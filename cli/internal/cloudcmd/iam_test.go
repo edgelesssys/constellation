@@ -13,7 +13,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/iamid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
@@ -33,9 +32,9 @@ func TestIAMCreator(t *testing.T) {
 			SaKey: "not_a_secret",
 		},
 	}
-	validGCPIAMIDFile := iamid.File{
+	validGCPIAMIDFile := IAMOutput{
 		CloudProvider: cloudprovider.GCP,
-		GCPOutput: iamid.GCPFile{
+		GCPOutput: GCPIAMOutput{
 			ServiceAccountKey: "not_a_secret",
 		},
 	}
@@ -52,9 +51,9 @@ func TestIAMCreator(t *testing.T) {
 			UAMIID:         "test_uami_id",
 		},
 	}
-	validAzureIAMIDFile := iamid.File{
+	validAzureIAMIDFile := IAMOutput{
 		CloudProvider: cloudprovider.Azure,
-		AzureOutput: iamid.AzureFile{
+		AzureOutput: AzureIAMOutput{
 			SubscriptionID: "test_subscription_id",
 			TenantID:       "test_tenant_id",
 			UAMIID:         "test_uami_id",
@@ -71,9 +70,9 @@ func TestIAMCreator(t *testing.T) {
 			ControlPlaneInstanceProfile: "test_control_plane_instance_profile",
 		},
 	}
-	validAWSIAMIDFile := iamid.File{
+	validAWSIAMIDFile := IAMOutput{
 		CloudProvider: cloudprovider.AWS,
-		AWSOutput: iamid.AWSFile{
+		AWSOutput: AWSIAMOutput{
 			ControlPlaneInstanceProfile: "test_control_plane_instance_profile",
 			WorkerNodeInstanceProfile:   "test_worker_node_instance_profile",
 		},
@@ -84,7 +83,7 @@ func TestIAMCreator(t *testing.T) {
 		newTfClientErr error
 		config         *IAMConfigOptions
 		provider       cloudprovider.Provider
-		wantIAMIDFile  iamid.File
+		wantIAMIDFile  IAMOutput
 		wantErr        bool
 	}{
 		"new terraform client err": {

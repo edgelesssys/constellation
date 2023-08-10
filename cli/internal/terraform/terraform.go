@@ -5,12 +5,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 
 /*
-Package terraform handles creation/destruction of a Constellation cluster using Terraform.
+Package terraform handles creation/destruction of cloud and IAM resources required by Constellation using Terraform.
 
 Since Terraform does not provide a stable Go API, we use the `terraform-exec` package to interact with Terraform.
 
 The Terraform templates are located in the "terraform" subdirectory. The templates are embedded into the CLI binary using `go:embed`.
 On use the relevant template is extracted to the working directory and the user customized variables are written to a `terraform.tfvars` file.
+
+Functions in this package should be kept CSP agnostic (there should be no "CreateAzureCluster" function),
+as loading the correct values and calling the correct functions for a given CSP is handled by the `cloudcmd` package.
 */
 package terraform
 
@@ -86,6 +89,9 @@ func (c *Client) ShowIAM(ctx context.Context, provider cloudprovider.Provider) (
 	tfState, err := c.tf.Show(ctx)
 	if err != nil {
 		return IAMOutput{}, err
+	}
+	if tfState == nil || tfState.Values == nil {
+		return IAMOutput{}, errors.New("terraform show: no values returned")
 	}
 
 	switch provider {

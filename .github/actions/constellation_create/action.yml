@@ -10,7 +10,7 @@ inputs:
     description: "Number of control-plane nodes to spawn."
     required: true
   cloudProvider:
-    description: "Either 'gcp' or 'azure'."
+    description: "Either 'gcp', 'aws' or 'azure'."
     required: true
   machineType:
     description: "Machine type of VM to spawn."
@@ -30,50 +30,17 @@ inputs:
   artifactNameSuffix:
     description: "Suffix for artifact naming."
     required: true
-  existingConfig:
-    default: "false"
-    description: "Use existing config file."
   fetchMeasurements:
     default: "false"
     description: "Update measurements via the 'constellation config fetch-measurements' command."
-  #
-  # GCP specific inputs
-  #
-  gcpProject:
-    description: "The GCP project to deploy Constellation in."
+  azureSNPEnforcementPolicy:
     required: false
-  gcpInClusterServiceAccountKey:
-    description: "The GCP Service account to use inside the created Constellation cluster."
-    required: false
-  #
-  # Azure specific inputs
-  #
-  azureSubscription:
-    description: "The Azure subscription ID to deploy Constellation in."
-    required: false
-  azureTenant:
-    description: "The Azure tenant ID to deploy Constellation in."
-    required: false
-  azureClientID:
-    description: "The Azure client ID of the application registration created for Constellation."
-    required: false
-  azureClientSecret:
-    description: "The Azure client secret value of the used secret."
-    required: false
-  azureUserAssignedIdentity:
-    description: "The Azure user assigned identity to use for Constellation."
-    required: false
-  azureResourceGroup:
-    description: "The Azure resource group to use for Constellation cluster"
-    required: false
+    description: "Azure SNP enforcement policy."
 
 outputs:
   kubeconfig:
     description: "The kubeconfig for the cluster."
     value: ${{ steps.constellation-init.outputs.KUBECONFIG }}
-  masterSecret:
-    description: "The master-secret for the cluster."
-    value: ${{ steps.constellation-init.outputs.MASTERSECRET }}
   osImageUsed:
     description: "The OS image used in the cluster."
     value: ${{ steps.setImage.outputs.image }}
@@ -81,43 +48,21 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - name: Constellation config generate
+    - name: Set constellation name
       shell: bash
-      if: inputs.existingConfig != 'true'
       run: |
-        if [[ -n "${{ inputs.kubernetesVersion }}" ]]; then
-          constellation config generate ${{ inputs.cloudProvider }} --kubernetes="${{ inputs.kubernetesVersion }}" --debug
-        else
-          constellation config generate ${{ inputs.cloudProvider }} --debug
-        fi
-
         yq eval -i "(.name) = \"e2e-test\"" constellation-conf.yaml
 
-        yq eval -i \
-          "(.provider | select(. | has(\"azure\")).azure.subscription) = \"${{ inputs.azureSubscription }}\" |
-            (.provider | select(. | has(\"azure\")).azure.tenant) = \"${{ inputs.azureTenant }}\" |
-            (.provider | select(. | has(\"azure\")).azure.location) = \"West US\" |
-            (.provider | select(. | has(\"azure\")).azure.userAssignedIdentity) = \"${{ inputs.azureUserAssignedIdentity }}\" |
-            (.provider | select(. | has(\"azure\")).azure.resourceGroup) = \"${{ inputs.azureResourceGroup }}\" |
-          constellation-conf.yaml
-
-        yq eval -i \
-          "(.provider | select(. | has(\"gcp\")).gcp.project) = \"${{ inputs.gcpProject }}\" |
-            (.provider | select(. | has(\"gcp\")).gcp.region) = \"europe-west3\" |
-            (.provider | select(. | has(\"gcp\")).gcp.zone) = \"europe-west3-b\" |
-            (.provider | select(. | has(\"gcp\")).gcp.serviceAccountKeyPath) = \"serviceAccountKey.json\"" \
-          constellation-conf.yaml
-
-        yq eval -i \
-          "(.provider | select(. | has(\"aws\")).aws.region) = \"us-east-2\" |
-            (.provider | select(. | has(\"aws\")).aws.zone) = \"us-east-2c\" |
-            (.provider | select(. | has(\"aws\")).aws.iamProfileControlPlane) = \"e2e_test_control_plane_instance_profile\" |
-            (.provider | select(. | has(\"aws\")).aws.iamProfileWorkerNodes) = \"e2e_test_worker_node_instance_profile\"" \
-          constellation-conf.yaml
-
-        if [[ -n "${{ inputs.kubernetesVersion }}" ]]; then
-          yq eval -i "(.kubernetesVersion) = \"${{ inputs.kubernetesVersion }}\"" constellation-conf.yaml
+    - name: Set Azure SNP enforcement policy
+      if: inputs.azureSNPEnforcementPolicy != ''
+      shell: bash
+      run: |
+        if [[ ${{ inputs.cloudProvider }} != 'azure' ]]; then
+          echo "SNP enforcement policy is only supported for Azure"
+          exit 1
         fi
+        yq eval -i "(.attestation.azureSEVSNP.firmwareSignerConfig.enforcementPolicy) \
+          = \"${{ inputs.azureSNPEnforcementPolicy }}\"" constellation-conf.yaml
 
     - name: Set image
       id: setImage
@@ -148,19 +93,12 @@ runs:
         yq eval -i "(.nodeGroups[] | .instanceType) = \"${{ inputs.machineType }}\"" constellation-conf.yaml
 
     - name: Set node count
-      if: inputs.cliVersion  != 'v2.9.0' && inputs.cliVersion  != 'v2.9.1'
+      # TODO(katexochen): remove if statement once 2.10 is released.
+      if: inputs.cliVersion != 'v2.9.0' && inputs.cliVersion != 'v2.9.1'
       shell: bash
       run: |
         yq eval -i "(.nodeGroups[] | select(.role == \"control-plane\") | .initialCount) = ${{ inputs.controlNodesCount }}" constellation-conf.yaml
         yq eval -i "(.nodeGroups[] | select(.role == \"worker\") | .initialCount) = ${{ inputs.workerNodesCount }}" constellation-conf.yaml
-
-    - name: Create serviceAccountKey.json
-      if: inputs.cloudProvider == 'gcp' && !inputs.existingConfig # Skip if using existing config. serviceAccountKey.json is already present in that case.
-      shell: bash
-      env:
-        GCP_CLUSTER_SERVICE_ACCOUNT_KEY: ${{ inputs.gcpInClusterServiceAccountKey }}
-      run: |
-        echo "$GCP_CLUSTER_SERVICE_ACCOUNT_KEY" > serviceAccountKey.json
 
     - name: Enable debugCluster flag
       if: inputs.isDebugImage == 'true'
@@ -211,8 +149,7 @@ runs:
       shell: bash
       run: |
         constellation init --force --debug
-        echo "KUBECONFIG=$(pwd)/constellation-admin.conf" >> $GITHUB_OUTPUT
-        echo "MASTERSECRET=$(pwd)/constellation-mastersecret.json" >> $GITHUB_OUTPUT
+        echo "KUBECONFIG=$(pwd)/constellation-admin.conf" | tee -a $GITHUB_OUTPUT
 
     - name: Wait for nodes to join and become ready
       shell: bash

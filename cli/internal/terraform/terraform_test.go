@@ -207,7 +207,6 @@ func TestPrepareIAM(t *testing.T) {
 }
 
 func TestCreateCluster(t *testing.T) {
-	someErr := errors.New("failed")
 	newQEMUState := func() *tfjson.State {
 		workingState := tfjson.State{
 			Values: &tfjson.StateValues{
@@ -307,7 +306,7 @@ func TestCreateCluster(t *testing.T) {
 			pathBase: "terraform",
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
-			tf:       &stubTerraform{initErr: someErr},
+			tf:       &stubTerraform{initErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -315,7 +314,7 @@ func TestCreateCluster(t *testing.T) {
 			pathBase: "terraform",
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
-			tf:       &stubTerraform{applyErr: someErr},
+			tf:       &stubTerraform{applyErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -323,7 +322,7 @@ func TestCreateCluster(t *testing.T) {
 			pathBase: "terraform",
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
-			tf:       &stubTerraform{showErr: someErr},
+			tf:       &stubTerraform{showErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -331,7 +330,7 @@ func TestCreateCluster(t *testing.T) {
 			pathBase: "terraform",
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
-			tf:       &stubTerraform{setLogErr: someErr},
+			tf:       &stubTerraform{setLogErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -339,7 +338,7 @@ func TestCreateCluster(t *testing.T) {
 			pathBase: "terraform",
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
-			tf:       &stubTerraform{setLogPathErr: someErr},
+			tf:       &stubTerraform{setLogPathErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -468,7 +467,6 @@ func TestCreateCluster(t *testing.T) {
 }
 
 func TestCreateIAM(t *testing.T) {
-	someErr := errors.New("failed")
 	newTestState := func() *tfjson.State {
 		workingState := tfjson.State{
 			Values: &tfjson.StateValues{
@@ -530,7 +528,7 @@ func TestCreateIAM(t *testing.T) {
 			pathBase: path.Join("terraform", "iam"),
 			provider: cloudprovider.GCP,
 			vars:     gcpVars,
-			tf:       &stubTerraform{setLogErr: someErr},
+			tf:       &stubTerraform{setLogErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -538,7 +536,7 @@ func TestCreateIAM(t *testing.T) {
 			pathBase: path.Join("terraform", "iam"),
 			provider: cloudprovider.GCP,
 			vars:     gcpVars,
-			tf:       &stubTerraform{setLogPathErr: someErr},
+			tf:       &stubTerraform{setLogPathErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -554,7 +552,7 @@ func TestCreateIAM(t *testing.T) {
 			pathBase: path.Join("terraform", "iam"),
 			provider: cloudprovider.GCP,
 			vars:     gcpVars,
-			tf:       &stubTerraform{initErr: someErr},
+			tf:       &stubTerraform{initErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -562,7 +560,7 @@ func TestCreateIAM(t *testing.T) {
 			pathBase: path.Join("terraform", "iam"),
 			provider: cloudprovider.GCP,
 			vars:     gcpVars,
-			tf:       &stubTerraform{applyErr: someErr},
+			tf:       &stubTerraform{applyErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -570,7 +568,7 @@ func TestCreateIAM(t *testing.T) {
 			pathBase: path.Join("terraform", "iam"),
 			provider: cloudprovider.GCP,
 			vars:     gcpVars,
-			tf:       &stubTerraform{showErr: someErr},
+			tf:       &stubTerraform{showErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -618,7 +616,7 @@ func TestCreateIAM(t *testing.T) {
 			pathBase: path.Join("terraform", "iam"),
 			provider: cloudprovider.Azure,
 			vars:     azureVars,
-			tf:       &stubTerraform{initErr: someErr},
+			tf:       &stubTerraform{initErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -626,7 +624,7 @@ func TestCreateIAM(t *testing.T) {
 			pathBase: path.Join("terraform", "iam"),
 			provider: cloudprovider.Azure,
 			vars:     azureVars,
-			tf:       &stubTerraform{applyErr: someErr},
+			tf:       &stubTerraform{applyErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -634,7 +632,7 @@ func TestCreateIAM(t *testing.T) {
 			pathBase: path.Join("terraform", "iam"),
 			provider: cloudprovider.Azure,
 			vars:     azureVars,
-			tf:       &stubTerraform{showErr: someErr},
+			tf:       &stubTerraform{showErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -681,7 +679,7 @@ func TestCreateIAM(t *testing.T) {
 			pathBase: path.Join("terraform", "iam"),
 			provider: cloudprovider.AWS,
 			vars:     awsVars,
-			tf:       &stubTerraform{initErr: someErr},
+			tf:       &stubTerraform{initErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -689,7 +687,7 @@ func TestCreateIAM(t *testing.T) {
 			pathBase: path.Join("terraform", "iam"),
 			provider: cloudprovider.AWS,
 			vars:     awsVars,
-			tf:       &stubTerraform{applyErr: someErr},
+			tf:       &stubTerraform{applyErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -697,7 +695,7 @@ func TestCreateIAM(t *testing.T) {
 			pathBase: path.Join("terraform", "iam"),
 			provider: cloudprovider.AWS,
 			vars:     awsVars,
-			tf:       &stubTerraform{showErr: someErr},
+			tf:       &stubTerraform{showErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -757,7 +755,6 @@ func TestCreateIAM(t *testing.T) {
 }
 
 func TestDestroyInstances(t *testing.T) {
-	someErr := errors.New("some error")
 	testCases := map[string]struct {
 		tf      *stubTerraform
 		wantErr bool
@@ -766,15 +763,15 @@ func TestDestroyInstances(t *testing.T) {
 			tf: &stubTerraform{},
 		},
 		"destroy fails": {
-			tf:      &stubTerraform{destroyErr: someErr},
+			tf:      &stubTerraform{destroyErr: assert.AnError},
 			wantErr: true,
 		},
 		"setLog fails": {
-			tf:      &stubTerraform{setLogErr: someErr},
+			tf:      &stubTerraform{setLogErr: assert.AnError},
 			wantErr: true,
 		},
 		"setLogPath fails": {
-			tf:      &stubTerraform{setLogPathErr: someErr},
+			tf:      &stubTerraform{setLogPathErr: assert.AnError},
 			wantErr: true,
 		},
 	}
@@ -1088,6 +1085,190 @@ func TestShowPlan(t *testing.T) {
 	}
 }
 
+func TestShowIAM(t *testing.T) {
+	testCases := map[string]struct {
+		tf      *stubTerraform
+		csp     cloudprovider.Provider
+		wantErr bool
+	}{
+		"GCP success": {
+			tf: &stubTerraform{
+				showState: getTfjsonState(map[string]any{
+					"sa_key": "key",
+				}),
+			},
+			csp: cloudprovider.GCP,
+		},
+		"GCP wrong data type": {
+			tf: &stubTerraform{
+				showState: getTfjsonState(map[string]any{
+					"sa_key": map[string]any{},
+				}),
+			},
+			csp:     cloudprovider.GCP,
+			wantErr: true,
+		},
+		"GCP missing key": {
+			tf: &stubTerraform{
+				showState: getTfjsonState(map[string]any{}),
+			},
+			csp:     cloudprovider.GCP,
+			wantErr: true,
+		},
+		"Azure success": {
+			tf: &stubTerraform{
+				showState: getTfjsonState(map[string]any{
+					"subscription_id": "sub",
+					"tenant_id":       "tenant",
+					"uami_id":         "uami",
+				}),
+			},
+			csp: cloudprovider.Azure,
+		},
+		"Azure wrong data type subscription_id": {
+			tf: &stubTerraform{
+				showState: getTfjsonState(map[string]any{
+					"subscription_id": map[string]any{},
+					"tenant_id":       "tenant",
+					"uami_id":         "uami",
+				}),
+			},
+			csp:     cloudprovider.Azure,
+			wantErr: true,
+		},
+		"Azure wrong data type tenant_id": {
+			tf: &stubTerraform{
+				showState: getTfjsonState(map[string]any{
+					"subscription_id": "sub",
+					"tenant_id":       map[string]any{},
+					"uami_id":         "uami",
+				}),
+			},
+			csp:     cloudprovider.Azure,
+			wantErr: true,
+		},
+		"Azure wrong data type uami_id": {
+			tf: &stubTerraform{
+				showState: getTfjsonState(map[string]any{
+					"subscription_id": "sub",
+					"tenant_id":       "tenant",
+					"uami_id":         map[string]any{},
+				}),
+			},
+			csp:     cloudprovider.Azure,
+			wantErr: true,
+		},
+		"Azure missing uami_id": {
+			tf: &stubTerraform{
+				showState: getTfjsonState(map[string]any{
+					"subscription_id": "sub",
+					"tenant_id":       "tenant",
+				}),
+			},
+			csp:     cloudprovider.Azure,
+			wantErr: true,
+		},
+		"Azure missing tenant_id": {
+			tf: &stubTerraform{
+				showState: getTfjsonState(map[string]any{
+					"subscription_id": "sub",
+					"uami_id":         "uami",
+				}),
+			},
+			csp:     cloudprovider.Azure,
+			wantErr: true,
+		},
+		"Azure missing subscription_id": {
+			tf: &stubTerraform{
+				showState: getTfjsonState(map[string]any{
+					"tenant_id": "tenant",
+					"uami_id":   "uami",
+				}),
+			},
+			csp:     cloudprovider.Azure,
+			wantErr: true,
+		},
+		"AWS success": {
+			tf: &stubTerraform{
+				showState: getTfjsonState(map[string]any{
+					"control_plane_instance_profile": "profile",
+					"worker_nodes_instance_profile":  "profile",
+				}),
+			},
+			csp: cloudprovider.AWS,
+		},
+		"AWS wrong data type control_plane_instance_profile": {
+			tf: &stubTerraform{
+				showState: getTfjsonState(map[string]any{
+					"control_plane_instance_profile": map[string]any{},
+					"worker_nodes_instance_profile":  "profile",
+				}),
+			},
+			csp:     cloudprovider.AWS,
+			wantErr: true,
+		},
+		"AWS wrong data type worker_nodes_instance_profile": {
+			tf: &stubTerraform{
+				showState: getTfjsonState(map[string]any{
+					"control_plane_instance_profile": "profile",
+					"worker_nodes_instance_profile":  map[string]any{},
+				}),
+			},
+			csp:     cloudprovider.AWS,
+			wantErr: true,
+		},
+		"AWS missing control_plane_instance_profile": {
+			tf: &stubTerraform{
+				showState: getTfjsonState(map[string]any{
+					"worker_nodes_instance_profile": "profile",
+				}),
+			},
+			csp:     cloudprovider.AWS,
+			wantErr: true,
+		},
+		"AWS missing worker_nodes_instance_profile": {
+			tf: &stubTerraform{
+				showState: getTfjsonState(map[string]any{
+					"control_plane_instance_profile": "profile",
+				}),
+			},
+			csp:     cloudprovider.AWS,
+			wantErr: true,
+		},
+		"Show fails": {
+			tf: &stubTerraform{
+				showErr: assert.AnError,
+			},
+			csp:     cloudprovider.AWS,
+			wantErr: true,
+		},
+		"Show returns state with nil Value": {
+			tf: &stubTerraform{
+				showState: &tfjson.State{},
+			},
+			csp:     cloudprovider.AWS,
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			c := &Client{
+				tf: tc.tf,
+			}
+
+			_, err := c.ShowIAM(context.Background(), tc.csp)
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+		})
+	}
+}
+
 type stubTerraform struct {
 	applyErr        error
 	destroyErr      error
@@ -1135,4 +1316,16 @@ func (s *stubTerraform) SetLogPath(_ string) error {
 
 func (s *stubTerraform) StateMv(_ context.Context, _, _ string, _ ...tfexec.StateMvCmdOption) error {
 	return s.stateMvErr
+}
+
+func getTfjsonState(values map[string]any) *tfjson.State {
+	state := tfjson.State{
+		Values: &tfjson.StateValues{
+			Outputs: map[string]*tfjson.StateOutput{},
+		},
+	}
+	for k, v := range values {
+		state.Values.Outputs[k] = &tfjson.StateOutput{Value: v}
+	}
+	return &state
 }

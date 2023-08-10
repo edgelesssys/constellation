@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
-	"github.com/edgelesssys/constellation/v2/cli/internal/iamid"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -24,20 +23,20 @@ import (
 )
 
 func TestParseIDFile(t *testing.T) {
-	validIAMIDFile := iamid.File{
+	validIAMIDFile := cloudcmd.IAMOutput{
 		CloudProvider: cloudprovider.GCP,
-		GCPOutput: iamid.GCPFile{
+		GCPOutput: cloudcmd.GCPIAMOutput{
 			ServiceAccountKey: base64.RawStdEncoding.EncodeToString([]byte(`{"private_key_id":"not_a_secret"}`)),
 		},
 	}
-	invalidIAMIDFile := iamid.File{
+	invalidIAMIDFile := cloudcmd.IAMOutput{
 		CloudProvider: cloudprovider.GCP,
-		GCPOutput: iamid.GCPFile{
+		GCPOutput: cloudcmd.GCPIAMOutput{
 			ServiceAccountKey: "ey_Jwcml2YXRlX2tleV9pZCI6Im5vdF9hX3NlY3JldCJ9Cg==", // invalid b64
 		},
 	}
 	testCases := map[string]struct {
-		idFile           iamid.File
+		idFile           cloudcmd.IAMOutput
 		wantPrivateKeyID string
 		wantErr          bool
 	}{
@@ -72,9 +71,9 @@ func TestIAMCreateAWS(t *testing.T) {
 		fs := afero.NewReadOnlyFs(afero.NewMemMapFs())
 		return fs
 	}
-	validIAMIDFile := iamid.File{
+	validIAMIDFile := cloudcmd.IAMOutput{
 		CloudProvider: cloudprovider.AWS,
-		AWSOutput: iamid.AWSFile{
+		AWSOutput: cloudcmd.AWSIAMOutput{
 			ControlPlaneInstanceProfile: "test_control_plane_instance_profile",
 			WorkerNodeInstanceProfile:   "test_worker_nodes_instance_profile",
 		},
@@ -304,9 +303,9 @@ func TestIAMCreateAzure(t *testing.T) {
 		fs := afero.NewReadOnlyFs(afero.NewMemMapFs())
 		return fs
 	}
-	validIAMIDFile := iamid.File{
+	validIAMIDFile := cloudcmd.IAMOutput{
 		CloudProvider: cloudprovider.Azure,
-		AzureOutput: iamid.AzureFile{
+		AzureOutput: cloudcmd.AzureIAMOutput{
 			SubscriptionID: "test_subscription_id",
 			TenantID:       "test_tenant_id",
 			UAMIID:         "test_uami_id",
@@ -504,15 +503,15 @@ func TestIAMCreateGCP(t *testing.T) {
 		fs := afero.NewReadOnlyFs(afero.NewMemMapFs())
 		return fs
 	}
-	validIAMIDFile := iamid.File{
+	validIAMIDFile := cloudcmd.IAMOutput{
 		CloudProvider: cloudprovider.GCP,
-		GCPOutput: iamid.GCPFile{
+		GCPOutput: cloudcmd.GCPIAMOutput{
 			ServiceAccountKey: "eyJwcml2YXRlX2tleV9pZCI6Im5vdF9hX3NlY3JldCJ9Cg==", // {"private_key_id":"not_a_secret"}
 		},
 	}
-	invalidIAMIDFile := iamid.File{
+	invalidIAMIDFile := cloudcmd.IAMOutput{
 		CloudProvider: cloudprovider.GCP,
-		GCPOutput: iamid.GCPFile{
+		GCPOutput: cloudcmd.GCPIAMOutput{
 			ServiceAccountKey: "ey_Jwcml2YXRlX2tleV9pZCI6Im5vdF9hX3NlY3JldCJ9Cg==", // invalid b64
 		},
 	}
@@ -708,13 +707,13 @@ func TestIAMCreateGCP(t *testing.T) {
 				readConfig := &config.Config{}
 				readErr := fileHandler.ReadYAML(constants.ConfigFilename, readConfig)
 				require.NoError(readErr)
-				assert.Equal(gcpServiceAccountKeyFile, readConfig.Provider.GCP.ServiceAccountKeyPath)
+				assert.Equal(constants.GCPServiceAccountKeyFilename, readConfig.Provider.GCP.ServiceAccountKeyPath)
 			}
 			require.NoError(err)
 			assert.True(tc.creator.createCalled)
 			assert.Equal(tc.creator.id.GCPOutput, validIAMIDFile.GCPOutput)
 			readServiceAccountKey := &map[string]string{}
-			readErr := fileHandler.ReadJSON(gcpServiceAccountKeyFile, readServiceAccountKey)
+			readErr := fileHandler.ReadJSON(constants.GCPServiceAccountKeyFilename, readServiceAccountKey)
 			require.NoError(readErr)
 			assert.Equal("not_a_secret", (*readServiceAccountKey)["private_key_id"])
 		})

@@ -15,7 +15,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/iamid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
@@ -115,10 +114,10 @@ func NewIAMCreator(out io.Writer) *IAMCreator {
 }
 
 // Create prepares and hands over the corresponding providers IAM creator.
-func (c *IAMCreator) Create(ctx context.Context, provider cloudprovider.Provider, opts *IAMConfigOptions) (iamid.File, error) {
+func (c *IAMCreator) Create(ctx context.Context, provider cloudprovider.Provider, opts *IAMConfigOptions) (IAMOutput, error) {
 	cl, err := c.newTerraformClient(ctx, opts.TFWorkspace)
 	if err != nil {
-		return iamid.File{}, err
+		return IAMOutput{}, err
 	}
 	defer cl.RemoveInstaller()
 
@@ -130,12 +129,12 @@ func (c *IAMCreator) Create(ctx context.Context, provider cloudprovider.Provider
 	case cloudprovider.AWS:
 		return c.createAWS(ctx, cl, opts)
 	default:
-		return iamid.File{}, fmt.Errorf("unsupported cloud provider: %s", provider)
+		return IAMOutput{}, fmt.Errorf("unsupported cloud provider: %s", provider)
 	}
 }
 
 // createGCP creates the IAM configuration on GCP.
-func (c *IAMCreator) createGCP(ctx context.Context, cl tfIAMClient, opts *IAMConfigOptions) (retFile iamid.File, retErr error) {
+func (c *IAMCreator) createGCP(ctx context.Context, cl tfIAMClient, opts *IAMConfigOptions) (iam IAMOutput, retErr error) {
 	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl}, opts.TFLogLevel)
 
 	vars := terraform.GCPIAMVariables{
@@ -146,24 +145,24 @@ func (c *IAMCreator) createGCP(ctx context.Context, cl tfIAMClient, opts *IAMCon
 	}
 
 	if err := cl.PrepareWorkspace(path.Join("terraform", "iam", strings.ToLower(cloudprovider.GCP.String())), &vars); err != nil {
-		return iamid.File{}, err
+		return IAMOutput{}, err
 	}
 
 	iamOutput, err := cl.ApplyIAMConfig(ctx, cloudprovider.GCP, opts.TFLogLevel)
 	if err != nil {
-		return iamid.File{}, err
+		return IAMOutput{}, err
 	}
 
-	return iamid.File{
+	return IAMOutput{
 		CloudProvider: cloudprovider.GCP,
-		GCPOutput: iamid.GCPFile{
+		GCPOutput: GCPIAMOutput{
 			ServiceAccountKey: iamOutput.GCP.SaKey,
 		},
 	}, nil
 }
 
 // createAzure creates the IAM configuration on Azure.
-func (c *IAMCreator) createAzure(ctx context.Context, cl tfIAMClient, opts *IAMConfigOptions) (retFile iamid.File, retErr error) {
+func (c *IAMCreator) createAzure(ctx context.Context, cl tfIAMClient, opts *IAMConfigOptions) (iam IAMOutput, retErr error) {
 	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl}, opts.TFLogLevel)
 
 	vars := terraform.AzureIAMVariables{
@@ -173,17 +172,17 @@ func (c *IAMCreator) createAzure(ctx context.Context, cl tfIAMClient, opts *IAMC
 	}
 
 	if err := cl.PrepareWorkspace(path.Join("terraform", "iam", strings.ToLower(cloudprovider.Azure.String())), &vars); err != nil {
-		return iamid.File{}, err
+		return IAMOutput{}, err
 	}
 
 	iamOutput, err := cl.ApplyIAMConfig(ctx, cloudprovider.Azure, opts.TFLogLevel)
 	if err != nil {
-		return iamid.File{}, err
+		return IAMOutput{}, err
 	}
 
-	return iamid.File{
+	return IAMOutput{
 		CloudProvider: cloudprovider.Azure,
-		AzureOutput: iamid.AzureFile{
+		AzureOutput: AzureIAMOutput{
 			SubscriptionID: iamOutput.Azure.SubscriptionID,
 			TenantID:       iamOutput.Azure.TenantID,
 			UAMIID:         iamOutput.Azure.UAMIID,
@@ -192,7 +191,7 @@ func (c *IAMCreator) createAzure(ctx context.Context, cl tfIAMClient, opts *IAMC
 }
 
 // createAWS creates the IAM configuration on AWS.
-func (c *IAMCreator) createAWS(ctx context.Context, cl tfIAMClient, opts *IAMConfigOptions) (retFile iamid.File, retErr error) {
+func (c *IAMCreator) createAWS(ctx context.Context, cl tfIAMClient, opts *IAMConfigOptions) (iam IAMOutput, retErr error) {
 	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl}, opts.TFLogLevel)
 
 	vars := terraform.AWSIAMVariables{
@@ -201,21 +200,49 @@ func (c *IAMCreator) createAWS(ctx context.Context, cl tfIAMClient, opts *IAMCon
 	}
 
 	if err := cl.PrepareWorkspace(path.Join("terraform", "iam", strings.ToLower(cloudprovider.AWS.String())), &vars); err != nil {
-		return iamid.File{}, err
+		return IAMOutput{}, err
 	}
 
 	iamOutput, err := cl.ApplyIAMConfig(ctx, cloudprovider.AWS, opts.TFLogLevel)
 	if err != nil {
-		return iamid.File{}, err
+		return IAMOutput{}, err
 	}
 
-	return iamid.File{
+	return IAMOutput{
 		CloudProvider: cloudprovider.AWS,
-		AWSOutput: iamid.AWSFile{
+		AWSOutput: AWSIAMOutput{
 			WorkerNodeInstanceProfile:   iamOutput.AWS.WorkerNodeInstanceProfile,
 			ControlPlaneInstanceProfile: iamOutput.AWS.ControlPlaneInstanceProfile,
 		},
 	}, nil
+}
+
+// IAMOutput is the output of creating a new IAM profile.
+type IAMOutput struct {
+	// CloudProvider is the cloud provider of the cluster.
+	CloudProvider cloudprovider.Provider `json:"cloudprovider,omitempty"`
+
+	GCPOutput   GCPIAMOutput   `json:"gcpOutput,omitempty"`
+	AzureOutput AzureIAMOutput `json:"azureOutput,omitempty"`
+	AWSOutput   AWSIAMOutput   `json:"awsOutput,omitempty"`
+}
+
+// GCPIAMOutput contains the output information of a GCP IAM configuration.
+type GCPIAMOutput struct {
+	ServiceAccountKey string `json:"serviceAccountID,omitempty"`
+}
+
+// AzureIAMOutput contains the output information of a Microsoft Azure IAM configuration.
+type AzureIAMOutput struct {
+	SubscriptionID string `json:"subscriptionID,omitempty"`
+	TenantID       string `json:"tenantID,omitempty"`
+	UAMIID         string `json:"uamiID,omitempty"`
+}
+
+// AWSIAMOutput contains the output information of an AWS IAM configuration.
+type AWSIAMOutput struct {
+	ControlPlaneInstanceProfile string `json:"controlPlaneInstanceProfile,omitempty"`
+	WorkerNodeInstanceProfile   string `json:"workerNodeInstanceProfile,omitempty"`
 }
 
 type newTFIAMClientFunc func(ctx context.Context, workspace string) (tfIAMClient, error)

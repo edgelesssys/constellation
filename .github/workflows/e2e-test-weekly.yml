@@ -99,6 +99,7 @@ jobs:
             refStream: "ref/main/stream/debug/?"
             provider: "azure"
             kubernetes-version: "v1.27"
+            azureSNPEnforcementPolicy: "equal" # This run checks for unknown ID Key disgests.
           - test: "verify"
             provider: "aws"
             refStream: "ref/main/stream/debug/?"
@@ -208,6 +209,7 @@ jobs:
           registry: ghcr.io
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           fetchMeasurements: ${{ matrix.refStream != 'ref/release/stream/stable/?' }}
+          azureSNPEnforcementPolicy: ${{ matrix.azureSNPEnforcementPolicy }}
 
       - name: Always terminate cluster
         if: always()

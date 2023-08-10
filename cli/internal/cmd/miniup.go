@@ -13,6 +13,7 @@ import (
 	"net"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
+	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/cli/internal/featureset"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
@@ -229,16 +230,16 @@ type upFlags struct {
 
 func (m *miniUpCmd) parseUpFlags(cmd *cobra.Command) (upFlags, error) {
 	m.log.Debugf("Preparing configuration")
-	workspace, err := cmd.Flags().GetString("workspace")
+	workDir, err := cmd.Flags().GetString("workspace")
 	if err != nil {
 		return upFlags{}, fmt.Errorf("parsing config string: %w", err)
 	}
-	m.log.Debugf("Configuration path is %q", configPath)
+	m.log.Debugf("Workspace set to %q", workDir)
 	force, err := cmd.Flags().GetBool("force")
 	if err != nil {
 		return upFlags{}, fmt.Errorf("parsing force bool: %w", err)
 	}
-	m.log.Debugf("force flag is %q", configPath)
+	m.log.Debugf("force flag is %q", force)
 
 	logLevelString, err := cmd.Flags().GetString("tf-log")
 	if err != nil {
@@ -248,7 +249,7 @@ func (m *miniUpCmd) parseUpFlags(cmd *cobra.Command) (upFlags, error) {
 	if err != nil {
 		return upFlags{}, fmt.Errorf("parsing Terraform log level %s: %w", logLevelString, err)
 	}
-	m.log.Debugf("Terraform logs will be written into %s at level %s", terraformLogPath(workspace), logLevel.String())
+	m.log.Debugf("Terraform logs will be written into %s at level %s", pathprefix.New(workDir).PrefixPath(constants.TerraformLogFile), logLevel.String())
 
 	return upFlags{
 		force:      force,

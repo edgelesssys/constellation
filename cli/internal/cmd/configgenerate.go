@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
@@ -41,7 +42,7 @@ func newConfigGenerateCmd() *cobra.Command {
 }
 
 type generateFlags struct {
-	workspace          string
+	pf                 pathprefix.PathPrefixer
 	k8sVersion         string
 	attestationVariant variant.Variant
 }
@@ -80,7 +81,7 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 		return err
 	}
 
-	cmd.Println("Config file written to", configPath(flags.workspace))
+	cmd.Println("Config file written to", flags.pf.PrefixPath(constants.ConfigFilename))
 	cmd.Println("Please fill in your CSP-specific configuration before proceeding.")
 	cmd.Println("For more information refer to the documentation:")
 	cmd.Println("\thttps://docs.edgeless.systems/constellation/getting-started/first-steps")
@@ -137,7 +138,7 @@ func supportedVersions() string {
 }
 
 func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
-	workspace, err := cmd.Flags().GetString("workspace")
+	workDir, err := cmd.Flags().GetString("workspace")
 	if err != nil {
 		return generateFlags{}, fmt.Errorf("parsing workspace flag: %w", err)
 	}
@@ -166,7 +167,7 @@ func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
 		}
 	}
 	return generateFlags{
-		workspace:          workspace,
+		pf:                 pathprefix.New(workDir),
 		k8sVersion:         resolvedVersion,
 		attestationVariant: attestationVariant,
 	}, nil

@@ -12,9 +12,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"path/filepath"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/cli/internal/featureset"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
@@ -50,7 +50,7 @@ type fetchMeasurementsFlags struct {
 	signatureURL    *url.URL
 	insecure        bool
 	force           bool
-	workspace       string
+	pf              pathprefix.PathPrefixer
 }
 
 type configFetchMeasurementsCmd struct {
@@ -90,7 +90,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 		return errors.New("fetching measurements is not supported")
 	}
 
-	cfm.log.Debugf("Loading configuration file from %q", filepath.Join(flags.workspace, constants.ConfigFilename))
+	cfm.log.Debugf("Loading configuration file from %q", flags.pf.PrefixPath(constants.ConfigFilename))
 
 	conf, err := config.New(fileHandler, constants.ConfigFilename, fetcher, flags.force)
 	var configValidationErr *config.ValidationError
@@ -173,7 +173,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	if err := fileHandler.WriteYAML(constants.ConfigFilename, conf, file.OptOverwrite); err != nil {
 		return err
 	}
-	cfm.log.Debugf("Configuration written to %s", configPath(flags.workspace))
+	cfm.log.Debugf("Configuration written to %s", flags.pf.PrefixPath(constants.ConfigFilename))
 	cmd.Print("Successfully fetched measurements and updated Configuration\n")
 	return nil
 }
@@ -194,7 +194,7 @@ func (cfm *configFetchMeasurementsCmd) parseURLFlag(cmd *cobra.Command, flag str
 }
 
 func (cfm *configFetchMeasurementsCmd) parseFetchMeasurementsFlags(cmd *cobra.Command) (*fetchMeasurementsFlags, error) {
-	workspace, err := cmd.Flags().GetString("workspace")
+	workDir, err := cmd.Flags().GetString("workspace")
 	if err != nil {
 		return nil, fmt.Errorf("parsing workspace argument: %w", err)
 	}
@@ -226,7 +226,7 @@ func (cfm *configFetchMeasurementsCmd) parseFetchMeasurementsFlags(cmd *cobra.Co
 		signatureURL:    measurementsSignatureURL,
 		insecure:        insecure,
 		force:           force,
-		workspace:       workspace,
+		pf:              pathprefix.New(workDir),
 	}, nil
 }
 

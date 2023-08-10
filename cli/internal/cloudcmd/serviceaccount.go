@@ -13,8 +13,8 @@ package cloudcmd
 
 import (
 	"fmt"
-	"path/filepath"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
@@ -24,17 +24,17 @@ import (
 )
 
 // GetMarshaledServiceAccountURI returns the service account URI for the given cloud provider.
-func GetMarshaledServiceAccountURI(provider cloudprovider.Provider, config *config.Config, workspace string, log debugLog, fileHandler file.Handler,
+func GetMarshaledServiceAccountURI(provider cloudprovider.Provider, config *config.Config, pf pathprefix.PathPrefixer, log debugLog, fileHandler file.Handler,
 ) (string, error) {
 	log.Debugf("Getting service account URI")
 	switch provider {
 	case cloudprovider.GCP:
 		log.Debugf("Handling case for GCP")
-		log.Debugf("GCP service account key path %s", filepath.Join(workspace, config.Provider.GCP.ServiceAccountKeyPath))
+		log.Debugf("GCP service account key path %s", pf.PrefixPath(config.Provider.GCP.ServiceAccountKeyPath))
 
 		var key gcpshared.ServiceAccountKey
 		if err := fileHandler.ReadJSON(config.Provider.GCP.ServiceAccountKeyPath, &key); err != nil {
-			return "", fmt.Errorf("reading service account key from path %q: %w", filepath.Join(workspace, config.Provider.GCP.ServiceAccountKeyPath), err)
+			return "", fmt.Errorf("reading service account key from path %q: %w", pf.PrefixPath(config.Provider.GCP.ServiceAccountKeyPath), err)
 		}
 		log.Debugf("Read GCP service account key from path")
 		return key.ToCloudServiceAccountURI(), nil

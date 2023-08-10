@@ -5,14 +5,26 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 
 /*
-Package helm provides a higher level interface to the Helm GO SDK.
+Package helm provides a higher level interface to the Helm Go SDK.
 
 It is used by the CLI to:
-- load embedded charts
-- install charts
-- update helm releases
-- get versions for installed helm releases
-- create local backups before running service upgrades
+
+  - load embedded charts
+  - install charts
+  - update helm releases
+  - get versions for installed helm releases
+  - create local backups before running service upgrades
+
+The charts themselves are embedded in the CLI binary, and values are dynamically updated depending on configuration.
+The charts can be found in “./charts/“.
+Values should be added in the chart's "values.yaml“ file if they are static i.e. don't depend on user input,
+otherwise they need to be dynamically created depending on a user's configuration.
+
+Helm logic should not be implemented outside this package.
+All values loading, parsing, installing, uninstalling, and updating of charts should be implemented here.
+As such, the helm package requires to implement some CSP specific logic.
+However, exported functions should be CSP agnostic and take a cloudprovider.Provider as argument.
+As such, the number of exported functions should be kept minimal.
 */
 package helm
 

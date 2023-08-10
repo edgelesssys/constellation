@@ -14,7 +14,7 @@ import (
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
-	"github.com/edgelesssys/constellation/v2/cli/internal/iamid"
+	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -130,15 +130,15 @@ func newIAMCreateGCPCmd() *cobra.Command {
 // createRunIAMFunc is the entrypoint for the iam create command. It sets up the iamCreator
 // and starts IAM creation for the specific cloud provider.
 func createRunIAMFunc(provider cloudprovider.Provider) func(cmd *cobra.Command, args []string) error {
-	var providerCreator func(workspace string) providerIAMCreator
+	var providerCreator func(pf pathprefix.PathPrefixer) providerIAMCreator
 	switch provider {
 	case cloudprovider.AWS:
-		providerCreator = func(string) providerIAMCreator { return &awsIAMCreator{} }
+		providerCreator = func(pathprefix.PathPrefixer) providerIAMCreator { return &awsIAMCreator{} }
 	case cloudprovider.Azure:
-		providerCreator = func(string) providerIAMCreator { return &azureIAMCreator{} }
+		providerCreator = func(pathprefix.PathPrefixer) providerIAMCreator { return &azureIAMCreator{} }
 	case cloudprovider.GCP:
-		providerCreator = func(workspace string) providerIAMCreator {
-			return &gcpIAMCreator{workspace}
+		providerCreator = func(pf pathprefix.PathPrefixer) providerIAMCreator {
+			return &gcpIAMCreator{pf}
 		}
 	default:
 		return func(cmd *cobra.Command, args []string) error {
@@ -155,25 +155,26 @@ func createRunIAMFunc(provider cloudprovider.Provider) func(cmd *cobra.Command, 
 		if err != nil {
 			return fmt.Errorf("parsing Terraform log level %s: %w", logLevelString, err)
 		}
-		workspace, err := cmd.Flags().GetString("workspace")
+		workDir, err := cmd.Flags().GetString("workspace")
 		if err != nil {
 			return fmt.Errorf("parsing workspace string: %w", err)
 		}
+		pf := pathprefix.New(workDir)
 
-		iamCreator, err := newIAMCreator(cmd, workspace, logLevel)
+		iamCreator, err := newIAMCreator(cmd, pf, logLevel)
 		if err != nil {
 			return fmt.Errorf("creating iamCreator: %w", err)
 		}
 		defer iamCreator.spinner.Stop()
 		defer iamCreator.log.Sync()
 		iamCreator.provider = provider
-		iamCreator.providerCreator = providerCreator(workspace)
+		iamCreator.providerCreator = providerCreator(pf)
 		return iamCreator.create(cmd.Context())
 	}
 }
 
 // newIAMCreator creates a new iamiamCreator.
-func newIAMCreator(cmd *cobra.Command, workspace string, logLevel terraform.LogLevel) (*iamCreator, error) {
+func newIAMCreator(cmd *cobra.Command, pf pathprefix.PathPrefixer, logLevel terraform.LogLevel) (*iamCreator, error) {
 	spinner, err := newSpinnerOrStderr(cmd)
 	if err != nil {
 		return nil, fmt.Errorf("creating spinner: %w", err)
@@ -182,7 +183,7 @@ func newIAMCreator(cmd *cobra.Command, workspace string, logLevel terraform.LogL
 	if err != nil {
 		return nil, fmt.Errorf("creating logger: %w", err)
 	}
-	log.Debugf("Terraform logs will be written into %s at level %s", terraformLogPath(workspace), logLevel.String())
+	log.Debugf("Terraform logs will be written into %s at level %s", pf.PrefixPath(constants.TerraformLogFile), logLevel.String())
 
 	return &iamCreator{
 		cmd:         cmd,
@@ -207,6 +208,7 @@ type iamCreator struct {
 	providerCreator providerIAMCreator
 	iamConfig       *cloudcmd.IAMConfigOptions
 	log             debugLog
+	pf              pathprefix.PathPrefixer
 }
 
 // create IAM configuration on the iamCreator's cloud provider.
@@ -217,7 +219,7 @@ func (c *iamCreator) create(ctx context.Context) error {
 	}
 	c.log.Debugf("Using flags: %+v", flags)
 
-	if err := c.checkWorkingDir(flags.workspace); err != nil {
+	if err := c.checkWorkingDir(); err != nil {
 		return err
 	}
 
@@ -236,14 +238,14 @@ func (c *iamCreator) create(ctx context.Context) error {
 
 	var conf config.Config
 	if flags.updateConfig {
-		c.log.Debugf("Parsing config %s", configPath(flags.workspace))
+		c.log.Debugf("Parsing config %s", c.pf.PrefixPath(constants.ConfigFilename))
 		if err = c.fileHandler.ReadYAML(constants.ConfigFilename, &conf); err != nil {
 			return fmt.Errorf("error reading the configuration file: %w", err)
 		}
 		if err := validateConfigWithFlagCompatibility(c.provider, conf, flags); err != nil {
 			return err
 		}
-		c.cmd.Printf("The configuration file %q will be automatically updated with the IAM values and zone/region information.\n", configPath(flags.workspace))
+		c.cmd.Printf("The configuration file %q will be automatically updated with the IAM values and zone/region information.\n", c.pf.PrefixPath(constants.ConfigFilename))
 	}
 
 	c.spinner.Start("Creating", false)
@@ -261,12 +263,12 @@ func (c *iamCreator) create(ctx context.Context) error {
 	}
 
 	if flags.updateConfig {
-		c.log.Debugf("Writing IAM configuration to %s", configPath(flags.workspace))
+		c.log.Debugf("Writing IAM configuration to %s", c.pf.PrefixPath(constants.ConfigFilename))
 		c.providerCreator.writeOutputValuesToConfig(&conf, flags, iamFile)
 		if err := c.fileHandler.WriteYAML(constants.ConfigFilename, conf, file.OptOverwrite); err != nil {
 			return err
 		}
-		c.cmd.Printf("Your IAM configuration was created and filled into %s successfully.\n", configPath(flags.workspace))
+		c.cmd.Printf("Your IAM configuration was created and filled into %s successfully.\n", c.pf.PrefixPath(constants.ConfigFilename))
 		return nil
 	}
 
@@ -278,10 +280,12 @@ func (c *iamCreator) create(ctx context.Context) error {
 
 // parseFlagsAndSetupConfig parses the flags of the iam create command and fills the values into the IAM config (output values of the command).
 func (c *iamCreator) parseFlagsAndSetupConfig() (iamFlags, error) {
-	cwd, err := c.cmd.Flags().GetString("workspace")
+	workDir, err := c.cmd.Flags().GetString("workspace")
 	if err != nil {
 		return iamFlags{}, fmt.Errorf("parsing config string: %w", err)
 	}
+	c.pf = pathprefix.New(workDir)
+
 	yesFlag, err := c.cmd.Flags().GetBool("yes")
 	if err != nil {
 		return iamFlags{}, fmt.Errorf("parsing yes bool: %w", err)
@@ -292,7 +296,6 @@ func (c *iamCreator) parseFlagsAndSetupConfig() (iamFlags, error) {
 	}
 
 	flags := iamFlags{
-		workspace:    cwd,
 		yesFlag:      yesFlag,
 		updateConfig: updateConfig,
 	}
@@ -306,9 +309,9 @@ func (c *iamCreator) parseFlagsAndSetupConfig() (iamFlags, error) {
 }
 
 // checkWorkingDir checks if the current working directory already contains a Terraform dir.
-func (c *iamCreator) checkWorkingDir(workspace string) error {
+func (c *iamCreator) checkWorkingDir() error {
 	if _, err := c.fileHandler.Stat(constants.TerraformIAMWorkingDir); err == nil {
-		return fmt.Errorf("the current working directory already contains the Terraform workspace directory %q. Please run the command in a different directory or destroy the existing workspace", terraformIAMWorkspace(workspace))
+		return fmt.Errorf("the current working directory already contains the Terraform workspace directory %q. Please run the command in a different directory or destroy the existing workspace", c.pf.PrefixPath(constants.TerraformIAMWorkingDir))
 	}
 	return nil
 }
@@ -318,7 +321,6 @@ type iamFlags struct {
 	aws          awsFlags
 	azure        azureFlags
 	gcp          gcpFlags
-	workspace    string
 	yesFlag      bool
 	updateConfig bool
 }
@@ -350,13 +352,13 @@ type providerIAMCreator interface {
 	// printConfirmValues prints the values that will be created on the cloud provider and need to be confirmed by the user.
 	printConfirmValues(cmd *cobra.Command, flags iamFlags)
 	// printOutputValues prints the values that were created on the cloud provider.
-	printOutputValues(cmd *cobra.Command, flags iamFlags, iamFile iamid.File)
+	printOutputValues(cmd *cobra.Command, flags iamFlags, iamFile cloudcmd.IAMOutput)
 	// writeOutputValuesToConfig writes the output values of the IAM creation to the constellation config file.
-	writeOutputValuesToConfig(conf *config.Config, flags iamFlags, iamFile iamid.File)
+	writeOutputValuesToConfig(conf *config.Config, flags iamFlags, iamFile cloudcmd.IAMOutput)
 	// parseFlagsAndSetupConfig parses the provider-specific flags and fills the values into the IAM config (output values of the command).
 	parseFlagsAndSetupConfig(cmd *cobra.Command, flags iamFlags, iamConfig *cloudcmd.IAMConfigOptions) (iamFlags, error)
 	// parseAndWriteIDFile parses the GCP service account key and writes it to a keyfile. It is only implemented for GCP.
-	parseAndWriteIDFile(iamFile iamid.File, fileHandler file.Handler) error
+	parseAndWriteIDFile(iamFile cloudcmd.IAMOutput, fileHandler file.Handler) error
 }
 
 // awsIAMCreator implements the providerIAMCreator interface for AWS.
@@ -404,14 +406,14 @@ func (c *awsIAMCreator) printConfirmValues(cmd *cobra.Command, flags iamFlags) {
 	cmd.Printf("Name Prefix:\t%s\n\n", flags.aws.prefix)
 }
 
-func (c *awsIAMCreator) printOutputValues(cmd *cobra.Command, flags iamFlags, iamFile iamid.File) {
+func (c *awsIAMCreator) printOutputValues(cmd *cobra.Command, flags iamFlags, iamFile cloudcmd.IAMOutput) {
 	cmd.Printf("region:\t\t\t%s\n", flags.aws.region)
 	cmd.Printf("zone:\t\t\t%s\n", flags.aws.zone)
 	cmd.Printf("iamProfileControlPlane:\t%s\n", iamFile.AWSOutput.ControlPlaneInstanceProfile)
 	cmd.Printf("iamProfileWorkerNodes:\t%s\n\n", iamFile.AWSOutput.WorkerNodeInstanceProfile)
 }
 
-func (c *awsIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iamFlags, iamFile iamid.File) {
+func (c *awsIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iamFlags, iamFile cloudcmd.IAMOutput) {
 	conf.Provider.AWS.Region = flags.aws.region
 	conf.Provider.AWS.Zone = flags.aws.zone
 	conf.Provider.AWS.IAMProfileControlPlane = iamFile.AWSOutput.ControlPlaneInstanceProfile
@@ -422,7 +424,7 @@ func (c *awsIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iam
 	}
 }
 
-func (c *awsIAMCreator) parseAndWriteIDFile(_ iamid.File, _ file.Handler) error {
+func (c *awsIAMCreator) parseAndWriteIDFile(_ cloudcmd.IAMOutput, _ file.Handler) error {
 	return nil
 }
 
@@ -467,7 +469,7 @@ func (c *azureIAMCreator) printConfirmValues(cmd *cobra.Command, flags iamFlags)
 	cmd.Printf("Service Principal:\t%s\n\n", flags.azure.servicePrincipal)
 }
 
-func (c *azureIAMCreator) printOutputValues(cmd *cobra.Command, flags iamFlags, iamFile iamid.File) {
+func (c *azureIAMCreator) printOutputValues(cmd *cobra.Command, flags iamFlags, iamFile cloudcmd.IAMOutput) {
 	cmd.Printf("subscription:\t\t%s\n", iamFile.AzureOutput.SubscriptionID)
 	cmd.Printf("tenant:\t\t\t%s\n", iamFile.AzureOutput.TenantID)
 	cmd.Printf("location:\t\t%s\n", flags.azure.region)
@@ -475,7 +477,7 @@ func (c *azureIAMCreator) printOutputValues(cmd *cobra.Command, flags iamFlags, 
 	cmd.Printf("userAssignedIdentity:\t%s\n", iamFile.AzureOutput.UAMIID)
 }
 
-func (c *azureIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iamFlags, iamFile iamid.File) {
+func (c *azureIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iamFlags, iamFile cloudcmd.IAMOutput) {
 	conf.Provider.Azure.SubscriptionID = iamFile.AzureOutput.SubscriptionID
 	conf.Provider.Azure.TenantID = iamFile.AzureOutput.TenantID
 	conf.Provider.Azure.Location = flags.azure.region
@@ -483,13 +485,13 @@ func (c *azureIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags i
 	conf.Provider.Azure.UserAssignedIdentity = iamFile.AzureOutput.UAMIID
 }
 
-func (c *azureIAMCreator) parseAndWriteIDFile(_ iamid.File, _ file.Handler) error {
+func (c *azureIAMCreator) parseAndWriteIDFile(_ cloudcmd.IAMOutput, _ file.Handler) error {
 	return nil
 }
 
 // gcpIAMCreator implements the providerIAMCreator interface for GCP.
 type gcpIAMCreator struct {
-	workspace string
+	pf pathprefix.PathPrefixer
 }
 
 func (c *gcpIAMCreator) parseFlagsAndSetupConfig(cmd *cobra.Command, flags iamFlags, iamConfig *cloudcmd.IAMConfigOptions) (iamFlags, error) {
@@ -549,16 +551,16 @@ func (c *gcpIAMCreator) printConfirmValues(cmd *cobra.Command, flags iamFlags) {
 	cmd.Printf("Zone:\t\t\t%s\n\n", flags.gcp.zone)
 }
 
-func (c *gcpIAMCreator) printOutputValues(cmd *cobra.Command, flags iamFlags, _ iamid.File) {
+func (c *gcpIAMCreator) printOutputValues(cmd *cobra.Command, flags iamFlags, _ cloudcmd.IAMOutput) {
 	cmd.Printf("projectID:\t\t%s\n", flags.gcp.projectID)
 	cmd.Printf("region:\t\t\t%s\n", flags.gcp.region)
 	cmd.Printf("zone:\t\t\t%s\n", flags.gcp.zone)
-	cmd.Printf("serviceAccountKeyPath:\t%s\n\n", gcpServiceAccountKeyPath(c.workspace))
+	cmd.Printf("serviceAccountKeyPath:\t%s\n\n", c.pf.PrefixPath(constants.GCPServiceAccountKeyFilename))
 }
 
-func (c *gcpIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iamFlags, _ iamid.File) {
+func (c *gcpIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iamFlags, _ cloudcmd.IAMOutput) {
 	conf.Provider.GCP.Project = flags.gcp.projectID
-	conf.Provider.GCP.ServiceAccountKeyPath = gcpServiceAccountKeyFile // File was created in workspace, so only the filename is needed.
+	conf.Provider.GCP.ServiceAccountKeyPath = constants.GCPServiceAccountKeyFilename // File was created in workspace, so only the filename is needed.
 	conf.Provider.GCP.Region = flags.gcp.region
 	conf.Provider.GCP.Zone = flags.gcp.zone
 	for groupName, group := range conf.NodeGroups {
@@ -567,14 +569,14 @@ func (c *gcpIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iam
 	}
 }
 
-func (c *gcpIAMCreator) parseAndWriteIDFile(iamFile iamid.File, fileHandler file.Handler) error {
+func (c *gcpIAMCreator) parseAndWriteIDFile(iamFile cloudcmd.IAMOutput, fileHandler file.Handler) error {
 	// GCP needs to write the service account key to a file.
 	tmpOut, err := parseIDFile(iamFile.GCPOutput.ServiceAccountKey)
 	if err != nil {
 		return err
 	}
 
-	return fileHandler.WriteJSON(gcpServiceAccountKeyFile, tmpOut, file.OptNone)
+	return fileHandler.WriteJSON(constants.GCPServiceAccountKeyFilename, tmpOut, file.OptNone)
 }
 
 // parseIDFile parses the given base64 encoded JSON string of the GCP service account key and returns a map.

@@ -17,6 +17,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
+	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/recoverproto"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
@@ -50,6 +51,7 @@ func NewRecoverCmd() *cobra.Command {
 type recoverCmd struct {
 	log           debugLog
 	configFetcher attestationconfigapi.Fetcher
+	pf            pathprefix.PathPrefixer
 }
 
 func runRecover(cmd *cobra.Command, _ []string) error {
@@ -77,12 +79,12 @@ func (r *recoverCmd) recover(
 	r.log.Debugf("Using flags: %+v", flags)
 
 	var masterSecret uri.MasterSecret
-	r.log.Debugf("Loading master secret file from %s", masterSecretPath(flags.workspace))
+	r.log.Debugf("Loading master secret file from %s", r.pf.PrefixPath(constants.MasterSecretFilename))
 	if err := fileHandler.ReadJSON(constants.MasterSecretFilename, &masterSecret); err != nil {
 		return err
 	}
 
-	r.log.Debugf("Loading configuration file from %q", configPath(flags.workspace))
+	r.log.Debugf("Loading configuration file from %q", r.pf.PrefixPath(constants.ConfigFilename))
 	conf, err := config.New(fileHandler, constants.ConfigFilename, r.configFetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
@@ -210,18 +212,18 @@ func (d *recoverDoer) setURIs(kmsURI, storageURI string) {
 }
 
 type recoverFlags struct {
-	endpoint  string
-	workspace string
-	maaURL    string
-	force     bool
+	endpoint string
+	maaURL   string
+	force    bool
 }
 
 func (r *recoverCmd) parseRecoverFlags(cmd *cobra.Command, fileHandler file.Handler) (recoverFlags, error) {
-	workspace, err := cmd.Flags().GetString("workspace")
+	workDir, err := cmd.Flags().GetString("workspace")
 	if err != nil {
 		return recoverFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
-	r.log.Debugf("Workspace set to %q", workspace)
+	r.log.Debugf("Workspace set to %q", workDir)
+	r.pf = pathprefix.New(workDir)
 
 	var idFile clusterid.File
 	if err := fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil && !errors.Is(err, afero.ErrFileNotFound) {
@@ -248,10 +250,9 @@ func (r *recoverCmd) parseRecoverFlags(cmd *cobra.Command, fileHandler file.Hand
 	}
 
 	return recoverFlags{
-		endpoint:  endpoint,
-		workspace: workspace,
-		maaURL:    idFile.AttestationURL,
-		force:     force,
+		endpoint: endpoint,
+		maaURL:   idFile.AttestationURL,
+		force:    force,
 	}, nil
 }
 

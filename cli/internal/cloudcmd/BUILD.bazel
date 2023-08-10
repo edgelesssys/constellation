@@ -19,7 +19,6 @@ go_library(
     visibility = ["//cli:__subpackages__"],
     deps = [
         "//cli/internal/clusterid",
-        "//cli/internal/iamid",
         "//cli/internal/libvirt",
         "//cli/internal/terraform",
         "//internal/atls",
@@ -54,7 +53,6 @@ go_test(
     ],
     embed = [":cloudcmd"],
     deps = [
-        "//cli/internal/iamid",
         "//cli/internal/terraform",
         "//internal/attestation/measurements",
         "//internal/attestation/variant",

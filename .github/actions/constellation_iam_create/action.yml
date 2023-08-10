@@ -5,6 +5,9 @@ inputs:
   cloudProvider:
     description: "Either 'aws', 'azure' or 'gcp'."
     required: true
+  kubernetesVersion:
+    description: "Kubernetes version to create the cluster from."
+    required: true
   namePrefix:
     description: "Name prefix to use for resources."
     required: true
@@ -30,76 +33,51 @@ inputs:
     description: "The GCP zone to deploy Constellation in."
     required: false
 
-outputs:
-  existingConfig:
-    description: "Whether a configuration file has been created to be used in the next step."
-    value: ${{ steps.setExistingConfig.outputs.existingConfig }}
-
 runs:
   using: "composite"
   steps:
+    - name: Generate config
+      id: generate-config
+      shell: bash
+      # TODO(katexochen): Remove the generate-config flag once v2.10 is released.
+      run: |
+        output=$(constellation iam create --help)
+        if [[ $output == *"generate-config"* ]]; then
+          echo "flag=--generate-config" | tee -a "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        echo "flag=--update-config" | tee -a "$GITHUB_OUTPUT"
+        constellation config generate ${{ inputs.cloudProvider }} --kubernetes=${{ inputs.kubernetesVersion }}
+
     - name: Constellation iam create aws
       shell: bash
       if: inputs.cloudProvider == 'aws'
       run: |
-        constellation config generate aws
-        iam_conf_flag="--update-config"
-
-        output=$(constellation iam create --help)
-        if [[ $output == *"generate-config"* ]]; then
-          rm constellation-conf.yaml
-          iam_conf_flag="--generate-config"
-        fi
-
         constellation iam create aws \
           --zone=${{ inputs.awsZone }} \
           --prefix=${{ inputs.namePrefix }} \
-          ${iam_conf_flag} --yes
+          ${{ steps.generate-config.outputs.flag }} \
+          --yes
 
-    - name: Constellation iam create azure
+    - name: Constellation iam create azure --kubernetes=${{ inputs.kubernetesVersion }}
       shell: bash
       if: inputs.cloudProvider == 'azure'
       run: |
-        output=$(constellation --help)
-        if [[ $output == *"tf-log"* ]]; then
-          TFFLAG="--tf-log=DEBUG"
-        fi
-        constellation config generate azure
-        iam_conf_flag="--update-config"
-
-        output=$(constellation iam create --help)
-        if [[ $output == *"generate-config"* ]]; then
-          rm constellation-conf.yaml
-          iam_conf_flag="--generate-config"
-        fi
-
         constellation iam create azure \
           --region=${{ inputs.azureRegion }} \
           --resourceGroup="${{ inputs.namePrefix }}-rg" \
           --servicePrincipal="${{ inputs.namePrefix }}-sp" \
-          ${iam_conf_flag} --yes ${TFFLAG:-}
+          ${{ steps.generate-config.outputs.flag }} \
+          --yes
 
     - name: Constellation iam create gcp
       shell: bash
       if: inputs.cloudProvider == 'gcp'
       run: |
-        constellation config generate gcp
-        iam_conf_flag="--update-config"
-
-        output=$(constellation iam create --help)
-        if [[ $output == *"generate-config"* ]]; then
-          rm constellation-conf.yaml
-          iam_conf_flag="--generate-config"
-        fi
-
         constellation iam create gcp \
           --projectID=${{ inputs.gcpProjectID }} \
           --zone=${{ inputs.gcpZone }} \
           --serviceAccountID="${{ inputs.namePrefix }}-sa" \
-          ${iam_conf_flag} --yes
-
-    - name: Set existing config
-      id: setExistingConfig
-      shell: bash
-      run: |
-        echo "existingConfig=true" | tee -a $GITHUB_OUTPUT
+          ${{ steps.generate-config.outputs.flag }} \
+          --yes

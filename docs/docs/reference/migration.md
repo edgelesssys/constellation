@@ -17,6 +17,9 @@ Use [`constellation config migrate`](./cli.md#constellation-config-migrate) to a
 ## Migrating from CLI versions before 2.10
 
 - AWS cluster upgrades require additional IAM permissions for the newly introduced `aws-load-balancer-controller`. Please upgrade your IAM roles using `iam upgrade apply`. This will show necessary changes and apply them, if desired.
+- The global `nodeGroups` field was added.
+- The fields `instanceType`, `stateDiskSizeGB`, and `stateDiskType` for each cloud provider are now part of the configuration of individual node groups.
+- The `constellation create` command no longer uses the flags `--control-plane-count` and `--worker-count`. Instead, the initial node count is configured per node group in the `nodeGroups` field.
 
 ## Migrating from CLI versions before 2.9
 

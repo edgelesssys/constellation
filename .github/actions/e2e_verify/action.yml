@@ -8,6 +8,9 @@ inputs:
   cloudProvider:
     description: "The cloud provider used in the cluster."
     required: true
+  kubeconfig:
+    description: "The kubeconfig file for the cluster."
+    required: true
 
 runs:
   using: "composite"
@@ -31,3 +34,32 @@ runs:
     - name: Constellation verify
       shell: bash
       run: constellation verify --cluster-id $(jq -r ".clusterID" constellation-id.json) --force
+
+    - name: Verify all nodes
+      shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+      run: |
+        nodes=$(kubectl get nodes -o json | jq -r ".items[].metadata.name")
+
+        for node in $nodes ; do
+          verificationPod=$(kubectl get pods --field-selector spec.nodeName=${node} -n kube-system | grep "verification-service" | cut -d' ' -f1)
+
+          mapfile -t verificationPod <<< "$verificationPod"
+
+          if [[ ${#verificationPod[@]} -ne 1 ]]; then
+            echo "Expected 1 verification pod for node ${node}, found ${#verificationPodArray[@]}"
+            exit 1
+          fi
+
+          echo "Verifying pod ${pod} on node ${node}"
+
+          kubectl wait -n kube-system "pod/${verificationPod}" --for=condition=ready --timeout=5m
+          kubectl port-forward -n kube-system "pods/${verificationPod}"  9090:9090 &
+          forwarderPID=$!
+          sleep 5
+
+          constellation verify --cluster-id $(jq -r ".clusterID" constellation-id.json) --force --node-endpoint localhost:9090
+
+          kill $forwarderPID
+        done

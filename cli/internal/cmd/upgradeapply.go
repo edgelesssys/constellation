@@ -15,6 +15,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
+	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
@@ -146,11 +147,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, stableClientFactory s
 	conf.UpdateMAAURL(idFile.AttestationURL)
 
 	// If an image upgrade was just executed there won't be a diff. The function will return nil in that case.
-	stableClient, err := stableClientFactory(constants.AdminConfFilename)
-	if err != nil {
-		return fmt.Errorf("creating stable client: %w", err)
-	}
-	if err := u.confirmIfUpgradeAttestConfigHasDiff(cmd, stableClient, conf.GetAttestationConfig(), flags); err != nil {
+	if err := u.confirmIfUpgradeAttestConfigHasDiff(cmd, conf.GetAttestationConfig(), flags); err != nil {
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
 	// not moving existing Terraform migrator because of planned apply refactor
@@ -298,8 +295,9 @@ func (u *upgradeApplyCmd) migrateTerraform(
 
 		cmd.Printf("Terraform migrations applied successfully and output written to: %s\n"+
 			"A backup of the pre-upgrade state has been written to: %s\n",
-			clusterIDsPath(flags.workspace), filepath.Join(opts.UpgradeWorkspace, u.upgrader.GetUpgradeID(), constants.TerraformUpgradeBackupDir))
-		return tfOutput, nil
+			flags.pf.PrefixPath(constants.ClusterIDsFilename), flags.pf.PrefixPath(filepath.Join(opts.UpgradeWorkspace, u.upgrader.GetUpgradeID(), constants.TerraformUpgradeBackupDir)))
+	} else {
+		u.log.Debugf("No Terraform diff detected")
 	}
 	u.log.Debugf("No Terraform diff detected")
 	tfOutput, err := u.clusterShower.ShowCluster(cmd.Context(), conf.GetProvider())
@@ -353,7 +351,7 @@ type imageFetcher interface {
 
 // confirmIfUpgradeAttestConfigHasDiff checks if the locally configured measurements are different from the cluster's measurements.
 // If so the function will ask the user to confirm (if --yes is not set).
-func (u *upgradeApplyCmd) confirmIfUpgradeAttestConfigHasDiff(cmd *cobra.Command, stableClient configMapGetter, newConfig config.AttestationCfg, flags upgradeApplyFlags) error {
+func (u *upgradeApplyCmd) confirmIfUpgradeAttestConfigHasDiff(cmd *cobra.Command, newConfig config.AttestationCfg, flags upgradeApplyFlags) error {
 	clusterAttestationConfig, clusterJoinConfig, err := u.upgrader.GetClusterAttestationConfig(cmd.Context(), newConfig.GetVariant())
 	if err != nil {
 		return fmt.Errorf("getting cluster attestation config: %w", err)
@@ -392,10 +390,10 @@ func (u *upgradeApplyCmd) confirmIfUpgradeAttestConfigHasDiff(cmd *cobra.Command
 
 func (u *upgradeApplyCmd) handleServiceUpgrade(cmd *cobra.Command, conf *config.Config, idFile clusterid.File, tfOutput terraform.ApplyOutput, validK8sVersion versions.ValidK8sVersion, flags upgradeApplyFlags) error {
 	var secret uri.MasterSecret
-	if err := u.fileHandler.ReadJSON(masterSecretPath(flags.workspace), &secret); err != nil {
+	if err := u.fileHandler.ReadJSON(flags.pf.PrefixPath(constants.MasterSecretFilename), &secret); err != nil {
 		return fmt.Errorf("reading master secret: %w", err)
 	}
-	serviceAccURI, err := cloudcmd.GetMarshaledServiceAccountURI(conf.GetProvider(), conf, flags.workspace, u.log, u.fileHandler)
+	serviceAccURI, err := cloudcmd.GetMarshaledServiceAccountURI(conf.GetProvider(), conf, flags.pf, u.log, u.fileHandler)
 	if err != nil {
 		return fmt.Errorf("getting service account URI: %w", err)
 	}
@@ -419,7 +417,7 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(cmd *cobra.Command, conf *config.
 }
 
 func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
-	workspace, err := cmd.Flags().GetString("workspace")
+	workDir, err := cmd.Flags().GetString("workspace")
 	if err != nil {
 		return upgradeApplyFlags{}, err
 	}
@@ -461,7 +459,7 @@ func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
 		helmWaitMode = helm.WaitModeNone
 	}
 	return upgradeApplyFlags{
-		workspace:         workspace,
+		pf:                pathprefix.New(workDir),
 		yes:               yes,
 		upgradeTimeout:    timeout,
 		force:             force,
@@ -485,7 +483,7 @@ func mergeClusterIDFile(clusterIDPath string, newIDFile clusterid.File, fileHand
 }
 
 type upgradeApplyFlags struct {
-	workspace         string
+	pf                pathprefix.PathPrefixer
 	yes               bool
 	upgradeTimeout    time.Duration
 	force             bool
