@@ -78,6 +78,7 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 		Bucket: awsBucket,
 		Region: awsRegion,
 	}
+	log.Infof("Reading MAA claims from file: %s", maaFilePath)
 	maaClaimsBytes, err := os.ReadFile(maaFilePath)
 	if err != nil {
 		return fmt.Errorf("reading MAA claims file: %w", err)
@@ -87,6 +88,7 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("unmarshalling MAA claims file: %w", err)
 	}
 	inputVersion := maaTCB.ToAzureSEVSNPVersion()
+	log.Infof("Input version: %+v", inputVersion)
 
 	dateStr, err := cmd.Flags().GetString("upload-date")
 	if err != nil {
@@ -100,20 +102,21 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 		}
 	}
 
-	latestAPIVersion, err := attestationconfigapi.NewFetcher().FetchAzureSEVSNPVersionLatest(ctx, uploadDate)
+	latestAPIVersionAPI, err := attestationconfigapi.NewFetcher().FetchAzureSEVSNPVersionLatest(ctx, uploadDate)
 	if err != nil {
 		return fmt.Errorf("fetching latest version: %w", err)
 	}
+	latestAPIVersion := latestAPIVersionAPI.AzureSEVSNPVersion
 
-	isNewer, err := isInputNewerThanLatestAPI(inputVersion, latestAPIVersion.AzureSEVSNPVersion)
+	isNewer, err := isInputNewerThanLatestAPI(inputVersion, latestAPIVersion)
 	if err != nil {
 		return fmt.Errorf("comparing versions: %w", err)
 	}
 	if !isNewer {
-		fmt.Printf("Input version: %+v is not newer than latest API version: %+v\n", inputVersion, latestAPIVersion)
+		log.Infof("Input version: %+v is not newer than latest API version: %+v", inputVersion, latestAPIVersion)
 		return nil
 	}
-	fmt.Printf("Input version: %+v is newer than latest API version: %+v\n", inputVersion, latestAPIVersion)
+	log.Infof("Input version: %+v is newer than latest API version: %+v", inputVersion, latestAPIVersion)
 
 	client, stop, err := attestationconfigapi.NewClient(ctx, cfg, []byte(cosignPwd), []byte(privateKey), false, log)
 	defer func() {
@@ -135,18 +138,20 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 
 // maaTokenTCBClaims describes the TCB information in a MAA token.
 type maaTokenTCBClaims struct {
-	TEESvn        uint8 `json:"x-ms-sevsnpvm-tee-svn"`
-	SNPFwSvn      uint8 `json:"x-ms-sevsnpvm-snpfw-svn"`
-	MicrocodeSvn  uint8 `json:"x-ms-sevsnpvm-microcode-svn"`
-	BootloaderSvn uint8 `json:"x-ms-sevsnpvm-bootloader-svn"`
+	IsolationTEE struct {
+		TEESvn        uint8 `json:"x-ms-sevsnpvm-tee-svn"`
+		SNPFwSvn      uint8 `json:"x-ms-sevsnpvm-snpfw-svn"`
+		MicrocodeSvn  uint8 `json:"x-ms-sevsnpvm-microcode-svn"`
+		BootloaderSvn uint8 `json:"x-ms-sevsnpvm-bootloader-svn"`
+	} `json:"x-ms-isolation-tee"`
 }
 
 func (c maaTokenTCBClaims) ToAzureSEVSNPVersion() attestationconfigapi.AzureSEVSNPVersion {
 	return attestationconfigapi.AzureSEVSNPVersion{
-		TEE:        c.TEESvn,
-		SNP:        c.SNPFwSvn,
-		Microcode:  c.MicrocodeSvn,
-		Bootloader: c.BootloaderSvn,
+		TEE:        c.IsolationTEE.TEESvn,
+		SNP:        c.IsolationTEE.SNPFwSvn,
+		Microcode:  c.IsolationTEE.MicrocodeSvn,
+		Bootloader: c.IsolationTEE.BootloaderSvn,
 	}
 }
 
@@ -155,7 +160,6 @@ func isInputNewerThanLatestAPI(input, latest attestationconfigapi.AzureSEVSNPVer
 	if input == latest {
 		return false, nil
 	}
-
 	if input.TEE < latest.TEE {
 		return false, fmt.Errorf("input TEE version: %d is older than latest API version: %d", input.TEE, latest.TEE)
 	}
@@ -168,7 +172,6 @@ func isInputNewerThanLatestAPI(input, latest attestationconfigapi.AzureSEVSNPVer
 	if input.Bootloader < latest.Bootloader {
 		return false, fmt.Errorf("input Bootloader version: %d is older than latest API version: %d", input.Bootloader, latest.Bootloader)
 	}
-
 	return true, nil
 }
 

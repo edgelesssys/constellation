@@ -5,7 +5,7 @@ go_library(
     name = "configapi_lib",
     srcs = [
         "delete.go",
-        "root.go",
+        "main.go",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/hack/configapi",
     visibility = ["//visibility:private"],
@@ -28,7 +28,7 @@ go_test(
     name = "configapi_test",
     srcs = [
         "delete_test.go",
-        "root_test.go",
+        "main_test.go",
     ],
     embed = [":configapi_lib"],
     deps = [
