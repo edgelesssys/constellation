@@ -740,8 +740,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/bazelbuild/rules_go",
-        sum = "h1:+JfzEgvtYJ/cQVPWPdyMEXheRaSb/zCKy/uHl5bPqwk=",
-        version = "v0.40.1",
+        sum = "h1:JzlRxsFNhlX+g4drDRPhIaU5H5LnI978wdMJ0vK4I+k=",
+        version = "v0.41.0",
     )
 
     go_repository(
