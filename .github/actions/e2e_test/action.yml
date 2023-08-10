@@ -23,6 +23,9 @@ inputs:
     description: "Version of a released CLI to download, e.g. 'v2.3.0', leave empty to build it."
   kubernetesVersion:
     description: "Kubernetes version to create the cluster from."
+  regionZone:
+    description: "Region or zone to use for resource creation"
+    required: false
   gcpProject:
     description: "The GCP project to deploy Constellation in."
     required: true
@@ -190,10 +193,10 @@ runs:
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
         namePrefix: ${{ steps.create-prefix.outputs.prefix }}
-        awsZone: us-east-2c
-        azureRegion: northeurope
+        awsZone: ${{ inputs.regionZone || 'us-east-2c' }}
+        azureRegion: ${{ inputs.regionZone || 'northeurope' }}
         gcpProjectID: ${{ inputs.gcpProject }}
-        gcpZone: europe-west3-b
+        gcpZone: ${{ inputs.regionZone || 'europe-west3-b' }}
         kubernetesVersion: ${{ inputs.kubernetesVersion }}
 
     - name: Login to GCP (Cluster service account)
