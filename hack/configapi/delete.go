@@ -3,7 +3,7 @@ Copyright (c) Edgeless Systems GmbH
 
 SPDX-License-Identifier: AGPL-3.0-only
 */
-package cmd
+package main
 
 import (
 	"context"
@@ -50,13 +50,13 @@ func runDelete(cmd *cobra.Command, _ []string) error {
 		Bucket: awsBucket,
 		Region: awsRegion,
 	}
-	client, close, err := attestationconfigapi.NewClient(cmd.Context(), cfg, []byte(cosignPwd), []byte(privateKey), false, log)
+	client, stop, err := attestationconfigapi.NewClient(cmd.Context(), cfg, []byte(cosignPwd), []byte(privateKey), false, log)
 	if err != nil {
 		return fmt.Errorf("create attestation client: %w", err)
 	}
 	defer func() {
-		if err := close(cmd.Context()); err != nil {
-			cmd.Printf("close client: %s\n", err.Error())
+		if err := stop(cmd.Context()); err != nil {
+			cmd.Printf("stopping client: %s\n", err.Error())
 		}
 	}()
 	deleteCmd := deleteCmd{

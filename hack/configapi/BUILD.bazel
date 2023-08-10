@@ -1,15 +1,39 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "configapi_lib",
-    srcs = ["main.go"],
+    srcs = [
+        "delete.go",
+        "root.go",
+    ],
     importpath = "github.com/edgelesssys/constellation/v2/hack/configapi",
     visibility = ["//visibility:private"],
-    deps = ["//hack/configapi/cmd"],
+    deps = [
+        "//internal/api/attestationconfigapi",
+        "//internal/logger",
+        "//internal/staticupload",
+        "@com_github_spf13_cobra//:cobra",
+        "@org_uber_go_zap//:zap",
+    ],
 )
 
 go_binary(
     name = "configapi",
     embed = [":configapi_lib"],
     visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "configapi_test",
+    srcs = [
+        "delete_test.go",
+        "root_test.go",
+    ],
+    embed = [":configapi_lib"],
+    deps = [
+        "//internal/api/attestationconfigapi",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
 )
