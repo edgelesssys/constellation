@@ -7,7 +7,7 @@ go_library(
         "validator.go",
         "watcher.go",
     ],
-    importpath = "github.com/edgelesssys/constellation/v2/internal/watcher",
+    importpath = "github.com/edgelesssys/constellation/v2/joinservice/internal/watcher",
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/atls",

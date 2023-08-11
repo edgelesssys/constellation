@@ -28,11 +28,11 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/watcher"
 	"github.com/edgelesssys/constellation/v2/joinservice/internal/kms"
 	"github.com/edgelesssys/constellation/v2/joinservice/internal/kubeadm"
 	"github.com/edgelesssys/constellation/v2/joinservice/internal/kubernetesca"
 	"github.com/edgelesssys/constellation/v2/joinservice/internal/server"
+	"github.com/edgelesssys/constellation/v2/joinservice/internal/watcher"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 )

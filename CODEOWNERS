@@ -56,7 +56,6 @@
 /internal/sigstore @elchead
 /internal/staticupload @malt3
 /internal/versions @3u13r
-/internal/watcher @daniel-weisse
 /joinservice @daniel-weisse
 /keyservice @daniel-weisse
 /measurement-reader @daniel-weisse
