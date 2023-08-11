@@ -139,10 +139,12 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command) error {
 			return fmt.Errorf("getting join-config: %w", err)
 		}
 		idFile.MeasurementSalt = measurementSalt
+		if err := u.fileHandler.WriteJSON(constants.ClusterIDsFilename, idFile, file.OptOverwrite); err != nil {
+			return fmt.Errorf("writing cluster ID file: %w", err)
+		}
 	}
 	conf.UpdateMAAURL(idFile.AttestationURL)
 
-	// If an image upgrade was just executed there won't be a diff. The function will return nil in that case.
 	if err := u.confirmIfUpgradeAttestConfigHasDiff(cmd, conf.GetAttestationConfig(), flags); err != nil {
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
@@ -377,6 +379,7 @@ func (u *upgradeApplyCmd) confirmIfUpgradeAttestConfigHasDiff(cmd *cobra.Command
 			return errors.New("aborting upgrade since attestation config is different")
 		}
 	}
+	// TODO(elchead): move this outside this function to remove the side effect.
 	if err := u.upgrader.BackupConfigMap(cmd.Context(), constants.JoinConfigMap); err != nil {
 		return fmt.Errorf("backing up join-config: %w", err)
 	}
