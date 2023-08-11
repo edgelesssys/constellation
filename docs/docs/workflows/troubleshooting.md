@@ -44,6 +44,7 @@ ARM_SKIP_PROVIDER_REGISTRATION=true constellation terminate
 
 This error indicates that a node's [attestation statement](../architecture/attestation.md) contains measurements that don't match the trusted values expected by the [JoinService](../architecture/microservices.md#joinservice).
 This may for example happen if the cloud provider updates the VM's firmware such that it influences the [runtime measurements](../architecture/attestation.md#runtime-measurements) in an unforeseen way.
+A failed upgrade due to an erroneous attestation config can also cause this error.
 You can change the expected measurements to resolve the failure.
 
 :::caution
@@ -53,6 +54,14 @@ Be extra careful when manually changing these settings.
 When in doubt, check if the encountered [issue is known](https://github.com/edgelesssys/constellation/issues?q=is%3Aopen+is%3Aissue+label%3A%22known+issue%22) or [contact support](https://github.com/edgelesssys/constellation#support).
 
 :::
+
+
+:::tip
+
+During an upgrade with modified attestation config, a backup of the current configuration is stored in the `join-config-backup` config map in the `kube-system` namespace. To restore the old attestation config after a failed upgrade, you can copy the attestation config from this resource, put it in your configuration file and retry the upgrade.
+
+:::
+
 
 You can use the `upgrade apply` command to change measurements of a running cluster:
 

@@ -8,7 +8,6 @@ package kubernetes
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -29,6 +28,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
+	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	internalk8s "github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
@@ -155,6 +155,19 @@ func NewUpgrader(
 	return u, nil
 }
 
+// GetMeasurementSalt returns the measurementSalt from the join-config.
+func (u *Upgrader) GetMeasurementSalt(ctx context.Context) ([]byte, error) {
+	cm, err := u.stableInterface.GetConfigMap(ctx, constants.JoinConfigMap)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving current join-config: %w", err)
+	}
+	salt, ok := cm.BinaryData[constants.MeasurementSaltFilename]
+	if !ok {
+		return nil, errors.New("measurementSalt missing from join-config")
+	}
+	return salt, nil
+}
+
 // GetUpgradeID returns the upgrade ID.
 func (u *Upgrader) GetUpgradeID() string {
 	return u.upgradeID
@@ -183,13 +196,17 @@ func (u *Upgrader) PlanTerraformMigrations(ctx context.Context, opts upgrade.Ter
 // If PlanTerraformMigrations has not been executed before, it will return an error.
 // In case of a successful upgrade, the output will be written to the specified file and the old Terraform directory is replaced
 // By the new one.
-func (u *Upgrader) ApplyTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (clusterid.File, error) {
+func (u *Upgrader) ApplyTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (terraform.ApplyOutput, error) {
 	return u.tfUpgrader.ApplyTerraformMigrations(ctx, opts, u.upgradeID)
 }
 
 // UpgradeHelmServices upgrade helm services.
-func (u *Upgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive bool, force bool) error {
-	return u.helmClient.Upgrade(ctx, config, idFile, timeout, allowDestructive, force, u.upgradeID)
+func (u *Upgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration,
+	allowDestructive bool, force bool, conformance bool, helmWaitMode helm.WaitMode, masterSecret uri.MasterSecret, serviceAccURI string,
+	validK8sVersion versions.ValidK8sVersion, output terraform.ApplyOutput,
+) error {
+	return u.helmClient.Upgrade(ctx, config, idFile, timeout, allowDestructive, force, u.upgradeID, conformance,
+		helmWaitMode, masterSecret, serviceAccURI, validK8sVersion, output)
 }
 
 // UpgradeNodeVersion upgrades the cluster's NodeVersion object and in turn triggers image & k8s version upgrades.
@@ -293,56 +310,41 @@ func (u *Upgrader) CurrentKubernetesVersion(ctx context.Context) (string, error)
 	return nodeVersion.Spec.KubernetesClusterVersion, nil
 }
 
-// UpdateAttestationConfig fetches the cluster's attestation config, compares them to a new config,
-// and updates the cluster's config if it is different from the new one.
-func (u *Upgrader) UpdateAttestationConfig(ctx context.Context, newAttestConfig config.AttestationCfg) error {
-	currentAttestConfig, joinConfig, err := u.GetClusterAttestationConfig(ctx, newAttestConfig.GetVariant())
-	if err != nil {
-		return fmt.Errorf("getting attestation config: %w", err)
-	}
-	equal, err := newAttestConfig.EqualTo(currentAttestConfig)
-	if err != nil {
-		return fmt.Errorf("comparing attestation configs: %w", err)
-	}
-	if equal {
-		fmt.Fprintln(u.outWriter, "Cluster is already using the chosen attestation config, skipping config upgrade")
-		return nil
-	}
-
-	// backup of previous measurements
-	joinConfig.Data[constants.AttestationConfigFilename+"_backup"] = joinConfig.Data[constants.AttestationConfigFilename]
-
-	newConfigJSON, err := json.Marshal(newAttestConfig)
-	if err != nil {
-		return fmt.Errorf("marshaling attestation config: %w", err)
-	}
-	joinConfig.Data[constants.AttestationConfigFilename] = string(newConfigJSON)
-	u.log.Debugf("Triggering attestation config update now")
-	if _, err = u.stableInterface.UpdateConfigMap(ctx, joinConfig); err != nil {
-		return fmt.Errorf("setting new attestation config: %w", err)
-	}
-
-	fmt.Fprintln(u.outWriter, "Successfully updated the cluster's attestation config")
-	return nil
-}
-
 // GetClusterAttestationConfig fetches the join-config configmap from the cluster, extracts the config
 // and returns both the full configmap and the attestation config.
-func (u *Upgrader) GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, *corev1.ConfigMap, error) {
-	existingConf, err := u.stableInterface.GetCurrentConfigMap(ctx, constants.JoinConfigMap)
+func (u *Upgrader) GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, error) {
+	existingConf, err := u.stableInterface.GetConfigMap(ctx, constants.JoinConfigMap)
 	if err != nil {
-		return nil, nil, fmt.Errorf("retrieving current attestation config: %w", err)
+		return nil, fmt.Errorf("retrieving current attestation config: %w", err)
 	}
 	if _, ok := existingConf.Data[constants.AttestationConfigFilename]; !ok {
-		return nil, nil, errors.New("attestation config missing from join-config")
+		return nil, errors.New("attestation config missing from join-config")
 	}
 
 	existingAttestationConfig, err := config.UnmarshalAttestationConfig([]byte(existingConf.Data[constants.AttestationConfigFilename]), variant)
 	if err != nil {
-		return nil, nil, fmt.Errorf("retrieving current attestation config: %w", err)
+		return nil, fmt.Errorf("retrieving current attestation config: %w", err)
 	}
 
-	return existingAttestationConfig, existingConf, nil
+	return existingAttestationConfig, nil
+}
+
+// BackupConfigMap creates a backup of the given config map.
+func (u *Upgrader) BackupConfigMap(ctx context.Context, name string) error {
+	cm, err := u.stableInterface.GetConfigMap(ctx, name)
+	if err != nil {
+		return fmt.Errorf("getting config map %s: %w", name, err)
+	}
+	backup := cm.DeepCopy()
+	backup.ObjectMeta = metav1.ObjectMeta{}
+	backup.Name = fmt.Sprintf("%s-backup", backup.Name)
+	if _, err := u.stableInterface.CreateConfigMap(ctx, backup); err != nil {
+		if _, err := u.stableInterface.UpdateConfigMap(ctx, backup); err != nil {
+			return fmt.Errorf("updating backup config map: %w", err)
+		}
+	}
+	u.log.Debugf("Successfully backed up config map %s", cm.Name)
+	return nil
 }
 
 // ExtendClusterConfigCertSANs extends the ClusterConfig stored under "kube-system/kubeadm-config" with the given SANs.
@@ -391,7 +393,7 @@ func (u *Upgrader) ExtendClusterConfigCertSANs(ctx context.Context, alternativeN
 // GetClusterConfiguration fetches the kubeadm-config configmap from the cluster, extracts the config
 // and returns both the full configmap and the ClusterConfiguration.
 func (u *Upgrader) GetClusterConfiguration(ctx context.Context) (kubeadmv1beta3.ClusterConfiguration, *corev1.ConfigMap, error) {
-	existingConf, err := u.stableInterface.GetCurrentConfigMap(ctx, constants.KubeadmConfigMap)
+	existingConf, err := u.stableInterface.GetConfigMap(ctx, constants.KubeadmConfigMap)
 	if err != nil {
 		return kubeadmv1beta3.ClusterConfiguration{}, nil, fmt.Errorf("retrieving current kubeadm-config: %w", err)
 	}
@@ -544,7 +546,7 @@ func upgradeInProgress(nodeVersion updatev1alpha1.NodeVersion) bool {
 }
 
 type helmInterface interface {
-	Upgrade(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive, force bool, upgradeID string) error
+	Upgrade(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive, force bool, upgradeID string, conformance bool, helmWaitMode helm.WaitMode, masterSecret uri.MasterSecret, serviceAccURI string, validK8sVersion versions.ValidK8sVersion, output terraform.ApplyOutput) error
 }
 
 type debugLog interface {

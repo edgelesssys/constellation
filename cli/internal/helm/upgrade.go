@@ -13,20 +13,21 @@ import (
 	"strings"
 	"time"
 
-	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/chart"
-	"helm.sh/helm/v3/pkg/cli"
-	"helm.sh/helm/v3/pkg/release"
-
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
+	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart"
+	"helm.sh/helm/v3/pkg/cli"
+	"helm.sh/helm/v3/pkg/release"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -113,53 +114,58 @@ func (c *UpgradeClient) shouldUpgrade(releaseName string, newVersion semver.Semv
 // Upgrade runs a helm-upgrade on all deployments that are managed via Helm.
 // If the CLI receives an interrupt signal it will cancel the context.
 // Canceling the context will prompt helm to abort and roll back the ongoing upgrade.
-func (c *UpgradeClient) Upgrade(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive, force bool, upgradeID string) error {
+func (c *UpgradeClient) Upgrade(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration,
+	allowDestructive, force bool, upgradeID string, conformance bool, helmWaitMode WaitMode, masterSecret uri.MasterSecret,
+	serviceAccURI string, validK8sVersion versions.ValidK8sVersion, output terraform.ApplyOutput,
+) error {
 	upgradeErrs := []error{}
-	upgradeReleases := []*chart.Chart{}
-	newReleases := []*chart.Chart{}
-	for _, info := range getManagedCharts(config) {
-		c.log.Debugf("Checking release %s", info.releaseName)
-		chart, err := loadChartsDir(helmFS, info.path)
-		if err != nil {
-			return fmt.Errorf("loading chart: %w", err)
-		}
+	upgradeReleases := []Release{}
+	newReleases := []Release{}
 
+	clusterName := clusterid.GetClusterName(config, idFile)
+	helmLoader := NewLoader(config.GetProvider(), validK8sVersion, clusterName)
+	c.log.Debugf("Created new Helm loader")
+	releases, err := helmLoader.LoadReleases(config, conformance, helmWaitMode, masterSecret, serviceAccURI, idFile, output)
+	if err != nil {
+		return fmt.Errorf("loading releases: %w", err)
+	}
+	for _, release := range getManagedReleases(config, releases) {
+		var invalidUpgrade *compatibility.InvalidUpgradeError
 		// Get version of the chart embedded in the CLI
 		// This is the version we are upgrading to
 		// Since our bundled charts are embedded with version 0.0.0,
 		// we need to update them to the same version as the CLI
 		var upgradeVersion semver.Semver
-		if isCLIVersionedRelease(info.releaseName) {
-			updateVersions(chart, constants.BinaryVersion())
+		if isCLIVersionedRelease(release.ReleaseName) {
+			updateVersions(release.Chart, constants.BinaryVersion())
 			upgradeVersion = config.MicroserviceVersion
 		} else {
-			chartVersion, err := semver.New(chart.Metadata.Version)
+			chartVersion, err := semver.New(release.Chart.Metadata.Version)
 			if err != nil {
 				return fmt.Errorf("parsing chart version: %w", err)
 			}
 			upgradeVersion = chartVersion
 		}
-
-		var invalidUpgrade *compatibility.InvalidUpgradeError
-		err = c.shouldUpgrade(info.releaseName, upgradeVersion, force)
+		err = c.shouldUpgrade(release.ReleaseName, upgradeVersion, force)
 		switch {
 		case errors.Is(err, errReleaseNotFound):
 			// if the release is not found, we need to install it
-			c.log.Debugf("Release %s not found, adding to new releases...", info.releaseName)
-			newReleases = append(newReleases, chart)
+			c.log.Debugf("Release %s not found, adding to new releases...", release.ReleaseName)
+			newReleases = append(newReleases, release)
 		case errors.As(err, &invalidUpgrade):
-			upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping %s upgrade: %w", info.releaseName, err))
+			c.log.Debugf("Appending to %s upgrade: %s", release.ReleaseName, err)
+			upgradeReleases = append(upgradeReleases, release)
 		case err != nil:
-			c.log.Debugf("Adding %s to upgrade releases...", info.releaseName)
-			return fmt.Errorf("should upgrade %s: %w", info.releaseName, err)
+			c.log.Debugf("Adding %s to upgrade releases...", release.ReleaseName)
+			return fmt.Errorf("should upgrade %s: %w", release.ReleaseName, err)
 		case err == nil:
-			upgradeReleases = append(upgradeReleases, chart)
+			upgradeReleases = append(upgradeReleases, release)
 
 			// Check if installing/upgrading the chart could be destructive
 			// If so, we don't want to perform any actions,
 			// unless the user confirms it to be OK.
 			if !allowDestructive &&
-				info.chartName == certManagerInfo.chartName {
+				release.ReleaseName == certManagerInfo.releaseName {
 				return ErrConfirmationMissing
 			}
 		}
@@ -177,10 +183,15 @@ func (c *UpgradeClient) Upgrade(ctx context.Context, config *config.Config, idFi
 		}
 	}
 
-	for _, chart := range upgradeReleases {
-		c.log.Debugf("Upgrading release %s", chart.Metadata.Name)
-		if err := c.upgradeRelease(ctx, timeout, config, idFile, chart); err != nil {
-			return fmt.Errorf("upgrading %s: %w", chart.Metadata.Name, err)
+	for _, release := range upgradeReleases {
+		c.log.Debugf("Upgrading release %s", release.Chart.Metadata.Name)
+		if release.ReleaseName == constellationOperatorsInfo.releaseName {
+			if err := c.updateCRDs(ctx, release.Chart); err != nil {
+				return fmt.Errorf("updating operator CRDs: %w", err)
+			}
+		}
+		if err := c.upgradeRelease(ctx, timeout, release); err != nil {
+			return fmt.Errorf("upgrading %s: %w", release.Chart.Metadata.Name, err)
 		}
 	}
 
@@ -190,25 +201,26 @@ func (c *UpgradeClient) Upgrade(ctx context.Context, config *config.Config, idFi
 	// that the new release is installed without creating naming conflicts.
 	// If in the future, we require to install a new release before upgrading existing ones,
 	// it should be done in a separate loop, instead of moving this one up.
-	for _, chart := range newReleases {
-		c.log.Debugf("Installing new release %s", chart.Metadata.Name)
-		if err := c.installNewRelease(ctx, timeout, config, idFile, chart); err != nil {
-			return fmt.Errorf("upgrading %s: %w", chart.Metadata.Name, err)
+	for _, release := range newReleases {
+		c.log.Debugf("Installing new release %s", release.Chart.Metadata.Name)
+		if err := c.installNewRelease(ctx, timeout, release); err != nil {
+			return fmt.Errorf("upgrading %s: %w", release.Chart.Metadata.Name, err)
 		}
 	}
 
 	return errors.Join(upgradeErrs...)
 }
 
-func getManagedCharts(config *config.Config) []chartInfo {
-	charts := []chartInfo{ciliumInfo, certManagerInfo, constellationOperatorsInfo, constellationServicesInfo}
+func getManagedReleases(config *config.Config, releases *Releases) []Release {
+	res := []Release{releases.Cilium, releases.CertManager, releases.ConstellationOperators, releases.ConstellationServices}
+
 	if config.GetProvider() == cloudprovider.AWS {
-		charts = append(charts, awsLBControllerInfo)
+		res = append(res, *releases.AWSLoadBalancerController)
 	}
 	if config.DeployCSIDriver() {
-		charts = append(charts, csiInfo)
+		res = append(res, *releases.CSI)
 	}
-	return charts
+	return res
 }
 
 // Versions queries the cluster for running versions and returns a map of releaseName -> version.
@@ -306,130 +318,16 @@ func (c *UpgradeClient) csiVersions() (map[string]semver.Semver, error) {
 
 // installNewRelease installs a previously not installed release on the cluster.
 func (c *UpgradeClient) installNewRelease(
-	ctx context.Context, timeout time.Duration, conf *config.Config, idFile clusterid.File, chart *chart.Chart,
+	ctx context.Context, timeout time.Duration, release Release,
 ) error {
-	releaseName, values, err := c.loadUpgradeValues(ctx, conf, idFile, chart)
-	if err != nil {
-		return fmt.Errorf("loading values: %w", err)
-	}
-	return c.actions.installAction(ctx, releaseName, chart, values, timeout)
+	return c.actions.installAction(ctx, release.ReleaseName, release.Chart, release.Values, timeout)
 }
 
 // upgradeRelease upgrades a release running on the cluster.
 func (c *UpgradeClient) upgradeRelease(
-	ctx context.Context, timeout time.Duration, conf *config.Config, idFile clusterid.File, chart *chart.Chart,
+	ctx context.Context, timeout time.Duration, release Release,
 ) error {
-	releaseName, values, err := c.loadUpgradeValues(ctx, conf, idFile, chart)
-	if err != nil {
-		return fmt.Errorf("loading values: %w", err)
-	}
-
-	values, err = c.mergeClusterValues(values, releaseName)
-	if err != nil {
-		return fmt.Errorf("preparing values: %w", err)
-	}
-
-	return c.actions.upgradeAction(ctx, releaseName, chart, values, timeout)
-}
-
-// loadUpgradeValues loads values for a chart required for running an upgrade.
-func (c *UpgradeClient) loadUpgradeValues(ctx context.Context, conf *config.Config, idFile clusterid.File, chart *chart.Chart,
-) (string, map[string]any, error) {
-	// We need to load all values that can be statically loaded before merging them with the cluster
-	// values. Otherwise the templates are not rendered correctly.
-	k8sVersion, err := versions.NewValidK8sVersion(conf.KubernetesVersion, false)
-	if err != nil {
-		return "", nil, fmt.Errorf("validating k8s version: %s", conf.KubernetesVersion)
-	}
-
-	c.log.Debugf("Checking cluster ID file")
-	clusterName := clusterid.GetClusterName(conf, idFile)
-
-	loader := NewLoader(conf.GetProvider(), k8sVersion, clusterName)
-
-	var values map[string]any
-	var releaseName string
-
-	switch chart.Metadata.Name {
-	case ciliumInfo.chartName:
-		releaseName = ciliumInfo.releaseName
-		var ok bool
-		values, ok = ciliumVals[conf.GetProvider().String()]
-		if !ok {
-			return "", nil, fmt.Errorf("cilium values for csp %q not found", conf.GetProvider().String())
-		}
-	case certManagerInfo.chartName:
-		releaseName = certManagerInfo.releaseName
-		values = loader.loadCertManagerValues()
-	case constellationOperatorsInfo.chartName:
-		releaseName = constellationOperatorsInfo.releaseName
-		values = loader.loadOperatorsValues()
-
-		if err := c.updateCRDs(ctx, chart); err != nil {
-			return "", nil, fmt.Errorf("updating CRDs: %w", err)
-		}
-	case constellationServicesInfo.chartName:
-		releaseName = constellationServicesInfo.releaseName
-		values = loader.loadConstellationServicesValues()
-
-		if err := c.applyMigrations(ctx, releaseName, values, conf); err != nil {
-			return "", nil, fmt.Errorf("applying migrations: %w", err)
-		}
-	case csiInfo.chartName:
-		releaseName = csiInfo.releaseName
-		values = loader.loadCSIValues()
-	case awsLBControllerInfo.chartName:
-		releaseName = awsLBControllerInfo.releaseName
-		values = loader.loadAWSLBControllerValues()
-	default:
-		return "", nil, fmt.Errorf("unknown chart name: %s", chart.Metadata.Name)
-	}
-
-	return releaseName, values, nil
-}
-
-// applyMigrations checks the from version and applies the necessary migrations.
-// The function assumes the caller has verified that our version drift restriction is not violated,
-// Currently, this is done during config validation.
-func (c *UpgradeClient) applyMigrations(ctx context.Context, releaseName string, values map[string]any, conf *config.Config) error {
-	current, err := c.currentVersion(releaseName)
-	if err != nil {
-		return fmt.Errorf("getting %s version: %w", releaseName, err)
-	}
-
-	if current.Major() == 2 && current.Minor() == 8 {
-		// Rename/change the following function to implement any necessary migrations.
-		return migrateFrom2_8(ctx, values, conf, c.kubectl)
-	}
-
-	return nil
-}
-
-// migrateFrom2_8 is currently a no-op that is kept for documentation purposes.
-// If you have to implement the function please make sure to update the below comment to your situation.
-// migrateFrom2_8 applies the necessary migrations for upgrading from v2.8.x to v2.9.x.
-// migrateFrom2_8 should be applied for v2.8.x --> v2.9.x.
-// migrateFrom2_8 should NOT be applied for v2.8.0 --> v2.9.x.
-func migrateFrom2_8(_ context.Context, _ map[string]any, _ *config.Config, _ crdClient) error {
-	return nil
-}
-
-// mergeClusterValues returns a values map as required for helm-upgrade.
-// It imitates the behaviour of helm's reuse-values flag by fetching the current values from the cluster
-// and merging the fetched values with the locally found values.
-// This is done to ensure that new values (from upgrades of the local files) end up in the cluster.
-// reuse-values does not ensure this.
-func (c *UpgradeClient) mergeClusterValues(localValues map[string]any, releaseName string) (map[string]any, error) {
-	// Ensure installCRDs is set for cert-manager chart.
-	if releaseName == certManagerInfo.releaseName {
-		localValues["installCRDs"] = true
-	}
-	clusterValues, err := c.actions.getValues(releaseName)
-	if err != nil {
-		return nil, fmt.Errorf("getting values for %s: %w", releaseName, err)
-	}
-
-	return mergeMaps(clusterValues, localValues), nil
+	return c.actions.upgradeAction(ctx, release.ReleaseName, release.Chart, release.Values, timeout)
 }
 
 // GetValues queries the cluster for the values of the given release.

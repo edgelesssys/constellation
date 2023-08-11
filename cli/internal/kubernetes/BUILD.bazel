@@ -23,6 +23,7 @@ go_library(
         "//internal/constants",
         "//internal/file",
         "//internal/imagefetcher",
+        "//internal/kms/uri",
         "//internal/kubernetes",
         "//internal/kubernetes/kubectl",
         "//internal/versions",
@@ -49,7 +50,6 @@ go_test(
     srcs = ["upgrade_test.go"],
     embed = [":kubernetes"],
     deps = [
-        "//internal/attestation/measurements",
         "//internal/attestation/variant",
         "//internal/cloud/cloudprovider",
         "//internal/compatibility",

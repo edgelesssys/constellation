@@ -8,14 +8,12 @@ package kubernetes
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"io"
 	"testing"
 
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
-	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
@@ -186,7 +184,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			currentClusterVersion: versions.SupportedK8sVersions()[0],
 			stable: &fakeStableClient{
 				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":true}}`),
 				},
 			},
 			wantUpdate: true,
@@ -333,118 +331,6 @@ func TestUpgradeNodeVersion(t *testing.T) {
 				return
 			}
 			assert.NoError(err)
-		})
-	}
-}
-
-func TestUpdateMeasurements(t *testing.T) {
-	someErr := errors.New("error")
-	testCases := map[string]struct {
-		updater    *fakeStableClient
-		newConfig  config.AttestationCfg
-		wantUpdate bool
-		wantErr    bool
-	}{
-		"success": {
-			updater: &fakeStableClient{
-				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap: newJoinConfigMap(`{"measurements":{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}}`),
-				},
-			},
-			newConfig: &config.GCPSEVES{
-				Measurements: measurements.M{
-					0: measurements.WithAllBytes(0xBB, measurements.Enforce, measurements.PCRMeasurementLength),
-				},
-			},
-			wantUpdate: true,
-		},
-		"measurements are the same": {
-			updater: &fakeStableClient{
-				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap: newJoinConfigMap(`{"measurements":{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}}`),
-				},
-			},
-			newConfig: &config.GCPSEVES{
-				Measurements: measurements.M{
-					0: measurements.WithAllBytes(0xAA, measurements.Enforce, measurements.PCRMeasurementLength),
-				},
-			},
-		},
-		"setting warnOnly to true is allowed": {
-			updater: &fakeStableClient{
-				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap: newJoinConfigMap(`{"measurements":{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}}`),
-				},
-			},
-			newConfig: &config.GCPSEVES{
-				Measurements: measurements.M{
-					0: measurements.WithAllBytes(0xAA, measurements.WarnOnly, measurements.PCRMeasurementLength),
-				},
-			},
-			wantUpdate: true,
-		},
-		"setting warnOnly to false is allowed": {
-			updater: &fakeStableClient{
-				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap: newJoinConfigMap(`{"measurements":{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":true}}}`),
-				},
-			},
-			newConfig: &config.GCPSEVES{
-				Measurements: measurements.M{
-					0: measurements.WithAllBytes(0xAA, measurements.Enforce, measurements.PCRMeasurementLength),
-				},
-			},
-			wantUpdate: true,
-		},
-		"getCurrent error": {
-			updater: &fakeStableClient{getErr: someErr},
-			newConfig: &config.GCPSEVES{
-				Measurements: measurements.M{
-					0: measurements.WithAllBytes(0xBB, measurements.Enforce, measurements.PCRMeasurementLength),
-				},
-			},
-			wantErr: true,
-		},
-		"update error": {
-			updater: &fakeStableClient{
-				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap: newJoinConfigMap(`{"measurements":{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}}`),
-				},
-				updateErr: someErr,
-			},
-			newConfig: &config.GCPSEVES{
-				Measurements: measurements.M{
-					0: measurements.WithAllBytes(0xBB, measurements.Enforce, measurements.PCRMeasurementLength),
-				},
-			},
-			wantErr: true,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-
-			upgrader := &Upgrader{
-				stableInterface: tc.updater,
-				outWriter:       io.Discard,
-				log:             logger.NewTest(t),
-			}
-
-			err := upgrader.UpdateAttestationConfig(context.Background(), tc.newConfig)
-			if tc.wantErr {
-				assert.Error(err)
-				return
-			}
-
-			assert.NoError(err)
-			if tc.wantUpdate {
-				newConfigJSON, err := json.Marshal(tc.newConfig)
-				require.NoError(t, err)
-				assert.JSONEq(string(newConfigJSON), tc.updater.updatedConfigMaps[constants.JoinConfigMap].Data[constants.AttestationConfigFilename])
-			} else {
-				assert.Nil(tc.updater.updatedConfigMaps)
-			}
 		})
 	}
 }
@@ -626,7 +512,7 @@ type fakeStableClient struct {
 	k8sErr            error
 }
 
-func (s *fakeStableClient) GetCurrentConfigMap(_ context.Context, name string) (*corev1.ConfigMap, error) {
+func (s *fakeStableClient) GetConfigMap(_ context.Context, name string) (*corev1.ConfigMap, error) {
 	return s.configMaps[name], s.getErr
 }
 

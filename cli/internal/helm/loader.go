@@ -109,7 +109,7 @@ func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion, 
 // LoadReleases loads the embedded helm charts and returns them as a HelmReleases object.
 func (i *ChartLoader) LoadReleases(
 	config *config.Config, conformanceMode bool, helmWaitMode WaitMode, masterSecret uri.MasterSecret,
-	measurementSalt []byte, serviceAccURI string, idFile clusterid.File, output terraform.ApplyOutput,
+	serviceAccURI string, idFile clusterid.File, output terraform.ApplyOutput,
 ) (*Releases, error) {
 	ciliumRelease, err := i.loadRelease(ciliumInfo, helmWaitMode)
 	if err != nil {
@@ -133,7 +133,11 @@ func (i *ChartLoader) LoadReleases(
 	if err != nil {
 		return nil, fmt.Errorf("loading constellation-services: %w", err)
 	}
-	svcVals, err := extraConstellationServicesValues(config, masterSecret, measurementSalt, idFile.UID, serviceAccURI, output)
+
+	if idFile.MeasurementSalt == nil {
+		return nil, errors.New("missing measurement salt in idFile")
+	}
+	svcVals, err := extraConstellationServicesValues(config, masterSecret, idFile.MeasurementSalt, idFile.UID, serviceAccURI, output)
 	if err != nil {
 		return nil, fmt.Errorf("extending constellation-services values: %w", err)
 	}
