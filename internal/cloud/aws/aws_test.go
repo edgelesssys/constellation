@@ -122,10 +122,6 @@ func TestSelf(t *testing.T) {
 									InstanceId: aws.String("test-instance-id"),
 									Tags: []ec2Types.Tag{
 										{
-											Key:   aws.String(tagName),
-											Value: aws.String("test-instance"),
-										},
-										{
 											Key:   aws.String(cloud.TagRole),
 											Value: aws.String("controlplane"),
 										},
@@ -170,12 +166,7 @@ func TestSelf(t *testing.T) {
 							Instances: []ec2Types.Instance{
 								{
 									InstanceId: aws.String("test-instance-id"),
-									Tags: []ec2Types.Tag{
-										{
-											Key:   aws.String(tagName),
-											Value: aws.String("test-instance"),
-										},
-									},
+									Tags:       []ec2Types.Tag{},
 								},
 							},
 						},
@@ -222,10 +213,6 @@ func TestList(t *testing.T) {
 						},
 						Tags: []ec2Types.Tag{
 							{
-								Key:   aws.String(tagName),
-								Value: aws.String("name-1"),
-							},
-							{
 								Key:   aws.String(cloud.TagRole),
 								Value: aws.String("controlplane"),
 							},
@@ -243,10 +230,6 @@ func TestList(t *testing.T) {
 							AvailabilityZone: aws.String("test-zone"),
 						},
 						Tags: []ec2Types.Tag{
-							{
-								Key:   aws.String(tagName),
-								Value: aws.String("name-2"),
-							},
 							{
 								Key:   aws.String(cloud.TagRole),
 								Value: aws.String("worker"),
@@ -285,10 +268,6 @@ func TestList(t *testing.T) {
 									InstanceId: aws.String("id-1"),
 									Tags: []ec2Types.Tag{
 										{
-											Key:   aws.String(tagName),
-											Value: aws.String("name-1"),
-										},
-										{
 											Key:   aws.String(cloud.TagRole),
 											Value: aws.String("controlplane"),
 										},
@@ -306,13 +285,13 @@ func TestList(t *testing.T) {
 			},
 			wantList: []metadata.InstanceMetadata{
 				{
-					Name:       "name-1",
+					Name:       "id-1",
 					Role:       role.ControlPlane,
 					ProviderID: "aws:///test-zone/id-1",
 					VPCIP:      "192.0.2.1",
 				},
 				{
-					Name:       "name-2",
+					Name:       "id-2",
 					Role:       role.Worker,
 					ProviderID: "aws:///test-zone/id-2",
 					VPCIP:      "192.0.2.2",
@@ -335,10 +314,6 @@ func TestList(t *testing.T) {
 								{
 									InstanceId: aws.String("id-1"),
 									Tags: []ec2Types.Tag{
-										{
-											Key:   aws.String(tagName),
-											Value: aws.String("name-1"),
-										},
 										{
 											Key:   aws.String(cloud.TagRole),
 											Value: aws.String("controlplane"),
@@ -366,10 +341,6 @@ func TestList(t *testing.T) {
 									},
 									Tags: []ec2Types.Tag{
 										{
-											Key:   aws.String(tagName),
-											Value: aws.String("name-3"),
-										},
-										{
 											Key:   aws.String(cloud.TagRole),
 											Value: aws.String("worker"),
 										},
@@ -388,19 +359,19 @@ func TestList(t *testing.T) {
 			},
 			wantList: []metadata.InstanceMetadata{
 				{
-					Name:       "name-3",
+					Name:       "id-3",
 					Role:       role.Worker,
 					ProviderID: "aws:///test-zone-2/id-3",
 					VPCIP:      "192.0.2.3",
 				},
 				{
-					Name:       "name-1",
+					Name:       "id-1",
 					Role:       role.ControlPlane,
 					ProviderID: "aws:///test-zone/id-1",
 					VPCIP:      "192.0.2.1",
 				},
 				{
-					Name:       "name-2",
+					Name:       "id-2",
 					Role:       role.Worker,
 					ProviderID: "aws:///test-zone/id-2",
 					VPCIP:      "192.0.2.2",
@@ -423,10 +394,6 @@ func TestList(t *testing.T) {
 								{
 									InstanceId: aws.String("id-1"),
 									Tags: []ec2Types.Tag{
-										{
-											Key:   aws.String(tagName),
-											Value: aws.String("name-1"),
-										},
 										{
 											Key:   aws.String(cloud.TagRole),
 											Value: aws.String("controlplane"),
@@ -847,10 +814,6 @@ func TestConvertToMetadataInstance(t *testing.T) {
 					},
 					Tags: []ec2Types.Tag{
 						{
-							Key:   aws.String(tagName),
-							Value: aws.String("name-1"),
-						},
-						{
 							Key:   aws.String(cloud.TagRole),
 							Value: aws.String("controlplane"),
 						},
@@ -859,7 +822,7 @@ func TestConvertToMetadataInstance(t *testing.T) {
 			},
 			wantInstances: []metadata.InstanceMetadata{
 				{
-					Name:       "name-1",
+					Name:       "id-1",
 					Role:       role.ControlPlane,
 					ProviderID: "aws:///test-zone/id-1",
 					VPCIP:      "192.0.2.1",
@@ -874,10 +837,6 @@ func TestConvertToMetadataInstance(t *testing.T) {
 					PrivateIpAddress: aws.String("192.0.2.1"),
 					Tags: []ec2Types.Tag{
 						{
-							Key:   aws.String(tagName),
-							Value: aws.String("name-1"),
-						},
-						{
 							Key:   aws.String(cloud.TagRole),
 							Value: aws.String("controlplane"),
 						},
@@ -887,7 +846,7 @@ func TestConvertToMetadataInstance(t *testing.T) {
 
 			wantInstances: []metadata.InstanceMetadata{
 				{
-					Name:       "name-1",
+					Name:       "id-1",
 					Role:       role.ControlPlane,
 					ProviderID: "aws:///id-1",
 					VPCIP:      "192.0.2.1",
@@ -914,10 +873,6 @@ func TestConvertToMetadataInstance(t *testing.T) {
 					},
 					Tags: []ec2Types.Tag{
 						{
-							Key:   aws.String(tagName),
-							Value: aws.String("name-1"),
-						},
-						{
 							Key:   aws.String(cloud.TagRole),
 							Value: aws.String("controlplane"),
 						},
@@ -931,29 +886,6 @@ func TestConvertToMetadataInstance(t *testing.T) {
 				{
 					State:      &ec2Types.InstanceState{Name: ec2Types.InstanceStateNameRunning},
 					InstanceId: aws.String("id-1"),
-					Placement: &ec2Types.Placement{
-						AvailabilityZone: aws.String("test-zone"),
-					},
-					Tags: []ec2Types.Tag{
-						{
-							Key:   aws.String(tagName),
-							Value: aws.String("name-1"),
-						},
-						{
-							Key:   aws.String(cloud.TagRole),
-							Value: aws.String("controlplane"),
-						},
-					},
-				},
-			},
-			wantErr: true,
-		},
-		"missing name tag": {
-			in: []ec2Types.Instance{
-				{
-					State:            &ec2Types.InstanceState{Name: ec2Types.InstanceStateNameRunning},
-					InstanceId:       aws.String("id-1"),
-					PrivateIpAddress: aws.String("192.0.2.1"),
 					Placement: &ec2Types.Placement{
 						AvailabilityZone: aws.String("test-zone"),
 					},
@@ -976,12 +908,7 @@ func TestConvertToMetadataInstance(t *testing.T) {
 					Placement: &ec2Types.Placement{
 						AvailabilityZone: aws.String("test-zone"),
 					},
-					Tags: []ec2Types.Tag{
-						{
-							Key:   aws.String(tagName),
-							Value: aws.String("name-1"),
-						},
-					},
+					Tags: []ec2Types.Tag{},
 				},
 			},
 			wantErr: true,
