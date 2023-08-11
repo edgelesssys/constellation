@@ -155,6 +155,19 @@ func NewUpgrader(
 	return u, nil
 }
 
+// GetMeasurementSalt returns the measurementSalt from the join-config.
+func (u *Upgrader) GetMeasurementSalt(ctx context.Context) ([]byte, error) {
+	cm, err := u.stableInterface.GetConfigMap(ctx, constants.JoinConfigMap)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving current join-config: %w", err)
+	}
+	salt, ok := cm.BinaryData[constants.MeasurementSaltFilename]
+	if !ok {
+		return nil, errors.New("measurementSalt missing from join-config")
+	}
+	return salt, nil
+}
+
 // GetUpgradeID returns the upgrade ID.
 func (u *Upgrader) GetUpgradeID() string {
 	return u.upgradeID

@@ -182,6 +182,10 @@ type stubUpgrader struct {
 	backupWasCalled   bool
 }
 
+func (u stubUpgrader) GetMeasurementSalt(_ context.Context) ([]byte, error) {
+	return []byte{}, nil
+}
+
 func (u stubUpgrader) GetUpgradeID() string {
 	return "test-upgrade"
 }

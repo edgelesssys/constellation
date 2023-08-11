@@ -132,6 +132,14 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command) error {
 	if err := u.fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil {
 		return fmt.Errorf("reading cluster ID file: %w", err)
 	}
+	if idFile.MeasurementSalt == nil {
+		// TODO(elchead): remove after 2.10, since 2.9 does not yet save it in the idfile
+		measurementSalt, err := u.upgrader.GetMeasurementSalt(cmd.Context())
+		if err != nil {
+			return fmt.Errorf("getting join-config: %w", err)
+		}
+		idFile.MeasurementSalt = measurementSalt
+	}
 	conf.UpdateMAAURL(idFile.AttestationURL)
 
 	// If an image upgrade was just executed there won't be a diff. The function will return nil in that case.
@@ -482,6 +490,7 @@ type cloudUpgrader interface {
 	UpgradeHelmServices(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive bool, force bool, conformance bool, helmWaitMode helm.WaitMode, masterSecret uri.MasterSecret, serviceAccURI string, validK8sVersion versions.ValidK8sVersion, tfOutput terraform.ApplyOutput) error
 	ExtendClusterConfigCertSANs(ctx context.Context, alternativeNames []string) error
 	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, error)
+	GetMeasurementSalt(ctx context.Context) ([]byte, error)
 	PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error)
 	ApplyTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (terraform.ApplyOutput, error)
 	CheckTerraformMigrations(upgradeWorkspace string) error
