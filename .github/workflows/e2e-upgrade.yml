@@ -298,7 +298,7 @@ jobs:
           failure() &&
           github.ref == 'refs/heads/main' &&
           github.event_name == 'workflow_call' &&
-          ${{ inputs.scheduled || 'true' }} == 'true'
+          ${{ inputs.scheduled || 'false' }} == 'true'
         continue-on-error: true
         uses: ./.github/actions/notify_failure
         with:
