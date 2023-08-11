@@ -433,7 +433,7 @@ func (i *initCmd) writeOutput(
 	if !mergeConfig {
 		fmt.Fprintln(wr, "You can now connect to your cluster by executing:")
 
-		exportPath, err := filepath.Abs(i.pf.PrefixPath(constants.AdminConfFilename))
+		exportPath, err := filepath.Abs(constants.AdminConfFilename)
 		if err != nil {
 			return fmt.Errorf("getting absolute path to kubeconfig: %w", err)
 		}
