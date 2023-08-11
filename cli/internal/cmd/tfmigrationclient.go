@@ -44,7 +44,7 @@ func (u *tfMigrationClient) applyMigration(cmd *cobra.Command, upgradeWorkspace 
 	}
 	if hasDiff {
 		// If there are any Terraform migrations to apply, ask for confirmation
-		fmt.Fprintf(cmd.OutOrStdout(), "The %s upgrade requires a migration by applying an updated Terraform template. Please manually review the suggested changes below.\n", migrateCmd.String())
+		fmt.Fprintf(cmd.OutOrStdout(), "The %s upgrade requires a migration by applying an updated Terraform template. Please manually review the suggested changes.\n", migrateCmd.String())
 		if !yesFlag {
 			ok, err := askToConfirm(cmd, fmt.Sprintf("Do you want to apply the %s?", migrateCmd.String()))
 			if err != nil {
