@@ -172,6 +172,8 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command) error {
 		switch {
 		case errors.As(err, &upgradeErr):
 			cmd.PrintErrln(err)
+		case err == nil:
+			cmd.Println("Successfully upgraded Constellation services.")
 		case err != nil:
 			return fmt.Errorf("upgrading services: %w", err)
 		}
