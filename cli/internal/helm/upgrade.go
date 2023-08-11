@@ -99,12 +99,11 @@ func (c *UpgradeClient) shouldUpgrade(releaseName string, newVersion semver.Semv
 			return err
 		}
 	}
-	cliVersion := constants.BinaryVersion()
+
 	// at this point we conclude that the release should be upgraded. check that this CLI supports the upgrade.
-	if releaseName == constellationOperatorsInfo.releaseName || releaseName == constellationServicesInfo.releaseName {
-		if cliVersion.Compare(newVersion) != 0 {
-			return fmt.Errorf("this CLI only supports microservice version %s for upgrading", cliVersion.String())
-		}
+	cliVersion := constants.BinaryVersion()
+	if isCLIVersionedRelease(releaseName) && cliVersion.Compare(newVersion) != 0 {
+		return fmt.Errorf("this CLI only supports microservice version %s for upgrading", cliVersion.String())
 	}
 	c.log.Debugf("Upgrading %s from %s to %s", releaseName, currentVersion, newVersion)
 
@@ -130,7 +129,7 @@ func (c *UpgradeClient) Upgrade(ctx context.Context, config *config.Config, idFi
 		// Since our bundled charts are embedded with version 0.0.0,
 		// we need to update them to the same version as the CLI
 		var upgradeVersion semver.Semver
-		if info == constellationOperatorsInfo || info == constellationServicesInfo || info == csiInfo {
+		if isCLIVersionedRelease(info.releaseName) {
 			updateVersions(chart, constants.BinaryVersion())
 			upgradeVersion = config.MicroserviceVersion
 		} else {
@@ -518,4 +517,12 @@ func (a actions) installAction(ctx context.Context, releaseName string, chart *c
 		return fmt.Errorf("installing previously not installed chart %s: %w", chart.Name(), err)
 	}
 	return nil
+}
+
+// isCLIVersionedRelease checks if the given release is versioned by the CLI,
+// meaning that the version of the Helm release is equal to the version of the CLI that installed it.
+func isCLIVersionedRelease(releaseName string) bool {
+	return releaseName == constellationOperatorsInfo.releaseName ||
+		releaseName == constellationServicesInfo.releaseName ||
+		releaseName == csiInfo.releaseName
 }
