@@ -9,7 +9,6 @@ package cmd
 import (
 	"bytes"
 	"context"
-	"errors"
 	"testing"
 	"time"
 
@@ -32,87 +31,106 @@ import (
 )
 
 func TestUpgradeApply(t *testing.T) {
-	someErr := errors.New("some error")
 	testCases := map[string]struct {
-		upgrader                 *stubUpgrader
+		helmUpgrader             *stubHelmUpgrader
+		kubeUpgrader             *stubKubernetesUpgrader
+		terraformUpgrader        *stubTerraformUpgrader
 		wantErr                  bool
 		yesFlag                  bool
 		dontWantJoinConfigBackup bool
 		stdin                    string
 	}{
 		"success": {
-			upgrader: &stubUpgrader{currentConfig: config.DefaultForAzureSEVSNP()},
-			yesFlag:  true,
+			kubeUpgrader:      &stubKubernetesUpgrader{currentConfig: config.DefaultForAzureSEVSNP()},
+			helmUpgrader:      &stubHelmUpgrader{},
+			terraformUpgrader: &stubTerraformUpgrader{},
+			yesFlag:           true,
 		},
 		"nodeVersion some error": {
-			upgrader: &stubUpgrader{
+			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig:  config.DefaultForAzureSEVSNP(),
-				nodeVersionErr: someErr,
+				nodeVersionErr: assert.AnError,
 			},
-			wantErr: true,
-			yesFlag: true,
+			helmUpgrader:      &stubHelmUpgrader{},
+			terraformUpgrader: &stubTerraformUpgrader{},
+			wantErr:           true,
+			yesFlag:           true,
 		},
 		"nodeVersion in progress error": {
-			upgrader: &stubUpgrader{
+			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig:  config.DefaultForAzureSEVSNP(),
 				nodeVersionErr: kubernetes.ErrInProgress,
 			},
-			yesFlag: true,
+			helmUpgrader:      &stubHelmUpgrader{},
+			terraformUpgrader: &stubTerraformUpgrader{},
+			yesFlag:           true,
 		},
 		"helm other error": {
-			upgrader: &stubUpgrader{
+			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig: config.DefaultForAzureSEVSNP(),
-				helmErr:       someErr,
 			},
-			wantErr: true,
-			yesFlag: true,
+			helmUpgrader:      &stubHelmUpgrader{err: assert.AnError},
+			terraformUpgrader: &stubTerraformUpgrader{},
+			wantErr:           true,
+			yesFlag:           true,
 		},
 		"check terraform error": {
-			upgrader: &stubUpgrader{
-				currentConfig:     config.DefaultForAzureSEVSNP(),
-				checkTerraformErr: someErr,
+			kubeUpgrader: &stubKubernetesUpgrader{
+				currentConfig: config.DefaultForAzureSEVSNP(),
 			},
-			wantErr: true,
-			yesFlag: true,
+			helmUpgrader:      &stubHelmUpgrader{},
+			terraformUpgrader: &stubTerraformUpgrader{checkTerraformErr: assert.AnError},
+			wantErr:           true,
+			yesFlag:           true,
 		},
 		"abort": {
-			upgrader: &stubUpgrader{
+			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig: config.DefaultForAzureSEVSNP(),
-				terraformDiff: true,
 			},
-			wantErr: true,
-			stdin:   "no\n",
+			helmUpgrader:      &stubHelmUpgrader{},
+			terraformUpgrader: &stubTerraformUpgrader{terraformDiff: true},
+			wantErr:           true,
+			stdin:             "no\n",
 		},
 		"clean terraform error": {
-			upgrader: &stubUpgrader{
-				currentConfig:     config.DefaultForAzureSEVSNP(),
-				cleanTerraformErr: someErr,
+			kubeUpgrader: &stubKubernetesUpgrader{
+				currentConfig: config.DefaultForAzureSEVSNP(),
+			},
+			helmUpgrader: &stubHelmUpgrader{},
+			terraformUpgrader: &stubTerraformUpgrader{
+				cleanTerraformErr: assert.AnError,
 				terraformDiff:     true,
 			},
 			wantErr: true,
 			stdin:   "no\n",
 		},
 		"plan terraform error": {
-			upgrader: &stubUpgrader{
-				currentConfig:    config.DefaultForAzureSEVSNP(),
-				planTerraformErr: someErr,
+			kubeUpgrader: &stubKubernetesUpgrader{
+				currentConfig: config.DefaultForAzureSEVSNP(),
 			},
-			wantErr: true,
-			yesFlag: true,
+			helmUpgrader:      &stubHelmUpgrader{},
+			terraformUpgrader: &stubTerraformUpgrader{planTerraformErr: assert.AnError},
+			wantErr:           true,
+			yesFlag:           true,
 		},
 		"apply terraform error": {
-			upgrader: &stubUpgrader{
-				currentConfig:     config.DefaultForAzureSEVSNP(),
-				applyTerraformErr: someErr,
+			kubeUpgrader: &stubKubernetesUpgrader{
+				currentConfig: config.DefaultForAzureSEVSNP(),
+			},
+			helmUpgrader: &stubHelmUpgrader{},
+			terraformUpgrader: &stubTerraformUpgrader{
+				applyTerraformErr: assert.AnError,
 				terraformDiff:     true,
 			},
 			wantErr: true,
 			yesFlag: true,
 		},
 		"do no backup join-config when remote attestation config is the same": {
-			upgrader: &stubUpgrader{
+			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig: fakeAzureAttestationConfigFromCluster(context.Background(), t, cloudprovider.Azure),
 			},
+			helmUpgrader:             &stubHelmUpgrader{},
+			terraformUpgrader:        &stubTerraformUpgrader{},
 			yesFlag:                  true,
 			dontWantJoinConfigBackup: true,
 		},
@@ -141,7 +159,15 @@ func TestUpgradeApply(t *testing.T) {
 			require.NoError(handler.WriteJSON(constants.ClusterIDsFilename, clusterid.File{}))
 			require.NoError(handler.WriteJSON(constants.MasterSecretFilename, uri.MasterSecret{}))
 
-			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t), configFetcher: stubAttestationFetcher{}, clusterShower: &stubShowCluster{}, fileHandler: handler}
+			upgrader := upgradeApplyCmd{
+				kubeUpgrader:      tc.kubeUpgrader,
+				helmUpgrader:      tc.helmUpgrader,
+				terraformUpgrader: tc.terraformUpgrader,
+				log:               logger.NewTest(t),
+				configFetcher:     stubAttestationFetcher{},
+				clusterShower:     &stubShowCluster{},
+				fileHandler:       handler,
+			}
 
 			err := upgrader.upgradeApply(cmd)
 			if tc.wantErr {
@@ -149,70 +175,79 @@ func TestUpgradeApply(t *testing.T) {
 				return
 			}
 			assert.NoError(err)
-			assert.Equal(!tc.dontWantJoinConfigBackup, tc.upgrader.backupWasCalled)
+			assert.Equal(!tc.dontWantJoinConfigBackup, tc.kubeUpgrader.backupWasCalled)
 		})
 	}
 }
 
-type stubUpgrader struct {
-	currentConfig     config.AttestationCfg
-	nodeVersionErr    error
-	helmErr           error
+type stubHelmUpgrader struct {
+	err error
+}
+
+func (u stubHelmUpgrader) Upgrade(
+	_ context.Context, _ *config.Config, _ clusterid.File, _ time.Duration, _, _ bool, _ string, _ bool,
+	_ helm.WaitMode, _ uri.MasterSecret, _ string, _ versions.ValidK8sVersion, _ terraform.ApplyOutput,
+) error {
+	return u.err
+}
+
+type stubKubernetesUpgrader struct {
+	backupWasCalled bool
+	nodeVersionErr  error
+	currentConfig   config.AttestationCfg
+}
+
+func (u stubKubernetesUpgrader) GetMeasurementSalt(_ context.Context) ([]byte, error) {
+	return []byte{}, nil
+}
+
+func (u *stubKubernetesUpgrader) BackupConfigMap(_ context.Context, _ string) error {
+	u.backupWasCalled = true
+	return nil
+}
+
+func (u stubKubernetesUpgrader) UpgradeNodeVersion(_ context.Context, _ *config.Config, _ bool) error {
+	return u.nodeVersionErr
+}
+
+func (u stubKubernetesUpgrader) UpdateAttestationConfig(_ context.Context, _ config.AttestationCfg) error {
+	return nil
+}
+
+func (u stubKubernetesUpgrader) GetClusterAttestationConfig(_ context.Context, _ variant.Variant) (config.AttestationCfg, error) {
+	return u.currentConfig, nil
+}
+
+func (u stubKubernetesUpgrader) ExtendClusterConfigCertSANs(_ context.Context, _ []string) error {
+	return nil
+}
+
+type stubTerraformUpgrader struct {
 	terraformDiff     bool
 	planTerraformErr  error
 	checkTerraformErr error
 	applyTerraformErr error
 	cleanTerraformErr error
-	backupWasCalled   bool
 }
 
-func (u stubUpgrader) GetMeasurementSalt(_ context.Context) ([]byte, error) {
-	return []byte{}, nil
-}
-
-func (u stubUpgrader) GetUpgradeID() string {
-	return "test-upgrade"
-}
-
-func (u *stubUpgrader) BackupConfigMap(_ context.Context, _ string) error {
-	u.backupWasCalled = true
-	return nil
-}
-
-func (u stubUpgrader) UpgradeNodeVersion(_ context.Context, _ *config.Config, _ bool) error {
-	return u.nodeVersionErr
-}
-
-func (u stubUpgrader) UpgradeHelmServices(_ context.Context, _ *config.Config, _ clusterid.File, _ time.Duration, _, _, _ bool, _ helm.WaitMode, _ uri.MasterSecret, _ string, _ versions.ValidK8sVersion, _ terraform.ApplyOutput) error {
-	return u.helmErr
-}
-
-func (u stubUpgrader) UpdateAttestationConfig(_ context.Context, _ config.AttestationCfg) error {
-	return nil
-}
-
-func (u stubUpgrader) GetClusterAttestationConfig(_ context.Context, _ variant.Variant) (config.AttestationCfg, error) {
-	return u.currentConfig, nil
-}
-
-func (u stubUpgrader) CheckTerraformMigrations(_ string) error {
+func (u stubTerraformUpgrader) CheckTerraformMigrations(_ string) error {
 	return u.checkTerraformErr
 }
 
-func (u stubUpgrader) CleanUpTerraformMigrations(_ string) error {
+func (u stubTerraformUpgrader) CleanUpTerraformMigrations(_ string) error {
 	return u.cleanTerraformErr
 }
 
-func (u stubUpgrader) PlanTerraformMigrations(context.Context, upgrade.TerraformUpgradeOptions) (bool, error) {
+func (u stubTerraformUpgrader) PlanTerraformMigrations(context.Context, upgrade.TerraformUpgradeOptions) (bool, error) {
 	return u.terraformDiff, u.planTerraformErr
 }
 
-func (u stubUpgrader) ApplyTerraformMigrations(context.Context, upgrade.TerraformUpgradeOptions) (terraform.ApplyOutput, error) {
+func (u stubTerraformUpgrader) ApplyTerraformMigrations(context.Context, upgrade.TerraformUpgradeOptions) (terraform.ApplyOutput, error) {
 	return terraform.ApplyOutput{}, u.applyTerraformErr
 }
 
-func (u stubUpgrader) ExtendClusterConfigCertSANs(_ context.Context, _ []string) error {
-	return nil
+func (u stubTerraformUpgrader) UpgradeID() string {
+	return "test-upgrade"
 }
 
 func fakeAzureAttestationConfigFromCluster(ctx context.Context, t *testing.T, provider cloudprovider.Provider) config.AttestationCfg {

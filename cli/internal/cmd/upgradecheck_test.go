@@ -110,22 +110,22 @@ func TestBuildString(t *testing.T) {
 
 func TestGetCurrentImageVersion(t *testing.T) {
 	testCases := map[string]struct {
-		stubUpgradeChecker stubUpgradeChecker
-		wantErr            bool
+		stubKubernetesChecker stubKubernetesChecker
+		wantErr               bool
 	}{
 		"valid version": {
-			stubUpgradeChecker: stubUpgradeChecker{
+			stubKubernetesChecker: stubKubernetesChecker{
 				image: "v1.0.0",
 			},
 		},
 		"invalid version": {
-			stubUpgradeChecker: stubUpgradeChecker{
+			stubKubernetesChecker: stubKubernetesChecker{
 				image: "invalid",
 			},
 			wantErr: true,
 		},
 		"GetCurrentImage error": {
-			stubUpgradeChecker: stubUpgradeChecker{
+			stubKubernetesChecker: stubKubernetesChecker{
 				err: errors.New("error"),
 			},
 			wantErr: true,
@@ -136,7 +136,7 @@ func TestGetCurrentImageVersion(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			version, err := getCurrentImageVersion(context.Background(), tc.stubUpgradeChecker)
+			version, err := getCurrentImageVersion(context.Background(), tc.stubKubernetesChecker)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -215,19 +215,19 @@ func TestUpgradeCheck(t *testing.T) {
 	testCases := map[string]struct {
 		collector  stubVersionCollector
 		csp        cloudprovider.Provider
-		checker    stubUpgradeChecker
+		checker    stubTerraformChecker
 		cliVersion string
 		wantError  bool
 	}{
 		"upgrades gcp": {
 			collector:  collector,
-			checker:    stubUpgradeChecker{},
+			checker:    stubTerraformChecker{},
 			csp:        cloudprovider.GCP,
 			cliVersion: "v1.0.0",
 		},
 		"terraform err": {
 			collector: collector,
-			checker: stubUpgradeChecker{
+			checker: stubTerraformChecker{
 				err: assert.AnError,
 			},
 			csp:        cloudprovider.GCP,
@@ -245,10 +245,10 @@ func TestUpgradeCheck(t *testing.T) {
 			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, cfg))
 
 			checkCmd := upgradeCheckCmd{
-				canUpgradeCheck: true,
-				collect:         &tc.collector,
-				checker:         tc.checker,
-				log:             logger.NewTest(t),
+				canUpgradeCheck:  true,
+				collect:          &tc.collector,
+				terraformChecker: tc.checker,
+				log:              logger.NewTest(t),
 			}
 
 			cmd := newUpgradeCheckCmd()
@@ -317,31 +317,35 @@ func (s *stubVersionCollector) filterCompatibleCLIVersions(_ context.Context, _ 
 	return s.newCompatibleCLIVersionsList, nil
 }
 
-type stubUpgradeChecker struct {
+type stubKubernetesChecker struct {
 	image      string
 	k8sVersion string
-	tfDiff     bool
 	err        error
 }
 
-func (u stubUpgradeChecker) CurrentImage(context.Context) (string, error) {
-	return u.image, u.err
+func (s stubKubernetesChecker) CurrentImage(context.Context) (string, error) {
+	return s.image, s.err
 }
 
-func (u stubUpgradeChecker) CurrentKubernetesVersion(context.Context) (string, error) {
-	return u.k8sVersion, u.err
+func (s stubKubernetesChecker) CurrentKubernetesVersion(context.Context) (string, error) {
+	return s.k8sVersion, s.err
 }
 
-func (u stubUpgradeChecker) PlanTerraformMigrations(context.Context, upgrade.TerraformUpgradeOptions) (bool, error) {
-	return u.tfDiff, u.err
+type stubTerraformChecker struct {
+	tfDiff bool
+	err    error
 }
 
-func (u stubUpgradeChecker) CheckTerraformMigrations(_ string) error {
-	return u.err
+func (s stubTerraformChecker) PlanTerraformMigrations(context.Context, upgrade.TerraformUpgradeOptions) (bool, error) {
+	return s.tfDiff, s.err
 }
 
-func (u stubUpgradeChecker) CleanUpTerraformMigrations(_ string) error {
-	return u.err
+func (s stubTerraformChecker) CheckTerraformMigrations(_ string) error {
+	return s.err
+}
+
+func (s stubTerraformChecker) CleanUpTerraformMigrations(_ string) error {
+	return s.err
 }
 
 func TestNewCLIVersions(t *testing.T) {

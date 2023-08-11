@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -71,11 +72,14 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 	}
 
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	checker, err := kubernetes.NewUpgrader(
-		cmd.Context(), cmd.OutOrStdout(),
-		constants.UpgradeDir, constants.AdminConfFilename,
-		fileHandler, log, kubernetes.UpgradeCmdKindCheck,
-	)
+	upgradeID := generateUpgradeID(upgradeCmdKindCheck)
+
+	tfClient, err := terraform.New(cmd.Context(), filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeWorkingDir))
+	if err != nil {
+		return fmt.Errorf("setting up terraform client: %w", err)
+	}
+
+	kubeChecker, err := kubernetes.NewUpgrader(cmd.OutOrStdout(), constants.AdminConfFilename, log)
 	if err != nil {
 		return fmt.Errorf("setting up Kubernetes upgrader: %w", err)
 	}
@@ -89,7 +93,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 		canUpgradeCheck: featureset.CanUpgradeCheck,
 		collect: &versionCollector{
 			writer:         cmd.OutOrStderr(),
-			checker:        checker,
+			kubeChecker:    kubeChecker,
 			verListFetcher: versionfetcher,
 			fileHandler:    fileHandler,
 			client:         http.DefaultClient,
@@ -99,8 +103,8 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 			log:            log,
 			versionsapi:    versionfetcher,
 		},
-		checker: checker,
-		log:     log,
+		terraformChecker: upgrade.NewTerraformUpgrader(tfClient, cmd.OutOrStdout(), fileHandler, upgradeID),
+		log:              log,
 	}
 
 	return up.upgradeCheck(cmd, fileHandler, attestationconfigapi.NewFetcher(), flags)
@@ -143,10 +147,10 @@ func parseUpgradeCheckFlags(cmd *cobra.Command) (upgradeCheckFlags, error) {
 }
 
 type upgradeCheckCmd struct {
-	canUpgradeCheck bool
-	collect         collector
-	checker         upgradeChecker
-	log             debugLog
+	canUpgradeCheck  bool
+	collect          collector
+	terraformChecker terraformChecker
+	log              debugLog
 }
 
 // upgradePlan plans an upgrade of a Constellation cluster.
@@ -212,7 +216,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	// 	  u.upgrader.AddManualStateMigration(migration)
 	// }
 
-	if err := u.checker.CheckTerraformMigrations(constants.UpgradeDir); err != nil {
+	if err := u.terraformChecker.CheckTerraformMigrations(constants.UpgradeDir); err != nil {
 		return fmt.Errorf("checking workspace: %w", err)
 	}
 
@@ -233,12 +237,12 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	cmd.Println("The following Terraform migrations are available with this CLI:")
 
 	// Check if there are any Terraform migrations
-	hasDiff, err := u.checker.PlanTerraformMigrations(cmd.Context(), opts)
+	hasDiff, err := u.terraformChecker.PlanTerraformMigrations(cmd.Context(), opts)
 	if err != nil {
 		return fmt.Errorf("planning terraform migrations: %w", err)
 	}
 	defer func() {
-		if err := u.checker.CleanUpTerraformMigrations(constants.UpgradeDir); err != nil {
+		if err := u.terraformChecker.CleanUpTerraformMigrations(constants.UpgradeDir); err != nil {
 			u.log.Debugf("Failed to clean up Terraform migrations: %v", err)
 		}
 	}()
@@ -323,7 +327,7 @@ type collector interface {
 
 type versionCollector struct {
 	writer         io.Writer
-	checker        upgradeChecker
+	kubeChecker    kubernetesChecker
 	verListFetcher versionListFetcher
 	fileHandler    file.Handler
 	client         *http.Client
@@ -382,12 +386,12 @@ func (v *versionCollector) currentVersions(ctx context.Context) (currentVersionI
 		return currentVersionInfo{}, fmt.Errorf("getting service versions: %w", err)
 	}
 
-	imageVersion, err := getCurrentImageVersion(ctx, v.checker)
+	imageVersion, err := getCurrentImageVersion(ctx, v.kubeChecker)
 	if err != nil {
 		return currentVersionInfo{}, fmt.Errorf("getting image version: %w", err)
 	}
 
-	k8sVersion, err := getCurrentKubernetesVersion(ctx, v.checker)
+	k8sVersion, err := getCurrentKubernetesVersion(ctx, v.kubeChecker)
 	if err != nil {
 		return currentVersionInfo{}, fmt.Errorf("getting Kubernetes version: %w", err)
 	}
@@ -588,7 +592,7 @@ func (v *versionUpgrade) writeConfig(conf *config.Config, fileHandler file.Handl
 
 // getCurrentImageVersion retrieves the semantic version of the image currently installed in the cluster.
 // If the cluster is not using a release image, an error is returned.
-func getCurrentImageVersion(ctx context.Context, checker upgradeChecker) (string, error) {
+func getCurrentImageVersion(ctx context.Context, checker kubernetesChecker) (string, error) {
 	imageVersion, err := checker.CurrentImage(ctx)
 	if err != nil {
 		return "", err
@@ -602,7 +606,7 @@ func getCurrentImageVersion(ctx context.Context, checker upgradeChecker) (string
 }
 
 // getCurrentKubernetesVersion retrieves the semantic version of Kubernetes currently installed in the cluster.
-func getCurrentKubernetesVersion(ctx context.Context, checker upgradeChecker) (string, error) {
+func getCurrentKubernetesVersion(ctx context.Context, checker kubernetesChecker) (string, error) {
 	k8sVersion, err := checker.CurrentKubernetesVersion(ctx)
 	if err != nil {
 		return "", err
@@ -745,9 +749,12 @@ type upgradeCheckFlags struct {
 	terraformLogLevel terraform.LogLevel
 }
 
-type upgradeChecker interface {
+type kubernetesChecker interface {
 	CurrentImage(ctx context.Context) (string, error)
 	CurrentKubernetesVersion(ctx context.Context) (string, error)
+}
+
+type terraformChecker interface {
 	PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error)
 	CheckTerraformMigrations(upgradeWorkspace string) error
 	CleanUpTerraformMigrations(upgradeWorkspace string) error
