@@ -144,14 +144,14 @@ func (v Semver) MajorMinorEqual(other Semver) bool {
 // It checks if the version of v is greater than the version of other and allows a drift of at most one minor version.
 func (v Semver) IsUpgradeTo(other Semver) error {
 	if v.Compare(other) <= 0 {
-		return compatibility.NewInvalidUpgradeError(v.String(), other.String(), errors.New("current version newer than or equal to new version"))
+		return compatibility.NewInvalidUpgradeError(other.String(), v.String(), errors.New("current version newer than or equal to new version"))
 	}
 	if v.major != other.major {
-		return compatibility.NewInvalidUpgradeError(v.String(), other.String(), compatibility.ErrMajorMismatch)
+		return compatibility.NewInvalidUpgradeError(other.String(), v.String(), compatibility.ErrMajorMismatch)
 	}
 
 	if v.minor-other.minor > 1 {
-		return compatibility.NewInvalidUpgradeError(v.String(), other.String(), compatibility.ErrMinorDrift)
+		return compatibility.NewInvalidUpgradeError(other.String(), v.String(), compatibility.ErrMinorDrift)
 	}
 
 	return nil
