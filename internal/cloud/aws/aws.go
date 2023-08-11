@@ -302,13 +302,8 @@ func (c *Cloud) convertToMetadataInstance(ec2Instances []ec2Types.Instance) ([]m
 
 		newInstance := metadata.InstanceMetadata{
 			VPCIP: *ec2Instance.PrivateIpAddress,
+			Name:  *ec2Instance.InstanceId,
 		}
-
-		name, err := findTag(ec2Instance.Tags, tagName)
-		if err != nil {
-			return nil, fmt.Errorf("retrieving tag for instance %s: %w", *ec2Instance.InstanceId, err)
-		}
-		newInstance.Name = name
 
 		instanceRole, err := findTag(ec2Instance.Tags, cloud.TagRole)
 		if err != nil {
