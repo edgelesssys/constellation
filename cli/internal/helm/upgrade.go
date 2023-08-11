@@ -115,7 +115,10 @@ func (c *UpgradeClient) shouldUpgrade(releaseName string, newVersion semver.Semv
 // Upgrade runs a helm-upgrade on all deployments that are managed via Helm.
 // If the CLI receives an interrupt signal it will cancel the context.
 // Canceling the context will prompt helm to abort and roll back the ongoing upgrade.
-func (c *UpgradeClient) Upgrade(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive, force bool, upgradeID string, conformance bool, helmWaitMode WaitMode, masterSecret uri.MasterSecret, serviceAccURI string, validK8sVersion versions.ValidK8sVersion, output terraform.ApplyOutput) error {
+func (c *UpgradeClient) Upgrade(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration,
+	allowDestructive, force bool, upgradeID string, conformance bool, helmWaitMode WaitMode, masterSecret uri.MasterSecret,
+	serviceAccURI string, validK8sVersion versions.ValidK8sVersion, output terraform.ApplyOutput,
+) error {
 	upgradeErrs := []error{}
 	upgradeReleases := []Release{}
 	newReleases := []Release{}

@@ -324,7 +324,7 @@ func validK8sVersion(cmd *cobra.Command, version string, yes bool) (validVersion
 	validVersion, err = versions.NewValidK8sVersion(version, true)
 	if versions.IsPreviewK8sVersion(validVersion) {
 		cmd.PrintErrf("Warning: Constellation with Kubernetes %v is still in preview. Use only for evaluation purposes.\n", validVersion)
-	} // TODO(elchead): copied from init, should we also use it here?
+	}
 	valid := err == nil
 
 	if !valid && !yes {

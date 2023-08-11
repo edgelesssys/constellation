@@ -201,8 +201,12 @@ func (u *Upgrader) ApplyTerraformMigrations(ctx context.Context, opts upgrade.Te
 }
 
 // UpgradeHelmServices upgrade helm services.
-func (u *Upgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive bool, force bool, conformance bool, helmWaitMode helm.WaitMode, masterSecret uri.MasterSecret, serviceAccURI string, validK8sVersion versions.ValidK8sVersion, output terraform.ApplyOutput) error {
-	return u.helmClient.Upgrade(ctx, config, idFile, timeout, allowDestructive, force, u.upgradeID, conformance, helmWaitMode, masterSecret, serviceAccURI, validK8sVersion, output)
+func (u *Upgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration,
+	allowDestructive bool, force bool, conformance bool, helmWaitMode helm.WaitMode, masterSecret uri.MasterSecret, serviceAccURI string,
+	validK8sVersion versions.ValidK8sVersion, output terraform.ApplyOutput,
+) error {
+	return u.helmClient.Upgrade(ctx, config, idFile, timeout, allowDestructive, force, u.upgradeID, conformance,
+		helmWaitMode, masterSecret, serviceAccURI, validK8sVersion, output)
 }
 
 // UpgradeNodeVersion upgrades the cluster's NodeVersion object and in turn triggers image & k8s version upgrades.
@@ -332,8 +336,8 @@ func (u *Upgrader) BackupConfigMap(ctx context.Context, name string) error {
 		return fmt.Errorf("getting config map %s: %w", name, err)
 	}
 	backup := cm.DeepCopy()
+	backup.ObjectMeta = metav1.ObjectMeta{}
 	backup.Name = fmt.Sprintf("%s-backup", backup.Name)
-	backup.ResourceVersion = "" // reset resource version to create a new resource
 	if _, err := u.stableInterface.CreateConfigMap(ctx, backup); err != nil {
 		if _, err := u.stableInterface.UpdateConfigMap(ctx, backup); err != nil {
 			return fmt.Errorf("updating backup config map: %w", err)

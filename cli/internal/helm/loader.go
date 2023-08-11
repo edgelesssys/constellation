@@ -108,7 +108,8 @@ func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion, 
 
 // LoadReleases loads the embedded helm charts and returns them as a HelmReleases object.
 func (i *ChartLoader) LoadReleases(
-	config *config.Config, conformanceMode bool, helmWaitMode WaitMode, masterSecret uri.MasterSecret, serviceAccURI string, idFile clusterid.File, output terraform.ApplyOutput,
+	config *config.Config, conformanceMode bool, helmWaitMode WaitMode, masterSecret uri.MasterSecret,
+	serviceAccURI string, idFile clusterid.File, output terraform.ApplyOutput,
 ) (*Releases, error) {
 	ciliumRelease, err := i.loadRelease(ciliumInfo, helmWaitMode)
 	if err != nil {
