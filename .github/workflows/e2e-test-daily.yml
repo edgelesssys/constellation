@@ -120,6 +120,7 @@ jobs:
           test: ${{ matrix.test }}
           kubernetesVersion: ${{ matrix.kubernetesVersion }}
           provider: ${{ matrix.provider }}
+  
   e2e-mini:
     name: Run miniconstellation E2E test
     runs-on: ubuntu-22.04
