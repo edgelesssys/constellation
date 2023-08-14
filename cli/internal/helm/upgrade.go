@@ -154,7 +154,7 @@ func (c *UpgradeClient) Upgrade(ctx context.Context, config *config.Config, idFi
 			newReleases = append(newReleases, release)
 		case errors.As(err, &invalidUpgrade):
 			c.log.Debugf("Appending to %s upgrade: %s", release.ReleaseName, err)
-			upgradeReleases = append(upgradeReleases, release)
+			upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping %s upgrade: %w", release.ReleaseName, err))
 		case err != nil:
 			c.log.Debugf("Adding %s to upgrade releases...", release.ReleaseName)
 			return fmt.Errorf("should upgrade %s: %w", release.ReleaseName, err)
