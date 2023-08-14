@@ -337,7 +337,7 @@ func (u *Upgrader) BackupConfigMap(ctx context.Context, name string) error {
 	}
 	backup := cm.DeepCopy()
 	backup.ObjectMeta = metav1.ObjectMeta{}
-	backup.Name = fmt.Sprintf("%s-backup", backup.Name)
+	backup.Name = fmt.Sprintf("%s-backup", name)
 	if _, err := u.stableInterface.CreateConfigMap(ctx, backup); err != nil {
 		if _, err := u.stableInterface.UpdateConfigMap(ctx, backup); err != nil {
 			return fmt.Errorf("updating backup config map: %w", err)
