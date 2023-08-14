@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package kubernetes
+package kubecmd
 
 import (
 	"context"
@@ -306,7 +306,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			unstrNodeVersion, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&nodeVersion)
 			require.NoError(err)
 			dynamicClient := &stubDynamicClient{object: &unstructured.Unstructured{Object: unstrNodeVersion}, badUpdatedObject: badUpdatedObject, getErr: tc.getErr}
-			upgrader := Upgrader{
+			upgrader := KubeCmd{
 				stableInterface:  tc.stable,
 				dynamicInterface: dynamicClient,
 				imageFetcher:     &stubImageFetcher{reference: tc.newImageReference},
@@ -368,7 +368,7 @@ func TestUpdateImage(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			upgrader := &Upgrader{
+			upgrader := &KubeCmd{
 				log: logger.NewTest(t),
 			}
 
@@ -427,7 +427,7 @@ func TestUpdateK8s(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			upgrader := &Upgrader{
+			upgrader := &KubeCmd{
 				log: logger.NewTest(t),
 			}
 

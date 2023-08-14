@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package kubernetes
+package kubecmd
 
 import (
 	"context"
@@ -53,8 +53,8 @@ func (e *applyError) Error() string {
 	return fmt.Sprintf("expected NodeVersion to contain %s, got %s", e.expected, e.actual)
 }
 
-// Upgrader handles upgrading the cluster's components using the CLI.
-type Upgrader struct {
+// KubeCmd handles interaction with the cluster's components using the CLI.
+type KubeCmd struct {
 	stableInterface  stableInterface
 	dynamicInterface dynamicInterface
 	imageFetcher     imageFetcher
@@ -62,8 +62,8 @@ type Upgrader struct {
 	log              debugLog
 }
 
-// NewUpgrader returns a new Upgrader.
-func NewUpgrader(outWriter io.Writer, kubeConfigPath string, log debugLog) (*Upgrader, error) {
+// New returns a new KubeCmd.
+func New(outWriter io.Writer, kubeConfigPath string, log debugLog) (*KubeCmd, error) {
 	kubeClient, err := newClient(kubeConfigPath)
 	if err != nil {
 		return nil, err
@@ -80,7 +80,7 @@ func NewUpgrader(outWriter io.Writer, kubeConfigPath string, log debugLog) (*Upg
 		return nil, fmt.Errorf("setting up custom resource client: %w", err)
 	}
 
-	return &Upgrader{
+	return &KubeCmd{
 		imageFetcher:     imagefetcher.New(),
 		outWriter:        outWriter,
 		log:              log,
@@ -90,7 +90,7 @@ func NewUpgrader(outWriter io.Writer, kubeConfigPath string, log debugLog) (*Upg
 }
 
 // GetMeasurementSalt returns the measurementSalt from the join-config.
-func (u *Upgrader) GetMeasurementSalt(ctx context.Context) ([]byte, error) {
+func (u *KubeCmd) GetMeasurementSalt(ctx context.Context) ([]byte, error) {
 	cm, err := u.stableInterface.GetConfigMap(ctx, constants.JoinConfigMap)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving current join-config: %w", err)
@@ -103,7 +103,7 @@ func (u *Upgrader) GetMeasurementSalt(ctx context.Context) ([]byte, error) {
 }
 
 // GetConstellationVersion queries the constellation-version object for a given field.
-func (u *Upgrader) GetConstellationVersion(ctx context.Context) (updatev1alpha1.NodeVersion, error) {
+func (u *KubeCmd) GetConstellationVersion(ctx context.Context) (updatev1alpha1.NodeVersion, error) {
 	raw, err := u.dynamicInterface.GetCurrent(ctx, "constellation-version")
 	if err != nil {
 		return updatev1alpha1.NodeVersion{}, err
@@ -118,7 +118,7 @@ func (u *Upgrader) GetConstellationVersion(ctx context.Context) (updatev1alpha1.
 
 // UpgradeNodeVersion upgrades the cluster's NodeVersion object and in turn triggers image & k8s version upgrades.
 // The versions set in the config are validated against the versions running in the cluster.
-func (u *Upgrader) UpgradeNodeVersion(ctx context.Context, conf *config.Config, force bool) error {
+func (u *KubeCmd) UpgradeNodeVersion(ctx context.Context, conf *config.Config, force bool) error {
 	provider := conf.GetProvider()
 	attestationVariant := conf.GetAttestationConfig().GetVariant()
 	region := conf.GetRegion()
@@ -195,7 +195,7 @@ func (u *Upgrader) UpgradeNodeVersion(ctx context.Context, conf *config.Config, 
 }
 
 // ClusterStatus returns a map from node name to NodeStatus.
-func (u *Upgrader) ClusterStatus(ctx context.Context) (map[string]NodeStatus, error) {
+func (u *KubeCmd) ClusterStatus(ctx context.Context) (map[string]NodeStatus, error) {
 	nodes, err := u.stableInterface.GetNodes(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("getting nodes: %w", err)
@@ -210,12 +210,12 @@ func (u *Upgrader) ClusterStatus(ctx context.Context) (map[string]NodeStatus, er
 }
 
 // KubernetesVersion returns the version of Kubernetes the Constellation is currently running on.
-func (u *Upgrader) KubernetesVersion() (string, error) {
+func (u *KubeCmd) KubernetesVersion() (string, error) {
 	return u.stableInterface.KubernetesVersion()
 }
 
 // CurrentImage returns the currently used image version of the cluster.
-func (u *Upgrader) CurrentImage(ctx context.Context) (string, error) {
+func (u *KubeCmd) CurrentImage(ctx context.Context) (string, error) {
 	nodeVersion, err := u.GetConstellationVersion(ctx)
 	if err != nil {
 		return "", fmt.Errorf("getting constellation-version: %w", err)
@@ -224,7 +224,7 @@ func (u *Upgrader) CurrentImage(ctx context.Context) (string, error) {
 }
 
 // CurrentKubernetesVersion returns the currently used Kubernetes version.
-func (u *Upgrader) CurrentKubernetesVersion(ctx context.Context) (string, error) {
+func (u *KubeCmd) CurrentKubernetesVersion(ctx context.Context) (string, error) {
 	nodeVersion, err := u.GetConstellationVersion(ctx)
 	if err != nil {
 		return "", fmt.Errorf("getting constellation-version: %w", err)
@@ -234,7 +234,7 @@ func (u *Upgrader) CurrentKubernetesVersion(ctx context.Context) (string, error)
 
 // GetClusterAttestationConfig fetches the join-config configmap from the cluster, extracts the config
 // and returns both the full configmap and the attestation config.
-func (u *Upgrader) GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, error) {
+func (u *KubeCmd) GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, error) {
 	existingConf, err := u.stableInterface.GetConfigMap(ctx, constants.JoinConfigMap)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving current attestation config: %w", err)
@@ -252,7 +252,7 @@ func (u *Upgrader) GetClusterAttestationConfig(ctx context.Context, variant vari
 }
 
 // BackupConfigMap creates a backup of the given config map.
-func (u *Upgrader) BackupConfigMap(ctx context.Context, name string) error {
+func (u *KubeCmd) BackupConfigMap(ctx context.Context, name string) error {
 	cm, err := u.stableInterface.GetConfigMap(ctx, name)
 	if err != nil {
 		return fmt.Errorf("getting config map %s: %w", name, err)
@@ -294,7 +294,7 @@ func (u *Upgrader) UpdateAttestationConfig(ctx context.Context, newAttestConfig 
 
 // ExtendClusterConfigCertSANs extends the ClusterConfig stored under "kube-system/kubeadm-config" with the given SANs.
 // Existing SANs are preserved.
-func (u *Upgrader) ExtendClusterConfigCertSANs(ctx context.Context, alternativeNames []string) error {
+func (u *KubeCmd) ExtendClusterConfigCertSANs(ctx context.Context, alternativeNames []string) error {
 	clusterConfiguration, kubeadmConfig, err := u.GetClusterConfiguration(ctx)
 	if err != nil {
 		return fmt.Errorf("getting ClusterConfig: %w", err)
@@ -337,7 +337,7 @@ func (u *Upgrader) ExtendClusterConfigCertSANs(ctx context.Context, alternativeN
 
 // GetClusterConfiguration fetches the kubeadm-config configmap from the cluster, extracts the config
 // and returns both the full configmap and the ClusterConfiguration.
-func (u *Upgrader) GetClusterConfiguration(ctx context.Context) (kubeadmv1beta3.ClusterConfiguration, *corev1.ConfigMap, error) {
+func (u *KubeCmd) GetClusterConfiguration(ctx context.Context) (kubeadmv1beta3.ClusterConfiguration, *corev1.ConfigMap, error) {
 	existingConf, err := u.stableInterface.GetConfigMap(ctx, constants.KubeadmConfigMap)
 	if err != nil {
 		return kubeadmv1beta3.ClusterConfiguration{}, nil, fmt.Errorf("retrieving current kubeadm-config: %w", err)
@@ -356,7 +356,7 @@ func (u *Upgrader) GetClusterConfiguration(ctx context.Context) (kubeadmv1beta3.
 }
 
 // applyComponentsCM applies the k8s components ConfigMap to the cluster.
-func (u *Upgrader) applyComponentsCM(ctx context.Context, components *corev1.ConfigMap) error {
+func (u *KubeCmd) applyComponentsCM(ctx context.Context, components *corev1.ConfigMap) error {
 	_, err := u.stableInterface.CreateConfigMap(ctx, components)
 	// If the map already exists we can use that map and assume it has the same content as 'configMap'.
 	if err != nil && !k8serrors.IsAlreadyExists(err) {
@@ -365,7 +365,7 @@ func (u *Upgrader) applyComponentsCM(ctx context.Context, components *corev1.Con
 	return nil
 }
 
-func (u *Upgrader) applyNodeVersion(ctx context.Context, nodeVersion updatev1alpha1.NodeVersion) (updatev1alpha1.NodeVersion, error) {
+func (u *KubeCmd) applyNodeVersion(ctx context.Context, nodeVersion updatev1alpha1.NodeVersion) (updatev1alpha1.NodeVersion, error) {
 	u.log.Debugf("Triggering NodeVersion upgrade now")
 	var updatedNodeVersion updatev1alpha1.NodeVersion
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
@@ -393,7 +393,7 @@ func (u *Upgrader) applyNodeVersion(ctx context.Context, nodeVersion updatev1alp
 	return updatedNodeVersion, err
 }
 
-func (u *Upgrader) getClusterStatus(ctx context.Context) (updatev1alpha1.NodeVersion, error) {
+func (u *KubeCmd) getClusterStatus(ctx context.Context) (updatev1alpha1.NodeVersion, error) {
 	nodeVersion, err := u.GetConstellationVersion(ctx)
 	if err != nil {
 		return updatev1alpha1.NodeVersion{}, fmt.Errorf("retrieving current image: %w", err)
@@ -403,7 +403,7 @@ func (u *Upgrader) getClusterStatus(ctx context.Context) (updatev1alpha1.NodeVer
 }
 
 // updateImage upgrades the cluster to the given measurements and image.
-func (u *Upgrader) updateImage(nodeVersion *updatev1alpha1.NodeVersion, newImageReference, newImageVersion string, force bool) error {
+func (u *KubeCmd) updateImage(nodeVersion *updatev1alpha1.NodeVersion, newImageReference, newImageVersion string, force bool) error {
 	currentImageVersion := nodeVersion.Spec.ImageVersion
 	if !force {
 		if upgradeInProgress(*nodeVersion) {
@@ -420,7 +420,7 @@ func (u *Upgrader) updateImage(nodeVersion *updatev1alpha1.NodeVersion, newImage
 	return nil
 }
 
-func (u *Upgrader) updateK8s(nodeVersion *updatev1alpha1.NodeVersion, newClusterVersion string, components components.Components, force bool) (*corev1.ConfigMap, error) {
+func (u *KubeCmd) updateK8s(nodeVersion *updatev1alpha1.NodeVersion, newClusterVersion string, components components.Components, force bool) (*corev1.ConfigMap, error) {
 	configMap, err := internalk8s.ConstructK8sComponentsCM(components, newClusterVersion)
 	if err != nil {
 		return nil, fmt.Errorf("constructing k8s-components ConfigMap: %w", err)

@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 
 /*
-Package kubernetes provides functions to interact with a Kubernetes cluster to the CLI.
+Package kubecmd provides functions to interact with a Kubernetes cluster to the CLI.
 The package should be used for:
 
   - Fetching status information about the cluster
@@ -14,7 +14,7 @@ The package should be used for:
 The package should not be used for anything that doesn't just require the Kubernetes API.
 For example, Terraform and Helm actions should not be accessed by this package.
 */
-package kubernetes
+package kubecmd
 
 import (
 	"context"

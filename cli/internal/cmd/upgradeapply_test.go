@@ -14,7 +14,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
-	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
+	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -59,7 +59,7 @@ func TestUpgradeApply(t *testing.T) {
 		"nodeVersion in progress error": {
 			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig:  config.DefaultForAzureSEVSNP(),
-				nodeVersionErr: kubernetes.ErrInProgress,
+				nodeVersionErr: kubecmd.ErrInProgress,
 			},
 			helmUpgrader:      &stubHelmUpgrader{},
 			terraformUpgrader: &stubTerraformUpgrader{},

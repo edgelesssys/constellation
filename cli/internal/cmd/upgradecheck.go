@@ -19,7 +19,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/featureset"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
-	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
+	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
@@ -79,7 +79,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("setting up terraform client: %w", err)
 	}
 
-	kubeChecker, err := kubernetes.NewUpgrader(cmd.OutOrStdout(), constants.AdminConfFilename, log)
+	kubeChecker, err := kubecmd.New(cmd.OutOrStdout(), constants.AdminConfFilename, log)
 	if err != nil {
 		return fmt.Errorf("setting up Kubernetes upgrader: %w", err)
 	}

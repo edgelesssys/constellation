@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
-	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
+	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -73,7 +73,7 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 	}
 	variant := conf.GetAttestationConfig().GetVariant()
 
-	kubeClient, err := kubernetes.NewUpgrader(cmd.OutOrStdout(), constants.AdminConfFilename, log)
+	kubeClient, err := kubecmd.New(cmd.OutOrStdout(), constants.AdminConfFilename, log)
 	if err != nil {
 		return fmt.Errorf("setting up kubernetes client: %w", err)
 	}
@@ -107,7 +107,7 @@ func status(ctx context.Context, getHelmVersions func() (fmt.Stringer, error), k
 		return "", fmt.Errorf("marshalling attestation config: %w", err)
 	}
 
-	targetVersions, err := kubernetes.NewTargetVersions(nodeVersion)
+	targetVersions, err := kubecmd.NewTargetVersions(nodeVersion)
 	if err != nil {
 		return "", fmt.Errorf("getting configured versions: %w", err)
 	}
@@ -127,8 +127,8 @@ func status(ctx context.Context, getHelmVersions func() (fmt.Stringer, error), k
 
 // statusOutput creates the status cmd output string by formatting the received information.
 func statusOutput(
-	targetVersions kubernetes.TargetVersions, serviceVersions fmt.Stringer,
-	status map[string]kubernetes.NodeStatus, nodeVersion v1alpha1.NodeVersion, rawAttestationConfig string,
+	targetVersions kubecmd.TargetVersions, serviceVersions fmt.Stringer,
+	status map[string]kubecmd.NodeStatus, nodeVersion v1alpha1.NodeVersion, rawAttestationConfig string,
 ) string {
 	builder := strings.Builder{}
 
@@ -149,7 +149,7 @@ func indentEntireStringWithTab(input string) string {
 }
 
 // nodeStatusString creates the node status part of the output string.
-func nodeStatusString(status map[string]kubernetes.NodeStatus, targetVersions kubernetes.TargetVersions) string {
+func nodeStatusString(status map[string]kubecmd.NodeStatus, targetVersions kubecmd.TargetVersions) string {
 	var upToDateImages int
 	var upToDateK8s int
 	for _, node := range status {
@@ -171,7 +171,7 @@ func nodeStatusString(status map[string]kubernetes.NodeStatus, targetVersions ku
 }
 
 // targetVersionsString creates the target versions part of the output string.
-func targetVersionsString(target kubernetes.TargetVersions) string {
+func targetVersionsString(target kubecmd.TargetVersions) string {
 	builder := strings.Builder{}
 	builder.WriteString("Target versions:\n")
 	builder.WriteString(fmt.Sprintf("\tImage: %s\n", target.Image()))
@@ -201,7 +201,7 @@ func parseStatusFlags(cmd *cobra.Command) (statusFlags, error) {
 }
 
 type kubeCmd interface {
-	ClusterStatus(ctx context.Context) (map[string]kubernetes.NodeStatus, error)
+	ClusterStatus(ctx context.Context) (map[string]kubecmd.NodeStatus, error)
 	GetConstellationVersion(ctx context.Context) (v1alpha1.NodeVersion, error)
 	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, error)
 }

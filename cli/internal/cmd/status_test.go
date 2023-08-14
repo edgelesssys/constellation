@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
+	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -64,8 +64,8 @@ func TestStatus(t *testing.T) {
 	}{
 		"success": {
 			kubeClient: stubKubeClient{
-				status: map[string]kubernetes.NodeStatus{
-					"outdated": kubernetes.NewNodeStatus(corev1.Node{
+				status: map[string]kubecmd.NodeStatus{
+					"outdated": kubecmd.NewNodeStatus(corev1.Node{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "node1",
 							Annotations: map[string]string{
@@ -104,8 +104,8 @@ func TestStatus(t *testing.T) {
 		},
 		"one of two nodes not upgraded": {
 			kubeClient: stubKubeClient{
-				status: map[string]kubernetes.NodeStatus{
-					"outdated": kubernetes.NewNodeStatus(corev1.Node{
+				status: map[string]kubecmd.NodeStatus{
+					"outdated": kubecmd.NewNodeStatus(corev1.Node{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "outdated",
 							Annotations: map[string]string{
@@ -118,7 +118,7 @@ func TestStatus(t *testing.T) {
 							},
 						},
 					}),
-					"uptodate": kubernetes.NewNodeStatus(corev1.Node{
+					"uptodate": kubecmd.NewNodeStatus(corev1.Node{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "uptodate",
 							Annotations: map[string]string{
@@ -184,8 +184,8 @@ func TestStatus(t *testing.T) {
 		},
 		"error getting node version": {
 			kubeClient: stubKubeClient{
-				status: map[string]kubernetes.NodeStatus{
-					"outdated": kubernetes.NewNodeStatus(corev1.Node{
+				status: map[string]kubecmd.NodeStatus{
+					"outdated": kubecmd.NewNodeStatus(corev1.Node{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "node1",
 							Annotations: map[string]string{
@@ -212,8 +212,8 @@ func TestStatus(t *testing.T) {
 		},
 		"error getting attestation config": {
 			kubeClient: stubKubeClient{
-				status: map[string]kubernetes.NodeStatus{
-					"outdated": kubernetes.NewNodeStatus(corev1.Node{
+				status: map[string]kubecmd.NodeStatus{
+					"outdated": kubecmd.NewNodeStatus(corev1.Node{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "node1",
 							Annotations: map[string]string{
@@ -272,7 +272,7 @@ func TestStatus(t *testing.T) {
 }
 
 type stubKubeClient struct {
-	status         map[string]kubernetes.NodeStatus
+	status         map[string]kubecmd.NodeStatus
 	statusErr      error
 	version        v1alpha1.NodeVersion
 	versionErr     error
@@ -280,7 +280,7 @@ type stubKubeClient struct {
 	attestationErr error
 }
 
-func (s stubKubeClient) ClusterStatus(_ context.Context) (map[string]kubernetes.NodeStatus, error) {
+func (s stubKubeClient) ClusterStatus(_ context.Context) (map[string]kubecmd.NodeStatus, error) {
 	return s.status, s.statusErr
 }
 

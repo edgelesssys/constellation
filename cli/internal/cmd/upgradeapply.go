@@ -17,7 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
-	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
+	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
@@ -69,7 +69,7 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	upgradeID := generateUpgradeID(upgradeCmdKindApply)
 
-	kubeUpgrader, err := kubernetes.NewUpgrader(cmd.OutOrStdout(), constants.AdminConfFilename, log)
+	kubeUpgrader, err := kubecmd.New(cmd.OutOrStdout(), constants.AdminConfFilename, log)
 	if err != nil {
 		return err
 	}
@@ -190,7 +190,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command) error {
 
 		err = u.kubeUpgrader.UpgradeNodeVersion(cmd.Context(), conf, flags.force)
 		switch {
-		case errors.Is(err, kubernetes.ErrInProgress):
+		case errors.Is(err, kubecmd.ErrInProgress):
 			cmd.PrintErrln("Skipping image and Kubernetes upgrades. Another upgrade is in progress.")
 		case errors.As(err, &upgradeErr):
 			cmd.PrintErrln(err)
