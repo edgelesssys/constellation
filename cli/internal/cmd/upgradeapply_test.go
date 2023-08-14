@@ -35,7 +35,6 @@ func TestUpgradeApply(t *testing.T) {
 	someErr := errors.New("some error")
 	testCases := map[string]struct {
 		upgrader                 *stubUpgrader
-		fetcher                  stubImageFetcher
 		wantErr                  bool
 		yesFlag                  bool
 		dontWantJoinConfigBackup bool
@@ -66,7 +65,6 @@ func TestUpgradeApply(t *testing.T) {
 				helmErr:       someErr,
 			},
 			wantErr: true,
-			fetcher: stubImageFetcher{},
 			yesFlag: true,
 		},
 		"check terraform error": {
@@ -74,7 +72,6 @@ func TestUpgradeApply(t *testing.T) {
 				currentConfig:     config.DefaultForAzureSEVSNP(),
 				checkTerraformErr: someErr,
 			},
-			fetcher: stubImageFetcher{},
 			wantErr: true,
 			yesFlag: true,
 		},
@@ -83,7 +80,6 @@ func TestUpgradeApply(t *testing.T) {
 				currentConfig: config.DefaultForAzureSEVSNP(),
 				terraformDiff: true,
 			},
-			fetcher: stubImageFetcher{},
 			wantErr: true,
 			stdin:   "no\n",
 		},
@@ -93,7 +89,6 @@ func TestUpgradeApply(t *testing.T) {
 				cleanTerraformErr: someErr,
 				terraformDiff:     true,
 			},
-			fetcher: stubImageFetcher{},
 			wantErr: true,
 			stdin:   "no\n",
 		},
@@ -102,7 +97,6 @@ func TestUpgradeApply(t *testing.T) {
 				currentConfig:    config.DefaultForAzureSEVSNP(),
 				planTerraformErr: someErr,
 			},
-			fetcher: stubImageFetcher{},
 			wantErr: true,
 			yesFlag: true,
 		},
@@ -112,15 +106,6 @@ func TestUpgradeApply(t *testing.T) {
 				applyTerraformErr: someErr,
 				terraformDiff:     true,
 			},
-			fetcher: stubImageFetcher{},
-			wantErr: true,
-			yesFlag: true,
-		},
-		"fetch reference error": {
-			upgrader: &stubUpgrader{
-				currentConfig: config.DefaultForAzureSEVSNP(),
-			},
-			fetcher: stubImageFetcher{fetchReferenceErr: someErr},
 			wantErr: true,
 			yesFlag: true,
 		},
@@ -128,7 +113,6 @@ func TestUpgradeApply(t *testing.T) {
 			upgrader: &stubUpgrader{
 				currentConfig: fakeAzureAttestationConfigFromCluster(context.Background(), t, cloudprovider.Azure),
 			},
-			fetcher:                  stubImageFetcher{},
 			yesFlag:                  true,
 			dontWantJoinConfigBackup: true,
 		},
@@ -157,7 +141,7 @@ func TestUpgradeApply(t *testing.T) {
 			require.NoError(handler.WriteJSON(constants.ClusterIDsFilename, clusterid.File{}))
 			require.NoError(handler.WriteJSON(constants.MasterSecretFilename, uri.MasterSecret{}))
 
-			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t), imageFetcher: tc.fetcher, configFetcher: stubAttestationFetcher{}, clusterShower: &stubShowCluster{}, fileHandler: handler}
+			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t), configFetcher: stubAttestationFetcher{}, clusterShower: &stubShowCluster{}, fileHandler: handler}
 
 			err := upgrader.upgradeApply(cmd)
 			if tc.wantErr {
@@ -229,17 +213,6 @@ func (u stubUpgrader) ApplyTerraformMigrations(context.Context, upgrade.Terrafor
 
 func (u stubUpgrader) ExtendClusterConfigCertSANs(_ context.Context, _ []string) error {
 	return nil
-}
-
-type stubImageFetcher struct {
-	fetchReferenceErr error
-}
-
-func (f stubImageFetcher) FetchReference(_ context.Context,
-	_ cloudprovider.Provider, _ variant.Variant,
-	_, _ string,
-) (string, error) {
-	return "", f.fetchReferenceErr
 }
 
 func fakeAzureAttestationConfigFromCluster(ctx context.Context, t *testing.T, provider cloudprovider.Provider) config.AttestationCfg {

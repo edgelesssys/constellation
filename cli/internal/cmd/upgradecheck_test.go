@@ -213,29 +213,26 @@ func TestUpgradeCheck(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		collector    stubVersionCollector
-		csp          cloudprovider.Provider
-		checker      stubUpgradeChecker
-		imagefetcher stubImageFetcher
-		cliVersion   string
-		wantError    bool
+		collector  stubVersionCollector
+		csp        cloudprovider.Provider
+		checker    stubUpgradeChecker
+		cliVersion string
+		wantError  bool
 	}{
 		"upgrades gcp": {
-			collector:    collector,
-			checker:      stubUpgradeChecker{},
-			imagefetcher: stubImageFetcher{},
-			csp:          cloudprovider.GCP,
-			cliVersion:   "v1.0.0",
+			collector:  collector,
+			checker:    stubUpgradeChecker{},
+			csp:        cloudprovider.GCP,
+			cliVersion: "v1.0.0",
 		},
 		"terraform err": {
 			collector: collector,
 			checker: stubUpgradeChecker{
 				err: assert.AnError,
 			},
-			imagefetcher: stubImageFetcher{},
-			csp:          cloudprovider.GCP,
-			cliVersion:   "v1.0.0",
-			wantError:    true,
+			csp:        cloudprovider.GCP,
+			cliVersion: "v1.0.0",
+			wantError:  true,
 		},
 	}
 
@@ -251,7 +248,6 @@ func TestUpgradeCheck(t *testing.T) {
 				canUpgradeCheck: true,
 				collect:         &tc.collector,
 				checker:         tc.checker,
-				imagefetcher:    tc.imagefetcher,
 				log:             logger.NewTest(t),
 			}
 
