@@ -156,9 +156,9 @@ func (c *UpgradeClient) Upgrade(ctx context.Context, config *config.Config, idFi
 			c.log.Debugf("Appending to %s upgrade: %s", release.ReleaseName, err)
 			upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping %s upgrade: %w", release.ReleaseName, err))
 		case err != nil:
-			c.log.Debugf("Adding %s to upgrade releases...", release.ReleaseName)
 			return fmt.Errorf("should upgrade %s: %w", release.ReleaseName, err)
 		case err == nil:
+			c.log.Debugf("Adding %s to upgrade releases...", release.ReleaseName)
 			upgradeReleases = append(upgradeReleases, release)
 
 			// Check if installing/upgrading the chart could be destructive
