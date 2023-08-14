@@ -7,9 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package kubernetes
 
 import (
-	"context"
-	"fmt"
-
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -48,21 +45,6 @@ func (c *TargetVersions) Kubernetes() string {
 	return c.kubernetes
 }
 
-// ClusterStatus returns a map from node name to NodeStatus.
-func ClusterStatus(ctx context.Context, kubeclient kubeClient) (map[string]NodeStatus, error) {
-	nodes, err := kubeclient.GetNodes(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("getting nodes: %w", err)
-	}
-
-	clusterStatus := map[string]NodeStatus{}
-	for _, node := range nodes {
-		clusterStatus[node.ObjectMeta.Name] = NewNodeStatus(node)
-	}
-
-	return clusterStatus, nil
-}
-
 // NodeStatus bundles status information about a node.
 type NodeStatus struct {
 	kubeletVersion string
@@ -85,8 +67,4 @@ func (n *NodeStatus) KubeletVersion() string {
 // ImageVersion returns the node image of the node.
 func (n *NodeStatus) ImageVersion() string {
 	return n.imageVersion
-}
-
-type kubeClient interface {
-	GetNodes(ctx context.Context) ([]corev1.Node, error)
 }

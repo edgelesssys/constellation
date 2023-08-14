@@ -24,9 +24,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 // NewStatusCmd returns a new cobra.Command for the statuus command.
@@ -50,33 +47,12 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 	}
 	defer log.Sync()
 
-	kubeClient := kubectl.New()
-
 	flags, err := parseStatusFlags(cmd)
 	if err != nil {
 		return fmt.Errorf("parsing flags: %w", err)
 	}
 
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	kubeConfig, err := fileHandler.Read(constants.AdminConfFilename)
-	if err != nil {
-		return fmt.Errorf("reading admin.conf: %w", err)
-	}
-
-	// need kubectl client to fetch nodes.
-	if err := kubeClient.Initialize(kubeConfig); err != nil {
-		return err
-	}
-
-	restConfig, err := clientcmd.RESTConfigFromKubeConfig(kubeConfig)
-	if err != nil {
-		return fmt.Errorf("creating k8s client config from kubeconfig: %w", err)
-	}
-	// need unstructed client to fetch NodeVersion CRD.
-	unstructuredClient, err := dynamic.NewForConfig(restConfig)
-	if err != nil {
-		return fmt.Errorf("setting up custom resource client: %w", err)
-	}
 
 	// need helm client to fetch service versions.
 	// The client used here, doesn't need to know the current workspace.
@@ -97,11 +73,12 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 	}
 	variant := conf.GetAttestationConfig().GetVariant()
 
-	stableClient, err := kubernetes.NewStableClient(constants.AdminConfFilename)
+	kubeClient, err := kubernetes.NewUpgrader(cmd.OutOrStdout(), constants.AdminConfFilename, log)
 	if err != nil {
-		return fmt.Errorf("setting up stable client: %w", err)
+		return fmt.Errorf("setting up kubernetes client: %w", err)
 	}
-	output, err := status(cmd.Context(), kubeClient, stableClient, helmVersionGetter, kubernetes.NewNodeVersionClient(unstructuredClient), variant)
+
+	output, err := status(cmd.Context(), helmVersionGetter, kubeClient, variant)
 	if err != nil {
 		return fmt.Errorf("getting status: %w", err)
 	}
@@ -111,11 +88,9 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 }
 
 // status queries the cluster for the relevant status information and returns the output string.
-func status(
-	ctx context.Context, kubeClient kubeClient, cmClient configMapClient, getHelmVersions func() (fmt.Stringer, error),
-	dynamicInterface kubernetes.DynamicInterface, attestVariant variant.Variant,
+func status(ctx context.Context, getHelmVersions func() (fmt.Stringer, error), kubeClient kubeCmd, attestVariant variant.Variant,
 ) (string, error) {
-	nodeVersion, err := kubernetes.GetConstellationVersion(ctx, dynamicInterface)
+	nodeVersion, err := kubeClient.GetConstellationVersion(ctx)
 	if err != nil {
 		return "", fmt.Errorf("getting constellation version: %w", err)
 	}
@@ -123,7 +98,7 @@ func status(
 		return "", fmt.Errorf("expected exactly one condition, got %d", len(nodeVersion.Status.Conditions))
 	}
 
-	attestationConfig, err := getAttestationConfig(ctx, cmClient, attestVariant)
+	attestationConfig, err := kubeClient.GetClusterAttestationConfig(ctx, attestVariant)
 	if err != nil {
 		return "", fmt.Errorf("getting attestation config: %w", err)
 	}
@@ -142,28 +117,12 @@ func status(
 		return "", fmt.Errorf("getting service versions: %w", err)
 	}
 
-	status, err := kubernetes.ClusterStatus(ctx, kubeClient)
+	status, err := kubeClient.ClusterStatus(ctx)
 	if err != nil {
 		return "", fmt.Errorf("getting cluster status: %w", err)
 	}
 
 	return statusOutput(targetVersions, serviceVersions, status, nodeVersion, string(prettyYAML)), nil
-}
-
-func getAttestationConfig(ctx context.Context, cmClient configMapClient, attestVariant variant.Variant) (config.AttestationCfg, error) {
-	joinConfig, err := cmClient.GetConfigMap(ctx, constants.JoinConfigMap)
-	if err != nil {
-		return nil, fmt.Errorf("getting current config map: %w", err)
-	}
-	rawAttestationConfig, ok := joinConfig.Data[constants.AttestationConfigFilename]
-	if !ok {
-		return nil, fmt.Errorf("attestationConfig not found in %s", constants.JoinConfigMap)
-	}
-	attestationConfig, err := config.UnmarshalAttestationConfig([]byte(rawAttestationConfig), attestVariant)
-	if err != nil {
-		return nil, fmt.Errorf("unmarshalling attestation config: %w", err)
-	}
-	return attestationConfig, nil
 }
 
 // statusOutput creates the status cmd output string by formatting the received information.
@@ -241,10 +200,8 @@ func parseStatusFlags(cmd *cobra.Command) (statusFlags, error) {
 	}, nil
 }
 
-type kubeClient interface {
-	GetNodes(ctx context.Context) ([]corev1.Node, error)
-}
-
-type configMapClient interface {
-	GetConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error)
+type kubeCmd interface {
+	ClusterStatus(ctx context.Context) (map[string]kubernetes.NodeStatus, error)
+	GetConstellationVersion(ctx context.Context) (v1alpha1.NodeVersion, error)
+	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, error)
 }

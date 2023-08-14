@@ -48,7 +48,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 		wantErr               bool
 		wantUpdate            bool
 		assertCorrectError    func(t *testing.T, err error) bool
-		customClientFn        func(nodeVersion updatev1alpha1.NodeVersion) DynamicInterface
+		customClientFn        func(nodeVersion updatev1alpha1.NodeVersion) dynamicInterface
 	}{
 		"success": {
 			conf: func() *config.Config {
@@ -270,7 +270,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 				},
 			},
 			wantUpdate: false, // because customClient is used
-			customClientFn: func(nodeVersion updatev1alpha1.NodeVersion) DynamicInterface {
+			customClientFn: func(nodeVersion updatev1alpha1.NodeVersion) dynamicInterface {
 				fakeClient := &fakeDynamicClient{}
 				fakeClient.On("GetCurrent", mock.Anything, mock.Anything).Return(unstructedObjectWithGeneration(nodeVersion, 1), nil)
 				fakeClient.On("Update", mock.Anything, mock.Anything).Return(nil, kerrors.NewConflict(schema.GroupResource{Resource: nodeVersion.Name}, nodeVersion.Name, nil)).Once()
@@ -510,6 +510,8 @@ type fakeStableClient struct {
 	updateErr         error
 	createErr         error
 	k8sErr            error
+	nodes             []corev1.Node
+	nodesErr          error
 }
 
 func (s *fakeStableClient) GetConfigMap(_ context.Context, name string) (*corev1.ConfigMap, error) {
@@ -534,6 +536,10 @@ func (s *fakeStableClient) CreateConfigMap(_ context.Context, configMap *corev1.
 
 func (s *fakeStableClient) KubernetesVersion() (string, error) {
 	return s.k8sVersion, s.k8sErr
+}
+
+func (s *fakeStableClient) GetNodes(_ context.Context) ([]corev1.Node, error) {
+	return s.nodes, s.nodesErr
 }
 
 type stubImageFetcher struct {

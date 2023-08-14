@@ -42,20 +42,6 @@ import (
 // ErrInProgress signals that an upgrade is in progress inside the cluster.
 var ErrInProgress = errors.New("upgrade in progress")
 
-// GetConstellationVersion queries the constellation-version object for a given field.
-func GetConstellationVersion(ctx context.Context, client DynamicInterface) (updatev1alpha1.NodeVersion, error) {
-	raw, err := client.GetCurrent(ctx, "constellation-version")
-	if err != nil {
-		return updatev1alpha1.NodeVersion{}, err
-	}
-	var nodeVersion updatev1alpha1.NodeVersion
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(raw.UnstructuredContent(), &nodeVersion); err != nil {
-		return updatev1alpha1.NodeVersion{}, fmt.Errorf("converting unstructured to NodeVersion: %w", err)
-	}
-
-	return nodeVersion, nil
-}
-
 // InvalidUpgradeError present an invalid upgrade. It wraps the source and destination version for improved debuggability.
 type applyError struct {
 	expected string
@@ -69,8 +55,8 @@ func (e *applyError) Error() string {
 
 // Upgrader handles upgrading the cluster's components using the CLI.
 type Upgrader struct {
-	stableInterface  StableInterface
-	dynamicInterface DynamicInterface
+	stableInterface  stableInterface
+	dynamicInterface dynamicInterface
 	imageFetcher     imageFetcher
 	outWriter        io.Writer
 	log              debugLog
@@ -99,7 +85,7 @@ func NewUpgrader(outWriter io.Writer, kubeConfigPath string, log debugLog) (*Upg
 		outWriter:        outWriter,
 		log:              log,
 		stableInterface:  &stableClient{client: kubeClient},
-		dynamicInterface: &NodeVersionClient{client: unstructuredClient},
+		dynamicInterface: newNodeVersionClient(unstructuredClient),
 	}, nil
 }
 
@@ -114,6 +100,20 @@ func (u *Upgrader) GetMeasurementSalt(ctx context.Context) ([]byte, error) {
 		return nil, errors.New("measurementSalt missing from join-config")
 	}
 	return salt, nil
+}
+
+// GetConstellationVersion queries the constellation-version object for a given field.
+func (u *Upgrader) GetConstellationVersion(ctx context.Context) (updatev1alpha1.NodeVersion, error) {
+	raw, err := u.dynamicInterface.GetCurrent(ctx, "constellation-version")
+	if err != nil {
+		return updatev1alpha1.NodeVersion{}, err
+	}
+	var nodeVersion updatev1alpha1.NodeVersion
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(raw.UnstructuredContent(), &nodeVersion); err != nil {
+		return updatev1alpha1.NodeVersion{}, fmt.Errorf("converting unstructured to NodeVersion: %w", err)
+	}
+
+	return nodeVersion, nil
 }
 
 // UpgradeNodeVersion upgrades the cluster's NodeVersion object and in turn triggers image & k8s version upgrades.
@@ -194,6 +194,21 @@ func (u *Upgrader) UpgradeNodeVersion(ctx context.Context, conf *config.Config, 
 	return errors.Join(upgradeErrs...)
 }
 
+// ClusterStatus returns a map from node name to NodeStatus.
+func (u *Upgrader) ClusterStatus(ctx context.Context) (map[string]NodeStatus, error) {
+	nodes, err := u.stableInterface.GetNodes(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting nodes: %w", err)
+	}
+
+	clusterStatus := map[string]NodeStatus{}
+	for _, node := range nodes {
+		clusterStatus[node.ObjectMeta.Name] = NewNodeStatus(node)
+	}
+
+	return clusterStatus, nil
+}
+
 // KubernetesVersion returns the version of Kubernetes the Constellation is currently running on.
 func (u *Upgrader) KubernetesVersion() (string, error) {
 	return u.stableInterface.KubernetesVersion()
@@ -201,7 +216,7 @@ func (u *Upgrader) KubernetesVersion() (string, error) {
 
 // CurrentImage returns the currently used image version of the cluster.
 func (u *Upgrader) CurrentImage(ctx context.Context) (string, error) {
-	nodeVersion, err := GetConstellationVersion(ctx, u.dynamicInterface)
+	nodeVersion, err := u.GetConstellationVersion(ctx)
 	if err != nil {
 		return "", fmt.Errorf("getting constellation-version: %w", err)
 	}
@@ -210,7 +225,7 @@ func (u *Upgrader) CurrentImage(ctx context.Context) (string, error) {
 
 // CurrentKubernetesVersion returns the currently used Kubernetes version.
 func (u *Upgrader) CurrentKubernetesVersion(ctx context.Context) (string, error) {
-	nodeVersion, err := GetConstellationVersion(ctx, u.dynamicInterface)
+	nodeVersion, err := u.GetConstellationVersion(ctx)
 	if err != nil {
 		return "", fmt.Errorf("getting constellation-version: %w", err)
 	}
@@ -379,7 +394,7 @@ func (u *Upgrader) applyNodeVersion(ctx context.Context, nodeVersion updatev1alp
 }
 
 func (u *Upgrader) getClusterStatus(ctx context.Context) (updatev1alpha1.NodeVersion, error) {
-	nodeVersion, err := GetConstellationVersion(ctx, u.dynamicInterface)
+	nodeVersion, err := u.GetConstellationVersion(ctx)
 	if err != nil {
 		return updatev1alpha1.NodeVersion{}, fmt.Errorf("retrieving current image: %w", err)
 	}
@@ -423,18 +438,18 @@ func (u *Upgrader) updateK8s(nodeVersion *updatev1alpha1.NodeVersion, newCluster
 	return &configMap, nil
 }
 
-// NodeVersionClient implements the DynamicInterface interface to interact with NodeVersion objects.
-type NodeVersionClient struct {
+// nodeVersionClient implements the DynamicInterface interface to interact with NodeVersion objects.
+type nodeVersionClient struct {
 	client dynamic.Interface
 }
 
-// NewNodeVersionClient returns a new NodeVersionClient.
-func NewNodeVersionClient(client dynamic.Interface) *NodeVersionClient {
-	return &NodeVersionClient{client: client}
+// newNodeVersionClient returns a new nodeVersionClient.
+func newNodeVersionClient(client dynamic.Interface) *nodeVersionClient {
+	return &nodeVersionClient{client: client}
 }
 
 // GetCurrent returns the current NodeVersion object.
-func (u *NodeVersionClient) GetCurrent(ctx context.Context, name string) (*unstructured.Unstructured, error) {
+func (u *nodeVersionClient) GetCurrent(ctx context.Context, name string) (*unstructured.Unstructured, error) {
 	return u.client.Resource(schema.GroupVersionResource{
 		Group:    "update.edgeless.systems",
 		Version:  "v1alpha1",
@@ -443,18 +458,12 @@ func (u *NodeVersionClient) GetCurrent(ctx context.Context, name string) (*unstr
 }
 
 // Update updates the NodeVersion object.
-func (u *NodeVersionClient) Update(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+func (u *nodeVersionClient) Update(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 	return u.client.Resource(schema.GroupVersionResource{
 		Group:    "update.edgeless.systems",
 		Version:  "v1alpha1",
 		Resource: "nodeversions",
 	}).Update(ctx, obj, metav1.UpdateOptions{})
-}
-
-// DynamicInterface is a general interface to query custom resources.
-type DynamicInterface interface {
-	GetCurrent(ctx context.Context, name string) (*unstructured.Unstructured, error)
-	Update(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
 }
 
 // upgradeInProgress checks if an upgrade is in progress.
@@ -473,19 +482,6 @@ func upgradeInProgress(nodeVersion updatev1alpha1.NodeVersion) bool {
 		}
 	}
 	return false
-}
-
-type debugLog interface {
-	Debugf(format string, args ...any)
-	Sync()
-}
-
-// imageFetcher gets an image reference from the versionsapi.
-type imageFetcher interface {
-	FetchReference(ctx context.Context,
-		provider cloudprovider.Provider, attestationVariant variant.Variant,
-		image, region string,
-	) (string, error)
 }
 
 type upgradeVersionCmd struct {
@@ -517,4 +513,32 @@ func (u upgradeVersionCmd) SetUpdatedVersions(node *updatev1alpha1.NodeVersion) 
 	if u.k8sVersion != "" {
 		node.Spec.KubernetesClusterVersion = u.k8sVersion
 	}
+}
+
+// stableInterface is an interface to interact with stable resources.
+type stableInterface interface {
+	GetNodes(ctx context.Context) ([]corev1.Node, error)
+	GetConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error)
+	UpdateConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error)
+	CreateConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error)
+	KubernetesVersion() (string, error)
+}
+
+// dynamicInterface is a general interface to query custom resources.
+type dynamicInterface interface {
+	GetCurrent(ctx context.Context, name string) (*unstructured.Unstructured, error)
+	Update(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
+}
+
+type debugLog interface {
+	Debugf(format string, args ...any)
+	Sync()
+}
+
+// imageFetcher gets an image reference from the versionsapi.
+type imageFetcher interface {
+	FetchReference(ctx context.Context,
+		provider cloudprovider.Provider, attestationVariant variant.Variant,
+		image, region string,
+	) (string, error)
 }
