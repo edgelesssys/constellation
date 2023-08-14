@@ -92,10 +92,6 @@ Depending on how far the pipeline ran we need to delete:
 3. Select image definition "constellation"
 4. Select "Versions" submenu and search for "1.3.0"
 5. Press "Delete" button NEXT TO THE IMAGE VERSION TABLE. Do no delete the image definition.
-6. Go back to "Azure compute galleries" page and select "Constellation" gallery (this is for trusted launch)
-7. Select image definition "constellation"
-8. Select "Versions" submenu and search for "1.3.0"
-9. Press "Delete" button NEXT TO THE IMAGE VERSION TABLE. Do no delete the image definition. 
 
 ### AWS
 **Important:** You need to repeat the following steps for every region supported by Constellation!
