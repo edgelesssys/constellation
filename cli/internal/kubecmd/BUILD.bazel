@@ -2,13 +2,12 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
-    name = "kubernetes",
+    name = "kubecmd",
     srcs = [
-        "kubernetes.go",
+        "kubecmd.go",
         "status.go",
-        "upgrade.go",
     ],
-    importpath = "github.com/edgelesssys/constellation/v2/cli/internal/kubernetes",
+    importpath = "github.com/edgelesssys/constellation/v2/cli/internal/kubecmd",
     visibility = ["//cli:__subpackages__"],
     deps = [
         "//internal/api/versionsapi",
@@ -19,6 +18,7 @@ go_library(
         "//internal/constants",
         "//internal/imagefetcher",
         "//internal/kubernetes",
+        "//internal/kubernetes/kubectl",
         "//internal/versions",
         "//internal/versions/components",
         "//operators/constellation-node-operator/api/v1alpha1",
@@ -28,9 +28,6 @@ go_library(
         "@io_k8s_apimachinery//pkg/apis/meta/v1/unstructured",
         "@io_k8s_apimachinery//pkg/runtime",
         "@io_k8s_apimachinery//pkg/runtime/schema",
-        "@io_k8s_client_go//dynamic",
-        "@io_k8s_client_go//kubernetes",
-        "@io_k8s_client_go//tools/clientcmd",
         "@io_k8s_client_go//util/retry",
         "@io_k8s_kubernetes//cmd/kubeadm/app/apis/kubeadm/v1beta3",
         "@io_k8s_sigs_yaml//:yaml",
@@ -38,9 +35,9 @@ go_library(
 )
 
 go_test(
-    name = "kubernetes_test",
-    srcs = ["upgrade_test.go"],
-    embed = [":kubernetes"],
+    name = "kubecmd_test",
+    srcs = ["kubecmd_test.go"],
+    embed = [":kubecmd"],
     deps = [
         "//internal/attestation/variant",
         "//internal/cloud/cloudprovider",

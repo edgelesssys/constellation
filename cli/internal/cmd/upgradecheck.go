@@ -317,8 +317,8 @@ func filterK8sUpgrades(currentVersion string, newVersions []string) []string {
 
 type collector interface {
 	currentVersions(ctx context.Context) (currentVersionInfo, error)
-	supportedVersions(ctx context.Context, version, currentK8sVersion string) (supportedVersionInfo, error)
-	newImages(ctx context.Context, version string) ([]versionsapi.Version, error)
+	supportedVersions(ctx context.Context, currentImageVersion, currentK8sVersion string) (supportedVersionInfo, error)
+	newImages(ctx context.Context, currentImageVersion string) ([]versionsapi.Version, error)
 	newMeasurements(ctx context.Context, csp cloudprovider.Provider, attestationVariant variant.Variant, images []versionsapi.Version) (map[string]measurements.M, error)
 	newerVersions(ctx context.Context, allowedVersions []string) ([]versionsapi.Version, error)
 	newCLIVersions(ctx context.Context) ([]consemver.Semver, error)
@@ -376,7 +376,7 @@ type currentVersionInfo struct {
 }
 
 func (v *versionCollector) currentVersions(ctx context.Context) (currentVersionInfo, error) {
-	helmClient, err := helm.NewUpgradeClient(kubectl.New(), constants.UpgradeDir, constants.AdminConfFilename, constants.HelmNamespace, v.log)
+	helmClient, err := helm.NewUpgradeClient(kubectl.NewUninitialized(), constants.UpgradeDir, constants.AdminConfFilename, constants.HelmNamespace, v.log)
 	if err != nil {
 		return currentVersionInfo{}, fmt.Errorf("setting up helm client: %w", err)
 	}
@@ -386,20 +386,21 @@ func (v *versionCollector) currentVersions(ctx context.Context) (currentVersionI
 		return currentVersionInfo{}, fmt.Errorf("getting service versions: %w", err)
 	}
 
-	imageVersion, err := getCurrentImageVersion(ctx, v.kubeChecker)
+	clusterVersions, err := v.kubeChecker.GetConstellationVersion(ctx)
 	if err != nil {
-		return currentVersionInfo{}, fmt.Errorf("getting image version: %w", err)
+		return currentVersionInfo{}, fmt.Errorf("getting cluster versions: %w", err)
 	}
-
-	k8sVersion, err := getCurrentKubernetesVersion(ctx, v.kubeChecker)
-	if err != nil {
-		return currentVersionInfo{}, fmt.Errorf("getting Kubernetes version: %w", err)
+	if !semver.IsValid(clusterVersions.ImageVersion()) {
+		return currentVersionInfo{}, fmt.Errorf("checking image for valid semantic version: %w", err)
+	}
+	if !semver.IsValid(clusterVersions.KubernetesVersion()) {
+		return currentVersionInfo{}, fmt.Errorf("checking Kubernetes for valid semantic version: %w", err)
 	}
 
 	return currentVersionInfo{
 		service: serviceVersions.ConstellationServices(),
-		image:   imageVersion,
-		k8s:     k8sVersion,
+		image:   clusterVersions.ImageVersion(),
+		k8s:     clusterVersions.KubernetesVersion(),
 		cli:     v.cliVersion,
 	}, nil
 }
@@ -415,10 +416,10 @@ type supportedVersionInfo struct {
 }
 
 // supportedVersions returns slices of supported versions.
-func (v *versionCollector) supportedVersions(ctx context.Context, version, currentK8sVersion string) (supportedVersionInfo, error) {
+func (v *versionCollector) supportedVersions(ctx context.Context, currentImageVersion, currentK8sVersion string) (supportedVersionInfo, error) {
 	k8sVersions := versions.SupportedK8sVersions()
 
-	imageVersions, err := v.newImages(ctx, version)
+	imageVersions, err := v.newImages(ctx, currentImageVersion)
 	if err != nil {
 		return supportedVersionInfo{}, fmt.Errorf("loading image versions: %w", err)
 	}
@@ -441,13 +442,13 @@ func (v *versionCollector) supportedVersions(ctx context.Context, version, curre
 	}, nil
 }
 
-func (v *versionCollector) newImages(ctx context.Context, version string) ([]versionsapi.Version, error) {
+func (v *versionCollector) newImages(ctx context.Context, currentImageVersion string) ([]versionsapi.Version, error) {
 	// find compatible images
 	// image updates should always be possible for the current minor version of the cluster
 	// (e.g. 0.1.0 -> 0.1.1, 0.1.2, 0.1.3, etc.)
 	// additionally, we allow updates to the next minor version (e.g. 0.1.0 -> 0.2.0)
 	// if the CLI minor version is newer than the cluster minor version
-	currentImageMinorVer := semver.MajorMinor(version)
+	currentImageMinorVer := semver.MajorMinor(currentImageVersion)
 	currentCLIMinorVer := semver.MajorMinor(v.cliVersion.String())
 	nextImageMinorVer, err := compatibility.NextMinorVersion(currentImageMinorVer)
 	if err != nil {
@@ -590,35 +591,6 @@ func (v *versionUpgrade) writeConfig(conf *config.Config, fileHandler file.Handl
 	return fileHandler.WriteYAML(configPath, conf, file.OptOverwrite)
 }
 
-// getCurrentImageVersion retrieves the semantic version of the image currently installed in the cluster.
-// If the cluster is not using a release image, an error is returned.
-func getCurrentImageVersion(ctx context.Context, checker kubernetesChecker) (string, error) {
-	imageVersion, err := checker.CurrentImage(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	if !semver.IsValid(imageVersion) {
-		return "", fmt.Errorf("current image version is not a release image version: %q", imageVersion)
-	}
-
-	return imageVersion, nil
-}
-
-// getCurrentKubernetesVersion retrieves the semantic version of Kubernetes currently installed in the cluster.
-func getCurrentKubernetesVersion(ctx context.Context, checker kubernetesChecker) (string, error) {
-	k8sVersion, err := checker.CurrentKubernetesVersion(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	if !semver.IsValid(k8sVersion) {
-		return "", fmt.Errorf("current kubernetes version is not a valid semver string: %q", k8sVersion)
-	}
-
-	return k8sVersion, nil
-}
-
 // getCompatibleImageMeasurements retrieves the expected measurements for each image.
 func getCompatibleImageMeasurements(ctx context.Context, writer io.Writer, client *http.Client, cosign sigstore.Verifier, rekor rekorVerifier,
 	csp cloudprovider.Provider, attestationVariant variant.Variant, version versionsapi.Version, log debugLog,
@@ -711,7 +683,8 @@ func (v *versionCollector) newCLIVersions(ctx context.Context) ([]consemver.Semv
 }
 
 // filterCompatibleCLIVersions filters a list of CLI versions which are compatible with the current Kubernetes version.
-func (v *versionCollector) filterCompatibleCLIVersions(ctx context.Context, cliPatchVersions []consemver.Semver, currentK8sVersion string) ([]consemver.Semver, error) {
+func (v *versionCollector) filterCompatibleCLIVersions(ctx context.Context, cliPatchVersions []consemver.Semver, currentK8sVersion string,
+) ([]consemver.Semver, error) {
 	// filter out invalid upgrades and versions which are not compatible with the current Kubernetes version
 	var compatibleVersions []consemver.Semver
 	for _, version := range cliPatchVersions {
@@ -750,8 +723,7 @@ type upgradeCheckFlags struct {
 }
 
 type kubernetesChecker interface {
-	CurrentImage(ctx context.Context) (string, error)
-	CurrentKubernetesVersion(ctx context.Context) (string, error)
+	GetConstellationVersion(ctx context.Context) (kubecmd.NodeVersion, error)
 }
 
 type terraformChecker interface {

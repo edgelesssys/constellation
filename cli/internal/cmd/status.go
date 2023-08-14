@@ -20,7 +20,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
-	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -57,7 +56,7 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 	// need helm client to fetch service versions.
 	// The client used here, doesn't need to know the current workspace.
 	// It may be refactored in the future for easier usage.
-	helmClient, err := helm.NewUpgradeClient(kubectl.New(), constants.UpgradeDir, constants.AdminConfFilename, constants.HelmNamespace, log)
+	helmClient, err := helm.NewUpgradeClient(kubectl.NewUninitialized(), constants.UpgradeDir, constants.AdminConfFilename, constants.HelmNamespace, log)
 	if err != nil {
 		return fmt.Errorf("setting up helm client: %w", err)
 	}
@@ -94,9 +93,6 @@ func status(ctx context.Context, getHelmVersions func() (fmt.Stringer, error), k
 	if err != nil {
 		return "", fmt.Errorf("getting constellation version: %w", err)
 	}
-	if len(nodeVersion.Status.Conditions) != 1 {
-		return "", fmt.Errorf("expected exactly one condition, got %d", len(nodeVersion.Status.Conditions))
-	}
 
 	attestationConfig, err := kubeClient.GetClusterAttestationConfig(ctx, attestVariant)
 	if err != nil {
@@ -105,11 +101,6 @@ func status(ctx context.Context, getHelmVersions func() (fmt.Stringer, error), k
 	prettyYAML, err := yaml.Marshal(attestationConfig)
 	if err != nil {
 		return "", fmt.Errorf("marshalling attestation config: %w", err)
-	}
-
-	targetVersions, err := kubecmd.NewTargetVersions(nodeVersion)
-	if err != nil {
-		return "", fmt.Errorf("getting configured versions: %w", err)
 	}
 
 	serviceVersions, err := getHelmVersions()
@@ -122,20 +113,20 @@ func status(ctx context.Context, getHelmVersions func() (fmt.Stringer, error), k
 		return "", fmt.Errorf("getting cluster status: %w", err)
 	}
 
-	return statusOutput(targetVersions, serviceVersions, status, nodeVersion, string(prettyYAML)), nil
+	return statusOutput(nodeVersion, serviceVersions, status, string(prettyYAML)), nil
 }
 
 // statusOutput creates the status cmd output string by formatting the received information.
 func statusOutput(
-	targetVersions kubecmd.TargetVersions, serviceVersions fmt.Stringer,
-	status map[string]kubecmd.NodeStatus, nodeVersion v1alpha1.NodeVersion, rawAttestationConfig string,
+	nodeVersion kubecmd.NodeVersion, serviceVersions fmt.Stringer,
+	status map[string]kubecmd.NodeStatus, rawAttestationConfig string,
 ) string {
 	builder := strings.Builder{}
 
-	builder.WriteString(targetVersionsString(targetVersions))
+	builder.WriteString(targetVersionsString(nodeVersion))
 	builder.WriteString(serviceVersions.String())
-	builder.WriteString(fmt.Sprintf("Cluster status: %s\n", nodeVersion.Status.Conditions[0].Message))
-	builder.WriteString(nodeStatusString(status, targetVersions))
+	builder.WriteString(fmt.Sprintf("Cluster status: %s\n", nodeVersion.ClusterStatus()))
+	builder.WriteString(nodeStatusString(status, nodeVersion))
 	builder.WriteString(fmt.Sprintf("Attestation config:\n%s", indentEntireStringWithTab(rawAttestationConfig)))
 	return builder.String()
 }
@@ -149,14 +140,14 @@ func indentEntireStringWithTab(input string) string {
 }
 
 // nodeStatusString creates the node status part of the output string.
-func nodeStatusString(status map[string]kubecmd.NodeStatus, targetVersions kubecmd.TargetVersions) string {
+func nodeStatusString(status map[string]kubecmd.NodeStatus, targetVersions kubecmd.NodeVersion) string {
 	var upToDateImages int
 	var upToDateK8s int
 	for _, node := range status {
-		if node.KubeletVersion() == targetVersions.Kubernetes() {
+		if node.KubeletVersion() == targetVersions.KubernetesVersion() {
 			upToDateK8s++
 		}
-		if node.ImageVersion() == targetVersions.ImagePath() {
+		if node.ImageVersion() == targetVersions.ImageReference() {
 			upToDateImages++
 		}
 	}
@@ -171,11 +162,11 @@ func nodeStatusString(status map[string]kubecmd.NodeStatus, targetVersions kubec
 }
 
 // targetVersionsString creates the target versions part of the output string.
-func targetVersionsString(target kubecmd.TargetVersions) string {
+func targetVersionsString(target kubecmd.NodeVersion) string {
 	builder := strings.Builder{}
 	builder.WriteString("Target versions:\n")
-	builder.WriteString(fmt.Sprintf("\tImage: %s\n", target.Image()))
-	builder.WriteString(fmt.Sprintf("\tKubernetes: %s\n", target.Kubernetes()))
+	builder.WriteString(fmt.Sprintf("\tImage: %s\n", target.ImageVersion()))
+	builder.WriteString(fmt.Sprintf("\tKubernetes: %s\n", target.KubernetesVersion()))
 
 	return builder.String()
 }
@@ -202,6 +193,6 @@ func parseStatusFlags(cmd *cobra.Command) (statusFlags, error) {
 
 type kubeCmd interface {
 	ClusterStatus(ctx context.Context) (map[string]kubecmd.NodeStatus, error)
-	GetConstellationVersion(ctx context.Context) (v1alpha1.NodeVersion, error)
+	GetConstellationVersion(ctx context.Context) (kubecmd.NodeVersion, error)
 	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, error)
 }

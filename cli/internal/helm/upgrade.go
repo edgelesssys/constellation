@@ -363,8 +363,8 @@ func (c *UpgradeClient) updateCRDs(ctx context.Context, chart *chart.Chart) erro
 type crdClient interface {
 	Initialize(kubeconfig []byte) error
 	ApplyCRD(ctx context.Context, rawCRD []byte) error
-	GetCRDs(ctx context.Context) ([]apiextensionsv1.CustomResourceDefinition, error)
-	GetCRs(ctx context.Context, gvr schema.GroupVersionResource) ([]unstructured.Unstructured, error)
+	ListCRDs(ctx context.Context) ([]apiextensionsv1.CustomResourceDefinition, error)
+	ListCRs(ctx context.Context, gvr schema.GroupVersionResource) ([]unstructured.Unstructured, error)
 }
 
 type actionWrapper interface {

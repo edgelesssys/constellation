@@ -28,7 +28,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/mod/semver"
 )
 
 // TestBuildString checks that the resulting user output is as expected. Slow part is the Sscanf in parseCanonicalSemver().
@@ -104,46 +103,6 @@ func TestBuildString(t *testing.T) {
 			}
 			assert.NoError(err)
 			assert.Equal(tc.expected, result)
-		})
-	}
-}
-
-func TestGetCurrentImageVersion(t *testing.T) {
-	testCases := map[string]struct {
-		stubKubernetesChecker stubKubernetesChecker
-		wantErr               bool
-	}{
-		"valid version": {
-			stubKubernetesChecker: stubKubernetesChecker{
-				image: "v1.0.0",
-			},
-		},
-		"invalid version": {
-			stubKubernetesChecker: stubKubernetesChecker{
-				image: "invalid",
-			},
-			wantErr: true,
-		},
-		"GetCurrentImage error": {
-			stubKubernetesChecker: stubKubernetesChecker{
-				err: errors.New("error"),
-			},
-			wantErr: true,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-
-			version, err := getCurrentImageVersion(context.Background(), tc.stubKubernetesChecker)
-			if tc.wantErr {
-				assert.Error(err)
-				return
-			}
-
-			assert.NoError(err)
-			assert.True(semver.IsValid(version))
 		})
 	}
 }
@@ -315,20 +274,6 @@ func (s *stubVersionCollector) newCLIVersions(_ context.Context) ([]consemver.Se
 
 func (s *stubVersionCollector) filterCompatibleCLIVersions(_ context.Context, _ []consemver.Semver, _ string) ([]consemver.Semver, error) {
 	return s.newCompatibleCLIVersionsList, nil
-}
-
-type stubKubernetesChecker struct {
-	image      string
-	k8sVersion string
-	err        error
-}
-
-func (s stubKubernetesChecker) CurrentImage(context.Context) (string, error) {
-	return s.image, s.err
-}
-
-func (s stubKubernetesChecker) CurrentKubernetesVersion(context.Context) (string, error) {
-	return s.k8sVersion, s.err
 }
 
 type stubTerraformChecker struct {

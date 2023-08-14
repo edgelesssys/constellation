@@ -74,7 +74,7 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	helmUpgrader, err := helm.NewUpgradeClient(kubectl.New(), constants.UpgradeDir, constants.AdminConfFilename, constants.HelmNamespace, log)
+	helmUpgrader, err := helm.NewUpgradeClient(kubectl.NewUninitialized(), constants.UpgradeDir, constants.AdminConfFilename, constants.HelmNamespace, log)
 	if err != nil {
 		return fmt.Errorf("setting up helm client: %w", err)
 	}

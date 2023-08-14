@@ -19,7 +19,7 @@ import (
 
 func (c *UpgradeClient) backupCRDs(ctx context.Context, upgradeID string) ([]apiextensionsv1.CustomResourceDefinition, error) {
 	c.log.Debugf("Starting CRD backup")
-	crds, err := c.kubectl.GetCRDs(ctx)
+	crds, err := c.kubectl.ListCRDs(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("getting CRDs: %w", err)
 	}
@@ -66,7 +66,7 @@ func (c *UpgradeClient) backupCRs(ctx context.Context, crds []apiextensionsv1.Cu
 			c.log.Debugf("Creating backup of CRs for %q at version %q", crd.Name, version.Name)
 
 			gvr := schema.GroupVersionResource{Group: crd.Spec.Group, Version: version.Name, Resource: crd.Spec.Names.Plural}
-			crs, err := c.kubectl.GetCRs(ctx, gvr)
+			crs, err := c.kubectl.ListCRs(ctx, gvr)
 			if err != nil {
 				if !k8serrors.IsNotFound(err) {
 					return fmt.Errorf("retrieving CR %s: %w", crd.Name, err)

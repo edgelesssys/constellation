@@ -15,7 +15,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -56,6 +55,12 @@ const attestationConfigOutput = `Attestation config:
 
 // TestStatus checks that the status function produces the correct strings.
 func TestStatus(t *testing.T) {
+	mustParseNodeVersion := func(nV updatev1alpha1.NodeVersion) kubecmd.NodeVersion {
+		nodeVersion, err := kubecmd.NewNodeVersion(nV)
+		require.NoError(t, err)
+		return nodeVersion
+	}
+
 	testCases := map[string]struct {
 		kubeClient     stubKubeClient
 		attestVariant  variant.Variant
@@ -79,7 +84,7 @@ func TestStatus(t *testing.T) {
 						},
 					}),
 				},
-				version: updatev1alpha1.NodeVersion{
+				version: mustParseNodeVersion(updatev1alpha1.NodeVersion{
 					Spec: updatev1alpha1.NodeVersionSpec{
 						ImageVersion:             "v1.1.0",
 						ImageReference:           "v1.1.0",
@@ -92,7 +97,7 @@ func TestStatus(t *testing.T) {
 							},
 						},
 					},
-				},
+				}),
 				attestation: &config.QEMUVTPM{
 					Measurements: measurements.M{
 						15: measurements.WithAllBytes(0, measurements.Enforce, measurements.PCRMeasurementLength),
@@ -132,7 +137,7 @@ func TestStatus(t *testing.T) {
 						},
 					}),
 				},
-				version: updatev1alpha1.NodeVersion{
+				version: mustParseNodeVersion(updatev1alpha1.NodeVersion{
 					Spec: updatev1alpha1.NodeVersionSpec{
 						ImageVersion:             "v1.1.0",
 						ImageReference:           "v1.1.0",
@@ -145,7 +150,7 @@ func TestStatus(t *testing.T) {
 							},
 						},
 					},
-				},
+				}),
 				attestation: &config.QEMUVTPM{
 					Measurements: measurements.M{
 						15: measurements.WithAllBytes(0, measurements.Enforce, measurements.PCRMeasurementLength),
@@ -158,7 +163,7 @@ func TestStatus(t *testing.T) {
 		"error getting node status": {
 			kubeClient: stubKubeClient{
 				statusErr: assert.AnError,
-				version: updatev1alpha1.NodeVersion{
+				version: mustParseNodeVersion(updatev1alpha1.NodeVersion{
 					Spec: updatev1alpha1.NodeVersionSpec{
 						ImageVersion:             "v1.1.0",
 						ImageReference:           "v1.1.0",
@@ -171,7 +176,7 @@ func TestStatus(t *testing.T) {
 							},
 						},
 					},
-				},
+				}),
 				attestation: &config.QEMUVTPM{
 					Measurements: measurements.M{
 						15: measurements.WithAllBytes(0, measurements.Enforce, measurements.PCRMeasurementLength),
@@ -227,7 +232,7 @@ func TestStatus(t *testing.T) {
 						},
 					}),
 				},
-				version: updatev1alpha1.NodeVersion{
+				version: mustParseNodeVersion(updatev1alpha1.NodeVersion{
 					Spec: updatev1alpha1.NodeVersionSpec{
 						ImageVersion:             "v1.1.0",
 						ImageReference:           "v1.1.0",
@@ -240,7 +245,7 @@ func TestStatus(t *testing.T) {
 							},
 						},
 					},
-				},
+				}),
 				attestationErr: assert.AnError,
 			},
 			attestVariant:  variant.QEMUVTPM{},
@@ -274,7 +279,7 @@ func TestStatus(t *testing.T) {
 type stubKubeClient struct {
 	status         map[string]kubecmd.NodeStatus
 	statusErr      error
-	version        v1alpha1.NodeVersion
+	version        kubecmd.NodeVersion
 	versionErr     error
 	attestation    config.AttestationCfg
 	attestationErr error
@@ -284,7 +289,7 @@ func (s stubKubeClient) ClusterStatus(_ context.Context) (map[string]kubecmd.Nod
 	return s.status, s.statusErr
 }
 
-func (s stubKubeClient) GetConstellationVersion(_ context.Context) (v1alpha1.NodeVersion, error) {
+func (s stubKubeClient) GetConstellationVersion(_ context.Context) (kubecmd.NodeVersion, error) {
 	return s.version, s.versionErr
 }
 

@@ -7,45 +7,54 @@ SPDX-License-Identifier: AGPL-3.0-only
 package kubecmd
 
 import (
+	"fmt"
+
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 )
 
-// TargetVersions bundles version information about the target versions of a cluster.
-type TargetVersions struct {
-	// image version
-	image string
-	// CSP specific path to the image
-	imageReference string
-	// kubernetes version
-	kubernetes string
+// NodeVersion bundles version information of a Constellation cluster.
+type NodeVersion struct {
+	imageVersion      string
+	imageReference    string
+	kubernetesVersion string
+	clusterStatus     string
 }
 
-// NewTargetVersions returns the target versions for the cluster.
-func NewTargetVersions(nodeVersion updatev1alpha1.NodeVersion) (TargetVersions, error) {
-	return TargetVersions{
-		image:          nodeVersion.Spec.ImageVersion,
-		imageReference: nodeVersion.Spec.ImageReference,
-		kubernetes:     nodeVersion.Spec.KubernetesClusterVersion,
+// NewNodeVersion returns the target versions for the cluster.
+func NewNodeVersion(nodeVersion updatev1alpha1.NodeVersion) (NodeVersion, error) {
+	if len(nodeVersion.Status.Conditions) != 1 {
+		return NodeVersion{}, fmt.Errorf("expected exactly one condition, got %d", len(nodeVersion.Status.Conditions))
+	}
+	return NodeVersion{
+		imageVersion:      nodeVersion.Spec.ImageVersion,
+		imageReference:    nodeVersion.Spec.ImageReference,
+		kubernetesVersion: nodeVersion.Spec.KubernetesClusterVersion,
+		clusterStatus:     nodeVersion.Status.Conditions[0].Message,
 	}, nil
 }
 
-// Image return the image version.
-func (c *TargetVersions) Image() string {
-	return c.image
+// ImageVersion is the version of the image running on a node.
+func (n NodeVersion) ImageVersion() string {
+	return n.imageVersion
 }
 
-// ImagePath return the image path.
-func (c *TargetVersions) ImagePath() string {
-	return c.imageReference
+// ImageReference is a CSP specific path to the image.
+func (n NodeVersion) ImageReference() string {
+	return n.imageReference
 }
 
-// Kubernetes return the Kubernetes version.
-func (c *TargetVersions) Kubernetes() string {
-	return c.kubernetes
+// KubernetesVersion is the Kubernetes version running on a node.
+func (n NodeVersion) KubernetesVersion() string {
+	return n.kubernetesVersion
 }
 
-// NodeStatus bundles status information about a node.
+// ClusterStatus is a string describing the status of the cluster.
+func (n NodeVersion) ClusterStatus() string {
+	return n.clusterStatus
+}
+
+// NodeStatus bundles status information about a Kubernetes node.
 type NodeStatus struct {
 	kubeletVersion string
 	imageVersion   string
@@ -67,4 +76,19 @@ func (n *NodeStatus) KubeletVersion() string {
 // ImageVersion returns the node image of the node.
 func (n *NodeStatus) ImageVersion() string {
 	return n.imageVersion
+}
+
+func updateNodeVersions(newNodeVersion updatev1alpha1.NodeVersion, node *updatev1alpha1.NodeVersion) {
+	if newNodeVersion.Spec.ImageVersion != "" {
+		node.Spec.ImageVersion = newNodeVersion.Spec.ImageVersion
+	}
+	if newNodeVersion.Spec.ImageReference != "" {
+		node.Spec.ImageReference = newNodeVersion.Spec.ImageReference
+	}
+	if newNodeVersion.Spec.KubernetesComponentsReference != "" {
+		node.Spec.KubernetesComponentsReference = newNodeVersion.Spec.KubernetesComponentsReference
+	}
+	if newNodeVersion.Spec.KubernetesClusterVersion != "" {
+		node.Spec.KubernetesClusterVersion = newNodeVersion.Spec.KubernetesClusterVersion
+	}
 }

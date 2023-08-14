@@ -181,14 +181,14 @@ type stubCrdClient struct {
 	crdClient
 }
 
-func (c stubCrdClient) GetCRDs(_ context.Context) ([]apiextensionsv1.CustomResourceDefinition, error) {
+func (c stubCrdClient) ListCRDs(_ context.Context) ([]apiextensionsv1.CustomResourceDefinition, error) {
 	if c.getCRDsError != nil {
 		return nil, c.getCRDsError
 	}
 	return c.crds, nil
 }
 
-func (c stubCrdClient) GetCRs(_ context.Context, _ schema.GroupVersionResource) ([]unstructured.Unstructured, error) {
+func (c stubCrdClient) ListCRs(_ context.Context, _ schema.GroupVersionResource) ([]unstructured.Unstructured, error) {
 	if c.getCRsError != nil {
 		return nil, c.getCRsError
 	}
