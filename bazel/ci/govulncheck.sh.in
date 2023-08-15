@@ -31,7 +31,7 @@ check() {
   for mod in ${submodules}; do
     echo "  ${mod}"
     echo -n "  "
-    CGO_ENABLED=0 ${govulncheck} "${mod}/..." |
+    CGO_ENABLED=0 ${govulncheck} -C "${mod}" "./..." |
       tail -n 2 | # Providing some nice output...
       tr '\n' ' ' |
       sed s/" your code and"// &&
