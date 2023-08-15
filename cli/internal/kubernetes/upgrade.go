@@ -356,7 +356,6 @@ func (u *Upgrader) UpdateAttestationConfig(ctx context.Context, newAttestConfig 
 	if err != nil {
 		return fmt.Errorf("getting join-config configmap: %w", err)
 	}
-	joinConfig.Data[constants.AttestationConfigFilename+"_backup"] = joinConfig.Data[constants.AttestationConfigFilename]
 
 	newConfigJSON, err := json.Marshal(newAttestConfig)
 	if err != nil {
