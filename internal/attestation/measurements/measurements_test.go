@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package measurements
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"io"
@@ -925,6 +926,120 @@ func TestMergeImageMeasurementsV2(t *testing.T) {
 			}
 			assert.NoError(err)
 			assert.Equal(tc.wantMeasurements, gotMeasurements)
+		})
+	}
+}
+
+func TestMeasurementsCompare(t *testing.T) {
+	testCases := map[string]struct {
+		expected     M
+		actual       map[uint32][]byte
+		wantErrs     int
+		wantWarnings int
+	}{
+		"no errors": {
+			expected: M{
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0x11, Enforce, PCRMeasurementLength),
+			},
+			actual: map[uint32][]byte{
+				0: bytes.Repeat([]byte{0x00}, PCRMeasurementLength),
+				1: bytes.Repeat([]byte{0x11}, PCRMeasurementLength),
+			},
+			wantErrs:     0,
+			wantWarnings: 0,
+		},
+		"no errors, with warnings": {
+			expected: M{
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0x11, WarnOnly, PCRMeasurementLength),
+				2: WithAllBytes(0x22, WarnOnly, PCRMeasurementLength),
+			},
+			actual: map[uint32][]byte{
+				0: bytes.Repeat([]byte{0x00}, PCRMeasurementLength),
+				1: bytes.Repeat([]byte{0xFF}, PCRMeasurementLength),
+				2: bytes.Repeat([]byte{0xFF}, PCRMeasurementLength),
+			},
+			wantErrs:     0,
+			wantWarnings: 2,
+		},
+		"with errors, no warnings": {
+			expected: M{
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0x11, Enforce, PCRMeasurementLength),
+				2: WithAllBytes(0x22, Enforce, PCRMeasurementLength),
+			},
+			actual: map[uint32][]byte{
+				0: bytes.Repeat([]byte{0x00}, PCRMeasurementLength),
+				1: bytes.Repeat([]byte{0xFF}, PCRMeasurementLength),
+				2: bytes.Repeat([]byte{0xFF}, PCRMeasurementLength),
+			},
+			wantErrs:     2,
+			wantWarnings: 0,
+		},
+		"with errors and warnings": {
+			expected: M{
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0x11, WarnOnly, PCRMeasurementLength),
+				2: WithAllBytes(0x22, Enforce, PCRMeasurementLength),
+			},
+
+			actual: map[uint32][]byte{
+				0: bytes.Repeat([]byte{0x00}, PCRMeasurementLength),
+				1: bytes.Repeat([]byte{0xFF}, PCRMeasurementLength),
+				2: bytes.Repeat([]byte{0xFF}, PCRMeasurementLength),
+			},
+			wantErrs:     1,
+			wantWarnings: 1,
+		},
+		"extra measurements don't cause errors": {
+			expected: M{
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0x11, Enforce, PCRMeasurementLength),
+			},
+			actual: map[uint32][]byte{
+				0: bytes.Repeat([]byte{0x00}, PCRMeasurementLength),
+				1: bytes.Repeat([]byte{0x11}, PCRMeasurementLength),
+				2: bytes.Repeat([]byte{0x22}, PCRMeasurementLength),
+			},
+			wantErrs:     0,
+			wantWarnings: 0,
+		},
+		"missing measurements cause errors": {
+			expected: M{
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0x11, Enforce, PCRMeasurementLength),
+				2: WithAllBytes(0x22, Enforce, PCRMeasurementLength),
+			},
+			actual: map[uint32][]byte{
+				0: bytes.Repeat([]byte{0x00}, PCRMeasurementLength),
+				1: bytes.Repeat([]byte{0x11}, PCRMeasurementLength),
+			},
+			wantErrs:     1,
+			wantWarnings: 0,
+		},
+		"missing measurements cause warnings": {
+			expected: M{
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0x11, Enforce, PCRMeasurementLength),
+				2: WithAllBytes(0x22, WarnOnly, PCRMeasurementLength),
+			},
+			actual: map[uint32][]byte{
+				0: bytes.Repeat([]byte{0x00}, PCRMeasurementLength),
+				1: bytes.Repeat([]byte{0x11}, PCRMeasurementLength),
+			},
+			wantErrs:     0,
+			wantWarnings: 1,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			gotWarnings, gotErrs := tc.expected.Compare(tc.actual)
+			assert.Equal(tc.wantErrs, len(gotErrs))
+			assert.Equal(tc.wantWarnings, len(gotWarnings))
 		})
 	}
 }
