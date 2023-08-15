@@ -109,7 +109,7 @@ const (
 	KonnectivityServerImage = "registry.k8s.io/kas-network-proxy/proxy-server:v0.1.2@sha256:79933c3779bc30e33bb7509dff913e70f6ba78ad441f4827f0f3e840ce5f3ddb" // renovate:container
 	// GcpGuestImage image for GCP guest agent.
 	// Check for new versions at https://github.com/GoogleCloudPlatform/guest-agent/releases and update in /.github/workflows/build-gcp-guest-agent.yml.
-	GcpGuestImage = "ghcr.io/edgelesssys/gcp-guest-agent:v20230628.0.0@sha256:e76f66b20be7e30f7e3bfd2b37e068a39874706cd9c0a43c1500e74fe39df797" // renovate:container
+	GcpGuestImage = "ghcr.io/edgelesssys/gcp-guest-agent:v20230811.0.0@sha256:c05d6273a1574af2564835a9cc989bed36ec3f76899f51908987263df5b0f231" // renovate:container
 	// NodeMaintenanceOperatorImage is the image for the node maintenance operator.
 	NodeMaintenanceOperatorImage = "quay.io/medik8s/node-maintenance-operator:v0.15.0@sha256:8cb8dad93283268282c30e75c68f4bd76b28def4b68b563d2f9db9c74225d634" // renovate:container
 	// LogstashImage is the container image of logstash, used for log collection by debugd.
