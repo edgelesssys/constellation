@@ -8,6 +8,7 @@ package kubernetes
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -344,6 +345,30 @@ func (u *Upgrader) BackupConfigMap(ctx context.Context, name string) error {
 		}
 	}
 	u.log.Debugf("Successfully backed up config map %s", cm.Name)
+	return nil
+}
+
+// UpdateAttestationConfig fetches the cluster's attestation config, compares them to a new config,
+// and updates the cluster's config if it is different from the new one.
+func (u *Upgrader) UpdateAttestationConfig(ctx context.Context, newAttestConfig config.AttestationCfg) error {
+	// backup of previous measurements
+	joinConfig, err := u.stableInterface.GetConfigMap(ctx, constants.JoinConfigMap)
+	if err != nil {
+		return fmt.Errorf("getting join-config configmap: %w", err)
+	}
+	joinConfig.Data[constants.AttestationConfigFilename+"_backup"] = joinConfig.Data[constants.AttestationConfigFilename]
+
+	newConfigJSON, err := json.Marshal(newAttestConfig)
+	if err != nil {
+		return fmt.Errorf("marshaling attestation config: %w", err)
+	}
+	joinConfig.Data[constants.AttestationConfigFilename] = string(newConfigJSON)
+	u.log.Debugf("Triggering attestation config update now")
+	if _, err = u.stableInterface.UpdateConfigMap(ctx, joinConfig); err != nil {
+		return fmt.Errorf("setting new attestation config: %w", err)
+	}
+
+	fmt.Fprintln(u.outWriter, "Successfully updated the cluster's attestation config")
 	return nil
 }
 

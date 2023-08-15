@@ -360,6 +360,9 @@ func (u *upgradeApplyCmd) confirmIfUpgradeAttestConfigHasDiff(cmd *cobra.Command
 	if err := u.upgrader.BackupConfigMap(cmd.Context(), constants.JoinConfigMap); err != nil {
 		return fmt.Errorf("backing up join-config: %w", err)
 	}
+	if err := u.upgrader.UpdateAttestationConfig(cmd.Context(), newConfig); err != nil {
+		return fmt.Errorf("updating attestation config: %w", err)
+	}
 	return nil
 }
 
@@ -472,6 +475,7 @@ type cloudUpgrader interface {
 	UpgradeHelmServices(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive bool, force bool, conformance bool, helmWaitMode helm.WaitMode, masterSecret uri.MasterSecret, serviceAccURI string, validK8sVersion versions.ValidK8sVersion, tfOutput terraform.ApplyOutput) error
 	ExtendClusterConfigCertSANs(ctx context.Context, alternativeNames []string) error
 	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, error)
+	UpdateAttestationConfig(ctx context.Context, newAttestConfig config.AttestationCfg) error
 	GetMeasurementSalt(ctx context.Context) ([]byte, error)
 	PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error)
 	ApplyTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (terraform.ApplyOutput, error)
