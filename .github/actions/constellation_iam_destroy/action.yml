@@ -39,5 +39,4 @@ runs:
     - name: Delete IAM configuration
       shell: bash
       run: |
-        output=$(constellation --help)
         constellation iam destroy --yes --tf-log=DEBUG
