@@ -75,20 +75,6 @@ func New(outWriter io.Writer, kubeConfigPath string, log debugLog) (*KubeCmd, er
 	}, nil
 }
 
-// GetMeasurementSalt returns the measurementSalt from the join-config.
-// TODO(v2.10): Remove since this is only used for clusters that didn't generate the measurementSalt on CLI side.
-func (k *KubeCmd) GetMeasurementSalt(ctx context.Context) ([]byte, error) {
-	cm, err := k.kubectl.GetConfigMap(ctx, constants.ConstellationNamespace, constants.JoinConfigMap)
-	if err != nil {
-		return nil, fmt.Errorf("retrieving current join-config: %w", err)
-	}
-	salt, ok := cm.BinaryData[constants.MeasurementSaltFilename]
-	if !ok {
-		return nil, errors.New("measurementSalt missing from join-config")
-	}
-	return salt, nil
-}
-
 // UpgradeNodeVersion upgrades the cluster's NodeVersion object and in turn triggers image & k8s version upgrades.
 // The versions set in the config are validated against the versions running in the cluster.
 func (k *KubeCmd) UpgradeNodeVersion(ctx context.Context, conf *config.Config, force bool) error {

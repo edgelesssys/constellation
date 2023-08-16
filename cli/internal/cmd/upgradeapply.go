@@ -494,7 +494,6 @@ type kubernetesUpgrader interface {
 	ExtendClusterConfigCertSANs(ctx context.Context, alternativeNames []string) error
 	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, error)
 	UpdateAttestationConfig(ctx context.Context, newAttestConfig config.AttestationCfg) error
-	GetMeasurementSalt(ctx context.Context) ([]byte, error)
 }
 
 type helmUpgrader interface {

@@ -193,10 +193,6 @@ type stubKubernetesUpgrader struct {
 	currentConfig  config.AttestationCfg
 }
 
-func (u stubKubernetesUpgrader) GetMeasurementSalt(_ context.Context) ([]byte, error) {
-	return []byte{}, nil
-}
-
 func (u stubKubernetesUpgrader) UpgradeNodeVersion(_ context.Context, _ *config.Config, _ bool) error {
 	return u.nodeVersionErr
 }
