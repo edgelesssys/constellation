@@ -28,6 +28,11 @@ As such, the number of exported functions should be kept minimal.
 */
 package helm
 
+import (
+	"context"
+	"fmt"
+)
+
 // mergeMaps returns a new map that is the merger of it's inputs.
 // Key collisions are resolved by taking the value of the second argument (map b).
 // Taken from: https://github.com/helm/helm/blob/dbc6d8e20fe1d58d50e6ed30f09a04a77e4c68db/pkg/cli/values/options.go#L91-L108.
@@ -48,4 +53,23 @@ func mergeMaps(a, b map[string]any) map[string]any {
 		out[k] = v
 	}
 	return out
+}
+
+// ApplyCharts applies the given releases in the given order.
+func ApplyCharts(ctx context.Context, releases ReleaseApplyOrder, kubeConfigPath string, force, allowDestructive bool, log debugLog) error {
+	factory, err := newActionFactory(kubeConfigPath, log)
+	if err != nil {
+		return fmt.Errorf("creating Helm action factory: %w", err)
+	}
+	actions, _, err := factory.newActions(releases, force, allowDestructive)
+	if err != nil {
+		return fmt.Errorf("creating Helm actions: %w", err)
+	}
+	for _, action := range actions {
+		log.Debugf("Applying %q", action.ReleaseName())
+		if err := action.Apply(ctx); err != nil {
+			return fmt.Errorf("applying %s: %w", action.ReleaseName(), err)
+		}
+	}
+	return nil
 }

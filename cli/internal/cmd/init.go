@@ -278,15 +278,16 @@ func (i *initCmd) initialize(
 	if err != nil {
 		return fmt.Errorf("loading Helm charts: %w", err)
 	}
-
-	i.log.Debugf("Installing Helm deployments")
-	if err := i.helmInstaller.Install(cmd.Context(), releases); err != nil {
-		return fmt.Errorf("installing Helm charts: %w", err)
+	i.log.Debugf("Loaded Helm deployments")
+	if err != nil {
+		return fmt.Errorf("loading Helm charts: %w", err)
+	}
+	if err = helm.ApplyCharts(cmd.Context(), releases, constants.AdminConfFilename, flags.force, false, i.log); err != nil {
+		return fmt.Errorf("applying Helm charts: %w", err)
 	}
 	i.spinner.Stop()
 	i.log.Debugf("Helm deployment installation succeeded")
-
-	cmd.Println(bufferedOutput.String())
+	cmd.Println(bufferedOutput.String()) // TODO(elchead): should print even with error? successfully initialized warning would be wrong.
 	return nil
 }
 
@@ -623,7 +624,7 @@ func (e *nonRetriableError) Unwrap() error {
 }
 
 type initializer interface {
-	Install(ctx context.Context, releases *helm.Releases) error
+	Install(ctx context.Context, releases helm.ReleaseApplyOrder) error
 }
 
 type attestationConfigApplier interface {

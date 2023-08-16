@@ -666,7 +666,7 @@ func (c stubInitClient) Recv() (*initproto.InitResponse, error) {
 
 type stubHelmInstaller struct{}
 
-func (i *stubHelmInstaller) Install(_ context.Context, _ *helm.Releases) error {
+func (i *stubHelmInstaller) Install(_ context.Context, _ helm.ReleaseApplyOrder) error {
 	return nil
 }
 

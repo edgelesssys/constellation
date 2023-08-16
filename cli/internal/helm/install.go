@@ -23,14 +23,7 @@ import (
 const (
 	// timeout is the maximum time given to the helm Installer.
 	timeout = 10 * time.Minute
-	// maximumRetryAttempts is the maximum number of attempts to retry a helm install.
-	maximumRetryAttempts = 3
 )
-
-type debugLog interface {
-	Debugf(format string, args ...any)
-	Sync()
-}
 
 // Installer is a wrapper for a helm install action.
 type Installer struct {

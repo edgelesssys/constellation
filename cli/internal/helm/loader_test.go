@@ -72,8 +72,11 @@ func TestLoadReleases(t *testing.T) {
 		fakeServiceAccURI(cloudprovider.GCP), clusterid.File{UID: "testuid"}, terraform.ApplyOutput{GCP: &terraform.GCPApplyOutput{}},
 	)
 	require.NoError(err)
-	chart := helmReleases.ConstellationServices.Chart
-	assert.NotNil(chart.Dependencies())
+	for _, release := range helmReleases {
+		if release.ReleaseName == constellationServicesInfo.releaseName {
+			assert.NotNil(release.Chart.Dependencies())
+		}
+	}
 }
 
 func TestLoadAWSLoadBalancerValues(t *testing.T) {

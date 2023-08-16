@@ -4,6 +4,8 @@ load("//bazel/go:go_test.bzl", "go_test")
 go_library(
     name = "helm",
     srcs = [
+        "action.go",
+        "actionfactory.go",
         "backup.go",
         "ciliumhelper.go",
         "helm.go",
@@ -12,9 +14,11 @@ go_library(
         "loader.go",
         "overrides.go",
         "release.go",
+        "retry.go",
         "serviceversion.go",
         "upgrade.go",
         "values.go",
+        "versionlister.go",
     ],
     embedsrcs = [
         "charts/cert-manager/Chart.yaml",
@@ -431,6 +435,7 @@ go_library(
         "//internal/constants",
         "//internal/file",
         "//internal/kms/uri",
+        "//internal/kubernetes/kubectl",
         "//internal/retry",
         "//internal/semver",
         "//internal/versions",
@@ -444,6 +449,7 @@ go_library(
         "@io_k8s_apimachinery//pkg/util/wait",
         "@io_k8s_client_go//kubernetes",
         "@io_k8s_client_go//tools/clientcmd",
+        "@io_k8s_client_go//util/retry",
         "@io_k8s_sigs_yaml//:yaml",
         "@sh_helm_helm//pkg/ignore",
         "@sh_helm_helm_v3//pkg/action",

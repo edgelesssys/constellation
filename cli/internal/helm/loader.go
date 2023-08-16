@@ -106,11 +106,14 @@ func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion, 
 	}
 }
 
+// ReleaseApplyOrder is a list of releases in the order they should be applied.
+type ReleaseApplyOrder []Release
+
 // LoadReleases loads the embedded helm charts and returns them as a HelmReleases object.
 func (i *ChartLoader) LoadReleases(
 	config *config.Config, conformanceMode bool, helmWaitMode WaitMode, masterSecret uri.MasterSecret,
 	serviceAccURI string, idFile clusterid.File, output terraform.ApplyOutput,
-) (*Releases, error) {
+) (ReleaseApplyOrder, error) {
 	ciliumRelease, err := i.loadRelease(ciliumInfo, helmWaitMode)
 	if err != nil {
 		return nil, fmt.Errorf("loading cilium: %w", err)
@@ -140,15 +143,7 @@ func (i *ChartLoader) LoadReleases(
 	}
 	conServicesRelease.Values = mergeMaps(conServicesRelease.Values, svcVals)
 
-	releases := Releases{Cilium: ciliumRelease, CertManager: certManagerRelease, ConstellationOperators: operatorRelease, ConstellationServices: conServicesRelease}
-	if config.HasProvider(cloudprovider.AWS) {
-		awsRelease, err := i.loadRelease(awsLBControllerInfo, helmWaitMode)
-		if err != nil {
-			return nil, fmt.Errorf("loading aws-services: %w", err)
-		}
-		releases.AWSLoadBalancerController = &awsRelease
-	}
-
+	releases := ReleaseApplyOrder{ciliumRelease, conServicesRelease, certManagerRelease}
 	if config.DeployCSIDriver() {
 		csiRelease, err := i.loadRelease(csiInfo, helmWaitMode)
 		if err != nil {
@@ -159,9 +154,18 @@ func (i *ChartLoader) LoadReleases(
 			return nil, fmt.Errorf("extending CSI values: %w", err)
 		}
 		csiRelease.Values = mergeMaps(csiRelease.Values, extraCSIvals)
-		releases.CSI = &csiRelease
+		releases = append(releases, csiRelease)
 	}
-	return &releases, nil
+	if config.HasProvider(cloudprovider.AWS) {
+		awsRelease, err := i.loadRelease(awsLBControllerInfo, helmWaitMode)
+		if err != nil {
+			return nil, fmt.Errorf("loading aws-services: %w", err)
+		}
+		releases = append(releases, awsRelease)
+	}
+	releases = append(releases, operatorRelease)
+
+	return releases, nil
 }
 
 // loadRelease loads the embedded chart and values depending on the given info argument.

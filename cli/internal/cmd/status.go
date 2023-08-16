@@ -19,7 +19,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -53,8 +52,7 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 
 	fileHandler := file.NewHandler(afero.NewOsFs())
 
-	// set up helm client to fetch service versions
-	helmClient, err := helm.NewUpgradeClient(kubectl.NewUninitialized(), constants.AdminConfFilename, constants.HelmNamespace, log)
+	helmClient, err := helm.NewReleaseVersionClient(constants.AdminConfFilename, log)
 	if err != nil {
 		return fmt.Errorf("setting up helm client: %w", err)
 	}

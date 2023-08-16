@@ -15,7 +15,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -28,9 +27,7 @@ import (
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/release"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/util/retry"
 )
 
 const (
@@ -41,9 +38,9 @@ const (
 )
 
 // ErrConfirmationMissing signals that an action requires user confirmation.
-var ErrConfirmationMissing = errors.New("action requires user confirmation")
+// var ErrConfirmationMissing = errors.New("action requires user confirmation")
 
-var errReleaseNotFound = errors.New("release not found")
+// var errReleaseNotFound = errors.New("release not found")
 
 // UpgradeClient handles interaction with helm and the cluster.
 type UpgradeClient struct {
@@ -109,6 +106,12 @@ func (c *UpgradeClient) shouldUpgrade(releaseName string, newVersion semver.Semv
 	return nil
 }
 
+// helmState release : Version: "" // Version: "clusterVersion"
+// helmState := lister()
+// actions := getActions(helmState)
+// needsCRDBackup(actions) -> backup
+// for actions ... a.Apply()
+
 // Upgrade runs a helm-upgrade on all deployments that are managed via Helm.
 // If the CLI receives an interrupt signal it will cancel the context.
 // Canceling the context will prompt helm to abort and roll back the ongoing upgrade.
@@ -123,26 +126,21 @@ func (c *UpgradeClient) Upgrade(ctx context.Context, config *config.Config, idFi
 	clusterName := clusterid.GetClusterName(config, idFile)
 	helmLoader := NewLoader(config.GetProvider(), validK8sVersion, clusterName)
 	c.log.Debugf("Created new Helm loader")
-	releases, err := helmLoader.LoadReleases(config, conformance, helmWaitMode, masterSecret, serviceAccURI, idFile, output)
+	releases, err := helmLoader.LoadReleases(config, conformance, helmWaitMode, masterSecret, serviceAccURI, idFile, output) // []applyAction
 	if err != nil {
 		return fmt.Errorf("loading releases: %w", err)
 	}
-	for _, release := range getManagedReleases(config, releases) {
+
+	//CreateApplyActions(releases)
+	//if err != nil {
+	//	return fmt.Errorf("loading releases: %w", err)
+	//}
+
+	for _, release := range releases {
 		var invalidUpgrade *compatibility.InvalidUpgradeError
-		// Get version of the chart embedded in the CLI
-		// This is the version we are upgrading to
-		// Since our bundled charts are embedded with version 0.0.0,
-		// we need to update them to the same version as the CLI
-		var upgradeVersion semver.Semver
-		if isCLIVersionedRelease(release.ReleaseName) {
-			updateVersions(release.Chart, constants.BinaryVersion())
-			upgradeVersion = config.MicroserviceVersion
-		} else {
-			chartVersion, err := semver.New(release.Chart.Metadata.Version)
-			if err != nil {
-				return fmt.Errorf("parsing chart version: %w", err)
-			}
-			upgradeVersion = chartVersion
+		upgradeVersion, err := semver.New(release.Chart.Metadata.Version)
+		if err != nil {
+			return fmt.Errorf("parsing chart version: %w", err)
 		}
 		err = c.shouldUpgrade(release.ReleaseName, upgradeVersion, force)
 		switch {
@@ -207,18 +205,6 @@ func (c *UpgradeClient) Upgrade(ctx context.Context, config *config.Config, idFi
 	}
 
 	return errors.Join(upgradeErrs...)
-}
-
-func getManagedReleases(config *config.Config, releases *Releases) []Release {
-	res := []Release{releases.Cilium, releases.CertManager, releases.ConstellationOperators, releases.ConstellationServices}
-
-	if config.GetProvider() == cloudprovider.AWS {
-		res = append(res, *releases.AWSLoadBalancerController)
-	}
-	if config.DeployCSIDriver() {
-		res = append(res, *releases.CSI)
-	}
-	return res
 }
 
 // Versions queries the cluster for running versions and returns a map of releaseName -> version.
@@ -358,12 +344,12 @@ func (c *UpgradeClient) updateCRDs(ctx context.Context, chart *chart.Chart) erro
 	return nil
 }
 
-type crdClient interface {
-	Initialize(kubeconfig []byte) error
-	ApplyCRD(ctx context.Context, rawCRD []byte) error
-	ListCRDs(ctx context.Context) ([]apiextensionsv1.CustomResourceDefinition, error)
-	ListCRs(ctx context.Context, gvr schema.GroupVersionResource) ([]unstructured.Unstructured, error)
-}
+//type crdClient interface {
+//	Initialize(kubeconfig []byte) error
+//	ApplyCRD(ctx context.Context, rawCRD []byte) error
+//	GetCRDs(ctx context.Context) ([]apiextensionsv1.CustomResourceDefinition, error)
+//	GetCRs(ctx context.Context, gvr schema.GroupVersionResource) ([]unstructured.Unstructured, error)
+//}
 
 type actionWrapper interface {
 	listAction(release string) ([]*release.Release, error)
@@ -378,10 +364,17 @@ type actions struct {
 
 // listAction execute a List action by wrapping helm's action package.
 // It creates the action, runs it at returns results and errors.
-func (a actions) listAction(release string) ([]*release.Release, error) {
+func (a actions) listAction(release string) (res []*release.Release, err error) {
 	action := action.NewList(a.config)
 	action.Filter = release
-	return action.Run()
+	// during init, the kube API might not yet be reachable, so we retry
+	err = retry.OnError(retry.DefaultBackoff, func(err error) bool {
+		return err != nil
+	}, func() error {
+		res, err = action.Run()
+		return err
+	})
+	return
 }
 
 func (a actions) getValues(release string) (map[string]any, error) {
@@ -417,8 +410,8 @@ func (a actions) installAction(ctx context.Context, releaseName string, chart *c
 
 // isCLIVersionedRelease checks if the given release is versioned by the CLI,
 // meaning that the version of the Helm release is equal to the version of the CLI that installed it.
-func isCLIVersionedRelease(releaseName string) bool {
-	return releaseName == constellationOperatorsInfo.releaseName ||
-		releaseName == constellationServicesInfo.releaseName ||
-		releaseName == csiInfo.releaseName
-}
+//func isCLIVersionedRelease(releaseName string) bool {
+//	return releaseName == constellationOperatorsInfo.releaseName ||
+//		releaseName == constellationServicesInfo.releaseName ||
+//		releaseName == csiInfo.releaseName
+//}
