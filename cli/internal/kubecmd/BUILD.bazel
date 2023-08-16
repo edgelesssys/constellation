@@ -39,6 +39,7 @@ go_test(
     srcs = ["kubecmd_test.go"],
     embed = [":kubecmd"],
     deps = [
+        "//internal/attestation/measurements",
         "//internal/attestation/variant",
         "//internal/cloud/cloudprovider",
         "//internal/compatibility",

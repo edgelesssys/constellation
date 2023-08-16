@@ -13,8 +13,7 @@ import (
 	"io"
 	"testing"
 
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
-
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
@@ -28,6 +27,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -281,7 +281,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			customClientFn: func(nodeVersion updatev1alpha1.NodeVersion) unstructuredInterface {
 				fakeClient := &fakeUnstructuredClient{}
 				fakeClient.On("GetCR", mock.Anything, mock.Anything).Return(unstructedObjectWithGeneration(nodeVersion, 1), nil)
-				fakeClient.On("UpdateCR", mock.Anything, mock.Anything).Return(nil, kerrors.NewConflict(schema.GroupResource{Resource: nodeVersion.Name}, nodeVersion.Name, nil)).Once()
+				fakeClient.On("UpdateCR", mock.Anything, mock.Anything).Return(nil, k8serrors.NewConflict(schema.GroupResource{Resource: nodeVersion.Name}, nodeVersion.Name, nil)).Once()
 				fakeClient.On("UpdateCR", mock.Anything, mock.Anything).Return(unstructedObjectWithGeneration(nodeVersion, 2), nil).Once()
 				return fakeClient
 			},
@@ -470,7 +470,7 @@ func newJoinConfigMap(data string) *corev1.ConfigMap {
 	}
 }
 
-func TestUpdateAttestationConfig(t *testing.T) {
+func TestApplyAttestationConfig(t *testing.T) {
 	mustMarshal := func(cfg config.AttestationCfg) string {
 		data, err := json.Marshal(cfg)
 		require.NoError(t, err)
@@ -483,17 +483,57 @@ func TestUpdateAttestationConfig(t *testing.T) {
 		wantErr           bool
 	}{
 		"success": {
-			newAttestationCfg: config.DefaultForAzureSEVSNP(),
+			newAttestationCfg: &config.QEMUVTPM{
+				Measurements: measurements.M{
+					0: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+				},
+			},
 			kubectl: &stubKubectl{
 				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap: newJoinConfigMap(mustMarshal(config.DefaultForAzureSEVSNP())),
+					constants.JoinConfigMap: newJoinConfigMap(mustMarshal(&config.QEMUVTPM{
+						Measurements: measurements.M{
+							0: measurements.WithAllBytes(0xFF, measurements.WarnOnly, measurements.PCRMeasurementLength),
+						},
+					})),
 				},
 			},
 		},
-		"error getting ConfigMap": {
-			newAttestationCfg: config.DefaultForAzureSEVSNP(),
+		"Get ConfigMap error": {
+			newAttestationCfg: &config.QEMUVTPM{
+				Measurements: measurements.M{
+					0: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+				},
+			},
 			kubectl: &stubKubectl{
 				getCMErr: assert.AnError,
+			},
+			wantErr: true,
+		},
+		"ConfigMap does not exist yet": {
+			newAttestationCfg: &config.QEMUVTPM{
+				Measurements: measurements.M{
+					0: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+				},
+			},
+			kubectl: &stubKubectl{
+				getCMErr: k8serrors.NewNotFound(schema.GroupResource{}, ""),
+			},
+		},
+		"Update ConfigMap error": {
+			newAttestationCfg: &config.QEMUVTPM{
+				Measurements: measurements.M{
+					0: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+				},
+			},
+			kubectl: &stubKubectl{
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.JoinConfigMap: newJoinConfigMap(mustMarshal(&config.QEMUVTPM{
+						Measurements: measurements.M{
+							0: measurements.WithAllBytes(0xFF, measurements.WarnOnly, measurements.PCRMeasurementLength),
+						},
+					})),
+				},
+				updateCMErr: assert.AnError,
 			},
 			wantErr: true,
 		},
@@ -502,6 +542,7 @@ func TestUpdateAttestationConfig(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
+			require := require.New(t)
 
 			cmd := &KubeCmd{
 				kubectl:   tc.kubectl,
@@ -509,12 +550,15 @@ func TestUpdateAttestationConfig(t *testing.T) {
 				outWriter: io.Discard,
 			}
 
-			err := cmd.UpdateAttestationConfig(context.Background(), tc.newAttestationCfg)
+			err := cmd.ApplyAttestationConfig(context.Background(), tc.newAttestationCfg, []byte{0x11})
 			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			assert.NoError(err)
+			cfg, ok := tc.kubectl.configMaps[constants.JoinConfigMap]
+			require.True(ok)
+			assert.Equal(mustMarshal(tc.newAttestationCfg), cfg.Data[constants.AttestationConfigFilename])
 		})
 	}
 }

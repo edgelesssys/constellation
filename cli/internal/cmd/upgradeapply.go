@@ -153,7 +153,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command) error {
 	}
 	conf.UpdateMAAURL(idFile.AttestationURL)
 
-	if err := u.confirmAttestationConfigUpgrade(cmd, conf.GetAttestationConfig(), flags); err != nil {
+	if err := u.confirmAttestationConfigUpgrade(cmd, conf.GetAttestationConfig(), idFile.MeasurementSalt, flags); err != nil {
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
 
@@ -340,7 +340,9 @@ func validK8sVersion(cmd *cobra.Command, version string, yes bool) (validVersion
 
 // confirmAttestationConfigUpgrade checks if the locally configured measurements are different from the cluster's measurements.
 // If so the function will ask the user to confirm (if --yes is not set) and upgrade the cluster's config.
-func (u *upgradeApplyCmd) confirmAttestationConfigUpgrade(cmd *cobra.Command, newConfig config.AttestationCfg, flags upgradeApplyFlags) error {
+func (u *upgradeApplyCmd) confirmAttestationConfigUpgrade(
+	cmd *cobra.Command, newConfig config.AttestationCfg, measurementSalt []byte, flags upgradeApplyFlags,
+) error {
 	clusterAttestationConfig, err := u.kubeUpgrader.GetClusterAttestationConfig(cmd.Context(), newConfig.GetVariant())
 	if err != nil {
 		return fmt.Errorf("getting cluster attestation config: %w", err)
@@ -371,9 +373,11 @@ func (u *upgradeApplyCmd) confirmAttestationConfigUpgrade(cmd *cobra.Command, ne
 		}
 	}
 
-	if err := u.kubeUpgrader.UpdateAttestationConfig(cmd.Context(), newConfig); err != nil {
+	if err := u.kubeUpgrader.ApplyAttestationConfig(cmd.Context(), newConfig, measurementSalt); err != nil {
 		return fmt.Errorf("updating attestation config: %w", err)
 	}
+
+	cmd.Println("Successfully update the cluster's attestation config")
 	return nil
 }
 
@@ -493,7 +497,7 @@ type kubernetesUpgrader interface {
 	UpgradeNodeVersion(ctx context.Context, conf *config.Config, force bool) error
 	ExtendClusterConfigCertSANs(ctx context.Context, alternativeNames []string) error
 	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, error)
-	UpdateAttestationConfig(ctx context.Context, newAttestConfig config.AttestationCfg) error
+	ApplyAttestationConfig(ctx context.Context, newAttestConfig config.AttestationCfg, measurementSalt []byte) error
 }
 
 type helmUpgrader interface {
