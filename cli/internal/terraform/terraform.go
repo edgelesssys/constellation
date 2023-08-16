@@ -39,7 +39,7 @@ import (
 )
 
 const (
-	tfVersion         = ">= 1.4.6"
+	tfVersion         = ">= 1.4.6, < 1.6.0"
 	terraformVarsFile = "terraform.tfvars"
 
 	// terraformUpgradePlanFile is the file name of the zipfile created by Terraform plan for Constellation upgrades.
