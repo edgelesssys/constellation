@@ -63,7 +63,6 @@ The following infrastructure configurations was used:
 - CVM: `false`
 - Zone: `europe-west3-b`
 
-
 ### Results
 
 #### Network
@@ -79,11 +78,10 @@ Therefore, to make the test comparable, both AKS and Constellation on Azure were
 Constellation on Azure and AKS used an MTU of 1500.
 Constellation on GCP used an MTU of 8896. GKE used an MTU of 1450.
 
-
 The difference in network bandwidth can largely be attributed to two factors.
 
-* Constellation's [network encryption](../architecture/networking.md) via Cilium and WireGuard, which protects data in-transit.
-* [AMD SEV using SWIOTLB bounce buffers](https://lore.kernel.org/all/20200204193500.GA15564@ashkalra_ubuntu_server/T/) for all DMA including network I/O.
+- Constellation's [network encryption](../architecture/networking.md) via Cilium and WireGuard, which protects data in-transit.
+- [AMD SEV using SWIOTLB bounce buffers](https://lore.kernel.org/all/20200204193500.GA15564@ashkalra_ubuntu_server/T/) for all DMA including network I/O.
 
 ##### Pod-to-Pod
 
@@ -134,6 +132,7 @@ The results for "Pod-to-Pod" on GCP are as follows:
 In our recent comparison of Constellation on GCP with GKE, Constellation has 58% less TCP bandwidth. However, UDP bandwidth was slightly better with Constellation, thanks to its higher MTU.
 
 Similarly, when comparing Constellation on Azure with AKS using CVMs, Constellation achieved approximately 10% less TCP and 40% less UDP bandwidth.
+
 #### Storage I/O
 
 Azure and GCP offer persistent storage for their Kubernetes services AKS and GKE via the Container Storage Interface (CSI). CSI storage in Kubernetes is available via `PersistentVolumes` (PV) and consumed via `PersistentVolumeClaims` (PVC).
@@ -143,21 +142,25 @@ Similarly, upon a PVC request, Constellation will provision a PV via a default s
 
 For Constellation on Azure and AKS, the benchmark ran with Azure Disk storage [Standard SSD](https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types#standard-ssds) of 400 GiB size.
 The [DC4as machine type](https://learn.microsoft.com/en-us/azure/virtual-machines/dasv5-dadsv5-series#dasv5-series) with four cores provides the following maximum performance:
+
 - 6400 (20000 burst) IOPS
 - 144 MB/s (600 MB/s burst) throughput
 
 However, the performance is bound by the capabilities of the [512 GiB Standard SSD size](https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types#standard-ssds) (the size class of 400 GiB volumes):
+
 - 500 (600 burst) IOPS
 - 60 MB/s (150 MB/s burst) throughput
 
 For Constellation on GCP and GKE, the benchmark ran with Compute Engine Persistent Disk Storage [pd-balanced](https://cloud.google.com/compute/docs/disks) of 400 GiB size.
 The N2D machine type with four cores and pd-balanced provides the following [maximum performance](https://cloud.google.com/compute/docs/disks/performance#n2d_vms):
+
 - 3,000 read IOPS
 - 15,000 write IOPS
 - 240 MB/s read throughput
 - 240 MB/s write throughput
 
 However, the performance is bound by the capabilities of a [`Zonal balanced PD`](https://cloud.google.com/compute/docs/disks/performance#zonal-persistent-disks) with 400 GiB size:
+
 - 2400 read IOPS
 - 2400 write IOPS
 - 112 MB/s read throughput
@@ -178,8 +181,7 @@ The following `fio` settings were used:
 - IOPS: 4 KB blocks and 128 iodepth
 - Bandwidth: 1024 KB blocks and 128 iodepth
 
-For more details, see the [`fio` test configuration](../../../../.github/actions/e2e_benchmark/fio.ini).
-
+For more details, see the [`fio` test configuration](https://github.com/edgelesssys/constellation/blob/main/.github/actions/e2e_benchmark/fio.ini).
 
 The results for IOPS on Azure are as follows:
 
