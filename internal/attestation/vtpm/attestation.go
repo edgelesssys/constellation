@@ -7,10 +7,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 package vtpm
 
 import (
-	"bytes"
 	"context"
 	"crypto"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 
@@ -219,21 +219,12 @@ func (v *Validator) Validate(ctx context.Context, attDocRaw []byte, nonce []byte
 	if err != nil {
 		return nil, err
 	}
-	for idx, pcr := range v.expected {
-		if !bytes.Equal(pcr.Expected[:], attDoc.Attestation.Quotes[quoteIdx].Pcrs.Pcrs[idx]) {
-			if pcr.ValidationOpt == measurements.Enforce {
-				return nil, fmt.Errorf(
-					"untrusted PCR value %x at index %d",
-					attDoc.Attestation.Quotes[quoteIdx].Pcrs.Pcrs[idx],
-					idx,
-				)
-			}
-			v.log.Warnf(
-				"Encountered untrusted PCR value %x at index %d",
-				attDoc.Attestation.Quotes[quoteIdx].Pcrs.Pcrs[idx],
-				idx,
-			)
-		}
+	warnings, errs := v.expected.Compare(attDoc.Attestation.Quotes[quoteIdx].Pcrs.Pcrs)
+	for _, warning := range warnings {
+		v.log.Warnf(warning)
+	}
+	if len(errs) > 0 {
+		return nil, fmt.Errorf("measurement validation failed:\n%w", errors.Join(errs...))
 	}
 
 	v.log.Infof("Successfully validated attestation document")

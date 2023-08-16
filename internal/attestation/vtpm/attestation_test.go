@@ -80,7 +80,7 @@ func TestValidate(t *testing.T) {
 	defer tpmCloser.Close()
 
 	issuer := NewIssuer(tpmOpen, tpmclient.AttestationKeyRSA, fakeGetInstanceInfo, logger.NewTest(t))
-	validator := NewValidator(testExpectedPCRs, fakeGetTrustedKey, fakeValidateCVM, nil)
+	validator := NewValidator(testExpectedPCRs, fakeGetTrustedKey, fakeValidateCVM, logger.NewTest(t))
 
 	nonce := []byte{1, 2, 3, 4}
 	challenge := []byte("Constellation")
@@ -206,6 +206,10 @@ func TestValidate(t *testing.T) {
 						Expected:      []byte{0xFF},
 						ValidationOpt: measurements.Enforce,
 					},
+					1: measurements.Measurement{
+						Expected:      []byte{0xFF},
+						ValidationOpt: measurements.Enforce,
+					},
 				},
 				fakeGetTrustedKey,
 				fakeValidateCVM,
@@ -213,6 +217,25 @@ func TestValidate(t *testing.T) {
 			attDoc:  mustMarshalAttestation(attDoc, require),
 			nonce:   nonce,
 			wantErr: true,
+		},
+		"untrusted WarnOnly PCRs": {
+			validator: NewValidator(
+				measurements.M{
+					0: measurements.Measurement{
+						Expected:      []byte{0xFF},
+						ValidationOpt: measurements.WarnOnly,
+					},
+					1: measurements.Measurement{
+						Expected:      []byte{0xFF},
+						ValidationOpt: measurements.WarnOnly,
+					},
+				},
+				fakeGetTrustedKey,
+				fakeValidateCVM,
+				logger.NewTest(t)),
+			attDoc:  mustMarshalAttestation(attDoc, require),
+			nonce:   nonce,
+			wantErr: false,
 		},
 		"no sha256 quote": {
 			validator: NewValidator(testExpectedPCRs, fakeGetTrustedKey, fakeValidateCVM, warnLog),
