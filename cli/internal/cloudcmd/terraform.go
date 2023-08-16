@@ -30,7 +30,7 @@ func TerraformUpgradeVars(conf *config.Config) (terraform.Variables, error) {
 		vars := awsTerraformVars(conf, "ami-placeholder")
 		return vars, nil
 	case cloudprovider.Azure:
-		vars := azureTerraformVars(conf, "/communityGalleries/myGalleryName/images/myImageName/versions/myImageVersion")
+		vars := azureTerraformVars(conf, "/communityGalleries/myGalleryName/images/myImageName/versions/latest")
 		return vars, nil
 	case cloudprovider.GCP:
 		vars := gcpTerraformVars(conf, "placeholder")
