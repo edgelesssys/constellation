@@ -68,6 +68,7 @@ go_library(
         "//internal/grpc/dialer",
         "//internal/grpc/grpclog",
         "//internal/grpc/retry",
+        "//internal/imagefetcher",
         "//internal/kms/uri",
         "//internal/kubernetes/kubectl",
         "//internal/license",

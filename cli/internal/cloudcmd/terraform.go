@@ -18,18 +18,16 @@ import (
 )
 
 // TerraformUpgradeVars returns variables required to execute the Terraform scripts.
-func TerraformUpgradeVars(conf *config.Config) (terraform.Variables, error) {
-	// Note that we pass "" as imageRef, as we ignore changes to the image in the terraform.
-	// The image is updates via our operator.
+func TerraformUpgradeVars(conf *config.Config, imageRef string) (terraform.Variables, error) {
 	switch conf.GetProvider() {
 	case cloudprovider.AWS:
-		vars := awsTerraformVars(conf, "")
+		vars := awsTerraformVars(conf, imageRef)
 		return vars, nil
 	case cloudprovider.Azure:
-		vars := azureTerraformVars(conf, "")
+		vars := azureTerraformVars(conf, imageRef)
 		return vars, nil
 	case cloudprovider.GCP:
-		vars := gcpTerraformVars(conf, "")
+		vars := gcpTerraformVars(conf, imageRef)
 		return vars, nil
 	default:
 		return nil, fmt.Errorf("unsupported provider: %s", conf.GetProvider())

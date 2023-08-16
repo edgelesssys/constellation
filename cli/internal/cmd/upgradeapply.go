@@ -27,6 +27,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/rogpeppe/go-internal/diff"
@@ -75,18 +76,20 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
+	imagefetcher := imagefetcher.New()
 	configFetcher := attestationconfigapi.NewFetcher()
 	tfClient, err := terraform.New(cmd.Context(), constants.TerraformWorkingDir)
 	if err != nil {
 		return fmt.Errorf("setting up terraform client: %w", err)
 	}
 
-	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log, configFetcher: configFetcher, clusterShower: tfClient, fileHandler: fileHandler}
+	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log, imageFetcher: imagefetcher, configFetcher: configFetcher, clusterShower: tfClient, fileHandler: fileHandler}
 	return applyCmd.upgradeApply(cmd)
 }
 
 type upgradeApplyCmd struct {
 	upgrader      cloudUpgrader
+	imageFetcher  imageFetcher
 	configFetcher attestationconfigapi.Fetcher
 	clusterShower clusterShower
 	fileHandler   file.Handler
@@ -146,7 +149,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command) error {
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
 	// not moving existing Terraform migrator because of planned apply refactor
-	tfOutput, err := u.migrateTerraform(cmd, conf, flags)
+	tfOutput, err := u.migrateTerraform(cmd, u.imageFetcher, conf, flags)
 	if err != nil {
 		return fmt.Errorf("performing Terraform migrations: %w", err)
 	}
@@ -207,10 +210,18 @@ func diffAttestationCfg(currentAttestationCfg config.AttestationCfg, newAttestat
 	return diff, nil
 }
 
+func getImage(ctx context.Context, conf *config.Config, fetcher imageFetcher) (string, error) {
+	// Fetch variables to execute Terraform script with
+	provider := conf.GetProvider()
+	attestationVariant := conf.GetAttestationConfig().GetVariant()
+	region := conf.GetRegion()
+	return fetcher.FetchReference(ctx, provider, attestationVariant, conf.Image, region)
+}
+
 // migrateTerraform checks if the Constellation version the cluster is being upgraded to requires a migration
 // of cloud resources with Terraform. If so, the migration is performed.
 func (u *upgradeApplyCmd) migrateTerraform(
-	cmd *cobra.Command, conf *config.Config, flags upgradeApplyFlags,
+	cmd *cobra.Command, fetcher imageFetcher, conf *config.Config, flags upgradeApplyFlags,
 ) (res terraform.ApplyOutput, err error) {
 	u.log.Debugf("Planning Terraform migrations")
 
@@ -218,7 +229,12 @@ func (u *upgradeApplyCmd) migrateTerraform(
 		return res, fmt.Errorf("checking workspace: %w", err)
 	}
 
-	vars, err := cloudcmd.TerraformUpgradeVars(conf)
+	imageRef, err := getImage(cmd.Context(), conf, fetcher)
+	if err != nil {
+		return res, fmt.Errorf("fetching image reference: %w", err)
+	}
+
+	vars, err := cloudcmd.TerraformUpgradeVars(conf, imageRef)
 	if err != nil {
 		return res, fmt.Errorf("parsing upgrade variables: %w", err)
 	}
@@ -324,6 +340,13 @@ func validK8sVersion(cmd *cobra.Command, version string, yes bool) (validVersion
 	}
 
 	return validVersion, nil
+}
+
+type imageFetcher interface {
+	FetchReference(ctx context.Context,
+		provider cloudprovider.Provider, attestationVariant variant.Variant,
+		image, region string,
+	) (string, error)
 }
 
 // confirmIfUpgradeAttestConfigHasDiff checks if the locally configured measurements are different from the cluster's measurements.

@@ -31,6 +31,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
 	consemver "github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
@@ -99,8 +100,9 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 			log:            log,
 			versionsapi:    versionfetcher,
 		},
-		checker: checker,
-		log:     log,
+		checker:      checker,
+		imagefetcher: imagefetcher.New(),
+		log:          log,
 	}
 
 	return up.upgradeCheck(cmd, fileHandler, attestationconfigapi.NewFetcher(), flags)
@@ -146,6 +148,7 @@ type upgradeCheckCmd struct {
 	canUpgradeCheck bool
 	collect         collector
 	checker         upgradeChecker
+	imagefetcher    imageFetcher
 	log             debugLog
 }
 
@@ -216,7 +219,12 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 		return fmt.Errorf("checking workspace: %w", err)
 	}
 
-	vars, err := cloudcmd.TerraformUpgradeVars(conf)
+	imageRef, err := getImage(cmd.Context(), conf, u.imagefetcher)
+	if err != nil {
+		return fmt.Errorf("fetching image reference: %w", err)
+	}
+
+	vars, err := cloudcmd.TerraformUpgradeVars(conf, imageRef)
 	if err != nil {
 		return fmt.Errorf("parsing upgrade variables: %w", err)
 	}
