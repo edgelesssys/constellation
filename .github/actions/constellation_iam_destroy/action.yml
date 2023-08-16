@@ -39,8 +39,4 @@ runs:
     - name: Delete IAM configuration
       shell: bash
       run: |
-        output=$(constellation --help)
-        if [[ $output == *"tf-log"* ]]; then
-          TFFLAG="--tf-log=DEBUG"
-        fi
-        constellation iam destroy --yes ${TFFLAG:-}
+        constellation iam destroy --yes --tf-log=DEBUG
