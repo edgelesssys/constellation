@@ -68,3 +68,15 @@ oci_image(
     ],
     visibility = ["//visibility:public"],
 )
+
+filegroup(
+    name = "crd_bases",
+    srcs = glob(["config/crd/bases/*.yaml"]),
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "external_crds",
+    srcs = glob(["external/**/*.yaml"]),
+    visibility = ["//visibility:public"],
+)
