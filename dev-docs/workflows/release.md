@@ -6,7 +6,6 @@ This checklist will prepare `v1.3.0` from `v1.2.0` (minor release) or `v1.3.1` f
 
 1. Search the code for TODOs and FIXMEs that should be resolved before releasing.
 2. [Update titles and labels for all PRs relevant for this release](/dev-docs/conventions.md#pr-conventions) to aid in the [changelog generation](/.github/release.yml).
-3. Check PRs for the label `iam upgrade`. If there is any, update `upgradeRequiresIAMMigration`  in `iamupgradeapply.go`. This ensures the CLI issues a warning on `upgrade apply` to run `iam upgrade apply` before upgrading the cluster.
 
 
 
@@ -78,6 +77,7 @@ Then wait until the node / Kubernetes upgrades are finished by periodically chec
    4. Move open issues and PRs from closed milestone to next milestone
 3.  If the release is a minor version release, bump the pre-release version in the `version.txt` file.
 4. Update the `fromVersion` in `e2e-test-release.yml` and `e2e-test-weekly.yaml` to the newly released version. To check the current values, run: `grep "fromVersion: \[.*\]" -R .github`.
+5. Reset `upgradeRequiresIAMMigration`  in `iamupgradeapply.go`.
 
 ## Pipeline cleanup
 
