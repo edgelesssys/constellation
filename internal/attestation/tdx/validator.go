@@ -7,9 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 package tdx
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
@@ -81,13 +81,12 @@ func (v *Validator) Validate(ctx context.Context, attDocRaw []byte, nonce []byte
 	}
 
 	// Verify the quote against the expected measurements.
-	for idx, ex := range v.expected {
-		if !bytes.Equal(ex.Expected, tdMeasure[idx]) {
-			if !ex.ValidationOpt {
-				return nil, fmt.Errorf("untrusted TD measurement value at index %d", idx)
-			}
-			v.log.Warnf("Encountered untrusted TD measurement value at index %d", idx)
-		}
+	warnings, errs := v.expected.Compare(tdMeasure)
+	for _, warning := range warnings {
+		v.log.Warnf(warning)
+	}
+	if len(errs) > 0 {
+		return nil, fmt.Errorf("measurement validation failed:\n%w", errors.Join(errs...))
 	}
 
 	return attDoc.UserData, nil

@@ -226,6 +226,37 @@ func (m *M) EqualTo(other M) bool {
 	return true
 }
 
+// Compare compares the expected measurements to the given list of measurements.
+// It returns a list of warnings for non matching measurements for WarnOnly entries,
+// and a list of errors for non matching measurements for Enforce entries.
+func (m M) Compare(other map[uint32][]byte) (warnings []string, errs []error) {
+	// Get list of indices in expected measurements
+	var mIndices []uint32
+	for idx := range m {
+		mIndices = append(mIndices, idx)
+	}
+	sort.SliceStable(mIndices, func(i, j int) bool {
+		return mIndices[i] < mIndices[j]
+	})
+
+	for _, idx := range mIndices {
+		if !bytes.Equal(m[idx].Expected, other[idx]) {
+			msg := fmt.Sprintf("untrusted measurement value %x at index %d", other[idx], idx)
+			if len(other[idx]) == 0 {
+				msg = fmt.Sprintf("missing measurement value for index %d", idx)
+			}
+
+			if m[idx].ValidationOpt == Enforce {
+				errs = append(errs, errors.New(msg))
+			} else {
+				warnings = append(warnings, fmt.Sprintf("Encountered %s", msg))
+			}
+		}
+	}
+
+	return warnings, errs
+}
+
 // GetEnforced returns a list of all enforced Measurements,
 // i.e. all Measurements that are not marked as WarnOnly.
 func (m *M) GetEnforced() []uint32 {

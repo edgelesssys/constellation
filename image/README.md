@@ -272,3 +272,11 @@ bazel run //image/upload -- qemu --verbose --raw-image mkosi.output.qemu/fedora~
 ```
 
 </details>
+
+## Kernel
+
+The Kernel is built from the srpm published under [edgelesssys/constellation-kernel](https://github.com/edgelesssys/constellation-kernel).
+We track the latest longterm release, use sources directly from [kernel.org](https://www.kernel.org/) and build the Kernel using the steps specified in the
+srpm spec file.
+
+After building a Kernel rpm, we upload it to our CDN and use it in our image builds.
