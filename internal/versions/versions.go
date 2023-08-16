@@ -119,14 +119,14 @@ const (
 
 	// currently supported versions.
 	//nolint:revive
-	V1_25 ValidK8sVersion = "v1.25.12" // renovate:kubernetes-release
-	//nolint:revive
 	V1_26 ValidK8sVersion = "v1.26.7" // renovate:kubernetes-release
 	//nolint:revive
 	V1_27 ValidK8sVersion = "v1.27.4" // renovate:kubernetes-release
+	//nolint:revive
+	V1_28 ValidK8sVersion = "v1.28.0" // renovate:kubernetes-release
 
 	// Default k8s version deployed by Constellation.
-	Default ValidK8sVersion = V1_26
+	Default ValidK8sVersion = V1_27
 )
 
 // Regenerate the hashes by running go generate.
@@ -135,69 +135,18 @@ const (
 
 // VersionConfigs holds download URLs for all required kubernetes components for every supported version.
 var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
-	V1_25: {
-		ClusterVersion: "v1.25.12", // renovate:kubernetes-release
-		KubernetesComponents: components.Components{
-			{
-				URL:         "https://github.com/containernetworking/plugins/releases/download/v1.2.0/cni-plugins-linux-amd64-v1.2.0.tgz", // renovate:cni-plugins-release
-				Hash:        "sha256:f3a841324845ca6bf0d4091b4fc7f97e18a623172158b72fc3fdcdb9d42d2d37",
-				InstallPath: constants.CniPluginsDir,
-				Extract:     true,
-			},
-			{
-				URL:         "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.27.0/crictl-v1.27.0-linux-amd64.tar.gz", // renovate:crictl-release
-				Hash:        "sha256:d335d6e16c309fbc3ff1a29a7e49bb253b5c9b4b030990bf7c6b48687f985cee",
-				InstallPath: constants.BinDir,
-				Extract:     true,
-			},
-			{
-				URL:         "https://storage.googleapis.com/kubernetes-release/release/v1.25.12/bin/linux/amd64/kubelet", // renovate:kubernetes-release
-				Hash:        "sha256:7aa7d0b4512e6d79ada2017c054b07aaf30d4dc0d740449364a5e2c26e2c1842",
-				InstallPath: constants.KubeletPath,
-				Extract:     false,
-			},
-			{
-				URL:         "https://storage.googleapis.com/kubernetes-release/release/v1.25.12/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
-				Hash:        "sha256:293252f0a1727bfad4ef4fe99d704a56ecea45e39b0ea77f629c55da39e377da",
-				InstallPath: constants.KubeadmPath,
-				Extract:     false,
-			},
-			{
-				URL:         "https://storage.googleapis.com/kubernetes-release/release/v1.25.12/bin/linux/amd64/kubectl", // renovate:kubernetes-release
-				Hash:        "sha256:75842752ea07cb8ee2210df40faa7c61e1317e76d5c7968e380cae83447d4a0f",
-				InstallPath: constants.KubectlPath,
-				Extract:     false,
-			},
-		},
-		// CloudControllerManagerImageAWS is the CCM image used on AWS.
-		CloudControllerManagerImageAWS: "registry.k8s.io/provider-aws/cloud-controller-manager:v1.25.3@sha256:47eb1c1e6a3bd6d0fb44ac4992885b6218f1448ea339de778d8b703df463c06f", // renovate:container
-		// CloudControllerManagerImageAzure is the CCM image used on Azure.
-		// Check for newer versions at https://github.com/kubernetes-sigs/cloud-provider-azure/blob/master/README.md.
-		CloudControllerManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.25.17@sha256:db168815dd1801bbde18e585875c155bece8dd2077514abb91de6ec82bc5e97b", // renovate:container
-		// CloudNodeManagerImageAzure is the cloud-node-manager image used on Azure.
-		// Check for newer versions at https://github.com/kubernetes-sigs/cloud-provider-azure/blob/master/README.md.
-		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.25.17@sha256:89f7bcf23a7674714103800306b2efd18f8b9f42477c6ac7687a99692adb236d", // renovate:container
-		// CloudControllerManagerImageGCP is the CCM image used on GCP.
-		// TODO(3u13r): use newer "cloud-provider-gcp" from https://github.com/kubernetes/cloud-provider-gcp when newer releases are available.
-		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v25.2.0@sha256:86fa9d31ed0b3d0d8806f13d6e7debd3471028b2cb7cca3a876d8a31612a7ba5", // renovate:container
-		// CloudControllerManagerImageOpenStack is the CCM image used on OpenStack.
-		CloudControllerManagerImageOpenStack: "docker.io/k8scloudprovider/openstack-cloud-controller-manager:v1.25.5", // renovate:container
-		// External service image. Depends on k8s version.
-		// Check for new versions at https://github.com/kubernetes/autoscaler/releases.
-		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.25.3@sha256:a8c8f3c5e5fc532c37ab9cf5388d0061ecbf78090b91c3d059b09fa3ffd4ac53", // renovate:container
-	},
 	V1_26: {
 		ClusterVersion: "v1.26.7", // renovate:kubernetes-release
 		KubernetesComponents: components.Components{
 			{
-				URL:         "https://github.com/containernetworking/plugins/releases/download/v1.2.0/cni-plugins-linux-amd64-v1.2.0.tgz", // renovate:cni-plugins-release
-				Hash:        "sha256:f3a841324845ca6bf0d4091b4fc7f97e18a623172158b72fc3fdcdb9d42d2d37",
+				URL:         "https://github.com/containernetworking/plugins/releases/download/v1.3.0/cni-plugins-linux-amd64-v1.3.0.tgz", // renovate:cni-plugins-release
+				Hash:        "sha256:754a71ed60a4bd08726c3af705a7d55ee3df03122b12e389fdba4bea35d7dd7e",
 				InstallPath: constants.CniPluginsDir,
 				Extract:     true,
 			},
 			{
-				URL:         "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.27.0/crictl-v1.27.0-linux-amd64.tar.gz", // renovate:crictl-release
-				Hash:        "sha256:d335d6e16c309fbc3ff1a29a7e49bb253b5c9b4b030990bf7c6b48687f985cee",
+				URL:         "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.28.0/crictl-v1.28.0-linux-amd64.tar.gz", // renovate:crictl-release
+				Hash:        "sha256:8dc78774f7cbeaf787994d386eec663f0a3cf24de1ea4893598096cb39ef2508",
 				InstallPath: constants.BinDir,
 				Extract:     true,
 			},
@@ -241,14 +190,14 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		ClusterVersion: "v1.27.4", // renovate:kubernetes-release
 		KubernetesComponents: components.Components{
 			{
-				URL:         "https://github.com/containernetworking/plugins/releases/download/v1.2.0/cni-plugins-linux-amd64-v1.2.0.tgz", // renovate:cni-plugins-release
-				Hash:        "sha256:f3a841324845ca6bf0d4091b4fc7f97e18a623172158b72fc3fdcdb9d42d2d37",
+				URL:         "https://github.com/containernetworking/plugins/releases/download/v1.3.0/cni-plugins-linux-amd64-v1.3.0.tgz", // renovate:cni-plugins-release
+				Hash:        "sha256:754a71ed60a4bd08726c3af705a7d55ee3df03122b12e389fdba4bea35d7dd7e",
 				InstallPath: constants.CniPluginsDir,
 				Extract:     true,
 			},
 			{
-				URL:         "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.27.0/crictl-v1.27.0-linux-amd64.tar.gz", // renovate:crictl-release
-				Hash:        "sha256:d335d6e16c309fbc3ff1a29a7e49bb253b5c9b4b030990bf7c6b48687f985cee",
+				URL:         "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.28.0/crictl-v1.28.0-linux-amd64.tar.gz", // renovate:crictl-release
+				Hash:        "sha256:8dc78774f7cbeaf787994d386eec663f0a3cf24de1ea4893598096cb39ef2508",
 				InstallPath: constants.BinDir,
 				Extract:     true,
 			},
@@ -284,6 +233,57 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v26.0.1@sha256:db2b15a20ad690784a6015bfad55c4dff15826be8cf9f6ac77d70abd11b1f70c", // renovate:container
 		// CloudControllerManagerImageOpenStack is the CCM image used on OpenStack.
 		CloudControllerManagerImageOpenStack: "docker.io/k8scloudprovider/openstack-cloud-controller-manager:v1.26.2", // renovate:container
+		// External service image. Depends on k8s version.
+		// Check for new versions at https://github.com/kubernetes/autoscaler/releases.
+		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.27.3@sha256:0e1ab1bfeb1beaa82f59356ef36364503df22aeb8f8d0d7383bac449b4e808fb", // renovate:container
+	},
+	V1_28: {
+		ClusterVersion: "v1.28.0", // renovate:kubernetes-release
+		KubernetesComponents: components.Components{
+			{
+				URL:         "https://github.com/containernetworking/plugins/releases/download/v1.3.0/cni-plugins-linux-amd64-v1.3.0.tgz", // renovate:cni-plugins-release
+				Hash:        "sha256:754a71ed60a4bd08726c3af705a7d55ee3df03122b12e389fdba4bea35d7dd7e",
+				InstallPath: constants.CniPluginsDir,
+				Extract:     true,
+			},
+			{
+				URL:         "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.28.0/crictl-v1.28.0-linux-amd64.tar.gz", // renovate:crictl-release
+				Hash:        "sha256:8dc78774f7cbeaf787994d386eec663f0a3cf24de1ea4893598096cb39ef2508",
+				InstallPath: constants.BinDir,
+				Extract:     true,
+			},
+			{
+				URL:         "https://storage.googleapis.com/kubernetes-release/release/v1.28.0/bin/linux/amd64/kubelet", // renovate:kubernetes-release
+				Hash:        "sha256:bfb6b977100963f2879a33e5fbaa59a5276ba829a957a6819c936e9c1465f981",
+				InstallPath: constants.KubeletPath,
+				Extract:     false,
+			},
+			{
+				URL:         "https://storage.googleapis.com/kubernetes-release/release/v1.28.0/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
+				Hash:        "sha256:12ea68bfef0377ccedc1a7c98a05ea76907decbcf1e1ec858a60a7b9b73211bb",
+				InstallPath: constants.KubeadmPath,
+				Extract:     false,
+			},
+			{
+				URL:         "https://storage.googleapis.com/kubernetes-release/release/v1.28.0/bin/linux/amd64/kubectl", // renovate:kubernetes-release
+				Hash:        "sha256:4717660fd1466ec72d59000bb1d9f5cdc91fac31d491043ca62b34398e0799ce",
+				InstallPath: constants.KubectlPath,
+				Extract:     false,
+			},
+		},
+		// CloudControllerManagerImageAWS is the CCM image used on AWS.
+		CloudControllerManagerImageAWS: "registry.k8s.io/provider-aws/cloud-controller-manager:v1.28.0@sha256:47eb1c1e6a3bd6d0fb44ac4992885b6218f1448ea339de778d8b703df463c06f", // renovate:container
+		// CloudControllerManagerImageAzure is the CCM image used on Azure.
+		// Check for newer versions at https://github.com/kubernetes-sigs/cloud-provider-azure/blob/master/README.md.
+		CloudControllerManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.27.7@sha256:e27c4ddc8b9efdac8509a2f681eaa98152309f6b2f08d14230b11c60a9b8b87f", // renovate:container
+		// CloudNodeManagerImageAzure is the cloud-node-manager image used on Azure.
+		// Check for newer versions at https://github.com/kubernetes-sigs/cloud-provider-azure/blob/master/README.md.
+		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.27.7@sha256:998453989b03ac6c24e53aabbf271fa181e054b3a061fe6caa565186ae79bd0c", // renovate:container
+		// CloudControllerManagerImageGCP is the CCM image used on GCP.
+		// TODO(3u13r): use newer "cloud-provider-gcp" from https://github.com/kubernetes/cloud-provider-gcp when newer releases are available.
+		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v26.0.1@sha256:db2b15a20ad690784a6015bfad55c4dff15826be8cf9f6ac77d70abd11b1f70c", // renovate:container
+		// CloudControllerManagerImageOpenStack is the CCM image used on OpenStack.
+		CloudControllerManagerImageOpenStack: "docker.io/k8scloudprovider/openstack-cloud-controller-manager:v1.26.3@sha256:65f0945ea9fc17e64812befbf3fc52b06c13df1c3407cb8022e8110a2fe08a4a", // renovate:container
 		// External service image. Depends on k8s version.
 		// Check for new versions at https://github.com/kubernetes/autoscaler/releases.
 		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.27.3@sha256:0e1ab1bfeb1beaa82f59356ef36364503df22aeb8f8d0d7383bac449b4e808fb", // renovate:container
