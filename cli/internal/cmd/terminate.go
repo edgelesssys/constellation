@@ -81,11 +81,11 @@ func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.
 
 	var removeErr error
 	if err := fileHandler.Remove(constants.AdminConfFilename); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		removeErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", pf.PrefixPath(constants.AdminConfFilename)))
+		removeErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", pf.PrefixPrintablePath(constants.AdminConfFilename)))
 	}
 
 	if err := fileHandler.Remove(constants.ClusterIDsFilename); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		removeErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", pf.PrefixPath(constants.ClusterIDsFilename)))
+		removeErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", pf.PrefixPrintablePath(constants.ClusterIDsFilename)))
 	}
 
 	return removeErr

@@ -142,7 +142,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 		return err
 	}
 	i.log.Debugf("Using flags: %+v", flags)
-	i.log.Debugf("Loading configuration file from %q", i.pf.PrefixPath(constants.ConfigFilename))
+	i.log.Debugf("Loading configuration file from %q", i.pf.PrefixPrintablePath(constants.ConfigFilename))
 	conf, err := config.New(i.fileHandler, constants.ConfigFilename, configFetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
@@ -404,14 +404,14 @@ func (i *initCmd) writeOutput(
 	tw := tabwriter.NewWriter(wr, 0, 0, 2, ' ', 0)
 	// writeRow(tw, "Constellation cluster's owner identifier", ownerID)
 	writeRow(tw, "Constellation cluster identifier", clusterID)
-	writeRow(tw, "Kubernetes configuration", i.pf.PrefixPath(constants.AdminConfFilename))
+	writeRow(tw, "Kubernetes configuration", i.pf.PrefixPrintablePath(constants.AdminConfFilename))
 	tw.Flush()
 	fmt.Fprintln(wr)
 
 	if err := i.fileHandler.Write(constants.AdminConfFilename, initResp.GetKubeconfig(), file.OptNone); err != nil {
 		return fmt.Errorf("writing kubeconfig: %w", err)
 	}
-	i.log.Debugf("Kubeconfig written to %s", i.pf.PrefixPath(constants.AdminConfFilename))
+	i.log.Debugf("Kubeconfig written to %s", i.pf.PrefixPrintablePath(constants.AdminConfFilename))
 
 	if mergeConfig {
 		if err := i.merger.mergeConfigs(constants.AdminConfFilename, i.fileHandler); err != nil {
@@ -428,7 +428,7 @@ func (i *initCmd) writeOutput(
 	if err := i.fileHandler.WriteJSON(constants.ClusterIDsFilename, idFile, file.OptOverwrite); err != nil {
 		return fmt.Errorf("writing Constellation ID file: %w", err)
 	}
-	i.log.Debugf("Constellation ID file written to %s", i.pf.PrefixPath(constants.ClusterIDsFilename))
+	i.log.Debugf("Constellation ID file written to %s", i.pf.PrefixPrintablePath(constants.ClusterIDsFilename))
 
 	if !mergeConfig {
 		fmt.Fprintln(wr, "You can now connect to your cluster by executing:")
@@ -527,7 +527,7 @@ func (i *initCmd) generateMasterSecret(outWriter io.Writer) (uri.MasterSecret, e
 	if err := i.fileHandler.WriteJSON(constants.MasterSecretFilename, secret, file.OptNone); err != nil {
 		return uri.MasterSecret{}, err
 	}
-	fmt.Fprintf(outWriter, "Your Constellation master secret was successfully written to %q\n", i.pf.PrefixPath(constants.MasterSecretFilename))
+	fmt.Fprintf(outWriter, "Your Constellation master secret was successfully written to %q\n", i.pf.PrefixPrintablePath(constants.MasterSecretFilename))
 	return secret, nil
 }
 

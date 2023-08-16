@@ -90,7 +90,7 @@ func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 	}
 	c.log.Debugf("Using flags: %+v", flags)
 
-	c.log.Debugf("Loading configuration file from %q", flags.pf.PrefixPath(constants.ConfigFilename))
+	c.log.Debugf("Loading configuration file from %q", flags.pf.PrefixPrintablePath(constants.ConfigFilename))
 	conf, err := config.New(fileHandler, constants.ConfigFilename, configFetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
@@ -191,13 +191,13 @@ func (c *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 	emptyEndpoint := endpoint == ""
 	emptyIDs := ownerID == "" && clusterID == ""
 	if emptyEndpoint || emptyIDs {
-		c.log.Debugf("Trying to supplement empty flag values from %q", pf.PrefixPath(constants.ClusterIDsFilename))
+		c.log.Debugf("Trying to supplement empty flag values from %q", pf.PrefixPrintablePath(constants.ClusterIDsFilename))
 		if emptyEndpoint {
-			cmd.Printf("Using endpoint from %q. Specify --node-endpoint to override this.\n", pf.PrefixPath(constants.ClusterIDsFilename))
+			cmd.Printf("Using endpoint from %q. Specify --node-endpoint to override this.\n", pf.PrefixPrintablePath(constants.ClusterIDsFilename))
 			endpoint = idFile.IP
 		}
 		if emptyIDs {
-			cmd.Printf("Using ID from %q. Specify --cluster-id to override this.\n", pf.PrefixPath(constants.ClusterIDsFilename))
+			cmd.Printf("Using ID from %q. Specify --cluster-id to override this.\n", pf.PrefixPrintablePath(constants.ClusterIDsFilename))
 			ownerID = idFile.OwnerID
 			clusterID = idFile.ClusterID
 		}
