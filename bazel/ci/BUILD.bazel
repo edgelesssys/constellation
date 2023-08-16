@@ -4,7 +4,10 @@ load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier", "bui
 load("//bazel/ci:proto_targets.bzl", "proto_targets")
 load("//bazel/sh:def.bzl", "noop_warn", "repo_command", "sh_template")
 
-required_tags = ["e2e"]
+required_tags = [
+    "e2e",
+    "integration",
+]
 
 gazelle(
     name = "gazelle_generate",
