@@ -19,7 +19,7 @@ import (
 
 // TerraformUpgradeVars returns variables required to execute the Terraform scripts.
 func TerraformUpgradeVars(conf *config.Config) (terraform.Variables, error) {
-	// Note that we pass "" as imageRef, as we ignore changes to the image in the terraform.
+	// Note that we don't pass any real image as imageRef, as we ignore changes to the image in the terraform.
 	// The image is updates via our operator.
 	// Still, the terraform variable verification must accept the values.
 	// For AWS, we enforce some basic constraints on the image variable.
