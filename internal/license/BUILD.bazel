@@ -26,6 +26,7 @@ go_test(
     name = "license_test",
     srcs = [
         "file_test.go",
+        "license_integration_test.go",
         "license_test.go",
     ],
     embed = [":license"],

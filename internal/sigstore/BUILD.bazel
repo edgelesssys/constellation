@@ -28,6 +28,7 @@ go_library(
 go_test(
     name = "sigstore_test",
     srcs = [
+        "rekor_integration_test.go",
         "rekor_test.go",
         "sign_test.go",
         "verify_test.go",
@@ -38,5 +39,6 @@ go_test(
         "@com_github_sigstore_rekor//pkg/types/hashedrekord/v0.0.1:v0_0_1",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
+        "@org_uber_go_goleak//:goleak",
     ],
 )
