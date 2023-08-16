@@ -153,7 +153,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command) error {
 	}
 	conf.UpdateMAAURL(idFile.AttestationURL)
 
-	if err := u.confirmAttestationConfigUpgrade(cmd, conf.GetAttestationConfig(), idFile.MeasurementSalt, flags); err != nil {
+	if err := u.confirmAndUpgradeAttestationConfig(cmd, conf.GetAttestationConfig(), idFile.MeasurementSalt, flags); err != nil {
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
 
@@ -339,9 +339,9 @@ func validK8sVersion(cmd *cobra.Command, version string, yes bool) (validVersion
 	return validVersion, nil
 }
 
-// confirmAttestationConfigUpgrade checks if the locally configured measurements are different from the cluster's measurements.
+// confirmAndUpgradeAttestationConfig checks if the locally configured measurements are different from the cluster's measurements.
 // If so the function will ask the user to confirm (if --yes is not set) and upgrade the cluster's config.
-func (u *upgradeApplyCmd) confirmAttestationConfigUpgrade(
+func (u *upgradeApplyCmd) confirmAndUpgradeAttestationConfig(
 	cmd *cobra.Command, newConfig config.AttestationCfg, measurementSalt []byte, flags upgradeApplyFlags,
 ) error {
 	// TODO(v2.11): Remove this migration
