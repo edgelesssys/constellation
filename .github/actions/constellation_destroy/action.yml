@@ -41,8 +41,4 @@ runs:
     - name: Constellation terminate
       shell: bash
       run: |
-        output=$(constellation --help)
-        if [[ $output == *"tf-log"* ]]; then
-          TFFLAG="--tf-log=DEBUG"
-        fi
-        constellation terminate --yes ${TFFLAG:-}
+        constellation terminate --yes --tf-log=DEBUG
