@@ -113,6 +113,21 @@ Currently, this includes: 
 - Ohio (us-east-2)
 - Mumbai (ap-south-1) 
 
+#### Automated script
+This is a script to automate the deletion but please be super careful to set the version correctly.
+```
+VERSION=vX.XX.X # !! DOUBLE CHECK CORRECTNESS!
+regions=("eu-central-1" "eu-west-1" "eu-west-3" "us-east-2" "ap-south-1")
+for region in "${regions[@]}"
+do
+    aws ec2 describe-images --filters "Name=name,Values=constellation-$VERSION-aws-sev-snp" --query "Images[0].ImageId" --output text --region "$region"  | xargs -I {{image_id}} aws ec2 deregister-image --image-id {{image_id}} --region "$region"
+    aws ec2 describe-snapshots --filters Name=tag:Name,Values=constellation-$VERSION-aws-sev-snp --query 'Snapshots[].SnapshotId' --output text --region "$region" | xargs -n 1 aws ec2 delete-snapshot --snapshot-id --region "$region"
+    aws ec2 describe-images --filters "Name=name,Values=constellation-$VERSION-aws-nitro-tpm" --query "Images[0].ImageId" --output text --region "$region"  | xargs -I {{image_id}} aws ec2 deregister-image --image-id {{image_id}} --region "$region"
+    aws ec2 describe-snapshots --filters Name=tag:Name,Values=constellation-$VERSION-aws-nitro-tpm --query 'Snapshots[].SnapshotId' --output text --region "$region"  | xargs -n 1 aws ec2 delete-snapshot --snapshot-id --region "$region"
+done
+```
+
+#### Manual GUI steps
 1. Navigate to [AMI](https://eu-central-1.console.aws.amazon.com/ec2/home?region=eu-central-1#Images:visibility=owned-by-me)
 2. Search for release version "constellation-v1.3.0" and select the AMIs for both variants ("constellation-v1.3.0-aws-sev-snp" and "constellation-v1.3.0-aws-nitro-tpm")
 3. On the "Actions" button (top right) select "Deregister AMI"
