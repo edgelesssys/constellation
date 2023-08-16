@@ -54,17 +54,11 @@ func extraCiliumValues(provider cloudprovider.Provider, conformanceMode bool, ou
 // extraConstellationServicesValues extends the given values map by some values depending on user input.
 // Values set inside this function are only applied during init, not during upgrade.
 func extraConstellationServicesValues(
-	cfg *config.Config, masterSecret uri.MasterSecret, measurementSalt []byte, uid, serviceAccURI string, output terraform.ApplyOutput,
+	cfg *config.Config, masterSecret uri.MasterSecret, uid, serviceAccURI string, output terraform.ApplyOutput,
 ) (map[string]any, error) {
-	attestationConfigJSON, err := json.Marshal(cfg.GetAttestationConfig())
-	if err != nil {
-		return nil, fmt.Errorf("marshalling measurements: %w", err)
-	}
 	extraVals := map[string]any{}
 	extraVals["join-service"] = map[string]any{
-		"measurementSalt":    base64.StdEncoding.EncodeToString(measurementSalt),
 		"attestationVariant": cfg.GetAttestationConfig().GetVariant().String(),
-		"attestationConfig":  string(attestationConfigJSON),
 	}
 	extraVals["verification-service"] = map[string]any{
 		"attestationVariant": cfg.GetAttestationConfig().GetVariant().String(),

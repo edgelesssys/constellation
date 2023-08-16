@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: join-config
-  namespace: testNamespace
-data:
-  attestationConfig: "{\"measurements\":{\"1\":{\"expected\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"warnOnly\":false}},\"bootloaderVersion\":1,\"teeVersion\":2,\"snpVersion\":3,\"microcodeVersion\":4,\"firmwareSignerConfig\":{\"acceptedKeyDigests\":[\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"],\"enforcementPolicy\":\"MAAFallback\",\"maaURL\":\"https://192.0.2.1:8080/maa\"},\"amdRootKey\":\"-----BEGIN CERTIFICATE-----\\n-----END CERTIFICATE-----\\n\"}"
-binaryData:
-  measurementSalt: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA

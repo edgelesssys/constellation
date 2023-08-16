@@ -134,10 +134,7 @@ func (i *ChartLoader) LoadReleases(
 		return nil, fmt.Errorf("loading constellation-services: %w", err)
 	}
 
-	if idFile.MeasurementSalt == nil {
-		return nil, errors.New("missing measurement salt in idFile")
-	}
-	svcVals, err := extraConstellationServicesValues(config, masterSecret, idFile.MeasurementSalt, idFile.UID, serviceAccURI, output)
+	svcVals, err := extraConstellationServicesValues(config, masterSecret, idFile.UID, serviceAccURI, output)
 	if err != nil {
 		return nil, fmt.Errorf("extending constellation-services values: %w", err)
 	}

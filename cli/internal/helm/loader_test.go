@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package helm
 
 import (
-	"bytes"
 	"fmt"
 	"io/fs"
 	"os"
@@ -25,7 +24,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -71,7 +69,7 @@ func TestLoadReleases(t *testing.T) {
 	helmReleases, err := chartLoader.LoadReleases(
 		config, true, WaitModeAtomic,
 		uri.MasterSecret{Key: []byte("secret"), Salt: []byte("masterSalt")},
-		fakeServiceAccURI(cloudprovider.GCP), clusterid.File{UID: "testuid", MeasurementSalt: []byte("measurementSalt")}, terraform.ApplyOutput{GCP: &terraform.GCPApplyOutput{}},
+		fakeServiceAccURI(cloudprovider.GCP), clusterid.File{UID: "testuid"}, terraform.ApplyOutput{GCP: &terraform.GCPApplyOutput{}},
 	)
 	require.NoError(err)
 	chart := helmReleases.ConstellationServices.Chart
@@ -113,18 +111,7 @@ func TestConstellationServices(t *testing.T) {
 				Provider: config.ProviderConfig{Azure: &config.AzureConfig{
 					DeployCSIDriver: toPtr(true),
 				}},
-				Attestation: config.AttestationConfig{AzureSEVSNP: &config.AzureSEVSNP{
-					Measurements: measurements.M{1: measurements.WithAllBytes(0xAA, measurements.Enforce, measurements.PCRMeasurementLength)},
-					FirmwareSignerConfig: config.SNPFirmwareSignerConfig{
-						AcceptedKeyDigests: idkeydigest.List{bytes.Repeat([]byte{0xAA}, 32)},
-						EnforcementPolicy:  idkeydigest.MAAFallback,
-						MAAURL:             "https://192.0.2.1:8080/maa",
-					},
-					BootloaderVersion: config.AttestationVersion{Value: 1, WantLatest: true},
-					TEEVersion:        config.AttestationVersion{Value: 2, WantLatest: true},
-					SNPVersion:        config.AttestationVersion{Value: 3, WantLatest: true},
-					MicrocodeVersion:  config.AttestationVersion{Value: 4, WantLatest: true},
-				}},
+				Attestation: config.AttestationConfig{AzureSEVSNP: &config.AzureSEVSNP{}},
 			},
 			enforceIDKeyDigest: true,
 			ccmImage:           "ccmImageForAzure",
@@ -135,27 +122,21 @@ func TestConstellationServices(t *testing.T) {
 				Provider: config.ProviderConfig{GCP: &config.GCPConfig{
 					DeployCSIDriver: toPtr(true),
 				}},
-				Attestation: config.AttestationConfig{GCPSEVES: &config.GCPSEVES{
-					Measurements: measurements.M{1: measurements.WithAllBytes(0xAA, measurements.Enforce, measurements.PCRMeasurementLength)},
-				}},
+				Attestation: config.AttestationConfig{GCPSEVES: &config.GCPSEVES{}},
 			},
 			ccmImage: "ccmImageForGCP",
 		},
 		"OpenStack": {
 			config: &config.Config{
-				Provider: config.ProviderConfig{OpenStack: &config.OpenStackConfig{}},
-				Attestation: config.AttestationConfig{QEMUVTPM: &config.QEMUVTPM{
-					Measurements: measurements.M{1: measurements.WithAllBytes(0xAA, measurements.Enforce, measurements.PCRMeasurementLength)},
-				}},
+				Provider:    config.ProviderConfig{OpenStack: &config.OpenStackConfig{}},
+				Attestation: config.AttestationConfig{QEMUVTPM: &config.QEMUVTPM{}},
 			},
 			ccmImage: "ccmImageForOpenStack",
 		},
 		"QEMU": {
 			config: &config.Config{
-				Provider: config.ProviderConfig{QEMU: &config.QEMUConfig{}},
-				Attestation: config.AttestationConfig{QEMUVTPM: &config.QEMUVTPM{
-					Measurements: measurements.M{1: measurements.WithAllBytes(0xAA, measurements.Enforce, measurements.PCRMeasurementLength)},
-				}},
+				Provider:    config.ProviderConfig{QEMU: &config.QEMUConfig{}},
+				Attestation: config.AttestationConfig{QEMUVTPM: &config.QEMUVTPM{}},
 			},
 		},
 	}
@@ -186,7 +167,6 @@ func TestConstellationServices(t *testing.T) {
 					Key:  []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
 					Salt: []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
 				},
-				[]byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
 				"uid", serviceAccURI, terraform.ApplyOutput{
 					Azure: &terraform.AzureApplyOutput{},
 					GCP:   &terraform.GCPApplyOutput{},
@@ -381,13 +361,6 @@ func buildTestdataMap(csp string, expectedData map[string]string, require *requi
 
 // addInClusterValues adds values that are only known after the cluster is created.
 func addInClusterValues(values map[string]any, csp cloudprovider.Provider) error {
-	joinVals, ok := values["join-service"].(map[string]any)
-	if !ok {
-		return errors.New("missing 'join-service' key")
-	}
-
-	joinVals["measurementSalt"] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-
 	verificationVals, ok := values["verification-service"].(map[string]any)
 	if !ok {
 		return fmt.Errorf("missing 'verification-service' key %v", values)

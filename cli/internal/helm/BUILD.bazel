@@ -467,7 +467,6 @@ go_test(
     deps = [
         "//cli/internal/clusterid",
         "//cli/internal/terraform",
-        "//internal/attestation/idkeydigest",
         "//internal/attestation/measurements",
         "//internal/cloud/azureshared",
         "//internal/cloud/cloudprovider",
