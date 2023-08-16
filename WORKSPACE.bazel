@@ -173,3 +173,8 @@ node_maintainance_operator_deps()
 load("//bazel/toolchains:ci_deps.bzl", "ci_deps")
 
 ci_deps()
+
+# k8s deps
+load("//bazel/toolchains:k8s.bzl", "k8s_deps")
+
+k8s_deps()
