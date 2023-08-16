@@ -21,15 +21,19 @@ import (
 func TerraformUpgradeVars(conf *config.Config) (terraform.Variables, error) {
 	// Note that we pass "" as imageRef, as we ignore changes to the image in the terraform.
 	// The image is updates via our operator.
+	// Still, the terraform variable verification must accept the values.
+	// For AWS, we enforce some basic constraints on the image variable.
+	// For Azure, the provider enforces the format below.
+	// For GCP, any placeholder works.
 	switch conf.GetProvider() {
 	case cloudprovider.AWS:
-		vars := awsTerraformVars(conf, "")
+		vars := awsTerraformVars(conf, "ami-placeholder")
 		return vars, nil
 	case cloudprovider.Azure:
-		vars := azureTerraformVars(conf, "")
+		vars := azureTerraformVars(conf, "/communityGalleries/myGalleryName/images/myImageName/versions/myImageVersion")
 		return vars, nil
 	case cloudprovider.GCP:
-		vars := gcpTerraformVars(conf, "")
+		vars := gcpTerraformVars(conf, "placeholder")
 		return vars, nil
 	default:
 		return nil, fmt.Errorf("unsupported provider: %s", conf.GetProvider())
