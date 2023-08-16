@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 )
 
-// PathPrefixer is used to prefix paths with the configured workspace.
+// PathPrefixer is used to prefix paths with the configured workspace for printing.
 type PathPrefixer struct {
 	workspace string
 }
@@ -32,7 +32,9 @@ func New(workspace string) PathPrefixer {
 	return PathPrefixer{workspace: workspace}
 }
 
-// PrefixPath prefixes the given path with the configured workspace.
-func (p PathPrefixer) PrefixPath(path string) string {
+// PrefixPrintablePath prefixes the given path with the configured workspace for printing.
+// This function MUST not be used when accessing files.
+// This function SHOULD be used when printing paths to the user.
+func (p PathPrefixer) PrefixPrintablePath(path string) string {
 	return filepath.Clean(filepath.Join(p.workspace, path))
 }

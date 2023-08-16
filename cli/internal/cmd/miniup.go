@@ -249,7 +249,7 @@ func (m *miniUpCmd) parseUpFlags(cmd *cobra.Command) (upFlags, error) {
 	if err != nil {
 		return upFlags{}, fmt.Errorf("parsing Terraform log level %s: %w", logLevelString, err)
 	}
-	m.log.Debugf("Terraform logs will be written into %s at level %s", pathprefix.New(workDir).PrefixPath(constants.TerraformLogFile), logLevel.String())
+	m.log.Debugf("Terraform logs will be written into %s at level %s", pathprefix.New(workDir).PrefixPrintablePath(constants.TerraformLogFile), logLevel.String())
 
 	return upFlags{
 		force:      force,

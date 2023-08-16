@@ -90,7 +90,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 		return errors.New("fetching measurements is not supported")
 	}
 
-	cfm.log.Debugf("Loading configuration file from %q", flags.pf.PrefixPath(constants.ConfigFilename))
+	cfm.log.Debugf("Loading configuration file from %q", flags.pf.PrefixPrintablePath(constants.ConfigFilename))
 
 	conf, err := config.New(fileHandler, constants.ConfigFilename, fetcher, flags.force)
 	var configValidationErr *config.ValidationError
@@ -173,7 +173,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	if err := fileHandler.WriteYAML(constants.ConfigFilename, conf, file.OptOverwrite); err != nil {
 		return err
 	}
-	cfm.log.Debugf("Configuration written to %s", flags.pf.PrefixPath(constants.ConfigFilename))
+	cfm.log.Debugf("Configuration written to %s", flags.pf.PrefixPrintablePath(constants.ConfigFilename))
 	cmd.Print("Successfully fetched measurements and updated Configuration\n")
 	return nil
 }

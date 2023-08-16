@@ -277,7 +277,9 @@ func (u *upgradeApplyCmd) migrateTerraform(
 
 		cmd.Printf("Terraform migrations applied successfully and output written to: %s\n"+
 			"A backup of the pre-upgrade state has been written to: %s\n",
-			flags.pf.PrefixPath(constants.ClusterIDsFilename), flags.pf.PrefixPath(filepath.Join(opts.UpgradeWorkspace, u.upgrader.GetUpgradeID(), constants.TerraformUpgradeBackupDir)))
+			flags.pf.PrefixPrintablePath(constants.ClusterIDsFilename),
+			flags.pf.PrefixPrintablePath(filepath.Join(opts.UpgradeWorkspace, u.upgrader.GetUpgradeID(), constants.TerraformUpgradeBackupDir)),
+		)
 	} else {
 		u.log.Debugf("No Terraform diff detected")
 	}
@@ -368,7 +370,7 @@ func (u *upgradeApplyCmd) confirmIfUpgradeAttestConfigHasDiff(cmd *cobra.Command
 
 func (u *upgradeApplyCmd) handleServiceUpgrade(cmd *cobra.Command, conf *config.Config, idFile clusterid.File, tfOutput terraform.ApplyOutput, validK8sVersion versions.ValidK8sVersion, flags upgradeApplyFlags) error {
 	var secret uri.MasterSecret
-	if err := u.fileHandler.ReadJSON(flags.pf.PrefixPath(constants.MasterSecretFilename), &secret); err != nil {
+	if err := u.fileHandler.ReadJSON(constants.MasterSecretFilename, &secret); err != nil {
 		return fmt.Errorf("reading master secret: %w", err)
 	}
 	serviceAccURI, err := cloudcmd.GetMarshaledServiceAccountURI(conf.GetProvider(), conf, flags.pf, u.log, u.fileHandler)
