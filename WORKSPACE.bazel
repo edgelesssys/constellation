@@ -1,3 +1,5 @@
+workspace(name = "constellation")
+
 # Python toolchain
 load("//bazel/toolchains:python_deps.bzl", "python_deps")
 
