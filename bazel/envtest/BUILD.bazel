@@ -1,0 +1,47 @@
+load("@aspect_bazel_lib//lib:copy_to_directory.bzl", "copy_to_directory")
+
+# tools (aka KUBEBUILDER_ASSETS) are a collection of binaries that are used by
+# kubebuilder for envtests.
+copy_to_directory(
+    name = "tools",
+    srcs = [
+        ":etcd",
+        ":kube-apiserver",
+        ":kubectl",
+    ],
+    include_external_repositories = ["kubebuilder_tools_*"],
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "etcd",
+    actual = select({
+        "@io_bazel_rules_go//go/platform:darwin_amd64": "@kubebuilder_tools_darwin_amd64//:etcd",
+        "@io_bazel_rules_go//go/platform:darwin_arm64": "@kubebuilder_tools_darwin_arm64//:etcd",
+        "@io_bazel_rules_go//go/platform:linux_amd64": "@kubebuilder_tools_linux_amd64//:etcd",
+        "@io_bazel_rules_go//go/platform:linux_arm64": "@kubebuilder_tools_linux_arm64//:etcd",
+    }),
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "kube-apiserver",
+    actual = select({
+        "@io_bazel_rules_go//go/platform:darwin_amd64": "@kubebuilder_tools_darwin_amd64//:kube-apiserver",
+        "@io_bazel_rules_go//go/platform:darwin_arm64": "@kubebuilder_tools_darwin_arm64//:kube-apiserver",
+        "@io_bazel_rules_go//go/platform:linux_amd64": "@kubebuilder_tools_linux_amd64//:kube-apiserver",
+        "@io_bazel_rules_go//go/platform:linux_arm64": "@kubebuilder_tools_linux_arm64//:kube-apiserver",
+    }),
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "kubectl",
+    actual = select({
+        "@io_bazel_rules_go//go/platform:darwin_amd64": "@kubebuilder_tools_darwin_amd64//:kubectl",
+        "@io_bazel_rules_go//go/platform:darwin_arm64": "@kubebuilder_tools_darwin_arm64//:kubectl",
+        "@io_bazel_rules_go//go/platform:linux_amd64": "@kubebuilder_tools_linux_amd64//:kubectl",
+        "@io_bazel_rules_go//go/platform:linux_arm64": "@kubebuilder_tools_linux_arm64//:kubectl",
+    }),
+    visibility = ["//visibility:public"],
+)
