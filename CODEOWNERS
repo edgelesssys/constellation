@@ -10,7 +10,7 @@
 /cli/internal/cmd/upgrade* @derpsteb
 /cli/internal/featureset @malt3
 /cli/internal/helm @derpsteb
-/cli/internal/kubernetes @daniel-weisse
+/cli/internal/kubecmd @daniel-weisse
 /cli/internal/libvirt @daniel-weisse
 /cli/internal/terraform @elchead
 /cli/internal/upgrade @elchead
