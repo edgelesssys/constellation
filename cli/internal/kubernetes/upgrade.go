@@ -12,30 +12,20 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"path/filepath"
 	"sort"
 	"strings"
-	"time"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
-	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
-	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
-	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
-	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	internalk8s "github.com/edgelesssys/constellation/v2/internal/kubernetes"
-	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
-	"github.com/google/uuid"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,16 +37,6 @@ import (
 	"k8s.io/client-go/util/retry"
 	kubeadmv1beta3 "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 	"sigs.k8s.io/yaml"
-)
-
-// UpgradeCmdKind is the kind of the upgrade command (check, apply).
-type UpgradeCmdKind int
-
-const (
-	// UpgradeCmdKindCheck corresponds to the upgrade check command.
-	UpgradeCmdKindCheck UpgradeCmdKind = iota
-	// UpgradeCmdKindApply corresponds to the upgrade apply command.
-	UpgradeCmdKindApply
 )
 
 // ErrInProgress signals that an upgrade is in progress inside the cluster.
@@ -91,69 +71,36 @@ func (e *applyError) Error() string {
 type Upgrader struct {
 	stableInterface  StableInterface
 	dynamicInterface DynamicInterface
-	helmClient       helmInterface
 	imageFetcher     imageFetcher
 	outWriter        io.Writer
-	tfUpgrader       *upgrade.TerraformUpgrader
 	log              debugLog
-	upgradeID        string
 }
 
 // NewUpgrader returns a new Upgrader.
-func NewUpgrader(
-	ctx context.Context, outWriter io.Writer, upgradeWorkspace, kubeConfigPath string,
-	fileHandler file.Handler, log debugLog, upgradeCmdKind UpgradeCmdKind,
-) (*Upgrader, error) {
-	upgradeID := "upgrade-" + time.Now().Format("20060102150405") + "-" + strings.Split(uuid.New().String(), "-")[0]
-	if upgradeCmdKind == UpgradeCmdKindCheck {
-		// When performing an upgrade check, the upgrade directory will only be used temporarily to store the
-		// Terraform state. The directory is deleted after the check is finished.
-		// Therefore, add a tmp-suffix to the upgrade ID to indicate that the directory will be cleared after the check.
-		upgradeID += "-tmp"
-	}
-
-	u := &Upgrader{
-		imageFetcher: imagefetcher.New(),
-		outWriter:    outWriter,
-		log:          log,
-		upgradeID:    upgradeID,
-	}
-
+func NewUpgrader(outWriter io.Writer, kubeConfigPath string, log debugLog) (*Upgrader, error) {
 	kubeClient, err := newClient(kubeConfigPath)
 	if err != nil {
 		return nil, err
 	}
-	u.stableInterface = &stableClient{client: kubeClient}
 
 	// use unstructured client to avoid importing the operator packages
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
 	if err != nil {
 		return nil, fmt.Errorf("building kubernetes config: %w", err)
 	}
+
 	unstructuredClient, err := dynamic.NewForConfig(kubeConfig)
 	if err != nil {
 		return nil, fmt.Errorf("setting up custom resource client: %w", err)
 	}
-	u.dynamicInterface = &NodeVersionClient{client: unstructuredClient}
 
-	helmClient, err := helm.NewUpgradeClient(kubectl.New(), upgradeWorkspace, kubeConfigPath, constants.HelmNamespace, log)
-	if err != nil {
-		return nil, fmt.Errorf("setting up helm client: %w", err)
-	}
-	u.helmClient = helmClient
-
-	tfClient, err := terraform.New(ctx, filepath.Join(upgradeWorkspace, upgradeID, constants.TerraformUpgradeWorkingDir))
-	if err != nil {
-		return nil, fmt.Errorf("setting up terraform client: %w", err)
-	}
-
-	tfUpgrader, err := upgrade.NewTerraformUpgrader(tfClient, outWriter, fileHandler)
-	if err != nil {
-		return nil, fmt.Errorf("setting up terraform upgrader: %w", err)
-	}
-	u.tfUpgrader = tfUpgrader
-
-	return u, nil
+	return &Upgrader{
+		imageFetcher:     imagefetcher.New(),
+		outWriter:        outWriter,
+		log:              log,
+		stableInterface:  &stableClient{client: kubeClient},
+		dynamicInterface: &NodeVersionClient{client: unstructuredClient},
+	}, nil
 }
 
 // GetMeasurementSalt returns the measurementSalt from the join-config.
@@ -167,47 +114,6 @@ func (u *Upgrader) GetMeasurementSalt(ctx context.Context) ([]byte, error) {
 		return nil, errors.New("measurementSalt missing from join-config")
 	}
 	return salt, nil
-}
-
-// GetUpgradeID returns the upgrade ID.
-func (u *Upgrader) GetUpgradeID() string {
-	return u.upgradeID
-}
-
-// CheckTerraformMigrations checks whether Terraform migrations are possible in the current workspace.
-// If the files that will be written during the upgrade already exist, it returns an error.
-func (u *Upgrader) CheckTerraformMigrations(upgradeWorkspace string) error {
-	return u.tfUpgrader.CheckTerraformMigrations(upgradeWorkspace, u.upgradeID, constants.TerraformUpgradeBackupDir)
-}
-
-// CleanUpTerraformMigrations cleans up the Terraform migration workspace, for example when an upgrade is
-// aborted by the user.
-func (u *Upgrader) CleanUpTerraformMigrations(upgradeWorkspace string) error {
-	return u.tfUpgrader.CleanUpTerraformMigrations(upgradeWorkspace, u.upgradeID)
-}
-
-// PlanTerraformMigrations prepares the upgrade workspace and plans the Terraform migrations for the Constellation upgrade.
-// If a diff exists, it's being written to the upgrader's output writer. It also returns
-// a bool indicating whether a diff exists.
-func (u *Upgrader) PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error) {
-	return u.tfUpgrader.PlanTerraformMigrations(ctx, opts, u.upgradeID)
-}
-
-// ApplyTerraformMigrations applies the migrations planned by PlanTerraformMigrations.
-// If PlanTerraformMigrations has not been executed before, it will return an error.
-// In case of a successful upgrade, the output will be written to the specified file and the old Terraform directory is replaced
-// By the new one.
-func (u *Upgrader) ApplyTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (terraform.ApplyOutput, error) {
-	return u.tfUpgrader.ApplyTerraformMigrations(ctx, opts, u.upgradeID)
-}
-
-// UpgradeHelmServices upgrade helm services.
-func (u *Upgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration,
-	allowDestructive bool, force bool, conformance bool, helmWaitMode helm.WaitMode, masterSecret uri.MasterSecret, serviceAccURI string,
-	validK8sVersion versions.ValidK8sVersion, output terraform.ApplyOutput,
-) error {
-	return u.helmClient.Upgrade(ctx, config, idFile, timeout, allowDestructive, force, u.upgradeID, conformance,
-		helmWaitMode, masterSecret, serviceAccURI, validK8sVersion, output)
 }
 
 // UpgradeNodeVersion upgrades the cluster's NodeVersion object and in turn triggers image & k8s version upgrades.
@@ -567,10 +473,6 @@ func upgradeInProgress(nodeVersion updatev1alpha1.NodeVersion) bool {
 		}
 	}
 	return false
-}
-
-type helmInterface interface {
-	Upgrade(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive, force bool, upgradeID string, conformance bool, helmWaitMode helm.WaitMode, masterSecret uri.MasterSecret, serviceAccURI string, validK8sVersion versions.ValidK8sVersion, output terraform.ApplyOutput) error
 }
 
 type debugLog interface {

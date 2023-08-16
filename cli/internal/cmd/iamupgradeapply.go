@@ -8,8 +8,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"strings"
-	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
@@ -18,7 +16,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/google/uuid"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -70,7 +67,8 @@ func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	upgradeID := "iam-" + time.Now().Format("20060102150405") + "-" + strings.Split(uuid.New().String(), "-")[0]
+
+	upgradeID := generateUpgradeID(upgradeCmdKindIAM)
 	iamMigrateCmd, err := upgrade.NewIAMMigrateCmd(cmd.Context(), constants.TerraformIAMWorkingDir, constants.UpgradeDir, upgradeID, conf.GetProvider(), terraform.LogLevelDebug)
 	if err != nil {
 		return fmt.Errorf("setting up IAM migration command: %w", err)
@@ -86,10 +84,10 @@ func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	err = migrator.applyMigration(cmd, constants.UpgradeDir, file.NewHandler(afero.NewOsFs()), iamMigrateCmd, yes)
-	if err != nil {
+	if err := migrator.applyMigration(cmd, constants.UpgradeDir, file.NewHandler(afero.NewOsFs()), iamMigrateCmd, yes); err != nil {
 		return fmt.Errorf("applying IAM migration: %w", err)
 	}
+
 	cmd.Println("IAM profile successfully applied.")
 	return nil
 }

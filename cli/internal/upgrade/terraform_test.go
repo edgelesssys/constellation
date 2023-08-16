@@ -23,13 +23,6 @@ import (
 )
 
 func TestCheckTerraformMigrations(t *testing.T) {
-	upgrader := func(fileHandler file.Handler) *TerraformUpgrader {
-		u, err := NewTerraformUpgrader(&stubTerraformClient{}, bytes.NewBuffer(nil), fileHandler)
-		require.NoError(t, err)
-
-		return u
-	}
-
 	workspace := func(existingFiles []string) file.Handler {
 		fs := afero.NewMemMapFs()
 		for _, f := range existingFiles {
@@ -57,8 +50,9 @@ func TestCheckTerraformMigrations(t *testing.T) {
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			u := upgrader(tc.workspace)
-			err := u.CheckTerraformMigrations(constants.UpgradeDir, tc.upgradeID, constants.TerraformUpgradeBackupDir)
+			u := NewTerraformUpgrader(&stubTerraformClient{}, bytes.NewBuffer(nil), tc.workspace, tc.upgradeID)
+
+			err := u.CheckTerraformMigrations(constants.UpgradeDir)
 			if tc.wantErr {
 				require.Error(t, err)
 				return
@@ -70,12 +64,6 @@ func TestCheckTerraformMigrations(t *testing.T) {
 }
 
 func TestPlanTerraformMigrations(t *testing.T) {
-	upgrader := func(tf tfResourceClient, fileHandler file.Handler) *TerraformUpgrader {
-		u, err := NewTerraformUpgrader(tf, bytes.NewBuffer(nil), fileHandler)
-		require.NoError(t, err)
-
-		return u
-	}
 	workspace := func(existingFiles []string) file.Handler {
 		fs := afero.NewMemMapFs()
 		for _, f := range existingFiles {
@@ -142,7 +130,7 @@ func TestPlanTerraformMigrations(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			require := require.New(t)
 
-			u := upgrader(tc.tf, tc.workspace)
+			u := NewTerraformUpgrader(tc.tf, bytes.NewBuffer(nil), tc.workspace, tc.upgradeID)
 
 			opts := TerraformUpgradeOptions{
 				LogLevel: terraform.LogLevelDebug,
@@ -150,7 +138,7 @@ func TestPlanTerraformMigrations(t *testing.T) {
 				Vars:     &terraform.QEMUVariables{},
 			}
 
-			diff, err := u.PlanTerraformMigrations(context.Background(), opts, tc.upgradeID)
+			diff, err := u.PlanTerraformMigrations(context.Background(), opts)
 			if tc.wantErr {
 				require.Error(err)
 			} else {
@@ -162,13 +150,6 @@ func TestPlanTerraformMigrations(t *testing.T) {
 }
 
 func TestApplyTerraformMigrations(t *testing.T) {
-	upgrader := func(tf tfResourceClient, fileHandler file.Handler) *TerraformUpgrader {
-		u, err := NewTerraformUpgrader(tf, bytes.NewBuffer(nil), fileHandler)
-		require.NoError(t, err)
-
-		return u
-	}
-
 	fileHandler := func(upgradeID string, existingFiles ...string) file.Handler {
 		fh := file.NewHandler(afero.NewMemMapFs())
 
@@ -211,7 +192,7 @@ func TestApplyTerraformMigrations(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			require := require.New(t)
 
-			u := upgrader(tc.tf, tc.fs)
+			u := NewTerraformUpgrader(tc.tf, bytes.NewBuffer(nil), tc.fs, tc.upgradeID)
 
 			opts := TerraformUpgradeOptions{
 				LogLevel:         terraform.LogLevelDebug,
@@ -221,7 +202,7 @@ func TestApplyTerraformMigrations(t *testing.T) {
 				UpgradeWorkspace: constants.UpgradeDir,
 			}
 
-			_, err := u.ApplyTerraformMigrations(context.Background(), opts, tc.upgradeID)
+			_, err := u.ApplyTerraformMigrations(context.Background(), opts)
 			if tc.wantErr {
 				require.Error(err)
 			} else {
@@ -232,13 +213,6 @@ func TestApplyTerraformMigrations(t *testing.T) {
 }
 
 func TestCleanUpTerraformMigrations(t *testing.T) {
-	upgrader := func(fileHandler file.Handler) *TerraformUpgrader {
-		u, err := NewTerraformUpgrader(&stubTerraformClient{}, bytes.NewBuffer(nil), fileHandler)
-		require.NoError(t, err)
-
-		return u
-	}
-
 	workspace := func(existingFiles []string) file.Handler {
 		fs := afero.NewMemMapFs()
 		for _, f := range existingFiles {
@@ -299,9 +273,9 @@ func TestCleanUpTerraformMigrations(t *testing.T) {
 			require := require.New(t)
 
 			workspace := workspace(tc.workspaceFiles)
-			u := upgrader(workspace)
+			u := NewTerraformUpgrader(&stubTerraformClient{}, bytes.NewBuffer(nil), workspace, tc.upgradeID)
 
-			err := u.CleanUpTerraformMigrations(constants.UpgradeDir, tc.upgradeID)
+			err := u.CleanUpTerraformMigrations(constants.UpgradeDir)
 			if tc.wantErr {
 				require.Error(err)
 				return
