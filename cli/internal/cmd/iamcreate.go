@@ -183,7 +183,7 @@ func newIAMCreator(cmd *cobra.Command, pf pathprefix.PathPrefixer, logLevel terr
 	if err != nil {
 		return nil, fmt.Errorf("creating logger: %w", err)
 	}
-	log.Debugf("Terraform logs will be written into %s at level %s", pf.PrefixPath(constants.TerraformLogFile), logLevel.String())
+	log.Debugf("Terraform logs will be written into %s at level %s", pf.PrefixPrintablePath(constants.TerraformLogFile), logLevel.String())
 
 	return &iamCreator{
 		cmd:         cmd,
@@ -238,14 +238,14 @@ func (c *iamCreator) create(ctx context.Context) error {
 
 	var conf config.Config
 	if flags.updateConfig {
-		c.log.Debugf("Parsing config %s", c.pf.PrefixPath(constants.ConfigFilename))
+		c.log.Debugf("Parsing config %s", c.pf.PrefixPrintablePath(constants.ConfigFilename))
 		if err = c.fileHandler.ReadYAML(constants.ConfigFilename, &conf); err != nil {
 			return fmt.Errorf("error reading the configuration file: %w", err)
 		}
 		if err := validateConfigWithFlagCompatibility(c.provider, conf, flags); err != nil {
 			return err
 		}
-		c.cmd.Printf("The configuration file %q will be automatically updated with the IAM values and zone/region information.\n", c.pf.PrefixPath(constants.ConfigFilename))
+		c.cmd.Printf("The configuration file %q will be automatically updated with the IAM values and zone/region information.\n", c.pf.PrefixPrintablePath(constants.ConfigFilename))
 	}
 
 	c.spinner.Start("Creating", false)
@@ -263,12 +263,12 @@ func (c *iamCreator) create(ctx context.Context) error {
 	}
 
 	if flags.updateConfig {
-		c.log.Debugf("Writing IAM configuration to %s", c.pf.PrefixPath(constants.ConfigFilename))
+		c.log.Debugf("Writing IAM configuration to %s", c.pf.PrefixPrintablePath(constants.ConfigFilename))
 		c.providerCreator.writeOutputValuesToConfig(&conf, flags, iamFile)
 		if err := c.fileHandler.WriteYAML(constants.ConfigFilename, conf, file.OptOverwrite); err != nil {
 			return err
 		}
-		c.cmd.Printf("Your IAM configuration was created and filled into %s successfully.\n", c.pf.PrefixPath(constants.ConfigFilename))
+		c.cmd.Printf("Your IAM configuration was created and filled into %s successfully.\n", c.pf.PrefixPrintablePath(constants.ConfigFilename))
 		return nil
 	}
 
@@ -311,7 +311,7 @@ func (c *iamCreator) parseFlagsAndSetupConfig() (iamFlags, error) {
 // checkWorkingDir checks if the current working directory already contains a Terraform dir.
 func (c *iamCreator) checkWorkingDir() error {
 	if _, err := c.fileHandler.Stat(constants.TerraformIAMWorkingDir); err == nil {
-		return fmt.Errorf("the current working directory already contains the Terraform workspace directory %q. Please run the command in a different directory or destroy the existing workspace", c.pf.PrefixPath(constants.TerraformIAMWorkingDir))
+		return fmt.Errorf("the current working directory already contains the Terraform workspace directory %q. Please run the command in a different directory or destroy the existing workspace", c.pf.PrefixPrintablePath(constants.TerraformIAMWorkingDir))
 	}
 	return nil
 }
@@ -555,7 +555,7 @@ func (c *gcpIAMCreator) printOutputValues(cmd *cobra.Command, flags iamFlags, _ 
 	cmd.Printf("projectID:\t\t%s\n", flags.gcp.projectID)
 	cmd.Printf("region:\t\t\t%s\n", flags.gcp.region)
 	cmd.Printf("zone:\t\t\t%s\n", flags.gcp.zone)
-	cmd.Printf("serviceAccountKeyPath:\t%s\n\n", c.pf.PrefixPath(constants.GCPServiceAccountKeyFilename))
+	cmd.Printf("serviceAccountKeyPath:\t%s\n\n", c.pf.PrefixPrintablePath(constants.GCPServiceAccountKeyFilename))
 }
 
 func (c *gcpIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iamFlags, _ cloudcmd.IAMOutput) {

@@ -79,12 +79,12 @@ func (r *recoverCmd) recover(
 	r.log.Debugf("Using flags: %+v", flags)
 
 	var masterSecret uri.MasterSecret
-	r.log.Debugf("Loading master secret file from %s", r.pf.PrefixPath(constants.MasterSecretFilename))
+	r.log.Debugf("Loading master secret file from %s", r.pf.PrefixPrintablePath(constants.MasterSecretFilename))
 	if err := fileHandler.ReadJSON(constants.MasterSecretFilename, &masterSecret); err != nil {
 		return err
 	}
 
-	r.log.Debugf("Loading configuration file from %q", r.pf.PrefixPath(constants.ConfigFilename))
+	r.log.Debugf("Loading configuration file from %q", r.pf.PrefixPrintablePath(constants.ConfigFilename))
 	conf, err := config.New(fileHandler, constants.ConfigFilename, r.configFetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {

@@ -329,7 +329,7 @@ func TestWriteOutput(t *testing.T) {
 	require.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
-	assert.Contains(out.String(), i.pf.PrefixPath(constants.AdminConfFilename))
+	assert.Contains(out.String(), i.pf.PrefixPrintablePath(constants.AdminConfFilename))
 	out.Reset()
 	// File is written to current working dir, we simply pass the workspace for generating readable user output
 	require.NoError(afs.Remove(constants.AdminConfFilename))
