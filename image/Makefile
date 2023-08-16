@@ -23,12 +23,9 @@ variants := aws_aws-sev-snp aws_aws-nitro-tpm azure_azure-sev-snp gcp_gcp-sev-es
 certs := $(PKI)/PK.cer $(PKI)/KEK.cer $(PKI)/db.cer
 
 SYSTEMD_FIXED_RPMS := systemd-251.11-2.fc37.x86_64.rpm systemd-libs-251.11-2.fc37.x86_64.rpm systemd-networkd-251.11-2.fc37.x86_64.rpm systemd-pam-251.11-2.fc37.x86_64.rpm systemd-resolved-251.11-2.fc37.x86_64.rpm systemd-udev-251.11-2.fc37.x86_64.rpm
-AWS_FIXED_RPMS := kernel-6.1.34-59.116.amzn2023.x86_64.rpm
-AZURE_FIXED_KERNEL_RPMS := kernel-6.1.18-200.fc37.x86_64.rpm kernel-core-6.1.18-200.fc37.x86_64.rpm kernel-modules-6.1.18-200.fc37.x86_64.rpm
-GCP_FIXED_KERNEL_RPMS := kernel-6.1.18-200.fc37.x86_64.rpm kernel-core-6.1.18-200.fc37.x86_64.rpm kernel-modules-6.1.18-200.fc37.x86_64.rpm
+KERNEL_RPMS := kernel-6.1.45-100.constellation.fc38.x86_64.rpm kernel-core-6.1.45-100.constellation.fc38.x86_64.rpm kernel-modules-6.1.45-100.constellation.fc38.x86_64.rpm kernel-modules-core-6.1.45-100.constellation.fc38.x86_64.rpm
 PREBUILD_RPMS_SYSTEMD := $(addprefix prebuilt/rpms/systemd/,$(SYSTEMD_FIXED_RPMS))
-PREBUILT_RPMS_AZURE := $(addprefix prebuilt/rpms/azure/,$(AZURE_FIXED_KERNEL_RPMS))
-PREBUILT_RPMS_AWS := $(addprefix prebuilt/rpms/aws/,$(AWS_FIXED_RPMS))
+PREBUILD_RPMS_KERNEL := $(addprefix prebuilt/rpms/kernel/,$(KERNEL_RPMS))
 
 .PHONY: all clean inject-bins $(csps) $(variants)
 
@@ -49,15 +46,10 @@ prebuilt/rpms/systemd/%.rpm:
 	@mkdir -p $(@D)
 	@curl -fsSL -o $@ https://kojipkgs.fedoraproject.org/packages/systemd/251.11/2.fc37/x86_64/$*.rpm
 
-prebuilt/rpms/aws/kernel-6.1.34-59.116.amzn2023.x86_64.rpm:
+prebuilt/rpms/kernel/%.rpm:
 	@echo "Downloading $*"
 	@mkdir -p $(@D)
-	@curl -fsSL -o $@ https://cdn.confidential.cloud/constellation/kernel/6.1.34-59.116.amzn2023/kernel-6.1.34-59.116.amzn2023.x86_64.rpm
-
-prebuilt/rpms/azure/%.rpm:
-	@echo "Downloading $*"
-	@mkdir -p $(@D)
-	@curl -fsSL -o $@ https://kojipkgs.fedoraproject.org/packages/kernel/6.1.18/200.fc37/x86_64/$*.rpm
+	@curl -fsSL -o $@ https://cdn.confidential.cloud/constellation/kernel/6.1.45-100.constellation/$*.rpm
 
 mkosi.output.%/fedora~38/image.raw: inject-bins inject-certs
 	rm -rf .csp/
@@ -83,7 +75,7 @@ mkosi.output.%/fedora~38/image.raw: inject-bins inject-certs
 	rm -rf .csp/
 	@echo "Image is ready: $@"
 
-inject-bins: $(PREBUILD_RPMS_SYSTEMD) $(PREBUILT_RPMS_AZURE) $(PREBUILT_RPMS_AWS)
+inject-bins: $(PREBUILD_RPMS_SYSTEMD) $(PREBUILD_RPMS_KERNEL)
 	mkdir -p $(MKOSI_EXTRA)/usr/bin
 	mkdir -p $(MKOSI_EXTRA)/usr/sbin
 	cp $(UPGRADE_AGENT_BINARY) $(MKOSI_EXTRA)/usr/bin/upgrade-agent
