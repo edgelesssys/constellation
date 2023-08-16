@@ -153,9 +153,10 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command) error {
 	}
 	conf.UpdateMAAURL(idFile.AttestationURL)
 
-	if err := u.confirmIfUpgradeAttestConfigHasDiff(cmd, conf.GetAttestationConfig(), flags); err != nil {
+	if err := u.confirmAttestationConfigUpgrade(cmd, conf.GetAttestationConfig(), flags); err != nil {
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
+
 	// not moving existing Terraform migrator because of planned apply refactor
 	tfOutput, err := u.migrateTerraform(cmd, conf, flags)
 	if err != nil {
@@ -337,9 +338,9 @@ func validK8sVersion(cmd *cobra.Command, version string, yes bool) (validVersion
 	return validVersion, nil
 }
 
-// confirmIfUpgradeAttestConfigHasDiff checks if the locally configured measurements are different from the cluster's measurements.
-// If so the function will ask the user to confirm (if --yes is not set).
-func (u *upgradeApplyCmd) confirmIfUpgradeAttestConfigHasDiff(cmd *cobra.Command, newConfig config.AttestationCfg, flags upgradeApplyFlags) error {
+// confirmAttestationConfigUpgrade checks if the locally configured measurements are different from the cluster's measurements.
+// If so the function will ask the user to confirm (if --yes is not set) and upgrade the cluster's config.
+func (u *upgradeApplyCmd) confirmAttestationConfigUpgrade(cmd *cobra.Command, newConfig config.AttestationCfg, flags upgradeApplyFlags) error {
 	clusterAttestationConfig, err := u.kubeUpgrader.GetClusterAttestationConfig(cmd.Context(), newConfig.GetVariant())
 	if err != nil {
 		return fmt.Errorf("getting cluster attestation config: %w", err)
@@ -369,10 +370,7 @@ func (u *upgradeApplyCmd) confirmIfUpgradeAttestConfigHasDiff(cmd *cobra.Command
 			return errors.New("aborting upgrade since attestation config is different")
 		}
 	}
-	// TODO(elchead): move this outside this function to remove the side effect.
-	if err := u.kubeUpgrader.BackupConfigMap(cmd.Context(), constants.JoinConfigMap); err != nil {
-		return fmt.Errorf("backing up join-config: %w", err)
-	}
+
 	if err := u.kubeUpgrader.UpdateAttestationConfig(cmd.Context(), newConfig); err != nil {
 		return fmt.Errorf("updating attestation config: %w", err)
 	}
@@ -497,7 +495,6 @@ type kubernetesUpgrader interface {
 	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, error)
 	UpdateAttestationConfig(ctx context.Context, newAttestConfig config.AttestationCfg) error
 	GetMeasurementSalt(ctx context.Context) ([]byte, error)
-	BackupConfigMap(ctx context.Context, name string) error
 }
 
 type helmUpgrader interface {

@@ -8,6 +8,7 @@ package kubecmd
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"testing"
@@ -278,7 +279,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			},
 			wantUpdate: false, // because customClient is used
 			customClientFn: func(nodeVersion updatev1alpha1.NodeVersion) unstructuredInterface {
-				fakeClient := &fakeDynamicClient{}
+				fakeClient := &fakeUnstructuredClient{}
 				fakeClient.On("GetCR", mock.Anything, mock.Anything).Return(unstructedObjectWithGeneration(nodeVersion, 1), nil)
 				fakeClient.On("UpdateCR", mock.Anything, mock.Anything).Return(nil, kerrors.NewConflict(schema.GroupResource{Resource: nodeVersion.Name}, nodeVersion.Name, nil)).Once()
 				fakeClient.On("UpdateCR", mock.Anything, mock.Anything).Return(unstructedObjectWithGeneration(nodeVersion, 2), nil).Once()
@@ -469,16 +470,65 @@ func newJoinConfigMap(data string) *corev1.ConfigMap {
 	}
 }
 
-type fakeDynamicClient struct {
+func TestUpdateAttestationConfig(t *testing.T) {
+	mustMarshal := func(cfg config.AttestationCfg) string {
+		data, err := json.Marshal(cfg)
+		require.NoError(t, err)
+		return string(data)
+	}
+
+	testCases := map[string]struct {
+		newAttestationCfg config.AttestationCfg
+		kubectl           *stubKubectl
+		wantErr           bool
+	}{
+		"success": {
+			newAttestationCfg: config.DefaultForAzureSEVSNP(),
+			kubectl: &stubKubectl{
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.JoinConfigMap: newJoinConfigMap(mustMarshal(config.DefaultForAzureSEVSNP())),
+				},
+			},
+		},
+		"error getting ConfigMap": {
+			newAttestationCfg: config.DefaultForAzureSEVSNP(),
+			kubectl: &stubKubectl{
+				getCMErr: assert.AnError,
+			},
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			cmd := &KubeCmd{
+				kubectl:   tc.kubectl,
+				log:       logger.NewTest(t),
+				outWriter: io.Discard,
+			}
+
+			err := cmd.UpdateAttestationConfig(context.Background(), tc.newAttestationCfg)
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+		})
+	}
+}
+
+type fakeUnstructuredClient struct {
 	mock.Mock
 }
 
-func (u *fakeDynamicClient) GetCR(ctx context.Context, _ schema.GroupVersionResource, str string) (*unstructured.Unstructured, error) {
+func (u *fakeUnstructuredClient) GetCR(ctx context.Context, _ schema.GroupVersionResource, str string) (*unstructured.Unstructured, error) {
 	args := u.Called(ctx, str)
 	return args.Get(0).(*unstructured.Unstructured), args.Error(1)
 }
 
-func (u *fakeDynamicClient) UpdateCR(ctx context.Context, _ schema.GroupVersionResource, updatedObject *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+func (u *fakeUnstructuredClient) UpdateCR(ctx context.Context, _ schema.GroupVersionResource, updatedObject *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 	args := u.Called(ctx, updatedObject)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -516,7 +566,7 @@ type stubKubectl struct {
 	configMaps        map[string]*corev1.ConfigMap
 	updatedConfigMaps map[string]*corev1.ConfigMap
 	k8sVersion        string
-	getErr            error
+	getCMErr          error
 	updateCMErr       error
 	createCMErr       error
 	k8sErr            error
@@ -525,7 +575,7 @@ type stubKubectl struct {
 }
 
 func (s *stubKubectl) GetConfigMap(_ context.Context, _, name string) (*corev1.ConfigMap, error) {
-	return s.configMaps[name], s.getErr
+	return s.configMaps[name], s.getCMErr
 }
 
 func (s *stubKubectl) UpdateConfigMap(_ context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {

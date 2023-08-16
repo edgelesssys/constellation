@@ -197,44 +197,35 @@ func (k *KubeCmd) GetClusterAttestationConfig(ctx context.Context, variant varia
 	return existingAttestationConfig, nil
 }
 
-// BackupConfigMap creates a backup of the given config map.
-func (k *KubeCmd) BackupConfigMap(ctx context.Context, name string) error {
-	cm, err := k.kubectl.GetConfigMap(ctx, constants.ConstellationNamespace, name)
-	if err != nil {
-		return fmt.Errorf("getting config map %s: %w", name, err)
-	}
-	backup := cm.DeepCopy()
-	backup.ObjectMeta = metav1.ObjectMeta{}
-	backup.Name = fmt.Sprintf("%s-backup", name)
-	if err := k.kubectl.CreateConfigMap(ctx, backup); err != nil {
-		if _, err := k.kubectl.UpdateConfigMap(ctx, backup); err != nil {
-			return fmt.Errorf("updating backup config map: %w", err)
-		}
-	}
-	k.log.Debugf("Successfully backed up config map %s", cm.Name)
-	return nil
-}
-
-// UpdateAttestationConfig fetches the cluster's attestation config, compares them to a new config,
-// and updates the cluster's config if it is different from the new one.
-func (u *Upgrader) UpdateAttestationConfig(ctx context.Context, newAttestConfig config.AttestationCfg) error {
+// UpdateAttestationConfig updates the Constellation cluster's attestation config.
+// A backup of the previous config is created before updating.
+func (k *KubeCmd) UpdateAttestationConfig(ctx context.Context, newAttestConfig config.AttestationCfg) error {
 	// backup of previous measurements
-	joinConfig, err := u.stableInterface.GetConfigMap(ctx, constants.JoinConfigMap)
+	joinConfig, err := k.kubectl.GetConfigMap(ctx, constants.ConstellationNamespace, constants.JoinConfigMap)
 	if err != nil {
-		return fmt.Errorf("getting join-config configmap: %w", err)
+		return fmt.Errorf("getting %s ConfigMap: %w", constants.JoinConfigMap, err)
 	}
+
+	// create backup of previous config
+	backup := joinConfig.DeepCopy()
+	backup.ObjectMeta = metav1.ObjectMeta{}
+	backup.Name = fmt.Sprintf("%s-backup", constants.JoinConfigMap)
+	if err := k.applyConfigMap(ctx, backup); err != nil {
+		return fmt.Errorf("creating backup of join-config ConfigMap: %w", err)
+	}
+	k.log.Debugf("Created backup of %s ConfigMap %q in namespace %q", constants.JoinConfigMap, backup.Name, backup.Namespace)
 
 	newConfigJSON, err := json.Marshal(newAttestConfig)
 	if err != nil {
 		return fmt.Errorf("marshaling attestation config: %w", err)
 	}
 	joinConfig.Data[constants.AttestationConfigFilename] = string(newConfigJSON)
-	u.log.Debugf("Triggering attestation config update now")
-	if _, err = u.stableInterface.UpdateConfigMap(ctx, joinConfig); err != nil {
+	k.log.Debugf("Triggering attestation config update now")
+	if _, err = k.kubectl.UpdateConfigMap(ctx, joinConfig); err != nil {
 		return fmt.Errorf("setting new attestation config: %w", err)
 	}
 
-	fmt.Fprintln(u.outWriter, "Successfully updated the cluster's attestation config")
+	fmt.Fprintln(k.outWriter, "Successfully updated the cluster's attestation config")
 	return nil
 }
 
@@ -409,6 +400,19 @@ func (k *KubeCmd) updateK8s(nodeVersion *updatev1alpha1.NodeVersion, newClusterV
 	nodeVersion.Spec.KubernetesClusterVersion = newClusterVersion
 
 	return &configMap, nil
+}
+
+// applyConfigMap applies the ConfigMap by creating it if it doesn't exist, or updating it if it does.
+func (k *KubeCmd) applyConfigMap(ctx context.Context, configMap *corev1.ConfigMap) error {
+	if err := k.kubectl.CreateConfigMap(ctx, configMap); err != nil {
+		if !k8serrors.IsAlreadyExists(err) {
+			return fmt.Errorf("creating backup config map: %w", err)
+		}
+		if _, err := k.kubectl.UpdateConfigMap(ctx, configMap); err != nil {
+			return fmt.Errorf("updating backup config map: %w", err)
+		}
+	}
+	return nil
 }
 
 func checkForApplyError(expected, actual updatev1alpha1.NodeVersion) error {
