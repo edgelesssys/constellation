@@ -25,8 +25,6 @@ import (
 
 func upgradeRequiresIAMMigration(provider cloudprovider.Provider) bool {
 	switch provider {
-	case cloudprovider.AWS:
-		return true // needs to be set on every release. Can we automate this?
 	default:
 		return false
 	}
