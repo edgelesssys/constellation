@@ -2,7 +2,6 @@ name: Constellation create
 description: Create a new Constellation cluster using latest OS image.
 
 inputs:
-  # TODO(elchead): remove once 2.10 is released
   workerNodesCount:
     description: "Number of worker nodes to spawn."
     required: true
@@ -93,8 +92,6 @@ runs:
         yq eval -i "(.nodeGroups[] | .instanceType) = \"${{ inputs.machineType }}\"" constellation-conf.yaml
 
     - name: Set node count
-      # TODO(katexochen): remove if statement once 2.10 is released.
-      if: inputs.cliVersion != 'v2.9.0' && inputs.cliVersion != 'v2.9.1'
       shell: bash
       run: |
         yq eval -i "(.nodeGroups[] | select(.role == \"control-plane\") | .initialCount) = ${{ inputs.controlNodesCount }}" constellation-conf.yaml
@@ -120,8 +117,7 @@ runs:
         if [[ $output == *"tf-log"* ]]; then
           TFFLAG="--tf-log=DEBUG"
         fi
-        constellation create -y --force --debug ${TFFLAG:-} -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }}
-      # TODO(elchead): remove -c and -w once 2.10 is released, such that a fromVersion upgrade E2E no longer requires these flags
+        constellation create -y --force --debug ${TFFLAG:-}
 
     - name: Cdbg deploy
       if: inputs.isDebugImage == 'true'

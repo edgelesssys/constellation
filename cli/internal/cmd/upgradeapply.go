@@ -129,17 +129,6 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command) error {
 	if err := u.fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil {
 		return fmt.Errorf("reading cluster ID file: %w", err)
 	}
-	if idFile.MeasurementSalt == nil {
-		// TODO(elchead): remove after 2.10, since 2.9 does not yet save it in the idfile
-		measurementSalt, err := u.upgrader.GetMeasurementSalt(cmd.Context())
-		if err != nil {
-			return fmt.Errorf("getting join-config: %w", err)
-		}
-		idFile.MeasurementSalt = measurementSalt
-		if err := u.fileHandler.WriteJSON(constants.ClusterIDsFilename, idFile, file.OptOverwrite); err != nil {
-			return fmt.Errorf("writing cluster ID file: %w", err)
-		}
-	}
 	conf.UpdateMAAURL(idFile.AttestationURL)
 
 	if err := u.confirmIfUpgradeAttestConfigHasDiff(cmd, conf.GetAttestationConfig(), flags); err != nil {
