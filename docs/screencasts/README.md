@@ -8,7 +8,7 @@ CLI tools, and run them inside a [container](docker/Dockerfile).
 ## Usage
 
 ```sh
-mkdir -P constellation
+mkdir -p constellation
 ./generate-screencasts.sh
 sudo chown -R $USER:$USER ./constellation
 cd constellation && constellation iam destroy
