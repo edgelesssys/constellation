@@ -113,10 +113,6 @@ type upgradeApplyCmd struct {
 	clusterShower     clusterShower
 	fileHandler       file.Handler
 	log               debugLog
-
-	// TODO(v2.11): Remove this flag
-	// We currently need it to ensure we don't delete the attestation config during an upgrade
-	attestationConfUpgraded bool
 }
 
 func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command) error {
@@ -193,12 +189,6 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command) error {
 		cmd.PrintErrln(err)
 	case err == nil:
 		cmd.Println("Successfully upgraded Constellation services.")
-
-		if u.attestationConfUpgraded {
-			if err := u.kubeUpgrader.ApplyAttestationConfig(cmd.Context(), conf.GetAttestationConfig(), idFile.MeasurementSalt); err != nil {
-				return fmt.Errorf("applying attestation config: %w", err)
-			}
-		}
 	case err != nil:
 		return fmt.Errorf("upgrading services: %w", err)
 	}
@@ -354,6 +344,11 @@ func validK8sVersion(cmd *cobra.Command, version string, yes bool) (validVersion
 func (u *upgradeApplyCmd) confirmAttestationConfigUpgrade(
 	cmd *cobra.Command, newConfig config.AttestationCfg, measurementSalt []byte, flags upgradeApplyFlags,
 ) error {
+	// TODO(v2.11): Remove this migration
+	if err := u.kubeUpgrader.RemoveAttestationConfigHelmManagement(cmd.Context()); err != nil {
+		return fmt.Errorf("removing helm management from attestation config: %w", err)
+	}
+
 	clusterAttestationConfig, err := u.kubeUpgrader.GetClusterAttestationConfig(cmd.Context(), newConfig.GetVariant())
 	if err != nil {
 		return fmt.Errorf("getting cluster attestation config: %w", err)
@@ -387,10 +382,6 @@ func (u *upgradeApplyCmd) confirmAttestationConfigUpgrade(
 	if err := u.kubeUpgrader.ApplyAttestationConfig(cmd.Context(), newConfig, measurementSalt); err != nil {
 		return fmt.Errorf("updating attestation config: %w", err)
 	}
-
-	// TODO(v2.11): Remove this flag and the corresponding code.
-	u.attestationConfUpgraded = true
-
 	cmd.Println("Successfully update the cluster's attestation config")
 	return nil
 }
@@ -512,6 +503,8 @@ type kubernetesUpgrader interface {
 	ExtendClusterConfigCertSANs(ctx context.Context, alternativeNames []string) error
 	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, error)
 	ApplyAttestationConfig(ctx context.Context, newAttestConfig config.AttestationCfg, measurementSalt []byte) error
+	// TODO(v2.11): Remove this function.
+	RemoveAttestationConfigHelmManagement(ctx context.Context) error
 }
 
 type helmUpgrader interface {

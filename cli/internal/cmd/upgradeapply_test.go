@@ -209,6 +209,11 @@ func (u stubKubernetesUpgrader) ExtendClusterConfigCertSANs(_ context.Context, _
 	return nil
 }
 
+// TODO(v2.11): Remove this function.
+func (u stubKubernetesUpgrader) RemoveAttestationConfigHelmManagement(_ context.Context) error {
+	return nil
+}
+
 type stubTerraformUpgrader struct {
 	terraformDiff     bool
 	planTerraformErr  error
