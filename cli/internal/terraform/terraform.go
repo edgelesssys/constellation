@@ -39,7 +39,8 @@ import (
 )
 
 const (
-	tfVersion         = ">= 1.4.6"
+	// Enforce "<1.6.0" to ensure that only MPL licensed Terraform versions are used.
+	tfVersion         = ">= 1.4.6, < 1.6.0"
 	terraformVarsFile = "terraform.tfvars"
 
 	// terraformUpgradePlanFile is the file name of the zipfile created by Terraform plan for Constellation upgrades.
@@ -521,10 +522,19 @@ func GetExecutable(ctx context.Context, workingDir string) (terraform *tfexec.Te
 		return nil, nil, err
 	}
 
-	downloadVersion := &releases.LatestVersion{
+	constrainedVersions := &releases.Versions{
 		Product:     product.Terraform,
 		Constraints: version,
 	}
+	installCandidates, err := constrainedVersions.List(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(installCandidates) == 0 {
+		return nil, nil, fmt.Errorf("no Terraform version found for constraint %s", version)
+	}
+	downloadVersion := installCandidates[len(installCandidates)-1]
+
 	localVersion := &fs.Version{
 		Product:     product.Terraform,
 		Constraints: version,
