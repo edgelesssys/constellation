@@ -1,0 +1,24 @@
+name: Find GCP CCM versions that need to be build
+description: Find GCP CCM versions that need to be build
+
+inputs:
+  path:
+    description: "Path to the GCP CCM repository"
+    required: true
+
+outputs:
+  versions:
+    description: "Versions that need to be build"
+    value: ${{ steps.find-versions.outputs.versions }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Find versions that need to be build
+      id: find-versions
+      shell: bash
+      run: |
+        script=$(realpath .github/actions/gcpccm_vers_to_build/findvers.sh)
+        pushd "${{ inputs.path }}"
+        versions=$(${script})
+        echo "versions=${versions}" | tee -a "$GITHUB_OUTPUT"
