@@ -332,10 +332,9 @@ sh_template(
         "@@HELM@@": "$(rootpath :com_github_helm_helm)",
         "@@MEASUREMENT_GENERATOR@@": "$(rootpath //internal/attestation/measurements/measurement-generator:measurement-generator)",
         "@@STRINGER@@": "$(rootpath @org_golang_x_tools//cmd/stringer:stringer)",
-        "@@YQ@@": "$(YQ_BIN)",
+        "@@YQ@@": "$(rootpath @yq_toolchains//:resolved_toolchain)",
     },
     template = "go_generate.sh.in",
-    toolchains = ["@yq_toolchains//:resolved_toolchain"],
 )
 
 # deps_mirror_fix fixes bazel workspace rules for external dependencies.
