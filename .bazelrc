@@ -1,27 +1,27 @@
 # share bazel cache between checkouts of the same project
 # and keep old build caches around for longer
-build --disk_cache=~/.cache/shared_bazel_action_cache
-build --repository_cache=~/.cache/shared_bazel_repository_cache
+common --disk_cache=~/.cache/shared_bazel_action_cache
+common --repository_cache=~/.cache/shared_bazel_repository_cache
 
 # better caching / reproducibility
-build --incompatible_strict_action_env=true
-build --experimental_output_directory_naming_scheme=diff_against_baseline
+common --incompatible_strict_action_env=true
+common --experimental_output_directory_naming_scheme=diff_against_baseline
 
 # disable automatic toolchain detection for C/C++
-build --incompatible_enable_cc_toolchain_resolution
-build --action_env BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
+common --incompatible_enable_cc_toolchain_resolution
+common --action_env BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
 
 # inject version information into binaries
-build --stamp --workspace_status_command=tools/workspace_status.sh
+common --stamp --workspace_status_command=tools/workspace_status.sh
 
 # strip binaries for better reproducibility
-build --strip=always
+common --strip=always
 
 # set build mode to opt by default (better reproducibility and performance)
-build --compilation_mode=opt
+common --compilation_mode=opt
 
 # use pure go implementation of netdns
-build --define=gotags=netgo
+common --define=gotags=netgo
 
 # enable tpm simulator for tests
 test --//bazel/settings:tpm_simulator
@@ -36,26 +36,26 @@ build --flag_alias=cli_edition=//bazel/settings:cli_edition
 test --build_tests_only
 
 # bazel config for debug builds
-build:debug --compilation_mode=dbg --strip=never
+common:debug --compilation_mode=dbg --strip=never
 
 # bazel configs to explicitly target a platform
-build:host --platforms @local_config_platform//:host
-build:linux_amd64 --platforms @zig_sdk//libc_aware/platform:linux_amd64_gnu.2.23
-build:linux_arm64 --platforms @zig_sdk//libc_aware/platform:linux_arm64_gnu.2.23
-build:linux_amd64_static --platforms @zig_sdk//libc_aware/platform:linux_amd64_musl
-build:linux_arm64_static --platforms @zig_sdk//libc_aware/platform:linux_arm64_musl
+common:host --platforms @local_config_platform//:host
+common:linux_amd64 --platforms @zig_sdk//libc_aware/platform:linux_amd64_gnu.2.23
+common:linux_arm64 --platforms @zig_sdk//libc_aware/platform:linux_arm64_gnu.2.23
+common:linux_amd64_static --platforms @zig_sdk//libc_aware/platform:linux_amd64_musl
+common:linux_arm64_static --platforms @zig_sdk//libc_aware/platform:linux_arm64_musl
 
 # bazel config to explicitly disable stamping (hide version information at build time)
-build:nostamp --nostamp --workspace_status_command=
+common:nostamp --nostamp --workspace_status_command=
 
 # bazel config to use remote cache
-build:remote_cache --bes_results_url=https://app.buildbuddy.io/invocation/
-build:remote_cache --bes_backend=grpcs://remote.buildbuddy.io
-build:remote_cache --remote_cache=grpcs://remote.buildbuddy.io
-build:remote_cache --remote_timeout=3600
-build:remote_cache --experimental_remote_build_event_upload=minimal
-build:remote_cache --experimental_remote_cache_compression
-build:remote_cache --nolegacy_important_outputs
-build:remote_cache_readonly --noremote_upload_local_results # Uploads logs & artifacts without writing to cache
+common:remote_cache --bes_results_url=https://app.buildbuddy.io/invocation/
+common:remote_cache --bes_backend=grpcs://remote.buildbuddy.io
+common:remote_cache --remote_cache=grpcs://remote.buildbuddy.io
+common:remote_cache --remote_timeout=3600
+common:remote_cache --experimental_remote_build_event_upload=minimal
+common:remote_cache --experimental_remote_cache_compression
+common:remote_cache --nolegacy_important_outputs
+common:remote_cache_readonly --noremote_upload_local_results # Uploads logs & artifacts without writing to cache
 
 try-import %workspace%/.bazeloverwriterc
