@@ -3,33 +3,33 @@
     "properties": {
         "csp": {
             "description": "CSP to which the chart is deployed.",
-            "enum": ["AWS", "Azure", "GCP", "OpenStack", "QEMU"]
-        },
-        "attestationConfig": {
-            "description": "JSON-string to describe the config to use for attestation validation.",
-            "type": "string",
-            "examples": ["{'measurements':{'1':{'expected':'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA','warnOnly':true},'15':{'expected':'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=','warnOnly':true}}}"]
+            "enum": [
+                "AWS",
+                "Azure",
+                "GCP",
+                "OpenStack",
+                "QEMU"
+            ]
         },
         "image": {
             "description": "Container image to use for the spawned pods.",
             "type": "string",
-            "examples": ["ghcr.io/edgelesssys/constellation/join-service:latest"]
-        },
-        "measurementSalt": {
-            "description": "Salt used to generate node measurements",
-            "type": "string",
-            "examples": ["AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"]
+            "examples": [
+                "ghcr.io/edgelesssys/constellation/join-service:latest"
+            ]
         },
         "attestationVariant": {
             "description": "Attestation variant to use for aTLS connections.",
             "type": "string",
-            "examples": ["azure-sev-snp", "azure-trusted-launch", "gcp-sev-es"]
+            "examples": [
+                "azure-sev-snp",
+                "azure-trusted-launch",
+                "gcp-sev-es"
+            ]
         }
     },
     "required": [
         "csp",
-        "attestationConfig",
-        "measurementSalt",
         "image",
         "attestationVariant"
     ],

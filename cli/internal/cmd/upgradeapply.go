@@ -113,6 +113,10 @@ type upgradeApplyCmd struct {
 	clusterShower     clusterShower
 	fileHandler       file.Handler
 	log               debugLog
+
+	// TODO(v2.11): Remove this flag
+	// We currently need it to ensure we don't delete the attestation config during an upgrade
+	attestationConfUpgraded bool
 }
 
 func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command) error {
@@ -177,29 +181,36 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command) error {
 		return fmt.Errorf("extending cert SANs: %w", err)
 	}
 
-	if conf.GetProvider() == cloudprovider.Azure || conf.GetProvider() == cloudprovider.GCP || conf.GetProvider() == cloudprovider.AWS {
-		var upgradeErr *compatibility.InvalidUpgradeError
-		err = u.handleServiceUpgrade(cmd, conf, idFile, tfOutput, validK8sVersion, flags)
-		switch {
-		case errors.As(err, &upgradeErr):
-			cmd.PrintErrln(err)
-		case err == nil:
-			cmd.Println("Successfully upgraded Constellation services.")
-		case err != nil:
-			return fmt.Errorf("upgrading services: %w", err)
-		}
-
-		err = u.kubeUpgrader.UpgradeNodeVersion(cmd.Context(), conf, flags.force)
-		switch {
-		case errors.Is(err, kubecmd.ErrInProgress):
-			cmd.PrintErrln("Skipping image and Kubernetes upgrades. Another upgrade is in progress.")
-		case errors.As(err, &upgradeErr):
-			cmd.PrintErrln(err)
-		case err != nil:
-			return fmt.Errorf("upgrading NodeVersion: %w", err)
-		}
-	} else {
+	if conf.GetProvider() != cloudprovider.Azure && conf.GetProvider() != cloudprovider.GCP && conf.GetProvider() != cloudprovider.AWS {
 		cmd.PrintErrln("WARNING: Skipping service and image upgrades, which are currently only supported for AWS, Azure, and GCP.")
+		return nil
+	}
+
+	var upgradeErr *compatibility.InvalidUpgradeError
+	err = u.handleServiceUpgrade(cmd, conf, idFile, tfOutput, validK8sVersion, flags)
+	switch {
+	case errors.As(err, &upgradeErr):
+		cmd.PrintErrln(err)
+	case err == nil:
+		cmd.Println("Successfully upgraded Constellation services.")
+
+		if u.attestationConfUpgraded {
+			if err := u.kubeUpgrader.ApplyAttestationConfig(cmd.Context(), conf.GetAttestationConfig(), idFile.MeasurementSalt); err != nil {
+				return fmt.Errorf("applying attestation config: %w", err)
+			}
+		}
+	case err != nil:
+		return fmt.Errorf("upgrading services: %w", err)
+	}
+
+	err = u.kubeUpgrader.UpgradeNodeVersion(cmd.Context(), conf, flags.force)
+	switch {
+	case errors.Is(err, kubecmd.ErrInProgress):
+		cmd.PrintErrln("Skipping image and Kubernetes upgrades. Another upgrade is in progress.")
+	case errors.As(err, &upgradeErr):
+		cmd.PrintErrln(err)
+	case err != nil:
+		return fmt.Errorf("upgrading NodeVersion: %w", err)
 	}
 
 	return nil
@@ -376,6 +387,9 @@ func (u *upgradeApplyCmd) confirmAttestationConfigUpgrade(
 	if err := u.kubeUpgrader.ApplyAttestationConfig(cmd.Context(), newConfig, measurementSalt); err != nil {
 		return fmt.Errorf("updating attestation config: %w", err)
 	}
+
+	// TODO(v2.11): Remove this flag and the corresponding code.
+	u.attestationConfUpgraded = true
 
 	cmd.Println("Successfully update the cluster's attestation config")
 	return nil

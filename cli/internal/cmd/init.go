@@ -39,6 +39,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
+	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -129,13 +130,20 @@ func runInitialize(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("creating Helm installer: %w", err)
 	}
 	i := newInitCmd(tfClient, helmInstaller, fileHandler, spinner, &kubeconfigMerger{log: log}, log)
+
 	fetcher := attestationconfigapi.NewFetcher()
-	return i.initialize(cmd, newDialer, license.NewClient(), fetcher)
+	newAttestationApplier := func(w io.Writer, kubeConfig string, log debugLog) (attestationConfigApplier, error) {
+		return kubecmd.New(w, kubeConfig, log)
+	}
+
+	return i.initialize(cmd, newDialer, license.NewClient(), fetcher, newAttestationApplier)
 }
 
 // initialize initializes a Constellation.
-func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.Validator) *dialer.Dialer,
+func (i *initCmd) initialize(
+	cmd *cobra.Command, newDialer func(validator atls.Validator) *dialer.Dialer,
 	quotaChecker license.QuotaChecker, configFetcher attestationconfigapi.Fetcher,
+	newAttestationApplier func(io.Writer, string, debugLog) (attestationConfigApplier, error),
 ) error {
 	flags, err := i.evalFlagArgs(cmd)
 	if err != nil {
@@ -247,6 +255,14 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	bufferedOutput := &bytes.Buffer{}
 	if err := i.writeOutput(idFile, resp, flags.mergeConfigs, bufferedOutput); err != nil {
 		return err
+	}
+
+	attestationApplier, err := newAttestationApplier(cmd.OutOrStdout(), constants.AdminConfFilename, i.log)
+	if err != nil {
+		return err
+	}
+	if err := attestationApplier.ApplyAttestationConfig(cmd.Context(), conf.GetAttestationConfig(), measurementSalt); err != nil {
+		return fmt.Errorf("applying attestation config: %w", err)
 	}
 
 	helmLoader := helm.NewLoader(provider, k8sVersion, clusterName)
@@ -608,4 +624,8 @@ func (e *nonRetriableError) Unwrap() error {
 
 type initializer interface {
 	Install(ctx context.Context, releases *helm.Releases) error
+}
+
+type attestationConfigApplier interface {
+	ApplyAttestationConfig(ctx context.Context, newAttestConfig config.AttestationCfg, measurementSalt []byte) error
 }
