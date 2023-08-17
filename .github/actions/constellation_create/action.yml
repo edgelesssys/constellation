@@ -33,45 +33,12 @@ inputs:
     default: "false"
     description: "Update measurements via the 'constellation config fetch-measurements' command."
   azureSNPEnforcementPolicy:
-    description: "Keep measurements embedded in the CLI."
+    required: false
     description: "Azure SNP enforcement policy."
-  existingConfig:
-    default: "false"
-    description: "Use existing config file."
   test:
     description: "The e2e test payload."
     required: true
-  #
-  # GCP specific inputs
-  #
-  gcpProject:
-    description: "The GCP project to deploy Constellation in."
-    required: false
-  gcpInClusterServiceAccountKey:
-    description: "The GCP Service account to use inside the created Constellation cluster."
-    required: false
-  #
-  # Azure specific inputs
-  #
-  azureSubscription:
-    description: "The Azure subscription ID to deploy Constellation in."
-    required: false
-  azureTenant:
-    description: "The Azure tenant ID to deploy Constellation in."
-    required: false
-  azureClientID:
-    description: "The Azure client ID of the application registration created for Constellation."
-    required: false
-  azureClientSecret:
-    description: "The Azure client secret value of the used secret."
-    required: false
-  azureUserAssignedIdentity:
-    description: "The Azure user assigned identity to use for Constellation."
-    required: false
-  azureResourceGroup:
-    description: "The Azure resource group to use for Constellation cluster"
-    required: false
-    
+
 outputs:
   kubeconfig:
     description: "The kubeconfig for the cluster."
