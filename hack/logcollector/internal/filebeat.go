@@ -57,11 +57,6 @@ func (p *FilebeatPreparer) Prepare(dir string) error {
 		return fmt.Errorf("read values.yml: %w", err)
 	}
 
-	makefile, err := filebeatHelmAssets.ReadFile("templates/filebeat/Makefile")
-	if err != nil {
-		return fmt.Errorf("read makefile: %w", err)
-	}
-
 	helmValuesYaml := &FilebeatHelmValues{}
 	if err := yaml.Unmarshal(rawHelmValues, helmValuesYaml); err != nil {
 		return fmt.Errorf("unmarshal values.yml: %w", err)
@@ -77,10 +72,6 @@ func (p *FilebeatPreparer) Prepare(dir string) error {
 
 	if err = p.fh.Write(filepath.Join(dir, "filebeat", "values.yml"), helmValues, file.OptMkdirAll); err != nil {
 		return fmt.Errorf("write values.yml: %w", err)
-	}
-
-	if err = p.fh.Write(filepath.Join(dir, "filebeat", "Makefile"), makefile, file.OptMkdirAll); err != nil {
-		return fmt.Errorf("write makefile: %w", err)
 	}
 
 	return nil

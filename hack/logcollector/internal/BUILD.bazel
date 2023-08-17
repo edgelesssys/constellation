@@ -8,9 +8,7 @@ go_library(
         "prepare.go",
     ],
     embedsrcs = [
-        "templates/filebeat/Makefile",
         "templates/filebeat/values.yml",
-        "templates/logstash/Makefile",
         "templates/logstash/values.yml",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/hack/logcollector/internal",

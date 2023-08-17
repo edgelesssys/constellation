@@ -86,11 +86,6 @@ func (p *LogstashPreparer) Prepare(dir string) error {
 		return fmt.Errorf("unmarshal values.yml: %w", err)
 	}
 
-	makefile, err := logstashHelmAssets.ReadFile("templates/logstash/Makefile")
-	if err != nil {
-		return fmt.Errorf("read makefile: %w", err)
-	}
-
 	helmValuesYaml.LogstashConfig.LogstashYml = helmValuesYaml.LogstashConfig.LogstashYml + string(logstashYaml)
 	helmValuesYaml.LogstashConfig.Log4J2Properties = string(log4jProperties)
 	helmValuesYaml.LogstashPipeline.LogstashConf = templatedPipelineConf.String()
@@ -104,10 +99,6 @@ func (p *LogstashPreparer) Prepare(dir string) error {
 
 	if err = p.fh.Write(filepath.Join(dir, "logstash", "values.yml"), helmValues, file.OptMkdirAll); err != nil {
 		return fmt.Errorf("write values.yml: %w", err)
-	}
-
-	if err = p.fh.Write(filepath.Join(dir, "logstash", "Makefile"), makefile, file.OptMkdirAll); err != nil {
-		return fmt.Errorf("write makefile: %w", err)
 	}
 
 	return nil
