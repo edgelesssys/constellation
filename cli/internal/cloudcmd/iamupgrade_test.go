@@ -4,10 +4,9 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package upgrade
+package cloudcmd
 
 import (
-	"bytes"
 	"context"
 	"io"
 	"path/filepath"
@@ -23,48 +22,55 @@ import (
 )
 
 func TestIAMMigrate(t *testing.T) {
+	assert := assert.New(t)
 	upgradeID := "test-upgrade"
 	upgradeDir := filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformIAMUpgradeWorkingDir)
 	fs, file := setupMemFSAndFileHandler(t, []string{"terraform.tfvars", "terraform.tfstate"}, []byte("OLD"))
-	// act
-	fakeTfClient := &tfClientStub{upgradeID, file}
-	sut := &IAMMigrateCmd{
-		tf:               fakeTfClient,
-		upgradeID:        upgradeID,
-		csp:              cloudprovider.AWS,
-		logLevel:         terraform.LogLevelDebug,
-		iamWorkspace:     constants.TerraformIAMWorkingDir,
-		upgradeWorkspace: constants.UpgradeDir,
-	}
-	hasDiff, err := sut.Plan(context.Background(), file, bytes.NewBuffer(nil))
-	// assert
-	assert.NoError(t, err)
-	assert.False(t, hasDiff)
-	assertFileExists(fs, filepath.Join(upgradeDir, "terraform.tfvars"), t)
-	assertFileExists(fs, filepath.Join(upgradeDir, "terraform.tfstate"), t)
+	csp := cloudprovider.AWS
 
 	// act
-	err = sut.Apply(context.Background(), file)
-	assert.NoError(t, err)
+	fakeTfClient := &tfIAMUpgradeStub{upgradeID, file}
+	sut := &IAMUpgrader{
+		tf:                fakeTfClient,
+		logLevel:          terraform.LogLevelDebug,
+		existingWorkspace: constants.TerraformIAMWorkingDir,
+		upgradeWorkspace:  filepath.Join(constants.UpgradeDir, upgradeID),
+		fileHandler:       file,
+	}
+	hasDiff, err := sut.Plan(context.Background(), io.Discard, csp)
+
 	// assert
-	assertFileReadsContent(file, filepath.Join(constants.TerraformIAMWorkingDir, "terraform.tfvars"), "NEW", t)
-	assertFileReadsContent(file, filepath.Join(constants.TerraformIAMWorkingDir, "terraform.tfstate"), "NEW", t)
-	assertFileDoesntExist(fs, filepath.Join(upgradeDir), t)
+	assert.NoError(err)
+	assert.False(hasDiff)
+	assertFileExists(t, fs, filepath.Join(upgradeDir, "terraform.tfvars"))
+	assertFileExists(t, fs, filepath.Join(upgradeDir, "terraform.tfstate"))
+
+	// act
+	err = sut.Apply(context.Background(), csp)
+	assert.NoError(err)
+
+	// assert
+	assertFileReadsContent(t, file, filepath.Join(constants.TerraformIAMWorkingDir, "terraform.tfvars"), "NEW")
+	assertFileReadsContent(t, file, filepath.Join(constants.TerraformIAMWorkingDir, "terraform.tfstate"), "NEW")
+	assertFileDoesntExist(t, fs, filepath.Join(upgradeDir))
 }
 
-func assertFileReadsContent(file file.Handler, path string, expectedContent string, t *testing.T) {
+func assertFileReadsContent(t *testing.T, file file.Handler, path string, expectedContent string) {
+	t.Helper()
 	bt, err := file.Read(path)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedContent, string(bt))
 }
 
-func assertFileExists(fs afero.Fs, path string, t *testing.T) {
+func assertFileExists(t *testing.T, fs afero.Fs, path string) {
+	t.Helper()
 	res, err := fs.Stat(path)
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 }
 
-func assertFileDoesntExist(fs afero.Fs, path string, t *testing.T) {
+func assertFileDoesntExist(t *testing.T, fs afero.Fs, path string) {
+	t.Helper()
 	res, err := fs.Stat(path)
 	assert.Error(t, err)
 	assert.Nil(t, res)
@@ -84,20 +90,20 @@ func setupMemFSAndFileHandler(t *testing.T, files []string, content []byte) (afe
 	return fs, file
 }
 
-type tfClientStub struct {
+type tfIAMUpgradeStub struct {
 	upgradeID string
 	file      file.Handler
 }
 
-func (t *tfClientStub) Plan(_ context.Context, _ terraform.LogLevel) (bool, error) {
+func (t *tfIAMUpgradeStub) Plan(_ context.Context, _ terraform.LogLevel) (bool, error) {
 	return false, nil
 }
 
-func (t *tfClientStub) ShowPlan(_ context.Context, _ terraform.LogLevel, _ io.Writer) error {
+func (t *tfIAMUpgradeStub) ShowPlan(_ context.Context, _ terraform.LogLevel, _ io.Writer) error {
 	return nil
 }
 
-func (t *tfClientStub) ApplyIAM(_ context.Context, _ cloudprovider.Provider, _ terraform.LogLevel) (terraform.IAMOutput, error) {
+func (t *tfIAMUpgradeStub) ApplyIAM(_ context.Context, _ cloudprovider.Provider, _ terraform.LogLevel) (terraform.IAMOutput, error) {
 	upgradeDir := filepath.Join(constants.UpgradeDir, t.upgradeID, constants.TerraformIAMUpgradeWorkingDir)
 	err := t.file.Remove(filepath.Join(upgradeDir, "terraform.tfvars"))
 	if err != nil {

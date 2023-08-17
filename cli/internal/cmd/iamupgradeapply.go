@@ -6,11 +6,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"io"
+	"path/filepath"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
-	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -50,6 +53,12 @@ func newIAMUpgradeApplyCmd() *cobra.Command {
 	return cmd
 }
 
+type iamUpgradeApplyCmd struct {
+	fileHandler   file.Handler
+	configFetcher attestationconfigapi.Fetcher
+	log           debugLog
+}
+
 func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
 	force, err := cmd.Flags().GetBool("force")
 	if err != nil {
@@ -57,17 +66,15 @@ func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
 	}
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	configFetcher := attestationconfigapi.NewFetcher()
-	conf, err := config.New(fileHandler, constants.ConfigFilename, configFetcher, force)
-	var configValidationErr *config.ValidationError
-	if errors.As(err, &configValidationErr) {
-		cmd.PrintErrln(configValidationErr.LongMessage())
-	}
-	if err != nil {
-		return err
-	}
 
 	upgradeID := generateUpgradeID(upgradeCmdKindIAM)
-	iamMigrateCmd, err := upgrade.NewIAMMigrateCmd(cmd.Context(), constants.TerraformIAMWorkingDir, constants.UpgradeDir, upgradeID, conf.GetProvider(), terraform.LogLevelDebug)
+	upgradeDir := filepath.Join(constants.UpgradeDir, upgradeID)
+	iamMigrateCmd, err := cloudcmd.NewIAMUpgrader(
+		cmd.Context(), constants.TerraformIAMWorkingDir,
+		upgradeDir,
+		terraform.LogLevelDebug,
+		fileHandler,
+	)
 	if err != nil {
 		return fmt.Errorf("setting up IAM migration command: %w", err)
 	}
@@ -76,16 +83,67 @@ func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("setting up logger: %w", err)
 	}
-	migrator := &tfMigrationClient{log}
 
 	yes, err := cmd.Flags().GetBool("yes")
 	if err != nil {
 		return err
 	}
-	if err := migrator.applyMigration(cmd, constants.UpgradeDir, file.NewHandler(afero.NewOsFs()), iamMigrateCmd, yes); err != nil {
-		return fmt.Errorf("applying IAM migration: %w", err)
+
+	i := iamUpgradeApplyCmd{
+		fileHandler:   fileHandler,
+		configFetcher: configFetcher,
+		log:           log,
+	}
+
+	return i.iamUpgradeApply(cmd, iamMigrateCmd, upgradeDir, force, yes)
+}
+
+func (i iamUpgradeApplyCmd) iamUpgradeApply(cmd *cobra.Command, iamUpgrader iamUpgrader, upgradeDir string, force, yes bool) error {
+	conf, err := config.New(i.fileHandler, constants.ConfigFilename, i.configFetcher, force)
+	var configValidationErr *config.ValidationError
+	if errors.As(err, &configValidationErr) {
+		cmd.PrintErrln(configValidationErr.LongMessage())
+	}
+	if err != nil {
+		return err
+	}
+
+	hasDiff, err := iamUpgrader.Plan(cmd.Context(), cmd.OutOrStderr(), conf.GetProvider())
+	if err != nil {
+		return err
+	}
+	if !hasDiff && !force {
+		cmd.Println("No IAM migrations necessary.")
+		return nil
+	}
+
+	// If there are any Terraform migrations to apply, ask for confirmation
+	cmd.Println("The IAM upgrade requires a migration by applying an updated Terraform template. Please manually review the suggested changes.")
+	if !yes {
+		ok, err := askToConfirm(cmd, "Do you want to apply the IAM upgrade?")
+		if err != nil {
+			return fmt.Errorf("asking for confirmation: %w", err)
+		}
+		if !ok {
+			cmd.Println("Aborting upgrade.")
+			// Remove the upgrade directory
+			if err := i.fileHandler.RemoveAll(upgradeDir); err != nil {
+				return fmt.Errorf("cleaning up upgrade directory %s: %w", upgradeDir, err)
+			}
+			return errors.New("IAM upgrade aborted by user")
+		}
+	}
+	i.log.Debugf("Applying Terraform IAM migrations")
+	if err := iamUpgrader.Apply(cmd.Context(), conf.GetProvider()); err != nil {
+		return fmt.Errorf("applying terraform migrations: %w", err)
 	}
 
 	cmd.Println("IAM profile successfully applied.")
+
 	return nil
+}
+
+type iamUpgrader interface {
+	Plan(ctx context.Context, outWriter io.Writer, csp cloudprovider.Provider) (bool, error)
+	Apply(ctx context.Context, csp cloudprovider.Provider) error
 }

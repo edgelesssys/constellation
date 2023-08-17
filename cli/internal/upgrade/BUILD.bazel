@@ -4,7 +4,6 @@ load("//bazel/go:go_test.bzl", "go_test")
 go_library(
     name = "upgrade",
     srcs = [
-        "iammigrate.go",
         "terraform.go",
         "upgrade.go",
     ],
@@ -21,10 +20,7 @@ go_library(
 
 go_test(
     name = "upgrade_test",
-    srcs = [
-        "iammigrate_test.go",
-        "terraform_test.go",
-    ],
+    srcs = ["terraform_test.go"],
     embed = [":upgrade"],
     deps = [
         "//cli/internal/terraform",

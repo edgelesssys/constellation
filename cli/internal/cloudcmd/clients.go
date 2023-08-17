@@ -42,6 +42,11 @@ type tfIAMClient interface {
 	ShowIAM(ctx context.Context, provider cloudprovider.Provider) (terraform.IAMOutput, error)
 }
 
+type tfPlanner interface {
+	ShowPlan(ctx context.Context, logLevel terraform.LogLevel, output io.Writer) error
+	Plan(ctx context.Context, logLevel terraform.LogLevel) (bool, error)
+}
+
 type libvirtRunner interface {
 	Start(ctx context.Context, containerName, imageName string) error
 	Stop(ctx context.Context) error

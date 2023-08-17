@@ -185,12 +185,6 @@ type tfResourceClient interface {
 	tfClientCommon
 }
 
-// tfIAMClient is a Terraform client for managing IAM resources.
-type tfIAMClient interface {
-	ApplyIAM(ctx context.Context, csp cloudprovider.Provider, logLevel terraform.LogLevel) (terraform.IAMOutput, error)
-	tfClientCommon
-}
-
 // policyPatcher interacts with the CSP (currently only applies for Azure) to update the attestation policy.
 type policyPatcher interface {
 	Patch(ctx context.Context, attestationURL string) error
