@@ -1,0 +1,160 @@
+# ==================================================================================================
+# Aspect Workflows Reusable Workflow for GitHub Actions (v5.7.0-rc5)
+#
+# https://github.com/marketplace/actions/aspect-workflows?version=5.7.0-rc5
+#
+# At this time, GitHub Actions does not allow referencing reusable workflows from public
+# repositories in other organizations. See
+# https://docs.github.com/en/actions/using-workflows/reusing-workflows#access-to-reusable-workflows
+# for more info.
+#
+# Use the Aspect Workflows Reusable Workflow with GitHub Actions by doing one of the following:
+#
+# 1. Vendor this file into the `.github/workflows` folder of your repository and reference it with
+#    `uses:` in a workflow file such as `.github/workflows/aspect-workflows.yaml`:
+#
+#    ```
+#    name: Aspect Workflows
+#
+#    on:
+#      push:
+#        branches: [main]
+#      pull_request:
+#        branches: [main]
+#      workflow_dispatch:
+#
+#    jobs:
+#      aspect-workflows:
+#        name: Aspect Workflows
+#        uses: ./.github/workflows/.aspect-workflows-reusable.yaml
+#    ```
+#
+# 2. Create a fork of https://github.com/aspect-build/workflows-action in your
+#    GitHub org and change the `uses` line above to reference the reusable work
+#    from your fork:
+#
+#    ```
+#    jobs:
+#      aspect-workflows:
+#        name: Aspect Workflows
+#        uses: my-github-org/workflows-action/.github/workflows/.aspect-workflows-reusable.yaml@<version>
+#    ```
+# ==================================================================================================
+name: Aspect Workflows Reusable Workflow (v5.7.0-rc5)
+
+on:
+  # Makes this workflow reusable, see
+  # https://github.blog/2022-02-10-using-reusable-workflows-github-actions
+  workflow_call:
+    inputs:
+      aspect-config:
+        description: Path to the Aspect Workflows config.yaml file
+        type: string
+        default: .aspect/workflows/config.yaml
+      delivery-workflow:
+        description: The name of the file which contains the delivery workflow
+        type: string
+        default: aspect-workflows-delivery.yaml
+      queue:
+        description: The queue / runner pool that the setup step will run on
+        type: string
+        default: aspect-default
+      slack_webhook_url:
+        description: 'If set, then a webhook notification will be sent for failing builds on a release branch. Input should match the name of a secret. "secrets: inherit" must also be set'
+        type: string
+      inherited_secrets:
+        description: 'Comma separated list of secrets or regex (Oniguruma) describing secrets to be made available during the build. "secrets: inherit" must also be set. The regex is used by jq internally which uses the Oniguruma regular expression library: https://jqlang.github.io/jq/manual/'
+        type: string
+
+jobs:
+  setup:
+    runs-on: [self-hosted, aspect-workflows, "${{ inputs.queue }}"]
+    steps:
+      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+      - id: rosetta-generate
+        run: |
+          echo "json=$( \
+            rosetta steps \
+            --config "${{ inputs.aspect-config }}" \
+            --gha_task generate \
+            --gha_json_pretty_print=false \
+          )" | tee "${GITHUB_OUTPUT}"
+
+    outputs:
+      cfg: ${{ steps.rosetta-generate.outputs.json }}
+
+  bazel:
+    needs: [setup]
+    runs-on: ${{ fromJson(needs.setup.outputs.cfg).workflows_config[matrix.job].labels }}
+    strategy:
+      matrix: ${{ fromJson(needs.setup.outputs.cfg).matrix_config }}
+    env:
+      ASPECT_WORKFLOWS_CONFIG: ${{ inputs.aspect-config }}
+
+    steps:
+      - name: Configure environment
+        run: configure_workflows_env
+
+      - name: Clone repo
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+
+      - name: Agent health checks
+        run: agent_health_check
+        timeout-minutes: ${{ fromJson(needs.setup.outputs.cfg).task_config[fromJson(needs.setup.outputs.cfg).workflows_config[matrix.job].workspace].tasks['bazel_health_probe'].timeout_in_minutes }}
+
+      - name: Process Secrets
+        id: process_secrets
+        if: inputs.inherited_secrets != ''
+        run: |
+          REQUIRED_SECRETS=$(jq -R --compact-output 'gsub("\\s+";"";"g") | split(",")' <<< "${{ inputs.inherited_secrets }}")
+          FILTERED_SECRETS=$(jq --compact-output --argjson secrets "${REQUIRED_SECRETS}" 'with_entries( select (.key | test($secrets[]) ) )' <<< '''${{ toJson(secrets) }}''' )
+          echo "filtered_secrets=${FILTERED_SECRETS}" | tee "${GITHUB_OUTPUT}"
+
+      - name: Branch Freshness
+        uses: aspect-build/workflows-action@94af6eb5b5319f01de6338f2a20c274825a7c50f # 5.7.0-rc5
+        timeout-minutes: ${{ fromJson(needs.setup.outputs.cfg).task_config[fromJson(needs.setup.outputs.cfg).workflows_config[matrix.job].workspace].tasks['branch_freshness'].timeout_in_minutes }}
+        with:
+          workspace: ${{ fromJson(needs.setup.outputs.cfg).workflows_config[matrix.job].workspace }}
+          task: branch_freshness
+
+      - name: Prepare archive directories
+        run: rm -rf ${{ join(fromJson(needs.setup.outputs.cfg).workflows_config[matrix.job].artifact_paths, ' ') }}
+
+      - name: ${{ fromJson(needs.setup.outputs.cfg).workflows_config[matrix.job].task }}
+        uses: aspect-build/workflows-action@94af6eb5b5319f01de6338f2a20c274825a7c50f # 5.7.0-rc5
+        env: ${{ inputs.inherited_secrets != '' && fromJson(steps.process_secrets.outputs.filtered_secrets) || fromJson('{}') }}
+        timeout-minutes: ${{ fromJson(needs.setup.outputs.cfg).workflows_config[matrix.job].timeout_in_minutes }}
+        with:
+            workspace: ${{ fromJson(needs.setup.outputs.cfg).workflows_config[matrix.job].workspace }}
+            task: ${{ fromJson(needs.setup.outputs.cfg).workflows_config[matrix.job].task }}
+
+      - name: Delivery Manifest
+        if: fromJson(needs.setup.outputs.cfg).workflows_config[matrix.job].generate_manifest
+        uses: aspect-build/workflows-action@94af6eb5b5319f01de6338f2a20c274825a7c50f # 5.7.0-rc5
+        timeout-minutes: ${{ fromJson(needs.setup.outputs.cfg).task_config[fromJson(needs.setup.outputs.cfg).workflows_config[matrix.job].workspace].tasks['delivery'].timeout_in_minutes }}
+        with:
+            workspace: ${{ fromJson(needs.setup.outputs.cfg).workflows_config[matrix.job].workspace }}
+            task: delivery_manifest
+
+      # Upload all artifacts for the workspace
+      - name: Upload Artifact
+        # The `always()` condition is required to ensure this step runs even if the previous
+        # step fails. Note that setting `continue-on-error: true` on the previous
+        # step is not ideal as GitHub will misleadingly flag the step as having passed.
+        if: ${{ always() }}
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        with:
+          name: ${{ fromJson(needs.setup.outputs.cfg).workflows_config[matrix.job].artifact_prefix }}${{ fromJson(needs.setup.outputs.cfg).workflows_config[matrix.job].task }}.artifacts
+          path: ${{ fromJson(needs.setup.outputs.cfg).workflows_config[matrix.job].artifact_upload_pattern }}
+
+      - name: Trigger Delivery
+        # This uses the following API: https://docs.github.com/en/rest/actions/workflows?apiVersion=2022-11-28#create-a-workflow-dispatch-event
+        run: |
+          curl \
+            -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/${{ github.repository }}/actions/workflows/${{ inputs.delivery-workflow }}/dispatches \
+            -d "{\"ref\":\"${{ fromJson(needs.setup.outputs.cfg).workflows_config[matrix.job].branch }}\",\"inputs\":{\"delivery_commit\":\"${GITHUB_SHA}\"}}"
+        shell: bash
+        if: fromJson(needs.setup.outputs.cfg).workflows_config[matrix.job].delivery

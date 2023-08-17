@@ -1,0 +1,13 @@
+# See https://docs.aspect.build/v/workflows/config
+---
+workspaces:
+  .:
+    bazel:
+      flags:
+        - --config=nostamp
+tasks:
+  buildifier:
+    target: //bazel/ci:buildifier_check
+  gazelle:
+    target: //bazel/ci:gazelle_check
+  test:

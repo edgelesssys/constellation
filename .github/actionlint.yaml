@@ -1,3 +1,4 @@
 self-hosted-runner:
   # Labels of self-hosted runner in array of string
-  labels: [azure-cvm, bazel-cached, bazel-nocache]
+  labels:
+    [azure-cvm, bazel-cached, bazel-nocache, aspect-workflows, aspect-warming]
