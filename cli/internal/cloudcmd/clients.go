@@ -32,13 +32,13 @@ type tfCommonClient interface {
 
 type tfResourceClient interface {
 	tfCommonClient
-	CreateCluster(ctx context.Context, provider cloudprovider.Provider, logLevel terraform.LogLevel) (terraform.ApplyOutput, error)
+	ApplyCluster(ctx context.Context, provider cloudprovider.Provider, logLevel terraform.LogLevel) (terraform.ApplyOutput, error)
 	ShowCluster(ctx context.Context, provider cloudprovider.Provider) (terraform.ApplyOutput, error)
 }
 
 type tfIAMClient interface {
 	tfCommonClient
-	ApplyIAMConfig(ctx context.Context, provider cloudprovider.Provider, logLevel terraform.LogLevel) (terraform.IAMOutput, error)
+	ApplyIAM(ctx context.Context, provider cloudprovider.Provider, logLevel terraform.LogLevel) (terraform.IAMOutput, error)
 	ShowIAM(ctx context.Context, provider cloudprovider.Provider) (terraform.IAMOutput, error)
 }
 

@@ -88,7 +88,7 @@ func (c *IAMMigrateCmd) Plan(ctx context.Context, file file.Handler, outWriter i
 
 // Apply applies the Terraform IAM migrations for the Constellation upgrade.
 func (c *IAMMigrateCmd) Apply(ctx context.Context, fileHandler file.Handler) error {
-	if _, err := c.tf.ApplyIAMConfig(ctx, c.csp, c.logLevel); err != nil {
+	if _, err := c.tf.ApplyIAM(ctx, c.csp, c.logLevel); err != nil {
 		return fmt.Errorf("terraform apply: %w", err)
 	}
 

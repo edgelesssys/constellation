@@ -148,7 +148,7 @@ func (c *IAMCreator) createGCP(ctx context.Context, cl tfIAMClient, opts *IAMCon
 		return IAMOutput{}, err
 	}
 
-	iamOutput, err := cl.ApplyIAMConfig(ctx, cloudprovider.GCP, opts.TFLogLevel)
+	iamOutput, err := cl.ApplyIAM(ctx, cloudprovider.GCP, opts.TFLogLevel)
 	if err != nil {
 		return IAMOutput{}, err
 	}
@@ -175,7 +175,7 @@ func (c *IAMCreator) createAzure(ctx context.Context, cl tfIAMClient, opts *IAMC
 		return IAMOutput{}, err
 	}
 
-	iamOutput, err := cl.ApplyIAMConfig(ctx, cloudprovider.Azure, opts.TFLogLevel)
+	iamOutput, err := cl.ApplyIAM(ctx, cloudprovider.Azure, opts.TFLogLevel)
 	if err != nil {
 		return IAMOutput{}, err
 	}
@@ -203,7 +203,7 @@ func (c *IAMCreator) createAWS(ctx context.Context, cl tfIAMClient, opts *IAMCon
 		return IAMOutput{}, err
 	}
 
-	iamOutput, err := cl.ApplyIAMConfig(ctx, cloudprovider.AWS, opts.TFLogLevel)
+	iamOutput, err := cl.ApplyIAM(ctx, cloudprovider.AWS, opts.TFLogLevel)
 	if err != nil {
 		return IAMOutput{}, err
 	}

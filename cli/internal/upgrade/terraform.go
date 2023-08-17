@@ -101,7 +101,7 @@ func (u *TerraformUpgrader) CleanUpTerraformMigrations(upgradeWorkspace string) 
 // In case of a successful upgrade, the output will be written to the specified file and the old Terraform directory is replaced
 // By the new one.
 func (u *TerraformUpgrader) ApplyTerraformMigrations(ctx context.Context, opts TerraformUpgradeOptions) (terraform.ApplyOutput, error) {
-	tfOutput, err := u.tf.CreateCluster(ctx, opts.CSP, opts.LogLevel)
+	tfOutput, err := u.tf.ApplyCluster(ctx, opts.CSP, opts.LogLevel)
 	if err != nil {
 		return tfOutput, fmt.Errorf("terraform apply: %w", err)
 	}
@@ -181,13 +181,13 @@ type tfClientCommon interface {
 // tfResourceClient is a Terraform client for managing cluster resources.
 type tfResourceClient interface {
 	PrepareUpgradeWorkspace(embeddedPath, oldWorkingDir, newWorkingDir, backupDir string, vars terraform.Variables) error
-	CreateCluster(ctx context.Context, provider cloudprovider.Provider, logLevel terraform.LogLevel) (terraform.ApplyOutput, error)
+	ApplyCluster(ctx context.Context, provider cloudprovider.Provider, logLevel terraform.LogLevel) (terraform.ApplyOutput, error)
 	tfClientCommon
 }
 
 // tfIAMClient is a Terraform client for managing IAM resources.
 type tfIAMClient interface {
-	ApplyIAMConfig(ctx context.Context, csp cloudprovider.Provider, logLevel terraform.LogLevel) (terraform.IAMOutput, error)
+	ApplyIAM(ctx context.Context, csp cloudprovider.Provider, logLevel terraform.LogLevel) (terraform.IAMOutput, error)
 	tfClientCommon
 }
 

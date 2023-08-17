@@ -44,7 +44,7 @@ type stubTerraformClient struct {
 	showErr                error
 }
 
-func (c *stubTerraformClient) CreateCluster(_ context.Context, _ cloudprovider.Provider, _ terraform.LogLevel) (terraform.ApplyOutput, error) {
+func (c *stubTerraformClient) ApplyCluster(_ context.Context, _ cloudprovider.Provider, _ terraform.LogLevel) (terraform.ApplyOutput, error) {
 	return terraform.ApplyOutput{
 		IP:     c.ip,
 		Secret: c.initSecret,
@@ -55,7 +55,7 @@ func (c *stubTerraformClient) CreateCluster(_ context.Context, _ cloudprovider.P
 	}, c.createClusterErr
 }
 
-func (c *stubTerraformClient) ApplyIAMConfig(_ context.Context, _ cloudprovider.Provider, _ terraform.LogLevel) (terraform.IAMOutput, error) {
+func (c *stubTerraformClient) ApplyIAM(_ context.Context, _ cloudprovider.Provider, _ terraform.LogLevel) (terraform.IAMOutput, error) {
 	return c.iamOutput, c.iamOutputErr
 }
 

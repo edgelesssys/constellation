@@ -47,6 +47,18 @@ const (
 	terraformUpgradePlanFile = "plan.zip"
 )
 
+// PrepareIAMUpgradeWorkspace prepares a Terraform workspace for a Constellation IAM upgrade.
+func PrepareIAMUpgradeWorkspace(file file.Handler, path, oldWorkingDir, newWorkingDir, backupDir string) error {
+	if err := prepareUpgradeWorkspace(path, file, oldWorkingDir, newWorkingDir, backupDir); err != nil {
+		return fmt.Errorf("prepare upgrade workspace: %w", err)
+	}
+	// copy the vars file from the old working dir to the new working dir
+	if err := file.CopyFile(filepath.Join(oldWorkingDir, terraformVarsFile), filepath.Join(newWorkingDir, terraformVarsFile)); err != nil {
+		return fmt.Errorf("copying vars file: %w", err)
+	}
+	return nil
+}
+
 // ErrTerraformWorkspaceExistsWithDifferentVariables is returned when existing Terraform files differ from the version the CLI wants to extract.
 var ErrTerraformWorkspaceExistsWithDifferentVariables = errors.New("creating cluster: a Terraform workspace already exists with different variables")
 
@@ -66,7 +78,7 @@ func New(ctx context.Context, workingDir string) (*Client, error) {
 	if err := file.MkdirAll(workingDir); err != nil {
 		return nil, err
 	}
-	tf, remove, err := GetExecutable(ctx, workingDir)
+	tf, remove, err := getExecutable(ctx, workingDir)
 	if err != nil {
 		return nil, err
 	}
@@ -345,104 +357,17 @@ func (c *Client) PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir, bac
 	return c.writeVars(vars)
 }
 
-// PrepareIAMUpgradeWorkspace prepares a Terraform workspace for a Constellation IAM upgrade.
-func PrepareIAMUpgradeWorkspace(file file.Handler, path, oldWorkingDir, newWorkingDir, backupDir string) error {
-	if err := prepareUpgradeWorkspace(path, file, oldWorkingDir, newWorkingDir, backupDir); err != nil {
-		return fmt.Errorf("prepare upgrade workspace: %w", err)
+// ApplyCluster applies the Terraform configuration of the workspace to create or upgrade a Constellation cluster.
+func (c *Client) ApplyCluster(ctx context.Context, provider cloudprovider.Provider, logLevel LogLevel) (ApplyOutput, error) {
+	if err := c.apply(ctx, logLevel); err != nil {
+		return ApplyOutput{}, err
 	}
-	// copy the vars file from the old working dir to the new working dir
-	if err := file.CopyFile(filepath.Join(oldWorkingDir, terraformVarsFile), filepath.Join(newWorkingDir, terraformVarsFile)); err != nil {
-		return fmt.Errorf("copying vars file: %w", err)
-	}
-	return nil
-}
-
-// CreateCluster creates a Constellation cluster using Terraform.
-func (c *Client) CreateCluster(ctx context.Context, provider cloudprovider.Provider, logLevel LogLevel) (ApplyOutput, error) {
-	if err := c.setLogLevel(logLevel); err != nil {
-		return ApplyOutput{}, fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
-	}
-
-	if err := c.tf.Init(ctx); err != nil {
-		return ApplyOutput{}, fmt.Errorf("terraform init: %w", err)
-	}
-
-	if err := c.applyManualStateMigrations(ctx); err != nil {
-		return ApplyOutput{}, fmt.Errorf("apply manual state migrations: %w", err)
-	}
-
-	if err := c.tf.Apply(ctx); err != nil {
-		return ApplyOutput{}, fmt.Errorf("terraform apply: %w", err)
-	}
-
 	return c.ShowCluster(ctx, provider)
 }
 
-// ApplyOutput contains the Terraform output values of a cluster creation
-// or apply operation.
-type ApplyOutput struct {
-	IP                string
-	APIServerCertSANs []string
-	Secret            string
-	UID               string
-	GCP               *GCPApplyOutput
-	Azure             *AzureApplyOutput
-}
-
-// AzureApplyOutput contains the Terraform output values of a terraform apply operation on Microsoft Azure.
-type AzureApplyOutput struct {
-	ResourceGroup            string
-	SubscriptionID           string
-	NetworkSecurityGroupName string
-	LoadBalancerName         string
-	UserAssignedIdentity     string
-	// AttestationURL is the URL of the attestation provider.
-	AttestationURL string
-}
-
-// GCPApplyOutput contains the Terraform output values of a terraform apply operation on GCP.
-type GCPApplyOutput struct {
-	ProjectID  string
-	IPCidrNode string
-	IPCidrPod  string
-}
-
-// IAMOutput contains the output information of the Terraform IAM operations.
-type IAMOutput struct {
-	GCP   GCPIAMOutput
-	Azure AzureIAMOutput
-	AWS   AWSIAMOutput
-}
-
-// GCPIAMOutput contains the output information of the Terraform IAM operation on GCP.
-type GCPIAMOutput struct {
-	SaKey string
-}
-
-// AzureIAMOutput contains the output information of the Terraform IAM operation on Microsoft Azure.
-type AzureIAMOutput struct {
-	SubscriptionID string
-	TenantID       string
-	UAMIID         string
-}
-
-// AWSIAMOutput contains the output information of the Terraform IAM operation on GCP.
-type AWSIAMOutput struct {
-	ControlPlaneInstanceProfile string
-	WorkerNodeInstanceProfile   string
-}
-
-// ApplyIAMConfig creates an IAM configuration using Terraform.
-func (c *Client) ApplyIAMConfig(ctx context.Context, provider cloudprovider.Provider, logLevel LogLevel) (IAMOutput, error) {
-	if err := c.setLogLevel(logLevel); err != nil {
-		return IAMOutput{}, fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
-	}
-
-	if err := c.tf.Init(ctx); err != nil {
-		return IAMOutput{}, err
-	}
-
-	if err := c.tf.Apply(ctx); err != nil {
+// ApplyIAM applies the Terraform configuration of the workspace to create or upgrade an IAM configuration.
+func (c *Client) ApplyIAM(ctx context.Context, provider cloudprovider.Provider, logLevel LogLevel) (IAMOutput, error) {
+	if err := c.apply(ctx, logLevel); err != nil {
 		return IAMOutput{}, err
 	}
 	return c.ShowIAM(ctx, provider)
@@ -512,42 +437,24 @@ func (c *Client) CleanUpWorkspace() error {
 	return cleanUpWorkspace(c.file, c.workingDir)
 }
 
-// GetExecutable returns a Terraform executable either from the local filesystem,
-// or downloads the latest version fulfilling the version constraint.
-func GetExecutable(ctx context.Context, workingDir string) (terraform *tfexec.Terraform, remove func(), err error) {
-	inst := install.NewInstaller()
-
-	version, err := version.NewConstraint(tfVersion)
-	if err != nil {
-		return nil, nil, err
+func (c *Client) apply(ctx context.Context, logLevel LogLevel) error {
+	if err := c.setLogLevel(logLevel); err != nil {
+		return fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
 	}
 
-	constrainedVersions := &releases.Versions{
-		Product:     product.Terraform,
-		Constraints: version,
-	}
-	installCandidates, err := constrainedVersions.List(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-	if len(installCandidates) == 0 {
-		return nil, nil, fmt.Errorf("no Terraform version found for constraint %s", version)
-	}
-	downloadVersion := installCandidates[len(installCandidates)-1]
-
-	localVersion := &fs.Version{
-		Product:     product.Terraform,
-		Constraints: version,
+	if err := c.tf.Init(ctx); err != nil {
+		return fmt.Errorf("terraform init: %w", err)
 	}
 
-	execPath, err := inst.Ensure(ctx, []src.Source{localVersion, downloadVersion})
-	if err != nil {
-		return nil, nil, err
+	if err := c.applyManualStateMigrations(ctx); err != nil {
+		return fmt.Errorf("apply manual state migrations: %w", err)
 	}
 
-	tf, err := tfexec.NewTerraform(workingDir, execPath)
+	if err := c.tf.Apply(ctx); err != nil {
+		return fmt.Errorf("terraform apply: %w", err)
+	}
 
-	return tf, func() { _ = inst.Remove(context.Background()) }, err
+	return nil
 }
 
 // applyManualStateMigrations applies manual state migrations that are not handled by Terraform due to missing features.
@@ -560,11 +467,6 @@ func (c *Client) applyManualStateMigrations(ctx context.Context) error {
 		}
 	}
 	return nil
-	// expects to be run on initialized workspace
-	// and only works for AWS
-	// if migration fails, we expect to either be on a different CSP or that the migration has already been applied
-	// and we can continue
-	// c.tf.StateMv(ctx, "module.control_plane.aws_iam_role.this", "module.control_plane.aws_iam_role.control_plane")
 }
 
 // writeVars tries to write the Terraform variables file or, if it exists, checks if it is the same as we are expecting.
@@ -610,6 +512,98 @@ func (c *Client) setLogLevel(logLevel LogLevel) error {
 type StateMigration struct {
 	DisplayName string
 	Hook        func(ctx context.Context, tfClient TFMigrator) error
+}
+
+// ApplyOutput contains the Terraform output values of a cluster creation
+// or apply operation.
+type ApplyOutput struct {
+	IP                string
+	APIServerCertSANs []string
+	Secret            string
+	UID               string
+	GCP               *GCPApplyOutput
+	Azure             *AzureApplyOutput
+}
+
+// AzureApplyOutput contains the Terraform output values of a terraform apply operation on Microsoft Azure.
+type AzureApplyOutput struct {
+	ResourceGroup            string
+	SubscriptionID           string
+	NetworkSecurityGroupName string
+	LoadBalancerName         string
+	UserAssignedIdentity     string
+	// AttestationURL is the URL of the attestation provider.
+	AttestationURL string
+}
+
+// GCPApplyOutput contains the Terraform output values of a terraform apply operation on GCP.
+type GCPApplyOutput struct {
+	ProjectID  string
+	IPCidrNode string
+	IPCidrPod  string
+}
+
+// IAMOutput contains the output information of the Terraform IAM operations.
+type IAMOutput struct {
+	GCP   GCPIAMOutput
+	Azure AzureIAMOutput
+	AWS   AWSIAMOutput
+}
+
+// GCPIAMOutput contains the output information of the Terraform IAM operation on GCP.
+type GCPIAMOutput struct {
+	SaKey string
+}
+
+// AzureIAMOutput contains the output information of the Terraform IAM operation on Microsoft Azure.
+type AzureIAMOutput struct {
+	SubscriptionID string
+	TenantID       string
+	UAMIID         string
+}
+
+// AWSIAMOutput contains the output information of the Terraform IAM operation on GCP.
+type AWSIAMOutput struct {
+	ControlPlaneInstanceProfile string
+	WorkerNodeInstanceProfile   string
+}
+
+// getExecutable returns a Terraform executable either from the local filesystem,
+// or downloads the latest version fulfilling the version constraint.
+func getExecutable(ctx context.Context, workingDir string) (terraform *tfexec.Terraform, remove func(), err error) {
+	inst := install.NewInstaller()
+
+	version, err := version.NewConstraint(tfVersion)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	constrainedVersions := &releases.Versions{
+		Product:     product.Terraform,
+		Constraints: version,
+	}
+	installCandidates, err := constrainedVersions.List(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(installCandidates) == 0 {
+		return nil, nil, fmt.Errorf("no Terraform version found for constraint %s", version)
+	}
+	downloadVersion := installCandidates[len(installCandidates)-1]
+
+	localVersion := &fs.Version{
+		Product:     product.Terraform,
+		Constraints: version,
+	}
+
+	execPath, err := inst.Ensure(ctx, []src.Source{localVersion, downloadVersion})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	tf, err := tfexec.NewTerraform(workingDir, execPath)
+
+	return tf, func() { _ = inst.Remove(context.Background()) }, err
 }
 
 func toStringSlice(in []any) ([]string, error) {
