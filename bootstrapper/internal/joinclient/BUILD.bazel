@@ -1,5 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
-load("//bazel/go:go_test.bzl", "go_ld_test", "go_test")
+load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "joinclient",
@@ -32,7 +32,9 @@ go_test(
     srcs = ["joinclient_test.go"],
     embed = [":joinclient"],
     # keep
-    tags = ["manual"],
+    pure = "on",
+    # keep
+    race = "off",
     deps = [
         "//internal/cloud/metadata",
         "//internal/constants",
@@ -52,10 +54,4 @@ go_test(
         "@org_golang_google_grpc//:go_default_library",
         "@org_uber_go_goleak//:goleak",
     ],
-)
-
-go_ld_test(
-    name = "joinclient_ld_test",
-    src = "joinclient_test",
-    ld = "//rpm:ld",
 )

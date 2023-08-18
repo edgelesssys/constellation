@@ -1,5 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
-load("//bazel/go:go_test.bzl", "go_ld_test", "go_test")
+load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "diskencryption",
@@ -20,26 +20,13 @@ go_test(
     srcs = ["diskencryption_test.go"],
     embed = [":diskencryption"],
     # keep
-    tags = ["manual"],
-    deps = select({
-        "@io_bazel_rules_go//go/platform:android": [
-            "@com_github_spf13_afero//:afero",
-            "@com_github_stretchr_testify//assert",
-            "@com_github_stretchr_testify//require",
-            "@org_uber_go_goleak//:goleak",
-        ],
-        "@io_bazel_rules_go//go/platform:linux": [
-            "@com_github_spf13_afero//:afero",
-            "@com_github_stretchr_testify//assert",
-            "@com_github_stretchr_testify//require",
-            "@org_uber_go_goleak//:goleak",
-        ],
-        "//conditions:default": [],
-    }),
-)
-
-go_ld_test(
-    name = "diskencryption_ld_test",
-    src = "diskencryption_test",
-    ld = "//rpm:ld",
+    pure = "on",
+    # keep
+    race = "off",
+    deps = [
+        "@com_github_spf13_afero//:afero",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@org_uber_go_goleak//:goleak",
+    ],
 )

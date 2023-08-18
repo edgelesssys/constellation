@@ -1,5 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
-load("//bazel/go:go_test.bzl", "go_ld_test", "go_test")
+load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "cryptmapper",
@@ -36,15 +36,11 @@ go_test(
     srcs = ["cryptmapper_test.go"],
     embed = [":cryptmapper"],
     # keep
-    tags = ["manual"],
+    pure = "on",
+    # keep
+    race = "off",
     deps = [
         "@com_github_stretchr_testify//assert",
         "@org_uber_go_goleak//:goleak",
     ],
-)
-
-go_ld_test(
-    name = "cryptmapper_ld_test",
-    src = "cryptmapper_test",
-    ld = "//rpm:ld",
 )
