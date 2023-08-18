@@ -4,7 +4,10 @@ workspaces:
   .:
     bazel:
       flags:
-        - --config=nostamp
+        - --nostamp
+        - --workspace_status_command=
+        - --nobuild_tests_only
+        - --cli_edition=enterprise
 tasks:
   buildifier:
     target: //bazel/ci:buildifier_check
