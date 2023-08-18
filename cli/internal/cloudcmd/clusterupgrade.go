@@ -53,34 +53,12 @@ func NewClusterUpgrader(ctx context.Context, existingWorkspace, upgradeWorkspace
 // a bool indicating whether a diff exists.
 func (u *ClusterUpgrader) PlanClusterUpgrade(ctx context.Context, outWriter io.Writer, vars terraform.Variables, csp cloudprovider.Provider,
 ) (bool, error) {
-	if err := ensureFileNotExist(u.fileHandler, filepath.Join(u.upgradeWorkspace, constants.TerraformUpgradeBackupDir)); err != nil {
-		return false, fmt.Errorf("workspace is not clean: %w", err)
-	}
-
-	// Prepare the new Terraform workspace and backup the old one
-	err := u.tf.PrepareUpgradeWorkspace(
+	return planUpgrade(
+		ctx, u.tf, u.fileHandler, outWriter, u.logLevel, vars,
 		filepath.Join("terraform", strings.ToLower(csp.String())),
 		u.existingWorkspace,
-		filepath.Join(u.upgradeWorkspace, constants.TerraformUpgradeWorkingDir),
 		filepath.Join(u.upgradeWorkspace, constants.TerraformUpgradeBackupDir),
-		vars,
 	)
-	if err != nil {
-		return false, fmt.Errorf("preparing terraform workspace: %w", err)
-	}
-
-	hasDiff, err := u.tf.Plan(ctx, u.logLevel)
-	if err != nil {
-		return false, fmt.Errorf("terraform plan: %w", err)
-	}
-
-	if hasDiff {
-		if err := u.tf.ShowPlan(ctx, u.logLevel, outWriter); err != nil {
-			return false, fmt.Errorf("terraform show plan: %w", err)
-		}
-	}
-
-	return hasDiff, nil
 }
 
 // ApplyClusterUpgrade applies the migrations planned by PlanClusterUpgrade.
@@ -97,24 +75,14 @@ func (u *ClusterUpgrader) ApplyClusterUpgrade(ctx context.Context, csp cloudprov
 			return tfOutput, fmt.Errorf("patching policies: %w", err)
 		}
 	}
-	if err := u.fileHandler.RemoveAll(u.existingWorkspace); err != nil {
-		return tfOutput, fmt.Errorf("removing old terraform directory: %w", err)
-	}
-	if err := u.fileHandler.CopyDir(
-		filepath.Join(u.upgradeWorkspace, constants.TerraformUpgradeWorkingDir),
+
+	if err := moveUpgradeToCurrent(
+		u.fileHandler,
 		u.existingWorkspace,
+		filepath.Join(u.upgradeWorkspace, constants.TerraformUpgradeWorkingDir),
 	); err != nil {
-		return tfOutput, fmt.Errorf("replacing old terraform directory with new one: %w", err)
+		return tfOutput, fmt.Errorf("promoting upgrade workspace to current workspace: %w", err)
 	}
 
-	if err := u.fileHandler.RemoveAll(filepath.Join(u.upgradeWorkspace, constants.TerraformUpgradeWorkingDir)); err != nil {
-		return tfOutput, fmt.Errorf("removing terraform upgrade directory: %w", err)
-	}
 	return tfOutput, nil
-}
-
-type tfClusterUpgradeClient interface {
-	tfPlanner
-	ApplyCluster(ctx context.Context, provider cloudprovider.Provider, logLevel terraform.LogLevel) (terraform.ApplyOutput, error)
-	PrepareUpgradeWorkspace(embeddedPath, oldWorkingDir, newWorkingDir, backupDir string, vars terraform.Variables) error
 }

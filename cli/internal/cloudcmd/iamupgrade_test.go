@@ -37,7 +37,7 @@ func TestIAMMigrate(t *testing.T) {
 		upgradeWorkspace:  filepath.Join(constants.UpgradeDir, upgradeID),
 		fileHandler:       file,
 	}
-	hasDiff, err := sut.PlanIAMUpgrade(context.Background(), io.Discard, csp)
+	hasDiff, err := sut.PlanIAMUpgrade(context.Background(), io.Discard, &terraform.QEMUVariables{}, csp)
 
 	// assert
 	assert.NoError(err)
@@ -91,12 +91,13 @@ func setupMemFSAndFileHandler(t *testing.T, files []string, content []byte) (afe
 }
 
 type tfIAMUpgradeStub struct {
-	upgradeID string
-	file      file.Handler
-	applyErr  error
-	planErr   error
-	planDiff  bool
-	showErr   error
+	upgradeID           string
+	file                file.Handler
+	applyErr            error
+	planErr             error
+	planDiff            bool
+	showErr             error
+	prepareWorkspaceErr error
 }
 
 func (t *tfIAMUpgradeStub) Plan(_ context.Context, _ terraform.LogLevel) (bool, error) {
@@ -113,21 +114,23 @@ func (t *tfIAMUpgradeStub) ApplyIAM(_ context.Context, _ cloudprovider.Provider,
 	}
 
 	upgradeDir := filepath.Join(constants.UpgradeDir, t.upgradeID, constants.TerraformIAMUpgradeWorkingDir)
-	err := t.file.Remove(filepath.Join(upgradeDir, "terraform.tfvars"))
-	if err != nil {
+	if err := t.file.Write(filepath.Join(upgradeDir, "terraform.tfvars"), []byte("NEW"), file.OptOverwrite); err != nil {
 		return terraform.IAMOutput{}, err
 	}
-	err = t.file.Write(filepath.Join(upgradeDir, "terraform.tfvars"), []byte("NEW"))
-	if err != nil {
-		return terraform.IAMOutput{}, err
-	}
-	err = t.file.Remove(filepath.Join(upgradeDir, "terraform.tfstate"))
-	if err != nil {
-		return terraform.IAMOutput{}, err
-	}
-	err = t.file.Write(filepath.Join(upgradeDir, "terraform.tfstate"), []byte("NEW"))
-	if err != nil {
+	if err := t.file.Write(filepath.Join(upgradeDir, "terraform.tfstate"), []byte("NEW"), file.OptOverwrite); err != nil {
 		return terraform.IAMOutput{}, err
 	}
 	return terraform.IAMOutput{}, nil
+}
+
+func (t *tfIAMUpgradeStub) PrepareUpgradeWorkspace(_, _, _ string, _ terraform.Variables) error {
+	if t.prepareWorkspaceErr != nil {
+		return t.prepareWorkspaceErr
+	}
+
+	upgradeDir := filepath.Join(constants.UpgradeDir, t.upgradeID, constants.TerraformIAMUpgradeWorkingDir)
+	if err := t.file.Write(filepath.Join(upgradeDir, "terraform.tfvars"), []byte("OLD")); err != nil {
+		return err
+	}
+	return t.file.Write(filepath.Join(upgradeDir, "terraform.tfstate"), []byte("OLD"))
 }

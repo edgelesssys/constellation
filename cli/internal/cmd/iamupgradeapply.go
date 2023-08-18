@@ -70,7 +70,8 @@ func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
 	upgradeID := generateUpgradeID(upgradeCmdKindIAM)
 	upgradeDir := filepath.Join(constants.UpgradeDir, upgradeID)
 	iamMigrateCmd, err := cloudcmd.NewIAMUpgrader(
-		cmd.Context(), constants.TerraformIAMWorkingDir,
+		cmd.Context(),
+		constants.TerraformIAMWorkingDir,
 		upgradeDir,
 		terraform.LogLevelDebug,
 		fileHandler,
@@ -108,7 +109,11 @@ func (i iamUpgradeApplyCmd) iamUpgradeApply(cmd *cobra.Command, iamUpgrader iamU
 		return err
 	}
 
-	hasDiff, err := iamUpgrader.PlanIAMUpgrade(cmd.Context(), cmd.OutOrStderr(), conf.GetProvider())
+	vars, err := cloudcmd.TerraformIAMUpgradeVars(conf, i.fileHandler)
+	if err != nil {
+		return fmt.Errorf("getting terraform variables: %w", err)
+	}
+	hasDiff, err := iamUpgrader.PlanIAMUpgrade(cmd.Context(), cmd.OutOrStderr(), vars, conf.GetProvider())
 	if err != nil {
 		return err
 	}
@@ -144,6 +149,6 @@ func (i iamUpgradeApplyCmd) iamUpgradeApply(cmd *cobra.Command, iamUpgrader iamU
 }
 
 type iamUpgrader interface {
-	PlanIAMUpgrade(ctx context.Context, outWriter io.Writer, csp cloudprovider.Provider) (bool, error)
+	PlanIAMUpgrade(ctx context.Context, outWriter io.Writer, vars terraform.Variables, csp cloudprovider.Provider) (bool, error)
 	ApplyIAMUpgrade(ctx context.Context, csp cloudprovider.Provider) error
 }

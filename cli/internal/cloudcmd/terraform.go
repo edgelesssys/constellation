@@ -8,12 +8,15 @@ package cloudcmd
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 )
 
@@ -25,19 +28,54 @@ func TerraformUpgradeVars(conf *config.Config) (terraform.Variables, error) {
 	// For AWS, we enforce some basic constraints on the image variable.
 	// For Azure, the provider enforces the format below.
 	// For GCP, any placeholder works.
+	var vars terraform.Variables
 	switch conf.GetProvider() {
 	case cloudprovider.AWS:
-		vars := awsTerraformVars(conf, "ami-placeholder")
-		return vars, nil
+		vars = awsTerraformVars(conf, "ami-placeholder")
 	case cloudprovider.Azure:
-		vars := azureTerraformVars(conf, "/communityGalleries/myGalleryName/images/myImageName/versions/latest")
-		return vars, nil
+		vars = azureTerraformVars(conf, "/communityGalleries/myGalleryName/images/myImageName/versions/latest")
 	case cloudprovider.GCP:
-		vars := gcpTerraformVars(conf, "placeholder")
-		return vars, nil
+		vars = gcpTerraformVars(conf, "placeholder")
 	default:
 		return nil, fmt.Errorf("unsupported provider: %s", conf.GetProvider())
 	}
+	return vars, nil
+}
+
+// TerraformIAMUpgradeVars returns variables required to execute IAM upgrades with Terraform.
+func TerraformIAMUpgradeVars(conf *config.Config, fileHandler file.Handler) (terraform.Variables, error) {
+	// Load the tfvars of the existing IAM workspace.
+	// Ideally we would only load values from the config file, but this currently does not hold all values required.
+	// This should be refactored in the future.
+	oldVarBytes, err := fileHandler.Read(filepath.Join(constants.TerraformIAMWorkingDir, "terraform.tfvars"))
+	if err != nil {
+		return nil, fmt.Errorf("reading existing IAM workspace: %w", err)
+	}
+
+	var vars terraform.Variables
+	switch conf.GetProvider() {
+	case cloudprovider.AWS:
+		var oldVars terraform.AWSIAMVariables
+		if err := terraform.VariablesFromBytes(oldVarBytes, &oldVars); err != nil {
+			return nil, fmt.Errorf("parsing existing IAM workspace: %w", err)
+		}
+		vars = awsTerraformIAMVars(conf, oldVars)
+	case cloudprovider.Azure:
+		var oldVars terraform.AzureIAMVariables
+		if err := terraform.VariablesFromBytes(oldVarBytes, &oldVars); err != nil {
+			return nil, fmt.Errorf("parsing existing IAM workspace: %w", err)
+		}
+		vars = azureTerraformIAMVars(conf, oldVars)
+	case cloudprovider.GCP:
+		var oldVars terraform.GCPIAMVariables
+		if err := terraform.VariablesFromBytes(oldVarBytes, &oldVars); err != nil {
+			return nil, fmt.Errorf("parsing existing IAM workspace: %w", err)
+		}
+		vars = gcpTerraformIAMVars(conf, oldVars)
+	default:
+		return nil, fmt.Errorf("unsupported provider: %s", conf.GetProvider())
+	}
+	return vars, nil
 }
 
 // awsTerraformVars provides variables required to execute the Terraform scripts.
@@ -65,6 +103,13 @@ func awsTerraformVars(conf *config.Config, imageRef string) *terraform.AWSCluste
 		Debug:                  conf.IsDebugCluster(),
 		EnableSNP:              conf.GetAttestationConfig().GetVariant().Equal(variant.AWSSEVSNP{}),
 		CustomEndpoint:         conf.CustomEndpoint,
+	}
+}
+
+func awsTerraformIAMVars(conf *config.Config, oldVars terraform.AWSIAMVariables) *terraform.AWSIAMVariables {
+	return &terraform.AWSIAMVariables{
+		Region: conf.Provider.AWS.Region,
+		Prefix: oldVars.Prefix,
 	}
 }
 
@@ -104,6 +149,14 @@ func azureTerraformVars(conf *config.Config, imageRef string) *terraform.AzureCl
 	return vars
 }
 
+func azureTerraformIAMVars(conf *config.Config, oldVars terraform.AzureIAMVariables) *terraform.AzureIAMVariables {
+	return &terraform.AzureIAMVariables{
+		Region:           conf.Provider.Azure.Location,
+		ServicePrincipal: oldVars.ServicePrincipal,
+		ResourceGroup:    conf.Provider.Azure.ResourceGroup,
+	}
+}
+
 // gcpTerraformVars provides variables required to execute the Terraform scripts.
 // It should be the only place to declare the GCP variables.
 func gcpTerraformVars(conf *config.Config, imageRef string) *terraform.GCPClusterVariables {
@@ -127,6 +180,15 @@ func gcpTerraformVars(conf *config.Config, imageRef string) *terraform.GCPCluste
 		ImageID:        imageRef,
 		Debug:          conf.IsDebugCluster(),
 		CustomEndpoint: conf.CustomEndpoint,
+	}
+}
+
+func gcpTerraformIAMVars(conf *config.Config, oldVars terraform.GCPIAMVariables) *terraform.GCPIAMVariables {
+	return &terraform.GCPIAMVariables{
+		Project:          conf.Provider.GCP.Project,
+		Region:           conf.Provider.GCP.Region,
+		Zone:             conf.Provider.GCP.Zone,
+		ServiceAccountID: oldVars.ServiceAccountID,
 	}
 }
 

@@ -86,8 +86,8 @@ func TestAWSIAMVariables(t *testing.T) {
 	}
 
 	// test that the variables are correctly rendered
-	want := `name_prefix = "my-prefix"
-region = "eu-central-1"
+	want := `region      = "eu-central-1"
+name_prefix = "my-prefix"
 `
 	got := vars.String()
 	assert.Equal(t, want, got)
@@ -162,9 +162,9 @@ func TestGCPIAMVariables(t *testing.T) {
 	}
 
 	// test that the variables are correctly rendered
-	want := `project_id = "my-project"
-region = "eu-central-1"
-zone = "eu-central-1a"
+	want := `project_id         = "my-project"
+region             = "eu-central-1"
+zone               = "eu-central-1a"
 service_account_id = "my-service-account"
 `
 	got := vars.String()
@@ -226,9 +226,9 @@ func TestAzureIAMVariables(t *testing.T) {
 	}
 
 	// test that the variables are correctly rendered
-	want := `service_principal_name = "my-service-principal"
-region = "eu-central-1"
-resource_group_name = "my-resource-group"
+	want := `region                 = "eu-central-1"
+service_principal_name = "my-service-principal"
+resource_group_name    = "my-resource-group"
 `
 	got := vars.String()
 	assert.Equal(t, want, got)

@@ -198,6 +198,6 @@ func (t *tfClusterUpgradeStub) ApplyCluster(_ context.Context, _ cloudprovider.P
 	return terraform.ApplyOutput{}, t.applyErr
 }
 
-func (t *tfClusterUpgradeStub) PrepareUpgradeWorkspace(_, _, _, _ string, _ terraform.Variables) error {
+func (t *tfClusterUpgradeStub) PrepareUpgradeWorkspace(_, _, _ string, _ terraform.Variables) error {
 	return t.prepareWorkspaceErr
 }

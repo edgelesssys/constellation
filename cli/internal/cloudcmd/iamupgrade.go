@@ -10,7 +10,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -50,34 +49,13 @@ func NewIAMUpgrader(ctx context.Context, existingWorkspace, upgradeWorkspace str
 }
 
 // PlanIAMUpgrade prepares the upgrade workspace and plans the Terraform migrations for the Constellation upgrade, writing the plan to the outWriter.
-func (u *IAMUpgrader) PlanIAMUpgrade(ctx context.Context, outWriter io.Writer, csp cloudprovider.Provider) (bool, error) {
-	if err := ensureFileNotExist(u.fileHandler, filepath.Join(u.upgradeWorkspace, constants.TerraformIAMUpgradeBackupDir)); err != nil {
-		return false, fmt.Errorf("workspace is not clean: %w", err)
-	}
-
-	templateDir := filepath.Join("terraform", "iam", strings.ToLower(csp.String()))
-	if err := terraform.PrepareIAMUpgradeWorkspace(
-		u.fileHandler,
-		templateDir,
+func (u *IAMUpgrader) PlanIAMUpgrade(ctx context.Context, outWriter io.Writer, vars terraform.Variables, csp cloudprovider.Provider) (bool, error) {
+	return planUpgrade(
+		ctx, u.tf, u.fileHandler, outWriter, u.logLevel, vars,
+		filepath.Join("terraform", "iam", strings.ToLower(csp.String())),
 		u.existingWorkspace,
-		filepath.Join(u.upgradeWorkspace, constants.TerraformIAMUpgradeWorkingDir),
 		filepath.Join(u.upgradeWorkspace, constants.TerraformIAMUpgradeBackupDir),
-	); err != nil {
-		return false, fmt.Errorf("preparing terraform workspace: %w", err)
-	}
-
-	hasDiff, err := u.tf.Plan(ctx, u.logLevel)
-	if err != nil {
-		return false, fmt.Errorf("terraform plan: %w", err)
-	}
-
-	if hasDiff {
-		if err := u.tf.ShowPlan(ctx, u.logLevel, outWriter); err != nil {
-			return false, fmt.Errorf("terraform show plan: %w", err)
-		}
-	}
-
-	return hasDiff, nil
+	)
 }
 
 // ApplyIAMUpgrade applies the Terraform IAM migrations for the IAM upgrade.
@@ -86,35 +64,13 @@ func (u *IAMUpgrader) ApplyIAMUpgrade(ctx context.Context, csp cloudprovider.Pro
 		return fmt.Errorf("terraform apply: %w", err)
 	}
 
-	if err := u.fileHandler.RemoveAll(u.existingWorkspace); err != nil {
-		return fmt.Errorf("removing old terraform directory: %w", err)
-	}
-	if err := u.fileHandler.CopyDir(
-		filepath.Join(u.upgradeWorkspace, constants.TerraformIAMUpgradeWorkingDir),
+	if err := moveUpgradeToCurrent(
+		u.fileHandler,
 		u.existingWorkspace,
+		filepath.Join(u.upgradeWorkspace, constants.TerraformIAMUpgradeWorkingDir),
 	); err != nil {
-		return fmt.Errorf("replacing old terraform directory with new one: %w", err)
-	}
-
-	if err := u.fileHandler.RemoveAll(filepath.Join(u.upgradeWorkspace, constants.TerraformIAMUpgradeWorkingDir)); err != nil {
-		return fmt.Errorf("removing terraform upgrade directory: %w", err)
+		return fmt.Errorf("promoting upgrade workspace to current workspace: %w", err)
 	}
 
 	return nil
-}
-
-// ensureFileNotExist checks if a single file or directory does not exist, returning an error if it does.
-func ensureFileNotExist(fileHandler file.Handler, fileName string) error {
-	if _, err := fileHandler.Stat(fileName); err != nil {
-		if !os.IsNotExist(err) {
-			return fmt.Errorf("checking %q: %w", fileName, err)
-		}
-		return nil
-	}
-	return fmt.Errorf("%q already exists", fileName)
-}
-
-type tfIAMUpgradeClient interface {
-	tfPlanner
-	ApplyIAM(ctx context.Context, csp cloudprovider.Provider, logLevel terraform.LogLevel) (terraform.IAMOutput, error)
 }
