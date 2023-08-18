@@ -21,11 +21,6 @@ const (
 	maximumRetryAttempts = 3
 )
 
-type debugLog interface {
-	Debugf(format string, args ...any)
-	Sync()
-}
-
 type retrieableApplier interface {
 	apply(context.Context) error
 	ReleaseName() string

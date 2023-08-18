@@ -9,11 +9,17 @@ package helm
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
+)
+
+const (
+	// timeout is the maximum time given per helm action.
+	timeout = 10 * time.Minute
 )
 
 type applyAction interface {
@@ -58,11 +64,6 @@ func setWaitMode(a *action.Install, waitMode WaitMode) {
 	default:
 		panic(fmt.Errorf("unknown wait mode %q", waitMode))
 	}
-}
-
-// newInstallAction creates a new InstallAction.
-func newInstallAction(config *action.Configuration, release Release, log debugLog) *installAction {
-	return &installAction{helmAction: newHelmInstallAction(config, release), release: release, log: log}
 }
 
 // installAction is an action that installs a helm chart.

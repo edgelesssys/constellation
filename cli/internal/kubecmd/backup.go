@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package helm
+package kubecmd
 
 import (
 	"context"
@@ -13,25 +13,32 @@ import (
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/yaml"
 )
 
-func (c *UpgradeClient) backupCRDs(ctx context.Context, upgradeDir string) ([]apiextensionsv1.CustomResourceDefinition, error) {
-	c.log.Debugf("Starting CRD backup")
-	crds, err := c.kubectl.ListCRDs(ctx)
+type crdLister interface {
+	ListCRDs(ctx context.Context) ([]apiextensionsv1.CustomResourceDefinition, error)
+	ListCRs(ctx context.Context, gvr schema.GroupVersionResource) ([]unstructured.Unstructured, error)
+}
+
+// BackupCRDs backs up all CRDs to the upgrade workspace.
+func (k *KubeCmd) BackupCRDs(ctx context.Context, upgradeDir string) ([]apiextensionsv1.CustomResourceDefinition, error) {
+	k.log.Debugf("Starting CRD backup")
+	crds, err := k.kubectl.ListCRDs(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("getting CRDs: %w", err)
 	}
 
-	crdBackupFolder := c.crdBackupFolder(upgradeDir)
-	if err := c.fs.MkdirAll(crdBackupFolder); err != nil {
+	crdBackupFolder := k.crdBackupFolder(upgradeDir)
+	if err := k.fileHandler.MkdirAll(crdBackupFolder); err != nil {
 		return nil, fmt.Errorf("creating backup dir: %w", err)
 	}
 	for i := range crds {
 		path := filepath.Join(crdBackupFolder, crds[i].Name+".yaml")
 
-		c.log.Debugf("Creating CRD backup: %s", path)
+		k.log.Debugf("Creating CRD backup: %s", path)
 
 		// We have to manually set kind/apiversion because of a long-standing limitation of the API:
 		// https://github.com/kubernetes/kubernetes/issues/3030#issuecomment-67543738
@@ -44,18 +51,19 @@ func (c *UpgradeClient) backupCRDs(ctx context.Context, upgradeDir string) ([]ap
 		if err != nil {
 			return nil, err
 		}
-		if err := c.fs.Write(path, yamlBytes); err != nil {
+		if err := k.fileHandler.Write(path, yamlBytes); err != nil {
 			return nil, err
 		}
 	}
-	c.log.Debugf("CRD backup complete")
+	k.log.Debugf("CRD backup complete")
 	return crds, nil
 }
 
-func (c *UpgradeClient) backupCRs(ctx context.Context, crds []apiextensionsv1.CustomResourceDefinition, upgradeID string) error {
-	c.log.Debugf("Starting CR backup")
+// BackupCRs backs up all CRs to the upgrade workspace.
+func (k *KubeCmd) BackupCRs(ctx context.Context, crds []apiextensionsv1.CustomResourceDefinition, upgradeDir string) error {
+	k.log.Debugf("Starting CR backup")
 	for _, crd := range crds {
-		c.log.Debugf("Creating backup for resource type: %s", crd.Name)
+		k.log.Debugf("Creating backup for resource type: %s", crd.Name)
 
 		// Iterate over all versions of the CRD
 		// TODO: Consider iterating over crd.Status.StoredVersions instead
@@ -63,22 +71,22 @@ func (c *UpgradeClient) backupCRs(ctx context.Context, crds []apiextensionsv1.Cu
 		// a version that is not installed in the cluster.
 		// With the StoredVersions field, we could only iterate over the installed versions.
 		for _, version := range crd.Spec.Versions {
-			c.log.Debugf("Creating backup of CRs for %q at version %q", crd.Name, version.Name)
+			k.log.Debugf("Creating backup of CRs for %q at version %q", crd.Name, version.Name)
 
 			gvr := schema.GroupVersionResource{Group: crd.Spec.Group, Version: version.Name, Resource: crd.Spec.Names.Plural}
-			crs, err := c.kubectl.ListCRs(ctx, gvr)
+			crs, err := k.kubectl.ListCRs(ctx, gvr)
 			if err != nil {
 				if !k8serrors.IsNotFound(err) {
 					return fmt.Errorf("retrieving CR %s: %w", crd.Name, err)
 				}
-				c.log.Debugf("No CRs found for %q at version %q, skipping...", crd.Name, version.Name)
+				k.log.Debugf("No CRs found for %q at version %q, skipping...", crd.Name, version.Name)
 				continue
 			}
 
-			backupFolder := c.backupFolder(upgradeID)
+			backupFolder := k.backupFolder(upgradeDir)
 			for _, cr := range crs {
 				targetFolder := filepath.Join(backupFolder, gvr.Group, gvr.Version, cr.GetNamespace(), cr.GetKind())
-				if err := c.fs.MkdirAll(targetFolder); err != nil {
+				if err := k.fileHandler.MkdirAll(targetFolder); err != nil {
 					return fmt.Errorf("creating resource dir: %w", err)
 				}
 				path := filepath.Join(targetFolder, cr.GetName()+".yaml")
@@ -86,22 +94,22 @@ func (c *UpgradeClient) backupCRs(ctx context.Context, crds []apiextensionsv1.Cu
 				if err != nil {
 					return err
 				}
-				if err := c.fs.Write(path, yamlBytes); err != nil {
+				if err := k.fileHandler.Write(path, yamlBytes); err != nil {
 					return err
 				}
 			}
 		}
 
-		c.log.Debugf("Backup for resource type %q complete", crd.Name)
+		k.log.Debugf("Backup for resource type %q complete", crd.Name)
 	}
-	c.log.Debugf("CR backup complete")
+	k.log.Debugf("CR backup complete")
 	return nil
 }
 
-func (c *UpgradeClient) backupFolder(upgradeDir string) string {
+func (k *KubeCmd) backupFolder(upgradeDir string) string {
 	return filepath.Join(upgradeDir, "backups")
 }
 
-func (c *UpgradeClient) crdBackupFolder(upgradeDir string) string {
-	return filepath.Join(c.backupFolder(upgradeDir), "crds")
+func (k *KubeCmd) crdBackupFolder(upgradeDir string) string {
+	return filepath.Join(k.backupFolder(upgradeDir), "crds")
 }

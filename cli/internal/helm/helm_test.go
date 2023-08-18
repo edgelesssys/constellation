@@ -7,9 +7,21 @@ SPDX-License-Identifier: AGPL-3.0-only
 package helm
 
 import (
+	"errors"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/compatibility"
+	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/semver"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"helm.sh/helm/v3/pkg/action"
 )
 
 func TestMergeMaps(t *testing.T) {
@@ -106,4 +118,149 @@ func TestMergeMaps(t *testing.T) {
 			assert.Equal(tc.expected, newVals)
 		})
 	}
+}
+
+func TestHelmApply(t *testing.T) {
+	cliVersion := semver.NewFromInt(2, 11, 0, "")
+	csp := cloudprovider.AWS // using AWS since it has an additional chart: aws-load-balancer-controller
+	microserviceCharts := []string{
+		"constellation-services",
+		"constellation-operators",
+		"constellation-csi",
+	}
+	testCases := map[string]struct {
+		clusterMicroServiceVersion string
+		expectedActions            []string
+		clusterCertManagerVersion  *string
+		clusterAWSLBVersion        *string
+		expectNoUpgrade            bool
+		allowDestructive           bool
+		expectError                bool
+	}{
+		"CLI microservices are 1 minor version newer than cluster ones": {
+			clusterMicroServiceVersion: "v2.10.1",
+			expectedActions:            microserviceCharts,
+		},
+		"CLI microservices are 2 minor versions newer than cluster ones": {
+			clusterMicroServiceVersion: "v2.9.0",
+			expectedActions:            []string{},
+			expectNoUpgrade:            true,
+		},
+		"cluster microservices are newer than CLI": {
+			clusterMicroServiceVersion: "v2.12.0",
+			expectNoUpgrade:            true,
+		},
+		"cluster and CLI microservices have the same version": {
+			clusterMicroServiceVersion: "v2.11.0",
+			expectedActions:            []string{},
+			expectNoUpgrade:            true,
+		},
+		"cert-manager upgrade is ignored when denying destructive upgrades": {
+			clusterMicroServiceVersion: "v2.11.0",
+			clusterCertManagerVersion:  toPtr("v1.9.0"),
+			allowDestructive:           false,
+			expectNoUpgrade:            true,
+			expectError:                true,
+		},
+		"both microservices and cert-manager are upgraded in destructive mode": {
+			clusterMicroServiceVersion: "v2.10.1",
+			clusterCertManagerVersion:  toPtr("v1.9.0"),
+			expectedActions:            append(microserviceCharts, "cert-manager"),
+			allowDestructive:           true,
+		},
+		"only missing aws-load-balancer-controller is installed": {
+			clusterMicroServiceVersion: "v2.11.0",
+			clusterAWSLBVersion:        toPtr(""),
+			expectedActions:            []string{"aws-load-balancer-controller"},
+			expectNoUpgrade:            true,
+		},
+	}
+
+	cfg := config.Default()
+	cfg.RemoveProviderAndAttestationExcept(csp)
+	log := logger.NewTest(t)
+	options := Options{
+		Conformance:      false,
+		HelmWaitMode:     WaitModeWait,
+		AllowDestructive: true,
+		Force:            false,
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			lister := &ReleaseVersionStub{}
+			sut := Client{
+				factory:    newActionFactory(nil, lister, &action.Configuration{}, cliVersion, log),
+				log:        log,
+				cliVersion: cliVersion,
+			}
+			awsLbVersion := "v1.5.4" // current version
+			if tc.clusterAWSLBVersion != nil {
+				awsLbVersion = *tc.clusterAWSLBVersion
+			}
+
+			certManagerVersion := "v1.10.0" // current version
+			if tc.clusterCertManagerVersion != nil {
+				certManagerVersion = *tc.clusterCertManagerVersion
+			}
+			helmListVersion(lister, "cilium", "v1.12.1")
+			helmListVersion(lister, "cert-manager", certManagerVersion)
+			helmListVersion(lister, "constellation-services", tc.clusterMicroServiceVersion)
+			helmListVersion(lister, "constellation-operators", tc.clusterMicroServiceVersion)
+			helmListVersion(lister, "constellation-csi", tc.clusterMicroServiceVersion)
+			helmListVersion(lister, "aws-load-balancer-controller", awsLbVersion)
+
+			options.AllowDestructive = tc.allowDestructive
+			ex, includesUpgrade, err := sut.ApplyCharts(cfg, versions.ValidK8sVersion("v1.27.4"),
+				clusterid.File{UID: "testuid", MeasurementSalt: []byte("measurementSalt")}, options,
+				fakeTerraformOutput(csp), fakeServiceAccURI(csp),
+				uri.MasterSecret{Key: []byte("secret"), Salt: []byte("masterSalt")})
+			var upgradeErr *compatibility.InvalidUpgradeError
+			if tc.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.True(t, err == nil || errors.As(err, &upgradeErr))
+			}
+			assert.Equal(t, !tc.expectNoUpgrade, includesUpgrade)
+			chartExecutor, ok := ex.(*ChartApplyExecutor)
+			assert.True(t, ok)
+			assert.ElementsMatch(t, tc.expectedActions, getActionReleaseNames(chartExecutor.actions))
+		})
+	}
+}
+
+func fakeTerraformOutput(csp cloudprovider.Provider) terraform.ApplyOutput {
+	switch csp {
+	case cloudprovider.AWS:
+		return terraform.ApplyOutput{}
+	case cloudprovider.GCP:
+		return terraform.ApplyOutput{GCP: &terraform.GCPApplyOutput{}}
+	default:
+		panic("invalid csp")
+	}
+}
+
+func getActionReleaseNames(actions []applyAction) []string {
+	releaseActionNames := []string{}
+	for _, action := range actions {
+		releaseActionNames = append(releaseActionNames, action.ReleaseName())
+	}
+	return releaseActionNames
+}
+
+func helmListVersion(l *ReleaseVersionStub, releaseName string, installedVersion string) {
+	if installedVersion == "" {
+		l.On("currentVersion", releaseName).Return(semver.Semver{}, errReleaseNotFound)
+		return
+	}
+	v, _ := semver.New(installedVersion)
+	l.On("currentVersion", releaseName).Return(v, nil)
+}
+
+type ReleaseVersionStub struct {
+	mock.Mock
+}
+
+func (s *ReleaseVersionStub) currentVersion(release string) (semver.Semver, error) {
+	args := s.Called(release)
+	return args.Get(0).(semver.Semver), args.Error(1)
 }

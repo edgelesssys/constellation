@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -616,6 +617,10 @@ type stubKubectl struct {
 	k8sErr            error
 	nodes             []corev1.Node
 	nodesErr          error
+	crds              []apiextensionsv1.CustomResourceDefinition
+	getCRDsError      error
+	crs               []unstructured.Unstructured
+	getCRsError       error
 }
 
 func (s *stubKubectl) GetConfigMap(_ context.Context, _, name string) (*corev1.ConfigMap, error) {

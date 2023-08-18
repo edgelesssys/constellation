@@ -76,17 +76,12 @@ type initCmd struct {
 	merger        configMerger
 	spinner       spinnerInterf
 	fileHandler   file.Handler
-	helmInstaller initializer
 	clusterShower clusterShower
 	pf            pathprefix.PathPrefixer
 }
 
-type clusterShower interface {
-	ShowCluster(ctx context.Context, provider cloudprovider.Provider) (terraform.ApplyOutput, error)
-}
-
 func newInitCmd(
-	clusterShower clusterShower, helmInstaller initializer, fileHandler file.Handler,
+	clusterShower clusterShower, fileHandler file.Handler,
 	spinner spinnerInterf, merger configMerger, log debugLog,
 ) *initCmd {
 	return &initCmd{
@@ -94,7 +89,6 @@ func newInitCmd(
 		merger:        merger,
 		spinner:       spinner,
 		fileHandler:   fileHandler,
-		helmInstaller: helmInstaller,
 		clusterShower: clusterShower,
 	}
 }
@@ -125,18 +119,17 @@ func runInitialize(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("creating Terraform client: %w", err)
 	}
-	helmInstaller, err := helm.NewInitializer(log, constants.AdminConfFilename)
-	if err != nil {
-		return fmt.Errorf("creating Helm installer: %w", err)
-	}
-	i := newInitCmd(tfClient, helmInstaller, fileHandler, spinner, &kubeconfigMerger{log: log}, log)
 
+	i := newInitCmd(tfClient, fileHandler, spinner, &kubeconfigMerger{log: log}, log)
 	fetcher := attestationconfigapi.NewFetcher()
 	newAttestationApplier := func(w io.Writer, kubeConfig string, log debugLog) (attestationConfigApplier, error) {
-		return kubecmd.New(w, kubeConfig, log)
+		return kubecmd.New(w, kubeConfig, fileHandler, log)
 	}
+	newHelmClient := func(kubeConfigPath string, log debugLog) (helmApplier, error) {
+		return helm.NewClient(kubeConfigPath, log)
+	} // need to defer helm client instantiation until kubeconfig is available
 
-	return i.initialize(cmd, newDialer, license.NewClient(), fetcher, newAttestationApplier)
+	return i.initialize(cmd, newDialer, license.NewClient(), fetcher, newAttestationApplier, newHelmClient)
 }
 
 // initialize initializes a Constellation.
@@ -144,6 +137,7 @@ func (i *initCmd) initialize(
 	cmd *cobra.Command, newDialer func(validator atls.Validator) *dialer.Dialer,
 	quotaChecker license.QuotaChecker, configFetcher attestationconfigapi.Fetcher,
 	newAttestationApplier func(io.Writer, string, debugLog) (attestationConfigApplier, error),
+	newHelmClient func(kubeConfigPath string, log debugLog) (helmApplier, error),
 ) error {
 	flags, err := i.evalFlagArgs(cmd)
 	if err != nil {
@@ -265,29 +259,36 @@ func (i *initCmd) initialize(
 		return fmt.Errorf("applying attestation config: %w", err)
 	}
 
-	helmLoader := helm.NewLoader(provider, k8sVersion, clusterName)
-	i.log.Debugf("Created new Helm loader")
 	output, err := i.clusterShower.ShowCluster(cmd.Context(), conf.GetProvider())
 	if err != nil {
 		return fmt.Errorf("getting Terraform output: %w", err)
 	}
 
-	i.log.Debugf("Loading Helm deployments")
 	i.spinner.Start("Installing Kubernetes components ", false)
-	releases, err := helmLoader.LoadReleases(conf, flags.conformance, flags.helmWaitMode, masterSecret, serviceAccURI, idFile, output)
-	if err != nil {
-		return fmt.Errorf("loading Helm charts: %w", err)
+	options := helm.Options{
+		Force:            flags.force,
+		Conformance:      flags.conformance,
+		HelmWaitMode:     flags.helmWaitMode,
+		AllowDestructive: helm.DenyDestructive,
 	}
-	i.log.Debugf("Loaded Helm deployments")
+	helmApplier, err := newHelmClient(constants.AdminConfFilename, i.log)
 	if err != nil {
-		return fmt.Errorf("loading Helm charts: %w", err)
+		return fmt.Errorf("creating Helm client: %w", err)
 	}
-	if err = helm.ApplyCharts(cmd.Context(), releases, constants.AdminConfFilename, flags.force, false, i.log); err != nil {
+	executor, includesUpgrades, err := helmApplier.ApplyCharts(conf, k8sVersion, idFile, options, output,
+		serviceAccURI, masterSecret)
+	if err != nil {
+		return fmt.Errorf("getting Helm chart executor: %w", err)
+	}
+	if includesUpgrades {
+		return errors.New("init: helm tried to upgrade charts instead of installing them")
+	}
+	if err := executor.Run(cmd.Context()); err != nil {
 		return fmt.Errorf("applying Helm charts: %w", err)
 	}
 	i.spinner.Stop()
 	i.log.Debugf("Helm deployment installation succeeded")
-	cmd.Println(bufferedOutput.String()) // TODO(elchead): should print even with error? successfully initialized warning would be wrong.
+	cmd.Println(bufferedOutput.String())
 	return nil
 }
 
@@ -623,10 +624,14 @@ func (e *nonRetriableError) Unwrap() error {
 	return e.err
 }
 
-type initializer interface {
-	Install(ctx context.Context, releases helm.ReleaseApplyOrder) error
-}
-
 type attestationConfigApplier interface {
 	ApplyJoinConfig(ctx context.Context, newAttestConfig config.AttestationCfg, measurementSalt []byte) error
+}
+
+type helmApplier interface {
+	ApplyCharts(conf *config.Config, validK8sversion versions.ValidK8sVersion, idFile clusterid.File, flags helm.Options, tfOutput terraform.ApplyOutput, serviceAccURI string, masterSecret uri.MasterSecret) (helm.Runner, bool, error)
+}
+
+type clusterShower interface {
+	ShowCluster(ctx context.Context, provider cloudprovider.Provider) (terraform.ApplyOutput, error)
 }

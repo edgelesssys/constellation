@@ -125,6 +125,27 @@ func extraConstellationServicesValues(
 	return extraVals, nil
 }
 
+// cloudConfig is used to marshal the cloud config for the Kubernetes Cloud Controller Manager on Azure.
+type cloudConfig struct {
+	Cloud                       string `json:"cloud,omitempty"`
+	TenantID                    string `json:"tenantId,omitempty"`
+	SubscriptionID              string `json:"subscriptionId,omitempty"`
+	ResourceGroup               string `json:"resourceGroup,omitempty"`
+	Location                    string `json:"location,omitempty"`
+	SubnetName                  string `json:"subnetName,omitempty"`
+	SecurityGroupName           string `json:"securityGroupName,omitempty"`
+	SecurityGroupResourceGroup  string `json:"securityGroupResourceGroup,omitempty"`
+	LoadBalancerName            string `json:"loadBalancerName,omitempty"`
+	LoadBalancerSku             string `json:"loadBalancerSku,omitempty"`
+	VNetName                    string `json:"vnetName,omitempty"`
+	VNetResourceGroup           string `json:"vnetResourceGroup,omitempty"`
+	CloudProviderBackoff        bool   `json:"cloudProviderBackoff,omitempty"`
+	UseInstanceMetadata         bool   `json:"useInstanceMetadata,omitempty"`
+	VMType                      string `json:"vmType,omitempty"`
+	UseManagedIdentityExtension bool   `json:"useManagedIdentityExtension,omitempty"`
+	UserAssignedIdentityID      string `json:"userAssignedIdentityID,omitempty"`
+}
+
 // getCCMConfig returns the configuration needed for the Kubernetes Cloud Controller Manager on Azure.
 func getCCMConfig(tfOutput terraform.AzureApplyOutput, serviceAccURI string) ([]byte, error) {
 	creds, err := azureshared.ApplicationCredentialsFromURI(serviceAccURI)

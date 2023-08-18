@@ -31,7 +31,100 @@ package helm
 import (
 	"context"
 	"fmt"
+
+	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
+	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
+	"github.com/edgelesssys/constellation/v2/internal/semver"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 )
+
+const (
+	// AllowDestructive is a named bool to signal that destructive actions have been confirmed by the user.
+	AllowDestructive = true
+	// DenyDestructive is a named bool to signal that destructive actions have not been confirmed by the user yet.
+	DenyDestructive = false
+)
+
+type debugLog interface {
+	Debugf(format string, args ...any)
+	Sync()
+}
+
+// Client is a Helm client to apply charts.
+type Client struct {
+	factory    *actionFactory
+	cliVersion semver.Semver
+	log        debugLog
+}
+
+// NewClient returns a new Helm client.
+func NewClient(kubeConfigPath string, log debugLog) (*Client, error) {
+	kubeClient, err := kubectl.NewFromConfig(kubeConfigPath)
+	if err != nil {
+		return nil, fmt.Errorf("initializing kubectl: %w", err)
+	}
+	actionConfig, err := newActionConfig(kubeConfigPath, log)
+	if err != nil {
+		return nil, fmt.Errorf("creating action config: %w", err)
+	}
+	lister := ReleaseVersionClient{actionConfig}
+	cliVersion := constants.BinaryVersion()
+	factory := newActionFactory(kubeClient, lister, actionConfig, cliVersion, log)
+	return &Client{factory, cliVersion, log}, nil
+}
+
+// Options are options for loading charts.
+type Options struct {
+	Conformance      bool
+	HelmWaitMode     WaitMode
+	AllowDestructive bool
+	Force            bool
+}
+
+// ApplyCharts loads the charts and returns the executor to apply them.
+// TODO(elchead): remove validK8sVersion by putting ValidK8sVersion into config.Config, see AB#3374.
+func (h Client) ApplyCharts(conf *config.Config, validK8sversion versions.ValidK8sVersion, idFile clusterid.File, flags Options, tfOutput terraform.ApplyOutput, serviceAccURI string, masterSecret uri.MasterSecret) (Runner, bool, error) {
+	releases, err := h.loadReleases(conf, masterSecret, validK8sversion, idFile, flags, tfOutput, serviceAccURI)
+	if err != nil {
+		return nil, false, fmt.Errorf("loading Helm releases: %w", err)
+	}
+	h.log.Debugf("Loaded Helm releases")
+	actions, includesUpgrades, err := h.factory.GetActions(releases, flags.Force, flags.AllowDestructive)
+	return &ChartApplyExecutor{actions: actions, log: h.log}, includesUpgrades, err
+}
+
+func (h Client) loadReleases(conf *config.Config, secret uri.MasterSecret, validK8sVersion versions.ValidK8sVersion, idFile clusterid.File, flags Options, tfOutput terraform.ApplyOutput, serviceAccURI string) ([]Release, error) {
+	helmLoader := newLoader(conf, idFile, validK8sVersion, h.cliVersion)
+	h.log.Debugf("Created new Helm loader")
+	return helmLoader.loadReleases(flags.Conformance, flags.HelmWaitMode, secret,
+		serviceAccURI, tfOutput)
+}
+
+// Runner runs the Helm actions.
+type Runner interface {
+	Run(ctx context.Context) error
+}
+
+// ChartApplyExecutor is a Helm action executor that applies all actions.
+type ChartApplyExecutor struct {
+	actions []applyAction
+	log     debugLog
+}
+
+// Run applies the charts in order.
+func (c ChartApplyExecutor) Run(ctx context.Context) error {
+	for _, action := range c.actions {
+		c.log.Debugf("Applying %q", action.ReleaseName())
+		if err := action.Apply(ctx); err != nil {
+			return fmt.Errorf("applying %s: %w", action.ReleaseName(), err)
+		}
+	}
+	return nil
+}
 
 // mergeMaps returns a new map that is the merger of it's inputs.
 // Key collisions are resolved by taking the value of the second argument (map b).
@@ -53,23 +146,4 @@ func mergeMaps(a, b map[string]any) map[string]any {
 		out[k] = v
 	}
 	return out
-}
-
-// ApplyCharts applies the given releases in the given order.
-func ApplyCharts(ctx context.Context, releases ReleaseApplyOrder, kubeConfigPath string, force, allowDestructive bool, log debugLog) error {
-	factory, err := newActionFactory(kubeConfigPath, log)
-	if err != nil {
-		return fmt.Errorf("creating Helm action factory: %w", err)
-	}
-	actions, _, err := factory.newActions(releases, force, allowDestructive)
-	if err != nil {
-		return fmt.Errorf("creating Helm actions: %w", err)
-	}
-	for _, action := range actions {
-		log.Debugf("Applying %q", action.ReleaseName())
-		if err := action.Apply(ctx); err != nil {
-			return fmt.Errorf("applying %s: %w", action.ReleaseName(), err)
-		}
-	}
-	return nil
 }

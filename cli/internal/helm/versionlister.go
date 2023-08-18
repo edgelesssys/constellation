@@ -16,12 +16,6 @@ import (
 	"k8s.io/client-go/util/retry"
 )
 
-// ReleaseVersionLister can list the versions of a helm release.
-type ReleaseVersionLister interface {
-	CurrentVersion(release string) (semver.Semver, error)
-	listAction(release string) ([]*release.Release, error)
-}
-
 // ReleaseVersionClient is a client that can retrieve the version of a helm release.
 type ReleaseVersionClient struct {
 	config *action.Configuration
@@ -53,8 +47,48 @@ func (c ReleaseVersionClient) listAction(release string) (res []*release.Release
 	return
 }
 
-// CurrentVersion returns the version of the currently installed helm release.
-func (c ReleaseVersionClient) CurrentVersion(release string) (semver.Semver, error) {
+// Versions queries the cluster for running versions and returns a map of releaseName -> version.
+func (c ReleaseVersionClient) Versions() (ServiceVersions, error) {
+	ciliumVersion, err := c.currentVersion(ciliumInfo.releaseName)
+	if err != nil {
+		return ServiceVersions{}, fmt.Errorf("getting %s version: %w", ciliumInfo.releaseName, err)
+	}
+	certManagerVersion, err := c.currentVersion(certManagerInfo.releaseName)
+	if err != nil {
+		return ServiceVersions{}, fmt.Errorf("getting %s version: %w", certManagerInfo.releaseName, err)
+	}
+	operatorsVersion, err := c.currentVersion(constellationOperatorsInfo.releaseName)
+	if err != nil {
+		return ServiceVersions{}, fmt.Errorf("getting %s version: %w", constellationOperatorsInfo.releaseName, err)
+	}
+	servicesVersion, err := c.currentVersion(constellationServicesInfo.releaseName)
+	if err != nil {
+		return ServiceVersions{}, fmt.Errorf("getting %s version: %w", constellationServicesInfo.releaseName, err)
+	}
+	csiVersions, err := c.csiVersions()
+	if err != nil {
+		return ServiceVersions{}, fmt.Errorf("getting CSI versions: %w", err)
+	}
+
+	serviceVersions := ServiceVersions{
+		cilium:                 ciliumVersion,
+		certManager:            certManagerVersion,
+		constellationOperators: operatorsVersion,
+		constellationServices:  servicesVersion,
+		csiVersions:            csiVersions,
+	}
+
+	if awsLBVersion, err := c.currentVersion(awsLBControllerInfo.releaseName); err == nil {
+		serviceVersions.awsLBController = awsLBVersion
+	} else if !errors.Is(err, errReleaseNotFound) {
+		return ServiceVersions{}, fmt.Errorf("getting %s version: %w", awsLBControllerInfo.releaseName, err)
+	}
+
+	return serviceVersions, nil
+}
+
+// currentVersion returns the version of the currently installed helm release.
+func (c ReleaseVersionClient) currentVersion(release string) (semver.Semver, error) {
 	rel, err := c.listAction(release)
 	if err != nil {
 		return semver.Semver{}, err
@@ -103,44 +137,4 @@ func (c ReleaseVersionClient) csiVersions() (map[string]semver.Semver, error) {
 		}
 	}
 	return csiVersions, nil
-}
-
-// Versions queries the cluster for running versions and returns a map of releaseName -> version.
-func (c ReleaseVersionClient) Versions() (ServiceVersions, error) {
-	ciliumVersion, err := c.CurrentVersion(ciliumInfo.releaseName)
-	if err != nil {
-		return ServiceVersions{}, fmt.Errorf("getting %s version: %w", ciliumInfo.releaseName, err)
-	}
-	certManagerVersion, err := c.CurrentVersion(certManagerInfo.releaseName)
-	if err != nil {
-		return ServiceVersions{}, fmt.Errorf("getting %s version: %w", certManagerInfo.releaseName, err)
-	}
-	operatorsVersion, err := c.CurrentVersion(constellationOperatorsInfo.releaseName)
-	if err != nil {
-		return ServiceVersions{}, fmt.Errorf("getting %s version: %w", constellationOperatorsInfo.releaseName, err)
-	}
-	servicesVersion, err := c.CurrentVersion(constellationServicesInfo.releaseName)
-	if err != nil {
-		return ServiceVersions{}, fmt.Errorf("getting %s version: %w", constellationServicesInfo.releaseName, err)
-	}
-	csiVersions, err := c.csiVersions()
-	if err != nil {
-		return ServiceVersions{}, fmt.Errorf("getting CSI versions: %w", err)
-	}
-
-	serviceVersions := ServiceVersions{
-		cilium:                 ciliumVersion,
-		certManager:            certManagerVersion,
-		constellationOperators: operatorsVersion,
-		constellationServices:  servicesVersion,
-		csiVersions:            csiVersions,
-	}
-
-	if awsLBVersion, err := c.CurrentVersion(awsLBControllerInfo.releaseName); err == nil {
-		serviceVersions.awsLBController = awsLBVersion
-	} else if !errors.Is(err, errReleaseNotFound) {
-		return ServiceVersions{}, fmt.Errorf("getting %s version: %w", awsLBControllerInfo.releaseName, err)
-	}
-
-	return serviceVersions, nil
 }

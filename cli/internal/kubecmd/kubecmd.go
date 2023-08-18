@@ -31,6 +31,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
 	internalk8s "github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
@@ -68,11 +69,12 @@ type KubeCmd struct {
 	kubectl      kubectlInterface
 	imageFetcher imageFetcher
 	outWriter    io.Writer
+	fileHandler  file.Handler
 	log          debugLog
 }
 
 // New returns a new KubeCmd.
-func New(outWriter io.Writer, kubeConfigPath string, log debugLog) (*KubeCmd, error) {
+func New(outWriter io.Writer, kubeConfigPath string, fileHandler file.Handler, log debugLog) (*KubeCmd, error) {
 	client, err := kubectl.NewFromConfig(kubeConfigPath)
 	if err != nil {
 		return nil, fmt.Errorf("creating kubectl client: %w", err)
@@ -80,6 +82,7 @@ func New(outWriter io.Writer, kubeConfigPath string, log debugLog) (*KubeCmd, er
 
 	return &KubeCmd{
 		kubectl:      client,
+		fileHandler:  fileHandler,
 		imageFetcher: imagefetcher.New(),
 		outWriter:    outWriter,
 		log:          log,
@@ -506,6 +509,7 @@ type kubectlInterface interface {
 	KubernetesVersion() (string, error)
 	GetCR(ctx context.Context, gvr schema.GroupVersionResource, name string) (*unstructured.Unstructured, error)
 	UpdateCR(ctx context.Context, gvr schema.GroupVersionResource, obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
+	crdLister
 }
 
 type debugLog interface {

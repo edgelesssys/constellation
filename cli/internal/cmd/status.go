@@ -68,7 +68,7 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 	}
 	variant := conf.GetAttestationConfig().GetVariant()
 
-	kubeClient, err := kubecmd.New(cmd.OutOrStdout(), constants.AdminConfFilename, log)
+	kubeClient, err := kubecmd.New(cmd.OutOrStdout(), constants.AdminConfFilename, fileHandler, log)
 	if err != nil {
 		return fmt.Errorf("setting up kubernetes client: %w", err)
 	}

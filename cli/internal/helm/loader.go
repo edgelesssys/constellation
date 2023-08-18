@@ -57,9 +57,10 @@ var (
 	csiInfo                    = chartInfo{releaseName: "constellation-csi", chartName: "constellation-csi", path: "charts/edgeless/csi"}
 )
 
-// ChartLoader loads embedded helm charts.
-type ChartLoader struct {
+// chartLoader loads embedded helm charts.
+type chartLoader struct {
 	csp                          cloudprovider.Provider
+	config                       *config.Config
 	joinServiceImage             string
 	keyServiceImage              string
 	ccmImage                     string // cloud controller manager image
@@ -71,11 +72,16 @@ type ChartLoader struct {
 	constellationOperatorImage   string
 	nodeMaintenanceOperatorImage string
 	clusterName                  string
+	idFile                       clusterid.File
+	cliVersion                   semver.Semver
 }
 
-// NewLoader creates a new ChartLoader.
-func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion, clusterName string) *ChartLoader {
+// newLoader creates a new ChartLoader.
+func newLoader(config *config.Config, idFile clusterid.File, k8sVersion versions.ValidK8sVersion, cliVersion semver.Semver) *chartLoader {
+	// TODO(malt3): Allow overriding container image registry + prefix for all images
+	// (e.g. for air-gapped environments).
 	var ccmImage, cnmImage string
+	csp := config.GetProvider()
 	switch csp {
 	case cloudprovider.AWS:
 		ccmImage = versions.VersionConfigs[k8sVersion].CloudControllerManagerImageAWS
@@ -87,38 +93,39 @@ func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion, 
 	case cloudprovider.OpenStack:
 		ccmImage = versions.VersionConfigs[k8sVersion].CloudControllerManagerImageOpenStack
 	}
-
-	// TODO(malt3): Allow overriding container image registry + prefix for all images
-	// (e.g. for air-gapped environments).
-	return &ChartLoader{
+	return &chartLoader{
+		cliVersion:                   cliVersion,
 		csp:                          csp,
-		joinServiceImage:             imageversion.JoinService("", ""),
-		keyServiceImage:              imageversion.KeyService("", ""),
+		idFile:                       idFile,
 		ccmImage:                     ccmImage,
 		azureCNMImage:                cnmImage,
+		config:                       config,
+		joinServiceImage:             imageversion.JoinService("", ""),
+		keyServiceImage:              imageversion.KeyService("", ""),
 		autoscalerImage:              versions.VersionConfigs[k8sVersion].ClusterAutoscalerImage,
 		verificationServiceImage:     imageversion.VerificationService("", ""),
 		gcpGuestAgentImage:           versions.GcpGuestImage,
 		konnectivityImage:            versions.KonnectivityAgentImage,
 		constellationOperatorImage:   imageversion.ConstellationNodeOperator("", ""),
 		nodeMaintenanceOperatorImage: versions.NodeMaintenanceOperatorImage,
-		clusterName:                  clusterName,
 	}
 }
 
-// ReleaseApplyOrder is a list of releases in the order they should be applied.
-type ReleaseApplyOrder []Release
+// releaseApplyOrder is a list of releases in the order they should be applied.
+// makes sure if a release was removed as a dependency from one chart,
+// and then added as a new standalone chart (or as a dependency of another chart),
+// that the new release is installed after the existing one to avoid name conflicts.
+type releaseApplyOrder []Release
 
-// LoadReleases loads the embedded helm charts and returns them as a HelmReleases object.
-func (i *ChartLoader) LoadReleases(
-	config *config.Config, conformanceMode bool, helmWaitMode WaitMode, masterSecret uri.MasterSecret,
-	serviceAccURI string, idFile clusterid.File, output terraform.ApplyOutput,
-) (ReleaseApplyOrder, error) {
+// loadReleases loads the embedded helm charts and returns them as a HelmReleases object.
+func (i *chartLoader) loadReleases(conformanceMode bool, helmWaitMode WaitMode, masterSecret uri.MasterSecret,
+	serviceAccURI string, output terraform.ApplyOutput,
+) (releaseApplyOrder, error) {
 	ciliumRelease, err := i.loadRelease(ciliumInfo, helmWaitMode)
 	if err != nil {
 		return nil, fmt.Errorf("loading cilium: %w", err)
 	}
-	ciliumVals := extraCiliumValues(config.GetProvider(), conformanceMode, output)
+	ciliumVals := extraCiliumValues(i.config.GetProvider(), conformanceMode, output)
 	ciliumRelease.Values = mergeMaps(ciliumRelease.Values, ciliumVals)
 
 	certManagerRelease, err := i.loadRelease(certManagerInfo, helmWaitMode)
@@ -130,33 +137,33 @@ func (i *ChartLoader) LoadReleases(
 	if err != nil {
 		return nil, fmt.Errorf("loading operators: %w", err)
 	}
-	operatorRelease.Values = mergeMaps(operatorRelease.Values, extraOperatorValues(idFile.UID))
+	operatorRelease.Values = mergeMaps(operatorRelease.Values, extraOperatorValues(i.idFile.UID))
 
 	conServicesRelease, err := i.loadRelease(constellationServicesInfo, helmWaitMode)
 	if err != nil {
 		return nil, fmt.Errorf("loading constellation-services: %w", err)
 	}
 
-	svcVals, err := extraConstellationServicesValues(config, masterSecret, idFile.UID, serviceAccURI, output)
+	svcVals, err := extraConstellationServicesValues(i.config, masterSecret, i.idFile.UID, serviceAccURI, output)
 	if err != nil {
 		return nil, fmt.Errorf("extending constellation-services values: %w", err)
 	}
 	conServicesRelease.Values = mergeMaps(conServicesRelease.Values, svcVals)
 
-	releases := ReleaseApplyOrder{ciliumRelease, conServicesRelease, certManagerRelease}
-	if config.DeployCSIDriver() {
+	releases := releaseApplyOrder{ciliumRelease, conServicesRelease, certManagerRelease}
+	if i.config.DeployCSIDriver() {
 		csiRelease, err := i.loadRelease(csiInfo, helmWaitMode)
 		if err != nil {
 			return nil, fmt.Errorf("loading snapshot CRDs: %w", err)
 		}
-		extraCSIvals, err := extraCSIValues(config.GetProvider(), serviceAccURI)
+		extraCSIvals, err := extraCSIValues(i.config.GetProvider(), serviceAccURI)
 		if err != nil {
 			return nil, fmt.Errorf("extending CSI values: %w", err)
 		}
 		csiRelease.Values = mergeMaps(csiRelease.Values, extraCSIvals)
 		releases = append(releases, csiRelease)
 	}
-	if config.HasProvider(cloudprovider.AWS) {
+	if i.config.HasProvider(cloudprovider.AWS) {
 		awsRelease, err := i.loadRelease(awsLBControllerInfo, helmWaitMode)
 		if err != nil {
 			return nil, fmt.Errorf("loading aws-services: %w", err)
@@ -170,7 +177,7 @@ func (i *ChartLoader) LoadReleases(
 
 // loadRelease loads the embedded chart and values depending on the given info argument.
 // IMPORTANT: .helmignore rules specifying files in subdirectories are not applied (e.g. crds/kustomization.yaml).
-func (i *ChartLoader) loadRelease(info chartInfo, helmWaitMode WaitMode) (Release, error) {
+func (i *chartLoader) loadRelease(info chartInfo, helmWaitMode WaitMode) (Release, error) {
 	chart, err := loadChartsDir(helmFS, info.path)
 	if err != nil {
 		return Release{}, fmt.Errorf("loading %s chart: %w", info.releaseName, err)
@@ -188,23 +195,23 @@ func (i *ChartLoader) loadRelease(info chartInfo, helmWaitMode WaitMode) (Releas
 	case certManagerInfo.releaseName:
 		values = i.loadCertManagerValues()
 	case constellationOperatorsInfo.releaseName:
-		updateVersions(chart, constants.BinaryVersion())
+		updateVersions(chart, i.cliVersion)
 		values = i.loadOperatorsValues()
 	case constellationServicesInfo.releaseName:
-		updateVersions(chart, constants.BinaryVersion())
+		updateVersions(chart, i.cliVersion)
 		values = i.loadConstellationServicesValues()
 	case awsLBControllerInfo.releaseName:
 		values = i.loadAWSLBControllerValues()
 	case csiInfo.releaseName:
-		updateVersions(chart, constants.BinaryVersion())
+		updateVersions(chart, i.cliVersion)
 		values = i.loadCSIValues()
 	}
 	return Release{Chart: chart, Values: values, ReleaseName: info.releaseName, WaitMode: helmWaitMode}, nil
 }
 
-func (i *ChartLoader) loadAWSLBControllerValues() map[string]any {
+func (i *chartLoader) loadAWSLBControllerValues() map[string]any {
 	return map[string]any{
-		"clusterName":  i.clusterName,
+		"clusterName":  clusterid.GetClusterName(i.config, i.idFile),
 		"tolerations":  controlPlaneTolerations,
 		"nodeSelector": controlPlaneNodeSelector,
 	}
@@ -212,7 +219,7 @@ func (i *ChartLoader) loadAWSLBControllerValues() map[string]any {
 
 // loadCertManagerHelper is used to separate the marshalling step from the loading step.
 // This reduces the time unit tests take to execute.
-func (i *ChartLoader) loadCertManagerValues() map[string]any {
+func (i *chartLoader) loadCertManagerValues() map[string]any {
 	return map[string]any{
 		"installCRDs": true,
 		"prometheus": map[string]any{
@@ -237,7 +244,7 @@ func (i *ChartLoader) loadCertManagerValues() map[string]any {
 
 // loadOperatorsHelper is used to separate the marshalling step from the loading step.
 // This reduces the time unit tests take to execute.
-func (i *ChartLoader) loadOperatorsValues() map[string]any {
+func (i *chartLoader) loadOperatorsValues() map[string]any {
 	return map[string]any{
 		"constellation-operator": map[string]any{
 			"controllerManager": map[string]any{
@@ -260,7 +267,7 @@ func (i *ChartLoader) loadOperatorsValues() map[string]any {
 
 // loadConstellationServicesHelper is used to separate the marshalling step from the loading step.
 // This reduces the time unit tests take to execute.
-func (i *ChartLoader) loadConstellationServicesValues() map[string]any {
+func (i *chartLoader) loadConstellationServicesValues() map[string]any {
 	return map[string]any{
 		"global": map[string]any{
 			"keyServicePort":      constants.KeyServicePort,
@@ -303,13 +310,13 @@ func (i *ChartLoader) loadConstellationServicesValues() map[string]any {
 	}
 }
 
-func (i *ChartLoader) loadCSIValues() map[string]any {
+func (i *chartLoader) loadCSIValues() map[string]any {
 	return map[string]any{
 		"tags": i.cspTags(),
 	}
 }
 
-func (i *ChartLoader) cspTags() map[string]any {
+func (i *chartLoader) cspTags() map[string]any {
 	return map[string]any{
 		i.csp.String(): true,
 	}
