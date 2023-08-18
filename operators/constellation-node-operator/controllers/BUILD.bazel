@@ -75,6 +75,8 @@ go_test(
     },
     # keep
     gotags = ["integration"],
+    # keep
+    tags = ["requires-network"],
     deps = [
         "//3rdparty/node-maintenance-operator/api/v1beta1",
         "//internal/constants",

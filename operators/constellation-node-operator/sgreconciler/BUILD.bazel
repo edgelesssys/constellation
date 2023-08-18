@@ -52,6 +52,8 @@ go_test(
     },
     # keep
     gotags = ["integration"],
+    # keep
+    tags = ["requires-network"],
     deps = [
         "//internal/constants",
         "//operators/constellation-node-operator/api/v1alpha1",
