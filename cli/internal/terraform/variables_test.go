@@ -337,3 +337,34 @@ custom_endpoint         = "example.com"
 	got := vars.String()
 	assert.Equal(t, want, got)
 }
+
+func TestVariablesFromBytes(t *testing.T) {
+	assert := assert.New(t)
+
+	awsVars := AWSIAMVariables{
+		Region: "test",
+	}
+	var loadedAWSVars AWSIAMVariables
+	err := VariablesFromBytes([]byte(awsVars.String()), &loadedAWSVars)
+	assert.NoError(err)
+	assert.Equal(awsVars, loadedAWSVars)
+
+	azureVars := AzureIAMVariables{
+		Region: "test",
+	}
+	var loadedAzureVars AzureIAMVariables
+	err = VariablesFromBytes([]byte(azureVars.String()), &loadedAzureVars)
+	assert.NoError(err)
+	assert.Equal(azureVars, loadedAzureVars)
+
+	gcpVars := GCPIAMVariables{
+		Region: "test",
+	}
+	var loadedGCPVars GCPIAMVariables
+	err = VariablesFromBytes([]byte(gcpVars.String()), &loadedGCPVars)
+	assert.NoError(err)
+	assert.Equal(gcpVars, loadedGCPVars)
+
+	err = VariablesFromBytes([]byte("invalid"), &loadedGCPVars)
+	assert.Error(err)
+}
