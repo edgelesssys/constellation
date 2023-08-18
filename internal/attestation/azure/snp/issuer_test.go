@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"os"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
@@ -115,6 +116,10 @@ func TestGetSNPAttestation(t *testing.T) {
 // Testing anything else will only verify that the simulator works as expected, since getAkPub
 // only retrieves the attestation key from the TPM.
 func TestGetHCLAttestationKey(t *testing.T) {
+	cgo := os.Getenv("CGO_ENABLED")
+	if cgo == "0" {
+		t.Skip("skipping test because CGO is disabled and tpm simulator requires it")
+	}
 	require := require.New(t)
 	assert := assert.New(t)
 

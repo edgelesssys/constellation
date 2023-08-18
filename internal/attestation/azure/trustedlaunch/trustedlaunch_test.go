@@ -15,6 +15,7 @@ import (
 	"crypto/x509/pkix"
 	"io"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
@@ -32,6 +33,10 @@ import (
 )
 
 func TestGetAttestationCert(t *testing.T) {
+	cgo := os.Getenv("CGO_ENABLED")
+	if cgo == "0" {
+		t.Skip("skipping test because CGO is disabled and tpm simulator requires it")
+	}
 	require := require.New(t)
 	tpm, err := simulator.OpenSimulatedTPM()
 	require.NoError(err)
