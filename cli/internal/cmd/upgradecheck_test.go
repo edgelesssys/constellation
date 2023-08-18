@@ -15,7 +15,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -207,12 +207,13 @@ func TestUpgradeCheck(t *testing.T) {
 				canUpgradeCheck:  true,
 				collect:          &tc.collector,
 				terraformChecker: tc.checker,
+				fileHandler:      fileHandler,
 				log:              logger.NewTest(t),
 			}
 
 			cmd := newUpgradeCheckCmd()
 
-			err := checkCmd.upgradeCheck(cmd, fileHandler, stubAttestationFetcher{}, upgradeCheckFlags{})
+			err := checkCmd.upgradeCheck(cmd, stubAttestationFetcher{}, "test", upgradeCheckFlags{})
 			if tc.wantError {
 				assert.Error(err)
 				return
@@ -281,16 +282,8 @@ type stubTerraformChecker struct {
 	err    error
 }
 
-func (s stubTerraformChecker) PlanTerraformMigrations(context.Context, upgrade.TerraformUpgradeOptions) (bool, error) {
+func (s stubTerraformChecker) PlanClusterUpgrade(_ context.Context, _ io.Writer, _ terraform.Variables, _ cloudprovider.Provider) (bool, error) {
 	return s.tfDiff, s.err
-}
-
-func (s stubTerraformChecker) CheckTerraformMigrations(_ string) error {
-	return s.err
-}
-
-func (s stubTerraformChecker) CleanUpTerraformMigrations(_ string) error {
-	return s.err
 }
 
 func TestNewCLIVersions(t *testing.T) {

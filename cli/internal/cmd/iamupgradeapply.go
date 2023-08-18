@@ -108,7 +108,7 @@ func (i iamUpgradeApplyCmd) iamUpgradeApply(cmd *cobra.Command, iamUpgrader iamU
 		return err
 	}
 
-	hasDiff, err := iamUpgrader.Plan(cmd.Context(), cmd.OutOrStderr(), conf.GetProvider())
+	hasDiff, err := iamUpgrader.PlanIAMUpgrade(cmd.Context(), cmd.OutOrStderr(), conf.GetProvider())
 	if err != nil {
 		return err
 	}
@@ -134,7 +134,7 @@ func (i iamUpgradeApplyCmd) iamUpgradeApply(cmd *cobra.Command, iamUpgrader iamU
 		}
 	}
 	i.log.Debugf("Applying Terraform IAM migrations")
-	if err := iamUpgrader.Apply(cmd.Context(), conf.GetProvider()); err != nil {
+	if err := iamUpgrader.ApplyIAMUpgrade(cmd.Context(), conf.GetProvider()); err != nil {
 		return fmt.Errorf("applying terraform migrations: %w", err)
 	}
 
@@ -144,6 +144,6 @@ func (i iamUpgradeApplyCmd) iamUpgradeApply(cmd *cobra.Command, iamUpgrader iamU
 }
 
 type iamUpgrader interface {
-	Plan(ctx context.Context, outWriter io.Writer, csp cloudprovider.Provider) (bool, error)
-	Apply(ctx context.Context, csp cloudprovider.Provider) error
+	PlanIAMUpgrade(ctx context.Context, outWriter io.Writer, csp cloudprovider.Provider) (bool, error)
+	ApplyIAMUpgrade(ctx context.Context, csp cloudprovider.Provider) error
 }

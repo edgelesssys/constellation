@@ -6,6 +6,7 @@ go_library(
     srcs = [
         "clients.go",
         "cloudcmd.go",
+        "clusterupgrade.go",
         "create.go",
         "iam.go",
         "iamupgrade.go",
@@ -47,6 +48,7 @@ go_test(
     name = "cloudcmd_test",
     srcs = [
         "clients_test.go",
+        "clusterupgrade_test.go",
         "create_test.go",
         "iam_test.go",
         "iamupgrade_test.go",

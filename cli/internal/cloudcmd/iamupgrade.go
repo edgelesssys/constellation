@@ -49,9 +49,9 @@ func NewIAMUpgrader(ctx context.Context, existingWorkspace, upgradeWorkspace str
 	}, nil
 }
 
-// Plan prepares the upgrade workspace and plans the Terraform migrations for the Constellation upgrade, writing the plan to the outWriter.
-func (u *IAMUpgrader) Plan(ctx context.Context, outWriter io.Writer, csp cloudprovider.Provider) (bool, error) {
-	if err := ensureFileNotExists(u.fileHandler, filepath.Join(u.upgradeWorkspace, constants.TerraformIAMUpgradeBackupDir)); err != nil {
+// PlanIAMUpgrade prepares the upgrade workspace and plans the Terraform migrations for the Constellation upgrade, writing the plan to the outWriter.
+func (u *IAMUpgrader) PlanIAMUpgrade(ctx context.Context, outWriter io.Writer, csp cloudprovider.Provider) (bool, error) {
+	if err := ensureFileNotExist(u.fileHandler, filepath.Join(u.upgradeWorkspace, constants.TerraformIAMUpgradeBackupDir)); err != nil {
 		return false, fmt.Errorf("workspace is not clean: %w", err)
 	}
 
@@ -80,8 +80,8 @@ func (u *IAMUpgrader) Plan(ctx context.Context, outWriter io.Writer, csp cloudpr
 	return hasDiff, nil
 }
 
-// Apply applies the Terraform IAM migrations for the Constellation upgrade.
-func (u *IAMUpgrader) Apply(ctx context.Context, csp cloudprovider.Provider) error {
+// ApplyIAMUpgrade applies the Terraform IAM migrations for the IAM upgrade.
+func (u *IAMUpgrader) ApplyIAMUpgrade(ctx context.Context, csp cloudprovider.Provider) error {
 	if _, err := u.tf.ApplyIAM(ctx, csp, u.logLevel); err != nil {
 		return fmt.Errorf("terraform apply: %w", err)
 	}
@@ -103,15 +103,15 @@ func (u *IAMUpgrader) Apply(ctx context.Context, csp cloudprovider.Provider) err
 	return nil
 }
 
-// ensureFileNotExists checks if the target file or directory already exists, and if so, returns an error.
-func ensureFileNotExists(fileHandler file.Handler, target string) error {
-	if _, err := fileHandler.Stat(target); err != nil {
+// ensureFileNotExist checks if a single file or directory does not exist, returning an error if it does.
+func ensureFileNotExist(fileHandler file.Handler, fileName string) error {
+	if _, err := fileHandler.Stat(fileName); err != nil {
 		if !os.IsNotExist(err) {
-			return fmt.Errorf("checking %q: %w", target, err)
+			return fmt.Errorf("checking %q: %w", fileName, err)
 		}
 		return nil
 	}
-	return fmt.Errorf("%q already exists", target)
+	return fmt.Errorf("%q already exists", fileName)
 }
 
 type tfIAMUpgradeClient interface {

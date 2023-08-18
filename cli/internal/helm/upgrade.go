@@ -47,16 +47,15 @@ var errReleaseNotFound = errors.New("release not found")
 
 // UpgradeClient handles interaction with helm and the cluster.
 type UpgradeClient struct {
-	config           *action.Configuration
-	kubectl          crdClient
-	fs               file.Handler
-	actions          actionWrapper
-	upgradeWorkspace string
-	log              debugLog
+	config  *action.Configuration
+	kubectl crdClient
+	fs      file.Handler
+	actions actionWrapper
+	log     debugLog
 }
 
 // NewUpgradeClient returns a newly initialized UpgradeClient for the given namespace.
-func NewUpgradeClient(client crdClient, upgradeWorkspace, kubeConfigPath, helmNamespace string, log debugLog) (*UpgradeClient, error) {
+func NewUpgradeClient(client crdClient, kubeConfigPath, helmNamespace string, log debugLog) (*UpgradeClient, error) {
 	settings := cli.New()
 	settings.KubeConfig = kubeConfigPath
 
@@ -77,11 +76,10 @@ func NewUpgradeClient(client crdClient, upgradeWorkspace, kubeConfigPath, helmNa
 	}
 
 	return &UpgradeClient{
-		kubectl:          client,
-		fs:               fileHandler,
-		actions:          actions{config: actionConfig},
-		upgradeWorkspace: upgradeWorkspace,
-		log:              log,
+		kubectl: client,
+		fs:      fileHandler,
+		actions: actions{config: actionConfig},
+		log:     log,
 	}, nil
 }
 
@@ -115,7 +113,7 @@ func (c *UpgradeClient) shouldUpgrade(releaseName string, newVersion semver.Semv
 // If the CLI receives an interrupt signal it will cancel the context.
 // Canceling the context will prompt helm to abort and roll back the ongoing upgrade.
 func (c *UpgradeClient) Upgrade(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration,
-	allowDestructive, force bool, upgradeID string, conformance bool, helmWaitMode WaitMode, masterSecret uri.MasterSecret,
+	allowDestructive, force bool, upgradeDir string, conformance bool, helmWaitMode WaitMode, masterSecret uri.MasterSecret,
 	serviceAccURI string, validK8sVersion versions.ValidK8sVersion, output terraform.ApplyOutput,
 ) error {
 	upgradeErrs := []error{}
@@ -174,11 +172,11 @@ func (c *UpgradeClient) Upgrade(ctx context.Context, config *config.Config, idFi
 	// Backup CRDs and CRs if we are upgrading anything.
 	if len(upgradeReleases) != 0 {
 		c.log.Debugf("Creating backup of CRDs and CRs")
-		crds, err := c.backupCRDs(ctx, upgradeID)
+		crds, err := c.backupCRDs(ctx, upgradeDir)
 		if err != nil {
 			return fmt.Errorf("creating CRD backup: %w", err)
 		}
-		if err := c.backupCRs(ctx, crds, upgradeID); err != nil {
+		if err := c.backupCRs(ctx, crds, upgradeDir); err != nil {
 			return fmt.Errorf("creating CR backup: %w", err)
 		}
 	}

@@ -29,7 +29,7 @@ func TestIAMMigrate(t *testing.T) {
 	csp := cloudprovider.AWS
 
 	// act
-	fakeTfClient := &tfIAMUpgradeStub{upgradeID, file}
+	fakeTfClient := &tfIAMUpgradeStub{upgradeID: upgradeID, file: file}
 	sut := &IAMUpgrader{
 		tf:                fakeTfClient,
 		logLevel:          terraform.LogLevelDebug,
@@ -37,7 +37,7 @@ func TestIAMMigrate(t *testing.T) {
 		upgradeWorkspace:  filepath.Join(constants.UpgradeDir, upgradeID),
 		fileHandler:       file,
 	}
-	hasDiff, err := sut.Plan(context.Background(), io.Discard, csp)
+	hasDiff, err := sut.PlanIAMUpgrade(context.Background(), io.Discard, csp)
 
 	// assert
 	assert.NoError(err)
@@ -46,7 +46,7 @@ func TestIAMMigrate(t *testing.T) {
 	assertFileExists(t, fs, filepath.Join(upgradeDir, "terraform.tfstate"))
 
 	// act
-	err = sut.Apply(context.Background(), csp)
+	err = sut.ApplyIAMUpgrade(context.Background(), csp)
 	assert.NoError(err)
 
 	// assert
@@ -93,17 +93,25 @@ func setupMemFSAndFileHandler(t *testing.T, files []string, content []byte) (afe
 type tfIAMUpgradeStub struct {
 	upgradeID string
 	file      file.Handler
+	applyErr  error
+	planErr   error
+	planDiff  bool
+	showErr   error
 }
 
 func (t *tfIAMUpgradeStub) Plan(_ context.Context, _ terraform.LogLevel) (bool, error) {
-	return false, nil
+	return t.planDiff, t.planErr
 }
 
 func (t *tfIAMUpgradeStub) ShowPlan(_ context.Context, _ terraform.LogLevel, _ io.Writer) error {
-	return nil
+	return t.showErr
 }
 
 func (t *tfIAMUpgradeStub) ApplyIAM(_ context.Context, _ cloudprovider.Provider, _ terraform.LogLevel) (terraform.IAMOutput, error) {
+	if t.applyErr != nil {
+		return terraform.IAMOutput{}, t.applyErr
+	}
+
 	upgradeDir := filepath.Join(constants.UpgradeDir, t.upgradeID, constants.TerraformIAMUpgradeWorkingDir)
 	err := t.file.Remove(filepath.Join(upgradeDir, "terraform.tfvars"))
 	if err != nil {
