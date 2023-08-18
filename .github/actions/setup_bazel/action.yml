@@ -34,24 +34,7 @@ runs:
       run: |
         echo "::group::Configure Bazel"
         cat <<EOF >> "${WORKSPACE}/.bazeloverwriterc"
-        # general
-        common --color=yes
-        common --terminal_columns=143
-        common --build_metadata=ROLE=CI
-        common --show_progress_rate_limit=5
-        common --curses=yes
-        common --verbose_failures
-        common --announce_rc
-        # test related
-        test --show_timestamps
-        test --keep_going
-        # remote cache / execution related
-        common --bes_timeout=600s
-        common --experimental_remote_build_event_upload=minimal
-        common --experimental_remote_cache_compression
-        common --nolegacy_important_outputs
-        common --noremote_upload_local_results
-        common --remote_timeout=3600
+        import %workspace%/bazel/bazelrc/ci.bazelrc
         EOF
         echo "::endgroup::"
 
@@ -68,6 +51,14 @@ runs:
         common --bes_backend=grpcs://remote.buildbuddy.io
         common --remote_cache=grpcs://remote.buildbuddy.io
         common --remote_header=x-buildbuddy-api-key=${BUILDBUDDY_ORG_API_KEY}
+        cquery --bes_results_url=
+        cquery --bes_backend=
+        cquery --remote_cache=
+        cquery --remote_header=
+        query --bes_results_url=
+        query --bes_backend=
+        query --remote_cache=
+        query --remote_header=
         EOF
         echo "::endgroup::"
 
@@ -93,6 +84,12 @@ runs:
         common --bes_results_url=https://app.buildbuddy.io/invocation/
         common --bes_backend=grpcs://remote.buildbuddy.io
         common --remote_header=x-buildbuddy-api-key=${BUILDBUDDY_ORG_API_KEY}
+        cquery --bes_results_url=
+        cquery --bes_backend=
+        cquery --remote_header=
+        query --bes_results_url=
+        query --bes_backend=
+        query --remote_header=
         EOF
         echo "::endgroup::"
 

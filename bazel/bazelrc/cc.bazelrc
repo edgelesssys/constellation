@@ -1,0 +1,3 @@
+# disable automatic toolchain detection for C/C++
+common --incompatible_enable_cc_toolchain_resolution
+common --action_env BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1

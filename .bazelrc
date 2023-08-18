@@ -1,15 +1,15 @@
+# Import bazelrc presets
+import %workspace%/bazel/bazelrc/bazel6.bazelrc
+import %workspace%/bazel/bazelrc/convenience.bazelrc
+import %workspace%/bazel/bazelrc/correctness.bazelrc
+import %workspace%/bazel/bazelrc/debug.bazelrc
+import %workspace%/bazel/bazelrc/performance.bazelrc
+import %workspace%/bazel/bazelrc/cc.bazelrc
+
 # share bazel cache between checkouts of the same project
 # and keep old build caches around for longer
 common --disk_cache=~/.cache/shared_bazel_action_cache
 common --repository_cache=~/.cache/shared_bazel_repository_cache
-
-# better caching / reproducibility
-common --incompatible_strict_action_env=true
-common --experimental_output_directory_naming_scheme=diff_against_baseline
-
-# disable automatic toolchain detection for C/C++
-common --incompatible_enable_cc_toolchain_resolution
-common --action_env BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
 
 # inject version information into binaries
 common --stamp --workspace_status_command=tools/workspace_status.sh
@@ -31,12 +31,6 @@ build --flag_alias=container_prefix=//bazel/settings:container_prefix
 
 # set cli edition flag alias
 build --flag_alias=cli_edition=//bazel/settings:cli_edition
-
-# build only what is needed for tests
-test --build_tests_only
-
-# bazel config for debug builds
-common:debug --compilation_mode=dbg --strip=never
 
 # bazel configs to explicitly target a platform
 common:host --platforms @local_config_platform//:host
