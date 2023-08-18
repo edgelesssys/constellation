@@ -18,8 +18,14 @@ runs:
         KUBECONFIG: ${{ inputs.kubeconfig }}
       run: |
         WORKER_NODE=$(kubectl get nodes --selector='!node-role.kubernetes.io/control-plane' -o json | jq '.items[0].metadata.name' -r)
+
+        echo "Disabling the join-service and waiting for the node to be unresponsive"
+        kubectl patch daemonset -n kube-system join-service -p '{"spec":{"template":{"spec":{"nodeSelector":{"some-tag":""}}}}}'
         kubectl debug node/$WORKER_NODE --image=ubuntu -- bash -c "echo reboot > reboot.sh && chroot /host < reboot.sh"
-        kubectl wait --for=condition=Ready=false --timeout=10m node/$WORKER_NODE
+        kubectl wait --for=condition=Ready=Unknown --timeout=10m node/$WORKER_NODE
+
+        echo "Re-enabling the join-service and waiting for the node to be back up"
+        kubectl patch daemonset -n kube-system join-service --type=json -p='[{"op": "remove", "path": "/spec/template/spec/nodeSelector/some-tag"}]'
         kubectl wait --for=condition=Ready=true --timeout=10m --all nodes
       
     - name: Restart all control plane nodes
