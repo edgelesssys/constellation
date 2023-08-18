@@ -1,0 +1,27 @@
+name: Aspect Workflows Warming
+
+on:
+    # Run the workflows on a cron schedule to periodically create an up-to-date warming archive
+    schedule:
+        # M-F 15:05, 19:05, 23:05 UTC
+        - cron: '5 15,19,23 * * 1-5'
+
+    # Allow this to be triggered manually via the GitHub UI Actions tab
+    workflow_dispatch:
+
+jobs:
+    warming-archive:
+        name: Aspect Workflows Warming
+        runs-on: [self-hosted, aspect-workflows, aspect-warming]
+        steps:
+            - name: Configure environment
+              run: configure_workflows_env
+            - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+            - name: Agent health checks
+              run: agent_health_check
+            - name: Create warming archive
+              uses: aspect-build/workflows-action@94af6eb5b5319f01de6338f2a20c274825a7c50f # 5.7.0-rc5
+              with:
+                  task: warming
+            - name: Archive warming tars
+              run: warming_archive

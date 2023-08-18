@@ -1,0 +1,16 @@
+name: Aspect Workflows
+
+on:
+    # Triggers the workflow on pull request events and on main
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
+
+    # Allow this to be triggered manually via the GitHub UI Actions tab
+    workflow_dispatch:
+
+jobs:
+    aspect-workflows:
+        name: Aspect Workflows
+        uses: ./.github/workflows/.aspect-workflows-reusable.yaml
