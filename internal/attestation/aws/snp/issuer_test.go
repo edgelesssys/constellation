@@ -9,6 +9,7 @@ package snp
 import (
 	"context"
 	"errors"
+	"os"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
@@ -20,6 +21,10 @@ import (
 )
 
 func TestGetAttestationKey(t *testing.T) {
+	cgo := os.Getenv("CGO_ENABLED")
+	if cgo == "0" {
+		t.Skip("skipping test because CGO is disabled and tpm simulator requires it")
+	}
 	require := require.New(t)
 	assert := assert.New(t)
 
@@ -42,6 +47,10 @@ func TestGetAttestationKey(t *testing.T) {
 }
 
 func TestGetInstanceInfo(t *testing.T) {
+	cgo := os.Getenv("CGO_ENABLED")
+	if cgo == "0" {
+		t.Skip("skipping test because CGO is disabled and tpm simulator requires it")
+	}
 	testCases := map[string]struct {
 		client  stubMetadataAPI
 		wantErr bool

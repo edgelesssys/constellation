@@ -9,6 +9,7 @@ package initialize
 import (
 	"errors"
 	"io"
+	"os"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
@@ -29,6 +30,10 @@ func (s simTPMNOPCloser) Close() error {
 }
 
 func TestMarkNodeAsBootstrapped(t *testing.T) {
+	cgo := os.Getenv("CGO_ENABLED")
+	if cgo == "0" {
+		t.Skip("skipping test because CGO is disabled and tpm simulator requires it")
+	}
 	assert := assert.New(t)
 	require := require.New(t)
 
@@ -57,6 +62,10 @@ func TestFailOpener(t *testing.T) {
 }
 
 func TestIsNodeInitialized(t *testing.T) {
+	cgo := os.Getenv("CGO_ENABLED")
+	if cgo == "0" {
+		t.Skip("skipping test because CGO is disabled and tpm simulator requires it")
+	}
 	testCases := map[string]struct {
 		pcrValueClusterID []byte
 		wantInitialized   bool

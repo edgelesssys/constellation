@@ -16,6 +16,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
@@ -31,6 +32,10 @@ import (
 )
 
 func TestTrustedKeyFromSNP(t *testing.T) {
+	cgo := os.Getenv("CGO_ENABLED")
+	if cgo == "0" {
+		t.Skip("skipping test because CGO is disabled and tpm simulator requires it")
+	}
 	require := require.New(t)
 
 	tpm, err := simulator.OpenSimulatedTPM()
@@ -237,6 +242,10 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 }
 
 func TestValidateAk(t *testing.T) {
+	cgo := os.Getenv("CGO_ENABLED")
+	if cgo == "0" {
+		t.Skip("skipping test because CGO is disabled and tpm simulator requires it")
+	}
 	require := require.New(t)
 
 	tpm, err := simulator.OpenSimulatedTPM()

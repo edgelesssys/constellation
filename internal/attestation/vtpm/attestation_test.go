@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"testing"
 
 	tpmclient "github.com/google/go-tpm-tools/client"
@@ -58,6 +59,10 @@ func fakeGetInstanceInfo(_ context.Context, _ io.ReadWriteCloser, _ []byte) ([]b
 }
 
 func TestValidate(t *testing.T) {
+	cgo := os.Getenv("CGO_ENABLED")
+	if cgo == "0" {
+		t.Skip("skipping test because CGO is disabled and tpm simulator requires it")
+	}
 	require := require.New(t)
 
 	fakeValidateCVM := func(AttestationDocument, *attest.MachineState) error { return nil }
@@ -421,6 +426,10 @@ func TestGetSHA256QuoteIndex(t *testing.T) {
 }
 
 func TestGetSelectedMeasurements(t *testing.T) {
+	cgo := os.Getenv("CGO_ENABLED")
+	if cgo == "0" {
+		t.Skip("skipping test because CGO is disabled and tpm simulator requires it")
+	}
 	testCases := map[string]struct {
 		openFunc     TPMOpenFunc
 		pcrSelection tpm2.PCRSelection
