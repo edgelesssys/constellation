@@ -1,5 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
-load("//bazel/go:go_test.bzl", "go_ld_test", "go_test")
+load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "server",
@@ -20,10 +20,16 @@ go_library(
 
 go_test(
     name = "server_test",
-    srcs = ["server_test.go"],
+    srcs = [
+        "server_cgo_test.go",
+        "server_cross_test.go",
+        "server_test.go",
+    ],
     embed = [":server"],
     # keep
-    tags = ["manual"],
+    pure = "on",
+    # keep
+    race = "off",
     deps = [
         "//hack/qemu-metadata-api/virtwrapper",
         "//internal/cloud/metadata",
@@ -32,10 +38,4 @@ go_test(
         "@com_github_stretchr_testify//require",
         "@org_libvirt_go_libvirt//:libvirt",
     ],
-)
-
-go_ld_test(
-    name = "server_ld_test",
-    src = "server_test",
-    ld = "//rpm:ld",
 )

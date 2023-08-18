@@ -1,5 +1,3 @@
-//go:build cgo
-
 /*
 Copyright (c) Edgeless Systems GmbH
 
@@ -23,7 +21,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"libvirt.org/go/libvirt"
 )
 
 func TestListAll(t *testing.T) {
@@ -35,22 +32,20 @@ func TestListAll(t *testing.T) {
 	}{
 		"success": {
 			connect: &stubConnect{
-				network: stubNetwork{
-					leases: []libvirt.NetworkDHCPLease{
-						{
-							IPaddr:   "192.0.100.1",
-							Hostname: "control-plane-0",
-						},
-						{
-							IPaddr:   "192.0.100.2",
-							Hostname: "control-plane-1",
-						},
-						{
-							IPaddr:   "192.0.200.1",
-							Hostname: "worker-0",
-						},
+				network: newStubNetwork([]virtwrapper.NetworkDHCPLease{
+					{
+						IPaddr:   "192.0.100.1",
+						Hostname: "control-plane-0",
 					},
-				},
+					{
+						IPaddr:   "192.0.100.2",
+						Hostname: "control-plane-1",
+					},
+					{
+						IPaddr:   "192.0.200.1",
+						Hostname: "worker-0",
+					},
+				}, nil),
 			},
 		},
 		"LookupNetworkByName error": {
@@ -98,14 +93,12 @@ func TestListSelf(t *testing.T) {
 		"success": {
 			remoteAddr: "192.0.100.1:1234",
 			connect: &stubConnect{
-				network: stubNetwork{
-					leases: []libvirt.NetworkDHCPLease{
-						{
-							IPaddr:   "192.0.100.1",
-							Hostname: "control-plane-0",
-						},
+				network: newStubNetwork([]virtwrapper.NetworkDHCPLease{
+					{
+						IPaddr:   "192.0.100.1",
+						Hostname: "control-plane-0",
 					},
-				},
+				}, nil),
 			},
 		},
 		"listAll error": {
@@ -118,28 +111,24 @@ func TestListSelf(t *testing.T) {
 		"remoteAddr error": {
 			remoteAddr: "",
 			connect: &stubConnect{
-				network: stubNetwork{
-					leases: []libvirt.NetworkDHCPLease{
-						{
-							IPaddr:   "192.0.100.1",
-							Hostname: "control-plane-0",
-						},
+				network: newStubNetwork([]virtwrapper.NetworkDHCPLease{
+					{
+						IPaddr:   "192.0.100.1",
+						Hostname: "control-plane-0",
 					},
-				},
+				}, nil),
 			},
 			wantErr: true,
 		},
 		"peer not found": {
 			remoteAddr: "192.0.200.1:1234",
 			connect: &stubConnect{
-				network: stubNetwork{
-					leases: []libvirt.NetworkDHCPLease{
-						{
-							IPaddr:   "192.0.100.1",
-							Hostname: "control-plane-0",
-						},
+				network: newStubNetwork([]virtwrapper.NetworkDHCPLease{
+					{
+						IPaddr:   "192.0.100.1",
+						Hostname: "control-plane-0",
 					},
-				},
+				}, nil),
 			},
 			wantErr: true,
 		},
@@ -184,18 +173,16 @@ func TestListPeers(t *testing.T) {
 		"success": {
 			remoteAddr: "192.0.100.1:1234",
 			connect: &stubConnect{
-				network: stubNetwork{
-					leases: []libvirt.NetworkDHCPLease{
-						{
-							IPaddr:   "192.0.100.1",
-							Hostname: "control-plane-0",
-						},
-						{
-							IPaddr:   "192.0.200.1",
-							Hostname: "worker-0",
-						},
+				network: newStubNetwork([]virtwrapper.NetworkDHCPLease{
+					{
+						IPaddr:   "192.0.100.1",
+						Hostname: "control-plane-0",
 					},
-				},
+					{
+						IPaddr:   "192.0.200.1",
+						Hostname: "worker-0",
+					},
+				}, nil),
 			},
 		},
 		"listAll error": {
@@ -287,14 +274,12 @@ func TestPostLog(t *testing.T) {
 
 func TestInitSecretHash(t *testing.T) {
 	defaultConnect := &stubConnect{
-		network: stubNetwork{
-			leases: []libvirt.NetworkDHCPLease{
-				{
-					IPaddr:   "192.0.100.1",
-					Hostname: "control-plane-0",
-				},
+		network: newStubNetwork([]virtwrapper.NetworkDHCPLease{
+			{
+				IPaddr:   "192.0.100.1",
+				Hostname: "control-plane-0",
 			},
-		},
+		}, nil),
 	}
 	testCases := map[string]struct {
 		connect  *stubConnect
@@ -344,17 +329,4 @@ type stubConnect struct {
 
 func (c stubConnect) LookupNetworkByName(_ string) (*virtwrapper.Network, error) {
 	return &virtwrapper.Network{Net: c.network}, c.getNetworkErr
-}
-
-type stubNetwork struct {
-	leases      []libvirt.NetworkDHCPLease
-	getLeaseErr error
-}
-
-func (n stubNetwork) GetDHCPLeases() ([]libvirt.NetworkDHCPLease, error) {
-	return n.leases, n.getLeaseErr
-}
-
-func (n stubNetwork) Free() error {
-	return nil
 }

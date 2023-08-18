@@ -20,14 +20,21 @@ func (c *Connect) LookupNetworkByName(_ string) (*Network, error) {
 }
 
 // Network wraps a libvirt network.
-type Network struct{}
+type Network struct {
+	Net Net
+}
 
 // GetDHCPLeases returns the underlying DHCP leases.
 // This function errors if CGO is disabled.
 func (n *Network) GetDHCPLeases() ([]NetworkDHCPLease, error) {
-	return nil, errors.New("using virtwrapper requires building with CGO")
+	return n.Net.GetDHCPLeases()
 }
 
 // Free the network resource.
 // This function does nothing if CGO is disabled.
 func (n *Network) Free() {}
+
+// Net is a libvirt Network.
+type Net interface {
+	GetDHCPLeases() ([]NetworkDHCPLease, error)
+}

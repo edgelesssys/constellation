@@ -1,5 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
-load("//bazel/go:go_test.bzl", "go_ld_test", "go_test")
+load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "initserver",
@@ -36,7 +36,9 @@ go_test(
     srcs = ["initserver_test.go"],
     embed = [":initserver"],
     # keep
-    tags = ["manual"],
+    pure = "on",
+    # keep
+    race = "off",
     deps = [
         "//bootstrapper/initproto",
         "//internal/atls",
@@ -54,10 +56,4 @@ go_test(
         "@org_golang_x_crypto//bcrypt",
         "@org_uber_go_goleak//:goleak",
     ],
-)
-
-go_ld_test(
-    name = "initserver_ld_test",
-    src = "initserver_test",
-    ld = "//rpm:ld",
 )
