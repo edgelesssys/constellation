@@ -458,6 +458,7 @@ func (c *Client) apply(ctx context.Context, logLevel LogLevel) error {
 }
 
 // applyManualStateMigrations applies manual state migrations that are not handled by Terraform due to missing features.
+// This functions expects to be run on an initialized Terraform workspace.
 // Each migration is expected to be idempotent.
 // This is a temporary solution until we can remove the need for manual state migrations.
 func (c *Client) applyManualStateMigrations(ctx context.Context) error {
