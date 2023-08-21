@@ -22,12 +22,15 @@ import (
 	"strconv"
 	"strings"
 
+	tpmProto "github.com/google/go-tpm-tools/proto/tpm"
+
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
@@ -372,11 +375,19 @@ func (f *attestationDocFormatterImpl) parseCerts(b *strings.Builder, certTypeNam
 }
 
 // parseQuotes parses the base64-encoded quotes and writes their details to the output builder.
-func (f *attestationDocFormatterImpl) parseQuotes(b *strings.Builder, quotes []quote, expectedPCRs measurements.M) error {
+func (f *attestationDocFormatterImpl) parseQuotes(b *strings.Builder, quotes []*tpmProto.Quote, expectedPCRs measurements.M) error {
 	writeIndentfln(b, 1, "Quote:")
 	for pcrNum, expectedPCR := range expectedPCRs {
-		encPCR := quotes[1].Pcrs.Pcrs[fmt.Sprintf("%d", pcrNum)]
-		actualPCR, err := base64.StdEncoding.DecodeString(encPCR)
+		pcrIdx, err := vtpm.GetSHA256QuoteIndex(quotes)
+		if err != nil {
+			return fmt.Errorf("get SHA256 quote index: %w", err)
+		}
+
+		if quotes[pcrIdx] == nil {
+			return fmt.Errorf("quote %d is nil", pcrIdx)
+		}
+
+		actualPCR := quotes[pcrIdx].Pcrs.Pcrs[pcrNum]
 		if err != nil {
 			return fmt.Errorf("decode PCR %d: %w", pcrNum, err)
 		}
@@ -621,22 +632,13 @@ type maaTokenClaims struct {
 // attestationDoc is the attestation document returned by the verifier.
 type attestationDoc struct {
 	Attestation struct {
-		AkPub          string      `json:"ak_pub"`
-		Quotes         []quote     `json:"quotes"`
-		EventLog       string      `json:"event_log"`
-		TeeAttestation interface{} `json:"TeeAttestation"`
+		AkPub          string            `json:"ak_pub"`
+		Quotes         []*tpmProto.Quote `json:"quotes"`
+		EventLog       string            `json:"event_log"`
+		TeeAttestation interface{}       `json:"TeeAttestation"`
 	} `json:"Attestation"`
 	InstanceInfo string `json:"InstanceInfo"`
 	UserData     string `json:"UserData"`
-}
-
-type quote struct {
-	Quote  string `json:"quote"`
-	RawSig string `json:"raw_sig"`
-	Pcrs   struct {
-		Hash int               `json:"hash"`
-		Pcrs map[string]string `json:"pcrs"`
-	} `json:"pcrs"`
 }
 
 // azureInstanceInfo is the b64-decoded InstanceInfo field of the attestation document.
