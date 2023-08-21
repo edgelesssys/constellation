@@ -304,3 +304,14 @@ jobs:
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
           registry: ghcr.io
           githubToken: ${{ secrets.GITHUB_TOKEN }}
+
+  e2e-windows:
+    name: Run Windows E2E test
+    permissions:
+      id-token: write
+      contents: read
+      packages: write
+    secrets: inherit
+    uses: ./.github/workflows/e2e-windows.yml
+    with:
+      scheduled: ${{ github.event_name == 'schedule' }}

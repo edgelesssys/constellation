@@ -2,8 +2,13 @@ name: e2e test windows
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 3 * * 6" # At 03:00 on Saturday.
+  workflow_call:
+    inputs:
+      scheduled:
+        description: Whether this is a scheduled run.
+        type: boolean
+        default: false
+        required: false
 
 jobs:
   build-cli:
@@ -21,13 +26,12 @@ jobs:
           targetOS: "windows"
           targetArch: "amd64"
           enterpriseCLI: true
-          outputPath: "build/constellation.exe"
 
       - name: Upload CLI artifact
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
-          path: "build/constellation.exe"
-          name: "constellation.exe"
+          path: "bazel-bin/cli/cli_enterprise_windows_amd64"
+          name: "constell-exe"
 
   e2e-test:
     name: E2E Test Windows
@@ -42,11 +46,12 @@ jobs:
       - name: Download CLI artifact
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
-          name: "constellation.exe"
+          name: "constell-exe"
 
       - name: Check CLI version
         shell: pwsh
         run: |
+          Move-Item -Path .\cli_enterprise_windows_amd64 -Destination .\constellation.exe
           .\constellation.exe version
 
       - name: Login to Azure (IAM service principal)
@@ -137,3 +142,26 @@ jobs:
         shell: pwsh
         run: |
           .\constellation.exe iam destroy --debug -y
+
+  notify-failure:
+    name: Notify about failure
+    runs-on: ubuntu-22.04
+    needs: e2e-test
+    if: |
+      failure() &&
+      github.ref == 'refs/heads/main' &&
+      inputs.scheduled
+    steps:
+      - name: Checkout
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+        with:
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
+      - name: Notify about failure
+        continue-on-error: true
+        uses: ./.github/actions/notify_failure
+        with:
+          projectWriteToken: ${{ secrets.PROJECT_WRITE_TOKEN }}
+          teamsWebhookUri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+          test: Windows E2E Test
+          provider: Azure
