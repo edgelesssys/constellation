@@ -88,8 +88,8 @@ func (f *Fetcher) DiscoverDebugdIPs(ctx context.Context) ([]string, error) {
 	return ips, nil
 }
 
-// DiscoverLoadbalancerIP gets load balancer IP from metadata API.
-func (f *Fetcher) DiscoverLoadbalancerIP(ctx context.Context) (string, error) {
+// DiscoverLoadBalancerIP gets load balancer IP from metadata API.
+func (f *Fetcher) DiscoverLoadBalancerIP(ctx context.Context) (string, error) {
 	lbHost, _, err := f.metaAPI.GetLoadBalancerEndpoint(ctx)
 	if err != nil {
 		return "", fmt.Errorf("retrieving load balancer endpoint: %w", err)

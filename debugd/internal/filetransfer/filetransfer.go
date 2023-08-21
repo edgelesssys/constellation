@@ -13,6 +13,7 @@ import (
 	"io"
 	"io/fs"
 	"sync"
+	"sync/atomic"
 
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/filetransfer/streamer"
@@ -33,10 +34,10 @@ type SendFilesStream interface {
 
 // FileTransferer manages sending and receiving of files.
 type FileTransferer struct {
-	mux             sync.RWMutex
+	fileMux         sync.RWMutex
 	log             *logger.Logger
 	receiveStarted  bool
-	receiveFinished bool
+	receiveFinished atomic.Bool
 	files           []FileStat
 	streamer        streamReadWriter
 	showProgress    bool
@@ -52,12 +53,15 @@ func New(log *logger.Logger, streamer streamReadWriter, showProgress bool) *File
 }
 
 // SendFiles sends files to the given stream.
+// If the FileTransferer has not received any files to send, an error is returned.
 func (s *FileTransferer) SendFiles(stream SendFilesStream) error {
-	s.mux.RLock()
-	defer s.mux.RUnlock()
-	if !s.receiveFinished {
+	if !s.receiveFinished.Load() {
 		return errors.New("cannot send files before receiving them")
 	}
+
+	s.fileMux.RLock()
+	defer s.fileMux.RUnlock()
+
 	for _, file := range s.files {
 		if err := s.handleFileSend(stream, file); err != nil {
 			return err
@@ -68,8 +72,8 @@ func (s *FileTransferer) SendFiles(stream SendFilesStream) error {
 
 // RecvFiles receives files from the given stream.
 func (s *FileTransferer) RecvFiles(stream RecvFilesStream) (err error) {
-	s.mux.Lock()
-	defer s.mux.Unlock()
+	s.fileMux.Lock()
+	defer s.fileMux.Unlock()
 	if err := s.startRecv(); err != nil {
 		return err
 	}
@@ -89,30 +93,23 @@ func (s *FileTransferer) RecvFiles(stream RecvFilesStream) (err error) {
 
 // GetFiles returns the a copy of the list of files that have been received.
 func (s *FileTransferer) GetFiles() []FileStat {
-	s.mux.RLock()
-	defer s.mux.RUnlock()
+	s.fileMux.RLock()
+	defer s.fileMux.RUnlock()
 	res := make([]FileStat, len(s.files))
 	copy(res, s.files)
 	return res
 }
 
 // SetFiles sets the list of files that can be sent.
+// This function is used for a sender which has not received any files through
+// this FileTransferer i.e. the CLI.
 func (s *FileTransferer) SetFiles(files []FileStat) {
-	s.mux.Lock()
-	defer s.mux.Unlock()
+	s.fileMux.Lock()
+	defer s.fileMux.Unlock()
 	res := make([]FileStat, len(files))
 	copy(res, files)
 	s.files = res
-	s.receiveFinished = true
-}
-
-// CanSend returns true if the file receive has finished.
-// This is called to determine if a debugd instance can request files from this server.
-func (s *FileTransferer) CanSend() bool {
-	s.mux.RLock()
-	defer s.mux.RUnlock()
-	ret := s.receiveFinished
-	return ret
+	s.receiveFinished.Store(true)
 }
 
 func (s *FileTransferer) handleFileSend(stream SendFilesStream, file FileStat) error {
@@ -173,7 +170,7 @@ func (s *FileTransferer) handleFileRecv(stream RecvFilesStream) (bool, error) {
 // startRecv marks the file receive as started. It returns an error if receiving has already started.
 func (s *FileTransferer) startRecv() error {
 	switch {
-	case s.receiveFinished:
+	case s.receiveFinished.Load():
 		return ErrReceiveFinished
 	case s.receiveStarted:
 		return ErrReceiveRunning
@@ -193,7 +190,7 @@ func (s *FileTransferer) abortRecv() {
 // This allows other debugd instances to request files from this server.
 func (s *FileTransferer) finishRecv() {
 	s.receiveStarted = false
-	s.receiveFinished = true
+	s.receiveFinished.Store(true)
 }
 
 // addFile adds a file to the list of received files.
