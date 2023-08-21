@@ -378,19 +378,22 @@ func (f *attestationDocFormatterImpl) parseCerts(b *strings.Builder, certTypeNam
 func (f *attestationDocFormatterImpl) parseQuotes(b *strings.Builder, quotes []*tpmProto.Quote, expectedPCRs measurements.M) error {
 	writeIndentfln(b, 1, "Quote:")
 	for pcrNum, expectedPCR := range expectedPCRs {
-
 		pcrIdx, err := vtpm.GetSHA256QuoteIndex(quotes)
 		if err != nil {
 			return fmt.Errorf("get SHA256 quote index: %w", err)
 		}
 
-		encPCR := quotes[pcrIdx].Pcrs.Pcrs[pcrNum]
+		if quotes[pcrIdx] == nil {
+			return fmt.Errorf("quote %d is nil", pcrIdx)
+		}
+
+		actualPCR := quotes[pcrIdx].Pcrs.Pcrs[pcrNum]
 		if err != nil {
 			return fmt.Errorf("decode PCR %d: %w", pcrNum, err)
 		}
 		writeIndentfln(b, 2, "PCR %d (Strict: %t):", pcrNum, !expectedPCR.ValidationOpt)
 		writeIndentfln(b, 3, "Expected:\t%x", expectedPCR.Expected)
-		writeIndentfln(b, 3, "Actual:\t\t%x", encPCR)
+		writeIndentfln(b, 3, "Actual:\t\t%x", actualPCR)
 	}
 	return nil
 }
