@@ -87,9 +87,7 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 
 	configFetcher := attestationconfigapi.NewFetcher()
 
-	// Set up two Terraform clients. They need to be configured with different workspaces
-	// One for upgrading existing resources
-
+	// Set up terraform upgrader
 	upgradeDir := filepath.Join(constants.UpgradeDir, upgradeID)
 	clusterUpgrader, err := cloudcmd.NewClusterUpgrader(
 		cmd.Context(),
@@ -102,7 +100,7 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("setting up cluster upgrader: %w", err)
 	}
 
-	// And one for showing existing resources
+	// Set up terraform client to show existing cluster resources and information required for Helm upgrades
 	tfShower, err := terraform.New(cmd.Context(), constants.TerraformWorkingDir)
 	if err != nil {
 		return fmt.Errorf("setting up terraform client: %w", err)
@@ -175,7 +173,6 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
 
-	// not moving existing Terraform migrator because of planned apply refactor
 	tfOutput, err := u.migrateTerraform(cmd, conf, upgradeDir, flags)
 	if err != nil {
 		return fmt.Errorf("performing Terraform migrations: %w", err)
