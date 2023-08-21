@@ -19,6 +19,7 @@ import (
 // Fetcher retrieves other debugd IPs from cloud provider metadata.
 type Fetcher interface {
 	DiscoverDebugdIPs(ctx context.Context) ([]string, error)
+	DiscoverLoadBalancerIP(ctx context.Context) (string, error)
 }
 
 // Scheduler schedules fetching of metadata using timers.
@@ -51,23 +52,35 @@ func (s *Scheduler) Start(ctx context.Context, wg *sync.WaitGroup) {
 		defer ticker.Stop()
 
 		for {
-			ips, err := s.fetcher.DiscoverDebugdIPs(ctx)
-			if err != nil {
-				s.log.With(zap.Error(err)).Warnf("Discovering debugd IPs failed")
-			}
-			if err == nil {
-				s.log.With(zap.Strings("ips", ips)).Infof("Discovered instances")
-				s.download(ctx, ips)
-				if s.deploymentDone && s.infoDone {
-					return
-				}
-			}
-
 			select {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
 			}
+
+			ips, err := s.fetcher.DiscoverDebugdIPs(ctx)
+			if err != nil {
+				s.log.With(zap.Error(err)).Warnf("Discovering debugd IPs failed")
+			}
+
+			lbip, err := s.fetcher.DiscoverLoadBalancerIP(ctx)
+			if err != nil {
+				s.log.With(zap.Error(err)).Warnf("Discovering load balancer IP failed")
+			} else {
+				ips = append(ips, lbip)
+			}
+
+			if len(ips) == 0 {
+				s.log.With(zap.Error(err)).Warnf("No debugd IPs discovered")
+				continue
+			}
+
+			s.log.With(zap.Strings("ips", ips)).Infof("Discovered instances")
+			s.download(ctx, ips)
+			if s.deploymentDone && s.infoDone {
+				return
+			}
+
 		}
 	}()
 }

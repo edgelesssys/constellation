@@ -133,9 +133,6 @@ func (s *debugdServer) UploadFiles(stream pb.Debugd_UploadFilesServer) error {
 // DownloadFiles streams the previously received files to other instances.
 func (s *debugdServer) DownloadFiles(_ *pb.DownloadFilesRequest, stream pb.Debugd_DownloadFilesServer) error {
 	s.log.Infof("Sending files to other instance")
-	if !s.transfer.CanSend() {
-		return errors.New("cannot send files at this time")
-	}
 	return s.transfer.SendFiles(stream)
 }
 
@@ -185,5 +182,4 @@ type fileTransferer interface {
 	RecvFiles(stream filetransfer.RecvFilesStream) error
 	SendFiles(stream filetransfer.SendFilesStream) error
 	GetFiles() []filetransfer.FileStat
-	CanSend() bool
 }

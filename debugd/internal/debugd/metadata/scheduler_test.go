@@ -91,6 +91,9 @@ type stubFetcher struct {
 	discoverErrs   []error
 	discoverErrIdx int
 	discoverCalls  int
+
+	loadBalancerIP            string
+	discoverLoadBalancerIPErr error
 }
 
 func (s *stubFetcher) DiscoverDebugdIPs(_ context.Context) ([]string, error) {
@@ -102,6 +105,10 @@ func (s *stubFetcher) DiscoverDebugdIPs(_ context.Context) ([]string, error) {
 		return nil, err
 	}
 	return s.ips, nil
+}
+
+func (s *stubFetcher) DiscoverLoadBalancerIP(_ context.Context) (string, error) {
+	return s.loadBalancerIP, s.discoverLoadBalancerIPErr
 }
 
 type stubDownloader struct {

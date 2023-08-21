@@ -121,7 +121,7 @@ func TestDiscoverDebugIPs(t *testing.T) {
 	}
 }
 
-func TestDiscoverLoadbalancerIP(t *testing.T) {
+func TestDiscoverLoadBalancerIP(t *testing.T) {
 	ip := "192.0.2.1"
 	someErr := errors.New("failed")
 
@@ -148,7 +148,7 @@ func TestDiscoverLoadbalancerIP(t *testing.T) {
 				metaAPI: tc.metaAPI,
 			}
 
-			ip, err := fetcher.DiscoverLoadbalancerIP(context.Background())
+			ip, err := fetcher.DiscoverLoadBalancerIP(context.Background())
 
 			if tc.wantErr {
 				assert.Error(err)
