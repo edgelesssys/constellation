@@ -306,10 +306,12 @@ jobs:
           githubToken: ${{ secrets.GITHUB_TOKEN }}
 
   e2e-windows:
+    name: Run Windows E2E test
     permissions:
       id-token: write
       contents: read
       packages: write
+    secrets: inherit
     uses: ./.github/workflows/e2e-windows.yml
     with:
       scheduled: ${{ github.event_name == 'schedule' }}
