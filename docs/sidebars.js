@@ -51,9 +51,21 @@ const sidebars = {
           id: 'overview/clouds',
         },
         {
-          type: 'doc',
+          type: 'category',
           label: 'Performance',
-          id: 'overview/performance',
+          link: { type: 'doc', id: 'overview/performance/performance' },
+          items: [
+            {
+              type: 'doc',
+              label: 'I/O benchmarks',
+              id: 'overview/performance/io',
+            },
+            {
+              type: 'doc',
+              label: 'Applicaiton benchmarks',
+              id: 'overview/performance/application',
+            },
+          ]
         },
         {
           type: 'doc',
