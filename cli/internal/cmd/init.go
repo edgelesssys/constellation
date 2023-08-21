@@ -255,17 +255,21 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	if err != nil {
 		return fmt.Errorf("getting Terraform output: %w", err)
 	}
+
+	i.log.Debugf("Loading Helm deployments")
+	i.spinner.Start("Installing Kubernetes components ", false)
 	releases, err := helmLoader.LoadReleases(conf, flags.conformance, flags.helmWaitMode, masterSecret, serviceAccURI, idFile, output)
 	if err != nil {
 		return fmt.Errorf("loading Helm charts: %w", err)
 	}
-	i.log.Debugf("Loaded Helm deployments")
-	if err != nil {
-		return fmt.Errorf("loading Helm charts: %w", err)
-	}
+
+	i.log.Debugf("Installing Helm deployments")
 	if err := i.helmInstaller.Install(cmd.Context(), releases); err != nil {
 		return fmt.Errorf("installing Helm charts: %w", err)
 	}
+	i.spinner.Stop()
+	i.log.Debugf("Helm deployment installation succeeded")
+
 	cmd.Println(bufferedOutput.String())
 	return nil
 }
