@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package setup
 
 import (
+	"context"
 	"io/fs"
 	"os"
 
@@ -37,6 +38,7 @@ type ConfigurationGenerator interface {
 type MetadataAPI interface {
 	metadata.InstanceSelfer
 	metadata.InstanceLister
+	GetLoadBalancerEndpoint(ctx context.Context) (host, port string, err error)
 }
 
 // RecoveryDoer is an interface to perform key recovery operations.

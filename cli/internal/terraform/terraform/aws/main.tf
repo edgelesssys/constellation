@@ -27,6 +27,7 @@ locals {
   ports_verify       = "30081"
   ports_recovery     = "9999"
   ports_debugd       = "4000"
+  ports_join         = "30090"
   target_group_arns = {
     control-plane : flatten([
       module.load_balancer_target_bootstrapper.target_group_arn,
@@ -34,6 +35,7 @@ locals {
       module.load_balancer_target_verify.target_group_arn,
       module.load_balancer_target_recovery.target_group_arn,
       module.load_balancer_target_konnectivity.target_group_arn,
+      module.load_balancer_target_join.target_group_arn,
       var.debug ? [module.load_balancer_target_debugd[0].target_group_arn] : [],
     ])
     worker : []
@@ -96,6 +98,7 @@ resource "aws_lb" "front_end" {
   internal           = false
   load_balancer_type = "network"
   tags               = local.tags
+  security_groups    = [aws_security_group.security_group.id]
 
   dynamic "subnet_mapping" {
     # TODO(malt3): use for_each = toset(module.public_private_subnet.all_zones)
@@ -251,6 +254,16 @@ module "load_balancer_target_konnectivity" {
   vpc_id               = aws_vpc.vpc.id
   lb_arn               = aws_lb.front_end.arn
   port                 = local.ports_konnectivity
+  tags                 = local.tags
+  healthcheck_protocol = "TCP"
+}
+
+module "load_balancer_target_join" {
+  source               = "./modules/load_balancer_target"
+  name                 = "${local.name}-join"
+  vpc_id               = aws_vpc.vpc.id
+  lb_arn               = aws_lb.front_end.arn
+  port                 = local.ports_join
   tags                 = local.tags
   healthcheck_protocol = "TCP"
 }

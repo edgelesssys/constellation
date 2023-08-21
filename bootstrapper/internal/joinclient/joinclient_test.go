@@ -330,6 +330,10 @@ func (s *stubRepeaterMetadataAPI) List(_ context.Context) ([]metadata.InstanceMe
 	return s.listInstances, s.listErr
 }
 
+func (s *stubRepeaterMetadataAPI) GetLoadBalancerEndpoint(_ context.Context) (string, string, error) {
+	return "", "", nil
+}
+
 type stubMetadataAPI struct {
 	selfAnswerC chan selfAnswer
 	listAnswerC chan listAnswer
@@ -350,6 +354,10 @@ func (s *stubMetadataAPI) Self(_ context.Context) (metadata.InstanceMetadata, er
 func (s *stubMetadataAPI) List(_ context.Context) ([]metadata.InstanceMetadata, error) {
 	answer := <-s.listAnswerC
 	return answer.instances, answer.err
+}
+
+func (s *stubMetadataAPI) GetLoadBalancerEndpoint(_ context.Context) (string, string, error) {
+	return "", "", nil
 }
 
 type selfAnswer struct {

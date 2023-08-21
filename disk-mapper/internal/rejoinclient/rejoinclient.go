@@ -14,10 +14,13 @@ package rejoinclient
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
+	"strconv"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/joinservice/joinproto"
@@ -75,7 +78,7 @@ func (c *RejoinClient) Start(ctx context.Context, diskUUID string) (diskKey, mea
 	defer c.log.Infof("RejoinClient stopped")
 
 	for {
-		endpoints, err := c.getControlPlaneEndpoints()
+		endpoints, err := c.getJoinEndpoints()
 		if err != nil {
 			c.log.With(zap.Error(err)).Errorf("Failed to get control-plane endpoints")
 		} else {
@@ -130,19 +133,37 @@ func (c *RejoinClient) requestRejoinTicket(endpoint string) (*joinproto.IssueRej
 	return joinproto.NewAPIClient(conn).IssueRejoinTicket(ctx, &joinproto.IssueRejoinTicketRequest{DiskUuid: c.diskUUID})
 }
 
-// getControlPlaneEndpoints requests the available control-plane endpoints from the metadata API.
+// getJoinEndpoints requests the available control-plane endpoints from the metadata API.
 // The list is filtered to remove *this* node if it is a restarting control-plane node.
-func (c *RejoinClient) getControlPlaneEndpoints() ([]string, error) {
+// Furthermore, the load balancer's endpoint is added.
+func (c *RejoinClient) getJoinEndpoints() ([]string, error) {
 	ctx, cancel := c.timeoutCtx()
 	defer cancel()
-	endpoints, err := metadata.JoinServiceEndpoints(ctx, c.metadataAPI)
+	instances, err := c.metadataAPI.List(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("retrieving instances list from cloud provider: %w", err)
 	}
+
+	joinEndpoints := []string{}
+	for _, instance := range instances {
+		if instance.Role == role.ControlPlane {
+			if instance.VPCIP != "" {
+				joinEndpoints = append(joinEndpoints, net.JoinHostPort(instance.VPCIP, strconv.Itoa(constants.JoinServiceNodePort)))
+			}
+		}
+	}
+
+	lbEndpoint, _, err := c.metadataAPI.GetLoadBalancerEndpoint(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving load balancer endpoint from cloud provider: %w", err)
+	}
+	joinEndpoints = append(joinEndpoints, net.JoinHostPort(lbEndpoint, strconv.Itoa(constants.JoinServiceNodePort)))
+
 	if c.nodeInfo.Role == role.ControlPlane {
-		return removeSelfFromEndpoints(c.nodeInfo.VPCIP, endpoints), nil
+		return removeSelfFromEndpoints(c.nodeInfo.VPCIP, joinEndpoints), nil
 	}
-	return endpoints, nil
+
+	return joinEndpoints, nil
 }
 
 // removeSelfFromEndpoints removes *this* node from the list of endpoints.
@@ -169,4 +190,6 @@ type grpcDialer interface {
 type metadataAPI interface {
 	// List retrieves all instances belonging to the current constellation.
 	List(ctx context.Context) ([]metadata.InstanceMetadata, error)
+	// GetLoadBalancerEndpoint retrieves the load balancer endpoint.
+	GetLoadBalancerEndpoint(ctx context.Context) (host, port string, err error)
 }

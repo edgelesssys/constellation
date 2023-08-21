@@ -188,8 +188,14 @@ func (c *JoinClient) Stop() {
 func (c *JoinClient) tryJoinWithAvailableServices() error {
 	ips, err := c.getControlPlaneIPs()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get control plane IPs: %w", err)
 	}
+
+	ip, _, err := c.metadataAPI.GetLoadBalancerEndpoint(context.TODO())
+	if err != nil {
+		return fmt.Errorf("failed to get load balancer endpoint: %w", err)
+	}
+	ips = append(ips, ip)
 
 	if len(ips) == 0 {
 		return errors.New("no control plane IPs found")
@@ -425,6 +431,8 @@ type MetadataAPI interface {
 	List(ctx context.Context) ([]metadata.InstanceMetadata, error)
 	// Self retrieves the current instance.
 	Self(ctx context.Context) (metadata.InstanceMetadata, error)
+	// GetLoadBalancerEndpoint retrieves the load balancer endpoint.
+	GetLoadBalancerEndpoint(ctx context.Context) (host, port string, err error)
 }
 
 type encryptedDisk interface {
