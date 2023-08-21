@@ -54,11 +54,9 @@ runs:
         cquery --bes_results_url=
         cquery --bes_backend=
         cquery --remote_cache=
-        cquery --remote_header=
         query --bes_results_url=
         query --bes_backend=
         query --remote_cache=
-        query --remote_header=
         EOF
         echo "::endgroup::"
 
@@ -86,10 +84,8 @@ runs:
         common --remote_header=x-buildbuddy-api-key=${BUILDBUDDY_ORG_API_KEY}
         cquery --bes_results_url=
         cquery --bes_backend=
-        cquery --remote_header=
         query --bes_results_url=
         query --bes_backend=
-        query --remote_header=
         EOF
         echo "::endgroup::"
 
