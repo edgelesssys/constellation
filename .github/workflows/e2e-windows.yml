@@ -1,8 +1,14 @@
 name: e2e test windows
 
 on:
-  workflow_call:
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      scheduled:
+        description: Whether this is a scheduled run.
+        type: boolean
+        default: false
+        required: false
 
 jobs:
   build-cli:
@@ -144,7 +150,7 @@ jobs:
     if: |
       failure() &&
       github.ref == 'refs/heads/main' &&
-      github.event_name == 'workflow_call'
+      inputs.scheduled
     steps:
       - name: Checkout
         uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3

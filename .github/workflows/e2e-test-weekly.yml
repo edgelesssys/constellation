@@ -306,8 +306,10 @@ jobs:
           githubToken: ${{ secrets.GITHUB_TOKEN }}
 
   e2e-windows:
-    uses: ./.github/workflows/e2e-windows.yml
     permissions:
       id-token: write
       contents: read
       packages: write
+    uses: ./.github/workflows/e2e-windows.yml
+    with:
+      scheduled: ${{ github.event_name == 'schedule' }}
