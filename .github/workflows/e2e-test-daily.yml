@@ -87,6 +87,9 @@ jobs:
           cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
           cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
           fetchMeasurements: ${{ matrix.refStream != 'ref/release/stream/stable/?' }}
+          awsOpenSearchDomain: ${{ secrets.AWS_OPENSEARCH_DOMAIN }}
+          awsOpenSearchUsers: ${{ secrets.AWS_OPENSEARCH_USER }}
+          awsOpenSearchPwd: ${{ secrets.AWS_OPENSEARCH_PWD }}
 
       - name: Always terminate cluster
         if: always()
@@ -122,7 +125,7 @@ jobs:
           test: ${{ matrix.test }}
           kubernetesVersion: ${{ matrix.kubernetesVersion }}
           provider: ${{ matrix.provider }}
-  
+
   e2e-mini:
     name: Run miniconstellation E2E test
     runs-on: ubuntu-22.04

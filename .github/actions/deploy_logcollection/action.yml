@@ -1,0 +1,73 @@
+name: Log Collection Deployment
+description: Deploy log collection functionality to the cluster.
+
+inputs:
+  logstash-port:
+    description: "The port of the logstash service."
+    default: "5045"
+  kubeconfig:
+    description: "The kubeconfig of the cluster to deploy to."
+    required: true
+  opensearchUser:
+    description: "The username of the opensearch cluster."
+    required: true
+  opensearchPwd:
+    description: "The password of the opensearch cluster."
+    required: true
+  test:
+    description: "The e2e test payload."
+    required: true
+  provider:
+    description: "The CSP of the cluster."
+    required: true
+  isDebugImage:
+    description: "Whether the cluster is a debug cluster / uses a debug image."
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Template Logcollection Helm Values
+      id: template
+      shell: bash
+      run: |
+        bazel run //hack/logcollector template -- \
+         --dir $(realpath .) \
+         --username ${{ inputs.opensearchUser }} \
+         --password ${{ inputs.opensearchPwd }} \
+         --port ${{ inputs.logstash-port }} \
+         --fields github.actor="${{ github.triggering_actor }}" \
+         --fields github.workflow="${{ github.workflow }}" \
+         --fields github.run-id="${{ github.run_id }}" \
+         --fields github.run-attempt="${{ github.run_attempt }}" \
+         --fields github.ref-name="${{ github.ref_name }}" \
+         --fields github.sha="${{ github.sha }}" \
+         --fields github.runner-os="${{ runner.os }}" \
+         --fields github.e2e-test-payload="${{ inputs.test }}" \
+         --fields github.isDebugImage="${{ inputs.isDebugImage }}" \
+         --fields github.e2e-test-provider="${{ inputs.provider }}" \
+         --fields deployment-type="k8s"
+
+    - name: Deploy Logstash
+      id: deploy-logstash
+      shell: bash
+      working-directory: ./logstash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+      run: |
+        helm repo add elastic https://helm.elastic.co
+        helm repo update
+        helm install logstash elastic/logstash \
+          --wait --timeout=1200s --values values.yml
+
+    - name: Deploy Filebeat
+      id: deploy-filebeat
+      shell: bash
+      working-directory: ./filebeat
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+      run: |
+        helm repo add elastic https://helm.elastic.co
+        helm repo update
+        helm install filebeat elastic/filebeat \
+          --wait --timeout=1200s --values values.yml

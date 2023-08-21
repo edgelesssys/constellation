@@ -3,14 +3,14 @@ Copyright (c) Edgeless Systems GmbH
 
 SPDX-License-Identifier: AGPL-3.0-only
 */
-package logcollector
-
-// THIS FILE IS A DUPLICATE OF hack/logcollector/fields/fields.go
+package fields
 
 import (
 	"fmt"
 	"strings"
 )
+
+// THIS FILE IS A DUPLICATE OF debugd/internal/debugd/logcollector/fields.go
 
 var (
 	// DebugdLogcollectPrefix is the prefix for all OpenSearch fields specified by the user when starting through debugd.
@@ -37,8 +37,8 @@ var (
 	}
 )
 
-// FieldsFromMap returns new Fields from the given map.
-func FieldsFromMap(m map[string]string) Fields {
+// FromMap returns new Fields from the given map.
+func FromMap(m map[string]string) Fields {
 	return Fields(m)
 }
 

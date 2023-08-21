@@ -1,5 +1,5 @@
 output.logstash:
-  hosts: ["localhost:5044"]
+  hosts: ["{{ .LogstashHost }}"]
 
 output.console:
   enabled: false
@@ -12,7 +12,7 @@ logging:
 filebeat.config:
   inputs:
     enabled: true
-    path: /usr/share/filebeat/inputs.d/*.yml
+    path: /usr/share/filebeat/inputs.yml
     # reload.enabled: true
     # reload.period: 10s
 

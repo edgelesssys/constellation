@@ -14,6 +14,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"text/template"
@@ -74,7 +75,7 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 			}
 
 			logger.Infof("Getting logstash pipeline template")
-			tmpl, err := getTemplate(ctx, logger)
+			tmpl, err := getTemplate(ctx, logger, versions.LogstashImage, "/run/logstash/templates/pipeline.conf", "/run/logstash")
 			if err != nil {
 				logger.Errorf("Getting logstash pipeline template: %v", err)
 				return
@@ -90,12 +91,28 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 
 			logger.Infof("Writing logstash pipeline")
 			pipelineConf := logstashConfInput{
+				Port:        5044,
 				Host:        openSearchHost,
+				IndexPrefix: "systemd-logs",
 				InfoMap:     infoMapM,
 				Credentials: creds,
 			}
-			if err := writeLogstashPipelineConf(tmpl, pipelineConf); err != nil {
+			if err := writeTemplate("/run/filebeat/filebeat.yml", tmpl, pipelineConf); err != nil {
 				logger.Errorf("Writing logstash pipeline: %v", err)
+				return
+			}
+
+			logger.Infof("Getting logstash config template")
+			tmpl, err = getTemplate(ctx, logger, versions.FilebeatImage, "/run/filebeat/templates/filebeat.yml", "/run/filebeat")
+			if err != nil {
+				logger.Errorf("Getting filebeat config template: %v", err)
+				return
+			}
+			filebeatConf := filebeatConfInput{
+				LogstashHost: "localhost:5044",
+			}
+			if err := writeTemplate("/run/logstash/pipeline/pipeline.conf", tmpl, filebeatConf); err != nil {
+				logger.Errorf("Writing filebeat config: %v", err)
 				return
 			}
 
@@ -107,31 +124,31 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 	}
 }
 
-func getTemplate(ctx context.Context, logger *logger.Logger) (*template.Template, error) {
+func getTemplate(ctx context.Context, logger *logger.Logger, image, templateDir, destDir string) (*template.Template, error) {
 	createContainerArgs := []string{
 		"create",
 		"--name=template",
-		versions.LogstashImage,
+		image,
 	}
 	createContainerCmd := exec.CommandContext(ctx, "podman", createContainerArgs...)
-	logger.Infof("Creating logstash template container")
+	logger.Infof("Creating template container")
 	if out, err := createContainerCmd.CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("creating logstash template container: %w\n%s", err, out)
+		return nil, fmt.Errorf("creating template container: %w\n%s", err, out)
 	}
 
-	if err := os.MkdirAll("/run/logstash", 0o777); err != nil {
-		return nil, fmt.Errorf("creating logstash template dir: %w", err)
+	if err := os.MkdirAll(destDir, 0o777); err != nil {
+		return nil, fmt.Errorf("creating template dir: %w", err)
 	}
 
 	copyFromArgs := []string{
 		"cp",
 		"template:/usr/share/constellogs/templates/",
-		"/run/logstash/",
+		destDir,
 	}
 	copyFromCmd := exec.CommandContext(ctx, "podman", copyFromArgs...)
-	logger.Infof("Copying logstash templates")
+	logger.Infof("Copying templates")
 	if out, err := copyFromCmd.CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("copying logstash templates: %w\n%s", err, out)
+		return nil, fmt.Errorf("copying templates: %w\n%s", err, out)
 	}
 
 	removeContainerArgs := []string{
@@ -139,14 +156,14 @@ func getTemplate(ctx context.Context, logger *logger.Logger) (*template.Template
 		"template",
 	}
 	removeContainerCmd := exec.CommandContext(ctx, "podman", removeContainerArgs...)
-	logger.Infof("Removing logstash template container")
+	logger.Infof("Removing template container")
 	if out, err := removeContainerCmd.CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("removing logstash template container: %w\n%s", err, out)
+		return nil, fmt.Errorf("removing template container: %w\n%s", err, out)
 	}
 
-	tmpl, err := template.ParseFiles("/run/logstash/templates/pipeline.conf")
+	tmpl, err := template.ParseFiles(templateDir)
 	if err != nil {
-		return nil, fmt.Errorf("parsing logstash template: %w", err)
+		return nil, fmt.Errorf("parsing template: %w", err)
 	}
 
 	return tmpl, nil
@@ -198,6 +215,7 @@ func startPod(ctx context.Context, logger *logger.Logger) error {
 		"--volume=/run/systemd:/run/systemd:ro",
 		"--volume=/run/systemd/journal/socket:/run/systemd/journal/socket:rw",
 		"--volume=/run/state/var/log:/var/log:ro",
+		"--volume=/run/filebeat:/usr/share/filebeat/:ro",
 		versions.FilebeatImage,
 	}
 	runFilebeatCmd := exec.CommandContext(ctx, "podman", runFilebeatArgs...)
@@ -212,24 +230,30 @@ func startPod(ctx context.Context, logger *logger.Logger) error {
 }
 
 type logstashConfInput struct {
+	Port        int
 	Host        string
+	IndexPrefix string
 	InfoMap     map[string]string
 	Credentials credentials
 }
 
-func writeLogstashPipelineConf(templ *template.Template, in logstashConfInput) error {
-	if err := os.MkdirAll("/run/logstash/pipeline", 0o777); err != nil {
-		return fmt.Errorf("creating logstash config dir: %w", err)
+type filebeatConfInput struct {
+	LogstashHost string
+}
+
+func writeTemplate(path string, templ *template.Template, in any) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o777); err != nil {
+		return fmt.Errorf("creating template dir: %w", err)
 	}
 
-	file, err := os.OpenFile("/run/logstash/pipeline/pipeline.conf", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o777)
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o777)
 	if err != nil {
-		return fmt.Errorf("opening logstash config file: %w", err)
+		return fmt.Errorf("opening template file: %w", err)
 	}
 	defer file.Close()
 
 	if err := templ.Execute(file, in); err != nil {
-		return fmt.Errorf("executing logstash pipeline template: %w", err)
+		return fmt.Errorf("executing template: %w", err)
 	}
 
 	return nil

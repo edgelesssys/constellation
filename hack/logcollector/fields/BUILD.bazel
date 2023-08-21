@@ -1,0 +1,8 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "fields",
+    srcs = ["fields.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/hack/logcollector/fields",
+    visibility = ["//visibility:public"],
+)

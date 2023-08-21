@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 function setup {
+  (stopBazelServer && sleep 1) || true
+
   # Ensure that the cache directories exist, so they are not created by docker with root permissions.
   mkdir -p "${HOME}/.cache/bazel"
   mkdir -p "${HOME}/.cache/shared_bazel_repository_cache"
@@ -20,6 +22,12 @@ function startBazelServer {
 
   setup
 
+  # In-container .bazelrc overwrite.
+  mkdir -p "/tmp/bazel-container"
+  cat << EOF > "/tmp/bazel-container/.bazelrc"
+startup --output_user_root=/home/${USER}/.cache/bazel/_bazel_${USER}
+EOF
+
   local hostWorkspaceDir
   hostWorkspaceDir="$(git rev-parse --show-toplevel)"
   if [[ $? -ne 0 ]]; then
@@ -36,10 +44,11 @@ function startBazelServer {
     --detach \
     --name "${containerName}" \
     -v "${hostWorkspaceDir}":/workspace \
-    -v "${HOME}/.cache/bazel":"/home/builder/.cache/bazel" \
-    -v "${HOME}/.cache/shared_bazel_repository_cache":"/home/builder/.cache/shared_bazel_repository_cache" \
-    -v "${HOME}/.cache/shared_bazel_action_cache":"/home/builder/.cache/shared_bazel_action_cache" \
+    -v "${HOME}/.cache/bazel":"${HOME}/.cache/bazel" \
+    -v "${HOME}/.cache/shared_bazel_repository_cache":"${HOME}/.cache/shared_bazel_repository_cache" \
+    -v "${HOME}/.cache/shared_bazel_action_cache":"${HOME}/.cache/shared_bazel_action_cache" \
     -v "${HOME}/.docker/config.json":"/home/builder/.docker/config.json" \
+    -v "/tmp/bazel-container/.bazelrc":"/etc/bazel.bazelrc" \
     --entrypoint=/bin/sleep \
     "${containerImage}" \
     infinity || return $?
