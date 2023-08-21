@@ -261,7 +261,7 @@ func (k *KubeWrapper) setupK8sComponentsConfigMap(ctx context.Context, component
 		return "", fmt.Errorf("constructing k8s-components ConfigMap: %w", err)
 	}
 
-	if err := k.client.CreateConfigMap(ctx, componentsConfig); err != nil {
+	if err := k.client.CreateConfigMap(ctx, &componentsConfig); err != nil {
 		return "", fmt.Errorf("apply in KubeWrapper.setupK8sVersionConfigMap(..) for components config map failed with: %w", err)
 	}
 
@@ -284,7 +284,7 @@ func (k *KubeWrapper) setupInternalConfigMap(ctx context.Context) error {
 
 	// We do not use the client's Apply method here since we are handling a kubernetes-native type.
 	// These types don't implement our custom Marshaler interface.
-	if err := k.client.CreateConfigMap(ctx, config); err != nil {
+	if err := k.client.CreateConfigMap(ctx, &config); err != nil {
 		return fmt.Errorf("apply in KubeWrapper.setupInternalConfigMap failed with: %w", err)
 	}
 

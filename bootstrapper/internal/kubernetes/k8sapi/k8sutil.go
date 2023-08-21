@@ -49,7 +49,7 @@ const (
 // Client provides the functions to talk to the k8s API.
 type Client interface {
 	Initialize(kubeconfig []byte) error
-	CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error
+	CreateConfigMap(ctx context.Context, configMap *corev1.ConfigMap) error
 	AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string, namespace string) error
 	ListAllNamespaces(ctx context.Context) (*corev1.NamespaceList, error)
 	AnnotateNode(ctx context.Context, nodeName, annotationKey, annotationValue string) error

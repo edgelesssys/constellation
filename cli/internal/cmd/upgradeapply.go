@@ -17,7 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
-	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
+	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
@@ -69,12 +69,12 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	upgradeID := generateUpgradeID(upgradeCmdKindApply)
 
-	kubeUpgrader, err := kubernetes.NewUpgrader(cmd.OutOrStdout(), constants.AdminConfFilename, log)
+	kubeUpgrader, err := kubecmd.New(cmd.OutOrStdout(), constants.AdminConfFilename, log)
 	if err != nil {
 		return err
 	}
 
-	helmUpgrader, err := helm.NewUpgradeClient(kubectl.New(), constants.UpgradeDir, constants.AdminConfFilename, constants.HelmNamespace, log)
+	helmUpgrader, err := helm.NewUpgradeClient(kubectl.NewUninitialized(), constants.UpgradeDir, constants.AdminConfFilename, constants.HelmNamespace, log)
 	if err != nil {
 		return fmt.Errorf("setting up helm client: %w", err)
 	}
@@ -153,9 +153,10 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command) error {
 	}
 	conf.UpdateMAAURL(idFile.AttestationURL)
 
-	if err := u.confirmIfUpgradeAttestConfigHasDiff(cmd, conf.GetAttestationConfig(), flags); err != nil {
+	if err := u.confirmAttestationConfigUpgrade(cmd, conf.GetAttestationConfig(), flags); err != nil {
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
+
 	// not moving existing Terraform migrator because of planned apply refactor
 	tfOutput, err := u.migrateTerraform(cmd, conf, flags)
 	if err != nil {
@@ -190,7 +191,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command) error {
 
 		err = u.kubeUpgrader.UpgradeNodeVersion(cmd.Context(), conf, flags.force)
 		switch {
-		case errors.Is(err, kubernetes.ErrInProgress):
+		case errors.Is(err, kubecmd.ErrInProgress):
 			cmd.PrintErrln("Skipping image and Kubernetes upgrades. Another upgrade is in progress.")
 		case errors.As(err, &upgradeErr):
 			cmd.PrintErrln(err)
@@ -337,9 +338,9 @@ func validK8sVersion(cmd *cobra.Command, version string, yes bool) (validVersion
 	return validVersion, nil
 }
 
-// confirmIfUpgradeAttestConfigHasDiff checks if the locally configured measurements are different from the cluster's measurements.
-// If so the function will ask the user to confirm (if --yes is not set).
-func (u *upgradeApplyCmd) confirmIfUpgradeAttestConfigHasDiff(cmd *cobra.Command, newConfig config.AttestationCfg, flags upgradeApplyFlags) error {
+// confirmAttestationConfigUpgrade checks if the locally configured measurements are different from the cluster's measurements.
+// If so the function will ask the user to confirm (if --yes is not set) and upgrade the cluster's config.
+func (u *upgradeApplyCmd) confirmAttestationConfigUpgrade(cmd *cobra.Command, newConfig config.AttestationCfg, flags upgradeApplyFlags) error {
 	clusterAttestationConfig, err := u.kubeUpgrader.GetClusterAttestationConfig(cmd.Context(), newConfig.GetVariant())
 	if err != nil {
 		return fmt.Errorf("getting cluster attestation config: %w", err)
@@ -369,10 +370,7 @@ func (u *upgradeApplyCmd) confirmIfUpgradeAttestConfigHasDiff(cmd *cobra.Command
 			return errors.New("aborting upgrade since attestation config is different")
 		}
 	}
-	// TODO(elchead): move this outside this function to remove the side effect.
-	if err := u.kubeUpgrader.BackupConfigMap(cmd.Context(), constants.JoinConfigMap); err != nil {
-		return fmt.Errorf("backing up join-config: %w", err)
-	}
+
 	if err := u.kubeUpgrader.UpdateAttestationConfig(cmd.Context(), newConfig); err != nil {
 		return fmt.Errorf("updating attestation config: %w", err)
 	}
@@ -496,8 +494,6 @@ type kubernetesUpgrader interface {
 	ExtendClusterConfigCertSANs(ctx context.Context, alternativeNames []string) error
 	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, error)
 	UpdateAttestationConfig(ctx context.Context, newAttestConfig config.AttestationCfg) error
-	GetMeasurementSalt(ctx context.Context) ([]byte, error)
-	BackupConfigMap(ctx context.Context, name string) error
 }
 
 type helmUpgrader interface {

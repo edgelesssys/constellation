@@ -522,7 +522,7 @@ func (s *stubKubectl) Initialize(_ []byte) error {
 	return nil
 }
 
-func (s *stubKubectl) CreateConfigMap(_ context.Context, _ corev1.ConfigMap) error {
+func (s *stubKubectl) CreateConfigMap(_ context.Context, _ *corev1.ConfigMap) error {
 	return s.createConfigMapErr
 }
 

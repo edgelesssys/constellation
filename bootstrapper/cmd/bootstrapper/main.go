@@ -89,7 +89,7 @@ func main() {
 		}
 
 		clusterInitJoiner = kubernetes.New(
-			"aws", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
+			"aws", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.NewUninitialized(),
 			metadata, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 		openDevice = vtpm.OpenVTPM
@@ -109,7 +109,7 @@ func main() {
 
 		metadataAPI = metadata
 		clusterInitJoiner = kubernetes.New(
-			"gcp", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
+			"gcp", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.NewUninitialized(),
 			metadata, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 		openDevice = vtpm.OpenVTPM
@@ -127,7 +127,7 @@ func main() {
 		}
 		metadataAPI = metadata
 		clusterInitJoiner = kubernetes.New(
-			"azure", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
+			"azure", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.NewUninitialized(),
 			metadata, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 
@@ -138,7 +138,7 @@ func main() {
 		cloudLogger = qemucloud.NewLogger()
 		metadata := qemucloud.New()
 		clusterInitJoiner = kubernetes.New(
-			"qemu", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
+			"qemu", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.NewUninitialized(),
 			metadata, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 		metadataAPI = metadata
@@ -161,7 +161,7 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to create OpenStack metadata client")
 		}
 		clusterInitJoiner = kubernetes.New(
-			"openstack", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
+			"openstack", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.NewUninitialized(),
 			metadata, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 		metadataAPI = metadata

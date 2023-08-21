@@ -4,10 +4,11 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package kubernetes
+package kubecmd
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"testing"
@@ -34,9 +35,8 @@ import (
 )
 
 func TestUpgradeNodeVersion(t *testing.T) {
-	someErr := errors.New("some error")
 	testCases := map[string]struct {
-		stable                *fakeStableClient
+		kubectl               *stubKubectl
 		conditions            []metav1.Condition
 		currentImageVersion   string
 		newImageReference     string
@@ -44,11 +44,11 @@ func TestUpgradeNodeVersion(t *testing.T) {
 		currentClusterVersion string
 		conf                  *config.Config
 		force                 bool
-		getErr                error
+		getCRErr              error
 		wantErr               bool
 		wantUpdate            bool
 		assertCorrectError    func(t *testing.T, err error) bool
-		customClientFn        func(nodeVersion updatev1alpha1.NodeVersion) DynamicInterface
+		customClientFn        func(nodeVersion updatev1alpha1.NodeVersion) unstructuredInterface
 	}{
 		"success": {
 			conf: func() *config.Config {
@@ -59,7 +59,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			}(),
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: versions.SupportedK8sVersions()[0],
-			stable: &fakeStableClient{
+			kubectl: &stubKubectl{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
 				},
@@ -75,7 +75,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			}(),
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: versions.SupportedK8sVersions()[0],
-			stable: &fakeStableClient{
+			kubectl: &stubKubectl{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
 				},
@@ -96,7 +96,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			}(),
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: versions.SupportedK8sVersions()[0],
-			stable: &fakeStableClient{
+			kubectl: &stubKubectl{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
 				},
@@ -117,7 +117,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			}(),
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: versions.SupportedK8sVersions()[0],
-			stable:                &fakeStableClient{},
+			kubectl:               &stubKubectl{},
 			wantErr:               true,
 			assertCorrectError: func(t *testing.T, err error) bool {
 				var upgradeErr *compatibility.InvalidUpgradeError
@@ -137,7 +137,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			}},
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: versions.SupportedK8sVersions()[0],
-			stable:                &fakeStableClient{},
+			kubectl:               &stubKubectl{},
 			wantErr:               true,
 			assertCorrectError: func(t *testing.T, err error) bool {
 				return assert.ErrorIs(t, err, ErrInProgress)
@@ -156,7 +156,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			}},
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: versions.SupportedK8sVersions()[0],
-			stable:                &fakeStableClient{},
+			kubectl:               &stubKubectl{},
 			force:                 true,
 			wantUpdate:            true,
 		},
@@ -164,12 +164,20 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			conf: func() *config.Config {
 				conf := config.Default()
 				conf.Image = "v1.2.3"
+				conf.KubernetesVersion = versions.SupportedK8sVersions()[1]
 				return conf
 			}(),
-			getErr:  someErr,
-			wantErr: true,
+			currentImageVersion:   "v1.2.2",
+			currentClusterVersion: versions.SupportedK8sVersions()[0],
+			kubectl: &stubKubectl{
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+				},
+			},
+			getCRErr: assert.AnError,
+			wantErr:  true,
 			assertCorrectError: func(t *testing.T, err error) bool {
-				return assert.ErrorIs(t, err, someErr)
+				return assert.ErrorIs(t, err, assert.AnError)
 			},
 		},
 		"image too new valid k8s": {
@@ -182,7 +190,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			newImageReference:     "path/to/image:v1.4.2",
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: versions.SupportedK8sVersions()[0],
-			stable: &fakeStableClient{
+			kubectl: &stubKubectl{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":true}}`),
 				},
@@ -204,7 +212,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			newImageReference:     "path/to/image:v1.4.2",
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: versions.SupportedK8sVersions()[0],
-			stable: &fakeStableClient{
+			kubectl: &stubKubectl{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
 				},
@@ -222,7 +230,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: versions.SupportedK8sVersions()[0],
 			badImageVersion:       "v3.2.1",
-			stable: &fakeStableClient{
+			kubectl: &stubKubectl{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
 				},
@@ -243,7 +251,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			}(),
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: versions.SupportedK8sVersions()[0],
-			stable: &fakeStableClient{
+			kubectl: &stubKubectl{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
 				},
@@ -264,17 +272,17 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			}(),
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: versions.SupportedK8sVersions()[0],
-			stable: &fakeStableClient{
+			kubectl: &stubKubectl{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
 				},
 			},
 			wantUpdate: false, // because customClient is used
-			customClientFn: func(nodeVersion updatev1alpha1.NodeVersion) DynamicInterface {
-				fakeClient := &fakeDynamicClient{}
-				fakeClient.On("GetCurrent", mock.Anything, mock.Anything).Return(unstructedObjectWithGeneration(nodeVersion, 1), nil)
-				fakeClient.On("Update", mock.Anything, mock.Anything).Return(nil, kerrors.NewConflict(schema.GroupResource{Resource: nodeVersion.Name}, nodeVersion.Name, nil)).Once()
-				fakeClient.On("Update", mock.Anything, mock.Anything).Return(unstructedObjectWithGeneration(nodeVersion, 2), nil).Once()
+			customClientFn: func(nodeVersion updatev1alpha1.NodeVersion) unstructuredInterface {
+				fakeClient := &fakeUnstructuredClient{}
+				fakeClient.On("GetCR", mock.Anything, mock.Anything).Return(unstructedObjectWithGeneration(nodeVersion, 1), nil)
+				fakeClient.On("UpdateCR", mock.Anything, mock.Anything).Return(nil, kerrors.NewConflict(schema.GroupResource{Resource: nodeVersion.Name}, nodeVersion.Name, nil)).Once()
+				fakeClient.On("UpdateCR", mock.Anything, mock.Anything).Return(unstructedObjectWithGeneration(nodeVersion, 2), nil).Once()
 				return fakeClient
 			},
 		},
@@ -305,24 +313,29 @@ func TestUpgradeNodeVersion(t *testing.T) {
 
 			unstrNodeVersion, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&nodeVersion)
 			require.NoError(err)
-			dynamicClient := &stubDynamicClient{object: &unstructured.Unstructured{Object: unstrNodeVersion}, badUpdatedObject: badUpdatedObject, getErr: tc.getErr}
-			upgrader := Upgrader{
-				stableInterface:  tc.stable,
-				dynamicInterface: dynamicClient,
-				imageFetcher:     &stubImageFetcher{reference: tc.newImageReference},
-				log:              logger.NewTest(t),
-				outWriter:        io.Discard,
+			unstructuredClient := &stubUnstructuredClient{
+				object:           &unstructured.Unstructured{Object: unstrNodeVersion},
+				badUpdatedObject: badUpdatedObject,
+				getCRErr:         tc.getCRErr,
 			}
+			tc.kubectl.unstructuredInterface = unstructuredClient
 			if tc.customClientFn != nil {
-				upgrader.dynamicInterface = tc.customClientFn(nodeVersion)
+				tc.kubectl.unstructuredInterface = tc.customClientFn(nodeVersion)
+			}
+
+			upgrader := KubeCmd{
+				kubectl:      tc.kubectl,
+				imageFetcher: &stubImageFetcher{reference: tc.newImageReference},
+				log:          logger.NewTest(t),
+				outWriter:    io.Discard,
 			}
 
 			err = upgrader.UpgradeNodeVersion(context.Background(), tc.conf, tc.force)
 			// Check upgrades first because if we checked err first, UpgradeImage may error due to other reasons and still trigger an upgrade.
 			if tc.wantUpdate {
-				assert.NotNil(dynamicClient.updatedObject)
+				assert.NotNil(unstructuredClient.updatedObject)
 			} else {
-				assert.Nil(dynamicClient.updatedObject)
+				assert.Nil(unstructuredClient.updatedObject)
 			}
 
 			if tc.wantErr {
@@ -368,7 +381,7 @@ func TestUpdateImage(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			upgrader := &Upgrader{
+			upgrader := &KubeCmd{
 				log: logger.NewTest(t),
 			}
 
@@ -379,21 +392,13 @@ func TestUpdateImage(t *testing.T) {
 				},
 			}
 
-			err := upgrader.updateImage(&nodeVersion, tc.newImageReference, tc.newImageVersion, false)
+			err := upgrader.isValidImageUpgrade(nodeVersion, tc.newImageVersion, false)
 
 			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
-
 			assert.NoError(err)
-			if tc.wantUpdate {
-				assert.Equal(tc.newImageReference, nodeVersion.Spec.ImageReference)
-				assert.Equal(tc.newImageVersion, nodeVersion.Spec.ImageVersion)
-			} else {
-				assert.Equal(tc.oldImageReference, nodeVersion.Spec.ImageReference)
-				assert.Equal(tc.oldImageVersion, nodeVersion.Spec.ImageVersion)
-			}
 		})
 	}
 }
@@ -427,7 +432,7 @@ func TestUpdateK8s(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			upgrader := &Upgrader{
+			upgrader := &KubeCmd{
 				log: logger.NewTest(t),
 			}
 
@@ -465,16 +470,65 @@ func newJoinConfigMap(data string) *corev1.ConfigMap {
 	}
 }
 
-type fakeDynamicClient struct {
+func TestUpdateAttestationConfig(t *testing.T) {
+	mustMarshal := func(cfg config.AttestationCfg) string {
+		data, err := json.Marshal(cfg)
+		require.NoError(t, err)
+		return string(data)
+	}
+
+	testCases := map[string]struct {
+		newAttestationCfg config.AttestationCfg
+		kubectl           *stubKubectl
+		wantErr           bool
+	}{
+		"success": {
+			newAttestationCfg: config.DefaultForAzureSEVSNP(),
+			kubectl: &stubKubectl{
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.JoinConfigMap: newJoinConfigMap(mustMarshal(config.DefaultForAzureSEVSNP())),
+				},
+			},
+		},
+		"error getting ConfigMap": {
+			newAttestationCfg: config.DefaultForAzureSEVSNP(),
+			kubectl: &stubKubectl{
+				getCMErr: assert.AnError,
+			},
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			cmd := &KubeCmd{
+				kubectl:   tc.kubectl,
+				log:       logger.NewTest(t),
+				outWriter: io.Discard,
+			}
+
+			err := cmd.UpdateAttestationConfig(context.Background(), tc.newAttestationCfg)
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+		})
+	}
+}
+
+type fakeUnstructuredClient struct {
 	mock.Mock
 }
 
-func (u *fakeDynamicClient) GetCurrent(ctx context.Context, str string) (*unstructured.Unstructured, error) {
+func (u *fakeUnstructuredClient) GetCR(ctx context.Context, _ schema.GroupVersionResource, str string) (*unstructured.Unstructured, error) {
 	args := u.Called(ctx, str)
 	return args.Get(0).(*unstructured.Unstructured), args.Error(1)
 }
 
-func (u *fakeDynamicClient) Update(ctx context.Context, updatedObject *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+func (u *fakeUnstructuredClient) UpdateCR(ctx context.Context, _ schema.GroupVersionResource, updatedObject *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 	args := u.Called(ctx, updatedObject)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -482,58 +536,70 @@ func (u *fakeDynamicClient) Update(ctx context.Context, updatedObject *unstructu
 	return updatedObject, args.Error(1)
 }
 
-type stubDynamicClient struct {
+type stubUnstructuredClient struct {
 	object           *unstructured.Unstructured
 	updatedObject    *unstructured.Unstructured
 	badUpdatedObject *unstructured.Unstructured
-	getErr           error
-	updateErr        error
+	getCRErr         error
+	updateCRErr      error
 }
 
-func (u *stubDynamicClient) GetCurrent(_ context.Context, _ string) (*unstructured.Unstructured, error) {
-	return u.object, u.getErr
+func (u *stubUnstructuredClient) GetCR(_ context.Context, _ schema.GroupVersionResource, _ string) (*unstructured.Unstructured, error) {
+	return u.object, u.getCRErr
 }
 
-func (u *stubDynamicClient) Update(_ context.Context, updatedObject *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+func (u *stubUnstructuredClient) UpdateCR(_ context.Context, _ schema.GroupVersionResource, updatedObject *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 	u.updatedObject = updatedObject
 	if u.badUpdatedObject != nil {
-		return u.badUpdatedObject, u.updateErr
+		return u.badUpdatedObject, u.updateCRErr
 	}
-	return u.updatedObject, u.updateErr
+	return u.updatedObject, u.updateCRErr
 }
 
-type fakeStableClient struct {
+type unstructuredInterface interface {
+	GetCR(ctx context.Context, gvr schema.GroupVersionResource, name string) (*unstructured.Unstructured, error)
+	UpdateCR(ctx context.Context, gvr schema.GroupVersionResource, obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
+}
+
+type stubKubectl struct {
+	unstructuredInterface
 	configMaps        map[string]*corev1.ConfigMap
 	updatedConfigMaps map[string]*corev1.ConfigMap
 	k8sVersion        string
-	getErr            error
-	updateErr         error
-	createErr         error
+	getCMErr          error
+	updateCMErr       error
+	createCMErr       error
 	k8sErr            error
+	nodes             []corev1.Node
+	nodesErr          error
 }
 
-func (s *fakeStableClient) GetConfigMap(_ context.Context, name string) (*corev1.ConfigMap, error) {
-	return s.configMaps[name], s.getErr
+func (s *stubKubectl) GetConfigMap(_ context.Context, _, name string) (*corev1.ConfigMap, error) {
+	return s.configMaps[name], s.getCMErr
 }
 
-func (s *fakeStableClient) UpdateConfigMap(_ context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
+func (s *stubKubectl) UpdateConfigMap(_ context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
 	if s.updatedConfigMaps == nil {
 		s.updatedConfigMaps = map[string]*corev1.ConfigMap{}
 	}
 	s.updatedConfigMaps[configMap.ObjectMeta.Name] = configMap
-	return s.updatedConfigMaps[configMap.ObjectMeta.Name], s.updateErr
+	return s.updatedConfigMaps[configMap.ObjectMeta.Name], s.updateCMErr
 }
 
-func (s *fakeStableClient) CreateConfigMap(_ context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
+func (s *stubKubectl) CreateConfigMap(_ context.Context, configMap *corev1.ConfigMap) error {
 	if s.configMaps == nil {
 		s.configMaps = map[string]*corev1.ConfigMap{}
 	}
 	s.configMaps[configMap.ObjectMeta.Name] = configMap
-	return s.configMaps[configMap.ObjectMeta.Name], s.createErr
+	return s.createCMErr
 }
 
-func (s *fakeStableClient) KubernetesVersion() (string, error) {
+func (s *stubKubectl) KubernetesVersion() (string, error) {
 	return s.k8sVersion, s.k8sErr
+}
+
+func (s *stubKubectl) GetNodes(_ context.Context) ([]corev1.Node, error) {
+	return s.nodes, s.nodesErr
 }
 
 type stubImageFetcher struct {

@@ -14,7 +14,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
-	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
+	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -32,13 +32,12 @@ import (
 
 func TestUpgradeApply(t *testing.T) {
 	testCases := map[string]struct {
-		helmUpgrader             *stubHelmUpgrader
-		kubeUpgrader             *stubKubernetesUpgrader
-		terraformUpgrader        *stubTerraformUpgrader
-		wantErr                  bool
-		yesFlag                  bool
-		dontWantJoinConfigBackup bool
-		stdin                    string
+		helmUpgrader      *stubHelmUpgrader
+		kubeUpgrader      *stubKubernetesUpgrader
+		terraformUpgrader *stubTerraformUpgrader
+		wantErr           bool
+		yesFlag           bool
+		stdin             string
 	}{
 		"success": {
 			kubeUpgrader:      &stubKubernetesUpgrader{currentConfig: config.DefaultForAzureSEVSNP()},
@@ -59,7 +58,7 @@ func TestUpgradeApply(t *testing.T) {
 		"nodeVersion in progress error": {
 			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig:  config.DefaultForAzureSEVSNP(),
-				nodeVersionErr: kubernetes.ErrInProgress,
+				nodeVersionErr: kubecmd.ErrInProgress,
 			},
 			helmUpgrader:      &stubHelmUpgrader{},
 			terraformUpgrader: &stubTerraformUpgrader{},
@@ -129,10 +128,9 @@ func TestUpgradeApply(t *testing.T) {
 			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig: fakeAzureAttestationConfigFromCluster(context.Background(), t, cloudprovider.Azure),
 			},
-			helmUpgrader:             &stubHelmUpgrader{},
-			terraformUpgrader:        &stubTerraformUpgrader{},
-			yesFlag:                  true,
-			dontWantJoinConfigBackup: true,
+			helmUpgrader:      &stubHelmUpgrader{},
+			terraformUpgrader: &stubTerraformUpgrader{},
+			yesFlag:           true,
 		},
 	}
 
@@ -175,7 +173,6 @@ func TestUpgradeApply(t *testing.T) {
 				return
 			}
 			assert.NoError(err)
-			assert.Equal(!tc.dontWantJoinConfigBackup, tc.kubeUpgrader.backupWasCalled)
 		})
 	}
 }
@@ -192,18 +189,8 @@ func (u stubHelmUpgrader) Upgrade(
 }
 
 type stubKubernetesUpgrader struct {
-	backupWasCalled bool
-	nodeVersionErr  error
-	currentConfig   config.AttestationCfg
-}
-
-func (u stubKubernetesUpgrader) GetMeasurementSalt(_ context.Context) ([]byte, error) {
-	return []byte{}, nil
-}
-
-func (u *stubKubernetesUpgrader) BackupConfigMap(_ context.Context, _ string) error {
-	u.backupWasCalled = true
-	return nil
+	nodeVersionErr error
+	currentConfig  config.AttestationCfg
 }
 
 func (u stubKubernetesUpgrader) UpgradeNodeVersion(_ context.Context, _ *config.Config, _ bool) error {
