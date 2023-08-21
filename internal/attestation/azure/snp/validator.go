@@ -315,19 +315,19 @@ type azureInstanceInfo struct {
 
 // attestation returns the formatted attestation report and its certificate chain.
 func (a *azureInstanceInfo) attestation() (*spb.Attestation, error) {
-	var report spb.Report
-	if err := binary.Read(bytes.NewReader(a.AttestationReport), binary.LittleEndian, &report); err != nil {
-		return nil, fmt.Errorf("reading attestation report: %w", err)
+	report, err := abi.ReportToProto(a.AttestationReport)
+	if err != nil {
+		return nil, fmt.Errorf("converting report to proto: %w", err)
 	}
 
-	var certChain spb.CertificateChain
-	if err := binary.Read(bytes.NewReader(a.CertChain), binary.LittleEndian, &certChain); err != nil {
-		return nil, fmt.Errorf("reading certificate chain: %w", err)
+	certTable := &abi.CertTable{}
+	if err := certTable.Unmarshal(a.CertChain); err != nil {
+		return nil, fmt.Errorf("unmarshalling cert table: %w", err)
 	}
 
 	return &spb.Attestation{
-		Report:           &report,
-		CertificateChain: &certChain,
+		Report:           report,
+		CertificateChain: certTable.Proto(),
 	}, nil
 }
 
