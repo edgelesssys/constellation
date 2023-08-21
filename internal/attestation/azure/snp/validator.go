@@ -101,6 +101,10 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 		return nil, fmt.Errorf("verifying SNP attestation: %w", err)
 	}
 
+	// If the enforcement policy is set to MAAFallback or WarnOnly, the check of the IDKey hashes should not be enforced.
+	requireIDBlock := !(v.config.FirmwareSignerConfig.EnforcementPolicy == idkeydigest.MAAFallback ||
+		v.config.FirmwareSignerConfig.EnforcementPolicy == idkeydigest.WarnOnly)
+
 	// Checks if the attestation report matches the given constraints.
 	// Some constraints are implicitly checked by validate.SnpAttestation:
 	// - the report is not expired
@@ -111,12 +115,21 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 		// This checks that the reported TCB version is equal or greater than the specified minimum.
 		MinimumTCB: kds.TCBParts{
 			BlSpl:    v.config.BootloaderVersion.Value, // Bootloader
-			TeeSpl:   v.config.TEEVersion.Value, // TEE (Secure OS)
-			SnpSpl:   v.config.SNPVersion.Value, // SNP
-			UcodeSpl: v.config.MicrocodeVersion.Value, // Microcode
+			TeeSpl:   v.config.TEEVersion.Value,        // TEE (Secure OS)
+			SnpSpl:   v.config.SNPVersion.Value,        // SNP
+			UcodeSpl: v.config.MicrocodeVersion.Value,  // Microcode
 		},
+		// Check if the IDKey hashes in the report are in the list of accepted hashes.
+		TrustedIDKeyHashes: v.config.FirmwareSignerConfig.AcceptedKeyDigests,
+		// The IDKey hashes should not be checked if the enforcement policy is set to MAAFallback or WarnOnly to prevent
+		// an error from being returned because of the TrustedIDKeyHashes validation. In this case, we should perform a
+		// custom check of the MAA-specific values later.
+		RequireIDBlock: requireIDBlock,
 	}); err != nil {
 		return nil, fmt.Errorf("validating SNP attestation: %w", err)
+	}
+	if requireIDBlock {
+		// TODO: Custom WarnOnly / MAAFallback check of the MAA-specific values.
 	}
 
 	if err := v.validateSNPReport(ctx, vcek, att.Report, instanceInfo.MAAToken, extraData); err != nil {
