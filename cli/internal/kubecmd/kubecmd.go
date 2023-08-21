@@ -4,6 +4,16 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+/*
+Package kubecmd provides functions to interact with a Kubernetes cluster to the CLI.
+The package should be used for:
+
+  - Fetching status information about the cluster
+  - Creating, deleting, or migrating resources not managed by Helm
+
+The package should not be used for anything that doesn't just require the Kubernetes API.
+For example, Terraform and Helm actions should not be accessed by this package.
+*/
 package kubecmd
 
 import (
