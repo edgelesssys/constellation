@@ -16,6 +16,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 )
 
+// planUpgrade prepares a workspace and plans the possible Terraform migrations.
+// In case of possible migrations, the diff is written to outWriter and this function returns true.
 func planUpgrade(
 	ctx context.Context, tfClient tfUpgradePlanner, fileHandler file.Handler,
 	outWriter io.Writer, logLevel terraform.LogLevel, vars terraform.Variables,
@@ -50,6 +52,7 @@ func planUpgrade(
 	return hasDiff, nil
 }
 
+// moveUpgradeToCurrent replaces the an existing Terraform workspace with a workspace holding migrated Terraform resources.
 func moveUpgradeToCurrent(fileHandler file.Handler, existingWorkspace, upgradeWorkingDir string) error {
 	if err := fileHandler.RemoveAll(existingWorkspace); err != nil {
 		return fmt.Errorf("removing old terraform directory: %w", err)

@@ -30,6 +30,8 @@ type ClusterUpgrader struct {
 }
 
 // NewClusterUpgrader initializes and returns a new ClusterUpgrader.
+// existingWorkspace is the directory holding the existing Terraform resources.
+// upgradeWorkspace is the directory to use for holding temporary files and resources required to apply the upgrade.
 func NewClusterUpgrader(ctx context.Context, existingWorkspace, upgradeWorkspace string,
 	logLevel terraform.LogLevel, fileHandler file.Handler,
 ) (*ClusterUpgrader, error) {
@@ -48,9 +50,8 @@ func NewClusterUpgrader(ctx context.Context, existingWorkspace, upgradeWorkspace
 	}, nil
 }
 
-// PlanClusterUpgrade prepares the upgrade workspace and plans the possible migrations for Constellation's cluster resources.
-// If a diff exists, it's being written to the upgrader's output writer. It also returns
-// a bool indicating whether a diff exists.
+// PlanClusterUpgrade prepares the upgrade workspace and plans the possible Terraform migrations for Constellation's cluster resources (Loadbalancers, VMs, networks etc.).
+// In case of possible migrations, the diff is written to outWriter and this function returns true.
 func (u *ClusterUpgrader) PlanClusterUpgrade(ctx context.Context, outWriter io.Writer, vars terraform.Variables, csp cloudprovider.Provider,
 ) (bool, error) {
 	return planUpgrade(
@@ -61,10 +62,8 @@ func (u *ClusterUpgrader) PlanClusterUpgrade(ctx context.Context, outWriter io.W
 	)
 }
 
-// ApplyClusterUpgrade applies the migrations planned by PlanClusterUpgrade.
-// If PlanTerraformMigrations has not been executed before, it will return an error.
-// In case of a successful upgrade, the output will be written to the specified file and the old Terraform directory is replaced
-// By the new one.
+// ApplyClusterUpgrade applies the Terraform migrations planned by PlanClusterUpgrade.
+// On success, the workspace of the Upgrader replaces the existing Terraform workspace.
 func (u *ClusterUpgrader) ApplyClusterUpgrade(ctx context.Context, csp cloudprovider.Provider) (terraform.ApplyOutput, error) {
 	tfOutput, err := u.tf.ApplyCluster(ctx, csp, u.logLevel)
 	if err != nil {

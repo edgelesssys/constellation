@@ -29,8 +29,8 @@ type IAMUpgrader struct {
 }
 
 // NewIAMUpgrader creates and initializes a new IAMUpgrader.
-// The existingWorkspace is the directory holding the existing Terraform resources.
-// The upgradeWorkspace is the directory used for the upgrade.
+// existingWorkspace is the directory holding the existing Terraform resources.
+// upgradeWorkspace is the directory to use for holding temporary files and resources required to apply the upgrade.
 func NewIAMUpgrader(ctx context.Context, existingWorkspace, upgradeWorkspace string,
 	logLevel terraform.LogLevel, fileHandler file.Handler,
 ) (*IAMUpgrader, error) {
@@ -48,7 +48,8 @@ func NewIAMUpgrader(ctx context.Context, existingWorkspace, upgradeWorkspace str
 	}, nil
 }
 
-// PlanIAMUpgrade prepares the upgrade workspace and plans the Terraform migrations for the Constellation upgrade, writing the plan to the outWriter.
+// PlanIAMUpgrade prepares the upgrade workspace and plans the possible Terraform migrations for Constellation's IAM resources (service accounts, permissions etc.).
+// In case of possible migrations, the diff is written to outWriter and this function returns true.
 func (u *IAMUpgrader) PlanIAMUpgrade(ctx context.Context, outWriter io.Writer, vars terraform.Variables, csp cloudprovider.Provider) (bool, error) {
 	return planUpgrade(
 		ctx, u.tf, u.fileHandler, outWriter, u.logLevel, vars,
@@ -58,7 +59,8 @@ func (u *IAMUpgrader) PlanIAMUpgrade(ctx context.Context, outWriter io.Writer, v
 	)
 }
 
-// ApplyIAMUpgrade applies the Terraform IAM migrations for the IAM upgrade.
+// ApplyIAMUpgrade applies the Terraform IAM migrations planned by PlanIAMUpgrade.
+// On success, the workspace of the Upgrader replaces the existing Terraform workspace.
 func (u *IAMUpgrader) ApplyIAMUpgrade(ctx context.Context, csp cloudprovider.Provider) error {
 	if _, err := u.tf.ApplyIAM(ctx, csp, u.logLevel); err != nil {
 		return fmt.Errorf("terraform apply: %w", err)
