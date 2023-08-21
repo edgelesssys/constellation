@@ -96,14 +96,19 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 		return nil, fmt.Errorf("validating VCEK: %w", err)
 	}
 
+	// Checks the signature and certificate chain of the attestation report.
 	if err := verify.SnpAttestation(att, &verify.Options{}); err != nil {
 		return nil, fmt.Errorf("verifying SNP attestation: %w", err)
 	}
 
+	// Checks if the attestation report matches the given constraints.
+	// Some constraints are implicitly checked by validate.SnpAttestation:
+	// - the report is not expired
 	if err := validate.SnpAttestation(att, &validate.Options{
 		GuestPolicy: abi.SnpPolicy{
 			Debug: false, // Debug means the VM can be decrypted by the host for debugging purposes and thus is not allowed.
 		},
+		// This checks that the reported TCB version is equal or greater than the specified minimum.
 		MinimumTCB: kds.TCBParts{
 			BlSpl:    v.config.BootloaderVersion.Value, // Bootloader
 			TeeSpl:   v.config.TEEVersion.Value, // TEE (Secure OS)
