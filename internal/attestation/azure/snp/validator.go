@@ -26,6 +26,11 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	internalCrypto "github.com/edgelesssys/constellation/v2/internal/crypto"
+	"github.com/google/go-sev-guest/abi"
+	"github.com/google/go-sev-guest/kds"
+	spb "github.com/google/go-sev-guest/proto/sevsnp"
+	"github.com/google/go-sev-guest/validate"
+	"github.com/google/go-sev-guest/verify"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm/legacy/tpm2"
 )
@@ -67,15 +72,6 @@ func validateCVM(vtpm.AttestationDocument, *attest.MachineState) error {
 	return nil
 }
 
-func newSNPReportFromBytes(reportRaw []byte) (snpAttestationReport, error) {
-	var report snpAttestationReport
-	if err := binary.Read(bytes.NewReader(reportRaw), binary.LittleEndian, &report); err != nil {
-		return snpAttestationReport{}, fmt.Errorf("reading attestation report: %w", err)
-	}
-
-	return report, nil
-}
-
 func reverseEndian(b []byte) {
 	for i := 0; i < len(b)/2; i++ {
 		b[i], b[len(b)-i-1] = b[len(b)-i-1], b[i]
@@ -90,7 +86,7 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 		return nil, fmt.Errorf("unmarshalling instanceInfoRaw: %w", err)
 	}
 
-	report, err := newSNPReportFromBytes(instanceInfo.AttestationReport)
+	att, err := instanceInfo.attestation()
 	if err != nil {
 		return nil, fmt.Errorf("parsing attestation report: %w", err)
 	}
@@ -100,7 +96,25 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 		return nil, fmt.Errorf("validating VCEK: %w", err)
 	}
 
-	if err := v.validateSNPReport(ctx, vcek, report, instanceInfo.MAAToken, extraData); err != nil {
+	if err := verify.SnpAttestation(att, &verify.Options{}); err != nil {
+		return nil, fmt.Errorf("verifying SNP attestation: %w", err)
+	}
+
+	if err := validate.SnpAttestation(att, &validate.Options{
+		GuestPolicy: abi.SnpPolicy{
+			Debug: false, // Debug means the VM can be decrypted by the host for debugging purposes and thus is not allowed.
+		},
+		MinimumTCB: kds.TCBParts{
+			BlSpl:    v.config.BootloaderVersion.Value, // Bootloader
+			TeeSpl:   v.config.TEEVersion.Value, // TEE (Secure OS)
+			SnpSpl:   v.config.SNPVersion.Value, // SNP
+			UcodeSpl: v.config.MicrocodeVersion.Value, // Microcode
+		},
+	}); err != nil {
+		return nil, fmt.Errorf("validating SNP attestation: %w", err)
+	}
+
+	if err := v.validateSNPReport(ctx, vcek, att.Report, instanceInfo.MAAToken, extraData); err != nil {
 		return nil, fmt.Errorf("validating SNP report: %w", err)
 	}
 
@@ -142,7 +156,7 @@ func (v *Validator) validateVCEK(vcekRaw []byte, certChain []byte) (*x509.Certif
 }
 
 func (v *Validator) validateSNPReport(
-	ctx context.Context, cert *x509.Certificate, report snpAttestationReport, maaToken string, extraData []byte,
+	ctx context.Context, cert *x509.Certificate, report *spb.Report, maaToken string, extraData []byte,
 ) error {
 	if report.Policy.Debug() {
 		return errDebugEnabled
@@ -279,6 +293,24 @@ type azureInstanceInfo struct {
 	AttestationReport []byte
 	RuntimeData       []byte
 	MAAToken          string
+}
+
+// attestation returns the formatted attestation report and its certificate chain.
+func (a *azureInstanceInfo) attestation() (*spb.Attestation, error) {
+	var report spb.Report
+	if err := binary.Read(bytes.NewReader(a.AttestationReport), binary.LittleEndian, &report); err != nil {
+		return nil, fmt.Errorf("reading attestation report: %w", err)
+	}
+
+	var certChain spb.CertificateChain
+	if err := binary.Read(bytes.NewReader(a.CertChain), binary.LittleEndian, &certChain); err != nil {
+		return nil, fmt.Errorf("reading certificate chain: %w", err)
+	}
+
+	return &spb.Attestation{
+		Report:           &report,
+		CertificateChain: &certChain,
+	}, nil
 }
 
 // validateAk validates that the attestation key from the TPM is trustworthy. The steps are:
