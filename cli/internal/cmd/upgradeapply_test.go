@@ -195,11 +195,3 @@ func (u stubTerraformUpgrader) PlanClusterUpgrade(_ context.Context, _ io.Writer
 func (u stubTerraformUpgrader) ApplyClusterUpgrade(_ context.Context, _ cloudprovider.Provider) (terraform.ApplyOutput, error) {
 	return terraform.ApplyOutput{}, u.applyTerraformErr
 }
-
-func fakeAzureAttestationConfigFromCluster(ctx context.Context, t *testing.T, provider cloudprovider.Provider) config.AttestationCfg {
-	cpCfg := defaultConfigWithExpectedMeasurements(t, config.Default(), provider)
-	// the cluster attestation config needs to have real version numbers that are translated from "latest" as defined in config.Default()
-	err := cpCfg.Attestation.AzureSEVSNP.FetchAndSetLatestVersionNumbers(ctx, stubAttestationFetcher{}, time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC))
-	require.NoError(t, err)
-	return cpCfg.GetAttestationConfig()
-}
