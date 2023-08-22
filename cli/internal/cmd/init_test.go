@@ -687,6 +687,6 @@ type stubAttestationApplier struct {
 	applyErr error
 }
 
-func (a *stubAttestationApplier) ApplyAttestationConfig(_ context.Context, _ config.AttestationCfg, _ []byte) error {
+func (a *stubAttestationApplier) ApplyJoinConfig(_ context.Context, _ config.AttestationCfg, _ []byte) error {
 	return a.applyErr
 }

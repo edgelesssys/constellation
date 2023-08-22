@@ -261,7 +261,7 @@ func (i *initCmd) initialize(
 	if err != nil {
 		return err
 	}
-	if err := attestationApplier.ApplyAttestationConfig(cmd.Context(), conf.GetAttestationConfig(), measurementSalt); err != nil {
+	if err := attestationApplier.ApplyJoinConfig(cmd.Context(), conf.GetAttestationConfig(), measurementSalt); err != nil {
 		return fmt.Errorf("applying attestation config: %w", err)
 	}
 
@@ -627,5 +627,5 @@ type initializer interface {
 }
 
 type attestationConfigApplier interface {
-	ApplyAttestationConfig(ctx context.Context, newAttestConfig config.AttestationCfg, measurementSalt []byte) error
+	ApplyJoinConfig(ctx context.Context, newAttestConfig config.AttestationCfg, measurementSalt []byte) error
 }

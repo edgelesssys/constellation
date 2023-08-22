@@ -383,7 +383,7 @@ func (u *upgradeApplyCmd) confirmAndUpgradeAttestationConfig(
 		}
 	}
 
-	if err := u.kubeUpgrader.ApplyAttestationConfig(cmd.Context(), newConfig, measurementSalt); err != nil {
+	if err := u.kubeUpgrader.ApplyJoinConfig(cmd.Context(), newConfig, measurementSalt); err != nil {
 		return fmt.Errorf("updating attestation config: %w", err)
 	}
 	cmd.Println("Successfully update the cluster's attestation config")
@@ -534,7 +534,7 @@ type kubernetesUpgrader interface {
 	UpgradeNodeVersion(ctx context.Context, conf *config.Config, force bool) error
 	ExtendClusterConfigCertSANs(ctx context.Context, alternativeNames []string) error
 	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, error)
-	ApplyAttestationConfig(ctx context.Context, newAttestConfig config.AttestationCfg, measurementSalt []byte) error
+	ApplyJoinConfig(ctx context.Context, newAttestConfig config.AttestationCfg, measurementSalt []byte) error
 	// TODO(v2.11): Remove this function after v2.11 is released.
 	RemoveAttestationConfigHelmManagement(ctx context.Context) error
 	// TODO(v2.12): Remove this function after v2.12 is released.

@@ -197,7 +197,7 @@ func (u stubKubernetesUpgrader) UpgradeNodeVersion(_ context.Context, _ *config.
 	return u.nodeVersionErr
 }
 
-func (u stubKubernetesUpgrader) ApplyAttestationConfig(_ context.Context, _ config.AttestationCfg, _ []byte) error {
+func (u stubKubernetesUpgrader) ApplyJoinConfig(_ context.Context, _ config.AttestationCfg, _ []byte) error {
 	return nil
 }
 

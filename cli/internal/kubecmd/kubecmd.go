@@ -194,8 +194,10 @@ func (k *KubeCmd) GetClusterAttestationConfig(ctx context.Context, variant varia
 	return existingAttestationConfig, nil
 }
 
-// ApplyAttestationConfig creates or updates the Constellation cluster's attestation config.
-func (k *KubeCmd) ApplyAttestationConfig(ctx context.Context, newAttestConfig config.AttestationCfg, measurementSalt []byte) error {
+// ApplyJoinConfig creates or updates the Constellation cluster's join-config ConfigMap.
+// This ConfigMap holds the attestation config and measurement salt of the cluster.
+// A backup of the previous attestation config is created with the suffix `_backup` in the config map data.
+func (k *KubeCmd) ApplyJoinConfig(ctx context.Context, newAttestConfig config.AttestationCfg, measurementSalt []byte) error {
 	newConfigJSON, err := json.Marshal(newAttestConfig)
 	if err != nil {
 		return fmt.Errorf("marshaling attestation config: %w", err)

@@ -550,7 +550,7 @@ func TestApplyAttestationConfig(t *testing.T) {
 				outWriter: io.Discard,
 			}
 
-			err := cmd.ApplyAttestationConfig(context.Background(), tc.newAttestationCfg, []byte{0x11})
+			err := cmd.ApplyJoinConfig(context.Background(), tc.newAttestationCfg, []byte{0x11})
 			if tc.wantErr {
 				assert.Error(err)
 				return
