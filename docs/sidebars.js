@@ -62,7 +62,7 @@ const sidebars = {
             },
             {
               type: 'doc',
-              label: 'Applicaiton benchmarks',
+              label: 'Application benchmarks',
               id: 'overview/performance/application',
             },
           ]
