@@ -214,6 +214,11 @@ func (u stubKubernetesUpgrader) RemoveAttestationConfigHelmManagement(_ context.
 	return nil
 }
 
+// TODO(v2.12): Remove this function.
+func (u stubKubernetesUpgrader) RemoveHelmKeepAnnotation(_ context.Context) error {
+	return nil
+}
+
 type stubTerraformUpgrader struct {
 	terraformDiff     bool
 	planTerraformErr  error

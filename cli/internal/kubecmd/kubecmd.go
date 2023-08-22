@@ -431,7 +431,7 @@ func joinConfigMap(attestationCfgJSON, measurementSalt []byte) *corev1.ConfigMap
 
 // RemoveAttestationConfigHelmManagement removes labels and annotations from the join-config ConfigMap that are added by Helm.
 // This is to ensure we can cleanly transition from Helm to Constellation's management of the ConfigMap.
-// TODO(v2.11): Remove this function.
+// TODO(v2.11): Remove this function after v2.11 is released.
 func (k *KubeCmd) RemoveAttestationConfigHelmManagement(ctx context.Context) error {
 	const (
 		appManagedByLabel              = "app.kubernetes.io/managed-by"
@@ -470,6 +470,26 @@ func (k *KubeCmd) RemoveAttestationConfigHelmManagement(ctx context.Context) err
 			return fmt.Errorf("removing Helm management labels from join-config: %w", err)
 		}
 		k.log.Debugf("Successfully removed Helm management labels from join-config ConfigMap")
+	}
+
+	return nil
+}
+
+// RemoveHelmKeepAnnotation removes the Helm Resource Policy annotation from the join-config ConfigMap.
+// TODO(v2.12): Remove this function after v2.12 is released.
+func (k *KubeCmd) RemoveHelmKeepAnnotation(ctx context.Context) error {
+	k.log.Debugf("Checking if Helm Resource Policy can be removed from join-config ConfigMap")
+	joinConfig, err := k.kubectl.GetConfigMap(ctx, constants.ConstellationNamespace, constants.JoinConfigMap)
+	if err != nil {
+		return fmt.Errorf("getting join config: %w", err)
+	}
+
+	if policy, ok := joinConfig.Annotations[kube.ResourcePolicyAnno]; ok && policy == kube.KeepPolicy {
+		delete(joinConfig.Annotations, kube.ResourcePolicyAnno)
+		if _, err := k.kubectl.UpdateConfigMap(ctx, joinConfig); err != nil {
+			return fmt.Errorf("removing Helm Resource Policy from join-config: %w", err)
+		}
+		k.log.Debugf("Successfully removed Helm Resource Policy from join-config ConfigMap")
 	}
 
 	return nil
