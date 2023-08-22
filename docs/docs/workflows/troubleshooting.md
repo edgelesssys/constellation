@@ -57,7 +57,11 @@ When in doubt, check if the encountered [issue is known](https://github.com/edge
 
 :::tip
 
-During an upgrade with modified attestation config, a backup of the current configuration is stored in the `join-config` config map in the `kube-system` namespace under the `attestationConfig_backup` key. To restore the old attestation config after a failed upgrade, replace the value of `attestationConfig` with the value from `attestationConfig_backup`. Alternatively you can copy the attestation config from `attestationConfig_backup`, put it in your configuration file and rerun `constellation upgrade apply`.
+During an upgrade with modified attestation config, a backup of the current configuration is stored in the `join-config` config map in the `kube-system` namespace under the `attestationConfig_backup` key. To restore the old attestation config after a failed upgrade, replace the value of `attestationConfig` with the value from `attestationConfig_backup`:
+
+```bash
+kubectl patch configmaps -n kube-system join-config -p "{\"data\":{\"attestationConfig\":\"$(kubectl get configmaps -n kube-system join-config -o "jsonpath={.data.attestationConfig_backup}")\"}}"
+```
 
 :::
 
