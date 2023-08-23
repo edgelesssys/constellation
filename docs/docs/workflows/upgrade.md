@@ -58,6 +58,10 @@ Image and Kubernetes upgrades take longer.
 For each node in your cluster, a new node has to be created and joined.
 The process usually takes up to ten minutes per node.
 
+When applying an upgrade, backup files of the Terraform state and certain Custom Resources are created.
+The Terraform state backup can be used as a reference to the possible Terraform resource migration of an upgrade.
+The Custom Resource backup files can be used to restore those Custom Resources manually (e.g. via `kubectl apply`) if the automatic migration of those resources fails.
+
 ## Check the status
 
 Upgrades are asynchronous operations.
