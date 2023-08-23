@@ -42,6 +42,22 @@ type tfIAMClient interface {
 	ShowIAM(ctx context.Context, provider cloudprovider.Provider) (terraform.IAMOutput, error)
 }
 
+type tfUpgradePlanner interface {
+	ShowPlan(ctx context.Context, logLevel terraform.LogLevel, output io.Writer) error
+	Plan(ctx context.Context, logLevel terraform.LogLevel) (bool, error)
+	PrepareUpgradeWorkspace(embeddedPath, oldWorkingDir, backupDir string, vars terraform.Variables) error
+}
+
+type tfIAMUpgradeClient interface {
+	tfUpgradePlanner
+	ApplyIAM(ctx context.Context, csp cloudprovider.Provider, logLevel terraform.LogLevel) (terraform.IAMOutput, error)
+}
+
+type tfClusterUpgradeClient interface {
+	tfUpgradePlanner
+	ApplyCluster(ctx context.Context, provider cloudprovider.Provider, logLevel terraform.LogLevel) (terraform.ApplyOutput, error)
+}
+
 type libvirtRunner interface {
 	Start(ctx context.Context, containerName, imageName string) error
 	Stop(ctx context.Context) error

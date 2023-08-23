@@ -21,7 +21,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
-	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
@@ -74,9 +73,16 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	upgradeID := generateUpgradeID(upgradeCmdKindCheck)
 
-	tfClient, err := terraform.New(cmd.Context(), filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeWorkingDir))
+	upgradeDir := filepath.Join(constants.UpgradeDir, upgradeID)
+	tfClient, err := cloudcmd.NewClusterUpgrader(
+		cmd.Context(),
+		constants.TerraformWorkingDir,
+		upgradeDir,
+		flags.terraformLogLevel,
+		fileHandler,
+	)
 	if err != nil {
-		return fmt.Errorf("setting up terraform client: %w", err)
+		return fmt.Errorf("setting up Terraform upgrader: %w", err)
 	}
 
 	kubeChecker, err := kubecmd.New(cmd.OutOrStdout(), constants.AdminConfFilename, log)
@@ -103,11 +109,12 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 			log:            log,
 			versionsapi:    versionfetcher,
 		},
-		terraformChecker: upgrade.NewTerraformUpgrader(tfClient, cmd.OutOrStdout(), fileHandler, upgradeID),
+		terraformChecker: tfClient,
+		fileHandler:      fileHandler,
 		log:              log,
 	}
 
-	return up.upgradeCheck(cmd, fileHandler, attestationconfigapi.NewFetcher(), flags)
+	return up.upgradeCheck(cmd, attestationconfigapi.NewFetcher(), upgradeDir, flags)
 }
 
 func parseUpgradeCheckFlags(cmd *cobra.Command) (upgradeCheckFlags, error) {
@@ -150,12 +157,13 @@ type upgradeCheckCmd struct {
 	canUpgradeCheck  bool
 	collect          collector
 	terraformChecker terraformChecker
+	fileHandler      file.Handler
 	log              debugLog
 }
 
 // upgradePlan plans an upgrade of a Constellation cluster.
-func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Handler, fetcher attestationconfigapi.Fetcher, flags upgradeCheckFlags) error {
-	conf, err := config.New(fileHandler, constants.ConfigFilename, fetcher, flags.force)
+func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fetcher attestationconfigapi.Fetcher, upgradeDir string, flags upgradeCheckFlags) error {
+	conf, err := config.New(u.fileHandler, constants.ConfigFilename, fetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -216,34 +224,21 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	// 	  u.upgrader.AddManualStateMigration(migration)
 	// }
 
-	if err := u.terraformChecker.CheckTerraformMigrations(constants.UpgradeDir); err != nil {
-		return fmt.Errorf("checking workspace: %w", err)
-	}
-
 	vars, err := cloudcmd.TerraformUpgradeVars(conf)
 	if err != nil {
 		return fmt.Errorf("parsing upgrade variables: %w", err)
 	}
 	u.log.Debugf("Using Terraform variables:\n%v", vars)
 
-	opts := upgrade.TerraformUpgradeOptions{
-		LogLevel:         flags.terraformLogLevel,
-		CSP:              conf.GetProvider(),
-		Vars:             vars,
-		TFWorkspace:      constants.TerraformWorkingDir,
-		UpgradeWorkspace: constants.UpgradeDir,
-	}
-
 	cmd.Println("The following Terraform migrations are available with this CLI:")
-
-	// Check if there are any Terraform migrations
-	hasDiff, err := u.terraformChecker.PlanTerraformMigrations(cmd.Context(), opts)
+	hasDiff, err := u.terraformChecker.PlanClusterUpgrade(cmd.Context(), cmd.OutOrStdout(), vars, conf.GetProvider())
 	if err != nil {
 		return fmt.Errorf("planning terraform migrations: %w", err)
 	}
 	defer func() {
-		if err := u.terraformChecker.CleanUpTerraformMigrations(constants.UpgradeDir); err != nil {
-			u.log.Debugf("Failed to clean up Terraform migrations: %v", err)
+		// Remove the upgrade directory
+		if err := u.fileHandler.RemoveAll(upgradeDir); err != nil {
+			u.log.Debugf("Failed to clean up Terraform migrations: %s", err)
 		}
 	}()
 
@@ -271,7 +266,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	cmd.Print(updateMsg)
 
 	if flags.updateConfig {
-		if err := upgrade.writeConfig(conf, fileHandler, constants.ConfigFilename); err != nil {
+		if err := upgrade.writeConfig(conf, u.fileHandler, constants.ConfigFilename); err != nil {
 			return fmt.Errorf("writing config: %w", err)
 		}
 		cmd.Println("Config updated successfully.")
@@ -376,7 +371,7 @@ type currentVersionInfo struct {
 }
 
 func (v *versionCollector) currentVersions(ctx context.Context) (currentVersionInfo, error) {
-	helmClient, err := helm.NewUpgradeClient(kubectl.NewUninitialized(), constants.UpgradeDir, constants.AdminConfFilename, constants.HelmNamespace, v.log)
+	helmClient, err := helm.NewUpgradeClient(kubectl.NewUninitialized(), constants.AdminConfFilename, constants.HelmNamespace, v.log)
 	if err != nil {
 		return currentVersionInfo{}, fmt.Errorf("setting up helm client: %w", err)
 	}
@@ -727,9 +722,7 @@ type kubernetesChecker interface {
 }
 
 type terraformChecker interface {
-	PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error)
-	CheckTerraformMigrations(upgradeWorkspace string) error
-	CleanUpTerraformMigrations(upgradeWorkspace string) error
+	PlanClusterUpgrade(ctx context.Context, outWriter io.Writer, vars terraform.Variables, csp cloudprovider.Provider) (bool, error)
 }
 
 type versionListFetcher interface {

@@ -47,18 +47,6 @@ const (
 	terraformUpgradePlanFile = "plan.zip"
 )
 
-// PrepareIAMUpgradeWorkspace prepares a Terraform workspace for a Constellation IAM upgrade.
-func PrepareIAMUpgradeWorkspace(file file.Handler, path, oldWorkingDir, newWorkingDir, backupDir string) error {
-	if err := prepareUpgradeWorkspace(path, file, oldWorkingDir, newWorkingDir, backupDir); err != nil {
-		return fmt.Errorf("prepare upgrade workspace: %w", err)
-	}
-	// copy the vars file from the old working dir to the new working dir
-	if err := file.CopyFile(filepath.Join(oldWorkingDir, terraformVarsFile), filepath.Join(newWorkingDir, terraformVarsFile)); err != nil {
-		return fmt.Errorf("copying vars file: %w", err)
-	}
-	return nil
-}
-
 // ErrTerraformWorkspaceExistsWithDifferentVariables is returned when existing Terraform files differ from the version the CLI wants to extract.
 var ErrTerraformWorkspaceExistsWithDifferentVariables = errors.New("creating cluster: a Terraform workspace already exists with different variables")
 
@@ -347,10 +335,12 @@ func (c *Client) PrepareWorkspace(path string, vars Variables) error {
 	return c.writeVars(vars)
 }
 
-// PrepareUpgradeWorkspace prepares a Terraform workspace for a Constellation version upgrade.
-// It copies the Terraform state from the old working dir and the embedded Terraform files into the new working dir.
-func (c *Client) PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir, backupDir string, vars Variables) error {
-	if err := prepareUpgradeWorkspace(path, c.file, oldWorkingDir, newWorkingDir, backupDir); err != nil {
+// PrepareUpgradeWorkspace prepares a Terraform workspace for an upgrade.
+// It copies the Terraform state from the old working dir and the embedded Terraform files
+// into the working dir of the Terraform client.
+// Additionally, a backup of the old working dir is created in the backup dir.
+func (c *Client) PrepareUpgradeWorkspace(path, oldWorkingDir, backupDir string, vars Variables) error {
+	if err := prepareUpgradeWorkspace(path, c.file, oldWorkingDir, c.workingDir, backupDir); err != nil {
 		return fmt.Errorf("prepare upgrade workspace: %w", err)
 	}
 

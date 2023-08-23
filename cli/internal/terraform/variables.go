@@ -8,9 +8,10 @@ package terraform
 
 import (
 	"fmt"
-	"strings"
 
+	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 )
 
@@ -28,6 +29,19 @@ type ClusterVariables interface {
 	// These functions can only be moved into this package once we have introduced an interface for config.Config,
 	// since we do not want to introduce a dependency on config.Config in this package.
 	GetCreateMAA() bool
+}
+
+// VariablesFromBytes parses the given bytes into the given variables struct.
+func VariablesFromBytes[T any](b []byte, vars *T) error {
+	file, err := hclsyntax.ParseConfig(b, "", hcl.Pos{Line: 1, Column: 1})
+	if err != nil {
+		return fmt.Errorf("parsing variables: %w", err)
+	}
+
+	if err := gohcl.DecodeBody(file.Body, nil, vars); err != nil {
+		return fmt.Errorf("decoding variables: %w", err)
+	}
+	return nil
 }
 
 // AWSClusterVariables is user configuration for creating a cluster with Terraform on AWS.
@@ -87,18 +101,16 @@ type AWSNodeGroup struct {
 // AWSIAMVariables is user configuration for creating the IAM configuration with Terraform on Microsoft Azure.
 type AWSIAMVariables struct {
 	// Region is the AWS location to use. (e.g. us-east-2)
-	Region string
+	Region string `hcl:"region" cty:"region"`
 	// Prefix is the name prefix of the resources to use.
-	Prefix string
+	Prefix string `hcl:"name_prefix" cty:"name_prefix"`
 }
 
 // String returns a string representation of the IAM-specific variables, formatted as Terraform variables.
 func (v *AWSIAMVariables) String() string {
-	b := &strings.Builder{}
-	writeLinef(b, "name_prefix = %q", v.Prefix)
-	writeLinef(b, "region = %q", v.Region)
-
-	return b.String()
+	f := hclwrite.NewEmptyFile()
+	gohcl.EncodeIntoBody(v, f.Body())
+	return string(f.Bytes())
 }
 
 // GCPClusterVariables is user configuration for creating resources with Terraform on GCP.
@@ -151,24 +163,20 @@ type GCPNodeGroup struct {
 // GCPIAMVariables is user configuration for creating the IAM confioguration with Terraform on GCP.
 type GCPIAMVariables struct {
 	// Project is the ID of the GCP project to use.
-	Project string
+	Project string `hcl:"project_id" cty:"project_id"`
 	// Region is the GCP region to use.
-	Region string
+	Region string `hcl:"region" cty:"region"`
 	// Zone is the GCP zone to use.
-	Zone string
+	Zone string `hcl:"zone" cty:"zone"`
 	// ServiceAccountID is the ID of the service account to use.
-	ServiceAccountID string
+	ServiceAccountID string `hcl:"service_account_id" cty:"service_account_id"`
 }
 
 // String returns a string representation of the IAM-specific variables, formatted as Terraform variables.
 func (v *GCPIAMVariables) String() string {
-	b := &strings.Builder{}
-	writeLinef(b, "project_id = %q", v.Project)
-	writeLinef(b, "region = %q", v.Region)
-	writeLinef(b, "zone = %q", v.Zone)
-	writeLinef(b, "service_account_id = %q", v.ServiceAccountID)
-
-	return b.String()
+	f := hclwrite.NewEmptyFile()
+	gohcl.EncodeIntoBody(v, f.Body())
+	return string(f.Bytes())
 }
 
 // AzureClusterVariables is user configuration for creating a cluster with Terraform on Azure.
@@ -229,21 +237,18 @@ type AzureNodeGroup struct {
 // AzureIAMVariables is user configuration for creating the IAM configuration with Terraform on Microsoft Azure.
 type AzureIAMVariables struct {
 	// Region is the Azure region to use. (e.g. westus)
-	Region string
+	Region string `hcl:"region" cty:"region"`
 	// ServicePrincipal is the name of the service principal to use.
-	ServicePrincipal string
+	ServicePrincipal string `hcl:"service_principal_name" cty:"service_principal_name"`
 	// ResourceGroup is the name of the resource group to use.
-	ResourceGroup string
+	ResourceGroup string `hcl:"resource_group_name" cty:"resource_group_name"`
 }
 
 // String returns a string representation of the IAM-specific variables, formatted as Terraform variables.
 func (v *AzureIAMVariables) String() string {
-	b := &strings.Builder{}
-	writeLinef(b, "service_principal_name = %q", v.ServicePrincipal)
-	writeLinef(b, "region = %q", v.Region)
-	writeLinef(b, "resource_group_name = %q", v.ResourceGroup)
-
-	return b.String()
+	f := hclwrite.NewEmptyFile()
+	gohcl.EncodeIntoBody(v, f.Body())
+	return string(f.Bytes())
 }
 
 // OpenStackClusterVariables is user configuration for creating a cluster with Terraform on OpenStack.
@@ -378,11 +383,6 @@ type QEMUNodeGroup struct {
 	CPUCount int `hcl:"vcpus" cty:"vcpus"`
 	// MemorySize is the amount of memory to allocate to each node, in MiB.
 	MemorySize int `hcl:"memory" cty:"memory"`
-}
-
-func writeLinef(builder *strings.Builder, format string, a ...any) {
-	builder.WriteString(fmt.Sprintf(format, a...))
-	builder.WriteByte('\n')
 }
 
 func toPtr[T any](v T) *T {

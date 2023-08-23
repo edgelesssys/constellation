@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"path/filepath"
 	"time"
 
@@ -19,7 +20,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
-	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -61,6 +61,11 @@ func newUpgradeApplyCmd() *cobra.Command {
 }
 
 func runUpgradeApply(cmd *cobra.Command, _ []string) error {
+	flags, err := parseUpgradeApplyFlags(cmd)
+	if err != nil {
+		return fmt.Errorf("parsing flags: %w", err)
+	}
+
 	log, err := newCLILogger(cmd)
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
@@ -75,53 +80,55 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	helmUpgrader, err := helm.NewUpgradeClient(kubectl.NewUninitialized(), constants.UpgradeDir, constants.AdminConfFilename, constants.HelmNamespace, log)
+	helmUpgrader, err := helm.NewUpgradeClient(kubectl.NewUninitialized(), constants.AdminConfFilename, constants.HelmNamespace, log)
 	if err != nil {
 		return fmt.Errorf("setting up helm client: %w", err)
 	}
 
 	configFetcher := attestationconfigapi.NewFetcher()
 
-	// Set up two Terraform clients. They need to be configured with different workspaces
-	// One for upgrading existing resources
-	tfUpgrader, err := terraform.New(cmd.Context(), filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeWorkingDir))
+	// Set up terraform upgrader
+	upgradeDir := filepath.Join(constants.UpgradeDir, upgradeID)
+	clusterUpgrader, err := cloudcmd.NewClusterUpgrader(
+		cmd.Context(),
+		constants.TerraformWorkingDir,
+		upgradeDir,
+		flags.terraformLogLevel,
+		fileHandler,
+	)
 	if err != nil {
-		return fmt.Errorf("setting up terraform client: %w", err)
+		return fmt.Errorf("setting up cluster upgrader: %w", err)
 	}
-	// And one for showing existing resources
+
+	// Set up terraform client to show existing cluster resources and information required for Helm upgrades
 	tfShower, err := terraform.New(cmd.Context(), constants.TerraformWorkingDir)
 	if err != nil {
 		return fmt.Errorf("setting up terraform client: %w", err)
 	}
 
 	applyCmd := upgradeApplyCmd{
-		helmUpgrader:      helmUpgrader,
-		kubeUpgrader:      kubeUpgrader,
-		terraformUpgrader: upgrade.NewTerraformUpgrader(tfUpgrader, cmd.OutOrStdout(), fileHandler, upgradeID),
-		configFetcher:     configFetcher,
-		clusterShower:     tfShower,
-		fileHandler:       fileHandler,
-		log:               log,
+		helmUpgrader:    helmUpgrader,
+		kubeUpgrader:    kubeUpgrader,
+		clusterUpgrader: clusterUpgrader,
+		configFetcher:   configFetcher,
+		clusterShower:   tfShower,
+		fileHandler:     fileHandler,
+		log:             log,
 	}
-	return applyCmd.upgradeApply(cmd)
+	return applyCmd.upgradeApply(cmd, upgradeDir, flags)
 }
 
 type upgradeApplyCmd struct {
-	helmUpgrader      helmUpgrader
-	kubeUpgrader      kubernetesUpgrader
-	terraformUpgrader terraformUpgrader
-	configFetcher     attestationconfigapi.Fetcher
-	clusterShower     clusterShower
-	fileHandler       file.Handler
-	log               debugLog
+	helmUpgrader    helmUpgrader
+	kubeUpgrader    kubernetesUpgrader
+	clusterUpgrader clusterUpgrader
+	configFetcher   attestationconfigapi.Fetcher
+	clusterShower   clusterShower
+	fileHandler     file.Handler
+	log             debugLog
 }
 
-func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command) error {
-	flags, err := parseUpgradeApplyFlags(cmd)
-	if err != nil {
-		return fmt.Errorf("parsing flags: %w", err)
-	}
-
+func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, flags upgradeApplyFlags) error {
 	conf, err := config.New(u.fileHandler, constants.ConfigFilename, u.configFetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
@@ -166,8 +173,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command) error {
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
 
-	// not moving existing Terraform migrator because of planned apply refactor
-	tfOutput, err := u.migrateTerraform(cmd, conf, flags)
+	tfOutput, err := u.migrateTerraform(cmd, conf, upgradeDir, flags)
 	if err != nil {
 		return fmt.Errorf("performing Terraform migrations: %w", err)
 	}
@@ -192,7 +198,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command) error {
 	}
 
 	var upgradeErr *compatibility.InvalidUpgradeError
-	err = u.handleServiceUpgrade(cmd, conf, idFile, tfOutput, validK8sVersion, flags)
+	err = u.handleServiceUpgrade(cmd, conf, idFile, tfOutput, validK8sVersion, upgradeDir, flags)
 	switch {
 	case errors.As(err, &upgradeErr):
 		cmd.PrintErrln(err)
@@ -231,28 +237,15 @@ func diffAttestationCfg(currentAttestationCfg config.AttestationCfg, newAttestat
 
 // migrateTerraform checks if the Constellation version the cluster is being upgraded to requires a migration
 // of cloud resources with Terraform. If so, the migration is performed.
-func (u *upgradeApplyCmd) migrateTerraform(
-	cmd *cobra.Command, conf *config.Config, flags upgradeApplyFlags,
+func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, conf *config.Config, upgradeDir string, flags upgradeApplyFlags,
 ) (res terraform.ApplyOutput, err error) {
 	u.log.Debugf("Planning Terraform migrations")
-
-	if err := u.terraformUpgrader.CheckTerraformMigrations(constants.UpgradeDir); err != nil {
-		return res, fmt.Errorf("checking workspace: %w", err)
-	}
 
 	vars, err := cloudcmd.TerraformUpgradeVars(conf)
 	if err != nil {
 		return res, fmt.Errorf("parsing upgrade variables: %w", err)
 	}
 	u.log.Debugf("Using Terraform variables:\n%v", vars)
-
-	opts := upgrade.TerraformUpgradeOptions{
-		LogLevel:         flags.terraformLogLevel,
-		CSP:              conf.GetProvider(),
-		Vars:             vars,
-		TFWorkspace:      constants.TerraformWorkingDir,
-		UpgradeWorkspace: constants.UpgradeDir,
-	}
 
 	// Check if there are any Terraform migrations to apply
 
@@ -264,7 +257,7 @@ func (u *upgradeApplyCmd) migrateTerraform(
 	// 	  u.upgrader.AddManualStateMigration(migration)
 	// }
 
-	hasDiff, err := u.terraformUpgrader.PlanTerraformMigrations(cmd.Context(), opts)
+	hasDiff, err := u.clusterUpgrader.PlanClusterUpgrade(cmd.Context(), cmd.OutOrStdout(), vars, conf.GetProvider())
 	if err != nil {
 		return res, fmt.Errorf("planning terraform migrations: %w", err)
 	}
@@ -279,28 +272,28 @@ func (u *upgradeApplyCmd) migrateTerraform(
 			}
 			if !ok {
 				cmd.Println("Aborting upgrade.")
-				if err := u.terraformUpgrader.CleanUpTerraformMigrations(constants.UpgradeDir); err != nil {
-					return res, fmt.Errorf("cleaning up workspace: %w", err)
+				// Remove the upgrade directory
+				if err := u.fileHandler.RemoveAll(upgradeDir); err != nil {
+					return res, fmt.Errorf("cleaning up upgrade directory %s: %w", upgradeDir, err)
 				}
-				return res, fmt.Errorf("aborted by user")
+				return res, fmt.Errorf("cluster upgrade aborted by user")
 			}
 		}
 		u.log.Debugf("Applying Terraform migrations")
-		tfOutput, err := u.terraformUpgrader.ApplyTerraformMigrations(cmd.Context(), opts)
+		tfOutput, err := u.clusterUpgrader.ApplyClusterUpgrade(cmd.Context(), conf.GetProvider())
 		if err != nil {
 			return tfOutput, fmt.Errorf("applying terraform migrations: %w", err)
 		}
 
-		// Patch MAA policy if we applied an Azure upgrade.
-		newIDFile := newIDFile(opts, tfOutput)
-		if err := mergeClusterIDFile(constants.ClusterIDsFilename, newIDFile, u.fileHandler); err != nil {
+		// Apply possible updates to cluster ID file
+		if err := updateClusterIDFile(tfOutput, u.fileHandler); err != nil {
 			return tfOutput, fmt.Errorf("merging cluster ID files: %w", err)
 		}
 
 		cmd.Printf("Terraform migrations applied successfully and output written to: %s\n"+
 			"A backup of the pre-upgrade state has been written to: %s\n",
 			flags.pf.PrefixPrintablePath(constants.ClusterIDsFilename),
-			flags.pf.PrefixPrintablePath(filepath.Join(opts.UpgradeWorkspace, u.terraformUpgrader.UpgradeID(), constants.TerraformUpgradeBackupDir)),
+			flags.pf.PrefixPrintablePath(filepath.Join(upgradeDir, constants.TerraformUpgradeBackupDir)),
 		)
 	} else {
 		u.log.Debugf("No Terraform diff detected")
@@ -311,20 +304,6 @@ func (u *upgradeApplyCmd) migrateTerraform(
 		return tfOutput, fmt.Errorf("getting Terraform output: %w", err)
 	}
 	return tfOutput, nil
-}
-
-func newIDFile(opts upgrade.TerraformUpgradeOptions, tfOutput terraform.ApplyOutput) clusterid.File {
-	newIDFile := clusterid.File{
-		CloudProvider:     opts.CSP,
-		InitSecret:        []byte(tfOutput.Secret),
-		IP:                tfOutput.IP,
-		APIServerCertSANs: tfOutput.APIServerCertSANs,
-		UID:               tfOutput.UID,
-	}
-	if tfOutput.Azure != nil {
-		newIDFile.AttestationURL = tfOutput.Azure.AttestationURL
-	}
-	return newIDFile
 }
 
 // validK8sVersion checks if the Kubernetes patch version is supported and asks for confirmation if not.
@@ -390,7 +369,10 @@ func (u *upgradeApplyCmd) confirmAndUpgradeAttestationConfig(
 	return nil
 }
 
-func (u *upgradeApplyCmd) handleServiceUpgrade(cmd *cobra.Command, conf *config.Config, idFile clusterid.File, tfOutput terraform.ApplyOutput, validK8sVersion versions.ValidK8sVersion, flags upgradeApplyFlags) error {
+func (u *upgradeApplyCmd) handleServiceUpgrade(
+	cmd *cobra.Command, conf *config.Config, idFile clusterid.File, tfOutput terraform.ApplyOutput,
+	validK8sVersion versions.ValidK8sVersion, upgradeDir string, flags upgradeApplyFlags,
+) error {
 	var secret uri.MasterSecret
 	if err := u.fileHandler.ReadJSON(constants.MasterSecretFilename, &secret); err != nil {
 		return fmt.Errorf("reading master secret: %w", err)
@@ -401,7 +383,7 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(cmd *cobra.Command, conf *config.
 	}
 	err = u.helmUpgrader.Upgrade(
 		cmd.Context(), conf, idFile,
-		flags.upgradeTimeout, helm.DenyDestructive, flags.force, u.terraformUpgrader.UpgradeID(),
+		flags.upgradeTimeout, helm.DenyDestructive, flags.force, upgradeDir,
 		flags.conformance, flags.helmWaitMode, secret, serviceAccURI, validK8sVersion, tfOutput,
 	)
 	if errors.Is(err, helm.ErrConfirmationMissing) {
@@ -418,7 +400,7 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(cmd *cobra.Command, conf *config.
 		}
 		err = u.helmUpgrader.Upgrade(
 			cmd.Context(), conf, idFile,
-			flags.upgradeTimeout, helm.AllowDestructive, flags.force, u.terraformUpgrader.UpgradeID(),
+			flags.upgradeTimeout, helm.AllowDestructive, flags.force, upgradeDir,
 			flags.conformance, flags.helmWaitMode, secret, serviceAccURI, validK8sVersion, tfOutput,
 		)
 	}
@@ -507,14 +489,24 @@ func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
 	}, nil
 }
 
-func mergeClusterIDFile(clusterIDPath string, newIDFile clusterid.File, fileHandler file.Handler) error {
-	idFile := &clusterid.File{}
-	if err := fileHandler.ReadJSON(clusterIDPath, idFile); err != nil {
-		return fmt.Errorf("reading %s: %w", clusterIDPath, err)
+func updateClusterIDFile(tfOutput terraform.ApplyOutput, fileHandler file.Handler) error {
+	newIDFile := clusterid.File{
+		InitSecret:        []byte(tfOutput.Secret),
+		IP:                tfOutput.IP,
+		APIServerCertSANs: tfOutput.APIServerCertSANs,
+		UID:               tfOutput.UID,
+	}
+	if tfOutput.Azure != nil {
+		newIDFile.AttestationURL = tfOutput.Azure.AttestationURL
 	}
 
-	if err := fileHandler.WriteJSON(clusterIDPath, idFile.Merge(newIDFile), file.OptOverwrite); err != nil {
-		return fmt.Errorf("writing %s: %w", clusterIDPath, err)
+	idFile := &clusterid.File{}
+	if err := fileHandler.ReadJSON(constants.ClusterIDsFilename, idFile); err != nil {
+		return fmt.Errorf("reading %s: %w", constants.ClusterIDsFilename, err)
+	}
+
+	if err := fileHandler.WriteJSON(constants.ClusterIDsFilename, idFile.Merge(newIDFile), file.OptOverwrite); err != nil {
+		return fmt.Errorf("writing %s: %w", constants.ClusterIDsFilename, err)
 	}
 
 	return nil
@@ -544,15 +536,12 @@ type kubernetesUpgrader interface {
 type helmUpgrader interface {
 	Upgrade(
 		ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration,
-		allowDestructive, force bool, upgradeID string, conformance bool, helmWaitMode helm.WaitMode,
+		allowDestructive, force bool, upgradeDir string, conformance bool, helmWaitMode helm.WaitMode,
 		masterSecret uri.MasterSecret, serviceAccURI string, validK8sVersion versions.ValidK8sVersion, tfOutput terraform.ApplyOutput,
 	) error
 }
 
-type terraformUpgrader interface {
-	PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error)
-	ApplyTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (terraform.ApplyOutput, error)
-	CheckTerraformMigrations(upgradeWorkspace string) error
-	CleanUpTerraformMigrations(upgradeWorkspace string) error
-	UpgradeID() string
+type clusterUpgrader interface {
+	PlanClusterUpgrade(ctx context.Context, outWriter io.Writer, vars terraform.Variables, csp cloudprovider.Provider) (bool, error)
+	ApplyClusterUpgrade(ctx context.Context, csp cloudprovider.Provider) (terraform.ApplyOutput, error)
 }

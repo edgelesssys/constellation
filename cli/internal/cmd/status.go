@@ -53,10 +53,8 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 
 	fileHandler := file.NewHandler(afero.NewOsFs())
 
-	// need helm client to fetch service versions.
-	// The client used here, doesn't need to know the current workspace.
-	// It may be refactored in the future for easier usage.
-	helmClient, err := helm.NewUpgradeClient(kubectl.NewUninitialized(), constants.UpgradeDir, constants.AdminConfFilename, constants.HelmNamespace, log)
+	// set up helm client to fetch service versions
+	helmClient, err := helm.NewUpgradeClient(kubectl.NewUninitialized(), constants.AdminConfFilename, constants.HelmNamespace, log)
 	if err != nil {
 		return fmt.Errorf("setting up helm client: %w", err)
 	}
