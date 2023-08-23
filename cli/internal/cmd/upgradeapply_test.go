@@ -197,7 +197,7 @@ func (u stubKubernetesUpgrader) UpgradeNodeVersion(_ context.Context, _ *config.
 	return u.nodeVersionErr
 }
 
-func (u stubKubernetesUpgrader) UpdateAttestationConfig(_ context.Context, _ config.AttestationCfg) error {
+func (u stubKubernetesUpgrader) ApplyJoinConfig(_ context.Context, _ config.AttestationCfg, _ []byte) error {
 	return nil
 }
 
@@ -206,6 +206,16 @@ func (u stubKubernetesUpgrader) GetClusterAttestationConfig(_ context.Context, _
 }
 
 func (u stubKubernetesUpgrader) ExtendClusterConfigCertSANs(_ context.Context, _ []string) error {
+	return nil
+}
+
+// TODO(v2.11): Remove this function.
+func (u stubKubernetesUpgrader) RemoveAttestationConfigHelmManagement(_ context.Context) error {
+	return nil
+}
+
+// TODO(v2.12): Remove this function.
+func (u stubKubernetesUpgrader) RemoveHelmKeepAnnotation(_ context.Context) error {
 	return nil
 }
 

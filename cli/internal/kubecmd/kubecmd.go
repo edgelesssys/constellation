@@ -37,6 +37,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
+	"helm.sh/helm/v3/pkg/kube"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -193,35 +194,37 @@ func (k *KubeCmd) GetClusterAttestationConfig(ctx context.Context, variant varia
 	return existingAttestationConfig, nil
 }
 
-// UpdateAttestationConfig updates the Constellation cluster's attestation config.
-// A backup of the previous config is created before updating.
-func (k *KubeCmd) UpdateAttestationConfig(ctx context.Context, newAttestConfig config.AttestationCfg) error {
-	// backup of previous measurements
-	joinConfig, err := k.kubectl.GetConfigMap(ctx, constants.ConstellationNamespace, constants.JoinConfigMap)
-	if err != nil {
-		return fmt.Errorf("getting %s ConfigMap: %w", constants.JoinConfigMap, err)
-	}
-
-	// create backup of previous config
-	backup := joinConfig.DeepCopy()
-	backup.ObjectMeta = metav1.ObjectMeta{}
-	backup.Name = fmt.Sprintf("%s-backup", constants.JoinConfigMap)
-	if err := k.applyConfigMap(ctx, backup); err != nil {
-		return fmt.Errorf("creating backup of join-config ConfigMap: %w", err)
-	}
-	k.log.Debugf("Created backup of %s ConfigMap %q in namespace %q", constants.JoinConfigMap, backup.Name, backup.Namespace)
-
+// ApplyJoinConfig creates or updates the Constellation cluster's join-config ConfigMap.
+// This ConfigMap holds the attestation config and measurement salt of the cluster.
+// A backup of the previous attestation config is created with the suffix `_backup` in the config map data.
+func (k *KubeCmd) ApplyJoinConfig(ctx context.Context, newAttestConfig config.AttestationCfg, measurementSalt []byte) error {
 	newConfigJSON, err := json.Marshal(newAttestConfig)
 	if err != nil {
 		return fmt.Errorf("marshaling attestation config: %w", err)
 	}
+
+	joinConfig, err := k.kubectl.GetConfigMap(ctx, constants.ConstellationNamespace, constants.JoinConfigMap)
+	if err != nil {
+		if !k8serrors.IsNotFound(err) {
+			return fmt.Errorf("getting %s ConfigMap: %w", constants.JoinConfigMap, err)
+		}
+
+		k.log.Debugf("ConfigMap %q does not exist in namespace %q, creating it now", constants.JoinConfigMap, constants.ConstellationNamespace)
+		if err := k.kubectl.CreateConfigMap(ctx, joinConfigMap(newConfigJSON, measurementSalt)); err != nil {
+			return fmt.Errorf("creating join-config ConfigMap: %w", err)
+		}
+		k.log.Debugf("Created %q ConfigMap in namespace %q", constants.JoinConfigMap, constants.ConstellationNamespace)
+		return nil
+	}
+
+	// create backup of previous config
+	joinConfig.Data[constants.AttestationConfigFilename+"_backup"] = joinConfig.Data[constants.AttestationConfigFilename]
 	joinConfig.Data[constants.AttestationConfigFilename] = string(newConfigJSON)
 	k.log.Debugf("Triggering attestation config update now")
 	if _, err = k.kubectl.UpdateConfigMap(ctx, joinConfig); err != nil {
 		return fmt.Errorf("setting new attestation config: %w", err)
 	}
 
-	fmt.Fprintln(k.outWriter, "Successfully updated the cluster's attestation config")
 	return nil
 }
 
@@ -398,19 +401,6 @@ func (k *KubeCmd) updateK8s(nodeVersion *updatev1alpha1.NodeVersion, newClusterV
 	return &configMap, nil
 }
 
-// applyConfigMap applies the ConfigMap by creating it if it doesn't exist, or updating it if it does.
-func (k *KubeCmd) applyConfigMap(ctx context.Context, configMap *corev1.ConfigMap) error {
-	if err := k.kubectl.CreateConfigMap(ctx, configMap); err != nil {
-		if !k8serrors.IsAlreadyExists(err) {
-			return fmt.Errorf("creating backup config map: %w", err)
-		}
-		if _, err := k.kubectl.UpdateConfigMap(ctx, configMap); err != nil {
-			return fmt.Errorf("updating backup config map: %w", err)
-		}
-	}
-	return nil
-}
-
 func checkForApplyError(expected, actual updatev1alpha1.NodeVersion) error {
 	var err error
 	switch {
@@ -424,6 +414,87 @@ func checkForApplyError(expected, actual updatev1alpha1.NodeVersion) error {
 		err = &applyError{expected: expected.Spec.KubernetesClusterVersion, actual: actual.Spec.KubernetesClusterVersion}
 	}
 	return err
+}
+
+func joinConfigMap(attestationCfgJSON, measurementSalt []byte) *corev1.ConfigMap {
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      constants.JoinConfigMap,
+			Namespace: constants.ConstellationNamespace,
+		},
+		Data: map[string]string{
+			constants.AttestationConfigFilename: string(attestationCfgJSON),
+		},
+		BinaryData: map[string][]byte{
+			constants.MeasurementSaltFilename: measurementSalt,
+		},
+	}
+}
+
+// RemoveAttestationConfigHelmManagement removes labels and annotations from the join-config ConfigMap that are added by Helm.
+// This is to ensure we can cleanly transition from Helm to Constellation's management of the ConfigMap.
+// TODO(v2.11): Remove this function after v2.11 is released.
+func (k *KubeCmd) RemoveAttestationConfigHelmManagement(ctx context.Context) error {
+	const (
+		appManagedByLabel              = "app.kubernetes.io/managed-by"
+		appManagedByHelm               = "Helm"
+		helmReleaseNameAnnotation      = "meta.helm.sh/release-name"
+		helmReleaseNamespaceAnnotation = "meta.helm.sh/release-namespace"
+	)
+
+	k.log.Debugf("Checking if join-config ConfigMap needs to be migrated to remove Helm management")
+	joinConfig, err := k.kubectl.GetConfigMap(ctx, constants.ConstellationNamespace, constants.JoinConfigMap)
+	if err != nil {
+		return fmt.Errorf("getting join config: %w", err)
+	}
+
+	var needUpdate bool
+	if managedBy, ok := joinConfig.Labels[appManagedByLabel]; ok && managedBy == appManagedByHelm {
+		delete(joinConfig.Labels, appManagedByLabel)
+		needUpdate = true
+	}
+	if _, ok := joinConfig.Annotations[helmReleaseNameAnnotation]; ok {
+		delete(joinConfig.Annotations, helmReleaseNameAnnotation)
+		needUpdate = true
+	}
+	if _, ok := joinConfig.Annotations[helmReleaseNamespaceAnnotation]; ok {
+		delete(joinConfig.Annotations, helmReleaseNamespaceAnnotation)
+		needUpdate = true
+	}
+
+	if needUpdate {
+		// Tell Helm to ignore this resource in the future.
+		// TODO(v2.11): Remove this annotation from the ConfigMap.
+		joinConfig.Annotations[kube.ResourcePolicyAnno] = kube.KeepPolicy
+
+		k.log.Debugf("Removing Helm management labels from join-config ConfigMap")
+		if _, err := k.kubectl.UpdateConfigMap(ctx, joinConfig); err != nil {
+			return fmt.Errorf("removing Helm management labels from join-config: %w", err)
+		}
+		k.log.Debugf("Successfully removed Helm management labels from join-config ConfigMap")
+	}
+
+	return nil
+}
+
+// RemoveHelmKeepAnnotation removes the Helm Resource Policy annotation from the join-config ConfigMap.
+// TODO(v2.12): Remove this function after v2.12 is released.
+func (k *KubeCmd) RemoveHelmKeepAnnotation(ctx context.Context) error {
+	k.log.Debugf("Checking if Helm Resource Policy can be removed from join-config ConfigMap")
+	joinConfig, err := k.kubectl.GetConfigMap(ctx, constants.ConstellationNamespace, constants.JoinConfigMap)
+	if err != nil {
+		return fmt.Errorf("getting join config: %w", err)
+	}
+
+	if policy, ok := joinConfig.Annotations[kube.ResourcePolicyAnno]; ok && policy == kube.KeepPolicy {
+		delete(joinConfig.Annotations, kube.ResourcePolicyAnno)
+		if _, err := k.kubectl.UpdateConfigMap(ctx, joinConfig); err != nil {
+			return fmt.Errorf("removing Helm Resource Policy from join-config: %w", err)
+		}
+		k.log.Debugf("Successfully removed Helm Resource Policy from join-config ConfigMap")
+	}
+
+	return nil
 }
 
 // kubectlInterface is provides access to the Kubernetes API.

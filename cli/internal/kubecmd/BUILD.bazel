@@ -31,6 +31,7 @@ go_library(
         "@io_k8s_client_go//util/retry",
         "@io_k8s_kubernetes//cmd/kubeadm/app/apis/kubeadm/v1beta3",
         "@io_k8s_sigs_yaml//:yaml",
+        "@sh_helm_helm_v3//pkg/kube",
     ],
 )
 
@@ -39,6 +40,7 @@ go_test(
     srcs = ["kubecmd_test.go"],
     embed = [":kubecmd"],
     deps = [
+        "//internal/attestation/measurements",
         "//internal/attestation/variant",
         "//internal/cloud/cloudprovider",
         "//internal/compatibility",

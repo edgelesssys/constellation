@@ -10,12 +10,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/cli/internal/featureset"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
+	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
@@ -215,8 +217,12 @@ func (m *miniUpCmd) initializeMiniCluster(cmd *cobra.Command, fileHandler file.H
 		return fmt.Errorf("creating Terraform client: %w", err)
 	}
 
+	newAttestationApplier := func(w io.Writer, kubeConfig string, log debugLog) (attestationConfigApplier, error) {
+		return kubecmd.New(w, kubeConfig, log)
+	}
+
 	i := newInitCmd(tfClient, helmInstaller, fileHandler, spinner, &kubeconfigMerger{log: log}, log)
-	if err := i.initialize(cmd, newDialer, license.NewClient(), m.configFetcher); err != nil {
+	if err := i.initialize(cmd, newDialer, license.NewClient(), m.configFetcher, newAttestationApplier); err != nil {
 		return err
 	}
 	m.log.Debugf("Initialized mini cluster")

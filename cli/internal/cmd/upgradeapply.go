@@ -29,6 +29,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
+	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/rogpeppe/go-internal/diff"
 	"github.com/spf13/afero"
@@ -153,7 +154,15 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command) error {
 	}
 	conf.UpdateMAAURL(idFile.AttestationURL)
 
-	if err := u.confirmAttestationConfigUpgrade(cmd, conf.GetAttestationConfig(), flags); err != nil {
+	// Apply migrations necessary for the upgrade
+	if err := migrateFrom2_10(cmd.Context(), u.kubeUpgrader); err != nil {
+		return fmt.Errorf("applying migration for upgrading from v2.10: %w", err)
+	}
+	if err := migrateFrom2_11(cmd.Context(), u.kubeUpgrader); err != nil {
+		return fmt.Errorf("applying migration for upgrading from v2.11: %w", err)
+	}
+
+	if err := u.confirmAndUpgradeAttestationConfig(cmd, conf.GetAttestationConfig(), idFile.MeasurementSalt, flags); err != nil {
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
 
@@ -177,29 +186,30 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command) error {
 		return fmt.Errorf("extending cert SANs: %w", err)
 	}
 
-	if conf.GetProvider() == cloudprovider.Azure || conf.GetProvider() == cloudprovider.GCP || conf.GetProvider() == cloudprovider.AWS {
-		var upgradeErr *compatibility.InvalidUpgradeError
-		err = u.handleServiceUpgrade(cmd, conf, idFile, tfOutput, validK8sVersion, flags)
-		switch {
-		case errors.As(err, &upgradeErr):
-			cmd.PrintErrln(err)
-		case err == nil:
-			cmd.Println("Successfully upgraded Constellation services.")
-		case err != nil:
-			return fmt.Errorf("upgrading services: %w", err)
-		}
-
-		err = u.kubeUpgrader.UpgradeNodeVersion(cmd.Context(), conf, flags.force)
-		switch {
-		case errors.Is(err, kubecmd.ErrInProgress):
-			cmd.PrintErrln("Skipping image and Kubernetes upgrades. Another upgrade is in progress.")
-		case errors.As(err, &upgradeErr):
-			cmd.PrintErrln(err)
-		case err != nil:
-			return fmt.Errorf("upgrading NodeVersion: %w", err)
-		}
-	} else {
+	if conf.GetProvider() != cloudprovider.Azure && conf.GetProvider() != cloudprovider.GCP && conf.GetProvider() != cloudprovider.AWS {
 		cmd.PrintErrln("WARNING: Skipping service and image upgrades, which are currently only supported for AWS, Azure, and GCP.")
+		return nil
+	}
+
+	var upgradeErr *compatibility.InvalidUpgradeError
+	err = u.handleServiceUpgrade(cmd, conf, idFile, tfOutput, validK8sVersion, flags)
+	switch {
+	case errors.As(err, &upgradeErr):
+		cmd.PrintErrln(err)
+	case err == nil:
+		cmd.Println("Successfully upgraded Constellation services.")
+	case err != nil:
+		return fmt.Errorf("upgrading services: %w", err)
+	}
+
+	err = u.kubeUpgrader.UpgradeNodeVersion(cmd.Context(), conf, flags.force)
+	switch {
+	case errors.Is(err, kubecmd.ErrInProgress):
+		cmd.PrintErrln("Skipping image and Kubernetes upgrades. Another upgrade is in progress.")
+	case errors.As(err, &upgradeErr):
+		cmd.PrintErrln(err)
+	case err != nil:
+		return fmt.Errorf("upgrading NodeVersion: %w", err)
 	}
 
 	return nil
@@ -338,9 +348,11 @@ func validK8sVersion(cmd *cobra.Command, version string, yes bool) (validVersion
 	return validVersion, nil
 }
 
-// confirmAttestationConfigUpgrade checks if the locally configured measurements are different from the cluster's measurements.
+// confirmAndUpgradeAttestationConfig checks if the locally configured measurements are different from the cluster's measurements.
 // If so the function will ask the user to confirm (if --yes is not set) and upgrade the cluster's config.
-func (u *upgradeApplyCmd) confirmAttestationConfigUpgrade(cmd *cobra.Command, newConfig config.AttestationCfg, flags upgradeApplyFlags) error {
+func (u *upgradeApplyCmd) confirmAndUpgradeAttestationConfig(
+	cmd *cobra.Command, newConfig config.AttestationCfg, measurementSalt []byte, flags upgradeApplyFlags,
+) error {
 	clusterAttestationConfig, err := u.kubeUpgrader.GetClusterAttestationConfig(cmd.Context(), newConfig.GetVariant())
 	if err != nil {
 		return fmt.Errorf("getting cluster attestation config: %w", err)
@@ -371,9 +383,10 @@ func (u *upgradeApplyCmd) confirmAttestationConfigUpgrade(cmd *cobra.Command, ne
 		}
 	}
 
-	if err := u.kubeUpgrader.UpdateAttestationConfig(cmd.Context(), newConfig); err != nil {
+	if err := u.kubeUpgrader.ApplyJoinConfig(cmd.Context(), newConfig, measurementSalt); err != nil {
 		return fmt.Errorf("updating attestation config: %w", err)
 	}
+	cmd.Println("Successfully update the cluster's attestation config")
 	return nil
 }
 
@@ -411,6 +424,34 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(cmd *cobra.Command, conf *config.
 	}
 
 	return err
+}
+
+// migrateFrom2_10 applies migrations necessary for upgrading from v2.10 to v2.11
+// TODO(v2.11): Remove this function after v2.11 is released.
+func migrateFrom2_10(ctx context.Context, kubeUpgrader kubernetesUpgrader) error {
+	// Sanity check to make sure we only run migrations on upgrades with CLI version 2.10 < v < 2.12
+	if !constants.BinaryVersion().MajorMinorEqual(semver.NewFromInt(2, 11, 0, "")) {
+		return nil
+	}
+
+	if err := kubeUpgrader.RemoveAttestationConfigHelmManagement(ctx); err != nil {
+		return fmt.Errorf("removing helm management from attestation config: %w", err)
+	}
+	return nil
+}
+
+// migrateFrom2_11 applies migrations necessary for upgrading from v2.11 to v2.12
+// TODO(v2.12): Remove this function after v2.12 is released.
+func migrateFrom2_11(ctx context.Context, kubeUpgrader kubernetesUpgrader) error {
+	// Sanity check to make sure we only run migrations on upgrades with CLI version 2.11 < v < 2.13
+	if !constants.BinaryVersion().MajorMinorEqual(semver.NewFromInt(2, 12, 0, "")) {
+		return nil
+	}
+
+	if err := kubeUpgrader.RemoveHelmKeepAnnotation(ctx); err != nil {
+		return fmt.Errorf("removing helm keep annotation: %w", err)
+	}
+	return nil
 }
 
 func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
@@ -493,7 +534,11 @@ type kubernetesUpgrader interface {
 	UpgradeNodeVersion(ctx context.Context, conf *config.Config, force bool) error
 	ExtendClusterConfigCertSANs(ctx context.Context, alternativeNames []string) error
 	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, error)
-	UpdateAttestationConfig(ctx context.Context, newAttestConfig config.AttestationCfg) error
+	ApplyJoinConfig(ctx context.Context, newAttestConfig config.AttestationCfg, measurementSalt []byte) error
+	// TODO(v2.11): Remove this function after v2.11 is released.
+	RemoveAttestationConfigHelmManagement(ctx context.Context) error
+	// TODO(v2.12): Remove this function after v2.12 is released.
+	RemoveHelmKeepAnnotation(ctx context.Context) error
 }
 
 type helmUpgrader interface {

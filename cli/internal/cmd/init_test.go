@@ -187,7 +187,15 @@ func TestInitialize(t *testing.T) {
 			defer cancel()
 			cmd.SetContext(ctx)
 			i := newInitCmd(&stubShowCluster{}, &stubHelmInstaller{}, fileHandler, &nopSpinner{}, nil, logger.NewTest(t))
-			err := i.initialize(cmd, newDialer, &stubLicenseClient{}, stubAttestationFetcher{})
+			err := i.initialize(
+				cmd,
+				newDialer,
+				&stubLicenseClient{},
+				stubAttestationFetcher{},
+				func(io.Writer, string, debugLog) (attestationConfigApplier, error) {
+					return &stubAttestationApplier{}, nil
+				},
+			)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -486,7 +494,15 @@ func TestAttestation(t *testing.T) {
 	cmd.SetContext(ctx)
 
 	i := newInitCmd(nil, nil, fileHandler, &nopSpinner{}, nil, logger.NewTest(t))
-	err := i.initialize(cmd, newDialer, &stubLicenseClient{}, stubAttestationFetcher{})
+	err := i.initialize(
+		cmd,
+		newDialer,
+		&stubLicenseClient{},
+		stubAttestationFetcher{},
+		func(io.Writer, string, debugLog) (attestationConfigApplier, error) {
+			return &stubAttestationApplier{}, nil
+		},
+	)
 	assert.Error(err)
 	// make sure the error is actually a TLS handshake error
 	assert.Contains(err.Error(), "transport: authentication handshake failed")
@@ -665,4 +681,12 @@ func (s *stubShowCluster) ShowCluster(_ context.Context, csp cloudprovider.Provi
 		res.GCP = &terraform.GCPApplyOutput{}
 	}
 	return res, nil
+}
+
+type stubAttestationApplier struct {
+	applyErr error
+}
+
+func (a *stubAttestationApplier) ApplyJoinConfig(_ context.Context, _ config.AttestationCfg, _ []byte) error {
+	return a.applyErr
 }

@@ -1,5 +1,4 @@
 csp: "gcp"
 attestationVariant: ""
-measurementSalt: ""
 joinServicePort: 9090
 joinServiceNodePort: 30090

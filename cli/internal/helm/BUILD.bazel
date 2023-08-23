@@ -226,7 +226,6 @@ go_library(
         "charts/edgeless/constellation-services/charts/join-service/Chart.yaml",
         "charts/edgeless/constellation-services/charts/join-service/templates/clusterrole.yaml",
         "charts/edgeless/constellation-services/charts/join-service/templates/clusterrolebinding.yaml",
-        "charts/edgeless/constellation-services/charts/join-service/templates/configmap.yaml",
         "charts/edgeless/constellation-services/charts/join-service/templates/daemonset.yaml",
         "charts/edgeless/constellation-services/charts/join-service/templates/service.yaml",
         "charts/edgeless/constellation-services/charts/join-service/templates/serviceaccount.yaml",
@@ -468,7 +467,6 @@ go_test(
     deps = [
         "//cli/internal/clusterid",
         "//cli/internal/terraform",
-        "//internal/attestation/idkeydigest",
         "//internal/attestation/measurements",
         "//internal/cloud/azureshared",
         "//internal/cloud/cloudprovider",
