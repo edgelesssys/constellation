@@ -230,7 +230,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.27.7@sha256:998453989b03ac6c24e53aabbf271fa181e054b3a061fe6caa565186ae79bd0c", // renovate:container
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
 		// TODO(3u13r): use newer "cloud-provider-gcp" from https://github.com/kubernetes/cloud-provider-gcp when newer releases are available.
-		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v26.4.0@sha256:dbe983cceabb3df98112b083d844229c85a1bbdfef2060c79f4cd49afe2a07f3", // renovate:container
+		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v27.1.6@sha256:b097b4e5382ea1987db5996a9eaffb94fa224639b3464876f0b1b17f64509ac4", // renovate:container
 		// CloudControllerManagerImageOpenStack is the CCM image used on OpenStack.
 		CloudControllerManagerImageOpenStack: "docker.io/k8scloudprovider/openstack-cloud-controller-manager:v1.26.3@sha256:65f0945ea9fc17e64812befbf3fc52b06c13df1c3407cb8022e8110a2fe08a4a", // renovate:container
 		// External service image. Depends on k8s version.
@@ -281,7 +281,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.27.7@sha256:998453989b03ac6c24e53aabbf271fa181e054b3a061fe6caa565186ae79bd0c", // renovate:container
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
 		// TODO(3u13r): use newer "cloud-provider-gcp" from https://github.com/kubernetes/cloud-provider-gcp when newer releases are available.
-		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v26.4.0@sha256:dbe983cceabb3df98112b083d844229c85a1bbdfef2060c79f4cd49afe2a07f3", // renovate:container
+		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v27.1.6@sha256:b097b4e5382ea1987db5996a9eaffb94fa224639b3464876f0b1b17f64509ac4", // renovate:container
 		// CloudControllerManagerImageOpenStack is the CCM image used on OpenStack.
 		CloudControllerManagerImageOpenStack: "docker.io/k8scloudprovider/openstack-cloud-controller-manager:v1.26.3@sha256:65f0945ea9fc17e64812befbf3fc52b06c13df1c3407cb8022e8110a2fe08a4a", // renovate:container
 		// External service image. Depends on k8s version.
