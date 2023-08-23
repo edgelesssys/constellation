@@ -1,0 +1,14 @@
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_test(
+    name = "malicious-join_test",
+    srcs = ["malicious-join_test.go"],
+    deps = [
+        "//internal/attestation/variant",
+        "//internal/cloud/cloudprovider",
+        "//internal/grpc/dialer",
+        "//internal/logger",
+        "//joinservice/joinproto",
+        "@com_github_stretchr_testify//require",
+    ],
+)

@@ -1,0 +1,34 @@
+name: Malicious join
+description: "Verify that a malicious node cannot join a Constellation cluster."
+
+inputs:
+  cloudProvider:
+    description: "The cloud provider the test runs on."
+    required: true
+  kubeconfig:
+    description: "The kubeconfig file for the cluster."
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Run malicious join
+      shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+      working-directory: e2e/malicious-join
+      run: |
+        yq eval -i "(.spec.template.spec.containers[0].command) = [ \"/malicious-join.test\", \"--js-endpoint=join-service.kube-system:9090\", \"--csp=${{ inputs.cloudProvider }}\", \"--variant=default\" ]" job.yaml
+        kubectl apply -f job.yaml
+        kubectl wait -n kube-system --for=condition=complete --timeout=10m job/malicious-join
+        TEST_LOGS=$(kubectl logs -n kube-system job/malicious-join)
+        JS_LOGS=$(kubectl logs -n kube-system svc/join-service)
+        kubectl delete -f job.yaml
+        if [[ "$TEST_LOGS" != *"PASS"* ]]; then
+          echo "$TEST_LOGS" | tee -a "$GITHUB_OUTPUT"
+          exit 1
+        fi
+        if [[ "$JS_LOGS" != *"Failed to validate attestation document: validating attestation public key"* ]]; then
+          echo "$JS_LOGS" | tee -a "$GITHUB_OUTPUT"
+          exit 1
+        fi

@@ -51,7 +51,7 @@ inputs:
     description: "Azure credentials authorized to create an IAM configuration."
     required: true
   test:
-    description: "The test to run. Can currently be one of [sonobuoy full, sonobuoy quick, autoscaling, lb, perf-bench, verify, recover, nop]."
+    description: "The test to run. Can currently be one of [sonobuoy full, sonobuoy quick, autoscaling, lb, perf-bench, verify, recover, malicious join, nop]."
     required: true
   sonobuoyTestSuiteCmd:
     description: "The sonobuoy test suite to run."
@@ -85,7 +85,7 @@ runs:
   using: "composite"
   steps:
     - name: Check input
-      if: (!contains(fromJson('["sonobuoy full", "sonobuoy quick", "autoscaling", "perf-bench", "verify", "lb", "recover", "nop"]'), inputs.test))
+      if: (!contains(fromJson('["sonobuoy full", "sonobuoy quick", "autoscaling", "perf-bench", "verify", "lb", "recover", "malicious join", "nop"]'), inputs.test))
       shell: bash
       run: |
         echo "::error::Invalid input for test field: ${{ inputs.test }}"
@@ -261,10 +261,10 @@ runs:
         test: ${{ inputs.test }}
         provider: ${{ inputs.cloudProvider }}
         isDebugImage: ${{ inputs.isDebugImage }}
+
     #
     # Test payloads
     #
-
     - name: Nop test payload
       if: inputs.test == 'nop'
       shell: bash
@@ -326,3 +326,10 @@ runs:
         controlNodesCount: ${{ inputs.controlNodesCount }}
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
         masterSecret: ${{ steps.constellation-create.outputs.masterSecret }}
+
+    - name: Run malicious join test
+      if: inputs.test == 'malicious join'
+      uses: ./.github/actions/e2e_malicious_join
+      with:
+        cloudProvider: ${{ inputs.cloudProvider }}
+        kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
