@@ -24,11 +24,29 @@ on:
 jobs:
   test-unittest:
     runs-on: [self-hosted, bazel-cached]
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+          fetch-depth: 0
+
+      - name: Install AWS cli
+        run: |
+          curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
+          rm -rf awscliv2.zip aws
+
+      - name: Login to AWS (IAM role)
+        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 # v2.2.0
+        with:
+          role-to-assume: arn:aws:iam::795746500882:role/GithubActionGocoverage
+          aws-region: eu-central-1
 
       - name: Setup bazel
         uses: ./.github/actions/setup_bazel
@@ -40,3 +58,25 @@ jobs:
         env:
           TMPDIR: ${{ runner.temp }}
         run: bazel test //... --test_output=errors --config=nostamp
+
+      - name: Coverage
+        id: coverage
+        run: |
+          bazel run //bazel/ci:gocoverage_diff
+          lines=$(wc -l < coverage_diff.md)
+          uploadable=$([[ ${lines} -gt 3 ]] && echo "true" || echo "false")
+          echo "uploadable=$uploadable" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Comment coverage
+        if: steps.coverage.outputs.uploadable == 'true' && github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@efaaab3fd41a9c3de579aba759d2552635e590fd # v2.8.0
+        with:
+          header: coverage
+          path: coverage_diff.md
+
+      - name: Upload coverage
+        if: github.ref_name == 'main'
+        run: |
+          cat coverage_result.json
+          aws s3 cp coverage_result.json s3://constellation-ci/gocoverage/coverage_main.json
+          echo "coverage uploaded to s3://constellation-ci/gocoverage/coverage_main.json"

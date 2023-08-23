@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+
+###### script header ######
+
+lib=$(realpath @@BASE_LIB@@) || exit 1
+stat "${lib}" >> /dev/null || exit 1
+
+# shellcheck source=../sh/lib.bash
+if ! source "${lib}"; then
+  echo "Error: could not find import"
+  exit 1
+fi
+
+go=$(realpath @@GO@@)
+stat "${go}" >> /dev/null
+gocoverage=$(realpath @@GOCOVERAGE@@)
+stat "${gocoverage}" >> /dev/null
+
+cd "${BUILD_WORKSPACE_DIRECTORY}"
+
+###### script body ######
+
+readonly coverageResultPath="coverage_result.json"
+readonly coverageMainBucketPath="s3://constellation-ci/gocoverage/coverage_main.json"
+readonly coverageMainPath="coverage_main.json"
+readonly diffMdPath="coverage_diff.md"
+
+function goTestCover() {
+  local path=${1-.}
+  testResult=0
+  testout=$(CGO_ENABLED=0 ${go} test -C "${path}" -cover "./...") || testResult=$?
+  if [[ ${testResult} -ne 0 ]]; then
+    echo "go test failed with exit code ${testResult}:"
+    echo "${testout}"
+    exit "${testResult}"
+  fi
+  echo "${testout}"
+}
+
+function goTestCoverAllMods() {
+  readarray -t <<< "$(${go} list -f '{{.Dir}}' -m)"
+  modules=("${MAPFILE[@]}")
+
+  excludeMods=(
+    "hack/tools"
+  )
+
+  for exclude in "${excludeMods[@]}"; do
+    for i in "${!modules[@]}"; do
+      if [[ ${modules[i]} == "${BUILD_WORKSPACE_DIRECTORY}/${exclude}" ]]; then
+        unset 'modules[i]'
+      fi
+    done
+  done
+
+  out=""
+  for mod in "${modules[@]}"; do
+    out="${out}$(goTestCover "${mod}")\n"
+  done
+
+  echo "${out}"
+}
+
+function fetchMainReport() {
+  if ! aws s3 cp "${coverageMainBucketPath}" "${coverageMainPath}" > /dev/null; then
+    echo "Could not fetch main coverage report from ${coverageMainBucketPath}"
+    exit 1
+  fi
+}
+
+function findDiffPaths() {
+  diff=$(git diff --name-only origin/main...HEAD)
+  if [[ -z ${diff} ]]; then
+    echo "No diff found between main and HEAD"
+    exit 0
+  fi
+  echo "${diff}" | xargs dirname | sort | uniq | tr '\n' ','
+}
+
+function generateCoverageDiff() {
+  echo "Running go test with coverage for all modules..."
+  out=$(goTestCoverAllMods)
+  echo "Generating coverage report..."
+  ${gocoverage} > "${coverageResultPath}" <<< "${out}"
+  echo "Fetch latest report from main..."
+  fetchMainReport
+  echo "Find package paths that changed..."
+  diffPaths=$(findDiffPaths)
+  echo "Generating diff report..."
+  ${gocoverage} \
+    -touched "${diffPaths}" \
+    -diff "${coverageMainPath}" "${coverageResultPath}" \
+    > "${diffMdPath}"
+}
+
+generateCoverageDiff

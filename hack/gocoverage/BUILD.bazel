@@ -1,0 +1,26 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "gocoverage_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/hack/gocoverage",
+    visibility = ["//visibility:private"],
+    deps = ["@org_golang_x_exp//slices"],
+)
+
+go_binary(
+    name = "gocoverage",
+    embed = [":gocoverage_lib"],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "gocoverage_test",
+    srcs = ["main_test.go"],
+    embed = [":gocoverage_lib"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

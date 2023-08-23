@@ -450,6 +450,19 @@ sh_template(
     template = "unused_gh_actions.sh.in",
 )
 
+sh_template(
+    name = "gocoverage_diff",
+    data = [
+        "//hack/gocoverage",
+        "@go_sdk//:bin/go",
+    ],
+    substitutions = {
+        "@@GO@@": "$(rootpath @go_sdk//:bin/go)",
+        "@@GOCOVERAGE@@": "$(rootpath //hack/gocoverage:gocoverage)",
+    },
+    template = "gocoverage_diff.sh.in",
+)
+
 multirun(
     name = "tidy",
     commands = [

@@ -25,6 +25,7 @@
 /hack/clidocgen @thomasten
 /hack/configapi @elchead
 /hack/fetch-broken-e2e @katexochen
+/hack/gocoverage @katexochen
 /hack/oci-pin @malt3
 /hack/pseudo-version @malt3
 /hack/qemu-metadata-api @daniel-weisse
