@@ -59,8 +59,8 @@ For each node in your cluster, a new node has to be created and joined.
 The process usually takes up to ten minutes per node.
 
 When applying an upgrade, backup files of Constellation-managed Custom Resource Definitions, Custom Resources, and Terraform state are created.
-The Terraform state backup can be used to restore previous resources in case an upgrade misconfigured or erroneously deleted a resource. 
-The Custom Resource (Definition) backup files can be used to restore Custom Resources and Definitions manually (e.g. via `kubectl apply`) if the automatic migration of those resources fails.
+You can use the Terraform state backup to restore previous resources in case an upgrade misconfigured or erroneously deleted a resource.
+You can use the Custom Resource (Definition) backup files to restore Custom Resources and Definitions manually (e.g., via `kubectl apply`) if the automatic migration of those resources fails.
 
 ## Check the status
 
