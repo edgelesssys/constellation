@@ -79,11 +79,8 @@ Then wait until the node / Kubernetes upgrades are finished by periodically chec
 4. Update the `fromVersion` in `e2e-test-release.yml` and `e2e-test-weekly.yaml` to the newly released version. To check the current values, run: `grep "fromVersion: \[.*\]" -R .github`.
 5. Reset `upgradeRequiresIAMMigration`  in `iamupgradeapply.go`.
 
-## Pipeline cleanup
-
-When testing changes to the pipeline or when the pipeline fails during a release it might become necessary to clean up the images created by the pipeline.
-These are the necessary steps.
-
+## Troubleshooting: Pipeline cleanup
+No manual steps should be necessary anymore but in case you encounter issues, create a ticket to fix it. These are instructions to do some cleanup steps manually:
 ### General
 
 Depending on how far the pipeline ran we need to delete:
