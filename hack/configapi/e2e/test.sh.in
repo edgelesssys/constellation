@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+
+# Try to upload a file to S3 and then delete it using the configapi cli.
+# Check the file exists after uploading it.
+# Check the file does not exist after deleting it.
+
+###### script header ######
+
+lib=$(realpath @@BASE_LIB@@) || exit 1
+stat "${lib}" >> /dev/null || exit 1
+
+# shellcheck source=../../../bazel/sh/lib.bash
+if ! source "${lib}"; then
+  echo "Error: could not find import"
+  exit 1
+fi
+
+configapi_cli=$(realpath @@CONFIGAPI_CLI@@)
+stat "${configapi_cli}" >> /dev/null
+
+###### script body ######
+
+readonly region="eu-west-1"
+readonly bucket="resource-api-testing"
+readonly distribution="ETZGUP1CWRC2P"
+
+tmpdir=$(mktemp -d)
+readonly tmpdir
+registerExitHandler "rm -rf $tmpdir"
+
+readonly claim_path="'$tmpdir'/maaClaim.json"
+cat << EOF > "$claim_path"
+{
+  "x-ms-isolation-tee": {
+    "x-ms-sevsnpvm-tee-svn": 1,
+    "x-ms-sevsnpvm-snpfw-svn": 9,
+    "x-ms-sevsnpvm-microcode-svn": 116,
+    "x-ms-sevsnpvm-bootloader-svn": 4
+  }
+}
+EOF
+
+readonly date="2023-02-02-03-04"
+${configapi_cli} --maa-claims-path "$claim_path" --upload-date "$date" --region "$region" --bucket "$bucket" --distribution "$distribution"
+
+baseurl="https://d33dzgxuwsgbpw.cloudfront.net/constellation/v1/attestation/azure-sev-snp"
+if ! curl -fsSL ${baseurl}/${date}.json > /dev/null; then
+  echo "Checking for uploaded version file constellation/v1/attestation/azure-sev-snp/${date}.json: request returned ${?}"
+  exit 1
+fi
+
+if ! curl -fsSL ${baseurl}/${date}.json.sig > /dev/null; then
+  echo "Checking for uploaded version signature file constellation/v1/attestation/azure-sev-snp/${date}.json.sig: request returned ${?}"
+  exit 1
+fi
+
+if ! curl -fsSL ${baseurl}/list > /dev/null; then
+  echo "Checking for uploaded list file constellation/v1/attestation/azure-sev-snp/list: request returned ${?}"
+  exit 1
+fi
+${configapi_cli} delete --version "$date" --region "$region" --bucket "$bucket" --distribution "$distribution"
+
+# Omit -f to check for 404. We want to check that a file was deleted, therefore we expect the query to fail.
+http_code=$(curl -sSL -w '%{http_code}\n' -o /dev/null ${baseurl}/${date}.json)
+if [[ $http_code -ne 404 ]]; then
+  echo "Expected HTTP code 404 for: constellation/v1/attestation/azure-sev-snp/${date}.json, but got ${http_code}"
+  exit 1
+fi
+# Omit -f to check for 404. We want to check that a file was deleted, therefore we expect the query to fail.
+http_code=$(curl -sSL -w '%{http_code}\n' -o /dev/null ${baseurl}/${date}.json.sig)
+if [[ $http_code -ne 404 ]]; then
+  echo "Expected HTTP code 404 for: constellation/v1/attestation/azure-sev-snp/${date}.json, but got ${http_code}"
+  exit 1
+fi

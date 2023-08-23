@@ -44,6 +44,7 @@ type Client struct {
 	dirtyKeys []string
 	// invalidationIDs is a list of invalidation IDs that are currently in progress.
 	invalidationIDs []string
+	logger          *logger.Logger
 }
 
 // Config is the configuration for the Client.
@@ -118,6 +119,7 @@ func New(ctx context.Context, config Config) (*Client, CloseFunc, error) {
 		cacheInvalidationStrategy:    config.CacheInvalidationStrategy,
 		cacheInvalidationWaitTimeout: config.CacheInvalidationWaitTimeout,
 		bucketID:                     config.Bucket,
+		logger:                       log,
 	}
 	return client, client.Flush, nil
 }
@@ -218,10 +220,13 @@ func (c *Client) waitForInvalidations(ctx context.Context) error {
 			DistributionId: &c.distributionID,
 			Id:             &invalidationID,
 		}
+		c.logger.Debugf("Waiting for invalidation %s in distribution %s", invalidationID, c.distributionID)
 		if err := waiter.Wait(ctx, waitIn, c.cacheInvalidationWaitTimeout); err != nil {
 			return NewInvalidationError(fmt.Errorf("waiting for invalidation to complete: %w", err))
 		}
+
 	}
+	c.logger.Debugf("Invalidations finished")
 	c.invalidationIDs = nil
 	return nil
 }
