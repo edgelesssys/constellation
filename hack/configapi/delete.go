@@ -46,9 +46,20 @@ func (d deleteCmd) delete(cmd *cobra.Command) error {
 
 func runDelete(cmd *cobra.Command, _ []string) error {
 	log := logger.New(logger.PlainLog, zap.DebugLevel).Named("attestationconfigapi")
+
+	region, err := cmd.Flags().GetString("region")
+	if err != nil {
+		return fmt.Errorf("getting region: %w", err)
+	}
+
+	bucket, err := cmd.Flags().GetString("bucket")
+	if err != nil {
+		return fmt.Errorf("getting bucket: %w", err)
+	}
+
 	cfg := staticupload.Config{
-		Bucket: awsBucket,
-		Region: awsRegion,
+		Bucket: bucket,
+		Region: region,
 	}
 	client, stop, err := attestationconfigapi.NewClient(cmd.Context(), cfg, []byte(cosignPwd), []byte(privateKey), false, log)
 	if err != nil {

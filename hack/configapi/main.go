@@ -28,7 +28,6 @@ const (
 )
 
 var (
-	maaFilePath string
 	// Cosign credentials.
 	cosignPwd  string
 	privateKey string
@@ -55,8 +54,10 @@ func newRootCmd() *cobra.Command {
 		PreRunE: envCheck,
 		RunE:    runCmd,
 	}
-	rootCmd.Flags().StringVarP(&maaFilePath, "maa-claims-path", "t", "", "File path to a json file containing the MAA claims.")
+	rootCmd.Flags().StringP("maa-claims-path", "t", "", "File path to a json file containing the MAA claims.")
 	rootCmd.Flags().StringP("upload-date", "d", "", "upload a version with this date as version name.")
+	rootCmd.PersistentFlags().StringP("region", "r", awsRegion, "region of the targeted bucket.")
+	rootCmd.PersistentFlags().StringP("bucket", "b", awsBucket, "bucket targeted by all operations.")
 	must(rootCmd.MarkFlagRequired("maa-claims-path"))
 	rootCmd.AddCommand(newDeleteCmd())
 	return rootCmd
@@ -74,12 +75,19 @@ func envCheck(_ *cobra.Command, _ []string) error {
 func runCmd(cmd *cobra.Command, _ []string) error {
 	ctx := cmd.Context()
 	log := logger.New(logger.PlainLog, zap.DebugLevel).Named("attestationconfigapi")
-	cfg := staticupload.Config{
-		Bucket: awsBucket,
-		Region: awsRegion,
+
+	flags, err := parseCliFlags(cmd)
+	if err != nil {
+		return fmt.Errorf("parsing cli flags: %w", err)
 	}
-	log.Infof("Reading MAA claims from file: %s", maaFilePath)
-	maaClaimsBytes, err := os.ReadFile(maaFilePath)
+
+	cfg := staticupload.Config{
+		Bucket: flags.bucket,
+		Region: flags.region,
+	}
+
+	log.Infof("Reading MAA claims from file: %s", flags.maaFilePath)
+	maaClaimsBytes, err := os.ReadFile(flags.maaFilePath)
 	if err != nil {
 		return fmt.Errorf("reading MAA claims file: %w", err)
 	}
@@ -90,19 +98,7 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 	inputVersion := maaTCB.ToAzureSEVSNPVersion()
 	log.Infof("Input version: %+v", inputVersion)
 
-	dateStr, err := cmd.Flags().GetString("upload-date")
-	if err != nil {
-		return fmt.Errorf("getting upload date: %w", err)
-	}
-	uploadDate := time.Now()
-	if dateStr != "" {
-		uploadDate, err = time.Parse(attestationconfigapi.VersionFormat, dateStr)
-		if err != nil {
-			return fmt.Errorf("parsing date: %w", err)
-		}
-	}
-
-	latestAPIVersionAPI, err := attestationconfigapi.NewFetcher().FetchAzureSEVSNPVersionLatest(ctx, uploadDate)
+	latestAPIVersionAPI, err := attestationconfigapi.NewFetcher().FetchAzureSEVSNPVersionLatest(ctx, flags.uploadDate)
 	if err != nil {
 		return fmt.Errorf("fetching latest version: %w", err)
 	}
@@ -128,12 +124,55 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("creating client: %w", err)
 	}
 
-	if err := client.UploadAzureSEVSNP(ctx, inputVersion, uploadDate); err != nil {
+	if err := client.UploadAzureSEVSNP(ctx, inputVersion, flags.uploadDate); err != nil {
 		return fmt.Errorf("uploading version: %w", err)
 	}
 
 	cmd.Printf("Successfully uploaded new Azure SEV-SNP version: %+v\n", inputVersion)
 	return nil
+}
+
+type cliFlags struct {
+	maaFilePath string
+	uploadDate  time.Time
+	region      string
+	bucket      string
+}
+
+func parseCliFlags(cmd *cobra.Command) (cliFlags, error) {
+	maaFilePath, err := cmd.Flags().GetString("maa-claims-path")
+	if err != nil {
+		return cliFlags{}, fmt.Errorf("getting maa claims path: %w", err)
+	}
+
+	dateStr, err := cmd.Flags().GetString("upload-date")
+	if err != nil {
+		return cliFlags{}, fmt.Errorf("getting upload date: %w", err)
+	}
+	uploadDate := time.Now()
+	if dateStr != "" {
+		uploadDate, err = time.Parse(attestationconfigapi.VersionFormat, dateStr)
+		if err != nil {
+			return cliFlags{}, fmt.Errorf("parsing date: %w", err)
+		}
+	}
+
+	region, err := cmd.Flags().GetString("region")
+	if err != nil {
+		return cliFlags{}, fmt.Errorf("getting region: %w", err)
+	}
+
+	bucket, err := cmd.Flags().GetString("bucket")
+	if err != nil {
+		return cliFlags{}, fmt.Errorf("getting bucket: %w", err)
+	}
+
+	return cliFlags{
+		maaFilePath: maaFilePath,
+		uploadDate:  uploadDate,
+		region:      region,
+		bucket:      bucket,
+	}, nil
 }
 
 // maaTokenTCBClaims describes the TCB information in a MAA token.
