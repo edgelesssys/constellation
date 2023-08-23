@@ -52,6 +52,8 @@ jobs:
           echo "latest=${lastest}" | tee -a "$GITHUB_OUTPUT"
 
   build-ccm-gcp:
+    # matrix cannot handle empty lists
+    if: needs.find-ccm-versions.outputs.versions != '[]'
     runs-on: ubuntu-22.04
     permissions:
       contents: read
