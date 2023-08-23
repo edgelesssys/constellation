@@ -1,0 +1,36 @@
+name: E2E Attestationconfig API Test
+description: "Test the attestationconfig CLI is functional."
+
+inputs:
+  buildBuddyApiKey:
+    description: "BuildBuddy API key for caching Bazel artifacts"
+    required: true
+  cosignPrivateKey:
+    description: "Cosign private key"
+    required: true
+  cosignPassword:
+    description: "Password for Cosign private key"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup bazel
+      uses: ./.github/actions/setup_bazel
+      with:
+        useCache: "true"
+        buildBuddyApiKey: ${{ inputs.buildBuddyApiKey }}
+
+    - name: Login to AWS
+      uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 # v2.2.0
+      with:
+        role-to-assume: arn:aws:iam::795746500882:role/GithubTestResourceAPI
+        aws-region: eu-west-1
+
+    - name: Run attestationconfig API E2E
+      shell: bash
+      env:
+        COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
+        COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
+      run: |
+        bazel run //hack/configapi:configapi_e2e_test

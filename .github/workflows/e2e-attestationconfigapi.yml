@@ -1,0 +1,36 @@
+name: e2e test attestationconfig API
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - "release/**"
+    paths:
+      - "internal/api/**"
+      - ".github/workflows/e2e-attestationconfigapi.yml"
+  pull_request:
+    paths:
+      - "internal/api/**"
+      - ".github/workflows/e2e-attestationconfigapi.yml"
+
+jobs:
+  e2e-api:
+    runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+        with:
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
+      - name: Run Attestationconfig API E2E
+        uses: ./.github/actions/e2e_attestationconfigapi
+        with:
+          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
+          cosignPrivateKey: ${{ secrets.COSIGN_DEV_PRIVATE_KEY }}
+          cosignPassword: ${{ secrets.COSIGN_DEV_PASSWORD }}

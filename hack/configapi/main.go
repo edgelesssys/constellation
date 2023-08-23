@@ -4,6 +4,12 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+/*
+# configapi CLI
+
+A CLI to interact with the Attestationconfig API, a sub API of the Resource API.
+You can execute an e2e test by running: `bazel run //hack/configapi:configapi_e2e_test`.
+*/
 package main
 
 import (
@@ -13,6 +19,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"go.uber.org/zap"
 
@@ -23,6 +30,7 @@ import (
 const (
 	awsRegion           = "eu-central-1"
 	awsBucket           = "cdn-constellation-backend"
+	distributionID      = constants.CDNDefaultDistributionID
 	envCosignPwd        = "COSIGN_PASSWORD"
 	envCosignPrivateKey = "COSIGN_PRIVATE_KEY"
 )
@@ -58,6 +66,7 @@ func newRootCmd() *cobra.Command {
 	rootCmd.Flags().StringP("upload-date", "d", "", "upload a version with this date as version name.")
 	rootCmd.PersistentFlags().StringP("region", "r", awsRegion, "region of the targeted bucket.")
 	rootCmd.PersistentFlags().StringP("bucket", "b", awsBucket, "bucket targeted by all operations.")
+	rootCmd.PersistentFlags().StringP("distribution", "i", distributionID, "cloudflare distribution used.")
 	must(rootCmd.MarkFlagRequired("maa-claims-path"))
 	rootCmd.AddCommand(newDeleteCmd())
 	return rootCmd
@@ -72,7 +81,7 @@ func envCheck(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func runCmd(cmd *cobra.Command, _ []string) error {
+func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 	ctx := cmd.Context()
 	log := logger.New(logger.PlainLog, zap.DebugLevel).Named("attestationconfigapi")
 
@@ -82,8 +91,9 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 	}
 
 	cfg := staticupload.Config{
-		Bucket: flags.bucket,
-		Region: flags.region,
+		Bucket:         flags.bucket,
+		Region:         flags.region,
+		DistributionID: flags.distribution,
 	}
 
 	log.Infof("Reading MAA claims from file: %s", flags.maaFilePath)
@@ -114,17 +124,19 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 	}
 	log.Infof("Input version: %+v is newer than latest API version: %+v", inputVersion, latestAPIVersion)
 
-	client, stop, err := attestationconfigapi.NewClient(ctx, cfg, []byte(cosignPwd), []byte(privateKey), false, log)
-	defer func() {
-		if err := stop(ctx); err != nil {
-			cmd.Printf("stopping client: %v\n", err)
+	client, clientClose, err := attestationconfigapi.NewClient(ctx, cfg, []byte(cosignPwd), []byte(privateKey), false, log)
+	defer func(retErr *error) {
+		log.Infof("Invalidating cache. This may take some time")
+		if err := clientClose(cmd.Context()); err != nil && retErr == nil {
+			*retErr = fmt.Errorf("invalidating cache: %w", err)
 		}
-	}()
+	}(&retErr)
+
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
 	}
 
-	if err := client.UploadAzureSEVSNP(ctx, inputVersion, flags.uploadDate); err != nil {
+	if err := client.UploadAzureSEVSNPVersion(ctx, inputVersion, flags.uploadDate); err != nil {
 		return fmt.Errorf("uploading version: %w", err)
 	}
 
@@ -133,10 +145,11 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 }
 
 type cliFlags struct {
-	maaFilePath string
-	uploadDate  time.Time
-	region      string
-	bucket      string
+	maaFilePath  string
+	uploadDate   time.Time
+	region       string
+	bucket       string
+	distribution string
 }
 
 func parseCliFlags(cmd *cobra.Command) (cliFlags, error) {
@@ -167,11 +180,17 @@ func parseCliFlags(cmd *cobra.Command) (cliFlags, error) {
 		return cliFlags{}, fmt.Errorf("getting bucket: %w", err)
 	}
 
+	distribution, err := cmd.Flags().GetString("distribution")
+	if err != nil {
+		return cliFlags{}, fmt.Errorf("getting distribution: %w", err)
+	}
+
 	return cliFlags{
-		maaFilePath: maaFilePath,
-		uploadDate:  uploadDate,
-		region:      region,
-		bucket:      bucket,
+		maaFilePath:  maaFilePath,
+		uploadDate:   uploadDate,
+		region:       region,
+		bucket:       bucket,
+		distribution: distribution,
 	}, nil
 }
 

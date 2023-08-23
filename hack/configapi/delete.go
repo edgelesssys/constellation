@@ -7,6 +7,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
@@ -44,7 +45,7 @@ func (d deleteCmd) delete(cmd *cobra.Command) error {
 	return d.attestationClient.DeleteAzureSEVSNPVersion(cmd.Context(), version)
 }
 
-func runDelete(cmd *cobra.Command, _ []string) error {
+func runDelete(cmd *cobra.Command, _ []string) (retErr error) {
 	log := logger.New(logger.PlainLog, zap.DebugLevel).Named("attestationconfigapi")
 
 	region, err := cmd.Flags().GetString("region")
@@ -57,19 +58,27 @@ func runDelete(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("getting bucket: %w", err)
 	}
 
-	cfg := staticupload.Config{
-		Bucket: bucket,
-		Region: region,
+	distribution, err := cmd.Flags().GetString("distribution")
+	if err != nil {
+		return fmt.Errorf("getting distribution: %w", err)
 	}
-	client, stop, err := attestationconfigapi.NewClient(cmd.Context(), cfg, []byte(cosignPwd), []byte(privateKey), false, log)
+
+	cfg := staticupload.Config{
+		Bucket:         bucket,
+		Region:         region,
+		DistributionID: distribution,
+	}
+	client, clientClose, err := attestationconfigapi.NewClient(cmd.Context(), cfg, []byte(cosignPwd), []byte(privateKey), false, log)
 	if err != nil {
 		return fmt.Errorf("create attestation client: %w", err)
 	}
 	defer func() {
-		if err := stop(cmd.Context()); err != nil {
-			cmd.Printf("stopping client: %s\n", err.Error())
+		err := clientClose(cmd.Context())
+		if err != nil {
+			retErr = errors.Join(retErr, fmt.Errorf("failed to invalidate cache: %w", err))
 		}
 	}()
+
 	deleteCmd := deleteCmd{
 		attestationClient: client,
 	}
