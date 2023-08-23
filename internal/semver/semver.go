@@ -131,6 +131,7 @@ func (v Semver) String() string {
 }
 
 // Compare compares two versions. It relies on the semver.Compare function internally.
+// The result will be 0 if v == w, -1 if v < w, or +1 if v > w.
 func (v Semver) Compare(other Semver) int {
 	return semver.Compare(v.String(), other.String())
 }
