@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cloudcmd
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"testing"
@@ -19,19 +20,20 @@ func TestRollbackTerraform(t *testing.T) {
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		tfClient *stubTerraformClient
-		wantErr  bool
+		tfClient       *stubTerraformClient
+		wantCleanupErr bool
+		wantDestroyErr bool
 	}{
 		"success": {
 			tfClient: &stubTerraformClient{},
 		},
 		"destroy cluster error": {
-			tfClient: &stubTerraformClient{destroyErr: someErr},
-			wantErr:  true,
+			tfClient:       &stubTerraformClient{destroyErr: someErr},
+			wantDestroyErr: true,
 		},
 		"clean up workspace error": {
-			tfClient: &stubTerraformClient{cleanUpWorkspaceErr: someErr},
-			wantErr:  true,
+			tfClient:       &stubTerraformClient{cleanUpWorkspaceErr: someErr},
+			wantCleanupErr: true,
 		},
 	}
 
@@ -43,12 +45,18 @@ func TestRollbackTerraform(t *testing.T) {
 				client: tc.tfClient,
 			}
 
-			err := rollbacker.rollback(context.Background(), terraform.LogLevelNone)
-			if tc.wantErr {
+			destroyClusterErrOutput := &bytes.Buffer{}
+			err := rollbacker.rollback(context.Background(), destroyClusterErrOutput, terraform.LogLevelNone)
+			if tc.wantCleanupErr {
 				assert.Error(err)
 				if tc.tfClient.cleanUpWorkspaceErr == nil {
 					assert.False(tc.tfClient.cleanUpWorkspaceCalled)
 				}
+				return
+			}
+			if tc.wantDestroyErr {
+				assert.Error(err)
+				assert.Equal("Could not destroy the resources. Please delete the \"constellation-terraform\" directory manually if no resources were created\n", destroyClusterErrOutput.String())
 				return
 			}
 			assert.NoError(err)
@@ -65,6 +73,7 @@ func TestRollbackQEMU(t *testing.T) {
 		libvirt          *stubLibvirtRunner
 		tfClient         *stubTerraformClient
 		createdWorkspace bool
+		wantDestroyErr   bool
 		wantErr          bool
 	}{
 		"success": {
@@ -78,9 +87,9 @@ func TestRollbackQEMU(t *testing.T) {
 			wantErr:  true,
 		},
 		"destroy cluster error": {
-			libvirt:  &stubLibvirtRunner{stopErr: someErr},
-			tfClient: &stubTerraformClient{destroyErr: someErr},
-			wantErr:  true,
+			libvirt:        &stubLibvirtRunner{stopErr: someErr},
+			tfClient:       &stubTerraformClient{destroyErr: someErr},
+			wantDestroyErr: true,
 		},
 		"clean up workspace error": {
 			libvirt:  &stubLibvirtRunner{},
@@ -99,12 +108,19 @@ func TestRollbackQEMU(t *testing.T) {
 				createdWorkspace: tc.createdWorkspace,
 			}
 
-			err := rollbacker.rollback(context.Background(), terraform.LogLevelNone)
+			destroyClusterErrOutput := &bytes.Buffer{}
+
+			err := rollbacker.rollback(context.Background(), destroyClusterErrOutput, terraform.LogLevelNone)
 			if tc.wantErr {
 				assert.Error(err)
 				if tc.tfClient.cleanUpWorkspaceErr == nil {
 					assert.False(tc.tfClient.cleanUpWorkspaceCalled)
 				}
+				return
+			}
+			if tc.wantDestroyErr {
+				assert.Error(err)
+				assert.Equal("Could not destroy the resources. Please delete the \"constellation-terraform\" directory manually if no resources were created\n", destroyClusterErrOutput.String())
 				return
 			}
 			assert.NoError(err)
