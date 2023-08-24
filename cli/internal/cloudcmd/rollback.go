@@ -18,7 +18,7 @@ import (
 
 // rollbacker does a rollback.
 type rollbacker interface {
-	rollback(ctx context.Context, logLevel terraform.LogLevel) error
+	rollback(ctx context.Context, w io.Writer, logLevel terraform.LogLevel) error
 }
 
 // rollbackOnError calls rollback on the rollbacker if the handed error is not nil,
@@ -29,7 +29,7 @@ func rollbackOnError(w io.Writer, onErr *error, roll rollbacker, logLevel terraf
 	}
 	fmt.Fprintf(w, "An error occurred: %s\n", *onErr)
 	fmt.Fprintln(w, "Attempting to roll back.")
-	if err := roll.rollback(context.Background(), logLevel); err != nil {
+	if err := roll.rollback(context.Background(), w, logLevel); err != nil {
 		*onErr = errors.Join(*onErr, fmt.Errorf("on rollback: %w", err)) // TODO(katexochen): print the error, or return it?
 		return
 	}
@@ -55,11 +55,13 @@ type rollbackerQEMU struct {
 	createdWorkspace bool
 }
 
-func (r *rollbackerQEMU) rollback(ctx context.Context, logLevel terraform.LogLevel) (retErr error) {
+func (r *rollbackerQEMU) rollback(ctx context.Context, w io.Writer, logLevel terraform.LogLevel) (retErr error) {
 	if r.createdWorkspace {
 		retErr = r.client.Destroy(ctx, logLevel)
 	}
 	if retErr := errors.Join(retErr, r.libvirt.Stop(ctx)); retErr != nil {
+		fmt.Fprintf(w, "Could not destroy the resources. Please delete the %q directory manually if no resources were created\n",
+			constants.TerraformWorkingDir)
 		return retErr
 	}
 	return r.client.CleanUpWorkspace()
