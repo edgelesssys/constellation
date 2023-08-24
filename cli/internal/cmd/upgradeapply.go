@@ -386,9 +386,9 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(
 		HelmWaitMode: flags.helmWaitMode,
 	}
 
-	helmApply := func(allowDestructive bool) (helm.Runner, bool, error) {
+	prepareApply := func(allowDestructive bool) (helm.Applier, bool, error) {
 		options.AllowDestructive = allowDestructive
-		executor, includesUpgrades, err := u.helmApplier.ApplyCharts(conf, validK8sVersion, idFile, options,
+		executor, includesUpgrades, err := u.helmApplier.PrepareApply(conf, validK8sVersion, idFile, options,
 			tfOutput, serviceAccURI, secret)
 		var upgradeErr *compatibility.InvalidUpgradeError
 		switch {
@@ -400,7 +400,7 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(
 		return executor, includesUpgrades, nil
 	}
 
-	executor, includesUpgrades, err := helmApply(helm.DenyDestructive)
+	executor, includesUpgrades, err := prepareApply(helm.DenyDestructive)
 	if err != nil {
 		if !errors.Is(err, helm.ErrConfirmationMissing) {
 			return fmt.Errorf("upgrading charts with deny destructive mode: %w", err)
@@ -416,7 +416,7 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(
 				return nil
 			}
 		}
-		executor, includesUpgrades, err = helmApply(helm.AllowDestructive)
+		executor, includesUpgrades, err = prepareApply(helm.AllowDestructive)
 		if err != nil {
 			return fmt.Errorf("upgrading charts with allow destructive mode: %w", err)
 		}
@@ -432,7 +432,7 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(
 			return fmt.Errorf("creating CR backup: %w", err)
 		}
 	}
-	if err := executor.Run(cmd.Context()); err != nil {
+	if err := executor.Apply(cmd.Context()); err != nil {
 		return fmt.Errorf("applying Helm charts: %w", err)
 	}
 

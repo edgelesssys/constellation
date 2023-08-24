@@ -85,9 +85,9 @@ type Options struct {
 	Force            bool
 }
 
-// ApplyCharts loads the charts and returns the executor to apply them.
+// PrepareApply loads the charts and returns the executor to apply them.
 // TODO(elchead): remove validK8sVersion by putting ValidK8sVersion into config.Config, see AB#3374.
-func (h Client) ApplyCharts(conf *config.Config, validK8sversion versions.ValidK8sVersion, idFile clusterid.File, flags Options, tfOutput terraform.ApplyOutput, serviceAccURI string, masterSecret uri.MasterSecret) (Runner, bool, error) {
+func (h Client) PrepareApply(conf *config.Config, validK8sversion versions.ValidK8sVersion, idFile clusterid.File, flags Options, tfOutput terraform.ApplyOutput, serviceAccURI string, masterSecret uri.MasterSecret) (Applier, bool, error) {
 	releases, err := h.loadReleases(conf, masterSecret, validK8sversion, idFile, flags, tfOutput, serviceAccURI)
 	if err != nil {
 		return nil, false, fmt.Errorf("loading Helm releases: %w", err)
@@ -104,9 +104,9 @@ func (h Client) loadReleases(conf *config.Config, secret uri.MasterSecret, valid
 		serviceAccURI, tfOutput)
 }
 
-// Runner runs the Helm actions.
-type Runner interface {
-	Run(ctx context.Context) error
+// Applier runs the Helm actions.
+type Applier interface {
+	Apply(ctx context.Context) error
 }
 
 // ChartApplyExecutor is a Helm action executor that applies all actions.
@@ -115,8 +115,8 @@ type ChartApplyExecutor struct {
 	log     debugLog
 }
 
-// Run applies the charts in order.
-func (c ChartApplyExecutor) Run(ctx context.Context) error {
+// Apply applies the charts in order.
+func (c ChartApplyExecutor) Apply(ctx context.Context) error {
 	for _, action := range c.actions {
 		c.log.Debugf("Applying %q", action.ReleaseName())
 		if err := action.Apply(ctx); err != nil {

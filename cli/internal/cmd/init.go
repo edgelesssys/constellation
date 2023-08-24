@@ -275,7 +275,7 @@ func (i *initCmd) initialize(
 	if err != nil {
 		return fmt.Errorf("creating Helm client: %w", err)
 	}
-	executor, includesUpgrades, err := helmApplier.ApplyCharts(conf, k8sVersion, idFile, options, output,
+	executor, includesUpgrades, err := helmApplier.PrepareApply(conf, k8sVersion, idFile, options, output,
 		serviceAccURI, masterSecret)
 	if err != nil {
 		return fmt.Errorf("getting Helm chart executor: %w", err)
@@ -283,7 +283,7 @@ func (i *initCmd) initialize(
 	if includesUpgrades {
 		return errors.New("init: helm tried to upgrade charts instead of installing them")
 	}
-	if err := executor.Run(cmd.Context()); err != nil {
+	if err := executor.Apply(cmd.Context()); err != nil {
 		return fmt.Errorf("applying Helm charts: %w", err)
 	}
 	i.spinner.Stop()
@@ -629,7 +629,7 @@ type attestationConfigApplier interface {
 }
 
 type helmApplier interface {
-	ApplyCharts(conf *config.Config, validK8sversion versions.ValidK8sVersion, idFile clusterid.File, flags helm.Options, tfOutput terraform.ApplyOutput, serviceAccURI string, masterSecret uri.MasterSecret) (helm.Runner, bool, error)
+	PrepareApply(conf *config.Config, validK8sversion versions.ValidK8sVersion, idFile clusterid.File, flags helm.Options, tfOutput terraform.ApplyOutput, serviceAccURI string, masterSecret uri.MasterSecret) (helm.Applier, bool, error)
 }
 
 type clusterShower interface {

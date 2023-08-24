@@ -121,7 +121,7 @@ func TestMergeMaps(t *testing.T) {
 }
 
 func TestHelmApply(t *testing.T) {
-	cliVersion := semver.NewFromInt(2, 11, 0, "")
+	cliVersion := semver.NewFromInt(1, 99, 0, "")
 	csp := cloudprovider.AWS // using AWS since it has an additional chart: aws-load-balancer-controller
 	microserviceCharts := []string{
 		"constellation-services",
@@ -131,48 +131,45 @@ func TestHelmApply(t *testing.T) {
 	testCases := map[string]struct {
 		clusterMicroServiceVersion string
 		expectedActions            []string
+		expectUpgrade              bool
 		clusterCertManagerVersion  *string
 		clusterAWSLBVersion        *string
-		expectNoUpgrade            bool
 		allowDestructive           bool
 		expectError                bool
 	}{
 		"CLI microservices are 1 minor version newer than cluster ones": {
-			clusterMicroServiceVersion: "v2.10.1",
+			clusterMicroServiceVersion: "v1.98.1",
 			expectedActions:            microserviceCharts,
+			expectUpgrade:              true,
 		},
 		"CLI microservices are 2 minor versions newer than cluster ones": {
-			clusterMicroServiceVersion: "v2.9.0",
+			clusterMicroServiceVersion: "v1.97.0",
 			expectedActions:            []string{},
-			expectNoUpgrade:            true,
 		},
 		"cluster microservices are newer than CLI": {
-			clusterMicroServiceVersion: "v2.12.0",
-			expectNoUpgrade:            true,
+			clusterMicroServiceVersion: "v1.100.0",
 		},
 		"cluster and CLI microservices have the same version": {
-			clusterMicroServiceVersion: "v2.11.0",
+			clusterMicroServiceVersion: "v1.99.0",
 			expectedActions:            []string{},
-			expectNoUpgrade:            true,
 		},
 		"cert-manager upgrade is ignored when denying destructive upgrades": {
-			clusterMicroServiceVersion: "v2.11.0",
+			clusterMicroServiceVersion: "v1.99.0",
 			clusterCertManagerVersion:  toPtr("v1.9.0"),
 			allowDestructive:           false,
-			expectNoUpgrade:            true,
 			expectError:                true,
 		},
 		"both microservices and cert-manager are upgraded in destructive mode": {
-			clusterMicroServiceVersion: "v2.10.1",
+			clusterMicroServiceVersion: "v1.98.1",
 			clusterCertManagerVersion:  toPtr("v1.9.0"),
 			expectedActions:            append(microserviceCharts, "cert-manager"),
+			expectUpgrade:              true,
 			allowDestructive:           true,
 		},
 		"only missing aws-load-balancer-controller is installed": {
-			clusterMicroServiceVersion: "v2.11.0",
+			clusterMicroServiceVersion: "v1.99.0",
 			clusterAWSLBVersion:        toPtr(""),
 			expectedActions:            []string{"aws-load-balancer-controller"},
-			expectNoUpgrade:            true,
 		},
 	}
 
@@ -210,7 +207,7 @@ func TestHelmApply(t *testing.T) {
 			helmListVersion(lister, "aws-load-balancer-controller", awsLbVersion)
 
 			options.AllowDestructive = tc.allowDestructive
-			ex, includesUpgrade, err := sut.ApplyCharts(cfg, versions.ValidK8sVersion("v1.27.4"),
+			ex, includesUpgrade, err := sut.PrepareApply(cfg, versions.ValidK8sVersion("v1.27.4"),
 				clusterid.File{UID: "testuid", MeasurementSalt: []byte("measurementSalt")}, options,
 				fakeTerraformOutput(csp), fakeServiceAccURI(csp),
 				uri.MasterSecret{Key: []byte("secret"), Salt: []byte("masterSalt")})
@@ -220,7 +217,7 @@ func TestHelmApply(t *testing.T) {
 			} else {
 				assert.True(t, err == nil || errors.As(err, &upgradeErr))
 			}
-			assert.Equal(t, !tc.expectNoUpgrade, includesUpgrade)
+			assert.Equal(t, tc.expectUpgrade, includesUpgrade)
 			chartExecutor, ok := ex.(*ChartApplyExecutor)
 			assert.True(t, ok)
 			assert.ElementsMatch(t, tc.expectedActions, getActionReleaseNames(chartExecutor.actions))

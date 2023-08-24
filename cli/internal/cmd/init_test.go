@@ -222,13 +222,13 @@ type stubApplier struct {
 	err error
 }
 
-func (s stubApplier) ApplyCharts(_ *config.Config, _ versions.ValidK8sVersion, _ clusterid.File, _ helm.Options, _ terraform.ApplyOutput, _ string, _ uri.MasterSecret) (helm.Runner, bool, error) {
+func (s stubApplier) PrepareApply(_ *config.Config, _ versions.ValidK8sVersion, _ clusterid.File, _ helm.Options, _ terraform.ApplyOutput, _ string, _ uri.MasterSecret) (helm.Applier, bool, error) {
 	return stubRunner{}, false, s.err
 }
 
 type stubRunner struct{}
 
-func (s stubRunner) Run(_ context.Context) error {
+func (s stubRunner) Apply(_ context.Context) error {
 	return nil
 }
 

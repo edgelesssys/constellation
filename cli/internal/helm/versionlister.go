@@ -88,6 +88,7 @@ func (c ReleaseVersionClient) Versions() (ServiceVersions, error) {
 }
 
 // currentVersion returns the version of the currently installed helm release.
+// If the CSI chart is not installed, no error is returned because the user can configure if the chart should be installed.
 func (c ReleaseVersionClient) currentVersion(release string) (semver.Semver, error) {
 	rel, err := c.listAction(release)
 	if err != nil {
@@ -107,6 +108,7 @@ func (c ReleaseVersionClient) currentVersion(release string) (semver.Semver, err
 	return semver.New(rel[0].Chart.Metadata.Version)
 }
 
+// csi versions needs special handling because all versions of its subcharts should be gathered.
 func (c ReleaseVersionClient) csiVersions() (map[string]semver.Semver, error) {
 	packedChartRelease, err := c.listAction(csiInfo.releaseName)
 	if err != nil {
