@@ -55,8 +55,8 @@ Releases should be performed using [the automated release pipeline](https://gith
 4. upgrade the dogfooding cluster. Note that `upgrade check --update-config` will not yet show the new image. But you can manually set it in the config:
 ```sh
 ./constellation upgrade check --update-config
-yq eval -i '.image="v2.10.0"' constellation-conf.yaml
-./constellation config fetch-measurements --insecure
+yq eval -i '.image="vX.YY.Z"' constellation-conf.yaml
+./constellation config fetch-measurements
 ./constellation upgrade apply --yes --debug
 ```
 Then wait until the node / Kubernetes upgrades are finished by periodically checking:
