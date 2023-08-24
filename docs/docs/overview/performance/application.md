@@ -7,7 +7,7 @@ HashiCorp maintains a benchmarking tool for vault, [vault-benchmark](https://git
 Vault-benchmark generates load on a Vault deployment and measures response times.
 
 This article describes the results from running vault-benchmark on Constellation, AKS, and GKE.
-The setup for producing the data discussed in this article can be found in the [vault-benchmarks](https://github.com/edgelesssys/vault-benchmarks) repository.
+You can find the setup for producing the data discussed in this article in the [vault-benchmarks](https://github.com/edgelesssys/vault-benchmarks) repository.
 
 The Vault API used during benchmarking is the [transits secret engine](https://developer.hashicorp.com/vault/docs/secrets/transit).
 This allows services to send data to Vault for encryption, decryption, signing, and verification.
@@ -26,7 +26,7 @@ Minimum and maximum mark the range within which latency varies each run.
 The benchmark was configured with 1300 workers and 10 seconds per run.
 Those numbers were chosen empirically.
 The latency was stabilizing at 10 seconds runtime, not changing with further increase.
-Increasing the number of workers beyond 1300 leads to request failures marking the limit Vault was able to handle in our setup.
+Increasing the number of workers beyond 1300 leads to request failures, marking the limit Vault was able to handle in this setup.
 All results are based on 100 runs.
 
 The following data was generated while running five replicas, one primary, and four standby nodes.

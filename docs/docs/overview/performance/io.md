@@ -193,8 +193,12 @@ When comparing Constellation on GCP with GKE, Constellation has similar bandwidt
 
 ## Conclusion
 
-Despite the added [security benefits](../security-benefits.md) that Constellation provides, it only incurs a slight performance overhead when compared to managed Kubernetes offerings such as AKS and GKE. In most compute benchmarks, Constellation is on par, and while it may be slightly slower in certain I/O scenarios due to network and storage encryption, we're confident that we can reduce this overhead to single digits.
+Despite the added [security benefits](../security-benefits.md) that Constellation provides, it only incurs a slight performance overhead when compared to managed Kubernetes offerings such as AKS and GKE. In most compute benchmarks, Constellation is on par with it's alternatives.
+While it may be slightly slower in certain I/O scenarios due to network and storage encryption, there is ongoing work to reduce this overhead to single digits.
 
-For instance, storage encryption only adds between 10% to 15% overhead in terms of bandwidth and IOPS. Meanwhile, the biggest performance impact that Constellation currently faces is network encryption, which can incur up to 58% overhead on a 10 Gbps network. However, the Cilium team has conducted [benchmarks with Cilium using WireGuard encryption](https://docs.cilium.io/en/latest/operations/performance/benchmark/#encryption-wireguard-ipsec) on a 100 Gbps network that yielded over 15 Gbps, and we're confident that we can provide a similar level of performance with Constellation in our upcoming releases.
+For instance, storage encryption only adds between 10% to 15% overhead in terms of bandwidth and IOPS.
+Meanwhile, the biggest performance impact that Constellation currently faces is network encryption, which can incur up to 58% overhead on a 10 Gbps network.
+However, the Cilium team has conducted [benchmarks with Cilium using WireGuard encryption](https://docs.cilium.io/en/latest/operations/performance/benchmark/#encryption-wireguard-ipsec) on a 100 Gbps network that yielded over 15 Gbps.
+We're confident that Constellation will provide a similar level of performance with an upcoming release.
 
 Overall, Constellation strikes a great balance between security and performance, and we're continuously working to improve its performance capabilities while maintaining its high level of security.
