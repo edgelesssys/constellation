@@ -13,6 +13,7 @@ import (
 	"io"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 )
 
 // rollbacker does a rollback.
@@ -39,8 +40,10 @@ type rollbackerTerraform struct {
 	client tfCommonClient
 }
 
-func (r *rollbackerTerraform) rollback(ctx context.Context, logLevel terraform.LogLevel) error {
+func (r *rollbackerTerraform) rollback(ctx context.Context, w io.Writer, logLevel terraform.LogLevel) error {
 	if err := r.client.Destroy(ctx, logLevel); err != nil {
+		fmt.Fprintf(w, "Could not destroy the resources. Please delete the %q directory manually if no resources were created\n",
+			constants.TerraformWorkingDir)
 		return err
 	}
 	return r.client.CleanUpWorkspace()
