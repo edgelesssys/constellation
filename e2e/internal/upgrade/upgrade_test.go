@@ -350,6 +350,7 @@ func runUpgradeApply(require *require.Assertions, cli string) {
 	require.NoError(err, "Stdout: %s\nStderr: %s", string(stdout), string(stderr))
 	require.NoError(containsUnexepectedMsg(string(stdout)))
 	log.Println(string(stdout))
+	log.Println(string(stderr)) // also print debug logs.
 }
 
 // containsUnexepectedMsg checks if the given input contains any unexpected messages.

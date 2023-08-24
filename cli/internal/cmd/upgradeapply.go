@@ -28,13 +28,13 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
-	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/rogpeppe/go-internal/diff"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
 func newUpgradeApplyCmd() *cobra.Command {
@@ -75,14 +75,9 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	upgradeID := generateUpgradeID(upgradeCmdKindApply)
 
-	kubeUpgrader, err := kubecmd.New(cmd.OutOrStdout(), constants.AdminConfFilename, log)
+	kubeUpgrader, err := kubecmd.New(cmd.OutOrStdout(), constants.AdminConfFilename, fileHandler, log)
 	if err != nil {
 		return err
-	}
-
-	helmUpgrader, err := helm.NewUpgradeClient(kubectl.NewUninitialized(), constants.AdminConfFilename, constants.HelmNamespace, log)
-	if err != nil {
-		return fmt.Errorf("setting up helm client: %w", err)
 	}
 
 	configFetcher := attestationconfigapi.NewFetcher()
@@ -105,10 +100,14 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("setting up terraform client: %w", err)
 	}
+	helmClient, err := helm.NewClient(constants.AdminConfFilename, log)
+	if err != nil {
+		return fmt.Errorf("creating Helm client: %w", err)
+	}
 
 	applyCmd := upgradeApplyCmd{
-		helmUpgrader:    helmUpgrader,
 		kubeUpgrader:    kubeUpgrader,
+		helmApplier:     helmClient,
 		clusterUpgrader: clusterUpgrader,
 		configFetcher:   configFetcher,
 		clusterShower:   tfShower,
@@ -119,7 +118,7 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 }
 
 type upgradeApplyCmd struct {
-	helmUpgrader    helmUpgrader
+	helmApplier     helmApplier
 	kubeUpgrader    kubernetesUpgrader
 	clusterUpgrader clusterUpgrader
 	configFetcher   attestationconfigapi.Fetcher
@@ -381,12 +380,31 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(
 	if err != nil {
 		return fmt.Errorf("getting service account URI: %w", err)
 	}
-	err = u.helmUpgrader.Upgrade(
-		cmd.Context(), conf, idFile,
-		flags.upgradeTimeout, helm.DenyDestructive, flags.force, upgradeDir,
-		flags.conformance, flags.helmWaitMode, secret, serviceAccURI, validK8sVersion, tfOutput,
-	)
-	if errors.Is(err, helm.ErrConfirmationMissing) {
+	options := helm.Options{
+		Force:        flags.force,
+		Conformance:  flags.conformance,
+		HelmWaitMode: flags.helmWaitMode,
+	}
+
+	prepareApply := func(allowDestructive bool) (helm.Applier, bool, error) {
+		options.AllowDestructive = allowDestructive
+		executor, includesUpgrades, err := u.helmApplier.PrepareApply(conf, validK8sVersion, idFile, options,
+			tfOutput, serviceAccURI, secret)
+		var upgradeErr *compatibility.InvalidUpgradeError
+		switch {
+		case errors.As(err, &upgradeErr):
+			cmd.PrintErrln(err)
+		case err != nil:
+			return nil, false, fmt.Errorf("getting chart executor: %w", err)
+		}
+		return executor, includesUpgrades, nil
+	}
+
+	executor, includesUpgrades, err := prepareApply(helm.DenyDestructive)
+	if err != nil {
+		if !errors.Is(err, helm.ErrConfirmationMissing) {
+			return fmt.Errorf("upgrading charts with deny destructive mode: %w", err)
+		}
 		if !flags.yes {
 			cmd.PrintErrln("WARNING: Upgrading cert-manager will destroy all custom resources you have manually created that are based on the current version of cert-manager.")
 			ok, askErr := askToConfirm(cmd, "Do you want to upgrade cert-manager anyway?")
@@ -398,14 +416,27 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(
 				return nil
 			}
 		}
-		err = u.helmUpgrader.Upgrade(
-			cmd.Context(), conf, idFile,
-			flags.upgradeTimeout, helm.AllowDestructive, flags.force, upgradeDir,
-			flags.conformance, flags.helmWaitMode, secret, serviceAccURI, validK8sVersion, tfOutput,
-		)
+		executor, includesUpgrades, err = prepareApply(helm.AllowDestructive)
+		if err != nil {
+			return fmt.Errorf("upgrading charts with allow destructive mode: %w", err)
+		}
 	}
 
-	return err
+	if includesUpgrades {
+		u.log.Debugf("Creating backup of CRDs and CRs")
+		crds, err := u.kubeUpgrader.BackupCRDs(cmd.Context(), upgradeDir)
+		if err != nil {
+			return fmt.Errorf("creating CRD backup: %w", err)
+		}
+		if err := u.kubeUpgrader.BackupCRs(cmd.Context(), crds, upgradeDir); err != nil {
+			return fmt.Errorf("creating CR backup: %w", err)
+		}
+	}
+	if err := executor.Apply(cmd.Context()); err != nil {
+		return fmt.Errorf("applying Helm charts: %w", err)
+	}
+
+	return nil
 }
 
 // migrateFrom2_10 applies migrations necessary for upgrading from v2.10 to v2.11
@@ -527,18 +558,12 @@ type kubernetesUpgrader interface {
 	ExtendClusterConfigCertSANs(ctx context.Context, alternativeNames []string) error
 	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, error)
 	ApplyJoinConfig(ctx context.Context, newAttestConfig config.AttestationCfg, measurementSalt []byte) error
+	BackupCRs(ctx context.Context, crds []apiextensionsv1.CustomResourceDefinition, upgradeDir string) error
+	BackupCRDs(ctx context.Context, upgradeDir string) ([]apiextensionsv1.CustomResourceDefinition, error)
 	// TODO(v2.11): Remove this function after v2.11 is released.
 	RemoveAttestationConfigHelmManagement(ctx context.Context) error
 	// TODO(v2.12): Remove this function after v2.12 is released.
 	RemoveHelmKeepAnnotation(ctx context.Context) error
-}
-
-type helmUpgrader interface {
-	Upgrade(
-		ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration,
-		allowDestructive, force bool, upgradeDir string, conformance bool, helmWaitMode helm.WaitMode,
-		masterSecret uri.MasterSecret, serviceAccURI string, validK8sVersion versions.ValidK8sVersion, tfOutput terraform.ApplyOutput,
-	) error
 }
 
 type clusterUpgrader interface {

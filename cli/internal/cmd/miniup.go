@@ -208,21 +208,20 @@ func (m *miniUpCmd) initializeMiniCluster(cmd *cobra.Command, fileHandler file.H
 	m.log.Debugf("Created new logger")
 	defer log.Sync()
 
-	helmInstaller, err := helm.NewInitializer(log, constants.AdminConfFilename)
-	if err != nil {
-		return fmt.Errorf("creating Helm installer: %w", err)
-	}
 	tfClient, err := terraform.New(cmd.Context(), constants.TerraformWorkingDir)
 	if err != nil {
 		return fmt.Errorf("creating Terraform client: %w", err)
 	}
 
 	newAttestationApplier := func(w io.Writer, kubeConfig string, log debugLog) (attestationConfigApplier, error) {
-		return kubecmd.New(w, kubeConfig, log)
+		return kubecmd.New(w, kubeConfig, fileHandler, log)
 	}
-
-	i := newInitCmd(tfClient, helmInstaller, fileHandler, spinner, &kubeconfigMerger{log: log}, log)
-	if err := i.initialize(cmd, newDialer, license.NewClient(), m.configFetcher, newAttestationApplier); err != nil {
+	newHelmClient := func(kubeConfigPath string, log debugLog) (helmApplier, error) {
+		return helm.NewClient(kubeConfigPath, log)
+	} // need to defer helm client instantiation until kubeconfig is available
+	i := newInitCmd(tfClient, fileHandler, spinner, &kubeconfigMerger{log: log}, log)
+	if err := i.initialize(cmd, newDialer, license.NewClient(), m.configFetcher,
+		newAttestationApplier, newHelmClient); err != nil {
 		return err
 	}
 	m.log.Debugf("Initialized mini cluster")

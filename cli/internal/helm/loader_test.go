@@ -30,6 +30,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
+	"github.com/edgelesssys/constellation/v2/internal/semver"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 )
 
 func fakeServiceAccURI(provider cloudprovider.Provider) string {
@@ -65,26 +67,34 @@ func TestLoadReleases(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 	config := &config.Config{Provider: config.ProviderConfig{GCP: &config.GCPConfig{}}}
-	chartLoader := ChartLoader{csp: config.GetProvider()}
-	helmReleases, err := chartLoader.LoadReleases(
-		config, true, WaitModeAtomic,
+	k8sVersion := versions.ValidK8sVersion("v1.27.4")
+	chartLoader := newLoader(config, clusterid.File{UID: "testuid", MeasurementSalt: []byte("measurementSalt")},
+		k8sVersion, semver.NewFromInt(2, 10, 0, ""))
+	helmReleases, err := chartLoader.loadReleases(
+		true, WaitModeAtomic,
 		uri.MasterSecret{Key: []byte("secret"), Salt: []byte("masterSalt")},
-		fakeServiceAccURI(cloudprovider.GCP), clusterid.File{UID: "testuid"}, terraform.ApplyOutput{GCP: &terraform.GCPApplyOutput{}},
+		fakeServiceAccURI(cloudprovider.GCP), terraform.ApplyOutput{GCP: &terraform.GCPApplyOutput{}},
 	)
 	require.NoError(err)
-	chart := helmReleases.ConstellationServices.Chart
-	assert.NotNil(chart.Dependencies())
+	for _, release := range helmReleases {
+		if release.ReleaseName == constellationServicesInfo.releaseName {
+			assert.NotNil(release.Chart.Dependencies())
+		}
+	}
 }
 
 func TestLoadAWSLoadBalancerValues(t *testing.T) {
-	sut := ChartLoader{
+	sut := chartLoader{
+		config:      &config.Config{Name: "testCluster"},
 		clusterName: "testCluster",
+		idFile:      clusterid.File{UID: "testuid"},
 	}
 	val := sut.loadAWSLBControllerValues()
-	assert.Equal(t, "testCluster", val["clusterName"])
+	assert.Equal(t, "testCluster-testuid", val["clusterName"])
 	// needs to run on control-plane
 	assert.Contains(t, val["nodeSelector"].(map[string]any), "node-role.kubernetes.io/control-plane")
-	assert.Contains(t, val["tolerations"].([]map[string]any), map[string]any{"key": "node-role.kubernetes.io/control-plane", "operator": "Exists", "effect": "NoSchedule"})
+	assert.Contains(t, val["tolerations"].([]map[string]any),
+		map[string]any{"key": "node-role.kubernetes.io/control-plane", "operator": "Exists", "effect": "NoSchedule"})
 }
 
 // TestConstellationServices checks if the rendered constellation-services chart produces the expected yaml files.
@@ -146,7 +156,7 @@ func TestConstellationServices(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			chartLoader := ChartLoader{
+			chartLoader := chartLoader{
 				csp:                      tc.config.GetProvider(),
 				joinServiceImage:         "joinServiceImage",
 				keyServiceImage:          "keyServiceImage",
@@ -239,7 +249,7 @@ func TestOperators(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			chartLoader := ChartLoader{
+			chartLoader := chartLoader{
 				csp:                          tc.csp,
 				joinServiceImage:             "joinServiceImage",
 				keyServiceImage:              "keyServiceImage",

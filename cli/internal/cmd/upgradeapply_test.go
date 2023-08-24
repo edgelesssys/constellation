@@ -11,10 +11,8 @@ import (
 	"context"
 	"io"
 	"testing"
-	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
-	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -24,24 +22,24 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
 func TestUpgradeApply(t *testing.T) {
 	testCases := map[string]struct {
-		helmUpgrader      *stubHelmUpgrader
+		helmUpgrader      stubApplier
 		kubeUpgrader      *stubKubernetesUpgrader
 		terraformUpgrader *stubTerraformUpgrader
-		flags             upgradeApplyFlags
 		wantErr           bool
+		flags             upgradeApplyFlags
 		stdin             string
 	}{
 		"success": {
 			kubeUpgrader:      &stubKubernetesUpgrader{currentConfig: config.DefaultForAzureSEVSNP()},
-			helmUpgrader:      &stubHelmUpgrader{},
+			helmUpgrader:      stubApplier{},
 			terraformUpgrader: &stubTerraformUpgrader{},
 			flags:             upgradeApplyFlags{yes: true},
 		},
@@ -50,7 +48,7 @@ func TestUpgradeApply(t *testing.T) {
 				currentConfig:  config.DefaultForAzureSEVSNP(),
 				nodeVersionErr: assert.AnError,
 			},
-			helmUpgrader:      &stubHelmUpgrader{},
+			helmUpgrader:      stubApplier{},
 			terraformUpgrader: &stubTerraformUpgrader{},
 			wantErr:           true,
 			flags:             upgradeApplyFlags{yes: true},
@@ -60,7 +58,7 @@ func TestUpgradeApply(t *testing.T) {
 				currentConfig:  config.DefaultForAzureSEVSNP(),
 				nodeVersionErr: kubecmd.ErrInProgress,
 			},
-			helmUpgrader:      &stubHelmUpgrader{},
+			helmUpgrader:      stubApplier{},
 			terraformUpgrader: &stubTerraformUpgrader{},
 			flags:             upgradeApplyFlags{yes: true},
 		},
@@ -68,7 +66,7 @@ func TestUpgradeApply(t *testing.T) {
 			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig: config.DefaultForAzureSEVSNP(),
 			},
-			helmUpgrader:      &stubHelmUpgrader{err: assert.AnError},
+			helmUpgrader:      stubApplier{err: assert.AnError},
 			terraformUpgrader: &stubTerraformUpgrader{},
 			wantErr:           true,
 			flags:             upgradeApplyFlags{yes: true},
@@ -77,7 +75,7 @@ func TestUpgradeApply(t *testing.T) {
 			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig: config.DefaultForAzureSEVSNP(),
 			},
-			helmUpgrader:      &stubHelmUpgrader{},
+			helmUpgrader:      stubApplier{},
 			terraformUpgrader: &stubTerraformUpgrader{terraformDiff: true},
 			wantErr:           true,
 			stdin:             "no\n",
@@ -86,7 +84,7 @@ func TestUpgradeApply(t *testing.T) {
 			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig: config.DefaultForAzureSEVSNP(),
 			},
-			helmUpgrader:      &stubHelmUpgrader{},
+			helmUpgrader:      stubApplier{},
 			terraformUpgrader: &stubTerraformUpgrader{planTerraformErr: assert.AnError},
 			wantErr:           true,
 			flags:             upgradeApplyFlags{yes: true},
@@ -95,7 +93,7 @@ func TestUpgradeApply(t *testing.T) {
 			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig: config.DefaultForAzureSEVSNP(),
 			},
-			helmUpgrader: &stubHelmUpgrader{},
+			helmUpgrader: stubApplier{},
 			terraformUpgrader: &stubTerraformUpgrader{
 				applyTerraformErr: assert.AnError,
 				terraformDiff:     true,
@@ -117,12 +115,12 @@ func TestUpgradeApply(t *testing.T) {
 			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.Azure)
 
 			require.NoError(handler.WriteYAML(constants.ConfigFilename, cfg))
-			require.NoError(handler.WriteJSON(constants.ClusterIDsFilename, clusterid.File{}))
+			require.NoError(handler.WriteJSON(constants.ClusterIDsFilename, clusterid.File{MeasurementSalt: []byte("measurementSalt")}))
 			require.NoError(handler.WriteJSON(constants.MasterSecretFilename, uri.MasterSecret{}))
 
 			upgrader := upgradeApplyCmd{
 				kubeUpgrader:    tc.kubeUpgrader,
-				helmUpgrader:    tc.helmUpgrader,
+				helmApplier:     tc.helmUpgrader,
 				clusterUpgrader: tc.terraformUpgrader,
 				log:             logger.NewTest(t),
 				configFetcher:   stubAttestationFetcher{},
@@ -140,20 +138,17 @@ func TestUpgradeApply(t *testing.T) {
 	}
 }
 
-type stubHelmUpgrader struct {
-	err error
-}
-
-func (u stubHelmUpgrader) Upgrade(
-	_ context.Context, _ *config.Config, _ clusterid.File, _ time.Duration, _, _ bool, _ string, _ bool,
-	_ helm.WaitMode, _ uri.MasterSecret, _ string, _ versions.ValidK8sVersion, _ terraform.ApplyOutput,
-) error {
-	return u.err
-}
-
 type stubKubernetesUpgrader struct {
 	nodeVersionErr error
 	currentConfig  config.AttestationCfg
+}
+
+func (u stubKubernetesUpgrader) BackupCRDs(_ context.Context, _ string) ([]apiextensionsv1.CustomResourceDefinition, error) {
+	return []apiextensionsv1.CustomResourceDefinition{}, nil
+}
+
+func (u stubKubernetesUpgrader) BackupCRs(_ context.Context, _ []apiextensionsv1.CustomResourceDefinition, _ string) error {
+	return nil
 }
 
 func (u stubKubernetesUpgrader) UpgradeNodeVersion(_ context.Context, _ *config.Config, _ bool) error {

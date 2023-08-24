@@ -17,16 +17,6 @@ type Release struct {
 	WaitMode    WaitMode
 }
 
-// Releases bundles all helm releases to be deployed to Constellation.
-type Releases struct {
-	AWSLoadBalancerController *Release
-	CSI                       *Release
-	Cilium                    Release
-	CertManager               Release
-	ConstellationOperators    Release
-	ConstellationServices     Release
-}
-
 // WaitMode specifies the wait mode for a helm release.
 type WaitMode string
 

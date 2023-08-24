@@ -186,16 +186,13 @@ func TestInitialize(t *testing.T) {
 			ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 			defer cancel()
 			cmd.SetContext(ctx)
-			i := newInitCmd(&stubShowCluster{}, &stubHelmInstaller{}, fileHandler, &nopSpinner{}, nil, logger.NewTest(t))
-			err := i.initialize(
-				cmd,
-				newDialer,
-				&stubLicenseClient{},
-				stubAttestationFetcher{},
+			i := newInitCmd(&stubShowCluster{}, fileHandler, &nopSpinner{}, nil, logger.NewTest(t))
+			err := i.initialize(cmd, newDialer, &stubLicenseClient{}, stubAttestationFetcher{},
 				func(io.Writer, string, debugLog) (attestationConfigApplier, error) {
 					return &stubAttestationApplier{}, nil
-				},
-			)
+				}, func(_ string, _ debugLog) (helmApplier, error) {
+					return &stubApplier{}, nil
+				})
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -219,6 +216,20 @@ func TestInitialize(t *testing.T) {
 			assert.NotEmpty(secret.Salt)
 		})
 	}
+}
+
+type stubApplier struct {
+	err error
+}
+
+func (s stubApplier) PrepareApply(_ *config.Config, _ versions.ValidK8sVersion, _ clusterid.File, _ helm.Options, _ terraform.ApplyOutput, _ string, _ uri.MasterSecret) (helm.Applier, bool, error) {
+	return stubRunner{}, false, s.err
+}
+
+type stubRunner struct{}
+
+func (s stubRunner) Apply(_ context.Context) error {
+	return nil
 }
 
 func TestGetLogs(t *testing.T) {
@@ -310,7 +321,7 @@ func TestWriteOutput(t *testing.T) {
 		UID: "test-uid",
 		IP:  "cluster-ip",
 	}
-	i := newInitCmd(nil, nil, fileHandler, nil, &stubMerger{}, logger.NewTest(t))
+	i := newInitCmd(nil, fileHandler, &nopSpinner{}, &stubMerger{}, logger.NewTest(t))
 	err := i.writeOutput(idFile, resp.GetInitSuccess(), false, &out)
 	require.NoError(err)
 	// assert.Contains(out.String(), ownerID)
@@ -403,7 +414,7 @@ func TestGenerateMasterSecret(t *testing.T) {
 			require.NoError(tc.createFileFunc(fileHandler))
 
 			var out bytes.Buffer
-			i := newInitCmd(nil, nil, fileHandler, nil, nil, logger.NewTest(t))
+			i := newInitCmd(nil, fileHandler, nil, nil, logger.NewTest(t))
 			secret, err := i.generateMasterSecret(&out)
 
 			if tc.wantErr {
@@ -493,16 +504,13 @@ func TestAttestation(t *testing.T) {
 	defer cancel()
 	cmd.SetContext(ctx)
 
-	i := newInitCmd(nil, nil, fileHandler, &nopSpinner{}, nil, logger.NewTest(t))
-	err := i.initialize(
-		cmd,
-		newDialer,
-		&stubLicenseClient{},
-		stubAttestationFetcher{},
+	i := newInitCmd(nil, fileHandler, &nopSpinner{}, nil, logger.NewTest(t))
+	err := i.initialize(cmd, newDialer, &stubLicenseClient{}, stubAttestationFetcher{},
 		func(io.Writer, string, debugLog) (attestationConfigApplier, error) {
 			return &stubAttestationApplier{}, nil
-		},
-	)
+		}, func(_ string, _ debugLog) (helmApplier, error) {
+			return &stubApplier{}, nil
+		})
 	assert.Error(err)
 	// make sure the error is actually a TLS handshake error
 	assert.Contains(err.Error(), "transport: authentication handshake failed")
@@ -662,12 +670,6 @@ func (c stubInitClient) Recv() (*initproto.InitResponse, error) {
 	}
 
 	return res, err
-}
-
-type stubHelmInstaller struct{}
-
-func (i *stubHelmInstaller) Install(_ context.Context, _ *helm.Releases) error {
-	return nil
 }
 
 type stubShowCluster struct{}

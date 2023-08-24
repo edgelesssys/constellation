@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package helm
+package kubecmd
 
 import (
 	"context"
@@ -52,14 +52,13 @@ func TestBackupCRDs(t *testing.T) {
 			crd := apiextensionsv1.CustomResourceDefinition{}
 			err := yaml.Unmarshal([]byte(tc.crd), &crd)
 			require.NoError(err)
-			client := UpgradeClient{
-				config:  nil,
-				kubectl: stubCrdClient{crds: []apiextensionsv1.CustomResourceDefinition{crd}, getCRDsError: tc.getCRDsError},
-				fs:      file.NewHandler(memFs),
-				log:     stubLog{},
+			client := KubeCmd{
+				kubectl:     &stubKubectl{crds: []apiextensionsv1.CustomResourceDefinition{crd}, getCRDsError: tc.getCRDsError},
+				fileHandler: file.NewHandler(memFs),
+				log:         stubLog{},
 			}
 
-			_, err = client.backupCRDs(context.Background(), tc.upgradeID)
+			_, err = client.BackupCRDs(context.Background(), tc.upgradeID)
 			if tc.wantError {
 				assert.Error(err)
 				return
@@ -143,14 +142,13 @@ func TestBackupCRs(t *testing.T) {
 			require := require.New(t)
 			memFs := afero.NewMemMapFs()
 
-			client := UpgradeClient{
-				config:  nil,
-				kubectl: stubCrdClient{crs: []unstructured.Unstructured{tc.resource}, getCRsError: tc.getCRsError},
-				fs:      file.NewHandler(memFs),
-				log:     stubLog{},
+			client := KubeCmd{
+				kubectl:     &stubKubectl{crs: []unstructured.Unstructured{tc.resource}, getCRsError: tc.getCRsError},
+				fileHandler: file.NewHandler(memFs),
+				log:         stubLog{},
 			}
 
-			err := client.backupCRs(context.Background(), []apiextensionsv1.CustomResourceDefinition{tc.crd}, tc.upgradeID)
+			err := client.BackupCRs(context.Background(), []apiextensionsv1.CustomResourceDefinition{tc.crd}, tc.upgradeID)
 			if tc.wantError {
 				assert.Error(err)
 				return
@@ -173,22 +171,14 @@ type stubLog struct{}
 func (s stubLog) Debugf(_ string, _ ...any) {}
 func (s stubLog) Sync()                     {}
 
-type stubCrdClient struct {
-	crds         []apiextensionsv1.CustomResourceDefinition
-	getCRDsError error
-	crs          []unstructured.Unstructured
-	getCRsError  error
-	crdClient
-}
-
-func (c stubCrdClient) ListCRDs(_ context.Context) ([]apiextensionsv1.CustomResourceDefinition, error) {
+func (c stubKubectl) ListCRDs(_ context.Context) ([]apiextensionsv1.CustomResourceDefinition, error) {
 	if c.getCRDsError != nil {
 		return nil, c.getCRDsError
 	}
 	return c.crds, nil
 }
 
-func (c stubCrdClient) ListCRs(_ context.Context, _ schema.GroupVersionResource) ([]unstructured.Unstructured, error) {
+func (c stubKubectl) ListCRs(_ context.Context, _ schema.GroupVersionResource) ([]unstructured.Unstructured, error) {
 	if c.getCRsError != nil {
 		return nil, c.getCRsError
 	}

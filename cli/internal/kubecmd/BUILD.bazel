@@ -4,6 +4,7 @@ load("//bazel/go:go_test.bzl", "go_test")
 go_library(
     name = "kubecmd",
     srcs = [
+        "backup.go",
         "kubecmd.go",
         "status.go",
     ],
@@ -16,6 +17,7 @@ go_library(
         "//internal/compatibility",
         "//internal/config",
         "//internal/constants",
+        "//internal/file",
         "//internal/imagefetcher",
         "//internal/kubernetes",
         "//internal/kubernetes/kubectl",
@@ -23,6 +25,7 @@ go_library(
         "//internal/versions/components",
         "//operators/constellation-node-operator/api/v1alpha1",
         "@io_k8s_api//core/v1:core",
+        "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1:apiextensions",
         "@io_k8s_apimachinery//pkg/api/errors",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
         "@io_k8s_apimachinery//pkg/apis/meta/v1/unstructured",
@@ -37,7 +40,10 @@ go_library(
 
 go_test(
     name = "kubecmd_test",
-    srcs = ["kubecmd_test.go"],
+    srcs = [
+        "backup_test.go",
+        "kubecmd_test.go",
+    ],
     embed = [":kubecmd"],
     deps = [
         "//internal/attestation/measurements",
@@ -46,18 +52,23 @@ go_test(
         "//internal/compatibility",
         "//internal/config",
         "//internal/constants",
+        "//internal/file",
         "//internal/logger",
         "//internal/versions",
         "//internal/versions/components",
         "//operators/constellation-node-operator/api/v1alpha1",
+        "@com_github_pkg_errors//:errors",
+        "@com_github_spf13_afero//:afero",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//mock",
         "@com_github_stretchr_testify//require",
         "@io_k8s_api//core/v1:core",
+        "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1:apiextensions",
         "@io_k8s_apimachinery//pkg/api/errors",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
         "@io_k8s_apimachinery//pkg/apis/meta/v1/unstructured",
         "@io_k8s_apimachinery//pkg/runtime",
         "@io_k8s_apimachinery//pkg/runtime/schema",
+        "@io_k8s_sigs_yaml//:yaml",
     ],
 )
