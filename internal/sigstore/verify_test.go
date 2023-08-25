@@ -89,3 +89,33 @@ gCDlEzkuOCybCHf+q766bve799L7Y5y5oRsHY1MrUCUwYF/tL7Sg7EYMsA==
 		})
 	}
 }
+
+func TestIsBase64(t *testing.T) {
+	tests := map[string]struct {
+		signature []byte
+		wantErr   bool
+	}{
+		"valid base64": {
+			signature: []byte("SGVsbG8gV29ybGQ="),
+			wantErr:   false,
+		},
+		"invalid base64": {
+			signature: []byte("not base64"),
+			wantErr:   true,
+		},
+		"empty input": {
+			signature: []byte{},
+			wantErr:   false,
+		},
+	}
+
+	for tc, tt := range tests {
+		t.Run(tc, func(t *testing.T) {
+			err := IsBase64(tt.signature)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("IsBase64() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}

@@ -21,9 +21,9 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/staticupload"
 	"go.uber.org/zap"
 
-	"github.com/edgelesssys/constellation/v2/internal/staticupload"
 	"github.com/spf13/cobra"
 )
 

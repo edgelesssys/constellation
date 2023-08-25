@@ -5,5 +5,8 @@ go_library(
     srcs = ["fetcher.go"],
     importpath = "github.com/edgelesssys/constellation/v2/internal/api/fetcher",
     visibility = ["//:__subpackages__"],
-    deps = ["//internal/sigstore"],
+    deps = [
+        "//internal/constants",
+        "//internal/sigstore",
+    ],
 )
