@@ -12,5 +12,6 @@ go_library(
         "//internal/file",
         "//internal/role",
         "//internal/semver",
+        "//internal/versions",
     ],
 )

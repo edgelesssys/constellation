@@ -8,6 +8,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -29,8 +30,28 @@ func TestConfigGenerateKubernetesVersion(t *testing.T) {
 		version string
 		wantErr bool
 	}{
-		"success": {
+		"default version": {
+			version: "",
+		},
+		"without v prefix": {
+			version: strings.TrimPrefix(string(versions.Default), "v"),
+		},
+		"K8s version without patch version": {
 			version: semver.MajorMinor(string(versions.Default)),
+		},
+		"K8s version with patch version": {
+			version: string(versions.Default),
+		},
+		"K8s version with invalid patch version": {
+			version: func() string {
+				s := string(versions.Default)
+				return s[:len(s)-1] + "99"
+			}(),
+			wantErr: true,
+		},
+		"outdated K8s version": {
+			version: "v1.0.0",
+			wantErr: true,
 		},
 		"no semver": {
 			version: "asdf",
@@ -50,11 +71,13 @@ func TestConfigGenerateKubernetesVersion(t *testing.T) {
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 			cmd := newConfigGenerateCmd()
 			cmd.Flags().String("workspace", "", "") // register persistent flag manually
-			err := cmd.Flags().Set("kubernetes", tc.version)
-			require.NoError(err)
+			if tc.version != "" {
+				err := cmd.Flags().Set("kubernetes", tc.version)
+				require.NoError(err)
+			}
 
 			cg := &configGenerateCmd{log: logger.NewTest(t)}
-			err = cg.configGenerate(cmd, fileHandler, cloudprovider.Unknown, "")
+			err := cg.configGenerate(cmd, fileHandler, cloudprovider.Unknown, "")
 
 			if tc.wantErr {
 				assert.Error(err)

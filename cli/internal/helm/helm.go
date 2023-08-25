@@ -39,7 +39,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
 )
 
 const (
@@ -87,8 +86,8 @@ type Options struct {
 
 // PrepareApply loads the charts and returns the executor to apply them.
 // TODO(elchead): remove validK8sVersion by putting ValidK8sVersion into config.Config, see AB#3374.
-func (h Client) PrepareApply(conf *config.Config, validK8sversion versions.ValidK8sVersion, idFile clusterid.File, flags Options, tfOutput terraform.ApplyOutput, serviceAccURI string, masterSecret uri.MasterSecret) (Applier, bool, error) {
-	releases, err := h.loadReleases(conf, masterSecret, validK8sversion, idFile, flags, tfOutput, serviceAccURI)
+func (h Client) PrepareApply(conf *config.Config, idFile clusterid.File, flags Options, tfOutput terraform.ApplyOutput, serviceAccURI string, masterSecret uri.MasterSecret) (Applier, bool, error) {
+	releases, err := h.loadReleases(conf, masterSecret, idFile, flags, tfOutput, serviceAccURI)
 	if err != nil {
 		return nil, false, fmt.Errorf("loading Helm releases: %w", err)
 	}
@@ -97,8 +96,8 @@ func (h Client) PrepareApply(conf *config.Config, validK8sversion versions.Valid
 	return &ChartApplyExecutor{actions: actions, log: h.log}, includesUpgrades, err
 }
 
-func (h Client) loadReleases(conf *config.Config, secret uri.MasterSecret, validK8sVersion versions.ValidK8sVersion, idFile clusterid.File, flags Options, tfOutput terraform.ApplyOutput, serviceAccURI string) ([]Release, error) {
-	helmLoader := newLoader(conf, idFile, validK8sVersion, h.cliVersion)
+func (h Client) loadReleases(conf *config.Config, secret uri.MasterSecret, idFile clusterid.File, flags Options, tfOutput terraform.ApplyOutput, serviceAccURI string) ([]Release, error) {
+	helmLoader := newLoader(conf, idFile, h.cliVersion)
 	h.log.Debugf("Created new Helm loader")
 	return helmLoader.loadReleases(flags.Conformance, flags.HelmWaitMode, secret,
 		serviceAccURI, tfOutput)

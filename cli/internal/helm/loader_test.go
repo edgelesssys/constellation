@@ -31,7 +31,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
 )
 
 func fakeServiceAccURI(provider cloudprovider.Provider) string {
@@ -67,9 +66,8 @@ func TestLoadReleases(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 	config := &config.Config{Provider: config.ProviderConfig{GCP: &config.GCPConfig{}}}
-	k8sVersion := versions.ValidK8sVersion("v1.27.4")
 	chartLoader := newLoader(config, clusterid.File{UID: "testuid", MeasurementSalt: []byte("measurementSalt")},
-		k8sVersion, semver.NewFromInt(2, 10, 0, ""))
+		semver.NewFromInt(2, 10, 0, ""))
 	helmReleases, err := chartLoader.loadReleases(
 		true, WaitModeAtomic,
 		uri.MasterSecret{Key: []byte("secret"), Salt: []byte("masterSalt")},

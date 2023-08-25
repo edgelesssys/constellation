@@ -77,11 +77,12 @@ type chartLoader struct {
 }
 
 // newLoader creates a new ChartLoader.
-func newLoader(config *config.Config, idFile clusterid.File, k8sVersion versions.ValidK8sVersion, cliVersion semver.Semver) *chartLoader {
+func newLoader(config *config.Config, idFile clusterid.File, cliVersion semver.Semver) *chartLoader {
 	// TODO(malt3): Allow overriding container image registry + prefix for all images
 	// (e.g. for air-gapped environments).
 	var ccmImage, cnmImage string
 	csp := config.GetProvider()
+	k8sVersion := config.KubernetesVersion
 	switch csp {
 	case cloudprovider.AWS:
 		ccmImage = versions.VersionConfigs[k8sVersion].CloudControllerManagerImageAWS

@@ -62,7 +62,6 @@ go_test(
         "//internal/constants",
         "//internal/file",
         "//internal/semver",
-        "//internal/versions",
         "@com_github_go_playground_locales//en",
         "@com_github_go_playground_universal_translator//:universal-translator",
         "@com_github_go_playground_validator_v10//:validator",

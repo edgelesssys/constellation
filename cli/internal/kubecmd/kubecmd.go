@@ -124,17 +124,13 @@ func (k *KubeCmd) UpgradeNodeVersion(ctx context.Context, conf *config.Config, f
 	nodeVersion.Spec.ImageReference = imageReference
 	nodeVersion.Spec.ImageVersion = imageVersion.Version()
 
+	// TODO(elchead): why?
 	// We have to allow users to specify outdated k8s patch versions.
 	// Therefore, this code has to skip k8s updates if a user configures an outdated (i.e. invalid) k8s version.
 	var components *corev1.ConfigMap
-	currentK8sVersion, err := versions.NewValidK8sVersion(conf.KubernetesVersion, true)
-	if err != nil {
-		innerErr := fmt.Errorf("unsupported Kubernetes version, supported versions are %s", strings.Join(versions.SupportedK8sVersions(), ", "))
-		err = compatibility.NewInvalidUpgradeError(nodeVersion.Spec.KubernetesClusterVersion, conf.KubernetesVersion, innerErr)
-	} else {
-		versionConfig := versions.VersionConfigs[currentK8sVersion]
-		components, err = k.updateK8s(&nodeVersion, versionConfig.ClusterVersion, versionConfig.KubernetesComponents, force)
-	}
+	currentK8sVersion := conf.KubernetesVersion
+	versionConfig := versions.VersionConfigs[currentK8sVersion]
+	components, err = k.updateK8s(&nodeVersion, versionConfig.ClusterVersion, versionConfig.KubernetesComponents, force)
 
 	switch {
 	case err == nil:

@@ -42,7 +42,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 		currentImageVersion   string
 		newImageReference     string
 		badImageVersion       string
-		currentClusterVersion string
+		currentClusterVersion versions.ValidK8sVersion
 		conf                  *config.Config
 		force                 bool
 		getCRErr              error
@@ -55,11 +55,11 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			conf: func() *config.Config {
 				conf := config.Default()
 				conf.Image = "v1.2.3"
-				conf.KubernetesVersion = versions.SupportedK8sVersions()[1]
+				conf.KubernetesVersion = versions.SupportedValidK8sVersions()[1]
 				return conf
 			}(),
 			currentImageVersion:   "v1.2.2",
-			currentClusterVersion: versions.SupportedK8sVersions()[0],
+			currentClusterVersion: versions.SupportedValidK8sVersions()[0],
 			kubectl: &stubKubectl{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
@@ -71,11 +71,11 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			conf: func() *config.Config {
 				conf := config.Default()
 				conf.Image = "v1.2.2"
-				conf.KubernetesVersion = versions.SupportedK8sVersions()[1]
+				conf.KubernetesVersion = versions.SupportedValidK8sVersions()[1]
 				return conf
 			}(),
 			currentImageVersion:   "v1.2.2",
-			currentClusterVersion: versions.SupportedK8sVersions()[0],
+			currentClusterVersion: versions.SupportedValidK8sVersions()[0],
 			kubectl: &stubKubectl{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
@@ -92,11 +92,11 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			conf: func() *config.Config {
 				conf := config.Default()
 				conf.Image = "v1.2.3"
-				conf.KubernetesVersion = versions.SupportedK8sVersions()[0]
+				conf.KubernetesVersion = versions.SupportedValidK8sVersions()[0]
 				return conf
 			}(),
 			currentImageVersion:   "v1.2.2",
-			currentClusterVersion: versions.SupportedK8sVersions()[0],
+			currentClusterVersion: versions.SupportedValidK8sVersions()[0],
 			kubectl: &stubKubectl{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
@@ -113,11 +113,11 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			conf: func() *config.Config {
 				conf := config.Default()
 				conf.Image = "v1.2.2"
-				conf.KubernetesVersion = versions.SupportedK8sVersions()[0]
+				conf.KubernetesVersion = versions.SupportedValidK8sVersions()[0]
 				return conf
 			}(),
 			currentImageVersion:   "v1.2.2",
-			currentClusterVersion: versions.SupportedK8sVersions()[0],
+			currentClusterVersion: versions.SupportedValidK8sVersions()[0],
 			kubectl:               &stubKubectl{},
 			wantErr:               true,
 			assertCorrectError: func(t *testing.T, err error) bool {
@@ -129,7 +129,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			conf: func() *config.Config {
 				conf := config.Default()
 				conf.Image = "v1.2.3"
-				conf.KubernetesVersion = versions.SupportedK8sVersions()[1]
+				conf.KubernetesVersion = versions.SupportedValidK8sVersions()[1]
 				return conf
 			}(),
 			conditions: []metav1.Condition{{
@@ -137,7 +137,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 				Status: metav1.ConditionTrue,
 			}},
 			currentImageVersion:   "v1.2.2",
-			currentClusterVersion: versions.SupportedK8sVersions()[0],
+			currentClusterVersion: versions.SupportedValidK8sVersions()[0],
 			kubectl:               &stubKubectl{},
 			wantErr:               true,
 			assertCorrectError: func(t *testing.T, err error) bool {
@@ -148,7 +148,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			conf: func() *config.Config {
 				conf := config.Default()
 				conf.Image = "v1.2.3"
-				conf.KubernetesVersion = versions.SupportedK8sVersions()[1]
+				conf.KubernetesVersion = versions.SupportedValidK8sVersions()[1]
 				return conf
 			}(),
 			conditions: []metav1.Condition{{
@@ -156,7 +156,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 				Status: metav1.ConditionTrue,
 			}},
 			currentImageVersion:   "v1.2.2",
-			currentClusterVersion: versions.SupportedK8sVersions()[0],
+			currentClusterVersion: versions.SupportedValidK8sVersions()[0],
 			kubectl:               &stubKubectl{},
 			force:                 true,
 			wantUpdate:            true,
@@ -165,11 +165,11 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			conf: func() *config.Config {
 				conf := config.Default()
 				conf.Image = "v1.2.3"
-				conf.KubernetesVersion = versions.SupportedK8sVersions()[1]
+				conf.KubernetesVersion = versions.SupportedValidK8sVersions()[1]
 				return conf
 			}(),
 			currentImageVersion:   "v1.2.2",
-			currentClusterVersion: versions.SupportedK8sVersions()[0],
+			currentClusterVersion: versions.SupportedValidK8sVersions()[0],
 			kubectl: &stubKubectl{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
@@ -185,12 +185,12 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			conf: func() *config.Config {
 				conf := config.Default()
 				conf.Image = "v1.4.2"
-				conf.KubernetesVersion = versions.SupportedK8sVersions()[1]
+				conf.KubernetesVersion = versions.SupportedValidK8sVersions()[1]
 				return conf
 			}(),
 			newImageReference:     "path/to/image:v1.4.2",
 			currentImageVersion:   "v1.2.2",
-			currentClusterVersion: versions.SupportedK8sVersions()[0],
+			currentClusterVersion: versions.SupportedValidK8sVersions()[0],
 			kubectl: &stubKubectl{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":true}}`),
@@ -207,12 +207,12 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			conf: func() *config.Config {
 				conf := config.Default()
 				conf.Image = "v1.4.2"
-				conf.KubernetesVersion = versions.SupportedK8sVersions()[1]
+				conf.KubernetesVersion = versions.SupportedValidK8sVersions()[1]
 				return conf
 			}(),
 			newImageReference:     "path/to/image:v1.4.2",
 			currentImageVersion:   "v1.2.2",
-			currentClusterVersion: versions.SupportedK8sVersions()[0],
+			currentClusterVersion: versions.SupportedValidK8sVersions()[0],
 			kubectl: &stubKubectl{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
@@ -225,11 +225,11 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			conf: func() *config.Config {
 				conf := config.Default()
 				conf.Image = "v1.2.3"
-				conf.KubernetesVersion = versions.SupportedK8sVersions()[1]
+				conf.KubernetesVersion = versions.SupportedValidK8sVersions()[1]
 				return conf
 			}(),
 			currentImageVersion:   "v1.2.2",
-			currentClusterVersion: versions.SupportedK8sVersions()[0],
+			currentClusterVersion: versions.SupportedValidK8sVersions()[0],
 			badImageVersion:       "v3.2.1",
 			kubectl: &stubKubectl{
 				configMaps: map[string]*corev1.ConfigMap{
@@ -251,7 +251,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 				return conf
 			}(),
 			currentImageVersion:   "v1.2.2",
-			currentClusterVersion: versions.SupportedK8sVersions()[0],
+			currentClusterVersion: versions.SupportedValidK8sVersions()[0],
 			kubectl: &stubKubectl{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
@@ -268,11 +268,11 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			conf: func() *config.Config {
 				conf := config.Default()
 				conf.Image = "v1.2.3"
-				conf.KubernetesVersion = versions.SupportedK8sVersions()[1]
+				conf.KubernetesVersion = versions.SupportedValidK8sVersions()[1]
 				return conf
 			}(),
 			currentImageVersion:   "v1.2.2",
-			currentClusterVersion: versions.SupportedK8sVersions()[0],
+			currentClusterVersion: versions.SupportedValidK8sVersions()[0],
 			kubectl: &stubKubectl{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
@@ -297,7 +297,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			nodeVersion := updatev1alpha1.NodeVersion{
 				Spec: updatev1alpha1.NodeVersionSpec{
 					ImageVersion:             tc.currentImageVersion,
-					KubernetesClusterVersion: tc.currentClusterVersion,
+					KubernetesClusterVersion: string(tc.currentClusterVersion),
 				},
 				Status: updatev1alpha1.NodeVersionStatus{
 					Conditions: tc.conditions,

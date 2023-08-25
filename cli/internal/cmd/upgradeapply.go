@@ -149,7 +149,9 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 			}
 		}
 	}
-	validK8sVersion, err := validK8sVersion(cmd, conf.KubernetesVersion, flags.yes)
+	if versions.IsPreviewK8sVersion(conf.KubernetesVersion) {
+		cmd.PrintErrf("Warning: Constellation with Kubernetes %q is still in preview. Use only for evaluation purposes.\n", conf.KubernetesVersion)
+	}
 	if err != nil {
 		return err
 	}
@@ -197,7 +199,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 	}
 
 	var upgradeErr *compatibility.InvalidUpgradeError
-	err = u.handleServiceUpgrade(cmd, conf, idFile, tfOutput, validK8sVersion, upgradeDir, flags)
+	err = u.handleServiceUpgrade(cmd, conf, idFile, tfOutput, upgradeDir, flags)
 	switch {
 	case errors.As(err, &upgradeErr):
 		cmd.PrintErrln(err)
@@ -305,27 +307,6 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, conf *config.Conf
 	return tfOutput, nil
 }
 
-// validK8sVersion checks if the Kubernetes patch version is supported and asks for confirmation if not.
-func validK8sVersion(cmd *cobra.Command, version string, yes bool) (validVersion versions.ValidK8sVersion, err error) {
-	validVersion, err = versions.NewValidK8sVersion(version, true)
-	if versions.IsPreviewK8sVersion(validVersion) {
-		cmd.PrintErrf("Warning: Constellation with Kubernetes %v is still in preview. Use only for evaluation purposes.\n", validVersion)
-	}
-	valid := err == nil
-
-	if !valid && !yes {
-		confirmed, err := askToConfirm(cmd, fmt.Sprintf("WARNING: The Kubernetes patch version %s is not supported. If you continue, Kubernetes upgrades will be skipped. Do you want to continue anyway?", version))
-		if err != nil {
-			return validVersion, fmt.Errorf("asking for confirmation: %w", err)
-		}
-		if !confirmed {
-			return validVersion, fmt.Errorf("aborted by user")
-		}
-	}
-
-	return validVersion, nil
-}
-
 // confirmAndUpgradeAttestationConfig checks if the locally configured measurements are different from the cluster's measurements.
 // If so the function will ask the user to confirm (if --yes is not set) and upgrade the cluster's config.
 func (u *upgradeApplyCmd) confirmAndUpgradeAttestationConfig(
@@ -370,7 +351,7 @@ func (u *upgradeApplyCmd) confirmAndUpgradeAttestationConfig(
 
 func (u *upgradeApplyCmd) handleServiceUpgrade(
 	cmd *cobra.Command, conf *config.Config, idFile clusterid.File, tfOutput terraform.ApplyOutput,
-	validK8sVersion versions.ValidK8sVersion, upgradeDir string, flags upgradeApplyFlags,
+	upgradeDir string, flags upgradeApplyFlags,
 ) error {
 	var secret uri.MasterSecret
 	if err := u.fileHandler.ReadJSON(constants.MasterSecretFilename, &secret); err != nil {
@@ -388,7 +369,7 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(
 
 	prepareApply := func(allowDestructive bool) (helm.Applier, bool, error) {
 		options.AllowDestructive = allowDestructive
-		executor, includesUpgrades, err := u.helmApplier.PrepareApply(conf, validK8sVersion, idFile, options,
+		executor, includesUpgrades, err := u.helmApplier.PrepareApply(conf, idFile, options,
 			tfOutput, serviceAccURI, secret)
 		var upgradeErr *compatibility.InvalidUpgradeError
 		switch {

@@ -637,22 +637,6 @@ func (c *Config) validateK8sVersion(fl validator.FieldLevel) bool {
 	return err == nil
 }
 
-// K8sVersionFromMajorMinor takes a semver in format MAJOR.MINOR
-// and returns the version in format MAJOR.MINOR.PATCH with the
-// supported patch version as PATCH.
-func K8sVersionFromMajorMinor(version string) string {
-	switch version {
-	case semver.MajorMinor(string(versions.V1_26)):
-		return string(versions.V1_26)
-	case semver.MajorMinor(string(versions.V1_27)):
-		return string(versions.V1_27)
-	case semver.MajorMinor(string(versions.V1_28)):
-		return string(versions.V1_28)
-	default:
-		return ""
-	}
-}
-
 func registerImageCompatibilityError(ut ut.Translator) error {
 	return ut.Add("image_compatibility", "{0} specifies an invalid version: {1}", true)
 }

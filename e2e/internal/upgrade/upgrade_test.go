@@ -273,12 +273,11 @@ func writeUpgradeConfig(require *require.Assertions, image string, kubernetes st
 	cfg.Image = image
 
 	defaultConfig := config.Default()
-	var kubernetesVersion semver.Semver
+	var kubernetesVersion versions.ValidK8sVersion
 	if kubernetes == "" {
-		kubernetesVersion, err = semver.New(defaultConfig.KubernetesVersion)
-		require.NoError(err)
+		kubernetesVersion = defaultConfig.KubernetesVersion
 	} else {
-		kubernetesVersion, err = semver.New(kubernetes)
+		kubernetesVersion, err = versions.NewValidK8sVersion(kubernetes, true)
 		require.NoError(err)
 	}
 
@@ -291,8 +290,8 @@ func writeUpgradeConfig(require *require.Assertions, image string, kubernetes st
 		microserviceVersion = version
 	}
 
-	log.Printf("Setting K8s version: %s\n", kubernetesVersion.String())
-	cfg.KubernetesVersion = kubernetesVersion.String()
+	log.Printf("Setting K8s version: %s\n", kubernetesVersion)
+	cfg.KubernetesVersion = kubernetesVersion
 	log.Printf("Setting microservice version: %s\n", microserviceVersion)
 	cfg.MicroserviceVersion = microserviceVersion
 
@@ -432,13 +431,13 @@ func testNodesEventuallyHaveVersion(t *testing.T, k *kubernetes.Clientset, targe
 			}
 
 			kubeletVersion := node.Status.NodeInfo.KubeletVersion
-			if kubeletVersion != targetVersions.kubernetes.String() {
-				log.Printf("\t%s: K8s (Kubelet) %s, want %s\n", node.Name, kubeletVersion, targetVersions.kubernetes.String())
+			if kubeletVersion != string(targetVersions.kubernetes) {
+				log.Printf("\t%s: K8s (Kubelet) %s, want %s\n", node.Name, kubeletVersion, targetVersions.kubernetes)
 				allUpdated = false
 			}
 			kubeProxyVersion := node.Status.NodeInfo.KubeProxyVersion
-			if kubeProxyVersion != targetVersions.kubernetes.String() {
-				log.Printf("\t%s: K8s (Proxy) %s, want %s\n", node.Name, kubeProxyVersion, targetVersions.kubernetes.String())
+			if kubeProxyVersion != string(targetVersions.kubernetes) {
+				log.Printf("\t%s: K8s (Proxy) %s, want %s\n", node.Name, kubeProxyVersion, targetVersions.kubernetes)
 				allUpdated = false
 			}
 		}
@@ -449,7 +448,7 @@ func testNodesEventuallyHaveVersion(t *testing.T, k *kubernetes.Clientset, targe
 
 type versionContainer struct {
 	imageRef      string
-	kubernetes    semver.Semver
+	kubernetes    versions.ValidK8sVersion
 	microservices semver.Semver
 }
 

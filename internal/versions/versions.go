@@ -36,6 +36,14 @@ func SupportedK8sVersions() []string {
 	return validVersionsSorted
 }
 
+// SupportedValidK8sVersions returns a typed list of supported Kubernetes versions.
+func SupportedValidK8sVersions() (res []ValidK8sVersion) {
+	for _, v := range SupportedK8sVersions() {
+		res = append(res, ValidK8sVersion(v))
+	}
+	return
+}
+
 // ValidK8sVersion represents any of the three currently supported k8s versions.
 type ValidK8sVersion string
 
@@ -44,21 +52,91 @@ type ValidK8sVersion string
 // strict controls whether the patch version is checked or not.
 // If strict is false, the patch version is ignored and the returned
 // ValidK8sVersion is a supported patch version for the given major.minor version.
+// TODO(elchead): only allow strict mode?
 func NewValidK8sVersion(k8sVersion string, strict bool) (ValidK8sVersion, error) {
+	prefixedVersion := compatibility.EnsurePrefixV(k8sVersion)
+	parsedVersion, err := resolveK8sPatchVersion(prefixedVersion)
+	if err != nil {
+		return "", fmt.Errorf("resolving kubernetes patch version from flag: %w", err)
+	}
+	fmt.Println(parsedVersion)
 	var supported bool
 	if strict {
-		supported = isSupportedK8sVersionStrict(k8sVersion)
+		supported = isSupportedK8sVersionStrict(parsedVersion)
 	} else {
-		supported = isSupportedK8sVersion(k8sVersion)
+		supported = isSupportedK8sVersion(parsedVersion)
 	}
 	if !supported {
-		return "", fmt.Errorf("invalid Kubernetes version: %s; supported versions are %v", k8sVersion, SupportedK8sVersions())
+		return "", fmt.Errorf("invalid Kubernetes version: %s; supported versions are %v", parsedVersion, SupportedK8sVersions())
 	}
 	if !strict {
-		k8sVersion, _ = supportedVersionForMajorMinor(k8sVersion)
+		parsedVersion, _ = supportedVersionForMajorMinor(parsedVersion)
 	}
 
-	return ValidK8sVersion(k8sVersion), nil
+	return ValidK8sVersion(parsedVersion), nil
+}
+
+// UnmarshalYAML implements the yaml.Unmarshaler interface.
+func (v *ValidK8sVersion) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var version string
+	if err := unmarshal(&version); err != nil {
+		return err
+	}
+	valid, err := NewValidK8sVersion(version, true)
+	if err != nil {
+		return fmt.Errorf("unsupported Kubernetes version, supported versions are %s", strings.Join(SupportedK8sVersions(), ", "))
+	}
+	*v = valid
+	return nil
+}
+
+// resolveK8sPatchVersion takes the user input from --kubernetes and transforms a MAJOR.MINOR definition into a supported
+// MAJOR.MINOR.PATCH release.
+// TODO(elchead): should we support this resolvement also for the config?
+func resolveK8sPatchVersion(k8sVersion string) (string, error) {
+	if !semver.IsValid(k8sVersion) {
+		return "", fmt.Errorf("kubernetes flag does not specify a valid semantic version: %s", k8sVersion)
+	}
+
+	if semver.MajorMinor(k8sVersion) != k8sVersion {
+		// patch version is specified
+		return k8sVersion, nil
+	}
+	extendedVersion := K8sVersionFromMajorMinor(k8sVersion)
+	if extendedVersion == "" {
+		return "", fmt.Errorf("--kubernetes (%s) does not specify a valid Kubernetes version. Supported versions: %s", strings.TrimPrefix(k8sVersion, "v"), supportedVersions())
+	}
+
+	return extendedVersion, nil
+}
+
+// K8sVersionFromMajorMinor takes a semver in format MAJOR.MINOR
+// and returns the version in format MAJOR.MINOR.PATCH with the
+// supported patch version as PATCH.
+func K8sVersionFromMajorMinor(version string) string {
+	switch version {
+	case semver.MajorMinor(string(V1_26)):
+		return string(V1_26)
+	case semver.MajorMinor(string(V1_27)):
+		return string(V1_27)
+	case semver.MajorMinor(string(V1_28)):
+		return string(V1_28)
+	default:
+		return ""
+	}
+}
+
+// supportedVersions prints the supported version without v prefix and without patch version.
+// Should only be used when accepting Kubernetes versions from --kubernetes.
+func supportedVersions() string {
+	builder := strings.Builder{}
+	for i, version := range SupportedK8sVersions() {
+		if i > 0 {
+			builder.WriteString(" ")
+		}
+		builder.WriteString(strings.TrimPrefix(semver.MajorMinor(version), "v"))
+	}
+	return builder.String()
 }
 
 // IsSupportedK8sVersion checks if a given Kubernetes minor version is supported by Constellation.
