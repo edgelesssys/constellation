@@ -243,7 +243,7 @@ func (i *initCmd) initialize(
 		if errors.As(err, &nonRetriable) {
 			cmd.PrintErrln("Cluster initialization failed. This error is not recoverable.")
 			cmd.PrintErrln("Terminate your cluster and try again.")
-			cmd.PrintErrf("The cluster logs were saved to %q\n", constants.ErrorLog)
+			cmd.PrintErrf("Fetched bootstrapper logs are stored in %q\n", constants.ErrorLog)
 		}
 		return err
 	}
