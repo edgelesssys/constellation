@@ -35,35 +35,6 @@ type AzureSEVSNPVersion struct {
 	Microcode uint8 `json:"microcode"`
 }
 
-// AzureSEVSNPVersionSignature is the object to perform CRUD operations on the config api.
-type AzureSEVSNPVersionSignature struct {
-	Version   string `json:"-"`
-	Signature []byte `json:"signature"`
-}
-
-// JSONPath returns the path to the JSON file for the request to the config api.
-func (s AzureSEVSNPVersionSignature) JSONPath() string {
-	return path.Join(attestationURLPath, variant.AzureSEVSNP{}.String(), s.Version+".sig")
-}
-
-// URL returns the URL for the request to the config api.
-func (s AzureSEVSNPVersionSignature) URL() (string, error) {
-	return getURL(s)
-}
-
-// ValidateRequest validates the request.
-func (s AzureSEVSNPVersionSignature) ValidateRequest() error {
-	if !strings.HasSuffix(s.Version, ".json") {
-		return fmt.Errorf("%s version has no .json suffix", s.Version)
-	}
-	return nil
-}
-
-// Validate is a No-Op at the moment.
-func (s AzureSEVSNPVersionSignature) Validate() error {
-	return nil
-}
-
 // AzureSEVSNPVersionAPI is the request to get the version information of the specific version in the config api.
 type AzureSEVSNPVersionAPI struct {
 	Version string `json:"-"`

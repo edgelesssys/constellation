@@ -374,5 +374,5 @@ func (s signature) ValidateRequest() error {
 
 // Validate checks that the signature is base64 encoded.
 func (s signature) Validate() error {
-	return sigstore.IsBase64([]byte(s.Signature))
+	return sigstore.IsBase64(s.Signature)
 }

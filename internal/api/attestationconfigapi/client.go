@@ -7,7 +7,6 @@ package attestationconfigapi
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -45,16 +44,14 @@ func NewClient(ctx context.Context, cfg staticupload.Config, cosignPwd, privateK
 	return repo, clientClose, nil
 }
 
-// UploadAzureSEVSNP uploads the latest version numbers of the Azure SEVSNP. Then version name is the UTC timestamp of the date. The /list entry stores the version name + .json suffix.
-func (a Client) UploadAzureSEVSNP(ctx context.Context, version AzureSEVSNPVersion, date time.Time) error {
+// UploadAzureSEVSNPVersion uploads the latest version numbers of the Azure SEVSNP. Then version name is the UTC timestamp of the date. The /list entry stores the version name + .json suffix.
+func (a Client) UploadAzureSEVSNPVersion(ctx context.Context, version AzureSEVSNPVersion, date time.Time) error {
 	versions, err := a.List(ctx, variant.AzureSEVSNP{})
 	if err != nil {
 		return fmt.Errorf("fetch version list: %w", err)
 	}
-	ops, err := a.uploadAzureSEVSNP(version, versions, date)
-	if err != nil {
-		return err
-	}
+	ops := a.constructUploadCmd(version, versions, date)
+
 	return executeAllCmds(ctx, a.s3Client, ops)
 }
 
@@ -91,50 +88,33 @@ func (a Client) deleteAzureSEVSNPVersion(versions AzureSEVSNPVersionList, versio
 		},
 	})
 
-	ops = append(ops, deleteCmd{
-		apiObject: AzureSEVSNPVersionSignature{
-			Version: versionStr,
-		},
-	})
-
 	removedVersions, err := removeVersion(versions, versionStr)
 	if err != nil {
 		return nil, err
 	}
 	ops = append(ops, putCmd{
 		apiObject: removedVersions,
+		signer:    a.signer,
 	})
 	return ops, nil
 }
 
-func (a Client) uploadAzureSEVSNP(versions AzureSEVSNPVersion, versionNames []string, date time.Time) (res []crudCmd, err error) {
+func (a Client) constructUploadCmd(versions AzureSEVSNPVersion, versionNames []string, date time.Time) []crudCmd {
 	dateStr := date.Format(VersionFormat) + ".json"
+	var res []crudCmd
 
-	res = append(res, putCmd{AzureSEVSNPVersionAPI{Version: dateStr, AzureSEVSNPVersion: versions}})
+	res = append(res, putCmd{
+		apiObject: AzureSEVSNPVersionAPI{Version: dateStr, AzureSEVSNPVersion: versions},
+		signer:    a.signer,
+	})
 
-	versionBytes, err := json.Marshal(versions)
-	if err != nil {
-		return res, err
-	}
-	signature, err := a.createSignature(versionBytes, dateStr)
-	if err != nil {
-		return res, err
-	}
-	res = append(res, putCmd{signature})
 	newVersions := addVersion(versionNames, dateStr)
-	res = append(res, putCmd{AzureSEVSNPVersionList(newVersions)})
-	return
-}
+	res = append(res, putCmd{
+		apiObject: AzureSEVSNPVersionList(newVersions),
+		signer:    a.signer,
+	})
 
-func (a Client) createSignature(content []byte, dateStr string) (res AzureSEVSNPVersionSignature, err error) {
-	signature, err := a.signer.Sign(content)
-	if err != nil {
-		return res, fmt.Errorf("sign version file: %w", err)
-	}
-	return AzureSEVSNPVersionSignature{
-		Signature: signature,
-		Version:   dateStr,
-	}, nil
+	return res
 }
 
 func removeVersion(versions AzureSEVSNPVersionList, versionStr string) (removedVersions AzureSEVSNPVersionList, err error) {
@@ -160,15 +140,16 @@ type deleteCmd struct {
 }
 
 func (d deleteCmd) Execute(ctx context.Context, c *apiclient.Client) error {
-	return apiclient.Delete(ctx, c, d.apiObject)
+	return apiclient.DeleteWithSignature(ctx, c, d.apiObject)
 }
 
 type putCmd struct {
 	apiObject apiclient.APIObject
+	signer    sigstore.Signer
 }
 
 func (p putCmd) Execute(ctx context.Context, c *apiclient.Client) error {
-	return apiclient.Update(ctx, c, p.apiObject)
+	return apiclient.SignAndUpdate(ctx, c, p.apiObject, p.signer)
 }
 
 func executeAllCmds(ctx context.Context, client *apiclient.Client, cmds []crudCmd) error {
