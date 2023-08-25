@@ -63,3 +63,10 @@ func (c CosignVerifier) VerifySignature(content, signature []byte) error {
 
 	return nil
 }
+
+// IsBase64 checks if the given byte slice is base64 encoded.
+func IsBase64(signature []byte) error {
+	target := make([]byte, base64.StdEncoding.DecodedLen(len(signature)))
+	_, err := base64.StdEncoding.Decode(target, signature)
+	return err
+}

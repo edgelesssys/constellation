@@ -20,9 +20,12 @@ package fetcher
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 )
 
@@ -87,7 +90,11 @@ func FetchAndVerify[T apiObject](ctx context.Context, c HTTPClient, obj T, cosig
 		return fetchedObj, fmt.Errorf("marshalling object: %w", err)
 	}
 
-	signature, err := Fetch(ctx, c, signature{Signed: fetchedObj})
+	url, err := obj.URL()
+	if err != nil {
+		return fetchedObj, fmt.Errorf("getting signed URL: %w", err)
+	}
+	signature, err := Fetch(ctx, c, signature{Signed: url})
 	if err != nil {
 		return fetchedObj, fmt.Errorf("fetching signature: %w", err)
 	}
@@ -123,29 +130,33 @@ type apiObject interface {
 	URL() (string, error)
 }
 
-// signature wraps another APIObject and adds a signature to it.
+// signature manages the signature of a object saved at location 'Signed'.
 type signature struct {
 	// Signed is the object that is signed.
-	Signed apiObject `json:"-"`
+	Signed string `json:"signed"`
 	// Signature is the signature of `Signed`.
 	Signature []byte `json:"signature"`
 }
 
 // URL returns the URL for the request to the config api.
 func (s signature) URL() (string, error) {
-	url, err := s.Signed.URL()
-	if err != nil {
-		return "", err
-	}
-	return url + ".sig", nil
+	return s.Signed + ".sig", nil
 }
 
 // ValidateRequest validates the request.
 func (s signature) ValidateRequest() error {
-	return s.Signed.ValidateRequest()
+	if !strings.HasPrefix(s.Signed, constants.CDNRepositoryURL) {
+		return errors.New("signed object missing CDN URL prefix")
+	}
+
+	if !strings.HasSuffix(s.Signed, ".json") {
+		return errors.New("signed object missing .json suffix")
+	}
+
+	return nil
 }
 
-// Validate is a No-Op at the moment.
+// Validate checks that the signature is base64 encoded.
 func (s signature) Validate() error {
-	return s.Signed.Validate()
+	return sigstore.IsBase64(s.Signature)
 }

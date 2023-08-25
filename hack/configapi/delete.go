@@ -20,9 +20,10 @@ import (
 // newDeleteCmd creates the delete command.
 func newDeleteCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "delete",
-		Short: "delete a specific version from the config api",
-		RunE:  runDelete,
+		Use:     "delete",
+		Short:   "delete a specific version from the config api",
+		PreRunE: envCheck,
+		RunE:    runDelete,
 	}
 	cmd.Flags().StringP("version", "v", "", "Name of the version to delete (without .json suffix)")
 	must(cmd.MarkFlagRequired("version"))

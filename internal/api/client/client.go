@@ -33,7 +33,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"path"
+	"strings"
 	"time"
 
 	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
@@ -266,7 +266,7 @@ func SignAndUpdate(ctx context.Context, c *Client, obj APIObject, signer sigstor
 	}
 
 	signature := signature{
-		Signed:    obj,
+		Signed:    obj.JSONPath(),
 		Signature: dataSignature,
 	}
 
@@ -287,7 +287,7 @@ func DeleteWithSignature(ctx context.Context, c *Client, obj APIObject) error {
 		return fmt.Errorf("deleting %T: %w", obj, err)
 	}
 
-	sig := signature{Signed: obj}
+	sig := signature{Signed: obj.JSONPath()}
 	if err := Delete(ctx, c, sig); err != nil {
 		return fmt.Errorf("deleting %T: %w", sig, err)
 	}
@@ -350,25 +350,29 @@ type uploadClient interface {
 // CloseFunc is a function that closes the client.
 type CloseFunc func(ctx context.Context) error
 
-// signature wraps another APIObject and adds a signature to it.
+// signature manages the signature of a object saved at location 'Signed'.
 type signature struct {
 	// Signed is the object that is signed.
-	Signed APIObject
+	Signed string `json:"signed"`
 	// Signature is the signature of `Signed`.
 	Signature []byte `json:"signature"`
 }
 
 // JSONPath returns the path to the JSON file for the request to the config api.
 func (s signature) JSONPath() string {
-	return path.Join(s.Signed.JSONPath() + ".sig")
+	return s.Signed + ".sig"
 }
 
 // ValidateRequest validates the request.
 func (s signature) ValidateRequest() error {
-	return s.Signed.ValidateRequest()
+	if !strings.HasSuffix(s.Signed, ".json") {
+		return errors.New("signed object missing .json suffix")
+	}
+
+	return nil
 }
 
-// Validate is a No-Op at the moment.
+// Validate checks that the signature is base64 encoded.
 func (s signature) Validate() error {
-	return s.Signed.Validate()
+	return sigstore.IsBase64([]byte(s.Signature))
 }
