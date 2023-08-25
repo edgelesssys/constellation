@@ -39,13 +39,12 @@ Use [Logger.Fatalf] to log information about any errors that occurred and then e
 package logger
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"testing"
 
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
-	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
@@ -154,40 +153,75 @@ func (l *Logger) Named(name string) *Logger {
 
 // ReplaceGRPCLogger replaces grpc's internal logger with the given logger.
 func (l *Logger) ReplaceGRPCLogger() {
-	grpc_zap.ReplaceGrpcLoggerV2(l.logger.Desugar())
+	replaceGRPCLogger(l.getZapLogger())
 }
 
 // GetServerUnaryInterceptor returns a gRPC server option for intercepting unary gRPC logs.
 func (l *Logger) GetServerUnaryInterceptor() grpc.ServerOption {
-	return grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
-		grpc_ctxtags.UnaryServerInterceptor(),
-		grpc_zap.UnaryServerInterceptor(l.getZapLogger()),
-	))
+	return grpc.UnaryInterceptor(
+		logging.UnaryServerInterceptor(l.middlewareLogger()),
+	)
 }
 
 // GetServerStreamInterceptor returns a gRPC server option for intercepting streaming gRPC logs.
 func (l *Logger) GetServerStreamInterceptor() grpc.ServerOption {
-	return grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
-		grpc_ctxtags.StreamServerInterceptor(),
-		grpc_zap.StreamServerInterceptor(l.getZapLogger()),
-	))
+	return grpc.StreamInterceptor(
+		logging.StreamServerInterceptor(l.middlewareLogger()),
+	)
 }
 
 // GetClientUnaryInterceptor returns a gRPC client option for intercepting unary gRPC logs.
 func (l *Logger) GetClientUnaryInterceptor() grpc.DialOption {
-	return grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
-		grpc_zap.UnaryClientInterceptor(l.getZapLogger()),
-	))
+	return grpc.WithUnaryInterceptor(
+		logging.UnaryClientInterceptor(l.middlewareLogger()),
+	)
 }
 
 // GetClientStreamInterceptor returns a gRPC client option for intercepting stream gRPC logs.
 func (l *Logger) GetClientStreamInterceptor() grpc.DialOption {
-	return grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
-		grpc_zap.StreamClientInterceptor(l.getZapLogger()),
-	))
+	return grpc.WithStreamInterceptor(
+		logging.StreamClientInterceptor(l.middlewareLogger()),
+	)
 }
 
 // getZapLogger returns the underlying zap logger.
 func (l *Logger) getZapLogger() *zap.Logger {
 	return l.logger.Desugar()
+}
+
+func (l *Logger) middlewareLogger() logging.Logger {
+	return logging.LoggerFunc(func(ctx context.Context, lvl logging.Level, msg string, fields ...any) {
+		f := make([]zap.Field, 0, len(fields)/2)
+
+		for i := 0; i < len(fields); i += 2 {
+			key := fields[i]
+			value := fields[i+1]
+
+			switch v := value.(type) {
+			case string:
+				f = append(f, zap.String(key.(string), v))
+			case int:
+				f = append(f, zap.Int(key.(string), v))
+			case bool:
+				f = append(f, zap.Bool(key.(string), v))
+			default:
+				f = append(f, zap.Any(key.(string), v))
+			}
+		}
+
+		logger := l.getZapLogger().WithOptions(zap.AddCallerSkip(1)).With(f...)
+
+		switch lvl {
+		case logging.LevelDebug:
+			logger.Debug(msg)
+		case logging.LevelInfo:
+			logger.Info(msg)
+		case logging.LevelWarn:
+			logger.Warn(msg)
+		case logging.LevelError:
+			logger.Error(msg)
+		default:
+			panic(fmt.Sprintf("unknown level %v", lvl))
+		}
+	})
 }
