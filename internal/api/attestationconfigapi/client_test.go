@@ -19,24 +19,19 @@ func TestUploadAzureSEVSNP(t *testing.T) {
 	}
 	version := AzureSEVSNPVersion{}
 	date := time.Date(2023, 1, 1, 1, 1, 1, 1, time.UTC)
-	ops, err := sut.uploadAzureSEVSNP(version, []string{"2021-01-01-01-01.json", "2019-01-01-01-01.json"}, date)
-	assert := assert.New(t)
-	assert.NoError(err)
+	ops := sut.constructUploadCmd(version, []string{"2021-01-01-01-01.json", "2019-01-01-01-01.json"}, date)
 	dateStr := "2023-01-01-01-01.json"
+	assert := assert.New(t)
 	assert.Contains(ops, putCmd{
 		apiObject: AzureSEVSNPVersionAPI{
 			Version:            dateStr,
 			AzureSEVSNPVersion: version,
 		},
-	})
-	assert.Contains(ops, putCmd{
-		apiObject: AzureSEVSNPVersionSignature{
-			Version:   dateStr,
-			Signature: []byte("signature"),
-		},
+		signer: fakeSigner{},
 	})
 	assert.Contains(ops, putCmd{
 		apiObject: AzureSEVSNPVersionList([]string{"2023-01-01-01-01.json", "2021-01-01-01-01.json", "2019-01-01-01-01.json"}),
+		signer:    fakeSigner{},
 	})
 }
 
@@ -52,11 +47,6 @@ func TestDeleteAzureSEVSNPVersions(t *testing.T) {
 	assert.NoError(err)
 	assert.Contains(ops, deleteCmd{
 		apiObject: AzureSEVSNPVersionAPI{
-			Version: "2021-01-01.json",
-		},
-	})
-	assert.Contains(ops, deleteCmd{
-		apiObject: AzureSEVSNPVersionSignature{
 			Version: "2021-01-01.json",
 		},
 	})

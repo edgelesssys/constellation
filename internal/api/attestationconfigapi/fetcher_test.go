@@ -97,7 +97,6 @@ type fakeConfigAPIHandler struct {
 
 // RoundTrip resolves the request and returns a dummy response.
 func (f *fakeConfigAPIHandler) RoundTrip(req *http.Request) (*http.Response, error) {
-	signature := []byte("placeholderSignature")
 	if req.URL.Path == "/constellation/v1/attestation/azure-sev-snp/list" {
 		res := &http.Response{}
 		bt, err := json.Marshal(f.versions)
@@ -128,30 +127,15 @@ func (f *fakeConfigAPIHandler) RoundTrip(req *http.Request) (*http.Response, err
 		res.Body = io.NopCloser(bytes.NewReader(bt))
 		res.StatusCode = http.StatusOK
 		return res, nil
-
 	} else if req.URL.Path == fmt.Sprintf("/constellation/v1/attestation/azure-sev-snp/%s.sig", f.latestVersion) {
 		res := &http.Response{}
-		obj := AzureSEVSNPVersionSignature{
-			Signature: signature,
-		}
-		bt, err := json.Marshal(obj)
-		if err != nil {
-			return nil, err
-		}
-		res.Body = io.NopCloser(bytes.NewReader(bt))
+		res.Body = io.NopCloser(bytes.NewReader([]byte("null")))
 		res.StatusCode = http.StatusOK
 		return res, nil
 
 	} else if req.URL.Path == fmt.Sprintf("/constellation/v1/attestation/azure-sev-snp/%s.sig", f.olderVersion) {
 		res := &http.Response{}
-		obj := AzureSEVSNPVersionSignature{
-			Signature: signature,
-		}
-		bt, err := json.Marshal(obj)
-		if err != nil {
-			return nil, err
-		}
-		res.Body = io.NopCloser(bytes.NewReader(bt))
+		res.Body = io.NopCloser(bytes.NewReader([]byte("null")))
 		res.StatusCode = http.StatusOK
 		return res, nil
 

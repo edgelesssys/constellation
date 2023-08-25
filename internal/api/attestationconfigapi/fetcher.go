@@ -8,7 +8,6 @@ package attestationconfigapi
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -57,31 +56,17 @@ func newFetcherWithClientAndVerifier(client apifetcher.HTTPClient, cosignVerifie
 
 // FetchAzureSEVSNPVersionList fetches the version list information from the config API.
 func (f *fetcher) FetchAzureSEVSNPVersionList(ctx context.Context, attestation AzureSEVSNPVersionList) (AzureSEVSNPVersionList, error) {
+	// TODO (derpsteb): Replace with FetchAndVerify once we move to v2 of the config API.
 	return apifetcher.Fetch(ctx, f.HTTPClient, attestation)
 }
 
 // FetchAzureSEVSNPVersion fetches the version information from the config API.
 func (f *fetcher) FetchAzureSEVSNPVersion(ctx context.Context, azureVersion AzureSEVSNPVersionAPI) (AzureSEVSNPVersionAPI, error) {
-	fetchedVersion, err := apifetcher.Fetch(ctx, f.HTTPClient, azureVersion)
+	fetchedVersion, err := apifetcher.FetchAndVerify(ctx, f.HTTPClient, azureVersion, f.verifier)
 	if err != nil {
 		return fetchedVersion, fmt.Errorf("fetch version %s: %w", fetchedVersion.Version, err)
 	}
-	versionBytes, err := json.Marshal(fetchedVersion)
-	if err != nil {
-		return fetchedVersion, fmt.Errorf("marshal version for verify %s: %w", azureVersion.Version, err)
-	}
 
-	signature, err := apifetcher.Fetch(ctx, f.HTTPClient, AzureSEVSNPVersionSignature{
-		Version: azureVersion.Version,
-	})
-	if err != nil {
-		return fetchedVersion, fmt.Errorf("fetch version %s signature: %w", azureVersion.Version, err)
-	}
-
-	err = f.verifier.VerifySignature(versionBytes, signature.Signature)
-	if err != nil {
-		return fetchedVersion, fmt.Errorf("verify version %s signature: %w", azureVersion.Version, err)
-	}
 	return fetchedVersion, nil
 }
 
