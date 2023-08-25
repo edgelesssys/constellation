@@ -93,3 +93,7 @@ export KUBECONFIG="$PWD/constellation-admin.conf"
 ```
 
 🏁 That's it. You've successfully created a Constellation cluster.
+
+
+### Troubleshooting
+In case `init` fails, the CLI collects logs from the bootstrapping instance and stores them inside `constellation-cluster.log`.
