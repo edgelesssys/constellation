@@ -18,7 +18,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"helm.sh/helm/v3/pkg/action"
@@ -208,7 +207,7 @@ func TestHelmApply(t *testing.T) {
 			helmListVersion(lister, "aws-load-balancer-controller", awsLbVersion)
 
 			options.AllowDestructive = tc.allowDestructive
-			ex, includesUpgrade, err := sut.PrepareApply(cfg, versions.ValidK8sVersion("v1.27.4"),
+			ex, includesUpgrade, err := sut.PrepareApply(cfg,
 				clusterid.File{UID: "testuid", MeasurementSalt: []byte("measurementSalt")}, options,
 				fakeTerraformOutput(csp), fakeServiceAccURI(csp),
 				uri.MasterSecret{Key: []byte("secret"), Salt: []byte("masterSalt")})

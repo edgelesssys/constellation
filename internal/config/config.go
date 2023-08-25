@@ -315,7 +315,7 @@ func Default() *Config {
 		Image:               defaultImage,
 		Name:                defaultName,
 		MicroserviceVersion: constants.BinaryVersion(),
-		KubernetesVersion:   string(versions.Default),
+		KubernetesVersion:   versions.Default,
 		DebugCluster:        toPtr(false),
 		Provider: ProviderConfig{
 			AWS: &AWSConfig{

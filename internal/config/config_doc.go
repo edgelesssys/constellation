@@ -52,7 +52,7 @@ func init() {
 	ConfigDoc.Fields[2].Description = "Name of the cluster."
 	ConfigDoc.Fields[2].Comments[encoder.LineComment] = "Name of the cluster."
 	ConfigDoc.Fields[3].Name = "kubernetesVersion"
-	ConfigDoc.Fields[3].Type = "string"
+	ConfigDoc.Fields[3].Type = "ValidK8sVersion"
 	ConfigDoc.Fields[3].Note = ""
 	ConfigDoc.Fields[3].Description = "Kubernetes version to be installed into the cluster."
 	ConfigDoc.Fields[3].Comments[encoder.LineComment] = "Kubernetes version to be installed into the cluster."

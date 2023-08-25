@@ -21,6 +21,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 )
 
 const (
@@ -335,7 +336,7 @@ func V3ToV4(path string, fileHandler file.Handler) error {
 	cfgV4.Version = config.Version4
 	cfgV4.Image = cfgV3.Image
 	cfgV4.Name = cfgV3.Name
-	cfgV4.KubernetesVersion = cfgV3.KubernetesVersion
+	cfgV4.KubernetesVersion = versions.ValidK8sVersion(cfgV3.KubernetesVersion)
 	cfgV4.MicroserviceVersion = cfgV3.MicroserviceVersion
 	cfgV4.DebugCluster = cfgV3.DebugCluster
 

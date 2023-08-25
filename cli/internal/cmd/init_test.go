@@ -133,7 +133,13 @@ func TestInitialize(t *testing.T) {
 			provider:      cloudprovider.Azure,
 			idFile:        &clusterid.File{IP: "192.0.2.1"},
 			initServerAPI: &stubInitServer{res: &initproto.InitResponse{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}},
-			configMutator: func(c *config.Config) { c.KubernetesVersion = strings.TrimPrefix(string(versions.Default), "v") },
+			configMutator: func(c *config.Config) {
+				res, err := versions.NewValidK8sVersion(strings.TrimPrefix(string(versions.Default), "v"), true)
+				if err != nil {
+					panic("invalid k8s version")
+				}
+				c.KubernetesVersion = res
+			},
 		},
 	}
 
@@ -222,7 +228,7 @@ type stubApplier struct {
 	err error
 }
 
-func (s stubApplier) PrepareApply(_ *config.Config, _ versions.ValidK8sVersion, _ clusterid.File, _ helm.Options, _ terraform.ApplyOutput, _ string, _ uri.MasterSecret) (helm.Applier, bool, error) {
+func (s stubApplier) PrepareApply(_ *config.Config, _ clusterid.File, _ helm.Options, _ terraform.ApplyOutput, _ string, _ uri.MasterSecret) (helm.Applier, bool, error) {
 	return stubRunner{}, false, s.err
 }
 
