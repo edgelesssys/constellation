@@ -96,4 +96,4 @@ export KUBECONFIG="$PWD/constellation-admin.conf"
 
 
 ### Troubleshooting
-In case the bootstrapping fails, the CLI tries to collect the logs from the bootstrapping instance and then stores them inside `constellation-cluster.log`.
+In case `init` fails, the CLI collects logs from the bootstrapping instance and stores them inside `constellation-cluster.log`.
