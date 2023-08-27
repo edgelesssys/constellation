@@ -26,7 +26,7 @@ Minimum and maximum mark the range within which latency varies each run.
 The benchmark was configured with 1300 workers and 10 seconds per run.
 Those numbers were chosen empirically.
 The latency was stabilizing at 10 seconds runtime, not changing with further increase.
-Increasing the number of workers beyond 1300 leads to request failures marking the limit Vault was able to handle in our setup.
+Increasing the number of workers beyond 1300 leads to request failures, marking the limit Vault was able to handle in this setup.
 All results are based on 100 runs.
 
 The following data was generated while running five replicas, one primary, and four standby nodes.
