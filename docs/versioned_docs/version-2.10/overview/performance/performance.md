@@ -16,8 +16,10 @@ Similarly, AMD and Google have jointly released a [performance benchmark](https:
 
 ## I/O performance benchmarks
 
-We evaluated the [I/O performance](io.md) of Constellation, utilizing a collection of synthetic benchmarks targeting networking and storage. We further compared this performance to native managed Kubernetes offerings from various cloud providers, to better understand how Constellation stands in relation to standard practices.
+We evaluated the [I/O performance](io.md) of Constellation, utilizing a collection of synthetic benchmarks targeting networking and storage.
+We further compared this performance to native managed Kubernetes offerings from various cloud providers, to better understand how Constellation stands in relation to standard practices.
 
-## Real-world application benchmarking
+## Application benchmarking
 
-To gauge Constellation's real-world applicability, we performed a specific benchmarking of [HashiCorp Vault](application.md) running on Constellation. The results were then compared to deployments on the managed Kubernetes offerings from different cloud providers, providing a tangible perspective on Constellation's performance in actual deployment scenarios.
+To gauge Constellation's applicability to well-known applications, we performed a [benchmark of HashiCorp Vault](application.md) running on Constellation.
+The results were then compared to deployments on the managed Kubernetes offerings from different cloud providers, providing a tangible perspective on Constellation's performance in actual deployment scenarios.
