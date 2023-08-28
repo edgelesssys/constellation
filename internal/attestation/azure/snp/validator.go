@@ -11,8 +11,6 @@ import (
 	"context"
 	"crypto"
 	"crypto/sha256"
-	"crypto/x509"
-	"encoding/asn1"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
@@ -25,7 +23,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	internalCrypto "github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/google/go-sev-guest/abi"
 	"github.com/google/go-sev-guest/kds"
 	spb "github.com/google/go-sev-guest/proto/sevsnp"
@@ -91,13 +88,8 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 		return nil, fmt.Errorf("parsing attestation report: %w", err)
 	}
 
-	vcek, err := v.validateVCEK(instanceInfo.Vcek, instanceInfo.CertChain)
-	if err != nil {
-		return nil, fmt.Errorf("validating VCEK: %w", err)
-	}
-
 	// Checks the signature and certificate chain of the attestation report.
-	if err := verify.SnpAttestation(att, &verify.Options{}); err != nil {
+	if err := verify.SnpReport(att.Report, &verify.Options{}); err != nil {
 		return nil, fmt.Errorf("verifying SNP attestation: %w", err)
 	}
 
@@ -143,16 +135,12 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 		v.checkIDKeyDigests(ctx, att, instanceInfo.MAAToken, extraData)
 	}
 
-	if err := v.validateSNPReport(ctx, vcek, att.Report, instanceInfo.MAAToken, extraData); err != nil {
-		return nil, fmt.Errorf("validating SNP report: %w", err)
-	}
-
 	pubArea, err := tpm2.DecodePublic(attDoc.Attestation.AkPub)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = v.hclValidator.validateAk(instanceInfo.RuntimeData, report.ReportData[:], pubArea.RSAParameters); err != nil {
+	if err = v.hclValidator.validateAk(instanceInfo.RuntimeData, att.Report.ReportData, pubArea.RSAParameters); err != nil {
 		return nil, fmt.Errorf("validating HCLAkPub: %w", err)
 	}
 
@@ -162,7 +150,7 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 func (v *Validator) checkIDKeyDigests(ctx context.Context, report *spb.Attestation, maaToken string, extraData []byte) error {
 	hasExpectedIDKeyDigest := false
 	for _, digest := range v.config.FirmwareSignerConfig.AcceptedKeyDigests {
-		if bytes.Equal(digest, report.Report.IdKeyDigest[:]) {
+		if bytes.Equal(digest, report.Report.IdKeyDigest) {
 			hasExpectedIDKeyDigest = true
 			break
 		}
@@ -176,17 +164,17 @@ func (v *Validator) checkIDKeyDigests(ctx context.Context, report *spb.Attestati
 			v.log.Infof(
 				"configured idkeydigests %x don't contain reported idkeydigest %x, falling back to MAA validation",
 				v.config.FirmwareSignerConfig.AcceptedKeyDigests,
-				report.Report.IdKeyDigest[:],
+				report.Report.IdKeyDigest,
 			)
 			return v.maa.validateToken(ctx, v.config.FirmwareSignerConfig.MAAURL, maaToken, extraData)
 		case idkeydigest.WarnOnly:
 			v.log.Warnf(
 				"configured idkeydigests %x don't contain reported idkeydigest %x",
 				v.config.FirmwareSignerConfig.AcceptedKeyDigests,
-				report.Report.IdKeyDigest[:],
+				report.Report.IdKeyDigest,
 			)
 		default:
-			return &idKeyError{report.Report.IdKeyDigest[:], v.config.FirmwareSignerConfig.AcceptedKeyDigests}
+			return &idKeyError{report.Report.IdKeyDigest, v.config.FirmwareSignerConfig.AcceptedKeyDigests}
 		}
 	}
 
@@ -194,123 +182,7 @@ func (v *Validator) checkIDKeyDigests(ctx context.Context, report *spb.Attestati
 	return nil
 }
 
-// validateVCEK takes the PEM-encoded X509 certificate VCEK, ASK and ARK and verifies the integrity of the chain.
-// ARK (hardcoded) validates ASK (cloud metadata API) validates VCEK (cloud metadata API).
-func (v *Validator) validateVCEK(vcekRaw []byte, certChain []byte) (*x509.Certificate, error) {
-	vcek, err := internalCrypto.PemToX509Cert(vcekRaw)
-	if err != nil {
-		return nil, fmt.Errorf("loading vcek: %w", err)
-	}
-
-	// certChain includes two PEM encoded certs. The ASK and the ARK, in that order.
-	ask, err := internalCrypto.PemToX509Cert(certChain)
-	if err != nil {
-		return nil, fmt.Errorf("loading askPEM: %w", err)
-	}
-
-	if err = ask.CheckSignatureFrom((*x509.Certificate)(&v.config.AMDRootKey)); err != nil {
-		return nil, &askError{err}
-	}
-
-	if err = vcek.CheckSignatureFrom(ask); err != nil {
-		return nil, &vcekError{err}
-	}
-
-	return vcek, nil
-}
-
-func (v *Validator) validateSNPReport(
-	ctx context.Context, cert *x509.Certificate, report *spb.Report, maaToken string, extraData []byte,
-) error {
-	if err := validateVCEKExtensions(cert, report); err != nil {
-		return fmt.Errorf("mismatching vcek extensions: %w", err)
-	}
-
-	sigR := report.Signature.R[:]
-	sigS := report.Signature.S[:]
-
-	// Table 107 in https://www.amd.com/system/files/TechDocs/56860.pdf mentions little endian signature components.
-	// They come out of the certificate as big endian.
-	reverseEndian(sigR)
-	reverseEndian(sigS)
-
-	rParam := new(big.Int).SetBytes(sigR)
-	sParam := new(big.Int).SetBytes(sigS)
-	sequence := ecdsaSig{rParam, sParam}
-	sigEncoded, err := asn1.Marshal(sequence)
-	if err != nil {
-		return fmt.Errorf("marshalling ecdsa signature: %w", err)
-	}
-
-	buf := new(bytes.Buffer)
-	if err = binary.Write(buf, binary.LittleEndian, report); err != nil {
-		return fmt.Errorf("writing report to buf: %w", err)
-	}
-	// signature is only calculated from 0x0 to 0x2a0
-	if err := cert.CheckSignature(x509.ECDSAWithSHA384, buf.Bytes()[:0x2a0], sigEncoded); err != nil {
-		return &signatureError{err}
-	}
-
-	return nil
-}
-
-// validateVCEKExtensions checks that the certificate extension values in cert match the values described in report.
-func validateVCEKExtensions(cert *x509.Certificate, report snpAttestationReport) error {
-	var certVersion int
-	for _, extension := range cert.Extensions {
-		switch extension.Id.String() {
-		// check bootloader version
-		case "1.3.6.1.4.1.3704.1.3.1":
-			{
-				_, err := asn1.Unmarshal(extension.Value, &certVersion)
-				if err != nil {
-					return fmt.Errorf("unmarshalling bootloader version: %w", err)
-				}
-				if certVersion != int(report.CommittedTCB.Bootloader) {
-					return fmt.Errorf("bootloader version %d from report does not match VCEK version %d", int(report.CommittedTCB.Bootloader), certVersion)
-				}
-			}
-		// check TEE version
-		case "1.3.6.1.4.1.3704.1.3.2":
-			{
-				_, err := asn1.Unmarshal(extension.Value, &certVersion)
-				if err != nil {
-					return fmt.Errorf("unmarshalling tee version: %w", err)
-				}
-				if certVersion != int(report.CommittedTCB.TEE) {
-					return fmt.Errorf("bootloader version %d from report does not match VCEK version %d", int(report.CommittedTCB.TEE), certVersion)
-				}
-			}
-		// check SNP Firmware version
-		case "1.3.6.1.4.1.3704.1.3.3":
-			{
-				_, err := asn1.Unmarshal(extension.Value, &certVersion)
-				if err != nil {
-					return fmt.Errorf("unmarshalling snp version: %w", err)
-				}
-				if certVersion != int(report.CommittedTCB.SNP) {
-					return fmt.Errorf("bootloader version %d from report does not match VCEK version %d", int(report.CommittedTCB.SNP), certVersion)
-				}
-			}
-		// check microcode version
-		case "1.3.6.1.4.1.3704.1.3.8":
-			{
-				_, err := asn1.Unmarshal(extension.Value, &certVersion)
-				if err != nil {
-					return fmt.Errorf("unmarshalling microcode version: %w", err)
-				}
-				if certVersion != int(report.CommittedTCB.Microcode) {
-					return fmt.Errorf("bootloader version %d from report does not match VCEK version %d", int(report.CommittedTCB.Microcode), certVersion)
-				}
-			}
-		}
-	}
-
-	return nil
-}
-
 type azureInstanceInfo struct {
-	Vcek              []byte
 	CertChain         []byte
 	AttestationReport []byte
 	RuntimeData       []byte
@@ -390,80 +262,6 @@ type hclAkValidator interface {
 	validateAk(runtimeDataRaw []byte, reportData []byte, rsaParameters *tpm2.RSAParams) error
 }
 
-// Reference: https://github.com/AMDESE/sev-guest/blob/main/include/attestation.h
-type snpAttestationReport struct {
-	Version         uint32       // 0x000
-	GuestSVN        uint32       // 0x004
-	Policy          guestPolicy  // 0x008
-	FamilyID        [16]byte     // 0x010
-	ImageID         [16]byte     // 0x020
-	VMPL            uint32       // 0x030
-	SignatureAlgo   uint32       // 0x034
-	CurrentTCB      tcbVersion   // 0x038
-	PlatformInfo    uint64       // 0x040
-	Flags           uint32       // 0x048
-	Reserved0       uint32       // 0x04C
-	ReportData      [64]byte     // 0x050
-	Measurement     [48]byte     // 0x090
-	HostData        [32]byte     // 0x0C0
-	IDKeyDigest     [48]byte     // 0x0E0
-	AuthorKeyDigest [48]byte     // 0x110
-	ReportID        [32]byte     // 0x140
-	ReportIDMa      [32]byte     // 0x160
-	ReportedTCB     tcbVersion   // 0x180
-	_               [24]byte     // 0x188
-	ChipID          [64]byte     // 0x1A0
-	CommittedTCB    tcbVersion   // 0x1E0
-	CurrentBuild    byte         // 0x1E8
-	CurrentMinor    byte         // 0x1E9
-	CurrentMajor    byte         // 0x1EA
-	_               byte         // 0x1EB
-	CommittedBuild  byte         // 0x1EC
-	CommittedMinor  byte         // 0x1ED
-	CommittedMajor  byte         // 0x1EE
-	_               byte         // 0x1EF
-	LaunchTCB       tcbVersion   // 0x1F0
-	_               [168]byte    // 0x1F8
-	Signature       snpSignature // 0x2A0
-}
-
-type guestPolicy struct {
-	AbiMinor       uint8 // 0x0
-	AbiMajor       uint8 // 0x8
-	ContainerValue byte  // 0x10 - encodes the following four values:
-	// Smt          bool // 0x10 - bit 0 in 'ContainerValue'.
-	// _            bool // 0x11 - bit 1 in 'ContainerValue'.
-	// MigrateMa    bool // 0x12 - bit 2 in 'ContainerValue'.
-	// Debug        bool // 0x13 - bit 3 in 'ContainerValue'.
-	// SingleSocket bool // 0x14 - bit 4 in 'ContainerValue'.
-	_ [5]byte // 0x15
-}
-
-func (g *guestPolicy) Debug() bool {
-	return (g.ContainerValue & 0b00001000) != 0
-}
-
-type tcbVersion struct {
-	Bootloader uint8   // 0x0
-	TEE        uint8   // 0x10
-	_          [4]byte // 0x2F
-	SNP        uint8   // 0x37
-	Microcode  uint8   // 0x3F
-}
-
-func (t *tcbVersion) isVersion(expectedBootloader, expectedTEE, expectedSNP, expectedMicrocode uint8) bool {
-	return t.Bootloader >= expectedBootloader && t.TEE >= expectedTEE && t.SNP >= expectedSNP && t.Microcode >= expectedMicrocode
-}
-
-func (t *tcbVersion) supersededBy(new tcbVersion) bool {
-	return new.Bootloader >= t.Bootloader && new.TEE >= t.TEE && new.SNP >= t.SNP && new.Microcode >= t.Microcode
-}
-
-type snpSignature struct {
-	R        [72]byte
-	S        [72]byte
-	Reserved [512 - 144]byte
-}
 type ecdsaSig struct {
 	R, S *big.Int
 }
