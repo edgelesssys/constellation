@@ -183,9 +183,6 @@ func (v *Validator) validateVCEK(vcekRaw []byte, certChain []byte) (*x509.Certif
 func (v *Validator) validateSNPReport(
 	ctx context.Context, cert *x509.Certificate, report *spb.Report, maaToken string, extraData []byte,
 ) error {
-	if report.LaunchTCB != report.CommittedTCB {
-		return &versionError{"LAUNCH_TCB", report.LaunchTCB}
-	}
 	if !report.CommittedTCB.supersededBy(report.CurrentTCB) {
 		return &versionError{"CURRENT_TCB", report.CurrentTCB}
 	}
