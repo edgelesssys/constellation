@@ -13,6 +13,9 @@ on:
         required: true
         default: "minor"
 
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   verify-inputs:
     name: Verify inputs
@@ -44,8 +47,8 @@ jobs:
 
       - name: Verify temporary branch
         run: |
-          if [[ ! "${WORKING_BRANCH}" =~ ^tmp/v[0-9]+\.[0-9]+\.[0-9]+(/.+)? ]]; then
-            echo "Workflow can only be triggered from a temporary branch in the form of tmp/vX.Y.Z/..."
+          if [[ ! "${WORKING_BRANCH}" =~ ^tmp/v[0-9]+\.[0-9]+\.[0-9] ]]; then
+            echo "Workflow can only be triggered from a temporary branch in the form of tmp/vX.Y.Z"
             exit 1
           fi
 
@@ -176,8 +179,12 @@ jobs:
         run: |
           git config --global user.name "edgelessci"
           git config --global user.email "edgelessci@users.noreply.github.com"
-          git commit -m "deps: update images to ${VERSION}"
-          git push
+          if git diff-index --quiet HEAD --; then
+            echo "No changes to commit"
+          else
+            git commit -m "deps: update images to ${VERSION}"
+            git push
+          fi
 
   os-image:
     name: Build OS image
@@ -251,7 +258,7 @@ jobs:
           git config --global user.name "edgelessci"
           git config --global user.email "edgelessci@users.noreply.github.com"
           git tag -a "${VERSION}" -m "Release ${VERSION}"
-          git push origin "refs/tags/${VERSION}"
+          git push --force origin "refs/tags/${VERSION}" # force push to overwrite existing tag
 
   draft-release-cli:
     name: Draft release (CLI)

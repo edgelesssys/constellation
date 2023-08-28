@@ -27,6 +27,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+        with:
+          fetch-depth: 0 # fetch all history
 
       - name: Determine branch names
         run: |
@@ -35,20 +37,8 @@ jobs:
           PART_MINOR=${WITHOUT_V#*.}
           MAJOR_MINOR=${PART_MAJOR}.${PART_MINOR}
           RELEASE_BRANCH="release/v${MAJOR_MINOR}"
-          WORKING_BRANCH_PREFIX="origin/tmp/${FULL_VERSION}"
+          WORKING_BRANCH="tmp/${FULL_VERSION}"
           echo "RELEASE_BRANCH=${RELEASE_BRANCH}" | tee -a "$GITHUB_ENV"
-          echo "WORKING_BRANCH_PREFIX=${WORKING_BRANCH_PREFIX}" | tee -a "$GITHUB_ENV"
-
-      - name: Find temporary branch
-        id: find-temporary-branch
-        run: |
-          working_branch_count=$(git branch --list -r "${WORKING_BRANCH_PREFIX}*" | wc -l)
-          if [[ "${working_branch_count}" -ne 1 ]]; then
-            echo "More than one (or zero) temporary branches found. Cannot finish transaction."
-            git branch --list "${WORKING_BRANCH_PREFIX}*"
-            exit 1
-          fi
-          WORKING_BRANCH=$(git branch --list "${WORKING_BRANCH_PREFIX}*" | head -n 1 | sed -e 's/^[[:space:]]*//')
           echo "WORKING_BRANCH=${WORKING_BRANCH}" | tee -a "$GITHUB_ENV"
 
       - name: Check if we are strictly ahead of the release branch (if it exists)
