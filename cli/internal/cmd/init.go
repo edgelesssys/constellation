@@ -152,8 +152,8 @@ func (i *initCmd) initialize(
 	if err != nil {
 		return err
 	}
-	conf.KubernetesVersion, err = versions.NewValidK8sVersion(string(conf.KubernetesVersion), true)
 	// cfg validation does not check k8s patch version since upgrade may accept an outdated patch version.
+	conf.KubernetesVersion, err = versions.NewValidK8sVersion(string(conf.KubernetesVersion), true)
 	if err != nil {
 		return err
 	}
@@ -172,8 +172,6 @@ func (i *initCmd) initialize(
 		return fmt.Errorf("reading cluster ID file: %w", err)
 	}
 
-	// config validation does not check k8s patch version since upgrade may accept an outdated patch version.
-	// init only supported up-to-date versions.
 	k8sVersion := conf.KubernetesVersion
 	i.log.Debugf("Validated k8s version as %s", k8sVersion)
 	if versions.IsPreviewK8sVersion(k8sVersion) {
