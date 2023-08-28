@@ -14,6 +14,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"golang.org/x/mod/semver"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -34,7 +35,7 @@ func newConfigGenerateCmd() *cobra.Command {
 		ValidArgsFunction: generateCompletion,
 		RunE:              runConfigGenerate,
 	}
-	cmd.Flags().StringP("kubernetes", "k", string(config.Default().KubernetesVersion), "Kubernetes version to use in format MAJOR.MINOR")
+	cmd.Flags().StringP("kubernetes", "k", semver.MajorMinor(string(config.Default().KubernetesVersion)), "Kubernetes version to use in format MAJOR.MINOR")
 	cmd.Flags().StringP("attestation", "a", "", fmt.Sprintf("attestation variant to use %s. If not specified, the default for the cloud provider is used", printFormattedSlice(variant.GetAvailableAttestationVariants())))
 
 	return cmd
