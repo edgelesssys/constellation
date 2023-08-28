@@ -126,17 +126,21 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 			SnpSpl:   v.config.SNPVersion.Value,        // SNP
 			UcodeSpl: v.config.MicrocodeVersion.Value,  // Microcode
 		},
+		// Check that CurrentTCB >= CommittedTCB.
+		PermitProvisionalFirmware: true,
 		// Check if the IDKey hashes in the report are in the list of accepted hashes.
 		TrustedIDKeyHashes: v.config.FirmwareSignerConfig.AcceptedKeyDigests,
 		// The IDKey hashes should not be checked if the enforcement policy is set to MAAFallback or WarnOnly to prevent
 		// an error from being returned because of the TrustedIDKeyHashes validation. In this case, we should perform a
-		// custom check of the MAA-specific values later.
+		// custom check of the MAA-specific values later. Right now, this is a double check, since a custom MAA check
+		// is performed either way.
 		RequireIDBlock: requireIDBlock,
 	}); err != nil {
 		return nil, fmt.Errorf("validating SNP attestation: %w", err)
 	}
 	if requireIDBlock {
-		// TODO: Custom WarnOnly / MAAFallback check of the MAA-specific values.
+		// Custom WarnOnly / MAAFallback check of the IDKeyDigests.
+		v.checkIDKeyDigests(ctx, att, instanceInfo.MAAToken, extraData)
 	}
 
 	if err := v.validateSNPReport(ctx, vcek, att.Report, instanceInfo.MAAToken, extraData); err != nil {
@@ -153,6 +157,41 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 	}
 
 	return pubArea.Key()
+}
+
+func (v *Validator) checkIDKeyDigests(ctx context.Context, report *spb.Attestation, maaToken string, extraData []byte) error {
+	hasExpectedIDKeyDigest := false
+	for _, digest := range v.config.FirmwareSignerConfig.AcceptedKeyDigests {
+		if bytes.Equal(digest, report.Report.IdKeyDigest[:]) {
+			hasExpectedIDKeyDigest = true
+			break
+		}
+	}
+
+	if !hasExpectedIDKeyDigest {
+		// IDKeyDigests that were not expected are present, check the enforcement policy and verify against
+		// the MAA if necessary.
+		switch v.config.FirmwareSignerConfig.EnforcementPolicy {
+		case idkeydigest.MAAFallback:
+			v.log.Infof(
+				"configured idkeydigests %x don't contain reported idkeydigest %x, falling back to MAA validation",
+				v.config.FirmwareSignerConfig.AcceptedKeyDigests,
+				report.Report.IdKeyDigest[:],
+			)
+			return v.maa.validateToken(ctx, v.config.FirmwareSignerConfig.MAAURL, maaToken, extraData)
+		case idkeydigest.WarnOnly:
+			v.log.Warnf(
+				"configured idkeydigests %x don't contain reported idkeydigest %x",
+				v.config.FirmwareSignerConfig.AcceptedKeyDigests,
+				report.Report.IdKeyDigest[:],
+			)
+		default:
+			return &idKeyError{report.Report.IdKeyDigest[:], v.config.FirmwareSignerConfig.AcceptedKeyDigests}
+		}
+	}
+
+	// No IDKeyDigests that were not expected are present.
+	return nil
 }
 
 // validateVCEK takes the PEM-encoded X509 certificate VCEK, ASK and ARK and verifies the integrity of the chain.
@@ -183,10 +222,6 @@ func (v *Validator) validateVCEK(vcekRaw []byte, certChain []byte) (*x509.Certif
 func (v *Validator) validateSNPReport(
 	ctx context.Context, cert *x509.Certificate, report *spb.Report, maaToken string, extraData []byte,
 ) error {
-	if !report.CommittedTCB.supersededBy(report.CurrentTCB) {
-		return &versionError{"CURRENT_TCB", report.CurrentTCB}
-	}
-
 	if err := validateVCEKExtensions(cert, report); err != nil {
 		return fmt.Errorf("mismatching vcek extensions: %w", err)
 	}
@@ -214,34 +249,6 @@ func (v *Validator) validateSNPReport(
 	// signature is only calculated from 0x0 to 0x2a0
 	if err := cert.CheckSignature(x509.ECDSAWithSHA384, buf.Bytes()[:0x2a0], sigEncoded); err != nil {
 		return &signatureError{err}
-	}
-
-	hasExpectedIDKeyDigest := false
-	for _, digest := range v.config.FirmwareSignerConfig.AcceptedKeyDigests {
-		if bytes.Equal(digest, report.IDKeyDigest[:]) {
-			hasExpectedIDKeyDigest = true
-			break
-		}
-	}
-
-	if !hasExpectedIDKeyDigest {
-		switch v.config.FirmwareSignerConfig.EnforcementPolicy {
-		case idkeydigest.MAAFallback:
-			v.log.Infof(
-				"configured idkeydigests %x don't contain reported idkeydigest %x, falling back to MAA validation",
-				v.config.FirmwareSignerConfig.AcceptedKeyDigests,
-				report.IDKeyDigest[:],
-			)
-			return v.maa.validateToken(ctx, v.config.FirmwareSignerConfig.MAAURL, maaToken, extraData)
-		case idkeydigest.WarnOnly:
-			v.log.Warnf(
-				"configured idkeydigests %x don't contain reported idkeydigest %x",
-				v.config.FirmwareSignerConfig.AcceptedKeyDigests,
-				report.IDKeyDigest[:],
-			)
-		default:
-			return &idKeyError{report.IDKeyDigest[:], v.config.FirmwareSignerConfig.AcceptedKeyDigests}
-		}
 	}
 
 	return nil
