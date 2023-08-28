@@ -152,6 +152,11 @@ func (i *initCmd) initialize(
 	if err != nil {
 		return err
 	}
+	conf.KubernetesVersion, err = versions.NewValidK8sVersion(string(conf.KubernetesVersion), true)
+	// cfg validation does not check k8s patch version since upgrade may accept an outdated patch version.
+	if err != nil {
+		return err
+	}
 	if !flags.force {
 		if err := validateCLIandConstellationVersionAreEqual(constants.BinaryVersion(), conf.Image, conf.MicroserviceVersion); err != nil {
 			return err
