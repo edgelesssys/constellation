@@ -52,7 +52,7 @@ type ValidK8sVersion string
 // It also accepts a full version (e.g. 1.26.7) and validates it.
 // Returns an empty string if the given version is invalid.
 // strict controls whether the patch version is checked or not.
-// If strict is false, the patch version is ignored and the returned.
+// If strict is false, the patch version validation is skipped.
 func NewValidK8sVersion(k8sVersion string, strict bool) (ValidK8sVersion, error) {
 	prefixedVersion := compatibility.EnsurePrefixV(k8sVersion)
 	parsedVersion, err := resolveK8sPatchVersion(prefixedVersion)
@@ -69,6 +69,11 @@ func NewValidK8sVersion(k8sVersion string, strict bool) (ValidK8sVersion, error)
 		return "", fmt.Errorf("invalid Kubernetes version: %s; supported versions are %v", parsedVersion, SupportedK8sVersions())
 	}
 	return ValidK8sVersion(parsedVersion), nil
+}
+
+// hasPatchVersion returns if the given version has specified a patch version.
+func hasPatchVersion(version string) bool {
+	return semver.MajorMinor(version) != version
 }
 
 // UnmarshalYAML implements the yaml.Unmarshaler interface.
@@ -89,17 +94,15 @@ func (v *ValidK8sVersion) UnmarshalYAML(unmarshal func(interface{}) error) error
 // MAJOR.MINOR.PATCH release.
 func resolveK8sPatchVersion(k8sVersion string) (string, error) {
 	if !semver.IsValid(k8sVersion) {
-		return "", fmt.Errorf("kubernetes flag does not specify a valid semantic version: %s", k8sVersion)
+		return "", fmt.Errorf("Kubernetes version does not specify a valid semantic version: %s", k8sVersion)
 	}
-	fmt.Println("COMPARE", semver.MajorMinor(k8sVersion), k8sVersion)
-
-	if semver.MajorMinor(k8sVersion) != k8sVersion {
-		// patch version is specified
+	if hasPatchVersion(k8sVersion) {
 		return k8sVersion, nil
 	}
 	extendedVersion := K8sVersionFromMajorMinor(k8sVersion)
 	if extendedVersion == "" {
-		return "", fmt.Errorf("--kubernetes (%s) does not specify a valid Kubernetes version. Supported versions: %s", strings.TrimPrefix(k8sVersion, "v"), supportedVersions())
+		return "", fmt.Errorf("Kubernetes version %s is not valid. Supported versions: %s",
+			strings.TrimPrefix(k8sVersion, "v"), supportedVersions())
 	}
 
 	return extendedVersion, nil
