@@ -124,7 +124,6 @@ func (k *KubeCmd) UpgradeNodeVersion(ctx context.Context, conf *config.Config, f
 	nodeVersion.Spec.ImageReference = imageReference
 	nodeVersion.Spec.ImageVersion = imageVersion.Version()
 
-	// TODO(elchead): why?
 	// We have to allow users to specify outdated k8s patch versions.
 	// Therefore, this code has to skip k8s updates if a user configures an outdated (i.e. invalid) k8s version.
 	var components *corev1.ConfigMap

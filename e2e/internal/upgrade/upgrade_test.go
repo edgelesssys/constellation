@@ -277,8 +277,7 @@ func writeUpgradeConfig(require *require.Assertions, image string, kubernetes st
 	if kubernetes == "" {
 		kubernetesVersion = defaultConfig.KubernetesVersion
 	} else {
-		kubernetesVersion, err = versions.NewValidK8sVersion(kubernetes, true)
-		require.NoError(err)
+		kubernetesVersion = versions.ValidK8sVersion(kubernetes) // ignore validation because the config is only written to file
 	}
 
 	var microserviceVersion semver.Semver

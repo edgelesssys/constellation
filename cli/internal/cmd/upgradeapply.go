@@ -149,9 +149,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 			}
 		}
 	}
-	if versions.IsPreviewK8sVersion(conf.KubernetesVersion) {
-		cmd.PrintErrf("Warning: Constellation with Kubernetes %q is still in preview. Use only for evaluation purposes.\n", conf.KubernetesVersion)
-	}
+	conf.KubernetesVersion, err = validK8sVersion(cmd, string(conf.KubernetesVersion), flags.yes)
 	if err != nil {
 		return err
 	}
@@ -305,6 +303,27 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, conf *config.Conf
 		return tfOutput, fmt.Errorf("getting Terraform output: %w", err)
 	}
 	return tfOutput, nil
+}
+
+// validK8sVersion checks if the Kubernetes patch version is supported and asks for confirmation if not.
+func validK8sVersion(cmd *cobra.Command, version string, yes bool) (validVersion versions.ValidK8sVersion, err error) {
+	validVersion, err = versions.NewValidK8sVersion(version, true)
+	if versions.IsPreviewK8sVersion(validVersion) {
+		cmd.PrintErrf("Warning: Constellation with Kubernetes %v is still in preview. Use only for evaluation purposes.\n", validVersion)
+	}
+	valid := err == nil
+
+	if !valid && !yes {
+		confirmed, err := askToConfirm(cmd, fmt.Sprintf("WARNING: The Kubernetes patch version %s is not supported. If you continue, Kubernetes upgrades will be skipped. Do you want to continue anyway?", version))
+		if err != nil {
+			return validVersion, fmt.Errorf("asking for confirmation: %w", err)
+		}
+		if !confirmed {
+			return validVersion, fmt.Errorf("aborted by user")
+		}
+	}
+
+	return validVersion, nil
 }
 
 // confirmAndUpgradeAttestationConfig checks if the locally configured measurements are different from the cluster's measurements.

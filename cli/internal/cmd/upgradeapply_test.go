@@ -115,8 +115,8 @@ func TestUpgradeApply(t *testing.T) {
 				require.NoError(t, err)
 				return semver.NewFromInt(v.Major(), v.Minor(), v.Patch()-1, "").String()
 			}(),
-			wantErr: false,
 			flags:   upgradeApplyFlags{yes: true},
+			wantErr: false,
 		},
 		"outdated K8s version": {
 			kubeUpgrader: &stubKubernetesUpgrader{
@@ -125,8 +125,8 @@ func TestUpgradeApply(t *testing.T) {
 			helmUpgrader:      stubApplier{},
 			terraformUpgrader: &stubTerraformUpgrader{},
 			customK8sVersion:  "v1.20.0",
-			wantErr:           true,
 			flags:             upgradeApplyFlags{yes: true},
+			wantErr:           true,
 		},
 	}
 
