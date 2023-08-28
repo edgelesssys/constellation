@@ -63,6 +63,7 @@ runs:
           --zone=${{ inputs.awsZone }} \
           --prefix=${{ inputs.namePrefix }} \
           ${{ steps.generate-config.outputs.flag }} \
+          --tf-log=DEBUG \
           --yes
 
     - name: Constellation iam create azure
@@ -74,6 +75,7 @@ runs:
           --resourceGroup="${{ inputs.namePrefix }}-rg" \
           --servicePrincipal="${{ inputs.namePrefix }}-sp" \
           ${{ steps.generate-config.outputs.flag }} \
+          --tf-log=DEBUG \
           --yes
 
     - name: Constellation iam create gcp
@@ -85,4 +87,5 @@ runs:
           --zone=${{ inputs.gcpZone }} \
           --serviceAccountID="${{ inputs.namePrefix }}-sa" \
           ${{ steps.generate-config.outputs.flag }} \
+          --tf-log=DEBUG \
           --yes
