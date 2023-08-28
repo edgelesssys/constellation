@@ -24,6 +24,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/google/go-sev-guest/kds"
 	"github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm/legacy/tpm2"
@@ -343,7 +344,7 @@ func TestValidateAzureCVM(t *testing.T) {
 	assert.NoError(t, validateCVM(vtpm.AttestationDocument{}, nil))
 }
 
-func TestNewSNPReportFromBytes(t *testing.T) {
+func TestInstanceInfoAttestation(t *testing.T) {
 	testCases := map[string]struct {
 		raw     string
 		wantErr bool
@@ -362,17 +363,23 @@ func TestNewSNPReportFromBytes(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			instanceInfo, err := newStubAzureInstanceInfo("", "", tc.raw, "")
-			assert.NoError(err)
-			report, err := newSNPReportFromBytes(instanceInfo.AttestationReport)
+			instanceInfo := azureInstanceInfo{
+				AttestationReport: []byte(tc.raw),
+			}
+			report, err := instanceInfo.attestation()
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
 				assert.NotNil(report)
-				assert.Equal(hex.EncodeToString(report.IDKeyDigest[:]), "57e229e0ffe5fa92d0faddff6cae0e61c926fc9ef9afd20a8b8cfcf7129db9338cbe5bf3f6987733a2bf65d06dc38fc1")
+				assert.Equal(hex.EncodeToString(report.Report.IdKeyDigest[:]), "57e229e0ffe5fa92d0faddff6cae0e61c926fc9ef9afd20a8b8cfcf7129db9338cbe5bf3f6987733a2bf65d06dc38fc1")
 				// This is a canary for us: If this fails in the future we possibly downgraded a SVN.
-				assert.True(report.LaunchTCB.isVersion(cfg.BootloaderVersion.Value, cfg.TEEVersion.Value, cfg.SNPVersion.Value, cfg.MicrocodeVersion.Value))
+				// See https://github.com/google/go-sev-guest/blob/14ac50e9ffcc05cd1d12247b710c65093beedb58/validate/validate.go#L336 for decomposition of the values.
+				tcbValues := kds.DecomposeTCBVersion(kds.TCBVersion(report.Report.GetLaunchTcb()))
+				assert.True(tcbValues.BlSpl >= cfg.BootloaderVersion.Value)
+				assert.True(tcbValues.TeeSpl >= cfg.TEEVersion.Value)
+				assert.True(tcbValues.SnpSpl >= cfg.SNPVersion.Value)
+				assert.True(tcbValues.UcodeSpl >= cfg.MicrocodeVersion.Value)
 			}
 		})
 	}
