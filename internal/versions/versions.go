@@ -48,27 +48,22 @@ func SupportedValidK8sVersions() (res []ValidK8sVersion) {
 type ValidK8sVersion string
 
 // NewValidK8sVersion validates the given string and produces a new ValidK8sVersion object.
-// It accepts a major minor version (e.g. 1.26) and transforms it into a supported patch version (e.g. 1.26.7).
-// It also accepts a full version (e.g. 1.26.7) and validates it.
+// It accepts a full version (e.g. 1.26.7) and validates it.
 // Returns an empty string if the given version is invalid.
 // strict controls whether the patch version is checked or not.
 // If strict is false, the patch version validation is skipped.
 func NewValidK8sVersion(k8sVersion string, strict bool) (ValidK8sVersion, error) {
 	prefixedVersion := compatibility.EnsurePrefixV(k8sVersion)
-	parsedVersion, err := resolveK8sPatchVersion(prefixedVersion)
-	if err != nil {
-		return "", fmt.Errorf("resolving kubernetes patch version from flag: %w", err)
-	}
 	var supported bool
 	if strict {
-		supported = isSupportedK8sVersionStrict(parsedVersion)
+		supported = isSupportedK8sVersionStrict(prefixedVersion)
 	} else {
-		supported = isSupportedK8sVersion(parsedVersion)
+		supported = isSupportedK8sVersion(prefixedVersion)
 	}
 	if !supported {
-		return "", fmt.Errorf("invalid Kubernetes version: %s; supported versions are %v", parsedVersion, SupportedK8sVersions())
+		return "", fmt.Errorf("invalid Kubernetes version: %s; supported versions are %v", prefixedVersion, SupportedK8sVersions())
 	}
-	return ValidK8sVersion(parsedVersion), nil
+	return ValidK8sVersion(prefixedVersion), nil
 }
 
 // hasPatchVersion returns if the given version has specified a patch version.
@@ -90,9 +85,10 @@ func (v *ValidK8sVersion) UnmarshalYAML(unmarshal func(interface{}) error) error
 	return nil
 }
 
-// resolveK8sPatchVersion takes the user input from --kubernetes and transforms a MAJOR.MINOR definition into a supported
+// ResolveK8sPatchVersion transforms a MAJOR.MINOR definition into a supported
 // MAJOR.MINOR.PATCH release.
-func resolveK8sPatchVersion(k8sVersion string) (string, error) {
+func ResolveK8sPatchVersion(k8sVersion string) (string, error) {
+	k8sVersion = compatibility.EnsurePrefixV(k8sVersion)
 	if !semver.IsValid(k8sVersion) {
 		return "", fmt.Errorf("Kubernetes version does not specify a valid semantic version: %s", k8sVersion)
 	}

@@ -133,7 +133,11 @@ func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
 	if err != nil {
 		return generateFlags{}, fmt.Errorf("parsing Kubernetes flag: %w", err)
 	}
-	resolvedVersion, err := versions.NewValidK8sVersion(k8sVersion, true)
+	resolvedVersion, err := versions.ResolveK8sPatchVersion(k8sVersion)
+	if err != nil {
+		return generateFlags{}, fmt.Errorf("resolving kubernetes patch version from flag: %w", err)
+	}
+	validK8sVersion, err := versions.NewValidK8sVersion(resolvedVersion, true)
 	if err != nil {
 		return generateFlags{}, fmt.Errorf("resolving Kubernetes version from flag: %w", err)
 	}
@@ -155,7 +159,7 @@ func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
 	}
 	return generateFlags{
 		pf:                 pathprefix.New(workDir),
-		k8sVersion:         resolvedVersion,
+		k8sVersion:         validK8sVersion,
 		attestationVariant: attestationVariant,
 	}, nil
 }

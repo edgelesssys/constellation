@@ -248,17 +248,6 @@ func TestFromFile(t *testing.T) {
 			configName: "wrong-name.yaml",
 			wantErr:    true,
 		},
-		// TODO why do we support an empty file?
-		//"custom config from default file": {
-		//	config: &Config{
-		//		Version: Version4,
-		//	},
-		//	configName: constants.ConfigFilename,
-		//	wantResult: &Config{
-		//		Version:    Version4,
-		//		NodeGroups: map[string]NodeGroup{},
-		//	},
-		//},
 		"modify default config": {
 			config: func() *Config {
 				conf := Default()
