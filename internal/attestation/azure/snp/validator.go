@@ -112,8 +112,15 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 		GuestPolicy: abi.SnpPolicy{
 			Debug: false, // Debug means the VM can be decrypted by the host for debugging purposes and thus is not allowed.
 		},
-		// This checks that the reported TCB version is equal or greater than the specified minimum.
+		// This checks that the reported TCB version is equal or greater than the minimum specified in the config.
 		MinimumTCB: kds.TCBParts{
+			BlSpl:    v.config.BootloaderVersion.Value, // Bootloader
+			TeeSpl:   v.config.TEEVersion.Value,        // TEE (Secure OS)
+			SnpSpl:   v.config.SNPVersion.Value,        // SNP
+			UcodeSpl: v.config.MicrocodeVersion.Value,  // Microcode
+		},
+		// This checks that the reported LaunchTCB version is equal or greater than the minimum specified in the config.
+		MinimumLaunchTCB: kds.TCBParts{
 			BlSpl:    v.config.BootloaderVersion.Value, // Bootloader
 			TeeSpl:   v.config.TEEVersion.Value,        // TEE (Secure OS)
 			SnpSpl:   v.config.SNPVersion.Value,        // SNP
@@ -180,9 +187,6 @@ func (v *Validator) validateSNPReport(
 		return errDebugEnabled
 	}
 
-	if !report.CommittedTCB.isVersion(v.config.BootloaderVersion.Value, v.config.TEEVersion.Value, v.config.SNPVersion.Value, v.config.MicrocodeVersion.Value) {
-		return &versionError{"COMMITTED_TCB", report.CommittedTCB}
-	}
 	if report.LaunchTCB != report.CommittedTCB {
 		return &versionError{"LAUNCH_TCB", report.LaunchTCB}
 	}
