@@ -9,6 +9,8 @@ package snp
 import (
 	"errors"
 	"fmt"
+
+	"github.com/google/go-sev-guest/kds"
 )
 
 type signatureError struct {
@@ -62,7 +64,7 @@ func (e *idKeyError) Error() string {
 
 type versionError struct {
 	expectedType     string
-	excpectedVersion tcbVersion
+	excpectedVersion *kds.TCBParts
 }
 
 func (e *versionError) Unwrap() error {
