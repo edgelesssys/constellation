@@ -133,7 +133,7 @@ func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
 	if err != nil {
 		return generateFlags{}, fmt.Errorf("parsing Kubernetes flag: %w", err)
 	}
-	resolvedVersion, err := versions.NewValidK8sVersion(k8sVersion, true) // allow versions without specified patch
+	resolvedVersion, err := versions.NewValidK8sVersion(k8sVersion, true)
 	if err != nil {
 		return generateFlags{}, fmt.Errorf("resolving Kubernetes version from flag: %w", err)
 	}

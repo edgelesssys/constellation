@@ -48,10 +48,11 @@ func SupportedValidK8sVersions() (res []ValidK8sVersion) {
 type ValidK8sVersion string
 
 // NewValidK8sVersion validates the given string and produces a new ValidK8sVersion object.
+// It accepts a major minor version (e.g. 1.26) and transforms it into a supported patch version (e.g. 1.26.7).
+// It also accepts a full version (e.g. 1.26.7) and validates it.
 // Returns an empty string if the given version is invalid.
 // strict controls whether the patch version is checked or not.
-// If strict is false, the patch version is ignored and the returned
-// TODO(elchead): only allow strict mode?
+// If strict is false, the patch version is ignored and the returned.
 func NewValidK8sVersion(k8sVersion string, strict bool) (ValidK8sVersion, error) {
 	prefixedVersion := compatibility.EnsurePrefixV(k8sVersion)
 	parsedVersion, err := resolveK8sPatchVersion(prefixedVersion)
@@ -86,7 +87,6 @@ func (v *ValidK8sVersion) UnmarshalYAML(unmarshal func(interface{}) error) error
 
 // resolveK8sPatchVersion takes the user input from --kubernetes and transforms a MAJOR.MINOR definition into a supported
 // MAJOR.MINOR.PATCH release.
-// TODO(elchead): should we support this resolvement also for the config?
 func resolveK8sPatchVersion(k8sVersion string) (string, error) {
 	if !semver.IsValid(k8sVersion) {
 		return "", fmt.Errorf("kubernetes flag does not specify a valid semantic version: %s", k8sVersion)
