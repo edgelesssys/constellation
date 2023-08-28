@@ -22,6 +22,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/semver"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -34,6 +36,7 @@ func TestUpgradeApply(t *testing.T) {
 		kubeUpgrader      *stubKubernetesUpgrader
 		terraformUpgrader *stubTerraformUpgrader
 		wantErr           bool
+		customK8sVersion  string
 		flags             upgradeApplyFlags
 		stdin             string
 	}{
@@ -101,6 +104,30 @@ func TestUpgradeApply(t *testing.T) {
 			wantErr: true,
 			flags:   upgradeApplyFlags{yes: true},
 		},
+		"outdated K8s patch version": {
+			kubeUpgrader: &stubKubernetesUpgrader{
+				currentConfig: config.DefaultForAzureSEVSNP(),
+			},
+			helmUpgrader:      stubApplier{},
+			terraformUpgrader: &stubTerraformUpgrader{},
+			customK8sVersion: func() string {
+				v, err := semver.New(versions.SupportedK8sVersions()[0])
+				require.NoError(t, err)
+				return semver.NewFromInt(v.Major(), v.Minor(), v.Patch()-1, "").String()
+			}(),
+			wantErr: false,
+			flags:   upgradeApplyFlags{yes: true},
+		},
+		"outdated K8s version": {
+			kubeUpgrader: &stubKubernetesUpgrader{
+				currentConfig: config.DefaultForAzureSEVSNP(),
+			},
+			helmUpgrader:      stubApplier{},
+			terraformUpgrader: &stubTerraformUpgrader{},
+			customK8sVersion:  "v1.20.0",
+			wantErr:           true,
+			flags:             upgradeApplyFlags{yes: true},
+		},
 	}
 
 	for name, tc := range testCases {
@@ -113,7 +140,9 @@ func TestUpgradeApply(t *testing.T) {
 			handler := file.NewHandler(afero.NewMemMapFs())
 
 			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.Azure)
-
+			if tc.customK8sVersion != "" {
+				cfg.KubernetesVersion = versions.ValidK8sVersion(tc.customK8sVersion)
+			}
 			require.NoError(handler.WriteYAML(constants.ConfigFilename, cfg))
 			require.NoError(handler.WriteJSON(constants.ClusterIDsFilename, clusterid.File{MeasurementSalt: []byte("measurementSalt")}))
 			require.NoError(handler.WriteJSON(constants.MasterSecretFilename, uri.MasterSecret{}))
