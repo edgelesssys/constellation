@@ -78,17 +78,18 @@ func reverseEndian(b []byte) {
 // getTrustedKey establishes trust in the given public key.
 // It does so by verifying the SNP attestation document.
 func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDocument, extraData []byte) (crypto.PublicKey, error) {
+	// transform the instanceInfo received from Microsoft into a the verifiable attestation report format.
 	var instanceInfo azureInstanceInfo
 	if err := json.Unmarshal(attDoc.InstanceInfo, &instanceInfo); err != nil {
 		return nil, fmt.Errorf("unmarshalling instanceInfo: %w", err)
 	}
-
 	att, err := instanceInfo.attestation()
 	if err != nil {
 		return nil, fmt.Errorf("parsing attestation report: %w", err)
 	}
 
-	// Checks the signature and certificate chain of the attestation report.
+	// Retrieve the VCEK certificate from the AMD KDS, get the certificate chain for the VCEK
+	// certificate, and verify the certificate chain.
 	if err := verify.SnpReport(att.Report, &verify.Options{}); err != nil {
 		return nil, fmt.Errorf("verifying SNP attestation: %w", err)
 	}
@@ -135,11 +136,11 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 		v.checkIDKeyDigests(ctx, att, instanceInfo.MAAToken, extraData)
 	}
 
+	// Decode the public area of the attestation key and validate its trustworthiness.
 	pubArea, err := tpm2.DecodePublic(attDoc.Attestation.AkPub)
 	if err != nil {
 		return nil, err
 	}
-
 	if err = v.hclValidator.validateAk(instanceInfo.RuntimeData, att.Report.ReportData, pubArea.RSAParameters); err != nil {
 		return nil, fmt.Errorf("validating HCLAkPub: %w", err)
 	}
@@ -183,27 +184,20 @@ func (v *Validator) checkIDKeyDigests(ctx context.Context, report *spb.Attestati
 }
 
 type azureInstanceInfo struct {
-	CertChain         []byte
 	AttestationReport []byte
 	RuntimeData       []byte
 	MAAToken          string
 }
 
-// attestation returns the formatted attestation report and its certificate chain.
+// attestation returns the formatted attestation report.
 func (a *azureInstanceInfo) attestation() (*spb.Attestation, error) {
 	report, err := abi.ReportToProto(a.AttestationReport)
 	if err != nil {
 		return nil, fmt.Errorf("converting report to proto: %w", err)
 	}
 
-	certTable := &abi.CertTable{}
-	if err := certTable.Unmarshal(a.CertChain); err != nil {
-		return nil, fmt.Errorf("unmarshalling cert table: %w", err)
-	}
-
 	return &spb.Attestation{
 		Report:           report,
-		CertificateChain: certTable.Proto(),
 	}, nil
 }
 
