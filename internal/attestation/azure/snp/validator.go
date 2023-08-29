@@ -202,7 +202,7 @@ func (a *azureInstanceInfo) attestation() (*spb.Attestation, error) {
 	}
 
 	return &spb.Attestation{
-		Report:           report,
+		Report: report,
 	}, nil
 }
 
