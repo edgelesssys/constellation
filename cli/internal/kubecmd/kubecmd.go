@@ -24,6 +24,7 @@ import (
 	"io"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -35,6 +36,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
 	internalk8s "github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
+	conretry "github.com/edgelesssys/constellation/v2/internal/retry"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
@@ -48,6 +50,10 @@ import (
 	"k8s.io/client-go/util/retry"
 	kubeadmv1beta3 "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 	"sigs.k8s.io/yaml"
+)
+
+const (
+	maxRetryAttempts = 5
 )
 
 // ErrInProgress signals that an upgrade is in progress inside the cluster.
@@ -66,11 +72,12 @@ func (e *applyError) Error() string {
 
 // KubeCmd handles interaction with the cluster's components using the CLI.
 type KubeCmd struct {
-	kubectl      kubectlInterface
-	imageFetcher imageFetcher
-	outWriter    io.Writer
-	fileHandler  file.Handler
-	log          debugLog
+	kubectl       kubectlInterface
+	imageFetcher  imageFetcher
+	outWriter     io.Writer
+	fileHandler   file.Handler
+	retryInterval time.Duration
+	log           debugLog
 }
 
 // New returns a new KubeCmd.
@@ -81,11 +88,12 @@ func New(outWriter io.Writer, kubeConfigPath string, fileHandler file.Handler, l
 	}
 
 	return &KubeCmd{
-		kubectl:      client,
-		fileHandler:  fileHandler,
-		imageFetcher: imagefetcher.New(),
-		outWriter:    outWriter,
-		log:          log,
+		kubectl:       client,
+		fileHandler:   fileHandler,
+		imageFetcher:  imagefetcher.New(),
+		outWriter:     outWriter,
+		retryInterval: time.Second * 5,
+		log:           log,
 	}, nil
 }
 
@@ -206,14 +214,34 @@ func (k *KubeCmd) ApplyJoinConfig(ctx context.Context, newAttestConfig config.At
 		return fmt.Errorf("marshaling attestation config: %w", err)
 	}
 
-	joinConfig, err := k.kubectl.GetConfigMap(ctx, constants.ConstellationNamespace, constants.JoinConfigMap)
-	if err != nil {
+	var retries int
+	retrieable := func(err error) bool {
+		if k8serrors.IsNotFound(err) {
+			return false
+		}
+		retries++
+		k.log.Debugf("Getting join-config ConfigMap failed (attempt %d/%d): %s", retries, maxRetryAttempts, err)
+		return retries <= maxRetryAttempts
+	}
+
+	var joinConfig *corev1.ConfigMap
+	doer := &kubeDoer{
+		action: func(ctx context.Context) error {
+			joinConfig, err = k.kubectl.GetConfigMap(ctx, constants.ConstellationNamespace, constants.JoinConfigMap)
+			return err
+		},
+	}
+	retrier := conretry.NewIntervalRetrier(doer, k.retryInterval, retrieable)
+
+	if err := retrier.Do(ctx); err != nil {
 		if !k8serrors.IsNotFound(err) {
 			return fmt.Errorf("getting %s ConfigMap: %w", constants.JoinConfigMap, err)
 		}
 
 		k.log.Debugf("ConfigMap %q does not exist in namespace %q, creating it now", constants.JoinConfigMap, constants.ConstellationNamespace)
-		if err := k.kubectl.CreateConfigMap(ctx, joinConfigMap(newConfigJSON, measurementSalt)); err != nil {
+		if err := retryAction(ctx, k.retryInterval, maxRetryAttempts, func(ctx context.Context) error {
+			return k.kubectl.CreateConfigMap(ctx, joinConfigMap(newConfigJSON, measurementSalt))
+		}, k.log); err != nil {
 			return fmt.Errorf("creating join-config ConfigMap: %w", err)
 		}
 		k.log.Debugf("Created %q ConfigMap in namespace %q", constants.JoinConfigMap, constants.ConstellationNamespace)
@@ -224,7 +252,10 @@ func (k *KubeCmd) ApplyJoinConfig(ctx context.Context, newAttestConfig config.At
 	joinConfig.Data[constants.AttestationConfigFilename+"_backup"] = joinConfig.Data[constants.AttestationConfigFilename]
 	joinConfig.Data[constants.AttestationConfigFilename] = string(newConfigJSON)
 	k.log.Debugf("Triggering attestation config update now")
-	if _, err = k.kubectl.UpdateConfigMap(ctx, joinConfig); err != nil {
+	if err := retryAction(ctx, k.retryInterval, maxRetryAttempts, func(ctx context.Context) error {
+		_, err = k.kubectl.UpdateConfigMap(ctx, joinConfig)
+		return err
+	}, k.log); err != nil {
 		return fmt.Errorf("setting new attestation config: %w", err)
 	}
 
@@ -335,7 +366,7 @@ func (k *KubeCmd) applyComponentsCM(ctx context.Context, components *corev1.Conf
 func (k *KubeCmd) applyNodeVersion(ctx context.Context, nodeVersion updatev1alpha1.NodeVersion) (updatev1alpha1.NodeVersion, error) {
 	k.log.Debugf("Triggering NodeVersion upgrade now")
 	var updatedNodeVersion updatev1alpha1.NodeVersion
-	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+	err := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
 		newNode, err := k.getConstellationVersion(ctx)
 		if err != nil {
 			return fmt.Errorf("retrieving current NodeVersion: %w", err)
@@ -500,7 +531,25 @@ func (k *KubeCmd) RemoveHelmKeepAnnotation(ctx context.Context) error {
 	return nil
 }
 
-// kubectlInterface is provides access to the Kubernetes API.
+type kubeDoer struct {
+	action func(ctx context.Context) error
+}
+
+func (k *kubeDoer) Do(ctx context.Context) error {
+	return k.action(ctx)
+}
+
+func retryAction(ctx context.Context, retryInterval time.Duration, maxRetries int, action func(ctx context.Context) error, log debugLog) error {
+	ctr := 0
+	retrier := conretry.NewIntervalRetrier(&kubeDoer{action: action}, retryInterval, func(err error) bool {
+		ctr++
+		log.Debugf("Action failed (attempt %d/%d): %s", ctr, maxRetries, err)
+		return ctr <= maxRetries
+	})
+	return retrier.Do(ctx)
+}
+
+// kubectlInterface provides access to the Kubernetes API.
 type kubectlInterface interface {
 	GetNodes(ctx context.Context) ([]corev1.Node, error)
 	GetConfigMap(ctx context.Context, namespace, name string) (*corev1.ConfigMap, error)
@@ -514,7 +563,6 @@ type kubectlInterface interface {
 
 type debugLog interface {
 	Debugf(format string, args ...any)
-	Sync()
 }
 
 // imageFetcher gets an image reference from the versionsapi.

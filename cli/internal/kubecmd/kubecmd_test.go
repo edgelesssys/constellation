@@ -12,6 +12,7 @@ import (
 	"errors"
 	"io"
 	"testing"
+	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -471,16 +472,28 @@ func newJoinConfigMap(data string) *corev1.ConfigMap {
 	}
 }
 
-func TestApplyAttestationConfig(t *testing.T) {
+func TestApplyJoinConfig(t *testing.T) {
 	mustMarshal := func(cfg config.AttestationCfg) string {
 		data, err := json.Marshal(cfg)
 		require.NoError(t, err)
 		return string(data)
 	}
+	// repeatedErrors returns the given error multiple times
+	// This is needed in tests, since the retry logic will retry multiple times
+	// If the retry limit is raised in [KubeCmd.ApplyJoinConfig], it should also
+	// be updated here
+	repeatedErrors := func(err error) []error {
+		var errs []error
+		for i := 0; i < 20; i++ {
+			errs = append(errs, err)
+		}
+		return errs
+	}
 
 	testCases := map[string]struct {
 		newAttestationCfg config.AttestationCfg
-		kubectl           *stubKubectl
+		kubectl           *fakeConfigMapClient
+		wantUpdate        bool
 		wantErr           bool
 	}{
 		"success": {
@@ -489,7 +502,7 @@ func TestApplyAttestationConfig(t *testing.T) {
 					0: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
 				},
 			},
-			kubectl: &stubKubectl{
+			kubectl: &fakeConfigMapClient{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(mustMarshal(&config.QEMUVTPM{
 						Measurements: measurements.M{
@@ -498,6 +511,7 @@ func TestApplyAttestationConfig(t *testing.T) {
 					})),
 				},
 			},
+			wantUpdate: true,
 		},
 		"Get ConfigMap error": {
 			newAttestationCfg: &config.QEMUVTPM{
@@ -505,10 +519,38 @@ func TestApplyAttestationConfig(t *testing.T) {
 					0: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
 				},
 			},
-			kubectl: &stubKubectl{
-				getCMErr: assert.AnError,
+			kubectl: &fakeConfigMapClient{
+				getErrs: repeatedErrors(assert.AnError),
 			},
 			wantErr: true,
+		},
+		"Get ConfigMap fails then returns ConfigMap": {
+			newAttestationCfg: &config.QEMUVTPM{
+				Measurements: measurements.M{
+					0: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+				},
+			},
+			kubectl: &fakeConfigMapClient{
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.JoinConfigMap: newJoinConfigMap(mustMarshal(&config.QEMUVTPM{
+						Measurements: measurements.M{
+							0: measurements.WithAllBytes(0xFF, measurements.WarnOnly, measurements.PCRMeasurementLength),
+						},
+					})),
+				},
+				getErrs: []error{assert.AnError, assert.AnError},
+			},
+			wantUpdate: true,
+		},
+		"Get ConfigMap fails then fails with NotFound": {
+			newAttestationCfg: &config.QEMUVTPM{
+				Measurements: measurements.M{
+					0: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+				},
+			},
+			kubectl: &fakeConfigMapClient{
+				getErrs: []error{assert.AnError, assert.AnError, k8serrors.NewNotFound(schema.GroupResource{}, "")},
+			},
 		},
 		"ConfigMap does not exist yet": {
 			newAttestationCfg: &config.QEMUVTPM{
@@ -516,8 +558,31 @@ func TestApplyAttestationConfig(t *testing.T) {
 					0: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
 				},
 			},
-			kubectl: &stubKubectl{
-				getCMErr: k8serrors.NewNotFound(schema.GroupResource{}, ""),
+			kubectl: &fakeConfigMapClient{
+				getErrs: repeatedErrors(k8serrors.NewNotFound(schema.GroupResource{}, "")),
+			},
+		},
+		"Create ConfigMap fails": {
+			newAttestationCfg: &config.QEMUVTPM{
+				Measurements: measurements.M{
+					0: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+				},
+			},
+			kubectl: &fakeConfigMapClient{
+				getErrs:    repeatedErrors(k8serrors.NewNotFound(schema.GroupResource{}, "")),
+				createErrs: repeatedErrors(assert.AnError),
+			},
+			wantErr: true,
+		},
+		"Create ConfigMap fails then succeeds": {
+			newAttestationCfg: &config.QEMUVTPM{
+				Measurements: measurements.M{
+					0: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+				},
+			},
+			kubectl: &fakeConfigMapClient{
+				getErrs:    repeatedErrors(k8serrors.NewNotFound(schema.GroupResource{}, "")),
+				createErrs: []error{assert.AnError, assert.AnError},
 			},
 		},
 		"Update ConfigMap error": {
@@ -526,7 +591,7 @@ func TestApplyAttestationConfig(t *testing.T) {
 					0: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
 				},
 			},
-			kubectl: &stubKubectl{
+			kubectl: &fakeConfigMapClient{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(mustMarshal(&config.QEMUVTPM{
 						Measurements: measurements.M{
@@ -534,9 +599,27 @@ func TestApplyAttestationConfig(t *testing.T) {
 						},
 					})),
 				},
-				updateCMErr: assert.AnError,
+				updateErrs: repeatedErrors(assert.AnError),
 			},
 			wantErr: true,
+		},
+		"Update ConfigMap fails then succeeds": {
+			newAttestationCfg: &config.QEMUVTPM{
+				Measurements: measurements.M{
+					0: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+				},
+			},
+			kubectl: &fakeConfigMapClient{
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.JoinConfigMap: newJoinConfigMap(mustMarshal(&config.QEMUVTPM{
+						Measurements: measurements.M{
+							0: measurements.WithAllBytes(0xFF, measurements.WarnOnly, measurements.PCRMeasurementLength),
+						},
+					})),
+				},
+				updateErrs: []error{assert.AnError, assert.AnError},
+			},
+			wantUpdate: true,
 		},
 	}
 
@@ -546,9 +629,10 @@ func TestApplyAttestationConfig(t *testing.T) {
 			require := require.New(t)
 
 			cmd := &KubeCmd{
-				kubectl:   tc.kubectl,
-				log:       logger.NewTest(t),
-				outWriter: io.Discard,
+				kubectl:       tc.kubectl,
+				log:           logger.NewTest(t),
+				retryInterval: time.Millisecond,
+				outWriter:     io.Discard,
 			}
 
 			err := cmd.ApplyJoinConfig(context.Background(), tc.newAttestationCfg, []byte{0x11})
@@ -557,7 +641,14 @@ func TestApplyAttestationConfig(t *testing.T) {
 				return
 			}
 			assert.NoError(err)
-			cfg, ok := tc.kubectl.configMaps[constants.JoinConfigMap]
+
+			var cfg *corev1.ConfigMap
+			var ok bool
+			if tc.wantUpdate {
+				cfg, ok = tc.kubectl.updatedConfigMaps[constants.JoinConfigMap]
+			} else {
+				cfg, ok = tc.kubectl.configMaps[constants.JoinConfigMap]
+			}
 			require.True(ok)
 			assert.Equal(mustMarshal(tc.newAttestationCfg), cfg.Data[constants.AttestationConfigFilename])
 		})
@@ -668,4 +759,62 @@ func unstructedObjectWithGeneration(nodeVersion updatev1alpha1.NodeVersion, gene
 	object := &unstructured.Unstructured{Object: unstrNodeVersion}
 	object.SetGeneration(generation)
 	return object
+}
+
+type fakeConfigMapClient struct {
+	getErrs           []error
+	updatedConfigMaps map[string]*corev1.ConfigMap
+	updateErrs        []error
+	configMaps        map[string]*corev1.ConfigMap
+	createErrs        []error
+	kubectlInterface
+}
+
+func (f *fakeConfigMapClient) GetConfigMap(_ context.Context, _, name string) (*corev1.ConfigMap, error) {
+	if len(f.getErrs) > 0 {
+		err := f.getErrs[0]
+		if len(f.getErrs) > 1 {
+			f.getErrs = f.getErrs[1:]
+		} else {
+			f.getErrs = nil
+		}
+		return nil, err
+	}
+	return f.configMaps[name], nil
+}
+
+func (f *fakeConfigMapClient) UpdateConfigMap(_ context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
+	if len(f.updateErrs) > 0 {
+		err := f.updateErrs[0]
+		if len(f.updateErrs) > 1 {
+			f.updateErrs = f.updateErrs[1:]
+		} else {
+			f.updateErrs = nil
+		}
+		return nil, err
+	}
+
+	if f.updatedConfigMaps == nil {
+		f.updatedConfigMaps = map[string]*corev1.ConfigMap{}
+	}
+	f.updatedConfigMaps[configMap.ObjectMeta.Name] = configMap
+	return f.updatedConfigMaps[configMap.ObjectMeta.Name], nil
+}
+
+func (f *fakeConfigMapClient) CreateConfigMap(_ context.Context, configMap *corev1.ConfigMap) error {
+	if len(f.createErrs) > 0 {
+		err := f.createErrs[0]
+		if len(f.createErrs) > 1 {
+			f.createErrs = f.createErrs[1:]
+		} else {
+			f.createErrs = nil
+		}
+		return err
+	}
+
+	if f.configMaps == nil {
+		f.configMaps = map[string]*corev1.ConfigMap{}
+	}
+	f.configMaps[configMap.ObjectMeta.Name] = configMap
+	return nil
 }

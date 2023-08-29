@@ -21,6 +21,7 @@ go_library(
         "//internal/imagefetcher",
         "//internal/kubernetes",
         "//internal/kubernetes/kubectl",
+        "//internal/retry",
         "//internal/versions",
         "//internal/versions/components",
         "//operators/constellation-node-operator/api/v1alpha1",
