@@ -80,7 +80,7 @@ func reverseEndian(b []byte) {
 func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDocument, extraData []byte) (crypto.PublicKey, error) {
 	var instanceInfo azureInstanceInfo
 	if err := json.Unmarshal(attDoc.InstanceInfo, &instanceInfo); err != nil {
-		return nil, fmt.Errorf("unmarshalling instanceInfoRaw: %w", err)
+		return nil, fmt.Errorf("unmarshalling instanceInfo: %w", err)
 	}
 
 	att, err := instanceInfo.attestation()
