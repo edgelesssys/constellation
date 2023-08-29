@@ -133,7 +133,7 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 	}
 	if requireIDBlock {
 		// Custom WarnOnly / MAAFallback check of the IDKeyDigests.
-		v.checkIDKeyDigests(ctx, att, instanceInfo.MAAToken, extraData)
+		v.checkIDKeyDigest(ctx, att, instanceInfo.MAAToken, extraData)
 	}
 
 	// Decode the public area of the attestation key and validate its trustworthiness.
@@ -148,7 +148,12 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 	return pubArea.Key()
 }
 
-func (v *Validator) checkIDKeyDigests(ctx context.Context, report *spb.Attestation, maaToken string, extraData []byte) error {
+// checkIDKeyDigest validates the IDKeyDigest in the given attestation report against the accepted IDKeyDigests in the
+// validator's config. If an IDKeyDigest is present in the report that is not in the accepted IDKeyDigests, the validation proceeds
+// according to the enforcement policy. If the enforcement policy is set to MAAFallback, the maaToken is validated against the MAA.
+// If the enforcement policy is set to WarnOnly, a warning is logged. If the enforcement policy is set to neither WarnOnly or MAAFallback, an
+// error is returned.
+func (v *Validator) checkIDKeyDigest(ctx context.Context, report *spb.Attestation, maaToken string, extraData []byte) error {
 	hasExpectedIDKeyDigest := false
 	for _, digest := range v.config.FirmwareSignerConfig.AcceptedKeyDigests {
 		if bytes.Equal(digest, report.Report.IdKeyDigest) {

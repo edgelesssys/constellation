@@ -25,6 +25,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/google/go-sev-guest/kds"
+	spb "github.com/google/go-sev-guest/proto/sevsnp"
 	"github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm/legacy/tpm2"
@@ -44,7 +45,7 @@ func TestInstanceInfoAttestation(t *testing.T) {
 			wantErr:   true,
 		},
 		"corrupted report": {
-			reportHex: defaultReport[10:len(defaultReport)-10],
+			reportHex: defaultReport[10 : len(defaultReport)-10],
 			wantErr:   true,
 		},
 		"success": {
@@ -84,6 +85,98 @@ func TestInstanceInfoAttestation(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestCheckIDKeyDigest tests validation of an IDKeyDigest under different enforcement policies.
+func TestCheckIDKeyDigest(t *testing.T) {
+	cfgWithAcceptedIDKeyDigests := func(enforcementPolicy idkeydigest.Enforcement, digestStrings []string) *config.AzureSEVSNP {
+		digests := idkeydigest.List{}
+		for _, digest := range digestStrings {
+			digests = append(digests, []byte(digest))
+		}
+		cfg := config.DefaultForAzureSEVSNP()
+		cfg.FirmwareSignerConfig.AcceptedKeyDigests = digests
+		cfg.FirmwareSignerConfig.EnforcementPolicy = enforcementPolicy
+		return cfg
+	}
+	reportWithIdKeyDigest := func(idKeyDigest string) *spb.Attestation {
+		report := &spb.Attestation{}
+		report.Report = &spb.Report{}
+		report.Report.IdKeyDigest = []byte(idKeyDigest)
+		return report
+	}
+	newTestValidator := func(cfg *config.AzureSEVSNP, log *logger.Logger, validateTokenErr error) *Validator {
+		validator := NewValidator(cfg, logger.NewTest(t))
+		validator.maa = &stubMaaValidator{
+			validateTokenErr: validateTokenErr,
+		}
+		return validator
+	}
+
+	testCases := map[string]struct {
+		idKeyDigest          string
+		acceptedIDKeyDigests []string
+		enforcementPolicy    idkeydigest.Enforcement
+		validateMaaTokenErr  error
+		wantErr              bool
+	}{
+		"matching digest": {
+			idKeyDigest:          "test",
+			acceptedIDKeyDigests: []string{"test"},
+		},
+		"no accepted digests": {
+			idKeyDigest:          "test",
+			acceptedIDKeyDigests: []string{},
+			wantErr:              true,
+		},
+		"mismatching digest, enforce": {
+			idKeyDigest:          "test",
+			acceptedIDKeyDigests: []string{"other"},
+			wantErr:              true,
+		},
+		"mismatching digest, maaFallback": {
+			idKeyDigest:          "test",
+			acceptedIDKeyDigests: []string{"other"},
+			enforcementPolicy:    idkeydigest.MAAFallback,
+		},
+		"mismatching digest, maaFallback errors": {
+			idKeyDigest:          "test",
+			acceptedIDKeyDigests: []string{"other"},
+			enforcementPolicy:    idkeydigest.MAAFallback,
+			validateMaaTokenErr:  errors.New("maa fallback failed"),
+			wantErr:              true,
+		},
+		"mismatching digest, warnOnly": {
+			idKeyDigest:          "test",
+			acceptedIDKeyDigests: []string{"other"},
+			enforcementPolicy:    idkeydigest.WarnOnly,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			require := require.New(t)
+
+			cfg := cfgWithAcceptedIDKeyDigests(tc.enforcementPolicy, tc.acceptedIDKeyDigests)
+			report := reportWithIdKeyDigest(tc.idKeyDigest)
+			validator := newTestValidator(cfg, logger.NewTest(t), tc.validateMaaTokenErr)
+
+			err := validator.checkIDKeyDigest(context.Background(), report, "", nil)
+			if tc.wantErr {
+				require.Error(err)
+			} else {
+				require.NoError(err)
+			}
+		})
+	}
+}
+
+type stubMaaValidator struct {
+	validateTokenErr error
+}
+
+func (v *stubMaaValidator) validateToken(_ context.Context, _ string, _ string, _ []byte) error {
+	return v.validateTokenErr
 }
 
 func TestTrustedKeyFromSNP(t *testing.T) {
