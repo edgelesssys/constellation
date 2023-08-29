@@ -239,7 +239,7 @@ func (k *KubeCmd) ApplyJoinConfig(ctx context.Context, newAttestConfig config.At
 		}
 
 		k.log.Debugf("ConfigMap %q does not exist in namespace %q, creating it now", constants.JoinConfigMap, constants.ConstellationNamespace)
-		if err := retryFiveTimes(ctx, k.retryInterval, func(ctx context.Context) error {
+		if err := retryAction(ctx, k.retryInterval, maxRetryAttempts, func(ctx context.Context) error {
 			return k.kubectl.CreateConfigMap(ctx, joinConfigMap(newConfigJSON, measurementSalt))
 		}, k.log); err != nil {
 			return fmt.Errorf("creating join-config ConfigMap: %w", err)
@@ -252,7 +252,7 @@ func (k *KubeCmd) ApplyJoinConfig(ctx context.Context, newAttestConfig config.At
 	joinConfig.Data[constants.AttestationConfigFilename+"_backup"] = joinConfig.Data[constants.AttestationConfigFilename]
 	joinConfig.Data[constants.AttestationConfigFilename] = string(newConfigJSON)
 	k.log.Debugf("Triggering attestation config update now")
-	if err := retryFiveTimes(ctx, k.retryInterval, func(ctx context.Context) error {
+	if err := retryAction(ctx, k.retryInterval, maxRetryAttempts, func(ctx context.Context) error {
 		_, err = k.kubectl.UpdateConfigMap(ctx, joinConfig)
 		return err
 	}, k.log); err != nil {
@@ -539,17 +539,17 @@ func (k *kubeDoer) Do(ctx context.Context) error {
 	return k.action(ctx)
 }
 
-func retryFiveTimes(ctx context.Context, retryInterval time.Duration, action func(ctx context.Context) error, log debugLog) error {
+func retryAction(ctx context.Context, retryInterval time.Duration, maxRetries int, action func(ctx context.Context) error, log debugLog) error {
 	ctr := 0
 	retrier := conretry.NewIntervalRetrier(&kubeDoer{action: action}, retryInterval, func(err error) bool {
 		ctr++
-		log.Debugf("Action failed (attempt %d/%d): %s", ctr, maxRetryAttempts, err)
-		return ctr <= maxRetryAttempts
+		log.Debugf("Action failed (attempt %d/%d): %s", ctr, maxRetries, err)
+		return ctr <= maxRetries
 	})
 	return retrier.Do(ctx)
 }
 
-// kubectlInterface is provides access to the Kubernetes API.
+// kubectlInterface provides access to the Kubernetes API.
 type kubectlInterface interface {
 	GetNodes(ctx context.Context) ([]corev1.Node, error)
 	GetConfigMap(ctx context.Context, namespace, name string) (*corev1.ConfigMap, error)
