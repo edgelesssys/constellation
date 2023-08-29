@@ -76,7 +76,7 @@ func reverseEndian(b []byte) {
 }
 
 // getTrustedKey establishes trust in the given public key.
-// It does so by verifying the SNP attestation statement in instanceInfo.
+// It does so by verifying the SNP attestation document.
 func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDocument, extraData []byte) (crypto.PublicKey, error) {
 	var instanceInfo azureInstanceInfo
 	if err := json.Unmarshal(attDoc.InstanceInfo, &instanceInfo); err != nil {
