@@ -28,6 +28,7 @@ import (
 	spb "github.com/google/go-sev-guest/proto/sevsnp"
 	"github.com/google/go-sev-guest/validate"
 	"github.com/google/go-sev-guest/verify"
+	"github.com/google/go-sev-guest/verify/trust"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm/legacy/tpm2"
 )
@@ -38,6 +39,7 @@ type Validator struct {
 	*vtpm.Validator
 	hclValidator hclAkValidator
 	maa          maaValidator
+	getter       trust.HTTPSGetter
 
 	config *config.AzureSEVSNP
 
@@ -54,6 +56,7 @@ func NewValidator(cfg *config.AzureSEVSNP, log attestation.Logger) *Validator {
 		maa:          newMAAClient(),
 		config:       cfg,
 		log:          log,
+		getter:       trust.DefaultHTTPSGetter(),
 	}
 	v.Validator = vtpm.NewValidator(
 		cfg.Measurements,
@@ -83,14 +86,13 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 	if err := json.Unmarshal(attDoc.InstanceInfo, &instanceInfo); err != nil {
 		return nil, fmt.Errorf("unmarshalling instanceInfo: %w", err)
 	}
-	att, err := instanceInfo.attestation()
+	att, err := instanceInfo.attestationWithCerts(trust.DefaultHTTPSGetter())
 	if err != nil {
 		return nil, fmt.Errorf("parsing attestation report: %w", err)
 	}
 
-	// Retrieve the VCEK certificate from the AMD KDS, get the certificate chain for the VCEK
-	// certificate, and verify the certificate chain.
-	if err := verify.SnpReport(att.Report, &verify.Options{}); err != nil {
+	// Verify the attestation report's certificates.
+	if err := verify.SnpAttestation(att, &verify.Options{}); err != nil {
 		return nil, fmt.Errorf("verifying SNP attestation: %w", err)
 	}
 
@@ -194,16 +196,17 @@ type azureInstanceInfo struct {
 	MAAToken          string
 }
 
-// attestation returns the formatted attestation report.
-func (a *azureInstanceInfo) attestation() (*spb.Attestation, error) {
+// attestationWithCerts returns the formatted attestation report and its certificates,
+// using the given getter to fetch the AMD KDS for the VCEK certificate and the corresponding certificate chain.
+func (a *azureInstanceInfo) attestationWithCerts(getter trust.HTTPSGetter) (*spb.Attestation, error) {
 	report, err := abi.ReportToProto(a.AttestationReport)
 	if err != nil {
 		return nil, fmt.Errorf("converting report to proto: %w", err)
 	}
 
-	return &spb.Attestation{
-		Report: report,
-	}, nil
+	return verify.GetAttestationFromReport(report, &verify.Options{
+		Getter: getter,
+	})
 }
 
 // validateAk validates that the attestation key from the TPM is trustworthy. The steps are:

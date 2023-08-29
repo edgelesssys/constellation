@@ -1,0 +1,13 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "testdata",
+    srcs = ["testdata.go"],
+    embedsrcs = [
+        "attestation.bin",
+        "chain.cert",
+        "vcek.cert",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp/testdata",
+    visibility = ["//:__subpackages__"],
+)
