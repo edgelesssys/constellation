@@ -11,10 +11,11 @@ This creates problems since the relevant information may be split over multiple 
 Additionally, commands like `upgrade` and `init` currently depend on Terraform files being present in the working directory,
 which may not be the case if the cloud resources were manually created.
 
-## Proposal
+To fix these problems, we want to use a Constellation state file, which keeps track of cluster relevant information.
 
-Add a Constellation state file to keep track of this information.
-This file should replace the current `constellation-id.json` file and be the single source of truth for this kind of cluster relevant information.
+## Design Goals
+
+The state file should replace the current `constellation-id.json` file and be the single source of truth for this kind of cluster relevant information.
 The file should keep track of all information currently kept in `constellation-id.json`, as well as information we currently have to read from Terraform files
 during `init` or `upgrade`.
 
@@ -27,8 +28,11 @@ and only use the Constellation CLI for Kubernetes cluster management (Kubernetes
 
 ## Format
 
-The state file will be in either YAML or JSON format, and contain a version number to keep track of necessary migrations or breaking formats.
+The state file will be in annotated YAML format, and contain a version number to keep track of necessary migrations or breaking formats.
 The file should be split into multiple sections for each relevant resource.
+
+Each section and key should have a comment dedicated to explaining what it does, where to get it from, and if it is to be considered read-only,
+or if a user has to supplement a value themselves (if they manage their own infrastructure).
 
 Information that is only used to upgrade Terraform resources (e.g. IAM) should not be part of this file.
 
@@ -85,10 +89,13 @@ If they are manually managed, the user has to update the values on their own.
 Values depending purely on Kubernetes/node state should be automatically updated by the CLI.
 
 Breaking format changes should be automatically handled for `runtimeResources`.
-They should be automatically handled for `cloudResources` if the resources are managed by the Constellation CLI,
-otherwise we should provide documentation and/or tooling for migrating old file formats.
+Breaking format changes should be automatically handled for `cloudResources` if the resources are managed by the Constellation CLI.
+Otherwise, we should provide documentation and/or tooling for migrating old file formats.
 
 ## Migrating from terraform outputs + id file
 
 The Constellation version implementing the state file should provide an upgrade path for moving the Terraform outputs and cluster id file content into the new state file.
 This should happen at the beginning of `constellation upgrade apply`.
+
+We might want to implement a CLI command to automatically create the state file from and existing Terraform state.
+In that case, the migration path should make use of that command to set up the state file.
