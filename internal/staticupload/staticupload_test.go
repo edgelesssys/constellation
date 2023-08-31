@@ -21,6 +21,7 @@ import (
 	cftypes "github.com/aws/aws-sdk-go-v2/service/cloudfront/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -105,6 +106,7 @@ func TestUpload(t *testing.T) {
 				distributionID:               "test-distribution-id",
 				cacheInvalidationStrategy:    tc.cacheInvalidationStrategy,
 				cacheInvalidationWaitTimeout: tc.cacheInvalidationWaitTimeout,
+				logger:                       logger.NewTest(t),
 			}
 			_, err := client.Upload(context.Background(), tc.in)
 
@@ -216,6 +218,7 @@ func TestDeleteObject(t *testing.T) {
 				distributionID:               "test-distribution-id",
 				cacheInvalidationStrategy:    tc.cacheInvalidationStrategy,
 				cacheInvalidationWaitTimeout: tc.cacheInvalidationWaitTimeout,
+				logger:                       logger.NewTest(t),
 			}
 			_, err := client.DeleteObject(context.Background(), newObjectInput(tc.nilInput, tc.nilKey))
 
@@ -254,6 +257,7 @@ func TestDeleteObject(t *testing.T) {
 				distributionID:               "test-distribution-id",
 				cacheInvalidationStrategy:    tc.cacheInvalidationStrategy,
 				cacheInvalidationWaitTimeout: tc.cacheInvalidationWaitTimeout,
+				logger:                       logger.NewTest(t),
 			}
 			_, err := client.DeleteObjects(context.Background(), newObjectsInput(tc.nilInput, tc.nilKey))
 
@@ -395,6 +399,7 @@ func TestFlush(t *testing.T) {
 				cacheInvalidationWaitTimeout: tc.cacheInvalidationWaitTimeout,
 				dirtyKeys:                    tc.dirtyKeys,
 				invalidationIDs:              tc.invalidationIDs,
+				logger:                       logger.NewTest(t),
 			}
 			err := client.Flush(context.Background())
 
@@ -413,7 +418,7 @@ func TestFlush(t *testing.T) {
 	}
 }
 
-func TestConcurrency(_ *testing.T) {
+func TestConcurrency(t *testing.T) {
 	newInput := func() *s3.PutObjectInput {
 		return &s3.PutObjectInput{
 			Bucket: ptr("test-bucket"),
@@ -432,6 +437,7 @@ func TestConcurrency(_ *testing.T) {
 		uploadClient:                 uploadClient,
 		distributionID:               "test-distribution-id",
 		cacheInvalidationWaitTimeout: 50 * time.Millisecond,
+		logger:                       logger.NewTest(t),
 	}
 
 	var wg sync.WaitGroup

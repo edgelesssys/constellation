@@ -38,7 +38,7 @@ func newListCmd() *cobra.Command {
 	return cmd
 }
 
-func runList(cmd *cobra.Command, _ []string) error {
+func runList(cmd *cobra.Command, _ []string) (retErr error) {
 	flags, err := parseListFlags(cmd)
 	if err != nil {
 		return err
@@ -57,8 +57,9 @@ func runList(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("creating client: %w", err)
 	}
 	defer func() {
-		if err := clientClose(cmd.Context()); err != nil {
-			log.Errorf("Closing versions API client: %v", err)
+		err := clientClose(cmd.Context())
+		if err != nil {
+			retErr = errors.Join(retErr, fmt.Errorf("failed to invalidate cache: %w", err))
 		}
 	}()
 

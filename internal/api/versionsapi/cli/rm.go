@@ -105,12 +105,12 @@ func runRemove(cmd *cobra.Command, _ []string) (retErr error) {
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
 	}
-	defer func(retErr *error) {
-		log.Infof("Invalidating cache. This may take some time")
-		if err := verclientClose(cmd.Context()); err != nil && retErr == nil {
-			*retErr = fmt.Errorf("invalidating cache: %w", err)
+	defer func() {
+		err := verclientClose(cmd.Context())
+		if err != nil {
+			retErr = errors.Join(retErr, fmt.Errorf("failed to invalidate cache: %w", err))
 		}
-	}(&retErr)
+	}()
 
 	imageClients := rmImageClients{
 		version: verclient,
