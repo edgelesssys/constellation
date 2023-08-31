@@ -71,12 +71,12 @@ func runAdd(cmd *cobra.Command, _ []string) (retErr error) {
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
 	}
-	defer func(retErr *error) {
-		log.Infof("Invalidating cache. This may take some time")
-		if err := clientClose(cmd.Context()); err != nil && retErr == nil {
-			*retErr = fmt.Errorf("invalidating cache: %w", err)
+	defer func() {
+		err := clientClose(cmd.Context())
+		if err != nil {
+			retErr = errors.Join(retErr, fmt.Errorf("failed to invalidate cache: %w", err))
 		}
-	}(&retErr)
+	}()
 
 	log.Infof("Adding version")
 	if err := ensureVersion(cmd.Context(), client, flags.kind, ver, versionsapi.GranularityMajor, log); err != nil {

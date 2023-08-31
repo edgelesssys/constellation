@@ -25,6 +25,7 @@ import (
 	cftypes "github.com/aws/aws-sdk-go-v2/service/cloudfront/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/google/uuid"
 )
 
@@ -100,7 +101,7 @@ func (e *InvalidationError) Unwrap() error {
 }
 
 // New creates a new Client. Call CloseFunc when done with operations.
-func New(ctx context.Context, config Config) (*Client, CloseFunc, error) {
+func New(ctx context.Context, config Config, log *logger.Logger) (*Client, CloseFunc, error) {
 	config.SetsDefault()
 	cfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(config.Region))
 	if err != nil {
@@ -121,6 +122,7 @@ func New(ctx context.Context, config Config) (*Client, CloseFunc, error) {
 		bucketID:                     config.Bucket,
 		logger:                       log,
 	}
+
 	return client, client.Flush, nil
 }
 
@@ -132,6 +134,7 @@ func (c *Client) Flush(ctx context.Context) error {
 	c.mux.Lock()
 	defer c.mux.Unlock()
 
+	c.logger.Debugf("Invalidating keys: %s", c.dirtyKeys)
 	if len(c.dirtyKeys) == 0 {
 		return nil
 	}
@@ -211,16 +214,17 @@ func (c *Client) invalidateCacheForKeys(ctx context.Context, keys []string) (str
 // waitForInvalidations waits for all invalidations to finish.
 func (c *Client) waitForInvalidations(ctx context.Context) error {
 	if c.cacheInvalidationWaitTimeout == 0 {
+		c.logger.Warnf("cacheInvalidationWaitTimeout set to 0, not waiting for invalidations to finish")
 		return nil
 	}
 
 	waiter := cloudfront.NewInvalidationCompletedWaiter(c.cdnClient)
+	c.logger.Debugf("Waiting for invalidations %s in distribution %s", c.invalidationIDs, c.distributionID)
 	for _, invalidationID := range c.invalidationIDs {
 		waitIn := &cloudfront.GetInvalidationInput{
 			DistributionId: &c.distributionID,
 			Id:             &invalidationID,
 		}
-		c.logger.Debugf("Waiting for invalidation %s in distribution %s", invalidationID, c.distributionID)
 		if err := waiter.Wait(ctx, waitIn, c.cacheInvalidationWaitTimeout); err != nil {
 			return NewInvalidationError(fmt.Errorf("waiting for invalidation to complete: %w", err))
 		}

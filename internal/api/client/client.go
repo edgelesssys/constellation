@@ -48,14 +48,13 @@ import (
 // Client is the a general client for all APIs.
 type Client struct {
 	s3Client
-	s3ClientClose                func(ctx context.Context) error
-	bucket                       string
-	cacheInvalidationWaitTimeout time.Duration
+	s3ClientClose func(ctx context.Context) error
+	bucket        string
 
 	dirtyPaths []string // written paths to be invalidated
 	DryRun     bool     // no write operations are performed
 
-	Log *logger.Logger
+	Logger *logger.Logger
 }
 
 // NewReadOnlyClient creates a new read-only client.
@@ -64,11 +63,12 @@ func NewReadOnlyClient(ctx context.Context, region, bucket, distributionID strin
 	log *logger.Logger,
 ) (*Client, CloseFunc, error) {
 	staticUploadClient, staticUploadClientClose, err := staticupload.New(ctx, staticupload.Config{
-		Region:                    region,
-		Bucket:                    bucket,
-		DistributionID:            distributionID,
-		CacheInvalidationStrategy: staticupload.CacheInvalidateBatchOnFlush,
-	})
+		Region:                       region,
+		Bucket:                       bucket,
+		DistributionID:               distributionID,
+		CacheInvalidationStrategy:    staticupload.CacheInvalidateBatchOnFlush,
+		CacheInvalidationWaitTimeout: 10 * time.Minute,
+	}, log)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -78,7 +78,7 @@ func NewReadOnlyClient(ctx context.Context, region, bucket, distributionID strin
 		s3ClientClose: staticUploadClientClose,
 		bucket:        bucket,
 		DryRun:        true,
-		Log:           log,
+		Logger:        log,
 	}
 	clientClose := func(ctx context.Context) error {
 		return client.Close(ctx)
@@ -92,22 +92,22 @@ func NewClient(ctx context.Context, region, bucket, distributionID string, dryRu
 	log *logger.Logger,
 ) (*Client, CloseFunc, error) {
 	staticUploadClient, staticUploadClientClose, err := staticupload.New(ctx, staticupload.Config{
-		Region:                    region,
-		Bucket:                    bucket,
-		DistributionID:            distributionID,
-		CacheInvalidationStrategy: staticupload.CacheInvalidateBatchOnFlush,
-	})
+		Region:                       region,
+		Bucket:                       bucket,
+		DistributionID:               distributionID,
+		CacheInvalidationStrategy:    staticupload.CacheInvalidateBatchOnFlush,
+		CacheInvalidationWaitTimeout: 10 * time.Minute,
+	}, log)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	client := &Client{
-		s3Client:                     staticUploadClient,
-		s3ClientClose:                staticUploadClientClose,
-		bucket:                       bucket,
-		DryRun:                       dryRun,
-		Log:                          log,
-		cacheInvalidationWaitTimeout: 10 * time.Minute,
+		s3Client:      staticUploadClient,
+		s3ClientClose: staticUploadClientClose,
+		bucket:        bucket,
+		DryRun:        dryRun,
+		Logger:        log,
 	}
 	clientClose := func(ctx context.Context) error {
 		return client.Close(ctx)
@@ -120,6 +120,7 @@ func NewClient(ctx context.Context, region, bucket, distributionID string, dryRu
 // It invalidates the CDN cache for all uploaded files.
 func (c *Client) Close(ctx context.Context) error {
 	if c.s3ClientClose == nil {
+		c.Logger.Debugf("Client has no s3ClientClose")
 		return nil
 	}
 	return c.s3ClientClose(ctx)
@@ -131,7 +132,7 @@ func (c *Client) DeletePath(ctx context.Context, path string) error {
 		Bucket: &c.bucket,
 		Prefix: &path,
 	}
-	c.Log.Debugf("Listing objects in %s", path)
+	c.Logger.Debugf("Listing objects in %s", path)
 	objs := []s3types.Object{}
 	out := &s3.ListObjectsV2Output{IsTruncated: true}
 	for out.IsTruncated {
@@ -142,10 +143,10 @@ func (c *Client) DeletePath(ctx context.Context, path string) error {
 		}
 		objs = append(objs, out.Contents...)
 	}
-	c.Log.Debugf("Found %d objects in %s", len(objs), path)
+	c.Logger.Debugf("Found %d objects in %s", len(objs), path)
 
 	if len(objs) == 0 {
-		c.Log.Warnf("Path %s is already empty", path)
+		c.Logger.Warnf("Path %s is already empty", path)
 		return nil
 	}
 
@@ -155,7 +156,7 @@ func (c *Client) DeletePath(ctx context.Context, path string) error {
 	}
 
 	if c.DryRun {
-		c.Log.Debugf("DryRun: Deleting %d objects with IDs %v", len(objs), objIDs)
+		c.Logger.Debugf("DryRun: Deleting %d objects with IDs %v", len(objs), objIDs)
 		return nil
 	}
 
@@ -167,7 +168,7 @@ func (c *Client) DeletePath(ctx context.Context, path string) error {
 			Objects: objIDs,
 		},
 	}
-	c.Log.Debugf("Deleting %d objects in %s", len(objs), path)
+	c.Logger.Debugf("Deleting %d objects in %s", len(objs), path)
 	if _, err := c.s3Client.DeleteObjects(ctx, deleteIn); err != nil {
 		return fmt.Errorf("deleting objects in %s: %w", path, err)
 	}
@@ -197,7 +198,7 @@ func Fetch[T APIObject](ctx context.Context, c *Client, obj T) (T, error) {
 		Key:    ptr(obj.JSONPath()),
 	}
 
-	c.Log.Debugf("Fetching %T from s3: %s", obj, obj.JSONPath())
+	c.Logger.Debugf("Fetching %T from s3: %s", obj, obj.JSONPath())
 	out, err := c.s3Client.GetObject(ctx, in)
 	var noSuchkey *s3types.NoSuchKey
 	if errors.As(err, &noSuchkey) {
@@ -231,7 +232,7 @@ func Update(ctx context.Context, c *Client, obj APIObject) error {
 	}
 
 	if c.DryRun {
-		c.Log.With(zap.String("bucket", c.bucket), zap.String("key", obj.JSONPath()), zap.String("body", string(rawJSON))).Debugf("DryRun: s3 put object")
+		c.Logger.With(zap.String("bucket", c.bucket), zap.String("key", obj.JSONPath()), zap.String("body", string(rawJSON))).Debugf("DryRun: s3 put object")
 		return nil
 	}
 
@@ -243,7 +244,7 @@ func Update(ctx context.Context, c *Client, obj APIObject) error {
 
 	c.dirtyPaths = append(c.dirtyPaths, "/"+obj.JSONPath())
 
-	c.Log.Debugf("Uploading %T to s3: %v", obj, obj.JSONPath())
+	c.Logger.Debugf("Uploading %T to s3: %v", obj, obj.JSONPath())
 	if _, err := c.Upload(ctx, in); err != nil {
 		return fmt.Errorf("uploading %T: %w", obj, err)
 	}
@@ -306,7 +307,7 @@ func Delete(ctx context.Context, c *Client, obj APIObject) error {
 		Key:    ptr(obj.JSONPath()),
 	}
 
-	c.Log.Debugf("Deleting %T from s3: %s", obj, obj.JSONPath())
+	c.Logger.Debugf("Deleting %T from s3: %s", obj, obj.JSONPath())
 	if _, err := c.DeleteObject(ctx, in); err != nil {
 		return fmt.Errorf("deleting s3 object at %s: %w", obj.JSONPath(), err)
 	}

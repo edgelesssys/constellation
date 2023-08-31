@@ -8,6 +8,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
@@ -32,7 +33,7 @@ func newLatestCmd() *cobra.Command {
 	return cmd
 }
 
-func runLatest(cmd *cobra.Command, _ []string) error {
+func runLatest(cmd *cobra.Command, _ []string) (retErr error) {
 	flags, err := parseLatestFlags(cmd)
 	if err != nil {
 		return err
@@ -51,8 +52,9 @@ func runLatest(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("creating client: %w", err)
 	}
 	defer func() {
-		if err := clientClose(cmd.Context()); err != nil {
-			log.Errorf("Closing versions API client: %v", err)
+		err := clientClose(cmd.Context())
+		if err != nil {
+			retErr = errors.Join(retErr, fmt.Errorf("failed to invalidate cache: %w", err))
 		}
 	}()
 

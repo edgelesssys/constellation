@@ -11,6 +11,7 @@ import (
 	"context"
 	"io"
 	"net/url"
+	"time"
 
 	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -34,11 +35,12 @@ type Archivist struct {
 // New creates a new Archivist.
 func New(ctx context.Context, region, bucket, distributionID string, log *logger.Logger) (*Archivist, CloseFunc, error) {
 	staticUploadClient, staticUploadClientClose, err := staticupload.New(ctx, staticupload.Config{
-		Region:                    region,
-		Bucket:                    bucket,
-		DistributionID:            distributionID,
-		CacheInvalidationStrategy: staticupload.CacheInvalidateBatchOnFlush,
-	})
+		Region:                       region,
+		Bucket:                       bucket,
+		DistributionID:               distributionID,
+		CacheInvalidationStrategy:    staticupload.CacheInvalidateBatchOnFlush,
+		CacheInvalidationWaitTimeout: 10 * time.Minute,
+	}, log)
 	if err != nil {
 		return nil, nil, err
 	}

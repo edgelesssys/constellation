@@ -14,6 +14,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -125,12 +126,12 @@ func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 	log.Infof("Input version: %+v is newer than latest API version: %+v", inputVersion, latestAPIVersion)
 
 	client, clientClose, err := attestationconfigapi.NewClient(ctx, cfg, []byte(cosignPwd), []byte(privateKey), false, log)
-	defer func(retErr *error) {
-		log.Infof("Invalidating cache. This may take some time")
-		if err := clientClose(cmd.Context()); err != nil && retErr == nil {
-			*retErr = fmt.Errorf("invalidating cache: %w", err)
+	defer func() {
+		err := clientClose(cmd.Context())
+		if err != nil {
+			retErr = errors.Join(retErr, fmt.Errorf("failed to invalidate cache: %w", err))
 		}
-	}(&retErr)
+	}()
 
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
