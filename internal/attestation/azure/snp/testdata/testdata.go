@@ -19,6 +19,11 @@ var AttestationReport []byte
 //go:embed vcek.cert
 var VCEK []byte
 
+// RuntimeData is an example runtime data from the TPM for the AttestationReport.
+//
+//go:embed runtimedata.bin
+var RuntimeData []byte
+
 // CertChain is a valid certificate chain for the VCEK certificate.
 //
 //go:embed certchain.pem

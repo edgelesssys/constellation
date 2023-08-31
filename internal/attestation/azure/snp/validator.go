@@ -13,7 +13,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/binary"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -91,10 +90,6 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 	if err != nil {
 		return nil, fmt.Errorf("parsing attestation report: %w", err)
 	}
-
-	// TODO: Remove
-	fmt.Println("Report HWID:", hex.EncodeToString(att.Report.GetChipId()))
-	fmt.Println("Report TCB:", kds.DecomposeTCBVersion(kds.TCBVersion(att.Report.GetReportedTcb())))
 
 	// Verify the attestation report's certificates.
 	if err := verify.SnpAttestation(att, &verify.Options{}); err != nil {
