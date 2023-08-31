@@ -5,10 +5,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 
 /*
-# configapi CLI
+This package provides a CLI to interact with the Attestationconfig API, a sub API of the Resource API.
 
-A CLI to interact with the Attestationconfig API, a sub API of the Resource API.
 You can execute an e2e test by running: `bazel run //hack/configapi:configapi_e2e_test`.
+The CLI is used in the CI pipeline. Actions that change the bucket's data shouldn't be executed manually.
+Notice that there is no synchronization on API operations.
 */
 package main
 

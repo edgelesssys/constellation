@@ -2,13 +2,19 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("//bazel/go:go_test.bzl", "go_test")
 load("//bazel/sh:def.bzl", "sh_template")
 
+go_binary(
+    name = "cli",
+    embed = [":cli_lib"],
+    visibility = ["//visibility:public"],
+)
+
 go_library(
-    name = "configapi_lib",
+    name = "cli_lib",
     srcs = [
         "delete.go",
         "main.go",
     ],
-    importpath = "github.com/edgelesssys/constellation/v2/hack/configapi",
+    importpath = "github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi/cli",
     visibility = ["//visibility:private"],
     deps = [
         "//internal/api/attestationconfigapi",
@@ -20,19 +26,13 @@ go_library(
     ],
 )
 
-go_binary(
-    name = "configapi",
-    embed = [":configapi_lib"],
-    visibility = ["//visibility:public"],
-)
-
 go_test(
-    name = "configapi_test",
+    name = "cli_test",
     srcs = [
         "delete_test.go",
         "main_test.go",
     ],
-    embed = [":configapi_lib"],
+    embed = [":cli_lib"],
     deps = [
         "//internal/api/attestationconfigapi",
         "@com_github_stretchr_testify//assert",
@@ -41,10 +41,10 @@ go_test(
 )
 
 sh_template(
-    name = "configapi_e2e_test",
-    data = [":configapi"],
+    name = "cli_e2e_test",
+    data = [":cli"],
     substitutions = {
-        "@@CONFIGAPI_CLI@@": "$(rootpath :configapi)",
+        "@@CONFIGAPI_CLI@@": "$(rootpath :cli)",
     },
     template = "e2e/test.sh.in",
 )

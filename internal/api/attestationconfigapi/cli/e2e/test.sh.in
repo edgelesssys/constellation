@@ -9,7 +9,7 @@
 lib=$(realpath @@BASE_LIB@@) || exit 1
 stat "${lib}" >> /dev/null || exit 1
 
-# shellcheck source=../../../bazel/sh/lib.bash
+# shellcheck source=../../../../../bazel/sh/lib.bash
 if ! source "${lib}"; then
   echo "Error: could not find import"
   exit 1
@@ -28,7 +28,7 @@ tmpdir=$(mktemp -d)
 readonly tmpdir
 registerExitHandler "rm -rf $tmpdir"
 
-readonly claim_path="'$tmpdir'/maaClaim.json"
+readonly claim_path="$tmpdir/maaClaim.json"
 cat << EOF > "$claim_path"
 {
   "x-ms-isolation-tee": {
