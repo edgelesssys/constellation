@@ -21,5 +21,5 @@ var VCEK []byte
 
 // CertChain is a valid certificate chain for the VCEK certificate.
 //
-//go:embed chain.cert
+//go:embed certchain.pem
 var CertChain []byte

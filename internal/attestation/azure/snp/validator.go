@@ -87,13 +87,14 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 	if err := json.Unmarshal(attDoc.InstanceInfo, &instanceInfo); err != nil {
 		return nil, fmt.Errorf("unmarshalling instanceInfo: %w", err)
 	}
-	att, err := instanceInfo.attestationWithCerts(trust.DefaultHTTPSGetter())
+	att, err := instanceInfo.attestationWithCerts(v.getter)
 	if err != nil {
 		return nil, fmt.Errorf("parsing attestation report: %w", err)
 	}
 
 	// TODO: Remove
 	fmt.Println("Report HWID:", hex.EncodeToString(att.Report.GetChipId()))
+	fmt.Println("Report TCB:", kds.DecomposeTCBVersion(kds.TCBVersion(att.Report.GetReportedTcb())))
 
 	// Verify the attestation report's certificates.
 	if err := verify.SnpAttestation(att, &verify.Options{}); err != nil {
@@ -110,6 +111,8 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 	if err := validate.SnpAttestation(att, &validate.Options{
 		GuestPolicy: abi.SnpPolicy{
 			Debug: false, // Debug means the VM can be decrypted by the host for debugging purposes and thus is not allowed.
+			SMT:   true,  // Allow Simultaneous Multi-Threading (SMT). Normally, we would want to disable SMT
+			// but Azure does not allow to disable it.
 		},
 		// This checks that the reported TCB version is equal or greater than the minimum specified in the config.
 		MinimumTCB: kds.TCBParts{
@@ -207,13 +210,6 @@ func (a *azureInstanceInfo) attestationWithCerts(getter trust.HTTPSGetter) (*spb
 	if err != nil {
 		return nil, fmt.Errorf("converting report to proto: %w", err)
 	}
-
-	// TODO: Remove
-	bytes, err := abi.ReportToAbiBytes(report)
-	if err != nil {
-		return nil, fmt.Errorf("converting report to abi bytes: %w", err)
-	}
-	fmt.Println(hex.EncodeToString(bytes))
 
 	return verify.GetAttestationFromReport(report, &verify.Options{
 		Getter: getter,
