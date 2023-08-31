@@ -13,6 +13,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -90,6 +91,9 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 	if err != nil {
 		return nil, fmt.Errorf("parsing attestation report: %w", err)
 	}
+
+	// TODO: Remove
+	fmt.Println("Report HWID:", hex.EncodeToString(att.Report.GetChipId()))
 
 	// Verify the attestation report's certificates.
 	if err := verify.SnpAttestation(att, &verify.Options{}); err != nil {
@@ -203,6 +207,13 @@ func (a *azureInstanceInfo) attestationWithCerts(getter trust.HTTPSGetter) (*spb
 	if err != nil {
 		return nil, fmt.Errorf("converting report to proto: %w", err)
 	}
+
+	// TODO: Remove
+	bytes, err := abi.ReportToAbiBytes(report)
+	if err != nil {
+		return nil, fmt.Errorf("converting report to abi bytes: %w", err)
+	}
+	fmt.Println(hex.EncodeToString(bytes))
 
 	return verify.GetAttestationFromReport(report, &verify.Options{
 		Getter: getter,
