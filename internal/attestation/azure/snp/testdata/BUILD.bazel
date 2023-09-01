@@ -5,8 +5,9 @@ go_library(
     srcs = ["testdata.go"],
     embedsrcs = [
         "attestation.bin",
-        "chain.cert",
         "vcek.cert",
+        "certchain.pem",
+        "runtimedata.bin",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp/testdata",
     visibility = ["//:__subpackages__"],

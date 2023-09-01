@@ -16,7 +16,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/big"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
@@ -61,21 +60,13 @@ func NewValidator(cfg *config.AzureSEVSNP, log attestation.Logger) *Validator {
 	v.Validator = vtpm.NewValidator(
 		cfg.Measurements,
 		v.getTrustedKey,
-		validateCVM,
+		// stub, since SEV-SNP attestation is already verified in trustedKeyFromSNP().
+		func(vtpm.AttestationDocument, *attest.MachineState) error {
+			return nil
+		},
 		log,
 	)
 	return v
-}
-
-// validateCVM is a stub, since SEV-SNP attestation is already verified in trustedKeyFromSNP().
-func validateCVM(vtpm.AttestationDocument, *attest.MachineState) error {
-	return nil
-}
-
-func reverseEndian(b []byte) {
-	for i := 0; i < len(b)/2; i++ {
-		b[i], b[len(b)-i-1] = b[len(b)-i-1], b[i]
-	}
 }
 
 // getTrustedKey establishes trust in the given public key.
@@ -184,7 +175,11 @@ func (v *Validator) checkIDKeyDigest(ctx context.Context, report *spb.Attestatio
 				report.Report.IdKeyDigest,
 			)
 		default:
-			return &idKeyError{report.Report.IdKeyDigest, v.config.FirmwareSignerConfig.AcceptedKeyDigests}
+			return fmt.Errorf(
+				"configured idkeydigests %x don't contain reported idkeydigest %x",
+				v.config.FirmwareSignerConfig.AcceptedKeyDigests,
+				report.Report.IdKeyDigest,
+			)
 		}
 	}
 
@@ -266,10 +261,7 @@ type hclAkValidator interface {
 	validateAk(runtimeDataRaw []byte, reportData []byte, rsaParameters *tpm2.RSAParams) error
 }
 
-type ecdsaSig struct {
-	R, S *big.Int
-}
-
+// akPub are the public parameters of an RSA attestation key.
 type akPub struct {
 	E string
 	N string

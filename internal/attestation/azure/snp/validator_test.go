@@ -29,7 +29,6 @@ import (
 	"github.com/google/go-sev-guest/abi"
 	"github.com/google/go-sev-guest/kds"
 	spb "github.com/google/go-sev-guest/proto/sevsnp"
-	"github.com/google/go-sev-guest/verify/trust"
 	"github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm/legacy/tpm2"
@@ -44,18 +43,39 @@ func TestInstanceInfoAttestation(t *testing.T) {
 
 	testCases := map[string]struct {
 		report  []byte
+		getter  *stubHTTPSGetter
 		wantErr bool
 	}{
 		"report too short": {
-			report:  defaultReport[:len(defaultReport)-10],
+			report: defaultReport[:len(defaultReport)-100],
+			getter: newStubHTTPSGetter(
+				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				nil,
+			),
 			wantErr: true,
 		},
 		"corrupted report": {
-			report:  defaultReport[10 : len(defaultReport)-10],
+			report: defaultReport[10 : len(defaultReport)-10],
+			getter: newStubHTTPSGetter(
+				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				nil,
+			),
+			wantErr: true,
+		},
+		"certificate fetch error": {
+			report: defaultReport[10 : len(defaultReport)-10],
+			getter: newStubHTTPSGetter(
+				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				assert.AnError,
+			),
 			wantErr: true,
 		},
 		"success": {
-			report:  defaultReport,
+			report: defaultReport,
+			getter: newStubHTTPSGetter(
+				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				nil,
+			),
 			wantErr: false,
 		},
 	}
@@ -68,7 +88,7 @@ func TestInstanceInfoAttestation(t *testing.T) {
 				AttestationReport: tc.report,
 			}
 
-			report, err := instanceInfo.attestationWithCerts(trust.DefaultHTTPSGetter())
+			report, err := instanceInfo.attestationWithCerts(tc.getter)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
@@ -87,6 +107,47 @@ func TestInstanceInfoAttestation(t *testing.T) {
 			}
 		})
 	}
+}
+
+type stubHTTPSGetter struct {
+	urlResponseMatcher *urlResponseMatcher // maps responses to requested URLs
+	err                error
+}
+
+func newStubHTTPSGetter(urlResponseMatcher *urlResponseMatcher, err error) *stubHTTPSGetter {
+	return &stubHTTPSGetter{
+		urlResponseMatcher: urlResponseMatcher,
+		err:                err,
+	}
+}
+
+func (s *stubHTTPSGetter) Get(url string) ([]byte, error) {
+	if s.err != nil {
+		return nil, s.err
+	}
+	return s.urlResponseMatcher.match(url), nil
+}
+
+type urlResponseMatcher struct {
+	certChainResponse []byte
+	vcekResponse      []byte
+}
+
+func newUrlResponseMatcher(certChainResponse []byte, vcekResponse []byte) *urlResponseMatcher {
+	return &urlResponseMatcher{
+		certChainResponse: certChainResponse,
+		vcekResponse:      vcekResponse,
+	}
+}
+
+func (m *urlResponseMatcher) match(url string) []byte {
+	switch {
+	case url == "https://kdsintf.amd.com/vcek/v1/Milan/cert_chain":
+		return m.certChainResponse
+	case regexp.MustCompile(`https:\/\/kdsintf.amd.com\/vcek\/v1\/Milan\/.*`).MatchString(url):
+		return m.vcekResponse
+	}
+	return nil
 }
 
 // TestCheckIDKeyDigest tests validation of an IDKeyDigest under different enforcement policies.
@@ -298,30 +359,14 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 	akPub, err := key.PublicArea().Encode()
 	require.NoError(err)
 
+	defaultCfg := config.DefaultForAzureSEVSNP()
 	defaultReport := hex.EncodeToString(testdata.AttestationReport)
 	defaultRuntimeData := hex.EncodeToString(testdata.RuntimeData)
-	defaultVcek := testdata.VCEK
-	defaultCertChain := testdata.CertChain
 	defaultIDKeyDigestOld, err := hex.DecodeString("57e229e0ffe5fa92d0faddff6cae0e61c926fc9ef9afd20a8b8cfcf7129db9338cbe5bf3f6987733a2bf65d06dc38fc1")
 	require.NoError(err)
 	defaultIDKeyDigest := idkeydigest.NewList([][]byte{defaultIDKeyDigestOld})
-	defaultUrlResponseMatcher := func(url string) []byte {
-		switch {
-		case url == "https://kdsintf.amd.com/vcek/v1/Milan/cert_chain":
-			return []byte(defaultCertChain)
-		case regexp.MustCompile(`https:\/\/kdsintf.amd.com\/vcek\/v1\/Milan\/.*`).MatchString(url):
-			return []byte(defaultVcek)
-		default:
-			t.Fatalf("unexpected url: %s", url)
-		}
-		return nil
-	}
-	httpsGetter := func(urlResponseMatcher func(string) []byte, err error) *stubHTTPSGetter {
-		return &stubHTTPSGetter{
-			urlResponseMatcher: urlResponseMatcher,
-			err:                err,
-		}
-	}
+
+	// reportTransformer unpacks the hex-encoded report, applies the given transformations and re-encodes it.
 	reportTransformer := func(reportHex string, transformations func(*spb.Report)) string {
 		rawReport, err := hex.DecodeString(reportHex)
 		require.NoError(err)
@@ -346,7 +391,10 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			runtimeData:          defaultRuntimeData,
 			acceptedIDKeyDigests: defaultIDKeyDigest,
 			enforcementPolicy:    idkeydigest.Equal,
-			getter:               httpsGetter(defaultUrlResponseMatcher, nil),
+			getter: newStubHTTPSGetter(
+				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				nil,
+			),
 		},
 		"invalid report signature": {
 			report: reportTransformer(defaultReport, func(r *spb.Report) {
@@ -355,8 +403,143 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			runtimeData:          defaultRuntimeData,
 			acceptedIDKeyDigests: defaultIDKeyDigest,
 			enforcementPolicy:    idkeydigest.Equal,
-			getter:               httpsGetter(defaultUrlResponseMatcher, nil),
-			wantErr:              true,
+			getter: newStubHTTPSGetter(
+				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				nil,
+			),
+			wantErr: true,
+		},
+		"invalid vcek": {
+			report:               defaultReport,
+			runtimeData:          defaultRuntimeData,
+			acceptedIDKeyDigests: defaultIDKeyDigest,
+			enforcementPolicy:    idkeydigest.Equal,
+			getter: newStubHTTPSGetter(
+				newUrlResponseMatcher(testdata.CertChain, make([]byte, 0)),
+				nil,
+			),
+			wantErr: true,
+		},
+		// TODO: Find out why this doesn't error.
+		"invalid certchain": {
+			report:               defaultReport,
+			runtimeData:          defaultRuntimeData,
+			acceptedIDKeyDigests: defaultIDKeyDigest,
+			enforcementPolicy:    idkeydigest.Equal,
+			getter: newStubHTTPSGetter(
+				newUrlResponseMatcher(make([]byte, 0), testdata.VCEK),
+				nil,
+			),
+			wantErr: true,
+		},
+		"invalid runtime data": {
+			report:               defaultReport,
+			runtimeData:          defaultRuntimeData[:len(defaultRuntimeData)-10],
+			acceptedIDKeyDigests: defaultIDKeyDigest,
+			enforcementPolicy:    idkeydigest.Equal,
+			getter: newStubHTTPSGetter(
+				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				nil,
+			),
+			wantErr: true,
+		},
+		"inacceptable idkeydigest, enforce": {
+			report:               defaultReport,
+			runtimeData:          defaultRuntimeData,
+			acceptedIDKeyDigests: idkeydigest.List{[]byte{0x00}},
+			enforcementPolicy:    idkeydigest.Equal,
+			getter: newStubHTTPSGetter(
+				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				nil,
+			),
+			wantErr: true,
+		},
+		"inacceptable idkeydigest, warn only": {
+			report:               defaultReport,
+			runtimeData:          defaultRuntimeData,
+			acceptedIDKeyDigests: idkeydigest.List{[]byte{0x00}},
+			enforcementPolicy:    idkeydigest.WarnOnly,
+			getter: newStubHTTPSGetter(
+				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				nil,
+			),
+		},
+		"launch tcb < minimum launch tcb": {
+			report: reportTransformer(defaultReport, func(r *spb.Report) {
+				launchTcb := kds.DecomposeTCBVersion(kds.TCBVersion(r.LaunchTcb))
+				launchTcb.UcodeSpl = defaultCfg.MicrocodeVersion.Value - 1
+				newLaunchTcb, err := kds.ComposeTCBParts(launchTcb)
+				require.NoError(err)
+				r.LaunchTcb = uint64(newLaunchTcb)
+			}),
+			runtimeData:          defaultRuntimeData,
+			acceptedIDKeyDigests: defaultIDKeyDigest,
+			enforcementPolicy:    idkeydigest.WarnOnly,
+			getter: newStubHTTPSGetter(
+				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				nil,
+			),
+			wantErr: true,
+		},
+		"reported tcb < minimum tcb": {
+			report: reportTransformer(defaultReport, func(r *spb.Report) {
+				reportedTcb := kds.DecomposeTCBVersion(kds.TCBVersion(r.ReportedTcb))
+				reportedTcb.UcodeSpl = defaultCfg.MicrocodeVersion.Value - 1
+				newReportedTcb, err := kds.ComposeTCBParts(reportedTcb)
+				require.NoError(err)
+				r.ReportedTcb = uint64(newReportedTcb)
+			}),
+			runtimeData:          defaultRuntimeData,
+			acceptedIDKeyDigests: defaultIDKeyDigest,
+			enforcementPolicy:    idkeydigest.WarnOnly,
+			getter: newStubHTTPSGetter(
+				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				nil,
+			),
+			wantErr: true,
+		},
+		"current tcb < committed tcb": {
+			report: reportTransformer(defaultReport, func(r *spb.Report) {
+				r.CurrentTcb = r.CommittedTcb - 1
+			}),
+			runtimeData:          defaultRuntimeData,
+			acceptedIDKeyDigests: defaultIDKeyDigest,
+			enforcementPolicy:    idkeydigest.WarnOnly,
+			getter: newStubHTTPSGetter(
+				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				nil,
+			),
+			wantErr: true,
+		},
+		"current tcb < tcb in vcek": {
+			report: reportTransformer(defaultReport, func(r *spb.Report) {
+				currentTcb := kds.DecomposeTCBVersion(kds.TCBVersion(r.CurrentTcb))
+				currentTcb.UcodeSpl = 0x5c // testdata.VCEK has ucode version 0x5d
+				newCurrentTcb, err := kds.ComposeTCBParts(currentTcb)
+				require.NoError(err)
+				r.CurrentTcb = uint64(newCurrentTcb)
+			}),
+			runtimeData:          defaultRuntimeData,
+			acceptedIDKeyDigests: defaultIDKeyDigest,
+			enforcementPolicy:    idkeydigest.WarnOnly,
+			getter: newStubHTTPSGetter(
+				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				nil,
+			),
+			wantErr: true,
+		},
+		"reported tcb != tcb in vcek": {
+			report: reportTransformer(defaultReport, func(r *spb.Report) {
+				r.ReportedTcb = uint64(0)
+			}),
+			runtimeData:          defaultRuntimeData,
+			acceptedIDKeyDigests: defaultIDKeyDigest,
+			enforcementPolicy:    idkeydigest.WarnOnly,
+			getter: newStubHTTPSGetter(
+				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				nil,
+			),
+			wantErr: true,
 		},
 	}
 
@@ -379,15 +562,14 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 				},
 			}
 
-			cfg := config.DefaultForAzureSEVSNP()
-			cfg.FirmwareSignerConfig = config.SNPFirmwareSignerConfig{
+			defaultCfg.FirmwareSignerConfig = config.SNPFirmwareSignerConfig{
 				AcceptedKeyDigests: tc.acceptedIDKeyDigests,
 				EnforcementPolicy:  tc.enforcementPolicy,
 			}
 
 			validator := &Validator{
 				hclValidator: &instanceInfo,
-				config:       cfg,
+				config:       defaultCfg,
 				log:          logger.NewTest(t),
 				getter:       tc.getter,
 			}
@@ -401,22 +583,6 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			}
 		})
 	}
-}
-
-type stubHTTPSGetter struct {
-	urlResponseMatcher func(string) []byte // maps responses to requested URLs
-	err                error
-}
-
-func (s *stubHTTPSGetter) Get(url string) ([]byte, error) {
-	if s.err != nil {
-		return nil, s.err
-	}
-	return s.urlResponseMatcher(url), nil
-}
-
-func TestValidateAzureCVM(t *testing.T) {
-	assert.NoError(t, validateCVM(vtpm.AttestationDocument{}, nil))
 }
 
 type stubAzureInstanceInfo struct {
