@@ -396,6 +396,17 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 				nil,
 			),
 		},
+		"certificate fetch error": {
+			report:               defaultReport,
+			runtimeData:          defaultRuntimeData,
+			acceptedIDKeyDigests: defaultIDKeyDigest,
+			enforcementPolicy:    idkeydigest.Equal,
+			getter: newStubHTTPSGetter(
+				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				assert.AnError,
+			),
+			wantErr: true,
+		},
 		"invalid report signature": {
 			report: reportTransformer(defaultReport, func(r *spb.Report) {
 				r.Signature = make([]byte, 512)
