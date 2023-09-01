@@ -72,7 +72,7 @@ func NewValidator(cfg *config.AzureSEVSNP, log attestation.Logger) *Validator {
 // getTrustedKey establishes trust in the given public key.
 // It does so by verifying the SNP attestation document.
 func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDocument, extraData []byte) (crypto.PublicKey, error) {
-	// transform the instanceInfo received from Microsoft into a the verifiable attestation report format.
+	// transform the instanceInfo received from Microsoft into a verifiable attestation report format.
 	var instanceInfo azureInstanceInfo
 	if err := json.Unmarshal(attDoc.InstanceInfo, &instanceInfo); err != nil {
 		return nil, fmt.Errorf("unmarshalling instanceInfo: %w", err)
