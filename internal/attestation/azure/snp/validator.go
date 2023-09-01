@@ -128,7 +128,6 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 		return nil, fmt.Errorf("checking IDKey digests: %w", err)
 	}
 
-
 	// Decode the public area of the attestation key and validate its trustworthiness.
 	pubArea, err := tpm2.DecodePublic(attDoc.Attestation.AkPub)
 	if err != nil {
