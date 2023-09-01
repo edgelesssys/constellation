@@ -87,10 +87,6 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 		return nil, fmt.Errorf("verifying SNP attestation: %w", err)
 	}
 
-	// If the enforcement policy is set to MAAFallback or WarnOnly, the check of the IDKey hashes should not be enforced.
-	requireIDBlock := !(v.config.FirmwareSignerConfig.EnforcementPolicy == idkeydigest.MAAFallback ||
-		v.config.FirmwareSignerConfig.EnforcementPolicy == idkeydigest.WarnOnly)
-
 	// Checks if the attestation report matches the given constraints.
 	// Some constraints are implicitly checked by validate.SnpAttestation:
 	// - the report is not expired
@@ -122,14 +118,16 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 		// an error from being returned because of the TrustedIDKeyHashes validation. In this case, we should perform a
 		// custom check of the MAA-specific values later. Right now, this is a double check, since a custom MAA check
 		// is performed either way.
-		RequireIDBlock: requireIDBlock,
+		RequireIDBlock: v.config.FirmwareSignerConfig.EnforcementPolicy == idkeydigest.Equal,
 	}); err != nil {
 		return nil, fmt.Errorf("validating SNP attestation: %w", err)
 	}
-	if requireIDBlock {
-		// Custom WarnOnly / MAAFallback check of the IDKeyDigests.
-		v.checkIDKeyDigest(ctx, att, instanceInfo.MAAToken, extraData)
+	// Custom check of the IDKeyDigests, taking care of the WarnOnly / MAAFallback cases,
+	// but also double-checking the IDKeyDigests if the enforcement policy is set to Equal.
+	if err := v.checkIDKeyDigest(ctx, att, instanceInfo.MAAToken, extraData); err != nil {
+		return nil, fmt.Errorf("checking IDKey digests: %w", err)
 	}
+
 
 	// Decode the public area of the attestation key and validate its trustworthiness.
 	pubArea, err := tpm2.DecodePublic(attDoc.Attestation.AkPub)
@@ -163,14 +161,14 @@ func (v *Validator) checkIDKeyDigest(ctx context.Context, report *spb.Attestatio
 		switch v.config.FirmwareSignerConfig.EnforcementPolicy {
 		case idkeydigest.MAAFallback:
 			v.log.Infof(
-				"configured idkeydigests %x don't contain reported idkeydigest %x, falling back to MAA validation",
+				"Configured idkeydigests %x don't contain reported idkeydigest %x, falling back to MAA validation",
 				v.config.FirmwareSignerConfig.AcceptedKeyDigests,
 				report.Report.IdKeyDigest,
 			)
 			return v.maa.validateToken(ctx, v.config.FirmwareSignerConfig.MAAURL, maaToken, extraData)
 		case idkeydigest.WarnOnly:
 			v.log.Warnf(
-				"configured idkeydigests %x don't contain reported idkeydigest %x",
+				"Configured idkeydigests %x don't contain reported idkeydigest %x",
 				v.config.FirmwareSignerConfig.AcceptedKeyDigests,
 				report.Report.IdKeyDigest,
 			)
