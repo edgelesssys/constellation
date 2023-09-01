@@ -15,7 +15,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/diskencryption"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/martinjungblut/go-cryptsetup"
+	cryptsetup "github.com/malt3/purego-cryptsetup"
 	"go.uber.org/zap/zapcore"
 )
 

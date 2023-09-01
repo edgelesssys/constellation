@@ -19,7 +19,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/diskencryption"
 	ccryptsetup "github.com/edgelesssys/constellation/v2/internal/cryptsetup"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	cryptsetup "github.com/martinjungblut/go-cryptsetup"
+	cryptsetup "github.com/malt3/purego-cryptsetup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"

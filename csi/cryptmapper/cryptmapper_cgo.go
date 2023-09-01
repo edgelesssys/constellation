@@ -12,7 +12,7 @@ import (
 	"fmt"
 
 	ccryptsetup "github.com/edgelesssys/constellation/v2/internal/cryptsetup"
-	cryptsetup "github.com/martinjungblut/go-cryptsetup"
+	cryptsetup "github.com/malt3/purego-cryptsetup"
 	mount "k8s.io/mount-utils"
 	utilexec "k8s.io/utils/exec"
 )

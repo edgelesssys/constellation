@@ -1536,6 +1536,14 @@ def go_dependencies():
         sum = "h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=",
         version = "v1.0.1",
     )
+    go_repository(
+        name = "com_github_ebitengine_purego",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/ebitengine/purego",
+        sum = "h1:0gVgWGb8GjKYs7cufvfNSleJAD00m2xWC26FMwOjNrw=",
+        version = "v0.5.0-alpha.1",
+    )
 
     go_repository(
         name = "com_github_edgelesssys_go_azguestattestation",
@@ -3572,6 +3580,14 @@ def go_dependencies():
         sum = "h1:cXCdzVdstXyiTqTvfqk9SDHpKNjxuom+DOlyEeQ4pzQ=",
         version = "v1.0.0",
     )
+    go_repository(
+        name = "com_github_malt3_purego_cryptsetup",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/malt3/purego-cryptsetup",
+        sum = "h1:NUO4VzRZg7gjBWQ/CQdSq0Bp7rkpNvRqBRT6XQle8Qc=",
+        version = "v0.0.1-rc3",
+    )
 
     go_repository(
         name = "com_github_markbates_errx",
@@ -3597,18 +3613,7 @@ def go_dependencies():
         sum = "h1:yjZkbvRM6IzKj9tlu/zMJLS0n/V351OZWRnF3QfaUxI=",
         version = "v1.0.1",
     )
-    go_repository(
-        name = "com_github_martinjungblut_go_cryptsetup",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/martinjungblut/go-cryptsetup",
-        patches = [
-            "//3rdparty/bazel/com_github_martinjungblut_go_cryptsetup:com_github_martinjungblut_go_cryptsetup.patch",  # keep
-        ],
-        replace = "github.com/daniel-weisse/go-cryptsetup",
-        sum = "h1:ToajP6trZoiqlZ3Z4uoG1P02/wtqSw1AcowOXOYjATk=",
-        version = "v0.0.0-20230705150314-d8c07bd1723c",
-    )
+
     go_repository(
         name = "com_github_masterminds_goutils",
         build_file_generation = "on",

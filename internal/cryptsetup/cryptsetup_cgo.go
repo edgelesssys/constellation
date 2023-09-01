@@ -7,20 +7,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 package cryptsetup
 
-// #include <libcryptsetup.h>
-import "C"
-
 import (
 	"errors"
 
-	"github.com/martinjungblut/go-cryptsetup"
+	cryptsetup "github.com/malt3/purego-cryptsetup"
 )
 
 const (
 	// ReadWriteQueueBypass is a flag to disable the write and read workqueues for a crypt device.
-	ReadWriteQueueBypass = C.CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE | C.CRYPT_ACTIVATE_NO_READ_WORKQUEUE
-	wipeFlags            = cryptsetup.CRYPT_ACTIVATE_PRIVATE | cryptsetup.CRYPT_ACTIVATE_NO_JOURNAL
-	wipePattern          = cryptsetup.CRYPT_WIPE_ZERO
+	ReadWriteQueueBypass          = cryptActivateNoReadWorkqueue | cryptActivateNoWriteWorkqueue
+	cryptActivateNoReadWorkqueue  = 0x1000000
+	cryptActivateNoWriteWorkqueue = 0x2000000
+	wipeFlags                     = cryptsetup.CRYPT_ACTIVATE_PRIVATE | cryptsetup.CRYPT_ACTIVATE_NO_JOURNAL
+	wipePattern                   = cryptsetup.CRYPT_WIPE_ZERO
 )
 
 var errInvalidType = errors.New("device is not a *cryptsetup.Device")

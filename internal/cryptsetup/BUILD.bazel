@@ -7,19 +7,14 @@ go_library(
         "cryptsetup_cgo.go",
         "cryptsetup_cross.go",
     ],
-    # keep
-    cdeps = [
-        "@//rpm:cryptsetup",
-    ],
-    cgo = True,
     importpath = "github.com/edgelesssys/constellation/v2/internal/cryptsetup",
     visibility = ["//:__subpackages__"],
     deps = select({
         "@io_bazel_rules_go//go/platform:android": [
-            "@com_github_martinjungblut_go_cryptsetup//:go-cryptsetup",
+            "@com_github_malt3_purego_cryptsetup//:purego-cryptsetup",
         ],
         "@io_bazel_rules_go//go/platform:linux": [
-            "@com_github_martinjungblut_go_cryptsetup//:go-cryptsetup",
+            "@com_github_malt3_purego_cryptsetup//:purego-cryptsetup",
         ],
         "//conditions:default": [],
     }),
