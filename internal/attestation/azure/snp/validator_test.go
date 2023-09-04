@@ -20,6 +20,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp/testdata"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
@@ -35,6 +36,33 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// TestNewValidator tests the creation of a new validator.
+func TestNewValidator(t *testing.T) {
+	require := require.New(t)
+
+	testCases := map[string]struct {
+		cfg    *config.AzureSEVSNP
+		logger attestation.Logger
+	}{
+		"success": {
+			cfg:    config.DefaultForAzureSEVSNP(),
+			logger: logger.NewTest(t),
+		},
+		"nil logger": {
+			cfg:    config.DefaultForAzureSEVSNP(),
+			logger: nil,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			validator := NewValidator(tc.cfg, tc.logger)
+			require.NotNil(validator)
+			require.NotNil(validator.log)
+		})
+	}
+}
 
 // TestInstanceInfoAttestation tests the basic unmarshalling of the attestation report.
 func TestInstanceInfoAttestation(t *testing.T) {
@@ -420,30 +448,28 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			),
 			wantErr: true,
 		},
-		// // TODO: Find out why this doesn't error.
-		// "invalid vcek": {
-		// 	report:               defaultReport,
-		// 	runtimeData:          defaultRuntimeData,
-		// 	acceptedIDKeyDigests: defaultIDKeyDigest,
-		// 	enforcementPolicy:    idkeydigest.Equal,
-		// 	getter: newStubHTTPSGetter(
-		// 		newUrlResponseMatcher(testdata.CertChain, make([]byte, 0)),
-		// 		nil,
-		// 	),
-		// 	wantErr: true,
-		// },
-		// // TODO: Find out why this doesn't error.
-		// "invalid certchain": {
-		// 	report:               defaultReport,
-		// 	runtimeData:          defaultRuntimeData,
-		// 	acceptedIDKeyDigests: defaultIDKeyDigest,
-		// 	enforcementPolicy:    idkeydigest.Equal,
-		// 	getter: newStubHTTPSGetter(
-		// 		newUrlResponseMatcher(make([]byte, 0), testdata.VCEK),
-		// 		nil,
-		// 	),
-		// 	wantErr: true,
-		// },
+		// TODO: Find out why this doesn't error.
+		"invalid vcek": {
+			report:               defaultReport,
+			runtimeData:          defaultRuntimeData,
+			acceptedIDKeyDigests: defaultIDKeyDigest,
+			enforcementPolicy:    idkeydigest.Equal,
+			getter: newStubHTTPSGetter(
+				newUrlResponseMatcher(testdata.CertChain, []byte("invalid")),
+				nil,
+			),
+			wantErr: true,
+		},
+		"invalid certchain fall back to embedded": {
+			report:               defaultReport,
+			runtimeData:          defaultRuntimeData,
+			acceptedIDKeyDigests: defaultIDKeyDigest,
+			enforcementPolicy:    idkeydigest.Equal,
+			getter: newStubHTTPSGetter(
+				newUrlResponseMatcher([]byte("invalid"), testdata.VCEK),
+				nil,
+			),
+		},
 		"invalid runtime data": {
 			report:               defaultReport,
 			runtimeData:          defaultRuntimeData[:len(defaultRuntimeData)-10],
