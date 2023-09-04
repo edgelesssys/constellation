@@ -8,3 +8,7 @@
 - [ ] Correlate to existing bug tickets *or*
 - [ ] Add new bug ticket
 - [ ] Update title to contain ticket number and a short description of the issue (AB#123 foo bar)
+
+**If `terminate` failed**:
+
+- [ ] Clean up left over Constellation resources
