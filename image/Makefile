@@ -23,7 +23,7 @@ variants := aws_aws-sev-snp aws_aws-nitro-tpm azure_azure-sev-snp gcp_gcp-sev-es
 certs := $(PKI)/PK.cer $(PKI)/KEK.cer $(PKI)/db.cer
 
 SYSTEMD_FIXED_RPMS := systemd-251.11-2.fc37.x86_64.rpm systemd-libs-251.11-2.fc37.x86_64.rpm systemd-networkd-251.11-2.fc37.x86_64.rpm systemd-pam-251.11-2.fc37.x86_64.rpm systemd-resolved-251.11-2.fc37.x86_64.rpm systemd-udev-251.11-2.fc37.x86_64.rpm
-KERNEL_RPMS := kernel-6.1.45-100.constellation.fc38.x86_64.rpm kernel-core-6.1.45-100.constellation.fc38.x86_64.rpm kernel-modules-6.1.45-100.constellation.fc38.x86_64.rpm kernel-modules-core-6.1.45-100.constellation.fc38.x86_64.rpm
+KERNEL_RPMS := kernel-6.1.46-100.constellation.fc38.x86_64.rpm kernel-core-6.1.46-100.constellation.fc38.x86_64.rpm kernel-modules-6.1.46-100.constellation.fc38.x86_64.rpm kernel-modules-core-6.1.46-100.constellation.fc38.x86_64.rpm
 PREBUILD_RPMS_SYSTEMD := $(addprefix prebuilt/rpms/systemd/,$(SYSTEMD_FIXED_RPMS))
 PREBUILD_RPMS_KERNEL := $(addprefix prebuilt/rpms/kernel/,$(KERNEL_RPMS))
 
@@ -49,7 +49,7 @@ prebuilt/rpms/systemd/%.rpm:
 prebuilt/rpms/kernel/%.rpm:
 	@echo "Downloading $*"
 	@mkdir -p $(@D)
-	@curl -fsSL -o $@ https://cdn.confidential.cloud/constellation/kernel/6.1.45-100.constellation/$*.rpm
+	@curl -fsSL -o $@ https://cdn.confidential.cloud/constellation/kernel/6.1.46-100.constellation/$*.rpm
 
 mkosi.output.%/fedora~38/image.raw: inject-bins inject-certs
 	rm -rf .csp/
