@@ -29,6 +29,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/verify/verifyproto"
+	tpmProto "github.com/google/go-tpm-tools/proto/tpm"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -463,6 +464,96 @@ func TestAddPortIfMissing(t *testing.T) {
 
 			require.NoError(err)
 			assert.Equal(tc.wantResult, res)
+		})
+	}
+}
+
+func TestParseQuotes(t *testing.T) {
+	testCases := map[string]struct {
+		quotes       []*tpmProto.Quote
+		expectedPCRs measurements.M
+		wantOutput   string
+		wantErr      bool
+	}{
+		"parse quotes in order": {
+			quotes: []*tpmProto.Quote{
+				{
+					Pcrs: &tpmProto.PCRs{
+						Hash: tpmProto.HashAlgo_SHA256,
+						Pcrs: map[uint32][]byte{
+							0: {0x00},
+							1: {0x01},
+						},
+					},
+				},
+			},
+			expectedPCRs: measurements.M{
+				0: measurements.WithAllBytes(0x00, measurements.Enforce, 1),
+				1: measurements.WithAllBytes(0x01, measurements.WarnOnly, 1),
+			},
+			wantOutput: "\tQuote:\n\t\tPCR 0 (Strict: true):\n\t\t\tExpected:\t00\n\t\t\tActual:\t\t00\n\t\tPCR 1 (Strict: false):\n\t\t\tExpected:\t01\n\t\t\tActual:\t\t01\n",
+		},
+		"additional quotes are skipped": {
+			quotes: []*tpmProto.Quote{
+				{
+					Pcrs: &tpmProto.PCRs{
+						Hash: tpmProto.HashAlgo_SHA256,
+						Pcrs: map[uint32][]byte{
+							0: {0x00},
+							1: {0x01},
+							2: {0x02},
+							3: {0x03},
+						},
+					},
+				},
+			},
+			expectedPCRs: measurements.M{
+				0: measurements.WithAllBytes(0x00, measurements.Enforce, 1),
+				1: measurements.WithAllBytes(0x01, measurements.WarnOnly, 1),
+			},
+			wantOutput: "\tQuote:\n\t\tPCR 0 (Strict: true):\n\t\t\tExpected:\t00\n\t\t\tActual:\t\t00\n\t\tPCR 1 (Strict: false):\n\t\t\tExpected:\t01\n\t\t\tActual:\t\t01\n",
+		},
+		"missing quotes error": {
+			quotes: []*tpmProto.Quote{
+				{
+					Pcrs: &tpmProto.PCRs{
+						Hash: tpmProto.HashAlgo_SHA256,
+						Pcrs: map[uint32][]byte{
+							0: {0x00},
+						},
+					},
+				},
+			},
+			expectedPCRs: measurements.M{
+				0: measurements.WithAllBytes(0x00, measurements.Enforce, 1),
+				1: measurements.WithAllBytes(0x01, measurements.WarnOnly, 1),
+			},
+			wantErr: true,
+		},
+		"no quotes error": {
+			quotes: []*tpmProto.Quote{},
+			expectedPCRs: measurements.M{
+				0: measurements.WithAllBytes(0x00, measurements.Enforce, 1),
+				1: measurements.WithAllBytes(0x01, measurements.WarnOnly, 1),
+			},
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			b := &strings.Builder{}
+			parser := &attestationDocFormatterImpl{}
+
+			err := parser.parseQuotes(b, tc.quotes, tc.expectedPCRs)
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.wantOutput, b.String())
+			}
 		})
 	}
 }
