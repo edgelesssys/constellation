@@ -232,6 +232,10 @@ func (s stubRunner) Apply(_ context.Context) error {
 	return nil
 }
 
+func (s stubRunner) SaveCharts(_ string, _ file.Handler) error {
+	return nil
+}
+
 func TestGetLogs(t *testing.T) {
 	someErr := errors.New("failed")
 
