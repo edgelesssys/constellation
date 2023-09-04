@@ -315,14 +315,15 @@ func (f *attestationDocFormatterImpl) format(ctx context.Context, docString stri
 
 // parseCerts parses the PEM certificates and writes their details to the output builder.
 func (f *attestationDocFormatterImpl) parseCerts(b *strings.Builder, certTypeName string, cert []byte) error {
-	formattedCert := strings.ReplaceAll(string(cert[:len(cert)-1]), "\n", "\n\t\t") + "\n"
+	newlinesTrimmed := strings.TrimSpace(string(cert))
+	formattedCert := strings.ReplaceAll(newlinesTrimmed, "\n", "\n\t\t") + "\n"
 	b.WriteString(fmt.Sprintf("\tRaw %s:\n\t\t%s", certTypeName, formattedCert))
 
 	f.log.Debugf("Decoding PEM certificate: %s", certTypeName)
 	i := 1
 	var rest []byte
 	var block *pem.Block
-	for block, rest = pem.Decode(cert); block != nil; block, rest = pem.Decode(rest) {
+	for block, rest = pem.Decode([]byte(newlinesTrimmed)); block != nil; block, rest = pem.Decode(rest) {
 		f.log.Debugf("Parsing PEM block: %d", i)
 		if block.Type != "CERTIFICATE" {
 			return fmt.Errorf("parse %s: expected PEM block type 'CERTIFICATE', got '%s'", certTypeName, block.Type)
@@ -367,6 +368,9 @@ func (f *attestationDocFormatterImpl) parseCerts(b *strings.Builder, certTypeNam
 		i++
 	}
 
+	if i == 1 {
+		return fmt.Errorf("parse %s: no PEM blocks found", certTypeName)
+	}
 	if len(rest) != 0 {
 		return fmt.Errorf("parse %s: remaining PEM block is not a valid certificate: %s", certTypeName, rest)
 	}
