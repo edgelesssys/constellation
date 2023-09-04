@@ -3,6 +3,7 @@ module github.com/edgelesssys/constellation/v2/hack
 go 1.20
 
 replace (
+	github.com/google/go-sev-guest v0.7.1 => github.com/msanft/go-sev-guest v1.1.0
 	k8s.io/api v0.0.0 => k8s.io/api v0.27.2
 	k8s.io/apiextensions-apiserver v0.0.0 => k8s.io/apiextensions-apiserver v0.27.2
 	k8s.io/apimachinery v0.0.0 => k8s.io/apimachinery v0.27.2
@@ -168,7 +169,7 @@ require (
 	github.com/google/go-attestation v0.5.0 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/go-containerregistry v0.15.2 // indirect
-	github.com/google/go-sev-guest v0.7.1-0.20230831152447-2f2e24f7fb5e // indirect
+	github.com/google/go-sev-guest v0.7.1 // indirect
 	github.com/google/go-tpm v0.9.0 // indirect
 	github.com/google/go-tpm-tools v0.4.0 // indirect
 	github.com/google/go-tspi v0.3.0 // indirect
