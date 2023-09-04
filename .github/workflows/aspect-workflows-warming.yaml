@@ -20,7 +20,7 @@ jobs:
             - name: Agent health checks
               run: agent_health_check
             - name: Create warming archive
-              uses: aspect-build/workflows-action@94af6eb5b5319f01de6338f2a20c274825a7c50f # 5.7.0-rc5
+              uses: aspect-build/workflows-action@884ca425fc061c7f23f533664790f11540d9521f # 5.7.3
               with:
                   task: warming
             - name: Archive warming tars

@@ -111,7 +111,7 @@ jobs:
           echo "filtered_secrets=${FILTERED_SECRETS}" | tee "${GITHUB_OUTPUT}"
 
       - name: Branch Freshness
-        uses: aspect-build/workflows-action@94af6eb5b5319f01de6338f2a20c274825a7c50f # 5.7.0-rc5
+        uses: aspect-build/workflows-action@884ca425fc061c7f23f533664790f11540d9521f # 5.7.3
         timeout-minutes: ${{ fromJson(needs.setup.outputs.cfg).task_config[fromJson(needs.setup.outputs.cfg).workflows_config[matrix.job].workspace].tasks['branch_freshness'].timeout_in_minutes }}
         with:
           workspace: ${{ fromJson(needs.setup.outputs.cfg).workflows_config[matrix.job].workspace }}
@@ -121,7 +121,7 @@ jobs:
         run: rm -rf ${{ join(fromJson(needs.setup.outputs.cfg).workflows_config[matrix.job].artifact_paths, ' ') }}
 
       - name: ${{ fromJson(needs.setup.outputs.cfg).workflows_config[matrix.job].task }}
-        uses: aspect-build/workflows-action@94af6eb5b5319f01de6338f2a20c274825a7c50f # 5.7.0-rc5
+        uses: aspect-build/workflows-action@884ca425fc061c7f23f533664790f11540d9521f # 5.7.3
         env: ${{ inputs.inherited_secrets != '' && fromJson(steps.process_secrets.outputs.filtered_secrets) || fromJson('{}') }}
         timeout-minutes: ${{ fromJson(needs.setup.outputs.cfg).workflows_config[matrix.job].timeout_in_minutes }}
         with:
@@ -130,7 +130,7 @@ jobs:
 
       - name: Delivery Manifest
         if: fromJson(needs.setup.outputs.cfg).workflows_config[matrix.job].generate_manifest
-        uses: aspect-build/workflows-action@94af6eb5b5319f01de6338f2a20c274825a7c50f # 5.7.0-rc5
+        uses: aspect-build/workflows-action@884ca425fc061c7f23f533664790f11540d9521f # 5.7.3
         timeout-minutes: ${{ fromJson(needs.setup.outputs.cfg).task_config[fromJson(needs.setup.outputs.cfg).workflows_config[matrix.job].workspace].tasks['delivery'].timeout_in_minutes }}
         with:
             workspace: ${{ fromJson(needs.setup.outputs.cfg).workflows_config[matrix.job].workspace }}
