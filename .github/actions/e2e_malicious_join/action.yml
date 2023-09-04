@@ -19,11 +19,11 @@ runs:
       working-directory: e2e/malicious-join
       run: |
         yq eval -i "(.spec.template.spec.containers[0].command) = [ \"/malicious-join.test\", \"--js-endpoint=join-service.kube-system:9090\", \"--csp=${{ inputs.cloudProvider }}\", \"--variant=default\" ]" job.yaml
-        kubectl apply -f job.yaml
+        kubectl apply -n kube-system -f job.yaml
         kubectl wait -n kube-system --for=condition=complete --timeout=10m job/malicious-join
         TEST_LOGS=$(kubectl logs -n kube-system job/malicious-join)
         JS_LOGS=$(kubectl logs -n kube-system svc/join-service)
-        kubectl delete -f job.yaml
+        kubectl delete -n kube-system -f job.yaml
         if [[ "$TEST_LOGS" != *"PASS"* ]]; then
           echo "$TEST_LOGS" | tee -a "$GITHUB_OUTPUT"
           exit 1
