@@ -46,6 +46,7 @@ go_test(
         "//conditions:default": ["disable_tpm_simulator"],
     }),
     deps = [
+        "//internal/attestation",
         "//internal/attestation/azure/snp/testdata",
         "//internal/attestation/idkeydigest",
         "//internal/attestation/simulator",
@@ -56,6 +57,8 @@ go_test(
         "@com_github_google_go_sev_guest//abi",
         "@com_github_google_go_sev_guest//kds",
         "@com_github_google_go_sev_guest//proto/sevsnp",
+        "@com_github_google_go_sev_guest//validate",
+        "@com_github_google_go_sev_guest//verify",
         "@com_github_google_go_tpm//legacy/tpm2",
         "@com_github_google_go_tpm_tools//client",
         "@com_github_google_go_tpm_tools//proto/attest",

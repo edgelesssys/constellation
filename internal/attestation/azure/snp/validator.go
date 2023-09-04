@@ -40,14 +40,13 @@ type Validator struct {
 	maa          maaValidator
 	getter       trust.HTTPSGetter
 
-	attestationVerifier attestationVerifier
+	attestationVerifier  attestationVerifier
 	attestationValidator attestationValidator
 
 	config *config.AzureSEVSNP
 
 	log attestation.Logger
 }
-
 
 type attestationVerifier interface {
 	SnpAttestation(attestation *spb.Attestation, options *verify.Options) error
@@ -77,12 +76,12 @@ func NewValidator(cfg *config.AzureSEVSNP, log attestation.Logger) *Validator {
 		log = nopAttestationLogger{}
 	}
 	v := &Validator{
-		hclValidator: &azureInstanceInfo{},
-		maa:          newMAAClient(),
-		config:       cfg,
-		log:          log,
-		getter:       trust.DefaultHTTPSGetter(),
-		attestationVerifier: attestationVerifierImpl{},
+		hclValidator:         &azureInstanceInfo{},
+		maa:                  newMAAClient(),
+		config:               cfg,
+		log:                  log,
+		getter:               trust.DefaultHTTPSGetter(),
+		attestationVerifier:  attestationVerifierImpl{},
 		attestationValidator: attestationValidatorImpl{},
 	}
 	v.Validator = vtpm.NewValidator(
