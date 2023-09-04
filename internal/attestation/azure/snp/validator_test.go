@@ -30,6 +30,8 @@ import (
 	"github.com/google/go-sev-guest/abi"
 	"github.com/google/go-sev-guest/kds"
 	spb "github.com/google/go-sev-guest/proto/sevsnp"
+	"github.com/google/go-sev-guest/validate"
+	"github.com/google/go-sev-guest/verify"
 	"github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm/legacy/tpm2"
@@ -393,6 +395,9 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 	defaultIDKeyDigestOld, err := hex.DecodeString("57e229e0ffe5fa92d0faddff6cae0e61c926fc9ef9afd20a8b8cfcf7129db9338cbe5bf3f6987733a2bf65d06dc38fc1")
 	require.NoError(err)
 	defaultIDKeyDigest := idkeydigest.NewList([][]byte{defaultIDKeyDigestOld})
+	defaultVerifier := &stubAttestationVerifier{}
+	skipVerifier := &stubAttestationVerifier{skipCheck: true}
+	defaultValidator := &stubAttestationValidator{}
 
 	// reportTransformer unpacks the hex-encoded report, applies the given transformations and re-encodes it.
 	reportTransformer := func(reportHex string, transformations func(*spb.Report)) string {
@@ -412,13 +417,18 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 		acceptedIDKeyDigests idkeydigest.List
 		enforcementPolicy    idkeydigest.Enforcement
 		getter               *stubHTTPSGetter
+		verifier             *stubAttestationVerifier
+		validator            *stubAttestationValidator
 		wantErr              bool
+		assertion            func(*assert.Assertions, error)
 	}{
 		"success": {
 			report:               defaultReport,
 			runtimeData:          defaultRuntimeData,
 			acceptedIDKeyDigests: defaultIDKeyDigest,
 			enforcementPolicy:    idkeydigest.Equal,
+			verifier:             defaultVerifier,
+			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
 				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
 				nil,
@@ -429,11 +439,16 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			runtimeData:          defaultRuntimeData,
 			acceptedIDKeyDigests: defaultIDKeyDigest,
 			enforcementPolicy:    idkeydigest.Equal,
+			verifier:             defaultVerifier,
+			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
 				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
 				assert.AnError,
 			),
 			wantErr: true,
+			assertion: func(assert *assert.Assertions, err error) {
+				assert.ErrorContains(err, "could not download VCEK certificate")
+			},
 		},
 		"invalid report signature": {
 			report: reportTransformer(defaultReport, func(r *spb.Report) {
@@ -442,28 +457,40 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			runtimeData:          defaultRuntimeData,
 			acceptedIDKeyDigests: defaultIDKeyDigest,
 			enforcementPolicy:    idkeydigest.Equal,
+			verifier:             defaultVerifier,
+			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
 				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
 				nil,
 			),
 			wantErr: true,
+			assertion: func(assert *assert.Assertions, err error) {
+				assert.ErrorContains(err, "report signature verification error")
+			},
 		},
 		"invalid vcek": {
 			report:               defaultReport,
 			runtimeData:          defaultRuntimeData,
 			acceptedIDKeyDigests: defaultIDKeyDigest,
 			enforcementPolicy:    idkeydigest.Equal,
+			verifier:             defaultVerifier,
+			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
 				newUrlResponseMatcher(testdata.CertChain, []byte("invalid")),
 				nil,
 			),
 			wantErr: true,
+			assertion: func(assert *assert.Assertions, err error) {
+				assert.ErrorContains(err, "could not interpret VCEK DER bytes: x509: malformed certificate")
+			},
 		},
 		"invalid certchain fall back to embedded": {
 			report:               defaultReport,
 			runtimeData:          defaultRuntimeData,
 			acceptedIDKeyDigests: defaultIDKeyDigest,
 			enforcementPolicy:    idkeydigest.Equal,
+			verifier:             defaultVerifier,
+			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
 				newUrlResponseMatcher([]byte("invalid"), testdata.VCEK),
 				nil,
@@ -474,28 +501,56 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			runtimeData:          defaultRuntimeData[:len(defaultRuntimeData)-10],
 			acceptedIDKeyDigests: defaultIDKeyDigest,
 			enforcementPolicy:    idkeydigest.Equal,
+			verifier:             defaultVerifier,
+			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
 				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
 				nil,
 			),
 			wantErr: true,
+			assertion: func(assert *assert.Assertions, err error) {
+				assert.ErrorContains(err, "validating HCLAkPub: unmarshalling json: unexpected end of JSON input")
+			},
 		},
-		"inacceptable idkeydigest, enforce": {
+		"inacceptable idkeydigest (wrong size), enforce": {
 			report:               defaultReport,
 			runtimeData:          defaultRuntimeData,
 			acceptedIDKeyDigests: idkeydigest.List{[]byte{0x00}},
 			enforcementPolicy:    idkeydigest.Equal,
+			verifier:             defaultVerifier,
+			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
 				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
 				nil,
 			),
 			wantErr: true,
+			assertion: func(assert *assert.Assertions, err error) {
+				assert.ErrorContains(err, "bad hash size in TrustedIDKeyHashes")
+			},
+		},
+		"inacceptable idkeydigest (wrong value), enforce": {
+			report:               defaultReport,
+			runtimeData:          defaultRuntimeData,
+			acceptedIDKeyDigests: idkeydigest.List{make([]byte, 48)},
+			enforcementPolicy:    idkeydigest.Equal,
+			verifier:             defaultVerifier,
+			validator:            defaultValidator,
+			getter: newStubHTTPSGetter(
+				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				nil,
+			),
+			wantErr: true,
+			assertion: func(assert *assert.Assertions, err error) {
+				assert.ErrorContains(err, "report ID key not trusted")
+			},
 		},
 		"inacceptable idkeydigest, warn only": {
 			report:               defaultReport,
 			runtimeData:          defaultRuntimeData,
 			acceptedIDKeyDigests: idkeydigest.List{[]byte{0x00}},
 			enforcementPolicy:    idkeydigest.WarnOnly,
+			verifier:             defaultVerifier,
+			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
 				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
 				nil,
@@ -504,7 +559,10 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 		"launch tcb < minimum launch tcb": {
 			report: reportTransformer(defaultReport, func(r *spb.Report) {
 				launchTcb := kds.DecomposeTCBVersion(kds.TCBVersion(r.LaunchTcb))
-				launchTcb.UcodeSpl = defaultCfg.MicrocodeVersion.Value - 1
+				fmt.Println(launchTcb)
+				defaultCfg.MicrocodeVersion.Value = 10
+				launchTcb.UcodeSpl = 9
+				fmt.Println(launchTcb)
 				newLaunchTcb, err := kds.ComposeTCBParts(launchTcb)
 				require.NoError(err)
 				r.LaunchTcb = uint64(newLaunchTcb)
@@ -512,11 +570,16 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			runtimeData:          defaultRuntimeData,
 			acceptedIDKeyDigests: defaultIDKeyDigest,
 			enforcementPolicy:    idkeydigest.WarnOnly,
+			verifier:             skipVerifier,
+			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
 				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
 				nil,
 			),
 			wantErr: true,
+			assertion: func(assert *assert.Assertions, err error) {
+				assert.ErrorContains(err, "is lower than the policy minimum launch TCB")
+			},
 		},
 		"reported tcb < minimum tcb": {
 			report: reportTransformer(defaultReport, func(r *spb.Report) {
@@ -529,11 +592,16 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			runtimeData:          defaultRuntimeData,
 			acceptedIDKeyDigests: defaultIDKeyDigest,
 			enforcementPolicy:    idkeydigest.WarnOnly,
+			verifier:             skipVerifier,
+			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
 				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
 				nil,
 			),
 			wantErr: true,
+			assertion: func(assert *assert.Assertions, err error) {
+				assert.ErrorContains(err, "is lower than the policy minimum TCB")
+			},
 		},
 		"current tcb < committed tcb": {
 			report: reportTransformer(defaultReport, func(r *spb.Report) {
@@ -542,11 +610,16 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			runtimeData:          defaultRuntimeData,
 			acceptedIDKeyDigests: defaultIDKeyDigest,
 			enforcementPolicy:    idkeydigest.WarnOnly,
+			verifier:             skipVerifier,
+			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
 				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
 				nil,
 			),
 			wantErr: true,
+			assertion: func(assert *assert.Assertions, err error) {
+				assert.ErrorContains(err, "is lower than the report's COMMITTED_TCB")
+			},
 		},
 		"current tcb < tcb in vcek": {
 			report: reportTransformer(defaultReport, func(r *spb.Report) {
@@ -559,11 +632,16 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			runtimeData:          defaultRuntimeData,
 			acceptedIDKeyDigests: defaultIDKeyDigest,
 			enforcementPolicy:    idkeydigest.WarnOnly,
+			verifier:             skipVerifier,
+			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
 				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
 				nil,
 			),
 			wantErr: true,
+			assertion: func(assert *assert.Assertions, err error) {
+				assert.ErrorContains(err, "is lower than the TCB of the VCEK certificate")
+			},
 		},
 		"reported tcb != tcb in vcek": {
 			report: reportTransformer(defaultReport, func(r *spb.Report) {
@@ -572,11 +650,16 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			runtimeData:          defaultRuntimeData,
 			acceptedIDKeyDigests: defaultIDKeyDigest,
 			enforcementPolicy:    idkeydigest.WarnOnly,
+			verifier:             skipVerifier,
+			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
 				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
 				nil,
 			),
 			wantErr: true,
+			assertion: func(assert *assert.Assertions, err error) {
+				assert.ErrorContains(err, "does not match the TCB of the VCEK certificate")
+			},
 		},
 		"vmpl != 0": {
 			report: reportTransformer(defaultReport, func(r *spb.Report) {
@@ -585,11 +668,16 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			runtimeData:          defaultRuntimeData,
 			acceptedIDKeyDigests: defaultIDKeyDigest,
 			enforcementPolicy:    idkeydigest.Equal,
+			verifier:             skipVerifier,
+			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
 				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
 				nil,
 			),
 			wantErr: true,
+			assertion: func(assert *assert.Assertions, err error) {
+				assert.ErrorContains(err, "report VMPL 1 is not 0")
+			},
 		},
 	}
 
@@ -618,21 +706,50 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			}
 
 			validator := &Validator{
-				hclValidator: &instanceInfo,
-				config:       defaultCfg,
-				log:          logger.NewTest(t),
-				getter:       tc.getter,
+				hclValidator:         &instanceInfo,
+				config:               defaultCfg,
+				log:                  logger.NewTest(t),
+				getter:               tc.getter,
+				attestationVerifier:  tc.verifier,
+				attestationValidator: tc.validator,
 			}
 
 			key, err := validator.getTrustedKey(context.Background(), attDoc, nil)
 			if tc.wantErr {
 				require.Error(err)
+				if tc.assertion != nil {
+					tc.assertion(assert, err)
+				}
 			} else {
 				require.NoError(err)
 				assert.NotNil(key)
 			}
 		})
 	}
+}
+
+type stubAttestationVerifier struct {
+	skipCheck bool // whether the verification function should be called
+}
+
+// SnpAttestation verifies the VCEK certificate as well as the certificate chain of the attestation report.
+func (v *stubAttestationVerifier) SnpAttestation(attestation *spb.Attestation, options *verify.Options) error {
+	if v.skipCheck {
+		return nil
+	}
+	return verify.SnpAttestation(attestation, options)
+}
+
+type stubAttestationValidator struct {
+	skipCheck bool // whether the verification function should be called
+}
+
+// SnpAttestation validates the attestation report against the given set of constraints.
+func (v *stubAttestationValidator) SnpAttestation(attestation *spb.Attestation, options *validate.Options) error {
+	if v.skipCheck {
+		return nil
+	}
+	return validate.SnpAttestation(attestation, options)
 }
 
 type stubAzureInstanceInfo struct {

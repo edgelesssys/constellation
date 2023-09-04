@@ -40,9 +40,35 @@ type Validator struct {
 	maa          maaValidator
 	getter       trust.HTTPSGetter
 
+	attestationVerifier attestationVerifier
+	attestationValidator attestationValidator
+
 	config *config.AzureSEVSNP
 
 	log attestation.Logger
+}
+
+
+type attestationVerifier interface {
+	SnpAttestation(attestation *spb.Attestation, options *verify.Options) error
+}
+
+type attestationValidator interface {
+	SnpAttestation(attestation *spb.Attestation, options *validate.Options) error
+}
+
+type attestationVerifierImpl struct{}
+
+// SnpAttestation verifies the VCEK certificate as well as the certificate chain of the attestation report.
+func (attestationVerifierImpl) SnpAttestation(attestation *spb.Attestation, options *verify.Options) error {
+	return verify.SnpAttestation(attestation, options)
+}
+
+type attestationValidatorImpl struct{}
+
+// SnpAttestation validates the attestation report against the given set of constraints.
+func (attestationValidatorImpl) SnpAttestation(attestation *spb.Attestation, options *validate.Options) error {
+	return validate.SnpAttestation(attestation, options)
 }
 
 // NewValidator initializes a new Azure validator with the provided PCR values.
@@ -56,6 +82,8 @@ func NewValidator(cfg *config.AzureSEVSNP, log attestation.Logger) *Validator {
 		config:       cfg,
 		log:          log,
 		getter:       trust.DefaultHTTPSGetter(),
+		attestationVerifier: attestationVerifierImpl{},
+		attestationValidator: attestationValidatorImpl{},
 	}
 	v.Validator = vtpm.NewValidator(
 		cfg.Measurements,
@@ -83,14 +111,14 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 	}
 
 	// Verify the attestation report's certificates.
-	if err := verify.SnpAttestation(att, &verify.Options{}); err != nil {
+	if err := v.attestationVerifier.SnpAttestation(att, &verify.Options{}); err != nil {
 		return nil, fmt.Errorf("verifying SNP attestation: %w", err)
 	}
 
 	// Checks if the attestation report matches the given constraints.
 	// Some constraints are implicitly checked by validate.SnpAttestation:
 	// - the report is not expired
-	if err := validate.SnpAttestation(att, &validate.Options{
+	if err := v.attestationValidator.SnpAttestation(att, &validate.Options{
 		GuestPolicy: abi.SnpPolicy{
 			Debug: false, // Debug means the VM can be decrypted by the host for debugging purposes and thus is not allowed.
 			SMT:   true,  // Allow Simultaneous Multi-Threading (SMT). Normally, we would want to disable SMT
