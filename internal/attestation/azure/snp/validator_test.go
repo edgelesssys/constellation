@@ -79,7 +79,7 @@ func TestInstanceInfoAttestation(t *testing.T) {
 		"report too short": {
 			report: defaultReport[:len(defaultReport)-100],
 			getter: newStubHTTPSGetter(
-				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
 				nil,
 			),
 			wantErr: true,
@@ -87,7 +87,7 @@ func TestInstanceInfoAttestation(t *testing.T) {
 		"corrupted report": {
 			report: defaultReport[10 : len(defaultReport)-10],
 			getter: newStubHTTPSGetter(
-				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
 				nil,
 			),
 			wantErr: true,
@@ -95,7 +95,7 @@ func TestInstanceInfoAttestation(t *testing.T) {
 		"certificate fetch error": {
 			report: defaultReport[10 : len(defaultReport)-10],
 			getter: newStubHTTPSGetter(
-				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
 				assert.AnError,
 			),
 			wantErr: true,
@@ -103,7 +103,7 @@ func TestInstanceInfoAttestation(t *testing.T) {
 		"success": {
 			report: defaultReport,
 			getter: newStubHTTPSGetter(
-				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
 				nil,
 			),
 			wantErr: false,
@@ -163,7 +163,7 @@ type urlResponseMatcher struct {
 	vcekResponse      []byte
 }
 
-func newUrlResponseMatcher(certChainResponse []byte, vcekResponse []byte) *urlResponseMatcher {
+func newURLResponseMatcher(certChainResponse []byte, vcekResponse []byte) *urlResponseMatcher {
 	return &urlResponseMatcher{
 		certChainResponse: certChainResponse,
 		vcekResponse:      vcekResponse,
@@ -192,13 +192,13 @@ func TestCheckIDKeyDigest(t *testing.T) {
 		cfg.FirmwareSignerConfig.EnforcementPolicy = enforcementPolicy
 		return cfg
 	}
-	reportWithIdKeyDigest := func(idKeyDigest string) *spb.Attestation {
+	reportWithIDKeyDigest := func(idKeyDigest string) *spb.Attestation {
 		report := &spb.Attestation{}
 		report.Report = &spb.Report{}
 		report.Report.IdKeyDigest = []byte(idKeyDigest)
 		return report
 	}
-	newTestValidator := func(cfg *config.AzureSEVSNP, log *logger.Logger, validateTokenErr error) *Validator {
+	newTestValidator := func(cfg *config.AzureSEVSNP, validateTokenErr error) *Validator {
 		validator := NewValidator(cfg, logger.NewTest(t))
 		validator.maa = &stubMaaValidator{
 			validateTokenErr: validateTokenErr,
@@ -251,8 +251,8 @@ func TestCheckIDKeyDigest(t *testing.T) {
 			require := require.New(t)
 
 			cfg := cfgWithAcceptedIDKeyDigests(tc.enforcementPolicy, tc.acceptedIDKeyDigests)
-			report := reportWithIdKeyDigest(tc.idKeyDigest)
-			validator := newTestValidator(cfg, logger.NewTest(t), tc.validateMaaTokenErr)
+			report := reportWithIDKeyDigest(tc.idKeyDigest)
+			validator := newTestValidator(cfg, tc.validateMaaTokenErr)
 
 			err := validator.checkIDKeyDigest(context.Background(), report, "", nil)
 			if tc.wantErr {
@@ -430,7 +430,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			verifier:             defaultVerifier,
 			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
-				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
 				nil,
 			),
 		},
@@ -442,7 +442,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			verifier:             defaultVerifier,
 			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
-				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
 				assert.AnError,
 			),
 			wantErr: true,
@@ -460,7 +460,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			verifier:             defaultVerifier,
 			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
-				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
 				nil,
 			),
 			wantErr: true,
@@ -476,7 +476,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			verifier:             defaultVerifier,
 			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
-				newUrlResponseMatcher(testdata.CertChain, []byte("invalid")),
+				newURLResponseMatcher(testdata.CertChain, []byte("invalid")),
 				nil,
 			),
 			wantErr: true,
@@ -492,7 +492,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			verifier:             defaultVerifier,
 			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
-				newUrlResponseMatcher([]byte("invalid"), testdata.VCEK),
+				newURLResponseMatcher([]byte("invalid"), testdata.VCEK),
 				nil,
 			),
 		},
@@ -504,7 +504,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			verifier:             defaultVerifier,
 			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
-				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
 				nil,
 			),
 			wantErr: true,
@@ -520,7 +520,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			verifier:             defaultVerifier,
 			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
-				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
 				nil,
 			),
 			wantErr: true,
@@ -536,7 +536,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			verifier:             defaultVerifier,
 			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
-				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
 				nil,
 			),
 			wantErr: true,
@@ -552,7 +552,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			verifier:             defaultVerifier,
 			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
-				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
 				nil,
 			),
 		},
@@ -573,7 +573,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			verifier:             skipVerifier,
 			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
-				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
 				nil,
 			),
 			wantErr: true,
@@ -595,7 +595,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			verifier:             skipVerifier,
 			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
-				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
 				nil,
 			),
 			wantErr: true,
@@ -613,7 +613,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			verifier:             skipVerifier,
 			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
-				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
 				nil,
 			),
 			wantErr: true,
@@ -635,7 +635,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			verifier:             skipVerifier,
 			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
-				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
 				nil,
 			),
 			wantErr: true,
@@ -653,7 +653,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			verifier:             skipVerifier,
 			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
-				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
 				nil,
 			),
 			wantErr: true,
@@ -671,7 +671,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			verifier:             skipVerifier,
 			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
-				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
 				nil,
 			),
 			wantErr: true,
