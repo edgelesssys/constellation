@@ -6,3 +6,4 @@ image.*
 mkosi.output.*
 pki_*/*.key
 pki_*/*.vmgs
+.csp
