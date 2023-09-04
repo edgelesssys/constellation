@@ -96,6 +96,7 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 			SMT:   true,  // Allow Simultaneous Multi-Threading (SMT). Normally, we would want to disable SMT
 			// but Azure does not allow to disable it.
 		},
+		VMPL: new(int), // Checks that Virtual Machine Privilege Level (VMPL) is 0.
 		// This checks that the reported TCB version is equal or greater than the minimum specified in the config.
 		MinimumTCB: kds.TCBParts{
 			BlSpl:    v.config.BootloaderVersion.Value, // Bootloader

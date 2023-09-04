@@ -448,7 +448,6 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			),
 			wantErr: true,
 		},
-		// TODO: Find out why this doesn't error.
 		"invalid vcek": {
 			report:               defaultReport,
 			runtimeData:          defaultRuntimeData,
@@ -573,6 +572,19 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			runtimeData:          defaultRuntimeData,
 			acceptedIDKeyDigests: defaultIDKeyDigest,
 			enforcementPolicy:    idkeydigest.WarnOnly,
+			getter: newStubHTTPSGetter(
+				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
+				nil,
+			),
+			wantErr: true,
+		},
+		"vmpl != 0": {
+			report: reportTransformer(defaultReport, func(r *spb.Report) {
+				r.Vmpl = 1
+			}),
+			runtimeData:          defaultRuntimeData,
+			acceptedIDKeyDigests: defaultIDKeyDigest,
+			enforcementPolicy:    idkeydigest.Equal,
 			getter: newStubHTTPSGetter(
 				newUrlResponseMatcher(testdata.CertChain, testdata.VCEK),
 				nil,
