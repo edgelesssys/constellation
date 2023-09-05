@@ -54,32 +54,35 @@ func main() {
 	for name, tc := range testCases {
 		fmt.Printf("Running testcase %s\n", name)
 		err := tc.fn()
-		if tc.wantErr && err == nil {
+		switch {
+		case err == nil && tc.wantErr:
 			fmt.Printf("Test case %s failed: Expected error but got none\n", name)
 			testOutput.TestCases[name] = testCaseOutput{
 				Passed:  false,
 				Message: fmt.Sprintf("Expected error but got none"),
 			}
 			allPassed = false
-		} else if !tc.wantErr && err != nil {
+		case !tc.wantErr && err != nil:
 			fmt.Printf("Test case %s failed: Got unexpected error: %s\n", name, err)
 			testOutput.TestCases[name] = testCaseOutput{
 				Passed:  false,
 				Message: fmt.Sprintf("Got unexpected error: %s", err),
 			}
 			allPassed = false
-		} else if tc.wantErr && err != nil {
+		case tc.wantErr && err != nil:
 			fmt.Printf("Test case %s succeeded\n", name)
 			testOutput.TestCases[name] = testCaseOutput{
 				Passed:  true,
 				Message: fmt.Sprintf("Got expected error: %s", err),
 			}
-		} else {
+		case !tc.wantErr && err == nil:
 			fmt.Printf("Test case %s succeeded\n", name)
 			testOutput.TestCases[name] = testCaseOutput{
 				Passed:  true,
 				Message: "No error, as expected",
 			}
+		default:
+			panic("invalid result")
 		}
 	}
 	testOutput.AllPassed = allPassed
