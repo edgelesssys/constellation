@@ -6,8 +6,6 @@ const darkCodeTheme = require('prism-react-renderer').themes.dracula;
 
 /** @type {import('@docusaurus/types').Config} */
 async function createConfig() {
-  const mdxMermaid = await import('mdx-mermaid')
-
   return {
     title: 'Constellation',
     tagline: 'Constellation: The world\'s most secure Kubernetes',
@@ -37,38 +35,18 @@ async function createConfig() {
       locales: ['en'],
     },
 
+    // mermaid
+    markdown: {
+      mermaid: true,
+    },
+    themes: ['@docusaurus/theme-mermaid'],
+
     presets: [
       [
         'classic',
         /** @type {import('@docusaurus/preset-classic').Options} */
         ({
           docs: {
-            remarkPlugins: [[mdxMermaid.default, {
-              mermaid: {
-                theme: 'base',
-                themeVariables: {
-                  // general
-                  'fontFamily': '"Open Sans", sans-serif',
-                  'primaryColor': '#90FF99', // edgeless green
-                  'primaryTextColor': '#000000',
-                  'secondaryColor': '#A5A5A5', // edgeless grey
-                  'secondaryTextColor': '#000000',
-                  'tertiaryColor': '#E7E6E6', // edgeless light grey
-                  'tertiaryTextColor': '#000000',
-                  // flowchart
-                  'clusterBorder': '#A5A5A5',
-                  'clusterBkg': '#ffffff',
-                  'edgeLabelBackground': '#ffffff',
-                  // sequence diagram
-                  'activationBorderColor': '#000000',
-                  'actorBorder': '#A5A5A5',
-                  'actorFontFamily': '"Open Sans", sans-serif', // not released by mermaid yet
-                  'noteBkgColor': '#8B04DD', // edgeless purple
-                  'noteTextColor': '#ffffff',
-                },
-                startOnLoad: true
-              }
-            }]],
             sidebarPath: require.resolve('./sidebars.js'),
             // sidebarPath: 'sidebars.js',
             // Please change this to your repo.
@@ -215,6 +193,32 @@ async function createConfig() {
           theme: lightCodeTheme,
           darkTheme: darkCodeTheme,
           additionalLanguages: ['shell-session'],
+        },
+        mermaid: {
+          theme: { light: 'base', dark: 'base' },
+          options: {
+            themeVariables: {
+              // general
+              fontFamily: '"Open Sans", sans-serif',
+              primaryColor: '#90FF99', // edgeless green
+              primaryTextColor: '#000000',
+              secondaryColor: '#A5A5A5', // edgeless grey
+              secondaryTextColor: '#000000',
+              tertiaryColor: '#E7E6E6', // edgeless light grey
+              tertiaryTextColor: '#000000',
+              // flowchart
+              clusterBorder: '#A5A5A5',
+              clusterBkg: '#ffffff',
+              edgeLabelBackground: '#ffffff',
+              // sequence diagram
+              activationBorderColor: '#000000',
+              actorBorder: '#A5A5A5',
+              actorFontFamily: '"Open Sans", sans-serif', // not released by mermaid yet
+              noteBkgColor: '#8B04DD', // edgeless purple
+              noteTextColor: '#ffffff',
+            },
+            startOnLoad: true,
+          },
         },
       }),
 
