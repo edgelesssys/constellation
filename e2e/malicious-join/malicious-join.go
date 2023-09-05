@@ -23,9 +23,6 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// Flags are defined globally as `go test` implicitly calls flag.Parse() before executing a testcase.
-// Thus defining and parsing flags inside a testcase would result in a panic.
-// See https://groups.google.com/g/golang-nuts/c/P6EdEdgvDuc/m/5-Dg6bPxmvQJ.
 var (
 	jsEndpoint = flag.String("js-endpoint", "", "Join service endpoint to use.")
 	csp        = flag.String("csp", "", "Cloud service provider to use.")
