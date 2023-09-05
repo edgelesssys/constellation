@@ -77,6 +77,9 @@ func (v *ValidK8sVersion) UnmarshalYAML(unmarshal func(interface{}) error) error
 	if err := unmarshal(&version); err != nil {
 		return err
 	}
+	if !hasPatchVersion(version) {
+		return fmt.Errorf("Kubernetes version %s does not specify a patch, supported versions are %s", version, strings.Join(SupportedK8sVersions(), ", "))
+	}
 	valid, err := NewValidK8sVersion(version, false) // allow any patch version to not force K8s patch upgrades
 	if err != nil {
 		return fmt.Errorf("unsupported Kubernetes version %s, supported versions are %s", version, strings.Join(SupportedK8sVersions(), ", "))
