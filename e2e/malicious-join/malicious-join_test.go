@@ -121,7 +121,7 @@ type maliciousIssuer struct {
 	variant.Getter
 }
 
-func (i *maliciousIssuer) Issue(ctx context.Context, userData, nonce []byte) ([]byte, error) {
+func (i *maliciousIssuer) Issue(_ context.Context, userData, nonce []byte) ([]byte, error) {
 	return json.Marshal(fakeAttestationDoc{UserData: userData, Nonce: nonce})
 }
 
