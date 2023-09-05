@@ -72,13 +72,13 @@ func main() {
 			}
 			allPassed = false
 		} else if tc.wantErr && err != nil {
-			fmt.Printf("Test case %s suceeded\n", name)
+			fmt.Printf("Test case %s succeeded\n", name)
 			testOutput.TestCases[name] = testCaseOutput{
 				Passed:  true,
 				Message: fmt.Sprintf("Got expected error: %s", err),
 			}
 		} else {
-			fmt.Printf("Test case %s suceeded\n", name)
+			fmt.Printf("Test case %s succeeded\n", name)
 			testOutput.TestCases[name] = testCaseOutput{
 				Passed:  true,
 				Message: "No error, as expected",
