@@ -66,11 +66,6 @@ func NewValidK8sVersion(k8sVersion string, strict bool) (ValidK8sVersion, error)
 	return ValidK8sVersion(prefixedVersion), nil
 }
 
-// hasPatchVersion returns if the given version has specified a patch version.
-func hasPatchVersion(version string) bool {
-	return semver.MajorMinor(version) != version
-}
-
 // UnmarshalYAML implements the yaml.Unmarshaler interface.
 func (v *ValidK8sVersion) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var version string
@@ -160,6 +155,11 @@ func isSupportedK8sVersionStrict(version string) bool {
 // IsPreviewK8sVersion checks if a given Kubernetes version is still in preview and not fully supported.
 func IsPreviewK8sVersion(_ ValidK8sVersion) bool {
 	return false
+}
+
+// hasPatchVersion returns if the given version has specified a patch version.
+func hasPatchVersion(version string) bool {
+	return semver.MajorMinor(version) != version
 }
 
 const (
