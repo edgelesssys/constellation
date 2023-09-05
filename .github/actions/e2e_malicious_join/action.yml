@@ -19,19 +19,19 @@ runs:
       working-directory: e2e/malicious-join
       run: |
         yq eval -i "(.spec.template.spec.containers[0].command) = [ \"/malicious-join.test\", \"--js-endpoint=join-service.kube-system:9090\", \"--csp=${{ inputs.cloudProvider }}\", \"--variant=default\" ]" job.yaml
-        kubectl apply -n kube-system -f job.yaml
-        kubectl wait -n kube-system --for=condition=complete --timeout=10m job/malicious-join
-        TEST_LOGS=$(kubectl logs -n kube-system job/malicious-join)
-        JS_LOGS=$(kubectl logs -n kube-system svc/join-service)
-        LAST_JS_LOG=$(echo "$JS_LOGS" | tail -n 1)
-        kubectl delete -n kube-system -f job.yaml
+        kubectl create ns malicious-join
+        kubectl apply -n malicious-join -f job.yaml
+        kubectl wait -n malicious-join --for=condition=complete --timeout=10m job/malicious-join
+        LAST_TEST_LOG=$(kubectl logs -n malicious-join job/malicious-join | tail -n 1)
+        LAST_JS_LOG=$(kubectl logs -n kube-system svc/join-service | tail -n 1)
         # The test passes if an error occurs when trying to join the cluster.
         if [[ "$TEST_LOGS" != *"PASS"* ]]; then
-          echo "$TEST_LOGS" | tee -a "$GITHUB_OUTPUT"
+          kubectl logs -n malicious-join job/malicious-join | tee -a "$GITHUB_OUTPUT"
           exit 1
         fi
         # The last log of the join service should be an error message about the attestation document.
         if [[ "$LAST_JS_LOG" != *"Failed to validate attestation document: validating attestation public key"* ]]; then
-          echo "$JS_LOGS" | tee -a "$GITHUB_OUTPUT"
+          kubectl logs -n kube-system svc/join-service | tee -a "$GITHUB_OUTPUT"
           exit 1
         fi
+        kubectl delete ns malicious-join
