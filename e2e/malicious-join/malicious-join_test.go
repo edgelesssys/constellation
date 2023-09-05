@@ -54,9 +54,9 @@ func TestMaliciousJoin(t *testing.T) {
 func formatFlags() string {
 	var sb strings.Builder
 	sb.WriteString("Using Flags:\n")
-	flag.VisitAll(func(f *flag.Flag) {
-		sb.WriteString(fmt.Sprintf("\t%s: %s\n", f.Name, f.Value.String()))
-	})
+	sb.WriteString(fmt.Sprintf("\tjs-endpoint: %s\n", *jsEndpoint))
+	sb.WriteString(fmt.Sprintf("\tcsp: %s\n", *csp))
+	sb.WriteString(fmt.Sprintf("\tvariant: %s\n", *attVariant))
 	return sb.String()
 }
 
