@@ -51,7 +51,9 @@ func main() {
 	}
 
 	allPassed := true
-	testOutput := &testOutput{}
+	testOutput := &testOutput{
+		TestCases: make(map[string]testCaseOutput),
+	}
 	for name, tc := range testCases {
 		fmt.Printf("Running testcase %s\n", name)
 		err := tc.fn()
