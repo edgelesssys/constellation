@@ -135,9 +135,7 @@ func TestInitialize(t *testing.T) {
 			initServerAPI: &stubInitServer{res: &initproto.InitResponse{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}},
 			configMutator: func(c *config.Config) {
 				res, err := versions.NewValidK8sVersion(strings.TrimPrefix(string(versions.Default), "v"), true)
-				if err != nil {
-					panic("invalid k8s version")
-				}
+				require.NoError(t, err)
 				c.KubernetesVersion = res
 			},
 		},
