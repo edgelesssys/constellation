@@ -36,14 +36,6 @@ func SupportedK8sVersions() []string {
 	return validVersionsSorted
 }
 
-// SupportedValidK8sVersions returns a typed list of supported Kubernetes versions.
-func SupportedValidK8sVersions() (res []ValidK8sVersion) {
-	for _, v := range SupportedK8sVersions() {
-		res = append(res, ValidK8sVersion(v))
-	}
-	return
-}
-
 // ValidK8sVersion represents any of the three currently supported k8s versions.
 type ValidK8sVersion string
 
