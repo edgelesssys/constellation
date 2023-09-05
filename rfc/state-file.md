@@ -50,8 +50,9 @@ The following is a list of proposed sections:
 
 * Runtime resources
 
-    cluster ID, measurement salt etc.
-    This field will be automatically populated during `constellation init`
+    Cluster ID, measurement salt etc.
+    This field will be automatically populated during `constellation init`.
+    This entry should be marked with `DO NOT EDIT` to make it clear these resources are expected to not be touched by a user manually.
 
 YAML file example:
 
@@ -97,5 +98,5 @@ Otherwise, we should provide documentation and/or tooling for migrating old file
 The Constellation version implementing the state file should provide an upgrade path for moving the Terraform outputs and cluster id file content into the new state file.
 This should happen at the beginning of `constellation upgrade apply`.
 
-We might want to implement a CLI command to automatically create the state file from and existing Terraform state.
+We might want to implement a CLI command to automatically create the state file from an existing Terraform state.
 In that case, the migration path should make use of that command to set up the state file.
