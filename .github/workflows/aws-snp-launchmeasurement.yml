@@ -52,8 +52,8 @@ jobs:
 
     - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
       with:
-        repository: edgelesssys/sev-snp-measure-go.git
-        ref: main
+        repository: virtee/sev-snp-measure-go.git
+        ref: e42b6f8991ed5a671d5d1e02a6b61f6373f9f8d8
         path: sev-snp-measure-go
 
 
