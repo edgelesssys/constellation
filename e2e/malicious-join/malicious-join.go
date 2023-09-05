@@ -1,5 +1,3 @@
-//go:build e2e
-
 /*
 Copyright (c) Edgeless Systems GmbH
 
@@ -7,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 
 // End-to-end test that issues various types of malicious join requests to a cluster.
-package maliciousjoin
+package main
 
 import (
 	"context"
@@ -16,14 +14,13 @@ import (
 	"fmt"
 	"net"
 	"strings"
-	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/joinservice/joinproto"
-	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zapcore"
 )
 
 // Flags are defined globally as `go test` implicitly calls flag.Parse() before executing a testcase.
@@ -39,16 +36,69 @@ var (
 	)
 )
 
-func TestMaliciousJoin(t *testing.T) {
+func main() {
+	flag.Parse()
 	fmt.Println(formatFlags())
 
-	require := require.New(t)
+	testCases := map[string]struct {
+		fn      func() error
+		wantErr bool
+	}{
+		"JoinFromUnattestedNode": {
+			fn:      JoinFromUnattestedNode,
+			wantErr: true,
+		},
+	}
 
-	joiner, err := newMaliciousJoiner(logger.NewTest(t), *jsEndpoint)
-	require.NoError(err)
+	allPassed := true
+	testOutput := &testOutput{}
+	for name, tc := range testCases {
+		fmt.Printf("Running testcase %s\n", name)
+		err := tc.fn()
+		if tc.wantErr && err == nil {
+			fmt.Printf("Test case %s failed: Expected error but got none\n", name)
+			testOutput.TestCases[name] = testCaseOutput{
+				Passed:  false,
+				Message: fmt.Sprintf("Expected error but got none: %s", err),
+			}
+			allPassed = false
+		} else if !tc.wantErr && err != nil {
+			fmt.Printf("Test case %s failed: Got unexpected error: %s\n", name, err)
+			testOutput.TestCases[name] = testCaseOutput{
+				Passed:  false,
+				Message: fmt.Sprintf("Got unexpected error: %s", err),
+			}
+			allPassed = false
+		} else if tc.wantErr && err != nil {
+			fmt.Printf("Test case %s suceeded\n", name)
+			testOutput.TestCases[name] = testCaseOutput{
+				Passed:  true,
+				Message: fmt.Sprintf("Got expected error: %s", err),
+			}
+		} else {
+			fmt.Printf("Test case %s suceeded\n", name)
+			testOutput.TestCases[name] = testCaseOutput{
+				Passed:  true,
+				Message: "No error, as expected",
+			}
+		}
+	}
+	testOutput.AllPassed = allPassed
+	out, err := json.Marshal(testOutput)
+	if err != nil {
+		panic(fmt.Sprintf("marshalling test output: %s", err))
+	}
+	fmt.Println(string(out))
+}
 
-	_, err = joiner.join(context.Background())
-	require.Error(err)
+type testOutput struct {
+	AllPassed bool                      `json:"allPassed"`
+	TestCases map[string]testCaseOutput `json:"testCases"`
+}
+
+type testCaseOutput struct {
+	Passed  bool   `json:"passed"`
+	Message string `json:"message"`
 }
 
 func formatFlags() string {
@@ -60,6 +110,24 @@ func formatFlags() string {
 	return sb.String()
 }
 
+// JoinFromUnattestedNode simulates a join request from a Node that uses a stub issuer
+// and thus cannot be attested correctly.
+func JoinFromUnattestedNode() error {
+	log := logger.New(logger.JSONLog, zapcore.DebugLevel)
+	joiner, err := newMaliciousJoiner(log, *jsEndpoint)
+	if err != nil {
+		return fmt.Errorf("creating malicious joiner: %w", err)
+	}
+
+	_, err = joiner.join(context.Background())
+	if err != nil {
+		return fmt.Errorf("joining cluster: %w", err)
+	}
+	return nil
+}
+
+// newMaliciousJoiner creates a new malicious joiner, i.e. a simulated node that issues
+// an invalid join request.
 func newMaliciousJoiner(log *logger.Logger, endpoint string) (*maliciousJoiner, error) {
 	var attVariantOid variant.Variant
 	var err error
@@ -72,7 +140,7 @@ func newMaliciousJoiner(log *logger.Logger, endpoint string) (*maliciousJoiner, 
 		}
 	}
 
-	issuer := newMaliciousIssuer(attVariantOid)
+	issuer := newFakeIssuer(attVariantOid)
 
 	return &maliciousJoiner{
 		endpoint: endpoint,
@@ -81,12 +149,14 @@ func newMaliciousJoiner(log *logger.Logger, endpoint string) (*maliciousJoiner, 
 	}, nil
 }
 
+// maliciousJoiner simulates a malicious node joining a cluster.
 type maliciousJoiner struct {
 	endpoint string
 	logger   *logger.Logger
 	dialer   *dialer.Dialer
 }
 
+// join issues a join request to the join service endpoint.
 func (j *maliciousJoiner) join(ctx context.Context) (*joinproto.IssueJoinTicketResponse, error) {
 	j.logger.Debugf("Dialing join service endpoint %s", j.endpoint)
 	conn, err := j.dialer.Dial(ctx, j.endpoint)
@@ -113,18 +183,22 @@ func (j *maliciousJoiner) join(ctx context.Context) (*joinproto.IssueJoinTicketR
 	return res, nil
 }
 
-func newMaliciousIssuer(oid variant.Getter) *maliciousIssuer {
-	return &maliciousIssuer{oid}
+// newFakeIssuer creates a new fake issuer for a given attestation variant.
+func newFakeIssuer(oid variant.Getter) *fakeIssuer {
+	return &fakeIssuer{oid}
 }
 
-type maliciousIssuer struct {
+// fakeIssuer simulates an issuer that issues a fake / invalid attestation document.
+type fakeIssuer struct {
 	variant.Getter
 }
 
-func (i *maliciousIssuer) Issue(_ context.Context, userData, nonce []byte) ([]byte, error) {
+// Issue issues a fake attestation document.
+func (i *fakeIssuer) Issue(_ context.Context, userData, nonce []byte) ([]byte, error) {
 	return json.Marshal(fakeAttestationDoc{UserData: userData, Nonce: nonce})
 }
 
+// fakeAttestationDoc is a fake attestation document.
 type fakeAttestationDoc struct {
 	UserData []byte
 	Nonce    []byte
