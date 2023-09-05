@@ -58,7 +58,7 @@ func main() {
 			fmt.Printf("Test case %s failed: Expected error but got none\n", name)
 			testOutput.TestCases[name] = testCaseOutput{
 				Passed:  false,
-				Message: fmt.Sprintf("Expected error but got none: %s", err),
+				Message: fmt.Sprintf("Expected error but got none"),
 			}
 			allPassed = false
 		} else if !tc.wantErr && err != nil {
