@@ -23,12 +23,15 @@ runs:
         kubectl wait -n kube-system --for=condition=complete --timeout=10m job/malicious-join
         TEST_LOGS=$(kubectl logs -n kube-system job/malicious-join)
         JS_LOGS=$(kubectl logs -n kube-system svc/join-service)
+        LAST_JS_LOG=$(echo "$JS_LOGS" | tail -n 1)
         kubectl delete -n kube-system -f job.yaml
+        # The test passes if an error occurs when trying to join the cluster.
         if [[ "$TEST_LOGS" != *"PASS"* ]]; then
           echo "$TEST_LOGS" | tee -a "$GITHUB_OUTPUT"
           exit 1
         fi
-        if [[ "$JS_LOGS" != *"Failed to validate attestation document: validating attestation public key"* ]]; then
+        # The last log of the join service should be an error message about the attestation document.
+        if [[ "$LAST_JS_LOG" != *"Failed to validate attestation document: validating attestation public key"* ]]; then
           echo "$JS_LOGS" | tee -a "$GITHUB_OUTPUT"
           exit 1
         fi

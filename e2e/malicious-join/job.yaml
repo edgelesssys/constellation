@@ -7,11 +7,6 @@ spec:
     spec:
       containers:
         - name: malicious-join
-          image: ghcr.io/edgelesssys/malicious-join-test:0.0.1@sha256:a5c9129e7dfbf1c76a6c0ede199d89471d0d2627f7b9b7a826bdafb013420e76
-          command:
-            - /malicious-join.test
-            - --js-endpoint=join-service.kube-system:9090
-            - --csp=azure
-            - --variant=default
+          image: ghcr.io/edgelesssys/malicious-join-test:0.0.1@sha256:a7b1262ed13d144cd2b0bd2f5924b2596dc8acf24fbac4f044091dbe81a838ee
       restartPolicy: Never
   backoffLimit: 0 # Do not retry
