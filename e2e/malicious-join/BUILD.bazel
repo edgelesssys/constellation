@@ -1,6 +1,6 @@
-load("//bazel/go:go_test.bzl", "go_test")
 load("@rules_oci//oci:defs.bzl", "oci_image", "oci_push")
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
+load("//bazel/go:go_test.bzl", "go_test")
 
 go_test(
     name = "malicious-join_test",
