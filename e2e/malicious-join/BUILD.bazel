@@ -1,8 +1,15 @@
 load("//bazel/go:go_test.bzl", "go_test")
+load("@rules_oci//oci:defs.bzl", "oci_image", "oci_push")
+load("@rules_pkg//:pkg.bzl", "pkg_tar")
 
 go_test(
     name = "malicious-join_test",
+    testonly = False,
     srcs = ["malicious-join_test.go"],
+    gotags = ["e2e"],
+    pure = "on",
+    race = "off",
+    tags = ["manual"],
     deps = [
         "//internal/attestation/variant",
         "//internal/cloud/cloudprovider",
@@ -11,4 +18,29 @@ go_test(
         "//joinservice/joinproto",
         "@com_github_stretchr_testify//require",
     ],
+)
+
+pkg_tar(
+    name = "layer",
+    srcs = [
+        ":malicious-join_test",
+    ],
+    mode = "0755",
+    remap_paths = {"/malicious-join_test": "/malicious-join_test"},
+)
+
+oci_image(
+    name = "malicious-join_image",
+    base = "@distroless_static_linux_amd64",
+    entrypoint = ["/malicious-join_test"],
+    tars = [
+        ":layer",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+oci_push(
+    name = "malicious-join_push",
+    image = ":malicious-join_image",
+    repotags = ["ghcr.io/edgelesssys/malicious-join-test:latest"],
 )

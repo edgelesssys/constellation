@@ -18,7 +18,7 @@ runs:
         KUBECONFIG: ${{ inputs.kubeconfig }}
       working-directory: e2e/malicious-join
       run: |
-        yq eval -i "(.spec.template.spec.containers[0].command) = [ \"/malicious-join.test\", \"--js-endpoint=join-service.kube-system:9090\", \"--csp=${{ inputs.cloudProvider }}\", \"--variant=default\" ]" job.yaml
+        yq eval -i "(.spec.template.spec.containers[0].command) = [ \"/malicious-join_test\", \"--js-endpoint=join-service.kube-system:9090\", \"--csp=${{ inputs.cloudProvider }}\", \"--variant=default\" ]" job.yaml
         kubectl create ns malicious-join
         kubectl apply -n malicious-join -f job.yaml
         kubectl wait -n malicious-join --for=condition=complete --timeout=10m job/malicious-join

@@ -7,6 +7,6 @@ spec:
     spec:
       containers:
         - name: malicious-join
-          image: ghcr.io/edgelesssys/malicious-join-test:0.0.1@sha256:a7b1262ed13d144cd2b0bd2f5924b2596dc8acf24fbac4f044091dbe81a838ee
-      restartPolicy: Never
+          image: ghcr.io/edgelesssys/malicious-join-test:latest@sha256:af30b3355e81cc1704f3a952336946be15ef39f2f6c809962c0a8848e7f58550
+          restartPolicy: Never
   backoffLimit: 0 # Do not retry
