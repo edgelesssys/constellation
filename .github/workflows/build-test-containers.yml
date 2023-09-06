@@ -1,4 +1,4 @@
-name: Build logcollector images
+name: Build E2E test containers
 
 on:
   workflow_dispatch:
@@ -24,6 +24,7 @@ jobs:
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
-      - name: Build and upload Logstash container image
+      - name: Check CLI version
         shell: bash
+        run: |
         
