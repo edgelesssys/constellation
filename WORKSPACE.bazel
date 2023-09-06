@@ -1,5 +1,23 @@
 workspace(name = "constellation")
 
+# nixpkgs deps
+load("//bazel/toolchains:nixpkgs_deps.bzl", "nixpkgs_deps")
+
+nixpkgs_deps()
+
+load("@io_tweag_rules_nixpkgs//nixpkgs:repositories.bzl", "rules_nixpkgs_dependencies")
+
+rules_nixpkgs_dependencies()
+
+load("@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl", "nixpkgs_flake_package")
+
+nixpkgs_flake_package(
+    name = "mkosi",
+    nix_flake_file = "//:flake.nix",
+    nix_flake_lock_file = "//:flake.lock",
+    package = "mkosi",
+)
+
 # Python toolchain
 load("//bazel/toolchains:python_deps.bzl", "python_deps")
 
