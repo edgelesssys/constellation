@@ -609,7 +609,7 @@ type SkipPhases []SkipPhase
 // Contains returns true if the list of phases contains the given phase.
 func (s SkipPhases) Contains(phase SkipPhase) bool {
 	for _, p := range s {
-		if p == phase {
+		if strings.EqualFold(p, phase) {
 			return true
 		}
 	}
