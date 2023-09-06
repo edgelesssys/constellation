@@ -37,6 +37,20 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
+const (
+	// SkipInfrastructurePhase skips the terraform apply of the upgrade process.
+	SkipInfrastructurePhase SkipPhase = "infrastructure"
+	// SkipHelmPhase skips the helm upgrade of the upgrade process.
+	SkipHelmPhase SkipPhase = "helm"
+	// SkipNodePhase skips the node upgrade of the upgrade process.
+	SkipNodePhase SkipPhase = "node"
+	// SkipK8sPhase skips the k8s upgrade of the upgrade process.
+	SkipK8sPhase SkipPhase = "k8s"
+)
+
+// SkipPhase is a phase of the upgrade process that can be skipped.
+type SkipPhase string
+
 func newUpgradeApplyCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "apply",
@@ -53,6 +67,7 @@ func newUpgradeApplyCmd() *cobra.Command {
 		"Might be useful for slow connections or big clusters.")
 	cmd.Flags().Bool("conformance", false, "enable conformance mode")
 	cmd.Flags().Bool("skip-helm-wait", false, "install helm charts without waiting for deployments to be ready")
+	cmd.Flags().StringSlice("skip-phases", []string{}, "skip one or multiple phases of the upgrade process {infrastructure|helm|node|k8s}\n")
 	if err := cmd.Flags().MarkHidden("timeout"); err != nil {
 		panic(err)
 	}
@@ -172,9 +187,17 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
 
-	tfOutput, err := u.migrateTerraform(cmd, conf, upgradeDir, flags)
-	if err != nil {
-		return fmt.Errorf("performing Terraform migrations: %w", err)
+	var tfOutput terraform.ApplyOutput
+	if flags.SkipPhases.Contains(SkipInfrastructurePhase) {
+		tfOutput, err = u.clusterShower.ShowCluster(cmd.Context(), conf.GetProvider())
+		if err != nil {
+			return fmt.Errorf("getting Terraform output: %w", err)
+		}
+	} else {
+		tfOutput, err = u.migrateTerraform(cmd, conf, upgradeDir, flags)
+		if err != nil {
+			return fmt.Errorf("performing Terraform migrations: %w", err)
+		}
 	}
 	// reload idFile after terraform migration
 	// it might have been updated by the migration
@@ -197,26 +220,29 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 	}
 
 	var upgradeErr *compatibility.InvalidUpgradeError
-	err = u.handleServiceUpgrade(cmd, conf, idFile, tfOutput, validK8sVersion, upgradeDir, flags)
-	switch {
-	case errors.As(err, &upgradeErr):
-		cmd.PrintErrln(err)
-	case err == nil:
-		cmd.Println("Successfully upgraded Constellation services.")
-	case err != nil:
-		return fmt.Errorf("upgrading services: %w", err)
+	if !flags.SkipPhases.Contains(SkipHelmPhase) {
+		err = u.handleServiceUpgrade(cmd, conf, idFile, tfOutput, validK8sVersion, upgradeDir, flags)
+		switch {
+		case errors.As(err, &upgradeErr):
+			cmd.PrintErrln(err)
+		case err == nil:
+			cmd.Println("Successfully upgraded Constellation services.")
+		case err != nil:
+			return fmt.Errorf("upgrading services: %w", err)
+		}
 	}
 
-	err = u.kubeUpgrader.UpgradeNodeVersion(cmd.Context(), conf, flags.force)
-	switch {
-	case errors.Is(err, kubecmd.ErrInProgress):
-		cmd.PrintErrln("Skipping image and Kubernetes upgrades. Another upgrade is in progress.")
-	case errors.As(err, &upgradeErr):
-		cmd.PrintErrln(err)
-	case err != nil:
-		return fmt.Errorf("upgrading NodeVersion: %w", err)
+	if !flags.SkipPhases.Contains(SkipNodePhase) {
+		err = u.kubeUpgrader.UpgradeNodeVersion(cmd.Context(), conf, flags.force)
+		switch {
+		case errors.Is(err, kubecmd.ErrInProgress):
+			cmd.PrintErrln("Skipping image and Kubernetes upgrades. Another upgrade is in progress.")
+		case errors.As(err, &upgradeErr):
+			cmd.PrintErrln(err)
+		case err != nil:
+			return fmt.Errorf("upgrading NodeVersion: %w", err)
+		}
 	}
-
 	return nil
 }
 
@@ -516,6 +542,21 @@ func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
 	if skipHelmWait {
 		helmWaitMode = helm.WaitModeNone
 	}
+
+	rawSkipPhases, err := cmd.Flags().GetStringSlice("skip-phases")
+	if err != nil {
+		return upgradeApplyFlags{}, fmt.Errorf("parsing skip-phases flag: %w", err)
+	}
+	skipPhases := []SkipPhase{}
+	for _, phase := range rawSkipPhases {
+		switch SkipPhase(phase) {
+		case SkipInfrastructurePhase, SkipHelmPhase, SkipNodePhase, SkipK8sPhase:
+			skipPhases = append(skipPhases, SkipPhase(phase))
+		default:
+			return upgradeApplyFlags{}, fmt.Errorf("invalid phase %s", phase)
+		}
+	}
+
 	return upgradeApplyFlags{
 		pf:                pathprefix.New(workDir),
 		yes:               yes,
@@ -524,6 +565,7 @@ func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
 		terraformLogLevel: logLevel,
 		conformance:       conformance,
 		helmWaitMode:      helmWaitMode,
+		SkipPhases:        skipPhases,
 	}, nil
 }
 
@@ -558,6 +600,20 @@ type upgradeApplyFlags struct {
 	terraformLogLevel terraform.LogLevel
 	conformance       bool
 	helmWaitMode      helm.WaitMode
+	SkipPhases        SkipPhases
+}
+
+// SkipPhases is a list of phases that can be skipped during the upgrade process.
+type SkipPhases []SkipPhase
+
+// Contains returns true if the list of phases contains the given phase.
+func (s SkipPhases) Contains(phase SkipPhase) bool {
+	for _, p := range s {
+		if p == phase {
+			return true
+		}
+	}
+	return false
 }
 
 type kubernetesUpgrader interface {
