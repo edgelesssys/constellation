@@ -18,6 +18,10 @@ nixpkgs_flake_package(
     package = "mkosi",
 )
 
+load("//bazel/mkosi:mkosi_configure.bzl", "find_system_mkosi")
+
+find_system_mkosi(name="constellation_mkosi")
+
 # Python toolchain
 load("//bazel/toolchains:python_deps.bzl", "python_deps")
 

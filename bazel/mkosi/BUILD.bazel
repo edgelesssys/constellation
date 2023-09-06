@@ -1,0 +1,70 @@
+"""toolchain to wrap an mkosi binary.
+
+Type: @constellation//bazel/mkosi:toolchain_type
+
+Toolchains:
+- mkosi_missing_toolchain: provides a fallback toolchain for exec platforms
+  where mkosi might not be available.
+
+- mkosi_auto_toolchain: a toolchain that uses the installed mkosi. See
+  mkosi_configure.bzl%find_system_mkosi for usage.
+"""
+
+load(":toolchain.bzl", "is_mkosi_available", "mkosi_make_variables", "mkosi_toolchain")
+
+# Expose the availability of an actual mkosi as a config_setting, so we can
+# select() on it.
+config_setting(
+    name = "have_mkosi",
+    flag_values = {
+        ":is_mkosi_available": "1",
+    },
+    visibility = ["//visibility:public"],
+)
+
+# Expose the availability of an actual mkosi as a feature flag, so we can
+# create a config_setting from it.
+is_mkosi_available(
+    name = "is_mkosi_available",
+    visibility = ["//:__subpackages__"],
+)
+
+toolchain_type(
+    name = "toolchain_type",
+    visibility = ["//visibility:public"],
+)
+
+mkosi_make_variables(
+    name = "make_variables",
+    visibility = ["//visibility:public"],
+)
+
+# mkosi_missing_toolchain provides a fallback toolchain so that toolchain
+# resolution can succeed even on platforms that do not have a working mkosi.
+# If this toolchain is selected, the constraint ":have_mkosi" will not be
+# satistifed.
+mkosi_toolchain(
+    name = "no_mkosi",
+)
+
+toolchain(
+    name = "mkosi_missing_toolchain",
+    toolchain = ":no_mkosi",
+    toolchain_type = ":toolchain_type",
+)
+
+mkosi_toolchain(
+    name = "nix_mkosi",
+    label = "@mkosi//:bin/mkosi",
+)
+
+toolchain(
+    name = "mkosi_nix_toolchain",
+    exec_compatible_with = [
+        "@rules_nixpkgs_core//constraints:support_nix",
+    ],
+    toolchain = ":nix_mkosi",
+    toolchain_type = "@constellation//bazel/mkosi:toolchain_type",
+)
+
+exports_files(["mkosi_wrapper.sh.in"])
