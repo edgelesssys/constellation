@@ -159,7 +159,7 @@ func TestUpgradeApply(t *testing.T) {
 				return
 			}
 			assert.NoError(err)
-			assert.Equal(!tc.flags.skipPhases.Contains(skipNodePhase), tc.kubeUpgrader.calledNodeUpgrade,
+			assert.Equal(!tc.flags.skipPhases.contains(skipNodePhase), tc.kubeUpgrader.calledNodeUpgrade,
 				"incorrect node upgrade skipping behavior")
 		})
 	}

@@ -189,7 +189,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 	}
 
 	var tfOutput terraform.ApplyOutput
-	if flags.skipPhases.Contains(skipInfrastructurePhase) {
+	if flags.skipPhases.contains(skipInfrastructurePhase) {
 		tfOutput, err = u.clusterShower.ShowCluster(cmd.Context(), conf.GetProvider())
 		if err != nil {
 			return fmt.Errorf("getting Terraform output: %w", err)
@@ -221,7 +221,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 	}
 
 	var upgradeErr *compatibility.InvalidUpgradeError
-	if !flags.skipPhases.Contains(skipHelmPhase) {
+	if !flags.skipPhases.contains(skipHelmPhase) {
 		err = u.handleServiceUpgrade(cmd, conf, idFile, tfOutput, validK8sVersion, upgradeDir, flags)
 		switch {
 		case errors.As(err, &upgradeErr):
@@ -233,7 +233,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 		}
 	}
 
-	if !flags.skipPhases.Contains(skipNodePhase) {
+	if !flags.skipPhases.contains(skipNodePhase) {
 		err = u.kubeUpgrader.UpgradeNodeVersion(cmd.Context(), conf, flags.force)
 		switch {
 		case errors.Is(err, kubecmd.ErrInProgress):
@@ -607,8 +607,8 @@ type upgradeApplyFlags struct {
 // skipPhases is a list of phases that can be skipped during the upgrade process.
 type skipPhases []skipPhase
 
-// Contains returns true if the list of phases contains the given phase.
-func (s skipPhases) Contains(phase skipPhase) bool {
+// contains returns true if the list of phases contains the given phase.
+func (s skipPhases) contains(phase skipPhase) bool {
 	for _, p := range s {
 		if strings.EqualFold(string(p), string(phase)) {
 			return true
