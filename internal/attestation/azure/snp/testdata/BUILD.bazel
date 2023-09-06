@@ -8,6 +8,7 @@ go_library(
         "vcek.cert",
         "certchain.pem",
         "runtimedata.bin",
+        "vcek.pem",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp/testdata",
     visibility = ["//:__subpackages__"],
