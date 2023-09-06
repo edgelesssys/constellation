@@ -70,9 +70,9 @@ sh_template(
         "@yq_toolchains//:resolved_toolchain",
     ],
     substitutions = {
+        "@@REPO_TAG@@": "$(rootpath :repotag.txt)",
         "@@TEMPLATE@@": "$(rootpath :job.yaml)",
         "@@YQ_BIN@@": "$(rootpath @yq_toolchains//:resolved_toolchain)",
-        "@@REPO_TAG@@": "$(rootpath :repotag.txt)",
     },
     template = "job_template.sh.in",
     visibility = ["//visibility:public"],
