@@ -113,7 +113,34 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 	}
 
 	// Verify the attestation report's certificates.
-	if err := v.attestationVerifier.SnpAttestation(att, &verify.Options{}); err != nil {
+	trustedArk := x509.Certificate(v.config.AMDRootKey)             // ARK, specified in Constellation config.
+	ask, err := x509.ParseCertificate(att.CertificateChain.AskCert) // ASK, as reported from THIM / KDS.
+	if err != nil {
+		return nil, fmt.Errorf("parsing ASK certificate: %w", err)
+	}
+	// We verify the ASK certificate against the ARK certificate, since the ARK certificate is the root certificate
+	// and inherently trusted. This check should also be performed by go-sev-guest, but as we have to specify both ASK and ARK for
+	// the trusted roots, this needs to be done here as well.
+	rootPool := x509.NewCertPool()
+	rootPool.AddCert(&trustedArk)
+	if _, err := ask.Verify(x509.VerifyOptions{
+		Roots: rootPool,
+	}); err != nil {
+		return nil, fmt.Errorf("verifying ASK certificate: %w", err)
+	}
+	if err := v.attestationVerifier.SnpAttestation(att, &verify.Options{
+		TrustedRoots: map[string][]*trust.AMDRootCerts{
+			"Milan": {
+				{
+					Product: "Milan",
+					ProductCerts: &trust.ProductCerts{
+						Ask: ask,
+						Ark: &trustedArk,
+					},
+				},
+			},
+		},
+	}); err != nil {
 		return nil, fmt.Errorf("verifying SNP attestation: %w", err)
 	}
 
@@ -360,6 +387,10 @@ func (a *azureInstanceInfo) parseVCEK() (vcek *x509.Certificate, retErr error) {
 		retErr = fmt.Errorf("no PEM blocks found")
 		return
 	}
+	if len(rest) != 0 {
+		retErr = fmt.Errorf("received more data than expected")
+		return
+	}
 	if block.Type != "CERTIFICATE" {
 		retErr = fmt.Errorf("expected PEM block type 'CERTIFICATE', got '%s'", block.Type)
 		return
@@ -368,11 +399,6 @@ func (a *azureInstanceInfo) parseVCEK() (vcek *x509.Certificate, retErr error) {
 	vcek, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
 		retErr = fmt.Errorf("parsing VCEK certificate: %w", err)
-		return
-	}
-
-	if len(rest) != 0 {
-		retErr = fmt.Errorf("remaining PEM block is not a valid certificate: %s", rest)
 		return
 	}
 
