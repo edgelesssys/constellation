@@ -111,7 +111,7 @@ func TestUpgradeApply(t *testing.T) {
 			helmUpgrader:      &mockApplier{}, // mocks ensure that no methods are called
 			terraformUpgrader: &mockTerraformUpgrader{},
 			flags: upgradeApplyFlags{
-				SkipPhases: []SkipPhase{SkipInfrastructurePhase, SkipHelmPhase, SkipK8sPhase, SkipNodePhase},
+				skipPhases: []skipPhase{skipInfrastructurePhase, skipHelmPhase, skipK8sPhase, skipNodePhase},
 				yes:        true,
 			},
 		},
@@ -122,7 +122,7 @@ func TestUpgradeApply(t *testing.T) {
 			helmUpgrader:      &mockApplier{}, // mocks ensure that no methods are called
 			terraformUpgrader: &mockTerraformUpgrader{},
 			flags: upgradeApplyFlags{
-				SkipPhases: []SkipPhase{SkipInfrastructurePhase, SkipHelmPhase, SkipK8sPhase},
+				skipPhases: []skipPhase{skipInfrastructurePhase, skipHelmPhase, skipK8sPhase},
 				yes:        true,
 			},
 		},
@@ -159,7 +159,7 @@ func TestUpgradeApply(t *testing.T) {
 				return
 			}
 			assert.NoError(err)
-			assert.Equal(!tc.flags.SkipPhases.Contains(SkipNodePhase), tc.kubeUpgrader.calledNodeUpgrade,
+			assert.Equal(!tc.flags.skipPhases.Contains(skipNodePhase), tc.kubeUpgrader.calledNodeUpgrade,
 				"incorrect node upgrade skipping behavior")
 		})
 	}
@@ -175,7 +175,7 @@ func TestUpgradeApplyFlagsForSkipPhases(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error while parsing flags: %v", err)
 	}
-	assert.ElementsMatch(t, []SkipPhase{SkipInfrastructurePhase, SkipHelmPhase, SkipK8sPhase, SkipNodePhase}, result.SkipPhases)
+	assert.ElementsMatch(t, []skipPhase{skipInfrastructurePhase, skipHelmPhase, skipK8sPhase, skipNodePhase}, result.skipPhases)
 }
 
 type stubKubernetesUpgrader struct {
