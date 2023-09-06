@@ -3,6 +3,10 @@ name: Build CLI and prepare release
 on:
   workflow_dispatch:
     inputs:
+      versionName:
+        type: string
+        description: "Version to use for the release (e.g. v1.2.3)"
+        required: true
       ref:
         type: string
         description: "Git ref to checkout"
@@ -22,6 +26,10 @@ on:
         required: true
   workflow_call:
     inputs:
+      versionName:
+        type: string
+        description: "Version to use for the release (e.g. v1.2.3)"
+        required: true
       ref:
         type: string
         description: "Git ref to checkout"
@@ -387,7 +395,7 @@ jobs:
         with:
           draft: true
           generate_release_notes: true
-          tag_name: ${{ inputs.ref }}
+          tag_name: ${{ inputs.versionName || inputs.ref || github.head_ref }}
           files: |
             constellation-*
             cosign.pub

@@ -239,30 +239,9 @@ jobs:
           git commit -m "attestation: hardcode measurements for ${VERSION}"
           git push
 
-  tag-release:
-    name: Tag release
-    needs: [verify-inputs, update-hardcoded-measurements]
-    runs-on: ubuntu-22.04
-    permissions:
-      contents: write
-    env:
-      VERSION: ${{ inputs.version }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
-        with:
-          ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
-
-      - name: Tag release
-        run: |
-          git config --global user.name "edgelessci"
-          git config --global user.email "edgelessci@users.noreply.github.com"
-          git tag -a "${VERSION}" -m "Release ${VERSION}"
-          git push --force origin "refs/tags/${VERSION}" # force push to overwrite existing tag
-
   draft-release-cli:
     name: Draft release (CLI)
-    needs: [verify-inputs, tag-release]
+    needs: [verify-inputs, update-hardcoded-measurements]
     uses: ./.github/workflows/release-cli.yml
     permissions:
       actions: read
@@ -271,7 +250,8 @@ jobs:
       packages: write
     secrets: inherit
     with:
-      ref: "refs/tags/${{ inputs.version }}"
+      versionName: ${{ inputs.version }}
+      ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
       pushContainers: true
       key: 'release'
 
