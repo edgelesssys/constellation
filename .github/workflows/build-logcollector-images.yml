@@ -25,5 +25,15 @@ jobs:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
       - name: Build and upload Logstash container image
-        shell: bash
-        
+        uses: ./.github/actions/build_micro_service
+        with:
+          name: logstash-debugd
+          dockerfile: debugd/logstash/Dockerfile
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and upload Filebeat container image
+        uses: ./.github/actions/build_micro_service
+        with:
+          name: filebeat-debugd
+          dockerfile: debugd/filebeat/Dockerfile
+          githubToken: ${{ secrets.GITHUB_TOKEN }}

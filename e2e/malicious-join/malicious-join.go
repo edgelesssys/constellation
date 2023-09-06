@@ -23,22 +23,20 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var (
-	jsEndpoint = flag.String("js-endpoint", "", "Join service endpoint to use.")
-	csp        = flag.String("csp", "", "Cloud service provider to use.")
-	attVariant = flag.String(
+func main() {
+	jsEndpoint := flag.String("js-endpoint", "", "Join service endpoint to use.")
+	csp := flag.String("csp", "", "Cloud service provider to use.")
+	attVariant := flag.String(
 		"variant",
 		"",
-		fmt.Sprintf("Attestation variant to use. Set to \"default\" to use the default attestation variant for the CSP, or one of: %s", variant.GetAvailableAttestationVariants()),
+		fmt.Sprintf("Attestation variant to use. Set to \"default\" to use the default attestation variant for the CSP,"+
+			"or one of: %s", variant.GetAvailableAttestationVariants()),
 	)
-)
-
-func main() {
 	flag.Parse()
-	fmt.Println(formatFlags())
+	fmt.Println(formatFlags(*attVariant, *csp, *jsEndpoint))
 
 	testCases := map[string]struct {
-		fn      func() error
+		fn      func(attVariant, csp, jsEndpoint string) error
 		wantErr bool
 	}{
 		"JoinFromUnattestedNode": {
@@ -53,7 +51,9 @@ func main() {
 	}
 	for name, tc := range testCases {
 		fmt.Printf("Running testcase %s\n", name)
-		err := tc.fn()
+
+		err := tc.fn(*attVariant, *csp, *jsEndpoint)
+
 		switch {
 		case err == nil && tc.wantErr:
 			fmt.Printf("Test case %s failed: Expected error but got none\n", name)
@@ -85,6 +85,7 @@ func main() {
 			panic("invalid result")
 		}
 	}
+
 	testOutput.AllPassed = allPassed
 	out, err := json.Marshal(testOutput)
 	if err != nil {
@@ -103,20 +104,20 @@ type testCaseOutput struct {
 	Message string `json:"message"`
 }
 
-func formatFlags() string {
+func formatFlags(attVariant, csp, jsEndpoint string) string {
 	var sb strings.Builder
 	sb.WriteString("Using Flags:\n")
-	sb.WriteString(fmt.Sprintf("\tjs-endpoint: %s\n", *jsEndpoint))
-	sb.WriteString(fmt.Sprintf("\tcsp: %s\n", *csp))
-	sb.WriteString(fmt.Sprintf("\tvariant: %s\n", *attVariant))
+	sb.WriteString(fmt.Sprintf("\tjs-endpoint: %s\n", jsEndpoint))
+	sb.WriteString(fmt.Sprintf("\tcsp: %s\n", csp))
+	sb.WriteString(fmt.Sprintf("\tvariant: %s\n", attVariant))
 	return sb.String()
 }
 
 // JoinFromUnattestedNode simulates a join request from a Node that uses a stub issuer
 // and thus cannot be attested correctly.
-func JoinFromUnattestedNode() error {
+func JoinFromUnattestedNode(attVariant, csp, jsEndpoint string) error {
 	log := logger.New(logger.JSONLog, zapcore.DebugLevel)
-	joiner, err := newMaliciousJoiner(log, *jsEndpoint)
+	joiner, err := newMaliciousJoiner(attVariant, csp, jsEndpoint, log)
 	if err != nil {
 		return fmt.Errorf("creating malicious joiner: %w", err)
 	}
@@ -130,13 +131,13 @@ func JoinFromUnattestedNode() error {
 
 // newMaliciousJoiner creates a new malicious joiner, i.e. a simulated node that issues
 // an invalid join request.
-func newMaliciousJoiner(log *logger.Logger, endpoint string) (*maliciousJoiner, error) {
+func newMaliciousJoiner(attVariant, csp, endpoint string, log *logger.Logger) (*maliciousJoiner, error) {
 	var attVariantOid variant.Variant
 	var err error
-	if strings.EqualFold(*attVariant, "default") {
-		attVariantOid = variant.GetDefaultAttestation(cloudprovider.FromString(*csp))
+	if strings.EqualFold(attVariant, "default") {
+		attVariantOid = variant.GetDefaultAttestation(cloudprovider.FromString(csp))
 	} else {
-		attVariantOid, err = variant.FromString(*attVariant)
+		attVariantOid, err = variant.FromString(attVariant)
 		if err != nil {
 			return nil, fmt.Errorf("parsing attestation variant: %w", err)
 		}

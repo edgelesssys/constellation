@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 YQ=$(realpath @@YQ_BIN@@)
 TEMPLATE=$(realpath @@TEMPLATE@@)
 export REPO_TAG=$(realpath @@REPO_TAG@@)
