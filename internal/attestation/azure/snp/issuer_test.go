@@ -103,6 +103,8 @@ func TestGetSNPAttestation(t *testing.T) {
 			err = json.Unmarshal(attestationJSON, &instanceInfo)
 			require.NoError(err)
 
+			assert.Equal(params.VcekCert, instanceInfo.VCEK)
+			assert.Equal(params.VcekChain, instanceInfo.CertChain)
 			assert.Equal(params.SNPReport, instanceInfo.AttestationReport)
 			assert.Equal(params.RuntimeData, instanceInfo.RuntimeData)
 			assert.Equal(tc.maaToken, instanceInfo.MAAToken)

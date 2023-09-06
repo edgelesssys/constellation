@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
@@ -66,47 +67,170 @@ func TestNewValidator(t *testing.T) {
 	}
 }
 
+// TestParseCertChain tests the parsing of the certificate chain.
+func TestParseCertChain(t *testing.T) {
+	defaultCertChain := testdata.CertChain
+	askOnly := strings.Split(string(defaultCertChain), "-----END CERTIFICATE-----")[0] + "-----END CERTIFICATE-----"
+	arkOnly := strings.Split(string(defaultCertChain), "-----END CERTIFICATE-----")[1] + "-----END CERTIFICATE-----"
+
+	testCases := map[string]struct {
+		certChain []byte
+		wantAsk   bool
+		wantArk   bool
+		wantErr   bool
+	}{
+		"success": {
+			certChain: defaultCertChain,
+			wantAsk:   true,
+			wantArk:   true,
+		},
+		"empty cert chain": {
+			certChain: []byte{},
+			wantErr:   true,
+		},
+		"more than two certificates": {
+			certChain: append(defaultCertChain, defaultCertChain...),
+			wantErr:   true,
+		},
+		"invalid certificate": {
+			certChain: []byte("invalid"),
+			wantErr:   true,
+		},
+		"ark missing": {
+			certChain: []byte(askOnly),
+			wantAsk:   true,
+		},
+		"ask missing": {
+			certChain: []byte(arkOnly),
+			wantArk:   true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			instanceInfo := &azureInstanceInfo{
+				CertChain: tc.certChain,
+			}
+
+			ask, ark, err := instanceInfo.parseCertChain()
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.wantAsk, ask != nil)
+				assert.Equal(tc.wantArk, ark != nil)
+			}
+		})
+	}
+}
+
+// TestParseVCEK tests the parsing of the VCEK certificate.
+func TestParseVCEK(t *testing.T) {
+	testCases := map[string]struct {
+		VCEK    []byte
+		wantErr bool
+	}{
+		"success": {
+			VCEK: testdata.AzureThimVCEK,
+		},
+		"malformed": {
+			VCEK:    testdata.AzureThimVCEK[:len(testdata.AzureThimVCEK)-100],
+			wantErr: true,
+		},
+		"invalid": {
+			VCEK:    []byte("invalid"),
+			wantErr: true,
+		},
+		"empty": {
+			VCEK:    []byte{},
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			instanceInfo := &azureInstanceInfo{
+				VCEK: tc.VCEK,
+			}
+
+			vcek, err := instanceInfo.parseVCEK()
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.NotNil(vcek)
+			}
+		})
+	}
+}
+
 // TestInstanceInfoAttestation tests the basic unmarshalling of the attestation report.
 func TestInstanceInfoAttestation(t *testing.T) {
 	defaultReport := testdata.AttestationReport
 	cfg := config.DefaultForAzureSEVSNP()
 
 	testCases := map[string]struct {
-		report  []byte
-		getter  *stubHTTPSGetter
-		wantErr bool
+		report    []byte
+		vcek      []byte
+		certChain []byte
+		getter    *stubHTTPSGetter
+		wantErr   bool
 	}{
-		"report too short": {
-			report: defaultReport[:len(defaultReport)-100],
+		"success": {
+			report:    defaultReport,
+			vcek:      testdata.AzureThimVCEK,
+			certChain: testdata.CertChain,
+		},
+		"retrieve vcek": {
+			report:    defaultReport,
+			certChain: testdata.CertChain,
 			getter: newStubHTTPSGetter(
-				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
+				&urlResponseMatcher{
+					vcekResponse:    testdata.AmdKdsVCEK,
+					wantVcekRequest: true,
+				},
 				nil,
 			),
+		},
+		"retrieve certchain": {
+			report: defaultReport,
+			vcek:   testdata.AzureThimVCEK,
+			getter: newStubHTTPSGetter(
+				&urlResponseMatcher{
+					certChainResponse:    testdata.CertChain,
+					wantCertChainRequest: true,
+				},
+				nil,
+			),
+		},
+		"retrieve vcek and certchain": {
+			report: defaultReport,
+			getter: newStubHTTPSGetter(
+				&urlResponseMatcher{
+					certChainResponse:    testdata.CertChain,
+					vcekResponse:         testdata.AmdKdsVCEK,
+					wantCertChainRequest: true,
+					wantVcekRequest:      true,
+				},
+				nil,
+			),
+		},
+		"report too short": {
+			report:  defaultReport[:len(defaultReport)-100],
 			wantErr: true,
 		},
 		"corrupted report": {
-			report: defaultReport[10 : len(defaultReport)-10],
-			getter: newStubHTTPSGetter(
-				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
-				nil,
-			),
+			report:  defaultReport[10 : len(defaultReport)-10],
 			wantErr: true,
 		},
 		"certificate fetch error": {
-			report: defaultReport[10 : len(defaultReport)-10],
-			getter: newStubHTTPSGetter(
-				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
-				assert.AnError,
-			),
+			report:  defaultReport,
+			getter:  newStubHTTPSGetter(nil, assert.AnError),
 			wantErr: true,
-		},
-		"success": {
-			report: defaultReport,
-			getter: newStubHTTPSGetter(
-				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
-				nil,
-			),
-			wantErr: false,
 		},
 	}
 	for name, tc := range testCases {
@@ -116,20 +240,24 @@ func TestInstanceInfoAttestation(t *testing.T) {
 
 			instanceInfo := azureInstanceInfo{
 				AttestationReport: tc.report,
+				CertChain:         tc.certChain,
+				VCEK:              tc.vcek,
 			}
 
-			report, err := instanceInfo.attestationWithCerts(tc.getter)
+			att, err := instanceInfo.attestationWithCerts(logger.NewTest(t), tc.getter)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				require.NoError(err)
-				assert.NotNil(report)
+				assert.NotNil(att)
+				assert.NotNil(att.CertificateChain)
+				assert.NotNil(att.Report)
 
-				assert.Equal(hex.EncodeToString(report.Report.IdKeyDigest[:]), "57e229e0ffe5fa92d0faddff6cae0e61c926fc9ef9afd20a8b8cfcf7129db9338cbe5bf3f6987733a2bf65d06dc38fc1")
+				assert.Equal(hex.EncodeToString(att.Report.IdKeyDigest[:]), "57e229e0ffe5fa92d0faddff6cae0e61c926fc9ef9afd20a8b8cfcf7129db9338cbe5bf3f6987733a2bf65d06dc38fc1")
 
 				// This is a canary for us: If this fails in the future we possibly downgraded a SVN.
 				// See https://github.com/google/go-sev-guest/blob/14ac50e9ffcc05cd1d12247b710c65093beedb58/validate/validate.go#L336 for decomposition of the values.
-				tcbValues := kds.DecomposeTCBVersion(kds.TCBVersion(report.Report.GetLaunchTcb()))
+				tcbValues := kds.DecomposeTCBVersion(kds.TCBVersion(att.Report.GetLaunchTcb()))
 				assert.True(tcbValues.BlSpl >= cfg.BootloaderVersion.Value)
 				assert.True(tcbValues.TeeSpl >= cfg.TEEVersion.Value)
 				assert.True(tcbValues.SnpSpl >= cfg.SNPVersion.Value)
@@ -155,29 +283,31 @@ func (s *stubHTTPSGetter) Get(url string) ([]byte, error) {
 	if s.err != nil {
 		return nil, s.err
 	}
-	return s.urlResponseMatcher.match(url), nil
+	return s.urlResponseMatcher.match(url)
 }
 
 type urlResponseMatcher struct {
-	certChainResponse []byte
-	vcekResponse      []byte
+	certChainResponse    []byte
+	wantCertChainRequest bool
+	vcekResponse         []byte
+	wantVcekRequest      bool
 }
 
-func newURLResponseMatcher(certChainResponse []byte, vcekResponse []byte) *urlResponseMatcher {
-	return &urlResponseMatcher{
-		certChainResponse: certChainResponse,
-		vcekResponse:      vcekResponse,
-	}
-}
-
-func (m *urlResponseMatcher) match(url string) []byte {
+func (m *urlResponseMatcher) match(url string) ([]byte, error) {
 	switch {
 	case url == "https://kdsintf.amd.com/vcek/v1/Milan/cert_chain":
-		return m.certChainResponse
+		if !m.wantCertChainRequest {
+			return nil, fmt.Errorf("unexpected cert_chain request")
+		}
+		return m.certChainResponse, nil
 	case regexp.MustCompile(`https:\/\/kdsintf.amd.com\/vcek\/v1\/Milan\/.*`).MatchString(url):
-		return m.vcekResponse
+		if !m.wantVcekRequest {
+			return nil, fmt.Errorf("unexpected VCEK request")
+		}
+		return m.vcekResponse, nil
+	default:
+		return nil, fmt.Errorf("unexpected URL: %s", url)
 	}
-	return nil
 }
 
 // TestCheckIDKeyDigest tests validation of an IDKeyDigest under different enforcement policies.
@@ -414,6 +544,8 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 	testCases := map[string]struct {
 		report               string
 		runtimeData          string
+		vcek                 []byte
+		certChain            []byte
 		acceptedIDKeyDigests idkeydigest.List
 		enforcementPolicy    idkeydigest.Enforcement
 		getter               *stubHTTPSGetter
@@ -429,8 +561,10 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforcementPolicy:    idkeydigest.Equal,
 			verifier:             defaultVerifier,
 			validator:            defaultValidator,
+			vcek:                 testdata.AzureThimVCEK,
+			certChain:            testdata.CertChain,
 			getter: newStubHTTPSGetter(
-				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
+				&urlResponseMatcher{},
 				nil,
 			),
 		},
@@ -442,13 +576,62 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			verifier:             defaultVerifier,
 			validator:            defaultValidator,
 			getter: newStubHTTPSGetter(
-				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
+				nil,
 				assert.AnError,
 			),
 			wantErr: true,
 			assertion: func(assert *assert.Assertions, err error) {
-				assert.ErrorContains(err, "could not download VCEK certificate")
+				assert.ErrorContains(err, "retrieving VCEK certificate from AMD KDS")
 			},
+		},
+		"fetch vcek and certchain": {
+			report:               defaultReport,
+			runtimeData:          defaultRuntimeData,
+			acceptedIDKeyDigests: defaultIDKeyDigest,
+			enforcementPolicy:    idkeydigest.Equal,
+			verifier:             defaultVerifier,
+			validator:            defaultValidator,
+			getter: newStubHTTPSGetter(
+				&urlResponseMatcher{
+					vcekResponse:         testdata.AmdKdsVCEK,
+					wantVcekRequest:      true,
+					certChainResponse:    testdata.CertChain,
+					wantCertChainRequest: true,
+				},
+				nil,
+			),
+		},
+		"fetch vcek": {
+			report:               defaultReport,
+			runtimeData:          defaultRuntimeData,
+			acceptedIDKeyDigests: defaultIDKeyDigest,
+			enforcementPolicy:    idkeydigest.Equal,
+			verifier:             defaultVerifier,
+			validator:            defaultValidator,
+			certChain:            testdata.CertChain,
+			getter: newStubHTTPSGetter(
+				&urlResponseMatcher{
+					vcekResponse:    testdata.AmdKdsVCEK,
+					wantVcekRequest: true,
+				},
+				nil,
+			),
+		},
+		"fetch certchain": {
+			report:               defaultReport,
+			runtimeData:          defaultRuntimeData,
+			acceptedIDKeyDigests: defaultIDKeyDigest,
+			enforcementPolicy:    idkeydigest.Equal,
+			verifier:             defaultVerifier,
+			validator:            defaultValidator,
+			vcek:                 testdata.AzureThimVCEK,
+			getter: newStubHTTPSGetter(
+				&urlResponseMatcher{
+					certChainResponse:    testdata.CertChain,
+					wantCertChainRequest: true,
+				},
+				nil,
+			),
 		},
 		"invalid report signature": {
 			report: reportTransformer(defaultReport, func(r *spb.Report) {
@@ -459,8 +642,10 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforcementPolicy:    idkeydigest.Equal,
 			verifier:             defaultVerifier,
 			validator:            defaultValidator,
+			vcek:                 testdata.AzureThimVCEK,
+			certChain:            testdata.CertChain,
 			getter: newStubHTTPSGetter(
-				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
+				&urlResponseMatcher{},
 				nil,
 			),
 			wantErr: true,
@@ -475,8 +660,13 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforcementPolicy:    idkeydigest.Equal,
 			verifier:             defaultVerifier,
 			validator:            defaultValidator,
+			vcek:                 []byte("invalid"),
+			certChain:            testdata.CertChain,
 			getter: newStubHTTPSGetter(
-				newURLResponseMatcher(testdata.CertChain, []byte("invalid")),
+				&urlResponseMatcher{
+					vcekResponse:    []byte("invalid"),
+					wantVcekRequest: true,
+				},
 				nil,
 			),
 			wantErr: true,
@@ -491,8 +681,13 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforcementPolicy:    idkeydigest.Equal,
 			verifier:             defaultVerifier,
 			validator:            defaultValidator,
+			vcek:                 testdata.AzureThimVCEK,
+			certChain:            []byte("invalid"),
 			getter: newStubHTTPSGetter(
-				newURLResponseMatcher([]byte("invalid"), testdata.VCEK),
+				&urlResponseMatcher{
+					certChainResponse:    []byte("invalid"),
+					wantCertChainRequest: true,
+				},
 				nil,
 			),
 		},
@@ -503,8 +698,10 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforcementPolicy:    idkeydigest.Equal,
 			verifier:             defaultVerifier,
 			validator:            defaultValidator,
+			vcek:                 testdata.AzureThimVCEK,
+			certChain:            testdata.CertChain,
 			getter: newStubHTTPSGetter(
-				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
+				&urlResponseMatcher{},
 				nil,
 			),
 			wantErr: true,
@@ -519,8 +716,10 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforcementPolicy:    idkeydigest.Equal,
 			verifier:             defaultVerifier,
 			validator:            defaultValidator,
+			vcek:                 testdata.AzureThimVCEK,
+			certChain:            testdata.CertChain,
 			getter: newStubHTTPSGetter(
-				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
+				&urlResponseMatcher{},
 				nil,
 			),
 			wantErr: true,
@@ -535,8 +734,10 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforcementPolicy:    idkeydigest.Equal,
 			verifier:             defaultVerifier,
 			validator:            defaultValidator,
+			vcek:                 testdata.AzureThimVCEK,
+			certChain:            testdata.CertChain,
 			getter: newStubHTTPSGetter(
-				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
+				&urlResponseMatcher{},
 				nil,
 			),
 			wantErr: true,
@@ -551,18 +752,18 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforcementPolicy:    idkeydigest.WarnOnly,
 			verifier:             defaultVerifier,
 			validator:            defaultValidator,
+			vcek:                 testdata.AzureThimVCEK,
+			certChain:            testdata.CertChain,
 			getter: newStubHTTPSGetter(
-				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
+				&urlResponseMatcher{},
 				nil,
 			),
 		},
 		"launch tcb < minimum launch tcb": {
 			report: reportTransformer(defaultReport, func(r *spb.Report) {
 				launchTcb := kds.DecomposeTCBVersion(kds.TCBVersion(r.LaunchTcb))
-				fmt.Println(launchTcb)
 				defaultCfg.MicrocodeVersion.Value = 10
 				launchTcb.UcodeSpl = 9
-				fmt.Println(launchTcb)
 				newLaunchTcb, err := kds.ComposeTCBParts(launchTcb)
 				require.NoError(err)
 				r.LaunchTcb = uint64(newLaunchTcb)
@@ -572,8 +773,10 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforcementPolicy:    idkeydigest.WarnOnly,
 			verifier:             skipVerifier,
 			validator:            defaultValidator,
+			vcek:                 testdata.AzureThimVCEK,
+			certChain:            testdata.CertChain,
 			getter: newStubHTTPSGetter(
-				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
+				&urlResponseMatcher{},
 				nil,
 			),
 			wantErr: true,
@@ -594,8 +797,10 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforcementPolicy:    idkeydigest.WarnOnly,
 			verifier:             skipVerifier,
 			validator:            defaultValidator,
+			vcek:                 testdata.AzureThimVCEK,
+			certChain:            testdata.CertChain,
 			getter: newStubHTTPSGetter(
-				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
+				&urlResponseMatcher{},
 				nil,
 			),
 			wantErr: true,
@@ -612,8 +817,10 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforcementPolicy:    idkeydigest.WarnOnly,
 			verifier:             skipVerifier,
 			validator:            defaultValidator,
+			vcek:                 testdata.AzureThimVCEK,
+			certChain:            testdata.CertChain,
 			getter: newStubHTTPSGetter(
-				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
+				&urlResponseMatcher{},
 				nil,
 			),
 			wantErr: true,
@@ -624,7 +831,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 		"current tcb < tcb in vcek": {
 			report: reportTransformer(defaultReport, func(r *spb.Report) {
 				currentTcb := kds.DecomposeTCBVersion(kds.TCBVersion(r.CurrentTcb))
-				currentTcb.UcodeSpl = 0x5c // testdata.VCEK has ucode version 0x5d
+				currentTcb.UcodeSpl = 0x5c // testdata.AzureThimVCEK has ucode version 0x5d
 				newCurrentTcb, err := kds.ComposeTCBParts(currentTcb)
 				require.NoError(err)
 				r.CurrentTcb = uint64(newCurrentTcb)
@@ -634,8 +841,10 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforcementPolicy:    idkeydigest.WarnOnly,
 			verifier:             skipVerifier,
 			validator:            defaultValidator,
+			vcek:                 testdata.AzureThimVCEK,
+			certChain:            testdata.CertChain,
 			getter: newStubHTTPSGetter(
-				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
+				&urlResponseMatcher{},
 				nil,
 			),
 			wantErr: true,
@@ -652,8 +861,10 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforcementPolicy:    idkeydigest.WarnOnly,
 			verifier:             skipVerifier,
 			validator:            defaultValidator,
+			vcek:                 testdata.AzureThimVCEK,
+			certChain:            testdata.CertChain,
 			getter: newStubHTTPSGetter(
-				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
+				&urlResponseMatcher{},
 				nil,
 			),
 			wantErr: true,
@@ -670,8 +881,10 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforcementPolicy:    idkeydigest.Equal,
 			verifier:             skipVerifier,
 			validator:            defaultValidator,
+			vcek:                 testdata.AzureThimVCEK,
+			certChain:            testdata.CertChain,
 			getter: newStubHTTPSGetter(
-				newURLResponseMatcher(testdata.CertChain, testdata.VCEK),
+				&urlResponseMatcher{},
 				nil,
 			),
 			wantErr: true,
@@ -685,7 +898,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			instanceInfo, err := newStubAzureInstanceInfo(tc.report, tc.runtimeData)
+			instanceInfo, err := newStubAzureInstanceInfo(tc.vcek, tc.certChain, tc.report, tc.runtimeData)
 			assert.NoError(err)
 
 			statement, err := json.Marshal(instanceInfo)
@@ -755,9 +968,11 @@ func (v *stubAttestationValidator) SnpAttestation(attestation *spb.Attestation, 
 type stubAzureInstanceInfo struct {
 	AttestationReport []byte
 	RuntimeData       []byte
+	VCEK              []byte
+	CertChain         []byte
 }
 
-func newStubAzureInstanceInfo(report string, runtimeData string) (stubAzureInstanceInfo, error) {
+func newStubAzureInstanceInfo(vcek, certChain []byte, report, runtimeData string) (stubAzureInstanceInfo, error) {
 	validReport, err := hex.DecodeString(report)
 	if err != nil {
 		return stubAzureInstanceInfo{}, fmt.Errorf("invalid hex string report: %s", err)
@@ -771,6 +986,8 @@ func newStubAzureInstanceInfo(report string, runtimeData string) (stubAzureInsta
 	return stubAzureInstanceInfo{
 		AttestationReport: validReport,
 		RuntimeData:       decodedRuntime,
+		VCEK:              vcek,
+		CertChain:         certChain,
 	}, nil
 }
 

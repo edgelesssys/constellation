@@ -66,6 +66,8 @@ func (i *Issuer) getInstanceInfo(ctx context.Context, tpm io.ReadWriteCloser, us
 	}
 
 	instanceInfo := azureInstanceInfo{
+		VCEK:              params.VcekCert,
+		CertChain:         params.VcekChain,
 		AttestationReport: params.SNPReport,
 		RuntimeData:       params.RuntimeData,
 		MAAToken:          maaToken,

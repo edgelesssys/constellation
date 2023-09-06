@@ -11,11 +11,14 @@ import (
 	"context"
 	"crypto"
 	"crypto/sha256"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
@@ -104,7 +107,7 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 	if err := json.Unmarshal(attDoc.InstanceInfo, &instanceInfo); err != nil {
 		return nil, fmt.Errorf("unmarshalling instanceInfo: %w", err)
 	}
-	att, err := instanceInfo.attestationWithCerts(v.getter)
+	att, err := instanceInfo.attestationWithCerts(v.log, v.getter)
 	if err != nil {
 		return nil, fmt.Errorf("parsing attestation report: %w", err)
 	}
@@ -212,23 +215,168 @@ func (v *Validator) checkIDKeyDigest(ctx context.Context, report *spb.Attestatio
 	return nil
 }
 
+// azureInstanceInfo contains the necessary information to establish trust in
+// an Azure CVM.
 type azureInstanceInfo struct {
+	// VCEK is the PEM-encoded VCEK certificate for the attestation report.
+	VCEK []byte
+	// CertChain is the PEM-encoded certificate chain for the attestation report.
+	CertChain []byte
+	// AttestationReport is the attestation report from the vTPM (NVRAM) of the CVM.
 	AttestationReport []byte
-	RuntimeData       []byte
-	MAAToken          string
+	// RuntimeData is the Azure runtime data from the vTPM (NVRAM) of the CVM.
+	RuntimeData []byte
+	// MAAToken is the token of the MAA for the attestation report, used as a fallback
+	// if the IDKeyDigests cannot be verified.
+	MAAToken string
 }
 
-// attestationWithCerts returns the formatted attestation report and its certificates,
-// using the given getter to fetch the AMD KDS for the VCEK certificate and the corresponding certificate chain.
-func (a *azureInstanceInfo) attestationWithCerts(getter trust.HTTPSGetter) (*spb.Attestation, error) {
+// attestationWithCerts returns a formatted version of the attestation report and its certificates from the instanceInfo.
+// if the VCEK certificate or the certificate chain is not present, the given getter is used to retrieve them
+// from the AMD KDS.
+func (a *azureInstanceInfo) attestationWithCerts(logger attestation.Logger, getter trust.HTTPSGetter) (*spb.Attestation, error) {
 	report, err := abi.ReportToProto(a.AttestationReport)
 	if err != nil {
 		return nil, fmt.Errorf("converting report to proto: %w", err)
 	}
 
-	return verify.GetAttestationFromReport(report, &verify.Options{
-		Getter: getter,
-	})
+	// Product info as reported through CPUID[EAX=1]
+	sevProduct := abi.DefaultSevProduct()
+	productName := kds.ProductString(sevProduct)
+
+	att := &spb.Attestation{
+		Report:           report,
+		CertificateChain: &spb.CertificateChain{},
+		Product:          sevProduct,
+	}
+
+	// If the VCEK certificate is present, parse it and format it.
+	vcek, vcekParsingErr := a.parseVCEK()
+	if err != nil {
+		logger.Warnf("Error parsing VCEK: %v", vcekParsingErr)
+	}
+	if vcek != nil {
+		att.CertificateChain.VcekCert = vcek.Raw
+	}
+	// Otherwise, retrieve it from AMD KDS.
+	if att.CertificateChain.VcekCert == nil {
+		logger.Infof("VCEK certificate not present, falling back to retrieving it from AMD KDS")
+		vcekURL := kds.VCEKCertURL(productName, report.GetChipId(), kds.TCBVersion(report.GetReportedTcb()))
+		vcek, err := getter.Get(vcekURL)
+		if err != nil {
+			return nil, fmt.Errorf("retrieving VCEK certificate from AMD KDS: %w", err)
+		}
+		att.CertificateChain.VcekCert = vcek
+	}
+
+	// If the certificate chain is present, parse it and format it.
+	ask, ark, certChainParsingErr := a.parseCertChain()
+	if certChainParsingErr != nil {
+		logger.Warnf("Error parsing certificate chain: %v", certChainParsingErr)
+	}
+	if ask != nil {
+		att.CertificateChain.AskCert = ask.Raw
+	}
+	if ark != nil {
+		att.CertificateChain.ArkCert = ark.Raw
+	}
+	// Otherwise, retrieve it from AMD KDS.
+	if att.CertificateChain.AskCert == nil || att.CertificateChain.ArkCert == nil {
+		logger.Infof("Certificate chain not fully present, falling back to retrieving it from AMD KDS")
+		kdsCertChain, err := trust.GetProductChain(productName, getter)
+		if err != nil {
+			return nil, fmt.Errorf("retrieving certificate chain from AMD KDS: %w", err)
+		}
+		if att.CertificateChain.AskCert == nil {
+			att.CertificateChain.AskCert = kdsCertChain.Ask.Raw
+		}
+		if att.CertificateChain.ArkCert == nil {
+			att.CertificateChain.ArkCert = kdsCertChain.Ark.Raw
+		}
+	}
+
+	return att, nil
+}
+
+// parseCertChain parses the certificate chain from the instanceInfo into x509-formatted ASK and ARK certificates.
+// If less than 2 certificates are present, only the present certificate is returned.
+// If more than 2 certificates are present, an error is returned.
+func (a *azureInstanceInfo) parseCertChain() (ask, ark *x509.Certificate, retErr error) {
+	newlinesTrimmed := strings.TrimSpace(string(a.CertChain))
+
+	i := 1
+	var rest []byte
+	var block *pem.Block
+	for block, rest = pem.Decode([]byte(newlinesTrimmed)); block != nil; block, rest = pem.Decode(rest) {
+		if i > 3 {
+			retErr = fmt.Errorf("parse certificate %d: more than 2 certificates in chain", i)
+			return
+		}
+
+		if block.Type != "CERTIFICATE" {
+			retErr = fmt.Errorf("parse certificate %d: expected PEM block type 'CERTIFICATE', got '%s'", i, block.Type)
+			return
+		}
+
+		cert, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			retErr = fmt.Errorf("parse certificate %d: %w", i, err)
+			return
+		}
+
+		// https://www.amd.com/content/dam/amd/en/documents/epyc-technical-docs/specifications/57230.pdf
+		// Table 6 and 7
+		switch cert.Subject.CommonName {
+		case "SEV-Milan":
+			ask = cert
+		case "ARK-Milan":
+			ark = cert
+		default:
+			retErr = fmt.Errorf("parse certificate %d: unexpected subject CN %s", i, cert.Subject.CommonName)
+			return
+		}
+
+		i++
+	}
+
+	switch {
+	case i == 1:
+		retErr = fmt.Errorf("no PEM blocks found")
+		return
+	case len(rest) != 0:
+		retErr = fmt.Errorf("remaining PEM block is not a valid certificate: %s", rest)
+		return
+	}
+
+	return
+}
+
+// parseVCEK parses the VCEK certificate from the instanceInfo into an x509-formatted certificate.
+func (a *azureInstanceInfo) parseVCEK() (vcek *x509.Certificate, retErr error) {
+	newlinesTrimmed := strings.TrimSpace(string(a.VCEK))
+
+	block, rest := pem.Decode([]byte(newlinesTrimmed))
+	if block == nil {
+		retErr = fmt.Errorf("no PEM blocks found")
+		return
+	}
+	if block.Type != "CERTIFICATE" {
+		retErr = fmt.Errorf("expected PEM block type 'CERTIFICATE', got '%s'", block.Type)
+		return
+	}
+
+	vcek, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		retErr = fmt.Errorf("parsing VCEK certificate: %w", err)
+		return
+	}
+
+	if len(rest) != 0 {
+		retErr = fmt.Errorf("remaining PEM block is not a valid certificate: %s", rest)
+		return
+	}
+
+	return
 }
 
 // validateAk validates that the attestation key from the TPM is trustworthy. The steps are:

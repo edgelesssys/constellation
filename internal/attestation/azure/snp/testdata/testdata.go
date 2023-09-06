@@ -14,17 +14,22 @@ import _ "embed"
 //go:embed attestation.bin
 var AttestationReport []byte
 
-// VCEK is an example VCEK certificate for the AttestationReport.
+// AzureThimVCEK is an example VCEK certificate (PEM, as returned from Azure THIM) for the AttestationReport.
+//
+//go:embed vcek.pem
+var AzureThimVCEK []byte
+
+// AmdKdsVCEK is an example VCEK certificate (DER, as returned from AMD KDS) for the AttestationReport.
 //
 //go:embed vcek.cert
-var VCEK []byte
+var AmdKdsVCEK []byte
 
 // RuntimeData is an example runtime data from the TPM for the AttestationReport.
 //
 //go:embed runtimedata.bin
 var RuntimeData []byte
 
-// CertChain is a valid certificate chain for the VCEK certificate.
+// CertChain is a valid certificate chain (PEM, as returned from Azure THIM) for the VCEK certificate.
 //
 //go:embed certchain.pem
 var CertChain []byte
