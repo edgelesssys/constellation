@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+shopt -s inherit_errexit
+
+export PATH=/run/wrappers/bin:/run/current-system/sw/bin:/bin:/usr/bin:/usr/local/bin
+VERSION_ARG=""
+args=("$@")
+
+if [[ -n ${VERSION_FILE+x} ]]; then
+  VERSION_ARG="--environment=IMAGE_VERSION=$(cat "${VERSION_FILE}")"
+  args+=("$VERSION_ARG")
+fi
+
+exec @@MKOSI@@ "${args[@]}" build

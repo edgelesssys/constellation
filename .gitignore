@@ -63,3 +63,9 @@ __pycache__/
 
 # bazeldnf
 .bazeldnf/
+
+# mkosi
+.mkosi-tmp*
+
+# nix
+/result
