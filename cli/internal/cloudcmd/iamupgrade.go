@@ -19,6 +19,14 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 )
 
+// UpgradeRequiresIAMMigration returns true if the given cloud provider requires an IAM migration.
+func UpgradeRequiresIAMMigration(provider cloudprovider.Provider) bool {
+	switch provider {
+	default:
+		return false
+	}
+}
+
 // IAMUpgrader handles upgrades to IAM resources required by Constellation.
 type IAMUpgrader struct {
 	tf                tfIAMUpgradeClient
