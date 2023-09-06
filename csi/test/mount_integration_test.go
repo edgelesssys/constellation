@@ -16,7 +16,6 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/csi/cryptmapper"
-	"github.com/edgelesssys/constellation/v2/internal/cryptsetup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -67,7 +66,7 @@ func TestOpenAndClose(t *testing.T) {
 	setup()
 	defer teardown(devicePath)
 
-	mapper := cryptmapper.New(&fakeKMS{}, cryptsetup.New())
+	mapper := cryptmapper.New(&fakeKMS{})
 
 	newPath, err := mapper.OpenCryptDevice(context.Background(), devicePath, deviceName, false)
 	require.NoError(err)
@@ -107,7 +106,7 @@ func TestOpenAndCloseIntegrity(t *testing.T) {
 	setup()
 	defer teardown(devicePath)
 
-	mapper := cryptmapper.New(&fakeKMS{}, cryptsetup.New())
+	mapper := cryptmapper.New(&fakeKMS{})
 
 	newPath, err := mapper.OpenCryptDevice(context.Background(), devicePath, deviceName, true)
 	require.NoError(err)
@@ -146,7 +145,7 @@ func TestDeviceCloning(t *testing.T) {
 	setup()
 	defer teardown(devicePath)
 
-	mapper := cryptmapper.New(&dynamicKMS{}, cryptsetup.New())
+	mapper := cryptmapper.New(&dynamicKMS{})
 
 	_, err := mapper.OpenCryptDevice(context.Background(), devicePath, deviceName, false)
 	assert.NoError(err)
