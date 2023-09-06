@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
@@ -609,7 +610,7 @@ type skipPhases []skipPhase
 // Contains returns true if the list of phases contains the given phase.
 func (s skipPhases) Contains(phase skipPhase) bool {
 	for _, p := range s {
-		if strings.EqualFold(p, phase) {
+		if strings.EqualFold(string(p), string(phase)) {
 			return true
 		}
 	}
