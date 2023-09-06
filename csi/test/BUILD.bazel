@@ -8,14 +8,12 @@ go_test(
     deps = select({
         "@io_bazel_rules_go//go/platform:android": [
             "//csi/cryptmapper",
-            "//internal/cryptsetup",
             "@com_github_stretchr_testify//assert",
             "@com_github_stretchr_testify//require",
             "@org_uber_go_goleak//:goleak",
         ],
         "@io_bazel_rules_go//go/platform:linux": [
             "//csi/cryptmapper",
-            "//internal/cryptsetup",
             "@com_github_stretchr_testify//assert",
             "@com_github_stretchr_testify//require",
             "@org_uber_go_goleak//:goleak",

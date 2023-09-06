@@ -40,9 +40,9 @@ type CryptMapper struct {
 
 // New initializes a new CryptMapper with the given kms client and key-encryption-key ID.
 // kms is used to fetch data encryption keys for the dm-crypt volumes.
-func New(kms keyCreator, mapper deviceMapper) *CryptMapper {
+func New(kms keyCreator) *CryptMapper {
 	return &CryptMapper{
-		mapper:        mapper,
+		mapper:        cryptsetup.New(),
 		kms:           kms,
 		getDiskFormat: getDiskFormat,
 	}
