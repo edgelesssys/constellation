@@ -62,6 +62,13 @@ When applying an upgrade, backup files of Constellation-managed Custom Resource 
 You can use the Terraform state backup to restore previous resources in case an upgrade misconfigured or erroneously deleted a resource.
 You can use the Custom Resource (Definition) backup files to restore Custom Resources and Definitions manually (e.g., via `kubectl apply`) if the automatic migration of those resources fails.
 
+::note
+
+For advanced users: the upgrade consists of several phases that can be individually skipped through the `--skip-phases` flag.
+The phases are `infrastracture` for the cloud resource management through Terraform, `helm` for the chart management of the microservices, `node` for OS image upgrades, and `k8s` for Kubernetes version upgrades.
+
+:::
+
 ## Check the status
 
 Upgrades are asynchronous operations.
