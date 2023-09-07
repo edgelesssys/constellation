@@ -10,7 +10,7 @@ import (
 	"context"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
-	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
@@ -20,7 +20,7 @@ type cloudCreator interface {
 	Create(
 		ctx context.Context,
 		opts cloudcmd.CreateOptions,
-	) (clusterid.File, error)
+	) (state.Infrastructure, error)
 }
 
 type cloudIAMCreator interface {

@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -30,7 +31,7 @@ func TestCreate(t *testing.T) {
 		require.NoError(file.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), provider)))
 		return fs
 	}
-	idFile := clusterid.File{IP: "192.0.2.1"}
+	infraState := state.Infrastructure{PublicIP: "192.0.2.1"}
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
@@ -46,13 +47,13 @@ func TestCreate(t *testing.T) {
 	}{
 		"create": {
 			setupFs:  fsWithDefaultConfig,
-			creator:  &stubCloudCreator{id: idFile},
+			creator:  &stubCloudCreator{state: infraState},
 			provider: cloudprovider.GCP,
 			yesFlag:  true,
 		},
 		"interactive": {
 			setupFs:  fsWithDefaultConfig,
-			creator:  &stubCloudCreator{id: idFile},
+			creator:  &stubCloudCreator{state: infraState},
 			provider: cloudprovider.Azure,
 			stdin:    "yes\n",
 		},
@@ -156,9 +157,19 @@ func TestCreate(t *testing.T) {
 					var gotIDFile clusterid.File
 					require.NoError(fileHandler.ReadJSON(constants.ClusterIDsFilename, &gotIDFile))
 					assert.Equal(gotIDFile, clusterid.File{
-						IP:            idFile.IP,
+						IP:            infraState.PublicIP,
 						CloudProvider: tc.provider,
 					})
+
+					var gotState state.State
+					expectedState := state.Infrastructure{
+						PublicIP:          "192.0.2.1",
+						APIServerCertSANs: []string{},
+					}
+					require.NoError(fileHandler.ReadYAML(constants.StateFilename, &gotState))
+					assert.Equal("v1", gotState.Version)
+					assert.Equal(expectedState, gotState.Infrastructure)
+
 				}
 			}
 		})

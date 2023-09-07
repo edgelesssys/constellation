@@ -237,8 +237,7 @@ func TestCreator(t *testing.T) {
 				}
 			} else {
 				assert.NoError(err)
-				assert.Equal(tc.provider, idFile.CloudProvider)
-				assert.Equal(ip, idFile.IP)
+				assert.Equal(ip, idFile.PublicIP)
 			}
 		})
 	}
