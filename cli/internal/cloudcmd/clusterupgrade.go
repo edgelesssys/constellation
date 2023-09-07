@@ -69,7 +69,6 @@ func (u *ClusterUpgrader) RollbackClusterWorkspace() error {
 	return rollbackToBackup(u.fileHandler, u.existingWorkspace, filepath.Join(u.upgradeWorkspace, constants.TerraformUpgradeBackupDir))
 }
 
-
 // ApplyClusterUpgrade applies the Terraform migrations planned by PlanClusterUpgrade.
 // On success, the workspace of the Upgrader replaces the existing Terraform workspace.
 func (u *ClusterUpgrader) ApplyClusterUpgrade(ctx context.Context, csp cloudprovider.Provider) (terraform.ApplyOutput, error) {
