@@ -12,4 +12,4 @@ else
   workdir="$1"
 fi
 
-$YQ eval '.spec.template.spec.containers[0].image |= "ghcr.io/edgelesssys/malicious-join-test:" + load_str(strenv(REPO_TAG))' $TEMPLATE > stamped_job.yaml
+$YQ eval '.spec.template.spec.containers[0].image |= "ghcr.io/edgelesssys/malicious-join-test:" + load_str(strenv(REPO_TAG))' "$TEMPLATE" > "$workdir/stamped_job.yaml"
