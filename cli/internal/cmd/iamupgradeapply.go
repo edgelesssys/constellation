@@ -23,13 +23,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func upgradeRequiresIAMMigration(provider cloudprovider.Provider) bool {
-	switch provider {
-	default:
-		return false
-	}
-}
-
 func newIAMUpgradeCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "upgrade",

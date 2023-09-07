@@ -136,7 +136,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 	if err != nil {
 		return err
 	}
-	if upgradeRequiresIAMMigration(conf.GetProvider()) {
+	if cloudcmd.UpgradeRequiresIAMMigration(conf.GetProvider()) {
 		cmd.Println("WARNING: This upgrade requires an IAM migration. Please make sure you have applied the IAM migration using `iam upgrade apply` before continuing.")
 		if !flags.yes {
 			yes, err := askToConfirm(cmd, "Did you upgrade the IAM resources?")
