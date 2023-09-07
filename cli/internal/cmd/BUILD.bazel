@@ -115,6 +115,7 @@ go_test(
         "create_test.go",
         "iamcreate_test.go",
         "iamdestroy_test.go",
+        "iamupgradeapply_test.go",
         "init_test.go",
         "recover_test.go",
         "spinner_test.go",

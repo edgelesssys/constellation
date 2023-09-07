@@ -47,8 +47,8 @@ func newIAMUpgradeApplyCmd() *cobra.Command {
 }
 
 type iamUpgradeApplyCmd struct {
-	fileHandler   file.Handler
-	log           debugLog
+	fileHandler file.Handler
+	log         debugLog
 }
 
 func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
@@ -81,8 +81,8 @@ func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
 	}
 
 	i := iamUpgradeApplyCmd{
-		fileHandler:   fileHandler,
-		log:           log,
+		fileHandler: fileHandler,
+		log:         log,
 	}
 
 	return i.iamUpgradeApply(cmd, iamMigrateCmd, upgradeDir, force, yes)

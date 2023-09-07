@@ -120,7 +120,6 @@ func TestIamUpgradeApply(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 type stubIamUpgrader struct {
