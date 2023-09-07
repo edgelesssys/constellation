@@ -83,5 +83,6 @@ def write_go_proto_srcs(name, go_proto_library, src, visibility = None):
         files = {
             src: generated_src,
         },
+        diff_test = False,
         visibility = visibility,
     )

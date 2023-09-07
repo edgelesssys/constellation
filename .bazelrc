@@ -39,6 +39,11 @@ common:linux_arm64 --platforms @zig_sdk//libc_aware/platform:linux_arm64_gnu.2.2
 common:linux_amd64_static --platforms @zig_sdk//libc_aware/platform:linux_amd64_musl
 common:linux_arm64_static --platforms @zig_sdk//libc_aware/platform:linux_arm64_musl
 
+# bazel configs to explicitly target NixOS
+common:nix --host_platform=@io_tweag_rules_nixpkgs//nixpkgs/platforms:host
+common:nix --crosstool_top=@local_config_cc//:toolchain
+common:nix --action_env=BAZEL_NIX_HOST_PLATFORM=1
+
 # bazel config to explicitly disable stamping (hide version information at build time)
 common:nostamp --nostamp --workspace_status_command=
 

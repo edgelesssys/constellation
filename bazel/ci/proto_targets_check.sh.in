@@ -5,6 +5,13 @@
 lib=$(realpath @@BASE_LIB@@) || exit 1
 stat "${lib}" >> /dev/null || exit 1
 
+if [[ -n ${DIFF+x} ]]; then
+  diff=$(realpath "${DIFF}") || exit 1
+else
+  diff=$(command -v diff) || exit 1
+fi
+stat "${diff}" >> /dev/null || exit 1
+
 # shellcheck source=../sh/lib.bash
 if ! source "${lib}"; then
   echo "Error: could not find import"
@@ -47,7 +54,7 @@ done
 protoFilePathsSorted=$(printf '%s\n' "${protoFilePaths[@]}" | sort)
 writeGoProtoPathsSorted=$(printf '%s\n' "${writeGoProtoPaths[@]}" | sort)
 
-diff=$(diff <(echo "${protoFilePathsSorted}") <(echo "${writeGoProtoPathsSorted}") || true) # don't let diff fail
+diff=$($diff <(echo "${protoFilePathsSorted}") <(echo "${writeGoProtoPathsSorted}") || true) # don't let diff fail
 
 if [[ -n ${diff} ]]; then
   echo "Mismatch between proto files and 'write_go_proto_srcs' calls:"
