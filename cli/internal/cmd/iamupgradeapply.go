@@ -48,7 +48,6 @@ func newIAMUpgradeApplyCmd() *cobra.Command {
 
 type iamUpgradeApplyCmd struct {
 	fileHandler   file.Handler
-	configFetcher attestationconfigapi.Fetcher
 	log           debugLog
 }
 
@@ -58,8 +57,6 @@ func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("parsing force argument: %w", err)
 	}
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	configFetcher := attestationconfigapi.NewFetcher()
-
 	upgradeID := generateUpgradeID(upgradeCmdKindIAM)
 	upgradeDir := filepath.Join(constants.UpgradeDir, upgradeID)
 	iamMigrateCmd, err := cloudcmd.NewIAMUpgrader(
@@ -85,7 +82,6 @@ func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
 
 	i := iamUpgradeApplyCmd{
 		fileHandler:   fileHandler,
-		configFetcher: configFetcher,
 		log:           log,
 	}
 
@@ -93,7 +89,7 @@ func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
 }
 
 func (i iamUpgradeApplyCmd) iamUpgradeApply(cmd *cobra.Command, iamUpgrader iamUpgrader, upgradeDir string, force, yes bool) error {
-	conf, err := config.New(i.fileHandler, constants.ConfigFilename, i.configFetcher, force)
+	conf, err := config.New(i.fileHandler, constants.ConfigFilename, attestationconfigapi.NewFetcher(), force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())

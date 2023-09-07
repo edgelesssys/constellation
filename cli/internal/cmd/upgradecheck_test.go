@@ -193,7 +193,7 @@ func TestUpgradeCheck(t *testing.T) {
 			cliVersion: "v1.0.0",
 			wantError:  true,
 		},
-		"terraform rollback err (deferred)": {
+		"terraform rollback err, log only": {
 			collector: collector,
 			checker: stubTerraformChecker{
 				rollbackErr: assert.AnError,
