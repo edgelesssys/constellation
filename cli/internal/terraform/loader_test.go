@@ -131,22 +131,19 @@ func TestPrepareUpgradeWorkspace(t *testing.T) {
 	testCases := map[string]struct {
 		pathBase            string
 		provider            cloudprovider.Provider
-		oldWorkingDir       string
-		newWorkingDir       string
+		workingDir          string
 		backupDir           string
-		oldWorkspaceFiles   []string
-		newWorkspaceFiles   []string
+		workspaceFiles      []string
 		expectedFiles       []string
 		testAlreadyUnpacked bool
 		wantErr             bool
 	}{
 		"works": {
-			pathBase:          "terraform",
-			provider:          cloudprovider.AWS,
-			oldWorkingDir:     "old",
-			newWorkingDir:     "new",
-			backupDir:         "backup",
-			oldWorkspaceFiles: []string{"terraform.tfstate"},
+			pathBase:       "terraform",
+			provider:       cloudprovider.AWS,
+			workingDir:     "working",
+			backupDir:      "backup",
+			workspaceFiles: []string{"terraform.tfstate"},
 			expectedFiles: []string{
 				"main.tf",
 				"variables.tf",
@@ -156,24 +153,27 @@ func TestPrepareUpgradeWorkspace(t *testing.T) {
 			},
 		},
 		"state file does not exist": {
-			pathBase:          "terraform",
-			provider:          cloudprovider.AWS,
-			oldWorkingDir:     "old",
-			newWorkingDir:     "new",
-			backupDir:         "backup",
-			oldWorkspaceFiles: []string{},
-			expectedFiles:     []string{},
-			wantErr:           true,
+			pathBase:       "terraform",
+			provider:       cloudprovider.AWS,
+			workingDir:     "working",
+			backupDir:      "backup",
+			workspaceFiles: []string{},
+			expectedFiles:  []string{},
+			wantErr:        true,
 		},
-		"terraform files already exist in new dir": {
-			pathBase:          "terraform",
-			provider:          cloudprovider.AWS,
-			oldWorkingDir:     "old",
-			newWorkingDir:     "new",
-			backupDir:         "backup",
-			oldWorkspaceFiles: []string{"terraform.tfstate"},
-			newWorkspaceFiles: []string{"main.tf"},
-			wantErr:           true,
+		"terraform file already exists in working dir (overwrite)": {
+			pathBase:       "terraform",
+			provider:       cloudprovider.AWS,
+			workingDir:     "working",
+			backupDir:      "backup",
+			workspaceFiles: []string{"terraform.tfstate"},
+			expectedFiles: []string{
+				"main.tf",
+				"variables.tf",
+				"outputs.tf",
+				"modules",
+				"terraform.tfstate",
+			},
 		},
 	}
 
@@ -186,21 +186,16 @@ func TestPrepareUpgradeWorkspace(t *testing.T) {
 
 			path := path.Join(tc.pathBase, strings.ToLower(tc.provider.String()))
 
-			createFiles(t, file, tc.oldWorkspaceFiles, tc.oldWorkingDir)
-			createFiles(t, file, tc.newWorkspaceFiles, tc.newWorkingDir)
+			createFiles(t, file, tc.workspaceFiles, tc.workingDir)
 
-			err := prepareUpgradeWorkspace(path, file, tc.oldWorkingDir, tc.newWorkingDir, tc.backupDir)
+			err := prepareUpgradeWorkspace(path, file, tc.workingDir, tc.backupDir)
 
 			if tc.wantErr {
 				require.Error(err)
 			} else {
 				require.NoError(err)
 			}
-			checkFiles(t, file, func(err error) { assert.NoError(err) }, tc.newWorkingDir, tc.expectedFiles)
-			checkFiles(t, file, func(err error) { assert.NoError(err) },
-				tc.backupDir,
-				tc.oldWorkspaceFiles,
-			)
+			checkFiles(t, file, func(err error) { assert.NoError(err) }, tc.workingDir, tc.expectedFiles)
 		})
 	}
 }

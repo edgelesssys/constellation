@@ -235,9 +235,10 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fetcher attestationco
 		return fmt.Errorf("planning terraform migrations: %w", err)
 	}
 	defer func() {
-		// Remove the upgrade directory
-		if err := u.fileHandler.RemoveAll(upgradeDir); err != nil {
-			u.log.Debugf("Failed to clean up Terraform migrations: %s", err)
+		// User doesn't expect to see any changes in his workspace after an "upgrade plan",
+		// therefore, roll back to the backed up state.
+		if err := u.terraformChecker.RollbackClusterWorkspace(); err != nil {
+			u.log.Debugf("Failed to rollback Terraform workspace: %s", err)
 		}
 	}()
 
@@ -728,6 +729,7 @@ type kubernetesChecker interface {
 
 type terraformChecker interface {
 	PlanClusterUpgrade(ctx context.Context, outWriter io.Writer, vars terraform.Variables, csp cloudprovider.Provider) (bool, error)
+	RollbackClusterWorkspace() error
 }
 
 type versionListFetcher interface {

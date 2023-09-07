@@ -336,11 +336,10 @@ func (c *Client) PrepareWorkspace(path string, vars Variables) error {
 }
 
 // PrepareUpgradeWorkspace prepares a Terraform workspace for an upgrade.
-// It copies the Terraform state from the old working dir and the embedded Terraform files
-// into the working dir of the Terraform client.
-// Additionally, a backup of the old working dir is created in the backup dir.
-func (c *Client) PrepareUpgradeWorkspace(path, oldWorkingDir, backupDir string, vars Variables) error {
-	if err := prepareUpgradeWorkspace(path, c.file, oldWorkingDir, c.workingDir, backupDir); err != nil {
+// It creates a backup of the Terraform workspace in the backupDir, and copies
+// the embedded Terraform files into the workingDir.
+func (c *Client) PrepareUpgradeWorkspace(path, backupDir string, vars Variables) error {
+	if err := prepareUpgradeWorkspace(path, c.file, c.workingDir, backupDir); err != nil {
 		return fmt.Errorf("prepare upgrade workspace: %w", err)
 	}
 

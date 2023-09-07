@@ -42,7 +42,7 @@ type IAMUpgrader struct {
 func NewIAMUpgrader(ctx context.Context, existingWorkspace, upgradeWorkspace string,
 	logLevel terraform.LogLevel, fileHandler file.Handler,
 ) (*IAMUpgrader, error) {
-	tfClient, err := terraform.New(ctx, filepath.Join(upgradeWorkspace, constants.TerraformIAMUpgradeWorkingDir))
+	tfClient, err := terraform.New(ctx, constants.TerraformIAMWorkingDir)
 	if err != nil {
 		return nil, fmt.Errorf("setting up terraform client: %w", err)
 	}
@@ -67,19 +67,18 @@ func (u *IAMUpgrader) PlanIAMUpgrade(ctx context.Context, outWriter io.Writer, v
 	)
 }
 
+// RollbackIAMWorkspace rolls back the existing workspace to the backup directory created when planning an upgrade,
+// when the user decides to not apply an upgrade after planning it.
+// Note that this will not apply the restored state from the backup.
+func (u *IAMUpgrader) RollbackIAMWorkspace() error {
+	return rollbackToBackup(u.fileHandler, u.existingWorkspace, filepath.Join(u.upgradeWorkspace, constants.TerraformIAMUpgradeBackupDir))
+}
+
 // ApplyIAMUpgrade applies the Terraform IAM migrations planned by PlanIAMUpgrade.
 // On success, the workspace of the Upgrader replaces the existing Terraform workspace.
 func (u *IAMUpgrader) ApplyIAMUpgrade(ctx context.Context, csp cloudprovider.Provider) error {
 	if _, err := u.tf.ApplyIAM(ctx, csp, u.logLevel); err != nil {
 		return fmt.Errorf("terraform apply: %w", err)
-	}
-
-	if err := moveUpgradeToCurrent(
-		u.fileHandler,
-		u.existingWorkspace,
-		filepath.Join(u.upgradeWorkspace, constants.TerraformIAMUpgradeWorkingDir),
-	); err != nil {
-		return fmt.Errorf("promoting upgrade workspace to current workspace: %w", err)
 	}
 
 	return nil

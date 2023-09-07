@@ -99,9 +99,9 @@ func TestPlanUpgrade(t *testing.T) {
 	}
 }
 
-func TestMoveUpgradeToCurrent(t *testing.T) {
+func TestRollbackToBackup(t *testing.T) {
 	existingWorkspace := "foo"
-	upgradeWorkingDir := "bar"
+	backupDir := "bar"
 
 	testCases := map[string]struct {
 		prepareFs func(require *require.Assertions) file.Handler
@@ -111,18 +111,18 @@ func TestMoveUpgradeToCurrent(t *testing.T) {
 			prepareFs: func(require *require.Assertions) file.Handler {
 				fs := file.NewHandler(afero.NewMemMapFs())
 				require.NoError(fs.MkdirAll(existingWorkspace))
-				require.NoError(fs.MkdirAll(upgradeWorkingDir))
+				require.NoError(fs.MkdirAll(backupDir))
 				return fs
 			},
 		},
-		"old workspace does not exist": {
+		"existing workspace does not exist": {
 			prepareFs: func(require *require.Assertions) file.Handler {
 				fs := file.NewHandler(afero.NewMemMapFs())
-				require.NoError(fs.MkdirAll(upgradeWorkingDir))
+				require.NoError(fs.MkdirAll(backupDir))
 				return fs
 			},
 		},
-		"upgrade working dir does not exist": {
+		"backup dir does not exist": {
 			prepareFs: func(require *require.Assertions) file.Handler {
 				fs := file.NewHandler(afero.NewMemMapFs())
 				require.NoError(fs.MkdirAll(existingWorkspace))
@@ -135,8 +135,7 @@ func TestMoveUpgradeToCurrent(t *testing.T) {
 				memFS := afero.NewMemMapFs()
 				fs := file.NewHandler(memFS)
 				require.NoError(fs.MkdirAll(existingWorkspace))
-				require.NoError(fs.MkdirAll(upgradeWorkingDir))
-
+				require.NoError(fs.MkdirAll(backupDir))
 				return file.NewHandler(afero.NewReadOnlyFs(memFS))
 			},
 			wantErr: true,
@@ -148,7 +147,7 @@ func TestMoveUpgradeToCurrent(t *testing.T) {
 			assert := assert.New(t)
 			fs := tc.prepareFs(require.New(t))
 
-			err := moveUpgradeToCurrent(fs, existingWorkspace, upgradeWorkingDir)
+			err := rollbackToBackup(fs, existingWorkspace, backupDir)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -209,7 +208,7 @@ type stubUpgradePlanner struct {
 	showPlanErr         error
 }
 
-func (s *stubUpgradePlanner) PrepareUpgradeWorkspace(_, _ string, _ string, _ terraform.Variables) error {
+func (s *stubUpgradePlanner) PrepareUpgradeWorkspace(_, _ string, _ terraform.Variables) error {
 	return s.prepareWorkspaceErr
 }
 

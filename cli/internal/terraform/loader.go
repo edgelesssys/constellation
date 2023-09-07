@@ -33,27 +33,18 @@ func prepareWorkspace(rootDir string, fileHandler file.Handler, workingDir strin
 	return terraformCopier(fileHandler, rootDir, workingDir)
 }
 
-// prepareUpgradeWorkspace takes the Terraform state file from the old workspace and the
-// embedded Terraform files and writes them into the new workspace.
-func prepareUpgradeWorkspace(rootDir string, fileHandler file.Handler, oldWorkingDir, newWorkingDir, backupDir string) error {
+// prepareUpgradeWorkspace backs up the old Terraform workspace from workingDir, and
+// copies the embedded Terraform files into workingDir.
+func prepareUpgradeWorkspace(rootDir string, fileHandler file.Handler, workingDir, backupDir string) error {
 	// backup old workspace
 	if err := fileHandler.CopyDir(
-		oldWorkingDir,
+		workingDir,
 		backupDir,
 	); err != nil {
 		return fmt.Errorf("backing up old workspace: %w", err)
 	}
 
-	// copy state file
-	if err := fileHandler.CopyFile(
-		filepath.Join(oldWorkingDir, "terraform.tfstate"),
-		filepath.Join(newWorkingDir, "terraform.tfstate"),
-		file.OptMkdirAll,
-	); err != nil {
-		return fmt.Errorf("copying state file: %w", err)
-	}
-
-	return terraformCopier(fileHandler, rootDir, newWorkingDir)
+	return terraformCopier(fileHandler, rootDir, workingDir)
 }
 
 // terraformCopier copies the embedded Terraform files into the workspace.

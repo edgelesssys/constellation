@@ -124,9 +124,10 @@ func (i iamUpgradeApplyCmd) iamUpgradeApply(cmd *cobra.Command, iamUpgrader iamU
 		}
 		if !ok {
 			cmd.Println("Aborting upgrade.")
-			// Remove the upgrade directory
-			if err := i.fileHandler.RemoveAll(upgradeDir); err != nil {
-				return fmt.Errorf("cleaning up upgrade directory %s: %w", upgradeDir, err)
+			// User doesn't expect to see any changes in his workspace after aborting an "upgrade apply",
+			// therefore, roll back to the backed up state.
+			if err := iamUpgrader.RollbackIAMWorkspace(); err != nil {
+				i.log.Debugf("Failed to rollback Terraform workspace: %s", err)
 			}
 			return errors.New("IAM upgrade aborted by user")
 		}
@@ -144,4 +145,5 @@ func (i iamUpgradeApplyCmd) iamUpgradeApply(cmd *cobra.Command, iamUpgrader iamU
 type iamUpgrader interface {
 	PlanIAMUpgrade(ctx context.Context, outWriter io.Writer, vars terraform.Variables, csp cloudprovider.Provider) (bool, error)
 	ApplyIAMUpgrade(ctx context.Context, csp cloudprovider.Provider) error
+	RollbackIAMWorkspace() error
 }
