@@ -40,7 +40,7 @@ Information that is only used to upgrade Terraform resources (e.g. IAM) should n
 
 The following is a list of proposed sections:
 
-* Cloud resources
+* Infrastructure
 
     Information about resources we currently create using Terraform.
     Essentially, we want to record the information we currently write to the cluster ID file during `create`,
@@ -50,11 +50,11 @@ The following is a list of proposed sections:
     If cloud resource were created with the Constellation CLI (using `constellation create`),
     it will be populated automatically.
 
-* Runtime resources
+* Cluster values
 
     Cluster ID, measurement salt etc.
     This field will be automatically populated during `constellation init`.
-    This entry should be marked with `DO NOT EDIT` to make it clear these resources are expected to not be touched by a user manually.
+    This entry should be marked with `DO NOT EDIT` to make it clear these values are expected to not be touched by a user manually.
 
 YAML file example:
 
@@ -100,8 +100,8 @@ If they are manually managed, the user has to update the values on their own.
 
 Values depending purely on Kubernetes/node state should be automatically updated by the CLI.
 
-Breaking format changes should be automatically handled for `runtimeResources`.
-Breaking format changes should be automatically handled for `cloudResources` if the resources are managed by the Constellation CLI.
+Breaking format changes should be automatically handled for `clusterValues`.
+Breaking format changes should be automatically handled for `infrastructure` if the resources are managed by the Constellation CLI.
 Otherwise, we should provide documentation and/or tooling for migrating old file formats.
 
 ## Migrating from terraform outputs + id file
