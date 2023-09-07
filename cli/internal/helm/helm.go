@@ -73,7 +73,7 @@ func NewClient(kubeConfigPath string, log debugLog) (*Client, error) {
 	}
 	lister := ReleaseVersionClient{actionConfig}
 	cliVersion := constants.BinaryVersion()
-	factory := newActionFactory(kubeClient, lister, actionConfig, cliVersion, log)
+	factory := newActionFactory(kubeClient, lister, actionConfig, log)
 	return &Client{factory, cliVersion, log}, nil
 }
 
@@ -96,7 +96,7 @@ func (h Client) PrepareApply(
 		return nil, false, fmt.Errorf("loading Helm releases: %w", err)
 	}
 	h.log.Debugf("Loaded Helm releases")
-	actions, includesUpgrades, err := h.factory.GetActions(releases, flags.Force, flags.AllowDestructive)
+	actions, includesUpgrades, err := h.factory.GetActions(releases, conf.MicroserviceVersion, flags.Force, flags.AllowDestructive)
 	return &ChartApplyExecutor{actions: actions, log: h.log}, includesUpgrades, err
 }
 

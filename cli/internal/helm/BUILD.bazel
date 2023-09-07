@@ -455,6 +455,7 @@ go_library(
 go_test(
     name = "helm_test",
     srcs = [
+        "actionfactory_test.go",
         "helm_test.go",
         "loader_test.go",
     ],
@@ -478,6 +479,7 @@ go_test(
         "@com_github_stretchr_testify//mock",
         "@com_github_stretchr_testify//require",
         "@sh_helm_helm_v3//pkg/action",
+        "@sh_helm_helm_v3//pkg/chart",
         "@sh_helm_helm_v3//pkg/chartutil",
         "@sh_helm_helm_v3//pkg/engine",
     ],

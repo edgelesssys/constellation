@@ -29,7 +29,6 @@ type actionFactory struct {
 	versionLister releaseVersionLister
 	cfg           *action.Configuration
 	kubeClient    crdClient
-	cliVersion    semver.Semver
 	log           debugLog
 }
 
@@ -38,9 +37,8 @@ type crdClient interface {
 }
 
 // newActionFactory creates a new action factory for managing helm releases.
-func newActionFactory(kubeClient crdClient, lister releaseVersionLister, actionConfig *action.Configuration, cliVersion semver.Semver, log debugLog) *actionFactory {
+func newActionFactory(kubeClient crdClient, lister releaseVersionLister, actionConfig *action.Configuration, log debugLog) *actionFactory {
 	return &actionFactory{
-		cliVersion:    cliVersion,
 		versionLister: lister,
 		cfg:           actionConfig,
 		kubeClient:    kubeClient,
@@ -49,10 +47,10 @@ func newActionFactory(kubeClient crdClient, lister releaseVersionLister, actionC
 }
 
 // GetActions returns a list of actions to apply the given releases.
-func (a actionFactory) GetActions(releases []Release, force, allowDestructive bool) (actions []applyAction, includesUpgrade bool, err error) {
+func (a actionFactory) GetActions(releases []Release, configTargetVersion semver.Semver, force, allowDestructive bool) (actions []applyAction, includesUpgrade bool, err error) {
 	upgradeErrs := []error{}
 	for _, release := range releases {
-		err := a.appendNewAction(release, force, allowDestructive, &actions)
+		err := a.appendNewAction(release, configTargetVersion, force, allowDestructive, &actions)
 		var invalidUpgrade *compatibility.InvalidUpgradeError
 		if errors.As(err, &invalidUpgrade) {
 			upgradeErrs = append(upgradeErrs, err)
@@ -71,13 +69,21 @@ func (a actionFactory) GetActions(releases []Release, force, allowDestructive bo
 	return actions, includesUpgrade, errors.Join(upgradeErrs...)
 }
 
-func (a actionFactory) appendNewAction(release Release, force, allowDestructive bool, actions *[]applyAction) error {
+func (a actionFactory) appendNewAction(release Release, configTargetVersion semver.Semver, force, allowDestructive bool, actions *[]applyAction) error {
 	newVersion, err := semver.New(release.Chart.Metadata.Version)
 	if err != nil {
 		return fmt.Errorf("parsing chart version: %w", err)
 	}
 	currentVersion, err := a.versionLister.currentVersion(release.ReleaseName)
 	if errors.Is(err, errReleaseNotFound) {
+		// Don't install a new release if the user's config specifies a different version than the CLI offers.
+		if !force && isCLIVersionedRelease(release.ReleaseName) && configTargetVersion.Compare(newVersion) != 0 {
+			return fmt.Errorf(
+				"unable to install release %s at %s: this CLI only supports microservice version %s for upgrading",
+				release.ReleaseName, configTargetVersion, newVersion,
+			)
+		}
+
 		a.log.Debugf("Release %s not found, adding to new releases...", release.ReleaseName)
 		*actions = append(*actions, a.newInstall(release))
 		return nil
@@ -88,18 +94,30 @@ func (a actionFactory) appendNewAction(release Release, force, allowDestructive 
 	a.log.Debugf("Current %s version: %s", release.ReleaseName, currentVersion)
 	a.log.Debugf("New %s version: %s", release.ReleaseName, newVersion)
 
-	// This may break for cert-manager or cilium if we decide to upgrade more than one minor version at a time.
-	// Leaving it as is since it is not clear to me what kind of sanity check we could do.
 	if !force {
-		if err := newVersion.IsUpgradeTo(currentVersion); err != nil {
-			return fmt.Errorf("invalid upgrade for %s: %w", release.ReleaseName, err)
+		// For charts we package ourselves, the version is equal to the CLI version (charts are embedded in the binary).
+		// We need to make sure this matches with the version in a user's config, if an upgrade should be applied.
+		if isCLIVersionedRelease(release.ReleaseName) {
+			// If target version is not a valid upgrade, don't upgrade any charts.
+			if err := configTargetVersion.IsUpgradeTo(currentVersion); err != nil {
+				return fmt.Errorf("invalid upgrade for %s: %w", release.ReleaseName, err)
+			}
+			// Target version is newer than current version, so we should perform an upgrade.
+			// Now make sure the target version is equal to the the CLI version.
+			if configTargetVersion.Compare(newVersion) != 0 {
+				return fmt.Errorf(
+					"unable to upgrade release %s to %s: this CLI only supports microservice version %s for upgrading",
+					release.ReleaseName, configTargetVersion, newVersion,
+				)
+			}
+		} else {
+			// This may break for external chart dependencies if we decide to upgrade more than one minor version at a time.
+			if err := newVersion.IsUpgradeTo(currentVersion); err != nil {
+				return fmt.Errorf("invalid upgrade for %s: %w", release.ReleaseName, err)
+			}
 		}
 	}
 
-	// at this point we conclude that the release should be upgraded. check that this CLI supports the upgrade.
-	if isCLIVersionedRelease(release.ReleaseName) && a.cliVersion.Compare(newVersion) != 0 {
-		return fmt.Errorf("this CLI only supports microservice version %s for upgrading", a.cliVersion.String())
-	}
 	if !allowDestructive &&
 		release.ReleaseName == certManagerInfo.releaseName {
 		return ErrConfirmationMissing
