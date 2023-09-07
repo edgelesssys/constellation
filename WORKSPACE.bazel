@@ -1,5 +1,9 @@
 workspace(name = "constellation")
 
+load("//bazel/toolchains:skylib_deps.bzl", "skylib_deps")
+
+skylib_deps()
+
 # nixpkgs deps
 load("//bazel/toolchains:nixpkgs_deps.bzl", "nixpkgs_deps")
 
@@ -9,7 +13,13 @@ load("@io_tweag_rules_nixpkgs//nixpkgs:repositories.bzl", "rules_nixpkgs_depende
 
 rules_nixpkgs_dependencies()
 
-load("@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl", "nixpkgs_flake_package")
+load("@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl", "nixpkgs_flake_package", "nixpkgs_git_repository", "nixpkgs_package", "nixpkgs_python_configure")
+
+nixpkgs_git_repository(
+    name = "nixpkgs",
+    revision = "27c6a38e0aa2e57ab914ad8b500582085549c236",
+    sha256 = "875c2e171ab9663ff6ad2b5c75d974776682b3b4075143fc98d73c39a3b8c132",
+)
 
 nixpkgs_flake_package(
     name = "mkosi",
@@ -18,9 +28,19 @@ nixpkgs_flake_package(
     package = "mkosi",
 )
 
+nixpkgs_package(
+    name = "diffutils",
+    repository = "@nixpkgs",
+)
+
+nixpkgs_package(
+    name = "systemd",
+    repository = "@nixpkgs",
+)
+
 load("//bazel/mkosi:mkosi_configure.bzl", "find_system_mkosi")
 
-find_system_mkosi(name="constellation_mkosi")
+find_system_mkosi(name = "constellation_mkosi")
 
 # Python toolchain
 load("//bazel/toolchains:python_deps.bzl", "python_deps")
@@ -31,6 +51,14 @@ load("@rules_python//python:repositories.bzl", "py_repositories", "python_regist
 
 py_repositories()
 
+# if nix is installed, use nixpkgs python toolchain...
+nixpkgs_python_configure(
+    fail_not_supported = False,
+    python3_attribute_path = "python311.withPackages(ps: with ps; [ numpy ])",
+    repository = "@nixpkgs",
+)
+
+# ... otherwise, fall back to rules_python toolchain
 python_register_toolchains(
     name = "python3_11",
     python_version = "3.11",
@@ -41,16 +69,29 @@ load("//bazel/toolchains:go_rules_deps.bzl", "go_deps")
 
 go_deps()
 
-load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
-load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 load("//bazel/toolchains:go_module_deps.bzl", "go_dependencies")
 
 # gazelle:repository_macro bazel/toolchains/go_module_deps.bzl%go_dependencies
 go_dependencies()
 
+load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies")
+
 go_rules_dependencies()
 
-go_register_toolchains(version = "1.20.8")
+local_repository(
+    name = "nixos-support",
+    path = "bazel/nixos-support",
+)
+
+load("@nixos-support//:nixos-support.bzl", "gen_imports")
+
+gen_imports()
+
+load("@nixos_support//:imports.bzl", "cc_toolchain", "go_toolchain")
+
+go_toolchain()
+
+load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 
 gazelle_dependencies(go_repository_default_config = "//:WORKSPACE.bazel")
 
@@ -111,19 +152,7 @@ load("@hermetic_cc_toolchain//toolchain:defs.bzl", zig_toolchains = "toolchains"
 
 zig_toolchains()
 
-register_toolchains(
-    "@zig_sdk//libc_aware/toolchain:linux_amd64_gnu.2.23",
-    "@zig_sdk//libc_aware/toolchain:linux_arm64_gnu.2.23",
-    "@zig_sdk//libc_aware/toolchain:linux_amd64_musl",
-    "@zig_sdk//libc_aware/toolchain:linux_arm64_musl",
-    "@zig_sdk//toolchain:linux_amd64_gnu.2.23",
-    "@zig_sdk//toolchain:linux_arm64_gnu.2.23",
-    "@zig_sdk//toolchain:linux_amd64_musl",
-    "@zig_sdk//toolchain:linux_arm64_musl",
-    "@zig_sdk//toolchain:darwin_amd64",
-    "@zig_sdk//toolchain:darwin_arm64",
-    "@zig_sdk//toolchain:windows_amd64",
-)
+cc_toolchain()
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 

@@ -5,7 +5,9 @@ load("@bazel_skylib//lib:shell.bzl", "shell")
 def _sh_template_impl(ctx):
     out_file = ctx.actions.declare_file(ctx.label.name + ".bash")
 
-    substitutions = {}
+    substitutions = {
+        "@@BASE_LIB@@": ctx.file._base_lib.path,
+    }
     for k, v in ctx.attr.substitutions.items():
         sub = ctx.expand_location(v, ctx.attr.data)
         sub = ctx.expand_make_variables("substitutions", sub, {})
@@ -21,6 +23,7 @@ def _sh_template_impl(ctx):
     return [DefaultInfo(
         files = depset([out_file]),
         executable = out_file,
+        runfiles = ctx.runfiles(files = ctx.files.data + [ctx.file._base_lib]),
     )]
 
 _sh_template = rule(
@@ -31,6 +34,10 @@ _sh_template = rule(
         ),
         "substitutions": attr.string_dict(),
         "template": attr.label(
+            allow_single_file = True,
+        ),
+        "_base_lib": attr.label(
+            default = Label("@constellation//bazel/sh:base_lib"),
             allow_single_file = True,
         ),
     },
@@ -46,10 +53,8 @@ def sh_template(name, **kwargs):
     script_name = name + "-script"
 
     tags = kwargs.get("tags", [])
-    data = kwargs.get("data", [])
-    data.append("//bazel/sh:base_lib")
+    data = kwargs.pop("data", [])
     substitutions = kwargs.pop("substitutions", [])
-    substitutions["@@BASE_LIB@@"] = "$(rootpath //bazel/sh:base_lib)"
     template = kwargs.pop("template", [])
     toolchains = kwargs.pop("toolchains", [])
 
@@ -65,6 +70,7 @@ def sh_template(name, **kwargs):
     native.sh_binary(
         name = name,
         srcs = [script_name],
+        data = [script_name] + data,
         **kwargs
     )
 
@@ -78,10 +84,8 @@ def sh_test_template(name, **kwargs):
     script_name = name + "-script"
 
     tags = kwargs.get("tags", [])
-    data = kwargs.get("data", [])
-    data.append("//bazel/sh:base_lib")
+    data = kwargs.pop("data", [])
     substitutions = kwargs.pop("substitutions", [])
-    substitutions["@@BASE_LIB@@"] = "$(rootpath //bazel/sh:base_lib)"
     template = kwargs.pop("template", [])
 
     _sh_template(
@@ -95,6 +99,7 @@ def sh_test_template(name, **kwargs):
     native.sh_test(
         name = name,
         srcs = [script_name],
+        data = [script_name] + data,
         **kwargs
     )
 
