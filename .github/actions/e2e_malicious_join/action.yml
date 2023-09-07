@@ -17,6 +17,8 @@ runs:
       env:
         KUBECONFIG: ${{ inputs.kubeconfig }}
       working-directory: e2e/malicious-join
+      permissions:
+        packages: write
       run: |
         bazel run //e2e/malicious-join:stamp_and_push
         yq eval -i "(.spec.template.spec.containers[0].command) = \
@@ -31,7 +33,7 @@ runs:
         ALL_TESTS_PASSED=$(kubectl logs -n malicious-join job/malicious-join | tail -n 1 | jq -r '.allPassed')
         if [[ "$ALL_TESTS_PASSED" != "true" ]]; then
           kubectl logs -n malicious-join job/malicious-join
-          kubectl logs -n kube-system svc/join-service 
+          kubectl logs -n kube-system svc/join-service
           exit 1
         fi
         kubectl delete ns malicious-join

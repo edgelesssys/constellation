@@ -330,6 +330,8 @@ runs:
     - name: Run malicious join test
       if: inputs.test == 'malicious join'
       uses: ./.github/actions/e2e_malicious_join
+      permissions:
+        packages: write
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
