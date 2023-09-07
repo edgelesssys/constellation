@@ -62,7 +62,6 @@ func (u *IAMUpgrader) PlanIAMUpgrade(ctx context.Context, outWriter io.Writer, v
 	return planUpgrade(
 		ctx, u.tf, u.fileHandler, outWriter, u.logLevel, vars,
 		filepath.Join("terraform", "iam", strings.ToLower(csp.String())),
-		u.existingWorkspace,
 		filepath.Join(u.upgradeWorkspace, constants.TerraformIAMUpgradeBackupDir),
 	)
 }

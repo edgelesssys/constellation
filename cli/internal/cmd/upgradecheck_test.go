@@ -221,7 +221,7 @@ func TestUpgradeCheck(t *testing.T) {
 
 			cmd := newUpgradeCheckCmd()
 
-			err := checkCmd.upgradeCheck(cmd, stubAttestationFetcher{}, "test", upgradeCheckFlags{})
+			err := checkCmd.upgradeCheck(cmd, stubAttestationFetcher{}, upgradeCheckFlags{})
 			if tc.wantError {
 				assert.Error(err)
 				return

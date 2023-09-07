@@ -112,7 +112,7 @@ func TestIamUpgradeApply(t *testing.T) {
 				log:         logger.NewTest(t),
 			}
 
-			err := iamUpgradeApplyCmd.iamUpgradeApply(cmd, tc.iamUpgrader, "test", false, tc.yesFlag)
+			err := iamUpgradeApplyCmd.iamUpgradeApply(cmd, tc.iamUpgrader, false, tc.yesFlag)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

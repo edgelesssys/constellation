@@ -85,10 +85,10 @@ func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
 		log:         log,
 	}
 
-	return i.iamUpgradeApply(cmd, iamMigrateCmd, upgradeDir, force, yes)
+	return i.iamUpgradeApply(cmd, iamMigrateCmd, force, yes)
 }
 
-func (i iamUpgradeApplyCmd) iamUpgradeApply(cmd *cobra.Command, iamUpgrader iamUpgrader, upgradeDir string, force, yes bool) error {
+func (i iamUpgradeApplyCmd) iamUpgradeApply(cmd *cobra.Command, iamUpgrader iamUpgrader, force, yes bool) error {
 	conf, err := config.New(i.fileHandler, constants.ConfigFilename, attestationconfigapi.NewFetcher(), force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {

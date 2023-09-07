@@ -87,7 +87,7 @@ func TestPlanUpgrade(t *testing.T) {
 			hasDiff, err := planUpgrade(
 				context.Background(), tc.tf, fs, io.Discard, terraform.LogLevelDebug,
 				&terraform.QEMUVariables{},
-				"existing", "upgrade", "backup",
+				"test", "backup",
 			)
 			if tc.wantErr {
 				assert.Error(err)

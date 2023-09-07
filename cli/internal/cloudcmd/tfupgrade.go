@@ -21,7 +21,7 @@ import (
 func planUpgrade(
 	ctx context.Context, tfClient tfUpgradePlanner, fileHandler file.Handler,
 	outWriter io.Writer, logLevel terraform.LogLevel, vars terraform.Variables,
-	templateDir, existingWorkspace, backupDir string,
+	templateDir, backupDir string,
 ) (bool, error) {
 	if err := ensureFileNotExist(fileHandler, backupDir); err != nil {
 		return false, fmt.Errorf("backup directory %s already exists: %w", backupDir, err)
