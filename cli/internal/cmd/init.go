@@ -153,7 +153,7 @@ func (i *initCmd) initialize(
 		return err
 	}
 	// cfg validation does not check k8s patch version since upgrade may accept an outdated patch version.
-	conf.KubernetesVersion, err = versions.NewValidK8sVersion(string(conf.KubernetesVersion), true)
+	_, err = versions.NewValidK8sVersion(string(conf.KubernetesVersion), true)
 	if err != nil {
 		return err
 	}
