@@ -80,9 +80,10 @@ func (a actionFactory) appendNewAction(release Release, configTargetVersion semv
 	if errors.Is(err, errReleaseNotFound) {
 		// Don't install a new release if the user's config specifies a different version than the CLI offers.
 		if !force && isCLIVersionedRelease(release.ReleaseName) && cliSupportsConfigVersion {
-			return fmt.Errorf(
-				"unable to install release %s at %s: this CLI only supports microservice version %s for upgrading",
-				release.ReleaseName, configTargetVersion, newVersion,
+			return compatibility.NewInvalidUpgradeError(
+				currentVersion.String(),
+				configTargetVersion.String(),
+				fmt.Errorf("this CLI only supports installing microservice version %s", newVersion),
 			)
 		}
 
@@ -107,9 +108,10 @@ func (a actionFactory) appendNewAction(release Release, configTargetVersion semv
 			// Target version is newer than current version, so we should perform an upgrade.
 			// Now make sure the target version is equal to the the CLI version.
 			if cliSupportsConfigVersion {
-				return fmt.Errorf(
-					"unable to upgrade release %s to %s: this CLI only supports microservice version %s for upgrading",
-					release.ReleaseName, configTargetVersion, newVersion,
+				return compatibility.NewInvalidUpgradeError(
+					currentVersion.String(),
+					configTargetVersion.String(),
+					fmt.Errorf("this CLI only supports upgrading to microservice version %s", newVersion),
 				)
 			}
 		} else {

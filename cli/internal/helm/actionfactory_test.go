@@ -178,10 +178,7 @@ func TestAppendNewAction(t *testing.T) {
 			},
 			configTargetVersion: semver.NewFromInt(1, 1, 0, ""),
 			wantErr:             true,
-			assertErr: func(assert *assert.Assertions, err error) {
-				var invalidUpgrade *compatibility.InvalidUpgradeError
-				assert.False(errors.As(err, &invalidUpgrade))
-			},
+			assertErr:           assertUpgradeErr,
 		},
 		"config version matches CLI version on upgrade": {
 			lister: stubLister{version: semver.NewFromInt(1, 0, 0, "")},
@@ -220,6 +217,7 @@ func TestAppendNewAction(t *testing.T) {
 			},
 			configTargetVersion: semver.NewFromInt(1, 0, 0, ""),
 			wantErr:             true,
+			assertErr:           assertUpgradeErr,
 		},
 		"config - CLI version mismatch for new releases can be forced through": {
 			lister: stubLister{err: errReleaseNotFound},
