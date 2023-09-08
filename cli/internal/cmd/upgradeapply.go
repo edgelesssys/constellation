@@ -549,7 +549,7 @@ func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
 	if err != nil {
 		return upgradeApplyFlags{}, fmt.Errorf("parsing skip-phases flag: %w", err)
 	}
-	skipPhases := []skipPhase{}
+	var skipPhases []skipPhase
 	for _, phase := range rawSkipPhases {
 		switch skipPhase(phase) {
 		case skipInfrastructurePhase, skipHelmPhase, skipNodePhase, skipK8sPhase:
