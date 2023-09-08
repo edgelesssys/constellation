@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
@@ -37,6 +38,20 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
+const (
+	// skipInfrastructurePhase skips the terraform apply of the upgrade process.
+	skipInfrastructurePhase skipPhase = "infrastructure"
+	// skipHelmPhase skips the helm upgrade of the upgrade process.
+	skipHelmPhase skipPhase = "helm"
+	// skipImagePhase skips the image upgrade of the upgrade process.
+	skipImagePhase skipPhase = "image"
+	// skipK8sPhase skips the k8s upgrade of the upgrade process.
+	skipK8sPhase skipPhase = "k8s"
+)
+
+// skipPhase is a phase of the upgrade process that can be skipped.
+type skipPhase string
+
 func newUpgradeApplyCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "apply",
@@ -53,6 +68,8 @@ func newUpgradeApplyCmd() *cobra.Command {
 		"Might be useful for slow connections or big clusters.")
 	cmd.Flags().Bool("conformance", false, "enable conformance mode")
 	cmd.Flags().Bool("skip-helm-wait", false, "install helm charts without waiting for deployments to be ready")
+	cmd.Flags().StringSlice("skip-phases", nil, "comma-separated list of upgrade phases to skip\n"+
+		"one or multiple of { infrastructure | helm | image | k8s }")
 	if err := cmd.Flags().MarkHidden("timeout"); err != nil {
 		panic(err)
 	}
@@ -172,9 +189,17 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
 
-	tfOutput, err := u.migrateTerraform(cmd, conf, upgradeDir, flags)
-	if err != nil {
-		return fmt.Errorf("performing Terraform migrations: %w", err)
+	var tfOutput terraform.ApplyOutput
+	if flags.skipPhases.contains(skipInfrastructurePhase) {
+		tfOutput, err = u.clusterShower.ShowCluster(cmd.Context(), conf.GetProvider())
+		if err != nil {
+			return fmt.Errorf("getting Terraform output: %w", err)
+		}
+	} else {
+		tfOutput, err = u.migrateTerraform(cmd, conf, upgradeDir, flags)
+		if err != nil {
+			return fmt.Errorf("performing Terraform migrations: %w", err)
+		}
 	}
 	// reload idFile after terraform migration
 	// it might have been updated by the migration
@@ -197,26 +222,31 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 	}
 
 	var upgradeErr *compatibility.InvalidUpgradeError
-	err = u.handleServiceUpgrade(cmd, conf, idFile, tfOutput, validK8sVersion, upgradeDir, flags)
-	switch {
-	case errors.As(err, &upgradeErr):
-		cmd.PrintErrln(err)
-	case err == nil:
-		cmd.Println("Successfully upgraded Constellation services.")
-	case err != nil:
-		return fmt.Errorf("upgrading services: %w", err)
+	if !flags.skipPhases.contains(skipHelmPhase) {
+		err = u.handleServiceUpgrade(cmd, conf, idFile, tfOutput, validK8sVersion, upgradeDir, flags)
+		switch {
+		case errors.As(err, &upgradeErr):
+			cmd.PrintErrln(err)
+		case err == nil:
+			cmd.Println("Successfully upgraded Constellation services.")
+		case err != nil:
+			return fmt.Errorf("upgrading services: %w", err)
+		}
 	}
 
-	err = u.kubeUpgrader.UpgradeNodeVersion(cmd.Context(), conf, flags.force)
-	switch {
-	case errors.Is(err, kubecmd.ErrInProgress):
-		cmd.PrintErrln("Skipping image and Kubernetes upgrades. Another upgrade is in progress.")
-	case errors.As(err, &upgradeErr):
-		cmd.PrintErrln(err)
-	case err != nil:
-		return fmt.Errorf("upgrading NodeVersion: %w", err)
+	skipImageUpgrade := flags.skipPhases.contains(skipImagePhase)
+	skipK8sUpgrade := flags.skipPhases.contains(skipK8sPhase)
+	if !(skipImageUpgrade && skipK8sUpgrade) {
+		err = u.kubeUpgrader.UpgradeNodeVersion(cmd.Context(), conf, flags.force, skipImageUpgrade, skipK8sUpgrade)
+		switch {
+		case errors.Is(err, kubecmd.ErrInProgress):
+			cmd.PrintErrln("Skipping image and Kubernetes upgrades. Another upgrade is in progress.")
+		case errors.As(err, &upgradeErr):
+			cmd.PrintErrln(err)
+		case err != nil:
+			return fmt.Errorf("upgrading NodeVersion: %w", err)
+		}
 	}
-
 	return nil
 }
 
@@ -516,6 +546,21 @@ func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
 	if skipHelmWait {
 		helmWaitMode = helm.WaitModeNone
 	}
+
+	rawSkipPhases, err := cmd.Flags().GetStringSlice("skip-phases")
+	if err != nil {
+		return upgradeApplyFlags{}, fmt.Errorf("parsing skip-phases flag: %w", err)
+	}
+	var skipPhases []skipPhase
+	for _, phase := range rawSkipPhases {
+		switch skipPhase(phase) {
+		case skipInfrastructurePhase, skipHelmPhase, skipImagePhase, skipK8sPhase:
+			skipPhases = append(skipPhases, skipPhase(phase))
+		default:
+			return upgradeApplyFlags{}, fmt.Errorf("invalid phase %s", phase)
+		}
+	}
+
 	return upgradeApplyFlags{
 		pf:                pathprefix.New(workDir),
 		yes:               yes,
@@ -524,6 +569,7 @@ func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
 		terraformLogLevel: logLevel,
 		conformance:       conformance,
 		helmWaitMode:      helmWaitMode,
+		skipPhases:        skipPhases,
 	}, nil
 }
 
@@ -558,10 +604,24 @@ type upgradeApplyFlags struct {
 	terraformLogLevel terraform.LogLevel
 	conformance       bool
 	helmWaitMode      helm.WaitMode
+	skipPhases        skipPhases
+}
+
+// skipPhases is a list of phases that can be skipped during the upgrade process.
+type skipPhases []skipPhase
+
+// contains returns true if the list of phases contains the given phase.
+func (s skipPhases) contains(phase skipPhase) bool {
+	for _, p := range s {
+		if strings.EqualFold(string(p), string(phase)) {
+			return true
+		}
+	}
+	return false
 }
 
 type kubernetesUpgrader interface {
-	UpgradeNodeVersion(ctx context.Context, conf *config.Config, force bool) error
+	UpgradeNodeVersion(ctx context.Context, conf *config.Config, force, skipImage, skipK8s bool) error
 	ExtendClusterConfigCertSANs(ctx context.Context, alternativeNames []string) error
 	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, error)
 	ApplyJoinConfig(ctx context.Context, newAttestConfig config.AttestationCfg, measurementSalt []byte) error

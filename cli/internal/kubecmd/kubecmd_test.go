@@ -332,7 +332,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 				outWriter:    io.Discard,
 			}
 
-			err = upgrader.UpgradeNodeVersion(context.Background(), tc.conf, tc.force)
+			err = upgrader.UpgradeNodeVersion(context.Background(), tc.conf, tc.force, false, false)
 			// Check upgrades first because if we checked err first, UpgradeImage may error due to other reasons and still trigger an upgrade.
 			if tc.wantUpdate {
 				assert.NotNil(unstructuredClient.updatedObject)

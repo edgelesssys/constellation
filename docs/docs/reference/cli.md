@@ -472,12 +472,14 @@ constellation upgrade apply [flags]
 ### Options
 
 ```
-      --conformance      enable conformance mode
-  -h, --help             help for apply
-      --skip-helm-wait   install helm charts without waiting for deployments to be ready
-  -y, --yes              run upgrades without further confirmation
-                         WARNING: might delete your resources in case you are using cert-manager in your cluster. Please read the docs.
-                         WARNING: might unintentionally overwrite measurements in the running cluster.
+      --conformance           enable conformance mode
+  -h, --help                  help for apply
+      --skip-helm-wait        install helm charts without waiting for deployments to be ready
+      --skip-phases strings   comma-separated list of upgrade phases to skip
+                              one or multiple of { infrastructure | helm | image | k8s }
+  -y, --yes                   run upgrades without further confirmation
+                              WARNING: might delete your resources in case you are using cert-manager in your cluster. Please read the docs.
+                              WARNING: might unintentionally overwrite measurements in the running cluster.
 ```
 
 ### Options inherited from parent commands
