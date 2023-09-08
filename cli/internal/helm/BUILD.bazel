@@ -438,7 +438,6 @@ go_library(
         "//internal/versions",
         "@com_github_pkg_errors//:errors",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
-        "@io_k8s_apimachinery//pkg/util/wait",
         "@io_k8s_client_go//kubernetes",
         "@io_k8s_client_go//tools/clientcmd",
         "@io_k8s_client_go//util/retry",
@@ -457,6 +456,7 @@ go_test(
     srcs = [
         "helm_test.go",
         "loader_test.go",
+        "retryaction_test.go",
     ],
     data = glob(["testdata/**"]),
     embed = [":helm"],

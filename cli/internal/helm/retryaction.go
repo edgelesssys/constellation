@@ -9,11 +9,9 @@ package helm
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/retry"
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 const (
@@ -28,7 +26,7 @@ type retrieableApplier interface {
 }
 
 // retryApply retries the given retriable action.
-func retryApply(ctx context.Context, action retrieableApplier, log debugLog) error {
+func retryApply(ctx context.Context, action retrieableApplier, retryInterval time.Duration, log debugLog) error {
 	var retries int
 	retriable := func(err error) bool {
 		// abort after maximumRetryAttempts tries.
@@ -37,20 +35,14 @@ func retryApply(ctx context.Context, action retrieableApplier, log debugLog) err
 		}
 		retries++
 		// only retry if atomic is set
-		// otherwise helm doesn't uninstall
-		// the release on failure
-		if !action.IsAtomic() {
-			return false
-		}
-		// check if error is retriable
-		return wait.Interrupted(err) ||
-			strings.Contains(err.Error(), "connection refused")
+		// otherwise helm doesn't uninstall the release on failure
+		return action.IsAtomic()
 	}
 	doer := applyDoer{
-		action,
-		log,
+		applier: action,
+		log:     log,
 	}
-	retrier := retry.NewIntervalRetrier(doer, 30*time.Second, retriable)
+	retrier := retry.NewIntervalRetrier(doer, retryInterval, retriable)
 
 	retryLoopStartTime := time.Now()
 	if err := retrier.Do(ctx); err != nil {
@@ -63,15 +55,15 @@ func retryApply(ctx context.Context, action retrieableApplier, log debugLog) err
 
 // applyDoer is a helper struct to enable retrying helm actions.
 type applyDoer struct {
-	Applier retrieableApplier
+	applier retrieableApplier
 	log     debugLog
 }
 
 // Do tries to apply the action.
 func (i applyDoer) Do(ctx context.Context) error {
-	i.log.Debugf("Trying to apply Helm chart %s", i.Applier.ReleaseName())
-	if err := i.Applier.apply(ctx); err != nil {
-		i.log.Debugf("Helm chart installation %s failed: %v", i.Applier.ReleaseName(), err)
+	i.log.Debugf("Trying to apply Helm chart %s", i.applier.ReleaseName())
+	if err := i.applier.apply(ctx); err != nil {
+		i.log.Debugf("Helm chart installation %s failed: %v", i.applier.ReleaseName(), err)
 		return err
 	}
 
