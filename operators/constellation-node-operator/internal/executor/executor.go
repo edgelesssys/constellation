@@ -33,10 +33,10 @@ type Controller interface {
 	Reconcile(ctx context.Context) (Result, error)
 }
 
-// Executor is a task executor / scheduler.
+// taskExecutor is a task executor / scheduler.
 // It will call the reconcile method of the given controller with a regular interval
 // or when triggered externally.
-type Executor struct {
+type taskExecutor struct {
 	running atomic.Bool
 
 	// controller is the controller to be reconciled.
@@ -55,9 +55,9 @@ type Executor struct {
 }
 
 // New creates a new Executor.
-func New(controller Controller, cfg Config) *Executor {
+func New(controller Controller, cfg Config) Executor {
 	cfg.applyDefaults()
-	return &Executor{
+	return &taskExecutor{
 		controller:       controller,
 		pollingFrequency: cfg.PollingFrequency,
 		rateLimiter:      cfg.RateLimiter,
@@ -66,13 +66,20 @@ func New(controller Controller, cfg Config) *Executor {
 	}
 }
 
+// Executor is a task executor / scheduler.
+type Executor interface {
+	Start(ctx context.Context) StopWaitFn
+	Running() bool
+	Trigger()
+}
+
 // StopWaitFn is a function that can be called to stop the executor and wait for it to stop.
 type StopWaitFn func()
 
 // Start starts the executor in a separate go routine.
 // Call Stop to stop the executor.
 // IMPORTANT: The executor can only be started once.
-func (e *Executor) Start(ctx context.Context) StopWaitFn {
+func (e *taskExecutor) Start(ctx context.Context) StopWaitFn {
 	wg := &sync.WaitGroup{}
 	logr := log.FromContext(ctx)
 	stopWait := func() {
@@ -157,7 +164,7 @@ func (e *Executor) Start(ctx context.Context) StopWaitFn {
 
 // Stop stops the executor.
 // It does not block until the executor is stopped.
-func (e *Executor) Stop() {
+func (e *taskExecutor) Stop() {
 	select {
 	case e.stop <- struct{}{}:
 	default:
@@ -167,13 +174,13 @@ func (e *Executor) Stop() {
 
 // Running returns true if the executor is running.
 // When the executor is stopped, it is not running anymore.
-func (e *Executor) Running() bool {
+func (e *taskExecutor) Running() bool {
 	return e.running.Load()
 }
 
 // Trigger triggers a reconciliation.
 // If a reconciliation is already pending, this call is a no-op.
-func (e *Executor) Trigger() {
+func (e *taskExecutor) Trigger() {
 	select {
 	case e.externalTrigger <- struct{}{}:
 	default:
