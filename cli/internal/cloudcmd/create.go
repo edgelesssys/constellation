@@ -112,31 +112,7 @@ func (c *Creator) Create(ctx context.Context, opts CreateOptions) (state.Infrast
 	if err != nil {
 		return state.Infrastructure{}, fmt.Errorf("creating cluster: %w", err)
 	}
-	return convertToInfrastructure(tfOutput), nil
-}
-
-func convertToInfrastructure(applyOutput terraform.ApplyOutput) state.Infrastructure {
-	var infra state.Infrastructure
-	infra.UID = applyOutput.UID
-	infra.PublicIP = applyOutput.IP
-	infra.InitSecret = applyOutput.Secret
-	infra.APIServerCertSANs = applyOutput.APIServerCertSANs
-
-	if applyOutput.Azure != nil {
-		infra.Azure.ResourceGroup = applyOutput.Azure.ResourceGroup
-		infra.Azure.SubscriptionID = applyOutput.Azure.SubscriptionID
-		infra.Azure.NetworkSecurityGroupName = applyOutput.Azure.NetworkSecurityGroupName
-		infra.Azure.LoadBalancerName = applyOutput.Azure.LoadBalancerName
-		infra.Azure.UserAssignedIdentity = applyOutput.Azure.UserAssignedIdentity
-		infra.Azure.AttestationURL = applyOutput.Azure.AttestationURL
-	}
-
-	if applyOutput.GCP != nil {
-		infra.GCP.ProjectID = applyOutput.GCP.ProjectID
-		infra.GCP.IPCidrNode = applyOutput.GCP.IPCidrNode
-		infra.GCP.IPCidrPod = applyOutput.GCP.IPCidrPod
-	}
-	return infra
+	return terraform.ConvertToInfrastructure(tfOutput), nil
 }
 
 func (c *Creator) createAWS(ctx context.Context, cl tfResourceClient, opts CreateOptions) (tfOutput terraform.ApplyOutput, retErr error) {

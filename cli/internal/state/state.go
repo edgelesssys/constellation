@@ -15,23 +15,23 @@ type State struct {
 
 // Infrastructure describe the state related to the cloud resources of the cluster.
 type Infrastructure struct {
-	UID               string     `yaml:"uid"`
-	PublicIP          string     `yaml:"publicIP"`
-	InitSecret        string     `yaml:"initSecret"`
-	APIServerCertSANs []string   `yaml:"apiServerCertSANs"`
-	Azure             AzureState `yaml:"azure"`
-	GCP               GCPState   `yaml:"gcp"`
+	UID               string   `yaml:"uid"`
+	PublicIP          string   `yaml:"publicIP"`
+	InitSecret        string   `yaml:"initSecret"`
+	APIServerCertSANs []string `yaml:"apiServerCertSANs"`
+	Azure             *Azure   `yaml:"azure"`
+	GCP               *GCP     `yaml:"gcp"`
 }
 
-// GCPState describes the infra state related to GCP.
-type GCPState struct {
+// GCP describes the infra state related to GCP.
+type GCP struct {
 	ProjectID  string `yaml:"projectID"`
 	IPCidrNode string `yaml:"ipCidrNode"`
 	IPCidrPod  string `yaml:"ipCidrPod"`
 }
 
-// AzureState describes the infra state related to Azure.
-type AzureState struct {
+// Azure describes the infra state related to Azure.
+type Azure struct {
 	ResourceGroup            string `yaml:"resourceGroup"`
 	SubscriptionID           string `yaml:"subscriptionID"`
 	NetworkSecurityGroupName string `yaml:"networkSecurityGroupName"`

@@ -13,7 +13,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
@@ -31,7 +31,7 @@ import (
 // reuse user input from the init step. However, we can't rely on reuse-values, because
 // during upgrades we all values need to be set locally as they might have changed.
 // Also, the charts are not rendered correctly without all of these values.
-func extraCiliumValues(provider cloudprovider.Provider, conformanceMode bool, output terraform.ApplyOutput) map[string]any {
+func extraCiliumValues(provider cloudprovider.Provider, conformanceMode bool, output state.Infrastructure) map[string]any {
 	extraVals := map[string]any{}
 	if conformanceMode {
 		extraVals["kubeProxyReplacementHealthzBindAddr"] = ""
@@ -42,7 +42,7 @@ func extraCiliumValues(provider cloudprovider.Provider, conformanceMode bool, ou
 		}
 	}
 
-	extraVals["k8sServiceHost"] = output.IP
+	extraVals["k8sServiceHost"] = output.PublicIP
 	extraVals["k8sServicePort"] = constants.KubernetesPort
 	if provider == cloudprovider.GCP {
 		extraVals["ipv4NativeRoutingCIDR"] = output.GCP.IPCidrPod
@@ -54,7 +54,7 @@ func extraCiliumValues(provider cloudprovider.Provider, conformanceMode bool, ou
 // extraConstellationServicesValues extends the given values map by some values depending on user input.
 // Values set inside this function are only applied during init, not during upgrade.
 func extraConstellationServicesValues(
-	cfg *config.Config, masterSecret uri.MasterSecret, uid, serviceAccURI string, output terraform.ApplyOutput,
+	cfg *config.Config, masterSecret uri.MasterSecret, uid, serviceAccURI string, output state.Infrastructure,
 ) (map[string]any, error) {
 	extraVals := map[string]any{}
 	extraVals["join-service"] = map[string]any{
@@ -62,10 +62,10 @@ func extraConstellationServicesValues(
 	}
 	extraVals["verification-service"] = map[string]any{
 		"attestationVariant": cfg.GetAttestationConfig().GetVariant().String(),
-		"loadBalancerIP":     output.IP,
+		"loadBalancerIP":     output.PublicIP,
 	}
 	extraVals["konnectivity"] = map[string]any{
-		"loadBalancerIP": output.IP,
+		"loadBalancerIP": output.PublicIP,
 	}
 
 	extraVals["key-service"] = map[string]any{
@@ -147,7 +147,7 @@ type cloudConfig struct {
 }
 
 // getCCMConfig returns the configuration needed for the Kubernetes Cloud Controller Manager on Azure.
-func getCCMConfig(tfOutput terraform.AzureApplyOutput, serviceAccURI string) ([]byte, error) {
+func getCCMConfig(azureState state.Azure, serviceAccURI string) ([]byte, error) {
 	creds, err := azureshared.ApplicationCredentialsFromURI(serviceAccURI)
 	if err != nil {
 		return nil, fmt.Errorf("getting service account key: %w", err)
@@ -156,16 +156,16 @@ func getCCMConfig(tfOutput terraform.AzureApplyOutput, serviceAccURI string) ([]
 	config := cloudConfig{
 		Cloud:                       "AzurePublicCloud",
 		TenantID:                    creds.TenantID,
-		SubscriptionID:              tfOutput.SubscriptionID,
-		ResourceGroup:               tfOutput.ResourceGroup,
+		SubscriptionID:              azureState.SubscriptionID,
+		ResourceGroup:               azureState.ResourceGroup,
 		LoadBalancerSku:             "standard",
-		SecurityGroupName:           tfOutput.NetworkSecurityGroupName,
-		LoadBalancerName:            tfOutput.LoadBalancerName,
+		SecurityGroupName:           azureState.NetworkSecurityGroupName,
+		LoadBalancerName:            azureState.LoadBalancerName,
 		UseInstanceMetadata:         true,
 		VMType:                      "vmss",
 		Location:                    creds.Location,
 		UseManagedIdentityExtension: useManagedIdentityExtension,
-		UserAssignedIdentityID:      tfOutput.UserAssignedIdentity,
+		UserAssignedIdentityID:      azureState.UserAssignedIdentity,
 	}
 
 	return json.Marshal(config)

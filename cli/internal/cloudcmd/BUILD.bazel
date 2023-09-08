@@ -60,6 +60,7 @@ go_test(
     ],
     embed = [":cloudcmd"],
     deps = [
+        "//cli/internal/state",
         "//cli/internal/terraform",
         "//internal/attestation/measurements",
         "//internal/attestation/variant",

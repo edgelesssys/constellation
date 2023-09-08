@@ -39,6 +39,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -75,12 +76,12 @@ type initCmd struct {
 	merger        configMerger
 	spinner       spinnerInterf
 	fileHandler   file.Handler
-	clusterShower clusterShower
+	clusterShower infrastructureShower
 	pf            pathprefix.PathPrefixer
 }
 
 func newInitCmd(
-	clusterShower clusterShower, fileHandler file.Handler,
+	clusterShower infrastructureShower, fileHandler file.Handler,
 	spinner spinnerInterf, merger configMerger, log debugLog,
 ) *initCmd {
 	return &initCmd{
@@ -261,9 +262,9 @@ func (i *initCmd) initialize(
 		return fmt.Errorf("applying attestation config: %w", err)
 	}
 
-	output, err := i.clusterShower.ShowCluster(cmd.Context(), conf.GetProvider())
+	infraState, err := i.clusterShower.ShowInfrastructure(cmd.Context(), conf.GetProvider())
 	if err != nil {
-		return fmt.Errorf("getting Terraform output: %w", err)
+		return fmt.Errorf("getting infrastructure state: %w", err)
 	}
 
 	i.spinner.Start("Installing Kubernetes components ", false)
@@ -277,7 +278,7 @@ func (i *initCmd) initialize(
 	if err != nil {
 		return fmt.Errorf("creating Helm client: %w", err)
 	}
-	executor, includesUpgrades, err := helmApplier.PrepareApply(conf, idFile, options, output,
+	executor, includesUpgrades, err := helmApplier.PrepareApply(conf, idFile, options, infraState,
 		serviceAccURI, masterSecret)
 	if err != nil {
 		return fmt.Errorf("getting Helm chart executor: %w", err)
@@ -671,9 +672,11 @@ type attestationConfigApplier interface {
 }
 
 type helmApplier interface {
-	PrepareApply(conf *config.Config, idFile clusterid.File, flags helm.Options, tfOutput terraform.ApplyOutput, serviceAccURI string, masterSecret uri.MasterSecret) (helm.Applier, bool, error)
+	PrepareApply(conf *config.Config, idFile clusterid.File,
+		flags helm.Options, infra state.Infrastructure, serviceAccURI string, masterSecret uri.MasterSecret) (
+		helm.Applier, bool, error)
 }
 
-type clusterShower interface {
-	ShowCluster(ctx context.Context, provider cloudprovider.Provider) (terraform.ApplyOutput, error)
+type infrastructureShower interface {
+	ShowInfrastructure(ctx context.Context, provider cloudprovider.Provider) (state.Infrastructure, error)
 }

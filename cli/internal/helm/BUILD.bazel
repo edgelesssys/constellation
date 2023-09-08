@@ -422,7 +422,7 @@ go_library(
     deps = [
         "//cli/internal/clusterid",
         "//cli/internal/helm/imageversion",
-        "//cli/internal/terraform",
+        "//cli/internal/state",
         "//internal/cloud/azureshared",
         "//internal/cloud/cloudprovider",
         "//internal/cloud/gcpshared",
@@ -463,7 +463,7 @@ go_test(
     embed = [":helm"],
     deps = [
         "//cli/internal/clusterid",
-        "//cli/internal/terraform",
+        "//cli/internal/state",
         "//internal/attestation/measurements",
         "//internal/cloud/azureshared",
         "//internal/cloud/cloudprovider",
