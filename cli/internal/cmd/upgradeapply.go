@@ -68,7 +68,8 @@ func newUpgradeApplyCmd() *cobra.Command {
 		"Might be useful for slow connections or big clusters.")
 	cmd.Flags().Bool("conformance", false, "enable conformance mode")
 	cmd.Flags().Bool("skip-helm-wait", false, "install helm charts without waiting for deployments to be ready")
-	cmd.Flags().StringSlice("skip-phases", []string{}, "skip one or multiple phases of the upgrade process {infrastructure|helm|node|k8s}\n")
+	cmd.Flags().StringSlice("skip-phases", nil, "comma-separated list of upgrade phases to skip\n"+
+		"one or multiple of { infrastructure | helm | node | k8s }")
 	if err := cmd.Flags().MarkHidden("timeout"); err != nil {
 		panic(err)
 	}
