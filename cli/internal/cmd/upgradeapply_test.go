@@ -111,7 +111,7 @@ func TestUpgradeApply(t *testing.T) {
 			helmUpgrader:      &mockApplier{}, // mocks ensure that no methods are called
 			terraformUpgrader: &mockTerraformUpgrader{},
 			flags: upgradeApplyFlags{
-				skipPhases: []skipPhase{skipInfrastructurePhase, skipHelmPhase, skipK8sPhase, skipNodePhase},
+				skipPhases: []skipPhase{skipInfrastructurePhase, skipHelmPhase, skipK8sPhase, skipImagePhase},
 				yes:        true,
 			},
 		},
@@ -159,7 +159,7 @@ func TestUpgradeApply(t *testing.T) {
 				return
 			}
 			assert.NoError(err)
-			assert.Equal(!tc.flags.skipPhases.contains(skipNodePhase), tc.kubeUpgrader.calledNodeUpgrade,
+			assert.Equal(!tc.flags.skipPhases.contains(skipImagePhase), tc.kubeUpgrader.calledNodeUpgrade,
 				"incorrect node upgrade skipping behavior")
 		})
 	}
@@ -170,12 +170,12 @@ func TestUpgradeApplyFlagsForSkipPhases(t *testing.T) {
 	cmd.Flags().String("workspace", "", "")  // register persistent flag manually
 	cmd.Flags().Bool("force", true, "")      // register persistent flag manually
 	cmd.Flags().String("tf-log", "NONE", "") // register persistent flag manually
-	require.NoError(t, cmd.Flags().Set("skip-phases", "infrastructure,helm,k8s,node"))
+	require.NoError(t, cmd.Flags().Set("skip-phases", "infrastructure,helm,k8s,image"))
 	result, err := parseUpgradeApplyFlags(cmd)
 	if err != nil {
 		t.Fatalf("Error while parsing flags: %v", err)
 	}
-	assert.ElementsMatch(t, []skipPhase{skipInfrastructurePhase, skipHelmPhase, skipK8sPhase, skipNodePhase}, result.skipPhases)
+	assert.ElementsMatch(t, []skipPhase{skipInfrastructurePhase, skipHelmPhase, skipK8sPhase, skipImagePhase}, result.skipPhases)
 }
 
 type stubKubernetesUpgrader struct {
@@ -192,7 +192,7 @@ func (u *stubKubernetesUpgrader) BackupCRs(_ context.Context, _ []apiextensionsv
 	return nil
 }
 
-func (u *stubKubernetesUpgrader) UpgradeNodeVersion(_ context.Context, _ *config.Config, _ bool) error {
+func (u *stubKubernetesUpgrader) UpgradeNodeVersion(_ context.Context, _ *config.Config, _, _, _ bool) error {
 	u.calledNodeUpgrade = true
 	return u.nodeVersionErr
 }

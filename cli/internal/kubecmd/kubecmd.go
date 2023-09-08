@@ -99,7 +99,8 @@ func New(outWriter io.Writer, kubeConfigPath string, fileHandler file.Handler, l
 
 // UpgradeNodeVersion upgrades the cluster's NodeVersion object and in turn triggers image & k8s version upgrades.
 // The versions set in the config are validated against the versions running in the cluster.
-func (k *KubeCmd) UpgradeNodeVersion(ctx context.Context, conf *config.Config, force bool) error {
+// TODO(elchead): AB#3434 Split K8s and image upgrade of UpgradeNodeVersion.
+func (k *KubeCmd) UpgradeNodeVersion(ctx context.Context, conf *config.Config, force, skipImage, skipK8s bool) error {
 	provider := conf.GetProvider()
 	attestationVariant := conf.GetAttestationConfig().GetVariant()
 	region := conf.GetRegion()
@@ -120,40 +121,43 @@ func (k *KubeCmd) UpgradeNodeVersion(ctx context.Context, conf *config.Config, f
 
 	upgradeErrs := []error{}
 	var upgradeErr *compatibility.InvalidUpgradeError
-
-	err = k.isValidImageUpgrade(nodeVersion, imageVersion.Version(), force)
-	switch {
-	case errors.As(err, &upgradeErr):
-		upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping image upgrades: %w", err))
-	case err != nil:
-		return fmt.Errorf("updating image version: %w", err)
-	}
-	k.log.Debugf("Updating local copy of nodeVersion image version from %s to %s", nodeVersion.Spec.ImageVersion, imageVersion.Version())
-	nodeVersion.Spec.ImageReference = imageReference
-	nodeVersion.Spec.ImageVersion = imageVersion.Version()
-
-	// We have to allow users to specify outdated k8s patch versions.
-	// Therefore, this code has to skip k8s updates if a user configures an outdated (i.e. invalid) k8s version.
-	var components *corev1.ConfigMap
-	currentK8sVersion, err := versions.NewValidK8sVersion(conf.KubernetesVersion, true)
-	if err != nil {
-		innerErr := fmt.Errorf("unsupported Kubernetes version, supported versions are %s", strings.Join(versions.SupportedK8sVersions(), ", "))
-		err = compatibility.NewInvalidUpgradeError(nodeVersion.Spec.KubernetesClusterVersion, conf.KubernetesVersion, innerErr)
-	} else {
-		versionConfig := versions.VersionConfigs[currentK8sVersion]
-		components, err = k.updateK8s(&nodeVersion, versionConfig.ClusterVersion, versionConfig.KubernetesComponents, force)
-	}
-
-	switch {
-	case err == nil:
-		err := k.applyComponentsCM(ctx, components)
-		if err != nil {
-			return fmt.Errorf("applying k8s components ConfigMap: %w", err)
+	if !skipImage {
+		err = k.isValidImageUpgrade(nodeVersion, imageVersion.Version(), force)
+		switch {
+		case errors.As(err, &upgradeErr):
+			upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping image upgrades: %w", err))
+		case err != nil:
+			return fmt.Errorf("updating image version: %w", err)
 		}
-	case errors.As(err, &upgradeErr):
-		upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping Kubernetes upgrades: %w", err))
-	default:
-		return fmt.Errorf("updating Kubernetes version: %w", err)
+		k.log.Debugf("Updating local copy of nodeVersion image version from %s to %s", nodeVersion.Spec.ImageVersion, imageVersion.Version())
+		nodeVersion.Spec.ImageReference = imageReference
+		nodeVersion.Spec.ImageVersion = imageVersion.Version()
+	}
+
+	if !skipK8s {
+		// We have to allow users to specify outdated k8s patch versions.
+		// Therefore, this code has to skip k8s updates if a user configures an outdated (i.e. invalid) k8s version.
+		var components *corev1.ConfigMap
+		currentK8sVersion, err := versions.NewValidK8sVersion(conf.KubernetesVersion, true)
+		if err != nil {
+			innerErr := fmt.Errorf("unsupported Kubernetes version, supported versions are %s", strings.Join(versions.SupportedK8sVersions(), ", "))
+			err = compatibility.NewInvalidUpgradeError(nodeVersion.Spec.KubernetesClusterVersion, conf.KubernetesVersion, innerErr)
+		} else {
+			versionConfig := versions.VersionConfigs[currentK8sVersion]
+			components, err = k.updateK8s(&nodeVersion, versionConfig.ClusterVersion, versionConfig.KubernetesComponents, force)
+		}
+
+		switch {
+		case err == nil:
+			err := k.applyComponentsCM(ctx, components)
+			if err != nil {
+				return fmt.Errorf("applying k8s components ConfigMap: %w", err)
+			}
+		case errors.As(err, &upgradeErr):
+			upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping Kubernetes upgrades: %w", err))
+		default:
+			return fmt.Errorf("updating Kubernetes version: %w", err)
+		}
 	}
 
 	if len(upgradeErrs) == 2 {

@@ -43,8 +43,8 @@ const (
 	skipInfrastructurePhase skipPhase = "infrastructure"
 	// skipHelmPhase skips the helm upgrade of the upgrade process.
 	skipHelmPhase skipPhase = "helm"
-	// skipNodePhase skips the node upgrade of the upgrade process.
-	skipNodePhase skipPhase = "node"
+	// skipImagePhase skips the image upgrade of the upgrade process.
+	skipImagePhase skipPhase = "image"
 	// skipK8sPhase skips the k8s upgrade of the upgrade process.
 	skipK8sPhase skipPhase = "k8s"
 )
@@ -69,7 +69,7 @@ func newUpgradeApplyCmd() *cobra.Command {
 	cmd.Flags().Bool("conformance", false, "enable conformance mode")
 	cmd.Flags().Bool("skip-helm-wait", false, "install helm charts without waiting for deployments to be ready")
 	cmd.Flags().StringSlice("skip-phases", nil, "comma-separated list of upgrade phases to skip\n"+
-		"one or multiple of { infrastructure | helm | node | k8s }")
+		"one or multiple of { infrastructure | helm | image | k8s }")
 	if err := cmd.Flags().MarkHidden("timeout"); err != nil {
 		panic(err)
 	}
@@ -234,8 +234,10 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 		}
 	}
 
-	if !flags.skipPhases.contains(skipNodePhase) {
-		err = u.kubeUpgrader.UpgradeNodeVersion(cmd.Context(), conf, flags.force)
+	skipImageUpgrade := flags.skipPhases.contains(skipImagePhase)
+	skipK8sUpgrade := flags.skipPhases.contains(skipK8sPhase)
+	if !(skipImageUpgrade && skipK8sUpgrade) {
+		err = u.kubeUpgrader.UpgradeNodeVersion(cmd.Context(), conf, flags.force, skipImageUpgrade, skipK8sUpgrade)
 		switch {
 		case errors.Is(err, kubecmd.ErrInProgress):
 			cmd.PrintErrln("Skipping image and Kubernetes upgrades. Another upgrade is in progress.")
@@ -552,7 +554,7 @@ func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
 	var skipPhases []skipPhase
 	for _, phase := range rawSkipPhases {
 		switch skipPhase(phase) {
-		case skipInfrastructurePhase, skipHelmPhase, skipNodePhase, skipK8sPhase:
+		case skipInfrastructurePhase, skipHelmPhase, skipImagePhase, skipK8sPhase:
 			skipPhases = append(skipPhases, skipPhase(phase))
 		default:
 			return upgradeApplyFlags{}, fmt.Errorf("invalid phase %s", phase)
@@ -619,7 +621,7 @@ func (s skipPhases) contains(phase skipPhase) bool {
 }
 
 type kubernetesUpgrader interface {
-	UpgradeNodeVersion(ctx context.Context, conf *config.Config, force bool) error
+	UpgradeNodeVersion(ctx context.Context, conf *config.Config, force, skipImage, skipK8s bool) error
 	ExtendClusterConfigCertSANs(ctx context.Context, alternativeNames []string) error
 	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, error)
 	ApplyJoinConfig(ctx context.Context, newAttestConfig config.AttestationCfg, measurementSalt []byte) error
