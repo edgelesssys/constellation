@@ -21,7 +21,8 @@ import (
 
 const (
 	// timeout is the maximum time given per helm action.
-	timeout = 10 * time.Minute
+	timeout            = 10 * time.Minute
+	applyRetryInterval = 30 * time.Second
 )
 
 type applyAction interface {
@@ -85,7 +86,7 @@ func (a *installAction) Apply(ctx context.Context) error {
 			return err
 		}
 	}
-	if err := retryApply(ctx, a, a.log); err != nil {
+	if err := retryApply(ctx, a, applyRetryInterval, a.log); err != nil {
 		return err
 	}
 
@@ -142,7 +143,7 @@ func (a *upgradeAction) Apply(ctx context.Context) error {
 			return err
 		}
 	}
-	if err := retryApply(ctx, a, a.log); err != nil {
+	if err := retryApply(ctx, a, applyRetryInterval, a.log); err != nil {
 		return err
 	}
 	if a.postUpgrade != nil {
