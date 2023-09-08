@@ -78,6 +78,21 @@ You can run these commands to learn about the versions currently configured in t
 - image version: `kubectl get nodeversion constellation-version -o json -n kube-system | jq .spec.imageVersion`
 - microservices versions: `helm list --filter 'constellation-services' -n kube-system`
 
+### Upgrading Kubernetes resources fails
+
+Constellation manages its Kubernetes resources using Helm.
+When applying an upgrade, the charts that are about to be installed, and a values override file `overrides.yaml`,
+are saved to disk in your current workspace under `constellation-upgrade/upgrade-<timestamp>/helm-charts/`.
+If upgrading the charts using the Constellation CLI fails, you can review these charts and try to manually apply the upgrade.
+
+:::caution
+
+Changing and manually applying the charts may destroy cluster resources and can lead to broken Constellation deployments.
+Proceed with caution and when in doubt,
+check if the encountered [issue is known](https://github.com/edgelesssys/constellation/issues?q=is%3Aopen+is%3Aissue+label%3A%22known+issue%22) or [contact support](https://github.com/edgelesssys/constellation#support).
+
+:::
+
 ## Diagnosing issues
 
 ### Cloud logging
