@@ -61,6 +61,8 @@ func New(controller Controller, cfg Config) *Executor {
 		controller:       controller,
 		pollingFrequency: cfg.PollingFrequency,
 		rateLimiter:      cfg.RateLimiter,
+		externalTrigger:  make(chan struct{}, 1),
+		stop:             make(chan struct{}, 1),
 	}
 }
 
@@ -69,6 +71,7 @@ type StopWaitFn func()
 
 // Start starts the executor in a separate go routine.
 // Call Stop to stop the executor.
+// IMPORTANT: The executor can only be started once.
 func (e *Executor) Start(ctx context.Context) StopWaitFn {
 	wg := &sync.WaitGroup{}
 	logr := log.FromContext(ctx)
@@ -83,9 +86,6 @@ func (e *Executor) Start(ctx context.Context) StopWaitFn {
 	if !e.running.CompareAndSwap(false, true) {
 		return stopWait
 	}
-
-	e.externalTrigger = make(chan struct{}, 1)
-	e.stop = make(chan struct{}, 1)
 	// execute is used by the go routines below to communicate
 	// that a reconciliation should happen
 	execute := make(chan struct{}, 1)
