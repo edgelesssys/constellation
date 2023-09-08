@@ -58,9 +58,10 @@ Image and Kubernetes upgrades take longer.
 For each node in your cluster, a new node has to be created and joined.
 The process usually takes up to ten minutes per node.
 
-When applying an upgrade, backup files of Constellation-managed Custom Resource Definitions, Custom Resources, and Terraform state are created.
+When applying an upgrade, the Helm charts for the upgrade as well as backup files of Constellation-managed Custom Resource Definitions, Custom Resources, and Terraform state are created.
 You can use the Terraform state backup to restore previous resources in case an upgrade misconfigured or erroneously deleted a resource.
 You can use the Custom Resource (Definition) backup files to restore Custom Resources and Definitions manually (e.g., via `kubectl apply`) if the automatic migration of those resources fails.
+You can use the Helm charts to manually apply upgrades to the Kubernetes resources, should an upgrade fail.
 
 ## Check the status
 
@@ -82,16 +83,16 @@ Here's an example output:
 
 ```shell-session
 Target versions:
-	Image: v2.6.0
-	Kubernetes: v1.25.8
-Installed service versions:
-	Cilium: v1.12.1
-	cert-manager: v1.10.0
-	constellation-operators: v2.6.0
-	constellation-services: v2.6.0
+    Image: v2.6.0
+    Kubernetes: v1.25.8
+Service versions:
+    Cilium: v1.12.1
+    cert-manager: v1.10.0
+    constellation-operators: v2.6.0
+    constellation-services: v2.6.0
 Cluster status: Some node versions are out of date
-	Image: 23/25
-	Kubernetes: 25/25
+    Image: 23/25
+    Kubernetes: 25/25
 ```
 
 This output indicates that the cluster is running Kubernetes version `1.25.8`, and all nodes have the appropriate binaries installed.
