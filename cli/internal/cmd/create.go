@@ -35,11 +35,6 @@ func NewCreateCmd() *cobra.Command {
 		RunE:  runCreate,
 	}
 	cmd.Flags().BoolP("yes", "y", false, "create the cluster without further confirmation")
-	// TODO(malt3): remove deprecated flags in v2.11+
-	cmd.Flags().IntP("control-plane-nodes", "c", 0, "number of control-plane nodes")
-	cmd.Flags().IntP("worker-nodes", "w", 0, "number of worker nodes")
-	must(cmd.Flags().MarkDeprecated("control-plane-nodes", "configure the number of control-plane nodes in the configuration file"))
-	must(cmd.Flags().MarkDeprecated("worker-nodes", "configure the number of worker nodes in the configuration file"))
 	return cmd
 }
 

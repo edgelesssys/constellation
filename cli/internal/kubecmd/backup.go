@@ -66,7 +66,7 @@ func (k *KubeCmd) BackupCRs(ctx context.Context, crds []apiextensionsv1.CustomRe
 		k.log.Debugf("Creating backup for resource type: %s", crd.Name)
 
 		// Iterate over all versions of the CRD
-		// TODO: Consider iterating over crd.Status.StoredVersions instead
+		// TODO(daniel-weisse): Consider iterating over crd.Status.StoredVersions instead
 		// Currently, we have to ignore not-found errors, because a CRD might define
 		// a version that is not installed in the cluster.
 		// With the StoredVersions field, we could only iterate over the installed versions.

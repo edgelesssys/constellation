@@ -200,9 +200,8 @@ func normalizeAzureURIs(vars *terraform.AzureClusterVariables) *terraform.AzureC
 }
 
 func (c *Creator) createOpenStack(ctx context.Context, cl tfResourceClient, opts CreateOptions) (tfOutput terraform.ApplyOutput, retErr error) {
-	// TODO(malt3): Remove this once OpenStack is supported.
 	if os.Getenv("CONSTELLATION_OPENSTACK_DEV") != "1" {
-		return terraform.ApplyOutput{}, errors.New("OpenStack isn't supported yet")
+		return terraform.ApplyOutput{}, errors.New("Constellation must be fine-tuned to your OpenStack deployment. Please create an issue or contact Edgeless Systems at https://edgeless.systems/contact/")
 	}
 	if _, hasOSAuthURL := os.LookupEnv("OS_AUTH_URL"); !hasOSAuthURL && opts.Config.Provider.OpenStack.Cloud == "" {
 		return terraform.ApplyOutput{}, errors.New(

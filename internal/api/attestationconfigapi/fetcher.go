@@ -56,7 +56,7 @@ func newFetcherWithClientAndVerifier(client apifetcher.HTTPClient, cosignVerifie
 
 // FetchAzureSEVSNPVersionList fetches the version list information from the config API.
 func (f *fetcher) FetchAzureSEVSNPVersionList(ctx context.Context, attestation AzureSEVSNPVersionList) (AzureSEVSNPVersionList, error) {
-	// TODO (derpsteb): Replace with FetchAndVerify once we move to v2 of the config API.
+	// TODO(derpsteb): Replace with FetchAndVerify once we move to v2 of the config API.
 	return apifetcher.Fetch(ctx, f.HTTPClient, attestation)
 }
 
