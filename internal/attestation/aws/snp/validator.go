@@ -80,12 +80,18 @@ func (v *Validator) tpmEnabled(attestation vtpm.AttestationDocument, _ *attest.M
 	if err != nil {
 		return err
 	}
+	if len(imageOutput.Images) == 0 {
+		return fmt.Errorf("aws image %s not found", imageID)
+	}
+	if len(imageOutput.Images) > 1 {
+		return fmt.Errorf("found multiple image references for image ID %s", imageID)
+	}
 
 	if imageOutput.Images[0].TpmSupport == "v2.0" {
 		return nil
 	}
 
-	return fmt.Errorf("iam image %s does not support TPM v2.0", imageID)
+	return fmt.Errorf("aws image %s does not support TPM v2.0", imageID)
 }
 
 func getEC2Client(ctx context.Context, region string) (awsMetadataAPI, error) {

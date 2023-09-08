@@ -19,6 +19,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -381,19 +382,23 @@ func (f *attestationDocFormatterImpl) parseCerts(b *strings.Builder, certTypeNam
 // parseQuotes parses the base64-encoded quotes and writes their details to the output builder.
 func (f *attestationDocFormatterImpl) parseQuotes(b *strings.Builder, quotes []*tpmProto.Quote, expectedPCRs measurements.M) error {
 	writeIndentfln(b, 1, "Quote:")
-	for pcrNum, expectedPCR := range expectedPCRs {
+
+	var pcrNumbers []uint32
+	for pcrNum := range expectedPCRs {
+		pcrNumbers = append(pcrNumbers, pcrNum)
+	}
+	sort.Slice(pcrNumbers, func(i, j int) bool { return pcrNumbers[i] < pcrNumbers[j] })
+
+	for _, pcrNum := range pcrNumbers {
+		expectedPCR := expectedPCRs[pcrNum]
 		pcrIdx, err := vtpm.GetSHA256QuoteIndex(quotes)
 		if err != nil {
 			return fmt.Errorf("get SHA256 quote index: %w", err)
 		}
 
-		if quotes[pcrIdx] == nil {
-			return fmt.Errorf("quote %d is nil", pcrIdx)
-		}
-
-		actualPCR := quotes[pcrIdx].Pcrs.Pcrs[pcrNum]
-		if err != nil {
-			return fmt.Errorf("decode PCR %d: %w", pcrNum, err)
+		actualPCR, ok := quotes[pcrIdx].Pcrs.Pcrs[pcrNum]
+		if !ok {
+			return fmt.Errorf("PCR %d not found in quote", pcrNum)
 		}
 		writeIndentfln(b, 2, "PCR %d (Strict: %t):", pcrNum, !expectedPCR.ValidationOpt)
 		writeIndentfln(b, 3, "Expected:\t%x", expectedPCR.Expected)
