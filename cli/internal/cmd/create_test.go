@@ -9,7 +9,6 @@ package cmd
 import (
 	"bytes"
 	"errors"
-	"strconv"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
@@ -46,68 +45,30 @@ func TestCreate(t *testing.T) {
 		wantAbort           bool
 	}{
 		"create": {
-			setupFs:             fsWithDefaultConfig,
-			creator:             &stubCloudCreator{id: idFile},
-			provider:            cloudprovider.GCP,
-			controllerCountFlag: intPtr(1),
-			workerCountFlag:     intPtr(2),
-			yesFlag:             true,
+			setupFs:  fsWithDefaultConfig,
+			creator:  &stubCloudCreator{id: idFile},
+			provider: cloudprovider.GCP,
+			yesFlag:  true,
 		},
 		"interactive": {
-			setupFs:             fsWithDefaultConfig,
-			creator:             &stubCloudCreator{id: idFile},
-			provider:            cloudprovider.Azure,
-			controllerCountFlag: intPtr(2),
-			workerCountFlag:     intPtr(1),
-			stdin:               "yes\n",
+			setupFs:  fsWithDefaultConfig,
+			creator:  &stubCloudCreator{id: idFile},
+			provider: cloudprovider.Azure,
+			stdin:    "yes\n",
 		},
 		"interactive abort": {
-			setupFs:             fsWithDefaultConfig,
-			creator:             &stubCloudCreator{},
-			provider:            cloudprovider.GCP,
-			controllerCountFlag: intPtr(1),
-			workerCountFlag:     intPtr(1),
-			stdin:               "no\n",
-			wantAbort:           true,
+			setupFs:   fsWithDefaultConfig,
+			creator:   &stubCloudCreator{},
+			provider:  cloudprovider.GCP,
+			stdin:     "no\n",
+			wantAbort: true,
 		},
 		"interactive error": {
-			setupFs:             fsWithDefaultConfig,
-			creator:             &stubCloudCreator{},
-			provider:            cloudprovider.GCP,
-			controllerCountFlag: intPtr(1),
-			workerCountFlag:     intPtr(1),
-			stdin:               "foo\nfoo\nfoo\n",
-			wantErr:             true,
-		},
-		"flag control-plane-count invalid": {
-			setupFs:             fsWithDefaultConfig,
-			creator:             &stubCloudCreator{},
-			provider:            cloudprovider.GCP,
-			controllerCountFlag: intPtr(0),
-			workerCountFlag:     intPtr(3),
-			wantErr:             true,
-		},
-		"flag worker-count invalid": {
-			setupFs:             fsWithDefaultConfig,
-			creator:             &stubCloudCreator{},
-			provider:            cloudprovider.GCP,
-			controllerCountFlag: intPtr(3),
-			workerCountFlag:     intPtr(0),
-			wantErr:             true,
-		},
-		"flag control-plane-count missing": {
-			setupFs:         fsWithDefaultConfig,
-			creator:         &stubCloudCreator{},
-			provider:        cloudprovider.GCP,
-			workerCountFlag: intPtr(3),
-			wantErr:         true,
-		},
-		"flag worker-count missing": {
-			setupFs:             fsWithDefaultConfig,
-			creator:             &stubCloudCreator{},
-			provider:            cloudprovider.GCP,
-			controllerCountFlag: intPtr(3),
-			wantErr:             true,
+			setupFs:  fsWithDefaultConfig,
+			creator:  &stubCloudCreator{},
+			provider: cloudprovider.GCP,
+			stdin:    "foo\nfoo\nfoo\n",
+			wantErr:  true,
 		},
 		"old adminConf in directory": {
 			setupFs: func(require *require.Assertions, csp cloudprovider.Provider) afero.Fs {
@@ -117,12 +78,10 @@ func TestCreate(t *testing.T) {
 				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
 				return fs
 			},
-			creator:             &stubCloudCreator{},
-			provider:            cloudprovider.GCP,
-			controllerCountFlag: intPtr(1),
-			workerCountFlag:     intPtr(1),
-			yesFlag:             true,
-			wantErr:             true,
+			creator:  &stubCloudCreator{},
+			provider: cloudprovider.GCP,
+			yesFlag:  true,
+			wantErr:  true,
 		},
 		"old masterSecret in directory": {
 			setupFs: func(require *require.Assertions, csp cloudprovider.Provider) afero.Fs {
@@ -132,30 +91,24 @@ func TestCreate(t *testing.T) {
 				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
 				return fs
 			},
-			creator:             &stubCloudCreator{},
-			provider:            cloudprovider.GCP,
-			controllerCountFlag: intPtr(1),
-			workerCountFlag:     intPtr(1),
-			yesFlag:             true,
-			wantErr:             true,
+			creator:  &stubCloudCreator{},
+			provider: cloudprovider.GCP,
+			yesFlag:  true,
+			wantErr:  true,
 		},
 		"config does not exist": {
-			setupFs:             func(a *require.Assertions, p cloudprovider.Provider) afero.Fs { return afero.NewMemMapFs() },
-			creator:             &stubCloudCreator{},
-			provider:            cloudprovider.GCP,
-			controllerCountFlag: intPtr(1),
-			workerCountFlag:     intPtr(1),
-			yesFlag:             true,
-			wantErr:             true,
+			setupFs:  func(a *require.Assertions, p cloudprovider.Provider) afero.Fs { return afero.NewMemMapFs() },
+			creator:  &stubCloudCreator{},
+			provider: cloudprovider.GCP,
+			yesFlag:  true,
+			wantErr:  true,
 		},
 		"create error": {
-			setupFs:             fsWithDefaultConfig,
-			creator:             &stubCloudCreator{createErr: someErr},
-			provider:            cloudprovider.GCP,
-			controllerCountFlag: intPtr(1),
-			workerCountFlag:     intPtr(1),
-			yesFlag:             true,
-			wantErr:             true,
+			setupFs:  fsWithDefaultConfig,
+			creator:  &stubCloudCreator{createErr: someErr},
+			provider: cloudprovider.GCP,
+			yesFlag:  true,
+			wantErr:  true,
 		},
 		"write id file error": {
 			setupFs: func(require *require.Assertions, csp cloudprovider.Provider) afero.Fs {
@@ -164,12 +117,10 @@ func TestCreate(t *testing.T) {
 				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
 				return afero.NewReadOnlyFs(fs)
 			},
-			creator:             &stubCloudCreator{},
-			provider:            cloudprovider.GCP,
-			controllerCountFlag: intPtr(1),
-			workerCountFlag:     intPtr(1),
-			yesFlag:             true,
-			wantErr:             true,
+			creator:  &stubCloudCreator{},
+			provider: cloudprovider.GCP,
+			yesFlag:  true,
+			wantErr:  true,
 		},
 	}
 
@@ -188,12 +139,6 @@ func TestCreate(t *testing.T) {
 
 			if tc.yesFlag {
 				require.NoError(cmd.Flags().Set("yes", "true"))
-			}
-			if tc.controllerCountFlag != nil {
-				require.NoError(cmd.Flags().Set("control-plane-nodes", strconv.Itoa(*tc.controllerCountFlag)))
-			}
-			if tc.workerCountFlag != nil {
-				require.NoError(cmd.Flags().Set("worker-nodes", strconv.Itoa(*tc.workerCountFlag)))
 			}
 
 			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider))
@@ -331,8 +276,4 @@ func TestValidateCLIandConstellationVersionCompatibility(t *testing.T) {
 			}
 		})
 	}
-}
-
-func intPtr(i int) *int {
-	return &i
 }
