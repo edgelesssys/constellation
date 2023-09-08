@@ -9,9 +9,11 @@ package helm
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/file"
 
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
@@ -24,6 +26,7 @@ const (
 
 type applyAction interface {
 	Apply(context.Context) error
+	SaveChart(chartsDir string, fileHandler file.Handler) error
 	ReleaseName() string
 	IsAtomic() bool
 }
@@ -94,6 +97,11 @@ func (a *installAction) Apply(ctx context.Context) error {
 	return nil
 }
 
+// SaveChart saves the chart to the given directory under the `install/<chart-name>` subdirectory.
+func (a *installAction) SaveChart(chartsDir string, fileHandler file.Handler) error {
+	return saveChart(a.release, chartsDir, fileHandler)
+}
+
 func (a *installAction) apply(ctx context.Context) error {
 	_, err := a.helmAction.RunWithContext(ctx, a.release.Chart, a.release.Values)
 	return err
@@ -145,6 +153,11 @@ func (a *upgradeAction) Apply(ctx context.Context) error {
 	return nil
 }
 
+// SaveChart saves the chart to the given directory under the `upgrade/<chart-name>` subdirectory.
+func (a *upgradeAction) SaveChart(chartsDir string, fileHandler file.Handler) error {
+	return saveChart(a.release, chartsDir, fileHandler)
+}
+
 func (a *upgradeAction) apply(ctx context.Context) error {
 	_, err := a.helmAction.RunWithContext(ctx, a.release.ReleaseName, a.release.Chart, a.release.Values)
 	return err
@@ -158,4 +171,15 @@ func (a *upgradeAction) ReleaseName() string {
 // IsAtomic returns true if the action is atomic.
 func (a *upgradeAction) IsAtomic() bool {
 	return a.helmAction.Atomic
+}
+
+func saveChart(release Release, chartsDir string, fileHandler file.Handler) error {
+	if err := saveChartToDisk(release.Chart, chartsDir, fileHandler); err != nil {
+		return fmt.Errorf("saving chart %s to %q: %w", release.ReleaseName, chartsDir, err)
+	}
+	if err := fileHandler.WriteYAML(filepath.Join(chartsDir, release.Chart.Metadata.Name, "overrides.yaml"), release.Values); err != nil {
+		return fmt.Errorf("saving override values for chart %s to %q: %w", release.ReleaseName, filepath.Join(chartsDir, release.Chart.Metadata.Name), err)
+	}
+
+	return nil
 }

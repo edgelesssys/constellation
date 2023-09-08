@@ -36,6 +36,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
@@ -51,7 +52,6 @@ const (
 
 type debugLog interface {
 	Debugf(format string, args ...any)
-	Sync()
 }
 
 // Client is a Helm client to apply charts.
@@ -87,7 +87,10 @@ type Options struct {
 
 // PrepareApply loads the charts and returns the executor to apply them.
 // TODO(elchead): remove validK8sVersion by putting ValidK8sVersion into config.Config, see AB#3374.
-func (h Client) PrepareApply(conf *config.Config, validK8sversion versions.ValidK8sVersion, idFile clusterid.File, flags Options, tfOutput terraform.ApplyOutput, serviceAccURI string, masterSecret uri.MasterSecret) (Applier, bool, error) {
+func (h Client) PrepareApply(
+	conf *config.Config, validK8sversion versions.ValidK8sVersion, idFile clusterid.File,
+	flags Options, tfOutput terraform.ApplyOutput, serviceAccURI string, masterSecret uri.MasterSecret,
+) (Applier, bool, error) {
 	releases, err := h.loadReleases(conf, masterSecret, validK8sversion, idFile, flags, tfOutput, serviceAccURI)
 	if err != nil {
 		return nil, false, fmt.Errorf("loading Helm releases: %w", err)
@@ -97,7 +100,10 @@ func (h Client) PrepareApply(conf *config.Config, validK8sversion versions.Valid
 	return &ChartApplyExecutor{actions: actions, log: h.log}, includesUpgrades, err
 }
 
-func (h Client) loadReleases(conf *config.Config, secret uri.MasterSecret, validK8sVersion versions.ValidK8sVersion, idFile clusterid.File, flags Options, tfOutput terraform.ApplyOutput, serviceAccURI string) ([]Release, error) {
+func (h Client) loadReleases(
+	conf *config.Config, secret uri.MasterSecret, validK8sVersion versions.ValidK8sVersion,
+	idFile clusterid.File, flags Options, tfOutput terraform.ApplyOutput, serviceAccURI string,
+) ([]Release, error) {
 	helmLoader := newLoader(conf, idFile, validK8sVersion, h.cliVersion)
 	h.log.Debugf("Created new Helm loader")
 	return helmLoader.loadReleases(flags.Conformance, flags.HelmWaitMode, secret,
@@ -107,6 +113,7 @@ func (h Client) loadReleases(conf *config.Config, secret uri.MasterSecret, valid
 // Applier runs the Helm actions.
 type Applier interface {
 	Apply(ctx context.Context) error
+	SaveCharts(chartsDir string, fileHandler file.Handler) error
 }
 
 // ChartApplyExecutor is a Helm action executor that applies all actions.
@@ -121,6 +128,16 @@ func (c ChartApplyExecutor) Apply(ctx context.Context) error {
 		c.log.Debugf("Applying %q", action.ReleaseName())
 		if err := action.Apply(ctx); err != nil {
 			return fmt.Errorf("applying %s: %w", action.ReleaseName(), err)
+		}
+	}
+	return nil
+}
+
+// SaveCharts saves all Helm charts and their values to the given directory.
+func (c ChartApplyExecutor) SaveCharts(chartsDir string, fileHandler file.Handler) error {
+	for _, action := range c.actions {
+		if err := action.SaveChart(chartsDir, fileHandler); err != nil {
+			return fmt.Errorf("saving chart %s: %w", action.ReleaseName(), err)
 		}
 	}
 	return nil

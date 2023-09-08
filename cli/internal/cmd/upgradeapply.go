@@ -422,6 +422,13 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(
 		}
 	}
 
+	// Save the Helm charts for the upgrade to disk
+	chartDir := filepath.Join(upgradeDir, "helm-charts")
+	if err := executor.SaveCharts(chartDir, u.fileHandler); err != nil {
+		return fmt.Errorf("saving Helm charts to disk: %w", err)
+	}
+	u.log.Debugf("Helm charts saved to %s", chartDir)
+
 	if includesUpgrades {
 		u.log.Debugf("Creating backup of CRDs and CRs")
 		crds, err := u.kubeUpgrader.BackupCRDs(cmd.Context(), upgradeDir)
