@@ -5,7 +5,7 @@ curl -LO https://github.com/edgelesssys/constellation/releases/latest/download/c
 sudo install constellation-linux-amd64 /usr/local/bin/constellation
 
 # Start docker service and auto start on boot
-# TODO should be done in cloud-init but was not done in my test case
+# TODO(elchead) should be done in cloud-init but was not done in my test case
 sudo systemctl start docker.service && sudo systemctl enable docker.service
 echo "Waiting for docker service to be active..."
 # Wait at most 20min

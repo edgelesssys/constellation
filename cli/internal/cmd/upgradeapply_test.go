@@ -209,7 +209,7 @@ func (u *stubKubernetesUpgrader) ExtendClusterConfigCertSANs(_ context.Context, 
 	return nil
 }
 
-// TODO(v2.11): Remove this function.
+// TODO(v2.11): Remove this function after v2.11 is released.
 func (u *stubKubernetesUpgrader) RemoveAttestationConfigHelmManagement(_ context.Context) error {
 	return nil
 }

@@ -949,7 +949,7 @@ func (c AWSSEVSNP) EqualTo(other AttestationCfg) (bool, error) {
 	if !ok {
 		return false, fmt.Errorf("cannot compare %T with %T", c, other)
 	}
-	// TODO (derpsteb): reenable launchMeasurement once SNP is fixed on AWS.
+	// TODO(derpsteb): reenable launchMeasurement once SNP is fixed on AWS.
 	// if !bytes.Equal(c.LaunchMeasurement.Expected, otherCfg.LaunchMeasurement.Expected) {
 	// 	return false, nil
 	// }
