@@ -126,9 +126,6 @@ func (e *taskExecutor) Start(ctx context.Context) StopWaitFn {
 
 	// executor routine is responsible for executing the reconciliation
 	go func() {
-		defer func() {
-			e.running.Store(false)
-		}()
 		defer wg.Done()
 		defer close(nextScheduledReconcile)
 		defer logr.Info("Executor stopped")
