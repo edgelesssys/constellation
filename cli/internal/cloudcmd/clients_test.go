@@ -45,12 +45,12 @@ type stubTerraformClient struct {
 	showErr                error
 }
 
-func (c *stubTerraformClient) ApplyCluster(_ context.Context, _ cloudprovider.Provider, _ terraform.LogLevel) (terraform.ApplyOutput, error) {
-	return terraform.ApplyOutput{
-		IP:     c.ip,
-		Secret: c.initSecret,
-		UID:    c.uid,
-		Azure: &terraform.AzureApplyOutput{
+func (c *stubTerraformClient) ApplyCluster(_ context.Context, _ cloudprovider.Provider, _ terraform.LogLevel) (state.Infrastructure, error) {
+	return state.Infrastructure{
+		PublicIP:   c.ip,
+		InitSecret: c.initSecret,
+		UID:        c.uid,
+		Azure: &state.Azure{
 			AttestationURL: c.attestationURL,
 		},
 	}, c.createClusterErr

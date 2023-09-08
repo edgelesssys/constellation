@@ -449,18 +449,18 @@ func TestCreateCluster(t *testing.T) {
 
 			path := path.Join(tc.pathBase, strings.ToLower(tc.provider.String()))
 			require.NoError(c.PrepareWorkspace(path, tc.vars))
-			tfOutput, err := c.ApplyCluster(context.Background(), tc.provider, LogLevelDebug)
+			infraState, err := c.ApplyCluster(context.Background(), tc.provider, LogLevelDebug)
 
 			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			assert.NoError(err)
-			assert.Equal("192.0.2.100", tfOutput.IP)
-			assert.Equal("initSecret", tfOutput.Secret)
-			assert.Equal("12345abc", tfOutput.UID)
+			assert.Equal("192.0.2.100", infraState.PublicIP)
+			assert.Equal("initSecret", infraState.InitSecret)
+			assert.Equal("12345abc", infraState.UID)
 			if tc.provider == cloudprovider.Azure {
-				assert.Equal(tc.expectedAttestationURL, tfOutput.Azure.AttestationURL)
+				assert.Equal(tc.expectedAttestationURL, infraState.Azure.AttestationURL)
 			}
 		})
 	}

@@ -80,20 +80,20 @@ func (c *Creator) Create(ctx context.Context, opts CreateOptions) (state.Infrast
 	}
 	defer cl.RemoveInstaller()
 
-	var tfOutput terraform.ApplyOutput
+	var infraState state.Infrastructure
 	switch opts.Provider {
 	case cloudprovider.AWS:
 
-		tfOutput, err = c.createAWS(ctx, cl, opts)
+		infraState, err = c.createAWS(ctx, cl, opts)
 	case cloudprovider.GCP:
 
-		tfOutput, err = c.createGCP(ctx, cl, opts)
+		infraState, err = c.createGCP(ctx, cl, opts)
 	case cloudprovider.Azure:
 
-		tfOutput, err = c.createAzure(ctx, cl, opts)
+		infraState, err = c.createAzure(ctx, cl, opts)
 	case cloudprovider.OpenStack:
 
-		tfOutput, err = c.createOpenStack(ctx, cl, opts)
+		infraState, err = c.createOpenStack(ctx, cl, opts)
 	case cloudprovider.QEMU:
 		if runtime.GOARCH != "amd64" || runtime.GOOS != "linux" {
 			return state.Infrastructure{}, fmt.Errorf("creation of a QEMU based Constellation is not supported for %s/%s", runtime.GOOS, runtime.GOARCH)
@@ -104,7 +104,7 @@ func (c *Creator) Create(ctx context.Context, opts CreateOptions) (state.Infrast
 			CreateOptions: opts,
 		}
 
-		tfOutput, err = c.createQEMU(ctx, cl, lv, qemuOpts)
+		infraState, err = c.createQEMU(ctx, cl, lv, qemuOpts)
 	default:
 		return state.Infrastructure{}, fmt.Errorf("unsupported cloud provider: %s", opts.Provider)
 	}
@@ -112,46 +112,46 @@ func (c *Creator) Create(ctx context.Context, opts CreateOptions) (state.Infrast
 	if err != nil {
 		return state.Infrastructure{}, fmt.Errorf("creating cluster: %w", err)
 	}
-	return terraform.ConvertToInfrastructure(tfOutput), nil
+	return infraState, nil
 }
 
-func (c *Creator) createAWS(ctx context.Context, cl tfResourceClient, opts CreateOptions) (tfOutput terraform.ApplyOutput, retErr error) {
+func (c *Creator) createAWS(ctx context.Context, cl tfResourceClient, opts CreateOptions) (tfOutput state.Infrastructure, retErr error) {
 	vars := awsTerraformVars(opts.Config, opts.image)
 
 	tfOutput, err := runTerraformCreate(ctx, cl, cloudprovider.AWS, vars, c.out, opts.TFLogLevel)
 	if err != nil {
-		return terraform.ApplyOutput{}, err
+		return state.Infrastructure{}, err
 	}
 
 	return tfOutput, nil
 }
 
-func (c *Creator) createGCP(ctx context.Context, cl tfResourceClient, opts CreateOptions) (tfOutput terraform.ApplyOutput, retErr error) {
+func (c *Creator) createGCP(ctx context.Context, cl tfResourceClient, opts CreateOptions) (tfOutput state.Infrastructure, retErr error) {
 	vars := gcpTerraformVars(opts.Config, opts.image)
 
 	tfOutput, err := runTerraformCreate(ctx, cl, cloudprovider.GCP, vars, c.out, opts.TFLogLevel)
 	if err != nil {
-		return terraform.ApplyOutput{}, err
+		return state.Infrastructure{}, err
 	}
 
 	return tfOutput, nil
 }
 
-func (c *Creator) createAzure(ctx context.Context, cl tfResourceClient, opts CreateOptions) (tfOutput terraform.ApplyOutput, retErr error) {
+func (c *Creator) createAzure(ctx context.Context, cl tfResourceClient, opts CreateOptions) (tfOutput state.Infrastructure, retErr error) {
 	vars := azureTerraformVars(opts.Config, opts.image)
 
 	tfOutput, err := runTerraformCreate(ctx, cl, cloudprovider.Azure, vars, c.out, opts.TFLogLevel)
 	if err != nil {
-		return terraform.ApplyOutput{}, err
+		return state.Infrastructure{}, err
 	}
 
 	if vars.GetCreateMAA() {
 		// Patch the attestation policy to allow the cluster to boot while having secure boot disabled.
 		if tfOutput.Azure == nil {
-			return terraform.ApplyOutput{}, errors.New("no Terraform Azure output found")
+			return state.Infrastructure{}, errors.New("no Terraform Azure output found")
 		}
 		if err := c.policyPatcher.Patch(ctx, tfOutput.Azure.AttestationURL); err != nil {
-			return terraform.ApplyOutput{}, err
+			return state.Infrastructure{}, err
 		}
 	}
 
@@ -189,12 +189,13 @@ func normalizeAzureURIs(vars *terraform.AzureClusterVariables) *terraform.AzureC
 	return vars
 }
 
-func (c *Creator) createOpenStack(ctx context.Context, cl tfResourceClient, opts CreateOptions) (tfOutput terraform.ApplyOutput, retErr error) {
+func (c *Creator) createOpenStack(ctx context.Context, cl tfResourceClient, opts CreateOptions) (infraState state.Infrastructure, retErr error) {
+	// TODO(malt3): Remove this once OpenStack is supported.
 	if os.Getenv("CONSTELLATION_OPENSTACK_DEV") != "1" {
-		return terraform.ApplyOutput{}, errors.New("Constellation must be fine-tuned to your OpenStack deployment. Please create an issue or contact Edgeless Systems at https://edgeless.systems/contact/")
+		return state.Infrastructure{}, errors.New("Constellation must be fine-tuned to your OpenStack deployment. Please create an issue or contact Edgeless Systems at https://edgeless.systems/contact/")
 	}
 	if _, hasOSAuthURL := os.LookupEnv("OS_AUTH_URL"); !hasOSAuthURL && opts.Config.Provider.OpenStack.Cloud == "" {
-		return terraform.ApplyOutput{}, errors.New(
+		return state.Infrastructure{}, errors.New(
 			"neither environment variable OS_AUTH_URL nor cloud name for \"clouds.yaml\" is set. OpenStack authentication requires a set of " +
 				"OS_* environment variables that are typically sourced into the current shell with an openrc file " +
 				"or a cloud name for \"clouds.yaml\". " +
@@ -204,23 +205,23 @@ func (c *Creator) createOpenStack(ctx context.Context, cl tfResourceClient, opts
 
 	vars := openStackTerraformVars(opts.Config, opts.image)
 
-	tfOutput, err := runTerraformCreate(ctx, cl, cloudprovider.OpenStack, vars, c.out, opts.TFLogLevel)
+	infraState, err := runTerraformCreate(ctx, cl, cloudprovider.OpenStack, vars, c.out, opts.TFLogLevel)
 	if err != nil {
-		return terraform.ApplyOutput{}, err
+		return state.Infrastructure{}, err
 	}
 
-	return tfOutput, nil
+	return infraState, nil
 }
 
-func runTerraformCreate(ctx context.Context, cl tfResourceClient, provider cloudprovider.Provider, vars terraform.Variables, outWriter io.Writer, loglevel terraform.LogLevel) (output terraform.ApplyOutput, retErr error) {
+func runTerraformCreate(ctx context.Context, cl tfResourceClient, provider cloudprovider.Provider, vars terraform.Variables, outWriter io.Writer, loglevel terraform.LogLevel) (output state.Infrastructure, retErr error) {
 	if err := cl.PrepareWorkspace(path.Join("terraform", strings.ToLower(provider.String())), vars); err != nil {
-		return terraform.ApplyOutput{}, err
+		return state.Infrastructure{}, err
 	}
 
 	defer rollbackOnError(outWriter, &retErr, &rollbackerTerraform{client: cl}, loglevel)
 	tfOutput, err := cl.ApplyCluster(ctx, provider, loglevel)
 	if err != nil {
-		return terraform.ApplyOutput{}, err
+		return state.Infrastructure{}, err
 	}
 
 	return tfOutput, nil
@@ -231,7 +232,7 @@ type qemuCreateOptions struct {
 	CreateOptions
 }
 
-func (c *Creator) createQEMU(ctx context.Context, cl tfResourceClient, lv libvirtRunner, opts qemuCreateOptions) (tfOutput terraform.ApplyOutput, retErr error) {
+func (c *Creator) createQEMU(ctx context.Context, cl tfResourceClient, lv libvirtRunner, opts qemuCreateOptions) (tfOutput state.Infrastructure, retErr error) {
 	qemuRollbacker := &rollbackerQEMU{client: cl, libvirt: lv, createdWorkspace: false}
 	defer rollbackOnError(c.out, &retErr, qemuRollbacker, opts.TFLogLevel)
 
@@ -239,7 +240,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl tfResourceClient, lv libvir
 	downloader := c.newRawDownloader()
 	imagePath, err := downloader.Download(ctx, c.out, false, opts.source, opts.Config.Image)
 	if err != nil {
-		return terraform.ApplyOutput{}, fmt.Errorf("download raw image: %w", err)
+		return state.Infrastructure{}, fmt.Errorf("download raw image: %w", err)
 	}
 
 	libvirtURI := opts.Config.Provider.QEMU.LibvirtURI
@@ -249,7 +250,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl tfResourceClient, lv libvir
 	// if no libvirt URI is specified, start a libvirt container
 	case libvirtURI == "":
 		if err := lv.Start(ctx, opts.Config.Name, opts.Config.Provider.QEMU.LibvirtContainerImage); err != nil {
-			return terraform.ApplyOutput{}, fmt.Errorf("start libvirt container: %w", err)
+			return state.Infrastructure{}, fmt.Errorf("start libvirt container: %w", err)
 		}
 		libvirtURI = libvirt.LibvirtTCPConnectURI
 
@@ -265,11 +266,11 @@ func (c *Creator) createQEMU(ctx context.Context, cl tfResourceClient, lv libvir
 	case strings.HasPrefix(libvirtURI, "qemu+unix://"):
 		unixURI, err := url.Parse(strings.TrimPrefix(libvirtURI, "qemu+unix://"))
 		if err != nil {
-			return terraform.ApplyOutput{}, err
+			return state.Infrastructure{}, err
 		}
 		libvirtSocketPath = unixURI.Query().Get("socket")
 		if libvirtSocketPath == "" {
-			return terraform.ApplyOutput{}, fmt.Errorf("socket path not specified in qemu+unix URI: %s", libvirtURI)
+			return state.Infrastructure{}, fmt.Errorf("socket path not specified in qemu+unix URI: %s", libvirtURI)
 		}
 	}
 
@@ -285,7 +286,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl tfResourceClient, lv libvir
 	}
 
 	if err := cl.PrepareWorkspace(path.Join("terraform", strings.ToLower(cloudprovider.QEMU.String())), vars); err != nil {
-		return terraform.ApplyOutput{}, fmt.Errorf("prepare workspace: %w", err)
+		return state.Infrastructure{}, fmt.Errorf("prepare workspace: %w", err)
 	}
 
 	// Allow rollback of QEMU Terraform workspace from this point on
@@ -293,7 +294,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl tfResourceClient, lv libvir
 
 	tfOutput, err = cl.ApplyCluster(ctx, opts.Provider, opts.TFLogLevel)
 	if err != nil {
-		return terraform.ApplyOutput{}, fmt.Errorf("create cluster: %w", err)
+		return state.Infrastructure{}, fmt.Errorf("create cluster: %w", err)
 	}
 
 	return tfOutput, nil

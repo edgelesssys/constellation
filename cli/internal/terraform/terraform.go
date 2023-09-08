@@ -173,93 +173,64 @@ func (c *Client) ShowIAM(ctx context.Context, provider cloudprovider.Provider) (
 
 // ShowInfrastructure reads the state of Constellation cluster resources from Terraform.
 func (c *Client) ShowInfrastructure(ctx context.Context, provider cloudprovider.Provider) (state.Infrastructure, error) {
-	tfOutput, err := c.ShowCluster(ctx, provider)
+	tfOutput, err := c.showApplyOutput(ctx, provider)
 	if err != nil {
 		return state.Infrastructure{}, err
 	}
-	return ConvertToInfrastructure(tfOutput), nil
+	return convertToInfrastructure(tfOutput), nil
 }
 
-// ConvertToInfrastructure converts the Terraform output of a cluster creation or apply operation to a state.Infrastructure.
-func ConvertToInfrastructure(applyOutput ApplyOutput) state.Infrastructure {
-	var infra state.Infrastructure
-	infra.UID = applyOutput.UID
-	infra.ClusterEndpoint = applyOutput.IP
-	infra.InitSecret = applyOutput.Secret
-	infra.APIServerCertSANs = applyOutput.APIServerCertSANs
-
-	if applyOutput.Azure != nil {
-		infra.Azure = &state.Azure{
-			ResourceGroup:            applyOutput.Azure.ResourceGroup,
-			SubscriptionID:           applyOutput.Azure.SubscriptionID,
-			UserAssignedIdentity:     applyOutput.Azure.UserAssignedIdentity,
-			NetworkSecurityGroupName: applyOutput.Azure.NetworkSecurityGroupName,
-			LoadBalancerName:         applyOutput.Azure.LoadBalancerName,
-			AttestationURL:           applyOutput.Azure.AttestationURL,
-		}
-	}
-
-	if applyOutput.GCP != nil {
-		infra.GCP = &state.GCP{
-			ProjectID:  applyOutput.GCP.ProjectID,
-			IPCidrNode: applyOutput.GCP.IPCidrNode,
-			IPCidrPod:  applyOutput.GCP.IPCidrPod,
-		}
-	}
-	return infra
-}
-
-// ShowCluster reads the state of Constellation cluster resources from Terraform.
-func (c *Client) ShowCluster(ctx context.Context, provider cloudprovider.Provider) (ApplyOutput, error) {
+// showApplyOutput reads the state of Constellation cluster resources from Terraform.
+func (c *Client) showApplyOutput(ctx context.Context, provider cloudprovider.Provider) (applyOutput, error) {
 	tfState, err := c.tf.Show(ctx)
 	if err != nil {
-		return ApplyOutput{}, fmt.Errorf("terraform show: %w", err)
+		return applyOutput{}, fmt.Errorf("terraform show: %w", err)
 	}
 	if tfState.Values == nil {
-		return ApplyOutput{}, errors.New("terraform show: no values returned")
+		return applyOutput{}, errors.New("terraform show: no values returned")
 	}
 
 	ipOutput, ok := tfState.Values.Outputs["ip"]
 	if !ok {
-		return ApplyOutput{}, errors.New("no IP output found")
+		return applyOutput{}, errors.New("no IP output found")
 	}
 	ip, ok := ipOutput.Value.(string)
 	if !ok {
-		return ApplyOutput{}, errors.New("invalid type in IP output: not a string")
+		return applyOutput{}, errors.New("invalid type in IP output: not a string")
 	}
 
 	apiServerCertSANsOutput, ok := tfState.Values.Outputs["api_server_cert_sans"]
 	if !ok {
-		return ApplyOutput{}, errors.New("no api_server_cert_sans output found")
+		return applyOutput{}, errors.New("no api_server_cert_sans output found")
 	}
 	apiServerCertSANsUntyped, ok := apiServerCertSANsOutput.Value.([]any)
 	if !ok {
-		return ApplyOutput{}, fmt.Errorf("invalid type in api_server_cert_sans output: %s is not a list of elements", apiServerCertSANsOutput.Type.FriendlyName())
+		return applyOutput{}, fmt.Errorf("invalid type in api_server_cert_sans output: %s is not a list of elements", apiServerCertSANsOutput.Type.FriendlyName())
 	}
 	apiServerCertSANs, err := toStringSlice(apiServerCertSANsUntyped)
 	if err != nil {
-		return ApplyOutput{}, fmt.Errorf("convert api_server_cert_sans output: %w", err)
+		return applyOutput{}, fmt.Errorf("convert api_server_cert_sans output: %w", err)
 	}
 
 	secretOutput, ok := tfState.Values.Outputs["initSecret"]
 	if !ok {
-		return ApplyOutput{}, errors.New("no initSecret output found")
+		return applyOutput{}, errors.New("no initSecret output found")
 	}
 	secret, ok := secretOutput.Value.(string)
 	if !ok {
-		return ApplyOutput{}, errors.New("invalid type in initSecret output: not a string")
+		return applyOutput{}, errors.New("invalid type in initSecret output: not a string")
 	}
 
 	uidOutput, ok := tfState.Values.Outputs["uid"]
 	if !ok {
-		return ApplyOutput{}, errors.New("no uid output found")
+		return applyOutput{}, errors.New("no uid output found")
 	}
 	uid, ok := uidOutput.Value.(string)
 	if !ok {
-		return ApplyOutput{}, errors.New("invalid type in uid output: not a string")
+		return applyOutput{}, errors.New("invalid type in uid output: not a string")
 	}
 
-	res := ApplyOutput{
+	res := applyOutput{
 		IP:                ip,
 		APIServerCertSANs: apiServerCertSANs,
 		Secret:            secret,
@@ -270,32 +241,32 @@ func (c *Client) ShowCluster(ctx context.Context, provider cloudprovider.Provide
 	case cloudprovider.GCP:
 		gcpProjectOutput, ok := tfState.Values.Outputs["project"]
 		if !ok {
-			return ApplyOutput{}, errors.New("no project output found")
+			return applyOutput{}, errors.New("no project output found")
 		}
 		gcpProject, ok := gcpProjectOutput.Value.(string)
 		if !ok {
-			return ApplyOutput{}, errors.New("invalid type in project output: not a string")
+			return applyOutput{}, errors.New("invalid type in project output: not a string")
 		}
 
 		cidrNodesOutput, ok := tfState.Values.Outputs["ip_cidr_nodes"]
 		if !ok {
-			return ApplyOutput{}, errors.New("no ip_cidr_nodes output found")
+			return applyOutput{}, errors.New("no ip_cidr_nodes output found")
 		}
 		cidrNodes, ok := cidrNodesOutput.Value.(string)
 		if !ok {
-			return ApplyOutput{}, errors.New("invalid type in ip_cidr_nodes output: not a string")
+			return applyOutput{}, errors.New("invalid type in ip_cidr_nodes output: not a string")
 		}
 
 		cidrPodsOutput, ok := tfState.Values.Outputs["ip_cidr_pods"]
 		if !ok {
-			return ApplyOutput{}, errors.New("no ip_cidr_pods output found")
+			return applyOutput{}, errors.New("no ip_cidr_pods output found")
 		}
 		cidrPods, ok := cidrPodsOutput.Value.(string)
 		if !ok {
-			return ApplyOutput{}, errors.New("invalid type in ip_cidr_pods output: not a string")
+			return applyOutput{}, errors.New("invalid type in ip_cidr_pods output: not a string")
 		}
 
-		res.GCP = &GCPApplyOutput{
+		res.GCP = &gcpApplyOutput{
 			ProjectID:  gcpProject,
 			IPCidrNode: cidrNodes,
 			IPCidrPod:  cidrPods,
@@ -303,57 +274,57 @@ func (c *Client) ShowCluster(ctx context.Context, provider cloudprovider.Provide
 	case cloudprovider.Azure:
 		attestationURLOutput, ok := tfState.Values.Outputs["attestationURL"]
 		if !ok {
-			return ApplyOutput{}, errors.New("no attestationURL output found")
+			return applyOutput{}, errors.New("no attestationURL output found")
 		}
 		attestationURL, ok := attestationURLOutput.Value.(string)
 		if !ok {
-			return ApplyOutput{}, errors.New("invalid type in attestationURL output: not a string")
+			return applyOutput{}, errors.New("invalid type in attestationURL output: not a string")
 		}
 
 		azureUAMIOutput, ok := tfState.Values.Outputs["user_assigned_identity_client_id"]
 		if !ok {
-			return ApplyOutput{}, errors.New("no user_assigned_identity_client_id output found")
+			return applyOutput{}, errors.New("no user_assigned_identity_client_id output found")
 		}
 		azureUAMI, ok := azureUAMIOutput.Value.(string)
 		if !ok {
-			return ApplyOutput{}, errors.New("invalid type in user_assigned_identity_client_id output: not a string")
+			return applyOutput{}, errors.New("invalid type in user_assigned_identity_client_id output: not a string")
 		}
 
 		rgOutput, ok := tfState.Values.Outputs["resource_group"]
 		if !ok {
-			return ApplyOutput{}, errors.New("no resource_group output found")
+			return applyOutput{}, errors.New("no resource_group output found")
 		}
 		rg, ok := rgOutput.Value.(string)
 		if !ok {
-			return ApplyOutput{}, errors.New("invalid type in resource_group output: not a string")
+			return applyOutput{}, errors.New("invalid type in resource_group output: not a string")
 		}
 
 		subscriptionOutput, ok := tfState.Values.Outputs["subscription_id"]
 		if !ok {
-			return ApplyOutput{}, errors.New("no subscription_id output found")
+			return applyOutput{}, errors.New("no subscription_id output found")
 		}
 		subscriptionID, ok := subscriptionOutput.Value.(string)
 		if !ok {
-			return ApplyOutput{}, errors.New("invalid type in subscription_id output: not a string")
+			return applyOutput{}, errors.New("invalid type in subscription_id output: not a string")
 		}
 
 		networkSGNameOutput, ok := tfState.Values.Outputs["network_security_group_name"]
 		if !ok {
-			return ApplyOutput{}, errors.New("no network_security_group_name output found")
+			return applyOutput{}, errors.New("no network_security_group_name output found")
 		}
 		networkSGName, ok := networkSGNameOutput.Value.(string)
 		if !ok {
-			return ApplyOutput{}, errors.New("invalid type in network_security_group_name output: not a string")
+			return applyOutput{}, errors.New("invalid type in network_security_group_name output: not a string")
 		}
 		loadBalancerNameOutput, ok := tfState.Values.Outputs["loadbalancer_name"]
 		if !ok {
-			return ApplyOutput{}, errors.New("no loadbalancer_name output found")
+			return applyOutput{}, errors.New("no loadbalancer_name output found")
 		}
 		loadBalancerName, ok := loadBalancerNameOutput.Value.(string)
 		if !ok {
-			return ApplyOutput{}, errors.New("invalid type in loadbalancer_name output: not a string")
+			return applyOutput{}, errors.New("invalid type in loadbalancer_name output: not a string")
 		}
-		res.Azure = &AzureApplyOutput{
+		res.Azure = &azureApplyOutput{
 			ResourceGroup:            rg,
 			SubscriptionID:           subscriptionID,
 			UserAssignedIdentity:     azureUAMI,
@@ -386,11 +357,11 @@ func (c *Client) PrepareUpgradeWorkspace(path, backupDir string, vars Variables)
 }
 
 // ApplyCluster applies the Terraform configuration of the workspace to create or upgrade a Constellation cluster.
-func (c *Client) ApplyCluster(ctx context.Context, provider cloudprovider.Provider, logLevel LogLevel) (ApplyOutput, error) {
+func (c *Client) ApplyCluster(ctx context.Context, provider cloudprovider.Provider, logLevel LogLevel) (state.Infrastructure, error) {
 	if err := c.apply(ctx, logLevel); err != nil {
-		return ApplyOutput{}, err
+		return state.Infrastructure{}, err
 	}
-	return c.ShowCluster(ctx, provider)
+	return c.ShowInfrastructure(ctx, provider)
 }
 
 // ApplyIAM applies the Terraform configuration of the workspace to create or upgrade an IAM configuration.
@@ -547,19 +518,19 @@ type StateMigration struct {
 	Hook        func(ctx context.Context, tfClient TFMigrator) error
 }
 
-// ApplyOutput contains the Terraform output values of a cluster creation
+// applyOutput contains the Terraform output values of a cluster creation
 // or apply operation.
-type ApplyOutput struct {
+type applyOutput struct {
 	IP                string
 	APIServerCertSANs []string
 	Secret            string
 	UID               string
-	GCP               *GCPApplyOutput
-	Azure             *AzureApplyOutput
+	GCP               *gcpApplyOutput
+	Azure             *azureApplyOutput
 }
 
-// AzureApplyOutput contains the Terraform output values of a terraform apply operation on Microsoft Azure.
-type AzureApplyOutput struct {
+// azureApplyOutput contains the Terraform output values of a terraform apply operation on Microsoft Azure.
+type azureApplyOutput struct {
 	ResourceGroup            string
 	SubscriptionID           string
 	NetworkSecurityGroupName string
@@ -569,8 +540,8 @@ type AzureApplyOutput struct {
 	AttestationURL string
 }
 
-// GCPApplyOutput contains the Terraform output values of a terraform apply operation on GCP.
-type GCPApplyOutput struct {
+// gcpApplyOutput contains the Terraform output values of a terraform apply operation on GCP.
+type gcpApplyOutput struct {
 	ProjectID  string
 	IPCidrNode string
 	IPCidrPod  string
@@ -649,6 +620,34 @@ func toStringSlice(in []any) ([]string, error) {
 		out[i] = s
 	}
 	return out, nil
+}
+
+func convertToInfrastructure(output applyOutput) state.Infrastructure {
+	var infra state.Infrastructure
+	infra.UID = output.UID
+	infra.ClusterEndpoint = output.IP
+	infra.InitSecret = output.Secret
+	infra.APIServerCertSANs = output.APIServerCertSANs
+
+	if output.Azure != nil {
+		infra.Azure = &state.Azure{
+			ResourceGroup:            output.Azure.ResourceGroup,
+			SubscriptionID:           output.Azure.SubscriptionID,
+			UserAssignedIdentity:     output.Azure.UserAssignedIdentity,
+			NetworkSecurityGroupName: output.Azure.NetworkSecurityGroupName,
+			LoadBalancerName:         output.Azure.LoadBalancerName,
+			AttestationURL:           output.Azure.AttestationURL,
+		}
+	}
+
+	if output.GCP != nil {
+		infra.GCP = &state.GCP{
+			ProjectID:  output.GCP.ProjectID,
+			IPCidrNode: output.GCP.IPCidrNode,
+			IPCidrPod:  output.GCP.IPCidrPod,
+		}
+	}
+	return infra
 }
 
 type tfInterface interface {
