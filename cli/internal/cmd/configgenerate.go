@@ -14,13 +14,12 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	"golang.org/x/mod/semver"
-
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"golang.org/x/mod/semver"
 )
 
 func newConfigGenerateCmd() *cobra.Command {

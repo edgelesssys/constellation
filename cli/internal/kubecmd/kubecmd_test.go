@@ -444,7 +444,7 @@ func TestUpdateK8s(t *testing.T) {
 				},
 			}
 
-			_, err := upgrader.updateK8s(&nodeVersion, tc.newClusterVersion, components.Components{}, false)
+			_, err := upgrader.prepareUpdateK8s(&nodeVersion, tc.newClusterVersion, components.Components{}, false)
 
 			if tc.wantErr {
 				assert.Error(err)

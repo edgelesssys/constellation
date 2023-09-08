@@ -153,7 +153,7 @@ func (i *initCmd) initialize(
 		return err
 	}
 	// cfg validation does not check k8s patch version since upgrade may accept an outdated patch version.
-	_, err = versions.NewValidK8sVersion(string(conf.KubernetesVersion), true)
+	k8sVersion, err := versions.NewValidK8sVersion(string(conf.KubernetesVersion), true)
 	if err != nil {
 		return err
 	}
@@ -172,7 +172,6 @@ func (i *initCmd) initialize(
 		return fmt.Errorf("reading cluster ID file: %w", err)
 	}
 
-	k8sVersion := conf.KubernetesVersion
 	i.log.Debugf("Validated k8s version as %s", k8sVersion)
 	if versions.IsPreviewK8sVersion(k8sVersion) {
 		cmd.PrintErrf("Warning: Constellation with Kubernetes %v is still in preview. Use only for evaluation purposes.\n", k8sVersion)

@@ -145,8 +145,14 @@ func (k *KubeCmd) UpgradeNodeVersion(ctx context.Context, conf *config.Config, f
 			err = compatibility.NewInvalidUpgradeError(nodeVersion.Spec.KubernetesClusterVersion,
 				string(conf.KubernetesVersion), innerErr)
 		} else {
-			versionConfig := versions.VersionConfigs[conf.KubernetesVersion]
-			components, err = k.updateK8s(&nodeVersion, versionConfig.ClusterVersion, versionConfig.KubernetesComponents, force)
+			versionConfig, ok := versions.VersionConfigs[conf.KubernetesVersion]
+			if !ok {
+				err = compatibility.NewInvalidUpgradeError(nodeVersion.Spec.KubernetesClusterVersion,
+					string(conf.KubernetesVersion), fmt.Errorf("no version config matching K8s %s", conf.KubernetesVersion))
+			} else {
+				components, err = k.prepareUpdateK8s(&nodeVersion, versionConfig.ClusterVersion,
+					versionConfig.KubernetesComponents, force)
+			}
 		}
 
 		switch {
@@ -161,7 +167,6 @@ func (k *KubeCmd) UpgradeNodeVersion(ctx context.Context, conf *config.Config, f
 			return fmt.Errorf("updating Kubernetes version: %w", err)
 		}
 	}
-
 	if len(upgradeErrs) == 2 {
 		return errors.Join(upgradeErrs...)
 	}
@@ -423,7 +428,7 @@ func (k *KubeCmd) isValidImageUpgrade(nodeVersion updatev1alpha1.NodeVersion, ne
 	return nil
 }
 
-func (k *KubeCmd) updateK8s(nodeVersion *updatev1alpha1.NodeVersion, newClusterVersion string, components components.Components, force bool) (*corev1.ConfigMap, error) {
+func (k *KubeCmd) prepareUpdateK8s(nodeVersion *updatev1alpha1.NodeVersion, newClusterVersion string, components components.Components, force bool) (*corev1.ConfigMap, error) {
 	configMap, err := internalk8s.ConstructK8sComponentsCM(components, newClusterVersion)
 	if err != nil {
 		return nil, fmt.Errorf("constructing k8s-components ConfigMap: %w", err)

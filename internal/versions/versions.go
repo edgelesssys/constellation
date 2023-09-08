@@ -85,7 +85,7 @@ func ResolveK8sPatchVersion(k8sVersion string) (string, error) {
 	if hasPatchVersion(k8sVersion) {
 		return k8sVersion, nil
 	}
-	extendedVersion := K8sVersionFromMajorMinor(k8sVersion)
+	extendedVersion := k8sVersionFromMajorMinor(k8sVersion)
 	if extendedVersion == "" {
 		return "", fmt.Errorf("Kubernetes version %s is not valid. Supported versions: %s",
 			strings.TrimPrefix(k8sVersion, "v"), supportedVersions())
@@ -94,10 +94,10 @@ func ResolveK8sPatchVersion(k8sVersion string) (string, error) {
 	return extendedVersion, nil
 }
 
-// K8sVersionFromMajorMinor takes a semver in format MAJOR.MINOR
+// k8sVersionFromMajorMinor takes a semver in format MAJOR.MINOR
 // and returns the version in format MAJOR.MINOR.PATCH with the
 // supported patch version as PATCH.
-func K8sVersionFromMajorMinor(version string) string {
+func k8sVersionFromMajorMinor(version string) string {
 	switch version {
 	case semver.MajorMinor(string(V1_26)):
 		return string(V1_26)
