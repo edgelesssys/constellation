@@ -195,17 +195,21 @@ func (i *chartLoader) loadRelease(info chartInfo, helmWaitMode WaitMode) (Releas
 	case certManagerInfo.releaseName:
 		values = i.loadCertManagerValues()
 	case constellationOperatorsInfo.releaseName:
-		updateVersions(chart, i.cliVersion)
 		values = i.loadOperatorsValues()
 	case constellationServicesInfo.releaseName:
-		updateVersions(chart, i.cliVersion)
 		values = i.loadConstellationServicesValues()
 	case awsLBControllerInfo.releaseName:
 		values = i.loadAWSLBControllerValues()
 	case csiInfo.releaseName:
-		updateVersions(chart, i.cliVersion)
 		values = i.loadCSIValues()
 	}
+
+	// Charts we package ourselves have version 0.0.0.
+	// Before use, we need to update the version of the chart to the current CLI version.
+	if isCLIVersionedRelease(info.releaseName) {
+		updateVersions(chart, i.cliVersion)
+	}
+
 	return Release{Chart: chart, Values: values, ReleaseName: info.releaseName, WaitMode: helmWaitMode}, nil
 }
 

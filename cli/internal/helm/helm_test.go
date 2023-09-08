@@ -175,6 +175,7 @@ func TestHelmApply(t *testing.T) {
 
 	cfg := config.Default()
 	cfg.RemoveProviderAndAttestationExcept(csp)
+	cfg.MicroserviceVersion = cliVersion
 	log := logger.NewTest(t)
 	options := Options{
 		Conformance:      false,
@@ -184,9 +185,9 @@ func TestHelmApply(t *testing.T) {
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			lister := &ReleaseVersionStub{}
+			lister := &releaseVersionMock{}
 			sut := Client{
-				factory:    newActionFactory(nil, lister, &action.Configuration{}, cliVersion, log),
+				factory:    newActionFactory(nil, lister, &action.Configuration{}, log),
 				log:        log,
 				cliVersion: cliVersion,
 			}
@@ -244,7 +245,7 @@ func getActionReleaseNames(actions []applyAction) []string {
 	return releaseActionNames
 }
 
-func helmListVersion(l *ReleaseVersionStub, releaseName string, installedVersion string) {
+func helmListVersion(l *releaseVersionMock, releaseName string, installedVersion string) {
 	if installedVersion == "" {
 		l.On("currentVersion", releaseName).Return(semver.Semver{}, errReleaseNotFound)
 		return
@@ -253,11 +254,11 @@ func helmListVersion(l *ReleaseVersionStub, releaseName string, installedVersion
 	l.On("currentVersion", releaseName).Return(v, nil)
 }
 
-type ReleaseVersionStub struct {
+type releaseVersionMock struct {
 	mock.Mock
 }
 
-func (s *ReleaseVersionStub) currentVersion(release string) (semver.Semver, error) {
+func (s *releaseVersionMock) currentVersion(release string) (semver.Semver, error) {
 	args := s.Called(release)
 	return args.Get(0).(semver.Semver), args.Error(1)
 }
