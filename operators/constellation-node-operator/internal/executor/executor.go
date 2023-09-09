@@ -106,6 +106,9 @@ func (e *taskExecutor) Start(ctx context.Context) StopWaitFn {
 	// timer routine is responsible for triggering the reconciliation after the timer expires
 	// or when triggered externally
 	go func() {
+		defer func() {
+			e.running.Store(false)
+		}()
 		defer wg.Done()
 		defer close(execute)
 		defer logr.Info("Timer stopped")
