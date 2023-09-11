@@ -1,4 +1,0 @@
-# prevent systemd udev rules from marking unformatted device mapper device as unready (SYSTEMD_READY=0)
-# this is the offending rule from systemd: SUBSYSTEM=="block", ENV{DM_UUID}=="CRYPT-*", ENV{ID_PART_TABLE_TYPE}=="", ENV{ID_FS_USAGE}=="", ENV{SYSTEMD_READY}="0"
-SUBSYSTEM=="block", ENV{DM_UUID}=="CRYPT-*", ENV{ID_PART_TABLE_TYPE}=="", ENV{ID_FS_USAGE}="constellation-encrypted-disk"
-SUBSYSTEM=="block", ENV{DM_NAME}=="state", ENV{DM_UUID}=="CRYPT-*", ENV{ID_PART_TABLE_TYPE}=="", ENV{ID_FS_USAGE}="constellation-state"
