@@ -284,9 +284,9 @@ func (a *azureInstanceInfo) attestationWithCerts(logger attestation.Logger, gett
 	}
 
 	// If the certificate chain is present, parse it and format it.
-	ask, ark, certChainParsingErr := a.parseCertChain()
-	if certChainParsingErr != nil {
-		logger.Warnf("Error parsing certificate chain: %v", certChainParsingErr)
+	ask, ark, err := a.parseCertChain()
+	if err != nil {
+		logger.Warnf("Error parsing certificate chain: %v", err)
 	}
 	if ask != nil {
 		att.CertificateChain.AskCert = ask.Raw
