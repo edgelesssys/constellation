@@ -1,0 +1,81 @@
+load("//bazel/mkosi:mkosi_image.bzl", "mkosi_image")
+load(":variants.bzl", "CSPS", "STREAMS", "VARIANTS", "autologin", "constellation_packages", "images_for_csp", "images_for_csp_and_stream", "images_for_stream", "kernel_command_line", "kernel_command_line_dict")
+
+[
+    mkosi_image(
+        name = variant["csp"] + "_" + variant["attestation_variant"] + "_" + stream,
+        srcs = [
+            "mkosi.postinst",
+        ] + glob([
+            "mkosi.repart/**",
+        ]),
+        autologin = autologin(
+            variant["csp"],
+            variant["attestation_variant"],
+            stream,
+        ),
+        base_trees = [
+            "//image/base",
+        ],
+        extra_trees = constellation_packages(stream),
+        initrds = [
+            "//image/initrd",
+        ],
+        kernel_command_line = kernel_command_line(
+            variant["csp"],
+            variant["attestation_variant"],
+            stream,
+        ),
+        kernel_command_line_dict = kernel_command_line_dict(
+            variant["csp"],
+            variant["attestation_variant"],
+            stream,
+        ),
+        mkosi_conf = "mkosi.conf",
+        out_dir = variant["csp"] + "_" + variant["attestation_variant"] + "_" + stream,
+        tags = [
+            "manual",
+            "no-cache",
+        ],
+        version_file = "//bazel/settings:tag",
+    )
+    for variant in VARIANTS
+    for stream in STREAMS
+]
+
+[
+    filegroup(
+        name = stream,
+        srcs = images_for_stream(stream),
+        tags = [
+            "manual",
+            "no-cache",
+        ],
+    )
+    for stream in STREAMS
+]
+
+[
+    filegroup(
+        name = csp,
+        srcs = images_for_csp(csp),
+        tags = [
+            "manual",
+            "no-cache",
+        ],
+    )
+    for csp in CSPS
+]
+
+[
+    filegroup(
+        name = csp + "_" + stream,
+        srcs = images_for_csp_and_stream(csp, stream),
+        tags = [
+            "manual",
+            "no-cache",
+        ],
+    )
+    for csp in CSPS
+    for stream in STREAMS
+]
