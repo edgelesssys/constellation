@@ -61,15 +61,15 @@ type attestationValidator interface {
 
 type attestationVerifierImpl struct{}
 
-// SnpAttestation verifies the VCEK certificate as well as the certificate chain of the attestation report.
-func (attestationVerifierImpl) SnpAttestation(attestation *spb.Attestation, options *verify.Options) error {
+// SNPAttestation verifies the report signature, the VCEK certificate, as well as the certificate chain of the attestation report.
+func (attestationVerifierImpl) SNPAttestation(attestation *spb.Attestation, options *verify.Options) error {
 	return verify.SnpAttestation(attestation, options)
 }
 
 type attestationValidatorImpl struct{}
 
-// SnpAttestation validates the attestation report against the given set of constraints.
-func (attestationValidatorImpl) SnpAttestation(attestation *spb.Attestation, options *validate.Options) error {
+// SNPAttestation validates the attestation report against the given set of constraints.
+func (attestationValidatorImpl) SNPAttestation(attestation *spb.Attestation, options *validate.Options) error {
 	return validate.SnpAttestation(attestation, options)
 }
 
@@ -128,7 +128,7 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 	}); err != nil {
 		return nil, fmt.Errorf("verifying ASK certificate: %w", err)
 	}
-	if err := v.attestationVerifier.SnpAttestation(att, &verify.Options{
+	if err := v.attestationVerifier.SNPAttestation(att, &verify.Options{
 		TrustedRoots: map[string][]*trust.AMDRootCerts{
 			"Milan": {
 				{
@@ -147,7 +147,7 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 	// Checks if the attestation report matches the given constraints.
 	// Some constraints are implicitly checked by validate.SnpAttestation:
 	// - the report is not expired
-	if err := v.attestationValidator.SnpAttestation(att, &validate.Options{
+	if err := v.attestationValidator.SNPAttestation(att, &validate.Options{
 		GuestPolicy: abi.SnpPolicy{
 			Debug: false, // Debug means the VM can be decrypted by the host for debugging purposes and thus is not allowed.
 			SMT:   true,  // Allow Simultaneous Multi-Threading (SMT). Normally, we would want to disable SMT
@@ -213,7 +213,7 @@ func (v *Validator) checkIDKeyDigest(ctx context.Context, report *spb.Attestatio
 	}
 
 	if !hasExpectedIDKeyDigest {
-		// IDKeyDigests that were not expected are present, check the enforcement policy and verify against
+		// IDKeyDigest that was not expected is present, check the enforcement policy and verify against
 		// the MAA if necessary.
 		switch v.config.FirmwareSignerConfig.EnforcementPolicy {
 		case idkeydigest.MAAFallback:
@@ -238,7 +238,7 @@ func (v *Validator) checkIDKeyDigest(ctx context.Context, report *spb.Attestatio
 		}
 	}
 
-	// No IDKeyDigests that were not expected are present.
+	// No IDKeyDigest that was not expected is present.
 	return nil
 }
 

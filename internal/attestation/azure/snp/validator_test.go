@@ -968,8 +968,8 @@ type stubAttestationVerifier struct {
 	skipCheck bool // whether the verification function should be called
 }
 
-// SnpAttestation verifies the VCEK certificate as well as the certificate chain of the attestation report.
-func (v *stubAttestationVerifier) SnpAttestation(attestation *spb.Attestation, options *verify.Options) error {
+// SNPAttestation verifies the VCEK certificate as well as the certificate chain of the attestation report.
+func (v *stubAttestationVerifier) SNPAttestation(attestation *spb.Attestation, options *verify.Options) error {
 	if v.skipCheck {
 		return nil
 	}
@@ -980,8 +980,8 @@ type stubAttestationValidator struct {
 	skipCheck bool // whether the verification function should be called
 }
 
-// SnpAttestation validates the attestation report against the given set of constraints.
-func (v *stubAttestationValidator) SnpAttestation(attestation *spb.Attestation, options *validate.Options) error {
+// SNPAttestation validates the attestation report against the given set of constraints.
+func (v *stubAttestationValidator) SNPAttestation(attestation *spb.Attestation, options *validate.Options) error {
 	if v.skipCheck {
 		return nil
 	}
