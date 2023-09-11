@@ -1,0 +1,20 @@
+load("@rules_pkg//:pkg.bzl", "pkg_tar")
+load("@rules_pkg//pkg:mappings.bzl", "pkg_files", "strip_prefix")
+
+filegroup(
+    name = "sysroot_tree",
+    srcs = glob(["sysroot-tree/**"]),
+)
+
+pkg_files(
+    name = "sysroot",
+    srcs = [":sysroot_tree"],
+    strip_prefix = strip_prefix.from_pkg() + "sysroot-tree",
+    visibility = ["//visibility:public"],
+)
+
+pkg_tar(
+    name = "sysroot_tar",
+    srcs = [":sysroot"],
+    visibility = ["//visibility:public"],
+)
