@@ -303,8 +303,12 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, conf *config.Conf
 				cmd.Println("Aborting upgrade.")
 				// User doesn't expect to see any changes in his workspace after aborting an "upgrade apply",
 				// therefore, roll back to the backed up state.
-				if err := u.clusterUpgrader.RollbackClusterWorkspace(); err != nil {
-					u.log.Debugf("Failed to rollback Terraform workspace: %s", err)
+				if err := u.clusterUpgrader.RestoreClusterWorkspace(); err != nil {
+					return res, fmt.Errorf(
+						"restoring Terraform workspace: %w, restore the Terraform workspace manually from %s ",
+						err,
+						filepath.Join(constants.UpgradeDir, "<upgrade-id>", constants.TerraformUpgradeBackupDir),
+					)
 				}
 				return res, fmt.Errorf("cluster upgrade aborted by user")
 			}
@@ -637,5 +641,5 @@ type kubernetesUpgrader interface {
 type clusterUpgrader interface {
 	PlanClusterUpgrade(ctx context.Context, outWriter io.Writer, vars terraform.Variables, csp cloudprovider.Provider) (bool, error)
 	ApplyClusterUpgrade(ctx context.Context, csp cloudprovider.Provider) (terraform.ApplyOutput, error)
-	RollbackClusterWorkspace() error
+	RestoreClusterWorkspace() error
 }

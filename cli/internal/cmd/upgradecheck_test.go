@@ -295,7 +295,7 @@ func (s stubTerraformChecker) PlanClusterUpgrade(_ context.Context, _ io.Writer,
 	return s.tfDiff, s.planErr
 }
 
-func (s stubTerraformChecker) RollbackClusterWorkspace() error {
+func (s stubTerraformChecker) RestoreClusterWorkspace() error {
 	return s.rollbackErr
 }
 

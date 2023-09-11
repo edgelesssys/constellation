@@ -83,7 +83,7 @@ func TestUpgradeApply(t *testing.T) {
 			wantErr:           true,
 			stdin:             "no\n",
 		},
-		"abort, rollback terraform err, log only": {
+		"abort, rollback terraform err": {
 			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig: config.DefaultForAzureSEVSNP(),
 			},
@@ -243,7 +243,7 @@ func (u stubTerraformUpgrader) ApplyClusterUpgrade(_ context.Context, _ cloudpro
 	return terraform.ApplyOutput{}, u.applyTerraformErr
 }
 
-func (u stubTerraformUpgrader) RollbackClusterWorkspace() error {
+func (u stubTerraformUpgrader) RestoreClusterWorkspace() error {
 	return u.rollbackWorkspaceErr
 }
 

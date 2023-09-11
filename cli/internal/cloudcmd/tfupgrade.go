@@ -51,8 +51,8 @@ func planUpgrade(
 	return hasDiff, nil
 }
 
-// rollbackToBackup replaces the existing Terraform workspace with the backup.
-func rollbackToBackup(fileHandler file.Handler, workingDir, backupDir string) error {
+// restoreBackup replaces the existing Terraform workspace with the backup.
+func restoreBackup(fileHandler file.Handler, workingDir, backupDir string) error {
 	if err := fileHandler.RemoveAll(workingDir); err != nil {
 		return fmt.Errorf("removing existing workspace: %w", err)
 	}

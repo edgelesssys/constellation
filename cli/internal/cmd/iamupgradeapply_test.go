@@ -99,14 +99,15 @@ func TestIamUpgradeApply(t *testing.T) {
 			yesFlag:       true,
 			wantErr:       true,
 		},
-		"rollback error, log only": {
+		"restore error": {
 			fh: setupFs(true, true),
 			iamUpgrader: &stubIamUpgrader{
+				hasDiff:     true,
 				rollbackErr: assert.AnError,
 			},
 			configFetcher: &stubConfigFetcher{},
-			input:         "no",
-			yesFlag:       true,
+			input:         "no\n",
+			wantErr:       true,
 		},
 		"config fetcher err": {
 			fh: setupFs(true, true),
@@ -159,7 +160,7 @@ func (u *stubIamUpgrader) ApplyIAMUpgrade(context.Context, cloudprovider.Provide
 	return u.applyErr
 }
 
-func (u *stubIamUpgrader) RollbackIAMWorkspace() error {
+func (u *stubIamUpgrader) RestoreIAMWorkspace() error {
 	return u.rollbackErr
 }
 

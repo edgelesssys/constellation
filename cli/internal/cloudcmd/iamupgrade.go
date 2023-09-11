@@ -66,11 +66,11 @@ func (u *IAMUpgrader) PlanIAMUpgrade(ctx context.Context, outWriter io.Writer, v
 	)
 }
 
-// RollbackIAMWorkspace rolls back the existing workspace to the backup directory created when planning an upgrade,
+// RestoreIAMWorkspace rolls back the existing workspace to the backup directory created when planning an upgrade,
 // when the user decides to not apply an upgrade after planning it.
 // Note that this will not apply the restored state from the backup.
-func (u *IAMUpgrader) RollbackIAMWorkspace() error {
-	return rollbackToBackup(u.fileHandler, u.existingWorkspace, filepath.Join(u.upgradeWorkspace, constants.TerraformIAMUpgradeBackupDir))
+func (u *IAMUpgrader) RestoreIAMWorkspace() error {
+	return restoreBackup(u.fileHandler, u.existingWorkspace, filepath.Join(u.upgradeWorkspace, constants.TerraformIAMUpgradeBackupDir))
 }
 
 // ApplyIAMUpgrade applies the Terraform IAM migrations planned by PlanIAMUpgrade.

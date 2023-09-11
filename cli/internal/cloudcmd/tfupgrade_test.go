@@ -99,7 +99,7 @@ func TestPlanUpgrade(t *testing.T) {
 	}
 }
 
-func TestRollbackToBackup(t *testing.T) {
+func TestRestoreBackup(t *testing.T) {
 	existingWorkspace := "foo"
 	backupDir := "bar"
 
@@ -147,7 +147,7 @@ func TestRollbackToBackup(t *testing.T) {
 			assert := assert.New(t)
 			fs := tc.prepareFs(require.New(t))
 
-			err := rollbackToBackup(fs, existingWorkspace, backupDir)
+			err := restoreBackup(fs, existingWorkspace, backupDir)
 			if tc.wantErr {
 				assert.Error(err)
 				return
