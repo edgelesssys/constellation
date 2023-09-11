@@ -1,0 +1,25 @@
+load("//bazel/mkosi:mkosi_image.bzl", "mkosi_image")
+
+mkosi_image(
+    name = "initrd",
+    srcs = [
+        "mkosi.postinst",
+    ] + glob([
+        "mkosi.skeleton/**",
+        "reposdir/**",
+    ]),
+    outs = [
+        "image",
+        "image.cpio.zst",
+    ],
+    extra_trees = [
+        "//image:sysroot_tar",
+        "//disk-mapper/cmd:disk-mapper-package.tar",
+    ],
+    mkosi_conf = "mkosi.conf",
+    tags = [
+        "manual",
+        "no-cache",
+    ],
+    visibility = ["//visibility:public"],
+)
