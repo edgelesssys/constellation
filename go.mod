@@ -33,7 +33,6 @@ replace (
 
 replace (
 	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api => ./operators/constellation-node-operator/api
-	github.com/google/go-sev-guest v0.7.1 => github.com/msanft/go-sev-guest v1.1.0
 	github.com/google/go-tpm => github.com/thomasten/go-tpm v0.0.0-20230629092004-f43f8e2a59eb
 	github.com/martinjungblut/go-cryptsetup => github.com/daniel-weisse/go-cryptsetup v0.0.0-20230705150314-d8c07bd1723c
 )
@@ -78,7 +77,7 @@ require (
 	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.14.1
 	github.com/golang-jwt/jwt/v5 v5.0.0
-	github.com/google/go-sev-guest v0.7.1
+	github.com/google/go-sev-guest v0.7.2-0.20230904235445-81d183f8e73d
 	github.com/google/go-tpm v0.9.0
 	github.com/google/go-tpm-tools v0.4.0
 	github.com/google/uuid v1.3.0

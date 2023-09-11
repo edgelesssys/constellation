@@ -535,6 +535,8 @@ github.com/google/go-cmp v0.5.9 h1:O2Tfq5qg4qc4AmwVlvv0oLiVAGB7enBSJ2x2DqQFi38=
 github.com/google/go-cmp v0.5.9/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 github.com/google/go-containerregistry v0.15.2 h1:MMkSh+tjSdnmJZO7ljvEqV1DjfekB6VUEAZgy3a+TQE=
 github.com/google/go-containerregistry v0.15.2/go.mod h1:wWK+LnOv4jXMM23IT/F1wdYftGWGr47Is8CG+pmHK1Q=
+github.com/google/go-sev-guest v0.7.2-0.20230904235445-81d183f8e73d h1:a7hr+ndZtgfZSR/IKZOYY8KiUMlJMqDdIAYt1dacpWM=
+github.com/google/go-sev-guest v0.7.2-0.20230904235445-81d183f8e73d/go.mod h1:UEi9uwoPbLdKGl1QHaq1G8pfCbQ4QP0swWX4J0k6r+Q=
 github.com/google/go-tpm-tools v0.4.0 h1:bYRZAUvQEmn11WTKCkTLRCCv4aTlOBgBBeqCK0ABT2A=
 github.com/google/go-tpm-tools v0.4.0/go.mod h1:G7PFUk8KKQzdYYGv/cpV9LB9sPT7czAAomnceugzNKQ=
 github.com/google/go-tspi v0.3.0 h1:ADtq8RKfP+jrTyIWIZDIYcKOMecRqNJFOew2IT0Inus=
@@ -827,8 +829,6 @@ github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00/go.mod
 github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe/go.mod h1:wL8QJuTMNUDYhXwkmfOly8iTdp5TEcJFWZD2D7SIkUc=
 github.com/morikuni/aec v1.0.0 h1:nP9CBfwrvYnBRgY6qfDQkygYDmYwOilePFkwzv4dU8A=
 github.com/morikuni/aec v1.0.0/go.mod h1:BbKIizmSmc5MMPqRYbxO4ZU0S0+P200+tUnFx7PXmsc=
-github.com/msanft/go-sev-guest v1.1.0 h1:oqmo3YdqKGD/Ms/bTqrpYzVmHY2RRYQnhwfiTBAqTLg=
-github.com/msanft/go-sev-guest v1.1.0/go.mod h1:UEi9uwoPbLdKGl1QHaq1G8pfCbQ4QP0swWX4J0k6r+Q=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
