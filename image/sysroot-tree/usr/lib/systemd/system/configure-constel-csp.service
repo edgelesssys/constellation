@@ -1,0 +1,11 @@
+[Unit]
+Description=Configures constellation cloud service provider environment variable
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c "CSP=$(< /proc/cmdline tr  ' ' '\n' | grep constel.csp | sed 's/constel.csp=//'); echo CONSTEL_CSP=$CSP >> /run/constellation.env"
+ExecStart=/bin/bash -c "ATTESTATION=$(< /proc/cmdline tr  ' ' '\n' | grep constel.attestation-variant | sed 's/constel.attestation-variant=//'); echo CONSTEL_ATTESTATION_VARIANT=$ATTESTATION >> /run/constellation.env"
+RemainAfterExit=yes
+
+[Install]
+WantedBy=basic.target
