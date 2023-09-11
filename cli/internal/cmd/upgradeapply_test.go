@@ -180,6 +180,7 @@ func TestUpgradeApplyFlagsForSkipPhases(t *testing.T) {
 
 type stubKubernetesUpgrader struct {
 	nodeVersionErr    error
+	k8sErr            error
 	currentConfig     config.AttestationCfg
 	calledNodeUpgrade bool
 }
@@ -192,9 +193,13 @@ func (u *stubKubernetesUpgrader) BackupCRs(_ context.Context, _ []apiextensionsv
 	return nil
 }
 
-func (u *stubKubernetesUpgrader) UpgradeNodeVersion(_ context.Context, _ *config.Config, _, _, _ bool) error {
+func (u *stubKubernetesUpgrader) UpgradeImageVersion(_ context.Context, _ *config.Config, _ bool) error {
 	u.calledNodeUpgrade = true
 	return u.nodeVersionErr
+}
+
+func (u *stubKubernetesUpgrader) UpgradeK8sVersion(_ context.Context, _ versions.ValidK8sVersion, _ bool) error {
+	return u.k8sErr
 }
 
 func (u *stubKubernetesUpgrader) ApplyJoinConfig(_ context.Context, _ config.AttestationCfg, _ []byte) error {

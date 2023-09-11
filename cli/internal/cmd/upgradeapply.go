@@ -233,18 +233,27 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 			return fmt.Errorf("upgrading services: %w", err)
 		}
 	}
-
-	skipImageUpgrade := flags.skipPhases.contains(skipImagePhase)
-	skipK8sUpgrade := flags.skipPhases.contains(skipK8sPhase)
-	if !(skipImageUpgrade && skipK8sUpgrade) {
-		err = u.kubeUpgrader.UpgradeNodeVersion(cmd.Context(), conf, flags.force, skipImageUpgrade, skipK8sUpgrade)
+	// image upgrades need to be done before k8s upgrade because image upgrades are not allowed during another upgrade
+	if !flags.skipPhases.contains(skipImagePhase) {
+		err = u.kubeUpgrader.UpgradeImageVersion(cmd.Context(), conf, flags.force)
 		switch {
 		case errors.Is(err, kubecmd.ErrInProgress):
-			cmd.PrintErrln("Skipping image and Kubernetes upgrades. Another upgrade is in progress.")
+			cmd.PrintErrln("Skipping image upgrade. Another upgrade is in progress.")
 		case errors.As(err, &upgradeErr):
 			cmd.PrintErrln(err)
 		case err != nil:
 			return fmt.Errorf("upgrading NodeVersion: %w", err)
+		}
+	}
+	if !flags.skipPhases.contains(skipK8sPhase) {
+		err = u.kubeUpgrader.UpgradeK8sVersion(cmd.Context(), validK8sVersion, flags.force)
+		switch {
+		case errors.As(err, &upgradeErr):
+			cmd.PrintErrln(err)
+		case err == nil:
+			cmd.Println("Successfully upgraded Kubernetes.")
+		case err != nil:
+			return fmt.Errorf("upgrading Kubernetes: %w", err)
 		}
 	}
 	return nil
@@ -621,7 +630,8 @@ func (s skipPhases) contains(phase skipPhase) bool {
 }
 
 type kubernetesUpgrader interface {
-	UpgradeNodeVersion(ctx context.Context, conf *config.Config, force, skipImage, skipK8s bool) error
+	UpgradeImageVersion(ctx context.Context, conf *config.Config, force bool) error
+	UpgradeK8sVersion(ctx context.Context, k8sVersion versions.ValidK8sVersion, force bool) error
 	ExtendClusterConfigCertSANs(ctx context.Context, alternativeNames []string) error
 	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, error)
 	ApplyJoinConfig(ctx context.Context, newAttestConfig config.AttestationCfg, measurementSalt []byte) error
