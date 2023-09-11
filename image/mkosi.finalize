@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-# Copyright (c) Edgeless Systems GmbH
-#
-# SPDX-License-Identifier: AGPL-3.0-only
-
-set -euxo pipefail
-
-# cleanup dracut generation files (disk-mapper) to save space
-rm -rf "${BUILDROOT}/usr/lib/dracut/modules.d/39constellation-mount/"

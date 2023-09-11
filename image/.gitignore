@@ -1,8 +1,0 @@
-mkosi.cache
-mkosi.extra
-pki
-image.*
-!image.go
-mkosi.output.*
-pki_*/*.key
-pki_*/*.vmgs

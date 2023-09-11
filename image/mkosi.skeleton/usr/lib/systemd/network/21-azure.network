@@ -1,6 +1,0 @@
-# Used as a fallback rule for Azure NICs as they are not named with "en*"
-[Match]
-Driver=hv_netvsc
-
-[Network]
-DHCP=yes
