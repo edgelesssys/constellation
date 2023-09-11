@@ -112,7 +112,6 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 		return nil, fmt.Errorf("parsing attestation report: %w", err)
 	}
 
-	// Verify the attestation report's certificates.
 	trustedArk := x509.Certificate(v.config.AMDRootKey)             // ARK, specified in Constellation config.
 	ask, err := x509.ParseCertificate(att.CertificateChain.AskCert) // ASK, as reported from THIM / KDS.
 	if err != nil {
