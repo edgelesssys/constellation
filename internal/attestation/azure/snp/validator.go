@@ -326,7 +326,7 @@ func (a *azureInstanceInfo) parseCertChain() (ask, ark *x509.Certificate, retErr
 	var rest []byte
 	var block *pem.Block
 	for block, rest = pem.Decode([]byte(newlinesTrimmed)); block != nil; block, rest = pem.Decode(rest) {
-		if i > 3 {
+		if i > 2 {
 			retErr = fmt.Errorf("parse certificate %d: more than 2 certificates in chain", i)
 			return
 		}
