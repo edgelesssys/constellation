@@ -254,7 +254,7 @@ type azureInstanceInfo struct {
 	// RuntimeData is the Azure runtime data from the vTPM (NVRAM) of the CVM.
 	RuntimeData []byte
 	// MAAToken is the token of the MAA for the attestation report, used as a fallback
-	// if the IDKeyDigests cannot be verified.
+	// if the IDKeyDigest cannot be verified.
 	MAAToken string
 }
 
