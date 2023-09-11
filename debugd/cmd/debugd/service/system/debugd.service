@@ -1,0 +1,15 @@
+[Unit]
+Description=Constellation Debug Daemon
+Wants=network-online.target
+After=network-online.target configure-constel-csp.service
+
+[Service]
+Type=simple
+RemainAfterExit=yes
+Restart=on-failure
+EnvironmentFile=/run/constellation.env
+Environment=PATH=/run/state/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+ExecStart=debugd
+
+[Install]
+WantedBy=multi-user.target
