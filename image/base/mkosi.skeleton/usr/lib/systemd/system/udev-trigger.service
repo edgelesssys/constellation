@@ -1,0 +1,15 @@
+[Unit]
+Description=Trigger udev events for constellation
+Before=blockdev@dev-mapper-state.target
+Requires=systemd-udevd.service
+After=systemd-udev-trigger.service
+DefaultDependencies=no
+
+[Service]
+Type=oneshot
+ExecStart=-udevadm trigger -v
+RemainAfterExit=yes
+TimeoutSec=infinity
+
+[Install]
+RequiredBy=dev-mapper-state.device

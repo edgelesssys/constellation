@@ -1,0 +1,12 @@
+[Unit]
+Description=Print image measurements on startup
+Before=constellation-bootstrapper.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+EnvironmentFile=/run/constellation.env
+ExecStart=/usr/libexec/constellation-pcrs
+
+[Install]
+WantedBy=multi-user.target

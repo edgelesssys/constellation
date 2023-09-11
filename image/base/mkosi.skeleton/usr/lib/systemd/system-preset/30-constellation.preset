@@ -1,0 +1,12 @@
+enable configure-constel-csp.service
+enable constellation-upgrade-agent.service
+enable constellation-bootstrapper.service
+enable containerd.service
+enable kubelet.service
+enable systemd-networkd.service
+enable systemd-networkd.socket
+enable systemd-resolved.service
+enable measurements.service
+enable export_constellation_debug.service
+enable systemd-timesyncd
+enable udev-trigger.service
