@@ -17,8 +17,6 @@ runs:
       env:
         KUBECONFIG: ${{ inputs.kubeconfig }}
       working-directory: e2e/malicious-join
-      permissions:
-        packages: write
       run: |
         bazel run //e2e/malicious-join:stamp_and_push
         yq eval -i "(.spec.template.spec.containers[0].command) = \
