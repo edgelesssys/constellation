@@ -52,7 +52,7 @@ type Validator struct {
 }
 
 type attestationVerifier interface {
-	SnpAttestation(attestation *spb.Attestation, options *verify.Options) error
+	SNPAttestation(attestation *spb.Attestation, options *verify.Options) error
 }
 
 type attestationValidator interface {
