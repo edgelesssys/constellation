@@ -170,9 +170,9 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 		},
 		// Check that CurrentTCB >= CommittedTCB.
 		PermitProvisionalFirmware: true,
-		// Check if the IDKey hashes in the report are in the list of accepted hashes.
+		// Check if the IDKey hash in the report is in the list of accepted hashes.
 		TrustedIDKeyHashes: v.config.FirmwareSignerConfig.AcceptedKeyDigests,
-		// The IDKey hashes should not be checked if the enforcement policy is set to MAAFallback or WarnOnly to prevent
+		// The IDKey hash should not be checked if the enforcement policy is set to MAAFallback or WarnOnly to prevent
 		// an error from being returned because of the TrustedIDKeyHashes validation. In this case, we should perform a
 		// custom check of the MAA-specific values later. Right now, this is a double check, since a custom MAA check
 		// is performed either way.
