@@ -118,7 +118,7 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 		return nil, fmt.Errorf("parsing ASK certificate: %w", err)
 	}
 
-	if err := v.attestationVerifier.SNPAttestation(att, &verify.Options{
+    verifyOpts = &verify.Options{
 		TrustedRoots: map[string][]*trust.AMDRootCerts{
 			"Milan": {
 				{
@@ -130,7 +130,8 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 				},
 			},
 		},
-	}); err != nil {
+	}
+	if err := v.attestationVerifier.SNPAttestation(att, verifyOpts); err != nil {
 		return nil, fmt.Errorf("verifying SNP attestation: %w", err)
 	}
 
