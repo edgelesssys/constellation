@@ -27,10 +27,17 @@ var ErrTerraformWorkspaceDifferentFiles = errors.New("creating cluster: trying t
 //go:embed terraform/*/.terraform.lock.hcl
 var terraformFS embed.FS
 
+const (
+	noOverwrites overwritePolicy = iota
+	allowOverwrites
+)
+
+type overwritePolicy int
+
 // prepareWorkspace loads the embedded Terraform files,
 // and writes them into the workspace.
 func prepareWorkspace(rootDir string, fileHandler file.Handler, workingDir string) error {
-	return terraformCopier(fileHandler, rootDir, workingDir)
+	return terraformCopier(fileHandler, rootDir, workingDir, noOverwrites)
 }
 
 // prepareUpgradeWorkspace backs up the old Terraform workspace from workingDir, and
@@ -44,11 +51,12 @@ func prepareUpgradeWorkspace(rootDir string, fileHandler file.Handler, workingDi
 		return fmt.Errorf("backing up old workspace: %w", err)
 	}
 
-	return terraformCopier(fileHandler, rootDir, workingDir)
+	return terraformCopier(fileHandler, rootDir, workingDir, allowOverwrites)
 }
 
 // terraformCopier copies the embedded Terraform files into the workspace.
-func terraformCopier(fileHandler file.Handler, rootDir, workingDir string) error {
+// allowOverwrites allows overwriting existing files in the workspace.
+func terraformCopier(fileHandler file.Handler, rootDir, workingDir string, overwritePolicy overwritePolicy) error {
 	goEmbedRootDir := filepath.ToSlash(rootDir)
 	return fs.WalkDir(terraformFS, goEmbedRootDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -65,7 +73,13 @@ func terraformCopier(fileHandler file.Handler, rootDir, workingDir string) error
 		}
 		// normalize
 		fileName := strings.Replace(slashpath.Join(workingDir, path), goEmbedRootDir+"/", "", 1)
-		if err := fileHandler.Write(fileName, content, file.OptMkdirAll); errors.Is(err, afero.ErrFileExists) {
+		opts := []file.Option{
+			file.OptMkdirAll,
+		}
+		if overwritePolicy == allowOverwrites {
+			opts = append(opts, file.OptOverwrite)
+		}
+		if err := fileHandler.Write(fileName, content, opts...); errors.Is(err, afero.ErrFileExists) {
 			// If a file already exists, check if it is identical. If yes, continue and don't write anything to disk.
 			// If no, don't overwrite it and instead throw an error. The affected file could be from a different version,
 			// provider, corrupted or manually modified in general.
