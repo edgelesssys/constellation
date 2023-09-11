@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euxo pipefail
+
+# set selinux to permissive
+sed -i 's/^SELINUX=.*/SELINUX=permissive/' "${BUILDROOT}/etc/selinux/config"

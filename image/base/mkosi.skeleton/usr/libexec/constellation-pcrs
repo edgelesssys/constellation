@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Copyright (c) Edgeless Systems GmbH
+#
+# SPDX-License-Identifier: AGPL-3.0-only
+
+# This script reads the measurements of the system
+# and prints the message to the serial console
+
+main() {
+  pcr_state="$(/usr/sbin/measurement-reader)"
+  echo -e "${pcr_state}\n" > /run/issue.d/35_constellation_pcrs.issue
+}
+
+main

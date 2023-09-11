@@ -1,0 +1,60 @@
+load("@aspect_bazel_lib//lib:copy_file.bzl", "copy_file")
+load("@aspect_bazel_lib//lib:copy_to_directory.bzl", "copy_to_directory")
+load("//bazel/mkosi:mkosi_image.bzl", "mkosi_image")
+
+copy_to_directory(
+    name = "rpms",
+    srcs = [
+        "@kernel//file",
+        "@kernel_core//file",
+        "@kernel_modules//file",
+        "@kernel_modules_core//file",
+    ],
+    include_external_repositories = ["kernel*"],
+    replace_prefixes = {"file": ""},
+)
+
+[
+    copy_file(
+        name = name,
+        src = "@" + name + "//file",
+        out = name + ".rpm",
+        allow_symlink = True,
+    )
+    for name in [
+        "kernel",
+        "kernel_core",
+        "kernel_modules",
+        "kernel_modules_core",
+    ]
+]
+
+mkosi_image(
+    name = "base",
+    srcs = [
+        "mkosi.postinst",
+        "mkosi.prepare",
+    ] + glob([
+        "mkosi.skeleton/**",
+        "reposdir/**",
+    ]),
+    outs = [
+        "image",
+        "image.tar",
+    ],
+    extra_trees = [
+        "//image:sysroot_tar",
+    ],
+    mkosi_conf = "mkosi.conf",
+    package_files = [
+        ":kernel",
+        ":kernel_core",
+        ":kernel_modules",
+        ":kernel_modules_core",
+    ],
+    tags = [
+        "manual",
+        "no-cache",
+    ],
+    visibility = ["//visibility:public"],
+)

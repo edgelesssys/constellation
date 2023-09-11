@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euxo pipefail
+
+# create mountpoints in /etc
+mkdir -p "${BUILDROOT}"/etc/{cni,kubernetes}
+
+# move issue files away from /etc
+# to allow /run/issue and /run/issue.d to take precedence
+mv "${BUILDROOT}/etc/issue.d" "${BUILDROOT}/usr/lib/issue.d" || true
