@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -euxo pipefail
+
+# add motd for constellation console access
+if [[ ${CONSOLE_MOTD:-false} == "true" ]]; then
+  cat << EOF > "${BUILDROOT}/usr/lib/motd.d/10-constellation-console-access.motd"
+~ Welcome to Constellation! ~
+Usually, on release versions of Constellation running in the cloud, you are not able to login through the serial console.
+This shell access is specifically granted for debug images and MiniConstellation to allow users to research the environment Constellation runs in.
+Have fun! Feel free to report any issues to GitHub or security@edgeless.systems (for security vulnerabilities only).
+EOF
+fi
+
+# update /etc/os-release
+echo "IMAGE_ID=\"${IMAGE_ID}\"" >> "${BUILDROOT}/etc/os-release"
+# TODO(malt3): ensure IMAGE_VERSION is actually set (shell wrapper)
+export IMAGE_VERSION=${IMAGE_VERSION-v0.0.0}
+echo "IMAGE_VERSION=\"${IMAGE_VERSION}\"" >> "${BUILDROOT}/etc/os-release"
+
+# enable debugd
+ln -s /usr/lib/systemd/system/debugd.service "${BUILDROOT}/etc/systemd/system/multi-user.target.wants/debugd.service"
+
+# ensure google_nvme_id is executable
+chmod o+x "${BUILDROOT}/usr/lib/udev/google_nvme_id"
+chmod g+x "${BUILDROOT}/usr/lib/udev/google_nvme_id"
+chmod u+x "${BUILDROOT}/usr/lib/udev/google_nvme_id"
+
+# mask unwanted services
+ln -s /dev/null "${BUILDROOT}/etc/systemd/system/systemd-pcrmachine.service"
+ln -s /dev/null "${BUILDROOT}/etc/systemd/system/systemd-pcrfs-root.service"
+ln -s /dev/null "${BUILDROOT}/etc/systemd/system/systemd-pcrfs@.service"
+ln -s /dev/null "${BUILDROOT}/etc/systemd/system/systemd-pcrphase@.service"
+ln -s /dev/null "${BUILDROOT}/etc/systemd/system/systemd-pcrphase-initrd.service"
+ln -s /dev/null "${BUILDROOT}/etc/systemd/system/systemd-pcrphase-sysinit.service"
+ln -s /dev/null "${BUILDROOT}/etc/systemd/system/systemd-pcrphase.service"
