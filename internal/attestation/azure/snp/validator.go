@@ -320,12 +320,11 @@ func (a *azureInstanceInfo) attestationWithCerts(logger attestation.Logger, gett
 // If less than 2 certificates are present, only the present certificate is returned.
 // If more than 2 certificates are present, an error is returned.
 func (a *azureInstanceInfo) parseCertChain() (ask, ark *x509.Certificate, retErr error) {
-	newlinesTrimmed := strings.TrimSpace(string(a.CertChain))
+	rest := []byte(strings.TrimSpace(string(a.CertChain)))
 
 	i := 1
-	var rest []byte
 	var block *pem.Block
-	for block, rest = pem.Decode([]byte(newlinesTrimmed)); block != nil; block, rest = pem.Decode(rest) {
+	for block, rest = pem.Decode(rest); block != nil; block, rest = pem.Decode(rest) {
 		if i > 2 {
 			retErr = fmt.Errorf("parse certificate %d: more than 2 certificates in chain", i)
 			return
