@@ -33,10 +33,10 @@ type Controller interface {
 	Reconcile(ctx context.Context) (Result, error)
 }
 
-// Executor is a task executor / scheduler.
+// taskExecutor is a task executor / scheduler.
 // It will call the reconcile method of the given controller with a regular interval
 // or when triggered externally.
-type Executor struct {
+type taskExecutor struct {
 	running atomic.Bool
 
 	// controller is the controller to be reconciled.
@@ -55,13 +55,22 @@ type Executor struct {
 }
 
 // New creates a new Executor.
-func New(controller Controller, cfg Config) *Executor {
+func New(controller Controller, cfg Config) Executor {
 	cfg.applyDefaults()
-	return &Executor{
+	return &taskExecutor{
 		controller:       controller,
 		pollingFrequency: cfg.PollingFrequency,
 		rateLimiter:      cfg.RateLimiter,
+		externalTrigger:  make(chan struct{}, 1),
+		stop:             make(chan struct{}, 1),
 	}
+}
+
+// Executor is a task executor / scheduler.
+type Executor interface {
+	Start(ctx context.Context) StopWaitFn
+	Running() bool
+	Trigger()
 }
 
 // StopWaitFn is a function that can be called to stop the executor and wait for it to stop.
@@ -69,7 +78,8 @@ type StopWaitFn func()
 
 // Start starts the executor in a separate go routine.
 // Call Stop to stop the executor.
-func (e *Executor) Start(ctx context.Context) StopWaitFn {
+// IMPORTANT: The executor can only be started once.
+func (e *taskExecutor) Start(ctx context.Context) StopWaitFn {
 	wg := &sync.WaitGroup{}
 	logr := log.FromContext(ctx)
 	stopWait := func() {
@@ -83,9 +93,6 @@ func (e *Executor) Start(ctx context.Context) StopWaitFn {
 	if !e.running.CompareAndSwap(false, true) {
 		return stopWait
 	}
-
-	e.externalTrigger = make(chan struct{}, 1)
-	e.stop = make(chan struct{}, 1)
 	// execute is used by the go routines below to communicate
 	// that a reconciliation should happen
 	execute := make(chan struct{}, 1)
@@ -99,6 +106,9 @@ func (e *Executor) Start(ctx context.Context) StopWaitFn {
 	// timer routine is responsible for triggering the reconciliation after the timer expires
 	// or when triggered externally
 	go func() {
+		defer func() {
+			e.running.Store(false)
+		}()
 		defer wg.Done()
 		defer close(execute)
 		defer logr.Info("Timer stopped")
@@ -119,9 +129,6 @@ func (e *Executor) Start(ctx context.Context) StopWaitFn {
 
 	// executor routine is responsible for executing the reconciliation
 	go func() {
-		defer func() {
-			e.running.Store(false)
-		}()
 		defer wg.Done()
 		defer close(nextScheduledReconcile)
 		defer logr.Info("Executor stopped")
@@ -157,7 +164,7 @@ func (e *Executor) Start(ctx context.Context) StopWaitFn {
 
 // Stop stops the executor.
 // It does not block until the executor is stopped.
-func (e *Executor) Stop() {
+func (e *taskExecutor) Stop() {
 	select {
 	case e.stop <- struct{}{}:
 	default:
@@ -167,13 +174,13 @@ func (e *Executor) Stop() {
 
 // Running returns true if the executor is running.
 // When the executor is stopped, it is not running anymore.
-func (e *Executor) Running() bool {
+func (e *taskExecutor) Running() bool {
 	return e.running.Load()
 }
 
 // Trigger triggers a reconciliation.
 // If a reconciliation is already pending, this call is a no-op.
-func (e *Executor) Trigger() {
+func (e *taskExecutor) Trigger() {
 	select {
 	case e.externalTrigger <- struct{}{}:
 	default:
