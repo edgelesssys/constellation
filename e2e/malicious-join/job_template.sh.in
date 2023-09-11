@@ -2,7 +2,7 @@
 
 YQ=$(realpath @@YQ_BIN@@)
 TEMPLATE=$(realpath @@TEMPLATE@@)
-export REPO_TAGD
+export REPO_TAG
 REPO_TAG=$(realpath @@REPO_TAG@@)
 
 cd "${BUILD_WORKING_DIRECTORY}" || exit 1
@@ -13,5 +13,5 @@ else
   workdir="$1"
 fi
 
-echo "Stamping job deployment with ghcr.io/edgelesssys/malicious-join-test:$REPO_TAG"
+echo "Stamping job deployment with ghcr.io/edgelesssys/malicious-join-test:$(cat $REPO_TAG))"
 $YQ eval '.spec.template.spec.containers[0].image |= "ghcr.io/edgelesssys/malicious-join-test:" + load_str(strenv(REPO_TAG))' "$TEMPLATE" > "$workdir/stamped_job.yaml"
