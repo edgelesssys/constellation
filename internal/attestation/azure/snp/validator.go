@@ -309,7 +309,11 @@ func (a *azureInstanceInfo) attestationWithCerts(logger attestation.Logger, gett
 	}
 	// Otherwise, retrieve it from AMD KDS.
 	if att.CertificateChain.AskCert == nil || att.CertificateChain.ArkCert == nil {
-		logger.Infof("Certificate chain not fully present, falling back to retrieving it from AMD KDS")
+		logger.Infof(
+			"Certificate chain not fully present (ARK present: %t, ASK present: %t), falling back to retrieving it from AMD KDS",
+			(att.CertificateChain.ArkCert != nil),
+			(att.CertificateChain.AskCert != nil),
+		)
 		kdsCertChain, err := trust.GetProductChain(productName, getter)
 		if err != nil {
 			return nil, fmt.Errorf("retrieving certificate chain from AMD KDS: %w", err)

@@ -892,6 +892,29 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 				assert.ErrorContains(err, "report VMPL 1 is not 0")
 			},
 		},
+		"invalid ASK": {
+			report:               defaultReport,
+			runtimeData:          defaultRuntimeData,
+			acceptedIDKeyDigests: defaultIDKeyDigest,
+			enforcementPolicy:    idkeydigest.Equal,
+			verifier:             skipVerifier,
+			validator:            defaultValidator,
+			vcek:                 testdata.AzureThimVCEK,
+			certChain: func() []byte {
+				c := make([]byte, len(testdata.CertChain))
+				copy(c, testdata.CertChain)
+				c[1676] = 0x41 // somewhere in the ASK signature
+				return c
+			}(),
+			getter: newStubHTTPSGetter(
+				&urlResponseMatcher{},
+				nil,
+			),
+			wantErr: true,
+			assertion: func(assert *assert.Assertions, err error) {
+				assert.ErrorContains(err, "crypto/rsa: verification error")
+			},
+		},
 	}
 
 	for name, tc := range testCases {
