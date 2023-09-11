@@ -112,13 +112,14 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 		return nil, fmt.Errorf("parsing attestation report: %w", err)
 	}
 
+	// Verify the attestation report's certificates.
 	trustedArk := x509.Certificate(v.config.AMDRootKey)             // ARK, specified in Constellation config.
 	ask, err := x509.ParseCertificate(att.CertificateChain.AskCert) // ASK, as reported from THIM / KDS.
 	if err != nil {
 		return nil, fmt.Errorf("parsing ASK certificate: %w", err)
 	}
 
-    verifyOpts = &verify.Options{
+	if err := v.attestationVerifier.SNPAttestation(att, &verify.Options{
 		TrustedRoots: map[string][]*trust.AMDRootCerts{
 			"Milan": {
 				{
@@ -130,8 +131,7 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 				},
 			},
 		},
-	}
-	if err := v.attestationVerifier.SNPAttestation(att, verifyOpts); err != nil {
+	}); err != nil {
 		return nil, fmt.Errorf("verifying SNP attestation: %w", err)
 	}
 
@@ -271,9 +271,8 @@ func (a *azureInstanceInfo) attestationWithCerts(logger attestation.Logger, gett
 	}
 	if vcek != nil {
 		att.CertificateChain.VcekCert = vcek.Raw
-	}
-	// Otherwise, retrieve it from AMD KDS.
-	if att.CertificateChain.VcekCert == nil {
+	} else {
+		// Otherwise, retrieve it from AMD KDS.
 		logger.Infof("VCEK certificate not present, falling back to retrieving it from AMD KDS")
 		vcekURL := kds.VCEKCertURL(productName, report.GetChipId(), kds.TCBVersion(report.GetReportedTcb()))
 		vcek, err := getter.Get(vcekURL)
@@ -284,9 +283,9 @@ func (a *azureInstanceInfo) attestationWithCerts(logger attestation.Logger, gett
 	}
 
 	// If the certificate chain is present, parse it and format it.
-	ask, ark, err := a.parseCertChain()
-	if err != nil {
-		logger.Warnf("Error parsing certificate chain: %v", err)
+	ask, ark, certChainParsingErr := a.parseCertChain()
+	if certChainParsingErr != nil {
+		logger.Warnf("Error parsing certificate chain: %v", certChainParsingErr)
 	}
 	if ask != nil {
 		att.CertificateChain.AskCert = ask.Raw
@@ -358,8 +357,10 @@ func (a *azureInstanceInfo) parseCertChain() (ask, ark *x509.Certificate, retErr
 	switch {
 	case i == 1:
 		retErr = fmt.Errorf("no PEM blocks found")
+		return
 	case len(rest) != 0:
 		retErr = fmt.Errorf("remaining PEM block is not a valid certificate: %s", rest)
+		return
 	}
 
 	return
@@ -377,17 +378,20 @@ func (a *azureInstanceInfo) parseVCEK() (*x509.Certificate, error) {
 	block, rest := pem.Decode([]byte(newlinesTrimmed))
 	if block == nil {
 		return nil, fmt.Errorf("no PEM blocks found")
+
 	}
 	if len(rest) != 0 {
 		return nil, fmt.Errorf("received more data than expected")
 	}
 	if block.Type != "CERTIFICATE" {
 		return nil, fmt.Errorf("expected PEM block type 'CERTIFICATE', got '%s'", block.Type)
+
 	}
 
 	vcek, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
 		return nil, fmt.Errorf("parsing VCEK certificate: %w", err)
+
 	}
 
 	return vcek, nil
