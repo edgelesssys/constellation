@@ -330,7 +330,8 @@ func (a *azureInstanceInfo) parseCertChain() (ask, ark *x509.Certificate, retErr
 		}
 
 		if block.Type != "CERTIFICATE" {
-			return fmt.Errorf("parse certificate %d: expected PEM block type 'CERTIFICATE', got '%s'", i, block.Type)
+			retErr = fmt.Errorf("parse certificate %d: expected PEM block type 'CERTIFICATE', got '%s'", i, block.Type)
+			return
 		}
 
 		cert, err := x509.ParseCertificate(block.Bytes)
