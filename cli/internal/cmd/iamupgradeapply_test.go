@@ -11,8 +11,10 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -45,41 +47,47 @@ func TestIamUpgradeApply(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		fh          file.Handler
-		iamUpgrader *stubIamUpgrader
-		yesFlag     bool
-		input       string
-		wantErr     bool
+		fh            file.Handler
+		iamUpgrader   *stubIamUpgrader
+		configFetcher *stubConfigFetcher
+		yesFlag       bool
+		input         string
+		wantErr       bool
 	}{
 		"success": {
-			fh:          setupFs(true, true),
-			iamUpgrader: &stubIamUpgrader{},
+			fh:            setupFs(true, true),
+			configFetcher: &stubConfigFetcher{},
+			iamUpgrader:   &stubIamUpgrader{},
 		},
 		"abort": {
-			fh:          setupFs(true, true),
-			iamUpgrader: &stubIamUpgrader{},
-			input:       "no",
-			yesFlag:     true,
+			fh:            setupFs(true, true),
+			iamUpgrader:   &stubIamUpgrader{},
+			configFetcher: &stubConfigFetcher{},
+			input:         "no",
+			yesFlag:       true,
 		},
 		"config missing": {
-			fh:          setupFs(false, true),
-			iamUpgrader: &stubIamUpgrader{},
-			yesFlag:     true,
-			wantErr:     true,
+			fh:            setupFs(false, true),
+			iamUpgrader:   &stubIamUpgrader{},
+			configFetcher: &stubConfigFetcher{},
+			yesFlag:       true,
+			wantErr:       true,
 		},
 		"iam vars missing": {
-			fh:          setupFs(true, false),
-			iamUpgrader: &stubIamUpgrader{},
-			yesFlag:     true,
-			wantErr:     true,
+			fh:            setupFs(true, false),
+			iamUpgrader:   &stubIamUpgrader{},
+			configFetcher: &stubConfigFetcher{},
+			yesFlag:       true,
+			wantErr:       true,
 		},
 		"plan error": {
 			fh: setupFs(true, true),
 			iamUpgrader: &stubIamUpgrader{
 				planErr: assert.AnError,
 			},
-			yesFlag: true,
-			wantErr: true,
+			configFetcher: &stubConfigFetcher{},
+			yesFlag:       true,
+			wantErr:       true,
 		},
 		"apply error": {
 			fh: setupFs(true, true),
@@ -87,16 +95,29 @@ func TestIamUpgradeApply(t *testing.T) {
 				hasDiff:  true,
 				applyErr: assert.AnError,
 			},
-			yesFlag: true,
-			wantErr: true,
+			configFetcher: &stubConfigFetcher{},
+			yesFlag:       true,
+			wantErr:       true,
 		},
 		"rollback error, log only": {
 			fh: setupFs(true, true),
 			iamUpgrader: &stubIamUpgrader{
 				rollbackErr: assert.AnError,
 			},
-			input:   "no",
+			configFetcher: &stubConfigFetcher{},
+			input:         "no",
+			yesFlag:       true,
+		},
+		"config fetcher err": {
+			fh: setupFs(true, true),
+			iamUpgrader: &stubIamUpgrader{
+				rollbackErr: assert.AnError,
+			},
+			configFetcher: &stubConfigFetcher{
+				fetchLatestErr: assert.AnError,
+			},
 			yesFlag: true,
+			wantErr: true,
 		},
 	}
 
@@ -108,8 +129,9 @@ func TestIamUpgradeApply(t *testing.T) {
 			cmd.SetIn(strings.NewReader(tc.input))
 
 			iamUpgradeApplyCmd := &iamUpgradeApplyCmd{
-				fileHandler: tc.fh,
-				log:         logger.NewTest(t),
+				fileHandler:   tc.fh,
+				log:           logger.NewTest(t),
+				configFetcher: tc.configFetcher,
 			}
 
 			err := iamUpgradeApplyCmd.iamUpgradeApply(cmd, tc.iamUpgrader, false, tc.yesFlag)
@@ -139,4 +161,20 @@ func (u *stubIamUpgrader) ApplyIAMUpgrade(context.Context, cloudprovider.Provide
 
 func (u *stubIamUpgrader) RollbackIAMWorkspace() error {
 	return u.rollbackErr
+}
+
+type stubConfigFetcher struct {
+	fetchLatestErr error
+}
+
+func (s *stubConfigFetcher) FetchAzureSEVSNPVersion(context.Context, attestationconfigapi.AzureSEVSNPVersionAPI) (attestationconfigapi.AzureSEVSNPVersionAPI, error) {
+	panic("not implemented")
+}
+
+func (s *stubConfigFetcher) FetchAzureSEVSNPVersionList(context.Context, attestationconfigapi.AzureSEVSNPVersionList) (attestationconfigapi.AzureSEVSNPVersionList, error) {
+	panic("not implemented")
+}
+
+func (s *stubConfigFetcher) FetchAzureSEVSNPVersionLatest(context.Context, time.Time) (attestationconfigapi.AzureSEVSNPVersionAPI, error) {
+	return attestationconfigapi.AzureSEVSNPVersionAPI{}, s.fetchLatestErr
 }

@@ -47,8 +47,9 @@ func newIAMUpgradeApplyCmd() *cobra.Command {
 }
 
 type iamUpgradeApplyCmd struct {
-	fileHandler file.Handler
-	log         debugLog
+	fileHandler   file.Handler
+	log           debugLog
+	configFetcher attestationconfigapi.Fetcher
 }
 
 func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
@@ -59,6 +60,7 @@ func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	upgradeID := generateUpgradeID(upgradeCmdKindIAM)
 	upgradeDir := filepath.Join(constants.UpgradeDir, upgradeID)
+	configFetcher := attestationconfigapi.NewFetcher()
 	iamMigrateCmd, err := cloudcmd.NewIAMUpgrader(
 		cmd.Context(),
 		constants.TerraformIAMWorkingDir,
@@ -83,13 +85,14 @@ func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
 	i := iamUpgradeApplyCmd{
 		fileHandler: fileHandler,
 		log:         log,
+		configFetcher: configFetcher,
 	}
 
 	return i.iamUpgradeApply(cmd, iamMigrateCmd, force, yes)
 }
 
 func (i iamUpgradeApplyCmd) iamUpgradeApply(cmd *cobra.Command, iamUpgrader iamUpgrader, force, yes bool) error {
-	conf, err := config.New(i.fileHandler, constants.ConfigFilename, attestationconfigapi.NewFetcher(), force)
+	conf, err := config.New(i.fileHandler, constants.ConfigFilename, i.configFetcher, force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
