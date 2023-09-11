@@ -118,16 +118,7 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 	if err != nil {
 		return nil, fmt.Errorf("parsing ASK certificate: %w", err)
 	}
-	// We verify the ASK certificate against the ARK certificate, since the ARK certificate is the root certificate
-	// and inherently trusted. This check should also be performed by go-sev-guest, but as we have to specify both ASK and ARK for
-	// the trusted roots, this needs to be done here as well.
-	rootPool := x509.NewCertPool()
-	rootPool.AddCert(&trustedArk)
-	if _, err := ask.Verify(x509.VerifyOptions{
-		Roots: rootPool,
-	}); err != nil {
-		return nil, fmt.Errorf("verifying ASK certificate: %w", err)
-	}
+
 	if err := v.attestationVerifier.SNPAttestation(att, &verify.Options{
 		TrustedRoots: map[string][]*trust.AMDRootCerts{
 			"Milan": {
@@ -204,38 +195,34 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 // If the enforcement policy is set to WarnOnly, a warning is logged. If the enforcement policy is set to neither WarnOnly or MAAFallback, an
 // error is returned.
 func (v *Validator) checkIDKeyDigest(ctx context.Context, report *spb.Attestation, maaToken string, extraData []byte) error {
-	hasExpectedIDKeyDigest := false
 	for _, digest := range v.config.FirmwareSignerConfig.AcceptedKeyDigests {
 		if bytes.Equal(digest, report.Report.IdKeyDigest) {
-			hasExpectedIDKeyDigest = true
-			break
+			return nil
 		}
 	}
 
-	if !hasExpectedIDKeyDigest {
-		// IDKeyDigest that was not expected is present, check the enforcement policy and verify against
-		// the MAA if necessary.
-		switch v.config.FirmwareSignerConfig.EnforcementPolicy {
-		case idkeydigest.MAAFallback:
-			v.log.Infof(
-				"Configured idkeydigests %x don't contain reported idkeydigest %x, falling back to MAA validation",
-				v.config.FirmwareSignerConfig.AcceptedKeyDigests,
-				report.Report.IdKeyDigest,
-			)
-			return v.maa.validateToken(ctx, v.config.FirmwareSignerConfig.MAAURL, maaToken, extraData)
-		case idkeydigest.WarnOnly:
-			v.log.Warnf(
-				"Configured idkeydigests %x don't contain reported idkeydigest %x",
-				v.config.FirmwareSignerConfig.AcceptedKeyDigests,
-				report.Report.IdKeyDigest,
-			)
-		default:
-			return fmt.Errorf(
-				"configured idkeydigests %x don't contain reported idkeydigest %x",
-				v.config.FirmwareSignerConfig.AcceptedKeyDigests,
-				report.Report.IdKeyDigest,
-			)
-		}
+	// IDKeyDigest that was not expected is present, check the enforcement policy and verify against
+	// the MAA if necessary.
+	switch v.config.FirmwareSignerConfig.EnforcementPolicy {
+	case idkeydigest.MAAFallback:
+		v.log.Infof(
+			"Configured idkeydigests %x don't contain reported idkeydigest %x, falling back to MAA validation",
+			v.config.FirmwareSignerConfig.AcceptedKeyDigests,
+			report.Report.IdKeyDigest,
+		)
+		return v.maa.validateToken(ctx, v.config.FirmwareSignerConfig.MAAURL, maaToken, extraData)
+	case idkeydigest.WarnOnly:
+		v.log.Warnf(
+			"Configured idkeydigests %x don't contain reported idkeydigest %x",
+			v.config.FirmwareSignerConfig.AcceptedKeyDigests,
+			report.Report.IdKeyDigest,
+		)
+	default:
+		return fmt.Errorf(
+			"configured idkeydigests %x don't contain reported idkeydigest %x",
+			v.config.FirmwareSignerConfig.AcceptedKeyDigests,
+			report.Report.IdKeyDigest,
+		)
 	}
 
 	// No IDKeyDigest that was not expected is present.

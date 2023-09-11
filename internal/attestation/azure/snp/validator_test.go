@@ -897,7 +897,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			runtimeData:          defaultRuntimeData,
 			acceptedIDKeyDigests: defaultIDKeyDigest,
 			enforcementPolicy:    idkeydigest.Equal,
-			verifier:             skipVerifier,
+			verifier:             defaultVerifier,
 			validator:            defaultValidator,
 			vcek:                 testdata.AzureThimVCEK,
 			certChain: func() []byte {
