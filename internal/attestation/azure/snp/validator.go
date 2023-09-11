@@ -265,9 +265,9 @@ func (a *azureInstanceInfo) attestationWithCerts(logger attestation.Logger, gett
 	}
 
 	// If the VCEK certificate is present, parse it and format it.
-	vcek, vcekParsingErr := a.parseVCEK()
+	vcek, err := a.parseVCEK()
 	if err != nil {
-		logger.Warnf("Error parsing VCEK: %v", vcekParsingErr)
+		logger.Warnf("Error parsing VCEK: %v", err)
 	}
 	if vcek != nil {
 		att.CertificateChain.VcekCert = vcek.Raw
@@ -360,40 +360,42 @@ func (a *azureInstanceInfo) parseCertChain() (ask, ark *x509.Certificate, retErr
 	switch {
 	case i == 1:
 		retErr = fmt.Errorf("no PEM blocks found")
-		return
 	case len(rest) != 0:
 		retErr = fmt.Errorf("remaining PEM block is not a valid certificate: %s", rest)
-		return
 	}
 
 	return
 }
 
 // parseVCEK parses the VCEK certificate from the instanceInfo into an x509-formatted certificate.
-func (a *azureInstanceInfo) parseVCEK() (vcek *x509.Certificate, retErr error) {
+// If the VCEK certificate is not present, nil is returned.
+func (a *azureInstanceInfo) parseVCEK() (*x509.Certificate, error) {
 	newlinesTrimmed := strings.TrimSpace(string(a.VCEK))
+	if newlinesTrimmed == "" {
+		// VCEK is not present.
+		return nil, nil
+	}
 
 	block, rest := pem.Decode([]byte(newlinesTrimmed))
 	if block == nil {
-		retErr = fmt.Errorf("no PEM blocks found")
-		return
+		return nil, fmt.Errorf("no PEM blocks found")
+
 	}
 	if len(rest) != 0 {
-		retErr = fmt.Errorf("received more data than expected")
-		return
+		return nil, fmt.Errorf("received more data than expected")
 	}
 	if block.Type != "CERTIFICATE" {
-		retErr = fmt.Errorf("expected PEM block type 'CERTIFICATE', got '%s'", block.Type)
-		return
+		return nil, fmt.Errorf("expected PEM block type 'CERTIFICATE', got '%s'", block.Type)
+
 	}
 
 	vcek, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		retErr = fmt.Errorf("parsing VCEK certificate: %w", err)
-		return
+		return nil, fmt.Errorf("parsing VCEK certificate: %w", err)
+
 	}
 
-	return
+	return vcek, nil
 }
 
 // validateAk validates that the attestation key from the TPM is trustworthy. The steps are:
