@@ -231,3 +231,8 @@ ci_deps()
 load("//bazel/toolchains:k8s.bzl", "k8s_deps")
 
 k8s_deps()
+
+# kernel rpms
+load("//bazel/toolchains:linux_kernel.bzl", "kernel_rpms")
+
+kernel_rpms()
