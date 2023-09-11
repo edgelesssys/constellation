@@ -97,5 +97,5 @@ runs:
         for file in $(ls maa-claims-*.json); do
           path=$(realpath "${file}")
           cat "${path}"
-          bazel run //hack/configapi -- --maa-claims-path "${path}"
+          bazel run //internal/api/attestationconfigapi -- --maa-claims-path "${path}"
         done
