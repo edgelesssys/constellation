@@ -1,4 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@rules_pkg//:pkg.bzl", "pkg_tar")
 load("//bazel/go:platform.bzl", "platform_binary")
 
 go_library(
@@ -28,5 +29,15 @@ platform_binary(
     name = "upgrade_agent_linux_amd64",
     platform = "@zig_sdk//libc_aware/platform:linux_amd64_gnu.2.23",
     target_file = ":cmd",
+    visibility = ["//visibility:public"],
+)
+
+pkg_tar(
+    name = "upgrade-agent-package",
+    srcs = [
+        ":upgrade_agent_linux_amd64",
+    ],
+    mode = "0755",
+    remap_paths = {"/platform:linux_amd64_gnu.2.23": "/usr/bin/upgrade-agent"},
     visibility = ["//visibility:public"],
 )
