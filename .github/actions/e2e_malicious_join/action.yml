@@ -8,10 +8,21 @@ inputs:
   kubeconfig:
     description: "The kubeconfig file for the cluster."
     required: true
+  githubToken:
+    description: "GitHub authorization token"
+    required: true
 
 runs:
   using: "composite"
   steps:
+    - name: Log in to the Container registry
+      id: docker-login
+      uses: ./.github/actions/container_registry_login
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ inputs.githubToken }}
+
     - name: Run malicious join
       shell: bash
       env:

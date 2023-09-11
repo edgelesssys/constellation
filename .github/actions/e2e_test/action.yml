@@ -333,3 +333,4 @@ runs:
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
+        githubToken: ${{ inputs.githubToken }}
