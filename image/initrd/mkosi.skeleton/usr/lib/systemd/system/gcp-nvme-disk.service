@@ -1,0 +1,18 @@
+[Unit]
+Description=Force symlink creation for GCP nvme disks
+Before=prepare-state-disk.service
+After=network-online.target
+Wants=network-online.target
+ConditionKernelCommandLine=constel.csp=gcp
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /usr/sbin/gcp-nvme-disk
+RemainAfterExit=yes
+StandardOutput=tty
+StandardInput=tty
+StandardError=tty
+TimeoutSec=infinity
+
+[Install]
+WantedBy=basic.target multi-user.target

@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Copyright (c) Edgeless Systems GmbH
+#
+# SPDX-License-Identifier: AGPL-3.0-only
+
+set -euo pipefail
+shopt -s extglob nullglob inherit_errexit
+
+GCP_STATE_DISK_SYMLINK="/dev/disk/by-id/google-state-disk"
+
+function onError {
+  echo "Failed to symlink state disk"
+  sleep 2 # give the serial console time to print the error message
+}
+
+trap onError ERR
+
+# hack: gcp nvme udev rules are never executed. Create symlinks for the nvme devices manually.
+while [[ ! -L ${GCP_STATE_DISK_SYMLINK} ]]; do
+  for nvmedisk in /dev/nvme?n?; do
+    /usr/lib/udev/google_nvme_id -s -d "${nvmedisk}"
+  done
+  if [[ -L ${GCP_STATE_DISK_SYMLINK} ]]; then
+    break
+  fi
+  echo "Waiting for state disk to appear.."
+  sleep 2
+done
+
+echo "GCP state disk found"
+echo "${GCP_STATE_DISK_SYMLINK}" → "$(readlink -f "${GCP_STATE_DISK_SYMLINK}")"

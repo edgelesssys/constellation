@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euxo pipefail
+
+# ensure google_nvme_id is executable
+chmod o+x "${BUILDROOT}/usr/lib/udev/google_nvme_id"
+chmod g+x "${BUILDROOT}/usr/lib/udev/google_nvme_id"
+chmod u+x "${BUILDROOT}/usr/lib/udev/google_nvme_id"
+
+# mask unwanted services
+ln -s /dev/null "${BUILDROOT}/etc/systemd/system/systemd-pcrmachine.service"
+ln -s /dev/null "${BUILDROOT}/etc/systemd/system/systemd-pcrfs-root.service"
+ln -s /dev/null "${BUILDROOT}/etc/systemd/system/systemd-pcrfs@.service"
+ln -s /dev/null "${BUILDROOT}/etc/systemd/system/systemd-pcrphase@.service"
+ln -s /dev/null "${BUILDROOT}/etc/systemd/system/systemd-pcrphase-initrd.service"
+ln -s /dev/null "${BUILDROOT}/etc/systemd/system/systemd-pcrphase-sysinit.service"
+ln -s /dev/null "${BUILDROOT}/etc/systemd/system/systemd-pcrphase.service"
