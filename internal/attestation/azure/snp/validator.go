@@ -119,7 +119,7 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 		return nil, fmt.Errorf("parsing ASK certificate: %w", err)
 	}
 
-	if err := v.attestationVerifier.SNPAttestation(att, &verify.Options{
+	verifyOpts := &verify.Options{
 		TrustedRoots: map[string][]*trust.AMDRootCerts{
 			"Milan": {
 				{
@@ -131,7 +131,8 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 				},
 			},
 		},
-	}); err != nil {
+	}
+	if err := v.attestationVerifier.SNPAttestation(att, verifyOpts); err != nil {
 		return nil, fmt.Errorf("verifying SNP attestation: %w", err)
 	}
 
@@ -283,9 +284,9 @@ func (a *azureInstanceInfo) attestationWithCerts(logger attestation.Logger, gett
 	}
 
 	// If the certificate chain is present, parse it and format it.
-	ask, ark, certChainParsingErr := a.parseCertChain()
-	if certChainParsingErr != nil {
-		logger.Warnf("Error parsing certificate chain: %v", certChainParsingErr)
+	ask, ark, err := a.parseCertChain()
+	if err != nil {
+		logger.Warnf("Error parsing certificate chain: %v", err)
 	}
 	if ask != nil {
 		att.CertificateChain.AskCert = ask.Raw
@@ -358,10 +359,8 @@ func (a *azureInstanceInfo) parseCertChain() (ask, ark *x509.Certificate, retErr
 	switch {
 	case i == 1:
 		retErr = fmt.Errorf("no PEM blocks found")
-		return
 	case len(rest) != 0:
 		retErr = fmt.Errorf("remaining PEM block is not a valid certificate: %s", rest)
-		return
 	}
 
 	return
