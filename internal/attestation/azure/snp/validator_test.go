@@ -134,7 +134,7 @@ func TestParseVCEK(t *testing.T) {
 		wantErr  bool
 	}{
 		"success": {
-			VCEK: testdata.AzureThimVCEK,
+			VCEK:     testdata.AzureThimVCEK,
 			wantVCEK: true,
 		},
 		"empty": {
