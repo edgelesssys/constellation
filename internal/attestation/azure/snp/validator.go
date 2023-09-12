@@ -379,20 +379,17 @@ func (a *azureInstanceInfo) parseVCEK() (*x509.Certificate, error) {
 	block, rest := pem.Decode([]byte(newlinesTrimmed))
 	if block == nil {
 		return nil, fmt.Errorf("no PEM blocks found")
-
 	}
 	if len(rest) != 0 {
 		return nil, fmt.Errorf("received more data than expected")
 	}
 	if block.Type != "CERTIFICATE" {
 		return nil, fmt.Errorf("expected PEM block type 'CERTIFICATE', got '%s'", block.Type)
-
 	}
 
 	vcek, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
 		return nil, fmt.Errorf("parsing VCEK certificate: %w", err)
-
 	}
 
 	return vcek, nil

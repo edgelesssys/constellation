@@ -129,11 +129,16 @@ func TestParseCertChain(t *testing.T) {
 // TestParseVCEK tests the parsing of the VCEK certificate.
 func TestParseVCEK(t *testing.T) {
 	testCases := map[string]struct {
-		VCEK    []byte
-		wantErr bool
+		VCEK     []byte
+		wantVCEK bool
+		wantErr  bool
 	}{
 		"success": {
 			VCEK: testdata.AzureThimVCEK,
+			wantVCEK: true,
+		},
+		"empty": {
+			VCEK: []byte{},
 		},
 		"malformed": {
 			VCEK:    testdata.AzureThimVCEK[:len(testdata.AzureThimVCEK)-100],
@@ -141,10 +146,6 @@ func TestParseVCEK(t *testing.T) {
 		},
 		"invalid": {
 			VCEK:    []byte("invalid"),
-			wantErr: true,
-		},
-		"empty": {
-			VCEK:    []byte{},
 			wantErr: true,
 		},
 	}
@@ -162,7 +163,7 @@ func TestParseVCEK(t *testing.T) {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
-				assert.NotNil(vcek)
+				assert.Equal(tc.wantVCEK, vcek != nil)
 			}
 		})
 	}
