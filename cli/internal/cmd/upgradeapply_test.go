@@ -83,7 +83,7 @@ func TestUpgradeApply(t *testing.T) {
 			wantErr:           true,
 			stdin:             "no\n",
 		},
-		"abort, rollback terraform err": {
+		"abort, restore terraform err": {
 			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig: config.DefaultForAzureSEVSNP(),
 			},
