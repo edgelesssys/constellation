@@ -45,6 +45,9 @@ type Validator struct {
 	attestationVerifier  attestationVerifier
 	attestationValidator attestationValidator
 
+	// ASK certificate cached by the join service.
+	cachedASKCert *x509.Certificate
+
 	config *config.AzureSEVSNP
 
 	log attestation.Logger
@@ -95,6 +98,12 @@ func NewValidator(cfg *config.AzureSEVSNP, log attestation.Logger) *Validator {
 		},
 		log,
 	)
+	return v
+}
+
+// WithCachedASKCert sets the cached ASK certificate.
+func (v *Validator) WithCachedASKCert(cert *x509.Certificate) *Validator {
+	v.cachedASKCert = cert
 	return v
 }
 

@@ -1,0 +1,26 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "amdkds",
+    srcs = ["amdkds.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/joinservice/internal/certcache/amdkds",
+    visibility = ["//joinservice:__subpackages__"],
+    deps = [
+        "@com_github_google_go_sev_guest//abi",
+        "@com_github_google_go_sev_guest//verify/trust",
+    ],
+)
+
+go_test(
+    name = "amdkds_test",
+    srcs = ["amdkds_test.go"],
+    embed = [":amdkds"],
+    deps = [
+        "//internal/logger",
+        "//joinservice/internal/certcache/amdkds/testdata",
+        "@com_github_google_go_sev_guest//abi",
+        "@com_github_google_go_sev_guest//verify/trust",
+        "@com_github_stretchr_testify//assert",
+    ],
+)

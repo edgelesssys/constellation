@@ -1,0 +1,15 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "certcache",
+    srcs = ["certcache.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/joinservice/internal/certcache",
+    visibility = ["//joinservice:__subpackages__"],
+    deps = [
+        "//internal/constants",
+        "//internal/logger",
+        "//joinservice/internal/certcache/amdkds",
+        "@com_github_google_go_sev_guest//abi",
+        "@com_github_google_go_sev_guest//verify/trust",
+    ],
+)

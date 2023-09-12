@@ -19,7 +19,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/grpc/grpclog"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
-	"github.com/edgelesssys/constellation/v2/joinservice/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/joinservice/joinproto"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -45,12 +44,8 @@ type Server struct {
 // New initializes a new Server.
 func New(
 	measurementSalt []byte, ca certificateAuthority,
-	joinTokenGetter joinTokenGetter, dataKeyGetter dataKeyGetter, log *logger.Logger,
+	joinTokenGetter joinTokenGetter, dataKeyGetter dataKeyGetter, kubeClient kubeClient, log *logger.Logger,
 ) (*Server, error) {
-	kubeClient, err := kubernetes.New()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create kubernetes client: %w", err)
-	}
 	return &Server{
 		measurementSalt: measurementSalt,
 		log:             log,

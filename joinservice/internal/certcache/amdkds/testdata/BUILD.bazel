@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "testdata",
+    srcs = ["testdata.go"],
+    embedsrcs = ["certchain.pem"],
+    importpath = "github.com/edgelesssys/constellation/v2/joinservice/internal/certcache/amdkds/testdata",
+    visibility = ["//joinservice:__subpackages__"],
+)
