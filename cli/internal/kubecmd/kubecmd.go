@@ -117,13 +117,12 @@ func (k *KubeCmd) UpgradeK8sVersion(ctx context.Context, k8sVersion versions.Val
 			string(k8sVersion), fmt.Errorf("no version config matching K8s %s", k8sVersion))
 	}
 	components, err = k.updateK8s(&nodeVersion, versionConfig.ClusterVersion, versionConfig.KubernetesComponents, force)
-	if err == nil {
-		err = k.applyComponentsCM(ctx, components)
-		if err != nil {
-			return fmt.Errorf("applying k8s components ConfigMap: %w", err)
-		}
+	if err != nil {
+		return fmt.Errorf("updating K8s: %w", err)
 	}
-	fmt.Println("Successfully updated Kubernetes version", nodeVersion.Spec.KubernetesClusterVersion, "conf", k8sVersion)
+	if err := k.applyComponentsCM(ctx, components); err != nil {
+		return fmt.Errorf("applying k8s components ConfigMap: %w", err)
+	}
 	updatedNodeVersion, err := k.applyNodeVersion(ctx, nodeVersion)
 	if err != nil {
 		return fmt.Errorf("applying upgrade: %w", err)
@@ -133,7 +132,6 @@ func (k *KubeCmd) UpgradeK8sVersion(ctx context.Context, k8sVersion versions.Val
 
 // UpgradeImageVersion upgrades the cluster's image.
 // The versions set in the config are validated against the versions running in the cluster.
-// TODO(elchead): AB#3434 Split K8s and image upgrade of UpgradeNodeVersion.
 func (k *KubeCmd) UpgradeImageVersion(ctx context.Context, conf *config.Config, force bool) error {
 	provider := conf.GetProvider()
 	attestationVariant := conf.GetAttestationConfig().GetVariant()
