@@ -850,7 +850,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			),
 			wantErr: true,
 			assertion: func(assert *assert.Assertions, err error) {
-				assert.ErrorContains(err, "is lower than the TCB of the VCEK certificate")
+				assert.ErrorContains(err, "is lower than the TCB of the V[CL]EK certificate")
 			},
 		},
 		"reported tcb != tcb in vcek": {
@@ -870,7 +870,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			),
 			wantErr: true,
 			assertion: func(assert *assert.Assertions, err error) {
-				assert.ErrorContains(err, "does not match the TCB of the VCEK certificate")
+				assert.ErrorContains(err, "does not match the TCB of the V[CL]EK certificate")
 			},
 		},
 		"vmpl != 0": {

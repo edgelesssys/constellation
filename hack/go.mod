@@ -3,7 +3,6 @@ module github.com/edgelesssys/constellation/v2/hack
 go 1.20
 
 replace (
-	github.com/google/go-sev-guest v0.7.1 => github.com/msanft/go-sev-guest v1.1.0
 	k8s.io/api v0.0.0 => k8s.io/api v0.27.2
 	k8s.io/apiextensions-apiserver v0.0.0 => k8s.io/apiextensions-apiserver v0.27.2
 	k8s.io/apimachinery v0.0.0 => k8s.io/apimachinery v0.27.2
@@ -169,7 +168,7 @@ require (
 	github.com/google/go-attestation v0.5.0 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/go-containerregistry v0.15.2 // indirect
-	github.com/google/go-sev-guest v0.7.2-0.20230904235445-81d183f8e73d // indirect
+	github.com/google/go-sev-guest v0.8.0 // indirect
 	github.com/google/go-tpm v0.9.0 // indirect
 	github.com/google/go-tpm-tools v0.4.0 // indirect
 	github.com/google/go-tspi v0.3.0 // indirect
@@ -177,7 +176,7 @@ require (
 	github.com/google/logger v1.1.1 // indirect
 	github.com/google/s2a-go v0.1.4 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
-	github.com/google/uuid v1.3.0 // indirect
+	github.com/google/uuid v1.3.1 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.5 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.0 // indirect
 	github.com/gophercloud/gophercloud v1.5.0 // indirect
@@ -281,13 +280,13 @@ require (
 	go.starlark.net v0.0.0-20220223235035-243c74974e97 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.12.0 // indirect
+	golang.org/x/crypto v0.13.0 // indirect
 	golang.org/x/net v0.14.0 // indirect
 	golang.org/x/oauth2 v0.9.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
-	golang.org/x/sys v0.11.0 // indirect
-	golang.org/x/term v0.11.0 // indirect
-	golang.org/x/text v0.12.0 // indirect
+	golang.org/x/sys v0.12.0 // indirect
+	golang.org/x/term v0.12.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.10.0 // indirect
 	google.golang.org/api v0.130.0 // indirect

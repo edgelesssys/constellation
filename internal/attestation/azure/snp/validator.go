@@ -18,7 +18,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
@@ -301,7 +300,7 @@ func (a *azureInstanceInfo) attestationWithCerts(logger attestation.Logger, gett
 			(att.CertificateChain.ArkCert != nil),
 			(att.CertificateChain.AskCert != nil),
 		)
-		kdsCertChain, err := trust.GetProductChain(productName, getter)
+		kdsCertChain, err := trust.GetProductChain(productName, abi.VcekReportSigner, getter)
 		if err != nil {
 			return nil, fmt.Errorf("retrieving certificate chain from AMD KDS: %w", err)
 		}
@@ -320,7 +319,7 @@ func (a *azureInstanceInfo) attestationWithCerts(logger attestation.Logger, gett
 // If less than 2 certificates are present, only the present certificate is returned.
 // If more than 2 certificates are present, an error is returned.
 func (a *azureInstanceInfo) parseCertChain() (ask, ark *x509.Certificate, retErr error) {
-	rest := []byte(strings.TrimSpace(string(a.CertChain)))
+	rest := bytes.TrimSpace(a.CertChain)
 
 	i := 1
 	var block *pem.Block
@@ -369,13 +368,13 @@ func (a *azureInstanceInfo) parseCertChain() (ask, ark *x509.Certificate, retErr
 // parseVCEK parses the VCEK certificate from the instanceInfo into an x509-formatted certificate.
 // If the VCEK certificate is not present, nil is returned.
 func (a *azureInstanceInfo) parseVCEK() (*x509.Certificate, error) {
-	newlinesTrimmed := strings.TrimSpace(string(a.VCEK))
-	if newlinesTrimmed == "" {
+	newlinesTrimmed := bytes.TrimSpace(a.VCEK)
+	if len(newlinesTrimmed) == 0 {
 		// VCEK is not present.
 		return nil, nil
 	}
 
-	block, rest := pem.Decode([]byte(newlinesTrimmed))
+	block, rest := pem.Decode(newlinesTrimmed)
 	if block == nil {
 		return nil, fmt.Errorf("no PEM blocks found")
 	}
