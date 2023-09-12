@@ -261,6 +261,11 @@ func (m *mockTerraformUpgrader) ApplyClusterUpgrade(ctx context.Context, provide
 	return args.Get(0).(terraform.ApplyOutput), args.Error(1)
 }
 
+func (m *mockTerraformUpgrader) RestoreClusterWorkspace() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
 type mockApplier struct {
 	mock.Mock
 }

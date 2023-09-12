@@ -129,7 +129,7 @@ func (i iamUpgradeApplyCmd) iamUpgradeApply(cmd *cobra.Command, iamUpgrader iamU
 				return fmt.Errorf(
 					"restoring Terraform workspace: %w, restore the Terraform workspace manually from %s ",
 					err,
-					filepath.Join(constants.UpgradeDir, "<upgrade-id>", constants.TerraformUpgradeBackupDir),
+					filepath.Join(constants.UpgradeDir, "<upgrade-id>", constants.TerraformIAMUpgradeBackupDir),
 				)
 			}
 			return errors.New("IAM upgrade aborted by user")
