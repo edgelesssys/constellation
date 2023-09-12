@@ -107,7 +107,7 @@ func (i iamUpgradeApplyCmd) iamUpgradeApply(cmd *cobra.Command, iamUpgrader iamU
 	}
 	hasDiff, err := iamUpgrader.PlanIAMUpgrade(cmd.Context(), cmd.OutOrStderr(), vars, conf.GetProvider())
 	if err != nil {
-		return err
+		return fmt.Errorf("planning terraform migrations: %w", err)
 	}
 	if !hasDiff && !force {
 		cmd.Println("No IAM migrations necessary.")

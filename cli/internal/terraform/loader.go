@@ -25,6 +25,7 @@ var ErrTerraformWorkspaceDifferentFiles = errors.New("creating cluster: trying t
 
 //go:embed terraform/*
 //go:embed terraform/*/.terraform.lock.hcl
+//go:embed terraform/iam/*/.terraform.lock.hcl
 var terraformFS embed.FS
 
 const (
@@ -80,7 +81,8 @@ func terraformCopier(fileHandler file.Handler, rootDir, workingDir string, overw
 			opts = append(opts, file.OptOverwrite)
 		}
 		if err := fileHandler.Write(fileName, content, opts...); errors.Is(err, afero.ErrFileExists) {
-			// If a file already exists, check if it is identical. If yes, continue and don't write anything to disk.
+			// If a file already exists and overwritePolicy is set to noOverwrites,
+			// check if it is identical. If yes, continue and don't write anything to disk.
 			// If no, don't overwrite it and instead throw an error. The affected file could be from a different version,
 			// provider, corrupted or manually modified in general.
 			existingFileContent, err := fileHandler.Read(fileName)
