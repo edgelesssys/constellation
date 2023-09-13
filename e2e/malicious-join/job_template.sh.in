@@ -4,7 +4,8 @@ lib=$(realpath @@BASE_LIB@@) || exit 1
 stat "${lib}" >> /dev/null || exit 1
 yq=$(realpath @@YQ_BIN@@)
 template=$(realpath @@TEMPLATE@@)
-export REPO_TAG=$(realpath @@REPO_TAG@@)
+REPO_TAG=$(realpath @@REPO_TAG@@)
+export REPO_TAG
 
 # shellcheck source=../sh/lib.bash
 if ! source "${lib}"; then
