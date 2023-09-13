@@ -1,9 +1,17 @@
 #!/usr/bin/env bash
 
-YQ=$(realpath @@YQ_BIN@@)
-TEMPLATE=$(realpath @@TEMPLATE@@)
 export REPO_TAG
 REPO_TAG=$(realpath @@REPO_TAG@@)
+yq=$(realpath @@YQ_BIN@@)
+template=$(realpath @@TEMPLATE@@)
+lib=$(realpath @@BASE_LIB@@) || exit 1
+stat "${lib}" >> /dev/null || exit 1
+
+# shellcheck source=../sh/lib.bash
+if ! source "${lib}"; then
+  echo "Error: could not find import"
+  exit 1
+fi
 
 cd "${BUILD_WORKING_DIRECTORY}" || exit 1
 
@@ -14,4 +22,4 @@ else
 fi
 
 echo "Stamping job deployment with $REPO_TAG"
-$YQ eval '.spec.template.spec.containers[0].image |= "ghcr.io/edgelesssys/malicious-join-test:" + load_str(strenv(REPO_TAG))' "$TEMPLATE" > "$workdir/stamped_job.yaml"
+$yq eval '.spec.template.spec.containers[0].image |= "ghcr.io/edgelesssys/malicious-join-test:" + load_str(strenv(REPO_TAG))' "$template" > "$workdir/stamped_job.yaml"
