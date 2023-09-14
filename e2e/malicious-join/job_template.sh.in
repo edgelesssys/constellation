@@ -2,16 +2,17 @@
 
 lib=$(realpath @@BASE_LIB@@) || exit 1
 stat "${lib}" >> /dev/null || exit 1
-yq=$(realpath @@YQ_BIN@@)
-template=$(realpath @@TEMPLATE@@)
-REPO_TAG=$(realpath @@REPO_TAG@@)
-export REPO_TAG
 
-# shellcheck source=../sh/lib.bash
+# shellcheck source=../../bazel/sh/lib.bash
 if ! source "${lib}"; then
   echo "Error: could not find import"
   exit 1
 fi
+
+yq=$(realpath @@YQ_BIN@@)
+template=$(realpath @@TEMPLATE@@)
+REPO_TAG=$(realpath @@REPO_TAG@@)
+export REPO_TAG
 
 cd "${BUILD_WORKING_DIRECTORY}" || exit 1
 
