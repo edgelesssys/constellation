@@ -76,7 +76,7 @@ func main() {
 	var ask *x509.Certificate
 	if attVariant.Equal(variant.AzureSEVSNP{}) {
 		log.Infof("Starting certificate cache")
-		certCacheClient := certcache.NewCertCacheClient(log.Named("certcache"), kubeClient)
+		certCacheClient := certcache.NewClient(log.Named("certcache"), kubeClient)
 		ask, _, err = certCacheClient.CreateCertChainCache(ctx, abi.VcekReportSigner)
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to create certificate chain cache")

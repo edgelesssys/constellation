@@ -268,7 +268,7 @@ type azureInstanceInfo struct {
 // Certificates are retrieved in the following precedence:
 // 1. ASK or ARK from THIM
 // 2. ASK or ARK from fallbackCerts
-// 3. ASK or ARK from AMD KDS
+// 3. ASK or ARK from AMD KDS.
 func (a *azureInstanceInfo) attestationWithCerts(logger attestation.Logger, getter trust.HTTPSGetter,
 	fallbackCerts sevSnpCerts,
 ) (*spb.Attestation, error) {

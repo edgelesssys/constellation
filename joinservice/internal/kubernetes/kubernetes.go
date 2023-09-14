@@ -72,7 +72,7 @@ func (c *Client) GetConfigMapData(ctx context.Context, name, key string) (string
 	cm, err := c.client.CoreV1().ConfigMaps("kube-system").Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			return "", &ErrConfigMapNotExist{}
+			return "", &ConfigMapNotExistError{}
 		}
 		return "", fmt.Errorf("failed to get configmap: %w", err)
 	}
@@ -80,11 +80,11 @@ func (c *Client) GetConfigMapData(ctx context.Context, name, key string) (string
 	return cm.Data[key], nil
 }
 
-// ErrConfigMapNotExist is returned when a configmap does not exist.
-type ErrConfigMapNotExist struct{}
+// ConfigMapNotExistError is returned when a configmap does not exist.
+type ConfigMapNotExistError struct{}
 
 // Error returns the error message.
-func (e ErrConfigMapNotExist) Error() string {
+func (e ConfigMapNotExistError) Error() string {
 	return "configmap does not exist"
 }
 

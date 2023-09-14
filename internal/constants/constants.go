@@ -130,7 +130,7 @@ const (
 	ComponentsListKey = "components"
 	// SevSnpCertCacheConfigMapName is the name of the configMap holding the SEV-SNP certificate cache in the join service.
 	SevSnpCertCacheConfigMapName = "sev-snp-cert-cache"
-	// CertCacheCertKey is the name of the key holding the ASK certificate in the SEV-SNP certificate cache.
+	// CertCacheArkKey is the name of the key holding the ASK certificate in the SEV-SNP certificate cache.
 	CertCacheAskKey = "ask"
 	// CertCacheArkKey is the name of the key holding the ARK certificate in the SEV-SNP certificate cache.
 	CertCacheArkKey = "ark"

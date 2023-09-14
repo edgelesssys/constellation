@@ -22,18 +22,18 @@ import (
 	"github.com/google/go-sev-guest/verify/trust"
 )
 
-// CertCacheClient is a client for interacting with the certificate chain cache.
-type CertCacheClient struct {
+// Client is a client for interacting with the certificate chain cache.
+type Client struct {
 	log *logger.Logger
 	kdsClient
 	kubeClient kubeClient
 }
 
-// NewCertCacheClient creates a new CertCacheClient.
-func NewCertCacheClient(log *logger.Logger, kubeClient kubeClient) *CertCacheClient {
+// NewClient creates a new CertCacheClient.
+func NewClient(log *logger.Logger, kubeClient kubeClient) *Client {
 	kdsClient := amdkds.NewKDSClient(trust.DefaultHTTPSGetter())
 
-	return &CertCacheClient{
+	return &Client{
 		log:        log,
 		kubeClient: kubeClient,
 		kdsClient:  kdsClient,
@@ -43,7 +43,7 @@ func NewCertCacheClient(log *logger.Logger, kubeClient kubeClient) *CertCacheCli
 // CreateCertChainCache creates the certificate chain cache configmap with the provided ASK and ARK
 // and returns ASK and ARK.
 // If the configmap already exists, nothing is done and the existing ASK and ARK are returned.
-func (c *CertCacheClient) CreateCertChainCache(ctx context.Context, signingType abi.ReportSigner) (ask, ark *x509.Certificate, err error) {
+func (c *Client) CreateCertChainCache(ctx context.Context, signingType abi.ReportSigner) (ask, ark *x509.Certificate, err error) {
 	c.log.Debugf("Creating certificate chain cache")
 	ask, ark, err = c.getCertChainCache(ctx)
 	if err != nil {
@@ -81,11 +81,11 @@ func (c *CertCacheClient) CreateCertChainCache(ctx context.Context, signingType 
 }
 
 // getCertChainCache returns the cached ASK and ARK certificate.
-func (c *CertCacheClient) getCertChainCache(ctx context.Context) (ask, ark *x509.Certificate, err error) {
+func (c *Client) getCertChainCache(ctx context.Context) (ask, ark *x509.Certificate, err error) {
 	c.log.Debugf("Retrieving certificate chain from cache")
 	askRaw, err := c.kubeClient.GetConfigMapData(ctx, constants.SevSnpCertCacheConfigMapName, constants.CertCacheAskKey)
 	if err != nil {
-		if _, ok := err.(kubernetes.ErrConfigMapNotExist); ok {
+		if _, ok := err.(kubernetes.ConfigMapNotExistError); ok {
 			return nil, nil, nil
 		}
 		return nil, nil, fmt.Errorf("failed to get ask: %w", err)
@@ -101,7 +101,7 @@ func (c *CertCacheClient) getCertChainCache(ctx context.Context) (ask, ark *x509
 
 	arkRaw, err := c.kubeClient.GetConfigMapData(ctx, constants.SevSnpCertCacheConfigMapName, constants.CertCacheArkKey)
 	if err != nil {
-		if _, ok := err.(kubernetes.ErrConfigMapNotExist); ok {
+		if _, ok := err.(kubernetes.ConfigMapNotExistError); ok {
 			return nil, nil, nil
 		}
 		return nil, nil, fmt.Errorf("failed to get ark: %w", err)

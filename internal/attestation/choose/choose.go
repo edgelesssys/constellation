@@ -23,7 +23,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 )
 
-// Issuer returns the issuer for the given variant
+// Issuer returns the issuer for the given variant.
 func Issuer(attestationVariant variant.Variant, log attestation.Logger) (atls.Issuer, error) {
 	switch attestationVariant {
 	case variant.AWSSEVSNP{}:

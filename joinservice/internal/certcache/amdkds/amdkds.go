@@ -15,7 +15,7 @@ import (
 	"github.com/google/go-sev-guest/verify/trust"
 )
 
-// a KDSClient is a client for interacting with the AMD KDS.
+// KDSClient is a client for interacting with the AMD KDS.
 type KDSClient struct {
 	getter trust.HTTPSGetter
 }
