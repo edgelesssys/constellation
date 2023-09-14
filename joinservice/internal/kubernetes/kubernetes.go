@@ -71,10 +71,21 @@ func (c *Client) GetComponents(ctx context.Context, configMapName string) (compo
 func (c *Client) GetConfigMapData(ctx context.Context, name, key string) (string, error) {
 	cm, err := c.client.CoreV1().ConfigMaps("kube-system").Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
+		if errors.IsNotFound(err) {
+			return "", &ErrConfigMapNotExist{}
+		}
 		return "", fmt.Errorf("failed to get configmap: %w", err)
 	}
 
 	return cm.Data[key], nil
+}
+
+// ErrConfigMapNotExist is returned when a configmap does not exist.
+type ErrConfigMapNotExist struct{}
+
+// Error returns the error message.
+func (e ErrConfigMapNotExist) Error() string {
+	return "configmap does not exist"
 }
 
 // GetK8sComponentsRefFromNodeVersionCRD returns the K8sComponentsRef from the node version CRD.
@@ -181,17 +192,4 @@ func (c *Client) CreateConfigMap(ctx context.Context, name string, data map[stri
 		return fmt.Errorf("failed to create configmap: %w", err)
 	}
 	return nil
-}
-
-// ConfigMapExists checks if a configmap with the provided name exists in the kube-system namespace.
-func (c *Client) ConfigMapExists(ctx context.Context, name string) (bool, error) {
-	_, err := c.client.CoreV1().ConfigMaps("kube-system").Get(ctx, name, metav1.GetOptions{})
-	if err != nil {
-		if errors.IsNotFound(err) {
-			return false, nil
-		}
-		return false, fmt.Errorf("failed to get configmap: %w", err)
-	}
-
-	return true, nil
 }

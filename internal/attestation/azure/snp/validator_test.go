@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
@@ -169,17 +170,18 @@ func TestParseVCEK(t *testing.T) {
 	}
 }
 
-// TestInstanceInfoAttestation tests the basic unmarshalling of the attestation report.
+// TestInstanceInfoAttestation tests the basic unmarshalling of the attestation report and the ASK / ARK precedence.
 func TestInstanceInfoAttestation(t *testing.T) {
 	defaultReport := testdata.AttestationReport
 	cfg := config.DefaultForAzureSEVSNP()
 
 	testCases := map[string]struct {
-		report    []byte
-		vcek      []byte
-		certChain []byte
-		getter    *stubHTTPSGetter
-		wantErr   bool
+		report        []byte
+		vcek          []byte
+		certChain     []byte
+		fallbackCerts sevSnpCerts
+		getter        *stubHTTPSGetter
+		wantErr       bool
 	}{
 		"success": {
 			report:    defaultReport,
@@ -205,6 +207,18 @@ func TestInstanceInfoAttestation(t *testing.T) {
 					certChainResponse:    testdata.CertChain,
 					wantCertChainRequest: true,
 				},
+				nil,
+			),
+		},
+		"use fallback certs": {
+			report: defaultReport,
+			vcek:   testdata.AzureThimVCEK,
+			fallbackCerts: sevSnpCerts{
+				ask: &x509.Certificate{},
+				ark: &x509.Certificate{},
+			},
+			getter: newStubHTTPSGetter(
+				&urlResponseMatcher{},
 				nil,
 			),
 		},
@@ -245,7 +259,7 @@ func TestInstanceInfoAttestation(t *testing.T) {
 				VCEK:              tc.vcek,
 			}
 
-			att, err := instanceInfo.attestationWithCerts(logger.NewTest(t), tc.getter)
+			att, err := instanceInfo.attestationWithCerts(logger.NewTest(t), tc.getter, tc.fallbackCerts)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

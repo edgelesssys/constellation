@@ -79,11 +79,11 @@ func TestNewUpdateableValidator(t *testing.T) {
 				))
 			}
 
-			_, err := NewValidator(
+			err := NewValidator(
 				logger.NewTest(t),
 				tc.variant,
 				handler,
-			)
+			).Update()
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

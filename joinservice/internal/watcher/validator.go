@@ -8,6 +8,7 @@ package watcher
 
 import (
 	"context"
+	"crypto/x509"
 	"encoding/asn1"
 	"fmt"
 	"path/filepath"
@@ -28,21 +29,23 @@ type Updatable struct {
 	mux         sync.Mutex
 	fileHandler file.Handler
 	variant     variant.Variant
+	cachedAsk   *x509.Certificate
 	atls.Validator
 }
 
 // NewValidator initializes a new updatable validator.
-func NewValidator(log *logger.Logger, variant variant.Variant, fileHandler file.Handler) (*Updatable, error) {
-	u := &Updatable{
+func NewValidator(log *logger.Logger, variant variant.Variant, fileHandler file.Handler) *Updatable {
+	return &Updatable{
 		log:         log,
 		fileHandler: fileHandler,
 		variant:     variant,
 	}
+}
 
-	if err := u.Update(); err != nil {
-		return nil, err
-	}
-	return u, nil
+// WithCachedASKCert sets the cached ASK certificate.
+func (u *Updatable) WithCachedASKCert(cachedAsk *x509.Certificate) *Updatable {
+	u.cachedAsk = cachedAsk
+	return u
 }
 
 // Validate calls the validators Validate method, and prevents any updates during the call.
@@ -76,9 +79,20 @@ func (u *Updatable) Update() error {
 	}
 	u.log.Debugf("New expected measurements: %+v", cfg.GetMeasurements())
 
+	if u.cachedAsk != nil {
+		u.log.Debugf("Using cached ASK certificate")
+		validator, err := choose.ValidatorWithASKCertCache(cfg, u.log, u.cachedAsk)
+		if err != nil {
+			return fmt.Errorf("choosing validator with cached ASK: %w", err)
+		}
+		u.Validator = validator
+
+		return nil
+	}
+
 	validator, err := choose.Validator(cfg, u.log)
 	if err != nil {
-		return fmt.Errorf("updating validator: %w", err)
+		return fmt.Errorf("choosing validator: %w", err)
 	}
 	u.Validator = validator
 

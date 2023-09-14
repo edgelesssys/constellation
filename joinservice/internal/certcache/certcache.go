@@ -17,6 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/joinservice/internal/certcache/amdkds"
+	"github.com/edgelesssys/constellation/v2/joinservice/internal/kubernetes"
 	"github.com/google/go-sev-guest/abi"
 	"github.com/google/go-sev-guest/verify/trust"
 )
@@ -39,11 +40,54 @@ func NewCertCacheClient(log *logger.Logger, kubeClient kubeClient) *CertCacheCli
 	}
 }
 
-// GetCertChainCache returns the cached ASK and ARK certificate.
-func (c *CertCacheClient) GetCertChainCache(ctx context.Context) (ask, ark *x509.Certificate, err error) {
+// CreateCertChainCache creates the certificate chain cache configmap with the provided ASK and ARK
+// and returns ASK and ARK.
+// If the configmap already exists, nothing is done and the existing ASK and ARK are returned.
+func (c *CertCacheClient) CreateCertChainCache(ctx context.Context, signingType abi.ReportSigner) (ask, ark *x509.Certificate, err error) {
+	c.log.Debugf("Creating certificate chain cache")
+	ask, ark, err = c.getCertChainCache(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get certificate chain cache: %w", err)
+	}
+	if ask != nil && ark != nil {
+		c.log.Debugf("Certificate chain cache already exists")
+		return ask, ark, nil
+	}
+
+	c.log.Debugf("Retrieving certificate chain from KDS")
+	ask, ark, err = c.kdsClient.CertChain(signingType)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to retrieve certificate chain from KDS: %w", err)
+	}
+
+	askWriter := &strings.Builder{}
+	if err := pem.Encode(askWriter, &pem.Block{Type: "CERTIFICATE", Bytes: ask.Raw}); err != nil {
+		return nil, nil, fmt.Errorf("failed to encode ask: %w", err)
+	}
+	arkWriter := &strings.Builder{}
+	if err := pem.Encode(arkWriter, &pem.Block{Type: "CERTIFICATE", Bytes: ark.Raw}); err != nil {
+		return nil, nil, fmt.Errorf("failed to encode ark: %w", err)
+	}
+
+	c.log.Debugf("Creating certificate chain cache configmap")
+	if err := c.kubeClient.CreateConfigMap(ctx, constants.SevSnpCertCacheConfigMapName, map[string]string{
+		constants.CertCacheAskKey: askWriter.String(),
+		constants.CertCacheArkKey: arkWriter.String(),
+	}); err != nil {
+		return nil, nil, fmt.Errorf("failed to create certificate chain cache configmap: %w", err)
+	}
+
+	return ask, ark, nil
+}
+
+// getCertChainCache returns the cached ASK and ARK certificate.
+func (c *CertCacheClient) getCertChainCache(ctx context.Context) (ask, ark *x509.Certificate, err error) {
 	c.log.Debugf("Retrieving certificate chain from cache")
 	askRaw, err := c.kubeClient.GetConfigMapData(ctx, constants.SevSnpCertCacheConfigMapName, constants.CertCacheAskKey)
 	if err != nil {
+		if _, ok := err.(kubernetes.ErrConfigMapNotExist); ok {
+			return nil, nil, nil
+		}
 		return nil, nil, fmt.Errorf("failed to get ask: %w", err)
 	}
 	askBlock, _ := pem.Decode([]byte(askRaw))
@@ -57,6 +101,9 @@ func (c *CertCacheClient) GetCertChainCache(ctx context.Context) (ask, ark *x509
 
 	arkRaw, err := c.kubeClient.GetConfigMapData(ctx, constants.SevSnpCertCacheConfigMapName, constants.CertCacheArkKey)
 	if err != nil {
+		if _, ok := err.(kubernetes.ErrConfigMapNotExist); ok {
+			return nil, nil, nil
+		}
 		return nil, nil, fmt.Errorf("failed to get ark: %w", err)
 	}
 	arkBlock, _ := pem.Decode([]byte(arkRaw))
@@ -72,43 +119,9 @@ func (c *CertCacheClient) GetCertChainCache(ctx context.Context) (ask, ark *x509
 	return ask, ark, nil
 }
 
-// CreateCertChainCache creates the certificate chain cache configmap with the provided ask and ark.
-// If the configmap already exists, nothing is done.
-func (c *CertCacheClient) CreateCertChainCache(ctx context.Context, signingType abi.ReportSigner) error {
-	c.log.Debugf("Creating certificate chain cache")
-	exists, err := c.kubeClient.ConfigMapExists(ctx, constants.SevSnpCertCacheConfigMapName)
-	if err != nil {
-		return fmt.Errorf("failed to check if configmap exists: %w", err)
-	}
-	if exists {
-		c.log.Debugf("Certificate chain cache already exists")
-		return nil
-	}
-
-	c.log.Debugf("Retrieving certificate chain from KDS")
-	ask, ark, err := c.kdsClient.CertChain(signingType)
-	if err != nil {
-		return fmt.Errorf("failed to retrieve certificate chain from KDS: %w", err)
-	}
-
-	askWriter := &strings.Builder{}
-	if err := pem.Encode(askWriter, &pem.Block{Type: "CERTIFICATE", Bytes: ask.Raw}); err != nil {
-		return fmt.Errorf("failed to encode ask: %w", err)
-	}
-	arkWriter := &strings.Builder{}
-	if err := pem.Encode(arkWriter, &pem.Block{Type: "CERTIFICATE", Bytes: ark.Raw}); err != nil {
-		return fmt.Errorf("failed to encode ark: %w", err)
-	}
-	return c.kubeClient.CreateConfigMap(ctx, constants.SevSnpCertCacheConfigMapName, map[string]string{
-		constants.CertCacheAskKey: askWriter.String(),
-		constants.CertCacheArkKey: arkWriter.String(),
-	})
-}
-
 type kubeClient interface {
 	CreateConfigMap(ctx context.Context, name string, data map[string]string) error
 	GetConfigMapData(ctx context.Context, name, key string) (string, error)
-	ConfigMapExists(ctx context.Context, name string) (bool, error)
 }
 
 type kdsClient interface {

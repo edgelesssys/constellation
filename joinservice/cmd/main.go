@@ -8,6 +8,7 @@ package main
 
 import (
 	"context"
+	"crypto/x509"
 	"errors"
 	"flag"
 	"net"
@@ -50,6 +51,9 @@ func main() {
 	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 	flag.Parse()
 
+	ctx, cancel := context.WithTimeout(context.Background(), vpcIPTimeout)
+	defer cancel()
+
 	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity))
 	log.With(
 		zap.String("version", constants.BinaryVersion().String()),
@@ -59,20 +63,37 @@ func main() {
 
 	handler := file.NewHandler(afero.NewOsFs())
 
-	variant, err := variant.FromString(*attestationVariant)
+	kubeClient, err := kubernetes.New()
+	if err != nil {
+		log.With(zap.Error(err)).Fatalf("Failed to create Kubernetes client")
+	}
+
+	attVariant, err := variant.FromString(*attestationVariant)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to parse attestation variant")
 	}
-	validator, err := watcher.NewValidator(log.Named("validator"), variant, handler)
-	if err != nil {
+
+	var ask *x509.Certificate
+	if attVariant.Equal(variant.AzureSEVSNP{}) {
+		log.Infof("Starting certificate cache")
+		certCacheClient := certcache.NewCertCacheClient(log.Named("certcache"), kubeClient)
+		ask, _, err = certCacheClient.CreateCertChainCache(ctx, abi.VcekReportSigner)
+		if err != nil {
+			log.With(zap.Error(err)).Fatalf("Failed to create certificate chain cache")
+		}
+	}
+
+	validator := watcher.NewValidator(log.Named("validator"), attVariant, handler)
+	if ask != nil {
+		validator = validator.WithCachedASKCert(ask)
+	}
+	if err := validator.Update(); err != nil {
 		flag.Usage()
 		log.With(zap.Error(err)).Fatalf("Failed to create validator")
 	}
 
 	creds := atlscredentials.New(nil, []atls.Validator{validator})
 
-	ctx, cancel := context.WithTimeout(context.Background(), vpcIPTimeout)
-	defer cancel()
 	vpcIP, err := getVPCIP(ctx, *provider)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to get IP in VPC")
@@ -87,17 +108,6 @@ func main() {
 	measurementSalt, err := handler.Read(filepath.Join(constants.ServiceBasePath, constants.MeasurementSaltFilename))
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to read measurement salt")
-	}
-
-	kubeClient, err := kubernetes.New()
-	if err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to create Kubernetes client")
-	}
-
-	log.Infof("Starting certificate cache")
-	certCacheClient := certcache.NewCertCacheClient(log.Named("certcache"), kubeClient)
-	if err := certCacheClient.CreateCertChainCache(ctx, abi.VcekReportSigner); err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to create certificate chain cache")
 	}
 
 	// initialize cert cache
