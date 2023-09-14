@@ -35,7 +35,7 @@ type ClusterUpgrader struct {
 func NewClusterUpgrader(ctx context.Context, existingWorkspace, upgradeWorkspace string,
 	logLevel terraform.LogLevel, fileHandler file.Handler,
 ) (*ClusterUpgrader, error) {
-	tfClient, err := terraform.New(ctx, filepath.Join(upgradeWorkspace, constants.TerraformUpgradeWorkingDir))
+	tfClient, err := terraform.New(ctx, constants.TerraformWorkingDir)
 	if err != nil {
 		return nil, fmt.Errorf("setting up terraform client: %w", err)
 	}
@@ -57,9 +57,15 @@ func (u *ClusterUpgrader) PlanClusterUpgrade(ctx context.Context, outWriter io.W
 	return planUpgrade(
 		ctx, u.tf, u.fileHandler, outWriter, u.logLevel, vars,
 		filepath.Join("terraform", strings.ToLower(csp.String())),
-		u.existingWorkspace,
 		filepath.Join(u.upgradeWorkspace, constants.TerraformUpgradeBackupDir),
 	)
+}
+
+// RestoreClusterWorkspace rolls back the existing workspace to the backup directory created when planning an upgrade,
+// when the user decides to not apply an upgrade after planning it.
+// Note that this will not apply the restored state from the backup.
+func (u *ClusterUpgrader) RestoreClusterWorkspace() error {
+	return restoreBackup(u.fileHandler, u.existingWorkspace, filepath.Join(u.upgradeWorkspace, constants.TerraformUpgradeBackupDir))
 }
 
 // ApplyClusterUpgrade applies the Terraform migrations planned by PlanClusterUpgrade.
@@ -73,14 +79,6 @@ func (u *ClusterUpgrader) ApplyClusterUpgrade(ctx context.Context, csp cloudprov
 		if err := u.policyPatcher.Patch(ctx, tfOutput.Azure.AttestationURL); err != nil {
 			return tfOutput, fmt.Errorf("patching policies: %w", err)
 		}
-	}
-
-	if err := moveUpgradeToCurrent(
-		u.fileHandler,
-		u.existingWorkspace,
-		filepath.Join(u.upgradeWorkspace, constants.TerraformUpgradeWorkingDir),
-	); err != nil {
-		return tfOutput, fmt.Errorf("promoting upgrade workspace to current workspace: %w", err)
 	}
 
 	return tfOutput, nil

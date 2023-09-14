@@ -83,6 +83,15 @@ func TestUpgradeApply(t *testing.T) {
 			wantErr:           true,
 			stdin:             "no\n",
 		},
+		"abort, restore terraform err": {
+			kubeUpgrader: &stubKubernetesUpgrader{
+				currentConfig: config.DefaultForAzureSEVSNP(),
+			},
+			helmUpgrader:      stubApplier{},
+			terraformUpgrader: &stubTerraformUpgrader{terraformDiff: true, rollbackWorkspaceErr: assert.AnError},
+			wantErr:           true,
+			stdin:             "no\n",
+		},
 		"plan terraform error": {
 			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig: config.DefaultForAzureSEVSNP(),
@@ -220,9 +229,10 @@ func (u *stubKubernetesUpgrader) RemoveHelmKeepAnnotation(_ context.Context) err
 }
 
 type stubTerraformUpgrader struct {
-	terraformDiff     bool
-	planTerraformErr  error
-	applyTerraformErr error
+	terraformDiff        bool
+	planTerraformErr     error
+	applyTerraformErr    error
+	rollbackWorkspaceErr error
 }
 
 func (u stubTerraformUpgrader) PlanClusterUpgrade(_ context.Context, _ io.Writer, _ terraform.Variables, _ cloudprovider.Provider) (bool, error) {
@@ -231,6 +241,10 @@ func (u stubTerraformUpgrader) PlanClusterUpgrade(_ context.Context, _ io.Writer
 
 func (u stubTerraformUpgrader) ApplyClusterUpgrade(_ context.Context, _ cloudprovider.Provider) (terraform.ApplyOutput, error) {
 	return terraform.ApplyOutput{}, u.applyTerraformErr
+}
+
+func (u stubTerraformUpgrader) RestoreClusterWorkspace() error {
+	return u.rollbackWorkspaceErr
 }
 
 type mockTerraformUpgrader struct {
@@ -245,6 +259,11 @@ func (m *mockTerraformUpgrader) PlanClusterUpgrade(ctx context.Context, w io.Wri
 func (m *mockTerraformUpgrader) ApplyClusterUpgrade(ctx context.Context, provider cloudprovider.Provider) (terraform.ApplyOutput, error) {
 	args := m.Called(ctx, provider)
 	return args.Get(0).(terraform.ApplyOutput), args.Error(1)
+}
+
+func (m *mockTerraformUpgrader) RestoreClusterWorkspace() error {
+	args := m.Called()
+	return args.Error(0)
 }
 
 type mockApplier struct {

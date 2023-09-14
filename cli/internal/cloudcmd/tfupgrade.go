@@ -21,16 +21,15 @@ import (
 func planUpgrade(
 	ctx context.Context, tfClient tfUpgradePlanner, fileHandler file.Handler,
 	outWriter io.Writer, logLevel terraform.LogLevel, vars terraform.Variables,
-	templateDir, existingWorkspace, backupDir string,
+	templateDir, backupDir string,
 ) (bool, error) {
 	if err := ensureFileNotExist(fileHandler, backupDir); err != nil {
-		return false, fmt.Errorf("workspace is not clean: %w", err)
+		return false, fmt.Errorf("backup directory %s already exists: %w", backupDir, err)
 	}
 
-	// Prepare the new Terraform workspace and backup the old one
+	// Backup the old Terraform workspace and move the embedded Terraform files into the workspace.
 	err := tfClient.PrepareUpgradeWorkspace(
 		templateDir,
-		existingWorkspace,
 		backupDir,
 		vars,
 	)
@@ -52,20 +51,20 @@ func planUpgrade(
 	return hasDiff, nil
 }
 
-// moveUpgradeToCurrent replaces the an existing Terraform workspace with a workspace holding migrated Terraform resources.
-func moveUpgradeToCurrent(fileHandler file.Handler, existingWorkspace, upgradeWorkingDir string) error {
-	if err := fileHandler.RemoveAll(existingWorkspace); err != nil {
-		return fmt.Errorf("removing old terraform directory: %w", err)
+// restoreBackup replaces the existing Terraform workspace with the backup.
+func restoreBackup(fileHandler file.Handler, workingDir, backupDir string) error {
+	if err := fileHandler.RemoveAll(workingDir); err != nil {
+		return fmt.Errorf("removing existing workspace: %w", err)
 	}
 	if err := fileHandler.CopyDir(
-		upgradeWorkingDir,
-		existingWorkspace,
+		backupDir,
+		workingDir,
 	); err != nil {
-		return fmt.Errorf("replacing old terraform directory with new one: %w", err)
+		return fmt.Errorf("replacing terraform workspace with backup: %w", err)
 	}
 
-	if err := fileHandler.RemoveAll(upgradeWorkingDir); err != nil {
-		return fmt.Errorf("removing terraform upgrade directory: %w", err)
+	if err := fileHandler.RemoveAll(backupDir); err != nil {
+		return fmt.Errorf("removing backup directory: %w", err)
 	}
 	return nil
 }

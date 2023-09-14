@@ -24,7 +24,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/semver"
 	consemver "github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -47,8 +46,8 @@ func TestBuildString(t *testing.T) {
 				newKubernetes:     []string{"v1.24.12", "v1.25.6"},
 				newCLI:            []consemver.Semver{consemver.NewFromInt(2, 5, 0, ""), consemver.NewFromInt(2, 6, 0, "")},
 				currentServices:   consemver.NewFromInt(2, 4, 0, ""),
-				currentImage:      semver.NewFromInt(2, 4, 0, ""),
-				currentKubernetes: semver.NewFromInt(1, 24, 5, ""),
+				currentImage:      consemver.NewFromInt(2, 4, 0, ""),
+				currentKubernetes: consemver.NewFromInt(1, 24, 5, ""),
 				currentCLI:        consemver.NewFromInt(2, 4, 0, ""),
 			},
 			expected: "The following updates are available with this CLI:\n  Kubernetes: v1.24.5 --> v1.24.12 v1.25.6\n  Images:\n    v2.4.0 --> v2.5.0\n      Includes these measurements:\n      4:\n          expected: \"1234123412341234123412341234123412341234123412341234123412341234\"\n          warnOnly: false\n      8:\n          expected: \"0000000000000000000000000000000000000000000000000000000000000000\"\n          warnOnly: false\n      9:\n          expected: \"1234123412341234123412341234123412341234123412341234123412341234\"\n          warnOnly: false\n      11:\n          expected: \"0000000000000000000000000000000000000000000000000000000000000000\"\n          warnOnly: false\n      12:\n          expected: \"1234123412341234123412341234123412341234123412341234123412341234\"\n          warnOnly: false\n      13:\n          expected: \"0000000000000000000000000000000000000000000000000000000000000000\"\n          warnOnly: false\n      15:\n          expected: \"0000000000000000000000000000000000000000000000000000000000000000\"\n          warnOnly: false\n      \n  Services: v2.4.0 --> v2.5.0\n",
@@ -70,7 +69,7 @@ func TestBuildString(t *testing.T) {
 		"k8s only": {
 			upgrade: versionUpgrade{
 				newKubernetes:     []string{"v1.24.12", "v1.25.6"},
-				currentKubernetes: semver.NewFromInt(1, 24, 5, ""),
+				currentKubernetes: consemver.NewFromInt(1, 24, 5, ""),
 			},
 			expected: "The following updates are available with this CLI:\n  Kubernetes: v1.24.5 --> v1.24.12 v1.25.6\n",
 		},
@@ -81,8 +80,8 @@ func TestBuildString(t *testing.T) {
 				newKubernetes:     []string{},
 				newCLI:            []consemver.Semver{},
 				currentServices:   consemver.NewFromInt(2, 5, 0, ""),
-				currentImage:      semver.NewFromInt(2, 5, 0, ""),
-				currentKubernetes: semver.NewFromInt(1, 25, 6, ""),
+				currentImage:      consemver.NewFromInt(2, 5, 0, ""),
+				currentKubernetes: consemver.NewFromInt(1, 25, 6, ""),
 				currentCLI:        consemver.NewFromInt(2, 5, 0, ""),
 			},
 			expected: "You are up to date.\n",
@@ -165,8 +164,8 @@ func TestUpgradeCheck(t *testing.T) {
 		},
 		supportedK8sVersions:    []string{"v1.24.5", "v1.24.12", "v1.25.6"},
 		currentServicesVersions: consemver.NewFromInt(2, 4, 0, ""),
-		currentImageVersion:     semver.NewFromInt(2, 4, 0, ""),
-		currentK8sVersion:       semver.NewFromInt(1, 24, 5, ""),
+		currentImageVersion:     consemver.NewFromInt(2, 4, 0, ""),
+		currentK8sVersion:       consemver.NewFromInt(1, 24, 5, ""),
 		currentCLIVersion:       consemver.NewFromInt(2, 4, 0, ""),
 		images:                  []versionsapi.Version{v2_5},
 		newCLIVersionsList:      []consemver.Semver{consemver.NewFromInt(2, 5, 0, ""), consemver.NewFromInt(2, 6, 0, "")},
@@ -185,14 +184,22 @@ func TestUpgradeCheck(t *testing.T) {
 			csp:        cloudprovider.GCP,
 			cliVersion: "v1.0.0",
 		},
-		"terraform err": {
+		"terraform plan err": {
 			collector: collector,
 			checker: stubTerraformChecker{
-				err: assert.AnError,
+				planErr: assert.AnError,
 			},
 			csp:        cloudprovider.GCP,
 			cliVersion: "v1.0.0",
 			wantError:  true,
+		},
+		"terraform rollback err, log only": {
+			collector: collector,
+			checker: stubTerraformChecker{
+				rollbackErr: assert.AnError,
+			},
+			csp:        cloudprovider.GCP,
+			cliVersion: "v1.0.0",
 		},
 	}
 
@@ -214,7 +221,7 @@ func TestUpgradeCheck(t *testing.T) {
 
 			cmd := newUpgradeCheckCmd()
 
-			err := checkCmd.upgradeCheck(cmd, stubAttestationFetcher{}, "test", upgradeCheckFlags{})
+			err := checkCmd.upgradeCheck(cmd, stubAttestationFetcher{}, upgradeCheckFlags{})
 			if tc.wantError {
 				assert.Error(err)
 				return
@@ -279,12 +286,17 @@ func (s *stubVersionCollector) filterCompatibleCLIVersions(_ context.Context, _ 
 }
 
 type stubTerraformChecker struct {
-	tfDiff bool
-	err    error
+	tfDiff      bool
+	planErr     error
+	rollbackErr error
 }
 
 func (s stubTerraformChecker) PlanClusterUpgrade(_ context.Context, _ io.Writer, _ terraform.Variables, _ cloudprovider.Provider) (bool, error) {
-	return s.tfDiff, s.err
+	return s.tfDiff, s.planErr
+}
+
+func (s stubTerraformChecker) RestoreClusterWorkspace() error {
+	return s.rollbackErr
 }
 
 func TestNewCLIVersions(t *testing.T) {
@@ -374,7 +386,7 @@ func TestFilterCompatibleCLIVersions(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			require := require.New(t)
 
-			_, err := tc.verCollector.filterCompatibleCLIVersions(context.Background(), tc.cliPatchVersions, semver.NewFromInt(1, 24, 5, ""))
+			_, err := tc.verCollector.filterCompatibleCLIVersions(context.Background(), tc.cliPatchVersions, consemver.NewFromInt(1, 24, 5, ""))
 			if tc.wantErr {
 				require.Error(err)
 				return

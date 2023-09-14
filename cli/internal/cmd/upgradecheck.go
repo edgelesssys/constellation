@@ -108,12 +108,13 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 			log:            log,
 			versionsapi:    versionfetcher,
 		},
+		upgradeDir:       upgradeDir,
 		terraformChecker: tfClient,
 		fileHandler:      fileHandler,
 		log:              log,
 	}
 
-	return up.upgradeCheck(cmd, attestationconfigapi.NewFetcher(), upgradeDir, flags)
+	return up.upgradeCheck(cmd, attestationconfigapi.NewFetcher(), flags)
 }
 
 func parseUpgradeCheckFlags(cmd *cobra.Command) (upgradeCheckFlags, error) {
@@ -154,6 +155,7 @@ func parseUpgradeCheckFlags(cmd *cobra.Command) (upgradeCheckFlags, error) {
 
 type upgradeCheckCmd struct {
 	canUpgradeCheck  bool
+	upgradeDir       string
 	collect          collector
 	terraformChecker terraformChecker
 	fileHandler      file.Handler
@@ -161,7 +163,7 @@ type upgradeCheckCmd struct {
 }
 
 // upgradePlan plans an upgrade of a Constellation cluster.
-func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fetcher attestationconfigapi.Fetcher, upgradeDir string, flags upgradeCheckFlags) error {
+func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fetcher attestationconfigapi.Fetcher, flags upgradeCheckFlags) error {
 	conf, err := config.New(u.fileHandler, constants.ConfigFilename, fetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
@@ -235,9 +237,14 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fetcher attestationco
 		return fmt.Errorf("planning terraform migrations: %w", err)
 	}
 	defer func() {
-		// Remove the upgrade directory
-		if err := u.fileHandler.RemoveAll(upgradeDir); err != nil {
-			u.log.Debugf("Failed to clean up Terraform migrations: %s", err)
+		// User doesn't expect to see any changes in his workspace after an "upgrade plan",
+		// therefore, roll back to the backed up state.
+		if err := u.terraformChecker.RestoreClusterWorkspace(); err != nil {
+			cmd.PrintErrf(
+				"restoring Terraform workspace: %s, restore the Terraform workspace manually from %s ",
+				err,
+				filepath.Join(u.upgradeDir, constants.TerraformUpgradeBackupDir),
+			)
 		}
 	}()
 
@@ -728,6 +735,7 @@ type kubernetesChecker interface {
 
 type terraformChecker interface {
 	PlanClusterUpgrade(ctx context.Context, outWriter io.Writer, vars terraform.Variables, csp cloudprovider.Provider) (bool, error)
+	RestoreClusterWorkspace() error
 }
 
 type versionListFetcher interface {

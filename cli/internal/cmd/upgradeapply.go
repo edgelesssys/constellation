@@ -301,9 +301,14 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, conf *config.Conf
 			}
 			if !ok {
 				cmd.Println("Aborting upgrade.")
-				// Remove the upgrade directory
-				if err := u.fileHandler.RemoveAll(upgradeDir); err != nil {
-					return res, fmt.Errorf("cleaning up upgrade directory %s: %w", upgradeDir, err)
+				// User doesn't expect to see any changes in his workspace after aborting an "upgrade apply",
+				// therefore, roll back to the backed up state.
+				if err := u.clusterUpgrader.RestoreClusterWorkspace(); err != nil {
+					return res, fmt.Errorf(
+						"restoring Terraform workspace: %w, restore the Terraform workspace manually from %s ",
+						err,
+						filepath.Join(upgradeDir, constants.TerraformUpgradeBackupDir),
+					)
 				}
 				return res, fmt.Errorf("cluster upgrade aborted by user")
 			}
@@ -636,4 +641,5 @@ type kubernetesUpgrader interface {
 type clusterUpgrader interface {
 	PlanClusterUpgrade(ctx context.Context, outWriter io.Writer, vars terraform.Variables, csp cloudprovider.Provider) (bool, error)
 	ApplyClusterUpgrade(ctx context.Context, csp cloudprovider.Provider) (terraform.ApplyOutput, error)
+	RestoreClusterWorkspace() error
 }

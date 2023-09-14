@@ -332,19 +332,18 @@ func (c *Client) PrepareWorkspace(path string, vars Variables) error {
 		return fmt.Errorf("prepare workspace: %w", err)
 	}
 
-	return c.writeVars(vars)
+	return c.writeVars(vars, noOverwrites)
 }
 
 // PrepareUpgradeWorkspace prepares a Terraform workspace for an upgrade.
-// It copies the Terraform state from the old working dir and the embedded Terraform files
-// into the working dir of the Terraform client.
-// Additionally, a backup of the old working dir is created in the backup dir.
-func (c *Client) PrepareUpgradeWorkspace(path, oldWorkingDir, backupDir string, vars Variables) error {
-	if err := prepareUpgradeWorkspace(path, c.file, oldWorkingDir, c.workingDir, backupDir); err != nil {
+// It creates a backup of the Terraform workspace in the backupDir, and copies
+// the embedded Terraform files into the workingDir.
+func (c *Client) PrepareUpgradeWorkspace(path, backupDir string, vars Variables) error {
+	if err := prepareUpgradeWorkspace(path, c.file, c.workingDir, backupDir); err != nil {
 		return fmt.Errorf("prepare upgrade workspace: %w", err)
 	}
 
-	return c.writeVars(vars)
+	return c.writeVars(vars, allowOverwrites)
 }
 
 // ApplyCluster applies the Terraform configuration of the workspace to create or upgrade a Constellation cluster.
@@ -461,13 +460,17 @@ func (c *Client) applyManualStateMigrations(ctx context.Context) error {
 }
 
 // writeVars tries to write the Terraform variables file or, if it exists, checks if it is the same as we are expecting.
-func (c *Client) writeVars(vars Variables) error {
+func (c *Client) writeVars(vars Variables, overwritePolicy overwritePolicy) error {
 	if vars == nil {
 		return errors.New("creating cluster: vars is nil")
 	}
 
 	pathToVarsFile := filepath.Join(c.workingDir, terraformVarsFile)
-	if err := c.file.Write(pathToVarsFile, []byte(vars.String())); errors.Is(err, afero.ErrFileExists) {
+	opts := []file.Option{}
+	if overwritePolicy == allowOverwrites {
+		opts = append(opts, file.OptOverwrite)
+	}
+	if err := c.file.Write(pathToVarsFile, []byte(vars.String()), opts...); errors.Is(err, afero.ErrFileExists) {
 		// If a variables file already exists, check if it's the same as we're expecting, so we can continue using it.
 		varsContent, err := c.file.Read(pathToVarsFile)
 		if err != nil {

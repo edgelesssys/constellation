@@ -52,7 +52,6 @@ go_test(
         "clusterupgrade_test.go",
         "create_test.go",
         "iam_test.go",
-        "iamupgrade_test.go",
         "patch_test.go",
         "rollback_test.go",
         "terminate_test.go",

@@ -48,8 +48,8 @@ func newIAMUpgradeApplyCmd() *cobra.Command {
 
 type iamUpgradeApplyCmd struct {
 	fileHandler   file.Handler
-	configFetcher attestationconfigapi.Fetcher
 	log           debugLog
+	configFetcher attestationconfigapi.Fetcher
 }
 
 func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
@@ -58,10 +58,9 @@ func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("parsing force argument: %w", err)
 	}
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	configFetcher := attestationconfigapi.NewFetcher()
-
 	upgradeID := generateUpgradeID(upgradeCmdKindIAM)
 	upgradeDir := filepath.Join(constants.UpgradeDir, upgradeID)
+	configFetcher := attestationconfigapi.NewFetcher()
 	iamMigrateCmd, err := cloudcmd.NewIAMUpgrader(
 		cmd.Context(),
 		constants.TerraformIAMWorkingDir,
@@ -85,8 +84,8 @@ func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
 
 	i := iamUpgradeApplyCmd{
 		fileHandler:   fileHandler,
-		configFetcher: configFetcher,
 		log:           log,
+		configFetcher: configFetcher,
 	}
 
 	return i.iamUpgradeApply(cmd, iamMigrateCmd, upgradeDir, force, yes)
@@ -108,7 +107,7 @@ func (i iamUpgradeApplyCmd) iamUpgradeApply(cmd *cobra.Command, iamUpgrader iamU
 	}
 	hasDiff, err := iamUpgrader.PlanIAMUpgrade(cmd.Context(), cmd.OutOrStderr(), vars, conf.GetProvider())
 	if err != nil {
-		return err
+		return fmt.Errorf("planning terraform migrations: %w", err)
 	}
 	if !hasDiff && !force {
 		cmd.Println("No IAM migrations necessary.")
@@ -124,9 +123,14 @@ func (i iamUpgradeApplyCmd) iamUpgradeApply(cmd *cobra.Command, iamUpgrader iamU
 		}
 		if !ok {
 			cmd.Println("Aborting upgrade.")
-			// Remove the upgrade directory
-			if err := i.fileHandler.RemoveAll(upgradeDir); err != nil {
-				return fmt.Errorf("cleaning up upgrade directory %s: %w", upgradeDir, err)
+			// User doesn't expect to see any changes in his workspace after aborting an "upgrade apply",
+			// therefore, roll back to the backed up state.
+			if err := iamUpgrader.RestoreIAMWorkspace(); err != nil {
+				return fmt.Errorf(
+					"restoring Terraform workspace: %w, restore the Terraform workspace manually from %s ",
+					err,
+					filepath.Join(upgradeDir, constants.TerraformIAMUpgradeBackupDir),
+				)
 			}
 			return errors.New("IAM upgrade aborted by user")
 		}
@@ -144,4 +148,5 @@ func (i iamUpgradeApplyCmd) iamUpgradeApply(cmd *cobra.Command, iamUpgrader iamU
 type iamUpgrader interface {
 	PlanIAMUpgrade(ctx context.Context, outWriter io.Writer, vars terraform.Variables, csp cloudprovider.Provider) (bool, error)
 	ApplyIAMUpgrade(ctx context.Context, csp cloudprovider.Provider) error
+	RestoreIAMWorkspace() error
 }
