@@ -48,6 +48,13 @@ runs:
          --fields github.e2e-test-provider="${{ inputs.provider }}" \
          --fields deployment-type="k8s"
 
+    # Make sure that helm is installed
+    # This is not always the case, e.g. on MacOS runners
+    - name: Install Helm
+      uses: azure/setup-helm@v1
+      with:
+        version: latest
+
     - name: Deploy Logstash
       id: deploy-logstash
       shell: bash
