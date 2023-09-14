@@ -108,7 +108,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 			log:            log,
 			versionsapi:    versionfetcher,
 		},
-		upgradeID:        upgradeID,
+		upgradeDir:       upgradeDir,
 		terraformChecker: tfClient,
 		fileHandler:      fileHandler,
 		log:              log,
@@ -155,7 +155,7 @@ func parseUpgradeCheckFlags(cmd *cobra.Command) (upgradeCheckFlags, error) {
 
 type upgradeCheckCmd struct {
 	canUpgradeCheck  bool
-	upgradeID        string
+	upgradeDir       string
 	collect          collector
 	terraformChecker terraformChecker
 	fileHandler      file.Handler
@@ -243,7 +243,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fetcher attestationco
 			cmd.PrintErrf(
 				"restoring Terraform workspace: %s, restore the Terraform workspace manually from %s ",
 				err,
-				filepath.Join(constants.UpgradeDir, u.upgradeID, constants.TerraformUpgradeBackupDir),
+				filepath.Join(u.upgradeDir, constants.TerraformUpgradeBackupDir),
 			)
 		}
 	}()

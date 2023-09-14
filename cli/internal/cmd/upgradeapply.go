@@ -307,7 +307,7 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, conf *config.Conf
 					return res, fmt.Errorf(
 						"restoring Terraform workspace: %w, restore the Terraform workspace manually from %s ",
 						err,
-						filepath.Join(constants.UpgradeDir, "<upgrade-id>", constants.TerraformUpgradeBackupDir),
+						filepath.Join(upgradeDir, constants.TerraformUpgradeBackupDir),
 					)
 				}
 				return res, fmt.Errorf("cluster upgrade aborted by user")

@@ -88,10 +88,10 @@ func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
 		configFetcher: configFetcher,
 	}
 
-	return i.iamUpgradeApply(cmd, iamMigrateCmd, force, yes)
+	return i.iamUpgradeApply(cmd, iamMigrateCmd, upgradeDir, force, yes)
 }
 
-func (i iamUpgradeApplyCmd) iamUpgradeApply(cmd *cobra.Command, iamUpgrader iamUpgrader, force, yes bool) error {
+func (i iamUpgradeApplyCmd) iamUpgradeApply(cmd *cobra.Command, iamUpgrader iamUpgrader, upgradeDir string, force, yes bool) error {
 	conf, err := config.New(i.fileHandler, constants.ConfigFilename, i.configFetcher, force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
@@ -129,7 +129,7 @@ func (i iamUpgradeApplyCmd) iamUpgradeApply(cmd *cobra.Command, iamUpgrader iamU
 				return fmt.Errorf(
 					"restoring Terraform workspace: %w, restore the Terraform workspace manually from %s ",
 					err,
-					filepath.Join(constants.UpgradeDir, "<upgrade-id>", constants.TerraformIAMUpgradeBackupDir),
+					filepath.Join(upgradeDir, constants.TerraformIAMUpgradeBackupDir),
 				)
 			}
 			return errors.New("IAM upgrade aborted by user")

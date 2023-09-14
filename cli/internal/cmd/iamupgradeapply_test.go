@@ -135,7 +135,7 @@ func TestIamUpgradeApply(t *testing.T) {
 				configFetcher: tc.configFetcher,
 			}
 
-			err := iamUpgradeApplyCmd.iamUpgradeApply(cmd, tc.iamUpgrader, false, tc.yesFlag)
+			err := iamUpgradeApplyCmd.iamUpgradeApply(cmd, tc.iamUpgrader, "", false, tc.yesFlag)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
