@@ -20,9 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var (
-	defaultFileContent = []byte("1234")
-)
+var oldFileContent = []byte("1234")
 
 func TestPrepareWorkspace(t *testing.T) {
 	testCases := map[string]struct {
@@ -208,13 +206,13 @@ func TestPrepareUpgradeWorkspace(t *testing.T) {
 				checkFiles(
 					t, file,
 					func(err error) { assert.NoError(err) },
-					func(content []byte) { assert.NotEqual(defaultFileContent, content) },
+					func(content []byte) { assert.NotEqual(oldFileContent, content) },
 					tc.workingDir, tc.expectedFiles,
 				)
 				checkFiles(
 					t, file,
 					func(err error) { assert.NoError(err) },
-					func(content []byte) { assert.Equal(defaultFileContent, content) },
+					func(content []byte) { assert.Equal(oldFileContent, content) },
 					tc.backupDir, tc.expectedBackupFiles,
 				)
 			}
@@ -244,7 +242,7 @@ func createFiles(t *testing.T, fileHandler file.Handler, fileList []string, targ
 
 	for _, f := range fileList {
 		path := filepath.Join(targetDir, f)
-		err := fileHandler.Write(path, defaultFileContent, file.OptOverwrite, file.OptMkdirAll)
+		err := fileHandler.Write(path, oldFileContent, file.OptOverwrite, file.OptMkdirAll)
 		require.NoError(err)
 	}
 }
