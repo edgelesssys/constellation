@@ -14,7 +14,7 @@ template=$(realpath @@TEMPLATE@@)
 REPO_TAG=$(realpath @@REPO_TAG@@)
 export REPO_TAG
 
-cd "${BUILD_WORKING_DIRECTORY}" || exit 1
+cd "${BUILD_WORKING_DIRECTORY}"
 
 if [[ $# -eq 0 ]]; then
   workdir="."
