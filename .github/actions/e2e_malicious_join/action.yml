@@ -1,0 +1,48 @@
+name: Malicious join
+description: "Verify that a malicious node cannot join a Constellation cluster."
+
+inputs:
+  cloudProvider:
+    description: "The cloud provider the test runs on."
+    required: true
+  kubeconfig:
+    description: "The kubeconfig file for the cluster."
+    required: true
+  githubToken:
+    description: "GitHub authorization token"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Log in to the Container registry
+      id: docker-login
+      uses: ./.github/actions/container_registry_login
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ inputs.githubToken }}
+
+    - name: Run malicious join
+      shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+      working-directory: e2e/malicious-join
+      run: |
+        bazel run //e2e/malicious-join:stamp_and_push
+        yq eval -i "(.spec.template.spec.containers[0].command) = \
+          [ \"/malicious-join_bin\", \
+          \"--js-endpoint=join-service.kube-system:9090\", \
+          \"--csp=${{ inputs.cloudProvider }}\", \
+          \"--variant=default\" ]" job.yaml
+        kubectl create ns malicious-join
+        kubectl apply -n malicious-join -f job.yaml
+        kubectl wait -n malicious-join --for=condition=complete --timeout=10m job/malicious-join
+        kubectl logs -n malicious-join job/malicious-join | tail -n 1 | jq '.'
+        ALL_TESTS_PASSED=$(kubectl logs -n malicious-join job/malicious-join | tail -n 1 | jq -r '.allPassed')
+        if [[ "$ALL_TESTS_PASSED" != "true" ]]; then
+          kubectl logs -n malicious-join job/malicious-join
+          kubectl logs -n kube-system svc/join-service
+          exit 1
+        fi
+        kubectl delete ns malicious-join

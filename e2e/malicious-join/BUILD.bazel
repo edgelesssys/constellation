@@ -1,0 +1,88 @@
+load("@com_github_ash2k_bazel_tools//multirun:def.bzl", "multirun")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@rules_oci//oci:defs.bzl", "oci_image", "oci_push")
+load("@rules_pkg//:pkg.bzl", "pkg_tar")
+load("//bazel/sh:def.bzl", "sh_template")
+
+go_library(
+    name = "malicious-join_lib",
+    srcs = ["malicious-join.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/e2e/malicious-join",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//internal/attestation/variant",
+        "//internal/cloud/cloudprovider",
+        "//internal/grpc/dialer",
+        "//internal/logger",
+        "//joinservice/joinproto",
+        "@org_uber_go_zap//zapcore",
+    ],
+)
+
+go_binary(
+    name = "malicious-join_bin",
+    embed = [":malicious-join_lib"],
+    pure = "on",
+    race = "off",
+    visibility = ["//visibility:public"],
+)
+
+pkg_tar(
+    name = "layer",
+    srcs = [
+        ":malicious-join_bin",
+    ],
+    mode = "0755",
+    remap_paths = {"/malicious-join_bin": "/malicious-join_bin"},
+)
+
+oci_image(
+    name = "malicious-join_image",
+    base = "@distroless_static_linux_amd64",
+    entrypoint = ["/malicious-join_bin"],
+    tars = [
+        ":layer",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+genrule(
+    name = "malicious-join-test_repotag",
+    srcs = [
+        "//bazel/settings:tag",
+    ],
+    outs = ["repotag.txt"],
+    cmd = "echo -n 'ghcr.io/edgelesssys/malicious-join-test:' | cat - $(location //bazel/settings:tag) > $@",
+    visibility = ["//visibility:public"],
+)
+
+oci_push(
+    name = "malicious-join_push",
+    image = ":malicious-join_image",
+    repotags = ":repotag.txt",
+)
+
+sh_template(
+    name = "template_job",
+    data = [
+        "job.yaml",
+        ":repotag.txt",
+        "@yq_toolchains//:resolved_toolchain",
+    ],
+    substitutions = {
+        "@@REPO_TAG@@": "$(rootpath :repotag.txt)",
+        "@@TEMPLATE@@": "$(rootpath :job.yaml)",
+        "@@YQ_BIN@@": "$(rootpath @yq_toolchains//:resolved_toolchain)",
+    },
+    template = "job_template.sh.in",
+    visibility = ["//visibility:public"],
+)
+
+multirun(
+    name = "stamp_and_push",
+    commands = [
+        ":template_job",
+        ":malicious-join_push",
+    ],
+    visibility = ["//visibility:public"],
+)

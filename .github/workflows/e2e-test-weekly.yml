@@ -157,6 +157,20 @@ jobs:
             provider: "azure"
             kubernetes-version: "v1.28"
 
+          # malicious join test on latest k8s version
+          - test: "malicious join"
+            refStream: "ref/main/stream/debug/?"
+            provider: "gcp"
+            kubernetes-version: "v1.28"
+          - test: "malicious join"
+            refStream: "ref/main/stream/debug/?"
+            provider: "azure"
+            kubernetes-version: "v1.28"
+          - test: "malicious join"
+            refStream: "ref/main/stream/debug/?"
+            provider: "aws"
+            kubernetes-version: "v1.28"
+
           #
           # Tests on release-stable refStream
           #
