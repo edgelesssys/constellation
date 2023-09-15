@@ -84,6 +84,11 @@ resource "aws_autoscaling_group" "autoscaling_group" {
   vpc_zone_identifier = [var.subnetwork]
   target_group_arns   = var.target_group_arns
 
+  # TODO(msanft): Remove this (to have the 10m default) once AWS SEV-SNP boot problems are resolved.
+  # Set a higher timeout for the ASG to fulfill the desired healthy capcity. Temporary workaround to
+  # long boot times on SEV-SNP machines on AWS.
+  wait_for_capacity_timeout = "20m"
+
   dynamic "tag" {
     for_each = var.tags
     content {
