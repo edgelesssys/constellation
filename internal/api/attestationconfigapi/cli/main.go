@@ -110,7 +110,7 @@ func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 	inputVersion := maaTCB.ToAzureSEVSNPVersion()
 	log.Infof("Input version: %+v", inputVersion)
 
-	latestAPIVersionAPI, err := attestationconfigapi.NewFetcher().FetchAzureSEVSNPVersionLatest(ctx, flags.uploadDate)
+	latestAPIVersionAPI, err := attestationconfigapi.NewFetcher().FetchAzureSEVSNPVersionLatest(ctx)
 	if err != nil {
 		return fmt.Errorf("fetching latest version: %w", err)
 	}

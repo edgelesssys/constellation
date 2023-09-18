@@ -20,7 +20,6 @@ import (
 )
 
 func TestFetchLatestAzureSEVSNPVersion(t *testing.T) {
-	now := time.Date(2023, 6, 12, 0, 0, 0, 0, time.UTC)
 	latestStr := "2023-06-11-14-09.json"
 	olderStr := "2019-01-01-01-01.json"
 	testcases := map[string]struct {
@@ -31,18 +30,7 @@ func TestFetchLatestAzureSEVSNPVersion(t *testing.T) {
 	}{
 		"get latest version if older than 2 weeks": {
 			fetcherVersions: []string{latestStr, olderStr},
-			timeAtTest:      now.Add(days(15)),
 			want:            latestVersion,
-		},
-		"get older version if latest version is not older than minimum age": {
-			fetcherVersions: []string{"2023-06-11-14-09.json", "2019-01-01-01-01.json"},
-			timeAtTest:      now.Add(days(7)),
-			want:            olderVersion,
-		},
-		"fail when no version is older minimum age": {
-			fetcherVersions: []string{"2021-02-21-01-01.json", "2021-02-20-00-00.json"},
-			timeAtTest:      now.Add(days(2)),
-			wantErr:         true,
 		},
 	}
 	for name, tc := range testcases {
@@ -55,7 +43,7 @@ func TestFetchLatestAzureSEVSNPVersion(t *testing.T) {
 				},
 			}
 			fetcher := newFetcherWithClientAndVerifier(client, dummyVerifier{})
-			res, err := fetcher.FetchAzureSEVSNPVersionLatest(context.Background(), tc.timeAtTest)
+			res, err := fetcher.FetchAzureSEVSNPVersionLatest(context.Background())
 			assert := assert.New(t)
 			if tc.wantErr {
 				assert.Error(err)
@@ -83,10 +71,6 @@ var olderVersion = AzureSEVSNPVersionAPI{
 		SNP:        1,
 		Bootloader: 1,
 	},
-}
-
-func days(days int) time.Duration {
-	return time.Duration(days*24) * time.Hour
 }
 
 type fakeConfigAPIHandler struct {

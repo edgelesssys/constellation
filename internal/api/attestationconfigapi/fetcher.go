@@ -9,16 +9,11 @@ package attestationconfigapi
 import (
 	"context"
 	"fmt"
-	"strings"
-	"time"
 
 	apifetcher "github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 )
-
-// minimumAgeVersion is the minimum age to accept the version as latest.
-const minimumAgeVersion = 14 * 24 * time.Hour
 
 const cosignPublicKey = constants.CosignPublicKeyReleases
 
@@ -26,7 +21,7 @@ const cosignPublicKey = constants.CosignPublicKeyReleases
 type Fetcher interface {
 	FetchAzureSEVSNPVersion(ctx context.Context, azureVersion AzureSEVSNPVersionAPI) (AzureSEVSNPVersionAPI, error)
 	FetchAzureSEVSNPVersionList(ctx context.Context, attestation AzureSEVSNPVersionList) (AzureSEVSNPVersionList, error)
-	FetchAzureSEVSNPVersionLatest(ctx context.Context, now time.Time) (AzureSEVSNPVersionAPI, error)
+	FetchAzureSEVSNPVersionLatest(ctx context.Context) (AzureSEVSNPVersionAPI, error)
 }
 
 // fetcher fetches AttestationCfg API resources without authentication.
@@ -71,34 +66,21 @@ func (f *fetcher) FetchAzureSEVSNPVersion(ctx context.Context, azureVersion Azur
 }
 
 // FetchAzureSEVSNPVersionLatest returns the latest versions of the given type.
-func (f *fetcher) FetchAzureSEVSNPVersionLatest(ctx context.Context, now time.Time) (res AzureSEVSNPVersionAPI, err error) {
+func (f *fetcher) FetchAzureSEVSNPVersionLatest(ctx context.Context) (res AzureSEVSNPVersionAPI, err error) {
 	var list AzureSEVSNPVersionList
 	list, err = f.FetchAzureSEVSNPVersionList(ctx, list)
 	if err != nil {
 		return res, fmt.Errorf("fetching versions list: %w", err)
 	}
-	getVersionRequest, err := getLatestVersionOlderThanMinimumAge(list, now, minimumAgeVersion)
-	if err != nil {
-		return res, fmt.Errorf("finding latest valid version: %w", err)
+	if len(list) < 1 {
+		return res, fmt.Errorf("no versions found")
+	}
+	getVersionRequest := AzureSEVSNPVersionAPI{
+		Version: list[0], // latest version is first in list
 	}
 	res, err = f.FetchAzureSEVSNPVersion(ctx, getVersionRequest)
 	if err != nil {
 		return res, fmt.Errorf("fetching version: %w", err)
 	}
 	return
-}
-
-func getLatestVersionOlderThanMinimumAge(list AzureSEVSNPVersionList, now time.Time, minimumAgeVersion time.Duration) (AzureSEVSNPVersionAPI, error) {
-	SortAzureSEVSNPVersionList(list)
-	for _, v := range list {
-		dateStr := strings.TrimSuffix(v, ".json")
-		versionDate, err := time.Parse(VersionFormat, dateStr)
-		if err != nil {
-			return AzureSEVSNPVersionAPI{}, fmt.Errorf("parsing version date %s: %w", dateStr, err)
-		}
-		if now.Sub(versionDate) > minimumAgeVersion {
-			return AzureSEVSNPVersionAPI{Version: v}, nil
-		}
-	}
-	return AzureSEVSNPVersionAPI{}, fmt.Errorf("no valid version fulfilling minimum age found")
 }
