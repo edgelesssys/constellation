@@ -48,6 +48,7 @@ EOF
     -v "${HOME}/.cache/shared_bazel_repository_cache":"${HOME}/.cache/shared_bazel_repository_cache" \
     -v "${HOME}/.cache/shared_bazel_action_cache":"${HOME}/.cache/shared_bazel_action_cache" \
     -v "${HOME}/.docker/config.json":"/home/builder/.docker/config.json" \
+    -v "${HOME}/.aws":"/home/builder/.aws" \
     -v "/tmp/bazel-container/.bazelrc":"/etc/bazel.bazelrc" \
     --entrypoint=/bin/sleep \
     "${containerImage}" \
