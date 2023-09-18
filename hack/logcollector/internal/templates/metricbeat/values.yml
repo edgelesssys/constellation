@@ -1,0 +1,35 @@
+image: ghcr.io/edgelesssys/beats/metricbeat-oss
+imageTag: 8.11.0@sha256:c2488378e794467f2a7214a56da0de017db1f2c28198721f12d74ad9cc263d08
+
+deployment:
+  enabled: false
+
+daemonset:
+    enabled: true
+    metricbeatConfig:
+        metricbeat.yml: ""
+    extraEnvs: []
+    secretMounts: []
+    tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+    securityContext:
+        privileged: true
+        runAsUser: 0
+    extraVolumeMounts:
+        - name: runsystemd
+          mountPath: /run/systemd
+          readOnly: true
+        - name: varrundbus
+          mountPath: /var/run/dbus
+          readOnly: true
+    extraVolumes:
+        - name: runsystemd
+          hostPath:
+            path: /run/systemd
+            type: ""
+        - name: varrundbus
+          hostPath:
+            path: /var/run/dbus
+            type: ""

@@ -15,10 +15,6 @@ timestamp.precision: nanosecond
 system.hostfs: "/hostfs"
 
 metricbeat.modules:
-  - module: etcd
-    metricsets: ["metrics"]
-    period: 10s
-    hosts: ["localhost:2379", "localhost:2380"]
   - module: system
     metricsets:
       - cpu             # CPU usage

@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "metricbeat",
+    srcs = ["assets.go"],
+    embedsrcs = ["templates/metricbeat.yml"],
+    importpath = "github.com/edgelesssys/constellation/v2/debugd/metricbeat",
+    visibility = ["//visibility:public"],
+)
