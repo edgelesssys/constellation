@@ -23,6 +23,7 @@ type commonFlags struct {
 	pki                string
 	provider           cloudprovider.Provider
 	attestationVariant string
+	secureBoot         bool
 	version            versionsapi.Version
 	timestamp          time.Time
 	region             string
@@ -46,6 +47,10 @@ func parseCommonFlags(cmd *cobra.Command) (commonFlags, error) {
 		pki = filepath.Join(workspaceDir, "image/pki")
 	}
 	attestationVariant, err := cmd.Flags().GetString("attestation-variant")
+	if err != nil {
+		return commonFlags{}, err
+	}
+	secureBoot, err := cmd.Flags().GetBool("secure-boot")
 	if err != nil {
 		return commonFlags{}, err
 	}
@@ -97,6 +102,7 @@ func parseCommonFlags(cmd *cobra.Command) (commonFlags, error) {
 		rawImage:           rawImage,
 		pki:                pki,
 		attestationVariant: attestationVariant,
+		secureBoot:         secureBoot,
 		version:            ver,
 		timestamp:          timestmp,
 		region:             region,

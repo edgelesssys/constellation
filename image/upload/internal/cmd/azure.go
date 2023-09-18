@@ -84,20 +84,24 @@ func runAzure(cmd *cobra.Command, _ []string) error {
 		out = outF
 	}
 
-	sbDatabase, uefiVarStore, err := loadSecureBootKeys(flags.pki)
-	if err != nil {
-		return err
-	}
-
 	uploadReq := &osimage.UploadRequest{
 		Provider:           flags.provider,
 		Version:            flags.version,
 		AttestationVariant: flags.attestationVariant,
-		SBDatabase:         sbDatabase,
-		UEFIVarStore:       uefiVarStore,
+		SecureBoot:         flags.secureBoot,
 		Size:               size,
 		Timestamp:          flags.timestamp,
 		Image:              file,
 	}
+
+	if flags.secureBoot {
+		sbDatabase, uefiVarStore, err := loadSecureBootKeys(flags.pki)
+		if err != nil {
+			return err
+		}
+		uploadReq.SBDatabase = sbDatabase
+		uploadReq.UEFIVarStore = uefiVarStore
+	}
+
 	return uploadImage(cmd.Context(), archiveC, uploadC, uploadReq, out)
 }

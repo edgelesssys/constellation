@@ -110,7 +110,7 @@ func (u *Uploader) Upload(ctx context.Context, req *osimage.UploadRequest) ([]ve
 	if err != nil {
 		return nil, fmt.Errorf("importing snapshot: %w", err)
 	}
-	primaryAMIID, err := u.createImageFromSnapshot(ctx, req.Version, imageName, snapshotID, req.UEFIVarStore)
+	primaryAMIID, err := u.createImageFromSnapshot(ctx, req.Version, imageName, snapshotID, req.SecureBoot, req.UEFIVarStore)
 	if err != nil {
 		return nil, fmt.Errorf("creating image from snapshot: %w", err)
 	}
@@ -297,16 +297,21 @@ func (u *Uploader) ensureSnapshotDeleted(ctx context.Context, snapshotName, regi
 	return nil
 }
 
-func (u *Uploader) createImageFromSnapshot(ctx context.Context, version versionsapi.Version, imageName, snapshotID string, uefiVarStore secureboot.UEFIVarStore) (string, error) {
+func (u *Uploader) createImageFromSnapshot(ctx context.Context, version versionsapi.Version, imageName, snapshotID string, enableSecureBoot bool, uefiVarStore secureboot.UEFIVarStore) (string, error) {
 	u.log.Debugf("Creating image %s in %s", imageName, u.region)
 	ec2C, err := u.ec2(ctx, u.region)
 	if err != nil {
 		return "", fmt.Errorf("creating ec2 client: %w", err)
 	}
-	uefiData, err := uefiVarStore.ToAWS()
-	if err != nil {
-		return "", fmt.Errorf("creating uefi data: %w", err)
+	var uefiData *string
+	if enableSecureBoot {
+		awsUEFIData, err := uefiVarStore.ToAWS()
+		if err != nil {
+			return "", fmt.Errorf("creating uefi data: %w", err)
+		}
+		uefiData = toPtr(awsUEFIData)
 	}
+
 	createReq, err := ec2C.RegisterImage(ctx, &ec2.RegisterImageInput{
 		Name:         &imageName,
 		Architecture: ec2types.ArchitectureValuesX8664,
@@ -324,7 +329,7 @@ func (u *Uploader) createImageFromSnapshot(ctx context.Context, version versions
 		EnaSupport:         toPtr(true),
 		RootDeviceName:     toPtr("/dev/xvda"),
 		TpmSupport:         ec2types.TpmSupportValuesV20,
-		UefiData:           &uefiData,
+		UefiData:           uefiData,
 		VirtualizationType: toPtr("hvm"),
 	})
 	if err != nil {
