@@ -97,12 +97,12 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 				InfoMap:     infoMapM,
 				Credentials: creds,
 			}
-			if err := writeTemplate("/run/filebeat/filebeat.yml", tmpl, pipelineConf); err != nil {
-				logger.Errorf("Writing logstash pipeline: %v", err)
+			if err := writeTemplate("/run/logstash/pipeline/pipeline.conf", tmpl, pipelineConf); err != nil {
+				logger.Errorf("Writing logstash config: %v", err)
 				return
 			}
 
-			logger.Infof("Getting logstash config template")
+			logger.Infof("Getting filebeat config template")
 			tmpl, err = getTemplate(ctx, logger, versions.FilebeatImage, "/run/filebeat/templates/filebeat.yml", "/run/filebeat")
 			if err != nil {
 				logger.Errorf("Getting filebeat config template: %v", err)
@@ -111,14 +111,28 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 			filebeatConf := filebeatConfInput{
 				LogstashHost: "localhost:5044",
 			}
-			if err := writeTemplate("/run/logstash/pipeline/pipeline.conf", tmpl, filebeatConf); err != nil {
-				logger.Errorf("Writing filebeat config: %v", err)
+			if err := writeTemplate("/run/filebeat/filebeat.yml", tmpl, filebeatConf); err != nil {
+				logger.Errorf("Writing filebeat pipeline: %v", err)
+				return
+			}
+
+			logger.Infof("Getting metricbeat config template")
+			tmpl, err = getTemplate(ctx, logger, versions.MetricbeatImage, "/run/metricbeat/templates/metricbeat.yml", "/run/metricbeat")
+			if err != nil {
+				logger.Errorf("Getting metricbeat config template: %v", err)
+				return
+			}
+			metricbeatConf := metricbeatConfInput{
+				LogstashHost: "localhost:5044",
+			}
+			if err := writeTemplate("/run/metricbeat/metricbeat.yml", tmpl, metricbeatConf); err != nil {
+				logger.Errorf("Writing metricbeat pipeline: %v", err)
 				return
 			}
 
 			logger.Infof("Starting log collection pod")
 			if err := startPod(ctx, logger); err != nil {
-				logger.Errorf("Starting filebeat: %v", err)
+				logger.Errorf("Starting log collection: %v", err)
 			}
 		}()
 	}
@@ -170,7 +184,7 @@ func getTemplate(ctx context.Context, logger *logger.Logger, image, templateDir,
 }
 
 func startPod(ctx context.Context, logger *logger.Logger) error {
-	// create a shared pod for filebeat and logstash
+	// create a shared pod for filebeat, metricbeat and logstash
 	createPodArgs := []string{
 		"pod",
 		"create",
@@ -226,6 +240,27 @@ func startPod(ctx context.Context, logger *logger.Logger) error {
 		return fmt.Errorf("failed to run filebeat: %w", err)
 	}
 
+	// start metricbeat container
+	metricbeatLog := newCmdLogger(logger.Named("metricbeat"))
+	runMetricbeatArgs := []string{
+		"run",
+		"--rm",
+		"--name=metricbeat",
+		"--pod=logcollection",
+		"--log-driver=none",
+		"--volume=/proc:/hostfs/proc:ro",
+		"--volume=/sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro",
+		"--volume=/run/metricbeat:/usr/share/metricbeat/:ro",
+		versions.MetricbeatImage,
+	}
+	runMetricbeatCmd := exec.CommandContext(ctx, "podman", runMetricbeatArgs...)
+	logger.Infof("Run metricbeat command: %v", runMetricbeatCmd.String())
+	runMetricbeatCmd.Stdout = metricbeatLog
+	runMetricbeatCmd.Stderr = metricbeatLog
+	if err := runMetricbeatCmd.Start(); err != nil {
+		return fmt.Errorf("failed to run metricbeat: %w", err)
+	}
+
 	return nil
 }
 
@@ -238,6 +273,10 @@ type logstashConfInput struct {
 }
 
 type filebeatConfInput struct {
+	LogstashHost string
+}
+
+type metricbeatConfInput struct {
 	LogstashHost string
 }
 
