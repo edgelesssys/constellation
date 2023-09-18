@@ -82,7 +82,7 @@ func (u *Uploader) Upload(ctx context.Context, req *osimage.UploadRequest) ([]ve
 			u.log.Errorf("post-cleaning: deleting blob: %v", err)
 		}
 	}()
-	imageRef, err := u.createImage(ctx, req.Version, imageName, blobName, req.SBDatabase)
+	imageRef, err := u.createImage(ctx, req.Version, imageName, blobName, req.SecureBoot, req.SBDatabase)
 	if err != nil {
 		return nil, fmt.Errorf("creating image: %w", err)
 	}
@@ -134,10 +134,18 @@ func (u *Uploader) ensureBlobDeleted(ctx context.Context, blobName string) error
 	return u.bucket.Object(blobName).Delete(ctx)
 }
 
-func (u *Uploader) createImage(ctx context.Context, version versionsapi.Version, imageName, blobName string, sbDatabase secureboot.Database) (string, error) {
+func (u *Uploader) createImage(ctx context.Context, version versionsapi.Version, imageName, blobName string, enableSecureBoot bool, sbDatabase secureboot.Database) (string, error) {
 	u.log.Debugf("Creating image %s", imageName)
 	blobURL := u.blobURL(blobName)
 	family := u.imageFamily(version)
+	var initialState *computepb.InitialStateConfig
+	if enableSecureBoot {
+		initialState = &computepb.InitialStateConfig{
+			Pk:   pk(&sbDatabase),
+			Keks: keks(&sbDatabase),
+			Dbs:  dbs(&sbDatabase),
+		}
+	}
 	req := computepb.InsertImageRequest{
 		ImageResource: &computepb.Image{
 			Name: &imageName,
@@ -154,11 +162,7 @@ func (u *Uploader) createImage(ctx context.Context, version versionsapi.Version,
 				{Type: toPtr("VIRTIO_SCSI_MULTIQUEUE")},
 				{Type: toPtr("UEFI_COMPATIBLE")},
 			},
-			ShieldedInstanceInitialState: &computepb.InitialStateConfig{
-				Pk:   pk(&sbDatabase),
-				Keks: keks(&sbDatabase),
-				Dbs:  dbs(&sbDatabase),
-			},
+			ShieldedInstanceInitialState: initialState,
 		},
 		Project: u.project,
 	}

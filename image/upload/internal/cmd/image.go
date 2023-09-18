@@ -25,6 +25,7 @@ func NewImageCmd() *cobra.Command {
 	cmd.SetOut(os.Stdout)
 
 	cmd.PersistentFlags().String("raw-image", "", "Path to os image in CSP specific format that should be uploaded.")
+	cmd.PersistentFlags().Bool("secure-boot", false, "Enables secure boot support.")
 	cmd.PersistentFlags().String("pki", "", "Base path to the PKI (secure boot signing) files.")
 	cmd.PersistentFlags().String("attestation-variant", "", "Attestation variant of the image being uploaded.")
 	cmd.PersistentFlags().String("version", "", "Shortname of the os image version.")

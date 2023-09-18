@@ -21,6 +21,7 @@ type UploadRequest struct {
 	Provider           cloudprovider.Provider
 	Version            versionsapi.Version
 	AttestationVariant string
+	SecureBoot         bool
 	SBDatabase         secureboot.Database
 	UEFIVarStore       secureboot.UEFIVarStore
 	Size               int64
