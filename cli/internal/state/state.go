@@ -9,8 +9,8 @@ package state
 
 // State describe the entire state to describe a Constellation cluster.
 type State struct {
-	Version        string `yaml:"version"`
-	Infrastructure `yaml:"infrastructure"`
+	Version        string         `yaml:"version"`
+	Infrastructure Infrastructure `yaml:"infrastructure"`
 }
 
 // Infrastructure describe the state related to the cloud resources of the cluster.
