@@ -14,7 +14,7 @@
         <xsl:copy>
             <!--<xsl:apply-templates select="node()|@*"/>-->
             <xsl:attribute name="secure">
-                <xsl:value-of select="'yes'"/>
+                <xsl:value-of select="'no'"/>
             </xsl:attribute>
             <xsl:attribute name="readonly">
                 <xsl:value-of select="'yes'"/>
