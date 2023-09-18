@@ -15,6 +15,8 @@ Notice that there is no synchronization on API operations. // TODO(elchead): wha
 */
 package main
 
+// TODO: separate reporter and upload CLI to ease manual upload or use force flag?
+
 import (
 	"encoding/json"
 	"errors"
@@ -133,11 +135,12 @@ func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 	if err := reporter.ReportAzureSEVSNPVersion(ctx, inputVersion, flags.uploadDate); err != nil {
 		return fmt.Errorf("reporting version: %w", err)
 	}
-	if err := reporter.UpdateLatestVersion(ctx, latestAPIVersion); err != nil {
+	if err := reporter.UpdateLatestVersion(ctx, latestAPIVersion, flags.uploadDate); err != nil {
 		return fmt.Errorf("updating latest version: %w", err)
 	}
+	// TODO move back in after refactor
+	// cmd.Printf("Successfully uploaded new Azure SEV-SNP version: %+v\n", inputVersion)
 
-	cmd.Printf("Successfully uploaded new Azure SEV-SNP version: %+v\n", inputVersion)
 	return nil
 }
 

@@ -26,9 +26,15 @@ func TestFilterDatesWithinTime(t *testing.T) {
 	testCases := map[string]struct {
 		timeFrame     time.Duration
 		expectedDates []string
+		customDates   *[]string
 	}{
 		"all dates within 3 days": {
 			timeFrame:     time.Hour * 24 * 3,
+			expectedDates: []string{"2022-01-06-00-00", "2022-01-07-00-00", "2022-01-08-00-00"},
+		},
+		"ignore dates newer than now": {
+			timeFrame:     time.Hour * 24 * 3,
+			customDates:   toPtr(append(dates, "2023-01-09-00-00")),
 			expectedDates: []string{"2022-01-06-00-00", "2022-01-07-00-00", "2022-01-08-00-00"},
 		},
 		"no dates within time frame": {
@@ -43,10 +49,18 @@ func TestFilterDatesWithinTime(t *testing.T) {
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
+			dates := dates
+			if tc.customDates != nil {
+				dates = *tc.customDates
+			}
 			filteredDates := filterDatesWithinTime(dates, now, tc.timeFrame)
 			assert.Equal(t, tc.expectedDates, filteredDates)
 		})
 	}
+}
+
+func toPtr[T any](v T) *T {
+	return &v
 }
 
 func TestIsInputNewerThanLatestAPI(t *testing.T) {
@@ -100,7 +114,7 @@ func TestIsInputNewerThanLatestAPI(t *testing.T) {
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			isNewer, err := isInputNewerThanLatestAPI(tc.input, tc.latest)
+			isNewer, err := isInputNewerThanOtherVersion(tc.input, tc.latest)
 			assert := assert.New(t)
 			if tc.errMsg != "" {
 				assert.EqualError(err, tc.errMsg)

@@ -22,6 +22,7 @@ import (
 )
 
 // cachedVersionsSubDir is the subdirectory in the bucket where the cached versions are stored.
+// TODO(elchead): store in a different directory so that it is not mirrored to the CDN?
 const cachedVersionsSubDir = "cached-versions"
 
 // timeFrameForCachedVersions defines the time frame for reported versions which are considered to define the latest version.
@@ -33,6 +34,7 @@ var reportVersionDir = path.Join(attestationURLPath, variant.AzureSEVSNP{}.Strin
 type Reporter struct {
 	// Client is the client to the config api.
 	*Client
+	// s3client: but no cache invalidation for upload -> new client
 }
 
 // ReportAzureSEVSNPVersion uploads the latest observed version numbers of the Azure SEVSNP. This version is used to later report the latest version numbers to the API.
@@ -45,7 +47,7 @@ func (r Reporter) ReportAzureSEVSNPVersion(ctx context.Context, version AzureSEV
 	return res.Execute(ctx, r.s3Client)
 }
 
-func (r Reporter) listReportedVersions(ctx context.Context, timeFrame time.Duration) ([]string, error) {
+func (r Reporter) listReportedVersions(ctx context.Context, timeFrame time.Duration, now time.Time) ([]string, error) {
 	list, err := r.s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
 		Bucket: aws.String(r.bucketID),
 		Prefix: aws.String(reportVersionDir),
@@ -60,18 +62,18 @@ func (r Reporter) listReportedVersions(ctx context.Context, timeFrame time.Durat
 			dates = append(dates, fileName[:len(fileName)-5])
 		}
 	}
-	return filterDatesWithinTime(dates, time.Now(), timeFrame), nil
+	return filterDatesWithinTime(dates, now, timeFrame), nil
 }
 
 // UpdateLatestVersion checks the reported version values
 // and updates the latest version of the Azure SEVSNP in the API if there is an update .
-func (r Reporter) UpdateLatestVersion(ctx context.Context, latestAPIVersion AzureSEVSNPVersion) error {
+func (r Reporter) UpdateLatestVersion(ctx context.Context, latestAPIVersion AzureSEVSNPVersion, now time.Time) error {
 	// get the reported version values of the last 3 weeks
-	versionDates, err := r.listReportedVersions(ctx, timeFrameForCachedVersions)
+	versionDates, err := r.listReportedVersions(ctx, timeFrameForCachedVersions, now)
 	if err != nil {
 		return fmt.Errorf("list reported versions: %w", err)
 	}
-	r.s3Client.Logger.Infof("Found %d reported versions in the last %s", len(versionDates), timeFrameForCachedVersions.String())
+	r.s3Client.Logger.Infof("Found %v reported versions in the last %s since %s", versionDates, timeFrameForCachedVersions.String(), now.String())
 	if len(versionDates) < 3 {
 		r.s3Client.Logger.Infof("Skipping version update since only %s out of 3 expected versions are found in the cache within the last %d days",
 			len(versionDates), int(timeFrameForCachedVersions.Hours()/24))
@@ -83,7 +85,7 @@ func (r Reporter) UpdateLatestVersion(ctx context.Context, latestAPIVersion Azur
 		return fmt.Errorf("get minimal version: %w", err)
 	}
 	r.s3Client.Logger.Infof("Found minimal version: %+v with date: %s", *minVersion, minDate)
-	shouldUpdateAPI, err := isInputNewerThanLatestAPI(*minVersion, latestAPIVersion)
+	shouldUpdateAPI, err := isInputNewerThanOtherVersion(*minVersion, latestAPIVersion)
 	if err == nil && shouldUpdateAPI {
 		r.s3Client.Logger.Infof("Input version: %+v is newer than latest API version: %+v", *minVersion, latestAPIVersion)
 		// upload minVersion to the API
@@ -104,7 +106,7 @@ func (r Reporter) UpdateLatestVersion(ctx context.Context, latestAPIVersion Azur
 func (r Reporter) findMinVersion(ctx context.Context, versionDates []string) (*AzureSEVSNPVersion, string, error) {
 	var minimalVersion *AzureSEVSNPVersion
 	var minimalDate string
-	sort.Sort(sort.Reverse(sort.StringSlice(versionDates))) // the latest date with the minimal version should be taken
+	sort.Strings(versionDates) // the oldest date with the minimal version should be taken
 	for _, date := range versionDates {
 		obj, err := client.Fetch(ctx, r.s3Client, reportedAzureSEVSNPVersionAPI{Version: date + ".json"})
 		if err != nil {
@@ -115,9 +117,9 @@ func (r Reporter) findMinVersion(ctx context.Context, versionDates []string) (*A
 			minimalVersion = &obj.AzureSEVSNPVersion
 			minimalDate = date
 		} else {
-			shouldUpdateMinimal, err := isInputNewerThanLatestAPI(*minimalVersion, obj.AzureSEVSNPVersion)
+			shouldUpdateMinimal, err := isInputNewerThanOtherVersion(*minimalVersion, obj.AzureSEVSNPVersion)
 			if err != nil {
-				return nil, "", fmt.Errorf("comparing versions: %w", err)
+				continue
 			}
 			if shouldUpdateMinimal {
 				minimalVersion = &obj.AzureSEVSNPVersion
@@ -135,29 +137,30 @@ func filterDatesWithinTime(dates []string, now time.Time, timeFrame time.Duratio
 		if err != nil {
 			continue
 		}
-		if now.Sub(t) <= timeFrame {
+		fmt.Println(now, " t ", t, " sub ", now.Sub(t))
+		if now.Sub(t) >= 0 && now.Sub(t) <= timeFrame {
 			datesWithinTimeFrame = append(datesWithinTimeFrame, date)
 		}
 	}
 	return datesWithinTimeFrame
 }
 
-// isInputNewerThanLatestAPI compares all version fields with the latest API version and returns true if any input field is newer.
-func isInputNewerThanLatestAPI(input, latest AzureSEVSNPVersion) (bool, error) {
-	if input == latest {
+// isInputNewerThanOtherVersion compares all version fields and returns true if any input field is newer.
+func isInputNewerThanOtherVersion(input, other AzureSEVSNPVersion) (bool, error) {
+	if input == other {
 		return false, nil
 	}
-	if input.TEE < latest.TEE {
-		return false, fmt.Errorf("input TEE version: %d is older than latest API version: %d", input.TEE, latest.TEE)
+	if input.TEE < other.TEE {
+		return false, fmt.Errorf("input TEE version: %d is older than latest API version: %d", input.TEE, other.TEE)
 	}
-	if input.SNP < latest.SNP {
-		return false, fmt.Errorf("input SNP version: %d is older than latest API version: %d", input.SNP, latest.SNP)
+	if input.SNP < other.SNP {
+		return false, fmt.Errorf("input SNP version: %d is older than latest API version: %d", input.SNP, other.SNP)
 	}
-	if input.Microcode < latest.Microcode {
-		return false, fmt.Errorf("input Microcode version: %d is older than latest API version: %d", input.Microcode, latest.Microcode)
+	if input.Microcode < other.Microcode {
+		return false, fmt.Errorf("input Microcode version: %d is older than latest API version: %d", input.Microcode, other.Microcode)
 	}
-	if input.Bootloader < latest.Bootloader {
-		return false, fmt.Errorf("input Bootloader version: %d is older than latest API version: %d", input.Bootloader, latest.Bootloader)
+	if input.Bootloader < other.Bootloader {
+		return false, fmt.Errorf("input Bootloader version: %d is older than latest API version: %d", input.Bootloader, other.Bootloader)
 	}
 	return true, nil
 }
