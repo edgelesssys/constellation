@@ -63,6 +63,19 @@ func (c *KubdeadmConfiguration) InitConfiguration(externalCloudProvider bool, cl
 			},
 			// Target kubernetes version of the control plane.
 			KubernetesVersion: clusterVersion,
+			// Configration of the etcd cluster spawned for the control plane.
+			Etcd: kubeadm.Etcd{
+				Local: &kubeadm.LocalEtcd{
+					ExtraArgs: map[string]string{
+						// Alleviate problems where nodes that are partitioned from the etcd cluster
+						// and rejoin later trigger leader re-elections. Leader re-elections can
+						// disrupt requests.
+						// Background: https://groups.google.com/g/scylladb-dev/c/Aj6rzpEgkSc/m/_41ZeHAuAwAJ.
+						// Raft is the consensus algorithm used by etcd.
+						"pre-vote": "true",
+					},
+				},
+			},
 			// necessary to be able to access the kubeapi server through localhost
 			APIServer: kubeadm.APIServer{
 				ControlPlaneComponent: kubeadm.ControlPlaneComponent{
