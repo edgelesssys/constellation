@@ -173,6 +173,8 @@ const (
 	LogstashImage = "ghcr.io/edgelesssys/constellation/filebeat-debugd:v2.11.0-pre.0.20230821060133-60bf770e62bc@sha256:89ea1925345922a5471f26de6bc2344a83a76f2f908a6f048230699f8b810114" // renovate:container
 	// FilebeatImage is the container image of filebeat, used for log collection by debugd.
 	FilebeatImage = "ghcr.io/edgelesssys/constellation/filebeat-debugd:v2.11.0-pre.0.20230821060133-60bf770e62bc@sha256:89ea1925345922a5471f26de6bc2344a83a76f2f908a6f048230699f8b810114" // renovate:container
+	// MetricbeatImage is the container image of filebeat, used for log collection by debugd.
+	MetricbeatImage = "ghcr.io/edgelesssys/constellation/filebeat-debugd:v2.11.0-pre.0.20230821060133-60bf770e62bc@sha256:89ea1925345922a5471f26de6bc2344a83a76f2f908a6f048230699f8b810114" // renovate:container
 
 	// currently supported versions.
 	//nolint:revive
