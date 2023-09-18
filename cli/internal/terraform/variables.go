@@ -360,9 +360,9 @@ func (q *QEMUVariables) String() string {
 	vCopy := *q
 	switch vCopy.NVRAM {
 	case "production":
-		vCopy.NVRAM = "/usr/share/OVMF/constellation_vars.production.fd"
+		vCopy.NVRAM = "/usr/share/OVMF/OVMF_VARS.fd"
 	case "testing":
-		vCopy.NVRAM = "/usr/share/OVMF/constellation_vars.testing.fd"
+		vCopy.NVRAM = "/usr/share/OVMF/OVMF_VARS.fd"
 	}
 	f := hclwrite.NewEmptyFile()
 	gohcl.EncodeIntoBody(vCopy, f.Body())

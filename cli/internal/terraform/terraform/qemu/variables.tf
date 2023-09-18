@@ -68,7 +68,7 @@ variable "image_format" {
 variable "firmware" {
   type        = string
   default     = "/usr/share/OVMF/OVMF_CODE.secboot.fd"
-  description = "path to UEFI firmware file. Use \"OVMF_CODE_4M.ms.fd\" on Ubuntu and \"OVMF_CODE.secboot.fd\" on Fedora."
+  description = "path to UEFI firmware file. Use \"OVMF_CODE_4M.ms.fd\" on Ubuntu and \"OVMF_CODE.fd\" or \"OVMF_CODE.secboot.fd\" on Fedora."
 }
 
 variable "nvram" {
