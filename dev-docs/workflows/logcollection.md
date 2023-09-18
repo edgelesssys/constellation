@@ -29,28 +29,37 @@ In non-debug clusters, logcollection functionality needs to be explicitly deploy
     One can add additional key-value pairs to the configuration by appending `--info key=value` to the command.
     These key-value pairs will be attached to the log entries and can be used to filter them in OpenSearch.
     For example, it might be helpful to add a `test=<xyz>` tag to be able to filter out logs from a specific test run.
+2. Add the Elastic Helm repository
+    ```bash
+    helm repo add elastic https://helm.elastic.co
+    helm repo update
+    ```
 2. Deploy Logstash
 
     ```bash
     cd logstash
-    make add
-    make install
+    helm install logstash elastic/logstash \
+        --wait --timeout=1200s --values values.yml
     cd ..
     ```
 
     This will add the required Logstash Helm charts and deploy them to your cluster.
-3. Deploy Filebeat
+2. Deploy Beats
 
     ```bash
+    cd metricbeat
+    helm install metricbeat elastic/metricbeat \
+        --wait --timeout=1200s --values values.yml
+    cd ..
     cd filebeat
-    make add
-    make install
+    helm install filebeat elastic/filebeat \
+        --wait --timeout=1200s --values values.yml
     cd ..
     ```
 
-    This will add the required Filebeat Helm charts and deploy them to your cluster.
+    This will add the required Filebeat and Metricbeat Helm charts and deploy them to your cluster.
 
-To remove Logstash or Filebeat, `cd` into the corresponding directory and run `make remove`.
+To remove Logstash or one of the beats, `cd` into the corresponding directory and run `helm uninstall {logstash,filebeat,metricbeat}`.
 
 ## Inspecting Logs in OpenSearch
 

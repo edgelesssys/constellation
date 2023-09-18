@@ -63,6 +63,13 @@ func runTemplate(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("prepare filebeat: %w", err)
 	}
 
+	metricbeatPreparer := internal.NewMetricbeatPreparer(
+		flags.port,
+	)
+	if err := metricbeatPreparer.Prepare(flags.dir); err != nil {
+		return fmt.Errorf("prepare metricbeat: %w", err)
+	}
+
 	return nil
 }
 
