@@ -8,8 +8,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 This package provides a CLI to interact with the Attestationconfig API, a sub API of the Resource API.
 
 You can execute an e2e test by running: `bazel run //internal/api/attestationconfigapi:configapi_e2e_test`.
-The CLI is used in the CI pipeline. Actions that change the bucket's data shouldn't be executed manually.
-Notice that there is no synchronization on API operations.
+The CLI is used in the CI pipeline. Manual actions that change the bucket's data shouldn't be necessary.
+The reporter CLI caches the observed version values in a dedicated caching directory and derives the latest API version from it.
+Any version update is then pushed to the API.
+Notice that there is no synchronization on API operations. // TODO(elchead): what does this mean?
 */
 package main
 
@@ -56,7 +58,7 @@ func newRootCmd() *cobra.Command {
 		Use:   "COSIGN_PASSWORD=$CPWD COSIGN_PRIVATE_KEY=$CKEY upload --version-file $FILE",
 		Short: "Upload a set of versions specific to the azure-sev-snp attestation variant to the config api.",
 
-		Long: fmt.Sprintf("Upload a set of versions specific to the azure-sev-snp attestation variant to the config api."+
+		Long: fmt.Sprintf("The reporter uploads an observed version number specific to the azure-sev-snp attestation variant to the reporter cache. The reporter then deduces a latest version value from the cache and updates the config api if necessary. "+
 			"Please authenticate with AWS through your preferred method (e.g. environment variables, CLI)"+
 			"to be able to upload to S3. Set the %s and %s environment variables to authenticate with cosign.",
 			envCosignPrivateKey, envCosignPwd,
@@ -116,16 +118,6 @@ func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 	}
 	latestAPIVersion := latestAPIVersionAPI.AzureSEVSNPVersion
 
-	isNewer, err := isInputNewerThanLatestAPI(inputVersion, latestAPIVersion)
-	if err != nil {
-		return fmt.Errorf("comparing versions: %w", err)
-	}
-	if !isNewer {
-		log.Infof("Input version: %+v is not newer than latest API version: %+v", inputVersion, latestAPIVersion)
-		return nil
-	}
-	log.Infof("Input version: %+v is newer than latest API version: %+v", inputVersion, latestAPIVersion)
-
 	client, clientClose, err := attestationconfigapi.NewClient(ctx, cfg, []byte(cosignPwd), []byte(privateKey), false, log)
 	defer func() {
 		err := clientClose(cmd.Context())
@@ -137,9 +129,12 @@ func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
 	}
-
-	if err := client.UploadAzureSEVSNPVersion(ctx, inputVersion, flags.uploadDate); err != nil {
-		return fmt.Errorf("uploading version: %w", err)
+	reporter := attestationconfigapi.Reporter{Client: client}
+	if err := reporter.ReportAzureSEVSNPVersion(ctx, inputVersion, flags.uploadDate); err != nil {
+		return fmt.Errorf("reporting version: %w", err)
+	}
+	if err := reporter.UpdateLatestVersion(ctx, latestAPIVersion); err != nil {
+		return fmt.Errorf("updating latest version: %w", err)
 	}
 
 	cmd.Printf("Successfully uploaded new Azure SEV-SNP version: %+v\n", inputVersion)
@@ -213,26 +208,6 @@ func (c maaTokenTCBClaims) ToAzureSEVSNPVersion() attestationconfigapi.AzureSEVS
 		Microcode:  c.IsolationTEE.MicrocodeSvn,
 		Bootloader: c.IsolationTEE.BootloaderSvn,
 	}
-}
-
-// isInputNewerThanLatestAPI compares all version fields with the latest API version and returns true if any input field is newer.
-func isInputNewerThanLatestAPI(input, latest attestationconfigapi.AzureSEVSNPVersion) (bool, error) {
-	if input == latest {
-		return false, nil
-	}
-	if input.TEE < latest.TEE {
-		return false, fmt.Errorf("input TEE version: %d is older than latest API version: %d", input.TEE, latest.TEE)
-	}
-	if input.SNP < latest.SNP {
-		return false, fmt.Errorf("input SNP version: %d is older than latest API version: %d", input.SNP, latest.SNP)
-	}
-	if input.Microcode < latest.Microcode {
-		return false, fmt.Errorf("input Microcode version: %d is older than latest API version: %d", input.Microcode, latest.Microcode)
-	}
-	if input.Bootloader < latest.Bootloader {
-		return false, fmt.Errorf("input Bootloader version: %d is older than latest API version: %d", input.Bootloader, latest.Bootloader)
-	}
-	return true, nil
 }
 
 func must(err error) {
