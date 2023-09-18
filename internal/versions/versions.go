@@ -174,7 +174,7 @@ const (
 	// FilebeatImage is the container image of filebeat, used for log collection by debugd.
 	FilebeatImage = "ghcr.io/edgelesssys/constellation/filebeat-debugd:v2.11.0-pre.0.20230821060133-60bf770e62bc@sha256:89ea1925345922a5471f26de6bc2344a83a76f2f908a6f048230699f8b810114" // renovate:container
 	// MetricbeatImage is the container image of filebeat, used for log collection by debugd.
-	MetricbeatImage = "ghcr.io/edgelesssys/constellation/filebeat-debugd:v2.11.0-pre.0.20230821060133-60bf770e62bc@sha256:89ea1925345922a5471f26de6bc2344a83a76f2f908a6f048230699f8b810114" // renovate:container
+	MetricbeatImage = "ghcr.io/edgelesssys/constellation/metricbeat-debugd:v2.12.0-pre.0.20230918092128-9bc15334c100@sha256:5941e91aebdbf5a93c041fab03d020aade0715a9f7aa7723cca631b49065b1e0" // renovate:container
 
 	// currently supported versions.
 	//nolint:revive
