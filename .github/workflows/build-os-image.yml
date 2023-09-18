@@ -45,84 +45,6 @@ on:
         required: false
 
 jobs:
-  build-dependencies:
-    name: "Build binaries for embedding in the OS"
-    runs-on: ubuntu-22.04
-    permissions:
-      contents: read
-      packages: read
-    outputs:
-      bootstrapper-sha256: ${{ steps.collect-hashes.outputs.bootstrapper-sha256 }}
-      disk-mapper-sha256: ${{ steps.collect-hashes.outputs.disk-mapper-sha256 }}
-      upgrade-agent-sha256: ${{ steps.collect-hashes.outputs.upgrade-agent-sha256 }}
-      measurement-reader-sha256: ${{ steps.collect-hashes.outputs.measurement-reader-sha256 }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
-        with:
-          ref: ${{ inputs.ref || github.head_ref }}
-
-      - name: Setup Go environment
-        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
-        with:
-          go-version: "1.20.8"
-          cache: true
-
-      - name: Setup bazel
-        uses: ./.github/actions/setup_bazel
-        with:
-          useCache: "false"
-
-      - name: Build bootstrapper
-        if: inputs.stream != 'debug'
-        uses: ./.github/actions/build_bootstrapper
-        with:
-          outputPath: ${{ github.workspace }}/build/bootstrapper
-
-      - name: Build debugd
-        if: inputs.stream == 'debug'
-        uses: ./.github/actions/build_debugd
-        with:
-          outputPath: ${{ github.workspace }}/build/debugd
-
-      - name: Build disk-mapper
-        uses: ./.github/actions/build_disk_mapper
-        with:
-          outputPath: ${{ github.workspace }}/build/disk-mapper
-
-      - name: Build upgrade-agent
-        uses: ./.github/actions/build_upgrade_agent
-        with:
-          outputPath: ${{ github.workspace }}/build/upgrade-agent
-
-      - name: Build measurement-reader
-        uses: ./.github/actions/build_measurement_reader
-        with:
-          outputPath: ${{ github.workspace }}/build/measurement-reader
-
-      - name: Upload dependencies
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
-        env:
-          MAIN_BINARY: ${{ inputs.stream == 'debug' && 'debugd' || 'bootstrapper' }}
-        with:
-          name: dependencies
-          path: |
-            ${{ github.workspace }}/build/${{ env.MAIN_BINARY }}
-            ${{ github.workspace }}/build/disk-mapper
-            ${{ github.workspace }}/build/upgrade-agent
-            ${{ github.workspace }}/build/measurement-reader
-
-      - name: Collect hashes
-        id: collect-hashes
-        working-directory: ${{ github.workspace }}/build
-        run: |
-          {
-            echo "bootstrapper-sha256=$(sha256sum bootstrapper | head -c 64)"
-            echo "disk-mapper-sha256=$(sha256sum disk-mapper | head -c 64)"
-            echo "upgrade-agent-sha256=$(sha256sum upgrade-agent | head -c 64)"
-            echo "measurement-reader-sha256=$(sha256sum measurement-reader | head -c 64)"
-          } | tee -a "$GITHUB_OUTPUT"
-
   build-settings:
     name: "Determine build settings"
     runs-on: ubuntu-22.04
@@ -130,7 +52,6 @@ jobs:
       ref: ${{ steps.ref.outputs.ref }}
       stream: ${{ steps.stream.outputs.stream }}
       imageType: ${{ steps.image-type.outputs.imageType }}
-      pkiSet: ${{ steps.pki-set.outputs.pkiSet }}
       imageVersion: ${{ steps.image-version.outputs.imageVersion }}
       imageName: ${{ steps.image-version.outputs.imageName }}
       imageNameShort: ${{ steps.image-version.outputs.imageNameShort }}
@@ -185,16 +106,6 @@ jobs:
               ;;
           esac
 
-      - name: Determine PKI set
-        id: pki-set
-        shell: bash
-        run: |
-          if [[ "${{ inputs.isRelease }}" == "true" ]] && [[ "${{ steps.stream.outputs.stream }}" == "stable" ]]; then
-             echo "pkiSet=pki_prod" | tee -a "$GITHUB_OUTPUT"
-           else
-             echo "pkiSet=pki_testing" | tee -a "$GITHUB_OUTPUT"
-           fi
-
       - name: Determine image version
         id: image-version
         shell: bash
@@ -220,43 +131,10 @@ jobs:
 
   make-os-image:
     name: "Build OS using mkosi"
-    needs: [build-settings, build-dependencies]
+    needs: [build-settings]
     runs-on: ubuntu-22.04
     # TODO(malt3): flatten outputs once possible
     # https://github.com/community/community/discussions/17245
-    outputs:
-      image-raw-aws-aws-nitro-tpm-sha256: ${{ steps.collect-hashes.outputs.image-raw-aws-aws-nitro-tpm-sha256 }}
-      image-raw-azure-azure-sev-snp-sha256: ${{ steps.collect-hashes.outputs.image-raw-azure-azure-sev-snp-sha256 }}
-      image-raw-gcp-gcp-sev-es-sha256: ${{ steps.collect-hashes.outputs.image-raw-gcp-gcp-sev-es-sha256 }}
-      image-raw-qemu-qemu-vtpm-sha256: ${{ steps.collect-hashes.outputs.image-raw-qemu-qemu-vtpm-sha256 }}
-      image-efi-aws-aws-nitro-tpm-sha256: ${{ steps.collect-hashes.outputs.image-efi-aws-aws-nitro-tpm-sha256 }}
-      image-efi-azure-azure-sev-snp-sha256: ${{ steps.collect-hashes.outputs.image-efi-azure-azure-sev-snp-sha256 }}
-      image-efi-gcp-gcp-sev-es-sha256: ${{ steps.collect-hashes.outputs.image-efi-gcp-gcp-sev-es-sha256 }}
-      image-efi-qemu-qemu-vtpm-sha256: ${{ steps.collect-hashes.outputs.image-efi-qemu-qemu-vtpm-sha256 }}
-      image-initrd-aws-aws-nitro-tpm-sha256: ${{ steps.collect-hashes.outputs.image-initrd-aws-aws-nitro-tpm-sha256 }}
-      image-initrd-azure-azure-sev-snp-sha256: ${{ steps.collect-hashes.outputs.image-initrd-azure-azure-sev-snp-sha256 }}
-      image-initrd-gcp-gcp-sev-es-sha256: ${{ steps.collect-hashes.outputs.image-initrd-gcp-gcp-sev-es-sha256 }}
-      image-initrd-qemu-qemu-vtpm-sha256: ${{ steps.collect-hashes.outputs.image-initrd-qemu-qemu-vtpm-sha256 }}
-      image-root-raw-aws-aws-nitro-tpm-sha256: ${{ steps.collect-hashes.outputs.image-root-raw-aws-aws-nitro-tpm-sha256 }}
-      image-root-raw-azure-azure-sev-snp-sha256: ${{ steps.collect-hashes.outputs.image-root-raw-azure-azure-sev-snp-sha256 }}
-      image-root-raw-gcp-gcp-sev-es-sha256: ${{ steps.collect-hashes.outputs.image-root-raw-gcp-gcp-sev-es-sha256 }}
-      image-root-raw-qemu-qemu-vtpm-sha256: ${{ steps.collect-hashes.outputs.image-root-raw-qemu-qemu-vtpm-sha256 }}
-      image-root-verity-aws-aws-nitro-tpm-sha256: ${{ steps.collect-hashes.outputs.image-root-verity-aws-aws-nitro-tpm-sha256 }}
-      image-root-verity-azure-azure-sev-snp-sha256: ${{ steps.collect-hashes.outputs.image-root-verity-azure-azure-sev-snp-sha256 }}
-      image-root-verity-gcp-gcp-sev-es-sha256: ${{ steps.collect-hashes.outputs.image-root-verity-gcp-gcp-sev-es-sha256 }}
-      image-root-verity-qemu-qemu-vtpm-sha256: ${{ steps.collect-hashes.outputs.image-root-verity-qemu-qemu-vtpm-sha256 }}
-      image-vmlinuz-aws-aws-nitro-tpm-sha256: ${{ steps.collect-hashes.outputs.image-vmlinuz-aws-aws-nitro-tpm-sha256 }}
-      image-vmlinuz-azure-azure-sev-snp-sha256: ${{ steps.collect-hashes.outputs.image-vmlinuz-azure-azure-sev-snp-sha256 }}
-      image-vmlinuz-gcp-gcp-sev-es-sha256: ${{ steps.collect-hashes.outputs.image-vmlinuz-gcp-gcp-sev-es-sha256 }}
-      image-vmlinuz-qemu-qemu-vtpm-sha256: ${{ steps.collect-hashes.outputs.image-vmlinuz-qemu-qemu-vtpm-sha256 }}
-      image-raw-changelog-aws-aws-nitro-tpm-sha256: ${{ steps.collect-hashes.outputs.image-raw-changelog-aws-aws-nitro-tpm-sha256 }}
-      image-raw-changelog-azure-azure-sev-snp-sha256: ${{ steps.collect-hashes.outputs.image-raw-changelog-azure-azure-sev-snp-sha256 }}
-      image-raw-changelog-gcp-gcp-sev-es-sha256: ${{ steps.collect-hashes.outputs.image-raw-changelog-gcp-gcp-sev-es-sha256 }}
-      image-raw-changelog-qemu-qemu-vtpm-sha256: ${{ steps.collect-hashes.outputs.image-raw-changelog-qemu-qemu-vtpm-sha256 }}
-      image-raw-manifest-aws-aws-nitro-tpm-sha256: ${{ steps.collect-hashes.outputs.image-raw-manifest-aws-aws-nitro-tpm-sha256 }}
-      image-raw-manifest-azure-azure-sev-snp-sha256: ${{ steps.collect-hashes.outputs.image-raw-manifest-azure-azure-sev-snp-sha256 }}
-      image-raw-manifest-gcp-gcp-sev-es-sha256: ${{ steps.collect-hashes.outputs.image-raw-manifest-gcp-gcp-sev-es-sha256 }}
-      image-raw-manifest-qemu-qemu-vtpm-sha256: ${{ steps.collect-hashes.outputs.image-raw-manifest-qemu-qemu-vtpm-sha256 }}
     strategy:
       fail-fast: false
       matrix:
@@ -281,97 +159,36 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.head_ref }}
 
-      - name: Download build dependencies
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-        with:
-          name: dependencies
-          path: ${{ github.workspace }}/build
-
-      - name: Mark bootstrapper, debugd, disk-mapper, measurement-reader, and upgrade-agent as executable
-        run: |
-          chmod +x ${{ github.workspace }}/build/bootstrapper || true
-          chmod +x ${{ github.workspace }}/build/debugd || true
-          chmod +x ${{ github.workspace }}/build/disk-mapper
-          chmod +x ${{ github.workspace }}/build/upgrade-agent
-          chmod +x ${{ github.workspace }}/build/measurement-reader
-
-      - name: Setup mkosi
-        uses: ./.github/actions/setup_mkosi
-        with:
-          version: d8b32fbf3077b612db0024276e73cec3c2c87577
-          systemdVersion: f6e94c5f7ddd796095cf6294857e535dcdbfc677
-
-      - name: Prepare PKI for secure boot signing
-        id: prepare-pki
-        shell: bash
-        working-directory: ${{ github.workspace }}/image
-        env:
-          PKI_SET: ${{ needs.build-settings.outputs.pkiSet }}
-          DB_KEY: ${{ ((needs.build-settings.outputs.pkiSet == 'pki_prod') && secrets.SECURE_BOOT_RELEASE_DB_KEY) || secrets.SECURE_BOOT_TESTING_DB_KEY }}
-        run: |
-          echo "${DB_KEY}" > "${PKI_SET}/db.key"
-          chmod 600 "${PKI_SET}/db.key"
-          ln -s "${PKI_SET}" pki
+      - uses: cachix/install-nix-action@v22
 
       - name: Build
+        id: build
         shell: bash
         working-directory: ${{ github.workspace }}/image
         env:
-          BOOTSTRAPPER_BINARY: ${{ github.workspace }}/build/bootstrapper
-          DEBUGD_BINARY: ${{ github.workspace }}/build/bootstrapper
-          DISK_MAPPER_BINARY: ${{ github.workspace }}/build/disk-mapper
-          UPGRADE_AGENT_BINARY: ${{ github.workspace }}/build/upgrade-agent
-          MEASUREMENT_READER_BINARY: ${{ github.workspace }}/build/measurement-reader
-          DEBUG: ${{ (needs.build-settings.outputs.stream == 'debug') && 'true' || 'false' }}
-          AUTOLOGIN: ${{ (needs.build-settings.outputs.stream == 'console' || needs.build-settings.outputs.stream == 'debug' ) && 'true' || 'false' }}
-          IMAGE_VERSION: ${{ needs.build-settings.outputs.imageVersion }}
-          CSP: ${{ matrix.csp }}
-          ATTESTATION_VARIANT: ${{ matrix.attestation_variant }}
+          TARGET: //image/system:${{ matrix.csp }}_${{ matrix.attestation_variant }}_${{ needs.build-settings.outputs.stream }}
         run: |
           echo "::group::Build"
-          sudo make IMAGE_VERSION="${IMAGE_VERSION}" DEBUG="${DEBUG}" AUTOLOGIN="${AUTOLOGIN}" "${CSP}_${ATTESTATION_VARIANT}"
-          echo "::endgroup::"
-
-      - name: Collect hashes
-        id: collect-hashes
-        working-directory: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38
-        run: |
+          bazel build --host_platform=@rules_nixpkgs_core//platforms:host "${TARGET}"
           {
-            echo "image-raw-${{ matrix.csp }}-${{ matrix.attestation_variant }}-sha256=$(sha256sum image.raw | head -c 64)"
-            echo "image-efi-${{ matrix.csp }}-${{ matrix.attestation_variant }}-sha256=$(sha256sum image.efi | head -c 64)"
-            echo "image-initrd-${{ matrix.csp }}-${{ matrix.attestation_variant }}-sha256=$(sha256sum image.esp.raw | head -c 64)"
-            echo "image-root-raw-${{ matrix.csp }}-${{ matrix.attestation_variant }}-sha256=$(sha256sum image.root-x86-64.raw | head -c 64)"
-            echo "image-root-verity-${{ matrix.csp }}-${{ matrix.attestation_variant }}-sha256=$(sha256sum image.root-x86-64-verity.raw | head -c 64)"
-            echo "image-vmlinuz-${{ matrix.csp }}-${{ matrix.attestation_variant }}-sha256=$(sha256sum image.vmlinuz | head -c 64)"
-            echo "image-raw-changelog-${{ matrix.csp }}-${{ matrix.attestation_variant }}-sha256=$(sha256sum image.changelog | head -c 64)"
-            echo "image-raw-manifest-${{ matrix.csp }}-${{ matrix.attestation_variant }}-sha256=$(sha256sum image.manifest | head -c 64)"
+            echo "image-dir=$(bazel cquery --host_platform=@rules_nixpkgs_core//platforms:host --output=files "$TARGET")"
           } | tee -a "$GITHUB_OUTPUT"
+          echo "::endgroup::"
 
       - name: Upload raw OS image as artifact
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: image-${{ matrix.csp }}-${{ matrix.attestation_variant }}
-          path: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38/image.raw
+          path: ${{ steps.build.outputs.image-dir }}/constellation.raw
 
       - name: Upload individual OS parts as artifacts
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: parts-${{ matrix.csp }}-${{ matrix.attestation_variant }}
           path: |
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38/image.cmdline
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38/image.efi
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38/image.esp.raw
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38/image.root-x86-64.raw
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38/image.root-x86-64-verity.raw
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38/image.vmlinuz
-
-      - name: Upload manifest as artifact
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
-        with:
-          name: manifest-${{ matrix.csp }}-${{ matrix.attestation_variant }}
-          path: |
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38/image.changelog
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38/image.manifest
+            ${{ steps.build.outputs.image-dir }}/constellation.efi
+            ${{ steps.build.outputs.image-dir }}/constellation.initrd
+            ${{ steps.build.outputs.image-dir }}/constellation.vmlinuz
 
   upload-os-image:
     name: "Upload OS image to CSP"
@@ -399,7 +216,7 @@ jobs:
           - csp: openstack
             attestation_variant: qemu-vtpm
     env:
-      RAW_IMAGE_PATH: mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38/image.raw
+      RAW_IMAGE_PATH: mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38/constellation.raw
       JSON_OUTPUT: mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38/image-upload.json
       AZURE_IMAGE_PATH: mkosi.output.azure_${{ matrix.attestation_variant }}/fedora~38/image.vhd
       GCP_IMAGE_PATH: mkosi.output.gcp_${{ matrix.attestation_variant }}/fedora~38/image.tar.gz
@@ -445,13 +262,6 @@ jobs:
         uses: ./.github/actions/login_gcp
         with:
           service_account: "constellation-cos-builder@constellation-331613.iam.gserviceaccount.com"
-
-      - name: Prepare PKI for image upload
-        id: prepare-pki
-        shell: bash
-        working-directory: ${{ github.workspace }}/image
-        run: |
-          ln -s ${{ needs.build-settings.outputs.pkiSet }} pki
 
       - name: Upload AWS image
         if: matrix.csp == 'aws'
@@ -575,7 +385,6 @@ jobs:
       - name: Install dependencies
         run: |
           echo "::group::Install dependencies"
-          python -m pip install --user --require-hashes -r .github/workflows/build-os-image-requirements.txt
           sudo apt-get update
           sudo apt-get install -y systemd-container # for systemd-dissect
           echo "::endgroup::"
@@ -584,13 +393,7 @@ jobs:
         working-directory: ${{ github.workspace }}/image/measured-boot
         run: |
           echo "::group::Calculate expected PCRs"
-          {
-            ./precalculate_pcr_4.sh ${{ github.workspace }}/image.raw ${{ github.workspace }}/pcr-4-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json
-            ./precalculate_pcr_9.sh ${{ github.workspace }}/image.raw ${{ github.workspace }}/pcr-9-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json
-            ./precalculate_pcr_12.sh ${{ github.workspace }}/image.raw ${{ github.workspace }}/pcr-12-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json ${{ matrix.csp }}
-          } >> "$GITHUB_STEP_SUMMARY"
-          cp pcr-stable.json ${{ github.workspace }}/
-          jq -sSc '.[0] * .[1] * .[2] * .[3]' ${{ github.workspace }}/pcr-* > ${{ github.workspace }}/pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json
+          bazel run --run_under="sudo -E" //image/measured-boot/cmd ${{ github.workspace }}/constellation.raw ${{ github.workspace }}/pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json >> "$GITHUB_STEP_SUMMARY"
           echo "::endgroup::"
 
       - name: Add static PCRs
@@ -614,7 +417,7 @@ jobs:
                 .measurements.12.warnOnly = false |
                 .measurements.13.warnOnly = false |
                 .measurements.14.warnOnly = true |
-                .measurements.14.expected = "d7c4cc7ff7933022f013e03bdee875b91720b5b86cf1753cad830f95e791926f" |
+                .measurements.14.expected = "0000000000000000000000000000000000000000000000000000000000000000" |
                 .measurements.15.warnOnly = false' \
                 -I 0 -o json -i "${{ github.workspace }}/pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json"
             ;;
@@ -634,7 +437,7 @@ jobs:
                 .measurements.12.warnOnly = false |
                 .measurements.13.warnOnly = false |
                 .measurements.14.warnOnly = true |
-                .measurements.14.expected = "d7c4cc7ff7933022f013e03bdee875b91720b5b86cf1753cad830f95e791926f" |
+                .measurements.14.expected = "0000000000000000000000000000000000000000000000000000000000000000" |
                 .measurements.15.warnOnly = false' \
                 -I 0 -o json -i "${{ github.workspace }}/pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json"
             ;;
@@ -656,7 +459,7 @@ jobs:
                 .measurements.12.warnOnly = false |
                 .measurements.13.warnOnly = false |
                 .measurements.14.warnOnly = true |
-                .measurements.14.expected = "d7c4cc7ff7933022f013e03bdee875b91720b5b86cf1753cad830f95e791926f" |
+                .measurements.14.expected = "0000000000000000000000000000000000000000000000000000000000000000" |
                 .measurements.15.warnOnly = false' \
                 -I 0 -o json -i "${{ github.workspace }}/pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json"
             ;;
@@ -669,6 +472,8 @@ jobs:
                 .measurements.11.warnOnly = false |
                 .measurements.12.warnOnly = false |
                 .measurements.13.warnOnly = false |
+                .measurements.14.warnOnly = true |
+                .measurements.14.expected = "0000000000000000000000000000000000000000000000000000000000000000" |
                 .measurements.15.warnOnly = false' \
                 -I 0 -o json -i "${{ github.workspace }}/pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json"
             ;;
@@ -681,6 +486,8 @@ jobs:
                 .measurements.11.warnOnly = false |
                 .measurements.12.warnOnly = false |
                 .measurements.13.warnOnly = false |
+                .measurements.14.warnOnly = true |
+                .measurements.14.expected = "0000000000000000000000000000000000000000000000000000000000000000" |
                 .measurements.15.warnOnly = false' \
                 -I 0 -o json -i "${{ github.workspace }}/pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json"
             ;;
@@ -796,127 +603,6 @@ jobs:
             --measurements measurements.json \
             --signature measurements.json.sig
           echo "::endgroup::"
-
-  generate-sbom:
-    name: "Generate SBOM"
-    needs: [build-settings, build-dependencies, make-os-image]
-    permissions:
-      id-token: write
-      contents: read
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Login to AWS
-        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 # v2.2.0
-        with:
-          role-to-assume: arn:aws:iam::795746500882:role/GitHubConstellationImagePipeline
-          aws-region: eu-central-1
-
-      - name: Install squashfs tools
-        run: |
-          echo "::group::Install squashfs tools"
-          sudo apt-get update
-          sudo apt-get install -y squashfs-tools
-          echo "::endgroup::"
-
-      - name: Download rootfs
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-        with:
-          # downloading / using only the QEMU rootfs is fine
-          # since the images only differ in the ESP partition
-          name: parts-qemu-qemu-vtpm
-
-      - name: Download manifest
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-        with:
-          # downloading / using only the QEMU manifest is fine
-          # since the images only differ in the ESP partition
-          name: manifest-qemu-qemu-vtpm
-
-      - name: Unpack squashfs
-        run: |
-          echo "::group::Unpack squashfs"
-          unsquashfs -user-xattrs -d image.root.tree image.root-x86-64.raw
-          echo "::endgroup::"
-
-      - name: Create SBOM in SPDX fromat
-        uses: anchore/sbom-action@78fc58e266e87a38d4194b2137a3d4e9bcaf7ca1 # v0.14.3
-        with:
-          path: image.root.tree
-          artifact-name: sbom.spdx.json
-          output-file: sbom.spdx.json
-          format: spdx-json
-
-      - name: Create SBOM in CycloneDX fromat
-        uses: anchore/sbom-action@78fc58e266e87a38d4194b2137a3d4e9bcaf7ca1 # v0.14.3
-        with:
-          path: image.root.tree
-          artifact-name: sbom.cyclonedx.json
-          output-file: sbom.cyclonedx.json
-          format: cyclonedx-json
-
-      - name: Create SBOM in  Syft fromat
-        uses: anchore/sbom-action@78fc58e266e87a38d4194b2137a3d4e9bcaf7ca1 # v0.14.3
-        with:
-          path: image.root.tree
-          artifact-name: sbom.syft.json
-          output-file: sbom.syft.json
-          format: syft-json
-
-      - name: Combine hashes
-        run: |
-          cat > SHA256SUMS <<EOF
-          ${{ needs.build-dependencies.outputs.bootstrapper-sha256 }} bootstrapper
-          ${{ needs.build-dependencies.outputs.disk-mapper-sha256 }} disk-mapper
-          ${{ needs.build-dependencies.outputs.upgrade-agent-sha256 }} upgrade-agent
-          ${{ needs.build-dependencies.outputs.measurement-reader-sha256 }} measurement-reader
-          ${{ needs.make-os-image.outputs.image-raw-aws-aws-nitro-tpm-sha256 }} aws/image.raw
-          ${{ needs.make-os-image.outputs.image-raw-changelog-aws-aws-nitro-tpm-sha256 }} aws/image.changelog
-          ${{ needs.make-os-image.outputs.image-raw-manifest-aws-aws-nitro-tpm-sha256 }} aws/image.manifest
-          ${{ needs.make-os-image.outputs.image-efi-aws-aws-nitro-tpm-sha256 }} aws/image.efi
-          ${{ needs.make-os-image.outputs.image-initrd-aws-aws-nitro-tpm-sha256 }} aws/image.initrd
-          ${{ needs.make-os-image.outputs.image-root-raw-aws-aws-nitro-tpm-sha256 }} aws/image.root-x86-64.raw
-          ${{ needs.make-os-image.outputs.image-root-verity-aws-aws-nitro-tpm-sha256 }} aws/image.root.verity
-          ${{ needs.make-os-image.outputs.image-vmlinuz-aws-aws-nitro-tpm-sha256 }} aws/image.vmlinuz
-          ${{ needs.make-os-image.outputs.image-raw-azure-azure-sev-snp-sha256 }} azure/image.raw
-          ${{ needs.make-os-image.outputs.image-raw-changelog-azure-azure-sev-snp-sha256 }} azure/image.changelog
-          ${{ needs.make-os-image.outputs.image-raw-manifest-azure-azure-sev-snp-sha256 }} azure/image.manifest
-          ${{ needs.make-os-image.outputs.image-efi-azure-azure-sev-snp-sha256 }} azure/image.efi
-          ${{ needs.make-os-image.outputs.image-initrd-azure-azure-sev-snp-sha256 }} azure/image.initrd
-          ${{ needs.make-os-image.outputs.image-root-raw-azure-azure-sev-snp-sha256 }} azure/image.root-x86-64.raw
-          ${{ needs.make-os-image.outputs.image-root-verity-azure-azure-sev-snp-sha256 }} azure/image.root.verity
-          ${{ needs.make-os-image.outputs.image-vmlinuz-azure-azure-sev-snp-sha256 }} azure/image.vmlinuz
-          ${{ needs.make-os-image.outputs.image-raw-gcp-gcp-sev-es-sha256 }} gcp/image.raw
-          ${{ needs.make-os-image.outputs.image-raw-changelog-gcp-gcp-sev-es-sha256 }} gcp/image.changelog
-          ${{ needs.make-os-image.outputs.image-raw-manifest-gcp-gcp-sev-es-sha256 }} gcp/image.manifest
-          ${{ needs.make-os-image.outputs.image-efi-gcp-gcp-sev-es-sha256 }} gcp/image.efi
-          ${{ needs.make-os-image.outputs.image-initrd-gcp-gcp-sev-es-sha256 }} gcp/image.initrd
-          ${{ needs.make-os-image.outputs.image-root-raw-gcp-gcp-sev-es-sha256 }} gcp/image.root-x86-64.raw
-          ${{ needs.make-os-image.outputs.image-root-verity-gcp-gcp-sev-es-sha256 }} gcp/image.root.verity
-          ${{ needs.make-os-image.outputs.image-vmlinuz-gcp-gcp-sev-es-sha256 }} gcp/image.vmlinuz
-          ${{ needs.make-os-image.outputs.image-raw-qemu-qemu-vtpm-sha256 }} qemu/image.raw
-          ${{ needs.make-os-image.outputs.image-raw-changelog-qemu-qemu-vtpm-sha256 }} qemu/image.changelog
-          ${{ needs.make-os-image.outputs.image-raw-manifest-qemu-qemu-vtpm-sha256 }} qemu/image.manifest
-          ${{ needs.make-os-image.outputs.image-efi-qemu-qemu-vtpm-sha256 }} qemu/image.efi
-          ${{ needs.make-os-image.outputs.image-initrd-qemu-qemu-vtpm-sha256 }} qemu/image.initrd
-          ${{ needs.make-os-image.outputs.image-root-raw-qemu-qemu-vtpm-sha256 }} qemu/image.root-x86-64.raw
-          ${{ needs.make-os-image.outputs.image-root-verity-qemu-qemu-vtpm-sha256 }} qemu/image.root.verity
-          ${{ needs.make-os-image.outputs.image-vmlinuz-qemu-qemu-vtpm-sha256 }} qemu/image.vmlinuz
-          EOF
-          cat SHA256SUMS
-          echo -e "SHA256SUMS:\n\`\`\`\n$(cat SHA256SUMS)\n\`\`\`" >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload SBOMs to S3
-        shell: bash
-        run: |
-          sboms='sbom.spdx.json sbom.cyclonedx.json sbom.syft.json'
-          manifests='image.manifest image.changelog'
-          hashes='SHA256SUMS'
-          for file in ${sboms} ${manifests} ${hashes}; do
-            aws s3 cp \
-              "${file}" \
-              "s3://cdn-constellation-backend/${{needs.build-settings.outputs.imageApiBasePath}}/${file}" \
-              --no-progress
-          done
 
   upload-artifacts:
     name: "Upload image lookup table and CLI compatibility info"
