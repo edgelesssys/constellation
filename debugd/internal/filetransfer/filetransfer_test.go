@@ -25,11 +25,12 @@ func TestMain(m *testing.M) {
 
 func TestSendFiles(t *testing.T) {
 	testCases := map[string]struct {
-		files         *[]FileStat
-		sendErr       error
-		readStreamErr error
-		wantHeaders   []*pb.FileTransferMessage
-		wantErr       bool
+		files           *[]FileStat
+		receiveFinished bool
+		sendErr         error
+		readStreamErr   error
+		wantHeaders     []*pb.FileTransferMessage
+		wantErr         bool
 	}{
 		"can send files": {
 			files: &[]FileStat{
@@ -44,6 +45,7 @@ func TestSendFiles(t *testing.T) {
 					OverrideServiceUnit: "somesvcB",
 				},
 			},
+			receiveFinished: true,
 			wantHeaders: []*pb.FileTransferMessage{
 				{
 					Kind: &pb.FileTransferMessage_Header{
@@ -65,8 +67,21 @@ func TestSendFiles(t *testing.T) {
 				},
 			},
 		},
-		"no files set": {
-			wantErr: true,
+		"not finished receiving": {
+			files: &[]FileStat{
+				{
+					TargetPath:          "testfileA",
+					Mode:                0o644,
+					OverrideServiceUnit: "somesvcA",
+				},
+				{
+					TargetPath:          "testfileB",
+					Mode:                0o644,
+					OverrideServiceUnit: "somesvcB",
+				},
+			},
+			receiveFinished: false,
+			wantErr:         true,
 		},
 		"send fails": {
 			files: &[]FileStat{
@@ -76,8 +91,9 @@ func TestSendFiles(t *testing.T) {
 					OverrideServiceUnit: "somesvcA",
 				},
 			},
-			sendErr: errors.New("send failed"),
-			wantErr: true,
+			receiveFinished: true,
+			sendErr:         errors.New("send failed"),
+			wantErr:         true,
 		},
 		"read stream fails": {
 			files: &[]FileStat{
@@ -87,8 +103,9 @@ func TestSendFiles(t *testing.T) {
 					OverrideServiceUnit: "somesvcA",
 				},
 			},
-			readStreamErr: errors.New("read stream failed"),
-			wantErr:       true,
+			receiveFinished: true,
+			readStreamErr:   errors.New("read stream failed"),
+			wantErr:         true,
 		},
 	}
 
@@ -99,10 +116,16 @@ func TestSendFiles(t *testing.T) {
 
 			streamer := &stubStreamReadWriter{readStreamErr: tc.readStreamErr}
 			stream := &stubSendFilesStream{sendErr: tc.sendErr}
-			transfer := New(logger.NewTest(t), streamer, false)
-			if tc.files != nil {
-				transfer.SetFiles(*tc.files)
+			transfer := &FileTransferer{
+				log:          logger.NewTest(t),
+				streamer:     streamer,
+				showProgress: false,
 			}
+			if tc.files != nil {
+				transfer.files = *tc.files
+			}
+			transfer.receiveFinished.Store(tc.receiveFinished)
+
 			err := transfer.SendFiles(stream)
 
 			if tc.wantErr {
@@ -236,7 +259,7 @@ func TestRecvFiles(t *testing.T) {
 				transfer.receiveStarted = true
 			}
 			if tc.recvAlreadyFinished {
-				transfer.receiveFinished = true
+				transfer.receiveFinished.Store(true)
 			}
 			err := transfer.RecvFiles(stream)
 
@@ -290,32 +313,9 @@ func TestGetSetFiles(t *testing.T) {
 			}
 			gotFiles := transfer.GetFiles()
 			assert.Equal(tc.wantFiles, gotFiles)
-			assert.Equal(tc.setFiles != nil, transfer.receiveFinished)
+			assert.Equal(tc.setFiles != nil, transfer.receiveFinished.Load())
 		})
 	}
-}
-
-func TestCanSend(t *testing.T) {
-	assert := assert.New(t)
-
-	streamer := &stubStreamReadWriter{}
-	stream := &stubRecvFilesStream{recvErr: io.EOF}
-	transfer := New(logger.NewTest(t), streamer, false)
-	assert.False(transfer.CanSend())
-
-	// manual set
-	transfer.SetFiles(nil)
-	assert.True(transfer.CanSend())
-
-	// reset
-	transfer.receiveStarted = false
-	transfer.receiveFinished = false
-	transfer.files = nil
-	assert.False(transfer.CanSend())
-
-	// receive files (empty)
-	assert.NoError(transfer.RecvFiles(stream))
-	assert.True(transfer.CanSend())
 }
 
 func TestConcurrency(t *testing.T) {
@@ -337,10 +337,6 @@ func TestConcurrency(t *testing.T) {
 		ft.SetFiles([]FileStat{{SourcePath: "file", TargetPath: "file", Mode: 0o644}})
 	}
 
-	canSend := func() {
-		_ = ft.CanSend()
-	}
-
 	go sendFiles()
 	go sendFiles()
 	go sendFiles()
@@ -357,10 +353,6 @@ func TestConcurrency(t *testing.T) {
 	go setFiles()
 	go setFiles()
 	go setFiles()
-	go canSend()
-	go canSend()
-	go canSend()
-	go canSend()
 }
 
 type stubStreamReadWriter struct {

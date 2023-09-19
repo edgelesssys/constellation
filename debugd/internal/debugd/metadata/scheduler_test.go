@@ -33,32 +33,47 @@ func TestSchedulerStart(t *testing.T) {
 		wantInfoDownloads       []string
 	}{
 		"no errors occur": {
-			fetcher:                 stubFetcher{ips: []string{"192.0.2.1", "192.0.2.2"}},
+			fetcher:                 stubFetcher{ips: []string{"192.0.2.1", "192.0.2.2"}, loadBalancerIP: "192.0.2.3"},
 			downloader:              stubDownloader{},
-			wantDiscoverCount:       1,
+			wantDiscoverCount:       2,
 			wantDeploymentDownloads: []string{"192.0.2.1"},
 			wantInfoDownloads:       []string{"192.0.2.1"},
 		},
-		"download deployment fails": {
+		"no load balancer is discovered": {
 			fetcher:                 stubFetcher{ips: []string{"192.0.2.1", "192.0.2.2"}},
-			downloader:              stubDownloader{downloadDeploymentErrs: []error{someErr, someErr}},
+			downloader:              stubDownloader{},
 			wantDiscoverCount:       2,
-			wantDeploymentDownloads: []string{"192.0.2.1", "192.0.2.2", "192.0.2.1"},
+			wantDeploymentDownloads: []string{"192.0.2.1"},
+			wantInfoDownloads:       []string{"192.0.2.1"},
+		},
+		"no nodes are discovered": {
+			fetcher:                 stubFetcher{loadBalancerIP: "192.0.2.3"},
+			downloader:              stubDownloader{},
+			wantDiscoverCount:       2,
+			wantDeploymentDownloads: []string{"192.0.2.3"},
+			wantInfoDownloads:       []string{"192.0.2.3"},
+		},
+		"download deployment fails": {
+			fetcher:                 stubFetcher{ips: []string{"192.0.2.1", "192.0.2.2"}, loadBalancerIP: "192.0.2.3"},
+			downloader:              stubDownloader{downloadDeploymentErrs: []error{someErr, someErr, someErr}},
+			wantDiscoverCount:       4,
+			wantDeploymentDownloads: []string{"192.0.2.1", "192.0.2.2", "192.0.2.3", "192.0.2.1"},
 			wantInfoDownloads:       []string{"192.0.2.1"},
 		},
 		"download info fails": {
-			fetcher:                 stubFetcher{ips: []string{"192.0.2.1", "192.0.2.2"}},
-			downloader:              stubDownloader{downloadInfoErrs: []error{someErr, someErr}},
-			wantDiscoverCount:       2,
+			fetcher:                 stubFetcher{ips: []string{"192.0.2.1", "192.0.2.2"}, loadBalancerIP: "192.0.2.3"},
+			downloader:              stubDownloader{downloadInfoErrs: []error{someErr, someErr, someErr}},
+			wantDiscoverCount:       4,
 			wantDeploymentDownloads: []string{"192.0.2.1"},
-			wantInfoDownloads:       []string{"192.0.2.1", "192.0.2.2", "192.0.2.1"},
+			wantInfoDownloads:       []string{"192.0.2.1", "192.0.2.2", "192.0.2.3", "192.0.2.1"},
 		},
 		"endpoint discovery fails": {
 			fetcher: stubFetcher{
-				discoverErrs: []error{someErr, someErr, someErr},
-				ips:          []string{"192.0.2.1", "192.0.2.2"},
+				discoverErrs:              []error{someErr, someErr, someErr},
+				discoverLoadBalancerIPErr: someErr,
+				ips:                       []string{"192.0.2.1", "192.0.2.2"},
 			},
-			wantDiscoverCount:       4,
+			wantDiscoverCount:       8,
 			wantDeploymentDownloads: []string{"192.0.2.1"},
 			wantInfoDownloads:       []string{"192.0.2.1"},
 		},
@@ -90,7 +105,11 @@ type stubFetcher struct {
 	ips            []string
 	discoverErrs   []error
 	discoverErrIdx int
-	discoverCalls  int
+
+	discoverCalls int
+
+	loadBalancerIP            string
+	discoverLoadBalancerIPErr error
 }
 
 func (s *stubFetcher) DiscoverDebugdIPs(_ context.Context) ([]string, error) {
@@ -102,6 +121,11 @@ func (s *stubFetcher) DiscoverDebugdIPs(_ context.Context) ([]string, error) {
 		return nil, err
 	}
 	return s.ips, nil
+}
+
+func (s *stubFetcher) DiscoverLoadBalancerIP(_ context.Context) (string, error) {
+	s.discoverCalls++
+	return s.loadBalancerIP, s.discoverLoadBalancerIPErr
 }
 
 type stubDownloader struct {

@@ -228,10 +228,6 @@ func TestDownloadFiles(t *testing.T) {
 			canSend:           true,
 			wantSendFileCalls: 1,
 		},
-		"transfer is not ready for sending": {
-			request:     &pb.DownloadFilesRequest{},
-			wantRecvErr: true,
-		},
 	}
 
 	for name, tc := range testCases {
