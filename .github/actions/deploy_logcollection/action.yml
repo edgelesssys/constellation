@@ -96,5 +96,7 @@ runs:
       run: |
         helm repo add elastic https://helm.elastic.co
         helm repo update
-        helm install metricbeat elastic/metricbeat \
-          --wait --timeout=1200s --values values.yml
+        helm install metricbeat-k8s elastic/metricbeat \
+          --wait --timeout=1200s --values values-control-plane.yml
+        helm install metricbeat-system elastic/metricbeat \
+          --wait --timeout=1200s --values values-all-nodes.yml

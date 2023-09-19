@@ -11,7 +11,8 @@ go_library(
     embedsrcs = [
         "templates/filebeat/values.yml",
         "templates/logstash/values.yml",
-        "templates/metricbeat/values.yml",
+        "templates/metricbeat/values-all-nodes.yml",
+        "templates/metricbeat/values-control-plane.yml",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/hack/logcollector/internal",
     visibility = ["//hack/logcollector:__subpackages__"],
