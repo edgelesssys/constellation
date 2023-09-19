@@ -38,6 +38,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/license"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -73,7 +74,6 @@ func TestInitialize(t *testing.T) {
 		ClusterId:  []byte("clusterID"),
 	}
 	serviceAccPath := "/test/service-account.json"
-	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
 		provider                cloudprovider.Provider
@@ -105,7 +105,7 @@ func TestInitialize(t *testing.T) {
 		"non retriable error": {
 			provider:                cloudprovider.QEMU,
 			idFile:                  &clusterid.File{IP: "192.0.2.1"},
-			initServerAPI:           &stubInitServer{initErr: &nonRetriableError{someErr}},
+			initServerAPI:           &stubInitServer{initErr: &nonRetriableError{assert.AnError}},
 			retriable:               false,
 			masterSecretShouldExist: true,
 			wantErr:                 true,
@@ -125,7 +125,7 @@ func TestInitialize(t *testing.T) {
 		"init call fails": {
 			provider:      cloudprovider.GCP,
 			idFile:        &clusterid.File{IP: "192.0.2.1"},
-			initServerAPI: &stubInitServer{initErr: someErr},
+			initServerAPI: &stubInitServer{initErr: assert.AnError},
 			retriable:     true,
 			wantErr:       true,
 		},
@@ -133,7 +133,24 @@ func TestInitialize(t *testing.T) {
 			provider:      cloudprovider.Azure,
 			idFile:        &clusterid.File{IP: "192.0.2.1"},
 			initServerAPI: &stubInitServer{res: &initproto.InitResponse{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}},
-			configMutator: func(c *config.Config) { c.KubernetesVersion = strings.TrimPrefix(string(versions.Default), "v") },
+			configMutator: func(c *config.Config) {
+				res, err := versions.NewValidK8sVersion(strings.TrimPrefix(string(versions.Default), "v"), true)
+				require.NoError(t, err)
+				c.KubernetesVersion = res
+			},
+		},
+		"outdated k8s patch version doesn't work": {
+			provider:      cloudprovider.Azure,
+			idFile:        &clusterid.File{IP: "192.0.2.1"},
+			initServerAPI: &stubInitServer{res: &initproto.InitResponse{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}},
+			configMutator: func(c *config.Config) {
+				v, err := semver.New(versions.SupportedK8sVersions()[0])
+				require.NoError(t, err)
+				outdatedPatchVer := semver.NewFromInt(v.Major(), v.Minor(), v.Patch()-1, "").String()
+				c.KubernetesVersion = versions.ValidK8sVersion(outdatedPatchVer)
+			},
+			wantErr:   true,
+			retriable: true, // doesn't need to show retriable error message
 		},
 	}
 
@@ -222,7 +239,7 @@ type stubApplier struct {
 	err error
 }
 
-func (s stubApplier) PrepareApply(_ *config.Config, _ versions.ValidK8sVersion, _ clusterid.File, _ helm.Options, _ terraform.ApplyOutput, _ string, _ uri.MasterSecret) (helm.Applier, bool, error) {
+func (s stubApplier) PrepareApply(_ *config.Config, _ clusterid.File, _ helm.Options, _ terraform.ApplyOutput, _ string, _ uri.MasterSecret) (helm.Applier, bool, error) {
 	return stubRunner{}, false, s.err
 }
 

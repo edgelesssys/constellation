@@ -473,7 +473,6 @@ go_test(
         "//internal/kms/uri",
         "//internal/logger",
         "//internal/semver",
-        "//internal/versions",
         "@com_github_pkg_errors//:errors",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//mock",

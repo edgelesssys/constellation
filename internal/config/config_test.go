@@ -30,6 +30,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
+	gosemver "golang.org/x/mod/semver"
 )
 
 func TestMain(m *testing.M) {
@@ -187,6 +188,44 @@ func TestReadConfigFile(t *testing.T) {
 			configName: constants.ConfigFilename,
 			wantErr:    true,
 		},
+		"outdated k8s patch version is allowed": {
+			config: func() configMap {
+				conf := Default()
+				ver, err := semver.New(versions.SupportedK8sVersions()[0])
+				require.NoError(t, err)
+				conf.KubernetesVersion = versions.ValidK8sVersion(semver.NewFromInt(ver.Major(), ver.Minor(), ver.Patch()-1, "").String())
+				m := getConfigAsMap(conf, t)
+				return m
+			}(),
+			wantResult: func() *Config {
+				conf := Default()
+				ver, err := semver.New(versions.SupportedK8sVersions()[0])
+				require.NoError(t, err)
+				conf.KubernetesVersion = versions.ValidK8sVersion(semver.NewFromInt(ver.Major(), ver.Minor(), ver.Patch()-1, "").String())
+				return conf
+			}(),
+			configName: constants.ConfigFilename,
+		},
+		"outdated k8s version is not allowed": {
+			config: func() configMap {
+				conf := Default()
+				conf.KubernetesVersion = versions.ValidK8sVersion("v1.0.0")
+				m := getConfigAsMap(conf, t)
+				return m
+			}(),
+			wantErr:    true,
+			configName: constants.ConfigFilename,
+		},
+		"a k8s version without specified patch is not allowed": {
+			config: func() configMap {
+				conf := Default()
+				conf.KubernetesVersion = versions.ValidK8sVersion(gosemver.MajorMinor(string(versions.Default)))
+				m := getConfigAsMap(conf, t)
+				return m
+			}(),
+			wantErr:    true,
+			configName: constants.ConfigFilename,
+		},
 		"error on entering app client id": {
 			config: func() configMap {
 				conf := Default()
@@ -249,16 +288,6 @@ func TestFromFile(t *testing.T) {
 			configName: "wrong-name.yaml",
 			wantErr:    true,
 		},
-		"custom config from default file": {
-			config: &Config{
-				Version: Version4,
-			},
-			configName: constants.ConfigFilename,
-			wantResult: &Config{
-				Version:    Version4,
-				NodeGroups: map[string]NodeGroup{},
-			},
-		},
 		"modify default config": {
 			config: func() *Config {
 				conf := Default()
@@ -316,19 +345,6 @@ func TestValidate(t *testing.T) {
 			cnf: func() *Config {
 				cnf := Default()
 				cnf.Image = ""
-				return cnf
-			}(),
-			wantErr:      true,
-			wantErrCount: defaultErrCount,
-		},
-		"outdated k8s patch version is allowed": {
-			cnf: func() *Config {
-				cnf := Default()
-				cnf.Image = ""
-				ver, err := semver.New(versions.SupportedK8sVersions()[0])
-				require.NoError(t, err)
-				ver = semver.NewFromInt(ver.Major(), ver.Minor(), ver.Patch()-1, "")
-				cnf.KubernetesVersion = ver.String()
 				return cnf
 			}(),
 			wantErr:      true,

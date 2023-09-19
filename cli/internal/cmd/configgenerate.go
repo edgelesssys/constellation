@@ -13,7 +13,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -35,7 +34,7 @@ func newConfigGenerateCmd() *cobra.Command {
 		ValidArgsFunction: generateCompletion,
 		RunE:              runConfigGenerate,
 	}
-	cmd.Flags().StringP("kubernetes", "k", semver.MajorMinor(config.Default().KubernetesVersion), "Kubernetes version to use in format MAJOR.MINOR")
+	cmd.Flags().StringP("kubernetes", "k", semver.MajorMinor(string(config.Default().KubernetesVersion)), "Kubernetes version to use in format MAJOR.MINOR")
 	cmd.Flags().StringP("attestation", "a", "", fmt.Sprintf("attestation variant to use %s. If not specified, the default for the cloud provider is used", printFormattedSlice(variant.GetAvailableAttestationVariants())))
 
 	return cmd
@@ -43,7 +42,7 @@ func newConfigGenerateCmd() *cobra.Command {
 
 type generateFlags struct {
 	pf                 pathprefix.PathPrefixer
-	k8sVersion         string
+	k8sVersion         versions.ValidK8sVersion
 	attestationVariant variant.Variant
 }
 
@@ -124,19 +123,6 @@ func createConfig(provider cloudprovider.Provider) *config.Config {
 	return res
 }
 
-// supportedVersions prints the supported version without v prefix and without patch version.
-// Should only be used when accepting Kubernetes versions from --kubernetes.
-func supportedVersions() string {
-	builder := strings.Builder{}
-	for i, version := range versions.SupportedK8sVersions() {
-		if i > 0 {
-			builder.WriteString(" ")
-		}
-		builder.WriteString(strings.TrimPrefix(semver.MajorMinor(version), "v"))
-	}
-	return builder.String()
-}
-
 func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
 	workDir, err := cmd.Flags().GetString("workspace")
 	if err != nil {
@@ -144,11 +130,15 @@ func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
 	}
 	k8sVersion, err := cmd.Flags().GetString("kubernetes")
 	if err != nil {
-		return generateFlags{}, fmt.Errorf("parsing kuberentes flag: %w", err)
+		return generateFlags{}, fmt.Errorf("parsing Kubernetes flag: %w", err)
 	}
-	resolvedVersion, err := resolveK8sVersion(k8sVersion)
+	resolvedVersion, err := versions.ResolveK8sPatchVersion(k8sVersion)
 	if err != nil {
-		return generateFlags{}, fmt.Errorf("resolving kuberentes version from flag: %w", err)
+		return generateFlags{}, fmt.Errorf("resolving kubernetes patch version from flag: %w", err)
+	}
+	validK8sVersion, err := versions.NewValidK8sVersion(resolvedVersion, true)
+	if err != nil {
+		return generateFlags{}, fmt.Errorf("resolving Kubernetes version from flag: %w", err)
 	}
 
 	attestationString, err := cmd.Flags().GetString("attestation")
@@ -168,7 +158,7 @@ func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
 	}
 	return generateFlags{
 		pf:                 pathprefix.New(workDir),
-		k8sVersion:         resolvedVersion,
+		k8sVersion:         validK8sVersion,
 		attestationVariant: attestationVariant,
 	}, nil
 }
@@ -182,22 +172,6 @@ func generateCompletion(_ *cobra.Command, args []string, _ string) ([]string, co
 	default:
 		return []string{}, cobra.ShellCompDirectiveError
 	}
-}
-
-// resolveK8sVersion takes the user input from --kubernetes and transforms a MAJOR.MINOR definition into a supported
-// MAJOR.MINOR.PATCH release.
-func resolveK8sVersion(k8sVersion string) (string, error) {
-	prefixedVersion := compatibility.EnsurePrefixV(k8sVersion)
-	if !semver.IsValid(prefixedVersion) {
-		return "", fmt.Errorf("kubernetes flag does not specify a valid semantic version: %s", k8sVersion)
-	}
-
-	extendedVersion := config.K8sVersionFromMajorMinor(prefixedVersion)
-	if extendedVersion == "" {
-		return "", fmt.Errorf("--kubernetes (%s) does not specify a valid Kubernetes version. Supported versions: %s", strings.TrimPrefix(k8sVersion, "v"), supportedVersions())
-	}
-
-	return extendedVersion, nil
 }
 
 func printFormattedSlice[T any](input []T) string {

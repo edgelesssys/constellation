@@ -583,7 +583,11 @@ func (v *versionUpgrade) writeConfig(conf *config.Config, fileHandler file.Handl
 		conf.MicroserviceVersion = v.newServices
 	}
 	if len(v.newKubernetes) > 0 {
-		conf.KubernetesVersion = v.newKubernetes[0]
+		var err error
+		conf.KubernetesVersion, err = versions.NewValidK8sVersion(v.newKubernetes[0], true)
+		if err != nil {
+			return fmt.Errorf("parsing Kubernetes version: %w", err)
+		}
 	}
 	if len(v.newImages) > 0 {
 		imageUpgrade := sortedMapKeys(v.newImages)[0]

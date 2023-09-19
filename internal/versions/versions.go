@@ -40,25 +40,87 @@ func SupportedK8sVersions() []string {
 type ValidK8sVersion string
 
 // NewValidK8sVersion validates the given string and produces a new ValidK8sVersion object.
+// It accepts a full version (e.g. 1.26.7) and validates it.
 // Returns an empty string if the given version is invalid.
 // strict controls whether the patch version is checked or not.
-// If strict is false, the patch version is ignored and the returned
-// ValidK8sVersion is a supported patch version for the given major.minor version.
+// If strict is false, the patch version validation is skipped.
 func NewValidK8sVersion(k8sVersion string, strict bool) (ValidK8sVersion, error) {
+	prefixedVersion := compatibility.EnsurePrefixV(k8sVersion)
 	var supported bool
 	if strict {
-		supported = isSupportedK8sVersionStrict(k8sVersion)
+		supported = isSupportedK8sVersionStrict(prefixedVersion)
 	} else {
-		supported = isSupportedK8sVersion(k8sVersion)
+		supported = isSupportedK8sVersion(prefixedVersion)
 	}
 	if !supported {
-		return "", fmt.Errorf("invalid Kubernetes version: %s; supported versions are %v", k8sVersion, SupportedK8sVersions())
+		return "", fmt.Errorf("invalid Kubernetes version: %s; supported versions are %v", prefixedVersion, SupportedK8sVersions())
 	}
-	if !strict {
-		k8sVersion, _ = supportedVersionForMajorMinor(k8sVersion)
+	return ValidK8sVersion(prefixedVersion), nil
+}
+
+// UnmarshalYAML implements the yaml.Unmarshaler interface.
+func (v *ValidK8sVersion) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var version string
+	if err := unmarshal(&version); err != nil {
+		return err
+	}
+	if !hasPatchVersion(version) {
+		return fmt.Errorf("Kubernetes version %s does not specify a patch, supported versions are %s", version, strings.Join(SupportedK8sVersions(), ", "))
+	}
+	valid, err := NewValidK8sVersion(version, false) // allow any patch version to not force K8s patch upgrades
+	if err != nil {
+		return fmt.Errorf("unsupported Kubernetes version %s, supported versions are %s", version, strings.Join(SupportedK8sVersions(), ", "))
+	}
+	*v = valid
+	return nil
+}
+
+// ResolveK8sPatchVersion transforms a MAJOR.MINOR definition into a supported
+// MAJOR.MINOR.PATCH release.
+func ResolveK8sPatchVersion(k8sVersion string) (string, error) {
+	k8sVersion = compatibility.EnsurePrefixV(k8sVersion)
+	if !semver.IsValid(k8sVersion) {
+		return "", fmt.Errorf("Kubernetes version does not specify a valid semantic version: %s", k8sVersion)
+	}
+	if hasPatchVersion(k8sVersion) {
+		return k8sVersion, nil
+	}
+	extendedVersion := k8sVersionFromMajorMinor(k8sVersion)
+	if extendedVersion == "" {
+		return "", fmt.Errorf("Kubernetes version %s is not valid. Supported versions: %s",
+			strings.TrimPrefix(k8sVersion, "v"), supportedVersions())
 	}
 
-	return ValidK8sVersion(k8sVersion), nil
+	return extendedVersion, nil
+}
+
+// k8sVersionFromMajorMinor takes a semver in format MAJOR.MINOR
+// and returns the version in format MAJOR.MINOR.PATCH with the
+// supported patch version as PATCH.
+func k8sVersionFromMajorMinor(version string) string {
+	switch version {
+	case semver.MajorMinor(string(V1_26)):
+		return string(V1_26)
+	case semver.MajorMinor(string(V1_27)):
+		return string(V1_27)
+	case semver.MajorMinor(string(V1_28)):
+		return string(V1_28)
+	default:
+		return ""
+	}
+}
+
+// supportedVersions prints the supported version without v prefix and without patch version.
+// Should only be used when accepting Kubernetes versions from --kubernetes.
+func supportedVersions() string {
+	builder := strings.Builder{}
+	for i, version := range SupportedK8sVersions() {
+		if i > 0 {
+			builder.WriteString(" ")
+		}
+		builder.WriteString(strings.TrimPrefix(semver.MajorMinor(version), "v"))
+	}
+	return builder.String()
 }
 
 // IsSupportedK8sVersion checks if a given Kubernetes minor version is supported by Constellation.
@@ -87,14 +149,9 @@ func IsPreviewK8sVersion(_ ValidK8sVersion) bool {
 	return false
 }
 
-func supportedVersionForMajorMinor(majorMinor string) (string, bool) {
-	majorMinor = semver.MajorMinor(majorMinor)
-	for _, valid := range SupportedK8sVersions() {
-		if semver.MajorMinor(valid) == majorMinor {
-			return valid, true
-		}
-	}
-	return "", false
+// hasPatchVersion returns if the given version has specified a patch version.
+func hasPatchVersion(version string) bool {
+	return semver.MajorMinor(version) != version
 }
 
 const (

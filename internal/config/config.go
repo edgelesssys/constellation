@@ -69,7 +69,7 @@ type Config struct {
 	Name string `yaml:"name" validate:"valid_name,required"`
 	// description: |
 	//   Kubernetes version to be installed into the cluster.
-	KubernetesVersion string `yaml:"kubernetesVersion" validate:"required,supported_k8s_version"`
+	KubernetesVersion versions.ValidK8sVersion `yaml:"kubernetesVersion" validate:"required,supported_k8s_version"`
 	// description: |
 	//   Microservice version to be installed into the cluster. Defaults to the version of the CLI.
 	MicroserviceVersion semver.Semver `yaml:"microserviceVersion" validate:"required"`
@@ -315,7 +315,7 @@ func Default() *Config {
 		Image:               defaultImage,
 		Name:                defaultName,
 		MicroserviceVersion: constants.BinaryVersion(),
-		KubernetesVersion:   string(versions.Default),
+		KubernetesVersion:   versions.Default,
 		DebugCluster:        toPtr(false),
 		Provider: ProviderConfig{
 			AWS: &AWSConfig{

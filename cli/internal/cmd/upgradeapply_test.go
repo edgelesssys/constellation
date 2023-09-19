@@ -23,6 +23,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -37,6 +38,7 @@ func TestUpgradeApply(t *testing.T) {
 		kubeUpgrader      *stubKubernetesUpgrader
 		terraformUpgrader clusterUpgrader
 		wantErr           bool
+		customK8sVersion  string
 		flags             upgradeApplyFlags
 		stdin             string
 	}{
@@ -113,6 +115,30 @@ func TestUpgradeApply(t *testing.T) {
 			wantErr: true,
 			flags:   upgradeApplyFlags{yes: true},
 		},
+		"outdated K8s patch version": {
+			kubeUpgrader: &stubKubernetesUpgrader{
+				currentConfig: config.DefaultForAzureSEVSNP(),
+			},
+			helmUpgrader:      stubApplier{},
+			terraformUpgrader: &stubTerraformUpgrader{},
+			customK8sVersion: func() string {
+				v, err := semver.New(versions.SupportedK8sVersions()[0])
+				require.NoError(t, err)
+				return semver.NewFromInt(v.Major(), v.Minor(), v.Patch()-1, "").String()
+			}(),
+			flags:   upgradeApplyFlags{yes: true},
+			wantErr: false,
+		},
+		"outdated K8s version": {
+			kubeUpgrader: &stubKubernetesUpgrader{
+				currentConfig: config.DefaultForAzureSEVSNP(),
+			},
+			helmUpgrader:      stubApplier{},
+			terraformUpgrader: &stubTerraformUpgrader{},
+			customK8sVersion:  "v1.20.0",
+			flags:             upgradeApplyFlags{yes: true},
+			wantErr:           true,
+		},
 		"skip all upgrade phases": {
 			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig: config.DefaultForAzureSEVSNP(),
@@ -147,7 +173,9 @@ func TestUpgradeApply(t *testing.T) {
 			handler := file.NewHandler(afero.NewMemMapFs())
 
 			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.Azure)
-
+			if tc.customK8sVersion != "" {
+				cfg.KubernetesVersion = versions.ValidK8sVersion(tc.customK8sVersion)
+			}
 			require.NoError(handler.WriteYAML(constants.ConfigFilename, cfg))
 			require.NoError(handler.WriteJSON(constants.ClusterIDsFilename, clusterid.File{MeasurementSalt: []byte("measurementSalt")}))
 			require.NoError(handler.WriteJSON(constants.MasterSecretFilename, uri.MasterSecret{}))
@@ -270,7 +298,7 @@ type mockApplier struct {
 	mock.Mock
 }
 
-func (m *mockApplier) PrepareApply(cfg *config.Config, k8sVersion versions.ValidK8sVersion, clusterID clusterid.File, helmOpts helm.Options, terraformOut terraform.ApplyOutput, str string, masterSecret uri.MasterSecret) (helm.Applier, bool, error) {
-	args := m.Called(cfg, k8sVersion, clusterID, helmOpts, terraformOut, str, masterSecret)
+func (m *mockApplier) PrepareApply(cfg *config.Config, clusterID clusterid.File, helmOpts helm.Options, terraformOut terraform.ApplyOutput, str string, masterSecret uri.MasterSecret) (helm.Applier, bool, error) {
+	args := m.Called(cfg, clusterID, helmOpts, terraformOut, str, masterSecret)
 	return args.Get(0).(helm.Applier), args.Bool(1), args.Error(2)
 }

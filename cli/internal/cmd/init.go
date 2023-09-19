@@ -24,7 +24,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
-	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -153,6 +152,11 @@ func (i *initCmd) initialize(
 	if err != nil {
 		return err
 	}
+	// cfg validation does not check k8s patch version since upgrade may accept an outdated patch version.
+	k8sVersion, err := versions.NewValidK8sVersion(string(conf.KubernetesVersion), true)
+	if err != nil {
+		return err
+	}
 	if !flags.force {
 		if err := validateCLIandConstellationVersionAreEqual(constants.BinaryVersion(), conf.Image, conf.MicroserviceVersion); err != nil {
 			return err
@@ -168,12 +172,6 @@ func (i *initCmd) initialize(
 		return fmt.Errorf("reading cluster ID file: %w", err)
 	}
 
-	// config validation does not check k8s patch version since upgrade may accept an outdated patch version.
-	// init only supported up-to-date versions.
-	k8sVersion, err := versions.NewValidK8sVersion(compatibility.EnsurePrefixV(conf.KubernetesVersion), true)
-	if err != nil {
-		return err
-	}
 	i.log.Debugf("Validated k8s version as %s", k8sVersion)
 	if versions.IsPreviewK8sVersion(k8sVersion) {
 		cmd.PrintErrf("Warning: Constellation with Kubernetes %v is still in preview. Use only for evaluation purposes.\n", k8sVersion)
@@ -275,7 +273,7 @@ func (i *initCmd) initialize(
 	if err != nil {
 		return fmt.Errorf("creating Helm client: %w", err)
 	}
-	executor, includesUpgrades, err := helmApplier.PrepareApply(conf, k8sVersion, idFile, options, output,
+	executor, includesUpgrades, err := helmApplier.PrepareApply(conf, idFile, options, output,
 		serviceAccURI, masterSecret)
 	if err != nil {
 		return fmt.Errorf("getting Helm chart executor: %w", err)
@@ -629,7 +627,7 @@ type attestationConfigApplier interface {
 }
 
 type helmApplier interface {
-	PrepareApply(conf *config.Config, validK8sversion versions.ValidK8sVersion, idFile clusterid.File, flags helm.Options, tfOutput terraform.ApplyOutput, serviceAccURI string, masterSecret uri.MasterSecret) (helm.Applier, bool, error)
+	PrepareApply(conf *config.Config, idFile clusterid.File, flags helm.Options, tfOutput terraform.ApplyOutput, serviceAccURI string, masterSecret uri.MasterSecret) (helm.Applier, bool, error)
 }
 
 type clusterShower interface {

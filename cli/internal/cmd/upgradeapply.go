@@ -166,7 +166,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 			}
 		}
 	}
-	validK8sVersion, err := validK8sVersion(cmd, conf.KubernetesVersion, flags.yes)
+	conf.KubernetesVersion, err = validK8sVersion(cmd, string(conf.KubernetesVersion), flags.yes)
 	if err != nil {
 		return err
 	}
@@ -223,7 +223,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 
 	var upgradeErr *compatibility.InvalidUpgradeError
 	if !flags.skipPhases.contains(skipHelmPhase) {
-		err = u.handleServiceUpgrade(cmd, conf, idFile, tfOutput, validK8sVersion, upgradeDir, flags)
+		err = u.handleServiceUpgrade(cmd, conf, idFile, tfOutput, upgradeDir, flags)
 		switch {
 		case errors.As(err, &upgradeErr):
 			cmd.PrintErrln(err)
@@ -405,7 +405,7 @@ func (u *upgradeApplyCmd) confirmAndUpgradeAttestationConfig(
 
 func (u *upgradeApplyCmd) handleServiceUpgrade(
 	cmd *cobra.Command, conf *config.Config, idFile clusterid.File, tfOutput terraform.ApplyOutput,
-	validK8sVersion versions.ValidK8sVersion, upgradeDir string, flags upgradeApplyFlags,
+	upgradeDir string, flags upgradeApplyFlags,
 ) error {
 	var secret uri.MasterSecret
 	if err := u.fileHandler.ReadJSON(constants.MasterSecretFilename, &secret); err != nil {
@@ -423,7 +423,7 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(
 
 	prepareApply := func(allowDestructive bool) (helm.Applier, bool, error) {
 		options.AllowDestructive = allowDestructive
-		executor, includesUpgrades, err := u.helmApplier.PrepareApply(conf, validK8sVersion, idFile, options,
+		executor, includesUpgrades, err := u.helmApplier.PrepareApply(conf, idFile, options,
 			tfOutput, serviceAccURI, secret)
 		var upgradeErr *compatibility.InvalidUpgradeError
 		switch {
