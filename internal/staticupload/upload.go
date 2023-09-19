@@ -34,3 +34,19 @@ func (c *Client) Upload(
 	}
 	return output, nil
 }
+
+// Upload uploads the given object to S3 and invalidates the CDN cache.
+// It returns the upload output or an error.
+// The error will be of type InvalidationError if the CDN cache could not be invalidated.
+func (c *ClientWithoutCache) Upload(
+	ctx context.Context, input *s3.PutObjectInput, opts ...func(*s3manager.Uploader),
+) (*s3manager.UploadOutput, error) {
+	if input == nil || input.Key == nil {
+		return nil, errors.New("key is not set")
+	}
+	output, uploadErr := c.uploadClient.Upload(ctx, input, opts...)
+	if uploadErr != nil {
+		return nil, fmt.Errorf("uploading object: %w", uploadErr)
+	}
+	return output, nil
+}

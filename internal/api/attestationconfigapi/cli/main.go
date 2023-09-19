@@ -120,26 +120,39 @@ func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 	}
 	latestAPIVersion := latestAPIVersionAPI.AzureSEVSNPVersion
 
+	if err != nil {
+		return fmt.Errorf("creating client: %w", err)
+	}
+	reporter, err := attestationconfigapi.NewReporter(ctx, awsRegion, awsBucket, log)
+	if err != nil {
+		return fmt.Errorf("creating reporter: %w", err)
+	}
+	if err := reporter.ReportAzureSEVSNPVersion(ctx, inputVersion, flags.uploadDate); err != nil {
+		return fmt.Errorf("reporting version: %w", err)
+	}
+
+	version, date, err := reporter.HasVersionUpdate(ctx, latestAPIVersion, flags.uploadDate)
+	if errors.Is(err, attestationconfigapi.ErrNoUpdate) {
+		log.Infof("No update necessary. Latest version: %+v", latestAPIVersion)
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("updating latest version: %w", err)
+	}
 	client, clientClose, err := attestationconfigapi.NewClient(ctx, cfg, []byte(cosignPwd), []byte(privateKey), false, log)
+	if err != nil {
+		return fmt.Errorf("creating client: %w", err)
+	}
 	defer func() {
 		err := clientClose(cmd.Context())
 		if err != nil {
 			retErr = errors.Join(retErr, fmt.Errorf("failed to invalidate cache: %w", err))
 		}
 	}()
-
-	if err != nil {
-		return fmt.Errorf("creating client: %w", err)
+	if err := client.UploadAzureSEVSNPVersion(ctx, version, date); err != nil {
+		return fmt.Errorf("uploading version: %w", err)
 	}
-	reporter := attestationconfigapi.Reporter{Client: client}
-	if err := reporter.ReportAzureSEVSNPVersion(ctx, inputVersion, flags.uploadDate); err != nil {
-		return fmt.Errorf("reporting version: %w", err)
-	}
-	if err := reporter.UpdateLatestVersion(ctx, latestAPIVersion, flags.uploadDate); err != nil {
-		return fmt.Errorf("updating latest version: %w", err)
-	}
-	// TODO move back in after refactor
-	// cmd.Printf("Successfully uploaded new Azure SEV-SNP version: %+v\n", inputVersion)
+	cmd.Printf("Successfully uploaded new Azure SEV-SNP version: %+v\n", inputVersion)
 
 	return nil
 }
