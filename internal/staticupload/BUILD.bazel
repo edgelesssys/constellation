@@ -8,7 +8,6 @@ go_library(
         "get.go",
         "staticupload.go",
         "upload.go",
-        "withoutcache.go",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/staticupload",
     visibility = ["//:__subpackages__"],

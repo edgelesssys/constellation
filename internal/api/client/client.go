@@ -87,7 +87,7 @@ func NewReadOnlyClient(ctx context.Context, region, bucket, distributionID strin
 	return client, clientClose, nil
 }
 
-// NewClient creates a new general client for the API.
+// NewClient creates a new client for the versions API.
 func NewClient(ctx context.Context, region, bucket, distributionID string, dryRun bool,
 	log *logger.Logger,
 ) (*Client, CloseFunc, error) {
@@ -114,24 +114,6 @@ func NewClient(ctx context.Context, region, bucket, distributionID string, dryRu
 	}
 
 	return client, clientClose, nil
-}
-
-// NewClientWithoutCDNCache creates a new internal general client without CDN cache invalidation for the API.
-func NewClientWithoutCDNCache(ctx context.Context, region, bucket string, dryRun bool,
-	log *logger.Logger,
-) (*Client, error) {
-	staticUploadClient, err := staticupload.NewClientWithoutCDNCache(ctx, region, bucket, dryRun, log)
-	if err != nil {
-		return nil, err
-	}
-	client := &Client{
-		s3Client:      staticUploadClient,
-		s3ClientClose: nil,
-		bucket:        bucket,
-		DryRun:        dryRun,
-		Logger:        log,
-	}
-	return client, nil
 }
 
 // Close closes the client.

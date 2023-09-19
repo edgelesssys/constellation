@@ -19,7 +19,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/api/client"
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 )
 
 // cachedVersionsSubDir is the subdirectory in the bucket where the cached versions are stored.
@@ -31,25 +30,11 @@ const timeFrameForCachedVersions = 21 * 24 * time.Hour
 
 var reportVersionDir = path.Join(attestationURLPath, variant.AzureSEVSNP{}.String(), cachedVersionsSubDir)
 
-// ErrNoUpdate is returned if there is no update for the latest version.
-var ErrNoUpdate = fmt.Errorf("no version update available")
-
 // Reporter caches observed version numbers and reports the latest version numbers to the API.
 type Reporter struct {
 	// Client is the client to the config api.
-	//*Client
+	*Client
 	// s3client: but no cache invalidation for upload -> new client
-	s3Client *apiclient.Client
-	bucket   string
-}
-
-// NewReporter returns a new Reporter.
-func NewReporter(ctx context.Context, region, bucket string, log *logger.Logger) (*Reporter, error) {
-	s3Client, err := apiclient.NewClientWithoutCDNCache(ctx, region, bucket, false, log)
-	if err != nil {
-		return nil, fmt.Errorf("creating s3 client: %w", err)
-	}
-	return &Reporter{s3Client: s3Client, bucket: bucket}, nil
 }
 
 // ReportAzureSEVSNPVersion uploads the latest observed version numbers of the Azure SEVSNP. This version is used to later report the latest version numbers to the API.
@@ -62,50 +47,9 @@ func (r Reporter) ReportAzureSEVSNPVersion(ctx context.Context, version AzureSEV
 	return res.Execute(ctx, r.s3Client)
 }
 
-// HasVersionUpdate checks the reported version values
-// and returns the latest version of the Azure SEVSNP in the API if there is an update .
-func (r Reporter) HasVersionUpdate(ctx context.Context,
-	latestAPIVersion AzureSEVSNPVersion, now time.Time,
-) (version AzureSEVSNPVersion, t time.Time, err error) {
-	minVersion, minDate, err := r.determineLatestVersionFromCache(ctx, now)
-	if err != nil {
-		return version, t, fmt.Errorf("determine latest version: %w", err)
-	}
-	r.s3Client.Logger.Infof("Found minimal version: %+v with date: %s", *minVersion, minDate)
-	shouldUpdateAPI, err := isInputNewerThanOtherVersion(*minVersion, latestAPIVersion)
-	if err == nil && shouldUpdateAPI {
-		r.s3Client.Logger.Infof("Input version: %+v is newer than latest API version: %+v", *minVersion, latestAPIVersion)
-		t, err = time.Parse(VersionFormat, minDate)
-		if err != nil {
-			return version, t, fmt.Errorf("parsing date: %w", err)
-		}
-		return *minVersion, t, nil
-	}
-	r.s3Client.Logger.Infof("Input version: %+v is not newer than latest API version: %+v", *minVersion, latestAPIVersion)
-	return latestAPIVersion, now, ErrNoUpdate
-}
-
-func (r Reporter) determineLatestVersionFromCache(ctx context.Context, now time.Time) (*AzureSEVSNPVersion, string, error) {
-	versionDates, err := r.listReportedVersions(ctx, timeFrameForCachedVersions, now)
-	if err != nil {
-		return nil, "", fmt.Errorf("get minimal version: %w", err)
-	}
-	r.s3Client.Logger.Infof("Found %v reported versions in the last %s since %s", versionDates, timeFrameForCachedVersions.String(), now.String())
-	if len(versionDates) < 3 {
-		r.s3Client.Logger.Infof("Skipping version update since only %s out of 3 expected versions are found in the cache within the last %d days",
-			len(versionDates), int(timeFrameForCachedVersions.Hours()/24))
-		return nil, "", fmt.Errorf("get minimal version: %w", err)
-	}
-	minVersion, minDate, err := r.findMinVersion(ctx, versionDates)
-	if err != nil {
-		return nil, "", fmt.Errorf("get minimal version: %w", err)
-	}
-	return minVersion, minDate, nil
-}
-
 func (r Reporter) listReportedVersions(ctx context.Context, timeFrame time.Duration, now time.Time) ([]string, error) {
 	list, err := r.s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
-		Bucket: aws.String(r.bucket),
+		Bucket: aws.String(r.bucketID),
 		Prefix: aws.String(reportVersionDir),
 	})
 	if err != nil {
@@ -119,6 +63,44 @@ func (r Reporter) listReportedVersions(ctx context.Context, timeFrame time.Durat
 		}
 	}
 	return filterDatesWithinTime(dates, now, timeFrame), nil
+}
+
+// UpdateLatestVersion checks the reported version values
+// and updates the latest version of the Azure SEVSNP in the API if there is an update .
+func (r Reporter) UpdateLatestVersion(ctx context.Context, latestAPIVersion AzureSEVSNPVersion, now time.Time) error {
+	// get the reported version values of the last 3 weeks
+	versionDates, err := r.listReportedVersions(ctx, timeFrameForCachedVersions, now)
+	if err != nil {
+		return fmt.Errorf("list reported versions: %w", err)
+	}
+	r.s3Client.Logger.Infof("Found %v reported versions in the last %s since %s", versionDates, timeFrameForCachedVersions.String(), now.String())
+	if len(versionDates) < 3 {
+		r.s3Client.Logger.Infof("Skipping version update since only %s out of 3 expected versions are found in the cache within the last %d days",
+			len(versionDates), int(timeFrameForCachedVersions.Hours()/24))
+		return nil
+	}
+
+	minVersion, minDate, err := r.findMinVersion(ctx, versionDates)
+	if err != nil {
+		return fmt.Errorf("get minimal version: %w", err)
+	}
+	r.s3Client.Logger.Infof("Found minimal version: %+v with date: %s", *minVersion, minDate)
+	shouldUpdateAPI, err := isInputNewerThanOtherVersion(*minVersion, latestAPIVersion)
+	if err == nil && shouldUpdateAPI {
+		r.s3Client.Logger.Infof("Input version: %+v is newer than latest API version: %+v", *minVersion, latestAPIVersion)
+		// upload minVersion to the API
+		t, err := time.Parse(VersionFormat, minDate)
+		if err != nil {
+			return fmt.Errorf("parsing date: %w", err)
+		}
+		// TODO(elchead): defer upload to client so that the Reporter can be decoupled from the client.
+		if err := r.UploadAzureSEVSNPVersion(ctx, *minVersion, t); err != nil {
+			return fmt.Errorf("uploading version: %w", err)
+		}
+		return nil
+	}
+	r.s3Client.Logger.Infof("Input version: %+v is not newer than latest API version: %+v", *minVersion, latestAPIVersion)
+	return nil
 }
 
 func (r Reporter) findMinVersion(ctx context.Context, versionDates []string) (*AzureSEVSNPVersion, string, error) {
@@ -155,6 +137,7 @@ func filterDatesWithinTime(dates []string, now time.Time, timeFrame time.Duratio
 		if err != nil {
 			continue
 		}
+		fmt.Println(now, " t ", t, " sub ", now.Sub(t))
 		if now.Sub(t) >= 0 && now.Sub(t) <= timeFrame {
 			datesWithinTimeFrame = append(datesWithinTimeFrame, date)
 		}
