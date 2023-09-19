@@ -250,11 +250,9 @@ runs:
         cliVersion: ${{ inputs.cliVersion }}
         azureSNPEnforcementPolicy: ${{ inputs.azureSNPEnforcementPolicy }}
 
-    - name: Deploy logcollection
+    - name: Deploy log- and metrics-collection
       id: deploy-logcollection
-      # TODO(msanft):temporarily deploy in debug clusters too to resolve "missing logs"-bug
-      # see https://dev.azure.com/Edgeless/Edgeless/_workitems/edit/3227
-      # if: inputs.isDebugImage == 'false'
+      if: inputs.isDebugImage == 'false'
       uses: ./.github/actions/deploy_logcollection
       with:
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
