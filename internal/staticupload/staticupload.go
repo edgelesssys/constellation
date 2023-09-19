@@ -109,6 +109,7 @@ func New(ctx context.Context, config Config, log *logger.Logger) (*Client, Close
 	}
 	s3Client := s3.NewFromConfig(cfg)
 	uploadClient := s3manager.NewUploader(s3Client)
+
 	cdnClient := cloudfront.NewFromConfig(cfg)
 
 	client := &Client{
