@@ -1,5 +1,10 @@
+# Helm Values for the DaemonSet that is deployed on all nodes in the cluster and
+# collects system metrics.
 image: ghcr.io/edgelesssys/beats/metricbeat-oss
 imageTag: 8.11.0@sha256:c2488378e794467f2a7214a56da0de017db1f2c28198721f12d74ad9cc263d08
+
+kube_state_metrics:
+  enabled: false
 
 deployment:
   enabled: false
@@ -8,6 +13,7 @@ daemonset:
     enabled: true
     metricbeatConfig:
         metricbeat.yml: ""
+    hostNetworking: true
     extraEnvs: []
     secretMounts: []
     tolerations:
@@ -33,3 +39,41 @@ daemonset:
           hostPath:
             path: /var/run/dbus
             type: ""
+
+clusterRoleRules:
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - namespaces
+      - events
+      - pods
+      - services
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["extensions"]
+    resources:
+      - replicasets
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources:
+      - statefulsets
+      - deployments
+      - replicasets
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources:
+      - nodes/stats
+    verbs: ["get"]
+  - apiGroups: ["batch"]
+    resources:
+      - jobs
+    verbs: ["get", "list", "watch"]
+  - apiGroups:
+      - ""
+    resources:
+      - nodes/stats
+    verbs:
+      - get
+  - nonResourceURLs:
+      - "/metrics"
+    verbs:
+      - get

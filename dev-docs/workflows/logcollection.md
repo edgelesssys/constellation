@@ -48,8 +48,10 @@ In non-debug clusters, logcollection functionality needs to be explicitly deploy
 
     ```bash
     cd metricbeat
-    helm install metricbeat elastic/metricbeat \
-        --wait --timeout=1200s --values values.yml
+    helm install metricbeat-k8s elastic/metricbeat \
+        --wait --timeout=1200s --values values-control-plane.yml
+    helm install metricbeat-system elastic/metricbeat \
+        --wait --timeout=1200s --values values-all-nodes.yml
     cd ..
     cd filebeat
     helm install filebeat elastic/filebeat \

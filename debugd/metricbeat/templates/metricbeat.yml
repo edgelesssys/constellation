@@ -1,3 +1,5 @@
+http.port: {{ .Port }}
+
 output.logstash:
   hosts: ["{{ .LogstashHost }}"]
 
@@ -14,8 +16,15 @@ timestamp.precision: nanosecond
 # https://www.elastic.co/guide/en/beats/metricbeat/current/configuration-path.html#_system_hostfs
 system.hostfs: "/hostfs"
 
+{{ if .AddK8sMetadata }}
+processors:
+  - add_kubernetes_metadata:
+{{ end }}
+
 metricbeat.modules:
+  {{ if .CollectSystemMetrics }}
   - module: system
+    enabled: true
     metricsets:
       - cpu             # CPU usage
       - load            # CPU load averages
@@ -23,19 +32,45 @@ metricbeat.modules:
       - network         # Network IO
       - process         # Per process metrics
       - process_summary # Process summary
-      - uptime          # System Uptime
-      - socket_summary  # Socket summary
+      #- uptime          # System Uptime
+      #- socket_summary  # Socket summary
       #- core           # Per CPU core usage
       - diskio         # Disk IO
       - filesystem     # File system usage for each mountpoint
       - fsstat         # File system summary metrics
       #- raid           # Raid
       #- socket         # Sockets and connection info (linux only)
-      - service        # systemd service information
+      #- service        # systemd service information
     cpu.metrics:  ["percentages","normalized_percentages"]
-    enabled: true
     period: 10s
     processes: ['.*']
     # To monitor host metrics from within a container. As per:
     # https://www.elastic.co/guide/en/beats/metricbeat/current/metricbeat-module-system.html#_example_configuration_59
     hostfs: "/hostfs"
+  {{ end }}
+  {{ if .CollectEtcdMetrics }}
+  - module: etcd
+    enabled: true
+    metricsets: ["metrics"]
+    period: 10s
+    hosts: ["https://localhost:2379"]
+    ssl:
+      certificate_authorities: ["/etc/kubernetes/pki/etcd/ca.crt"]
+      certificate: "/etc/kubernetes/pki/etcd/peer.crt"
+      key: "/etc/kubernetes/pki/etcd/peer.key"
+      verification_mode: "full"
+  {{ end }}
+  {{ if .CollectK8sMetrics }}
+  - module: kubernetes
+    metricsets:
+      - container
+      - node
+      - pod
+      - system
+      - volume
+    period: 10s
+    host: "${NODE_NAME}"
+    hosts: ["https://${NODE_NAME}:10250"]
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    ssl.verification_mode: "full"
+  {{ end }}
