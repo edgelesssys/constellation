@@ -26,14 +26,10 @@ import (
 )
 
 // cachedVersionsSubDir is the subdirectory in the bucket where the cached versions are stored.
-// TODO(elchead): store in a different directory so that it is not mirrored to the CDN?
 const cachedVersionsSubDir = "cached-versions"
 
 // versionWindowSize defines the number of versions to be considered for the latest version. Each week 5 versions are uploaded for each node of the verify cluster.
 const versionWindowSize = 15
-
-// timeFrameForCachedVersions defines the time frame for reported versions which are considered to define the latest version.
-const timeFrameForCachedVersions = 21 * 24 * time.Hour
 
 var reportVersionDir = path.Join(attestationURLPath, variant.AzureSEVSNP{}.String(), cachedVersionsSubDir)
 
@@ -52,7 +48,7 @@ func (c Client) UpdateLatestVersion(ctx context.Context, inputVersion,
 		}
 		return nil
 	}
-	versionDates, err := c.listReportedVersions(ctx, timeFrameForCachedVersions, now)
+	versionDates, err := c.listReportedVersions(ctx)
 	if err != nil {
 		return fmt.Errorf("list reported versions: %w", err)
 	}
@@ -81,6 +77,11 @@ func (c Client) UpdateLatestVersion(ctx context.Context, inputVersion,
 	return nil
 }
 
+// SetCacheVersionSize sets a custom number of versions to be considered for the latest version.
+func (c *Client) SetCacheVersionSize(size int) {
+	c.cacheWindowSize = size
+}
+
 // reportAzureSEVSNPVersion uploads the latest observed version numbers of the Azure SEVSNP. This version is used to later report the latest version numbers to the API.
 func (c Client) reportAzureSEVSNPVersion(ctx context.Context, version AzureSEVSNPVersion, date time.Time) error {
 	dateStr := date.Format(VersionFormat) + ".json"
@@ -90,7 +91,7 @@ func (c Client) reportAzureSEVSNPVersion(ctx context.Context, version AzureSEVSN
 	return res.Execute(ctx, c.s3Client)
 }
 
-func (c Client) listReportedVersions(ctx context.Context, _ time.Duration, _ time.Time) ([]string, error) {
+func (c Client) listReportedVersions(ctx context.Context) ([]string, error) {
 	list, err := c.s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
 		Bucket: aws.String(c.bucketID),
 		Prefix: aws.String(reportVersionDir),

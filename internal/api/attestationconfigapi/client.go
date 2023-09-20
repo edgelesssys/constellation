@@ -22,10 +22,11 @@ const VersionFormat = "2006-01-02-15-04"
 
 // Client manages (modifies) the version information for the attestation variants.
 type Client struct {
-	s3Client      *apiclient.Client
-	s3ClientClose func(ctx context.Context) error
-	bucketID      string
-	signer        sigstore.Signer
+	s3Client        *apiclient.Client
+	s3ClientClose   func(ctx context.Context) error
+	bucketID        string
+	signer          sigstore.Signer
+	cacheWindowSize int
 }
 
 // NewClient returns a new Client.
@@ -36,10 +37,11 @@ func NewClient(ctx context.Context, cfg staticupload.Config, cosignPwd, privateK
 	}
 
 	repo := &Client{
-		s3Client:      s3Client,
-		s3ClientClose: clientClose,
-		signer:        sigstore.NewSigner(cosignPwd, privateKey),
-		bucketID:      cfg.Bucket,
+		s3Client:        s3Client,
+		s3ClientClose:   clientClose,
+		signer:          sigstore.NewSigner(cosignPwd, privateKey),
+		bucketID:        cfg.Bucket,
+		cacheWindowSize: versionWindowSize,
 	}
 	return repo, clientClose, nil
 }

@@ -55,22 +55,22 @@ cat << EOF > "$older_claim_path"
 EOF
 
 # report 3 versions with different dates to fill the reporter cache
-readonly date_yet_older="2023-02-01-03-04"
-${configapi_cli} --maa-claims-path "$older_claim_path" --upload-date "$date_yet_older" --region "$region" --bucket "$bucket" --distribution "$distribution"
+readonly date_oldest="2023-02-01-03-04"
+${configapi_cli} --maa-claims-path "$older_claim_path" --upload-date "$date_oldest" --region "$region" --bucket "$bucket" --distribution "$distribution" --cache-window-size 3
 readonly date_older="2023-02-02-03-04"
-${configapi_cli} --maa-claims-path "$older_claim_path" --upload-date "$date_older" --region "$region" --bucket "$bucket" --distribution "$distribution"
+${configapi_cli} --maa-claims-path "$older_claim_path" --upload-date "$date_older" --region "$region" --bucket "$bucket" --distribution "$distribution" --cache-window-size 3
 readonly date="2023-02-03-03-04"
-${configapi_cli} --maa-claims-path "$claim_path" --upload-date "$date" --region "$region" --bucket "$bucket" --distribution "$distribution"
+${configapi_cli} --maa-claims-path "$claim_path" --upload-date "$date" --region "$region" --bucket "$bucket" --distribution "$distribution" --cache-window-size 3
 
 # expect that the older version was expected as new latest version
 baseurl="https://d33dzgxuwsgbpw.cloudfront.net/constellation/v1/attestation/azure-sev-snp"
-if ! curl -fsSL ${baseurl}/${date_yet_older}.json > /dev/null; then
-  echo "Checking for uploaded version file constellation/v1/attestation/azure-sev-snp/${date_yet_older}.json: request returned ${?}"
+if ! curl -fsSL ${baseurl}/${date_oldest}.json > /dev/null; then
+  echo "Checking for uploaded version file constellation/v1/attestation/azure-sev-snp/${date_oldest}.json: request returned ${?}"
   exit 1
 fi
 
-if ! curl -fsSL ${baseurl}/${date_yet_older}.json.sig > /dev/null; then
-  echo "Checking for uploaded version signature file constellation/v1/attestation/azure-sev-snp/${date_yet_older}.json.sig: request returned ${?}"
+if ! curl -fsSL ${baseurl}/${date_oldest}.json.sig > /dev/null; then
+  echo "Checking for uploaded version signature file constellation/v1/attestation/azure-sev-snp/${date_oldest}.json.sig: request returned ${?}"
   exit 1
 fi
 
@@ -78,17 +78,17 @@ if ! curl -fsSL ${baseurl}/list > /dev/null; then
   echo "Checking for uploaded list file constellation/v1/attestation/azure-sev-snp/list: request returned ${?}"
   exit 1
 fi
-${configapi_cli} delete --version "$date_yet_older" --region "$region" --bucket "$bucket" --distribution "$distribution"
+${configapi_cli} delete --version "$date_oldest" --region "$region" --bucket "$bucket" --distribution "$distribution"
 
 # Omit -f to check for 404. We want to check that a file was deleted, therefore we expect the query to fail.
-http_code=$(curl -sSL -w '%{http_code}\n' -o /dev/null ${baseurl}/${date_yet_older}.json)
+http_code=$(curl -sSL -w '%{http_code}\n' -o /dev/null ${baseurl}/${date_oldest}.json)
 if [[ $http_code -ne 404 ]]; then
-  echo "Expected HTTP code 404 for: constellation/v1/attestation/azure-sev-snp/${date_yet_older}.json, but got ${http_code}"
+  echo "Expected HTTP code 404 for: constellation/v1/attestation/azure-sev-snp/${date_oldest}.json, but got ${http_code}"
   exit 1
 fi
 # Omit -f to check for 404. We want to check that a file was deleted, therefore we expect the query to fail.
-http_code=$(curl -sSL -w '%{http_code}\n' -o /dev/null ${baseurl}/${date_yet_older}.json.sig)
+http_code=$(curl -sSL -w '%{http_code}\n' -o /dev/null ${baseurl}/${date_oldest}.json.sig)
 if [[ $http_code -ne 404 ]]; then
-  echo "Expected HTTP code 404 for: constellation/v1/attestation/azure-sev-snp/${date_yet_older}.json, but got ${http_code}"
+  echo "Expected HTTP code 404 for: constellation/v1/attestation/azure-sev-snp/${date_oldest}.json, but got ${http_code}"
   exit 1
 fi

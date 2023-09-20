@@ -74,8 +74,9 @@ func newRootCmd() *cobra.Command {
 	rootCmd.PersistentFlags().StringP("bucket", "b", awsBucket, "bucket targeted by all operations.")
 	rootCmd.PersistentFlags().StringP("distribution", "i", distributionID, "cloudflare distribution used.")
 	must(rootCmd.MarkFlagRequired("maa-claims-path"))
-	rootCmd.PersistentFlags().BoolP("force", "f", false, "Use force to manually push a new latest version."+
+	rootCmd.LocalFlags().BoolP("force", "f", false, "Use force to manually push a new latest version."+
 		" The version gets reported in the cache but the version selection logic is skipped.")
+	rootCmd.LocalFlags().IntP("cache-window-size", "s", 0, "Number of versions to be considered for the latest version.")
 	rootCmd.AddCommand(newDeleteCmd())
 	return rootCmd
 }
@@ -129,6 +130,9 @@ func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 			retErr = errors.Join(retErr, fmt.Errorf("failed to invalidate cache: %w", err))
 		}
 	}()
+	if flags.cacheWindowSize != 0 {
+		client.SetCacheVersionSize(flags.cacheWindowSize)
+	}
 
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
@@ -143,12 +147,13 @@ func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 }
 
 type cliFlags struct {
-	maaFilePath  string
-	uploadDate   time.Time
-	region       string
-	bucket       string
-	distribution string
-	force        bool
+	maaFilePath     string
+	uploadDate      time.Time
+	region          string
+	bucket          string
+	distribution    string
+	force           bool
+	cacheWindowSize int
 }
 
 func parseCliFlags(cmd *cobra.Command) (cliFlags, error) {
@@ -189,13 +194,18 @@ func parseCliFlags(cmd *cobra.Command) (cliFlags, error) {
 		return cliFlags{}, fmt.Errorf("getting force: %w", err)
 	}
 
+	cacheWindowSize, err := cmd.Flags().GetInt("cache-window-size")
+	if err != nil {
+		return cliFlags{}, fmt.Errorf("getting cache window size: %w", err)
+	}
 	return cliFlags{
-		maaFilePath:  maaFilePath,
-		uploadDate:   uploadDate,
-		region:       region,
-		bucket:       bucket,
-		distribution: distribution,
-		force:        force,
+		maaFilePath:     maaFilePath,
+		uploadDate:      uploadDate,
+		region:          region,
+		bucket:          bucket,
+		distribution:    distribution,
+		force:           force,
+		cacheWindowSize: cacheWindowSize,
 	}, nil
 }
 
