@@ -50,7 +50,7 @@ runs:
          --fields github.sha="${{ github.sha }}" \
          --fields github.runner-os="${{ runner.os }}" \
          --fields github.e2e-test-payload="${{ inputs.test }}" \
-         --fields github.isDebugImage="${{ inputs.isDebugImage }}" \
+         --fields github.is-debug-cluster="${{ inputs.isDebugImage }}" \
          --fields github.e2e-test-provider="${{ inputs.provider }}" \
          --fields github.ref-stream="${{ inputs.refStream }}" \
          --fields github.kubernetes-version="${{ inputs.kubernetesVersion }}" \
