@@ -32,7 +32,7 @@ const (
 
 // NewStartTrigger returns a trigger func can be registered with an infos instance.
 // The trigger is called when infos changes to received state and starts a log collection pod
-// with filebeat and logstash in case the flags are set.
+// with filebeat, metricbeat and logstash in case the flags are set.
 //
 // This requires podman to be installed.
 func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprovider.Provider,
@@ -249,6 +249,7 @@ func startPod(ctx context.Context, logger *logger.Logger) error {
 		"--rm",
 		"--name=metricbeat",
 		"--pod=logcollection",
+		"--privileged",
 		"--log-driver=none",
 		"--volume=/proc:/hostfs/proc:ro",
 		"--volume=/sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro",
