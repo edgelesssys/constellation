@@ -18,7 +18,7 @@ system.hostfs: "/hostfs"
 
 {{ if .AddK8sMetadata }}
 processors:
-  - add_kubernetes_metadata:
+  - add_kubernetes_metadata: ~
 {{ end }}
 
 metricbeat.modules:
