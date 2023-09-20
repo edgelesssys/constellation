@@ -45,7 +45,7 @@ func (p *MetricbeatPreparer) Prepare(dir string) error {
 		LogstashHost:         fmt.Sprintf("logstash-logstash:%d", p.port),
 		Port:                 5066,
 		CollectSystemMetrics: true,
-		AddK8sMetadata:       true,
+		AddCloudMetadata:     true,
 	})
 	if err != nil {
 		return fmt.Errorf("template system metricbeat.yml: %w", err)
@@ -54,7 +54,7 @@ func (p *MetricbeatPreparer) Prepare(dir string) error {
 		LogstashHost:       fmt.Sprintf("logstash-logstash:%d", p.port),
 		Port:               5067,
 		CollectEtcdMetrics: true,
-		AddK8sMetadata:     true,
+		AddCloudMetadata:   true,
 	})
 	if err != nil {
 		return fmt.Errorf("template k8s metricbeat.yml: %w", err)
@@ -108,6 +108,7 @@ type MetricbeatTemplateData struct {
 	CollectSystemMetrics bool
 	CollectK8sMetrics    bool
 	AddK8sMetadata       bool
+	AddCloudMetadata     bool
 }
 
 // MetricbeatHelmValues repesents the Helm values.yml.

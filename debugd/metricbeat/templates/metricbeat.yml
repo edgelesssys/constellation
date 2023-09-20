@@ -16,11 +16,6 @@ timestamp.precision: nanosecond
 # https://www.elastic.co/guide/en/beats/metricbeat/current/configuration-path.html#_system_hostfs
 system.hostfs: "/hostfs"
 
-{{ if .AddK8sMetadata }}
-processors:
-  - add_kubernetes_metadata: ~
-{{ end }}
-
 metricbeat.modules:
   {{ if .CollectSystemMetrics }}
   - module: system
@@ -60,17 +55,9 @@ metricbeat.modules:
       key: "/etc/kubernetes/pki/etcd/peer.key"
       verification_mode: "full"
   {{ end }}
-  {{ if .CollectK8sMetrics }}
-  - module: kubernetes
-    metricsets:
-      - container
-      - node
-      - pod
-      - system
-      - volume
-    period: 10s
-    host: "${NODE_NAME}"
-    hosts: ["https://${NODE_NAME}:10250"]
-    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-    ssl.verification_mode: "full"
+
+
+processors:
+  {{ if .AddCloudMetadata }}
+  - add_cloud_metadata: ~
   {{ end }}
