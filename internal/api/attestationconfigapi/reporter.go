@@ -33,10 +33,10 @@ const versionWindowSize = 15
 
 var reportVersionDir = path.Join(attestationURLPath, variant.AzureSEVSNP{}.String(), cachedVersionsSubDir)
 
-// UpdateLatestVersion reports the given version, checks the reported version values
+// UpdateLatestAzureSEVSNPVersion reports the given version, checks the reported version values
 // and updates the latest version of the Azure SEVSNP in the API if there is an update .
 // force can be used to force an update of the latest API version regardless of the cache reporting.
-func (c Client) UpdateLatestVersion(ctx context.Context, inputVersion,
+func (c Client) UpdateLatestAzureSEVSNPVersion(ctx context.Context, inputVersion,
 	latestAPIVersion AzureSEVSNPVersion, now time.Time, force bool,
 ) error {
 	if err := c.reportAzureSEVSNPVersion(ctx, inputVersion, now); err != nil {
@@ -52,8 +52,8 @@ func (c Client) UpdateLatestVersion(ctx context.Context, inputVersion,
 	if err != nil {
 		return fmt.Errorf("list reported versions: %w", err)
 	}
-	if len(versionDates) < versionWindowSize {
-		c.s3Client.Logger.Infof("Skipping version update since found only %d out of expected reported versions.", len(versionDates), versionWindowSize)
+	if len(versionDates) < c.cacheWindowSize {
+		c.s3Client.Logger.Infof("Skipping version update since found only %d out of expected reported versions.", len(versionDates), c.cacheWindowSize)
 		return nil
 	}
 	minVersion, minDate, err := c.findMinVersion(ctx, versionDates)
@@ -71,6 +71,7 @@ func (c Client) UpdateLatestVersion(ctx context.Context, inputVersion,
 		if err := c.uploadAzureSEVSNPVersion(ctx, *minVersion, t); err != nil {
 			return fmt.Errorf("uploading version: %w", err)
 		}
+		c.s3Client.Logger.Infof("Successfully uploaded new Azure SEV-SNP version: %+v", *minVersion)
 		return nil
 	}
 	c.s3Client.Logger.Infof("Input version: %+v is not newer than latest API version: %+v", *minVersion, latestAPIVersion)
@@ -114,7 +115,7 @@ func (c Client) findMinVersion(ctx context.Context, versionDates []string) (*Azu
 	var minimalVersion *AzureSEVSNPVersion
 	var minimalDate string
 	sort.Strings(versionDates) // the oldest date with the minimal version should be taken
-	versionDates = versionDates[:versionWindowSize]
+	versionDates = versionDates[:c.cacheWindowSize]
 	for _, date := range versionDates {
 		obj, err := client.Fetch(ctx, c.s3Client, reportedAzureSEVSNPVersionAPI{Version: date + ".json"})
 		if err != nil {
@@ -136,21 +137,6 @@ func (c Client) findMinVersion(ctx context.Context, versionDates []string) (*Azu
 		}
 	}
 	return minimalVersion, minimalDate, nil
-}
-
-func filterDatesWithinTime(dates []string, now time.Time, timeFrame time.Duration) []string {
-	var datesWithinTimeFrame []string
-	for _, date := range dates {
-		t, err := time.Parse(VersionFormat, date)
-		if err != nil {
-			continue
-		}
-		fmt.Println(now, " t ", t, " sub ", now.Sub(t))
-		if now.Sub(t) >= 0 && now.Sub(t) <= timeFrame {
-			datesWithinTimeFrame = append(datesWithinTimeFrame, date)
-		}
-	}
-	return datesWithinTimeFrame
 }
 
 // isInputNewerThanOtherVersion compares all version fields and returns true if any input field is newer.

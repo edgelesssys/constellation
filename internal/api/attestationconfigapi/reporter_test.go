@@ -6,62 +6,9 @@ package attestationconfigapi
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
-
-func TestFilterDatesWithinTime(t *testing.T) {
-	dates := []string{
-		"2022-01-01-00-00",
-		"2022-01-02-00-00",
-		"2022-01-03-00-00",
-		"2022-01-04-00-00",
-		"2022-01-05-00-00",
-		"2022-01-06-00-00",
-		"2022-01-07-00-00",
-		"2022-01-08-00-00",
-	}
-	now := time.Date(2022, 1, 9, 0, 0, 0, 0, time.UTC)
-	testCases := map[string]struct {
-		timeFrame     time.Duration
-		expectedDates []string
-		customDates   *[]string
-	}{
-		"all dates within 3 days": {
-			timeFrame:     time.Hour * 24 * 3,
-			expectedDates: []string{"2022-01-06-00-00", "2022-01-07-00-00", "2022-01-08-00-00"},
-		},
-		"ignore dates newer than now": {
-			timeFrame:     time.Hour * 24 * 3,
-			customDates:   toPtr(append(dates, "2023-01-09-00-00")),
-			expectedDates: []string{"2022-01-06-00-00", "2022-01-07-00-00", "2022-01-08-00-00"},
-		},
-		"no dates within time frame": {
-			timeFrame:     time.Hour,
-			expectedDates: nil,
-		},
-		"some dates within time frame": {
-			timeFrame:     time.Hour * 24 * 4,
-			expectedDates: []string{"2022-01-05-00-00", "2022-01-06-00-00", "2022-01-07-00-00", "2022-01-08-00-00"},
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			dates := dates
-			if tc.customDates != nil {
-				dates = *tc.customDates
-			}
-			filteredDates := filterDatesWithinTime(dates, now, tc.timeFrame)
-			assert.Equal(t, tc.expectedDates, filteredDates)
-		})
-	}
-}
-
-func toPtr[T any](v T) *T {
-	return &v
-}
 
 func TestIsInputNewerThanLatestAPI(t *testing.T) {
 	newTestCfg := func() AzureSEVSNPVersion {

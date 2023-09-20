@@ -28,7 +28,7 @@ func TestFetchLatestAzureSEVSNPVersion(t *testing.T) {
 		wantErr         bool
 		want            AzureSEVSNPVersionAPI
 	}{
-		"get latest version if older than 2 weeks": {
+		"get latest version": {
 			fetcherVersions: []string{latestStr, olderStr},
 			want:            latestVersion,
 		},

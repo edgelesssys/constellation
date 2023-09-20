@@ -15,8 +15,6 @@ Notice that there is no synchronization on API operations. // TODO(elchead): wha
 */
 package main
 
-// TODO: separate reporter and upload CLI to ease manual upload or use force flag?
-
 import (
 	"encoding/json"
 	"errors"
@@ -70,13 +68,13 @@ func newRootCmd() *cobra.Command {
 	}
 	rootCmd.Flags().StringP("maa-claims-path", "t", "", "File path to a json file containing the MAA claims.")
 	rootCmd.Flags().StringP("upload-date", "d", "", "upload a version with this date as version name.")
+	rootCmd.Flags().BoolP("force", "f", false, "Use force to manually push a new latest version."+
+		" The version gets reported in the cache but the version selection logic is skipped.")
+	rootCmd.Flags().IntP("cache-window-size", "s", 0, "Number of versions to be considered for the latest version.")
 	rootCmd.PersistentFlags().StringP("region", "r", awsRegion, "region of the targeted bucket.")
 	rootCmd.PersistentFlags().StringP("bucket", "b", awsBucket, "bucket targeted by all operations.")
 	rootCmd.PersistentFlags().StringP("distribution", "i", distributionID, "cloudflare distribution used.")
 	must(rootCmd.MarkFlagRequired("maa-claims-path"))
-	rootCmd.LocalFlags().BoolP("force", "f", false, "Use force to manually push a new latest version."+
-		" The version gets reported in the cache but the version selection logic is skipped.")
-	rootCmd.LocalFlags().IntP("cache-window-size", "s", 0, "Number of versions to be considered for the latest version.")
 	rootCmd.AddCommand(newDeleteCmd())
 	return rootCmd
 }
@@ -137,12 +135,9 @@ func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
 	}
-	if err := client.UpdateLatestVersion(ctx, inputVersion, latestAPIVersion, flags.uploadDate, flags.force); err != nil {
+	if err := client.UpdateLatestAzureSEVSNPVersion(ctx, inputVersion, latestAPIVersion, flags.uploadDate, flags.force); err != nil {
 		return fmt.Errorf("updating latest version: %w", err)
 	}
-	// TODO move back in after refactor
-	// cmd.Printf("Successfully uploaded new Azure SEV-SNP version: %+v\n", inputVersion)
-
 	return nil
 }
 
