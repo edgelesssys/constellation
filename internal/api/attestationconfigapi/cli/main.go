@@ -74,6 +74,8 @@ func newRootCmd() *cobra.Command {
 	rootCmd.PersistentFlags().StringP("bucket", "b", awsBucket, "bucket targeted by all operations.")
 	rootCmd.PersistentFlags().StringP("distribution", "i", distributionID, "cloudflare distribution used.")
 	must(rootCmd.MarkFlagRequired("maa-claims-path"))
+	rootCmd.PersistentFlags().BoolP("force", "f", false, "Use force to manually push a new latest version."+
+		" The version gets reported in the cache but the version selection logic is skipped.")
 	rootCmd.AddCommand(newDeleteCmd())
 	return rootCmd
 }
@@ -131,11 +133,7 @@ func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
 	}
-	reporter := attestationconfigapi.Reporter{Client: client}
-	if err := reporter.ReportAzureSEVSNPVersion(ctx, inputVersion, flags.uploadDate); err != nil {
-		return fmt.Errorf("reporting version: %w", err)
-	}
-	if err := reporter.UpdateLatestVersion(ctx, latestAPIVersion, flags.uploadDate); err != nil {
+	if err := client.UpdateLatestVersion(ctx, inputVersion, latestAPIVersion, flags.uploadDate, flags.force); err != nil {
 		return fmt.Errorf("updating latest version: %w", err)
 	}
 	// TODO move back in after refactor
@@ -150,6 +148,7 @@ type cliFlags struct {
 	region       string
 	bucket       string
 	distribution string
+	force        bool
 }
 
 func parseCliFlags(cmd *cobra.Command) (cliFlags, error) {
@@ -185,12 +184,18 @@ func parseCliFlags(cmd *cobra.Command) (cliFlags, error) {
 		return cliFlags{}, fmt.Errorf("getting distribution: %w", err)
 	}
 
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return cliFlags{}, fmt.Errorf("getting force: %w", err)
+	}
+
 	return cliFlags{
 		maaFilePath:  maaFilePath,
 		uploadDate:   uploadDate,
 		region:       region,
 		bucket:       bucket,
 		distribution: distribution,
+		force:        force,
 	}, nil
 }
 

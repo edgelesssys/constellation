@@ -44,8 +44,8 @@ func NewClient(ctx context.Context, cfg staticupload.Config, cosignPwd, privateK
 	return repo, clientClose, nil
 }
 
-// UploadAzureSEVSNPVersion uploads the latest version numbers of the Azure SEVSNP. Then version name is the UTC timestamp of the date. The /list entry stores the version name + .json suffix.
-func (a Client) UploadAzureSEVSNPVersion(ctx context.Context, version AzureSEVSNPVersion, date time.Time) error {
+// uploadAzureSEVSNPVersion uploads the latest version numbers of the Azure SEVSNP. Then version name is the UTC timestamp of the date. The /list entry stores the version name + .json suffix.
+func (a Client) uploadAzureSEVSNPVersion(ctx context.Context, version AzureSEVSNPVersion, date time.Time) error {
 	versions, err := a.List(ctx, variant.AzureSEVSNP{})
 	if err != nil {
 		return fmt.Errorf("fetch version list: %w", err)
