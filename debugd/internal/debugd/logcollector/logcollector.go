@@ -283,8 +283,7 @@ type metricbeatConfInput struct {
 	LogstashHost         string
 	CollectEtcdMetrics   bool
 	CollectSystemMetrics bool
-	CollectK8sMetrics    bool
-	AddK8sMetadata       bool
+	AddCloudMetadata     bool
 }
 
 func writeTemplate(path string, templ *template.Template, in any) error {
