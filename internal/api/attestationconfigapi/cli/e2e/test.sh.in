@@ -62,22 +62,41 @@ ${configapi_cli} --maa-claims-path "$older_claim_path" --upload-date "$date_olde
 readonly date="2023-02-03-03-04"
 ${configapi_cli} --maa-claims-path "$claim_path" --upload-date "$date" --region "$region" --bucket "$bucket" --distribution "$distribution" --cache-window-size 3
 
-# expect that the older version was expected as new latest version
+# expect that $date_oldest is served as latest version
 baseurl="https://d33dzgxuwsgbpw.cloudfront.net/constellation/v1/attestation/azure-sev-snp"
-if ! curl -fsSL ${baseurl}/${date_oldest}.json > /dev/null; then
+if ! curl -fsSL ${baseurl}/${date_oldest}.json > version.json; then
   echo "Checking for uploaded version file constellation/v1/attestation/azure-sev-snp/${date_oldest}.json: request returned ${?}"
   exit 1
 fi
-
+# check that version values are equal to expected
+if ! cmp -s <(echo -n '{"bootloader":255,"tee":255,"snp":255,"microcode":254}') version.json; then
+    echo "The version content:"
+    cat version.json
+    echo " is not equal to the expected version content:"
+    echo '{"bootloader":255,"tee":255,"snp":255,"microcode":254}'
+    exit 1
+fi
 if ! curl -fsSL ${baseurl}/${date_oldest}.json.sig > /dev/null; then
   echo "Checking for uploaded version signature file constellation/v1/attestation/azure-sev-snp/${date_oldest}.json.sig: request returned ${?}"
   exit 1
 fi
 
+# check that the other versions are not uploaded
+if curl -fsSL ${baseurl}/${date_older}.json > /dev/null; then
+  echo "Should not be available: constellation/v1/attestation/azure-sev-snp/${date_older}.json: request returned ${?}"
+  exit 1
+fi
+if curl -fsSL ${baseurl}/${date}.json > /dev/null; then
+  echo "Should not be available: constellation/v1/attestation/azure-sev-snp/${date}.json: request returned ${?}"
+  exit 1
+fi
+
+# check list endpoint
 if ! curl -fsSL ${baseurl}/list > /dev/null; then
   echo "Checking for uploaded list file constellation/v1/attestation/azure-sev-snp/list: request returned ${?}"
   exit 1
 fi
+
 ${configapi_cli} delete --version "$date_oldest" --region "$region" --bucket "$bucket" --distribution "$distribution"
 
 # Omit -f to check for 404. We want to check that a file was deleted, therefore we expect the query to fail.
