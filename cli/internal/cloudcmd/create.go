@@ -190,7 +190,6 @@ func normalizeAzureURIs(vars *terraform.AzureClusterVariables) *terraform.AzureC
 }
 
 func (c *Creator) createOpenStack(ctx context.Context, cl tfResourceClient, opts CreateOptions) (infraState state.Infrastructure, retErr error) {
-	// TODO(malt3): Remove this once OpenStack is supported.
 	if os.Getenv("CONSTELLATION_OPENSTACK_DEV") != "1" {
 		return state.Infrastructure{}, errors.New("Constellation must be fine-tuned to your OpenStack deployment. Please create an issue or contact Edgeless Systems at https://edgeless.systems/contact/")
 	}

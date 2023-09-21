@@ -590,7 +590,7 @@ func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
 func updateClusterIDFile(infraState state.Infrastructure, fileHandler file.Handler) error {
 	newIDFile := clusterid.File{
 		InitSecret:        []byte(infraState.InitSecret),
-		IP:                infraState.PublicIP,
+		IP:                infraState.ClusterEndpoint,
 		APIServerCertSANs: infraState.APIServerCertSANs,
 		UID:               infraState.UID,
 	}

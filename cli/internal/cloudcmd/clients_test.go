@@ -47,9 +47,9 @@ type stubTerraformClient struct {
 
 func (c *stubTerraformClient) ApplyCluster(_ context.Context, _ cloudprovider.Provider, _ terraform.LogLevel) (state.Infrastructure, error) {
 	return state.Infrastructure{
-		PublicIP:   c.ip,
-		InitSecret: c.initSecret,
-		UID:        c.uid,
+		ClusterEndpoint: c.ip,
+		InitSecret:      c.initSecret,
+		UID:             c.uid,
 		Azure: &state.Azure{
 			AttestationURL: c.attestationURL,
 		},

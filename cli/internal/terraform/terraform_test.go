@@ -456,7 +456,7 @@ func TestCreateCluster(t *testing.T) {
 				return
 			}
 			assert.NoError(err)
-			assert.Equal("192.0.2.100", infraState.PublicIP)
+			assert.Equal("192.0.2.100", infraState.ClusterEndpoint)
 			assert.Equal("initSecret", infraState.InitSecret)
 			assert.Equal("12345abc", infraState.UID)
 			if tc.provider == cloudprovider.Azure {
