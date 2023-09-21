@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "fixtures",
+    srcs = ["fixtures.go"],
+    embedsrcs = ["uki.efi"],
+    importpath = "github.com/edgelesssys/constellation/v2/image/measured-boot/fixtures",
+    visibility = ["//visibility:public"],
+)

@@ -1,0 +1,34 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "cmd_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/image/measured-boot/cmd",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//image/measured-boot/extract",
+        "//image/measured-boot/measure",
+        "//image/measured-boot/pesection",
+        "@com_github_spf13_afero//:afero",
+    ],
+)
+
+go_binary(
+    name = "cmd",
+    # keep
+    data = select({
+        "@rules_nixpkgs_core//constraints:support_nix": [
+            "@systemd//:bin/systemd-dissect",
+        ],
+        "//conditions:default": [],
+    }),
+    embed = [":cmd_lib"],
+    # keep
+    env = select({
+        "@rules_nixpkgs_core//constraints:support_nix": {
+            "DISSECT_TOOLCHAIN": "$(rootpath @systemd//:bin/systemd-dissect)",
+        },
+        "//conditions:default": {},
+    }),
+    visibility = ["//visibility:public"],
+)

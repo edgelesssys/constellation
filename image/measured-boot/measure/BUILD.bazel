@@ -1,0 +1,39 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "measure",
+    srcs = [
+        "authentihash.go",
+        "pcr.go",
+        "pcr04.go",
+        "pcr09.go",
+        "pcr11.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/image/measured-boot/measure",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//image/measured-boot/pesection",
+        "@com_github_foxboron_go_uefi//efi/pecoff",
+        "@org_golang_x_text//encoding/unicode",
+    ],
+)
+
+go_test(
+    name = "measure_test",
+    srcs = [
+        "authentihash_test.go",
+        "measure_test.go",
+        "pcr04_test.go",
+        "pcr09_test.go",
+        "pcr11_test.go",
+        "pcr_test.go",
+    ],
+    embed = [":measure"],
+    deps = [
+        "//image/measured-boot/fixtures",
+        "//image/measured-boot/pesection",
+        "@com_github_stretchr_testify//assert",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

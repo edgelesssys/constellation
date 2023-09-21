@@ -1,0 +1,22 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "extract",
+    srcs = ["extract.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/image/measured-boot/extract",
+    visibility = ["//visibility:public"],
+    deps = ["//image/measured-boot/pesection"],
+)
+
+go_test(
+    name = "extract_test",
+    srcs = ["extract_test.go"],
+    embed = [":extract"],
+    deps = [
+        "//image/measured-boot/fixtures",
+        "//image/measured-boot/pesection",
+        "@com_github_stretchr_testify//assert",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

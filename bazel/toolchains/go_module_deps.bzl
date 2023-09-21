@@ -142,6 +142,14 @@ def go_dependencies():
         sum = "h1:V7yhSDDn8LP4lc4jS8pFkt0zCnzVJlG5JXy9BVKJUX0=",
         version = "v1.4.1",
     )
+    go_repository(
+        name = "com_github_anatol_vmtest",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/anatol/vmtest",
+        sum = "h1:t4JGeY9oaF5LB4Rdx9e2wARRRPAYt8Ow4eCf5SwO3fA=",
+        version = "v0.0.0-20220413190228-7a42f1f6d7b8",
+    )
 
     go_repository(
         name = "com_github_andybalholm_brotli",
@@ -1719,6 +1727,14 @@ def go_dependencies():
         importpath = "github.com/form3tech-oss/jwt-go",
         sum = "h1:/l4kBbb4/vGSsdtB5nUe8L7B9mImVMaBPw9L/0TBHU8=",
         version = "v3.2.5+incompatible",
+    )
+    go_repository(
+        name = "com_github_foxboron_go_uefi",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/foxboron/go-uefi",
+        sum = "h1:SJMQFT74bCrP+kQ24oWhmuyPFHDTavrd3JMIe//2NhU=",
+        version = "v0.0.0-20230808201820-18b9ba9cd4c3",
     )
 
     go_repository(
