@@ -428,6 +428,11 @@ func (f *attestationDocFormatterImpl) parseSNPReport(b *strings.Builder, reportB
 		return fmt.Errorf("parsing signature: %w", err)
 	}
 
+	signerInfo, err := abi.ParseSignerInfo(report.SignerInfo)
+	if err != nil {
+		return fmt.Errorf("parsing signer info: %w", err)
+	}
+
 	writeTCB := func(tcbVersion uint64) {
 		tcb := kds.DecomposeTCBVersion(kds.TCBVersion(tcbVersion))
 		writeIndentfln(b, 3, "Secure Processor bootloader SVN: %d", tcb.BlSpl)
@@ -459,7 +464,10 @@ func (f *attestationDocFormatterImpl) parseSNPReport(b *strings.Builder, reportB
 	writeIndentfln(b, 2, "Platform Info:")
 	writeIndentfln(b, 3, "Symmetric Multithreading enabled (SMT): %t", platformInfo.SMTEnabled)
 	writeIndentfln(b, 3, "Transparent secure memory encryption (TSME): %t", platformInfo.TSMEEnabled)
-	writeIndentfln(b, 2, "Author Key ID: %x", report.AuthorKeyEn)
+	writeIndentfln(b, 2, "Signer Info:")
+	writeIndentfln(b, 3, "Author Key Enabled: %t", signerInfo.AuthorKeyEn)
+	writeIndentfln(b, 3, "Chip ID Masking: %t", signerInfo.MaskChipKey)
+	writeIndentfln(b, 3, "Signing Type: %s", signerInfo.SigningKey)
 	writeIndentfln(b, 2, "Report Data: %x", report.ReportData)
 	writeIndentfln(b, 2, "Measurement: %x", report.Measurement)
 	writeIndentfln(b, 2, "Host Data: %x", report.HostData)
