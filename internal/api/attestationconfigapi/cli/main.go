@@ -55,10 +55,10 @@ func main() {
 // newRootCmd creates the root command.
 func newRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:   "COSIGN_PASSWORD=$CPWD COSIGN_PRIVATE_KEY=$CKEY upload --version-file $FILE",
+		Use:   "COSIGN_PASSWORD=$CPW COSIGN_PRIVATE_KEY=$CKEY upload --version-file $FILE",
 		Short: "Upload a set of versions specific to the azure-sev-snp attestation variant to the config api.",
 
-		Long: fmt.Sprintf("The reporter uploads an observed version number specific to the azure-sev-snp attestation variant to the reporter cache. The reporter then deduces a latest version value from the cache and updates the config api if necessary. "+
+		Long: fmt.Sprintf("The CLI uploads an observed version number specific to the azure-sev-snp attestation variant to a cache directory. The CLI then determines the lowest version within the cache-window present in the cache and writes that value to the config api if necessary. "+
 			"Please authenticate with AWS through your preferred method (e.g. environment variables, CLI)"+
 			"to be able to upload to S3. Set the %s and %s environment variables to authenticate with cosign.",
 			envCosignPrivateKey, envCosignPwd,
@@ -69,7 +69,7 @@ func newRootCmd() *cobra.Command {
 	rootCmd.Flags().StringP("maa-claims-path", "t", "", "File path to a json file containing the MAA claims.")
 	rootCmd.Flags().StringP("upload-date", "d", "", "upload a version with this date as version name.")
 	rootCmd.Flags().BoolP("force", "f", false, "Use force to manually push a new latest version."+
-		" The version gets reported in the cache but the version selection logic is skipped.")
+		" The version gets saved to the cache but the version selection logic is skipped.")
 	rootCmd.Flags().IntP("cache-window-size", "s", 0, "Number of versions to be considered for the latest version.")
 	rootCmd.PersistentFlags().StringP("region", "r", awsRegion, "region of the targeted bucket.")
 	rootCmd.PersistentFlags().StringP("bucket", "b", awsBucket, "bucket targeted by all operations.")
@@ -129,13 +129,13 @@ func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 		}
 	}()
 	if flags.cacheWindowSize != 0 {
-		client.SetCacheVersionSize(flags.cacheWindowSize)
+		client.SetCacheWindowSize(flags.cacheWindowSize)
 	}
 
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
 	}
-	if err := client.UpdateLatestAzureSEVSNPVersion(ctx, inputVersion, latestAPIVersion, flags.uploadDate, flags.force); err != nil {
+	if err := client.UploadAzureSEVSNPVersionLatest(ctx, inputVersion, latestAPIVersion, flags.uploadDate, flags.force); err != nil {
 		return fmt.Errorf("updating latest version: %w", err)
 	}
 	return nil
