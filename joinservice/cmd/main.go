@@ -8,7 +8,6 @@ package main
 
 import (
 	"context"
-	"crypto/x509"
 	"errors"
 	"flag"
 	"net"
@@ -36,7 +35,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/joinservice/internal/kubernetesca"
 	"github.com/edgelesssys/constellation/v2/joinservice/internal/server"
 	"github.com/edgelesssys/constellation/v2/joinservice/internal/watcher"
-	"github.com/google/go-sev-guest/abi"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 )
@@ -73,20 +71,15 @@ func main() {
 		log.With(zap.Error(err)).Fatalf("Failed to parse attestation variant")
 	}
 
-	var ask *x509.Certificate
-	if attVariant.Equal(variant.AzureSEVSNP{}) {
-		log.Infof("Starting certificate cache")
-		certCacheClient := certcache.NewClient(log.Named("certcache"), kubeClient)
-		ask, _, err = certCacheClient.CreateCertChainCache(ctx, abi.VcekReportSigner)
-		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to create certificate chain cache")
-		}
+	certCacheClient := certcache.NewClient(log.Named("certcache"), kubeClient, &attVariant)
+	cachedCerts, err := certCacheClient.CreateCertChainCache(ctx)
+	if err != nil {
+		log.With(zap.Error(err)).Fatalf("Failed to create certificate chain cache")
 	}
 
-	validator := watcher.NewValidator(log.Named("validator"), attVariant, handler)
-	if ask != nil {
-		validator = validator.WithCachedASKCert(ask)
-	}
+	validator := watcher.
+		NewValidator(log.Named("validator"), attVariant, handler).
+		WithCachedCerts(cachedCerts)
 	if err := validator.Update(); err != nil {
 		flag.Usage()
 		log.With(zap.Error(err)).Fatalf("Failed to create validator")
@@ -109,8 +102,6 @@ func main() {
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to read measurement salt")
 	}
-
-	// initialize cert cache
 
 	server, err := server.New(
 		measurementSalt,

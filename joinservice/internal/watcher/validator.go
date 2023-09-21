@@ -8,7 +8,6 @@ package watcher
 
 import (
 	"context"
-	"crypto/x509"
 	"encoding/asn1"
 	"fmt"
 	"path/filepath"
@@ -21,6 +20,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/joinservice/internal/certcache"
 )
 
 // Updatable implements an updatable atls.Validator.
@@ -29,7 +29,7 @@ type Updatable struct {
 	mux         sync.Mutex
 	fileHandler file.Handler
 	variant     variant.Variant
-	cachedAsk   *x509.Certificate
+	cachedCerts *certcache.CachedCerts
 	atls.Validator
 }
 
@@ -42,9 +42,9 @@ func NewValidator(log *logger.Logger, variant variant.Variant, fileHandler file.
 	}
 }
 
-// WithCachedASKCert sets the cached ASK certificate.
-func (u *Updatable) WithCachedASKCert(cachedAsk *x509.Certificate) *Updatable {
-	u.cachedAsk = cachedAsk
+// WithCachedCerts sets the available cached certificates in the updatable validator.
+func (u *Updatable) WithCachedCerts(cachedCerts *certcache.CachedCerts) *Updatable {
+	u.cachedCerts = cachedCerts
 	return u
 }
 
@@ -79,22 +79,30 @@ func (u *Updatable) Update() error {
 	}
 	u.log.Debugf("New expected measurements: %+v", cfg.GetMeasurements())
 
-	if u.cachedAsk != nil {
-		u.log.Debugf("Using cached ASK certificate")
-		validator, err := choose.ValidatorWithASKCertCache(cfg, u.log, u.cachedAsk)
-		if err != nil {
-			return fmt.Errorf("choosing validator with cached ASK: %w", err)
-		}
-		u.Validator = validator
+	cfgWithCerts := u.addCachedCerts(cfg)
 
-		return nil
-	}
-
-	validator, err := choose.Validator(cfg, u.log)
+	validator, err := choose.Validator(cfgWithCerts, u.log)
 	if err != nil {
 		return fmt.Errorf("choosing validator: %w", err)
 	}
 	u.Validator = validator
 
 	return nil
+}
+
+// addCachedCerts adds the certificates cached by the validator to the config, if applicable.
+func (u *Updatable) addCachedCerts(cfg config.AttestationCfg) config.AttestationCfg {
+	if u.cachedCerts != nil {
+		// SEV-SNP (ASK and ARK) Certificates
+		ask, _ := u.cachedCerts.SevSnpCerts()
+		if ask != nil {
+			switch c := cfg.(type) {
+			case *config.AzureSEVSNP:
+				c.AMDSigningKey = config.Certificate(*ask)
+				return c
+			}
+			// TODO(derpsteb): Add AWS SEV-SNP
+		}
+	}
+	return cfg
 }

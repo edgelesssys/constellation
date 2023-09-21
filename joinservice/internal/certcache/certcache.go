@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/joinservice/internal/certcache/amdkds"
@@ -24,26 +25,61 @@ import (
 
 // Client is a client for interacting with the certificate chain cache.
 type Client struct {
-	log *logger.Logger
+	log        *logger.Logger
+	attVariant *variant.Variant
 	kdsClient
 	kubeClient kubeClient
 }
 
 // NewClient creates a new CertCacheClient.
-func NewClient(log *logger.Logger, kubeClient kubeClient) *Client {
+func NewClient(log *logger.Logger, kubeClient kubeClient, attVariant *variant.Variant) *Client {
 	kdsClient := amdkds.NewKDSClient(trust.DefaultHTTPSGetter())
 
 	return &Client{
+		attVariant: attVariant,
 		log:        log,
 		kubeClient: kubeClient,
 		kdsClient:  kdsClient,
 	}
 }
 
-// CreateCertChainCache creates the certificate chain cache configmap with the provided ASK and ARK
-// and returns ASK and ARK.
+// CreateCertChainCache creates a certificate chain cache for the given attestation variant
+// and returns the cached certificates, if applicable.
+// If the certificate chain cache already exists, nothing is done.
+func (c *Client) CreateCertChainCache(ctx context.Context) (*CachedCerts, error) {
+	switch *c.attVariant {
+	case variant.AzureSEVSNP{}:
+		c.log.Debugf("Creating azure SEV-SNP certificate chain cache")
+		ask, ark, err := c.createCertChainCache(ctx, abi.VcekReportSigner)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create azure SEV-SNP certificate chain cache: %w", err)
+		}
+		return &CachedCerts{
+			ask: ask,
+			ark: ark,
+		}, nil
+	// TODO(derpsteb): Add AWS
+	default:
+		c.log.Debugf("No certificate chain caching possible for attestation variant %s", *c.attVariant)
+		return nil, nil
+	}
+}
+
+// CachedCerts contains the cached certificates.
+type CachedCerts struct {
+	ask *x509.Certificate
+	ark *x509.Certificate
+}
+
+// SevSnpCerts returns the cached SEV-SNP ASK and ARK certificates.
+func (c *CachedCerts) SevSnpCerts() (ask, ark *x509.Certificate) {
+	return c.ask, c.ark
+}
+
+// createCertChainCache creates a certificate chain cache configmap with the ASK and ARK
+// retrieved from the KDS and returns ASK and ARK.
 // If the configmap already exists, nothing is done and the existing ASK and ARK are returned.
-func (c *Client) CreateCertChainCache(ctx context.Context, signingType abi.ReportSigner) (ask, ark *x509.Certificate, err error) {
+func (c *Client) createCertChainCache(ctx context.Context, signingType abi.ReportSigner) (ask, ark *x509.Certificate, err error) {
 	c.log.Debugf("Creating certificate chain cache")
 	ask, ark, err = c.getCertChainCache(ctx)
 	if err != nil {

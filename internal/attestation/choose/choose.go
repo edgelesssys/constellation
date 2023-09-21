@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package choose
 
 import (
-	"crypto/x509"
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/atls"
@@ -68,19 +67,5 @@ func Validator(cfg config.AttestationCfg, log attestation.Logger) (atls.Validato
 		return atls.NewFakeValidator(variant.Dummy{}), nil
 	default:
 		return nil, fmt.Errorf("unknown attestation variant: %s", cfg.GetVariant())
-	}
-}
-
-// ValidatorWithASKCertCache returns the validator for the given variant with an ASK certificate cached by the join service.
-// This is only supported for Azure with SEV-SNP attestation.
-func ValidatorWithASKCertCache(cfg config.AttestationCfg, log attestation.Logger, cachedAsk *x509.Certificate) (atls.Validator, error) {
-	switch cfg := cfg.(type) {
-	// TODO(derpsteb): Implement AWS SEV-SNP with ASK cert cache
-	case *config.AzureSEVSNP:
-		return azuresnp.NewValidator(cfg, log).WithCachedASKCert(cachedAsk), nil
-	case *config.DummyCfg:
-		return atls.NewFakeValidator(variant.Dummy{}), nil
-	default:
-		return nil, fmt.Errorf("unsupported / unknown attestation variant: %s", cfg.GetVariant())
 	}
 }
