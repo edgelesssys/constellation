@@ -74,7 +74,7 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 				return
 			}
 
-			logger.Infof("Getting logstash pipeline template")
+			logger.Infof("Getting logstash pipeline template from image %s", versions.LogstashImage)
 			tmpl, err := getTemplate(ctx, logger, versions.LogstashImage, "/run/logstash/templates/pipeline.conf", "/run/logstash")
 			if err != nil {
 				logger.Errorf("Getting logstash pipeline template: %v", err)
@@ -102,7 +102,7 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 				return
 			}
 
-			logger.Infof("Getting filebeat config template")
+			logger.Infof("Getting filebeat config template from image %s", versions.FilebeatImage)
 			tmpl, err = getTemplate(ctx, logger, versions.FilebeatImage, "/run/filebeat/templates/filebeat.yml", "/run/filebeat")
 			if err != nil {
 				logger.Errorf("Getting filebeat config template: %v", err)
@@ -116,7 +116,7 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 				return
 			}
 
-			logger.Infof("Getting metricbeat config template")
+			logger.Infof("Getting metricbeat config template from image %s", versions.MetricbeatImage)
 			tmpl, err = getTemplate(ctx, logger, versions.MetricbeatImage, "/run/metricbeat/templates/metricbeat.yml", "/run/metricbeat")
 			if err != nil {
 				logger.Errorf("Getting metricbeat config template: %v", err)
