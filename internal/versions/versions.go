@@ -174,7 +174,7 @@ const (
 	// FilebeatImage is the container image of filebeat, used for log collection by debugd.
 	FilebeatImage = "ghcr.io/edgelesssys/constellation/filebeat-debugd:fix-ci-logcollection-permissions" // renovate:container
 	// MetricbeatImage is the container image of filebeat, used for log collection by debugd.
-	MetricbeatImage = "ghcr.io/edgelesssys/constellation/filebeat-debugd:fix-ci-logcollection-permissions" // renovate:container
+	MetricbeatImage = "ghcr.io/edgelesssys/constellation/metricbeat-debugd:fix-ci-logcollection-permissions" // renovate:container
 
 	// currently supported versions.
 	//nolint:revive
