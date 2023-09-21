@@ -109,7 +109,8 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 				return
 			}
 			filebeatConf := filebeatConfInput{
-				LogstashHost: "localhost:5044",
+				LogstashHost:     "localhost:5044",
+				AddCloudMetadata: true,
 			}
 			if err := writeTemplate("/run/filebeat/filebeat.yml", tmpl, filebeatConf); err != nil {
 				logger.Errorf("Writing filebeat pipeline: %v", err)
@@ -126,6 +127,7 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 				LogstashHost:         "localhost:5044",
 				Port:                 5066,
 				CollectSystemMetrics: true,
+				AddCloudMetadata:     true,
 			}
 			if err := writeTemplate("/run/metricbeat/metricbeat.yml", tmpl, metricbeatConf); err != nil {
 				logger.Errorf("Writing metricbeat pipeline: %v", err)
@@ -276,7 +278,8 @@ type logstashConfInput struct {
 }
 
 type filebeatConfInput struct {
-	LogstashHost string
+	LogstashHost     string
+	AddCloudMetadata bool
 }
 
 type metricbeatConfInput struct {

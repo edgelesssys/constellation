@@ -27,3 +27,6 @@ processors:
       field: "log.file.path"
       target_prefix: "kubernetes"
       ignore_failure: true
+  {{ if .AddCloudMetadata }}
+  - add_cloud_metadata: ~
+  {{ end }}

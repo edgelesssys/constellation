@@ -41,7 +41,8 @@ func NewFilebeatPreparer(port int) *FilebeatPreparer {
 // Prepare prepares the Filebeat Helm chart by templating the filebeat.yml and inputs.yml files and placing them in the specified directory.
 func (p *FilebeatPreparer) Prepare(dir string) error {
 	templatedFilebeatYaml, err := p.template(filebeatAssets, "templates/filebeat.yml", FilebeatTemplateData{
-		LogstashHost: fmt.Sprintf("logstash-logstash:%d", p.port),
+		LogstashHost:     fmt.Sprintf("logstash-logstash:%d", p.port),
+		AddCloudMetadata: true,
 	})
 	if err != nil {
 		return fmt.Errorf("template filebeat.yml: %w", err)
@@ -79,7 +80,8 @@ func (p *FilebeatPreparer) Prepare(dir string) error {
 
 // FilebeatTemplateData is template data.
 type FilebeatTemplateData struct {
-	LogstashHost string
+	LogstashHost     string
+	AddCloudMetadata bool
 }
 
 // FilebeatHelmValues repesents the Helm values.yml.
