@@ -10,6 +10,5 @@ import "embed"
 
 // Assets are the exported Filebeat template files.
 //
-//go:embed *.yml
 //go:embed templates/*
 var Assets embed.FS
