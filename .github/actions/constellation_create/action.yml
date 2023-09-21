@@ -141,6 +141,16 @@ runs:
           --force
         echo "::endgroup::"
 
+    - name: Add Azure Keyvault access role
+      if: inputs.cloudProvider == 'azure' && inputs.isDebugImage == 'true'
+      shell: bash
+      run: |
+        UAMI=$(yq eval ".provider.azure.userAssignedIdentity | upcase" constellation-conf.yaml)
+        PRINCIPAL_ID=$(az identity list | yq ".[] | select(.id | test(\"(?i)$UAMI\"; \"g\")) | .principalId")
+        az role assignment create --role "Key Vault Secrets User" \
+          --assignee "$PRINCIPAL_ID" \
+          --scope /subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/e2e-test-creds/providers/Microsoft.KeyVault/vaults/opensearch-creds
+
     - name: Constellation init
       id: constellation-init
       shell: bash
