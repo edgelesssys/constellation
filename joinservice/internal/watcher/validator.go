@@ -91,18 +91,31 @@ func (u *Updatable) Update() error {
 }
 
 // addCachedCerts adds the certificates cached by the validator to the config, if applicable.
-func (u *Updatable) addCachedCerts(cfg config.AttestationCfg) config.AttestationCfg {
-	if u.cachedCerts != nil {
-		// SEV-SNP (ASK and ARK) Certificates
-		ask, _ := u.cachedCerts.SevSnpCerts()
-		if ask != nil {
-			switch c := cfg.(type) {
-			case *config.AzureSEVSNP:
-				c.AMDSigningKey = config.Certificate(*ask)
-				return c
-			}
-			// TODO(derpsteb): Add AWS SEV-SNP
+func (u *Updatable) addCachedCerts(cfg config.AttestationCfg) (config.AttestationCfg, error) {
+	switch c := cfg.(type) {
+	case *config.AzureSEVSNP:
+		ask, err := u.getCachedCerts()
+		if err != nil {
+			return nil, err
 		}
+		c.AMDSigningKey = config.Certificate(ask)
+		return c, nil
 	}
-	return cfg
+	// TODO(derpsteb): Add AWS SEV-SNP
+
+	return cfg, nil
+}
+
+func (u *Updatable) getCachedCerts() (x509.Certificate, error) {
+	if u.cachedCerts == nil {
+		return x509.Certificate{}, fmt.Errorf("no cached certs available")
+	}
+	ask, ark := u.cachedCerts.SevSnpCerts()
+	if ask == nil {
+		return x509.Certificate{}, fmt.Errorf("no ASK available")
+	}
+	if ark == nil {
+		return x509.Certificate{}, fmt.Errorf("no ARK available")
+	}
+	return *ask, nil
 }
