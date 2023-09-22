@@ -95,7 +95,6 @@ func FetchAndVerify[T apiObject](ctx context.Context, c HTTPClient, cdnURL strin
 	if err != nil {
 		return fetchedObj, fmt.Errorf("fetching signature: %w", err)
 	}
-
 	err = cosignVerifier.VerifySignature(marshalledObj, signature.Signature)
 	if err != nil {
 		return fetchedObj, fmt.Errorf("verifying signature: %w", err)
@@ -130,7 +129,7 @@ type apiObject interface {
 // signature manages the signature of a object saved at location 'Signed'.
 type signature struct {
 	// Signed is the object that is signed.
-	Signed string `json:"signed"`
+	Signed string `json:"-"`
 	// Signature is the signature of `Signed`.
 	Signature []byte `json:"signature"`
 }

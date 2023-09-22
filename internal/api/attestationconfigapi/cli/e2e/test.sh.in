@@ -98,20 +98,29 @@ if ! curl -fsSL ${baseurl}/${date_oldest}.json.sig > /dev/null; then
   echo "Checking for uploaded version signature file constellation/v1/attestation/azure-sev-snp/${date_oldest}.json.sig: request returned ${?}"
   exit 1
 fi
+# check list endpoint
+if ! curl -fsSL ${baseurl}/list > list.json; then
+  echo "Checking for uploaded list file constellation/v1/attestation/azure-sev-snp/list: request returned ${?}"
+  exit 1
+fi
+# check that version values are equal to expected
+if ! cmp -s <(echo -n '["2023-02-01-03-04.json","2000-01-01-01-01.json"]') list.json; then
+  echo "The list content:"
+  cat list.json
+  echo " is not equal to the expected version content:"
+  echo '["2023-02-01-03-04.json","2000-01-01-01-01.json"]'
+  exit 1
+fi
 
 # check that the other versions are not uploaded
-if curl -fsSL ${baseurl}/${date_older}.json > /dev/null; then
-  echo "Should not be available: constellation/v1/attestation/azure-sev-snp/${date_older}.json: request returned ${?}"
+http_code=$(curl -sSL -w '%{http_code}\n' -o /dev/null ${baseurl}/${date_older}.json)
+if [[ $http_code -ne 404 ]]; then
+  echo "Expected HTTP code 404 for: constellation/v1/attestation/azure-sev-snp/${date_older}.json, but got ${http_code}"
   exit 1
 fi
-if curl -fsSL ${baseurl}/${date}.json > /dev/null; then
-  echo "Should not be available: constellation/v1/attestation/azure-sev-snp/${date}.json: request returned ${?}"
-  exit 1
-fi
-
-# check list endpoint
-if ! curl -fsSL ${baseurl}/list > /dev/null; then
-  echo "Checking for uploaded list file constellation/v1/attestation/azure-sev-snp/list: request returned ${?}"
+http_code=$(curl -sSL -w '%{http_code}\n' -o /dev/null ${baseurl}/${date}.json.sig)
+if [[ $http_code -ne 404 ]]; then
+  echo "Expected HTTP code 404 for: constellation/v1/attestation/azure-sev-snp/${date}.json, but got ${http_code}"
   exit 1
 fi
 

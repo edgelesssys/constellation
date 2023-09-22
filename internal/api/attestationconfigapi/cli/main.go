@@ -131,10 +131,10 @@ func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 	}
 
 	url := "https://d33dzgxuwsgbpw.cloudfront.net"
-	latestAPIVersionAPI, err := attestationconfigapi.NewFetcherWithCustomCDN(url).FetchAzureSEVSNPVersionLatest(ctx)
+	latestAPIVersionAPI, err := attestationconfigapi.NewFetcherWithCustomCDNAndCosignKey(url, constants.CosignPublicKeyDev).FetchAzureSEVSNPVersionLatest(ctx)
 	if err != nil {
-		if errors.Is(err, attestationconfigapi.ErrNoVersionsFound) && flags.force {
-			log.Infof("No versions found in API, but assuming that we are uploading the first version.\n")
+		if errors.Is(err, attestationconfigapi.ErrNoVersionsFound) {
+			log.Infof("No versions found in API, but assuming that we are uploading the first version.")
 		} else {
 			return fmt.Errorf("fetching latest version: %w", err)
 		}

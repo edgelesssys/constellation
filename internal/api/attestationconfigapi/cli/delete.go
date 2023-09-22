@@ -79,7 +79,8 @@ func runDelete(cmd *cobra.Command, _ []string) (retErr error) {
 		Region:         region,
 		DistributionID: distribution,
 	}
-	client, clientClose, err := attestationconfigapi.NewClient(cmd.Context(), cfg, []byte(cosignPwd), []byte(privateKey), false, log)
+	client, clientClose, err := attestationconfigapi.NewClient(cmd.Context(), cfg,
+		[]byte(cosignPwd), []byte(privateKey), false, 1, log)
 	if err != nil {
 		return fmt.Errorf("create attestation client: %w", err)
 	}

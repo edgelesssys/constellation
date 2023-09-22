@@ -40,9 +40,14 @@ func NewFetcher() Fetcher {
 	return NewFetcherWithClient(apifetcher.NewHTTPClient(), constants.CDNRepositoryURL)
 }
 
-// NewFetcherWithCustomCDN returns a new fetcher with custom CDN URL.
-func NewFetcherWithCustomCDN(cdnURL string) Fetcher {
-	return NewFetcherWithClient(apifetcher.NewHTTPClient(), cdnURL)
+// NewFetcherWithCustomCDNAndCosignKey returns a new fetcher with custom CDN URL.
+func NewFetcherWithCustomCDNAndCosignKey(cdnURL, cosignKey string) Fetcher {
+	verifier, err := sigstore.NewCosignVerifier([]byte(cosignKey))
+	if err != nil {
+		// This relies on an embedded public key. If this key can not be validated, there is no way to recover from this.
+		panic(fmt.Errorf("creating cosign verifier: %w", err))
+	}
+	return newFetcherWithClientAndVerifier(apifetcher.NewHTTPClient(), verifier, cdnURL)
 }
 
 // NewFetcherWithClient returns a new fetcher with custom http client.
@@ -69,7 +74,7 @@ func (f *fetcher) FetchAzureSEVSNPVersionList(ctx context.Context, attestation A
 func (f *fetcher) FetchAzureSEVSNPVersion(ctx context.Context, azureVersion AzureSEVSNPVersionAPI) (AzureSEVSNPVersionAPI, error) {
 	fetchedVersion, err := apifetcher.FetchAndVerify(ctx, f.HTTPClient, f.cdnURL, azureVersion, f.verifier)
 	if err != nil {
-		return fetchedVersion, fmt.Errorf("fetch version %s: %w", fetchedVersion.Version, err)
+		return fetchedVersion, fmt.Errorf("fetching version %s: %w", azureVersion.Version, err)
 	}
 	return fetchedVersion, nil
 }
@@ -89,7 +94,7 @@ func (f *fetcher) FetchAzureSEVSNPVersionLatest(ctx context.Context) (res AzureS
 	}
 	res, err = f.FetchAzureSEVSNPVersion(ctx, getVersionRequest)
 	if err != nil {
-		return res, fmt.Errorf("fetching version: %w", err)
+		return res, err
 	}
 	return
 }
