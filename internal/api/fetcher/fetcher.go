@@ -23,9 +23,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 )
 
@@ -36,15 +36,17 @@ func NewHTTPClient() HTTPClient {
 
 // Fetch fetches the given apiObject from the public Constellation CDN.
 // Fetch does not require authentication.
-func Fetch[T apiObject](ctx context.Context, c HTTPClient, obj T) (T, error) {
+func Fetch[T apiObject](ctx context.Context, c HTTPClient, cdnURL string, obj T) (T, error) {
 	if err := obj.ValidateRequest(); err != nil {
 		return *new(T), fmt.Errorf("validating request for %T: %w", obj, err)
 	}
 
-	url, err := obj.URL()
+	urlObj, err := url.Parse(cdnURL)
 	if err != nil {
-		return *new(T), fmt.Errorf("getting URL for %T: %w", obj, err)
+		return *new(T), fmt.Errorf("parsing CDN root URL: %w", err)
 	}
+	urlObj.Path = obj.JSONPath()
+	url := urlObj.String()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
@@ -80,8 +82,8 @@ func Fetch[T apiObject](ctx context.Context, c HTTPClient, obj T) (T, error) {
 // The public key used to verify the signature is embedded in the verifier argument.
 // FetchAndVerify uses a generic to return a new object of type T.
 // Otherwise the caller would have to cast the interface type to a concrete object, which could fail.
-func FetchAndVerify[T apiObject](ctx context.Context, c HTTPClient, obj T, cosignVerifier sigstore.Verifier) (T, error) {
-	fetchedObj, err := Fetch(ctx, c, obj)
+func FetchAndVerify[T apiObject](ctx context.Context, c HTTPClient, cdnURL string, obj T, cosignVerifier sigstore.Verifier) (T, error) {
+	fetchedObj, err := Fetch(ctx, c, cdnURL, obj)
 	if err != nil {
 		return fetchedObj, fmt.Errorf("fetching object: %w", err)
 	}
@@ -89,12 +91,7 @@ func FetchAndVerify[T apiObject](ctx context.Context, c HTTPClient, obj T, cosig
 	if err != nil {
 		return fetchedObj, fmt.Errorf("marshalling object: %w", err)
 	}
-
-	url, err := obj.URL()
-	if err != nil {
-		return fetchedObj, fmt.Errorf("getting signed URL: %w", err)
-	}
-	signature, err := Fetch(ctx, c, signature{Signed: url})
+	signature, err := Fetch(ctx, c, cdnURL, signature{Signed: obj.JSONPath()})
 	if err != nil {
 		return fetchedObj, fmt.Errorf("fetching signature: %w", err)
 	}
@@ -127,7 +124,7 @@ type HTTPClient interface {
 type apiObject interface {
 	ValidateRequest() error
 	Validate() error
-	URL() (string, error)
+	JSONPath() string
 }
 
 // signature manages the signature of a object saved at location 'Signed'.
@@ -139,16 +136,12 @@ type signature struct {
 }
 
 // URL returns the URL for the request to the config api.
-func (s signature) URL() (string, error) {
-	return s.Signed + ".sig", nil
+func (s signature) JSONPath() string {
+	return s.Signed + ".sig"
 }
 
 // ValidateRequest validates the request.
 func (s signature) ValidateRequest() error {
-	if !strings.HasPrefix(s.Signed, constants.CDNRepositoryURL) {
-		return errors.New("signed object missing CDN URL prefix")
-	}
-
 	if !strings.HasSuffix(s.Signed, ".json") {
 		return errors.New("signed object missing .json suffix")
 	}

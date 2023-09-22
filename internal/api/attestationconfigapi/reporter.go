@@ -171,11 +171,6 @@ type reportedAzureSEVSNPVersionAPI struct {
 	AzureSEVSNPVersion
 }
 
-// URL returns the URL for the request to the config api.
-func (i reportedAzureSEVSNPVersionAPI) URL() (string, error) {
-	return getURL(i)
-}
-
 // JSONPath returns the path to the JSON file for the request to the config api.
 func (i reportedAzureSEVSNPVersionAPI) JSONPath() string {
 	return path.Join(reportVersionDir, i.Version)

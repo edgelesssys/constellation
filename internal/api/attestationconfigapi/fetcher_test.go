@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,7 +43,7 @@ func TestFetchLatestAzureSEVSNPVersion(t *testing.T) {
 					olderVersion:  olderStr,
 				},
 			}
-			fetcher := newFetcherWithClientAndVerifier(client, dummyVerifier{})
+			fetcher := newFetcherWithClientAndVerifier(client, dummyVerifier{}, constants.CDNRepositoryURL)
 			res, err := fetcher.FetchAzureSEVSNPVersionLatest(context.Background())
 			assert := assert.New(t)
 			if tc.wantErr {
