@@ -114,6 +114,10 @@ resource "aws_lb" "front_end" {
     }
   }
   enable_cross_zone_load_balancing = true
+
+  lifecycle {
+    ignore_changes = [security_groups]
+  }
 }
 
 resource "aws_security_group" "security_group" {

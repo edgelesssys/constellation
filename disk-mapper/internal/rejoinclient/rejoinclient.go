@@ -139,12 +139,20 @@ func (c *RejoinClient) requestRejoinTicket(endpoint string) (*joinproto.IssueRej
 func (c *RejoinClient) getJoinEndpoints() ([]string, error) {
 	ctx, cancel := c.timeoutCtx()
 	defer cancel()
+
+	joinEndpoints := []string{}
+
+	lbEndpoint, _, err := c.metadataAPI.GetLoadBalancerEndpoint(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving load balancer endpoint from cloud provider: %w", err)
+	}
+	joinEndpoints = append(joinEndpoints, net.JoinHostPort(lbEndpoint, strconv.Itoa(constants.JoinServiceNodePort)))
+
 	instances, err := c.metadataAPI.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving instances list from cloud provider: %w", err)
 	}
 
-	joinEndpoints := []string{}
 	for _, instance := range instances {
 		if instance.Role == role.ControlPlane {
 			if instance.VPCIP != "" {
@@ -152,12 +160,6 @@ func (c *RejoinClient) getJoinEndpoints() ([]string, error) {
 			}
 		}
 	}
-
-	lbEndpoint, _, err := c.metadataAPI.GetLoadBalancerEndpoint(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("retrieving load balancer endpoint from cloud provider: %w", err)
-	}
-	joinEndpoints = append(joinEndpoints, net.JoinHostPort(lbEndpoint, strconv.Itoa(constants.JoinServiceNodePort)))
 
 	if c.nodeInfo.Role == role.ControlPlane {
 		return removeSelfFromEndpoints(c.nodeInfo.VPCIP, joinEndpoints), nil
