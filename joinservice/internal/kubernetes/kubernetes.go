@@ -18,7 +18,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -71,21 +70,10 @@ func (c *Client) GetComponents(ctx context.Context, configMapName string) (compo
 func (c *Client) GetConfigMapData(ctx context.Context, name, key string) (string, error) {
 	cm, err := c.client.CoreV1().ConfigMaps("kube-system").Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
-		if errors.IsNotFound(err) {
-			return "", &ConfigMapNotExistError{}
-		}
 		return "", fmt.Errorf("failed to get configmap: %w", err)
 	}
 
 	return cm.Data[key], nil
-}
-
-// ConfigMapNotExistError is returned when a configmap does not exist.
-type ConfigMapNotExistError struct{}
-
-// Error returns the error message.
-func (e ConfigMapNotExistError) Error() string {
-	return "configmap does not exist"
 }
 
 // GetK8sComponentsRefFromNodeVersionCRD returns the K8sComponentsRef from the node version CRD.

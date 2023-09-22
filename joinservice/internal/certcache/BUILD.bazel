@@ -10,8 +10,8 @@ go_library(
         "//internal/constants",
         "//internal/logger",
         "//joinservice/internal/certcache/amdkds",
-        "//joinservice/internal/kubernetes",
         "@com_github_google_go_sev_guest//abi",
         "@com_github_google_go_sev_guest//verify/trust",
+        "@io_k8s_apimachinery//pkg/api/errors",
     ],
 )
