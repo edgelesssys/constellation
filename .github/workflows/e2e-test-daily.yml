@@ -157,3 +157,16 @@ jobs:
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
           registry: ghcr.io
           githubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notify about failure
+        if: |
+          failure() &&
+          github.ref == 'refs/heads/main' &&
+          github.event_name == 'schedule'
+        continue-on-error: true
+        uses: ./.github/actions/notify_failure
+        with:
+          projectWriteToken: ${{ secrets.PROJECT_WRITE_TOKEN }}
+          teamsWebhookUri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+          test: "MiniConstellation"
+          provider: "QEMU"
