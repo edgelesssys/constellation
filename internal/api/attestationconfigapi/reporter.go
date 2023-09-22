@@ -11,6 +11,7 @@ package attestationconfigapi
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path"
 	"sort"
@@ -32,6 +33,9 @@ const cachedVersionsSubDir = "cached-versions"
 const versionWindowSize = 15
 
 var reportVersionDir = path.Join(attestationURLPath, variant.AzureSEVSNP{}.String(), cachedVersionsSubDir)
+
+// ErrNoNewerVersion is returned if the input version is not newer than the latest API version.
+var ErrNoNewerVersion = errors.New("input version is not newer than latest API version")
 
 // UploadAzureSEVSNPVersionLatest saves the given version to the cache, determines the smallest
 // TCB version in the cache among the last cacheWindowSize versions and updates
@@ -61,7 +65,7 @@ func (c Client) UploadAzureSEVSNPVersionLatest(ctx context.Context, inputVersion
 	c.s3Client.Logger.Infof("Found minimal version: %+v with date: %s", minVersion, minDate)
 	shouldUpdateAPI, err := isInputNewerThanOtherVersion(minVersion, latestAPIVersion)
 	if err != nil {
-		return fmt.Errorf("comparing new and other versions: %w", err)
+		return ErrNoNewerVersion
 	}
 	if !shouldUpdateAPI {
 		c.s3Client.Logger.Infof("Input version: %+v is not newer than latest API version: %+v", minVersion, latestAPIVersion)
@@ -115,8 +119,9 @@ func (c Client) listCachedVersions(ctx context.Context) ([]string, error) {
 func (c Client) findMinVersion(ctx context.Context, versionDates []string) (AzureSEVSNPVersion, string, error) {
 	var minimalVersion *AzureSEVSNPVersion
 	var minimalDate string
-	sort.Strings(versionDates) // the oldest date with the minimal version should be taken
+	sort.Sort(sort.Reverse(sort.StringSlice(versionDates))) // sort in reverse order to slice the latest versions
 	versionDates = versionDates[:c.cacheWindowSize]
+	sort.Strings(versionDates) // sort with oldest first to to take the minimal version with the oldest date
 	for _, date := range versionDates {
 		obj, err := client.Fetch(ctx, c.s3Client, reportedAzureSEVSNPVersionAPI{Version: date + ".json"})
 		if err != nil {

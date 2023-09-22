@@ -7,6 +7,7 @@ package attestationconfigapi
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
+
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
 )
 
@@ -75,6 +77,10 @@ func (a Client) List(ctx context.Context, attestation variant.Variant) ([]string
 	if attestation.Equal(variant.AzureSEVSNP{}) {
 		versions, err := apiclient.Fetch(ctx, a.s3Client, AzureSEVSNPVersionList{})
 		if err != nil {
+			var notFoundErr *apiclient.NotFoundError
+			if errors.As(err, &notFoundErr) {
+				return nil, nil
+			}
 			return nil, err
 		}
 		return versions, nil

@@ -28,6 +28,24 @@ tmpdir=$(mktemp -d)
 readonly tmpdir
 registerExitHandler "rm -rf $tmpdir"
 
+# empty the bucket version state
+${configapi_cli} delete recursive --region "$region" --bucket "$bucket" --distribution "$distribution"
+
+# the high version numbers ensure that it's newer than the current latest value
+readonly current_claim_path="$tmpdir/currentMaaClaim.json"
+cat << EOF > "$current_claim_path"
+{
+  "x-ms-isolation-tee": {
+    "x-ms-sevsnpvm-tee-svn": 1,
+    "x-ms-sevsnpvm-snpfw-svn": 1,
+    "x-ms-sevsnpvm-microcode-svn": 1,
+    "x-ms-sevsnpvm-bootloader-svn": 1
+  }
+}
+EOF
+# upload a fake latest version for the fetcher
+${configapi_cli} --force --maa-claims-path "$current_claim_path" --upload-date "2000-01-01-01-01" --region "$region" --bucket "$bucket" --distribution "$distribution"
+
 # the high version numbers ensure that it's newer than the current latest value
 readonly claim_path="$tmpdir/maaClaim.json"
 cat << EOF > "$claim_path"
@@ -70,11 +88,11 @@ if ! curl -fsSL ${baseurl}/${date_oldest}.json > version.json; then
 fi
 # check that version values are equal to expected
 if ! cmp -s <(echo -n '{"bootloader":255,"tee":255,"snp":255,"microcode":254}') version.json; then
-    echo "The version content:"
-    cat version.json
-    echo " is not equal to the expected version content:"
-    echo '{"bootloader":255,"tee":255,"snp":255,"microcode":254}'
-    exit 1
+  echo "The version content:"
+  cat version.json
+  echo " is not equal to the expected version content:"
+  echo '{"bootloader":255,"tee":255,"snp":255,"microcode":254}'
+  exit 1
 fi
 if ! curl -fsSL ${baseurl}/${date_oldest}.json.sig > /dev/null; then
   echo "Checking for uploaded version signature file constellation/v1/attestation/azure-sev-snp/${date_oldest}.json.sig: request returned ${?}"

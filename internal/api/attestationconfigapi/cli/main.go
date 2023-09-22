@@ -136,6 +136,10 @@ func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 		return fmt.Errorf("creating client: %w", err)
 	}
 	if err := client.UploadAzureSEVSNPVersionLatest(ctx, inputVersion, latestAPIVersion, flags.uploadDate, flags.force); err != nil {
+		if errors.Is(err, attestationconfigapi.ErrNoNewerVersion) {
+			log.Infof("Input version: %+v is not newer than latest API version: %+v", inputVersion, latestAPIVersion)
+			return nil
+		}
 		return fmt.Errorf("updating latest version: %w", err)
 	}
 	return nil
