@@ -28,9 +28,6 @@ import (
 // cachedVersionsSubDir is the subdirectory in the bucket where the cached versions are stored.
 const cachedVersionsSubDir = "cached-versions"
 
-// versionWindowSize defines the number of versions to be considered for the latest version. Each week 5 versions are uploaded for each node of the verify cluster.
-const versionWindowSize = 15
-
 var reportVersionDir = path.Join(attestationURLPath, variant.AzureSEVSNP{}.String(), cachedVersionsSubDir)
 
 // ErrNoNewerVersion is returned if the input version is not newer than the latest API version.
@@ -80,11 +77,6 @@ func (c Client) UploadAzureSEVSNPVersionLatest(ctx context.Context, inputVersion
 	}
 	c.s3Client.Logger.Infof("Successfully uploaded new Azure SEV-SNP version: %+v", minVersion)
 	return nil
-}
-
-// SetCacheWindowSize sets a custom number of versions to be considered for the latest version.
-func (c *Client) SetCacheWindowSize(size int) {
-	c.cacheWindowSize = size
 }
 
 // cacheAzureSEVSNPVersion uploads the latest observed version numbers of the Azure SEVSNP. This version is used to later report the latest version numbers to the API.

@@ -37,6 +37,8 @@ const (
 	distributionID      = constants.CDNDefaultDistributionID
 	envCosignPwd        = "COSIGN_PASSWORD"
 	envCosignPrivateKey = "COSIGN_PRIVATE_KEY"
+	// versionWindowSize defines the number of versions to be considered for the latest version. Each week 5 versions are uploaded for each node of the verify cluster.
+	versionWindowSize = 15
 )
 
 var (
@@ -70,7 +72,7 @@ func newRootCmd() *cobra.Command {
 	rootCmd.Flags().StringP("upload-date", "d", "", "upload a version with this date as version name.")
 	rootCmd.Flags().BoolP("force", "f", false, "Use force to manually push a new latest version."+
 		" The version gets saved to the cache but the version selection logic is skipped.")
-	rootCmd.Flags().IntP("cache-window-size", "s", 0, "Number of versions to be considered for the latest version.")
+	rootCmd.Flags().IntP("cache-window-size", "s", versionWindowSize, "Number of versions to be considered for the latest version.")
 	rootCmd.PersistentFlags().StringP("region", "r", awsRegion, "region of the targeted bucket.")
 	rootCmd.PersistentFlags().StringP("bucket", "b", awsBucket, "bucket targeted by all operations.")
 	rootCmd.PersistentFlags().StringP("distribution", "i", distributionID, "cloudflare distribution used.")
@@ -115,22 +117,21 @@ func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 	inputVersion := maaTCB.ToAzureSEVSNPVersion()
 	log.Infof("Input version: %+v", inputVersion)
 
-	client, clientClose, err := attestationconfigapi.NewClient(ctx, cfg, []byte(cosignPwd), []byte(privateKey), false, log)
+	client, clientClose, err := attestationconfigapi.NewClient(ctx, cfg,
+		[]byte(cosignPwd), []byte(privateKey), false, flags.cacheWindowSize, log)
 	defer func() {
 		err := clientClose(cmd.Context())
 		if err != nil {
 			retErr = errors.Join(retErr, fmt.Errorf("failed to invalidate cache: %w", err))
 		}
 	}()
-	if flags.cacheWindowSize != 0 {
-		client.SetCacheWindowSize(flags.cacheWindowSize)
-	}
 
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
 	}
 
-	latestAPIVersionAPI, err := attestationconfigapi.NewFetcherWithCustomCDN("https://d33dzgxuwsgbpw.cloudfront.net").FetchAzureSEVSNPVersionLatest(ctx)
+	url := "https://d33dzgxuwsgbpw.cloudfront.net"
+	latestAPIVersionAPI, err := attestationconfigapi.NewFetcherWithCustomCDN(url).FetchAzureSEVSNPVersionLatest(ctx)
 	if err != nil {
 		if errors.Is(err, attestationconfigapi.ErrNoVersionsFound) && flags.force {
 			log.Infof("No versions found in API, but assuming that we are uploading the first version.\n")
