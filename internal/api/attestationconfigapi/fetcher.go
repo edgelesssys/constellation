@@ -8,6 +8,7 @@ package attestationconfigapi
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	apifetcher "github.com/edgelesssys/constellation/v2/internal/api/fetcher"
@@ -16,6 +17,9 @@ import (
 )
 
 const cosignPublicKey = constants.CosignPublicKeyReleases
+
+// ErrNoVersionsFound is returned if no versions are found.
+var ErrNoVersionsFound = errors.New("no versions found")
 
 // Fetcher fetches config API resources without authentication.
 type Fetcher interface {
@@ -75,10 +79,10 @@ func (f *fetcher) FetchAzureSEVSNPVersionLatest(ctx context.Context) (res AzureS
 	var list AzureSEVSNPVersionList
 	list, err = f.FetchAzureSEVSNPVersionList(ctx, list)
 	if err != nil {
-		return res, fmt.Errorf("fetching versions list: %w", err)
+		return res, ErrNoVersionsFound
 	}
 	if len(list) < 1 {
-		return res, fmt.Errorf("no versions found")
+		return res, ErrNoVersionsFound
 	}
 	getVersionRequest := AzureSEVSNPVersionAPI{
 		Version: list[0], // latest version is first in list

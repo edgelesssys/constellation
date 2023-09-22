@@ -115,12 +115,6 @@ func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 	inputVersion := maaTCB.ToAzureSEVSNPVersion()
 	log.Infof("Input version: %+v", inputVersion)
 
-	latestAPIVersionAPI, err := attestationconfigapi.NewFetcherWithCustomCDN("https://d33dzgxuwsgbpw.cloudfront.net").FetchAzureSEVSNPVersionLatest(ctx)
-	if err != nil {
-		return fmt.Errorf("fetching latest version: %w", err)
-	}
-	latestAPIVersion := latestAPIVersionAPI.AzureSEVSNPVersion
-
 	client, clientClose, err := attestationconfigapi.NewClient(ctx, cfg, []byte(cosignPwd), []byte(privateKey), false, log)
 	defer func() {
 		err := clientClose(cmd.Context())
@@ -135,6 +129,16 @@ func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
 	}
+
+	latestAPIVersionAPI, err := attestationconfigapi.NewFetcherWithCustomCDN("https://d33dzgxuwsgbpw.cloudfront.net").FetchAzureSEVSNPVersionLatest(ctx)
+	if err != nil {
+		if errors.Is(err, attestationconfigapi.ErrNoVersionsFound) && flags.force {
+			log.Infof("No versions found in API, but assuming that we are uploading the first version.\n")
+		} else {
+			return fmt.Errorf("fetching latest version: %w", err)
+		}
+	}
+	latestAPIVersion := latestAPIVersionAPI.AzureSEVSNPVersion
 	if err := client.UploadAzureSEVSNPVersionLatest(ctx, inputVersion, latestAPIVersion, flags.uploadDate, flags.force); err != nil {
 		if errors.Is(err, attestationconfigapi.ErrNoNewerVersion) {
 			log.Infof("Input version: %+v is not newer than latest API version: %+v", inputVersion, latestAPIVersion)

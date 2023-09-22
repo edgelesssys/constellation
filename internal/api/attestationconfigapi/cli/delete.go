@@ -9,11 +9,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
@@ -108,40 +107,46 @@ func runRecursiveDelete(cmd *cobra.Command, _ []string) (retErr error) {
 		return fmt.Errorf("getting bucket: %w", err)
 	}
 
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(region),
-	})
+	distribution, err := cmd.Flags().GetString("distribution")
 	if err != nil {
-		return
+		return fmt.Errorf("getting distribution: %w", err)
 	}
 
-	// Create an S3 client.
-	svc := s3.New(sess)
-
+	log := logger.New(logger.PlainLog, zap.DebugLevel).Named("attestationconfigapi")
+	client, closeFn, err := staticupload.New(cmd.Context(), staticupload.Config{
+		Bucket:         bucket,
+		Region:         region,
+		DistributionID: distribution,
+	}, log)
+	if err != nil {
+		return fmt.Errorf("create static upload client: %w", err)
+	}
+	defer func() {
+		err := closeFn(cmd.Context())
+		if err != nil {
+			retErr = errors.Join(retErr, fmt.Errorf("failed to close client: %w", err))
+		}
+	}()
 	path := "constellation/v1/attestation/azure-sev-snp"
-	// List all objects in the path.
-	resp, err := svc.ListObjectsV2(&s3.ListObjectsV2Input{
+	resp, err := client.ListObjectsV2(cmd.Context(), &s3.ListObjectsV2Input{
 		Bucket: aws.String(bucket),
 		Prefix: aws.String(path),
 	})
 	if err != nil {
-		fmt.Println("Error listing objects:", err)
-		os.Exit(1)
+		return err
 	}
 
 	// Delete all objects in the path.
-	var keys []*s3.ObjectIdentifier
-	for _, obj := range resp.Contents {
-		keys = append(keys, &s3.ObjectIdentifier{
-			Key: obj.Key,
-		})
+	objIDs := make([]s3types.ObjectIdentifier, len(resp.Contents))
+	for i, obj := range resp.Contents {
+		objIDs[i] = s3types.ObjectIdentifier{Key: obj.Key}
 	}
-	if len(keys) > 0 {
-		_, err = svc.DeleteObjects(&s3.DeleteObjectsInput{
+	if len(objIDs) > 0 {
+		_, err = client.DeleteObjects(cmd.Context(), &s3.DeleteObjectsInput{
 			Bucket: aws.String(bucket),
-			Delete: &s3.Delete{
-				Objects: keys,
-				Quiet:   aws.Bool(true),
+			Delete: &s3types.Delete{
+				Objects: objIDs,
+				Quiet:   true,
 			},
 		})
 		if err != nil {
