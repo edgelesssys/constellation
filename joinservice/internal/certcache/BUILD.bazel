@@ -6,6 +6,7 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/joinservice/internal/certcache",
     visibility = ["//joinservice:__subpackages__"],
     deps = [
+        "//internal/attestation/variant",
         "//internal/constants",
         "//internal/logger",
         "//joinservice/internal/certcache/amdkds",

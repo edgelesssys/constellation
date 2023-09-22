@@ -17,6 +17,7 @@ go_library(
         "//internal/constants",
         "//internal/file",
         "//internal/logger",
+        "//joinservice/internal/certcache",
         "@com_github_fsnotify_fsnotify//:fsnotify",
         "@org_uber_go_zap//:zap",
     ],
