@@ -1120,7 +1120,7 @@ type AzureSEVSNP struct {
 	AMDRootKey Certificate `json:"amdRootKey" yaml:"amdRootKey"`
 	// description: |
 	//   AMD Signing Key certificate used to verify the SEV-SNP VCEK / VLEK certificate.
-	AMDSigningKey Certificate `json:"amdSigningKey" yaml:"amdSigningKey" validate:"len=0"`
+	AMDSigningKey Certificate `json:"amdSigningKey,omitempty" yaml:"amdSigningKey,omitempty" validate:"len=0"`
 }
 
 // setWantLatestToFalse sets the WantLatest field to false for all versions in order to unmarshal the numerical versions instead of the string "latest".
