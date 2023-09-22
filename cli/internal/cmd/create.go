@@ -176,10 +176,8 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	if err := fileHandler.WriteJSON(constants.ClusterIDsFilename, idFile, file.OptNone); err != nil {
 		return err
 	}
-	state := state.State{
-		Version:        "v1",
-		Infrastructure: infraState,
-	}
+	state := state.NewState(infraState)
+
 	if err := fileHandler.WriteYAML(constants.StateFilename, state, file.OptNone); err != nil {
 		return err
 	}

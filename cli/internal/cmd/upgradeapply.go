@@ -202,19 +202,16 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 			return fmt.Errorf("performing Terraform migrations: %w", err)
 		}
 	}
-	state := state.State{
-		Version:        "v1",
-		Infrastructure: infraState,
-	}
-	if err := u.fileHandler.WriteYAML(constants.StateFilename, state, file.OptOverwrite); err != nil {
-		return fmt.Errorf("writing state file: %w", err)
-	}
 	// reload idFile after terraform migration
 	// it might have been updated by the migration
 	if err := u.fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil {
 		return fmt.Errorf("reading updated cluster ID file: %w", err)
 	}
-
+	state := state.NewState(infraState)
+	// TODO(elchead): AB#3424 move this to updateClusterIDFile and correctly handle existing state when writing state
+	if err := u.fileHandler.WriteYAML(constants.StateFilename, state, file.OptOverwrite); err != nil {
+		return fmt.Errorf("writing state file: %w", err)
+	}
 	// extend the clusterConfig cert SANs with any of the supported endpoints:
 	// - (legacy) public IP
 	// - fallback endpoint
@@ -341,11 +338,16 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, conf *config.Conf
 		u.log.Debugf("No Terraform diff detected")
 	}
 	u.log.Debugf("No Terraform diff detected")
-	tfOutput, err := u.clusterShower.ShowInfrastructure(cmd.Context(), conf.GetProvider())
+	infraState, err := u.clusterShower.ShowInfrastructure(cmd.Context(), conf.GetProvider())
 	if err != nil {
-		return tfOutput, fmt.Errorf("getting Terraform output: %w", err)
+		return infraState, fmt.Errorf("getting Terraform output: %w", err)
 	}
-	return tfOutput, nil
+	state := state.NewState(infraState)
+	// TODO(elchead):
+	if err := u.fileHandler.WriteYAML(constants.StateFilename, state, file.OptOverwrite); err != nil {
+		return infraState, fmt.Errorf("writing state file: %w", err)
+	}
+	return infraState, nil
 }
 
 // validK8sVersion checks if the Kubernetes patch version is supported and asks for confirmation if not.
