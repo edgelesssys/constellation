@@ -4,9 +4,4 @@ RUN dnf install -y https://artifacts.elastic.co/downloads/beats/filebeat/filebea
 
 COPY debugd/filebeat/templates/ /usr/share/constellogs/templates/
 
-RUN chmod -R 777 /usr/share/filebeat/data/
-
-RUN useradd -s /bin/bash filebeat
-USER filebeat
-
 ENTRYPOINT ["/usr/share/filebeat/bin/filebeat", "-e", "--path.home", "/usr/share/filebeat", "--path.data", "/usr/share/filebeat/data"]

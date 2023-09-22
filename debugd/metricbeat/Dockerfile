@@ -4,11 +4,6 @@ RUN dnf install -y https://artifacts.elastic.co/downloads/beats/metricbeat/metri
 
 COPY debugd/metricbeat/templates/ /usr/share/constellogs/templates/
 
-RUN chmod -R 777 /usr/share/metricbeat/data/
-
-RUN useradd -s /bin/bash metricbeat
-USER metricbeat
-
 # -e enables logging to stderr
 # -E http.enabled=true enables http endpoint as seen in https://github.com/elastic/helm-charts/blob/main/metricbeat/templates/daemonset.yaml
 # --path.home and --path.data set the paths to the metricbeat binary and data directory
