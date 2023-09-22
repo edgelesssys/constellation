@@ -86,7 +86,7 @@ resource "google_compute_instance_template" "template" {
   }
 
   shielded_instance_config {
-    enable_secure_boot          = true
+    enable_secure_boot          = false
     enable_vtpm                 = true
     enable_integrity_monitoring = true
   }
