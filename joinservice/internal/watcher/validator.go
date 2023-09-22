@@ -35,18 +35,13 @@ type Updatable struct {
 }
 
 // NewValidator initializes a new updatable validator.
-func NewValidator(log *logger.Logger, variant variant.Variant, fileHandler file.Handler) *Updatable {
+func NewValidator(log *logger.Logger, variant variant.Variant, fileHandler file.Handler, cachedCerts *certcache.CachedCerts) *Updatable {
 	return &Updatable{
 		log:         log,
 		fileHandler: fileHandler,
 		variant:     variant,
+		cachedCerts: cachedCerts,
 	}
-}
-
-// WithCachedCerts sets the available cached certificates in the updatable validator.
-func (u *Updatable) WithCachedCerts(cachedCerts *certcache.CachedCerts) *Updatable {
-	u.cachedCerts = cachedCerts
-	return u
 }
 
 // Validate calls the validators Validate method, and prevents any updates during the call.
@@ -80,7 +75,7 @@ func (u *Updatable) Update() error {
 	}
 	u.log.Debugf("New expected measurements: %+v", cfg.GetMeasurements())
 
-	cfgWithCerts, err := u.addCachedCerts(cfg)
+	cfgWithCerts, err := u.configWithCerts(cfg)
 	if err != nil {
 		return fmt.Errorf("adding cached certificates: %w", err)
 	}
@@ -94,8 +89,8 @@ func (u *Updatable) Update() error {
 	return nil
 }
 
-// addCachedCerts adds the certificates cached by the validator to the config, if applicable.
-func (u *Updatable) addCachedCerts(cfg config.AttestationCfg) (config.AttestationCfg, error) {
+// addCachedCerts adds the certificates cached by the validator to the attestation config, if applicable.
+func (u *Updatable) configWithCerts(cfg config.AttestationCfg) (config.AttestationCfg, error) {
 	switch c := cfg.(type) {
 	case *config.AzureSEVSNP:
 		ask, err := u.getCachedAskCert()
