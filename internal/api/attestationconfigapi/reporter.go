@@ -22,7 +22,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/client"
-	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 )
 
@@ -91,8 +90,9 @@ func (c *Client) SetCacheWindowSize(size int) {
 // cacheAzureSEVSNPVersion uploads the latest observed version numbers of the Azure SEVSNP. This version is used to later report the latest version numbers to the API.
 func (c Client) cacheAzureSEVSNPVersion(ctx context.Context, version AzureSEVSNPVersion, date time.Time) error {
 	dateStr := date.Format(VersionFormat) + ".json"
-	res := putCmdWithoutSigning{
+	res := putCmd{
 		apiObject: reportedAzureSEVSNPVersionAPI{Version: dateStr, AzureSEVSNPVersion: version},
+		signer:    c.signer,
 	}
 	return res.Execute(ctx, c.s3Client)
 }
@@ -192,12 +192,4 @@ func (i reportedAzureSEVSNPVersionAPI) ValidateRequest() error {
 // Validate is a No-Op at the moment.
 func (i reportedAzureSEVSNPVersionAPI) Validate() error {
 	return nil
-}
-
-type putCmdWithoutSigning struct {
-	apiObject apiclient.APIObject
-}
-
-func (p putCmdWithoutSigning) Execute(ctx context.Context, c *apiclient.Client) error {
-	return apiclient.Update(ctx, c, p.apiObject)
 }
