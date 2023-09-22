@@ -233,7 +233,7 @@ func startPod(ctx context.Context, logger *logger.Logger) error {
 		"--volume=/run/systemd:/run/systemd:ro",
 		"--volume=/run/systemd/journal/socket:/run/systemd/journal/socket:rw",
 		"--volume=/run/state/var/log:/var/log:ro",
-		"--volume=/run/filebeat:/usr/share/filebeat/:ro",
+		"--volume=/run/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro",
 		versions.FilebeatImage,
 	}
 	runFilebeatCmd := exec.CommandContext(ctx, "podman", runFilebeatArgs...)
@@ -255,7 +255,7 @@ func startPod(ctx context.Context, logger *logger.Logger) error {
 		"--log-driver=none",
 		"--volume=/proc:/hostfs/proc:ro",
 		"--volume=/sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro",
-		"--volume=/run/metricbeat:/usr/share/metricbeat/:ro",
+		"--volume=/run/metricbeat/metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro",
 		versions.MetricbeatImage,
 	}
 	runMetricbeatCmd := exec.CommandContext(ctx, "podman", runMetricbeatArgs...)
