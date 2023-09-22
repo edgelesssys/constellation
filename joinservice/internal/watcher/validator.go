@@ -8,6 +8,7 @@ package watcher
 
 import (
 	"context"
+	"crypto/x509"
 	"encoding/asn1"
 	"fmt"
 	"path/filepath"
@@ -79,7 +80,10 @@ func (u *Updatable) Update() error {
 	}
 	u.log.Debugf("New expected measurements: %+v", cfg.GetMeasurements())
 
-	cfgWithCerts := u.addCachedCerts(cfg)
+	cfgWithCerts, err := u.addCachedCerts(cfg)
+	if err != nil {
+		return fmt.Errorf("adding cached certificates: %w", err)
+	}
 
 	validator, err := choose.Validator(cfgWithCerts, u.log)
 	if err != nil {
@@ -94,9 +98,9 @@ func (u *Updatable) Update() error {
 func (u *Updatable) addCachedCerts(cfg config.AttestationCfg) (config.AttestationCfg, error) {
 	switch c := cfg.(type) {
 	case *config.AzureSEVSNP:
-		ask, err := u.getCachedCerts()
+		ask, err := u.getCachedAskCert()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("getting cached ASK certificate: %w", err)
 		}
 		c.AMDSigningKey = config.Certificate(ask)
 		return c, nil
@@ -106,7 +110,8 @@ func (u *Updatable) addCachedCerts(cfg config.AttestationCfg) (config.Attestatio
 	return cfg, nil
 }
 
-func (u *Updatable) getCachedCerts() (x509.Certificate, error) {
+// getCachedAskCert returns the cached SEV-SNP ASK certificate.
+func (u *Updatable) getCachedAskCert() (x509.Certificate, error) {
 	if u.cachedCerts == nil {
 		return x509.Certificate{}, fmt.Errorf("no cached certs available")
 	}
