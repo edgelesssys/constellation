@@ -235,7 +235,11 @@ func (i *initCmd) initialize(
 		if errors.As(err, &nonRetriable) {
 			cmd.PrintErrln("Cluster initialization failed. This error is not recoverable.")
 			cmd.PrintErrln("Terminate your cluster and try again.")
-			cmd.PrintErrf("Fetched bootstrapper logs are stored in %q\n", i.pf.PrefixPrintablePath(constants.ErrorLog))
+			if nonRetriable.logCollectionErr != nil {
+				cmd.PrintErrf("Failed to collect logs from bootstrapper: %s\n", nonRetriable.logCollectionErr)
+			} else {
+				cmd.PrintErrf("Fetched bootstrapper logs are stored in %q\n", i.pf.PrefixPrintablePath(constants.ErrorLog))
+			}
 		}
 		return err
 	}
@@ -330,7 +334,7 @@ func (d *initDoer) Do(ctx context.Context) error {
 	// connectedOnce is set in handleGRPCStateChanges when a connection was established in one retry attempt.
 	// This should cancel any other retry attempts when the connection is lost since the bootstrapper likely won't accept any new attempts anymore.
 	if d.connectedOnce {
-		return &nonRetriableError{errors.New("init already connected to the remote server in a previous attempt - resumption is not supported")}
+		return &nonRetriableError{err: errors.New("init already connected to the remote server in a previous attempt - resumption is not supported")}
 	}
 
 	conn, err := d.dialer.Dial(ctx, d.endpoint)
@@ -351,31 +355,39 @@ func (d *initDoer) Do(ctx context.Context) error {
 	d.log.Debugf("Created protoClient")
 	resp, err := protoClient.Init(ctx, d.req)
 	if err != nil {
-		return &nonRetriableError{fmt.Errorf("init call: %w", err)}
+		return &nonRetriableError{err: fmt.Errorf("init call: %w", err)}
 	}
 
 	res, err := resp.Recv() // get first response, either success or failure
 	if err != nil {
 		if e := d.getLogs(resp); e != nil {
 			d.log.Debugf("Failed to collect logs: %s", e)
+			return &nonRetriableError{
+				logCollectionErr: e,
+				err:              errors.New(res.GetInitFailure().GetError()),
+			}
 		}
-		return &nonRetriableError{err}
+		return &nonRetriableError{err: err}
 	}
 
 	switch res.Kind.(type) {
 	case *initproto.InitResponse_InitFailure:
 		if e := d.getLogs(resp); e != nil {
 			d.log.Debugf("Failed to get logs from cluster: %s", e)
+			return &nonRetriableError{
+				logCollectionErr: e,
+				err:              errors.New(res.GetInitFailure().GetError()),
+			}
 		}
-		return &nonRetriableError{errors.New(res.GetInitFailure().GetError())}
+		return &nonRetriableError{err: errors.New(res.GetInitFailure().GetError())}
 	case *initproto.InitResponse_InitSuccess:
 		d.resp = res.GetInitSuccess()
 	case nil:
 		d.log.Debugf("Cluster returned nil response type")
-		return &nonRetriableError{errors.New("empty response from cluster")}
+		return &nonRetriableError{err: errors.New("empty response from cluster")}
 	default:
 		d.log.Debugf("Cluster returned unknown response type")
-		return &nonRetriableError{errors.New("unknown response from cluster")}
+		return &nonRetriableError{err: errors.New("unknown response from cluster")}
 	}
 
 	return nil
@@ -609,7 +621,8 @@ type grpcDialer interface {
 }
 
 type nonRetriableError struct {
-	err error
+	logCollectionErr error
+	err              error
 }
 
 // Error returns the error message.
