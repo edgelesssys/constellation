@@ -11,6 +11,9 @@ inputs:
   azureIAMCreateCredentials:
     description: "Azure credentials authorized to create an IAM configuration."
     required: true
+  cloudProvider:
+    description: "The cloud provider to use."
+    required: true
 
 runs:
   using: "composite"
@@ -36,6 +39,34 @@ runs:
       uses: ./.github/actions/login_azure
       with:
         azure_credentials: ${{ inputs.azureClusterCreateCredentials }}
+
+    - name: Login to AWS (IAM service principal)
+      if: inputs.cloudProvider == 'aws' && inputs.isDebugImage == 'true'
+      uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 # v2.2.0
+      with:
+        role-to-assume: arn:aws:iam::795746500882:role/GithubActionsE2EIAM
+        aws-region: eu-central-1
+        # extend token expiry to 6 hours to ensure constellation can terminate
+        role-duration-seconds: 21600
+
+    - name: Add AWS Secrets Manager access role
+      if: inputs.cloudProvider == 'aws' && inputs.isDebugImage == 'true'
+      shell: bash
+      run: |
+        INSTANCE_PROFILE=$(yq eval ".provider.aws.iamProfileControlPlane" constellation-conf.yaml)
+        ROLE_NAME=$(aws iam get-instance-profile --instance-profile-name "$INSTANCE_PROFILE" | yq ".InstanceProfile.Roles[0].RoleName")
+        aws iam attach-role-policy \
+          --role-name "$ROLE_NAME" \
+          --policy-arn arn:aws:iam::795746500882:policy/GitHubActionsOSCredAccess
+
+    - name: Login to AWS (Cluster service principal)
+      if: inputs.cloudProvider == 'aws' && inputs.isDebugImage == 'true'
+      uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 # v2.2.0
+      with:
+        role-to-assume: arn:aws:iam::795746500882:role/GithubActionsE2ECluster
+        aws-region: eu-central-1
+        # extend token expiry to 6 hours to ensure constellation can terminate
+        role-duration-seconds: 21600
 
     - name: Cdbg deploy
       shell: bash

@@ -127,10 +127,11 @@ runs:
       if: inputs.isDebugImage == 'true'
       uses: ./.github/actions/deploy_debugd
       with:
+        cloudProvider: ${{ inputs.cloudProvider }}
         test: ${{ inputs.test }}
         azureClusterCreateCredentials: ${{ inputs.azureClusterCreateCredentials }}
         azureIAMCreateCredentials: ${{ inputs.azureIAMCreateCredentials }}
-        
+
     - name: Constellation init
       id: constellation-init
       shell: bash
