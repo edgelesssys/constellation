@@ -90,22 +90,47 @@ func TestInitialize(t *testing.T) {
 			idFile:        &clusterid.File{IP: "192.0.2.1"},
 			configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
 			serviceAccKey: gcpServiceAccKey,
-			initServerAPI: &stubInitServer{res: &initproto.InitResponse{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}},
+			initServerAPI: &stubInitServer{res: []*initproto.InitResponse{{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}}},
 		},
 		"initialize some azure instances": {
 			provider:      cloudprovider.Azure,
 			idFile:        &clusterid.File{IP: "192.0.2.1"},
-			initServerAPI: &stubInitServer{res: &initproto.InitResponse{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}},
+			initServerAPI: &stubInitServer{res: []*initproto.InitResponse{{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}}},
 		},
 		"initialize some qemu instances": {
 			provider:      cloudprovider.QEMU,
 			idFile:        &clusterid.File{IP: "192.0.2.1"},
-			initServerAPI: &stubInitServer{res: &initproto.InitResponse{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}},
+			initServerAPI: &stubInitServer{res: []*initproto.InitResponse{{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}}},
 		},
 		"non retriable error": {
 			provider:                cloudprovider.QEMU,
 			idFile:                  &clusterid.File{IP: "192.0.2.1"},
-			initServerAPI:           &stubInitServer{initErr: &nonRetriableError{assert.AnError}},
+			initServerAPI:           &stubInitServer{initErr: &nonRetriableError{err: assert.AnError}},
+			retriable:               false,
+			masterSecretShouldExist: true,
+			wantErr:                 true,
+		},
+		"non retriable error with failed log collection": {
+			provider: cloudprovider.QEMU,
+			idFile:   &clusterid.File{IP: "192.0.2.1"},
+			initServerAPI: &stubInitServer{
+				res: []*initproto.InitResponse{
+					{
+						Kind: &initproto.InitResponse_InitFailure{
+							InitFailure: &initproto.InitFailureResponse{
+								Error: "error",
+							},
+						},
+					},
+					{
+						Kind: &initproto.InitResponse_InitFailure{
+							InitFailure: &initproto.InitFailureResponse{
+								Error: "error",
+							},
+						},
+					},
+				},
+			},
 			retriable:               false,
 			masterSecretShouldExist: true,
 			wantErr:                 true,
@@ -132,7 +157,7 @@ func TestInitialize(t *testing.T) {
 		"k8s version without v works": {
 			provider:      cloudprovider.Azure,
 			idFile:        &clusterid.File{IP: "192.0.2.1"},
-			initServerAPI: &stubInitServer{res: &initproto.InitResponse{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}},
+			initServerAPI: &stubInitServer{res: []*initproto.InitResponse{{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}}},
 			configMutator: func(c *config.Config) {
 				res, err := versions.NewValidK8sVersion(strings.TrimPrefix(string(versions.Default), "v"), true)
 				require.NoError(t, err)
@@ -142,7 +167,7 @@ func TestInitialize(t *testing.T) {
 		"outdated k8s patch version doesn't work": {
 			provider:      cloudprovider.Azure,
 			idFile:        &clusterid.File{IP: "192.0.2.1"},
-			initServerAPI: &stubInitServer{res: &initproto.InitResponse{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}},
+			initServerAPI: &stubInitServer{res: []*initproto.InitResponse{{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}}},
 			configMutator: func(c *config.Config) {
 				v, err := semver.New(versions.SupportedK8sVersions()[0])
 				require.NoError(t, err)
@@ -458,12 +483,14 @@ func TestAttestation(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	initServerAPI := &stubInitServer{res: &initproto.InitResponse{
-		Kind: &initproto.InitResponse_InitSuccess{
-			InitSuccess: &initproto.InitSuccessResponse{
-				Kubeconfig: []byte("kubeconfig"),
-				OwnerId:    []byte("ownerID"),
-				ClusterId:  []byte("clusterID"),
+	initServerAPI := &stubInitServer{res: []*initproto.InitResponse{
+		{
+			Kind: &initproto.InitResponse_InitSuccess{
+				InitSuccess: &initproto.InitSuccessResponse{
+					Kubeconfig: []byte("kubeconfig"),
+					OwnerId:    []byte("ownerID"),
+					ClusterId:  []byte("clusterID"),
+				},
 			},
 		},
 	}}
@@ -577,14 +604,16 @@ func (i *testIssuer) Issue(_ context.Context, userData []byte, _ []byte) ([]byte
 }
 
 type stubInitServer struct {
-	res     *initproto.InitResponse
+	res     []*initproto.InitResponse
 	initErr error
 
 	initproto.UnimplementedAPIServer
 }
 
 func (s *stubInitServer) Init(_ *initproto.InitRequest, stream initproto.API_InitServer) error {
-	_ = stream.Send(s.res)
+	for _, r := range s.res {
+		_ = stream.Send(r)
+	}
 	return s.initErr
 }
 
