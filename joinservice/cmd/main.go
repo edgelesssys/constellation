@@ -77,8 +77,8 @@ func main() {
 		log.With(zap.Error(err)).Fatalf("Failed to create certificate chain cache")
 	}
 
-	validator := watcher.NewValidator(log.Named("validator"), attVariant, handler, cachedCerts)
-	if err := validator.Update(); err != nil {
+	validator, err := watcher.NewValidator(log.Named("validator"), attVariant, handler, cachedCerts)
+	if err != nil {
 		flag.Usage()
 		log.With(zap.Error(err)).Fatalf("Failed to create validator")
 	}
