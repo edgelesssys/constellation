@@ -42,8 +42,8 @@ runs:
       uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
       with:
         fetch-depth: 0
-        repository: "InfraBuilder/k8s-bench-suite"
-        ref: 1698974913b7b18ad54cf5860838029c295c77b1
+        repository: "edgelesssys/k8s-bench-suite"
+        ref: 67c64c854841165b778979375444da1c02e02210
         path: k8s-bench-suite
 
 
