@@ -31,7 +31,7 @@ func TestCreate(t *testing.T) {
 		require.NoError(file.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), provider)))
 		return fs
 	}
-	infraState := state.Infrastructure{PublicIP: "192.0.2.1"}
+	infraState := state.Infrastructure{ClusterEndpoint: "192.0.2.1"}
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
@@ -157,13 +157,13 @@ func TestCreate(t *testing.T) {
 					var gotIDFile clusterid.File
 					require.NoError(fileHandler.ReadJSON(constants.ClusterIDsFilename, &gotIDFile))
 					assert.Equal(gotIDFile, clusterid.File{
-						IP:            infraState.PublicIP,
+						IP:            infraState.ClusterEndpoint,
 						CloudProvider: tc.provider,
 					})
 
 					var gotState state.State
 					expectedState := state.Infrastructure{
-						PublicIP:          "192.0.2.1",
+						ClusterEndpoint:   "192.0.2.1",
 						APIServerCertSANs: []string{},
 					}
 					require.NoError(fileHandler.ReadYAML(constants.StateFilename, &gotState))

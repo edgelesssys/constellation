@@ -42,7 +42,7 @@ func extraCiliumValues(provider cloudprovider.Provider, conformanceMode bool, ou
 		}
 	}
 
-	extraVals["k8sServiceHost"] = output.PublicIP
+	extraVals["k8sServiceHost"] = output.ClusterEndpoint
 	extraVals["k8sServicePort"] = constants.KubernetesPort
 	if provider == cloudprovider.GCP {
 		extraVals["ipv4NativeRoutingCIDR"] = output.GCP.IPCidrPod
@@ -62,10 +62,10 @@ func extraConstellationServicesValues(
 	}
 	extraVals["verification-service"] = map[string]any{
 		"attestationVariant": cfg.GetAttestationConfig().GetVariant().String(),
-		"loadBalancerIP":     output.PublicIP,
+		"loadBalancerIP":     output.ClusterEndpoint,
 	}
 	extraVals["konnectivity"] = map[string]any{
-		"loadBalancerIP": output.PublicIP,
+		"loadBalancerIP": output.ClusterEndpoint,
 	}
 
 	extraVals["key-service"] = map[string]any{

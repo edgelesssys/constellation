@@ -184,7 +184,7 @@ func (c *Client) ShowInfrastructure(ctx context.Context, provider cloudprovider.
 func ConvertToInfrastructure(applyOutput ApplyOutput) state.Infrastructure {
 	var infra state.Infrastructure
 	infra.UID = applyOutput.UID
-	infra.PublicIP = applyOutput.IP
+	infra.ClusterEndpoint = applyOutput.IP
 	infra.InitSecret = applyOutput.Secret
 	infra.APIServerCertSANs = applyOutput.APIServerCertSANs
 

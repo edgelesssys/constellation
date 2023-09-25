@@ -189,7 +189,7 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 func convertToIDFile(infra state.Infrastructure, provider cloudprovider.Provider) clusterid.File {
 	var file clusterid.File
 	file.CloudProvider = provider
-	file.IP = infra.PublicIP
+	file.IP = infra.ClusterEndpoint
 	file.APIServerCertSANs = infra.APIServerCertSANs
 	file.InitSecret = []byte(infra.InitSecret) // Convert string to []byte
 	file.UID = infra.UID

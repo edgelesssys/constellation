@@ -29,7 +29,7 @@ func NewState(Infrastructure Infrastructure) State {
 // Infrastructure describe the state related to the cloud resources of the cluster.
 type Infrastructure struct {
 	UID               string   `yaml:"uid"`
-	PublicIP          string   `yaml:"publicIP"`
+	ClusterEndpoint   string   `yaml:"clusterEndpoint"`
 	InitSecret        string   `yaml:"initSecret"`
 	APIServerCertSANs []string `yaml:"apiServerCertSANs"`
 	Azure             *Azure   `yaml:"azure"`

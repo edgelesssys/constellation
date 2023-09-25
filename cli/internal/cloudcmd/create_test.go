@@ -237,7 +237,7 @@ func TestCreator(t *testing.T) {
 				}
 			} else {
 				assert.NoError(err)
-				assert.Equal(ip, idFile.PublicIP)
+				assert.Equal(ip, idFile.ClusterEndpoint)
 			}
 		})
 	}
