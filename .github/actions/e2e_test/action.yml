@@ -247,8 +247,10 @@ runs:
         fetchMeasurements: ${{ inputs.fetchMeasurements }}
         cliVersion: ${{ inputs.cliVersion }}
         azureSNPEnforcementPolicy: ${{ inputs.azureSNPEnforcementPolicy }}
+        azureIAMCreateCredentials: ${{ inputs.azureIAMCreateCredentials }}
+        azureClusterCreateCredentials: ${{ inputs.azureClusterCreateCredentials }}
 
-    - name: Deploy log- and metrics-collection
+    - name: Deploy log- and metrics-collection (Kubernetes)
       id: deploy-logcollection
       if: inputs.isDebugImage == 'false'
       uses: ./.github/actions/deploy_logcollection
