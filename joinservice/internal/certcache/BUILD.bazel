@@ -26,5 +26,10 @@ go_test(
         "//internal/constants",
         "//internal/logger",
         "//joinservice/internal/certcache/testdata",
+        "@com_github_google_go_sev_guest//abi",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@io_k8s_apimachinery//pkg/api/errors",
+        "@io_k8s_apimachinery//pkg/runtime/schema",
     ],
 )
