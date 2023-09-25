@@ -34,14 +34,17 @@ type Updatable struct {
 	atls.Validator
 }
 
-// NewValidator initializes a new updatable validator.
-func NewValidator(log *logger.Logger, variant variant.Variant, fileHandler file.Handler, cachedCerts *certcache.CachedCerts) *Updatable {
-	return &Updatable{
+// NewValidator initializes a new updatable validator and performs an initial update (aka. initialization).
+func NewValidator(log *logger.Logger, variant variant.Variant, fileHandler file.Handler, cachedCerts *certcache.CachedCerts) (*Updatable, error) {
+	u := &Updatable{
 		log:         log,
 		fileHandler: fileHandler,
 		variant:     variant,
 		cachedCerts: cachedCerts,
 	}
+	err := u.Update()
+
+	return u, err
 }
 
 // Validate calls the validators Validate method, and prevents any updates during the call.

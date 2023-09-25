@@ -79,12 +79,12 @@ func TestNewUpdateableValidator(t *testing.T) {
 				))
 			}
 
-			err := NewValidator(
+			_, err := NewValidator(
 				logger.NewTest(t),
 				tc.variant,
 				handler,
 				nil, // TODO(msanft): add certcache test
-			).Update()
+			)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

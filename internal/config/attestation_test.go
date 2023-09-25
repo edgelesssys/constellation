@@ -77,11 +77,37 @@ func TestCertificateMarshalJSON(t *testing.T) {
 	assert.JSONEq(jsonCert, string(out))
 }
 
+func TestEmptyCertificateMarshalJSON(t *testing.T) {
+	require := require.New(t)
+	assert := assert.New(t)
+
+	jsonCert := "\"\""
+	var cert Certificate
+	require.NoError(json.Unmarshal([]byte(jsonCert), &cert))
+
+	out, err := json.Marshal(cert)
+	require.NoError(err)
+	assert.JSONEq(jsonCert, string(out))
+}
+
 func TestCertificateMarshalYAML(t *testing.T) {
 	require := require.New(t)
 	assert := assert.New(t)
 
 	yamlCert := fmt.Sprintf("\"%s\"", testCertPEM)
+	var cert Certificate
+	require.NoError(yaml.Unmarshal([]byte(yamlCert), &cert))
+
+	out, err := yaml.Marshal(cert)
+	require.NoError(err)
+	assert.YAMLEq(yamlCert, string(out))
+}
+
+func TestEmptyCertificateMarshalYAML(t *testing.T) {
+	require := require.New(t)
+	assert := assert.New(t)
+
+	yamlCert := "\"\""
 	var cert Certificate
 	require.NoError(yaml.Unmarshal([]byte(yamlCert), &cert))
 
