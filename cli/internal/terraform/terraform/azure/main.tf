@@ -32,6 +32,7 @@ locals {
   ports_konnectivity    = "8132"
   ports_verify          = "30081"
   ports_recovery        = "9999"
+  ports_join            = "30090"
   ports_debugd          = "4000"
   cidr_vpc_subnet_nodes = "192.168.178.0/24"
   cidr_vpc_subnet_pods  = "10.10.0.0/16"
@@ -182,6 +183,12 @@ module "loadbalancer_backend_control_plane" {
       protocol = "Tcp",
       path     = null
     },
+    {
+      name     = "join",
+      port     = local.ports_join,
+      protocol = "Tcp",
+      path     = null
+    },
     var.debug ? [{
       name     = "debugd",
       port     = local.ports_debugd,
@@ -231,8 +238,9 @@ resource "azurerm_network_security_group" "security_group" {
       { name = "kubernetes", priority = 101, dest_port_range = local.ports_kubernetes },
       { name = "bootstrapper", priority = 102, dest_port_range = local.ports_bootstrapper },
       { name = "konnectivity", priority = 103, dest_port_range = local.ports_konnectivity },
-      { name = "recovery", priority = 104, dest_port_range = local.ports_recovery },
-      var.debug ? [{ name = "debugd", priority = 105, dest_port_range = local.ports_debugd }] : [],
+      { name = "join", priority = 104, dest_port_range = local.ports_recovery },
+      { name = "recovery", priority = 105, dest_port_range = local.ports_join },
+      var.debug ? [{ name = "debugd", priority = 106, dest_port_range = local.ports_debugd }] : [],
     ])
     content {
       name                       = security_rule.value.name

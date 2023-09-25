@@ -123,7 +123,7 @@ func TestRemoveSelfFromEndpoints(t *testing.T) {
 	}
 }
 
-func TestGetControlPlaneEndpoints(t *testing.T) {
+func TestGetJoinEndpoints(t *testing.T) {
 	testInstances := []metadata.InstanceMetadata{
 		{
 			Role:  role.ControlPlane,
@@ -154,7 +154,7 @@ func TestGetControlPlaneEndpoints(t *testing.T) {
 	testCases := map[string]struct {
 		nodeInfo      metadata.InstanceMetadata
 		meta          stubMetadataAPI
-		wantInstances int
+		wantEndpoints int
 		wantErr       bool
 	}{
 		"worker node": {
@@ -163,9 +163,10 @@ func TestGetControlPlaneEndpoints(t *testing.T) {
 				VPCIP: "192.0.2.1",
 			},
 			meta: stubMetadataAPI{
-				instances: testInstances,
+				instances:  testInstances,
+				lbEndpoint: "192.0.2.100",
 			},
-			wantInstances: 3,
+			wantEndpoints: 4,
 		},
 		"control-plane node not in list": {
 			nodeInfo: metadata.InstanceMetadata{
@@ -173,9 +174,10 @@ func TestGetControlPlaneEndpoints(t *testing.T) {
 				VPCIP: "192.0.2.1",
 			},
 			meta: stubMetadataAPI{
-				instances: testInstances,
+				instances:  testInstances,
+				lbEndpoint: "192.0.2.100",
 			},
-			wantInstances: 3,
+			wantEndpoints: 4,
 		},
 		"control-plane node in list": {
 			nodeInfo: metadata.InstanceMetadata{
@@ -183,17 +185,28 @@ func TestGetControlPlaneEndpoints(t *testing.T) {
 				VPCIP: "192.0.2.2",
 			},
 			meta: stubMetadataAPI{
-				instances: testInstances,
+				instances:  testInstances,
+				lbEndpoint: "192.0.2.100",
 			},
-			wantInstances: 2,
+			wantEndpoints: 3,
 		},
-		"metadata error": {
+		"metadata list error": {
 			nodeInfo: metadata.InstanceMetadata{
 				Role:  role.ControlPlane,
 				VPCIP: "192.0.2.1",
 			},
 			meta: stubMetadataAPI{
-				err: errors.New("error"),
+				listErr: assert.AnError,
+			},
+			wantErr: true,
+		},
+		"metadata load balancer error": {
+			nodeInfo: metadata.InstanceMetadata{
+				Role:  role.ControlPlane,
+				VPCIP: "192.0.2.1",
+			},
+			meta: stubMetadataAPI{
+				getLoadBalancerEndpointErr: assert.AnError,
 			},
 			wantErr: true,
 		},
@@ -205,13 +218,14 @@ func TestGetControlPlaneEndpoints(t *testing.T) {
 
 			client := New(nil, tc.nodeInfo, tc.meta, logger.NewTest(t))
 
-			endpoints, err := client.getControlPlaneEndpoints()
+			endpoints, err := client.getJoinEndpoints()
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
 				assert.NotContains(endpoints, tc.nodeInfo.VPCIP)
-				assert.Len(endpoints, tc.wantInstances)
+				// +1 for the load balancer endpoint
+				assert.Len(endpoints, tc.wantEndpoints)
 			}
 		})
 	}
@@ -288,12 +302,18 @@ func TestStart(t *testing.T) {
 }
 
 type stubMetadataAPI struct {
-	instances []metadata.InstanceMetadata
-	err       error
+	instances                  []metadata.InstanceMetadata
+	lbEndpoint                 string
+	getLoadBalancerEndpointErr error
+	listErr                    error
 }
 
 func (s stubMetadataAPI) List(context.Context) ([]metadata.InstanceMetadata, error) {
-	return s.instances, s.err
+	return s.instances, s.listErr
+}
+
+func (s stubMetadataAPI) GetLoadBalancerEndpoint(_ context.Context) (string, string, error) {
+	return s.lbEndpoint, "", s.getLoadBalancerEndpointErr
 }
 
 type stubRejoinServiceAPI struct {

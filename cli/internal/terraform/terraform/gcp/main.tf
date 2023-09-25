@@ -42,6 +42,7 @@ locals {
   ports_konnectivity    = "8132"
   ports_verify          = "30081"
   ports_recovery        = "9999"
+  ports_join            = "30090"
   ports_debugd          = "4000"
   cidr_vpc_subnet_nodes = "192.168.178.0/24"
   cidr_vpc_subnet_pods  = "10.10.0.0/16"
@@ -52,6 +53,7 @@ locals {
     { name = "verify", port = local.ports_verify },
     { name = "konnectivity", port = local.ports_konnectivity },
     { name = "recovery", port = local.ports_recovery },
+    { name = "join", port = local.ports_join },
     var.debug ? [{ name = "debugd", port = local.ports_debugd }] : [],
   ])
   node_groups_by_role = {
@@ -120,6 +122,7 @@ resource "google_compute_firewall" "firewall_external" {
       local.ports_kubernetes,
       local.ports_konnectivity,
       local.ports_recovery,
+      local.ports_join,
       var.debug ? [local.ports_debugd] : [],
     ])
   }
@@ -232,6 +235,17 @@ module "loadbalancer_recovery" {
   ip_address              = google_compute_global_address.loadbalancer_ip.self_link
   port                    = local.ports_recovery
   frontend_labels         = merge(local.labels, { constellation-use = "recovery" })
+}
+
+module "loadbalancer_join" {
+  source                  = "./modules/loadbalancer"
+  name                    = local.name
+  health_check            = "TCP"
+  backend_port_name       = "join"
+  backend_instance_groups = local.control_plane_instance_groups
+  ip_address              = google_compute_global_address.loadbalancer_ip.self_link
+  port                    = local.ports_join
+  frontend_labels         = merge(local.labels, { constellation-use = "join" })
 }
 
 module "loadbalancer_debugd" {

@@ -5,8 +5,5 @@ go_library(
     srcs = ["metadata.go"],
     importpath = "github.com/edgelesssys/constellation/v2/internal/cloud/metadata",
     visibility = ["//:__subpackages__"],
-    deps = [
-        "//internal/constants",
-        "//internal/role",
-    ],
+    deps = ["//internal/role"],
 )

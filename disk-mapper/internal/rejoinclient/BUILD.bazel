@@ -8,6 +8,7 @@ go_library(
     visibility = ["//disk-mapper:__subpackages__"],
     deps = [
         "//internal/cloud/metadata",
+        "//internal/constants",
         "//internal/logger",
         "//internal/role",
         "//joinservice/joinproto",

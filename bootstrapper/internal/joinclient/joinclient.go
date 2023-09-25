@@ -186,17 +186,29 @@ func (c *JoinClient) Stop() {
 }
 
 func (c *JoinClient) tryJoinWithAvailableServices() error {
-	ips, err := c.getControlPlaneIPs()
-	if err != nil {
-		return err
-	}
+	ctx, cancel := c.timeoutCtx()
+	defer cancel()
 
-	if len(ips) == 0 {
+	var endpoints []string
+
+	ip, _, err := c.metadataAPI.GetLoadBalancerEndpoint(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get load balancer endpoint: %w", err)
+	}
+	endpoints = append(endpoints, net.JoinHostPort(ip, strconv.Itoa(constants.JoinServiceNodePort)))
+
+	ips, err := c.getControlPlaneIPs(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get control plane IPs: %w", err)
+	}
+	endpoints = append(endpoints, ips...)
+
+	if len(endpoints) == 0 {
 		return errors.New("no control plane IPs found")
 	}
 
-	for _, ip := range ips {
-		err = c.join(net.JoinHostPort(ip, strconv.Itoa(constants.JoinServiceNodePort)))
+	for _, endpoint := range endpoints {
+		err = c.join(net.JoinHostPort(endpoint, strconv.Itoa(constants.JoinServiceNodePort)))
 		if err == nil {
 			return nil
 		}
@@ -357,10 +369,7 @@ func (c *JoinClient) getDiskUUID() (string, error) {
 	return c.disk.UUID()
 }
 
-func (c *JoinClient) getControlPlaneIPs() ([]string, error) {
-	ctx, cancel := c.timeoutCtx()
-	defer cancel()
-
+func (c *JoinClient) getControlPlaneIPs(ctx context.Context) ([]string, error) {
 	instances, err := c.metadataAPI.List(ctx)
 	if err != nil {
 		c.log.With(zap.Error(err)).Errorf("Failed to list instances from metadata API")
@@ -425,6 +434,8 @@ type MetadataAPI interface {
 	List(ctx context.Context) ([]metadata.InstanceMetadata, error)
 	// Self retrieves the current instance.
 	Self(ctx context.Context) (metadata.InstanceMetadata, error)
+	// GetLoadBalancerEndpoint retrieves the load balancer endpoint.
+	GetLoadBalancerEndpoint(ctx context.Context) (host, port string, err error)
 }
 
 type encryptedDisk interface {
