@@ -12,7 +12,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"strconv"
@@ -238,7 +237,6 @@ func TestInitialize(t *testing.T) {
 				})
 
 			if tc.wantErr {
-				fmt.Println(errOut.String())
 				assert.Error(err)
 				if !tc.retriable {
 					assert.Contains(errOut.String(), "This error is not recoverable")
@@ -616,7 +614,6 @@ func (s *stubInitServer) Init(_ *initproto.InitRequest, stream initproto.API_Ini
 	for _, r := range s.res {
 		_ = stream.Send(r)
 	}
-	// _ = stream.Send(s.res)
 	return s.initErr
 }
 
