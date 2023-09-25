@@ -11,7 +11,6 @@ You can execute an e2e test by running: `bazel run //internal/api/attestationcon
 The CLI is used in the CI pipeline. Manual actions that change the bucket's data shouldn't be necessary.
 The reporter CLI caches the observed version values in a dedicated caching directory and derives the latest API version from it.
 Any version update is then pushed to the API.
-Notice that there is no synchronization on API operations. // TODO(elchead): what does this mean?
 */
 package main
 
@@ -75,7 +74,7 @@ func newRootCmd() *cobra.Command {
 	rootCmd.Flags().IntP("cache-window-size", "s", versionWindowSize, "Number of versions to be considered for the latest version.")
 	rootCmd.PersistentFlags().StringP("region", "r", awsRegion, "region of the targeted bucket.")
 	rootCmd.PersistentFlags().StringP("bucket", "b", awsBucket, "bucket targeted by all operations.")
-	rootCmd.PersistentFlags().StringP("distribution", "i", distributionID, "cloudflare distribution used.")
+	rootCmd.PersistentFlags().Bool("testing", false, "upload to S3 test bucket.")
 	must(rootCmd.MarkFlagRequired("maa-claims-path"))
 	rootCmd.AddCommand(newDeleteCmd())
 	return rootCmd
@@ -130,8 +129,7 @@ func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 		return fmt.Errorf("creating client: %w", err)
 	}
 
-	url := "https://d33dzgxuwsgbpw.cloudfront.net"
-	latestAPIVersionAPI, err := attestationconfigapi.NewFetcherWithCustomCDNAndCosignKey(url, constants.CosignPublicKeyDev).FetchAzureSEVSNPVersionLatest(ctx)
+	latestAPIVersionAPI, err := attestationconfigapi.NewFetcherWithCustomCDNAndCosignKey(flags.url, constants.CosignPublicKeyDev).FetchAzureSEVSNPVersionLatest(ctx)
 	if err != nil {
 		if errors.Is(err, attestationconfigapi.ErrNoVersionsFound) {
 			log.Infof("No versions found in API, but assuming that we are uploading the first version.")
@@ -150,67 +148,77 @@ func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 	return nil
 }
 
-type cliFlags struct {
+type config struct {
 	maaFilePath     string
 	uploadDate      time.Time
 	region          string
 	bucket          string
 	distribution    string
+	url             string
 	force           bool
 	cacheWindowSize int
 }
 
-func parseCliFlags(cmd *cobra.Command) (cliFlags, error) {
+func parseCliFlags(cmd *cobra.Command) (config, error) {
 	maaFilePath, err := cmd.Flags().GetString("maa-claims-path")
 	if err != nil {
-		return cliFlags{}, fmt.Errorf("getting maa claims path: %w", err)
+		return config{}, fmt.Errorf("getting maa claims path: %w", err)
 	}
 
 	dateStr, err := cmd.Flags().GetString("upload-date")
 	if err != nil {
-		return cliFlags{}, fmt.Errorf("getting upload date: %w", err)
+		return config{}, fmt.Errorf("getting upload date: %w", err)
 	}
 	uploadDate := time.Now()
 	if dateStr != "" {
 		uploadDate, err = time.Parse(attestationconfigapi.VersionFormat, dateStr)
 		if err != nil {
-			return cliFlags{}, fmt.Errorf("parsing date: %w", err)
+			return config{}, fmt.Errorf("parsing date: %w", err)
 		}
 	}
 
 	region, err := cmd.Flags().GetString("region")
 	if err != nil {
-		return cliFlags{}, fmt.Errorf("getting region: %w", err)
+		return config{}, fmt.Errorf("getting region: %w", err)
 	}
 
 	bucket, err := cmd.Flags().GetString("bucket")
 	if err != nil {
-		return cliFlags{}, fmt.Errorf("getting bucket: %w", err)
+		return config{}, fmt.Errorf("getting bucket: %w", err)
 	}
 
-	distribution, err := cmd.Flags().GetString("distribution")
+	testing, err := cmd.Flags().GetBool("testing")
 	if err != nil {
-		return cliFlags{}, fmt.Errorf("getting distribution: %w", err)
+		return config{}, fmt.Errorf("getting testing flag: %w", err)
 	}
+	url, distribution := getEnvironment(testing)
 
 	force, err := cmd.Flags().GetBool("force")
 	if err != nil {
-		return cliFlags{}, fmt.Errorf("getting force: %w", err)
+		return config{}, fmt.Errorf("getting force: %w", err)
 	}
 
 	cacheWindowSize, err := cmd.Flags().GetInt("cache-window-size")
 	if err != nil {
-		return cliFlags{}, fmt.Errorf("getting cache window size: %w", err)
+		return config{}, fmt.Errorf("getting cache window size: %w", err)
 	}
-	return cliFlags{
+	return config{
 		maaFilePath:     maaFilePath,
 		uploadDate:      uploadDate,
 		region:          region,
 		bucket:          bucket,
+		url:             url,
 		distribution:    distribution,
 		force:           force,
 		cacheWindowSize: cacheWindowSize,
 	}, nil
+}
+
+func getEnvironment(testing bool) (url string, distributionID string) {
+	if testing {
+		return "https://d33dzgxuwsgbpw.cloudfront.net", "ETZGUP1CWRC2P"
+	}
+	return constants.CDNRepositoryURL, constants.CDNDefaultDistributionID
 }
 
 // maaTokenTCBClaims describes the TCB information in a MAA token.
