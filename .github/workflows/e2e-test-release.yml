@@ -154,10 +154,12 @@ jobs:
           #
           # Tests on macOS runner
           #
-          - test: "verify"
-            provider: "azure"
-            kubernetes-version: "v1.28"
-            runner: "macos-12"
+          # Skipping verify test on MacOS since the runner uses a different version of sed
+          # TODO(3u13r): Update verify test to work on MacOS runners
+          # - test: "verify"
+          #  provider: "azure"
+          #  kubernetes-version: "v1.28"
+          #  runner: "macos-12"
           - test: "recover"
             provider: "gcp"
             kubernetes-version: "v1.28"
