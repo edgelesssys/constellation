@@ -23,6 +23,8 @@ inputs:
     description: "Version of a released CLI to download, e.g. 'v2.3.0', leave empty to build it."
   kubernetesVersion:
     description: "Kubernetes version to create the cluster from."
+  refStream:
+    description: "RefStream of the image"
   regionZone:
     description: "Region or zone to use for resource creation"
     required: false
@@ -51,7 +53,7 @@ inputs:
     description: "Azure credentials authorized to create an IAM configuration."
     required: true
   test:
-    description: "The test to run. Can currently be one of [sonobuoy full, sonobuoy quick, autoscaling, lb, perf-bench, verify, recover, malicious join, nop]."
+    description: "The test to run. Can currently be one of [sonobuoy full, sonobuoy quick, autoscaling, lb, perf-bench, verify, recover, malicious join, nop, upgrade]."
     required: true
   sonobuoyTestSuiteCmd:
     description: "The sonobuoy test suite to run."
@@ -85,7 +87,7 @@ runs:
   using: "composite"
   steps:
     - name: Check input
-      if: (!contains(fromJson('["sonobuoy full", "sonobuoy quick", "autoscaling", "perf-bench", "verify", "lb", "recover", "malicious join", "nop"]'), inputs.test))
+      if: (!contains(fromJson('["sonobuoy full", "sonobuoy quick", "autoscaling", "perf-bench", "verify", "lb", "recover", "malicious join", "nop", "upgrade"]'), inputs.test))
       shell: bash
       run: |
         echo "::error::Invalid input for test field: ${{ inputs.test }}"
@@ -261,12 +263,14 @@ runs:
         test: ${{ inputs.test }}
         provider: ${{ inputs.cloudProvider }}
         isDebugImage: ${{ inputs.isDebugImage }}
+        kubernetesVersion: ${{ inputs.kubernetesVersion }}
+        refStream: ${{ inputs.refStream }}
 
     #
     # Test payloads
     #
     - name: Nop test payload
-      if: inputs.test == 'nop'
+      if: (inputs.test == 'nop') || (inputs.test == 'upgrade')
       shell: bash
       run: |
         echo "::warning::This test has a nop payload. It doesn't run any tests."
