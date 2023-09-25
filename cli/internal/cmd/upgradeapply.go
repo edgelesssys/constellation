@@ -343,7 +343,7 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, conf *config.Conf
 		return infraState, fmt.Errorf("getting Terraform output: %w", err)
 	}
 	state := state.NewState(infraState)
-	// TODO(elchead):
+	// TODO(elchead): AB#3424 move this to updateClusterIDFile and correctly handle existing state when writing state
 	if err := u.fileHandler.WriteYAML(constants.StateFilename, state, file.OptOverwrite); err != nil {
 		return infraState, fmt.Errorf("writing state file: %w", err)
 	}
