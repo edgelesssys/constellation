@@ -18,8 +18,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -64,19 +64,19 @@ type CreateOptions struct {
 }
 
 // Create creates the handed amount of instances and all the needed resources.
-func (c *Creator) Create(ctx context.Context, opts CreateOptions) (clusterid.File, error) {
+func (c *Creator) Create(ctx context.Context, opts CreateOptions) (state.Infrastructure, error) {
 	provider := opts.Config.GetProvider()
 	attestationVariant := opts.Config.GetAttestationConfig().GetVariant()
 	region := opts.Config.GetRegion()
 	image, err := c.image.FetchReference(ctx, provider, attestationVariant, opts.Config.Image, region)
 	if err != nil {
-		return clusterid.File{}, fmt.Errorf("fetching image reference: %w", err)
+		return state.Infrastructure{}, fmt.Errorf("fetching image reference: %w", err)
 	}
 	opts.image = image
 
 	cl, err := c.newTerraformClient(ctx, opts.TFWorkspace)
 	if err != nil {
-		return clusterid.File{}, err
+		return state.Infrastructure{}, err
 	}
 	defer cl.RemoveInstaller()
 
@@ -96,7 +96,7 @@ func (c *Creator) Create(ctx context.Context, opts CreateOptions) (clusterid.Fil
 		tfOutput, err = c.createOpenStack(ctx, cl, opts)
 	case cloudprovider.QEMU:
 		if runtime.GOARCH != "amd64" || runtime.GOOS != "linux" {
-			return clusterid.File{}, fmt.Errorf("creation of a QEMU based Constellation is not supported for %s/%s", runtime.GOOS, runtime.GOARCH)
+			return state.Infrastructure{}, fmt.Errorf("creation of a QEMU based Constellation is not supported for %s/%s", runtime.GOOS, runtime.GOARCH)
 		}
 		lv := c.newLibvirtRunner()
 		qemuOpts := qemuCreateOptions{
@@ -106,23 +106,13 @@ func (c *Creator) Create(ctx context.Context, opts CreateOptions) (clusterid.Fil
 
 		tfOutput, err = c.createQEMU(ctx, cl, lv, qemuOpts)
 	default:
-		return clusterid.File{}, fmt.Errorf("unsupported cloud provider: %s", opts.Provider)
+		return state.Infrastructure{}, fmt.Errorf("unsupported cloud provider: %s", opts.Provider)
 	}
 
 	if err != nil {
-		return clusterid.File{}, fmt.Errorf("creating cluster: %w", err)
+		return state.Infrastructure{}, fmt.Errorf("creating cluster: %w", err)
 	}
-	res := clusterid.File{
-		CloudProvider:     opts.Provider,
-		IP:                tfOutput.IP,
-		APIServerCertSANs: tfOutput.APIServerCertSANs,
-		InitSecret:        []byte(tfOutput.Secret),
-		UID:               tfOutput.UID,
-	}
-	if tfOutput.Azure != nil {
-		res.AttestationURL = tfOutput.Azure.AttestationURL
-	}
-	return res, nil
+	return terraform.ConvertToInfrastructure(tfOutput), nil
 }
 
 func (c *Creator) createAWS(ctx context.Context, cl tfResourceClient, opts CreateOptions) (tfOutput terraform.ApplyOutput, retErr error) {

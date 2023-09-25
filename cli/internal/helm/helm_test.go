@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
-	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -209,7 +209,7 @@ func TestHelmApply(t *testing.T) {
 			options.AllowDestructive = tc.allowDestructive
 			ex, includesUpgrade, err := sut.PrepareApply(cfg,
 				clusterid.File{UID: "testuid", MeasurementSalt: []byte("measurementSalt")}, options,
-				fakeTerraformOutput(csp), fakeServiceAccURI(csp),
+				fakeInfraOutput(csp), fakeServiceAccURI(csp),
 				uri.MasterSecret{Key: []byte("secret"), Salt: []byte("masterSalt")})
 			var upgradeErr *compatibility.InvalidUpgradeError
 			if tc.expectError {
@@ -225,12 +225,12 @@ func TestHelmApply(t *testing.T) {
 	}
 }
 
-func fakeTerraformOutput(csp cloudprovider.Provider) terraform.ApplyOutput {
+func fakeInfraOutput(csp cloudprovider.Provider) state.Infrastructure {
 	switch csp {
 	case cloudprovider.AWS:
-		return terraform.ApplyOutput{}
+		return state.Infrastructure{}
 	case cloudprovider.GCP:
-		return terraform.ApplyOutput{GCP: &terraform.GCPApplyOutput{}}
+		return state.Infrastructure{GCP: &state.GCP{}}
 	default:
 		panic("invalid csp")
 	}

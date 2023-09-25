@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
-	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
@@ -27,17 +27,16 @@ func TestMain(m *testing.M) {
 
 type stubCloudCreator struct {
 	createCalled bool
-	id           clusterid.File
+	state        state.Infrastructure
 	createErr    error
 }
 
 func (c *stubCloudCreator) Create(
 	_ context.Context,
-	opts cloudcmd.CreateOptions,
-) (clusterid.File, error) {
+	_ cloudcmd.CreateOptions,
+) (state.Infrastructure, error) {
 	c.createCalled = true
-	c.id.CloudProvider = opts.Provider
-	return c.id, c.createErr
+	return c.state, c.createErr
 }
 
 type stubCloudTerminator struct {

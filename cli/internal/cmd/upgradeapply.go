@@ -20,6 +20,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -139,7 +140,7 @@ type upgradeApplyCmd struct {
 	kubeUpgrader    kubernetesUpgrader
 	clusterUpgrader clusterUpgrader
 	configFetcher   attestationconfigapi.Fetcher
-	clusterShower   clusterShower
+	clusterShower   infrastructureShower
 	fileHandler     file.Handler
 	log             debugLog
 }
@@ -189,14 +190,14 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
 
-	var tfOutput terraform.ApplyOutput
+	var infraState state.Infrastructure
 	if flags.skipPhases.contains(skipInfrastructurePhase) {
-		tfOutput, err = u.clusterShower.ShowCluster(cmd.Context(), conf.GetProvider())
+		infraState, err = u.clusterShower.ShowInfrastructure(cmd.Context(), conf.GetProvider())
 		if err != nil {
-			return fmt.Errorf("getting Terraform output: %w", err)
+			return fmt.Errorf("getting infra state: %w", err)
 		}
 	} else {
-		tfOutput, err = u.migrateTerraform(cmd, conf, upgradeDir, flags)
+		infraState, err = u.migrateTerraform(cmd, conf, upgradeDir, flags)
 		if err != nil {
 			return fmt.Errorf("performing Terraform migrations: %w", err)
 		}
@@ -206,7 +207,11 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 	if err := u.fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil {
 		return fmt.Errorf("reading updated cluster ID file: %w", err)
 	}
-
+	state := state.NewState(infraState)
+	// TODO(elchead): AB#3424 move this to updateClusterIDFile and correctly handle existing state when writing state
+	if err := u.fileHandler.WriteYAML(constants.StateFilename, state, file.OptOverwrite); err != nil {
+		return fmt.Errorf("writing state file: %w", err)
+	}
 	// extend the clusterConfig cert SANs with any of the supported endpoints:
 	// - (legacy) public IP
 	// - fallback endpoint
@@ -223,7 +228,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 
 	var upgradeErr *compatibility.InvalidUpgradeError
 	if !flags.skipPhases.contains(skipHelmPhase) {
-		err = u.handleServiceUpgrade(cmd, conf, idFile, tfOutput, upgradeDir, flags)
+		err = u.handleServiceUpgrade(cmd, conf, idFile, infraState, upgradeDir, flags)
 		switch {
 		case errors.As(err, &upgradeErr):
 			cmd.PrintErrln(err)
@@ -233,7 +238,6 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 			return fmt.Errorf("upgrading services: %w", err)
 		}
 	}
-
 	skipImageUpgrade := flags.skipPhases.contains(skipImagePhase)
 	skipK8sUpgrade := flags.skipPhases.contains(skipK8sPhase)
 	if !(skipImageUpgrade && skipK8sUpgrade) {
@@ -267,7 +271,7 @@ func diffAttestationCfg(currentAttestationCfg config.AttestationCfg, newAttestat
 // migrateTerraform checks if the Constellation version the cluster is being upgraded to requires a migration
 // of cloud resources with Terraform. If so, the migration is performed.
 func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, conf *config.Config, upgradeDir string, flags upgradeApplyFlags,
-) (res terraform.ApplyOutput, err error) {
+) (res state.Infrastructure, err error) {
 	u.log.Debugf("Planning Terraform migrations")
 
 	vars, err := cloudcmd.TerraformUpgradeVars(conf)
@@ -315,13 +319,14 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, conf *config.Conf
 		}
 		u.log.Debugf("Applying Terraform migrations")
 		tfOutput, err := u.clusterUpgrader.ApplyClusterUpgrade(cmd.Context(), conf.GetProvider())
+		res = terraform.ConvertToInfrastructure(tfOutput)
 		if err != nil {
-			return tfOutput, fmt.Errorf("applying terraform migrations: %w", err)
+			return res, fmt.Errorf("applying terraform migrations: %w", err)
 		}
 
 		// Apply possible updates to cluster ID file
 		if err := updateClusterIDFile(tfOutput, u.fileHandler); err != nil {
-			return tfOutput, fmt.Errorf("merging cluster ID files: %w", err)
+			return res, fmt.Errorf("merging cluster ID files: %w", err)
 		}
 
 		cmd.Printf("Terraform migrations applied successfully and output written to: %s\n"+
@@ -333,11 +338,16 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, conf *config.Conf
 		u.log.Debugf("No Terraform diff detected")
 	}
 	u.log.Debugf("No Terraform diff detected")
-	tfOutput, err := u.clusterShower.ShowCluster(cmd.Context(), conf.GetProvider())
+	infraState, err := u.clusterShower.ShowInfrastructure(cmd.Context(), conf.GetProvider())
 	if err != nil {
-		return tfOutput, fmt.Errorf("getting Terraform output: %w", err)
+		return infraState, fmt.Errorf("getting Terraform output: %w", err)
 	}
-	return tfOutput, nil
+	state := state.NewState(infraState)
+	// TODO(elchead): AB#3424 move this to updateClusterIDFile and correctly handle existing state when writing state
+	if err := u.fileHandler.WriteYAML(constants.StateFilename, state, file.OptOverwrite); err != nil {
+		return infraState, fmt.Errorf("writing state file: %w", err)
+	}
+	return infraState, nil
 }
 
 // validK8sVersion checks if the Kubernetes patch version is supported and asks for confirmation if not.
@@ -404,7 +414,7 @@ func (u *upgradeApplyCmd) confirmAndUpgradeAttestationConfig(
 }
 
 func (u *upgradeApplyCmd) handleServiceUpgrade(
-	cmd *cobra.Command, conf *config.Config, idFile clusterid.File, tfOutput terraform.ApplyOutput,
+	cmd *cobra.Command, conf *config.Config, idFile clusterid.File, infra state.Infrastructure,
 	upgradeDir string, flags upgradeApplyFlags,
 ) error {
 	var secret uri.MasterSecret
@@ -424,7 +434,7 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(
 	prepareApply := func(allowDestructive bool) (helm.Applier, bool, error) {
 		options.AllowDestructive = allowDestructive
 		executor, includesUpgrades, err := u.helmApplier.PrepareApply(conf, idFile, options,
-			tfOutput, serviceAccURI, secret)
+			infra, serviceAccURI, secret)
 		var upgradeErr *compatibility.InvalidUpgradeError
 		switch {
 		case errors.As(err, &upgradeErr):

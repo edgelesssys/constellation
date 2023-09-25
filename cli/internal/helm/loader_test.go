@@ -23,7 +23,7 @@ import (
 	"helm.sh/helm/v3/pkg/engine"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
-	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -71,7 +71,7 @@ func TestLoadReleases(t *testing.T) {
 	helmReleases, err := chartLoader.loadReleases(
 		true, WaitModeAtomic,
 		uri.MasterSecret{Key: []byte("secret"), Salt: []byte("masterSalt")},
-		fakeServiceAccURI(cloudprovider.GCP), terraform.ApplyOutput{GCP: &terraform.GCPApplyOutput{}},
+		fakeServiceAccURI(cloudprovider.GCP), state.Infrastructure{GCP: &state.GCP{}},
 	)
 	require.NoError(err)
 	for _, release := range helmReleases {
@@ -175,9 +175,9 @@ func TestConstellationServices(t *testing.T) {
 					Key:  []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
 					Salt: []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
 				},
-				"uid", serviceAccURI, terraform.ApplyOutput{
-					Azure: &terraform.AzureApplyOutput{},
-					GCP:   &terraform.GCPApplyOutput{},
+				"uid", serviceAccURI, state.Infrastructure{
+					Azure: &state.Azure{},
+					GCP:   &state.GCP{},
 				})
 			require.NoError(err)
 			values = mergeMaps(values, extraVals)

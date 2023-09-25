@@ -21,7 +21,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm/imageversion"
-	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -120,13 +120,13 @@ type releaseApplyOrder []Release
 
 // loadReleases loads the embedded helm charts and returns them as a HelmReleases object.
 func (i *chartLoader) loadReleases(conformanceMode bool, helmWaitMode WaitMode, masterSecret uri.MasterSecret,
-	serviceAccURI string, output terraform.ApplyOutput,
+	serviceAccURI string, infra state.Infrastructure,
 ) (releaseApplyOrder, error) {
 	ciliumRelease, err := i.loadRelease(ciliumInfo, helmWaitMode)
 	if err != nil {
 		return nil, fmt.Errorf("loading cilium: %w", err)
 	}
-	ciliumVals := extraCiliumValues(i.config.GetProvider(), conformanceMode, output)
+	ciliumVals := extraCiliumValues(i.config.GetProvider(), conformanceMode, infra)
 	ciliumRelease.Values = mergeMaps(ciliumRelease.Values, ciliumVals)
 
 	certManagerRelease, err := i.loadRelease(certManagerInfo, helmWaitMode)
@@ -145,7 +145,7 @@ func (i *chartLoader) loadReleases(conformanceMode bool, helmWaitMode WaitMode, 
 		return nil, fmt.Errorf("loading constellation-services: %w", err)
 	}
 
-	svcVals, err := extraConstellationServicesValues(i.config, masterSecret, i.idFile.UID, serviceAccURI, output)
+	svcVals, err := extraConstellationServicesValues(i.config, masterSecret, i.idFile.UID, serviceAccURI, infra)
 	if err != nil {
 		return nil, fmt.Errorf("extending constellation-services values: %w", err)
 	}

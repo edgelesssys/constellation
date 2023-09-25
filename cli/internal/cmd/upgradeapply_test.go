@@ -15,6 +15,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -186,7 +187,7 @@ func TestUpgradeApply(t *testing.T) {
 				clusterUpgrader: tc.terraformUpgrader,
 				log:             logger.NewTest(t),
 				configFetcher:   stubAttestationFetcher{},
-				clusterShower:   &stubShowCluster{},
+				clusterShower:   &stubShowInfrastructure{},
 				fileHandler:     handler,
 			}
 
@@ -198,6 +199,15 @@ func TestUpgradeApply(t *testing.T) {
 			assert.NoError(err)
 			assert.Equal(!tc.flags.skipPhases.contains(skipImagePhase), tc.kubeUpgrader.calledNodeUpgrade,
 				"incorrect node upgrade skipping behavior")
+
+			var gotState state.State
+			expectedState := state.Infrastructure{
+				APIServerCertSANs: []string{},
+				Azure:             &state.Azure{},
+			}
+			require.NoError(handler.ReadYAML(constants.StateFilename, &gotState))
+			assert.Equal("v1", gotState.Version)
+			assert.Equal(expectedState, gotState.Infrastructure)
 		})
 	}
 }
@@ -298,7 +308,9 @@ type mockApplier struct {
 	mock.Mock
 }
 
-func (m *mockApplier) PrepareApply(cfg *config.Config, clusterID clusterid.File, helmOpts helm.Options, terraformOut terraform.ApplyOutput, str string, masterSecret uri.MasterSecret) (helm.Applier, bool, error) {
-	args := m.Called(cfg, clusterID, helmOpts, terraformOut, str, masterSecret)
+func (m *mockApplier) PrepareApply(cfg *config.Config, clusterID clusterid.File,
+	helmOpts helm.Options, infraState state.Infrastructure, str string, masterSecret uri.MasterSecret,
+) (helm.Applier, bool, error) {
+	args := m.Called(cfg, clusterID, helmOpts, infraState, str, masterSecret)
 	return args.Get(0).(helm.Applier), args.Bool(1), args.Error(2)
 }

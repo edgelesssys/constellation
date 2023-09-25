@@ -24,6 +24,7 @@ import (
 	"io"
 	"path/filepath"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -168,6 +169,44 @@ func (c *Client) ShowIAM(ctx context.Context, provider cloudprovider.Provider) (
 	default:
 		return IAMOutput{}, errors.New("unsupported cloud provider")
 	}
+}
+
+// ShowInfrastructure reads the state of Constellation cluster resources from Terraform.
+func (c *Client) ShowInfrastructure(ctx context.Context, provider cloudprovider.Provider) (state.Infrastructure, error) {
+	tfOutput, err := c.ShowCluster(ctx, provider)
+	if err != nil {
+		return state.Infrastructure{}, err
+	}
+	return ConvertToInfrastructure(tfOutput), nil
+}
+
+// ConvertToInfrastructure converts the Terraform output of a cluster creation or apply operation to a state.Infrastructure.
+func ConvertToInfrastructure(applyOutput ApplyOutput) state.Infrastructure {
+	var infra state.Infrastructure
+	infra.UID = applyOutput.UID
+	infra.ClusterEndpoint = applyOutput.IP
+	infra.InitSecret = applyOutput.Secret
+	infra.APIServerCertSANs = applyOutput.APIServerCertSANs
+
+	if applyOutput.Azure != nil {
+		infra.Azure = &state.Azure{
+			ResourceGroup:            applyOutput.Azure.ResourceGroup,
+			SubscriptionID:           applyOutput.Azure.SubscriptionID,
+			UserAssignedIdentity:     applyOutput.Azure.UserAssignedIdentity,
+			NetworkSecurityGroupName: applyOutput.Azure.NetworkSecurityGroupName,
+			LoadBalancerName:         applyOutput.Azure.LoadBalancerName,
+			AttestationURL:           applyOutput.Azure.AttestationURL,
+		}
+	}
+
+	if applyOutput.GCP != nil {
+		infra.GCP = &state.GCP{
+			ProjectID:  applyOutput.GCP.ProjectID,
+			IPCidrNode: applyOutput.GCP.IPCidrNode,
+			IPCidrPod:  applyOutput.GCP.IPCidrPod,
+		}
+	}
+	return infra
 }
 
 // ShowCluster reads the state of Constellation cluster resources from Terraform.

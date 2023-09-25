@@ -14,6 +14,7 @@
 /cli/internal/libvirt @daniel-weisse
 /cli/internal/terraform @elchead
 /cli/internal/upgrade @elchead
+/cli/internal/state @elchead
 /csi @daniel-weisse
 /debugd @malt3
 /disk-mapper @daniel-weisse
@@ -23,7 +24,6 @@
 /hack/bazel-deps-mirror @malt3
 /hack/cli-k8s-compatibility @derpsteb
 /hack/clidocgen @thomasten
-/hack/configapi @elchead
 /hack/fetch-broken-e2e @katexochen
 /hack/gocoverage @katexochen
 /hack/oci-pin @malt3

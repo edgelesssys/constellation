@@ -11,6 +11,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -31,7 +32,7 @@ type stubTerraformClient struct {
 	iamOutput              terraform.IAMOutput
 	uid                    string
 	attestationURL         string
-	applyOutput            terraform.ApplyOutput
+	infraState             state.Infrastructure
 	cleanUpWorkspaceCalled bool
 	removeInstallerCalled  bool
 	destroyCalled          bool
@@ -77,9 +78,9 @@ func (c *stubTerraformClient) RemoveInstaller() {
 	c.removeInstallerCalled = true
 }
 
-func (c *stubTerraformClient) ShowCluster(_ context.Context, _ cloudprovider.Provider) (terraform.ApplyOutput, error) {
+func (c *stubTerraformClient) ShowInfrastructure(_ context.Context, _ cloudprovider.Provider) (state.Infrastructure, error) {
 	c.showCalled = true
-	return c.applyOutput, c.showErr
+	return c.infraState, c.showErr
 }
 
 func (c *stubTerraformClient) ShowIAM(_ context.Context, _ cloudprovider.Provider) (terraform.IAMOutput, error) {

@@ -23,7 +23,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
-	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -228,7 +228,7 @@ func TestInitialize(t *testing.T) {
 			ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 			defer cancel()
 			cmd.SetContext(ctx)
-			i := newInitCmd(&stubShowCluster{}, fileHandler, &nopSpinner{}, nil, logger.NewTest(t))
+			i := newInitCmd(&stubShowInfrastructure{}, fileHandler, &nopSpinner{}, nil, logger.NewTest(t))
 			err := i.initialize(cmd, newDialer, &stubLicenseClient{}, stubAttestationFetcher{},
 				func(io.Writer, string, debugLog) (attestationConfigApplier, error) {
 					return &stubAttestationApplier{}, nil
@@ -264,7 +264,7 @@ type stubApplier struct {
 	err error
 }
 
-func (s stubApplier) PrepareApply(_ *config.Config, _ clusterid.File, _ helm.Options, _ terraform.ApplyOutput, _ string, _ uri.MasterSecret) (helm.Applier, bool, error) {
+func (s stubApplier) PrepareApply(_ *config.Config, _ clusterid.File, _ helm.Options, _ state.Infrastructure, _ string, _ uri.MasterSecret) (helm.Applier, bool, error) {
 	return stubRunner{}, false, s.err
 }
 
@@ -722,15 +722,15 @@ func (c stubInitClient) Recv() (*initproto.InitResponse, error) {
 	return res, err
 }
 
-type stubShowCluster struct{}
+type stubShowInfrastructure struct{}
 
-func (s *stubShowCluster) ShowCluster(_ context.Context, csp cloudprovider.Provider) (terraform.ApplyOutput, error) {
-	res := terraform.ApplyOutput{}
+func (s *stubShowInfrastructure) ShowInfrastructure(_ context.Context, csp cloudprovider.Provider) (state.Infrastructure, error) {
+	res := state.Infrastructure{}
 	switch csp {
 	case cloudprovider.Azure:
-		res.Azure = &terraform.AzureApplyOutput{}
+		res.Azure = &state.Azure{}
 	case cloudprovider.GCP:
-		res.GCP = &terraform.GCPApplyOutput{}
+		res.GCP = &state.GCP{}
 	}
 	return res, nil
 }
