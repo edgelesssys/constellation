@@ -1,21 +1,18 @@
 /*
 Copyright (c) Edgeless Systems GmbH
-
 SPDX-License-Identifier: AGPL-3.0-only
 */
-
-package main
+package attestationconfigapi
 
 import (
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestIsInputNewerThanLatestAPI(t *testing.T) {
-	newTestCfg := func() attestationconfigapi.AzureSEVSNPVersion {
-		return attestationconfigapi.AzureSEVSNPVersion{
+	newTestCfg := func() AzureSEVSNPVersion {
+		return AzureSEVSNPVersion{
 			Microcode:  93,
 			TEE:        0,
 			SNP:        6,
@@ -24,13 +21,13 @@ func TestIsInputNewerThanLatestAPI(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		latest attestationconfigapi.AzureSEVSNPVersion
-		input  attestationconfigapi.AzureSEVSNPVersion
+		latest AzureSEVSNPVersion
+		input  AzureSEVSNPVersion
 		expect bool
 		errMsg string
 	}{
 		"input is older than latest": {
-			input: func(c attestationconfigapi.AzureSEVSNPVersion) attestationconfigapi.AzureSEVSNPVersion {
+			input: func(c AzureSEVSNPVersion) AzureSEVSNPVersion {
 				c.Microcode--
 				return c
 			}(newTestCfg()),
@@ -39,7 +36,7 @@ func TestIsInputNewerThanLatestAPI(t *testing.T) {
 			errMsg: "input Microcode version: 92 is older than latest API version: 93",
 		},
 		"input has greater and smaller version field than latest": {
-			input: func(c attestationconfigapi.AzureSEVSNPVersion) attestationconfigapi.AzureSEVSNPVersion {
+			input: func(c AzureSEVSNPVersion) AzureSEVSNPVersion {
 				c.Microcode++
 				c.Bootloader--
 				return c
@@ -49,7 +46,7 @@ func TestIsInputNewerThanLatestAPI(t *testing.T) {
 			errMsg: "input Bootloader version: 1 is older than latest API version: 2",
 		},
 		"input is newer than latest": {
-			input: func(c attestationconfigapi.AzureSEVSNPVersion) attestationconfigapi.AzureSEVSNPVersion {
+			input: func(c AzureSEVSNPVersion) AzureSEVSNPVersion {
 				c.TEE++
 				return c
 			}(newTestCfg()),
@@ -64,7 +61,7 @@ func TestIsInputNewerThanLatestAPI(t *testing.T) {
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			isNewer, err := isInputNewerThanLatestAPI(tc.input, tc.latest)
+			isNewer, err := isInputNewerThanOtherVersion(tc.input, tc.latest)
 			assert := assert.New(t)
 			if tc.errMsg != "" {
 				assert.EqualError(err, tc.errMsg)

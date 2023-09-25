@@ -26,7 +26,6 @@ import (
 	"os"
 	"reflect"
 	"strings"
-	"time"
 
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"
@@ -456,7 +455,7 @@ func New(fileHandler file.Handler, name string, fetcher attestationconfigapi.Fet
 	}
 
 	if azure := c.Attestation.AzureSEVSNP; azure != nil {
-		if err := azure.FetchAndSetLatestVersionNumbers(context.Background(), fetcher, time.Now()); err != nil {
+		if err := azure.FetchAndSetLatestVersionNumbers(context.Background(), fetcher); err != nil {
 			return c, err
 		}
 	}

@@ -21,6 +21,9 @@ go_library(
         "//internal/constants",
         "//internal/logger",
         "//internal/staticupload",
+        "@com_github_aws_aws_sdk_go//aws",
+        "@com_github_aws_aws_sdk_go_v2_service_s3//:s3",
+        "@com_github_aws_aws_sdk_go_v2_service_s3//types",
         "@com_github_spf13_cobra//:cobra",
         "@org_uber_go_zap//:zap",
     ],
@@ -28,13 +31,9 @@ go_library(
 
 go_test(
     name = "cli_test",
-    srcs = [
-        "delete_test.go",
-        "main_test.go",
-    ],
+    srcs = ["delete_test.go"],
     embed = [":cli_lib"],
     deps = [
-        "//internal/api/attestationconfigapi",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],

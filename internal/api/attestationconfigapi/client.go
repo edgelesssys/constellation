@@ -7,6 +7,7 @@ package attestationconfigapi
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
+
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
 )
 
@@ -22,30 +24,32 @@ const VersionFormat = "2006-01-02-15-04"
 
 // Client manages (modifies) the version information for the attestation variants.
 type Client struct {
-	s3Client      *apiclient.Client
-	s3ClientClose func(ctx context.Context) error
-	bucketID      string
-	signer        sigstore.Signer
+	s3Client        *apiclient.Client
+	s3ClientClose   func(ctx context.Context) error
+	bucketID        string
+	signer          sigstore.Signer
+	cacheWindowSize int
 }
 
 // NewClient returns a new Client.
-func NewClient(ctx context.Context, cfg staticupload.Config, cosignPwd, privateKey []byte, dryRun bool, log *logger.Logger) (*Client, apiclient.CloseFunc, error) {
+func NewClient(ctx context.Context, cfg staticupload.Config, cosignPwd, privateKey []byte, dryRun bool, versionWindowSize int, log *logger.Logger) (*Client, apiclient.CloseFunc, error) {
 	s3Client, clientClose, err := apiclient.NewClient(ctx, cfg.Region, cfg.Bucket, cfg.DistributionID, dryRun, log)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create s3 storage: %w", err)
 	}
 
 	repo := &Client{
-		s3Client:      s3Client,
-		s3ClientClose: clientClose,
-		signer:        sigstore.NewSigner(cosignPwd, privateKey),
-		bucketID:      cfg.Bucket,
+		s3Client:        s3Client,
+		s3ClientClose:   clientClose,
+		signer:          sigstore.NewSigner(cosignPwd, privateKey),
+		bucketID:        cfg.Bucket,
+		cacheWindowSize: versionWindowSize,
 	}
 	return repo, clientClose, nil
 }
 
-// UploadAzureSEVSNPVersion uploads the latest version numbers of the Azure SEVSNP. Then version name is the UTC timestamp of the date. The /list entry stores the version name + .json suffix.
-func (a Client) UploadAzureSEVSNPVersion(ctx context.Context, version AzureSEVSNPVersion, date time.Time) error {
+// uploadAzureSEVSNPVersion uploads the latest version numbers of the Azure SEVSNP. Then version name is the UTC timestamp of the date. The /list entry stores the version name + .json suffix.
+func (a Client) uploadAzureSEVSNPVersion(ctx context.Context, version AzureSEVSNPVersion, date time.Time) error {
 	versions, err := a.List(ctx, variant.AzureSEVSNP{})
 	if err != nil {
 		return fmt.Errorf("fetch version list: %w", err)
@@ -73,6 +77,10 @@ func (a Client) List(ctx context.Context, attestation variant.Variant) ([]string
 	if attestation.Equal(variant.AzureSEVSNP{}) {
 		versions, err := apiclient.Fetch(ctx, a.s3Client, AzureSEVSNPVersionList{})
 		if err != nil {
+			var notFoundErr *apiclient.NotFoundError
+			if errors.As(err, &notFoundErr) {
+				return nil, nil
+			}
 			return nil, err
 		}
 		return versions, nil

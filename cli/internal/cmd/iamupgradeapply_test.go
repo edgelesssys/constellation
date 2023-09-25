@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
@@ -176,6 +175,6 @@ func (s *stubConfigFetcher) FetchAzureSEVSNPVersionList(context.Context, attesta
 	panic("not implemented")
 }
 
-func (s *stubConfigFetcher) FetchAzureSEVSNPVersionLatest(context.Context, time.Time) (attestationconfigapi.AzureSEVSNPVersionAPI, error) {
+func (s *stubConfigFetcher) FetchAzureSEVSNPVersionLatest(context.Context) (attestationconfigapi.AzureSEVSNPVersionAPI, error) {
 	return attestationconfigapi.AzureSEVSNPVersionAPI{}, s.fetchLatestErr
 }

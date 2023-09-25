@@ -8,8 +8,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 This package provides a CLI to interact with the Attestationconfig API, a sub API of the Resource API.
 
 You can execute an e2e test by running: `bazel run //internal/api/attestationconfigapi:configapi_e2e_test`.
-The CLI is used in the CI pipeline. Actions that change the bucket's data shouldn't be executed manually.
-Notice that there is no synchronization on API operations.
+The CLI is used in the CI pipeline. Manual actions that change the bucket's data shouldn't be necessary.
+The reporter CLI caches the observed version values in a dedicated caching directory and derives the latest API version from it.
+Any version update is then pushed to the API.
 */
 package main
 
@@ -35,6 +36,8 @@ const (
 	distributionID      = constants.CDNDefaultDistributionID
 	envCosignPwd        = "COSIGN_PASSWORD"
 	envCosignPrivateKey = "COSIGN_PRIVATE_KEY"
+	// versionWindowSize defines the number of versions to be considered for the latest version. Each week 5 versions are uploaded for each node of the verify cluster.
+	versionWindowSize = 15
 )
 
 var (
@@ -53,10 +56,10 @@ func main() {
 // newRootCmd creates the root command.
 func newRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:   "COSIGN_PASSWORD=$CPWD COSIGN_PRIVATE_KEY=$CKEY upload --version-file $FILE",
+		Use:   "COSIGN_PASSWORD=$CPW COSIGN_PRIVATE_KEY=$CKEY upload --version-file $FILE",
 		Short: "Upload a set of versions specific to the azure-sev-snp attestation variant to the config api.",
 
-		Long: fmt.Sprintf("Upload a set of versions specific to the azure-sev-snp attestation variant to the config api."+
+		Long: fmt.Sprintf("The CLI uploads an observed version number specific to the azure-sev-snp attestation variant to a cache directory. The CLI then determines the lowest version within the cache-window present in the cache and writes that value to the config api if necessary. "+
 			"Please authenticate with AWS through your preferred method (e.g. environment variables, CLI)"+
 			"to be able to upload to S3. Set the %s and %s environment variables to authenticate with cosign.",
 			envCosignPrivateKey, envCosignPwd,
@@ -66,9 +69,12 @@ func newRootCmd() *cobra.Command {
 	}
 	rootCmd.Flags().StringP("maa-claims-path", "t", "", "File path to a json file containing the MAA claims.")
 	rootCmd.Flags().StringP("upload-date", "d", "", "upload a version with this date as version name.")
+	rootCmd.Flags().BoolP("force", "f", false, "Use force to manually push a new latest version."+
+		" The version gets saved to the cache but the version selection logic is skipped.")
+	rootCmd.Flags().IntP("cache-window-size", "s", versionWindowSize, "Number of versions to be considered for the latest version.")
 	rootCmd.PersistentFlags().StringP("region", "r", awsRegion, "region of the targeted bucket.")
 	rootCmd.PersistentFlags().StringP("bucket", "b", awsBucket, "bucket targeted by all operations.")
-	rootCmd.PersistentFlags().StringP("distribution", "i", distributionID, "cloudflare distribution used.")
+	rootCmd.PersistentFlags().Bool("testing", false, "upload to S3 test bucket.")
 	must(rootCmd.MarkFlagRequired("maa-claims-path"))
 	rootCmd.AddCommand(newDeleteCmd())
 	return rootCmd
@@ -110,23 +116,8 @@ func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 	inputVersion := maaTCB.ToAzureSEVSNPVersion()
 	log.Infof("Input version: %+v", inputVersion)
 
-	latestAPIVersionAPI, err := attestationconfigapi.NewFetcher().FetchAzureSEVSNPVersionLatest(ctx, flags.uploadDate)
-	if err != nil {
-		return fmt.Errorf("fetching latest version: %w", err)
-	}
-	latestAPIVersion := latestAPIVersionAPI.AzureSEVSNPVersion
-
-	isNewer, err := isInputNewerThanLatestAPI(inputVersion, latestAPIVersion)
-	if err != nil {
-		return fmt.Errorf("comparing versions: %w", err)
-	}
-	if !isNewer {
-		log.Infof("Input version: %+v is not newer than latest API version: %+v", inputVersion, latestAPIVersion)
-		return nil
-	}
-	log.Infof("Input version: %+v is newer than latest API version: %+v", inputVersion, latestAPIVersion)
-
-	client, clientClose, err := attestationconfigapi.NewClient(ctx, cfg, []byte(cosignPwd), []byte(privateKey), false, log)
+	client, clientClose, err := attestationconfigapi.NewClient(ctx, cfg,
+		[]byte(cosignPwd), []byte(privateKey), false, flags.cacheWindowSize, log)
 	defer func() {
 		err := clientClose(cmd.Context())
 		if err != nil {
@@ -138,62 +129,96 @@ func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 		return fmt.Errorf("creating client: %w", err)
 	}
 
-	if err := client.UploadAzureSEVSNPVersion(ctx, inputVersion, flags.uploadDate); err != nil {
-		return fmt.Errorf("uploading version: %w", err)
+	latestAPIVersionAPI, err := attestationconfigapi.NewFetcherWithCustomCDNAndCosignKey(flags.url, constants.CosignPublicKeyDev).FetchAzureSEVSNPVersionLatest(ctx)
+	if err != nil {
+		if errors.Is(err, attestationconfigapi.ErrNoVersionsFound) {
+			log.Infof("No versions found in API, but assuming that we are uploading the first version.")
+		} else {
+			return fmt.Errorf("fetching latest version: %w", err)
+		}
 	}
-
-	cmd.Printf("Successfully uploaded new Azure SEV-SNP version: %+v\n", inputVersion)
+	latestAPIVersion := latestAPIVersionAPI.AzureSEVSNPVersion
+	if err := client.UploadAzureSEVSNPVersionLatest(ctx, inputVersion, latestAPIVersion, flags.uploadDate, flags.force); err != nil {
+		if errors.Is(err, attestationconfigapi.ErrNoNewerVersion) {
+			log.Infof("Input version: %+v is not newer than latest API version: %+v", inputVersion, latestAPIVersion)
+			return nil
+		}
+		return fmt.Errorf("updating latest version: %w", err)
+	}
 	return nil
 }
 
-type cliFlags struct {
-	maaFilePath  string
-	uploadDate   time.Time
-	region       string
-	bucket       string
-	distribution string
+type config struct {
+	maaFilePath     string
+	uploadDate      time.Time
+	region          string
+	bucket          string
+	distribution    string
+	url             string
+	force           bool
+	cacheWindowSize int
 }
 
-func parseCliFlags(cmd *cobra.Command) (cliFlags, error) {
+func parseCliFlags(cmd *cobra.Command) (config, error) {
 	maaFilePath, err := cmd.Flags().GetString("maa-claims-path")
 	if err != nil {
-		return cliFlags{}, fmt.Errorf("getting maa claims path: %w", err)
+		return config{}, fmt.Errorf("getting maa claims path: %w", err)
 	}
 
 	dateStr, err := cmd.Flags().GetString("upload-date")
 	if err != nil {
-		return cliFlags{}, fmt.Errorf("getting upload date: %w", err)
+		return config{}, fmt.Errorf("getting upload date: %w", err)
 	}
 	uploadDate := time.Now()
 	if dateStr != "" {
 		uploadDate, err = time.Parse(attestationconfigapi.VersionFormat, dateStr)
 		if err != nil {
-			return cliFlags{}, fmt.Errorf("parsing date: %w", err)
+			return config{}, fmt.Errorf("parsing date: %w", err)
 		}
 	}
 
 	region, err := cmd.Flags().GetString("region")
 	if err != nil {
-		return cliFlags{}, fmt.Errorf("getting region: %w", err)
+		return config{}, fmt.Errorf("getting region: %w", err)
 	}
 
 	bucket, err := cmd.Flags().GetString("bucket")
 	if err != nil {
-		return cliFlags{}, fmt.Errorf("getting bucket: %w", err)
+		return config{}, fmt.Errorf("getting bucket: %w", err)
 	}
 
-	distribution, err := cmd.Flags().GetString("distribution")
+	testing, err := cmd.Flags().GetBool("testing")
 	if err != nil {
-		return cliFlags{}, fmt.Errorf("getting distribution: %w", err)
+		return config{}, fmt.Errorf("getting testing flag: %w", err)
+	}
+	url, distribution := getEnvironment(testing)
+
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return config{}, fmt.Errorf("getting force: %w", err)
 	}
 
-	return cliFlags{
-		maaFilePath:  maaFilePath,
-		uploadDate:   uploadDate,
-		region:       region,
-		bucket:       bucket,
-		distribution: distribution,
+	cacheWindowSize, err := cmd.Flags().GetInt("cache-window-size")
+	if err != nil {
+		return config{}, fmt.Errorf("getting cache window size: %w", err)
+	}
+	return config{
+		maaFilePath:     maaFilePath,
+		uploadDate:      uploadDate,
+		region:          region,
+		bucket:          bucket,
+		url:             url,
+		distribution:    distribution,
+		force:           force,
+		cacheWindowSize: cacheWindowSize,
 	}, nil
+}
+
+func getEnvironment(testing bool) (url string, distributionID string) {
+	if testing {
+		return "https://d33dzgxuwsgbpw.cloudfront.net", "ETZGUP1CWRC2P"
+	}
+	return constants.CDNRepositoryURL, constants.CDNDefaultDistributionID
 }
 
 // maaTokenTCBClaims describes the TCB information in a MAA token.
@@ -213,26 +238,6 @@ func (c maaTokenTCBClaims) ToAzureSEVSNPVersion() attestationconfigapi.AzureSEVS
 		Microcode:  c.IsolationTEE.MicrocodeSvn,
 		Bootloader: c.IsolationTEE.BootloaderSvn,
 	}
-}
-
-// isInputNewerThanLatestAPI compares all version fields with the latest API version and returns true if any input field is newer.
-func isInputNewerThanLatestAPI(input, latest attestationconfigapi.AzureSEVSNPVersion) (bool, error) {
-	if input == latest {
-		return false, nil
-	}
-	if input.TEE < latest.TEE {
-		return false, fmt.Errorf("input TEE version: %d is older than latest API version: %d", input.TEE, latest.TEE)
-	}
-	if input.SNP < latest.SNP {
-		return false, fmt.Errorf("input SNP version: %d is older than latest API version: %d", input.SNP, latest.SNP)
-	}
-	if input.Microcode < latest.Microcode {
-		return false, fmt.Errorf("input Microcode version: %d is older than latest API version: %d", input.Microcode, latest.Microcode)
-	}
-	if input.Bootloader < latest.Bootloader {
-		return false, fmt.Errorf("input Bootloader version: %d is older than latest API version: %d", input.Bootloader, latest.Bootloader)
-	}
-	return true, nil
 }
 
 func must(err error) {
