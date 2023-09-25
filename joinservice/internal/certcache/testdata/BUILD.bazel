@@ -1,0 +1,12 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "testdata",
+    srcs = ["testdata.go"],
+    embedsrcs = [
+        "ark.pem",
+        "ask.pem",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/joinservice/internal/certcache/testdata",
+    visibility = ["//joinservice:__subpackages__"],
+)

@@ -26,13 +26,13 @@ import (
 // Client is a client for interacting with the certificate chain cache.
 type Client struct {
 	log        *logger.Logger
-	attVariant *variant.Variant
+	attVariant variant.Variant
 	kdsClient
 	kubeClient kubeClient
 }
 
 // NewClient creates a new CertCacheClient.
-func NewClient(log *logger.Logger, kubeClient kubeClient, attVariant *variant.Variant) *Client {
+func NewClient(log *logger.Logger, kubeClient kubeClient, attVariant variant.Variant) *Client {
 	kdsClient := amdkds.NewKDSClient(trust.DefaultHTTPSGetter())
 
 	return &Client{
@@ -47,7 +47,7 @@ func NewClient(log *logger.Logger, kubeClient kubeClient, attVariant *variant.Va
 // and returns the cached certificates, if applicable.
 // If the certificate chain cache already exists, nothing is done.
 func (c *Client) CreateCertChainCache(ctx context.Context) (*CachedCerts, error) {
-	switch *c.attVariant {
+	switch c.attVariant {
 	case variant.AzureSEVSNP{}:
 		c.log.Debugf("Creating azure SEV-SNP certificate chain cache")
 		ask, ark, err := c.createCertChainCache(ctx, abi.VcekReportSigner)
@@ -60,7 +60,7 @@ func (c *Client) CreateCertChainCache(ctx context.Context) (*CachedCerts, error)
 		}, nil
 	// TODO(derpsteb): Add AWS
 	default:
-		c.log.Debugf("No certificate chain caching possible for attestation variant %s", *c.attVariant)
+		c.log.Debugf("No certificate chain caching possible for attestation variant %s", c.attVariant)
 		return nil, nil
 	}
 }

@@ -1,4 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "certcache",
@@ -13,5 +14,17 @@ go_library(
         "@com_github_google_go_sev_guest//abi",
         "@com_github_google_go_sev_guest//verify/trust",
         "@io_k8s_apimachinery//pkg/api/errors",
+    ],
+)
+
+go_test(
+    name = "certcache_test",
+    srcs = ["certcache_test.go"],
+    embed = [":certcache"],
+    deps = [
+        "//internal/attestation/variant",
+        "//internal/constants",
+        "//internal/logger",
+        "//joinservice/internal/certcache/testdata",
     ],
 )

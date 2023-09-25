@@ -71,7 +71,7 @@ func main() {
 		log.With(zap.Error(err)).Fatalf("Failed to parse attestation variant")
 	}
 
-	certCacheClient := certcache.NewClient(log.Named("certcache"), kubeClient, &attVariant)
+	certCacheClient := certcache.NewClient(log.Named("certcache"), kubeClient, attVariant)
 	cachedCerts, err := certCacheClient.CreateCertChainCache(ctx)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to create certificate chain cache")
