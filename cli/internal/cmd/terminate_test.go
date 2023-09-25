@@ -52,6 +52,7 @@ func TestTerminate(t *testing.T) {
 		fileHandler := file.NewHandler(fs)
 		require.NoError(fileHandler.Write(constants.AdminConfFilename, []byte{1, 2}, file.OptNone))
 		require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFilename, idFile, file.OptNone))
+		require.NoError(fileHandler.Write(constants.StateFilename, []byte{3, 4}, file.OptNone))
 		return fs
 	}
 	someErr := errors.New("failed")
@@ -159,6 +160,8 @@ func TestTerminate(t *testing.T) {
 					_, err = fileHandler.Stat(constants.AdminConfFilename)
 					assert.Error(err)
 					_, err = fileHandler.Stat(constants.ClusterIDsFilename)
+					assert.Error(err)
+					_, err = fileHandler.Stat(constants.StateFilename)
 					assert.Error(err)
 				}
 			}
