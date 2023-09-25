@@ -181,3 +181,17 @@ func (c *Client) CreateConfigMap(ctx context.Context, name string, data map[stri
 	}
 	return nil
 }
+
+// UpdateConfigMap updates the configmap with the provided name by writing the provided key and value.
+func (c *Client) UpdateConfigMap(ctx context.Context, name, key, value string) error {
+	cm, err := c.client.CoreV1().ConfigMaps("kube-system").Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to get configmap: %w", err)
+	}
+	cm.Data[key] = value
+	_, err = c.client.CoreV1().ConfigMaps("kube-system").Update(ctx, cm, metav1.UpdateOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to update configmap: %w", err)
+	}
+	return nil
+}

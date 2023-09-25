@@ -35,14 +35,14 @@ func TestCreateCertChainCache(t *testing.T) {
 	}{
 		"available in configmap": {
 			kubeClient: &stubKubeClient{
-				AskResponse: string(testdata.Ask),
-				ArkResponse: string(testdata.Ark),
+				askResponse: string(testdata.Ask),
+				arkResponse: string(testdata.Ark),
 			},
 			kdsClient: &stubKdsClient{},
 			wantAsk:   true,
 			wantArk:   true,
 		},
-		"query from KDS": {
+		"query from kds": {
 			kubeClient: &stubKubeClient{
 				getConfigMapDataErr: notFoundErr,
 			},
@@ -52,6 +52,51 @@ func TestCreateCertChainCache(t *testing.T) {
 			},
 			wantAsk: true,
 			wantArk: true,
+		},
+		"only ask available in configmap": {
+			kubeClient: &stubKubeClient{
+				askResponse: string(testdata.Ask),
+			},
+			kdsClient: &stubKdsClient{
+				arkResponse: []byte(testdata.Ark),
+			},
+			wantAsk: true,
+			wantArk: true,
+		},
+		"only ark available in configmap": {
+			kubeClient: &stubKubeClient{
+				arkResponse: string(testdata.Ark),
+			},
+			kdsClient: &stubKdsClient{
+				askResponse: []byte(testdata.Ask),
+			},
+			wantAsk: true,
+			wantArk: true,
+		},
+		"get config map data err": {
+			kubeClient: &stubKubeClient{
+				getConfigMapDataErr: assert.AnError,
+			},
+			wantErr: true,
+		},
+		"update configmap err": {
+			kubeClient: &stubKubeClient{
+				askResponse:        string(testdata.Ask),
+				updateConfigMapErr: assert.AnError,
+			},
+			kdsClient: &stubKdsClient{
+				arkResponse: []byte(testdata.Ark),
+			},
+			wantErr: true,
+		},
+		"kds cert chain err": {
+			kubeClient: &stubKubeClient{
+				getConfigMapDataErr: notFoundErr,
+			},
+			kdsClient: &stubKdsClient{
+				certChainErr: assert.AnError,
+			},
+			wantErr: true,
 		},
 	}
 
@@ -92,19 +137,22 @@ type stubKdsClient struct {
 }
 
 func (c *stubKdsClient) CertChain(abi.ReportSigner) (ask, ark *x509.Certificate, err error) {
-	pemBlock, _ := pem.Decode(c.askResponse)
-	ask, err = x509.ParseCertificate(pemBlock.Bytes)
-	if err != nil {
-		return nil, nil, err
+	if c.askResponse != nil {
+		ask = mustParsePEM(c.askResponse)
 	}
-
-	pemBlock, _ = pem.Decode(c.arkResponse)
-	ark, err = x509.ParseCertificate(pemBlock.Bytes)
-	if err != nil {
-		return nil, nil, err
+	if c.arkResponse != nil {
+		ark = mustParsePEM(c.arkResponse)
 	}
-
 	return ask, ark, c.certChainErr
+}
+
+func mustParsePEM(pemBytes []byte) *x509.Certificate {
+	pemBlock, _ := pem.Decode(pemBytes)
+	cert, err := x509.ParseCertificate(pemBlock.Bytes)
+	if err != nil {
+		panic(err)
+	}
+	return cert
 }
 
 func TestGetCertChainCache(t *testing.T) {
@@ -114,23 +162,21 @@ func TestGetCertChainCache(t *testing.T) {
 	}{
 		"success": {
 			kubeClient: &stubKubeClient{
-				AskResponse: string(testdata.Ask),
-				ArkResponse: string(testdata.Ark),
+				askResponse: string(testdata.Ask),
+				arkResponse: string(testdata.Ark),
 			},
 		},
 		"empty ask": {
 			kubeClient: &stubKubeClient{
-				AskResponse: "",
-				ArkResponse: string(testdata.Ark),
+				askResponse: "",
+				arkResponse: string(testdata.Ark),
 			},
-			wantErr: true,
 		},
 		"empty ark": {
 			kubeClient: &stubKubeClient{
-				AskResponse: string(testdata.Ask),
-				ArkResponse: "",
+				askResponse: string(testdata.Ask),
+				arkResponse: "",
 			},
-			wantErr: true,
 		},
 		"error getting config map data": {
 			kubeClient: &stubKubeClient{
@@ -159,9 +205,10 @@ func TestGetCertChainCache(t *testing.T) {
 }
 
 type stubKubeClient struct {
-	AskResponse         string
-	ArkResponse         string
+	askResponse         string
+	arkResponse         string
 	createConfigMapErr  error
+	updateConfigMapErr  error
 	getConfigMapDataErr error
 }
 
@@ -171,10 +218,14 @@ func (s *stubKubeClient) CreateConfigMap(context.Context, string, map[string]str
 
 func (s *stubKubeClient) GetConfigMapData(ctx context.Context, name string, key string) (string, error) {
 	if key == constants.CertCacheAskKey {
-		return s.AskResponse, s.getConfigMapDataErr
+		return s.askResponse, s.getConfigMapDataErr
 	}
 	if key == constants.CertCacheArkKey {
-		return s.ArkResponse, s.getConfigMapDataErr
+		return s.arkResponse, s.getConfigMapDataErr
 	}
 	return "", s.getConfigMapDataErr
+}
+
+func (s *stubKubeClient) UpdateConfigMap(ctx context.Context, name, key, value string) error {
+	return s.updateConfigMapErr
 }
