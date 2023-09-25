@@ -277,8 +277,8 @@ func (u stubTerraformUpgrader) PlanClusterUpgrade(_ context.Context, _ io.Writer
 	return u.terraformDiff, u.planTerraformErr
 }
 
-func (u stubTerraformUpgrader) ApplyClusterUpgrade(_ context.Context, _ cloudprovider.Provider) (terraform.ApplyOutput, error) {
-	return terraform.ApplyOutput{}, u.applyTerraformErr
+func (u stubTerraformUpgrader) ApplyClusterUpgrade(_ context.Context, _ cloudprovider.Provider) (state.Infrastructure, error) {
+	return state.Infrastructure{}, u.applyTerraformErr
 }
 
 func (u stubTerraformUpgrader) RestoreClusterWorkspace() error {
@@ -294,9 +294,9 @@ func (m *mockTerraformUpgrader) PlanClusterUpgrade(ctx context.Context, w io.Wri
 	return args.Bool(0), args.Error(1)
 }
 
-func (m *mockTerraformUpgrader) ApplyClusterUpgrade(ctx context.Context, provider cloudprovider.Provider) (terraform.ApplyOutput, error) {
+func (m *mockTerraformUpgrader) ApplyClusterUpgrade(ctx context.Context, provider cloudprovider.Provider) (state.Infrastructure, error) {
 	args := m.Called(ctx, provider)
-	return args.Get(0).(terraform.ApplyOutput), args.Error(1)
+	return args.Get(0).(state.Infrastructure), args.Error(1)
 }
 
 func (m *mockTerraformUpgrader) RestoreClusterWorkspace() error {

@@ -318,15 +318,14 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, conf *config.Conf
 			}
 		}
 		u.log.Debugf("Applying Terraform migrations")
-		tfOutput, err := u.clusterUpgrader.ApplyClusterUpgrade(cmd.Context(), conf.GetProvider())
-		res = terraform.ConvertToInfrastructure(tfOutput)
+		infraState, err := u.clusterUpgrader.ApplyClusterUpgrade(cmd.Context(), conf.GetProvider())
 		if err != nil {
-			return res, fmt.Errorf("applying terraform migrations: %w", err)
+			return infraState, fmt.Errorf("applying terraform migrations: %w", err)
 		}
 
 		// Apply possible updates to cluster ID file
-		if err := updateClusterIDFile(tfOutput, u.fileHandler); err != nil {
-			return res, fmt.Errorf("merging cluster ID files: %w", err)
+		if err := updateClusterIDFile(infraState, u.fileHandler); err != nil {
+			return infraState, fmt.Errorf("merging cluster ID files: %w", err)
 		}
 
 		cmd.Printf("Terraform migrations applied successfully and output written to: %s\n"+
@@ -588,15 +587,15 @@ func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
 	}, nil
 }
 
-func updateClusterIDFile(tfOutput terraform.ApplyOutput, fileHandler file.Handler) error {
+func updateClusterIDFile(infraState state.Infrastructure, fileHandler file.Handler) error {
 	newIDFile := clusterid.File{
-		InitSecret:        []byte(tfOutput.Secret),
-		IP:                tfOutput.IP,
-		APIServerCertSANs: tfOutput.APIServerCertSANs,
-		UID:               tfOutput.UID,
+		InitSecret:        []byte(infraState.InitSecret),
+		IP:                infraState.ClusterEndpoint,
+		APIServerCertSANs: infraState.APIServerCertSANs,
+		UID:               infraState.UID,
 	}
-	if tfOutput.Azure != nil {
-		newIDFile.AttestationURL = tfOutput.Azure.AttestationURL
+	if infraState.Azure != nil {
+		newIDFile.AttestationURL = infraState.Azure.AttestationURL
 	}
 
 	idFile := &clusterid.File{}
@@ -650,6 +649,6 @@ type kubernetesUpgrader interface {
 
 type clusterUpgrader interface {
 	PlanClusterUpgrade(ctx context.Context, outWriter io.Writer, vars terraform.Variables, csp cloudprovider.Provider) (bool, error)
-	ApplyClusterUpgrade(ctx context.Context, csp cloudprovider.Provider) (terraform.ApplyOutput, error)
+	ApplyClusterUpgrade(ctx context.Context, csp cloudprovider.Provider) (state.Infrastructure, error)
 	RestoreClusterWorkspace() error
 }

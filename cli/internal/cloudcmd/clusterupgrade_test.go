@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -194,8 +195,8 @@ func (t *tfClusterUpgradeStub) ShowPlan(_ context.Context, _ terraform.LogLevel,
 	return t.showErr
 }
 
-func (t *tfClusterUpgradeStub) ApplyCluster(_ context.Context, _ cloudprovider.Provider, _ terraform.LogLevel) (terraform.ApplyOutput, error) {
-	return terraform.ApplyOutput{}, t.applyErr
+func (t *tfClusterUpgradeStub) ApplyCluster(_ context.Context, _ cloudprovider.Provider, _ terraform.LogLevel) (state.Infrastructure, error) {
+	return state.Infrastructure{}, t.applyErr
 }
 
 func (t *tfClusterUpgradeStub) PrepareUpgradeWorkspace(_, _ string, _ terraform.Variables) error {

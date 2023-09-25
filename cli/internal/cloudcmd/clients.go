@@ -33,7 +33,7 @@ type tfCommonClient interface {
 
 type tfResourceClient interface {
 	tfCommonClient
-	ApplyCluster(ctx context.Context, provider cloudprovider.Provider, logLevel terraform.LogLevel) (terraform.ApplyOutput, error)
+	ApplyCluster(ctx context.Context, provider cloudprovider.Provider, logLevel terraform.LogLevel) (state.Infrastructure, error)
 	ShowInfrastructure(ctx context.Context, provider cloudprovider.Provider) (state.Infrastructure, error)
 }
 
@@ -56,7 +56,7 @@ type tfIAMUpgradeClient interface {
 
 type tfClusterUpgradeClient interface {
 	tfUpgradePlanner
-	ApplyCluster(ctx context.Context, provider cloudprovider.Provider, logLevel terraform.LogLevel) (terraform.ApplyOutput, error)
+	ApplyCluster(ctx context.Context, provider cloudprovider.Provider, logLevel terraform.LogLevel) (state.Infrastructure, error)
 }
 
 type libvirtRunner interface {

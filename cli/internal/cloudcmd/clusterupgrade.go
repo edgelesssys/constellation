@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -70,16 +71,16 @@ func (u *ClusterUpgrader) RestoreClusterWorkspace() error {
 
 // ApplyClusterUpgrade applies the Terraform migrations planned by PlanClusterUpgrade.
 // On success, the workspace of the Upgrader replaces the existing Terraform workspace.
-func (u *ClusterUpgrader) ApplyClusterUpgrade(ctx context.Context, csp cloudprovider.Provider) (terraform.ApplyOutput, error) {
-	tfOutput, err := u.tf.ApplyCluster(ctx, csp, u.logLevel)
+func (u *ClusterUpgrader) ApplyClusterUpgrade(ctx context.Context, csp cloudprovider.Provider) (state.Infrastructure, error) {
+	infraState, err := u.tf.ApplyCluster(ctx, csp, u.logLevel)
 	if err != nil {
-		return tfOutput, fmt.Errorf("terraform apply: %w", err)
+		return infraState, fmt.Errorf("terraform apply: %w", err)
 	}
-	if tfOutput.Azure != nil {
-		if err := u.policyPatcher.Patch(ctx, tfOutput.Azure.AttestationURL); err != nil {
-			return tfOutput, fmt.Errorf("patching policies: %w", err)
+	if infraState.Azure != nil {
+		if err := u.policyPatcher.Patch(ctx, infraState.Azure.AttestationURL); err != nil {
+			return infraState, fmt.Errorf("patching policies: %w", err)
 		}
 	}
 
-	return tfOutput, nil
+	return infraState, nil
 }
