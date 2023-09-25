@@ -593,7 +593,7 @@ func toPtr[T any](v T) *T {
 
 const (
 	waitInterval    = 15 * time.Second
-	maxWait         = 15 * time.Minute
+	maxWait         = 30 * time.Minute
 	timestampFormat = "20060102150405"
 )
 
