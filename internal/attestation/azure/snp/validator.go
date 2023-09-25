@@ -45,9 +45,6 @@ type Validator struct {
 	attestationVerifier  attestationVerifier
 	attestationValidator attestationValidator
 
-	// ASK certificate cached by the join service.
-	cachedASKCert *x509.Certificate
-
 	config *config.AzureSEVSNP
 
 	log attestation.Logger
@@ -101,22 +98,16 @@ func NewValidator(cfg *config.AzureSEVSNP, log attestation.Logger) *Validator {
 	return v
 }
 
-// WithCachedASKCert sets the cached ASK certificate.
-func (v *Validator) WithCachedASKCert(cert *x509.Certificate) *Validator {
-	v.cachedASKCert = cert
-	return v
-}
-
 // getTrustedKey establishes trust in the given public key.
 // It does so by verifying the SNP attestation document.
 func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDocument, extraData []byte) (crypto.PublicKey, error) {
-	// ARK, specified in Constellation config.
-	trustedArk := x509.Certificate(v.config.AMDRootKey)
+	trustedAsk := (*x509.Certificate)(&v.config.AMDSigningKey) // ASK, cached by the Join-Service
+	trustedArk := (*x509.Certificate)(&v.config.AMDRootKey)    // ARK, specified in the Constellation config
 
 	// fallback certificates, used if not present in THIM response.
 	cachedCerts := sevSnpCerts{
-		ask: v.cachedASKCert,
-		ark: &trustedArk,
+		ask: trustedAsk,
+		ark: trustedArk,
 	}
 
 	// transform the instanceInfo received from Microsoft into a verifiable attestation report format.
@@ -144,7 +135,7 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 					Product: "Milan",
 					ProductCerts: &trust.ProductCerts{
 						Ask: ask,
-						Ark: &trustedArk,
+						Ark: trustedArk,
 					},
 				},
 			},
