@@ -14,6 +14,9 @@ inputs:
   cloudProvider:
     description: "The cloud provider to use."
     required: true
+  isDebugImage:
+    description: "Whether a debug image is used."
+    required: true
 
 runs:
   using: "composite"

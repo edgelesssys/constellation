@@ -131,6 +131,7 @@ runs:
         test: ${{ inputs.test }}
         azureClusterCreateCredentials: ${{ inputs.azureClusterCreateCredentials }}
         azureIAMCreateCredentials: ${{ inputs.azureIAMCreateCredentials }}
+        isDebugImage: ${{ inputs.isDebugImage }}
 
     - name: Constellation init
       id: constellation-init
