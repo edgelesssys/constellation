@@ -30,54 +30,63 @@ registerExitHandler "rm -rf $tmpdir"
 # empty the bucket version state
 ${configapi_cli} delete recursive --region "$region" --bucket "$bucket"
 
-# the high version numbers ensure that it's newer than the current latest value
-readonly current_claim_path="$tmpdir/currentMaaClaim.json"
-cat << EOF > "$current_claim_path"
-{
-  "x-ms-isolation-tee": {
-    "x-ms-sevsnpvm-tee-svn": 1,
-    "x-ms-sevsnpvm-snpfw-svn": 1,
-    "x-ms-sevsnpvm-microcode-svn": 1,
-    "x-ms-sevsnpvm-bootloader-svn": 1
-  }
-}
-EOF
 # upload a fake latest version for the fetcher
-${configapi_cli} --force --maa-claims-path "$current_claim_path" --upload-date "2000-01-01-01-01" --region "$region" --bucket "$bucket"
+# this is a shortened version of constellation verify output
+readonly current_report_path="$tmpdir/currentReport.txt"
+cat << EOF > "$current_report_path"
+		Launch TCB:
+			Secure Processor bootloader SVN: 1
+			Secure Processor operating system SVN: 1
+			SVN 4 (reserved): 0
+			SVN 5 (reserved): 0
+			SVN 6 (reserved): 0
+			SVN 7 (reserved): 0
+			SEV-SNP firmware SVN: 1
+			Microcode SVN: 1
+		Signature (DER):
+			3066023100d6606c3fc55b649dc5700c63ed4298aedf2a201a47530fcd31f56c51dfa8c198d6a9b29666164130f36f2fe61f5b9796023100a3a16f9b8c996d60699a32651b458489ba99135484809fdd43098db43e3bb8519ccbd6643c09defb2ddb40ee00d6d9a0
+EOF
+${configapi_cli} --force --snp-report-path "$current_report_path" --upload-date "2000-01-01-01-01" --region "$region" --bucket "$bucket"
 
 # the high version numbers ensure that it's newer than the current latest value
-readonly claim_path="$tmpdir/maaClaim.json"
-cat << EOF > "$claim_path"
-{
-  "x-ms-isolation-tee": {
-    "x-ms-sevsnpvm-tee-svn": 255,
-    "x-ms-sevsnpvm-snpfw-svn": 255,
-    "x-ms-sevsnpvm-microcode-svn": 255,
-    "x-ms-sevsnpvm-bootloader-svn": 255
-  }
-}
+readonly report_path="$tmpdir/report.txt"
+cat << EOF > "$report_path"
+		Launch TCB:
+			Secure Processor bootloader SVN: 255
+			Secure Processor operating system SVN: 255
+			SVN 4 (reserved): 0
+			SVN 5 (reserved): 0
+			SVN 6 (reserved): 0
+			SVN 7 (reserved): 0
+			SEV-SNP firmware SVN: 255
+			Microcode SVN: 255
+		Signature (DER):
+			3066023100d6606c3fc55b649dc5700c63ed4298aedf2a201a47530fcd31f56c51dfa8c198d6a9b29666164130f36f2fe61f5b9796023100a3a16f9b8c996d60699a32651b458489ba99135484809fdd43098db43e3bb8519ccbd6643c09defb2ddb40ee00d6d9a0
 EOF
 
 # has an older version
-readonly older_claim_path="$tmpdir/maaClaimOld.json"
-cat << EOF > "$older_claim_path"
-{
-  "x-ms-isolation-tee": {
-    "x-ms-sevsnpvm-tee-svn": 255,
-    "x-ms-sevsnpvm-snpfw-svn": 255,
-    "x-ms-sevsnpvm-microcode-svn": 254,
-    "x-ms-sevsnpvm-bootloader-svn": 255
-  }
-}
+readonly older_report_path="$tmpdir/oldReport.txt"
+cat << EOF > "$older_report_path"
+		Launch TCB:
+			Secure Processor bootloader SVN: 254
+			Secure Processor operating system SVN: 255
+			SVN 4 (reserved): 0
+			SVN 5 (reserved): 0
+			SVN 6 (reserved): 0
+			SVN 7 (reserved): 0
+			SEV-SNP firmware SVN: 255
+			Microcode SVN: 255
+		Signature (DER):
+			3066023100d6606c3fc55b649dc5700c63ed4298aedf2a201a47530fcd31f56c51dfa8c198d6a9b29666164130f36f2fe61f5b9796023100a3a16f9b8c996d60699a32651b458489ba99135484809fdd43098db43e3bb8519ccbd6643c09defb2ddb40ee00d6d9a0
 EOF
 
 # report 3 versions with different dates to fill the reporter cache
 readonly date_oldest="2023-02-01-03-04"
-${configapi_cli} --maa-claims-path "$older_claim_path" --upload-date "$date_oldest" --region "$region" --bucket "$bucket" --cache-window-size 3
+${configapi_cli} --snp-report-path "$older_report_path" --upload-date "$date_oldest" --region "$region" --bucket "$bucket" --cache-window-size 3
 readonly date_older="2023-02-02-03-04"
-${configapi_cli} --maa-claims-path "$older_claim_path" --upload-date "$date_older" --region "$region" --bucket "$bucket" --cache-window-size 3
+${configapi_cli} --snp-report-path "$older_report_path" --upload-date "$date_older" --region "$region" --bucket "$bucket" --cache-window-size 3
 readonly date="2023-02-03-03-04"
-${configapi_cli} --maa-claims-path "$claim_path" --upload-date "$date" --region "$region" --bucket "$bucket" --cache-window-size 3
+${configapi_cli} --snp-report-path "$report_path" --upload-date "$date" --region "$region" --bucket "$bucket" --cache-window-size 3
 
 # expect that $date_oldest is served as latest version
 baseurl="https://d33dzgxuwsgbpw.cloudfront.net/constellation/v1/attestation/azure-sev-snp"
@@ -86,11 +95,11 @@ if ! curl -fsSL ${baseurl}/${date_oldest}.json > version.json; then
   exit 1
 fi
 # check that version values are equal to expected
-if ! cmp -s <(echo -n '{"bootloader":255,"tee":255,"snp":255,"microcode":254}') version.json; then
+if ! cmp -s <(echo -n '{"bootloader":254,"tee":255,"snp":255,"microcode":255}') version.json; then
   echo "The version content:"
   cat version.json
   echo " is not equal to the expected version content:"
-  echo '{"bootloader":255,"tee":255,"snp":255,"microcode":254}'
+  echo '{"bootloader":254,"tee":255,"snp":255,"microcode":255}'
   exit 1
 fi
 if ! curl -fsSL ${baseurl}/${date_oldest}.json.sig > /dev/null; then

@@ -13,6 +13,7 @@ go_library(
     srcs = [
         "delete.go",
         "main.go",
+        "parse_report.go",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi/cli",
     visibility = ["//visibility:private"],
@@ -31,7 +32,10 @@ go_library(
 
 go_test(
     name = "cli_test",
-    srcs = ["delete_test.go"],
+    srcs = [
+        "delete_test.go",
+        "parse_report_test.go",
+    ],
     embed = [":cli_lib"],
     deps = [
         "@com_github_stretchr_testify//assert",

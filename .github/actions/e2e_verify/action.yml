@@ -74,10 +74,9 @@ runs:
             continue
           fi
 
-          echo "Extracting TCB versions for API update"
-          startMAAToken="Microsoft Azure Attestation Token:"
-          endMAAToken="Verification OK"
-          sed -n "/${startMAAToken}/,/${endMAAToken}/ { /${startMAAToken}/d; /${endMAAToken}/d; p }" <<< "${verifyOut}" > "maa-claims-${node}.json"
+          echo "Writing report to file"
+          echo "${verifyOut}" > "snp-report-${node}.txt"
+
         done
 
     - name: Login to AWS
@@ -94,8 +93,8 @@ runs:
         COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
         COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
       run: |
-        for file in $(ls maa-claims-*.json); do
+        for file in $(ls snp-report-*.txt); do
           path=$(realpath "${file}")
           cat "${path}"
-          bazel run //internal/api/attestationconfigapi/cli -- --maa-claims-path "${path}"
+          bazel run //internal/api/attestationconfigapi/cli -- --snp-report-path "${path}"
         done
