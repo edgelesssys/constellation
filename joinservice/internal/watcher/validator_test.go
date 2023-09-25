@@ -8,6 +8,7 @@ package watcher
 
 import (
 	"context"
+	"crypto/x509"
 	"encoding/asn1"
 	"encoding/json"
 	"io"
@@ -39,13 +40,18 @@ func TestMain(m *testing.M) {
 
 func TestNewUpdateableValidator(t *testing.T) {
 	testCases := map[string]struct {
-		variant variant.Variant
-		config  config.AttestationCfg
-		wantErr bool
+		variant  variant.Variant
+		config   config.AttestationCfg
+		snpCerts *stubSnpCerts
+		wantErr  bool
 	}{
 		"azure": {
 			variant: variant.AzureSEVSNP{},
 			config:  config.DefaultForAzureSEVSNP(),
+			snpCerts: &stubSnpCerts{
+				ask: &x509.Certificate{},
+				ark: &x509.Certificate{},
+			},
 		},
 		"gcp": {
 			variant: variant.GCPSEVES{},
@@ -83,7 +89,7 @@ func TestNewUpdateableValidator(t *testing.T) {
 				logger.NewTest(t),
 				tc.variant,
 				handler,
-				nil, // TODO(msanft): add certcache test
+				tc.snpCerts,
 			)
 			if tc.wantErr {
 				assert.Error(err)
@@ -92,6 +98,15 @@ func TestNewUpdateableValidator(t *testing.T) {
 			}
 		})
 	}
+}
+
+type stubSnpCerts struct {
+	ask *x509.Certificate
+	ark *x509.Certificate
+}
+
+func (s *stubSnpCerts) SevSnpCerts() (ask *x509.Certificate, ark *x509.Certificate) {
+	return s.ask, s.ark
 }
 
 func TestUpdate(t *testing.T) {

@@ -21,7 +21,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/joinservice/internal/certcache"
 )
 
 // Updatable implements an updatable atls.Validator.
@@ -30,12 +29,12 @@ type Updatable struct {
 	mux         sync.Mutex
 	fileHandler file.Handler
 	variant     variant.Variant
-	cachedCerts *certcache.CachedCerts
+	cachedCerts cachedCerts
 	atls.Validator
 }
 
 // NewValidator initializes a new updatable validator and performs an initial update (aka. initialization).
-func NewValidator(log *logger.Logger, variant variant.Variant, fileHandler file.Handler, cachedCerts *certcache.CachedCerts) (*Updatable, error) {
+func NewValidator(log *logger.Logger, variant variant.Variant, fileHandler file.Handler, cachedCerts cachedCerts) (*Updatable, error) {
 	u := &Updatable{
 		log:         log,
 		fileHandler: fileHandler,
@@ -45,6 +44,10 @@ func NewValidator(log *logger.Logger, variant variant.Variant, fileHandler file.
 	err := u.Update()
 
 	return u, err
+}
+
+type cachedCerts interface{
+	SevSnpCerts() (ask *x509.Certificate, ark *x509.Certificate)
 }
 
 // Validate calls the validators Validate method, and prevents any updates during the call.

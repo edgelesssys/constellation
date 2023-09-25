@@ -590,7 +590,7 @@ func init() {
 			FieldName: "azureSEVSNP",
 		},
 	}
-	AzureSEVSNPDoc.Fields = make([]encoder.Doc, 7)
+	AzureSEVSNPDoc.Fields = make([]encoder.Doc, 8)
 	AzureSEVSNPDoc.Fields[0].Name = "measurements"
 	AzureSEVSNPDoc.Fields[0].Type = "M"
 	AzureSEVSNPDoc.Fields[0].Note = ""
@@ -626,6 +626,11 @@ func init() {
 	AzureSEVSNPDoc.Fields[6].Note = ""
 	AzureSEVSNPDoc.Fields[6].Description = "AMD Root Key certificate used to verify the SEV-SNP certificate chain."
 	AzureSEVSNPDoc.Fields[6].Comments[encoder.LineComment] = "AMD Root Key certificate used to verify the SEV-SNP certificate chain."
+	AzureSEVSNPDoc.Fields[7].Name = "amdSigningKey"
+	AzureSEVSNPDoc.Fields[7].Type = "Certificate"
+	AzureSEVSNPDoc.Fields[7].Note = ""
+	AzureSEVSNPDoc.Fields[7].Description = "AMD Signing Key certificate used to verify the SEV-SNP VCEK / VLEK certificate."
+	AzureSEVSNPDoc.Fields[7].Comments[encoder.LineComment] = "AMD Signing Key certificate used to verify the SEV-SNP VCEK / VLEK certificate."
 
 	AzureTrustedLaunchDoc.Type = "AzureTrustedLaunch"
 	AzureTrustedLaunchDoc.Comments[encoder.LineComment] = "AzureTrustedLaunch is the configuration for Azure Trusted Launch attestation."
