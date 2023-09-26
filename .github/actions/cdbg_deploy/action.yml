@@ -14,21 +14,18 @@ inputs:
   cloudProvider:
     description: "The cloud provider to use."
     required: true
-  isDebugImage:
-    description: "Whether a debug image is used."
-    required: true
 
 runs:
   using: "composite"
   steps:
     - name: Login to Azure (IAM service principal)
-      if: inputs.cloudProvider == 'azure' && inputs.isDebugImage == 'true'
+      if: inputs.cloudProvider == 'azure'
       uses: ./.github/actions/login_azure
       with:
         azure_credentials: ${{ inputs.azureIAMCreateCredentials }}
 
     - name: Add Azure Keyvault access role
-      if: inputs.cloudProvider == 'azure' && inputs.isDebugImage == 'true'
+      if: inputs.cloudProvider == 'azure'
       shell: bash
       run: |
         UAMI=$(yq eval ".provider.azure.userAssignedIdentity | upcase" constellation-conf.yaml)
@@ -38,13 +35,13 @@ runs:
           --scope /subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/e2e-test-creds/providers/Microsoft.KeyVault/vaults/opensearch-creds
 
     - name: Login to Azure (Cluster service principal)
-      if: inputs.cloudProvider == 'azure' && inputs.isDebugImage == 'true'
+      if: inputs.cloudProvider == 'azure'
       uses: ./.github/actions/login_azure
       with:
         azure_credentials: ${{ inputs.azureClusterCreateCredentials }}
 
     - name: Login to AWS (IAM service principal)
-      if: inputs.cloudProvider == 'aws' && inputs.isDebugImage == 'true'
+      if: inputs.cloudProvider == 'aws'
       uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 # v2.2.0
       with:
         role-to-assume: arn:aws:iam::795746500882:role/GithubActionsE2EIAM
@@ -53,7 +50,7 @@ runs:
         role-duration-seconds: 21600
 
     - name: Add AWS Secrets Manager access role
-      if: inputs.cloudProvider == 'aws' && inputs.isDebugImage == 'true'
+      if: inputs.cloudProvider == 'aws'
       shell: bash
       run: |
         INSTANCE_PROFILE=$(yq eval ".provider.aws.iamProfileControlPlane" constellation-conf.yaml)
@@ -63,7 +60,7 @@ runs:
           --policy-arn arn:aws:iam::795746500882:policy/GitHubActionsOSCredAccess
 
     - name: Login to AWS (Cluster service principal)
-      if: inputs.cloudProvider == 'aws' && inputs.isDebugImage == 'true'
+      if: inputs.cloudProvider == 'aws'
       uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 # v2.2.0
       with:
         role-to-assume: arn:aws:iam::795746500882:role/GithubActionsE2ECluster
