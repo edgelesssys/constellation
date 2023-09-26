@@ -24,6 +24,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/google/go-sev-guest/abi"
 	"github.com/google/go-sev-guest/kds"
 	spb "github.com/google/go-sev-guest/proto/sevsnp"
@@ -302,16 +303,21 @@ func (a *azureInstanceInfo) attestationWithCerts(logger attestation.Logger, gett
 		logger.Warnf("Error parsing certificate chain: %v", err)
 	}
 	if ask != nil {
+		logger.Infof("Using ASK certificate from Azure THIM")
 		att.CertificateChain.AskCert = ask.Raw
 	}
 	if ark != nil {
+		logger.Infof("Using ARK certificate from Azure THIM")
 		att.CertificateChain.ArkCert = ark.Raw
 	}
-	// If a cached ASK or an ARK specified by the Constellation config is present, use it.
-	if fallbackCerts.ask != nil {
+
+	// If a cached ASK or an ARK from the Constellation config is present, use it.
+	if att.CertificateChain.AskCert == nil && fallbackCerts.ask != nil {
+		logger.Infof("Using cached ASK certificate")
 		att.CertificateChain.AskCert = fallbackCerts.ask.Raw
 	}
-	if fallbackCerts.ark != nil {
+	if att.CertificateChain.ArkCert == nil && fallbackCerts.ark != nil {
+		logger.Infof("Using ARK certificate from %s", constants.ConfigFilename)
 		att.CertificateChain.ArkCert = fallbackCerts.ark.Raw
 	}
 	// Otherwise, retrieve it from AMD KDS.
@@ -325,10 +331,12 @@ func (a *azureInstanceInfo) attestationWithCerts(logger attestation.Logger, gett
 		if err != nil {
 			return nil, fmt.Errorf("retrieving certificate chain from AMD KDS: %w", err)
 		}
-		if att.CertificateChain.AskCert == nil {
+		if att.CertificateChain.AskCert == nil && kdsCertChain.Ask != nil {
+			logger.Infof("Using ASK certificate from AMD KDS")
 			att.CertificateChain.AskCert = kdsCertChain.Ask.Raw
 		}
-		if att.CertificateChain.ArkCert == nil {
+		if att.CertificateChain.ArkCert == nil && kdsCertChain.Ask != nil {
+			logger.Infof("Using ARK certificate from AMD KDS")
 			att.CertificateChain.ArkCert = kdsCertChain.Ark.Raw
 		}
 	}

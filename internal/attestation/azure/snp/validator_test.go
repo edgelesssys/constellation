@@ -173,6 +173,10 @@ func TestParseVCEK(t *testing.T) {
 // TestInstanceInfoAttestation tests the basic unmarshalling of the attestation report and the ASK / ARK precedence.
 func TestInstanceInfoAttestation(t *testing.T) {
 	defaultReport := testdata.AttestationReport
+	testdataArk, testdataAsk := mustCertChainToPem(t, testdata.CertChain)
+	exampleCert := &x509.Certificate{
+		Raw: []byte{1, 2, 3},
+	}
 	cfg := config.DefaultForAzureSEVSNP()
 
 	testCases := map[string]struct {
@@ -181,12 +185,16 @@ func TestInstanceInfoAttestation(t *testing.T) {
 		certChain     []byte
 		fallbackCerts sevSnpCerts
 		getter        *stubHTTPSGetter
+		expectedArk   *x509.Certificate
+		expectedAsk   *x509.Certificate
 		wantErr       bool
 	}{
 		"success": {
-			report:    defaultReport,
-			vcek:      testdata.AzureThimVCEK,
-			certChain: testdata.CertChain,
+			report:      defaultReport,
+			vcek:        testdata.AzureThimVCEK,
+			certChain:   testdata.CertChain,
+			expectedArk: testdataArk,
+			expectedAsk: testdataAsk,
 		},
 		"retrieve vcek": {
 			report:    defaultReport,
@@ -198,6 +206,8 @@ func TestInstanceInfoAttestation(t *testing.T) {
 				},
 				nil,
 			),
+			expectedArk: testdataArk,
+			expectedAsk: testdataAsk,
 		},
 		"retrieve certchain": {
 			report: defaultReport,
@@ -209,10 +219,27 @@ func TestInstanceInfoAttestation(t *testing.T) {
 				},
 				nil,
 			),
+			expectedArk: testdataArk,
+			expectedAsk: testdataAsk,
 		},
 		"use fallback certs": {
 			report: defaultReport,
 			vcek:   testdata.AzureThimVCEK,
+			fallbackCerts: sevSnpCerts{
+				ask: exampleCert,
+				ark: exampleCert,
+			},
+			getter: newStubHTTPSGetter(
+				&urlResponseMatcher{},
+				nil,
+			),
+			expectedArk: exampleCert,
+			expectedAsk: exampleCert,
+		},
+		"use certchain with fallback certs": {
+			report:    defaultReport,
+			certChain: testdata.CertChain,
+			vcek:      testdata.AzureThimVCEK,
 			fallbackCerts: sevSnpCerts{
 				ask: &x509.Certificate{},
 				ark: &x509.Certificate{},
@@ -221,6 +248,8 @@ func TestInstanceInfoAttestation(t *testing.T) {
 				&urlResponseMatcher{},
 				nil,
 			),
+			expectedArk: testdataArk,
+			expectedAsk: testdataAsk,
 		},
 		"retrieve vcek and certchain": {
 			report: defaultReport,
@@ -233,6 +262,8 @@ func TestInstanceInfoAttestation(t *testing.T) {
 				},
 				nil,
 			),
+			expectedArk: testdataArk,
+			expectedAsk: testdataAsk,
 		},
 		"report too short": {
 			report:  defaultReport[:len(defaultReport)-100],
@@ -277,9 +308,19 @@ func TestInstanceInfoAttestation(t *testing.T) {
 				assert.True(tcbValues.TeeSpl >= cfg.TEEVersion.Value)
 				assert.True(tcbValues.SnpSpl >= cfg.SNPVersion.Value)
 				assert.True(tcbValues.UcodeSpl >= cfg.MicrocodeVersion.Value)
+				assert.Equal(tc.expectedArk.Raw, att.CertificateChain.ArkCert)
+				assert.Equal(tc.expectedAsk.Raw, att.CertificateChain.AskCert)
 			}
 		})
 	}
+}
+
+func mustCertChainToPem(t *testing.T, certchain []byte) (ark, ask *x509.Certificate) {
+	t.Helper()
+	a := azureInstanceInfo{CertChain: certchain}
+	ask, ark, err := a.parseCertChain()
+	require.NoError(t, err)
+	return ark, ask
 }
 
 type stubHTTPSGetter struct {
