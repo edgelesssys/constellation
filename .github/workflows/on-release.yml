@@ -41,20 +41,11 @@ jobs:
           echo "RELEASE_BRANCH=${RELEASE_BRANCH}" | tee -a "$GITHUB_ENV"
           echo "WORKING_BRANCH=${WORKING_BRANCH}" | tee -a "$GITHUB_ENV"
 
-      - name: Check if we are strictly ahead of the release branch (if it exists)
+      - name: Create or update release branch
         run: |
           git fetch
-          git pull
-          git checkout "${RELEASE_BRANCH}" || exit 0
-          git checkout "${WORKING_BRANCH}"
-          ahead=$(git rev-list HEAD --not "${RELEASE_BRANCH}"  | wc -l)
-          if [[ "${ahead}" -gt 0 ]]; then
-            echo "The current branch is not strictly ahead of the release branch. Cannot finish transaction without touching release branch history."
-            exit 1
-          fi
-
-      - name: Create or update release branch
-        run: git push origin "${WORKING_BRANCH}":"${RELEASE_BRANCH}"
+          git checkout "${WORKING_BRANCH}" # ensure branch exists locally
+          git push origin "${WORKING_BRANCH}":"${RELEASE_BRANCH}"
 
   update:
     runs-on: ubuntu-22.04
