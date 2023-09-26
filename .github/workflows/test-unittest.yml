@@ -73,6 +73,7 @@ jobs:
         with:
           header: coverage
           path: coverage_diff.md
+          recreate: true
 
       - name: Upload coverage
         if: github.ref_name == 'main'
