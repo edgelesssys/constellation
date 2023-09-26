@@ -8,6 +8,14 @@ The logcollection functionality can be deployed to both [debug](./debug-cluster.
 In debug clusters, logcollection functionality should be deployed automatically through the debug daemon `debugd`, which runs *before* the bootstrapper
 and can therefore, contrary to non-debug clusters, also collect logs of the bootstrapper.
 
+> [!WARNING]
+> If logs from a E2E test run for a debug-cluster with a bootstrapping-failure are missing in OpenSearch, this might be caused by a race condition
+> between the termination of the cluster and the start-up of the logcollection containers in the debugd.
+> If the failure can be reproduced manually, it is best to do so and observe the serial console of the bootstrapping node with the following command until the logcollection containers have started.
+> ```bash
+> journalctl _SYSTEMD_UNIT=debugd.service | grep > logcollect
+> ```
+
 ## Deployment in Non-Debug Clusters
 
 In non-debug clusters, logcollection functionality needs to be explicitly deployed as a Kubernetes Deployment through Helm. To do that, a few steps need to be followed:

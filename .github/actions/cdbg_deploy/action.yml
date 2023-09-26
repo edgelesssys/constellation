@@ -1,0 +1,100 @@
+name: Cdbg deploy
+description: Deploy the Constellation Bootstrapper to the cluster via the debugd.
+
+inputs:
+  test:
+    description: "The e2e test payload."
+    required: true
+  azureClusterCreateCredentials:
+    description: "Azure credentials authorized to create a Constellation cluster."
+    required: true
+  azureIAMCreateCredentials:
+    description: "Azure credentials authorized to create an IAM configuration."
+    required: true
+  cloudProvider:
+    description: "The cloud provider to use."
+    required: true
+  kubernetesVersion:
+    description: "Kubernetes version to create the cluster from."
+    required: true
+  refStream:
+    description: "The refStream of the image the test runs on."
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Login to Azure (IAM service principal)
+      if: inputs.cloudProvider == 'azure'
+      uses: ./.github/actions/login_azure
+      with:
+        azure_credentials: ${{ inputs.azureIAMCreateCredentials }}
+
+    - name: Add Azure Keyvault access role
+      if: inputs.cloudProvider == 'azure'
+      shell: bash
+      run: |
+        UAMI=$(yq eval ".provider.azure.userAssignedIdentity | upcase" constellation-conf.yaml)
+        PRINCIPAL_ID=$(az identity list | yq ".[] | select(.id | test(\"(?i)$UAMI\"; \"g\")) | .principalId")
+        az role assignment create --role "Key Vault Secrets User" \
+          --assignee "$PRINCIPAL_ID" \
+          --scope /subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/e2e-test-creds/providers/Microsoft.KeyVault/vaults/opensearch-creds
+
+    - name: Login to Azure (Cluster service principal)
+      if: inputs.cloudProvider == 'azure'
+      uses: ./.github/actions/login_azure
+      with:
+        azure_credentials: ${{ inputs.azureClusterCreateCredentials }}
+
+    - name: Login to AWS (IAM service principal)
+      if: inputs.cloudProvider == 'aws'
+      uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 # v2.2.0
+      with:
+        role-to-assume: arn:aws:iam::795746500882:role/GithubActionsE2EIAM
+        aws-region: eu-central-1
+        # extend token expiry to 6 hours to ensure constellation can terminate
+        role-duration-seconds: 21600
+
+    - name: Add AWS Secrets Manager access role
+      if: inputs.cloudProvider == 'aws'
+      shell: bash
+      run: |
+        INSTANCE_PROFILE=$(yq eval ".provider.aws.iamProfileControlPlane" constellation-conf.yaml)
+        ROLE_NAME=$(aws iam get-instance-profile --instance-profile-name "$INSTANCE_PROFILE" | yq ".InstanceProfile.Roles[0].RoleName")
+        aws iam attach-role-policy \
+          --role-name "$ROLE_NAME" \
+          --policy-arn arn:aws:iam::795746500882:policy/GitHubActionsOSCredAccess
+
+    - name: Login to AWS (Cluster service principal)
+      if: inputs.cloudProvider == 'aws'
+      uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 # v2.2.0
+      with:
+        role-to-assume: arn:aws:iam::795746500882:role/GithubActionsE2ECluster
+        aws-region: eu-central-1
+        # extend token expiry to 6 hours to ensure constellation can terminate
+        role-duration-seconds: 21600
+
+    - name: Cdbg deploy
+      shell: bash
+      run: |
+        echo "::group::cdbg deploy"
+        chmod +x $GITHUB_WORKSPACE/build/cdbg
+        cdbg deploy \
+          --bootstrapper "${{ github.workspace }}/build/bootstrapper" \
+          --upgrade-agent "${{ github.workspace }}/build/upgrade-agent" \
+          --info logcollect=true \
+          --info logcollect.github.actor="${{ github.triggering_actor }}" \
+          --info logcollect.github.workflow="${{ github.workflow }}" \
+          --info logcollect.github.run-id="${{ github.run_id }}" \
+          --info logcollect.github.run-attempt="${{ github.run_attempt }}" \
+          --info logcollect.github.ref-name="${{ github.ref_name }}" \
+          --info logcollect.github.sha="${{ github.sha }}" \
+          --info logcollect.github.runner-os="${{ runner.os }}" \
+          --info logcollect.github.e2e-test-payload="${{ inputs.test }}" \
+          --info logcollect.github.is-debug-cluster=false \
+          --info logcollect.github.ref-stream="${{ inputs.refStream }}" \
+          --info logcollect.github.kubernetes-version="${{ inputs.kubernetesVersion }}" \
+          --info logcollect.deployment-type="debugd" \
+          --verbosity=-1 \
+          --force
+        echo "::endgroup::"

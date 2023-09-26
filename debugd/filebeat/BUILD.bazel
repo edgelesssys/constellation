@@ -3,10 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "filebeat",
     srcs = ["assets.go"],
-    embedsrcs = [
-        "templates/filebeat.yml",
-        "inputs.yml",
-    ],
+    embedsrcs = ["templates/filebeat.yml"],
     importpath = "github.com/edgelesssys/constellation/v2/debugd/filebeat",
     visibility = ["//visibility:public"],
 )

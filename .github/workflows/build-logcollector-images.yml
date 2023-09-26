@@ -38,7 +38,7 @@ jobs:
           dockerfile: debugd/filebeat/Dockerfile
           githubToken: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and upload Filebeat container image
+      - name: Build and upload Metricbeat container image
         uses: ./.github/actions/build_micro_service
         with:
           name: metricbeat-debugd

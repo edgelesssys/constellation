@@ -9,12 +9,15 @@ logging:
   metrics.enabled: false
   level: warning
 
-filebeat.config:
-  inputs:
+filebeat.inputs:
+  - type: journald
     enabled: true
-    path: /usr/share/filebeat/inputs.yml
-    # reload.enabled: true
-    # reload.period: 10s
+    id: journald
+  - type: filestream
+    enabled: true
+    id: container
+    paths:
+      - /var/log/pods/*/*/*.log
 
 timestamp.precision: nanosecond
 

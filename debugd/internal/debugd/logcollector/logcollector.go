@@ -74,7 +74,7 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 				return
 			}
 
-			logger.Infof("Getting logstash pipeline template")
+			logger.Infof("Getting logstash pipeline template from image %s", versions.LogstashImage)
 			tmpl, err := getTemplate(ctx, logger, versions.LogstashImage, "/run/logstash/templates/pipeline.conf", "/run/logstash")
 			if err != nil {
 				logger.Errorf("Getting logstash pipeline template: %v", err)
@@ -102,7 +102,7 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 				return
 			}
 
-			logger.Infof("Getting filebeat config template")
+			logger.Infof("Getting filebeat config template from image %s", versions.FilebeatImage)
 			tmpl, err = getTemplate(ctx, logger, versions.FilebeatImage, "/run/filebeat/templates/filebeat.yml", "/run/filebeat")
 			if err != nil {
 				logger.Errorf("Getting filebeat config template: %v", err)
@@ -117,7 +117,7 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 				return
 			}
 
-			logger.Infof("Getting metricbeat config template")
+			logger.Infof("Getting metricbeat config template from image %s", versions.MetricbeatImage)
 			tmpl, err = getTemplate(ctx, logger, versions.MetricbeatImage, "/run/metricbeat/templates/metricbeat.yml", "/run/metricbeat")
 			if err != nil {
 				logger.Errorf("Getting metricbeat config template: %v", err)
@@ -233,7 +233,7 @@ func startPod(ctx context.Context, logger *logger.Logger) error {
 		"--volume=/run/systemd:/run/systemd:ro",
 		"--volume=/run/systemd/journal/socket:/run/systemd/journal/socket:rw",
 		"--volume=/run/state/var/log:/var/log:ro",
-		"--volume=/run/filebeat:/usr/share/filebeat/:ro",
+		"--volume=/run/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro",
 		versions.FilebeatImage,
 	}
 	runFilebeatCmd := exec.CommandContext(ctx, "podman", runFilebeatArgs...)
@@ -255,7 +255,7 @@ func startPod(ctx context.Context, logger *logger.Logger) error {
 		"--log-driver=none",
 		"--volume=/proc:/hostfs/proc:ro",
 		"--volume=/sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro",
-		"--volume=/run/metricbeat:/usr/share/metricbeat/:ro",
+		"--volume=/run/metricbeat/metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro",
 		versions.MetricbeatImage,
 	}
 	runMetricbeatCmd := exec.CommandContext(ctx, "podman", runMetricbeatArgs...)
