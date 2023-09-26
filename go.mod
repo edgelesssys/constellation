@@ -104,7 +104,7 @@ require (
 	github.com/siderolabs/talos/pkg/machinery v1.4.6
 	github.com/sigstore/rekor v1.2.2
 	github.com/sigstore/sigstore v1.7.1
-	github.com/spf13/afero v1.9.5
+	github.com/spf13/afero v1.10.0
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.4
 	github.com/theupdateframework/go-tuf v0.5.2
