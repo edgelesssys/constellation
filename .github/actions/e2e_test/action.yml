@@ -251,6 +251,8 @@ runs:
         azureSNPEnforcementPolicy: ${{ inputs.azureSNPEnforcementPolicy }}
         azureIAMCreateCredentials: ${{ inputs.azureIAMCreateCredentials }}
         azureClusterCreateCredentials: ${{ inputs.azureClusterCreateCredentials }}
+        kubernetesVersion: ${{ inputs.kubernetesVersion }}
+        refStream: ${{ inputs.refStream }}
 
     - name: Deploy log- and metrics-collection (Kubernetes)
       id: deploy-logcollection

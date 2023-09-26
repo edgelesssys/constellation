@@ -44,6 +44,9 @@ inputs:
   azureIAMCreateCredentials:
     description: "Azure credentials authorized to create an IAM configuration."
     required: true
+  refStream:
+    description: "Reference and stream of the image in use"
+    required: false
 
 outputs:
   kubeconfig:
