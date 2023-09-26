@@ -1,5 +1,5 @@
-name: Deploy debugd
-description: Deploy the Constellation debug daemon to the cluster.
+name: Cdbg deploy
+description: Deploy the Constellation Bootstrapper to the cluster via the debugd.
 
 inputs:
   test:

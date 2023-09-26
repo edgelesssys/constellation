@@ -123,9 +123,9 @@ runs:
         sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts' || true
         constellation create -y --force --debug --tf-log=DEBUG
 
-    - name: Deploy debugd
+    - name: Cdbg deploy
       if: inputs.isDebugImage == 'true'
-      uses: ./.github/actions/deploy_debugd
+      uses: ./.github/actions/cdbg_deploy
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
         test: ${{ inputs.test }}
