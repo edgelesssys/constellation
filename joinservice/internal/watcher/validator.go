@@ -46,7 +46,7 @@ func NewValidator(log *logger.Logger, variant variant.Variant, fileHandler file.
 	return u, err
 }
 
-type cachedCerts interface{
+type cachedCerts interface {
 	SevSnpCerts() (ask *x509.Certificate, ark *x509.Certificate)
 }
 
