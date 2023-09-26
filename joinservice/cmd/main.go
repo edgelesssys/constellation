@@ -49,7 +49,7 @@ func main() {
 	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 	flag.Parse()
 
-	ctx, cancel := context.WithTimeout(context.Background(), vpcIPTimeout)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity))
@@ -85,7 +85,10 @@ func main() {
 
 	creds := atlscredentials.New(nil, []atls.Validator{validator})
 
-	vpcIP, err := getVPCIP(ctx, *provider)
+	vpcCtx, cancel := context.WithTimeout(ctx, vpcIPTimeout)
+	defer cancel()
+
+	vpcIP, err := getVPCIP(vpcCtx, *provider)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to get IP in VPC")
 	}
