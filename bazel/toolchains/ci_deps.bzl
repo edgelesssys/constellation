@@ -97,41 +97,41 @@ def _actionlint_deps():
         name = "com_github_rhysd_actionlint_linux_amd64",
         build_file_content = """exports_files(["actionlint"], visibility = ["//visibility:public"])""",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/80a54660e73ad55a0818372bdaa0dced82eb86f618e6bf1621e73f099e61c027",
-            "https://github.com/rhysd/actionlint/releases/download/v1.6.25/actionlint_1.6.25_linux_amd64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/f0294c342af98fad4ff917bc32032f28e1b55f76aedf291886ec10bbed7c12e1",
+            "https://github.com/rhysd/actionlint/releases/download/v1.6.26/actionlint_1.6.26_linux_amd64.tar.gz",
         ],
         type = "tar.gz",
-        sha256 = "80a54660e73ad55a0818372bdaa0dced82eb86f618e6bf1621e73f099e61c027",
+        sha256 = "f0294c342af98fad4ff917bc32032f28e1b55f76aedf291886ec10bbed7c12e1",
     )
     http_archive(
         name = "com_github_rhysd_actionlint_linux_arm64",
         build_file_content = """exports_files(["actionlint"], visibility = ["//visibility:public"])""",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/8bedeea8ed636891fd7351fa7ccbc75fdb5bee6efde5320162f712e8457e73ea",
-            "https://github.com/rhysd/actionlint/releases/download/v1.6.25/actionlint_1.6.25_linux_arm64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/a1056d85d614af4f6e5517ed2911dab2621b8e97c368c8b265328f9c22801648",
+            "https://github.com/rhysd/actionlint/releases/download/v1.6.26/actionlint_1.6.26_linux_arm64.tar.gz",
         ],
         type = "tar.gz",
-        sha256 = "8bedeea8ed636891fd7351fa7ccbc75fdb5bee6efde5320162f712e8457e73ea",
+        sha256 = "a1056d85d614af4f6e5517ed2911dab2621b8e97c368c8b265328f9c22801648",
     )
     http_archive(
         name = "com_github_rhysd_actionlint_darwin_amd64",
         build_file_content = """exports_files(["actionlint"], visibility = ["//visibility:public"])""",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/30d69622ff9fbf564081515bf7d20538f2cb590150ef0c69fdcc56fa23fe85f1",
-            "https://github.com/rhysd/actionlint/releases/download/v1.6.25/actionlint_1.6.25_darwin_amd64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/bfa890e77a8508603c785af09a30bbab3a3255d291d8d27efc3f20ac8e303a8e",
+            "https://github.com/rhysd/actionlint/releases/download/v1.6.26/actionlint_1.6.26_darwin_amd64.tar.gz",
         ],
         type = "tar.gz",
-        sha256 = "30d69622ff9fbf564081515bf7d20538f2cb590150ef0c69fdcc56fa23fe85f1",
+        sha256 = "bfa890e77a8508603c785af09a30bbab3a3255d291d8d27efc3f20ac8e303a8e",
     )
     http_archive(
         name = "com_github_rhysd_actionlint_darwin_arm64",
         build_file_content = """exports_files(["actionlint"], visibility = ["//visibility:public"])""",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/9153ebe7be2a33c9047e60aeb0d8d7b831b22fe99bbea63d365500c68245d6df",
-            "https://github.com/rhysd/actionlint/releases/download/v1.6.25/actionlint_1.6.25_darwin_arm64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/5e131ab7de7ad051e1923b80d167aaa414734e97c720698c48778250e1dd2590",
+            "https://github.com/rhysd/actionlint/releases/download/v1.6.26/actionlint_1.6.26_darwin_arm64.tar.gz",
         ],
         type = "tar.gz",
-        sha256 = "9153ebe7be2a33c9047e60aeb0d8d7b831b22fe99bbea63d365500c68245d6df",
+        sha256 = "5e131ab7de7ad051e1923b80d167aaa414734e97c720698c48778250e1dd2590",
     )
 
 def _gofumpt_deps():
