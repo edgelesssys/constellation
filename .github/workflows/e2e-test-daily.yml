@@ -73,6 +73,7 @@ jobs:
           osImage: ${{ matrix.refStream == 'ref/release/stream/stable/?' && needs.find-latest-image.outputs.image-release-stable || needs.find-latest-image.outputs.image-main-debug }}
           isDebugImage: ${{ matrix.refStream == 'ref/main/stream/debug/?' }}
           cliVersion: ${{ matrix.refStream == 'ref/release/stream/stable/?' && needs.find-latest-image.outputs.image-release-stable || '' }}
+          refStream: ${{ matrix.refStream }}
           gcpProject: ${{ secrets.GCP_E2E_PROJECT }}
           gcpClusterCreateServiceAccount: "constellation-e2e-cluster@constellation-331613.iam.gserviceaccount.com"
           gcpIAMCreateServiceAccount: "constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"
