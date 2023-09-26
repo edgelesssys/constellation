@@ -48,11 +48,6 @@ func (p *FilebeatPreparer) Prepare(dir string) error {
 		return fmt.Errorf("template filebeat.yml: %w", err)
 	}
 
-	inputsYaml, err := filebeatAssets.ReadFile("inputs.yml")
-	if err != nil {
-		return fmt.Errorf("read log4j2.properties: %w", err)
-	}
-
 	rawHelmValues, err := filebeatHelmAssets.ReadFile("templates/filebeat/values.yml")
 	if err != nil {
 		return fmt.Errorf("read values.yml: %w", err)
@@ -64,8 +59,6 @@ func (p *FilebeatPreparer) Prepare(dir string) error {
 	}
 
 	helmValuesYaml.Daemonset.FilebeatConfig.FilebeatYml = templatedFilebeatYaml.String()
-	helmValuesYaml.Daemonset.FilebeatConfig.InputsYml = string(inputsYaml)
-
 	helmValues, err := yaml.Marshal(helmValuesYaml)
 	if err != nil {
 		return fmt.Errorf("marshal values.yml: %w", err)
@@ -92,7 +85,6 @@ type FilebeatHelmValues struct {
 		Enabled        bool `yaml:"enabled"`
 		FilebeatConfig struct {
 			FilebeatYml string `yaml:"filebeat.yml"`
-			InputsYml   string `yaml:"inputs.yml"`
 		} `yaml:"filebeatConfig"`
 		ExtraEnvs    []interface{} `yaml:"extraEnvs"`
 		SecretMounts []interface{} `yaml:"secretMounts"`
