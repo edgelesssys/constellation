@@ -193,6 +193,11 @@ func convertToIDFile(infra state.Infrastructure, provider cloudprovider.Provider
 	file.APIServerCertSANs = infra.APIServerCertSANs
 	file.InitSecret = []byte(infra.InitSecret) // Convert string to []byte
 	file.UID = infra.UID
+
+	if infra.Azure != nil {
+		file.AttestationURL = infra.Azure.AttestationURL
+	}
+
 	return file
 }
 
