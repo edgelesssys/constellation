@@ -38,7 +38,7 @@ These logs include [Bootstrapper](./microservices.md#bootstrapper) events and [d
 You can access the cloud logging [directly via the cloud provider endpoints](../workflows/troubleshooting.md#cloud-logging).
 
 More detailed system-level logs are accessible via `/var/log` and [journald](https://www.freedesktop.org/software/systemd/man/systemd-journald.service.html) on the nodes directly.
-They can be collected from there, for example, via [Filebeat and Logstash](https://www.elastic.co/guide/en/beats/filebeat/current/logstash-output.html), tools of the [Elastic Stack](https://www.elastic.co/de/elastic-stack/).
+They can be collected from there, for example, via [Filebeat and Logstash](https://www.elastic.co/guide/en/beats/filebeat/current/logstash-output.html), which are tools of the [Elastic Stack](https://www.elastic.co/de/elastic-stack/).
 
 In case of an error during the creation or initialization, the CLI automatically collects the [Bootstrapper](./microservices.md#bootstrapper) logs and returns these as a file for [troubleshooting](../workflows/troubleshooting.md). Here is an example of such an event:
 
