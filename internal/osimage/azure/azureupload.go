@@ -18,7 +18,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	armcomputev4 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
+	armcomputev5 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/pageblob"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
@@ -49,27 +49,27 @@ func New(subscription, location, resourceGroup string, log *logger.Logger) (*Upl
 	if err != nil {
 		return nil, err
 	}
-	diskClient, err := armcomputev4.NewDisksClient(subscription, cred, nil)
+	diskClient, err := armcomputev5.NewDisksClient(subscription, cred, nil)
 	if err != nil {
 		return nil, err
 	}
-	managedImagesClient, err := armcomputev4.NewImagesClient(subscription, cred, nil)
+	managedImagesClient, err := armcomputev5.NewImagesClient(subscription, cred, nil)
 	if err != nil {
 		return nil, err
 	}
-	galleriesClient, err := armcomputev4.NewGalleriesClient(subscription, cred, nil)
+	galleriesClient, err := armcomputev5.NewGalleriesClient(subscription, cred, nil)
 	if err != nil {
 		return nil, err
 	}
-	galleriesImageClient, err := armcomputev4.NewGalleryImagesClient(subscription, cred, nil)
+	galleriesImageClient, err := armcomputev5.NewGalleryImagesClient(subscription, cred, nil)
 	if err != nil {
 		return nil, err
 	}
-	galleriesImageVersionClient, err := armcomputev4.NewGalleryImageVersionsClient(subscription, cred, nil)
+	galleriesImageVersionClient, err := armcomputev5.NewGalleryImageVersionsClient(subscription, cred, nil)
 	if err != nil {
 		return nil, err
 	}
-	communityImageVersionClient, err := armcomputev4.NewCommunityGalleryImageVersionsClient(subscription, cred, nil)
+	communityImageVersionClient, err := armcomputev5.NewCommunityGalleryImageVersionsClient(subscription, cred, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -169,27 +169,27 @@ func (u *Uploader) createDisk(ctx context.Context, diskName string, diskType Dis
 	if diskType == DiskTypeWithVMGS && vmgs == nil {
 		return "", errors.New("cannot create disk with vmgs: vmgs reader is nil")
 	}
-	var createOption armcomputev4.DiskCreateOption
+	var createOption armcomputev5.DiskCreateOption
 	var requestVMGSSAS bool
 	switch diskType {
 	case DiskTypeNormal:
-		createOption = armcomputev4.DiskCreateOptionUpload
+		createOption = armcomputev5.DiskCreateOptionUpload
 	case DiskTypeWithVMGS:
-		createOption = armcomputev4.DiskCreateOptionUploadPreparedSecure
+		createOption = armcomputev5.DiskCreateOptionUploadPreparedSecure
 		requestVMGSSAS = true
 	}
-	disk := armcomputev4.Disk{
+	disk := armcomputev5.Disk{
 		Location: &u.location,
-		Properties: &armcomputev4.DiskProperties{
-			CreationData: &armcomputev4.CreationData{
+		Properties: &armcomputev5.DiskProperties{
+			CreationData: &armcomputev5.CreationData{
 				CreateOption:    &createOption,
 				UploadSizeBytes: toPtr(size),
 			},
-			HyperVGeneration: toPtr(armcomputev4.HyperVGenerationV2),
-			OSType:           toPtr(armcomputev4.OperatingSystemTypesLinux),
+			HyperVGeneration: toPtr(armcomputev5.HyperVGenerationV2),
+			OSType:           toPtr(armcomputev5.OperatingSystemTypesLinux),
 		},
 	}
-	createPoller, err := u.disks.BeginCreateOrUpdate(ctx, u.resourceGroup, diskName, disk, &armcomputev4.DisksClientBeginCreateOrUpdateOptions{})
+	createPoller, err := u.disks.BeginCreateOrUpdate(ctx, u.resourceGroup, diskName, disk, &armcomputev5.DisksClientBeginCreateOrUpdateOptions{})
 	if err != nil {
 		return "", fmt.Errorf("creating disk: %w", err)
 	}
@@ -199,12 +199,12 @@ func (u *Uploader) createDisk(ctx context.Context, diskName string, diskType Dis
 	}
 
 	u.log.Debugf("Granting temporary upload permissions via SAS token")
-	accessGrant := armcomputev4.GrantAccessData{
-		Access:                   toPtr(armcomputev4.AccessLevelWrite),
+	accessGrant := armcomputev5.GrantAccessData{
+		Access:                   toPtr(armcomputev5.AccessLevelWrite),
 		DurationInSeconds:        toPtr(int32(uploadAccessDuration)),
 		GetSecureVMGuestStateSAS: &requestVMGSSAS,
 	}
-	accessPoller, err := u.disks.BeginGrantAccess(ctx, u.resourceGroup, diskName, accessGrant, &armcomputev4.DisksClientBeginGrantAccessOptions{})
+	accessPoller, err := u.disks.BeginGrantAccess(ctx, u.resourceGroup, diskName, accessGrant, &armcomputev5.DisksClientBeginGrantAccessOptions{})
 	if err != nil {
 		return "", fmt.Errorf("generating disk sas token: %w", err)
 	}
@@ -236,7 +236,7 @@ func (u *Uploader) createDisk(ctx context.Context, diskName string, diskType Dis
 	if err := uploadBlob(ctx, *accesPollerResp.AccessSAS, img, size, u.blob); err != nil {
 		return "", fmt.Errorf("uploading image: %w", err)
 	}
-	revokePoller, err := u.disks.BeginRevokeAccess(ctx, u.resourceGroup, diskName, &armcomputev4.DisksClientBeginRevokeAccessOptions{})
+	revokePoller, err := u.disks.BeginRevokeAccess(ctx, u.resourceGroup, diskName, &armcomputev5.DisksClientBeginRevokeAccessOptions{})
 	if err != nil {
 		return "", fmt.Errorf("revoking disk sas token: %w", err)
 	}
@@ -250,13 +250,13 @@ func (u *Uploader) createDisk(ctx context.Context, diskName string, diskType Dis
 }
 
 func (u *Uploader) ensureDiskDeleted(ctx context.Context, diskName string) error {
-	_, err := u.disks.Get(ctx, u.resourceGroup, diskName, &armcomputev4.DisksClientGetOptions{})
+	_, err := u.disks.Get(ctx, u.resourceGroup, diskName, &armcomputev5.DisksClientGetOptions{})
 	if err != nil {
 		u.log.Debugf("Disk %s in %s doesn't exist. Nothing to clean up.", diskName, u.resourceGroup)
 		return nil
 	}
 	u.log.Debugf("Deleting disk %s in %s", diskName, u.resourceGroup)
-	deletePoller, err := u.disks.BeginDelete(ctx, u.resourceGroup, diskName, &armcomputev4.DisksClientBeginDeleteOptions{})
+	deletePoller, err := u.disks.BeginDelete(ctx, u.resourceGroup, diskName, &armcomputev5.DisksClientBeginDeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("deleting disk: %w", err)
 	}
@@ -268,15 +268,15 @@ func (u *Uploader) ensureDiskDeleted(ctx context.Context, diskName string) error
 
 func (u *Uploader) createManagedImage(ctx context.Context, imageName string, diskID string) (string, error) {
 	u.log.Debugf("Creating managed image %s in %s", imageName, u.resourceGroup)
-	image := armcomputev4.Image{
+	image := armcomputev5.Image{
 		Location: &u.location,
-		Properties: &armcomputev4.ImageProperties{
-			HyperVGeneration: toPtr(armcomputev4.HyperVGenerationTypesV2),
-			StorageProfile: &armcomputev4.ImageStorageProfile{
-				OSDisk: &armcomputev4.ImageOSDisk{
-					OSState: toPtr(armcomputev4.OperatingSystemStateTypesGeneralized),
-					OSType:  toPtr(armcomputev4.OperatingSystemTypesLinux),
-					ManagedDisk: &armcomputev4.SubResource{
+		Properties: &armcomputev5.ImageProperties{
+			HyperVGeneration: toPtr(armcomputev5.HyperVGenerationTypesV2),
+			StorageProfile: &armcomputev5.ImageStorageProfile{
+				OSDisk: &armcomputev5.ImageOSDisk{
+					OSState: toPtr(armcomputev5.OperatingSystemStateTypesGeneralized),
+					OSType:  toPtr(armcomputev5.OperatingSystemTypesLinux),
+					ManagedDisk: &armcomputev5.SubResource{
 						ID: &diskID,
 					},
 				},
@@ -285,7 +285,7 @@ func (u *Uploader) createManagedImage(ctx context.Context, imageName string, dis
 	}
 	createPoller, err := u.managedImages.BeginCreateOrUpdate(
 		ctx, u.resourceGroup, imageName, image,
-		&armcomputev4.ImagesClientBeginCreateOrUpdateOptions{},
+		&armcomputev5.ImagesClientBeginCreateOrUpdateOptions{},
 	)
 	if err != nil {
 		return "", fmt.Errorf("creating managed image: %w", err)
@@ -301,13 +301,13 @@ func (u *Uploader) createManagedImage(ctx context.Context, imageName string, dis
 }
 
 func (u *Uploader) ensureManagedImageDeleted(ctx context.Context, imageName string) error {
-	_, err := u.managedImages.Get(ctx, u.resourceGroup, imageName, &armcomputev4.ImagesClientGetOptions{})
+	_, err := u.managedImages.Get(ctx, u.resourceGroup, imageName, &armcomputev5.ImagesClientGetOptions{})
 	if err != nil {
 		u.log.Debugf("Managed image %s in %s doesn't exist. Nothing to clean up.", imageName, u.resourceGroup)
 		return nil
 	}
 	u.log.Debugf("Deleting managed image %s in %s", imageName, u.resourceGroup)
-	deletePoller, err := u.managedImages.BeginDelete(ctx, u.resourceGroup, imageName, &armcomputev4.ImagesClientBeginDeleteOptions{})
+	deletePoller, err := u.managedImages.BeginDelete(ctx, u.resourceGroup, imageName, &armcomputev5.ImagesClientBeginDeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("deleting image: %w", err)
 	}
@@ -319,17 +319,17 @@ func (u *Uploader) ensureManagedImageDeleted(ctx context.Context, imageName stri
 
 // ensureSIG creates a SIG if it does not exist yet.
 func (u *Uploader) ensureSIG(ctx context.Context, sigName string) error {
-	_, err := u.galleries.Get(ctx, u.resourceGroup, sigName, &armcomputev4.GalleriesClientGetOptions{})
+	_, err := u.galleries.Get(ctx, u.resourceGroup, sigName, &armcomputev5.GalleriesClientGetOptions{})
 	if err == nil {
 		u.log.Debugf("Image gallery %s in %s exists", sigName, u.resourceGroup)
 		return nil
 	}
 	u.log.Debugf("Creating image gallery %s in %s", sigName, u.resourceGroup)
-	gallery := armcomputev4.Gallery{
+	gallery := armcomputev5.Gallery{
 		Location: &u.location,
 	}
 	createPoller, err := u.galleries.BeginCreateOrUpdate(ctx, u.resourceGroup, sigName, gallery,
-		&armcomputev4.GalleriesClientBeginCreateOrUpdateOptions{},
+		&armcomputev5.GalleriesClientBeginCreateOrUpdateOptions{},
 	)
 	if err != nil {
 		return fmt.Errorf("creating image gallery: %w", err)
@@ -342,7 +342,7 @@ func (u *Uploader) ensureSIG(ctx context.Context, sigName string) error {
 
 // ensureImageDefinition creates an image definition (component of a SIG) if it does not exist yet.
 func (u *Uploader) ensureImageDefinition(ctx context.Context, sigName, definitionName string, version versionsapi.Version, attestationVariant string) error {
-	_, err := u.image.Get(ctx, u.resourceGroup, sigName, definitionName, &armcomputev4.GalleryImagesClientGetOptions{})
+	_, err := u.image.Get(ctx, u.resourceGroup, sigName, definitionName, &armcomputev5.GalleryImagesClientGetOptions{})
 	if err == nil {
 		u.log.Debugf("Image definition %s/%s in %s exists", sigName, definitionName, u.resourceGroup)
 		return nil
@@ -357,32 +357,32 @@ func (u *Uploader) ensureImageDefinition(ctx context.Context, sigName, definitio
 	case "azure-sev-snp":
 		securityType = string("ConfidentialVMSupported")
 	case "azure-trustedlaunch":
-		securityType = string(armcomputev4.SecurityTypesTrustedLaunch)
+		securityType = string(armcomputev5.SecurityTypesTrustedLaunch)
 	}
 	offer := imageOffer(version)
 
-	galleryImage := armcomputev4.GalleryImage{
+	galleryImage := armcomputev5.GalleryImage{
 		Location: &u.location,
-		Properties: &armcomputev4.GalleryImageProperties{
-			Identifier: &armcomputev4.GalleryImageIdentifier{
+		Properties: &armcomputev5.GalleryImageProperties{
+			Identifier: &armcomputev5.GalleryImageIdentifier{
 				Offer:     &offer,
 				Publisher: toPtr(imageDefinitionPublisher),
 				SKU:       toPtr(imageDefinitionSKU),
 			},
-			OSState:      toPtr(armcomputev4.OperatingSystemStateTypesGeneralized),
-			OSType:       toPtr(armcomputev4.OperatingSystemTypesLinux),
-			Architecture: toPtr(armcomputev4.ArchitectureX64),
-			Features: []*armcomputev4.GalleryImageFeature{
+			OSState:      toPtr(armcomputev5.OperatingSystemStateTypesGeneralized),
+			OSType:       toPtr(armcomputev5.OperatingSystemTypesLinux),
+			Architecture: toPtr(armcomputev5.ArchitectureX64),
+			Features: []*armcomputev5.GalleryImageFeature{
 				{
 					Name:  toPtr("SecurityType"),
 					Value: &securityType,
 				},
 			},
-			HyperVGeneration: toPtr(armcomputev4.HyperVGenerationV2),
+			HyperVGeneration: toPtr(armcomputev5.HyperVGenerationV2),
 		},
 	}
 	createPoller, err := u.image.BeginCreateOrUpdate(ctx, u.resourceGroup, sigName, definitionName, galleryImage,
-		&armcomputev4.GalleryImagesClientBeginCreateOrUpdateOptions{},
+		&armcomputev5.GalleryImagesClientBeginCreateOrUpdateOptions{},
 	)
 	if err != nil {
 		return fmt.Errorf("creating image definition: %w", err)
@@ -395,26 +395,26 @@ func (u *Uploader) ensureImageDefinition(ctx context.Context, sigName, definitio
 
 func (u *Uploader) createImageVersion(ctx context.Context, sigName, definitionName, versionName, imageID string) (string, error) {
 	u.log.Debugf("Creating image version %s/%s/%s in %s", sigName, definitionName, versionName, u.resourceGroup)
-	imageVersion := armcomputev4.GalleryImageVersion{
+	imageVersion := armcomputev5.GalleryImageVersion{
 		Location: &u.location,
-		Properties: &armcomputev4.GalleryImageVersionProperties{
-			StorageProfile: &armcomputev4.GalleryImageVersionStorageProfile{
-				OSDiskImage: &armcomputev4.GalleryOSDiskImage{
-					HostCaching: toPtr(armcomputev4.HostCachingReadOnly),
+		Properties: &armcomputev5.GalleryImageVersionProperties{
+			StorageProfile: &armcomputev5.GalleryImageVersionStorageProfile{
+				OSDiskImage: &armcomputev5.GalleryOSDiskImage{
+					HostCaching: toPtr(armcomputev5.HostCachingReadOnly),
 				},
-				Source: &armcomputev4.GalleryArtifactVersionFullSource{
+				Source: &armcomputev5.GalleryArtifactVersionFullSource{
 					ID: &imageID,
 				},
 			},
-			PublishingProfile: &armcomputev4.GalleryImageVersionPublishingProfile{
+			PublishingProfile: &armcomputev5.GalleryImageVersionPublishingProfile{
 				ReplicaCount:    toPtr[int32](1),
-				ReplicationMode: toPtr(armcomputev4.ReplicationModeFull),
+				ReplicationMode: toPtr(armcomputev5.ReplicationModeFull),
 				TargetRegions:   targetRegions,
 			},
 		},
 	}
 	createPoller, err := u.imageVersions.BeginCreateOrUpdate(ctx, u.resourceGroup, sigName, definitionName, versionName, imageVersion,
-		&armcomputev4.GalleryImageVersionsClientBeginCreateOrUpdateOptions{},
+		&armcomputev5.GalleryImageVersionsClientBeginCreateOrUpdateOptions{},
 	)
 	if err != nil {
 		return "", fmt.Errorf("creating image version: %w", err)
@@ -430,13 +430,13 @@ func (u *Uploader) createImageVersion(ctx context.Context, sigName, definitionNa
 }
 
 func (u *Uploader) ensureImageVersionDeleted(ctx context.Context, sigName, definitionName, versionName string) error {
-	_, err := u.imageVersions.Get(ctx, u.resourceGroup, sigName, definitionName, versionName, &armcomputev4.GalleryImageVersionsClientGetOptions{})
+	_, err := u.imageVersions.Get(ctx, u.resourceGroup, sigName, definitionName, versionName, &armcomputev5.GalleryImageVersionsClientGetOptions{})
 	if err != nil {
 		u.log.Debugf("Image version %s in %s/%s/%s doesn't exist. Nothing to clean up.", versionName, u.resourceGroup, sigName, definitionName)
 		return nil
 	}
 	u.log.Debugf("Deleting image version %s in %s/%s/%s", versionName, u.resourceGroup, sigName, definitionName)
-	deletePoller, err := u.imageVersions.BeginDelete(ctx, u.resourceGroup, sigName, definitionName, versionName, &armcomputev4.GalleryImageVersionsClientBeginDeleteOptions{})
+	deletePoller, err := u.imageVersions.BeginDelete(ctx, u.resourceGroup, sigName, definitionName, versionName, &armcomputev5.GalleryImageVersionsClientBeginDeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("deleting image version: %w", err)
 	}
@@ -450,7 +450,7 @@ func (u *Uploader) ensureImageVersionDeleted(ctx context.Context, sigName, defin
 // If the shared image gallery is a community gallery, the community identifier is returned.
 // Otherwise, the unshared identifier is returned.
 func (u *Uploader) getImageReference(ctx context.Context, sigName, definitionName, versionName, unsharedID string) (string, error) {
-	galleryResp, err := u.galleries.Get(ctx, u.resourceGroup, sigName, &armcomputev4.GalleriesClientGetOptions{})
+	galleryResp, err := u.galleries.Get(ctx, u.resourceGroup, sigName, &armcomputev5.GalleriesClientGetOptions{})
 	if err != nil {
 		return "", fmt.Errorf("getting image gallery %s: %w", sigName, err)
 	}
@@ -474,7 +474,7 @@ func (u *Uploader) getImageReference(ctx context.Context, sigName, definitionNam
 	u.log.Debugf("Image gallery %s in %s is shared. Using community identifier in %s", sigName, u.resourceGroup, communityGalleryName)
 	communityVersionResp, err := u.communityVersions.Get(ctx, u.location, communityGalleryName,
 		definitionName, versionName,
-		&armcomputev4.CommunityGalleryImageVersionsClientGetOptions{},
+		&armcomputev5.CommunityGalleryImageVersionsClientGetOptions{},
 	)
 	if err != nil {
 		return "", fmt.Errorf("getting community image version %s/%s/%s: %w", communityGalleryName, definitionName, versionName, err)
@@ -548,33 +548,33 @@ type sasBlobUploader func(sasBlobURL string) (azurePageblobAPI, error)
 
 type azureDiskAPI interface {
 	Get(ctx context.Context, resourceGroupName string, diskName string,
-		options *armcomputev4.DisksClientGetOptions,
-	) (armcomputev4.DisksClientGetResponse, error)
-	BeginCreateOrUpdate(ctx context.Context, resourceGroupName string, diskName string, disk armcomputev4.Disk,
-		options *armcomputev4.DisksClientBeginCreateOrUpdateOptions,
-	) (*runtime.Poller[armcomputev4.DisksClientCreateOrUpdateResponse], error)
+		options *armcomputev5.DisksClientGetOptions,
+	) (armcomputev5.DisksClientGetResponse, error)
+	BeginCreateOrUpdate(ctx context.Context, resourceGroupName string, diskName string, disk armcomputev5.Disk,
+		options *armcomputev5.DisksClientBeginCreateOrUpdateOptions,
+	) (*runtime.Poller[armcomputev5.DisksClientCreateOrUpdateResponse], error)
 	BeginDelete(ctx context.Context, resourceGroupName string, diskName string,
-		options *armcomputev4.DisksClientBeginDeleteOptions,
-	) (*runtime.Poller[armcomputev4.DisksClientDeleteResponse], error)
-	BeginGrantAccess(ctx context.Context, resourceGroupName string, diskName string, grantAccessData armcomputev4.GrantAccessData,
-		options *armcomputev4.DisksClientBeginGrantAccessOptions,
-	) (*runtime.Poller[armcomputev4.DisksClientGrantAccessResponse], error)
+		options *armcomputev5.DisksClientBeginDeleteOptions,
+	) (*runtime.Poller[armcomputev5.DisksClientDeleteResponse], error)
+	BeginGrantAccess(ctx context.Context, resourceGroupName string, diskName string, grantAccessData armcomputev5.GrantAccessData,
+		options *armcomputev5.DisksClientBeginGrantAccessOptions,
+	) (*runtime.Poller[armcomputev5.DisksClientGrantAccessResponse], error)
 	BeginRevokeAccess(ctx context.Context, resourceGroupName string, diskName string,
-		options *armcomputev4.DisksClientBeginRevokeAccessOptions,
-	) (*runtime.Poller[armcomputev4.DisksClientRevokeAccessResponse], error)
+		options *armcomputev5.DisksClientBeginRevokeAccessOptions,
+	) (*runtime.Poller[armcomputev5.DisksClientRevokeAccessResponse], error)
 }
 
 type azureManagedImageAPI interface {
 	Get(ctx context.Context, resourceGroupName string, imageName string,
-		options *armcomputev4.ImagesClientGetOptions,
-	) (armcomputev4.ImagesClientGetResponse, error)
+		options *armcomputev5.ImagesClientGetOptions,
+	) (armcomputev5.ImagesClientGetResponse, error)
 	BeginCreateOrUpdate(ctx context.Context, resourceGroupName string,
-		imageName string, parameters armcomputev4.Image,
-		options *armcomputev4.ImagesClientBeginCreateOrUpdateOptions,
-	) (*runtime.Poller[armcomputev4.ImagesClientCreateOrUpdateResponse], error)
+		imageName string, parameters armcomputev5.Image,
+		options *armcomputev5.ImagesClientBeginCreateOrUpdateOptions,
+	) (*runtime.Poller[armcomputev5.ImagesClientCreateOrUpdateResponse], error)
 	BeginDelete(ctx context.Context, resourceGroupName string, imageName string,
-		options *armcomputev4.ImagesClientBeginDeleteOptions,
-	) (*runtime.Poller[armcomputev4.ImagesClientDeleteResponse], error)
+		options *armcomputev5.ImagesClientBeginDeleteOptions,
+	) (*runtime.Poller[armcomputev5.ImagesClientDeleteResponse], error)
 }
 
 type azurePageblobAPI interface {
@@ -585,50 +585,50 @@ type azurePageblobAPI interface {
 
 type azureGalleriesAPI interface {
 	Get(ctx context.Context, resourceGroupName string, galleryName string,
-		options *armcomputev4.GalleriesClientGetOptions,
-	) (armcomputev4.GalleriesClientGetResponse, error)
-	NewListPager(options *armcomputev4.GalleriesClientListOptions,
-	) *runtime.Pager[armcomputev4.GalleriesClientListResponse]
+		options *armcomputev5.GalleriesClientGetOptions,
+	) (armcomputev5.GalleriesClientGetResponse, error)
+	NewListPager(options *armcomputev5.GalleriesClientListOptions,
+	) *runtime.Pager[armcomputev5.GalleriesClientListResponse]
 	BeginCreateOrUpdate(ctx context.Context, resourceGroupName string,
-		galleryName string, gallery armcomputev4.Gallery,
-		options *armcomputev4.GalleriesClientBeginCreateOrUpdateOptions,
-	) (*runtime.Poller[armcomputev4.GalleriesClientCreateOrUpdateResponse], error)
+		galleryName string, gallery armcomputev5.Gallery,
+		options *armcomputev5.GalleriesClientBeginCreateOrUpdateOptions,
+	) (*runtime.Poller[armcomputev5.GalleriesClientCreateOrUpdateResponse], error)
 }
 
 type azureGalleriesImageAPI interface {
 	Get(ctx context.Context, resourceGroupName string, galleryName string,
-		galleryImageName string, options *armcomputev4.GalleryImagesClientGetOptions,
-	) (armcomputev4.GalleryImagesClientGetResponse, error)
+		galleryImageName string, options *armcomputev5.GalleryImagesClientGetOptions,
+	) (armcomputev5.GalleryImagesClientGetResponse, error)
 	BeginCreateOrUpdate(ctx context.Context, resourceGroupName string, galleryName string,
-		galleryImageName string, galleryImage armcomputev4.GalleryImage,
-		options *armcomputev4.GalleryImagesClientBeginCreateOrUpdateOptions,
-	) (*runtime.Poller[armcomputev4.GalleryImagesClientCreateOrUpdateResponse], error)
+		galleryImageName string, galleryImage armcomputev5.GalleryImage,
+		options *armcomputev5.GalleryImagesClientBeginCreateOrUpdateOptions,
+	) (*runtime.Poller[armcomputev5.GalleryImagesClientCreateOrUpdateResponse], error)
 	BeginDelete(ctx context.Context, resourceGroupName string, galleryName string, galleryImageName string,
-		options *armcomputev4.GalleryImagesClientBeginDeleteOptions,
-	) (*runtime.Poller[armcomputev4.GalleryImagesClientDeleteResponse], error)
+		options *armcomputev5.GalleryImagesClientBeginDeleteOptions,
+	) (*runtime.Poller[armcomputev5.GalleryImagesClientDeleteResponse], error)
 }
 
 type azureGalleriesImageVersionAPI interface {
 	Get(ctx context.Context, resourceGroupName string, galleryName string, galleryImageName string, galleryImageVersionName string,
-		options *armcomputev4.GalleryImageVersionsClientGetOptions,
-	) (armcomputev4.GalleryImageVersionsClientGetResponse, error)
+		options *armcomputev5.GalleryImageVersionsClientGetOptions,
+	) (armcomputev5.GalleryImageVersionsClientGetResponse, error)
 	NewListByGalleryImagePager(resourceGroupName string, galleryName string, galleryImageName string,
-		options *armcomputev4.GalleryImageVersionsClientListByGalleryImageOptions,
-	) *runtime.Pager[armcomputev4.GalleryImageVersionsClientListByGalleryImageResponse]
+		options *armcomputev5.GalleryImageVersionsClientListByGalleryImageOptions,
+	) *runtime.Pager[armcomputev5.GalleryImageVersionsClientListByGalleryImageResponse]
 	BeginCreateOrUpdate(ctx context.Context, resourceGroupName string, galleryName string, galleryImageName string,
-		galleryImageVersionName string, galleryImageVersion armcomputev4.GalleryImageVersion,
-		options *armcomputev4.GalleryImageVersionsClientBeginCreateOrUpdateOptions,
-	) (*runtime.Poller[armcomputev4.GalleryImageVersionsClientCreateOrUpdateResponse], error)
+		galleryImageVersionName string, galleryImageVersion armcomputev5.GalleryImageVersion,
+		options *armcomputev5.GalleryImageVersionsClientBeginCreateOrUpdateOptions,
+	) (*runtime.Poller[armcomputev5.GalleryImageVersionsClientCreateOrUpdateResponse], error)
 	BeginDelete(ctx context.Context, resourceGroupName string, galleryName string, galleryImageName string,
-		galleryImageVersionName string, options *armcomputev4.GalleryImageVersionsClientBeginDeleteOptions,
-	) (*runtime.Poller[armcomputev4.GalleryImageVersionsClientDeleteResponse], error)
+		galleryImageVersionName string, options *armcomputev5.GalleryImageVersionsClientBeginDeleteOptions,
+	) (*runtime.Poller[armcomputev5.GalleryImageVersionsClientDeleteResponse], error)
 }
 
 type azureCommunityGalleryImageVersionAPI interface {
 	Get(ctx context.Context, location string,
 		publicGalleryName, galleryImageName, galleryImageVersionName string,
-		options *armcomputev4.CommunityGalleryImageVersionsClientGetOptions,
-	) (armcomputev4.CommunityGalleryImageVersionsClientGetResponse, error)
+		options *armcomputev5.CommunityGalleryImageVersionsClientGetOptions,
+	) (armcomputev5.CommunityGalleryImageVersionsClientGetResponse, error)
 }
 
 const (
@@ -646,7 +646,7 @@ const (
 	timestampFormat          = "20060102150405"
 )
 
-var targetRegions = []*armcomputev4.TargetRegion{
+var targetRegions = []*armcomputev5.TargetRegion{
 	{
 		Name:                 toPtr("northeurope"),
 		RegionalReplicaCount: toPtr[int32](1),

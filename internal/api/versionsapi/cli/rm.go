@@ -20,7 +20,7 @@ import (
 	"cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	armcomputev4 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
+	armcomputev5 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/smithy-go"
@@ -575,15 +575,15 @@ func newAzureClient(subscription, location, resourceGroup string) (*azureClient,
 	if err != nil {
 		log.Fatal(err)
 	}
-	galleriesClient, err := armcomputev4.NewGalleriesClient(subscription, cred, nil)
+	galleriesClient, err := armcomputev5.NewGalleriesClient(subscription, cred, nil)
 	if err != nil {
 		return nil, err
 	}
-	galleriesImageClient, err := armcomputev4.NewGalleryImagesClient(subscription, cred, nil)
+	galleriesImageClient, err := armcomputev5.NewGalleryImagesClient(subscription, cred, nil)
 	if err != nil {
 		return nil, err
 	}
-	galleriesImageVersionClient, err := armcomputev4.NewGalleryImageVersionsClient(subscription, cred, nil)
+	galleriesImageVersionClient, err := armcomputev5.NewGalleryImageVersionsClient(subscription, cred, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -599,24 +599,24 @@ func newAzureClient(subscription, location, resourceGroup string) (*azureClient,
 }
 
 type azureGalleriesAPI interface {
-	NewListPager(options *armcomputev4.GalleriesClientListOptions,
-	) *runtime.Pager[armcomputev4.GalleriesClientListResponse]
+	NewListPager(options *armcomputev5.GalleriesClientListOptions,
+	) *runtime.Pager[armcomputev5.GalleriesClientListResponse]
 }
 
 type azureGalleriesImageAPI interface {
 	BeginDelete(ctx context.Context, resourceGroupName string, galleryName string, galleryImageName string,
-		options *armcomputev4.GalleryImagesClientBeginDeleteOptions,
-	) (*runtime.Poller[armcomputev4.GalleryImagesClientDeleteResponse], error)
+		options *armcomputev5.GalleryImagesClientBeginDeleteOptions,
+	) (*runtime.Poller[armcomputev5.GalleryImagesClientDeleteResponse], error)
 }
 
 type azureGalleriesImageVersionAPI interface {
 	NewListByGalleryImagePager(resourceGroupName string, galleryName string, galleryImageName string,
-		options *armcomputev4.GalleryImageVersionsClientListByGalleryImageOptions,
-	) *runtime.Pager[armcomputev4.GalleryImageVersionsClientListByGalleryImageResponse]
+		options *armcomputev5.GalleryImageVersionsClientListByGalleryImageOptions,
+	) *runtime.Pager[armcomputev5.GalleryImageVersionsClientListByGalleryImageResponse]
 
 	BeginDelete(ctx context.Context, resourceGroupName string, galleryName string, galleryImageName string,
-		galleryImageVersionName string, options *armcomputev4.GalleryImageVersionsClientBeginDeleteOptions,
-	) (*runtime.Poller[armcomputev4.GalleryImageVersionsClientDeleteResponse], error)
+		galleryImageVersionName string, options *armcomputev5.GalleryImageVersionsClientBeginDeleteOptions,
+	) (*runtime.Poller[armcomputev5.GalleryImageVersionsClientDeleteResponse], error)
 }
 
 var (
