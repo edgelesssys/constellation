@@ -150,6 +150,7 @@ go_test(
         "//internal/cloud/gcpshared",
         "//internal/config",
         "//internal/constants",
+        "//internal/crypto",
         "//internal/crypto/testvector",
         "//internal/file",
         "//internal/grpc/atlscredentials",

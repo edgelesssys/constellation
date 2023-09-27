@@ -10,7 +10,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
@@ -208,8 +207,10 @@ func TestHelmApply(t *testing.T) {
 
 			options.AllowDestructive = tc.allowDestructive
 			ex, includesUpgrade, err := sut.PrepareApply(cfg,
-				clusterid.File{UID: "testuid", MeasurementSalt: []byte("measurementSalt")}, options,
-				fakeInfraOutput(csp), fakeServiceAccURI(csp),
+				state.NewState().
+					SetInfrastructure(state.Infrastructure{UID: "testuid"}).
+					SetClusterValues(state.ClusterValues{MeasurementSalt: "measurementSalt"}),
+				options, fakeServiceAccURI(csp),
 				uri.MasterSecret{Key: []byte("secret"), Salt: []byte("masterSalt")})
 			var upgradeErr *compatibility.InvalidUpgradeError
 			if tc.expectError {

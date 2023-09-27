@@ -133,6 +133,8 @@ require (
 	sigs.k8s.io/yaml v1.3.0
 )
 
+require dario.cat/mergo v1.0.0
+
 require (
 	cloud.google.com/go v0.110.2 // indirect
 	cloud.google.com/go/iam v1.1.0 // indirect

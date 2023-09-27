@@ -180,6 +180,10 @@ func TestUpgradeApply(t *testing.T) {
 			require.NoError(handler.WriteYAML(constants.ConfigFilename, cfg))
 			require.NoError(handler.WriteJSON(constants.ClusterIDsFilename, clusterid.File{MeasurementSalt: []byte("measurementSalt")}))
 			require.NoError(handler.WriteJSON(constants.MasterSecretFilename, uri.MasterSecret{}))
+			stateFile := state.NewState().SetClusterValues(state.ClusterValues{
+				MeasurementSalt: "measurementSalt",
+			})
+			require.NoError(stateFile.WriteToFile(handler, constants.StateFilename))
 
 			upgrader := upgradeApplyCmd{
 				kubeUpgrader:    tc.kubeUpgrader,
@@ -200,14 +204,13 @@ func TestUpgradeApply(t *testing.T) {
 			assert.Equal(!tc.flags.skipPhases.contains(skipImagePhase), tc.kubeUpgrader.calledNodeUpgrade,
 				"incorrect node upgrade skipping behavior")
 
-			var gotState state.State
-			expectedState := state.Infrastructure{
-				APIServerCertSANs: []string{},
-				Azure:             &state.Azure{},
-			}
-			require.NoError(handler.ReadYAML(constants.StateFilename, &gotState))
+			expectedState := state.NewState().
+				SetInfrastructure(state.Infrastructure{APIServerCertSANs: []string{}}).
+				SetClusterValues(state.ClusterValues{MeasurementSalt: "measurementSalt"})
+			gotState, err := state.ReadFromFile(handler, constants.StateFilename)
+			require.NoError(err)
 			assert.Equal("v1", gotState.Version)
-			assert.Equal(expectedState, gotState.Infrastructure)
+			assert.Equal(expectedState, gotState)
 		})
 	}
 }
@@ -308,9 +311,9 @@ type mockApplier struct {
 	mock.Mock
 }
 
-func (m *mockApplier) PrepareApply(cfg *config.Config, clusterID clusterid.File,
-	helmOpts helm.Options, infraState state.Infrastructure, str string, masterSecret uri.MasterSecret,
+func (m *mockApplier) PrepareApply(cfg *config.Config, stateFile *state.State,
+	helmOpts helm.Options, str string, masterSecret uri.MasterSecret,
 ) (helm.Applier, bool, error) {
-	args := m.Called(cfg, clusterID, helmOpts, infraState, str, masterSecret)
+	args := m.Called(cfg, stateFile, helmOpts, str, masterSecret)
 	return args.Get(0).(helm.Applier), args.Bool(1), args.Error(2)
 }

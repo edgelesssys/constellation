@@ -1,8 +1,27 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "state",
     srcs = ["state.go"],
     importpath = "github.com/edgelesssys/constellation/v2/cli/internal/state",
     visibility = ["//cli:__subpackages__"],
+    deps = [
+        "//internal/config",
+        "//internal/file",
+        "@cat_dario_mergo//:mergo",
+    ],
+)
+
+go_test(
+    name = "state_test",
+    srcs = ["state_test.go"],
+    embed = [":state"],
+    deps = [
+        "//internal/constants",
+        "//internal/file",
+        "@com_github_spf13_afero//:afero",
+        "@com_github_stretchr_testify//assert",
+        "@in_gopkg_yaml_v3//:yaml_v3",
+    ],
 )

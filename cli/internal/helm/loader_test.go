@@ -22,7 +22,6 @@ import (
 	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/engine"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
@@ -66,12 +65,15 @@ func TestLoadReleases(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 	config := &config.Config{Provider: config.ProviderConfig{GCP: &config.GCPConfig{}}}
-	chartLoader := newLoader(config, clusterid.File{UID: "testuid", MeasurementSalt: []byte("measurementSalt")},
-		semver.NewFromInt(2, 10, 0, ""))
+	chartLoader := newLoader(config, state.NewState().
+		SetInfrastructure(state.Infrastructure{UID: "testuid"}).
+		SetClusterValues(state.ClusterValues{MeasurementSalt: "measurementSalt"}),
+		semver.NewFromInt(2, 10, 0, ""),
+	)
 	helmReleases, err := chartLoader.loadReleases(
 		true, WaitModeAtomic,
 		uri.MasterSecret{Key: []byte("secret"), Salt: []byte("masterSalt")},
-		fakeServiceAccURI(cloudprovider.GCP), state.Infrastructure{GCP: &state.GCP{}},
+		fakeServiceAccURI(cloudprovider.GCP),
 	)
 	require.NoError(err)
 	for _, release := range helmReleases {
@@ -85,7 +87,7 @@ func TestLoadAWSLoadBalancerValues(t *testing.T) {
 	sut := chartLoader{
 		config:      &config.Config{Name: "testCluster"},
 		clusterName: "testCluster",
-		idFile:      clusterid.File{UID: "testuid"},
+		stateFile:   state.NewState().SetInfrastructure(state.Infrastructure{UID: "testuid"}),
 	}
 	val := sut.loadAWSLBControllerValues()
 	assert.Equal(t, "testCluster-testuid", val["clusterName"])
@@ -174,8 +176,8 @@ func TestConstellationServices(t *testing.T) {
 				tc.config, uri.MasterSecret{
 					Key:  []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
 					Salt: []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
-				},
-				"uid", serviceAccURI, state.Infrastructure{
+				}, serviceAccURI, state.Infrastructure{
+					UID:   "uid",
 					Azure: &state.Azure{},
 					GCP:   &state.GCP{},
 				})

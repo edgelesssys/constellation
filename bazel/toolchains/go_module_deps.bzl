@@ -15,6 +15,14 @@ def go_dependencies():
         sum = "h1:tdpHgTbmbvEIARu+bixzmleMi14+3imnpoFXz+Qzjp4=",
         version = "v1.31.0-20230802163732-1c33ebd9ecfa.1",
     )
+    go_repository(
+        name = "cat_dario_mergo",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "dario.cat/mergo",
+        sum = "h1:AGCNq9Evsj31mOgNPcLyXc+4PNABt905YmuqPYYpBWk=",
+        version = "v1.0.0",
+    )
 
     go_repository(
         name = "cc_mvdan_editorconfig",
