@@ -1,0 +1,26 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "router",
+    srcs = [
+        "object.go",
+        "router.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/s3proxy/internal/router",
+    visibility = ["//s3proxy:__subpackages__"],
+    deps = [
+        "//internal/logger",
+        "//s3proxy/internal/crypto",
+        "//s3proxy/internal/s3",
+        "@com_github_aws_aws_sdk_go_v2_service_s3//:s3",
+        "@org_uber_go_zap//:zap",
+    ],
+)
+
+go_test(
+    name = "router_test",
+    srcs = ["router_test.go"],
+    embed = [":router"],
+    deps = ["@com_github_stretchr_testify//assert"],
+)

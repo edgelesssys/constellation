@@ -55,6 +55,14 @@ def containers():
             "repotag_file": "//bazel/release:libvirt_tag.txt",
             "used_by": ["config"],
         },
+        {
+            "identifier": "s3proxy",
+            "image_name": "s3proxy",
+            "name": "s3proxy",
+            "oci": "//s3proxy/cmd:s3proxy",
+            "repotag_file": "//bazel/release:s3proxy_tag.txt",
+            "used_by": ["config"],
+        },
     ]
 
 def helm_containers():

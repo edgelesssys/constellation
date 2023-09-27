@@ -1,0 +1,47 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_cross_binary", "go_library")
+load("@rules_oci//oci:defs.bzl", "oci_image")
+load("@rules_pkg//:pkg.bzl", "pkg_tar")
+
+go_library(
+    name = "cmd_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/s3proxy/cmd",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//internal/logger",
+        "//s3proxy/internal/router",
+        "@org_uber_go_zap//:zap",
+    ],
+)
+
+go_binary(
+    name = "cmd",
+    embed = [":cmd_lib"],
+    visibility = ["//visibility:public"],
+)
+
+go_cross_binary(
+    name = "s3proxy_linux_amd64",
+    platform = "@io_bazel_rules_go//go/toolchain:linux_amd64",
+    target = ":cmd",
+    visibility = ["//visibility:public"],
+)
+
+pkg_tar(
+    name = "layer",
+    srcs = [
+        ":s3proxy_linux_amd64",
+    ],
+    mode = "0755",
+    remap_paths = {"/s3proxy_linux_amd64": "/s3proxy"},
+)
+
+oci_image(
+    name = "s3proxy",
+    base = "@distroless_static_linux_amd64",
+    entrypoint = ["/s3proxy"],
+    tars = [
+        ":layer",
+    ],
+    visibility = ["//visibility:public"],
+)
