@@ -23,7 +23,7 @@ These metrics endpoints can be [disabled](https://kubernetes.io/docs/concepts/cl
 
 You can collect these cluster-internal metrics via tools such as [Prometheus](https://prometheus.io/) or the [Elastic Stack](https://www.elastic.co/de/elastic-stack/).
 
-Cilium supports [metrics via Prometheus endpoints](https://docs.cilium.io/en/latest/observability/metrics/) as well.
+Constellation's CNI Cilium also supports [metrics via Prometheus endpoints](https://docs.cilium.io/en/latest/observability/metrics/).
 However, in Constellation, they're disabled by default and must be enabled first.
 
 ## Logs
