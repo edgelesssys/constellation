@@ -49,9 +49,6 @@ func main() {
 	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 	flag.Parse()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity))
 	log.With(
 		zap.String("version", constants.BinaryVersion().String()),
@@ -72,7 +69,7 @@ func main() {
 	}
 
 	certCacheClient := certcache.NewClient(log.Named("certcache"), kubeClient, attVariant)
-	cachedCerts, err := certCacheClient.CreateCertChainCache(ctx)
+	cachedCerts, err := certCacheClient.CreateCertChainCache(context.Background())
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to create certificate chain cache")
 	}
@@ -85,7 +82,7 @@ func main() {
 
 	creds := atlscredentials.New(nil, []atls.Validator{validator})
 
-	vpcCtx, cancel := context.WithTimeout(ctx, vpcIPTimeout)
+	vpcCtx, cancel := context.WithTimeout(context.Background(), vpcIPTimeout)
 	defer cancel()
 
 	vpcIP, err := getVPCIP(vpcCtx, *provider)
