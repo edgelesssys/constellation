@@ -122,7 +122,6 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 		return nil, fmt.Errorf("parsing attestation report: %w", err)
 	}
 
-	// Verify the attestation report's certificates.
 	// ASK, as cached in joinservice or reported from THIM / KDS.
 	ask, err := x509.ParseCertificate(att.CertificateChain.AskCert)
 	if err != nil {
