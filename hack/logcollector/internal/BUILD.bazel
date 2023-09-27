@@ -5,17 +5,21 @@ go_library(
     srcs = [
         "filebeat.go",
         "logstash.go",
+        "metricbeat.go",
         "prepare.go",
     ],
     embedsrcs = [
         "templates/filebeat/values.yml",
         "templates/logstash/values.yml",
+        "templates/metricbeat/values-all-nodes.yml",
+        "templates/metricbeat/values-control-plane.yml",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/hack/logcollector/internal",
     visibility = ["//hack/logcollector:__subpackages__"],
     deps = [
         "//debugd/filebeat",
         "//debugd/logstash",
+        "//debugd/metricbeat",
         "//internal/file",
         "@com_github_spf13_afero//:afero",
         "@in_gopkg_yaml_v3//:yaml_v3",

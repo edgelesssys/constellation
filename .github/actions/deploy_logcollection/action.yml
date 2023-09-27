@@ -50,7 +50,7 @@ runs:
          --fields github.sha="${{ github.sha }}" \
          --fields github.runner-os="${{ runner.os }}" \
          --fields github.e2e-test-payload="${{ inputs.test }}" \
-         --fields github.isDebugImage="${{ inputs.isDebugImage }}" \
+         --fields github.is-debug-cluster="${{ inputs.isDebugImage }}" \
          --fields github.e2e-test-provider="${{ inputs.provider }}" \
          --fields github.ref-stream="${{ inputs.refStream }}" \
          --fields github.kubernetes-version="${{ inputs.kubernetesVersion }}" \
@@ -86,3 +86,17 @@ runs:
         helm repo update
         helm install filebeat elastic/filebeat \
           --wait --timeout=1200s --values values.yml
+
+    - name: Deploy Metricbeat
+      id: deploy-metricbeat
+      shell: bash
+      working-directory: ./metricbeat
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+      run: |
+        helm repo add elastic https://helm.elastic.co
+        helm repo update
+        helm install metricbeat-k8s elastic/metricbeat \
+          --wait --timeout=1200s --values values-control-plane.yml
+        helm install metricbeat-system elastic/metricbeat \
+          --wait --timeout=1200s --values values-all-nodes.yml

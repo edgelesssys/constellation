@@ -249,12 +249,14 @@ runs:
         fetchMeasurements: ${{ inputs.fetchMeasurements }}
         cliVersion: ${{ inputs.cliVersion }}
         azureSNPEnforcementPolicy: ${{ inputs.azureSNPEnforcementPolicy }}
+        azureIAMCreateCredentials: ${{ inputs.azureIAMCreateCredentials }}
+        azureClusterCreateCredentials: ${{ inputs.azureClusterCreateCredentials }}
+        kubernetesVersion: ${{ inputs.kubernetesVersion }}
+        refStream: ${{ inputs.refStream }}
 
-    - name: Deploy logcollection
+    - name: Deploy log- and metrics-collection (Kubernetes)
       id: deploy-logcollection
-      # TODO(msanft):temporarily deploy in debug clusters too to resolve "missing logs"-bug
-      # see https://dev.azure.com/Edgeless/Edgeless/_workitems/edit/3227
-      # if: inputs.isDebugImage == 'false'
+      if: inputs.isDebugImage == 'false'
       uses: ./.github/actions/deploy_logcollection
       with:
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}

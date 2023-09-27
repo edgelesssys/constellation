@@ -41,15 +41,11 @@ func NewFilebeatPreparer(port int) *FilebeatPreparer {
 // Prepare prepares the Filebeat Helm chart by templating the filebeat.yml and inputs.yml files and placing them in the specified directory.
 func (p *FilebeatPreparer) Prepare(dir string) error {
 	templatedFilebeatYaml, err := p.template(filebeatAssets, "templates/filebeat.yml", FilebeatTemplateData{
-		LogstashHost: fmt.Sprintf("logstash-logstash:%d", p.port),
+		LogstashHost:     fmt.Sprintf("logstash-logstash:%d", p.port),
+		AddCloudMetadata: true,
 	})
 	if err != nil {
 		return fmt.Errorf("template filebeat.yml: %w", err)
-	}
-
-	inputsYaml, err := filebeatAssets.ReadFile("inputs.yml")
-	if err != nil {
-		return fmt.Errorf("read log4j2.properties: %w", err)
 	}
 
 	rawHelmValues, err := filebeatHelmAssets.ReadFile("templates/filebeat/values.yml")
@@ -63,8 +59,6 @@ func (p *FilebeatPreparer) Prepare(dir string) error {
 	}
 
 	helmValuesYaml.Daemonset.FilebeatConfig.FilebeatYml = templatedFilebeatYaml.String()
-	helmValuesYaml.Daemonset.FilebeatConfig.InputsYml = string(inputsYaml)
-
 	helmValues, err := yaml.Marshal(helmValuesYaml)
 	if err != nil {
 		return fmt.Errorf("marshal values.yml: %w", err)
@@ -79,7 +73,8 @@ func (p *FilebeatPreparer) Prepare(dir string) error {
 
 // FilebeatTemplateData is template data.
 type FilebeatTemplateData struct {
-	LogstashHost string
+	LogstashHost     string
+	AddCloudMetadata bool
 }
 
 // FilebeatHelmValues repesents the Helm values.yml.
@@ -90,7 +85,6 @@ type FilebeatHelmValues struct {
 		Enabled        bool `yaml:"enabled"`
 		FilebeatConfig struct {
 			FilebeatYml string `yaml:"filebeat.yml"`
-			InputsYml   string `yaml:"inputs.yml"`
 		} `yaml:"filebeatConfig"`
 		ExtraEnvs    []interface{} `yaml:"extraEnvs"`
 		SecretMounts []interface{} `yaml:"secretMounts"`

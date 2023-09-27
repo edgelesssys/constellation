@@ -38,6 +38,15 @@ inputs:
   test:
     description: "The e2e test payload."
     required: true
+  azureClusterCreateCredentials:
+    description: "Azure credentials authorized to create a Constellation cluster."
+    required: true
+  azureIAMCreateCredentials:
+    description: "Azure credentials authorized to create an IAM configuration."
+    required: true
+  refStream:
+    description: "Reference and stream of the image in use"
+    required: false
 
 outputs:
   kubeconfig:
@@ -119,29 +128,14 @@ runs:
 
     - name: Cdbg deploy
       if: inputs.isDebugImage == 'true'
-      shell: bash
-      run: |
-        echo "::group::cdbg deploy"
-        chmod +x $GITHUB_WORKSPACE/build/cdbg
-        cdbg deploy \
-          --bootstrapper "${{ github.workspace }}/build/bootstrapper" \
-          --upgrade-agent "${{ github.workspace }}/build/upgrade-agent" \
-          --info logcollect=true \
-          --info logcollect.github.actor="${{ github.triggering_actor }}" \
-          --info logcollect.github.workflow="${{ github.workflow }}" \
-          --info logcollect.github.run-id="${{ github.run_id }}" \
-          --info logcollect.github.run-attempt="${{ github.run_attempt }}" \
-          --info logcollect.github.ref-name="${{ github.ref_name }}" \
-          --info logcollect.github.sha="${{ github.sha }}" \
-          --info logcollect.github.runner-os="${{ runner.os }}" \
-          --info logcollect.github.e2e-test-payload="${{ inputs.test }}" \
-          --info logcollect.github.is-debug-cluster=false \
-          --info logcollect.github.ref-stream="${{ inputs.refStream }}" \
-          --info logcollect.github.kubernetes-version="${{ inputs.kubernetesVersion }}" \
-          --info logcollect.deployment-type="debugd" \
-          --verbosity=-1 \
-          --force
-        echo "::endgroup::"
+      uses: ./.github/actions/cdbg_deploy
+      with:
+        cloudProvider: ${{ inputs.cloudProvider }}
+        test: ${{ inputs.test }}
+        azureClusterCreateCredentials: ${{ inputs.azureClusterCreateCredentials }}
+        azureIAMCreateCredentials: ${{ inputs.azureIAMCreateCredentials }}
+        refStream: ${{ inputs.refStream }}
+        kubernetesVersion: ${{ inputs.kubernetesVersion }}
 
     - name: Constellation init
       id: constellation-init
