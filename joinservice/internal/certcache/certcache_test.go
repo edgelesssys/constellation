@@ -47,8 +47,8 @@ func TestCreateCertChainCache(t *testing.T) {
 				getConfigMapDataErr: notFoundErr,
 			},
 			kdsClient: &stubKdsClient{
-				askResponse: []byte(testdata.Ask),
-				arkResponse: []byte(testdata.Ark),
+				askResponse: testdata.Ask,
+				arkResponse: testdata.Ark,
 			},
 			wantAsk: true,
 			wantArk: true,
@@ -58,7 +58,7 @@ func TestCreateCertChainCache(t *testing.T) {
 				askResponse: string(testdata.Ask),
 			},
 			kdsClient: &stubKdsClient{
-				arkResponse: []byte(testdata.Ark),
+				arkResponse: testdata.Ark,
 			},
 			wantAsk: true,
 			wantArk: true,
@@ -68,7 +68,7 @@ func TestCreateCertChainCache(t *testing.T) {
 				arkResponse: string(testdata.Ark),
 			},
 			kdsClient: &stubKdsClient{
-				askResponse: []byte(testdata.Ask),
+				askResponse: testdata.Ask,
 			},
 			wantAsk: true,
 			wantArk: true,
@@ -85,7 +85,7 @@ func TestCreateCertChainCache(t *testing.T) {
 				updateConfigMapErr: assert.AnError,
 			},
 			kdsClient: &stubKdsClient{
-				arkResponse: []byte(testdata.Ark),
+				arkResponse: testdata.Ark,
 			},
 			wantErr: true,
 		},
@@ -216,7 +216,7 @@ func (s *stubKubeClient) CreateConfigMap(context.Context, string, map[string]str
 	return s.createConfigMapErr
 }
 
-func (s *stubKubeClient) GetConfigMapData(ctx context.Context, name string, key string) (string, error) {
+func (s *stubKubeClient) GetConfigMapData(_ context.Context, name string, key string) (string, error) {
 	if key == constants.CertCacheAskKey {
 		return s.askResponse, s.getConfigMapDataErr
 	}
@@ -226,6 +226,6 @@ func (s *stubKubeClient) GetConfigMapData(ctx context.Context, name string, key 
 	return "", s.getConfigMapDataErr
 }
 
-func (s *stubKubeClient) UpdateConfigMap(ctx context.Context, name, key, value string) error {
+func (s *stubKubeClient) UpdateConfigMap(context.Context, string, string, string) error {
 	return s.updateConfigMapErr
 }
