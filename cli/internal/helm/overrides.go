@@ -54,7 +54,7 @@ func extraCiliumValues(provider cloudprovider.Provider, conformanceMode bool, ou
 // extraConstellationServicesValues extends the given values map by some values depending on user input.
 // Values set inside this function are only applied during init, not during upgrade.
 func extraConstellationServicesValues(
-	cfg *config.Config, masterSecret uri.MasterSecret, uid, serviceAccURI string, output state.Infrastructure,
+	cfg *config.Config, masterSecret uri.MasterSecret, serviceAccURI string, output state.Infrastructure,
 ) (map[string]any, error) {
 	extraVals := map[string]any{}
 	extraVals["join-service"] = map[string]any{
@@ -102,7 +102,7 @@ func extraConstellationServicesValues(
 		extraVals["ccm"] = map[string]any{
 			"GCP": map[string]any{
 				"projectID":         output.GCP.ProjectID,
-				"uid":               uid,
+				"uid":               output.UID,
 				"secretData":        string(rawKey),
 				"subnetworkPodCIDR": output.GCP.IPCidrPod,
 			},

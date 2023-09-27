@@ -145,6 +145,10 @@ type upgradeApplyCmd struct {
 	log             debugLog
 }
 
+type infrastructureShower interface {
+	ShowInfrastructure(ctx context.Context, provider cloudprovider.Provider) (state.Infrastructure, error)
+}
+
 func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, flags upgradeApplyFlags) error {
 	conf, err := config.New(u.fileHandler, constants.ConfigFilename, u.configFetcher, flags.force)
 	var configValidationErr *config.ValidationError
@@ -190,15 +194,11 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
 
-	var infraState state.Infrastructure
-	if flags.skipPhases.contains(skipInfrastructurePhase) {
-		infraState, err = u.clusterShower.ShowInfrastructure(cmd.Context(), conf.GetProvider())
-		if err != nil {
-			return fmt.Errorf("getting infra state: %w", err)
-		}
-	} else {
-		infraState, err = u.migrateTerraform(cmd, conf, upgradeDir, flags)
-		if err != nil {
+	// Perform Terraform migrations if infrastructure upgrade phase is not skipped.
+	// If it is skipped, we expect the new infrastructure to be in the state file
+	// already.
+	if !flags.skipPhases.contains(skipInfrastructurePhase) {
+		if err := u.migrateTerraform(cmd, conf, upgradeDir, flags); err != nil {
 			return fmt.Errorf("performing Terraform migrations: %w", err)
 		}
 	}
@@ -207,16 +207,16 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 	if err := u.fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil {
 		return fmt.Errorf("reading updated cluster ID file: %w", err)
 	}
-	state := state.NewState(infraState)
-	// TODO(elchead): AB#3424 move this to updateClusterIDFile and correctly handle existing state when writing state
-	if err := u.fileHandler.WriteYAML(constants.StateFilename, state, file.OptOverwrite); err != nil {
-		return fmt.Errorf("writing state file: %w", err)
+	stateFile, err := state.ReadFromFile(u.fileHandler, constants.StateFilename)
+	if err != nil {
+		return fmt.Errorf("reading state file: %w", err)
 	}
+
 	// extend the clusterConfig cert SANs with any of the supported endpoints:
 	// - (legacy) public IP
 	// - fallback endpoint
 	// - custom (user-provided) endpoint
-	sans := append([]string{idFile.IP, conf.CustomEndpoint}, idFile.APIServerCertSANs...)
+	sans := append([]string{stateFile.Infrastructure.ClusterEndpoint, conf.CustomEndpoint}, stateFile.Infrastructure.APIServerCertSANs...)
 	if err := u.kubeUpgrader.ExtendClusterConfigCertSANs(cmd.Context(), sans); err != nil {
 		return fmt.Errorf("extending cert SANs: %w", err)
 	}
@@ -228,7 +228,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 
 	var upgradeErr *compatibility.InvalidUpgradeError
 	if !flags.skipPhases.contains(skipHelmPhase) {
-		err = u.handleServiceUpgrade(cmd, conf, idFile, infraState, upgradeDir, flags)
+		err = u.handleServiceUpgrade(cmd, conf, stateFile, upgradeDir, flags)
 		switch {
 		case errors.As(err, &upgradeErr):
 			cmd.PrintErrln(err)
@@ -269,14 +269,14 @@ func diffAttestationCfg(currentAttestationCfg config.AttestationCfg, newAttestat
 }
 
 // migrateTerraform checks if the Constellation version the cluster is being upgraded to requires a migration
-// of cloud resources with Terraform. If so, the migration is performed.
+// of cloud resources with Terraform. If so, the migration is performed and the output is written to the state / ID file.
 func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, conf *config.Config, upgradeDir string, flags upgradeApplyFlags,
-) (res state.Infrastructure, err error) {
+) error {
 	u.log.Debugf("Planning Terraform migrations")
 
 	vars, err := cloudcmd.TerraformUpgradeVars(conf)
 	if err != nil {
-		return res, fmt.Errorf("parsing upgrade variables: %w", err)
+		return fmt.Errorf("parsing upgrade variables: %w", err)
 	}
 	u.log.Debugf("Using Terraform variables:\n%v", vars)
 
@@ -292,7 +292,7 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, conf *config.Conf
 
 	hasDiff, err := u.clusterUpgrader.PlanClusterUpgrade(cmd.Context(), cmd.OutOrStdout(), vars, conf.GetProvider())
 	if err != nil {
-		return res, fmt.Errorf("planning terraform migrations: %w", err)
+		return fmt.Errorf("planning terraform migrations: %w", err)
 	}
 
 	if hasDiff {
@@ -301,35 +301,36 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, conf *config.Conf
 		if !flags.yes {
 			ok, err := askToConfirm(cmd, "Do you want to apply the Terraform migrations?")
 			if err != nil {
-				return res, fmt.Errorf("asking for confirmation: %w", err)
+				return fmt.Errorf("asking for confirmation: %w", err)
 			}
 			if !ok {
 				cmd.Println("Aborting upgrade.")
 				// User doesn't expect to see any changes in his workspace after aborting an "upgrade apply",
 				// therefore, roll back to the backed up state.
 				if err := u.clusterUpgrader.RestoreClusterWorkspace(); err != nil {
-					return res, fmt.Errorf(
+					return fmt.Errorf(
 						"restoring Terraform workspace: %w, restore the Terraform workspace manually from %s ",
 						err,
 						filepath.Join(upgradeDir, constants.TerraformUpgradeBackupDir),
 					)
 				}
-				return res, fmt.Errorf("cluster upgrade aborted by user")
+				return fmt.Errorf("cluster upgrade aborted by user")
 			}
 		}
 		u.log.Debugf("Applying Terraform migrations")
 		infraState, err := u.clusterUpgrader.ApplyClusterUpgrade(cmd.Context(), conf.GetProvider())
 		if err != nil {
-			return infraState, fmt.Errorf("applying terraform migrations: %w", err)
+			return fmt.Errorf("applying terraform migrations: %w", err)
 		}
 
 		// Apply possible updates to cluster ID file
 		if err := updateClusterIDFile(infraState, u.fileHandler); err != nil {
-			return infraState, fmt.Errorf("merging cluster ID files: %w", err)
+			return fmt.Errorf("merging cluster ID files: %w", err)
 		}
 
-		cmd.Printf("Terraform migrations applied successfully and output written to: %s\n"+
+		cmd.Printf("Terraform migrations applied successfully and output written to: %s and %s\n"+
 			"A backup of the pre-upgrade state has been written to: %s\n",
+			flags.pf.PrefixPrintablePath(constants.StateFilename),
 			flags.pf.PrefixPrintablePath(constants.ClusterIDsFilename),
 			flags.pf.PrefixPrintablePath(filepath.Join(upgradeDir, constants.TerraformUpgradeBackupDir)),
 		)
@@ -337,16 +338,8 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, conf *config.Conf
 		u.log.Debugf("No Terraform diff detected")
 	}
 	u.log.Debugf("No Terraform diff detected")
-	infraState, err := u.clusterShower.ShowInfrastructure(cmd.Context(), conf.GetProvider())
-	if err != nil {
-		return infraState, fmt.Errorf("getting Terraform output: %w", err)
-	}
-	state := state.NewState(infraState)
-	// TODO(elchead): AB#3424 move this to updateClusterIDFile and correctly handle existing state when writing state
-	if err := u.fileHandler.WriteYAML(constants.StateFilename, state, file.OptOverwrite); err != nil {
-		return infraState, fmt.Errorf("writing state file: %w", err)
-	}
-	return infraState, nil
+
+	return nil
 }
 
 // validK8sVersion checks if the Kubernetes patch version is supported and asks for confirmation if not.
@@ -413,7 +406,7 @@ func (u *upgradeApplyCmd) confirmAndUpgradeAttestationConfig(
 }
 
 func (u *upgradeApplyCmd) handleServiceUpgrade(
-	cmd *cobra.Command, conf *config.Config, idFile clusterid.File, infra state.Infrastructure,
+	cmd *cobra.Command, conf *config.Config, stateFile *state.State,
 	upgradeDir string, flags upgradeApplyFlags,
 ) error {
 	var secret uri.MasterSecret
@@ -432,8 +425,7 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(
 
 	prepareApply := func(allowDestructive bool) (helm.Applier, bool, error) {
 		options.AllowDestructive = allowDestructive
-		executor, includesUpgrades, err := u.helmApplier.PrepareApply(conf, idFile, options,
-			infra, serviceAccURI, secret)
+		executor, includesUpgrades, err := u.helmApplier.PrepareApply(conf, stateFile, options, serviceAccURI, secret)
 		var upgradeErr *compatibility.InvalidUpgradeError
 		switch {
 		case errors.As(err, &upgradeErr):
@@ -597,14 +589,39 @@ func updateClusterIDFile(infraState state.Infrastructure, fileHandler file.Handl
 	if infraState.Azure != nil {
 		newIDFile.AttestationURL = infraState.Azure.AttestationURL
 	}
+	newStateFile := state.NewState()
+	newStateFile.SetInfrastructure(state.Infrastructure{
+		InitSecret:        infraState.InitSecret,
+		ClusterEndpoint:   infraState.ClusterEndpoint,
+		APIServerCertSANs: infraState.APIServerCertSANs,
+		UID:               infraState.UID,
+	})
+	if infraState.Azure != nil {
+		newStateFile.Infrastructure.Azure = &state.Azure{
+			AttestationURL: infraState.Azure.AttestationURL,
+		}
+	}
 
 	idFile := &clusterid.File{}
 	if err := fileHandler.ReadJSON(constants.ClusterIDsFilename, idFile); err != nil {
 		return fmt.Errorf("reading %s: %w", constants.ClusterIDsFilename, err)
 	}
 
+	stateFile, err := state.ReadFromFile(fileHandler, constants.StateFilename)
+	if err != nil {
+		return fmt.Errorf("reading %s: %w", constants.StateFilename, err)
+	}
+
 	if err := fileHandler.WriteJSON(constants.ClusterIDsFilename, idFile.Merge(newIDFile), file.OptOverwrite); err != nil {
 		return fmt.Errorf("writing %s: %w", constants.ClusterIDsFilename, err)
+	}
+
+	_, err = stateFile.Merge(newStateFile)
+	if err != nil {
+		return fmt.Errorf("merging state: %w", err)
+	}
+	if err := stateFile.WriteToFile(fileHandler, constants.StateFilename); err != nil {
+		return fmt.Errorf("writing %s: %w", constants.StateFilename, err)
 	}
 
 	return nil

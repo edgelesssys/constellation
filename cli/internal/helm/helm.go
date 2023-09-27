@@ -32,7 +32,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -87,10 +86,10 @@ type Options struct {
 // PrepareApply loads the charts and returns the executor to apply them.
 // TODO(elchead): remove validK8sVersion by putting ValidK8sVersion into config.Config, see AB#3374.
 func (h Client) PrepareApply(
-	conf *config.Config, idFile clusterid.File,
-	flags Options, infra state.Infrastructure, serviceAccURI string, masterSecret uri.MasterSecret,
+	conf *config.Config, stateFile *state.State,
+	flags Options, serviceAccURI string, masterSecret uri.MasterSecret,
 ) (Applier, bool, error) {
-	releases, err := h.loadReleases(conf, masterSecret, idFile, flags, infra, serviceAccURI)
+	releases, err := h.loadReleases(conf, masterSecret, stateFile, flags, serviceAccURI)
 	if err != nil {
 		return nil, false, fmt.Errorf("loading Helm releases: %w", err)
 	}
@@ -101,12 +100,11 @@ func (h Client) PrepareApply(
 
 func (h Client) loadReleases(
 	conf *config.Config, secret uri.MasterSecret,
-	idFile clusterid.File, flags Options, infra state.Infrastructure, serviceAccURI string,
+	stateFile *state.State, flags Options, serviceAccURI string,
 ) ([]Release, error) {
-	helmLoader := newLoader(conf, idFile, h.cliVersion)
+	helmLoader := newLoader(conf, stateFile, h.cliVersion)
 	h.log.Debugf("Created new Helm loader")
-	return helmLoader.loadReleases(flags.Conformance, flags.HelmWaitMode, secret,
-		serviceAccURI, infra)
+	return helmLoader.loadReleases(flags.Conformance, flags.HelmWaitMode, secret, serviceAccURI)
 }
 
 // Applier runs the Helm actions.

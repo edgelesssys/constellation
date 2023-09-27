@@ -19,7 +19,6 @@ import (
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm/imageversion"
 	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -72,12 +71,12 @@ type chartLoader struct {
 	constellationOperatorImage   string
 	nodeMaintenanceOperatorImage string
 	clusterName                  string
-	idFile                       clusterid.File
+	stateFile                    *state.State
 	cliVersion                   semver.Semver
 }
 
 // newLoader creates a new ChartLoader.
-func newLoader(config *config.Config, idFile clusterid.File, cliVersion semver.Semver) *chartLoader {
+func newLoader(config *config.Config, stateFile *state.State, cliVersion semver.Semver) *chartLoader {
 	// TODO(malt3): Allow overriding container image registry + prefix for all images
 	// (e.g. for air-gapped environments).
 	var ccmImage, cnmImage string
@@ -97,7 +96,7 @@ func newLoader(config *config.Config, idFile clusterid.File, cliVersion semver.S
 	return &chartLoader{
 		cliVersion:                   cliVersion,
 		csp:                          csp,
-		idFile:                       idFile,
+		stateFile:                    stateFile,
 		ccmImage:                     ccmImage,
 		azureCNMImage:                cnmImage,
 		config:                       config,
@@ -120,13 +119,13 @@ type releaseApplyOrder []Release
 
 // loadReleases loads the embedded helm charts and returns them as a HelmReleases object.
 func (i *chartLoader) loadReleases(conformanceMode bool, helmWaitMode WaitMode, masterSecret uri.MasterSecret,
-	serviceAccURI string, infra state.Infrastructure,
+	serviceAccURI string,
 ) (releaseApplyOrder, error) {
 	ciliumRelease, err := i.loadRelease(ciliumInfo, helmWaitMode)
 	if err != nil {
 		return nil, fmt.Errorf("loading cilium: %w", err)
 	}
-	ciliumVals := extraCiliumValues(i.config.GetProvider(), conformanceMode, infra)
+	ciliumVals := extraCiliumValues(i.config.GetProvider(), conformanceMode, i.stateFile.Infrastructure)
 	ciliumRelease.Values = mergeMaps(ciliumRelease.Values, ciliumVals)
 
 	certManagerRelease, err := i.loadRelease(certManagerInfo, helmWaitMode)
@@ -138,14 +137,14 @@ func (i *chartLoader) loadReleases(conformanceMode bool, helmWaitMode WaitMode, 
 	if err != nil {
 		return nil, fmt.Errorf("loading operators: %w", err)
 	}
-	operatorRelease.Values = mergeMaps(operatorRelease.Values, extraOperatorValues(i.idFile.UID))
+	operatorRelease.Values = mergeMaps(operatorRelease.Values, extraOperatorValues(i.stateFile.Infrastructure.UID))
 
 	conServicesRelease, err := i.loadRelease(constellationServicesInfo, helmWaitMode)
 	if err != nil {
 		return nil, fmt.Errorf("loading constellation-services: %w", err)
 	}
 
-	svcVals, err := extraConstellationServicesValues(i.config, masterSecret, i.idFile.UID, serviceAccURI, infra)
+	svcVals, err := extraConstellationServicesValues(i.config, masterSecret, serviceAccURI, i.stateFile.Infrastructure)
 	if err != nil {
 		return nil, fmt.Errorf("extending constellation-services values: %w", err)
 	}
@@ -216,7 +215,7 @@ func (i *chartLoader) loadRelease(info chartInfo, helmWaitMode WaitMode) (Releas
 
 func (i *chartLoader) loadAWSLBControllerValues() map[string]any {
 	return map[string]any{
-		"clusterName":  clusterid.GetClusterName(i.config, i.idFile),
+		"clusterName":  i.stateFile.ClusterName(i.config),
 		"tolerations":  controlPlaneTolerations,
 		"nodeSelector": controlPlaneNodeSelector,
 	}

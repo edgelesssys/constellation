@@ -9,6 +9,7 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -41,8 +42,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/state"
-	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
@@ -73,24 +72,19 @@ func NewInitCmd() *cobra.Command {
 }
 
 type initCmd struct {
-	log           debugLog
-	merger        configMerger
-	spinner       spinnerInterf
-	fileHandler   file.Handler
-	clusterShower infrastructureShower
-	pf            pathprefix.PathPrefixer
+	log         debugLog
+	merger      configMerger
+	spinner     spinnerInterf
+	fileHandler file.Handler
+	pf          pathprefix.PathPrefixer
 }
 
-func newInitCmd(
-	clusterShower infrastructureShower, fileHandler file.Handler,
-	spinner spinnerInterf, merger configMerger, log debugLog,
-) *initCmd {
+func newInitCmd(fileHandler file.Handler, spinner spinnerInterf, merger configMerger, log debugLog) *initCmd {
 	return &initCmd{
-		log:           log,
-		merger:        merger,
-		spinner:       spinner,
-		fileHandler:   fileHandler,
-		clusterShower: clusterShower,
+		log:         log,
+		merger:      merger,
+		spinner:     spinner,
+		fileHandler: fileHandler,
 	}
 }
 
@@ -116,12 +110,7 @@ func runInitialize(cmd *cobra.Command, _ []string) error {
 	defer cancel()
 	cmd.SetContext(ctx)
 
-	tfClient, err := terraform.New(ctx, constants.TerraformWorkingDir)
-	if err != nil {
-		return fmt.Errorf("creating Terraform client: %w", err)
-	}
-
-	i := newInitCmd(tfClient, fileHandler, spinner, &kubeconfigMerger{log: log}, log)
+	i := newInitCmd(fileHandler, spinner, &kubeconfigMerger{log: log}, log)
 	fetcher := attestationconfigapi.NewFetcher()
 	newAttestationApplier := func(w io.Writer, kubeConfig string, log debugLog) (attestationConfigApplier, error) {
 		return kubecmd.New(w, kubeConfig, fileHandler, log)
@@ -168,10 +157,16 @@ func (i *initCmd) initialize(
 		cmd.PrintErrln("WARNING: Attestation temporarily relies on AWS nitroTPM. See https://docs.edgeless.systems/constellation/workflows/config#choosing-a-vm-type for more information.")
 	}
 
+	// TODO(msanft): Remove IDFile as per AB#3354
 	i.log.Debugf("Checking cluster ID file")
 	var idFile clusterid.File
 	if err := i.fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil {
 		return fmt.Errorf("reading cluster ID file: %w", err)
+	}
+
+	stateFile, err := state.ReadFromFile(i.fileHandler, constants.StateFilename)
+	if err != nil {
+		return fmt.Errorf("reading state file: %w", err)
 	}
 
 	i.log.Debugf("Validated k8s version as %s", k8sVersion)
@@ -212,6 +207,10 @@ func (i *initCmd) initialize(
 	}
 	idFile.MeasurementSalt = measurementSalt
 
+	stateFile.SetClusterValues(state.ClusterValues{
+		MeasurementSalt: base64.StdEncoding.EncodeToString(measurementSalt),
+	})
+
 	clusterName := clusterid.GetClusterName(conf, idFile)
 	i.log.Debugf("Setting cluster name to %s", clusterName)
 
@@ -247,11 +246,12 @@ func (i *initCmd) initialize(
 	}
 	i.log.Debugf("Initialization request succeeded")
 
+	// TODO(msanft): Remove IDFile as per AB#3354
 	i.log.Debugf("Writing Constellation ID file")
 	idFile.CloudProvider = provider
 
 	bufferedOutput := &bytes.Buffer{}
-	if err := i.writeOutput(idFile, resp, flags.mergeConfigs, bufferedOutput); err != nil {
+	if err := i.writeOutput(idFile, stateFile, resp, flags.mergeConfigs, bufferedOutput); err != nil {
 		return err
 	}
 
@@ -261,11 +261,6 @@ func (i *initCmd) initialize(
 	}
 	if err := attestationApplier.ApplyJoinConfig(cmd.Context(), conf.GetAttestationConfig(), measurementSalt); err != nil {
 		return fmt.Errorf("applying attestation config: %w", err)
-	}
-
-	infraState, err := i.clusterShower.ShowInfrastructure(cmd.Context(), conf.GetProvider())
-	if err != nil {
-		return fmt.Errorf("getting infrastructure state: %w", err)
 	}
 
 	i.spinner.Start("Installing Kubernetes components ", false)
@@ -279,8 +274,7 @@ func (i *initCmd) initialize(
 	if err != nil {
 		return fmt.Errorf("creating Helm client: %w", err)
 	}
-	executor, includesUpgrades, err := helmApplier.PrepareApply(conf, idFile, options, infraState,
-		serviceAccURI, masterSecret)
+	executor, includesUpgrades, err := helmApplier.PrepareApply(conf, stateFile, options, serviceAccURI, masterSecret)
 	if err != nil {
 		return fmt.Errorf("getting Helm chart executor: %w", err)
 	}
@@ -458,7 +452,7 @@ func (d *initDoer) handleGRPCStateChanges(ctx context.Context, wg *sync.WaitGrou
 }
 
 func (i *initCmd) writeOutput(
-	idFile clusterid.File, initResp *initproto.InitSuccessResponse, mergeConfig bool, wr io.Writer,
+	idFile clusterid.File, stateFile *state.State, initResp *initproto.InitSuccessResponse, mergeConfig bool, wr io.Writer,
 ) error {
 	fmt.Fprint(wr, "Your Constellation cluster was successfully initialized.\n\n")
 
@@ -510,6 +504,13 @@ func (i *initCmd) writeOutput(
 
 	idFile.OwnerID = ownerID
 	idFile.ClusterID = clusterID
+
+	stateFile.ClusterValues.OwnerID = ownerID
+	stateFile.ClusterValues.ClusterID = clusterID
+
+	if err := stateFile.WriteToFile(i.fileHandler, constants.StateFilename); err != nil {
+		return fmt.Errorf("writing state file: %w", err)
+	}
 
 	if err := i.fileHandler.WriteJSON(constants.ClusterIDsFilename, idFile, file.OptOverwrite); err != nil {
 		return fmt.Errorf("writing Constellation ID file: %w", err)
@@ -694,11 +695,7 @@ type attestationConfigApplier interface {
 }
 
 type helmApplier interface {
-	PrepareApply(conf *config.Config, idFile clusterid.File,
-		flags helm.Options, infra state.Infrastructure, serviceAccURI string, masterSecret uri.MasterSecret) (
+	PrepareApply(conf *config.Config, stateFile *state.State,
+		flags helm.Options, serviceAccURI string, masterSecret uri.MasterSecret) (
 		helm.Applier, bool, error)
-}
-
-type infrastructureShower interface {
-	ShowInfrastructure(ctx context.Context, provider cloudprovider.Provider) (state.Infrastructure, error)
 }

@@ -172,14 +172,15 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	}
 	c.log.Debugf("Successfully created the cloud resources for the cluster")
 
+	// TODO(msanft): Remove IDFile as per AB#3354
 	idFile := convertToIDFile(infraState, provider)
 	if err := fileHandler.WriteJSON(constants.ClusterIDsFilename, idFile, file.OptNone); err != nil {
 		return err
 	}
-	state := state.NewState(infraState)
 
-	if err := fileHandler.WriteYAML(constants.StateFilename, state, file.OptNone); err != nil {
-		return err
+	state := state.NewState().SetInfrastructure(infraState)
+	if err := state.WriteToFile(fileHandler, constants.StateFilename); err != nil {
+		return fmt.Errorf("writing state file: %w", err)
 	}
 
 	cmd.Println("Your Constellation cluster was created successfully.")

@@ -24,7 +24,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	grpcRetry "github.com/edgelesssys/constellation/v2/internal/grpc/retry"
@@ -254,10 +253,4 @@ func (r *recoverCmd) parseRecoverFlags(cmd *cobra.Command, fileHandler file.Hand
 		maaURL:   idFile.AttestationURL,
 		force:    force,
 	}, nil
-}
-
-func getStateDiskKeyFunc(masterKey, salt []byte) func(uuid string) ([]byte, error) {
-	return func(uuid string) ([]byte, error) {
-		return crypto.DeriveKey(masterKey, salt, []byte(crypto.DEKPrefix+uuid), crypto.StateDiskKeyLength)
-	}
 }
