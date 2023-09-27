@@ -216,7 +216,7 @@ func (s *stubKubeClient) CreateConfigMap(context.Context, string, map[string]str
 	return s.createConfigMapErr
 }
 
-func (s *stubKubeClient) GetConfigMapData(_ context.Context, name string, key string) (string, error) {
+func (s *stubKubeClient) GetConfigMapData(_ context.Context, _ string, key string) (string, error) {
 	if key == constants.CertCacheAskKey {
 		return s.askResponse, s.getConfigMapDataErr
 	}
