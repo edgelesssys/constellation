@@ -1,0 +1,94 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: selfsigned-issuer
+  labels:
+    app: s3proxy
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: selfsigned-ca
+  labels:
+    app: s3proxy
+spec:
+  isCA: true
+  commonName: s3proxy-selfsigned-ca
+  secretName: s3proxy-tls
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  dnsNames:
+  - "s3.eu-west-1.amazonaws.com"
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: s3proxy
+    labels:
+      app: s3proxy
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: s3proxy
+    template:
+        metadata:
+          labels:
+            app: s3proxy
+        spec:
+          imagePullSecrets:
+          - name: regcred
+          containers:
+          - name: s3proxy
+            image: ghcr.io/edgelesssys/constellation/s3proxy@sha256:2394a804e8b5ff487a55199dd83138885322a4de8e71ac7ce67b79d4ffc842b2
+            args:
+            - "--level=-1"
+            ports:
+            - containerPort: 4433
+              name: s3proxy-port
+            volumeMounts:
+            - name: tls-cert-data
+              mountPath: /etc/s3proxy/certs/s3proxy.crt
+              subPath: tls.crt
+            - name: tls-cert-data
+              mountPath: /etc/s3proxy/certs/s3proxy.key
+              subPath: tls.key
+            envFrom:
+            - secretRef:
+                name: s3-creds
+          volumes:
+          - name: tls-cert-data
+            secret:
+              secretName: s3proxy-tls
+          - name: s3-creds
+            secret:
+              secretName: s3-creds
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: s3proxy-service
+spec:
+  selector:
+    app: s3proxy
+  ports:
+  - name: https
+    port: 443
+    targetPort: s3proxy-port
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: s3-creds
+type: Opaque
+stringData:
+  AWS_ACCESS_KEY_ID: "replaceme"
+  AWS_SECRET_ACCESS_KEY: "replaceme"
