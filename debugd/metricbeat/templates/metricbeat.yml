@@ -47,7 +47,7 @@ metricbeat.modules:
   - module: etcd
     enabled: true
     metricsets: ["metrics"]
-    period: 10s
+    period: 30s
     hosts: ["https://localhost:2379"]
     ssl:
       certificate_authorities: ["/etc/kubernetes/pki/etcd/ca.crt"]
