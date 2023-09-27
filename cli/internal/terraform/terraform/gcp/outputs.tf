@@ -1,13 +1,13 @@
 output "ip" {
-  value = google_compute_global_address.loadbalancer_ip.address
+  value = var.internal_load_balancer ? google_compute_address.loadbalancer_ip_internal[0].address : google_compute_global_address.loadbalancer_ip[0].address
 }
 
 output "api_server_cert_sans" {
-  value = sort(concat([google_compute_global_address.loadbalancer_ip.address], var.custom_endpoint == "" ? [] : [var.custom_endpoint]))
+  value = sort(concat([var.internal_load_balancer ? google_compute_address.loadbalancer_ip_internal[0].address : google_compute_global_address.loadbalancer_ip[0].address], var.custom_endpoint == "" ? [] : [var.custom_endpoint]))
 }
 
 output "fallback_endpoint" {
-  value = google_compute_global_address.loadbalancer_ip.address
+  value = var.internal_load_balancer ? google_compute_address.loadbalancer_ip_internal[0].address : google_compute_global_address.loadbalancer_ip[0].address
 }
 
 output "uid" {

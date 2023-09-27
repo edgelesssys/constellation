@@ -73,6 +73,8 @@ go_library(
         "terraform/iam/aws/.terraform.lock.hcl",
         "terraform/iam/azure/.terraform.lock.hcl",
         "terraform/iam/gcp/.terraform.lock.hcl",
+        "terraform/gcp/modules/internal_load_balancer/main.tf",
+        "terraform/gcp/modules/internal_load_balancer/variables.tf",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/cli/internal/terraform",
     visibility = ["//cli:__subpackages__"],

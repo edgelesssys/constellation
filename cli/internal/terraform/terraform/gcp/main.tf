@@ -89,6 +89,26 @@ resource "google_compute_subnetwork" "vpc_subnetwork" {
   ]
 }
 
+
+resource "google_compute_subnetwork" "proxy_subnet" {
+  count         = var.internal_load_balancer ? 1 : 0
+  name          = "${local.name}-proxy"
+  ip_cidr_range = local.cidr_vpc_subnet_proxy
+  region        = var.region
+  purpose       = "REGIONAL_MANAGED_PROXY"
+  role          = "ACTIVE"
+  network       = google_compute_network.vpc_network.id
+}
+
+resource "google_compute_subnetwork" "ilb_subnet" {
+  count         = var.internal_load_balancer ? 1 : 0
+  name          = "${local.name}-ilb"
+  ip_cidr_range = local.cidr_vpc_subnet_ilb
+  region        = var.region
+  network       = google_compute_network.vpc_network.id
+  depends_on    = [google_compute_subnetwork.proxy_subnet]
+}
+
 resource "google_compute_router" "vpc_router" {
   name        = local.name
   description = "Constellation VPC router"
@@ -114,6 +134,7 @@ resource "google_compute_firewall" "firewall_external" {
     ports = flatten([
       [for port in local.control_plane_named_ports : port.port],
       [local.ports_node_range],
+      var.internal_load_balancer ? [22] : [],
     ])
   }
 
@@ -168,21 +189,46 @@ module "instance_group" {
   custom_endpoint     = var.custom_endpoint
 }
 
+resource "google_compute_address" "loadbalancer_ip_internal" {
+  count        = var.internal_load_balancer ? 1 : 0
+  name         = local.name
+  region       = var.region
+  subnetwork   = google_compute_subnetwork.ilb_subnet[0].id
+  purpose      = "SHARED_LOADBALANCER_VIP"
+  address_type = "INTERNAL"
+}
+
 resource "google_compute_global_address" "loadbalancer_ip" {
-  name = local.name
+  count = var.internal_load_balancer ? 0 : 1
+  name  = local.name
 }
 
 module "loadbalancer_public" {
   // for every port in control_plane_named_ports if internal lb is disabled
-  for_each                = { for port in local.control_plane_named_ports : port.name => port }
+  for_each                = var.internal_load_balancer ? {} : { for port in local.control_plane_named_ports : port.name => port }
   source                  = "./modules/loadbalancer"
   name                    = local.name
   backend_port_name       = each.value.name
   port                    = each.value.port
   health_check            = each.value.health_check
   backend_instance_groups = local.control_plane_instance_groups
-  ip_address              = google_compute_global_address.loadbalancer_ip.self_link
-  frontend_labels         = merge(local.labels, { constellation-use = each.value.name })
+  ip_address              = google_compute_global_address.loadbalancer_ip[0].self_link
+}
+
+module "loadbalancer_internal" {
+  for_each               = var.internal_load_balancer ? { for port in local.control_plane_named_ports : port.name => port } : {}
+  source                 = "./modules/internal_load_balancer"
+  name                   = local.name
+  backend_port_name      = each.value.name
+  port                   = each.value.port
+  health_check           = each.value.health_check
+  backend_instance_group = local.control_plane_instance_groups[0]
+  ip_address             = google_compute_address.loadbalancer_ip_internal[0].self_link
+  frontend_labels        = merge(local.labels, { constellation-use = each.value.name })
+
+  region         = var.region
+  network        = google_compute_network.vpc_network.id
+  backend_subnet = google_compute_subnetwork.ilb_subnet[0].id
 }
 
 moved {
@@ -208,11 +254,6 @@ moved {
 moved {
   from = module.loadbalancer_recovery
   to   = module.loadbalancer_public["recovery"]
-}
-
-moved {
-  from = module.loadbalancer_join
-  to   = module.loadbalancer_public["join"]
 }
 
 moved {
