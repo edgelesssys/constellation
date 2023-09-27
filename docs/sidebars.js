@@ -254,6 +254,11 @@ const sidebars = {
           label: 'Networking',
           id: 'architecture/networking',
         },
+        {
+          type: 'doc',
+          label: 'Observability',
+          id: 'architecture/observability',
+        },
       ],
     },
     {
