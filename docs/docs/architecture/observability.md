@@ -21,7 +21,7 @@ By default, Constellation exposes the [metrics for Kubernetes systems components
 Similarly, the [etcd metrics](https://etcd.io/docs/v3.5/metrics/) endpoints are exposed inside the cluster.
 These metrics endpoints can be [disabled](https://kubernetes.io/docs/concepts/cluster-administration/system-metrics/#disabling-metrics).
 
-You can collect these cluster-internal metrics via tools such as [Prometheus](https://prometheus.io/) or [Elastic Stack](https://www.elastic.co/de/elastic-stack/).
+You can collect these cluster-internal metrics via tools such as [Prometheus](https://prometheus.io/) or the [Elastic Stack](https://www.elastic.co/de/elastic-stack/).
 
 Cilium supports [metrics via Prometheus endpoints](https://docs.cilium.io/en/latest/observability/metrics/) as well.
 However, in Constellation, they're disabled by default and must be enabled first.
@@ -38,7 +38,7 @@ These logs include [Bootstrapper](./microservices.md#bootstrapper) events and [d
 You can access the cloud logging [directly via the cloud provider endpoints](../workflows/troubleshooting.md#cloud-logging).
 
 More detailed system-level logs are accessible via `/var/log` and [journald](https://www.freedesktop.org/software/systemd/man/systemd-journald.service.html) on the nodes directly.
-They can be collected from there, for example, via [filebeat and logstash](https://www.elastic.co/guide/en/beats/filebeat/current/logstash-output.html), tools of the [Elastic Stack](https://www.elastic.co/de/elastic-stack/).
+They can be collected from there, for example, via [Filebeat and Logstash](https://www.elastic.co/guide/en/beats/filebeat/current/logstash-output.html), tools of the [Elastic Stack](https://www.elastic.co/de/elastic-stack/).
 
 In case of an error during the creation or initialization, the CLI automatically collects the [Bootstrapper](./microservices.md#bootstrapper) logs and returns these as a file for [troubleshooting](../workflows/troubleshooting.md). Here is an example of such an event:
 
@@ -55,9 +55,9 @@ By default, logs are written to the nodes' encrypted state disks.
 These include the Pod and container logs and the [system component logs](https://kubernetes.io/docs/concepts/cluster-administration/logging/#system-component-logs).
 
 [Constellation services](https://docs.edgeless.systems/constellation/architecture/microservices) run as pods inside the `kube-system` namespace and use the standard container logging mechanism.
-The same is true for the [Cilium Pods](https://docs.cilium.io/en/latest/operations/troubleshooting/#logs).
+The same applies for the [Cilium Pods](https://docs.cilium.io/en/latest/operations/troubleshooting/#logs).
 
-You can collect logs from within the cluster via tools such as [Fluentd](https://github.com/fluent/fluentd), [Loki](https://github.com/grafana/loki), or [Elastic Stack](https://www.elastic.co/de/elastic-stack/).
+You can collect logs from within the cluster via tools such as [Fluentd](https://github.com/fluent/fluentd), [Loki](https://github.com/grafana/loki), or the [Elastic Stack](https://www.elastic.co/de/elastic-stack/).
 
 ## Traces
 
