@@ -69,3 +69,9 @@ variable "custom_endpoint" {
   default     = ""
   description = "Custom endpoint to use for the Kubernetes apiserver. If not set, the default endpoint will be used."
 }
+
+variable "internal_load_balancer" {
+  type        = bool
+  default     = false
+  description = "Use an internal load balancer."
+}

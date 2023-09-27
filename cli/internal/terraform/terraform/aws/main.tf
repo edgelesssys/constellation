@@ -84,14 +84,14 @@ resource "aws_eip" "lb" {
   # in a future version to support all availability zones in the chosen region
   # This should only be done after we migrated to DNS-based addressing for the
   # control-plane.
-  for_each = toset([var.zone])
+  for_each = var.internal_load_balancer ? [] : toset([var.zone])
   domain   = "vpc"
   tags     = merge(local.tags, { "constellation-ip-endpoint" = each.key == var.zone ? "legacy-primary-zone" : "additional-zone" })
 }
 
 resource "aws_lb" "front_end" {
   name               = "${local.name}-loadbalancer"
-  internal           = false
+  internal           = var.internal_load_balancer
   load_balancer_type = "network"
   tags               = local.tags
   security_groups    = [aws_security_group.security_group.id]
@@ -106,7 +106,7 @@ resource "aws_lb" "front_end" {
     for_each = toset([var.zone])
     content {
       subnet_id     = module.public_private_subnet.public_subnet_id[subnet_mapping.key]
-      allocation_id = aws_eip.lb[subnet_mapping.key].id
+      allocation_id = var.internal_load_balancer ? "" : aws_eip.lb[subnet_mapping.key].id
     }
   }
   enable_cross_zone_load_balancing = true

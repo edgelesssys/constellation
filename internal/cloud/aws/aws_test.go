@@ -17,7 +17,7 @@ import (
 	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
 	elbTypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
-	tagTypes "github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi/types"
+	rgtTypes "github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi/types"
 
 	"github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi"
 	"github.com/edgelesssys/constellation/v2/internal/cloud"
@@ -445,330 +445,240 @@ func TestList(t *testing.T) {
 
 func TestGetLoadBalancerEndpoint(t *testing.T) {
 	lbAddr := "192.0.2.1"
-	someErr := errors.New("some error")
+	successfulEC2 := &stubEC2{
+		selfInstance: &ec2.DescribeInstancesOutput{
+			Reservations: []ec2Types.Reservation{
+				{
+					Instances: []ec2Types.Instance{
+						{
+							InstanceId: aws.String("id-1"),
+							Tags: []ec2Types.Tag{
+								{
+									Key:   aws.String(cloud.TagRole),
+									Value: aws.String("controlplane"),
+								},
+								{
+									Key:   aws.String(cloud.TagUID),
+									Value: aws.String("uid"),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 
 	testCases := map[string]struct {
 		imds         *stubIMDS
-		ec2API       *stubEC2
 		loadbalancer *stubLoadbalancer
 		resourceapi  *stubResourceGroupTagging
 		wantHost     string
 		wantErr      bool
 	}{
-		"success retrieving loadbalancer endpoint": {
+		"success": {
 			imds: &stubIMDS{
 				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
 					InstanceIdentityDocument: imds.InstanceIdentityDocument{
-						InstanceID: "test-instance-id",
+						AvailabilityZone: "test-zone",
 					},
 				},
-			},
-			ec2API: &stubEC2{
-				selfInstance: &ec2.DescribeInstancesOutput{
-					Reservations: []ec2Types.Reservation{
-						{
-							Instances: []ec2Types.Instance{
-								{
-									InstanceId: aws.String("test-instance-id"),
-									Tags: []ec2Types.Tag{
-										{
-											Key:   aws.String(cloud.TagUID),
-											Value: aws.String("uid"),
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				describeAddressesResp: &ec2.DescribeAddressesOutput{
-					Addresses: []ec2Types.Address{
-						{
-							Tags: []ec2Types.Tag{
-								{Key: aws.String(cloud.TagUID), Value: aws.String("uid")},
-								{Key: aws.String("constellation-ip-endpoint"), Value: aws.String("legacy-primary-zone")},
-							},
-							PublicIp: aws.String(lbAddr),
-						},
-					},
-				},
-			},
-			wantHost: lbAddr,
-		},
-		"success retrieving loadbalancer endpoint legacy": {
-			imds: &stubIMDS{
-				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
-					InstanceIdentityDocument: imds.InstanceIdentityDocument{
-						InstanceID: "test-instance-id",
-					},
-				},
-			},
-			ec2API: &stubEC2{
-				selfInstance: &ec2.DescribeInstancesOutput{
-					Reservations: []ec2Types.Reservation{
-						{
-							Instances: []ec2Types.Instance{
-								{
-									InstanceId: aws.String("test-instance-id"),
-									Tags: []ec2Types.Tag{
-										{
-											Key:   aws.String(cloud.TagUID),
-											Value: aws.String("uid"),
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				describeAddressesErr: errors.New("using legacy infrastructure"),
 			},
 			loadbalancer: &stubLoadbalancer{
 				describeLoadBalancersOut: &elasticloadbalancingv2.DescribeLoadBalancersOutput{
 					LoadBalancers: []elbTypes.LoadBalancer{
 						{
+							LoadBalancerName: aws.String("test-lb"),
 							AvailabilityZones: []elbTypes.AvailabilityZone{
 								{
-									LoadBalancerAddresses: []elbTypes.LoadBalancerAddress{
-										{
-											IpAddress: aws.String(lbAddr),
-										},
-									},
+									ZoneName: aws.String("test-zone"),
 								},
 							},
+							DNSName: aws.String(lbAddr),
 						},
 					},
 				},
 			},
 			resourceapi: &stubResourceGroupTagging{
 				getResourcesOut1: &resourcegroupstaggingapi.GetResourcesOutput{
-					ResourceTagMappingList: []tagTypes.ResourceTagMapping{
-						{
-							ResourceARN: aws.String("arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/test-loadbalancer/50dc6c495c0c9188"),
-						},
-					},
-				},
-			},
-			wantHost: lbAddr,
-		},
-		"too many ARNs legacy": {
-			imds: &stubIMDS{
-				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
-					InstanceIdentityDocument: imds.InstanceIdentityDocument{
-						InstanceID: "test-instance-id",
-					},
-				},
-			},
-			ec2API: &stubEC2{
-				selfInstance: &ec2.DescribeInstancesOutput{
-					Reservations: []ec2Types.Reservation{
-						{
-							Instances: []ec2Types.Instance{
-								{
-									InstanceId: aws.String("test-instance-id"),
-									Tags: []ec2Types.Tag{
-										{
-											Key:   aws.String(cloud.TagUID),
-											Value: aws.String("uid"),
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				describeAddressesErr: errors.New("using legacy infrastructure"),
-			},
-			loadbalancer: &stubLoadbalancer{
-				describeLoadBalancersOut: &elasticloadbalancingv2.DescribeLoadBalancersOutput{
-					LoadBalancers: []elbTypes.LoadBalancer{
-						{
-							AvailabilityZones: []elbTypes.AvailabilityZone{
-								{
-									LoadBalancerAddresses: []elbTypes.LoadBalancerAddress{
-										{
-											IpAddress: aws.String(lbAddr),
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			resourceapi: &stubResourceGroupTagging{
-				getResourcesOut1: &resourcegroupstaggingapi.GetResourcesOutput{
-					ResourceTagMappingList: []tagTypes.ResourceTagMapping{
-						{
-							ResourceARN: aws.String("arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/test-loadbalancer/50dc6c495c0c9188"),
-						},
-						{
-							ResourceARN: aws.String("arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/test-loadbalancer/50dc6c495c0c9188"),
-						},
-					},
-				},
-			},
-			wantErr: true,
-		},
-		"too many ARNs (paged) legacy": {
-			imds: &stubIMDS{
-				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
-					InstanceIdentityDocument: imds.InstanceIdentityDocument{
-						InstanceID: "test-instance-id",
-					},
-				},
-			},
-			ec2API: &stubEC2{
-				selfInstance: &ec2.DescribeInstancesOutput{
-					Reservations: []ec2Types.Reservation{
-						{
-							Instances: []ec2Types.Instance{
-								{
-									InstanceId: aws.String("test-instance-id"),
-									Tags: []ec2Types.Tag{
-										{
-											Key:   aws.String(cloud.TagUID),
-											Value: aws.String("uid"),
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				describeAddressesErr: errors.New("using legacy infrastructure"),
-			},
-			loadbalancer: &stubLoadbalancer{
-				describeLoadBalancersOut: &elasticloadbalancingv2.DescribeLoadBalancersOutput{
-					LoadBalancers: []elbTypes.LoadBalancer{
-						{
-							AvailabilityZones: []elbTypes.AvailabilityZone{
-								{
-									LoadBalancerAddresses: []elbTypes.LoadBalancerAddress{
-										{
-											IpAddress: aws.String(lbAddr),
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			resourceapi: &stubResourceGroupTagging{
-				getResourcesOut1: &resourcegroupstaggingapi.GetResourcesOutput{
-					ResourceTagMappingList: []tagTypes.ResourceTagMapping{
-						{
-							ResourceARN: aws.String("arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/test-loadbalancer/50dc6c495c0c9188"),
-						},
-					},
-					PaginationToken: aws.String("token"),
+					PaginationToken: aws.String("next-token"),
 				},
 				getResourcesOut2: &resourcegroupstaggingapi.GetResourcesOutput{
-					ResourceTagMappingList: []tagTypes.ResourceTagMapping{
+					ResourceTagMappingList: []rgtTypes.ResourceTagMapping{
 						{
-							ResourceARN: aws.String("arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/test-loadbalancer/50dc6c495c0c9188"),
+							ResourceARN: aws.String("arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/test-lb/1234567890abcdef"),
+							Tags: []rgtTypes.Tag{
+								{
+									Key:   aws.String(cloud.TagUID),
+									Value: aws.String("uid"),
+								},
+							},
+						},
+					},
+				},
+			},
+			wantHost: lbAddr,
+		},
+		"no load balancer found": {
+			imds: &stubIMDS{
+				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
+					InstanceIdentityDocument: imds.InstanceIdentityDocument{
+						AvailabilityZone: "test-zone",
+					},
+				},
+			},
+			loadbalancer: &stubLoadbalancer{
+				describeLoadBalancersOut: &elasticloadbalancingv2.DescribeLoadBalancersOutput{
+					LoadBalancers: []elbTypes.LoadBalancer{},
+				},
+			},
+			resourceapi: &stubResourceGroupTagging{
+				getResourcesOut1: &resourcegroupstaggingapi.GetResourcesOutput{
+					PaginationToken: aws.String("next-token"),
+				},
+				getResourcesOut2: &resourcegroupstaggingapi.GetResourcesOutput{
+					ResourceTagMappingList: []rgtTypes.ResourceTagMapping{
+						{
+							ResourceARN: aws.String("arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/test-lb/1234567890abcdef"),
+							Tags: []rgtTypes.Tag{
+								{
+									Key:   aws.String(cloud.TagUID),
+									Value: aws.String("uid"),
+								},
+							},
 						},
 					},
 				},
 			},
 			wantErr: true,
 		},
-		"loadbalancer has no availability zones legacy": {
+		"no load balancer DNS name": {
 			imds: &stubIMDS{
 				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
 					InstanceIdentityDocument: imds.InstanceIdentityDocument{
-						InstanceID: "test-instance-id",
+						AvailabilityZone: "test-zone",
 					},
 				},
-			},
-			ec2API: &stubEC2{
-				selfInstance: &ec2.DescribeInstancesOutput{
-					Reservations: []ec2Types.Reservation{
-						{
-							Instances: []ec2Types.Instance{
-								{
-									InstanceId: aws.String("test-instance-id"),
-									Tags: []ec2Types.Tag{
-										{
-											Key:   aws.String(cloud.TagUID),
-											Value: aws.String("uid"),
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				describeAddressesErr: errors.New("using legacy infrastructure"),
 			},
 			loadbalancer: &stubLoadbalancer{
 				describeLoadBalancersOut: &elasticloadbalancingv2.DescribeLoadBalancersOutput{
 					LoadBalancers: []elbTypes.LoadBalancer{
 						{
-							AvailabilityZones: []elbTypes.AvailabilityZone{},
+							LoadBalancerName: aws.String("test-lb"),
+							AvailabilityZones: []elbTypes.AvailabilityZone{
+								{
+									ZoneName: aws.String("test-zone"),
+								},
+							},
 						},
 					},
 				},
 			},
 			resourceapi: &stubResourceGroupTagging{
 				getResourcesOut1: &resourcegroupstaggingapi.GetResourcesOutput{
-					ResourceTagMappingList: []tagTypes.ResourceTagMapping{
+					PaginationToken: aws.String("next-token"),
+				},
+				getResourcesOut2: &resourcegroupstaggingapi.GetResourcesOutput{
+					ResourceTagMappingList: []rgtTypes.ResourceTagMapping{
 						{
-							ResourceARN: aws.String("arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/test-loadbalancer/50dc6c495c0c9188"),
+							ResourceARN: aws.String("arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/test-lb/1234567890abcdef"),
+							Tags: []rgtTypes.Tag{
+								{
+									Key:   aws.String(cloud.TagUID),
+									Value: aws.String("uid"),
+								},
+							},
 						},
 					},
 				},
 			},
 			wantErr: true,
 		},
-		"failure to get resources by tag legacy": {
+		"describe load balancers fails": {
 			imds: &stubIMDS{
 				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
 					InstanceIdentityDocument: imds.InstanceIdentityDocument{
-						InstanceID: "test-instance-id",
+						AvailabilityZone: "test-zone",
 					},
 				},
 			},
-			ec2API: &stubEC2{
-				selfInstance: &ec2.DescribeInstancesOutput{
-					Reservations: []ec2Types.Reservation{
+			resourceapi: &stubResourceGroupTagging{
+				getResourcesOut1: &resourcegroupstaggingapi.GetResourcesOutput{
+					PaginationToken: aws.String("next-token"),
+				},
+				getResourcesOut2: &resourcegroupstaggingapi.GetResourcesOutput{
+					ResourceTagMappingList: []rgtTypes.ResourceTagMapping{
 						{
-							Instances: []ec2Types.Instance{
+							ResourceARN: aws.String("arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/test-lb/1234567890abcdef"),
+							Tags: []rgtTypes.Tag{
 								{
-									InstanceId: aws.String("test-instance-id"),
-									Tags: []ec2Types.Tag{
-										{
-											Key:   aws.String(cloud.TagUID),
-											Value: aws.String("uid"),
-										},
-									},
+									Key:   aws.String(cloud.TagUID),
+									Value: aws.String("uid"),
 								},
 							},
 						},
 					},
 				},
-				describeAddressesErr: errors.New("using legacy infrastructure"),
+			},
+			loadbalancer: &stubLoadbalancer{
+				describeLoadBalancersErr: assert.AnError,
+			},
+			wantErr: true,
+		},
+		"get resources fails": {
+			imds: &stubIMDS{
+				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
+					InstanceIdentityDocument: imds.InstanceIdentityDocument{},
+				},
 			},
 			loadbalancer: &stubLoadbalancer{
 				describeLoadBalancersOut: &elasticloadbalancingv2.DescribeLoadBalancersOutput{
 					LoadBalancers: []elbTypes.LoadBalancer{
 						{
+							LoadBalancerName: aws.String("test-lb"),
 							AvailabilityZones: []elbTypes.AvailabilityZone{
 								{
-									LoadBalancerAddresses: []elbTypes.LoadBalancerAddress{
-										{
-											IpAddress: aws.String(lbAddr),
-										},
-									},
+									ZoneName: aws.String("test-zone"),
 								},
 							},
+							DNSName: aws.String(lbAddr),
 						},
 					},
 				},
 			},
 			resourceapi: &stubResourceGroupTagging{
-				getResourcesErr: someErr,
+				getResourcesErr: assert.AnError,
+			},
+			wantErr: true,
+		},
+		"no resources found": {
+			imds: &stubIMDS{
+				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
+					InstanceIdentityDocument: imds.InstanceIdentityDocument{},
+				},
+			},
+			loadbalancer: &stubLoadbalancer{
+				describeLoadBalancersOut: &elasticloadbalancingv2.DescribeLoadBalancersOutput{
+					LoadBalancers: []elbTypes.LoadBalancer{
+						{
+							LoadBalancerName: aws.String("test-lb"),
+							AvailabilityZones: []elbTypes.AvailabilityZone{
+								{
+									ZoneName: aws.String("test-zone"),
+								},
+							},
+							DNSName: aws.String(lbAddr),
+						},
+					},
+				},
+			},
+			resourceapi: &stubResourceGroupTagging{
+				getResourcesOut1: &resourcegroupstaggingapi.GetResourcesOutput{
+					PaginationToken: aws.String("next-token"),
+				},
+				getResourcesOut2: &resourcegroupstaggingapi.GetResourcesOutput{
+					ResourceTagMappingList: []rgtTypes.ResourceTagMapping{},
+				},
 			},
 			wantErr: true,
 		},
@@ -779,9 +689,9 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 			assert := assert.New(t)
 			m := &Cloud{
 				imds:              tc.imds,
-				ec2:               tc.ec2API,
 				loadbalancer:      tc.loadbalancer,
 				resourceapiClient: tc.resourceapi,
+				ec2:               successfulEC2,
 			}
 
 			gotHost, gotPort, err := m.GetLoadBalancerEndpoint(context.Background())
