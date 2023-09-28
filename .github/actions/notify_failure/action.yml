@@ -43,7 +43,7 @@ runs:
         ## Metadata
 
         * [Job URL](${jobURL})
-        * [OpenSearch URL](${opensearchURL})
+        * [OpenSearch URL](${opensearchURL// /%20})
 
         EOF
 
