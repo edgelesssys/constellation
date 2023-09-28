@@ -1,6 +1,6 @@
 module github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api
 
-go 1.20
+go 1.21
 
 require (
 	k8s.io/api v0.27.3

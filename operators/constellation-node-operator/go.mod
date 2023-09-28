@@ -1,6 +1,6 @@
 module github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2
 
-go 1.20
+go 1.21
 
 replace (
 	github.com/edgelesssys/constellation/v2 => ./../..

@@ -1,5 +1,5 @@
 load("@bazel_gazelle//:def.bzl", "gazelle")
-load("@com_github_ash2k_bazel_tools//multirun:def.bzl", "multirun")
+load("@com_github_ash2k_bazel_tools//multirun:def.bzl", "command", "multirun")
 load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier", "buildifier_test")
 load("//bazel/ci:proto_targets.bzl", "proto_targets")
 load("//bazel/sh:def.bzl", "noop_warn", "repo_command", "sh_template")
@@ -8,6 +8,18 @@ required_tags = [
     "e2e",
     "integration",
 ]
+
+# TODO(malt3): Remove this once we have a better solution for
+# gazelle not respecting the default go env.
+command(
+    name = "cmd_gazelle_update_repos",
+    command = ":gazelle_update_repos",
+    environment = {
+        "GOPROXY": "https://proxy.golang.org,direct",
+        "GOSUMDB": "sum.golang.org",
+        "GOTOOLCHAIN": "local",
+    },
+)
 
 gazelle(
     name = "gazelle_generate",
@@ -482,7 +494,7 @@ multirun(
         ":shfmt",
         ":gofumpt",
         ":go_mod_tidy",
-        ":gazelle_update_repos",
+        ":cmd_gazelle_update_repos",
         ":gazelle_generate",
         ":buildifier_fix",
         ":terraform_fmt",
