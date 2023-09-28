@@ -157,7 +157,7 @@ func TestX509ToPemCert(t *testing.T) {
 		wantErr bool
 	}{
 		"success": {
-			cert:    &x509.Certificate{},
+			cert: &x509.Certificate{},
 		},
 		// TODO(msanft): Add more test cases with testdata
 	}
