@@ -9,11 +9,11 @@ package certcache
 import (
 	"context"
 	"crypto/x509"
-	"encoding/pem"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/joinservice/internal/certcache/testdata"
 	"github.com/google/go-sev-guest/abi"
@@ -147,8 +147,7 @@ func (c *stubKdsClient) CertChain(abi.ReportSigner) (ask, ark *x509.Certificate,
 }
 
 func mustParsePEM(pemBytes []byte) *x509.Certificate {
-	pemBlock, _ := pem.Decode(pemBytes)
-	cert, err := x509.ParseCertificate(pemBlock.Bytes)
+	cert, err := crypto.PemToX509Cert(pemBytes)
 	if err != nil {
 		panic(err)
 	}

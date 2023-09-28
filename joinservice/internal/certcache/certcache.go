@@ -10,12 +10,11 @@ package certcache
 import (
 	"context"
 	"crypto/x509"
-	"encoding/pem"
 	"fmt"
-	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/joinservice/internal/certcache/amdkds"
 	"github.com/google/go-sev-guest/abi"
@@ -114,12 +113,12 @@ func (c *Client) createCertChainCache(ctx context.Context, signingType abi.Repor
 		ark = kdsArk
 	}
 
-	askWriter := &strings.Builder{}
-	if err := pem.Encode(askWriter, &pem.Block{Type: "CERTIFICATE", Bytes: ask.Raw}); err != nil {
+	askPem, err := crypto.X509CertToPem(ask)
+	if err != nil {
 		return nil, nil, fmt.Errorf("encoding ASK: %w", err)
 	}
-	arkWriter := &strings.Builder{}
-	if err := pem.Encode(arkWriter, &pem.Block{Type: "CERTIFICATE", Bytes: ark.Raw}); err != nil {
+	arkPem, err := crypto.X509CertToPem(ark)
+	if err != nil {
 		return nil, nil, fmt.Errorf("encoding ARK: %w", err)
 	}
 
@@ -127,8 +126,8 @@ func (c *Client) createCertChainCache(ctx context.Context, signingType abi.Repor
 		// ConfigMap does not exist, create it.
 		c.log.Debugf("Creating certificate chain cache configmap")
 		if err := c.kubeClient.CreateConfigMap(ctx, constants.SevSnpCertCacheConfigMapName, map[string]string{
-			constants.CertCacheAskKey: askWriter.String(),
-			constants.CertCacheArkKey: arkWriter.String(),
+			constants.CertCacheAskKey: string(askPem),
+			constants.CertCacheArkKey: string(arkPem),
 		}); err != nil {
 			// If the ConfigMap already exists, another JoinService instance created the certificate cache while this operation was running.
 			// Calling this function again should now retrieve the cached certificates.
@@ -142,13 +141,13 @@ func (c *Client) createCertChainCache(ctx context.Context, signingType abi.Repor
 		// ConfigMap already exists but either ASK or ARK are missing. Update the according value.
 		if cacheAsk == nil {
 			if err := c.kubeClient.UpdateConfigMap(ctx, constants.SevSnpCertCacheConfigMapName,
-				constants.CertCacheAskKey, askWriter.String()); err != nil {
+				constants.CertCacheAskKey, string(askPem)); err != nil {
 				return nil, nil, fmt.Errorf("updating ASK in certificate chain cache configmap: %w", err)
 			}
 		}
 		if cacheArk == nil {
 			if err := c.kubeClient.UpdateConfigMap(ctx, constants.SevSnpCertCacheConfigMapName,
-				constants.CertCacheArkKey, arkWriter.String()); err != nil {
+				constants.CertCacheArkKey, string(arkPem)); err != nil {
 				return nil, nil, fmt.Errorf("updating ARK in certificate chain cache configmap: %w", err)
 			}
 		}
@@ -167,8 +166,7 @@ func (c *Client) getCertChainCache(ctx context.Context) (ask, ark *x509.Certific
 	}
 	if askRaw != "" {
 		c.log.Debugf("ASK cache hit")
-		askBlock, _ := pem.Decode([]byte(askRaw))
-		ask, err = x509.ParseCertificate(askBlock.Bytes)
+		ask, err = crypto.PemToX509Cert([]byte(askRaw))
 		if err != nil {
 			return nil, nil, fmt.Errorf("parsing ASK: %w", err)
 		}
@@ -180,8 +178,7 @@ func (c *Client) getCertChainCache(ctx context.Context) (ask, ark *x509.Certific
 	}
 	if arkRaw != "" {
 		c.log.Debugf("ARK cache hit")
-		arkBlock, _ := pem.Decode([]byte(arkRaw))
-		ark, err = x509.ParseCertificate(arkBlock.Bytes)
+		ark, err = crypto.PemToX509Cert([]byte(arkRaw))
 		if err != nil {
 			return nil, nil, fmt.Errorf("parsing ARK: %w", err)
 		}
