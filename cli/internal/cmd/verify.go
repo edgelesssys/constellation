@@ -37,6 +37,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
+	"github.com/edgelesssys/constellation/v2/internal/verify"
 	"github.com/edgelesssys/constellation/v2/verify/verifyproto"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/go-sev-guest/abi"
@@ -58,6 +59,7 @@ func NewVerifyCmd() *cobra.Command {
 	}
 	cmd.Flags().String("cluster-id", "", "expected cluster identifier")
 	cmd.Flags().Bool("raw", false, "print raw attestation document")
+	cmd.Flags().Bool("json", false, "print the attestation document as parsed json")
 	cmd.Flags().StringP("node-endpoint", "e", "", "endpoint of the node to verify, passed as HOST[:PORT]")
 	return cmd
 }
@@ -78,16 +80,21 @@ func runVerify(cmd *cobra.Command, _ []string) error {
 		dialer: dialer.New(nil, nil, &net.Dialer{}),
 		log:    log,
 	}
-	formatter := &attestationDocFormatterImpl{
-		log: log,
+	formatterFactory := func(jsonOutput bool) attestationDocFormatter {
+		if jsonOutput {
+			return &jsonAttestationDocFormatter{log}
+		}
+		return &attestationDocFormatterImpl{log}
 	}
-
+	// TODO(elchead): unify the formatters to share the parsing logic
 	v := &verifyCmd{log: log}
 	fetcher := attestationconfigapi.NewFetcher()
-	return v.verify(cmd, fileHandler, verifyClient, formatter, fetcher)
+	return v.verify(cmd, fileHandler, verifyClient, formatterFactory, fetcher)
 }
 
-func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyClient verifyClient, formatter attestationDocFormatter, configFetcher attestationconfigapi.Fetcher) error {
+type formatterFactory func(jsonOutput bool) attestationDocFormatter
+
+func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyClient verifyClient, formatter formatterFactory, configFetcher attestationconfigapi.Fetcher) error {
 	flags, err := c.parseVerifyFlags(cmd, fileHandler)
 	if err != nil {
 		return fmt.Errorf("parsing flags: %w", err)
@@ -136,7 +143,7 @@ func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 	}
 
 	// certificates are only available for Azure
-	attDocOutput, err := formatter.format(
+	attDocOutput, err := formatter(flags.jsonOutput).format(
 		cmd.Context(),
 		rawAttestationDoc,
 		conf.Provider.Azure == nil,
@@ -185,6 +192,11 @@ func (c *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 		return verifyFlags{}, fmt.Errorf("parsing raw argument: %w", err)
 	}
 	c.log.Debugf("Flag 'raw' set to %t", force)
+	json, err := cmd.Flags().GetBool("json")
+	if err != nil {
+		return verifyFlags{}, fmt.Errorf("parsing raw argument: %w", err)
+	}
+	c.log.Debugf("Flag 'json' set to %t", force)
 
 	var idFile clusterid.File
 	if err := fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil && !errors.Is(err, afero.ErrFileNotFound) {
@@ -216,25 +228,30 @@ func (c *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 		return verifyFlags{}, fmt.Errorf("validating endpoint argument: %w", err)
 	}
 
+	if raw && json {
+		return verifyFlags{}, errors.New("cannot specify both --raw and --json")
+	}
 	return verifyFlags{
-		endpoint:  endpoint,
-		pf:        pf,
-		ownerID:   ownerID,
-		clusterID: clusterID,
-		maaURL:    idFile.AttestationURL,
-		rawOutput: raw,
-		force:     force,
+		endpoint:   endpoint,
+		pf:         pf,
+		ownerID:    ownerID,
+		clusterID:  clusterID,
+		maaURL:     idFile.AttestationURL,
+		rawOutput:  raw,
+		jsonOutput: json,
+		force:      force,
 	}, nil
 }
 
 type verifyFlags struct {
-	endpoint  string
-	ownerID   string
-	clusterID string
-	maaURL    string
-	rawOutput bool
-	force     bool
-	pf        pathprefix.PathPrefixer
+	endpoint   string
+	ownerID    string
+	clusterID  string
+	maaURL     string
+	rawOutput  bool
+	jsonOutput bool
+	force      bool
+	pf         pathprefix.PathPrefixer
 }
 
 func addPortIfMissing(endpoint string, defaultPort int) (string, error) {
@@ -255,10 +272,64 @@ func addPortIfMissing(endpoint string, defaultPort int) (string, error) {
 }
 
 // an attestationDocFormatter formats the attestation document.
+// TODO(elchead): refactor the interface to be more generic (e.g. no rawOutput argument).
 type attestationDocFormatter interface {
 	// format returns the raw or formatted attestation doc depending on the rawOutput argument.
 	format(ctx context.Context, docString string, PCRsOnly bool, rawOutput bool, expectedPCRs measurements.M,
 		attestationServiceURL string) (string, error)
+}
+
+type jsonAttestationDocFormatter struct {
+	log debugLog
+}
+
+// format returns the raw or formatted attestation doc depending on the rawOutput argument.
+func (f *jsonAttestationDocFormatter) format(ctx context.Context, docString string, _ bool,
+	_ bool, _ measurements.M, attestationServiceURL string,
+) (string, error) {
+	var doc attestationDoc
+	if err := json.Unmarshal([]byte(docString), &doc); err != nil {
+		return "", fmt.Errorf("unmarshal attestation document: %w", err)
+	}
+
+	instanceInfoString, err := base64.StdEncoding.DecodeString(doc.InstanceInfo)
+	if err != nil {
+		return "", fmt.Errorf("decode instance info: %w", err)
+	}
+
+	var instanceInfo azureInstanceInfo
+	if err := json.Unmarshal(instanceInfoString, &instanceInfo); err != nil {
+		return "", fmt.Errorf("unmarshal instance info: %w", err)
+	}
+
+	// TODO(elchead): omit quotes?
+	snpReport, err := newSNPReport(instanceInfo.AttestationReport)
+	if err != nil {
+		return "", fmt.Errorf("parsing SNP report: %w", err)
+	}
+
+	vcek, err := newCertificates("VCEK certificate", instanceInfo.Vcek, f.log)
+	if err != nil {
+		return "", fmt.Errorf("parsing VCEK certificate: %w", err)
+	}
+	certChain, err := newCertificates("Certificate chain", instanceInfo.CertChain, f.log)
+	if err != nil {
+		return "", fmt.Errorf("parsing certificate chain: %w", err)
+	}
+	maaToken, err := newMAAToken(ctx, instanceInfo.MAAToken, attestationServiceURL)
+	if err != nil {
+		return "", fmt.Errorf("parsing MAA token: %w", err)
+	}
+
+	report := verify.Report{
+		SNPReport: snpReport,
+		VCEK:      vcek,
+		CertChain: certChain,
+		MAAToken:  maaToken,
+	}
+	jsonBytes, err := json.Marshal(report)
+
+	return string(jsonBytes), err
 }
 
 type attestationDocFormatterImpl struct {
@@ -495,7 +566,7 @@ func (f *attestationDocFormatterImpl) parseSNPReport(b *strings.Builder, reportB
 }
 
 func parseMAAToken(ctx context.Context, b *strings.Builder, rawToken, attestationServiceURL string) error {
-	var claims maaTokenClaims
+	var claims verify.MaaTokenClaims
 	_, err := jwt.ParseWithClaims(rawToken, &claims, keyFromJKUFunc(ctx, attestationServiceURL), jwt.WithIssuedAt())
 	if err != nil {
 		return fmt.Errorf("parsing token: %w", err)
@@ -566,84 +637,6 @@ func keyFromJKUFunc(ctx context.Context, webKeysURLBase string) func(token *jwt.
 
 		return nil, fmt.Errorf("no key found for kid %s", kid)
 	}
-}
-
-type maaTokenClaims struct {
-	jwt.RegisteredClaims
-	Secureboot                               bool   `json:"secureboot,omitempty"`
-	XMsAttestationType                       string `json:"x-ms-attestation-type,omitempty"`
-	XMsAzurevmAttestationProtocolVer         string `json:"x-ms-azurevm-attestation-protocol-ver,omitempty"`
-	XMsAzurevmAttestedPcrs                   []int  `json:"x-ms-azurevm-attested-pcrs,omitempty"`
-	XMsAzurevmBootdebugEnabled               bool   `json:"x-ms-azurevm-bootdebug-enabled,omitempty"`
-	XMsAzurevmDbvalidated                    bool   `json:"x-ms-azurevm-dbvalidated,omitempty"`
-	XMsAzurevmDbxvalidated                   bool   `json:"x-ms-azurevm-dbxvalidated,omitempty"`
-	XMsAzurevmDebuggersdisabled              bool   `json:"x-ms-azurevm-debuggersdisabled,omitempty"`
-	XMsAzurevmDefaultSecurebootkeysvalidated bool   `json:"x-ms-azurevm-default-securebootkeysvalidated,omitempty"`
-	XMsAzurevmElamEnabled                    bool   `json:"x-ms-azurevm-elam-enabled,omitempty"`
-	XMsAzurevmFlightsigningEnabled           bool   `json:"x-ms-azurevm-flightsigning-enabled,omitempty"`
-	XMsAzurevmHvciPolicy                     int    `json:"x-ms-azurevm-hvci-policy,omitempty"`
-	XMsAzurevmHypervisordebugEnabled         bool   `json:"x-ms-azurevm-hypervisordebug-enabled,omitempty"`
-	XMsAzurevmIsWindows                      bool   `json:"x-ms-azurevm-is-windows,omitempty"`
-	XMsAzurevmKerneldebugEnabled             bool   `json:"x-ms-azurevm-kerneldebug-enabled,omitempty"`
-	XMsAzurevmOsbuild                        string `json:"x-ms-azurevm-osbuild,omitempty"`
-	XMsAzurevmOsdistro                       string `json:"x-ms-azurevm-osdistro,omitempty"`
-	XMsAzurevmOstype                         string `json:"x-ms-azurevm-ostype,omitempty"`
-	XMsAzurevmOsversionMajor                 int    `json:"x-ms-azurevm-osversion-major,omitempty"`
-	XMsAzurevmOsversionMinor                 int    `json:"x-ms-azurevm-osversion-minor,omitempty"`
-	XMsAzurevmSigningdisabled                bool   `json:"x-ms-azurevm-signingdisabled,omitempty"`
-	XMsAzurevmTestsigningEnabled             bool   `json:"x-ms-azurevm-testsigning-enabled,omitempty"`
-	XMsAzurevmVmid                           string `json:"x-ms-azurevm-vmid,omitempty"`
-	XMsIsolationTee                          struct {
-		XMsAttestationType  string `json:"x-ms-attestation-type,omitempty"`
-		XMsComplianceStatus string `json:"x-ms-compliance-status,omitempty"`
-		XMsRuntime          struct {
-			Keys []struct {
-				E      string   `json:"e,omitempty"`
-				KeyOps []string `json:"key_ops,omitempty"`
-				Kid    string   `json:"kid,omitempty"`
-				Kty    string   `json:"kty,omitempty"`
-				N      string   `json:"n,omitempty"`
-			} `json:"keys,omitempty"`
-			VMConfiguration struct {
-				ConsoleEnabled bool   `json:"console-enabled,omitempty"`
-				CurrentTime    int    `json:"current-time,omitempty"`
-				SecureBoot     bool   `json:"secure-boot,omitempty"`
-				TpmEnabled     bool   `json:"tpm-enabled,omitempty"`
-				VMUniqueID     string `json:"vmUniqueId,omitempty"`
-			} `json:"vm-configuration,omitempty"`
-		} `json:"x-ms-runtime,omitempty"`
-		XMsSevsnpvmAuthorkeydigest   string `json:"x-ms-sevsnpvm-authorkeydigest,omitempty"`
-		XMsSevsnpvmBootloaderSvn     int    `json:"x-ms-sevsnpvm-bootloader-svn,omitempty"`
-		XMsSevsnpvmFamilyID          string `json:"x-ms-sevsnpvm-familyId,omitempty"`
-		XMsSevsnpvmGuestsvn          int    `json:"x-ms-sevsnpvm-guestsvn,omitempty"`
-		XMsSevsnpvmHostdata          string `json:"x-ms-sevsnpvm-hostdata,omitempty"`
-		XMsSevsnpvmIdkeydigest       string `json:"x-ms-sevsnpvm-idkeydigest,omitempty"`
-		XMsSevsnpvmImageID           string `json:"x-ms-sevsnpvm-imageId,omitempty"`
-		XMsSevsnpvmIsDebuggable      bool   `json:"x-ms-sevsnpvm-is-debuggable,omitempty"`
-		XMsSevsnpvmLaunchmeasurement string `json:"x-ms-sevsnpvm-launchmeasurement,omitempty"`
-		XMsSevsnpvmMicrocodeSvn      int    `json:"x-ms-sevsnpvm-microcode-svn,omitempty"`
-		XMsSevsnpvmMigrationAllowed  bool   `json:"x-ms-sevsnpvm-migration-allowed,omitempty"`
-		XMsSevsnpvmReportdata        string `json:"x-ms-sevsnpvm-reportdata,omitempty"`
-		XMsSevsnpvmReportid          string `json:"x-ms-sevsnpvm-reportid,omitempty"`
-		XMsSevsnpvmSmtAllowed        bool   `json:"x-ms-sevsnpvm-smt-allowed,omitempty"`
-		XMsSevsnpvmSnpfwSvn          int    `json:"x-ms-sevsnpvm-snpfw-svn,omitempty"`
-		XMsSevsnpvmTeeSvn            int    `json:"x-ms-sevsnpvm-tee-svn,omitempty"`
-		XMsSevsnpvmVmpl              int    `json:"x-ms-sevsnpvm-vmpl,omitempty"`
-	} `json:"x-ms-isolation-tee,omitempty"`
-	XMsPolicyHash string `json:"x-ms-policy-hash,omitempty"`
-	XMsRuntime    struct {
-		ClientPayload struct {
-			Nonce string `json:"nonce,omitempty"`
-		} `json:"client-payload,omitempty"`
-		Keys []struct {
-			E      string   `json:"e,omitempty"`
-			KeyOps []string `json:"key_ops,omitempty"`
-			Kid    string   `json:"kid,omitempty"`
-			Kty    string   `json:"kty,omitempty"`
-			N      string   `json:"n,omitempty"`
-		} `json:"keys,omitempty"`
-	} `json:"x-ms-runtime,omitempty"`
-	XMsVer string `json:"x-ms-ver,omitempty"`
 }
 
 // attestationDoc is the attestation document returned by the verifier.
@@ -740,4 +733,141 @@ func httpGet(ctx context.Context, url string) ([]byte, error) {
 		return nil, err
 	}
 	return body, nil
+}
+
+func newCertificates(certTypeName string, cert []byte, log debugLog) (certs []verify.Certificate, err error) {
+	newlinesTrimmed := strings.TrimSpace(string(cert))
+
+	log.Debugf("Decoding PEM certificate: %s", certTypeName)
+	i := 1
+	var rest []byte
+	var block *pem.Block
+	for block, rest = pem.Decode([]byte(newlinesTrimmed)); block != nil; block, rest = pem.Decode(rest) {
+		log.Debugf("Parsing PEM block: %d", i)
+		if block.Type != "CERTIFICATE" {
+			return certs, fmt.Errorf("parse %s: expected PEM block type 'CERTIFICATE', got '%s'", certTypeName, block.Type)
+		}
+
+		cert, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return certs, fmt.Errorf("parse %s: %w", certTypeName, err)
+		}
+		if certTypeName == "VCEK certificate" {
+			vcekExts, err := kds.VcekCertificateExtensions(cert)
+			if err != nil {
+				return certs, fmt.Errorf("parsing VCEK certificate extensions: %w", err)
+			}
+			certs = append(certs, verify.Certificate{
+				Certificate:   cert,
+				CertTypeName:  certTypeName,
+				StructVersion: vcekExts.StructVersion,
+				ProductName:   vcekExts.ProductName,
+				TCBVersion:    newTCBVersion(vcekExts.TCBVersion),
+				HardwareID:    vcekExts.HWID,
+			})
+		} else {
+			certs = append(certs, verify.Certificate{
+				Certificate:  cert,
+				CertTypeName: certTypeName,
+			})
+		}
+		i++
+	}
+	if i == 1 {
+		return certs, fmt.Errorf("parse %s: no PEM blocks found", certTypeName)
+	}
+	if len(rest) != 0 {
+		return certs, fmt.Errorf("parse %s: remaining PEM block is not a valid certificate: %s", certTypeName, rest)
+	}
+	return certs, nil
+}
+
+func newSNPReport(reportBytes []byte) (res verify.SNPReport, err error) {
+	report, err := abi.ReportToProto(reportBytes)
+	if err != nil {
+		return res, fmt.Errorf("parsing report to proto: %w", err)
+	}
+
+	policy, err := abi.ParseSnpPolicy(report.Policy)
+	if err != nil {
+		return res, fmt.Errorf("parsing policy: %w", err)
+	}
+
+	platformInfo, err := abi.ParseSnpPlatformInfo(report.PlatformInfo)
+	if err != nil {
+		return res, fmt.Errorf("parsing platform info: %w", err)
+	}
+
+	signature, err := abi.ReportToSignatureDER(reportBytes)
+	if err != nil {
+		return res, fmt.Errorf("parsing signature: %w", err)
+	}
+
+	signerInfo, err := abi.ParseSignerInfo(report.SignerInfo)
+	if err != nil {
+		return res, fmt.Errorf("parsing signer info: %w", err)
+	}
+	return verify.SNPReport{
+		Version:              report.Version,
+		GuestSvn:             report.GuestSvn,
+		PolicyABIMinor:       policy.ABIMinor,
+		PolicyABIMajor:       policy.ABIMajor,
+		PolicySMT:            policy.SMT,
+		PolicyMigrationAgent: policy.MigrateMA,
+		PolicyDebug:          policy.Debug,
+		PolicySingleSocket:   policy.SingleSocket,
+		FamilyID:             report.FamilyId,
+		ImageID:              report.ImageId,
+		Vmpl:                 report.Vmpl,
+		SignatureAlgo:        report.SignatureAlgo,
+		CurrentTCB:           newTCBVersion(kds.TCBVersion(report.CurrentTcb)),
+		PlatformInfo: verify.PlatformInfo{
+			SMT:  platformInfo.SMTEnabled,
+			TSME: platformInfo.TSMEEnabled,
+		},
+		SignerInfo: verify.SignerInfo{
+			AuthorKeyEn: signerInfo.AuthorKeyEn,
+			MaskChipKey: signerInfo.MaskChipKey,
+			SigningKey:  signerInfo.SigningKey,
+		},
+		ReportData:      report.ReportData,
+		Measurement:     report.Measurement,
+		HostData:        report.HostData,
+		IDKeyDigest:     report.IdKeyDigest,
+		AuthorKeyDigest: report.AuthorKeyDigest,
+		ReportID:        report.ReportId,
+		ReportIDMa:      report.ReportIdMa,
+		ReportedTCB:     newTCBVersion(kds.TCBVersion(report.ReportedTcb)),
+		ChipID:          report.ChipId,
+		CommittedTCB:    newTCBVersion(kds.TCBVersion(report.CommittedTcb)),
+		CurrentBuild:    report.CurrentBuild,
+		CurrentMinor:    report.CurrentMinor,
+		CurrentMajor:    report.CurrentMajor,
+		CommittedBuild:  report.CommittedBuild,
+		CommittedMinor:  report.CommittedMinor,
+		CommittedMajor:  report.CommittedMajor,
+		LaunchTCB:       newTCBVersion(kds.TCBVersion(report.LaunchTcb)),
+		Signature:       signature,
+	}, nil
+}
+
+func newMAAToken(ctx context.Context, rawToken, attestationServiceURL string) (verify.MaaTokenClaims, error) {
+	var claims verify.MaaTokenClaims
+	_, err := jwt.ParseWithClaims(rawToken, &claims, keyFromJKUFunc(ctx, attestationServiceURL), jwt.WithIssuedAt())
+	return claims, err
+}
+
+func newTCBVersion(tcbVersion kds.TCBVersion) (res verify.TCBVersion) {
+	tcb := kds.DecomposeTCBVersion(tcbVersion)
+	return verify.TCBVersion{
+		Bootloader: tcb.BlSpl,
+		TEE:        tcb.TeeSpl,
+		SNP:        tcb.SnpSpl,
+		Microcode:  tcb.UcodeSpl,
+		Spl4:       tcb.Spl4,
+		Spl5:       tcb.Spl5,
+		Spl6:       tcb.Spl6,
+		Spl7:       tcb.Spl7,
+		UcodeSpl:   tcb.UcodeSpl,
+	}
 }

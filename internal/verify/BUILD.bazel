@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "verify",
+    srcs = ["verify.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/verify",
+    visibility = ["//:__subpackages__"],
+    deps = ["@com_github_golang_jwt_jwt_v5//:jwt"],
+)

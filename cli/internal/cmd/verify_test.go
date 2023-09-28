@@ -186,7 +186,10 @@ func TestVerify(t *testing.T) {
 			}
 
 			v := &verifyCmd{log: logger.NewTest(t)}
-			err := v.verify(cmd, fileHandler, tc.protoClient, tc.formatter, stubAttestationFetcher{})
+			formatterFac := func(_ bool) attestationDocFormatter {
+				return tc.formatter
+			}
+			err := v.verify(cmd, fileHandler, tc.protoClient, formatterFac, stubAttestationFetcher{})
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
