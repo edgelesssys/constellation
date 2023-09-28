@@ -1,6 +1,6 @@
 module github.com/edgelesssys/constellation/v2/hack
 
-go 1.20
+go 1.21
 
 replace (
 	k8s.io/api v0.0.0 => k8s.io/api v0.27.2

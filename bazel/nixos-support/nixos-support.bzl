@@ -11,7 +11,10 @@ load("@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl", "nixpkgs_cc_configure")
 load("@io_tweag_rules_nixpkgs//nixpkgs:toolchains/go.bzl", "nixpkgs_go_configure")
 
 def go_toolchain():
-    nixpkgs_go_configure(repository = "@nixpkgs")
+    nixpkgs_go_configure(
+        repository = "@nixpkgs",
+        attribute_path = "go_1_21",
+    )
 
 def cc_toolchain():
     nixpkgs_cc_configure(repository = "@nixpkgs")
@@ -33,7 +36,7 @@ def cc_toolchain():
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains")
 
 def go_toolchain():
-    go_register_toolchains(version = "1.20.8")
+    go_register_toolchains(version = "1.21.1")
 
 def cc_toolchain():
     native.register_toolchains(
