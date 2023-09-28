@@ -31,7 +31,7 @@ func NewKDSClient(getter trust.HTTPSGetter) *KDSClient {
 func (c *KDSClient) CertChain(signingType abi.ReportSigner) (ask, ark *x509.Certificate, err error) {
 	askark, err := trust.GetProductChain("Milan", signingType, c.getter)
 	if err != nil {
-		return nil, nil, fmt.Errorf("retrieving certificate chain: %v", err)
+		return nil, nil, fmt.Errorf("retrieving certificate chain: %w", err)
 	}
 
 	return askark.Ask, askark.Ark, nil
