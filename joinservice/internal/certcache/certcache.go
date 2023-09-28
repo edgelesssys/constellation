@@ -89,7 +89,7 @@ func (c *Client) createCertChainCache(ctx context.Context, signingType abi.Repor
 		c.log.Debugf("Certificate chain cache does not exist")
 		shouldCreateConfigMap = true
 	} else if err != nil {
-		return nil, nil, fmt.Errorf("failed to get certificate chain cache: %w", err)
+		return nil, nil, fmt.Errorf("getting certificate chain cache: %w", err)
 	}
 	if cacheAsk != nil && cacheArk != nil {
 		c.log.Debugf("ASK and ARK present in cache, returning cached values")
@@ -105,7 +105,7 @@ func (c *Client) createCertChainCache(ctx context.Context, signingType abi.Repor
 	c.log.Debugf("Retrieving certificate chain from KDS")
 	kdsAsk, kdsArk, err := c.kdsClient.CertChain(signingType)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to retrieve certificate chain from KDS: %w", err)
+		return nil, nil, fmt.Errorf("retrieving certificate chain from KDS: %w", err)
 	}
 	if kdsAsk != nil {
 		ask = kdsAsk
@@ -116,11 +116,11 @@ func (c *Client) createCertChainCache(ctx context.Context, signingType abi.Repor
 
 	askWriter := &strings.Builder{}
 	if err := pem.Encode(askWriter, &pem.Block{Type: "CERTIFICATE", Bytes: ask.Raw}); err != nil {
-		return nil, nil, fmt.Errorf("failed to encode ask: %w", err)
+		return nil, nil, fmt.Errorf("encoding ASK: %w", err)
 	}
 	arkWriter := &strings.Builder{}
 	if err := pem.Encode(arkWriter, &pem.Block{Type: "CERTIFICATE", Bytes: ark.Raw}); err != nil {
-		return nil, nil, fmt.Errorf("failed to encode ark: %w", err)
+		return nil, nil, fmt.Errorf("encoding ARK: %w", err)
 	}
 
 	if shouldCreateConfigMap {
@@ -136,20 +136,20 @@ func (c *Client) createCertChainCache(ctx context.Context, signingType abi.Repor
 				c.log.Debugf("Certificate chain cache configmap already exists, retrieving cached certificates")
 				return c.getCertChainCache(ctx)
 			}
-			return nil, nil, fmt.Errorf("failed to create certificate chain cache configmap: %w", err)
+			return nil, nil, fmt.Errorf("creating certificate chain cache configmap: %w", err)
 		}
 	} else {
 		// ConfigMap already exists but either ASK or ARK are missing. Update the according value.
 		if cacheAsk == nil {
 			if err := c.kubeClient.UpdateConfigMap(ctx, constants.SevSnpCertCacheConfigMapName,
 				constants.CertCacheAskKey, askWriter.String()); err != nil {
-				return nil, nil, fmt.Errorf("failed to update ASK in certificate chain cache configmap: %w", err)
+				return nil, nil, fmt.Errorf("updating ASK in certificate chain cache configmap: %w", err)
 			}
 		}
 		if cacheArk == nil {
 			if err := c.kubeClient.UpdateConfigMap(ctx, constants.SevSnpCertCacheConfigMapName,
 				constants.CertCacheArkKey, arkWriter.String()); err != nil {
-				return nil, nil, fmt.Errorf("failed to update ARK in certificate chain cache configmap: %w", err)
+				return nil, nil, fmt.Errorf("updating ARK in certificate chain cache configmap: %w", err)
 			}
 		}
 	}
@@ -163,27 +163,27 @@ func (c *Client) getCertChainCache(ctx context.Context) (ask, ark *x509.Certific
 	c.log.Debugf("Retrieving certificate chain from cache")
 	askRaw, err := c.kubeClient.GetConfigMapData(ctx, constants.SevSnpCertCacheConfigMapName, constants.CertCacheAskKey)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get ASK: %w", err)
+		return nil, nil, fmt.Errorf("getting ASK from configmap: %w", err)
 	}
 	if askRaw != "" {
 		c.log.Debugf("ASK cache hit")
 		askBlock, _ := pem.Decode([]byte(askRaw))
 		ask, err = x509.ParseCertificate(askBlock.Bytes)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to parse ASK: %w", err)
+			return nil, nil, fmt.Errorf("parsing ASK: %w", err)
 		}
 	}
 
 	arkRaw, err := c.kubeClient.GetConfigMapData(ctx, constants.SevSnpCertCacheConfigMapName, constants.CertCacheArkKey)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get ARK: %w", err)
+		return nil, nil, fmt.Errorf("getting ARK from configmap: %w", err)
 	}
 	if arkRaw != "" {
 		c.log.Debugf("ARK cache hit")
 		arkBlock, _ := pem.Decode([]byte(arkRaw))
 		ark, err = x509.ParseCertificate(arkBlock.Bytes)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to parse ARK: %w", err)
+			return nil, nil, fmt.Errorf("parsing ARK: %w", err)
 		}
 	}
 
