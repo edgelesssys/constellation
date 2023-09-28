@@ -116,12 +116,9 @@ func (u *Updatable) getCachedAskCert() (x509.Certificate, error) {
 	if u.cachedCerts == nil {
 		return x509.Certificate{}, fmt.Errorf("no cached certs available")
 	}
-	ask, ark := u.cachedCerts.SevSnpCerts()
+	ask, _ := u.cachedCerts.SevSnpCerts()
 	if ask == nil {
 		return x509.Certificate{}, fmt.Errorf("no ASK available")
-	}
-	if ark == nil {
-		return x509.Certificate{}, fmt.Errorf("no ARK available")
 	}
 	return *ask, nil
 }
