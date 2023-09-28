@@ -83,6 +83,10 @@ func (c *Client) createCertChainCache(ctx context.Context, signingType abi.Repor
 	c.log.Debugf("Creating certificate chain cache")
 	var shouldCreateConfigMap bool
 
+	// Check if ASK or ARK is already cached.
+	// If both are cached, return them.
+	// If only one is cached, retrieve the other one from the
+	// KDS and update the configmap with the missing value.
 	cacheAsk, cacheArk, err := c.getCertChainCache(ctx)
 	if k8serrors.IsNotFound(err) {
 		c.log.Debugf("Certificate chain cache does not exist")
@@ -101,15 +105,16 @@ func (c *Client) createCertChainCache(ctx context.Context, signingType abi.Repor
 		ark = cacheArk
 	}
 
+	// If only one certificate is cached, retrieve the other one from the KDS.
 	c.log.Debugf("Retrieving certificate chain from KDS")
 	kdsAsk, kdsArk, err := c.kdsClient.CertChain(signingType)
 	if err != nil {
 		return nil, nil, fmt.Errorf("retrieving certificate chain from KDS: %w", err)
 	}
-	if kdsAsk != nil {
+	if ask == nil && kdsAsk != nil {
 		ask = kdsAsk
 	}
-	if kdsArk != nil {
+	if ark == nil && kdsArk != nil {
 		ark = kdsArk
 	}
 

@@ -27,20 +27,20 @@ func TestCreateCertChainCache(t *testing.T) {
 	notFoundErr := k8serrors.NewNotFound(schema.GroupResource{}, "test")
 
 	testCases := map[string]struct {
-		kubeClient *stubKubeClient
-		kdsClient  *stubKdsClient
-		wantAsk    bool
-		wantArk    bool
-		wantErr    bool
+		kubeClient  *stubKubeClient
+		kdsClient   *stubKdsClient
+		expectedArk *x509.Certificate
+		expectedAsk *x509.Certificate
+		wantErr     bool
 	}{
 		"available in configmap": {
 			kubeClient: &stubKubeClient{
 				askResponse: string(testdata.Ask),
 				arkResponse: string(testdata.Ark),
 			},
-			kdsClient: &stubKdsClient{},
-			wantAsk:   true,
-			wantArk:   true,
+			kdsClient:   &stubKdsClient{},
+			expectedArk: mustParsePEM(testdata.Ark),
+			expectedAsk: mustParsePEM(testdata.Ask),
 		},
 		"query from kds": {
 			kubeClient: &stubKubeClient{
@@ -50,8 +50,19 @@ func TestCreateCertChainCache(t *testing.T) {
 				askResponse: testdata.Ask,
 				arkResponse: testdata.Ark,
 			},
-			wantAsk: true,
-			wantArk: true,
+			expectedArk: mustParsePEM(testdata.Ark),
+			expectedAsk: mustParsePEM(testdata.Ask),
+		},
+		"only replace uncached cert": {
+			kubeClient: &stubKubeClient{
+				askResponse: string(testdata.Ark), // on purpose
+			},
+			kdsClient: &stubKdsClient{
+				arkResponse: testdata.Ark,
+				askResponse: testdata.Ask,
+			},
+			expectedArk: mustParsePEM(testdata.Ark),
+			expectedAsk: mustParsePEM(testdata.Ark), // on purpose
 		},
 		"only ask available in configmap": {
 			kubeClient: &stubKubeClient{
@@ -60,8 +71,8 @@ func TestCreateCertChainCache(t *testing.T) {
 			kdsClient: &stubKdsClient{
 				arkResponse: testdata.Ark,
 			},
-			wantAsk: true,
-			wantArk: true,
+			expectedArk: mustParsePEM(testdata.Ark),
+			expectedAsk: mustParsePEM(testdata.Ask),
 		},
 		"only ark available in configmap": {
 			kubeClient: &stubKubeClient{
@@ -70,8 +81,8 @@ func TestCreateCertChainCache(t *testing.T) {
 			kdsClient: &stubKdsClient{
 				askResponse: testdata.Ask,
 			},
-			wantAsk: true,
-			wantArk: true,
+			expectedArk: mustParsePEM(testdata.Ark),
+			expectedAsk: mustParsePEM(testdata.Ask),
 		},
 		"get config map data err": {
 			kubeClient: &stubKubeClient{
@@ -119,12 +130,8 @@ func TestCreateCertChainCache(t *testing.T) {
 				assert.Error(err)
 			} else {
 				require.NoError(err)
-				if tc.wantArk {
-					assert.NotNil(ark)
-				}
-				if tc.wantAsk {
-					assert.NotNil(ask)
-				}
+				assert.Equal(tc.expectedArk, ark)
+				assert.Equal(tc.expectedAsk, ask)
 			}
 		})
 	}
@@ -156,26 +163,34 @@ func mustParsePEM(pemBytes []byte) *x509.Certificate {
 
 func TestGetCertChainCache(t *testing.T) {
 	testCases := map[string]struct {
-		kubeClient *stubKubeClient
-		wantErr    bool
+		kubeClient  *stubKubeClient
+		expectedAsk *x509.Certificate
+		expectedArk *x509.Certificate
+		wantErr     bool
 	}{
 		"success": {
 			kubeClient: &stubKubeClient{
 				askResponse: string(testdata.Ask),
 				arkResponse: string(testdata.Ark),
 			},
+			expectedAsk: mustParsePEM(testdata.Ask),
+			expectedArk: mustParsePEM(testdata.Ark),
 		},
 		"empty ask": {
 			kubeClient: &stubKubeClient{
 				askResponse: "",
 				arkResponse: string(testdata.Ark),
 			},
+			expectedAsk: nil,
+			expectedArk: mustParsePEM(testdata.Ark),
 		},
 		"empty ark": {
 			kubeClient: &stubKubeClient{
 				askResponse: string(testdata.Ask),
 				arkResponse: "",
 			},
+			expectedAsk: mustParsePEM(testdata.Ask),
+			expectedArk: nil,
 		},
 		"error getting config map data": {
 			kubeClient: &stubKubeClient{
@@ -193,11 +208,13 @@ func TestGetCertChainCache(t *testing.T) {
 
 			c := NewClient(logger.NewTest(t), tc.kubeClient, variant.Dummy{})
 
-			_, _, err := c.getCertChainCache(ctx)
+			ask, ark, err := c.getCertChainCache(ctx)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
+				assert.Equal(tc.expectedArk, ark)
+				assert.Equal(tc.expectedAsk, ask)
 			}
 		})
 	}

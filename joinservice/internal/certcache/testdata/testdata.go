@@ -9,12 +9,12 @@ package testdata
 
 import _ "embed"
 
-// ARK is a valid ARK certificate, as returned from the AMD KDS.
+// Ark is a valid ARK certificate, as returned from the AMD KDS.
 //
 //go:embed ark.pem
 var Ark []byte
 
-// ASK is a valid ASK certificate, as returned from the AMD KDS.
+// Ask is a valid ASK certificate, as returned from the AMD KDS.
 //
 //go:embed ask.pem
 var Ask []byte
