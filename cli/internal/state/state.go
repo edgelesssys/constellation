@@ -32,8 +32,8 @@ type Infrastructure struct {
 	ClusterEndpoint   string   `yaml:"clusterEndpoint"`
 	InitSecret        string   `yaml:"initSecret"`
 	APIServerCertSANs []string `yaml:"apiServerCertSANs"`
-	Azure             *Azure   `yaml:"azure"`
-	GCP               *GCP     `yaml:"gcp"`
+	Azure             *Azure   `yaml:"azure,omitempty"`
+	GCP               *GCP     `yaml:"gcp,omitempty"`
 }
 
 // GCP describes the infra state related to GCP.
