@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -472,7 +473,28 @@ func (i *initCmd) writeOutput(
 	tw.Flush()
 	fmt.Fprintln(wr)
 
-	if err := i.fileHandler.Write(constants.AdminConfFilename, initResp.GetKubeconfig(), file.OptNone); err != nil {
+	i.log.Debugf("Rewriting cluster server address in kubeconfig to %s", idFile.IP)
+	kubeconfig, err := clientcmd.Load(initResp.GetKubeconfig())
+	if err != nil {
+		return fmt.Errorf("loading kubeconfig: %w", err)
+	}
+	if len(kubeconfig.Clusters) != 1 {
+		return fmt.Errorf("expected exactly one cluster in kubeconfig, got %d", len(kubeconfig.Clusters))
+	}
+	for _, cluster := range kubeconfig.Clusters {
+		kubeEndpoint, err := url.Parse(cluster.Server)
+		if err != nil {
+			return fmt.Errorf("parsing kubeconfig server URL: %w", err)
+		}
+		kubeEndpoint.Host = net.JoinHostPort(idFile.IP, kubeEndpoint.Port())
+		cluster.Server = kubeEndpoint.String()
+	}
+	kubeconfigBytes, err := clientcmd.Write(*kubeconfig)
+	if err != nil {
+		return fmt.Errorf("marshaling kubeconfig: %w", err)
+	}
+
+	if err := i.fileHandler.Write(constants.AdminConfFilename, kubeconfigBytes, file.OptNone); err != nil {
 		return fmt.Errorf("writing kubeconfig: %w", err)
 	}
 	i.log.Debugf("Kubeconfig written to %s", i.pf.PrefixPrintablePath(constants.AdminConfFilename))
