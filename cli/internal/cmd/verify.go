@@ -59,7 +59,7 @@ func NewVerifyCmd() *cobra.Command {
 	}
 	cmd.Flags().String("cluster-id", "", "expected cluster identifier")
 	cmd.Flags().Bool("raw", false, "print raw attestation document")
-	cmd.Flags().Bool("json", false, "print the attestation document as parsed json")
+	cmd.Flags().String("output", "", "print the attestation document in the output format {json}")
 	cmd.Flags().StringP("node-endpoint", "e", "", "endpoint of the node to verify, passed as HOST[:PORT]")
 	return cmd
 }
@@ -192,9 +192,17 @@ func (c *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 		return verifyFlags{}, fmt.Errorf("parsing raw argument: %w", err)
 	}
 	c.log.Debugf("Flag 'raw' set to %t", force)
-	json, err := cmd.Flags().GetBool("json")
+	output, err := cmd.Flags().GetString("output")
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("parsing raw argument: %w", err)
+	}
+
+	var json bool
+	if output != "" {
+		if output != "json" {
+			return verifyFlags{}, fmt.Errorf("invalid output format %q, expected 'json'", output)
+		}
+		json = true
 	}
 	c.log.Debugf("Flag 'json' set to %t", force)
 
