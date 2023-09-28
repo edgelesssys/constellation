@@ -49,10 +49,10 @@ func NewClient(log *logger.Logger, kubeClient kubeClient, attVariant variant.Var
 func (c *Client) CreateCertChainCache(ctx context.Context) (*CachedCerts, error) {
 	switch c.attVariant {
 	case variant.AzureSEVSNP{}:
-		c.log.Debugf("Creating azure SEV-SNP certificate chain cache")
+		c.log.Debugf("Creating Azure SEV-SNP certificate chain cache")
 		ask, ark, err := c.createCertChainCache(ctx, abi.VcekReportSigner)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create azure SEV-SNP certificate chain cache: %w", err)
+			return nil, fmt.Errorf("creating Azure SEV-SNP certificate chain cache: %w", err)
 		}
 		return &CachedCerts{
 			ask: ask,
