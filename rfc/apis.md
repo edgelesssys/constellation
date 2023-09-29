@@ -55,7 +55,7 @@ The use of semantic versions and pseudo versions tries to match the versioning u
 consult the module reference of Go, especially the sections about [versions](https://go.dev/ref/mod#versions)
 and [pseudo-versions](https://go.dev/ref/mod#pseudo-versions).
 
-The [pesudo-version tool](../hack/pseudo-version) can generate a valid pseudo-version for your current head.
+The [workspace status tool](/tools/workspace_status.sh) can generate a valid pseudo-version for your current head.
 
 ### Consistent API path prefix of `ref` and `stream`
 

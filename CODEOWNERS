@@ -27,7 +27,6 @@
 /hack/fetch-broken-e2e @katexochen
 /hack/gocoverage @katexochen
 /hack/oci-pin @malt3
-/hack/pseudo-version @malt3
 /hack/qemu-metadata-api @daniel-weisse
 /hack/remove-tf-providers @katexochen
 /hack/terraform @3u13r

@@ -3667,14 +3667,6 @@ def go_dependencies():
         sum = "h1:IIA2aBdXvfbIM+yl/eTnL4hb1XwdpvuQLglAix1gweE=",
         version = "v1.13.3",
     )
-    go_repository(
-        name = "com_github_matryer_is",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/matryer/is",
-        sum = "h1:92UTHpy8CDwaJ08GqLDzhhuixiBUUD1p3AU6PHddz4A=",
-        version = "v1.2.0",
-    )
 
     go_repository(
         name = "com_github_mattn_go_colorable",
@@ -3921,14 +3913,6 @@ def go_dependencies():
         importpath = "github.com/mitchellh/reflectwalk",
         sum = "h1:G2LzWKi524PWgd3mLHV8Y5k7s6XUvT0Gef6zxSIeXaQ=",
         version = "v1.0.2",
-    )
-    go_repository(
-        name = "com_github_mmcloughlin_avo",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/mmcloughlin/avo",
-        sum = "h1:nAco9/aI9Lg2kiuROBY6BhCI/z0t5jEvJfjWbL8qXLU=",
-        version = "v0.5.0",
     )
 
     go_repository(

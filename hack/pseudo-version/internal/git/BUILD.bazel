@@ -1,9 +1,0 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
-
-go_library(
-    name = "git",
-    srcs = ["git.go"],
-    importpath = "github.com/edgelesssys/constellation/v2/hack/pseudo-version/internal/git",
-    visibility = ["//hack/pseudo-version:__subpackages__"],
-    deps = ["@com_github_go_git_go_git_v5//:go-git"],
-)
