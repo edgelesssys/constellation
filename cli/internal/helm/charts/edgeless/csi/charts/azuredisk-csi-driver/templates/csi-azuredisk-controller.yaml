@@ -20,6 +20,9 @@ spec:
     metadata:
 {{ include "azuredisk.labels" . | indent 6 }}
         app: {{ .Values.controller.name }}
+        {{- if .Values.workloadIdentity.clientID }}
+        azure.workload.identity/use: "true"
+        {{- end }}
 {{- with .Values.controller.podLabels }}
 {{ toYaml . | indent 8 }}
 {{- end }}
@@ -46,6 +49,9 @@ spec:
         node-role.kubernetes.io/control-plane: ""
         {{- end}}
       priorityClassName: system-cluster-critical
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
 {{- with .Values.controller.tolerations }}
       tolerations:
 {{ toYaml . | indent 8 }}
@@ -63,7 +69,7 @@ spec:
           image: "{{ .Values.image.csiProvisioner.repository }}:{{ .Values.image.csiProvisioner.tag }}"
 {{- end }}
           args:
-            - "--feature-gates=Topology=true"
+            - "--feature-gates=Topology=true,HonorPVReclaimPolicy=true"
             - "--csi-address=$(ADDRESS)"
             - "--v=2"
             - "--timeout=30s"
@@ -190,6 +196,7 @@ spec:
             - "--vmss-cache-ttl-seconds={{ .Values.controller.vmssCacheTTLInSeconds }}"
             - "--enable-traffic-manager={{ .Values.controller.enableTrafficManager }}"
             - "--traffic-manager-port={{ .Values.controller.trafficManagerPort }}"
+            - "--enable-otel-tracing={{ .Values.controller.otelTracing.enabled }}"
           ports:
             - containerPort: {{ .Values.controller.livenessProbe.healthPort }}
               name: healthz
@@ -209,7 +216,7 @@ spec:
             - name: AZURE_CREDENTIAL_FILE
               valueFrom:
                 configMapKeyRef:
-                  name: azure-cred-file
+                  name: {{ .Values.azureCredentialFileConfigMap }}
                   key: path
                   optional: true
             - name: CSI_ENDPOINT
@@ -231,6 +238,12 @@ spec:
             {{- if eq .Values.cloud "AzureStackCloud" }}
             - name: AZURE_ENVIRONMENT_FILEPATH
               value: /etc/kubernetes/azurestackcloud.json
+            {{- end }}
+            {{- if .Values.controller.otelTracing.enabled }}
+            - name: OTEL_SERVICE_NAME
+              value: {{ .Values.controller.otelTracing.otelServiceName }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.controller.otelTracing.otelExporterEndpoint }}
             {{- end }}
           imagePullPolicy: {{ .Values.image.azuredisk.pullPolicy }}
           volumeMounts:

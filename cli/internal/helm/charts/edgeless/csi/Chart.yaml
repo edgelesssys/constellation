@@ -13,7 +13,7 @@ dependencies:
     tags:
       - AWS
   - name: azuredisk-csi-driver
-    version: v1.2.0
+    version: v1.3.0
     tags:
       - Azure
   - name: cinder-config
