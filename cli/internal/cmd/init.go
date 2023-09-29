@@ -9,7 +9,6 @@ package cmd
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -157,7 +156,7 @@ func (i *initCmd) initialize(
 		cmd.PrintErrln("WARNING: Attestation temporarily relies on AWS nitroTPM. See https://docs.edgeless.systems/constellation/workflows/config#choosing-a-vm-type for more information.")
 	}
 
-	// TODO(msanft): Remove IDFile as per AB#3354
+	// TODO(msanft): Remove IDFile as per AB#3425
 	i.log.Debugf("Checking cluster ID file")
 	var idFile clusterid.File
 	if err := i.fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil {
@@ -208,7 +207,7 @@ func (i *initCmd) initialize(
 	idFile.MeasurementSalt = measurementSalt
 
 	stateFile.SetClusterValues(state.ClusterValues{
-		MeasurementSalt: base64.StdEncoding.EncodeToString(measurementSalt),
+		MeasurementSalt: measurementSalt,
 	})
 
 	clusterName := clusterid.GetClusterName(conf, idFile)
@@ -246,7 +245,7 @@ func (i *initCmd) initialize(
 	}
 	i.log.Debugf("Initialization request succeeded")
 
-	// TODO(msanft): Remove IDFile as per AB#3354
+	// TODO(msanft): Remove IDFile as per AB#3425
 	i.log.Debugf("Writing Constellation ID file")
 	idFile.CloudProvider = provider
 

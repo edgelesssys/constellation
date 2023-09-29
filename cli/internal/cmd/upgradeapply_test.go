@@ -35,74 +35,82 @@ import (
 
 func TestUpgradeApply(t *testing.T) {
 	testCases := map[string]struct {
-		helmUpgrader      helmApplier
-		kubeUpgrader      *stubKubernetesUpgrader
-		terraformUpgrader clusterUpgrader
-		wantErr           bool
-		customK8sVersion  string
-		flags             upgradeApplyFlags
-		stdin             string
+		helmUpgrader         helmApplier
+		kubeUpgrader         *stubKubernetesUpgrader
+		terraformUpgrader    clusterUpgrader
+		infrastructureShower *stubShowInfrastructure
+		wantErr              bool
+		customK8sVersion     string
+		flags                upgradeApplyFlags
+		stdin                string
 	}{
 		"success": {
-			kubeUpgrader:      &stubKubernetesUpgrader{currentConfig: config.DefaultForAzureSEVSNP()},
-			helmUpgrader:      stubApplier{},
-			terraformUpgrader: &stubTerraformUpgrader{},
-			flags:             upgradeApplyFlags{yes: true},
+			kubeUpgrader:         &stubKubernetesUpgrader{currentConfig: config.DefaultForAzureSEVSNP()},
+			helmUpgrader:         stubApplier{},
+			terraformUpgrader:    &stubTerraformUpgrader{},
+			flags:                upgradeApplyFlags{yes: true},
+			infrastructureShower: &stubShowInfrastructure{},
 		},
 		"nodeVersion some error": {
 			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig:  config.DefaultForAzureSEVSNP(),
 				nodeVersionErr: assert.AnError,
 			},
-			helmUpgrader:      stubApplier{},
-			terraformUpgrader: &stubTerraformUpgrader{},
-			wantErr:           true,
-			flags:             upgradeApplyFlags{yes: true},
+			helmUpgrader:         stubApplier{},
+			terraformUpgrader:    &stubTerraformUpgrader{},
+			wantErr:              true,
+			flags:                upgradeApplyFlags{yes: true},
+			infrastructureShower: &stubShowInfrastructure{},
 		},
 		"nodeVersion in progress error": {
 			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig:  config.DefaultForAzureSEVSNP(),
 				nodeVersionErr: kubecmd.ErrInProgress,
 			},
-			helmUpgrader:      stubApplier{},
-			terraformUpgrader: &stubTerraformUpgrader{},
-			flags:             upgradeApplyFlags{yes: true},
+			helmUpgrader:         stubApplier{},
+			terraformUpgrader:    &stubTerraformUpgrader{},
+			flags:                upgradeApplyFlags{yes: true},
+			infrastructureShower: &stubShowInfrastructure{},
 		},
 		"helm other error": {
 			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig: config.DefaultForAzureSEVSNP(),
 			},
-			helmUpgrader:      stubApplier{err: assert.AnError},
-			terraformUpgrader: &stubTerraformUpgrader{},
-			wantErr:           true,
-			flags:             upgradeApplyFlags{yes: true},
+			helmUpgrader:         stubApplier{err: assert.AnError},
+			terraformUpgrader:    &stubTerraformUpgrader{},
+			wantErr:              true,
+			flags:                upgradeApplyFlags{yes: true},
+			infrastructureShower: &stubShowInfrastructure{},
 		},
 		"abort": {
 			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig: config.DefaultForAzureSEVSNP(),
 			},
-			helmUpgrader:      stubApplier{},
-			terraformUpgrader: &stubTerraformUpgrader{terraformDiff: true},
-			wantErr:           true,
-			stdin:             "no\n",
+			helmUpgrader:         stubApplier{},
+			terraformUpgrader:    &stubTerraformUpgrader{terraformDiff: true},
+			wantErr:              true,
+			stdin:                "no\n",
+			infrastructureShower: &stubShowInfrastructure{},
 		},
 		"abort, restore terraform err": {
 			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig: config.DefaultForAzureSEVSNP(),
 			},
-			helmUpgrader:      stubApplier{},
-			terraformUpgrader: &stubTerraformUpgrader{terraformDiff: true, rollbackWorkspaceErr: assert.AnError},
-			wantErr:           true,
-			stdin:             "no\n",
+			helmUpgrader:         stubApplier{},
+			terraformUpgrader:    &stubTerraformUpgrader{terraformDiff: true, rollbackWorkspaceErr: assert.AnError},
+			wantErr:              true,
+			stdin:                "no\n",
+			infrastructureShower: &stubShowInfrastructure{},
 		},
 		"plan terraform error": {
 			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig: config.DefaultForAzureSEVSNP(),
 			},
-			helmUpgrader:      stubApplier{},
-			terraformUpgrader: &stubTerraformUpgrader{planTerraformErr: assert.AnError},
-			wantErr:           true,
-			flags:             upgradeApplyFlags{yes: true},
+			helmUpgrader:         stubApplier{},
+			terraformUpgrader:    &stubTerraformUpgrader{planTerraformErr: assert.AnError},
+			wantErr:              true,
+			flags:                upgradeApplyFlags{yes: true},
+			infrastructureShower: &stubShowInfrastructure{},
 		},
 		"apply terraform error": {
 			kubeUpgrader: &stubKubernetesUpgrader{
@@ -113,8 +121,9 @@ func TestUpgradeApply(t *testing.T) {
 				applyTerraformErr: assert.AnError,
 				terraformDiff:     true,
 			},
-			wantErr: true,
-			flags:   upgradeApplyFlags{yes: true},
+			wantErr:              true,
+			flags:                upgradeApplyFlags{yes: true},
+			infrastructureShower: &stubShowInfrastructure{},
 		},
 		"outdated K8s patch version": {
 			kubeUpgrader: &stubKubernetesUpgrader{
@@ -127,18 +136,19 @@ func TestUpgradeApply(t *testing.T) {
 				require.NoError(t, err)
 				return semver.NewFromInt(v.Major(), v.Minor(), v.Patch()-1, "").String()
 			}(),
-			flags:   upgradeApplyFlags{yes: true},
-			wantErr: false,
+			flags:                upgradeApplyFlags{yes: true},
+			infrastructureShower: &stubShowInfrastructure{},
 		},
 		"outdated K8s version": {
 			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig: config.DefaultForAzureSEVSNP(),
 			},
-			helmUpgrader:      stubApplier{},
-			terraformUpgrader: &stubTerraformUpgrader{},
-			customK8sVersion:  "v1.20.0",
-			flags:             upgradeApplyFlags{yes: true},
-			wantErr:           true,
+			helmUpgrader:         stubApplier{},
+			terraformUpgrader:    &stubTerraformUpgrader{},
+			customK8sVersion:     "v1.20.0",
+			flags:                upgradeApplyFlags{yes: true},
+			wantErr:              true,
+			infrastructureShower: &stubShowInfrastructure{},
 		},
 		"skip all upgrade phases": {
 			kubeUpgrader: &stubKubernetesUpgrader{
@@ -150,6 +160,22 @@ func TestUpgradeApply(t *testing.T) {
 				skipPhases: []skipPhase{skipInfrastructurePhase, skipHelmPhase, skipK8sPhase, skipImagePhase},
 				yes:        true,
 			},
+			infrastructureShower: &stubShowInfrastructure{},
+		},
+		"show state err": {
+			kubeUpgrader: &stubKubernetesUpgrader{
+				currentConfig: config.DefaultForAzureSEVSNP(),
+			},
+			helmUpgrader:      &stubApplier{},
+			terraformUpgrader: &stubTerraformUpgrader{},
+			flags: upgradeApplyFlags{
+				skipPhases: []skipPhase{skipInfrastructurePhase},
+				yes:        true,
+			},
+			infrastructureShower: &stubShowInfrastructure{
+				showInfraErr: assert.AnError,
+			},
+			wantErr: true,
 		},
 		"skip all phases except node upgrade": {
 			kubeUpgrader: &stubKubernetesUpgrader{
@@ -161,6 +187,7 @@ func TestUpgradeApply(t *testing.T) {
 				skipPhases: []skipPhase{skipInfrastructurePhase, skipHelmPhase, skipK8sPhase},
 				yes:        true,
 			},
+			infrastructureShower: &stubShowInfrastructure{},
 		},
 	}
 
@@ -178,12 +205,11 @@ func TestUpgradeApply(t *testing.T) {
 				cfg.KubernetesVersion = versions.ValidK8sVersion(tc.customK8sVersion)
 			}
 			require.NoError(handler.WriteYAML(constants.ConfigFilename, cfg))
-			require.NoError(handler.WriteJSON(constants.ClusterIDsFilename, clusterid.File{MeasurementSalt: []byte("measurementSalt")}))
+			require.NoError(handler.WriteJSON(constants.ClusterIDsFilename, clusterid.File{
+				MeasurementSalt: []byte{0x41},
+				UID:             "uid",
+			}))
 			require.NoError(handler.WriteJSON(constants.MasterSecretFilename, uri.MasterSecret{}))
-			stateFile := state.NewState().SetClusterValues(state.ClusterValues{
-				MeasurementSalt: "measurementSalt",
-			})
-			require.NoError(stateFile.WriteToFile(handler, constants.StateFilename))
 
 			upgrader := upgradeApplyCmd{
 				kubeUpgrader:    tc.kubeUpgrader,
@@ -191,7 +217,7 @@ func TestUpgradeApply(t *testing.T) {
 				clusterUpgrader: tc.terraformUpgrader,
 				log:             logger.NewTest(t),
 				configFetcher:   stubAttestationFetcher{},
-				clusterShower:   &stubShowInfrastructure{},
+				clusterShower:   tc.infrastructureShower,
 				fileHandler:     handler,
 			}
 
@@ -204,9 +230,12 @@ func TestUpgradeApply(t *testing.T) {
 			assert.Equal(!tc.flags.skipPhases.contains(skipImagePhase), tc.kubeUpgrader.calledNodeUpgrade,
 				"incorrect node upgrade skipping behavior")
 
-			expectedState := state.NewState().
-				SetInfrastructure(state.Infrastructure{APIServerCertSANs: []string{}}).
-				SetClusterValues(state.ClusterValues{MeasurementSalt: "measurementSalt"})
+			expectedState := state.New().
+				SetInfrastructure(state.Infrastructure{
+					APIServerCertSANs: []string{},
+					UID:               "uid",
+				}).
+				SetClusterValues(state.ClusterValues{MeasurementSalt: []byte{0x41}})
 			gotState, err := state.ReadFromFile(handler, constants.StateFilename)
 			require.NoError(err)
 			assert.Equal("v1", gotState.Version)

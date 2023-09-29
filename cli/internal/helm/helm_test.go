@@ -207,9 +207,9 @@ func TestHelmApply(t *testing.T) {
 
 			options.AllowDestructive = tc.allowDestructive
 			ex, includesUpgrade, err := sut.PrepareApply(cfg,
-				state.NewState().
+				state.New().
 					SetInfrastructure(state.Infrastructure{UID: "testuid"}).
-					SetClusterValues(state.ClusterValues{MeasurementSalt: "measurementSalt"}),
+					SetClusterValues(state.ClusterValues{MeasurementSalt: []byte{0x41}}),
 				options, fakeServiceAccURI(csp),
 				uri.MasterSecret{Key: []byte("secret"), Salt: []byte("masterSalt")})
 			var upgradeErr *compatibility.InvalidUpgradeError
@@ -223,17 +223,6 @@ func TestHelmApply(t *testing.T) {
 			assert.True(t, ok)
 			assert.ElementsMatch(t, tc.expectedActions, getActionReleaseNames(chartExecutor.actions))
 		})
-	}
-}
-
-func fakeInfraOutput(csp cloudprovider.Provider) state.Infrastructure {
-	switch csp {
-	case cloudprovider.AWS:
-		return state.Infrastructure{}
-	case cloudprovider.GCP:
-		return state.Infrastructure{GCP: &state.GCP{}}
-	default:
-		panic("invalid csp")
 	}
 }
 
