@@ -167,8 +167,7 @@ func TestVerify(t *testing.T) {
 			cmd.Flags().String("workspace", "", "") // register persistent flag manually
 			cmd.Flags().Bool("force", true, "")     // register persistent flag manually
 			out := &bytes.Buffer{}
-			cmd.SetOut(out)
-			cmd.SetErr(&bytes.Buffer{})
+			cmd.SetErr(out)
 			if tc.clusterIDFlag != "" {
 				require.NoError(cmd.Flags().Set("cluster-id", tc.clusterIDFlag))
 			}

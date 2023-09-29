@@ -59,7 +59,7 @@ func NewVerifyCmd() *cobra.Command {
 	}
 	cmd.Flags().String("cluster-id", "", "expected cluster identifier")
 	cmd.Flags().Bool("raw", false, "print raw attestation document")
-	cmd.Flags().String("output", "", "print the attestation document in the output format {json}")
+	cmd.Flags().StringP("output", "o", "", "print the attestation document in the output format {json}")
 	cmd.Flags().StringP("node-endpoint", "e", "", "endpoint of the node to verify, passed as HOST[:PORT]")
 	return cmd
 }
@@ -155,7 +155,7 @@ func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 		return fmt.Errorf("printing attestation document: %w", err)
 	}
 	cmd.Println(attDocOutput)
-	cmd.Println("Verification OK")
+	cmd.PrintErrln("Verification OK")
 
 	return nil
 }
@@ -217,11 +217,11 @@ func (c *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 	if emptyEndpoint || emptyIDs {
 		c.log.Debugf("Trying to supplement empty flag values from %q", pf.PrefixPrintablePath(constants.ClusterIDsFilename))
 		if emptyEndpoint {
-			cmd.Printf("Using endpoint from %q. Specify --node-endpoint to override this.\n", pf.PrefixPrintablePath(constants.ClusterIDsFilename))
+			cmd.PrintErrf("Using endpoint from %q. Specify --node-endpoint to override this.\n", pf.PrefixPrintablePath(constants.ClusterIDsFilename))
 			endpoint = idFile.IP
 		}
 		if emptyIDs {
-			cmd.Printf("Using ID from %q. Specify --cluster-id to override this.\n", pf.PrefixPrintablePath(constants.ClusterIDsFilename))
+			cmd.PrintErrf("Using ID from %q. Specify --cluster-id to override this.\n", pf.PrefixPrintablePath(constants.ClusterIDsFilename))
 			ownerID = idFile.OwnerID
 			clusterID = idFile.ClusterID
 		}

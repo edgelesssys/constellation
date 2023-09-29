@@ -38,15 +38,16 @@ type Certificate struct {
 
 // TCBVersion contains the TCB version data.
 type TCBVersion struct {
-	Bootloader uint8
-	TEE        uint8
-	SNP        uint8
-	Microcode  uint8
-	Spl4       uint8
-	Spl5       uint8
-	Spl6       uint8
-	Spl7       uint8
-	UcodeSpl   uint8 // UcodeSpl is the microcode security patch level.
+	Bootloader uint8 `json:"bootloader"`
+	TEE        uint8 `json:"tee"`
+	SNP        uint8 `json:"snp"`
+	Microcode  uint8 `json:"microcode"`
+	Spl4       uint8 `json:"spl4"`
+	Spl5       uint8 `json:"spl5"`
+	Spl6       uint8 `json:"spl6"`
+	Spl7       uint8 `json:"spl7"`
+	// UcodeSpl is the microcode security patch level.
+	UcodeSpl uint8 `json:"ucode_spl"`
 }
 
 // PlatformInfo contains the platform information.
