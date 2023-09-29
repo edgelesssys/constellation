@@ -1,0 +1,37 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "certcache",
+    srcs = ["certcache.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/joinservice/internal/certcache",
+    visibility = ["//joinservice:__subpackages__"],
+    deps = [
+        "//internal/attestation/variant",
+        "//internal/constants",
+        "//internal/crypto",
+        "//internal/logger",
+        "//joinservice/internal/certcache/amdkds",
+        "@com_github_google_go_sev_guest//abi",
+        "@com_github_google_go_sev_guest//verify/trust",
+        "@io_k8s_apimachinery//pkg/api/errors",
+    ],
+)
+
+go_test(
+    name = "certcache_test",
+    srcs = ["certcache_test.go"],
+    embed = [":certcache"],
+    deps = [
+        "//internal/attestation/variant",
+        "//internal/constants",
+        "//internal/crypto",
+        "//internal/logger",
+        "//joinservice/internal/certcache/testdata",
+        "@com_github_google_go_sev_guest//abi",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@io_k8s_apimachinery//pkg/api/errors",
+        "@io_k8s_apimachinery//pkg/runtime/schema",
+    ],
+)

@@ -128,6 +128,12 @@ const (
 	K8sVersionFieldName = "cluster-version"
 	// ComponentsListKey is the name of the key holding the list of components in the components configMap.
 	ComponentsListKey = "components"
+	// SevSnpCertCacheConfigMapName is the name of the configMap holding the SEV-SNP certificate cache in the join service.
+	SevSnpCertCacheConfigMapName = "sev-snp-cert-cache"
+	// CertCacheAskKey is the name of the key holding the ASK certificate in the SEV-SNP certificate cache.
+	CertCacheAskKey = "ask"
+	// CertCacheArkKey is the name of the key holding the ARK certificate in the SEV-SNP certificate cache.
+	CertCacheArkKey = "ark"
 	// NodeVersionResourceName resource name used for NodeVersion in constellation-operator and CLI.
 	NodeVersionResourceName = "constellation-version"
 	// NodeKubernetesComponentsAnnotationKey is the name of the annotation holding the reference to the ConfigMap listing all K8s components.

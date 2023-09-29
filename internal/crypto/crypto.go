@@ -8,6 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package crypto
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/x509"
@@ -61,7 +62,8 @@ func GenerateRandomBytes(length int) ([]byte, error) {
 	return nonce, nil
 }
 
-// PemToX509Cert takes a list of PEM encoded certificates, parses the first one and returns it.
+// PemToX509Cert takes a list of PEM-encoded certificates, parses the first one and returns it
+// as an x.509 certificate.
 func PemToX509Cert(raw []byte) (*x509.Certificate, error) {
 	decoded, _ := pem.Decode(raw)
 	if decoded == nil {
@@ -72,4 +74,14 @@ func PemToX509Cert(raw []byte) (*x509.Certificate, error) {
 		return nil, fmt.Errorf("parsing certificate: %w", err)
 	}
 	return cert, nil
+}
+
+// X509CertToPem takes an x.509 certificate and returns it as a PEM-encoded certificate.
+func X509CertToPem(cert *x509.Certificate) ([]byte, error) {
+	outWriter := &bytes.Buffer{}
+	err := pem.Encode(outWriter, &pem.Block{Type: "CERTIFICATE", Bytes: cert.Raw})
+	if err != nil {
+		return nil, fmt.Errorf("encode certificate: %w", err)
+	}
+	return outWriter.Bytes(), nil
 }

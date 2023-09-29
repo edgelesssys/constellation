@@ -17,6 +17,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -54,7 +55,7 @@ func New() (*Client, error) {
 
 // GetComponents returns the components of the cluster.
 func (c *Client) GetComponents(ctx context.Context, configMapName string) (components.Components, error) {
-	componentsRaw, err := c.getConfigMapData(ctx, configMapName, constants.ComponentsListKey)
+	componentsRaw, err := c.GetConfigMapData(ctx, configMapName, constants.ComponentsListKey)
 	if err != nil {
 		return components.Components{}, fmt.Errorf("failed to get components: %w", err)
 	}
@@ -65,8 +66,9 @@ func (c *Client) GetComponents(ctx context.Context, configMapName string) (compo
 	return clusterComponents, nil
 }
 
-func (c *Client) getConfigMapData(ctx context.Context, name, key string) (string, error) {
-	cm, err := c.client.CoreV1().ConfigMaps("kube-system").Get(ctx, name, metav1.GetOptions{})
+// GetConfigMapData returns the data for the given key in the configmap with the given name.
+func (c *Client) GetConfigMapData(ctx context.Context, name, key string) (string, error) {
+	cm, err := c.client.CoreV1().ConfigMaps(constants.ConstellationNamespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return "", fmt.Errorf("failed to get configmap: %w", err)
 	}
@@ -158,4 +160,38 @@ func k8sCompliantHostname(in string) (string, error) {
 		return "", fmt.Errorf("failed to generate a Kubernetes compliant hostname for %s", in)
 	}
 	return hostname, nil
+}
+
+// CreateConfigMap creates a configmap in the kube-system namespace with the provided name and data.
+func (c *Client) CreateConfigMap(ctx context.Context, name string, data map[string]string) error {
+	cm := &corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: constants.ConstellationNamespace,
+		},
+		Data: data,
+	}
+	_, err := c.client.CoreV1().ConfigMaps(constants.ConstellationNamespace).Create(ctx, cm, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to create configmap: %w", err)
+	}
+	return nil
+}
+
+// UpdateConfigMap updates the configmap with the provided name by writing the provided key and value.
+func (c *Client) UpdateConfigMap(ctx context.Context, name, key, value string) error {
+	cm, err := c.client.CoreV1().ConfigMaps(constants.ConstellationNamespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to get configmap: %w", err)
+	}
+	cm.Data[key] = value
+	_, err = c.client.CoreV1().ConfigMaps(constants.ConstellationNamespace).Update(ctx, cm, metav1.UpdateOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to update configmap: %w", err)
+	}
+	return nil
 }

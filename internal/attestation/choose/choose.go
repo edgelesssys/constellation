@@ -66,6 +66,6 @@ func Validator(cfg config.AttestationCfg, log attestation.Logger) (atls.Validato
 	case *config.DummyCfg:
 		return atls.NewFakeValidator(variant.Dummy{}), nil
 	default:
-		return nil, fmt.Errorf("unknown attestation variant")
+		return nil, fmt.Errorf("unknown attestation variant: %s", cfg.GetVariant())
 	}
 }

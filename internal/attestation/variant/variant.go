@@ -134,7 +134,7 @@ func ValidProvider(provider cloudprovider.Provider, variant Variant) bool {
 	return false
 }
 
-// Dummy OID for testfing.
+// Dummy OID for testing.
 type Dummy struct{}
 
 // OID returns the struct's object identifier.

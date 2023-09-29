@@ -13,7 +13,6 @@ go_library(
         "//internal/grpc/grpclog",
         "//internal/logger",
         "//internal/versions/components",
-        "//joinservice/internal/kubernetes",
         "//joinservice/joinproto",
         "@io_k8s_kubernetes//cmd/kubeadm/app/apis/kubeadm/v1beta3",
         "@org_golang_google_grpc//:go_default_library",

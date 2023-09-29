@@ -24,6 +24,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/google/go-sev-guest/abi"
 	"github.com/google/go-sev-guest/kds"
 	spb "github.com/google/go-sev-guest/proto/sevsnp"
@@ -101,19 +102,28 @@ func NewValidator(cfg *config.AzureSEVSNP, log attestation.Logger) *Validator {
 // getTrustedKey establishes trust in the given public key.
 // It does so by verifying the SNP attestation document.
 func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDocument, extraData []byte) (crypto.PublicKey, error) {
+	trustedAsk := (*x509.Certificate)(&v.config.AMDSigningKey) // ASK, cached by the Join-Service
+	trustedArk := (*x509.Certificate)(&v.config.AMDRootKey)    // ARK, specified in the Constellation config
+
+	// fallback certificates, used if not present in THIM response.
+	cachedCerts := sevSnpCerts{
+		ask: trustedAsk,
+		ark: trustedArk,
+	}
+
 	// transform the instanceInfo received from Microsoft into a verifiable attestation report format.
 	var instanceInfo azureInstanceInfo
 	if err := json.Unmarshal(attDoc.InstanceInfo, &instanceInfo); err != nil {
 		return nil, fmt.Errorf("unmarshalling instanceInfo: %w", err)
 	}
-	att, err := instanceInfo.attestationWithCerts(v.log, v.getter)
+
+	att, err := instanceInfo.attestationWithCerts(v.log, v.getter, cachedCerts)
 	if err != nil {
 		return nil, fmt.Errorf("parsing attestation report: %w", err)
 	}
 
-	// Verify the attestation report's certificates.
-	trustedArk := x509.Certificate(v.config.AMDRootKey)             // ARK, specified in Constellation config.
-	ask, err := x509.ParseCertificate(att.CertificateChain.AskCert) // ASK, as reported from THIM / KDS.
+	// ASK, as cached in joinservice or reported from THIM / KDS.
+	ask, err := x509.ParseCertificate(att.CertificateChain.AskCert)
 	if err != nil {
 		return nil, fmt.Errorf("parsing ASK certificate: %w", err)
 	}
@@ -125,7 +135,7 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 					Product: "Milan",
 					ProductCerts: &trust.ProductCerts{
 						Ask: ask,
-						Ark: &trustedArk,
+						Ark: trustedArk,
 					},
 				},
 			},
@@ -246,9 +256,13 @@ type azureInstanceInfo struct {
 }
 
 // attestationWithCerts returns a formatted version of the attestation report and its certificates from the instanceInfo.
-// if the VCEK certificate or the certificate chain is not present, the given getter is used to retrieve them
-// from the AMD KDS.
-func (a *azureInstanceInfo) attestationWithCerts(logger attestation.Logger, getter trust.HTTPSGetter) (*spb.Attestation, error) {
+// Certificates are retrieved in the following precedence:
+// 1. ASK or ARK from THIM
+// 2. ASK or ARK from fallbackCerts
+// 3. ASK or ARK from AMD KDS.
+func (a *azureInstanceInfo) attestationWithCerts(logger attestation.Logger, getter trust.HTTPSGetter,
+	fallbackCerts sevSnpCerts,
+) (*spb.Attestation, error) {
 	report, err := abi.ReportToProto(a.AttestationReport)
 	if err != nil {
 		return nil, fmt.Errorf("converting report to proto: %w", err)
@@ -282,16 +296,28 @@ func (a *azureInstanceInfo) attestationWithCerts(logger attestation.Logger, gett
 		att.CertificateChain.VcekCert = vcek
 	}
 
-	// If the certificate chain is present, parse it and format it.
+	// If the certificate chain from THIM is present, parse it and format it.
 	ask, ark, err := a.parseCertChain()
 	if err != nil {
 		logger.Warnf("Error parsing certificate chain: %v", err)
 	}
 	if ask != nil {
+		logger.Infof("Using ASK certificate from Azure THIM")
 		att.CertificateChain.AskCert = ask.Raw
 	}
 	if ark != nil {
+		logger.Infof("Using ARK certificate from Azure THIM")
 		att.CertificateChain.ArkCert = ark.Raw
+	}
+
+	// If a cached ASK or an ARK from the Constellation config is present, use it.
+	if att.CertificateChain.AskCert == nil && fallbackCerts.ask != nil {
+		logger.Infof("Using cached ASK certificate")
+		att.CertificateChain.AskCert = fallbackCerts.ask.Raw
+	}
+	if att.CertificateChain.ArkCert == nil && fallbackCerts.ark != nil {
+		logger.Infof("Using ARK certificate from %s", constants.ConfigFilename)
+		att.CertificateChain.ArkCert = fallbackCerts.ark.Raw
 	}
 	// Otherwise, retrieve it from AMD KDS.
 	if att.CertificateChain.AskCert == nil || att.CertificateChain.ArkCert == nil {
@@ -304,15 +330,22 @@ func (a *azureInstanceInfo) attestationWithCerts(logger attestation.Logger, gett
 		if err != nil {
 			return nil, fmt.Errorf("retrieving certificate chain from AMD KDS: %w", err)
 		}
-		if att.CertificateChain.AskCert == nil {
+		if att.CertificateChain.AskCert == nil && kdsCertChain.Ask != nil {
+			logger.Infof("Using ASK certificate from AMD KDS")
 			att.CertificateChain.AskCert = kdsCertChain.Ask.Raw
 		}
-		if att.CertificateChain.ArkCert == nil {
+		if att.CertificateChain.ArkCert == nil && kdsCertChain.Ask != nil {
+			logger.Infof("Using ARK certificate from AMD KDS")
 			att.CertificateChain.ArkCert = kdsCertChain.Ark.Raw
 		}
 	}
 
 	return att, nil
+}
+
+type sevSnpCerts struct {
+	ask *x509.Certificate
+	ark *x509.Certificate
 }
 
 // parseCertChain parses the certificate chain from the instanceInfo into x509-formatted ASK and ARK certificates.

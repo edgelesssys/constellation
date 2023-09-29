@@ -28,8 +28,10 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/joinservice/internal/certcache"
 	"github.com/edgelesssys/constellation/v2/joinservice/internal/kms"
 	"github.com/edgelesssys/constellation/v2/joinservice/internal/kubeadm"
+	"github.com/edgelesssys/constellation/v2/joinservice/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/joinservice/internal/kubernetesca"
 	"github.com/edgelesssys/constellation/v2/joinservice/internal/server"
 	"github.com/edgelesssys/constellation/v2/joinservice/internal/watcher"
@@ -56,11 +58,23 @@ func main() {
 
 	handler := file.NewHandler(afero.NewOsFs())
 
-	variant, err := variant.FromString(*attestationVariant)
+	kubeClient, err := kubernetes.New()
+	if err != nil {
+		log.With(zap.Error(err)).Fatalf("Failed to create Kubernetes client")
+	}
+
+	attVariant, err := variant.FromString(*attestationVariant)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to parse attestation variant")
 	}
-	validator, err := watcher.NewValidator(log.Named("validator"), variant, handler)
+
+	certCacheClient := certcache.NewClient(log.Named("certcache"), kubeClient, attVariant)
+	cachedCerts, err := certCacheClient.CreateCertChainCache(context.Background())
+	if err != nil {
+		log.With(zap.Error(err)).Fatalf("Failed to create certificate chain cache")
+	}
+
+	validator, err := watcher.NewValidator(log.Named("validator"), attVariant, handler, cachedCerts)
 	if err != nil {
 		flag.Usage()
 		log.With(zap.Error(err)).Fatalf("Failed to create validator")
@@ -68,9 +82,10 @@ func main() {
 
 	creds := atlscredentials.New(nil, []atls.Validator{validator})
 
-	ctx, cancel := context.WithTimeout(context.Background(), vpcIPTimeout)
+	vpcCtx, cancel := context.WithTimeout(context.Background(), vpcIPTimeout)
 	defer cancel()
-	vpcIP, err := getVPCIP(ctx, *provider)
+
+	vpcIP, err := getVPCIP(vpcCtx, *provider)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to get IP in VPC")
 	}
@@ -91,6 +106,7 @@ func main() {
 		kubernetesca.New(log.Named("certificateAuthority"), handler),
 		kubeadm,
 		keyServiceClient,
+		kubeClient,
 		log.Named("server"),
 	)
 	if err != nil {

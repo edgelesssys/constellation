@@ -65,18 +65,27 @@ type Certificate x509.Certificate
 
 // MarshalJSON marshals the certificate to PEM.
 func (c Certificate) MarshalJSON() ([]byte, error) {
+	if len(c.Raw) == 0 {
+		return json.Marshal(new(string))
+	}
 	pem := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: c.Raw})
 	return json.Marshal(string(pem))
 }
 
 // MarshalYAML marshals the certificate to PEM.
 func (c Certificate) MarshalYAML() (any, error) {
+	if len(c.Raw) == 0 {
+		return "", nil
+	}
 	pem := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: c.Raw})
 	return string(pem), nil
 }
 
 // UnmarshalJSON unmarshals the certificate from PEM.
 func (c *Certificate) UnmarshalJSON(data []byte) error {
+	if len(data) == 0 {
+		return nil
+	}
 	return c.unmarshal(func(val any) error {
 		return json.Unmarshal(data, val)
 	})
@@ -91,6 +100,9 @@ func (c *Certificate) unmarshal(unmarshalFunc func(any) error) error {
 	var pemData string
 	if err := unmarshalFunc(&pemData); err != nil {
 		return err
+	}
+	if pemData == "" {
+		return nil
 	}
 	block, _ := pem.Decode([]byte(pemData))
 	cert, err := x509.ParseCertificate(block.Bytes)

@@ -8,6 +8,7 @@ package watcher
 
 import (
 	"context"
+	"crypto/x509"
 	"encoding/asn1"
 	"fmt"
 	"path/filepath"
@@ -28,21 +29,25 @@ type Updatable struct {
 	mux         sync.Mutex
 	fileHandler file.Handler
 	variant     variant.Variant
+	cachedCerts cachedCerts
 	atls.Validator
 }
 
-// NewValidator initializes a new updatable validator.
-func NewValidator(log *logger.Logger, variant variant.Variant, fileHandler file.Handler) (*Updatable, error) {
+// NewValidator initializes a new updatable validator and performs an initial update (aka. initialization).
+func NewValidator(log *logger.Logger, variant variant.Variant, fileHandler file.Handler, cachedCerts cachedCerts) (*Updatable, error) {
 	u := &Updatable{
 		log:         log,
 		fileHandler: fileHandler,
 		variant:     variant,
+		cachedCerts: cachedCerts,
 	}
+	err := u.Update()
 
-	if err := u.Update(); err != nil {
-		return nil, err
-	}
-	return u, nil
+	return u, err
+}
+
+type cachedCerts interface {
+	SevSnpCerts() (ask *x509.Certificate, ark *x509.Certificate)
 }
 
 // Validate calls the validators Validate method, and prevents any updates during the call.
@@ -76,11 +81,44 @@ func (u *Updatable) Update() error {
 	}
 	u.log.Debugf("New expected measurements: %+v", cfg.GetMeasurements())
 
-	validator, err := choose.Validator(cfg, u.log)
+	cfgWithCerts, err := u.configWithCerts(cfg)
 	if err != nil {
-		return fmt.Errorf("updating validator: %w", err)
+		return fmt.Errorf("adding cached certificates: %w", err)
+	}
+
+	validator, err := choose.Validator(cfgWithCerts, u.log)
+	if err != nil {
+		return fmt.Errorf("choosing validator: %w", err)
 	}
 	u.Validator = validator
 
 	return nil
+}
+
+// addCachedCerts adds the certificates cached by the validator to the attestation config, if applicable.
+func (u *Updatable) configWithCerts(cfg config.AttestationCfg) (config.AttestationCfg, error) {
+	switch c := cfg.(type) {
+	case *config.AzureSEVSNP:
+		ask, err := u.getCachedAskCert()
+		if err != nil {
+			return nil, fmt.Errorf("getting cached ASK certificate: %w", err)
+		}
+		c.AMDSigningKey = config.Certificate(ask)
+		return c, nil
+	}
+	// TODO(derpsteb): Add AWS SEV-SNP
+
+	return cfg, nil
+}
+
+// getCachedAskCert returns the cached SEV-SNP ASK certificate.
+func (u *Updatable) getCachedAskCert() (x509.Certificate, error) {
+	if u.cachedCerts == nil {
+		return x509.Certificate{}, fmt.Errorf("no cached certs available")
+	}
+	ask, _ := u.cachedCerts.SevSnpCerts()
+	if ask == nil {
+		return x509.Certificate{}, fmt.Errorf("no ASK available")
+	}
+	return *ask, nil
 }
