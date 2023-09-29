@@ -637,16 +637,10 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.head_ref }}
 
-      - name: Setup Go environment
-        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
-        with:
-          go-version: "1.21.1"
-          cache: true
-
       - name: Create CLI compatibility information artifact
         shell: bash
         run: |
-          go run ./hack/cli-k8s-compatibility/main.go \
+          bazel run //hack/cli-k8s-compatibility -- \
             --ref=${{  needs.build-settings.outputs.ref }} \
             --stream=${{  needs.build-settings.outputs.stream }} \
             --version=${{  needs.build-settings.outputs.imageVersion }} \
