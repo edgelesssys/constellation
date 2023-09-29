@@ -163,7 +163,7 @@ require (
 	github.com/google/go-attestation v0.5.0 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/go-containerregistry v0.15.2 // indirect
-	github.com/google/go-sev-guest v0.8.0 // indirect
+	github.com/google/go-sev-guest v0.9.1 // indirect
 	github.com/google/go-tpm v0.9.0 // indirect
 	github.com/google/go-tpm-tools v0.4.0 // indirect
 	github.com/google/go-tspi v0.3.0 // indirect
