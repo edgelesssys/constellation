@@ -65,9 +65,9 @@ func TestLoadReleases(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 	config := &config.Config{Provider: config.ProviderConfig{GCP: &config.GCPConfig{}}}
-	chartLoader := newLoader(config, state.NewState().
+	chartLoader := newLoader(config, state.New().
 		SetInfrastructure(state.Infrastructure{UID: "testuid"}).
-		SetClusterValues(state.ClusterValues{MeasurementSalt: "measurementSalt"}),
+		SetClusterValues(state.ClusterValues{MeasurementSalt: []byte{0x41}}),
 		semver.NewFromInt(2, 10, 0, ""),
 	)
 	helmReleases, err := chartLoader.loadReleases(
@@ -87,7 +87,7 @@ func TestLoadAWSLoadBalancerValues(t *testing.T) {
 	sut := chartLoader{
 		config:      &config.Config{Name: "testCluster"},
 		clusterName: "testCluster",
-		stateFile:   state.NewState().SetInfrastructure(state.Infrastructure{UID: "testuid"}),
+		stateFile:   state.New().SetInfrastructure(state.Infrastructure{UID: "testuid"}),
 	}
 	val := sut.loadAWSLBControllerValues()
 	assert.Equal(t, "testCluster-testuid", val["clusterName"])

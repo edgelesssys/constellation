@@ -239,7 +239,7 @@ func TestInitialize(t *testing.T) {
 				tc.configMutator(config)
 			}
 			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, config, file.OptNone))
-			stateFile := state.NewState()
+			stateFile := state.New()
 			require.NoError(stateFile.WriteToFile(fileHandler, constants.StateFilename))
 			if tc.idFile != nil {
 				tc.idFile.CloudProvider = tc.provider
@@ -415,8 +415,12 @@ func TestWriteOutput(t *testing.T) {
 	}
 
 	expectedStateFile := &state.State{
-		Version:        state.Version1,
-		ClusterValues:  state.ClusterValues{ClusterID: clusterID, OwnerID: ownerID},
+		Version: state.Version1,
+		ClusterValues: state.ClusterValues{
+			ClusterID:       clusterID,
+			OwnerID:         ownerID,
+			MeasurementSalt: []byte{},
+		},
 		Infrastructure: state.Infrastructure{APIServerCertSANs: []string{}},
 	}
 
@@ -428,7 +432,7 @@ func TestWriteOutput(t *testing.T) {
 		UID: "test-uid",
 		IP:  clusterEndpoint,
 	}
-	stateFile := state.NewState()
+	stateFile := state.New()
 
 	i := newInitCmd(fileHandler, &nopSpinner{}, &stubMerger{}, logger.NewTest(t))
 	err = i.writeOutput(idFile, stateFile, resp.GetInitSuccess(), false, &out)
@@ -793,23 +797,18 @@ func (c stubInitClient) Recv() (*initproto.InitResponse, error) {
 	return res, err
 }
 
-type stubShowInfrastructure struct{}
+type stubShowInfrastructure struct {
+	showInfraErr error
+}
 
-func (s *stubShowInfrastructure) ShowInfrastructure(_ context.Context, csp cloudprovider.Provider) (state.Infrastructure, error) {
-	res := state.Infrastructure{}
-	switch csp {
-	case cloudprovider.Azure:
-		res.Azure = &state.Azure{}
-	case cloudprovider.GCP:
-		res.GCP = &state.GCP{}
-	}
-	return res, nil
+func (s *stubShowInfrastructure) ShowInfrastructure(context.Context, cloudprovider.Provider) (state.Infrastructure, error) {
+	return state.Infrastructure{}, s.showInfraErr
 }
 
 type stubAttestationApplier struct {
 	applyErr error
 }
 
-func (a *stubAttestationApplier) ApplyJoinConfig(_ context.Context, _ config.AttestationCfg, _ []byte) error {
+func (a *stubAttestationApplier) ApplyJoinConfig(context.Context, config.AttestationCfg, []byte) error {
 	return a.applyErr
 }

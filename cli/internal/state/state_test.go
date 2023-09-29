@@ -9,6 +9,7 @@ package state
 import (
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
@@ -43,7 +44,7 @@ var defaultState = &State{
 	ClusterValues: ClusterValues{
 		ClusterID:       "test-cluster-id",
 		OwnerID:         "test-owner-id",
-		MeasurementSalt: "test-measurement-salt",
+		MeasurementSalt: []byte{0x41},
 	},
 }
 
@@ -323,6 +324,62 @@ func TestMerge(t *testing.T) {
 				assert.NoError(err)
 				assert.Equal(tc.expected, tc.state)
 			}
+		})
+	}
+}
+
+func TestNewFromIDFile(t *testing.T) {
+	testCases := map[string]struct {
+		idFile   clusterid.File
+		expected *State
+	}{
+		"success": {
+			idFile: clusterid.File{
+				ClusterID: "test-cluster-id",
+				UID:       "test-uid",
+			},
+			expected: &State{
+				Version: Version1,
+				Infrastructure: Infrastructure{
+					UID: "test-uid",
+				},
+				ClusterValues: ClusterValues{
+					ClusterID: "test-cluster-id",
+				},
+			},
+		},
+		"empty id file": {
+			idFile:   clusterid.File{},
+			expected: &State{Version: Version1},
+		},
+		"nested pointer": {
+			idFile: clusterid.File{
+				ClusterID:      "test-cluster-id",
+				UID:            "test-uid",
+				AttestationURL: "test-maaUrl",
+			},
+			expected: &State{
+				Version: Version1,
+				Infrastructure: Infrastructure{
+					UID: "test-uid",
+					Azure: &Azure{
+						AttestationURL: "test-maaUrl",
+					},
+				},
+				ClusterValues: ClusterValues{
+					ClusterID: "test-cluster-id",
+				},
+			},
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			state := NewFromIDFile(tc.idFile)
+
+			assert.Equal(tc.expected, state)
 		})
 	}
 }

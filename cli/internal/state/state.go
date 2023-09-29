@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	"dario.cat/mergo"
+	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 )
@@ -36,11 +37,52 @@ type State struct {
 	ClusterValues  ClusterValues  `yaml:"clusterValues"`
 }
 
-// NewState creates a new cluster state (file).
-func NewState() *State {
+// New creates a new cluster state (file).
+func New() *State {
 	return &State{
 		Version: Version1,
 	}
+}
+
+// NewFromIDFile creates a new cluster state file from the given ID file.
+func NewFromIDFile(idFile clusterid.File) *State {
+	s := New()
+
+	if idFile.ClusterID != "" {
+		s.ClusterValues.ClusterID = idFile.ClusterID
+	}
+
+	if idFile.OwnerID != "" {
+		s.ClusterValues.OwnerID = idFile.OwnerID
+	}
+
+	if idFile.UID != "" {
+		s.Infrastructure.UID = idFile.UID
+	}
+
+	if idFile.IP != "" {
+		s.Infrastructure.ClusterEndpoint = idFile.IP
+	}
+
+	if len(idFile.APIServerCertSANs) > 0 {
+		s.Infrastructure.APIServerCertSANs = idFile.APIServerCertSANs
+	}
+
+	if idFile.InitSecret != nil {
+		s.Infrastructure.InitSecret = string(idFile.InitSecret)
+	}
+
+	if idFile.AttestationURL != "" {
+		s.Infrastructure.Azure = &Azure{
+			AttestationURL: idFile.AttestationURL,
+		}
+	}
+
+	if len(idFile.MeasurementSalt) > 0 {
+		s.ClusterValues.MeasurementSalt = idFile.MeasurementSalt
+	}
+
+	return s
 }
 
 // SetInfrastructure sets the infrastructure state.
@@ -72,7 +114,7 @@ func (s *State) Merge(other *State) (*State, error) {
 	return s, nil
 }
 
-// GetClusterName returns the name of the cluster.
+// ClusterName returns the name of the cluster.
 func (s *State) ClusterName(cfg *config.Config) string {
 	return cfg.Name + "-" + s.Infrastructure.UID
 }
@@ -84,7 +126,7 @@ type ClusterValues struct {
 	// OwnerID is the unique identifier of the owner of the cluster.
 	OwnerID string `yaml:"ownerID"`
 	// MeasurementSalt is the salt generated during cluster init.
-	MeasurementSalt string `yaml:"measurementSalt"`
+	MeasurementSalt []byte `yaml:"measurementSalt"`
 }
 
 // Infrastructure describe the state related to the cloud resources of the cluster.
