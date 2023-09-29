@@ -2,39 +2,23 @@ name: Determine pseudo version
 description: "Determine go-like pseudo version to use as container image tag."
 
 outputs:
-  semanticVersion:
-    description: "Semantic version based on the current HEAD"
-    value: ${{ steps.pseudo-version.outputs.semanticVersion }}
   version:
     description: "Version based on branch name"
     value: ${{ steps.pseudo-version.outputs.version }}
-  timestamp:
-    description: "Commit timestamp based on the current HEAD"
-    value: ${{ steps.pseudo-version.outputs.timestamp }}
   branchName:
     description: "Branch name"
     value: ${{ steps.pseudo-version.outputs.branchName }}
 
-# Linux runner only (homedir trick does not work on macOS, required for private runner)
 runs:
   using: "composite"
   steps:
     - name: get version
       id: pseudo-version
       shell: bash
-      working-directory: hack/pseudo-version
+      env:
+        WORKSPACE_STATUS_TOOL: ${{ github.workspace }}/tools/workspace_status.sh
       run: |
-        homedir="$(getent passwd $(id -u) | cut -d ":" -f 6)"
-        export GOCACHE=${homedir}/.cache/go-build
-        export GOPATH=${homedir}/go
-        export GOMODCACHE=${homedir}/.cache/go-mod
-
-        version=$(go run .)
-        semanticVersion=$(go run . -semantic-version)
-        timestamp=$(go run . -print-timestamp)
-        branchName=$(go run . -print-branch)
-
-        echo "version=${version}" | tee -a "$GITHUB_OUTPUT"
-        echo "semanticVersion=${semanticVersion}" | tee -a "$GITHUB_OUTPUT"
-        echo "timestamp=${timestamp}" | tee -a "$GITHUB_OUTPUT"
+        version=$(${WORKSPACE_STATUS_TOOL} | grep STABLE_STAMP_VERSION | cut -d ' ' -f2)
+        branchName=$(git branch --show-current | tr '/' '-')
+        echo "version=v${version}" | tee -a "$GITHUB_OUTPUT"
         echo "branchName=${branchName}" | tee -a "$GITHUB_OUTPUT"
