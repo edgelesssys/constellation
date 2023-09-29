@@ -76,7 +76,7 @@ func PemToX509Cert(raw []byte) (*x509.Certificate, error) {
 	return cert, nil
 }
 
-// X509CertToPEM takes an x.509 certificate and returns it as a PEM-encoded certificate.
+// X509CertToPem takes an x.509 certificate and returns it as a PEM-encoded certificate.
 func X509CertToPem(cert *x509.Certificate) ([]byte, error) {
 	outWriter := &bytes.Buffer{}
 	err := pem.Encode(outWriter, &pem.Block{Type: "CERTIFICATE", Bytes: cert.Raw})
