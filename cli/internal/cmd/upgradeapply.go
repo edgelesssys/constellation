@@ -239,6 +239,13 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 		return fmt.Errorf("writing state file: %w", err)
 	}
 
+	// TODO(msanft): Remove this after v2.12.0 is released, as we do not support
+	// the id-file starting from v2.13.0.
+	err = u.fileHandler.RenameFile(constants.ClusterIDsFilename, constants.ClusterIDsFilename+".old")
+	if !errors.Is(err, fs.ErrNotExist) && err != nil {
+		return fmt.Errorf("removing cluster ID file: %w", err)
+	}
+
 	// extend the clusterConfig cert SANs with any of the supported endpoints:
 	// - (legacy) public IP
 	// - fallback endpoint
