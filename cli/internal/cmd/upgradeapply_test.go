@@ -40,13 +40,13 @@ func TestUpgradeApply(t *testing.T) {
 			UID:               "uid",
 		}).
 		SetClusterValues(state.ClusterValues{MeasurementSalt: []byte{0x41}})
-	defaultIdFile := clusterid.File{
+	defaultIDFile := clusterid.File{
 		MeasurementSalt: []byte{0x41},
 		UID:             "uid",
 	}
-	fsWithIdFile := func() file.Handler {
+	fsWithIDFile := func() file.Handler {
 		fh := file.NewHandler(afero.NewMemMapFs())
-		require.NoError(t, fh.WriteJSON(constants.ClusterIDsFilename, defaultIdFile))
+		require.NoError(t, fh.WriteJSON(constants.ClusterIDsFilename, defaultIDFile))
 		return fh
 	}
 	fsWithStateFile := func() file.Handler {
@@ -87,7 +87,7 @@ func TestUpgradeApply(t *testing.T) {
 			terraformUpgrader:    &stubTerraformUpgrader{},
 			flags:                upgradeApplyFlags{yes: true},
 			infrastructureShower: &stubShowInfrastructure{},
-			fh:                   fsWithIdFile,
+			fh:                   fsWithIDFile,
 			fhAssertions: func(require *require.Assertions, assert *assert.Assertions, fh file.Handler) {
 				gotState, err := state.ReadFromFile(fh, constants.StateFilename)
 				require.NoError(err)
