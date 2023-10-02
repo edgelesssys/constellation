@@ -213,6 +213,8 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 	// the Terraform migrations.
 	var postMigrationInfraState state.Infrastructure
 	if flags.skipPhases.contains(skipInfrastructurePhase) {
+		// TODO(msanft): Once v2.12.0 is released, this should be removed and the state should be read
+		// from the state file instead, as it will be the only source of truth for the cluster's infrastructure.
 		postMigrationInfraState, err = u.clusterShower.ShowInfrastructure(cmd.Context(), conf.GetProvider())
 		if err != nil {
 			return fmt.Errorf("getting Terraform state: %w", err)
