@@ -230,12 +230,6 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 		return fmt.Errorf("writing state file: %w", err)
 	}
 
-	cmd.Printf("Infrastructure migrations applied successfully and output written to: %s\n"+
-		"A backup of the pre-upgrade state has been written to: %s\n",
-		flags.pf.PrefixPrintablePath(constants.StateFilename),
-		flags.pf.PrefixPrintablePath(filepath.Join(upgradeDir, constants.TerraformUpgradeBackupDir)),
-	)
-
 	// extend the clusterConfig cert SANs with any of the supported endpoints:
 	// - (legacy) public IP
 	// - fallback endpoint
@@ -350,7 +344,11 @@ func (u *upgradeApplyCmd) migrateTerraform(
 			return state.Infrastructure{}, fmt.Errorf("applying terraform migrations: %w", err)
 		}
 
-		cmd.Printf("Terraform migrations applied successfully.")
+		cmd.Printf("Infrastructure migrations applied successfully and output written to: %s\n"+
+			"A backup of the pre-upgrade state has been written to: %s\n",
+			flags.pf.PrefixPrintablePath(constants.StateFilename),
+			flags.pf.PrefixPrintablePath(filepath.Join(upgradeDir, constants.TerraformUpgradeBackupDir)),
+		)
 		return infraState, nil
 	}
 
