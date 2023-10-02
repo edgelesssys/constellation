@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"path/filepath"
 	"strings"
 	"time"
@@ -176,17 +177,23 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 		return err
 	}
 
+	stateFile, err := state.ReadFromFile(u.fileHandler, constants.StateFilename)
 	// TODO(msanft): Remove reading from idFile once v2.12.0 is released and read from state file directly.
 	// For now, this is only here to ensure upgradability from an id-file to a state file version.
-	var idFile clusterid.File
-	if err := u.fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil {
-		return fmt.Errorf("reading cluster ID file: %w", err)
-	}
-
-	// Convert id-file to state file
-	stateFile := state.NewFromIDFile(idFile)
-	if stateFile.Infrastructure.Azure != nil {
-		conf.UpdateMAAURL(stateFile.Infrastructure.Azure.AttestationURL)
+	if errors.Is(err, fs.ErrNotExist) {
+		u.log.Debugf("%s does not exist in current directory, falling back to reading from %s",
+			constants.StateFilename, constants.ClusterIDsFilename)
+		var idFile clusterid.File
+		if err := u.fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil {
+			return fmt.Errorf("reading cluster ID file: %w", err)
+		}
+		// Convert id-file to state file
+		stateFile = state.NewFromIDFile(idFile)
+		if stateFile.Infrastructure.Azure != nil {
+			conf.UpdateMAAURL(stateFile.Infrastructure.Azure.AttestationURL)
+		}
+	} else if err != nil {
+		return fmt.Errorf("reading state file: %w", err)
 	}
 
 	// Apply migrations necessary for the upgrade
