@@ -206,10 +206,6 @@ func (i *initCmd) initialize(
 	}
 	idFile.MeasurementSalt = measurementSalt
 
-	stateFile.SetClusterValues(state.ClusterValues{
-		MeasurementSalt: measurementSalt,
-	})
-
 	clusterName := clusterid.GetClusterName(conf, idFile)
 	i.log.Debugf("Setting cluster name to %s", clusterName)
 
@@ -250,7 +246,7 @@ func (i *initCmd) initialize(
 	idFile.CloudProvider = provider
 
 	bufferedOutput := &bytes.Buffer{}
-	if err := i.writeOutput(idFile, stateFile, resp, flags.mergeConfigs, bufferedOutput); err != nil {
+	if err := i.writeOutput(idFile, stateFile, resp, flags.mergeConfigs, bufferedOutput, measurementSalt); err != nil {
 		return err
 	}
 
@@ -450,8 +446,14 @@ func (d *initDoer) handleGRPCStateChanges(ctx context.Context, wg *sync.WaitGrou
 	})
 }
 
+// writeOutput writes the output of a cluster initialization to the
+// state- / id- / kubeconfig-file and saves it to disk.
 func (i *initCmd) writeOutput(
-	idFile clusterid.File, stateFile *state.State, initResp *initproto.InitSuccessResponse, mergeConfig bool, wr io.Writer,
+	idFile clusterid.File,
+	stateFile *state.State,
+	initResp *initproto.InitSuccessResponse,
+	mergeConfig bool, wr io.Writer,
+	measurementSalt []byte,
 ) error {
 	fmt.Fprint(wr, "Your Constellation cluster was successfully initialized.\n\n")
 
@@ -504,8 +506,11 @@ func (i *initCmd) writeOutput(
 	idFile.OwnerID = ownerID
 	idFile.ClusterID = clusterID
 
-	stateFile.ClusterValues.OwnerID = ownerID
-	stateFile.ClusterValues.ClusterID = clusterID
+	stateFile.SetClusterValues(state.ClusterValues{
+		MeasurementSalt: measurementSalt,
+		OwnerID:         ownerID,
+		ClusterID:       clusterID,
+	})
 
 	if err := stateFile.WriteToFile(i.fileHandler, constants.StateFilename); err != nil {
 		return fmt.Errorf("writing state file: %w", err)
