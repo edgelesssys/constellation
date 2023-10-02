@@ -1,5 +1,8 @@
 # Deploying s3proxy
 
+**Caution:** Using s3proxy outside Constellation is insecure as the connection between the key management service (KMS) and s3proxy is protected by Constellation's WireGuard VPN.
+The VPN is a feature of Constellation and will not be present by default in other environments.
+
 Disclaimer: the following steps will be automated next.
 - Within `constellation/build`: `bazel run //:devbuild`
 - Copy the container name displayed for the s3proxy image. Look for the line starting with `[@//bazel/release:s3proxy_push]`.

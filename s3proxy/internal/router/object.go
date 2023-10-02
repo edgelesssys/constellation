@@ -8,6 +8,7 @@ package router
 
 import (
 	"context"
+	"encoding/hex"
 	"io"
 	"net/http"
 	"net/url"
@@ -23,15 +24,14 @@ import (
 )
 
 const (
-	// testingKey is a temporary encryption key used for testing.
-	// TODO (derpsteb): This key needs to be fetched from Constellation's keyservice.
-	testingKey = "01234567890123456789012345678901"
-	// encryptionTag is the key used to tag objects that are encrypted with this proxy. Presence of the key implies the object needs to be decrypted.
-	encryptionTag = "constellation-encryption"
+	// dekTag is the name of the header that holds the encrypted data encryption key for the attached object. Presence of the key implies the object needs to be decrypted.
+	// Use lowercase only, as AWS automatically lowercases all metadata keys.
+	dekTag = "constellation-dek"
 )
 
 // object bundles data to implement http.Handler methods that use data from incoming requests.
 type object struct {
+	kek                       [32]byte
 	client                    s3Client
 	key                       string
 	bucket                    string
@@ -113,10 +113,16 @@ func (o object) get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	plaintext := body
-	decrypt, ok := output.Metadata[encryptionTag]
+	rawEncryptedDEK, ok := output.Metadata[dekTag]
+	if ok {
+		encryptedDEK, err := hex.DecodeString(rawEncryptedDEK)
+		if err != nil {
+			o.log.Errorf("GetObject decoding DEK", "error", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-	if ok && decrypt == "true" {
-		plaintext, err = crypto.Decrypt(body, []byte(testingKey))
+		plaintext, err = crypto.Decrypt(body, encryptedDEK, o.kek)
 		if err != nil {
 			o.log.With(zap.Error(err)).Errorf("GetObject decrypting response")
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -132,18 +138,13 @@ func (o object) get(w http.ResponseWriter, r *http.Request) {
 
 // put is a http.HandlerFunc that implements the PUT method for objects.
 func (o object) put(w http.ResponseWriter, r *http.Request) {
-	o.log.Debugf("putObject", "key", o.key, "host", o.bucket)
-
-	ciphertext, err := crypto.Encrypt(o.data, []byte(testingKey))
+	ciphertext, encryptedDEK, err := crypto.Encrypt(o.data, o.kek)
 	if err != nil {
 		o.log.With(zap.Error(err)).Errorf("PutObject")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// We need to tag objects that are encrypted with this proxy,
-	// because there might be objects in a bucket that are not encrypted.
-	// GetObject needs to be able to recognize these objects and skip decryption.
-	o.metadata[encryptionTag] = "true"
+	o.metadata[dekTag] = hex.EncodeToString(encryptedDEK)
 
 	output, err := o.client.PutObject(r.Context(), o.bucket, o.key, o.tags, o.contentType, o.objectLockLegalHoldStatus, o.objectLockMode, o.sseCustomerAlgorithm, o.sseCustomerKey, o.sseCustomerKeyMD5, o.objectLockRetainUntilDate, o.metadata, ciphertext)
 	if err != nil {
