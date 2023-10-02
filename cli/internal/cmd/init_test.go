@@ -406,6 +406,7 @@ func TestWriteOutput(t *testing.T) {
 
 	ownerID := hex.EncodeToString(resp.GetInitSuccess().GetOwnerId())
 	clusterID := hex.EncodeToString(resp.GetInitSuccess().GetClusterId())
+	measurementSalt := []byte{0x41}
 
 	expectedIDFile := clusterid.File{
 		ClusterID: clusterID,
@@ -419,7 +420,7 @@ func TestWriteOutput(t *testing.T) {
 		ClusterValues: state.ClusterValues{
 			ClusterID:       clusterID,
 			OwnerID:         ownerID,
-			MeasurementSalt: []byte{},
+			MeasurementSalt: []byte{0x41},
 		},
 		Infrastructure: state.Infrastructure{APIServerCertSANs: []string{}},
 	}
@@ -435,7 +436,7 @@ func TestWriteOutput(t *testing.T) {
 	stateFile := state.New()
 
 	i := newInitCmd(fileHandler, &nopSpinner{}, &stubMerger{}, logger.NewTest(t))
-	err = i.writeOutput(idFile, stateFile, resp.GetInitSuccess(), false, &out)
+	err = i.writeOutput(idFile, stateFile, resp.GetInitSuccess(), false, &out, measurementSalt)
 	require.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
@@ -463,7 +464,7 @@ func TestWriteOutput(t *testing.T) {
 
 	// test custom workspace
 	i.pf = pathprefix.New("/some/path")
-	err = i.writeOutput(idFile, stateFile, resp.GetInitSuccess(), true, &out)
+	err = i.writeOutput(idFile, stateFile, resp.GetInitSuccess(), true, &out, measurementSalt)
 	require.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
@@ -474,7 +475,7 @@ func TestWriteOutput(t *testing.T) {
 	i.pf = pathprefix.PathPrefixer{}
 
 	// test config merging
-	err = i.writeOutput(idFile, stateFile, resp.GetInitSuccess(), true, &out)
+	err = i.writeOutput(idFile, stateFile, resp.GetInitSuccess(), true, &out, measurementSalt)
 	require.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
@@ -486,7 +487,7 @@ func TestWriteOutput(t *testing.T) {
 
 	// test config merging with env vars set
 	i.merger = &stubMerger{envVar: "/some/path/to/kubeconfig"}
-	err = i.writeOutput(idFile, stateFile, resp.GetInitSuccess(), true, &out)
+	err = i.writeOutput(idFile, stateFile, resp.GetInitSuccess(), true, &out, measurementSalt)
 	require.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
