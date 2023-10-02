@@ -215,7 +215,7 @@ func (i *chartLoader) loadRelease(info chartInfo, helmWaitMode WaitMode) (Releas
 
 func (i *chartLoader) loadAWSLBControllerValues() map[string]any {
 	return map[string]any{
-		"clusterName":  i.stateFile.ClusterName(i.config),
+		"clusterName":  i.stateFile.Infrastructure.Name,
 		"tolerations":  controlPlaneTolerations,
 		"nodeSelector": controlPlaneNodeSelector,
 	}

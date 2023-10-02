@@ -188,7 +188,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 			return fmt.Errorf("reading cluster ID file: %w", err)
 		}
 		// Convert id-file to state file
-		stateFile = state.NewFromIDFile(idFile)
+		stateFile = state.NewFromIDFile(idFile, conf)
 		if stateFile.Infrastructure.Azure != nil {
 			conf.UpdateMAAURL(stateFile.Infrastructure.Azure.AttestationURL)
 		}

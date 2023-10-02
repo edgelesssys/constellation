@@ -95,7 +95,7 @@ func TestLoadAWSLoadBalancerValues(t *testing.T) {
 	sut := chartLoader{
 		config:      &config.Config{Name: "testCluster"},
 		clusterName: "testCluster",
-		stateFile:   state.New().SetInfrastructure(state.Infrastructure{UID: "testuid"}),
+		stateFile:   state.New().SetInfrastructure(state.Infrastructure{UID: "testuid", Name: "testCluster-testuid"}),
 	}
 	val := sut.loadAWSLBControllerValues()
 	assert.Equal(t, "testCluster-testuid", val["clusterName"])

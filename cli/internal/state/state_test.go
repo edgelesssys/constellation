@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
@@ -331,6 +332,7 @@ func TestMerge(t *testing.T) {
 func TestNewFromIDFile(t *testing.T) {
 	testCases := map[string]struct {
 		idFile   clusterid.File
+		cfg      *config.Config
 		expected *State
 	}{
 		"success": {
@@ -338,10 +340,12 @@ func TestNewFromIDFile(t *testing.T) {
 				ClusterID: "test-cluster-id",
 				UID:       "test-uid",
 			},
+			cfg: config.Default(),
 			expected: &State{
 				Version: Version1,
 				Infrastructure: Infrastructure{
-					UID: "test-uid",
+					UID:  "test-uid",
+					Name: "constell-test-uid",
 				},
 				ClusterValues: ClusterValues{
 					ClusterID: "test-cluster-id",
@@ -350,7 +354,8 @@ func TestNewFromIDFile(t *testing.T) {
 		},
 		"empty id file": {
 			idFile:   clusterid.File{},
-			expected: &State{Version: Version1},
+			cfg:      config.Default(),
+			expected: &State{Version: Version1, Infrastructure: Infrastructure{Name: "constell-"}},
 		},
 		"nested pointer": {
 			idFile: clusterid.File{
@@ -358,6 +363,7 @@ func TestNewFromIDFile(t *testing.T) {
 				UID:            "test-uid",
 				AttestationURL: "test-maaUrl",
 			},
+			cfg: config.Default(),
 			expected: &State{
 				Version: Version1,
 				Infrastructure: Infrastructure{
@@ -365,6 +371,7 @@ func TestNewFromIDFile(t *testing.T) {
 					Azure: &Azure{
 						AttestationURL: "test-maaUrl",
 					},
+					Name: "constell-test-uid",
 				},
 				ClusterValues: ClusterValues{
 					ClusterID: "test-cluster-id",
@@ -377,7 +384,7 @@ func TestNewFromIDFile(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			state := NewFromIDFile(tc.idFile)
+			state := NewFromIDFile(tc.idFile, tc.cfg)
 
 			assert.Equal(tc.expected, state)
 		})

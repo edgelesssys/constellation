@@ -38,6 +38,7 @@ func TestUpgradeApply(t *testing.T) {
 		SetInfrastructure(state.Infrastructure{
 			APIServerCertSANs: []string{},
 			UID:               "uid",
+			Name:              "kubernetes-uid", // default test cfg uses "kubernetes" prefix
 		}).
 		SetClusterValues(state.ClusterValues{MeasurementSalt: []byte{0x41}})
 	defaultIDFile := clusterid.File{

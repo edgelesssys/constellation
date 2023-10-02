@@ -14,3 +14,7 @@ output "initSecret" {
   value     = random_password.initSecret.result
   sensitive = true
 }
+
+output "name" {
+  value = local.name
+}
