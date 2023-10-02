@@ -11,7 +11,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -154,12 +153,6 @@ func TestCreate(t *testing.T) {
 					assert.False(tc.creator.createCalled)
 				} else {
 					assert.True(tc.creator.createCalled)
-					var gotIDFile clusterid.File
-					require.NoError(fileHandler.ReadJSON(constants.ClusterIDsFilename, &gotIDFile))
-					assert.Equal(gotIDFile, clusterid.File{
-						IP:            infraState.ClusterEndpoint,
-						CloudProvider: tc.provider,
-					})
 
 					var gotState state.State
 					expectedState := state.Infrastructure{
