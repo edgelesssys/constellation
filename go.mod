@@ -44,6 +44,7 @@ require (
 	cloud.google.com/go/logging v1.7.0
 	cloud.google.com/go/secretmanager v1.11.1
 	cloud.google.com/go/storage v1.31.0
+	dario.cat/mergo v1.0.0
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.6.1
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.3.0
@@ -131,7 +132,6 @@ require (
 	k8s.io/mount-utils v0.27.3
 	k8s.io/utils v0.0.0-20230505201702-9f6742963106
 	sigs.k8s.io/yaml v1.3.0
-	dario.cat/mergo v1.0.0
 )
 
 require (
