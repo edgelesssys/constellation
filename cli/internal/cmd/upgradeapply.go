@@ -323,46 +323,45 @@ func (u *upgradeApplyCmd) migrateTerraform(
 	if err != nil {
 		return state.Infrastructure{}, fmt.Errorf("planning terraform migrations: %w", err)
 	}
-
-	if hasDiff {
-		// If there are any Terraform migrations to apply, ask for confirmation
-		fmt.Fprintln(cmd.OutOrStdout(), "The upgrade requires a migration of Constellation cloud resources by applying an updated Terraform template. Please manually review the suggested changes below.")
-		if !flags.yes {
-			ok, err := askToConfirm(cmd, "Do you want to apply the Terraform migrations?")
-			if err != nil {
-				return state.Infrastructure{}, fmt.Errorf("asking for confirmation: %w", err)
-			}
-			if !ok {
-				cmd.Println("Aborting upgrade.")
-				// User doesn't expect to see any changes in his workspace after aborting an "upgrade apply",
-				// therefore, roll back to the backed up state.
-				if err := u.clusterUpgrader.RestoreClusterWorkspace(); err != nil {
-					return state.Infrastructure{}, fmt.Errorf(
-						"restoring Terraform workspace: %w, restore the Terraform workspace manually from %s ",
-						err,
-						filepath.Join(upgradeDir, constants.TerraformUpgradeBackupDir),
-					)
-				}
-				return state.Infrastructure{}, fmt.Errorf("cluster upgrade aborted by user")
-			}
-		}
-		u.log.Debugf("Applying Terraform migrations")
-
-		infraState, err := u.clusterUpgrader.ApplyClusterUpgrade(cmd.Context(), conf.GetProvider())
-		if err != nil {
-			return state.Infrastructure{}, fmt.Errorf("applying terraform migrations: %w", err)
-		}
-
-		cmd.Printf("Infrastructure migrations applied successfully and output written to: %s\n"+
-			"A backup of the pre-upgrade state has been written to: %s\n",
-			flags.pf.PrefixPrintablePath(constants.StateFilename),
-			flags.pf.PrefixPrintablePath(filepath.Join(upgradeDir, constants.TerraformUpgradeBackupDir)),
-		)
-		return infraState, nil
+	if !hasDiff {
+		u.log.Debugf("No Terraform diff detected")
+		return state.Infrastructure{}, nil
 	}
 
-	u.log.Debugf("No Terraform diff detected")
-	return state.Infrastructure{}, nil
+	// If there are any Terraform migrations to apply, ask for confirmation
+	fmt.Fprintln(cmd.OutOrStdout(), "The upgrade requires a migration of Constellation cloud resources by applying an updated Terraform template. Please manually review the suggested changes below.")
+	if !flags.yes {
+		ok, err := askToConfirm(cmd, "Do you want to apply the Terraform migrations?")
+		if err != nil {
+			return state.Infrastructure{}, fmt.Errorf("asking for confirmation: %w", err)
+		}
+		if !ok {
+			cmd.Println("Aborting upgrade.")
+			// User doesn't expect to see any changes in his workspace after aborting an "upgrade apply",
+			// therefore, roll back to the backed up state.
+			if err := u.clusterUpgrader.RestoreClusterWorkspace(); err != nil {
+				return state.Infrastructure{}, fmt.Errorf(
+					"restoring Terraform workspace: %w, restore the Terraform workspace manually from %s ",
+					err,
+					filepath.Join(upgradeDir, constants.TerraformUpgradeBackupDir),
+				)
+			}
+			return state.Infrastructure{}, fmt.Errorf("cluster upgrade aborted by user")
+		}
+	}
+	u.log.Debugf("Applying Terraform migrations")
+
+	infraState, err := u.clusterUpgrader.ApplyClusterUpgrade(cmd.Context(), conf.GetProvider())
+	if err != nil {
+		return state.Infrastructure{}, fmt.Errorf("applying terraform migrations: %w", err)
+	}
+
+	cmd.Printf("Infrastructure migrations applied successfully and output written to: %s\n"+
+		"A backup of the pre-upgrade state has been written to: %s\n",
+		flags.pf.PrefixPrintablePath(constants.StateFilename),
+		flags.pf.PrefixPrintablePath(filepath.Join(upgradeDir, constants.TerraformUpgradeBackupDir)),
+	)
+	return infraState, nil
 }
 
 // validK8sVersion checks if the Kubernetes patch version is supported and asks for confirmation if not.
