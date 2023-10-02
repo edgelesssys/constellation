@@ -346,3 +346,11 @@ func (m *mockApplier) PrepareApply(cfg *config.Config, stateFile *state.State,
 	args := m.Called(cfg, stateFile, helmOpts, str, masterSecret)
 	return args.Get(0).(helm.Applier), args.Bool(1), args.Error(2)
 }
+
+type stubShowInfrastructure struct {
+	showInfraErr error
+}
+
+func (s *stubShowInfrastructure) ShowInfrastructure(context.Context, cloudprovider.Provider) (state.Infrastructure, error) {
+	return state.Infrastructure{}, s.showInfraErr
+}

@@ -798,14 +798,6 @@ func (c stubInitClient) Recv() (*initproto.InitResponse, error) {
 	return res, err
 }
 
-type stubShowInfrastructure struct {
-	showInfraErr error
-}
-
-func (s *stubShowInfrastructure) ShowInfrastructure(context.Context, cloudprovider.Provider) (state.Infrastructure, error) {
-	return state.Infrastructure{}, s.showInfraErr
-}
-
 type stubAttestationApplier struct {
 	applyErr error
 }
