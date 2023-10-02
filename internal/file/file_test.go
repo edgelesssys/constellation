@@ -540,3 +540,58 @@ func TestCopyDir(t *testing.T) {
 		})
 	}
 }
+
+func TestRename(t *testing.T) {
+	setupHandler := func(existingFiles ...string) Handler {
+		fs := afero.NewMemMapFs()
+		handler := NewHandler(fs)
+		for _, file := range existingFiles {
+			err := handler.Write(file, []byte("some content"), OptMkdirAll)
+			require.NoError(t, err)
+		}
+		return handler
+	}
+
+	testCases := map[string]struct {
+		handler    Handler
+		renames    map[string]string
+		checkFiles []string
+		wantErr    bool
+	}{
+		"successful rename": {
+			handler:    setupHandler("someFile"),
+			renames:    map[string]string{"someFile": "someOtherFile"},
+			checkFiles: []string{"someOtherFile"},
+		},
+		"rename to existing file, overwrite": {
+			handler:    setupHandler("someFile", "someOtherFile"),
+			renames:    map[string]string{"someFile": "someOtherFile"},
+			checkFiles: []string{"someOtherFile"},
+		},
+		"file does not exist": {
+			handler: setupHandler(),
+			renames: map[string]string{"someFile": "someOtherFile"},
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			require := require.New(t)
+
+			for old, new := range tc.renames {
+				err := tc.handler.RenameFile(old, new)
+				if tc.wantErr {
+					require.Error(err)
+				} else {
+					require.NoError(err)
+				}
+			}
+
+			for _, file := range tc.checkFiles {
+				_, err := tc.handler.fs.Stat(file)
+				require.NoError(err)
+			}
+		})
+	}
+}
