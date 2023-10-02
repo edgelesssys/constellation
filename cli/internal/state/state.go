@@ -24,7 +24,7 @@ const (
 // ReadFromFile reads the state file at the given path and returns the state.
 func ReadFromFile(fileHandler file.Handler, path string) (*State, error) {
 	state := &State{}
-	if err := fileHandler.ReadYAML(path, &state); err != nil {
+	if err := fileHandler.ReadYAML(path, state); err != nil {
 		return nil, fmt.Errorf("reading state file: %w", err)
 	}
 	return state, nil
