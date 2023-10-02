@@ -131,9 +131,8 @@ require (
 	k8s.io/mount-utils v0.27.3
 	k8s.io/utils v0.0.0-20230505201702-9f6742963106
 	sigs.k8s.io/yaml v1.3.0
+	dario.cat/mergo v1.0.0
 )
-
-require dario.cat/mergo v1.0.0
 
 require (
 	cloud.google.com/go v0.110.2 // indirect
