@@ -36,7 +36,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
-	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
@@ -156,13 +155,6 @@ func (i *initCmd) initialize(
 		cmd.PrintErrln("WARNING: Attestation temporarily relies on AWS nitroTPM. See https://docs.edgeless.systems/constellation/workflows/config#choosing-a-vm-type for more information.")
 	}
 
-	// TODO(msanft): Remove IDFile as per AB#3425
-	i.log.Debugf("Checking cluster ID file")
-	var idFile clusterid.File
-	if err := i.fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil {
-		return fmt.Errorf("reading cluster ID file: %w", err)
-	}
-
 	stateFile, err := state.ReadFromFile(i.fileHandler, constants.StateFilename)
 	if err != nil {
 		return fmt.Errorf("reading state file: %w", err)
@@ -181,7 +173,10 @@ func (i *initCmd) initialize(
 	}
 	i.log.Debugf("Checked license")
 
-	conf.UpdateMAAURL(idFile.AttestationURL)
+	if stateFile.Infrastructure.Azure != nil {
+		conf.UpdateMAAURL(stateFile.Infrastructure.Azure.AttestationURL)
+	}
+
 	i.log.Debugf("Creating aTLS Validator for %s", conf.GetAttestationConfig().GetVariant())
 	validator, err := cloudcmd.NewValidator(cmd, conf.GetAttestationConfig(), i.log)
 	if err != nil {
@@ -199,14 +194,15 @@ func (i *initCmd) initialize(
 	if err != nil {
 		return fmt.Errorf("generating master secret: %w", err)
 	}
-	i.log.Debugf("Generated measurement salt")
+
+	i.log.Debugf("Generating measurement salt")
 	measurementSalt, err := crypto.GenerateRandomBytes(crypto.RNGLengthDefault)
 	if err != nil {
 		return fmt.Errorf("generating measurement salt: %w", err)
 	}
-	idFile.MeasurementSalt = measurementSalt
+	stateFile.ClusterValues.MeasurementSalt = measurementSalt
 
-	clusterName := clusterid.GetClusterName(conf, idFile)
+	clusterName := stateFile.ClusterName(conf)
 	i.log.Debugf("Setting cluster name to %s", clusterName)
 
 	cmd.PrintErrln("Note: If you just created the cluster, it can take a few minutes to connect.")
@@ -218,12 +214,12 @@ func (i *initCmd) initialize(
 		KubernetesVersion:    versions.VersionConfigs[k8sVersion].ClusterVersion,
 		KubernetesComponents: versions.VersionConfigs[k8sVersion].KubernetesComponents.ToInitProto(),
 		ConformanceMode:      flags.conformance,
-		InitSecret:           idFile.InitSecret,
+		InitSecret:           stateFile.Infrastructure.InitSecret,
 		ClusterName:          clusterName,
-		ApiserverCertSans:    idFile.APIServerCertSANs,
+		ApiserverCertSans:    stateFile.Infrastructure.APIServerCertSANs,
 	}
 	i.log.Debugf("Sending initialization request")
-	resp, err := i.initCall(cmd.Context(), newDialer(validator), idFile.IP, req)
+	resp, err := i.initCall(cmd.Context(), newDialer(validator), stateFile.Infrastructure.ClusterEndpoint, req)
 	i.spinner.Stop()
 
 	if err != nil {
@@ -241,12 +237,8 @@ func (i *initCmd) initialize(
 	}
 	i.log.Debugf("Initialization request succeeded")
 
-	// TODO(msanft): Remove IDFile as per AB#3425
-	i.log.Debugf("Writing Constellation ID file")
-	idFile.CloudProvider = provider
-
 	bufferedOutput := &bytes.Buffer{}
-	if err := i.writeOutput(idFile, stateFile, resp, flags.mergeConfigs, bufferedOutput, measurementSalt); err != nil {
+	if err := i.writeOutput(stateFile, resp, flags.mergeConfigs, bufferedOutput, measurementSalt); err != nil {
 		return err
 	}
 
@@ -449,7 +441,6 @@ func (d *initDoer) handleGRPCStateChanges(ctx context.Context, wg *sync.WaitGrou
 // writeOutput writes the output of a cluster initialization to the
 // state- / id- / kubeconfig-file and saves it to disk.
 func (i *initCmd) writeOutput(
-	idFile clusterid.File,
 	stateFile *state.State,
 	initResp *initproto.InitSuccessResponse,
 	mergeConfig bool, wr io.Writer,
@@ -458,17 +449,21 @@ func (i *initCmd) writeOutput(
 	fmt.Fprint(wr, "Your Constellation cluster was successfully initialized.\n\n")
 
 	ownerID := hex.EncodeToString(initResp.GetOwnerId())
-	// i.log.Debugf("Owner id is %s", ownerID)
 	clusterID := hex.EncodeToString(initResp.GetClusterId())
 
+	stateFile.SetClusterValues(state.ClusterValues{
+		MeasurementSalt: measurementSalt,
+		OwnerID:         ownerID,
+		ClusterID:       clusterID,
+	})
+
 	tw := tabwriter.NewWriter(wr, 0, 0, 2, ' ', 0)
-	// writeRow(tw, "Constellation cluster's owner identifier", ownerID)
 	writeRow(tw, "Constellation cluster identifier", clusterID)
 	writeRow(tw, "Kubernetes configuration", i.pf.PrefixPrintablePath(constants.AdminConfFilename))
 	tw.Flush()
 	fmt.Fprintln(wr)
 
-	i.log.Debugf("Rewriting cluster server address in kubeconfig to %s", idFile.IP)
+	i.log.Debugf("Rewriting cluster server address in kubeconfig to %s", stateFile.Infrastructure.ClusterEndpoint)
 	kubeconfig, err := clientcmd.Load(initResp.GetKubeconfig())
 	if err != nil {
 		return fmt.Errorf("loading kubeconfig: %w", err)
@@ -481,7 +476,7 @@ func (i *initCmd) writeOutput(
 		if err != nil {
 			return fmt.Errorf("parsing kubeconfig server URL: %w", err)
 		}
-		kubeEndpoint.Host = net.JoinHostPort(idFile.IP, kubeEndpoint.Port())
+		kubeEndpoint.Host = net.JoinHostPort(stateFile.Infrastructure.ClusterEndpoint, kubeEndpoint.Port())
 		cluster.Server = kubeEndpoint.String()
 	}
 	kubeconfigBytes, err := clientcmd.Write(*kubeconfig)
@@ -503,23 +498,11 @@ func (i *initCmd) writeOutput(
 		}
 	}
 
-	idFile.OwnerID = ownerID
-	idFile.ClusterID = clusterID
-
-	stateFile.SetClusterValues(state.ClusterValues{
-		MeasurementSalt: measurementSalt,
-		OwnerID:         ownerID,
-		ClusterID:       clusterID,
-	})
-
 	if err := stateFile.WriteToFile(i.fileHandler, constants.StateFilename); err != nil {
-		return fmt.Errorf("writing state file: %w", err)
+		return fmt.Errorf("writing Constellation state file: %w", err)
 	}
 
-	if err := i.fileHandler.WriteJSON(constants.ClusterIDsFilename, idFile, file.OptOverwrite); err != nil {
-		return fmt.Errorf("writing Constellation ID file: %w", err)
-	}
-	i.log.Debugf("Constellation ID file written to %s", i.pf.PrefixPrintablePath(constants.ClusterIDsFilename))
+	i.log.Debugf("Constellation state file written to %s", i.pf.PrefixPrintablePath(constants.StateFilename))
 
 	if !mergeConfig {
 		fmt.Fprintln(wr, "You can now connect to your cluster by executing:")

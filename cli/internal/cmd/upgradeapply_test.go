@@ -39,11 +39,13 @@ func TestUpgradeApply(t *testing.T) {
 			APIServerCertSANs: []string{},
 			UID:               "uid",
 			Name:              "kubernetes-uid", // default test cfg uses "kubernetes" prefix
+			InitSecret:        []byte{0x42},
 		}).
 		SetClusterValues(state.ClusterValues{MeasurementSalt: []byte{0x41}})
 	defaultIDFile := clusterid.File{
 		MeasurementSalt: []byte{0x41},
 		UID:             "uid",
+		InitSecret:      []byte{0x42},
 	}
 	fsWithIDFile := func() file.Handler {
 		fh := file.NewHandler(afero.NewMemMapFs())

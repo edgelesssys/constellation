@@ -233,7 +233,7 @@ func (c *Client) ShowInfrastructure(ctx context.Context, provider cloudprovider.
 	res := state.Infrastructure{
 		ClusterEndpoint:   ip,
 		APIServerCertSANs: apiServerCertSANs,
-		InitSecret:        secret,
+		InitSecret:        []byte(secret),
 		UID:               uid,
 		Name:              name,
 	}

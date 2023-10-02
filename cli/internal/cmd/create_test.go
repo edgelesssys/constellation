@@ -158,11 +158,11 @@ func TestCreate(t *testing.T) {
 					expectedState := state.Infrastructure{
 						ClusterEndpoint:   "192.0.2.1",
 						APIServerCertSANs: []string{},
+						InitSecret:        []byte{},
 					}
 					require.NoError(fileHandler.ReadYAML(constants.StateFilename, &gotState))
 					assert.Equal("v1", gotState.Version)
 					assert.Equal(expectedState, gotState.Infrastructure)
-
 				}
 			}
 		})
