@@ -65,9 +65,17 @@ func TestLoadReleases(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 	config := &config.Config{Provider: config.ProviderConfig{GCP: &config.GCPConfig{}}}
-	chartLoader := newLoader(config, state.New().
-		SetInfrastructure(state.Infrastructure{UID: "testuid"}).
-		SetClusterValues(state.ClusterValues{MeasurementSalt: []byte{0x41}}),
+	chartLoader := newLoader(
+		config,
+		state.New().
+			SetInfrastructure(state.Infrastructure{
+				GCP: &state.GCP{
+					ProjectID:  "test-project-id",
+					IPCidrNode: "test-node-cidr",
+					IPCidrPod:  "test-pod-cidr",
+				},
+			}).
+			SetClusterValues(state.ClusterValues{MeasurementSalt: []byte{0x41}}),
 		semver.NewFromInt(2, 10, 0, ""),
 	)
 	helmReleases, err := chartLoader.loadReleases(
