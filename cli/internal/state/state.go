@@ -24,7 +24,7 @@ const (
 // ReadFromFile reads the state file at the given path and returns the state.
 func ReadFromFile(fileHandler file.Handler, path string) (*State, error) {
 	state := &State{}
-	if err := fileHandler.ReadYAML(path, state); err != nil {
+	if err := fileHandler.ReadYAML(path, &state); err != nil {
 		return nil, fmt.Errorf("reading state file: %w", err)
 	}
 	return state, nil
@@ -46,40 +46,23 @@ func New() *State {
 
 // NewFromIDFile creates a new cluster state file from the given ID file.
 func NewFromIDFile(idFile clusterid.File) *State {
-	s := New()
-
-	if idFile.ClusterID != "" {
-		s.ClusterValues.ClusterID = idFile.ClusterID
-	}
-
-	if idFile.OwnerID != "" {
-		s.ClusterValues.OwnerID = idFile.OwnerID
-	}
-
-	if idFile.UID != "" {
-		s.Infrastructure.UID = idFile.UID
-	}
-
-	if idFile.IP != "" {
-		s.Infrastructure.ClusterEndpoint = idFile.IP
-	}
-
-	if len(idFile.APIServerCertSANs) > 0 {
-		s.Infrastructure.APIServerCertSANs = idFile.APIServerCertSANs
-	}
-
-	if idFile.InitSecret != nil {
-		s.Infrastructure.InitSecret = string(idFile.InitSecret)
-	}
+	s := New().
+		SetClusterValues(ClusterValues{
+			OwnerID:         idFile.OwnerID,
+			ClusterID:       idFile.ClusterID,
+			MeasurementSalt: idFile.MeasurementSalt,
+		}).
+		SetInfrastructure(Infrastructure{
+			UID:               idFile.UID,
+			ClusterEndpoint:   idFile.IP,
+			APIServerCertSANs: idFile.APIServerCertSANs,
+			InitSecret:        string(idFile.InitSecret),
+		})
 
 	if idFile.AttestationURL != "" {
 		s.Infrastructure.Azure = &Azure{
 			AttestationURL: idFile.AttestationURL,
 		}
-	}
-
-	if len(idFile.MeasurementSalt) > 0 {
-		s.ClusterValues.MeasurementSalt = idFile.MeasurementSalt
 	}
 
 	return s
