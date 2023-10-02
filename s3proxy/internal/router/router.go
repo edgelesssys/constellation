@@ -10,11 +10,18 @@ It decides which packages to forward and which to intercept.
 
 The routing logic in this file is taken from this blog post: https://benhoyt.com/writings/go-routing/#regex-switch.
 We should be able to replace this once this is part of the stdlib: https://github.com/golang/go/issues/61410.
+
+If the router intercepts a PutObject request it will encrypt the body before forwarding it to the S3 API.
+The stored object will have a tag that holds an encrypted data encryption key (DEK).
+That DEK is used to encrypt the object's body.
+The DEK is generated randomly for each PutObject request.
+The DEK is encrypted with a key encryption key (KEK) fetched from Constellation's keyservice.
 */
 package router
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"crypto/sha256"
 	"encoding/base64"
@@ -28,8 +35,15 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/s3proxy/internal/kms"
 	"github.com/edgelesssys/constellation/v2/s3proxy/internal/s3"
 	"go.uber.org/zap"
+)
+
+const (
+	// Use a 32*8 = 256 bit key for AES-256.
+	kekSizeBytes = 32
+	kekID        = "s3proxy-kek"
 )
 
 var (
@@ -40,12 +54,26 @@ var (
 // Router implements the interception logic for the s3proxy.
 type Router struct {
 	region string
+	kek    [32]byte
 	log    *logger.Logger
 }
 
 // New creates a new Router.
-func New(region string, log *logger.Logger) Router {
-	return Router{region: region, log: log}
+func New(region, endpoint string, log *logger.Logger) (Router, error) {
+	kms := kms.New(log, endpoint)
+
+	// Get the key encryption key that encrypts all DEKs.
+	kek, err := kms.GetDataKey(context.Background(), kekID, kekSizeBytes)
+	if err != nil {
+		return Router{}, fmt.Errorf("getting KEK: %w", err)
+	}
+
+	kekArray, err := byteSliceToByteArray(kek)
+	if err != nil {
+		return Router{}, fmt.Errorf("converting KEK to byte array: %w", err)
+	}
+
+	return Router{region: region, kek: kekArray, log: log}, nil
 }
 
 // Serve implements the routing logic for the s3 proxy.
@@ -241,6 +269,16 @@ func handleForwards(log *logger.Logger) http.HandlerFunc {
 			return
 		}
 	}
+}
+
+// byteSliceToByteArray casts a byte slice to a byte array of length 32.
+// It does a length check to prevent the cast from panic'ing.
+func byteSliceToByteArray(input []byte) ([32]byte, error) {
+	if len(input) != 32 {
+		return [32]byte{}, fmt.Errorf("input length mismatch, got: %d", len(input))
+	}
+
+	return ([32]byte)(input), nil
 }
 
 // containsBucket is a helper to recognizes cases where the bucket name is sent as part of the host.
