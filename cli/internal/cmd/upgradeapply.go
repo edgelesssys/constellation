@@ -230,10 +230,9 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 		return fmt.Errorf("writing state file: %w", err)
 	}
 
-	cmd.Printf("Infrastructure migrations applied successfully and output written to: %s and %s\n"+
+	cmd.Printf("Infrastructure migrations applied successfully and output written to: %s\n"+
 		"A backup of the pre-upgrade state has been written to: %s\n",
 		flags.pf.PrefixPrintablePath(constants.StateFilename),
-		flags.pf.PrefixPrintablePath(constants.ClusterIDsFilename),
 		flags.pf.PrefixPrintablePath(filepath.Join(upgradeDir, constants.TerraformUpgradeBackupDir)),
 	)
 
