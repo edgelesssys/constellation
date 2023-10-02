@@ -221,11 +221,21 @@ func (c *Client) ShowInfrastructure(ctx context.Context, provider cloudprovider.
 		return state.Infrastructure{}, errors.New("invalid type in uid output: not a string")
 	}
 
+	nameOutput, ok := tfState.Values.Outputs["name"]
+	if !ok {
+		return state.Infrastructure{}, errors.New("no name output found")
+	}
+	name, ok := nameOutput.Value.(string)
+	if !ok {
+		return state.Infrastructure{}, errors.New("invalid type in name output: not a string")
+	}
+
 	res := state.Infrastructure{
 		ClusterEndpoint:   ip,
 		APIServerCertSANs: apiServerCertSANs,
 		InitSecret:        secret,
 		UID:               uid,
+		Name:              name,
 	}
 
 	switch provider {

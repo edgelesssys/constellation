@@ -30,3 +30,7 @@ output "ip_cidr_nodes" {
 output "ip_cidr_pods" {
   value = local.cidr_vpc_subnet_pods
 }
+
+output "name" {
+  value = local.name
+}

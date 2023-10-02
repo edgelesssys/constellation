@@ -38,3 +38,7 @@ output "validate_constellation_cmdline" {
     error_message = "constellation_cmdline must be set if constellation_boot_mode is 'direct-linux-boot'"
   }
 }
+
+output "name" {
+  value = "${var.name}-qemu" // placeholder, as per "uid" output
+}

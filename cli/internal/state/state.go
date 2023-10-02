@@ -44,8 +44,8 @@ func New() *State {
 	}
 }
 
-// NewFromIDFile creates a new cluster state file from the given ID file.
-func NewFromIDFile(idFile clusterid.File) *State {
+// NewFromIDFile creates a new cluster state file from the given ID file and config.
+func NewFromIDFile(idFile clusterid.File, cfg *config.Config) *State {
 	s := New().
 		SetClusterValues(ClusterValues{
 			OwnerID:         idFile.OwnerID,
@@ -57,6 +57,7 @@ func NewFromIDFile(idFile clusterid.File) *State {
 			ClusterEndpoint:   idFile.IP,
 			APIServerCertSANs: idFile.APIServerCertSANs,
 			InitSecret:        string(idFile.InitSecret),
+			Name:              clusterid.GetClusterName(cfg, idFile),
 		})
 
 	if idFile.AttestationURL != "" {
@@ -97,11 +98,6 @@ func (s *State) Merge(other *State) (*State, error) {
 	return s, nil
 }
 
-// ClusterName returns the name of the cluster.
-func (s *State) ClusterName(cfg *config.Config) string {
-	return cfg.Name + "-" + s.Infrastructure.UID
-}
-
 // ClusterValues describe the (Kubernetes) cluster state, set during initialization of the cluster.
 type ClusterValues struct {
 	// ClusterID is the unique identifier of the cluster.
@@ -118,8 +114,10 @@ type Infrastructure struct {
 	ClusterEndpoint   string   `yaml:"clusterEndpoint"`
 	InitSecret        string   `yaml:"initSecret"`
 	APIServerCertSANs []string `yaml:"apiServerCertSANs"`
-	Azure             *Azure   `yaml:"azure,omitempty"`
-	GCP               *GCP     `yaml:"gcp,omitempty"`
+	// Name is the name of the cluster.
+	Name  string `yaml:"name"`
+	Azure *Azure `yaml:"azure,omitempty"`
+	GCP   *GCP   `yaml:"gcp,omitempty"`
 }
 
 // GCP describes the infra state related to GCP.
