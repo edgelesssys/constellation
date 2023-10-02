@@ -1,8 +1,24 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "crypto",
     srcs = ["crypto.go"],
     importpath = "github.com/edgelesssys/constellation/v2/s3proxy/internal/crypto",
     visibility = ["//s3proxy:__subpackages__"],
+    deps = [
+        "@com_github_tink_crypto_tink_go_v2//aead/subtle",
+        "@com_github_tink_crypto_tink_go_v2//kwp/subtle",
+        "@com_github_tink_crypto_tink_go_v2//subtle/random",
+    ],
+)
+
+go_test(
+    name = "crypto_test",
+    srcs = ["crypto_test.go"],
+    embed = [":crypto"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
 )

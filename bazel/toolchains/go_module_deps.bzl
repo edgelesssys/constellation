@@ -3050,6 +3050,7 @@ def go_dependencies():
         sum = "h1:YjkZLJ7K3inKgMZ0wzCU9OHqc+UqMQyXsPXnf3Cl2as=",
         version = "v1.9.2",
     )
+
     go_repository(
         name = "com_github_hexops_gotextdiff",
         build_file_generation = "on",
@@ -5032,6 +5033,15 @@ def go_dependencies():
         importpath = "github.com/tidwall/pretty",
         sum = "h1:RWIZEg2iJ8/g6fDDYzMpobmaoGh5OLl4AXtGUGPcqCs=",
         version = "v1.2.0",
+    )
+    go_repository(
+        name = "com_github_tink_crypto_tink_go_v2",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/tink-crypto/tink-go/v2",
+        replace = "github.com/derpsteb/tink-go/v2",
+        sum = "h1:FVii9oXvddz9sFir5TRYjQKrzJLbVD/hibT+SnRSDzg=",
+        version = "v2.0.0-20231002051717-a808e454eed6",
     )
 
     go_repository(

@@ -7,73 +7,67 @@ SPDX-License-Identifier: AGPL-3.0-only
 /*
 Package crypto provides encryption and decryption functions for the s3proxy.
 It uses AES-256-GCM to encrypt and decrypt data.
-A new nonce is generated for each encryption operation.
 */
 package crypto
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
-	"io"
+	"fmt"
+
+	aeadsubtle "github.com/tink-crypto/tink-go/v2/aead/subtle"
+	kwpsubtle "github.com/tink-crypto/tink-go/v2/kwp/subtle"
+	"github.com/tink-crypto/tink-go/v2/subtle/random"
 )
 
-// Encrypt takes a 32 byte key and encrypts a plaintext using AES-256-GCM.
-// Output format is 12 byte nonce + ciphertext.
-func Encrypt(plaintext, key []byte) ([]byte, error) {
-	// Enforce AES-256
-	if len(key) != 32 {
-		return nil, aes.KeySizeError(len(key))
-	}
-
-	// None should not be reused more often that 2^32 times:
-	// https://pkg.go.dev/crypto/cipher#NewGCM
-	// Assuming n encryption operations per second, the key has to be rotated every:
-	// n=1: 2^32 / (60*60*24*365*10) = 135 years.
-	// n=10: 2^32 / (60*60*24*365*10) = 13.5 years.
-	// n=100: 2^32 / (60*60*24*365*10) = 1.3 years.
-	// n=1000: 2^32 / (60*60*24*365*10) = 50 days.
-	nonce := make([]byte, 12)
-	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-		return nil, err
-	}
-
-	block, err := aes.NewCipher(key)
+// Encrypt generates a random key to encrypt a plaintext using AES-256-GCM.
+// The generated key is encrypted using the supplied key encryption key (KEK).
+// The ciphertext and encrypted data encryption key (DEK) are returned.
+func Encrypt(plaintext []byte, kek [32]byte) (ciphertext []byte, encryptedDEK []byte, err error) {
+	dek := random.GetRandomBytes(32)
+	aesgcm, err := aeadsubtle.NewAESGCMSIV(dek)
 	if err != nil {
-		return nil, err
+		return nil, nil, fmt.Errorf("getting aesgcm: %w", err)
 	}
-	aesgcm, err := cipher.NewGCM(block)
+
+	ciphertext, err = aesgcm.Encrypt(plaintext, []byte(""))
 	if err != nil {
-		return nil, err
+		return nil, nil, fmt.Errorf("encrypting plaintext: %w", err)
 	}
-	ciphertext := aesgcm.Seal(nil, nonce, plaintext, nil)
 
-	// Prepend the nonce to the ciphertext.
-	ciphertext = append(nonce, ciphertext...)
+	keywrapper, err := kwpsubtle.NewKWP(kek[:])
+	if err != nil {
+		return nil, nil, fmt.Errorf("getting kwp: %w", err)
+	}
 
-	return ciphertext, nil
+	encryptedDEK, err = keywrapper.Wrap(dek)
+	if err != nil {
+		return nil, nil, fmt.Errorf("wrapping dek: %w", err)
+	}
+
+	return ciphertext, encryptedDEK, nil
 }
 
-// Decrypt takes a 32 byte key and decrypts a ciphertext using AES-256-GCM.
-// ciphertext is formatted as 12 byte nonce + ciphertext.
-func Decrypt(ciphertext []byte, key []byte) ([]byte, error) {
-	// Enforce AES-256
-	if len(key) != 32 {
-		return nil, aes.KeySizeError(len(key))
-	}
-
-	// Extract the nonce from the ciphertext.
-	nonce := ciphertext[:12]
-	ciphertext = ciphertext[12:]
-
-	block, err := aes.NewCipher(key)
+// Decrypt decrypts a ciphertext using AES-256-GCM.
+// The encrypted DEK is decrypted using the supplied KEK.
+func Decrypt(ciphertext, encryptedDEK []byte, kek [32]byte) ([]byte, error) {
+	keywrapper, err := kwpsubtle.NewKWP(kek[:])
 	if err != nil {
-		return nil, err
-	}
-	aesgcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting kwp: %w", err)
 	}
 
-	return aesgcm.Open(nil, nonce, ciphertext, nil)
+	dek, err := keywrapper.Unwrap(encryptedDEK)
+	if err != nil {
+		return nil, fmt.Errorf("unwrapping dek: %w", err)
+	}
+
+	aesgcm, err := aeadsubtle.NewAESGCMSIV(dek)
+	if err != nil {
+		return nil, fmt.Errorf("getting aesgcm: %w", err)
+	}
+
+	plaintext, err := aesgcm.Decrypt(ciphertext, []byte(""))
+	if err != nil {
+		return nil, fmt.Errorf("decrypting ciphertext: %w", err)
+	}
+
+	return plaintext, nil
 }
