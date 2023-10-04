@@ -1,0 +1,18 @@
+name: Feature request
+description: Suggest an idea for this project
+body:
+  - type: textarea
+    attributes:
+      label: Use case
+      description: A concise description of what you want to happen.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Describe your solution
+      description: In case you have an idea how to implement this feature.
+  - type: checkboxes
+    attributes:
+      label: Would you be willing to implement this feature?
+      options:
+        - label: Yes, I could contribute this feature.
