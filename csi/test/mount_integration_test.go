@@ -81,6 +81,11 @@ func TestOpenAndClose(t *testing.T) {
 	_, err = os.Stat(newPath + "_dif")
 	assert.True(os.IsNotExist(err))
 
+	// Opening the same device should return the same path and not error
+	newPath2, err := mapper.OpenCryptDevice(context.Background(), devicePath, deviceName, false)
+	require.NoError(err)
+	assert.Equal(newPath, newPath2)
+
 	// Resize the device
 	resize()
 
@@ -118,6 +123,11 @@ func TestOpenAndCloseIntegrity(t *testing.T) {
 	// assert integrity device got created
 	_, err = os.Stat(newPath + "_dif")
 	assert.NoError(err)
+
+	// Opening the same device should return the same path and not error
+	newPath2, err := mapper.OpenCryptDevice(context.Background(), devicePath, deviceName, true)
+	require.NoError(err)
+	assert.Equal(newPath, newPath2)
 
 	// integrity devices do not support resizing
 	resize()

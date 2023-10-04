@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -93,6 +94,7 @@ func (c *CryptMapper) OpenCryptDevice(ctx context.Context, source, volumeID stri
 	}
 	defer free()
 
+	deviceName := filepath.Join(cryptPrefix, volumeID)
 	var passphrase []byte
 	// Try to load LUKS headers
 	// If this fails, the device is either not formatted at all, or already formatted with a different FS
@@ -102,6 +104,17 @@ func (c *CryptMapper) OpenCryptDevice(ctx context.Context, source, volumeID stri
 			return "", fmt.Errorf("formatting device: %w", err)
 		}
 	} else {
+		// Check if device is already active
+		// If yes, this is a no-op
+		// Simply return the device name
+		if _, err := os.Stat(deviceName); err == nil {
+			_, err := os.Stat(deviceName + integritySuffix)
+			if integrity && err != nil {
+				return "", fmt.Errorf("device %s already exists, but integrity device %s is missing", deviceName, deviceName+integritySuffix)
+			}
+			return deviceName, nil
+		}
+
 		uuid, err := c.mapper.GetUUID()
 		if err != nil {
 			return "", err
@@ -119,7 +132,7 @@ func (c *CryptMapper) OpenCryptDevice(ctx context.Context, source, volumeID stri
 		return "", fmt.Errorf("trying to activate dm-crypt volume: %w", err)
 	}
 
-	return cryptPrefix + volumeID, nil
+	return deviceName, nil
 }
 
 // ResizeCryptDevice resizes the underlying crypt device and returns the mapped device path.
