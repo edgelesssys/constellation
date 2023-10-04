@@ -46,7 +46,7 @@ func TestCloseCryptDevice(t *testing.T) {
 
 			mapper := &CryptMapper{
 				kms:    &fakeKMS{},
-				mapper: tc.mapper,
+				mapper: testMapper(tc.mapper),
 			}
 			err := mapper.closeCryptDevice("/dev/mapper/volume01", "volume01-unit-test", "crypt")
 			if tc.wantErr {
@@ -58,7 +58,7 @@ func TestCloseCryptDevice(t *testing.T) {
 	}
 
 	mapper := &CryptMapper{
-		mapper:        &stubCryptDevice{},
+		mapper:        testMapper(&stubCryptDevice{}),
 		kms:           &fakeKMS{},
 		getDiskFormat: getDiskFormat,
 	}
@@ -197,7 +197,7 @@ func TestOpenCryptDevice(t *testing.T) {
 			assert := assert.New(t)
 
 			mapper := &CryptMapper{
-				mapper:        tc.mapper,
+				mapper:        testMapper(tc.mapper),
 				kms:           tc.kms,
 				getDiskFormat: tc.diskInfo,
 			}
@@ -219,7 +219,7 @@ func TestOpenCryptDevice(t *testing.T) {
 	}
 
 	mapper := &CryptMapper{
-		mapper:        &stubCryptDevice{},
+		mapper:        testMapper(&stubCryptDevice{}),
 		kms:           &fakeKMS{},
 		getDiskFormat: getDiskFormat,
 	}
@@ -267,7 +267,7 @@ func TestResizeCryptDevice(t *testing.T) {
 
 			mapper := &CryptMapper{
 				kms:    &fakeKMS{},
-				mapper: tc.device,
+				mapper: testMapper(tc.device),
 			}
 
 			res, err := mapper.ResizeCryptDevice(context.Background(), tc.volumeID)
@@ -310,7 +310,7 @@ func TestGetDevicePath(t *testing.T) {
 			assert := assert.New(t)
 
 			mapper := &CryptMapper{
-				mapper: tc.device,
+				mapper: testMapper(tc.device),
 			}
 
 			res, err := mapper.GetDevicePath(tc.volumeID)
@@ -450,4 +450,10 @@ func (c *stubCryptDevice) Wipe(_ string, _ int, _ int, _ func(size, offset uint6
 
 func (c *stubCryptDevice) Resize(_ string, _ uint64) error {
 	return c.resizeErr
+}
+
+func testMapper(stub *stubCryptDevice) func() deviceMapper {
+	return func() deviceMapper {
+		return stub
+	}
 }
