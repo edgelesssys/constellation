@@ -202,8 +202,7 @@ func (i *initCmd) initialize(
 	}
 	stateFile.ClusterValues.MeasurementSalt = measurementSalt
 
-	clusterName := stateFile.ClusterName(conf)
-	i.log.Debugf("Setting cluster name to %s", clusterName)
+	i.log.Debugf("Setting cluster name to %s", stateFile.Infrastructure.Name)
 
 	cmd.PrintErrln("Note: If you just created the cluster, it can take a few minutes to connect.")
 	i.spinner.Start("Connecting ", false)
@@ -215,7 +214,7 @@ func (i *initCmd) initialize(
 		KubernetesComponents: versions.VersionConfigs[k8sVersion].KubernetesComponents.ToInitProto(),
 		ConformanceMode:      flags.conformance,
 		InitSecret:           stateFile.Infrastructure.InitSecret,
-		ClusterName:          clusterName,
+		ClusterName:          stateFile.Infrastructure.Name,
 		ApiserverCertSans:    stateFile.Infrastructure.APIServerCertSANs,
 	}
 	i.log.Debugf("Sending initialization request")

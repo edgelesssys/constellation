@@ -96,10 +96,10 @@ func TestUpgradeApply(t *testing.T) {
 				require.NoError(err)
 				assert.Equal("v1", gotState.Version)
 				assert.Equal(defaultState, gotState)
-				var oldIdFile clusterid.File
-				err = fh.ReadJSON(constants.ClusterIDsFilename+".old", &oldIdFile)
+				var oldIDFile clusterid.File
+				err = fh.ReadJSON(constants.ClusterIDsFilename+".old", &oldIDFile)
 				assert.NoError(err)
-				assert.Equal(defaultIdFile, oldIdFile)
+				assert.Equal(defaultIDFile, oldIDFile)
 			},
 		},
 		"id file and state file do not exist": {
