@@ -1,11 +1,11 @@
 # Observability
 
-Observability in Kubernetes is the process of gaining insight into the behavior and performance of applications running on Kubernetes.
+In Kubernetes, observability is the ability to gain insight into the behavior and performance of applications.
 It helps identify and resolve issues more effectively, ensuring stability and performance of Kubernetes workloads, reducing downtime and outages, and improving efficiency.
 The "three pillars of observability" are logs, metrics, and traces.
 
-In the context of Confidential Computing, observability is a delicate subject and needs to be applied so that it doesn't leak any sensitive information.
-The following gives an overview of where and how standard observability tools can be applied in Constellation.
+In the context of Confidential Computing, observability is a delicate subject and needs to be applied such that it doesn't leak any sensitive information.
+The following gives an overview of where and how you can apply standard observability tools in Constellation.
 
 ## Cloud resource monitoring
 
@@ -17,9 +17,9 @@ Similarly, other resources, such as storage and network and their respective met
 
 Metrics are numeric representations of data measured over intervals of time. They're essential for understanding system health and gaining insights using telemetry signals.
 
-By default, Constellation exposes the [metrics for Kubernetes systems components](https://kubernetes.io/docs/concepts/cluster-administration/system-metrics/) inside the cluster.
+By default, Constellation exposes the [metrics for Kubernetes system components](https://kubernetes.io/docs/concepts/cluster-administration/system-metrics/) inside the cluster.
 Similarly, the [etcd metrics](https://etcd.io/docs/v3.5/metrics/) endpoints are exposed inside the cluster.
-These metrics endpoints can be [disabled](https://kubernetes.io/docs/concepts/cluster-administration/system-metrics/#disabling-metrics).
+These [metrics endpoints can be disabled](https://kubernetes.io/docs/concepts/cluster-administration/system-metrics/#disabling-metrics).
 
 You can collect these cluster-internal metrics via tools such as [Prometheus](https://prometheus.io/) or the [Elastic Stack](https://www.elastic.co/de/elastic-stack/).
 
@@ -33,16 +33,16 @@ The payload is an actual message emitted from your system along with a metadata 
 
 ### System logs
 
-Constellation utilizes cloud logging for events occurring during the early stages of a node's boot process.
+Constellation uses cloud logging for events occurring during the early stages of a node's boot process.
 These logs include [Bootstrapper](./microservices.md#bootstrapper) events and [disk UUIDs](../architecture/images.md#state-disk) for discovery.
 You can access the cloud logging [directly via the cloud provider endpoints](../workflows/troubleshooting.md#cloud-logging).
 
 More detailed system-level logs are accessible via `/var/log` and [journald](https://www.freedesktop.org/software/systemd/man/systemd-journald.service.html) on the nodes directly.
 They can be collected from there, for example, via [Filebeat and Logstash](https://www.elastic.co/guide/en/beats/filebeat/current/logstash-output.html), which are tools of the [Elastic Stack](https://www.elastic.co/de/elastic-stack/).
 
-In case of an error during the creation or initialization, the CLI automatically collects the [Bootstrapper](./microservices.md#bootstrapper) logs and returns these as a file for [troubleshooting](../workflows/troubleshooting.md). Here is an example of such an event:
+In case of an error during the initialization, the CLI automatically collects the [Bootstrapper](./microservices.md#bootstrapper) logs and returns these as a file for [troubleshooting](../workflows/troubleshooting.md). Here is an example of such an event:
 
-```sh
+```shell-session
 Cluster initialization failed. This error is not recoverable.
 Terminate your cluster and try again.
 Fetched bootstrapper logs are stored in "constellation-cluster.log"
@@ -54,16 +54,16 @@ Constellation supports the [Kubernetes logging architecture](https://kubernetes.
 By default, logs are written to the nodes' encrypted state disks.
 These include the Pod and container logs and the [system component logs](https://kubernetes.io/docs/concepts/cluster-administration/logging/#system-component-logs).
 
-[Constellation services](https://docs.edgeless.systems/constellation/architecture/microservices) run as pods inside the `kube-system` namespace and use the standard container logging mechanism.
+[Constellation services](microservices.md) run as Pods inside the `kube-system` namespace and use the standard container logging mechanism.
 The same applies for the [Cilium Pods](https://docs.cilium.io/en/latest/operations/troubleshooting/#logs).
 
 You can collect logs from within the cluster via tools such as [Fluentd](https://github.com/fluent/fluentd), [Loki](https://github.com/grafana/loki), or the [Elastic Stack](https://www.elastic.co/de/elastic-stack/).
 
 ## Traces
 
-Modern systems are implemented as interconnected complex and distributed microservices. Understanding request flows and system communications is a huge technical challenge, mainly because all systems in a chain need to be modified to propagate tracing information. Distributed tracing is a new approach to increasing observability and understanding performance bottlenecks. A trace represents consecutive events that reflect an end-to-end request path in a distributed system.
+Modern systems are implemented as interconnected complex and distributed microservices. Understanding request flows and system communications is challenging, mainly because all systems in a chain need to be modified to propagate tracing information. Distributed tracing is a new approach to increasing observability and understanding performance bottlenecks. A trace represents consecutive events that reflect an end-to-end request path in a distributed system.
 
-Constellation supports [traces for Kubernetes systems components](https://kubernetes.io/docs/concepts/cluster-administration/system-traces/).
+Constellation supports [traces for Kubernetes system components](https://kubernetes.io/docs/concepts/cluster-administration/system-traces/).
 By default, they're disabled and need to be enabled first.
 
 Similarly, Cilium can be enabled to [export traces](https://cilium.io/use-cases/metrics-export/).
