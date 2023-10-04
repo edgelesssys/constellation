@@ -206,6 +206,17 @@ module "instance_group" {
   )
 }
 
+module "jump_host" {
+  count                = var.internal_load_balancer && var.debug ? 1 : 0
+  source               = "./modules/jump_host"
+  base_name            = local.name
+  subnet_id            = module.public_private_subnet.public_subnet_id[var.zone]
+  lb_internal_ip       = aws_lb.front_end.dns_name
+  ports                = [for port in local.load_balancer_ports : port.port]
+  iam_instance_profile = var.iam_instance_profile_worker_nodes
+  security_group_id    = aws_security_group.security_group.id
+}
+
 # TODO(31u3r): Remove once 2.12 is released
 moved {
   from = module.load_balancer_target_konnectivity
@@ -241,3 +252,4 @@ moved {
   from = module.load_balancer_target_bootstrapper
   to   = module.load_balancer_targets["bootstrapper"]
 }
+

@@ -1,12 +1,12 @@
 output "ip" {
-  value = var.internal_load_balancer ? azurerm_lb.loadbalancer.frontend_ip_configuration[0].private_ip_address : azurerm_public_ip.loadbalancer_ip[0].ip_address
+  value = local.output_ip
 }
 
 output "api_server_cert_sans" {
   value = sort(
     concat(
       [
-        var.internal_load_balancer ? azurerm_lb.loadbalancer.frontend_ip_configuration[0].private_ip_address : azurerm_public_ip.loadbalancer_ip[0].ip_address,
+        local.output_ip,
         var.internal_load_balancer ? "" : local.wildcard_lb_dns_name
       ],
     var.custom_endpoint == "" ? [] : [var.custom_endpoint])

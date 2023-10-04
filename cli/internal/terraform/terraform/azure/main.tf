@@ -46,6 +46,9 @@ locals {
   uai_resource_group = element(split("/", var.user_assigned_identity), length(split("/", var.user_assigned_identity)) - 5)
   // deduce as above
   uai_name = element(split("/", var.user_assigned_identity), length(split("/", var.user_assigned_identity)) - 1)
+
+  internal_ip = var.debug && var.internal_load_balancer ? module.jump_host[0].ip : azurerm_lb.loadbalancer.frontend_ip_configuration[0].private_ip_address
+  output_ip   = var.internal_load_balancer ? local.internal_ip : azurerm_public_ip.loadbalancer_ip[0].ip_address
 }
 
 resource "random_id" "uid" {
@@ -158,7 +161,7 @@ resource "azurerm_lb" "loadbalancer" {
     content {
       name                          = "PrivateIPAddress"
       private_ip_address_allocation = "Dynamic"
-      subnet_id                     = azurerm_subnet.lb_subnet.id
+      subnet_id                     = azurerm_subnet.loadbalancer_subnet[0].id
     }
   }
 }
@@ -266,6 +269,17 @@ module "scale_set_group" {
     azurerm_lb_backend_address_pool.all.id,
     module.loadbalancer_backend_worker.backendpool_id
   ]
+}
+
+module "jump_host" {
+  count          = var.internal_load_balancer && var.debug ? 1 : 0
+  source         = "./modules/jump_host"
+  base_name      = local.name
+  resource_group = var.resource_group
+  location       = var.location
+  subnet_id      = azurerm_subnet.loadbalancer_subnet[0].id
+  ports          = [for port in local.ports : port.port]
+  lb_internal_ip = azurerm_lb.loadbalancer.frontend_ip_configuration[0].private_ip_address
 }
 
 data "azurerm_subscription" "current" {

@@ -57,6 +57,8 @@ locals {
   control_plane_instance_groups = [
     for control_plane in local.node_groups_by_role["control-plane"] : module.instance_group[control_plane].instance_group
   ]
+  internal_ip = var.debug && var.internal_load_balancer ? module.jump_host[0].ip : google_compute_address.loadbalancer_ip_internal[0].address
+  output_ip   = var.internal_load_balancer ? local.internal_ip : google_compute_global_address.loadbalancer_ip[0].address
 }
 
 resource "random_id" "uid" {
@@ -231,6 +233,16 @@ module "loadbalancer_internal" {
   backend_subnet = google_compute_subnetwork.ilb_subnet[0].id
 }
 
+module "jump_host" {
+  count          = var.internal_load_balancer && var.debug ? 1 : 0
+  source         = "./modules/jump_host"
+  base_name      = local.name
+  zone           = var.zone
+  subnetwork     = google_compute_subnetwork.vpc_subnetwork.id
+  labels         = local.labels
+  lb_internal_ip = google_compute_address.loadbalancer_ip_internal[0].address
+  ports          = [for port in local.control_plane_named_ports : port.port]
+}
 moved {
   from = module.loadbalancer_boot
   to   = module.loadbalancer_public["bootstrapper"]
