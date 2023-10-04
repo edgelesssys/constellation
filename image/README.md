@@ -1,9 +1,8 @@
 ## Setup
 
-Ensure you have Nix installed. This is recommended in general but a requirement for the following steps.
+Ensure you have Nix installed. This is a requirement for the following steps.
 Consult the [developer docs](/dev-docs/workflows/build-develop-deploy.md) for more info.
-At the very least, `nix` should be in your PATH and either `common --config=nix`
-has to be set in the `.bazelrc` or you need to append `--config=nix` to each Bazel command.
+At the very least, `nix` should be in your PATH.
 
 ## Build
 

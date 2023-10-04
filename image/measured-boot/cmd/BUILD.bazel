@@ -16,19 +16,13 @@ go_library(
 go_binary(
     name = "cmd",
     # keep
-    data = select({
-        "@rules_nixpkgs_core//constraints:support_nix": [
-            "@systemd//:bin/systemd-dissect",
-        ],
-        "//conditions:default": [],
-    }),
+    data = [
+        "@systemd//:bin/systemd-dissect",
+    ],
     embed = [":cmd_lib"],
     # keep
-    env = select({
-        "@rules_nixpkgs_core//constraints:support_nix": {
-            "DISSECT_TOOLCHAIN": "$(rootpath @systemd//:bin/systemd-dissect)",
-        },
-        "//conditions:default": {},
-    }),
+    env = {
+        "DISSECT_TOOLCHAIN": "$(rootpath @systemd//:bin/systemd-dissect)",
+    },
     visibility = ["//visibility:public"],
 )

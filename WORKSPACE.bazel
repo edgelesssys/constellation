@@ -13,7 +13,7 @@ load("@io_tweag_rules_nixpkgs//nixpkgs:repositories.bzl", "rules_nixpkgs_depende
 
 rules_nixpkgs_dependencies()
 
-load("@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl", "nixpkgs_flake_package", "nixpkgs_git_repository", "nixpkgs_package", "nixpkgs_python_configure")
+load("@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl", "nixpkgs_cc_configure", "nixpkgs_flake_package", "nixpkgs_git_repository", "nixpkgs_package", "nixpkgs_python_configure")
 
 nixpkgs_git_repository(
     name = "nixpkgs",
@@ -38,30 +38,25 @@ nixpkgs_package(
     repository = "@nixpkgs",
 )
 
-load("//bazel/mkosi:mkosi_configure.bzl", "find_system_mkosi")
+load("//bazel/mkosi:mkosi_configure.bzl", "register_mkosi")
 
-find_system_mkosi(name = "constellation_mkosi")
+register_mkosi(
+    name = "mkosi_nix_toolchain",
+)
 
 # Python toolchain
 load("//bazel/toolchains:python_deps.bzl", "python_deps")
 
 python_deps()
 
-load("@rules_python//python:repositories.bzl", "py_repositories", "python_register_toolchains")
+load("@rules_python//python:repositories.bzl", "py_repositories")
 
 py_repositories()
 
-# if nix is installed, use nixpkgs python toolchain...
 nixpkgs_python_configure(
     fail_not_supported = False,
-    python3_attribute_path = "python311.withPackages(ps: with ps; [ numpy ])",
+    python3_attribute_path = "python311",
     repository = "@nixpkgs",
-)
-
-# ... otherwise, fall back to rules_python toolchain
-python_register_toolchains(
-    name = "python3_11",
-    python_version = "3.11",
 )
 
 # Go toolchain
@@ -78,18 +73,12 @@ load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies")
 
 go_rules_dependencies()
 
-local_repository(
-    name = "nixos-support",
-    path = "bazel/nixos-support",
+load("@io_tweag_rules_nixpkgs//nixpkgs:toolchains/go.bzl", "nixpkgs_go_configure")
+
+nixpkgs_go_configure(
+    attribute_path = "go_1_21",
+    repository = "@nixpkgs",
 )
-
-load("@nixos-support//:nixos-support.bzl", "gen_imports")
-
-gen_imports()
-
-load("@nixos_support//:imports.bzl", "cc_toolchain", "go_toolchain")
-
-go_toolchain()
 
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 
@@ -152,7 +141,21 @@ load("@hermetic_cc_toolchain//toolchain:defs.bzl", zig_toolchains = "toolchains"
 
 zig_toolchains()
 
-cc_toolchain()
+nixpkgs_cc_configure(repository = "@nixpkgs")
+
+register_toolchains(
+    "@zig_sdk//libc_aware/toolchain:linux_amd64_gnu.2.23",
+    "@zig_sdk//libc_aware/toolchain:linux_arm64_gnu.2.23",
+    "@zig_sdk//libc_aware/toolchain:linux_amd64_musl",
+    "@zig_sdk//libc_aware/toolchain:linux_arm64_musl",
+    "@zig_sdk//toolchain:linux_amd64_gnu.2.23",
+    "@zig_sdk//toolchain:linux_arm64_gnu.2.23",
+    "@zig_sdk//toolchain:linux_amd64_musl",
+    "@zig_sdk//toolchain:linux_arm64_musl",
+    "@zig_sdk//toolchain:darwin_amd64",
+    "@zig_sdk//toolchain:darwin_arm64",
+    "@zig_sdk//toolchain:windows_amd64",
+)
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 

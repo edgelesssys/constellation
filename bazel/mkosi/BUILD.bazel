@@ -5,9 +5,6 @@ Type: @constellation//bazel/mkosi:toolchain_type
 Toolchains:
 - mkosi_missing_toolchain: provides a fallback toolchain for exec platforms
   where mkosi might not be available.
-
-- mkosi_auto_toolchain: a toolchain that uses the installed mkosi. See
-  mkosi_configure.bzl%find_system_mkosi for usage.
 """
 
 load(":toolchain.bzl", "is_mkosi_available", "mkosi_make_variables", "mkosi_toolchain")
