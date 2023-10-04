@@ -22,3 +22,9 @@ You can learn more about [the images](images.md) and how verified boot ensures t
 ## About key management and cryptographic primitives
 
 Encryption of data at-rest, in-transit, and in-use is the fundamental building block for confidential computing and Constellation. Learn more about the [keys and cryptographic primitives](keys.md) used in Constellation, [encrypted persistent storage](encrypted-storage.md), and [network encryption](networking.md).
+
+## About observability
+
+Observability in Kubernetes refers to the capability to swiftly troubleshoot issues using telemetry signals such as logs, metrics, and traces.
+In the realm of Confidential Computing, it's crucial that observability aligns with confidentiality, necessitating careful implementation.
+Learn more about the [observability capabilities in Constellation](./observability.md).

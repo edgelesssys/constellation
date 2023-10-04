@@ -233,6 +233,11 @@
           "type": "doc",
           "label": "Networking",
           "id": "architecture/networking"
+        },
+        {
+          "type": "doc",
+          "label": "Observability",
+          "id": "architecture/observability"
         }
       ]
     },
