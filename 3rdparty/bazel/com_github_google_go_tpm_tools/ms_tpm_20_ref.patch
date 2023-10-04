@@ -229,7 +229,7 @@
 +    ],
 +    deps = [
 +        ":ms_tpm_20_ref_google_samples",
-+        "@org_openssl//:openssl",
++        "@org_openssl//:org_openssl",
 +    ],
 +    target_compatible_with = [
 +        "@platforms//os:linux",

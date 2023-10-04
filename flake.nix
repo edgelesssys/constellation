@@ -35,9 +35,16 @@
         ]);
       }));
 
+      openssl-static = pkgsUnstable.openssl.override { static = true; };
+
     in
     {
       packages.mkosi = mkosiDev;
+
+      packages.openssl = pkgsUnstable.symlinkJoin {
+        name = "openssl";
+        paths = [ openssl-static.out openssl-static.dev ];
+      };
 
       devShells.default = import ./nix/shells/default.nix { pkgs = pkgsUnstable; };
 
