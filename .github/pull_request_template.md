@@ -18,10 +18,10 @@ Feel free to edit, complete or extend this list while the PR is open.
 - link to the issue
 -->
 
-<!-- (uncomment if applicable)
 ### Additional info
+<!-- Remove items that do not apply -->
+- [AB#1234](https://dev.azure.com/Edgeless/Edgeless/_workitems/edit/1234)
 - Any additional information or context
--->
 
 ### Checklist
 <!-- Remove items that do not apply. For completed items, change [ ] to [x], or check after submitting. -->
