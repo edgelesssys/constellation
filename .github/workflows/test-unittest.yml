@@ -49,7 +49,7 @@ jobs:
           aws-region: eu-central-1
 
       - name: Setup bazel
-        uses: ./.github/actions/setup_bazel
+        uses: ./.github/actions/setup_bazel_nix
         with:
           useCache: "true"
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}

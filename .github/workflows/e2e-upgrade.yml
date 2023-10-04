@@ -134,6 +134,10 @@ jobs:
           fetch-depth: 0
           ref: ${{ inputs.gitRef }}
 
+      - uses: ./.github/actions/setup_bazel_nix
+        with:
+          useCache: "false"
+
       - name: Login to AWS
         uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 # v2.2.0
         with:

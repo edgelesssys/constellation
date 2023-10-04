@@ -30,7 +30,7 @@ runs:
         terraform_wrapper: false
 
     - name: Setup bazel
-      uses: ./.github/actions/setup_bazel
+      uses: ./.github/actions/setup_bazel_nix
       with:
         useCache: "true"
         buildBuddyApiKey: ${{ inputs.buildBuddyApiKey }}

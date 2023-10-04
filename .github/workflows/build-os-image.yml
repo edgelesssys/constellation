@@ -157,12 +157,9 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.head_ref }}
 
-      - uses: cachix/install-nix-action@6ed004b9ccb68dbc28e7c85bee15fa93dbd214ac # v22
-
-      - uses: cachix/cachix-action@6a9a34cdd93d0ae4b4b59fd678660efb08109f2f # v12
+      - uses: ./.github/actions/setup_bazel_nix
         with:
-          name: katexochen
-          extraPullNames: nix-community
+          useCache: "false"
 
       - name: Build
         id: build
@@ -230,6 +227,10 @@ jobs:
         uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
         with:
           ref: ${{ inputs.ref || github.head_ref }}
+
+      - uses: ./.github/actions/setup_bazel_nix
+        with:
+          useCache: "false"
 
       - name: Download OS image artifact
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
@@ -384,6 +385,10 @@ jobs:
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: image-${{ matrix.csp }}-${{ matrix.attestation_variant }}
+
+      - uses: ./.github/actions/setup_bazel_nix
+        with:
+          useCache: "false"
 
       - name: Install dependencies
         run: |
@@ -619,6 +624,10 @@ jobs:
         uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
         with:
           ref: ${{ inputs.ref || github.head_ref }}
+
+      - uses: ./.github/actions/setup_bazel_nix
+        with:
+          useCache: "false"
 
       - name: Download image lookup table
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3
