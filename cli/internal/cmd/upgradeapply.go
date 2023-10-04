@@ -243,6 +243,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 	// - (legacy) public IP
 	// - fallback endpoint
 	// - custom (user-provided) endpoint
+	// TODO(msanft): Remove the comment below once v2.12.0 is released.
 	// At this point, state file and id-file should have been merged, so we can use the state file.
 	sans := append([]string{stateFile.Infrastructure.ClusterEndpoint, conf.CustomEndpoint}, stateFile.Infrastructure.APIServerCertSANs...)
 	if err := u.kubeUpgrader.ExtendClusterConfigCertSANs(cmd.Context(), sans); err != nil {
