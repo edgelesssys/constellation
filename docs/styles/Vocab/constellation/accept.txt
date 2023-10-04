@@ -21,7 +21,7 @@ Dockerfile
 Dynatrace
 [Ee]mojivoto
 etcd
-filebeat
+Filebeat
 Filestore
 Fluentd
 Fulcio
@@ -41,7 +41,7 @@ kubeadm
 kubectl
 kubelet
 libcryptsetup
-logstash
+Logstash
 MicroK8s
 [Mm]inikube
 namespace
