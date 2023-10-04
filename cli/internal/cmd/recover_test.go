@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/recoverproto"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -185,16 +185,16 @@ func TestRecover(t *testing.T) {
 
 func TestParseRecoverFlags(t *testing.T) {
 	testCases := map[string]struct {
-		args        []string
-		wantFlags   recoverFlags
-		writeIDFile bool
-		wantErr     bool
+		args           []string
+		wantFlags      recoverFlags
+		writeStateFile bool
+		wantErr        bool
 	}{
 		"no flags": {
 			wantFlags: recoverFlags{
 				endpoint: "192.0.2.42:9999",
 			},
-			writeIDFile: true,
+			writeStateFile: true,
 		},
 		"no flags, no ID file": {
 			wantFlags: recoverFlags{
@@ -225,8 +225,12 @@ func TestParseRecoverFlags(t *testing.T) {
 			require.NoError(cmd.ParseFlags(tc.args))
 
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
-			if tc.writeIDFile {
-				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFilename, &clusterid.File{IP: "192.0.2.42"}))
+			if tc.writeStateFile {
+				require.NoError(
+					state.New().
+						SetInfrastructure(state.Infrastructure{ClusterEndpoint: "192.0.2.42"}).
+						WriteToFile(fileHandler, constants.StateFilename),
+				)
 			}
 			r := &recoverCmd{log: logger.NewTest(t)}
 			flags, err := r.parseRecoverFlags(cmd, fileHandler)
