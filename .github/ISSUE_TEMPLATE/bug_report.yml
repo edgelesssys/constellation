@@ -1,0 +1,25 @@
+name: Bug report
+description: File a bug report to help us improve
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: textarea
+    attributes:
+      label: Issue description
+      description: A concise description of what you're experiencing.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Steps to reproduce the behavior
+  - type: textarea
+    attributes:
+      label: Version
+      description: Output of `constellation version`
+  - type: textarea
+    attributes:
+      label: Constellation Config
+      description: Make sure to remove sensitive information, e.g., `yq e 'del(.provider.*.project)' constellation-conf.yaml`.
