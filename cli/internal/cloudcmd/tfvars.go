@@ -103,6 +103,7 @@ func awsTerraformVars(conf *config.Config, imageRef string) *terraform.AWSCluste
 		Debug:                  conf.IsDebugCluster(),
 		EnableSNP:              conf.GetAttestationConfig().GetVariant().Equal(variant.AWSSEVSNP{}),
 		CustomEndpoint:         conf.CustomEndpoint,
+		InternalLoadBalancer:   conf.InternalLoadBalancer,
 	}
 }
 
@@ -143,6 +144,7 @@ func azureTerraformVars(conf *config.Config, imageRef string) *terraform.AzureCl
 		UserAssignedIdentity: conf.Provider.Azure.UserAssignedIdentity,
 		ResourceGroup:        conf.Provider.Azure.ResourceGroup,
 		CustomEndpoint:       conf.CustomEndpoint,
+		InternalLoadBalancer: conf.InternalLoadBalancer,
 	}
 
 	vars = normalizeAzureURIs(vars)
@@ -172,14 +174,15 @@ func gcpTerraformVars(conf *config.Config, imageRef string) *terraform.GCPCluste
 		}
 	}
 	return &terraform.GCPClusterVariables{
-		Name:           conf.Name,
-		NodeGroups:     nodeGroups,
-		Project:        conf.Provider.GCP.Project,
-		Region:         conf.Provider.GCP.Region,
-		Zone:           conf.Provider.GCP.Zone,
-		ImageID:        imageRef,
-		Debug:          conf.IsDebugCluster(),
-		CustomEndpoint: conf.CustomEndpoint,
+		Name:                 conf.Name,
+		NodeGroups:           nodeGroups,
+		Project:              conf.Provider.GCP.Project,
+		Region:               conf.Provider.GCP.Region,
+		Zone:                 conf.Provider.GCP.Zone,
+		ImageID:              imageRef,
+		Debug:                conf.IsDebugCluster(),
+		CustomEndpoint:       conf.CustomEndpoint,
+		InternalLoadBalancer: conf.InternalLoadBalancer,
 	}
 }
 
@@ -218,6 +221,7 @@ func openStackTerraformVars(conf *config.Config, imageRef string) *terraform.Ope
 		Debug:                   conf.IsDebugCluster(),
 		NodeGroups:              nodeGroups,
 		CustomEndpoint:          conf.CustomEndpoint,
+		InternalLoadBalancer:    conf.InternalLoadBalancer,
 	}
 }
 

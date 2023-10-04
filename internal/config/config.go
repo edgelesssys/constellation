@@ -82,6 +82,9 @@ type Config struct {
 	//   A fallback to DNS name is always available.
 	CustomEndpoint string `yaml:"customEndpoint" validate:"omitempty,hostname_rfc1123"`
 	// description: |
+	//   Flag to enable/disable the internal load balancer. If enabled, the Constellation is only accessible from within the VPC.
+	InternalLoadBalancer bool `yaml:"internalLoadBalancer" validate:"omitempty"`
+	// description: |
 	//   Supported cloud providers and their specific configurations.
 	Provider ProviderConfig `yaml:"provider" validate:"dive"`
 	// description: |
@@ -827,6 +830,12 @@ func (c *Config) Validate(force bool) error {
 		if err := validateMicroserviceVersion(constants.BinaryVersion(), c.MicroserviceVersion); err != nil {
 			msg := "microserviceVersion: " + msgFromCompatibilityError(err, constants.BinaryVersion().String(), c.MicroserviceVersion.String())
 			return &ValidationError{validationErrMsgs: []string{msg}}
+		}
+	}
+
+	if c.InternalLoadBalancer {
+		if c.GetProvider() != cloudprovider.AWS && c.GetProvider() != cloudprovider.GCP {
+			return &ValidationError{validationErrMsgs: []string{"internalLoadBalancer is only supported for AWS and GCP"}}
 		}
 	}
 

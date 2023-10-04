@@ -66,6 +66,8 @@ type AWSClusterVariables struct {
 	NodeGroups map[string]AWSNodeGroup `hcl:"node_groups" cty:"node_groups"`
 	// CustomEndpoint is the (optional) custom dns hostname for the kubernetes api server.
 	CustomEndpoint string `hcl:"custom_endpoint" cty:"custom_endpoint"`
+	// InternalLoadBalancer is true if an internal load balancer should be created.
+	InternalLoadBalancer bool `hcl:"internal_load_balancer" cty:"internal_load_balancer"`
 }
 
 // GetCreateMAA gets the CreateMAA variable.
@@ -131,6 +133,8 @@ type GCPClusterVariables struct {
 	NodeGroups map[string]GCPNodeGroup `hcl:"node_groups" cty:"node_groups"`
 	// CustomEndpoint is the (optional) custom dns hostname for the kubernetes api server.
 	CustomEndpoint string `hcl:"custom_endpoint" cty:"custom_endpoint"`
+	// InternalLoadBalancer is true if an internal load balancer should be created.
+	InternalLoadBalancer bool `hcl:"internal_load_balancer" cty:"internal_load_balancer"`
 }
 
 // GetCreateMAA gets the CreateMAA variable.
@@ -203,6 +207,8 @@ type AzureClusterVariables struct {
 	NodeGroups map[string]AzureNodeGroup `hcl:"node_groups" cty:"node_groups"`
 	// CustomEndpoint is the (optional) custom dns hostname for the kubernetes api server.
 	CustomEndpoint string `hcl:"custom_endpoint" cty:"custom_endpoint"`
+	// InternalLoadBalancer is true if an internal load balancer should be created.
+	InternalLoadBalancer bool `hcl:"internal_load_balancer" cty:"internal_load_balancer"`
 }
 
 // GetCreateMAA gets the CreateMAA variable.
@@ -275,6 +281,8 @@ type OpenStackClusterVariables struct {
 	Debug bool `hcl:"debug" cty:"debug"`
 	// CustomEndpoint is the (optional) custom dns hostname for the kubernetes api server.
 	CustomEndpoint string `hcl:"custom_endpoint" cty:"custom_endpoint"`
+	// InternalLoadBalancer is true if an internal load balancer should be created.
+	InternalLoadBalancer bool `hcl:"internal_load_balancer" cty:"internal_load_balancer"`
 }
 
 // GetCreateMAA gets the CreateMAA variable.
@@ -346,6 +354,8 @@ type QEMUVariables struct {
 	KernelCmdline *string `hcl:"constellation_cmdline" cty:"constellation_cmdline"`
 	// CustomEndpoint is the (optional) custom dns hostname for the kubernetes api server.
 	CustomEndpoint string `hcl:"custom_endpoint" cty:"custom_endpoint"`
+	// InternalLoadBalancer is true if an internal load balancer should be created.
+	InternalLoadBalancer bool `hcl:"internal_load_balancer" cty:"internal_load_balancer"`
 }
 
 // GetCreateMAA gets the CreateMAA variable.

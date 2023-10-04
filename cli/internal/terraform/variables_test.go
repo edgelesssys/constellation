@@ -73,7 +73,8 @@ node_groups = {
     zone          = "eu-central-1c"
   }
 }
-custom_endpoint = "example.com"
+custom_endpoint        = "example.com"
+internal_load_balancer = false
 `
 	got := vars.String()
 	assert.Equal(t, want, got)
@@ -147,7 +148,8 @@ node_groups = {
     zone          = "eu-central-1b"
   }
 }
-custom_endpoint = "example.com"
+custom_endpoint        = "example.com"
+internal_load_balancer = false
 `
 	got := vars.String()
 	assert.Equal(t, want, got)
@@ -212,7 +214,8 @@ node_groups = {
     zones         = null
   }
 }
-custom_endpoint = "example.com"
+custom_endpoint        = "example.com"
+internal_load_balancer = false
 `
 	got := vars.String()
 	assert.Equal(t, want, got)
@@ -279,6 +282,7 @@ openstack_username         = "my-username"
 openstack_password         = "my-password"
 debug                      = true
 custom_endpoint            = "example.com"
+internal_load_balancer     = false
 `
 	got := vars.String()
 	assert.Equal(t, want, got)
@@ -333,6 +337,7 @@ nvram                   = "/usr/share/OVMF/OVMF_VARS.fd"
 constellation_initrd    = "/var/lib/libvirt/images/cluster-name-initrd"
 constellation_cmdline   = "console=ttyS0,115200n8"
 custom_endpoint         = "example.com"
+internal_load_balancer  = false
 `
 	got := vars.String()
 	assert.Equal(t, want, got)
