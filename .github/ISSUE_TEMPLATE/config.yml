@@ -1,5 +1,5 @@
 blank_issues_enabled: true
 contact_links:
-  - name: Confidential Computing Discord
-    url: https://discord.com/invite/rH8QTH56JN
-    about: Join the Confidential Computing community!
+  - name: Having trouble or questions?
+    url: https://github.com/edgelesssys/constellation/discussions/new?category=q-a
+    about: Open a discussion instead! We will be happy to help you.
