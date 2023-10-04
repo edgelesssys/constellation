@@ -29,7 +29,7 @@ jobs:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
       - name: Setup bazel
-        uses: ./.github/actions/setup_bazel
+        uses: ./.github/actions/setup_bazel_nix
         with:
           useCache: "logs"
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}

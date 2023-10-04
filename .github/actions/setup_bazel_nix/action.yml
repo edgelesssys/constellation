@@ -1,5 +1,5 @@
-name: Setup bazel
-description: Setup Bazel for CI builds and tests
+name: Setup bazel and Nix
+description: Setup Bazel and Nix for CI builds and tests
 
 inputs:
   useCache:
@@ -14,6 +14,7 @@ runs:
   using: "composite"
   steps:
     - name: Check inputs
+      id: check_inputs
       shell: bash
       run: |
         echo "::group::Check inputs"
@@ -25,6 +26,60 @@ runs:
           echo "BuildBuddy API key is required when cache is enabled."
           exit 1
         fi
+        if command -v nix; then
+          echo "nixPreinstalled=true" | tee -a "$GITHUB_OUTPUT"
+        else
+          echo "nixPreinstalled=false" | tee -a "$GITHUB_OUTPUT"
+        fi
+        if command -v bazel; then
+          echo "bazelPreinstalled=true" | tee -a "$GITHUB_OUTPUT"
+        else
+          echo "bazelPreinstalled=false" | tee -a "$GITHUB_OUTPUT"
+        fi
+        if [[ -f /etc/NIXOS ]]; then
+          echo "nixOS=true" | tee -a "$GITHUB_OUTPUT"
+        else
+          echo "nixOS=false" | tee -a "$GITHUB_OUTPUT"
+        fi
+        if [[ "$RUNNER_OS" == "Linux" ]]; then
+          echo "os=linux" | tee -a "$GITHUB_OUTPUT"
+        elif [[ "$RUNNER_OS" == "Windows" ]]; then
+          echo "os=windows" | tee -a "$GITHUB_OUTPUT"
+         elif [[ "$RUNNER_OS" == "macOS" ]]; then
+          echo "os=darwin" | tee -a "$GITHUB_OUTPUT"
+        else
+            echo "$RUNNER_OS not supported"
+            exit 1
+        fi
+        if [[ "$RUNNER_ARCH" == "X64" ]]; then
+          echo "arch=amd64" | tee -a "$GITHUB_OUTPUT"
+        elif [[ "$RUNNER_ARCH" == "ARM64" ]]; then
+          echo "arch=arm64" | tee -a "$GITHUB_OUTPUT"
+        else
+            echo "$RUNNER_ARCH not supported"
+            exit 1
+        fi
+        echo "::endgroup::"
+
+    - name: Install nix
+      if: steps.check_inputs.outputs.nixPreinstalled == 'false'
+      uses: cachix/install-nix-action@6ed004b9ccb68dbc28e7c85bee15fa93dbd214ac # v22
+
+    # - uses: cachix/cachix-action@6a9a34cdd93d0ae4b4b59fd678660efb08109f2f # v12
+    #   with:
+    #     name: katexochen
+    #     extraPullNames: nix-community
+
+    - name: Install Bazelisk
+      if: steps.check_inputs.outputs.bazelPreinstalled == 'false' && steps.check_inputs.outputs.nixOS == 'false'
+      shell: bash
+      env:
+        OS: ${{ steps.check_inputs.outputs.os }}
+        ARCH: ${{ steps.check_inputs.outputs.arch }}
+      run: |
+        echo "::group::Install Bazelisk"
+        curl -fsSLo /usr/local/bin/bazel "https://github.com/bazelbuild/bazelisk/releases/download/v1.18.0/bazelisk-${OS}-${ARCH}"
+        chmod +x /usr/local/bin/bazel
         echo "::endgroup::"
 
     - name: Free up space (Ubuntu)
@@ -65,8 +120,8 @@ runs:
         echo "::endgroup::"
 
     - name: Configure Bazel (rw)
-      shell: bash
       if: inputs.useCache == 'true' || inputs.useCache == 'readonly'
+      shell: bash
       env:
         BUILDBUDDY_ORG_API_KEY: ${{ inputs.buildBuddyApiKey }}
         WORKSPACE: ${{ github.workspace }}
@@ -87,8 +142,8 @@ runs:
         echo "::endgroup::"
 
     - name: Configure Bazel (readonly)
-      shell: bash
       if: inputs.useCache == 'readonly'
+      shell: bash
       env:
         WORKSPACE: ${{ github.workspace }}
       run: |
@@ -97,8 +152,8 @@ runs:
         echo "::endgroup::"
 
     - name: Configure Bazel (logs)
-      shell: bash
       if: inputs.useCache == 'logs'
+      shell: bash
       env:
         BUILDBUDDY_ORG_API_KEY: ${{ inputs.buildBuddyApiKey }}
         WORKSPACE: ${{ github.workspace }}
@@ -116,16 +171,12 @@ runs:
         echo "::endgroup::"
 
     - name: Disable disk cache on GitHub Actions runners
+      if: startsWith(runner.name , 'GitHub Actions')
       shell: bash
       env:
         WORKSPACE: ${{ github.workspace }}
-      if: startsWith(runner.name , 'GitHub Actions')
       run: |
         echo "::group::Configure Bazel (disk cache)"
         echo "common --disk_cache=" >> "${WORKSPACE}/.bazeloverwriterc"
         echo "common --repository_cache=" >> "${WORKSPACE}/.bazeloverwriterc"
         echo "::endgroup::"
-
-    - name: Check bazel version
-      shell: bash
-      run: bazel version

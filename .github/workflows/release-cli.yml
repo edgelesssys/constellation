@@ -77,7 +77,7 @@ jobs:
           ref: ${{ inputs.ref || github.head_ref }}
 
       - name: Setup bazel
-        uses: ./.github/actions/setup_bazel
+        uses: ./.github/actions/setup_bazel_nix
         with:
           useCache: "false"
 
@@ -125,7 +125,7 @@ jobs:
           ref: ${{ inputs.ref || github.head_ref }}
 
       - name: Setup bazel
-        uses: ./.github/actions/setup_bazel
+        uses: ./.github/actions/setup_bazel_nix
         with:
           useCache: "false"
 
@@ -209,7 +209,7 @@ jobs:
         uses: ./.github/actions/install_syft_grype
 
       - name: Setup bazel
-        uses: ./.github/actions/setup_bazel
+        uses: ./.github/actions/setup_bazel_nix
         with:
           useCache: "false"
 

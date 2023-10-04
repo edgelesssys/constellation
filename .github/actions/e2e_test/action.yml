@@ -120,7 +120,7 @@ runs:
         echo "hostArch=$(go env GOARCH)" | tee -a "$GITHUB_OUTPUT"
 
     - name: Setup bazel
-      uses: ./.github/actions/setup_bazel
+      uses: ./.github/actions/setup_bazel_nix
       with:
         useCache: ${{ inputs.buildBuddyApiKey != '' }}
         buildBuddyApiKey: ${{ inputs.buildBuddyApiKey }}
