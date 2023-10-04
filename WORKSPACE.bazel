@@ -28,6 +28,28 @@ nixpkgs_flake_package(
     package = "mkosi",
 )
 
+nixpkgs_flake_package(
+    name = "org_openssl",
+    build_file_content = """\
+load("@rules_cc//cc:defs.bzl", "cc_library")
+filegroup(
+    name = "include",
+    srcs = glob(["include/**/*.h"]),
+    visibility = ["//visibility:public"],
+)
+cc_library(
+    name = "org_openssl",
+    srcs = glob(["lib/**/*.a"]),
+    hdrs = [":include"],
+    strip_include_prefix = "include",
+    visibility = ["//visibility:public"],
+)
+""",
+    nix_flake_file = "//:flake.nix",
+    nix_flake_lock_file = "//:flake.lock",
+    package = "openssl",
+)
+
 nixpkgs_package(
     name = "diffutils",
     repository = "@nixpkgs",
@@ -156,33 +178,6 @@ register_toolchains(
     "@zig_sdk//toolchain:darwin_arm64",
     "@zig_sdk//toolchain:windows_amd64",
 )
-
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-
-http_archive(
-    name = "rules_foreign_cc",
-    sha256 = "2a4d07cd64b0719b39a7c12218a3e507672b82a97b98c6a89d38565894cf7c51",
-    strip_prefix = "rules_foreign_cc-0.9.0",
-    type = "tar.gz",
-    urls = [
-        "https://cdn.confidential.cloud/constellation/cas/sha256/2a4d07cd64b0719b39a7c12218a3e507672b82a97b98c6a89d38565894cf7c51",
-        "https://github.com/bazelbuild/rules_foreign_cc/archive/refs/tags/0.9.0.tar.gz",
-    ],
-)
-
-load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_dependencies")
-
-# This sets up some common toolchains for building targets. For more details, please see
-# https://bazelbuild.github.io/rules_foreign_cc/0.9.0/flatten.html#rules_foreign_cc_dependencies
-rules_foreign_cc_dependencies()
-
-load("//3rdparty/bazel/org_openssl:openssl_repositories.bzl", "openssl_repositories")
-
-openssl_repositories()
-
-load("//3rdparty/bazel/org_openssl:openssl_setup.bzl", "openssl_setup")
-
-openssl_setup()
 
 # Packaging rules (tar)
 load("//bazel/toolchains:pkg_deps.bzl", "pkg_deps")
