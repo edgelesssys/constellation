@@ -132,9 +132,7 @@ jobs:
   make-os-image:
     name: "Build OS using mkosi"
     needs: [build-settings]
-    runs-on: ubuntu-22.04
-    # TODO(malt3): flatten outputs once possible
-    # https://github.com/community/community/discussions/17245
+    runs-on: ubuntu-latest-8-cores
     strategy:
       fail-fast: false
       matrix:
