@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
-	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/state"
@@ -538,7 +537,7 @@ func TestAttestation(t *testing.T) {
 			},
 		},
 	}}
-	existingIDFile := &clusterid.File{IP: "192.0.2.4", CloudProvider: cloudprovider.QEMU}
+
 	existingStateFile := &state.State{Version: state.Version1, Infrastructure: state.Infrastructure{ClusterEndpoint: "192.0.2.4"}}
 
 	netDialer := testdialer.NewBufconnDialer()
@@ -570,7 +569,6 @@ func TestAttestation(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 	fileHandler := file.NewHandler(fs)
-	require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFilename, existingIDFile, file.OptNone))
 	require.NoError(existingStateFile.WriteToFile(fileHandler, constants.StateFilename))
 
 	cfg := config.Default()
