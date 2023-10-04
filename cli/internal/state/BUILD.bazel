@@ -20,6 +20,7 @@ go_test(
     embed = [":state"],
     deps = [
         "//cli/internal/clusterid",
+        "//internal/config",
         "//internal/constants",
         "//internal/file",
         "@com_github_spf13_afero//:afero",
