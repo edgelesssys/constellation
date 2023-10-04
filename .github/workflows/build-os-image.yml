@@ -172,9 +172,9 @@ jobs:
           TARGET: //image/system:${{ matrix.csp }}_${{ matrix.attestation_variant }}_${{ needs.build-settings.outputs.stream }}
         run: |
           echo "::group::Build"
-          bazel build --host_platform=@rules_nixpkgs_core//platforms:host "${TARGET}"
+          bazel build "${TARGET}"
           {
-            echo "image-dir=$(bazel cquery --host_platform=@rules_nixpkgs_core//platforms:host --output=files "$TARGET")"
+            echo "image-dir=$(bazel cquery --output=files "$TARGET")"
           } | tee -a "$GITHUB_OUTPUT"
           echo "::endgroup::"
 

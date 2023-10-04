@@ -410,18 +410,12 @@ repo_command(
 
 sh_template(
     name = "proto_targets_check",
-    data = select({
-        "@rules_nixpkgs_core//constraints:support_nix": [
-            "@diffutils//:bin/diff",
-        ],
-        "//conditions:default": [],
-    }),
-    env = select({
-        "@rules_nixpkgs_core//constraints:support_nix": {
-            "DIFF": "$(rootpath @diffutils//:bin/diff)",
-        },
-        "//conditions:default": {},
-    }),
+    data = [
+        "@diffutils//:bin/diff",
+    ],
+    env = {
+        "DIFF": "$(rootpath @diffutils//:bin/diff)",
+    },
     substitutions = {
         "@@PROTO_TARGETS@@": " ".join(proto_targets()),
     },

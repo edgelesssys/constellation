@@ -7,33 +7,19 @@ Prerequisites:
 * 20GB (minimum), better 40 GB disk space (required if you want to cross compile for all platforms)
 * [Latest version of Go](https://go.dev/doc/install).
 * Unless you use Nix / NixOS: [Bazelisk installed as `bazel` in your path](https://github.com/bazelbuild/bazelisk/releases).
-* We recommend Nix installed via [determinate systems installer](https://github.com/DeterminateSystems/nix-installer) (or NixOS as host system).
+* We require Nix to be installed. It is recommended to install nix using the [determinate systems installer](https://github.com/DeterminateSystems/nix-installer) (or to use NixOS as host system).
 * [Docker](https://docs.docker.com/engine/install/). Can be installed with these commands on Ubuntu 22.04: `sudo apt update && sudo apt install docker.io`. As the build spawns docker containers your user account either needs to be in the `docker` group (Add with `sudo usermod -a -G docker $USER`) or you have to run builds with `sudo`. When using `sudo` remember that your root user might (depending on your distro and local config) not have the go binary in it's PATH. The current PATH can be forwarded to the root env with `sudo env PATH=$PATH <cmd>`.
 
 ## Prequisites
 
 ### Linux
 
-* Packages on NixOS or with Nix installed (use flake.nix in this repo):
+* If you don't want to perform any setup, you can get a shell with Bazel and all required dependencies by running:
 
   ```sh
-  # add "common --config=nix" to your .bazeloverwriterc if you want to get nix compatible toolchains
-  echo "common --config=nix" >> .bazeloverwriterc
   # better would be: nix develop -i
   # but this doesn't play nice with bashrc, colored output and non-hermetic tools
   nix develop
-  ```
-
-* Packages on Ubuntu:
-
-  ```sh
-  sudo apt install build-essential cmake libssl-dev pkg-config libcryptsetup12 libcryptsetup-dev
-  ```
-
-* Packages on Fedora:
-
-  ```sh
-  sudo dnf install @development-tools pkg-config cmake openssl-devel cryptsetup-libs cryptsetup-devel
   ```
 
 ### Mac
