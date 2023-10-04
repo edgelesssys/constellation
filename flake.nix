@@ -2,9 +2,6 @@
   description = "Constellation";
 
   inputs = {
-    nixpkgsWorking = {
-      url = "github:katexochen/nixpkgs/working";
-    };
     nixpkgsUnstable = {
       url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     };
@@ -15,17 +12,15 @@
 
   outputs =
     { self
-    , nixpkgsWorking
     , nixpkgsUnstable
     , flake-utils
     }:
     flake-utils.lib.eachDefaultSystem (system:
     let
-      pkgsWorking = import nixpkgsWorking { inherit system; };
       pkgsUnstable = import nixpkgsUnstable { inherit system; };
 
-      mkosiDev = (pkgsWorking.mkosi.overrideAttrs (oldAttrs: rec {
-        propagatedBuildInputs = oldAttrs.propagatedBuildInputs ++ (with pkgsWorking;  [
+      mkosiDev = (pkgsUnstable.mkosi.overrideAttrs (oldAttrs: rec {
+        propagatedBuildInputs = oldAttrs.propagatedBuildInputs ++ (with pkgsUnstable;  [
           # package management
           dnf5
           rpm
