@@ -298,6 +298,7 @@ func diffAttestationCfg(currentAttestationCfg config.AttestationCfg, newAttestat
 
 // migrateTerraform checks if the Constellation version the cluster is being upgraded to requires a migration
 // of cloud resources with Terraform. If so, the migration is performed and the post-migration infrastructure state is returned.
+// If no migration is required, the current (pre-upgrade) infrastructure state is returned.
 func (u *upgradeApplyCmd) migrateTerraform(
 	cmd *cobra.Command, conf *config.Config, upgradeDir string, flags upgradeApplyFlags,
 ) (state.Infrastructure, error) {
@@ -325,7 +326,7 @@ func (u *upgradeApplyCmd) migrateTerraform(
 	}
 	if !hasDiff {
 		u.log.Debugf("No Terraform diff detected")
-		return state.Infrastructure{}, nil
+		return u.clusterShower.ShowInfrastructure(cmd.Context(), conf.GetProvider())
 	}
 
 	// If there are any Terraform migrations to apply, ask for confirmation
