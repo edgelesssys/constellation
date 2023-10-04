@@ -17,8 +17,8 @@ load("@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl", "nixpkgs_flake_package", "n
 
 nixpkgs_git_repository(
     name = "nixpkgs",
-    revision = "27c6a38e0aa2e57ab914ad8b500582085549c236",
-    sha256 = "875c2e171ab9663ff6ad2b5c75d974776682b3b4075143fc98d73c39a3b8c132",
+    revision = "0c7ffbc66e6d78c50c38e717ec91a2a14e0622fb",
+    sha256 = "2c8c39259595441e2fe529b75b2e69eba486e0f3457e810bf9bb2b531822743e",
 )
 
 nixpkgs_flake_package(
