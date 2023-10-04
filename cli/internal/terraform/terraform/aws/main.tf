@@ -17,27 +17,23 @@ provider "aws" {
 }
 
 locals {
-  uid                = random_id.uid.hex
-  name               = "${var.name}-${local.uid}"
-  initSecretHash     = random_password.initSecret.bcrypt_hash
-  ports_node_range   = "30000-32767"
-  ports_kubernetes   = "6443"
-  ports_bootstrapper = "9000"
-  ports_konnectivity = "8132"
-  ports_verify       = "30081"
-  ports_recovery     = "9999"
-  ports_debugd       = "4000"
-  ports_join         = "30090"
+  uid              = random_id.uid.hex
+  name             = "${var.name}-${local.uid}"
+  initSecretHash   = random_password.initSecret.bcrypt_hash
+  ports_node_range = "30000-32767"
+  load_balancer_ports = flatten([
+    { name = "kubernetes", port = "6443", health_check = "HTTPS" },
+    { name = "bootstrapper", port = "9000", health_check = "TCP" },
+    { name = "verify", port = "30081", health_check = "TCP" },
+    { name = "konnectivity", port = "8132", health_check = "TCP" },
+    { name = "recovery", port = "9999", health_check = "TCP" },
+    { name = "join", port = "30090", health_check = "TCP" },
+    var.debug ? [{ name = "debugd", port = "4000", health_check = "TCP" }] : [],
+  ])
   target_group_arns = {
-    control-plane : flatten([
-      module.load_balancer_target_bootstrapper.target_group_arn,
-      module.load_balancer_target_kubernetes.target_group_arn,
-      module.load_balancer_target_verify.target_group_arn,
-      module.load_balancer_target_recovery.target_group_arn,
-      module.load_balancer_target_konnectivity.target_group_arn,
-      module.load_balancer_target_join.target_group_arn,
-      var.debug ? [module.load_balancer_target_debugd[0].target_group_arn] : [],
-    ])
+    control-plane : [
+      for port in local.load_balancer_ports : module.load_balancer_targets[port.name].target_group_arn
+    ]
     worker : []
   }
   iam_instance_profile = {
@@ -142,36 +138,15 @@ resource "aws_security_group" "security_group" {
     description = "K8s node ports"
   }
 
-  ingress {
-    from_port   = local.ports_bootstrapper
-    to_port     = local.ports_bootstrapper
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "bootstrapper"
-  }
-
-  ingress {
-    from_port   = local.ports_kubernetes
-    to_port     = local.ports_kubernetes
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "kubernetes"
-  }
-
-  ingress {
-    from_port   = local.ports_konnectivity
-    to_port     = local.ports_konnectivity
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "konnectivity"
-  }
-
-  ingress {
-    from_port   = local.ports_recovery
-    to_port     = local.ports_recovery
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "recovery"
+  dynamic "ingress" {
+    for_each = local.load_balancer_ports
+    content {
+      description = ingress.value.name
+      from_port   = ingress.value.port
+      to_port     = ingress.value.port
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
   }
 
   ingress {
@@ -182,16 +157,6 @@ resource "aws_security_group" "security_group" {
     description = "allow all internal"
   }
 
-  dynamic "ingress" {
-    for_each = var.debug ? [1] : []
-    content {
-      from_port   = local.ports_debugd
-      to_port     = local.ports_debugd
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-      description = "debugd"
-    }
-  }
 }
 
 resource "aws_cloudwatch_log_group" "log_group" {
@@ -200,76 +165,16 @@ resource "aws_cloudwatch_log_group" "log_group" {
   tags              = local.tags
 }
 
-module "load_balancer_target_bootstrapper" {
+module "load_balancer_targets" {
+  for_each             = { for port in local.load_balancer_ports : port.name => port }
   source               = "./modules/load_balancer_target"
-  name                 = "${local.name}-bootstrapper"
+  name                 = "${local.name}-${each.value.name}"
+  port                 = each.value.port
+  healthcheck_protocol = each.value.health_check
+  healthcheck_path     = each.value.name == "kubernetes" ? "/readyz" : ""
   vpc_id               = aws_vpc.vpc.id
   lb_arn               = aws_lb.front_end.arn
-  port                 = local.ports_bootstrapper
   tags                 = local.tags
-  healthcheck_protocol = "TCP"
-}
-
-module "load_balancer_target_kubernetes" {
-  source               = "./modules/load_balancer_target"
-  name                 = "${local.name}-kubernetes"
-  vpc_id               = aws_vpc.vpc.id
-  lb_arn               = aws_lb.front_end.arn
-  port                 = local.ports_kubernetes
-  tags                 = local.tags
-  healthcheck_protocol = "HTTPS"
-  healthcheck_path     = "/readyz"
-}
-
-module "load_balancer_target_verify" {
-  source               = "./modules/load_balancer_target"
-  name                 = "${local.name}-verify"
-  vpc_id               = aws_vpc.vpc.id
-  lb_arn               = aws_lb.front_end.arn
-  port                 = local.ports_verify
-  tags                 = local.tags
-  healthcheck_protocol = "TCP"
-}
-
-module "load_balancer_target_recovery" {
-  source               = "./modules/load_balancer_target"
-  name                 = "${local.name}-recovery"
-  vpc_id               = aws_vpc.vpc.id
-  lb_arn               = aws_lb.front_end.arn
-  port                 = local.ports_recovery
-  tags                 = local.tags
-  healthcheck_protocol = "TCP"
-}
-
-module "load_balancer_target_debugd" {
-  count                = var.debug ? 1 : 0 // only deploy debugd in debug mode
-  source               = "./modules/load_balancer_target"
-  name                 = "${local.name}-debugd"
-  vpc_id               = aws_vpc.vpc.id
-  lb_arn               = aws_lb.front_end.arn
-  port                 = local.ports_debugd
-  tags                 = local.tags
-  healthcheck_protocol = "TCP"
-}
-
-module "load_balancer_target_konnectivity" {
-  source               = "./modules/load_balancer_target"
-  name                 = "${local.name}-konnectivity"
-  vpc_id               = aws_vpc.vpc.id
-  lb_arn               = aws_lb.front_end.arn
-  port                 = local.ports_konnectivity
-  tags                 = local.tags
-  healthcheck_protocol = "TCP"
-}
-
-module "load_balancer_target_join" {
-  source               = "./modules/load_balancer_target"
-  name                 = "${local.name}-join"
-  vpc_id               = aws_vpc.vpc.id
-  lb_arn               = aws_lb.front_end.arn
-  port                 = local.ports_join
-  tags                 = local.tags
-  healthcheck_protocol = "TCP"
 }
 
 module "instance_group" {
@@ -299,4 +204,40 @@ module "instance_group" {
     { constellation-init-secret-hash = local.initSecretHash },
     { "kubernetes.io/cluster/${local.name}" = "owned" }
   )
+}
+
+# TODO(31u3r): Remove once 2.12 is released
+moved {
+  from = module.load_balancer_target_konnectivity
+  to   = module.load_balancer_targets["konnectivity"]
+}
+
+moved {
+  from = module.load_balancer_target_verify
+  to   = module.load_balancer_targets["verify"]
+}
+
+moved {
+  from = module.load_balancer_target_recovery
+  to   = module.load_balancer_targets["recovery"]
+}
+
+moved {
+  from = module.load_balancer_target_join
+  to   = module.load_balancer_targets["join"]
+}
+
+moved {
+  from = module.load_balancer_target_debugd[0]
+  to   = module.load_balancer_targets["debugd"]
+}
+
+moved {
+  from = module.load_balancer_target_kubernetes
+  to   = module.load_balancer_targets["kubernetes"]
+}
+
+moved {
+  from = module.load_balancer_target_bootstrapper
+  to   = module.load_balancer_targets["bootstrapper"]
 }
