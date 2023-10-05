@@ -181,6 +181,7 @@ To [create a Constellation cluster](../workflows/create.md#the-create-step), you
 * `compute.firewalls.create`
 * `compute.firewalls.delete`
 * `compute.firewalls.get`
+* `compute.firewalls.update`
 * `compute.globalAddresses.create`
 * `compute.globalAddresses.delete`
 * `compute.globalAddresses.get`
@@ -197,9 +198,11 @@ To [create a Constellation cluster](../workflows/create.md#the-create-step), you
 * `compute.instanceGroupManagers.create`
 * `compute.instanceGroupManagers.delete`
 * `compute.instanceGroupManagers.get`
+* `compute.instanceGroupManagers.update`
 * `compute.instanceGroups.create`
 * `compute.instanceGroups.delete`
 * `compute.instanceGroups.get`
+* `compute.instanceGroups.update`
 * `compute.instanceGroups.use`
 * `compute.instances.create`
 * `compute.instances.setLabels`
