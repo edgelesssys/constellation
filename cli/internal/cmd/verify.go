@@ -295,21 +295,10 @@ type jsonAttestationDocFormatter struct {
 func (f *jsonAttestationDocFormatter) format(ctx context.Context, docString string, _ bool,
 	_ bool, _ measurements.M, attestationServiceURL string,
 ) (string, error) {
-	var doc attestationDoc
-	if err := json.Unmarshal([]byte(docString), &doc); err != nil {
-		return "", fmt.Errorf("unmarshal attestation document: %w", err)
-	}
-
-	instanceInfoString, err := base64.StdEncoding.DecodeString(doc.InstanceInfo)
+	instanceInfo, err := unmarshalInstanceInfo(docString)
 	if err != nil {
-		return "", fmt.Errorf("decode instance info: %w", err)
-	}
-
-	var instanceInfo azureInstanceInfo
-	if err := json.Unmarshal(instanceInfoString, &instanceInfo); err != nil {
 		return "", fmt.Errorf("unmarshal instance info: %w", err)
 	}
-
 	// TODO(elchead): omit quotes?
 	snpReport, err := newSNPReport(instanceInfo.AttestationReport)
 	if err != nil {
@@ -383,9 +372,11 @@ func (f *attestationDocFormatterImpl) format(ctx context.Context, docString stri
 	if err := f.parseCerts(b, "Certificate chain", instanceInfo.CertChain); err != nil {
 		return "", fmt.Errorf("print certificate chain: %w", err)
 	}
-	if err := f.parseSNPReport(b, instanceInfo.AttestationReport); err != nil {
-		return "", fmt.Errorf("print SNP report: %w", err)
+	snpReport, err := newSNPReport(instanceInfo.AttestationReport)
+	if err != nil {
+		return "", fmt.Errorf("parsing SNP report: %w", err)
 	}
+	f.printSNPReport(b, snpReport)
 	if err := parseMAAToken(ctx, b, instanceInfo.MAAToken, attestationServiceURL); err != nil {
 		return "", fmt.Errorf("print MAA token: %w", err)
 	}
@@ -486,79 +477,53 @@ func (f *attestationDocFormatterImpl) parseQuotes(b *strings.Builder, quotes []*
 	return nil
 }
 
-func (f *attestationDocFormatterImpl) parseSNPReport(b *strings.Builder, reportBytes []byte) error {
-	report, err := abi.ReportToProto(reportBytes)
-	if err != nil {
-		return fmt.Errorf("parsing report to proto: %w", err)
-	}
-
-	policy, err := abi.ParseSnpPolicy(report.Policy)
-	if err != nil {
-		return fmt.Errorf("parsing policy: %w", err)
-	}
-
-	platformInfo, err := abi.ParseSnpPlatformInfo(report.PlatformInfo)
-	if err != nil {
-		return fmt.Errorf("parsing platform info: %w", err)
-	}
-
-	signature, err := abi.ReportToSignatureDER(reportBytes)
-	if err != nil {
-		return fmt.Errorf("parsing signature: %w", err)
-	}
-
-	signerInfo, err := abi.ParseSignerInfo(report.SignerInfo)
-	if err != nil {
-		return fmt.Errorf("parsing signer info: %w", err)
-	}
-
-	writeTCB := func(tcbVersion uint64) {
-		tcb := kds.DecomposeTCBVersion(kds.TCBVersion(tcbVersion))
-		writeIndentfln(b, 3, "Secure Processor bootloader SVN: %d", tcb.BlSpl)
-		writeIndentfln(b, 3, "Secure Processor operating system SVN: %d", tcb.TeeSpl)
+func (f *attestationDocFormatterImpl) printSNPReport(b *strings.Builder, report verify.SNPReport) {
+	writeTCB := func(tcb verify.TCBVersion) {
+		writeIndentfln(b, 3, "Secure Processor bootloader SVN: %d", tcb.Bootloader)
+		writeIndentfln(b, 3, "Secure Processor operating system SVN: %d", tcb.TEE)
 		writeIndentfln(b, 3, "SVN 4 (reserved): %d", tcb.Spl4)
 		writeIndentfln(b, 3, "SVN 5 (reserved): %d", tcb.Spl5)
 		writeIndentfln(b, 3, "SVN 6 (reserved): %d", tcb.Spl6)
 		writeIndentfln(b, 3, "SVN 7 (reserved): %d", tcb.Spl7)
-		writeIndentfln(b, 3, "SEV-SNP firmware SVN: %d", tcb.SnpSpl)
-		writeIndentfln(b, 3, "Microcode SVN: %d", tcb.UcodeSpl)
+		writeIndentfln(b, 3, "SEV-SNP firmware SVN: %d", tcb.SNP)
+		writeIndentfln(b, 3, "Microcode SVN: %d", tcb.Microcode)
 	}
 
 	writeIndentfln(b, 1, "SNP Report:")
 	writeIndentfln(b, 2, "Version: %d", report.Version)
 	writeIndentfln(b, 2, "Guest SVN: %d", report.GuestSvn)
 	writeIndentfln(b, 2, "Policy:")
-	writeIndentfln(b, 3, "ABI Minor: %d", policy.ABIMinor)
-	writeIndentfln(b, 3, "ABI Major: %d", policy.ABIMajor)
-	writeIndentfln(b, 3, "Symmetric Multithreading enabled: %t", policy.SMT)
-	writeIndentfln(b, 3, "Migration agent enabled: %t", policy.MigrateMA)
-	writeIndentfln(b, 3, "Debugging enabled (host decryption of VM): %t", policy.Debug)
-	writeIndentfln(b, 3, "Single socket enabled: %t", policy.SingleSocket)
-	writeIndentfln(b, 2, "Family ID: %x", report.FamilyId)
-	writeIndentfln(b, 2, "Image ID: %x", report.ImageId)
+	writeIndentfln(b, 3, "ABI Minor: %d", report.PolicyABIMinor)
+	writeIndentfln(b, 3, "ABI Major: %d", report.PolicyABIMajor)
+	writeIndentfln(b, 3, "Symmetric Multithreading enabled: %t", report.PolicySMT)
+	writeIndentfln(b, 3, "Migration agent enabled: %t", report.PolicyMigrationAgent)
+	writeIndentfln(b, 3, "Debugging enabled (host decryption of VM): %t", report.PolicyDebug)
+	writeIndentfln(b, 3, "Single socket enabled: %t", report.PolicySingleSocket)
+	writeIndentfln(b, 2, "Family ID: %x", report.FamilyID)
+	writeIndentfln(b, 2, "Image ID: %x", report.ImageID)
 	writeIndentfln(b, 2, "VMPL: %d", report.Vmpl)
 	writeIndentfln(b, 2, "Signature Algorithm: %d", report.SignatureAlgo)
 	writeIndentfln(b, 2, "Current TCB:")
-	writeTCB(report.CurrentTcb)
+	writeTCB(report.CurrentTCB)
 	writeIndentfln(b, 2, "Platform Info:")
-	writeIndentfln(b, 3, "Symmetric Multithreading enabled (SMT): %t", platformInfo.SMTEnabled)
-	writeIndentfln(b, 3, "Transparent secure memory encryption (TSME): %t", platformInfo.TSMEEnabled)
+	writeIndentfln(b, 3, "Symmetric Multithreading enabled (SMT): %t", report.PlatformInfo.SMT)
+	writeIndentfln(b, 3, "Transparent secure memory encryption (TSME): %t", report.PlatformInfo.TSME)
 	writeIndentfln(b, 2, "Signer Info:")
-	writeIndentfln(b, 3, "Author Key Enabled: %t", signerInfo.AuthorKeyEn)
-	writeIndentfln(b, 3, "Chip ID Masking: %t", signerInfo.MaskChipKey)
-	writeIndentfln(b, 3, "Signing Type: %s", signerInfo.SigningKey)
+	writeIndentfln(b, 3, "Author Key Enabled: %t", report.SignerInfo.AuthorKey)
+	writeIndentfln(b, 3, "Chip ID Masking: %t", report.SignerInfo.MaskChipKey)
+	writeIndentfln(b, 3, "Signing Type: %s", report.SignerInfo.SigningKey)
 	writeIndentfln(b, 2, "Report Data: %x", report.ReportData)
 	writeIndentfln(b, 2, "Measurement: %x", report.Measurement)
 	writeIndentfln(b, 2, "Host Data: %x", report.HostData)
-	writeIndentfln(b, 2, "ID Key Digest: %x", report.IdKeyDigest)
+	writeIndentfln(b, 2, "ID Key Digest: %x", report.IDKeyDigest)
 	writeIndentfln(b, 2, "Author Key Digest: %x", report.AuthorKeyDigest)
-	writeIndentfln(b, 2, "Report ID: %x", report.ReportId)
-	writeIndentfln(b, 2, "Report ID MA: %x", report.ReportIdMa)
+	writeIndentfln(b, 2, "Report ID: %x", report.ReportID)
+	writeIndentfln(b, 2, "Report ID MA: %x", report.ReportIDMa)
 	writeIndentfln(b, 2, "Reported TCB:")
-	writeTCB(report.ReportedTcb)
-	writeIndentfln(b, 2, "Chip ID: %x", report.ChipId)
+	writeTCB(report.ReportedTCB)
+	writeIndentfln(b, 2, "Chip ID: %x", report.ChipID)
 	writeIndentfln(b, 2, "Committed TCB:")
-	writeTCB(report.CommittedTcb)
+	writeTCB(report.CommittedTCB)
 	writeIndentfln(b, 2, "Current Build: %d", report.CurrentBuild)
 	writeIndentfln(b, 2, "Current Minor: %d", report.CurrentMinor)
 	writeIndentfln(b, 2, "Current Major: %d", report.CurrentMajor)
@@ -566,11 +531,9 @@ func (f *attestationDocFormatterImpl) parseSNPReport(b *strings.Builder, reportB
 	writeIndentfln(b, 2, "Committed Minor: %d", report.CommittedMinor)
 	writeIndentfln(b, 2, "Committed Major: %d", report.CommittedMajor)
 	writeIndentfln(b, 2, "Launch TCB:")
-	writeTCB(report.LaunchTcb)
+	writeTCB(report.LaunchTCB)
 	writeIndentfln(b, 2, "Signature (DER):")
-	writeIndentfln(b, 3, "%x", signature)
-
-	return nil
+	writeIndentfln(b, 3, "%x", report.Signature)
 }
 
 func parseMAAToken(ctx context.Context, b *strings.Builder, rawToken, attestationServiceURL string) error {
@@ -834,7 +797,7 @@ func newSNPReport(reportBytes []byte) (res verify.SNPReport, err error) {
 			TSME: platformInfo.TSMEEnabled,
 		},
 		SignerInfo: verify.SignerInfo{
-			AuthorKeyEn: signerInfo.AuthorKeyEn,
+			AuthorKey:   signerInfo.AuthorKeyEn,
 			MaskChipKey: signerInfo.MaskChipKey,
 			SigningKey:  signerInfo.SigningKey,
 		},
@@ -876,6 +839,23 @@ func newTCBVersion(tcbVersion kds.TCBVersion) (res verify.TCBVersion) {
 		Spl5:       tcb.Spl5,
 		Spl6:       tcb.Spl6,
 		Spl7:       tcb.Spl7,
-		UcodeSpl:   tcb.UcodeSpl,
 	}
+}
+
+func unmarshalInstanceInfo(docString string) (azureInstanceInfo, error) {
+	var doc attestationDoc
+	if err := json.Unmarshal([]byte(docString), &doc); err != nil {
+		return azureInstanceInfo{}, fmt.Errorf("unmarshal attestation document: %w", err)
+	}
+
+	instanceInfoString, err := base64.StdEncoding.DecodeString(doc.InstanceInfo)
+	if err != nil {
+		return azureInstanceInfo{}, fmt.Errorf("decode instance info: %w", err)
+	}
+
+	var instanceInfo azureInstanceInfo
+	if err := json.Unmarshal(instanceInfoString, &instanceInfo); err != nil {
+		return azureInstanceInfo{}, fmt.Errorf("unmarshal instance info: %w", err)
+	}
+	return instanceInfo, nil
 }

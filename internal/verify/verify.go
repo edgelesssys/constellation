@@ -46,8 +46,6 @@ type TCBVersion struct {
 	Spl5       uint8 `json:"spl5"`
 	Spl6       uint8 `json:"spl6"`
 	Spl7       uint8 `json:"spl7"`
-	// UcodeSpl is the microcode security patch level.
-	UcodeSpl uint8 `json:"ucode_spl"`
 }
 
 // PlatformInfo contains the platform information.
@@ -58,7 +56,7 @@ type PlatformInfo struct {
 
 // SignerInfo contains the signer information.
 type SignerInfo struct {
-	AuthorKeyEn bool         `json:"author_key_en"`
+	AuthorKey   bool         `json:"author_key_en"`
 	MaskChipKey bool         `json:"mask_chip_key"`
 	SigningKey  fmt.Stringer `json:"signing_key"`
 }
