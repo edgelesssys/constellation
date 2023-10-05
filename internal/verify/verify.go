@@ -5,9 +5,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 
 /*
-Package verify provides the the types for the types of the verify report in JSON format.
+Package verify provides the types for the verify report in JSON format.
 
-At the moment the package is concerned with providing an interface for constellation verify and the attestationconfigapi upload tool through JSON serialization.
+The package provides an interface for constellation verify and
+the attestationconfigapi upload tool through JSON serialization.
 */
 package verify
 

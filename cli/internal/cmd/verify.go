@@ -86,7 +86,6 @@ func runVerify(cmd *cobra.Command, _ []string) error {
 		}
 		return &attestationDocFormatterImpl{log}
 	}
-	// TODO(elchead): unify the formatters to share the parsing logic
 	v := &verifyCmd{log: log}
 	fetcher := attestationconfigapi.NewFetcher()
 	return v.verify(cmd, fileHandler, verifyClient, formatterFactory, fetcher)
@@ -295,11 +294,10 @@ type jsonAttestationDocFormatter struct {
 func (f *jsonAttestationDocFormatter) format(ctx context.Context, docString string, _ bool,
 	_ bool, _ measurements.M, attestationServiceURL string,
 ) (string, error) {
-	instanceInfo, err := unmarshalInstanceInfo(docString)
+	instanceInfo, err := extractInstanceInfo(docString)
 	if err != nil {
 		return "", fmt.Errorf("unmarshal instance info: %w", err)
 	}
-	// TODO(elchead): omit quotes?
 	snpReport, err := newSNPReport(instanceInfo.AttestationReport)
 	if err != nil {
 		return "", fmt.Errorf("parsing SNP report: %w", err)
@@ -376,7 +374,7 @@ func (f *attestationDocFormatterImpl) format(ctx context.Context, docString stri
 	if err != nil {
 		return "", fmt.Errorf("parsing SNP report: %w", err)
 	}
-	f.printSNPReport(b, snpReport)
+	f.buildSNPReport(b, snpReport)
 	if err := parseMAAToken(ctx, b, instanceInfo.MAAToken, attestationServiceURL); err != nil {
 		return "", fmt.Errorf("print MAA token: %w", err)
 	}
@@ -477,7 +475,7 @@ func (f *attestationDocFormatterImpl) parseQuotes(b *strings.Builder, quotes []*
 	return nil
 }
 
-func (f *attestationDocFormatterImpl) printSNPReport(b *strings.Builder, report verify.SNPReport) {
+func (f *attestationDocFormatterImpl) buildSNPReport(b *strings.Builder, report verify.SNPReport) {
 	writeTCB := func(tcb verify.TCBVersion) {
 		writeIndentfln(b, 3, "Secure Processor bootloader SVN: %d", tcb.Bootloader)
 		writeIndentfln(b, 3, "Secure Processor operating system SVN: %d", tcb.TEE)
@@ -842,7 +840,7 @@ func newTCBVersion(tcbVersion kds.TCBVersion) (res verify.TCBVersion) {
 	}
 }
 
-func unmarshalInstanceInfo(docString string) (azureInstanceInfo, error) {
+func extractInstanceInfo(docString string) (azureInstanceInfo, error) {
 	var doc attestationDoc
 	if err := json.Unmarshal([]byte(docString), &doc); err != nil {
 		return azureInstanceInfo{}, fmt.Errorf("unmarshal attestation document: %w", err)
