@@ -47,6 +47,9 @@ inputs:
   refStream:
     description: "Reference and stream of the image in use"
     required: false
+  internalLoadBalancer:
+    description: "Whether to use an internal load balancer for the control plane"
+    required: false
 
 outputs:
   kubeconfig:
@@ -114,6 +117,12 @@ runs:
       shell: bash
       run: |
         yq eval -i '(.debugCluster) = true' constellation-conf.yaml
+
+    - name: Enable internalLoadBalancer flag
+      if: inputs.internalLoadBalancer == 'true'
+      shell: bash
+      run: |
+        yq eval -i '(.internalLoadBalancer) = true' constellation-conf.yaml
 
     # Uses --force flag since the CLI currently does not have a pre-release version and is always on the latest released version.
     # However, many of our pipelines work on prerelease images. Thus the used images are newer than the CLI's version.

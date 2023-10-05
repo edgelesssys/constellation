@@ -1,0 +1,227 @@
+name: e2e test manual internal LB
+
+on:
+  workflow_dispatch:
+    inputs:
+      nodeCount:
+        description: "Number of nodes to use in the cluster. Given in format `<control-plane nodes>:<worker nodes>`."
+        default: "3:2"
+        type: string
+      cloudProvider:
+        description: "Which cloud provider to use."
+        type: choice
+        options:
+          - "gcp"
+          - "azure"
+          - "aws"
+        default: "azure"
+        required: true
+      test:
+        description: "The test to run."
+        type: choice
+        options:
+          - "sonobuoy quick"
+          - "sonobuoy full"
+          - "autoscaling"
+          - "lb"
+          - "perf-bench"
+          - "verify"
+          - "recover"
+          - "malicious join"
+          - "nop"
+        required: true
+      kubernetesVersion:
+        description: "Kubernetes version to create the cluster from."
+        default: "1.27"
+        required: true
+      cliVersion:
+        description: "Version of a released CLI to download. Leave empty to build the CLI from the checked out ref."
+        type: string
+        default: ""
+        required: false
+      imageVersion:
+        description: "Full name of OS image (CSP independent image version UID). Leave empty for latest debug image on main."
+        type: string
+        default: ""
+        required: false
+  workflow_call:
+    inputs:
+      nodeCount:
+        description: "Number of nodes to use in the cluster. Given in format `<control-plane nodes>:<worker nodes>`."
+        default: "3:2"
+        type: string
+      cloudProvider:
+        description: "Which cloud provider to use."
+        type: string
+        required: true
+      test:
+        description: "The test to run."
+        type: string
+        required: true
+      kubernetesVersion:
+        description: "Kubernetes version to create the cluster from."
+        type: string
+        required: true
+      cliVersion:
+        description: "Version of a released CLI to download. Leave empty to build the CLI from the checked out ref."
+        type: string
+        default: ""
+        required: false
+      imageVersion:
+        description: "Full name of OS image (CSP independent image version UID). Leave empty for latest debug image on main."
+        type: string
+        default: ""
+        required: false
+
+jobs:
+  split-nodeCount:
+    name: Split nodeCount
+    runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      workerNodes: ${{ steps.split-nodeCount.outputs.workerNodes }}
+      controlPlaneNodes: ${{ steps.split-nodeCount.outputs.controlPlaneNodes }}
+    steps:
+      - name: Split nodeCount
+        id: split-nodeCount
+        shell: bash
+        run: |
+          nodeCount="${{ inputs.nodeCount }}"
+          workerNodes="${nodeCount##*:}"
+          controlPlaneNodes="${nodeCount%%:*}"
+
+          if [[ -z "${workerNodes}" ]] || [[ -z "{controlPlaneNodes}" ]]; then
+            echo "Invalid nodeCount input: '${nodeCount}'."
+            exit 1
+          fi
+
+          echo "workerNodes=${workerNodes}" | tee -a "$GITHUB_OUTPUT"
+          echo "controlPlaneNodes=${controlPlaneNodes}" | tee -a "$GITHUB_OUTPUT"
+
+  find-latest-image:
+    name: Select image
+    runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      image: ${{ steps.find-latest-image.outputs.output }}${{ steps.check-input.outputs.image }}
+    steps:
+      - name: Check input
+        id: check-input
+        shell: bash
+        run: |
+          if [[ -z "${{ inputs.imageVersion }}" ]]; then
+            echo "Using latest debug image from main."
+            exit 0
+          else
+            echo "image=${{ inputs.imageVersion }}" | tee -a "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout head
+        if: inputs.imageVersion == ''
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+        with:
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
+      - name: Login to AWS
+        if: inputs.imageVersion == ''
+        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 # v2.2.0
+        with:
+          role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIRead
+          aws-region: eu-central-1
+
+      - name: Find latest image
+        id: find-latest-image
+        if: inputs.imageVersion == ''
+        uses: ./.github/actions/versionsapi
+        with:
+          command: latest
+          ref: main
+          stream: debug
+
+      - name: Is debug image?
+        id: isDebugImage
+        shell: bash
+        run: |
+          case "${{ inputs.imageVersion }}" in
+            "")
+              ;;
+            *"/stream/debug/"*)
+              ;;
+            *)
+              echo "Only debug images are supported for internal LB tests."
+              exit 1
+              ;;
+          esac
+
+  e2e-test-manual:
+    runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+      checks: write
+      contents: read
+      packages: write
+    needs: [find-latest-image, split-nodeCount]
+    if: always() && !cancelled()
+    steps:
+      - name: Install basic tools (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: brew install coreutils kubectl bash terraform
+
+      - name: Checkout head
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+        with:
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
+      - name: Run manual E2E test
+        id: e2e_test
+        uses: ./.github/actions/e2e_test
+        with:
+          workerNodesCount: ${{ needs.split-nodeCount.outputs.workerNodes }}
+          controlNodesCount: ${{ needs.split-nodeCount.outputs.controlPlaneNodes }}
+          cloudProvider: ${{ inputs.cloudProvider }}
+          gcpProject: ${{ secrets.GCP_E2E_PROJECT }}
+          gcpClusterCreateServiceAccount: "constellation-e2e-cluster@constellation-331613.iam.gserviceaccount.com"
+          gcpIAMCreateServiceAccount: "constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"
+          gcpInClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
+          test: ${{ inputs.test }}
+          kubernetesVersion: ${{ inputs.kubernetesVersion }}
+          awsOpenSearchDomain: ${{ secrets.AWS_OPENSEARCH_DOMAIN }}
+          awsOpenSearchUsers: ${{ secrets.AWS_OPENSEARCH_USER }}
+          awsOpenSearchPwd: ${{ secrets.AWS_OPENSEARCH_PWD }}
+          osImage: ${{ needs.find-latest-image.outputs.image }}
+          cliVersion: ${{ inputs.cliVersion }}
+          isDebugImage: true
+          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
+          azureClusterCreateCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
+          azureIAMCreateCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
+          registry: ghcr.io
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
+          cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          fetchMeasurements: ${{ contains(needs.find-latest-image.outputs.image, '/stream/stable/') }}
+          internalLoadBalancer: true
+
+      - name: Always terminate cluster
+        if: always()
+        uses: ./.github/actions/constellation_destroy
+        with:
+          kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
+
+      - name: Always delete IAM configuration
+        if: always()
+        uses: ./.github/actions/constellation_iam_destroy
+        with:
+          cloudProvider: ${{ inputs.cloudProvider }}
+          azureCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
+          gcpServiceAccount: "constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"
+
+      - name: Always upload Terraform logs
+        if: always()
+        uses: ./.github/actions/upload_terraform_logs
+        with:
+          artifactNameSuffix: ${{ steps.e2e_test.outputs.namePrefix }}
