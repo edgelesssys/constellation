@@ -51,7 +51,6 @@ func TestTerminate(t *testing.T) {
 		fileHandler := file.NewHandler(fs)
 		require.NoError(fileHandler.Write(constants.AdminConfFilename, []byte{1, 2}, file.OptNone))
 		require.NoError(stateFile.WriteToFile(fileHandler, constants.StateFilename))
-		require.NoError(fileHandler.Write(constants.StateFilename, []byte{3, 4}, file.OptNone))
 		return fs
 	}
 	someErr := errors.New("failed")
@@ -157,8 +156,6 @@ func TestTerminate(t *testing.T) {
 				} else {
 					assert.True(tc.terminator.Called())
 					_, err = fileHandler.Stat(constants.AdminConfFilename)
-					assert.Error(err)
-					_, err = fileHandler.Stat(constants.StateFilename)
 					assert.Error(err)
 					_, err = fileHandler.Stat(constants.StateFilename)
 					assert.Error(err)
