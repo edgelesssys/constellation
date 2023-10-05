@@ -18,7 +18,7 @@ resource "azurerm_lb_probe" "health_probes" {
   loadbalancer_id     = var.loadbalancer_id
   name                = each.value.name
   port                = each.value.port
-  protocol            = each.value.protocol
+  protocol            = each.value.health_check_protocol
   request_path        = each.value.path
   interval_in_seconds = 5
 }
@@ -31,7 +31,7 @@ resource "azurerm_lb_rule" "rules" {
   protocol                       = "Tcp"
   frontend_port                  = each.value.port
   backend_port                   = each.value.port
-  frontend_ip_configuration_name = "PublicIPAddress"
+  frontend_ip_configuration_name = var.frontend_ip_configuration_name
   backend_address_pool_ids       = [azurerm_lb_backend_address_pool.backend_pool.id]
   probe_id                       = each.value.id
   disable_outbound_snat          = true

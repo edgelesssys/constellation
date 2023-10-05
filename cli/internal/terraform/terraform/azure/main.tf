@@ -27,15 +27,17 @@ locals {
     constellation-uid = local.uid,
   }
   ports_node_range      = "30000-32767"
-  ports_kubernetes      = "6443"
-  ports_bootstrapper    = "9000"
-  ports_konnectivity    = "8132"
-  ports_verify          = "30081"
-  ports_recovery        = "9999"
-  ports_join            = "30090"
-  ports_debugd          = "4000"
   cidr_vpc_subnet_nodes = "192.168.178.0/24"
   cidr_vpc_subnet_pods  = "10.10.0.0/16"
+  ports = flatten([
+    { name = "kubernetes", port = "6443", health_check_protocol = "Https", path = "/readyz", priority = 100 },
+    { name = "bootstrapper", port = "9000", health_check_protocol = "Tcp", path = null, priority = 101 },
+    { name = "verify", port = "30081", health_check_protocol = "Tcp", path = null, priority = 102 },
+    { name = "konnectivity", port = "8132", health_check_protocol = "Tcp", path = null, priority = 103 },
+    { name = "recovery", port = "9999", health_check_protocol = "Tcp", path = null, priority = 104 },
+    { name = "join", port = "30090", health_check_protocol = "Tcp", path = null, priority = 105 },
+    var.debug ? [{ name = "debugd", port = "4000", health_check_protocol = "Tcp", path = null, priority = 106 }] : [],
+  ])
   // wildcard_lb_dns_name is the DNS name of the load balancer with a wildcard for the name.
   // example: given "name-1234567890.location.cloudapp.azure.com" it will return "*.location.cloudapp.azure.com"
   wildcard_lb_dns_name = replace(data.azurerm_public_ip.loadbalancer_ip.fqdn, "/^[^.]*\\./", "*.")
@@ -150,60 +152,19 @@ resource "azurerm_lb" "loadbalancer" {
 module "loadbalancer_backend_control_plane" {
   source = "./modules/load_balancer_backend"
 
-  name            = "${local.name}-control-plane"
-  loadbalancer_id = azurerm_lb.loadbalancer.id
-  ports = flatten([
-    {
-      name     = "bootstrapper",
-      port     = local.ports_bootstrapper,
-      protocol = "Tcp",
-      path     = null
-    },
-    {
-      name     = "kubernetes",
-      port     = local.ports_kubernetes,
-      protocol = "Https",
-      path     = "/readyz"
-    },
-    {
-      name     = "konnectivity",
-      port     = local.ports_konnectivity,
-      protocol = "Tcp",
-      path     = null
-    },
-    {
-      name     = "verify",
-      port     = local.ports_verify,
-      protocol = "Tcp",
-      path     = null
-    },
-    {
-      name     = "recovery",
-      port     = local.ports_recovery,
-      protocol = "Tcp",
-      path     = null
-    },
-    {
-      name     = "join",
-      port     = local.ports_join,
-      protocol = "Tcp",
-      path     = null
-    },
-    var.debug ? [{
-      name     = "debugd",
-      port     = local.ports_debugd,
-      protocol = "Tcp",
-      path     = null
-    }] : [],
-  ])
+  name                           = "${local.name}-control-plane"
+  loadbalancer_id                = azurerm_lb.loadbalancer.id
+  frontend_ip_configuration_name = azurerm_lb.loadbalancer.frontend_ip_configuration[0].name
+  ports                          = local.ports
 }
 
 module "loadbalancer_backend_worker" {
   source = "./modules/load_balancer_backend"
 
-  name            = "${local.name}-worker"
-  loadbalancer_id = azurerm_lb.loadbalancer.id
-  ports           = []
+  name                           = "${local.name}-worker"
+  loadbalancer_id                = azurerm_lb.loadbalancer.id
+  frontend_ip_configuration_name = azurerm_lb.loadbalancer.frontend_ip_configuration[0].name
+  ports                          = []
 }
 
 resource "azurerm_lb_backend_address_pool" "all" {
@@ -233,15 +194,10 @@ resource "azurerm_network_security_group" "security_group" {
   tags                = local.tags
 
   dynamic "security_rule" {
-    for_each = flatten([
-      { name = "noderange", priority = 100, dest_port_range = local.ports_node_range },
-      { name = "kubernetes", priority = 101, dest_port_range = local.ports_kubernetes },
-      { name = "bootstrapper", priority = 102, dest_port_range = local.ports_bootstrapper },
-      { name = "konnectivity", priority = 103, dest_port_range = local.ports_konnectivity },
-      { name = "join", priority = 104, dest_port_range = local.ports_recovery },
-      { name = "recovery", priority = 105, dest_port_range = local.ports_join },
-      var.debug ? [{ name = "debugd", priority = 106, dest_port_range = local.ports_debugd }] : [],
-    ])
+    for_each = concat(
+      local.ports,
+      [{ name = "nodeports", port = local.ports_node_range, priority = 200 }]
+    )
     content {
       name                       = security_rule.value.name
       priority                   = security_rule.value.priority
@@ -249,7 +205,7 @@ resource "azurerm_network_security_group" "security_group" {
       access                     = "Allow"
       protocol                   = "Tcp"
       source_port_range          = "*"
-      destination_port_range     = security_rule.value.dest_port_range
+      destination_port_range     = security_rule.value.port
       source_address_prefix      = "*"
       destination_address_prefix = "*"
     }
@@ -298,12 +254,3 @@ data "azurerm_user_assigned_identity" "uaid" {
   resource_group_name = local.uai_resource_group
 }
 
-moved {
-  from = module.scale_set_control_plane
-  to   = module.scale_set_group["control_plane_default"]
-}
-
-moved {
-  from = module.scale_set_worker
-  to   = module.scale_set_group["worker_default"]
-}
