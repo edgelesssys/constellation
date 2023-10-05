@@ -224,24 +224,11 @@ func (r *recoverCmd) parseRecoverFlags(cmd *cobra.Command, fileHandler file.Hand
 	r.log.Debugf("Workspace set to %q", workDir)
 	r.pf = pathprefix.New(workDir)
 
-	stateFile, err := state.ReadFromFile(fileHandler, constants.StateFilename)
-	if err != nil {
-		return recoverFlags{}, fmt.Errorf("reading state file: %w", err)
-	}
-
 	endpoint, err := cmd.Flags().GetString("endpoint")
 	r.log.Debugf("Endpoint flag is %s", endpoint)
 	if err != nil {
 		return recoverFlags{}, fmt.Errorf("parsing endpoint argument: %w", err)
 	}
-	if endpoint == "" {
-		endpoint = stateFile.Infrastructure.ClusterEndpoint
-	}
-	endpoint, err = addPortIfMissing(endpoint, constants.RecoveryPort)
-	if err != nil {
-		return recoverFlags{}, fmt.Errorf("validating endpoint argument: %w", err)
-	}
-	r.log.Debugf("Endpoint value after parsing is %s", endpoint)
 
 	force, err := cmd.Flags().GetBool("force")
 	if err != nil {
@@ -249,6 +236,21 @@ func (r *recoverCmd) parseRecoverFlags(cmd *cobra.Command, fileHandler file.Hand
 	}
 
 	var attestationURL string
+	stateFile := state.New()
+	if endpoint == "" {
+		stateFile, err = state.ReadFromFile(fileHandler, constants.StateFilename)
+		if err != nil {
+			return recoverFlags{}, fmt.Errorf("reading state file: %w", err)
+		}
+		endpoint = stateFile.Infrastructure.ClusterEndpoint
+	}
+
+	endpoint, err = addPortIfMissing(endpoint, constants.RecoveryPort)
+	if err != nil {
+		return recoverFlags{}, fmt.Errorf("validating endpoint argument: %w", err)
+	}
+	r.log.Debugf("Endpoint value after parsing is %s", endpoint)
+
 	if stateFile.Infrastructure.Azure != nil {
 		attestationURL = stateFile.Infrastructure.Azure.AttestationURL
 	}
