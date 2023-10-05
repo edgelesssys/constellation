@@ -187,16 +187,18 @@ func (c *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 	c.log.Debugf("Flag 'raw' set to %t", force)
 
 	// Get empty values from state file
-	var attestationURL string
+	stateFile, err := state.ReadFromFile(fileHandler, constants.StateFilename)
+	isFileNotFound := errors.Is(err, afero.ErrFileNotFound)
+	if isFileNotFound {
+		stateFile = state.New() // error compat
+	} else if err != nil {
+		return verifyFlags{}, fmt.Errorf("reading state file: %w", err)
+	}
+
 	emptyEndpoint := endpoint == ""
 	emptyIDs := ownerID == "" && clusterID == ""
 	if emptyEndpoint || emptyIDs {
 		c.log.Debugf("Trying to supplement empty flag values from %q", pf.PrefixPrintablePath(constants.StateFilename))
-		stateFile, err := state.ReadFromFile(fileHandler, constants.StateFilename)
-		if err != nil {
-			return verifyFlags{}, fmt.Errorf("reading state file: %w", err)
-		}
-
 		if emptyEndpoint {
 			cmd.Printf("Using endpoint from %q. Specify --node-endpoint to override this.\n", pf.PrefixPrintablePath(constants.StateFilename))
 			endpoint = stateFile.Infrastructure.ClusterEndpoint
@@ -206,9 +208,11 @@ func (c *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 			ownerID = stateFile.ClusterValues.OwnerID
 			clusterID = stateFile.ClusterValues.ClusterID
 		}
-		if stateFile.Infrastructure.Azure != nil {
-			attestationURL = stateFile.Infrastructure.Azure.AttestationURL
-		}
+	}
+
+	var attestationURL string
+	if stateFile.Infrastructure.Azure != nil {
+		attestationURL = stateFile.Infrastructure.Azure.AttestationURL
 	}
 
 	// Validate
