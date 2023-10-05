@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -33,7 +34,7 @@ const (
 
 // CryptMapper manages dm-crypt volumes.
 type CryptMapper struct {
-	mapper        deviceMapper
+	mapper        func() deviceMapper
 	kms           keyCreator
 	getDiskFormat func(disk string) (string, error)
 }
@@ -42,7 +43,7 @@ type CryptMapper struct {
 // kms is used to fetch data encryption keys for the dm-crypt volumes.
 func New(kms keyCreator) *CryptMapper {
 	return &CryptMapper{
-		mapper:        cryptsetup.New(),
+		mapper:        func() deviceMapper { return cryptsetup.New() },
 		kms:           kms,
 		getDiskFormat: getDiskFormat,
 	}
@@ -87,22 +88,35 @@ func (c *CryptMapper) CloseCryptDevice(volumeID string) error {
 // The key used to encrypt the volume is fetched using CryptMapper's kms client.
 func (c *CryptMapper) OpenCryptDevice(ctx context.Context, source, volumeID string, integrity bool) (string, error) {
 	// Initialize the block device
-	free, err := c.mapper.Init(source)
+	mapper := c.mapper()
+	free, err := mapper.Init(source)
 	if err != nil {
 		return "", fmt.Errorf("initializing dm-crypt to map device %q: %w", source, err)
 	}
 	defer free()
 
+	deviceName := filepath.Join(cryptPrefix, volumeID)
 	var passphrase []byte
 	// Try to load LUKS headers
 	// If this fails, the device is either not formatted at all, or already formatted with a different FS
-	if err := c.mapper.LoadLUKS2(); err != nil {
-		passphrase, err = c.formatNewDevice(ctx, volumeID, source, integrity)
+	if err := mapper.LoadLUKS2(); err != nil {
+		passphrase, err = c.formatNewDevice(ctx, mapper, volumeID, source, integrity)
 		if err != nil {
 			return "", fmt.Errorf("formatting device: %w", err)
 		}
 	} else {
-		uuid, err := c.mapper.GetUUID()
+		// Check if device is already active
+		// If yes, this is a no-op
+		// Simply return the device name
+		if _, err := os.Stat(deviceName); err == nil {
+			_, err := os.Stat(deviceName + integritySuffix)
+			if integrity && err != nil {
+				return "", fmt.Errorf("device %s already exists, but integrity device %s is missing", deviceName, deviceName+integritySuffix)
+			}
+			return deviceName, nil
+		}
+
+		uuid, err := mapper.GetUUID()
 		if err != nil {
 			return "", err
 		}
@@ -115,26 +129,27 @@ func (c *CryptMapper) OpenCryptDevice(ctx context.Context, source, volumeID stri
 		}
 	}
 
-	if err := c.mapper.ActivateByPassphrase(volumeID, 0, string(passphrase), cryptsetup.ReadWriteQueueBypass); err != nil {
+	if err := mapper.ActivateByPassphrase(volumeID, 0, string(passphrase), cryptsetup.ReadWriteQueueBypass); err != nil {
 		return "", fmt.Errorf("trying to activate dm-crypt volume: %w", err)
 	}
 
-	return cryptPrefix + volumeID, nil
+	return deviceName, nil
 }
 
 // ResizeCryptDevice resizes the underlying crypt device and returns the mapped device path.
 func (c *CryptMapper) ResizeCryptDevice(ctx context.Context, volumeID string) (string, error) {
-	free, err := c.mapper.InitByName(volumeID)
+	mapper := c.mapper()
+	free, err := mapper.InitByName(volumeID)
 	if err != nil {
 		return "", fmt.Errorf("initializing device: %w", err)
 	}
 	defer free()
 
-	if err := c.mapper.LoadLUKS2(); err != nil {
+	if err := mapper.LoadLUKS2(); err != nil {
 		return "", fmt.Errorf("loading device: %w", err)
 	}
 
-	uuid, err := c.mapper.GetUUID()
+	uuid, err := mapper.GetUUID()
 	if err != nil {
 		return "", err
 	}
@@ -143,11 +158,11 @@ func (c *CryptMapper) ResizeCryptDevice(ctx context.Context, volumeID string) (s
 		return "", fmt.Errorf("getting key: %w", err)
 	}
 
-	if err := c.mapper.ActivateByPassphrase("", 0, string(passphrase), resizeFlags); err != nil {
+	if err := mapper.ActivateByPassphrase("", 0, string(passphrase), resizeFlags); err != nil {
 		return "", fmt.Errorf("activating keyring for crypt device %q with passphrase: %w", volumeID, err)
 	}
 
-	if err := c.mapper.Resize(volumeID, 0); err != nil {
+	if err := mapper.Resize(volumeID, 0); err != nil {
 		return "", fmt.Errorf("resizing device: %w", err)
 	}
 
@@ -156,14 +171,15 @@ func (c *CryptMapper) ResizeCryptDevice(ctx context.Context, volumeID string) (s
 
 // GetDevicePath returns the device path of a mapped crypt device.
 func (c *CryptMapper) GetDevicePath(volumeID string) (string, error) {
+	mapper := c.mapper()
 	name := strings.TrimPrefix(volumeID, cryptPrefix)
-	free, err := c.mapper.InitByName(name)
+	free, err := mapper.InitByName(name)
 	if err != nil {
 		return "", fmt.Errorf("initializing device: %w", err)
 	}
 	defer free()
 
-	deviceName := c.mapper.GetDeviceName()
+	deviceName := mapper.GetDeviceName()
 	if deviceName == "" {
 		return "", errors.New("unable to determine device name")
 	}
@@ -172,20 +188,21 @@ func (c *CryptMapper) GetDevicePath(volumeID string) (string, error) {
 
 // closeCryptDevice closes the crypt device mapped for volumeID.
 func (c *CryptMapper) closeCryptDevice(source, volumeID, deviceType string) error {
-	free, err := c.mapper.InitByName(volumeID)
+	mapper := c.mapper()
+	free, err := mapper.InitByName(volumeID)
 	if err != nil {
 		return fmt.Errorf("initializing dm-%s to unmap device %q: %w", deviceType, source, err)
 	}
 	defer free()
 
-	if err := c.mapper.Deactivate(volumeID); err != nil {
+	if err := mapper.Deactivate(volumeID); err != nil {
 		return fmt.Errorf("deactivating dm-%s volume %q for device %q: %w", deviceType, cryptPrefix+volumeID, source, err)
 	}
 
 	return nil
 }
 
-func (c *CryptMapper) formatNewDevice(ctx context.Context, volumeID, source string, integrity bool) ([]byte, error) {
+func (c *CryptMapper) formatNewDevice(ctx context.Context, mapper deviceMapper, volumeID, source string, integrity bool) ([]byte, error) {
 	format, err := c.getDiskFormat(source)
 	if err != nil {
 		return nil, fmt.Errorf("determining if disk is formatted: %w", err)
@@ -195,11 +212,11 @@ func (c *CryptMapper) formatNewDevice(ctx context.Context, volumeID, source stri
 	}
 
 	// Device is not formatted, so we can safely create a new LUKS2 partition
-	if err := c.mapper.Format(integrity); err != nil {
+	if err := mapper.Format(integrity); err != nil {
 		return nil, fmt.Errorf("formatting device %q: %w", source, err)
 	}
 
-	uuid, err := c.mapper.GetUUID()
+	uuid, err := mapper.GetUUID()
 	if err != nil {
 		return nil, err
 	}
@@ -212,7 +229,7 @@ func (c *CryptMapper) formatNewDevice(ctx context.Context, volumeID, source stri
 	}
 
 	// Add a new keyslot using the internal volume key
-	if err := c.mapper.KeyslotAddByVolumeKey(0, "", string(passphrase)); err != nil {
+	if err := mapper.KeyslotAddByVolumeKey(0, "", string(passphrase)); err != nil {
 		return nil, fmt.Errorf("adding keyslot: %w", err)
 	}
 
@@ -222,7 +239,7 @@ func (c *CryptMapper) formatNewDevice(ctx context.Context, volumeID, source stri
 			fmt.Printf("Wipe in progress: %.2f%%\n", prog)
 		}
 
-		if err := c.mapper.Wipe(volumeID, 1024*1024, 0, logProgress, 30*time.Second); err != nil {
+		if err := mapper.Wipe(volumeID, 1024*1024, 0, logProgress, 30*time.Second); err != nil {
 			return nil, fmt.Errorf("wiping device: %w", err)
 		}
 	}
