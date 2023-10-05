@@ -149,6 +149,13 @@ func TestInitialize(t *testing.T) {
 			masterSecretShouldExist: true,
 			wantErr:                 true,
 		},
+		"state file with only version": {
+			provider:      cloudprovider.GCP,
+			stateFile:     &state.State{Version: state.Version1},
+			initServerAPI: &stubInitServer{},
+			retriable:     true,
+			wantErr:       true,
+		},
 		"empty state file": {
 			provider:      cloudprovider.GCP,
 			stateFile:     &state.State{},
