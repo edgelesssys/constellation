@@ -19,6 +19,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
@@ -172,14 +173,18 @@ func (m *miniUpCmd) createMiniCluster(ctx context.Context, fileHandler file.Hand
 		TFWorkspace: constants.TerraformWorkingDir,
 		TFLogLevel:  flags.tfLogLevel,
 	}
-	idFile, err := creator.Create(ctx, opts)
+	infraState, err := creator.Create(ctx, opts)
 	if err != nil {
 		return err
 	}
 
-	idFile.UID = constants.MiniConstellationUID // use UID "mini" to identify MiniConstellation clusters.
-	m.log.Debugf("Cluster id file contains %v", idFile)
-	return fileHandler.WriteJSON(constants.ClusterIDsFilename, idFile, file.OptNone)
+	infraState.UID = constants.MiniConstellationUID // use UID "mini" to identify MiniConstellation clusters.
+
+	stateFile := state.New().
+		SetInfrastructure(infraState)
+
+	m.log.Debugf("Cluster state file contains %v", stateFile)
+	return stateFile.WriteToFile(fileHandler, constants.StateFilename)
 }
 
 // initializeMiniCluster initializes a QEMU cluster.
