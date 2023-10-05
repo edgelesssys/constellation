@@ -28,7 +28,7 @@ Altogether, the following files are generated during the creation of a Constella
 
 After the creation of your cluster, the CLI will provide you with a Kubernetes `kubeconfig` file.
 This file grants you access to your Kubernetes cluster and configures the [kubectl](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/) tool.
-In addition, the cluster's [identifier](orchestration.md#post-installation-configuration) is returned and stored in a file called `constellation-id.json`
+In addition, the cluster's [identifier](orchestration.md#post-installation-configuration) is returned and stored in a file called `constellation-state.yaml`
 
 ### Creation process details
 
