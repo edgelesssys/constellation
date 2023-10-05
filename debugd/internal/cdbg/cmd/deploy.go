@@ -113,11 +113,11 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 		return err
 	}
 	if len(ips) == 0 {
-		var idFile clusterIDsFile
-		if err := fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil {
-			return fmt.Errorf("reading cluster IDs file: %w", err)
+		var stateFile clusterStateFile
+		if err := fileHandler.ReadYAML(constants.StateFilename, &stateFile); err != nil {
+			return fmt.Errorf("reading cluster state file: %w", err)
 		}
-		ips = []string{idFile.IP}
+		ips = []string{stateFile.Infrastructure.ClusterEndpoint}
 	}
 
 	info, err := cmd.Flags().GetStringToString("info")
@@ -285,8 +285,8 @@ type fileTransferer interface {
 	SetFiles(files []filetransfer.FileStat)
 }
 
-type clusterIDsFile struct {
-	ClusterID string
-	OwnerID   string
-	IP        string
+type clusterStateFile struct {
+	Infrastructure struct {
+		ClusterEndpoint string `yaml:"clusterEndpoint"`
+	} `yaml:"infrastructure"`
 }

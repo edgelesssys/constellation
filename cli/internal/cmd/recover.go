@@ -16,8 +16,8 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
-	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/recoverproto"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
@@ -224,33 +224,40 @@ func (r *recoverCmd) parseRecoverFlags(cmd *cobra.Command, fileHandler file.Hand
 	r.log.Debugf("Workspace set to %q", workDir)
 	r.pf = pathprefix.New(workDir)
 
-	var idFile clusterid.File
-	if err := fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil && !errors.Is(err, afero.ErrFileNotFound) {
-		return recoverFlags{}, err
-	}
-
 	endpoint, err := cmd.Flags().GetString("endpoint")
 	r.log.Debugf("Endpoint flag is %s", endpoint)
 	if err != nil {
 		return recoverFlags{}, fmt.Errorf("parsing endpoint argument: %w", err)
 	}
-	if endpoint == "" {
-		endpoint = idFile.IP
-	}
-	endpoint, err = addPortIfMissing(endpoint, constants.RecoveryPort)
-	if err != nil {
-		return recoverFlags{}, fmt.Errorf("validating endpoint argument: %w", err)
-	}
-	r.log.Debugf("Endpoint value after parsing is %s", endpoint)
 
 	force, err := cmd.Flags().GetBool("force")
 	if err != nil {
 		return recoverFlags{}, fmt.Errorf("parsing force argument: %w", err)
 	}
 
+	var attestationURL string
+	stateFile := state.New()
+	if endpoint == "" {
+		stateFile, err = state.ReadFromFile(fileHandler, constants.StateFilename)
+		if err != nil {
+			return recoverFlags{}, fmt.Errorf("reading state file: %w", err)
+		}
+		endpoint = stateFile.Infrastructure.ClusterEndpoint
+	}
+
+	endpoint, err = addPortIfMissing(endpoint, constants.RecoveryPort)
+	if err != nil {
+		return recoverFlags{}, fmt.Errorf("validating endpoint argument: %w", err)
+	}
+	r.log.Debugf("Endpoint value after parsing is %s", endpoint)
+
+	if stateFile.Infrastructure.Azure != nil {
+		attestationURL = stateFile.Infrastructure.Azure.AttestationURL
+	}
+
 	return recoverFlags{
 		endpoint: endpoint,
-		maaURL:   idFile.AttestationURL,
+		maaURL:   attestationURL,
 		force:    force,
 	}, nil
 }

@@ -11,8 +11,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
@@ -47,65 +46,64 @@ func TestTerminateCmdArgumentValidation(t *testing.T) {
 }
 
 func TestTerminate(t *testing.T) {
-	setupFs := func(require *require.Assertions, idFile clusterid.File) afero.Fs {
+	setupFs := func(require *require.Assertions, stateFile *state.State) afero.Fs {
 		fs := afero.NewMemMapFs()
 		fileHandler := file.NewHandler(fs)
 		require.NoError(fileHandler.Write(constants.AdminConfFilename, []byte{1, 2}, file.OptNone))
-		require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFilename, idFile, file.OptNone))
-		require.NoError(fileHandler.Write(constants.StateFilename, []byte{3, 4}, file.OptNone))
+		require.NoError(stateFile.WriteToFile(fileHandler, constants.StateFilename))
 		return fs
 	}
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		idFile     clusterid.File
+		stateFile  *state.State
 		yesFlag    bool
 		stdin      string
-		setupFs    func(*require.Assertions, clusterid.File) afero.Fs
+		setupFs    func(*require.Assertions, *state.State) afero.Fs
 		terminator spyCloudTerminator
 		wantErr    bool
 		wantAbort  bool
 	}{
 		"success": {
-			idFile:     clusterid.File{CloudProvider: cloudprovider.GCP},
+			stateFile:  state.New(),
 			setupFs:    setupFs,
 			terminator: &stubCloudTerminator{},
 			yesFlag:    true,
 		},
 		"interactive": {
-			idFile:     clusterid.File{CloudProvider: cloudprovider.GCP},
+			stateFile:  state.New(),
 			setupFs:    setupFs,
 			terminator: &stubCloudTerminator{},
 			stdin:      "yes\n",
 		},
 		"interactive abort": {
-			idFile:     clusterid.File{CloudProvider: cloudprovider.GCP},
+			stateFile:  state.New(),
 			setupFs:    setupFs,
 			terminator: &stubCloudTerminator{},
 			stdin:      "no\n",
 			wantAbort:  true,
 		},
 		"files to remove do not exist": {
-			idFile: clusterid.File{CloudProvider: cloudprovider.GCP},
-			setupFs: func(require *require.Assertions, idFile clusterid.File) afero.Fs {
+			stateFile: state.New(),
+			setupFs: func(require *require.Assertions, stateFile *state.State) afero.Fs {
 				fs := afero.NewMemMapFs()
 				fileHandler := file.NewHandler(fs)
-				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFilename, idFile, file.OptNone))
+				require.NoError(stateFile.WriteToFile(fileHandler, constants.StateFilename))
 				return fs
 			},
 			terminator: &stubCloudTerminator{},
 			yesFlag:    true,
 		},
 		"terminate error": {
-			idFile:     clusterid.File{CloudProvider: cloudprovider.GCP},
+			stateFile:  state.New(),
 			setupFs:    setupFs,
 			terminator: &stubCloudTerminator{terminateErr: someErr},
 			yesFlag:    true,
 			wantErr:    true,
 		},
 		"missing id file does not error": {
-			idFile: clusterid.File{CloudProvider: cloudprovider.GCP},
-			setupFs: func(require *require.Assertions, idFile clusterid.File) afero.Fs {
+			stateFile: state.New(),
+			setupFs: func(require *require.Assertions, stateFile *state.State) afero.Fs {
 				fs := afero.NewMemMapFs()
 				fileHandler := file.NewHandler(fs)
 				require.NoError(fileHandler.Write(constants.AdminConfFilename, []byte{1, 2}, file.OptNone))
@@ -115,9 +113,9 @@ func TestTerminate(t *testing.T) {
 			yesFlag:    true,
 		},
 		"remove file fails": {
-			idFile: clusterid.File{CloudProvider: cloudprovider.GCP},
-			setupFs: func(require *require.Assertions, idFile clusterid.File) afero.Fs {
-				fs := setupFs(require, idFile)
+			stateFile: state.New(),
+			setupFs: func(require *require.Assertions, stateFile *state.State) afero.Fs {
+				fs := setupFs(require, stateFile)
 				return afero.NewReadOnlyFs(fs)
 			},
 			terminator: &stubCloudTerminator{},
@@ -141,7 +139,7 @@ func TestTerminate(t *testing.T) {
 			cmd.Flags().String("workspace", "", "")
 
 			require.NotNil(tc.setupFs)
-			fileHandler := file.NewHandler(tc.setupFs(require, tc.idFile))
+			fileHandler := file.NewHandler(tc.setupFs(require, tc.stateFile))
 
 			if tc.yesFlag {
 				require.NoError(cmd.Flags().Set("yes", "true"))
@@ -158,8 +156,6 @@ func TestTerminate(t *testing.T) {
 				} else {
 					assert.True(tc.terminator.Called())
 					_, err = fileHandler.Stat(constants.AdminConfFilename)
-					assert.Error(err)
-					_, err = fileHandler.Stat(constants.ClusterIDsFilename)
 					assert.Error(err)
 					_, err = fileHandler.Stat(constants.StateFilename)
 					assert.Error(err)

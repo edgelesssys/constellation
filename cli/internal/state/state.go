@@ -56,7 +56,7 @@ func NewFromIDFile(idFile clusterid.File, cfg *config.Config) *State {
 			UID:               idFile.UID,
 			ClusterEndpoint:   idFile.IP,
 			APIServerCertSANs: idFile.APIServerCertSANs,
-			InitSecret:        string(idFile.InitSecret),
+			InitSecret:        idFile.InitSecret,
 			Name:              clusterid.GetClusterName(cfg, idFile),
 		})
 
@@ -112,7 +112,7 @@ type ClusterValues struct {
 type Infrastructure struct {
 	UID               string   `yaml:"uid"`
 	ClusterEndpoint   string   `yaml:"clusterEndpoint"`
-	InitSecret        string   `yaml:"initSecret"`
+	InitSecret        []byte   `yaml:"initSecret"`
 	APIServerCertSANs []string `yaml:"apiServerCertSANs"`
 	// Name is the name of the cluster.
 	Name  string `yaml:"name"`

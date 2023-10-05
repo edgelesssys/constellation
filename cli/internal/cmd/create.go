@@ -12,14 +12,12 @@ import (
 	"io/fs"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
-	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -172,12 +170,6 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	}
 	c.log.Debugf("Successfully created the cloud resources for the cluster")
 
-	// TODO(msanft): Remove IDFile as per AB#3425
-	idFile := convertToIDFile(infraState, provider)
-	if err := fileHandler.WriteJSON(constants.ClusterIDsFilename, idFile, file.OptNone); err != nil {
-		return err
-	}
-
 	state := state.New().SetInfrastructure(infraState)
 	if err := state.WriteToFile(fileHandler, constants.StateFilename); err != nil {
 		return fmt.Errorf("writing state file: %w", err)
@@ -185,21 +177,6 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 
 	cmd.Println("Your Constellation cluster was created successfully.")
 	return nil
-}
-
-func convertToIDFile(infra state.Infrastructure, provider cloudprovider.Provider) clusterid.File {
-	var file clusterid.File
-	file.CloudProvider = provider
-	file.IP = infra.ClusterEndpoint
-	file.APIServerCertSANs = infra.APIServerCertSANs
-	file.InitSecret = []byte(infra.InitSecret) // Convert string to []byte
-	file.UID = infra.UID
-
-	if infra.Azure != nil {
-		file.AttestationURL = infra.Azure.AttestationURL
-	}
-
-	return file
 }
 
 // parseCreateFlags parses the flags of the create command.
@@ -257,9 +234,9 @@ func (c *createCmd) checkDirClean(fileHandler file.Handler) error {
 	if _, err := fileHandler.Stat(constants.MasterSecretFilename); !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("file '%s' already exists in working directory. Constellation won't overwrite previous master secrets. Move it somewhere or delete it before creating a new cluster", c.pf.PrefixPrintablePath(constants.MasterSecretFilename))
 	}
-	c.log.Debugf("Checking cluster IDs file")
-	if _, err := fileHandler.Stat(constants.ClusterIDsFilename); !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("file '%s' already exists in working directory. Constellation won't overwrite previous cluster IDs. Move it somewhere or delete it before creating a new cluster", c.pf.PrefixPrintablePath(constants.ClusterIDsFilename))
+	c.log.Debugf("Checking state file")
+	if _, err := fileHandler.Stat(constants.StateFilename); !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("file '%s' already exists in working directory. Constellation won't overwrite previous cluster state. Move it somewhere or delete it before creating a new cluster", c.pf.PrefixPrintablePath(constants.StateFilename))
 	}
 
 	return nil

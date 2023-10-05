@@ -39,11 +39,13 @@ func TestUpgradeApply(t *testing.T) {
 			APIServerCertSANs: []string{},
 			UID:               "uid",
 			Name:              "kubernetes-uid", // default test cfg uses "kubernetes" prefix
+			InitSecret:        []byte{0x42},
 		}).
 		SetClusterValues(state.ClusterValues{MeasurementSalt: []byte{0x41}})
 	defaultIDFile := clusterid.File{
 		MeasurementSalt: []byte{0x41},
 		UID:             "uid",
+		InitSecret:      []byte{0x42},
 	}
 	fsWithIDFile := func() file.Handler {
 		fh := file.NewHandler(afero.NewMemMapFs())
@@ -94,6 +96,10 @@ func TestUpgradeApply(t *testing.T) {
 				require.NoError(err)
 				assert.Equal("v1", gotState.Version)
 				assert.Equal(defaultState, gotState)
+				var oldIDFile clusterid.File
+				err = fh.ReadJSON(constants.ClusterIDsFilename+".old", &oldIDFile)
+				assert.NoError(err)
+				assert.Equal(defaultIDFile, oldIDFile)
 			},
 		},
 		"id file and state file do not exist": {

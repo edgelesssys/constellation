@@ -26,8 +26,8 @@ import (
 	tpmProto "github.com/google/go-tpm-tools/proto/tpm"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
-	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
@@ -54,7 +54,7 @@ func NewVerifyCmd() *cobra.Command {
 		Use:   "verify",
 		Short: "Verify the confidential properties of a Constellation cluster",
 		Long: "Verify the confidential properties of a Constellation cluster.\n" +
-			"If arguments aren't specified, values are read from `" + constants.ClusterIDsFilename + "`.",
+			"If arguments aren't specified, values are read from `" + constants.StateFilename + "`.",
 		Args: cobra.ExactArgs(0),
 		RunE: runVerify,
 	}
@@ -204,25 +204,34 @@ func (c *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 	}
 	c.log.Debugf("Flag 'output' set to %t", output)
 
-	var idFile clusterid.File
-	if err := fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil && !errors.Is(err, afero.ErrFileNotFound) {
-		return verifyFlags{}, fmt.Errorf("reading cluster ID file: %w", err)
+	// Get empty values from state file
+	stateFile, err := state.ReadFromFile(fileHandler, constants.StateFilename)
+	isFileNotFound := errors.Is(err, afero.ErrFileNotFound)
+	if isFileNotFound {
+		c.log.Debugf("State file %q not found, using empty state", pf.PrefixPrintablePath(constants.StateFilename))
+		stateFile = state.New() // error compat
+	} else if err != nil {
+		return verifyFlags{}, fmt.Errorf("reading state file: %w", err)
 	}
 
-	// Get empty values from ID file
 	emptyEndpoint := endpoint == ""
 	emptyIDs := ownerID == "" && clusterID == ""
 	if emptyEndpoint || emptyIDs {
-		c.log.Debugf("Trying to supplement empty flag values from %q", pf.PrefixPrintablePath(constants.ClusterIDsFilename))
+		c.log.Debugf("Trying to supplement empty flag values from %q", pf.PrefixPrintablePath(constants.StateFilename))
 		if emptyEndpoint {
-			cmd.PrintErrf("Using endpoint from %q. Specify --node-endpoint to override this.\n", pf.PrefixPrintablePath(constants.ClusterIDsFilename))
-			endpoint = idFile.IP
+			cmd.PrintErrf("Using endpoint from %q. Specify --node-endpoint to override this.\n", pf.PrefixPrintablePath(constants.StateFilename))
+			endpoint = stateFile.Infrastructure.ClusterEndpoint
 		}
 		if emptyIDs {
-			cmd.PrintErrf("Using ID from %q. Specify --cluster-id to override this.\n", pf.PrefixPrintablePath(constants.ClusterIDsFilename))
-			ownerID = idFile.OwnerID
-			clusterID = idFile.ClusterID
+			cmd.PrintErrf("Using ID from %q. Specify --cluster-id to override this.\n", pf.PrefixPrintablePath(constants.StateFilename))
+			ownerID = stateFile.ClusterValues.OwnerID
+			clusterID = stateFile.ClusterValues.ClusterID
 		}
+	}
+
+	var attestationURL string
+	if stateFile.Infrastructure.Azure != nil {
+		attestationURL = stateFile.Infrastructure.Azure.AttestationURL
 	}
 
 	// Validate
@@ -239,8 +248,8 @@ func (c *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 		pf:        pf,
 		ownerID:   ownerID,
 		clusterID: clusterID,
-		maaURL:    idFile.AttestationURL,
 		output:    output,
+		maaURL:    attestationURL,
 		force:     force,
 	}, nil
 }

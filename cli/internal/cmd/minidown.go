@@ -11,8 +11,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
@@ -44,14 +43,12 @@ func runDown(cmd *cobra.Command, args []string) error {
 }
 
 func checkForMiniCluster(fileHandler file.Handler) error {
-	var idFile clusterid.File
-	if err := fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil {
-		return err
+	stateFile, err := state.ReadFromFile(fileHandler, constants.StateFilename)
+	if err != nil {
+		return fmt.Errorf("reading state file: %w", err)
 	}
-	if idFile.CloudProvider != cloudprovider.QEMU {
-		return errors.New("cluster is not a QEMU based Constellation")
-	}
-	if idFile.UID != constants.MiniConstellationUID {
+
+	if stateFile.Infrastructure.UID != constants.MiniConstellationUID {
 		return errors.New("cluster is not a MiniConstellation cluster")
 	}
 

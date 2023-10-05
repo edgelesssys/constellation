@@ -17,7 +17,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -48,7 +48,7 @@ func TestVerify(t *testing.T) {
 		formatter          *stubAttDocFormatter
 		nodeEndpointFlag   string
 		clusterIDFlag      string
-		idFile             *clusterid.File
+		stateFile          *state.State
 		wantEndpoint       string
 		skipConfigCreation bool
 		wantErr            bool
@@ -84,11 +84,11 @@ func TestVerify(t *testing.T) {
 			formatter:     &stubAttDocFormatter{},
 			wantErr:       true,
 		},
-		"endpoint from id file": {
+		"endpoint from state file": {
 			provider:      cloudprovider.GCP,
 			clusterIDFlag: zeroBase64,
 			protoClient:   &stubVerifyClient{},
-			idFile:        &clusterid.File{IP: "192.0.2.1"},
+			stateFile:     &state.State{Infrastructure: state.Infrastructure{ClusterEndpoint: "192.0.2.1"}},
 			wantEndpoint:  "192.0.2.1:" + strconv.Itoa(constants.VerifyServiceNodePortGRPC),
 			formatter:     &stubAttDocFormatter{},
 		},
@@ -97,7 +97,7 @@ func TestVerify(t *testing.T) {
 			nodeEndpointFlag: "192.0.2.2:1234",
 			clusterIDFlag:    zeroBase64,
 			protoClient:      &stubVerifyClient{},
-			idFile:           &clusterid.File{IP: "192.0.2.1"},
+			stateFile:        &state.State{Infrastructure: state.Infrastructure{ClusterEndpoint: "192.0.2.1"}},
 			wantEndpoint:     "192.0.2.2:1234",
 			formatter:        &stubAttDocFormatter{},
 		},
@@ -115,11 +115,11 @@ func TestVerify(t *testing.T) {
 			formatter:        &stubAttDocFormatter{},
 			wantErr:          true,
 		},
-		"use owner id from id file": {
+		"use owner id from state file": {
 			provider:         cloudprovider.GCP,
 			nodeEndpointFlag: "192.0.2.1:1234",
 			protoClient:      &stubVerifyClient{},
-			idFile:           &clusterid.File{OwnerID: zeroBase64},
+			stateFile:        &state.State{ClusterValues: state.ClusterValues{OwnerID: zeroBase64}},
 			wantEndpoint:     "192.0.2.1:1234",
 			formatter:        &stubAttDocFormatter{},
 		},
@@ -180,8 +180,8 @@ func TestVerify(t *testing.T) {
 				cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), tc.provider)
 				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, cfg))
 			}
-			if tc.idFile != nil {
-				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFilename, tc.idFile, file.OptNone))
+			if tc.stateFile != nil {
+				require.NoError(tc.stateFile.WriteToFile(fileHandler, constants.StateFilename))
 			}
 
 			v := &verifyCmd{log: logger.NewTest(t)}
