@@ -380,7 +380,7 @@ Verify the confidential properties of a Constellation cluster
 ### Synopsis
 
 Verify the confidential properties of a Constellation cluster.
-If arguments aren't specified, values are read from `constellation-id.json`.
+If arguments aren't specified, values are read from `constellation-state.yaml`.
 
 ```
 constellation verify [flags]
