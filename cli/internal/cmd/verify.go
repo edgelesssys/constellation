@@ -190,6 +190,7 @@ func (c *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 	stateFile, err := state.ReadFromFile(fileHandler, constants.StateFilename)
 	isFileNotFound := errors.Is(err, afero.ErrFileNotFound)
 	if isFileNotFound {
+		c.log.Debugf("State file %q not found, using empty state", pf.PrefixPrintablePath(constants.StateFilename))
 		stateFile = state.New() // error compat
 	} else if err != nil {
 		return verifyFlags{}, fmt.Errorf("reading state file: %w", err)
