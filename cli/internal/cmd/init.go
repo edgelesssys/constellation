@@ -200,7 +200,6 @@ func (i *initCmd) initialize(
 	if err != nil {
 		return fmt.Errorf("generating measurement salt: %w", err)
 	}
-	stateFile.ClusterValues.MeasurementSalt = measurementSalt
 
 	i.log.Debugf("Setting cluster name to %s", stateFile.Infrastructure.Name)
 
