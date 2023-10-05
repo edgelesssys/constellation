@@ -20,7 +20,7 @@ Feel free to edit, complete or extend this list while the PR is open.
 
 ### Additional info
 <!-- Remove items that do not apply -->
-- [AB#1234](https://dev.azure.com/Edgeless/Edgeless/_workitems/edit/1234)
+- AB#1234
 - Any additional information or context
 
 ### Checklist
