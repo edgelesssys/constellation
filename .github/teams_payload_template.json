@@ -21,6 +21,14 @@
                         },
                         {
                             "type": "mention",
+                            "text": "<at>msanft</at>",
+                            "mentioned": {
+                                "id": "1359ea62-4415-423e-b808-9d9acb96def0",
+                                "name": "Moritz Sanft"
+                            }
+                        },
+                        {
+                            "type": "mention",
                             "text": "<at>3u13r</at>",
                             "mentioned": {
                                 "id": "26869b29-b0d6-48f8-a9ed-7a6374410a53",
