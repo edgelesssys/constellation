@@ -71,12 +71,14 @@ If you're already familiar with Kubernetes, it's easy to get started with Conste
 
 ![Constellation Shell](docs/static/img/shell-windowframe.svg)
 
+Learn more: ["Getting started with Constellation" videos series](https://www.youtube.com/playlist?list=PLEhAl3D5WVvRYxO_yI7KzmtJ7rJUyQgNu).
+
 ## Live demos
 
 We're running public instances of popular software on Constellation:
 
-* Rocket.Chat: <https://rocket.edgeless.systems/> ([blog post](https://dev.to/flxflx/rocketchat-constellation-most-secure-chat-server-ever--50oa))
-* GitLab: <https://gitlab.edgeless.systems/> ([blog post](https://dev.to/flxflx/setting-up-a-confidential-gitlab-333h))
+* Rocket.Chat: <https://rocket.edgeless.systems/> ([blog post](https://www.edgeless.systems/resource-library/confidential-rocketchat/))
+* GitLab: <https://gitlab.edgeless.systems/> ([blog post](https://www.edgeless.systems/resource-library/confidential-gitlab/))
 
 These instances run on CVMs in Azure and Constellation keeps them end-to-end confidential.
 
@@ -94,7 +96,7 @@ You may want to start with one of the following sections.
 * If something doesn't work, make sure to use the [latest release](https://github.com/edgelesssys/constellation/releases/latest) and check out the [known issues](https://github.com/edgelesssys/constellation/issues?q=is%3Aopen+is%3Aissue+label%3A%22known+issue%22).
 * Please file an [issue][github-issues] to get help or report a bug.
 * Join the [Discord] to have a chat on confidential computing and Constellation.
-* Visit our [blog](https://www.edgeless.systems/blog/) for technical deep-dives and tutorials and follow us on [Twitter] for news.
+* Visit our [blog](https://www.edgeless.systems/blog/) for technical deep-dives and tutorials and follow us on [LinkedIn] for news.
 * Edgeless Systems also offers [Enterprise Support][enterprise-support].
 
 ## Contributing
@@ -134,6 +136,6 @@ The Constellation source code is licensed under the [GNU Affero General Public L
 [s3proxy]: https://docs.edgeless.systems/constellation/workflows/s3proxy
 [supply-chain]: https://docs.edgeless.systems/constellation/architecture/attestation#chain-of-trust
 [security-benefits]: https://docs.edgeless.systems/constellation/overview/security-benefits
-[twitter]: https://twitter.com/EdgelessSystems
+[linkedin]: https://www.linkedin.com/company/edgeless-systems
 [whitepaper]: https://content.edgeless.systems/hubfs/Confidential%20Computing%20Whitepaper.pdf
 [performance]: https://docs.edgeless.systems/constellation/overview/performance
