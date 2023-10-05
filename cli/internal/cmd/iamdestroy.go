@@ -67,10 +67,10 @@ func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destr
 	if !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("file %q still exists, please make sure to terminate your cluster before destroying your IAM configuration", c.pf.PrefixPrintablePath(constants.AdminConfFilename))
 	}
-	c.log.Debugf("Checking if %q exists", c.pf.PrefixPrintablePath(constants.ClusterIDsFilename))
-	_, err = fsHandler.Stat(constants.ClusterIDsFilename)
+	c.log.Debugf("Checking if %q exists", c.pf.PrefixPrintablePath(constants.StateFilename))
+	_, err = fsHandler.Stat(constants.StateFilename)
 	if !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("file %q still exists, please make sure to terminate your cluster before destroying your IAM configuration", c.pf.PrefixPrintablePath(constants.ClusterIDsFilename))
+		return fmt.Errorf("file %q still exists, please make sure to terminate your cluster before destroying your IAM configuration", c.pf.PrefixPrintablePath(constants.StateFilename))
 	}
 
 	gcpFileExists := false
