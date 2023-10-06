@@ -649,7 +649,7 @@ jobs:
             --version=${{  needs.build-settings.outputs.imageVersion }} \
 
   add-image-version-to-versionsapi:
-    needs: [upload-artifacts, build-settings]
+    needs: [upload-artifacts, upload-pcrs, build-settings]
     name: "Add image version to versionsapi"
     if: needs.build-settings.outputs.ref != '-'
     permissions:
