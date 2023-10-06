@@ -2,27 +2,27 @@ image:
   baseRepo: mcr.microsoft.com
   azuredisk:
     repository: ghcr.io/edgelesssys/constellation/azure-csi-driver
-    tag: v1.2.0@sha256:a5346a6650ec702d0ba86acee808c0102340ea4cb3375d956c6b34020b292527
+    tag: v1.3.0@sha256:1e798f066ef78c293c4c87a31677f8948be4c8709980135969b73a9d7a46ca71
     pullPolicy: IfNotPresent
   csiProvisioner:
     repository: /oss/kubernetes-csi/csi-provisioner
-    tag: v3.3.0@sha256:3ef7d954946bd1cf9e5e3564a8d1acf8e5852616f7ae96bcbc5ced8c275483ee
+    tag: v3.5.0@sha256:fdf70099aa1538d1c2164976cf6d158ef8b3a5ee63db10bf0085de4ec66f59b4
     pullPolicy: IfNotPresent
   csiAttacher:
     repository: /oss/kubernetes-csi/csi-attacher
-    tag: v4.0.0@sha256:bc317fea7e7bbaff65130d7ac6ea7c96bc15eb1f086374b8c3359f11988ac024
+    tag: v4.3.0@sha256:4306b80bfe8caea3fe53f6d1c15807c745be3072553ff508fc4f61da8f4a0c10
     pullPolicy: IfNotPresent
   csiResizer:
     repository: /oss/kubernetes-csi/csi-resizer
-    tag: v1.6.0@sha256:9ba6483d2f8aa6051cb3a50e42d638fc17a6e4699a6689f054969024b7c12944
+    tag: v1.8.0@sha256:6f0e8c9f3d0bdcf7a5fb5e404276ffac624033099d7687c8080692bcb6d13cd1
     pullPolicy: IfNotPresent
   livenessProbe:
     repository: /oss/kubernetes-csi/livenessprobe
-    tag: v2.8.0@sha256:fcb73e1939d9abeb2d1e1680b476a10a422a04a73ea5a65e64eec3fde1f2a5a1
+    tag: v2.10.0@sha256:3aeac313cffdb7db80b733539427f2533a3f662bf538e7b6434b0f898ceb701b
     pullPolicy: IfNotPresent
   nodeDriverRegistrar:
     repository: /oss/kubernetes-csi/csi-node-driver-registrar
-    tag: v2.6.2@sha256:515b883deb0ae8d58eef60312f4d460ff8a3f52a2a5e487c94a8ebb2ca362720
+    tag: v2.8.0@sha256:af6bf1b5ff310d4dc02cf8276be9b06014318f7ee31238b5fa278febd1a10ca9
     pullPolicy: IfNotPresent
 
 serviceAccount:
@@ -54,6 +54,10 @@ controller:
   attacherWorkerThreads: 1000
   vmssCacheTTLInSeconds: -1
   logLevel: 5
+  otelTracing:
+    enabled: false
+    otelServiceName: csi-azuredisk-controller
+    otelExporterEndpoint: "http://localhost:4317"
   tolerations:
     - key: "node-role.kubernetes.io/master"
       operator: "Exists"
@@ -98,7 +102,7 @@ controller:
         memory: 20Mi
     csiSnapshotter:
       limits:
-        memory: 100Mi
+        memory: 200Mi
       requests:
         cpu: 10m
         memory: 20Mi
@@ -120,8 +124,8 @@ node:
   cloudConfigSecretNamespace: kube-system
   supportZone: true
   allowEmptyCloudConfig: true
+  getNodeIDFromIMDS: false
   maxUnavailable: 1
-  metricsPort: 29605
   logLevel: 5
   livenessProbe:
     healthPort: 29603
@@ -136,11 +140,11 @@ snapshot:
   image:
     csiSnapshotter:
       repository: /oss/kubernetes-csi/csi-snapshotter
-      tag: v5.0.1
+      tag: v6.2.2
       pullPolicy: IfNotPresent
     csiSnapshotController:
       repository: /oss/kubernetes-csi/snapshot-controller
-      tag: v5.0.1
+      tag: v6.2.2
       pullPolicy: IfNotPresent
   snapshotController:
     name: csi-snapshot-controller
@@ -151,7 +155,7 @@ snapshot:
     podAnnotations: {}
     resources:
       limits:
-        memory: 100Mi
+        memory: 300Mi
       requests:
         cpu: 10m
         memory: 20Mi
@@ -186,6 +190,11 @@ linux:
   kubelet: /var/lib/kubelet
   distro: fedora # available values: debian, fedora
   enablePerfOptimization: true
+  enableRegistrationProbe: true
+  otelTracing:
+    enabled: false
+    otelServiceName: csi-azuredisk-node
+    otelExporterEndpoint: "http://localhost:4317"
   tolerations:
     - operator: "Exists"
   hostNetwork: false # this setting could be disabled if perfProfile is `none`
@@ -233,3 +242,11 @@ createStorageClass: true
 ##
 imagePullSecrets: []
 # - name: "image-pull-secret"
+
+workloadIdentity:
+  clientID: ""
+  # [optional] If the AAD application or user-assigned managed identity is not in the same tenant as the cluster
+  # then set tenantID with the application or user-assigned managed identity tenant ID
+  tenantID: ""
+
+azureCredentialFileConfigMap: azure-cred-file

@@ -24,6 +24,9 @@ spec:
     metadata:
 {{ include "azuredisk.labels" . | indent 6 }}
         app: {{ .Values.linux.dsName }}
+        {{- if .Values.workloadIdentity.clientID }}
+        azure.workload.identity/use: "true"
+        {{- end }}
 {{- with .Values.linux.podLabels }}
 {{ toYaml . | indent 8 }}
 {{- end }}
@@ -50,6 +53,9 @@ spec:
         nodeAffinity:
 {{ toYaml .Values.linux.nodeAffinity | indent 10 }}
       priorityClassName: system-node-critical
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
 {{- with .Values.linux.tolerations }}
       tolerations:
 {{ toYaml . | indent 8 }}
@@ -81,6 +87,7 @@ spec:
             - --csi-address=$(ADDRESS)
             - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
             - --v=2
+{{- if .Values.linux.enableRegistrationProbe }}
           livenessProbe:
             exec:
               command:
@@ -89,6 +96,7 @@ spec:
                 - --mode=kubelet-registration-probe
             initialDelaySeconds: 30
             timeoutSeconds: 15
+{{- end }}
           env:
             - name: ADDRESS
               value: /csi/csi.sock
@@ -110,7 +118,6 @@ spec:
             - "--v={{ .Values.node.logLevel }}"
             - "--endpoint=$(CSI_ENDPOINT)"
             - "--nodeid=$(KUBE_NODE_NAME)"
-            - "--metrics-address=0.0.0.0:{{ .Values.node.metricsPort }}"
             - "--enable-perf-optimization={{ .Values.linux.enablePerfOptimization }}"
             - "--drivername={{ .Values.driver.name }}"
             - "--volume-attach-limit={{ .Values.driver.volumeAttachLimit }}"
@@ -121,6 +128,8 @@ spec:
             - "--allow-empty-cloud-config={{ .Values.node.allowEmptyCloudConfig }}"
             - "--support-zone={{ .Values.node.supportZone }}"
             - "--get-node-info-from-labels={{ .Values.linux.getNodeInfoFromLabels }}"
+            - "--get-nodeid-from-imds={{ .Values.node.getNodeIDFromIMDS }}"
+            - "--enable-otel-tracing={{ .Values.linux.otelTracing.enabled }}"
             - "--kms-addr={{ .Values.global.keyServiceName }}.{{ .Values.global.keyServiceNamespace | default .Release.Namespace }}:{{ .Values.global.keyServicePort }}"
           ports:
             - containerPort: {{ .Values.node.livenessProbe.healthPort }}
@@ -138,7 +147,7 @@ spec:
             - name: AZURE_CREDENTIAL_FILE
               valueFrom:
                 configMapKeyRef:
-                  name: azure-cred-file
+                  name: {{ .Values.azureCredentialFileConfigMap }}
                   key: path
                   optional: true
             - name: CSI_ENDPOINT
@@ -165,6 +174,12 @@ spec:
             {{- if eq .Values.cloud "AzureStackCloud" }}
             - name: AZURE_ENVIRONMENT_FILEPATH
               value: /etc/kubernetes/azurestackcloud.json
+            {{- end }}
+            {{- if .Values.linux.otelTracing.enabled }}
+            - name: OTEL_SERVICE_NAME
+              value: {{ .Values.linux.otelTracing.otelServiceName }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.linux.otelTracing.otelExporterEndpoint }}
             {{- end }}
           imagePullPolicy: {{ .Values.image.azuredisk.pullPolicy }}
           securityContext:

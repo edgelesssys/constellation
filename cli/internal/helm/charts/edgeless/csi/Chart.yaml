@@ -13,7 +13,7 @@ dependencies:
     tags:
       - AWS
   - name: azuredisk-csi-driver
-    version: v1.2.0
+    version: v1.3.0
     tags:
       - Azure
   - name: cinder-config
@@ -21,7 +21,7 @@ dependencies:
     tags:
       - OpenStack
   - name: gcp-compute-persistent-disk-csi-driver
-    version: 1.2.0
+    version: 1.3.0
     tags:
       - GCP
   - name: openstack-cinder-csi
