@@ -89,8 +89,10 @@ func runVerify(cmd *cobra.Command, _ []string) error {
 			return &jsonAttestationDocFormatter{log}, nil
 		case "raw":
 			return &rawAttestationDocFormatter{log}, nil
-		default:
+		case "":
 			return &defaultAttestationDocFormatter{log}, nil
+		default:
+			return nil, fmt.Errorf("invalid output value for formatter: %s", output)
 		}
 	}
 	v := &verifyCmd{log: log}
