@@ -167,6 +167,11 @@ const sidebars = {
         },
         {
           type: 'doc',
+          label: 'Install s3proxy',
+          id: 'workflows/s3proxy',
+        },
+        {
+          type: 'doc',
           label: 'Terminate your cluster',
           id: 'workflows/terminate',
         },
