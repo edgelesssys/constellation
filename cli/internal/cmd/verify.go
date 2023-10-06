@@ -32,6 +32,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
@@ -58,8 +59,7 @@ func NewVerifyCmd() *cobra.Command {
 		RunE: runVerify,
 	}
 	cmd.Flags().String("cluster-id", "", "expected cluster identifier")
-	cmd.Flags().Bool("raw", false, "print raw attestation document")
-	cmd.Flags().StringP("output", "o", "", "print the attestation document in the output format {json}")
+	cmd.Flags().StringP("output", "o", "", "print the attestation document in the output format {json|raw}")
 	cmd.Flags().StringP("node-endpoint", "e", "", "endpoint of the node to verify, passed as HOST[:PORT]")
 	return cmd
 }
@@ -80,20 +80,27 @@ func runVerify(cmd *cobra.Command, _ []string) error {
 		dialer: dialer.New(nil, nil, &net.Dialer{}),
 		log:    log,
 	}
-	formatterFactory := func(jsonOutput bool) attestationDocFormatter {
-		if jsonOutput {
-			return &jsonAttestationDocFormatter{log}
+	formatterFactory := func(output string, provider cloudprovider.Provider, log debugLog) (attestationDocFormatter, error) {
+		if output == "json" && provider != cloudprovider.Azure {
+			return nil, errors.New("json output is only supported for Azure")
 		}
-		return &attestationDocFormatterImpl{log}
+		switch output {
+		case "json":
+			return &jsonAttestationDocFormatter{log}, nil
+		case "raw":
+			return &rawAttestationDocFormatter{log}, nil
+		default:
+			return &defaultAttestationDocFormatter{log}, nil
+		}
 	}
 	v := &verifyCmd{log: log}
 	fetcher := attestationconfigapi.NewFetcher()
 	return v.verify(cmd, fileHandler, verifyClient, formatterFactory, fetcher)
 }
 
-type formatterFactory func(jsonOutput bool) attestationDocFormatter
+type formatterFactory func(output string, provider cloudprovider.Provider, log debugLog) (attestationDocFormatter, error)
 
-func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyClient verifyClient, formatter formatterFactory, configFetcher attestationconfigapi.Fetcher) error {
+func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyClient verifyClient, factory formatterFactory, configFetcher attestationconfigapi.Fetcher) error {
 	flags, err := c.parseVerifyFlags(cmd, fileHandler)
 	if err != nil {
 		return fmt.Errorf("parsing flags: %w", err)
@@ -142,11 +149,14 @@ func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 	}
 
 	// certificates are only available for Azure
-	attDocOutput, err := formatter(flags.jsonOutput).format(
+	formatter, err := factory(flags.output, conf.GetProvider(), c.log)
+	if err != nil {
+		return fmt.Errorf("creating formatter: %w", err)
+	}
+	attDocOutput, err := formatter.format(
 		cmd.Context(),
 		rawAttestationDoc,
 		conf.Provider.Azure == nil,
-		flags.rawOutput,
 		attConfig.GetMeasurements(),
 		flags.maaURL,
 	)
@@ -186,24 +196,11 @@ func (c *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 	}
 	c.log.Debugf("Flag 'force' set to %t", force)
 
-	raw, err := cmd.Flags().GetBool("raw")
-	if err != nil {
-		return verifyFlags{}, fmt.Errorf("parsing raw argument: %w", err)
-	}
-	c.log.Debugf("Flag 'raw' set to %t", force)
 	output, err := cmd.Flags().GetString("output")
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("parsing raw argument: %w", err)
 	}
-
-	var json bool
-	if output != "" {
-		if output != "json" {
-			return verifyFlags{}, fmt.Errorf("invalid output format %q, expected 'json'", output)
-		}
-		json = true
-	}
-	c.log.Debugf("Flag 'json' set to %t", force)
+	c.log.Debugf("Flag 'output' set to %t", output)
 
 	var idFile clusterid.File
 	if err := fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil && !errors.Is(err, afero.ErrFileNotFound) {
@@ -235,30 +232,25 @@ func (c *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 		return verifyFlags{}, fmt.Errorf("validating endpoint argument: %w", err)
 	}
 
-	if raw && json {
-		return verifyFlags{}, errors.New("cannot specify both --raw and --json")
-	}
 	return verifyFlags{
-		endpoint:   endpoint,
-		pf:         pf,
-		ownerID:    ownerID,
-		clusterID:  clusterID,
-		maaURL:     idFile.AttestationURL,
-		rawOutput:  raw,
-		jsonOutput: json,
-		force:      force,
+		endpoint:  endpoint,
+		pf:        pf,
+		ownerID:   ownerID,
+		clusterID: clusterID,
+		maaURL:    idFile.AttestationURL,
+		output:    output,
+		force:     force,
 	}, nil
 }
 
 type verifyFlags struct {
-	endpoint   string
-	ownerID    string
-	clusterID  string
-	maaURL     string
-	rawOutput  bool
-	jsonOutput bool
-	force      bool
-	pf         pathprefix.PathPrefixer
+	endpoint  string
+	ownerID   string
+	clusterID string
+	maaURL    string
+	output    string
+	force     bool
+	pf        pathprefix.PathPrefixer
 }
 
 func addPortIfMissing(endpoint string, defaultPort int) (string, error) {
@@ -279,10 +271,9 @@ func addPortIfMissing(endpoint string, defaultPort int) (string, error) {
 }
 
 // an attestationDocFormatter formats the attestation document.
-// TODO(elchead): refactor the interface to be more generic (e.g. no rawOutput argument).
 type attestationDocFormatter interface {
 	// format returns the raw or formatted attestation doc depending on the rawOutput argument.
-	format(ctx context.Context, docString string, PCRsOnly bool, rawOutput bool, expectedPCRs measurements.M,
+	format(ctx context.Context, docString string, PCRsOnly bool, expectedPCRs measurements.M,
 		attestationServiceURL string) (string, error)
 }
 
@@ -290,13 +281,10 @@ type jsonAttestationDocFormatter struct {
 	log debugLog
 }
 
-// format returns the raw or formatted attestation doc depending on the rawOutput argument.
-func (f *jsonAttestationDocFormatter) format(ctx context.Context, docString string, PCRsOnly bool,
-	_ bool, _ measurements.M, attestationServiceURL string,
+// format returns the json formatted attestation doc.
+func (f *jsonAttestationDocFormatter) format(ctx context.Context, docString string, _ bool,
+	_ measurements.M, attestationServiceURL string,
 ) (string, error) {
-	if PCRsOnly {
-		return "", fmt.Errorf("JSON output is currently only supported for Azure")
-	}
 	instanceInfo, err := extractAzureInstanceInfo(docString)
 	if err != nil {
 		return "", fmt.Errorf("unmarshal instance info: %w", err)
@@ -330,20 +318,30 @@ func (f *jsonAttestationDocFormatter) format(ctx context.Context, docString stri
 	return string(jsonBytes), err
 }
 
-type attestationDocFormatterImpl struct {
+type rawAttestationDocFormatter struct {
 	log debugLog
 }
 
-// format returns the raw or formatted attestation doc depending on the rawOutput argument.
-func (f *attestationDocFormatterImpl) format(ctx context.Context, docString string, PCRsOnly bool,
-	rawOutput bool, expectedPCRs measurements.M, attestationServiceURL string,
+// format returns the raw attestation doc.
+func (f *rawAttestationDocFormatter) format(_ context.Context, docString string, _ bool,
+	_ measurements.M, _ string,
 ) (string, error) {
 	b := &strings.Builder{}
 	b.WriteString("Attestation Document:\n")
-	if rawOutput {
-		b.WriteString(fmt.Sprintf("%s\n", docString))
-		return b.String(), nil
-	}
+	b.WriteString(fmt.Sprintf("%s\n", docString))
+	return b.String(), nil
+}
+
+type defaultAttestationDocFormatter struct {
+	log debugLog
+}
+
+// format returns the formatted attestation doc.
+func (f *defaultAttestationDocFormatter) format(ctx context.Context, docString string, PCRsOnly bool,
+	expectedPCRs measurements.M, attestationServiceURL string,
+) (string, error) {
+	b := &strings.Builder{}
+	b.WriteString("Attestation Document:\n")
 
 	var doc attestationDoc
 	if err := json.Unmarshal([]byte(docString), &doc); err != nil {
@@ -386,7 +384,7 @@ func (f *attestationDocFormatterImpl) format(ctx context.Context, docString stri
 }
 
 // parseCerts parses the PEM certificates and writes their details to the output builder.
-func (f *attestationDocFormatterImpl) parseCerts(b *strings.Builder, certTypeName string, cert []byte) error {
+func (f *defaultAttestationDocFormatter) parseCerts(b *strings.Builder, certTypeName string, cert []byte) error {
 	newlinesTrimmed := strings.TrimSpace(string(cert))
 	formattedCert := strings.ReplaceAll(newlinesTrimmed, "\n", "\n\t\t") + "\n"
 	b.WriteString(fmt.Sprintf("\tRaw %s:\n\t\t%s", certTypeName, formattedCert))
@@ -451,7 +449,7 @@ func (f *attestationDocFormatterImpl) parseCerts(b *strings.Builder, certTypeNam
 }
 
 // parseQuotes parses the base64-encoded quotes and writes their details to the output builder.
-func (f *attestationDocFormatterImpl) parseQuotes(b *strings.Builder, quotes []*tpmProto.Quote, expectedPCRs measurements.M) error {
+func (f *defaultAttestationDocFormatter) parseQuotes(b *strings.Builder, quotes []*tpmProto.Quote, expectedPCRs measurements.M) error {
 	writeIndentfln(b, 1, "Quote:")
 
 	var pcrNumbers []uint32
@@ -478,7 +476,7 @@ func (f *attestationDocFormatterImpl) parseQuotes(b *strings.Builder, quotes []*
 	return nil
 }
 
-func (f *attestationDocFormatterImpl) buildSNPReport(b *strings.Builder, report verify.SNPReport) {
+func (f *defaultAttestationDocFormatter) buildSNPReport(b *strings.Builder, report verify.SNPReport) {
 	writeTCB := func(tcb verify.TCBVersion) {
 		writeIndentfln(b, 3, "Secure Processor bootloader SVN: %d", tcb.Bootloader)
 		writeIndentfln(b, 3, "Secure Processor operating system SVN: %d", tcb.TEE)
