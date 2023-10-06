@@ -209,7 +209,7 @@ runs:
         cloudProvider: ${{ inputs.cloudProvider }}
         namePrefix: ${{ steps.create-prefix.outputs.prefix }}
         awsZone: ${{ inputs.regionZone || 'us-east-2c' }}
-        azureRegion: ${{ inputs.regionZone || 'northeurope' }}
+        azureRegion: ${{ inputs.regionZone || 'westus' }}
         gcpProjectID: ${{ inputs.gcpProject }}
         gcpZone: ${{ inputs.regionZone || 'europe-west3-b' }}
         kubernetesVersion: ${{ inputs.kubernetesVersion }}
