@@ -7,14 +7,14 @@ s3proxy will encrypt/decrypt objects when you send/retrieve objects to/from S3, 
 
 :::caution
 Using s3proxy outside Constellation is insecure as the connection between the key management service (KMS) and s3proxy is protected by Constellation's WireGuard VPN.
-The VPN is a feature of Constellation and will not be present by default in other environments.
+The VPN is a feature of Constellation and won't be present by default in other environments.
 :::
 
 These limitations will be removed with future iterations of s3proxy.
 
 - Only `PutObject` and `GetObject` requests are encrypted/decrypted by s3proxy.
 That means other requests are forwarded to S3 as-is.
-For example, objects uploaded with `CreateMultipartUpload` are not encrypted.
+For example, objects uploaded with `CreateMultipartUpload` aren't encrypted.
 - Using the [Range](https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html#API_GetObject_RequestSyntax) header on `GetObject` is currently not supported and will result in an error.
 
 If you want to use s3proxy but these limitations stop you from doing so, please consider [opening](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&projects=&template=feature_request.yml) an issue.
@@ -26,7 +26,7 @@ If you want to use s3proxy but these limitations stop you from doing so, please 
 - `kubectl apply -f s3proxy/deploy/deployment-s3proxy.yaml`
 
 s3proxy is now deployed.
-If you want to run a demo application you can checkout our [Deploy Filestash](https://github.com/edgelesssys/constellation/tree/main/s3proxy/deploy#deploying-filestash) instructions to deploy Filestash.
+If you want to run a demo application you can checkout the [Deploy Filestash](https://github.com/edgelesssys/constellation/tree/main/s3proxy/deploy#deploying-filestash) instructions to deploy Filestash.
 Filestash is a web frontend for different storage backends, including S3.
 
 
@@ -41,7 +41,7 @@ s3proxy uses [envelope encryption](https://cloud.google.com/kms/docs/envelope-en
 That means s3proxy uses a key encryption key (KEK) issued by the Constellation KMS to encrypt data encryption keys (DEK).
 Each S3 object is encrypted with it's own DEK.
 The encrypted DEK is then saved as metadata of the encrypted object.
-This enables key rotation of the KEK without reencrypting the data in S3.
+This enables key rotation of the KEK without re-encrypting the data in S3.
 The approach also allows access to objects from different locations, as long as each location has access to the KEK.
 
 ### Traffic interception
@@ -52,5 +52,5 @@ This can either be done by modifying your client application or by changing the 
 The necessary deployment modifications are to add DNS redirection and a trusted TLS certificate to the client's trust store.
 DNS redirection can be defined for each pod allowing you to test s3proxy for one application, without changing other applications in the same cluster.
 Adding a trusted TLS certificate is necessary as clients communicate with s3proxy via HTTPS.
-In order to have your client application trust s3proxy's TLS certificate, the certificate has to be added to the client's truststore.
+To have your client application trust s3proxy's TLS certificate, the certificate has to be added to the client's truststore.
 The above [deployment example](#deployment) shows how all this can be done using cert-manager and the [hostAliases](https://kubernetes.io/docs/tasks/network/customize-hosts-file-for-pods/) key.
