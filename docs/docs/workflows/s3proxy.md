@@ -21,9 +21,9 @@ If you want to use s3proxy but these limitations stop you from doing so, please 
 
 ## Deployment
 
-- `git clone git@github.com:edgelesssys/constellation.git && cd constellation`
-- Replace the values named `replaceme` in `s3proxy/deploy/deployment-s3proxy.yaml` with valid AWS credentials. These credentials are used by s3proxy to access your S3 buckets.
-- `kubectl apply -f s3proxy/deploy/deployment-s3proxy.yaml`
+- `wget https://raw.githubusercontent.com/edgelesssys/constellation/main/s3proxy/deploy/deployment-s3proxy.yaml`
+- Replace the values named `replaceme` in `deployment-s3proxy.yaml` with valid AWS credentials. These credentials are used by s3proxy to access your S3 buckets.
+- `kubectl apply -f deployment-s3proxy.yaml`
 
 s3proxy is now deployed.
 If you want to run a demo application you can checkout the [Deploy Filestash](https://github.com/edgelesssys/constellation/tree/main/s3proxy/deploy#deploying-filestash) instructions to deploy Filestash.
