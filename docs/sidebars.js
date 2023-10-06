@@ -119,6 +119,11 @@ const sidebars = {
               label: 'Horizontal Pod Autoscaling',
               id: 'getting-started/examples/horizontal-scaling'
             },
+            {
+              type: 'doc',
+              label: 'Filestash with s3proxy',
+              id: 'getting-started/examples/filstash-s3proxy'
+            },
           ]
         },
       ],

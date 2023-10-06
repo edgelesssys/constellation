@@ -26,8 +26,7 @@ If you want to use s3proxy but these limitations stop you from doing so, please 
 - `kubectl apply -f deployment-s3proxy.yaml`
 
 s3proxy is now deployed.
-If you want to run a demo application you can checkout the [Deploy Filestash](https://github.com/edgelesssys/constellation/tree/main/s3proxy/deploy#deploying-filestash) instructions to deploy Filestash.
-Filestash is a web frontend for different storage backends, including S3.
+If you want to run a demo application, checkout the [Filestash with s3proxy](../getting-started/examples/filstash-s3proxy.md) example.
 
 
 ## Technical details
