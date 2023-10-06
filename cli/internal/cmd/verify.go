@@ -291,10 +291,13 @@ type jsonAttestationDocFormatter struct {
 }
 
 // format returns the raw or formatted attestation doc depending on the rawOutput argument.
-func (f *jsonAttestationDocFormatter) format(ctx context.Context, docString string, _ bool,
+func (f *jsonAttestationDocFormatter) format(ctx context.Context, docString string, PCRsOnly bool,
 	_ bool, _ measurements.M, attestationServiceURL string,
 ) (string, error) {
-	instanceInfo, err := extractInstanceInfo(docString)
+	if PCRsOnly {
+		return "", fmt.Errorf("JSON output is currently only supported for Azure")
+	}
+	instanceInfo, err := extractAzureInstanceInfo(docString)
 	if err != nil {
 		return "", fmt.Errorf("unmarshal instance info: %w", err)
 	}
@@ -840,7 +843,7 @@ func newTCBVersion(tcbVersion kds.TCBVersion) (res verify.TCBVersion) {
 	}
 }
 
-func extractInstanceInfo(docString string) (azureInstanceInfo, error) {
+func extractAzureInstanceInfo(docString string) (azureInstanceInfo, error) {
 	var doc attestationDoc
 	if err := json.Unmarshal([]byte(docString), &doc); err != nil {
 		return azureInstanceInfo{}, fmt.Errorf("unmarshal attestation document: %w", err)
