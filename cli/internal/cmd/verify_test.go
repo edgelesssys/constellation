@@ -167,8 +167,7 @@ func TestVerify(t *testing.T) {
 			cmd.Flags().String("workspace", "", "") // register persistent flag manually
 			cmd.Flags().Bool("force", true, "")     // register persistent flag manually
 			out := &bytes.Buffer{}
-			cmd.SetOut(out)
-			cmd.SetErr(&bytes.Buffer{})
+			cmd.SetErr(out)
 			if tc.clusterIDFlag != "" {
 				require.NoError(cmd.Flags().Set("cluster-id", tc.clusterIDFlag))
 			}
@@ -186,7 +185,10 @@ func TestVerify(t *testing.T) {
 			}
 
 			v := &verifyCmd{log: logger.NewTest(t)}
-			err := v.verify(cmd, fileHandler, tc.protoClient, tc.formatter, stubAttestationFetcher{})
+			formatterFac := func(_ string, _ cloudprovider.Provider, _ debugLog) (attestationDocFormatter, error) {
+				return tc.formatter, nil
+			}
+			err := v.verify(cmd, fileHandler, tc.protoClient, formatterFac, stubAttestationFetcher{})
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
@@ -202,19 +204,19 @@ type stubAttDocFormatter struct {
 	formatErr error
 }
 
-func (f *stubAttDocFormatter) format(_ context.Context, _ string, _ bool, _ bool, _ measurements.M, _ string) (string, error) {
+func (f *stubAttDocFormatter) format(_ context.Context, _ string, _ bool, _ measurements.M, _ string) (string, error) {
 	return "", f.formatErr
 }
 
 func TestFormat(t *testing.T) {
-	formatter := func() *attestationDocFormatterImpl {
-		return &attestationDocFormatterImpl{
+	formatter := func() *defaultAttestationDocFormatter {
+		return &defaultAttestationDocFormatter{
 			log: logger.NewTest(t),
 		}
 	}
 
 	testCases := map[string]struct {
-		formatter *attestationDocFormatterImpl
+		formatter *defaultAttestationDocFormatter
 		doc       string
 		wantErr   bool
 	}{
@@ -227,7 +229,7 @@ func TestFormat(t *testing.T) {
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			_, err := tc.formatter.format(context.Background(), tc.doc, false, false, nil, "")
+			_, err := tc.formatter.format(context.Background(), tc.doc, false, nil, "")
 			if tc.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -299,7 +301,7 @@ F/SjRih31+SAtWb42jueAA==
 			assert := assert.New(t)
 
 			b := &strings.Builder{}
-			formatter := &attestationDocFormatterImpl{
+			formatter := &defaultAttestationDocFormatter{
 				log: logger.NewTest(t),
 			}
 			err := formatter.parseCerts(b, "Some Cert", tc.cert)
@@ -545,7 +547,7 @@ func TestParseQuotes(t *testing.T) {
 			assert := assert.New(t)
 
 			b := &strings.Builder{}
-			parser := &attestationDocFormatterImpl{}
+			parser := &defaultAttestationDocFormatter{}
 
 			err := parser.parseQuotes(b, tc.quotes, tc.expectedPCRs)
 			if tc.wantErr {

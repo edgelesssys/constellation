@@ -392,7 +392,7 @@ constellation verify [flags]
       --cluster-id string      expected cluster identifier
   -h, --help                   help for verify
   -e, --node-endpoint string   endpoint of the node to verify, passed as HOST[:PORT]
-      --raw                    print raw attestation document
+  -o, --output string          print the attestation document in the output format {json|raw}
 ```
 
 ### Options inherited from parent commands

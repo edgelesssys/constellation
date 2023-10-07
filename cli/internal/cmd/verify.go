@@ -32,11 +32,13 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
+	"github.com/edgelesssys/constellation/v2/internal/verify"
 	"github.com/edgelesssys/constellation/v2/verify/verifyproto"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/go-sev-guest/abi"
@@ -57,7 +59,7 @@ func NewVerifyCmd() *cobra.Command {
 		RunE: runVerify,
 	}
 	cmd.Flags().String("cluster-id", "", "expected cluster identifier")
-	cmd.Flags().Bool("raw", false, "print raw attestation document")
+	cmd.Flags().StringP("output", "o", "", "print the attestation document in the output format {json|raw}")
 	cmd.Flags().StringP("node-endpoint", "e", "", "endpoint of the node to verify, passed as HOST[:PORT]")
 	return cmd
 }
@@ -78,16 +80,29 @@ func runVerify(cmd *cobra.Command, _ []string) error {
 		dialer: dialer.New(nil, nil, &net.Dialer{}),
 		log:    log,
 	}
-	formatter := &attestationDocFormatterImpl{
-		log: log,
+	formatterFactory := func(output string, provider cloudprovider.Provider, log debugLog) (attestationDocFormatter, error) {
+		if output == "json" && provider != cloudprovider.Azure {
+			return nil, errors.New("json output is only supported for Azure")
+		}
+		switch output {
+		case "json":
+			return &jsonAttestationDocFormatter{log}, nil
+		case "raw":
+			return &rawAttestationDocFormatter{log}, nil
+		case "":
+			return &defaultAttestationDocFormatter{log}, nil
+		default:
+			return nil, fmt.Errorf("invalid output value for formatter: %s", output)
+		}
 	}
-
 	v := &verifyCmd{log: log}
 	fetcher := attestationconfigapi.NewFetcher()
-	return v.verify(cmd, fileHandler, verifyClient, formatter, fetcher)
+	return v.verify(cmd, fileHandler, verifyClient, formatterFactory, fetcher)
 }
 
-func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyClient verifyClient, formatter attestationDocFormatter, configFetcher attestationconfigapi.Fetcher) error {
+type formatterFactory func(output string, provider cloudprovider.Provider, log debugLog) (attestationDocFormatter, error)
+
+func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyClient verifyClient, factory formatterFactory, configFetcher attestationconfigapi.Fetcher) error {
 	flags, err := c.parseVerifyFlags(cmd, fileHandler)
 	if err != nil {
 		return fmt.Errorf("parsing flags: %w", err)
@@ -136,11 +151,14 @@ func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 	}
 
 	// certificates are only available for Azure
+	formatter, err := factory(flags.output, conf.GetProvider(), c.log)
+	if err != nil {
+		return fmt.Errorf("creating formatter: %w", err)
+	}
 	attDocOutput, err := formatter.format(
 		cmd.Context(),
 		rawAttestationDoc,
 		conf.Provider.Azure == nil,
-		flags.rawOutput,
 		attConfig.GetMeasurements(),
 		flags.maaURL,
 	)
@@ -148,7 +166,7 @@ func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 		return fmt.Errorf("printing attestation document: %w", err)
 	}
 	cmd.Println(attDocOutput)
-	cmd.Println("Verification OK")
+	cmd.PrintErrln("Verification OK")
 
 	return nil
 }
@@ -180,11 +198,11 @@ func (c *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 	}
 	c.log.Debugf("Flag 'force' set to %t", force)
 
-	raw, err := cmd.Flags().GetBool("raw")
+	output, err := cmd.Flags().GetString("output")
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("parsing raw argument: %w", err)
 	}
-	c.log.Debugf("Flag 'raw' set to %t", force)
+	c.log.Debugf("Flag 'output' set to %t", output)
 
 	var idFile clusterid.File
 	if err := fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil && !errors.Is(err, afero.ErrFileNotFound) {
@@ -197,11 +215,11 @@ func (c *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 	if emptyEndpoint || emptyIDs {
 		c.log.Debugf("Trying to supplement empty flag values from %q", pf.PrefixPrintablePath(constants.ClusterIDsFilename))
 		if emptyEndpoint {
-			cmd.Printf("Using endpoint from %q. Specify --node-endpoint to override this.\n", pf.PrefixPrintablePath(constants.ClusterIDsFilename))
+			cmd.PrintErrf("Using endpoint from %q. Specify --node-endpoint to override this.\n", pf.PrefixPrintablePath(constants.ClusterIDsFilename))
 			endpoint = idFile.IP
 		}
 		if emptyIDs {
-			cmd.Printf("Using ID from %q. Specify --cluster-id to override this.\n", pf.PrefixPrintablePath(constants.ClusterIDsFilename))
+			cmd.PrintErrf("Using ID from %q. Specify --cluster-id to override this.\n", pf.PrefixPrintablePath(constants.ClusterIDsFilename))
 			ownerID = idFile.OwnerID
 			clusterID = idFile.ClusterID
 		}
@@ -222,7 +240,7 @@ func (c *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 		ownerID:   ownerID,
 		clusterID: clusterID,
 		maaURL:    idFile.AttestationURL,
-		rawOutput: raw,
+		output:    output,
 		force:     force,
 	}, nil
 }
@@ -232,7 +250,7 @@ type verifyFlags struct {
 	ownerID   string
 	clusterID string
 	maaURL    string
-	rawOutput bool
+	output    string
 	force     bool
 	pf        pathprefix.PathPrefixer
 }
@@ -257,24 +275,75 @@ func addPortIfMissing(endpoint string, defaultPort int) (string, error) {
 // an attestationDocFormatter formats the attestation document.
 type attestationDocFormatter interface {
 	// format returns the raw or formatted attestation doc depending on the rawOutput argument.
-	format(ctx context.Context, docString string, PCRsOnly bool, rawOutput bool, expectedPCRs measurements.M,
+	format(ctx context.Context, docString string, PCRsOnly bool, expectedPCRs measurements.M,
 		attestationServiceURL string) (string, error)
 }
 
-type attestationDocFormatterImpl struct {
+type jsonAttestationDocFormatter struct {
 	log debugLog
 }
 
-// format returns the raw or formatted attestation doc depending on the rawOutput argument.
-func (f *attestationDocFormatterImpl) format(ctx context.Context, docString string, PCRsOnly bool,
-	rawOutput bool, expectedPCRs measurements.M, attestationServiceURL string,
+// format returns the json formatted attestation doc.
+func (f *jsonAttestationDocFormatter) format(ctx context.Context, docString string, _ bool,
+	_ measurements.M, attestationServiceURL string,
+) (string, error) {
+	instanceInfo, err := extractAzureInstanceInfo(docString)
+	if err != nil {
+		return "", fmt.Errorf("unmarshal instance info: %w", err)
+	}
+	snpReport, err := newSNPReport(instanceInfo.AttestationReport)
+	if err != nil {
+		return "", fmt.Errorf("parsing SNP report: %w", err)
+	}
+
+	vcek, err := newCertificates("VCEK certificate", instanceInfo.Vcek, f.log)
+	if err != nil {
+		return "", fmt.Errorf("parsing VCEK certificate: %w", err)
+	}
+	certChain, err := newCertificates("Certificate chain", instanceInfo.CertChain, f.log)
+	if err != nil {
+		return "", fmt.Errorf("parsing certificate chain: %w", err)
+	}
+	maaToken, err := newMAAToken(ctx, instanceInfo.MAAToken, attestationServiceURL)
+	if err != nil {
+		return "", fmt.Errorf("parsing MAA token: %w", err)
+	}
+
+	report := verify.Report{
+		SNPReport: snpReport,
+		VCEK:      vcek,
+		CertChain: certChain,
+		MAAToken:  maaToken,
+	}
+	jsonBytes, err := json.Marshal(report)
+
+	return string(jsonBytes), err
+}
+
+type rawAttestationDocFormatter struct {
+	log debugLog
+}
+
+// format returns the raw attestation doc.
+func (f *rawAttestationDocFormatter) format(_ context.Context, docString string, _ bool,
+	_ measurements.M, _ string,
 ) (string, error) {
 	b := &strings.Builder{}
 	b.WriteString("Attestation Document:\n")
-	if rawOutput {
-		b.WriteString(fmt.Sprintf("%s\n", docString))
-		return b.String(), nil
-	}
+	b.WriteString(fmt.Sprintf("%s\n", docString))
+	return b.String(), nil
+}
+
+type defaultAttestationDocFormatter struct {
+	log debugLog
+}
+
+// format returns the formatted attestation doc.
+func (f *defaultAttestationDocFormatter) format(ctx context.Context, docString string, PCRsOnly bool,
+	expectedPCRs measurements.M, attestationServiceURL string,
+) (string, error) {
+	b := &strings.Builder{}
+	b.WriteString("Attestation Document:\n")
 
 	var doc attestationDoc
 	if err := json.Unmarshal([]byte(docString), &doc); err != nil {
@@ -304,9 +373,11 @@ func (f *attestationDocFormatterImpl) format(ctx context.Context, docString stri
 	if err := f.parseCerts(b, "Certificate chain", instanceInfo.CertChain); err != nil {
 		return "", fmt.Errorf("print certificate chain: %w", err)
 	}
-	if err := f.parseSNPReport(b, instanceInfo.AttestationReport); err != nil {
-		return "", fmt.Errorf("print SNP report: %w", err)
+	snpReport, err := newSNPReport(instanceInfo.AttestationReport)
+	if err != nil {
+		return "", fmt.Errorf("parsing SNP report: %w", err)
 	}
+	f.buildSNPReport(b, snpReport)
 	if err := parseMAAToken(ctx, b, instanceInfo.MAAToken, attestationServiceURL); err != nil {
 		return "", fmt.Errorf("print MAA token: %w", err)
 	}
@@ -315,7 +386,7 @@ func (f *attestationDocFormatterImpl) format(ctx context.Context, docString stri
 }
 
 // parseCerts parses the PEM certificates and writes their details to the output builder.
-func (f *attestationDocFormatterImpl) parseCerts(b *strings.Builder, certTypeName string, cert []byte) error {
+func (f *defaultAttestationDocFormatter) parseCerts(b *strings.Builder, certTypeName string, cert []byte) error {
 	newlinesTrimmed := strings.TrimSpace(string(cert))
 	formattedCert := strings.ReplaceAll(newlinesTrimmed, "\n", "\n\t\t") + "\n"
 	b.WriteString(fmt.Sprintf("\tRaw %s:\n\t\t%s", certTypeName, formattedCert))
@@ -380,7 +451,7 @@ func (f *attestationDocFormatterImpl) parseCerts(b *strings.Builder, certTypeNam
 }
 
 // parseQuotes parses the base64-encoded quotes and writes their details to the output builder.
-func (f *attestationDocFormatterImpl) parseQuotes(b *strings.Builder, quotes []*tpmProto.Quote, expectedPCRs measurements.M) error {
+func (f *defaultAttestationDocFormatter) parseQuotes(b *strings.Builder, quotes []*tpmProto.Quote, expectedPCRs measurements.M) error {
 	writeIndentfln(b, 1, "Quote:")
 
 	var pcrNumbers []uint32
@@ -407,79 +478,53 @@ func (f *attestationDocFormatterImpl) parseQuotes(b *strings.Builder, quotes []*
 	return nil
 }
 
-func (f *attestationDocFormatterImpl) parseSNPReport(b *strings.Builder, reportBytes []byte) error {
-	report, err := abi.ReportToProto(reportBytes)
-	if err != nil {
-		return fmt.Errorf("parsing report to proto: %w", err)
-	}
-
-	policy, err := abi.ParseSnpPolicy(report.Policy)
-	if err != nil {
-		return fmt.Errorf("parsing policy: %w", err)
-	}
-
-	platformInfo, err := abi.ParseSnpPlatformInfo(report.PlatformInfo)
-	if err != nil {
-		return fmt.Errorf("parsing platform info: %w", err)
-	}
-
-	signature, err := abi.ReportToSignatureDER(reportBytes)
-	if err != nil {
-		return fmt.Errorf("parsing signature: %w", err)
-	}
-
-	signerInfo, err := abi.ParseSignerInfo(report.SignerInfo)
-	if err != nil {
-		return fmt.Errorf("parsing signer info: %w", err)
-	}
-
-	writeTCB := func(tcbVersion uint64) {
-		tcb := kds.DecomposeTCBVersion(kds.TCBVersion(tcbVersion))
-		writeIndentfln(b, 3, "Secure Processor bootloader SVN: %d", tcb.BlSpl)
-		writeIndentfln(b, 3, "Secure Processor operating system SVN: %d", tcb.TeeSpl)
+func (f *defaultAttestationDocFormatter) buildSNPReport(b *strings.Builder, report verify.SNPReport) {
+	writeTCB := func(tcb verify.TCBVersion) {
+		writeIndentfln(b, 3, "Secure Processor bootloader SVN: %d", tcb.Bootloader)
+		writeIndentfln(b, 3, "Secure Processor operating system SVN: %d", tcb.TEE)
 		writeIndentfln(b, 3, "SVN 4 (reserved): %d", tcb.Spl4)
 		writeIndentfln(b, 3, "SVN 5 (reserved): %d", tcb.Spl5)
 		writeIndentfln(b, 3, "SVN 6 (reserved): %d", tcb.Spl6)
 		writeIndentfln(b, 3, "SVN 7 (reserved): %d", tcb.Spl7)
-		writeIndentfln(b, 3, "SEV-SNP firmware SVN: %d", tcb.SnpSpl)
-		writeIndentfln(b, 3, "Microcode SVN: %d", tcb.UcodeSpl)
+		writeIndentfln(b, 3, "SEV-SNP firmware SVN: %d", tcb.SNP)
+		writeIndentfln(b, 3, "Microcode SVN: %d", tcb.Microcode)
 	}
 
 	writeIndentfln(b, 1, "SNP Report:")
 	writeIndentfln(b, 2, "Version: %d", report.Version)
 	writeIndentfln(b, 2, "Guest SVN: %d", report.GuestSvn)
 	writeIndentfln(b, 2, "Policy:")
-	writeIndentfln(b, 3, "ABI Minor: %d", policy.ABIMinor)
-	writeIndentfln(b, 3, "ABI Major: %d", policy.ABIMajor)
-	writeIndentfln(b, 3, "Symmetric Multithreading enabled: %t", policy.SMT)
-	writeIndentfln(b, 3, "Migration agent enabled: %t", policy.MigrateMA)
-	writeIndentfln(b, 3, "Debugging enabled (host decryption of VM): %t", policy.Debug)
-	writeIndentfln(b, 3, "Single socket enabled: %t", policy.SingleSocket)
-	writeIndentfln(b, 2, "Family ID: %x", report.FamilyId)
-	writeIndentfln(b, 2, "Image ID: %x", report.ImageId)
+	writeIndentfln(b, 3, "ABI Minor: %d", report.PolicyABIMinor)
+	writeIndentfln(b, 3, "ABI Major: %d", report.PolicyABIMajor)
+	writeIndentfln(b, 3, "Symmetric Multithreading enabled: %t", report.PolicySMT)
+	writeIndentfln(b, 3, "Migration agent enabled: %t", report.PolicyMigrationAgent)
+	writeIndentfln(b, 3, "Debugging enabled (host decryption of VM): %t", report.PolicyDebug)
+	writeIndentfln(b, 3, "Single socket enabled: %t", report.PolicySingleSocket)
+	writeIndentfln(b, 2, "Family ID: %x", report.FamilyID)
+	writeIndentfln(b, 2, "Image ID: %x", report.ImageID)
 	writeIndentfln(b, 2, "VMPL: %d", report.Vmpl)
 	writeIndentfln(b, 2, "Signature Algorithm: %d", report.SignatureAlgo)
 	writeIndentfln(b, 2, "Current TCB:")
-	writeTCB(report.CurrentTcb)
+	writeTCB(report.CurrentTCB)
 	writeIndentfln(b, 2, "Platform Info:")
-	writeIndentfln(b, 3, "Symmetric Multithreading enabled (SMT): %t", platformInfo.SMTEnabled)
-	writeIndentfln(b, 3, "Transparent secure memory encryption (TSME): %t", platformInfo.TSMEEnabled)
+	writeIndentfln(b, 3, "Symmetric Multithreading enabled (SMT): %t", report.PlatformInfo.SMT)
+	writeIndentfln(b, 3, "Transparent secure memory encryption (TSME): %t", report.PlatformInfo.TSME)
 	writeIndentfln(b, 2, "Signer Info:")
-	writeIndentfln(b, 3, "Author Key Enabled: %t", signerInfo.AuthorKeyEn)
-	writeIndentfln(b, 3, "Chip ID Masking: %t", signerInfo.MaskChipKey)
-	writeIndentfln(b, 3, "Signing Type: %s", signerInfo.SigningKey)
+	writeIndentfln(b, 3, "Author Key Enabled: %t", report.SignerInfo.AuthorKey)
+	writeIndentfln(b, 3, "Chip ID Masking: %t", report.SignerInfo.MaskChipKey)
+	writeIndentfln(b, 3, "Signing Type: %s", report.SignerInfo.SigningKey)
 	writeIndentfln(b, 2, "Report Data: %x", report.ReportData)
 	writeIndentfln(b, 2, "Measurement: %x", report.Measurement)
 	writeIndentfln(b, 2, "Host Data: %x", report.HostData)
-	writeIndentfln(b, 2, "ID Key Digest: %x", report.IdKeyDigest)
+	writeIndentfln(b, 2, "ID Key Digest: %x", report.IDKeyDigest)
 	writeIndentfln(b, 2, "Author Key Digest: %x", report.AuthorKeyDigest)
-	writeIndentfln(b, 2, "Report ID: %x", report.ReportId)
-	writeIndentfln(b, 2, "Report ID MA: %x", report.ReportIdMa)
+	writeIndentfln(b, 2, "Report ID: %x", report.ReportID)
+	writeIndentfln(b, 2, "Report ID MA: %x", report.ReportIDMa)
 	writeIndentfln(b, 2, "Reported TCB:")
-	writeTCB(report.ReportedTcb)
-	writeIndentfln(b, 2, "Chip ID: %x", report.ChipId)
+	writeTCB(report.ReportedTCB)
+	writeIndentfln(b, 2, "Chip ID: %x", report.ChipID)
 	writeIndentfln(b, 2, "Committed TCB:")
-	writeTCB(report.CommittedTcb)
+	writeTCB(report.CommittedTCB)
 	writeIndentfln(b, 2, "Current Build: %d", report.CurrentBuild)
 	writeIndentfln(b, 2, "Current Minor: %d", report.CurrentMinor)
 	writeIndentfln(b, 2, "Current Major: %d", report.CurrentMajor)
@@ -487,15 +532,13 @@ func (f *attestationDocFormatterImpl) parseSNPReport(b *strings.Builder, reportB
 	writeIndentfln(b, 2, "Committed Minor: %d", report.CommittedMinor)
 	writeIndentfln(b, 2, "Committed Major: %d", report.CommittedMajor)
 	writeIndentfln(b, 2, "Launch TCB:")
-	writeTCB(report.LaunchTcb)
+	writeTCB(report.LaunchTCB)
 	writeIndentfln(b, 2, "Signature (DER):")
-	writeIndentfln(b, 3, "%x", signature)
-
-	return nil
+	writeIndentfln(b, 3, "%x", report.Signature)
 }
 
 func parseMAAToken(ctx context.Context, b *strings.Builder, rawToken, attestationServiceURL string) error {
-	var claims maaTokenClaims
+	var claims verify.MaaTokenClaims
 	_, err := jwt.ParseWithClaims(rawToken, &claims, keyFromJKUFunc(ctx, attestationServiceURL), jwt.WithIssuedAt())
 	if err != nil {
 		return fmt.Errorf("parsing token: %w", err)
@@ -566,84 +609,6 @@ func keyFromJKUFunc(ctx context.Context, webKeysURLBase string) func(token *jwt.
 
 		return nil, fmt.Errorf("no key found for kid %s", kid)
 	}
-}
-
-type maaTokenClaims struct {
-	jwt.RegisteredClaims
-	Secureboot                               bool   `json:"secureboot,omitempty"`
-	XMsAttestationType                       string `json:"x-ms-attestation-type,omitempty"`
-	XMsAzurevmAttestationProtocolVer         string `json:"x-ms-azurevm-attestation-protocol-ver,omitempty"`
-	XMsAzurevmAttestedPcrs                   []int  `json:"x-ms-azurevm-attested-pcrs,omitempty"`
-	XMsAzurevmBootdebugEnabled               bool   `json:"x-ms-azurevm-bootdebug-enabled,omitempty"`
-	XMsAzurevmDbvalidated                    bool   `json:"x-ms-azurevm-dbvalidated,omitempty"`
-	XMsAzurevmDbxvalidated                   bool   `json:"x-ms-azurevm-dbxvalidated,omitempty"`
-	XMsAzurevmDebuggersdisabled              bool   `json:"x-ms-azurevm-debuggersdisabled,omitempty"`
-	XMsAzurevmDefaultSecurebootkeysvalidated bool   `json:"x-ms-azurevm-default-securebootkeysvalidated,omitempty"`
-	XMsAzurevmElamEnabled                    bool   `json:"x-ms-azurevm-elam-enabled,omitempty"`
-	XMsAzurevmFlightsigningEnabled           bool   `json:"x-ms-azurevm-flightsigning-enabled,omitempty"`
-	XMsAzurevmHvciPolicy                     int    `json:"x-ms-azurevm-hvci-policy,omitempty"`
-	XMsAzurevmHypervisordebugEnabled         bool   `json:"x-ms-azurevm-hypervisordebug-enabled,omitempty"`
-	XMsAzurevmIsWindows                      bool   `json:"x-ms-azurevm-is-windows,omitempty"`
-	XMsAzurevmKerneldebugEnabled             bool   `json:"x-ms-azurevm-kerneldebug-enabled,omitempty"`
-	XMsAzurevmOsbuild                        string `json:"x-ms-azurevm-osbuild,omitempty"`
-	XMsAzurevmOsdistro                       string `json:"x-ms-azurevm-osdistro,omitempty"`
-	XMsAzurevmOstype                         string `json:"x-ms-azurevm-ostype,omitempty"`
-	XMsAzurevmOsversionMajor                 int    `json:"x-ms-azurevm-osversion-major,omitempty"`
-	XMsAzurevmOsversionMinor                 int    `json:"x-ms-azurevm-osversion-minor,omitempty"`
-	XMsAzurevmSigningdisabled                bool   `json:"x-ms-azurevm-signingdisabled,omitempty"`
-	XMsAzurevmTestsigningEnabled             bool   `json:"x-ms-azurevm-testsigning-enabled,omitempty"`
-	XMsAzurevmVmid                           string `json:"x-ms-azurevm-vmid,omitempty"`
-	XMsIsolationTee                          struct {
-		XMsAttestationType  string `json:"x-ms-attestation-type,omitempty"`
-		XMsComplianceStatus string `json:"x-ms-compliance-status,omitempty"`
-		XMsRuntime          struct {
-			Keys []struct {
-				E      string   `json:"e,omitempty"`
-				KeyOps []string `json:"key_ops,omitempty"`
-				Kid    string   `json:"kid,omitempty"`
-				Kty    string   `json:"kty,omitempty"`
-				N      string   `json:"n,omitempty"`
-			} `json:"keys,omitempty"`
-			VMConfiguration struct {
-				ConsoleEnabled bool   `json:"console-enabled,omitempty"`
-				CurrentTime    int    `json:"current-time,omitempty"`
-				SecureBoot     bool   `json:"secure-boot,omitempty"`
-				TpmEnabled     bool   `json:"tpm-enabled,omitempty"`
-				VMUniqueID     string `json:"vmUniqueId,omitempty"`
-			} `json:"vm-configuration,omitempty"`
-		} `json:"x-ms-runtime,omitempty"`
-		XMsSevsnpvmAuthorkeydigest   string `json:"x-ms-sevsnpvm-authorkeydigest,omitempty"`
-		XMsSevsnpvmBootloaderSvn     int    `json:"x-ms-sevsnpvm-bootloader-svn,omitempty"`
-		XMsSevsnpvmFamilyID          string `json:"x-ms-sevsnpvm-familyId,omitempty"`
-		XMsSevsnpvmGuestsvn          int    `json:"x-ms-sevsnpvm-guestsvn,omitempty"`
-		XMsSevsnpvmHostdata          string `json:"x-ms-sevsnpvm-hostdata,omitempty"`
-		XMsSevsnpvmIdkeydigest       string `json:"x-ms-sevsnpvm-idkeydigest,omitempty"`
-		XMsSevsnpvmImageID           string `json:"x-ms-sevsnpvm-imageId,omitempty"`
-		XMsSevsnpvmIsDebuggable      bool   `json:"x-ms-sevsnpvm-is-debuggable,omitempty"`
-		XMsSevsnpvmLaunchmeasurement string `json:"x-ms-sevsnpvm-launchmeasurement,omitempty"`
-		XMsSevsnpvmMicrocodeSvn      int    `json:"x-ms-sevsnpvm-microcode-svn,omitempty"`
-		XMsSevsnpvmMigrationAllowed  bool   `json:"x-ms-sevsnpvm-migration-allowed,omitempty"`
-		XMsSevsnpvmReportdata        string `json:"x-ms-sevsnpvm-reportdata,omitempty"`
-		XMsSevsnpvmReportid          string `json:"x-ms-sevsnpvm-reportid,omitempty"`
-		XMsSevsnpvmSmtAllowed        bool   `json:"x-ms-sevsnpvm-smt-allowed,omitempty"`
-		XMsSevsnpvmSnpfwSvn          int    `json:"x-ms-sevsnpvm-snpfw-svn,omitempty"`
-		XMsSevsnpvmTeeSvn            int    `json:"x-ms-sevsnpvm-tee-svn,omitempty"`
-		XMsSevsnpvmVmpl              int    `json:"x-ms-sevsnpvm-vmpl,omitempty"`
-	} `json:"x-ms-isolation-tee,omitempty"`
-	XMsPolicyHash string `json:"x-ms-policy-hash,omitempty"`
-	XMsRuntime    struct {
-		ClientPayload struct {
-			Nonce string `json:"nonce,omitempty"`
-		} `json:"client-payload,omitempty"`
-		Keys []struct {
-			E      string   `json:"e,omitempty"`
-			KeyOps []string `json:"key_ops,omitempty"`
-			Kid    string   `json:"kid,omitempty"`
-			Kty    string   `json:"kty,omitempty"`
-			N      string   `json:"n,omitempty"`
-		} `json:"keys,omitempty"`
-	} `json:"x-ms-runtime,omitempty"`
-	XMsVer string `json:"x-ms-ver,omitempty"`
 }
 
 // attestationDoc is the attestation document returned by the verifier.
@@ -740,4 +705,158 @@ func httpGet(ctx context.Context, url string) ([]byte, error) {
 		return nil, err
 	}
 	return body, nil
+}
+
+func newCertificates(certTypeName string, cert []byte, log debugLog) (certs []verify.Certificate, err error) {
+	newlinesTrimmed := strings.TrimSpace(string(cert))
+
+	log.Debugf("Decoding PEM certificate: %s", certTypeName)
+	i := 1
+	var rest []byte
+	var block *pem.Block
+	for block, rest = pem.Decode([]byte(newlinesTrimmed)); block != nil; block, rest = pem.Decode(rest) {
+		log.Debugf("Parsing PEM block: %d", i)
+		if block.Type != "CERTIFICATE" {
+			return certs, fmt.Errorf("parse %s: expected PEM block type 'CERTIFICATE', got '%s'", certTypeName, block.Type)
+		}
+
+		cert, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return certs, fmt.Errorf("parse %s: %w", certTypeName, err)
+		}
+		if certTypeName == "VCEK certificate" {
+			vcekExts, err := kds.VcekCertificateExtensions(cert)
+			if err != nil {
+				return certs, fmt.Errorf("parsing VCEK certificate extensions: %w", err)
+			}
+			certs = append(certs, verify.Certificate{
+				Certificate:   cert,
+				CertTypeName:  certTypeName,
+				StructVersion: vcekExts.StructVersion,
+				ProductName:   vcekExts.ProductName,
+				TCBVersion:    newTCBVersion(vcekExts.TCBVersion),
+				HardwareID:    vcekExts.HWID,
+			})
+		} else {
+			certs = append(certs, verify.Certificate{
+				Certificate:  cert,
+				CertTypeName: certTypeName,
+			})
+		}
+		i++
+	}
+	if i == 1 {
+		return certs, fmt.Errorf("parse %s: no PEM blocks found", certTypeName)
+	}
+	if len(rest) != 0 {
+		return certs, fmt.Errorf("parse %s: remaining PEM block is not a valid certificate: %s", certTypeName, rest)
+	}
+	return certs, nil
+}
+
+func newSNPReport(reportBytes []byte) (res verify.SNPReport, err error) {
+	report, err := abi.ReportToProto(reportBytes)
+	if err != nil {
+		return res, fmt.Errorf("parsing report to proto: %w", err)
+	}
+
+	policy, err := abi.ParseSnpPolicy(report.Policy)
+	if err != nil {
+		return res, fmt.Errorf("parsing policy: %w", err)
+	}
+
+	platformInfo, err := abi.ParseSnpPlatformInfo(report.PlatformInfo)
+	if err != nil {
+		return res, fmt.Errorf("parsing platform info: %w", err)
+	}
+
+	signature, err := abi.ReportToSignatureDER(reportBytes)
+	if err != nil {
+		return res, fmt.Errorf("parsing signature: %w", err)
+	}
+
+	signerInfo, err := abi.ParseSignerInfo(report.SignerInfo)
+	if err != nil {
+		return res, fmt.Errorf("parsing signer info: %w", err)
+	}
+	return verify.SNPReport{
+		Version:              report.Version,
+		GuestSvn:             report.GuestSvn,
+		PolicyABIMinor:       policy.ABIMinor,
+		PolicyABIMajor:       policy.ABIMajor,
+		PolicySMT:            policy.SMT,
+		PolicyMigrationAgent: policy.MigrateMA,
+		PolicyDebug:          policy.Debug,
+		PolicySingleSocket:   policy.SingleSocket,
+		FamilyID:             report.FamilyId,
+		ImageID:              report.ImageId,
+		Vmpl:                 report.Vmpl,
+		SignatureAlgo:        report.SignatureAlgo,
+		CurrentTCB:           newTCBVersion(kds.TCBVersion(report.CurrentTcb)),
+		PlatformInfo: verify.PlatformInfo{
+			SMT:  platformInfo.SMTEnabled,
+			TSME: platformInfo.TSMEEnabled,
+		},
+		SignerInfo: verify.SignerInfo{
+			AuthorKey:   signerInfo.AuthorKeyEn,
+			MaskChipKey: signerInfo.MaskChipKey,
+			SigningKey:  signerInfo.SigningKey,
+		},
+		ReportData:      report.ReportData,
+		Measurement:     report.Measurement,
+		HostData:        report.HostData,
+		IDKeyDigest:     report.IdKeyDigest,
+		AuthorKeyDigest: report.AuthorKeyDigest,
+		ReportID:        report.ReportId,
+		ReportIDMa:      report.ReportIdMa,
+		ReportedTCB:     newTCBVersion(kds.TCBVersion(report.ReportedTcb)),
+		ChipID:          report.ChipId,
+		CommittedTCB:    newTCBVersion(kds.TCBVersion(report.CommittedTcb)),
+		CurrentBuild:    report.CurrentBuild,
+		CurrentMinor:    report.CurrentMinor,
+		CurrentMajor:    report.CurrentMajor,
+		CommittedBuild:  report.CommittedBuild,
+		CommittedMinor:  report.CommittedMinor,
+		CommittedMajor:  report.CommittedMajor,
+		LaunchTCB:       newTCBVersion(kds.TCBVersion(report.LaunchTcb)),
+		Signature:       signature,
+	}, nil
+}
+
+func newMAAToken(ctx context.Context, rawToken, attestationServiceURL string) (verify.MaaTokenClaims, error) {
+	var claims verify.MaaTokenClaims
+	_, err := jwt.ParseWithClaims(rawToken, &claims, keyFromJKUFunc(ctx, attestationServiceURL), jwt.WithIssuedAt())
+	return claims, err
+}
+
+func newTCBVersion(tcbVersion kds.TCBVersion) (res verify.TCBVersion) {
+	tcb := kds.DecomposeTCBVersion(tcbVersion)
+	return verify.TCBVersion{
+		Bootloader: tcb.BlSpl,
+		TEE:        tcb.TeeSpl,
+		SNP:        tcb.SnpSpl,
+		Microcode:  tcb.UcodeSpl,
+		Spl4:       tcb.Spl4,
+		Spl5:       tcb.Spl5,
+		Spl6:       tcb.Spl6,
+		Spl7:       tcb.Spl7,
+	}
+}
+
+func extractAzureInstanceInfo(docString string) (azureInstanceInfo, error) {
+	var doc attestationDoc
+	if err := json.Unmarshal([]byte(docString), &doc); err != nil {
+		return azureInstanceInfo{}, fmt.Errorf("unmarshal attestation document: %w", err)
+	}
+
+	instanceInfoString, err := base64.StdEncoding.DecodeString(doc.InstanceInfo)
+	if err != nil {
+		return azureInstanceInfo{}, fmt.Errorf("decode instance info: %w", err)
+	}
+
+	var instanceInfo azureInstanceInfo
+	if err := json.Unmarshal(instanceInfoString, &instanceInfo); err != nil {
+		return azureInstanceInfo{}, fmt.Errorf("unmarshal instance info: %w", err)
+	}
+	return instanceInfo, nil
 }
