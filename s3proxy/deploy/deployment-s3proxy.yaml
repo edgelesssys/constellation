@@ -47,7 +47,7 @@ spec:
           - name: regcred
           containers:
           - name: s3proxy
-            image: ghcr.io/edgelesssys/constellation/s3proxy@sha256:2394a804e8b5ff487a55199dd83138885322a4de8e71ac7ce67b79d4ffc842b2
+            image: ghcr.io/edgelesssys/constellation/s3proxy:v2.12.0-pre.0.20231009141917-226cb427d0b1
             args:
             - "--level=-1"
             ports:
