@@ -51,7 +51,7 @@ terraform destroy
 Delete all files that are no longer needed:
 
 ```bash
-rm constellation-id.json constellation-admin.conf
+rm constellation-state.yaml constellation-admin.conf
 ```
 
 Only the `constellation-mastersecret.json` and the configuration file remain.

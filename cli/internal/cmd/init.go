@@ -36,13 +36,10 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
-	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/state"
-	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
@@ -73,24 +70,19 @@ func NewInitCmd() *cobra.Command {
 }
 
 type initCmd struct {
-	log           debugLog
-	merger        configMerger
-	spinner       spinnerInterf
-	fileHandler   file.Handler
-	clusterShower infrastructureShower
-	pf            pathprefix.PathPrefixer
+	log         debugLog
+	merger      configMerger
+	spinner     spinnerInterf
+	fileHandler file.Handler
+	pf          pathprefix.PathPrefixer
 }
 
-func newInitCmd(
-	clusterShower infrastructureShower, fileHandler file.Handler,
-	spinner spinnerInterf, merger configMerger, log debugLog,
-) *initCmd {
+func newInitCmd(fileHandler file.Handler, spinner spinnerInterf, merger configMerger, log debugLog) *initCmd {
 	return &initCmd{
-		log:           log,
-		merger:        merger,
-		spinner:       spinner,
-		fileHandler:   fileHandler,
-		clusterShower: clusterShower,
+		log:         log,
+		merger:      merger,
+		spinner:     spinner,
+		fileHandler: fileHandler,
 	}
 }
 
@@ -116,12 +108,7 @@ func runInitialize(cmd *cobra.Command, _ []string) error {
 	defer cancel()
 	cmd.SetContext(ctx)
 
-	tfClient, err := terraform.New(ctx, constants.TerraformWorkingDir)
-	if err != nil {
-		return fmt.Errorf("creating Terraform client: %w", err)
-	}
-
-	i := newInitCmd(tfClient, fileHandler, spinner, &kubeconfigMerger{log: log}, log)
+	i := newInitCmd(fileHandler, spinner, &kubeconfigMerger{log: log}, log)
 	fetcher := attestationconfigapi.NewFetcher()
 	newAttestationApplier := func(w io.Writer, kubeConfig string, log debugLog) (attestationConfigApplier, error) {
 		return kubecmd.New(w, kubeConfig, fileHandler, log)
@@ -168,10 +155,9 @@ func (i *initCmd) initialize(
 		cmd.PrintErrln("WARNING: Attestation temporarily relies on AWS nitroTPM. See https://docs.edgeless.systems/constellation/workflows/config#choosing-a-vm-type for more information.")
 	}
 
-	i.log.Debugf("Checking cluster ID file")
-	var idFile clusterid.File
-	if err := i.fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil {
-		return fmt.Errorf("reading cluster ID file: %w", err)
+	stateFile, err := state.ReadFromFile(i.fileHandler, constants.StateFilename)
+	if err != nil {
+		return fmt.Errorf("reading state file: %w", err)
 	}
 
 	i.log.Debugf("Validated k8s version as %s", k8sVersion)
@@ -187,7 +173,10 @@ func (i *initCmd) initialize(
 	}
 	i.log.Debugf("Checked license")
 
-	conf.UpdateMAAURL(idFile.AttestationURL)
+	if stateFile.Infrastructure.Azure != nil {
+		conf.UpdateMAAURL(stateFile.Infrastructure.Azure.AttestationURL)
+	}
+
 	i.log.Debugf("Creating aTLS Validator for %s", conf.GetAttestationConfig().GetVariant())
 	validator, err := cloudcmd.NewValidator(cmd, conf.GetAttestationConfig(), i.log)
 	if err != nil {
@@ -205,15 +194,14 @@ func (i *initCmd) initialize(
 	if err != nil {
 		return fmt.Errorf("generating master secret: %w", err)
 	}
-	i.log.Debugf("Generated measurement salt")
+
+	i.log.Debugf("Generating measurement salt")
 	measurementSalt, err := crypto.GenerateRandomBytes(crypto.RNGLengthDefault)
 	if err != nil {
 		return fmt.Errorf("generating measurement salt: %w", err)
 	}
-	idFile.MeasurementSalt = measurementSalt
 
-	clusterName := clusterid.GetClusterName(conf, idFile)
-	i.log.Debugf("Setting cluster name to %s", clusterName)
+	i.log.Debugf("Setting cluster name to %s", stateFile.Infrastructure.Name)
 
 	cmd.PrintErrln("Note: If you just created the cluster, it can take a few minutes to connect.")
 	i.spinner.Start("Connecting ", false)
@@ -224,12 +212,12 @@ func (i *initCmd) initialize(
 		KubernetesVersion:    versions.VersionConfigs[k8sVersion].ClusterVersion,
 		KubernetesComponents: versions.VersionConfigs[k8sVersion].KubernetesComponents.ToInitProto(),
 		ConformanceMode:      flags.conformance,
-		InitSecret:           idFile.InitSecret,
-		ClusterName:          clusterName,
-		ApiserverCertSans:    idFile.APIServerCertSANs,
+		InitSecret:           stateFile.Infrastructure.InitSecret,
+		ClusterName:          stateFile.Infrastructure.Name,
+		ApiserverCertSans:    stateFile.Infrastructure.APIServerCertSANs,
 	}
 	i.log.Debugf("Sending initialization request")
-	resp, err := i.initCall(cmd.Context(), newDialer(validator), idFile.IP, req)
+	resp, err := i.initCall(cmd.Context(), newDialer(validator), stateFile.Infrastructure.ClusterEndpoint, req)
 	i.spinner.Stop()
 
 	if err != nil {
@@ -247,11 +235,8 @@ func (i *initCmd) initialize(
 	}
 	i.log.Debugf("Initialization request succeeded")
 
-	i.log.Debugf("Writing Constellation ID file")
-	idFile.CloudProvider = provider
-
 	bufferedOutput := &bytes.Buffer{}
-	if err := i.writeOutput(idFile, resp, flags.mergeConfigs, bufferedOutput); err != nil {
+	if err := i.writeOutput(stateFile, resp, flags.mergeConfigs, bufferedOutput, measurementSalt); err != nil {
 		return err
 	}
 
@@ -261,11 +246,6 @@ func (i *initCmd) initialize(
 	}
 	if err := attestationApplier.ApplyJoinConfig(cmd.Context(), conf.GetAttestationConfig(), measurementSalt); err != nil {
 		return fmt.Errorf("applying attestation config: %w", err)
-	}
-
-	infraState, err := i.clusterShower.ShowInfrastructure(cmd.Context(), conf.GetProvider())
-	if err != nil {
-		return fmt.Errorf("getting infrastructure state: %w", err)
 	}
 
 	i.spinner.Start("Installing Kubernetes components ", false)
@@ -279,8 +259,7 @@ func (i *initCmd) initialize(
 	if err != nil {
 		return fmt.Errorf("creating Helm client: %w", err)
 	}
-	executor, includesUpgrades, err := helmApplier.PrepareApply(conf, idFile, options, infraState,
-		serviceAccURI, masterSecret)
+	executor, includesUpgrades, err := helmApplier.PrepareApply(conf, stateFile, options, serviceAccURI, masterSecret)
 	if err != nil {
 		return fmt.Errorf("getting Helm chart executor: %w", err)
 	}
@@ -457,23 +436,32 @@ func (d *initDoer) handleGRPCStateChanges(ctx context.Context, wg *sync.WaitGrou
 	})
 }
 
+// writeOutput writes the output of a cluster initialization to the
+// state- / id- / kubeconfig-file and saves it to disk.
 func (i *initCmd) writeOutput(
-	idFile clusterid.File, initResp *initproto.InitSuccessResponse, mergeConfig bool, wr io.Writer,
+	stateFile *state.State,
+	initResp *initproto.InitSuccessResponse,
+	mergeConfig bool, wr io.Writer,
+	measurementSalt []byte,
 ) error {
 	fmt.Fprint(wr, "Your Constellation cluster was successfully initialized.\n\n")
 
 	ownerID := hex.EncodeToString(initResp.GetOwnerId())
-	// i.log.Debugf("Owner id is %s", ownerID)
 	clusterID := hex.EncodeToString(initResp.GetClusterId())
 
+	stateFile.SetClusterValues(state.ClusterValues{
+		MeasurementSalt: measurementSalt,
+		OwnerID:         ownerID,
+		ClusterID:       clusterID,
+	})
+
 	tw := tabwriter.NewWriter(wr, 0, 0, 2, ' ', 0)
-	// writeRow(tw, "Constellation cluster's owner identifier", ownerID)
 	writeRow(tw, "Constellation cluster identifier", clusterID)
 	writeRow(tw, "Kubernetes configuration", i.pf.PrefixPrintablePath(constants.AdminConfFilename))
 	tw.Flush()
 	fmt.Fprintln(wr)
 
-	i.log.Debugf("Rewriting cluster server address in kubeconfig to %s", idFile.IP)
+	i.log.Debugf("Rewriting cluster server address in kubeconfig to %s", stateFile.Infrastructure.ClusterEndpoint)
 	kubeconfig, err := clientcmd.Load(initResp.GetKubeconfig())
 	if err != nil {
 		return fmt.Errorf("loading kubeconfig: %w", err)
@@ -486,7 +474,7 @@ func (i *initCmd) writeOutput(
 		if err != nil {
 			return fmt.Errorf("parsing kubeconfig server URL: %w", err)
 		}
-		kubeEndpoint.Host = net.JoinHostPort(idFile.IP, kubeEndpoint.Port())
+		kubeEndpoint.Host = net.JoinHostPort(stateFile.Infrastructure.ClusterEndpoint, kubeEndpoint.Port())
 		cluster.Server = kubeEndpoint.String()
 	}
 	kubeconfigBytes, err := clientcmd.Write(*kubeconfig)
@@ -508,13 +496,11 @@ func (i *initCmd) writeOutput(
 		}
 	}
 
-	idFile.OwnerID = ownerID
-	idFile.ClusterID = clusterID
-
-	if err := i.fileHandler.WriteJSON(constants.ClusterIDsFilename, idFile, file.OptOverwrite); err != nil {
-		return fmt.Errorf("writing Constellation ID file: %w", err)
+	if err := stateFile.WriteToFile(i.fileHandler, constants.StateFilename); err != nil {
+		return fmt.Errorf("writing Constellation state file: %w", err)
 	}
-	i.log.Debugf("Constellation ID file written to %s", i.pf.PrefixPrintablePath(constants.ClusterIDsFilename))
+
+	i.log.Debugf("Constellation state file written to %s", i.pf.PrefixPrintablePath(constants.StateFilename))
 
 	if !mergeConfig {
 		fmt.Fprintln(wr, "You can now connect to your cluster by executing:")
@@ -694,11 +680,7 @@ type attestationConfigApplier interface {
 }
 
 type helmApplier interface {
-	PrepareApply(conf *config.Config, idFile clusterid.File,
-		flags helm.Options, infra state.Infrastructure, serviceAccURI string, masterSecret uri.MasterSecret) (
+	PrepareApply(conf *config.Config, stateFile *state.State,
+		flags helm.Options, serviceAccURI string, masterSecret uri.MasterSecret) (
 		helm.Applier, bool, error)
-}
-
-type infrastructureShower interface {
-	ShowInfrastructure(ctx context.Context, provider cloudprovider.Provider) (state.Infrastructure, error)
 }

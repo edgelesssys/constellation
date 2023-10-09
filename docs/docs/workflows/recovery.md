@@ -125,7 +125,7 @@ This means that you have to recover the node manually.
 
 Recovering a cluster requires the following parameters:
 
-* The `constellation-id.json` file in your working directory or the cluster's load balancer IP address
+* The `constellation-state.yaml` file in your working directory or the cluster's endpoint
 * The master secret of the cluster
 
 A cluster can be recovered like this:

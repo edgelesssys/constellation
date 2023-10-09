@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
-	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/state"
@@ -92,7 +91,7 @@ func TestInitialize(t *testing.T) {
 
 	testCases := map[string]struct {
 		provider                cloudprovider.Provider
-		idFile                  *clusterid.File
+		stateFile               *state.State
 		configMutator           func(*config.Config)
 		serviceAccKey           *gcpshared.ServiceAccountKey
 		initServerAPI           *stubInitServer
@@ -102,32 +101,32 @@ func TestInitialize(t *testing.T) {
 	}{
 		"initialize some gcp instances": {
 			provider:      cloudprovider.GCP,
-			idFile:        &clusterid.File{IP: "192.0.2.1"},
+			stateFile:     &state.State{Version: state.Version1, Infrastructure: state.Infrastructure{ClusterEndpoint: "192.0.2.1"}},
 			configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
 			serviceAccKey: gcpServiceAccKey,
 			initServerAPI: &stubInitServer{res: []*initproto.InitResponse{{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}}},
 		},
 		"initialize some azure instances": {
 			provider:      cloudprovider.Azure,
-			idFile:        &clusterid.File{IP: "192.0.2.1"},
+			stateFile:     &state.State{Version: state.Version1, Infrastructure: state.Infrastructure{ClusterEndpoint: "192.0.2.1"}},
 			initServerAPI: &stubInitServer{res: []*initproto.InitResponse{{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}}},
 		},
 		"initialize some qemu instances": {
 			provider:      cloudprovider.QEMU,
-			idFile:        &clusterid.File{IP: "192.0.2.1"},
+			stateFile:     &state.State{Version: state.Version1, Infrastructure: state.Infrastructure{ClusterEndpoint: "192.0.2.1"}},
 			initServerAPI: &stubInitServer{res: []*initproto.InitResponse{{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}}},
 		},
 		"non retriable error": {
 			provider:                cloudprovider.QEMU,
-			idFile:                  &clusterid.File{IP: "192.0.2.1"},
+			stateFile:               &state.State{Version: state.Version1, Infrastructure: state.Infrastructure{ClusterEndpoint: "192.0.2.1"}},
 			initServerAPI:           &stubInitServer{initErr: &nonRetriableError{err: assert.AnError}},
 			retriable:               false,
 			masterSecretShouldExist: true,
 			wantErr:                 true,
 		},
 		"non retriable error with failed log collection": {
-			provider: cloudprovider.QEMU,
-			idFile:   &clusterid.File{IP: "192.0.2.1"},
+			provider:  cloudprovider.QEMU,
+			stateFile: &state.State{Version: state.Version1, Infrastructure: state.Infrastructure{ClusterEndpoint: "192.0.2.1"}},
 			initServerAPI: &stubInitServer{
 				res: []*initproto.InitResponse{
 					{
@@ -150,28 +149,35 @@ func TestInitialize(t *testing.T) {
 			masterSecretShouldExist: true,
 			wantErr:                 true,
 		},
-		"empty id file": {
+		"state file with only version": {
 			provider:      cloudprovider.GCP,
-			idFile:        &clusterid.File{},
+			stateFile:     &state.State{Version: state.Version1},
 			initServerAPI: &stubInitServer{},
 			retriable:     true,
 			wantErr:       true,
 		},
-		"no id file": {
+		"empty state file": {
+			provider:      cloudprovider.GCP,
+			stateFile:     &state.State{},
+			initServerAPI: &stubInitServer{},
+			retriable:     true,
+			wantErr:       true,
+		},
+		"no state file": {
 			provider:  cloudprovider.GCP,
 			retriable: true,
 			wantErr:   true,
 		},
 		"init call fails": {
 			provider:      cloudprovider.GCP,
-			idFile:        &clusterid.File{IP: "192.0.2.1"},
+			stateFile:     &state.State{Version: state.Version1, Infrastructure: state.Infrastructure{ClusterEndpoint: "192.0.2.1"}},
 			initServerAPI: &stubInitServer{initErr: assert.AnError},
 			retriable:     true,
 			wantErr:       true,
 		},
 		"k8s version without v works": {
 			provider:      cloudprovider.Azure,
-			idFile:        &clusterid.File{IP: "192.0.2.1"},
+			stateFile:     &state.State{Version: state.Version1, Infrastructure: state.Infrastructure{ClusterEndpoint: "192.0.2.1"}},
 			initServerAPI: &stubInitServer{res: []*initproto.InitResponse{{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}}},
 			configMutator: func(c *config.Config) {
 				res, err := versions.NewValidK8sVersion(strings.TrimPrefix(string(versions.Default), "v"), true)
@@ -181,7 +187,7 @@ func TestInitialize(t *testing.T) {
 		},
 		"outdated k8s patch version doesn't work": {
 			provider:      cloudprovider.Azure,
-			idFile:        &clusterid.File{IP: "192.0.2.1"},
+			stateFile:     &state.State{Version: state.Version1, Infrastructure: state.Infrastructure{ClusterEndpoint: "192.0.2.1"}},
 			initServerAPI: &stubInitServer{res: []*initproto.InitResponse{{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}}},
 			configMutator: func(c *config.Config) {
 				v, err := semver.New(versions.SupportedK8sVersions()[0])
@@ -229,9 +235,10 @@ func TestInitialize(t *testing.T) {
 				tc.configMutator(config)
 			}
 			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, config, file.OptNone))
-			if tc.idFile != nil {
-				tc.idFile.CloudProvider = tc.provider
-				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFilename, tc.idFile, file.OptNone))
+			stateFile := state.New()
+			require.NoError(stateFile.WriteToFile(fileHandler, constants.StateFilename))
+			if tc.stateFile != nil {
+				require.NoError(tc.stateFile.WriteToFile(fileHandler, constants.StateFilename))
 			}
 			if tc.serviceAccKey != nil {
 				require.NoError(fileHandler.WriteJSON(serviceAccPath, tc.serviceAccKey, file.OptNone))
@@ -241,11 +248,16 @@ func TestInitialize(t *testing.T) {
 			ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 			defer cancel()
 			cmd.SetContext(ctx)
-			i := newInitCmd(&stubShowInfrastructure{}, fileHandler, &nopSpinner{}, nil, logger.NewTest(t))
-			err := i.initialize(cmd, newDialer, &stubLicenseClient{}, stubAttestationFetcher{},
+			i := newInitCmd(fileHandler, &nopSpinner{}, nil, logger.NewTest(t))
+			err := i.initialize(
+				cmd,
+				newDialer,
+				&stubLicenseClient{},
+				stubAttestationFetcher{},
 				func(io.Writer, string, debugLog) (attestationConfigApplier, error) {
 					return &stubAttestationApplier{}, nil
-				}, func(_ string, _ debugLog) (helmApplier, error) {
+				},
+				func(_ string, _ debugLog) (helmApplier, error) {
 					return &stubApplier{}, nil
 				})
 
@@ -277,7 +289,7 @@ type stubApplier struct {
 	err error
 }
 
-func (s stubApplier) PrepareApply(_ *config.Config, _ clusterid.File, _ helm.Options, _ state.Infrastructure, _ string, _ uri.MasterSecret) (helm.Applier, bool, error) {
+func (s stubApplier) PrepareApply(_ *config.Config, _ *state.State, _ helm.Options, _ string, _ uri.MasterSecret) (helm.Applier, bool, error) {
 	return stubRunner{}, false, s.err
 }
 
@@ -386,26 +398,33 @@ func TestWriteOutput(t *testing.T) {
 
 	ownerID := hex.EncodeToString(resp.GetInitSuccess().GetOwnerId())
 	clusterID := hex.EncodeToString(resp.GetInitSuccess().GetClusterId())
+	measurementSalt := []byte{0x41}
 
-	expectedIDFile := clusterid.File{
-		ClusterID: clusterID,
-		OwnerID:   ownerID,
-		IP:        clusterEndpoint,
-		UID:       "test-uid",
+	expectedStateFile := &state.State{
+		Version: state.Version1,
+		ClusterValues: state.ClusterValues{
+			ClusterID:       clusterID,
+			OwnerID:         ownerID,
+			MeasurementSalt: []byte{0x41},
+		},
+		Infrastructure: state.Infrastructure{
+			APIServerCertSANs: []string{},
+			InitSecret:        []byte{},
+			ClusterEndpoint:   clusterEndpoint,
+		},
 	}
 
 	var out bytes.Buffer
 	testFs := afero.NewMemMapFs()
 	fileHandler := file.NewHandler(testFs)
 
-	idFile := clusterid.File{
-		UID: "test-uid",
-		IP:  clusterEndpoint,
-	}
-	i := newInitCmd(nil, fileHandler, &nopSpinner{}, &stubMerger{}, logger.NewTest(t))
-	err = i.writeOutput(idFile, resp.GetInitSuccess(), false, &out)
+	stateFile := state.New().SetInfrastructure(state.Infrastructure{
+		ClusterEndpoint: clusterEndpoint,
+	})
+
+	i := newInitCmd(fileHandler, &nopSpinner{}, &stubMerger{}, logger.NewTest(t))
+	err = i.writeOutput(stateFile, resp.GetInitSuccess(), false, &out, measurementSalt)
 	require.NoError(err)
-	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
 	assert.Contains(out.String(), constants.AdminConfFilename)
 
@@ -415,20 +434,17 @@ func TestWriteOutput(t *testing.T) {
 	assert.Contains(string(adminConf), clusterEndpoint)
 	assert.Equal(string(expectedKubeconfigBytes), string(adminConf))
 
-	idsFile, err := afs.ReadFile(constants.ClusterIDsFilename)
+	fh := file.NewHandler(afs)
+	readStateFile, err := state.ReadFromFile(fh, constants.StateFilename)
 	assert.NoError(err)
-	var testIDFile clusterid.File
-	err = json.Unmarshal(idsFile, &testIDFile)
-	assert.NoError(err)
-	assert.Equal(expectedIDFile, testIDFile)
+	assert.Equal(expectedStateFile, readStateFile)
 	out.Reset()
 	require.NoError(afs.Remove(constants.AdminConfFilename))
 
 	// test custom workspace
 	i.pf = pathprefix.New("/some/path")
-	err = i.writeOutput(idFile, resp.GetInitSuccess(), true, &out)
+	err = i.writeOutput(stateFile, resp.GetInitSuccess(), true, &out, measurementSalt)
 	require.NoError(err)
-	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
 	assert.Contains(out.String(), i.pf.PrefixPrintablePath(constants.AdminConfFilename))
 	out.Reset()
@@ -437,9 +453,8 @@ func TestWriteOutput(t *testing.T) {
 	i.pf = pathprefix.PathPrefixer{}
 
 	// test config merging
-	err = i.writeOutput(idFile, resp.GetInitSuccess(), true, &out)
+	err = i.writeOutput(stateFile, resp.GetInitSuccess(), true, &out, measurementSalt)
 	require.NoError(err)
-	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
 	assert.Contains(out.String(), constants.AdminConfFilename)
 	assert.Contains(out.String(), "Constellation kubeconfig merged with default config")
@@ -449,9 +464,8 @@ func TestWriteOutput(t *testing.T) {
 
 	// test config merging with env vars set
 	i.merger = &stubMerger{envVar: "/some/path/to/kubeconfig"}
-	err = i.writeOutput(idFile, resp.GetInitSuccess(), true, &out)
+	err = i.writeOutput(stateFile, resp.GetInitSuccess(), true, &out, measurementSalt)
 	require.NoError(err)
-	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
 	assert.Contains(out.String(), constants.AdminConfFilename)
 	assert.Contains(out.String(), "Constellation kubeconfig merged with default config")
@@ -496,7 +510,7 @@ func TestGenerateMasterSecret(t *testing.T) {
 			require.NoError(tc.createFileFunc(fileHandler))
 
 			var out bytes.Buffer
-			i := newInitCmd(nil, fileHandler, nil, nil, logger.NewTest(t))
+			i := newInitCmd(fileHandler, nil, nil, logger.NewTest(t))
 			secret, err := i.generateMasterSecret(&out)
 
 			if tc.wantErr {
@@ -530,7 +544,8 @@ func TestAttestation(t *testing.T) {
 			},
 		},
 	}}
-	existingIDFile := &clusterid.File{IP: "192.0.2.4", CloudProvider: cloudprovider.QEMU}
+
+	existingStateFile := &state.State{Version: state.Version1, Infrastructure: state.Infrastructure{ClusterEndpoint: "192.0.2.4"}}
 
 	netDialer := testdialer.NewBufconnDialer()
 
@@ -561,7 +576,7 @@ func TestAttestation(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 	fileHandler := file.NewHandler(fs)
-	require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFilename, existingIDFile, file.OptNone))
+	require.NoError(existingStateFile.WriteToFile(fileHandler, constants.StateFilename))
 
 	cfg := config.Default()
 	cfg.Image = "v0.0.0" // is the default version of the the CLI (before build injects the real version)
@@ -588,7 +603,7 @@ func TestAttestation(t *testing.T) {
 	defer cancel()
 	cmd.SetContext(ctx)
 
-	i := newInitCmd(nil, fileHandler, &nopSpinner{}, nil, logger.NewTest(t))
+	i := newInitCmd(fileHandler, &nopSpinner{}, nil, logger.NewTest(t))
 	err := i.initialize(cmd, newDialer, &stubLicenseClient{}, stubAttestationFetcher{},
 		func(io.Writer, string, debugLog) (attestationConfigApplier, error) {
 			return &stubAttestationApplier{}, nil
@@ -758,23 +773,10 @@ func (c stubInitClient) Recv() (*initproto.InitResponse, error) {
 	return res, err
 }
 
-type stubShowInfrastructure struct{}
-
-func (s *stubShowInfrastructure) ShowInfrastructure(_ context.Context, csp cloudprovider.Provider) (state.Infrastructure, error) {
-	res := state.Infrastructure{}
-	switch csp {
-	case cloudprovider.Azure:
-		res.Azure = &state.Azure{}
-	case cloudprovider.GCP:
-		res.GCP = &state.GCP{}
-	}
-	return res, nil
-}
-
 type stubAttestationApplier struct {
 	applyErr error
 }
 
-func (a *stubAttestationApplier) ApplyJoinConfig(_ context.Context, _ config.AttestationCfg, _ []byte) error {
+func (a *stubAttestationApplier) ApplyJoinConfig(context.Context, config.AttestationCfg, []byte) error {
 	return a.applyErr
 }

@@ -181,7 +181,7 @@ runs:
         CSP: ${{ inputs.cloudProvider }}
       run: |
         echo "::group::Download boot logs"
-        CONSTELL_UID=$(yq '.uid' constellation-id.json)
+        CONSTELL_UID=$(yq '.infrastructure.uid' constellation-state.yaml)
         case $CSP in
           azure)
             AZURE_RESOURCE_GROUP=$(yq eval ".provider.azure.resourceGroup" constellation-conf.yaml)

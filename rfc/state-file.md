@@ -91,6 +91,7 @@ clusterValues:
     clusterID: "00112233445566778899AABBCCDDEEFF" # cluster ID uniquely identifies this Constellation cluster.
     ownerID: "00112233445566778899AABBCCDDEEFF" # owner ID identifies this cluster as belonging to owner.
     measurementSalt: "c2VjcmV0Cg==" # measurement salt is used by nodes to derive their cluster ID.
+    name: "constell-001122" # name of the cluster, as used in e.g. cluster resource naming.
 ```
 
 ## Updates to the state file

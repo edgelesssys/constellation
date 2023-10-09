@@ -223,6 +223,9 @@ func TestCreateCluster(t *testing.T) {
 					"api_server_cert_sans": {
 						Value: []any{"192.0.2.100"},
 					},
+					"name": {
+						Value: "constell-12345abc",
+					},
 				},
 			},
 		}
@@ -261,6 +264,9 @@ func TestCreateCluster(t *testing.T) {
 					},
 					"loadbalancer_name": {
 						Value: "test_lb_name",
+					},
+					"name": {
+						Value: "constell-12345abc",
 					},
 				},
 			},
@@ -398,6 +404,20 @@ func TestCreateCluster(t *testing.T) {
 			fs:      afero.NewMemMapFs(),
 			wantErr: true,
 		},
+		"name has wrong type": {
+			pathBase: "terraform",
+			provider: cloudprovider.QEMU,
+			vars:     qemuVars,
+			tf: &stubTerraform{
+				showState: &tfjson.State{
+					Values: &tfjson.StateValues{
+						Outputs: map[string]*tfjson.StateOutput{"name": {Value: 42}},
+					},
+				},
+			},
+			fs:      afero.NewMemMapFs(),
+			wantErr: true,
+		},
 		"working attestation url": {
 			pathBase:               "terraform",
 			provider:               cloudprovider.Azure,
@@ -457,7 +477,7 @@ func TestCreateCluster(t *testing.T) {
 			}
 			assert.NoError(err)
 			assert.Equal("192.0.2.100", infraState.ClusterEndpoint)
-			assert.Equal("initSecret", infraState.InitSecret)
+			assert.Equal([]byte("initSecret"), infraState.InitSecret)
 			assert.Equal("12345abc", infraState.UID)
 			if tc.provider == cloudprovider.Azure {
 				assert.Equal(tc.expectedAttestationURL, infraState.Azure.AttestationURL)

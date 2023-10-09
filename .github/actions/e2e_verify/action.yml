@@ -39,14 +39,14 @@ runs:
 
     - name: Constellation verify
       shell: bash
-      run: constellation verify --cluster-id $(jq -r ".clusterID" constellation-id.json) --force
+      run: constellation verify --cluster-id $(jq -r ".clusterValues.clusterID" constellation-state.yaml) --force
 
     - name: Verify all nodes
       shell: bash
       env:
         KUBECONFIG: ${{ inputs.kubeconfig }}
       run: |
-        clusterID=$(jq -r ".clusterID" constellation-id.json)
+        clusterID=$(jq -r ".clusterValues.clusterID" constellation-state.yaml)
         nodes=$(kubectl get nodes -o json | jq -r ".items[].metadata.name")
 
         for node in $nodes ; do

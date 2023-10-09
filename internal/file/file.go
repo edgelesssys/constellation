@@ -232,3 +232,8 @@ func (h *Handler) CopyFile(src, dst string, opts ...Option) error {
 
 	return nil
 }
+
+// RenameFile renames a file, overwriting any existing file at the destination.
+func (h *Handler) RenameFile(old, new string) error {
+	return h.fs.Rename(old, new)
+}

@@ -65,14 +65,16 @@ terraform init
 terraform apply
 ```
 
-The Constellation [init step](#the-init-step) requires the already created `constellation-config.yaml` and the `constellation-id.json`.
-Create the `constellation-id.json` using the output from the Terraform state and the `constellation-conf.yaml`:
+The Constellation [init step](#the-init-step) requires the already created `constellation-config.yaml` and the `constellation-state.yaml`.
+Create the `constellation-state.yaml` using the output from the Terraform state and the `constellation-conf.yaml`:
 
 ```bash
 CONSTELL_IP=$(terraform output ip)
 CONSTELL_INIT_SECRET=$(terraform output initSecret | jq -r | tr -d '\n' | base64)
-CONSTELL_CSP=$(cat constellation-conf.yaml | yq ".provider | keys | .[0]")
-jq --null-input --arg cloudprovider "$CONSTELL_CSP" --arg ip "$CONSTELL_IP" --arg initsecret "$CONSTELL_INIT_SECRET" '{"cloudprovider":$cloudprovider,"ip":$ip,"initsecret":$initsecret}' > constellation-id.json
+touch constellation-state.yaml
+yq eval '.version ="v1"' --inplace constellation-state.yaml
+yq eval '.infrastructure.initSecret ="$CONSTELL_INIT_SECRET"' --inplace constellation-state.yaml
+yq eval '.infrastructure.clusterEndpoint ="$CONSTELL_IP"' --inplace constellation-state.yaml
 ```
 
 </tabItem>

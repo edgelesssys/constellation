@@ -19,6 +19,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
@@ -172,14 +173,18 @@ func (m *miniUpCmd) createMiniCluster(ctx context.Context, fileHandler file.Hand
 		TFWorkspace: constants.TerraformWorkingDir,
 		TFLogLevel:  flags.tfLogLevel,
 	}
-	idFile, err := creator.Create(ctx, opts)
+	infraState, err := creator.Create(ctx, opts)
 	if err != nil {
 		return err
 	}
 
-	idFile.UID = constants.MiniConstellationUID // use UID "mini" to identify MiniConstellation clusters.
-	m.log.Debugf("Cluster id file contains %v", idFile)
-	return fileHandler.WriteJSON(constants.ClusterIDsFilename, idFile, file.OptNone)
+	infraState.UID = constants.MiniConstellationUID // use UID "mini" to identify MiniConstellation clusters.
+
+	stateFile := state.New().
+		SetInfrastructure(infraState)
+
+	m.log.Debugf("Cluster state file contains %v", stateFile)
+	return stateFile.WriteToFile(fileHandler, constants.StateFilename)
 }
 
 // initializeMiniCluster initializes a QEMU cluster.
@@ -208,18 +213,13 @@ func (m *miniUpCmd) initializeMiniCluster(cmd *cobra.Command, fileHandler file.H
 	m.log.Debugf("Created new logger")
 	defer log.Sync()
 
-	tfClient, err := terraform.New(cmd.Context(), constants.TerraformWorkingDir)
-	if err != nil {
-		return fmt.Errorf("creating Terraform client: %w", err)
-	}
-
 	newAttestationApplier := func(w io.Writer, kubeConfig string, log debugLog) (attestationConfigApplier, error) {
 		return kubecmd.New(w, kubeConfig, fileHandler, log)
 	}
 	newHelmClient := func(kubeConfigPath string, log debugLog) (helmApplier, error) {
 		return helm.NewClient(kubeConfigPath, log)
 	} // need to defer helm client instantiation until kubeconfig is available
-	i := newInitCmd(tfClient, fileHandler, spinner, &kubeconfigMerger{log: log}, log)
+	i := newInitCmd(fileHandler, spinner, &kubeconfigMerger{log: log}, log)
 	if err := i.initialize(cmd, newDialer, license.NewClient(), m.configFetcher,
 		newAttestationApplier, newHelmClient); err != nil {
 		return err
