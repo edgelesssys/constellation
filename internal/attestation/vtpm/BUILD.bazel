@@ -12,6 +12,7 @@ go_library(
     deps = [
         "//internal/attestation",
         "//internal/attestation/measurements",
+        "@com_github_google_go_sev_guest//proto/sevsnp",
         "@com_github_google_go_tpm//legacy/tpm2",
         "@com_github_google_go_tpm_tools//client",
         "@com_github_google_go_tpm_tools//proto/attest",

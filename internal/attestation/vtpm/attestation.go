@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/google/go-sev-guest/proto/sevsnp"
 	tpmClient "github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm-tools/proto/attest"
 	tpmProto "github.com/google/go-tpm-tools/proto/tpm"
@@ -183,7 +184,18 @@ func (v *Validator) Validate(ctx context.Context, attDocRaw []byte, nonce []byte
 		}
 	}()
 
-	var attDoc AttestationDocument
+	// Explicitly initialize this struct, as TeeAttestation
+	// is a "oneof" protobuf field, which needs an explicit
+	// type to be set to be unmarshaled correctly.
+	// Note: this value is incompatible with TDX attestation!
+	// TODO(msanft): select the correct attestation type (SEV-SNP, TDX, ...) here.
+	attDoc := AttestationDocument{
+		Attestation: &attest.Attestation{
+			TeeAttestation: &attest.Attestation_SevSnpAttestation{
+				SevSnpAttestation: &sevsnp.Attestation{},
+			},
+		},
+	}
 	if err := json.Unmarshal(attDocRaw, &attDoc); err != nil {
 		return nil, fmt.Errorf("unmarshaling TPM attestation document: %w", err)
 	}
