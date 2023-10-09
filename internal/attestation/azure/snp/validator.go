@@ -269,7 +269,7 @@ func (a *azureInstanceInfo) attestationWithCerts(logger attestation.Logger, gett
 	}
 
 	// Product info as reported through CPUID[EAX=1]
-	sevProduct := abi.DefaultSevProduct()
+	sevProduct := &spb.SevProduct{Name: spb.SevProduct_SEV_PRODUCT_MILAN, Stepping: 0} // Milan-B0
 	productName := kds.ProductString(sevProduct)
 
 	att := &spb.Attestation{
