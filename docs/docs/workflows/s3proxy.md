@@ -13,8 +13,9 @@ The VPN is a feature of Constellation and won't be present by default in other e
 These limitations will be removed with future iterations of s3proxy.
 
 - Only `PutObject` and `GetObject` requests are encrypted/decrypted by s3proxy.
-That means other requests are forwarded to S3 as-is.
-For example, objects uploaded with `CreateMultipartUpload` aren't encrypted.
+By default s3proxy will block requests that may leak data to S3 (e.g. UploadPart).
+The `allow-multipart` flag disables request blocking for testing.
+Using this flag will leak data if your application uses multipart uploads.
 - Using the [Range](https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html#API_GetObject_RequestSyntax) header on `GetObject` is currently not supported and will result in an error.
 
 If you want to use s3proxy but these limitations stop you from doing so, please consider [opening](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&projects=&template=feature_request.yml) an issue.
