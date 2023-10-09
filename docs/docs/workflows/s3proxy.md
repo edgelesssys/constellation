@@ -34,11 +34,11 @@ If you want to run a demo application, checkout the [Filestash with s3proxy](../
 ### Encryption
 
 s3proxy relies on Google's [Tink Cryptographic Library](https://developers.google.com/tink) to implement cryptographic operations securely.
-The used cryptographic primitives are [NIST SP 800 38f](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-38F.pdf) for keywrapping and [AES](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard)-[GCM](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Galois/counter_(GCM)) with 256 bit keys for data encryption.
+The used cryptographic primitives are [NIST SP 800 38f](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-38F.pdf) for key wrapping and [AES](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard)-[GCM](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Galois/counter_(GCM)) with 256 bit keys for data encryption.
 
 s3proxy uses [envelope encryption](https://cloud.google.com/kms/docs/envelope-encryption) to encrypt objects.
 That means s3proxy uses a key encryption key (KEK) issued by the Constellation KMS to encrypt data encryption keys (DEK).
-Each S3 object is encrypted with it's own DEK.
+Each S3 object is encrypted with its own DEK.
 The encrypted DEK is then saved as metadata of the encrypted object.
 This enables key rotation of the KEK without re-encrypting the data in S3.
 The approach also allows access to objects from different locations, as long as each location has access to the KEK.
@@ -49,7 +49,7 @@ To use s3proxy you have to redirect your outbound AWS S3 traffic to s3proxy.
 This can either be done by modifying your client application or by changing the deployment of your application.
 
 The necessary deployment modifications are to add DNS redirection and a trusted TLS certificate to the client's trust store.
-DNS redirection can be defined for each pod allowing you to test s3proxy for one application, without changing other applications in the same cluster.
+DNS redirection can be defined for each pod, allowing you to test s3proxy for one application without changing other applications in the same cluster.
 Adding a trusted TLS certificate is necessary as clients communicate with s3proxy via HTTPS.
-To have your client application trust s3proxy's TLS certificate, the certificate has to be added to the client's truststore.
+To have your client application trust s3proxy's TLS certificate, the certificate has to be added to the client's certificate trust store.
 The above [deployment example](#deployment) shows how all this can be done using cert-manager and the [hostAliases](https://kubernetes.io/docs/tasks/network/customize-hosts-file-for-pods/) key.

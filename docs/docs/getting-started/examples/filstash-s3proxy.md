@@ -2,7 +2,7 @@
 # Deploying Filestash
 
 Filestash is a web frontend for different storage backends, including S3.
-It is a useful application to showcase s3proxy in action.
+It's a useful application to showcase s3proxy in action.
 
 1. Deploy s3proxy as described in [Deployment](../../workflows/s3proxy.md#deployment).
 2. Create a deployment file for Filestash with one pod:
@@ -49,7 +49,7 @@ EOF
 ```
 
 The pod spec includes the `hostAliases` key, which adds an entry to the pod's `/etc/hosts`.
-The entry forwards all requests for `s3.eu-west-1.amazonaws.com` to the kubernetes service `s3proxy-service`.
+The entry forwards all requests for `s3.eu-west-1.amazonaws.com` to the Kubernetes service `s3proxy-service`.
 If you followed the s3proxy [Deployment](../../workflows/s3proxy.md#deployment) guide, this service points to a s3proxy pod.
 
 To use other regions than `eu-west-1`, add more entries to `hostAliases` for all regions you require.
@@ -60,10 +60,10 @@ Use the same IP for those entries. For example to add `us-east-1` add:
   - "s3.us-east-1.amazonaws.com"
 ```
 
-The spec also includes a volume mount for the TLS certificate and adds it to the pod's truststore.
+The spec also includes a volume mount for the TLS certificate and adds it to the pod's certificate trust store.
 Not doing this will result in TLS authentication errors.
 
 3. Apply the file: `kubectl apply -f deployment-filestash.yaml`
 
-Afterwards you can use a port forward to access the Filestash pod:
+Afterward, you can use a port forward to access the Filestash pod:
 `kubectl port-forward pod/$(kubectl get pod --selector='app=filestash' -o=jsonpath='{.items[*].metadata.name}') 8443:8443`
