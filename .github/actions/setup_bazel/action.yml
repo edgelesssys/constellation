@@ -27,6 +27,31 @@ runs:
         fi
         echo "::endgroup::"
 
+    - name: Free up space (Ubuntu)
+      shell: bash
+      if: startsWith(runner.name, 'GitHub Actions') && runner.os == 'Linux'
+      run: |
+        echo "::group::Free up space (Ubuntu)"
+        echo "Available storage (before):"
+        df -h
+
+        sudo apt-get remove -y '^dotnet-.*'
+        sudo apt-get remove -y '^llvm-.*'
+        sudo apt-get remove -y 'php.*'
+        sudo apt-get remove -y '^mongodb-.*'
+        sudo apt-get remove -y '^mysql-.*'
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /usr/local/lib/android
+        sudo rm -rf /opt/ghc
+        sudo rm -rf /opt/hostedtoolcache/CodeQL
+        sudo docker image prune --all --force
+        sudo apt-get autoremove -y
+        sudo apt-get clean
+
+        echo "Available storage (after):"
+        df -h
+        echo "::endgroup::"
+
     - name: Configure Bazel (general)
       shell: bash
       env:
