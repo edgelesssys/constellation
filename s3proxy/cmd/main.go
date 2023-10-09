@@ -49,6 +49,10 @@ func main() {
 
 	logger := logger.New(logger.JSONLog, logger.VerbosityFromInt(flags.logLevel))
 
+	if flags.forwardMultipartReqs {
+		logger.Warnf("configured to forward multipart uploads, this may leak data to AWS")
+	}
+
 	if err := runServer(flags, logger); err != nil {
 		panic(err)
 	}
@@ -57,7 +61,7 @@ func main() {
 func runServer(flags cmdFlags, log *logger.Logger) error {
 	log.With(zap.String("ip", flags.ip), zap.Int("port", defaultPort), zap.String("region", flags.region)).Infof("listening")
 
-	router, err := router.New(flags.region, flags.kmsEndpoint, log)
+	router, err := router.New(flags.region, flags.kmsEndpoint, flags.forwardMultipartReqs, log)
 	if err != nil {
 		return fmt.Errorf("creating router: %w", err)
 	}
@@ -96,6 +100,7 @@ func parseFlags() (cmdFlags, error) {
 	region := flag.String("region", defaultRegion, "AWS region in which target bucket is located")
 	certLocation := flag.String("cert", defaultCertLocation, "location of TLS certificate")
 	kmsEndpoint := flag.String("kms", "key-service.kube-system:9000", "endpoint of the KMS service to get key encryption keys from")
+	forwardMultipartReqs := flag.Bool("allow-multipart", false, "forward multipart requests to the target bucket; beware: this may store unencrypted data on AWS. See the documentation for more information")
 	level := flag.Int("level", defaultLogLevel, "log level")
 
 	flag.Parse()
@@ -112,21 +117,23 @@ func parseFlags() (cmdFlags, error) {
 	// }
 
 	return cmdFlags{
-		noTLS:        *noTLS,
-		ip:           netIP.String(),
-		region:       *region,
-		certLocation: *certLocation,
-		kmsEndpoint:  *kmsEndpoint,
-		logLevel:     *level,
+		noTLS:                *noTLS,
+		ip:                   netIP.String(),
+		region:               *region,
+		certLocation:         *certLocation,
+		kmsEndpoint:          *kmsEndpoint,
+		forwardMultipartReqs: *forwardMultipartReqs,
+		logLevel:             *level,
 	}, nil
 }
 
 type cmdFlags struct {
-	noTLS        bool
-	ip           string
-	region       string
-	certLocation string
-	kmsEndpoint  string
+	noTLS                bool
+	ip                   string
+	region               string
+	certLocation         string
+	kmsEndpoint          string
+	forwardMultipartReqs bool
 	// TODO(derpsteb): enable once we are on go 1.21.
 	// logLevel slog.Level
 	logLevel int
