@@ -8,7 +8,7 @@ The CLI is also used for updating your cluster.
 ## Workspaces
 
 Each Constellation cluster has an associated *workspace*.
-The workspace is where data such as the Constellation state, config, and ID files are stored.
+The workspace is where data such as the Constellation state and config files are stored.
 Each workspace is associated with a single cluster and configuration.
 The CLI stores state in the local filesystem making the current directory the active workspace.
 Multiple clusters require multiple workspaces, hence, multiple directories.
@@ -21,14 +21,14 @@ To allow for fine-grained configuration of your cluster and cloud environment, C
 Altogether, the following files are generated during the creation of a Constellation cluster and stored in the current workspace:
 
 * a configuration file
-* an ID file
+* a state file
 * a Base64-encoded master secret
 * [Terraform artifacts](../reference/terraform.md), stored in subdirectories
 * a Kubernetes `kubeconfig` file.
 
-After the creation of your cluster, the CLI will provide you with a Kubernetes `kubeconfig` file.
+After the initialization of your cluster, the CLI will provide you with a Kubernetes `kubeconfig` file.
 This file grants you access to your Kubernetes cluster and configures the [kubectl](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/) tool.
-In addition, the cluster's [identifier](orchestration.md#post-installation-configuration) is returned and stored in a file called `constellation-state.yaml`
+In addition, the cluster's [identifier](orchestration.md#post-installation-configuration) is returned and stored in the state file.
 
 ### Creation process details
 
