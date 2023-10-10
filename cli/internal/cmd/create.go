@@ -24,6 +24,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 // NewCreateCmd returns a new cobra.Command for the create command.
@@ -39,9 +40,29 @@ func NewCreateCmd() *cobra.Command {
 	return cmd
 }
 
+// createFlags contains the parsed flags of the create command.
+type createFlags struct {
+	rootFlags
+	yes bool
+}
+
+// parse parses the flags of the create command.
+func (f *createFlags) parse(flags *pflag.FlagSet) error {
+	if err := f.rootFlags.parse(flags); err != nil {
+		return err
+	}
+
+	yes, err := flags.GetBool("yes")
+	if err != nil {
+		return fmt.Errorf("getting 'yes' flag: %w", err)
+	}
+	f.yes = yes
+	return nil
+}
+
 type createCmd struct {
-	log debugLog
-	pf  pathprefix.PathPrefixer
+	log   debugLog
+	flags createFlags
 }
 
 func runCreate(cmd *cobra.Command, _ []string) error {
@@ -59,22 +80,22 @@ func runCreate(cmd *cobra.Command, _ []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	creator := cloudcmd.NewCreator(spinner)
 	c := &createCmd{log: log}
+	if err := c.flags.parse(cmd.Flags()); err != nil {
+		return err
+	}
+	c.log.Debugf("Using flags: %+v", c.flags)
+
 	fetcher := attestationconfigapi.NewFetcher()
 	return c.create(cmd, creator, fileHandler, spinner, fetcher)
 }
 
 func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, spinner spinnerInterf, fetcher attestationconfigapi.Fetcher) (retErr error) {
-	flags, err := c.parseCreateFlags(cmd)
-	if err != nil {
-		return err
-	}
-	c.log.Debugf("Using flags: %+v", flags)
 	if err := c.checkDirClean(fileHandler); err != nil {
 		return err
 	}
 
-	c.log.Debugf("Loading configuration file from %q", c.pf.PrefixPrintablePath(constants.ConfigFilename))
-	conf, err := config.New(fileHandler, constants.ConfigFilename, fetcher, flags.force)
+	c.log.Debugf("Loading configuration file from %q", c.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
+	conf, err := config.New(fileHandler, constants.ConfigFilename, fetcher, c.flags.force)
 	c.log.Debugf("Configuration file loaded: %+v", conf)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
@@ -83,7 +104,7 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	if err != nil {
 		return err
 	}
-	if !flags.force {
+	if !c.flags.force {
 		if err := validateCLIandConstellationVersionAreEqual(constants.BinaryVersion(), conf.Image, conf.MicroserviceVersion); err != nil {
 			return err
 		}
@@ -137,7 +158,7 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 		c.log.Debugf("Creating %d additional node groups: %v", len(otherGroupNames), otherGroupNames)
 	}
 
-	if !flags.yes {
+	if !c.flags.yes {
 		// Ask user to confirm action.
 		cmd.Printf("The following Constellation cluster will be created:\n")
 		cmd.Printf("  %d control-plane node%s of type %s will be created.\n", controlPlaneGroup.InitialCount, isPlural(controlPlaneGroup.InitialCount), controlPlaneGroup.InstanceType)
@@ -160,13 +181,13 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	opts := cloudcmd.CreateOptions{
 		Provider:    provider,
 		Config:      conf,
-		TFLogLevel:  flags.tfLogLevel,
+		TFLogLevel:  c.flags.tfLog,
 		TFWorkspace: constants.TerraformWorkingDir,
 	}
 	infraState, err := creator.Create(cmd.Context(), opts)
 	spinner.Stop()
 	if err != nil {
-		return translateCreateErrors(cmd, c.pf, err)
+		return translateCreateErrors(cmd, c.flags.pathPrefixer, err)
 	}
 	c.log.Debugf("Successfully created the cloud resources for the cluster")
 
@@ -179,64 +200,28 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	return nil
 }
 
-// parseCreateFlags parses the flags of the create command.
-func (c *createCmd) parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
-	yes, err := cmd.Flags().GetBool("yes")
-	if err != nil {
-		return createFlags{}, fmt.Errorf("parsing yes bool: %w", err)
-	}
-	c.log.Debugf("Yes flag is %t", yes)
-
-	workDir, err := cmd.Flags().GetString("workspace")
-	if err != nil {
-		return createFlags{}, fmt.Errorf("parsing config path argument: %w", err)
-	}
-	c.log.Debugf("Workspace set to %q", workDir)
-	c.pf = pathprefix.New(workDir)
-
-	force, err := cmd.Flags().GetBool("force")
-	if err != nil {
-		return createFlags{}, fmt.Errorf("parsing force argument: %w", err)
-	}
-	c.log.Debugf("force flag is %t", force)
-
-	logLevelString, err := cmd.Flags().GetString("tf-log")
-	if err != nil {
-		return createFlags{}, fmt.Errorf("parsing tf-log string: %w", err)
-	}
-	logLevel, err := terraform.ParseLogLevel(logLevelString)
-	if err != nil {
-		return createFlags{}, fmt.Errorf("parsing Terraform log level %s: %w", logLevelString, err)
-	}
-	c.log.Debugf("Terraform logs will be written into %s at level %s", c.pf.PrefixPrintablePath(constants.TerraformLogFile), logLevel.String())
-
-	return createFlags{
-		tfLogLevel: logLevel,
-		force:      force,
-		yes:        yes,
-	}, nil
-}
-
-// createFlags contains the parsed flags of the create command.
-type createFlags struct {
-	tfLogLevel terraform.LogLevel
-	force      bool
-	yes        bool
-}
-
 // checkDirClean checks if files of a previous Constellation are left in the current working dir.
 func (c *createCmd) checkDirClean(fileHandler file.Handler) error {
 	c.log.Debugf("Checking admin configuration file")
 	if _, err := fileHandler.Stat(constants.AdminConfFilename); !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("file '%s' already exists in working directory, run 'constellation terminate' before creating a new one", c.pf.PrefixPrintablePath(constants.AdminConfFilename))
+		return fmt.Errorf(
+			"file '%s' already exists in working directory, run 'constellation terminate' before creating a new one",
+			c.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename),
+		)
 	}
 	c.log.Debugf("Checking master secrets file")
 	if _, err := fileHandler.Stat(constants.MasterSecretFilename); !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("file '%s' already exists in working directory. Constellation won't overwrite previous master secrets. Move it somewhere or delete it before creating a new cluster", c.pf.PrefixPrintablePath(constants.MasterSecretFilename))
+		return fmt.Errorf(
+			"file '%s' already exists in working directory. Constellation won't overwrite previous master secrets. Move it somewhere or delete it before creating a new cluster",
+			c.flags.pathPrefixer.PrefixPrintablePath(constants.MasterSecretFilename),
+		)
 	}
 	c.log.Debugf("Checking state file")
 	if _, err := fileHandler.Stat(constants.StateFilename); !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("file '%s' already exists in working directory. Constellation won't overwrite previous cluster state. Move it somewhere or delete it before creating a new cluster", c.pf.PrefixPrintablePath(constants.StateFilename))
+		return fmt.Errorf(
+			"file '%s' already exists in working directory. Constellation won't overwrite previous cluster state. Move it somewhere or delete it before creating a new cluster",
+			c.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename),
+		)
 	}
 
 	return nil
@@ -268,12 +253,6 @@ func isPlural(count int) string {
 		return ""
 	}
 	return "s"
-}
-
-func must(err error) {
-	if err != nil {
-		panic(err)
-	}
 }
 
 // validateCLIandConstellationVersionAreEqual checks if the image and microservice version are equal (down to patch level) to the CLI version.

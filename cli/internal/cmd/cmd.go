@@ -26,6 +26,7 @@ import (
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/spf13/pflag"
 )
 
@@ -33,7 +34,7 @@ import (
 // They are available to all subcommands.
 type rootFlags struct {
 	pathPrefixer pathprefix.PathPrefixer
-	tfLog        string
+	tfLog        terraform.LogLevel
 	debug        bool
 	force        bool
 }
@@ -48,9 +49,13 @@ func (f *rootFlags) parse(flags *pflag.FlagSet) error {
 	}
 	f.pathPrefixer = pathprefix.New(workspace)
 
-	f.tfLog, err = flags.GetString("tf-log")
+	tfLogString, err := flags.GetString("tf-log")
 	if err != nil {
 		errs = errors.Join(err, fmt.Errorf("getting 'tf-log' flag: %w", err))
+	}
+	f.tfLog, err = terraform.ParseLogLevel(tfLogString)
+	if err != nil {
+		errs = errors.Join(err, fmt.Errorf("parsing 'tf-log' flag: %w", err))
 	}
 
 	f.debug, err = flags.GetBool("debug")
@@ -63,4 +68,10 @@ func (f *rootFlags) parse(flags *pflag.FlagSet) error {
 		errs = errors.Join(err, fmt.Errorf("getting 'force' flag: %w", err))
 	}
 	return errs
+}
+
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
 }
