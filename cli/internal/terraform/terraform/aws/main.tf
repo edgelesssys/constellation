@@ -51,6 +51,9 @@ locals {
   tags = {
     constellation-uid = local.uid,
   }
+
+  in_cluster_endpoint     = aws_lb.front_end.dns_name
+  out_of_cluster_endpoint = var.internal_load_balancer && var.debug ? module.jump_host[0].ip : local.in_cluster_endpoint
 }
 
 resource "random_id" "uid" {

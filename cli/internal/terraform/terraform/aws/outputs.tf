@@ -1,15 +1,22 @@
-output "ip" {
-  value = var.internal_load_balancer && var.debug ? module.jump_host[0].ip : aws_lb.front_end.dns_name
+output "out_of_cluster_endpoint" {
+  value = local.out_of_cluster_endpoint
 }
 
+output "in_cluster_endpoint" {
+  value = local.in_cluster_endpoint
+}
 output "api_server_cert_sans" {
   value = sort(
-    concat(
-      [
-        var.internal_load_balancer ? module.jump_host[0].ip : aws_eip.lb[var.zone].public_ip,
-        local.wildcard_lb_dns_name
-      ],
-  var.custom_endpoint == "" ? [] : [var.custom_endpoint]))
+    distinct(
+      concat(
+        [
+          local.in_cluster_endpoint,
+          local.out_of_cluster_endpoint,
+        ],
+        var.custom_endpoint == "" ? [] : [var.custom_endpoint],
+      )
+    )
+  )
 }
 
 output "uid" {

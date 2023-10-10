@@ -57,8 +57,8 @@ locals {
   control_plane_instance_groups = [
     for control_plane in local.node_groups_by_role["control-plane"] : module.instance_group[control_plane].instance_group
   ]
-  internal_ip = var.debug && var.internal_load_balancer ? module.jump_host[0].ip : google_compute_address.loadbalancer_ip_internal[0].address
-  output_ip   = var.internal_load_balancer ? local.internal_ip : google_compute_global_address.loadbalancer_ip[0].address
+  in_cluster_endpoint     = var.internal_load_balancer ? google_compute_address.loadbalancer_ip_internal[0].address : google_compute_global_address.loadbalancer_ip[0].address
+  out_of_cluster_endpoint = var.debug && var.internal_load_balancer ? module.jump_host[0].ip : local.in_cluster_endpoint
 }
 
 resource "random_id" "uid" {
@@ -215,6 +215,7 @@ module "loadbalancer_public" {
   health_check            = each.value.health_check
   backend_instance_groups = local.control_plane_instance_groups
   ip_address              = google_compute_global_address.loadbalancer_ip[0].self_link
+  frontend_labels         = merge(local.labels, { constellation-use = each.value.name })
 }
 
 module "loadbalancer_internal" {

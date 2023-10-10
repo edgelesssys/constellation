@@ -47,8 +47,8 @@ locals {
   // deduce as above
   uai_name = element(split("/", var.user_assigned_identity), length(split("/", var.user_assigned_identity)) - 1)
 
-  internal_ip = var.debug && var.internal_load_balancer ? module.jump_host[0].ip : azurerm_lb.loadbalancer.frontend_ip_configuration[0].private_ip_address
-  output_ip   = var.internal_load_balancer ? local.internal_ip : azurerm_public_ip.loadbalancer_ip[0].ip_address
+  in_cluster_endpoint     = var.internal_load_balancer ? azurerm_lb.loadbalancer.frontend_ip_configuration[0].private_ip_address : azurerm_public_ip.loadbalancer_ip[0].ip_address
+  out_of_cluster_endpoint = var.debug && var.internal_load_balancer ? module.jump_host[0].ip : local.in_cluster_endpoint
 }
 
 resource "random_id" "uid" {

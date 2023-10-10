@@ -1,15 +1,23 @@
-output "ip" {
-  value = local.output_ip
+output "out_of_cluster_endpoint" {
+  value = local.out_of_cluster_endpoint
+}
+
+output "in_cluster_endpoint" {
+  value = local.in_cluster_endpoint
 }
 
 output "api_server_cert_sans" {
   value = sort(
-    concat(
-      [
-        local.output_ip,
-        var.internal_load_balancer ? "" : local.wildcard_lb_dns_name
-      ],
-    var.custom_endpoint == "" ? [] : [var.custom_endpoint])
+    distinct(
+      concat(
+        [
+          local.in_cluster_endpoint,
+          local.out_of_cluster_endpoint,
+        ],
+        var.custom_endpoint == "" ? [] : [var.custom_endpoint],
+        var.internal_load_balancer ? [] : [local.wildcard_lb_dns_name],
+      )
+    )
   )
 }
 

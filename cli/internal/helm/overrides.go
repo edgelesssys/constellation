@@ -42,7 +42,7 @@ func extraCiliumValues(provider cloudprovider.Provider, conformanceMode bool, ou
 		}
 	}
 
-	extraVals["k8sServiceHost"] = output.ClusterEndpoint
+	extraVals["k8sServiceHost"] = output.InClusterEndpoint
 	extraVals["k8sServicePort"] = constants.KubernetesPort
 	if provider == cloudprovider.GCP {
 		extraVals["ipv4NativeRoutingCIDR"] = output.GCP.IPCidrPod
