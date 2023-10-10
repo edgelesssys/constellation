@@ -55,3 +55,8 @@ For encryption Constellation uses AES in XTS-Plain64. The key size is 512 bit.
 To interact with the dm-integrity kernel module, Constellation uses [libcryptsetup](https://gitlab.com/cryptsetup/cryptsetup/).
 When enabled, the used data integrity algorithm is [HMAC](https://datatracker.ietf.org/doc/html/rfc2104) with SHA256 as the hash function.
 The tag size is 32 Bytes.
+
+## Encrypted S3 object storage
+
+Constellation comes with a service that you can use to transparently retrofit client-side encryption to existing applications that use S3 (AWS or compatible) for storage.
+To learn more, check out the [s3proxy documentation](../workflows/s3proxy.md).

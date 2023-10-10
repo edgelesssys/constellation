@@ -24,7 +24,7 @@ spec:
   - "s3.eu-west-1.amazonaws.com"
   issuerRef:
     name: selfsigned-issuer
-    kind: ClusterIssuer
+    kind: Issuer
     group: cert-manager.io
 ---
 apiVersion: apps/v1
@@ -47,7 +47,7 @@ spec:
           - name: regcred
           containers:
           - name: s3proxy
-            image: ghcr.io/edgelesssys/constellation/s3proxy:v2.12.0-pre.0.20231009141917-226cb427d0b1
+            image: ghcr.io/edgelesssys/constellation/s3proxy:v2.12.0
             args:
             - "--level=-1"
             ports:

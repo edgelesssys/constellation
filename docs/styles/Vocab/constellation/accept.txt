@@ -22,6 +22,7 @@ Dynatrace
 [Ee]mojivoto
 etcd
 Filebeat
+Filestash
 Filestore
 Fluentd
 Fulcio
@@ -54,6 +55,7 @@ sigstore
 [Ss]uperset
 Syft
 systemd
+Tink
 [Uu]nencrypted
 unspoofable
 updatable

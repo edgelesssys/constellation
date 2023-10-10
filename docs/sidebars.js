@@ -119,6 +119,11 @@ const sidebars = {
               label: 'Horizontal Pod Autoscaling',
               id: 'getting-started/examples/horizontal-scaling'
             },
+            {
+              type: 'doc',
+              label: 'Filestash with s3proxy',
+              id: 'getting-started/examples/filstash-s3proxy'
+            },
           ]
         },
       ],
@@ -164,6 +169,11 @@ const sidebars = {
           type: 'doc',
           label: 'Install cert-manager',
           id: 'workflows/cert-manager',
+        },
+        {
+          type: 'doc',
+          label: 'Install s3proxy',
+          id: 'workflows/s3proxy',
         },
         {
           type: 'doc',
