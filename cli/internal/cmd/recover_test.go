@@ -140,12 +140,9 @@ func TestRecover(t *testing.T) {
 
 			cmd := NewRecoverCmd()
 			cmd.SetContext(context.Background())
-			cmd.Flags().String("workspace", "", "") // register persistent flag manually
-			cmd.Flags().Bool("force", true, "")     // register persistent flag manually
 			out := &bytes.Buffer{}
 			cmd.SetOut(out)
 			cmd.SetErr(out)
-			require.NoError(cmd.Flags().Set("endpoint", tc.endpoint))
 
 			fs := afero.NewMemMapFs()
 			fileHandler := file.NewHandler(fs)
@@ -156,13 +153,25 @@ func TestRecover(t *testing.T) {
 			}
 
 			require.NoError(fileHandler.WriteJSON(
-				"constellation-mastersecret.json",
+				constants.MasterSecretFilename,
 				uri.MasterSecret{Key: tc.masterSecret.Secret, Salt: tc.masterSecret.Salt},
+				file.OptNone,
+			))
+			require.NoError(fileHandler.WriteYAML(
+				constants.StateFilename,
+				state.New(),
 				file.OptNone,
 			))
 
 			newDialer := func(atls.Validator) *dialer.Dialer { return nil }
-			r := &recoverCmd{log: logger.NewTest(t), configFetcher: stubAttestationFetcher{}}
+			r := &recoverCmd{
+				log:           logger.NewTest(t),
+				configFetcher: stubAttestationFetcher{},
+				flags: recoverFlags{
+					rootFlags: rootFlags{force: true},
+					endpoint:  tc.endpoint,
+				},
+			}
 			err := r.recover(cmd, fileHandler, time.Millisecond, tc.doer, newDialer)
 			if tc.wantErr {
 				assert.Error(err)
@@ -179,68 +188,6 @@ func TestRecover(t *testing.T) {
 			} else {
 				assert.Contains(out.String(), "No control-plane nodes in need of recovery found.")
 			}
-		})
-	}
-}
-
-func TestParseRecoverFlags(t *testing.T) {
-	testCases := map[string]struct {
-		args           []string
-		wantFlags      recoverFlags
-		writeStateFile bool
-		wantErr        bool
-	}{
-		"no flags": {
-			wantFlags: recoverFlags{
-				endpoint: "192.0.2.42:9999",
-			},
-			writeStateFile: true,
-		},
-		"no flags, no ID file": {
-			wantFlags: recoverFlags{
-				endpoint: "192.0.2.42:9999",
-			},
-			wantErr: true,
-		},
-		"invalid endpoint": {
-			args:    []string{"-e", "192.0.2.42:2:2"},
-			wantErr: true,
-		},
-		"all args set": {
-			args: []string{"-e", "192.0.2.42:2", "--workspace", "./constellation-workspace"},
-			wantFlags: recoverFlags{
-				endpoint: "192.0.2.42:2",
-			},
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-			require := require.New(t)
-
-			cmd := NewRecoverCmd()
-			cmd.Flags().String("workspace", "", "") // register persistent flag manually
-			cmd.Flags().Bool("force", false, "")    // register persistent flag manually
-			require.NoError(cmd.ParseFlags(tc.args))
-
-			fileHandler := file.NewHandler(afero.NewMemMapFs())
-			if tc.writeStateFile {
-				require.NoError(
-					state.New().
-						SetInfrastructure(state.Infrastructure{ClusterEndpoint: "192.0.2.42"}).
-						WriteToFile(fileHandler, constants.StateFilename),
-				)
-			}
-			r := &recoverCmd{log: logger.NewTest(t)}
-			flags, err := r.parseRecoverFlags(cmd, fileHandler)
-
-			if tc.wantErr {
-				assert.Error(err)
-				return
-			}
-			assert.NoError(err)
-			assert.Equal(tc.wantFlags, flags)
 		})
 	}
 }
