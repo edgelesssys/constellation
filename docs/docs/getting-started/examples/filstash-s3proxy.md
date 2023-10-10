@@ -68,4 +68,4 @@ Not adding the CA certificate will result in TLS authentication errors.
 3. Apply the file: `kubectl apply -f deployment-filestash.yaml`
 
 Afterward, you can use a port forward to access the Filestash pod:
-`kubectl port-forward pod/$(kubectl get pod --selector='app=filestash' -o=jsonpath='{.items[*].metadata.name}') 8443:8443`
+`kubectl port-forward pod/$(kubectl get pod --selector='app=filestash' -o=jsonpath='{.items[*].metadata.name}') 8334:8334`
