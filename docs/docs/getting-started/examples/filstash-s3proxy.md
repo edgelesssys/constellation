@@ -61,7 +61,9 @@ Use the same IP for those entries. For example to add `us-east-1` add:
 ```
 
 The spec also includes a volume mount for the TLS certificate and adds it to the pod's certificate trust store.
-Not doing this will result in TLS authentication errors.
+The volume is called `ca-cert`.
+The key `ca.crt` of that volume is mounted to `/etc/ssl/certs/kube-ca.crt`, which is the default certificate trust store location for that container's OpenSSL library.
+Not adding the CA certificate will result in TLS authentication errors.
 
 3. Apply the file: `kubectl apply -f deployment-filestash.yaml`
 
