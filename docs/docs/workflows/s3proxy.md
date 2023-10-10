@@ -28,7 +28,6 @@ You can add the s3proxy to your Constellation cluster as follows:
    kubectl apply -f deployment-s3proxy.yaml
    ```
 
-s3proxy is now deployed.
 If you want to run a demo application, check out the [Filestash with s3proxy](../getting-started/examples/filstash-s3proxy.md) example.
 
 
@@ -52,7 +51,7 @@ To use s3proxy, you have to redirect your outbound S3 traffic to s3proxy.
 This can either be done by modifying your client application or by changing the deployment of your application.
 
 The necessary deployment modifications are to add DNS redirection and a trusted TLS certificate to the client's trust store.
-DNS redirection can be defined for each pod, allowing you to test s3proxy for one application without changing other applications in the same cluster.
+DNS redirection can be defined for each pod, allowing you to use s3proxy for one application without changing other applications in the same cluster.
 Adding a trusted TLS certificate is necessary as clients communicate with s3proxy via HTTPS.
 To have your client application trust s3proxy's TLS certificate, the certificate has to be added to the client's certificate trust store.
-The [Filestash with s3proxy](../getting-started/examples/filstash-s3proxy.md) example shows how this is realized using an example.
+The [Filestash with s3proxy](../getting-started/examples/filstash-s3proxy.md) example shows how to do this.
