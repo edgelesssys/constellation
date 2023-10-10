@@ -72,6 +72,6 @@ pkg_tar(
         ":bootstrapper_linux_amd64",
     ],
     mode = "0755",
-    remap_paths = {"/platform:linux_amd64_gnu.2.23": "/usr/sbin/bootstrapper"},
+    remap_paths = {"/platform:linux_amd64_gnu.2.23": "/usr/bin/bootstrapper"},
     visibility = ["//visibility:public"],
 )
