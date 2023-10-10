@@ -34,7 +34,7 @@ import (
 // They are available to all subcommands.
 type rootFlags struct {
 	pathPrefixer pathprefix.PathPrefixer
-	tfLog        terraform.LogLevel
+	tfLogLevel   terraform.LogLevel
 	debug        bool
 	force        bool
 }
@@ -53,7 +53,7 @@ func (f *rootFlags) parse(flags *pflag.FlagSet) error {
 	if err != nil {
 		errs = errors.Join(err, fmt.Errorf("getting 'tf-log' flag: %w", err))
 	}
-	f.tfLog, err = terraform.ParseLogLevel(tfLogString)
+	f.tfLogLevel, err = terraform.ParseLogLevel(tfLogString)
 	if err != nil {
 		errs = errors.Join(err, fmt.Errorf("parsing 'tf-log' flag: %w", err))
 	}

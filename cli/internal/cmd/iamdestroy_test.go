@@ -46,52 +46,52 @@ func TestIAMDestroy(t *testing.T) {
 		iamDestroyer      *stubIAMDestroyer
 		fh                file.Handler
 		stdin             string
-		yesFlag           string
+		yesFlag           bool
 		wantErr           bool
 		wantDestroyCalled bool
 	}{
 		"cluster running admin conf": {
 			fh:           newFsWithAdminConf(),
 			iamDestroyer: &stubIAMDestroyer{},
-			yesFlag:      "false",
+			yesFlag:      false,
 			wantErr:      true,
 		},
 		"cluster running cluster state": {
 			fh:           newFsWithStateFile(),
 			iamDestroyer: &stubIAMDestroyer{},
-			yesFlag:      "false",
+			yesFlag:      false,
 			wantErr:      true,
 		},
 		"file missing abort": {
 			fh:           newFsMissing(),
 			stdin:        "n\n",
-			yesFlag:      "false",
+			yesFlag:      false,
 			iamDestroyer: &stubIAMDestroyer{},
 		},
 		"file missing": {
 			fh:                newFsMissing(),
 			stdin:             "y\n",
-			yesFlag:           "false",
+			yesFlag:           false,
 			iamDestroyer:      &stubIAMDestroyer{},
 			wantDestroyCalled: true,
 		},
 		"file exists abort": {
 			fh:           newFsExists(),
 			stdin:        "n\n",
-			yesFlag:      "false",
+			yesFlag:      false,
 			iamDestroyer: &stubIAMDestroyer{},
 		},
 		"error destroying user": {
 			fh:                newFsMissing(),
 			stdin:             "y\n",
-			yesFlag:           "false",
+			yesFlag:           false,
 			iamDestroyer:      &stubIAMDestroyer{destroyErr: someError},
 			wantErr:           true,
 			wantDestroyCalled: true,
 		},
 		"gcp delete error": {
 			fh:           newFsExists(),
-			yesFlag:      "true",
+			yesFlag:      true,
 			iamDestroyer: &stubIAMDestroyer{getTfStateKeyErr: someError},
 			wantErr:      true,
 		},
@@ -106,13 +106,9 @@ func TestIAMDestroy(t *testing.T) {
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 
-			// register persistent flags manually
-			cmd.Flags().String("tf-log", "NONE", "")
-			cmd.Flags().String("workspace", "", "")
-
-			assert.NoError(cmd.Flags().Set("yes", tc.yesFlag))
-
-			c := &destroyCmd{log: logger.NewTest(t)}
+			c := &destroyCmd{log: logger.NewTest(t), flags: iamDestroyFlags{
+				yes: tc.yesFlag,
+			}}
 
 			err := c.iamDestroy(cmd, &nopSpinner{}, tc.iamDestroyer, tc.fh)
 

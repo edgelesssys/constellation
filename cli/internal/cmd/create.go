@@ -181,7 +181,7 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	opts := cloudcmd.CreateOptions{
 		Provider:    provider,
 		Config:      conf,
-		TFLogLevel:  c.flags.tfLog,
+		TFLogLevel:  c.flags.tfLogLevel,
 		TFWorkspace: constants.TerraformWorkingDir,
 	}
 	infraState, err := creator.Create(cmd.Context(), opts)

@@ -21,6 +21,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 func newIAMUpgradeCmd() *cobra.Command {
@@ -46,17 +47,32 @@ func newIAMUpgradeApplyCmd() *cobra.Command {
 	return cmd
 }
 
+type iamUpgradeApplyFlags struct {
+	rootFlags
+	yes bool
+}
+
+func (f *iamUpgradeApplyFlags) parse(flags *pflag.FlagSet) error {
+	if err := f.rootFlags.parse(flags); err != nil {
+		return err
+	}
+
+	yes, err := flags.GetBool("yes")
+	if err != nil {
+		return fmt.Errorf("getting 'yes' flag: %w", err)
+	}
+	f.yes = yes
+	return nil
+}
+
 type iamUpgradeApplyCmd struct {
 	fileHandler   file.Handler
 	log           debugLog
 	configFetcher attestationconfigapi.Fetcher
+	flags         iamUpgradeApplyFlags
 }
 
 func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
-	force, err := cmd.Flags().GetBool("force")
-	if err != nil {
-		return fmt.Errorf("parsing force argument: %w", err)
-	}
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	upgradeID := generateUpgradeID(upgradeCmdKindIAM)
 	upgradeDir := filepath.Join(constants.UpgradeDir, upgradeID)
@@ -77,22 +93,20 @@ func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("setting up logger: %w", err)
 	}
 
-	yes, err := cmd.Flags().GetBool("yes")
-	if err != nil {
-		return err
-	}
-
 	i := iamUpgradeApplyCmd{
 		fileHandler:   fileHandler,
 		log:           log,
 		configFetcher: configFetcher,
 	}
+	if err := i.flags.parse(cmd.Flags()); err != nil {
+		return err
+	}
 
-	return i.iamUpgradeApply(cmd, iamMigrateCmd, upgradeDir, force, yes)
+	return i.iamUpgradeApply(cmd, iamMigrateCmd, upgradeDir)
 }
 
-func (i iamUpgradeApplyCmd) iamUpgradeApply(cmd *cobra.Command, iamUpgrader iamUpgrader, upgradeDir string, force, yes bool) error {
-	conf, err := config.New(i.fileHandler, constants.ConfigFilename, i.configFetcher, force)
+func (i iamUpgradeApplyCmd) iamUpgradeApply(cmd *cobra.Command, iamUpgrader iamUpgrader, upgradeDir string) error {
+	conf, err := config.New(i.fileHandler, constants.ConfigFilename, i.configFetcher, i.flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -109,14 +123,14 @@ func (i iamUpgradeApplyCmd) iamUpgradeApply(cmd *cobra.Command, iamUpgrader iamU
 	if err != nil {
 		return fmt.Errorf("planning terraform migrations: %w", err)
 	}
-	if !hasDiff && !force {
+	if !hasDiff && !i.flags.force {
 		cmd.Println("No IAM migrations necessary.")
 		return nil
 	}
 
 	// If there are any Terraform migrations to apply, ask for confirmation
 	cmd.Println("The IAM upgrade requires a migration by applying an updated Terraform template. Please manually review the suggested changes.")
-	if !yes {
+	if !i.flags.yes {
 		ok, err := askToConfirm(cmd, "Do you want to apply the IAM upgrade?")
 		if err != nil {
 			return fmt.Errorf("asking for confirmation: %w", err)

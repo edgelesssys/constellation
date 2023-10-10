@@ -146,7 +146,7 @@ func (c *iamCreator) create(ctx context.Context) error {
 
 	iamConfig := c.providerCreator.getIAMConfigOptions()
 	iamConfig.TFWorkspace = constants.TerraformIAMWorkingDir
-	iamConfig.TFLogLevel = c.flags.tfLog
+	iamConfig.TFLogLevel = c.flags.tfLogLevel
 	c.spinner.Start("Creating", false)
 	iamFile, err := c.creator.Create(ctx, c.provider, iamConfig)
 	c.spinner.Stop()
