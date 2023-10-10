@@ -45,9 +45,9 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 	}
 	defer log.Sync()
 
-	flags, err := parseStatusFlags(cmd)
-	if err != nil {
-		return fmt.Errorf("parsing flags: %w", err)
+	var flags rootFlags
+	if err := flags.parse(cmd.Flags()); err != nil {
+		return err
 	}
 
 	fileHandler := file.NewHandler(afero.NewOsFs())
@@ -165,26 +165,6 @@ func targetVersionsString(target kubecmd.NodeVersion) string {
 	builder.WriteString(fmt.Sprintf("\tKubernetes: %s\n", target.KubernetesVersion()))
 
 	return builder.String()
-}
-
-type statusFlags struct {
-	workspace string
-	force     bool
-}
-
-func parseStatusFlags(cmd *cobra.Command) (statusFlags, error) {
-	workspace, err := cmd.Flags().GetString("workspace")
-	if err != nil {
-		return statusFlags{}, fmt.Errorf("getting config flag: %w", err)
-	}
-	force, err := cmd.Flags().GetBool("force")
-	if err != nil {
-		return statusFlags{}, fmt.Errorf("getting config flag: %w", err)
-	}
-	return statusFlags{
-		workspace: workspace,
-		force:     force,
-	}, nil
 }
 
 type kubeCmd interface {
