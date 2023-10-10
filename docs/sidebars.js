@@ -122,7 +122,7 @@ const sidebars = {
             {
               type: 'doc',
               label: 'Filestash with s3proxy',
-              id: 'getting-started/examples/filstash-s3proxy'
+              id: 'getting-started/examples/filestash-s3proxy'
             },
           ]
         },
