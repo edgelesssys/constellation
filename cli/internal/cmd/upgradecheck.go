@@ -38,6 +38,7 @@ import (
 	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"golang.org/x/mod/semver"
 )
 
@@ -57,6 +58,36 @@ func newUpgradeCheckCmd() *cobra.Command {
 	return cmd
 }
 
+type upgradeCheckFlags struct {
+	rootFlags
+	updateConfig bool
+	ref          string
+	stream       string
+}
+
+func (f *upgradeCheckFlags) parse(flags *pflag.FlagSet) error {
+	if err := f.rootFlags.parse(flags); err != nil {
+		return err
+	}
+
+	updateConfig, err := flags.GetBool("update-config")
+	if err != nil {
+		return fmt.Errorf("getting 'update-config' flag: %w", err)
+	}
+	f.updateConfig = updateConfig
+
+	f.ref, err = flags.GetString("ref")
+	if err != nil {
+		return fmt.Errorf("getting 'ref' flag: %w", err)
+	}
+	f.stream, err = flags.GetString("stream")
+	if err != nil {
+		return fmt.Errorf("getting 'stream' flag: %w", err)
+	}
+
+	return nil
+}
+
 func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 	log, err := newCLILogger(cmd)
 	if err != nil {
@@ -64,8 +95,8 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 	}
 	defer log.Sync()
 
-	flags, err := parseUpgradeCheckFlags(cmd)
-	if err != nil {
+	var flags upgradeCheckFlags
+	if err := flags.parse(cmd.Flags()); err != nil {
 		return err
 	}
 
@@ -77,7 +108,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 		cmd.Context(),
 		constants.TerraformWorkingDir,
 		upgradeDir,
-		flags.terraformLogLevel,
+		flags.tfLogLevel,
 		fileHandler,
 	)
 	if err != nil {
@@ -111,46 +142,11 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 		upgradeDir:       upgradeDir,
 		terraformChecker: tfClient,
 		fileHandler:      fileHandler,
+		flags:            flags,
 		log:              log,
 	}
 
-	return up.upgradeCheck(cmd, attestationconfigapi.NewFetcher(), flags)
-}
-
-func parseUpgradeCheckFlags(cmd *cobra.Command) (upgradeCheckFlags, error) {
-	force, err := cmd.Flags().GetBool("force")
-	if err != nil {
-		return upgradeCheckFlags{}, fmt.Errorf("parsing force bool: %w", err)
-	}
-	updateConfig, err := cmd.Flags().GetBool("update-config")
-	if err != nil {
-		return upgradeCheckFlags{}, fmt.Errorf("parsing update-config bool: %w", err)
-	}
-	ref, err := cmd.Flags().GetString("ref")
-	if err != nil {
-		return upgradeCheckFlags{}, fmt.Errorf("parsing ref string: %w", err)
-	}
-	stream, err := cmd.Flags().GetString("stream")
-	if err != nil {
-		return upgradeCheckFlags{}, fmt.Errorf("parsing stream string: %w", err)
-	}
-
-	logLevelString, err := cmd.Flags().GetString("tf-log")
-	if err != nil {
-		return upgradeCheckFlags{}, fmt.Errorf("parsing tf-log string: %w", err)
-	}
-	logLevel, err := terraform.ParseLogLevel(logLevelString)
-	if err != nil {
-		return upgradeCheckFlags{}, fmt.Errorf("parsing Terraform log level %s: %w", logLevelString, err)
-	}
-
-	return upgradeCheckFlags{
-		force:             force,
-		updateConfig:      updateConfig,
-		ref:               ref,
-		stream:            stream,
-		terraformLogLevel: logLevel,
-	}, nil
+	return up.upgradeCheck(cmd, attestationconfigapi.NewFetcher())
 }
 
 type upgradeCheckCmd struct {
@@ -159,12 +155,13 @@ type upgradeCheckCmd struct {
 	collect          collector
 	terraformChecker terraformChecker
 	fileHandler      file.Handler
+	flags            upgradeCheckFlags
 	log              debugLog
 }
 
 // upgradePlan plans an upgrade of a Constellation cluster.
-func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fetcher attestationconfigapi.Fetcher, flags upgradeCheckFlags) error {
-	conf, err := config.New(u.fileHandler, constants.ConfigFilename, fetcher, flags.force)
+func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fetcher attestationconfigapi.Fetcher) error {
+	conf, err := config.New(u.fileHandler, constants.ConfigFilename, fetcher, u.flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -271,7 +268,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fetcher attestationco
 	// Using Print over Println as buildString already includes a trailing newline where necessary.
 	cmd.Print(updateMsg)
 
-	if flags.updateConfig {
+	if u.flags.updateConfig {
 		if err := upgrade.writeConfig(conf, u.fileHandler, constants.ConfigFilename); err != nil {
 			return fmt.Errorf("writing config: %w", err)
 		}
@@ -723,14 +720,6 @@ func (v *versionCollector) filterCompatibleCLIVersions(ctx context.Context, cliP
 	consemver.Sort(compatibleVersions)
 
 	return compatibleVersions, nil
-}
-
-type upgradeCheckFlags struct {
-	force             bool
-	updateConfig      bool
-	ref               string
-	stream            string
-	terraformLogLevel terraform.LogLevel
 }
 
 type kubernetesChecker interface {

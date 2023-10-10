@@ -227,10 +227,11 @@ func TestUpgradeApply(t *testing.T) {
 				clusterUpgrader: tc.terraformUpgrader,
 				log:             logger.NewTest(t),
 				configFetcher:   stubAttestationFetcher{},
+				flags:           tc.flags,
 				fileHandler:     fh,
 			}
 
-			err := upgrader.upgradeApply(cmd, "test", tc.flags)
+			err := upgrader.upgradeApply(cmd, "test")
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -247,16 +248,20 @@ func TestUpgradeApply(t *testing.T) {
 }
 
 func TestUpgradeApplyFlagsForSkipPhases(t *testing.T) {
+	require := require.New(t)
 	cmd := newUpgradeApplyCmd()
-	cmd.Flags().String("workspace", "", "")  // register persistent flag manually
-	cmd.Flags().Bool("force", true, "")      // register persistent flag manually
-	cmd.Flags().String("tf-log", "NONE", "") // register persistent flag manually
-	require.NoError(t, cmd.Flags().Set("skip-phases", "infrastructure,helm,k8s,image"))
-	result, err := parseUpgradeApplyFlags(cmd)
-	if err != nil {
-		t.Fatalf("Error while parsing flags: %v", err)
-	}
-	assert.ElementsMatch(t, []skipPhase{skipInfrastructurePhase, skipHelmPhase, skipK8sPhase, skipImagePhase}, result.skipPhases)
+	// register persistent flags manually
+	cmd.Flags().String("workspace", "", "")
+	cmd.Flags().Bool("force", true, "")
+	cmd.Flags().String("tf-log", "NONE", "")
+	cmd.Flags().Bool("debug", false, "")
+
+	require.NoError(cmd.Flags().Set("skip-phases", "infrastructure,helm,k8s,image"))
+
+	var flags upgradeApplyFlags
+	err := flags.parse(cmd.Flags())
+	require.NoError(err)
+	assert.ElementsMatch(t, []skipPhase{skipInfrastructurePhase, skipHelmPhase, skipK8sPhase, skipImagePhase}, flags.skipPhases)
 }
 
 type stubKubernetesUpgrader struct {
