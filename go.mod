@@ -70,7 +70,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.36.0
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.19.10
 	github.com/aws/smithy-go v1.13.5
-	github.com/bazelbuild/rules_go v0.41.0
+	github.com/bazelbuild/rules_go v0.42.0
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/docker/docker v23.0.6+incompatible
 	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api v0.0.0
