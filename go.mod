@@ -33,6 +33,7 @@ replace (
 
 replace (
 	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api => ./operators/constellation-node-operator/api
+	github.com/google/go-sev-guest => github.com/google/go-sev-guest v0.0.0-20230928233922-2dcbba0a4b9d
 	github.com/google/go-tpm => github.com/thomasten/go-tpm v0.0.0-20230629092004-f43f8e2a59eb
 	github.com/google/go-tpm-tools => github.com/msanft/go-tpm-tools v0.0.0-20231009082622-266280269413
 	github.com/martinjungblut/go-cryptsetup => github.com/daniel-weisse/go-cryptsetup v0.0.0-20230705150314-d8c07bd1723c
@@ -137,7 +138,10 @@ require (
 	sigs.k8s.io/yaml v1.3.0
 )
 
-require github.com/google/go-tdx-guest v0.2.2 // indirect
+require (
+	github.com/google/go-attestation v0.5.0 // indirect
+	github.com/google/go-tdx-guest v0.2.2 // indirect
+)
 
 require (
 	cloud.google.com/go v0.110.2 // indirect
@@ -231,7 +235,6 @@ require (
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/certificate-transparency-go v1.1.4 // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
-	github.com/google/go-attestation v0.5.0 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/go-containerregistry v0.15.2 // indirect
 	github.com/google/go-tspi v0.3.0 // indirect
