@@ -34,23 +34,25 @@ ${configapi_cli} delete recursive --region "$region" --bucket "$bucket"
 readonly current_report_path="$tmpdir/currentSnpReport.json"
 cat << EOF > "$current_report_path"
 {
-  "reported_tcb": {
-    "bootloader": 1,
-    "tee": 1,
-    "snp": 1,
-    "microcode": 1
-  },
-  "committed_tcb": {
-    "bootloader": 1,
-    "tee": 1,
-    "snp": 1,
-    "microcode": 1
-  },
-  "launch_tcb": {
-    "bootloader": 1,
-    "tee": 1,
-    "snp": 1,
-    "microcode": 1
+  "snp_report": {
+    "reported_tcb": {
+      "bootloader": 1,
+      "tee": 1,
+      "snp": 1,
+      "microcode": 1
+    },
+    "committed_tcb": {
+      "bootloader": 1,
+      "tee": 1,
+      "snp": 1,
+      "microcode": 1
+    },
+    "launch_tcb": {
+      "bootloader": 1,
+      "tee": 1,
+      "snp": 1,
+      "microcode": 1
+    }
   }
 }
 EOF
@@ -61,23 +63,25 @@ ${configapi_cli} --force --snp-report-path "$current_report_path" --upload-date 
 readonly report_path="$tmpdir/snpReport.json"
 cat << EOF > "$report_path"
 {
-  "reported_tcb": {
-    "bootloader": 255,
-    "tee": 255,
-    "snp": 255,
-    "microcode": 255
-  },
-  "committed_tcb": {
-    "bootloader": 255,
-    "tee": 255,
-    "snp": 255,
-    "microcode": 255
-  },
-  "launch_tcb": {
-    "bootloader": 255,
-    "tee": 255,
-    "snp": 255,
-    "microcode": 255
+  "snp_report": {
+    "reported_tcb": {
+      "bootloader": 255,
+      "tee": 255,
+      "snp": 255,
+      "microcode": 255
+    },
+    "committed_tcb": {
+      "bootloader": 255,
+      "tee": 255,
+      "snp": 255,
+      "microcode": 255
+    },
+    "launch_tcb": {
+      "bootloader": 255,
+      "tee": 255,
+      "snp": 255,
+      "microcode": 255
+    }
   }
 }
 EOF
@@ -86,23 +90,25 @@ EOF
 readonly older_report_path="$tmpdir/snpReportOld.json"
 cat << EOF > "$older_report_path"
 {
-  "reported_tcb": {
-    "bootloader": 255,
-    "tee": 255,
-    "snp": 255,
-    "microcode": 254
-  },
-  "committed_tcb": {
-    "bootloader": 255,
-    "tee": 255,
-    "snp": 255,
-    "microcode": 254
-  },
-  "launch_tcb": {
-    "bootloader": 255,
-    "tee": 255,
-    "snp": 255,
-    "microcode": 254
+  "snp_report": {
+    "reported_tcb": {
+      "bootloader": 255,
+      "tee": 255,
+      "snp": 255,
+      "microcode": 254
+    },
+    "committed_tcb": {
+      "bootloader": 255,
+      "tee": 255,
+      "snp": 255,
+      "microcode": 254
+    },
+    "launch_tcb": {
+      "bootloader": 255,
+      "tee": 255,
+      "snp": 255,
+      "microcode": 254
+    }
   }
 }
 EOF
