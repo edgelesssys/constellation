@@ -287,12 +287,17 @@ func (k *KubeCmd) ExtendClusterConfigCertSANs(ctx context.Context, alternativeNa
 
 	var missingSANs []string
 	for _, san := range alternativeNames {
+		if san == "" {
+			continue // skip empty SANs
+		}
 		if _, ok := existingSANs[san]; !ok {
 			missingSANs = append(missingSANs, san)
+			existingSANs[san] = struct{}{} // make sure we don't add the same SAN twice
 		}
 	}
 
 	if len(missingSANs) == 0 {
+		k.log.Debugf("No new SANs to add to the cluster's apiserver SAN field")
 		return nil
 	}
 	k.log.Debugf("Extending the cluster's apiserver SAN field with the following SANs: %s\n", strings.Join(missingSANs, ", "))

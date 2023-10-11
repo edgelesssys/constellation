@@ -61,7 +61,7 @@ func NewInitCmd() *cobra.Command {
 		Long: "Initialize the Constellation cluster.\n\n" +
 			"Start your confidential Kubernetes.",
 		Args: cobra.ExactArgs(0),
-		RunE: runInitialize,
+		RunE: runApply,
 	}
 	cmd.Flags().Bool("conformance", false, "enable conformance mode")
 	cmd.Flags().Bool("skip-helm-wait", false, "install helm charts without waiting for deployments to be ready")
@@ -216,7 +216,7 @@ func (i *initCmd) initialize(
 		return fmt.Errorf("creating new validator: %w", err)
 	}
 	i.log.Debugf("Created a new validator")
-	serviceAccURI, err := cloudcmd.GetMarshaledServiceAccountURI(provider, conf, i.flags.pathPrefixer, i.log, i.fileHandler)
+	serviceAccURI, err := cloudcmd.GetMarshaledServiceAccountURI(conf, i.fileHandler)
 	if err != nil {
 		return err
 	}

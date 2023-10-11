@@ -38,6 +38,8 @@ import (
 )
 
 const (
+	// skipInitPhase skips the init RPC of the apply process.
+	skipInitPhase skipPhase = "init"
 	// skipInfrastructurePhase skips the terraform apply of the upgrade process.
 	skipInfrastructurePhase skipPhase = "infrastructure"
 	// skipHelmPhase skips the helm upgrade of the upgrade process.
@@ -57,7 +59,7 @@ func newUpgradeApplyCmd() *cobra.Command {
 		Short: "Apply an upgrade to a Constellation cluster",
 		Long:  "Apply an upgrade to a Constellation cluster by applying the chosen configuration.",
 		Args:  cobra.NoArgs,
-		RunE:  runUpgradeApply,
+		RunE:  runApply,
 	}
 
 	cmd.Flags().BoolP("yes", "y", false, "run upgrades without further confirmation\n"+
@@ -449,7 +451,7 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(
 	if err := u.fileHandler.ReadJSON(constants.MasterSecretFilename, &secret); err != nil {
 		return fmt.Errorf("reading master secret: %w", err)
 	}
-	serviceAccURI, err := cloudcmd.GetMarshaledServiceAccountURI(conf.GetProvider(), conf, u.flags.pathPrefixer, u.log, u.fileHandler)
+	serviceAccURI, err := cloudcmd.GetMarshaledServiceAccountURI(conf, u.fileHandler)
 	if err != nil {
 		return fmt.Errorf("getting service account URI: %w", err)
 	}
