@@ -7,3 +7,11 @@ mkdir -p "${BUILDROOT}"/etc/{cni,kubernetes}
 # move issue files away from /etc
 # to allow /run/issue and /run/issue.d to take precedence
 mv "${BUILDROOT}/etc/issue.d" "${BUILDROOT}/usr/lib/issue.d" || true
+
+# generate reproducible package manifest
+mkdir -p "${BUILDROOT}/usr/share/constellation"
+rpm -qa --qf '%{name};%{version};%{license}\n' --dbpath "${BUILDROOT}/var/lib/rpm/" | LC_ALL=C sort | tee "${BUILDROOT}/usr/share/constellation/packagemanifest"
+cp "${BUILDROOT}/usr/share/constellation/packagemanifest" "${OUTPUTDIR}/"
+
+# copy rpmdb to outputs
+cp "${BUILDROOT}"/var/lib/rpm/{rpmdb.sqlite-wal,rpmdb.sqlite-shm,rpmdb.sqlite,.rpm.lock} "${OUTPUTDIR}/"
