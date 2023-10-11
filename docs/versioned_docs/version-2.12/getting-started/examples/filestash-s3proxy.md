@@ -23,8 +23,6 @@ spec:
             labels:
                 app: filestash
         spec:
-          imagePullSecrets:
-          - name: regcred
           hostAliases:
           - ip: $(kubectl get svc s3proxy-service -o=jsonpath='{.spec.clusterIP}')
             hostnames:
@@ -54,6 +52,7 @@ If you followed the s3proxy [Deployment](../../workflows/s3proxy.md#deployment) 
 
 To use other regions than `eu-west-1`, add more entries to `hostAliases` for all regions you require.
 Use the same IP for those entries. For example to add `us-east-1` add:
+
 ```yaml
 - ip: $(kubectl get svc s3proxy-service -o=jsonpath='{.spec.clusterIP}')
   hostnames:

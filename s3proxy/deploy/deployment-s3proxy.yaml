@@ -43,8 +43,6 @@ spec:
           labels:
             app: s3proxy
         spec:
-          imagePullSecrets:
-          - name: regcred
           containers:
           - name: s3proxy
             image: ghcr.io/edgelesssys/constellation/s3proxy:v2.12.0
