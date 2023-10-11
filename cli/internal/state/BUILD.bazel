@@ -7,8 +7,6 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/cli/internal/state",
     visibility = ["//cli:__subpackages__"],
     deps = [
-        "//cli/internal/clusterid",
-        "//internal/config",
         "//internal/file",
         "@cat_dario_mergo//:mergo",
     ],
@@ -19,8 +17,6 @@ go_test(
     srcs = ["state_test.go"],
     embed = [":state"],
     deps = [
-        "//cli/internal/clusterid",
-        "//internal/config",
         "//internal/constants",
         "//internal/file",
         "@com_github_spf13_afero//:afero",

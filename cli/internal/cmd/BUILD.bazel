@@ -40,7 +40,6 @@ go_library(
     deps = [
         "//bootstrapper/initproto",
         "//cli/internal/cloudcmd",
-        "//cli/internal/clusterid",
         "//cli/internal/cmd/pathprefix",
         "//cli/internal/featureset",
         "//cli/internal/helm",
@@ -135,7 +134,6 @@ go_test(
     deps = [
         "//bootstrapper/initproto",
         "//cli/internal/cloudcmd",
-        "//cli/internal/clusterid",
         "//cli/internal/cmd/pathprefix",
         "//cli/internal/helm",
         "//cli/internal/kubecmd",

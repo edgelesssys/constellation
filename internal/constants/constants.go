@@ -74,8 +74,6 @@ const (
 	// Filenames.
 	//
 
-	// ClusterIDsFilename filename that contains Constellation clusterID and IP.
-	ClusterIDsFilename = "constellation-id.json"
 	// StateFilename filename that contains the entire state of the Constellation cluster.
 	StateFilename = "constellation-state.yaml"
 	// ConfigFilename filename of Constellation config file.

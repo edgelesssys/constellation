@@ -84,11 +84,6 @@ func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.
 		removeErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", pf.PrefixPrintablePath(constants.AdminConfFilename)))
 	}
 
-	// TODO(msanft): Once v2.12.0 is released, remove the ID-file-removal here.
-	if err := fileHandler.Remove(constants.ClusterIDsFilename); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		removeErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", pf.PrefixPrintablePath(constants.ClusterIDsFilename)))
-	}
-
 	if err := fileHandler.Remove(constants.StateFilename); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		removeErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", pf.PrefixPrintablePath(constants.StateFilename)))
 	}
