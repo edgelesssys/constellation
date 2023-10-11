@@ -33,7 +33,7 @@ jobs:
       RELEASE_BRANCH: ${{ steps.version-info.outputs.RELEASE_BRANCH }}
       WORKING_BRANCH: ${{ steps.version-info.outputs.WORKING_BRANCH }}
     steps:
-      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+      - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
 
       - name: Working branch
         run: echo "WORKING_BRANCH=$(git branch --show-current)" | tee -a "$GITHUB_ENV"
@@ -85,7 +85,7 @@ jobs:
       MAJOR_MINOR: ${{ needs.verify-inputs.outputs.MAJOR_MINOR }}
       BRANCH: docs/${{ needs.verify-inputs.outputs.MAJOR_MINOR }}
     steps:
-      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+      - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
         with:
           ref: main
 
@@ -123,7 +123,7 @@ jobs:
       WORKING_BRANCH: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
     steps:
       - name: Checkout
-        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
         with:
           ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
 
@@ -161,7 +161,7 @@ jobs:
       WITHOUT_V: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
     steps:
       - name: Checkout
-        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
         with:
           ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
 
@@ -212,7 +212,7 @@ jobs:
       WITHOUT_V: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
     steps:
       - name: Checkout
-        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
         with:
           ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
 
