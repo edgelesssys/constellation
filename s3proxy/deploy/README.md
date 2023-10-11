@@ -4,6 +4,7 @@
 The VPN is a feature of Constellation and will not be present by default in other environments.
 
 Disclaimer: the following steps will be automated next.
+
 - Within `constellation/build`: `bazel run //:devbuild`
 - Copy the container name displayed for the s3proxy image. Look for the line starting with `[@//bazel/release:s3proxy_push]`.
 - Replace the image key in `deployment-s3proxy.yaml` with the image value you just copied. Use the sha256 hash instead of the tag to make sure you use the latest image.
@@ -32,8 +33,6 @@ spec:
             labels:
                 app: filestash
         spec:
-          imagePullSecrets:
-          - name: regcred
           hostAliases:
           - ip: $(kubectl get svc s3proxy-service -o=jsonpath='{.spec.clusterIP}')
             hostnames:
@@ -60,4 +59,5 @@ $ kubectl apply -f deployment-filestash.yaml
 ```
 
 Afterwards you can use a port forward to access the Filestash pod:
+
 - `kubectl port-forward pod/$(kubectl get pod --selector='app=filestash' -o=jsonpath='{.items[*].metadata.name}') 8443:8443`
