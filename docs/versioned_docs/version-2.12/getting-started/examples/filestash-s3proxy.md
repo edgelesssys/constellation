@@ -78,7 +78,7 @@ The entry forwards all requests for any of the currently defined AWS regions to 
 If you followed the s3proxy [Deployment](../../workflows/s3proxy.md#deployment) guide, this service points to a s3proxy pod.
 
 The deployment specifies all regions explicitly to prevent accidental data leaks.
-If one of your buckets were located in a region that is not part of the `hostAliases` key, traffic towards those buckets would not be redirected to s3proxy.
+If one of your buckets were located in a region that's not part of the `hostAliases` key, traffic towards those buckets would not be redirected to s3proxy.
 Similarly, if you want to exclude data for specific regions from going through s3proxy you can remove those regions from the deployment.
 
 The spec also includes a volume mount for the TLS certificate and adds it to the pod's certificate trust store.
@@ -100,7 +100,7 @@ If you want to deploy Filestash in production, please take a look at it's [docum
 5. To see the logs of s3proxy intercepting requests made to S3, run: `kubectl logs -f pod/$(kubectl get pod --selector='app=s3proxy' -o=jsonpath='{.items[*].metadata.name}')`
 This will stream the logs of s3proxy to the terminal you are running the command in.
 Look out for log messages labeled "intercepting".
-There is one such log message for each message that is encrypted, decrypted or blocked.
+There is one such log message for each message that's encrypted, decrypted or blocked.
 
 6. Once you have uploaded a file with Filestash you should be able to view the file in Filestash.
 However, if you go to the AWS S3 [Web UI](https://s3.console.aws.amazon.com/s3/home) and download the file you just uploaded in Filestash, you won't be able to read it.
