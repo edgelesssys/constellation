@@ -15,7 +15,6 @@ Any version update is then pushed to the API.
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -23,11 +22,13 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
-	"go.uber.org/zap"
-
+	"github.com/edgelesssys/constellation/v2/internal/verify"
+	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 const (
@@ -67,7 +68,7 @@ func newRootCmd() *cobra.Command {
 		PreRunE: envCheck,
 		RunE:    runCmd,
 	}
-	rootCmd.Flags().StringP("maa-claims-path", "t", "", "File path to a json file containing the MAA claims.")
+	rootCmd.Flags().StringP("snp-report-path", "t", "", "File path to a file containing the Constellation verify output.")
 	rootCmd.Flags().StringP("upload-date", "d", "", "upload a version with this date as version name.")
 	rootCmd.Flags().BoolP("force", "f", false, "Use force to manually push a new latest version."+
 		" The version gets saved to the cache but the version selection logic is skipped.")
@@ -75,7 +76,7 @@ func newRootCmd() *cobra.Command {
 	rootCmd.PersistentFlags().StringP("region", "r", awsRegion, "region of the targeted bucket.")
 	rootCmd.PersistentFlags().StringP("bucket", "b", awsBucket, "bucket targeted by all operations.")
 	rootCmd.PersistentFlags().Bool("testing", false, "upload to S3 test bucket.")
-	must(rootCmd.MarkFlagRequired("maa-claims-path"))
+	must(rootCmd.MarkFlagRequired("snp-report-path"))
 	rootCmd.AddCommand(newDeleteCmd())
 	return rootCmd
 }
@@ -104,17 +105,20 @@ func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 		DistributionID: flags.distribution,
 	}
 
-	log.Infof("Reading MAA claims from file: %s", flags.maaFilePath)
-	maaClaimsBytes, err := os.ReadFile(flags.maaFilePath)
-	if err != nil {
-		return fmt.Errorf("reading MAA claims file: %w", err)
+	log.Infof("Reading SNP report from file: %s", flags.snpReportPath)
+
+	fs := file.NewHandler(afero.NewOsFs())
+	var report verify.Report
+	if err := fs.ReadJSON(flags.snpReportPath, &report); err != nil {
+		return fmt.Errorf("reading snp report: %w", err)
 	}
-	var maaTCB maaTokenTCBClaims
-	if err = json.Unmarshal(maaClaimsBytes, &maaTCB); err != nil {
-		return fmt.Errorf("unmarshalling MAA claims file: %w", err)
+	snpReport := report.SNPReport
+	if !allEqual(snpReport.LaunchTCB, snpReport.CommittedTCB, snpReport.ReportedTCB) {
+		return fmt.Errorf("TCB versions are not equal: \nLaunchTCB:%+v\nCommitted TCB:%+v\nReportedTCB:%+v",
+			snpReport.LaunchTCB, snpReport.CommittedTCB, snpReport.ReportedTCB)
 	}
-	inputVersion := maaTCB.ToAzureSEVSNPVersion()
-	log.Infof("Input version: %+v", inputVersion)
+	inputVersion := convertTCBVersionToAzureVersion(snpReport.LaunchTCB)
+	log.Infof("Input report: %+v", inputVersion)
 
 	client, clientClose, err := attestationconfigapi.NewClient(ctx, cfg,
 		[]byte(cosignPwd), []byte(privateKey), false, flags.cacheWindowSize, log)
@@ -148,8 +152,32 @@ func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 	return nil
 }
 
+func allEqual[T comparable](args ...T) bool {
+	if len(args) < 2 {
+		return true
+	}
+
+	firstArg := args[0]
+	for _, arg := range args[1:] {
+		if arg != firstArg {
+			return false
+		}
+	}
+
+	return true
+}
+
+func convertTCBVersionToAzureVersion(tcb verify.TCBVersion) attestationconfigapi.AzureSEVSNPVersion {
+	return attestationconfigapi.AzureSEVSNPVersion{
+		Bootloader: tcb.Bootloader,
+		TEE:        tcb.TEE,
+		SNP:        tcb.SNP,
+		Microcode:  tcb.Microcode,
+	}
+}
+
 type config struct {
-	maaFilePath     string
+	snpReportPath   string
 	uploadDate      time.Time
 	region          string
 	bucket          string
@@ -160,7 +188,7 @@ type config struct {
 }
 
 func parseCliFlags(cmd *cobra.Command) (config, error) {
-	maaFilePath, err := cmd.Flags().GetString("maa-claims-path")
+	snpReportFilePath, err := cmd.Flags().GetString("snp-report-path")
 	if err != nil {
 		return config{}, fmt.Errorf("getting maa claims path: %w", err)
 	}
@@ -191,7 +219,7 @@ func parseCliFlags(cmd *cobra.Command) (config, error) {
 	if err != nil {
 		return config{}, fmt.Errorf("getting testing flag: %w", err)
 	}
-	url, distribution := getEnvironment(testing)
+	url, distribution := getCDNEnvironment(testing)
 
 	force, err := cmd.Flags().GetBool("force")
 	if err != nil {
@@ -203,7 +231,7 @@ func parseCliFlags(cmd *cobra.Command) (config, error) {
 		return config{}, fmt.Errorf("getting cache window size: %w", err)
 	}
 	return config{
-		maaFilePath:     maaFilePath,
+		snpReportPath:   snpReportFilePath,
 		uploadDate:      uploadDate,
 		region:          region,
 		bucket:          bucket,
@@ -214,30 +242,11 @@ func parseCliFlags(cmd *cobra.Command) (config, error) {
 	}, nil
 }
 
-func getEnvironment(testing bool) (url string, distributionID string) {
+func getCDNEnvironment(testing bool) (url string, distributionID string) {
 	if testing {
 		return "https://d33dzgxuwsgbpw.cloudfront.net", "ETZGUP1CWRC2P"
 	}
 	return constants.CDNRepositoryURL, constants.CDNDefaultDistributionID
-}
-
-// maaTokenTCBClaims describes the TCB information in a MAA token.
-type maaTokenTCBClaims struct {
-	IsolationTEE struct {
-		TEESvn        uint8 `json:"x-ms-sevsnpvm-tee-svn"`
-		SNPFwSvn      uint8 `json:"x-ms-sevsnpvm-snpfw-svn"`
-		MicrocodeSvn  uint8 `json:"x-ms-sevsnpvm-microcode-svn"`
-		BootloaderSvn uint8 `json:"x-ms-sevsnpvm-bootloader-svn"`
-	} `json:"x-ms-isolation-tee"`
-}
-
-func (c maaTokenTCBClaims) ToAzureSEVSNPVersion() attestationconfigapi.AzureSEVSNPVersion {
-	return attestationconfigapi.AzureSEVSNPVersion{
-		TEE:        c.IsolationTEE.TEESvn,
-		SNP:        c.IsolationTEE.SNPFwSvn,
-		Microcode:  c.IsolationTEE.MicrocodeSvn,
-		Bootloader: c.IsolationTEE.BootloaderSvn,
-	}
 }
 
 func must(err error) {

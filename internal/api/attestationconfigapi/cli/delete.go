@@ -73,7 +73,7 @@ func runDelete(cmd *cobra.Command, _ []string) (retErr error) {
 	if err != nil {
 		return fmt.Errorf("getting testing flag: %w", err)
 	}
-	_, distribution := getEnvironment(testing)
+	_, distribution := getCDNEnvironment(testing)
 
 	cfg := staticupload.Config{
 		Bucket:         bucket,
@@ -113,7 +113,7 @@ func runRecursiveDelete(cmd *cobra.Command, _ []string) (retErr error) {
 	if err != nil {
 		return fmt.Errorf("getting testing flag: %w", err)
 	}
-	_, distribution := getEnvironment(testing)
+	_, distribution := getCDNEnvironment(testing)
 
 	log := logger.New(logger.PlainLog, zap.DebugLevel).Named("attestationconfigapi")
 	client, closeFn, err := staticupload.New(cmd.Context(), staticupload.Config{
