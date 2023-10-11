@@ -21,6 +21,9 @@
     "operators/constellation-node-operator/config/manager/kustomization.yaml",
   ],
   "ignoreDeps": ["github.com/edgelesssys/constellation/v2"],
+  // Rules for changing renovates behaviour for different packages.
+  // The documentation for configuration options can be found here:
+  // https://docs.renovatebot.com/configuration-options/
   "packageRules": [
     {
       "matchManagers": ["gomod"],
@@ -103,6 +106,7 @@
     },
     {
       "matchPackageNames": ["kubernetes/kubernetes"],
+      // example match: v1.2.3 (1.2 -> compatibility, 3 -> patch)
       "versioning": "regex:^(?<compatibility>v?\\d+\\.\\d+\\.)(?<patch>\\d+)$",
       "groupName": "Kubernetes versions",
       "prPriority": 15,
@@ -111,6 +115,7 @@
       "matchPackageNames": [
         "registry.k8s.io/provider-aws/cloud-controller-manager",
       ],
+      // example match: v1.2.3 (1.2 -> compatibility, 3 -> patch)
       "versioning": "regex:^(?<compatibility>v?\\d+\\.\\d+\\.)(?<patch>\\d+)$",
       "groupName": "K8s constrained AWS versions",
       "prPriority": 15,
@@ -120,6 +125,7 @@
         "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager",
         "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager",
       ],
+      // example match: v1.2.3 (1.2 -> compatibility, 3 -> patch)
       "versioning": "regex:^(?<compatibility>v?\\d+\\.\\d+\\.)(?<patch>\\d+)$",
       "groupName": "K8s constrained Azure versions",
       "prPriority": 15,
@@ -128,18 +134,21 @@
       "matchPackageNames": [
         "docker.io/k8scloudprovider/openstack-cloud-controller-manager",
       ],
+      // example match: v1.2.3 (1.2 -> compatibility, 3 -> patch)
       "versioning": "regex:^(?<compatibility>v?\\d+\\.\\d+\\.)(?<patch>\\d+)$",
       "groupName": "K8s constrained OpenStack versions",
       "prPriority": 15,
     },
     {
       "matchPackageNames": ["registry.k8s.io/autoscaling/cluster-autoscaler"],
+      // example match: v1.2.3 (1.2 -> compatibility, 3 -> patch)
       "versioning": "regex:^(?<compatibility>v?\\d+\\.\\d+\\.)(?<patch>\\d+)$",
       "groupName": "K8s constrained GCP versions",
       "prPriority": 15,
     },
     {
       "matchPackageNames": ["ghcr.io/edgelesssys/cloud-provider-gcp"],
+      // example match: v1.2.3 (1. -> compatibility, 2 -> minor, 3 -> patch)
       "versioning": "regex:^(?<compatibility>v\\d+\\.)(?<minor>\\d+)\\.(?<patch>\\d+)$",
       "groupName": "cloud-provider-gcp (K8s version constrained)",
       "prPriority": 15,
@@ -148,6 +157,11 @@
       "matchPackagePrefixes": ["ghcr.io/edgelesssys/"],
       "excludePackageNames": ["ghcr.io/edgelesssys/cloud-provider-gcp"],
       "versioning": "semver",
+      // Allow packages of ghcr.io/edgelesssys to update to unstable prereleases.
+      // This is necessary because renovate will not update minor versions of
+      // containers that are already tagged as a prerelease in the code
+      // if this is not set.
+      "ignoreUnstable": false,
       "groupName": "Constellation containers",
       "prPriority": 20,
     },
@@ -180,10 +194,16 @@
       "groupName": "{{packageName}}",
     },
   ],
+  // Regex Managers allow detection of other versions in files that renovate
+  // cannot parse by default. For more information, look at
+  // https://docs.renovatebot.com/modules/manager/regex/ .
   "regexManagers": [
     {
       "fileMatch": ["(^|\\/)versions.go$"],
       "matchStrings": [
+        // Match all container packages.
+        // example match:' "registry.io/owner/foo/bar:v1.2.3@sha256:somehash" // renovate:container'
+        // (registry.io/owner/foo/bar -> depName, v1.2.3 -> currentValue, sha256:somehash -> currentDigest)
         " \"(?<depName>[^\"]*?):(?<currentValue>[^\"]*?)@(?<currentDigest>sha256:[a-f0-9]+)\"[^\\n]+\\/\\/ renovate:container",
       ],
       "datasourceTemplate": "docker",
@@ -191,7 +211,13 @@
     {
       "fileMatch": ["(^|\\/)versions.go$"],
       "matchStrings": [
+        // Match kubernetes releases.
+        // example match:'  "https://storage.googleapis.com/kubernetes-release/release/v1.2.3/foo" // renovate:kubernetes-release'
+        // (v1.2.3 -> currentValue)
         " \"https:\\/\\/storage\\.googleapis\\.com\\/kubernetes-release\\/release\\/(?<currentValue>[^\\/\\s\"]+)\\/[^\"]+\"[^\\n]+\\/\\/ renovate:kubernetes-release",
+        // Match kubernetes releases.
+        // example match:' " "v1.2.3" // renovate:kubernetes-release"'
+        // (v1.2.3 -> currentValue)
         " \"(?<currentValue>v\\d+\\.\\d+\\.\\d+)\"[^\\n]+\\/\\/ renovate:kubernetes-release",
       ],
       "depNameTemplate": "kubernetes/kubernetes",
@@ -200,6 +226,9 @@
     {
       "fileMatch": ["(^|\\/)versions.go$"],
       "matchStrings": [
+        // Match github releases.
+        // example match:' "https://github.com/foo/bar/releases/download/v1.2.3/foo.bin" // renovate:github-release'
+        // (foo/bar -> depName, v1.2.3 -> currentValue)
         " \"https:\\/\\/github\\.com\\/(?<depName>[^\\/\\s\"]+\\/[^\\/\\s\"]+)\\/releases\\/download\\/(?<currentValue>[^\\/\\s\"]+)\\/[^\"]+\"[^\\n]+\\/\\/ renovate:github-release",
       ],
       "datasourceTemplate": "github-releases",
@@ -207,6 +236,9 @@
     {
       "fileMatch": ["(^|\\/)versions.go$"],
       "matchStrings": [
+        // Match kubernetes cri-tools releases (https://github.com/kubernetes-sigs/cri-tools).
+        // example Match:' "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.2.3/foo"'
+        // (v1.2.3 -> currentValue)
         " \"https:\\/\\/github\\.com\\/kubernetes-sigs\\/cri-tools\\/releases\\/download\\/(?<currentValue>[^\\/\\s\"]+)\\/[^\"]+\"",
       ],
       "depNameTemplate": "kubernetes-sigs/cri-tools",
@@ -216,6 +248,9 @@
     {
       "fileMatch": ["versions.go$"],
       "matchStrings": [
+        // Match containernetworking plugin releases (https://github.com/containernetworking/plugins).
+        // example Match:' "https://github.com/containernetworking/plugins/releases/download/v1.2.3/foo"'
+        // (v1.2.3 -> currentValue)
         " \"https:\\/\\/github\\.com\\/containernetworking\\/plugins\\/releases\\/download\\/(?<currentValue>[^\\/\\s\"]+)\\/[^\"]+\"",
       ],
       "depNameTemplate": "containernetworking/plugins",
@@ -225,6 +260,9 @@
     {
       "fileMatch": ["\\.yaml$", "\\.yml$"],
       "matchStrings": [
+        // Match `go install` commands.
+        // example Match: "go install foo.bar@0000000000000000000000000000000000000000"
+        // (foo.bar -> depName, 0000000000000000000000000000000000000000 -> currentValue)
         "go install (?<depName>[^@]+?)@(?<currentValue>[0-9a-f]{40})",
       ],
       "datasourceTemplate": "go",
