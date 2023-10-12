@@ -29,6 +29,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -64,8 +65,7 @@ func (f *applyFlags) parse(flags *pflag.FlagSet) error {
 
 	rawSkipPhases, err := flags.GetStringSlice("skip-phases")
 	if err != nil {
-		rawSkipPhases = []string{}
-		// return fmt.Errorf("getting 'skip-phases' flag: %w", err)
+		return fmt.Errorf("getting 'skip-phases' flag: %w", err)
 	}
 	var skipPhases []skipPhase
 	for _, phase := range rawSkipPhases {
@@ -80,14 +80,12 @@ func (f *applyFlags) parse(flags *pflag.FlagSet) error {
 
 	f.yes, err = flags.GetBool("yes")
 	if err != nil {
-		f.yes = false
-		// return fmt.Errorf("getting 'yes' flag: %w", err)
+		return fmt.Errorf("getting 'yes' flag: %w", err)
 	}
 
 	f.upgradeTimeout, err = flags.GetDuration("timeout")
 	if err != nil {
-		f.upgradeTimeout = time.Hour
-		// return fmt.Errorf("getting 'timeout' flag: %w", err)
+		return fmt.Errorf("getting 'timeout' flag: %w", err)
 	}
 
 	f.conformance, err = flags.GetBool("conformance")
@@ -106,8 +104,7 @@ func (f *applyFlags) parse(flags *pflag.FlagSet) error {
 
 	f.mergeConfigs, err = flags.GetBool("merge-kubeconfig")
 	if err != nil {
-		f.mergeConfigs = false
-		// return fmt.Errorf("getting 'merge-kubeconfig' flag: %w", err)
+		return fmt.Errorf("getting 'merge-kubeconfig' flag: %w", err)
 	}
 	return nil
 }
@@ -337,6 +334,17 @@ func (a *applyCmd) apply(cmd *cobra.Command, configFetcher attestationconfigapi.
 		if err := validateCLIandConstellationVersionAreEqual(constants.BinaryVersion(), conf.Image, conf.MicroserviceVersion); err != nil {
 			return err
 		}
+	}
+
+	// Constellation on QEMU or OpenStack don't support upgrades
+	// If using one of those providers, make sure the command is only used to initialize a cluster
+	if !(conf.GetProvider() == cloudprovider.AWS || conf.GetProvider() == cloudprovider.Azure || conf.GetProvider() == cloudprovider.GCP) {
+		if !initRequired {
+			return fmt.Errorf("upgrades are not supported for provider %s", conf.GetProvider())
+		}
+		// Skip Terraform phase
+		a.log.Debugf("Skipping Infrastructure phase for provider %s", conf.GetProvider())
+		a.flags.skipPhases = append(a.flags.skipPhases, skipInfrastructurePhase)
 	}
 
 	// Print warning about AWS attestation

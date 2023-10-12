@@ -44,6 +44,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/clientcmd"
 	k8sclientapi "k8s.io/client-go/tools/clientcmd/api"
 )
@@ -58,8 +60,6 @@ func TestInitArgumentValidation(t *testing.T) {
 }
 
 func TestInitialize(t *testing.T) {
-	require := require.New(t)
-
 	respKubeconfig := k8sclientapi.Config{
 		Clusters: map[string]*k8sclientapi.Cluster{
 			"cluster": {
@@ -68,7 +68,7 @@ func TestInitialize(t *testing.T) {
 		},
 	}
 	respKubeconfigBytes, err := clientcmd.Write(respKubeconfig)
-	require.NoError(err)
+	require.NoError(t, err)
 
 	gcpServiceAccKey := &gcpshared.ServiceAccountKey{
 		Type:                    "service_account",
@@ -149,31 +149,46 @@ func TestInitialize(t *testing.T) {
 			masterSecretShouldExist: true,
 			wantErr:                 true,
 		},
-		"state file with only version": {
-			provider:      cloudprovider.GCP,
-			stateFile:     &state.State{Version: state.Version1},
-			initServerAPI: &stubInitServer{},
-			retriable:     true,
-			wantErr:       true,
-		},
-		"empty state file": {
-			provider:      cloudprovider.GCP,
-			stateFile:     &state.State{},
-			initServerAPI: &stubInitServer{},
-			retriable:     true,
-			wantErr:       true,
-		},
+		/*
+				Tests currently disabled since we don't actually have validation for the state file yet
+				These tests cases only passed in the past because of unrelated errors in the test setup
+
+			"state file with only version": {
+				provider:      cloudprovider.GCP,
+				stateFile:     &state.State{Version: state.Version1},
+				configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
+				serviceAccKey: gcpServiceAccKey,
+				initServerAPI: &stubInitServer{},
+				retriable:     true,
+				wantErr:       true,
+			},
+
+			"empty state file": {
+				provider:      cloudprovider.GCP,
+				stateFile:     &state.State{},
+				configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
+				serviceAccKey: gcpServiceAccKey,
+				initServerAPI: &stubInitServer{},
+				retriable:     true,
+				wantErr:       true,
+			},
+		*/
 		"no state file": {
-			provider:  cloudprovider.GCP,
-			retriable: true,
-			wantErr:   true,
+			provider:      cloudprovider.GCP,
+			configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
+			serviceAccKey: gcpServiceAccKey,
+			retriable:     true,
+			wantErr:       true,
 		},
 		"init call fails": {
-			provider:      cloudprovider.GCP,
-			stateFile:     &state.State{Version: state.Version1, Infrastructure: state.Infrastructure{ClusterEndpoint: "192.0.2.1"}},
-			initServerAPI: &stubInitServer{initErr: assert.AnError},
-			retriable:     true,
-			wantErr:       true,
+			provider:                cloudprovider.GCP,
+			configMutator:           func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
+			stateFile:               &state.State{Version: state.Version1, Infrastructure: state.Infrastructure{ClusterEndpoint: "192.0.2.1"}},
+			serviceAccKey:           gcpServiceAccKey,
+			initServerAPI:           &stubInitServer{initErr: assert.AnError},
+			retriable:               false,
+			masterSecretShouldExist: true,
+			wantErr:                 true,
 		},
 		"k8s version without v works": {
 			provider:      cloudprovider.Azure,
@@ -181,7 +196,7 @@ func TestInitialize(t *testing.T) {
 			initServerAPI: &stubInitServer{res: []*initproto.InitResponse{{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}}},
 			configMutator: func(c *config.Config) {
 				res, err := versions.NewValidK8sVersion(strings.TrimPrefix(string(versions.Default), "v"), true)
-				require.NoError(err)
+				require.NoError(t, err)
 				c.KubernetesVersion = res
 			},
 		},
@@ -191,7 +206,7 @@ func TestInitialize(t *testing.T) {
 			initServerAPI: &stubInitServer{res: []*initproto.InitResponse{{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}}},
 			configMutator: func(c *config.Config) {
 				v, err := semver.New(versions.SupportedK8sVersions()[0])
-				require.NoError(err)
+				require.NoError(t, err)
 				outdatedPatchVer := semver.NewFromInt(v.Major(), v.Minor(), v.Patch()-1, "").String()
 				c.KubernetesVersion = versions.ValidK8sVersion(outdatedPatchVer)
 			},
@@ -203,6 +218,7 @@ func TestInitialize(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
+			require := require.New(t)
 			// Networking
 			netDialer := testdialer.NewBufconnDialer()
 			newDialer := func(atls.Validator) *dialer.Dialer {
@@ -231,8 +247,6 @@ func TestInitialize(t *testing.T) {
 				tc.configMutator(config)
 			}
 			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, config, file.OptNone))
-			stateFile := state.New()
-			require.NoError(stateFile.WriteToFile(fileHandler, constants.StateFilename))
 			if tc.stateFile != nil {
 				require.NoError(tc.stateFile.WriteToFile(fileHandler, constants.StateFilename))
 			}
@@ -244,22 +258,31 @@ func TestInitialize(t *testing.T) {
 			ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 			defer cancel()
 			cmd.SetContext(ctx)
-			i := newInitCmd(fileHandler, &nopSpinner{}, nil, logger.NewTest(t))
-			i.flags.force = true
 
-			err := i.initialize(
-				cmd,
-				newDialer,
-				&stubLicenseClient{},
-				stubAttestationFetcher{},
-				func(io.Writer, string, debugLog) (attestationConfigApplier, error) {
-					return &stubAttestationApplier{}, nil
-				},
-				func(_ string, _ debugLog) (helmApplier, error) {
+			i := &applyCmd{
+				fileHandler:  fileHandler,
+				flags:        applyFlags{rootFlags: rootFlags{force: true}},
+				log:          logger.NewTest(t),
+				spinner:      &nopSpinner{},
+				merger:       &stubMerger{},
+				quotaChecker: &stubLicenseClient{},
+				newHelmClient: func(string, debugLog) (helmApplier, error) {
 					return &stubApplier{}, nil
-				})
+				},
+				newDialer: newDialer,
+				newKubeUpgrader: func(io.Writer, string, debugLog) (kubernetesUpgrader, error) {
+					return &stubKubernetesUpgrader{
+						// On init, no attestation config exists yet
+						getClusterAttestationConfigErr: k8serrors.NewNotFound(schema.GroupResource{}, ""),
+					}, nil
+				},
+				clusterUpgrader: stubTerraformUpgrader{},
+			}
+
+			err := i.apply(cmd, stubAttestationFetcher{}, "test")
 
 			if tc.wantErr {
+				fmt.Println(err)
 				assert.Error(err)
 				if !tc.retriable {
 					assert.Contains(errOut.String(), "This error is not recoverable")
@@ -291,14 +314,17 @@ func (s stubApplier) PrepareApply(_ *config.Config, _ *state.State, _ helm.Optio
 	return stubRunner{}, false, s.err
 }
 
-type stubRunner struct{}
+type stubRunner struct {
+	applyErr      error
+	saveChartsErr error
+}
 
 func (s stubRunner) Apply(_ context.Context) error {
-	return nil
+	return s.applyErr
 }
 
 func (s stubRunner) SaveCharts(_ string, _ file.Handler) error {
-	return nil
+	return s.saveChartsErr
 }
 
 func TestGetLogs(t *testing.T) {
@@ -420,7 +446,12 @@ func TestWriteOutput(t *testing.T) {
 		ClusterEndpoint: clusterEndpoint,
 	})
 
-	i := newInitCmd(fileHandler, &nopSpinner{}, &stubMerger{}, logger.NewTest(t))
+	i := &applyCmd{
+		fileHandler: fileHandler,
+		spinner:     &nopSpinner{},
+		merger:      &stubMerger{},
+		log:         logger.NewTest(t),
+	}
 	err = i.writeOutput(stateFile, resp.GetInitSuccess(), false, &out, measurementSalt)
 	require.NoError(err)
 	assert.Contains(out.String(), clusterID)
@@ -508,7 +539,10 @@ func TestGenerateMasterSecret(t *testing.T) {
 			require.NoError(tc.createFileFunc(fileHandler))
 
 			var out bytes.Buffer
-			i := newInitCmd(fileHandler, nil, nil, logger.NewTest(t))
+			i := &applyCmd{
+				fileHandler: fileHandler,
+				log:         logger.NewTest(t),
+			}
 			secret, err := i.generateMasterSecret(&out)
 
 			if tc.wantErr {
@@ -601,13 +635,17 @@ func TestAttestation(t *testing.T) {
 	defer cancel()
 	cmd.SetContext(ctx)
 
-	i := newInitCmd(fileHandler, &nopSpinner{}, nil, logger.NewTest(t))
-	err := i.initialize(cmd, newDialer, &stubLicenseClient{}, stubAttestationFetcher{},
-		func(io.Writer, string, debugLog) (attestationConfigApplier, error) {
-			return &stubAttestationApplier{}, nil
-		}, func(_ string, _ debugLog) (helmApplier, error) {
-			return &stubApplier{}, nil
-		})
+	i := &applyCmd{
+		fileHandler: fileHandler,
+		spinner:     &nopSpinner{},
+		merger:      &stubMerger{},
+		log:         logger.NewTest(t),
+		newKubeUpgrader: func(io.Writer, string, debugLog) (kubernetesUpgrader, error) {
+			return &stubKubernetesUpgrader{}, nil
+		},
+		newDialer: newDialer,
+	}
+	_, err := i.runInit(cmd, cfg, existingStateFile)
 	assert.Error(err)
 	// make sure the error is actually a TLS handshake error
 	assert.Contains(err.Error(), "transport: authentication handshake failed")
@@ -769,12 +807,4 @@ func (c stubInitClient) Recv() (*initproto.InitResponse, error) {
 	}
 
 	return res, err
-}
-
-type stubAttestationApplier struct {
-	applyErr error
-}
-
-func (a *stubAttestationApplier) ApplyJoinConfig(context.Context, config.AttestationCfg, []byte) error {
-	return a.applyErr
 }

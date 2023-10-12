@@ -10,23 +10,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"net"
+	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/featureset"
-	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
-	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
-	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
-	"github.com/edgelesssys/constellation/v2/internal/license"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -105,7 +99,7 @@ func (m *miniUpCmd) up(cmd *cobra.Command, creator cloudCreator, spinner spinner
 	cmd.Printf("\tvirsh -c %s\n\n", connectURI)
 
 	// initialize cluster
-	if err := m.initializeMiniCluster(cmd, spinner); err != nil {
+	if err := m.initializeMiniCluster(cmd); err != nil {
 		return fmt.Errorf("initializing cluster: %w", err)
 	}
 	m.log.Debugf("Initialized cluster")
@@ -188,7 +182,7 @@ func (m *miniUpCmd) createMiniCluster(ctx context.Context, creator cloudCreator,
 }
 
 // initializeMiniCluster initializes a QEMU cluster.
-func (m *miniUpCmd) initializeMiniCluster(cmd *cobra.Command, spinner spinnerInterf) (retErr error) {
+func (m *miniUpCmd) initializeMiniCluster(cmd *cobra.Command) (retErr error) {
 	m.log.Debugf("Initializing mini cluster")
 	// clean up cluster resources if initialization fails
 	defer func() {
@@ -199,34 +193,19 @@ func (m *miniUpCmd) initializeMiniCluster(cmd *cobra.Command, spinner spinnerInt
 			cmd.PrintErrf("Rollback succeeded.\n\n")
 		}
 	}()
-	newDialer := func(validator atls.Validator) *dialer.Dialer {
-		return dialer.New(nil, validator, &net.Dialer{})
-	}
-	m.log.Debugf("Created new dialer")
-	cmd.Flags().String("endpoint", "", "")
+
+	// Define flags for apply backend that are not set by mini up
+	cmd.Flags().StringSlice(
+		"skip-phases",
+		[]string{string(skipInfrastructurePhase), string(skipK8sPhase), string(skipImagePhase)},
+		"",
+	)
+	cmd.Flags().Bool("yes", false, "")
+	cmd.Flags().Bool("skip-helm-wait", false, "")
 	cmd.Flags().Bool("conformance", false, "")
-	cmd.Flags().Bool("skip-helm-wait", false, "install helm charts without waiting for deployments to be ready")
-	log, err := newCLILogger(cmd)
-	if err != nil {
-		return fmt.Errorf("creating logger: %w", err)
-	}
-	m.log.Debugf("Created new logger")
-	defer log.Sync()
+	cmd.Flags().Duration("timeout", time.Hour, "")
 
-	newAttestationApplier := func(w io.Writer, kubeConfig string, log debugLog) (attestationConfigApplier, error) {
-		return kubecmd.New(w, kubeConfig, m.fileHandler, log)
-	}
-	newHelmClient := func(kubeConfigPath string, log debugLog) (helmApplier, error) {
-		return helm.NewClient(kubeConfigPath, log)
-	} // need to defer helm client instantiation until kubeconfig is available
-
-	i := newInitCmd(m.fileHandler, spinner, &kubeconfigMerger{log: log}, log)
-	if err := i.flags.parse(cmd.Flags()); err != nil {
-		return err
-	}
-
-	if err := i.initialize(cmd, newDialer, license.NewClient(), m.configFetcher,
-		newAttestationApplier, newHelmClient); err != nil {
+	if err := runApply(cmd, nil); err != nil {
 		return err
 	}
 	m.log.Debugf("Initialized mini cluster")
