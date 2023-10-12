@@ -69,3 +69,7 @@ __pycache__/
 
 # nix
 /result
+
+# s3proxy misc files
+port-forward.log
+s3proxy-ca.crt
