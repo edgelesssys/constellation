@@ -65,6 +65,16 @@ runs:
       if: steps.check_inputs.outputs.nixPreinstalled == 'false'
       uses: cachix/install-nix-action@6ed004b9ccb68dbc28e7c85bee15fa93dbd214ac # v22
 
+    - name: Set $USER if not set
+      shell: bash
+      run: |
+        echo "::group::Set \$USER if not set"
+        if [[ -z "$USER" ]]; then
+          echo "USER=$(id -un)" | tee -a "$GITHUB_ENV"
+        fi
+        echo "::endgroup::"
+
+
     - uses: cachix/cachix-action@6a9a34cdd93d0ae4b4b59fd678660efb08109f2f # v12
       with:
         name: katexochen
