@@ -98,7 +98,7 @@ go_rules_dependencies()
 load("@io_tweag_rules_nixpkgs//nixpkgs:toolchains/go.bzl", "nixpkgs_go_configure")
 
 nixpkgs_go_configure(
-    attribute_path = "go_1_21",
+    nix_file = "//bazel/go:go.nix",
     repository = "@nixpkgs",
 )
 
