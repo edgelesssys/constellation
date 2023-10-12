@@ -34,7 +34,9 @@ Encrypting your K8s is good for:
 ### 🔒 Everything always encrypted
 
 * Runtime encryption: All nodes run inside AMD SEV-based Confidential VMs (CVMs). Support for Intel TDX will be added in the future.
-* Transparent encryption of network and storage: All pod-to-pod traffic and all writes to persistent storage are [automatically encrypted][network-encryption]
+* Transparent encryption of network: All [pod-to-pod traffic is automatically encrypted][network-encryption]
+* Transparent encryption of storage: All writes to persistent storage are automatically encrypted.
+  This includes [nodes' state disks][storage-encryption], [persistent volumes via CSI][csi], and [S3 object storage][s3proxy].
 * Transparent key management: All cryptographic [keys are managed within the confidential context][key-management]
 
 ### 🔍 Everything verifiable
@@ -72,8 +74,9 @@ If you're already familiar with Kubernetes, it's easy to get started with Conste
 ## Live demos
 
 We're running public instances of popular software on Constellation:
-* Rocket.Chat: https://rocket.edgeless.systems/ ([blog post](https://dev.to/flxflx/rocketchat-constellation-most-secure-chat-server-ever--50oa))
-* GitLab: https://gitlab.edgeless.systems/ ([blog post](https://dev.to/flxflx/setting-up-a-confidential-gitlab-333h))
+
+* Rocket.Chat: <https://rocket.edgeless.systems/> ([blog post](https://dev.to/flxflx/rocketchat-constellation-most-secure-chat-server-ever--50oa))
+* GitLab: <https://gitlab.edgeless.systems/> ([blog post](https://dev.to/flxflx/setting-up-a-confidential-gitlab-333h))
 
 These instances run on CVMs in Azure and Constellation keeps them end-to-end confidential.
 
@@ -102,7 +105,7 @@ Refer to [`CONTRIBUTING.md`](CONTRIBUTING.md) on how to contribute. The most imp
 * Please follow the [Code of Conduct](/CODE_OF_CONDUCT.md).
 
 > **Warning**
-> Please report any security issue via a [private GitHub vulnerability report](https://github.com/edgelesssys/constellation/security/advisories/new) or write to security@edgeless.systems.
+> Please report any security issue via a [private GitHub vulnerability report](https://github.com/edgelesssys/constellation/security/advisories/new) or write to <security@edgeless.systems>.
 
 ## License
 
@@ -126,6 +129,9 @@ The Constellation source code is licensed under the [GNU Affero General Public L
 [key-management]: https://docs.edgeless.systems/constellation/architecture/keys
 [license]: https://docs.edgeless.systems/constellation/overview/license
 [network-encryption]: https://docs.edgeless.systems/constellation/architecture/keys#network-encryption
+[storage-encryption]: https://docs.edgeless.systems/constellation/architecture/keys#storage-encryption
+[csi]: https://docs.edgeless.systems/constellation/workflows/storage
+[s3proxy]: https://docs.edgeless.systems/constellation/workflows/s3proxy
 [supply-chain]: https://docs.edgeless.systems/constellation/architecture/attestation#chain-of-trust
 [security-benefits]: https://docs.edgeless.systems/constellation/overview/security-benefits
 [twitter]: https://twitter.com/EdgelessSystems
