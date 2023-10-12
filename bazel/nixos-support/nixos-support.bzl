@@ -36,7 +36,7 @@ def cc_toolchain():
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains")
 
 def go_toolchain():
-    go_register_toolchains(version = "1.21.1")
+    go_register_toolchains(version = "1.21.3")
 
 def cc_toolchain():
     native.register_toolchains(
