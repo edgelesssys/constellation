@@ -76,6 +76,10 @@ inputs:
     description: "Enable security policy for the cluster."
   internalLoadBalancer:
     description: "Enable internal load balancer for the cluster."
+  s3AccessKey:
+    description: "Access key for s3proxy"
+  s3SecretKey:
+    description: "Secret key for s3proxy"
 
 outputs:
   kubeconfig:
@@ -89,7 +93,7 @@ runs:
   using: "composite"
   steps:
     - name: Check input
-      if: (!contains(fromJson('["sonobuoy full", "sonobuoy quick", "autoscaling", "perf-bench", "verify", "lb", "recover", "malicious join", "nop", "upgrade"]'), inputs.test))
+      if: (!contains(fromJson('["sonobuoy full", "sonobuoy quick", "autoscaling", "perf-bench", "verify", "lb", "recover", "malicious join", "s3proxy", "nop", "upgrade"]'), inputs.test))
       shell: bash
       run: |
         echo "::error::Invalid input for test field: ${{ inputs.test }}"
@@ -349,4 +353,14 @@ runs:
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
+        githubToken: ${{ inputs.githubToken }}
+
+    - name: Run s3proxy e2e test
+      if: inputs.test == 's3proxy'
+      uses: ./.github/actions/e2e_s3proxy
+      with:
+        kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
+        s3AccessKey: ${{ inputs.s3AccessKey }}
+        s3SecretKey: ${{ inputs.s3SecretKey }}
+        buildBuddyApiKey: ${{ inputs.buildBuddyApiKey }}
         githubToken: ${{ inputs.githubToken }}

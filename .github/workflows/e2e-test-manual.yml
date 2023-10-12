@@ -35,6 +35,7 @@ on:
           - "verify"
           - "recover"
           - "malicious join"
+          - "s3proxy"
           - "nop"
         required: true
       kubernetesVersion:
@@ -260,6 +261,8 @@ jobs:
           cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
           cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
           fetchMeasurements: ${{ contains(needs.find-latest-image.outputs.image, '/stream/stable/') }}
+          s3AccessKey: ${{ secrets.AWS_ACCESS_KEY_ID_S3PROXY }}
+          s3SecretKey: ${{ secrets.AWS_SECRET_ACCESS_KEY_S3PROXY }}
 
       - name: Always terminate cluster
         if: always()

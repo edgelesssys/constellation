@@ -57,56 +57,58 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-    name: s3proxy
-    labels:
-      app: s3proxy
+  name: s3proxy
+  labels:
+    app: s3proxy
 spec:
-    replicas: 1
-    selector:
-        matchLabels:
-            app: s3proxy
-    template:
-        metadata:
-          labels:
-            app: s3proxy
-        spec:
-          containers:
-          - name: s3proxy
-            image: ghcr.io/edgelesssys/constellation/s3proxy:v2.12.0
-            args:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: s3proxy
+  template:
+    metadata:
+      labels:
+        app: s3proxy
+    spec:
+      containers:
+        - name: s3proxy
+          image: ghcr.io/edgelesssys/constellation/s3proxy:v2.13.0-pre
+          args:
             - "--level=-1"
-            ports:
+          ports:
             - containerPort: 4433
               name: s3proxy-port
-            volumeMounts:
+          volumeMounts:
             - name: tls-cert-data
               mountPath: /etc/s3proxy/certs/s3proxy.crt
               subPath: tls.crt
             - name: tls-cert-data
               mountPath: /etc/s3proxy/certs/s3proxy.key
               subPath: tls.key
-            envFrom:
+          envFrom:
             - secretRef:
                 name: s3-creds
-          volumes:
-          - name: tls-cert-data
-            secret:
-              secretName: s3proxy-tls
-          - name: s3-creds
-            secret:
-              secretName: s3-creds
+      volumes:
+        - name: tls-cert-data
+          secret:
+            secretName: s3proxy-tls
+        - name: s3-creds
+          secret:
+            secretName: s3-creds
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: s3proxy-service
+  labels:
+    app: s3proxy
 spec:
   selector:
     app: s3proxy
   ports:
-  - name: https
-    port: 443
-    targetPort: s3proxy-port
+    - name: https
+      port: 443
+      targetPort: s3proxy-port
   type: ClusterIP
 ---
 apiVersion: v1

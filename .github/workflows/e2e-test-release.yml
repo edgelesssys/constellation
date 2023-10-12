@@ -151,6 +151,12 @@ jobs:
             kubernetes-version: "v1.28"
             runner: "ubuntu-22.04"
 
+          # s3proxy test on latest k8s version
+          - test: "s3proxy"
+            refStream: "ref/main/stream/debug/?"
+            provider: "gcp"
+            kubernetes-version: "v1.28"
+
           #
           # Tests on macOS runner
           #
@@ -213,6 +219,8 @@ jobs:
           cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
           cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
           githubToken: ${{ secrets.GITHUB_TOKEN }}
+          s3AccessKey: ${{ secrets.AWS_ACCESS_KEY_ID_S3PROXY }}
+          s3SecretKey: ${{ secrets.AWS_SECRET_ACCESS_KEY_S3PROXY }}
 
       - name: Always terminate cluster
         if: always()
