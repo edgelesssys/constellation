@@ -7,28 +7,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
-	"bytes"
 	"context"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
-	"net"
-	"net/url"
 	"os"
-	"path/filepath"
-	"strconv"
 	"sync"
-	"text/tabwriter"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
-	"github.com/edgelesssys/constellation/v2/internal/atls"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
-
-	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	"google.golang.org/grpc"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd"
@@ -36,21 +23,13 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
-	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
-	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/grpclog"
-	grpcRetry "github.com/edgelesssys/constellation/v2/internal/grpc/retry"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
-	"github.com/edgelesssys/constellation/v2/internal/license"
-	"github.com/edgelesssys/constellation/v2/internal/retry"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
 )
 
 // NewInitCmd returns a new cobra.Command for the init command.
@@ -61,276 +40,20 @@ func NewInitCmd() *cobra.Command {
 		Long: "Initialize the Constellation cluster.\n\n" +
 			"Start your confidential Kubernetes.",
 		Args: cobra.ExactArgs(0),
-		RunE: runApply,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Define flags for apply backend that are not set by init
+			cmd.Flags().Bool("yes", false, "")
+			// Don't skip any phases
+			// The apply backend should handle init calls correctly
+			cmd.Flags().StringSlice("skip-phases", []string{}, "")
+			cmd.Flags().Duration("timeout", time.Hour, "")
+			return runApply(cmd, args)
+		},
 	}
 	cmd.Flags().Bool("conformance", false, "enable conformance mode")
 	cmd.Flags().Bool("skip-helm-wait", false, "install helm charts without waiting for deployments to be ready")
 	cmd.Flags().Bool("merge-kubeconfig", false, "merge Constellation kubeconfig file with default kubeconfig file in $HOME/.kube/config")
 	return cmd
-}
-
-// initFlags are flags used by the init command.
-type initFlags struct {
-	rootFlags
-	conformance  bool
-	helmWaitMode helm.WaitMode
-	mergeConfigs bool
-}
-
-func (f *initFlags) parse(flags *pflag.FlagSet) error {
-	if err := f.rootFlags.parse(flags); err != nil {
-		return err
-	}
-
-	skipHelmWait, err := flags.GetBool("skip-helm-wait")
-	if err != nil {
-		return fmt.Errorf("getting 'skip-helm-wait' flag: %w", err)
-	}
-	f.helmWaitMode = helm.WaitModeAtomic
-	if skipHelmWait {
-		f.helmWaitMode = helm.WaitModeNone
-	}
-
-	f.conformance, err = flags.GetBool("conformance")
-	if err != nil {
-		return fmt.Errorf("getting 'conformance' flag: %w", err)
-	}
-	f.mergeConfigs, err = flags.GetBool("merge-kubeconfig")
-	if err != nil {
-		return fmt.Errorf("getting 'merge-kubeconfig' flag: %w", err)
-	}
-	return nil
-}
-
-type initCmd struct {
-	log         debugLog
-	merger      configMerger
-	spinner     spinnerInterf
-	fileHandler file.Handler
-	flags       initFlags
-}
-
-func newInitCmd(fileHandler file.Handler, spinner spinnerInterf, merger configMerger, log debugLog) *initCmd {
-	return &initCmd{
-		log:         log,
-		merger:      merger,
-		spinner:     spinner,
-		fileHandler: fileHandler,
-	}
-}
-
-// runInitialize runs the initialize command.
-func runInitialize(cmd *cobra.Command, _ []string) error {
-	log, err := newCLILogger(cmd)
-	if err != nil {
-		return fmt.Errorf("creating logger: %w", err)
-	}
-	defer log.Sync()
-	fileHandler := file.NewHandler(afero.NewOsFs())
-	newDialer := func(validator atls.Validator) *dialer.Dialer {
-		return dialer.New(nil, validator, &net.Dialer{})
-	}
-
-	spinner, err := newSpinnerOrStderr(cmd)
-	if err != nil {
-		return err
-	}
-	defer spinner.Stop()
-
-	ctx, cancel := context.WithTimeout(cmd.Context(), time.Hour)
-	defer cancel()
-	cmd.SetContext(ctx)
-
-	i := newInitCmd(fileHandler, spinner, &kubeconfigMerger{log: log}, log)
-	if err := i.flags.parse(cmd.Flags()); err != nil {
-		return err
-	}
-	i.log.Debugf("Using flags: %+v", i.flags)
-
-	fetcher := attestationconfigapi.NewFetcher()
-	newAttestationApplier := func(w io.Writer, kubeConfig string, log debugLog) (attestationConfigApplier, error) {
-		return kubecmd.New(w, kubeConfig, fileHandler, log)
-	}
-	newHelmClient := func(kubeConfigPath string, log debugLog) (helmApplier, error) {
-		return helm.NewClient(kubeConfigPath, log)
-	} // need to defer helm client instantiation until kubeconfig is available
-
-	return i.initialize(cmd, newDialer, license.NewClient(), fetcher, newAttestationApplier, newHelmClient)
-}
-
-// initialize initializes a Constellation.
-func (i *initCmd) initialize(
-	cmd *cobra.Command, newDialer func(validator atls.Validator) *dialer.Dialer,
-	quotaChecker license.QuotaChecker, configFetcher attestationconfigapi.Fetcher,
-	newAttestationApplier func(io.Writer, string, debugLog) (attestationConfigApplier, error),
-	newHelmClient func(kubeConfigPath string, log debugLog) (helmApplier, error),
-) error {
-	i.log.Debugf("Loading configuration file from %q", i.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
-	conf, err := config.New(i.fileHandler, constants.ConfigFilename, configFetcher, i.flags.force)
-	var configValidationErr *config.ValidationError
-	if errors.As(err, &configValidationErr) {
-		cmd.PrintErrln(configValidationErr.LongMessage())
-	}
-	if err != nil {
-		return err
-	}
-	// cfg validation does not check k8s patch version since upgrade may accept an outdated patch version.
-	k8sVersion, err := versions.NewValidK8sVersion(string(conf.KubernetesVersion), true)
-	if err != nil {
-		return err
-	}
-	if !i.flags.force {
-		if err := validateCLIandConstellationVersionAreEqual(constants.BinaryVersion(), conf.Image, conf.MicroserviceVersion); err != nil {
-			return err
-		}
-	}
-	if conf.GetAttestationConfig().GetVariant().Equal(variant.AWSSEVSNP{}) {
-		cmd.PrintErrln("WARNING: Attestation temporarily relies on AWS nitroTPM. See https://docs.edgeless.systems/constellation/workflows/config#choosing-a-vm-type for more information.")
-	}
-
-	stateFile, err := state.ReadFromFile(i.fileHandler, constants.StateFilename)
-	if err != nil {
-		return fmt.Errorf("reading state file: %w", err)
-	}
-
-	i.log.Debugf("Validated k8s version as %s", k8sVersion)
-	if versions.IsPreviewK8sVersion(k8sVersion) {
-		cmd.PrintErrf("Warning: Constellation with Kubernetes %v is still in preview. Use only for evaluation purposes.\n", k8sVersion)
-	}
-
-	provider := conf.GetProvider()
-	i.log.Debugf("Got provider %s", provider.String())
-	checker := license.NewChecker(quotaChecker, i.fileHandler)
-	if err := checker.CheckLicense(cmd.Context(), provider, conf.Provider, cmd.Printf); err != nil {
-		cmd.PrintErrf("License check failed: %v", err)
-	}
-	i.log.Debugf("Checked license")
-
-	if stateFile.Infrastructure.Azure != nil {
-		conf.UpdateMAAURL(stateFile.Infrastructure.Azure.AttestationURL)
-	}
-
-	i.log.Debugf("Creating aTLS Validator for %s", conf.GetAttestationConfig().GetVariant())
-	validator, err := cloudcmd.NewValidator(cmd, conf.GetAttestationConfig(), i.log)
-	if err != nil {
-		return fmt.Errorf("creating new validator: %w", err)
-	}
-	i.log.Debugf("Created a new validator")
-	serviceAccURI, err := cloudcmd.GetMarshaledServiceAccountURI(conf, i.fileHandler)
-	if err != nil {
-		return err
-	}
-	i.log.Debugf("Successfully marshaled service account URI")
-
-	i.log.Debugf("Generating master secret")
-	masterSecret, err := i.generateMasterSecret(cmd.OutOrStdout())
-	if err != nil {
-		return fmt.Errorf("generating master secret: %w", err)
-	}
-
-	i.log.Debugf("Generating measurement salt")
-	measurementSalt, err := crypto.GenerateRandomBytes(crypto.RNGLengthDefault)
-	if err != nil {
-		return fmt.Errorf("generating measurement salt: %w", err)
-	}
-
-	i.log.Debugf("Setting cluster name to %s", stateFile.Infrastructure.Name)
-
-	cmd.PrintErrln("Note: If you just created the cluster, it can take a few minutes to connect.")
-	i.spinner.Start("Connecting ", false)
-	req := &initproto.InitRequest{
-		KmsUri:               masterSecret.EncodeToURI(),
-		StorageUri:           uri.NoStoreURI,
-		MeasurementSalt:      measurementSalt,
-		KubernetesVersion:    versions.VersionConfigs[k8sVersion].ClusterVersion,
-		KubernetesComponents: versions.VersionConfigs[k8sVersion].KubernetesComponents.ToInitProto(),
-		ConformanceMode:      i.flags.conformance,
-		InitSecret:           stateFile.Infrastructure.InitSecret,
-		ClusterName:          stateFile.Infrastructure.Name,
-		ApiserverCertSans:    stateFile.Infrastructure.APIServerCertSANs,
-	}
-	i.log.Debugf("Sending initialization request")
-	resp, err := i.initCall(cmd.Context(), newDialer(validator), stateFile.Infrastructure.ClusterEndpoint, req)
-	i.spinner.Stop()
-
-	if err != nil {
-		var nonRetriable *nonRetriableError
-		if errors.As(err, &nonRetriable) {
-			cmd.PrintErrln("Cluster initialization failed. This error is not recoverable.")
-			cmd.PrintErrln("Terminate your cluster and try again.")
-			if nonRetriable.logCollectionErr != nil {
-				cmd.PrintErrf("Failed to collect logs from bootstrapper: %s\n", nonRetriable.logCollectionErr)
-			} else {
-				cmd.PrintErrf("Fetched bootstrapper logs are stored in %q\n", i.flags.pathPrefixer.PrefixPrintablePath(constants.ErrorLog))
-			}
-		}
-		return err
-	}
-	i.log.Debugf("Initialization request succeeded")
-
-	bufferedOutput := &bytes.Buffer{}
-	if err := i.writeOutput(stateFile, resp, i.flags.mergeConfigs, bufferedOutput, measurementSalt); err != nil {
-		return err
-	}
-
-	attestationApplier, err := newAttestationApplier(cmd.OutOrStdout(), constants.AdminConfFilename, i.log)
-	if err != nil {
-		return err
-	}
-	if err := attestationApplier.ApplyJoinConfig(cmd.Context(), conf.GetAttestationConfig(), measurementSalt); err != nil {
-		return fmt.Errorf("applying attestation config: %w", err)
-	}
-
-	i.spinner.Start("Installing Kubernetes components ", false)
-	options := helm.Options{
-		Force:            i.flags.force,
-		Conformance:      i.flags.conformance,
-		HelmWaitMode:     i.flags.helmWaitMode,
-		AllowDestructive: helm.DenyDestructive,
-	}
-	helmApplier, err := newHelmClient(constants.AdminConfFilename, i.log)
-	if err != nil {
-		return fmt.Errorf("creating Helm client: %w", err)
-	}
-	executor, includesUpgrades, err := helmApplier.PrepareApply(conf, stateFile, options, serviceAccURI, masterSecret)
-	if err != nil {
-		return fmt.Errorf("getting Helm chart executor: %w", err)
-	}
-	if includesUpgrades {
-		return errors.New("init: helm tried to upgrade charts instead of installing them")
-	}
-	if err := executor.Apply(cmd.Context()); err != nil {
-		return fmt.Errorf("applying Helm charts: %w", err)
-	}
-	i.spinner.Stop()
-	i.log.Debugf("Helm deployment installation succeeded")
-	cmd.Println(bufferedOutput.String())
-	return nil
-}
-
-func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, req *initproto.InitRequest) (*initproto.InitSuccessResponse, error) {
-	doer := &initDoer{
-		dialer:   dialer,
-		endpoint: net.JoinHostPort(ip, strconv.Itoa(constants.BootstrapperPort)),
-		req:      req,
-		log:      i.log,
-		spinner:  i.spinner,
-		fh:       file.NewHandler(afero.NewOsFs()),
-	}
-
-	// Create a wrapper function that allows logging any returned error from the retrier before checking if it's the expected retriable one.
-	serviceIsUnavailable := func(err error) bool {
-		isServiceUnavailable := grpcRetry.ServiceIsUnavailable(err)
-		i.log.Debugf("Encountered error (retriable: %t): %s", isServiceUnavailable, err)
-		return isServiceUnavailable
-	}
-
-	i.log.Debugf("Making initialization call, doer is %+v", doer)
-	retrier := retry.NewIntervalRetrier(doer, 30*time.Second, serviceIsUnavailable)
-	if err := retrier.Do(ctx); err != nil {
-		return nil, err
-	}
-	return doer.resp, nil
 }
 
 type initDoer struct {
@@ -469,120 +192,8 @@ func (d *initDoer) handleGRPCStateChanges(ctx context.Context, wg *sync.WaitGrou
 	})
 }
 
-// writeOutput writes the output of a cluster initialization to the
-// state- / id- / kubeconfig-file and saves it to disk.
-func (i *initCmd) writeOutput(
-	stateFile *state.State,
-	initResp *initproto.InitSuccessResponse,
-	mergeConfig bool, wr io.Writer,
-	measurementSalt []byte,
-) error {
-	fmt.Fprint(wr, "Your Constellation cluster was successfully initialized.\n\n")
-
-	ownerID := hex.EncodeToString(initResp.GetOwnerId())
-	clusterID := hex.EncodeToString(initResp.GetClusterId())
-
-	stateFile.SetClusterValues(state.ClusterValues{
-		MeasurementSalt: measurementSalt,
-		OwnerID:         ownerID,
-		ClusterID:       clusterID,
-	})
-
-	tw := tabwriter.NewWriter(wr, 0, 0, 2, ' ', 0)
-	writeRow(tw, "Constellation cluster identifier", clusterID)
-	writeRow(tw, "Kubernetes configuration", i.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename))
-	tw.Flush()
-	fmt.Fprintln(wr)
-
-	i.log.Debugf("Rewriting cluster server address in kubeconfig to %s", stateFile.Infrastructure.ClusterEndpoint)
-	kubeconfig, err := clientcmd.Load(initResp.GetKubeconfig())
-	if err != nil {
-		return fmt.Errorf("loading kubeconfig: %w", err)
-	}
-	if len(kubeconfig.Clusters) != 1 {
-		return fmt.Errorf("expected exactly one cluster in kubeconfig, got %d", len(kubeconfig.Clusters))
-	}
-	for _, cluster := range kubeconfig.Clusters {
-		kubeEndpoint, err := url.Parse(cluster.Server)
-		if err != nil {
-			return fmt.Errorf("parsing kubeconfig server URL: %w", err)
-		}
-		kubeEndpoint.Host = net.JoinHostPort(stateFile.Infrastructure.ClusterEndpoint, kubeEndpoint.Port())
-		cluster.Server = kubeEndpoint.String()
-	}
-	kubeconfigBytes, err := clientcmd.Write(*kubeconfig)
-	if err != nil {
-		return fmt.Errorf("marshaling kubeconfig: %w", err)
-	}
-
-	if err := i.fileHandler.Write(constants.AdminConfFilename, kubeconfigBytes, file.OptNone); err != nil {
-		return fmt.Errorf("writing kubeconfig: %w", err)
-	}
-	i.log.Debugf("Kubeconfig written to %s", i.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename))
-
-	if mergeConfig {
-		if err := i.merger.mergeConfigs(constants.AdminConfFilename, i.fileHandler); err != nil {
-			writeRow(tw, "Failed to automatically merge kubeconfig", err.Error())
-			mergeConfig = false // Set to false so we don't print the wrong message below.
-		} else {
-			writeRow(tw, "Kubernetes configuration merged with default config", "")
-		}
-	}
-
-	if err := stateFile.WriteToFile(i.fileHandler, constants.StateFilename); err != nil {
-		return fmt.Errorf("writing Constellation state file: %w", err)
-	}
-
-	i.log.Debugf("Constellation state file written to %s", i.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename))
-
-	if !mergeConfig {
-		fmt.Fprintln(wr, "You can now connect to your cluster by executing:")
-
-		exportPath, err := filepath.Abs(constants.AdminConfFilename)
-		if err != nil {
-			return fmt.Errorf("getting absolute path to kubeconfig: %w", err)
-		}
-
-		fmt.Fprintf(wr, "\texport KUBECONFIG=%q\n", exportPath)
-	} else {
-		fmt.Fprintln(wr, "Constellation kubeconfig merged with default config.")
-
-		if i.merger.kubeconfigEnvVar() != "" {
-			fmt.Fprintln(wr, "Warning: KUBECONFIG environment variable is set.")
-			fmt.Fprintln(wr, "You may need to unset it to use the default config and connect to your cluster.")
-		} else {
-			fmt.Fprintln(wr, "You can now connect to your cluster.")
-		}
-	}
-	return nil
-}
-
 func writeRow(wr io.Writer, col1 string, col2 string) {
 	fmt.Fprint(wr, col1, "\t", col2, "\n")
-}
-
-// generateMasterSecret reads a base64 encoded master secret from file or generates a new 32 byte secret.
-func (i *initCmd) generateMasterSecret(outWriter io.Writer) (uri.MasterSecret, error) {
-	// No file given, generate a new secret, and save it to disk
-	i.log.Debugf("Generating new master secret")
-	key, err := crypto.GenerateRandomBytes(crypto.MasterSecretLengthDefault)
-	if err != nil {
-		return uri.MasterSecret{}, err
-	}
-	salt, err := crypto.GenerateRandomBytes(crypto.RNGLengthDefault)
-	if err != nil {
-		return uri.MasterSecret{}, err
-	}
-	secret := uri.MasterSecret{
-		Key:  key,
-		Salt: salt,
-	}
-	i.log.Debugf("Generated master secret key and salt values")
-	if err := i.fileHandler.WriteJSON(constants.MasterSecretFilename, secret, file.OptNone); err != nil {
-		return uri.MasterSecret{}, err
-	}
-	fmt.Fprintf(outWriter, "Your Constellation master secret was successfully written to %q\n", i.flags.pathPrefixer.PrefixPrintablePath(constants.MasterSecretFilename))
-	return secret, nil
 }
 
 type configMerger interface {
@@ -655,10 +266,6 @@ func (e *nonRetriableError) Error() string {
 // Unwrap returns the wrapped error.
 func (e *nonRetriableError) Unwrap() error {
 	return e.err
-}
-
-type attestationConfigApplier interface {
-	ApplyJoinConfig(ctx context.Context, newAttestConfig config.AttestationCfg, measurementSalt []byte) error
 }
 
 type helmApplier interface {
