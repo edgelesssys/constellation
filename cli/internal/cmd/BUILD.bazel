@@ -5,6 +5,9 @@ go_library(
     name = "cmd",
     srcs = [
         "apply.go",
+        "applyhelm.go",
+        "applyinit.go",
+        "applyterraform.go",
         "cloud.go",
         "cmd.go",
         "config.go",
