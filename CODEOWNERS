@@ -6,7 +6,6 @@
 /bazel/sh @katexochen
 /bootstrapper @3u13r
 /cli/internal/cloudcmd @daniel-weisse
-/cli/internal/clusterid @malt3
 /cli/internal/cmd/upgrade* @derpsteb
 /cli/internal/featureset @malt3
 /cli/internal/helm @derpsteb

@@ -11,13 +11,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
-	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
@@ -31,7 +29,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
-	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/rogpeppe/go-internal/diff"
 	"github.com/spf13/afero"
@@ -114,11 +111,6 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("setting up cluster upgrader: %w", err)
 	}
 
-	// Set up terraform client to show existing cluster resources and information required for Helm upgrades
-	tfShower, err := terraform.New(cmd.Context(), constants.TerraformWorkingDir)
-	if err != nil {
-		return fmt.Errorf("setting up terraform client: %w", err)
-	}
 	helmClient, err := helm.NewClient(constants.AdminConfFilename, log)
 	if err != nil {
 		return fmt.Errorf("creating Helm client: %w", err)
@@ -129,7 +121,6 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 		helmApplier:     helmClient,
 		clusterUpgrader: clusterUpgrader,
 		configFetcher:   configFetcher,
-		clusterShower:   tfShower,
 		fileHandler:     fileHandler,
 		log:             log,
 	}
@@ -141,13 +132,8 @@ type upgradeApplyCmd struct {
 	kubeUpgrader    kubernetesUpgrader
 	clusterUpgrader clusterUpgrader
 	configFetcher   attestationconfigapi.Fetcher
-	clusterShower   infrastructureShower
 	fileHandler     file.Handler
 	log             debugLog
-}
-
-type infrastructureShower interface {
-	ShowInfrastructure(ctx context.Context, provider cloudprovider.Provider) (state.Infrastructure, error)
 }
 
 func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, flags upgradeApplyFlags) error {
@@ -178,30 +164,8 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 	}
 
 	stateFile, err := state.ReadFromFile(u.fileHandler, constants.StateFilename)
-	// TODO(msanft): Remove reading from idFile once v2.12.0 is released and read from state file directly.
-	// For now, this is only here to ensure upgradability from an id-file to a state file version.
-	if errors.Is(err, fs.ErrNotExist) {
-		u.log.Debugf("%s does not exist in current directory, falling back to reading from %s",
-			constants.StateFilename, constants.ClusterIDsFilename)
-		var idFile clusterid.File
-		if err := u.fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil {
-			return fmt.Errorf("reading cluster ID file: %w", err)
-		}
-		// Convert id-file to state file
-		stateFile = state.NewFromIDFile(idFile, conf)
-		if stateFile.Infrastructure.Azure != nil {
-			conf.UpdateMAAURL(stateFile.Infrastructure.Azure.AttestationURL)
-		}
-	} else if err != nil {
+	if err != nil {
 		return fmt.Errorf("reading state file: %w", err)
-	}
-
-	// Apply migrations necessary for the upgrade
-	if err := migrateFrom2_10(cmd.Context(), u.kubeUpgrader); err != nil {
-		return fmt.Errorf("applying migration for upgrading from v2.10: %w", err)
-	}
-	if err := migrateFrom2_11(cmd.Context(), u.kubeUpgrader); err != nil {
-		return fmt.Errorf("applying migration for upgrading from v2.11: %w", err)
 	}
 
 	if err := u.confirmAndUpgradeAttestationConfig(cmd, conf.GetAttestationConfig(), stateFile.ClusterValues.MeasurementSalt, flags); err != nil {
@@ -211,47 +175,37 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 	// If infrastructure phase is skipped, we expect the new infrastructure
 	// to be in the Terraform configuration already. Otherwise, perform
 	// the Terraform migrations.
-	var postMigrationInfraState state.Infrastructure
-	if flags.skipPhases.contains(skipInfrastructurePhase) {
-		// TODO(msanft): Once v2.12.0 is released, this should be removed and the state should be read
-		// from the state file instead, as it will be the only source of truth for the cluster's infrastructure.
-		postMigrationInfraState, err = u.clusterShower.ShowInfrastructure(cmd.Context(), conf.GetProvider())
+	if !flags.skipPhases.contains(skipInfrastructurePhase) {
+		migrationRequired, err := u.planTerraformMigration(cmd, conf)
 		if err != nil {
-			return fmt.Errorf("getting Terraform state: %w", err)
+			return fmt.Errorf("planning Terraform migrations: %w", err)
 		}
-	} else {
-		postMigrationInfraState, err = u.migrateTerraform(cmd, conf, upgradeDir, flags)
-		if err != nil {
-			return fmt.Errorf("performing Terraform migrations: %w", err)
+
+		if migrationRequired {
+			postMigrationInfraState, err := u.migrateTerraform(cmd, conf, upgradeDir, flags)
+			if err != nil {
+				return fmt.Errorf("performing Terraform migrations: %w", err)
+			}
+
+			// Merge the pre-upgrade state with the post-migration infrastructure values
+			if _, err := stateFile.Merge(
+				// temporary state with post-migration infrastructure values
+				state.New().SetInfrastructure(postMigrationInfraState),
+			); err != nil {
+				return fmt.Errorf("merging pre-upgrade state with post-migration infrastructure values: %w", err)
+			}
+
+			// Write the post-migration state to disk
+			if err := stateFile.WriteToFile(u.fileHandler, constants.StateFilename); err != nil {
+				return fmt.Errorf("writing state file: %w", err)
+			}
 		}
-	}
-
-	// Merge the pre-upgrade state with the post-migration infrastructure values
-	if _, err := stateFile.Merge(
-		// temporary state with post-migration infrastructure values
-		state.New().SetInfrastructure(postMigrationInfraState),
-	); err != nil {
-		return fmt.Errorf("merging pre-upgrade state with post-migration infrastructure values: %w", err)
-	}
-
-	// Write the post-migration state to disk
-	if err := stateFile.WriteToFile(u.fileHandler, constants.StateFilename); err != nil {
-		return fmt.Errorf("writing state file: %w", err)
-	}
-
-	// TODO(msanft): Remove this after v2.12.0 is released, as we do not support
-	// the id-file starting from v2.13.0.
-	err = u.fileHandler.RenameFile(constants.ClusterIDsFilename, constants.ClusterIDsFilename+".old")
-	if !errors.Is(err, fs.ErrNotExist) && err != nil {
-		return fmt.Errorf("removing cluster ID file: %w", err)
 	}
 
 	// extend the clusterConfig cert SANs with any of the supported endpoints:
 	// - (legacy) public IP
 	// - fallback endpoint
 	// - custom (user-provided) endpoint
-	// TODO(msanft): Remove the comment below once v2.12.0 is released.
-	// At this point, state file and id-file should have been merged, so we can use the state file.
 	sans := append([]string{stateFile.Infrastructure.ClusterEndpoint, conf.CustomEndpoint}, stateFile.Infrastructure.APIServerCertSANs...)
 	if err := u.kubeUpgrader.ExtendClusterConfigCertSANs(cmd.Context(), sans); err != nil {
 		return fmt.Errorf("extending cert SANs: %w", err)
@@ -304,17 +258,13 @@ func diffAttestationCfg(currentAttestationCfg config.AttestationCfg, newAttestat
 	return diff, nil
 }
 
-// migrateTerraform checks if the Constellation version the cluster is being upgraded to requires a migration
-// of cloud resources with Terraform. If so, the migration is performed and the post-migration infrastructure state is returned.
-// If no migration is required, the current (pre-upgrade) infrastructure state is returned.
-func (u *upgradeApplyCmd) migrateTerraform(
-	cmd *cobra.Command, conf *config.Config, upgradeDir string, flags upgradeApplyFlags,
-) (state.Infrastructure, error) {
+// planTerraformMigration checks if the Constellation version the cluster is being upgraded to requires a migration.
+func (u *upgradeApplyCmd) planTerraformMigration(cmd *cobra.Command, conf *config.Config) (bool, error) {
 	u.log.Debugf("Planning Terraform migrations")
 
 	vars, err := cloudcmd.TerraformUpgradeVars(conf)
 	if err != nil {
-		return state.Infrastructure{}, fmt.Errorf("parsing upgrade variables: %w", err)
+		return false, fmt.Errorf("parsing upgrade variables: %w", err)
 	}
 	u.log.Debugf("Using Terraform variables:\n%v", vars)
 
@@ -328,15 +278,15 @@ func (u *upgradeApplyCmd) migrateTerraform(
 	// 	  u.upgrader.AddManualStateMigration(migration)
 	// }
 
-	hasDiff, err := u.clusterUpgrader.PlanClusterUpgrade(cmd.Context(), cmd.OutOrStdout(), vars, conf.GetProvider())
-	if err != nil {
-		return state.Infrastructure{}, fmt.Errorf("planning terraform migrations: %w", err)
-	}
-	if !hasDiff {
-		u.log.Debugf("No Terraform diff detected")
-		return u.clusterShower.ShowInfrastructure(cmd.Context(), conf.GetProvider())
-	}
+	return u.clusterUpgrader.PlanClusterUpgrade(cmd.Context(), cmd.OutOrStdout(), vars, conf.GetProvider())
+}
 
+// migrateTerraform checks if the Constellation version the cluster is being upgraded to requires a migration
+// of cloud resources with Terraform. If so, the migration is performed and the post-migration infrastructure state is returned.
+// If no migration is required, the current (pre-upgrade) infrastructure state is returned.
+func (u *upgradeApplyCmd) migrateTerraform(
+	cmd *cobra.Command, conf *config.Config, upgradeDir string, flags upgradeApplyFlags,
+) (state.Infrastructure, error) {
 	// If there are any Terraform migrations to apply, ask for confirmation
 	fmt.Fprintln(cmd.OutOrStdout(), "The upgrade requires a migration of Constellation cloud resources by applying an updated Terraform template. Please manually review the suggested changes below.")
 	if !flags.yes {
@@ -513,34 +463,6 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(
 	return nil
 }
 
-// migrateFrom2_10 applies migrations necessary for upgrading from v2.10 to v2.11
-// TODO(v2.11): Remove this function after v2.11 is released.
-func migrateFrom2_10(ctx context.Context, kubeUpgrader kubernetesUpgrader) error {
-	// Sanity check to make sure we only run migrations on upgrades with CLI version 2.10 < v < 2.12
-	if !constants.BinaryVersion().MajorMinorEqual(semver.NewFromInt(2, 11, 0, "")) {
-		return nil
-	}
-
-	if err := kubeUpgrader.RemoveAttestationConfigHelmManagement(ctx); err != nil {
-		return fmt.Errorf("removing helm management from attestation config: %w", err)
-	}
-	return nil
-}
-
-// migrateFrom2_11 applies migrations necessary for upgrading from v2.11 to v2.12
-// TODO(v2.12): Remove this function after v2.12 is released.
-func migrateFrom2_11(ctx context.Context, kubeUpgrader kubernetesUpgrader) error {
-	// Sanity check to make sure we only run migrations on upgrades with CLI version 2.11 < v < 2.13
-	if !constants.BinaryVersion().MajorMinorEqual(semver.NewFromInt(2, 12, 0, "")) {
-		return nil
-	}
-
-	if err := kubeUpgrader.RemoveHelmKeepAnnotation(ctx); err != nil {
-		return fmt.Errorf("removing helm keep annotation: %w", err)
-	}
-	return nil
-}
-
 func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
 	workDir, err := cmd.Flags().GetString("workspace")
 	if err != nil {
@@ -641,10 +563,6 @@ type kubernetesUpgrader interface {
 	ApplyJoinConfig(ctx context.Context, newAttestConfig config.AttestationCfg, measurementSalt []byte) error
 	BackupCRs(ctx context.Context, crds []apiextensionsv1.CustomResourceDefinition, upgradeDir string) error
 	BackupCRDs(ctx context.Context, upgradeDir string) ([]apiextensionsv1.CustomResourceDefinition, error)
-	// TODO(v2.11): Remove this function after v2.11 is released.
-	RemoveAttestationConfigHelmManagement(ctx context.Context) error
-	// TODO(v2.12): Remove this function after v2.12 is released.
-	RemoveHelmKeepAnnotation(ctx context.Context) error
 }
 
 type clusterUpgrader interface {

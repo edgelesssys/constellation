@@ -11,8 +11,6 @@ import (
 	"fmt"
 
 	"dario.cat/mergo"
-	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
-	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 )
 
@@ -42,31 +40,6 @@ func New() *State {
 	return &State{
 		Version: Version1,
 	}
-}
-
-// NewFromIDFile creates a new cluster state file from the given ID file and config.
-func NewFromIDFile(idFile clusterid.File, cfg *config.Config) *State {
-	s := New().
-		SetClusterValues(ClusterValues{
-			OwnerID:         idFile.OwnerID,
-			ClusterID:       idFile.ClusterID,
-			MeasurementSalt: idFile.MeasurementSalt,
-		}).
-		SetInfrastructure(Infrastructure{
-			UID:               idFile.UID,
-			ClusterEndpoint:   idFile.IP,
-			APIServerCertSANs: idFile.APIServerCertSANs,
-			InitSecret:        idFile.InitSecret,
-			Name:              clusterid.GetClusterName(cfg, idFile),
-		})
-
-	if idFile.AttestationURL != "" {
-		s.Infrastructure.Azure = &Azure{
-			AttestationURL: idFile.AttestationURL,
-		}
-	}
-
-	return s
 }
 
 // SetInfrastructure sets the infrastructure state.
