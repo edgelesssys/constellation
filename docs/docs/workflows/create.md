@@ -92,7 +92,7 @@ terraform init
 terraform apply
 ```
 
-And retrieve the necessary outputs from your configuration. When using another infrastructure management strategy than Terraform, retrieve the outputs accordingly, e.g. through your CSP's portal.
+Retrieve the necessary outputs from your configuration. When using another infrastructure management strategy than Terraform, retrieve the outputs accordingly, e.g. through your CSP's portal.
 
 ```bash
 CONSTELL_IP=$(terraform output ip)
