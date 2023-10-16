@@ -1,0 +1,19 @@
+sh_binary(
+    name = "update_packages",
+    srcs = ["update_packages.sh"],
+    data = [
+        "dnf.conf",
+        "packages.txt",
+        "@awscli//:bin/aws",
+        "@dnf5//:bin/dnf5",
+    ] + glob([
+        "upstream-repos/*.repo",
+    ]),
+    env = {
+        "AWS": "$(rootpath @awscli//:bin/aws)",
+        "DNF5": "$(rootpath @dnf5//:bin/dnf5)",
+        "DNF_CONF": "$(rootpath dnf.conf)",
+        "PACKAGES": "$(rootpath packages.txt)",
+        "REPOSDIR": "$(rootpath upstream-repos/fedora.repo) ",
+    },
+)
