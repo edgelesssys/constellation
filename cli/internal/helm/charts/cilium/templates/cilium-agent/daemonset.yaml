@@ -8,7 +8,7 @@
   {{- $defaultKeepDeprecatedProbes = false -}}
 {{- end -}}
 
-{{- $kubeProxyReplacement := (coalesce .Values.kubeProxyReplacement "disabled") -}}
+{{- $kubeProxyReplacement := (coalesce .Values.kubeProxyReplacement "false") -}}
 
 ---
 apiVersion: apps/v1
@@ -16,8 +16,14 @@ kind: DaemonSet
 metadata:
   name: cilium
   namespace: {{ .Release.Namespace }}
+  {{- with .Values.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   labels:
     k8s-app: cilium
+    app.kubernetes.io/part-of: cilium
+    app.kubernetes.io/name: cilium-agent
     {{- if .Values.keepDeprecatedLabels }}
     kubernetes.io/cluster-service: "true"
     {{- if and .Values.gke.enabled (eq .Release.Namespace "kube-system" ) }}
@@ -52,14 +58,18 @@ spec:
         # in AppArmor.
         container.apparmor.security.beta.kubernetes.io/cilium-agent: "unconfined"
         container.apparmor.security.beta.kubernetes.io/clean-cilium-state: "unconfined"
+        {{- if .Values.cgroup.autoMount.enabled }}
         container.apparmor.security.beta.kubernetes.io/mount-cgroup: "unconfined"
         container.apparmor.security.beta.kubernetes.io/apply-sysctl-overwrites: "unconfined"
+        {{- end }}
         {{- end }}
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
       labels:
         k8s-app: cilium
+        app.kubernetes.io/name: cilium-agent
+        app.kubernetes.io/part-of: cilium
         {{- if .Values.keepDeprecatedLabels }}
         kubernetes.io/cluster-service: "true"
         {{- end }}
@@ -69,6 +79,10 @@ spec:
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
@@ -182,18 +196,10 @@ spec:
               fieldPath: metadata.namespace
         - name: CILIUM_CLUSTERMESH_CONFIG
           value: /var/lib/cilium/clustermesh/
-        - name: CILIUM_CNI_CHAINING_MODE
+        - name: GOMEMLIMIT
           valueFrom:
-            configMapKeyRef:
-              name: cilium-config
-              key: cni-chaining-mode
-              optional: true
-        - name: CILIUM_CUSTOM_CNI_CONF
-          valueFrom:
-            configMapKeyRef:
-              name: cilium-config
-              key: custom-cni-conf
-              optional: true
+            resourceFieldRef:
+              resource: limits.memory
         {{- if .Values.k8sServiceHost }}
         - name: KUBERNETES_SERVICE_HOST
           value: {{ .Values.k8sServiceHost | quote }}
@@ -207,13 +213,15 @@ spec:
         {{- end }}
         {{- if .Values.cni.install }}
         lifecycle:
+          {{- if ne .Values.cni.chainingMode "aws-cni" }}
           postStart:
             exec:
               command:
-              - "/cni-install.sh"
-              - "--enable-debug={{ .Values.debug.enabled }}"
-              - "--cni-exclusive={{ .Values.cni.exclusive }}"
-              - "--log-file={{ .Values.cni.logFile }}"
+              - "bash"
+              - "-c"
+              - |
+                {{- tpl (.Files.Get "files/agent/poststart-eni.bash") . | nindent 20 }}
+          {{- end }}
           preStop:
             exec:
               command:
@@ -225,21 +233,19 @@ spec:
         {{- end }}
         {{- if or .Values.prometheus.enabled .Values.hubble.metrics.enabled }}
         ports:
-        {{- if .Values.hubble.peerService.enabled }}
         - name: peer-service
           containerPort: {{ .Values.hubble.peerService.targetPort }}
           hostPort: {{ .Values.hubble.peerService.targetPort }}
           protocol: TCP
-        {{- end }}
         {{- if .Values.prometheus.enabled }}
         - name: prometheus
           containerPort: {{ .Values.prometheus.port }}
           hostPort: {{ .Values.prometheus.port }}
           protocol: TCP
-        {{- if .Values.proxy.prometheus.enabled }}
+        {{- if and .Values.proxy.prometheus.enabled .Values.envoy.prometheus.enabled (not .Values.envoy.enabled) }}
         - name: envoy-metrics
-          containerPort: {{ .Values.proxy.prometheus.port }}
-          hostPort: {{ .Values.proxy.prometheus.port }}
+          containerPort: {{ .Values.proxy.prometheus.port | default .Values.envoy.prometheus.port }}
+          hostPort: {{ .Values.proxy.prometheus.port | default .Values.envoy.prometheus.port }}
           protocol: TCP
         {{- end }}
         {{- end }}
@@ -255,43 +261,29 @@ spec:
           privileged: true
           {{- else }}
           seLinuxOptions:
-            level: 's0'
-            # Running with spc_t since we have removed the privileged mode.
-            # Users can change it to a different type as long as they have the
-            # type available on the system.
-            type: 'spc_t'
+            {{- with .Values.securityContext.seLinuxOptions }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           capabilities:
             add:
-              # Use to set socket permission
-              - CHOWN
-              # Used to terminate envoy child process
-              - KILL
-              # Used since cilium modifies routing tables, etc...
-              - NET_ADMIN
-              # Used since cilium creates raw sockets, etc...
-              - NET_RAW
-              # Used since cilium monitor uses mmap
-              - IPC_LOCK
-              # Used in iptables. Consider removing once we are iptables-free
-              - SYS_MODULE
-              # We need it for now but might not need it for >= 5.11 specially
-              # for the 'SYS_RESOURCE'.
-              # In >= 5.8 there's already BPF and PERMON capabilities
-              - SYS_ADMIN
-              # Could be an alternative for the SYS_ADMIN for the RLIMIT_NPROC
-              - SYS_RESOURCE
-              # Both PERFMON and BPF requires kernel 5.8, container runtime
-              # cri-o >= v1.22.0 or containerd >= v1.5.0.
-              # If available, SYS_ADMIN can be removed.
-              #- PERFMON
-              #- BPF
-              {{- with .Values.securityContext.extraCapabilities }}
-              {{- toYaml . | nindent 14 }}
-              {{- end }}
+            {{- with .Values.securityContext.capabilities.ciliumAgent }}
+            {{- toYaml . | nindent 14 }}
+            {{- end }}
             drop:
               - ALL
           {{- end }}
+        terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
+        {{- if .Values.authentication.mutual.spire.enabled }}
+        - name: spire-agent-socket
+          mountPath: {{ dir .Values.authentication.mutual.spire.adminSocketPath }}
+          readOnly: false
+        {{- end }}
+        {{- if .Values.envoy.enabled }}
+        - name: envoy-sockets
+          mountPath: /var/run/cilium/envoy/sockets
+          readOnly: false
+        {{- end }}
         {{- if not .Values.securityContext.privileged }}
         # Unprivileged containers need to mount /proc/sys/net from the host
         # to have write access
@@ -303,7 +295,7 @@ spec:
           name: host-proc-sys-kernel
         {{- end}}
         {{- /* CRI-O already mounts the BPF filesystem */ -}}
-        {{- if not (eq .Values.containerRuntime.integration "crio") }}
+        {{- if and .Values.bpf.autoMount.enabled (not (eq .Values.containerRuntime.integration "crio")) }}
         - name: bpf-maps
           mountPath: /sys/fs/bpf
           {{- if .Values.securityContext.privileged }}
@@ -323,8 +315,6 @@ spec:
         {{- end}}
         - name: cilium-run
           mountPath: /var/run/cilium
-        - name: cni-path
-          mountPath: /host/opt/cni/bin
         - name: etc-cni-netd
           mountPath: {{ .Values.cni.hostConfDirMountPath }}
         {{- if .Values.etcd.enabled }}
@@ -339,9 +329,6 @@ spec:
         {{- end }}
         - name: clustermesh-secrets
           mountPath: /var/lib/cilium/clustermesh
-          readOnly: true
-        - name: cilium-config-path
-          mountPath: /tmp/cilium/config-map
           readOnly: true
         {{- if .Values.ipMasqAgent.enabled }}
         - name: ip-masq-agent
@@ -378,6 +365,8 @@ spec:
           mountPath: /var/lib/cilium/tls/hubble
           readOnly: true
         {{- end }}
+        - name: tmp
+          mountPath: /tmp
         {{- range .Values.extraHostPathMounts }}
         - name: {{ .name }}
           mountPath: {{ .mountPath }}
@@ -402,10 +391,11 @@ spec:
           for i in {1..5}; do \
             [ -S /var/run/cilium/monitor1_2.sock ] && break || sleep 10;\
             done; \
-          cilium monitor
+          cilium-dbg monitor
         {{- range $type := .Values.monitor.eventTypes -}}
           {{ " " }}--type={{ $type }}
         {{- end }}
+        terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
         - name: cilium-run
           mountPath: /var/run/cilium
@@ -414,7 +404,51 @@ spec:
           {{- toYaml . | trim | nindent 10 }}
         {{- end }}
       {{- end }}
+      {{- if .Values.extraContainers }}
+      {{- toYaml .Values.extraContainers | nindent 6 }}
+      {{- end }}
       initContainers:
+      - name: config
+        image: {{ include "cilium.image" .Values.image | quote }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        command:
+        - cilium-dbg
+        - build-config
+        {{- if (not (kindIs "invalid" .Values.daemon.configSources)) }}
+        - "--source={{.Values.daemon.configSources}}"
+        {{- end }}
+        {{- if (not (kindIs "invalid" .Values.daemon.allowedConfigOverrides)) }}
+        - "--allow-config-keys={{.Values.daemon.allowedConfigOverrides}}"
+        {{- end }}
+        {{- if (not (kindIs "invalid" .Values.daemon.blockedConfigOverrides)) }}
+        - "--deny-config-keys={{.Values.daemon.blockedConfigOverrides}}"
+        {{- end }}
+        env:
+        - name: K8S_NODE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        - name: CILIUM_K8S_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        {{- if .Values.k8sServiceHost }}
+        - name: KUBERNETES_SERVICE_HOST
+          value: {{ .Values.k8sServiceHost | quote }}
+        {{- end }}
+        {{- if .Values.k8sServicePort }}
+        - name: KUBERNETES_SERVICE_PORT
+          value: {{ .Values.k8sServicePort | quote }}
+        {{- end }}
+        {{- with .Values.extraEnv }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        terminationMessagePolicy: FallbackToLogsOnError
       {{- if .Values.cgroup.autoMount.enabled }}
       # Required to mount cgroup2 filesystem on the underlying Kubernetes node.
       # We use nsenter command with host's cgroup and mount namespaces enabled.
@@ -426,6 +460,10 @@ spec:
           value: {{ .Values.cgroup.hostRoot }}
         - name: BIN_PATH
           value: {{ .Values.cni.binPath }}
+        {{- with .Values.cgroup.autoMount.resources }}
+        resources:
+          {{- toYaml . | trim | nindent 10 }}
+        {{- end }}
         command:
         - sh
         - -ec
@@ -443,25 +481,22 @@ spec:
           mountPath: /hostproc
         - name: cni-path
           mountPath: /hostbin
+        terminationMessagePolicy: FallbackToLogsOnError
         securityContext:
           {{- if .Values.securityContext.privileged }}
           privileged: true
           {{- else }}
           seLinuxOptions:
-            level: 's0'
-            # Running with spc_t since we have removed the privileged mode.
-            # Users can change it to a different type as long as they have the
-            # type available on the system.
-            type: 'spc_t'
+            {{- with .Values.securityContext.seLinuxOptions }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           capabilities:
+            add:
+            {{- with .Values.securityContext.capabilities.mountCgroup }}
+            {{- toYaml . | nindent 14 }}
+            {{- end }}
             drop:
               - ALL
-            add:
-              # Only used for 'mount' cgroup
-              - SYS_ADMIN
-              # Used for nsenter
-              - SYS_CHROOT
-              - SYS_PTRACE
           {{- end}}
       - name: apply-sysctl-overwrites
         image: {{ include "cilium.image" .Values.image | quote }}
@@ -486,28 +521,25 @@ spec:
           mountPath: /hostproc
         - name: cni-path
           mountPath: /hostbin
+        terminationMessagePolicy: FallbackToLogsOnError
         securityContext:
           {{- if .Values.securityContext.privileged }}
           privileged: true
           {{- else }}
           seLinuxOptions:
-            level: 's0'
-            # Running with spc_t since we have removed the privileged mode.
-            # Users can change it to a different type as long as they have the
-            # type available on the system.
-            type: 'spc_t'
+            {{- with .Values.securityContext.seLinuxOptions }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           capabilities:
+            add:
+            {{- with .Values.securityContext.capabilities.applySysctlOverwrites }}
+            {{- toYaml . | nindent 14 }}
+            {{- end }}
             drop:
               - ALL
-            add:
-              # Required in order to access host's /etc/sysctl.d dir
-              - SYS_ADMIN
-              # Used for nsenter
-              - SYS_CHROOT
-              - SYS_PTRACE
           {{- end}}
       {{- end }}
-      {{- if not .Values.securityContext.privileged }}
+      {{- if and .Values.bpf.autoMount.enabled (not .Values.securityContext.privileged) }}
       # Mount the bpf fs if it is not mounted. We will perform this task
       # from a privileged container because the mount propagation bidirectional
       # only works from privileged containers.
@@ -520,10 +552,11 @@ spec:
         - /bin/bash
         - -c
         - --
+        terminationMessagePolicy: FallbackToLogsOnError
         securityContext:
           privileged: true
       {{- /* CRI-O already mounts the BPF filesystem */ -}}
-      {{- if not (eq .Values.containerRuntime.integration "crio") }}
+      {{- if and .Values.bpf.autoMount.enabled (not (eq .Values.containerRuntime.integration "crio")) }}
         volumeMounts:
         - name: bpf-maps
           mountPath: /sys/fs/bpf
@@ -542,6 +575,7 @@ spec:
             echo "Waiting on node-init to run...";
             sleep 1;
           done
+        terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
         - name: cilium-bootstrap-file-dir
           mountPath: "/tmp/cilium-bootstrap.d"
@@ -564,6 +598,12 @@ spec:
               name: cilium-config
               key: clean-cilium-bpf-state
               optional: true
+        - name: WRITE_CNI_CONF_WHEN_READY
+          valueFrom:
+            configMapKeyRef:
+              name: cilium-config
+              key: write-cni-conf-when-ready
+              optional: true
         {{- if .Values.k8sServiceHost }}
         - name: KUBERNETES_SERVICE_HOST
           value: {{ .Values.k8sServiceHost | quote }}
@@ -575,43 +615,26 @@ spec:
         {{- with .Values.extraEnv }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
+        terminationMessagePolicy: FallbackToLogsOnError
         securityContext:
           {{- if .Values.securityContext.privileged }}
           privileged: true
           {{- else }}
           seLinuxOptions:
-            level: 's0'
-            # Running with spc_t since we have removed the privileged mode.
-            # Users can change it to a different type as long as they have the
-            # type available on the system.
-            type: 'spc_t'
+            {{- with .Values.securityContext.seLinuxOptions }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           capabilities:
-            # Most of the capabilities here are the same ones used in the
-            # cilium-agent's container because this container can be used to
-            # uninstall all Cilium resources, and therefore it is likely that
-            # will need the same capabilities.
             add:
-              # Used since cilium modifies routing tables, etc...
-              - NET_ADMIN
-              # Used in iptables. Consider removing once we are iptables-free
-              - SYS_MODULE
-              # We need it for now but might not need it for >= 5.11 specially
-              # for the 'SYS_RESOURCE'.
-              # In >= 5.8 there's already BPF and PERMON capabilities
-              - SYS_ADMIN
-              # Could be an alternative for the SYS_ADMIN for the RLIMIT_NPROC
-              - SYS_RESOURCE
-              # Both PERFMON and BPF requires kernel 5.8, container runtime
-              # cri-o >= v1.22.0 or containerd >= v1.5.0.
-              # If available, SYS_ADMIN can be removed.
-              #- PERFMON
-              #- BPF
+            {{- with .Values.securityContext.capabilities.cleanCiliumState }}
+            {{- toYaml . | nindent 14 }}
+            {{- end }}
             drop:
               - ALL
           {{- end}}
         volumeMounts:
         {{- /* CRI-O already mounts the BPF filesystem */ -}}
-        {{- if not (eq .Values.containerRuntime.integration "crio") }}
+        {{- if and .Values.bpf.autoMount.enabled (not (eq .Values.containerRuntime.integration "crio")) }}
         - name: bpf-maps
           mountPath: /sys/fs/bpf
         {{- end }}
@@ -625,7 +648,7 @@ spec:
         resources:
           {{- toYaml . | trim | nindent 10 }}
         {{- end }}
-      {{- if and .Values.waitForKubeProxy (ne $kubeProxyReplacement "strict") }}
+      {{- if and .Values.waitForKubeProxy (and (ne $kubeProxyReplacement "strict") (ne $kubeProxyReplacement "true"))  }}
       - name: wait-for-kube-proxy
         image: {{ include "cilium.image" .Values.image | quote }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
@@ -656,11 +679,41 @@ spec:
               echo "Waiting for kube-proxy to create iptables rules...";
               sleep 1;
             done
+        terminationMessagePolicy: FallbackToLogsOnError
       {{- end }} # wait-for-kube-proxy
+      {{- if .Values.cni.install }}
+      # Install the CNI binaries in an InitContainer so we don't have a writable host mount in the agent
+      - name: install-cni-binaries
+        image: {{ include "cilium.image" .Values.image | quote }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        command:
+          - "/install-plugin.sh"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 10Mi
+        securityContext:
+          {{- if .Values.securityContext.privileged }}
+          privileged: true
+          {{- else }}
+          seLinuxOptions:
+            {{- with .Values.securityContext.seLinuxOptions }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- end }}
+          capabilities:
+            drop:
+              - ALL
+        terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+          - name: cni-path
+            mountPath: /host/opt/cni/bin
+      {{- end }} # .Values.cni.install
       restartPolicy: Always
       priorityClassName: {{ include "cilium.priorityClass" (list $ .Values.priorityClassName "system-node-critical") }}
       serviceAccount: {{ .Values.serviceAccounts.cilium.name | quote }}
       serviceAccountName: {{ .Values.serviceAccounts.cilium.name | quote }}
+      automountServiceAccountToken: {{ .Values.serviceAccounts.cilium.automount }}
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
       hostNetwork: true
       {{- if and .Values.etcd.managed (not .Values.etcd.k8sService) }}
@@ -682,7 +735,7 @@ spec:
       tolerations:
         {{- toYaml . | trim | nindent 8 }}
       {{- end }}
-      {{- if and .Values.clustermesh.useAPIServer .Values.clustermesh.config.enabled }}
+      {{- if and .Values.clustermesh.config.enabled (not (and .Values.clustermesh.useAPIServer .Values.clustermesh.apiserver.kvstoremesh.enabled )) }}
       hostAliases:
       {{- range $cluster := .Values.clustermesh.config.clusters }}
       {{- range $ip := $cluster.ips }}
@@ -692,13 +745,16 @@ spec:
       {{- end }}
       {{- end }}
       volumes:
+        # For sharing configuration between the "config" initContainer and the agent
+      - name: tmp
+        emptyDir: {}
         # To keep state between restarts / upgrades
       - name: cilium-run
         hostPath:
           path: {{ .Values.daemon.runPath }}
           type: DirectoryOrCreate
       {{- /* CRI-O already mounts the BPF filesystem */ -}}
-      {{- if not (eq .Values.containerRuntime.integration "crio") }}
+      {{- if and .Values.bpf.autoMount.enabled (not (eq .Values.containerRuntime.integration "crio")) }}
         # To keep state between restarts / upgrades for bpf maps
       - name: bpf-maps
         hostPath:
@@ -736,6 +792,19 @@ spec:
         hostPath:
           path: /run/xtables.lock
           type: FileOrCreate
+      {{- if .Values.authentication.mutual.spire.enabled }}
+      - name: spire-agent-socket
+        hostPath:
+          path: {{ dir .Values.authentication.mutual.spire.adminSocketPath }}
+          type: DirectoryOrCreate
+      {{- end }}
+      {{- if .Values.envoy.enabled }}
+      # Sharing socket with Cilium Envoy on the same node by using a host path
+      - name: envoy-sockets
+        hostPath:
+          path: "{{ .Values.daemon.runPath }}/envoy/sockets"
+          type: DirectoryOrCreate
+      {{- end }}
       {{- if .Values.kubeConfigPath }}
       - name: kube-config
         hostPath:
@@ -770,15 +839,36 @@ spec:
       {{- end }}
         # To read the clustermesh configuration
       - name: clustermesh-secrets
-        secret:
-          secretName: cilium-clustermesh
+        projected:
           # note: the leading zero means this number is in octal representation: do not remove it
           defaultMode: 0400
-          optional: true
-        # To read the configuration from the config map
-      - name: cilium-config-path
-        configMap:
-          name: cilium-config
+          sources:
+          - secret:
+              name: cilium-clustermesh
+              optional: true
+              # note: items are not explicitly listed here, since the entries of this secret
+              # depend on the peers configured, and that would cause a restart of all agents
+              # at every addition/removal. Leaving the field empty makes each secret entry
+              # to be automatically projected into the volume as a file whose name is the key.
+          - secret:
+              name: clustermesh-apiserver-remote-cert
+              optional: true
+              items:
+              - key: tls.key
+                path: common-etcd-client.key
+              - key: tls.crt
+                path: common-etcd-client.crt
+          {{- if not .Values.tls.caBundle.enabled }}
+              - key: ca.crt
+                path: common-etcd-client-ca.crt
+          {{- else }}
+          - {{ .Values.tls.caBundle.useSecret | ternary "secret" "configMap" }}:
+              name: {{ .Values.tls.caBundle.name }}
+              optional: true
+              items:
+              - key: {{ .Values.tls.caBundle.key }}
+                path: common-etcd-client-ca.crt
+          {{- end }}
       {{- if and .Values.ipMasqAgent .Values.ipMasqAgent.enabled }}
       - name: ip-masq-agent
         configMap:
@@ -823,12 +913,21 @@ spec:
               name: hubble-server-certs
               optional: true
               items:
-              - key: ca.crt
-                path: client-ca.crt
               - key: tls.crt
                 path: server.crt
               - key: tls.key
                 path: server.key
+          {{- if not .Values.tls.caBundle.enabled }}
+              - key: ca.crt
+                path: client-ca.crt
+          {{- else }}
+          - {{ .Values.tls.caBundle.useSecret | ternary "secret" "configMap" }}:
+              name: {{ .Values.tls.caBundle.name }}
+              optional: true
+              items:
+              - key: {{ .Values.tls.caBundle.key }}
+                path: client-ca.crt
+          {{- end }}
       {{- end }}
       {{- range .Values.extraHostPathMounts }}
       - name: {{ .name }}

@@ -5,9 +5,15 @@ kind: PodDisruptionBudget
 metadata:
   name: cilium-operator
   namespace: {{ .Release.Namespace }}
+  {{- with .Values.operator.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   labels:
     io.cilium/app: operator
     name: cilium-operator
+    app.kubernetes.io/name: cilium-operator
+    app.kubernetes.io/part-of: cilium
 spec:
   {{- with $component.maxUnavailable }}
   maxUnavailable: {{ . }}

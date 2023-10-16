@@ -3,6 +3,12 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: cilium-operator
+  {{- with .Values.operator.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  labels:
+    app.kubernetes.io/part-of: cilium
 rules:
 - apiGroups:
   - ""
@@ -13,7 +19,7 @@ rules:
   - list
   - watch
 {{- if hasKey .Values "disableEndpointCRD" }}
-{{- if (eq (.Values.disableEndpointCRD | quote ) ( "false" | quote )) }}
+{{- if not .Values.disableEndpointCRD }}
 {{- if (and .Values.operator.unmanagedPodWatcher.restart (ne (.Values.operator.unmanagedPodWatcher.intervalSeconds | int64) 0 ) ) }}
   # to automatically delete [core|kube]dns pods so that are starting to being
   # managed by Cilium
@@ -21,7 +27,7 @@ rules:
 {{- end }}
 {{- end }}
 {{- end }}
-{{- if or .Values.operator.removeNodeTaints .Values.operator.setNodeNetworkStatus .Values.operator.endpointGCInterval }}
+{{- if or .Values.operator.removeNodeTaints .Values.operator.setNodeNetworkStatus (include "hasDuration" .Values.operator.endpointGCInterval) }}
 - apiGroups:
   - ""
   resources:
@@ -60,12 +66,13 @@ rules:
   - services/status
   verbs:
   - update
+  - patch
 - apiGroups:
   - ""
   resources:
   # to check apiserver connectivity
   - namespaces
-{{- if .Values.ingressController.enabled }}
+{{- if or .Values.ingressController.enabled .Values.gatewayAPI.enabled  }}
   - secrets
 {{- end }}
   verbs:
@@ -82,10 +89,11 @@ rules:
   - get
   - list
   - watch
-{{- if .Values.ingressController.enabled }}
+{{- if or .Values.ingressController.enabled .Values.gatewayAPI.enabled }}
   - create
   - update
   - delete
+  - patch
 {{- end }}
 - apiGroups:
   - cilium.io
@@ -138,11 +146,9 @@ rules:
   - get
   - list
   - watch
-{{- if .Values.operator.nodeGCInterval }}
-{{- if ne .Values.operator.nodeGCInterval "0s" }}
+{{- if include "hasDuration" .Values.operator.nodeGCInterval }}
     # To perform CiliumNode garbage collector
   - delete
-{{- end }}
 {{- end }}
 - apiGroups:
   - cilium.io
@@ -155,6 +161,9 @@ rules:
   resources:
   - ciliumendpointslices
   - ciliumenvoyconfigs
+  - ciliumbgppeerconfigs
+  - ciliumbgpadvertisements
+  - ciliumbgpnodeconfigs
   verbs:
   - create
   - update
@@ -162,6 +171,7 @@ rules:
   - list
   - watch
   - delete
+  - patch
 - apiGroups:
   - apiextensions.k8s.io
   resources:
@@ -178,12 +188,16 @@ rules:
   verbs:
   - update
   resourceNames:
-  - ciliumbgploadbalancerippools.cilium.io
+  - ciliumloadbalancerippools.cilium.io
   - ciliumbgppeeringpolicies.cilium.io
+  - ciliumbgpclusterconfigs.cilium.io
+  - ciliumbgppeerconfigs.cilium.io
+  - ciliumbgpadvertisements.cilium.io
+  - ciliumbgpnodeconfigs.cilium.io
+  - ciliumbgpnodeconfigoverrides.cilium.io
   - ciliumclusterwideenvoyconfigs.cilium.io
   - ciliumclusterwidenetworkpolicies.cilium.io
   - ciliumegressgatewaypolicies.cilium.io
-  - ciliumegressnatpolicies.cilium.io
   - ciliumendpoints.cilium.io
   - ciliumendpointslices.cilium.io
   - ciliumenvoyconfigs.cilium.io
@@ -192,6 +206,33 @@ rules:
   - ciliumlocalredirectpolicies.cilium.io
   - ciliumnetworkpolicies.cilium.io
   - ciliumnodes.cilium.io
+  - ciliumnodeconfigs.cilium.io
+  - ciliumcidrgroups.cilium.io
+  - ciliuml2announcementpolicies.cilium.io
+  - ciliumpodippools.cilium.io
+- apiGroups:
+  - cilium.io
+  resources:
+  - ciliumloadbalancerippools
+  - ciliumpodippools
+  - ciliumbgpclusterconfigs
+  - ciliumbgpnodeconfigoverrides
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+    - cilium.io
+  resources:
+    - ciliumpodippools
+  verbs:
+    - create
+- apiGroups:
+  - cilium.io
+  resources:
+  - ciliumloadbalancerippools/status
+  verbs:
+  - patch
 # For cilium-operator running in HA mode.
 #
 # Cilium operator running in HA mode requires the use of ResourceLock for Leader Election
@@ -211,6 +252,7 @@ rules:
   - networking.k8s.io
   resources:
   - ingresses
+  - ingressclasses
   verbs:
   - get
   - list
@@ -221,5 +263,32 @@ rules:
   - ingresses/status # To update ingress status with load balancer IP.
   verbs:
   - update
+{{- end }}
+{{- if .Values.gatewayAPI.enabled }}
+- apiGroups:
+  - gateway.networking.k8s.io
+  resources:
+  - gatewayclasses
+  - gateways
+  - tlsroutes
+  - httproutes
+  - grpcroutes
+  - referencegrants
+  - referencepolicies
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - gateway.networking.k8s.io
+  resources:
+  - gatewayclasses/status
+  - gateways/status
+  - httproutes/status
+  - grpcroutes/status
+  - tlsroutes/status
+  verbs:
+  - update
+  - patch
 {{- end }}
 {{- end }}

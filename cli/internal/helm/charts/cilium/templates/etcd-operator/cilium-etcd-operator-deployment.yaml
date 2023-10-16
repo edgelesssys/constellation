@@ -5,8 +5,14 @@ metadata:
   labels:
     io.cilium/app: etcd-operator
     name: cilium-etcd-operator
+    app.kubernetes.io/name: cilium-etcd-operator
+    app.kubernetes.io/part-of: cilium
   name: cilium-etcd-operator
   namespace: {{ .Release.Namespace }}
+  {{- with .Values.etcd.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   replicas: 1
   selector:
@@ -25,6 +31,8 @@ spec:
 {{- end }}
       labels:
         io.cilium/app: etcd-operator
+        app.kubernetes.io/part-of: cilium
+        app.kubernetes.io/name: cilium-etcd-operator
         name: cilium-etcd-operator
 {{- with .Values.etcd.podLabels }}
         {{- toYaml . | nindent 8 }}
@@ -34,9 +42,25 @@ spec:
       affinity:
 {{ toYaml .Values.etcd.affinity | indent 8 }}
 {{- end }}
+{{- with .Values.etcd.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- range $constraint := . }}
+      - {{ toYaml $constraint | nindent 8 | trim }}
+          {{- if not $constraint.labelSelector }}
+        labelSelector:
+          matchLabels:
+            io.cilium/app: etcd-operator
+            name: cilium-etcd-operator
+          {{- end }}
+        {{- end }}
+{{- end }}
 {{- if .Values.imagePullSecrets }}
       imagePullSecrets:
         {{ toYaml .Values.imagePullSecrets | indent 8 }}
+{{- end }}
+{{- with .Values.etcd.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
 {{- end }}
       containers:
       - args:
@@ -70,15 +94,25 @@ spec:
           value: "revision"
         - name: CILIUM_ETCD_META_ETCD_AUTO_COMPACTION_RETENTION
           value: "25000"
-        image: {{ .Values.etcd.image.repository }}:{{ .Values.etcd.image.tag }}
+        image: {{ include "cilium.image" .Values.etcd.image | quote }}
         imagePullPolicy: {{ .Values.etcd.image.pullPolicy }}
         name: cilium-etcd-operator
+        terminationMessagePolicy: FallbackToLogsOnError
+        {{- with .Values.etcd.securityContext }}
+        securityContext:
+          {{- toYaml . | trim | nindent 8 }}
+        {{- end }}
+        {{- with .Values.etcd.extraVolumeMounts }}
+        volumeMounts:
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
       dnsPolicy: ClusterFirst
       hostNetwork: true
       priorityClassName: {{ include "cilium.priorityClass" (list $ .Values.clustermesh.apiserver.priorityClassName "system-cluster-critical") }}
       restartPolicy: Always
       serviceAccount: {{ .Values.serviceAccounts.etcd.name | quote }}
       serviceAccountName: {{ .Values.serviceAccounts.etcd.name | quote }}
+      automountServiceAccountToken: {{ .Values.serviceAccounts.etcd.automount }}
 {{- with .Values.etcd.nodeSelector }}
       nodeSelector:
         {{- toYaml . | trim | nindent 8 }}
@@ -87,4 +121,8 @@ spec:
       tolerations:
       {{- toYaml . | trim | nindent 6 }}
 {{- end }}
+      {{- with .Values.etcd.extraVolumes }}
+      volumes:
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
 {{- end }}

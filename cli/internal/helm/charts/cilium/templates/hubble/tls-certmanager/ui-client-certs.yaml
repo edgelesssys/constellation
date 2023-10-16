@@ -5,12 +5,18 @@ kind: Certificate
 metadata:
   name: hubble-ui-client-certs
   namespace: {{ .Release.Namespace }}
+  {{- with .Values.hubble.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   issuerRef:
-    {{- include "hubble-generate-certs.certmanager.issuer" . | nindent 4 }}
+    {{- toYaml .Values.hubble.tls.auto.certManagerIssuerRef | nindent 4 }}
   secretName: hubble-ui-client-certs
   commonName: "*.hubble-ui.cilium.io"
   dnsNames:
   - "*.hubble-ui.cilium.io"
-  duration: {{ printf "%dh" (mul .Values.hubble.tls.auto.certValidityDuration 24) }}
+  duration: {{ printf "%dh0m0s" (mul .Values.hubble.tls.auto.certValidityDuration 24) }}
+  privateKey:
+    rotationPolicy: Always
 {{- end }}

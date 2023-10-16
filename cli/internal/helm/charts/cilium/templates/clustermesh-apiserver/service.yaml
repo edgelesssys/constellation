@@ -6,9 +6,16 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     k8s-app: clustermesh-apiserver
-  {{- with .Values.clustermesh.apiserver.service.annotations }}
+    app.kubernetes.io/part-of: cilium
+    app.kubernetes.io/name: clustermesh-apiserver
+  {{- if or .Values.clustermesh.apiserver.service.annotations .Values.clustermesh.annotations }}
   annotations:
-    {{- toYaml . | nindent 4 }}
+    {{- with .Values.clustermesh.annotations }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- with .Values.clustermesh.apiserver.service.annotations }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
   {{- end }}
 spec:
   type: {{ .Values.clustermesh.apiserver.service.type }}
@@ -21,5 +28,11 @@ spec:
     {{- end }}
   {{- if and (eq "LoadBalancer" .Values.clustermesh.apiserver.service.type) .Values.clustermesh.apiserver.service.loadBalancerIP }}
   loadBalancerIP: {{ .Values.clustermesh.apiserver.service.loadBalancerIP }}
+  {{- end }}
+  {{- if .Values.clustermesh.apiserver.service.externalTrafficPolicy }}
+  externalTrafficPolicy: {{ .Values.clustermesh.apiserver.service.externalTrafficPolicy }}
+  {{- end }}
+  {{- if .Values.clustermesh.apiserver.service.internalTrafficPolicy }}
+  internalTrafficPolicy: {{ .Values.clustermesh.apiserver.service.internalTrafficPolicy }}
   {{- end }}
 {{- end }}

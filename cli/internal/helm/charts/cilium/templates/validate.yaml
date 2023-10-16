@@ -16,22 +16,28 @@
 {{- end }}
 
 {{/* validate service monitoring CRDs */}}
-{{- if and .Values.prometheus.enabled (or .Values.prometheus.serviceMonitor.enabled .Values.operator.prometheus.serviceMonitor.enabled) }}
+{{- if or (and .Values.prometheus.enabled .Values.prometheus.serviceMonitor.enabled) (and .Values.operator.prometheus.enabled .Values.operator.prometheus.serviceMonitor.enabled) (and .Values.proxy.prometheus.enabled .Values.envoy.prometheus.enabled .Values.envoy.prometheus.serviceMonitor.enabled) (and .Values.proxy.prometheus.enabled .Values.hubble.relay.prometheus.enabled .Values.hubble.relay.prometheus.serviceMonitor.enabled) }}
   {{- if not (.Capabilities.APIVersions.Has "monitoring.coreos.com/v1") }}
-      {{ fail "Service Monitor requires monitoring.coreos.com/v1 CRDs. Please refer to https://github.com/prometheus-operator/prometheus-operator/blob/master/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml" }}
+      {{- if not .Values.prometheus.serviceMonitor.trustCRDsExist }}
+          {{ fail "Service Monitor requires monitoring.coreos.com/v1 CRDs. Please refer to https://github.com/prometheus-operator/prometheus-operator/blob/main/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml or set .Values.prometheus.serviceMonitor.trustCRDsExist=true" }}
+      {{- end }}
   {{- end }}
 {{- end }}
 
 {{- if and .Values.hubble.enabled .Values.hubble.tls.enabled .Values.hubble.tls.auto.enabled (eq .Values.hubble.tls.auto.method "certmanager") }}
   {{- if not .Values.hubble.tls.auto.certManagerIssuerRef }}
-    {{ fail "Hubble TLS certgen method=certmanager requires user specify .Values.hubble.tls.auto.certManagerIssuerRef" }}
-  {{- end }}  
+    {{ fail "Hubble TLS certgen method=certmanager requires that user specifies .Values.hubble.tls.auto.certManagerIssuerRef" }}
+  {{- end }}
+{{- end }}
+
+{{- if and .Values.hubble.redact.http.headers.allow .Values.hubble.redact.http.headers.deny }}
+  {{ fail "Only one of .Values.hubble.redact.http.headers.allow, .Values.hubble.redact.http.headers.deny can be specified"}}
 {{- end }}
 
 {{- if and (or .Values.externalWorkloads.enabled .Values.clustermesh.useAPIServer) .Values.clustermesh.apiserver.tls.auto.enabled (eq .Values.clustermesh.apiserver.tls.auto.method "certmanager") }}
   {{- if not .Values.clustermesh.apiserver.tls.auto.certManagerIssuerRef }}
-    {{ fail "ClusterMesh TLS certgen method=certmanager requires user specify .Values.clustermesh.apiserver.tls.auto.certManagerIssuerRef" }}
-  {{- end }}  
+    {{ fail "ClusterMesh TLS certgen method=certmanager requires that user specifies .Values.clustermesh.apiserver.tls.auto.certManagerIssuerRef" }}
+  {{- end }}
 {{- end }}
 
 {{/* validate hubble-ui specific config */}}
@@ -43,5 +49,50 @@
   {{- end }}
   {{- if regexReplaceAll "@.*$" .Values.hubble.ui.frontend.image.tag "" | trimPrefix "v" | semverCompare "<0.9.0" }}
     {{ fail "Hubble UI requires hubble.ui.frontend.image.tag to be '>=v0.9.0'" }}
+  {{- end }}
+{{- end }}
+
+{{- if or .Values.ingressController.enabled .Values.gatewayAPI.enabled (eq .Values.loadBalancer.l7.backend "envoy") }}
+  {{- if hasKey .Values "l7Proxy" }}
+    {{- if not .Values.l7Proxy }}
+      {{ fail "Ingress or Gateway API controller or Envoy L7 Load Balancer  requires .Values.l7Proxy to be set to 'true'" }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
+{{- if or .Values.envoyConfig.enabled .Values.ingressController.enabled .Values.gatewayAPI.enabled }}
+  {{- if or (eq (toString .Values.kubeProxyReplacement) "disabled") (and (not (hasKey .Values "kubeProxyReplacement")) (not (semverCompare ">=1.14" (default "1.14" .Values.upgradeCompatibility)))) }}
+    {{ fail "Ingress/Gateway API controller and EnvoyConfig require .Values.kubeProxyReplacement to be explicitly set to 'false' or 'true'" }}
+  {{- end }}
+{{- end }}
+
+{{- if .Values.authentication.mutual.spire.enabled }}
+  {{- if not .Values.authentication.enabled }}
+    {{ fail "SPIRE integration requires .Values.authentication.enabled=true and .Values.authentication.mutual.spire.enabled=true" }}
+  {{- end }}
+{{- end }}
+
+{{/* validate Cilium operator */}}
+{{- if eq .Values.enableCiliumEndpointSlice true }}
+  {{- if eq .Values.disableEndpointCRD true }}
+    {{ fail "if Cilium Endpoint Slice is enabled (.Values.enableCiliumEndpointSlice=true), it requires .Values.disableEndpointCRD=false" }}
+  {{- end }}
+{{- end }}
+
+{{/* validate clustermesh-apiserver */}}
+{{- if .Values.clustermesh.useAPIServer }}
+  {{- if ne .Values.identityAllocationMode "crd" }}
+    {{ fail (printf "The clustermesh-apiserver cannot be enabled in combination with .Values.identityAllocationMode=%s. To establish a Cluster Mesh, directly configure the parameters to access the remote kvstore through .Values.clustermesh.config" .Values.identityAllocationMode ) }}
+  {{- end }}
+  {{- if .Values.disableEndpointCRD }}
+    {{ fail "The clustermesh-apiserver cannot be enabled in combination with .Values.disableEndpointCRD=true" }}
+  {{- end }}
+{{- end }}
+{{- if .Values.externalWorkloads.enabled }}
+  {{- if ne .Values.identityAllocationMode "crd" }}
+    {{ fail (printf "External workloads support cannot be enabled in combination with .Values.identityAllocationMode=%s" .Values.identityAllocationMode ) }}
+  {{- end }}
+  {{- if .Values.disableEndpointCRD }}
+    {{ fail "External workloads support cannot be enabled in combination with .Values.disableEndpointCRD=true" }}
   {{- end }}
 {{- end }}

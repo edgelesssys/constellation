@@ -5,8 +5,14 @@ apiVersion: apps/v1
 metadata:
   name: cilium-node-init
   namespace: {{ .Release.Namespace }}
+  {{- with .Values.nodeinit.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   labels:
     app: cilium-node-init
+    app.kubernetes.io/part-of: cilium
+    app.kubernetes.io/name: cilium-node-init
 spec:
   selector:
     matchLabels:
@@ -29,6 +35,8 @@ spec:
         {{- end }}
       labels:
         app: cilium-node-init
+        app.kubernetes.io/part-of: cilium
+        app.kubernetes.io/name: cilium-node-init
         {{- with .Values.nodeinit.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -42,19 +50,6 @@ spec:
           image: {{ include "cilium.image" .Values.nodeinit.image | quote }}
           imagePullPolicy: {{ .Values.nodeinit.image.pullPolicy }}
           lifecycle:
-            {{- if .Values.eni.enabled }}
-            postStart:
-              exec:
-                command:
-                  - nsenter
-                  - --target=1
-                  - --mount
-                  - --
-                  - "/bin/sh"
-                  - "-c"
-                  - |
-                    {{- tpl (.Files.Get "files/nodeinit/poststart-eni.bash") . | nindent 20 }}
-            {{- end }}
             {{- if .Values.nodeinit.revertReconfigureKubelet }}
             preStop:
               exec:
@@ -63,7 +58,7 @@ spec:
                   - --target=1
                   - --mount
                   - --
-                  - /bin/sh
+                  - /bin/bash
                   - -c
                   - |
                     {{- tpl (.Files.Get "files/nodeinit/prestop.bash") . | nindent 20 }}
@@ -87,6 +82,11 @@ spec:
           securityContext:
             {{- toYaml . | trim | nindent 12 }}
           {{- end }}
+          terminationMessagePolicy: FallbackToLogsOnError
+          {{- with .Values.nodeinit.extraVolumeMounts }}
+          volumeMounts:
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
       {{- with .Values.nodeinit.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
@@ -102,4 +102,13 @@ spec:
       hostPID: true
       hostNetwork: true
       priorityClassName: {{ include "cilium.priorityClass" (list $ .Values.nodeinit.priorityClassName "system-node-critical") }}
+      {{- if .Values.serviceAccounts.nodeinit.enabled }}
+      serviceAccount: {{ .Values.serviceAccounts.nodeinit.name | quote }}
+      serviceAccountName: {{ .Values.serviceAccounts.nodeinit.name | quote }}
+      automountServiceAccountToken: {{ .Values.serviceAccounts.nodeinit.automount }}
+      {{- end }}
+      {{- with .Values.nodeinit.extraVolumes }}
+      volumes:
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
 {{- end }}
