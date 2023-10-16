@@ -71,11 +71,43 @@ Create the `constellation-state.yaml` using the output from the Terraform state 
 ```bash
 CONSTELL_IP=$(terraform output ip)
 CONSTELL_INIT_SECRET=$(terraform output initSecret | jq -r | tr -d '\n' | base64)
-touch constellation-state.yaml
-yq eval '.version ="v1"' --inplace constellation-state.yaml
 yq eval '.infrastructure.initSecret ="$CONSTELL_INIT_SECRET"' --inplace constellation-state.yaml
 yq eval '.infrastructure.clusterEndpoint ="$CONSTELL_IP"' --inplace constellation-state.yaml
 ```
+
+</tabItem>
+<tabItem value="self-managed" label="Self-Managed">
+
+Self-managed infrastructure allows for managing the cloud resources necessary for a Constellation cluster separately from the Constellation CLI and Terraform,
+providing maximum flexibility in DevOps as well as meeting potential regulatory requirements.
+
+To self-manage the infrastructure of your cluster, download the Terraform files for the selected CSP from the [Constellation GitHub repository](https://github.com/edgelesssys/constellation/tree/main/cli/internal/terraform/terraform).
+They contain a minimum configuration for the resources necessary to run a Constellation cluster on the corresponding CSP. From this base, you can now add, edit, or substitute resources as per your own requirements, while ensuring the essential
+functionality of the base configuration is kept. You can also recreate the infrastructure from the Terraform configuration with the infrastructure management tooling of your choice, e.g. create it manually through a CSP portal.
+
+When using Terraform, initialize and apply your configuration. Otherwise, make sure all necessary resources are created, e.g. through checking your CSP's portal.
+
+```bash
+terraform init
+terraform apply
+```
+
+And retrieve the necessary outputs from your configuration. When using another infrastructure management strategy than Terraform, retrieve the outputs accordingly, e.g. through your CSP's portal.
+
+```bash
+CONSTELL_IP=$(terraform output ip)
+CONSTELL_INIT_SECRET=$(terraform output initSecret | jq -r | tr -d '\n' | base64)
+yq eval '.infrastructure.initSecret ="$CONSTELL_INIT_SECRET"' --inplace constellation-state.yaml
+yq eval '.infrastructure.clusterEndpoint ="$CONSTELL_IP"' --inplace constellation-state.yaml
+```
+
+Depending on the [configuration](./config.md) of your cluster, additional outputs might be necessary. Use the following command to query all possible outputs:
+
+```bash
+terraform output
+```
+
+And continue with [initializing your cluster](#the-init-step).
 
 </tabItem>
 </tabs>

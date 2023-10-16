@@ -119,7 +119,7 @@ If you encounter any problem with the following steps, make sure to use the [lat
 -->
 
 3. Create the cluster. `constellation create` uses options set in `constellation-conf.yaml`.
-    If you want to manually use [Terraform](../reference/terraform.md) for managing the cloud resources instead, follow the corresponding instructions in the [Create workflow](../workflows/create.md).
+    If you want to manually use [Terraform](../reference/terraform.md) for managing the cloud resources instead, or want completely self-managed infrastructure, follow the corresponding instructions in the [Create workflow](../workflows/create.md).
 
     :::tip
 
