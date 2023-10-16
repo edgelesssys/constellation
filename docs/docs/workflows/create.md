@@ -78,11 +78,11 @@ yq eval '.infrastructure.clusterEndpoint ="$CONSTELL_IP"' --inplace constellatio
 </tabItem>
 <tabItem value="self-managed" label="Self-Managed">
 
-Self-managed infrastructure allows for managing the cloud resources necessary for a Constellation cluster separately from the Constellation CLI,
-providing maximum flexibility in DevOps as well as meeting potential regulatory requirements.
+Self-managed infrastructure allows for managing the cloud resources necessary for a Constellation cluster separate from the Constellation CLI.
+This provides maximum flexibility in DevOps and can meet potential regulatory requirements.
 
 To self-manage the infrastructure of your cluster, download the Terraform files for the selected CSP from the [Constellation GitHub repository](https://github.com/edgelesssys/constellation/tree/main/cli/internal/terraform/terraform).
-They contain a minimum configuration for the resources necessary to run a Constellation cluster on the corresponding CSP. From this base, you can now add, edit, or substitute resources as per your own requirements with the infrastructure
+They contain a minimum configuration for the resources necessary to run a Constellation cluster on the corresponding CSP. From this base, you can now add, edit, or substitute resources per your own requirements with the infrastructure
 management tooling of your choice. You need to ensure the essential functionality of the base configuration is kept in order for your cluster to function correctly.
 
 Make sure all necessary resources are created, e.g. through checking your CSP's portal and retrieve the necessary values, aligned with the outputs (specified in `outputs.tf`) of the base configuration.
