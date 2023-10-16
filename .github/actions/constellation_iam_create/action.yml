@@ -39,14 +39,7 @@ runs:
     - name: Generate config
       id: generate-config
       shell: bash
-      # TODO(katexochen): Remove the generate-config flag once v2.10 is released.
       run: |
-        output=$(constellation iam create --help)
-        if [[ $output == *"generate-config"* ]]; then
-          echo "flag=--generate-config" | tee -a "$GITHUB_OUTPUT"
-          exit 0
-        fi
-
         kubernetesFlag=""
         if [[ ! -z "${{ inputs.kubernetesVersion }}" ]]; then
           kubernetesFlag="--kubernetes=${{ inputs.kubernetesVersion }}"
@@ -60,9 +53,9 @@ runs:
       if: inputs.cloudProvider == 'aws'
       run: |
         constellation iam create aws \
-          --zone=${{ inputs.awsZone }} \
-          --prefix=${{ inputs.namePrefix }} \
-          ${{ steps.generate-config.outputs.flag }} \
+          --zone="${{ inputs.awsZone }}" \
+          --prefix="${{ inputs.namePrefix }}" \
+          --update-config \
           --tf-log=DEBUG \
           --yes
 
@@ -71,10 +64,10 @@ runs:
       if: inputs.cloudProvider == 'azure'
       run: |
         constellation iam create azure \
-          --region=${{ inputs.azureRegion }} \
+          --region="${{ inputs.azureRegion }}" \
           --resourceGroup="${{ inputs.namePrefix }}-rg" \
           --servicePrincipal="${{ inputs.namePrefix }}-sp" \
-          ${{ steps.generate-config.outputs.flag }} \
+          --update-config \
           --tf-log=DEBUG \
           --yes
 
@@ -83,9 +76,9 @@ runs:
       if: inputs.cloudProvider == 'gcp'
       run: |
         constellation iam create gcp \
-          --projectID=${{ inputs.gcpProjectID }} \
-          --zone=${{ inputs.gcpZone }} \
+          --projectID="${{ inputs.gcpProjectID }}" \
+          --zone="${{ inputs.gcpZone }}" \
           --serviceAccountID="${{ inputs.namePrefix }}-sa" \
-          ${{ steps.generate-config.outputs.flag }} \
+          --update-config \
           --tf-log=DEBUG \
           --yes
