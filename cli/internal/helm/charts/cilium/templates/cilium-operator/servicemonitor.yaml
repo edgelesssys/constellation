@@ -5,13 +5,20 @@ metadata:
   name: cilium-operator
   namespace: {{ .Values.operator.prometheus.serviceMonitor.namespace | default .Release.Namespace }}
   labels:
+    app.kubernetes.io/part-of: cilium
+    app.kubernetes.io/name: cilium-operator
     {{- with .Values.operator.prometheus.serviceMonitor.labels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
+  {{- if or .Values.operator.prometheus.serviceMonitor.annotations .Values.operator.annotations }}
   annotations:
-    {{- with .Values.operator.prometheus.serviceMonitor.annotations }}
-    {{- toYaml . | nindent 4 }}
+    {{- with .Values.operator.annotations }}
+      {{- toYaml . | nindent 4 }}
     {{- end }}
+    {{- with .Values.operator.prometheus.serviceMonitor.annotations }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- end }}
 spec:
   selector:
     matchLabels:
@@ -22,9 +29,20 @@ spec:
     - {{ .Release.Namespace }}
   endpoints:
   - port: metrics
-    interval: 10s
+    interval: {{ .Values.operator.prometheus.serviceMonitor.interval | quote }}
     honorLabels: true
     path: /metrics
+    {{- with .Values.operator.prometheus.serviceMonitor.relabelings }}
+    relabelings:
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- with .Values.operator.prometheus.serviceMonitor.metricRelabelings }}
+    metricRelabelings:
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
   targetLabels:
   - io.cilium/app
+{{- if .Values.operator.prometheus.serviceMonitor.jobLabel }}
+  jobLabel: {{ .Values.operator.prometheus.serviceMonitor.jobLabel | quote }}
+{{- end }}
 {{- end }}

@@ -1,12 +1,17 @@
 {{- if and .Values.hubble.enabled .Values.hubble.relay.enabled }}
-{{- $mountSocket := not .Values.hubble.peerService.enabled -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: hubble-relay
   namespace: {{ .Release.Namespace }}
+  {{- with .Values.hubble.relay.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   labels:
     k8s-app: hubble-relay
+    app.kubernetes.io/name: hubble-relay
+    app.kubernetes.io/part-of: cilium
 spec:
   replicas: {{ .Values.hubble.relay.replicas }}
   selector:
@@ -28,11 +33,13 @@ spec:
         {{- end }}
       labels:
         k8s-app: hubble-relay
+        app.kubernetes.io/name: hubble-relay
+        app.kubernetes.io/part-of: cilium
         {{- with .Values.hubble.relay.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
-      {{- with .Values.hubble.relay.securityContext }}
+      {{- with .Values.hubble.relay.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -42,6 +49,10 @@ spec:
       {{- end }}
       containers:
         - name: hubble-relay
+          {{- with .Values.hubble.relay.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           image: {{ include "cilium.image" .Values.hubble.relay.image | quote }}
           imagePullPolicy: {{ .Values.hubble.relay.image.pullPolicy }}
           command:
@@ -74,11 +85,6 @@ spec:
             {{- toYaml . | trim | nindent 12 }}
           {{- end }}
           volumeMounts:
-          {{- if $mountSocket }}
-          - name: hubble-sock-dir
-            mountPath: {{ dir .Values.hubble.socketPath }}
-            readOnly: true
-          {{- end }}
           - name: config
             mountPath: /etc/hubble-relay
             readOnly: true
@@ -87,15 +93,27 @@ spec:
             mountPath: /var/lib/hubble-relay/tls
             readOnly: true
           {{- end }}
+          terminationMessagePolicy: FallbackToLogsOnError
       restartPolicy: Always
       priorityClassName: {{ .Values.hubble.relay.priorityClassName }}
       serviceAccount: {{ .Values.serviceAccounts.relay.name | quote }}
       serviceAccountName: {{ .Values.serviceAccounts.relay.name | quote }}
-      automountServiceAccountToken: false
+      automountServiceAccountToken: {{ .Values.serviceAccounts.relay.automount }}
       terminationGracePeriodSeconds: {{ .Values.hubble.relay.terminationGracePeriodSeconds }}
       {{- with .Values.hubble.relay.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.hubble.relay.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- range $constraint := . }}
+      - {{ toYaml $constraint | nindent 8 | trim }}
+          {{- if not $constraint.labelSelector }}
+        labelSelector:
+          matchLabels:
+            k8s-app: hubble-relay
+          {{- end }}
+        {{- end }}
       {{- end }}
       {{- with .Values.hubble.relay.nodeSelector }}
       nodeSelector:
@@ -112,12 +130,6 @@ spec:
           items:
           - key: config.yaml
             path: config.yaml
-      {{- if $mountSocket }}
-      - name: hubble-sock-dir
-        hostPath:
-          path: {{ dir .Values.hubble.socketPath }}
-          type: Directory
-      {{- end }}
       {{- if .Values.hubble.tls.enabled }}
       - name: tls
         projected:
@@ -127,12 +139,20 @@ spec:
           - secret:
               name: hubble-relay-client-certs
               items:
-                - key: ca.crt
-                  path: hubble-server-ca.crt
                 - key: tls.crt
                   path: client.crt
                 - key: tls.key
                   path: client.key
+          {{- if not .Values.tls.caBundle.enabled }}
+                - key: ca.crt
+                  path: hubble-server-ca.crt
+          {{- else }}
+          - {{ .Values.tls.caBundle.useSecret | ternary "secret" "configMap" }}:
+              name: {{ .Values.tls.caBundle.name }}
+              items:
+                - key: {{ .Values.tls.caBundle.key }}
+                  path: hubble-server-ca.crt
+          {{- end }}
           {{- if .Values.hubble.relay.tls.server.enabled }}
           - secret:
               name: hubble-relay-server-certs

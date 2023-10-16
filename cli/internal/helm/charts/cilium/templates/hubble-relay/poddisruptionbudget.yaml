@@ -5,8 +5,14 @@ kind: PodDisruptionBudget
 metadata:
   name: hubble-relay
   namespace: {{ .Release.Namespace }}
+  {{- with .Values.hubble.relay.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   labels:
     k8s-app: hubble-relay
+    app.kubernetes.io/name: hubble-relay
+    app.kubernetes.io/part-of: cilium
 spec:
   {{- with $component.maxUnavailable }}
   maxUnavailable: {{ . }}

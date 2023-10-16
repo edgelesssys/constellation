@@ -6,6 +6,12 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: cilium-pre-flight
+  {{- with .Values.preflight.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  labels:
+    app.kubernetes.io/part-of: cilium
 rules:
 - apiGroups:
   - networking.k8s.io
@@ -44,6 +50,18 @@ rules:
   # To annotate the k8s node with Cilium's metadata
   - patch
 {{- end }}
+{{- if .Values.l2announcements.enabled }}
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - create
+  - get
+  - update
+  - list
+  - delete
+{{- end }}
 - apiGroups:
   - apiextensions.k8s.io
   resources:
@@ -66,12 +84,14 @@ rules:
 - apiGroups:
   - cilium.io
   resources:
-  - ciliumbgploadbalancerippools
+  - ciliumloadbalancerippools
   - ciliumbgppeeringpolicies
+  - ciliumbgpnodeconfigs
+  - ciliumbgpadvertisements
+  - ciliumbgppeerconfigs
   - ciliumclusterwideenvoyconfigs
   - ciliumclusterwidenetworkpolicies
   - ciliumegressgatewaypolicies
-  - ciliumegressnatpolicies
   - ciliumendpoints
   - ciliumendpointslices
   - ciliumenvoyconfigs
@@ -79,6 +99,10 @@ rules:
   - ciliumlocalredirectpolicies
   - ciliumnetworkpolicies
   - ciliumnodes
+  - ciliumnodeconfigs
+  - ciliumcidrgroups
+  - ciliuml2announcementpolicies
+  - ciliumpodippools
   verbs:
   - list
   - watch
@@ -119,6 +143,8 @@ rules:
   - ciliumclusterwidenetworkpolicies/status
   - ciliumendpoints/status
   - ciliumendpoints
+  - ciliuml2announcementpolicies/status
+  - ciliumbgpnodeconfigs/status
   verbs:
   - patch
 {{- end }}
