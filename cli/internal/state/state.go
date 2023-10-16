@@ -4,6 +4,11 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// This binary can be build from siderolabs/talos projects. Located at:
+// https://github.com/siderolabs/talos/tree/master/hack/docgen
+//
+//go:generate docgen ./state.go ./state_doc.go Configuration
+
 // package state defines the structure of the Constellation state file.
 package state
 
@@ -30,9 +35,99 @@ func ReadFromFile(fileHandler file.Handler, path string) (*State, error) {
 
 // State describe the entire state to describe a Constellation cluster.
 type State struct {
-	Version        string         `yaml:"version"`
+	// description: |
+	//   Schema version of this state file.
+	Version string `yaml:"version"`
+
+	// TODO(msanft): Add link to self-managed infrastructure docs once existing.
+
+	// description: |
+	//   State of the cluster's cloud resources. These values are retrieved during
+	//   cluster creation. In the case of self-managed infrastructure, the marked
+	//   fields in this struct should be filled by the user as per
+	//   https://docs.edgeless.systems/constellation/workflows/create.
 	Infrastructure Infrastructure `yaml:"infrastructure"`
-	ClusterValues  ClusterValues  `yaml:"clusterValues"`
+	// description: |
+	//   DO NOT EDIT. State of the Constellation Kubernetes cluster.
+	//   These values are set during cluster initialization and should not be changed.
+	ClusterValues ClusterValues `yaml:"clusterValues"`
+}
+
+// ClusterValues describe the (Kubernetes) cluster state, set during initialization of the cluster.
+type ClusterValues struct {
+	// description: |
+	//   Unique identifier of the cluster.
+	ClusterID string `yaml:"clusterID"`
+	// description: |
+	//   Unique identifier of the owner of the cluster.
+	OwnerID string `yaml:"ownerID"`
+	// description: |
+	//   Salt used to generate the ClusterID on the bootstrapping node.
+	MeasurementSalt []byte `yaml:"measurementSalt"`
+}
+
+// Infrastructure describe the state related to the cloud resources of the cluster.
+type Infrastructure struct {
+	// description: |
+	//   Unique identifier the cluster's cloud resources are tagged with.
+	UID string `yaml:"uid"`
+	// description: |
+	//   Endpoint the cluster can be reached at. This value needs to be set
+	//   by the user in the case of self-managed infrastructure.
+	ClusterEndpoint string `yaml:"clusterEndpoint"`
+	// description: |
+	//   Secret used to authenticate the bootstrapping node. This value needs to be set
+	//   by the user in the case of self-managed infrastructure.
+	InitSecret []byte `yaml:"initSecret"`
+	// description: |
+	//   List of Subject Alternative Names (SANs) to add to the Kubernetes API server certificate.
+	APIServerCertSANs []string `yaml:"apiServerCertSANs"`
+	// description: |
+	//   Name used in the cluster's named resources.
+	Name string `yaml:"name"`
+	// description: |
+	//   Values specific to a Constellation cluster running on Azure.
+	Azure *Azure `yaml:"azure,omitempty"`
+	// description: |
+	//   Values specific to a Constellation cluster running on GCP.
+	GCP *GCP `yaml:"gcp,omitempty"`
+}
+
+// GCP describes the infra state related to GCP.
+type GCP struct {
+	// description: |
+	//   Project ID of the GCP project the cluster is running in.
+	ProjectID string `yaml:"projectID"`
+	// description: |
+	//   CIDR range of the cluster's nodes.
+	IPCidrNode string `yaml:"ipCidrNode"`
+	// description: |
+	//   CIDR range of the cluster's pods.
+	IPCidrPod string `yaml:"ipCidrPod"`
+}
+
+// Azure describes the infra state related to Azure.
+type Azure struct {
+	// description: |
+	//   Resource Group the cluster's resources are placed in.
+	ResourceGroup string `yaml:"resourceGroup"`
+	// description: |
+	//   ID of the Azure subscription the cluster is running in.
+	SubscriptionID string `yaml:"subscriptionID"`
+	// description: |
+	//   Security group name of the cluster's resource group.
+	NetworkSecurityGroupName string `yaml:"networkSecurityGroupName"`
+	// description: |
+	//   Name of the cluster's load balancer.
+	LoadBalancerName string `yaml:"loadBalancerName"`
+	// description: |
+	//   ID of the UAMI the cluster's nodes are running with.
+	UserAssignedIdentity string `yaml:"userAssignedIdentity"`
+	// description: |
+	//   MAA endpoint that can be used as a fallback for veryifying the ID key digests
+	//   in the cluster's attestation report if the enforcement policy is set accordingly.
+	//   Can be left empty otherwise.
+	AttestationURL string `yaml:"attestationURL"`
 }
 
 // New creates a new cluster state (file).
@@ -69,43 +164,4 @@ func (s *State) Merge(other *State) (*State, error) {
 		return nil, fmt.Errorf("merging state file: %w", err)
 	}
 	return s, nil
-}
-
-// ClusterValues describe the (Kubernetes) cluster state, set during initialization of the cluster.
-type ClusterValues struct {
-	// ClusterID is the unique identifier of the cluster.
-	ClusterID string `yaml:"clusterID"`
-	// OwnerID is the unique identifier of the owner of the cluster.
-	OwnerID string `yaml:"ownerID"`
-	// MeasurementSalt is the salt generated during cluster init.
-	MeasurementSalt []byte `yaml:"measurementSalt"`
-}
-
-// Infrastructure describe the state related to the cloud resources of the cluster.
-type Infrastructure struct {
-	UID               string   `yaml:"uid"`
-	ClusterEndpoint   string   `yaml:"clusterEndpoint"`
-	InitSecret        []byte   `yaml:"initSecret"`
-	APIServerCertSANs []string `yaml:"apiServerCertSANs"`
-	// Name is the name of the cluster.
-	Name  string `yaml:"name"`
-	Azure *Azure `yaml:"azure,omitempty"`
-	GCP   *GCP   `yaml:"gcp,omitempty"`
-}
-
-// GCP describes the infra state related to GCP.
-type GCP struct {
-	ProjectID  string `yaml:"projectID"`
-	IPCidrNode string `yaml:"ipCidrNode"`
-	IPCidrPod  string `yaml:"ipCidrPod"`
-}
-
-// Azure describes the infra state related to Azure.
-type Azure struct {
-	ResourceGroup            string `yaml:"resourceGroup"`
-	SubscriptionID           string `yaml:"subscriptionID"`
-	NetworkSecurityGroupName string `yaml:"networkSecurityGroupName"`
-	LoadBalancerName         string `yaml:"loadBalancerName"`
-	UserAssignedIdentity     string `yaml:"userAssignedIdentity"`
-	AttestationURL           string `yaml:"attestationURL"`
 }
