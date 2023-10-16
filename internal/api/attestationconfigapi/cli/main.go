@@ -133,7 +133,7 @@ func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 		return fmt.Errorf("creating client: %w", err)
 	}
 
-	latestAPIVersionAPI, err := attestationconfigapi.NewFetcherWithCustomCDNAndCosignKey(flags.url, constants.CosignPublicKeyDev).FetchAzureSEVSNPVersionLatest(ctx)
+	latestAPIVersionAPI, err := attestationconfigapi.NewFetcherWithCustomCDNAndCosignKey(flags.url, flags.cosignPublicKey).FetchAzureSEVSNPVersionLatest(ctx)
 	if err != nil {
 		if errors.Is(err, attestationconfigapi.ErrNoVersionsFound) {
 			log.Infof("No versions found in API, but assuming that we are uploading the first version.")
@@ -179,6 +179,7 @@ func convertTCBVersionToAzureVersion(tcb verify.TCBVersion) attestationconfigapi
 type config struct {
 	snpReportPath   string
 	uploadDate      time.Time
+	cosignPublicKey string
 	region          string
 	bucket          string
 	distribution    string
@@ -219,7 +220,7 @@ func parseCliFlags(cmd *cobra.Command) (config, error) {
 	if err != nil {
 		return config{}, fmt.Errorf("getting testing flag: %w", err)
 	}
-	url, distribution := getCDNEnvironment(testing)
+	apiCfg := getAPIEnvironment(testing)
 
 	force, err := cmd.Flags().GetBool("force")
 	if err != nil {
@@ -233,20 +234,27 @@ func parseCliFlags(cmd *cobra.Command) (config, error) {
 	return config{
 		snpReportPath:   snpReportFilePath,
 		uploadDate:      uploadDate,
+		cosignPublicKey: apiCfg.cosignPublicKey,
 		region:          region,
 		bucket:          bucket,
-		url:             url,
-		distribution:    distribution,
+		url:             apiCfg.url,
+		distribution:    apiCfg.distribution,
 		force:           force,
 		cacheWindowSize: cacheWindowSize,
 	}, nil
 }
 
-func getCDNEnvironment(testing bool) (url string, distributionID string) {
+type apiConfig struct {
+	url             string
+	distribution    string
+	cosignPublicKey string
+}
+
+func getAPIEnvironment(testing bool) apiConfig {
 	if testing {
-		return "https://d33dzgxuwsgbpw.cloudfront.net", "ETZGUP1CWRC2P"
+		return apiConfig{url: "https://d33dzgxuwsgbpw.cloudfront.net", distribution: "ETZGUP1CWRC2P", cosignPublicKey: constants.CosignPublicKeyDev}
 	}
-	return constants.CDNRepositoryURL, constants.CDNDefaultDistributionID
+	return apiConfig{url: constants.CDNRepositoryURL, distribution: constants.CDNDefaultDistributionID, cosignPublicKey: constants.CosignPublicKeyReleases}
 }
 
 func must(err error) {
