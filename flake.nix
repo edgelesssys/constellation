@@ -46,6 +46,12 @@
         paths = [ openssl-static.out openssl-static.dev ];
       };
 
+      packages.awscli2 = pkgsUnstable.awscli2;
+
+      packages.createrepo_c = pkgsUnstable.createrepo_c;
+
+      packages.dnf5 = pkgsUnstable.dnf5;
+
       devShells.default = import ./nix/shells/default.nix { pkgs = pkgsUnstable; };
 
       formatter = nixpkgsUnstable.legacyPackages.${system}.nixpkgs-fmt;

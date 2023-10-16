@@ -16,6 +16,7 @@ mkosi_image(
         "//image:sysroot_tar",
         "//disk-mapper/cmd:disk-mapper-package.tar",
     ],
+    local_mirror = ["@mkosi_rpms//:repo"],
     mkosi_conf = "mkosi.conf",
     tags = [
         "manual",

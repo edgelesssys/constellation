@@ -36,7 +36,6 @@ mkosi_image(
         "mkosi.prepare",
     ] + glob([
         "mkosi.skeleton/**",
-        "reposdir/**",
     ]),
     outs = [
         "image",
@@ -45,6 +44,7 @@ mkosi_image(
     extra_trees = [
         "//image:sysroot_tar",
     ],
+    local_mirror = ["@mkosi_rpms//:repo"],
     mkosi_conf = "mkosi.conf",
     package_files = [
         ":kernel",
