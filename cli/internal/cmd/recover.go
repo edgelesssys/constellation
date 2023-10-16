@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
-	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/recoverproto"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
@@ -31,6 +30,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/retry"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 // NewRecoverCmd returns a new cobra.Command for the recover command.
@@ -47,10 +47,28 @@ func NewRecoverCmd() *cobra.Command {
 	return cmd
 }
 
+type recoverFlags struct {
+	rootFlags
+	endpoint string
+}
+
+func (f *recoverFlags) parse(flags *pflag.FlagSet) error {
+	if err := f.rootFlags.parse(flags); err != nil {
+		return err
+	}
+
+	endpoint, err := flags.GetString("endpoint")
+	if err != nil {
+		return fmt.Errorf("getting 'endpoint' flag: %w", err)
+	}
+	f.endpoint = endpoint
+	return nil
+}
+
 type recoverCmd struct {
 	log           debugLog
 	configFetcher attestationconfigapi.Fetcher
-	pf            pathprefix.PathPrefixer
+	flags         recoverFlags
 }
 
 func runRecover(cmd *cobra.Command, _ []string) error {
@@ -64,6 +82,10 @@ func runRecover(cmd *cobra.Command, _ []string) error {
 		return dialer.New(nil, validator, &net.Dialer{})
 	}
 	r := &recoverCmd{log: log, configFetcher: attestationconfigapi.NewFetcher()}
+	if err := r.flags.parse(cmd.Flags()); err != nil {
+		return err
+	}
+	r.log.Debugf("Using flags: %+v", r.flags)
 	return r.recover(cmd, fileHandler, 5*time.Second, &recoverDoer{log: r.log}, newDialer)
 }
 
@@ -71,20 +93,14 @@ func (r *recoverCmd) recover(
 	cmd *cobra.Command, fileHandler file.Handler, interval time.Duration,
 	doer recoverDoerInterface, newDialer func(validator atls.Validator) *dialer.Dialer,
 ) error {
-	flags, err := r.parseRecoverFlags(cmd, fileHandler)
-	if err != nil {
-		return err
-	}
-	r.log.Debugf("Using flags: %+v", flags)
-
 	var masterSecret uri.MasterSecret
-	r.log.Debugf("Loading master secret file from %s", r.pf.PrefixPrintablePath(constants.MasterSecretFilename))
+	r.log.Debugf("Loading master secret file from %s", r.flags.pathPrefixer.PrefixPrintablePath(constants.MasterSecretFilename))
 	if err := fileHandler.ReadJSON(constants.MasterSecretFilename, &masterSecret); err != nil {
 		return err
 	}
 
-	r.log.Debugf("Loading configuration file from %q", r.pf.PrefixPrintablePath(constants.ConfigFilename))
-	conf, err := config.New(fileHandler, constants.ConfigFilename, r.configFetcher, flags.force)
+	r.log.Debugf("Loading configuration file from %q", r.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
+	conf, err := config.New(fileHandler, constants.ConfigFilename, r.configFetcher, r.flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -99,15 +115,26 @@ func (r *recoverCmd) recover(
 		interval = 20 * time.Second // Azure LB takes a while to remove unhealthy instances
 	}
 
-	conf.UpdateMAAURL(flags.maaURL)
+	stateFile, err := state.ReadFromFile(fileHandler, constants.StateFilename)
+	if err != nil {
+		return fmt.Errorf("reading state file: %w", err)
+	}
+	endpoint, err := r.parseEndpoint(stateFile)
+	if err != nil {
+		return err
+	}
+	if stateFile.Infrastructure.Azure != nil {
+		conf.UpdateMAAURL(stateFile.Infrastructure.Azure.AttestationURL)
+	}
+
 	r.log.Debugf("Creating aTLS Validator for %s", conf.GetAttestationConfig().GetVariant())
 	validator, err := cloudcmd.NewValidator(cmd, conf.GetAttestationConfig(), r.log)
 	if err != nil {
 		return fmt.Errorf("creating new validator: %w", err)
 	}
 	r.log.Debugf("Created a new validator")
-	doer.setDialer(newDialer(validator), flags.endpoint)
-	r.log.Debugf("Set dialer for endpoint %s", flags.endpoint)
+	doer.setDialer(newDialer(validator), endpoint)
+	r.log.Debugf("Set dialer for endpoint %s", endpoint)
 	doer.setURIs(masterSecret.EncodeToURI(), uri.NoStoreURI)
 	r.log.Debugf("Set secrets")
 	if err := r.recoverCall(cmd.Context(), cmd.OutOrStdout(), interval, doer); err != nil {
@@ -160,6 +187,18 @@ func (r *recoverCmd) recoverCall(ctx context.Context, out io.Writer, interval ti
 	return err
 }
 
+func (r *recoverCmd) parseEndpoint(state *state.State) (string, error) {
+	endpoint := r.flags.endpoint
+	if endpoint == "" {
+		endpoint = state.Infrastructure.ClusterEndpoint
+	}
+	endpoint, err := addPortIfMissing(endpoint, constants.RecoveryPort)
+	if err != nil {
+		return "", fmt.Errorf("validating cluster endpoint: %w", err)
+	}
+	return endpoint, nil
+}
+
 type recoverDoerInterface interface {
 	Do(ctx context.Context) error
 	setDialer(dialer grpcDialer, endpoint string)
@@ -208,56 +247,4 @@ func (d *recoverDoer) setDialer(dialer grpcDialer, endpoint string) {
 func (d *recoverDoer) setURIs(kmsURI, storageURI string) {
 	d.kmsURI = kmsURI
 	d.storageURI = storageURI
-}
-
-type recoverFlags struct {
-	endpoint string
-	maaURL   string
-	force    bool
-}
-
-func (r *recoverCmd) parseRecoverFlags(cmd *cobra.Command, fileHandler file.Handler) (recoverFlags, error) {
-	workDir, err := cmd.Flags().GetString("workspace")
-	if err != nil {
-		return recoverFlags{}, fmt.Errorf("parsing config path argument: %w", err)
-	}
-	r.log.Debugf("Workspace set to %q", workDir)
-	r.pf = pathprefix.New(workDir)
-
-	endpoint, err := cmd.Flags().GetString("endpoint")
-	r.log.Debugf("Endpoint flag is %s", endpoint)
-	if err != nil {
-		return recoverFlags{}, fmt.Errorf("parsing endpoint argument: %w", err)
-	}
-
-	force, err := cmd.Flags().GetBool("force")
-	if err != nil {
-		return recoverFlags{}, fmt.Errorf("parsing force argument: %w", err)
-	}
-
-	var attestationURL string
-	stateFile := state.New()
-	if endpoint == "" {
-		stateFile, err = state.ReadFromFile(fileHandler, constants.StateFilename)
-		if err != nil {
-			return recoverFlags{}, fmt.Errorf("reading state file: %w", err)
-		}
-		endpoint = stateFile.Infrastructure.ClusterEndpoint
-	}
-
-	endpoint, err = addPortIfMissing(endpoint, constants.RecoveryPort)
-	if err != nil {
-		return recoverFlags{}, fmt.Errorf("validating endpoint argument: %w", err)
-	}
-	r.log.Debugf("Endpoint value after parsing is %s", endpoint)
-
-	if stateFile.Infrastructure.Azure != nil {
-		attestationURL = stateFile.Infrastructure.Azure.AttestationURL
-	}
-
-	return recoverFlags{
-		endpoint: endpoint,
-		maaURL:   attestationURL,
-		force:    force,
-	}, nil
 }

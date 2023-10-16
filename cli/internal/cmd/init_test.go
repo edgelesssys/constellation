@@ -223,10 +223,6 @@ func TestInitialize(t *testing.T) {
 			var errOut bytes.Buffer
 			cmd.SetErr(&errOut)
 
-			// Flags
-			cmd.Flags().String("workspace", "", "") // register persistent flag manually
-			cmd.Flags().Bool("force", true, "")     // register persistent flag manually
-
 			// File system preparation
 			fs := afero.NewMemMapFs()
 			fileHandler := file.NewHandler(fs)
@@ -249,6 +245,8 @@ func TestInitialize(t *testing.T) {
 			defer cancel()
 			cmd.SetContext(ctx)
 			i := newInitCmd(fileHandler, &nopSpinner{}, nil, logger.NewTest(t))
+			i.flags.force = true
+
 			err := i.initialize(
 				cmd,
 				newDialer,
@@ -442,15 +440,15 @@ func TestWriteOutput(t *testing.T) {
 	require.NoError(afs.Remove(constants.AdminConfFilename))
 
 	// test custom workspace
-	i.pf = pathprefix.New("/some/path")
+	i.flags.pathPrefixer = pathprefix.New("/some/path")
 	err = i.writeOutput(stateFile, resp.GetInitSuccess(), true, &out, measurementSalt)
 	require.NoError(err)
 	assert.Contains(out.String(), clusterID)
-	assert.Contains(out.String(), i.pf.PrefixPrintablePath(constants.AdminConfFilename))
+	assert.Contains(out.String(), i.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename))
 	out.Reset()
 	// File is written to current working dir, we simply pass the workspace for generating readable user output
 	require.NoError(afs.Remove(constants.AdminConfFilename))
-	i.pf = pathprefix.PathPrefixer{}
+	i.flags.pathPrefixer = pathprefix.PathPrefixer{}
 
 	// test config merging
 	err = i.writeOutput(stateFile, resp.GetInitSuccess(), true, &out, measurementSalt)

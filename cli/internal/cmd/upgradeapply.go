@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
-	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/state"
@@ -33,6 +32,7 @@ import (
 	"github.com/rogpeppe/go-internal/diff"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
@@ -76,12 +76,62 @@ func newUpgradeApplyCmd() *cobra.Command {
 	return cmd
 }
 
-func runUpgradeApply(cmd *cobra.Command, _ []string) error {
-	flags, err := parseUpgradeApplyFlags(cmd)
-	if err != nil {
-		return fmt.Errorf("parsing flags: %w", err)
+type upgradeApplyFlags struct {
+	rootFlags
+	yes            bool
+	upgradeTimeout time.Duration
+	conformance    bool
+	helmWaitMode   helm.WaitMode
+	skipPhases     skipPhases
+}
+
+func (f *upgradeApplyFlags) parse(flags *pflag.FlagSet) error {
+	if err := f.rootFlags.parse(flags); err != nil {
+		return err
 	}
 
+	rawSkipPhases, err := flags.GetStringSlice("skip-phases")
+	if err != nil {
+		return fmt.Errorf("parsing skip-phases flag: %w", err)
+	}
+	var skipPhases []skipPhase
+	for _, phase := range rawSkipPhases {
+		switch skipPhase(phase) {
+		case skipInfrastructurePhase, skipHelmPhase, skipImagePhase, skipK8sPhase:
+			skipPhases = append(skipPhases, skipPhase(phase))
+		default:
+			return fmt.Errorf("invalid phase %s", phase)
+		}
+	}
+	f.skipPhases = skipPhases
+
+	f.yes, err = flags.GetBool("yes")
+	if err != nil {
+		return fmt.Errorf("getting 'yes' flag: %w", err)
+	}
+
+	f.upgradeTimeout, err = flags.GetDuration("timeout")
+	if err != nil {
+		return fmt.Errorf("getting 'timeout' flag: %w", err)
+	}
+
+	f.conformance, err = flags.GetBool("conformance")
+	if err != nil {
+		return fmt.Errorf("getting 'conformance' flag: %w", err)
+	}
+	skipHelmWait, err := flags.GetBool("skip-helm-wait")
+	if err != nil {
+		return fmt.Errorf("getting 'skip-helm-wait' flag: %w", err)
+	}
+	f.helmWaitMode = helm.WaitModeAtomic
+	if skipHelmWait {
+		f.helmWaitMode = helm.WaitModeNone
+	}
+
+	return nil
+}
+
+func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 	log, err := newCLILogger(cmd)
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
@@ -98,13 +148,18 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 
 	configFetcher := attestationconfigapi.NewFetcher()
 
+	var flags upgradeApplyFlags
+	if err := flags.parse(cmd.Flags()); err != nil {
+		return err
+	}
+
 	// Set up terraform upgrader
 	upgradeDir := filepath.Join(constants.UpgradeDir, upgradeID)
 	clusterUpgrader, err := cloudcmd.NewClusterUpgrader(
 		cmd.Context(),
 		constants.TerraformWorkingDir,
 		upgradeDir,
-		flags.terraformLogLevel,
+		flags.tfLogLevel,
 		fileHandler,
 	)
 	if err != nil {
@@ -122,9 +177,10 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 		clusterUpgrader: clusterUpgrader,
 		configFetcher:   configFetcher,
 		fileHandler:     fileHandler,
+		flags:           flags,
 		log:             log,
 	}
-	return applyCmd.upgradeApply(cmd, upgradeDir, flags)
+	return applyCmd.upgradeApply(cmd, upgradeDir)
 }
 
 type upgradeApplyCmd struct {
@@ -133,11 +189,12 @@ type upgradeApplyCmd struct {
 	clusterUpgrader clusterUpgrader
 	configFetcher   attestationconfigapi.Fetcher
 	fileHandler     file.Handler
+	flags           upgradeApplyFlags
 	log             debugLog
 }
 
-func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, flags upgradeApplyFlags) error {
-	conf, err := config.New(u.fileHandler, constants.ConfigFilename, u.configFetcher, flags.force)
+func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string) error {
+	conf, err := config.New(u.fileHandler, constants.ConfigFilename, u.configFetcher, u.flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -147,7 +204,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 	}
 	if cloudcmd.UpgradeRequiresIAMMigration(conf.GetProvider()) {
 		cmd.Println("WARNING: This upgrade requires an IAM migration. Please make sure you have applied the IAM migration using `iam upgrade apply` before continuing.")
-		if !flags.yes {
+		if !u.flags.yes {
 			yes, err := askToConfirm(cmd, "Did you upgrade the IAM resources?")
 			if err != nil {
 				return fmt.Errorf("asking for confirmation: %w", err)
@@ -158,7 +215,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 			}
 		}
 	}
-	conf.KubernetesVersion, err = validK8sVersion(cmd, string(conf.KubernetesVersion), flags.yes)
+	conf.KubernetesVersion, err = validK8sVersion(cmd, string(conf.KubernetesVersion), u.flags.yes)
 	if err != nil {
 		return err
 	}
@@ -168,21 +225,21 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 		return fmt.Errorf("reading state file: %w", err)
 	}
 
-	if err := u.confirmAndUpgradeAttestationConfig(cmd, conf.GetAttestationConfig(), stateFile.ClusterValues.MeasurementSalt, flags); err != nil {
+	if err := u.confirmAndUpgradeAttestationConfig(cmd, conf.GetAttestationConfig(), stateFile.ClusterValues.MeasurementSalt); err != nil {
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
 
 	// If infrastructure phase is skipped, we expect the new infrastructure
 	// to be in the Terraform configuration already. Otherwise, perform
 	// the Terraform migrations.
-	if !flags.skipPhases.contains(skipInfrastructurePhase) {
+	if !u.flags.skipPhases.contains(skipInfrastructurePhase) {
 		migrationRequired, err := u.planTerraformMigration(cmd, conf)
 		if err != nil {
 			return fmt.Errorf("planning Terraform migrations: %w", err)
 		}
 
 		if migrationRequired {
-			postMigrationInfraState, err := u.migrateTerraform(cmd, conf, upgradeDir, flags)
+			postMigrationInfraState, err := u.migrateTerraform(cmd, conf, upgradeDir)
 			if err != nil {
 				return fmt.Errorf("performing Terraform migrations: %w", err)
 			}
@@ -217,8 +274,8 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 	}
 
 	var upgradeErr *compatibility.InvalidUpgradeError
-	if !flags.skipPhases.contains(skipHelmPhase) {
-		err = u.handleServiceUpgrade(cmd, conf, stateFile, upgradeDir, flags)
+	if !u.flags.skipPhases.contains(skipHelmPhase) {
+		err = u.handleServiceUpgrade(cmd, conf, stateFile, upgradeDir)
 		switch {
 		case errors.As(err, &upgradeErr):
 			cmd.PrintErrln(err)
@@ -228,10 +285,10 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, upgradeDir string, fl
 			return fmt.Errorf("upgrading services: %w", err)
 		}
 	}
-	skipImageUpgrade := flags.skipPhases.contains(skipImagePhase)
-	skipK8sUpgrade := flags.skipPhases.contains(skipK8sPhase)
+	skipImageUpgrade := u.flags.skipPhases.contains(skipImagePhase)
+	skipK8sUpgrade := u.flags.skipPhases.contains(skipK8sPhase)
 	if !(skipImageUpgrade && skipK8sUpgrade) {
-		err = u.kubeUpgrader.UpgradeNodeVersion(cmd.Context(), conf, flags.force, skipImageUpgrade, skipK8sUpgrade)
+		err = u.kubeUpgrader.UpgradeNodeVersion(cmd.Context(), conf, u.flags.force, skipImageUpgrade, skipK8sUpgrade)
 		switch {
 		case errors.Is(err, kubecmd.ErrInProgress):
 			cmd.PrintErrln("Skipping image and Kubernetes upgrades. Another upgrade is in progress.")
@@ -284,12 +341,11 @@ func (u *upgradeApplyCmd) planTerraformMigration(cmd *cobra.Command, conf *confi
 // migrateTerraform checks if the Constellation version the cluster is being upgraded to requires a migration
 // of cloud resources with Terraform. If so, the migration is performed and the post-migration infrastructure state is returned.
 // If no migration is required, the current (pre-upgrade) infrastructure state is returned.
-func (u *upgradeApplyCmd) migrateTerraform(
-	cmd *cobra.Command, conf *config.Config, upgradeDir string, flags upgradeApplyFlags,
+func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, conf *config.Config, upgradeDir string,
 ) (state.Infrastructure, error) {
 	// If there are any Terraform migrations to apply, ask for confirmation
 	fmt.Fprintln(cmd.OutOrStdout(), "The upgrade requires a migration of Constellation cloud resources by applying an updated Terraform template. Please manually review the suggested changes below.")
-	if !flags.yes {
+	if !u.flags.yes {
 		ok, err := askToConfirm(cmd, "Do you want to apply the Terraform migrations?")
 		if err != nil {
 			return state.Infrastructure{}, fmt.Errorf("asking for confirmation: %w", err)
@@ -317,8 +373,8 @@ func (u *upgradeApplyCmd) migrateTerraform(
 
 	cmd.Printf("Infrastructure migrations applied successfully and output written to: %s\n"+
 		"A backup of the pre-upgrade state has been written to: %s\n",
-		flags.pf.PrefixPrintablePath(constants.StateFilename),
-		flags.pf.PrefixPrintablePath(filepath.Join(upgradeDir, constants.TerraformUpgradeBackupDir)),
+		u.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename),
+		u.flags.pathPrefixer.PrefixPrintablePath(filepath.Join(upgradeDir, constants.TerraformUpgradeBackupDir)),
 	)
 	return infraState, nil
 }
@@ -347,7 +403,7 @@ func validK8sVersion(cmd *cobra.Command, version string, yes bool) (validVersion
 // confirmAndUpgradeAttestationConfig checks if the locally configured measurements are different from the cluster's measurements.
 // If so the function will ask the user to confirm (if --yes is not set) and upgrade the cluster's config.
 func (u *upgradeApplyCmd) confirmAndUpgradeAttestationConfig(
-	cmd *cobra.Command, newConfig config.AttestationCfg, measurementSalt []byte, flags upgradeApplyFlags,
+	cmd *cobra.Command, newConfig config.AttestationCfg, measurementSalt []byte,
 ) error {
 	clusterAttestationConfig, err := u.kubeUpgrader.GetClusterAttestationConfig(cmd.Context(), newConfig.GetVariant())
 	if err != nil {
@@ -369,7 +425,7 @@ func (u *upgradeApplyCmd) confirmAndUpgradeAttestationConfig(
 	}
 	cmd.Println("The following changes will be applied to the attestation config:")
 	cmd.Println(diffStr)
-	if !flags.yes {
+	if !u.flags.yes {
 		ok, err := askToConfirm(cmd, "Are you sure you want to change your cluster's attestation config?")
 		if err != nil {
 			return fmt.Errorf("asking for confirmation: %w", err)
@@ -387,21 +443,20 @@ func (u *upgradeApplyCmd) confirmAndUpgradeAttestationConfig(
 }
 
 func (u *upgradeApplyCmd) handleServiceUpgrade(
-	cmd *cobra.Command, conf *config.Config, stateFile *state.State,
-	upgradeDir string, flags upgradeApplyFlags,
+	cmd *cobra.Command, conf *config.Config, stateFile *state.State, upgradeDir string,
 ) error {
 	var secret uri.MasterSecret
 	if err := u.fileHandler.ReadJSON(constants.MasterSecretFilename, &secret); err != nil {
 		return fmt.Errorf("reading master secret: %w", err)
 	}
-	serviceAccURI, err := cloudcmd.GetMarshaledServiceAccountURI(conf.GetProvider(), conf, flags.pf, u.log, u.fileHandler)
+	serviceAccURI, err := cloudcmd.GetMarshaledServiceAccountURI(conf.GetProvider(), conf, u.flags.pathPrefixer, u.log, u.fileHandler)
 	if err != nil {
 		return fmt.Errorf("getting service account URI: %w", err)
 	}
 	options := helm.Options{
-		Force:        flags.force,
-		Conformance:  flags.conformance,
-		HelmWaitMode: flags.helmWaitMode,
+		Force:        u.flags.force,
+		Conformance:  u.flags.conformance,
+		HelmWaitMode: u.flags.helmWaitMode,
 	}
 
 	prepareApply := func(allowDestructive bool) (helm.Applier, bool, error) {
@@ -422,7 +477,7 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(
 		if !errors.Is(err, helm.ErrConfirmationMissing) {
 			return fmt.Errorf("upgrading charts with deny destructive mode: %w", err)
 		}
-		if !flags.yes {
+		if !u.flags.yes {
 			cmd.PrintErrln("WARNING: Upgrading cert-manager will destroy all custom resources you have manually created that are based on the current version of cert-manager.")
 			ok, askErr := askToConfirm(cmd, "Do you want to upgrade cert-manager anyway?")
 			if askErr != nil {
@@ -461,86 +516,6 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(
 	}
 
 	return nil
-}
-
-func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
-	workDir, err := cmd.Flags().GetString("workspace")
-	if err != nil {
-		return upgradeApplyFlags{}, err
-	}
-
-	yes, err := cmd.Flags().GetBool("yes")
-	if err != nil {
-		return upgradeApplyFlags{}, err
-	}
-
-	timeout, err := cmd.Flags().GetDuration("timeout")
-	if err != nil {
-		return upgradeApplyFlags{}, err
-	}
-
-	force, err := cmd.Flags().GetBool("force")
-	if err != nil {
-		return upgradeApplyFlags{}, fmt.Errorf("parsing force argument: %w", err)
-	}
-
-	logLevelString, err := cmd.Flags().GetString("tf-log")
-	if err != nil {
-		return upgradeApplyFlags{}, fmt.Errorf("parsing tf-log string: %w", err)
-	}
-	logLevel, err := terraform.ParseLogLevel(logLevelString)
-	if err != nil {
-		return upgradeApplyFlags{}, fmt.Errorf("parsing Terraform log level %s: %w", logLevelString, err)
-	}
-
-	conformance, err := cmd.Flags().GetBool("conformance")
-	if err != nil {
-		return upgradeApplyFlags{}, fmt.Errorf("parsing conformance flag: %w", err)
-	}
-	skipHelmWait, err := cmd.Flags().GetBool("skip-helm-wait")
-	if err != nil {
-		return upgradeApplyFlags{}, fmt.Errorf("parsing skip-helm-wait flag: %w", err)
-	}
-	helmWaitMode := helm.WaitModeAtomic
-	if skipHelmWait {
-		helmWaitMode = helm.WaitModeNone
-	}
-
-	rawSkipPhases, err := cmd.Flags().GetStringSlice("skip-phases")
-	if err != nil {
-		return upgradeApplyFlags{}, fmt.Errorf("parsing skip-phases flag: %w", err)
-	}
-	var skipPhases []skipPhase
-	for _, phase := range rawSkipPhases {
-		switch skipPhase(phase) {
-		case skipInfrastructurePhase, skipHelmPhase, skipImagePhase, skipK8sPhase:
-			skipPhases = append(skipPhases, skipPhase(phase))
-		default:
-			return upgradeApplyFlags{}, fmt.Errorf("invalid phase %s", phase)
-		}
-	}
-
-	return upgradeApplyFlags{
-		pf:                pathprefix.New(workDir),
-		yes:               yes,
-		upgradeTimeout:    timeout,
-		force:             force,
-		terraformLogLevel: logLevel,
-		conformance:       conformance,
-		helmWaitMode:      helmWaitMode,
-		skipPhases:        skipPhases,
-	}, nil
-}
-
-type upgradeApplyFlags struct {
-	pf                pathprefix.PathPrefixer
-	yes               bool
-	upgradeTimeout    time.Duration
-	force             bool
-	terraformLogLevel terraform.LogLevel
-	conformance       bool
-	helmWaitMode      helm.WaitMode
-	skipPhases        skipPhases
 }
 
 // skipPhases is a list of phases that can be skipped during the upgrade process.

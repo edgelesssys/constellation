@@ -133,16 +133,9 @@ func TestCreate(t *testing.T) {
 			cmd.SetOut(&bytes.Buffer{})
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
-			cmd.Flags().String("workspace", "", "")  // register persistent flag manually
-			cmd.Flags().Bool("force", true, "")      // register persistent flag manually
-			cmd.Flags().String("tf-log", "NONE", "") // register persistent flag manually
-
-			if tc.yesFlag {
-				require.NoError(cmd.Flags().Set("yes", "true"))
-			}
 
 			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider))
-			c := &createCmd{log: logger.NewTest(t)}
+			c := &createCmd{log: logger.NewTest(t), flags: createFlags{yes: tc.yesFlag}}
 			err := c.create(cmd, tc.creator, fileHandler, &nopSpinner{}, stubAttestationFetcher{})
 
 			if tc.wantErr {

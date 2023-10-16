@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -19,6 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"golang.org/x/mod/semver"
 )
 
@@ -41,13 +41,34 @@ func newConfigGenerateCmd() *cobra.Command {
 }
 
 type generateFlags struct {
-	pf                 pathprefix.PathPrefixer
+	rootFlags
 	k8sVersion         versions.ValidK8sVersion
 	attestationVariant variant.Variant
 }
 
+func (f *generateFlags) parse(flags *pflag.FlagSet) error {
+	if err := f.rootFlags.parse(flags); err != nil {
+		return err
+	}
+
+	k8sVersion, err := parseK8sFlag(flags)
+	if err != nil {
+		return err
+	}
+	f.k8sVersion = k8sVersion
+
+	variant, err := parseAttestationFlag(flags)
+	if err != nil {
+		return err
+	}
+	f.attestationVariant = variant
+
+	return nil
+}
+
 type configGenerateCmd struct {
-	log debugLog
+	flags generateFlags
+	log   debugLog
 }
 
 func runConfigGenerate(cmd *cobra.Command, args []string) error {
@@ -56,31 +77,32 @@ func runConfigGenerate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("creating logger: %w", err)
 	}
 	defer log.Sync()
+
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	provider := cloudprovider.FromString(args[0])
+
 	cg := &configGenerateCmd{log: log}
+	if err := cg.flags.parse(cmd.Flags()); err != nil {
+		return fmt.Errorf("parsing flags: %w", err)
+	}
+	log.Debugf("Parsed flags as %+v", cg.flags)
+
 	return cg.configGenerate(cmd, fileHandler, provider, args[0])
 }
 
 func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file.Handler, provider cloudprovider.Provider, rawProvider string) error {
-	flags, err := parseGenerateFlags(cmd)
-	if err != nil {
-		return err
-	}
-
-	cg.log.Debugf("Parsed flags as %v", flags)
 	cg.log.Debugf("Using cloud provider %s", provider.String())
-	conf, err := createConfigWithAttestationVariant(provider, rawProvider, flags.attestationVariant)
+	conf, err := createConfigWithAttestationVariant(provider, rawProvider, cg.flags.attestationVariant)
 	if err != nil {
 		return fmt.Errorf("creating config: %w", err)
 	}
-	conf.KubernetesVersion = flags.k8sVersion
+	conf.KubernetesVersion = cg.flags.k8sVersion
 	cg.log.Debugf("Writing YAML data to configuration file")
 	if err := fileHandler.WriteYAML(constants.ConfigFilename, conf, file.OptMkdirAll); err != nil {
 		return err
 	}
 
-	cmd.Println("Config file written to", flags.pf.PrefixPrintablePath(constants.ConfigFilename))
+	cmd.Println("Config file written to", cg.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
 	cmd.Println("Please fill in your CSP-specific configuration before proceeding.")
 	cmd.Println("For more information refer to the documentation:")
 	cmd.Println("\thttps://docs.edgeless.systems/constellation/getting-started/first-steps")
@@ -123,46 +145,6 @@ func createConfig(provider cloudprovider.Provider) *config.Config {
 	return res
 }
 
-func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
-	workDir, err := cmd.Flags().GetString("workspace")
-	if err != nil {
-		return generateFlags{}, fmt.Errorf("parsing workspace flag: %w", err)
-	}
-	k8sVersion, err := cmd.Flags().GetString("kubernetes")
-	if err != nil {
-		return generateFlags{}, fmt.Errorf("parsing Kubernetes flag: %w", err)
-	}
-	resolvedVersion, err := versions.ResolveK8sPatchVersion(k8sVersion)
-	if err != nil {
-		return generateFlags{}, fmt.Errorf("resolving kubernetes patch version from flag: %w", err)
-	}
-	validK8sVersion, err := versions.NewValidK8sVersion(resolvedVersion, true)
-	if err != nil {
-		return generateFlags{}, fmt.Errorf("resolving Kubernetes version from flag: %w", err)
-	}
-
-	attestationString, err := cmd.Flags().GetString("attestation")
-	if err != nil {
-		return generateFlags{}, fmt.Errorf("parsing attestation flag: %w", err)
-	}
-
-	var attestationVariant variant.Variant
-	// if no attestation variant is specified, use the default for the cloud provider
-	if attestationString == "" {
-		attestationVariant = variant.Dummy{}
-	} else {
-		attestationVariant, err = variant.FromString(attestationString)
-		if err != nil {
-			return generateFlags{}, fmt.Errorf("invalid attestation variant: %s", attestationString)
-		}
-	}
-	return generateFlags{
-		pf:                 pathprefix.New(workDir),
-		k8sVersion:         validK8sVersion,
-		attestationVariant: attestationVariant,
-	}, nil
-}
-
 // generateCompletion handles the completion of the create command. It is frequently called
 // while the user types arguments of the command to suggest completion.
 func generateCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
@@ -184,4 +166,40 @@ func toString[T any](t []T) []string {
 		res = append(res, fmt.Sprintf("%v", v))
 	}
 	return res
+}
+
+func parseK8sFlag(flags *pflag.FlagSet) (versions.ValidK8sVersion, error) {
+	versionString, err := flags.GetString("kubernetes")
+	if err != nil {
+		return "", fmt.Errorf("getting kubernetes flag: %w", err)
+	}
+	resolvedVersion, err := versions.ResolveK8sPatchVersion(versionString)
+	if err != nil {
+		return "", fmt.Errorf("resolving kubernetes patch version from flag: %w", err)
+	}
+	k8sVersion, err := versions.NewValidK8sVersion(resolvedVersion, true)
+	if err != nil {
+		return "", fmt.Errorf("resolving Kubernetes version from flag: %w", err)
+	}
+	return k8sVersion, nil
+}
+
+func parseAttestationFlag(flags *pflag.FlagSet) (variant.Variant, error) {
+	attestationString, err := flags.GetString("attestation")
+	if err != nil {
+		return nil, fmt.Errorf("getting attestation flag: %w", err)
+	}
+
+	var attestationVariant variant.Variant
+	// if no attestation variant is specified, use the default for the cloud provider
+	if attestationString == "" {
+		attestationVariant = variant.Dummy{}
+	} else {
+		attestationVariant, err = variant.FromString(attestationString)
+		if err != nil {
+			return nil, fmt.Errorf("invalid attestation variant: %s", attestationString)
+		}
+	}
+
+	return attestationVariant, nil
 }

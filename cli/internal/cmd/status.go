@@ -45,11 +45,6 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 	}
 	defer log.Sync()
 
-	flags, err := parseStatusFlags(cmd)
-	if err != nil {
-		return fmt.Errorf("parsing flags: %w", err)
-	}
-
 	fileHandler := file.NewHandler(afero.NewOsFs())
 
 	helmClient, err := helm.NewReleaseVersionClient(constants.AdminConfFilename, log)
@@ -61,55 +56,61 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 	}
 
 	fetcher := attestationconfigapi.NewFetcher()
-	conf, err := config.New(fileHandler, constants.ConfigFilename, fetcher, flags.force)
-	var configValidationErr *config.ValidationError
-	if errors.As(err, &configValidationErr) {
-		cmd.PrintErrln(configValidationErr.LongMessage())
-	}
-	variant := conf.GetAttestationConfig().GetVariant()
-
 	kubeClient, err := kubecmd.New(cmd.OutOrStdout(), constants.AdminConfFilename, fileHandler, log)
 	if err != nil {
 		return fmt.Errorf("setting up kubernetes client: %w", err)
 	}
 
-	output, err := status(cmd.Context(), helmVersionGetter, kubeClient, variant)
-	if err != nil {
-		return fmt.Errorf("getting status: %w", err)
+	s := statusCmd{log: log, fileHandler: fileHandler}
+	if err := s.flags.parse(cmd.Flags()); err != nil {
+		return err
 	}
+	return s.status(cmd, helmVersionGetter, kubeClient, fetcher)
+}
 
-	cmd.Print(output)
-	return nil
+type statusCmd struct {
+	log         debugLog
+	fileHandler file.Handler
+	flags       rootFlags
 }
 
 // status queries the cluster for the relevant status information and returns the output string.
-func status(ctx context.Context, getHelmVersions func() (fmt.Stringer, error), kubeClient kubeCmd, attestVariant variant.Variant,
-) (string, error) {
-	nodeVersion, err := kubeClient.GetConstellationVersion(ctx)
-	if err != nil {
-		return "", fmt.Errorf("getting constellation version: %w", err)
+func (s *statusCmd) status(
+	cmd *cobra.Command, getHelmVersions func() (fmt.Stringer, error),
+	kubeClient kubeCmd, fetcher attestationconfigapi.Fetcher,
+) error {
+	conf, err := config.New(s.fileHandler, constants.ConfigFilename, fetcher, s.flags.force)
+	var configValidationErr *config.ValidationError
+	if errors.As(err, &configValidationErr) {
+		cmd.PrintErrln(configValidationErr.LongMessage())
 	}
 
-	attestationConfig, err := kubeClient.GetClusterAttestationConfig(ctx, attestVariant)
+	nodeVersion, err := kubeClient.GetConstellationVersion(cmd.Context())
 	if err != nil {
-		return "", fmt.Errorf("getting attestation config: %w", err)
+		return fmt.Errorf("getting constellation version: %w", err)
+	}
+
+	attestationConfig, err := kubeClient.GetClusterAttestationConfig(cmd.Context(), conf.GetAttestationConfig().GetVariant())
+	if err != nil {
+		return fmt.Errorf("getting attestation config: %w", err)
 	}
 	prettyYAML, err := yaml.Marshal(attestationConfig)
 	if err != nil {
-		return "", fmt.Errorf("marshalling attestation config: %w", err)
+		return fmt.Errorf("marshalling attestation config: %w", err)
 	}
 
 	serviceVersions, err := getHelmVersions()
 	if err != nil {
-		return "", fmt.Errorf("getting service versions: %w", err)
+		return fmt.Errorf("getting service versions: %w", err)
 	}
 
-	status, err := kubeClient.ClusterStatus(ctx)
+	status, err := kubeClient.ClusterStatus(cmd.Context())
 	if err != nil {
-		return "", fmt.Errorf("getting cluster status: %w", err)
+		return fmt.Errorf("getting cluster status: %w", err)
 	}
 
-	return statusOutput(nodeVersion, serviceVersions, status, string(prettyYAML)), nil
+	cmd.Print(statusOutput(nodeVersion, serviceVersions, status, string(prettyYAML)))
+	return nil
 }
 
 // statusOutput creates the status cmd output string by formatting the received information.
@@ -165,26 +166,6 @@ func targetVersionsString(target kubecmd.NodeVersion) string {
 	builder.WriteString(fmt.Sprintf("\tKubernetes: %s\n", target.KubernetesVersion()))
 
 	return builder.String()
-}
-
-type statusFlags struct {
-	workspace string
-	force     bool
-}
-
-func parseStatusFlags(cmd *cobra.Command) (statusFlags, error) {
-	workspace, err := cmd.Flags().GetString("workspace")
-	if err != nil {
-		return statusFlags{}, fmt.Errorf("getting config flag: %w", err)
-	}
-	force, err := cmd.Flags().GetBool("force")
-	if err != nil {
-		return statusFlags{}, fmt.Errorf("getting config flag: %w", err)
-	}
-	return statusFlags{
-		workspace: workspace,
-		force:     force,
-	}, nil
 }
 
 type kubeCmd interface {

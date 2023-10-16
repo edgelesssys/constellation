@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"testing"
@@ -14,8 +15,12 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/file"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -63,7 +68,6 @@ func TestStatus(t *testing.T) {
 
 	testCases := map[string]struct {
 		kubeClient     stubKubeClient
-		attestVariant  variant.Variant
 		expectedOutput string
 		wantErr        bool
 	}{
@@ -104,7 +108,6 @@ func TestStatus(t *testing.T) {
 					},
 				},
 			},
-			attestVariant:  variant.QEMUVTPM{},
 			expectedOutput: successOutput,
 		},
 		"one of two nodes not upgraded": {
@@ -157,7 +160,6 @@ func TestStatus(t *testing.T) {
 					},
 				},
 			},
-			attestVariant:  variant.QEMUVTPM{},
 			expectedOutput: inProgressOutput,
 		},
 		"error getting node status": {
@@ -183,7 +185,6 @@ func TestStatus(t *testing.T) {
 					},
 				},
 			},
-			attestVariant:  variant.QEMUVTPM{},
 			expectedOutput: successOutput,
 			wantErr:        true,
 		},
@@ -211,7 +212,6 @@ func TestStatus(t *testing.T) {
 					},
 				},
 			},
-			attestVariant:  variant.QEMUVTPM{},
 			expectedOutput: successOutput,
 			wantErr:        true,
 		},
@@ -248,7 +248,6 @@ func TestStatus(t *testing.T) {
 				}),
 				attestationErr: assert.AnError,
 			},
-			attestVariant:  variant.QEMUVTPM{},
 			expectedOutput: successOutput,
 			wantErr:        true,
 		},
@@ -259,19 +258,31 @@ func TestStatus(t *testing.T) {
 			require := require.New(t)
 			assert := assert.New(t)
 
-			variant := variant.AWSNitroTPM{}
-			output, err := status(
-				context.Background(),
+			cmd := NewStatusCmd()
+			var out bytes.Buffer
+			cmd.SetOut(&out)
+			var errOut bytes.Buffer
+			cmd.SetErr(&errOut)
+
+			fileHandler := file.NewHandler(afero.NewMemMapFs())
+			cfg, err := createConfigWithAttestationVariant(cloudprovider.QEMU, "", variant.QEMUVTPM{})
+			require.NoError(err)
+			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, cfg))
+
+			s := statusCmd{fileHandler: fileHandler}
+
+			err = s.status(
+				cmd,
 				stubGetVersions(versionsOutput),
 				tc.kubeClient,
-				variant,
+				stubAttestationFetcher{},
 			)
 			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedOutput, output)
+			assert.Equal(tc.expectedOutput, out.String())
 		})
 	}
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -134,18 +135,17 @@ func TestTerminate(t *testing.T) {
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 
-			// register persistent flags manually
-			cmd.Flags().String("tf-log", "NONE", "")
-			cmd.Flags().String("workspace", "", "")
-
 			require.NotNil(tc.setupFs)
 			fileHandler := file.NewHandler(tc.setupFs(require, tc.stateFile))
 
-			if tc.yesFlag {
-				require.NoError(cmd.Flags().Set("yes", "true"))
+			tCmd := &terminateCmd{
+				log:         logger.NewTest(t),
+				fileHandler: fileHandler,
+				flags: terminateFlags{
+					yes: tc.yesFlag,
+				},
 			}
-
-			err := terminate(cmd, tc.terminator, fileHandler, &nopSpinner{})
+			err := tCmd.terminate(cmd, tc.terminator, &nopSpinner{})
 
 			if tc.wantErr {
 				assert.Error(err)
