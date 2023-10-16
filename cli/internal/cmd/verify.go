@@ -809,7 +809,7 @@ func newSNPReport(reportBytes []byte) (res verify.SNPReport, err error) {
 		SignerInfo: verify.SignerInfo{
 			AuthorKey:   signerInfo.AuthorKeyEn,
 			MaskChipKey: signerInfo.MaskChipKey,
-			SigningKey:  signerInfo.SigningKey,
+			SigningKey:  signerInfo.SigningKey.String(),
 		},
 		ReportData:      report.ReportData,
 		Measurement:     report.Measurement,

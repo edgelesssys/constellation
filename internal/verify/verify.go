@@ -14,7 +14,6 @@ package verify
 
 import (
 	"crypto/x509"
-	"fmt"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -57,9 +56,9 @@ type PlatformInfo struct {
 
 // SignerInfo contains the signer information.
 type SignerInfo struct {
-	AuthorKey   bool         `json:"author_key_en"`
-	MaskChipKey bool         `json:"mask_chip_key"`
-	SigningKey  fmt.Stringer `json:"signing_key"`
+	AuthorKey   bool   `json:"author_key_en"`
+	MaskChipKey bool   `json:"mask_chip_key"`
+	SigningKey  string `json:"signing_key"`
 }
 
 // SNPReport contains the SNP report data.
