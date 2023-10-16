@@ -102,7 +102,7 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 	conf.KubernetesVersion = cg.flags.k8sVersion
 	cg.log.Debugf("Writing YAML data to configuration file")
 	if err := fileHandler.WriteYAML(constants.ConfigFilename, conf, file.OptMkdirAll); err != nil {
-		return err
+		return fmt.Errorf("writing config file: %w", err)
 	}
 
 	cmd.Println("Config file written to", cg.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
@@ -116,7 +116,9 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 	case cloudprovider.Azure:
 		stateFile.SetInfrastructure(state.Infrastructure{Azure: &state.Azure{}})
 	}
-	stateFile.WriteToFile(fileHandler, constants.StateFilename)
+	if err = stateFile.WriteToFile(fileHandler, constants.StateFilename); err != nil {
+		return fmt.Errorf("writing state file: %w", err)
+	}
 	cmd.Println("State file written to", cg.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename))
 
 	cmd.Println("For more information refer to the documentation:")
