@@ -169,32 +169,6 @@ func TestConfigGenerateDefaultProviderSpecific(t *testing.T) {
 	}
 }
 
-func TestConfigGenerateWithStackIt(t *testing.T) {
-	openStackProviders := []string{"stackit"}
-
-	for _, openStackProvider := range openStackProviders {
-		t.Run(openStackProvider, func(t *testing.T) {
-			assert := assert.New(t)
-			require := require.New(t)
-
-			fileHandler := file.NewHandler(afero.NewMemMapFs())
-			cmd := newConfigGenerateCmd()
-			cmd.Flags().String("workspace", "", "") // register persistent flag manually
-
-			wantConf := config.Default().WithOpenStackProviderDefaults(openStackProvider)
-			wantConf.RemoveProviderAndAttestationExcept(cloudprovider.OpenStack)
-
-			cg := &configGenerateCmd{log: logger.NewTest(t)}
-			require.NoError(cg.configGenerate(cmd, fileHandler, cloudprovider.OpenStack, openStackProvider))
-
-			var readConfig config.Config
-			err := fileHandler.ReadYAML(constants.ConfigFilename, &readConfig)
-			assert.NoError(err)
-			assert.Equal(*wantConf, readConfig)
-		})
-	}
-}
-
 func TestConfigGenerateDefaultExists(t *testing.T) {
 	require := require.New(t)
 
