@@ -12,7 +12,7 @@ constellation [command]
 Commands:
 
 * [config](#constellation-config): Work with the Constellation configuration file
-  * [generate](#constellation-config-generate): Generate a default configuration file
+  * [generate](#constellation-config-generate): Generate a default configuration and state file
   * [fetch-measurements](#constellation-config-fetch-measurements): Fetch measurements for configured cloud provider and image
   * [instance-types](#constellation-config-instance-types): Print the supported instance types for all cloud providers
   * [kubernetes-versions](#constellation-config-kubernetes-versions): Print the Kubernetes versions supported by this CLI
@@ -64,11 +64,11 @@ Work with the Constellation configuration file.
 
 ## constellation config generate
 
-Generate a default configuration file
+Generate a default configuration and state file
 
 ### Synopsis
 
-Generate a default configuration file for your selected cloud provider.
+Generate a default configuration and state file for your selected cloud provider.
 
 ```
 constellation config generate {aws|azure|gcp|openstack|qemu|stackit} [flags]

@@ -191,8 +191,12 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	}
 	c.log.Debugf("Successfully created the cloud resources for the cluster")
 
-	state := state.New().SetInfrastructure(infraState)
-	if err := state.WriteToFile(fileHandler, constants.StateFilename); err != nil {
+	stateFile, err := state.ReadFromFile(fileHandler, constants.StateFilename)
+	if err != nil {
+		return fmt.Errorf("reading state file: %w", err)
+	}
+	stateFile = stateFile.SetInfrastructure(infraState)
+	if err := stateFile.WriteToFile(fileHandler, constants.StateFilename); err != nil {
 		return fmt.Errorf("writing state file: %w", err)
 	}
 
@@ -214,13 +218,6 @@ func (c *createCmd) checkDirClean(fileHandler file.Handler) error {
 		return fmt.Errorf(
 			"file '%s' already exists in working directory. Constellation won't overwrite previous master secrets. Move it somewhere or delete it before creating a new cluster",
 			c.flags.pathPrefixer.PrefixPrintablePath(constants.MasterSecretFilename),
-		)
-	}
-	c.log.Debugf("Checking state file")
-	if _, err := fileHandler.Stat(constants.StateFilename); !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf(
-			"file '%s' already exists in working directory. Constellation won't overwrite previous cluster state. Move it somewhere or delete it before creating a new cluster",
-			c.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename),
 		)
 	}
 

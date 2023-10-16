@@ -13,7 +13,7 @@ If you encounter any problem with the following steps, make sure to use the [lat
 
 ## Create a cluster
 
-1. Create the [configuration file](../workflows/config.md) for your cloud provider.
+1. Create the [configuration file](../workflows/config.md) and state file for your cloud provider.
 
     <tabs groupId="csp">
 

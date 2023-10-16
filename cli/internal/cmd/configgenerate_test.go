@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -103,6 +104,9 @@ func TestConfigGenerateDefault(t *testing.T) {
 	err := fileHandler.ReadYAML(constants.ConfigFilename, &readConfig)
 	assert.NoError(err)
 	assert.Equal(*config.Default(), readConfig)
+
+	_, err = state.ReadFromFile(fileHandler, constants.StateFilename)
+	assert.NoError(err)
 }
 
 func TestConfigGenerateDefaultProviderSpecific(t *testing.T) {
@@ -152,6 +156,15 @@ func TestConfigGenerateDefaultProviderSpecific(t *testing.T) {
 			err := fileHandler.ReadYAML(constants.ConfigFilename, &readConfig)
 			assert.NoError(err)
 			assert.Equal(*wantConf, readConfig)
+
+			stateFile, err := state.ReadFromFile(fileHandler, constants.StateFilename)
+			assert.NoError(err)
+			switch tc.provider {
+			case cloudprovider.GCP:
+				assert.NotNil(stateFile.Infrastructure.GCP)
+			case cloudprovider.Azure:
+				assert.NotNil(stateFile.Infrastructure.Azure)
+			}
 		})
 	}
 }

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -25,8 +26,8 @@ import (
 func newConfigGenerateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "generate {aws|azure|gcp|openstack|qemu|stackit}",
-		Short: "Generate a default configuration file",
-		Long:  "Generate a default configuration file for your selected cloud provider.",
+		Short: "Generate a default configuration and state file",
+		Long:  "Generate a default configuration and state file for your selected cloud provider.",
 		Args: cobra.MatchAll(
 			cobra.ExactArgs(1),
 			isCloudProvider(0),
@@ -92,6 +93,8 @@ func runConfigGenerate(cmd *cobra.Command, args []string) error {
 
 func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file.Handler, provider cloudprovider.Provider, rawProvider string) error {
 	cg.log.Debugf("Using cloud provider %s", provider.String())
+
+	// Config creation
 	conf, err := createConfigWithAttestationVariant(provider, rawProvider, cg.flags.attestationVariant)
 	if err != nil {
 		return fmt.Errorf("creating config: %w", err)
@@ -99,11 +102,25 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 	conf.KubernetesVersion = cg.flags.k8sVersion
 	cg.log.Debugf("Writing YAML data to configuration file")
 	if err := fileHandler.WriteYAML(constants.ConfigFilename, conf, file.OptMkdirAll); err != nil {
-		return err
+		return fmt.Errorf("writing config file: %w", err)
 	}
 
 	cmd.Println("Config file written to", cg.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
 	cmd.Println("Please fill in your CSP-specific configuration before proceeding.")
+
+	// State-file creation
+	stateFile := state.New()
+	switch provider {
+	case cloudprovider.GCP:
+		stateFile.SetInfrastructure(state.Infrastructure{GCP: &state.GCP{}})
+	case cloudprovider.Azure:
+		stateFile.SetInfrastructure(state.Infrastructure{Azure: &state.Azure{}})
+	}
+	if err = stateFile.WriteToFile(fileHandler, constants.StateFilename); err != nil {
+		return fmt.Errorf("writing state file: %w", err)
+	}
+	cmd.Println("State file written to", cg.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename))
+
 	cmd.Println("For more information refer to the documentation:")
 	cmd.Println("\thttps://docs.edgeless.systems/constellation/getting-started/first-steps")
 
