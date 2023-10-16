@@ -24,7 +24,21 @@ import (
 )
 
 func TestCreate(t *testing.T) {
-	fsWithDefaultConfig := func(require *require.Assertions, provider cloudprovider.Provider) afero.Fs {
+	fsWithDefaultConfigAndState := func(require *require.Assertions, provider cloudprovider.Provider) afero.Fs {
+		fs := afero.NewMemMapFs()
+		file := file.NewHandler(fs)
+		require.NoError(file.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), provider)))
+		stateFile := state.New()
+		switch provider {
+		case cloudprovider.GCP:
+			stateFile.SetInfrastructure(state.Infrastructure{GCP: &state.GCP{}})
+		case cloudprovider.Azure:
+			stateFile.SetInfrastructure(state.Infrastructure{Azure: &state.Azure{}})
+		}
+		require.NoError(stateFile.WriteToFile(file, constants.StateFilename))
+		return fs
+	}
+	fsWithoutState := func(require *require.Assertions, provider cloudprovider.Provider) afero.Fs {
 		fs := afero.NewMemMapFs()
 		file := file.NewHandler(fs)
 		require.NoError(file.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), provider)))
@@ -45,26 +59,26 @@ func TestCreate(t *testing.T) {
 		wantAbort           bool
 	}{
 		"create": {
-			setupFs:  fsWithDefaultConfig,
+			setupFs:  fsWithDefaultConfigAndState,
 			creator:  &stubCloudCreator{state: infraState},
 			provider: cloudprovider.GCP,
 			yesFlag:  true,
 		},
 		"interactive": {
-			setupFs:  fsWithDefaultConfig,
+			setupFs:  fsWithDefaultConfigAndState,
 			creator:  &stubCloudCreator{state: infraState},
 			provider: cloudprovider.Azure,
 			stdin:    "yes\n",
 		},
 		"interactive abort": {
-			setupFs:   fsWithDefaultConfig,
+			setupFs:   fsWithDefaultConfigAndState,
 			creator:   &stubCloudCreator{},
 			provider:  cloudprovider.GCP,
 			stdin:     "no\n",
 			wantAbort: true,
 		},
 		"interactive error": {
-			setupFs:  fsWithDefaultConfig,
+			setupFs:  fsWithDefaultConfigAndState,
 			creator:  &stubCloudCreator{},
 			provider: cloudprovider.GCP,
 			stdin:    "foo\nfoo\nfoo\n",
@@ -103,8 +117,15 @@ func TestCreate(t *testing.T) {
 			yesFlag:  true,
 			wantErr:  true,
 		},
+		"state file does not exist": {
+			setupFs:  fsWithoutState,
+			creator:  &stubCloudCreator{},
+			provider: cloudprovider.GCP,
+			yesFlag:  true,
+			wantErr:  true,
+		},
 		"create error": {
-			setupFs:  fsWithDefaultConfig,
+			setupFs:  fsWithDefaultConfigAndState,
 			creator:  &stubCloudCreator{createErr: someErr},
 			provider: cloudprovider.GCP,
 			yesFlag:  true,
