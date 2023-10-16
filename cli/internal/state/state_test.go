@@ -381,6 +381,10 @@ func TestUnmarshalHexBytes(t *testing.T) {
 			in:       "[0xab, 0xcd, 0xef]",
 			expected: []byte{0xab, 0xcd, 0xef},
 		},
+		"byte slice compat 2": {
+			in:       "[00, 12, 34]",
+			expected: []byte{0x00, 0x0c, 0x22},
+		},
 	}
 
 	for name, tc := range testCases {
