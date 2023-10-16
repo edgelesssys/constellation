@@ -326,3 +326,72 @@ func TestMerge(t *testing.T) {
 		})
 	}
 }
+
+func TestMarshalHexBytes(t *testing.T) {
+	testCases := map[string]struct {
+		in       hexBytes
+		expected string
+		wantErr  bool
+	}{
+		"success": {
+			in:       []byte{0xab, 0xcd, 0xef},
+			expected: "abcdef\n",
+		},
+		"empty": {
+			in:       []byte{},
+			expected: "\"\"\n",
+		},
+		"nil": {
+			in:       nil,
+			expected: "\"\"\n",
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			actual, err := yaml.Marshal(tc.in)
+
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.expected, string(actual))
+			}
+		})
+	}
+}
+
+func TestUnmarshalHexBytes(t *testing.T) {
+	testCases := map[string]struct {
+		in       string
+		expected hexBytes
+		wantErr  bool
+	}{
+		"success": {
+			in:       "abcdef",
+			expected: []byte{0xab, 0xcd, 0xef},
+		},
+		"empty": {
+			in:       "",
+			expected: nil,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			var actual hexBytes
+			err := yaml.Unmarshal([]byte(tc.in), &actual)
+
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.expected, actual)
+			}
+		})
+	}
+}
