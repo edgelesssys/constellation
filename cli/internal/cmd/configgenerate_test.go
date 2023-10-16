@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -103,6 +104,9 @@ func TestConfigGenerateDefault(t *testing.T) {
 	err := fileHandler.ReadYAML(constants.ConfigFilename, &readConfig)
 	assert.NoError(err)
 	assert.Equal(*config.Default(), readConfig)
+
+	_, err = state.ReadFromFile(fileHandler, constants.StateFilename)
+	assert.NoError(err)
 }
 
 func TestConfigGenerateDefaultProviderSpecific(t *testing.T) {
@@ -147,6 +151,41 @@ func TestConfigGenerateDefaultProviderSpecific(t *testing.T) {
 				},
 			}
 			require.NoError(cg.configGenerate(cmd, fileHandler, tc.provider, tc.rawProvider))
+
+			var readConfig config.Config
+			err := fileHandler.ReadYAML(constants.ConfigFilename, &readConfig)
+			assert.NoError(err)
+			assert.Equal(*wantConf, readConfig)
+
+			stateFile, err := state.ReadFromFile(fileHandler, constants.StateFilename)
+			assert.NoError(err)
+			switch tc.provider {
+			case cloudprovider.GCP:
+				assert.NotNil(stateFile.Infrastructure.GCP)
+			case cloudprovider.Azure:
+				assert.NotNil(stateFile.Infrastructure.Azure)
+			}
+		})
+	}
+}
+
+func TestConfigGenerateWithStackIt(t *testing.T) {
+	openStackProviders := []string{"stackit"}
+
+	for _, openStackProvider := range openStackProviders {
+		t.Run(openStackProvider, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			fileHandler := file.NewHandler(afero.NewMemMapFs())
+			cmd := newConfigGenerateCmd()
+			cmd.Flags().String("workspace", "", "") // register persistent flag manually
+
+			wantConf := config.Default().WithOpenStackProviderDefaults(openStackProvider)
+			wantConf.RemoveProviderAndAttestationExcept(cloudprovider.OpenStack)
+
+			cg := &configGenerateCmd{log: logger.NewTest(t)}
+			require.NoError(cg.configGenerate(cmd, fileHandler, cloudprovider.OpenStack, openStackProvider))
 
 			var readConfig config.Config
 			err := fileHandler.ReadYAML(constants.ConfigFilename, &readConfig)

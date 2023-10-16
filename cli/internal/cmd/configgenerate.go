@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -92,6 +93,8 @@ func runConfigGenerate(cmd *cobra.Command, args []string) error {
 
 func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file.Handler, provider cloudprovider.Provider, rawProvider string) error {
 	cg.log.Debugf("Using cloud provider %s", provider.String())
+
+	// Config creation
 	conf, err := createConfigWithAttestationVariant(provider, rawProvider, cg.flags.attestationVariant)
 	if err != nil {
 		return fmt.Errorf("creating config: %w", err)
@@ -104,6 +107,18 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 
 	cmd.Println("Config file written to", cg.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
 	cmd.Println("Please fill in your CSP-specific configuration before proceeding.")
+
+	// State-file creation
+	stateFile := state.New()
+	switch provider {
+	case cloudprovider.GCP:
+		stateFile.SetInfrastructure(state.Infrastructure{GCP: &state.GCP{}})
+	case cloudprovider.Azure:
+		stateFile.SetInfrastructure(state.Infrastructure{Azure: &state.Azure{}})
+	}
+	stateFile.WriteToFile(fileHandler, constants.StateFilename)
+	cmd.Println("State file written to", cg.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename))
+
 	cmd.Println("For more information refer to the documentation:")
 	cmd.Println("\thttps://docs.edgeless.systems/constellation/getting-started/first-steps")
 
