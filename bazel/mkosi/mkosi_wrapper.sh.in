@@ -11,4 +11,17 @@ if [[ -n ${VERSION_FILE+x} ]]; then
   args+=("$VERSION_ARG")
 fi
 
+if [[ -n ${LOCAL_MIRROR+x} ]]; then
+  LOCAL_MIRROR=$(realpath "${LOCAL_MIRROR}")
+  reposdir=$(mktemp -d)
+  cat > "${reposdir}/mkosi.repo" << EOF
+[local-mirror]
+name=local-mirror
+baseurl=file://${LOCAL_MIRROR}
+enabled=1
+gpgcheck=0
+EOF
+  args+=("--package-manager-tree=${reposdir}:/etc/yum.repos.d")
+fi
+
 exec @@MKOSI@@ "${args[@]}" build

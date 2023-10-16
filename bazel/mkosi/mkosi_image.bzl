@@ -19,6 +19,8 @@ def _mkosi_image_impl(ctx):
     args.add_all(ctx.attr.packages, before_each = "--package")
     for package_file in ctx.files.package_files:
         args.add("--package", config_rel(package_file.path))
+    if len(ctx.files.local_mirror) > 0:
+        env["LOCAL_MIRROR"] = config_rel(ctx.files.local_mirror[0].dirname)
     for tree in ctx.files.base_trees:
         args.add("--base-tree", config_rel(tree.path))
     for tree in ctx.files.skeleton_trees:
@@ -38,6 +40,7 @@ def _mkosi_image_impl(ctx):
     inputs.extend(ctx.files.package_manager_trees[:])
     inputs.extend(ctx.files.extra_trees[:])
     inputs.extend(ctx.files.initrds[:])
+    inputs.extend(ctx.files.local_mirror[:])
     if ctx.attr.source_date_epoch:
         args.add("--source-date-epoch", ctx.attr.source_date_epoch)
     if ctx.attr.seed:
@@ -112,6 +115,7 @@ mkosi_image = rule(
         "initrds": attr.label_list(allow_files = True),
         "kernel_command_line": attr.string(),
         "kernel_command_line_dict": attr.string_dict(),
+        "local_mirror": attr.label_list(allow_files = True),
         "mkosi_conf": attr.label(
             allow_single_file = True,
             mandatory = True,

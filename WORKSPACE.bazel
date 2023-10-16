@@ -22,6 +22,27 @@ nixpkgs_git_repository(
 )
 
 nixpkgs_flake_package(
+    name = "awscli",
+    nix_flake_file = "//:flake.nix",
+    nix_flake_lock_file = "//:flake.lock",
+    package = "awscli2",
+)
+
+nixpkgs_flake_package(
+    name = "createrepo_c",
+    nix_flake_file = "//:flake.nix",
+    nix_flake_lock_file = "//:flake.lock",
+    package = "createrepo_c",
+)
+
+nixpkgs_flake_package(
+    name = "dnf5",
+    nix_flake_file = "//:flake.nix",
+    nix_flake_lock_file = "//:flake.lock",
+    package = "dnf5",
+)
+
+nixpkgs_flake_package(
     name = "mkosi",
     nix_flake_file = "//:flake.nix",
     nix_flake_lock_file = "//:flake.lock",
@@ -234,3 +255,11 @@ k8s_deps()
 load("//bazel/toolchains:linux_kernel.bzl", "kernel_rpms")
 
 kernel_rpms()
+
+# mkosi rpms
+load("//bazel/rpm:package_manifest.bzl", "rpm_repository")
+
+rpm_repository(
+    name = "mkosi_rpms",
+    lockfile = "//image/mirror:SHA256SUMS",
+)
