@@ -28,6 +28,7 @@ import (
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"google.golang.org/grpc"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd"
@@ -36,7 +37,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
-	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/state"
@@ -69,12 +69,45 @@ func NewInitCmd() *cobra.Command {
 	return cmd
 }
 
+// initFlags are flags used by the init command.
+type initFlags struct {
+	rootFlags
+	conformance  bool
+	helmWaitMode helm.WaitMode
+	mergeConfigs bool
+}
+
+func (f *initFlags) parse(flags *pflag.FlagSet) error {
+	if err := f.rootFlags.parse(flags); err != nil {
+		return err
+	}
+
+	skipHelmWait, err := flags.GetBool("skip-helm-wait")
+	if err != nil {
+		return fmt.Errorf("getting 'skip-helm-wait' flag: %w", err)
+	}
+	f.helmWaitMode = helm.WaitModeAtomic
+	if skipHelmWait {
+		f.helmWaitMode = helm.WaitModeNone
+	}
+
+	f.conformance, err = flags.GetBool("conformance")
+	if err != nil {
+		return fmt.Errorf("getting 'conformance' flag: %w", err)
+	}
+	f.mergeConfigs, err = flags.GetBool("merge-kubeconfig")
+	if err != nil {
+		return fmt.Errorf("getting 'merge-kubeconfig' flag: %w", err)
+	}
+	return nil
+}
+
 type initCmd struct {
 	log         debugLog
 	merger      configMerger
 	spinner     spinnerInterf
 	fileHandler file.Handler
-	pf          pathprefix.PathPrefixer
+	flags       initFlags
 }
 
 func newInitCmd(fileHandler file.Handler, spinner spinnerInterf, merger configMerger, log debugLog) *initCmd {
@@ -109,6 +142,11 @@ func runInitialize(cmd *cobra.Command, _ []string) error {
 	cmd.SetContext(ctx)
 
 	i := newInitCmd(fileHandler, spinner, &kubeconfigMerger{log: log}, log)
+	if err := i.flags.parse(cmd.Flags()); err != nil {
+		return err
+	}
+	i.log.Debugf("Using flags: %+v", i.flags)
+
 	fetcher := attestationconfigapi.NewFetcher()
 	newAttestationApplier := func(w io.Writer, kubeConfig string, log debugLog) (attestationConfigApplier, error) {
 		return kubecmd.New(w, kubeConfig, fileHandler, log)
@@ -127,13 +165,8 @@ func (i *initCmd) initialize(
 	newAttestationApplier func(io.Writer, string, debugLog) (attestationConfigApplier, error),
 	newHelmClient func(kubeConfigPath string, log debugLog) (helmApplier, error),
 ) error {
-	flags, err := i.evalFlagArgs(cmd)
-	if err != nil {
-		return err
-	}
-	i.log.Debugf("Using flags: %+v", flags)
-	i.log.Debugf("Loading configuration file from %q", i.pf.PrefixPrintablePath(constants.ConfigFilename))
-	conf, err := config.New(i.fileHandler, constants.ConfigFilename, configFetcher, flags.force)
+	i.log.Debugf("Loading configuration file from %q", i.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
+	conf, err := config.New(i.fileHandler, constants.ConfigFilename, configFetcher, i.flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -146,7 +179,7 @@ func (i *initCmd) initialize(
 	if err != nil {
 		return err
 	}
-	if !flags.force {
+	if !i.flags.force {
 		if err := validateCLIandConstellationVersionAreEqual(constants.BinaryVersion(), conf.Image, conf.MicroserviceVersion); err != nil {
 			return err
 		}
@@ -183,7 +216,7 @@ func (i *initCmd) initialize(
 		return fmt.Errorf("creating new validator: %w", err)
 	}
 	i.log.Debugf("Created a new validator")
-	serviceAccURI, err := cloudcmd.GetMarshaledServiceAccountURI(provider, conf, i.pf, i.log, i.fileHandler)
+	serviceAccURI, err := cloudcmd.GetMarshaledServiceAccountURI(provider, conf, i.flags.pathPrefixer, i.log, i.fileHandler)
 	if err != nil {
 		return err
 	}
@@ -211,7 +244,7 @@ func (i *initCmd) initialize(
 		MeasurementSalt:      measurementSalt,
 		KubernetesVersion:    versions.VersionConfigs[k8sVersion].ClusterVersion,
 		KubernetesComponents: versions.VersionConfigs[k8sVersion].KubernetesComponents.ToInitProto(),
-		ConformanceMode:      flags.conformance,
+		ConformanceMode:      i.flags.conformance,
 		InitSecret:           stateFile.Infrastructure.InitSecret,
 		ClusterName:          stateFile.Infrastructure.Name,
 		ApiserverCertSans:    stateFile.Infrastructure.APIServerCertSANs,
@@ -228,7 +261,7 @@ func (i *initCmd) initialize(
 			if nonRetriable.logCollectionErr != nil {
 				cmd.PrintErrf("Failed to collect logs from bootstrapper: %s\n", nonRetriable.logCollectionErr)
 			} else {
-				cmd.PrintErrf("Fetched bootstrapper logs are stored in %q\n", i.pf.PrefixPrintablePath(constants.ErrorLog))
+				cmd.PrintErrf("Fetched bootstrapper logs are stored in %q\n", i.flags.pathPrefixer.PrefixPrintablePath(constants.ErrorLog))
 			}
 		}
 		return err
@@ -236,7 +269,7 @@ func (i *initCmd) initialize(
 	i.log.Debugf("Initialization request succeeded")
 
 	bufferedOutput := &bytes.Buffer{}
-	if err := i.writeOutput(stateFile, resp, flags.mergeConfigs, bufferedOutput, measurementSalt); err != nil {
+	if err := i.writeOutput(stateFile, resp, i.flags.mergeConfigs, bufferedOutput, measurementSalt); err != nil {
 		return err
 	}
 
@@ -250,9 +283,9 @@ func (i *initCmd) initialize(
 
 	i.spinner.Start("Installing Kubernetes components ", false)
 	options := helm.Options{
-		Force:            flags.force,
-		Conformance:      flags.conformance,
-		HelmWaitMode:     flags.helmWaitMode,
+		Force:            i.flags.force,
+		Conformance:      i.flags.conformance,
+		HelmWaitMode:     i.flags.helmWaitMode,
 		AllowDestructive: helm.DenyDestructive,
 	}
 	helmApplier, err := newHelmClient(constants.AdminConfFilename, i.log)
@@ -457,7 +490,7 @@ func (i *initCmd) writeOutput(
 
 	tw := tabwriter.NewWriter(wr, 0, 0, 2, ' ', 0)
 	writeRow(tw, "Constellation cluster identifier", clusterID)
-	writeRow(tw, "Kubernetes configuration", i.pf.PrefixPrintablePath(constants.AdminConfFilename))
+	writeRow(tw, "Kubernetes configuration", i.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename))
 	tw.Flush()
 	fmt.Fprintln(wr)
 
@@ -485,7 +518,7 @@ func (i *initCmd) writeOutput(
 	if err := i.fileHandler.Write(constants.AdminConfFilename, kubeconfigBytes, file.OptNone); err != nil {
 		return fmt.Errorf("writing kubeconfig: %w", err)
 	}
-	i.log.Debugf("Kubeconfig written to %s", i.pf.PrefixPrintablePath(constants.AdminConfFilename))
+	i.log.Debugf("Kubeconfig written to %s", i.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename))
 
 	if mergeConfig {
 		if err := i.merger.mergeConfigs(constants.AdminConfFilename, i.fileHandler); err != nil {
@@ -500,7 +533,7 @@ func (i *initCmd) writeOutput(
 		return fmt.Errorf("writing Constellation state file: %w", err)
 	}
 
-	i.log.Debugf("Constellation state file written to %s", i.pf.PrefixPrintablePath(constants.StateFilename))
+	i.log.Debugf("Constellation state file written to %s", i.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename))
 
 	if !mergeConfig {
 		fmt.Fprintln(wr, "You can now connect to your cluster by executing:")
@@ -528,57 +561,6 @@ func writeRow(wr io.Writer, col1 string, col2 string) {
 	fmt.Fprint(wr, col1, "\t", col2, "\n")
 }
 
-// evalFlagArgs gets the flag values and does preprocessing of these values like
-// reading the content from file path flags and deriving other values from flag combinations.
-func (i *initCmd) evalFlagArgs(cmd *cobra.Command) (initFlags, error) {
-	conformance, err := cmd.Flags().GetBool("conformance")
-	if err != nil {
-		return initFlags{}, fmt.Errorf("parsing conformance flag: %w", err)
-	}
-	i.log.Debugf("Conformance flag is %t", conformance)
-	skipHelmWait, err := cmd.Flags().GetBool("skip-helm-wait")
-	if err != nil {
-		return initFlags{}, fmt.Errorf("parsing skip-helm-wait flag: %w", err)
-	}
-	helmWaitMode := helm.WaitModeAtomic
-	if skipHelmWait {
-		helmWaitMode = helm.WaitModeNone
-	}
-	i.log.Debugf("Helm wait flag is %t", skipHelmWait)
-	workDir, err := cmd.Flags().GetString("workspace")
-	if err != nil {
-		return initFlags{}, fmt.Errorf("parsing config path flag: %w", err)
-	}
-	i.pf = pathprefix.New(workDir)
-
-	mergeConfigs, err := cmd.Flags().GetBool("merge-kubeconfig")
-	if err != nil {
-		return initFlags{}, fmt.Errorf("parsing merge-kubeconfig flag: %w", err)
-	}
-	i.log.Debugf("Merge kubeconfig flag is %t", mergeConfigs)
-
-	force, err := cmd.Flags().GetBool("force")
-	if err != nil {
-		return initFlags{}, fmt.Errorf("parsing force argument: %w", err)
-	}
-	i.log.Debugf("force flag is %t", force)
-
-	return initFlags{
-		conformance:  conformance,
-		helmWaitMode: helmWaitMode,
-		force:        force,
-		mergeConfigs: mergeConfigs,
-	}, nil
-}
-
-// initFlags are the resulting values of flag preprocessing.
-type initFlags struct {
-	conformance  bool
-	helmWaitMode helm.WaitMode
-	force        bool
-	mergeConfigs bool
-}
-
 // generateMasterSecret reads a base64 encoded master secret from file or generates a new 32 byte secret.
 func (i *initCmd) generateMasterSecret(outWriter io.Writer) (uri.MasterSecret, error) {
 	// No file given, generate a new secret, and save it to disk
@@ -599,7 +581,7 @@ func (i *initCmd) generateMasterSecret(outWriter io.Writer) (uri.MasterSecret, e
 	if err := i.fileHandler.WriteJSON(constants.MasterSecretFilename, secret, file.OptNone); err != nil {
 		return uri.MasterSecret{}, err
 	}
-	fmt.Fprintf(outWriter, "Your Constellation master secret was successfully written to %q\n", i.pf.PrefixPrintablePath(constants.MasterSecretFilename))
+	fmt.Fprintf(outWriter, "Your Constellation master secret was successfully written to %q\n", i.flags.pathPrefixer.PrefixPrintablePath(constants.MasterSecretFilename))
 	return secret, nil
 }
 

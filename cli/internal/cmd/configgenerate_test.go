@@ -19,13 +19,12 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/mod/semver"
 )
 
-func TestConfigGenerateKubernetesVersion(t *testing.T) {
+func TestParseKubernetesVersion(t *testing.T) {
 	testCases := map[string]struct {
 		version string
 		wantErr bool
@@ -68,22 +67,18 @@ func TestConfigGenerateKubernetesVersion(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			fileHandler := file.NewHandler(afero.NewMemMapFs())
-			cmd := newConfigGenerateCmd()
-			cmd.Flags().String("workspace", "", "") // register persistent flag manually
+			flags := newConfigGenerateCmd().Flags()
 			if tc.version != "" {
-				err := cmd.Flags().Set("kubernetes", tc.version)
-				require.NoError(err)
+				require.NoError(flags.Set("kubernetes", tc.version))
 			}
 
-			cg := &configGenerateCmd{log: logger.NewTest(t)}
-			err := cg.configGenerate(cmd, fileHandler, cloudprovider.Unknown, "")
-
+			version, err := parseK8sFlag(flags)
 			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			assert.NoError(err)
+			assert.Equal(versions.Default, version)
 		})
 	}
 }
@@ -94,9 +89,14 @@ func TestConfigGenerateDefault(t *testing.T) {
 
 	fileHandler := file.NewHandler(afero.NewMemMapFs())
 	cmd := newConfigGenerateCmd()
-	cmd.Flags().String("workspace", "", "") // register persistent flag manually
 
-	cg := &configGenerateCmd{log: logger.NewTest(t)}
+	cg := &configGenerateCmd{
+		log: logger.NewTest(t),
+		flags: generateFlags{
+			attestationVariant: variant.Dummy{},
+			k8sVersion:         versions.Default,
+		},
+	}
 	require.NoError(cg.configGenerate(cmd, fileHandler, cloudprovider.Unknown, ""))
 
 	var readConfig config.Config
@@ -106,53 +106,47 @@ func TestConfigGenerateDefault(t *testing.T) {
 }
 
 func TestConfigGenerateDefaultProviderSpecific(t *testing.T) {
-	providers := []cloudprovider.Provider{
-		cloudprovider.AWS,
-		cloudprovider.Azure,
-		cloudprovider.GCP,
-		cloudprovider.OpenStack,
+	testCases := map[string]struct {
+		provider    cloudprovider.Provider
+		rawProvider string
+	}{
+		"aws": {
+			provider: cloudprovider.AWS,
+		},
+		"azure": {
+			provider: cloudprovider.Azure,
+		},
+		"gcp": {
+			provider: cloudprovider.GCP,
+		},
+		"openstack": {
+			provider: cloudprovider.OpenStack,
+		},
+		"stackit": {
+			provider:    cloudprovider.OpenStack,
+			rawProvider: "stackit",
+		},
 	}
 
-	for _, provider := range providers {
-		t.Run(provider.String(), func(t *testing.T) {
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 			cmd := newConfigGenerateCmd()
-			cmd.Flags().String("workspace", "", "") // register persistent flag manually
 
-			wantConf := config.Default()
-			wantConf.RemoveProviderAndAttestationExcept(provider)
+			wantConf := config.Default().WithOpenStackProviderDefaults(tc.rawProvider)
+			wantConf.RemoveProviderAndAttestationExcept(tc.provider)
 
-			cg := &configGenerateCmd{log: logger.NewTest(t)}
-			require.NoError(cg.configGenerate(cmd, fileHandler, provider, ""))
-
-			var readConfig config.Config
-			err := fileHandler.ReadYAML(constants.ConfigFilename, &readConfig)
-			assert.NoError(err)
-			assert.Equal(*wantConf, readConfig)
-		})
-	}
-}
-
-func TestConfigGenerateWithStackIt(t *testing.T) {
-	openStackProviders := []string{"stackit"}
-
-	for _, openStackProvider := range openStackProviders {
-		t.Run(openStackProvider, func(t *testing.T) {
-			assert := assert.New(t)
-			require := require.New(t)
-
-			fileHandler := file.NewHandler(afero.NewMemMapFs())
-			cmd := newConfigGenerateCmd()
-			cmd.Flags().String("workspace", "", "") // register persistent flag manually
-
-			wantConf := config.Default().WithOpenStackProviderDefaults(openStackProvider)
-			wantConf.RemoveProviderAndAttestationExcept(cloudprovider.OpenStack)
-
-			cg := &configGenerateCmd{log: logger.NewTest(t)}
-			require.NoError(cg.configGenerate(cmd, fileHandler, cloudprovider.OpenStack, openStackProvider))
+			cg := &configGenerateCmd{
+				log: logger.NewTest(t),
+				flags: generateFlags{
+					attestationVariant: variant.Dummy{},
+					k8sVersion:         versions.Default,
+				},
+			}
+			require.NoError(cg.configGenerate(cmd, fileHandler, tc.provider, tc.rawProvider))
 
 			var readConfig config.Config
 			err := fileHandler.ReadYAML(constants.ConfigFilename, &readConfig)
@@ -168,9 +162,11 @@ func TestConfigGenerateDefaultExists(t *testing.T) {
 	fileHandler := file.NewHandler(afero.NewMemMapFs())
 	require.NoError(fileHandler.Write(constants.ConfigFilename, []byte("foobar"), file.OptNone))
 	cmd := newConfigGenerateCmd()
-	cmd.Flags().String("workspace", "", "") // register persistent flag manually
 
-	cg := &configGenerateCmd{log: logger.NewTest(t)}
+	cg := &configGenerateCmd{
+		log:   logger.NewTest(t),
+		flags: generateFlags{attestationVariant: variant.Dummy{}},
+	}
 	require.Error(cg.configGenerate(cmd, fileHandler, cloudprovider.Unknown, ""))
 }
 
@@ -247,64 +243,61 @@ func TestValidProviderAttestationCombination(t *testing.T) {
 	}
 }
 
-func TestAttestationArgument(t *testing.T) {
-	defaultAttestation := config.Default().Attestation
-	tests := []struct {
-		name        string
-		provider    cloudprovider.Provider
-		expectErr   bool
-		expectedCfg config.AttestationConfig
-		setFlag     func(*cobra.Command) error
+func TestParseAttestationFlag(t *testing.T) {
+	testCases := map[string]struct {
+		wantErr         bool
+		attestationFlag string
+		wantVariant     variant.Variant
 	}{
-		{
-			name:      "InvalidAttestationArgument",
-			provider:  cloudprovider.Unknown,
-			expectErr: true,
-			setFlag: func(cmd *cobra.Command) error {
-				return cmd.Flags().Set("attestation", "unknown")
-			},
+		"invalid": {
+			wantErr:         true,
+			attestationFlag: "unknown",
 		},
-		{
-			name:      "ValidAttestationArgument",
-			provider:  cloudprovider.Azure,
-			expectErr: false,
-			setFlag: func(cmd *cobra.Command) error {
-				return cmd.Flags().Set("attestation", "azure-trustedlaunch")
-			},
-			expectedCfg: config.AttestationConfig{AzureTrustedLaunch: defaultAttestation.AzureTrustedLaunch},
+		"AzureTrustedLaunch": {
+			attestationFlag: "azure-trustedlaunch",
+			wantVariant:     variant.AzureTrustedLaunch{},
 		},
-		{
-			name:      "WithoutAttestationArgument",
-			provider:  cloudprovider.Azure,
-			expectErr: false,
-			setFlag: func(cmd *cobra.Command) error {
-				return nil
-			},
-			expectedCfg: config.AttestationConfig{AzureSEVSNP: defaultAttestation.AzureSEVSNP},
+		"AzureSEVSNP": {
+			attestationFlag: "azure-sev-snp",
+			wantVariant:     variant.AzureSEVSNP{},
+		},
+		"AWSSEVSNP": {
+			attestationFlag: "aws-sev-snp",
+			wantVariant:     variant.AWSSEVSNP{},
+		},
+		"AWSNitroTPM": {
+			attestationFlag: "aws-nitro-tpm",
+			wantVariant:     variant.AWSNitroTPM{},
+		},
+		"GCPSEVES": {
+			attestationFlag: "gcp-sev-es",
+			wantVariant:     variant.GCPSEVES{},
+		},
+		"QEMUVTPM": {
+			attestationFlag: "qemu-vtpm",
+			wantVariant:     variant.QEMUVTPM{},
+		},
+		"no flag": {
+			wantVariant: variant.Dummy{},
 		},
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			require := assert.New(t)
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			require := require.New(t)
 			assert := assert.New(t)
 
 			cmd := newConfigGenerateCmd()
-			cmd.Flags().String("workspace", "", "") // register persistent flag manually
-			require.NoError(test.setFlag(cmd))
-
-			fileHandler := file.NewHandler(afero.NewMemMapFs())
-
-			cg := &configGenerateCmd{log: logger.NewTest(t)}
-			err := cg.configGenerate(cmd, fileHandler, test.provider, "")
-			if test.expectErr {
-				assert.Error(err)
-			} else {
-				assert.NoError(err)
-				var readConfig config.Config
-				require.NoError(fileHandler.ReadYAML(constants.ConfigFilename, &readConfig))
-
-				assert.Equal(test.expectedCfg, readConfig.Attestation)
+			if tc.attestationFlag != "" {
+				require.NoError(cmd.Flags().Set("attestation", tc.attestationFlag))
 			}
+
+			attestation, err := parseAttestationFlag(cmd.Flags())
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			require.NoError(err)
+			assert.True(tc.wantVariant.Equal(attestation))
 		})
 	}
 }

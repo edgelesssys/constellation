@@ -13,10 +13,9 @@ import (
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
-	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
-	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 )
@@ -35,9 +34,26 @@ func NewTerminateCmd() *cobra.Command {
 	return cmd
 }
 
+type terminateFlags struct {
+	rootFlags
+	yes bool
+}
+
+func (f *terminateFlags) parse(flags *pflag.FlagSet) error {
+	if err := f.rootFlags.parse(flags); err != nil {
+		return err
+	}
+
+	yes, err := flags.GetBool("yes")
+	if err != nil {
+		return fmt.Errorf("getting 'yes' flag: %w", err)
+	}
+	f.yes = yes
+	return nil
+}
+
 // runTerminate runs the terminate command.
 func runTerminate(cmd *cobra.Command, _ []string) error {
-	fileHandler := file.NewHandler(afero.NewOsFs())
 	spinner, err := newSpinnerOrStderr(cmd)
 	if err != nil {
 		return fmt.Errorf("creating spinner: %w", err)
@@ -45,18 +61,27 @@ func runTerminate(cmd *cobra.Command, _ []string) error {
 	defer spinner.Stop()
 	terminator := cloudcmd.NewTerminator()
 
-	return terminate(cmd, terminator, fileHandler, spinner)
+	logger, err := newCLILogger(cmd)
+	if err != nil {
+		return fmt.Errorf("creating logger: %w", err)
+	}
+
+	t := &terminateCmd{log: logger, fileHandler: file.NewHandler(afero.NewOsFs())}
+	if err := t.flags.parse(cmd.Flags()); err != nil {
+		return err
+	}
+
+	return t.terminate(cmd, terminator, spinner)
 }
 
-func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.Handler, spinner spinnerInterf,
-) error {
-	flags, err := parseTerminateFlags(cmd)
-	if err != nil {
-		return fmt.Errorf("parsing flags: %w", err)
-	}
-	pf := pathprefix.New(flags.workspace)
+type terminateCmd struct {
+	log         debugLog
+	fileHandler file.Handler
+	flags       terminateFlags
+}
 
-	if !flags.yes {
+func (t *terminateCmd) terminate(cmd *cobra.Command, terminator cloudTerminator, spinner spinnerInterf) error {
+	if !t.flags.yes {
 		cmd.Println("You are about to terminate a Constellation cluster.")
 		cmd.Println("All of its associated resources will be DESTROYED.")
 		cmd.Println("This action is irreversible and ALL DATA WILL BE LOST.")
@@ -71,7 +96,7 @@ func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.
 	}
 
 	spinner.Start("Terminating", false)
-	err = terminator.Terminate(cmd.Context(), constants.TerraformWorkingDir, flags.logLevel)
+	err := terminator.Terminate(cmd.Context(), constants.TerraformWorkingDir, t.flags.tfLogLevel)
 	spinner.Stop()
 	if err != nil {
 		return fmt.Errorf("terminating Constellation cluster: %w", err)
@@ -80,44 +105,13 @@ func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.
 	cmd.Println("Your Constellation cluster was terminated successfully.")
 
 	var removeErr error
-	if err := fileHandler.Remove(constants.AdminConfFilename); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		removeErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", pf.PrefixPrintablePath(constants.AdminConfFilename)))
+	if err := t.fileHandler.Remove(constants.AdminConfFilename); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		removeErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", t.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename)))
 	}
 
-	if err := fileHandler.Remove(constants.StateFilename); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		removeErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", pf.PrefixPrintablePath(constants.StateFilename)))
+	if err := t.fileHandler.Remove(constants.StateFilename); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		removeErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", t.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename)))
 	}
 
 	return removeErr
-}
-
-type terminateFlags struct {
-	yes       bool
-	workspace string
-	logLevel  terraform.LogLevel
-}
-
-func parseTerminateFlags(cmd *cobra.Command) (terminateFlags, error) {
-	yes, err := cmd.Flags().GetBool("yes")
-	if err != nil {
-		return terminateFlags{}, fmt.Errorf("parsing yes bool: %w", err)
-	}
-	logLevelString, err := cmd.Flags().GetString("tf-log")
-	if err != nil {
-		return terminateFlags{}, fmt.Errorf("parsing tf-log string: %w", err)
-	}
-	logLevel, err := terraform.ParseLogLevel(logLevelString)
-	if err != nil {
-		return terminateFlags{}, fmt.Errorf("parsing Terraform log level %s: %w", logLevelString, err)
-	}
-	workspace, err := cmd.Flags().GetString("workspace")
-	if err != nil {
-		return terminateFlags{}, fmt.Errorf("parsing workspace string: %w", err)
-	}
-
-	return terminateFlags{
-		yes:       yes,
-		workspace: workspace,
-		logLevel:  logLevel,
-	}, nil
 }

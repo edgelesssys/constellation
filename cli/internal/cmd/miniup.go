@@ -14,13 +14,11 @@ import (
 	"net"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
-	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/cli/internal/featureset"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/cli/internal/state"
-	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -51,6 +49,8 @@ func newMiniUpCmd() *cobra.Command {
 type miniUpCmd struct {
 	log           debugLog
 	configFetcher attestationconfigapi.Fetcher
+	fileHandler   file.Handler
+	flags         rootFlags
 }
 
 func runUp(cmd *cobra.Command, _ []string) error {
@@ -66,7 +66,14 @@ func runUp(cmd *cobra.Command, _ []string) error {
 	defer spinner.Stop()
 	creator := cloudcmd.NewCreator(spinner)
 
-	m := &miniUpCmd{log: log, configFetcher: attestationconfigapi.NewFetcher()}
+	m := &miniUpCmd{
+		log:           log,
+		configFetcher: attestationconfigapi.NewFetcher(),
+		fileHandler:   file.NewHandler(afero.NewOsFs()),
+	}
+	if err := m.flags.parse(cmd.Flags()); err != nil {
+		return err
+	}
 	return m.up(cmd, creator, spinner)
 }
 
@@ -75,22 +82,15 @@ func (m *miniUpCmd) up(cmd *cobra.Command, creator cloudCreator, spinner spinner
 		return fmt.Errorf("system requirements not met: %w", err)
 	}
 
-	flags, err := m.parseUpFlags(cmd)
-	if err != nil {
-		return fmt.Errorf("parsing flags: %w", err)
-	}
-
-	fileHandler := file.NewHandler(afero.NewOsFs())
-
 	// create config if not passed as flag and set default values
-	config, err := m.prepareConfig(cmd, fileHandler, flags)
+	config, err := m.prepareConfig(cmd)
 	if err != nil {
 		return fmt.Errorf("preparing config: %w", err)
 	}
 
 	// create cluster
 	spinner.Start("Creating cluster in QEMU ", false)
-	err = m.createMiniCluster(cmd.Context(), fileHandler, creator, config, flags)
+	err = m.createMiniCluster(cmd.Context(), creator, config)
 	spinner.Stop()
 	if err != nil {
 		return fmt.Errorf("creating cluster: %w", err)
@@ -105,7 +105,7 @@ func (m *miniUpCmd) up(cmd *cobra.Command, creator cloudCreator, spinner spinner
 	cmd.Printf("\tvirsh -c %s\n\n", connectURI)
 
 	// initialize cluster
-	if err := m.initializeMiniCluster(cmd, fileHandler, spinner); err != nil {
+	if err := m.initializeMiniCluster(cmd, spinner); err != nil {
 		return fmt.Errorf("initializing cluster: %w", err)
 	}
 	m.log.Debugf("Initialized cluster")
@@ -113,8 +113,8 @@ func (m *miniUpCmd) up(cmd *cobra.Command, creator cloudCreator, spinner spinner
 }
 
 // prepareConfig reads a given config, or creates a new minimal QEMU config.
-func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler, flags upFlags) (*config.Config, error) {
-	_, err := fileHandler.Stat(constants.ConfigFilename)
+func (m *miniUpCmd) prepareConfig(cmd *cobra.Command) (*config.Config, error) {
+	_, err := m.fileHandler.Stat(constants.ConfigFilename)
 	if err == nil {
 		// config already exists, prompt user if they want to use this file
 		cmd.PrintErrln("A config file already exists in the configured workspace.")
@@ -123,7 +123,7 @@ func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler, 
 			return nil, err
 		}
 		if ok {
-			return m.prepareExistingConfig(cmd, fileHandler, flags)
+			return m.prepareExistingConfig(cmd)
 		}
 
 		// user declined to reuse config file, prompt if they want to overwrite it
@@ -146,11 +146,11 @@ func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler, 
 	}
 	m.log.Debugf("Prepared configuration")
 
-	return config, fileHandler.WriteYAML(constants.ConfigFilename, config, file.OptOverwrite)
+	return config, m.fileHandler.WriteYAML(constants.ConfigFilename, config, file.OptOverwrite)
 }
 
-func (m *miniUpCmd) prepareExistingConfig(cmd *cobra.Command, fileHandler file.Handler, flags upFlags) (*config.Config, error) {
-	conf, err := config.New(fileHandler, constants.ConfigFilename, m.configFetcher, flags.force)
+func (m *miniUpCmd) prepareExistingConfig(cmd *cobra.Command) (*config.Config, error) {
+	conf, err := config.New(m.fileHandler, constants.ConfigFilename, m.configFetcher, m.flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -165,13 +165,13 @@ func (m *miniUpCmd) prepareExistingConfig(cmd *cobra.Command, fileHandler file.H
 }
 
 // createMiniCluster creates a new cluster using the given config.
-func (m *miniUpCmd) createMiniCluster(ctx context.Context, fileHandler file.Handler, creator cloudCreator, config *config.Config, flags upFlags) error {
+func (m *miniUpCmd) createMiniCluster(ctx context.Context, creator cloudCreator, config *config.Config) error {
 	m.log.Debugf("Creating mini cluster")
 	opts := cloudcmd.CreateOptions{
 		Provider:    cloudprovider.QEMU,
 		Config:      config,
 		TFWorkspace: constants.TerraformWorkingDir,
-		TFLogLevel:  flags.tfLogLevel,
+		TFLogLevel:  m.flags.tfLogLevel,
 	}
 	infraState, err := creator.Create(ctx, opts)
 	if err != nil {
@@ -184,11 +184,11 @@ func (m *miniUpCmd) createMiniCluster(ctx context.Context, fileHandler file.Hand
 		SetInfrastructure(infraState)
 
 	m.log.Debugf("Cluster state file contains %v", stateFile)
-	return stateFile.WriteToFile(fileHandler, constants.StateFilename)
+	return stateFile.WriteToFile(m.fileHandler, constants.StateFilename)
 }
 
 // initializeMiniCluster initializes a QEMU cluster.
-func (m *miniUpCmd) initializeMiniCluster(cmd *cobra.Command, fileHandler file.Handler, spinner spinnerInterf) (retErr error) {
+func (m *miniUpCmd) initializeMiniCluster(cmd *cobra.Command, spinner spinnerInterf) (retErr error) {
 	m.log.Debugf("Initializing mini cluster")
 	// clean up cluster resources if initialization fails
 	defer func() {
@@ -214,50 +214,21 @@ func (m *miniUpCmd) initializeMiniCluster(cmd *cobra.Command, fileHandler file.H
 	defer log.Sync()
 
 	newAttestationApplier := func(w io.Writer, kubeConfig string, log debugLog) (attestationConfigApplier, error) {
-		return kubecmd.New(w, kubeConfig, fileHandler, log)
+		return kubecmd.New(w, kubeConfig, m.fileHandler, log)
 	}
 	newHelmClient := func(kubeConfigPath string, log debugLog) (helmApplier, error) {
 		return helm.NewClient(kubeConfigPath, log)
 	} // need to defer helm client instantiation until kubeconfig is available
-	i := newInitCmd(fileHandler, spinner, &kubeconfigMerger{log: log}, log)
+
+	i := newInitCmd(m.fileHandler, spinner, &kubeconfigMerger{log: log}, log)
+	if err := i.flags.parse(cmd.Flags()); err != nil {
+		return err
+	}
+
 	if err := i.initialize(cmd, newDialer, license.NewClient(), m.configFetcher,
 		newAttestationApplier, newHelmClient); err != nil {
 		return err
 	}
 	m.log.Debugf("Initialized mini cluster")
 	return nil
-}
-
-type upFlags struct {
-	force      bool
-	tfLogLevel terraform.LogLevel
-}
-
-func (m *miniUpCmd) parseUpFlags(cmd *cobra.Command) (upFlags, error) {
-	m.log.Debugf("Preparing configuration")
-	workDir, err := cmd.Flags().GetString("workspace")
-	if err != nil {
-		return upFlags{}, fmt.Errorf("parsing config string: %w", err)
-	}
-	m.log.Debugf("Workspace set to %q", workDir)
-	force, err := cmd.Flags().GetBool("force")
-	if err != nil {
-		return upFlags{}, fmt.Errorf("parsing force bool: %w", err)
-	}
-	m.log.Debugf("force flag is %q", force)
-
-	logLevelString, err := cmd.Flags().GetString("tf-log")
-	if err != nil {
-		return upFlags{}, fmt.Errorf("parsing tf-log string: %w", err)
-	}
-	logLevel, err := terraform.ParseLogLevel(logLevelString)
-	if err != nil {
-		return upFlags{}, fmt.Errorf("parsing Terraform log level %s: %w", logLevelString, err)
-	}
-	m.log.Debugf("Terraform logs will be written into %s at level %s", pathprefix.New(workDir).PrefixPrintablePath(constants.TerraformLogFile), logLevel.String())
-
-	return upFlags{
-		force:      force,
-		tfLogLevel: logLevel,
-	}, nil
 }

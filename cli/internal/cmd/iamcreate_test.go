@@ -82,7 +82,6 @@ func TestIAMCreateAWS(t *testing.T) {
 	testCases := map[string]struct {
 		setupFs             func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs
 		creator             *stubIAMCreator
-		provider            cloudprovider.Provider
 		zoneFlag            string
 		prefixFlag          string
 		yesFlag             bool
@@ -96,26 +95,14 @@ func TestIAMCreateAWS(t *testing.T) {
 		"iam create aws": {
 			setupFs:             defaultFs,
 			creator:             &stubIAMCreator{id: validIAMIDFile},
-			provider:            cloudprovider.AWS,
 			zoneFlag:            "us-east-2a",
 			prefixFlag:          "test",
 			yesFlag:             true,
 			existingConfigFiles: []string{constants.ConfigFilename},
 		},
-		"iam create aws fails when --zone has no availability zone": {
-			setupFs:             defaultFs,
-			creator:             &stubIAMCreator{id: validIAMIDFile},
-			provider:            cloudprovider.AWS,
-			zoneFlag:            "us-east-1",
-			prefixFlag:          "test",
-			yesFlag:             true,
-			existingConfigFiles: []string{constants.ConfigFilename},
-			wantErr:             true,
-		},
 		"iam create aws --update-config": {
 			setupFs:             defaultFs,
 			creator:             &stubIAMCreator{id: validIAMIDFile},
-			provider:            cloudprovider.AWS,
 			zoneFlag:            "us-east-2a",
 			prefixFlag:          "test",
 			yesFlag:             true,
@@ -130,7 +117,6 @@ func TestIAMCreateAWS(t *testing.T) {
 				return *cfg
 			}()),
 			creator:             &stubIAMCreator{id: validIAMIDFile},
-			provider:            cloudprovider.AWS,
 			zoneFlag:            "us-east-1a",
 			prefixFlag:          "test",
 			yesFlag:             true,
@@ -141,7 +127,6 @@ func TestIAMCreateAWS(t *testing.T) {
 		"iam create aws --update-config fails when config has different provider": {
 			setupFs:             createFSWithConfig(*createConfig(cloudprovider.GCP)),
 			creator:             &stubIAMCreator{id: validIAMIDFile},
-			provider:            cloudprovider.AWS,
 			zoneFlag:            "us-east-1a",
 			prefixFlag:          "test",
 			yesFlag:             true,
@@ -152,7 +137,6 @@ func TestIAMCreateAWS(t *testing.T) {
 		"iam create aws no config": {
 			setupFs:    defaultFs,
 			creator:    &stubIAMCreator{id: validIAMIDFile},
-			provider:   cloudprovider.AWS,
 			zoneFlag:   "us-east-2a",
 			prefixFlag: "test",
 			yesFlag:    true,
@@ -160,7 +144,6 @@ func TestIAMCreateAWS(t *testing.T) {
 		"iam create aws existing terraform dir": {
 			setupFs:      defaultFs,
 			creator:      &stubIAMCreator{id: validIAMIDFile},
-			provider:     cloudprovider.AWS,
 			zoneFlag:     "us-east-2a",
 			prefixFlag:   "test",
 			yesFlag:      true,
@@ -170,7 +153,6 @@ func TestIAMCreateAWS(t *testing.T) {
 		"interactive": {
 			setupFs:    defaultFs,
 			creator:    &stubIAMCreator{id: validIAMIDFile},
-			provider:   cloudprovider.AWS,
 			zoneFlag:   "us-east-2a",
 			prefixFlag: "test",
 			stdin:      "yes\n",
@@ -178,7 +160,6 @@ func TestIAMCreateAWS(t *testing.T) {
 		"interactive update config": {
 			setupFs:             defaultFs,
 			creator:             &stubIAMCreator{id: validIAMIDFile},
-			provider:            cloudprovider.AWS,
 			zoneFlag:            "us-east-2a",
 			prefixFlag:          "test",
 			stdin:               "yes\n",
@@ -188,7 +169,6 @@ func TestIAMCreateAWS(t *testing.T) {
 		"interactive abort": {
 			setupFs:    defaultFs,
 			creator:    &stubIAMCreator{id: validIAMIDFile},
-			provider:   cloudprovider.AWS,
 			zoneFlag:   "us-east-2a",
 			prefixFlag: "test",
 			stdin:      "no\n",
@@ -197,7 +177,6 @@ func TestIAMCreateAWS(t *testing.T) {
 		"interactive update config abort": {
 			setupFs:             defaultFs,
 			creator:             &stubIAMCreator{id: validIAMIDFile},
-			provider:            cloudprovider.AWS,
 			zoneFlag:            "us-east-2a",
 			prefixFlag:          "test",
 			stdin:               "no\n",
@@ -205,19 +184,9 @@ func TestIAMCreateAWS(t *testing.T) {
 			wantAbort:           true,
 			existingConfigFiles: []string{constants.ConfigFilename},
 		},
-		"invalid zone": {
-			setupFs:    defaultFs,
-			creator:    &stubIAMCreator{id: validIAMIDFile},
-			provider:   cloudprovider.AWS,
-			zoneFlag:   "us-west",
-			prefixFlag: "test",
-			yesFlag:    true,
-			wantErr:    true,
-		},
 		"unwritable fs": {
 			setupFs:          readOnlyFs,
 			creator:          &stubIAMCreator{id: validIAMIDFile},
-			provider:         cloudprovider.AWS,
 			zoneFlag:         "us-east-2a",
 			prefixFlag:       "test",
 			yesFlag:          true,
@@ -236,37 +205,26 @@ func TestIAMCreateAWS(t *testing.T) {
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 
-			// register persistent flags manually
-			cmd.Flags().String("workspace", "", "")
-			cmd.Flags().Bool("update-config", false, "")
-			cmd.Flags().Bool("yes", false, "")
-			cmd.Flags().String("name", "constell", "")
-			cmd.Flags().String("tf-log", "NONE", "")
-
-			if tc.zoneFlag != "" {
-				require.NoError(cmd.Flags().Set("zone", tc.zoneFlag))
-			}
-			if tc.prefixFlag != "" {
-				require.NoError(cmd.Flags().Set("prefix", tc.prefixFlag))
-			}
-			if tc.yesFlag {
-				require.NoError(cmd.Flags().Set("yes", "true"))
-			}
-			if tc.updateConfigFlag {
-				require.NoError(cmd.Flags().Set("update-config", "true"))
-			}
-
-			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider, tc.existingConfigFiles, tc.existingDirs))
+			fileHandler := file.NewHandler(tc.setupFs(require, cloudprovider.AWS, tc.existingConfigFiles, tc.existingDirs))
 
 			iamCreator := &iamCreator{
-				cmd:             cmd,
-				log:             logger.NewTest(t),
-				spinner:         &nopSpinner{},
-				creator:         tc.creator,
-				fileHandler:     fileHandler,
-				iamConfig:       &cloudcmd.IAMConfigOptions{},
-				provider:        tc.provider,
-				providerCreator: &awsIAMCreator{},
+				cmd:         cmd,
+				log:         logger.NewTest(t),
+				spinner:     &nopSpinner{},
+				creator:     tc.creator,
+				fileHandler: fileHandler,
+				iamConfig:   &cloudcmd.IAMConfigOptions{},
+				provider:    cloudprovider.AWS,
+				flags: iamCreateFlags{
+					yes:          tc.yesFlag,
+					updateConfig: tc.updateConfigFlag,
+				},
+				providerCreator: &awsIAMCreator{
+					flags: awsIAMCreateFlags{
+						zone:   tc.zoneFlag,
+						prefix: tc.prefixFlag,
+					},
+				},
 			}
 			err := iamCreator.create(cmd.Context())
 
@@ -315,7 +273,6 @@ func TestIAMCreateAzure(t *testing.T) {
 	testCases := map[string]struct {
 		setupFs              func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs
 		creator              *stubIAMCreator
-		provider             cloudprovider.Provider
 		regionFlag           string
 		servicePrincipalFlag string
 		resourceGroupFlag    string
@@ -330,7 +287,6 @@ func TestIAMCreateAzure(t *testing.T) {
 		"iam create azure": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
-			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
@@ -339,7 +295,6 @@ func TestIAMCreateAzure(t *testing.T) {
 		"iam create azure with existing config": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
-			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
@@ -349,7 +304,6 @@ func TestIAMCreateAzure(t *testing.T) {
 		"iam create azure --update-config": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
-			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
@@ -360,7 +314,6 @@ func TestIAMCreateAzure(t *testing.T) {
 		"iam create azure existing terraform dir": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
-			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
@@ -371,7 +324,6 @@ func TestIAMCreateAzure(t *testing.T) {
 		"interactive": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
-			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
@@ -380,7 +332,6 @@ func TestIAMCreateAzure(t *testing.T) {
 		"interactive update config": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
-			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
@@ -391,7 +342,6 @@ func TestIAMCreateAzure(t *testing.T) {
 		"interactive abort": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
-			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
@@ -401,7 +351,6 @@ func TestIAMCreateAzure(t *testing.T) {
 		"interactive update config abort": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
-			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
@@ -413,7 +362,6 @@ func TestIAMCreateAzure(t *testing.T) {
 		"unwritable fs": {
 			setupFs:              readOnlyFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
-			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
@@ -433,40 +381,27 @@ func TestIAMCreateAzure(t *testing.T) {
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 
-			// register persistent flags manually
-			cmd.Flags().String("workspace", "", "")
-			cmd.Flags().Bool("update-config", false, "")
-			cmd.Flags().Bool("yes", false, "")
-			cmd.Flags().String("name", "constell", "")
-			cmd.Flags().String("tf-log", "NONE", "")
-
-			if tc.regionFlag != "" {
-				require.NoError(cmd.Flags().Set("region", tc.regionFlag))
-			}
-			if tc.resourceGroupFlag != "" {
-				require.NoError(cmd.Flags().Set("resourceGroup", tc.resourceGroupFlag))
-			}
-			if tc.servicePrincipalFlag != "" {
-				require.NoError(cmd.Flags().Set("servicePrincipal", tc.servicePrincipalFlag))
-			}
-			if tc.yesFlag {
-				require.NoError(cmd.Flags().Set("yes", "true"))
-			}
-			if tc.updateConfigFlag {
-				require.NoError(cmd.Flags().Set("update-config", "true"))
-			}
-
-			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider, tc.existingConfigFiles, tc.existingDirs))
+			fileHandler := file.NewHandler(tc.setupFs(require, cloudprovider.Azure, tc.existingConfigFiles, tc.existingDirs))
 
 			iamCreator := &iamCreator{
-				cmd:             cmd,
-				log:             logger.NewTest(t),
-				spinner:         &nopSpinner{},
-				creator:         tc.creator,
-				fileHandler:     fileHandler,
-				iamConfig:       &cloudcmd.IAMConfigOptions{},
-				provider:        tc.provider,
-				providerCreator: &azureIAMCreator{},
+				cmd:         cmd,
+				log:         logger.NewTest(t),
+				spinner:     &nopSpinner{},
+				creator:     tc.creator,
+				fileHandler: fileHandler,
+				iamConfig:   &cloudcmd.IAMConfigOptions{},
+				provider:    cloudprovider.Azure,
+				flags: iamCreateFlags{
+					yes:          tc.yesFlag,
+					updateConfig: tc.updateConfigFlag,
+				},
+				providerCreator: &azureIAMCreator{
+					flags: azureIAMCreateFlags{
+						region:           tc.regionFlag,
+						resourceGroup:    tc.resourceGroupFlag,
+						servicePrincipal: tc.servicePrincipalFlag,
+					},
+				},
 			}
 			err := iamCreator.create(cmd.Context())
 
@@ -519,7 +454,6 @@ func TestIAMCreateGCP(t *testing.T) {
 	testCases := map[string]struct {
 		setupFs              func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs
 		creator              *stubIAMCreator
-		provider             cloudprovider.Provider
 		zoneFlag             string
 		serviceAccountIDFlag string
 		projectIDFlag        string
@@ -534,7 +468,6 @@ func TestIAMCreateGCP(t *testing.T) {
 		"iam create gcp": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
-			provider:             cloudprovider.GCP,
 			zoneFlag:             "europe-west1-a",
 			serviceAccountIDFlag: "constell-test",
 			projectIDFlag:        "constell-1234",
@@ -543,7 +476,6 @@ func TestIAMCreateGCP(t *testing.T) {
 		"iam create gcp with existing config": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
-			provider:             cloudprovider.GCP,
 			zoneFlag:             "europe-west1-a",
 			serviceAccountIDFlag: "constell-test",
 			projectIDFlag:        "constell-1234",
@@ -553,7 +485,6 @@ func TestIAMCreateGCP(t *testing.T) {
 		"iam create gcp --update-config": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
-			provider:             cloudprovider.GCP,
 			zoneFlag:             "europe-west1-a",
 			serviceAccountIDFlag: "constell-test",
 			projectIDFlag:        "constell-1234",
@@ -564,7 +495,6 @@ func TestIAMCreateGCP(t *testing.T) {
 		"iam create gcp existing terraform dir": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
-			provider:             cloudprovider.GCP,
 			zoneFlag:             "europe-west1-a",
 			serviceAccountIDFlag: "constell-test",
 			projectIDFlag:        "constell-1234",
@@ -573,18 +503,9 @@ func TestIAMCreateGCP(t *testing.T) {
 			yesFlag:      true,
 			wantErr:      true,
 		},
-		"iam create gcp invalid flags": {
-			setupFs:  defaultFs,
-			creator:  &stubIAMCreator{id: validIAMIDFile},
-			provider: cloudprovider.GCP,
-			zoneFlag: "-a",
-			yesFlag:  true,
-			wantErr:  true,
-		},
 		"iam create gcp invalid b64": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: invalidIAMIDFile},
-			provider:             cloudprovider.GCP,
 			zoneFlag:             "europe-west1-a",
 			serviceAccountIDFlag: "constell-test",
 			projectIDFlag:        "constell-1234",
@@ -594,7 +515,6 @@ func TestIAMCreateGCP(t *testing.T) {
 		"interactive": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
-			provider:             cloudprovider.GCP,
 			zoneFlag:             "europe-west1-a",
 			serviceAccountIDFlag: "constell-test",
 			projectIDFlag:        "constell-1234",
@@ -603,7 +523,6 @@ func TestIAMCreateGCP(t *testing.T) {
 		"interactive update config": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
-			provider:             cloudprovider.GCP,
 			zoneFlag:             "europe-west1-a",
 			serviceAccountIDFlag: "constell-test",
 			projectIDFlag:        "constell-1234",
@@ -614,7 +533,6 @@ func TestIAMCreateGCP(t *testing.T) {
 		"interactive abort": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
-			provider:             cloudprovider.GCP,
 			zoneFlag:             "europe-west1-a",
 			serviceAccountIDFlag: "constell-test",
 			projectIDFlag:        "constell-1234",
@@ -624,7 +542,6 @@ func TestIAMCreateGCP(t *testing.T) {
 		"interactive abort update config": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
-			provider:             cloudprovider.GCP,
 			zoneFlag:             "europe-west1-a",
 			serviceAccountIDFlag: "constell-test",
 			projectIDFlag:        "constell-1234",
@@ -636,7 +553,6 @@ func TestIAMCreateGCP(t *testing.T) {
 		"unwritable fs": {
 			setupFs:              readOnlyFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
-			provider:             cloudprovider.GCP,
 			zoneFlag:             "europe-west1-a",
 			serviceAccountIDFlag: "constell-test",
 			projectIDFlag:        "constell-1234",
@@ -656,40 +572,27 @@ func TestIAMCreateGCP(t *testing.T) {
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 
-			// register persistent flags manually
-			cmd.Flags().String("workspace", "", "")
-			cmd.Flags().Bool("update-config", false, "")
-			cmd.Flags().Bool("yes", false, "")
-			cmd.Flags().String("name", "constell", "")
-			cmd.Flags().String("tf-log", "NONE", "")
-
-			if tc.zoneFlag != "" {
-				require.NoError(cmd.Flags().Set("zone", tc.zoneFlag))
-			}
-			if tc.serviceAccountIDFlag != "" {
-				require.NoError(cmd.Flags().Set("serviceAccountID", tc.serviceAccountIDFlag))
-			}
-			if tc.projectIDFlag != "" {
-				require.NoError(cmd.Flags().Set("projectID", tc.projectIDFlag))
-			}
-			if tc.yesFlag {
-				require.NoError(cmd.Flags().Set("yes", "true"))
-			}
-			if tc.updateConfigFlag {
-				require.NoError(cmd.Flags().Set("update-config", "true"))
-			}
-
-			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider, tc.existingConfigFiles, tc.existingDirs))
+			fileHandler := file.NewHandler(tc.setupFs(require, cloudprovider.GCP, tc.existingConfigFiles, tc.existingDirs))
 
 			iamCreator := &iamCreator{
-				cmd:             cmd,
-				log:             logger.NewTest(t),
-				spinner:         &nopSpinner{},
-				creator:         tc.creator,
-				fileHandler:     fileHandler,
-				iamConfig:       &cloudcmd.IAMConfigOptions{},
-				provider:        tc.provider,
-				providerCreator: &gcpIAMCreator{},
+				cmd:         cmd,
+				log:         logger.NewTest(t),
+				spinner:     &nopSpinner{},
+				creator:     tc.creator,
+				fileHandler: fileHandler,
+				iamConfig:   &cloudcmd.IAMConfigOptions{},
+				provider:    cloudprovider.GCP,
+				flags: iamCreateFlags{
+					yes:          tc.yesFlag,
+					updateConfig: tc.updateConfigFlag,
+				},
+				providerCreator: &gcpIAMCreator{
+					flags: gcpIAMCreateFlags{
+						zone:             tc.zoneFlag,
+						serviceAccountID: tc.serviceAccountIDFlag,
+						projectID:        tc.projectIDFlag,
+					},
+				},
 			}
 			err := iamCreator.create(cmd.Context())
 
@@ -724,7 +627,7 @@ func TestValidateConfigWithFlagCompatibility(t *testing.T) {
 	testCases := map[string]struct {
 		iamProvider cloudprovider.Provider
 		cfg         config.Config
-		flags       iamFlags
+		zone        string
 		wantErr     bool
 	}{
 		"AWS valid when cfg.zone == flag.zone": {
@@ -734,20 +637,12 @@ func TestValidateConfigWithFlagCompatibility(t *testing.T) {
 				cfg.Provider.AWS.Zone = "europe-west-1a"
 				return *cfg
 			}(),
-			flags: iamFlags{
-				aws: awsFlags{
-					zone: "europe-west-1a",
-				},
-			},
+			zone: "europe-west-1a",
 		},
 		"AWS valid when cfg.zone not set": {
 			iamProvider: cloudprovider.AWS,
 			cfg:         *createConfig(cloudprovider.AWS),
-			flags: iamFlags{
-				aws: awsFlags{
-					zone: "europe-west-1a",
-				},
-			},
+			zone:        "europe-west-1a",
 		},
 		"GCP invalid when cfg.zone != flag.zone": {
 			iamProvider: cloudprovider.GCP,
@@ -756,11 +651,7 @@ func TestValidateConfigWithFlagCompatibility(t *testing.T) {
 				cfg.Provider.GCP.Zone = "europe-west-1a"
 				return *cfg
 			}(),
-			flags: iamFlags{
-				aws: awsFlags{
-					zone: "us-west-1a",
-				},
-			},
+			zone:    "us-west-1a",
 			wantErr: true,
 		},
 		"Azure invalid when cfg.zone != flag.zone": {
@@ -770,11 +661,7 @@ func TestValidateConfigWithFlagCompatibility(t *testing.T) {
 				cfg.Provider.Azure.Location = "europe-west-1a"
 				return *cfg
 			}(),
-			flags: iamFlags{
-				aws: awsFlags{
-					zone: "us-west-1a",
-				},
-			},
+			zone:    "us-west-1a",
 			wantErr: true,
 		},
 		"GCP invalid when cfg.provider different from iam provider": {
@@ -786,7 +673,7 @@ func TestValidateConfigWithFlagCompatibility(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			err := validateConfigWithFlagCompatibility(tc.iamProvider, tc.cfg, tc.flags)
+			err := validateConfigWithFlagCompatibility(tc.iamProvider, tc.cfg, tc.zone)
 			if tc.wantErr {
 				assert.Error(err)
 				return

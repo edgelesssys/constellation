@@ -13,7 +13,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
@@ -39,11 +38,11 @@ func TestParseFetchMeasurementsFlags(t *testing.T) {
 		urlFlag          string
 		signatureURLFlag string
 		forceFlag        bool
-		wantFlags        *fetchMeasurementsFlags
+		wantFlags        fetchMeasurementsFlags
 		wantErr          bool
 	}{
 		"default": {
-			wantFlags: &fetchMeasurementsFlags{
+			wantFlags: fetchMeasurementsFlags{
 				measurementsURL: nil,
 				signatureURL:    nil,
 			},
@@ -51,7 +50,7 @@ func TestParseFetchMeasurementsFlags(t *testing.T) {
 		"url": {
 			urlFlag:          "https://some.other.url/with/path",
 			signatureURLFlag: "https://some.other.url/with/path.sig",
-			wantFlags: &fetchMeasurementsFlags{
+			wantFlags: fetchMeasurementsFlags{
 				measurementsURL: urlMustParse("https://some.other.url/with/path"),
 				signatureURL:    urlMustParse("https://some.other.url/with/path.sig"),
 			},
@@ -69,7 +68,9 @@ func TestParseFetchMeasurementsFlags(t *testing.T) {
 
 			cmd := newConfigFetchMeasurementsCmd()
 			cmd.Flags().String("workspace", "", "") // register persistent flag manually
-			cmd.Flags().Bool("force", false, "")    // register persistent flag manually
+			cmd.Flags().Bool("force", false, "")
+			cmd.Flags().Bool("debug", false, "")
+			cmd.Flags().String("tf-log", "NONE", "")
 
 			if tc.urlFlag != "" {
 				require.NoError(cmd.Flags().Set("url", tc.urlFlag))
@@ -77,8 +78,8 @@ func TestParseFetchMeasurementsFlags(t *testing.T) {
 			if tc.signatureURLFlag != "" {
 				require.NoError(cmd.Flags().Set("signature-url", tc.signatureURLFlag))
 			}
-			cfm := &configFetchMeasurementsCmd{log: logger.NewTest(t)}
-			flags, err := cfm.parseFetchMeasurementsFlags(cmd)
+			var flags fetchMeasurementsFlags
+			err := flags.parse(cmd.Flags())
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -270,9 +271,6 @@ func TestConfigFetchMeasurements(t *testing.T) {
 			require := require.New(t)
 
 			cmd := newConfigFetchMeasurementsCmd()
-			cmd.Flags().String("workspace", "", "") // register persistent flag manually
-			cmd.Flags().Bool("force", true, "")     // register persistent flag manually
-			require.NoError(cmd.Flags().Set("insecure", strconv.FormatBool(tc.insecureFlag)))
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 
 			gcpConfig := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.GCP)
@@ -281,6 +279,8 @@ func TestConfigFetchMeasurements(t *testing.T) {
 			err := fileHandler.WriteYAML(constants.ConfigFilename, gcpConfig, file.OptMkdirAll)
 			require.NoError(err)
 			cfm := &configFetchMeasurementsCmd{canFetchMeasurements: true, log: logger.NewTest(t)}
+			cfm.flags.insecure = tc.insecureFlag
+			cfm.flags.force = true
 
 			err = cfm.configFetchMeasurements(cmd, tc.cosign, tc.rekor, fileHandler, stubAttestationFetcher{}, client)
 			if tc.wantErr {

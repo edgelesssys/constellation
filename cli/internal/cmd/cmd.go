@@ -20,3 +20,58 @@ Common filepaths are defined as constants in the global "/internal/constants" pa
 To generate workspace correct filepaths for printing, use the functions from the "workspace" package.
 */
 package cmd
+
+import (
+	"errors"
+	"fmt"
+
+	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/spf13/pflag"
+)
+
+// rootFlags are flags defined on the root command.
+// They are available to all subcommands.
+type rootFlags struct {
+	pathPrefixer pathprefix.PathPrefixer
+	tfLogLevel   terraform.LogLevel
+	debug        bool
+	force        bool
+}
+
+// parse flags into the rootFlags struct.
+func (f *rootFlags) parse(flags *pflag.FlagSet) error {
+	var errs error
+
+	workspace, err := flags.GetString("workspace")
+	if err != nil {
+		errs = errors.Join(err, fmt.Errorf("getting 'workspace' flag: %w", err))
+	}
+	f.pathPrefixer = pathprefix.New(workspace)
+
+	tfLogString, err := flags.GetString("tf-log")
+	if err != nil {
+		errs = errors.Join(err, fmt.Errorf("getting 'tf-log' flag: %w", err))
+	}
+	f.tfLogLevel, err = terraform.ParseLogLevel(tfLogString)
+	if err != nil {
+		errs = errors.Join(err, fmt.Errorf("parsing 'tf-log' flag: %w", err))
+	}
+
+	f.debug, err = flags.GetBool("debug")
+	if err != nil {
+		errs = errors.Join(err, fmt.Errorf("getting 'debug' flag: %w", err))
+	}
+
+	f.force, err = flags.GetBool("force")
+	if err != nil {
+		errs = errors.Join(err, fmt.Errorf("getting 'force' flag: %w", err))
+	}
+	return errs
+}
+
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}

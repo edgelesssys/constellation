@@ -14,7 +14,6 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/cli/internal/featureset"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
@@ -26,6 +25,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/sigstore/keyselect"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 func newConfigFetchMeasurementsCmd() *cobra.Command {
@@ -46,14 +46,35 @@ func newConfigFetchMeasurementsCmd() *cobra.Command {
 }
 
 type fetchMeasurementsFlags struct {
+	rootFlags
 	measurementsURL *url.URL
 	signatureURL    *url.URL
 	insecure        bool
-	force           bool
-	pf              pathprefix.PathPrefixer
+}
+
+func (f *fetchMeasurementsFlags) parse(flags *pflag.FlagSet) error {
+	var err error
+	if err := f.rootFlags.parse(flags); err != nil {
+		return err
+	}
+
+	f.measurementsURL, err = parseURLFlag(flags, "url")
+	if err != nil {
+		return err
+	}
+	f.signatureURL, err = parseURLFlag(flags, "signature-url")
+	if err != nil {
+		return err
+	}
+	f.insecure, err = flags.GetBool("insecure")
+	if err != nil {
+		return fmt.Errorf("getting 'insecure' flag: %w", err)
+	}
+	return nil
 }
 
 type configFetchMeasurementsCmd struct {
+	flags                fetchMeasurementsFlags
 	canFetchMeasurements bool
 	log                  debugLog
 }
@@ -70,6 +91,10 @@ func runConfigFetchMeasurements(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("constructing Rekor client: %w", err)
 	}
 	cfm := &configFetchMeasurementsCmd{log: log, canFetchMeasurements: featureset.CanFetchMeasurements}
+	if err := cfm.flags.parse(cmd.Flags()); err != nil {
+		return fmt.Errorf("parsing flags: %w", err)
+	}
+	cfm.log.Debugf("Using flags %+v", cfm.flags)
 
 	fetcher := attestationconfigapi.NewFetcherWithClient(http.DefaultClient, constants.CDNRepositoryURL)
 	return cfm.configFetchMeasurements(cmd, sigstore.NewCosignVerifier, rekor, fileHandler, fetcher, http.DefaultClient)
@@ -79,20 +104,14 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	cmd *cobra.Command, newCosignVerifier cosignVerifierConstructor, rekor rekorVerifier,
 	fileHandler file.Handler, fetcher attestationconfigapi.Fetcher, client *http.Client,
 ) error {
-	flags, err := cfm.parseFetchMeasurementsFlags(cmd)
-	if err != nil {
-		return err
-	}
-	cfm.log.Debugf("Using flags %v", flags)
-
 	if !cfm.canFetchMeasurements {
 		cmd.PrintErrln("Fetching measurements is not supported in the OSS build of the Constellation CLI. Consult the documentation for instructions on where to download the enterprise version.")
 		return errors.New("fetching measurements is not supported")
 	}
 
-	cfm.log.Debugf("Loading configuration file from %q", flags.pf.PrefixPrintablePath(constants.ConfigFilename))
+	cfm.log.Debugf("Loading configuration file from %q", cfm.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
 
-	conf, err := config.New(fileHandler, constants.ConfigFilename, fetcher, flags.force)
+	conf, err := config.New(fileHandler, constants.ConfigFilename, fetcher, cfm.flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -110,7 +129,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	defer cancel()
 
 	cfm.log.Debugf("Updating URLs")
-	if err := flags.updateURLs(conf); err != nil {
+	if err := cfm.flags.updateURLs(conf); err != nil {
 		return err
 	}
 
@@ -131,11 +150,11 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 
 	var fetchedMeasurements measurements.M
 	var hash string
-	if flags.insecure {
+	if cfm.flags.insecure {
 		if err := fetchedMeasurements.FetchNoVerify(
 			ctx,
 			client,
-			flags.measurementsURL,
+			cfm.flags.measurementsURL,
 			imageVersion,
 			conf.GetProvider(),
 			conf.GetAttestationConfig().GetVariant(),
@@ -149,8 +168,8 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 			ctx,
 			client,
 			cosign,
-			flags.measurementsURL,
-			flags.signatureURL,
+			cfm.flags.measurementsURL,
+			cfm.flags.signatureURL,
 			imageVersion,
 			conf.GetProvider(),
 			conf.GetAttestationConfig().GetVariant(),
@@ -173,61 +192,9 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	if err := fileHandler.WriteYAML(constants.ConfigFilename, conf, file.OptOverwrite); err != nil {
 		return err
 	}
-	cfm.log.Debugf("Configuration written to %s", flags.pf.PrefixPrintablePath(constants.ConfigFilename))
+	cfm.log.Debugf("Configuration written to %s", cfm.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
 	cmd.Print("Successfully fetched measurements and updated Configuration\n")
 	return nil
-}
-
-// parseURLFlag checks that flag can be parsed as URL.
-// If no value was provided for flag, nil is returned.
-func (cfm *configFetchMeasurementsCmd) parseURLFlag(cmd *cobra.Command, flag string) (*url.URL, error) {
-	rawURL, err := cmd.Flags().GetString(flag)
-	if err != nil {
-		return nil, fmt.Errorf("parsing config generate flags '%s': %w", flag, err)
-	}
-	cfm.log.Debugf("Flag %s has raw URL %q", flag, rawURL)
-	if rawURL != "" {
-		cfm.log.Debugf("Parsing raw URL")
-		return url.Parse(rawURL)
-	}
-	return nil, nil
-}
-
-func (cfm *configFetchMeasurementsCmd) parseFetchMeasurementsFlags(cmd *cobra.Command) (*fetchMeasurementsFlags, error) {
-	workDir, err := cmd.Flags().GetString("workspace")
-	if err != nil {
-		return nil, fmt.Errorf("parsing workspace argument: %w", err)
-	}
-	measurementsURL, err := cfm.parseURLFlag(cmd, "url")
-	if err != nil {
-		return nil, err
-	}
-	cfm.log.Debugf("Parsed measurements URL as %v", measurementsURL)
-
-	measurementsSignatureURL, err := cfm.parseURLFlag(cmd, "signature-url")
-	if err != nil {
-		return nil, err
-	}
-	cfm.log.Debugf("Parsed measurements signature URL as %v", measurementsSignatureURL)
-
-	insecure, err := cmd.Flags().GetBool("insecure")
-	if err != nil {
-		return nil, fmt.Errorf("parsing insecure argument: %w", err)
-	}
-	cfm.log.Debugf("Insecure flag is %v", insecure)
-
-	force, err := cmd.Flags().GetBool("force")
-	if err != nil {
-		return nil, fmt.Errorf("parsing force argument: %w", err)
-	}
-
-	return &fetchMeasurementsFlags{
-		measurementsURL: measurementsURL,
-		signatureURL:    measurementsSignatureURL,
-		insecure:        insecure,
-		force:           force,
-		pf:              pathprefix.New(workDir),
-	}, nil
 }
 
 func (f *fetchMeasurementsFlags) updateURLs(conf *config.Config) error {
@@ -248,6 +215,19 @@ func (f *fetchMeasurementsFlags) updateURLs(conf *config.Config) error {
 		f.signatureURL = signatureURL
 	}
 	return nil
+}
+
+// parseURLFlag checks that flag can be parsed as URL.
+// If no value was provided for flag, nil is returned.
+func parseURLFlag(flags *pflag.FlagSet, flag string) (*url.URL, error) {
+	rawURL, err := flags.GetString(flag)
+	if err != nil {
+		return nil, fmt.Errorf("getting '%s' flag: %w", flag, err)
+	}
+	if rawURL != "" {
+		return url.Parse(rawURL)
+	}
+	return nil, nil
 }
 
 type rekorVerifier interface {
