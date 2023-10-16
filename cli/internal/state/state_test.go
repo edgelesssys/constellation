@@ -11,9 +11,9 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v3"
 )
 
 var defaultState = &State{
@@ -145,7 +145,7 @@ func TestReadFromFile(t *testing.T) {
 
 func mustMarshalYaml(t *testing.T, v any) []byte {
 	t.Helper()
-	b, err := yaml.Marshal(v)
+	b, err := encoder.NewEncoder(v).Encode()
 	if err != nil {
 		t.Fatalf("failed to marshal yaml: %v", err)
 	}
