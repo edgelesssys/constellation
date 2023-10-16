@@ -3,12 +3,16 @@ load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "state",
-    srcs = ["state.go"],
+    srcs = [
+        "state.go",
+        "state_doc.go",
+    ],
     importpath = "github.com/edgelesssys/constellation/v2/cli/internal/state",
     visibility = ["//cli:__subpackages__"],
     deps = [
         "//internal/file",
         "@cat_dario_mergo//:mergo",
+        "@com_github_siderolabs_talos_pkg_machinery//config/encoder",
     ],
 )
 
