@@ -209,6 +209,9 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 		return fmt.Errorf("retrieving own instance metadata: %w", err)
 	}
 
+	// override join endpoint to go over lb
+	args.APIServerEndpoint = net.JoinHostPort(loadBalancerHost, loadBalancerPort)
+
 	log.With(
 		zap.String("nodeName", nodeName),
 		zap.String("providerID", providerID),
