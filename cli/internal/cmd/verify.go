@@ -738,18 +738,33 @@ func newCertificates(certTypeName string, cert []byte, log debugLog) (certs []ve
 			if err != nil {
 				return certs, fmt.Errorf("parsing VCEK certificate extensions: %w", err)
 			}
+			block := &pem.Block{
+				Type:  "CERTIFICATE",
+				Bytes: cert.Raw,
+			}
+
+			var buf bytes.Buffer
+			err = pem.Encode(&buf, block)
+			if err != nil {
+				return certs, fmt.Errorf("encoding PEM block: %w", err)
+			}
 			certs = append(certs, verify.Certificate{
-				Certificate:   cert,
-				CertTypeName:  certTypeName,
-				StructVersion: vcekExts.StructVersion,
-				ProductName:   vcekExts.ProductName,
-				TCBVersion:    newTCBVersion(vcekExts.TCBVersion),
-				HardwareID:    vcekExts.HWID,
+				CertificatePEM: buf.String(),
+				CertTypeName:   certTypeName,
+				StructVersion:  vcekExts.StructVersion,
+				ProductName:    vcekExts.ProductName,
+				TCBVersion:     newTCBVersion(vcekExts.TCBVersion),
+				HardwareID:     vcekExts.HWID,
 			})
 		} else {
+			var buf bytes.Buffer
+			err = pem.Encode(&buf, block)
+			if err != nil {
+				return certs, fmt.Errorf("encoding PEM block: %w", err)
+			}
 			certs = append(certs, verify.Certificate{
-				Certificate:  cert,
-				CertTypeName: certTypeName,
+				CertificatePEM: buf.String(),
+				CertTypeName:   certTypeName,
 			})
 		}
 		i++

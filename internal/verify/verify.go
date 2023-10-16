@@ -13,8 +13,6 @@ the attestationconfigapi upload tool through JSON serialization.
 package verify
 
 import (
-	"crypto/x509"
-
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -28,12 +26,12 @@ type Report struct {
 
 // Certificate contains the certificate data and additional information.
 type Certificate struct {
-	*x509.Certificate `json:"certificate"`
-	CertTypeName      string     `json:"cert_type_name"`
-	StructVersion     uint8      `json:"struct_version"`
-	ProductName       string     `json:"product_name"`
-	HardwareID        []byte     `json:"hardware_id"`
-	TCBVersion        TCBVersion `json:"tcb_version"`
+	CertificatePEM string     `json:"certificate"`
+	CertTypeName   string     `json:"cert_type_name"`
+	StructVersion  uint8      `json:"struct_version"`
+	ProductName    string     `json:"product_name"`
+	HardwareID     []byte     `json:"hardware_id"`
+	TCBVersion     TCBVersion `json:"tcb_version"`
 }
 
 // TCBVersion contains the TCB version data.
