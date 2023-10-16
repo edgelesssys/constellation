@@ -26,8 +26,8 @@ import (
 func newConfigGenerateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "generate {aws|azure|gcp|openstack|qemu|stackit}",
-		Short: "Generate a default configuration file",
-		Long:  "Generate a default configuration file for your selected cloud provider.",
+		Short: "Generate a default configuration and state file",
+		Long:  "Generate a default configuration and state file for your selected cloud provider.",
 		Args: cobra.MatchAll(
 			cobra.ExactArgs(1),
 			isCloudProvider(0),
