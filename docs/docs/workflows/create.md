@@ -107,7 +107,7 @@ Depending on the [configuration](./config.md) of your cluster, additional output
 terraform output
 ```
 
-And continue with [initializing your cluster](#the-init-step).
+Continue with [initializing your cluster](#the-init-step).
 
 </tabItem>
 </tabs>
