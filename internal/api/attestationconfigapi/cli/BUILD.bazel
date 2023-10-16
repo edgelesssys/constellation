@@ -34,9 +34,13 @@ go_library(
 
 go_test(
     name = "cli_test",
-    srcs = ["delete_test.go"],
+    srcs = [
+        "delete_test.go",
+        "main_test.go",
+    ],
     embed = [":cli_lib"],
     deps = [
+        "//internal/verify",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],

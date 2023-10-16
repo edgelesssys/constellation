@@ -152,7 +152,7 @@ func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 	return nil
 }
 
-func allEqual[T comparable](args ...T) bool {
+func allEqual(args ...verify.TCBVersion) bool {
 	if len(args) < 2 {
 		return true
 	}
