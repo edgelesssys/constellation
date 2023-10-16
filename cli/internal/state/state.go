@@ -173,12 +173,18 @@ type hexBytes []byte
 func (h *hexBytes) UnmarshalYAML(unmarshal func(any) error) error {
 	var hexString string
 	if err := unmarshal(&hexString); err != nil {
-		return err
+		// TODO(msanft): Remove with v2.14.0
+		// fall back to unmarshalling as a byte slice for backwards compatibility
+		var oldHexBytes []byte
+		if err := unmarshal(&oldHexBytes); err != nil {
+			return fmt.Errorf("unmarshalling hex bytes: %w", err)
+		}
+		hexString = hex.EncodeToString(oldHexBytes)
 	}
 
 	bytes, err := hex.DecodeString(hexString)
 	if err != nil {
-		return err
+		return fmt.Errorf("decoding hex bytes: %w", err)
 	}
 
 	*h = bytes
