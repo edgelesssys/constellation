@@ -72,15 +72,14 @@ type Infrastructure struct {
 	//   Unique identifier the cluster's cloud resources are tagged with.
 	UID string `yaml:"uid"`
 	// description: |
-	//   Endpoint the cluster can be reached at. This value needs to be set
-	//   by the user in the case of self-managed infrastructure.
+	//   Endpoint the cluster can be reached at.
 	ClusterEndpoint string `yaml:"clusterEndpoint"`
 	// description: |
-	//   Secret used to authenticate the bootstrapping node. This value needs to be set
-	//   by the user in the case of self-managed infrastructure.
+	//   Secret used to authenticate the bootstrapping node.
 	InitSecret []byte `yaml:"initSecret"`
 	// description: |
 	//   List of Subject Alternative Names (SANs) to add to the Kubernetes API server certificate.
+	// 	 If no SANs should be added, this field can be left empty.
 	APIServerCertSANs []string `yaml:"apiServerCertSANs"`
 	// description: |
 	//   Name used in the cluster's named resources.
