@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net"
 	"os"
 	"path/filepath"
@@ -346,9 +347,23 @@ func (a *applyCmd) apply(cmd *cobra.Command, configFetcher attestationconfigapi.
 	// Now start actually running the apply command
 
 	// Check if Terraform state is up to date and apply potential upgrades
-	if !a.flags.skipPhases.contains(skipInfrastructurePhase) {
+	tfStateExists, err := a.tfStateExists()
+	if err != nil {
+		return fmt.Errorf("checking Terraform state: %w", err)
+	}
+	performTfMigrations := true
+	if a.flags.skipPhases.contains(skipInfrastructurePhase) {
+		a.log.Debugf("Skipping infrastructure upgrade.")
+		performTfMigrations = false
+	}
+	if !tfStateExists {
+		a.log.Debugf("No Terraform state found in current working directory. Assuming self-managed infrastructure. Infrastructure upgrades will not be performed.")
+		performTfMigrations = false
+	}
+
+	if performTfMigrations {
 		if err := a.runTerraformApply(cmd, conf, stateFile, upgradeDir); err != nil {
-			return err
+			return fmt.Errorf("applying Terraform configuration : %w", err)
 		}
 	}
 
@@ -471,4 +486,16 @@ func (a *applyCmd) runK8sUpgrade(cmd *cobra.Command, conf *config.Config, kubeUp
 	}
 
 	return nil
+}
+
+// tfStateExists checks whether a Constellation Terraform state exists in the current working directory.
+func (a *applyCmd) tfStateExists() (bool, error) {
+	_, err := a.fileHandler.Stat(constants.TerraformWorkingDir)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return false, nil
+		}
+		return false, fmt.Errorf("reading Terraform state: %w", err)
+	}
+	return true, nil
 }
