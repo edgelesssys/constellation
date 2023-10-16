@@ -1,0 +1,57 @@
+name: Update locked rpms
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 8 * * 0" # every sunday at 8am
+
+jobs:
+  update-rpms:
+    runs-on: "ubuntu-22.04"
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
+
+      - name: Assume AWS role to upload Bazel dependencies to S3
+        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 # v2.2.0
+        with:
+          role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationMirrorWrite
+          aws-region: eu-central-1
+
+      - name: Setup bazel
+        uses: ./.github/actions/setup_bazel_nix
+        with:
+          useCache: "true"
+          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
+
+      - name: Update rpms
+        run: bazel run //image/mirror:update_packages
+
+      - name: Check if there are any changes
+        id: git-check
+        run: |
+          if git diff --quiet; then
+            echo "commitChanges=false" | tee -a "${GITHUB_OUTPUT}"
+          else
+            echo "commitChanges=true" | tee -a "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38 # v5.0.2
+        with:
+          branch: "image/automated/update-rpms-${{ github.run_number }}"
+          base: main
+          title: "image: update locked rpms"
+          body: |
+            :robot: *This is an automated PR.* :robot:
+
+            The PR is triggered as part of the scheduled rpm update workflow.
+            It updates the locked rpm packages that form the Constellation OS images.
+          commit-message: "image: update locked rpms"
+          committer: edgelessci <edgelessci@users.noreply.github.com>
+          labels: dependency
+          # We need to push changes using a token, otherwise triggers like on:push and on:pull_request won't work.
+          token: ${{ !github.event.pull_request.head.repo.fork && secrets.CI_COMMIT_PUSH_PR || '' }}
