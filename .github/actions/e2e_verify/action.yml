@@ -77,14 +77,14 @@ runs:
         done
 
     - name: Login to AWS
-      if: inputs.cloudProvider == 'azure'
+      if: github.ref_name == 'main' && inputs.cloudProvider == 'azure'
       uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 # v2.2.0
       with:
         role-to-assume: arn:aws:iam::795746500882:role/GitHubConstellationImagePipeline
         aws-region: eu-central-1
 
     - name: Upload extracted TCBs
-      if: inputs.cloudProvider == 'azure'
+      if: github.ref_name == 'main' && inputs.cloudProvider == 'azure'
       shell: bash
       env:
         COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
