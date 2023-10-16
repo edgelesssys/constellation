@@ -191,11 +191,11 @@ func (c *JoinClient) tryJoinWithAvailableServices() error {
 
 	var endpoints []string
 
-	ip, _, err := c.metadataAPI.GetLoadBalancerEndpoint(ctx)
+	endpoint, _, err := c.metadataAPI.GetLoadBalancerEndpoint(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get load balancer endpoint: %w", err)
 	}
-	endpoints = append(endpoints, net.JoinHostPort(ip, strconv.Itoa(constants.JoinServiceNodePort)))
+	endpoints = append(endpoints, endpoint)
 
 	ips, err := c.getControlPlaneIPs(ctx)
 	if err != nil {
