@@ -14,6 +14,7 @@ import (
 	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 )
 
@@ -403,4 +404,18 @@ func TestUnmarshalHexBytes(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMarshalUnmarshalHexBytes(t *testing.T) {
+	in := HexBytes{0xab, 0xcd, 0xef}
+	expected := "abcdef\n"
+
+	actual, err := yaml.Marshal(in)
+	require.NoError(t, err)
+	assert.Equal(t, expected, string(actual))
+
+	var actual2 HexBytes
+	err = yaml.Unmarshal(actual, &actual2)
+	require.NoError(t, err)
+	assert.Equal(t, in, actual2)
 }
