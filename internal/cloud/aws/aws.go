@@ -130,65 +130,14 @@ func (c *Cloud) InitSecretHash(ctx context.Context) ([]byte, error) {
 }
 
 // GetLoadBalancerEndpoint returns the endpoint of the load balancer.
-// TODO(malt3): remove old infrastructure code once we have migrated to using DNS as the load balancer endpoint.
 func (c *Cloud) GetLoadBalancerEndpoint(ctx context.Context) (host, port string, err error) {
-	// try new architecture first
-	uid, err := c.readInstanceTag(ctx, cloud.TagUID)
+	hostname, err := c.getLoadBalancerDNSName(ctx)
 	if err != nil {
-		return "", "", fmt.Errorf("retrieving uid tag: %w", err)
-	}
-	describeIPsOutput, err := c.ec2.DescribeAddresses(ctx, &ec2.DescribeAddressesInput{
-		Filters: []ec2Types.Filter{
-			{
-				Name:   aws.String(cloud.TagUID),
-				Values: []string{uid},
-			},
-			{
-				Name:   aws.String("constellation-ip-endpoint"),
-				Values: []string{"legacy-primary-zone"},
-			},
-		},
-	})
-	if err == nil && len(describeIPsOutput.Addresses) == 1 && describeIPsOutput.Addresses[0].PublicIp != nil {
-		return *describeIPsOutput.Addresses[0].PublicIp, strconv.FormatInt(constants.KubernetesPort, 10), nil
-	}
-	// fallback to old architecture
-	// this will be removed in the future
-	hostname, err := c.getLoadBalancerIPOldInfrastructure(ctx)
-	if err != nil {
-		return "", "", fmt.Errorf("retrieving load balancer ip: %w", err)
+		return "", "", fmt.Errorf("retrieving load balancer dns name: %w", err)
 	}
 	return hostname, strconv.FormatInt(constants.KubernetesPort, 10), nil
 }
 
-// getLoadBalancerIPOldInfrastructure returns the IP of the load balancer.
-// This is only used for the old infrastructure.
-// This will be removed in the future.
-func (c *Cloud) getLoadBalancerIPOldInfrastructure(ctx context.Context) (string, error) {
-	loadbalancer, err := c.getLoadBalancer(ctx)
-	if err != nil {
-		return "", fmt.Errorf("finding Constellation load balancer: %w", err)
-	}
-
-	// TODO(malt3): Add support for multiple availability zones in the lb frontend.
-	// This can only be done after we have migrated to using DNS as the load balancer endpoint.
-	// At that point, we don't need to care about the number of availability zones anymore.
-	if len(loadbalancer.AvailabilityZones) != 1 {
-		return "", fmt.Errorf("%d availability zones found; expected 1", len(loadbalancer.AvailabilityZones))
-	}
-
-	if len(loadbalancer.AvailabilityZones[0].LoadBalancerAddresses) != 1 {
-		return "", fmt.Errorf("%d load balancer addresses found; expected 1", len(loadbalancer.AvailabilityZones[0].LoadBalancerAddresses))
-	}
-	if loadbalancer.AvailabilityZones[0].LoadBalancerAddresses[0].IpAddress == nil {
-		return "", errors.New("load balancer address is nil")
-	}
-
-	return *loadbalancer.AvailabilityZones[0].LoadBalancerAddresses[0].IpAddress, nil
-}
-
-/*
-// TODO(malt3): uncomment and use as soon as we switch the primary endpoint to DNS.
 func (c *Cloud) getLoadBalancerDNSName(ctx context.Context) (string, error) {
 	loadbalancer, err := c.getLoadBalancer(ctx)
 	if err != nil {
@@ -199,7 +148,6 @@ func (c *Cloud) getLoadBalancerDNSName(ctx context.Context) (string, error) {
 	}
 	return *loadbalancer.DNSName, nil
 }
-*/
 
 func (c *Cloud) getLoadBalancer(ctx context.Context) (*elasticloadbalancingv2types.LoadBalancer, error) {
 	uid, err := c.readInstanceTag(ctx, cloud.TagUID)

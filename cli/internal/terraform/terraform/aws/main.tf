@@ -51,6 +51,9 @@ locals {
   tags = {
     constellation-uid = local.uid,
   }
+
+  in_cluster_endpoint     = aws_lb.front_end.dns_name
+  out_of_cluster_endpoint = var.internal_load_balancer && var.debug ? module.jump_host[0].ip : local.in_cluster_endpoint
 }
 
 resource "random_id" "uid" {
@@ -84,14 +87,14 @@ resource "aws_eip" "lb" {
   # in a future version to support all availability zones in the chosen region
   # This should only be done after we migrated to DNS-based addressing for the
   # control-plane.
-  for_each = toset([var.zone])
+  for_each = var.internal_load_balancer ? [] : toset([var.zone])
   domain   = "vpc"
   tags     = merge(local.tags, { "constellation-ip-endpoint" = each.key == var.zone ? "legacy-primary-zone" : "additional-zone" })
 }
 
 resource "aws_lb" "front_end" {
   name               = "${local.name}-loadbalancer"
-  internal           = false
+  internal           = var.internal_load_balancer
   load_balancer_type = "network"
   tags               = local.tags
   security_groups    = [aws_security_group.security_group.id]
@@ -106,7 +109,7 @@ resource "aws_lb" "front_end" {
     for_each = toset([var.zone])
     content {
       subnet_id     = module.public_private_subnet.public_subnet_id[subnet_mapping.key]
-      allocation_id = aws_eip.lb[subnet_mapping.key].id
+      allocation_id = var.internal_load_balancer ? "" : aws_eip.lb[subnet_mapping.key].id
     }
   }
   enable_cross_zone_load_balancing = true
@@ -206,6 +209,17 @@ module "instance_group" {
   )
 }
 
+module "jump_host" {
+  count                = var.internal_load_balancer && var.debug ? 1 : 0
+  source               = "./modules/jump_host"
+  base_name            = local.name
+  subnet_id            = module.public_private_subnet.public_subnet_id[var.zone]
+  lb_internal_ip       = aws_lb.front_end.dns_name
+  ports                = [for port in local.load_balancer_ports : port.port]
+  iam_instance_profile = var.iam_instance_profile_worker_nodes
+  security_group_id    = aws_security_group.security_group.id
+}
+
 # TODO(31u3r): Remove once 2.12 is released
 moved {
   from = module.load_balancer_target_konnectivity
@@ -241,3 +255,4 @@ moved {
   from = module.load_balancer_target_bootstrapper
   to   = module.load_balancer_targets["bootstrapper"]
 }
+

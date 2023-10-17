@@ -1,9 +1,22 @@
-output "ip" {
-  value = aws_eip.lb[var.zone].public_ip
+output "out_of_cluster_endpoint" {
+  value = local.out_of_cluster_endpoint
 }
 
+output "in_cluster_endpoint" {
+  value = local.in_cluster_endpoint
+}
 output "api_server_cert_sans" {
-  value = sort(concat([aws_eip.lb[var.zone].public_ip, local.wildcard_lb_dns_name], var.custom_endpoint == "" ? [] : [var.custom_endpoint]))
+  value = sort(
+    distinct(
+      concat(
+        [
+          local.in_cluster_endpoint,
+          local.out_of_cluster_endpoint,
+        ],
+        var.custom_endpoint == "" ? [] : [var.custom_endpoint],
+      )
+    )
+  )
 }
 
 output "uid" {

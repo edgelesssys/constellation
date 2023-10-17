@@ -212,8 +212,11 @@ func TestCreateCluster(t *testing.T) {
 		workingState := tfjson.State{
 			Values: &tfjson.StateValues{
 				Outputs: map[string]*tfjson.StateOutput{
-					"ip": {
+					"out_of_cluster_endpoint": {
 						Value: "192.0.2.100",
+					},
+					"in_cluster_endpoint": {
+						Value: "192.0.2.101",
 					},
 					"initSecret": {
 						Value: "initSecret",
@@ -236,8 +239,11 @@ func TestCreateCluster(t *testing.T) {
 		workingState := tfjson.State{
 			Values: &tfjson.StateValues{
 				Outputs: map[string]*tfjson.StateOutput{
-					"ip": {
+					"out_of_cluster_endpoint": {
 						Value: "192.0.2.100",
+					},
+					"in_cluster_endpoint": {
+						Value: "192.0.2.101",
 					},
 					"initSecret": {
 						Value: "initSecret",
@@ -480,6 +486,7 @@ func TestCreateCluster(t *testing.T) {
 			assert.Equal("192.0.2.100", infraState.ClusterEndpoint)
 			assert.Equal(state.HexBytes("initSecret"), infraState.InitSecret)
 			assert.Equal("12345abc", infraState.UID)
+			assert.Equal("192.0.2.101", infraState.InClusterEndpoint)
 			if tc.provider == cloudprovider.Azure {
 				assert.Equal(tc.expectedAttestationURL, infraState.Azure.AttestationURL)
 			}

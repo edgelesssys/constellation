@@ -89,8 +89,12 @@ type Infrastructure struct {
 	//   Unique identifier the cluster's cloud resources are tagged with.
 	UID string `yaml:"uid"`
 	// description: |
-	//   Endpoint the cluster can be reached at.
+	//   Endpoint the cluster can be reached at. This is the endpoint that is being used by the CLI.
 	ClusterEndpoint string `yaml:"clusterEndpoint"`
+	// description: |
+	//   The Cluster uses to reach itself. This might differ from the ClusterEndpoint in case e.g.,
+	//   an internal load balancer is used.
+	InClusterEndpoint string `yaml:"inClusterEndpoint"`
 	// description: |
 	//   Secret used to authenticate the bootstrapping node.
 	InitSecret HexBytes `yaml:"initSecret"`

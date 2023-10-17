@@ -181,11 +181,20 @@ func (c *Client) ShowInfrastructure(ctx context.Context, provider cloudprovider.
 		return state.Infrastructure{}, errors.New("terraform show: no values returned")
 	}
 
-	ipOutput, ok := tfState.Values.Outputs["ip"]
+	outOfClusterEndpointOutput, ok := tfState.Values.Outputs["out_of_cluster_endpoint"]
 	if !ok {
-		return state.Infrastructure{}, errors.New("no IP output found")
+		return state.Infrastructure{}, errors.New("no out_of_cluster_endpoint output found")
 	}
-	ip, ok := ipOutput.Value.(string)
+	outOfClusterEndpoint, ok := outOfClusterEndpointOutput.Value.(string)
+	if !ok {
+		return state.Infrastructure{}, errors.New("invalid type in IP output: not a string")
+	}
+
+	inClusterEndpointOutput, ok := tfState.Values.Outputs["in_cluster_endpoint"]
+	if !ok {
+		return state.Infrastructure{}, errors.New("no in_cluster_endpoint output found")
+	}
+	inClusterEndpoint, ok := inClusterEndpointOutput.Value.(string)
 	if !ok {
 		return state.Infrastructure{}, errors.New("invalid type in IP output: not a string")
 	}
@@ -231,7 +240,8 @@ func (c *Client) ShowInfrastructure(ctx context.Context, provider cloudprovider.
 	}
 
 	res := state.Infrastructure{
-		ClusterEndpoint:   ip,
+		ClusterEndpoint:   outOfClusterEndpoint,
+		InClusterEndpoint: inClusterEndpoint,
 		APIServerCertSANs: apiServerCertSANs,
 		InitSecret:        []byte(secret),
 		UID:               uid,

@@ -74,6 +74,8 @@ inputs:
     default: "false"
   azureSNPEnforcementPolicy:
     description: "Enable security policy for the cluster."
+  internalLoadBalancer:
+    description: "Enable internal load balancer for the cluster."
 
 outputs:
   kubeconfig:
@@ -253,6 +255,7 @@ runs:
         azureClusterCreateCredentials: ${{ inputs.azureClusterCreateCredentials }}
         kubernetesVersion: ${{ inputs.kubernetesVersion }}
         refStream: ${{ inputs.refStream }}
+        internalLoadBalancer: ${{ inputs.internalLoadBalancer }}
 
     - name: Deploy log- and metrics-collection (Kubernetes)
       id: deploy-logcollection

@@ -4,21 +4,22 @@
         "image": {
             "description": "Container image to use for the spawned pods.",
             "type": "string",
-            "examples": ["ghcr.io/edgelesssys/constellation/join-service:latest"]
-        },
-        "loadBalancerIP": {
-            "description": "IP of the k8s LB service",
-            "type": "string"
+            "examples": [
+                "ghcr.io/edgelesssys/constellation/join-service:latest"
+            ]
         },
         "attestationVariant": {
             "description": "Attestation variant to use for aTLS connections.",
             "type": "string",
-            "examples": ["azure-sev-snp", "azure-trusted-launch", "gcp-sev-es"]
+            "examples": [
+                "azure-sev-snp",
+                "azure-trusted-launch",
+                "gcp-sev-es"
+            ]
         }
     },
     "required": [
         "image",
-        "loadBalancerIP",
         "attestationVariant"
     ],
     "title": "Values",

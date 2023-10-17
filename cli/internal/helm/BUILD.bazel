@@ -252,7 +252,6 @@ go_library(
         "charts/edgeless/constellation-services/charts/verification-service/.helmignore",
         "charts/edgeless/constellation-services/charts/verification-service/Chart.yaml",
         "charts/edgeless/constellation-services/charts/verification-service/templates/daemonset.yaml",
-        "charts/edgeless/constellation-services/charts/verification-service/templates/loadbalancer-service.yaml",
         "charts/edgeless/constellation-services/charts/verification-service/templates/nodeport-service.yaml",
         "charts/edgeless/constellation-services/charts/verification-service/values.schema.json",
         "charts/edgeless/constellation-services/charts/verification-service/values.yaml",

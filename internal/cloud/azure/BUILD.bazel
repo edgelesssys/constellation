@@ -16,6 +16,7 @@ go_library(
         "//internal/cloud/azureshared",
         "//internal/cloud/metadata",
         "//internal/constants",
+        "//internal/logger",
         "//internal/role",
         "@com_github_azure_azure_sdk_for_go_sdk_azcore//runtime",
         "@com_github_azure_azure_sdk_for_go_sdk_azidentity//:azidentity",
@@ -23,6 +24,9 @@ go_library(
         "@com_github_azure_azure_sdk_for_go_sdk_resourcemanager_compute_armcompute_v5//:armcompute",
         "@com_github_azure_azure_sdk_for_go_sdk_resourcemanager_network_armnetwork_v4//:armnetwork",
         "@com_github_microsoft_applicationinsights_go//appinsights",
+        "@io_k8s_kubernetes//pkg/util/iptables",
+        "@io_k8s_utils//exec",
+        "@org_uber_go_zap//:zap",
     ],
 )
 
