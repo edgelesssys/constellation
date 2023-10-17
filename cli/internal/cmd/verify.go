@@ -738,18 +738,12 @@ func newCertificates(certTypeName string, cert []byte, log debugLog) (certs []ve
 			if err != nil {
 				return certs, fmt.Errorf("parsing VCEK certificate extensions: %w", err)
 			}
-			block := &pem.Block{
+			certPEM := pem.EncodeToMemory(&pem.Block{
 				Type:  "CERTIFICATE",
 				Bytes: cert.Raw,
-			}
-
-			var buf bytes.Buffer
-			err = pem.Encode(&buf, block)
-			if err != nil {
-				return certs, fmt.Errorf("encoding PEM block: %w", err)
-			}
+			})
 			certs = append(certs, verify.Certificate{
-				CertificatePEM: buf.String(),
+				CertificatePEM: string(certPEM),
 				CertTypeName:   certTypeName,
 				StructVersion:  vcekExts.StructVersion,
 				ProductName:    vcekExts.ProductName,
@@ -757,13 +751,12 @@ func newCertificates(certTypeName string, cert []byte, log debugLog) (certs []ve
 				HardwareID:     vcekExts.HWID,
 			})
 		} else {
-			var buf bytes.Buffer
-			err = pem.Encode(&buf, block)
-			if err != nil {
-				return certs, fmt.Errorf("encoding PEM block: %w", err)
-			}
+			certPEM := pem.EncodeToMemory(&pem.Block{
+				Type:  "CERTIFICATE",
+				Bytes: cert.Raw,
+			})
 			certs = append(certs, verify.Certificate{
-				CertificatePEM: buf.String(),
+				CertificatePEM: string(certPEM),
 				CertTypeName:   certTypeName,
 			})
 		}

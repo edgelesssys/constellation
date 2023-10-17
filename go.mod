@@ -139,11 +139,6 @@ require (
 )
 
 require (
-	github.com/google/go-attestation v0.5.0 // indirect
-	github.com/google/go-tdx-guest v0.2.2 // indirect
-)
-
-require (
 	cloud.google.com/go v0.110.2 // indirect
 	cloud.google.com/go/iam v1.1.0 // indirect
 	cloud.google.com/go/longrunning v0.4.2 // indirect
@@ -235,8 +230,10 @@ require (
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/certificate-transparency-go v1.1.4 // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
+	github.com/google/go-attestation v0.5.0 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/go-containerregistry v0.15.2 // indirect
+	github.com/google/go-tdx-guest v0.2.2 // indirect
 	github.com/google/go-tspi v0.3.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/logger v1.1.1 // indirect
