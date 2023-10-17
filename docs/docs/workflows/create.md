@@ -76,7 +76,7 @@ yq eval '.infrastructure.clusterEndpoint ="$CONSTELL_IP"' --inplace constellatio
 ```
 
 </tabItem>
-<tabItem value="self-managed" label="Self-Managed">
+<tabItem value="self-managed" label="Self-managed">
 
 Self-managed infrastructure allows for managing the cloud resources necessary for a Constellation cluster separate from the Constellation CLI.
 This provides maximum flexibility in DevOps and can meet potential regulatory requirements.
