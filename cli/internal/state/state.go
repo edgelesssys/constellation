@@ -14,7 +14,9 @@ package state
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
+	"os"
 
 	"dario.cat/mergo"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -30,6 +32,20 @@ func ReadFromFile(fileHandler file.Handler, path string) (*State, error) {
 	state := &State{}
 	if err := fileHandler.ReadYAML(path, &state); err != nil {
 		return nil, fmt.Errorf("reading state file: %w", err)
+	}
+	return state, nil
+}
+
+// CreateOrRead reads the state file at the given path, if it exists, and returns the state.
+// If the file does not exist, a new state is created and written to disk.
+func CreateOrRead(fileHandler file.Handler, path string) (*State, error) {
+	state := &State{}
+	if err := fileHandler.ReadYAML(path, &state); err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			return nil, fmt.Errorf("reading state file: %w", err)
+		}
+		state = New()
+		return state, state.WriteToFile(fileHandler, path)
 	}
 	return state, nil
 }
