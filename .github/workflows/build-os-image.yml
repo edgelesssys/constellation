@@ -545,6 +545,10 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.head_ref }}
 
+      - uses: ./.github/actions/setup_bazel_nix
+        with:
+          useCache: "false"
+
       - name: Download measurements
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
