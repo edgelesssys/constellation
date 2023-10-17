@@ -171,6 +171,20 @@ jobs:
             provider: "aws"
             kubernetes-version: "v1.28"
 
+          # self-managed infra test on latest k8s version
+          - test: "self-managed infra"
+            refStream: "ref/main/stream/debug/?"
+            provider: "gcp"
+            kubernetes-version: "v1.28"
+          - test: "self-managed infra"
+            refStream: "ref/main/stream/debug/?"
+            provider: "azure"
+            kubernetes-version: "v1.28"
+          - test: "self-managed infra"
+            provider: "aws"
+            refStream: "ref/main/stream/debug/?"
+            kubernetes-version: "v1.28"
+
           #
           # Tests on release-stable refStream
           #

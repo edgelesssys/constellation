@@ -1,0 +1,32 @@
+name: Self-managed infrastructure creation
+description: "Create the required infrastructure for a Constellation cluster manually."
+
+inputs:
+  cloudProvider:
+    description: "The cloud provider the test runs on."
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Copy Terraform configuration
+      shell: bash
+      working-directory:
+      run : |
+        cp ${{ github.workspace }}/cli/internal/terraform/terraform/${{ inputs.cloudProvider }} ${{ github.workspace }}/e2e-infra
+
+      - name: Apply Terraform configuration
+        shell: bash
+        working-directory: ${{ github.workspace }}/e2e-infra
+        run : |
+          terraform init
+          terraform apply -auto-approve
+
+    - name: Write outputs to state file
+      shell: bash
+      working-directory: ${{ github.workspace }}/e2e-infra
+      run : |
+        touch ${{ github.workspace }}/constellation-state.yaml
+        yq eval '.version ="v1"' --inplace ${{ github.workspace }}/constellation-state.yaml
+        yq eval '.infrastructure.initSecret ="$(terraform output initSecret | jq -r | tr -d '\n' | base64)"' --inplace ${{ github.workspace }}/constellation-state.yaml
+        yq eval '.infrastructure.clusterEndpoint ="$(terraform output ip)"' --inplace ${{ github.workspace }}/constellation-state.yaml

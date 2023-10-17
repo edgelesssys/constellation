@@ -35,6 +35,7 @@ on:
           - "verify"
           - "recover"
           - "malicious join"
+          - "self-managed infra"
           - "nop"
         required: true
       kubernetesVersion:

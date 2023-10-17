@@ -1,5 +1,5 @@
 name: Constellation create
-description: Create a new Constellation cluster using latest OS image.
+description: Create a new Constellation cluster using the latest OS image.
 
 inputs:
   workerNodesCount:
@@ -124,13 +124,24 @@ runs:
       run: |
         yq eval -i '(.internalLoadBalancer) = true' constellation-conf.yaml
 
-    - name: Constellation create
+    - name: Show Cluster Configuration
       shell: bash
       run: |
         echo "Creating cluster using config:"
         cat constellation-conf.yaml
         sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts' || true
+
+    - name: Constellation create (CLI)
+      if : inputs.test != 'self-managed infra'
+      shell: bash
+      run: |
         constellation create -y --debug --tf-log=DEBUG
+
+    - name: Constellation create (self-managed)
+      if : inputs.test == 'self-managed infra'
+      uses: ./.github/actions/self_managed_create
+      with:
+        cloudProvider: ${{ inputs.cloudProvider }}
 
     - name: Cdbg deploy
       if: inputs.isDebugImage == 'true'
