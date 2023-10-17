@@ -52,6 +52,6 @@ jobs:
             It updates the locked rpm packages that form the Constellation OS images.
           commit-message: "image: update locked rpms"
           committer: edgelessci <edgelessci@users.noreply.github.com>
-          labels: dependency
+          labels: dependencies
           # We need to push changes using a token, otherwise triggers like on:push and on:pull_request won't work.
           token: ${{ !github.event.pull_request.head.repo.fork && secrets.CI_COMMIT_PUSH_PR || '' }}
