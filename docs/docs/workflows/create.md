@@ -85,7 +85,7 @@ To self-manage the infrastructure of your cluster, download the Terraform files 
 They contain a minimum configuration for the resources necessary to run a Constellation cluster on the corresponding CSP. From this base, you can now add, edit, or substitute resources per your own requirements with the infrastructure
 management tooling of your choice. You need to keep the essential functionality of the base configuration in order for your cluster to function correctly.
 
-Make sure all necessary resources are created, e.g. through checking your CSP's portal and retrieve the necessary values, aligned with the outputs (specified in `outputs.tf`) of the base configuration.
+Make sure all necessary resources are created, e.g., through checking your CSP's portal and retrieve the necessary values, aligned with the outputs (specified in `outputs.tf`) of the base configuration.
 
 Fill these outputs into the corresponding fields of the `constellation-state.yaml` file. For example, fill the IP or DNS name your cluster can be reached at into the `.Infrastructure.ClusterEndpoint` field.
 
