@@ -64,7 +64,7 @@ type ClusterValues struct {
 	OwnerID string `yaml:"ownerID"`
 	// description: |
 	//   Salt used to generate the ClusterID on the bootstrapping node.
-	MeasurementSalt hexBytes `yaml:"measurementSalt"`
+	MeasurementSalt HexBytes `yaml:"measurementSalt"`
 }
 
 // Infrastructure describe the state related to the cloud resources of the cluster.
@@ -77,7 +77,7 @@ type Infrastructure struct {
 	ClusterEndpoint string `yaml:"clusterEndpoint"`
 	// description: |
 	//   Secret used to authenticate the bootstrapping node.
-	InitSecret hexBytes `yaml:"initSecret"`
+	InitSecret HexBytes `yaml:"initSecret"`
 	// description: |
 	//   List of Subject Alternative Names (SANs) to add to the Kubernetes API server certificate.
 	// 	 If no SANs should be added, this field can be left empty.
@@ -166,11 +166,11 @@ func (s *State) Merge(other *State) (*State, error) {
 	return s, nil
 }
 
-// hexBytes is a byte slice that is marshalled to and from a hex string.
-type hexBytes []byte
+// HexBytes is a byte slice that is marshalled to and from a hex string.
+type HexBytes []byte
 
 // UnmarshalYAML implements the yaml.Unmarshaler interface.
-func (h *hexBytes) UnmarshalYAML(unmarshal func(any) error) error {
+func (h *HexBytes) UnmarshalYAML(unmarshal func(any) error) error {
 	var hexString string
 	if err := unmarshal(&hexString); err != nil {
 		// TODO(msanft): Remove with v2.14.0
@@ -192,6 +192,6 @@ func (h *hexBytes) UnmarshalYAML(unmarshal func(any) error) error {
 }
 
 // MarshalYAML implements the yaml.Marshaler interface.
-func (h hexBytes) MarshalYAML() (any, error) {
+func (h HexBytes) MarshalYAML() (any, error) {
 	return hex.EncodeToString(h), nil
 }

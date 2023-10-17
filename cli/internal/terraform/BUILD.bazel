@@ -106,6 +106,7 @@ go_test(
     ],
     embed = [":terraform"],
     deps = [
+        "//cli/internal/state",
         "//internal/cloud/cloudprovider",
         "//internal/constants",
         "//internal/file",

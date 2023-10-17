@@ -330,7 +330,7 @@ func TestMerge(t *testing.T) {
 
 func TestMarshalHexBytes(t *testing.T) {
 	testCases := map[string]struct {
-		in       hexBytes
+		in       HexBytes
 		expected string
 		wantErr  bool
 	}{
@@ -367,7 +367,7 @@ func TestMarshalHexBytes(t *testing.T) {
 func TestUnmarshalHexBytes(t *testing.T) {
 	testCases := map[string]struct {
 		in       string
-		expected hexBytes
+		expected HexBytes
 		wantErr  bool
 	}{
 		"success": {
@@ -392,7 +392,7 @@ func TestUnmarshalHexBytes(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			var actual hexBytes
+			var actual HexBytes
 			err := yaml.Unmarshal([]byte(tc.in), &actual)
 
 			if tc.wantErr {
