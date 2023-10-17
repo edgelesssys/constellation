@@ -41,8 +41,9 @@ func TestUpgradeApply(t *testing.T) {
 			InitSecret:        []byte{0x42},
 		}).
 		SetClusterValues(state.ClusterValues{MeasurementSalt: []byte{0x41}})
-	fsWithStateFile := func() file.Handler {
+	fsWithStateFileAndTfState := func() file.Handler {
 		fh := file.NewHandler(afero.NewMemMapFs())
+		require.NoError(t, fh.MkdirAll(constants.TerraformWorkingDir))
 		require.NoError(t, fh.WriteYAML(constants.StateFilename, defaultState))
 		return fh
 	}
@@ -63,7 +64,7 @@ func TestUpgradeApply(t *testing.T) {
 			helmUpgrader:      stubApplier{},
 			terraformUpgrader: &stubTerraformUpgrader{},
 			flags:             applyFlags{yes: true},
-			fh:                fsWithStateFile,
+			fh:                fsWithStateFileAndTfState,
 			fhAssertions: func(require *require.Assertions, assert *assert.Assertions, fh file.Handler) {
 				gotState, err := state.ReadFromFile(fh, constants.StateFilename)
 				require.NoError(err)
@@ -90,7 +91,7 @@ func TestUpgradeApply(t *testing.T) {
 			terraformUpgrader: &stubTerraformUpgrader{},
 			wantErr:           true,
 			flags:             applyFlags{yes: true},
-			fh:                fsWithStateFile,
+			fh:                fsWithStateFileAndTfState,
 		},
 		"nodeVersion in progress error": {
 			kubeUpgrader: &stubKubernetesUpgrader{
@@ -100,7 +101,7 @@ func TestUpgradeApply(t *testing.T) {
 			helmUpgrader:      stubApplier{},
 			terraformUpgrader: &stubTerraformUpgrader{},
 			flags:             applyFlags{yes: true},
-			fh:                fsWithStateFile,
+			fh:                fsWithStateFileAndTfState,
 		},
 		"helm other error": {
 			kubeUpgrader: &stubKubernetesUpgrader{
@@ -110,7 +111,7 @@ func TestUpgradeApply(t *testing.T) {
 			terraformUpgrader: &stubTerraformUpgrader{},
 			wantErr:           true,
 			flags:             applyFlags{yes: true},
-			fh:                fsWithStateFile,
+			fh:                fsWithStateFileAndTfState,
 		},
 		"abort": {
 			kubeUpgrader: &stubKubernetesUpgrader{
@@ -120,7 +121,7 @@ func TestUpgradeApply(t *testing.T) {
 			terraformUpgrader: &stubTerraformUpgrader{terraformDiff: true},
 			wantErr:           true,
 			stdin:             "no\n",
-			fh:                fsWithStateFile,
+			fh:                fsWithStateFileAndTfState,
 		},
 		"abort, restore terraform err": {
 			kubeUpgrader: &stubKubernetesUpgrader{
@@ -130,7 +131,7 @@ func TestUpgradeApply(t *testing.T) {
 			terraformUpgrader: &stubTerraformUpgrader{terraformDiff: true, rollbackWorkspaceErr: assert.AnError},
 			wantErr:           true,
 			stdin:             "no\n",
-			fh:                fsWithStateFile,
+			fh:                fsWithStateFileAndTfState,
 		},
 		"plan terraform error": {
 			kubeUpgrader: &stubKubernetesUpgrader{
@@ -140,7 +141,7 @@ func TestUpgradeApply(t *testing.T) {
 			terraformUpgrader: &stubTerraformUpgrader{planTerraformErr: assert.AnError},
 			wantErr:           true,
 			flags:             applyFlags{yes: true},
-			fh:                fsWithStateFile,
+			fh:                fsWithStateFileAndTfState,
 		},
 		"apply terraform error": {
 			kubeUpgrader: &stubKubernetesUpgrader{
@@ -153,7 +154,7 @@ func TestUpgradeApply(t *testing.T) {
 			},
 			wantErr: true,
 			flags:   applyFlags{yes: true},
-			fh:      fsWithStateFile,
+			fh:      fsWithStateFileAndTfState,
 		},
 		"outdated K8s patch version": {
 			kubeUpgrader: &stubKubernetesUpgrader{
@@ -167,7 +168,7 @@ func TestUpgradeApply(t *testing.T) {
 				return semver.NewFromInt(v.Major(), v.Minor(), v.Patch()-1, "").String()
 			}(),
 			flags: applyFlags{yes: true},
-			fh:    fsWithStateFile,
+			fh:    fsWithStateFileAndTfState,
 		},
 		"outdated K8s version": {
 			kubeUpgrader: &stubKubernetesUpgrader{
@@ -178,7 +179,7 @@ func TestUpgradeApply(t *testing.T) {
 			customK8sVersion:  "v1.20.0",
 			flags:             applyFlags{yes: true},
 			wantErr:           true,
-			fh:                fsWithStateFile,
+			fh:                fsWithStateFileAndTfState,
 		},
 		"skip all upgrade phases": {
 			kubeUpgrader: &stubKubernetesUpgrader{
@@ -190,7 +191,7 @@ func TestUpgradeApply(t *testing.T) {
 				skipPhases: []skipPhase{skipInfrastructurePhase, skipHelmPhase, skipK8sPhase, skipImagePhase},
 				yes:        true,
 			},
-			fh: fsWithStateFile,
+			fh: fsWithStateFileAndTfState,
 		},
 		"skip all phases except node upgrade": {
 			kubeUpgrader: &stubKubernetesUpgrader{
@@ -202,14 +203,29 @@ func TestUpgradeApply(t *testing.T) {
 				skipPhases: []skipPhase{skipInfrastructurePhase, skipHelmPhase, skipK8sPhase},
 				yes:        true,
 			},
-			fh: fsWithStateFile,
+			fh: fsWithStateFileAndTfState,
+		},
+		"no tf state, skip infrastructure upgrade": {
+			kubeUpgrader: &stubKubernetesUpgrader{
+				currentConfig: config.DefaultForAzureSEVSNP(),
+			},
+			helmUpgrader:      &stubApplier{},
+			terraformUpgrader: &mockTerraformUpgrader{},
+			flags: applyFlags{
+				yes: true,
+			},
+			fh: func() file.Handler {
+				fh := file.NewHandler(afero.NewMemMapFs())
+				require.NoError(t, fh.WriteYAML(constants.StateFilename, defaultState))
+				return fh
+			},
 		},
 		"attempt to change attestation variant": {
 			kubeUpgrader:      &stubKubernetesUpgrader{currentConfig: &config.AzureTrustedLaunch{}},
 			helmUpgrader:      stubApplier{},
 			terraformUpgrader: &stubTerraformUpgrader{},
 			flags:             applyFlags{yes: true},
-			fh:                fsWithStateFile,
+			fh:                fsWithStateFileAndTfState,
 			wantErr:           true,
 		},
 	}
