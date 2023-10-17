@@ -5,6 +5,9 @@ inputs:
   kubeconfig:
     description: "The kubeconfig for the cluster."
     required: true
+  test:
+    description: "The e2e test payload."
+    required: true
 
 runs:
   using: "composite"
@@ -39,6 +42,15 @@ runs:
         echo "::endgroup::"
 
     - name: Constellation terminate
+      if: inputs.test != 'self-managed infra'
       shell: bash
       run: |
         constellation terminate --yes --tf-log=DEBUG
+
+    - name: Constellation terminate (self-managed)
+      if: inputs.test == 'self-managed infra'
+      shell: bash
+      working-directory: ${{ github.workspace }}/e2e-infra
+      run: |
+        terraform init
+        terraform destroy -auto-approve
