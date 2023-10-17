@@ -172,6 +172,7 @@ jobs:
           bazel build "${TARGET}"
           {
             echo "image-dir=$(bazel cquery --output=files "$TARGET")"
+            echo "rpmdb=$(bazel cquery --output=files //image/base:rpmdb)"
           } | tee -a "$GITHUB_OUTPUT"
           echo "::endgroup::"
 
@@ -189,6 +190,12 @@ jobs:
             ${{ steps.build.outputs.image-dir }}/constellation.efi
             ${{ steps.build.outputs.image-dir }}/constellation.initrd
             ${{ steps.build.outputs.image-dir }}/constellation.vmlinuz
+
+      - name: Upload sbom info as artifact
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        with:
+          name: sbom-${{ matrix.csp }}-${{ matrix.attestation_variant }}
+          path: ${{ steps.build.outputs.rpmdb }}
 
   upload-os-image:
     name: "Upload OS image to CSP"
@@ -615,6 +622,35 @@ jobs:
             --measurements measurements.json \
             --signature measurements.json.sig
           echo "::endgroup::"
+
+  upload-sbom:
+    name: "Upload SBOM"
+    needs: [build-settings, make-os-image]
+    permissions:
+      id-token: write
+      contents: read
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Login to AWS
+        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 # v2.2.0
+        with:
+          role-to-assume: arn:aws:iam::795746500882:role/GitHubConstellationImagePipeline
+          aws-region: eu-central-1
+
+      - name: Download sbom
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        with:
+          # downloading / using only the QEMU manifest is fine
+          # since the images only differ in the ESP partition
+          name: sbom-qemu-qemu-vtpm
+
+      - name: Upload SBOMs to S3
+        shell: bash
+        run: |
+          aws s3 cp \
+          rpmdb.tar \
+            "s3://cdn-constellation-backend/${{needs.build-settings.outputs.imageApiBasePath}}/${file}" \
+            --no-progress
 
   upload-artifacts:
     name: "Upload image lookup table and CLI compatibility info"
