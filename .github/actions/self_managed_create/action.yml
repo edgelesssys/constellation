@@ -13,7 +13,7 @@ runs:
       shell: bash
       working-directory:
       run : |
-        cp ${{ github.workspace }}/cli/internal/terraform/terraform/${{ inputs.cloudProvider }} ${{ github.workspace }}/e2e-infra
+        cp -r ${{ github.workspace }}/cli/internal/terraform/terraform/${{ inputs.cloudProvider }} ${{ github.workspace }}/e2e-infra
 
     - name: Apply Terraform configuration
       shell: bash
