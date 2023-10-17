@@ -66,18 +66,14 @@ runs:
           forwarderPID=$!
           sleep 5
 
-          verifyOut=$(constellation verify --cluster-id "${clusterID}" --force --node-endpoint localhost:9090)
-
-          kill $forwarderPID
-
-          if [[ ${{ inputs.cloudProvider }} != "azure" ]]; then
-            continue
+          if [[ ${{ inputs.cloudProvider }} == "azure" ]]; then
+            echo "Extracting Azure TCB versions for API update"
+            constellation verify --cluster-id "${clusterID}" --force --node-endpoint localhost:9090 -o json > "snp-report-${node}.json"
+          else
+            constellation verify --cluster-id "${clusterID}" --force --node-endpoint localhost:9090
           fi
 
-          echo "Extracting TCB versions for API update"
-          startMAAToken="Microsoft Azure Attestation Token:"
-          endMAAToken="Verification OK"
-          sed -n "/${startMAAToken}/,/${endMAAToken}/ { /${startMAAToken}/d; /${endMAAToken}/d; p }" <<< "${verifyOut}" > "maa-claims-${node}.json"
+          kill $forwarderPID
         done
 
     - name: Login to AWS
@@ -94,8 +90,8 @@ runs:
         COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
         COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
       run: |
-        for file in $(ls maa-claims-*.json); do
+        for file in $(ls snp-report-*.json); do
           path=$(realpath "${file}")
           cat "${path}"
-          bazel run //internal/api/attestationconfigapi/cli -- --maa-claims-path "${path}"
+          bazel run //internal/api/attestationconfigapi/cli -- --snp-report-path "${path}"
         done

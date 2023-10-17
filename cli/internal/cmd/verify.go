@@ -712,18 +712,26 @@ func newCertificates(certTypeName string, cert []byte, log debugLog) (certs []ve
 			if err != nil {
 				return certs, fmt.Errorf("parsing VCEK certificate extensions: %w", err)
 			}
+			certPEM := pem.EncodeToMemory(&pem.Block{
+				Type:  "CERTIFICATE",
+				Bytes: cert.Raw,
+			})
 			certs = append(certs, verify.Certificate{
-				Certificate:   cert,
-				CertTypeName:  certTypeName,
-				StructVersion: vcekExts.StructVersion,
-				ProductName:   vcekExts.ProductName,
-				TCBVersion:    newTCBVersion(vcekExts.TCBVersion),
-				HardwareID:    vcekExts.HWID,
+				CertificatePEM: string(certPEM),
+				CertTypeName:   certTypeName,
+				StructVersion:  vcekExts.StructVersion,
+				ProductName:    vcekExts.ProductName,
+				TCBVersion:     newTCBVersion(vcekExts.TCBVersion),
+				HardwareID:     vcekExts.HWID,
 			})
 		} else {
+			certPEM := pem.EncodeToMemory(&pem.Block{
+				Type:  "CERTIFICATE",
+				Bytes: cert.Raw,
+			})
 			certs = append(certs, verify.Certificate{
-				Certificate:  cert,
-				CertTypeName: certTypeName,
+				CertificatePEM: string(certPEM),
+				CertTypeName:   certTypeName,
 			})
 		}
 		i++
@@ -783,7 +791,7 @@ func newSNPReport(reportBytes []byte) (res verify.SNPReport, err error) {
 		SignerInfo: verify.SignerInfo{
 			AuthorKey:   signerInfo.AuthorKeyEn,
 			MaskChipKey: signerInfo.MaskChipKey,
-			SigningKey:  signerInfo.SigningKey,
+			SigningKey:  signerInfo.SigningKey.String(),
 		},
 		ReportData:      report.ReportData,
 		Measurement:     report.Measurement,
