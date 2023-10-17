@@ -14,6 +14,7 @@ import (
 	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v3"
 )
 
 var defaultState = &State{
