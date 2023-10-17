@@ -15,12 +15,12 @@ runs:
       run : |
         cp ${{ github.workspace }}/cli/internal/terraform/terraform/${{ inputs.cloudProvider }} ${{ github.workspace }}/e2e-infra
 
-      - name: Apply Terraform configuration
-        shell: bash
-        working-directory: ${{ github.workspace }}/e2e-infra
-        run : |
-          terraform init
-          terraform apply -auto-approve
+    - name: Apply Terraform configuration
+      shell: bash
+      working-directory: ${{ github.workspace }}/e2e-infra
+      run : |
+        terraform init
+        terraform apply -auto-approve
 
     - name: Write outputs to state file
       shell: bash
