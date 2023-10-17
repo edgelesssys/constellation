@@ -15,7 +15,7 @@ load(":variants.bzl", "CSPS", "STREAMS", "VARIANTS", "autologin", "constellation
             stream,
         ),
         base_trees = [
-            "//image/base",
+            "//image/base:image.tar",
         ],
         extra_trees = constellation_packages(stream),
         initrds = [
