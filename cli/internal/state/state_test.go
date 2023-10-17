@@ -14,6 +14,8 @@ import (
 	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 )
 
 var defaultState = &State{
@@ -325,4 +327,95 @@ func TestMerge(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMarshalHexBytes(t *testing.T) {
+	testCases := map[string]struct {
+		in       HexBytes
+		expected string
+		wantErr  bool
+	}{
+		"success": {
+			in:       []byte{0xab, 0xcd, 0xef},
+			expected: "abcdef\n",
+		},
+		"empty": {
+			in:       []byte{},
+			expected: "\"\"\n",
+		},
+		"nil": {
+			in:       nil,
+			expected: "\"\"\n",
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			actual, err := yaml.Marshal(tc.in)
+
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.expected, string(actual))
+			}
+		})
+	}
+}
+
+func TestUnmarshalHexBytes(t *testing.T) {
+	testCases := map[string]struct {
+		in       string
+		expected HexBytes
+		wantErr  bool
+	}{
+		"success": {
+			in:       "abcdef",
+			expected: []byte{0xab, 0xcd, 0xef},
+		},
+		"empty": {
+			in:       "",
+			expected: nil,
+		},
+		"byte slice compat": {
+			in:       "[0xab, 0xcd, 0xef]",
+			expected: []byte{0xab, 0xcd, 0xef},
+		},
+		"byte slice compat 2": {
+			in:       "[00, 12, 34]",
+			expected: []byte{0x00, 0x0c, 0x22},
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			var actual HexBytes
+			err := yaml.Unmarshal([]byte(tc.in), &actual)
+
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.expected, actual)
+			}
+		})
+	}
+}
+
+func TestMarshalUnmarshalHexBytes(t *testing.T) {
+	in := HexBytes{0xab, 0xcd, 0xef}
+	expected := "abcdef\n"
+
+	actual, err := yaml.Marshal(in)
+	require.NoError(t, err)
+	assert.Equal(t, expected, string(actual))
+
+	var actual2 HexBytes
+	err = yaml.Unmarshal(actual, &actual2)
+	require.NoError(t, err)
+	assert.Equal(t, in, actual2)
 }
