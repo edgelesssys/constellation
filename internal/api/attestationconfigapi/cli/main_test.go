@@ -1,3 +1,8 @@
+/*
+Copyright (c) Edgeless Systems GmbH
+
+SPDX-License-Identifier: AGPL-3.0-only
+*/
 package main
 
 import (
@@ -20,7 +25,7 @@ func TestAllEqual(t *testing.T) {
 
 	// Test case 3: Three input args where second and third element are different
 	assert.False(t, allEqual(
-		verify.TCBVersion{Bootloader: 1, Microcode: 2, SNP: 3, TEE: 4},
+		verify.TCBVersion{Bootloader: 2, Microcode: 2, SNP: 3, TEE: 4},
 		verify.TCBVersion{Bootloader: 2, Microcode: 2, SNP: 3, TEE: 4},
 		verify.TCBVersion{Bootloader: 2, Microcode: 3, SNP: 3, TEE: 4},
 	), "Expected allEqual to return false for three input args with different second and third elements, but got true")
