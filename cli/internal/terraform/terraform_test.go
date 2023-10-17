@@ -16,6 +16,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -477,7 +478,7 @@ func TestCreateCluster(t *testing.T) {
 			}
 			assert.NoError(err)
 			assert.Equal("192.0.2.100", infraState.ClusterEndpoint)
-			assert.Equal([]byte("initSecret"), infraState.InitSecret)
+			assert.Equal(state.HexBytes("initSecret"), infraState.InitSecret)
 			assert.Equal("12345abc", infraState.UID)
 			if tc.provider == cloudprovider.Azure {
 				assert.Equal(tc.expectedAttestationURL, infraState.Azure.AttestationURL)
