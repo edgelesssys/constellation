@@ -1,4 +1,4 @@
-FROM fedora:38@sha256:61f921e0c7b51e162e6f94b14ef4e6b0d38eac5987286fe4f52a2c1158cc2399 AS release
+FROM fedora:38@sha256:8285246bd5fad4e76e17a71c88dee34c49e2f227dab4ce7df704b592f8e72d41 AS release
 
 RUN dnf install -y https://artifacts.elastic.co/downloads/beats/metricbeat/metricbeat-8.9.2-x86_64.rpm
 
