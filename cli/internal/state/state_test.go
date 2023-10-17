@@ -18,68 +18,63 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var defaultState = &State{
-	Version: "v1",
-	Infrastructure: Infrastructure{
-		UID:             "123",
-		ClusterEndpoint: "test-cluster-endpoint",
-		InitSecret:      []byte{0x41},
-		APIServerCertSANs: []string{
-			"api-server-cert-san-test",
-			"api-server-cert-san-test-2",
+func defaultState() *State {
+	return &State{
+		Version: "v1",
+		Infrastructure: Infrastructure{
+			UID:             "123",
+			ClusterEndpoint: "test-cluster-endpoint",
+			InitSecret:      []byte{0x41},
+			APIServerCertSANs: []string{
+				"api-server-cert-san-test",
+				"api-server-cert-san-test-2",
+			},
+			Azure: &Azure{
+				ResourceGroup:            "test-rg",
+				SubscriptionID:           "test-sub",
+				NetworkSecurityGroupName: "test-nsg",
+				LoadBalancerName:         "test-lb",
+				UserAssignedIdentity:     "test-uami",
+				AttestationURL:           "test-maaUrl",
+			},
+			GCP: &GCP{
+				ProjectID:  "test-project",
+				IPCidrNode: "test-cidr-node",
+				IPCidrPod:  "test-cidr-pod",
+			},
 		},
-		Azure: &Azure{
-			ResourceGroup:            "test-rg",
-			SubscriptionID:           "test-sub",
-			NetworkSecurityGroupName: "test-nsg",
-			LoadBalancerName:         "test-lb",
-			UserAssignedIdentity:     "test-uami",
-			AttestationURL:           "test-maaUrl",
+		ClusterValues: ClusterValues{
+			ClusterID:       "test-cluster-id",
+			OwnerID:         "test-owner-id",
+			MeasurementSalt: []byte{0x41},
 		},
-		GCP: &GCP{
-			ProjectID:  "test-project",
-			IPCidrNode: "test-cidr-node",
-			IPCidrPod:  "test-cidr-pod",
-		},
-	},
-	ClusterValues: ClusterValues{
-		ClusterID:       "test-cluster-id",
-		OwnerID:         "test-owner-id",
-		MeasurementSalt: []byte{0x41},
-	},
+	}
 }
 
 func TestWriteToFile(t *testing.T) {
-	prepareFs := func(existingFiles ...string) file.Handler {
-		fs := afero.NewMemMapFs()
-		fh := file.NewHandler(fs)
-		for _, name := range existingFiles {
-			if err := fh.Write(name, []byte{0x41}); err != nil {
-				t.Fatalf("failed to create file %s: %v", name, err)
-			}
-		}
-		return fh
-	}
-
 	testCases := map[string]struct {
 		state   *State
 		fh      file.Handler
 		wantErr bool
 	}{
 		"success": {
-			state: defaultState,
-			fh:    prepareFs(),
+			state: defaultState(),
+			fh:    file.NewHandler(afero.NewMemMapFs()),
 		},
 		"overwrite": {
-			state: defaultState,
-			fh:    prepareFs(constants.StateFilename),
+			state: defaultState(),
+			fh: func() file.Handler {
+				fs := file.NewHandler(afero.NewMemMapFs())
+				require.NoError(t, fs.Write(constants.StateFilename, []byte{0x41}))
+				return fs
+			}(),
 		},
 		"empty state": {
 			state: &State{},
-			fh:    prepareFs(),
+			fh:    file.NewHandler(afero.NewMemMapFs()),
 		},
 		"rofs": {
-			state:   defaultState,
+			state:   defaultState(),
 			fh:      file.NewHandler(afero.NewReadOnlyFs(afero.NewMemMapFs())),
 			wantErr: true,
 		},
@@ -88,6 +83,7 @@ func TestWriteToFile(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
+			require := require.New(t)
 
 			err := tc.state.WriteToFile(tc.fh, constants.StateFilename)
 
@@ -95,72 +91,59 @@ func TestWriteToFile(t *testing.T) {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
-				assert.Equal(mustMarshalYaml(t, tc.state), mustReadFromFile(t, tc.fh))
+				assert.YAMLEq(mustMarshalYaml(require, tc.state), mustReadFromFile(require, tc.fh))
 			}
 		})
 	}
 }
 
 func TestReadFromFile(t *testing.T) {
-	prepareFs := func(existingFiles map[string][]byte) file.Handler {
-		fs := afero.NewMemMapFs()
-		fh := file.NewHandler(fs)
-		for name, content := range existingFiles {
-			if err := fh.Write(name, content); err != nil {
-				t.Fatalf("failed to create file %s: %v", name, err)
-			}
-		}
-		return fh
-	}
-
 	testCases := map[string]struct {
-		existingFiles map[string][]byte
-		wantErr       bool
+		fs        file.Handler
+		wantState *State
+		wantErr   bool
 	}{
 		"success": {
-			existingFiles: map[string][]byte{
-				constants.StateFilename: mustMarshalYaml(t, defaultState),
-			},
+			fs: func() file.Handler {
+				fh := file.NewHandler(afero.NewMemMapFs())
+				require.NoError(t, fh.WriteYAML(constants.StateFilename, defaultState()))
+				return fh
+			}(),
+			wantState: defaultState(),
 		},
 		"no state file present": {
-			existingFiles: map[string][]byte{},
-			wantErr:       true,
+			fs:      file.NewHandler(afero.NewMemMapFs()),
+			wantErr: true,
 		},
 	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			fh := prepareFs(tc.existingFiles)
+			require := require.New(t)
 
-			state, err := ReadFromFile(fh, constants.StateFilename)
+			state, err := ReadFromFile(tc.fs, constants.StateFilename)
 
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
-				assert.Equal(tc.existingFiles[constants.StateFilename], mustMarshalYaml(t, state))
+				assert.YAMLEq(mustMarshalYaml(require, tc.wantState), mustMarshalYaml(require, state))
 			}
 		})
 	}
 }
 
-func mustMarshalYaml(t *testing.T, v any) []byte {
-	t.Helper()
+func mustMarshalYaml(require *require.Assertions, v any) string {
 	b, err := encoder.NewEncoder(v).Encode()
-	if err != nil {
-		t.Fatalf("failed to marshal yaml: %v", err)
-	}
-	return b
+	require.NoError(err)
+	return string(b)
 }
 
-func mustReadFromFile(t *testing.T, fh file.Handler) []byte {
-	t.Helper()
+func mustReadFromFile(require *require.Assertions, fh file.Handler) string {
 	b, err := fh.Read(constants.StateFilename)
-	if err != nil {
-		t.Fatalf("failed to read file: %v", err)
-	}
-	return b
+	require.NoError(err)
+	return string(b)
 }
 
 func TestMerge(t *testing.T) {
@@ -418,4 +401,46 @@ func TestMarshalUnmarshalHexBytes(t *testing.T) {
 	err = yaml.Unmarshal(actual, &actual2)
 	require.NoError(t, err)
 	assert.Equal(t, in, actual2)
+}
+
+func TestCreateOrRead(t *testing.T) {
+	testCases := map[string]struct {
+		fs        file.Handler
+		wantState *State
+		wantErr   bool
+	}{
+		"file exists": {
+			fs: func() file.Handler {
+				fh := file.NewHandler(afero.NewMemMapFs())
+				require.NoError(t, fh.WriteYAML(constants.StateFilename, defaultState()))
+				return fh
+			}(),
+			wantState: defaultState(),
+		},
+		"file does not exist": {
+			fs:        file.NewHandler(afero.NewMemMapFs()),
+			wantState: New(),
+		},
+		"unable to write file": {
+			fs:      file.NewHandler(afero.NewReadOnlyFs(afero.NewMemMapFs())),
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			require := require.New(t)
+			state, err := CreateOrRead(tc.fs, constants.StateFilename)
+
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+			assert.YAMLEq(mustMarshalYaml(require, tc.wantState), mustMarshalYaml(require, state))
+			assert.YAMLEq(mustMarshalYaml(require, tc.wantState), mustReadFromFile(require, tc.fs))
+		})
+	}
 }

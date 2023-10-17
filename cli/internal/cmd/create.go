@@ -191,7 +191,7 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	}
 	c.log.Debugf("Successfully created the cloud resources for the cluster")
 
-	stateFile, err := state.ReadFromFile(fileHandler, constants.StateFilename)
+	stateFile, err := state.CreateOrRead(fileHandler, constants.StateFilename)
 	if err != nil {
 		return fmt.Errorf("reading state file: %w", err)
 	}

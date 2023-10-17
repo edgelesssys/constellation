@@ -72,14 +72,14 @@ func TestCreate(t *testing.T) {
 		},
 		"interactive abort": {
 			setupFs:   fsWithDefaultConfigAndState,
-			creator:   &stubCloudCreator{},
+			creator:   &stubCloudCreator{state: infraState},
 			provider:  cloudprovider.GCP,
 			stdin:     "no\n",
 			wantAbort: true,
 		},
 		"interactive error": {
 			setupFs:  fsWithDefaultConfigAndState,
-			creator:  &stubCloudCreator{},
+			creator:  &stubCloudCreator{state: infraState},
 			provider: cloudprovider.GCP,
 			stdin:    "foo\nfoo\nfoo\n",
 			wantErr:  true,
@@ -92,7 +92,7 @@ func TestCreate(t *testing.T) {
 				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
 				return fs
 			},
-			creator:  &stubCloudCreator{},
+			creator:  &stubCloudCreator{state: infraState},
 			provider: cloudprovider.GCP,
 			yesFlag:  true,
 			wantErr:  true,
@@ -105,24 +105,23 @@ func TestCreate(t *testing.T) {
 				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
 				return fs
 			},
-			creator:  &stubCloudCreator{},
+			creator:  &stubCloudCreator{state: infraState},
 			provider: cloudprovider.GCP,
 			yesFlag:  true,
 			wantErr:  true,
 		},
 		"config does not exist": {
 			setupFs:  func(a *require.Assertions, p cloudprovider.Provider) afero.Fs { return afero.NewMemMapFs() },
-			creator:  &stubCloudCreator{},
+			creator:  &stubCloudCreator{state: infraState},
 			provider: cloudprovider.GCP,
 			yesFlag:  true,
 			wantErr:  true,
 		},
 		"state file does not exist": {
 			setupFs:  fsWithoutState,
-			creator:  &stubCloudCreator{},
+			creator:  &stubCloudCreator{state: infraState},
 			provider: cloudprovider.GCP,
 			yesFlag:  true,
-			wantErr:  true,
 		},
 		"create error": {
 			setupFs:  fsWithDefaultConfigAndState,
@@ -131,14 +130,14 @@ func TestCreate(t *testing.T) {
 			yesFlag:  true,
 			wantErr:  true,
 		},
-		"write id file error": {
+		"write state file error": {
 			setupFs: func(require *require.Assertions, csp cloudprovider.Provider) afero.Fs {
 				fs := afero.NewMemMapFs()
 				fileHandler := file.NewHandler(fs)
 				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
 				return afero.NewReadOnlyFs(fs)
 			},
-			creator:  &stubCloudCreator{},
+			creator:  &stubCloudCreator{state: infraState},
 			provider: cloudprovider.GCP,
 			yesFlag:  true,
 			wantErr:  true,
