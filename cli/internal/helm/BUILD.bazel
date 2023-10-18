@@ -411,6 +411,7 @@ go_library(
         "charts/edgeless/csi/charts/aws-csi-driver/templates/storageclass_integrity.yaml",
         "charts/edgeless/csi/charts/aws-csi-driver/templates/volumesnapshotclass.yaml",
         "charts/edgeless/csi/charts/aws-csi-driver/values.yaml",
+        "charts/edgeless/constellation-services/charts/ccm/templates/gcp-clusterrolebinding.yaml",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/cli/internal/helm",
     visibility = ["//cli:__subpackages__"],
