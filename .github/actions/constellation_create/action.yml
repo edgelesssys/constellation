@@ -142,7 +142,6 @@ runs:
       uses: ./.github/actions/self_managed_create
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
-        osImage: ${{ steps.setImage.outputs.image }}
 
     - name: Cdbg deploy
       if: inputs.isDebugImage == 'true'
