@@ -5,6 +5,9 @@ inputs:
   cloudProvider:
     description: "The cloud provider the test runs on."
     required: true
+  osImage:
+    description: "OS image to use."
+    required: true
 
 runs:
   using: "composite"
@@ -14,6 +17,57 @@ runs:
       working-directory:
       run : |
         cp -r ${{ github.workspace }}/cli/internal/terraform/terraform/${{ inputs.cloudProvider }} ${{ github.workspace }}/e2e-infra
+
+    - name: Write Terraform variables
+      shell: bash
+      working-directory: ${{ github.workspace }}/e2e-infra
+      run : |
+        echo "name = \"$(yq '.name' constellation-conf.yaml)\"" >> terraform.tfvars
+        echo "debug = $(yq '.debugCluster' constellation-conf.yaml)" >> terraform.tfvars
+        echo "custom_endpoint = \"$(yq '.customEndpoint' constellation-conf.yaml)\"" >> terraform.tfvars
+        echo "image_id = \"${{ inputs.osImage }}\"" >> terraform.tfvars
+        echo "node_groups = {\n \
+          control_plane_default = {\n \
+            role = \"$(yq '.nodeGroups.control_plane_default.role' constellation-conf.yaml)\"\n \
+            zone = \"$(yq '.nodeGroups.control_plane_default.zone' constellation-conf.yaml)\"\n \
+            zones = [ \"$(yq '.nodeGroups.worker_default.zone' constellation-conf.yaml)\" ]\n \
+            instance_type = \"$(yq '.nodeGroups.control_plane_default.instanceType' constellation-conf.yaml)\"\n \
+            disk_size = \"$(yq '.nodeGroups.control_plane_default.stateDiskSizeGB' constellation-conf.yaml)\"\n \
+            disk_type = \"$(yq '.nodeGroups.control_plane_default.stateDiskType' constellation-conf.yaml)\"\n \
+            initial_count = \"$(yq '.nodeGroups.control_plane_default.initialCount' constellation-conf.yaml)\"\n \
+          }\n \
+          worker_default = {\n \
+            role = \"$(yq '.nodeGroups.worker_default.role' constellation-conf.yaml)\"\n \
+            zone = \"$(yq '.nodeGroups.worker_default.zone' constellation-conf.yaml)\"\n \
+            zones = [ \"$(yq '.nodeGroups.worker_default.zone' constellation-conf.yaml)\" ]\n \
+            instance_type = \"$(yq '.nodeGroups.worker_default.instanceType' constellation-conf.yaml)\"\n \
+            disk_size = \"$(yq '.nodeGroups.worker_default.stateDiskSizeGB' constellation-conf.yaml)\"\n \
+            disk_type = \"$(yq '.nodeGroups.worker_default.stateDiskType' constellation-conf.yaml)\"\n \
+            initial_count = \"$(yq '.nodeGroups.worker_default.initialCount' constellation-conf.yaml)\"\n \
+          } \
+        }" \
+        >> terraform.tfvars
+        if [[ "${{ inputs.cloudProvider }}" == 'aws' ]]; then
+          echo "iam_instance_profile_control_plane = \"$(yq '.provider.aws.iamProfileControlPlane' constellation-conf.yaml)\"" >> terraform.tfvars
+          echo "iam_instance_profile_worker_nodes = \"$(yq '.provider.aws.iamProfileWorkerNodes' constellation-conf.yaml)\"" >> terraform.tfvars
+          echo "region = \"$(yq '.provider.aws.region' constellation-conf.yaml)\"" >> terraform.tfvars
+          echo "zone = \"$(yq '.provider.aws.zone' constellation-conf.yaml)\"" >> terraform.tfvars
+          echo "ami = \"$(yq '.provider.aws.zone' constellation-conf.yaml)\"" >> terraform.tfvars
+          echo "enable_snp = $(yq '.attestation | has("awsSEVSNP")' constellation-conf.yaml)" >> terraform.tfvars
+        elif [[ "${{ inputs.cloudProvider }}" == 'azure' ]]; then
+          echo "create_maa = $(yq '.attestation | has("azureSEVSNP")' constellation-conf.yaml)" >> terraform.tfvars
+          echo "confidential_vm = $(yq '.attestation | has("azureSEVSNP")' constellation-conf.yaml)" >> terraform.tfvars
+          echo "secure_boot = $(yq '.provider.azure.secureBoot' constellation-conf.yaml)" >> terraform.tfvars
+          echo "resource_group = \"$(yq '.provider.azure.resourceGroup' constellation-conf.yaml)\"" >> terraform.tfvars
+          echo "user_assigned_identity = \"$(yq '.provider.azure.userAssignedIdentity' constellation-conf.yaml)\"" >> terraform.tfvars
+        elif [[ "${{ inputs.cloudProvider }}" == 'gcp' ]]; then
+          echo "project = \"$(yq '.provider.gcp.project' constellation-conf.yaml)\"" >> terraform.tfvars
+          echo "region = \"$(yq '.provider.gcp.region' constellation-conf.yaml)\"" >> terraform.tfvars
+          echo "zone = \"$(yq '.provider.gcp.zone' constellation-conf.yaml)\"" >> terraform.tfvars
+        fi
+        terraform fmt terraform.tfvars
+        echo "Using Terraform variables:"
+        cat terraform.tfvars
 
     - name: Apply Terraform configuration
       shell: bash
