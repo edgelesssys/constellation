@@ -120,6 +120,7 @@ echo "node_groups = {
     initial_count = \"$(yq '.nodeGroups.worker_default.initialCount' constellation-conf.yaml)\"
     }
 }" >> terraform.tfvars
+echo "location = \"$(yq '.provider.azure.location' constellation-conf.yaml)\"" >> terraform.tfvars
 echo "create_maa = $(yq '.attestation | has("azureSEVSNP")' constellation-conf.yaml)" >> terraform.tfvars
 echo "confidential_vm = $(yq '.attestation | has("azureSEVSNP")' constellation-conf.yaml)" >> terraform.tfvars
 echo "secure_boot = $(yq '.provider.azure.secureBoot' constellation-conf.yaml)" >> terraform.tfvars
@@ -152,7 +153,7 @@ echo "node_groups = {
     disk_size = \"$(yq '.nodeGroups.worker_default.stateDiskSizeGB' constellation-conf.yaml)\"
     disk_type = \"$(yq '.nodeGroups.worker_default.stateDiskType' constellation-conf.yaml)\"
     initial_count = \"$(yq '.nodeGroups.worker_default.initialCount' constellation-conf.yaml)\"
-    } 
+    }
 }" >> terraform.tfvars
 echo "project = \"$(yq '.provider.gcp.project' constellation-conf.yaml)\"" >> terraform.tfvars
 echo "region = \"$(yq '.provider.gcp.region' constellation-conf.yaml)\"" >> terraform.tfvars
