@@ -62,6 +62,7 @@ There, define all needed variables found in `variables.tf` using the values from
 
 <tabs groupId="provider">
 <tabItem value="aws" label="AWS">
+
 ```bash
 echo "name = \"$(yq '.name' constellation-conf.yaml)\"" >> terraform.tfvars
 echo "debug = $(yq '.debugCluster' constellation-conf.yaml)" >> terraform.tfvars
@@ -93,8 +94,10 @@ echo "ami = \"$(yq '.provider.aws.zone' constellation-conf.yaml)\"" >> terraform
 echo "enable_snp = $(yq '.attestation | has("awsSEVSNP")' constellation-conf.yaml)" >> terraform.tfvars
 terraform fmt terraform.tfvars
 ```
+
 </tabItem>
 <tabItem value="azure" label="Azure">
+
 ```bash
 echo "name = \"$(yq '.name' constellation-conf.yaml)\"" >> terraform.tfvars
 echo "debug = $(yq '.debugCluster' constellation-conf.yaml)" >> terraform.tfvars
@@ -126,8 +129,10 @@ echo "resource_group = \"$(yq '.provider.azure.resourceGroup' constellation-conf
 echo "user_assigned_identity = \"$(yq '.provider.azure.userAssignedIdentity' constellation-conf.yaml)\"" >> terraform.tfvars
 terraform fmt terraform.tfvars
 ```
+
 </tabItem>
 <tabItem value="gcp" label="GCP">
+
 ```bash
 echo "name = \"$(yq '.name' constellation-conf.yaml)\"" >> terraform.tfvars
 echo "debug = $(yq '.debugCluster' constellation-conf.yaml)" >> terraform.tfvars
@@ -157,6 +162,7 @@ echo "region = \"$(yq '.provider.gcp.region' constellation-conf.yaml)\"" >> terr
 echo "zone = \"$(yq '.provider.gcp.zone' constellation-conf.yaml)\"" >> terraform.tfvars
 terraform fmt terraform.tfvars
 ```
+
 </tabItem>
 </tabs>
 
