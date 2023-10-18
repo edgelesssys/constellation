@@ -39,6 +39,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
+// applyFlags defines the flags for the apply command.
 type applyFlags struct {
 	rootFlags
 	yes            bool
@@ -49,6 +50,7 @@ type applyFlags struct {
 	skipPhases     skipPhases
 }
 
+// parse the apply command flags.
 func (f *applyFlags) parse(flags *pflag.FlagSet) error {
 	if err := f.rootFlags.parse(flags); err != nil {
 		return err
@@ -100,6 +102,7 @@ func (f *applyFlags) parse(flags *pflag.FlagSet) error {
 	return nil
 }
 
+// runApply sets up the apply command and runs it.
 func runApply(cmd *cobra.Command, _ []string) error {
 	log, err := newCLILogger(cmd)
 	if err != nil {
@@ -179,67 +182,72 @@ type applyCmd struct {
 }
 
 /*
-		 ~~~~~~~~~~~~~~             ┌───────▼───────┐
-		   Apply Flow               │Parse Flags    │
-		 ~~~~~~~~~~~~~~             │               │
-		                            │Read Config    │
-		                            │               │
-		                            │Read State-File│
-		                            └───────┬───────┘
-		                                    │                          ───┐
-		                 ┌──────────────────▼───────────────────┐         │
-		                 │Check if Terraform state is up to date│         │
-		                 └──────────────────┬──┬────────────────┘         │
-		                                    │  │Not up to date            │
-		                                    │  │(Diff from Terraform plan)│
-		                                    │  └────────────┐             │
-		                                    │               │             │Terraform
-		                                    │  ┌────────────▼──────────┐  │Phase
-		                                    │  │Apply Terraform updates│  │
-		                                    │  └────────────┬──────────┘  │
-		                                    │               │             │
-		                                    │  ┌────────────┘             │
-		                                    │  │                       ───┘
-		                 ┌──────────────────▼──▼────────────┐
-		                 │Check for constellation-admin.conf│
-		                 └───────────────┬──┬───────────────┘
-		              File does not exist│  │
-		                 ┌───────────────┘  │                          ───┐
-		                 │                  │                             │
-		    ┌────────────▼────────────┐     │                             │
-		    │Run Bootstrapper Init RPC│     │                             │
-		    └────────────┬────────────┘     │File does exist              │
-		                 │                  │                             │
-		  ┌──────────────▼───────────────┐  │                             │Init
-		  │Write constellation-admin.conf│  │                             │Phase
-		  └──────────────┬───────────────┘  │                             │
-		                 │                  │                             │
-		  ┌──────────────▼───────────────┐  │                             │
-		  │Prepare "Init Success" Message│  │                             │
-		  └──────────────┬───────────────┘  │                             │
-		                 │                  │                             │
-		                 └───────────────┐  │                          ───┘
-		                                 │  │
-		                      ┌──────────▼──▼──────────┐
-		                      │Apply Attestation Config│
-		                      └─────────────┬──────────┘
-		                                    │
-		                     ┌──────────────▼────────────┐
-		                     │Extend API Server Cert SANs│
-		                     └──────────────┬────────────┘
-		                                    │                          ───┐
-		                         ┌──────────▼────────┐                    │Helm
-		                         │ Apply Helm Charts │                    │Phase
-		                         └──────────┬────────┘                 ───┘
-		                                    │                          ───┐
-		                      ┌─────────────▼────────────┐                │
-		Can   be skipped if we│Upgrade NodeVersion object│                │K8s/Image
-	  ran Init RPC (time save)│  (Image and K8s update)  │                │Phase
-		                      └─────────────┬────────────┘                │
-							                │                          ───┘
-							      ┌─────────▼──────────┐
-							      │Write success output│
-							      └────────────────────┘
+apply updates a Constellation cluster by applying a user's config.
+The control flow is as follows:
+
+	                          ┌───────▼───────┐
+	                          │Parse Flags    │
+	                          │               │
+	                          │Read Config    │
+	                          │               │
+	                          │Read State-File│
+	                          │               │
+	                          │Validate input │
+	                          └───────┬───────┘
+	                                  │                          ───┐
+	               ┌──────────────────▼───────────────────┐         │
+	               │Check if Terraform state is up to date│         │
+	               └──────────────────┬──┬────────────────┘         │
+	                                  │  │Not up to date            │
+	                                  │  │(Diff from Terraform plan)│
+	                                  │  └────────────┐             │
+	                                  │               │             │Terraform
+	                                  │  ┌────────────▼──────────┐  │Phase
+	                                  │  │Apply Terraform updates│  │
+	                                  │  └────────────┬──────────┘  │
+	                                  │               │             │
+	                                  │  ┌────────────┘             │
+	                                  │  │                       ───┘
+	               ┌──────────────────▼──▼────────────┐
+	               │Check for constellation-admin.conf│
+	               └───────────────┬──┬───────────────┘
+	            File does not exist│  │
+	               ┌───────────────┘  │                          ───┐
+	               │                  │                             │
+	  ┌────────────▼────────────┐     │                             │
+	  │Run Bootstrapper Init RPC│     │                             │
+	  └────────────┬────────────┘     │File does exist              │
+	               │                  │                             │
+	┌──────────────▼───────────────┐  │                             │Init
+	│Write constellation-admin.conf│  │                             │Phase
+	└──────────────┬───────────────┘  │                             │
+	               │                  │                             │
+	┌──────────────▼───────────────┐  │                             │
+	│Prepare "Init Success" Message│  │                             │
+	└──────────────┬───────────────┘  │                             │
+	               │                  │                             │
+	               └───────────────┐  │                          ───┘
+	                               │  │
+	                    ┌──────────▼──▼──────────┐
+	                    │Apply Attestation Config│
+	                    └─────────────┬──────────┘
+	                                  │
+	                   ┌──────────────▼────────────┐
+	                   │Extend API Server Cert SANs│
+	                   └──────────────┬────────────┘
+	                                  │                          ───┐
+	                       ┌──────────▼────────┐                    │Helm
+	                       │ Apply Helm Charts │                    │Phase
+	                       └──────────┬────────┘                 ───┘
+	                                  │                          ───┐
+	                    ┌─────────────▼────────────┐                │
+	     Can be skipped │Upgrade NodeVersion object│                │K8s/Image
+	  if we ran Init RP │  (Image and K8s update)  │                │Phase
+	                    └─────────────┬────────────┘                │
+	                                  │                          ───┘
+	                        ┌─────────▼──────────┐
+	                        │Write success output│
+	                        └────────────────────┘
 */
 func (a *applyCmd) apply(cmd *cobra.Command, configFetcher attestationconfigapi.Fetcher, upgradeDir string) error {
 	// Read user's config and state file
