@@ -55,6 +55,7 @@ runs:
           echo "ami = \"$(yq '.provider.aws.zone' constellation-conf.yaml)\"" >> terraform.tfvars
           echo "enable_snp = $(yq '.attestation | has("awsSEVSNP")' constellation-conf.yaml)" >> terraform.tfvars
         elif [[ "${{ inputs.cloudProvider }}" == 'azure' ]]; then
+          echo "location = \"$(yq '.provider.azure.location' constellation-conf.yaml)\"" >> terraform.tfvars
           echo "create_maa = $(yq '.attestation | has("azureSEVSNP")' constellation-conf.yaml)" >> terraform.tfvars
           echo "confidential_vm = $(yq '.attestation | has("azureSEVSNP")' constellation-conf.yaml)" >> terraform.tfvars
           echo "secure_boot = $(yq '.provider.azure.secureBoot' constellation-conf.yaml)" >> terraform.tfvars
