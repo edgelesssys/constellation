@@ -1,4 +1,8 @@
-output "ip" {
+output "out_of_cluster_endpoint" {
+  value = module.node_group["control_plane_default"].instance_ips[0]
+}
+
+output "in_cluster_endpoint" {
   value = module.node_group["control_plane_default"].instance_ips[0]
 }
 
