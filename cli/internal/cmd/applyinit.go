@@ -49,7 +49,7 @@ func (a *applyCmd) runInit(cmd *cobra.Command, conf *config.Config, stateFile *s
 	}
 
 	a.log.Debugf("Generating master secret")
-	masterSecret, err := a.generateMasterSecret(cmd.OutOrStdout())
+	masterSecret, err := a.generateAndPersistMasterSecret(cmd.OutOrStdout())
 	if err != nil {
 		return nil, fmt.Errorf("generating master secret: %w", err)
 	}
@@ -95,7 +95,7 @@ func (a *applyCmd) runInit(cmd *cobra.Command, conf *config.Config, stateFile *s
 
 	a.log.Debugf("Buffering init success message")
 	bufferedOutput := &bytes.Buffer{}
-	if err := a.writeOutput(stateFile, resp, a.flags.mergeConfigs, bufferedOutput, measurementSalt); err != nil {
+	if err := a.writeInitOutput(stateFile, resp, a.flags.mergeConfigs, bufferedOutput, measurementSalt); err != nil {
 		return nil, err
 	}
 
@@ -128,8 +128,8 @@ func (a *applyCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, r
 	return doer.resp, nil
 }
 
-// generateMasterSecret reads a base64 encoded master secret from file or generates a new 32 byte secret.
-func (a *applyCmd) generateMasterSecret(outWriter io.Writer) (uri.MasterSecret, error) {
+// generateAndPersistMasterSecret generates a 32 byte master secret and saves it to disk.
+func (a *applyCmd) generateAndPersistMasterSecret(outWriter io.Writer) (uri.MasterSecret, error) {
 	// No file given, generate a new secret, and save it to disk
 	key, err := crypto.GenerateRandomBytes(crypto.MasterSecretLengthDefault)
 	if err != nil {
@@ -150,9 +150,9 @@ func (a *applyCmd) generateMasterSecret(outWriter io.Writer) (uri.MasterSecret, 
 	return secret, nil
 }
 
-// writeOutput writes the output of a cluster initialization to the
+// writeInitOutput writes the output of a cluster initialization to the
 // state- / kubeconfig-file and saves it to disk.
-func (a *applyCmd) writeOutput(
+func (a *applyCmd) writeInitOutput(
 	stateFile *state.State, initResp *initproto.InitSuccessResponse,
 	mergeConfig bool, wr io.Writer, measurementSalt []byte,
 ) error {

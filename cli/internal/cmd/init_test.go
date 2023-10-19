@@ -150,8 +150,9 @@ func TestInitialize(t *testing.T) {
 			wantErr:                 true,
 		},
 		/*
-				Tests currently disabled since we don't actually have validation for the state file yet
-				These tests cases only passed in the past because of unrelated errors in the test setup
+			Tests currently disabled since we don't actually have validation for the state file yet
+			These tests cases only passed in the past because of unrelated errors in the test setup
+			TODO(AB#3492): Re-enable tests once state file validation is implemented
 
 			"state file with only version": {
 				provider:      cloudprovider.GCP,
@@ -282,7 +283,6 @@ func TestInitialize(t *testing.T) {
 			err := i.apply(cmd, stubAttestationFetcher{}, "test")
 
 			if tc.wantErr {
-				fmt.Println(err)
 				assert.Error(err)
 				if !tc.retriable {
 					assert.Contains(errOut.String(), "This error is not recoverable")
@@ -452,7 +452,7 @@ func TestWriteOutput(t *testing.T) {
 		merger:      &stubMerger{},
 		log:         logger.NewTest(t),
 	}
-	err = i.writeOutput(stateFile, resp.GetInitSuccess(), false, &out, measurementSalt)
+	err = i.writeInitOutput(stateFile, resp.GetInitSuccess(), false, &out, measurementSalt)
 	require.NoError(err)
 	assert.Contains(out.String(), clusterID)
 	assert.Contains(out.String(), constants.AdminConfFilename)
@@ -472,7 +472,7 @@ func TestWriteOutput(t *testing.T) {
 
 	// test custom workspace
 	i.flags.pathPrefixer = pathprefix.New("/some/path")
-	err = i.writeOutput(stateFile, resp.GetInitSuccess(), true, &out, measurementSalt)
+	err = i.writeInitOutput(stateFile, resp.GetInitSuccess(), true, &out, measurementSalt)
 	require.NoError(err)
 	assert.Contains(out.String(), clusterID)
 	assert.Contains(out.String(), i.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename))
@@ -482,7 +482,7 @@ func TestWriteOutput(t *testing.T) {
 	i.flags.pathPrefixer = pathprefix.PathPrefixer{}
 
 	// test config merging
-	err = i.writeOutput(stateFile, resp.GetInitSuccess(), true, &out, measurementSalt)
+	err = i.writeInitOutput(stateFile, resp.GetInitSuccess(), true, &out, measurementSalt)
 	require.NoError(err)
 	assert.Contains(out.String(), clusterID)
 	assert.Contains(out.String(), constants.AdminConfFilename)
@@ -493,7 +493,7 @@ func TestWriteOutput(t *testing.T) {
 
 	// test config merging with env vars set
 	i.merger = &stubMerger{envVar: "/some/path/to/kubeconfig"}
-	err = i.writeOutput(stateFile, resp.GetInitSuccess(), true, &out, measurementSalt)
+	err = i.writeInitOutput(stateFile, resp.GetInitSuccess(), true, &out, measurementSalt)
 	require.NoError(err)
 	assert.Contains(out.String(), clusterID)
 	assert.Contains(out.String(), constants.AdminConfFilename)
@@ -543,7 +543,7 @@ func TestGenerateMasterSecret(t *testing.T) {
 				fileHandler: fileHandler,
 				log:         logger.NewTest(t),
 			}
-			secret, err := i.generateMasterSecret(&out)
+			secret, err := i.generateAndPersistMasterSecret(&out)
 
 			if tc.wantErr {
 				assert.Error(err)
