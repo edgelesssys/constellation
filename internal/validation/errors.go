@@ -44,8 +44,17 @@ func getDocumentPath(doc any, field any) (string, error) {
 	needleAddr := reflect.ValueOf(field).Elem().UnsafeAddr()
 	needleType := reflect.TypeOf(field)
 
+	var haystackAddr uintptr
+	switch reflect.TypeOf(doc).Kind() {
+	case reflect.Ptr, reflect.UnsafePointer, reflect.Interface:
+		haystackAddr = reflect.ValueOf(doc).Elem().UnsafeAddr()
+	default:
+		haystackAddr = reflect.ValueOf(doc).UnsafeAddr()
+	}
+	haystackType := reflect.TypeOf(doc)
+
 	// traverse the top level struct (i.e. the "haystack") until addr (i.e. the "needle") is found
-	return traverse(doc, needleAddr, needleType, []string{})
+	return traverse(haystackAddr, haystackType, needleAddr, needleType, []string{})
 }
 
 // traverse reverses haystack recursively until it finds a field that matches
@@ -56,18 +65,15 @@ func getDocumentPath(doc any, field any) (string, error) {
 //
 // When a field matches the reference to the given field, it returns the
 // path to the field, joined with ".".
-func traverse(haystack any, needleAddr uintptr, needleType reflect.Type, path []string) (string, error) {
+func traverse(haystackAddr uintptr, haystackType reflect.Type, needleAddr uintptr, needleType reflect.Type, path []string) (string, error) {
 	// recursion anchor: doc is the field we are looking for.
 	// Join the path and return. Since the first value of a struct has
 	// the same address as the struct itself, we need to check the type as well.
-	haystackAddr := reflect.ValueOf(haystack).Elem().UnsafeAddr()
-	haystackType := reflect.TypeOf(haystack)
 	if haystackAddr == needleAddr && haystackType == needleType {
 		return strings.Join(path, "."), nil
 	}
 
-	haystackVal := reflect.ValueOf(haystack)
-	kind := reflect.TypeOf(haystack).Kind()
+	kind := haystackType.Kind()
 	switch kind {
 	case reflect.Pointer, reflect.UnsafePointer:
 		// Dereference pointer and continue.
