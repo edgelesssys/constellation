@@ -1,4 +1,8 @@
-output "ip" {
+output "out_of_cluster_endpoint" {
+  value = openstack_networking_floatingip_v2.public_ip.address
+}
+
+output "in_cluster_endpoint" {
   value = openstack_networking_floatingip_v2.public_ip.address
 }
 
