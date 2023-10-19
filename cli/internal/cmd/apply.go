@@ -251,7 +251,7 @@ The control flow is as follows:
 */
 func (a *applyCmd) apply(cmd *cobra.Command, configFetcher attestationconfigapi.Fetcher, upgradeDir string) error {
 	// Validate inputs
-	conf, stateFile, initRequired, tfStateExists, err := a.validateInputs(cmd, configFetcher)
+	conf, stateFile, err := a.validateInputs(cmd, configFetcher)
 	if err != nil {
 		return err
 	}
@@ -260,7 +260,7 @@ func (a *applyCmd) apply(cmd *cobra.Command, configFetcher attestationconfigapi.
 
 	// Check current Terraform state, if it exists and infrastructure upgrades are not skipped,
 	// and apply migrations if necessary.
-	if tfStateExists && !a.flags.skipPhases.contains(skipInfrastructurePhase) {
+	if !a.flags.skipPhases.contains(skipInfrastructurePhase) {
 		if err := a.runTerraformApply(cmd, conf, stateFile, upgradeDir); err != nil {
 			return fmt.Errorf("applying Terraform configuration : %w", err)
 		}
@@ -268,7 +268,7 @@ func (a *applyCmd) apply(cmd *cobra.Command, configFetcher attestationconfigapi.
 
 	bufferedOutput := &bytes.Buffer{}
 	// Run init RPC if required
-	if initRequired {
+	if !a.flags.skipPhases.contains(skipInitPhase) {
 		bufferedOutput, err = a.runInit(cmd, conf, stateFile)
 		if err != nil {
 			return err
@@ -296,14 +296,15 @@ func (a *applyCmd) apply(cmd *cobra.Command, configFetcher attestationconfigapi.
 
 	// Apply Helm Charts
 	if !a.flags.skipPhases.contains(skipHelmPhase) {
-		if err := a.runHelmApply(cmd, conf, stateFile, kubeUpgrader, upgradeDir, initRequired); err != nil {
+		if err := a.runHelmApply(cmd, conf, stateFile, kubeUpgrader, upgradeDir); err != nil {
 			return err
 		}
 	}
 
 	// Upgrade NodeVersion object
 	// This can be skipped if we ran the init RPC, as the NodeVersion object is already up to date
-	if !(a.flags.skipPhases.contains(skipK8sPhase) && a.flags.skipPhases.contains(skipImagePhase)) && !initRequired {
+	if !(a.flags.skipPhases.contains(skipK8sPhase) && a.flags.skipPhases.contains(skipImagePhase)) &&
+		a.flags.skipPhases.contains(skipInitPhase) {
 		if err := a.runK8sUpgrade(cmd, conf, kubeUpgrader); err != nil {
 			return err
 		}
@@ -315,7 +316,7 @@ func (a *applyCmd) apply(cmd *cobra.Command, configFetcher attestationconfigapi.
 	return nil
 }
 
-func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationconfigapi.Fetcher) (*config.Config, *state.State, bool, bool, error) {
+func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationconfigapi.Fetcher) (*config.Config, *state.State, error) {
 	// Read user's config and state file
 	a.log.Debugf("Reading config from %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
 	conf, err := config.New(a.fileHandler, constants.ConfigFilename, configFetcher, a.flags.force)
@@ -324,13 +325,13 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 		cmd.PrintErrln(configValidationErr.LongMessage())
 	}
 	if err != nil {
-		return nil, nil, false, false, err
+		return nil, nil, err
 	}
 
 	a.log.Debugf("Reading state file from %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename))
 	stateFile, err := state.ReadFromFile(a.fileHandler, constants.StateFilename)
 	if err != nil {
-		return nil, nil, false, false, err
+		return nil, nil, err
 	}
 
 	// Check license
@@ -343,31 +344,30 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 
 	// Check if we already have a running Kubernetes cluster
 	// by checking if the Kubernetes admin config file exists
-	// If not, we need to run the init RPC first
+	// If it exist, we skip the init phase
+	// If it does not exist, we need to run the init RPC first
+	// This may break things further down the line
+	// It is the user's responsibility to make sure the cluster is in a valid state
 	a.log.Debugf("Checking if %s exists", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename))
-	initRequired := false
-	if _, err := a.fileHandler.Stat(constants.AdminConfFilename); err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			return nil, nil, false, false, fmt.Errorf("checking for %s: %w", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename), err)
-		}
-		// Only run init RPC if we are not skipping the init phase
-		// This may break things further down the line
-		// It is the user's responsibility to make sure the cluster is in a valid state
-		initRequired = true && !a.flags.skipPhases.contains(skipInitPhase)
+	if _, err := a.fileHandler.Stat(constants.AdminConfFilename); err == nil {
+		a.flags.skipPhases = append(a.flags.skipPhases, skipInitPhase)
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return nil, nil, fmt.Errorf("checking for %s: %w", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename), err)
 	}
-	a.log.Debugf("Init RPC required: %t", initRequired)
+	a.log.Debugf("Init RPC required: %t", !a.flags.skipPhases.contains(skipInitPhase))
 
 	// Validate input arguments
 
 	// Validate Kubernetes version as set in the user's config
 	// If we need to run the init RPC, the version has to be valid
 	// Otherwise, we are able to use an outdated version, meaning we skip the K8s upgrade
+	// We skip version validation if the user explicitly skips the Kubernetes phase
 	a.log.Debugf("Validating Kubernetes version %s", conf.KubernetesVersion)
 	validVersion, err := versions.NewValidK8sVersion(string(conf.KubernetesVersion), true)
-	if err != nil {
+	if err != nil && !a.flags.skipPhases.contains(skipK8sPhase) {
 		a.log.Debugf("Kubernetes version not valid: %s", err)
-		if initRequired {
-			return nil, nil, false, false, err
+		if !a.flags.skipPhases.contains(skipInitPhase) {
+			return nil, nil, err
 		}
 		a.log.Debugf("Checking if user wants to continue anyway")
 		if !a.flags.yes {
@@ -378,10 +378,10 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 				),
 			)
 			if err != nil {
-				return nil, nil, false, false, fmt.Errorf("asking for confirmation: %w", err)
+				return nil, nil, fmt.Errorf("asking for confirmation: %w", err)
 			}
 			if !confirmed {
-				return nil, nil, false, false, fmt.Errorf("aborted by user")
+				return nil, nil, fmt.Errorf("aborted by user")
 			}
 		}
 		a.flags.skipPhases = append(a.flags.skipPhases, skipK8sPhase)
@@ -395,17 +395,17 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 
 	// Validate microservice version (helm versions) in the user's config matches the version of the CLI
 	// This makes sure we catch potential errors early, not just after we already ran Terraform migrations or the init RPC
-	if !a.flags.force {
+	if !a.flags.force && !a.flags.skipPhases.contains(skipHelmPhase) && !a.flags.skipPhases.contains(skipInitPhase) {
 		if err := validateCLIandConstellationVersionAreEqual(constants.BinaryVersion(), conf.Image, conf.MicroserviceVersion); err != nil {
-			return nil, nil, false, false, err
+			return nil, nil, err
 		}
 	}
 
 	// Constellation on QEMU or OpenStack don't support upgrades
 	// If using one of those providers, make sure the command is only used to initialize a cluster
 	if !(conf.GetProvider() == cloudprovider.AWS || conf.GetProvider() == cloudprovider.Azure || conf.GetProvider() == cloudprovider.GCP) {
-		if !initRequired {
-			return nil, nil, false, false, fmt.Errorf("upgrades are not supported for provider %s", conf.GetProvider())
+		if a.flags.skipPhases.contains(skipInitPhase) {
+			return nil, nil, fmt.Errorf("upgrades are not supported for provider %s", conf.GetProvider())
 		}
 		// Skip Terraform phase
 		a.log.Debugf("Skipping Infrastructure upgrade")
@@ -413,21 +413,20 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 	}
 
 	// Check if Terraform state exists
-	tfStateExists, err := a.tfStateExists()
-	if err != nil {
-		return nil, nil, false, false, fmt.Errorf("checking Terraform state: %w", err)
-	}
-	if !tfStateExists {
+	if tfStateExists, err := a.tfStateExists(); err != nil {
+		return nil, nil, fmt.Errorf("checking Terraform state: %w", err)
+	} else if !tfStateExists {
+		a.flags.skipPhases = append(a.flags.skipPhases, skipInfrastructurePhase)
 		a.log.Debugf("No Terraform state found in current working directory. Assuming self-managed infrastructure. Infrastructure upgrades will not be performed.")
 	}
 
 	// Print warning about AWS attestation
 	// TODO(derpsteb): remove once AWS fixes SEV-SNP attestation provisioning issues
-	if initRequired && conf.GetAttestationConfig().GetVariant().Equal(variant.AWSSEVSNP{}) {
+	if !a.flags.skipPhases.contains(skipInitPhase) && conf.GetAttestationConfig().GetVariant().Equal(variant.AWSSEVSNP{}) {
 		cmd.PrintErrln("WARNING: Attestation temporarily relies on AWS nitroTPM. See https://docs.edgeless.systems/constellation/workflows/config#choosing-a-vm-type for more information.")
 	}
 
-	return conf, stateFile, initRequired, tfStateExists, nil
+	return conf, stateFile, nil
 }
 
 // applyJoincConfig creates or updates the cluster's join config.

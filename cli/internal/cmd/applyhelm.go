@@ -25,7 +25,7 @@ import (
 // runHelmApply handles installing or upgrading helm charts for the cluster.
 func (a *applyCmd) runHelmApply(
 	cmd *cobra.Command, conf *config.Config, stateFile *state.State,
-	kubeUpgrader kubernetesUpgrader, upgradeDir string, initRequired bool,
+	kubeUpgrader kubernetesUpgrader, upgradeDir string,
 ) error {
 	a.log.Debugf("Installing or upgrading Helm charts")
 	var masterSecret uri.MasterSecret
@@ -81,17 +81,18 @@ func (a *applyCmd) runHelmApply(
 	}
 
 	a.log.Debugf("Applying Helm charts")
-	if initRequired {
+	if !a.flags.skipPhases.contains(skipInitPhase) {
 		a.spinner.Start("Installing Kubernetes components ", false)
 	} else {
 		a.spinner.Start("Upgrading Kubernetes components ", false)
 	}
+
 	if err := executor.Apply(cmd.Context()); err != nil {
 		return fmt.Errorf("applying Helm charts: %w", err)
 	}
 	a.spinner.Stop()
 
-	if !initRequired {
+	if a.flags.skipPhases.contains(skipInitPhase) {
 		cmd.Println("Successfully upgraded Constellation services.")
 	}
 
