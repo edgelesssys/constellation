@@ -39,7 +39,7 @@ runs:
 
     - name: Constellation verify
       shell: bash
-      run: constellation verify --cluster-id $(yq -r ".clusterValues.clusterID" constellation-state.yaml) --force
+      run: constellation verify --cluster-id $(yq -r ".clusterValues.clusterID" constellation-state.yaml)
 
     - name: Verify all nodes
       shell: bash
@@ -68,9 +68,9 @@ runs:
 
           if [[ ${{ inputs.cloudProvider }} == "azure" ]]; then
             echo "Extracting Azure TCB versions for API update"
-            constellation verify --cluster-id "${clusterID}" --force --node-endpoint localhost:9090 -o json > "snp-report-${node}.json"
+            constellation verify --cluster-id "${clusterID}" --node-endpoint localhost:9090 -o json > "snp-report-${node}.json"
           else
-            constellation verify --cluster-id "${clusterID}" --force --node-endpoint localhost:9090
+            constellation verify --cluster-id "${clusterID}" --node-endpoint localhost:9090
           fi
 
           kill $forwarderPID

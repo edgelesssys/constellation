@@ -27,7 +27,7 @@ runs:
         echo "Re-enabling the join-service and waiting for the node to be back up"
         kubectl patch daemonset -n kube-system join-service --type=json -p='[{"op": "remove", "path": "/spec/template/spec/nodeSelector/some-tag"}]'
         kubectl wait --for=condition=Ready=true --timeout=10m --all nodes
-      
+
     - name: Restart all control plane nodes
       shell: bash
       env:
@@ -37,7 +37,7 @@ runs:
         for CONTROL_PLANE_NODE in ${CONTROL_PLANE_NODES}; do
           kubectl debug node/$CONTROL_PLANE_NODE --image=ubuntu -- bash -c "echo reboot > reboot.sh && chroot /host < reboot.sh"
         done
-      
+
     - name: Constellation recover
       shell: bash
       run: |
@@ -45,7 +45,7 @@ runs:
         start_time=$(date +%s)
         recovered=0
         while true; do
-            output=$(constellation recover --force)
+            output=$(constellation recover)
             if echo "$output" | grep -q "Pushed recovery key."; then
                 echo "$output"
                 i=$(echo "$output" | grep -o "Pushed recovery key." | wc -l | sed 's/ //g')
