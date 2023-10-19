@@ -19,6 +19,12 @@ provider "docker" {
   host = "unix:///var/run/docker.sock"
 }
 
+locals {
+  cidr_vpc_subnet_nodes          = "10.42.0.0/22"
+  cidr_vpc_subnet_control_planes = "10.42.1.0/24"
+  cidr_vpc_subnet_worker         = "10.42.2.0/24"
+}
+
 resource "random_password" "initSecret" {
   length           = 32
   special          = true
@@ -61,7 +67,7 @@ module "node_group" {
   vcpus            = each.value.vcpus
   memory           = each.value.memory
   machine          = var.machine
-  cidr             = each.value.role == "control-plane" ? "10.42.1.0/24" : "10.42.2.0/24"
+  cidr             = each.value.role == "control-plane" ? local.cidr_vpc_subnet_control_planes : local.cidr_vpc_subnet_worker
   network_id       = libvirt_network.constellation.id
   pool             = libvirt_pool.cluster.name
   boot_mode        = var.constellation_boot_mode

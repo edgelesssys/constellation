@@ -46,3 +46,7 @@ output "validate_constellation_cmdline" {
 output "name" {
   value = "${var.name}-qemu" // placeholder, as per "uid" output
 }
+
+output "ip_cidr_nodes" {
+  value = local.cidr_vpc_subnet_nodes
+}

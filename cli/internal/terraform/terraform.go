@@ -239,6 +239,15 @@ func (c *Client) ShowInfrastructure(ctx context.Context, provider cloudprovider.
 		return state.Infrastructure{}, errors.New("invalid type in name output: not a string")
 	}
 
+	cidrNodesOutput, ok := tfState.Values.Outputs["ip_cidr_nodes"]
+	if !ok {
+		return state.Infrastructure{}, errors.New("no ip_cidr_nodes output found")
+	}
+	cidrNodes, ok := cidrNodesOutput.Value.(string)
+	if !ok {
+		return state.Infrastructure{}, errors.New("invalid type in ip_cidr_nodes output: not a string")
+	}
+
 	res := state.Infrastructure{
 		ClusterEndpoint:   outOfClusterEndpoint,
 		InClusterEndpoint: inClusterEndpoint,
@@ -246,6 +255,7 @@ func (c *Client) ShowInfrastructure(ctx context.Context, provider cloudprovider.
 		InitSecret:        []byte(secret),
 		UID:               uid,
 		Name:              name,
+		IPCidrNode:        cidrNodes,
 	}
 
 	switch provider {
@@ -259,15 +269,6 @@ func (c *Client) ShowInfrastructure(ctx context.Context, provider cloudprovider.
 			return state.Infrastructure{}, errors.New("invalid type in project output: not a string")
 		}
 
-		cidrNodesOutput, ok := tfState.Values.Outputs["ip_cidr_nodes"]
-		if !ok {
-			return state.Infrastructure{}, errors.New("no ip_cidr_nodes output found")
-		}
-		cidrNodes, ok := cidrNodesOutput.Value.(string)
-		if !ok {
-			return state.Infrastructure{}, errors.New("invalid type in ip_cidr_nodes output: not a string")
-		}
-
 		cidrPodsOutput, ok := tfState.Values.Outputs["ip_cidr_pods"]
 		if !ok {
 			return state.Infrastructure{}, errors.New("no ip_cidr_pods output found")
@@ -278,9 +279,8 @@ func (c *Client) ShowInfrastructure(ctx context.Context, provider cloudprovider.
 		}
 
 		res.GCP = &state.GCP{
-			ProjectID:  gcpProject,
-			IPCidrNode: cidrNodes,
-			IPCidrPod:  cidrPods,
+			ProjectID: gcpProject,
+			IPCidrPod: cidrPods,
 		}
 	case cloudprovider.Azure:
 		attestationURLOutput, ok := tfState.Values.Outputs["attestationURL"]
