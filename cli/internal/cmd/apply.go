@@ -16,6 +16,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
@@ -60,11 +61,11 @@ func (f *applyFlags) parse(flags *pflag.FlagSet) error {
 	if err != nil {
 		return fmt.Errorf("getting 'skip-phases' flag: %w", err)
 	}
-	var skipPhases []skipPhase
+	var skipPhases skipPhases
 	for _, phase := range rawSkipPhases {
-		switch skipPhase(phase) {
+		switch skipPhase(strings.ToLower(phase)) {
 		case skipInfrastructurePhase, skipHelmPhase, skipImagePhase, skipK8sPhase:
-			skipPhases = append(skipPhases, skipPhase(phase))
+			skipPhases.add(skipPhase(phase))
 		default:
 			return fmt.Errorf("invalid phase %s", phase)
 		}
@@ -350,7 +351,7 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 	// It is the user's responsibility to make sure the cluster is in a valid state
 	a.log.Debugf("Checking if %s exists", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename))
 	if _, err := a.fileHandler.Stat(constants.AdminConfFilename); err == nil {
-		a.flags.skipPhases = append(a.flags.skipPhases, skipInitPhase)
+		a.flags.skipPhases.add(skipInitPhase)
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return nil, nil, fmt.Errorf("checking for %s: %w", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename), err)
 	}
@@ -384,7 +385,7 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 				return nil, nil, fmt.Errorf("aborted by user")
 			}
 		}
-		a.flags.skipPhases = append(a.flags.skipPhases, skipK8sPhase)
+		a.flags.skipPhases.add(skipK8sPhase)
 		a.log.Debugf("Outdated Kubernetes version accepted, Kubernetes upgrade will be skipped")
 	}
 	if versions.IsPreviewK8sVersion(validVersion) {
@@ -409,14 +410,14 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 		}
 		// Skip Terraform phase
 		a.log.Debugf("Skipping Infrastructure upgrade")
-		a.flags.skipPhases = append(a.flags.skipPhases, skipInfrastructurePhase)
+		a.flags.skipPhases.add(skipInfrastructurePhase)
 	}
 
 	// Check if Terraform state exists
 	if tfStateExists, err := a.tfStateExists(); err != nil {
 		return nil, nil, fmt.Errorf("checking Terraform state: %w", err)
 	} else if !tfStateExists {
-		a.flags.skipPhases = append(a.flags.skipPhases, skipInfrastructurePhase)
+		a.flags.skipPhases.add(skipInfrastructurePhase)
 		a.log.Debugf("No Terraform state found in current working directory. Assuming self-managed infrastructure. Infrastructure upgrades will not be performed.")
 	}
 

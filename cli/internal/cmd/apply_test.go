@@ -56,7 +56,7 @@ func TestParseApplyFlags(t *testing.T) {
 				return flags
 			}(),
 			wantFlags: applyFlags{
-				skipPhases:   []skipPhase{skipHelmPhase, skipK8sPhase},
+				skipPhases:   skipPhases{skipHelmPhase: struct{}{}, skipK8sPhase: struct{}{}},
 				helmWaitMode: helm.WaitModeAtomic,
 			},
 		},

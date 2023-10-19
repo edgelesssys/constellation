@@ -188,8 +188,11 @@ func TestUpgradeApply(t *testing.T) {
 			helmUpgrader:      &mockApplier{}, // mocks ensure that no methods are called
 			terraformUpgrader: &mockTerraformUpgrader{},
 			flags: applyFlags{
-				skipPhases: []skipPhase{skipInfrastructurePhase, skipHelmPhase, skipK8sPhase, skipImagePhase},
-				yes:        true,
+				skipPhases: skipPhases{
+					skipInfrastructurePhase: struct{}{}, skipHelmPhase: struct{}{},
+					skipK8sPhase: struct{}{}, skipImagePhase: struct{}{},
+				},
+				yes: true,
 			},
 			fh: fsWithStateFileAndTfState,
 		},
@@ -200,8 +203,11 @@ func TestUpgradeApply(t *testing.T) {
 			helmUpgrader:      &mockApplier{}, // mocks ensure that no methods are called
 			terraformUpgrader: &mockTerraformUpgrader{},
 			flags: applyFlags{
-				skipPhases: []skipPhase{skipInfrastructurePhase, skipHelmPhase, skipK8sPhase},
-				yes:        true,
+				skipPhases: skipPhases{
+					skipInfrastructurePhase: struct{}{}, skipHelmPhase: struct{}{},
+					skipK8sPhase: struct{}{},
+				},
+				yes: true,
 			},
 			fh: fsWithStateFileAndTfState,
 		},
@@ -288,11 +294,13 @@ func TestUpgradeApplyFlagsForSkipPhases(t *testing.T) {
 	cmd.Flags().Bool("merge-kubeconfig", false, "")
 
 	require.NoError(cmd.Flags().Set("skip-phases", "infrastructure,helm,k8s,image"))
+	wantPhases := skipPhases{}
+	wantPhases.add(skipInfrastructurePhase, skipHelmPhase, skipK8sPhase, skipImagePhase)
 
 	var flags applyFlags
 	err := flags.parse(cmd.Flags())
 	require.NoError(err)
-	assert.ElementsMatch(t, []skipPhase{skipInfrastructurePhase, skipHelmPhase, skipK8sPhase, skipImagePhase}, flags.skipPhases)
+	assert.Equal(t, wantPhases, flags.skipPhases)
 }
 
 type stubKubernetesUpgrader struct {

@@ -82,16 +82,22 @@ func diffAttestationCfg(currentAttestationCfg config.AttestationCfg, newAttestat
 }
 
 // skipPhases is a list of phases that can be skipped during the upgrade process.
-type skipPhases []skipPhase
+type skipPhases map[skipPhase]struct{}
 
 // contains returns true if the list of phases contains the given phase.
 func (s skipPhases) contains(phase skipPhase) bool {
-	for _, p := range s {
-		if strings.EqualFold(string(p), string(phase)) {
-			return true
-		}
+	_, ok := s[skipPhase(strings.ToLower(string(phase)))]
+	return ok
+}
+
+// add a phase to the list of phases.
+func (s *skipPhases) add(phases ...skipPhase) {
+	if *s == nil {
+		*s = make(skipPhases)
 	}
-	return false
+	for _, phase := range phases {
+		(*s)[skipPhase(strings.ToLower(string(phase)))] = struct{}{}
+	}
 }
 
 type kubernetesUpgrader interface {
