@@ -230,6 +230,9 @@ func TestCreateCluster(t *testing.T) {
 					"name": {
 						Value: "constell-12345abc",
 					},
+					"ip_cidr_nodes": {
+						Value: "192.0.2.103/32",
+					},
 				},
 			},
 		}
@@ -274,6 +277,9 @@ func TestCreateCluster(t *testing.T) {
 					},
 					"name": {
 						Value: "constell-12345abc",
+					},
+					"ip_cidr_nodes": {
+						Value: "192.0.2.103/32",
 					},
 				},
 			},
@@ -487,6 +493,7 @@ func TestCreateCluster(t *testing.T) {
 			assert.Equal(state.HexBytes("initSecret"), infraState.InitSecret)
 			assert.Equal("12345abc", infraState.UID)
 			assert.Equal("192.0.2.101", infraState.InClusterEndpoint)
+			assert.Equal("192.0.2.103/32", infraState.IPCidrNode)
 			if tc.provider == cloudprovider.Azure {
 				assert.Equal(tc.expectedAttestationURL, infraState.Azure.AttestationURL)
 			}
