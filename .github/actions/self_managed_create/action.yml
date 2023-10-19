@@ -87,5 +87,5 @@ runs:
       run : |
         touch ${{ github.workspace }}/constellation-state.yaml
         yq eval '.version ="v1"' --inplace ${{ github.workspace }}/constellation-state.yaml
-        yq eval '.infrastructure.initSecret ="$(terraform output initSecret | jq -r | tr -d '\n' | base64)"' --inplace ${{ github.workspace }}/constellation-state.yaml
-        yq eval '.infrastructure.clusterEndpoint ="$(terraform output ip)"' --inplace ${{ github.workspace }}/constellation-state.yaml
+        yq eval ".infrastructure.initSecret =\"$(terraform output initSecret | jq -r | tr -d '\n' | base64)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
+        yq eval ".infrastructure.clusterEndpoint =\"$(terraform output ip)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
