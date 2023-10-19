@@ -169,6 +169,7 @@ jobs:
           TARGET: //image/system:${{ matrix.csp }}_${{ matrix.attestation_variant }}_${{ needs.build-settings.outputs.stream }}
         run: |
           echo "::group::Build"
+          bazel build //image/base:rpmdb
           bazel build "${TARGET}"
           {
             echo "image-dir=$(bazel cquery --output=files "$TARGET")"
