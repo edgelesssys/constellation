@@ -14,7 +14,7 @@ type ValidationError struct {
 
 // NewValidationError creates a new ValidationError.
 //
-// To find the path to the field that failed validation, it traverses the
+// To find the path to the exported field that failed validation, it traverses the
 // top level struct recursively until it finds a field that matches the
 // reference to the field that failed validation.
 func NewValidationError(topLevelStruct any, field any, errMsg error) *ValidationError {
@@ -44,16 +44,25 @@ func (e *ValidationError) Unwrap() error {
 
 // getDocumentPath finds the JSON / YAML path of field in doc.
 func getDocumentPath(doc any, field any) (string, error) {
-	needleVal := reflect.ValueOf(field)
-	// we only want to dereference the needle once to dereference the pointer 
+	// we only want to dereference the needle once to dereference the pointer
 	// used to pass it to the function without losing reference to it, as the
-	// needle could be an arbitrarily long chain of pointers
-	derefedNeedle := pointerDeref(needleVal)
-	needleAddr := derefedNeedle.UnsafeAddr()
-	needleType := derefedNeedle.Type()
+	// needle could be an arbitrarily long chain of pointers. The same
+	// applies to the haystack.
+	derefedNeedle := pointerDeref(reflect.ValueOf(field))
+	needleRef := referenceableValue{
+		value: derefedNeedle,
+		addr:  derefedNeedle.UnsafeAddr(),
+		_type: derefedNeedle.Type(),
+	}
+	derefedHaystack := pointerDeref(reflect.ValueOf(doc))
+	haystackRef := referenceableValue{
+		value: derefedHaystack,
+		addr:  derefedHaystack.UnsafeAddr(),
+		_type: derefedHaystack.Type(),
+	}
 
 	// traverse the top level struct (i.e. the "haystack") until addr (i.e. the "needle") is found
-	return traverse(doc, needleAddr, needleType, []string{})
+	return traverse(haystackRef, needleRef, []string{})
 }
 
 // traverse reverses haystack recursively until it finds a field that matches
@@ -64,61 +73,67 @@ func getDocumentPath(doc any, field any) (string, error) {
 //
 // When a field matches the reference to the given field, it returns the
 // path to the field, joined with ".".
-func traverse(haystack any, needleAddr uintptr, needleType reflect.Type, path []string) (string, error) {
-	// dereference pointers until the underlying non-pointer value is found
-	haystackVal := reflect.ValueOf(haystack)
-	derefedHaystack := recPointerDeref(haystackVal)
-
+func traverse(haystack referenceableValue, needle referenceableValue, path []string) (string, error) {
 	// recursion anchor: doc is the field we are looking for.
 	// Join the path and return.
-	haystackAddr := derefedHaystack.UnsafeAddr()
-	haystackType := reflect.TypeOf(derefedHaystack)
-	if foundNeedle(haystackAddr, haystackType, needleAddr, needleType) {
+	if foundNeedle(haystack.addr, haystack._type, needle.addr, needle._type) {
 		return strings.Join(path, "."), nil
 	}
 
-	kind := haystackType.Kind()
+	kind := haystack._type.Kind()
 	switch kind {
 	case reflect.Struct:
 		// Traverse all visible struct fields.
-		for _, field := range reflect.VisibleFields(derefedHaystack.Type()) {
+		for _, field := range reflect.VisibleFields(haystack._type) {
 			// skip unexported fields
 			if field.IsExported() {
-				fieldVal := derefedHaystack.FieldByName(field.Name)
+				fieldVal := haystack.value.FieldByName(field.Name)
+				fieldAddr := haystack.addr + field.Offset
 				if canTraverse(fieldVal) {
 					// When a field is not the needle and cannot be traversed further,
 					// a errCannotTraverse is returned. Therefore, we only want to handle
 					// the case where the field is the needle.
-					if path, err := traverse(fieldVal.Interface(), needleAddr, needleType, appendByStructTag(path, field)); err == nil {
+					newHaystack := referenceableValue{
+						value: fieldVal,
+						addr:  fieldAddr,
+						_type: field.Type,
+					}
+					if path, err := traverse(newHaystack, needle, appendByStructTag(path, field)); err == nil {
 						return path, nil
 					}
 				}
-				fieldAddr := haystackAddr + field.Offset
-				if foundNeedle(fieldAddr, field.Type, needleAddr, needleType) {
+				if foundNeedle(fieldAddr, field.Type, needle.addr, needle._type) {
 					return strings.Join(appendByStructTag(path, field), "."), nil
 				}
 			}
 		}
-	case reflect.Slice, reflect.Array:
-		// Traverse slice / Array elements
-		for i := 0; i < derefedHaystack.Len(); i++ {
-			// see struct case
-			if path, err := traverse(derefedHaystack.Index(i), needleAddr, needleType, append(path, fmt.Sprintf("%d", i))); err == nil {
-				return path, nil
-			}
-		}
-	case reflect.Map:
-		// Traverse map elements
-		for _, key := range derefedHaystack.MapKeys() {
-			// see struct case
-			if path, err := traverse(derefedHaystack.MapIndex(key), needleAddr, needleType, append(path, key.String())); err == nil {
-				return path, nil
-			}
-		}
+		// case reflect.Slice, reflect.Array:
+		// 	// Traverse slice / Array elements
+		// 	for i := 0; i < derefedHaystack.Len(); i++ {
+		// 		// see struct case
+		// 		if path, err := traverse(derefedHaystack.Index(i), needleAddr, needleType, append(path, fmt.Sprintf("%d", i))); err == nil {
+		// 			return path, nil
+		// 		}
+		// 	}
+		// case reflect.Map:
+		// 	// Traverse map elements
+		// 	for _, key := range derefedHaystack.MapKeys() {
+		// 		// see struct case
+		// 		if path, err := traverse(derefedHaystack.MapIndex(key), needleAddr, needleType, append(path, key.String())); err == nil {
+		// 			return path, nil
+		// 		}
+		// 	}
 	}
 	// Primitive type, but not the value we are looking for.
 	// Return a
 	return "", errCannotTraverse
+}
+
+// referenceableValue is a type that can be passed as any (thus being copied) without losing the reference to the actual value.
+type referenceableValue struct {
+	value reflect.Value
+	_type reflect.Type
+	addr  uintptr
 }
 
 // errCannotTraverse is returned when a field cannot be traversed further.
