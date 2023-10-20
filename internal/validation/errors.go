@@ -90,14 +90,16 @@ func traverse(haystack referenceableValue, needle referenceableValue, path []str
 			// skip unexported fields
 			if field.IsExported() {
 				fieldVal := recPointerDeref(haystack.value.FieldByName(field.Name))
+				if isNilPtrOrInvalid(fieldVal) {
+					continue
+				}
 				fieldAddr := haystack.addr + field.Offset
+				newHaystack := referenceableValue{
+					value: fieldVal,
+					addr:  fieldVal.UnsafeAddr(),
+					_type: fieldVal.Type(),
+				}
 				if canTraverse(fieldVal) {
-					fmt.Printf("can traverse %s\n", field.Name)
-					newHaystack := referenceableValue{
-						value: fieldVal,
-						addr:  fieldVal.UnsafeAddr(),
-						_type: fieldVal.Type(),
-					}
 					// When a field is not the needle and cannot be traversed further,
 					// a errCannotTraverse is returned. Therefore, we only want to handle
 					// the case where the field is the needle.
@@ -110,14 +112,28 @@ func traverse(haystack referenceableValue, needle referenceableValue, path []str
 				}
 			}
 		}
-		// case reflect.Slice, reflect.Array:
-		// 	// Traverse slice / Array elements
-		// 	for i := 0; i < derefedHaystack.Len(); i++ {
-		// 		// see struct case
-		// 		if path, err := traverse(derefedHaystack.Index(i), needleAddr, needleType, append(path, fmt.Sprintf("%d", i))); err == nil {
-		// 			return path, nil
-		// 		}
-		// 	}
+	case reflect.Slice, reflect.Array:
+		// Traverse slice / Array elements
+		for i := 0; i < haystack.value.Len(); i++ {
+			// see struct case
+			itemVal := recPointerDeref(haystack.value.Index(i))
+			if isNilPtrOrInvalid(itemVal) {
+				continue
+			}
+			newHaystack := referenceableValue{
+				value: itemVal,
+				addr:  itemVal.UnsafeAddr(),
+				_type: itemVal.Type(),
+			}
+			if canTraverse(itemVal) {
+				if path, err := traverse(newHaystack, needle, appendByIndex(path, i)); err == nil {
+					return path, nil
+				}
+			}
+			if foundNeedle(newHaystack.addr, newHaystack._type, needle.addr, needle._type) {
+				return strings.Join(appendByIndex(path, i), "."), nil
+			}
+		}
 		// case reflect.Map:
 		// 	// Traverse map elements
 		// 	for _, key := range derefedHaystack.MapKeys() {
@@ -143,7 +159,7 @@ type referenceableValue struct {
 var errCannotTraverse = errors.New("cannot traverse anymore")
 
 // appendByStructTag appends the name of the JSON / YAML struct tag of field to path.
-// If no struct tag is present, path is returned unchanged.
+// If no struct tag is present, the field name is used.
 func appendByStructTag(path []string, field reflect.StructField) []string {
 	switch {
 	case field.Tag.Get("json") != "":
@@ -151,7 +167,12 @@ func appendByStructTag(path []string, field reflect.StructField) []string {
 	case field.Tag.Get("yaml") != "":
 		return append(path, field.Tag.Get("yaml"))
 	}
-	return path
+	return append(path, field.Name)
+}
+
+// appendByIndex appends the index idx to path.
+func appendByIndex(path []string, idx int) []string {
+	return append(path, fmt.Sprintf("[%d]", idx))
 }
 
 // recPointerDeref recursively dereferences pointers and unpacks interfaces until a non-pointer value is found.
@@ -181,6 +202,17 @@ For pointer types, false is returned.
 func canTraverse(v reflect.Value) bool {
 	switch v.Kind() {
 	case reflect.Struct, reflect.Slice, reflect.Array, reflect.Map:
+		return true
+	}
+	return false
+}
+
+// isNilPtrOrInvalid returns true if a value is a nil pointer or if the value is of an invalid kind.
+func isNilPtrOrInvalid(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Ptr, reflect.UnsafePointer, reflect.Interface, reflect.Slice, reflect.Map:
+		return v.IsNil()
+	case reflect.Invalid:
 		return true
 	}
 	return false
