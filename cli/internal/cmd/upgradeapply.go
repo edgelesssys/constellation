@@ -51,6 +51,7 @@ func newUpgradeApplyCmd() *cobra.Command {
 			cmd.Flags().Bool("merge-kubeconfig", false, "")
 			return runApply(cmd, args)
 		},
+		Deprecated: "use 'constellation apply' instead.",
 	}
 
 	cmd.Flags().BoolP("yes", "y", false, "run upgrades without further confirmation\n"+
