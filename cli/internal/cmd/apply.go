@@ -40,6 +40,32 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
+// NewApplyCmd creates the apply command.
+func NewApplyCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "apply",
+		Short: "Apply a configuration to a Constellation cluster",
+		Long:  "Apply an upgrade to a Constellation cluster by applying the chosen configuration.",
+		Args:  cobra.NoArgs,
+		RunE:  runApply,
+	}
+
+	cmd.Flags().Bool("conformance", false, "enable conformance mode")
+	cmd.Flags().Bool("skip-helm-wait", false, "install helm charts without waiting for deployments to be ready")
+	cmd.Flags().Bool("merge-kubeconfig", false, "merge Constellation kubeconfig file with default kubeconfig file in $HOME/.kube/config")
+	cmd.Flags().BoolP("yes", "y", false, "run upgrades without further confirmation\n"+
+		"WARNING: might delete your resources in case you are using cert-manager in your cluster. Please read the docs.\n"+
+		"WARNING: might unintentionally overwrite measurements in the running cluster.")
+	cmd.Flags().Duration("timeout", 5*time.Minute, "change helm upgrade timeout\n"+
+		"Might be useful for slow connections or big clusters.")
+	cmd.Flags().StringSlice("skip-phases", nil, "comma-separated list of upgrade phases to skip\n"+
+		"one or multiple of { infrastructure | helm | image | k8s }")
+
+	must(cmd.Flags().MarkHidden("timeout"))
+
+	return cmd
+}
+
 // applyFlags defines the flags for the apply command.
 type applyFlags struct {
 	rootFlags

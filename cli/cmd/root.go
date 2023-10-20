@@ -49,6 +49,7 @@ func NewRootCmd() *cobra.Command {
 
 	must(rootCmd.MarkPersistentFlagDirname("workspace"))
 
+	rootCmd.AddCommand(cmd.NewApplyCmd())
 	rootCmd.AddCommand(cmd.NewConfigCmd())
 	rootCmd.AddCommand(cmd.NewCreateCmd())
 	rootCmd.AddCommand(cmd.NewInitCmd())
