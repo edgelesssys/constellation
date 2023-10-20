@@ -50,19 +50,17 @@ func (r *rollbackerTerraform) rollback(ctx context.Context, w io.Writer, logLeve
 }
 
 type rollbackerQEMU struct {
-	client           tfResourceClient
-	libvirt          libvirtRunner
-	createdWorkspace bool
+	client  tfResourceClient
+	libvirt libvirtRunner
 }
 
-func (r *rollbackerQEMU) rollback(ctx context.Context, w io.Writer, logLevel terraform.LogLevel) (retErr error) {
-	if r.createdWorkspace {
-		retErr = r.client.Destroy(ctx, logLevel)
-	}
-	if retErr := errors.Join(retErr, r.libvirt.Stop(ctx)); retErr != nil {
+func (r *rollbackerQEMU) rollback(ctx context.Context, w io.Writer, logLevel terraform.LogLevel) error {
+	tfErr := r.client.Destroy(ctx, logLevel)
+	libvirtErr := r.libvirt.Stop(ctx)
+	if err := errors.Join(tfErr, libvirtErr); err != nil {
 		fmt.Fprintf(w, "Could not destroy the resources. Please delete the %q directory manually if no resources were created\n",
 			constants.TerraformWorkingDir)
-		return retErr
+		return err
 	}
 	return r.client.CleanUpWorkspace()
 }
