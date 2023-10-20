@@ -45,6 +45,9 @@ func (e *ValidationError) Unwrap() error {
 // getDocumentPath finds the JSON / YAML path of field in doc.
 func getDocumentPath(doc any, field any) (string, error) {
 	needleVal := reflect.ValueOf(field)
+	// we only want to dereference the needle once to dereference the pointer 
+	// used to pass it to the function without losing reference to it, as the
+	// needle could be an arbitrarily long chain of pointers
 	derefedNeedle := pointerDeref(needleVal)
 	needleAddr := derefedNeedle.UnsafeAddr()
 	needleType := derefedNeedle.Type()
