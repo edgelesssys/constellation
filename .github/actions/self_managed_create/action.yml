@@ -84,5 +84,6 @@ runs:
       working-directory: ${{ github.workspace }}/e2e-infra
       run : |
         yq eval '.version ="v1"' --inplace ${{ github.workspace }}/constellation-state.yaml
-        yq eval ".infrastructure.initSecret =\"$(terraform output initSecret | jq -r | tr -d '\n' | base64)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
-        yq eval ".infrastructure.clusterEndpoint =$(terraform output out_of_cluster_endpoint)" --inplace ${{ github.workspace }}/constellation-state.yaml
+        yq eval ".infrastructure.initSecret =\"$(terraform output initSecret | jq -r | tr -d '\n' | hexdump -e '"%x"' && echo '')\"" --inplace ${{ github.workspace }}/constellation-state.yaml
+        yq eval ".infrastructure.clusterEndpoint =\"$(terraform output out_of_cluster_endpoint | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
+        yq eval ".infrastructure.inClusterEndpoint =\"$(terraform output in_cluster_endpoint | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
