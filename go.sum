@@ -292,8 +292,8 @@ github.com/cyberphone/json-canonicalization v0.0.0-20220623050100-57a0ce2678a7 h
 github.com/cyberphone/json-canonicalization v0.0.0-20220623050100-57a0ce2678a7/go.mod h1:uzvlm1mxhHkdfqitSA92i7Se+S9ksOn3a3qmv/kyOCw=
 github.com/cyphar/filepath-securejoin v0.2.4 h1:Ugdm7cg7i6ZK6x3xDF1oEu1nfkyfH53EtKeQYTC3kyg=
 github.com/cyphar/filepath-securejoin v0.2.4/go.mod h1:aPGpWjXOXUn2NCNjFvBE6aRxGGx79pTxQpKOJNYHHl4=
-github.com/daniel-weisse/go-cryptsetup v0.0.0-20230705150314-d8c07bd1723c h1:ToajP6trZoiqlZ3Z4uoG1P02/wtqSw1AcowOXOYjATk=
-github.com/daniel-weisse/go-cryptsetup v0.0.0-20230705150314-d8c07bd1723c/go.mod h1:gZoZ0+POlM1ge/VUxWpMmZVNPzzMJ7l436CgkQ5+qzU=
+github.com/daniel-weisse/go-cryptsetup v0.0.0-20220520180014-fd0874fd07a6 h1:ZCMQs7dWvEOsKb2ZejFi2cY6e0iVI0o2K4zoGELSiZg=
+github.com/daniel-weisse/go-cryptsetup v0.0.0-20220520180014-fd0874fd07a6/go.mod h1:gZoZ0+POlM1ge/VUxWpMmZVNPzzMJ7l436CgkQ5+qzU=
 github.com/danieljoos/wincred v1.1.2 h1:QLdCxFs1/Yl4zduvBdcHB8goaYk9RARS2SgLLRuAyr0=
 github.com/danieljoos/wincred v1.1.2/go.mod h1:GijpziifJoIBfYh+S7BbkdUTU4LfM+QnGqR5Vl2tAx0=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
