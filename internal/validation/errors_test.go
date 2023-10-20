@@ -1,8 +1,10 @@
 package validation
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -12,9 +14,9 @@ func TestNewValidationErrorSingleField(t *testing.T) {
 		OtherField:    42,
 	}
 
-	err := NewValidationError(st, &st.OtherField, nil)
+	err := NewValidationError(st, &st.OtherField, assert.AnError)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "validating otherField: <nil>")
+	require.Contains(t, err.Error(), fmt.Sprintf("validating otherField: %s", assert.AnError))
 }
 
 type ErrorTestDoc struct {
