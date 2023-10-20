@@ -45,7 +45,7 @@ func (e *ValidationError) Unwrap() error {
 // getDocumentPath finds the JSON / YAML path of field in doc.
 func getDocumentPath(doc any, field any) (string, error) {
 	needleVal := reflect.ValueOf(field)
-	derefedNeedle := recPointerDeref(needleVal)
+	derefedNeedle := pointerDeref(needleVal)
 	needleAddr := derefedNeedle.UnsafeAddr()
 	needleType := derefedNeedle.Type()
 
@@ -133,11 +133,21 @@ func appendByStructTag(path []string, field reflect.StructField) []string {
 	return path
 }
 
-// recPointerDeref recursively dereferences pointers until a non-pointer value is found.
+// recPointerDeref recursively dereferences pointers and unpacks interfaces until a non-pointer value is found.
 func recPointerDeref(val reflect.Value) reflect.Value {
 	switch val.Kind() {
 	case reflect.Ptr, reflect.UnsafePointer, reflect.Interface:
 		return recPointerDeref(val.Elem())
+	}
+	return val
+}
+
+// pointerDeref dereferences pointers and unpacks interfaces.
+// If the value is not a pointer, it is returned unchanged
+func pointerDeref(val reflect.Value) reflect.Value {
+	switch val.Kind() {
+	case reflect.Ptr, reflect.UnsafePointer, reflect.Interface:
+		return val.Elem()
 	}
 	return val
 }
