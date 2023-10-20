@@ -577,7 +577,7 @@ func TestAttestation(t *testing.T) {
 	require.NoError(existingStateFile.WriteToFile(fileHandler, constants.StateFilename))
 
 	cfg := config.Default()
-	cfg.Image = "v0.0.0" // is the default version of the the CLI (before build injects the real version)
+	cfg.Image = constants.BinaryVersion().String()
 	cfg.RemoveProviderAndAttestationExcept(cloudprovider.QEMU)
 	cfg.Attestation.QEMUVTPM.Measurements[0] = measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength)
 	cfg.Attestation.QEMUVTPM.Measurements[1] = measurements.WithAllBytes(0x11, measurements.Enforce, measurements.PCRMeasurementLength)
@@ -611,6 +611,9 @@ func TestAttestation(t *testing.T) {
 	assert.Error(err)
 	// make sure the error is actually a TLS handshake error
 	assert.Contains(err.Error(), "transport: authentication handshake failed")
+	if validationErr, ok := err.(*config.ValidationError); ok {
+		t.Log(validationErr.LongMessage())
+	}
 }
 
 type testValidator struct {
