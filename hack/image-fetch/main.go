@@ -17,13 +17,21 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
 	"github.com/spf13/afero"
+)
+
+var (
+	caseInsensitiveCommunityGalleriesRegexp = regexp.MustCompile(`(?i)\/communitygalleries\/`)
+	caseInsensitiveImagesRegExp             = regexp.MustCompile(`(?i)\/images\/`)
+	caseInsensitiveVersionsRegExp           = regexp.MustCompile(`(?i)\/versions\/`)
 )
 
 func main() {
@@ -48,6 +56,12 @@ func main() {
 	image, err := imgFetcher.FetchReference(ctx, provider, attestationVariant, conf.Image, region)
 	if err != nil {
 		panic(err)
+	}
+
+	if provider == cloudprovider.Azure {
+		image = caseInsensitiveCommunityGalleriesRegexp.ReplaceAllString(image, "/communityGalleries/")
+		image = caseInsensitiveImagesRegExp.ReplaceAllString(image, "/images/")
+		image = caseInsensitiveVersionsRegExp.ReplaceAllString(image, "/versions/")
 	}
 
 	fmt.Println(image)
