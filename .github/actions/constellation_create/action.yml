@@ -124,16 +124,13 @@ runs:
       run: |
         yq eval -i '(.internalLoadBalancer) = true' constellation-conf.yaml
 
-    # Uses --force flag since the CLI currently does not have a pre-release version and is always on the latest released version.
-    # However, many of our pipelines work on prerelease images. Thus the used images are newer than the CLI's version.
-    # This makes the version validation in the CLI fail.
     - name: Constellation create
       shell: bash
       run: |
         echo "Creating cluster using config:"
         cat constellation-conf.yaml
         sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts' || true
-        constellation create -y --force --debug --tf-log=DEBUG
+        constellation create -y --debug --tf-log=DEBUG
 
     - name: Cdbg deploy
       if: inputs.isDebugImage == 'true'
@@ -150,7 +147,7 @@ runs:
       id: constellation-init
       shell: bash
       run: |
-        constellation init --force --debug
+        constellation init --debug
         echo "KUBECONFIG=$(pwd)/constellation-admin.conf" | tee -a $GITHUB_OUTPUT
 
     - name: Wait for nodes to join and become ready
