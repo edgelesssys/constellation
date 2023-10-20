@@ -1,0 +1,24 @@
+name: Pick an Azure region
+description: "Pick an Azure region"
+
+outputs:
+  region:
+    description: "One of the supported Azure regions"
+    value: ${{ steps.pick-region.outputs.region }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Pick a region
+      id: pick-region
+      shell: bash
+      run: |
+        possibleRegions=(
+          "westus"
+          "eastus"
+          "northeurope"
+          "westeurope"
+          "southeastasia"
+        )
+        region=${possibleRegions[$RANDOM % ${#possibleRegions[@]}]}
+        echo "region=$region" | tee -a "$GITHUB_OUTPUT"

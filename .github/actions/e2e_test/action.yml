@@ -204,6 +204,10 @@ runs:
         echo "uuid=${uuid}" | tee -a $GITHUB_OUTPUT
         echo "prefix=e2e-${{ github.run_id }}-${{ github.run_attempt }}-${uuid}" | tee -a $GITHUB_OUTPUT
 
+    - name: Pick a random Azure region
+      id: pick-az-region
+      uses: ./.github/actions/pick_azure_region
+
     - name: Create IAM configuration
       id: constellation-iam-create
       uses: ./.github/actions/constellation_iam_create
@@ -211,7 +215,7 @@ runs:
         cloudProvider: ${{ inputs.cloudProvider }}
         namePrefix: ${{ steps.create-prefix.outputs.prefix }}
         awsZone: ${{ inputs.regionZone || 'us-east-2c' }}
-        azureRegion: ${{ inputs.regionZone || 'northeurope' }}
+        azureRegion: ${{ inputs.regionZone || steps.pick-az-region.outputs.region  }}
         gcpProjectID: ${{ inputs.gcpProject }}
         gcpZone: ${{ inputs.regionZone || 'europe-west3-b' }}
         kubernetesVersion: ${{ inputs.kubernetesVersion }}
