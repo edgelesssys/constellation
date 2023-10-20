@@ -11,6 +11,7 @@ constellation [command]
 ```
 Commands:
 
+* [apply](#constellation-apply): Apply a configuration to a Constellation cluster
 * [config](#constellation-config): Work with the Constellation configuration file
   * [generate](#constellation-config-generate): Generate a default configuration and state file
   * [fetch-measurements](#constellation-config-fetch-measurements): Fetch measurements for configured cloud provider and image
@@ -38,6 +39,41 @@ Commands:
   * [upgrade](#constellation-iam-upgrade): Find and apply upgrades to your IAM profile
     * [apply](#constellation-iam-upgrade-apply): Apply an upgrade to an IAM profile
 * [version](#constellation-version): Display version of this CLI
+
+## constellation apply
+
+Apply a configuration to a Constellation cluster
+
+### Synopsis
+
+Apply an upgrade to a Constellation cluster by applying the chosen configuration.
+
+```
+constellation apply [flags]
+```
+
+### Options
+
+```
+      --conformance           enable conformance mode
+  -h, --help                  help for apply
+      --merge-kubeconfig      merge Constellation kubeconfig file with default kubeconfig file in $HOME/.kube/config
+      --skip-helm-wait        install helm charts without waiting for deployments to be ready
+      --skip-phases strings   comma-separated list of upgrade phases to skip
+                              one or multiple of { infrastructure | helm | image | k8s }
+  -y, --yes                   run upgrades without further confirmation
+                              WARNING: might delete your resources in case you are using cert-manager in your cluster. Please read the docs.
+                              WARNING: might unintentionally overwrite measurements in the running cluster.
+```
+
+### Options inherited from parent commands
+
+```
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
+```
 
 ## constellation config
 
