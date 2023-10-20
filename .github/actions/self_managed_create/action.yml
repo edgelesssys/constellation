@@ -35,7 +35,6 @@ runs:
           control_plane_default = {
             role = \"$(yq '.nodeGroups.control_plane_default.role' constellation-conf.yaml)\"
             zone = \"$(yq '.nodeGroups.control_plane_default.zone' constellation-conf.yaml)\"
-            zones = [ \"$(yq '.nodeGroups.worker_default.zone' constellation-conf.yaml)\" ]
             instance_type = \"$(yq '.nodeGroups.control_plane_default.instanceType' constellation-conf.yaml)\"
             disk_size = \"$(yq '.nodeGroups.control_plane_default.stateDiskSizeGB' constellation-conf.yaml)\"
             disk_type = \"$(yq '.nodeGroups.control_plane_default.stateDiskType' constellation-conf.yaml)\"
@@ -44,7 +43,6 @@ runs:
           worker_default = {
             role = \"$(yq '.nodeGroups.worker_default.role' constellation-conf.yaml)\"
             zone = \"$(yq '.nodeGroups.worker_default.zone' constellation-conf.yaml)\"
-            zones = [ \"$(yq '.nodeGroups.worker_default.zone' constellation-conf.yaml)\" ]
             instance_type = \"$(yq '.nodeGroups.worker_default.instanceType' constellation-conf.yaml)\"
             disk_size = \"$(yq '.nodeGroups.worker_default.stateDiskSizeGB' constellation-conf.yaml)\"
             disk_type = \"$(yq '.nodeGroups.worker_default.stateDiskType' constellation-conf.yaml)\"
@@ -85,7 +83,6 @@ runs:
       shell: bash
       working-directory: ${{ github.workspace }}/e2e-infra
       run : |
-        touch ${{ github.workspace }}/constellation-state.yaml
         yq eval '.version ="v1"' --inplace ${{ github.workspace }}/constellation-state.yaml
         yq eval ".infrastructure.initSecret =\"$(terraform output initSecret | jq -r | tr -d '\n' | base64)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
-        yq eval ".infrastructure.clusterEndpoint =\"$(terraform output ip)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
+        yq eval ".infrastructure.clusterEndpoint =$(terraform output out_of_cluster_endpoint)" --inplace ${{ github.workspace }}/constellation-state.yaml
