@@ -141,16 +141,17 @@ If you encounter any problem with the following steps, make sure to use the [lat
 4. Initialize the cluster.
 
     ```bash
-    constellation init
+    constellation apply
     ```
 
     This should give the following output:
 
     ```shell-session
-    $ constellation init
+    $ constellation apply
     Your Constellation master secret was successfully written to ./constellation-mastersecret.json
-    Note: If you just created the cluster, it can take a few minutes to connect.
-    Initializing cluster ...
+    Connecting
+    Initializing cluster
+    Installing Kubernetes components
     Your Constellation cluster was successfully initialized.
 
     Constellation cluster identifier  g6iMP5wRU1b7mpOz2WEISlIYSfdAhB0oNaOg6XEwKFY=
@@ -166,7 +167,7 @@ If you encounter any problem with the following steps, make sure to use the [lat
 
     :::info
 
-    Depending on your CSP and region, `constellation init` may take 10+ minutes to complete.
+    Depending on your CSP and region, `constellation apply` may take 10+ minutes to complete.
 
     :::
 

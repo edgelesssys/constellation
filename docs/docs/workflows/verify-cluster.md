@@ -65,7 +65,7 @@ If attestation fails for a new node, it isn't permitted to join the cluster.
 ## The *verify* command
 
 :::note
-The steps below are purely optional. They're automatically executed by `constellation init` when you initialize your cluster. The `constellation verify` command mostly has an illustrative purpose.
+The steps below are purely optional. They're automatically executed by `constellation apply` when you initialize your cluster. The `constellation verify` command mostly has an illustrative purpose.
 :::
 
 The `verify` command obtains and verifies an attestation statement from a running Constellation cluster.

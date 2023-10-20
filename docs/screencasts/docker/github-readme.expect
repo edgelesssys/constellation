@@ -29,7 +29,7 @@ send "y"
 send "\r"
 expect_prompt
 
-run_command "constellation init"
+run_command "constellation apply"
 expect_prompt
 
 run_command "export KUBECONFIG=/constellation/constellation-admin.conf"

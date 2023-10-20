@@ -65,12 +65,12 @@ kubectl patch configmaps -n kube-system join-config -p "{\"data\":{\"attestation
 
 :::
 
-You can use the `upgrade apply` command to change measurements of a running cluster:
+You can use the `apply` command to change measurements of a running cluster:
 
 1. Modify the `measurements` key in your local `constellation-conf.yaml` to the expected values.
-2. Run `constellation upgrade apply`.
+2. Run `constellation apply`.
 
-Keep in mind that running `upgrade apply` also applies any version changes from your config to the cluster.
+Keep in mind that running `apply` also applies any version changes from your config to the cluster.
 
 You can run these commands to learn about the versions currently configured in the cluster:
 

@@ -33,7 +33,7 @@ expect_prompt
 
 run_command "# Step 2: Initialize Constellation"
 expect_prompt
-run_command "constellation init"
+run_command "constellation apply"
 expect_prompt
 
 run_command "# Wait for cluster to finish bootstrapping..."

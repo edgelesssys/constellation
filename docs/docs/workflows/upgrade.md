@@ -2,7 +2,7 @@
 
 Constellation provides an easy way to upgrade all components of your cluster, without disrupting it's availability.
 Specifically, you can upgrade the Kubernetes version, the nodes' image, and the Constellation microservices.
-You configure the desired versions in your local Constellation configuration and trigger upgrades with the `upgrade apply` command.
+You configure the desired versions in your local Constellation configuration and trigger upgrades with the `apply` command.
 To learn about available versions you use the `upgrade check` command.
 Which versions are available depends on the CLI version you are using.
 
@@ -48,7 +48,7 @@ When using this flag, the `kubernetesVersion`, `image`, `microserviceVersion`, a
 Once you updated your config with the desired versions, you can trigger the upgrade with this command:
 
 ```bash
-constellation upgrade apply
+constellation apply
 ```
 
 Microservice upgrades will be finished within a few minutes, depending on the cluster size.
@@ -73,7 +73,7 @@ The phases are `infrastracture` for the cloud resource management through Terraf
 ## Check the status
 
 Upgrades are asynchronous operations.
-After you run `upgrade apply`, it will take a while until the upgrade has completed.
+After you run `apply`, it will take a while until the upgrade has completed.
 To understand if an upgrade is finished, you can run:
 
 ```bash

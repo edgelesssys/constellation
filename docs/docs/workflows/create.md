@@ -204,7 +204,7 @@ Continue with [initializing your cluster](#the-init-step).
 The following command initializes and bootstraps your cluster:
 
 ```bash
-constellation init
+constellation apply
 ```
 
 Next, configure `kubectl` for your cluster:
@@ -215,6 +215,6 @@ export KUBECONFIG="$PWD/constellation-admin.conf"
 
 🏁 That's it. You've successfully created a Constellation cluster.
 
-
 ### Troubleshooting
-In case `init` fails, the CLI collects logs from the bootstrapping instance and stores them inside `constellation-cluster.log`.
+
+In case `apply` fails, the CLI collects logs from the bootstrapping instance and stores them inside `constellation-cluster.log`.

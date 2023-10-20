@@ -62,7 +62,7 @@ Releases should be performed using [the automated release pipeline](https://gith
    ./constellation upgrade check --update-config
    yq eval -i '.image="vX.YY.Z"' constellation-conf.yaml
    ./constellation config fetch-measurements
-   ./constellation upgrade apply --yes --debug
+   ./constellation apply --yes --debug
    ```
 
    Then wait until the node / Kubernetes upgrades are finished by periodically checking:
