@@ -84,7 +84,7 @@ jobs:
       - name: Initialize cluster
         shell: pwsh
         run: |
-          .\constellation.exe init --debug
+          .\constellation.exe apply --debug
 
       - name: Liveness probe
         shell: pwsh
