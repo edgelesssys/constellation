@@ -31,6 +31,19 @@ func TestNewValidationErrorSingleFieldPtr(t *testing.T) {
 	require.Contains(t, err.Error(), fmt.Sprintf("validating pointerField: %s", assert.AnError))
 }
 
+func TestNewValidationErrorSingleFieldDoublePtr(t *testing.T) {
+	intp := new(int)
+	st := &ErrorTestDoc{
+		ExportedField:      "abc",
+		OtherField:         42,
+		DoublePointerField: &intp,
+	}
+
+	err := NewValidationError(st, &st.DoublePointerField, assert.AnError)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), fmt.Sprintf("validating doublePointerField: %s", assert.AnError))
+}
+
 func TestNewValidationErrorSingleFieldInexistent(t *testing.T) {
 	st := &ErrorTestDoc{
 		ExportedField: "abc",
@@ -98,15 +111,84 @@ func TestNewValidationErrorNestedFieldPtr(t *testing.T) {
 	require.Contains(t, err.Error(), fmt.Sprintf("validating nestedPointerField.otherField: %s", assert.AnError))
 }
 
+func TestNewValidationErrorNestedNestedField(t *testing.T) {
+	st := &ErrorTestDoc{
+		ExportedField: "abc",
+		OtherField:    42,
+		NestedField: NestedErrorTestDoc{
+			ExportedField: "nested",
+			OtherField:    123,
+			NestedField: NestedNestedErrorTestDoc{
+				ExportedField: "nested",
+				OtherField:    123,
+			},
+		},
+	}
+
+	err := NewValidationError(st, &st.NestedField.NestedField.OtherField, assert.AnError)
+	t.Log(err)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), fmt.Sprintf("validating nestedField.nestedField.otherField: %s", assert.AnError))
+}
+
+func TestNewValidationErrorNestedNestedFieldPtr(t *testing.T) {
+	st := &ErrorTestDoc{
+		ExportedField: "abc",
+		OtherField:    42,
+		NestedField: NestedErrorTestDoc{
+			ExportedField: "nested",
+			OtherField:    123,
+			NestedPointerField: &NestedNestedErrorTestDoc{
+				ExportedField: "nested",
+				OtherField:    123,
+			},
+		},
+	}
+
+	err := NewValidationError(st, &st.NestedField.NestedField.OtherField, assert.AnError)
+	t.Log(err)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), fmt.Sprintf("validating nestedField.nestedField.otherField: %s", assert.AnError))
+}
+
+func TestNewValidationErrorNestedPtrNestedFieldPtr(t *testing.T) {
+	st := &ErrorTestDoc{
+		ExportedField: "abc",
+		OtherField:    42,
+		NestedPointerField: &NestedErrorTestDoc{
+			ExportedField: "nested",
+			OtherField:    123,
+			NestedPointerField: &NestedNestedErrorTestDoc{
+				ExportedField: "nested",
+				OtherField:    123,
+			},
+		},
+	}
+
+	err := NewValidationError(st, &st.NestedField.NestedField.OtherField, assert.AnError)
+	t.Log(err)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), fmt.Sprintf("validating nestedField.nestedField.otherField: %s", assert.AnError))
+}
+
 type ErrorTestDoc struct {
 	ExportedField      string              `json:"exportedField" yaml:"exportedField"`
 	OtherField         int                 `json:"otherField" yaml:"otherField"`
 	PointerField       *int                `json:"pointerField" yaml:"pointerField"`
+	DoublePointerField **int               `json:"doublePointerField" yaml:"doublePointerField"`
 	NestedField        NestedErrorTestDoc  `json:"nestedField" yaml:"nestedField"`
 	NestedPointerField *NestedErrorTestDoc `json:"nestedPointerField" yaml:"nestedPointerField"`
 }
 
 type NestedErrorTestDoc struct {
+	ExportedField      string                    `json:"exportedField" yaml:"exportedField"`
+	OtherField         int                       `json:"otherField" yaml:"otherField"`
+	PointerField       *int                      `json:"pointerField" yaml:"pointerField"`
+	NestedField        NestedNestedErrorTestDoc  `json:"nestedField" yaml:"nestedField"`
+	NestedPointerField *NestedNestedErrorTestDoc `json:"nestedPointerField" yaml:"nestedPointerField"`
+}
+
+type NestedNestedErrorTestDoc struct {
 	ExportedField string `json:"exportedField" yaml:"exportedField"`
 	OtherField    int    `json:"otherField" yaml:"otherField"`
 	PointerField  *int   `json:"pointerField" yaml:"pointerField"`
