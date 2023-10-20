@@ -54,12 +54,14 @@ func getDocumentPath(doc any, field any) (string, error) {
 		addr:  derefedNeedle.UnsafeAddr(),
 		_type: derefedNeedle.Type(),
 	}
+	fmt.Println("Needle Type: ", needleRef._type)
 	derefedHaystack := pointerDeref(reflect.ValueOf(doc))
 	haystackRef := referenceableValue{
 		value: derefedHaystack,
 		addr:  derefedHaystack.UnsafeAddr(),
 		_type: derefedHaystack.Type(),
 	}
+	fmt.Println("Haystack Type: ", haystackRef._type)
 
 	// traverse the top level struct (i.e. the "haystack") until addr (i.e. the "needle") is found
 	return traverse(haystackRef, needleRef, []string{})
@@ -87,17 +89,18 @@ func traverse(haystack referenceableValue, needle referenceableValue, path []str
 		for _, field := range reflect.VisibleFields(haystack._type) {
 			// skip unexported fields
 			if field.IsExported() {
-				fieldVal := haystack.value.FieldByName(field.Name)
+				fieldVal := recPointerDeref(haystack.value.FieldByName(field.Name))
 				fieldAddr := haystack.addr + field.Offset
 				if canTraverse(fieldVal) {
+					fmt.Printf("can traverse %s\n", field.Name)
+					newHaystack := referenceableValue{
+						value: fieldVal,
+						addr:  fieldVal.UnsafeAddr(),
+						_type: fieldVal.Type(),
+					}
 					// When a field is not the needle and cannot be traversed further,
 					// a errCannotTraverse is returned. Therefore, we only want to handle
 					// the case where the field is the needle.
-					newHaystack := referenceableValue{
-						value: fieldVal,
-						addr:  fieldAddr,
-						_type: field.Type,
-					}
 					if path, err := traverse(newHaystack, needle, appendByStructTag(path, field)); err == nil {
 						return path, nil
 					}
@@ -124,8 +127,8 @@ func traverse(haystack referenceableValue, needle referenceableValue, path []str
 		// 		}
 		// 	}
 	}
+
 	// Primitive type, but not the value we are looking for.
-	// Return a
 	return "", errCannotTraverse
 }
 

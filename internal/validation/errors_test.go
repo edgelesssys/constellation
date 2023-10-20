@@ -49,23 +49,61 @@ func TestNewValidationErrorNestedField(t *testing.T) {
 	st := &ErrorTestDoc{
 		ExportedField: "abc",
 		OtherField:    42,
-		NestedErrorTestDoc: NestedErrorTestDoc{
+		NestedField: NestedErrorTestDoc{
 			ExportedField: "nested",
 			OtherField:    123,
 		},
 	}
 
-	err := NewValidationError(st, &st.NestedErrorTestDoc.OtherField, assert.AnError)
+	err := NewValidationError(st, &st.NestedField.OtherField, assert.AnError)
 	t.Log(err)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), fmt.Sprintf("validating nestedErrorTestDoc.otherField: %s", assert.AnError))
+	require.Contains(t, err.Error(), fmt.Sprintf("validating nestedField.otherField: %s", assert.AnError))
+}
+
+func TestNewValidationErrorPointerInNestedField(t *testing.T) {
+	st := &ErrorTestDoc{
+		ExportedField: "abc",
+		OtherField:    42,
+		NestedField: NestedErrorTestDoc{
+			ExportedField: "nested",
+			OtherField:    123,
+			PointerField:  new(int),
+		},
+	}
+
+	err := NewValidationError(st, &st.NestedField.PointerField, assert.AnError)
+	t.Log(err)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), fmt.Sprintf("validating nestedField.pointerField: %s", assert.AnError))
+}
+
+func TestNewValidationErrorNestedFieldPtr(t *testing.T) {
+	st := &ErrorTestDoc{
+		ExportedField: "abc",
+		OtherField:    42,
+		NestedField: NestedErrorTestDoc{
+			ExportedField: "nested",
+			OtherField:    123,
+		},
+		NestedPointerField: &NestedErrorTestDoc{
+			ExportedField: "nested",
+			OtherField:    123,
+		},
+	}
+
+	err := NewValidationError(st, &st.NestedPointerField.OtherField, assert.AnError)
+	t.Log(err)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), fmt.Sprintf("validating nestedPointerField.otherField: %s", assert.AnError))
 }
 
 type ErrorTestDoc struct {
-	ExportedField      string             `json:"exportedField" yaml:"exportedField"`
-	OtherField         int                `json:"otherField" yaml:"otherField"`
-	PointerField       *int               `json:"pointerField" yaml:"pointerField"`
-	NestedErrorTestDoc NestedErrorTestDoc `json:"nestedErrorTestDoc" yaml:"nestedErrorTestDoc"`
+	ExportedField      string              `json:"exportedField" yaml:"exportedField"`
+	OtherField         int                 `json:"otherField" yaml:"otherField"`
+	PointerField       *int                `json:"pointerField" yaml:"pointerField"`
+	NestedField        NestedErrorTestDoc  `json:"nestedField" yaml:"nestedField"`
+	NestedPointerField *NestedErrorTestDoc `json:"nestedPointerField" yaml:"nestedPointerField"`
 }
 
 type NestedErrorTestDoc struct {
