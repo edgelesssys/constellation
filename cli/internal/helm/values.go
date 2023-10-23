@@ -20,9 +20,8 @@ var ciliumVals = map[string]map[string]any{
 			"type":           "wireguard",
 			"nodeEncryption": true,
 			"strictMode": map[string]any{
-				"enabled":      true,
-				"podCIDRList":  []string{"10.244.0.0/16"},
-				"nodeCIDRList": []string{"192.168.179.0/24"},
+				"enabled":     true,
+				"podCIDRList": []string{"10.244.0.0/16"},
 			},
 		},
 		"l7Proxy": false,
@@ -63,9 +62,8 @@ var ciliumVals = map[string]map[string]any{
 			"type":           "wireguard",
 			"nodeEncryption": true,
 			"strictMode": map[string]any{
-				"enabled":      true,
-				"podCIDRList":  []string{"10.244.0.0/16"},
-				"nodeCIDRList": []string{"10.9.0.0/24"},
+				"enabled":     true,
+				"podCIDRList": []string{"10.244.0.0/16"},
 			},
 		},
 		"l7Proxy": false,
@@ -109,9 +107,7 @@ var ciliumVals = map[string]map[string]any{
 			"type":           "wireguard",
 			"nodeEncryption": true,
 			"strictMode": map[string]any{
-				"enabled":      true,
-				"podCIDRList":  []string{"10.244.0.0/16"},
-				"nodeCIDRList": []string{"192.168.178.0/24"},
+				"enabled": true,
 			},
 		},
 		"image": map[string]any{
@@ -148,9 +144,8 @@ var ciliumVals = map[string]map[string]any{
 			"type":           "wireguard",
 			"nodeEncryption": true,
 			"strictMode": map[string]any{
-				"enabled":      true,
-				"podCIDRList":  []string{"10.244.0.0/16"},
-				"nodeCIDRList": []string{"192.168.178.0/24"},
+				"enabled":     true,
+				"podCIDRList": []string{"10.244.0.0/16"},
 			},
 		},
 		"l7Proxy": false,
@@ -190,9 +185,8 @@ var ciliumVals = map[string]map[string]any{
 			"type":           "wireguard",
 			"nodeEncryption": true,
 			"strictMode": map[string]any{
-				"enabled":      true,
-				"podCIDRList":  []string{"10.244.0.0/16"},
-				"nodeCIDRList": []string{},
+				"enabled":     true,
+				"podCIDRList": []string{"10.244.0.0/16"},
 			},
 		},
 		"image": map[string]any{
