@@ -48,7 +48,6 @@ import (
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
 	"google.golang.org/grpc"
 )
@@ -61,6 +60,14 @@ const (
 	JSONLog LogType = iota
 	// PlainLog encodes logs as human readable text.
 	PlainLog
+)
+
+const (
+	LevelDebug = slog.LevelDebug
+	LevelInfo  = slog.LevelInfo
+	LevelWarn  = slog.LevelWarn
+	LevelError = slog.LevelError
+	LevelFatal = 12
 )
 
 // Logger is a wrapper for slog logger.
@@ -109,31 +116,32 @@ func NewTest(t *testing.T) *Logger {
 // Debugf logs a message at Debug level.
 // Debug logs are typically voluminous, and contain detailed information on the flow of execution.
 func (l *Logger) Debugf(format string, args ...any) {
-	l.logger.Debugf(format, args...)
+	l.logger.Debug(format, args...)
 }
 
 // Infof logs a message at Info level.
 // This is the default logging priority and should be used for all normal messages.
 func (l *Logger) Infof(format string, args ...any) {
-	l.logger.Infof(format, args...)
+	l.logger.Info(format, args...)
 }
 
 // Warnf logs a message at Warn level.
 // Warn logs are more important than Info, but they don't need human review or necessarily indicate an error.
 func (l *Logger) Warnf(format string, args ...any) {
-	l.logger.Warnf(format, args...)
+	l.logger.Warn(format, args...)
 }
 
 // Errorf logs a message at Error level.
 // Error logs are high priority and indicate something has gone wrong.
 func (l *Logger) Errorf(format string, args ...any) {
-	l.logger.Errorf(format, args...)
+	l.logger.Error(format, args...)
 }
 
 // Fatalf logs the message and then calls os.Exit(1).
 // Use this to exit your program when a fatal error occurs.
 func (l *Logger) Fatalf(format string, args ...any) {
-	l.logger.Fatalf(format, args...)
+	l.logger.Log(context.Background(), LevelFatal, format, args...)
+	os.Exit(1)
 }
 
 // Sync flushes any buffered log entries.
@@ -143,8 +151,14 @@ func (l *Logger) Sync() {
 }
 
 // WithIncreasedLevel returns a logger with increased logging level.
-func (l *Logger) WithIncreasedLevel(level zapcore.Level) *Logger {
-	return &Logger{logger: l.getZapLogger().WithOptions(zap.IncreaseLevel(level)).Sugar()}
+func (l *Logger) WithIncreasedLevel(level slog.Level) *Logger {
+	var logger Logger
+	if _, ok := l.logger.Handler().(*slog.TextHandler); ok {
+		logger = *New(PlainLog, level)
+	} else {
+		logger = *New(JSONLog, level)
+	}
+	return &logger
 }
 
 // With returns a logger with structured context.
