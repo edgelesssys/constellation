@@ -175,10 +175,9 @@ The Constellation [init step](#the-init-step) requires the already created `cons
 Create the `constellation-state.yaml` using the output from the Terraform state and the `constellation-conf.yaml`:
 
 ```bash
-CONSTELL_IP=$(terraform output ip)
-CONSTELL_INIT_SECRET=$(terraform output initSecret | yq -r | tr -d '\n' | base64)
-yq eval ".infrastructure.initSecret =\"$CONSTELL_INIT_SECRET\"" --inplace constellation-state.yaml
-yq eval ".infrastructure.clusterEndpoint =\"$CONSTELL_IP\"" --inplace constellation-state.yaml
+yq eval ".infrastructure.initSecret =\"$(terraform output initSecret | jq -r | tr -d '\n' | hexdump -ve '/1 "%02x"' && echo '')\"" constellation-state.yaml
+yq eval ".infrastructure.clusterEndpoint =\"$(terraform output out_of_cluster_endpoint | jq -r)\"" --inplace constellation-state.yaml
+yq eval ".infrastructure.inClusterEndpoint =\"$(terraform output in_cluster_endpoint | jq -r)\"" --inplace constellation-state.yaml
 ```
 
 </tabItem>
