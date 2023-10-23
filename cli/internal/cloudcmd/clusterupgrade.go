@@ -57,7 +57,7 @@ func (u *ClusterUpgrader) PlanClusterUpgrade(ctx context.Context, outWriter io.W
 ) (bool, error) {
 	return planUpgrade(
 		ctx, u.tf, u.fileHandler, outWriter, u.logLevel, vars,
-		filepath.Join("terraform", strings.ToLower(csp.String())),
+		filepath.Join(constants.TerraformEmbeddedDir, strings.ToLower(csp.String())),
 		filepath.Join(u.upgradeWorkspace, constants.TerraformUpgradeBackupDir),
 	)
 }

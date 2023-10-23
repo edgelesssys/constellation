@@ -46,7 +46,7 @@ type tfIAMClient interface {
 type tfUpgradePlanner interface {
 	ShowPlan(ctx context.Context, logLevel terraform.LogLevel, output io.Writer) error
 	Plan(ctx context.Context, logLevel terraform.LogLevel) (bool, error)
-	PrepareUpgradeWorkspace(embeddedPath, backupDir string, vars terraform.Variables) error
+	PrepareWorkspace(path string, vars terraform.Variables) error
 }
 
 type tfIAMUpgradeClient interface {

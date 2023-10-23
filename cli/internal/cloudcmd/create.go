@@ -23,6 +23,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
 )
 
@@ -213,7 +214,7 @@ func (c *Creator) createOpenStack(ctx context.Context, cl tfResourceClient, opts
 }
 
 func runTerraformCreate(ctx context.Context, cl tfResourceClient, provider cloudprovider.Provider, vars terraform.Variables, outWriter io.Writer, loglevel terraform.LogLevel) (output state.Infrastructure, retErr error) {
-	if err := cl.PrepareWorkspace(path.Join("terraform", strings.ToLower(provider.String())), vars); err != nil {
+	if err := cl.PrepareWorkspace(path.Join(constants.TerraformEmbeddedDir, strings.ToLower(provider.String())), vars); err != nil {
 		return state.Infrastructure{}, err
 	}
 
@@ -284,7 +285,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl tfResourceClient, lv libvir
 		vars.Firmware = toPtr(opts.Config.Provider.QEMU.Firmware)
 	}
 
-	if err := cl.PrepareWorkspace(path.Join("terraform", strings.ToLower(cloudprovider.QEMU.String())), vars); err != nil {
+	if err := cl.PrepareWorkspace(path.Join(constants.TerraformEmbeddedDir, strings.ToLower(cloudprovider.QEMU.String())), vars); err != nil {
 		return state.Infrastructure{}, fmt.Errorf("prepare workspace: %w", err)
 	}
 

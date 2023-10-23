@@ -9,7 +9,7 @@ Package terraform handles creation/destruction of cloud and IAM resources requir
 
 Since Terraform does not provide a stable Go API, we use the `terraform-exec` package to interact with Terraform.
 
-The Terraform templates are located in the "terraform" subdirectory. The templates are embedded into the CLI binary using `go:embed`.
+The Terraform templates are located in the constants.TerraformEmbeddedDir subdirectory. The templates are embedded into the CLI binary using `go:embed`.
 On use the relevant template is extracted to the working directory and the user customized variables are written to a `terraform.tfvars` file.
 
 Functions in this package should be kept CSP agnostic (there should be no "CreateAzureCluster" function),
@@ -354,17 +354,6 @@ func (c *Client) PrepareWorkspace(path string, vars Variables) error {
 	}
 
 	return c.writeVars(vars, noOverwrites)
-}
-
-// PrepareUpgradeWorkspace prepares a Terraform workspace for an upgrade.
-// It creates a backup of the Terraform workspace in the backupDir, and copies
-// the embedded Terraform files into the workingDir.
-func (c *Client) PrepareUpgradeWorkspace(path, backupDir string, vars Variables) error {
-	if err := prepareUpgradeWorkspace(path, c.file, c.workingDir, backupDir); err != nil {
-		return fmt.Errorf("prepare upgrade workspace: %w", err)
-	}
-
-	return c.writeVars(vars, allowOverwrites)
 }
 
 // ApplyCluster applies the Terraform configuration of the workspace to create or upgrade a Constellation cluster.

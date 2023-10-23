@@ -61,7 +61,7 @@ func NewIAMUpgrader(ctx context.Context, existingWorkspace, upgradeWorkspace str
 func (u *IAMUpgrader) PlanIAMUpgrade(ctx context.Context, outWriter io.Writer, vars terraform.Variables, csp cloudprovider.Provider) (bool, error) {
 	return planUpgrade(
 		ctx, u.tf, u.fileHandler, outWriter, u.logLevel, vars,
-		filepath.Join("terraform", "iam", strings.ToLower(csp.String())),
+		filepath.Join(constants.TerraformEmbeddedDir, "iam", strings.ToLower(csp.String())),
 		filepath.Join(u.upgradeWorkspace, constants.TerraformIAMUpgradeBackupDir),
 	)
 }

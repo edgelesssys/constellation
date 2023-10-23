@@ -27,13 +27,13 @@ func planUpgrade(
 		return false, fmt.Errorf("backup directory %s already exists: %w", backupDir, err)
 	}
 
-	// Backup the old Terraform workspace and move the embedded Terraform files into the workspace.
-	err := tfClient.PrepareUpgradeWorkspace(
-		templateDir,
-		backupDir,
-		vars,
-	)
-	if err != nil {
+	// Backup old workspace
+	if err := fileHandler.CopyDir(templateDir, backupDir); err != nil {
+		return false, fmt.Errorf("backing up old workspace: %w", err)
+	}
+
+	// Move the new embedded Terraform files into the workspace.
+	if err := tfClient.PrepareWorkspace(templateDir, vars); err != nil {
 		return false, fmt.Errorf("preparing terraform workspace: %w", err)
 	}
 

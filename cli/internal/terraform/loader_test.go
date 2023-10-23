@@ -14,13 +14,12 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-var oldFileContent = []byte("1234")
 
 func TestPrepareWorkspace(t *testing.T) {
 	testCases := map[string]struct {
@@ -30,7 +29,7 @@ func TestPrepareWorkspace(t *testing.T) {
 		testAlreadyUnpacked bool
 	}{
 		"awsCluster": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			provider: cloudprovider.AWS,
 			fileList: []string{
 				"main.tf",
@@ -40,7 +39,7 @@ func TestPrepareWorkspace(t *testing.T) {
 			},
 		},
 		"gcpCluster": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			provider: cloudprovider.GCP,
 			fileList: []string{
 				"main.tf",
@@ -50,7 +49,7 @@ func TestPrepareWorkspace(t *testing.T) {
 			},
 		},
 		"qemuCluster": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			provider: cloudprovider.QEMU,
 			fileList: []string{
 				"main.tf",
@@ -60,7 +59,7 @@ func TestPrepareWorkspace(t *testing.T) {
 			},
 		},
 		"gcpIAM": {
-			pathBase: path.Join("terraform", "iam"),
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.GCP,
 			fileList: []string{
 				"main.tf",
@@ -69,7 +68,7 @@ func TestPrepareWorkspace(t *testing.T) {
 			},
 		},
 		"azureIAM": {
-			pathBase: path.Join("terraform", "iam"),
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.Azure,
 			fileList: []string{
 				"main.tf",
@@ -78,7 +77,7 @@ func TestPrepareWorkspace(t *testing.T) {
 			},
 		},
 		"awsIAM": {
-			pathBase: path.Join("terraform", "iam"),
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.AWS,
 			fileList: []string{
 				"main.tf",
@@ -87,7 +86,7 @@ func TestPrepareWorkspace(t *testing.T) {
 			},
 		},
 		"continue on (partially) unpacked": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			provider: cloudprovider.AWS,
 			fileList: []string{
 				"main.tf",
@@ -129,97 +128,6 @@ func TestPrepareWorkspace(t *testing.T) {
 	}
 }
 
-func TestPrepareUpgradeWorkspace(t *testing.T) {
-	testCases := map[string]struct {
-		pathBase            string
-		provider            cloudprovider.Provider
-		workingDir          string
-		backupDir           string
-		workspaceFiles      []string
-		expectedFiles       []string
-		expectedBackupFiles []string
-		testAlreadyUnpacked bool
-		wantErr             bool
-	}{
-		"works": {
-			pathBase:       "terraform",
-			provider:       cloudprovider.AWS,
-			workingDir:     "working",
-			backupDir:      "backup",
-			workspaceFiles: []string{"main.tf", "variables.tf", "outputs.tf"},
-			expectedFiles: []string{
-				"main.tf",
-				"variables.tf",
-				"outputs.tf",
-			},
-			expectedBackupFiles: []string{
-				"main.tf",
-				"variables.tf",
-				"outputs.tf",
-			},
-		},
-		"state file does not exist": {
-			pathBase:       "terraform",
-			provider:       cloudprovider.AWS,
-			workingDir:     "working",
-			backupDir:      "backup",
-			workspaceFiles: []string{},
-			expectedFiles:  []string{},
-			wantErr:        true,
-		},
-		"terraform file already exists in working dir (overwrite)": {
-			pathBase:       "terraform",
-			provider:       cloudprovider.AWS,
-			workingDir:     "working",
-			backupDir:      "backup",
-			workspaceFiles: []string{"main.tf", "variables.tf", "outputs.tf"},
-			expectedFiles: []string{
-				"main.tf",
-				"variables.tf",
-				"outputs.tf",
-			},
-			expectedBackupFiles: []string{
-				"main.tf",
-				"variables.tf",
-				"outputs.tf",
-			},
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			require := require.New(t)
-			assert := assert.New(t)
-
-			file := file.NewHandler(afero.NewMemMapFs())
-
-			path := path.Join(tc.pathBase, strings.ToLower(tc.provider.String()))
-
-			createFiles(t, file, tc.workspaceFiles, tc.workingDir)
-
-			err := prepareUpgradeWorkspace(path, file, tc.workingDir, tc.backupDir)
-
-			if tc.wantErr {
-				require.Error(err)
-			} else {
-				require.NoError(err)
-				checkFiles(
-					t, file,
-					func(err error) { assert.NoError(err) },
-					func(content []byte) { assert.NotEqual(oldFileContent, content) },
-					tc.workingDir, tc.expectedFiles,
-				)
-				checkFiles(
-					t, file,
-					func(err error) { assert.NoError(err) },
-					func(content []byte) { assert.Equal(oldFileContent, content) },
-					tc.backupDir, tc.expectedBackupFiles,
-				)
-			}
-		})
-	}
-}
-
 func checkFiles(t *testing.T, fileHandler file.Handler, assertion func(error), contentExpection func(content []byte), dir string, files []string) {
 	t.Helper()
 	for _, f := range files {
@@ -233,16 +141,5 @@ func checkFiles(t *testing.T, fileHandler file.Handler, assertion func(error), c
 				contentExpection(content)
 			}
 		}
-	}
-}
-
-func createFiles(t *testing.T, fileHandler file.Handler, fileList []string, targetDir string) {
-	t.Helper()
-	require := require.New(t)
-
-	for _, f := range fileList {
-		path := filepath.Join(targetDir, f)
-		err := fileHandler.Write(path, oldFileContent, file.OptOverwrite, file.OptMkdirAll)
-		require.NoError(err)
 	}
 }

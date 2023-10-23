@@ -19,6 +19,12 @@ import (
 )
 
 func TestPlanUpgrade(t *testing.T) {
+	defaultFs := func(require *require.Assertions) file.Handler {
+		fs := file.NewHandler(afero.NewMemMapFs())
+		require.NoError(fs.MkdirAll("test"))
+		return fs
+	}
+
 	testCases := map[string]struct {
 		prepareFs func(require *require.Assertions) file.Handler
 		tf        *stubUpgradePlanner
@@ -26,23 +32,26 @@ func TestPlanUpgrade(t *testing.T) {
 		wantErr   bool
 	}{
 		"success no diff": {
-			prepareFs: func(require *require.Assertions) file.Handler {
-				return file.NewHandler(afero.NewMemMapFs())
-			},
-			tf: &stubUpgradePlanner{},
+			prepareFs: defaultFs,
+			tf:        &stubUpgradePlanner{},
 		},
 		"success diff": {
-			prepareFs: func(require *require.Assertions) file.Handler {
-				return file.NewHandler(afero.NewMemMapFs())
-			},
+			prepareFs: defaultFs,
 			tf: &stubUpgradePlanner{
 				planDiff: true,
 			},
 			wantDiff: true,
 		},
+		"workspace does not exist": {
+			prepareFs: func(require *require.Assertions) file.Handler {
+				return file.NewHandler(afero.NewMemMapFs())
+			},
+			tf:      &stubUpgradePlanner{},
+			wantErr: true,
+		},
 		"workspace not clean": {
 			prepareFs: func(require *require.Assertions) file.Handler {
-				fs := file.NewHandler(afero.NewMemMapFs())
+				fs := defaultFs(require)
 				require.NoError(fs.MkdirAll("backup"))
 				return fs
 			},
@@ -50,27 +59,21 @@ func TestPlanUpgrade(t *testing.T) {
 			wantErr: true,
 		},
 		"prepare workspace error": {
-			prepareFs: func(require *require.Assertions) file.Handler {
-				return file.NewHandler(afero.NewMemMapFs())
-			},
+			prepareFs: defaultFs,
 			tf: &stubUpgradePlanner{
 				prepareWorkspaceErr: assert.AnError,
 			},
 			wantErr: true,
 		},
 		"plan error": {
-			prepareFs: func(require *require.Assertions) file.Handler {
-				return file.NewHandler(afero.NewMemMapFs())
-			},
+			prepareFs: defaultFs,
 			tf: &stubUpgradePlanner{
 				planErr: assert.AnError,
 			},
 			wantErr: true,
 		},
 		"show plan error": {
-			prepareFs: func(require *require.Assertions) file.Handler {
-				return file.NewHandler(afero.NewMemMapFs())
-			},
+			prepareFs: defaultFs,
 			tf: &stubUpgradePlanner{
 				planDiff:    true,
 				showPlanErr: assert.AnError,
@@ -208,7 +211,7 @@ type stubUpgradePlanner struct {
 	showPlanErr         error
 }
 
-func (s *stubUpgradePlanner) PrepareUpgradeWorkspace(_, _ string, _ terraform.Variables) error {
+func (s *stubUpgradePlanner) PrepareWorkspace(_ string, _ terraform.Variables) error {
 	return s.prepareWorkspaceErr
 }
 

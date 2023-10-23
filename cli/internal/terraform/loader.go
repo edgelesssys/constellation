@@ -10,7 +10,6 @@ import (
 	"bytes"
 	"embed"
 	"errors"
-	"fmt"
 	"io/fs"
 	slashpath "path"
 	"path/filepath"
@@ -39,20 +38,6 @@ type overwritePolicy int
 // and writes them into the workspace.
 func prepareWorkspace(rootDir string, fileHandler file.Handler, workingDir string) error {
 	return terraformCopier(fileHandler, rootDir, workingDir, noOverwrites)
-}
-
-// prepareUpgradeWorkspace backs up the old Terraform workspace from workingDir, and
-// copies the embedded Terraform files into workingDir.
-func prepareUpgradeWorkspace(rootDir string, fileHandler file.Handler, workingDir, backupDir string) error {
-	// backup old workspace
-	if err := fileHandler.CopyDir(
-		workingDir,
-		backupDir,
-	); err != nil {
-		return fmt.Errorf("backing up old workspace: %w", err)
-	}
-
-	return terraformCopier(fileHandler, rootDir, workingDir, allowOverwrites)
 }
 
 // terraformCopier copies the embedded Terraform files into the workspace.
