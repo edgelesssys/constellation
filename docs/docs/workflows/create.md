@@ -26,7 +26,7 @@ Before you create the cluster, make sure to have a [valid configuration file](./
 
 ### Create
 
-<tabs groupId="provider">
+<tabs groupId="usage">
 <tabItem value="cli" label="CLI">
 
 ```bash
@@ -48,15 +48,121 @@ Please also refrain from changing the Terraform resource definitions, as Constel
 
 Download the Terraform files for the selected CSP from the [GitHub repository](https://github.com/edgelesssys/constellation/tree/main/cli/internal/terraform/terraform).
 
-Create a `terraform.tfvars` file.
-There, define all needed variables found in `variables.tf` using the values from the `constellation-config.yaml`.
-
-To find the image reference for your CSP and region, execute:
+Find the image reference for your CSP and region, execute:
 
 ```bash
 CONSTELL_VER=vX.Y.Z
-curl -s https://cdn.confidential.cloud/constellation/v1/ref/-/stream/stable/$CONSTELL_VER/image/info.json | jq
+curl -s https://cdn.confidential.cloud/constellation/v2/ref/-/stream/stable/$CONSTELL_VER/image/info.json | jq
 ```
+
+From the list, select the `reference` for your CSP / Attestation combination and save it in the `IMAGE_REF` environment variable.
+
+Create a `terraform.tfvars` file.
+There, define all needed variables found in `variables.tf` using the values from the `constellation-config.yaml`.
+
+<tabs groupId="provider">
+<tabItem value="aws" label="AWS">
+
+```bash
+echo "name = \"$(yq '.name' constellation-conf.yaml)\"" >> terraform.tfvars
+echo "debug = $(yq '.debugCluster' constellation-conf.yaml)" >> terraform.tfvars
+echo "custom_endpoint = \"$(yq '.customEndpoint' constellation-conf.yaml)\"" >> terraform.tfvars
+echo "node_groups = {
+    control_plane_default = {
+    role = \"$(yq '.nodeGroups.control_plane_default.role' constellation-conf.yaml)\"
+    zone = \"$(yq '.nodeGroups.control_plane_default.zone' constellation-conf.yaml)\"
+    instance_type = \"$(yq '.nodeGroups.control_plane_default.instanceType' constellation-conf.yaml)\"
+    disk_size = \"$(yq '.nodeGroups.control_plane_default.stateDiskSizeGB' constellation-conf.yaml)\"
+    disk_type = \"$(yq '.nodeGroups.control_plane_default.stateDiskType' constellation-conf.yaml)\"
+    initial_count = \"$(yq '.nodeGroups.control_plane_default.initialCount' constellation-conf.yaml)\"
+    }
+    worker_default = {
+    role = \"$(yq '.nodeGroups.worker_default.role' constellation-conf.yaml)\"
+    zone = \"$(yq '.nodeGroups.worker_default.zone' constellation-conf.yaml)\"
+    instance_type = \"$(yq '.nodeGroups.worker_default.instanceType' constellation-conf.yaml)\"
+    disk_size = \"$(yq '.nodeGroups.worker_default.stateDiskSizeGB' constellation-conf.yaml)\"
+    disk_type = \"$(yq '.nodeGroups.worker_default.stateDiskType' constellation-conf.yaml)\"
+    initial_count = \"$(yq '.nodeGroups.worker_default.initialCount' constellation-conf.yaml)\"
+    }
+}" >> terraform.tfvars
+echo "iam_instance_profile_control_plane = \"$(yq '.provider.aws.iamProfileControlPlane' constellation-conf.yaml)\"" >> terraform.tfvars
+echo "iam_instance_profile_worker_nodes = \"$(yq '.provider.aws.iamProfileWorkerNodes' constellation-conf.yaml)\"" >> terraform.tfvars
+echo "region = \"$(yq '.provider.aws.region' constellation-conf.yaml)\"" >> terraform.tfvars
+echo "zone = \"$(yq '.provider.aws.zone' constellation-conf.yaml)\"" >> terraform.tfvars
+echo "ami = \"$(yq '.provider.aws.zone' constellation-conf.yaml)\"" >> terraform.tfvars
+echo "enable_snp = $(yq '.attestation | has("awsSEVSNP")' constellation-conf.yaml)" >> terraform.tfvars
+terraform fmt terraform.tfvars
+```
+
+</tabItem>
+<tabItem value="azure" label="Azure">
+
+```bash
+echo "name = \"$(yq '.name' constellation-conf.yaml)\"" >> terraform.tfvars
+echo "debug = $(yq '.debugCluster' constellation-conf.yaml)" >> terraform.tfvars
+echo "custom_endpoint = \"$(yq '.customEndpoint' constellation-conf.yaml)\"" >> terraform.tfvars
+echo "image_id = \"$IMAGE_REF\"" >> terraform.tfvars
+echo "node_groups = {
+    control_plane_default = {
+    role = \"$(yq '.nodeGroups.control_plane_default.role' constellation-conf.yaml)\"
+    zones = [ \"$(yq '.nodeGroups.worker_default.zone' constellation-conf.yaml)\" ]
+    instance_type = \"$(yq '.nodeGroups.control_plane_default.instanceType' constellation-conf.yaml)\"
+    disk_size = \"$(yq '.nodeGroups.control_plane_default.stateDiskSizeGB' constellation-conf.yaml)\"
+    disk_type = \"$(yq '.nodeGroups.control_plane_default.stateDiskType' constellation-conf.yaml)\"
+    initial_count = \"$(yq '.nodeGroups.control_plane_default.initialCount' constellation-conf.yaml)\"
+    }
+    worker_default = {
+    role = \"$(yq '.nodeGroups.worker_default.role' constellation-conf.yaml)\"
+    zones = [ \"$(yq '.nodeGroups.worker_default.zone' constellation-conf.yaml)\" ]
+    instance_type = \"$(yq '.nodeGroups.worker_default.instanceType' constellation-conf.yaml)\"
+    disk_size = \"$(yq '.nodeGroups.worker_default.stateDiskSizeGB' constellation-conf.yaml)\"
+    disk_type = \"$(yq '.nodeGroups.worker_default.stateDiskType' constellation-conf.yaml)\"
+    initial_count = \"$(yq '.nodeGroups.worker_default.initialCount' constellation-conf.yaml)\"
+    }
+}" >> terraform.tfvars
+echo "location = \"$(yq '.provider.azure.location' constellation-conf.yaml)\"" >> terraform.tfvars
+echo "create_maa = $(yq '.attestation | has("azureSEVSNP")' constellation-conf.yaml)" >> terraform.tfvars
+echo "confidential_vm = $(yq '.attestation | has("azureSEVSNP")' constellation-conf.yaml)" >> terraform.tfvars
+echo "secure_boot = $(yq '.provider.azure.secureBoot' constellation-conf.yaml)" >> terraform.tfvars
+echo "resource_group = \"$(yq '.provider.azure.resourceGroup' constellation-conf.yaml)\"" >> terraform.tfvars
+echo "user_assigned_identity = \"$(yq '.provider.azure.userAssignedIdentity' constellation-conf.yaml)\"" >> terraform.tfvars
+terraform fmt terraform.tfvars
+```
+
+</tabItem>
+<tabItem value="gcp" label="GCP">
+
+```bash
+echo "name = \"$(yq '.name' constellation-conf.yaml)\"" >> terraform.tfvars
+echo "debug = $(yq '.debugCluster' constellation-conf.yaml)" >> terraform.tfvars
+echo "custom_endpoint = \"$(yq '.customEndpoint' constellation-conf.yaml)\"" >> terraform.tfvars
+echo "image_id = \"$IMAGE_REF\"" >> terraform.tfvars
+echo "node_groups = {
+    control_plane_default = {
+    role = \"$(yq '.nodeGroups.control_plane_default.role' constellation-conf.yaml)\"
+    zone = \"$(yq '.nodeGroups.control_plane_default.zone' constellation-conf.yaml)\"
+    instance_type = \"$(yq '.nodeGroups.control_plane_default.instanceType' constellation-conf.yaml)\"
+    disk_size = \"$(yq '.nodeGroups.control_plane_default.stateDiskSizeGB' constellation-conf.yaml)\"
+    disk_type = \"$(yq '.nodeGroups.control_plane_default.stateDiskType' constellation-conf.yaml)\"
+    initial_count = \"$(yq '.nodeGroups.control_plane_default.initialCount' constellation-conf.yaml)\"
+    }
+    worker_default = {
+    role = \"$(yq '.nodeGroups.worker_default.role' constellation-conf.yaml)\"
+    zone = \"$(yq '.nodeGroups.worker_default.zone' constellation-conf.yaml)\"
+    instance_type = \"$(yq '.nodeGroups.worker_default.instanceType' constellation-conf.yaml)\"
+    disk_size = \"$(yq '.nodeGroups.worker_default.stateDiskSizeGB' constellation-conf.yaml)\"
+    disk_type = \"$(yq '.nodeGroups.worker_default.stateDiskType' constellation-conf.yaml)\"
+    initial_count = \"$(yq '.nodeGroups.worker_default.initialCount' constellation-conf.yaml)\"
+    }
+}" >> terraform.tfvars
+echo "project = \"$(yq '.provider.gcp.project' constellation-conf.yaml)\"" >> terraform.tfvars
+echo "region = \"$(yq '.provider.gcp.region' constellation-conf.yaml)\"" >> terraform.tfvars
+echo "zone = \"$(yq '.provider.gcp.zone' constellation-conf.yaml)\"" >> terraform.tfvars
+terraform fmt terraform.tfvars
+```
+
+</tabItem>
+</tabs>
 
 Initialize and apply Terraform to create the configured infrastructure:
 
@@ -69,13 +175,26 @@ The Constellation [init step](#the-init-step) requires the already created `cons
 Create the `constellation-state.yaml` using the output from the Terraform state and the `constellation-conf.yaml`:
 
 ```bash
-CONSTELL_IP=$(terraform output ip)
-CONSTELL_INIT_SECRET=$(terraform output initSecret | jq -r | tr -d '\n' | base64)
-touch constellation-state.yaml
-yq eval '.version ="v1"' --inplace constellation-state.yaml
-yq eval '.infrastructure.initSecret ="$CONSTELL_INIT_SECRET"' --inplace constellation-state.yaml
-yq eval '.infrastructure.clusterEndpoint ="$CONSTELL_IP"' --inplace constellation-state.yaml
+yq eval ".infrastructure.initSecret =\"$(terraform output initSecret | jq -r | tr -d '\n' | hexdump -ve '/1 "%02x"' && echo '')\"" constellation-state.yaml
+yq eval ".infrastructure.clusterEndpoint =\"$(terraform output out_of_cluster_endpoint | jq -r)\"" --inplace constellation-state.yaml
+yq eval ".infrastructure.inClusterEndpoint =\"$(terraform output in_cluster_endpoint | jq -r)\"" --inplace constellation-state.yaml
 ```
+
+</tabItem>
+<tabItem value="self-managed" label="Self-managed">
+
+Self-managed infrastructure allows for managing the cloud resources necessary for a Constellation cluster separate from the Constellation CLI.
+This provides flexibility in DevOps and can meet potential regulatory requirements.
+
+To self-manage the infrastructure of your cluster, download the Terraform files for the selected CSP from the [Constellation GitHub repository](https://github.com/edgelesssys/constellation/tree/main/cli/internal/terraform/terraform).
+They contain a minimum configuration for the resources necessary to run a Constellation cluster on the corresponding CSP. From this base, you can now add, edit, or substitute resources per your own requirements with the infrastructure
+management tooling of your choice. You need to keep the essential functionality of the base configuration in order for your cluster to function correctly.
+
+Make sure all necessary resources are created, e.g., through checking your CSP's portal and retrieve the necessary values, aligned with the outputs (specified in `outputs.tf`) of the base configuration.
+
+Fill these outputs into the corresponding fields of the `constellation-state.yaml` file. For example, fill the IP or DNS name your cluster can be reached at into the `.Infrastructure.ClusterEndpoint` field.
+
+Continue with [initializing your cluster](#the-init-step).
 
 </tabItem>
 </tabs>
