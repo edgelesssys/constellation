@@ -47,7 +47,6 @@ import (
 	"time"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
@@ -226,7 +225,7 @@ func (l *Logger) GetClientStreamInterceptor() grpc.DialOption {
 
 func (l *Logger) middlewareLogger() logging.Logger {
 	return logging.LoggerFunc(func(ctx context.Context, lvl logging.Level, msg string, fields ...any) {
-		f := make([]zap.Field, 0, len(fields)/2)
+		f := make([]slog.Attr, 0, len(fields)/2)
 
 		for i := 0; i < len(fields); i += 2 {
 			key := fields[i]
@@ -234,17 +233,17 @@ func (l *Logger) middlewareLogger() logging.Logger {
 
 			switch v := value.(type) {
 			case string:
-				f = append(f, zap.String(key.(string), v))
+				f = append(f, slog.String(key.(string), v))
 			case int:
-				f = append(f, zap.Int(key.(string), v))
+				f = append(f, slog.Int(key.(string), v))
 			case bool:
-				f = append(f, zap.Bool(key.(string), v))
+				f = append(f, slog.Bool(key.(string), v))
 			default:
-				f = append(f, zap.Any(key.(string), v))
+				f = append(f, slog.Any(key.(string), v))
 			}
 		}
 
-		logger := l.logger
+		logger := l.logger.With(f)
 
 		switch lvl {
 		case logging.LevelDebug:
