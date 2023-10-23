@@ -22,6 +22,7 @@ func NewValidator() *Validator {
 type Validator struct{}
 
 // Validatable is implemented by documents that can be validated.
+// It returns a list of constraints that must be satisfied for the document to be valid.
 type Validatable interface {
 	Constraints() []Constraint
 }

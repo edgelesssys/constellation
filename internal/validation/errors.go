@@ -12,15 +12,13 @@ type ValidationError struct {
 	Err  error
 }
 
-// NewValidationError creates a new ValidationError.
-//
-// To find the path to the exported field that failed validation, it traverses the
-// top level struct recursively until it finds a field that matches the
-// reference to the field that failed validation.
-//
-// As a special case, since map values are not addressable in Go, also a map key is taken.
-// In the case of verifying a map value, "field" should contain a reference to the map.
-func NewValidationError(doc, field referenceableValue, errMsg error) *ValidationError {
+/*
+newValidationError creates a new ValidationError.
+
+To find the path to the exported field that failed validation, it traverses "doc"
+recursively until it finds a field in "doc" that matches the reference to "field".
+*/
+func newValidationError(doc, field referenceableValue, errMsg error) *ValidationError {
 	// traverse the top level struct (i.e. the "haystack") until addr (i.e. the "needle") is found
 	path, err := traverse(doc, field, newPathBuilder(doc._type.Name()))
 	if err != nil {
@@ -46,14 +44,16 @@ func (e *ValidationError) Unwrap() error {
 	return e.Err
 }
 
-// traverse reverses haystack recursively until it finds a field that matches
-// the reference in needle.
-//
-// If it traverses a level down, it
-// appends the name of the struct tag of the field to path.
-//
-// When a field matches the reference to the given field, it returns the
-// path to the field, joined with ".".
+/*
+traverse reverses "haystack" recursively until it finds a field that matches
+the reference saved in "needle", while building a pseudo-JSONPath to the field.
+
+If it traverses a level down, it appends the name of the struct tag
+or another entity like array index or map field to path.
+
+When a field matches the reference to the given field, it returns the
+path to the field.
+*/
 func traverse(haystack referenceableValue, needle referenceableValue, path pathBuilder) (string, error) {
 	// recursion anchor: doc is the field we are looking for.
 	// Join the path and return.

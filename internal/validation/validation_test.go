@@ -182,6 +182,7 @@ type exampleDoc struct {
 	MatchRegexField string             `json:"matchRegexField"`
 }
 
+// Constraints implements the Validatable interface.
 func (d *exampleDoc) Constraints() []Constraint {
 	mapField := *(d.MapField)
 
