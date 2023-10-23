@@ -144,12 +144,6 @@ func (l *Logger) Fatalf(format string, args ...any) {
 	os.Exit(1)
 }
 
-// Sync flushes any buffered log entries.
-// Applications should take care to call Sync before exiting.
-func (l *Logger) Sync() {
-	_ = l.logger.Sync()
-}
-
 // WithIncreasedLevel returns a logger with increased logging level.
 func (l *Logger) WithIncreasedLevel(level slog.Level) *Logger {
 	var logger Logger
