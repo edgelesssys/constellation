@@ -18,7 +18,7 @@ func TestNewValidationErrorSingleField(t *testing.T) {
 
 	err := NewValidationError(st, &st.OtherField, "", assert.AnError)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), fmt.Sprintf("validating otherField: %s", assert.AnError))
+	require.Contains(t, err.Error(), fmt.Sprintf("validating ErrorTestDoc.otherField: %s", assert.AnError))
 }
 
 func TestNewValidationErrorSingleFieldPtr(t *testing.T) {
@@ -30,7 +30,7 @@ func TestNewValidationErrorSingleFieldPtr(t *testing.T) {
 
 	err := NewValidationError(st, &st.PointerField, "", assert.AnError)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), fmt.Sprintf("validating pointerField: %s", assert.AnError))
+	require.Contains(t, err.Error(), fmt.Sprintf("validating ErrorTestDoc.pointerField: %s", assert.AnError))
 }
 
 func TestNewValidationErrorSingleFieldDoublePtr(t *testing.T) {
@@ -43,7 +43,7 @@ func TestNewValidationErrorSingleFieldDoublePtr(t *testing.T) {
 
 	err := NewValidationError(st, &st.DoublePointerField, "", assert.AnError)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), fmt.Sprintf("validating doublePointerField: %s", assert.AnError))
+	require.Contains(t, err.Error(), fmt.Sprintf("validating ErrorTestDoc.doublePointerField: %s", assert.AnError))
 }
 
 func TestNewValidationErrorSingleFieldInexistent(t *testing.T) {
@@ -75,7 +75,7 @@ func TestNewValidationErrorNestedField(t *testing.T) {
 	err := NewValidationError(st, &st.NestedField.OtherField, "", assert.AnError)
 	t.Log(err)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), fmt.Sprintf("validating nestedField.otherField: %s", assert.AnError))
+	require.Contains(t, err.Error(), fmt.Sprintf("validating ErrorTestDoc.nestedField.otherField: %s", assert.AnError))
 }
 
 func TestNewValidationErrorPointerInNestedField(t *testing.T) {
@@ -92,7 +92,7 @@ func TestNewValidationErrorPointerInNestedField(t *testing.T) {
 	err := NewValidationError(st, &st.NestedField.PointerField, "", assert.AnError)
 	t.Log(err)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), fmt.Sprintf("validating nestedField.pointerField: %s", assert.AnError))
+	require.Contains(t, err.Error(), fmt.Sprintf("validating ErrorTestDoc.nestedField.pointerField: %s", assert.AnError))
 }
 
 func TestNewValidationErrorNestedFieldPtr(t *testing.T) {
@@ -112,7 +112,7 @@ func TestNewValidationErrorNestedFieldPtr(t *testing.T) {
 	err := NewValidationError(st, &st.NestedPointerField.OtherField, "", assert.AnError)
 	t.Log(err)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), fmt.Sprintf("validating nestedPointerField.otherField: %s", assert.AnError))
+	require.Contains(t, err.Error(), fmt.Sprintf("validating ErrorTestDoc.nestedPointerField.otherField: %s", assert.AnError))
 }
 
 func TestNewValidationErrorNestedNestedField(t *testing.T) {
@@ -132,7 +132,7 @@ func TestNewValidationErrorNestedNestedField(t *testing.T) {
 	err := NewValidationError(st, &st.NestedField.NestedField.OtherField, "", assert.AnError)
 	t.Log(err)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), fmt.Sprintf("validating nestedField.nestedField.otherField: %s", assert.AnError))
+	require.Contains(t, err.Error(), fmt.Sprintf("validating ErrorTestDoc.nestedField.nestedField.otherField: %s", assert.AnError))
 }
 
 func TestNewValidationErrorNestedNestedFieldPtr(t *testing.T) {
@@ -152,7 +152,7 @@ func TestNewValidationErrorNestedNestedFieldPtr(t *testing.T) {
 	err := NewValidationError(st, &st.NestedField.NestedField.OtherField, "", assert.AnError)
 	t.Log(err)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), fmt.Sprintf("validating nestedField.nestedField.otherField: %s", assert.AnError))
+	require.Contains(t, err.Error(), fmt.Sprintf("validating ErrorTestDoc.nestedField.nestedField.otherField: %s", assert.AnError))
 }
 
 func TestNewValidationErrorNestedPtrNestedFieldPtr(t *testing.T) {
@@ -172,7 +172,7 @@ func TestNewValidationErrorNestedPtrNestedFieldPtr(t *testing.T) {
 	err := NewValidationError(st, &st.NestedField.NestedField.OtherField, "", assert.AnError)
 	t.Log(err)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), fmt.Sprintf("validating nestedField.nestedField.otherField: %s", assert.AnError))
+	require.Contains(t, err.Error(), fmt.Sprintf("validating ErrorTestDoc.nestedField.nestedField.otherField: %s", assert.AnError))
 }
 
 // Tests for slices / arrays
@@ -185,7 +185,7 @@ func TestNewValidationErrorPrimitiveSlice(t *testing.T) {
 	err := NewValidationError(st, &st.PrimitiveSlice[1], "", assert.AnError)
 	t.Log(err)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), fmt.Sprintf("validating primitiveSlice[1]: %s", assert.AnError))
+	require.Contains(t, err.Error(), fmt.Sprintf("validating SliceErrorTestDoc.primitiveSlice[1]: %s", assert.AnError))
 }
 
 func TestNewValidationErrorPrimitiveArray(t *testing.T) {
@@ -196,7 +196,7 @@ func TestNewValidationErrorPrimitiveArray(t *testing.T) {
 	err := NewValidationError(st, &st.PrimitiveArray[1], "", assert.AnError)
 	t.Log(err)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), fmt.Sprintf("validating primitiveArray[1]: %s", assert.AnError))
+	require.Contains(t, err.Error(), fmt.Sprintf("validating SliceErrorTestDoc.primitiveArray[1]: %s", assert.AnError))
 }
 
 func TestNewValidationErrorStructSlice(t *testing.T) {
@@ -216,7 +216,7 @@ func TestNewValidationErrorStructSlice(t *testing.T) {
 	err := NewValidationError(st, &st.StructSlice[1].OtherField, "", assert.AnError)
 	t.Log(err)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), fmt.Sprintf("validating structSlice[1].otherField: %s", assert.AnError))
+	require.Contains(t, err.Error(), fmt.Sprintf("validating SliceErrorTestDoc.structSlice[1].otherField: %s", assert.AnError))
 }
 
 func TestNewValidationErrorStructArray(t *testing.T) {
@@ -236,7 +236,7 @@ func TestNewValidationErrorStructArray(t *testing.T) {
 	err := NewValidationError(st, &st.StructArray[1].OtherField, "", assert.AnError)
 	t.Log(err)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), fmt.Sprintf("validating structArray[1].otherField: %s", assert.AnError))
+	require.Contains(t, err.Error(), fmt.Sprintf("validating SliceErrorTestDoc.structArray[1].otherField: %s", assert.AnError))
 }
 
 func TestNewValidationErrorStructPointerSlice(t *testing.T) {
@@ -256,7 +256,7 @@ func TestNewValidationErrorStructPointerSlice(t *testing.T) {
 	err := NewValidationError(st, &st.StructPointerSlice[1].OtherField, "", assert.AnError)
 	t.Log(err)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), fmt.Sprintf("validating structPointerSlice[1].otherField: %s", assert.AnError))
+	require.Contains(t, err.Error(), fmt.Sprintf("validating SliceErrorTestDoc.structPointerSlice[1].otherField: %s", assert.AnError))
 }
 
 func TestNewValidationErrorStructPointerArray(t *testing.T) {
@@ -276,7 +276,7 @@ func TestNewValidationErrorStructPointerArray(t *testing.T) {
 	err := NewValidationError(st, &st.StructPointerArray[1].OtherField, "", assert.AnError)
 	t.Log(err)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), fmt.Sprintf("validating structPointerArray[1].otherField: %s", assert.AnError))
+	require.Contains(t, err.Error(), fmt.Sprintf("validating SliceErrorTestDoc.structPointerArray[1].otherField: %s", assert.AnError))
 }
 
 func TestNewValidationErrorPrimitiveSliceSlice(t *testing.T) {
@@ -290,7 +290,7 @@ func TestNewValidationErrorPrimitiveSliceSlice(t *testing.T) {
 	err := NewValidationError(st, &st.PrimitiveSliceSlice[1][1], "", assert.AnError)
 	t.Log(err)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), fmt.Sprintf("validating primitiveSliceSlice[1][1]: %s", assert.AnError))
+	require.Contains(t, err.Error(), fmt.Sprintf("validating SliceErrorTestDoc.primitiveSliceSlice[1][1]: %s", assert.AnError))
 }
 
 // Tests for maps
@@ -306,7 +306,7 @@ func TestNewValidationErrorPrimitiveMap(t *testing.T) {
 	err := NewValidationError(st, &st.PrimitiveMap, "ghi", assert.AnError)
 	t.Log(err)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), fmt.Sprintf("validating primitiveMap[\"ghi\"]: %s", assert.AnError))
+	require.Contains(t, err.Error(), fmt.Sprintf("validating MapErrorTestDoc.primitiveMap[\"ghi\"]: %s", assert.AnError))
 }
 
 func TestNewValidationErrorStructPointerMap(t *testing.T) {
@@ -326,7 +326,7 @@ func TestNewValidationErrorStructPointerMap(t *testing.T) {
 	err := NewValidationError(st, &st.StructPointerMap["ghi"].OtherField, "", assert.AnError)
 	t.Log(err)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), fmt.Sprintf("validating structPointerMap[\"ghi\"].otherField: %s", assert.AnError))
+	require.Contains(t, err.Error(), fmt.Sprintf("validating MapErrorTestDoc.structPointerMap[\"ghi\"].otherField: %s", assert.AnError))
 }
 
 func TestNewValidationErrorNestedPrimitiveMap(t *testing.T) {
@@ -344,7 +344,45 @@ func TestNewValidationErrorNestedPrimitiveMap(t *testing.T) {
 	err := NewValidationError(st, st.NestedPointerMap["jkl"], "mno", assert.AnError)
 	t.Log(err)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), fmt.Sprintf("validating nestedPointerMap[\"jkl\"][\"mno\"]: %s", assert.AnError))
+	require.Contains(t, err.Error(), fmt.Sprintf("validating MapErrorTestDoc.nestedPointerMap[\"jkl\"][\"mno\"]: %s", assert.AnError))
+}
+
+// Special cases
+
+func TestNewValidationErrorTopLevelIsNeedle(t *testing.T) {
+	st := &ErrorTestDoc{
+		ExportedField: "abc",
+		OtherField:    42,
+	}
+
+	err := NewValidationError(st, st, "", assert.AnError)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), fmt.Sprintf("validating ErrorTestDoc: %s", assert.AnError))
+}
+
+func TestNewValidationErrorUntaggedField(t *testing.T) {
+	st := &ErrorTestDoc{
+		ExportedField: "abc",
+		OtherField:    42,
+		NoTagField:    123,
+	}
+
+	err := NewValidationError(st, &st.NoTagField, "", assert.AnError)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), fmt.Sprintf("validating ErrorTestDoc.NoTagField: %s", assert.AnError))
+}
+
+func TestNewValidationErrorOnlyYamlTaggedField(t *testing.T) {
+	st := &ErrorTestDoc{
+		ExportedField: "abc",
+		OtherField:    42,
+		NoTagField:    123,
+		OnlyYamlKey:   "abc",
+	}
+
+	err := NewValidationError(st, &st.OnlyYamlKey, "", assert.AnError)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), fmt.Sprintf("validating ErrorTestDoc.onlyYamlKey: %s", assert.AnError))
 }
 
 type ErrorTestDoc struct {
@@ -354,6 +392,8 @@ type ErrorTestDoc struct {
 	DoublePointerField **int               `json:"doublePointerField" yaml:"doublePointerField"`
 	NestedField        NestedErrorTestDoc  `json:"nestedField" yaml:"nestedField"`
 	NestedPointerField *NestedErrorTestDoc `json:"nestedPointerField" yaml:"nestedPointerField"`
+	NoTagField         int
+	OnlyYamlKey        string `yaml:"onlyYamlKey"`
 }
 
 type NestedErrorTestDoc struct {

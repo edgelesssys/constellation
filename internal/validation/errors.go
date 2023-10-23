@@ -67,7 +67,7 @@ func getDocumentPath(doc any, field any, mapKey string) (string, error) {
 	}
 
 	// traverse the top level struct (i.e. the "haystack") until addr (i.e. the "needle") is found
-	return traverse(haystackRef, needleRef, newPathBuilder())
+	return traverse(haystackRef, needleRef, newPathBuilder(haystackRef._type.Name()))
 }
 
 // traverse reverses haystack recursively until it finds a field that matches
@@ -240,10 +240,10 @@ type pathBuilder struct {
 	buf []string
 }
 
-// newPathBuilder creates a new pathBuilder.
-func newPathBuilder() pathBuilder {
+// newPathBuilder creates a new pathBuilder from the identifier of a top level document.
+func newPathBuilder(topLevelDoc string) pathBuilder {
 	return pathBuilder{
-		buf: []string{},
+		buf: []string{topLevelDoc},
 	}
 }
 
