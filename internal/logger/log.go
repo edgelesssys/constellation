@@ -83,14 +83,22 @@ func New(logType LogType, logLevel slog.Level) *Logger {
 		// add the file and line number
 		AddSource: true,
 		Level:     logLevel,
-		// change the time format to rfc 3339
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-			if a.Key != slog.TimeKey {
-				return a
+			// change the time format to rfc 3339
+			if a.Key == slog.TimeKey {
+				logTime := a.Value.Any().(time.Time)
+				a.Value = slog.StringValue(logTime.Format(time.RFC3339))
 			}
 
-			logTime := a.Value.Any().(time.Time)
-			a.Value = slog.StringValue(logTime.Format(time.RFC3339))
+			// include fatal log level
+			if a.Key == slog.LevelKey {
+				level := a.Value.Any().(slog.Level)
+				if level <= LevelError {
+					return a
+				}
+
+				a.Value = slog.StringValue("FATAL")
+			}
 
 			return a
 		},
