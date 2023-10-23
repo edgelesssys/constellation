@@ -220,6 +220,13 @@ func (c *createCmd) checkDirClean(fileHandler file.Handler) error {
 			c.flags.pathPrefixer.PrefixPrintablePath(constants.MasterSecretFilename),
 		)
 	}
+	c.log.Debugf("Checking Terraform working directory")
+	if _, err := fileHandler.Stat(constants.TerraformWorkingDir); !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf(
+			"directory '%s' already exists in working directory, run 'constellation terminate' before creating a new one",
+			c.flags.pathPrefixer.PrefixPrintablePath(constants.TerraformWorkingDir),
+		)
+	}
 
 	return nil
 }
