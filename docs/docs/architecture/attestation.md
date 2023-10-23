@@ -90,7 +90,7 @@ Any changes to the image will inevitably also change the measured boot's PCR val
 To create a node attestation statement, the Constellation image obtains a CVM attestation statement from the hardware.
 This includes the runtime measurements and thereby binds the measured boot results to the CVM hardware measurement.
 
-In addition to the image measurements, Constellation extends a PCR during the [initialization phase](../workflows/create.md#the-init-step) that irrevocably marks the node as initialized.
+In addition to the image measurements, Constellation extends a PCR during the [initialization phase](../workflows/create.md#the-apply-step) that irrevocably marks the node as initialized.
 The measurement is created using the [*clusterID*](../architecture/keys.md#cluster-identity), tying all future attestation statements to this ID.
 Thereby, an attestation statement is unique for every cluster and a node can be identified unambiguously as being initialized.
 
