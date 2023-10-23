@@ -176,7 +176,7 @@ func (l *Logger) Named(name string) *Logger {
 
 // ReplaceGRPCLogger replaces grpc's internal logger with the given logger.
 func (l *Logger) ReplaceGRPCLogger() {
-	replaceGRPCLogger(l.getZapLogger())
+	replaceGRPCLogger(l.logger)
 }
 
 // GetServerUnaryInterceptor returns a gRPC server option for intercepting unary gRPC logs.
