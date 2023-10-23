@@ -171,7 +171,6 @@ func TestValidate(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 type exampleDoc struct {

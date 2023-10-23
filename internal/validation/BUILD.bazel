@@ -1,0 +1,26 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "validation",
+    srcs = [
+        "constraints.go",
+        "errors.go",
+        "validation.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/validation",
+    visibility = ["//:__subpackages__"],
+)
+
+go_test(
+    name = "validation_test",
+    srcs = [
+        "errors_test.go",
+        "validation_test.go",
+    ],
+    embed = [":validation"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

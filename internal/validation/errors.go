@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// ValidationError is returned when a document is not valid.
 type ValidationError struct {
 	Path string
 	Err  error
@@ -166,7 +167,7 @@ func recPointerDeref(val reflect.Value) reflect.Value {
 }
 
 // pointerDeref dereferences pointers and unpacks interfaces.
-// If the value is not a pointer, it is returned unchanged
+// If the value is not a pointer, it is returned unchanged.
 func pointerDeref(val reflect.Value) reflect.Value {
 	switch val.Kind() {
 	case reflect.Ptr, reflect.UnsafePointer, reflect.Interface:

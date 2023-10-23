@@ -21,13 +21,15 @@ type Constraint struct {
 /*
 WithFieldTrace adds a well-formatted trace to the field to the error message
 shown when the constraint is not satisfied. Both "doc" and "field" must be pointers:
-	- "doc" must be a pointer to the top level document
-	- "field" must be a pointer to the field to be validated
+  - "doc" must be a pointer to the top level document
+  - "field" must be a pointer to the field to be validated
 
 Example for a non-pointer field:
+
 	Equal(d.IntField, 42).WithFieldTrace(d, &d.IntField)
 
 Example for a pointer field:
+
 	NotEmpty(d.StrPtrField).WithFieldTrace(d, d.StrPtrField)
 
 Due to Go's addressability limititations regarding maps, if a map field is
@@ -56,11 +58,12 @@ func (c *Constraint) WithFieldTrace(doc any, field any) Constraint {
 /*
 WithMapFieldTrace adds a well-formatted trace to the map field to the error message
 shown when the constraint is not satisfied. Both "doc" and "field" must be pointers:
-	- "doc" must be a pointer to the top level document
-	- "field" must be a pointer to the map containing the field to be validated
-	- "mapKey" must be the key of the field to be validated in the map pointed to by "field"
+  - "doc" must be a pointer to the top level document
+  - "field" must be a pointer to the map containing the field to be validated
+  - "mapKey" must be the key of the field to be validated in the map pointed to by "field"
 
 Example:
+
 	Equal(d.IntField, 42).WithMapFieldTrace(d, &d.IntField)
 
 For non-map fields, WithFieldTrace should be used instead of WithMapFieldTrace.
