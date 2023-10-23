@@ -353,7 +353,7 @@ func (c *Client) PrepareWorkspace(path string, vars Variables) error {
 		return fmt.Errorf("prepare workspace: %w", err)
 	}
 
-	return c.writeVars(vars, noOverwrites)
+	return c.writeVars(vars)
 }
 
 // ApplyCluster applies the Terraform configuration of the workspace to create or upgrade a Constellation cluster.
@@ -470,26 +470,19 @@ func (c *Client) applyManualStateMigrations(ctx context.Context) error {
 }
 
 // writeVars tries to write the Terraform variables file or, if it exists, checks if it is the same as we are expecting.
-func (c *Client) writeVars(vars Variables, overwritePolicy overwritePolicy) error {
+func (c *Client) writeVars(vars Variables) error {
 	if vars == nil {
 		return errors.New("creating cluster: vars is nil")
 	}
 
 	pathToVarsFile := filepath.Join(c.workingDir, terraformVarsFile)
-	opts := []file.Option{}
-	if overwritePolicy == allowOverwrites {
-		opts = append(opts, file.OptOverwrite)
-	}
-	if err := c.file.Write(pathToVarsFile, []byte(vars.String()), opts...); errors.Is(err, afero.ErrFileExists) {
-		// If a variables file already exists, check if it's the same as we're expecting, so we can continue using it.
-		varsContent, err := c.file.Read(pathToVarsFile)
-		if err != nil {
-			return fmt.Errorf("read variables file: %w", err)
-		}
-		if vars.String() != string(varsContent) {
-			return ErrTerraformWorkspaceExistsWithDifferentVariables
-		}
-	} else if err != nil {
+
+	// Allow overwriting existing files.
+	// If we are creating a new cluster, the workspace must have been empty before,
+	// so there is no risk of overwriting existing files.
+	// If we are upgrading an existing cluster, we want to overwrite the existing files,
+	// and we have already created a backup of the existing workspace.
+	if err := c.file.Write(pathToVarsFile, []byte(vars.String()), file.OptOverwrite); err != nil {
 		return fmt.Errorf("write variables file: %w", err)
 	}
 

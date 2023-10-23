@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package terraform
 
 import (
-	"bytes"
 	"embed"
 	"errors"
 	"io/fs"
@@ -27,22 +26,15 @@ var ErrTerraformWorkspaceDifferentFiles = errors.New("creating cluster: trying t
 //go:embed terraform/iam/*/.terraform.lock.hcl
 var terraformFS embed.FS
 
-const (
-	noOverwrites overwritePolicy = iota
-	allowOverwrites
-)
-
-type overwritePolicy int
-
 // prepareWorkspace loads the embedded Terraform files,
 // and writes them into the workspace.
 func prepareWorkspace(rootDir string, fileHandler file.Handler, workingDir string) error {
-	return terraformCopier(fileHandler, rootDir, workingDir, noOverwrites)
+	return terraformCopier(fileHandler, rootDir, workingDir)
 }
 
 // terraformCopier copies the embedded Terraform files into the workspace.
 // allowOverwrites allows overwriting existing files in the workspace.
-func terraformCopier(fileHandler file.Handler, rootDir, workingDir string, overwritePolicy overwritePolicy) error {
+func terraformCopier(fileHandler file.Handler, rootDir, workingDir string) error {
 	goEmbedRootDir := filepath.ToSlash(rootDir)
 	return fs.WalkDir(terraformFS, goEmbedRootDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -61,29 +53,14 @@ func terraformCopier(fileHandler file.Handler, rootDir, workingDir string, overw
 		fileName := strings.Replace(slashpath.Join(workingDir, path), goEmbedRootDir+"/", "", 1)
 		opts := []file.Option{
 			file.OptMkdirAll,
+			// Allow overwriting existing files.
+			// If we are creating a new cluster, the workspace must have been empty before,
+			// so there is no risk of overwriting existing files.
+			// If we are upgrading an existing cluster, we want to overwrite the existing files,
+			// and we have already created a backup of the existing workspace.
+			file.OptOverwrite,
 		}
-		if overwritePolicy == allowOverwrites {
-			opts = append(opts, file.OptOverwrite)
-		}
-		if err := fileHandler.Write(fileName, content, opts...); errors.Is(err, afero.ErrFileExists) {
-			// If a file already exists and overwritePolicy is set to noOverwrites,
-			// check if it is identical. If yes, continue and don't write anything to disk.
-			// If no, don't overwrite it and instead throw an error. The affected file could be from a different version,
-			// provider, corrupted or manually modified in general.
-			existingFileContent, err := fileHandler.Read(fileName)
-			if err != nil {
-				return err
-			}
-
-			if !bytes.Equal(content, existingFileContent) {
-				return ErrTerraformWorkspaceDifferentFiles
-			}
-			return nil
-		} else if err != nil {
-			return err
-		}
-
-		return nil
+		return fileHandler.Write(fileName, content, opts...)
 	})
 }
 
