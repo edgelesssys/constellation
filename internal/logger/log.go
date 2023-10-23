@@ -161,8 +161,9 @@ func (l *Logger) With(fields ...any) *Logger {
 }
 
 // Named returns a named logger.
+// TODO: rename function to Grouped()
 func (l *Logger) Named(name string) *Logger {
-	return &Logger{logger: l.logger.Named(name)}
+	return &Logger{logger: l.logger.WithGroup(name)}
 }
 
 // ReplaceGRPCLogger replaces grpc's internal logger with the given logger.
