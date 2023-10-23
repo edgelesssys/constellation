@@ -7,8 +7,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 package logger
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"runtime"
 
 	"google.golang.org/grpc/grpclog"
@@ -70,15 +72,18 @@ func (l *grpcLogger) Errorf(format string, args ...interface{}) {
 }
 
 func (l *grpcLogger) Fatal(args ...interface{}) {
-	l.Fatal(fmt.Sprint(args...))
+	l.logger.Log(context.Background(), LevelFatal, fmt.Sprint(args...))
+	os.Exit(1)
 }
 
 func (l *grpcLogger) Fatalln(args ...interface{}) {
-	l.Fatal(fmt.Sprint(args...))
+	l.logger.Log(context.Background(), LevelFatal, fmt.Sprint(args...))
+	os.Exit(1)
 }
 
 func (l *grpcLogger) Fatalf(format string, args ...interface{}) {
-	l.Fatal(fmt.Sprintf(format, args...))
+	l.logger.Log(context.Background(), LevelFatal, fmt.Sprint(args...))
+	os.Exit(1)
 }
 
 func (l *grpcLogger) V(level int) bool {
