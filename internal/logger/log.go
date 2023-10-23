@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 /*
 Package logger provides logging functionality for Constellation services.
-It is a thin wrapper around the zap package, providing a consistent interface for logging.
+It is a thin wrapper around the slog package, providing a consistent interface for logging.
 Use this package to implement logging for your Constellation services.
 
 # Usage
@@ -41,8 +41,10 @@ package logger
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"go.uber.org/zap"
@@ -61,36 +63,40 @@ const (
 	PlainLog
 )
 
-// Logger is a wrapper for zap logger.
+// Logger is a wrapper for slog logger.
 // The purpose is to provide a simple interface for logging with sensible defaults.
 type Logger struct {
-	logger *zap.SugaredLogger
+	logger *slog.Logger
 }
 
 // New creates a new Logger.
 // Set name to an empty string to create an unnamed logger.
-func New(logType LogType, logLevel zapcore.Level) *Logger {
-	encoderCfg := zap.NewProductionEncoderConfig()
-	encoderCfg.StacktraceKey = zapcore.OmitKey
-	encoderCfg.EncodeLevel = zapcore.CapitalLevelEncoder
-	encoderCfg.EncodeTime = zapcore.RFC3339TimeEncoder
+func New(logType LogType, logLevel slog.Level) *Logger {
+	handlerOptions := &slog.HandlerOptions{
+		// add the file and line number
+		AddSource: true,
+		Level:     logLevel,
+		// change the time format to rfc 3339
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			if a.Key != slog.TimeKey {
+				return a
+			}
 
-	var encoder zapcore.Encoder
-	if logType == PlainLog {
-		encoder = zapcore.NewConsoleEncoder(encoderCfg)
-	} else {
-		encoder = zapcore.NewJSONEncoder(encoderCfg)
+			logTime := a.Value.Any().(time.Time)
+			a.Value = slog.StringValue(logTime.Format(time.RFC3339))
+
+			return a
+		},
 	}
 
-	logCore := zapcore.NewCore(encoder, zapcore.Lock(os.Stderr), zap.NewAtomicLevelAt(logLevel))
+	var logger *slog.Logger
+	if logType == PlainLog {
+		logger = slog.New(slog.NewTextHandler(os.Stderr, handlerOptions))
+	} else {
+		logger = slog.New(slog.NewJSONHandler(os.Stderr, handlerOptions))
+	}
 
-	logger := zap.New(
-		logCore,
-		zap.AddCaller(),      // add the file and line number of the logging call
-		zap.AddCallerSkip(1), // skip the first caller so that we don't only see this package as the caller
-	)
-
-	return &Logger{logger: logger.Sugar()}
+	return &Logger{logger}
 }
 
 // NewTest creates a logger for unit / integration tests.
