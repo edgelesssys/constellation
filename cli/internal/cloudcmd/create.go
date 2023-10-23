@@ -232,7 +232,7 @@ type qemuCreateOptions struct {
 }
 
 func (c *Creator) createQEMU(ctx context.Context, cl tfResourceClient, lv libvirtRunner, opts qemuCreateOptions) (tfOutput state.Infrastructure, retErr error) {
-	qemuRollbacker := &rollbackerQEMU{client: cl, libvirt: lv, createdWorkspace: false}
+	qemuRollbacker := &rollbackerQEMU{client: cl, libvirt: lv}
 	defer rollbackOnError(c.out, &retErr, qemuRollbacker, opts.TFLogLevel)
 
 	// TODO(malt3): render progress bar
@@ -287,9 +287,6 @@ func (c *Creator) createQEMU(ctx context.Context, cl tfResourceClient, lv libvir
 	if err := cl.PrepareWorkspace(path.Join("terraform", strings.ToLower(cloudprovider.QEMU.String())), vars); err != nil {
 		return state.Infrastructure{}, fmt.Errorf("prepare workspace: %w", err)
 	}
-
-	// Allow rollback of QEMU Terraform workspace from this point on
-	qemuRollbacker.createdWorkspace = true
 
 	tfOutput, err = cl.ApplyCluster(ctx, opts.Provider, opts.TFLogLevel)
 	if err != nil {

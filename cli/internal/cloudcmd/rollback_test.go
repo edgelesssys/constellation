@@ -70,16 +70,14 @@ func TestRollbackQEMU(t *testing.T) {
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		libvirt          *stubLibvirtRunner
-		tfClient         *stubTerraformClient
-		createdWorkspace bool
-		wantDestroyErr   bool
-		wantErr          bool
+		libvirt        *stubLibvirtRunner
+		tfClient       *stubTerraformClient
+		wantDestroyErr bool
+		wantErr        bool
 	}{
 		"success": {
-			libvirt:          &stubLibvirtRunner{},
-			tfClient:         &stubTerraformClient{},
-			createdWorkspace: true,
+			libvirt:  &stubLibvirtRunner{},
+			tfClient: &stubTerraformClient{},
 		},
 		"stop libvirt error": {
 			libvirt:  &stubLibvirtRunner{stopErr: someErr},
@@ -103,9 +101,8 @@ func TestRollbackQEMU(t *testing.T) {
 			assert := assert.New(t)
 
 			rollbacker := &rollbackerQEMU{
-				libvirt:          tc.libvirt,
-				client:           tc.tfClient,
-				createdWorkspace: tc.createdWorkspace,
+				libvirt: tc.libvirt,
+				client:  tc.tfClient,
 			}
 
 			destroyClusterErrOutput := &bytes.Buffer{}
@@ -125,11 +122,7 @@ func TestRollbackQEMU(t *testing.T) {
 			}
 			assert.NoError(err)
 			assert.True(tc.libvirt.stopCalled)
-			if tc.createdWorkspace {
-				assert.True(tc.tfClient.destroyCalled)
-			} else {
-				assert.False(tc.tfClient.destroyCalled)
-			}
+			assert.True(tc.tfClient.destroyCalled)
 			assert.True(tc.tfClient.cleanUpWorkspaceCalled)
 		})
 	}
