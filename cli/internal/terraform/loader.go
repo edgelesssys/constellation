@@ -18,9 +18,6 @@ import (
 	"github.com/spf13/afero"
 )
 
-// ErrTerraformWorkspaceDifferentFiles is returned when a re-used existing Terraform workspace has different files than the ones to be extracted (e.g. due to a version mix-up or incomplete writes).
-var ErrTerraformWorkspaceDifferentFiles = errors.New("creating cluster: trying to overwrite an existing Terraform file with a different version")
-
 //go:embed terraform/*
 //go:embed terraform/*/.terraform.lock.hcl
 //go:embed terraform/iam/*/.terraform.lock.hcl

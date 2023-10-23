@@ -48,9 +48,6 @@ const (
 	terraformUpgradePlanFile = "plan.zip"
 )
 
-// ErrTerraformWorkspaceExistsWithDifferentVariables is returned when existing Terraform files differ from the version the CLI wants to extract.
-var ErrTerraformWorkspaceExistsWithDifferentVariables = errors.New("creating cluster: a Terraform workspace already exists with different variables")
-
 // Client manages interaction with Terraform.
 type Client struct {
 	tf tfInterface
