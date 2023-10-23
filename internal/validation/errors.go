@@ -20,8 +20,9 @@ type ValidationError struct {
 //
 // As a special case, since map values are not addressable in Go, also a map key is taken.
 // In the case of verifying a map value, "field" should contain a reference to the map.
-func NewValidationError(topLevelStruct any, field any, mapKey string, errMsg error) *ValidationError {
-	path, err := getDocumentPath(topLevelStruct, field, mapKey)
+func NewValidationError(doc, field referenceableValue, errMsg error) *ValidationError {
+	// traverse the top level struct (i.e. the "haystack") until addr (i.e. the "needle") is found
+	path, err := traverse(doc, field, newPathBuilder(doc._type.Name()))
 	if err != nil {
 		return &ValidationError{
 			Path: "unknown",
@@ -43,31 +44,6 @@ func (e *ValidationError) Error() string {
 // Unwrap implements the error interface.
 func (e *ValidationError) Unwrap() error {
 	return e.Err
-}
-
-// getDocumentPath finds the JSON / YAML path of field in doc.
-func getDocumentPath(doc any, field any, mapKey string) (string, error) {
-	// we only want to dereference the needle once to dereference the pointer
-	// used to pass it to the function without losing reference to it, as the
-	// needle could be an arbitrarily long chain of pointers. The same
-	// applies to the haystack.
-	derefedNeedle := pointerDeref(reflect.ValueOf(field))
-	needleRef := referenceableValue{
-		value:  derefedNeedle,
-		addr:   derefedNeedle.UnsafeAddr(),
-		_type:  derefedNeedle.Type(),
-		mapKey: mapKey,
-	}
-	fmt.Println("Needle Type: ", needleRef._type)
-	derefedHaystack := pointerDeref(reflect.ValueOf(doc))
-	haystackRef := referenceableValue{
-		value: derefedHaystack,
-		addr:  derefedHaystack.UnsafeAddr(),
-		_type: derefedHaystack.Type(),
-	}
-
-	// traverse the top level struct (i.e. the "haystack") until addr (i.e. the "needle") is found
-	return traverse(haystackRef, needleRef, newPathBuilder(haystackRef._type.Name()))
 }
 
 // traverse reverses haystack recursively until it finds a field that matches
@@ -237,7 +213,7 @@ func foundNeedle(haystack, needle referenceableValue) bool {
 
 // pathBuilder is a helper to build a field path.
 type pathBuilder struct {
-	buf []string
+	buf []string // slice can be copied by value when its non-zero, contrary to a strings.Builder
 }
 
 // newPathBuilder creates a new pathBuilder from the identifier of a top level document.

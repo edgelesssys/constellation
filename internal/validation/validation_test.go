@@ -23,19 +23,135 @@ func TestValidate(t *testing.T) {
 	}{
 		"valid": {
 			doc: &exampleDoc{
-				strField: "abc",
+				StrField: "abc",
+				NumField: 42,
+				MapField: &map[string]string{
+					"empty": "",
+				},
+				NotEmptyField:   "certainly not.",
+				MatchRegexField: "abc",
 			},
 			opts: ValidateOptions{},
 		},
-		"invalid": {
+		"strField is not abc": {
 			doc: &exampleDoc{
-				strField: "def",
+				StrField: "def",
+				NumField: 42,
+				MapField: &map[string]string{
+					"empty": "",
+				},
+				NotEmptyField:   "certainly not.",
+				MatchRegexField: "abc",
 			},
 			wantErr: true,
 			errAssertion: func(assert *assert.Assertions, err error) bool {
-				return assert.Contains(err.Error(), "strField must be abc")
+				return assert.Contains(err.Error(), "validating exampleDoc.strField: def must be abc")
 			},
 			opts: ValidateOptions{},
+		},
+		"numField is not 42": {
+			doc: &exampleDoc{
+				StrField: "abc",
+				NumField: 43,
+				MapField: &map[string]string{
+					"empty": "",
+				},
+				NotEmptyField:   "certainly not.",
+				MatchRegexField: "abc",
+			},
+			wantErr: true,
+			errAssertion: func(assert *assert.Assertions, err error) bool {
+				return assert.Contains(err.Error(), "validating exampleDoc.numField: 43 must be equal to 42")
+			},
+		},
+		"multiple errors": {
+			doc: &exampleDoc{
+				StrField: "def",
+				NumField: 43,
+				MapField: &map[string]string{
+					"empty": "",
+				},
+				NotEmptyField:   "certainly not.",
+				MatchRegexField: "abc",
+			},
+			wantErr: true,
+			errAssertion: func(assert *assert.Assertions, err error) bool {
+				return assert.Contains(err.Error(), "validating exampleDoc.strField: def must be abc") &&
+					assert.Contains(err.Error(), "validating exampleDoc.numField: 43 must be equal to 42")
+			},
+			opts: ValidateOptions{},
+		},
+		"multiple errors, fail fast": {
+			doc: &exampleDoc{
+				StrField: "def",
+				NumField: 43,
+				MapField: &map[string]string{
+					"empty": "",
+				},
+				NotEmptyField:   "certainly not.",
+				MatchRegexField: "abc",
+			},
+			wantErr: true,
+			errAssertion: func(assert *assert.Assertions, err error) bool {
+				return assert.Contains(err.Error(), "validating exampleDoc.strField: def must be abc")
+			},
+			opts: ValidateOptions{
+				FailFast: true,
+			},
+		},
+		"map field is not empty": {
+			doc: &exampleDoc{
+				StrField: "abc",
+				NumField: 42,
+				MapField: &map[string]string{
+					"empty": "haha!",
+				},
+				NotEmptyField:   "certainly not.",
+				MatchRegexField: "abc",
+			},
+			wantErr: true,
+			errAssertion: func(assert *assert.Assertions, err error) bool {
+				return assert.Contains(err.Error(), "validating exampleDoc.mapField[\"empty\"]: haha! must be empty")
+			},
+			opts: ValidateOptions{
+				FailFast: true,
+			},
+		},
+		"empty field is not empty": {
+			doc: &exampleDoc{
+				StrField: "abc",
+				NumField: 42,
+				MapField: &map[string]string{
+					"empty": "",
+				},
+				NotEmptyField:   "",
+				MatchRegexField: "abc",
+			},
+			wantErr: true,
+			errAssertion: func(assert *assert.Assertions, err error) bool {
+				return assert.Contains(err.Error(), "validating exampleDoc.notEmptyField:  must not be empty")
+			},
+			opts: ValidateOptions{
+				FailFast: true,
+			},
+		},
+		"regex doesnt match": {
+			doc: &exampleDoc{
+				StrField: "abc",
+				NumField: 42,
+				MapField: &map[string]string{
+					"empty": "",
+				},
+				NotEmptyField:   "certainly not!",
+				MatchRegexField: "dontmatch",
+			},
+			wantErr: true,
+			errAssertion: func(assert *assert.Assertions, err error) bool {
+				return assert.Contains(err.Error(), "validating exampleDoc.matchRegexField: dontmatch must match the pattern ^a.c$")
+			},
+			opts: ValidateOptions{
+				FailFast: true,
+			},
 		},
 	}
 
@@ -59,29 +175,38 @@ func TestValidate(t *testing.T) {
 }
 
 type exampleDoc struct {
-	strField  string
-	numField  int
-	nested    nestedExampleDoc
-	nestedPtr *nestedExampleDoc
-}
-
-type nestedExampleDoc struct {
-	strField string
-	numField int
+	StrField        string             `json:"strField"`
+	NumField        int                `json:"numField"`
+	MapField        *map[string]string `json:"mapField"`
+	NotEmptyField   string             `json:"notEmptyField"`
+	MatchRegexField string             `json:"matchRegexField"`
 }
 
 func (d *exampleDoc) Constraints() []Constraint {
+	mapField := *(d.MapField)
+
 	return []Constraint{
-		d.strFieldNeedsToBeAbc,
-		MatchRegex(d.strField, "^[a-z]+$"),
-		Equal(d.numField, 42),
+		d.strFieldNeedsToBeAbc().
+			WithFieldTrace(d, &d.StrField),
+		Equal(d.NumField, 42).
+			WithFieldTrace(d, &d.NumField),
+		Empty(mapField["empty"]).
+			WithMapFieldTrace(d, d.MapField, "empty"),
+		NotEmpty(d.NotEmptyField).
+			WithFieldTrace(d, &d.NotEmptyField),
+		MatchRegex(d.MatchRegexField, "^a.c$").
+			WithFieldTrace(d, &d.MatchRegexField),
 	}
 }
 
 // StrFieldNeedsToBeAbc is an example for a custom constraint.
-func (d *exampleDoc) strFieldNeedsToBeAbc() (bool, error) {
-	if d.strField != "abc" {
-		return false, fmt.Errorf("%s must be abc", d.strField)
+func (d *exampleDoc) strFieldNeedsToBeAbc() *Constraint {
+	return &Constraint{
+		Satisfied: func() (bool, error) {
+			if d.StrField != "abc" {
+				return false, fmt.Errorf("%s must be abc", d.StrField)
+			}
+			return true, nil
+		},
 	}
-	return true, nil
 }
