@@ -8,21 +8,28 @@ package logger
 
 import (
 	"fmt"
+	"log/slog"
+	"runtime"
 
-	"go.uber.org/zap"
 	"google.golang.org/grpc/grpclog"
 )
 
-func replaceGRPCLogger(log *zap.Logger) {
+func replaceGRPCLogger(log *slog.Logger) {
+	// get correct reference in callstack
+	// to log function that called the
+	// wrapper
+	var pcs [1]uintptr
+	runtime.Callers(2, pcs[:])
+
 	gl := &grpcLogger{
-		logger:    log.With(zap.String("system", "grpc"), zap.Bool("grpc_log", true)).WithOptions(zap.AddCallerSkip(2)),
+		logger:    log.With(slog.String("system", "grpc"), slog.Bool("grpc_log", true), pcs[0]),
 		verbosity: 0,
 	}
 	grpclog.SetLoggerV2(gl)
 }
 
 type grpcLogger struct {
-	logger    *zap.Logger
+	logger    *slog.Logger
 	verbosity int
 }
 
@@ -63,15 +70,15 @@ func (l *grpcLogger) Errorf(format string, args ...interface{}) {
 }
 
 func (l *grpcLogger) Fatal(args ...interface{}) {
-	l.logger.Fatal(fmt.Sprint(args...))
+	l.Fatal(fmt.Sprint(args...))
 }
 
 func (l *grpcLogger) Fatalln(args ...interface{}) {
-	l.logger.Fatal(fmt.Sprint(args...))
+	l.Fatal(fmt.Sprint(args...))
 }
 
 func (l *grpcLogger) Fatalf(format string, args ...interface{}) {
-	l.logger.Fatal(fmt.Sprintf(format, args...))
+	l.Fatal(fmt.Sprintf(format, args...))
 }
 
 func (l *grpcLogger) V(level int) bool {
