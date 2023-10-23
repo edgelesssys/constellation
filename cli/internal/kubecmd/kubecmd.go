@@ -52,7 +52,7 @@ import (
 )
 
 const (
-	maxRetryAttempts = 5
+	maxRetryAttempts = 20
 )
 
 // ErrInProgress signals that an upgrade is in progress inside the cluster.
@@ -231,7 +231,7 @@ func (k *KubeCmd) ApplyJoinConfig(ctx context.Context, newAttestConfig config.At
 		}
 		retries++
 		k.log.Debugf("Getting join-config ConfigMap failed (attempt %d/%d): %s", retries, maxRetryAttempts, err)
-		return retries <= maxRetryAttempts
+		return retries < maxRetryAttempts
 	}
 
 	var joinConfig *corev1.ConfigMap
@@ -488,7 +488,7 @@ func retryAction(ctx context.Context, retryInterval time.Duration, maxRetries in
 	retrier := conretry.NewIntervalRetrier(&kubeDoer{action: action}, retryInterval, func(err error) bool {
 		ctr++
 		log.Debugf("Action failed (attempt %d/%d): %s", ctr, maxRetries, err)
-		return ctr <= maxRetries
+		return ctr < maxRetries
 	})
 	return retrier.Do(ctx)
 }

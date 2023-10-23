@@ -484,7 +484,7 @@ func TestApplyJoinConfig(t *testing.T) {
 	// be updated here
 	repeatedErrors := func(err error) []error {
 		var errs []error
-		for i := 0; i < 20; i++ {
+		for i := 0; i < 30; i++ {
 			errs = append(errs, err)
 		}
 		return errs
