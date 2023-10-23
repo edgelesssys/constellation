@@ -17,10 +17,11 @@ provider "aws" {
 }
 
 locals {
-  uid              = random_id.uid.hex
-  name             = "${var.name}-${local.uid}"
-  initSecretHash   = random_password.initSecret.bcrypt_hash
-  ports_node_range = "30000-32767"
+  uid                   = random_id.uid.hex
+  name                  = "${var.name}-${local.uid}"
+  initSecretHash        = random_password.initSecret.bcrypt_hash
+  cidr_vpc_subnet_nodes = "192.168.176.0/20"
+  ports_node_range      = "30000-32767"
   load_balancer_ports = flatten([
     { name = "kubernetes", port = "6443", health_check = "HTTPS" },
     { name = "bootstrapper", port = "9000", health_check = "TCP" },
@@ -75,7 +76,7 @@ module "public_private_subnet" {
   source                   = "./modules/public_private_subnet"
   name                     = local.name
   vpc_id                   = aws_vpc.vpc.id
-  cidr_vpc_subnet_nodes    = "192.168.176.0/20"
+  cidr_vpc_subnet_nodes    = local.cidr_vpc_subnet_nodes
   cidr_vpc_subnet_internet = "192.168.0.0/20"
   zone                     = var.zone
   zones                    = local.zones

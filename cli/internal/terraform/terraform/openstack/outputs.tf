@@ -22,3 +22,7 @@ output "initSecret" {
 output "name" {
   value = local.name
 }
+
+output "ip_cidr_nodes" {
+  value = local.cidr_vpc_subnet_nodes
+}

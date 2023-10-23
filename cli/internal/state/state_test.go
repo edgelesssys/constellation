@@ -29,6 +29,7 @@ func defaultState() *State {
 				"api-server-cert-san-test",
 				"api-server-cert-san-test-2",
 			},
+			IPCidrNode: "test-cidr-node",
 			Azure: &Azure{
 				ResourceGroup:            "test-rg",
 				SubscriptionID:           "test-sub",
@@ -38,9 +39,8 @@ func defaultState() *State {
 				AttestationURL:           "test-maaUrl",
 			},
 			GCP: &GCP{
-				ProjectID:  "test-project",
-				IPCidrNode: "test-cidr-node",
-				IPCidrPod:  "test-cidr-pod",
+				ProjectID: "test-project",
+				IPCidrPod: "test-cidr-pod",
 			},
 		},
 		ClusterValues: ClusterValues{

@@ -28,7 +28,6 @@ locals {
   }
   ports_node_range      = "30000-32767"
   cidr_vpc_subnet_nodes = "192.168.178.0/24"
-  cidr_vpc_subnet_pods  = "10.10.0.0/16"
   ports = flatten([
     { name = "kubernetes", port = "6443", health_check_protocol = "Https", path = "/readyz", priority = 100 },
     { name = "bootstrapper", port = "9000", health_check_protocol = "Tcp", path = null, priority = 101 },

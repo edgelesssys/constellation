@@ -106,6 +106,9 @@ type Infrastructure struct {
 	//   Name used in the cluster's named resources.
 	Name string `yaml:"name"`
 	// description: |
+	//   CIDR range of the cluster's nodes.
+	IPCidrNode string `yaml:"ipCidrNode"`
+	// description: |
 	//   Values specific to a Constellation cluster running on Azure.
 	Azure *Azure `yaml:"azure,omitempty"`
 	// description: |
@@ -118,9 +121,6 @@ type GCP struct {
 	// description: |
 	//   Project ID of the GCP project the cluster is running in.
 	ProjectID string `yaml:"projectID"`
-	// description: |
-	//   CIDR range of the cluster's nodes.
-	IPCidrNode string `yaml:"ipCidrNode"`
 	// description: |
 	//   CIDR range of the cluster's pods.
 	IPCidrPod string `yaml:"ipCidrPod"`

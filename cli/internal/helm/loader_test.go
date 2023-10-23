@@ -70,9 +70,8 @@ func TestLoadReleases(t *testing.T) {
 		state.New().
 			SetInfrastructure(state.Infrastructure{
 				GCP: &state.GCP{
-					ProjectID:  "test-project-id",
-					IPCidrNode: "test-node-cidr",
-					IPCidrPod:  "test-pod-cidr",
+					ProjectID: "test-project-id",
+					IPCidrPod: "test-pod-cidr",
 				},
 			}).
 			SetClusterValues(state.ClusterValues{MeasurementSalt: []byte{0x41}}),

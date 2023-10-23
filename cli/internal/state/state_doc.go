@@ -74,7 +74,7 @@ func init() {
 			FieldName: "infrastructure",
 		},
 	}
-	InfrastructureDoc.Fields = make([]encoder.Doc, 8)
+	InfrastructureDoc.Fields = make([]encoder.Doc, 9)
 	InfrastructureDoc.Fields[0].Name = "uid"
 	InfrastructureDoc.Fields[0].Type = "string"
 	InfrastructureDoc.Fields[0].Note = ""
@@ -105,16 +105,21 @@ func init() {
 	InfrastructureDoc.Fields[5].Note = ""
 	InfrastructureDoc.Fields[5].Description = "Name used in the cluster's named resources."
 	InfrastructureDoc.Fields[5].Comments[encoder.LineComment] = "Name used in the cluster's named resources."
-	InfrastructureDoc.Fields[6].Name = "azure"
-	InfrastructureDoc.Fields[6].Type = "Azure"
+	InfrastructureDoc.Fields[6].Name = "ipCidrNode"
+	InfrastructureDoc.Fields[6].Type = "string"
 	InfrastructureDoc.Fields[6].Note = ""
-	InfrastructureDoc.Fields[6].Description = "Values specific to a Constellation cluster running on Azure."
-	InfrastructureDoc.Fields[6].Comments[encoder.LineComment] = "Values specific to a Constellation cluster running on Azure."
-	InfrastructureDoc.Fields[7].Name = "gcp"
-	InfrastructureDoc.Fields[7].Type = "GCP"
+	InfrastructureDoc.Fields[6].Description = "CIDR range of the cluster's nodes."
+	InfrastructureDoc.Fields[6].Comments[encoder.LineComment] = "CIDR range of the cluster's nodes."
+	InfrastructureDoc.Fields[7].Name = "azure"
+	InfrastructureDoc.Fields[7].Type = "Azure"
 	InfrastructureDoc.Fields[7].Note = ""
-	InfrastructureDoc.Fields[7].Description = "Values specific to a Constellation cluster running on GCP."
-	InfrastructureDoc.Fields[7].Comments[encoder.LineComment] = "Values specific to a Constellation cluster running on GCP."
+	InfrastructureDoc.Fields[7].Description = "Values specific to a Constellation cluster running on Azure."
+	InfrastructureDoc.Fields[7].Comments[encoder.LineComment] = "Values specific to a Constellation cluster running on Azure."
+	InfrastructureDoc.Fields[8].Name = "gcp"
+	InfrastructureDoc.Fields[8].Type = "GCP"
+	InfrastructureDoc.Fields[8].Note = ""
+	InfrastructureDoc.Fields[8].Description = "Values specific to a Constellation cluster running on GCP."
+	InfrastructureDoc.Fields[8].Comments[encoder.LineComment] = "Values specific to a Constellation cluster running on GCP."
 
 	GCPDoc.Type = "GCP"
 	GCPDoc.Comments[encoder.LineComment] = "GCP describes the infra state related to GCP."
@@ -125,22 +130,17 @@ func init() {
 			FieldName: "gcp",
 		},
 	}
-	GCPDoc.Fields = make([]encoder.Doc, 3)
+	GCPDoc.Fields = make([]encoder.Doc, 2)
 	GCPDoc.Fields[0].Name = "projectID"
 	GCPDoc.Fields[0].Type = "string"
 	GCPDoc.Fields[0].Note = ""
 	GCPDoc.Fields[0].Description = "Project ID of the GCP project the cluster is running in."
 	GCPDoc.Fields[0].Comments[encoder.LineComment] = "Project ID of the GCP project the cluster is running in."
-	GCPDoc.Fields[1].Name = "ipCidrNode"
+	GCPDoc.Fields[1].Name = "ipCidrPod"
 	GCPDoc.Fields[1].Type = "string"
 	GCPDoc.Fields[1].Note = ""
-	GCPDoc.Fields[1].Description = "CIDR range of the cluster's nodes."
-	GCPDoc.Fields[1].Comments[encoder.LineComment] = "CIDR range of the cluster's nodes."
-	GCPDoc.Fields[2].Name = "ipCidrPod"
-	GCPDoc.Fields[2].Type = "string"
-	GCPDoc.Fields[2].Note = ""
-	GCPDoc.Fields[2].Description = "CIDR range of the cluster's pods."
-	GCPDoc.Fields[2].Comments[encoder.LineComment] = "CIDR range of the cluster's pods."
+	GCPDoc.Fields[1].Description = "CIDR range of the cluster's pods."
+	GCPDoc.Fields[1].Comments[encoder.LineComment] = "CIDR range of the cluster's pods."
 
 	AzureDoc.Type = "Azure"
 	AzureDoc.Comments[encoder.LineComment] = "Azure describes the infra state related to Azure."
