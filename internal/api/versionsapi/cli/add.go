@@ -10,12 +10,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap/zapcore"
 	"golang.org/x/mod/semver"
 )
 
@@ -183,7 +183,7 @@ type addFlags struct {
 	bucket         string
 	distributionID string
 	kind           versionsapi.VersionKind
-	logLevel       zapcore.Level
+	logLevel       slog.Level
 }
 
 func (f *addFlags) validate(log *logger.Logger) error {
@@ -256,9 +256,9 @@ func parseAddFlags(cmd *cobra.Command) (addFlags, error) {
 	if err != nil {
 		return addFlags{}, err
 	}
-	logLevel := zapcore.InfoLevel
+	logLevel := slog.LevelInfo
 	if verbose {
-		logLevel = zapcore.DebugLevel
+		logLevel = slog.LevelDebug
 	}
 	region, err := cmd.Flags().GetString("region")
 	if err != nil {

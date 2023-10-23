@@ -8,6 +8,7 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -17,11 +18,10 @@ import (
 	"github.com/edgelesssys/constellation/v2/measurement-reader/internal/tdx"
 	"github.com/edgelesssys/constellation/v2/measurement-reader/internal/tpm"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 func main() {
-	log := logger.New(logger.JSONLog, zapcore.InfoLevel)
+	log := logger.New(logger.JSONLog, slog.LevelInfo)
 	variantString := os.Getenv(constants.AttestationVariant)
 	attestationVariant, err := variant.FromString(variantString)
 	if err != nil {

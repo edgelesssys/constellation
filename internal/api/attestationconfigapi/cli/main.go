@@ -17,6 +17,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"time"
 
@@ -28,7 +29,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/verify"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 )
 
 const (
@@ -92,7 +92,7 @@ func envCheck(_ *cobra.Command, _ []string) error {
 
 func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 	ctx := cmd.Context()
-	log := logger.New(logger.PlainLog, zap.DebugLevel).Named("attestationconfigapi")
+	log := logger.New(logger.PlainLog, slog.LevelDebug).Named("attestationconfigapi")
 
 	flags, err := parseCliFlags(cmd)
 	if err != nil {

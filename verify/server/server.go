@@ -12,6 +12,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"sync"
@@ -21,7 +22,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/verify/verifyproto"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"
@@ -57,7 +57,7 @@ func (s *Server) Run(httpListener, grpcListener net.Listener) error {
 	var wg sync.WaitGroup
 	var once sync.Once
 
-	s.log.WithIncreasedLevel(zapcore.WarnLevel).Named("grpc").ReplaceGRPCLogger()
+	s.log.WithIncreasedLevel(slog.LevelWarn).Named("grpc").ReplaceGRPCLogger()
 	grpcServer := grpc.NewServer(
 		s.log.Named("gRPC").GetServerUnaryInterceptor(),
 		grpc.KeepaliveParams(keepalive.ServerParameters{Time: 15 * time.Second}),

@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
@@ -17,7 +18,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 )
 
 // newDeleteCmd creates the delete command.
@@ -57,7 +57,7 @@ func (d deleteCmd) delete(cmd *cobra.Command) error {
 }
 
 func runDelete(cmd *cobra.Command, _ []string) (retErr error) {
-	log := logger.New(logger.PlainLog, zap.DebugLevel).Named("attestationconfigapi")
+	log := logger.New(logger.PlainLog, slog.LevelDebug).Named("attestationconfigapi")
 
 	region, err := cmd.Flags().GetString("region")
 	if err != nil {
@@ -115,7 +115,7 @@ func runRecursiveDelete(cmd *cobra.Command, _ []string) (retErr error) {
 	}
 	apiCfg := getAPIEnvironment(testing)
 
-	log := logger.New(logger.PlainLog, zap.DebugLevel).Named("attestationconfigapi")
+	log := logger.New(logger.PlainLog, slog.LevelDebug).Named("attestationconfigapi")
 	client, closeFn, err := staticupload.New(cmd.Context(), staticupload.Config{
 		Bucket:         bucket,
 		Region:         region,

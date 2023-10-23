@@ -8,6 +8,7 @@ package main
 
 import (
 	"flag"
+	"log/slog"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -27,12 +28,11 @@ func main() {
 	flag.Parse()
 
 	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity)).Named("bootstrapper")
-	defer log.Sync()
 
 	if *gRPCDebug {
 		log.Named("gRPC").ReplaceGRPCLogger()
 	} else {
-		log.Named("gRPC").WithIncreasedLevel(zap.WarnLevel).ReplaceGRPCLogger()
+		log.Named("gRPC").WithIncreasedLevel(slog.LevelWarn).ReplaceGRPCLogger()
 	}
 
 	handler := file.NewHandler(afero.NewOsFs())

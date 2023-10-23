@@ -10,6 +10,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
@@ -18,7 +19,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/keyservice/keyserviceproto"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -51,7 +51,7 @@ func (s *Server) Run(port string) error {
 
 	server := grpc.NewServer(s.log.Named("gRPC").GetServerUnaryInterceptor())
 	keyserviceproto.RegisterAPIServer(server, s)
-	s.log.Named("gRPC").WithIncreasedLevel(zapcore.WarnLevel).ReplaceGRPCLogger()
+	s.log.Named("gRPC").WithIncreasedLevel(slog.LevelWarn).ReplaceGRPCLogger()
 
 	// start the server
 	s.log.Infof("Starting Constellation key management service on %s", listener.Addr().String())
