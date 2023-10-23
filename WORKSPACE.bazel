@@ -119,6 +119,7 @@ go_rules_dependencies()
 load("@io_tweag_rules_nixpkgs//nixpkgs:toolchains/go.bzl", "nixpkgs_go_configure")
 
 nixpkgs_go_configure(
+    fail_not_supported = False,
     nix_file = "//bazel/go:go.nix",
     repository = "@nixpkgs",
 )
@@ -184,7 +185,10 @@ load("@hermetic_cc_toolchain//toolchain:defs.bzl", zig_toolchains = "toolchains"
 
 zig_toolchains()
 
-nixpkgs_cc_configure(repository = "@nixpkgs")
+nixpkgs_cc_configure(
+    repository = "@nixpkgs",
+    fail_not_supported = False
+)
 
 register_toolchains(
     "@zig_sdk//libc_aware/toolchain:linux_amd64_gnu.2.23",
