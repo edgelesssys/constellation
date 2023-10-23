@@ -48,7 +48,6 @@ import (
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
 	"google.golang.org/grpc"
 )
 
@@ -70,6 +69,38 @@ const (
 	LevelFatal = 12
 )
 
+func replaceAttrFunction(groups []string, a slog.Attr) slog.Attr {
+	// change the time format to rfc 3339
+	if a.Key == slog.TimeKey {
+		logTime := a.Value.Any().(time.Time)
+		a.Value = slog.StringValue(logTime.Format(time.RFC3339))
+	}
+
+	// include fatal log level
+	if a.Key == slog.LevelKey {
+		level := a.Value.Any().(slog.Level)
+		if level <= LevelError {
+			return a
+		}
+
+		a.Value = slog.StringValue("FATAL")
+	}
+
+	return a
+}
+
+type testWriter struct {
+	t *testing.T
+}
+
+func (w *testWriter) Write(p []byte) (n int, err error) {
+	n = len(p)
+
+	w.t.Logf("%s", p)
+
+	return n, nil
+}
+
 // Logger is a wrapper for slog logger.
 // The purpose is to provide a simple interface for logging with sensible defaults.
 type Logger struct {
@@ -81,27 +112,9 @@ type Logger struct {
 func New(logType LogType, logLevel slog.Level) *Logger {
 	handlerOptions := &slog.HandlerOptions{
 		// add the file and line number
-		AddSource: true,
-		Level:     logLevel,
-		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-			// change the time format to rfc 3339
-			if a.Key == slog.TimeKey {
-				logTime := a.Value.Any().(time.Time)
-				a.Value = slog.StringValue(logTime.Format(time.RFC3339))
-			}
-
-			// include fatal log level
-			if a.Key == slog.LevelKey {
-				level := a.Value.Any().(slog.Level)
-				if level <= LevelError {
-					return a
-				}
-
-				a.Value = slog.StringValue("FATAL")
-			}
-
-			return a
-		},
+		AddSource:   true,
+		Level:       logLevel,
+		ReplaceAttr: replaceAttrFunction,
 	}
 
 	var logger *slog.Logger
@@ -117,7 +130,11 @@ func New(logType LogType, logLevel slog.Level) *Logger {
 // NewTest creates a logger for unit / integration tests.
 func NewTest(t *testing.T) *Logger {
 	return &Logger{
-		logger: zaptest.NewLogger(t).Sugar().Named(fmt.Sprintf("%q", t.Name())),
+		logger: slog.New(slog.NewTextHandler(&testWriter{t}, &slog.HandlerOptions{
+			AddSource:   true,
+			Level:       LevelDebug,
+			ReplaceAttr: replaceAttrFunction,
+		})),
 	}
 }
 
