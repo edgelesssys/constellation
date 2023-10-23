@@ -20,6 +20,12 @@ jobs:
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
+      - name: Setup bazel
+        uses: ./.github/actions/setup_bazel_nix
+        with:
+          useCache: "true"
+          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
+
       - name: Build CLI
         uses: ./.github/actions/build_cli
         with:
