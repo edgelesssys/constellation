@@ -207,11 +207,6 @@ func (l *Logger) GetClientStreamInterceptor() grpc.DialOption {
 	)
 }
 
-// getZapLogger returns the underlying zap logger.
-func (l *Logger) getZapLogger() *zap.Logger {
-	return l.logger.Desugar()
-}
-
 func (l *Logger) middlewareLogger() logging.Logger {
 	return logging.LoggerFunc(func(ctx context.Context, lvl logging.Level, msg string, fields ...any) {
 		f := make([]zap.Field, 0, len(fields)/2)
@@ -232,7 +227,7 @@ func (l *Logger) middlewareLogger() logging.Logger {
 			}
 		}
 
-		logger := l.getZapLogger().WithOptions(zap.AddCallerSkip(1)).With(f...)
+		logger := l.logger
 
 		switch lvl {
 		case logging.LevelDebug:
