@@ -11,7 +11,6 @@ constellation [command]
 ```
 Commands:
 
-* [apply](#constellation-apply): Apply a configuration to a Constellation cluster
 * [config](#constellation-config): Work with the Constellation configuration file
   * [generate](#constellation-config-generate): Generate a default configuration and state file
   * [fetch-measurements](#constellation-config-fetch-measurements): Fetch measurements for configured cloud provider and image
@@ -19,7 +18,7 @@ Commands:
   * [kubernetes-versions](#constellation-config-kubernetes-versions): Print the Kubernetes versions supported by this CLI
   * [migrate](#constellation-config-migrate): Migrate a configuration file to a new version
 * [create](#constellation-create): Create instances on a cloud platform for your Constellation cluster
-* [init](#constellation-init): Initialize the Constellation cluster
+* [apply](#constellation-apply): Apply a configuration to a Constellation cluster
 * [mini](#constellation-mini): Manage MiniConstellation clusters
   * [up](#constellation-mini-up): Create and initialize a new MiniConstellation cluster
   * [down](#constellation-mini-down): Destroy a MiniConstellation cluster
@@ -39,41 +38,7 @@ Commands:
   * [upgrade](#constellation-iam-upgrade): Find and apply upgrades to your IAM profile
     * [apply](#constellation-iam-upgrade-apply): Apply an upgrade to an IAM profile
 * [version](#constellation-version): Display version of this CLI
-
-## constellation apply
-
-Apply a configuration to a Constellation cluster
-
-### Synopsis
-
-Apply a configuration to a Constellation cluster to initialize or upgrade the cluster.
-
-```
-constellation apply [flags]
-```
-
-### Options
-
-```
-      --conformance           enable conformance mode
-  -h, --help                  help for apply
-      --merge-kubeconfig      merge Constellation kubeconfig file with default kubeconfig file in $HOME/.kube/config
-      --skip-helm-wait        install helm charts without waiting for deployments to be ready
-      --skip-phases strings   comma-separated list of upgrade phases to skip
-                              one or multiple of { infrastructure | init | attestationconfig | certsans | helm | image | k8s }
-  -y, --yes                   run command without further confirmation
-                              WARNING: the command might delete or update existing resources without additional checks. Please read the docs.
-                              
-```
-
-### Options inherited from parent commands
-
-```
-      --debug              enable debug logging
-      --force              disable version compatibility checks - might result in corrupted clusters
-      --tf-log string      Terraform log level (default "NONE")
-  -C, --workspace string   path to the Constellation workspace
-```
+* [init](#constellation-init): Initialize the Constellation cluster
 
 ## constellation config
 
@@ -267,27 +232,30 @@ constellation create [flags]
   -C, --workspace string   path to the Constellation workspace
 ```
 
-## constellation init
+## constellation apply
 
-Initialize the Constellation cluster
+Apply a configuration to a Constellation cluster
 
 ### Synopsis
 
-Initialize the Constellation cluster.
-
-Start your confidential Kubernetes.
+Apply a configuration to a Constellation cluster to initialize or upgrade the cluster.
 
 ```
-constellation init [flags]
+constellation apply [flags]
 ```
 
 ### Options
 
 ```
-      --conformance        enable conformance mode
-  -h, --help               help for init
-      --merge-kubeconfig   merge Constellation kubeconfig file with default kubeconfig file in $HOME/.kube/config
-      --skip-helm-wait     install helm charts without waiting for deployments to be ready
+      --conformance           enable conformance mode
+  -h, --help                  help for apply
+      --merge-kubeconfig      merge Constellation kubeconfig file with default kubeconfig file in $HOME/.kube/config
+      --skip-helm-wait        install helm charts without waiting for deployments to be ready
+      --skip-phases strings   comma-separated list of upgrade phases to skip
+                              one or multiple of { infrastructure | init | attestationconfig | certsans | helm | image | k8s }
+  -y, --yes                   run command without further confirmation
+                              WARNING: the command might delete or update existing resources without additional checks. Please read the docs.
+                              
 ```
 
 ### Options inherited from parent commands
@@ -829,6 +797,38 @@ constellation version [flags]
 
 ```
   -h, --help   help for version
+```
+
+### Options inherited from parent commands
+
+```
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
+```
+
+## constellation init
+
+Initialize the Constellation cluster
+
+### Synopsis
+
+Initialize the Constellation cluster.
+
+Start your confidential Kubernetes.
+
+```
+constellation init [flags]
+```
+
+### Options
+
+```
+      --conformance        enable conformance mode
+  -h, --help               help for init
+      --merge-kubeconfig   merge Constellation kubeconfig file with default kubeconfig file in $HOME/.kube/config
+      --skip-helm-wait     install helm charts without waiting for deployments to be ready
 ```
 
 ### Options inherited from parent commands
