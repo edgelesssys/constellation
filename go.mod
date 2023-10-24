@@ -88,7 +88,7 @@ require (
 	github.com/google/uuid v1.3.1
 	github.com/googleapis/gax-go/v2 v2.12.0
 	github.com/gophercloud/gophercloud v1.5.0
-	github.com/gophercloud/utils v0.0.0-20230523080330-de873b9cf00d
+	github.com/gophercloud/utils v0.0.0-20231010081019-80377eca5d56
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.0.0
 	github.com/hashicorp/go-kms-wrapping/v2 v2.0.10
 	github.com/hashicorp/go-kms-wrapping/wrappers/awskms/v2 v2.0.7
