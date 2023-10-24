@@ -13,6 +13,16 @@ package validation
 
 import "errors"
 
+// ErrStrategy is the strategy to use when encountering an error during validation.
+type ErrStrategy int
+
+const (
+	// EvaluateAll continues evaluating all constraints even if one is not satisfied.
+	EvaluateAll ErrStrategy = iota
+	// FailFast stops validation on the first error.
+	FailFast
+)
+
 // NewValidator creates a new Validator.
 func NewValidator() *Validator {
 	return &Validator{}
@@ -24,13 +34,13 @@ type Validator struct{}
 // Validatable is implemented by documents that can be validated.
 // It returns a list of constraints that must be satisfied for the document to be valid.
 type Validatable interface {
-	Constraints() []Constraint
+	Constraints() []*Constraint
 }
 
 // ValidateOptions are the options to use when validating a document.
 type ValidateOptions struct {
-	// FailFast stops validation on the first error.
-	FailFast bool
+	// ErrStrategy is the strategy to use when encountering an error during validation.
+	ErrStrategy ErrStrategy
 }
 
 // Validate validates a document using the given options.
@@ -38,7 +48,7 @@ func (v *Validator) Validate(doc Validatable, opts ValidateOptions) error {
 	var retErr error
 	for _, c := range doc.Constraints() {
 		if err := c.Satisfied(); err != nil {
-			if opts.FailFast {
+			if opts.ErrStrategy == FailFast {
 				return err
 			}
 			retErr = errors.Join(retErr, err)

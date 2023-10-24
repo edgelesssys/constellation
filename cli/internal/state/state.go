@@ -20,6 +20,7 @@ import (
 
 	"dario.cat/mergo"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/validation"
 )
 
 const (
@@ -27,12 +28,20 @@ const (
 	Version1 = "v1"
 )
 
-// ReadFromFile reads the state file at the given path and returns the state.
+// ReadFromFile reads the state file at the given path and validates it.
+// If the state file is valid, the state is returned. Otherwise, an error
+// describing why the validation failed is returned.
 func ReadFromFile(fileHandler file.Handler, path string) (*State, error) {
 	state := &State{}
 	if err := fileHandler.ReadYAML(path, &state); err != nil {
 		return nil, fmt.Errorf("reading state file: %w", err)
 	}
+
+	v := validation.NewValidator()
+	if err := v.Validate(state, validation.ValidateOptions{}); err != nil {
+		return nil, fmt.Errorf("validating state file: %w", err)
+	}
+
 	return state, nil
 }
 
@@ -184,6 +193,15 @@ func (s *State) Merge(other *State) (*State, error) {
 		return nil, fmt.Errorf("merging state file: %w", err)
 	}
 	return s, nil
+}
+
+// Constraints implements the "Validatable" interface.
+func (s *State) Constraints() []*validation.Constraint {
+	constraints := []*validation.Constraint{
+		validation.OneOf(s.Version, []string{Version1}).
+			WithFieldTrace(s, &s.Version),
+	}
+	return constraints
 }
 
 // HexBytes is a byte slice that is marshalled to and from a hex string.

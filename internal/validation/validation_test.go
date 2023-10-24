@@ -30,6 +30,11 @@ func TestValidate(t *testing.T) {
 				},
 				NotEmptyField:   "certainly not.",
 				MatchRegexField: "abc",
+				OneOfField:      "one",
+				OrLeftField:     "left",
+				OrRightField:    "right",
+				AndLeftField:    "left",
+				AndRightField:   "right",
 			},
 			opts: ValidateOptions{},
 		},
@@ -42,6 +47,11 @@ func TestValidate(t *testing.T) {
 				},
 				NotEmptyField:   "certainly not.",
 				MatchRegexField: "abc",
+				OneOfField:      "one",
+				OrLeftField:     "left",
+				OrRightField:    "right",
+				AndLeftField:    "left",
+				AndRightField:   "right",
 			},
 			wantErr: true,
 			errAssertion: func(assert *assert.Assertions, err error) bool {
@@ -58,6 +68,11 @@ func TestValidate(t *testing.T) {
 				},
 				NotEmptyField:   "certainly not.",
 				MatchRegexField: "abc",
+				OneOfField:      "one",
+				OrLeftField:     "left",
+				OrRightField:    "right",
+				AndLeftField:    "left",
+				AndRightField:   "right",
 			},
 			wantErr: true,
 			errAssertion: func(assert *assert.Assertions, err error) bool {
@@ -73,6 +88,11 @@ func TestValidate(t *testing.T) {
 				},
 				NotEmptyField:   "certainly not.",
 				MatchRegexField: "abc",
+				OneOfField:      "one",
+				OrLeftField:     "left",
+				OrRightField:    "right",
+				AndLeftField:    "left",
+				AndRightField:   "right",
 			},
 			wantErr: true,
 			errAssertion: func(assert *assert.Assertions, err error) bool {
@@ -90,13 +110,18 @@ func TestValidate(t *testing.T) {
 				},
 				NotEmptyField:   "certainly not.",
 				MatchRegexField: "abc",
+				OneOfField:      "one",
+				OrLeftField:     "left",
+				OrRightField:    "right",
+				AndLeftField:    "left",
+				AndRightField:   "right",
 			},
 			wantErr: true,
 			errAssertion: func(assert *assert.Assertions, err error) bool {
 				return assert.Contains(err.Error(), "validating exampleDoc.strField: def must be abc")
 			},
 			opts: ValidateOptions{
-				FailFast: true,
+				ErrStrategy: FailFast,
 			},
 		},
 		"map field is not empty": {
@@ -108,13 +133,18 @@ func TestValidate(t *testing.T) {
 				},
 				NotEmptyField:   "certainly not.",
 				MatchRegexField: "abc",
+				OneOfField:      "one",
+				OrLeftField:     "left",
+				OrRightField:    "right",
+				AndLeftField:    "left",
+				AndRightField:   "right",
 			},
 			wantErr: true,
 			errAssertion: func(assert *assert.Assertions, err error) bool {
 				return assert.Contains(err.Error(), "validating exampleDoc.mapField[\"empty\"]: haha! must be empty")
 			},
 			opts: ValidateOptions{
-				FailFast: true,
+				ErrStrategy: FailFast,
 			},
 		},
 		"empty field is not empty": {
@@ -126,13 +156,18 @@ func TestValidate(t *testing.T) {
 				},
 				NotEmptyField:   "",
 				MatchRegexField: "abc",
+				OneOfField:      "one",
+				OrLeftField:     "left",
+				OrRightField:    "right",
+				AndLeftField:    "left",
+				AndRightField:   "right",
 			},
 			wantErr: true,
 			errAssertion: func(assert *assert.Assertions, err error) bool {
 				return assert.Contains(err.Error(), "validating exampleDoc.notEmptyField:  must not be empty")
 			},
 			opts: ValidateOptions{
-				FailFast: true,
+				ErrStrategy: FailFast,
 			},
 		},
 		"regex doesnt match": {
@@ -144,13 +179,87 @@ func TestValidate(t *testing.T) {
 				},
 				NotEmptyField:   "certainly not!",
 				MatchRegexField: "dontmatch",
+				OneOfField:      "one",
+				OrLeftField:     "left",
+				OrRightField:    "right",
+				AndLeftField:    "left",
+				AndRightField:   "right",
 			},
 			wantErr: true,
 			errAssertion: func(assert *assert.Assertions, err error) bool {
 				return assert.Contains(err.Error(), "validating exampleDoc.matchRegexField: dontmatch must match the pattern ^a.c$")
 			},
 			opts: ValidateOptions{
-				FailFast: true,
+				ErrStrategy: FailFast,
+			},
+		},
+		"field is not in 'oneof' values": {
+			doc: &exampleDoc{
+				StrField: "abc",
+				NumField: 42,
+				MapField: &map[string]string{
+					"empty": "",
+				},
+				NotEmptyField:   "certainly not!",
+				MatchRegexField: "abc",
+				OneOfField:      "not in oneof",
+				OrLeftField:     "left",
+				OrRightField:    "right",
+				AndLeftField:    "left",
+				AndRightField:   "right",
+			},
+			wantErr: true,
+			errAssertion: func(assert *assert.Assertions, err error) bool {
+				return assert.Contains(err.Error(), "validating exampleDoc.oneOfField: not in oneof must be one of [one two three]")
+			},
+			opts: ValidateOptions{
+				ErrStrategy: FailFast,
+			},
+		},
+		"'or' violated": {
+			doc: &exampleDoc{
+				StrField: "abc",
+				NumField: 42,
+				MapField: &map[string]string{
+					"empty": "",
+				},
+				NotEmptyField:   "certainly not!",
+				MatchRegexField: "abc",
+				OneOfField:      "not in oneof",
+				OrLeftField:     "not left",
+				OrRightField:    "not right",
+				AndLeftField:    "left",
+				AndRightField:   "right",
+			},
+			wantErr: true,
+			errAssertion: func(assert *assert.Assertions, err error) bool {
+				return assert.Contains(err.Error(), "validating exampleDoc.oneOfField: not in oneof must be one of [one two three]")
+			},
+			opts: ValidateOptions{
+				ErrStrategy: FailFast,
+			},
+		},
+		"'and' violated": {
+			doc: &exampleDoc{
+				StrField: "abc",
+				NumField: 42,
+				MapField: &map[string]string{
+					"empty": "",
+				},
+				NotEmptyField:   "certainly not!",
+				MatchRegexField: "abc",
+				OneOfField:      "not in oneof",
+				OrLeftField:     "left",
+				OrRightField:    "right",
+				AndLeftField:    "left",
+				AndRightField:   "not right",
+			},
+			wantErr: true,
+			errAssertion: func(assert *assert.Assertions, err error) bool {
+				return assert.Contains(err.Error(), "validating exampleDoc.oneOfField: not in oneof must be one of [one two three]")
+			},
+			opts: ValidateOptions{
+				ErrStrategy: FailFast,
 			},
 		},
 	}
@@ -179,13 +288,18 @@ type exampleDoc struct {
 	MapField        *map[string]string `json:"mapField"`
 	NotEmptyField   string             `json:"notEmptyField"`
 	MatchRegexField string             `json:"matchRegexField"`
+	OneOfField      string             `json:"oneOfField"`
+	OrLeftField     string             `json:"orLeftField"`
+	OrRightField    string             `json:"orRightField"`
+	AndLeftField    string             `json:"andLeftField"`
+	AndRightField   string             `json:"andRightField"`
 }
 
 // Constraints implements the Validatable interface.
-func (d *exampleDoc) Constraints() []Constraint {
+func (d *exampleDoc) Constraints() []*Constraint {
 	mapField := *(d.MapField)
 
-	return []Constraint{
+	return []*Constraint{
 		d.strFieldNeedsToBeAbc().
 			WithFieldTrace(d, &d.StrField),
 		Equal(d.NumField, 42).
@@ -196,6 +310,21 @@ func (d *exampleDoc) Constraints() []Constraint {
 			WithFieldTrace(d, &d.NotEmptyField),
 		MatchRegex(d.MatchRegexField, "^a.c$").
 			WithFieldTrace(d, &d.MatchRegexField),
+		OneOf(d.OneOfField, []string{"one", "two", "three"}).
+			WithFieldTrace(d, &d.OneOfField),
+		Or(
+			Equal(d.OrLeftField, "left").
+				WithFieldTrace(d, &d.OrLeftField),
+			Equal(d.OrRightField, "right").
+				WithFieldTrace(d, &d.OrRightField),
+		),
+		And(
+			EvaluateAll,
+			Equal(d.AndLeftField, "left").
+				WithFieldTrace(d, &d.AndLeftField),
+			Equal(d.AndRightField, "right").
+				WithFieldTrace(d, &d.AndRightField),
+		),
 	}
 }
 
