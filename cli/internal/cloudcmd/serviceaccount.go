@@ -9,7 +9,6 @@ package cloudcmd
 import (
 	"fmt"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
@@ -19,27 +18,19 @@ import (
 )
 
 // GetMarshaledServiceAccountURI returns the service account URI for the given cloud provider.
-func GetMarshaledServiceAccountURI(provider cloudprovider.Provider, config *config.Config, pf pathprefix.PathPrefixer, log debugLog, fileHandler file.Handler,
-) (string, error) {
-	log.Debugf("Getting service account URI")
-	switch provider {
+func GetMarshaledServiceAccountURI(config *config.Config, fileHandler file.Handler) (string, error) {
+	switch config.GetProvider() {
 	case cloudprovider.GCP:
-		log.Debugf("Handling case for GCP")
-		log.Debugf("GCP service account key path %s", pf.PrefixPrintablePath(config.Provider.GCP.ServiceAccountKeyPath))
-
 		var key gcpshared.ServiceAccountKey
 		if err := fileHandler.ReadJSON(config.Provider.GCP.ServiceAccountKeyPath, &key); err != nil {
-			return "", fmt.Errorf("reading service account key from path %q: %w", pf.PrefixPrintablePath(config.Provider.GCP.ServiceAccountKeyPath), err)
+			return "", fmt.Errorf("reading service account key: %w", err)
 		}
-		log.Debugf("Read GCP service account key from path")
 		return key.ToCloudServiceAccountURI(), nil
 
 	case cloudprovider.AWS:
-		log.Debugf("Handling case for AWS")
 		return "", nil // AWS does not need a service account URI
-	case cloudprovider.Azure:
-		log.Debugf("Handling case for Azure")
 
+	case cloudprovider.Azure:
 		authMethod := azureshared.AuthMethodUserAssignedIdentity
 
 		creds := azureshared.ApplicationCredentials{
@@ -64,10 +55,9 @@ func GetMarshaledServiceAccountURI(provider cloudprovider.Provider, config *conf
 		return creds.ToCloudServiceAccountURI(), nil
 
 	case cloudprovider.QEMU:
-		log.Debugf("Handling case for QEMU")
 		return "", nil // QEMU does not use service account keys
 
 	default:
-		return "", fmt.Errorf("unsupported cloud provider %q", provider)
+		return "", fmt.Errorf("unsupported cloud provider %q", config.GetProvider())
 	}
 }

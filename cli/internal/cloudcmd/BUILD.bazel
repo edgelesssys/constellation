@@ -21,7 +21,6 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd",
     visibility = ["//cli:__subpackages__"],
     deps = [
-        "//cli/internal/cmd/pathprefix",
         "//cli/internal/libvirt",
         "//cli/internal/state",
         "//cli/internal/terraform",

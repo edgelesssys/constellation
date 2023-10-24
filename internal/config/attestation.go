@@ -24,7 +24,8 @@ type AttestationCfg interface {
 	SetMeasurements(m measurements.M)
 	// GetVariant returns the variant of the attestation config.
 	GetVariant() variant.Variant
-	// NewerThan returns true if the config is equal to the given config.
+	// EqualTo returns true if the config is equal to the given config.
+	// If the variant differs, an error must be returned.
 	EqualTo(AttestationCfg) (bool, error)
 }
 

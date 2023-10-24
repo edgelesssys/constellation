@@ -4,6 +4,10 @@ load("//bazel/go:go_test.bzl", "go_test")
 go_library(
     name = "cmd",
     srcs = [
+        "apply.go",
+        "applyhelm.go",
+        "applyinit.go",
+        "applyterraform.go",
         "cloud.go",
         "cmd.go",
         "config.go",
@@ -94,6 +98,7 @@ go_library(
         "@com_github_spf13_pflag//:pflag",
         "@in_gopkg_yaml_v3//:yaml_v3",
         "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1:apiextensions",
+        "@io_k8s_apimachinery//pkg/api/errors",
         "@io_k8s_apimachinery//pkg/runtime",
         "@io_k8s_client_go//tools/clientcmd",
         "@io_k8s_client_go//tools/clientcmd/api/latest",
@@ -115,6 +120,7 @@ go_library(
 go_test(
     name = "cmd_test",
     srcs = [
+        "apply_test.go",
         "cloud_test.go",
         "configfetchmeasurements_test.go",
         "configgenerate_test.go",
@@ -171,12 +177,15 @@ go_test(
         "@com_github_google_go_tpm_tools//proto/tpm",
         "@com_github_spf13_afero//:afero",
         "@com_github_spf13_cobra//:cobra",
+        "@com_github_spf13_pflag//:pflag",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//mock",
         "@com_github_stretchr_testify//require",
         "@io_k8s_api//core/v1:core",
         "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1:apiextensions",
+        "@io_k8s_apimachinery//pkg/api/errors",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_apimachinery//pkg/runtime/schema",
         "@io_k8s_client_go//tools/clientcmd",
         "@io_k8s_client_go//tools/clientcmd/api",
         "@org_golang_google_grpc//:go_default_library",
