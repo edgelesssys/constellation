@@ -65,7 +65,7 @@ func traverse(haystack referenceableValue, needle referenceableValue, path pathB
 	// recursion anchor: doc is the field we are looking for.
 	// Join the path and return.
 	if foundNeedle(haystack, needle) {
-		return path.String(), nil
+		return path.string(), nil
 	}
 
 	kind := haystack._type.Kind()
@@ -74,28 +74,31 @@ func traverse(haystack referenceableValue, needle referenceableValue, path pathB
 		// Traverse all visible struct fields.
 		for _, field := range reflect.VisibleFields(haystack._type) {
 			// skip unexported fields
-			if field.IsExported() {
-				fieldVal := recPointerDeref(haystack.value.FieldByName(field.Name))
-				if isNilPtrOrInvalid(fieldVal) {
-					continue
+			if !field.IsExported() {
+				continue
+			}
+
+			fieldVal := recPointerDeref(haystack.value.FieldByName(field.Name))
+			if isNilPtrOrInvalid(fieldVal) {
+				continue
+			}
+
+			fieldAddr := haystack.addr + field.Offset
+			newHaystack := referenceableValue{
+				value: fieldVal,
+				addr:  fieldVal.UnsafeAddr(),
+				_type: fieldVal.Type(),
+			}
+			if canTraverse(fieldVal) {
+				// When a field is not the needle and cannot be traversed further,
+				// a errCannotTraverse is returned. Therefore, we only want to handle
+				// the case where the field is the needle.
+				if path, err := traverse(newHaystack, needle, path.appendStructField(field)); err == nil {
+					return path, nil
 				}
-				fieldAddr := haystack.addr + field.Offset
-				newHaystack := referenceableValue{
-					value: fieldVal,
-					addr:  fieldVal.UnsafeAddr(),
-					_type: fieldVal.Type(),
-				}
-				if canTraverse(fieldVal) {
-					// When a field is not the needle and cannot be traversed further,
-					// a errCannotTraverse is returned. Therefore, we only want to handle
-					// the case where the field is the needle.
-					if path, err := traverse(newHaystack, needle, path.appendStructField(field)); err == nil {
-						return path, nil
-					}
-				}
-				if foundNeedle(referenceableValue{addr: fieldAddr, _type: field.Type}, needle) {
-					return path.appendStructField(field).String(), nil
-				}
+			}
+			if foundNeedle(referenceableValue{addr: fieldAddr, _type: field.Type}, needle) {
+				return path.appendStructField(field).string(), nil
 			}
 		}
 	case reflect.Slice, reflect.Array:
@@ -117,7 +120,7 @@ func traverse(haystack referenceableValue, needle referenceableValue, path pathB
 				}
 			}
 			if foundNeedle(newHaystack, needle) {
-				return path.appendArrayIndex(i).String(), nil
+				return path.appendArrayIndex(i).string(), nil
 			}
 		}
 	case reflect.Map:
@@ -143,7 +146,7 @@ func traverse(haystack referenceableValue, needle referenceableValue, path pathB
 			}
 			// check if reference to map is the needle and the map key matches
 			if foundNeedle(referenceableValue{addr: haystack.addr, _type: haystack._type, mapKey: mapKey}, needle) {
-				return path.appendMapKey(mapKey).String(), nil
+				return path.appendMapKey(mapKey).string(), nil
 			}
 		}
 	}

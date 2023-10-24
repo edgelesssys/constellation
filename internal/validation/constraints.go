@@ -14,8 +14,9 @@ import (
 
 // Constraint is a constraint on a document or a field of a document.
 type Constraint struct {
-	// Satisfied returns true if the constraint is satisfied.
-	Satisfied func() (valid bool, err error)
+	// Satisfied returns no error if the constraint is satisfied.
+	// Otherwise, it returns the reason why the constraint is not satisfied.
+	Satisfied func() error
 }
 
 /*
@@ -92,12 +93,11 @@ func (c *Constraint) WithMapFieldTrace(doc any, field any, mapKey string) Constr
 // withTrace wraps the constraint's error message with a well-formatted trace.
 func (c *Constraint) withTrace(docRef, fieldRef referenceableValue) Constraint {
 	return Constraint{
-		Satisfied: func() (valid bool, err error) {
-			valid, err = c.Satisfied()
-			if err != nil {
-				return valid, newError(docRef, fieldRef, err)
+		Satisfied: func() error {
+			if err := c.Satisfied(); err != nil {
+				return newError(docRef, fieldRef, err)
 			}
-			return valid, nil
+			return nil
 		},
 	}
 }
@@ -105,11 +105,11 @@ func (c *Constraint) withTrace(docRef, fieldRef referenceableValue) Constraint {
 // MatchRegex is a constraint that if s matches regex.
 func MatchRegex(s string, regex string) *Constraint {
 	return &Constraint{
-		Satisfied: func() (valid bool, err error) {
+		Satisfied: func() error {
 			if !regexp.MustCompile(regex).MatchString(s) {
-				return false, fmt.Errorf("%s must match the pattern %s", s, regex)
+				return fmt.Errorf("%s must match the pattern %s", s, regex)
 			}
-			return true, nil
+			return nil
 		},
 	}
 }
@@ -117,11 +117,11 @@ func MatchRegex(s string, regex string) *Constraint {
 // Equal is a constraint that if s is equal to t.
 func Equal[T comparable](s T, t T) *Constraint {
 	return &Constraint{
-		Satisfied: func() (valid bool, err error) {
+		Satisfied: func() error {
 			if s != t {
-				return false, fmt.Errorf("%v must be equal to %v", s, t)
+				return fmt.Errorf("%v must be equal to %v", s, t)
 			}
-			return true, nil
+			return nil
 		},
 	}
 }
@@ -129,12 +129,12 @@ func Equal[T comparable](s T, t T) *Constraint {
 // NotEmpty is a constraint that if s is not empty.
 func NotEmpty[T comparable](s T) *Constraint {
 	return &Constraint{
-		Satisfied: func() (valid bool, err error) {
+		Satisfied: func() error {
 			var zero T
 			if s == zero {
-				return false, fmt.Errorf("%v must not be empty", s)
+				return fmt.Errorf("%v must not be empty", s)
 			}
-			return true, nil
+			return nil
 		},
 	}
 }
@@ -142,12 +142,12 @@ func NotEmpty[T comparable](s T) *Constraint {
 // Empty is a constraint that if s is empty.
 func Empty[T comparable](s T) *Constraint {
 	return &Constraint{
-		Satisfied: func() (valid bool, err error) {
+		Satisfied: func() error {
 			var zero T
 			if s != zero {
-				return false, fmt.Errorf("%v must be empty", s)
+				return fmt.Errorf("%v must be empty", s)
 			}
-			return true, nil
+			return nil
 		},
 	}
 }

@@ -37,7 +37,7 @@ type ValidateOptions struct {
 func (v *Validator) Validate(doc Validatable, opts ValidateOptions) error {
 	var retErr error
 	for _, c := range doc.Constraints() {
-		if valid, err := c.Satisfied(); !valid {
+		if err := c.Satisfied(); err != nil {
 			if opts.FailFast {
 				return err
 			}
