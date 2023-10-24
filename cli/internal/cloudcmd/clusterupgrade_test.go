@@ -10,7 +10,6 @@ import (
 	"context"
 	"io"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/state"
@@ -26,7 +25,7 @@ import (
 func TestPlanClusterUpgrade(t *testing.T) {
 	setUpFilesystem := func(existingFiles []string) file.Handler {
 		fs := file.NewHandler(afero.NewMemMapFs())
-		require.NoError(t, fs.MkdirAll(filepath.Join(constants.TerraformEmbeddedDir, strings.ToLower(cloudprovider.Unknown.String()))))
+		require.NoError(t, fs.MkdirAll("test"))
 		for _, f := range existingFiles {
 			require.NoError(t, fs.Write(f, []byte{}))
 		}

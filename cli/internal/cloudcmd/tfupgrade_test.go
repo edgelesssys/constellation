@@ -19,9 +19,14 @@ import (
 )
 
 func TestPlanUpgrade(t *testing.T) {
-	defaultFs := func(require *require.Assertions) file.Handler {
+	const (
+		templateDir       = "templateDir"
+		existingWorkspace = "existing"
+		backupDir         = "backup"
+	)
+	fsWithWorkspace := func(require *require.Assertions) file.Handler {
 		fs := file.NewHandler(afero.NewMemMapFs())
-		require.NoError(fs.MkdirAll("test"))
+		require.NoError(fs.MkdirAll(existingWorkspace))
 		return fs
 	}
 
@@ -32,11 +37,11 @@ func TestPlanUpgrade(t *testing.T) {
 		wantErr   bool
 	}{
 		"success no diff": {
-			prepareFs: defaultFs,
+			prepareFs: fsWithWorkspace,
 			tf:        &stubUpgradePlanner{},
 		},
 		"success diff": {
-			prepareFs: defaultFs,
+			prepareFs: fsWithWorkspace,
 			tf: &stubUpgradePlanner{
 				planDiff: true,
 			},
@@ -51,29 +56,29 @@ func TestPlanUpgrade(t *testing.T) {
 		},
 		"workspace not clean": {
 			prepareFs: func(require *require.Assertions) file.Handler {
-				fs := defaultFs(require)
-				require.NoError(fs.MkdirAll("backup"))
+				fs := fsWithWorkspace(require)
+				require.NoError(fs.MkdirAll(backupDir))
 				return fs
 			},
 			tf:      &stubUpgradePlanner{},
 			wantErr: true,
 		},
 		"prepare workspace error": {
-			prepareFs: defaultFs,
+			prepareFs: fsWithWorkspace,
 			tf: &stubUpgradePlanner{
 				prepareWorkspaceErr: assert.AnError,
 			},
 			wantErr: true,
 		},
 		"plan error": {
-			prepareFs: defaultFs,
+			prepareFs: fsWithWorkspace,
 			tf: &stubUpgradePlanner{
 				planErr: assert.AnError,
 			},
 			wantErr: true,
 		},
 		"show plan error": {
-			prepareFs: defaultFs,
+			prepareFs: fsWithWorkspace,
 			tf: &stubUpgradePlanner{
 				planDiff:    true,
 				showPlanErr: assert.AnError,
@@ -90,7 +95,7 @@ func TestPlanUpgrade(t *testing.T) {
 			hasDiff, err := planUpgrade(
 				context.Background(), tc.tf, fs, io.Discard, terraform.LogLevelDebug,
 				&terraform.QEMUVariables{},
-				"test", "backup",
+				templateDir, existingWorkspace, backupDir,
 			)
 			if tc.wantErr {
 				assert.Error(err)

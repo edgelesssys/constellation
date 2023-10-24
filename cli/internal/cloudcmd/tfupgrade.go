@@ -21,14 +21,14 @@ import (
 func planUpgrade(
 	ctx context.Context, tfClient tfUpgradePlanner, fileHandler file.Handler,
 	outWriter io.Writer, logLevel terraform.LogLevel, vars terraform.Variables,
-	templateDir, backupDir string,
+	templateDir, existingWorkspace, backupDir string,
 ) (bool, error) {
 	if err := ensureFileNotExist(fileHandler, backupDir); err != nil {
 		return false, fmt.Errorf("backup directory %s already exists: %w", backupDir, err)
 	}
 
 	// Backup old workspace
-	if err := fileHandler.CopyDir(templateDir, backupDir); err != nil {
+	if err := fileHandler.CopyDir(existingWorkspace, backupDir); err != nil {
 		return false, fmt.Errorf("backing up old workspace: %w", err)
 	}
 

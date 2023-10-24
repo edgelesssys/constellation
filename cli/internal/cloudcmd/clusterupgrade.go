@@ -36,7 +36,7 @@ type ClusterUpgrader struct {
 func NewClusterUpgrader(ctx context.Context, existingWorkspace, upgradeWorkspace string,
 	logLevel terraform.LogLevel, fileHandler file.Handler,
 ) (*ClusterUpgrader, error) {
-	tfClient, err := terraform.New(ctx, constants.TerraformWorkingDir)
+	tfClient, err := terraform.New(ctx, existingWorkspace)
 	if err != nil {
 		return nil, fmt.Errorf("setting up terraform client: %w", err)
 	}
@@ -58,6 +58,7 @@ func (u *ClusterUpgrader) PlanClusterUpgrade(ctx context.Context, outWriter io.W
 	return planUpgrade(
 		ctx, u.tf, u.fileHandler, outWriter, u.logLevel, vars,
 		filepath.Join(constants.TerraformEmbeddedDir, strings.ToLower(csp.String())),
+		u.existingWorkspace,
 		filepath.Join(u.upgradeWorkspace, constants.TerraformUpgradeBackupDir),
 	)
 }

@@ -42,7 +42,7 @@ type IAMUpgrader struct {
 func NewIAMUpgrader(ctx context.Context, existingWorkspace, upgradeWorkspace string,
 	logLevel terraform.LogLevel, fileHandler file.Handler,
 ) (*IAMUpgrader, error) {
-	tfClient, err := terraform.New(ctx, constants.TerraformIAMWorkingDir)
+	tfClient, err := terraform.New(ctx, existingWorkspace)
 	if err != nil {
 		return nil, fmt.Errorf("setting up terraform client: %w", err)
 	}
@@ -62,6 +62,7 @@ func (u *IAMUpgrader) PlanIAMUpgrade(ctx context.Context, outWriter io.Writer, v
 	return planUpgrade(
 		ctx, u.tf, u.fileHandler, outWriter, u.logLevel, vars,
 		filepath.Join(constants.TerraformEmbeddedDir, "iam", strings.ToLower(csp.String())),
+		u.existingWorkspace,
 		filepath.Join(u.upgradeWorkspace, constants.TerraformIAMUpgradeBackupDir),
 	)
 }
