@@ -9,6 +9,7 @@ package cloudcmd
 import (
 	"context"
 	"io"
+	"path/filepath"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
@@ -23,10 +24,12 @@ func TestPlanUpgrade(t *testing.T) {
 		templateDir       = "templateDir"
 		existingWorkspace = "existing"
 		backupDir         = "backup"
+		testFile          = "testfile"
 	)
 	fsWithWorkspace := func(require *require.Assertions) file.Handler {
 		fs := file.NewHandler(afero.NewMemMapFs())
 		require.NoError(fs.MkdirAll(existingWorkspace))
+		require.NoError(fs.Write(filepath.Join(existingWorkspace, testFile), []byte{}))
 		return fs
 	}
 
@@ -103,6 +106,8 @@ func TestPlanUpgrade(t *testing.T) {
 			}
 			assert.NoError(err)
 			assert.Equal(tc.wantDiff, hasDiff)
+			_, err = fs.Stat(filepath.Join(backupDir, testFile))
+			assert.NoError(err)
 		})
 	}
 }
