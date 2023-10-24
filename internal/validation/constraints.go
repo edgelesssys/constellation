@@ -64,7 +64,7 @@ shown when the constraint is not satisfied. Both "doc" and "field" must be point
 
 Example:
 
-	Equal(d.IntField, 42).WithMapFieldTrace(d, &d.IntField)
+	Equal(d.IntField, 42).WithMapFieldTrace(d, &d.MapField, mapKey)
 
 For non-map fields, WithFieldTrace should be used instead of WithMapFieldTrace.
 */

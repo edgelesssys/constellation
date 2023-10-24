@@ -31,7 +31,7 @@ func newError(doc, field referenceableValue, errMsg error) *Error {
 	if err != nil {
 		return &Error{
 			Path: "unknown",
-			Err:  fmt.Errorf("cannot find path to field: %v. original error: %w", err, errMsg),
+			Err:  fmt.Errorf("cannot find path to field: %w. original error: %w", err, errMsg),
 		}
 	}
 
@@ -52,7 +52,7 @@ func (e *Error) Unwrap() error {
 }
 
 /*
-traverse reverses "haystack" recursively until it finds a field that matches
+traverse "haystack" recursively until it finds a field that matches
 the reference saved in "needle", while building a pseudo-JSONPath to the field.
 
 If it traverses a level down, it appends the name of the struct tag
@@ -256,8 +256,8 @@ func (p pathBuilder) appendMapKey(k string) pathBuilder {
 	return p
 }
 
-// String returns the path.
-func (p pathBuilder) String() string {
+// string returns the path.
+func (p pathBuilder) string() string {
 	// Remove struct tag prefix
 	return strings.TrimPrefix(
 		strings.Join(p.buf, ""),
