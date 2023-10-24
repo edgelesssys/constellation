@@ -95,7 +95,7 @@ func (c *Constraint) withTrace(docRef, fieldRef referenceableValue) Constraint {
 		Satisfied: func() (valid bool, err error) {
 			valid, err = c.Satisfied()
 			if err != nil {
-				return valid, newValidationError(docRef, fieldRef, err)
+				return valid, newError(docRef, fieldRef, err)
 			}
 			return valid, nil
 		},

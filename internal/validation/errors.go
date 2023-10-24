@@ -7,41 +7,41 @@ import (
 	"strings"
 )
 
-// ValidationError is returned when a document is not valid.
-type ValidationError struct {
+// Error is returned when a document is not valid.
+type Error struct {
 	Path string
 	Err  error
 }
 
 /*
-newValidationError creates a new ValidationError.
+newError creates a new validation Error.
 
 To find the path to the exported field that failed validation, it traverses "doc"
 recursively until it finds a field in "doc" that matches the reference to "field".
 */
-func newValidationError(doc, field referenceableValue, errMsg error) *ValidationError {
+func newError(doc, field referenceableValue, errMsg error) *Error {
 	// traverse the top level struct (i.e. the "haystack") until addr (i.e. the "needle") is found
 	path, err := traverse(doc, field, newPathBuilder(doc._type.Name()))
 	if err != nil {
-		return &ValidationError{
+		return &Error{
 			Path: "unknown",
 			Err:  fmt.Errorf("cannot find path to field: %v. original error: %w", err, errMsg),
 		}
 	}
 
-	return &ValidationError{
+	return &Error{
 		Path: path,
 		Err:  errMsg,
 	}
 }
 
 // Error implements the error interface.
-func (e *ValidationError) Error() string {
+func (e *Error) Error() string {
 	return fmt.Sprintf("validating %s: %s", e.Path, e.Err)
 }
 
 // Unwrap implements the error interface.
-func (e *ValidationError) Unwrap() error {
+func (e *Error) Unwrap() error {
 	return e.Err
 }
 
