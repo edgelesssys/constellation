@@ -32,7 +32,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
         with:
-          # ref is unset here intentionally to ensure we test against a merge of PR and main branch
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
           fetch-depth: 0
 
       - name: Install AWS cli
