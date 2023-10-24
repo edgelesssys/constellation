@@ -45,7 +45,7 @@ func NewApplyCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "apply",
 		Short: "Apply a configuration to a Constellation cluster",
-		Long:  "Apply an upgrade to a Constellation cluster by applying the chosen configuration.",
+		Long:  "Apply a configuration to a Constellation cluster to initialize or upgrade the cluster.",
 		Args:  cobra.NoArgs,
 		RunE:  runApply,
 	}
