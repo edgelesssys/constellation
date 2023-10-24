@@ -54,3 +54,5 @@ runs:
       run: |
         terraform init
         terraform destroy -auto-approve
+        # Explicitly delete the state file
+        rm constellation-state.yaml
