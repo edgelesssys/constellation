@@ -15,14 +15,14 @@ import (
 
 // Terminator deletes cloud provider resources.
 type Terminator struct {
-	newTerraformClient func(ctx context.Context, tfWorkspace string) (tfResourceClient, error)
+	newTerraformClient func(ctx context.Context, tfWorkspace string) (tfDestroyer, error)
 	newLibvirtRunner   func() libvirtRunner
 }
 
 // NewTerminator create a new cloud terminator.
 func NewTerminator() *Terminator {
 	return &Terminator{
-		newTerraformClient: func(ctx context.Context, tfWorkspace string) (tfResourceClient, error) {
+		newTerraformClient: func(ctx context.Context, tfWorkspace string) (tfDestroyer, error) {
 			return terraform.New(ctx, tfWorkspace)
 		},
 		newLibvirtRunner: func() libvirtRunner {
@@ -48,7 +48,7 @@ func (t *Terminator) Terminate(ctx context.Context, tfWorkspace string, logLevel
 	return t.terminateTerraform(ctx, cl, logLevel)
 }
 
-func (t *Terminator) terminateTerraform(ctx context.Context, cl tfResourceClient, logLevel terraform.LogLevel) error {
+func (t *Terminator) terminateTerraform(ctx context.Context, cl tfDestroyer, logLevel terraform.LogLevel) error {
 	if err := cl.Destroy(ctx, logLevel); err != nil {
 		return err
 	}

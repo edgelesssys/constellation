@@ -219,15 +219,8 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fetcher attestationco
 	// var manualMigrations []terraform.StateMigration
 	// for _, migration := range manualMigrations {
 	// 	  u.log.Debugf("Adding manual Terraform migration: %s", migration.DisplayName)
-	// 	  u.upgrader.AddManualStateMigration(migration)
+	// 	  u.terraformChecker.AddManualStateMigration(migration)
 	// }
-
-	vars, err := cloudcmd.TerraformUpgradeVars(conf)
-	if err != nil {
-		return fmt.Errorf("parsing upgrade variables: %w", err)
-	}
-	u.log.Debugf("Using Terraform variables:\n%v", vars)
-
 	cmd.Println("The following Terraform migrations are available with this CLI:")
 	hasDiff, err := u.terraformChecker.PlanClusterUpgrade(cmd.Context(), cmd.OutOrStdout(), vars, conf.GetProvider())
 	if err != nil {

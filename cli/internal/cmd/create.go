@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"path/filepath"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/state"
@@ -76,18 +77,30 @@ func runCreate(cmd *cobra.Command, _ []string) error {
 	defer spinner.Stop()
 
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	creator := cloudcmd.NewCreator(spinner)
 	c := &createCmd{log: log}
 	if err := c.flags.parse(cmd.Flags()); err != nil {
 		return err
 	}
 	c.log.Debugf("Using flags: %+v", c.flags)
 
+	applier, removeInstaller, err := cloudcmd.NewApplier(
+		cmd.Context(),
+		spinner,
+		constants.TerraformWorkingDir,
+		filepath.Join(constants.UpgradeDir, "create"), // Not used by create
+		c.flags.tfLogLevel,
+		fileHandler,
+	)
+	if err != nil {
+		return err
+	}
+	defer removeInstaller()
+
 	fetcher := attestationconfigapi.NewFetcher()
-	return c.create(cmd, creator, fileHandler, spinner, fetcher)
+	return c.create(cmd, applier, fileHandler, spinner, fetcher)
 }
 
-func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, spinner spinnerInterf, fetcher attestationconfigapi.Fetcher) (retErr error) {
+func (c *createCmd) create(cmd *cobra.Command, applier cloudApplier, fileHandler file.Handler, spinner spinnerInterf, fetcher attestationconfigapi.Fetcher) (retErr error) {
 	if err := c.checkDirClean(fileHandler); err != nil {
 		return err
 	}
@@ -136,8 +149,6 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 		cmd.PrintErrln("")
 	}
 
-	provider := conf.GetProvider()
-
 	controlPlaneGroup, ok := conf.NodeGroups[constants.DefaultControlPlaneGroupName]
 	if !ok {
 		return fmt.Errorf("default control-plane node group %q not found in configuration", constants.DefaultControlPlaneGroupName)
@@ -176,13 +187,10 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	}
 
 	spinner.Start("Creating", false)
-	opts := cloudcmd.CreateOptions{
-		Provider:    provider,
-		Config:      conf,
-		TFLogLevel:  c.flags.tfLogLevel,
-		TFWorkspace: constants.TerraformWorkingDir,
+	if _, err := applier.Plan(cmd.Context(), conf); err != nil {
+		return fmt.Errorf("planning infrastructure creation: %w", err)
 	}
-	infraState, err := creator.Create(cmd.Context(), opts)
+	infraState, err := applier.Apply(cmd.Context(), conf.GetProvider(), true)
 	spinner.Stop()
 	if err != nil {
 		return err
@@ -218,10 +226,12 @@ func (c *createCmd) checkDirClean(fileHandler file.Handler) error {
 			c.flags.pathPrefixer.PrefixPrintablePath(constants.MasterSecretFilename),
 		)
 	}
-	c.log.Debugf("Checking Terraform working directory")
-	if _, err := fileHandler.Stat(constants.TerraformWorkingDir); !errors.Is(err, fs.ErrNotExist) {
+	c.log.Debugf("Checking terraform working directory")
+	if clean, err := fileHandler.IsEmpty(constants.TerraformWorkingDir); err != nil {
+		return fmt.Errorf("checking if terraform working directory is empty: %w", err)
+	} else if !clean {
 		return fmt.Errorf(
-			"directory '%s' already exists in working directory, run 'constellation terminate' before creating a new one",
+			"directory '%s' already exists and is not empty, run 'constellation terminate' before creating a new one",
 			c.flags.pathPrefixer.PrefixPrintablePath(constants.TerraformWorkingDir),
 		)
 	}

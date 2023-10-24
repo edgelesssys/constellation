@@ -595,3 +595,45 @@ func TestRename(t *testing.T) {
 		})
 	}
 }
+
+func TestIsEmpty(t *testing.T) {
+	testCases := map[string]struct {
+		setupFs     func(fs *afero.Afero, dirName string) error
+		wantIsEmpty bool
+		wantErr     bool
+	}{
+		"empty directory": {
+			setupFs:     func(fs *afero.Afero, dirName string) error { return fs.Mkdir(dirName, 0o755) },
+			wantIsEmpty: true,
+		},
+		"directory not empty": {
+			setupFs: func(fs *afero.Afero, dirName string) error {
+				return fs.WriteFile(filepath.Join(dirName, "file"), []byte("some content"), 0o755)
+			},
+		},
+		"directory not existent": {
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+			dirName := "test"
+
+			handler := NewHandler(afero.NewMemMapFs())
+			if tc.setupFs != nil {
+				require.NoError(tc.setupFs(handler.fs, dirName))
+			}
+
+			isEmpty, err := handler.IsEmpty(dirName)
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.wantIsEmpty, isEmpty)
+			}
+		})
+	}
+}

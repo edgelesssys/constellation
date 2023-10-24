@@ -14,13 +14,18 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 )
 
 type cloudCreator interface {
-	Create(
-		ctx context.Context,
+	Create(ctx context.Context,
 		opts cloudcmd.CreateOptions,
 	) (state.Infrastructure, error)
+}
+
+type cloudApplier interface {
+	Plan(ctx context.Context, conf *config.Config) (bool, error)
+	Apply(ctx context.Context, csp cloudprovider.Provider, withRollback bool) (state.Infrastructure, error)
 }
 
 type cloudIAMCreator interface {

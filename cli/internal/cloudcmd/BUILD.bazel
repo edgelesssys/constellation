@@ -4,10 +4,9 @@ load("//bazel/go:go_test.bzl", "go_test")
 go_library(
     name = "cloudcmd",
     srcs = [
+        "apply.go",
         "clients.go",
         "cloudcmd.go",
-        "clusterupgrade.go",
-        "create.go",
         "iam.go",
         "iamupgrade.go",
         "rollback.go",
@@ -44,13 +43,13 @@ go_library(
 go_test(
     name = "cloudcmd_test",
     srcs = [
+        "apply_test.go",
         "clients_test.go",
-        "clusterupgrade_test.go",
-        "create_test.go",
         "iam_test.go",
         "rollback_test.go",
         "terminate_test.go",
         "tfupgrade_test.go",
+        "tfvars_test.go",
         "validators_test.go",
     ],
     embed = [":cloudcmd"],

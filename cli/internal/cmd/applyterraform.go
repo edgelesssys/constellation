@@ -60,11 +60,6 @@ func (a *applyCmd) runTerraformApply(cmd *cobra.Command, conf *config.Config, st
 // planTerraformMigration checks if the Constellation version the cluster is being upgraded to requires a migration.
 func (a *applyCmd) planTerraformMigration(cmd *cobra.Command, conf *config.Config, terraformClient clusterUpgrader) (bool, error) {
 	a.log.Debugf("Planning Terraform migrations")
-	vars, err := cloudcmd.TerraformUpgradeVars(conf)
-	if err != nil {
-		return false, fmt.Errorf("parsing upgrade variables: %w", err)
-	}
-	a.log.Debugf("Using Terraform variables:\n%+v", vars)
 
 	// Check if there are any Terraform migrations to apply
 
@@ -73,7 +68,7 @@ func (a *applyCmd) planTerraformMigration(cmd *cobra.Command, conf *config.Confi
 	// var manualMigrations []terraform.StateMigration
 	// for _, migration := range manualMigrations {
 	// 	  u.log.Debugf("Adding manual Terraform migration: %s", migration.DisplayName)
-	// 	  u.upgrader.AddManualStateMigration(migration)
+	// 	  u.infraApplier.AddManualStateMigration(migration)
 	// }
 
 	a.spinner.Start("Checking for infrastructure changes", false)
