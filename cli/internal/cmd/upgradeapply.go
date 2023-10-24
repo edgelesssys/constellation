@@ -10,7 +10,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/state"
@@ -23,22 +22,6 @@ import (
 	"gopkg.in/yaml.v3"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
-
-const (
-	// skipInitPhase skips the init RPC of the apply process.
-	skipInitPhase skipPhase = "init"
-	// skipInfrastructurePhase skips the terraform apply of the upgrade process.
-	skipInfrastructurePhase skipPhase = "infrastructure"
-	// skipHelmPhase skips the helm upgrade of the upgrade process.
-	skipHelmPhase skipPhase = "helm"
-	// skipImagePhase skips the image upgrade of the upgrade process.
-	skipImagePhase skipPhase = "image"
-	// skipK8sPhase skips the k8s upgrade of the upgrade process.
-	skipK8sPhase skipPhase = "k8s"
-)
-
-// skipPhase is a phase of the upgrade process that can be skipped.
-type skipPhase string
 
 func newUpgradeApplyCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -80,25 +63,6 @@ func diffAttestationCfg(currentAttestationCfg config.AttestationCfg, newAttestat
 	}
 	diff := string(diff.Diff("current", currentYml, "new", newYml))
 	return diff, nil
-}
-
-// skipPhases is a list of phases that can be skipped during the upgrade process.
-type skipPhases map[skipPhase]struct{}
-
-// contains returns true if the list of phases contains the given phase.
-func (s skipPhases) contains(phase skipPhase) bool {
-	_, ok := s[skipPhase(strings.ToLower(string(phase)))]
-	return ok
-}
-
-// add a phase to the list of phases.
-func (s *skipPhases) add(phases ...skipPhase) {
-	if *s == nil {
-		*s = make(skipPhases)
-	}
-	for _, phase := range phases {
-		(*s)[skipPhase(strings.ToLower(string(phase)))] = struct{}{}
-	}
 }
 
 type kubernetesUpgrader interface {

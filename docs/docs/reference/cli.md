@@ -46,7 +46,7 @@ Apply a configuration to a Constellation cluster
 
 ### Synopsis
 
-Apply an upgrade to a Constellation cluster by applying the chosen configuration.
+Apply a configuration to a Constellation cluster to initialize or upgrade the cluster.
 
 ```
 constellation apply [flags]
@@ -60,10 +60,10 @@ constellation apply [flags]
       --merge-kubeconfig      merge Constellation kubeconfig file with default kubeconfig file in $HOME/.kube/config
       --skip-helm-wait        install helm charts without waiting for deployments to be ready
       --skip-phases strings   comma-separated list of upgrade phases to skip
-                              one or multiple of { infrastructure | helm | image | k8s }
-  -y, --yes                   run upgrades without further confirmation
-                              WARNING: might delete your resources in case you are using cert-manager in your cluster. Please read the docs.
-                              WARNING: might unintentionally overwrite measurements in the running cluster.
+                              one or multiple of { infrastructure | init | attestationconfig | certsans | helm | image | k8s }
+  -y, --yes                   run command without further confirmation
+                              WARNING: the command might delete or update existing resources without additional checks. Please read the docs.
+                              
 ```
 
 ### Options inherited from parent commands
