@@ -466,7 +466,7 @@ func (c *Client) applyManualStateMigrations(ctx context.Context) error {
 	return nil
 }
 
-// writeVars tries to write the Terraform variables file or, if it exists, checks if it is the same as we are expecting.
+// writeVars writes / overwrites the Terraform variables file.
 func (c *Client) writeVars(vars Variables) error {
 	if vars == nil {
 		return errors.New("creating cluster: vars is nil")

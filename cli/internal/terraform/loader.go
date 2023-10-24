@@ -30,7 +30,6 @@ func prepareWorkspace(rootDir string, fileHandler file.Handler, workingDir strin
 }
 
 // terraformCopier copies the embedded Terraform files into the workspace.
-// allowOverwrites allows overwriting existing files in the workspace.
 func terraformCopier(fileHandler file.Handler, rootDir, workingDir string) error {
 	goEmbedRootDir := filepath.ToSlash(rootDir)
 	return fs.WalkDir(terraformFS, goEmbedRootDir, func(path string, d fs.DirEntry, err error) error {
