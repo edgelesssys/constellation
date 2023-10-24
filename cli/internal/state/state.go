@@ -39,13 +39,13 @@ func ReadFromFile(fileHandler file.Handler, path string) (*State, error) {
 // CreateOrRead reads the state file at the given path, if it exists, and returns the state.
 // If the file does not exist, a new state is created and written to disk.
 func CreateOrRead(fileHandler file.Handler, path string) (*State, error) {
-	state := &State{}
-	if err := fileHandler.ReadYAML(path, &state); err != nil {
+	state, err := ReadFromFile(fileHandler, path)
+	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
 			return nil, fmt.Errorf("reading state file: %w", err)
 		}
-		state = New()
-		return state, state.WriteToFile(fileHandler, path)
+		newState := New()
+		return newState, newState.WriteToFile(fileHandler, path)
 	}
 	return state, nil
 }
