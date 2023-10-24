@@ -90,7 +90,7 @@ runs:
         yq eval ".infrastructure.ipCidrNode =\"$(terraform output ip_cidr_nodes | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
         yq eval ".infrastructure.uid =\"$(terraform output uid | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
         yq eval ".infrastructure.name =\"$(terraform output name | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
-        yq eval ".infrastructure.apiServerCertSANs =\"$(terraform output -json api_server_cert_sans)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
+        yq eval ".infrastructure.apiServerCertSANs =$(terraform output -json api_server_cert_sans)" --inplace ${{ github.workspace }}/constellation-state.yaml
         if [[ "${{ inputs.cloudProvider }}" == 'azure' ]]; then
           yq eval ".infrastructure.azure.resourceGroup =\"$(terraform output resource_group | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
           yq eval ".infrastructure.azure.subscriptionID =\"$(terraform output subscription_id | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
