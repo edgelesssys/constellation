@@ -40,6 +40,8 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
+// phases that can be skipped during apply.
+// New phases should also be added to [formatSkipPhases].
 const (
 	// skipInfrastructurePhase skips the Terraform apply of the apply process.
 	skipInfrastructurePhase skipPhase = "infrastructure"
@@ -56,6 +58,19 @@ const (
 	// skipK8sPhase skips the Kubernetes version upgrade of the apply process.
 	skipK8sPhase skipPhase = "k8s"
 )
+
+// formatSkipPhases returns a formatted string of all phases that can be skipped.
+func formatSkipPhases() string {
+	return fmt.Sprintf("{ %s }", strings.Join([]string{
+		string(skipInfrastructurePhase),
+		string(skipInitPhase),
+		string(skipAttestationConfigPhase),
+		string(skipCertSANsPhase),
+		string(skipHelmPhase),
+		string(skipImagePhase),
+		string(skipK8sPhase),
+	}, " | "))
+}
 
 // skipPhase is a phase of the upgrade process that can be skipped.
 type skipPhase string
@@ -79,18 +94,6 @@ func (s *skipPhases) add(phases ...skipPhase) {
 	}
 }
 
-func printAllPhases() string {
-	return fmt.Sprintf("{ %s }", strings.Join([]string{
-		string(skipInfrastructurePhase),
-		string(skipInitPhase),
-		string(skipAttestationConfigPhase),
-		string(skipCertSANsPhase),
-		string(skipHelmPhase),
-		string(skipImagePhase),
-		string(skipK8sPhase),
-	}, " | "))
-}
-
 // NewApplyCmd creates the apply command.
 func NewApplyCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -109,7 +112,7 @@ func NewApplyCmd() *cobra.Command {
 	cmd.Flags().Duration("timeout", 5*time.Minute, "change helm upgrade timeout\n"+
 		"Might be useful for slow connections or big clusters.")
 	cmd.Flags().StringSlice("skip-phases", nil, "comma-separated list of upgrade phases to skip\n"+
-		fmt.Sprintf("one or multiple of %s", printAllPhases()))
+		fmt.Sprintf("one or multiple of %s", formatSkipPhases()))
 
 	must(cmd.Flags().MarkHidden("timeout"))
 
