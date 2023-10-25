@@ -8,6 +8,7 @@ package main
 
 import (
 	"context"
+	"log/slog"
 	"net"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/clean"
@@ -23,7 +24,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"go.uber.org/zap"
 )
 
 func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handler,
@@ -33,12 +33,12 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 ) {
 	defer cloudLogger.Close()
 
-	log.With(zap.String("version", constants.BinaryVersion().String())).Infof("Starting bootstrapper")
+	log.With(slog.String("version", constants.BinaryVersion().String())).Infof("Starting bootstrapper")
 	cloudLogger.Disclose("bootstrapper started running...")
 
 	uuid, err := getDiskUUID()
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Failed to get disk UUID")
+		log.With(slog.Any("error", err)).Errorf("Failed to get disk UUID")
 		cloudLogger.Disclose("Failed to get disk UUID")
 	} else {
 		log.Infof("Disk UUID: %s", uuid)
@@ -47,12 +47,12 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 
 	nodeBootstrapped, err := initialize.IsNodeBootstrapped(openDevice)
 	if err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to check if node was previously bootstrapped")
+		log.With(slog.Any("error", err)).Fatalf("Failed to check if node was previously bootstrapped")
 	}
 
 	if nodeBootstrapped {
 		if err := kube.StartKubelet(log); err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to restart kubelet")
+			log.With(slog.Any("error", err)).Fatalf("Failed to restart kubelet")
 		}
 		return
 	}
@@ -60,7 +60,7 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 	nodeLock := nodelock.New(openDevice)
 	initServer, err := initserver.New(context.Background(), nodeLock, kube, issuer, fileHandler, metadata, log)
 	if err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to create init server")
+		log.With(slog.Any("error", err)).Fatalf("Failed to create init server")
 	}
 
 	dialer := dialer.New(issuer, nil, &net.Dialer{})
@@ -73,7 +73,7 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 	joinClient.Start(cleaner)
 
 	if err := initServer.Serve(bindIP, bindPort, cleaner); err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to serve init server")
+		log.With(slog.Any("error", err)).Fatalf("Failed to serve init server")
 	}
 
 	log.Infof("bootstrapper done")

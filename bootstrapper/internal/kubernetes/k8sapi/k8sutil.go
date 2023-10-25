@@ -13,6 +13,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -36,7 +37,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/installer"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
-	"go.uber.org/zap"
 )
 
 const (
@@ -169,11 +169,11 @@ func (k *KubernetesUtil) InitCluster(
 		}
 		return nil, fmt.Errorf("kubeadm init: %w", err)
 	}
-	log.With(zap.String("output", string(out))).Infof("kubeadm init succeeded")
+	log.With(slog.String("output", string(out))).Infof("kubeadm init succeeded")
 
 	userName := clusterName + "-admin"
 
-	log.With(zap.String("userName", userName)).Infof("Creating admin kubeconfig file")
+	log.With(slog.String("userName", userName)).Infof("Creating admin kubeconfig file")
 	cmd = exec.CommandContext(
 		ctx, constants.KubeadmPath, "kubeconfig", "user",
 		"--client-name", userName, "--config", initConfigFile.Name(), "--org", user.SystemPrivilegedGroup,
@@ -266,7 +266,7 @@ func (k *KubernetesUtil) WaitForCilium(ctx context.Context, log *logger.Logger) 
 			}
 			resp, err := client.Do(req)
 			if err != nil {
-				log.With(zap.Error(err)).Infof("Waiting for local Cilium DaemonSet - Pod not healthy yet")
+				log.With(slog.Any("error", err)).Infof("Waiting for local Cilium DaemonSet - Pod not healthy yet")
 				continue
 			}
 			resp.Body.Close()
@@ -359,7 +359,7 @@ func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, pee
 		}
 		return fmt.Errorf("kubeadm join: %w", err)
 	}
-	log.With(zap.String("output", string(out))).Infof("kubeadm join succeeded")
+	log.With(slog.String("output", string(out))).Infof("kubeadm join succeeded")
 
 	return nil
 }

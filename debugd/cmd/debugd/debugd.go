@@ -10,12 +10,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log/slog"
 	"net"
 	"os"
 	"sync"
 
 	"github.com/spf13/afero"
-	"go.uber.org/zap"
 
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/deploy"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/info"
@@ -64,21 +64,21 @@ func main() {
 	case platform.AWS:
 		meta, err := awscloud.New(ctx)
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to initialize AWS metadata")
+			log.With(slog.Any("error", err)).Fatalf("Failed to initialize AWS metadata")
 		}
 		fetcher = cloudprovider.New(meta)
 
 	case platform.Azure:
 		meta, err := azurecloud.New(ctx)
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to initialize Azure metadata")
+			log.With(slog.Any("error", err)).Fatalf("Failed to initialize Azure metadata")
 		}
 		fetcher = cloudprovider.New(meta)
 
 	case platform.GCP:
 		meta, err := gcpcloud.New(ctx)
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to initialize GCP metadata")
+			log.With(slog.Any("error", err)).Fatalf("Failed to initialize GCP metadata")
 		}
 		defer meta.Close()
 		fetcher = cloudprovider.New(meta)
@@ -86,7 +86,7 @@ func main() {
 	case platform.OpenStack:
 		meta, err := openstackcloud.New(ctx)
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to initialize OpenStack metadata")
+			log.With(slog.Any("error", err)).Fatalf("Failed to initialize OpenStack metadata")
 		}
 		fetcher = cloudprovider.New(meta)
 	case platform.QEMU:
@@ -117,11 +117,11 @@ func main() {
 func writeDebugBanner(log *logger.Logger) {
 	tty, err := os.OpenFile("/dev/ttyS0", os.O_WRONLY, os.ModeAppend)
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Unable to open /dev/ttyS0 for printing banner")
+		log.With(slog.Any("error", err)).Errorf("Unable to open /dev/ttyS0 for printing banner")
 		return
 	}
 	defer tty.Close()
 	if _, err := fmt.Fprint(tty, debugBanner); err != nil {
-		log.With(zap.Error(err)).Errorf("Unable to print to /dev/ttyS0")
+		log.With(slog.Any("error", err)).Errorf("Unable to print to /dev/ttyS0")
 	}
 }

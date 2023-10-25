@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"log/slog"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -22,7 +23,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/keyservice/internal/server"
 	"github.com/spf13/afero"
-	"go.uber.org/zap"
 )
 
 func main() {
@@ -34,24 +34,24 @@ func main() {
 	flag.Parse()
 	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity))
 
-	log.With(zap.String("version", constants.BinaryVersion().String())).
+	log.With(slog.String("version", constants.BinaryVersion().String())).
 		Infof("Constellation Key Management Service")
 
 	// read master secret and salt
 	file := file.NewHandler(afero.NewOsFs())
 	masterKey, err := file.Read(*masterSecretPath)
 	if err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to read master secret")
+		log.With(slog.Any("error", err)).Fatalf("Failed to read master secret")
 	}
 	if len(masterKey) < crypto.MasterSecretLengthMin {
-		log.With(zap.Error(errors.New("invalid key length"))).Fatalf("Provided master secret is smaller than the required minimum of %d bytes", crypto.MasterSecretLengthMin)
+		log.With(slog.Any("error", errors.New("invalid key length"))).Fatalf("Provided master secret is smaller than the required minimum of %d bytes", crypto.MasterSecretLengthMin)
 	}
 	salt, err := file.Read(*saltPath)
 	if err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to read salt")
+		log.With(slog.Any("error", err)).Fatalf("Failed to read salt")
 	}
 	if len(salt) < crypto.RNGLengthDefault {
-		log.With(zap.Error(errors.New("invalid salt length"))).Fatalf("Expected salt to be %d bytes, but got %d", crypto.RNGLengthDefault, len(salt))
+		log.With(slog.Any("error", errors.New("invalid salt length"))).Fatalf("Expected salt to be %d bytes, but got %d", crypto.RNGLengthDefault, len(salt))
 	}
 	masterSecret := uri.MasterSecret{Key: masterKey, Salt: salt}
 
@@ -60,11 +60,11 @@ func main() {
 	defer cancel()
 	conKMS, err := setup.KMS(ctx, uri.NoStoreURI, masterSecret.EncodeToURI())
 	if err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to setup KMS")
+		log.With(slog.Any("error", err)).Fatalf("Failed to setup KMS")
 	}
 	defer conKMS.Close()
 
 	if err := server.New(log.Grouped("keyService"), conKMS).Run(*port); err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to run key-service server")
+		log.With(slog.Any("error", err)).Fatalf("Failed to run key-service server")
 	}
 }

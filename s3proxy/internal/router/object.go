@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/hex"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -20,7 +21,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/s3proxy/internal/crypto"
-	"go.uber.org/zap"
 )
 
 const (
@@ -51,7 +51,7 @@ type object struct {
 
 // get is a http.HandlerFunc that implements the GET method for objects.
 func (o object) get(w http.ResponseWriter, r *http.Request) {
-	o.log.With(zap.String("key", o.key), zap.String("host", o.bucket)).Debugf("getObject")
+	o.log.With(slog.String("key", o.key), slog.String("host", o.bucket)).Debugf("getObject")
 
 	versionID, ok := o.query["versionId"]
 	if !ok {
@@ -61,7 +61,7 @@ func (o object) get(w http.ResponseWriter, r *http.Request) {
 	output, err := o.client.GetObject(r.Context(), o.bucket, o.key, versionID[0], o.sseCustomerAlgorithm, o.sseCustomerKey, o.sseCustomerKeyMD5)
 	if err != nil {
 		// log with Info as it might be expected behavior (e.g. object not found).
-		o.log.With(zap.Error(err)).Errorf("GetObject sending request to S3")
+		o.log.With(slog.Any("error", err)).Errorf("GetObject sending request to S3")
 
 		// We want to forward error codes from the s3 API to clients as much as possible.
 		code := parseErrorCode(err)
@@ -107,7 +107,7 @@ func (o object) get(w http.ResponseWriter, r *http.Request) {
 
 	body, err := io.ReadAll(output.Body)
 	if err != nil {
-		o.log.With(zap.Error(err)).Errorf("GetObject reading S3 response")
+		o.log.With(slog.Any("error", err)).Errorf("GetObject reading S3 response")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -124,7 +124,7 @@ func (o object) get(w http.ResponseWriter, r *http.Request) {
 
 		plaintext, err = crypto.Decrypt(body, encryptedDEK, o.kek)
 		if err != nil {
-			o.log.With(zap.Error(err)).Errorf("GetObject decrypting response")
+			o.log.With(slog.Any("error", err)).Errorf("GetObject decrypting response")
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -132,7 +132,7 @@ func (o object) get(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write(plaintext); err != nil {
-		o.log.With(zap.Error(err)).Errorf("GetObject sending response")
+		o.log.With(slog.Any("error", err)).Errorf("GetObject sending response")
 	}
 }
 
@@ -140,7 +140,7 @@ func (o object) get(w http.ResponseWriter, r *http.Request) {
 func (o object) put(w http.ResponseWriter, r *http.Request) {
 	ciphertext, encryptedDEK, err := crypto.Encrypt(o.data, o.kek)
 	if err != nil {
-		o.log.With(zap.Error(err)).Errorf("PutObject")
+		o.log.With(slog.Any("error", err)).Errorf("PutObject")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -148,7 +148,7 @@ func (o object) put(w http.ResponseWriter, r *http.Request) {
 
 	output, err := o.client.PutObject(r.Context(), o.bucket, o.key, o.tags, o.contentType, o.objectLockLegalHoldStatus, o.objectLockMode, o.sseCustomerAlgorithm, o.sseCustomerKey, o.sseCustomerKeyMD5, o.objectLockRetainUntilDate, o.metadata, ciphertext)
 	if err != nil {
-		o.log.With(zap.Error(err)).Errorf("PutObject sending request to S3")
+		o.log.With(slog.Any("error", err)).Errorf("PutObject sending request to S3")
 
 		// We want to forward error codes from the s3 API to clients whenever possible.
 		code := parseErrorCode(err)
@@ -199,7 +199,7 @@ func (o object) put(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write(nil); err != nil {
-		o.log.With(zap.Error(err)).Errorf("PutObject sending response")
+		o.log.With(slog.Any("error", err)).Errorf("PutObject sending response")
 	}
 }
 

@@ -13,12 +13,12 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/s3proxy/internal/router"
-	"go.uber.org/zap"
 )
 
 const (
@@ -59,7 +59,7 @@ func main() {
 }
 
 func runServer(flags cmdFlags, log *logger.Logger) error {
-	log.With(zap.String("ip", flags.ip), zap.Int("port", defaultPort), zap.String("region", flags.region)).Infof("listening")
+	log.With(slog.String("ip", flags.ip), slog.Int("port", defaultPort), slog.String("region", flags.region)).Infof("listening")
 
 	router, err := router.New(flags.region, flags.kmsEndpoint, flags.forwardMultipartReqs, log)
 	if err != nil {

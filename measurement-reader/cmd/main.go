@@ -17,7 +17,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/measurement-reader/internal/sorted"
 	"github.com/edgelesssys/constellation/v2/measurement-reader/internal/tdx"
 	"github.com/edgelesssys/constellation/v2/measurement-reader/internal/tpm"
-	"go.uber.org/zap"
 )
 
 func main() {
@@ -25,7 +24,7 @@ func main() {
 	variantString := os.Getenv(constants.AttestationVariant)
 	attestationVariant, err := variant.FromString(variantString)
 	if err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to parse attestation variant")
+		log.With(slog.Any("error", err)).Fatalf("Failed to parse attestation variant")
 	}
 
 	var m []sorted.Measurement
@@ -33,15 +32,15 @@ func main() {
 	case variant.AWSNitroTPM{}, variant.AWSSEVSNP{}, variant.AzureSEVSNP{}, variant.AzureTrustedLaunch{}, variant.GCPSEVES{}, variant.QEMUVTPM{}:
 		m, err = tpm.Measurements()
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to read TPM measurements")
+			log.With(slog.Any("error", err)).Fatalf("Failed to read TPM measurements")
 		}
 	case variant.QEMUTDX{}:
 		m, err = tdx.Measurements()
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to read Intel TDX measurements")
+			log.With(slog.Any("error", err)).Fatalf("Failed to read Intel TDX measurements")
 		}
 	default:
-		log.With(zap.String("attestationVariant", variantString)).Fatalf("Unsupported attestation variant")
+		log.With(slog.String("attestationVariant", variantString)).Fatalf("Unsupported attestation variant")
 	}
 
 	fmt.Println("Measurements:")

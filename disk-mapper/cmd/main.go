@@ -10,6 +10,7 @@ import (
 	"context"
 	"flag"
 	"io"
+	"log/slog"
 	"net"
 	"os"
 	"path/filepath"
@@ -35,7 +36,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/spf13/afero"
-	"go.uber.org/zap"
 )
 
 const (
@@ -52,17 +52,17 @@ func main() {
 
 	flag.Parse()
 	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity))
-	log.With(zap.String("version", constants.BinaryVersion().String()), zap.String("cloudProvider", *csp)).
+	log.With(slog.String("version", constants.BinaryVersion().String()), slog.String("cloudProvider", *csp)).
 		Infof("Starting disk-mapper")
 
 	// set up quote issuer for aTLS connections
 	attestVariant, err := variant.FromString(os.Getenv(constants.AttestationVariant))
 	if err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to parse attestation variant")
+		log.With(slog.Any("error", err)).Fatalf("Failed to parse attestation variant")
 	}
 	issuer, err := choose.Issuer(attestVariant, log)
 	if err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to select issuer")
+		log.With(slog.Any("error", err)).Fatalf("Failed to select issuer")
 	}
 
 	// set up metadata API
@@ -74,31 +74,31 @@ func main() {
 		// using udev rules, a symlink for our disk is created at /dev/sdb
 		diskPath, err = filepath.EvalSymlinks(awsStateDiskPath)
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Unable to resolve Azure state disk path")
+			log.With(slog.Any("error", err)).Fatalf("Unable to resolve Azure state disk path")
 		}
 		metadataClient, err = awscloud.New(context.Background())
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to set up AWS metadata client")
+			log.With(slog.Any("error", err)).Fatalf("Failed to set up AWS metadata client")
 		}
 
 	case cloudprovider.Azure:
 		diskPath, err = filepath.EvalSymlinks(azureStateDiskPath)
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Unable to resolve Azure state disk path")
+			log.With(slog.Any("error", err)).Fatalf("Unable to resolve Azure state disk path")
 		}
 		metadataClient, err = azurecloud.New(context.Background())
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to set up Azure metadata client")
+			log.With(slog.Any("error", err)).Fatalf("Failed to set up Azure metadata client")
 		}
 
 	case cloudprovider.GCP:
 		diskPath, err = filepath.EvalSymlinks(gcpStateDiskPath)
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Unable to resolve GCP state disk path")
+			log.With(slog.Any("error", err)).Fatalf("Unable to resolve GCP state disk path")
 		}
 		gcpMeta, err := gcpcloud.New(context.Background())
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to create GCP metadata client")
+			log.With(slog.Any("error", err)).Fatalf("Failed to create GCP metadata client")
 		}
 		defer gcpMeta.Close()
 		metadataClient = gcpMeta
@@ -107,7 +107,7 @@ func main() {
 		diskPath = openstackStateDiskPath
 		metadataClient, err = openstack.New(context.Background())
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to create OpenStack metadata client")
+			log.With(slog.Any("error", err)).Fatalf("Failed to create OpenStack metadata client")
 		}
 
 	case cloudprovider.QEMU:
@@ -121,7 +121,7 @@ func main() {
 	// initialize device mapper
 	mapper, free, err := diskencryption.New(diskPath, log)
 	if err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to initialize device mapper")
+		log.With(slog.Any("error", err)).Fatalf("Failed to initialize device mapper")
 	}
 	defer free()
 
@@ -143,7 +143,7 @@ func main() {
 	)
 
 	if err := setupManger.LogDevices(); err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to log devices")
+		log.With(slog.Any("error", err)).Fatalf("Failed to log devices")
 	}
 
 	// prepare the state disk
@@ -152,7 +152,7 @@ func main() {
 		var self metadata.InstanceMetadata
 		self, err = metadataClient.Self(context.Background())
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to get self metadata")
+			log.With(slog.Any("error", err)).Fatalf("Failed to get self metadata")
 		}
 		rejoinClient := rejoinclient.New(
 			dialer.New(issuer, nil, &net.Dialer{}),
@@ -174,6 +174,6 @@ func main() {
 		err = setupManger.PrepareNewDisk()
 	}
 	if err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to prepare state disk")
+		log.With(slog.Any("error", err)).Fatalf("Failed to prepare state disk")
 	}
 }

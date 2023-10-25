@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"path"
 	"strconv"
 
@@ -31,7 +32,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
-	"go.uber.org/zap"
 	"k8s.io/kubernetes/pkg/util/iptables"
 	"k8s.io/utils/exec"
 )
@@ -471,7 +471,7 @@ func (c *Cloud) PrepareControlPlaneNode(ctx context.Context, log *logger.Logger)
 	// for public LB architectures
 	loadbalancerIP, err := c.getLoadBalancerPrivateIP(ctx)
 	if err != nil {
-		log.With(zap.Error(err)).Warnf("skipping iptables setup, failed to get load balancer private IP")
+		log.With(slog.Any("error", err)).Warnf("skipping iptables setup, failed to get load balancer private IP")
 		return nil
 	}
 

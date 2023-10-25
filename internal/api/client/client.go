@@ -33,6 +33,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -42,7 +43,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
-	"go.uber.org/zap"
 )
 
 // Client is the a general client for all APIs.
@@ -232,7 +232,7 @@ func Update(ctx context.Context, c *Client, obj APIObject) error {
 	}
 
 	if c.DryRun {
-		c.Logger.With(zap.String("bucket", c.bucket), zap.String("key", obj.JSONPath()), zap.String("body", string(rawJSON))).Debugf("DryRun: s3 put object")
+		c.Logger.With(slog.String("bucket", c.bucket), slog.String("key", obj.JSONPath()), slog.String("body", string(rawJSON))).Debugf("DryRun: s3 put object")
 		return nil
 	}
 

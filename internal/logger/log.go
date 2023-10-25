@@ -22,7 +22,7 @@ Use this package to implement logging for your Constellation services.
 5. Use the With() method to create a child logger with structured context.
 This can also be used to add context to a single log message:
 
-	logger.With(zap.String("key", "value")).Infof("log message")
+	logger.With(slog.String("key", "value")).Infof("log message")
 
 # Log Levels
 

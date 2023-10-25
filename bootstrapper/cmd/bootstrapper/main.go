@@ -15,7 +15,6 @@ import (
 	"strconv"
 
 	"github.com/spf13/afero"
-	"go.uber.org/zap"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
@@ -68,24 +67,24 @@ func main() {
 
 	attestVariant, err := variant.FromString(os.Getenv(constants.AttestationVariant))
 	if err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to parse attestation variant")
+		log.With(slog.Any("error", err)).Fatalf("Failed to parse attestation variant")
 	}
 	issuer, err := choose.Issuer(attestVariant, log)
 	if err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to select issuer")
+		log.With(slog.Any("error", err)).Fatalf("Failed to select issuer")
 	}
 
 	switch cloudprovider.FromString(os.Getenv(constellationCSP)) {
 	case cloudprovider.AWS:
 		metadata, err := awscloud.New(ctx)
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to set up AWS metadata API")
+			log.With(slog.Any("error", err)).Fatalf("Failed to set up AWS metadata API")
 		}
 		metadataAPI = metadata
 
 		cloudLogger, err = awscloud.NewLogger(ctx)
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to set up cloud logger")
+			log.With(slog.Any("error", err)).Fatalf("Failed to set up cloud logger")
 		}
 
 		clusterInitJoiner = kubernetes.New(
@@ -98,13 +97,13 @@ func main() {
 	case cloudprovider.GCP:
 		metadata, err := gcpcloud.New(ctx)
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to create GCP metadata client")
+			log.With(slog.Any("error", err)).Fatalf("Failed to create GCP metadata client")
 		}
 		defer metadata.Close()
 
 		cloudLogger, err = gcpcloud.NewLogger(ctx, "constellation-boot-log")
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to set up cloud logger")
+			log.With(slog.Any("error", err)).Fatalf("Failed to set up cloud logger")
 		}
 
 		metadataAPI = metadata
@@ -119,14 +118,14 @@ func main() {
 	case cloudprovider.Azure:
 		metadata, err := azurecloud.New(ctx)
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to create Azure metadata client")
+			log.With(slog.Any("error", err)).Fatalf("Failed to create Azure metadata client")
 		}
 		cloudLogger, err = azurecloud.NewLogger(ctx)
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to set up cloud logger")
+			log.With(slog.Any("error", err)).Fatalf("Failed to set up cloud logger")
 		}
 		if err := metadata.PrepareControlPlaneNode(ctx, log); err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to prepare Azure control plane node")
+			log.With(slog.Any("error", err)).Fatalf("Failed to prepare Azure control plane node")
 		}
 
 		metadataAPI = metadata
@@ -162,7 +161,7 @@ func main() {
 		cloudLogger = &logging.NopLogger{}
 		metadata, err := openstackcloud.New(ctx)
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to create OpenStack metadata client")
+			log.With(slog.Any("error", err)).Fatalf("Failed to create OpenStack metadata client")
 		}
 		clusterInitJoiner = kubernetes.New(
 			"openstack", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.NewUninitialized(),
