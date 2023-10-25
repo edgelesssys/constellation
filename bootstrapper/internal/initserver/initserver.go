@@ -77,7 +77,7 @@ type Server struct {
 
 // New creates a new initialization server.
 func New(ctx context.Context, lock locker, kube ClusterInitializer, issuer atls.Issuer, fh file.Handler, metadata MetadataAPI, log *logger.Logger) (*Server, error) {
-	log = log.Named("initServer")
+	log = log.Grouped("initServer")
 
 	initSecretHash, err := metadata.InitSecretHash(ctx)
 	if err != nil {
@@ -106,7 +106,7 @@ func New(ctx context.Context, lock locker, kube ClusterInitializer, issuer atls.
 	grpcServer := grpc.NewServer(
 		grpc.Creds(atlscredentials.New(issuer, nil)),
 		grpc.KeepaliveParams(keepalive.ServerParameters{Time: 15 * time.Second}),
-		log.Named("gRPC").GetServerUnaryInterceptor(),
+		log.Grouped("gRPC").GetServerUnaryInterceptor(),
 	)
 	initproto.RegisterAPIServer(grpcServer, server)
 

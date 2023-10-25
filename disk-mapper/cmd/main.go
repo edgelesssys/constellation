@@ -133,7 +133,7 @@ func main() {
 		}
 	}
 	setupManger := setup.New(
-		log.Named("setupManager"),
+		log.Grouped("setupManager"),
 		*csp,
 		diskPath,
 		afero.Afero{Fs: afero.NewOsFs()},
@@ -158,15 +158,15 @@ func main() {
 			dialer.New(issuer, nil, &net.Dialer{}),
 			self,
 			metadataClient,
-			log.Named("rejoinClient"),
+			log.Grouped("rejoinClient"),
 		)
 
 		// set up recovery server if control-plane node
 		var recoveryServer setup.RecoveryServer
 		if self.Role == role.ControlPlane {
-			recoveryServer = recoveryserver.New(issuer, kmssetup.KMS, log.Named("recoveryServer"))
+			recoveryServer = recoveryserver.New(issuer, kmssetup.KMS, log.Grouped("recoveryServer"))
 		} else {
-			recoveryServer = recoveryserver.NewStub(log.Named("recoveryServer"))
+			recoveryServer = recoveryserver.NewStub(log.Grouped("recoveryServer"))
 		}
 
 		err = setupManger.PrepareExistingDisk(setup.NewNodeRecoverer(recoveryServer, rejoinClient))

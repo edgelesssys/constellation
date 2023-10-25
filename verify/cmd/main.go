@@ -33,12 +33,12 @@ func main() {
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to parse attestation variant")
 	}
-	issuer, err := choose.Issuer(variant, log.Named("issuer"))
+	issuer, err := choose.Issuer(variant, log.Grouped("issuer"))
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to create issuer")
 	}
 
-	server := server.New(log.Named("server"), issuer)
+	server := server.New(log.Grouped("server"), issuer)
 	httpListener, err := net.Listen("tcp", net.JoinHostPort("", strconv.Itoa(constants.VerifyServicePortHTTP)))
 	if err != nil {
 		log.With(zap.Error(err), zap.Int("port", constants.VerifyServicePortHTTP)).

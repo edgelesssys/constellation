@@ -68,13 +68,13 @@ func main() {
 		log.With(zap.Error(err)).Fatalf("Failed to parse attestation variant")
 	}
 
-	certCacheClient := certcache.NewClient(log.Named("certcache"), kubeClient, attVariant)
+	certCacheClient := certcache.NewClient(log.Grouped("certcache"), kubeClient, attVariant)
 	cachedCerts, err := certCacheClient.CreateCertChainCache(context.Background())
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to create certificate chain cache")
 	}
 
-	validator, err := watcher.NewValidator(log.Named("validator"), attVariant, handler, cachedCerts)
+	validator, err := watcher.NewValidator(log.Grouped("validator"), attVariant, handler, cachedCerts)
 	if err != nil {
 		flag.Usage()
 		log.With(zap.Error(err)).Fatalf("Failed to create validator")
@@ -90,11 +90,11 @@ func main() {
 		log.With(zap.Error(err)).Fatalf("Failed to get IP in VPC")
 	}
 	apiServerEndpoint := net.JoinHostPort(vpcIP, strconv.Itoa(constants.KubernetesPort))
-	kubeadm, err := kubeadm.New(apiServerEndpoint, log.Named("kubeadm"))
+	kubeadm, err := kubeadm.New(apiServerEndpoint, log.Grouped("kubeadm"))
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to create kubeadm")
 	}
-	keyServiceClient := kms.New(log.Named("keyServiceClient"), *keyServiceEndpoint)
+	keyServiceClient := kms.New(log.Grouped("keyServiceClient"), *keyServiceEndpoint)
 
 	measurementSalt, err := handler.Read(filepath.Join(constants.ServiceBasePath, constants.MeasurementSaltFilename))
 	if err != nil {
@@ -103,17 +103,17 @@ func main() {
 
 	server, err := server.New(
 		measurementSalt,
-		kubernetesca.New(log.Named("certificateAuthority"), handler),
+		kubernetesca.New(log.Grouped("certificateAuthority"), handler),
 		kubeadm,
 		keyServiceClient,
 		kubeClient,
-		log.Named("server"),
+		log.Grouped("server"),
 	)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to create server")
 	}
 
-	watcher, err := watcher.New(log.Named("fileWatcher"), validator)
+	watcher, err := watcher.New(log.Grouped("fileWatcher"), validator)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to create watcher for measurements updates")
 	}

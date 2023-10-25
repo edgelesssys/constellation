@@ -49,8 +49,8 @@ func main() {
 	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity))
 	fs := afero.NewOsFs()
 	streamer := streamer.New(fs)
-	filetransferer := filetransfer.New(log.Named("filetransfer"), streamer, filetransfer.DontShowProgress)
-	serviceManager := deploy.NewServiceManager(log.Named("serviceManager"))
+	filetransferer := filetransfer.New(log.Grouped("filetransfer"), streamer, filetransfer.DontShowProgress)
+	serviceManager := deploy.NewServiceManager(log.Grouped("serviceManager"))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -99,13 +99,13 @@ func main() {
 
 	infoMap := info.NewMap()
 	infoMap.RegisterOnReceiveTrigger(
-		logcollector.NewStartTrigger(ctx, wg, platform.FromString(csp), fetcher, log.Named("logcollector")),
+		logcollector.NewStartTrigger(ctx, wg, platform.FromString(csp), fetcher, log.Grouped("logcollector")),
 	)
 
-	download := deploy.New(log.Named("download"), &net.Dialer{}, serviceManager, filetransferer, infoMap)
+	download := deploy.New(log.Grouped("download"), &net.Dialer{}, serviceManager, filetransferer, infoMap)
 
-	sched := metadata.NewScheduler(log.Named("scheduler"), fetcher, download)
-	serv := server.New(log.Named("server"), serviceManager, filetransferer, infoMap)
+	sched := metadata.NewScheduler(log.Grouped("scheduler"), fetcher, download)
+	serv := server.New(log.Grouped("server"), serviceManager, filetransferer, infoMap)
 
 	writeDebugBanner(log)
 

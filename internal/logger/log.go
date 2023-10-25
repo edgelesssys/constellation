@@ -215,9 +215,9 @@ func (l *Logger) With(fields ...any) *Logger {
 	return &Logger{logger: l.logger.With(fields...)}
 }
 
-// Named returns a named logger.
+// Grouped returns a named logger.
 // TODO: rename function to Grouped()
-func (l *Logger) Named(name string) *Logger {
+func (l *Logger) Grouped(name string) *Logger {
 	return &Logger{logger: l.logger.WithGroup(name)}
 }
 

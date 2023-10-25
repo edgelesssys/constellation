@@ -201,7 +201,7 @@ func startPod(ctx context.Context, logger *logger.Logger) error {
 	}
 
 	// start logstash container
-	logstashLog := newCmdLogger(logger.Named("logstash"))
+	logstashLog := newCmdLogger(logger.Grouped("logstash"))
 	runLogstashArgs := []string{
 		"run",
 		"--rm",
@@ -220,7 +220,7 @@ func startPod(ctx context.Context, logger *logger.Logger) error {
 	}
 
 	// start filebeat container
-	filebeatLog := newCmdLogger(logger.Named("filebeat"))
+	filebeatLog := newCmdLogger(logger.Grouped("filebeat"))
 	runFilebeatArgs := []string{
 		"run",
 		"--rm",
@@ -245,7 +245,7 @@ func startPod(ctx context.Context, logger *logger.Logger) error {
 	}
 
 	// start metricbeat container
-	metricbeatLog := newCmdLogger(logger.Named("metricbeat"))
+	metricbeatLog := newCmdLogger(logger.Grouped("metricbeat"))
 	runMetricbeatArgs := []string{
 		"run",
 		"--rm",

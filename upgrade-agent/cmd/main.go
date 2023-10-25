@@ -27,12 +27,12 @@ func main() {
 	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 	flag.Parse()
 
-	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity)).Named("bootstrapper")
+	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity)).Grouped("bootstrapper")
 
 	if *gRPCDebug {
-		log.Named("gRPC").ReplaceGRPCLogger()
+		log.Grouped("gRPC").ReplaceGRPCLogger()
 	} else {
-		log.Named("gRPC").WithIncreasedLevel(slog.LevelWarn).ReplaceGRPCLogger()
+		log.Grouped("gRPC").WithIncreasedLevel(slog.LevelWarn).ReplaceGRPCLogger()
 	}
 
 	handler := file.NewHandler(afero.NewOsFs())

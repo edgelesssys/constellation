@@ -57,9 +57,9 @@ func (s *Server) Run(httpListener, grpcListener net.Listener) error {
 	var wg sync.WaitGroup
 	var once sync.Once
 
-	s.log.WithIncreasedLevel(slog.LevelWarn).Named("grpc").ReplaceGRPCLogger()
+	s.log.WithIncreasedLevel(slog.LevelWarn).Grouped("grpc").ReplaceGRPCLogger()
 	grpcServer := grpc.NewServer(
-		s.log.Named("gRPC").GetServerUnaryInterceptor(),
+		s.log.Grouped("gRPC").GetServerUnaryInterceptor(),
 		grpc.KeepaliveParams(keepalive.ServerParameters{Time: 15 * time.Second}),
 	)
 	verifyproto.RegisterAPIServer(grpcServer, s)
@@ -103,7 +103,7 @@ func (s *Server) GetAttestation(ctx context.Context, req *verifyproto.GetAttesta
 		peerAddr = peer.Addr.String()
 	}
 
-	log := s.log.With(zap.String("peerAddress", peerAddr)).Named("gRPC")
+	log := s.log.With(zap.String("peerAddress", peerAddr)).Grouped("gRPC")
 	s.log.Infof("Received attestation request")
 	if len(req.Nonce) == 0 {
 		log.Errorf("Received attestation request with empty nonce")
@@ -122,7 +122,7 @@ func (s *Server) GetAttestation(ctx context.Context, req *verifyproto.GetAttesta
 
 // getAttestationHTTP implements the HTTP endpoint for retrieving attestation statements.
 func (s *Server) getAttestationHTTP(w http.ResponseWriter, r *http.Request) {
-	log := s.log.With(zap.String("peerAddress", r.RemoteAddr)).Named("http")
+	log := s.log.With(zap.String("peerAddress", r.RemoteAddr)).Grouped("http")
 
 	nonceB64 := r.URL.Query()["nonce"]
 	if len(nonceB64) != 1 || nonceB64[0] == "" {

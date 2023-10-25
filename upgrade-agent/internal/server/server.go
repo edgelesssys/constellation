@@ -45,7 +45,7 @@ type Server struct {
 
 // New creates a new upgrade-agent server.
 func New(log *logger.Logger, fileHandler file.Handler) (*Server, error) {
-	log = log.Named("upgradeServer")
+	log = log.Grouped("upgradeServer")
 
 	server := &Server{
 		log:  log,
@@ -53,7 +53,7 @@ func New(log *logger.Logger, fileHandler file.Handler) (*Server, error) {
 	}
 
 	grpcServer := grpc.NewServer(
-		log.Named("gRPC").GetServerUnaryInterceptor(),
+		log.Grouped("gRPC").GetServerUnaryInterceptor(),
 	)
 	upgradeproto.RegisterUpdateServer(grpcServer, server)
 

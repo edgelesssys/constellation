@@ -92,7 +92,7 @@ func envCheck(_ *cobra.Command, _ []string) error {
 
 func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 	ctx := cmd.Context()
-	log := logger.New(logger.PlainLog, slog.LevelDebug).Named("attestationconfigapi")
+	log := logger.New(logger.PlainLog, slog.LevelDebug).Grouped("attestationconfigapi")
 
 	flags, err := parseCliFlags(cmd)
 	if err != nil {

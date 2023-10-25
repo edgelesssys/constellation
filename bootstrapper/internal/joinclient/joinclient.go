@@ -93,7 +93,7 @@ func New(lock locker, dial grpcDialer, joiner ClusterJoiner, meta MetadataAPI, l
 		dialer:      dial,
 		joiner:      joiner,
 		metadataAPI: meta,
-		log:         log.Named("join-client"),
+		log:         log.Grouped("join-client"),
 	}
 }
 

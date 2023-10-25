@@ -155,7 +155,7 @@ func Start(log *logger.Logger, wg *sync.WaitGroup, serv pb.DebugdServer) {
 	go func() {
 		defer wg.Done()
 
-		grpcLog := log.Named("gRPC")
+		grpcLog := log.Grouped("gRPC")
 		grpcLog.WithIncreasedLevel(slog.LevelWarn).ReplaceGRPCLogger()
 
 		grpcServer := grpc.NewServer(

@@ -49,9 +49,9 @@ func (s *Server) Run(port string) error {
 		return fmt.Errorf("failed to listen on port %s: %v", port, err)
 	}
 
-	server := grpc.NewServer(s.log.Named("gRPC").GetServerUnaryInterceptor())
+	server := grpc.NewServer(s.log.Grouped("gRPC").GetServerUnaryInterceptor())
 	keyserviceproto.RegisterAPIServer(server, s)
-	s.log.Named("gRPC").WithIncreasedLevel(slog.LevelWarn).ReplaceGRPCLogger()
+	s.log.Grouped("gRPC").WithIncreasedLevel(slog.LevelWarn).ReplaceGRPCLogger()
 
 	// start the server
 	s.log.Infof("Starting Constellation key management service on %s", listener.Addr().String())

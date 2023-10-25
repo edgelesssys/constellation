@@ -57,7 +57,7 @@ func (d deleteCmd) delete(cmd *cobra.Command) error {
 }
 
 func runDelete(cmd *cobra.Command, _ []string) (retErr error) {
-	log := logger.New(logger.PlainLog, slog.LevelDebug).Named("attestationconfigapi")
+	log := logger.New(logger.PlainLog, slog.LevelDebug).Grouped("attestationconfigapi")
 
 	region, err := cmd.Flags().GetString("region")
 	if err != nil {
@@ -115,7 +115,7 @@ func runRecursiveDelete(cmd *cobra.Command, _ []string) (retErr error) {
 	}
 	apiCfg := getAPIEnvironment(testing)
 
-	log := logger.New(logger.PlainLog, slog.LevelDebug).Named("attestationconfigapi")
+	log := logger.New(logger.PlainLog, slog.LevelDebug).Grouped("attestationconfigapi")
 	client, closeFn, err := staticupload.New(cmd.Context(), staticupload.Config{
 		Bucket:         bucket,
 		Region:         region,
