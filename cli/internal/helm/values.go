@@ -20,8 +20,9 @@ var ciliumVals = map[string]map[string]any{
 			"type":           "wireguard",
 			"nodeEncryption": true,
 			"strictMode": map[string]any{
-				"enabled":     true,
-				"podCIDRList": []string{"10.244.0.0/16"},
+				"enabled":                   true,
+				"allowRemoteNodeIdentities": false,
+				"podCIDRList":               []string{"10.244.0.0/16"},
 			},
 		},
 		"l7Proxy": false,
@@ -62,8 +63,9 @@ var ciliumVals = map[string]map[string]any{
 			"type":           "wireguard",
 			"nodeEncryption": true,
 			"strictMode": map[string]any{
-				"enabled":     true,
-				"podCIDRList": []string{"10.244.0.0/16"},
+				"enabled":                   true,
+				"allowRemoteNodeIdentities": false,
+				"podCIDRList":               []string{"10.244.0.0/16"},
 			},
 		},
 		"l7Proxy": false,
@@ -107,7 +109,8 @@ var ciliumVals = map[string]map[string]any{
 			"type":           "wireguard",
 			"nodeEncryption": true,
 			"strictMode": map[string]any{
-				"enabled": true,
+				"enabled":                   true,
+				"allowRemoteNodeIdentities": false,
 			},
 		},
 		"image": map[string]any{
