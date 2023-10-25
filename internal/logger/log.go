@@ -225,7 +225,7 @@ func (l *Logger) GetClientStreamInterceptor() grpc.DialOption {
 
 func (l *Logger) middlewareLogger() logging.Logger {
 	return logging.LoggerFunc(func(ctx context.Context, lvl logging.Level, msg string, fields ...any) {
-		f := make([]slog.Attr, 0, len(fields)/2)
+		f := make([]interface{}, 0, len(fields)/2)
 
 		for i := 0; i < len(fields); i += 2 {
 			key := fields[i]
@@ -243,7 +243,7 @@ func (l *Logger) middlewareLogger() logging.Logger {
 			}
 		}
 
-		logger := l.logger.With(f)
+		logger := l.logger.With(f...)
 
 		switch lvl {
 		case logging.LevelDebug:
