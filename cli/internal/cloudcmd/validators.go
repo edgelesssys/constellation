@@ -121,5 +121,4 @@ func (wl warnLogger) Warnf(fmtStr string, args ...any) {
 
 type debugLog interface {
 	Debugf(format string, args ...any)
-	Sync()
 }
