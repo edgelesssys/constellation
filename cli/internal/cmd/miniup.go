@@ -52,7 +52,6 @@ func runUp(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
 	}
-	defer log.Sync()
 	spinner, err := newSpinnerOrStderr(cmd)
 	if err != nil {
 		return err

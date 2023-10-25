@@ -104,7 +104,6 @@ func runVerify(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
 	}
-	defer log.Sync()
 
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	verifyClient := &constellationVerifier{

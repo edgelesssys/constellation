@@ -93,7 +93,6 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
 	}
-	defer log.Sync()
 
 	var flags upgradeCheckFlags
 	if err := flags.parse(cmd.Flags()); err != nil {

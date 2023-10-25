@@ -82,7 +82,6 @@ func runIAMCreate(cmd *cobra.Command, providerCreator providerIAMCreator, provid
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
 	}
-	defer log.Sync()
 
 	iamCreator := &iamCreator{
 		cmd:             cmd,

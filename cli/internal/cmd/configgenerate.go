@@ -77,7 +77,6 @@ func runConfigGenerate(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
 	}
-	defer log.Sync()
 
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	provider := cloudprovider.FromString(args[0])
