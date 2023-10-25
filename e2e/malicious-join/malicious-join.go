@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log/slog"
 	"net"
 	"strings"
 
@@ -20,7 +21,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/joinservice/joinproto"
-	"go.uber.org/zap/zapcore"
 )
 
 func main() {
@@ -116,7 +116,7 @@ func formatFlags(attVariant, csp, jsEndpoint string) string {
 // JoinFromUnattestedNode simulates a join request from a Node that uses a stub issuer
 // and thus cannot be attested correctly.
 func JoinFromUnattestedNode(attVariant, csp, jsEndpoint string) error {
-	log := logger.New(logger.JSONLog, zapcore.DebugLevel)
+	log := logger.New(logger.JSONLog, slog.LevelDebug)
 	joiner, err := newMaliciousJoiner(attVariant, csp, jsEndpoint, log)
 	if err != nil {
 		return fmt.Errorf("creating malicious joiner: %w", err)
