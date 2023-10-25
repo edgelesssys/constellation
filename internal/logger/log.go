@@ -216,7 +216,6 @@ func (l *Logger) With(fields ...any) *Logger {
 }
 
 // Grouped returns a named logger.
-// TODO: rename function to Grouped()
 func (l *Logger) Grouped(name string) *Logger {
 	return &Logger{logger: l.logger.WithGroup(name)}
 }
