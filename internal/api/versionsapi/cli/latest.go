@@ -10,11 +10,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap/zapcore"
 )
 
 func newLatestCmd() *cobra.Command {
@@ -89,7 +89,7 @@ type latestFlags struct {
 	region         string
 	bucket         string
 	distributionID string
-	logLevel       zapcore.Level
+	logLevel       slog.Level
 }
 
 func (l *latestFlags) validate() error {
@@ -133,9 +133,9 @@ func parseLatestFlags(cmd *cobra.Command) (latestFlags, error) {
 	if err != nil {
 		return latestFlags{}, err
 	}
-	logLevel := zapcore.InfoLevel
+	logLevel := slog.LevelInfo
 	if verbose {
-		logLevel = zapcore.DebugLevel
+		logLevel = slog.LevelDebug
 	}
 
 	return latestFlags{

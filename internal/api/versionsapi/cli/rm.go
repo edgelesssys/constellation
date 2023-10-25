@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"log/slog"
 	"regexp"
 	"strings"
 	"time"
@@ -29,7 +30,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	gaxv2 "github.com/googleapis/gax-go/v2"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap/zapcore"
 )
 
 func newRemoveCmd() *cobra.Command {
@@ -259,7 +259,7 @@ type rmFlags struct {
 	azSubscription  string
 	azLocation      string
 	azResourceGroup string
-	logLevel        zapcore.Level
+	logLevel        slog.Level
 
 	ver versionsapi.Version
 }
@@ -358,9 +358,9 @@ func parseRmFlags(cmd *cobra.Command) (*rmFlags, error) {
 	if err != nil {
 		return nil, err
 	}
-	logLevel := zapcore.InfoLevel
+	logLevel := slog.LevelInfo
 	if verbose {
-		logLevel = zapcore.DebugLevel
+		logLevel = slog.LevelDebug
 	}
 
 	return &rmFlags{

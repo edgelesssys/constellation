@@ -11,9 +11,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/spf13/cobra"
-	"go.uber.org/zap/zapcore"
 	"golang.org/x/mod/semver"
 
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
@@ -158,7 +158,7 @@ type listFlags struct {
 	bucket         string
 	distributionID string
 	json           bool
-	logLevel       zapcore.Level
+	logLevel       slog.Level
 }
 
 func (l *listFlags) validate() error {
@@ -211,9 +211,9 @@ func parseListFlags(cmd *cobra.Command) (listFlags, error) {
 	if err != nil {
 		return listFlags{}, err
 	}
-	logLevel := zapcore.InfoLevel
+	logLevel := slog.LevelInfo
 	if verbose {
-		logLevel = zapcore.DebugLevel
+		logLevel = slog.LevelDebug
 	}
 
 	return listFlags{
