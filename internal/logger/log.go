@@ -43,6 +43,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"runtime"
 	"testing"
 	"time"
 
@@ -140,31 +141,61 @@ func NewTest(t *testing.T) *Logger {
 // Debugf logs a message at Debug level.
 // Debug logs are typically voluminous, and contain detailed information on the flow of execution.
 func (l *Logger) Debugf(format string, args ...any) {
-	l.logger.Debug(format, args...)
+	if !l.logger.Enabled(context.Background(), LevelDebug) {
+		return
+	}
+	var pcs [1]uintptr
+	runtime.Callers(2, pcs[:]) // skip [Callers, Debugf]
+	r := slog.NewRecord(time.Now(), LevelDebug, fmt.Sprintf(format, args...), pcs[0])
+	_ = l.logger.Handler().Handle(context.Background(), r)
 }
 
 // Infof logs a message at Info level.
 // This is the default logging priority and should be used for all normal messages.
 func (l *Logger) Infof(format string, args ...any) {
-	l.logger.Info(format, args...)
+	if !l.logger.Enabled(context.Background(), LevelInfo) {
+		return
+	}
+	var pcs [1]uintptr
+	runtime.Callers(2, pcs[:]) // skip [Callers, Infof]
+	r := slog.NewRecord(time.Now(), LevelInfo, fmt.Sprintf(format, args...), pcs[0])
+	_ = l.logger.Handler().Handle(context.Background(), r)
 }
 
 // Warnf logs a message at Warn level.
 // Warn logs are more important than Info, but they don't need human review or necessarily indicate an error.
 func (l *Logger) Warnf(format string, args ...any) {
-	l.logger.Warn(format, args...)
+	if !l.logger.Enabled(context.Background(), LevelWarn) {
+		return
+	}
+	var pcs [1]uintptr
+	runtime.Callers(2, pcs[:]) // skip [Callers, Warnf]
+	r := slog.NewRecord(time.Now(), LevelWarn, fmt.Sprintf(format, args...), pcs[0])
+	_ = l.logger.Handler().Handle(context.Background(), r)
 }
 
 // Errorf logs a message at Error level.
 // Error logs are high priority and indicate something has gone wrong.
 func (l *Logger) Errorf(format string, args ...any) {
-	l.logger.Error(format, args...)
+	if !l.logger.Enabled(context.Background(), LevelError) {
+		return
+	}
+	var pcs [1]uintptr
+	runtime.Callers(2, pcs[:]) // skip [Callers, Errorf]
+	r := slog.NewRecord(time.Now(), LevelError, fmt.Sprintf(format, args...), pcs[0])
+	_ = l.logger.Handler().Handle(context.Background(), r)
 }
 
 // Fatalf logs the message and then calls os.Exit(1).
 // Use this to exit your program when a fatal error occurs.
 func (l *Logger) Fatalf(format string, args ...any) {
-	l.logger.Log(context.Background(), LevelFatal, format, args...)
+	if !l.logger.Enabled(context.Background(), LevelFatal) {
+		return
+	}
+	var pcs [1]uintptr
+	runtime.Callers(2, pcs[:]) // skip [Callers, Fatalf]
+	r := slog.NewRecord(time.Now(), LevelFatal, fmt.Sprintf(format, args...), pcs[0])
+	_ = l.logger.Handler().Handle(context.Background(), r)
 	os.Exit(1)
 }
 
