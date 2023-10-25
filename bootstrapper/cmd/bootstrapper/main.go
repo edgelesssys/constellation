@@ -10,6 +10,7 @@ import (
 	"context"
 	"flag"
 	"io"
+	"log/slog"
 	"os"
 	"strconv"
 
@@ -47,12 +48,11 @@ func main() {
 	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 	flag.Parse()
 	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity)).Named("bootstrapper")
-	defer log.Sync()
 
 	if *gRPCDebug {
 		log.Named("gRPC").ReplaceGRPCLogger()
 	} else {
-		log.Named("gRPC").WithIncreasedLevel(zap.WarnLevel).ReplaceGRPCLogger()
+		log.Named("gRPC").WithIncreasedLevel(slog.LevelWarn).ReplaceGRPCLogger()
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
