@@ -45,7 +45,6 @@ func extraCiliumValues(provider cloudprovider.Provider, conformanceMode bool, ou
 	strictMode := map[string]any{}
 	if provider != cloudprovider.QEMU {
 		strictMode = map[string]any{
-			"enabled":      true,
 			"nodeCIDRList": []string{output.IPCidrNode},
 		}
 	}
