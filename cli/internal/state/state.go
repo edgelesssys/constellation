@@ -198,10 +198,78 @@ func (s *State) Merge(other *State) (*State, error) {
 // Constraints implements the "Validatable" interface.
 func (s *State) Constraints() []*validation.Constraint {
 	constraints := []*validation.Constraint{
+		// state version needs to be accepted by the parsing CLI.
 		validation.OneOf(s.Version, []string{Version1}).
 			WithFieldTrace(s, &s.Version),
+		// infrastructure should either be
+		// - completely empty, in the case of Constellation-managed infrastructure, or
+		// - valid already, in the case of self-managed infrastructure.
+		validation.Or(
+			// "valid alreadyy":
+			// all constraints on the infrastructure struct must be satisfied.
+			s.Infrastructure.Constraints(s),
+			// "completely empty":
+			// As the infrastructure struct contains slices, we cannot use the
+			// Empty constraint on the entire struct. Instead, we need to check
+			// each field individually.
+			validation.And(
+				validation.EvaluateAll,
+				validation.Empty(s.Infrastructure.UID).
+					WithFieldTrace(s, &s.Infrastructure.UID),
+				validation.Empty(s.Infrastructure.ClusterEndpoint).
+					WithFieldTrace(s, &s.Infrastructure.ClusterEndpoint),
+				validation.Empty(s.Infrastructure.InClusterEndpoint).
+					WithFieldTrace(s, &s.Infrastructure.InClusterEndpoint),
+				validation.Empty(s.Infrastructure.Name).
+					WithFieldTrace(s, &s.Infrastructure.Name),
+				validation.Empty(s.Infrastructure.IPCidrNode).
+					WithFieldTrace(s, &s.Infrastructure.IPCidrNode),
+				validation.EmptySlice(s.Infrastructure.APIServerCertSANs).
+					WithFieldTrace(s, &s.Infrastructure.APIServerCertSANs),
+				validation.EmptySlice(s.Infrastructure.InitSecret).
+					WithFieldTrace(s, &s.Infrastructure.InitSecret),
+			),
+		),
 	}
 	return constraints
+}
+
+// Constraints returns the constraints on the infrastructure state, ANDed to 1 constraint.
+// The state is passed as an argument to allow for full JSONPaths for the field
+// traces, starting from the top-level document (i.e. the state).
+func (i *Infrastructure) Constraints(s *State) *validation.Constraint {
+	return validation.And(
+		validation.EvaluateAll,
+		// out-of-cluster endpoint needs to be a valid DNS name or IP address.
+		validation.Or(
+			validation.DNSName(i.ClusterEndpoint).
+				WithFieldTrace(s, &s.Infrastructure.ClusterEndpoint),
+			validation.IPAddress(i.ClusterEndpoint).
+				WithFieldTrace(s, &s.Infrastructure.ClusterEndpoint),
+		),
+		// in-cluster endpoint needs to be a valid DNS name or IP address.
+		validation.Or(
+			validation.DNSName(i.InClusterEndpoint).
+				WithFieldTrace(s, &s.Infrastructure.InClusterEndpoint),
+			validation.IPAddress(i.InClusterEndpoint).
+				WithFieldTrace(s, &s.Infrastructure.InClusterEndpoint),
+		),
+		// all SANs need to be valid or the slice needs to be empty.
+		validation.Or(
+			validation.EmptySlice(i.APIServerCertSANs).
+				WithFieldTrace(s, &s.Infrastructure.APIServerCertSANs),
+			validation.All(i.APIServerCertSANs,
+				func(i int, san string) *validation.Constraint {
+					return validation.Or(
+						validation.DNSName(san).
+							WithFieldTrace(s, &s.Infrastructure.APIServerCertSANs[i]),
+						validation.IPAddress(san).
+							WithFieldTrace(s, &s.Infrastructure.APIServerCertSANs[i]),
+					)
+				},
+			),
+		),
+	)
 }
 
 // HexBytes is a byte slice that is marshalled to and from a hex string.

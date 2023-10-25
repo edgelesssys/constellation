@@ -11,7 +11,9 @@ It validates documents that specify a set of constraints on their content.
 */
 package validation
 
-import "errors"
+import (
+	"fmt"
+)
 
 // ErrStrategy is the strategy to use when encountering an error during validation.
 type ErrStrategy int
@@ -45,14 +47,21 @@ type ValidateOptions struct {
 
 // Validate validates a document using the given options.
 func (v *Validator) Validate(doc Validatable, opts ValidateOptions) error {
-	var retErr error
+	retErr := newListError(fmt.Errorf("validating document: "))
 	for _, c := range doc.Constraints() {
 		if err := c.Satisfied(); err != nil {
 			if opts.ErrStrategy == FailFast {
 				return err
 			}
-			retErr = errors.Join(retErr, err)
+			if lErr, ok := err.(*listError); ok {
+				retErr.addChild(lErr)
+			} else {
+				retErr.addChild(newListError(err))
+			}
 		}
 	}
-	return retErr
+	if len(retErr.childs) > 0 {
+		return retErr
+	}
+	return nil
 }

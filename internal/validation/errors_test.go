@@ -474,3 +474,16 @@ func references(t *testing.T, doc, field any, mapKey string) (haystack, needle r
 	}
 	return docRef, fieldRef
 }
+
+func TestListedError(t *testing.T) {
+	err := newListError(assert.AnError)
+	require.Error(t, err)
+
+	child := newListError(assert.AnError)
+	err.addChild(child)
+	assert.Contains(t, err.Error(), "\t")
+
+	childsChild := newListError(assert.AnError)
+	child.addChild(childsChild)
+	assert.Contains(t, err.Error(), "\t\t")
+}

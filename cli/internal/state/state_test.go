@@ -18,18 +18,20 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// defaultState returns a valid default state for testing.
 func defaultState() *State {
 	return &State{
 		Version: "v1",
 		Infrastructure: Infrastructure{
-			UID:             "123",
-			ClusterEndpoint: "test-cluster-endpoint",
-			InitSecret:      []byte{0x41},
+			UID:               "123",
+			ClusterEndpoint:   "0.0.0.0",
+			InClusterEndpoint: "0.0.0.0",
+			InitSecret:        []byte{0x41},
 			APIServerCertSANs: []string{
-				"api-server-cert-san-test",
-				"api-server-cert-san-test-2",
+				"127.0.0.1",
+				"www.example.com",
 			},
-			IPCidrNode: "test-cidr-node",
+			IPCidrNode: "0.0.0.0/24",
 			Azure: &Azure{
 				ResourceGroup:            "test-rg",
 				SubscriptionID:           "test-sub",
@@ -40,7 +42,7 @@ func defaultState() *State {
 			},
 			GCP: &GCP{
 				ProjectID: "test-project",
-				IPCidrPod: "test-cidr-pod",
+				IPCidrPod: "0.0.0.0/24",
 			},
 		},
 		ClusterValues: ClusterValues{

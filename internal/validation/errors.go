@@ -213,7 +213,7 @@ func isNilPtrOrInvalid(v reflect.Value) bool {
 foundNeedle returns whether the given value is the needle.
 
 It does so by comparing the address and type of the value to the address and type of the needle.
-The comparison of types is necessary because the first value of a struct has the same address as the struct itself.
+Thecomparison of types is necessary because the first value of a struct has the same address as the struct itself.
 */
 func foundNeedle(haystack, needle referenceableValue) bool {
 	return haystack.addr == needle.addr &&
@@ -266,4 +266,42 @@ func (p pathBuilder) string() string {
 		strings.Join(p.buf, ""),
 		".",
 	)
+}
+
+// newListError creates a new error, indented by tabs and enumerated
+// by enumerator.
+func newListError(err error) *listError {
+	return &listError{
+		err:    err,
+		childs: []*listError{},
+	}
+}
+
+// listError is an error that can be indented.
+type listError struct {
+	err    error
+	indent int
+	childs []*listError
+}
+
+// Error implements the error interface.
+func (e *listError) Error() string {
+	return e.format(&strings.Builder{})
+}
+
+func (e *listError) format(b *strings.Builder) string {
+	b.WriteString(fmt.Sprintf(
+		"%s%s\n",
+		strings.Repeat("\t", e.indent),
+		e.err.Error(),
+	))
+	for _, child := range e.childs {
+		b.WriteString(child.format(b))
+	}
+	return b.String()
+}
+
+func (e *listError) addChild(child *listError) {
+	child.indent = e.indent + 1
+	e.childs = append(e.childs, child)
 }

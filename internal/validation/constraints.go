@@ -7,8 +7,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 package validation
 
 import (
-	"errors"
 	"fmt"
+	"net"
 	"reflect"
 	"regexp"
 )
@@ -166,20 +166,91 @@ func OneOf[T comparable](s T, p []T) *Constraint {
 	}
 }
 
+// IPAddress is a constraint that checks if s is a valid IP address.
+func IPAddress(s string) *Constraint {
+	return &Constraint{
+		Satisfied: func() error {
+			if net.ParseIP(s) == nil {
+				return fmt.Errorf("%s must be a valid IP address", s)
+			}
+			return nil
+		},
+	}
+}
+
+// CIDR is a constraint that checks if s is a valid CIDR.
+func CIDR(s string) *Constraint {
+	return &Constraint{
+		Satisfied: func() error {
+			if _, _, err := net.ParseCIDR(s); err != nil {
+				return fmt.Errorf("%s must be a valid CIDR", s)
+			}
+			return nil
+		},
+	}
+}
+
+// DNSName is a constraint that checks if s is a valid DNS name.
+func DNSName(s string) *Constraint {
+	return &Constraint{
+		Satisfied: func() error {
+			if _, err := net.LookupHost(s); err != nil {
+				return fmt.Errorf("%s must be a valid DNS name", s)
+			}
+			return nil
+		},
+	}
+}
+
+// EmptySlice is a constraint that checks if s is an empty slice.
+func EmptySlice[T comparable](s []T) *Constraint {
+	return &Constraint{
+		Satisfied: func() error {
+			if len(s) != 0 {
+				return fmt.Errorf("%v must be empty", s)
+			}
+			return nil
+		},
+	}
+}
+
+// All is a constraint that checks if all elements of s satisfy the constraint c.
+// The constraint should be parametric in regards to the index of the element in s,
+// as well as the element itself.
+func All[T comparable](s []T, c func(i int, v T) *Constraint) *Constraint {
+	return &Constraint{
+		Satisfied: func() error {
+			retErr := newListError(fmt.Errorf("all of the constraints must be satisfied: "))
+			for i, v := range s {
+				if err := c(i, v).Satisfied(); err != nil {
+					retErr.addChild(newListError(err))
+				}
+			}
+			if len(retErr.childs) > 0 {
+				return retErr
+			}
+			return nil
+		},
+	}
+}
+
 // And groups multiple constraints in an "and" relation and fails according to the given strategy.
 func And(errStrat ErrStrategy, constraints ...*Constraint) *Constraint {
 	return &Constraint{
 		Satisfied: func() error {
-			var retErr error
+			retErr := newListError(fmt.Errorf("all of the constraints must be satisfied: "))
 			for _, constraint := range constraints {
 				if err := constraint.Satisfied(); err != nil {
 					if errStrat == FailFast {
 						return err
 					}
-					retErr = errors.Join(retErr, err)
+					retErr.addChild(newListError(err))
 				}
 			}
-			return retErr
+			if len(retErr.childs) > 0 {
+				return retErr
+			}
+			return nil
 		},
 	}
 }
@@ -188,15 +259,18 @@ func And(errStrat ErrStrategy, constraints ...*Constraint) *Constraint {
 func Or(constraints ...*Constraint) *Constraint {
 	return &Constraint{
 		Satisfied: func() error {
-			var retErr error
+			retErr := newListError(fmt.Errorf("at least one of the constraints must be satisfied: "))
 			for _, constraint := range constraints {
 				err := constraint.Satisfied()
 				if err == nil {
 					return nil
 				}
-				retErr = errors.Join(retErr, err)
+				retErr.addChild(newListError(err))
 			}
-			return retErr
+			if len(retErr.childs) > 0 {
+				return retErr
+			}
+			return nil
 		},
 	}
 }
