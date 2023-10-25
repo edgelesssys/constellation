@@ -10,6 +10,7 @@ package server
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net"
 	"strconv"
 	"sync"
@@ -155,7 +156,7 @@ func Start(log *logger.Logger, wg *sync.WaitGroup, serv pb.DebugdServer) {
 		defer wg.Done()
 
 		grpcLog := log.Named("gRPC")
-		grpcLog.WithIncreasedLevel(zap.WarnLevel).ReplaceGRPCLogger()
+		grpcLog.WithIncreasedLevel(slog.LevelWarn).ReplaceGRPCLogger()
 
 		grpcServer := grpc.NewServer(
 			grpcLog.GetServerStreamInterceptor(),
