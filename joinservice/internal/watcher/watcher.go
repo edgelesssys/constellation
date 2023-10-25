@@ -9,10 +9,10 @@ package watcher
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/fsnotify/fsnotify"
-	"go.uber.org/zap"
 )
 
 // FileWatcher watches for changes to the file and calls the waiter's Update method.
@@ -66,21 +66,21 @@ func (f *FileWatcher) Watch(file string) error {
 			// file changes may be indicated by either a WRITE, CHMOD, CREATE or RENAME event
 			if event.Op&(fsnotify.Write|fsnotify.Chmod|fsnotify.Create|fsnotify.Rename) != 0 {
 				if err := f.updater.Update(); err != nil {
-					log.With(zap.Error(err)).Errorf("Update failed")
+					log.With(slog.Any("error", err)).Errorf("Update failed")
 				}
 			}
 
 			// if a file gets removed, e.g. by a rename event, we need to re-add the file to the watcher
 			if event.Has(fsnotify.Remove) {
 				if err := f.watcher.Add(event.Name); err != nil {
-					log.With(zap.Error(err)).Errorf("Failed to re-add file to watcher")
+					log.With(slog.Any("error", err)).Errorf("Failed to re-add file to watcher")
 					return fmt.Errorf("failed to re-add file %q to watcher: %w", event.Name, err)
 				}
 			}
 
 		case err := <-f.watcher.Errors():
 			if err != nil {
-				log.With(zap.Error(err)).Errorf("Watching for measurements updates")
+				log.With(slog.Any("error", err)).Errorf("Watching for measurements updates")
 				return fmt.Errorf("watching for measurements updates: %w", err)
 			}
 		}

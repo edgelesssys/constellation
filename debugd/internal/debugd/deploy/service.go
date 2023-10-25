@@ -9,6 +9,7 @@ package deploy
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -17,7 +18,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
-	"go.uber.org/zap"
 )
 
 const (
@@ -102,7 +102,7 @@ type dbusConn interface {
 
 // SystemdAction will perform a systemd action on a service unit (start, stop, restart, reload).
 func (s *ServiceManager) SystemdAction(ctx context.Context, request ServiceManagerRequest) error {
-	log := s.log.With(zap.String("unit", request.Unit), zap.String("action", request.Action.String()))
+	log := s.log.With(slog.String("unit", request.Unit), slog.String("action", request.Action.String()))
 	conn, err := s.dbus.NewSystemConnectionContext(ctx)
 	if err != nil {
 		return fmt.Errorf("establishing systemd connection: %w", err)
@@ -146,7 +146,7 @@ func (s *ServiceManager) SystemdAction(ctx context.Context, request ServiceManag
 
 // WriteSystemdUnitFile will write a systemd unit to disk.
 func (s *ServiceManager) WriteSystemdUnitFile(ctx context.Context, unit SystemdUnit) error {
-	log := s.log.With(zap.String("unitFile", fmt.Sprintf("%s/%s", systemdUnitFolder, unit.Name)))
+	log := s.log.With(slog.String("unitFile", fmt.Sprintf("%s/%s", systemdUnitFolder, unit.Name)))
 	log.Infof("Writing systemd unit file")
 	s.systemdUnitFilewriteLock.Lock()
 	defer s.systemdUnitFilewriteLock.Unlock()
@@ -164,7 +164,7 @@ func (s *ServiceManager) WriteSystemdUnitFile(ctx context.Context, unit SystemdU
 
 // OverrideServiceUnitExecStart will override the ExecStart of a systemd unit.
 func (s *ServiceManager) OverrideServiceUnitExecStart(ctx context.Context, unitName, execStart string) error {
-	log := s.log.With(zap.String("unitFile", fmt.Sprintf("%s/%s", systemdUnitFolder, unitName)))
+	log := s.log.With(slog.String("unitFile", fmt.Sprintf("%s/%s", systemdUnitFolder, unitName)))
 	log.Infof("Overriding systemd unit file execStart")
 	if !systemdUnitNameRegexp.MatchString(unitName) {
 		return fmt.Errorf("unit name %q is invalid", unitName)

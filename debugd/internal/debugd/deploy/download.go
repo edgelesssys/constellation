@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"strconv"
 
@@ -18,7 +19,6 @@ import (
 	pb "github.com/edgelesssys/constellation/v2/debugd/service"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -51,7 +51,7 @@ func (d *Download) DownloadInfo(ctx context.Context, ip string) error {
 		return nil
 	}
 
-	log := d.log.With(zap.String("ip", ip))
+	log := d.log.With(slog.String("ip", ip))
 	serverAddr := net.JoinHostPort(ip, strconv.Itoa(constants.DebugdPort))
 
 	client, closer, err := d.newClient(ctx, serverAddr, log)
@@ -72,7 +72,7 @@ func (d *Download) DownloadInfo(ctx context.Context, ip string) error {
 
 // DownloadDeployment will open a new grpc connection to another instance, attempting to download files from that instance.
 func (d *Download) DownloadDeployment(ctx context.Context, ip string) error {
-	log := d.log.With(zap.String("ip", ip))
+	log := d.log.With(slog.String("ip", ip))
 	serverAddr := net.JoinHostPort(ip, strconv.Itoa(constants.DebugdPort))
 
 	client, closer, err := d.newClient(ctx, serverAddr, log)
@@ -98,7 +98,7 @@ func (d *Download) DownloadDeployment(ctx context.Context, ip string) error {
 		d.log.Warnf("Download already finished")
 		return nil
 	default:
-		d.log.With(zap.Error(err)).Errorf("Downloading files failed")
+		d.log.With(slog.Any("error", err)).Errorf("Downloading files failed")
 		return err
 	}
 
@@ -111,7 +111,7 @@ func (d *Download) DownloadDeployment(ctx context.Context, ip string) error {
 			ctx, file.OverrideServiceUnit, file.TargetPath,
 		); err != nil {
 			// continue on error to allow other units to be overridden
-			d.log.With(zap.Error(err)).Errorf("Failed to override service unit %s", file.OverrideServiceUnit)
+			d.log.With(slog.Any("error", err)).Errorf("Failed to override service unit %s", file.OverrideServiceUnit)
 		}
 	}
 

@@ -10,6 +10,7 @@ package kubernetes
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 	"regexp"
 	"strings"
@@ -23,7 +24,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
-	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
@@ -71,7 +71,7 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 func (k *KubeWrapper) InitCluster(
 	ctx context.Context, versionString, clusterName string, conformanceMode bool, kubernetesComponents components.Components, apiServerCertSANs []string, log *logger.Logger,
 ) ([]byte, error) {
-	log.With(zap.String("version", versionString)).Infof("Installing Kubernetes components")
+	log.With(slog.String("version", versionString)).Infof("Installing Kubernetes components")
 	if err := k.clusterUtil.InstallComponents(ctx, kubernetesComponents); err != nil {
 		return nil, err
 	}
@@ -108,13 +108,13 @@ func (k *KubeWrapper) InitCluster(
 	certSANs = append(certSANs, apiServerCertSANs...)
 
 	log.With(
-		zap.String("nodeName", nodeName),
-		zap.String("providerID", instance.ProviderID),
-		zap.String("nodeIP", nodeIP),
-		zap.String("controlPlaneHost", controlPlaneHost),
-		zap.String("controlPlanePort", controlPlanePort),
-		zap.String("certSANs", strings.Join(certSANs, ",")),
-		zap.String("podCIDR", subnetworkPodCIDR),
+		slog.String("nodeName", nodeName),
+		slog.String("providerID", instance.ProviderID),
+		slog.String("nodeIP", nodeIP),
+		slog.String("controlPlaneHost", controlPlaneHost),
+		slog.String("controlPlanePort", controlPlanePort),
+		slog.String("certSANs", strings.Join(certSANs, ",")),
+		slog.String("podCIDR", subnetworkPodCIDR),
 	).Infof("Setting information for node")
 
 	// Step 2: configure kubeadm init config
@@ -210,11 +210,11 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 	}
 
 	log.With(
-		zap.String("nodeName", nodeName),
-		zap.String("providerID", providerID),
-		zap.String("nodeIP", nodeInternalIP),
-		zap.String("loadBalancerHost", loadBalancerHost),
-		zap.String("loadBalancerPort", loadBalancerPort),
+		slog.String("nodeName", nodeName),
+		slog.String("providerID", providerID),
+		slog.String("nodeIP", nodeInternalIP),
+		slog.String("loadBalancerHost", loadBalancerHost),
+		slog.String("loadBalancerPort", loadBalancerPort),
 	).Infof("Setting information for node")
 
 	// Step 2: configure kubeadm join config
@@ -234,7 +234,7 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 	if err != nil {
 		return fmt.Errorf("encoding kubeadm join configuration as YAML: %w", err)
 	}
-	log.With(zap.String("apiServerEndpoint", args.APIServerEndpoint)).Infof("Joining Kubernetes cluster")
+	log.With(slog.String("apiServerEndpoint", args.APIServerEndpoint)).Infof("Joining Kubernetes cluster")
 	if err := k.clusterUtil.JoinCluster(ctx, joinConfigYAML, peerRole, loadBalancerHost, loadBalancerPort, log); err != nil {
 		return fmt.Errorf("joining cluster: %v; %w ", string(joinConfigYAML), err)
 	}
@@ -246,7 +246,7 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 
 	log.Infof("Restarting Cilium")
 	if err := k.clusterUtil.FixCilium(context.Background()); err != nil {
-		log.With(zap.Error(err)).Errorf("FixCilium failed")
+		log.With(slog.Any("error", err)).Errorf("FixCilium failed")
 		// Continue and don't throw an error here - things might be okay.
 	}
 
@@ -316,7 +316,7 @@ func (k *KubeWrapper) StartKubelet(log *logger.Logger) error {
 
 	log.Infof("Restarting Cilium")
 	if err := k.clusterUtil.FixCilium(context.Background()); err != nil {
-		log.With(zap.Error(err)).Errorf("FixCilium failed")
+		log.With(slog.Any("error", err)).Errorf("FixCilium failed")
 		// Continue and don't throw an error here - things might be okay.
 	}
 

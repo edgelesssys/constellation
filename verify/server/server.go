@@ -21,7 +21,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/verify/verifyproto"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"
@@ -103,7 +102,7 @@ func (s *Server) GetAttestation(ctx context.Context, req *verifyproto.GetAttesta
 		peerAddr = peer.Addr.String()
 	}
 
-	log := s.log.With(zap.String("peerAddress", peerAddr)).Grouped("gRPC")
+	log := s.log.With(slog.String("peerAddress", peerAddr)).Grouped("gRPC")
 	s.log.Infof("Received attestation request")
 	if len(req.Nonce) == 0 {
 		log.Errorf("Received attestation request with empty nonce")
@@ -122,7 +121,7 @@ func (s *Server) GetAttestation(ctx context.Context, req *verifyproto.GetAttesta
 
 // getAttestationHTTP implements the HTTP endpoint for retrieving attestation statements.
 func (s *Server) getAttestationHTTP(w http.ResponseWriter, r *http.Request) {
-	log := s.log.With(zap.String("peerAddress", r.RemoteAddr)).Grouped("http")
+	log := s.log.With(slog.String("peerAddress", r.RemoteAddr)).Grouped("http")
 
 	nonceB64 := r.URL.Query()["nonce"]
 	if len(nonceB64) != 1 || nonceB64[0] == "" {
@@ -133,7 +132,7 @@ func (s *Server) getAttestationHTTP(w http.ResponseWriter, r *http.Request) {
 
 	nonce, err := base64.URLEncoding.DecodeString(nonceB64[0])
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Received attestation request with invalid nonce")
+		log.With(slog.Any("error", err)).Errorf("Received attestation request with invalid nonce")
 		http.Error(w, fmt.Sprintf("invalid base64 encoding for nonce: %v", err), http.StatusBadRequest)
 		return
 	}

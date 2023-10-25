@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"strings"
 	"sync"
@@ -43,7 +44,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/nodestate"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
-	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -132,7 +132,7 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 	s.shutdownLock.RLock()
 	defer s.shutdownLock.RUnlock()
 
-	log := s.log.With(zap.String("peer", grpclog.PeerAddrFromContext(stream.Context())))
+	log := s.log.With(slog.String("peer", grpclog.PeerAddrFromContext(stream.Context())))
 	log.Infof("Init called")
 
 	s.kmsURI = req.KmsUri

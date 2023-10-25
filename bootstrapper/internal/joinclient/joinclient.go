@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"path/filepath"
 	"strconv"
@@ -39,7 +40,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"github.com/edgelesssys/constellation/v2/joinservice/joinproto"
 	"github.com/spf13/afero"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 	kubeconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
@@ -123,7 +123,7 @@ func (c *JoinClient) Start(cleaner cleaner) {
 
 		diskUUID, err := c.getDiskUUID()
 		if err != nil {
-			c.log.With(zap.Error(err)).Errorf("Failed to get disk UUID")
+			c.log.With(slog.Any("error", err)).Errorf("Failed to get disk UUID")
 			return
 		}
 		c.diskUUID = diskUUID
@@ -131,12 +131,12 @@ func (c *JoinClient) Start(cleaner cleaner) {
 		for {
 			err := c.getNodeMetadata()
 			if err == nil {
-				c.log.With(zap.String("role", c.role.String()), zap.String("name", c.nodeName)).Infof("Received own instance metadata")
+				c.log.With(slog.String("role", c.role.String()), slog.String("name", c.nodeName)).Infof("Received own instance metadata")
 				break
 			}
-			c.log.With(zap.Error(err)).Errorf("Failed to retrieve instance metadata")
+			c.log.With(slog.Any("error", err)).Errorf("Failed to retrieve instance metadata")
 
-			c.log.With(zap.Duration("interval", c.interval)).Infof("Sleeping")
+			c.log.With(slog.Duration("interval", c.interval)).Infof("Sleeping")
 			select {
 			case <-c.stopC:
 				return
@@ -150,12 +150,12 @@ func (c *JoinClient) Start(cleaner cleaner) {
 				c.log.Infof("Joined successfully. Client is shutting down")
 				return
 			} else if isUnrecoverable(err) {
-				c.log.With(zap.Error(err)).Errorf("Unrecoverable error occurred")
+				c.log.With(slog.Any("error", err)).Errorf("Unrecoverable error occurred")
 				return
 			}
-			c.log.With(zap.Error(err)).Warnf("Join failed for all available endpoints")
+			c.log.With(slog.Any("error", err)).Warnf("Join failed for all available endpoints")
 
-			c.log.With(zap.Duration("interval", c.interval)).Infof("Sleeping")
+			c.log.With(slog.Duration("interval", c.interval)).Infof("Sleeping")
 			select {
 			case <-c.stopC:
 				return
@@ -231,7 +231,7 @@ func (c *JoinClient) join(serviceEndpoint string) error {
 
 	conn, err := c.dialer.Dial(ctx, serviceEndpoint)
 	if err != nil {
-		c.log.With(zap.String("endpoint", serviceEndpoint), zap.Error(err)).Errorf("Join service unreachable")
+		c.log.With(slog.String("endpoint", serviceEndpoint), slog.Any("error", err)).Errorf("Join service unreachable")
 		return fmt.Errorf("dialing join service endpoint: %w", err)
 	}
 	defer conn.Close()
@@ -244,7 +244,7 @@ func (c *JoinClient) join(serviceEndpoint string) error {
 	}
 	ticket, err := protoClient.IssueJoinTicket(ctx, req)
 	if err != nil {
-		c.log.With(zap.String("endpoint", serviceEndpoint), zap.Error(err)).Errorf("Issuing join ticket failed")
+		c.log.With(slog.String("endpoint", serviceEndpoint), slog.Any("error", err)).Errorf("Issuing join ticket failed")
 		return fmt.Errorf("issuing join ticket: %w", err)
 	}
 
@@ -269,7 +269,7 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 
 	nodeLockAcquired, err := c.nodeLock.TryLockOnce(clusterID)
 	if err != nil {
-		c.log.With(zap.Error(err)).Errorf("Acquiring node lock failed")
+		c.log.With(slog.Any("error", err)).Errorf("Acquiring node lock failed")
 		return fmt.Errorf("acquiring node lock: %w", err)
 	}
 	if !nodeLockAcquired {
@@ -328,7 +328,7 @@ func (c *JoinClient) getNodeMetadata() error {
 	if err != nil {
 		return err
 	}
-	c.log.With(zap.Any("instance", inst)).Debugf("Received node metadata")
+	c.log.With(slog.Any("instance", inst)).Debugf("Received node metadata")
 
 	if inst.Name == "" {
 		return errors.New("got instance metadata with empty name")
@@ -372,7 +372,7 @@ func (c *JoinClient) getDiskUUID() (string, error) {
 func (c *JoinClient) getControlPlaneIPs(ctx context.Context) ([]string, error) {
 	instances, err := c.metadataAPI.List(ctx)
 	if err != nil {
-		c.log.With(zap.Error(err)).Errorf("Failed to list instances from metadata API")
+		c.log.With(slog.Any("error", err)).Errorf("Failed to list instances from metadata API")
 		return nil, fmt.Errorf("listing instances from metadata API: %w", err)
 	}
 
@@ -383,7 +383,7 @@ func (c *JoinClient) getControlPlaneIPs(ctx context.Context) ([]string, error) {
 		}
 	}
 
-	c.log.With(zap.Strings("IPs", ips)).Infof("Received control plane endpoints")
+	c.log.With(slog.Any("IPs", ips)).Infof("Received control plane endpoints")
 	return ips, nil
 }
 

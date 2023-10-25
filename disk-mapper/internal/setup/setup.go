@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"net"
 	"os"
 	"path/filepath"
@@ -34,7 +35,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/nodestate"
 	"github.com/spf13/afero"
-	"go.uber.org/zap"
 )
 
 const (
@@ -82,7 +82,7 @@ func (s *Manager) PrepareExistingDisk(recover RecoveryDoer) error {
 	if err != nil {
 		return err
 	}
-	s.log.With(zap.String("uuid", uuid)).Infof("Preparing existing state disk")
+	s.log.With(slog.String("uuid", uuid)).Infof("Preparing existing state disk")
 	endpoint := net.JoinHostPort("0.0.0.0", strconv.Itoa(constants.RecoveryPort))
 
 	passphrase, measurementSecret, err := recover.Do(uuid, endpoint)
@@ -128,7 +128,7 @@ func (s *Manager) PrepareExistingDisk(recover RecoveryDoer) error {
 // PrepareNewDisk prepares an instances state disk by formatting the disk as a LUKS device using a random passphrase.
 func (s *Manager) PrepareNewDisk() error {
 	uuid, _ := s.mapper.DiskUUID()
-	s.log.With(zap.String("uuid", uuid)).Infof("Preparing new state disk")
+	s.log.With(slog.String("uuid", uuid)).Infof("Preparing new state disk")
 
 	// generate and save temporary passphrase
 	passphrase := make([]byte, crypto.RNGLengthDefault)
@@ -197,7 +197,7 @@ func (s *Manager) LogDevices() error {
 		var stat syscall.Statfs_t
 		dev := "/dev/" + device.Name()
 		if err := syscall.Statfs(dev, &stat); err != nil {
-			s.log.With(zap.Error(err)).Errorf("failed to statfs %s", dev)
+			s.log.With(slog.Any("error", err)).Errorf("failed to statfs %s", dev)
 			continue
 		}
 

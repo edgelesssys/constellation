@@ -18,7 +18,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/keyservice/keyserviceproto"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -76,7 +75,7 @@ func (s *Server) GetDataKey(ctx context.Context, in *keyserviceproto.GetDataKeyR
 
 	key, err := s.conKMS.GetDEK(ctx, crypto.DEKPrefix+in.DataKeyId, int(in.Length))
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Failed to get data key")
+		log.With(slog.Any("error", err)).Errorf("Failed to get data key")
 		return nil, status.Errorf(codes.Internal, "%v", err)
 	}
 	return &keyserviceproto.GetDataKeyResponse{DataKey: key}, nil

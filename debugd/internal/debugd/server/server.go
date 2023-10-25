@@ -22,7 +22,6 @@ import (
 	pb "github.com/edgelesssys/constellation/v2/debugd/service"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 )
@@ -63,7 +62,7 @@ func (s *debugdServer) SetInfo(_ context.Context, req *pb.SetInfoRequest) (*pb.S
 	}
 
 	if setProtoErr != nil {
-		s.log.With(zap.Error(setProtoErr)).Errorf("Setting info failed")
+		s.log.With(slog.Any("error", setProtoErr)).Errorf("Setting info failed")
 		return nil, setProtoErr
 	}
 	s.log.Infof("Info set")
@@ -103,7 +102,7 @@ func (s *debugdServer) UploadFiles(stream pb.Debugd_UploadFilesServer) error {
 			Status: pb.UploadFilesStatus_UPLOAD_FILES_ALREADY_FINISHED,
 		})
 	default:
-		s.log.With(zap.Error(err)).Errorf("Uploading files failed")
+		s.log.With(slog.Any("error", err)).Errorf("Uploading files failed")
 		return stream.SendAndClose(&pb.UploadFilesResponse{
 			Status: pb.UploadFilesStatus_UPLOAD_FILES_UPLOAD_FAILED,
 		})
@@ -121,7 +120,7 @@ func (s *debugdServer) UploadFiles(stream pb.Debugd_UploadFilesServer) error {
 	}
 
 	if overrideUnitErr != nil {
-		s.log.With(zap.Error(overrideUnitErr)).Errorf("Overriding service units failed")
+		s.log.With(slog.Any("error", overrideUnitErr)).Errorf("Overriding service units failed")
 		return stream.SendAndClose(&pb.UploadFilesResponse{
 			Status: pb.UploadFilesStatus_UPLOAD_FILES_START_FAILED,
 		})
@@ -166,7 +165,7 @@ func Start(log *logger.Logger, wg *sync.WaitGroup, serv pb.DebugdServer) {
 		pb.RegisterDebugdServer(grpcServer, serv)
 		lis, err := net.Listen("tcp", net.JoinHostPort("0.0.0.0", strconv.Itoa(constants.DebugdPort)))
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Listening failed")
+			log.With(slog.Any("error", err)).Fatalf("Listening failed")
 		}
 		log.Infof("gRPC server is waiting for connections")
 		grpcServer.Serve(lis)

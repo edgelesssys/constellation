@@ -12,6 +12,7 @@ import (
 	"errors"
 	"io"
 	"io/fs"
+	"log/slog"
 	"sync"
 	"sync/atomic"
 
@@ -19,7 +20,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/debugd/internal/filetransfer/streamer"
 	pb "github.com/edgelesssys/constellation/v2/debugd/service"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"go.uber.org/zap"
 )
 
 // RecvFilesStream is a stream that receives FileTransferMessages.
@@ -160,7 +160,7 @@ func (s *FileTransferer) handleFileRecv(stream RecvFilesStream) (bool, error) {
 	})
 	recvChunkStream := &recvChunkStream{stream: stream}
 	if err := s.streamer.WriteStream(header.TargetPath, recvChunkStream, s.showProgress); err != nil {
-		s.log.With(zap.Error(err)).Errorf("Receive of file %q failed", header.TargetPath)
+		s.log.With(slog.Any("error", err)).Errorf("Receive of file %q failed", header.TargetPath)
 		return false, err
 	}
 	s.log.Infof("Finished file receive of %q", header.TargetPath)

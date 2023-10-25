@@ -15,6 +15,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"strconv"
 	"time"
@@ -24,7 +25,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/joinservice/joinproto"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"k8s.io/utils/clock"
 )
@@ -80,9 +80,9 @@ func (c *RejoinClient) Start(ctx context.Context, diskUUID string) (diskKey, mea
 	for {
 		endpoints, err := c.getJoinEndpoints()
 		if err != nil {
-			c.log.With(zap.Error(err)).Errorf("Failed to get control-plane endpoints")
+			c.log.With(slog.Any("error", err)).Errorf("Failed to get control-plane endpoints")
 		} else {
-			c.log.With(zap.Strings("endpoints", endpoints)).Infof("Received list with JoinService endpoints")
+			c.log.With(slog.Any("endpoints", endpoints)).Infof("Received list with JoinService endpoints")
 			diskKey, measurementSecret, err = c.tryRejoinWithAvailableServices(ctx, endpoints)
 			if err == nil {
 				c.log.Infof("Successfully retrieved rejoin ticket")
@@ -101,12 +101,12 @@ func (c *RejoinClient) Start(ctx context.Context, diskUUID string) (diskKey, mea
 // tryRejoinWithAvailableServices tries sending rejoin requests to the available endpoints.
 func (c *RejoinClient) tryRejoinWithAvailableServices(ctx context.Context, endpoints []string) (diskKey, measurementSecret []byte, err error) {
 	for _, endpoint := range endpoints {
-		c.log.With(zap.String("endpoint", endpoint)).Infof("Requesting rejoin ticket")
+		c.log.With(slog.String("endpoint", endpoint)).Infof("Requesting rejoin ticket")
 		rejoinTicket, err := c.requestRejoinTicket(endpoint)
 		if err == nil {
 			return rejoinTicket.StateDiskKey, rejoinTicket.MeasurementSecret, nil
 		}
-		c.log.With(zap.Error(err), zap.String("endpoint", endpoint)).Warnf("Failed to rejoin on endpoint")
+		c.log.With(slog.Any("error", err), slog.String("endpoint", endpoint)).Warnf("Failed to rejoin on endpoint")
 
 		// stop requesting additional endpoints if the context is done
 		select {

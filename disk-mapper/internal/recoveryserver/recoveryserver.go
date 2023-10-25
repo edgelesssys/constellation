@@ -17,6 +17,7 @@ package recoveryserver
 
 import (
 	"context"
+	"log/slog"
 	"net"
 	"sync"
 
@@ -27,7 +28,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/grpc/grpclog"
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -105,7 +105,7 @@ func (s *RecoveryServer) Serve(ctx context.Context, listener net.Listener, diskU
 func (s *RecoveryServer) Recover(ctx context.Context, req *recoverproto.RecoverMessage) (*recoverproto.RecoverResponse, error) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
-	log := s.log.With(zap.String("peer", grpclog.PeerAddrFromContext(ctx)))
+	log := s.log.With(slog.String("peer", grpclog.PeerAddrFromContext(ctx)))
 
 	log.Infof("Received recover call")
 
