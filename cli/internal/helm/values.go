@@ -14,6 +14,7 @@ var ciliumVals = map[string]map[string]any{
 		"endpointRoutes": map[string]any{
 			"enabled": true,
 		},
+		"extraArgs": []string{"--node-encryption-opt-out-labels=invalid.label"},
 		"encryption": map[string]any{
 			"enabled":        true,
 			"type":           "wireguard",
@@ -56,6 +57,7 @@ var ciliumVals = map[string]map[string]any{
 		"endpointRoutes": map[string]any{
 			"enabled": true,
 		},
+		"extraArgs": []string{"--node-encryption-opt-out-labels=invalid.label"},
 		"encryption": map[string]any{
 			"enabled":        true,
 			"type":           "wireguard",
@@ -100,7 +102,8 @@ var ciliumVals = map[string]map[string]any{
 		"endpointRoutes": map[string]any{
 			"enabled": true,
 		},
-		"tunnel": "disabled",
+		"extraArgs": []string{"--node-encryption-opt-out-labels=invalid.label"},
+		"tunnel":    "disabled",
 		"encryption": map[string]any{
 			"enabled":        true,
 			"type":           "wireguard",
@@ -139,6 +142,7 @@ var ciliumVals = map[string]map[string]any{
 		"endpointRoutes": map[string]any{
 			"enabled": true,
 		},
+		"extraArgs": []string{"--node-encryption-opt-out-labels=invalid.label"},
 		"encryption": map[string]any{
 			"enabled":        true,
 			"type":           "wireguard",
