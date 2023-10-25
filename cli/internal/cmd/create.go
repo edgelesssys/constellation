@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
@@ -190,7 +191,7 @@ func (c *createCmd) create(cmd *cobra.Command, applier cloudApplier, fileHandler
 	if _, err := applier.Plan(cmd.Context(), conf); err != nil {
 		return fmt.Errorf("planning infrastructure creation: %w", err)
 	}
-	infraState, err := applier.Apply(cmd.Context(), conf.GetProvider(), true)
+	infraState, err := applier.Apply(cmd.Context(), conf.GetProvider(), cloudcmd.WithRollbackOnError)
 	spinner.Stop()
 	if err != nil {
 		return err
@@ -227,9 +228,9 @@ func (c *createCmd) checkDirClean(fileHandler file.Handler) error {
 		)
 	}
 	c.log.Debugf("Checking terraform working directory")
-	if clean, err := fileHandler.IsEmpty(constants.TerraformWorkingDir); err != nil {
+	if clean, err := fileHandler.IsEmpty(constants.TerraformWorkingDir); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("checking if terraform working directory is empty: %w", err)
-	} else if !clean {
+	} else if err == nil && !clean {
 		return fmt.Errorf(
 			"directory '%s' already exists and is not empty, run 'constellation terminate' before creating a new one",
 			c.flags.pathPrefixer.PrefixPrintablePath(constants.TerraformWorkingDir),

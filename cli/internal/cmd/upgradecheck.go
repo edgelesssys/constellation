@@ -20,7 +20,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/featureset"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
-	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
@@ -104,8 +103,9 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 	upgradeID := generateUpgradeID(upgradeCmdKindCheck)
 
 	upgradeDir := filepath.Join(constants.UpgradeDir, upgradeID)
-	tfClient, err := cloudcmd.NewClusterUpgrader(
+	tfClient, cleanUp, err := cloudcmd.NewApplier(
 		cmd.Context(),
+		cmd.OutOrStdout(),
 		constants.TerraformWorkingDir,
 		upgradeDir,
 		flags.tfLogLevel,
@@ -114,6 +114,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("setting up Terraform upgrader: %w", err)
 	}
+	defer cleanUp()
 
 	kubeChecker, err := kubecmd.New(cmd.OutOrStdout(), constants.AdminConfFilename, fileHandler, log)
 	if err != nil {
@@ -222,14 +223,14 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fetcher attestationco
 	// 	  u.terraformChecker.AddManualStateMigration(migration)
 	// }
 	cmd.Println("The following Terraform migrations are available with this CLI:")
-	hasDiff, err := u.terraformChecker.PlanClusterUpgrade(cmd.Context(), cmd.OutOrStdout(), vars, conf.GetProvider())
+	hasDiff, err := u.terraformChecker.Plan(cmd.Context(), conf)
 	if err != nil {
 		return fmt.Errorf("planning terraform migrations: %w", err)
 	}
 	defer func() {
 		// User doesn't expect to see any changes in his workspace after an "upgrade plan",
 		// therefore, roll back to the backed up state.
-		if err := u.terraformChecker.RestoreClusterWorkspace(); err != nil {
+		if err := u.terraformChecker.RestoreWorkspace(); err != nil {
 			cmd.PrintErrf(
 				"restoring Terraform workspace: %s, restore the Terraform workspace manually from %s ",
 				err,
@@ -720,8 +721,8 @@ type kubernetesChecker interface {
 }
 
 type terraformChecker interface {
-	PlanClusterUpgrade(ctx context.Context, outWriter io.Writer, vars terraform.Variables, csp cloudprovider.Provider) (bool, error)
-	RestoreClusterWorkspace() error
+	Plan(context.Context, *config.Config) (bool, error)
+	RestoreWorkspace() error
 }
 
 type versionListFetcher interface {

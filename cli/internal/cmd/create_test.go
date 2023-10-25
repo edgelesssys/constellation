@@ -8,7 +8,6 @@ package cmd
 
 import (
 	"bytes"
-	"errors"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/state"
@@ -45,7 +44,6 @@ func TestCreate(t *testing.T) {
 		return fs
 	}
 	infraState := state.Infrastructure{ClusterEndpoint: "192.0.2.1"}
-	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
 		setupFs             func(*require.Assertions, cloudprovider.Provider) afero.Fs
@@ -125,7 +123,7 @@ func TestCreate(t *testing.T) {
 		},
 		"create error": {
 			setupFs:  fsWithDefaultConfigAndState,
-			creator:  &stubCloudCreator{createErr: someErr},
+			creator:  &stubCloudCreator{applyErr: assert.AnError},
 			provider: cloudprovider.GCP,
 			yesFlag:  true,
 			wantErr:  true,
@@ -163,9 +161,11 @@ func TestCreate(t *testing.T) {
 			} else {
 				assert.NoError(err)
 				if tc.wantAbort {
-					assert.False(tc.creator.createCalled)
+					assert.False(tc.creator.planCalled)
+					assert.False(tc.creator.applyCalled)
 				} else {
-					assert.True(tc.creator.createCalled)
+					assert.True(tc.creator.planCalled)
+					assert.True(tc.creator.applyCalled)
 
 					var gotState state.State
 					expectedState := state.Infrastructure{

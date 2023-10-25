@@ -277,7 +277,9 @@ func TestInitialize(t *testing.T) {
 						getClusterAttestationConfigErr: k8serrors.NewNotFound(schema.GroupResource{}, ""),
 					}, nil
 				},
-				newClusterApplier: func(ctx context.Context) (clusterUpgrader, error) { return stubTerraformUpgrader{}, nil },
+				newInfraApplier: func(ctx context.Context) (cloudApplier, func(), error) {
+					return stubTerraformUpgrader{}, func() {}, nil
+				},
 			}
 
 			err := i.apply(cmd, stubAttestationFetcher{}, "test")
