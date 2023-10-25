@@ -8,6 +8,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,7 +17,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/hack/oci-pin/internal/sums"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap/zapcore"
 )
 
 func newSumCmd() *cobra.Command {
@@ -99,7 +99,7 @@ type sumFlags struct {
 	ociPath      string
 	output       string
 	imageRepoTag string
-	logLevel     zapcore.Level
+	logLevel     slog.Level
 }
 
 func parseSumFlags(cmd *cobra.Command) (sumFlags, error) {
@@ -126,9 +126,9 @@ func parseSumFlags(cmd *cobra.Command) (sumFlags, error) {
 	if err != nil {
 		return sumFlags{}, err
 	}
-	logLevel := zapcore.InfoLevel
+	logLevel := slog.LevelInfo
 	if verbose {
-		logLevel = zapcore.DebugLevel
+		logLevel = slog.LevelDebug
 	}
 
 	return sumFlags{

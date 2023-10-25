@@ -10,11 +10,11 @@ package main
 import (
 	"context"
 	"flag"
+	"log/slog"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
-	"go.uber.org/zap/zapcore"
 )
 
 var (
@@ -24,7 +24,7 @@ var (
 )
 
 func main() {
-	log := logger.New(logger.PlainLog, zapcore.DebugLevel)
+	log := logger.New(logger.PlainLog, slog.LevelDebug)
 	ctx := context.Background()
 
 	flag.Parse()

@@ -9,6 +9,7 @@ package main
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	"github.com/bazelbuild/buildtools/build"
 	"github.com/edgelesssys/constellation/v2/hack/bazel-deps-mirror/internal/bazelfiles"
@@ -17,7 +18,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/hack/bazel-deps-mirror/internal/rules"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap/zapcore"
 )
 
 func newFixCmd() *cobra.Command {
@@ -211,7 +211,7 @@ type fixFlags struct {
 	region          string
 	bucket          string
 	mirrorBaseURL   string
-	logLevel        zapcore.Level
+	logLevel        slog.Level
 }
 
 func parseFixFlags(cmd *cobra.Command) (fixFlags, error) {
@@ -227,9 +227,9 @@ func parseFixFlags(cmd *cobra.Command) (fixFlags, error) {
 	if err != nil {
 		return fixFlags{}, err
 	}
-	logLevel := zapcore.InfoLevel
+	logLevel := slog.LevelInfo
 	if verbose {
-		logLevel = zapcore.DebugLevel
+		logLevel = slog.LevelDebug
 	}
 	region, err := cmd.Flags().GetString("region")
 	if err != nil {

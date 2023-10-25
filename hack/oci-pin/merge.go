@@ -8,12 +8,12 @@ package main
 import (
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 
 	"github.com/edgelesssys/constellation/v2/hack/oci-pin/internal/sums"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap/zapcore"
 )
 
 func newMergeCmd() *cobra.Command {
@@ -93,7 +93,7 @@ func parseInput(input string) ([]sums.PinnedImageReference, error) {
 type mergeFlags struct {
 	inputs   []string
 	output   string
-	logLevel zapcore.Level
+	logLevel slog.Level
 }
 
 func parseMergeFlags(cmd *cobra.Command) (mergeFlags, error) {
@@ -109,9 +109,9 @@ func parseMergeFlags(cmd *cobra.Command) (mergeFlags, error) {
 	if err != nil {
 		return mergeFlags{}, err
 	}
-	logLevel := zapcore.InfoLevel
+	logLevel := slog.LevelInfo
 	if verbose {
-		logLevel = zapcore.DebugLevel
+		logLevel = slog.LevelDebug
 	}
 
 	return mergeFlags{

@@ -9,6 +9,7 @@ package main
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	"github.com/edgelesssys/constellation/v2/hack/bazel-deps-mirror/internal/bazelfiles"
 	"github.com/edgelesssys/constellation/v2/hack/bazel-deps-mirror/internal/issues"
@@ -16,7 +17,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/hack/bazel-deps-mirror/internal/rules"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap/zapcore"
 )
 
 func newCheckCmd() *cobra.Command {
@@ -130,7 +130,7 @@ type checkFlags struct {
 	region                string
 	bucket                string
 	mirrorBaseURL         string
-	logLevel              zapcore.Level
+	logLevel              slog.Level
 }
 
 func parseCheckFlags(cmd *cobra.Command) (checkFlags, error) {
@@ -146,9 +146,9 @@ func parseCheckFlags(cmd *cobra.Command) (checkFlags, error) {
 	if err != nil {
 		return checkFlags{}, err
 	}
-	logLevel := zapcore.InfoLevel
+	logLevel := slog.LevelInfo
 	if verbose {
-		logLevel = zapcore.DebugLevel
+		logLevel = slog.LevelDebug
 	}
 	region, err := cmd.Flags().GetString("region")
 	if err != nil {

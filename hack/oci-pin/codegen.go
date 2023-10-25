@@ -8,6 +8,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,7 +17,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/hack/oci-pin/internal/inject"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap/zapcore"
 )
 
 func newCodegenCmd() *cobra.Command {
@@ -102,7 +102,7 @@ type codegenFlags struct {
 	pkg          string
 	identifier   string
 	imageRepoTag string
-	logLevel     zapcore.Level
+	logLevel     slog.Level
 }
 
 func parseCodegenFlags(cmd *cobra.Command) (codegenFlags, error) {
@@ -137,9 +137,9 @@ func parseCodegenFlags(cmd *cobra.Command) (codegenFlags, error) {
 	if err != nil {
 		return codegenFlags{}, err
 	}
-	logLevel := zapcore.InfoLevel
+	logLevel := slog.LevelInfo
 	if verbose {
-		logLevel = zapcore.DebugLevel
+		logLevel = slog.LevelDebug
 	}
 
 	return codegenFlags{

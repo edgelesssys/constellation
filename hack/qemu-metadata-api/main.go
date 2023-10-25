@@ -10,12 +10,12 @@ package main
 
 import (
 	"flag"
+	"log/slog"
 
 	"github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api/server"
 	"github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api/virtwrapper"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"libvirt.org/go/libvirt"
 )
 
@@ -26,7 +26,7 @@ func main() {
 	initSecretHash := flag.String("initsecrethash", "", "brcypt hash of the init secret")
 	flag.Parse()
 
-	log := logger.New(logger.JSONLog, zapcore.InfoLevel)
+	log := logger.New(logger.JSONLog, slog.LevelInfo)
 
 	conn, err := libvirt.NewConnect(*libvirtURI)
 	if err != nil {
