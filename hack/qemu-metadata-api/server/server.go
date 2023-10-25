@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"strings"
@@ -18,7 +19,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
-	"go.uber.org/zap"
 )
 
 // Server that provides QEMU metadata.
@@ -63,19 +63,19 @@ func (s *Server) ListenAndServe(port string) error {
 
 // listSelf returns peer information about the instance issuing the request.
 func (s *Server) listSelf(w http.ResponseWriter, r *http.Request) {
-	log := s.log.With(zap.String("peer", r.RemoteAddr))
+	log := s.log.With(slog.String("peer", r.RemoteAddr))
 	log.Infof("Serving GET request for /self")
 
 	remoteIP, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Failed to parse remote address")
+		log.With(slog.Any("error", err)).Errorf("Failed to parse remote address")
 		http.Error(w, fmt.Sprintf("Failed to parse remote address: %s\n", err), http.StatusInternalServerError)
 		return
 	}
 
 	peers, err := s.listAll()
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Failed to list peer metadata")
+		log.With(slog.Any("error", err)).Errorf("Failed to list peer metadata")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -98,12 +98,12 @@ func (s *Server) listSelf(w http.ResponseWriter, r *http.Request) {
 
 // listPeers returns a list of all active peers.
 func (s *Server) listPeers(w http.ResponseWriter, r *http.Request) {
-	log := s.log.With(zap.String("peer", r.RemoteAddr))
+	log := s.log.With(slog.String("peer", r.RemoteAddr))
 	log.Infof("Serving GET request for /peers")
 
 	peers, err := s.listAll()
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Failed to list peer metadata")
+		log.With(slog.Any("error", err)).Errorf("Failed to list peer metadata")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -118,9 +118,9 @@ func (s *Server) listPeers(w http.ResponseWriter, r *http.Request) {
 
 // initSecretHash returns the hash of the init secret.
 func (s *Server) initSecretHash(w http.ResponseWriter, r *http.Request) {
-	log := s.log.With(zap.String("initSecretHash", r.RemoteAddr))
+	log := s.log.With(slog.String("initSecretHash", r.RemoteAddr))
 	if r.Method != http.MethodGet {
-		log.With(zap.String("method", r.Method)).Errorf("Invalid method for /initSecretHash")
+		log.With(slog.String("method", r.Method)).Errorf("Invalid method for /initSecretHash")
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
@@ -129,7 +129,7 @@ func (s *Server) initSecretHash(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	_, err := w.Write(s.initSecretHashVal)
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Failed to write init secret hash")
+		log.With(slog.Any("error", err)).Errorf("Failed to write init secret hash")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -139,12 +139,12 @@ func (s *Server) initSecretHash(w http.ResponseWriter, r *http.Request) {
 // getEndpoint returns the IP address of the first control-plane instance.
 // This allows us to fake a load balancer for QEMU instances.
 func (s *Server) getEndpoint(w http.ResponseWriter, r *http.Request) {
-	log := s.log.With(zap.String("peer", r.RemoteAddr))
+	log := s.log.With(slog.String("peer", r.RemoteAddr))
 	log.Infof("Serving GET request for /endpoint")
 
 	net, err := s.virt.LookupNetworkByName(s.network)
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Failed to lookup network")
+		log.With(slog.Any("error", err)).Errorf("Failed to lookup network")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -152,7 +152,7 @@ func (s *Server) getEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	leases, err := net.GetDHCPLeases()
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Failed to get DHCP leases")
+		log.With(slog.Any("error", err)).Errorf("Failed to get DHCP leases")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
@@ -175,9 +175,9 @@ func (s *Server) getEndpoint(w http.ResponseWriter, r *http.Request) {
 
 // postLog writes implements cloud-logging for QEMU instances.
 func (s *Server) postLog(w http.ResponseWriter, r *http.Request) {
-	log := s.log.With(zap.String("peer", r.RemoteAddr))
+	log := s.log.With(slog.String("peer", r.RemoteAddr))
 	if r.Method != http.MethodPost {
-		log.With(zap.String("method", r.Method)).Errorf("Invalid method for /log")
+		log.With(slog.String("method", r.Method)).Errorf("Invalid method for /log")
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
@@ -192,12 +192,12 @@ func (s *Server) postLog(w http.ResponseWriter, r *http.Request) {
 
 	msg, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Failed to read request body")
+		log.With(slog.Any("error", err)).Errorf("Failed to read request body")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	log.With(zap.String("message", string(msg))).Infof("Cloud-logging entry")
+	log.With(slog.String("message", string(msg))).Infof("Cloud-logging entry")
 }
 
 // listAll returns a list of all active peers.
