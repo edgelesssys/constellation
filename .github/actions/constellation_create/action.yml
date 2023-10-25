@@ -50,6 +50,9 @@ inputs:
   internalLoadBalancer:
     description: "Whether to use an internal load balancer for the control plane"
     required: false
+  selfManagedInfra:
+    description: "Use self-managed infrastructure instead of infrastructure created by the Constellation CLI."
+    required: true
 
 outputs:
   kubeconfig:
@@ -132,13 +135,13 @@ runs:
         sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts' || true
 
     - name: Constellation create (CLI)
-      if : inputs.test != 'self-managed infra'
+      if : inputs.selfManagedInfra != 'true'
       shell: bash
       run: |
         constellation create -y --debug --tf-log=DEBUG
 
     - name: Constellation create (self-managed)
-      if : inputs.test == 'self-managed infra'
+      if : inputs.selfManagedInfra == 'true'
       uses: ./.github/actions/self_managed_create
       with:
         cloudProvider: ${{ inputs.cloudProvider }}

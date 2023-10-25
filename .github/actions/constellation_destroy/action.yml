@@ -5,8 +5,8 @@ inputs:
   kubeconfig:
     description: "The kubeconfig for the cluster."
     required: true
-  test:
-    description: "The e2e test payload."
+  selfManagedInfra:
+    description: "Use self-managed infrastructure instead of infrastructure created by the Constellation CLI."
     required: true
 
 runs:
@@ -42,13 +42,13 @@ runs:
         echo "::endgroup::"
 
     - name: Constellation terminate
-      if: inputs.test != 'self-managed infra'
+      if: inputs.selfManagedInfra != 'true'
       shell: bash
       run: |
         constellation terminate --yes --tf-log=DEBUG
 
     - name: Constellation terminate (self-managed)
-      if: inputs.test == 'self-managed infra'
+      if: inputs.selfManagedInfra == 'true'
       shell: bash
       working-directory: ${{ github.workspace }}/e2e-infra
       run: |

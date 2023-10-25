@@ -151,6 +151,24 @@ jobs:
             kubernetes-version: "v1.28"
             runner: "ubuntu-22.04"
 
+          # self-managed infra test on latest k8s version
+          # runs Sonobuoy full test
+          - test: "sonobuoy full"
+            provider: "gcp"
+            kubernetes-version: "v1.28"
+            runner: "ubuntu-22.04"
+            selfManagedInfra: "true"
+          - test: "sonobuoy full"
+            provider: "azure"
+            kubernetes-version: "v1.28"
+            runner: "ubuntu-22.04"
+            selfManagedInfra: "true"
+          - test: "sonobuoy full"
+            provider: "aws"
+            kubernetes-version: "v1.28"
+            runner: "ubuntu-22.04"
+            selfManagedInfra: "true"
+
           #
           # Tests on macOS runner
           #
@@ -213,14 +231,15 @@ jobs:
           cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
           cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
           githubToken: ${{ secrets.GITHUB_TOKEN }}
+          selfManagedInfra: ${{ matrix.selfManagedInfra == 'true' }}
 
       - name: Always terminate cluster
         if: always()
         uses: ./.github/actions/constellation_destroy
         with:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
-          test: ${{ matrix.test }}
-          
+          selfManagedInfra: ${{ matrix.selfManagedInfra == 'true' }}
+
       - name: Always delete IAM configuration
         if: always()
         uses: ./.github/actions/constellation_iam_destroy
