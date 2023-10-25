@@ -16,6 +16,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -52,8 +53,59 @@ func (r *Runner) Start(ctx context.Context, name, imageName string) error {
 	}
 	defer docker.Close()
 
-	containerName := name + "-libvirt"
+	// check for an existing name file
+	if containerName, err := r.file.Read(r.nameFile); err == nil {
+		return r.checkExistingContainer(ctx, docker, string(containerName), imageName)
+	} else if !errors.Is(err, afero.ErrFileNotFound) {
+		return err
+	}
 
+	return r.startNewContainer(ctx, docker, name+"-libvirt", imageName)
+}
+
+// checkExistingContainer performs checks on an existing libvirt container to evaluate if it can be used to run Constellation.
+func (r *Runner) checkExistingContainer(ctx context.Context, docker *docker.Client, containerName, imageName string) error {
+	// check if a container with the same name already exists
+	containers, err := docker.ContainerList(ctx, types.ContainerListOptions{
+		Filters: filters.NewArgs(
+			filters.KeyValuePair{
+				Key:   "name",
+				Value: fmt.Sprintf("^%s$", containerName),
+			},
+		),
+		All: true,
+	})
+	if err != nil {
+		return err
+	}
+	if len(containers) > 1 {
+		return fmt.Errorf("more than one container with name %q found", containerName)
+	}
+	if len(containers) > 1 {
+		return fmt.Errorf("more than one container with name %q found", containerName)
+	}
+	if len(containers) == 1 {
+		// make sure the container we listed is using the correct image
+		imageBase := strings.Split(imageName, ":")[0]
+		if containers[0].Image != imageBase {
+			return fmt.Errorf("existing libvirt container %q is using a different image: expected %q, got %q", containerName, imageBase, containers[0].Image)
+		}
+
+		// container already exists, check if its running
+		if containers[0].State == "running" {
+			return nil
+		}
+		// container exists but is not running, remove it
+		if err := docker.ContainerRemove(ctx, containers[0].ID, types.ContainerRemoveOptions{Force: true}); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// startNewContainer starts a new libvirt container using the given image.
+func (r *Runner) startNewContainer(ctx context.Context, docker *docker.Client, containerName, imageName string) error {
 	// check if image exists locally, if not pull it
 	// this allows us to use a custom image without having to push it to a registry
 	images, err := docker.ImageList(ctx, types.ImageListOptions{
