@@ -19,7 +19,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/smithy-go"
 
@@ -103,7 +102,7 @@ func (u *Uploader) Upload(ctx context.Context, req *osimage.UploadRequest) ([]ve
 	}
 	defer func() {
 		if err := u.ensureBlobDeleted(ctx, blobName); err != nil {
-			u.log.Errorf("post-cleaning: deleting temporary blob from s3", err)
+			u.log.Error("post-cleaning: deleting temporary blob from s3", err)
 		}
 	}()
 	snapshotID, err := u.importSnapshot(ctx, blobName, imageName)
@@ -166,7 +165,7 @@ func (u *Uploader) ensureBucket(ctx context.Context) error {
 		u.log.Debugf("Bucket %s exists", u.bucketName)
 		return nil
 	}
-	var noSuchBucketErr *types.NoSuchBucket
+	var noSuchBucketErr *s3types.NoSuchBucket
 	if !errors.As(err, &noSuchBucketErr) {
 		return fmt.Errorf("determining if bucket %s exists: %w", u.bucketName, err)
 	}

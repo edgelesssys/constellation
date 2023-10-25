@@ -154,11 +154,11 @@ func updateLatest(ctx context.Context, client *versionsapi.Client, kind versions
 	}
 
 	if latest.Version == ver.Version() {
-		log.Infof("Version %q is already latest version", ver)
+		log.Infof("Version %q is already latest version", ver.Version())
 		return nil
 	}
 
-	log.Infof("Setting %q as latest version", ver)
+	log.Infof("Setting %q as latest version", ver.Version())
 	latest = versionsapi.Latest{
 		Ref:     ver.Ref(),
 		Stream:  ver.Stream(),

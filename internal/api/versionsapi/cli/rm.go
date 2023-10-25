@@ -138,12 +138,12 @@ func runRemove(cmd *cobra.Command, _ []string) (retErr error) {
 func deleteSingleVersion(ctx context.Context, clients rmImageClients, ver versionsapi.Version, dryrun bool, log *logger.Logger) error {
 	var retErr error
 
-	log.Debugf("Deleting images for %s", ver.Version)
+	log.Debugf("Deleting images for %s", ver.Version())
 	if err := deleteImage(ctx, clients, ver, dryrun, log); err != nil {
 		retErr = errors.Join(retErr, fmt.Errorf("deleting images: %w", err))
 	}
 
-	log.Debugf("Deleting version %s from versions API", ver.Version)
+	log.Debugf("Deleting version %s from versions API", ver.Version())
 	if err := clients.version.DeleteVersion(ctx, ver); err != nil {
 		retErr = errors.Join(retErr, fmt.Errorf("deleting version from versions API: %w", err))
 	}
@@ -204,8 +204,8 @@ func deleteImage(ctx context.Context, clients rmImageClients, ver versionsapi.Ve
 	imageInfo, err := clients.version.FetchImageInfo(ctx, imageInfo)
 	var notFound *apiclient.NotFoundError
 	if errors.As(err, &notFound) {
-		log.Warnf("Image info for %s not found", ver.Version)
-		log.Warnf("Skipping image deletion")
+		log.Warnf("Image info for %s not found", ver.Version())
+		log.Warn("Skipping image deletion")
 		return nil
 	} else if err != nil {
 		return fmt.Errorf("fetching image info: %w", err)

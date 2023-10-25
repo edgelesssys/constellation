@@ -117,7 +117,7 @@ func (o object) get(w http.ResponseWriter, r *http.Request) {
 	if ok {
 		encryptedDEK, err := hex.DecodeString(rawEncryptedDEK)
 		if err != nil {
-			o.log.Errorf("GetObject decoding DEK", "error", err)
+			o.log.Error("GetObject decoding DEK", "error", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

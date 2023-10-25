@@ -60,7 +60,7 @@ func handlePutObject(client *s3.Client, key string, bucket string, log *logger.L
 		// Thus we have to check incoming requets for matching content digests.
 		// UNSIGNED-PAYLOAD can be used to disabled payload signing. In that case we don't check the content digest.
 		if clientDigest != "" && clientDigest != "UNSIGNED-PAYLOAD" && clientDigest != serverDigest {
-			log.Debugf("PutObject", "error", "x-amz-content-sha256 mismatch")
+			log.Debug("PutObject", "error", "x-amz-content-sha256 mismatch")
 			// The S3 API responds with an XML formatted error message.
 			mismatchErr := NewContentSHA256MismatchError(clientDigest, serverDigest)
 			marshalled, err := xml.Marshal(mismatchErr)

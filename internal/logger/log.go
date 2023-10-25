@@ -242,7 +242,7 @@ func (l *Logger) Fatalf(format string, args ...any) {
 	}
 	var pcs [1]uintptr
 	runtime.Callers(2, pcs[:]) // skip [Callers, Fatalf]
-	r := slog.NewRecord(time.Now(), LevelFatal, fmt.Sprintf(format, args...), pcs[0])
+	r := slog.NewRecord(time.Now(), LevelFatal, fmt.Errorf(format, args...).Error(), pcs[0])
 	_ = l.logger.Handler().Handle(context.Background(), r)
 	os.Exit(1)
 }
