@@ -199,7 +199,7 @@ func (k *KubeCmd) ClusterStatus(ctx context.Context) (map[string]NodeStatus, err
 // GetClusterAttestationConfig fetches the join-config configmap from the cluster, extracts the config
 // and returns both the full configmap and the attestation config.
 func (k *KubeCmd) GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, error) {
-	existingConf, err := k.kubectl.GetConfigMap(ctx, constants.ConstellationNamespace, constants.JoinConfigMap)
+	existingConf, err := retryGetJoinConfig(ctx, k.kubectl, k.retryInterval, k.log)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving current attestation config: %w", err)
 	}
@@ -224,26 +224,8 @@ func (k *KubeCmd) ApplyJoinConfig(ctx context.Context, newAttestConfig config.At
 		return fmt.Errorf("marshaling attestation config: %w", err)
 	}
 
-	var retries int
-	retrieable := func(err error) bool {
-		if k8serrors.IsNotFound(err) {
-			return false
-		}
-		retries++
-		k.log.Debugf("Getting join-config ConfigMap failed (attempt %d/%d): %s", retries, maxRetryAttempts, err)
-		return retries < maxRetryAttempts
-	}
-
-	var joinConfig *corev1.ConfigMap
-	doer := &kubeDoer{
-		action: func(ctx context.Context) error {
-			joinConfig, err = k.kubectl.GetConfigMap(ctx, constants.ConstellationNamespace, constants.JoinConfigMap)
-			return err
-		},
-	}
-	retrier := conretry.NewIntervalRetrier(doer, k.retryInterval, retrieable)
-
-	if err := retrier.Do(ctx); err != nil {
+	joinConfig, err := retryGetJoinConfig(ctx, k.kubectl, k.retryInterval, k.log)
+	if err != nil {
 		if !k8serrors.IsNotFound(err) {
 			return fmt.Errorf("getting %s ConfigMap: %w", constants.JoinConfigMap, err)
 		}
@@ -486,6 +468,31 @@ type kubeDoer struct {
 
 func (k *kubeDoer) Do(ctx context.Context) error {
 	return k.action(ctx)
+}
+
+func retryGetJoinConfig(ctx context.Context, kubectl kubectlInterface, retryInterval time.Duration, log debugLog) (*corev1.ConfigMap, error) {
+	var retries int
+	retrieable := func(err error) bool {
+		if k8serrors.IsNotFound(err) {
+			return false
+		}
+		retries++
+		log.Debugf("Getting join-config ConfigMap failed (attempt %d/%d): %s", retries, maxRetryAttempts, err)
+		return retries < maxRetryAttempts
+	}
+
+	var joinConfig *corev1.ConfigMap
+	var err error
+	doer := &kubeDoer{
+		action: func(ctx context.Context) error {
+			joinConfig, err = kubectl.GetConfigMap(ctx, constants.ConstellationNamespace, constants.JoinConfigMap)
+			return err
+		},
+	}
+	retrier := conretry.NewIntervalRetrier(doer, retryInterval, retrieable)
+
+	err = retrier.Do(ctx)
+	return joinConfig, err
 }
 
 func retryAction(ctx context.Context, retryInterval time.Duration, maxRetries int, action func(ctx context.Context) error, log debugLog) error {
