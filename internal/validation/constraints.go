@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package validation
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"reflect"
@@ -220,16 +221,13 @@ func EmptySlice[T comparable](s []T) *Constraint {
 func All[T comparable](s []T, c func(i int, v T) *Constraint) *Constraint {
 	return &Constraint{
 		Satisfied: func() error {
-			retErr := newListError(fmt.Errorf("all of the constraints must be satisfied: "))
+			var retErr error
 			for i, v := range s {
 				if err := c(i, v).Satisfied(); err != nil {
-					retErr.addChild(newListError(err))
+					retErr = errors.Join(retErr, err)
 				}
 			}
-			if len(retErr.childs) > 0 {
-				return retErr
-			}
-			return nil
+			return retErr
 		},
 	}
 }
@@ -238,19 +236,16 @@ func All[T comparable](s []T, c func(i int, v T) *Constraint) *Constraint {
 func And(errStrat ErrStrategy, constraints ...*Constraint) *Constraint {
 	return &Constraint{
 		Satisfied: func() error {
-			retErr := newListError(fmt.Errorf("all of the constraints must be satisfied: "))
+			var retErr error
 			for _, constraint := range constraints {
 				if err := constraint.Satisfied(); err != nil {
 					if errStrat == FailFast {
 						return err
 					}
-					retErr.addChild(newListError(err))
+					retErr = errors.Join(retErr, err)
 				}
 			}
-			if len(retErr.childs) > 0 {
-				return retErr
-			}
-			return nil
+			return retErr
 		},
 	}
 }
@@ -259,18 +254,15 @@ func And(errStrat ErrStrategy, constraints ...*Constraint) *Constraint {
 func Or(constraints ...*Constraint) *Constraint {
 	return &Constraint{
 		Satisfied: func() error {
-			retErr := newListError(fmt.Errorf("at least one of the constraints must be satisfied: "))
+			var retErr error
 			for _, constraint := range constraints {
 				err := constraint.Satisfied()
 				if err == nil {
 					return nil
 				}
-				retErr.addChild(newListError(err))
+				retErr = errors.Join(retErr, err)
 			}
-			if len(retErr.childs) > 0 {
-				return retErr
-			}
-			return nil
+			return retErr
 		},
 	}
 }
