@@ -45,7 +45,7 @@ func NewInitCmd() *cobra.Command {
 			cmd.Flags().Bool("yes", false, "")
 			// Don't skip any phases
 			// The apply backend should handle init calls correctly
-			cmd.Flags().StringSlice("skip-phases", []string{}, "")
+			cmd.Flags().StringSlice("skip-phases", []string{string(skipInfrastructurePhase)}, "")
 			cmd.Flags().Duration("timeout", time.Hour, "")
 			return runApply(cmd, args)
 		},
