@@ -77,7 +77,7 @@ require (
 	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api v0.0.0
 	github.com/edgelesssys/go-azguestattestation v0.0.0-20230707101700-a683be600fcf
 	github.com/edgelesssys/go-tdx-qpl v0.0.0-20230530085549-fd2878a4dead
-	github.com/fsnotify/fsnotify v1.6.0
+	github.com/fsnotify/fsnotify v1.7.0
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.14.1
