@@ -43,6 +43,8 @@ func NewInitCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Define flags for apply backend that are not set by init
 			cmd.Flags().Bool("yes", false, "")
+			// We always want to skip the infrastructure phase here, to be aligned with the
+			// functionality of the old init command.
 			cmd.Flags().StringSlice("skip-phases", []string{string(skipInfrastructurePhase)}, "")
 			cmd.Flags().Duration("timeout", time.Hour, "")
 			return runApply(cmd, args)
