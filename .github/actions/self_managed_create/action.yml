@@ -12,7 +12,7 @@ runs:
     - name: Copy Terraform configuration and Constellation config
       shell: bash
       working-directory:
-      run : |
+      run: |
         cp -r ${{ github.workspace }}/cli/internal/terraform/terraform/${{ inputs.cloudProvider }} ${{ github.workspace }}/e2e-infra
         cp ${{ github.workspace }}/constellation-conf.yaml ${{ github.workspace }}/e2e-infra
 
@@ -20,13 +20,13 @@ runs:
       id: get_image
       shell: bash
       working-directory: ${{ github.workspace }}/e2e-infra
-      run : |
+      run: |
         echo "image_ref=$(bazel run //hack/image-fetch:image-fetch)" >> $GITHUB_OUTPUT
 
     - name: Write Terraform variables
       shell: bash
       working-directory: ${{ github.workspace }}/e2e-infra
-      run : |
+      run: |
         echo "name = \"$(yq '.name' constellation-conf.yaml)\"" >> terraform.tfvars
         echo "debug = $(yq '.debugCluster' constellation-conf.yaml)" >> terraform.tfvars
         echo "custom_endpoint = \"$(yq '.customEndpoint' constellation-conf.yaml)\"" >> terraform.tfvars
@@ -75,14 +75,21 @@ runs:
     - name: Apply Terraform configuration
       shell: bash
       working-directory: ${{ github.workspace }}/e2e-infra
-      run : |
+      run: |
         terraform init
         terraform apply -auto-approve
+
+    - name: Patch MAA Policy
+      shell: bash
+      working-directory: ${{ github.workspace }}/e2e-infra
+      if: ${{ inputs.cloudProvider }} == 'azure'
+      run: |
+        bazel run //hack/maa-patch:maa-patch $(terraform output attestationURL | jq -r)
 
     - name: Write outputs to state file
       shell: bash
       working-directory: ${{ github.workspace }}/e2e-infra
-      run : |
+      run: |
         yq eval '.version ="v1"' --inplace ${{ github.workspace }}/constellation-state.yaml
         yq eval ".infrastructure.initSecret =\"$(terraform output initSecret | jq -r | tr -d '\n' | hexdump -ve '/1 "%02x"' && echo '')\"" --inplace ${{ github.workspace }}/constellation-state.yaml
         yq eval ".infrastructure.clusterEndpoint =\"$(terraform output out_of_cluster_endpoint | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
