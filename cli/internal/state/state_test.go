@@ -24,6 +24,7 @@ func defaultState() *State {
 		Version: "v1",
 		Infrastructure: Infrastructure{
 			UID:               "123",
+			Name:              "test-cluster",
 			ClusterEndpoint:   "0.0.0.0",
 			InClusterEndpoint: "0.0.0.0",
 			InitSecret:        []byte{0x41},

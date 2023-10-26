@@ -205,7 +205,7 @@ func (s *State) Constraints() []*validation.Constraint {
 		// - completely empty, in the case of Constellation-managed infrastructure, or
 		// - valid already, in the case of self-managed infrastructure.
 		validation.Or(
-			// "valid alreadyy":
+			// "valid already":
 			// all constraints on the infrastructure struct must be satisfied.
 			s.Infrastructure.Constraints(s),
 			// "completely empty":
@@ -230,11 +230,32 @@ func (s *State) Constraints() []*validation.Constraint {
 					WithFieldTrace(s, &s.Infrastructure.InitSecret),
 			),
 		),
+		// clusterValues should either be
+		// - completely empty, before init, or
+		// - completely valid, after init.
+		validation.Or(
+			// "completely valid":
+			// all constraints on the cluster vlaues struct must be satisfied.
+			s.ClusterValues.Constraints(s),
+			// "completely empty":
+			// As the clusterValues struct contains slices, we cannot use the
+			// Empty constraint on the entire struct. Instead, we need to check
+			// each field individually.
+			validation.And(
+				validation.EvaluateAll,
+				validation.Empty(s.ClusterValues.ClusterID).
+					WithFieldTrace(s, &s.ClusterValues.ClusterID),
+				validation.Empty(s.ClusterValues.OwnerID).
+					WithFieldTrace(s, &s.ClusterValues.OwnerID),
+				validation.EmptySlice(s.ClusterValues.MeasurementSalt).
+					WithFieldTrace(s, &s.ClusterValues.MeasurementSalt),
+			),
+		),
 	}
 	return constraints
 }
 
-// Constraints returns the constraints on the infrastructure state, ANDed to 1 constraint.
+// Constraints returns the constraints on the (not-empty) infrastructure state, ANDed to 1 constraint.
 // The state is passed as an argument to allow for full JSONPaths for the field
 // traces, starting from the top-level document (i.e. the state).
 func (i *Infrastructure) Constraints(s *State) *validation.Constraint {
@@ -269,6 +290,128 @@ func (i *Infrastructure) Constraints(s *State) *validation.Constraint {
 				},
 			),
 		),
+		// Node IP Cidr needs to be a valid CIDR range.
+		validation.CIDR(i.IPCidrNode).
+			WithFieldTrace(s, &s.Infrastructure.IPCidrNode),
+		// UID needs to be filled.
+		validation.NotEmpty(i.UID).
+			WithFieldTrace(s, &s.Infrastructure.UID),
+		// Name needs to be filled.
+		validation.NotEmpty(i.Name).
+			WithFieldTrace(s, &s.Infrastructure.Name),
+		// GCP values need to be nil, empty, or valid.
+		validation.Or(
+			validation.Or(
+				// nil.
+				validation.Equal(i.GCP, nil).
+					WithFieldTrace(s, &s.Infrastructure.GCP),
+				// empty.
+				validation.IfNotNil(
+					i.GCP,
+					func() *validation.Constraint {
+						return validation.And(
+							validation.EvaluateAll,
+							validation.Empty(i.GCP.ProjectID).
+								WithFieldTrace(s, &s.Infrastructure.GCP.ProjectID),
+							validation.Empty(i.GCP.IPCidrPod).
+								WithFieldTrace(s, &s.Infrastructure.GCP.IPCidrPod),
+						)
+					},
+				),
+			),
+			// valid.
+			validation.IfNotNil(
+				i.GCP,
+				func() *validation.Constraint {
+					return validation.And(
+						validation.EvaluateAll,
+						// ProjectID needs to be filled.
+						validation.NotEmpty(i.GCP.ProjectID).
+							WithFieldTrace(s, &s.Infrastructure.GCP.ProjectID),
+						// Pod IP Cidr needs to be a valid CIDR range.
+						validation.CIDR(i.GCP.IPCidrPod).
+							WithFieldTrace(s, &s.Infrastructure.GCP.IPCidrPod),
+					)
+				},
+			),
+		),
+		// Azure values need to be nil, empty, or valid.
+		validation.Or(
+			validation.Or(
+				// nil.
+				validation.Equal(i.Azure, nil).
+					WithFieldTrace(s, &s.Infrastructure.Azure),
+				// empty.
+				validation.IfNotNil(
+					i.Azure,
+					func() *validation.Constraint {
+						return validation.And(
+							validation.EvaluateAll,
+							validation.Empty(i.Azure.ResourceGroup).
+								WithFieldTrace(s, &s.Infrastructure.Azure.ResourceGroup),
+							validation.Empty(i.Azure.SubscriptionID).
+								WithFieldTrace(s, &s.Infrastructure.Azure.SubscriptionID),
+							validation.Empty(i.Azure.NetworkSecurityGroupName).
+								WithFieldTrace(s, &s.Infrastructure.Azure.NetworkSecurityGroupName),
+							validation.Empty(i.Azure.LoadBalancerName).
+								WithFieldTrace(s, &s.Infrastructure.Azure.LoadBalancerName),
+							validation.Empty(i.Azure.UserAssignedIdentity).
+								WithFieldTrace(s, &s.Infrastructure.Azure.UserAssignedIdentity),
+							validation.Empty(i.Azure.AttestationURL).
+								WithFieldTrace(s, &s.Infrastructure.Azure.AttestationURL),
+						)
+					},
+				),
+			),
+			// valid.
+			validation.IfNotNil(
+				i.Azure,
+				func() *validation.Constraint {
+					return validation.And(
+						validation.EvaluateAll,
+						validation.NotEmpty(i.Azure.ResourceGroup).
+							WithFieldTrace(s, &s.Infrastructure.Azure.ResourceGroup),
+						validation.NotEmpty(i.Azure.SubscriptionID).
+							WithFieldTrace(s, &s.Infrastructure.Azure.SubscriptionID),
+						validation.NotEmpty(i.Azure.NetworkSecurityGroupName).
+							WithFieldTrace(s, &s.Infrastructure.Azure.NetworkSecurityGroupName),
+						validation.NotEmpty(i.Azure.LoadBalancerName).
+							WithFieldTrace(s, &s.Infrastructure.Azure.LoadBalancerName),
+						validation.NotEmpty(i.Azure.UserAssignedIdentity).
+							WithFieldTrace(s, &s.Infrastructure.Azure.UserAssignedIdentity),
+						validation.NotEmpty(i.Azure.AttestationURL).
+							WithFieldTrace(s, &s.Infrastructure.Azure.AttestationURL),
+					)
+				},
+			),
+		),
+	)
+}
+
+// Constraints returns the constraints on the (not-empty) Azure infrastructure values, ANDed to 1 constraint.
+// The state is passed as an argument to allow for full JSONPaths for the field
+// traces, starting from the top-level document (i.e. the state).
+func (c *Azure) Constraints(s *State) *validation.Constraint {
+	return validation.And(
+		validation.EvaluateAll,
+	)
+}
+
+// Constraints returns the constraints on the (not-empty) cluster values, ANDed to 1 constraint.
+// The state is passed as an argument to allow for full JSONPaths for the field
+// traces, starting from the top-level document (i.e. the state).
+func (c *ClusterValues) Constraints(s *State) *validation.Constraint {
+	return validation.And(
+		validation.EvaluateAll,
+		// ClusterID needs to be filled.
+		validation.NotEmpty(c.ClusterID).
+			WithFieldTrace(s, &s.ClusterValues.ClusterID),
+		// OwnerID needs to be filled.
+		validation.NotEmpty(c.OwnerID).
+			WithFieldTrace(s, &s.ClusterValues.OwnerID),
+		// MeasurementSalt needs to be filled.
+		validation.NotEmptySlice(c.MeasurementSalt).
+			WithFieldTrace(s, &s.ClusterValues.MeasurementSalt),
 	)
 }
 

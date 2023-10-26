@@ -47,36 +47,122 @@ func TestValidation(t *testing.T) {
 				s.Infrastructure.ClusterEndpoint = "invalid"
 				return s
 			},
+			wantErr: true,
+			errAssertions: func(a *assert.Assertions, err error) {
+				a.Contains(err.Error(), "validating State.infrastructure.clusterEndpoint: invalid must be a valid DNS name")
+				a.Contains(err.Error(), "validating State.infrastructure.clusterEndpoint: invalid must be a valid IP address")
+			},
 		},
-		// "invalid in-cluster endpoint": {
-		// 	stateFile: func() *State {
-		// 		s := defaultState()
-		// 		s.Infrastructure.InClusterEndpoint = "invalid"
-		// 		return s
-		// 	},
-		// 	wantErr: true,
-		// 	errAssertions: func(a *assert.Assertions, err error) {
-		// 		a.Contains(err.Error(), "validating State.version: invalid must be one of [v1]")
-		// 	},
-		// },
-		// "empty sans": {
-		// 	stateFile: func() *State {
-		// 		s := defaultState()
-		// 		s.Infrastructure.APIServerCertSANs = []string{}
-		// 		return s
-		// 	},
-		// },
-		// "not all sans are valid": {
-		// 	stateFile: func() *State {
-		// 		s := defaultState()
-		// 		s.Infrastructure.APIServerCertSANs = []string{"not valid!"}
-		// 		return s
-		// 	},
-		// 	wantErr: true,
-		// 	errAssertions: func(a *assert.Assertions, err error) {
-		// 		a.Contains(err.Error(), "tt")
-		// 	},
-		// },
+		"invalid in-cluster endpoint": {
+			stateFile: func() *State {
+				s := defaultState()
+				s.Infrastructure.InClusterEndpoint = "invalid"
+				return s
+			},
+			wantErr: true,
+			errAssertions: func(a *assert.Assertions, err error) {
+				a.Contains(err.Error(), "validating State.infrastructure.inClusterEndpoint: invalid must be a valid DNS name")
+				a.Contains(err.Error(), "validating State.infrastructure.inClusterEndpoint: invalid must be a valid IP address")
+			},
+		},
+		"empty sans": {
+			stateFile: func() *State {
+				s := defaultState()
+				s.Infrastructure.APIServerCertSANs = []string{}
+				return s
+			},
+		},
+		"not all sans are valid": {
+			stateFile: func() *State {
+				s := defaultState()
+				s.Infrastructure.APIServerCertSANs = []string{"not valid!"}
+				return s
+			},
+			wantErr: true,
+			errAssertions: func(a *assert.Assertions, err error) {
+				a.Contains(err.Error(), "validating State.infrastructure.apiServerCertSANs[0]: not valid! must be a valid DNS name")
+				a.Contains(err.Error(), "validating State.infrastructure.apiServerCertSANs[0]: not valid! must be a valid IP address")
+			},
+		},
+		"invalid node ip cidr": {
+			stateFile: func() *State {
+				s := defaultState()
+				s.Infrastructure.IPCidrNode = "invalid"
+				return s
+			},
+			wantErr: true,
+			errAssertions: func(a *assert.Assertions, err error) {
+				a.Contains(err.Error(), "validating State.infrastructure.ipCidrNode: invalid must be a valid CIDR")
+			},
+		},
+		"empty cluster values": {
+			stateFile: func() *State {
+				s := defaultState()
+				s.ClusterValues = ClusterValues{}
+				return s
+			},
+		},
+		"only one value filled in cluster values": {
+			stateFile: func() *State {
+				s := defaultState()
+				s.ClusterValues.ClusterID = ""
+				return s
+			},
+			wantErr: true,
+			errAssertions: func(a *assert.Assertions, err error) {
+				a.Contains(err.Error(), "validating State.clusterValues.clusterID: must not be empty")
+			},
+		},
+		"gcp nil": {
+			stateFile: func() *State {
+				s := defaultState()
+				s.Infrastructure.GCP = nil
+				return s
+			},
+		},
+		"gcp empty": {
+			stateFile: func() *State {
+				s := defaultState()
+				s.Infrastructure.GCP = &GCP{}
+				return s
+			},
+		},
+		"only one value filled in gcp": {
+			stateFile: func() *State {
+				s := defaultState()
+				s.Infrastructure.GCP.ProjectID = ""
+				return s
+			},
+			wantErr: true,
+			errAssertions: func(a *assert.Assertions, err error) {
+				a.Contains(err.Error(), "validating State.infrastructure.gcp.projectID: must not be empty")
+			},
+		},
+		"azure nil": {
+			stateFile: func() *State {
+				s := defaultState()
+				s.Infrastructure.Azure = nil
+				return s
+			},
+		},
+		"azure empty": {
+			stateFile: func() *State {
+				s := defaultState()
+				s.Infrastructure.Azure = &Azure{}
+				return s
+			},
+		},
+		"only one value filled in azure": {
+			stateFile: func() *State {
+				s := defaultState()
+				s.Infrastructure.Azure.NetworkSecurityGroupName = ""
+				return s
+			},
+			wantErr: true,
+			errAssertions: func(a *assert.Assertions, err error) {
+				a.Contains(err.Error(), "validating State.infrastructure.azure.networkSecurityGroupName: must not be empty")
+			},
+		},
 	}
 
 	for name, tc := range testCases {

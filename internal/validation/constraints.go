@@ -129,6 +129,18 @@ func Equal[T comparable](s T, t T) *Constraint {
 	}
 }
 
+// NotEqual is a constraint that checks if s is not equal to t.
+func NotEqual[T comparable](s T, t T) *Constraint {
+	return &Constraint{
+		Satisfied: func() *ErrorTree {
+			if Equal(s, t).Satisfied() == nil {
+				return NewErrorTree(fmt.Errorf("%v must not be equal to %v", s, t))
+			}
+			return nil
+		},
+	}
+}
+
 // Empty is a constraint that checks if s is empty.
 func Empty[T comparable](s T) *Constraint {
 	return &Constraint{
@@ -147,7 +159,7 @@ func NotEmpty[T comparable](s T) *Constraint {
 	return &Constraint{
 		Satisfied: func() *ErrorTree {
 			if Empty(s).Satisfied() == nil {
-				return NewErrorTree(fmt.Errorf("%v must not be empty", s))
+				return NewErrorTree(fmt.Errorf("must not be empty"))
 			}
 			return nil
 		},
@@ -216,13 +228,25 @@ func EmptySlice[T comparable](s []T) *Constraint {
 	}
 }
 
+// NotEmpty is a constraint that checks if slice s is not empty.
+func NotEmptySlice[T comparable](s []T) *Constraint {
+	return &Constraint{
+		Satisfied: func() *ErrorTree {
+			if EmptySlice(s).Satisfied() == nil {
+				return NewErrorTree(fmt.Errorf("must not be empty"))
+			}
+			return nil
+		},
+	}
+}
+
 // All is a constraint that checks if all elements of s satisfy the constraint c.
 // The constraint should be parametric in regards to the index of the element in s,
 // as well as the element itself.
 func All[T comparable](s []T, c func(i int, v T) *Constraint) *Constraint {
 	return &Constraint{
 		Satisfied: func() *ErrorTree {
-			retErr := NewErrorTree(fmt.Errorf("all of the constraints must be satisfied:", s))
+			retErr := NewErrorTree(fmt.Errorf("all of the constraints must be satisfied: "))
 			for i, v := range s {
 				if err := c(i, v).Satisfied(); err != nil {
 					retErr.appendChild(err)
@@ -240,7 +264,7 @@ func All[T comparable](s []T, c func(i int, v T) *Constraint) *Constraint {
 func And(errStrat ErrStrategy, constraints ...*Constraint) *Constraint {
 	return &Constraint{
 		Satisfied: func() *ErrorTree {
-			retErr := NewErrorTree(fmt.Errorf("all of the constraints must be satisfied:"))
+			retErr := NewErrorTree(fmt.Errorf("all of the constraints must be satisfied: "))
 			for _, constraint := range constraints {
 				if err := constraint.Satisfied(); err != nil {
 					if errStrat == FailFast {
@@ -261,7 +285,7 @@ func And(errStrat ErrStrategy, constraints ...*Constraint) *Constraint {
 func Or(constraints ...*Constraint) *Constraint {
 	return &Constraint{
 		Satisfied: func() *ErrorTree {
-			retErr := NewErrorTree(fmt.Errorf("at least one of the constraints must be satisfied:"))
+			retErr := NewErrorTree(fmt.Errorf("at least one of the constraints must be satisfied: "))
 			for _, constraint := range constraints {
 				err := constraint.Satisfied()
 				if err == nil {
@@ -273,6 +297,18 @@ func Or(constraints ...*Constraint) *Constraint {
 				return nil
 			}
 			return retErr
+		},
+	}
+}
+
+// IfNotNil evaluates a constraint if and only if s is not nil.
+func IfNotNil[T comparable](s *T, c func() *Constraint) *Constraint {
+	return &Constraint{
+		Satisfied: func() *ErrorTree {
+			if s == nil {
+				return nil
+			}
+			return c().Satisfied()
 		},
 	}
 }

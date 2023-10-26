@@ -23,7 +23,7 @@ type ErrorTree struct {
 	children []*ErrorTree
 }
 
-// NewErrorTree creates a new error tree.
+// NewErrorTree creates a new error tree from the given error
 func NewErrorTree(err error) *ErrorTree {
 	return &ErrorTree{
 		err:      err,
@@ -283,9 +283,13 @@ func newPathBuilder(topLevelDoc string) pathBuilder {
 func (p pathBuilder) appendStructField(field reflect.StructField) pathBuilder {
 	switch {
 	case field.Tag.Get("json") != "":
-		p.buf = append(p.buf, fmt.Sprintf(".%s", field.Tag.Get("json")))
+		// cut off omitempty or other options
+		jsonTagName, _, _ := strings.Cut(field.Tag.Get("json"), ",")
+		p.buf = append(p.buf, fmt.Sprintf(".%s", jsonTagName))
 	case field.Tag.Get("yaml") != "":
-		p.buf = append(p.buf, fmt.Sprintf(".%s", field.Tag.Get("yaml")))
+		// cut off omitempty or other options
+		yamlTagName, _, _ := strings.Cut(field.Tag.Get("yaml"), ",")
+		p.buf = append(p.buf, fmt.Sprintf(".%s", yamlTagName))
 	default:
 		p.buf = append(p.buf, fmt.Sprintf(".%s", field.Name))
 	}

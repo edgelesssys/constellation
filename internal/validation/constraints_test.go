@@ -38,7 +38,7 @@ func TestIPAddress(t *testing.T) {
 			if tc.wantErr {
 				require.Error(t, err)
 			} else {
-				require.NoError(t, err)
+				require.Nil(t, err)
 			}
 		})
 	}
@@ -70,7 +70,7 @@ func TestCIDR(t *testing.T) {
 			if tc.wantErr {
 				require.Error(t, err)
 			} else {
-				require.NoError(t, err)
+				require.Nil(t, err)
 			}
 		})
 	}
@@ -99,7 +99,7 @@ func TestDNSName(t *testing.T) {
 			if tc.wantErr {
 				require.Error(t, err)
 			} else {
-				require.NoError(t, err)
+				require.Nil(t, err)
 			}
 		})
 	}
@@ -128,7 +128,37 @@ func TestEmptySlice(t *testing.T) {
 			if tc.wantErr {
 				require.Error(t, err)
 			} else {
-				require.NoError(t, err)
+				require.Nil(t, err)
+			}
+		})
+	}
+}
+
+func TestNotEmptySlice(t *testing.T) {
+	testCases := map[string]struct {
+		s       []any
+		wantErr bool
+	}{
+		"valid": {
+			s: []any{1},
+		},
+		"invalid": {
+			s:       []any{},
+			wantErr: true,
+		},
+		"nil": {
+			s:       nil,
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			err := NotEmptySlice(tc.s).Satisfied()
+			if tc.wantErr {
+				require.Error(t, err)
+			} else {
+				require.Nil(t, err)
 			}
 		})
 	}
@@ -167,7 +197,93 @@ func TestAll(t *testing.T) {
 			if tc.wantErr {
 				require.Error(t, err)
 			} else {
-				require.NoError(t, err)
+				require.Nil(t, err)
+			}
+		})
+	}
+}
+
+func TestNotEqual(t *testing.T) {
+	testCases := map[string]struct {
+		a       any
+		b       any
+		wantErr bool
+	}{
+		"valid": {
+			a: "abc",
+			b: "def",
+		},
+		"invalid": {
+			a:       "abc",
+			b:       "abc",
+			wantErr: true,
+		},
+		"empty": {
+			wantErr: true,
+		},
+		"one empty": {
+			a: "abc",
+			b: "",
+		},
+		"one nil": {
+			a: "abc",
+			b: nil,
+		},
+		"both nil": {
+			a:       nil,
+			b:       nil,
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			err := NotEqual(tc.a, tc.b).Satisfied()
+			if tc.wantErr {
+				require.Error(t, err)
+			} else {
+				require.Nil(t, err)
+			}
+		})
+	}
+}
+
+func TestIfNotNil(t *testing.T) {
+	testCases := map[string]struct {
+		a       *int
+		c       func() *Constraint
+		wantErr bool
+	}{
+		"valid": {
+			a: new(int),
+			c: func() *Constraint {
+				return &Constraint{
+					Satisfied: func() *ErrorTree {
+						return nil
+					},
+				}
+			},
+		},
+		"nil": {
+			a: nil,
+			c: func() *Constraint {
+				return &Constraint{
+					Satisfied: func() *ErrorTree {
+						t.Fatal("should not be called")
+						return nil
+					},
+				}
+			},
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			err := IfNotNil(tc.a, tc.c).Satisfied()
+			if tc.wantErr {
+				require.Error(t, err)
+			} else {
+				require.Nil(t, err)
 			}
 		})
 	}
