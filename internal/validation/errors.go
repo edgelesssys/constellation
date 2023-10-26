@@ -13,42 +13,87 @@ import (
 	"strings"
 )
 
-// Error is returned when a document is not valid.
-type Error struct {
-	Path string
-	Err  error
+// ErrorTree is returned when a document is not valid.
+// It contains the path to the field that failed validation, the error
+// that occured, as well as a list of child errors, as one constraint
+// can embed multiple other constraints, e.g. in an OR.
+type ErrorTree struct {
+	path     string
+	err      error
+	children []*ErrorTree
+}
+
+// NewErrorTree creates a new error tree.
+func NewErrorTree(err error) *ErrorTree {
+	return &ErrorTree{
+		err:      err,
+		children: []*ErrorTree{},
+	}
 }
 
 /*
-newError creates a new validation Error.
+newTraceError creates a new validation error, traced to a field.
 
 To find the path to the exported field that failed validation, it traverses "doc"
 recursively until it finds a field in "doc" that matches the reference to "field".
 */
-func newError(doc, field referenceableValue, errMsg error) *Error {
+func newTraceError(doc, field referenceableValue, errMsg error) *ErrorTree {
 	// traverse the top level struct (i.e. the "haystack") until addr (i.e. the "needle") is found
 	path, err := traverse(doc, field, newPathBuilder(doc._type.Name()))
 	if err != nil {
-		return &Error{
-			Path: "unknown",
-			Err:  fmt.Errorf("cannot find path to field: %w. original error: %w", err, errMsg),
+		return &ErrorTree{
+			path: "unknown",
+			err:  fmt.Errorf("cannot find path to field: %w. original error: %w", err, errMsg),
 		}
 	}
 
-	return &Error{
-		Path: path,
-		Err:  errMsg,
+	return &ErrorTree{
+		path:     path,
+		err:      errMsg,
+		children: []*ErrorTree{},
 	}
 }
 
 // Error implements the error interface.
-func (e *Error) Error() string {
-	return fmt.Sprintf("validating %s: %s", e.Path, e.Err)
+func (e *ErrorTree) Error() string {
+	b := &strings.Builder{}
+	return e.format(b, 0)
 }
 
 // Unwrap implements the error interface.
-func (e *Error) Unwrap() error {
-	return e.Err
+func (e *ErrorTree) Unwrap() error {
+	return e.err
+}
+
+// format formats the error tree and all of its children.
+func (e *ErrorTree) format(b *strings.Builder, indent int) string {
+	var sb strings.Builder
+	if e.path != "" {
+		sb.WriteString(fmt.Sprintf(
+			"%svalidating %s: %s",
+			strings.Repeat("  ", indent),
+			e.path,
+			e.err,
+		))
+	} else {
+		sb.WriteString(fmt.Sprintf(
+			"%s%s",
+			strings.Repeat("  ", indent),
+			e.err,
+		))
+	}
+	for _, child := range e.children {
+		sb.WriteString(fmt.Sprintf(
+			"\n%s",
+			child.format(b, indent+1),
+		))
+	}
+	return sb.String()
+}
+
+// appendChild adds the given child error to the tree.
+func (e *ErrorTree) appendChild(child *ErrorTree) {
+	e.children = append(e.children, child)
 }
 
 /*

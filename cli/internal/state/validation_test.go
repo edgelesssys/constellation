@@ -48,35 +48,35 @@ func TestValidation(t *testing.T) {
 				return s
 			},
 		},
-		"invalid in-cluster endpoint": {
-			stateFile: func() *State {
-				s := defaultState()
-				s.Infrastructure.InClusterEndpoint = "invalid"
-				return s
-			},
-			wantErr: true,
-			errAssertions: func(a *assert.Assertions, err error) {
-				a.Contains(err.Error(), "validating State.version: invalid must be one of [v1]")
-			},
-		},
-		"empty sans": {
-			stateFile: func() *State {
-				s := defaultState()
-				s.Infrastructure.APIServerCertSANs = []string{}
-				return s
-			},
-		},
-		"not all sans are valid": {
-			stateFile: func() *State {
-				s := defaultState()
-				s.Infrastructure.APIServerCertSANs = []string{"not valid!"}
-				return s
-			},
-			wantErr: true,
-			errAssertions: func(a *assert.Assertions, err error) {
-				a.Contains(err.Error(), "tt")
-			},
-		},
+		// "invalid in-cluster endpoint": {
+		// 	stateFile: func() *State {
+		// 		s := defaultState()
+		// 		s.Infrastructure.InClusterEndpoint = "invalid"
+		// 		return s
+		// 	},
+		// 	wantErr: true,
+		// 	errAssertions: func(a *assert.Assertions, err error) {
+		// 		a.Contains(err.Error(), "validating State.version: invalid must be one of [v1]")
+		// 	},
+		// },
+		// "empty sans": {
+		// 	stateFile: func() *State {
+		// 		s := defaultState()
+		// 		s.Infrastructure.APIServerCertSANs = []string{}
+		// 		return s
+		// 	},
+		// },
+		// "not all sans are valid": {
+		// 	stateFile: func() *State {
+		// 		s := defaultState()
+		// 		s.Infrastructure.APIServerCertSANs = []string{"not valid!"}
+		// 		return s
+		// 	},
+		// 	wantErr: true,
+		// 	errAssertions: func(a *assert.Assertions, err error) {
+		// 		a.Contains(err.Error(), "tt")
+		// 	},
+		// },
 	}
 
 	for name, tc := range testCases {

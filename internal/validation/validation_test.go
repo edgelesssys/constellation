@@ -331,9 +331,11 @@ func (d *exampleDoc) Constraints() []*Constraint {
 // StrFieldNeedsToBeAbc is an example for a custom constraint.
 func (d *exampleDoc) strFieldNeedsToBeAbc() *Constraint {
 	return &Constraint{
-		Satisfied: func() error {
+		Satisfied: func() *ErrorTree {
 			if d.StrField != "abc" {
-				return fmt.Errorf("%s must be abc", d.StrField)
+				return NewErrorTree(
+					fmt.Errorf("%s must be abc", d.StrField),
+				)
 			}
 			return nil
 		},
