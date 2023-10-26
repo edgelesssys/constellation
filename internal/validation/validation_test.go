@@ -164,7 +164,7 @@ func TestValidate(t *testing.T) {
 			},
 			wantErr: true,
 			errAssertion: func(assert *assert.Assertions, err error) bool {
-				return assert.Contains(err.Error(), "validating exampleDoc.notEmptyField:  must not be empty")
+				return assert.Contains(err.Error(), "validating exampleDoc.notEmptyField: must not be empty")
 			},
 			opts: ValidateOptions{
 				ErrStrategy: FailFast,
@@ -331,7 +331,7 @@ func (d *exampleDoc) Constraints() []*Constraint {
 // StrFieldNeedsToBeAbc is an example for a custom constraint.
 func (d *exampleDoc) strFieldNeedsToBeAbc() *Constraint {
 	return &Constraint{
-		Satisfied: func() *ErrorTree {
+		Satisfied: func() *TreeError {
 			if d.StrField != "abc" {
 				return NewErrorTree(
 					fmt.Errorf("%s must be abc", d.StrField),

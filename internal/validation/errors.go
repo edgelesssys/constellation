@@ -13,21 +13,21 @@ import (
 	"strings"
 )
 
-// ErrorTree is returned when a document is not valid.
+// TreeError is returned when a document is not valid.
 // It contains the path to the field that failed validation, the error
-// that occured, as well as a list of child errors, as one constraint
+// that occurred, as well as a list of child errors, as one constraint
 // can embed multiple other constraints, e.g. in an OR.
-type ErrorTree struct {
+type TreeError struct {
 	path     string
 	err      error
-	children []*ErrorTree
+	children []*TreeError
 }
 
-// NewErrorTree creates a new error tree from the given error
-func NewErrorTree(err error) *ErrorTree {
-	return &ErrorTree{
+// NewErrorTree creates a new error tree from the given error.
+func NewErrorTree(err error) *TreeError {
+	return &TreeError{
 		err:      err,
-		children: []*ErrorTree{},
+		children: []*TreeError{},
 	}
 }
 
@@ -37,36 +37,35 @@ newTraceError creates a new validation error, traced to a field.
 To find the path to the exported field that failed validation, it traverses "doc"
 recursively until it finds a field in "doc" that matches the reference to "field".
 */
-func newTraceError(doc, field referenceableValue, errMsg error) *ErrorTree {
+func newTraceError(doc, field referenceableValue, errMsg error) *TreeError {
 	// traverse the top level struct (i.e. the "haystack") until addr (i.e. the "needle") is found
 	path, err := traverse(doc, field, newPathBuilder(doc._type.Name()))
 	if err != nil {
-		return &ErrorTree{
+		return &TreeError{
 			path: "unknown",
 			err:  fmt.Errorf("cannot find path to field: %w. original error: %w", err, errMsg),
 		}
 	}
 
-	return &ErrorTree{
+	return &TreeError{
 		path:     path,
 		err:      errMsg,
-		children: []*ErrorTree{},
+		children: []*TreeError{},
 	}
 }
 
 // Error implements the error interface.
-func (e *ErrorTree) Error() string {
-	b := &strings.Builder{}
-	return e.format(b, 0)
+func (e *TreeError) Error() string {
+	return e.format(0)
 }
 
 // Unwrap implements the error interface.
-func (e *ErrorTree) Unwrap() error {
+func (e *TreeError) Unwrap() error {
 	return e.err
 }
 
 // format formats the error tree and all of its children.
-func (e *ErrorTree) format(b *strings.Builder, indent int) string {
+func (e *TreeError) format(indent int) string {
 	var sb strings.Builder
 	if e.path != "" {
 		sb.WriteString(fmt.Sprintf(
@@ -85,14 +84,14 @@ func (e *ErrorTree) format(b *strings.Builder, indent int) string {
 	for _, child := range e.children {
 		sb.WriteString(fmt.Sprintf(
 			"\n%s",
-			child.format(b, indent+1),
+			child.format(indent+1),
 		))
 	}
 	return sb.String()
 }
 
 // appendChild adds the given child error to the tree.
-func (e *ErrorTree) appendChild(child *ErrorTree) {
+func (e *TreeError) appendChild(child *TreeError) {
 	e.children = append(e.children, child)
 }
 

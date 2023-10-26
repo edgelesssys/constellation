@@ -16,30 +16,30 @@ import (
 )
 
 func TestErrorFormatting(t *testing.T) {
-	err := &ErrorTree{
+	err := &TreeError{
 		path:     "path",
 		err:      fmt.Errorf("error"),
-		children: []*ErrorTree{},
+		children: []*TreeError{},
 	}
 
 	assert.Equal(t, "validating path: error", err.Error())
 
-	err.children = append(err.children, &ErrorTree{
+	err.children = append(err.children, &TreeError{
 		path:     "child",
 		err:      fmt.Errorf("child error"),
-		children: []*ErrorTree{},
+		children: []*TreeError{},
 	})
 
 	assert.Equal(t, "validating path: error\n  validating child: child error", err.Error())
 
-	err.children = append(err.children, &ErrorTree{
+	err.children = append(err.children, &TreeError{
 		path: "child2",
 		err:  fmt.Errorf("child2 error"),
-		children: []*ErrorTree{
+		children: []*TreeError{
 			{
 				path:     "child2child",
 				err:      fmt.Errorf("child2child error"),
-				children: []*ErrorTree{},
+				children: []*TreeError{},
 			},
 		},
 	})

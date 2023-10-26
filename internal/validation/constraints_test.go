@@ -258,7 +258,7 @@ func TestIfNotNil(t *testing.T) {
 			a: new(int),
 			c: func() *Constraint {
 				return &Constraint{
-					Satisfied: func() *ErrorTree {
+					Satisfied: func() *TreeError {
 						return nil
 					},
 				}
@@ -268,7 +268,7 @@ func TestIfNotNil(t *testing.T) {
 			a: nil,
 			c: func() *Constraint {
 				return &Constraint{
-					Satisfied: func() *ErrorTree {
+					Satisfied: func() *TreeError {
 						t.Fatal("should not be called")
 						return nil
 					},

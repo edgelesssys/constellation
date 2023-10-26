@@ -11,6 +11,7 @@ go_library(
     visibility = ["//cli:__subpackages__"],
     deps = [
         "//internal/file",
+        "//internal/validation",
         "@cat_dario_mergo//:mergo",
         "@com_github_siderolabs_talos_pkg_machinery//config/encoder",
     ],
@@ -18,11 +19,15 @@ go_library(
 
 go_test(
     name = "state_test",
-    srcs = ["state_test.go"],
+    srcs = [
+        "state_test.go",
+        "validation_test.go",
+    ],
     embed = [":state"],
     deps = [
         "//internal/constants",
         "//internal/file",
+        "//internal/validation",
         "@com_github_siderolabs_talos_pkg_machinery//config/encoder",
         "@com_github_spf13_afero//:afero",
         "@com_github_stretchr_testify//assert",

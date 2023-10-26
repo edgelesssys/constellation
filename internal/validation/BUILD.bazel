@@ -15,6 +15,7 @@ go_library(
 go_test(
     name = "validation_test",
     srcs = [
+        "constraints_test.go",
         "errors_test.go",
         "validation_test.go",
     ],

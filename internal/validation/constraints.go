@@ -19,7 +19,7 @@ type Constraint struct {
 	// Otherwise, it returns the reason why the constraint is not satisfied,
 	// possibly including its child errors, i.e., errors returned by constraints
 	// that are embedded in this constraint.
-	Satisfied func() *ErrorTree
+	Satisfied func() *TreeError
 }
 
 /*
@@ -96,7 +96,7 @@ func (c *Constraint) WithMapFieldTrace(doc any, field any, mapKey string) *Const
 // withTrace wraps the constraint's error message with a well-formatted trace.
 func (c *Constraint) withTrace(docRef, fieldRef referenceableValue) *Constraint {
 	return &Constraint{
-		Satisfied: func() *ErrorTree {
+		Satisfied: func() *TreeError {
 			if err := c.Satisfied(); err != nil {
 				return newTraceError(docRef, fieldRef, err)
 			}
@@ -108,7 +108,7 @@ func (c *Constraint) withTrace(docRef, fieldRef referenceableValue) *Constraint 
 // MatchRegex is a constraint that if s matches regex.
 func MatchRegex(s string, regex string) *Constraint {
 	return &Constraint{
-		Satisfied: func() *ErrorTree {
+		Satisfied: func() *TreeError {
 			if !regexp.MustCompile(regex).MatchString(s) {
 				return NewErrorTree(fmt.Errorf("%s must match the pattern %s", s, regex))
 			}
@@ -120,7 +120,7 @@ func MatchRegex(s string, regex string) *Constraint {
 // Equal is a constraint that checks if s is equal to t.
 func Equal[T comparable](s T, t T) *Constraint {
 	return &Constraint{
-		Satisfied: func() *ErrorTree {
+		Satisfied: func() *TreeError {
 			if s != t {
 				return NewErrorTree(fmt.Errorf("%v must be equal to %v", s, t))
 			}
@@ -132,7 +132,7 @@ func Equal[T comparable](s T, t T) *Constraint {
 // NotEqual is a constraint that checks if s is not equal to t.
 func NotEqual[T comparable](s T, t T) *Constraint {
 	return &Constraint{
-		Satisfied: func() *ErrorTree {
+		Satisfied: func() *TreeError {
 			if Equal(s, t).Satisfied() == nil {
 				return NewErrorTree(fmt.Errorf("%v must not be equal to %v", s, t))
 			}
@@ -144,7 +144,7 @@ func NotEqual[T comparable](s T, t T) *Constraint {
 // Empty is a constraint that checks if s is empty.
 func Empty[T comparable](s T) *Constraint {
 	return &Constraint{
-		Satisfied: func() *ErrorTree {
+		Satisfied: func() *TreeError {
 			var zero T
 			if s != zero {
 				return NewErrorTree(fmt.Errorf("%v must be empty", s))
@@ -157,7 +157,7 @@ func Empty[T comparable](s T) *Constraint {
 // NotEmpty is a constraint that checks if s is not empty.
 func NotEmpty[T comparable](s T) *Constraint {
 	return &Constraint{
-		Satisfied: func() *ErrorTree {
+		Satisfied: func() *TreeError {
 			if Empty(s).Satisfied() == nil {
 				return NewErrorTree(fmt.Errorf("must not be empty"))
 			}
@@ -169,7 +169,7 @@ func NotEmpty[T comparable](s T) *Constraint {
 // OneOf is a constraint that s is in the set of values p.
 func OneOf[T comparable](s T, p []T) *Constraint {
 	return &Constraint{
-		Satisfied: func() *ErrorTree {
+		Satisfied: func() *TreeError {
 			for _, v := range p {
 				if s == v {
 					return nil
@@ -183,7 +183,7 @@ func OneOf[T comparable](s T, p []T) *Constraint {
 // IPAddress is a constraint that checks if s is a valid IP address.
 func IPAddress(s string) *Constraint {
 	return &Constraint{
-		Satisfied: func() *ErrorTree {
+		Satisfied: func() *TreeError {
 			if net.ParseIP(s) == nil {
 				return NewErrorTree(fmt.Errorf("%s must be a valid IP address", s))
 			}
@@ -195,7 +195,7 @@ func IPAddress(s string) *Constraint {
 // CIDR is a constraint that checks if s is a valid CIDR.
 func CIDR(s string) *Constraint {
 	return &Constraint{
-		Satisfied: func() *ErrorTree {
+		Satisfied: func() *TreeError {
 			if _, _, err := net.ParseCIDR(s); err != nil {
 				return NewErrorTree(fmt.Errorf("%s must be a valid CIDR", s))
 			}
@@ -207,7 +207,7 @@ func CIDR(s string) *Constraint {
 // DNSName is a constraint that checks if s is a valid DNS name.
 func DNSName(s string) *Constraint {
 	return &Constraint{
-		Satisfied: func() *ErrorTree {
+		Satisfied: func() *TreeError {
 			if _, err := net.LookupHost(s); err != nil {
 				return NewErrorTree(fmt.Errorf("%s must be a valid DNS name", s))
 			}
@@ -219,7 +219,7 @@ func DNSName(s string) *Constraint {
 // EmptySlice is a constraint that checks if s is an empty slice.
 func EmptySlice[T comparable](s []T) *Constraint {
 	return &Constraint{
-		Satisfied: func() *ErrorTree {
+		Satisfied: func() *TreeError {
 			if len(s) != 0 {
 				return NewErrorTree(fmt.Errorf("%v must be empty", s))
 			}
@@ -228,10 +228,10 @@ func EmptySlice[T comparable](s []T) *Constraint {
 	}
 }
 
-// NotEmpty is a constraint that checks if slice s is not empty.
+// NotEmptySlice is a constraint that checks if slice s is not empty.
 func NotEmptySlice[T comparable](s []T) *Constraint {
 	return &Constraint{
-		Satisfied: func() *ErrorTree {
+		Satisfied: func() *TreeError {
 			if EmptySlice(s).Satisfied() == nil {
 				return NewErrorTree(fmt.Errorf("must not be empty"))
 			}
@@ -245,7 +245,7 @@ func NotEmptySlice[T comparable](s []T) *Constraint {
 // as well as the element itself.
 func All[T comparable](s []T, c func(i int, v T) *Constraint) *Constraint {
 	return &Constraint{
-		Satisfied: func() *ErrorTree {
+		Satisfied: func() *TreeError {
 			retErr := NewErrorTree(fmt.Errorf("all of the constraints must be satisfied: "))
 			for i, v := range s {
 				if err := c(i, v).Satisfied(); err != nil {
@@ -263,7 +263,7 @@ func All[T comparable](s []T, c func(i int, v T) *Constraint) *Constraint {
 // And groups multiple constraints in an "and" relation and fails according to the given strategy.
 func And(errStrat ErrStrategy, constraints ...*Constraint) *Constraint {
 	return &Constraint{
-		Satisfied: func() *ErrorTree {
+		Satisfied: func() *TreeError {
 			retErr := NewErrorTree(fmt.Errorf("all of the constraints must be satisfied: "))
 			for _, constraint := range constraints {
 				if err := constraint.Satisfied(); err != nil {
@@ -284,7 +284,7 @@ func And(errStrat ErrStrategy, constraints ...*Constraint) *Constraint {
 // Or groups multiple constraints in an "or" relation.
 func Or(constraints ...*Constraint) *Constraint {
 	return &Constraint{
-		Satisfied: func() *ErrorTree {
+		Satisfied: func() *TreeError {
 			retErr := NewErrorTree(fmt.Errorf("at least one of the constraints must be satisfied: "))
 			for _, constraint := range constraints {
 				err := constraint.Satisfied()
@@ -304,7 +304,7 @@ func Or(constraints ...*Constraint) *Constraint {
 // IfNotNil evaluates a constraint if and only if s is not nil.
 func IfNotNil[T comparable](s *T, c func() *Constraint) *Constraint {
 	return &Constraint{
-		Satisfied: func() *ErrorTree {
+		Satisfied: func() *TreeError {
 			if s == nil {
 				return nil
 			}

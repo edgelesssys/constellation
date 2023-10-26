@@ -388,15 +388,6 @@ func (i *Infrastructure) Constraints(s *State) *validation.Constraint {
 	)
 }
 
-// Constraints returns the constraints on the (not-empty) Azure infrastructure values, ANDed to 1 constraint.
-// The state is passed as an argument to allow for full JSONPaths for the field
-// traces, starting from the top-level document (i.e. the state).
-func (c *Azure) Constraints(s *State) *validation.Constraint {
-	return validation.And(
-		validation.EvaluateAll,
-	)
-}
-
 // Constraints returns the constraints on the (not-empty) cluster values, ANDed to 1 constraint.
 // The state is passed as an argument to allow for full JSONPaths for the field
 // traces, starting from the top-level document (i.e. the state).
