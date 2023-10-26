@@ -18,6 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 )
 
 // IAMDestroyer destroys an IAM configuration.
@@ -144,7 +145,7 @@ func (c *IAMCreator) createGCP(ctx context.Context, cl tfIAMClient, opts *IAMCon
 		Zone:             opts.GCP.Zone,
 	}
 
-	if err := cl.PrepareWorkspace(path.Join("terraform", "iam", strings.ToLower(cloudprovider.GCP.String())), &vars); err != nil {
+	if err := cl.PrepareWorkspace(path.Join(constants.TerraformEmbeddedDir, "iam", strings.ToLower(cloudprovider.GCP.String())), &vars); err != nil {
 		return IAMOutput{}, err
 	}
 
@@ -171,7 +172,7 @@ func (c *IAMCreator) createAzure(ctx context.Context, cl tfIAMClient, opts *IAMC
 		ServicePrincipal: opts.Azure.ServicePrincipal,
 	}
 
-	if err := cl.PrepareWorkspace(path.Join("terraform", "iam", strings.ToLower(cloudprovider.Azure.String())), &vars); err != nil {
+	if err := cl.PrepareWorkspace(path.Join(constants.TerraformEmbeddedDir, "iam", strings.ToLower(cloudprovider.Azure.String())), &vars); err != nil {
 		return IAMOutput{}, err
 	}
 
@@ -199,7 +200,7 @@ func (c *IAMCreator) createAWS(ctx context.Context, cl tfIAMClient, opts *IAMCon
 		Prefix: opts.AWS.Prefix,
 	}
 
-	if err := cl.PrepareWorkspace(path.Join("terraform", "iam", strings.ToLower(cloudprovider.AWS.String())), &vars); err != nil {
+	if err := cl.PrepareWorkspace(path.Join(constants.TerraformEmbeddedDir, "iam", strings.ToLower(cloudprovider.AWS.String())), &vars); err != nil {
 		return IAMOutput{}, err
 	}
 

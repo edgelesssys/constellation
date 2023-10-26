@@ -9,7 +9,7 @@ Package terraform handles creation/destruction of cloud and IAM resources requir
 
 Since Terraform does not provide a stable Go API, we use the `terraform-exec` package to interact with Terraform.
 
-The Terraform templates are located in the "terraform" subdirectory. The templates are embedded into the CLI binary using `go:embed`.
+The Terraform templates are located in the constants.TerraformEmbeddedDir subdirectory. The templates are embedded into the CLI binary using `go:embed`.
 On use the relevant template is extracted to the working directory and the user customized variables are written to a `terraform.tfvars` file.
 
 Functions in this package should be kept CSP agnostic (there should be no "CreateAzureCluster" function),
@@ -47,9 +47,6 @@ const (
 	// terraformUpgradePlanFile is the file name of the zipfile created by Terraform plan for Constellation upgrades.
 	terraformUpgradePlanFile = "plan.zip"
 )
-
-// ErrTerraformWorkspaceExistsWithDifferentVariables is returned when existing Terraform files differ from the version the CLI wants to extract.
-var ErrTerraformWorkspaceExistsWithDifferentVariables = errors.New("creating cluster: a Terraform workspace already exists with different variables")
 
 // Client manages interaction with Terraform.
 type Client struct {
@@ -353,18 +350,7 @@ func (c *Client) PrepareWorkspace(path string, vars Variables) error {
 		return fmt.Errorf("prepare workspace: %w", err)
 	}
 
-	return c.writeVars(vars, noOverwrites)
-}
-
-// PrepareUpgradeWorkspace prepares a Terraform workspace for an upgrade.
-// It creates a backup of the Terraform workspace in the backupDir, and copies
-// the embedded Terraform files into the workingDir.
-func (c *Client) PrepareUpgradeWorkspace(path, backupDir string, vars Variables) error {
-	if err := prepareUpgradeWorkspace(path, c.file, c.workingDir, backupDir); err != nil {
-		return fmt.Errorf("prepare upgrade workspace: %w", err)
-	}
-
-	return c.writeVars(vars, allowOverwrites)
+	return c.writeVars(vars)
 }
 
 // ApplyCluster applies the Terraform configuration of the workspace to create or upgrade a Constellation cluster.
@@ -480,27 +466,20 @@ func (c *Client) applyManualStateMigrations(ctx context.Context) error {
 	return nil
 }
 
-// writeVars tries to write the Terraform variables file or, if it exists, checks if it is the same as we are expecting.
-func (c *Client) writeVars(vars Variables, overwritePolicy overwritePolicy) error {
+// writeVars writes / overwrites the Terraform variables file.
+func (c *Client) writeVars(vars Variables) error {
 	if vars == nil {
 		return errors.New("creating cluster: vars is nil")
 	}
 
 	pathToVarsFile := filepath.Join(c.workingDir, terraformVarsFile)
-	opts := []file.Option{}
-	if overwritePolicy == allowOverwrites {
-		opts = append(opts, file.OptOverwrite)
-	}
-	if err := c.file.Write(pathToVarsFile, []byte(vars.String()), opts...); errors.Is(err, afero.ErrFileExists) {
-		// If a variables file already exists, check if it's the same as we're expecting, so we can continue using it.
-		varsContent, err := c.file.Read(pathToVarsFile)
-		if err != nil {
-			return fmt.Errorf("read variables file: %w", err)
-		}
-		if vars.String() != string(varsContent) {
-			return ErrTerraformWorkspaceExistsWithDifferentVariables
-		}
-	} else if err != nil {
+
+	// Allow overwriting existing files.
+	// If we are creating a new cluster, the workspace must have been empty before,
+	// so there is no risk of overwriting existing files.
+	// If we are upgrading an existing cluster, we want to overwrite the existing files,
+	// and we have already created a backup of the existing workspace.
+	if err := c.file.Write(pathToVarsFile, []byte(vars.String()), file.OptOverwrite); err != nil {
 		return fmt.Errorf("write variables file: %w", err)
 	}
 

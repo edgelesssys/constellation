@@ -184,26 +184,24 @@ func TestCreate(t *testing.T) {
 
 func TestCheckDirClean(t *testing.T) {
 	testCases := map[string]struct {
-		fileHandler   file.Handler
 		existingFiles []string
 		wantErr       bool
 	}{
-		"no file exists": {
-			fileHandler: file.NewHandler(afero.NewMemMapFs()),
-		},
+		"no file exists": {},
 		"adminconf exists": {
-			fileHandler:   file.NewHandler(afero.NewMemMapFs()),
 			existingFiles: []string{constants.AdminConfFilename},
 			wantErr:       true,
 		},
 		"master secret exists": {
-			fileHandler:   file.NewHandler(afero.NewMemMapFs()),
 			existingFiles: []string{constants.MasterSecretFilename},
 			wantErr:       true,
 		},
 		"multiple exist": {
-			fileHandler:   file.NewHandler(afero.NewMemMapFs()),
 			existingFiles: []string{constants.AdminConfFilename, constants.MasterSecretFilename},
+			wantErr:       true,
+		},
+		"terraform dir exists": {
+			existingFiles: []string{constants.TerraformWorkingDir},
 			wantErr:       true,
 		},
 	}
@@ -213,11 +211,12 @@ func TestCheckDirClean(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
+			fh := file.NewHandler(afero.NewMemMapFs())
 			for _, f := range tc.existingFiles {
-				require.NoError(tc.fileHandler.Write(f, []byte{1, 2, 3}, file.OptNone))
+				require.NoError(fh.Write(f, []byte{1, 2, 3}, file.OptNone))
 			}
 			c := &createCmd{log: logger.NewTest(t)}
-			err := c.checkDirClean(tc.fileHandler)
+			err := c.checkDirClean(fh)
 
 			if tc.wantErr {
 				assert.Error(err)

@@ -56,20 +56,20 @@ func TestPrepareCluster(t *testing.T) {
 		wantErr            bool
 	}{
 		"qemu": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
 			fs:       afero.NewMemMapFs(),
 			wantErr:  false,
 		},
 		"no vars": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			provider: cloudprovider.QEMU,
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
 		"continue on partially extracted": {
-			pathBase:           "terraform",
+			pathBase:           constants.TerraformEmbeddedDir,
 			provider:           cloudprovider.QEMU,
 			vars:               qemuVars,
 			fs:                 afero.NewMemMapFs(),
@@ -77,7 +77,7 @@ func TestPrepareCluster(t *testing.T) {
 			wantErr:            false,
 		},
 		"prepare workspace fails": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
 			fs:       afero.NewReadOnlyFs(afero.NewMemMapFs()),
@@ -138,7 +138,7 @@ func TestPrepareIAM(t *testing.T) {
 		wantErr            bool
 	}{
 		"no vars": {
-			pathBase: path.Join("terraform", "iam"),
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -148,14 +148,14 @@ func TestPrepareIAM(t *testing.T) {
 			wantErr:  true,
 		},
 		"gcp": {
-			pathBase: path.Join("terraform", "iam"),
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.GCP,
 			vars:     gcpVars,
 			fs:       afero.NewMemMapFs(),
 			wantErr:  false,
 		},
 		"continue on partially extracted": {
-			pathBase:           path.Join("terraform", "iam"),
+			pathBase:           path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider:           cloudprovider.GCP,
 			vars:               gcpVars,
 			fs:                 afero.NewMemMapFs(),
@@ -163,14 +163,14 @@ func TestPrepareIAM(t *testing.T) {
 			wantErr:            false,
 		},
 		"azure": {
-			pathBase: path.Join("terraform", "iam"),
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.Azure,
 			vars:     azureVars,
 			fs:       afero.NewMemMapFs(),
 			wantErr:  false,
 		},
 		"aws": {
-			pathBase: path.Join("terraform", "iam"),
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.AWS,
 			vars:     awsVars,
 			fs:       afero.NewMemMapFs(),
@@ -315,14 +315,14 @@ func TestCreateCluster(t *testing.T) {
 		wantErr                bool
 	}{
 		"works": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
 			tf:       &stubTerraform{showState: newQEMUState()},
 			fs:       afero.NewMemMapFs(),
 		},
 		"init fails": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
 			tf:       &stubTerraform{initErr: assert.AnError},
@@ -330,7 +330,7 @@ func TestCreateCluster(t *testing.T) {
 			wantErr:  true,
 		},
 		"apply fails": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
 			tf:       &stubTerraform{applyErr: assert.AnError},
@@ -338,7 +338,7 @@ func TestCreateCluster(t *testing.T) {
 			wantErr:  true,
 		},
 		"show fails": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
 			tf:       &stubTerraform{showErr: assert.AnError},
@@ -346,7 +346,7 @@ func TestCreateCluster(t *testing.T) {
 			wantErr:  true,
 		},
 		"set log fails": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
 			tf:       &stubTerraform{setLogErr: assert.AnError},
@@ -354,7 +354,7 @@ func TestCreateCluster(t *testing.T) {
 			wantErr:  true,
 		},
 		"set log path fails": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
 			tf:       &stubTerraform{setLogPathErr: assert.AnError},
@@ -362,7 +362,7 @@ func TestCreateCluster(t *testing.T) {
 			wantErr:  true,
 		},
 		"no ip": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
 			tf: &stubTerraform{
@@ -376,7 +376,7 @@ func TestCreateCluster(t *testing.T) {
 			wantErr: true,
 		},
 		"ip has wrong type": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
 			tf: &stubTerraform{
@@ -390,7 +390,7 @@ func TestCreateCluster(t *testing.T) {
 			wantErr: true,
 		},
 		"no uid": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
 			tf: &stubTerraform{
@@ -404,7 +404,7 @@ func TestCreateCluster(t *testing.T) {
 			wantErr: true,
 		},
 		"uid has wrong type": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
 			tf: &stubTerraform{
@@ -418,7 +418,7 @@ func TestCreateCluster(t *testing.T) {
 			wantErr: true,
 		},
 		"name has wrong type": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
 			tf: &stubTerraform{
@@ -432,7 +432,7 @@ func TestCreateCluster(t *testing.T) {
 			wantErr: true,
 		},
 		"working attestation url": {
-			pathBase:               "terraform",
+			pathBase:               constants.TerraformEmbeddedDir,
 			provider:               cloudprovider.Azure,
 			vars:                   qemuVars, // works for mocking azure vars
 			tf:                     &stubTerraform{showState: newAzureState()},
@@ -440,7 +440,7 @@ func TestCreateCluster(t *testing.T) {
 			expectedAttestationURL: "https://12345.neu.attest.azure.net",
 		},
 		"no attestation url": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			provider: cloudprovider.Azure,
 			vars:     qemuVars, // works for mocking azure vars
 			tf: &stubTerraform{
@@ -454,7 +454,7 @@ func TestCreateCluster(t *testing.T) {
 			wantErr: true,
 		},
 		"attestation url has wrong type": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			provider: cloudprovider.Azure,
 			vars:     qemuVars, // works for mocking azure vars
 			tf: &stubTerraform{
@@ -560,7 +560,7 @@ func TestCreateIAM(t *testing.T) {
 		want     IAMOutput
 	}{
 		"set log fails": {
-			pathBase: path.Join("terraform", "iam"),
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.GCP,
 			vars:     gcpVars,
 			tf:       &stubTerraform{setLogErr: assert.AnError},
@@ -568,7 +568,7 @@ func TestCreateIAM(t *testing.T) {
 			wantErr:  true,
 		},
 		"set log path fails": {
-			pathBase: path.Join("terraform", "iam"),
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.GCP,
 			vars:     gcpVars,
 			tf:       &stubTerraform{setLogPathErr: assert.AnError},
@@ -576,7 +576,7 @@ func TestCreateIAM(t *testing.T) {
 			wantErr:  true,
 		},
 		"gcp works": {
-			pathBase: path.Join("terraform", "iam"),
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.GCP,
 			vars:     gcpVars,
 			tf:       &stubTerraform{showState: newTestState()},
@@ -584,7 +584,7 @@ func TestCreateIAM(t *testing.T) {
 			want:     IAMOutput{GCP: GCPIAMOutput{SaKey: "12345678_abcdefg"}},
 		},
 		"gcp init fails": {
-			pathBase: path.Join("terraform", "iam"),
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.GCP,
 			vars:     gcpVars,
 			tf:       &stubTerraform{initErr: assert.AnError},
@@ -592,7 +592,7 @@ func TestCreateIAM(t *testing.T) {
 			wantErr:  true,
 		},
 		"gcp apply fails": {
-			pathBase: path.Join("terraform", "iam"),
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.GCP,
 			vars:     gcpVars,
 			tf:       &stubTerraform{applyErr: assert.AnError},
@@ -600,7 +600,7 @@ func TestCreateIAM(t *testing.T) {
 			wantErr:  true,
 		},
 		"gcp show fails": {
-			pathBase: path.Join("terraform", "iam"),
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.GCP,
 			vars:     gcpVars,
 			tf:       &stubTerraform{showErr: assert.AnError},
@@ -608,7 +608,7 @@ func TestCreateIAM(t *testing.T) {
 			wantErr:  true,
 		},
 		"gcp no sa_key": {
-			pathBase: path.Join("terraform", "iam"),
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.GCP,
 			vars:     gcpVars,
 			tf: &stubTerraform{
@@ -622,7 +622,7 @@ func TestCreateIAM(t *testing.T) {
 			wantErr: true,
 		},
 		"gcp sa_key has wrong type": {
-			pathBase: path.Join("terraform", "iam"),
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.GCP,
 			vars:     gcpVars,
 			tf: &stubTerraform{
@@ -636,7 +636,7 @@ func TestCreateIAM(t *testing.T) {
 			wantErr: true,
 		},
 		"azure works": {
-			pathBase: path.Join("terraform", "iam"),
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.Azure,
 			vars:     azureVars,
 			tf:       &stubTerraform{showState: newTestState()},
@@ -648,7 +648,7 @@ func TestCreateIAM(t *testing.T) {
 			}},
 		},
 		"azure init fails": {
-			pathBase: path.Join("terraform", "iam"),
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.Azure,
 			vars:     azureVars,
 			tf:       &stubTerraform{initErr: assert.AnError},
@@ -656,7 +656,7 @@ func TestCreateIAM(t *testing.T) {
 			wantErr:  true,
 		},
 		"azure apply fails": {
-			pathBase: path.Join("terraform", "iam"),
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.Azure,
 			vars:     azureVars,
 			tf:       &stubTerraform{applyErr: assert.AnError},
@@ -664,7 +664,7 @@ func TestCreateIAM(t *testing.T) {
 			wantErr:  true,
 		},
 		"azure show fails": {
-			pathBase: path.Join("terraform", "iam"),
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.Azure,
 			vars:     azureVars,
 			tf:       &stubTerraform{showErr: assert.AnError},
@@ -672,7 +672,7 @@ func TestCreateIAM(t *testing.T) {
 			wantErr:  true,
 		},
 		"azure no subscription_id": {
-			pathBase: path.Join("terraform", "iam"),
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.Azure,
 			vars:     azureVars,
 			tf: &stubTerraform{
@@ -686,7 +686,7 @@ func TestCreateIAM(t *testing.T) {
 			wantErr: true,
 		},
 		"azure subscription_id has wrong type": {
-			pathBase: path.Join("terraform", "iam"),
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.Azure,
 			vars:     azureVars,
 			tf: &stubTerraform{
@@ -700,7 +700,7 @@ func TestCreateIAM(t *testing.T) {
 			wantErr: true,
 		},
 		"aws works": {
-			pathBase: path.Join("terraform", "iam"),
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.AWS,
 			vars:     awsVars,
 			tf:       &stubTerraform{showState: newTestState()},
@@ -711,7 +711,7 @@ func TestCreateIAM(t *testing.T) {
 			}},
 		},
 		"aws init fails": {
-			pathBase: path.Join("terraform", "iam"),
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.AWS,
 			vars:     awsVars,
 			tf:       &stubTerraform{initErr: assert.AnError},
@@ -719,7 +719,7 @@ func TestCreateIAM(t *testing.T) {
 			wantErr:  true,
 		},
 		"aws apply fails": {
-			pathBase: path.Join("terraform", "iam"),
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.AWS,
 			vars:     awsVars,
 			tf:       &stubTerraform{applyErr: assert.AnError},
@@ -727,7 +727,7 @@ func TestCreateIAM(t *testing.T) {
 			wantErr:  true,
 		},
 		"aws show fails": {
-			pathBase: path.Join("terraform", "iam"),
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.AWS,
 			vars:     awsVars,
 			tf:       &stubTerraform{showErr: assert.AnError},
@@ -735,7 +735,7 @@ func TestCreateIAM(t *testing.T) {
 			wantErr:  true,
 		},
 		"aws no control_plane_instance_profile": {
-			pathBase: path.Join("terraform", "iam"),
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.AWS,
 			vars:     awsVars,
 			tf: &stubTerraform{
@@ -749,7 +749,7 @@ func TestCreateIAM(t *testing.T) {
 			wantErr: true,
 		},
 		"azure control_plane_instance_profile has wrong type": {
-			pathBase: path.Join("terraform", "iam"),
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.AWS,
 			vars:     awsVars,
 			tf: &stubTerraform{
@@ -1003,12 +1003,12 @@ func TestPlan(t *testing.T) {
 		wantErr  bool
 	}{
 		"plan succeeds": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			tf:       &stubTerraform{},
 			fs:       afero.NewMemMapFs(),
 		},
 		"set log path fails": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			tf: &stubTerraform{
 				setLogPathErr: someError,
 			},
@@ -1016,7 +1016,7 @@ func TestPlan(t *testing.T) {
 			wantErr: true,
 		},
 		"set log fails": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			tf: &stubTerraform{
 				setLogErr: someError,
 			},
@@ -1024,7 +1024,7 @@ func TestPlan(t *testing.T) {
 			wantErr: true,
 		},
 		"plan fails": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			tf: &stubTerraform{
 				planJSONErr: someError,
 			},
@@ -1032,7 +1032,7 @@ func TestPlan(t *testing.T) {
 			wantErr: true,
 		},
 		"init fails": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			tf: &stubTerraform{
 				initErr: someError,
 			},
@@ -1070,12 +1070,12 @@ func TestShowPlan(t *testing.T) {
 		wantErr  bool
 	}{
 		"show plan succeeds": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			tf:       &stubTerraform{},
 			fs:       afero.NewMemMapFs(),
 		},
 		"set log path fails": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			tf: &stubTerraform{
 				setLogPathErr: someError,
 			},
@@ -1083,7 +1083,7 @@ func TestShowPlan(t *testing.T) {
 			wantErr: true,
 		},
 		"set log fails": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			tf: &stubTerraform{
 				setLogErr: someError,
 			},
@@ -1091,7 +1091,7 @@ func TestShowPlan(t *testing.T) {
 			wantErr: true,
 		},
 		"show plan file fails": {
-			pathBase: "terraform",
+			pathBase: constants.TerraformEmbeddedDir,
 			tf: &stubTerraform{
 				showPlanFileErr: someError,
 			},

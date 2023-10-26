@@ -24,12 +24,12 @@ import (
 
 func TestPlanClusterUpgrade(t *testing.T) {
 	setUpFilesystem := func(existingFiles []string) file.Handler {
-		fs := afero.NewMemMapFs()
+		fs := file.NewHandler(afero.NewMemMapFs())
+		require.NoError(t, fs.MkdirAll("test"))
 		for _, f := range existingFiles {
-			require.NoError(t, afero.WriteFile(fs, f, []byte{}, 0o644))
+			require.NoError(t, fs.Write(f, []byte{}))
 		}
-
-		return file.NewHandler(fs)
+		return fs
 	}
 
 	testCases := map[string]struct {
@@ -199,6 +199,6 @@ func (t *tfClusterUpgradeStub) ApplyCluster(_ context.Context, _ cloudprovider.P
 	return state.Infrastructure{}, t.applyErr
 }
 
-func (t *tfClusterUpgradeStub) PrepareUpgradeWorkspace(_, _ string, _ terraform.Variables) error {
+func (t *tfClusterUpgradeStub) PrepareWorkspace(_ string, _ terraform.Variables) error {
 	return t.prepareWorkspaceErr
 }
