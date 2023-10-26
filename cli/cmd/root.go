@@ -51,7 +51,7 @@ func NewRootCmd() *cobra.Command {
 
 	rootCmd.AddCommand(cmd.NewConfigCmd())
 	rootCmd.AddCommand(cmd.NewCreateCmd())
-	rootCmd.AddCommand(cmd.NewInitCmd())
+	rootCmd.AddCommand(cmd.NewApplyCmd())
 	rootCmd.AddCommand(cmd.NewMiniCmd())
 	rootCmd.AddCommand(cmd.NewStatusCmd())
 	rootCmd.AddCommand(cmd.NewVerifyCmd())
@@ -60,6 +60,7 @@ func NewRootCmd() *cobra.Command {
 	rootCmd.AddCommand(cmd.NewTerminateCmd())
 	rootCmd.AddCommand(cmd.NewIAMCmd())
 	rootCmd.AddCommand(cmd.NewVersionCmd())
+	rootCmd.AddCommand(cmd.NewInitCmd())
 
 	return rootCmd
 }

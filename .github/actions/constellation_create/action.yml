@@ -147,7 +147,12 @@ runs:
       id: constellation-init
       shell: bash
       run: |
-        constellation init --debug
+        # TODO(v2.14): Remove workaround for CLIs not supporting apply command
+        cmd=apply
+        if constellation --help | grep -q init; then
+          cmd=init
+        fi
+        constellation $cmd --debug
         echo "KUBECONFIG=$(pwd)/constellation-admin.conf" | tee -a $GITHUB_OUTPUT
 
     - name: Wait for nodes to join and become ready

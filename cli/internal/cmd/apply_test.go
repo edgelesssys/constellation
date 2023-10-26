@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -22,19 +23,13 @@ import (
 
 func TestParseApplyFlags(t *testing.T) {
 	require := require.New(t)
-	// TODO: Use flags := applyCmd().Flags() once we have a separate apply command
 	defaultFlags := func() *pflag.FlagSet {
-		flags := pflag.NewFlagSet("test", pflag.ContinueOnError)
+		flags := NewApplyCmd().Flags()
+		// Register persistent flags
 		flags.String("workspace", "", "")
 		flags.String("tf-log", "NONE", "")
 		flags.Bool("force", false, "")
 		flags.Bool("debug", false, "")
-		flags.Bool("merge-kubeconfig", false, "")
-		flags.Bool("conformance", false, "")
-		flags.Bool("skip-helm-wait", false, "")
-		flags.Bool("yes", false, "")
-		flags.StringSlice("skip-phases", []string{}, "")
-		flags.Duration("timeout", 0, "")
 		return flags
 	}
 
@@ -46,7 +41,8 @@ func TestParseApplyFlags(t *testing.T) {
 		"default flags": {
 			flags: defaultFlags(),
 			wantFlags: applyFlags{
-				helmWaitMode: helm.WaitModeAtomic,
+				helmWaitMode:   helm.WaitModeAtomic,
+				upgradeTimeout: 5 * time.Minute,
 			},
 		},
 		"skip phases": {
@@ -56,8 +52,9 @@ func TestParseApplyFlags(t *testing.T) {
 				return flags
 			}(),
 			wantFlags: applyFlags{
-				skipPhases:   skipPhases{skipHelmPhase: struct{}{}, skipK8sPhase: struct{}{}},
-				helmWaitMode: helm.WaitModeAtomic,
+				skipPhases:     skipPhases{skipHelmPhase: struct{}{}, skipK8sPhase: struct{}{}},
+				helmWaitMode:   helm.WaitModeAtomic,
+				upgradeTimeout: 5 * time.Minute,
 			},
 		},
 		"skip helm wait": {
@@ -67,7 +64,8 @@ func TestParseApplyFlags(t *testing.T) {
 				return flags
 			}(),
 			wantFlags: applyFlags{
-				helmWaitMode: helm.WaitModeNone,
+				helmWaitMode:   helm.WaitModeNone,
+				upgradeTimeout: 5 * time.Minute,
 			},
 		},
 	}

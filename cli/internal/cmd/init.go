@@ -47,6 +47,7 @@ func NewInitCmd() *cobra.Command {
 			cmd.Flags().Duration("timeout", time.Hour, "")
 			return runApply(cmd, args)
 		},
+		Deprecated: "use 'constellation apply' instead.",
 	}
 	cmd.Flags().Bool("conformance", false, "enable conformance mode")
 	cmd.Flags().Bool("skip-helm-wait", false, "install helm charts without waiting for deployments to be ready")

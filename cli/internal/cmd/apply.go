@@ -40,6 +40,85 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
+// phases that can be skipped during apply.
+// New phases should also be added to [formatSkipPhases].
+const (
+	// skipInfrastructurePhase skips the Terraform apply of the apply process.
+	skipInfrastructurePhase skipPhase = "infrastructure"
+	// skipInitPhase skips the init RPC of the apply process.
+	skipInitPhase skipPhase = "init"
+	// skipAttestationConfigPhase skips the attestation config upgrade of the apply process.
+	skipAttestationConfigPhase skipPhase = "attestationconfig"
+	// skipCertSANsPhase skips the cert SANs upgrade of the apply process.
+	skipCertSANsPhase skipPhase = "certsans"
+	// skipHelmPhase skips the helm upgrade of the apply process.
+	skipHelmPhase skipPhase = "helm"
+	// skipImagePhase skips the image upgrade of the apply process.
+	skipImagePhase skipPhase = "image"
+	// skipK8sPhase skips the Kubernetes version upgrade of the apply process.
+	skipK8sPhase skipPhase = "k8s"
+)
+
+// formatSkipPhases returns a formatted string of all phases that can be skipped.
+func formatSkipPhases() string {
+	return fmt.Sprintf("{ %s }", strings.Join([]string{
+		string(skipInfrastructurePhase),
+		string(skipInitPhase),
+		string(skipAttestationConfigPhase),
+		string(skipCertSANsPhase),
+		string(skipHelmPhase),
+		string(skipImagePhase),
+		string(skipK8sPhase),
+	}, " | "))
+}
+
+// skipPhase is a phase of the upgrade process that can be skipped.
+type skipPhase string
+
+// skipPhases is a list of phases that can be skipped during the upgrade process.
+type skipPhases map[skipPhase]struct{}
+
+// contains returns true if the list of phases contains the given phase.
+func (s skipPhases) contains(phase skipPhase) bool {
+	_, ok := s[skipPhase(strings.ToLower(string(phase)))]
+	return ok
+}
+
+// add a phase to the list of phases.
+func (s *skipPhases) add(phases ...skipPhase) {
+	if *s == nil {
+		*s = make(skipPhases)
+	}
+	for _, phase := range phases {
+		(*s)[skipPhase(strings.ToLower(string(phase)))] = struct{}{}
+	}
+}
+
+// NewApplyCmd creates the apply command.
+func NewApplyCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "apply",
+		Short: "Apply a configuration to a Constellation cluster",
+		Long:  "Apply a configuration to a Constellation cluster to initialize or upgrade the cluster.",
+		Args:  cobra.NoArgs,
+		RunE:  runApply,
+	}
+
+	cmd.Flags().Bool("conformance", false, "enable conformance mode")
+	cmd.Flags().Bool("skip-helm-wait", false, "install helm charts without waiting for deployments to be ready")
+	cmd.Flags().Bool("merge-kubeconfig", false, "merge Constellation kubeconfig file with default kubeconfig file in $HOME/.kube/config")
+	cmd.Flags().BoolP("yes", "y", false, "run command without further confirmation\n"+
+		"WARNING: the command might delete or update existing resources without additional checks. Please read the docs.\n")
+	cmd.Flags().Duration("timeout", 5*time.Minute, "change helm upgrade timeout\n"+
+		"Might be useful for slow connections or big clusters.")
+	cmd.Flags().StringSlice("skip-phases", nil, "comma-separated list of upgrade phases to skip\n"+
+		fmt.Sprintf("one or multiple of %s", formatSkipPhases()))
+
+	must(cmd.Flags().MarkHidden("timeout"))
+
+	return cmd
+}
+
 // applyFlags defines the flags for the apply command.
 type applyFlags struct {
 	rootFlags
@@ -202,7 +281,7 @@ The control flow is as follows:
 	                                  │  │Not up to date            │
 	                                  │  │(Diff from Terraform plan)│
 	                                  │  └────────────┐             │
-	                                  │               │             │Terraform
+	                                  │               │             |Infrastructure
 	                                  │  ┌────────────▼──────────┐  │Phase
 	                                  │  │Apply Terraform updates│  │
 	                                  │  └────────────┬──────────┘  │
@@ -228,14 +307,14 @@ The control flow is as follows:
 	└──────────────┬───────────────┘  │                             │
 	               │                  │                             │
 	               └───────────────┐  │                          ───┘
-	                               │  │
-	                    ┌──────────▼──▼──────────┐
-	                    │Apply Attestation Config│
-	                    └─────────────┬──────────┘
-	                                  │
-	                   ┌──────────────▼────────────┐
-	                   │Extend API Server Cert SANs│
-	                   └──────────────┬────────────┘
+	                               │  │                          ───┐
+	                    ┌──────────▼──▼──────────┐                  │AttestationConfig
+	                    │Apply Attestation Config│                  │Phase
+	                    └─────────────┬──────────┘               ───┘
+	                                  │                          ───┐
+	                   ┌──────────────▼────────────┐                │CertSANs
+	                   │Extend API Server Cert SANs│                │Phase
+	                   └──────────────┬────────────┘             ───┘
 	                                  │                          ───┐
 	                       ┌──────────▼────────┐                    │Helm
 	                       │ Apply Helm Charts │                    │Phase
@@ -277,22 +356,26 @@ func (a *applyCmd) apply(cmd *cobra.Command, configFetcher attestationconfigapi.
 	}
 
 	// From now on we can assume a valid Kubernetes admin config file exists
+	a.log.Debugf("Creating Kubernetes client using %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename))
 	kubeUpgrader, err := a.newKubeUpgrader(cmd.OutOrStdout(), constants.AdminConfFilename, a.log)
 	if err != nil {
 		return err
 	}
 
 	// Apply Attestation Config
-	a.log.Debugf("Creating Kubernetes client using %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename))
-	a.log.Debugf("Applying new attestation config to cluster")
-	if err := a.applyJoinConfig(cmd, kubeUpgrader, conf.GetAttestationConfig(), stateFile.ClusterValues.MeasurementSalt); err != nil {
-		return fmt.Errorf("applying attestation config: %w", err)
+	if !a.flags.skipPhases.contains(skipAttestationConfigPhase) {
+		a.log.Debugf("Applying new attestation config to cluster")
+		if err := a.applyJoinConfig(cmd, kubeUpgrader, conf.GetAttestationConfig(), stateFile.ClusterValues.MeasurementSalt); err != nil {
+			return fmt.Errorf("applying attestation config: %w", err)
+		}
 	}
 
 	// Extend API Server Cert SANs
-	sans := append([]string{stateFile.Infrastructure.ClusterEndpoint, conf.CustomEndpoint}, stateFile.Infrastructure.APIServerCertSANs...)
-	if err := kubeUpgrader.ExtendClusterConfigCertSANs(cmd.Context(), sans); err != nil {
-		return fmt.Errorf("extending cert SANs: %w", err)
+	if !a.flags.skipPhases.contains(skipCertSANsPhase) {
+		sans := append([]string{stateFile.Infrastructure.ClusterEndpoint, conf.CustomEndpoint}, stateFile.Infrastructure.APIServerCertSANs...)
+		if err := kubeUpgrader.ExtendClusterConfigCertSANs(cmd.Context(), sans); err != nil {
+			return fmt.Errorf("extending cert SANs: %w", err)
+		}
 	}
 
 	// Apply Helm Charts
