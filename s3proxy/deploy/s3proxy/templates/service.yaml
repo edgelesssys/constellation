@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: s3proxy-service
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: s3proxy
+spec:
+  selector:
+    app: s3proxy
+  ports:
+    - name: https
+      port: 443
+      targetPort: s3proxy-port
+  type: ClusterIP
