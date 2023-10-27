@@ -37,11 +37,6 @@ func ReadFromFile(fileHandler file.Handler, path string) (*State, error) {
 		return nil, fmt.Errorf("reading state file: %w", err)
 	}
 
-	v := validation.NewValidator()
-	if err := v.Validate(state, validation.ValidateOptions{}); err != nil {
-		return nil, fmt.Errorf("validating state file: %w", err)
-	}
-
 	return state, nil
 }
 
