@@ -71,7 +71,9 @@ func (a *applyCmd) planTerraformMigration(cmd *cobra.Command, conf *config.Confi
 	// 	  u.upgrader.AddManualStateMigration(migration)
 	// }
 
-	return a.clusterUpgrader.PlanClusterUpgrade(cmd.Context(), cmd.OutOrStdout(), vars, conf.GetProvider())
+	a.spinner.Start("Checking for infrastructure changes", false)
+	defer a.spinner.Stop()
+	return a.clusterUpgrader.PlanClusterUpgrade(cmd.Context(), a.spinner, vars, conf.GetProvider())
 }
 
 // migrateTerraform migrates an existing Terraform state and the post-migration infrastructure state is returned.
