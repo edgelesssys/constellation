@@ -260,12 +260,14 @@ jobs:
           cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
           cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
           fetchMeasurements: ${{ contains(needs.find-latest-image.outputs.image, '/stream/stable/') }}
+          selfManagedInfra: "false"
 
       - name: Always terminate cluster
         if: always()
         uses: ./.github/actions/constellation_destroy
         with:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
+          selfManagedInfra: "false"
 
       - name: Always delete IAM configuration
         if: always()

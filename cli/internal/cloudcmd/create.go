@@ -25,6 +25,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
+	"github.com/edgelesssys/constellation/v2/internal/maa"
 )
 
 // Creator creates cloud resources.
@@ -51,7 +52,7 @@ func NewCreator(out io.Writer) *Creator {
 		newRawDownloader: func() rawDownloader {
 			return imagefetcher.NewDownloader()
 		},
-		policyPatcher: NewAzurePolicyPatcher(),
+		policyPatcher: maa.NewAzurePolicyPatcher(),
 	}
 }
 

@@ -76,6 +76,9 @@ inputs:
     description: "Enable security policy for the cluster."
   internalLoadBalancer:
     description: "Enable internal load balancer for the cluster."
+  selfManagedInfra:
+    description: "Use self-managed infrastructure instead of infrastructure created by the Constellation CLI."
+    default: "false"
 
 outputs:
   kubeconfig:
@@ -260,6 +263,8 @@ runs:
         kubernetesVersion: ${{ inputs.kubernetesVersion }}
         refStream: ${{ inputs.refStream }}
         internalLoadBalancer: ${{ inputs.internalLoadBalancer }}
+        test: ${{ inputs.test }}
+        selfManagedInfra: ${{ inputs.selfManagedInfra }}
 
     - name: Deploy log- and metrics-collection (Kubernetes)
       id: deploy-logcollection

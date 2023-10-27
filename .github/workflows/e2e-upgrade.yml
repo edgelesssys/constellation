@@ -182,6 +182,7 @@ jobs:
           awsOpenSearchDomain: ${{ secrets.AWS_OPENSEARCH_DOMAIN }}
           awsOpenSearchUsers: ${{ secrets.AWS_OPENSEARCH_USER }}
           awsOpenSearchPwd: ${{ secrets.AWS_OPENSEARCH_PWD }}
+          selfManagedInfra: "false"
 
       - name: Build CLI
         uses: ./.github/actions/build_cli
@@ -287,6 +288,7 @@ jobs:
         uses: ./.github/actions/constellation_destroy
         with:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
+          selfManagedInfra: "false"
 
       - name: Always delete IAM configuration
         if: always()

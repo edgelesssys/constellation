@@ -18,6 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/maa"
 )
 
 // ClusterUpgrader is responsible for performing Terraform migrations on cluster upgrades.
@@ -43,7 +44,7 @@ func NewClusterUpgrader(ctx context.Context, existingWorkspace, upgradeWorkspace
 
 	return &ClusterUpgrader{
 		tf:                tfClient,
-		policyPatcher:     NewAzurePolicyPatcher(),
+		policyPatcher:     maa.NewAzurePolicyPatcher(),
 		fileHandler:       fileHandler,
 		existingWorkspace: existingWorkspace,
 		upgradeWorkspace:  upgradeWorkspace,

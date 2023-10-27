@@ -1,0 +1,30 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "image-fetch_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/hack/image-fetch",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//internal/api/attestationconfigapi",
+        "//internal/cloud/cloudprovider",
+        "//internal/config",
+        "//internal/constants",
+        "//internal/file",
+        "//internal/imagefetcher",
+        "@com_github_spf13_afero//:afero",
+    ],
+)
+
+go_binary(
+    name = "image-fetch",
+    embed = [":image-fetch_lib"],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "image-fetch_test",
+    srcs = ["main_test.go"],
+    embed = [":image-fetch_lib"],
+)

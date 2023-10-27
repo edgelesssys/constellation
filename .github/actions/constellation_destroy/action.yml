@@ -5,6 +5,9 @@ inputs:
   kubeconfig:
     description: "The kubeconfig for the cluster."
     required: true
+  selfManagedInfra:
+    description: "Use self-managed infrastructure instead of infrastructure created by the Constellation CLI."
+    required: true
 
 runs:
   using: "composite"
@@ -39,6 +42,18 @@ runs:
         echo "::endgroup::"
 
     - name: Constellation terminate
+      if: inputs.selfManagedInfra != 'true'
       shell: bash
       run: |
         constellation terminate --yes --tf-log=DEBUG
+
+    - name: Constellation terminate (self-managed)
+      if: inputs.selfManagedInfra == 'true'
+      shell: bash
+      working-directory: ${{ github.workspace }}/e2e-infra
+      run: |
+        terraform init
+        terraform destroy -auto-approve
+        # Explicitly delete the state file
+        rm ${{ github.workspace }}/constellation-state.yaml
+        rm ${{ github.workspace }}/constellation-admin.conf

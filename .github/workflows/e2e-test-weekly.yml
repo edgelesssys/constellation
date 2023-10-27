@@ -171,6 +171,24 @@ jobs:
             provider: "aws"
             kubernetes-version: "v1.28"
 
+          # self-managed infra test on latest k8s version
+          # with Sonobuoy full
+          - test: "sonobuoy full"
+            refStream: "ref/main/stream/debug/?"
+            provider: "gcp"
+            kubernetes-version: "v1.28"
+            selfManagedInfra: "true"
+          - test: "sonobuoy full"
+            refStream: "ref/main/stream/debug/?"
+            provider: "azure"
+            kubernetes-version: "v1.28"
+            selfManagedInfra: "true"
+          - test: "sonobuoy full"
+            provider: "aws"
+            refStream: "ref/main/stream/debug/?"
+            kubernetes-version: "v1.28"
+            selfManagedInfra: "true"
+
           #
           # Tests on release-stable refStream
           #
@@ -188,6 +206,7 @@ jobs:
             refStream: "ref/release/stream/stable/?"
             provider: "aws"
             kubernetes-version: "v1.27"
+
     runs-on: ubuntu-22.04
     permissions:
       id-token: write
@@ -231,12 +250,14 @@ jobs:
           cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
           fetchMeasurements: ${{ matrix.refStream != 'ref/release/stream/stable/?' }}
           azureSNPEnforcementPolicy: ${{ matrix.azureSNPEnforcementPolicy }}
+          selfManagedInfra: ${{ matrix.selfManagedInfra == 'true' }}
 
       - name: Always terminate cluster
         if: always()
         uses: ./.github/actions/constellation_destroy
         with:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
+          selfManagedInfra: ${{ matrix.selfManagedInfra == 'true' }}
 
       - name: Always delete IAM configuration
         if: always()
