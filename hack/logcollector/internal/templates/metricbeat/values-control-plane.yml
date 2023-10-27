@@ -48,7 +48,12 @@ daemonset:
         hostPath:
           path: /etc/kubernetes/pki/etcd
           type: ""
-
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "100Mi"
+      limits: null
+      
 clusterRoleRules:
   - apiGroups: [""]
     resources:
