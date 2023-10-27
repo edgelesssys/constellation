@@ -190,6 +190,47 @@ func (s *State) Merge(other *State) (*State, error) {
 	return s, nil
 }
 
+// preCreateConstraints are the constraints on the state that should be enforced
+// before a Constellation cluster is created.
+//
+// The constraints check if the state file version is valid,
+// and if all fields are empty, which is a requirement pre-create.
+func (s *State) preCreateConstraints() []*validation.Constraint {
+	return []*validation.Constraint{
+		// state version needs to be accepted by the parsing CLI.
+		validation.OneOf(s.Version, []string{Version1}).
+			WithFieldTrace(s, &s.Version),
+		// Infrastructure must be empty.
+		// As the infrastructure struct contains slices, we cannot use the
+		// Empty constraint on the entire struct. Instead, we need to check
+		// each field individually.
+		validation.Empty(s.Infrastructure.UID).
+			WithFieldTrace(s, &s.Infrastructure.UID),
+		validation.Empty(s.Infrastructure.ClusterEndpoint).
+			WithFieldTrace(s, &s.Infrastructure.ClusterEndpoint),
+		validation.Empty(s.Infrastructure.InClusterEndpoint).
+			WithFieldTrace(s, &s.Infrastructure.InClusterEndpoint),
+		validation.Empty(s.Infrastructure.Name).
+			WithFieldTrace(s, &s.Infrastructure.Name),
+		validation.Empty(s.Infrastructure.IPCidrNode).
+			WithFieldTrace(s, &s.Infrastructure.IPCidrNode),
+		validation.EmptySlice(s.Infrastructure.APIServerCertSANs).
+			WithFieldTrace(s, &s.Infrastructure.APIServerCertSANs),
+		validation.EmptySlice(s.Infrastructure.InitSecret).
+			WithFieldTrace(s, &s.Infrastructure.InitSecret),
+		// ClusterValues must be empty.
+		// As the clusterValues struct contains slices, we cannot use the
+		// Empty constraint on the entire struct. Instead, we need to check
+		// each field individually.
+		validation.Empty(s.ClusterValues.ClusterID).
+			WithFieldTrace(s, &s.ClusterValues.ClusterID),
+		validation.Empty(s.ClusterValues.OwnerID).
+			WithFieldTrace(s, &s.ClusterValues.OwnerID),
+		validation.EmptySlice(s.ClusterValues.MeasurementSalt).
+			WithFieldTrace(s, &s.ClusterValues.MeasurementSalt),
+	}
+}
+
 // Constraints implements the "Validatable" interface.
 func (s *State) Constraints() []*validation.Constraint {
 	constraints := []*validation.Constraint{
@@ -204,9 +245,7 @@ func (s *State) Constraints() []*validation.Constraint {
 			// all constraints on the infrastructure struct must be satisfied.
 			s.Infrastructure.Constraints(s),
 			// "completely empty":
-			// As the infrastructure struct contains slices, we cannot use the
-			// Empty constraint on the entire struct. Instead, we need to check
-			// each field individually.
+
 			validation.And(
 				validation.EvaluateAll,
 				validation.Empty(s.Infrastructure.UID).

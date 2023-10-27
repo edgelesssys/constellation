@@ -180,3 +180,75 @@ func TestValidation(t *testing.T) {
 		})
 	}
 }
+
+func TestPreCreateValidation(t *testing.T) {
+	testCases := map[string]struct {
+		stateFile     func() *State
+		wantErr       bool
+		errAssertions func(a *assert.Assertions, err error)
+	}{
+		"valid": {
+			stateFile: func() *State {
+				return &State{
+					Version: Version1,
+				}
+			},
+		},
+		"invalid version": {
+			stateFile: func() *State {
+				return &State{
+					Version: "invalid",
+				}
+			},
+			wantErr: true,
+			errAssertions: func(a *assert.Assertions, err error) {
+				a.Contains(err.Error(), "validating State.version: invalid must be one of [v1]")
+			},
+		},
+		"infrastructure not empty": {
+			stateFile: func() *State {
+				return &State{
+					Version: Version1,
+					Infrastructure: Infrastructure{
+						ClusterEndpoint: "test",
+					},
+				}
+			},
+			wantErr: true,
+			errAssertions: func(a *assert.Assertions, err error) {
+				a.Contains(err.Error(), "validating State.infrastructure.clusterEndpoint: test must be empty")
+			},
+		},
+		"cluster values not empty": {
+			stateFile: func() *State {
+				return &State{
+					Version: Version1,
+					ClusterValues: ClusterValues{
+						ClusterID: "test",
+					},
+				}
+			},
+			wantErr: true,
+			errAssertions: func(a *assert.Assertions, err error) {
+				a.Contains(err.Error(), "validating State.clusterValues.clusterID: test must be empty")
+			},
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			v := validation.NewValidator()
+			err := v.Validate(tc.stateFile(), validation.ValidateOptions{
+				OverrideConstraints: tc.stateFile().preCreateConstraints,
+			})
+			if tc.wantErr {
+				require.Error(t, err)
+				if tc.errAssertions != nil {
+					tc.errAssertions(assert.New(t), err)
+				}
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
