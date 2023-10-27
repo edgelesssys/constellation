@@ -20,8 +20,8 @@ require (
 	github.com/edgelesssys/constellation/v2/3rdparty/node-maintenance-operator v0.0.0
 	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api v0.0.0
 	github.com/googleapis/gax-go/v2 v2.12.0
-	github.com/onsi/ginkgo/v2 v2.11.0
-	github.com/onsi/gomega v1.27.8
+	github.com/onsi/ginkgo/v2 v2.13.0
+	github.com/onsi/gomega v1.27.10
 	github.com/spf13/afero v1.10.0
 	github.com/stretchr/testify v1.8.4
 	go.etcd.io/etcd/api/v3 v3.5.9
