@@ -252,3 +252,49 @@ func TestPreCreateValidation(t *testing.T) {
 		})
 	}
 }
+
+func TestPreInitValidation(t *testing.T) {
+	validPreInitState := func() *State {
+		s := defaultState()
+		s.ClusterValues = ClusterValues{}
+		return s
+	}
+
+	testCases := map[string]struct {
+		stateFile     func() *State
+		wantErr       bool
+		errAssertions func(a *assert.Assertions, err error)
+	}{
+		"valid": {
+			stateFile: validPreInitState,
+		},
+		"invalid version": {
+			stateFile: func() *State {
+				s := validPreInitState()
+				s.Version = "invalid"
+				return s
+			},
+			wantErr: true,
+			errAssertions: func(a *assert.Assertions, err error) {
+				a.Contains(err.Error(), "validating State.version: invalid must be one of [v1]")
+			},
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			v := validation.NewValidator()
+			err := v.Validate(tc.stateFile(), validation.ValidateOptions{
+				OverrideConstraints: tc.stateFile().preInitConstraints,
+			})
+			if tc.wantErr {
+				require.Error(t, err)
+				if tc.errAssertions != nil {
+					tc.errAssertions(assert.New(t), err)
+				}
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
