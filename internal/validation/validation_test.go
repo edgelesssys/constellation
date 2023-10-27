@@ -341,3 +341,64 @@ func (d *exampleDoc) strFieldNeedsToBeAbc() *Constraint {
 		},
 	}
 }
+
+func TestOverrideConstraints(t *testing.T) {
+	overrideConstraints := func(t *testing.T, wantCalled bool) func() []*Constraint {
+		return func() []*Constraint {
+			if !wantCalled {
+				t.Fatal("overrideConstraints should not be called")
+			}
+			return []*Constraint{}
+		}
+	}
+
+	testCases := map[string]struct {
+		doc                exampleDocToOverride
+		overrideFunc       func() []*Constraint
+		wantOverrideCalled bool
+		wantErr            bool
+	}{
+		"override constraints": {
+			doc:                exampleDocToOverride{},
+			overrideFunc:       overrideConstraints(t, true),
+			wantOverrideCalled: true,
+		},
+		"do not override constraints": {
+			doc: exampleDocToOverride{
+				calledDocConstraints: true,
+			},
+			overrideFunc:       nil,
+			wantOverrideCalled: false,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			validator := NewValidator()
+			err := validator.Validate(&tc.doc, ValidateOptions{
+				OverrideConstraints: tc.overrideFunc,
+			})
+
+			if tc.wantErr {
+				require.Error(err)
+			} else {
+				require.NoError(err)
+				if tc.wantOverrideCalled {
+					assert.Equal(tc.doc.calledDocConstraints, false)
+				}
+			}
+		})
+	}
+}
+
+type exampleDocToOverride struct {
+	calledDocConstraints bool
+}
+
+func (d *exampleDocToOverride) Constraints() []*Constraint {
+	d.calledDocConstraints = true
+	return []*Constraint{}
+}

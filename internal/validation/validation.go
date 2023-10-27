@@ -43,12 +43,22 @@ type Validatable interface {
 type ValidateOptions struct {
 	// ErrStrategy is the strategy to use when encountering an error during validation.
 	ErrStrategy ErrStrategy
+	// OverrideConstraints overrides the constraints to use for validation.
+	// If nil, the constraints returned by the document are used.
+	OverrideConstraints func() []*Constraint
 }
 
 // Validate validates a document using the given options.
 func (v *Validator) Validate(doc Validatable, opts ValidateOptions) error {
+	var constraints func() []*Constraint
+	if opts.OverrideConstraints != nil {
+		constraints = opts.OverrideConstraints
+	} else {
+		constraints = doc.Constraints
+	}
+
 	var retErr error
-	for _, c := range doc.Constraints() {
+	for _, c := range constraints() {
 		if err := c.Satisfied(); err != nil {
 			if opts.ErrStrategy == FailFast {
 				return err
