@@ -16,6 +16,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -41,7 +42,7 @@ import (
 )
 
 // phases that can be skipped during apply.
-// New phases should also be added to [formatSkipPhases].
+// New phases should also be added to [allPhases].
 const (
 	// skipInfrastructurePhase skips the Terraform apply of the apply process.
 	skipInfrastructurePhase skipPhase = "infrastructure"
@@ -59,9 +60,9 @@ const (
 	skipK8sPhase skipPhase = "k8s"
 )
 
-// formatSkipPhases returns a formatted string of all phases that can be skipped.
-func formatSkipPhases() string {
-	return fmt.Sprintf("{ %s }", strings.Join([]string{
+// allPhases returns a list of all phases that can be skipped as strings.
+func allPhases() []string {
+	return []string{
 		string(skipInfrastructurePhase),
 		string(skipInitPhase),
 		string(skipAttestationConfigPhase),
@@ -69,7 +70,12 @@ func formatSkipPhases() string {
 		string(skipHelmPhase),
 		string(skipImagePhase),
 		string(skipK8sPhase),
-	}, " | "))
+	}
+}
+
+// formatSkipPhases returns a formatted string of all phases that can be skipped.
+func formatSkipPhases() string {
+	return fmt.Sprintf("{ %s }", strings.Join(allPhases(), " | "))
 }
 
 // skipPhase is a phase of the upgrade process that can be skipped.
@@ -142,10 +148,10 @@ func (f *applyFlags) parse(flags *pflag.FlagSet) error {
 	}
 	var skipPhases skipPhases
 	for _, phase := range rawSkipPhases {
-		switch skipPhase(strings.ToLower(phase)) {
-		case skipInfrastructurePhase, skipHelmPhase, skipImagePhase, skipK8sPhase:
+		phase = strings.ToLower(phase)
+		if slices.Contains(allPhases(), phase) {
 			skipPhases.add(skipPhase(phase))
-		default:
+		} else {
 			return fmt.Errorf("invalid phase %s", phase)
 		}
 	}

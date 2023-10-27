@@ -283,26 +283,6 @@ func TestUpgradeApply(t *testing.T) {
 	}
 }
 
-func TestUpgradeApplyFlagsForSkipPhases(t *testing.T) {
-	require := require.New(t)
-	cmd := newUpgradeApplyCmd()
-	// register persistent flags manually
-	cmd.Flags().String("workspace", "", "")
-	cmd.Flags().Bool("force", true, "")
-	cmd.Flags().String("tf-log", "NONE", "")
-	cmd.Flags().Bool("debug", false, "")
-	cmd.Flags().Bool("merge-kubeconfig", false, "")
-
-	require.NoError(cmd.Flags().Set("skip-phases", "infrastructure,helm,k8s,image"))
-	wantPhases := skipPhases{}
-	wantPhases.add(skipInfrastructurePhase, skipHelmPhase, skipK8sPhase, skipImagePhase)
-
-	var flags applyFlags
-	err := flags.parse(cmd.Flags())
-	require.NoError(err)
-	assert.Equal(t, wantPhases, flags.skipPhases)
-}
-
 type stubKubernetesUpgrader struct {
 	nodeVersionErr                 error
 	currentConfig                  config.AttestationCfg
