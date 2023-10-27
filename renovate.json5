@@ -267,5 +267,15 @@
       ],
       "datasourceTemplate": "go",
     },
+    {
+      "fileMatch": ["(^|\\/)e2e_s3proxy/action.yml$"],
+      "matchStrings": [
+        // Match mint tags (ghcr.io/edgelesssys/mint).
+        // example Match:' "ghcr.io/edgelesssys/mint:v1.2.3"'
+        // (ghcr.io/edgelesssys/mint -> depName, v1.2.3 -> currentValue)
+        "IMAGE: \"(?<depName>[^\"]*?):(?<currentValue>[^\"]*?)@(?<currentDigest>sha256:[a-f0-9]+)\"[^\\n]+# renovate:mint-fork",
+      ],
+      "datasourceTemplate": "docker",
+    },
   ],
 }
