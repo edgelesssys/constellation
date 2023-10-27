@@ -5,7 +5,7 @@ The debugd gets embedded into OS images at the place where the bootstrapper norm
 Therefore, when a debug image is started, the debugd starts executing instead of the bootstrapper.
 The debugd will then wait for a request from the `cdbg` tool to upload a bootstrapper binary.
 Once the upload is finished debugd will start the bootstrapper.
-Subsequently you can initialize your cluster with `constellation init` as usual.
+Subsequently you can initialize your cluster with `constellation apply` as usual.
 
 ## Build cdbg
 
@@ -45,7 +45,7 @@ With `cdbg` and `yq` installed in your path:
 
    By default, `cdbg` searches for the bootstrapper in the current path (`./bootstrapper`). You can define a custom path by appending the argument `--bootstrapper <path to bootstrapper>` to `cdbg deploy`.
 
-6. Run `constellation init […]` as usual
+6. Run `constellation apply […]` as usual
 
 ### Logcollection to Opensearch
 

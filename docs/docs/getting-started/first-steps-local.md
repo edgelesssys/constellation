@@ -116,16 +116,17 @@ attaching persistent storage, or autoscaling aren't available.
 3. Initialize the cluster
 
   ```bash
-  constellation init
+  constellation apply
   ```
 
   This should give the following output:
 
   ```shell-session
-  $ constellation init
+  $ constellation apply
   Your Constellation master secret was successfully written to ./constellation-mastersecret.json
-  Note: If you just created the cluster, it can take a few minutes to connect.
-  Initializing cluster ...
+  Connecting
+  Initializing cluster
+  Installing Kubernetes components
   Your Constellation cluster was successfully initialized.
 
   Constellation cluster identifier  g6iMP5wRU1b7mpOz2WEISlIYSfdAhB0oNaOg6XEwKFY=
@@ -141,7 +142,7 @@ attaching persistent storage, or autoscaling aren't available.
 
   :::info
 
-  Depending on your setup, `constellation init` may take 10+ minutes to complete.
+  Depending on your setup, `constellation apply` may take 10+ minutes to complete.
 
   :::
 

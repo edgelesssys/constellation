@@ -5,7 +5,7 @@ In particular, it is responsible for updating the OS images of nodes by replacin
 
 ## High level goals
 
-- Admin or `constellation init` can create custom resources for node related components
+- Admin or `constellation apply` can create custom resources for node related components
 - The operator will manage nodes in the cluster by trying to ensure every node has the specified image
 - If a node uses an outdated image, it will be replaced by a new node
 - Admin can update the specified image at any point in time which will trigger a rolling upgrade through the cluster
@@ -20,6 +20,7 @@ The operator has multiple controllers with corresponding custom resource definit
 `NodeVersion` is the only user controlled CRD. The spec allows an administrator to update the desired image and trigger a rolling update.
 
 Example for GCP:
+
 ```yaml
 apiVersion: update.edgeless.systems/v1alpha1
 kind: NodeVersion
@@ -30,6 +31,7 @@ spec:
 ```
 
 Example for Azure:
+
 ```yaml
 apiVersion: update.edgeless.systems/v1alpha1
 kind: NodeVersion
@@ -38,7 +40,6 @@ metadata:
 spec:
   image: "/subscriptions/<subscription-id>/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/<image-definition-name>/versions/<image-version>"
 ```
-
 
 ### AutoscalingStrategy
 
@@ -124,12 +125,13 @@ spec:
   deadline: "2022-07-04T08:33:18+00:00"
 ```
 
-
 ## Getting Started
+
 You’ll need a Kubernetes cluster to run against. You can use [KIND](https://sigs.k8s.io/kind) to get a local cluster for testing, or run against a remote cluster.
 **Note:** Your controller will automatically use the current context in your kubeconfig file (i.e. whatever cluster `kubectl cluster-info` shows).
 
 ### Running on the cluster
+
 1. Install Instances of Custom Resources:
 
 ```sh
@@ -149,6 +151,7 @@ make deploy IMG=<some-registry>/constellation/node-operator:tag
 ```
 
 ### Uninstall CRDs
+
 To delete the CRDs from the cluster:
 
 ```sh
@@ -156,6 +159,7 @@ make uninstall
 ```
 
 ### Undeploy controller
+
 UnDeploy the controller to the cluster:
 
 ```sh
@@ -163,12 +167,14 @@ make undeploy
 ```
 
 ### How it works
+
 This project aims to follow the Kubernetes [Operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/)
 
 It uses [Controllers](https://kubernetes.io/docs/concepts/architecture/controller/)
 which provides a reconcile function responsible for synchronizing resources until the desired state is reached on the cluster
 
 ### Test It Out
+
 1. Install the CRDs into the cluster:
 
 ```sh
@@ -184,6 +190,7 @@ make run
 **NOTE:** You can also run this in one step by running: `make install run`
 
 ### Modifying the API definitions
+
 If you are editing the API definitions, generate the manifests such as CRs or CRDs using:
 
 ```sh

@@ -171,7 +171,7 @@ terraform init
 terraform apply
 ```
 
-The Constellation [init step](#the-init-step) requires the already created `constellation-config.yaml` and the `constellation-state.yaml`.
+The Constellation [apply step](#the-apply-step) requires the already created `constellation-config.yaml` and the `constellation-state.yaml`.
 Create the `constellation-state.yaml` using the output from the Terraform state and the `constellation-conf.yaml`:
 
 ```bash
@@ -199,12 +199,12 @@ Continue with [initializing your cluster](#the-init-step).
 </tabItem>
 </tabs>
 
-## The *init* step
+## The *apply* step
 
 The following command initializes and bootstraps your cluster:
 
 ```bash
-constellation init
+constellation apply
 ```
 
 Next, configure `kubectl` for your cluster:
@@ -215,6 +215,6 @@ export KUBECONFIG="$PWD/constellation-admin.conf"
 
 🏁 That's it. You've successfully created a Constellation cluster.
 
-
 ### Troubleshooting
-In case `init` fails, the CLI collects logs from the bootstrapping instance and stores them inside `constellation-cluster.log`.
+
+In case `apply` fails, the CLI collects logs from the bootstrapping instance and stores them inside `constellation-cluster.log`.

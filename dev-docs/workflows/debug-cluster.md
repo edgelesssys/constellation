@@ -45,7 +45,7 @@ Create the cluster and deploy the debug images:
 Finally run:
 
 ```sh
-./constellation init
+./constellation apply
 ```
 
 ## Access bootstrapper logs
