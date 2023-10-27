@@ -77,7 +77,7 @@ func (a *applyCmd) planTerraformMigration(cmd *cobra.Command, conf *config.Confi
 // migrateTerraform migrates an existing Terraform state and the post-migration infrastructure state is returned.
 func (a *applyCmd) migrateTerraform(cmd *cobra.Command, conf *config.Config, upgradeDir string) (state.Infrastructure, error) {
 	// Ask for confirmation first
-	fmt.Fprintln(cmd.OutOrStdout(), "The upgrade requires a migration of Constellation cloud resources by applying an updated Terraform template. Please manually review the suggested changes below.")
+	cmd.Println("The upgrade requires a migration of Constellation cloud resources by applying an updated Terraform template.")
 	if !a.flags.yes {
 		ok, err := askToConfirm(cmd, "Do you want to apply the Terraform migrations?")
 		if err != nil {
