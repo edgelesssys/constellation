@@ -279,6 +279,113 @@ func TestPreInitValidation(t *testing.T) {
 				a.Contains(err.Error(), "validating State.version: invalid must be one of [v1]")
 			},
 		},
+		"cluster endpoint invalid": {
+			stateFile: func() *State {
+				s := validPreInitState()
+				s.Infrastructure.ClusterEndpoint = "invalid"
+				return s
+			},
+			wantErr: true,
+			errAssertions: func(a *assert.Assertions, err error) {
+				a.Contains(err.Error(), "validating State.infrastructure.clusterEndpoint: invalid must be a valid DNS name")
+				a.Contains(err.Error(), "validating State.infrastructure.clusterEndpoint: invalid must be a valid IP address")
+			},
+		},
+		"in-cluster endpoint invalid": {
+			stateFile: func() *State {
+				s := validPreInitState()
+				s.Infrastructure.InClusterEndpoint = "invalid"
+				return s
+			},
+			wantErr: true,
+			errAssertions: func(a *assert.Assertions, err error) {
+				a.Contains(err.Error(), "validating State.infrastructure.inClusterEndpoint: invalid must be a valid DNS name")
+				a.Contains(err.Error(), "validating State.infrastructure.inClusterEndpoint: invalid must be a valid IP address")
+			},
+		},
+		"node ip cidr invalid": {
+			stateFile: func() *State {
+				s := validPreInitState()
+				s.Infrastructure.IPCidrNode = "invalid"
+				return s
+			},
+			wantErr: true,
+			errAssertions: func(a *assert.Assertions, err error) {
+				a.Contains(err.Error(), "validating State.infrastructure.ipCidrNode: invalid must be a valid CIDR")
+			},
+		},
+		"uid empty": {
+			stateFile: func() *State {
+				s := validPreInitState()
+				s.Infrastructure.UID = ""
+				return s
+			},
+			wantErr: true,
+			errAssertions: func(a *assert.Assertions, err error) {
+				a.Contains(err.Error(), "validating State.infrastructure.uid: must not be empty")
+			},
+		},
+		"name empty": {
+			stateFile: func() *State {
+				s := validPreInitState()
+				s.Infrastructure.Name = ""
+				return s
+			},
+			wantErr: true,
+			errAssertions: func(a *assert.Assertions, err error) {
+				a.Contains(err.Error(), "validating State.infrastructure.name: must not be empty")
+			},
+		},
+		"gcp empty": {
+			stateFile: func() *State {
+				s := validPreInitState()
+				s.Infrastructure.GCP = &GCP{}
+				return s
+			},
+		},
+		"gcp nil": {
+			stateFile: func() *State {
+				s := validPreInitState()
+				s.Infrastructure.GCP = nil
+				return s
+			},
+		},
+		"gcp invalid": {
+			stateFile: func() *State {
+				s := validPreInitState()
+				s.Infrastructure.GCP.IPCidrPod = "invalid"
+				return s
+			},
+			wantErr: true,
+			errAssertions: func(a *assert.Assertions, err error) {
+				a.Contains(err.Error(), "validating State.infrastructure.gcp.ipCidrPod: invalid must be a valid CIDR")
+			},
+		},
+		"azure empty": {
+			stateFile: func() *State {
+				s := validPreInitState()
+				s.Infrastructure.Azure = &Azure{}
+				return s
+			},
+		},
+		"azure nil": {
+			stateFile: func() *State {
+				s := validPreInitState()
+				s.Infrastructure.Azure = nil
+				return s
+			},
+		},
+		"azure invalid": {
+			stateFile: func() *State {
+				s := validPreInitState()
+				s.Infrastructure.Azure.NetworkSecurityGroupName = ""
+				return s
+			},
+			wantErr: true,
+			errAssertions: func(a *assert.Assertions, err error) {
+				a.Contains(err.Error(), "validating State.infrastructure.azure.networkSecurityGroupName: must not be empty")
+			},
+		},
 	}
 
 	for name, tc := range testCases {

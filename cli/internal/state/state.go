@@ -256,21 +256,6 @@ func (s *State) preInitConstraints() []*validation.Constraint {
 			validation.IPAddress(s.Infrastructure.InClusterEndpoint).
 				WithFieldTrace(s, &s.Infrastructure.InClusterEndpoint),
 		),
-		// all SANs need to be valid or the slice needs to be empty.
-		validation.Or(
-			validation.EmptySlice(s.Infrastructure.APIServerCertSANs).
-				WithFieldTrace(s, &s.Infrastructure.APIServerCertSANs),
-			validation.All(s.Infrastructure.APIServerCertSANs,
-				func(i int, san string) *validation.Constraint {
-					return validation.Or(
-						validation.DNSName(san).
-							WithFieldTrace(s, &s.Infrastructure.APIServerCertSANs[i]),
-						validation.IPAddress(san).
-							WithFieldTrace(s, &s.Infrastructure.APIServerCertSANs[i]),
-					)
-				},
-			),
-		),
 		// Node IP Cidr needs to be a valid CIDR range.
 		validation.CIDR(s.Infrastructure.IPCidrNode).
 			WithFieldTrace(s, &s.Infrastructure.IPCidrNode),
