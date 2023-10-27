@@ -20,12 +20,12 @@ If you want to use s3proxy but these limitations stop you from doing so, conside
 You can add the s3proxy to your Constellation cluster as follows:
 1. Download the deployment manifest:
    ```bash
-   wget https://raw.githubusercontent.com/edgelesssys/constellation/main/s3proxy/deploy/deployment-s3proxy.yaml
+   git clone --depth=1 git@github.com:edgelesssys/constellation.git
    ```
-2. Replace the values named `replaceme` in `deployment-s3proxy.yaml` with valid AWS credentials. These credentials are used by s3proxy to access your S3 buckets.
+2. Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY to valid credentials you want s3proxy to use to interact with S3. Inspect `constellation/s3proxy/deploy/s3proxy/values.yaml` to learn about available deployment options.
 3. Deploy s3proxy:
    ```bash
-   kubectl apply -f deployment-s3proxy.yaml
+   helm install s3proxy --set awsAccessKeyID="$AWS_ACCESS_KEY_ID" --set awsSecretAccessKey="$AWS_SECRET_ACCESS_KEY" ./constellation/s3proxy/deploy/s3proxy
    ```
 
 If you want to run a demo application, check out the [Filestash with s3proxy](../getting-started/examples/filestash-s3proxy.md) example.

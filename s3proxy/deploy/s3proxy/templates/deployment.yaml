@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: s3proxy
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: s3proxy
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: s3proxy
+  template:
+    metadata:
+      labels:
+        app: s3proxy
+    spec:
+      containers:
+        - name: s3proxy
+          image: {{ .Values.image }}
+          args:
+            - "--level=-1"
+            {{- if .Values.allowMultipart }}
+            - "--allow-multipart"
+            {{- end }}
+          ports:
+            - containerPort: 4433
+              name: s3proxy-port
+          volumeMounts:
+            - name: tls-cert-data
+              mountPath: /etc/s3proxy/certs/s3proxy.crt
+              subPath: tls.crt
+            - name: tls-cert-data
+              mountPath: /etc/s3proxy/certs/s3proxy.key
+              subPath: tls.key
+          envFrom:
+            - secretRef:
+                name: s3-creds
+      volumes:
+        - name: tls-cert-data
+          secret:
+            secretName: s3proxy-tls
+        - name: s3-creds
+          secret:
+            secretName: s3-creds

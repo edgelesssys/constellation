@@ -56,14 +56,7 @@ runs:
         AWS_ACCESS_KEY_ID: ${{ inputs.s3AccessKey }}
         AWS_SECRET_ACCESS_KEY: ${{ inputs.s3SecretKey }}
       run: |
-        sed -i "s|AWS_ACCESS_KEY_ID: \"replaceme\"|AWS_ACCESS_KEY_ID: \"${AWS_ACCESS_KEY_ID}\"|g" s3proxy/deploy/deployment-s3proxy.yaml
-        sed -i "s|AWS_SECRET_ACCESS_KEY: \"replaceme\"|AWS_SECRET_ACCESS_KEY: \"${AWS_SECRET_ACCESS_KEY}\"|g" s3proxy/deploy/deployment-s3proxy.yaml
-
-        sed -i "s|image: ghcr.io/edgelesssys/constellation/s3proxy:v.*|image: \"${S3_PROXY_IMAGE}\"|g" s3proxy/deploy/deployment-s3proxy.yaml
-
-        yq eval -i '(select(.spec.template.spec.containers.[].name == "s3proxy").spec.template.spec.containers.[].args) = ["--level=-1","--allow-multipart"]' s3proxy/deploy/deployment-s3proxy.yaml
-
-        kubectl apply -f s3proxy/deploy/deployment-s3proxy.yaml
+        helm install s3proxy --set awsAccessKeyID="$AWS_ACCESS_KEY_ID" --set awsSecretAccessKey="$AWS_SECRET_ACCESS_KEY" --set image="$S3_PROXY_IMAGE" --set allowMultipart=true s3proxy/deploy/s3proxy
 
     - name: Run mint
       shell: bash
