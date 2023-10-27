@@ -174,12 +174,71 @@ terraform apply
 The Constellation [apply step](#the-apply-step) requires the already created `constellation-config.yaml` and the `constellation-state.yaml`.
 Create the `constellation-state.yaml` using the output from the Terraform state and the `constellation-conf.yaml`:
 
+<tabs groupId="provider-output">
+<tabItem value="aws-output" label="AWS">
+
 ```bash
-yq eval ".infrastructure.initSecret =\"$(terraform output initSecret | jq -r | tr -d '\n' | hexdump -ve '/1 "%02x"' && echo '')\"" constellation-state.yaml
+yq eval '.version ="v1"' --inplace constellation-state.yaml
+yq eval ".infrastructure.initSecret =\"$(terraform output initSecret | jq -r | tr -d '\n' | hexdump -ve '/1 "%02x"' && echo '')\"" --inplace constellation-state.yaml
 yq eval ".infrastructure.clusterEndpoint =\"$(terraform output out_of_cluster_endpoint | jq -r)\"" --inplace constellation-state.yaml
 yq eval ".infrastructure.inClusterEndpoint =\"$(terraform output in_cluster_endpoint | jq -r)\"" --inplace constellation-state.yaml
+yq eval ".infrastructure.ipCidrNode =\"$(terraform output ip_cidr_nodes | jq -r)\"" --inplace constellation-state.yaml
+yq eval ".infrastructure.uid =\"$(terraform output uid | jq -r)\"" --inplace constellation-state.yaml
+yq eval ".infrastructure.name =\"$(terraform output name | jq -r)\"" --inplace constellation-state.yaml
+yq eval ".infrastructure.apiServerCertSANs =$(terraform output -json api_server_cert_sans)" --inplace constellation-state.yaml
 ```
 
+</tabItem>
+<tabItem value="azure-output" label="Azure">
+
+:::info
+
+  If the enforcement policy is set to `MAAFallback` in `constellation-config.yaml`, a manual update to the MAA provider's policy is necessary.
+  The update can be applied with the following commands, where `<VERSION>` is the version of Constellation that should be set up. (e.g. `v2.12.0`)
+
+  ```bash
+  https://github.com/edgelesssys/constellation/tree/<VERSION>
+  cd constellation/hack/maa-patch
+  go run . $(terraform output attestationURL | jq -r)
+  ```
+
+:::
+
+```bash
+yq eval '.version ="v1"' --inplace constellation-state.yaml
+yq eval ".infrastructure.initSecret =\"$(terraform output initSecret | jq -r | tr -d '\n' | hexdump -ve '/1 "%02x"' && echo '')\"" --inplace constellation-state.yaml
+yq eval ".infrastructure.clusterEndpoint =\"$(terraform output out_of_cluster_endpoint | jq -r)\"" --inplace constellation-state.yaml
+yq eval ".infrastructure.inClusterEndpoint =\"$(terraform output in_cluster_endpoint | jq -r)\"" --inplace constellation-state.yaml
+yq eval ".infrastructure.ipCidrNode =\"$(terraform output ip_cidr_nodes | jq -r)\"" --inplace constellation-state.yaml
+yq eval ".infrastructure.uid =\"$(terraform output uid | jq -r)\"" --inplace constellation-state.yaml
+yq eval ".infrastructure.name =\"$(terraform output name | jq -r)\"" --inplace constellation-state.yaml
+yq eval ".infrastructure.apiServerCertSANs =$(terraform output -json api_server_cert_sans)" --inplace constellation-state.yaml
+yq eval ".infrastructure.azure.resourceGroup =\"$(terraform output resource_group | jq -r)\"" --inplace constellation-state.yaml
+yq eval ".infrastructure.azure.subscriptionID =\"$(terraform output subscription_id | jq -r)\"" --inplace constellation-state.yaml
+yq eval ".infrastructure.azure.networkSecurityGroupName =\"$(terraform output network_security_group_name | jq -r)\"" --inplace constellation-state.yaml
+yq eval ".infrastructure.azure.loadBalancerName =\"$(terraform output loadbalancer_name | jq -r)\"" --inplace constellation-state.yaml
+yq eval ".infrastructure.azure.userAssignedIdentity =\"$(terraform output user_assigned_identity_client_id | jq -r)\"" --inplace constellation-state.yaml
+yq eval ".infrastructure.azure.attestationURL =\"$(terraform output attestationURL | jq -r)\"" --inplace constellation-state.yaml
+```
+
+</tabItem>
+<tabItem value="gcp-output" label="GCP">
+
+```bash
+yq eval '.version ="v1"' --inplace constellation-state.yaml
+yq eval ".infrastructure.initSecret =\"$(terraform output initSecret | jq -r | tr -d '\n' | hexdump -ve '/1 "%02x"' && echo '')\"" --inplace constellation-state.yaml
+yq eval ".infrastructure.clusterEndpoint =\"$(terraform output out_of_cluster_endpoint | jq -r)\"" --inplace constellation-state.yaml
+yq eval ".infrastructure.inClusterEndpoint =\"$(terraform output in_cluster_endpoint | jq -r)\"" --inplace constellation-state.yaml
+yq eval ".infrastructure.ipCidrNode =\"$(terraform output ip_cidr_nodes | jq -r)\"" --inplace constellation-state.yaml
+yq eval ".infrastructure.uid =\"$(terraform output uid | jq -r)\"" --inplace constellation-state.yaml
+yq eval ".infrastructure.name =\"$(terraform output name | jq -r)\"" --inplace constellation-state.yaml
+yq eval ".infrastructure.apiServerCertSANs =$(terraform output -json api_server_cert_sans)" --inplace constellation-state.yaml
+yq eval ".infrastructure.gcp.projectID =\"$(terraform output project | jq -r)\"" --inplace constellation-state.yaml
+yq eval ".infrastructure.gcp.ipCidrPod =\"$(terraform output ip_cidr_pods | jq -r)\"" --inplace constellation-state.yaml
+```
+
+</tabItem>
+</tabs>
 </tabItem>
 <tabItem value="self-managed" label="Self-managed">
 
@@ -190,11 +249,24 @@ To self-manage the infrastructure of your cluster, download the Terraform files 
 They contain a minimum configuration for the resources necessary to run a Constellation cluster on the corresponding CSP. From this base, you can now add, edit, or substitute resources per your own requirements with the infrastructure
 management tooling of your choice. You need to keep the essential functionality of the base configuration in order for your cluster to function correctly.
 
+:::info
+
+  On Azure, if the enforcement policy is set to `MAAFallback` in `constellation-config.yaml`, a manual update to the MAA provider's policy is necessary.
+  The update can be applied with the following commands, where `<VERSION>` is the version of Constellation that should be set up. (e.g. `v2.12.0`)
+
+  ```bash
+  https://github.com/edgelesssys/constellation/tree/<VERSION>
+  cd constellation/hack/maa-patch
+  go run . $(terraform output attestationURL | jq -r)
+  ```
+  
+:::
+
 Make sure all necessary resources are created, e.g., through checking your CSP's portal and retrieve the necessary values, aligned with the outputs (specified in `outputs.tf`) of the base configuration.
 
 Fill these outputs into the corresponding fields of the `constellation-state.yaml` file. For example, fill the IP or DNS name your cluster can be reached at into the `.Infrastructure.ClusterEndpoint` field.
 
-Continue with [initializing your cluster](#the-init-step).
+Continue with [initializing your cluster](#the-apply-step).
 
 </tabItem>
 </tabs>
