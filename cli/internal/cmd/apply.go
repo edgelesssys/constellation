@@ -568,8 +568,8 @@ func (a *applyCmd) runK8sUpgrade(cmd *cobra.Command, conf *config.Config, kubeUp
 ) error {
 	err := kubeUpgrader.UpgradeNodeVersion(
 		cmd.Context(), conf, a.flags.force,
-		a.flags.skipPhases.contains(skipK8sPhase),
 		a.flags.skipPhases.contains(skipImagePhase),
+		a.flags.skipPhases.contains(skipK8sPhase),
 	)
 
 	var upgradeErr *compatibility.InvalidUpgradeError
