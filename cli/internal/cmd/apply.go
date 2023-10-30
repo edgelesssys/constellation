@@ -220,28 +220,28 @@ func runApply(cmd *cobra.Command, _ []string) error {
 
 	upgradeID := generateUpgradeID(upgradeCmdKindApply)
 	upgradeDir := filepath.Join(constants.UpgradeDir, upgradeID)
-	clusterUpgrader, err := cloudcmd.NewClusterUpgrader(
-		cmd.Context(),
-		constants.TerraformWorkingDir,
-		upgradeDir,
-		flags.tfLogLevel,
-		fileHandler,
-	)
-	if err != nil {
-		return fmt.Errorf("setting up cluster upgrader: %w", err)
+
+	newClusterApplier := func(ctx context.Context) (clusterUpgrader, error) {
+		return cloudcmd.NewClusterUpgrader(
+			ctx,
+			constants.TerraformWorkingDir,
+			upgradeDir,
+			flags.tfLogLevel,
+			fileHandler,
+		)
 	}
 
 	apply := &applyCmd{
-		fileHandler:     fileHandler,
-		flags:           flags,
-		log:             log,
-		spinner:         spinner,
-		merger:          &kubeconfigMerger{log: log},
-		quotaChecker:    license.NewClient(),
-		newHelmClient:   newHelmClient,
-		newDialer:       newDialer,
-		newKubeUpgrader: newKubeUpgrader,
-		clusterUpgrader: clusterUpgrader,
+		fileHandler:       fileHandler,
+		flags:             flags,
+		log:               log,
+		spinner:           spinner,
+		merger:            &kubeconfigMerger{log: log},
+		quotaChecker:      license.NewClient(),
+		newHelmClient:     newHelmClient,
+		newDialer:         newDialer,
+		newKubeUpgrader:   newKubeUpgrader,
+		newClusterApplier: newClusterApplier,
 	}
 
 	ctx, cancel := context.WithTimeout(cmd.Context(), time.Hour)
@@ -261,10 +261,10 @@ type applyCmd struct {
 	merger       configMerger
 	quotaChecker license.QuotaChecker
 
-	newHelmClient   func(kubeConfigPath string, log debugLog) (helmApplier, error)
-	newDialer       func(validator atls.Validator) *dialer.Dialer
-	newKubeUpgrader func(io.Writer, string, debugLog) (kubernetesUpgrader, error)
-	clusterUpgrader clusterUpgrader
+	newHelmClient     func(kubeConfigPath string, log debugLog) (helmApplier, error)
+	newDialer         func(validator atls.Validator) *dialer.Dialer
+	newKubeUpgrader   func(out io.Writer, kubeConfigPath string, log debugLog) (kubernetesUpgrader, error)
+	newClusterApplier func(context.Context) (clusterUpgrader, error)
 }
 
 /*
