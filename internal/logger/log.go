@@ -75,6 +75,16 @@ func getOriginalCaller() (original [1]uintptr) {
 	return pcs
 }
 
+func createAndLogRecord(logger *slog.Logger, level slog.Level, originalFunction [1]uintptr, args ...any) {
+	record := slog.NewRecord(time.Now(), level, fmt.Sprint(args...), originalFunction[0])
+	_ = logger.Handler().Handle(context.Background(), record)
+}
+
+func createAndLogRecordf(logger *slog.Logger, level slog.Level, originalFunction [1]uintptr, format string, args ...any) {
+	record := slog.NewRecord(time.Now(), level, fmt.Sprintf(format, args...), originalFunction[0])
+	_ = logger.Handler().Handle(context.Background(), record)
+}
+
 func replaceAttrFunction(groups []string, a slog.Attr) slog.Attr {
 	// change the time format to rfc 3339
 	if a.Key == slog.TimeKey {
@@ -151,8 +161,7 @@ func (l *Logger) Debugf(format string, args ...any) {
 		return
 	}
 	originalFunction := getOriginalCaller()
-	r := slog.NewRecord(time.Now(), LevelDebug, fmt.Sprintf(format, args...), originalFunction[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+	createAndLogRecordf(l.logger, LevelDebug, originalFunction, format, args...)
 }
 
 // Debug logs a message at Debug level.
@@ -162,8 +171,7 @@ func (l *Logger) Debug(args ...any) {
 		return
 	}
 	originalFunction := getOriginalCaller()
-	r := slog.NewRecord(time.Now(), LevelDebug, fmt.Sprint(args...), originalFunction[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+	createAndLogRecord(l.logger, LevelDebug, originalFunction, args...)
 }
 
 // Infof logs a message at Info level.
@@ -173,8 +181,7 @@ func (l *Logger) Infof(format string, args ...any) {
 		return
 	}
 	originalFunction := getOriginalCaller()
-	r := slog.NewRecord(time.Now(), LevelInfo, fmt.Sprintf(format, args...), originalFunction[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+	createAndLogRecordf(l.logger, LevelInfo, originalFunction, format, args...)
 }
 
 // Info logs a message at Info level.
@@ -184,8 +191,7 @@ func (l *Logger) Info(args ...any) {
 		return
 	}
 	originalFunction := getOriginalCaller()
-	r := slog.NewRecord(time.Now(), LevelInfo, fmt.Sprint(args...), originalFunction[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+	createAndLogRecord(l.logger, LevelInfo, originalFunction, args...)
 }
 
 // Warnf logs a message at Warn level.
@@ -195,8 +201,7 @@ func (l *Logger) Warnf(format string, args ...any) {
 		return
 	}
 	originalFunction := getOriginalCaller()
-	r := slog.NewRecord(time.Now(), LevelWarn, fmt.Sprintf(format, args...), originalFunction[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+	createAndLogRecordf(l.logger, LevelWarn, originalFunction, format, args...)
 }
 
 // Warn logs a message at Warn level.
@@ -206,8 +211,7 @@ func (l *Logger) Warn(args ...any) {
 		return
 	}
 	originalFunction := getOriginalCaller()
-	r := slog.NewRecord(time.Now(), LevelWarn, fmt.Sprint(args...), originalFunction[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+	createAndLogRecord(l.logger, LevelWarn, originalFunction, args...)
 }
 
 // Errorf logs a message at Error level.
@@ -217,8 +221,7 @@ func (l *Logger) Errorf(format string, args ...any) {
 		return
 	}
 	originalFunction := getOriginalCaller()
-	r := slog.NewRecord(time.Now(), LevelError, fmt.Sprintf(format, args...), originalFunction[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+	createAndLogRecordf(l.logger, LevelError, originalFunction, format, args...)
 }
 
 // Error logs a message at Error level.
@@ -228,8 +231,7 @@ func (l *Logger) Error(args ...any) {
 		return
 	}
 	originalFunction := getOriginalCaller()
-	r := slog.NewRecord(time.Now(), LevelError, fmt.Sprint(args...), originalFunction[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+	createAndLogRecord(l.logger, LevelError, originalFunction, args...)
 }
 
 // Fatalf logs the message and then calls os.Exit(1).
@@ -239,8 +241,7 @@ func (l *Logger) Fatalf(format string, args ...any) {
 		return
 	}
 	originalFunction := getOriginalCaller()
-	r := slog.NewRecord(time.Now(), LevelFatal, fmt.Errorf(format, args...).Error(), originalFunction[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+	createAndLogRecordf(l.logger, LevelFatal, originalFunction, format, args...)
 	os.Exit(1)
 }
 
@@ -251,8 +252,7 @@ func (l *Logger) Fatal(args ...any) {
 		return
 	}
 	originalFunction := getOriginalCaller()
-	r := slog.NewRecord(time.Now(), LevelFatal, fmt.Sprint(args...), originalFunction[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+	createAndLogRecord(l.logger, LevelFatal, originalFunction, args...)
 	os.Exit(1)
 }
 

@@ -8,10 +8,8 @@ package logger
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"os"
-	"time"
 
 	"google.golang.org/grpc/grpclog"
 )
@@ -34,8 +32,7 @@ func (l *grpcLogger) Info(args ...interface{}) {
 		return
 	}
 	originalFunction := getOriginalCaller()
-	r := slog.NewRecord(time.Now(), LevelInfo, fmt.Sprint(args...), originalFunction[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+	createAndLogRecord(l.logger, LevelInfo, originalFunction, args...)
 }
 
 func (l *grpcLogger) Infoln(args ...interface{}) {
@@ -43,8 +40,7 @@ func (l *grpcLogger) Infoln(args ...interface{}) {
 		return
 	}
 	originalFunction := getOriginalCaller()
-	r := slog.NewRecord(time.Now(), LevelInfo, fmt.Sprint(args...), originalFunction[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+	createAndLogRecord(l.logger, LevelInfo, originalFunction, args...)
 }
 
 func (l *grpcLogger) Infof(format string, args ...interface{}) {
@@ -52,8 +48,7 @@ func (l *grpcLogger) Infof(format string, args ...interface{}) {
 		return
 	}
 	originalFunction := getOriginalCaller()
-	r := slog.NewRecord(time.Now(), LevelInfo, fmt.Sprintf(format, args...), originalFunction[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+	createAndLogRecordf(l.logger, LevelInfo, originalFunction, format, args...)
 }
 
 func (l *grpcLogger) Warning(args ...interface{}) {
@@ -61,8 +56,7 @@ func (l *grpcLogger) Warning(args ...interface{}) {
 		return
 	}
 	originalFunction := getOriginalCaller()
-	r := slog.NewRecord(time.Now(), LevelWarn, fmt.Sprint(args...), originalFunction[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+	createAndLogRecord(l.logger, LevelWarn, originalFunction, args...)
 }
 
 func (l *grpcLogger) Warningln(args ...interface{}) {
@@ -70,8 +64,7 @@ func (l *grpcLogger) Warningln(args ...interface{}) {
 		return
 	}
 	originalFunction := getOriginalCaller()
-	r := slog.NewRecord(time.Now(), LevelWarn, fmt.Sprint(args...), originalFunction[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+	createAndLogRecord(l.logger, LevelWarn, originalFunction, args...)
 }
 
 func (l *grpcLogger) Warningf(format string, args ...interface{}) {
@@ -79,8 +72,7 @@ func (l *grpcLogger) Warningf(format string, args ...interface{}) {
 		return
 	}
 	originalFunction := getOriginalCaller()
-	r := slog.NewRecord(time.Now(), LevelWarn, fmt.Sprintf(format, args...), originalFunction[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+	createAndLogRecordf(l.logger, LevelWarn, originalFunction, format, args...)
 }
 
 func (l *grpcLogger) Error(args ...interface{}) {
@@ -88,8 +80,7 @@ func (l *grpcLogger) Error(args ...interface{}) {
 		return
 	}
 	originalFunction := getOriginalCaller()
-	r := slog.NewRecord(time.Now(), LevelError, fmt.Sprint(args...), originalFunction[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+	createAndLogRecord(l.logger, LevelError, originalFunction, args...)
 }
 
 func (l *grpcLogger) Errorln(args ...interface{}) {
@@ -97,8 +88,7 @@ func (l *grpcLogger) Errorln(args ...interface{}) {
 		return
 	}
 	originalFunction := getOriginalCaller()
-	r := slog.NewRecord(time.Now(), LevelError, fmt.Sprint(args...), originalFunction[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+	createAndLogRecord(l.logger, LevelError, originalFunction, args...)
 }
 
 func (l *grpcLogger) Errorf(format string, args ...interface{}) {
@@ -106,8 +96,7 @@ func (l *grpcLogger) Errorf(format string, args ...interface{}) {
 		return
 	}
 	originalFunction := getOriginalCaller()
-	r := slog.NewRecord(time.Now(), LevelError, fmt.Sprintf(format, args...), originalFunction[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+	createAndLogRecordf(l.logger, LevelError, originalFunction, format, args...)
 }
 
 func (l *grpcLogger) Fatal(args ...interface{}) {
@@ -115,8 +104,7 @@ func (l *grpcLogger) Fatal(args ...interface{}) {
 		return
 	}
 	originalFunction := getOriginalCaller()
-	r := slog.NewRecord(time.Now(), LevelFatal, fmt.Sprint(args...), originalFunction[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+	createAndLogRecord(l.logger, LevelFatal, originalFunction, args...)
 	os.Exit(1)
 }
 
@@ -125,8 +113,7 @@ func (l *grpcLogger) Fatalln(args ...interface{}) {
 		return
 	}
 	originalFunction := getOriginalCaller()
-	r := slog.NewRecord(time.Now(), LevelFatal, fmt.Sprint(args...), originalFunction[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+	createAndLogRecord(l.logger, LevelFatal, originalFunction, args...)
 	os.Exit(1)
 }
 
@@ -135,8 +122,7 @@ func (l *grpcLogger) Fatalf(format string, args ...interface{}) {
 		return
 	}
 	originalFunction := getOriginalCaller()
-	r := slog.NewRecord(time.Now(), LevelFatal, fmt.Sprintf(format, args...), originalFunction[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+	createAndLogRecordf(l.logger, LevelFatal, originalFunction, format, args...)
 	os.Exit(1)
 }
 
