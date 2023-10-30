@@ -55,7 +55,7 @@ func plan(
 
 	// If we are planning in a new workspace, we don't want to show a diff
 	if isNewWorkspace {
-		return false, nil
+		return hasDiff, nil
 	}
 
 	if hasDiff {
@@ -74,7 +74,7 @@ func restoreBackup(fileHandler file.Handler, workingDir, backupDir string) error
 	if err := fileHandler.CopyDir(
 		backupDir,
 		workingDir,
-	); err != nil {
+	); err != nil && !errors.Is(err, os.ErrNotExist) { // ignore not found error because backup might not exist for new clusters
 		return fmt.Errorf("replacing terraform workspace with backup: %w", err)
 	}
 

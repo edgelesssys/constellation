@@ -170,7 +170,7 @@ func TestCreate(t *testing.T) {
 			} else {
 				assert.NoError(err)
 				if tc.wantAbort {
-					assert.False(tc.creator.planCalled)
+					assert.True(tc.creator.planCalled)
 					assert.False(tc.creator.applyCalled)
 				} else {
 					assert.True(tc.creator.planCalled)

@@ -168,6 +168,12 @@ func (c *createCmd) create(cmd *cobra.Command, applier cloudApplier, fileHandler
 		c.log.Debugf("Creating %d additional node groups: %v", len(otherGroupNames), otherGroupNames)
 	}
 
+	spinner.Start("Planning", false)
+	if _, err := applier.Plan(cmd.Context(), conf); err != nil {
+		return fmt.Errorf("planning infrastructure creation: %w", err)
+	}
+	spinner.Stop()
+
 	if !c.flags.yes {
 		// Ask user to confirm action.
 		cmd.Printf("The following Constellation cluster will be created:\n")
@@ -183,14 +189,12 @@ func (c *createCmd) create(cmd *cobra.Command, applier cloudApplier, fileHandler
 		}
 		if !ok {
 			cmd.Println("The creation of the cluster was aborted.")
+			_ = applier.RestoreWorkspace()
 			return nil
 		}
 	}
 
 	spinner.Start("Creating", false)
-	if _, err := applier.Plan(cmd.Context(), conf); err != nil {
-		return fmt.Errorf("planning infrastructure creation: %w", err)
-	}
 	infraState, err := applier.Apply(cmd.Context(), conf.GetProvider(), cloudcmd.WithRollbackOnError)
 	spinner.Stop()
 	if err != nil {

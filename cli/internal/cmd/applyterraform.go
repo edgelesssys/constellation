@@ -7,11 +7,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"path/filepath"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/state"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/spf13/cobra"
@@ -20,49 +23,53 @@ import (
 // runTerraformApply checks if changes to Terraform are required and applies them.
 func (a *applyCmd) runTerraformApply(cmd *cobra.Command, conf *config.Config, stateFile *state.State, upgradeDir string) error {
 	a.log.Debugf("Checking if Terraform migrations are required")
-	terraformClient, removeInstaller, err := a.newInfraApplier(cmd.Context())
+	terraformClient, removeClient, err := a.newInfraApplier(cmd.Context())
 	if err != nil {
 		return fmt.Errorf("creating Terraform client: %w", err)
 	}
-	defer removeInstaller()
+	defer removeClient()
 
-	migrationRequired, err := a.planTerraformMigration(cmd, conf, terraformClient)
+	// Check if we are creating a new cluster by checking if the Terraform workspace is empty
+	isNewCluster, err := a.fileHandler.IsEmpty(constants.TerraformWorkingDir)
 	if err != nil {
-		return fmt.Errorf("planning Terraform migrations: %w", err)
+		return fmt.Errorf("checking if Terraform workspace is empty: %w", err)
 	}
 
-	if !migrationRequired {
+	if changesRequired, err := a.planTerraformChanges(cmd, conf, terraformClient); err != nil {
+		return fmt.Errorf("planning Terraform migrations: %w", err)
+	} else if !changesRequired {
 		a.log.Debugf("No changes to infrastructure required, skipping Terraform migrations")
 		return nil
 	}
 
 	a.log.Debugf("Migrating terraform resources for infrastructure changes")
-	postMigrationInfraState, err := a.migrateTerraform(cmd, conf, terraformClient, upgradeDir)
+	newInfraState, err := a.applyTerraformChanges(cmd, conf, terraformClient, upgradeDir, isNewCluster)
 	if err != nil {
-		return fmt.Errorf("performing Terraform migrations: %w", err)
+		return err
 	}
 
-	// Merge the pre-upgrade state with the post-migration infrastructure values
+	// Merge the original state with the new infrastructure values
 	a.log.Debugf("Updating state file with new infrastructure state")
 	if _, err := stateFile.Merge(
-		// temporary state with post-migration infrastructure values
-		state.New().SetInfrastructure(postMigrationInfraState),
+		// temporary state with new infrastructure values
+		state.New().SetInfrastructure(newInfraState),
 	); err != nil {
-		return fmt.Errorf("merging pre-upgrade state with post-migration infrastructure values: %w", err)
+		return fmt.Errorf("merging old state with new infrastructure values: %w", err)
 	}
 
-	// Write the post-migration state to disk
+	// Write the new state to disk
 	if err := stateFile.WriteToFile(a.fileHandler, constants.StateFilename); err != nil {
 		return fmt.Errorf("writing state file: %w", err)
 	}
 	return nil
 }
 
-// planTerraformMigration checks if the Constellation version the cluster is being upgraded to requires a migration.
-func (a *applyCmd) planTerraformMigration(cmd *cobra.Command, conf *config.Config, terraformClient cloudApplier) (bool, error) {
-	a.log.Debugf("Planning Terraform migrations")
+// planTerraformChanges checks if any changes to the Terraform state are required.
+// If no state exists, this function will return true and the caller should create a new state.
+func (a *applyCmd) planTerraformChanges(cmd *cobra.Command, conf *config.Config, terraformClient cloudApplier) (bool, error) {
+	a.log.Debugf("Planning Terraform changes")
 
-	// Check if there are any Terraform migrations to apply
+	// Check if there are any Terraform changes to apply
 
 	// Add manual migrations here if required
 	//
@@ -77,42 +84,104 @@ func (a *applyCmd) planTerraformMigration(cmd *cobra.Command, conf *config.Confi
 	return terraformClient.Plan(cmd.Context(), conf)
 }
 
-// migrateTerraform migrates an existing Terraform state and the post-migration infrastructure state is returned.
-func (a *applyCmd) migrateTerraform(cmd *cobra.Command, conf *config.Config, terraformClient cloudApplier, upgradeDir string) (state.Infrastructure, error) {
+// applyTerraformChanges applies planned changes to a Terraform state and returns the resulting infrastructure state.
+// If no state existed prior to this function call, a new cluster will be created.
+func (a *applyCmd) applyTerraformChanges(
+	cmd *cobra.Command, conf *config.Config, terraformClient cloudApplier, upgradeDir string, isNewCluster bool,
+) (state.Infrastructure, error) {
+	if isNewCluster {
+		if err := printCreateInfo(cmd.OutOrStdout(), conf, a.log); err != nil {
+			return state.Infrastructure{}, err
+		}
+		return a.applyTerraformChangesWithMessage(
+			cmd, conf.GetProvider(), cloudcmd.WithRollbackOnError, terraformClient, upgradeDir,
+			"Do you want to create this cluster?",
+			"The creation of the cluster was aborted.",
+			"cluster creation aborted by user",
+			"Creating",
+			"Your Constellation cluster was created successfully.",
+		)
+	}
+
+	cmd.Println("Changes of Constellation cloud resources are required by applying an updated Terraform template.")
+	return a.applyTerraformChangesWithMessage(
+		cmd, conf.GetProvider(), cloudcmd.WithoutRollbackOnError, terraformClient, upgradeDir,
+		"Do you want to apply these Terraform changes?",
+		"Aborting upgrade.",
+		"cluster upgrade aborted by user",
+		"Applying Terraform changes",
+		fmt.Sprintf("Infrastructure migrations applied successfully and output written to: %s\n"+
+			"A backup of the pre-upgrade state has been written to: %s",
+			a.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename),
+			a.flags.pathPrefixer.PrefixPrintablePath(filepath.Join(upgradeDir, constants.TerraformUpgradeBackupDir)),
+		),
+	)
+}
+
+func (a *applyCmd) applyTerraformChangesWithMessage(
+	cmd *cobra.Command, csp cloudprovider.Provider, rollbackBehavior cloudcmd.RollbackBehavior,
+	terraformClient cloudApplier, upgradeDir string,
+	confirmationQst, abortMsg, abortErrorMsg, progressMsg, successMsg string,
+) (state.Infrastructure, error) {
 	// Ask for confirmation first
-	cmd.Println("The upgrade requires a migration of Constellation cloud resources by applying an updated Terraform template.")
 	if !a.flags.yes {
-		ok, err := askToConfirm(cmd, "Do you want to apply the Terraform migrations?")
+		ok, err := askToConfirm(cmd, confirmationQst)
 		if err != nil {
 			return state.Infrastructure{}, fmt.Errorf("asking for confirmation: %w", err)
 		}
 		if !ok {
-			cmd.Println("Aborting upgrade.")
-			// User doesn't expect to see any changes in his workspace after aborting an "upgrade apply",
-			// therefore, roll back to the backed up state.
+			cmd.Println(abortMsg)
+			// User doesn't expect to see any changes in their workspace after aborting an "apply",
+			// therefore, restore the workspace to the previous state.
 			if err := terraformClient.RestoreWorkspace(); err != nil {
 				return state.Infrastructure{}, fmt.Errorf(
-					"restoring Terraform workspace: %w, restore the Terraform workspace manually from %s ",
+					"restoring Terraform workspace: %w, clean up or restore the Terraform workspace manually from %s ",
 					err,
 					filepath.Join(upgradeDir, constants.TerraformUpgradeBackupDir),
 				)
 			}
-			return state.Infrastructure{}, fmt.Errorf("cluster upgrade aborted by user")
+			return state.Infrastructure{}, errors.New(abortErrorMsg)
 		}
 	}
-	a.log.Debugf("Applying Terraform migrations")
+	a.log.Debugf("Applying Terraform changes")
 
-	a.spinner.Start("Migrating Terraform resources", false)
-	infraState, err := terraformClient.Apply(cmd.Context(), conf.GetProvider(), cloudcmd.WithoutRollbackOnError)
+	a.spinner.Start(progressMsg, false)
+	infraState, err := terraformClient.Apply(cmd.Context(), csp, rollbackBehavior)
 	a.spinner.Stop()
 	if err != nil {
-		return state.Infrastructure{}, fmt.Errorf("applying terraform migrations: %w", err)
+		return state.Infrastructure{}, fmt.Errorf("applying terraform changes: %w", err)
 	}
 
-	cmd.Printf("Infrastructure migrations applied successfully and output written to: %s\n"+
-		"A backup of the pre-upgrade state has been written to: %s\n",
-		a.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename),
-		a.flags.pathPrefixer.PrefixPrintablePath(filepath.Join(upgradeDir, constants.TerraformUpgradeBackupDir)),
-	)
+	cmd.Println(successMsg)
 	return infraState, nil
+}
+
+func printCreateInfo(out io.Writer, conf *config.Config, log debugLog) error {
+	controlPlaneGroup, ok := conf.NodeGroups[constants.DefaultControlPlaneGroupName]
+	if !ok {
+		return fmt.Errorf("default control-plane node group %q not found in configuration", constants.DefaultControlPlaneGroupName)
+	}
+	workerGroup, ok := conf.NodeGroups[constants.DefaultWorkerGroupName]
+	if !ok {
+		return fmt.Errorf("default worker node group %q not found in configuration", constants.DefaultWorkerGroupName)
+	}
+	otherGroupNames := make([]string, 0, len(conf.NodeGroups)-2)
+	for groupName := range conf.NodeGroups {
+		if groupName != constants.DefaultControlPlaneGroupName && groupName != constants.DefaultWorkerGroupName {
+			otherGroupNames = append(otherGroupNames, groupName)
+		}
+	}
+	if len(otherGroupNames) > 0 {
+		log.Debugf("Creating %d additional node groups: %v", len(otherGroupNames), otherGroupNames)
+	}
+
+	fmt.Fprintf(out, "The following Constellation cluster will be created:\n")
+	fmt.Fprintf(out, "  %d control-plane node%s of type %s will be created.\n", controlPlaneGroup.InitialCount, isPlural(controlPlaneGroup.InitialCount), controlPlaneGroup.InstanceType)
+	fmt.Fprintf(out, "  %d worker node%s of type %s will be created.\n", workerGroup.InitialCount, isPlural(workerGroup.InitialCount), workerGroup.InstanceType)
+	for _, groupName := range otherGroupNames {
+		group := conf.NodeGroups[groupName]
+		fmt.Fprintf(out, "  group %s with %d node%s of type %s will be created.\n", groupName, group.InitialCount, isPlural(group.InitialCount), group.InstanceType)
+	}
+
+	return nil
 }

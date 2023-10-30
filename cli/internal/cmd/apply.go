@@ -14,7 +14,6 @@ import (
 	"io"
 	"io/fs"
 	"net"
-	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -431,6 +430,12 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 		return nil, nil, err
 	}
 
+	a.log.Debugf("Reading state file from %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename))
+	stateFile, err := state.CreateOrRead(a.fileHandler, constants.StateFilename)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	// Check license
 	a.log.Debugf("Running license check")
 	checker := license.NewChecker(a.quotaChecker, a.fileHandler)
@@ -439,19 +444,56 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 	}
 	a.log.Debugf("Checked license")
 
-	// Check if we already have a running Kubernetes cluster
-	// by checking if the Kubernetes admin config file exists
-	// If it exist, we skip the init phase
-	// If it does not exist, we need to run the init RPC first
-	// This may break things further down the line
-	// It is the user's responsibility to make sure the cluster is in a valid state
-	a.log.Debugf("Checking if %s exists", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename))
-	if _, err := a.fileHandler.Stat(constants.AdminConfFilename); err == nil {
-		a.flags.skipPhases.add(skipInitPhase)
-	} else if !errors.Is(err, os.ErrNotExist) {
-		return nil, nil, fmt.Errorf("checking for %s: %w", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename), err)
+	preCreateValidateErr := stateFile.Validate(state.PreCreate, conf.GetProvider())
+	preInitValidateErr := stateFile.Validate(state.PreInit, conf.GetProvider())
+	postInitValidateErr := stateFile.Validate(state.PostInit, conf.GetProvider())
+
+	// If the state file is in a pre-create state, we need to create the cluster,
+	// in which case the workspace has to be clean
+	if preCreateValidateErr == nil {
+		// We can't skip the infrastructure phase if no infrastructure has been defined
+		a.log.Debugf("State file is in pre-create state, checking workspace")
+		if a.flags.skipPhases.contains(skipInfrastructurePhase) {
+			return nil, nil, preInitValidateErr
+		}
+
+		if err := a.checkCreateFilesClean(); err != nil {
+			return nil, nil, err
+		}
+
+		printCreateWarnings(cmd.OutOrStdout(), conf)
 	}
-	a.log.Debugf("Init RPC required: %t", !a.flags.skipPhases.contains(skipInitPhase))
+
+	// Check if the state file is in a pre-init or pre-create state
+	// If so, we need to run the init RPC
+	if preInitValidateErr == nil {
+		// We can't skip the init phase if the init RPC hasn't been run yet
+		a.log.Debugf("State file is in pre-init state, checking workspace")
+		if a.flags.skipPhases.contains(skipInitPhase) {
+			return nil, nil, postInitValidateErr
+		}
+
+		if err := a.checkInitFilesClean(); err != nil {
+			return nil, nil, err
+		}
+
+		// Skip image and k8s phase, since they are covered by the init RPC
+		a.flags.skipPhases.add(skipImagePhase, skipK8sPhase)
+	}
+
+	// If the state file is in a post-init state,
+	// we need to make sure specific files exist in the workspace
+	if postInitValidateErr == nil {
+		a.log.Debugf("State file is in post-init state, checking workspace")
+		if err := a.checkPostInitFilesExist(); err != nil {
+			return nil, nil, err
+		}
+
+		// Skip init phase, since the init RPC has already been run
+		a.flags.skipPhases.add(skipInitPhase)
+	} else if preCreateValidateErr != nil && preInitValidateErr != nil {
+		return nil, nil, postInitValidateErr
+	}
 
 	// Validate input arguments
 
@@ -509,39 +551,10 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 		a.flags.skipPhases.add(skipInfrastructurePhase)
 	}
 
-	// Check if Terraform state exists
-	if tfStateExists, err := a.tfStateExists(); err != nil {
-		return nil, nil, fmt.Errorf("checking Terraform state: %w", err)
-	} else if !tfStateExists {
-		a.flags.skipPhases.add(skipInfrastructurePhase)
-		a.log.Debugf("No Terraform state found in current working directory. Assuming self-managed infrastructure. Infrastructure upgrades will not be performed.")
-	}
-
 	// Print warning about AWS attestation
 	// TODO(derpsteb): remove once AWS fixes SEV-SNP attestation provisioning issues
 	if !a.flags.skipPhases.contains(skipInitPhase) && conf.GetAttestationConfig().GetVariant().Equal(variant.AWSSEVSNP{}) {
 		cmd.PrintErrln("WARNING: Attestation temporarily relies on AWS nitroTPM. See https://docs.edgeless.systems/constellation/workflows/config#choosing-a-vm-type for more information.")
-	}
-
-	// Read and validate state file
-	// This needs to be done as a last step, as we need to parse all other inputs to
-	// know which phases are skipped.
-	a.log.Debugf("Reading state file from %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename))
-	stateFile, err := state.ReadFromFile(a.fileHandler, constants.StateFilename)
-	if err != nil {
-		return nil, nil, err
-	}
-	if a.flags.skipPhases.contains(skipInitPhase) {
-		// If the skipInit flag is set, we are in a state where the cluster
-		// has already been initialized and check against the respective constraints.
-		if err := stateFile.Validate(state.PostInit, conf.GetProvider()); err != nil {
-			return nil, nil, err
-		}
-	} else {
-		// The cluster has not been initialized yet, so we check against the pre-init constraints.
-		if err := stateFile.Validate(state.PreInit, conf.GetProvider()); err != nil {
-			return nil, nil, err
-		}
 	}
 
 	return conf, stateFile, nil
@@ -619,14 +632,84 @@ func (a *applyCmd) runK8sUpgrade(cmd *cobra.Command, conf *config.Config, kubeUp
 	return nil
 }
 
-// tfStateExists checks whether a Constellation Terraform state exists in the current working directory.
-func (a *applyCmd) tfStateExists() (bool, error) {
-	_, err := a.fileHandler.Stat(constants.TerraformWorkingDir)
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return false, nil
-		}
-		return false, fmt.Errorf("reading Terraform state: %w", err)
+// checkCreateFilesClean ensures that the workspace is clean before creating a new cluster.
+func (a *applyCmd) checkCreateFilesClean() error {
+	if err := a.checkInitFilesClean(); err != nil {
+		return err
 	}
-	return true, nil
+	a.log.Debugf("Checking Terraform state")
+	if _, err := a.fileHandler.Stat(constants.TerraformWorkingDir); err == nil {
+		return fmt.Errorf(
+			"terraform state %q already exists in working directory, run 'constellation terminate' before creating a new cluster",
+			a.flags.pathPrefixer.PrefixPrintablePath(constants.TerraformWorkingDir),
+		)
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("checking for %s: %w", a.flags.pathPrefixer.PrefixPrintablePath(constants.TerraformWorkingDir), err)
+	}
+
+	return nil
+}
+
+// checkInitFilesClean ensures that the workspace is clean before running the init RPC.
+func (a *applyCmd) checkInitFilesClean() error {
+	a.log.Debugf("Checking admin configuration file")
+	if _, err := a.fileHandler.Stat(constants.AdminConfFilename); err == nil {
+		return fmt.Errorf(
+			"file %q already exists in working directory, run 'constellation terminate' before creating a new cluster",
+			a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename),
+		)
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("checking for %q: %w", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename), err)
+	}
+	a.log.Debugf("Checking master secrets file")
+	if _, err := a.fileHandler.Stat(constants.MasterSecretFilename); err == nil {
+		return fmt.Errorf(
+			"file %q already exists in working directory. Constellation won't overwrite previous master secrets. Move it somewhere or delete it before creating a new cluster",
+			a.flags.pathPrefixer.PrefixPrintablePath(constants.MasterSecretFilename),
+		)
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("checking for %q: %w", a.flags.pathPrefixer.PrefixPrintablePath(constants.MasterSecretFilename), err)
+	}
+
+	return nil
+}
+
+// checkPostInitFilesExist ensures that the workspace contains the files from a previous init RPC.
+func (a *applyCmd) checkPostInitFilesExist() error {
+	if _, err := a.fileHandler.Stat(constants.AdminConfFilename); err != nil {
+		return fmt.Errorf("checking for %q: %w", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename), err)
+	}
+	if _, err := a.fileHandler.Stat(constants.MasterSecretFilename); err != nil {
+		return fmt.Errorf("checking for %q: %w", a.flags.pathPrefixer.PrefixPrintablePath(constants.MasterSecretFilename), err)
+	}
+	return nil
+}
+
+func printCreateWarnings(out io.Writer, conf *config.Config) {
+	var printedAWarning bool
+	if !conf.IsReleaseImage() {
+		fmt.Fprintln(out, "Configured image doesn't look like a released production image. Double check image before deploying to production.")
+		printedAWarning = true
+	}
+
+	if conf.IsNamedLikeDebugImage() && !conf.IsDebugCluster() {
+		fmt.Fprintln(out, "WARNING: A debug image is used but debugCluster is false.")
+		printedAWarning = true
+	}
+
+	if conf.IsDebugCluster() {
+		fmt.Fprintln(out, "WARNING: Creating a debug cluster. This cluster is not secure and should only be used for debugging purposes.")
+		fmt.Fprintln(out, "DO NOT USE THIS CLUSTER IN PRODUCTION.")
+		printedAWarning = true
+	}
+
+	if conf.GetAttestationConfig().GetVariant().Equal(variant.AzureTrustedLaunch{}) {
+		fmt.Fprintln(out, "Disabling Confidential VMs is insecure. Use only for evaluation purposes.")
+		printedAWarning = true
+	}
+
+	// Print an extra new line later to separate warnings from the prompt message of the create command
+	if printedAWarning {
+		fmt.Fprintln(out, "")
+	}
 }

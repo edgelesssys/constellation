@@ -287,6 +287,7 @@ func TestInitialize(t *testing.T) {
 
 			if tc.wantErr {
 				assert.Error(err)
+				fmt.Println(err)
 				if !tc.retriable {
 					assert.Contains(errOut.String(), "This error is not recoverable")
 				} else {
