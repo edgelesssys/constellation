@@ -59,6 +59,14 @@ func TestInitArgumentValidation(t *testing.T) {
 	assert.Error(cmd.ValidateArgs([]string{"sth", "sth"}))
 }
 
+// preInitStateFile returns a state file satisfying the pre-init state file
+// constraints.
+func preInitStateFile() *state.State {
+	s := defaultStateFile()
+	s.ClusterValues = state.ClusterValues{}
+	return s
+}
+
 func TestInitialize(t *testing.T) {
 	respKubeconfig := k8sclientapi.Config{
 		Clusters: map[string]*k8sclientapi.Cluster{
@@ -101,24 +109,24 @@ func TestInitialize(t *testing.T) {
 	}{
 		"initialize some gcp instances": {
 			provider:      cloudprovider.GCP,
-			stateFile:     &state.State{Version: state.Version1, Infrastructure: state.Infrastructure{ClusterEndpoint: "192.0.2.1"}},
+			stateFile:     preInitStateFile(),
 			configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
 			serviceAccKey: gcpServiceAccKey,
 			initServerAPI: &stubInitServer{res: []*initproto.InitResponse{{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}}},
 		},
 		"initialize some azure instances": {
 			provider:      cloudprovider.Azure,
-			stateFile:     &state.State{Version: state.Version1, Infrastructure: state.Infrastructure{ClusterEndpoint: "192.0.2.1"}},
+			stateFile:     preInitStateFile(),
 			initServerAPI: &stubInitServer{res: []*initproto.InitResponse{{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}}},
 		},
 		"initialize some qemu instances": {
 			provider:      cloudprovider.QEMU,
-			stateFile:     &state.State{Version: state.Version1, Infrastructure: state.Infrastructure{ClusterEndpoint: "192.0.2.1"}},
+			stateFile:     preInitStateFile(),
 			initServerAPI: &stubInitServer{res: []*initproto.InitResponse{{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}}},
 		},
 		"non retriable error": {
 			provider:                cloudprovider.QEMU,
-			stateFile:               &state.State{Version: state.Version1, Infrastructure: state.Infrastructure{ClusterEndpoint: "192.0.2.1"}},
+			stateFile:               preInitStateFile(),
 			initServerAPI:           &stubInitServer{initErr: &nonRetriableError{err: assert.AnError}},
 			retriable:               false,
 			masterSecretShouldExist: true,
@@ -126,7 +134,7 @@ func TestInitialize(t *testing.T) {
 		},
 		"non retriable error with failed log collection": {
 			provider:  cloudprovider.QEMU,
-			stateFile: &state.State{Version: state.Version1, Infrastructure: state.Infrastructure{ClusterEndpoint: "192.0.2.1"}},
+			stateFile: preInitStateFile(),
 			initServerAPI: &stubInitServer{
 				res: []*initproto.InitResponse{
 					{
@@ -149,31 +157,24 @@ func TestInitialize(t *testing.T) {
 			masterSecretShouldExist: true,
 			wantErr:                 true,
 		},
-		/*
-			Tests currently disabled since we don't actually have validation for the state file yet
-			These tests cases only passed in the past because of unrelated errors in the test setup
-			TODO(AB#3492): Re-enable tests once state file validation is implemented
-
-			"state file with only version": {
-				provider:      cloudprovider.GCP,
-				stateFile:     &state.State{Version: state.Version1},
-				configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
-				serviceAccKey: gcpServiceAccKey,
-				initServerAPI: &stubInitServer{},
-				retriable:     true,
-				wantErr:       true,
-			},
-
-			"empty state file": {
-				provider:      cloudprovider.GCP,
-				stateFile:     &state.State{},
-				configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
-				serviceAccKey: gcpServiceAccKey,
-				initServerAPI: &stubInitServer{},
-				retriable:     true,
-				wantErr:       true,
-			},
-		*/
+		"invalid state file": {
+			provider:      cloudprovider.GCP,
+			stateFile:     &state.State{Version: "invalid"},
+			configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
+			serviceAccKey: gcpServiceAccKey,
+			initServerAPI: &stubInitServer{},
+			retriable:     true,
+			wantErr:       true,
+		},
+		"empty state file": {
+			provider:      cloudprovider.GCP,
+			stateFile:     &state.State{},
+			configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
+			serviceAccKey: gcpServiceAccKey,
+			initServerAPI: &stubInitServer{},
+			retriable:     true,
+			wantErr:       true,
+		},
 		"no state file": {
 			provider:      cloudprovider.GCP,
 			configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
@@ -184,7 +185,7 @@ func TestInitialize(t *testing.T) {
 		"init call fails": {
 			provider:                cloudprovider.GCP,
 			configMutator:           func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
-			stateFile:               &state.State{Version: state.Version1, Infrastructure: state.Infrastructure{ClusterEndpoint: "192.0.2.1"}},
+			stateFile:               preInitStateFile(),
 			serviceAccKey:           gcpServiceAccKey,
 			initServerAPI:           &stubInitServer{initErr: assert.AnError},
 			retriable:               false,
@@ -193,7 +194,7 @@ func TestInitialize(t *testing.T) {
 		},
 		"k8s version without v works": {
 			provider:      cloudprovider.Azure,
-			stateFile:     &state.State{Version: state.Version1, Infrastructure: state.Infrastructure{ClusterEndpoint: "192.0.2.1"}},
+			stateFile:     preInitStateFile(),
 			initServerAPI: &stubInitServer{res: []*initproto.InitResponse{{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}}},
 			configMutator: func(c *config.Config) {
 				res, err := versions.NewValidK8sVersion(strings.TrimPrefix(string(versions.Default), "v"), true)
@@ -203,7 +204,7 @@ func TestInitialize(t *testing.T) {
 		},
 		"outdated k8s patch version doesn't work": {
 			provider:      cloudprovider.Azure,
-			stateFile:     &state.State{Version: state.Version1, Infrastructure: state.Infrastructure{ClusterEndpoint: "192.0.2.1"}},
+			stateFile:     preInitStateFile(),
 			initServerAPI: &stubInitServer{res: []*initproto.InitResponse{{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}}},
 			configMutator: func(c *config.Config) {
 				v, err := semver.New(versions.SupportedK8sVersions()[0])

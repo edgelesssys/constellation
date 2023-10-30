@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
+	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
@@ -21,6 +22,42 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// defaultStateFile returns a valid default state for testing.
+func defaultStateFile() *state.State {
+	return &state.State{
+		Version: "v1",
+		Infrastructure: state.Infrastructure{
+			UID:               "123",
+			Name:              "test-cluster",
+			ClusterEndpoint:   "0.0.0.0",
+			InClusterEndpoint: "0.0.0.0",
+			InitSecret:        []byte{0x41},
+			APIServerCertSANs: []string{
+				"127.0.0.1",
+				"www.example.com",
+			},
+			IPCidrNode: "0.0.0.0/24",
+			Azure: &state.Azure{
+				ResourceGroup:            "test-rg",
+				SubscriptionID:           "test-sub",
+				NetworkSecurityGroupName: "test-nsg",
+				LoadBalancerName:         "test-lb",
+				UserAssignedIdentity:     "test-uami",
+				AttestationURL:           "test-maaUrl",
+			},
+			GCP: &state.GCP{
+				ProjectID: "test-project",
+				IPCidrPod: "0.0.0.0/24",
+			},
+		},
+		ClusterValues: state.ClusterValues{
+			ClusterID:       "deadbeef",
+			OwnerID:         "deadbeef",
+			MeasurementSalt: []byte{0x41},
+		},
+	}
+}
 
 func TestParseApplyFlags(t *testing.T) {
 	require := require.New(t)
