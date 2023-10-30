@@ -9,6 +9,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -148,4 +149,23 @@ func TestBackupHelmCharts(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSkipPhases(t *testing.T) {
+	require := require.New(t)
+	cmd := NewApplyCmd()
+	// register persistent flags manually
+	cmd.Flags().String("workspace", "", "")
+	cmd.Flags().Bool("force", true, "")
+	cmd.Flags().String("tf-log", "NONE", "")
+	cmd.Flags().Bool("debug", false, "")
+
+	require.NoError(cmd.Flags().Set("skip-phases", strings.Join(allPhases(), ",")))
+	wantPhases := skipPhases{}
+	wantPhases.add(skipInfrastructurePhase, skipInitPhase, skipAttestationConfigPhase, skipCertSANsPhase, skipHelmPhase, skipK8sPhase, skipImagePhase)
+
+	var flags applyFlags
+	err := flags.parse(cmd.Flags())
+	require.NoError(err)
+	assert.Equal(t, wantPhases, flags.skipPhases)
 }
