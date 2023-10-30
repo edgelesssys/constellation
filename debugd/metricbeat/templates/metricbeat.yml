@@ -37,7 +37,7 @@ metricbeat.modules:
       #- socket         # Sockets and connection info (linux only)
       #- service        # systemd service information
     cpu.metrics:  ["percentages","normalized_percentages"]
-    period: 10s
+    period: 60s
     processes: ['.*']
     # To monitor host metrics from within a container. As per:
     # https://www.elastic.co/guide/en/beats/metricbeat/current/metricbeat-module-system.html#_example_configuration_59
@@ -47,7 +47,7 @@ metricbeat.modules:
   - module: etcd
     enabled: true
     metricsets: ["metrics"]
-    period: 30s
+    period: 60s
     hosts: ["https://localhost:2379"]
     ssl:
       certificate_authorities: ["/etc/kubernetes/pki/etcd/ca.crt"]
