@@ -257,7 +257,7 @@ func isNilPtrOrInvalid(v reflect.Value) bool {
 foundNeedle returns whether the given value is the needle.
 
 It does so by comparing the address and type of the value to the address and type of the needle.
-Thecomparison of types is necessary because the first value of a struct has the same address as the struct itself.
+The comparison of types is necessary because the first value of a struct has the same address as the struct itself.
 */
 func foundNeedle(haystack, needle referenceableValue) bool {
 	return haystack.addr == needle.addr &&
