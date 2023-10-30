@@ -10,6 +10,6 @@ go_library(
         "runtimedata.bin",
         "vcek.pem",
     ],
-    importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp/testdata",
+    importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/snp/testdata",
     visibility = ["//:__subpackages__"],
 )

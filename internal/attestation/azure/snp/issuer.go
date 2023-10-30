@@ -13,6 +13,7 @@ import (
 	"io"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/go-azguestattestation/maa"
@@ -65,7 +66,7 @@ func (i *Issuer) getInstanceInfo(ctx context.Context, tpm io.ReadWriteCloser, us
 		}
 	}
 
-	instanceInfo := azureInstanceInfo{
+	instanceInfo := snp.InstanceInfo{
 		VCEK:              params.VcekCert,
 		CertChain:         params.VcekChain,
 		AttestationReport: params.SNPReport,

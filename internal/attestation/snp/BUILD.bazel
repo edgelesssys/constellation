@@ -1,0 +1,31 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "snp",
+    srcs = ["snp.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/snp",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/attestation",
+        "//internal/constants",
+        "@com_github_google_go_sev_guest//abi",
+        "@com_github_google_go_sev_guest//kds",
+        "@com_github_google_go_sev_guest//proto/sevsnp",
+        "@com_github_google_go_sev_guest//verify/trust",
+    ],
+)
+
+go_test(
+    name = "snp_test",
+    srcs = ["snp_test.go"],
+    embed = [":snp"],
+    deps = [
+        "//internal/attestation/snp/testdata",
+        "//internal/config",
+        "//internal/logger",
+        "@com_github_google_go_sev_guest//kds",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

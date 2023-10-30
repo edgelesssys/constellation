@@ -10,7 +10,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
-	"crypto/x509"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
@@ -19,13 +18,13 @@ import (
 	"fmt"
 	"os"
 	"regexp"
-	"strings"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp/testdata"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/snp"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/snp/testdata"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -67,264 +66,6 @@ func TestNewValidator(t *testing.T) {
 			require.NotNil(validator.log)
 		})
 	}
-}
-
-// TestParseCertChain tests the parsing of the certificate chain.
-func TestParseCertChain(t *testing.T) {
-	defaultCertChain := testdata.CertChain
-	askOnly := strings.Split(string(defaultCertChain), "-----END CERTIFICATE-----")[0] + "-----END CERTIFICATE-----"
-	arkOnly := strings.Split(string(defaultCertChain), "-----END CERTIFICATE-----")[1] + "-----END CERTIFICATE-----"
-
-	testCases := map[string]struct {
-		certChain []byte
-		wantAsk   bool
-		wantArk   bool
-		wantErr   bool
-	}{
-		"success": {
-			certChain: defaultCertChain,
-			wantAsk:   true,
-			wantArk:   true,
-		},
-		"empty cert chain": {
-			certChain: []byte{},
-			wantErr:   true,
-		},
-		"more than two certificates": {
-			certChain: append(defaultCertChain, defaultCertChain...),
-			wantErr:   true,
-		},
-		"invalid certificate": {
-			certChain: []byte("invalid"),
-			wantErr:   true,
-		},
-		"ark missing": {
-			certChain: []byte(askOnly),
-			wantAsk:   true,
-		},
-		"ask missing": {
-			certChain: []byte(arkOnly),
-			wantArk:   true,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-
-			instanceInfo := &azureInstanceInfo{
-				CertChain: tc.certChain,
-			}
-
-			ask, ark, err := instanceInfo.parseCertChain()
-			if tc.wantErr {
-				assert.Error(err)
-			} else {
-				assert.NoError(err)
-				assert.Equal(tc.wantAsk, ask != nil)
-				assert.Equal(tc.wantArk, ark != nil)
-			}
-		})
-	}
-}
-
-// TestParseVCEK tests the parsing of the VCEK certificate.
-func TestParseVCEK(t *testing.T) {
-	testCases := map[string]struct {
-		VCEK     []byte
-		wantVCEK bool
-		wantErr  bool
-	}{
-		"success": {
-			VCEK:     testdata.AzureThimVCEK,
-			wantVCEK: true,
-		},
-		"empty": {
-			VCEK: []byte{},
-		},
-		"malformed": {
-			VCEK:    testdata.AzureThimVCEK[:len(testdata.AzureThimVCEK)-100],
-			wantErr: true,
-		},
-		"invalid": {
-			VCEK:    []byte("invalid"),
-			wantErr: true,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-
-			instanceInfo := &azureInstanceInfo{
-				VCEK: tc.VCEK,
-			}
-
-			vcek, err := instanceInfo.parseVCEK()
-			if tc.wantErr {
-				assert.Error(err)
-			} else {
-				assert.NoError(err)
-				assert.Equal(tc.wantVCEK, vcek != nil)
-			}
-		})
-	}
-}
-
-// TestInstanceInfoAttestation tests the basic unmarshalling of the attestation report and the ASK / ARK precedence.
-func TestInstanceInfoAttestation(t *testing.T) {
-	defaultReport := testdata.AttestationReport
-	testdataArk, testdataAsk := mustCertChainToPem(t, testdata.CertChain)
-	exampleCert := &x509.Certificate{
-		Raw: []byte{1, 2, 3},
-	}
-	cfg := config.DefaultForAzureSEVSNP()
-
-	testCases := map[string]struct {
-		report        []byte
-		vcek          []byte
-		certChain     []byte
-		fallbackCerts sevSnpCerts
-		getter        *stubHTTPSGetter
-		expectedArk   *x509.Certificate
-		expectedAsk   *x509.Certificate
-		wantErr       bool
-	}{
-		"success": {
-			report:      defaultReport,
-			vcek:        testdata.AzureThimVCEK,
-			certChain:   testdata.CertChain,
-			expectedArk: testdataArk,
-			expectedAsk: testdataAsk,
-		},
-		"retrieve vcek": {
-			report:    defaultReport,
-			certChain: testdata.CertChain,
-			getter: newStubHTTPSGetter(
-				&urlResponseMatcher{
-					vcekResponse:    testdata.AmdKdsVCEK,
-					wantVcekRequest: true,
-				},
-				nil,
-			),
-			expectedArk: testdataArk,
-			expectedAsk: testdataAsk,
-		},
-		"retrieve certchain": {
-			report: defaultReport,
-			vcek:   testdata.AzureThimVCEK,
-			getter: newStubHTTPSGetter(
-				&urlResponseMatcher{
-					certChainResponse:    testdata.CertChain,
-					wantCertChainRequest: true,
-				},
-				nil,
-			),
-			expectedArk: testdataArk,
-			expectedAsk: testdataAsk,
-		},
-		"use fallback certs": {
-			report: defaultReport,
-			vcek:   testdata.AzureThimVCEK,
-			fallbackCerts: sevSnpCerts{
-				ask: exampleCert,
-				ark: exampleCert,
-			},
-			getter: newStubHTTPSGetter(
-				&urlResponseMatcher{},
-				nil,
-			),
-			expectedArk: exampleCert,
-			expectedAsk: exampleCert,
-		},
-		"use certchain with fallback certs": {
-			report:    defaultReport,
-			certChain: testdata.CertChain,
-			vcek:      testdata.AzureThimVCEK,
-			fallbackCerts: sevSnpCerts{
-				ask: &x509.Certificate{},
-				ark: &x509.Certificate{},
-			},
-			getter: newStubHTTPSGetter(
-				&urlResponseMatcher{},
-				nil,
-			),
-			expectedArk: testdataArk,
-			expectedAsk: testdataAsk,
-		},
-		"retrieve vcek and certchain": {
-			report: defaultReport,
-			getter: newStubHTTPSGetter(
-				&urlResponseMatcher{
-					certChainResponse:    testdata.CertChain,
-					vcekResponse:         testdata.AmdKdsVCEK,
-					wantCertChainRequest: true,
-					wantVcekRequest:      true,
-				},
-				nil,
-			),
-			expectedArk: testdataArk,
-			expectedAsk: testdataAsk,
-		},
-		"report too short": {
-			report:  defaultReport[:len(defaultReport)-100],
-			wantErr: true,
-		},
-		"corrupted report": {
-			report:  defaultReport[10 : len(defaultReport)-10],
-			wantErr: true,
-		},
-		"certificate fetch error": {
-			report:  defaultReport,
-			getter:  newStubHTTPSGetter(nil, assert.AnError),
-			wantErr: true,
-		},
-	}
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-			require := require.New(t)
-
-			// This is important. Without this call, the trust module caches certificates across testcases.
-			defer trust.ClearProductCertCache()
-
-			instanceInfo := azureInstanceInfo{
-				AttestationReport: tc.report,
-				CertChain:         tc.certChain,
-				VCEK:              tc.vcek,
-			}
-
-			att, err := instanceInfo.attestationWithCerts(logger.NewTest(t), tc.getter, tc.fallbackCerts)
-			if tc.wantErr {
-				assert.Error(err)
-			} else {
-				require.NoError(err)
-				assert.NotNil(att)
-				assert.NotNil(att.CertificateChain)
-				assert.NotNil(att.Report)
-
-				assert.Equal(hex.EncodeToString(att.Report.IdKeyDigest[:]), "57e229e0ffe5fa92d0faddff6cae0e61c926fc9ef9afd20a8b8cfcf7129db9338cbe5bf3f6987733a2bf65d06dc38fc1")
-
-				// This is a canary for us: If this fails in the future we possibly downgraded a SVN.
-				// See https://github.com/google/go-sev-guest/blob/14ac50e9ffcc05cd1d12247b710c65093beedb58/validate/validate.go#L336 for decomposition of the values.
-				tcbValues := kds.DecomposeTCBVersion(kds.TCBVersion(att.Report.GetLaunchTcb()))
-				assert.True(tcbValues.BlSpl >= cfg.BootloaderVersion.Value)
-				assert.True(tcbValues.TeeSpl >= cfg.TEEVersion.Value)
-				assert.True(tcbValues.SnpSpl >= cfg.SNPVersion.Value)
-				assert.True(tcbValues.UcodeSpl >= cfg.MicrocodeVersion.Value)
-				assert.Equal(tc.expectedArk.Raw, att.CertificateChain.ArkCert)
-				assert.Equal(tc.expectedAsk.Raw, att.CertificateChain.AskCert)
-			}
-		})
-	}
-}
-
-func mustCertChainToPem(t *testing.T, certchain []byte) (ark, ask *x509.Certificate) {
-	t.Helper()
-	a := azureInstanceInfo{CertChain: certchain}
-	ask, ark, err := a.parseCertChain()
-	require.NoError(t, err)
-	return ark, ask
 }
 
 type stubHTTPSGetter struct {
@@ -488,18 +229,18 @@ func TestValidateAk(t *testing.T) {
 	n := base64.RawURLEncoding.EncodeToString(key.PublicArea().RSAParameters.ModulusRaw)
 
 	ak := akPub{E: e, N: n}
-	runtimeData := runtimeData{Keys: []akPub{ak}}
+	runtimeData := attestationKey{PublicPart: []akPub{ak}}
 
 	defaultRuntimeDataRaw, err := json.Marshal(runtimeData)
 	require.NoError(err)
-	defaultInstanceInfo := azureInstanceInfo{RuntimeData: defaultRuntimeDataRaw}
+	defaultInstanceInfo := snp.InstanceInfo{RuntimeData: defaultRuntimeDataRaw}
 
 	sig := sha256.Sum256(defaultRuntimeDataRaw)
 	defaultReportData := sig[:]
 	defaultRsaParams := key.PublicArea().RSAParameters
 
 	testCases := map[string]struct {
-		instanceInfo   azureInstanceInfo
+		instanceInfo   snp.InstanceInfo
 		runtimeDataRaw []byte
 		reportData     []byte
 		rsaParameters  *tpm2.RSAParams
@@ -552,7 +293,8 @@ func TestValidateAk(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			err = tc.instanceInfo.validateAk(tc.runtimeDataRaw, tc.reportData, tc.rsaParameters)
+			ak := attestationKey{}
+			err = ak.validate(tc.runtimeDataRaw, tc.reportData, tc.rsaParameters)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
@@ -985,7 +727,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			// This is important. Without this call, the trust module caches certificates across testcases.
 			defer trust.ClearProductCertCache()
 
-			instanceInfo, err := newStubAzureInstanceInfo(tc.vcek, tc.certChain, tc.report, tc.runtimeData)
+			instanceInfo, err := newStubInstanceInfo(tc.vcek, tc.certChain, tc.report, tc.runtimeData)
 			require.NoError(err)
 
 			statement, err := json.Marshal(instanceInfo)
@@ -1004,7 +746,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			}
 
 			validator := &Validator{
-				hclValidator:         &instanceInfo,
+				hclValidator:         &stubAttestationKey{},
 				config:               defaultCfg,
 				log:                  logger.NewTest(t),
 				getter:               tc.getter,
@@ -1050,25 +792,25 @@ func (v *stubAttestationValidator) SNPAttestation(attestation *spb.Attestation, 
 	return validate.SnpAttestation(attestation, options)
 }
 
-type stubAzureInstanceInfo struct {
+type stubInstanceInfo struct {
 	AttestationReport []byte
 	RuntimeData       []byte
 	VCEK              []byte
 	CertChain         []byte
 }
 
-func newStubAzureInstanceInfo(vcek, certChain []byte, report, runtimeData string) (stubAzureInstanceInfo, error) {
+func newStubInstanceInfo(vcek, certChain []byte, report, runtimeData string) (stubInstanceInfo, error) {
 	validReport, err := hex.DecodeString(report)
 	if err != nil {
-		return stubAzureInstanceInfo{}, fmt.Errorf("invalid hex string report: %s", err)
+		return stubInstanceInfo{}, fmt.Errorf("invalid hex string report: %s", err)
 	}
 
 	decodedRuntime, err := hex.DecodeString(runtimeData)
 	if err != nil {
-		return stubAzureInstanceInfo{}, fmt.Errorf("invalid hex string runtimeData: %s", err)
+		return stubInstanceInfo{}, fmt.Errorf("invalid hex string runtimeData: %s", err)
 	}
 
-	return stubAzureInstanceInfo{
+	return stubInstanceInfo{
 		AttestationReport: validReport,
 		RuntimeData:       decodedRuntime,
 		VCEK:              vcek,
@@ -1076,9 +818,12 @@ func newStubAzureInstanceInfo(vcek, certChain []byte, report, runtimeData string
 	}, nil
 }
 
-func (s *stubAzureInstanceInfo) validateAk(runtimeDataRaw []byte, reportData []byte, _ *tpm2.RSAParams) error {
-	var runtimeData runtimeData
-	if err := json.Unmarshal(runtimeDataRaw, &runtimeData); err != nil {
+type stubAttestationKey struct {
+	PublicPart []akPub
+}
+
+func (s *stubAttestationKey) validate(runtimeDataRaw []byte, reportData []byte, _ *tpm2.RSAParams) error {
+	if err := json.Unmarshal(runtimeDataRaw, s); err != nil {
 		return fmt.Errorf("unmarshalling json: %w", err)
 	}
 
