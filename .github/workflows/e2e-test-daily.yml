@@ -128,6 +128,7 @@ jobs:
           test: ${{ matrix.test }}
           kubernetesVersion: ${{ matrix.kubernetesVersion }}
           provider: ${{ matrix.provider }}
+          selfManagedInfra: "false"
 
   e2e-mini:
     name: Run miniconstellation E2E test
