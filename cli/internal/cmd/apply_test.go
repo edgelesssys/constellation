@@ -30,8 +30,8 @@ func defaultStateFile() *state.State {
 		Infrastructure: state.Infrastructure{
 			UID:               "123",
 			Name:              "test-cluster",
-			ClusterEndpoint:   "0.0.0.0",
-			InClusterEndpoint: "0.0.0.0",
+			ClusterEndpoint:   "192.0.2.1",
+			InClusterEndpoint: "192.0.2.1",
 			InitSecret:        []byte{0x41},
 			APIServerCertSANs: []string{
 				"127.0.0.1",

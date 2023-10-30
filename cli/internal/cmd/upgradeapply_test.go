@@ -33,18 +33,10 @@ import (
 )
 
 func TestUpgradeApply(t *testing.T) {
-	defaultState := state.New().
-		SetInfrastructure(state.Infrastructure{
-			APIServerCertSANs: []string{},
-			UID:               "uid",
-			Name:              "kubernetes-uid", // default test cfg uses "kubernetes" prefix
-			InitSecret:        []byte{0x42},
-		}).
-		SetClusterValues(state.ClusterValues{MeasurementSalt: []byte{0x41}})
 	fsWithStateFileAndTfState := func() file.Handler {
 		fh := file.NewHandler(afero.NewMemMapFs())
 		require.NoError(t, fh.MkdirAll(constants.TerraformWorkingDir))
-		require.NoError(t, fh.WriteYAML(constants.StateFilename, defaultState))
+		require.NoError(t, fh.WriteYAML(constants.StateFilename, defaultStateFile()))
 		return fh
 	}
 
@@ -63,20 +55,20 @@ func TestUpgradeApply(t *testing.T) {
 			kubeUpgrader:      &stubKubernetesUpgrader{currentConfig: config.DefaultForAzureSEVSNP()},
 			helmUpgrader:      stubApplier{},
 			terraformUpgrader: &stubTerraformUpgrader{},
-			flags:             applyFlags{yes: true},
+			flags:             applyFlags{yes: true, skipPhases: skipPhases{skipInitPhase: struct{}{}}},
 			fh:                fsWithStateFileAndTfState,
 			fhAssertions: func(require *require.Assertions, assert *assert.Assertions, fh file.Handler) {
 				gotState, err := state.ReadFromFile(fh, constants.StateFilename)
 				require.NoError(err)
 				assert.Equal("v1", gotState.Version)
-				assert.Equal(defaultState, gotState)
+				assert.Equal(defaultStateFile(), gotState)
 			},
 		},
 		"id file and state file do not exist": {
 			kubeUpgrader:      &stubKubernetesUpgrader{currentConfig: config.DefaultForAzureSEVSNP()},
 			helmUpgrader:      stubApplier{},
 			terraformUpgrader: &stubTerraformUpgrader{},
-			flags:             applyFlags{yes: true},
+			flags:             applyFlags{yes: true, skipPhases: skipPhases{skipInitPhase: struct{}{}}},
 			fh: func() file.Handler {
 				return file.NewHandler(afero.NewMemMapFs())
 			},
@@ -90,7 +82,7 @@ func TestUpgradeApply(t *testing.T) {
 			helmUpgrader:      stubApplier{},
 			terraformUpgrader: &stubTerraformUpgrader{},
 			wantErr:           true,
-			flags:             applyFlags{yes: true},
+			flags:             applyFlags{yes: true, skipPhases: skipPhases{skipInitPhase: struct{}{}}},
 			fh:                fsWithStateFileAndTfState,
 		},
 		"nodeVersion in progress error": {
@@ -100,7 +92,7 @@ func TestUpgradeApply(t *testing.T) {
 			},
 			helmUpgrader:      stubApplier{},
 			terraformUpgrader: &stubTerraformUpgrader{},
-			flags:             applyFlags{yes: true},
+			flags:             applyFlags{yes: true, skipPhases: skipPhases{skipInitPhase: struct{}{}}},
 			fh:                fsWithStateFileAndTfState,
 		},
 		"helm other error": {
@@ -110,7 +102,7 @@ func TestUpgradeApply(t *testing.T) {
 			helmUpgrader:      stubApplier{err: assert.AnError},
 			terraformUpgrader: &stubTerraformUpgrader{},
 			wantErr:           true,
-			flags:             applyFlags{yes: true},
+			flags:             applyFlags{yes: true, skipPhases: skipPhases{skipInitPhase: struct{}{}}},
 			fh:                fsWithStateFileAndTfState,
 		},
 		"abort": {
@@ -140,7 +132,7 @@ func TestUpgradeApply(t *testing.T) {
 			helmUpgrader:      stubApplier{},
 			terraformUpgrader: &stubTerraformUpgrader{planTerraformErr: assert.AnError},
 			wantErr:           true,
-			flags:             applyFlags{yes: true},
+			flags:             applyFlags{yes: true, skipPhases: skipPhases{skipInitPhase: struct{}{}}},
 			fh:                fsWithStateFileAndTfState,
 		},
 		"apply terraform error": {
@@ -153,7 +145,7 @@ func TestUpgradeApply(t *testing.T) {
 				terraformDiff:     true,
 			},
 			wantErr: true,
-			flags:   applyFlags{yes: true},
+			flags:   applyFlags{yes: true, skipPhases: skipPhases{skipInitPhase: struct{}{}}},
 			fh:      fsWithStateFileAndTfState,
 		},
 		"outdated K8s patch version": {
@@ -167,7 +159,7 @@ func TestUpgradeApply(t *testing.T) {
 				require.NoError(t, err)
 				return semver.NewFromInt(v.Major(), v.Minor(), v.Patch()-1, "").String()
 			}(),
-			flags: applyFlags{yes: true},
+			flags: applyFlags{yes: true, skipPhases: skipPhases{skipInitPhase: struct{}{}}},
 			fh:    fsWithStateFileAndTfState,
 		},
 		"outdated K8s version": {
@@ -177,7 +169,7 @@ func TestUpgradeApply(t *testing.T) {
 			helmUpgrader:      stubApplier{},
 			terraformUpgrader: &stubTerraformUpgrader{},
 			customK8sVersion:  "v1.20.0",
-			flags:             applyFlags{yes: true},
+			flags:             applyFlags{yes: true, skipPhases: skipPhases{skipInitPhase: struct{}{}}},
 			wantErr:           true,
 			fh:                fsWithStateFileAndTfState,
 		},
@@ -191,6 +183,7 @@ func TestUpgradeApply(t *testing.T) {
 				skipPhases: skipPhases{
 					skipInfrastructurePhase: struct{}{}, skipHelmPhase: struct{}{},
 					skipK8sPhase: struct{}{}, skipImagePhase: struct{}{},
+					skipInitPhase: struct{}{},
 				},
 				yes: true,
 			},
@@ -205,7 +198,7 @@ func TestUpgradeApply(t *testing.T) {
 			flags: applyFlags{
 				skipPhases: skipPhases{
 					skipInfrastructurePhase: struct{}{}, skipHelmPhase: struct{}{},
-					skipK8sPhase: struct{}{},
+					skipK8sPhase: struct{}{}, skipInitPhase: struct{}{},
 				},
 				yes: true,
 			},
@@ -219,10 +212,13 @@ func TestUpgradeApply(t *testing.T) {
 			terraformUpgrader: &mockTerraformUpgrader{},
 			flags: applyFlags{
 				yes: true,
+				skipPhases: skipPhases{
+					skipInitPhase: struct{}{},
+				},
 			},
 			fh: func() file.Handler {
 				fh := file.NewHandler(afero.NewMemMapFs())
-				require.NoError(t, fh.WriteYAML(constants.StateFilename, defaultState))
+				require.NoError(t, fh.WriteYAML(constants.StateFilename, defaultStateFile()))
 				return fh
 			},
 		},
@@ -230,7 +226,7 @@ func TestUpgradeApply(t *testing.T) {
 			kubeUpgrader:      &stubKubernetesUpgrader{currentConfig: &config.AzureTrustedLaunch{}},
 			helmUpgrader:      stubApplier{},
 			terraformUpgrader: &stubTerraformUpgrader{},
-			flags:             applyFlags{yes: true},
+			flags:             applyFlags{yes: true, skipPhases: skipPhases{skipInitPhase: struct{}{}}},
 			fh:                fsWithStateFileAndTfState,
 			wantErr:           true,
 		},
