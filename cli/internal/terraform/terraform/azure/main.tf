@@ -288,4 +288,3 @@ data "azurerm_user_assigned_identity" "uaid" {
   name                = local.uai_name
   resource_group_name = local.uai_resource_group
 }
-
