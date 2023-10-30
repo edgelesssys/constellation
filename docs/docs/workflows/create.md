@@ -197,7 +197,7 @@ yq eval ".infrastructure.apiServerCertSANs =$(terraform output -json api_server_
   The update can be applied with the following commands, where `<VERSION>` is the version of Constellation that should be set up. (e.g. `v2.12.0`)
 
   ```bash
-  https://github.com/edgelesssys/constellation/tree/<VERSION>
+  git clone --branch <VERSION> https://github.com/edgelesssys/constellation
   cd constellation/hack/maa-patch
   go run . $(terraform output attestationURL | jq -r)
   ```
