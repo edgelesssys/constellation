@@ -91,16 +91,17 @@ runs:
         helm install filebeat elastic/filebeat \
           --wait --timeout=1200s --values values.yml
 
-    - name: Deploy Metricbeat
-      id: deploy-metricbeat
-      shell: bash
-      working-directory: ./metricbeat
-      env:
-        KUBECONFIG: ${{ inputs.kubeconfig }}
-      run: |
-        helm repo add elastic https://helm.elastic.co
-        helm repo update
-        helm install metricbeat-k8s elastic/metricbeat \
-          --wait --timeout=1200s --values values-control-plane.yml
-        helm install metricbeat-system elastic/metricbeat \
-          --wait --timeout=1200s --values values-all-nodes.yml
+    # TODO(msanft): Re-enable Metricbeat deployment once OpenSearch instance health issues are resolved.
+    # - name: Deploy Metricbeat
+    #   id: deploy-metricbeat
+    #   shell: bash
+    #   working-directory: ./metricbeat
+    #   env:
+    #     KUBECONFIG: ${{ inputs.kubeconfig }}
+    #   run: |
+    #     helm repo add elastic https://helm.elastic.co
+    #     helm repo update
+    #     helm install metricbeat-k8s elastic/metricbeat \
+    #       --wait --timeout=1200s --values values-control-plane.yml
+    #     helm install metricbeat-system elastic/metricbeat \
+    #       --wait --timeout=1200s --values values-all-nodes.yml
