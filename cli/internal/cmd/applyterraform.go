@@ -20,7 +20,12 @@ import (
 // runTerraformApply checks if changes to Terraform are required and applies them.
 func (a *applyCmd) runTerraformApply(cmd *cobra.Command, conf *config.Config, stateFile *state.State, upgradeDir string) error {
 	a.log.Debugf("Checking if Terraform migrations are required")
-	migrationRequired, err := a.planTerraformMigration(cmd, conf)
+	terraformClient, err := a.newClusterApplier(cmd.Context())
+	if err != nil {
+		return fmt.Errorf("creating Terraform client: %w", err)
+	}
+
+	migrationRequired, err := a.planTerraformMigration(cmd, conf, terraformClient)
 	if err != nil {
 		return fmt.Errorf("planning Terraform migrations: %w", err)
 	}
@@ -31,7 +36,7 @@ func (a *applyCmd) runTerraformApply(cmd *cobra.Command, conf *config.Config, st
 	}
 
 	a.log.Debugf("Migrating terraform resources for infrastructure changes")
-	postMigrationInfraState, err := a.migrateTerraform(cmd, conf, upgradeDir)
+	postMigrationInfraState, err := a.migrateTerraform(cmd, conf, terraformClient, upgradeDir)
 	if err != nil {
 		return fmt.Errorf("performing Terraform migrations: %w", err)
 	}
@@ -53,7 +58,7 @@ func (a *applyCmd) runTerraformApply(cmd *cobra.Command, conf *config.Config, st
 }
 
 // planTerraformMigration checks if the Constellation version the cluster is being upgraded to requires a migration.
-func (a *applyCmd) planTerraformMigration(cmd *cobra.Command, conf *config.Config) (bool, error) {
+func (a *applyCmd) planTerraformMigration(cmd *cobra.Command, conf *config.Config, terraformClient clusterUpgrader) (bool, error) {
 	a.log.Debugf("Planning Terraform migrations")
 	vars, err := cloudcmd.TerraformUpgradeVars(conf)
 	if err != nil {
@@ -73,11 +78,11 @@ func (a *applyCmd) planTerraformMigration(cmd *cobra.Command, conf *config.Confi
 
 	a.spinner.Start("Checking for infrastructure changes", false)
 	defer a.spinner.Stop()
-	return a.clusterUpgrader.PlanClusterUpgrade(cmd.Context(), a.spinner, vars, conf.GetProvider())
+	return terraformClient.PlanClusterUpgrade(cmd.Context(), a.spinner, vars, conf.GetProvider())
 }
 
 // migrateTerraform migrates an existing Terraform state and the post-migration infrastructure state is returned.
-func (a *applyCmd) migrateTerraform(cmd *cobra.Command, conf *config.Config, upgradeDir string) (state.Infrastructure, error) {
+func (a *applyCmd) migrateTerraform(cmd *cobra.Command, conf *config.Config, terraformClient clusterUpgrader, upgradeDir string) (state.Infrastructure, error) {
 	// Ask for confirmation first
 	cmd.Println("The upgrade requires a migration of Constellation cloud resources by applying an updated Terraform template.")
 	if !a.flags.yes {
@@ -89,7 +94,7 @@ func (a *applyCmd) migrateTerraform(cmd *cobra.Command, conf *config.Config, upg
 			cmd.Println("Aborting upgrade.")
 			// User doesn't expect to see any changes in his workspace after aborting an "upgrade apply",
 			// therefore, roll back to the backed up state.
-			if err := a.clusterUpgrader.RestoreClusterWorkspace(); err != nil {
+			if err := terraformClient.RestoreClusterWorkspace(); err != nil {
 				return state.Infrastructure{}, fmt.Errorf(
 					"restoring Terraform workspace: %w, restore the Terraform workspace manually from %s ",
 					err,
@@ -102,7 +107,7 @@ func (a *applyCmd) migrateTerraform(cmd *cobra.Command, conf *config.Config, upg
 	a.log.Debugf("Applying Terraform migrations")
 
 	a.spinner.Start("Migrating Terraform resources", false)
-	infraState, err := a.clusterUpgrader.ApplyClusterUpgrade(cmd.Context(), conf.GetProvider())
+	infraState, err := terraformClient.ApplyClusterUpgrade(cmd.Context(), conf.GetProvider())
 	a.spinner.Stop()
 	if err != nil {
 		return state.Infrastructure{}, fmt.Errorf("applying terraform migrations: %w", err)

@@ -265,7 +265,7 @@ func TestUpgradeApply(t *testing.T) {
 				newKubeUpgrader: func(_ io.Writer, _ string, _ debugLog) (kubernetesUpgrader, error) {
 					return tc.kubeUpgrader, nil
 				},
-				clusterUpgrader: tc.terraformUpgrader,
+				newClusterApplier: func(ctx context.Context) (clusterUpgrader, error) { return tc.terraformUpgrader, nil },
 			}
 			err := upgrader.apply(cmd, stubAttestationFetcher{}, "test")
 			if tc.wantErr {
