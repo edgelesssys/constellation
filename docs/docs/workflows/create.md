@@ -60,7 +60,7 @@ From the list, select the `reference` for your CSP / Attestation combination and
 Create a `terraform.tfvars` file.
 There, define all needed variables found in `variables.tf` using the values from the `constellation-config.yaml`.
 
-<tabs groupId="provider">
+<tabs groupId="csp">
 <tabItem value="aws" label="AWS">
 
 ```bash
@@ -174,8 +174,8 @@ terraform apply
 The Constellation [apply step](#the-apply-step) requires the already created `constellation-config.yaml` and the `constellation-state.yaml`.
 Create the `constellation-state.yaml` using the output from the Terraform state and the `constellation-conf.yaml`:
 
-<tabs groupId="provider-output">
-<tabItem value="aws-output" label="AWS">
+<tabs groupId="csp">
+<tabItem value="aws" label="AWS">
 
 ```bash
 yq eval '.version ="v1"' --inplace constellation-state.yaml
@@ -189,12 +189,12 @@ yq eval ".infrastructure.apiServerCertSANs =$(terraform output -json api_server_
 ```
 
 </tabItem>
-<tabItem value="azure-output" label="Azure">
+<tabItem value="azure" label="Azure">
 
 :::info
 
   If the enforcement policy is set to `MAAFallback` in `constellation-config.yaml`, a manual update to the MAA provider's policy is necessary.
-  The update can be applied with the following commands, where `<VERSION>` is the version of Constellation that should be set up. (e.g. `v2.12.0`)
+  You can apply the update with the following commands, where `<VERSION>` is the version of Constellation that should be set up. (e.g. `v2.12.0`)
 
   ```bash
   git clone --branch <VERSION> https://github.com/edgelesssys/constellation
@@ -222,7 +222,7 @@ yq eval ".infrastructure.azure.attestationURL =\"$(terraform output attestationU
 ```
 
 </tabItem>
-<tabItem value="gcp-output" label="GCP">
+<tabItem value="gcp" label="GCP">
 
 ```bash
 yq eval '.version ="v1"' --inplace constellation-state.yaml
@@ -252,14 +252,14 @@ management tooling of your choice. You need to keep the essential functionality 
 :::info
 
   On Azure, if the enforcement policy is set to `MAAFallback` in `constellation-config.yaml`, a manual update to the MAA provider's policy is necessary.
-  The update can be applied with the following commands, where `<VERSION>` is the version of Constellation that should be set up. (e.g. `v2.12.0`)
+  You can apply the update with the following commands, where `<VERSION>` is the version of Constellation that should be set up. (e.g. `v2.12.0`)
 
   ```bash
   git clone --branch <VERSION> https://github.com/edgelesssys/constellation
   cd constellation/hack/maa-patch
   go run . $(terraform output attestationURL | jq -r)
   ```
-  
+
 :::
 
 Make sure all necessary resources are created, e.g., through checking your CSP's portal and retrieve the necessary values, aligned with the outputs (specified in `outputs.tf`) of the base configuration.
