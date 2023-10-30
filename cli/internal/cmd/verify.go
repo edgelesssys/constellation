@@ -29,6 +29,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -282,7 +283,7 @@ func (f *jsonAttestationDocFormatter) format(ctx context.Context, docString stri
 		return "", fmt.Errorf("parsing SNP report: %w", err)
 	}
 
-	vcek, err := newCertificates("VCEK certificate", instanceInfo.Vcek, f.log)
+	vcek, err := newCertificates("VCEK certificate", instanceInfo.VCEK, f.log)
 	if err != nil {
 		return "", fmt.Errorf("parsing VCEK certificate: %w", err)
 	}
@@ -348,12 +349,12 @@ func (f *defaultAttestationDocFormatter) format(ctx context.Context, docString s
 		return "", fmt.Errorf("decode instance info: %w", err)
 	}
 
-	var instanceInfo azureInstanceInfo
+	var instanceInfo snp.InstanceInfo
 	if err := json.Unmarshal(instanceInfoString, &instanceInfo); err != nil {
 		return "", fmt.Errorf("unmarshal instance info: %w", err)
 	}
 
-	if err := f.parseCerts(b, "VCEK certificate", instanceInfo.Vcek); err != nil {
+	if err := f.parseCerts(b, "VCEK certificate", instanceInfo.VCEK); err != nil {
 		return "", fmt.Errorf("print VCEK certificate: %w", err)
 	}
 	if err := f.parseCerts(b, "Certificate chain", instanceInfo.CertChain); err != nil {
@@ -609,16 +610,6 @@ type attestationDoc struct {
 	UserData     string `json:"UserData"`
 }
 
-// azureInstanceInfo is the b64-decoded InstanceInfo field of the attestation document.
-// as of now (2023-04-03), it only contains interesting data on Azure.
-type azureInstanceInfo struct {
-	Vcek              []byte
-	CertChain         []byte
-	AttestationReport []byte
-	RuntimeData       []byte
-	MAAToken          string
-}
-
 type constellationVerifier struct {
 	dialer grpcInsecureDialer
 	log    debugLog
@@ -837,20 +828,20 @@ func newTCBVersion(tcbVersion kds.TCBVersion) (res verify.TCBVersion) {
 	}
 }
 
-func extractAzureInstanceInfo(docString string) (azureInstanceInfo, error) {
+func extractAzureInstanceInfo(docString string) (snp.InstanceInfo, error) {
 	var doc attestationDoc
 	if err := json.Unmarshal([]byte(docString), &doc); err != nil {
-		return azureInstanceInfo{}, fmt.Errorf("unmarshal attestation document: %w", err)
+		return snp.InstanceInfo{}, fmt.Errorf("unmarshal attestation document: %w", err)
 	}
 
 	instanceInfoString, err := base64.StdEncoding.DecodeString(doc.InstanceInfo)
 	if err != nil {
-		return azureInstanceInfo{}, fmt.Errorf("decode instance info: %w", err)
+		return snp.InstanceInfo{}, fmt.Errorf("decode instance info: %w", err)
 	}
 
-	var instanceInfo azureInstanceInfo
+	var instanceInfo snp.InstanceInfo
 	if err := json.Unmarshal(instanceInfoString, &instanceInfo); err != nil {
-		return azureInstanceInfo{}, fmt.Errorf("unmarshal instance info: %w", err)
+		return snp.InstanceInfo{}, fmt.Errorf("unmarshal instance info: %w", err)
 	}
 	return instanceInfo, nil
 }
