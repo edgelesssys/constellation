@@ -69,6 +69,12 @@ const (
 	LevelFatal = 12
 )
 
+func getOriginalCaller() (original [1]uintptr) {
+	var pcs [1]uintptr
+	runtime.Callers(3, pcs[:]) // skip Callers, getOriginalCaller and the function calling getOriginalCaller
+	return pcs
+}
+
 func replaceAttrFunction(groups []string, a slog.Attr) slog.Attr {
 	// change the time format to rfc 3339
 	if a.Key == slog.TimeKey {
@@ -144,9 +150,8 @@ func (l *Logger) Debugf(format string, args ...any) {
 	if !l.logger.Enabled(context.Background(), LevelDebug) {
 		return
 	}
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:]) // skip [Callers, Debugf]
-	r := slog.NewRecord(time.Now(), LevelDebug, fmt.Sprintf(format, args...), pcs[0])
+	originalFunction := getOriginalCaller()
+	r := slog.NewRecord(time.Now(), LevelDebug, fmt.Sprintf(format, args...), originalFunction[0])
 	_ = l.logger.Handler().Handle(context.Background(), r)
 }
 
@@ -156,9 +161,8 @@ func (l *Logger) Debug(args ...any) {
 	if !l.logger.Enabled(context.Background(), LevelDebug) {
 		return
 	}
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:]) // skip [Callers, Debugf]
-	r := slog.NewRecord(time.Now(), LevelDebug, fmt.Sprint(args...), pcs[0])
+	originalFunction := getOriginalCaller()
+	r := slog.NewRecord(time.Now(), LevelDebug, fmt.Sprint(args...), originalFunction[0])
 	_ = l.logger.Handler().Handle(context.Background(), r)
 }
 
@@ -168,9 +172,8 @@ func (l *Logger) Infof(format string, args ...any) {
 	if !l.logger.Enabled(context.Background(), LevelInfo) {
 		return
 	}
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:]) // skip [Callers, Infof]
-	r := slog.NewRecord(time.Now(), LevelInfo, fmt.Sprintf(format, args...), pcs[0])
+	originalFunction := getOriginalCaller()
+	r := slog.NewRecord(time.Now(), LevelInfo, fmt.Sprintf(format, args...), originalFunction[0])
 	_ = l.logger.Handler().Handle(context.Background(), r)
 }
 
@@ -180,9 +183,8 @@ func (l *Logger) Info(args ...any) {
 	if !l.logger.Enabled(context.Background(), LevelInfo) {
 		return
 	}
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:]) // skip [Callers, Infof]
-	r := slog.NewRecord(time.Now(), LevelInfo, fmt.Sprint(args...), pcs[0])
+	originalFunction := getOriginalCaller()
+	r := slog.NewRecord(time.Now(), LevelInfo, fmt.Sprint(args...), originalFunction[0])
 	_ = l.logger.Handler().Handle(context.Background(), r)
 }
 
@@ -192,9 +194,8 @@ func (l *Logger) Warnf(format string, args ...any) {
 	if !l.logger.Enabled(context.Background(), LevelWarn) {
 		return
 	}
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:]) // skip [Callers, Warnf]
-	r := slog.NewRecord(time.Now(), LevelWarn, fmt.Sprintf(format, args...), pcs[0])
+	originalFunction := getOriginalCaller()
+	r := slog.NewRecord(time.Now(), LevelWarn, fmt.Sprintf(format, args...), originalFunction[0])
 	_ = l.logger.Handler().Handle(context.Background(), r)
 }
 
@@ -204,9 +205,8 @@ func (l *Logger) Warn(args ...any) {
 	if !l.logger.Enabled(context.Background(), LevelWarn) {
 		return
 	}
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:]) // skip [Callers, Warnf]
-	r := slog.NewRecord(time.Now(), LevelWarn, fmt.Sprint(args...), pcs[0])
+	originalFunction := getOriginalCaller()
+	r := slog.NewRecord(time.Now(), LevelWarn, fmt.Sprint(args...), originalFunction[0])
 	_ = l.logger.Handler().Handle(context.Background(), r)
 }
 
@@ -216,9 +216,8 @@ func (l *Logger) Errorf(format string, args ...any) {
 	if !l.logger.Enabled(context.Background(), LevelError) {
 		return
 	}
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:]) // skip [Callers, Errorf]
-	r := slog.NewRecord(time.Now(), LevelError, fmt.Sprintf(format, args...), pcs[0])
+	originalFunction := getOriginalCaller()
+	r := slog.NewRecord(time.Now(), LevelError, fmt.Sprintf(format, args...), originalFunction[0])
 	_ = l.logger.Handler().Handle(context.Background(), r)
 }
 
@@ -228,9 +227,8 @@ func (l *Logger) Error(args ...any) {
 	if !l.logger.Enabled(context.Background(), LevelError) {
 		return
 	}
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:]) // skip [Callers, Errorf]
-	r := slog.NewRecord(time.Now(), LevelError, fmt.Sprint(args...), pcs[0])
+	originalFunction := getOriginalCaller()
+	r := slog.NewRecord(time.Now(), LevelError, fmt.Sprint(args...), originalFunction[0])
 	_ = l.logger.Handler().Handle(context.Background(), r)
 }
 
@@ -240,9 +238,8 @@ func (l *Logger) Fatalf(format string, args ...any) {
 	if !l.logger.Enabled(context.Background(), LevelFatal) {
 		return
 	}
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:]) // skip [Callers, Fatalf]
-	r := slog.NewRecord(time.Now(), LevelFatal, fmt.Errorf(format, args...).Error(), pcs[0])
+	originalFunction := getOriginalCaller()
+	r := slog.NewRecord(time.Now(), LevelFatal, fmt.Errorf(format, args...).Error(), originalFunction[0])
 	_ = l.logger.Handler().Handle(context.Background(), r)
 	os.Exit(1)
 }
@@ -253,9 +250,8 @@ func (l *Logger) Fatal(args ...any) {
 	if !l.logger.Enabled(context.Background(), LevelFatal) {
 		return
 	}
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:]) // skip [Callers, Fatalf]
-	r := slog.NewRecord(time.Now(), LevelFatal, fmt.Sprint(args...), pcs[0])
+	originalFunction := getOriginalCaller()
+	r := slog.NewRecord(time.Now(), LevelFatal, fmt.Sprint(args...), originalFunction[0])
 	_ = l.logger.Handler().Handle(context.Background(), r)
 	os.Exit(1)
 }
