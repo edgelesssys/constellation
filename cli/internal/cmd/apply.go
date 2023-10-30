@@ -83,10 +83,14 @@ type skipPhase string
 // skipPhases is a list of phases that can be skipped during the upgrade process.
 type skipPhases map[skipPhase]struct{}
 
-// contains returns true if the list of phases contains the given phase.
-func (s skipPhases) contains(phase skipPhase) bool {
-	_, ok := s[skipPhase(strings.ToLower(string(phase)))]
-	return ok
+// contains returns true if skipPhases contains all of the given phases.
+func (s skipPhases) contains(phases ...skipPhase) bool {
+	for _, phase := range phases {
+		if _, ok := s[skipPhase(strings.ToLower(string(phase)))]; !ok {
+			return false
+		}
+	}
+	return true
 }
 
 // add a phase to the list of phases.
@@ -374,10 +378,13 @@ func (a *applyCmd) apply(cmd *cobra.Command, configFetcher attestationconfigapi.
 	}
 
 	// From now on we can assume a valid Kubernetes admin config file exists
-	a.log.Debugf("Creating Kubernetes client using %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename))
-	kubeUpgrader, err := a.newKubeUpgrader(cmd.OutOrStdout(), constants.AdminConfFilename, a.log)
-	if err != nil {
-		return err
+	var kubeUpgrader kubernetesUpgrader
+	if !a.flags.skipPhases.contains(skipAttestationConfigPhase, skipCertSANsPhase, skipHelmPhase, skipK8sPhase, skipImagePhase) {
+		a.log.Debugf("Creating Kubernetes client using %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename))
+		kubeUpgrader, err = a.newKubeUpgrader(cmd.OutOrStdout(), constants.AdminConfFilename, a.log)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Apply Attestation Config

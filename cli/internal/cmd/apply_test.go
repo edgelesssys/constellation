@@ -202,6 +202,7 @@ func TestBackupHelmCharts(t *testing.T) {
 
 func TestSkipPhases(t *testing.T) {
 	require := require.New(t)
+	assert := assert.New(t)
 	cmd := NewApplyCmd()
 	// register persistent flags manually
 	cmd.Flags().String("workspace", "", "")
@@ -216,5 +217,11 @@ func TestSkipPhases(t *testing.T) {
 	var flags applyFlags
 	err := flags.parse(cmd.Flags())
 	require.NoError(err)
-	assert.Equal(t, wantPhases, flags.skipPhases)
+	assert.Equal(wantPhases, flags.skipPhases)
+
+	phases := skipPhases{}
+	phases.add(skipAttestationConfigPhase, skipCertSANsPhase)
+	assert.True(phases.contains(skipAttestationConfigPhase, skipCertSANsPhase))
+	assert.False(phases.contains(skipAttestationConfigPhase, skipInitPhase))
+	assert.False(phases.contains(skipInitPhase, skipInfrastructurePhase))
 }
