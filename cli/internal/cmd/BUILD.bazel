@@ -58,6 +58,7 @@ go_library(
         "//internal/api/versionsapi",
         "//internal/atls",
         "//internal/attestation/measurements",
+        "//internal/attestation/snp",
         "//internal/attestation/variant",
         "//internal/attestation/vtpm",
         "//internal/cloud/cloudprovider",
