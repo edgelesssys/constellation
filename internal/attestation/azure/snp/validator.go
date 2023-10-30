@@ -15,16 +15,15 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
-	"encoding/pem"
 	"errors"
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/google/go-sev-guest/abi"
 	"github.com/google/go-sev-guest/kds"
 	spb "github.com/google/go-sev-guest/proto/sevsnp"
@@ -79,7 +78,7 @@ func NewValidator(cfg *config.AzureSEVSNP, log attestation.Logger) *Validator {
 		log = nopAttestationLogger{}
 	}
 	v := &Validator{
-		hclValidator:         &azureInstanceInfo{},
+		hclValidator:         &attestationKey{},
 		maa:                  newMAAClient(),
 		config:               cfg,
 		log:                  log,
@@ -106,18 +105,15 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 	trustedArk := (*x509.Certificate)(&v.config.AMDRootKey)    // ARK, specified in the Constellation config
 
 	// fallback certificates, used if not present in THIM response.
-	cachedCerts := sevSnpCerts{
-		ask: trustedAsk,
-		ark: trustedArk,
-	}
+	cachedCerts := snp.NewCertificateChain(trustedAsk, trustedArk)
 
 	// transform the instanceInfo received from Microsoft into a verifiable attestation report format.
-	var instanceInfo azureInstanceInfo
+	var instanceInfo snp.InstanceInfo
 	if err := json.Unmarshal(attDoc.InstanceInfo, &instanceInfo); err != nil {
 		return nil, fmt.Errorf("unmarshalling instanceInfo: %w", err)
 	}
 
-	att, err := instanceInfo.attestationWithCerts(v.log, v.getter, cachedCerts)
+	att, err := instanceInfo.AttestationWithCerts(v.log, v.getter, cachedCerts)
 	if err != nil {
 		return nil, fmt.Errorf("parsing attestation report: %w", err)
 	}
@@ -192,7 +188,7 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 	if err != nil {
 		return nil, err
 	}
-	if err = v.hclValidator.validateAk(instanceInfo.RuntimeData, att.Report.ReportData, pubArea.RSAParameters); err != nil {
+	if err = v.hclValidator.validate(instanceInfo.RuntimeData, att.Report.ReportData, pubArea.RSAParameters); err != nil {
 		return nil, fmt.Errorf("validating HCLAkPub: %w", err)
 	}
 
@@ -239,201 +235,17 @@ func (v *Validator) checkIDKeyDigest(ctx context.Context, report *spb.Attestatio
 	return nil
 }
 
-// azureInstanceInfo contains the necessary information to establish trust in
-// an Azure CVM.
-type azureInstanceInfo struct {
-	// VCEK is the PEM-encoded VCEK certificate for the attestation report.
-	VCEK []byte
-	// CertChain is the PEM-encoded certificate chain for the attestation report.
-	CertChain []byte
-	// AttestationReport is the attestation report from the vTPM (NVRAM) of the CVM.
-	AttestationReport []byte
-	// RuntimeData is the Azure runtime data from the vTPM (NVRAM) of the CVM.
-	RuntimeData []byte
-	// MAAToken is the token of the MAA for the attestation report, used as a fallback
-	// if the IDKeyDigest cannot be verified.
-	MAAToken string
+type attestationKey struct {
+	PublicPart []akPub `json:"keys"`
 }
 
-// attestationWithCerts returns a formatted version of the attestation report and its certificates from the instanceInfo.
-// Certificates are retrieved in the following precedence:
-// 1. ASK or ARK from THIM
-// 2. ASK or ARK from fallbackCerts
-// 3. ASK or ARK from AMD KDS.
-func (a *azureInstanceInfo) attestationWithCerts(logger attestation.Logger, getter trust.HTTPSGetter,
-	fallbackCerts sevSnpCerts,
-) (*spb.Attestation, error) {
-	report, err := abi.ReportToProto(a.AttestationReport)
-	if err != nil {
-		return nil, fmt.Errorf("converting report to proto: %w", err)
-	}
-
-	// Product info as reported through CPUID[EAX=1]
-	sevProduct := &spb.SevProduct{Name: spb.SevProduct_SEV_PRODUCT_MILAN, Stepping: 0} // Milan-B0
-	productName := kds.ProductString(sevProduct)
-
-	att := &spb.Attestation{
-		Report:           report,
-		CertificateChain: &spb.CertificateChain{},
-		Product:          sevProduct,
-	}
-
-	// If the VCEK certificate is present, parse it and format it.
-	vcek, err := a.parseVCEK()
-	if err != nil {
-		logger.Warnf("Error parsing VCEK: %v", err)
-	}
-	if vcek != nil {
-		att.CertificateChain.VcekCert = vcek.Raw
-	} else {
-		// Otherwise, retrieve it from AMD KDS.
-		logger.Infof("VCEK certificate not present, falling back to retrieving it from AMD KDS")
-		vcekURL := kds.VCEKCertURL(productName, report.GetChipId(), kds.TCBVersion(report.GetReportedTcb()))
-		vcek, err := getter.Get(vcekURL)
-		if err != nil {
-			return nil, fmt.Errorf("retrieving VCEK certificate from AMD KDS: %w", err)
-		}
-		att.CertificateChain.VcekCert = vcek
-	}
-
-	// If the certificate chain from THIM is present, parse it and format it.
-	ask, ark, err := a.parseCertChain()
-	if err != nil {
-		logger.Warnf("Error parsing certificate chain: %v", err)
-	}
-	if ask != nil {
-		logger.Infof("Using ASK certificate from Azure THIM")
-		att.CertificateChain.AskCert = ask.Raw
-	}
-	if ark != nil {
-		logger.Infof("Using ARK certificate from Azure THIM")
-		att.CertificateChain.ArkCert = ark.Raw
-	}
-
-	// If a cached ASK or an ARK from the Constellation config is present, use it.
-	if att.CertificateChain.AskCert == nil && fallbackCerts.ask != nil {
-		logger.Infof("Using cached ASK certificate")
-		att.CertificateChain.AskCert = fallbackCerts.ask.Raw
-	}
-	if att.CertificateChain.ArkCert == nil && fallbackCerts.ark != nil {
-		logger.Infof("Using ARK certificate from %s", constants.ConfigFilename)
-		att.CertificateChain.ArkCert = fallbackCerts.ark.Raw
-	}
-	// Otherwise, retrieve it from AMD KDS.
-	if att.CertificateChain.AskCert == nil || att.CertificateChain.ArkCert == nil {
-		logger.Infof(
-			"Certificate chain not fully present (ARK present: %t, ASK present: %t), falling back to retrieving it from AMD KDS",
-			(att.CertificateChain.ArkCert != nil),
-			(att.CertificateChain.AskCert != nil),
-		)
-		kdsCertChain, err := trust.GetProductChain(productName, abi.VcekReportSigner, getter)
-		if err != nil {
-			return nil, fmt.Errorf("retrieving certificate chain from AMD KDS: %w", err)
-		}
-		if att.CertificateChain.AskCert == nil && kdsCertChain.Ask != nil {
-			logger.Infof("Using ASK certificate from AMD KDS")
-			att.CertificateChain.AskCert = kdsCertChain.Ask.Raw
-		}
-		if att.CertificateChain.ArkCert == nil && kdsCertChain.Ask != nil {
-			logger.Infof("Using ARK certificate from AMD KDS")
-			att.CertificateChain.ArkCert = kdsCertChain.Ark.Raw
-		}
-	}
-
-	return att, nil
-}
-
-type sevSnpCerts struct {
-	ask *x509.Certificate
-	ark *x509.Certificate
-}
-
-// parseCertChain parses the certificate chain from the instanceInfo into x509-formatted ASK and ARK certificates.
-// If less than 2 certificates are present, only the present certificate is returned.
-// If more than 2 certificates are present, an error is returned.
-func (a *azureInstanceInfo) parseCertChain() (ask, ark *x509.Certificate, retErr error) {
-	rest := bytes.TrimSpace(a.CertChain)
-
-	i := 1
-	var block *pem.Block
-	for block, rest = pem.Decode(rest); block != nil; block, rest = pem.Decode(rest) {
-		if i > 2 {
-			retErr = fmt.Errorf("parse certificate %d: more than 2 certificates in chain", i)
-			return
-		}
-
-		if block.Type != "CERTIFICATE" {
-			retErr = fmt.Errorf("parse certificate %d: expected PEM block type 'CERTIFICATE', got '%s'", i, block.Type)
-			return
-		}
-
-		cert, err := x509.ParseCertificate(block.Bytes)
-		if err != nil {
-			retErr = fmt.Errorf("parse certificate %d: %w", i, err)
-			return
-		}
-
-		// https://www.amd.com/content/dam/amd/en/documents/epyc-technical-docs/specifications/57230.pdf
-		// Table 6 and 7
-		switch cert.Subject.CommonName {
-		case "SEV-Milan":
-			ask = cert
-		case "ARK-Milan":
-			ark = cert
-		default:
-			retErr = fmt.Errorf("parse certificate %d: unexpected subject CN %s", i, cert.Subject.CommonName)
-			return
-		}
-
-		i++
-	}
-
-	switch {
-	case i == 1:
-		retErr = fmt.Errorf("no PEM blocks found")
-	case len(rest) != 0:
-		retErr = fmt.Errorf("remaining PEM block is not a valid certificate: %s", rest)
-	}
-
-	return
-}
-
-// parseVCEK parses the VCEK certificate from the instanceInfo into an x509-formatted certificate.
-// If the VCEK certificate is not present, nil is returned.
-func (a *azureInstanceInfo) parseVCEK() (*x509.Certificate, error) {
-	newlinesTrimmed := bytes.TrimSpace(a.VCEK)
-	if len(newlinesTrimmed) == 0 {
-		// VCEK is not present.
-		return nil, nil
-	}
-
-	block, rest := pem.Decode(newlinesTrimmed)
-	if block == nil {
-		return nil, fmt.Errorf("no PEM blocks found")
-	}
-	if len(rest) != 0 {
-		return nil, fmt.Errorf("received more data than expected")
-	}
-	if block.Type != "CERTIFICATE" {
-		return nil, fmt.Errorf("expected PEM block type 'CERTIFICATE', got '%s'", block.Type)
-	}
-
-	vcek, err := x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		return nil, fmt.Errorf("parsing VCEK certificate: %w", err)
-	}
-
-	return vcek, nil
-}
-
-// validateAk validates that the attestation key from the TPM is trustworthy. The steps are:
+// validate validates that the attestation key from the TPM is trustworthy. The steps are:
 // 1. runtime data read from the TPM has the same sha256 digest as reported in `report_data` of the SNP report.
 // 2. modulus reported in runtime data matches modulus from key at idx 0x81000003.
 // 3. exponent reported in runtime data matches exponent from key at idx 0x81000003.
 // The function is currently tested manually on a Azure Ubuntu CVM.
-func (a *azureInstanceInfo) validateAk(runtimeDataRaw []byte, reportData []byte, rsaParameters *tpm2.RSAParams) error {
-	var runtimeData runtimeData
-	if err := json.Unmarshal(runtimeDataRaw, &runtimeData); err != nil {
+func (a *attestationKey) validate(runtimeDataRaw []byte, reportData []byte, rsaParameters *tpm2.RSAParams) error {
+	if err := json.Unmarshal(runtimeDataRaw, a); err != nil {
 		return fmt.Errorf("unmarshalling json: %w", err)
 	}
 
@@ -445,10 +257,10 @@ func (a *azureInstanceInfo) validateAk(runtimeDataRaw []byte, reportData []byte,
 		return errors.New("unexpected runtimeData digest in TPM")
 	}
 
-	if len(runtimeData.Keys) < 1 {
+	if len(a.PublicPart) < 1 {
 		return errors.New("did not receive any keys in runtime data")
 	}
-	rawN, err := base64.RawURLEncoding.DecodeString(runtimeData.Keys[0].N)
+	rawN, err := base64.RawURLEncoding.DecodeString(a.PublicPart[0].N)
 	if err != nil {
 		return fmt.Errorf("decoding modulus string: %w", err)
 	}
@@ -456,7 +268,7 @@ func (a *azureInstanceInfo) validateAk(runtimeDataRaw []byte, reportData []byte,
 		return fmt.Errorf("unexpected modulus value in TPM")
 	}
 
-	rawE, err := base64.RawURLEncoding.DecodeString(runtimeData.Keys[0].E)
+	rawE, err := base64.RawURLEncoding.DecodeString(a.PublicPart[0].E)
 	if err != nil {
 		return fmt.Errorf("decoding exponent string: %w", err)
 	}
@@ -478,17 +290,13 @@ func (a *azureInstanceInfo) validateAk(runtimeDataRaw []byte, reportData []byte,
 // The HCL is written by Azure, and sits between the Hypervisor and CVM OS.
 // The HCL runs in the protected context of the CVM.
 type hclAkValidator interface {
-	validateAk(runtimeDataRaw []byte, reportData []byte, rsaParameters *tpm2.RSAParams) error
+	validate(runtimeDataRaw []byte, reportData []byte, rsaParameters *tpm2.RSAParams) error
 }
 
 // akPub are the public parameters of an RSA attestation key.
 type akPub struct {
-	E string
-	N string
-}
-
-type runtimeData struct {
-	Keys []akPub
+	E string `json:"e"`
+	N string `json:"n"`
 }
 
 // nopAttestationLogger is a no-op implementation of AttestationLogger.

@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/snp"
 	"github.com/edgelesssys/go-azguestattestation/maa"
 	tpmclient "github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm/legacy/tpm2"
@@ -99,7 +100,7 @@ func TestGetSNPAttestation(t *testing.T) {
 				assert.Equal(data, maa.gotTokenData)
 			}
 
-			var instanceInfo azureInstanceInfo
+			var instanceInfo snp.InstanceInfo
 			err = json.Unmarshal(attestationJSON, &instanceInfo)
 			require.NoError(err)
 
