@@ -20,6 +20,9 @@ inputs:
   kubernetesVersion:
     description: "Kubernetes version"
     required: false
+  selfManagedInfra:
+    description: "Use self-managed infrastructure instead of infrastructure created by the Constellation CLI."
+    default: "false"
 
 runs:
   using: "composite"
@@ -52,7 +55,11 @@ runs:
         DATE=$(date '+%F %a %T %Z') yq -iP '.issueTitle = env(DATE)' metadata.json
         yq -iP '.assignees += [ "${{ steps.pick-assignee.outputs.assignee }}" ]' metadata.json
         yq -iP '.fields.cloudProvider = "${{ inputs.provider }}"' metadata.json
-        yq -iP '.fields.test = "${{ inputs.test }}"' metadata.json
+        if [[ ${{ inputs.selfManagedInfra }} == 'true' ]]; then
+          yq -iP '.fields.test = "${{ inputs.test }} (Self-managed infrastructure)"' metadata.json
+        else
+          yq -iP '.fields.test = "${{ inputs.test }}"' metadata.json
+        fi
         yq -iP '.fields.workflow = "${{ github.workflow }}"' metadata.json
         if [[ -n "${{ inputs.kubernetesVersion }}" ]]; then
           yq -iP '.fields.kubernetesVersion = "${{ inputs.kubernetesVersion }}"' metadata.json
@@ -60,6 +67,7 @@ runs:
         if [[ -n "${{ inputs.refStream }}" ]]; then
           yq -iP '.fields.refStream = "${{ inputs.refStream }}"' metadata.json
         fi
+
         cat metadata.json
 
         issueURL=$(

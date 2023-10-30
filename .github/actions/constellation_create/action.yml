@@ -156,7 +156,8 @@ runs:
         azureIAMCreateCredentials: ${{ inputs.azureIAMCreateCredentials }}
         refStream: ${{ inputs.refStream }}
         kubernetesVersion: ${{ inputs.kubernetesVersion }}
-
+        selfManagedInfra: ${{ inputs.selfManagedInfra }}
+        
     - name: Constellation init
       id: constellation-init
       shell: bash

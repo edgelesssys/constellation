@@ -281,6 +281,7 @@ jobs:
           test: ${{ matrix.test }}
           kubernetesVersion: ${{ matrix.kubernetes-version }}
           provider: ${{ matrix.provider }}
+          selfManagedInfra: ${{ matrix.selfManagedInfra == 'true' }}
 
       - name: Always upload Terraform logs
         if: always()
