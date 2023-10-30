@@ -17,10 +17,10 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 )
 
-// planApply prepares a workspace and plans the possible Terraform actions.
+// plan prepares a workspace and plans the possible Terraform actions.
 // This will either create a new workspace or update an existing one.
 // In case of possible migrations, the diff is written to outWriter and this function returns true.
-func planApply(
+func plan(
 	ctx context.Context, tfClient tfPlanner, fileHandler file.Handler,
 	outWriter io.Writer, logLevel terraform.LogLevel, vars terraform.Variables,
 	templateDir, existingWorkspace, backupDir string,

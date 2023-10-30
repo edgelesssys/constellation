@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestPlanUpgrade(t *testing.T) {
+func TestTFPlan(t *testing.T) {
 	const (
 		templateDir       = "templateDir"
 		existingWorkspace = "existing"
@@ -99,7 +99,7 @@ func TestPlanUpgrade(t *testing.T) {
 			assert := assert.New(t)
 			fs := tc.prepareFs(require.New(t))
 
-			hasDiff, planErr := planApply(
+			hasDiff, planErr := plan(
 				context.Background(), tc.tf, fs, io.Discard, terraform.LogLevelDebug,
 				&terraform.QEMUVariables{},
 				templateDir, existingWorkspace, backupDir,

@@ -59,7 +59,7 @@ func NewIAMUpgrader(ctx context.Context, existingWorkspace, upgradeWorkspace str
 // PlanIAMUpgrade prepares the upgrade workspace and plans the possible Terraform migrations for Constellation's IAM resources (service accounts, permissions etc.).
 // In case of possible migrations, the diff is written to outWriter and this function returns true.
 func (u *IAMUpgrader) PlanIAMUpgrade(ctx context.Context, outWriter io.Writer, vars terraform.Variables, csp cloudprovider.Provider) (bool, error) {
-	return planApply(
+	return plan(
 		ctx, u.tf, u.fileHandler, outWriter, u.logLevel, vars,
 		filepath.Join(constants.TerraformEmbeddedDir, "iam", strings.ToLower(csp.String())),
 		u.existingWorkspace,

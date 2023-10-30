@@ -80,7 +80,7 @@ func (a *Applier) Plan(ctx context.Context, conf *config.Config) (bool, error) {
 		return false, fmt.Errorf("creating terraform variables: %w", err)
 	}
 
-	return planApply(
+	return plan(
 		ctx, a.terraformClient, a.fileHandler, a.out, a.logLevel, vars,
 		filepath.Join(constants.TerraformEmbeddedDir, strings.ToLower(conf.GetProvider().String())),
 		a.workingDir,
