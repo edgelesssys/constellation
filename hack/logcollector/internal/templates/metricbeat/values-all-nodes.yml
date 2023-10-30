@@ -39,7 +39,12 @@ daemonset:
           hostPath:
             path: /var/run/dbus
             type: ""
-
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "100Mi"
+      limits: null
+      
 clusterRoleRules:
   - apiGroups: [""]
     resources:
