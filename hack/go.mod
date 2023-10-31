@@ -169,7 +169,7 @@ require (
 	github.com/google/go-sev-guest v0.9.1 // indirect
 	github.com/google/go-tdx-guest v0.2.2 // indirect
 	github.com/google/go-tpm v0.9.0 // indirect
-	github.com/google/go-tpm-tools v0.4.0 // indirect
+	github.com/google/go-tpm-tools v0.4.2 // indirect
 	github.com/google/go-tspi v0.3.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/logger v1.1.1 // indirect
