@@ -31,7 +31,7 @@ const (
 const (
 	// PreCreate are the constraints that should be enforced when the state file
 	// is validated before "constellation create" is run.
-	PreCreate = iota
+	PreCreate ConstraintSet = iota
 	// PreInit are the constraints that should be enforced when the state file
 	// is validated before "constellation apply" is run.
 	PreInit
@@ -40,9 +40,9 @@ const (
 	PostInit
 )
 
-// StateConstraints defines which constraints the state file
+// ConstraintSet defines which constraints the state file
 // should be validated against.
-type StateConstraints int
+type ConstraintSet int
 
 // ReadFromFile reads the state file at the given path and validates it.
 // If the state file is valid, the state is returned. Otherwise, an error
@@ -210,7 +210,7 @@ func (s *State) Merge(other *State) (*State, error) {
 //   - PreCreate, which is the constraint set that should be enforced before "constellation create" is run.
 //   - PreInit, which is the constraint set that should be enforced before "constellation apply" is run.
 //   - PostInit, which is the constraint set that should be enforced after "constellation apply" is run.
-func (s *State) Validate(constraintSet StateConstraints) error {
+func (s *State) Validate(constraintSet ConstraintSet) error {
 	v := validation.NewValidator()
 
 	switch constraintSet {
