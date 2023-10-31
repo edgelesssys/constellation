@@ -30,7 +30,7 @@ func (a *applyCmd) runTerraformApply(cmd *cobra.Command, conf *config.Config, st
 	defer removeClient()
 
 	// Check if we are creating a new cluster by checking if the Terraform workspace is empty
-	isNewCluster, err := a.fileHandler.IsEmpty(constants.TerraformWorkingDir)
+	isNewCluster, err := terraformClient.WorkingDirIsEmpty()
 	if err != nil {
 		return fmt.Errorf("checking if Terraform workspace is empty: %w", err)
 	}
@@ -42,7 +42,7 @@ func (a *applyCmd) runTerraformApply(cmd *cobra.Command, conf *config.Config, st
 		return nil
 	}
 
-	a.log.Debugf("Migrating terraform resources for infrastructure changes")
+	a.log.Debugf("Apply new Terraform resources for infrastructure changes")
 	newInfraState, err := a.applyTerraformChanges(cmd, conf, terraformClient, upgradeDir, isNewCluster)
 	if err != nil {
 		return err

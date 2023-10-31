@@ -365,7 +365,7 @@ func (a *applyCmd) apply(cmd *cobra.Command, configFetcher attestationconfigapi.
 	// and apply migrations if necessary.
 	if !a.flags.skipPhases.contains(skipInfrastructurePhase) {
 		if err := a.runTerraformApply(cmd, conf, stateFile, upgradeDir); err != nil {
-			return fmt.Errorf("applying Terraform configuration : %w", err)
+			return fmt.Errorf("applying Terraform configuration: %w", err)
 		}
 	}
 
@@ -469,7 +469,8 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 			return nil, nil, err
 		}
 
-		printCreateWarnings(cmd.OutOrStdout(), conf)
+		a.log.Debugf("No Terraform state found in current working directory. Preparing to create a new cluster.")
+		printCreateWarnings(cmd.ErrOrStderr(), conf)
 	}
 
 	// Check if the state file is in a pre-init or pre-create state
@@ -550,13 +551,9 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 
 	// Constellation on QEMU or OpenStack don't support upgrades
 	// If using one of those providers, make sure the command is only used to initialize a cluster
-	if !(conf.GetProvider() == cloudprovider.AWS || conf.GetProvider() == cloudprovider.Azure || conf.GetProvider() == cloudprovider.GCP) {
-		if a.flags.skipPhases.contains(skipInitPhase) {
-			return nil, nil, fmt.Errorf("upgrades are not supported for provider %s", conf.GetProvider())
-		}
-		// Skip Terraform phase
-		a.log.Debugf("Skipping Infrastructure upgrade")
-		a.flags.skipPhases.add(skipInfrastructurePhase)
+	if !(conf.GetProvider() == cloudprovider.AWS || conf.GetProvider() == cloudprovider.Azure || conf.GetProvider() == cloudprovider.GCP) &&
+		(!a.flags.skipPhases.contains(skipImagePhase) && a.flags.skipPhases.contains(skipInitPhase)) {
+		return nil, nil, fmt.Errorf("image upgrades are not supported for provider %s", conf.GetProvider())
 	}
 
 	// Print warning about AWS attestation

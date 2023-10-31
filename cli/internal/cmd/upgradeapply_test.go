@@ -204,7 +204,7 @@ func TestUpgradeApply(t *testing.T) {
 			},
 			fh: fsWithStateFileAndTfState,
 		},
-		"no tf state, skip infrastructure upgrade": {
+		"no tf state, but existing admin conf file": {
 			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig: config.DefaultForAzureSEVSNP(),
 			},
@@ -219,6 +219,25 @@ func TestUpgradeApply(t *testing.T) {
 			fh: func() file.Handler {
 				fh := file.NewHandler(afero.NewMemMapFs())
 				require.NoError(t, fh.WriteYAML(constants.StateFilename, defaultAzureStateFile()))
+				return fh
+			},
+			wantErr: true,
+		},
+		"no tf state, infra phase skipped": {
+			kubeUpgrader: &stubKubernetesUpgrader{
+				currentConfig: config.DefaultForAzureSEVSNP(),
+			},
+			helmUpgrader:      &stubApplier{},
+			terraformUpgrader: &mockTerraformUpgrader{},
+			flags: applyFlags{
+				yes: true,
+				skipPhases: skipPhases{
+					skipInfrastructurePhase: struct{}{},
+				},
+			},
+			fh: func() file.Handler {
+				fh := file.NewHandler(afero.NewMemMapFs())
+				require.NoError(t, fh.WriteYAML(constants.StateFilename, defaultState))
 				return fh
 			},
 		},
@@ -338,6 +357,10 @@ func (u stubTerraformUpgrader) RestoreWorkspace() error {
 	return u.rollbackWorkspaceErr
 }
 
+func (u stubTerraformUpgrader) WorkingDirIsEmpty() (bool, error) {
+	return false, nil
+}
+
 type mockTerraformUpgrader struct {
 	mock.Mock
 }
@@ -355,6 +378,11 @@ func (m *mockTerraformUpgrader) Apply(ctx context.Context, provider cloudprovide
 func (m *mockTerraformUpgrader) RestoreWorkspace() error {
 	args := m.Called()
 	return args.Error(0)
+}
+
+func (m *mockTerraformUpgrader) WorkingDirIsEmpty() (bool, error) {
+	args := m.Called()
+	return args.Bool(0), args.Error(1)
 }
 
 type mockApplier struct {
