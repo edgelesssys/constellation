@@ -29,30 +29,30 @@ const (
 
 // LogstashPreparer prepares the Logstash Helm chart.
 type LogstashPreparer struct {
-	fh          file.Handler
-	fields      map[string]string
-	username    string
-	password    string
-	port        int
+	fh       file.Handler
+	fields   map[string]string
+	username string
+	password string
+	port     int
 	templatePreparer
 }
 
 // NewLogstashPreparer returns a new LogstashPreparer.
 func NewLogstashPreparer(fields map[string]string, username, password string, port int) *LogstashPreparer {
 	return &LogstashPreparer{
-		username:    username,
-		password:    password,
-		fields:      fields,
-		fh:          file.NewHandler(afero.NewOsFs()),
-		port:        port,
+		username: username,
+		password: password,
+		fields:   fields,
+		fh:       file.NewHandler(afero.NewOsFs()),
+		port:     port,
 	}
 }
 
 // Prepare prepares the Logstash Helm chart by templating the required files and placing them in the specified directory.
 func (p *LogstashPreparer) Prepare(dir string) error {
 	templatedPipelineConf, err := p.template(logstashAssets, "templates/pipeline.conf", pipelineConfTemplate{
-		InfoMap:     p.fields,
-		Host:        openSearchHost,
+		InfoMap: p.fields,
+		Host:    openSearchHost,
 		Credentials: Credentials{
 			Username: p.username,
 			Password: p.password,
