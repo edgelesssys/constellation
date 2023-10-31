@@ -234,7 +234,7 @@ func TestGetTfstateServiceAccountKey(t *testing.T) {
 		},
 		"show error": {
 			cl: &stubTerraformClient{
-				showErr: assert.AnError,
+				showIAMErr: assert.AnError,
 			},
 			wantErr:        true,
 			wantShowCalled: true,

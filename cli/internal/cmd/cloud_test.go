@@ -15,6 +15,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"go.uber.org/goleak"
 )
 
@@ -26,17 +27,25 @@ func TestMain(m *testing.M) {
 }
 
 type stubCloudCreator struct {
-	createCalled bool
-	state        state.Infrastructure
-	createErr    error
+	state       state.Infrastructure
+	planCalled  bool
+	planErr     error
+	applyCalled bool
+	applyErr    error
 }
 
-func (c *stubCloudCreator) Create(
-	_ context.Context,
-	_ cloudcmd.CreateOptions,
-) (state.Infrastructure, error) {
-	c.createCalled = true
-	return c.state, c.createErr
+func (c *stubCloudCreator) Plan(_ context.Context, _ *config.Config) (bool, error) {
+	c.planCalled = true
+	return false, c.planErr
+}
+
+func (c *stubCloudCreator) Apply(_ context.Context, _ cloudprovider.Provider, _ cloudcmd.RollbackBehavior) (state.Infrastructure, error) {
+	c.applyCalled = true
+	return c.state, c.applyErr
+}
+
+func (c *stubCloudCreator) RestoreWorkspace() error {
+	return nil
 }
 
 type stubCloudTerminator struct {

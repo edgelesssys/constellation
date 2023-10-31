@@ -221,9 +221,10 @@ func runApply(cmd *cobra.Command, _ []string) error {
 	upgradeID := generateUpgradeID(upgradeCmdKindApply)
 	upgradeDir := filepath.Join(constants.UpgradeDir, upgradeID)
 
-	newClusterApplier := func(ctx context.Context) (clusterUpgrader, error) {
-		return cloudcmd.NewClusterUpgrader(
+	newInfraApplier := func(ctx context.Context) (cloudApplier, func(), error) {
+		return cloudcmd.NewApplier(
 			ctx,
+			spinner,
 			constants.TerraformWorkingDir,
 			upgradeDir,
 			flags.tfLogLevel,
@@ -232,16 +233,16 @@ func runApply(cmd *cobra.Command, _ []string) error {
 	}
 
 	apply := &applyCmd{
-		fileHandler:       fileHandler,
-		flags:             flags,
-		log:               log,
-		spinner:           spinner,
-		merger:            &kubeconfigMerger{log: log},
-		quotaChecker:      license.NewClient(),
-		newHelmClient:     newHelmClient,
-		newDialer:         newDialer,
-		newKubeUpgrader:   newKubeUpgrader,
-		newClusterApplier: newClusterApplier,
+		fileHandler:     fileHandler,
+		flags:           flags,
+		log:             log,
+		spinner:         spinner,
+		merger:          &kubeconfigMerger{log: log},
+		quotaChecker:    license.NewClient(),
+		newHelmClient:   newHelmClient,
+		newDialer:       newDialer,
+		newKubeUpgrader: newKubeUpgrader,
+		newInfraApplier: newInfraApplier,
 	}
 
 	ctx, cancel := context.WithTimeout(cmd.Context(), time.Hour)
@@ -261,10 +262,10 @@ type applyCmd struct {
 	merger       configMerger
 	quotaChecker license.QuotaChecker
 
-	newHelmClient     func(kubeConfigPath string, log debugLog) (helmApplier, error)
-	newDialer         func(validator atls.Validator) *dialer.Dialer
-	newKubeUpgrader   func(out io.Writer, kubeConfigPath string, log debugLog) (kubernetesUpgrader, error)
-	newClusterApplier func(context.Context) (clusterUpgrader, error)
+	newHelmClient   func(kubeConfigPath string, log debugLog) (helmApplier, error)
+	newDialer       func(validator atls.Validator) *dialer.Dialer
+	newKubeUpgrader func(out io.Writer, kubeConfigPath string, log debugLog) (kubernetesUpgrader, error)
+	newInfraApplier func(context.Context) (cloudApplier, func(), error)
 }
 
 /*

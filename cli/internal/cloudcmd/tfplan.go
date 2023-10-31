@@ -8,6 +8,7 @@ package cloudcmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -16,20 +17,30 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 )
 
-// planUpgrade prepares a workspace and plans the possible Terraform migrations.
+// plan prepares a workspace and plans the possible Terraform actions.
+// This will either create a new workspace or update an existing one.
 // In case of possible migrations, the diff is written to outWriter and this function returns true.
-func planUpgrade(
-	ctx context.Context, tfClient tfUpgradePlanner, fileHandler file.Handler,
+func plan(
+	ctx context.Context, tfClient tfPlanner, fileHandler file.Handler,
 	outWriter io.Writer, logLevel terraform.LogLevel, vars terraform.Variables,
 	templateDir, existingWorkspace, backupDir string,
 ) (bool, error) {
-	if err := ensureFileNotExist(fileHandler, backupDir); err != nil {
-		return false, fmt.Errorf("backup directory %s already exists: %w", backupDir, err)
+	isNewWorkspace, err := fileHandler.IsEmpty(existingWorkspace)
+	if err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			return false, fmt.Errorf("checking if workspace is empty: %w", err)
+		}
+		isNewWorkspace = true
 	}
 
-	// Backup old workspace
-	if err := fileHandler.CopyDir(existingWorkspace, backupDir); err != nil {
-		return false, fmt.Errorf("backing up old workspace: %w", err)
+	// Backup old workspace if it exists
+	if !isNewWorkspace {
+		if err := ensureFileNotExist(fileHandler, backupDir); err != nil {
+			return false, fmt.Errorf("backup directory %s already exists: %w", backupDir, err)
+		}
+		if err := fileHandler.CopyDir(existingWorkspace, backupDir); err != nil {
+			return false, fmt.Errorf("backing up old workspace: %w", err)
+		}
 	}
 
 	// Move the new embedded Terraform files into the workspace.
@@ -42,12 +53,16 @@ func planUpgrade(
 		return false, fmt.Errorf("terraform plan: %w", err)
 	}
 
+	// If we are planning in a new workspace, we don't want to show a diff
+	if isNewWorkspace {
+		return false, nil
+	}
+
 	if hasDiff {
 		if err := tfClient.ShowPlan(ctx, logLevel, outWriter); err != nil {
 			return false, fmt.Errorf("terraform show plan: %w", err)
 		}
 	}
-
 	return hasDiff, nil
 }
 

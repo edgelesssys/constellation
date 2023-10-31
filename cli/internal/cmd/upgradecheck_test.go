@@ -15,7 +15,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -291,11 +290,11 @@ type stubTerraformChecker struct {
 	rollbackErr error
 }
 
-func (s stubTerraformChecker) PlanClusterUpgrade(_ context.Context, _ io.Writer, _ terraform.Variables, _ cloudprovider.Provider) (bool, error) {
+func (s stubTerraformChecker) Plan(_ context.Context, _ *config.Config) (bool, error) {
 	return s.tfDiff, s.planErr
 }
 
-func (s stubTerraformChecker) RestoreClusterWorkspace() error {
+func (s stubTerraformChecker) RestoreWorkspace() error {
 	return s.rollbackErr
 }
 

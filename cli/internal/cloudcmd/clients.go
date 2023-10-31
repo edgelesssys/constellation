@@ -24,39 +24,34 @@ type imageFetcher interface {
 	) (string, error)
 }
 
-type tfCommonClient interface {
+type tfDestroyer interface {
 	CleanUpWorkspace() error
 	Destroy(ctx context.Context, logLevel terraform.LogLevel) error
-	PrepareWorkspace(path string, input terraform.Variables) error
 	RemoveInstaller()
 }
 
-type tfResourceClient interface {
-	tfCommonClient
-	ApplyCluster(ctx context.Context, provider cloudprovider.Provider, logLevel terraform.LogLevel) (state.Infrastructure, error)
-	ShowInfrastructure(ctx context.Context, provider cloudprovider.Provider) (state.Infrastructure, error)
-}
-
-type tfIAMClient interface {
-	tfCommonClient
-	ApplyIAM(ctx context.Context, provider cloudprovider.Provider, logLevel terraform.LogLevel) (terraform.IAMOutput, error)
-	ShowIAM(ctx context.Context, provider cloudprovider.Provider) (terraform.IAMOutput, error)
-}
-
-type tfUpgradePlanner interface {
+type tfPlanner interface {
 	ShowPlan(ctx context.Context, logLevel terraform.LogLevel, output io.Writer) error
 	Plan(ctx context.Context, logLevel terraform.LogLevel) (bool, error)
 	PrepareWorkspace(path string, vars terraform.Variables) error
 }
 
-type tfIAMUpgradeClient interface {
-	tfUpgradePlanner
-	ApplyIAM(ctx context.Context, csp cloudprovider.Provider, logLevel terraform.LogLevel) (terraform.IAMOutput, error)
+type tfResourceClient interface {
+	tfDestroyer
+	tfPlanner
+	ApplyCluster(ctx context.Context, provider cloudprovider.Provider, logLevel terraform.LogLevel) (state.Infrastructure, error)
 }
 
-type tfClusterUpgradeClient interface {
-	tfUpgradePlanner
-	ApplyCluster(ctx context.Context, provider cloudprovider.Provider, logLevel terraform.LogLevel) (state.Infrastructure, error)
+type tfIAMClient interface {
+	tfDestroyer
+	PrepareWorkspace(path string, vars terraform.Variables) error
+	ApplyIAM(ctx context.Context, provider cloudprovider.Provider, logLevel terraform.LogLevel) (terraform.IAMOutput, error)
+	ShowIAM(ctx context.Context, provider cloudprovider.Provider) (terraform.IAMOutput, error)
+}
+
+type tfIAMUpgradeClient interface {
+	tfPlanner
+	ApplyIAM(ctx context.Context, csp cloudprovider.Provider, logLevel terraform.LogLevel) (terraform.IAMOutput, error)
 }
 
 type libvirtRunner interface {

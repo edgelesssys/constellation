@@ -37,7 +37,7 @@ func rollbackOnError(w io.Writer, onErr *error, roll rollbacker, logLevel terraf
 }
 
 type rollbackerTerraform struct {
-	client tfCommonClient
+	client tfDestroyer
 }
 
 func (r *rollbackerTerraform) rollback(ctx context.Context, w io.Writer, logLevel terraform.LogLevel) error {
@@ -50,7 +50,7 @@ func (r *rollbackerTerraform) rollback(ctx context.Context, w io.Writer, logLeve
 }
 
 type rollbackerQEMU struct {
-	client  tfResourceClient
+	client  tfDestroyer
 	libvirt libvirtRunner
 }
 

@@ -7,10 +7,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cloudcmd
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"net/url"
+	"os"
 	"path/filepath"
+	"regexp"
+	"runtime"
 	"strings"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -20,27 +27,18 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/role"
 )
 
-// TerraformUpgradeVars returns variables required to execute the Terraform scripts.
-func TerraformUpgradeVars(conf *config.Config) (terraform.Variables, error) {
-	// Note that we don't pass any real image as imageRef, as we ignore changes to the image in the terraform.
-	// The image is updates via our operator.
-	// Still, the terraform variable verification must accept the values.
-	// For AWS, we enforce some basic constraints on the image variable.
-	// For Azure, the provider enforces the format below.
-	// For GCP, any placeholder works.
-	var vars terraform.Variables
-	switch conf.GetProvider() {
-	case cloudprovider.AWS:
-		vars = awsTerraformVars(conf, "ami-placeholder")
-	case cloudprovider.Azure:
-		vars = azureTerraformVars(conf, "/communityGalleries/myGalleryName/images/myImageName/versions/latest")
-	case cloudprovider.GCP:
-		vars = gcpTerraformVars(conf, "placeholder")
-	default:
-		return nil, fmt.Errorf("unsupported provider: %s", conf.GetProvider())
-	}
-	return vars, nil
-}
+// The azurerm Terraform provider enforces its own convention of case sensitivity for Azure URIs which Azure's API itself does not enforce or, even worse, actually returns.
+// These regular expression are used to make sure that the URIs we pass to Terraform are in the format that the provider expects.
+var (
+	caseInsensitiveSubscriptionsRegexp          = regexp.MustCompile(`(?i)\/subscriptions\/`)
+	caseInsensitiveResourceGroupRegexp          = regexp.MustCompile(`(?i)\/resourcegroups\/`)
+	caseInsensitiveProvidersRegexp              = regexp.MustCompile(`(?i)\/providers\/`)
+	caseInsensitiveUserAssignedIdentitiesRegexp = regexp.MustCompile(`(?i)\/userassignedidentities\/`)
+	caseInsensitiveMicrosoftManagedIdentity     = regexp.MustCompile(`(?i)\/microsoft.managedidentity\/`)
+	caseInsensitiveCommunityGalleriesRegexp     = regexp.MustCompile(`(?i)\/communitygalleries\/`)
+	caseInsensitiveImagesRegExp                 = regexp.MustCompile(`(?i)\/images\/`)
+	caseInsensitiveVersionsRegExp               = regexp.MustCompile(`(?i)\/versions\/`)
+)
 
 // TerraformIAMUpgradeVars returns variables required to execute IAM upgrades with Terraform.
 func TerraformIAMUpgradeVars(conf *config.Config, fileHandler file.Handler) (terraform.Variables, error) {
@@ -112,6 +110,19 @@ func awsTerraformIAMVars(conf *config.Config, oldVars terraform.AWSIAMVariables)
 		Region: conf.Provider.AWS.Region,
 		Prefix: oldVars.Prefix,
 	}
+}
+
+func normalizeAzureURIs(vars *terraform.AzureClusterVariables) *terraform.AzureClusterVariables {
+	vars.UserAssignedIdentity = caseInsensitiveSubscriptionsRegexp.ReplaceAllString(vars.UserAssignedIdentity, "/subscriptions/")
+	vars.UserAssignedIdentity = caseInsensitiveResourceGroupRegexp.ReplaceAllString(vars.UserAssignedIdentity, "/resourceGroups/")
+	vars.UserAssignedIdentity = caseInsensitiveProvidersRegexp.ReplaceAllString(vars.UserAssignedIdentity, "/providers/")
+	vars.UserAssignedIdentity = caseInsensitiveUserAssignedIdentitiesRegexp.ReplaceAllString(vars.UserAssignedIdentity, "/userAssignedIdentities/")
+	vars.UserAssignedIdentity = caseInsensitiveMicrosoftManagedIdentity.ReplaceAllString(vars.UserAssignedIdentity, "/Microsoft.ManagedIdentity/")
+	vars.ImageID = caseInsensitiveCommunityGalleriesRegexp.ReplaceAllString(vars.ImageID, "/communityGalleries/")
+	vars.ImageID = caseInsensitiveImagesRegExp.ReplaceAllString(vars.ImageID, "/images/")
+	vars.ImageID = caseInsensitiveVersionsRegExp.ReplaceAllString(vars.ImageID, "/versions/")
+
+	return vars
 }
 
 // azureTerraformVars provides variables required to execute the Terraform scripts.
@@ -197,7 +208,19 @@ func gcpTerraformIAMVars(conf *config.Config, oldVars terraform.GCPIAMVariables)
 
 // openStackTerraformVars provides variables required to execute the Terraform scripts.
 // It should be the only place to declare the OpenStack variables.
-func openStackTerraformVars(conf *config.Config, imageRef string) *terraform.OpenStackClusterVariables {
+func openStackTerraformVars(conf *config.Config, imageRef string) (*terraform.OpenStackClusterVariables, error) {
+	if os.Getenv("CONSTELLATION_OPENSTACK_DEV") != "1" {
+		return nil, errors.New("Constellation must be fine-tuned to your OpenStack deployment. Please create an issue or contact Edgeless Systems at https://edgeless.systems/contact/")
+	}
+	if _, hasOSAuthURL := os.LookupEnv("OS_AUTH_URL"); !hasOSAuthURL && conf.Provider.OpenStack.Cloud == "" {
+		return nil, errors.New(
+			"neither environment variable OS_AUTH_URL nor cloud name for \"clouds.yaml\" is set. OpenStack authentication requires a set of " +
+				"OS_* environment variables that are typically sourced into the current shell with an openrc file " +
+				"or a cloud name for \"clouds.yaml\". " +
+				"See https://docs.openstack.org/openstacksdk/latest/user/config/configuration.html for more information",
+		)
+	}
+
 	nodeGroups := make(map[string]terraform.OpenStackNodeGroup)
 	for groupName, group := range conf.NodeGroups {
 		nodeGroups[groupName] = terraform.OpenStackNodeGroup{
@@ -222,12 +245,65 @@ func openStackTerraformVars(conf *config.Config, imageRef string) *terraform.Ope
 		NodeGroups:              nodeGroups,
 		CustomEndpoint:          conf.CustomEndpoint,
 		InternalLoadBalancer:    conf.InternalLoadBalancer,
-	}
+	}, nil
 }
 
 // qemuTerraformVars provides variables required to execute the Terraform scripts.
 // It should be the only place to declare the QEMU variables.
-func qemuTerraformVars(conf *config.Config, imageRef string, libvirtURI, libvirtSocketPath, metadataLibvirtURI string) *terraform.QEMUVariables {
+func qemuTerraformVars(
+	ctx context.Context, conf *config.Config, imageRef string,
+	lv libvirtRunner, downloader rawDownloader,
+) (*terraform.QEMUVariables, error) {
+	if runtime.GOARCH != "amd64" || runtime.GOOS != "linux" {
+		return nil, fmt.Errorf("creation of a QEMU based Constellation is not supported for %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+
+	imagePath, err := downloader.Download(ctx, nil, false, imageRef, conf.Image)
+	if err != nil {
+		return nil, fmt.Errorf("download raw image: %w", err)
+	}
+
+	libvirtURI := conf.Provider.QEMU.LibvirtURI
+	libvirtSocketPath := "."
+
+	switch {
+	// if no libvirt URI is specified, start a libvirt container
+	case libvirtURI == "":
+		if err := lv.Start(ctx, conf.Name, conf.Provider.QEMU.LibvirtContainerImage); err != nil {
+			return nil, fmt.Errorf("start libvirt container: %w", err)
+		}
+		libvirtURI = libvirt.LibvirtTCPConnectURI
+
+	// socket for system URI should be in /var/run/libvirt/libvirt-sock
+	case libvirtURI == "qemu:///system":
+		libvirtSocketPath = "/var/run/libvirt/libvirt-sock"
+
+	// socket for session URI should be in /run/user/<uid>/libvirt/libvirt-sock
+	case libvirtURI == "qemu:///session":
+		libvirtSocketPath = fmt.Sprintf("/run/user/%d/libvirt/libvirt-sock", os.Getuid())
+
+	// if a unix socket is specified we need to parse the URI to get the socket path
+	case strings.HasPrefix(libvirtURI, "qemu+unix://"):
+		unixURI, err := url.Parse(strings.TrimPrefix(libvirtURI, "qemu+unix://"))
+		if err != nil {
+			return nil, err
+		}
+		libvirtSocketPath = unixURI.Query().Get("socket")
+		if libvirtSocketPath == "" {
+			return nil, fmt.Errorf("socket path not specified in qemu+unix URI: %s", libvirtURI)
+		}
+	}
+
+	metadataLibvirtURI := libvirtURI
+	if libvirtSocketPath != "." {
+		metadataLibvirtURI = "qemu:///system"
+	}
+
+	var firmware *string
+	if conf.Provider.QEMU.Firmware != "" {
+		firmware = &conf.Provider.QEMU.Firmware
+	}
+
 	nodeGroups := make(map[string]terraform.QEMUNodeGroup)
 	for groupName, group := range conf.NodeGroups {
 		nodeGroups[groupName] = terraform.QEMUNodeGroup{
@@ -245,17 +321,22 @@ func qemuTerraformVars(conf *config.Config, imageRef string, libvirtURI, libvirt
 		// TODO(malt3): auto select boot mode based on attestation variant.
 		// requires image info v2.
 		BootMode:           "uefi",
-		ImagePath:          imageRef,
+		ImagePath:          imagePath,
 		ImageFormat:        conf.Provider.QEMU.ImageFormat,
 		NodeGroups:         nodeGroups,
 		Machine:            "q35", // TODO(elchead): make configurable AB#3225
 		MetadataAPIImage:   conf.Provider.QEMU.MetadataAPIImage,
 		MetadataLibvirtURI: metadataLibvirtURI,
 		NVRAM:              conf.Provider.QEMU.NVRAM,
+		Firmware:           firmware,
 		// TODO(malt3) enable once we have a way to auto-select values for these
 		// requires image info v2.
 		// BzImagePath:        placeholder,
 		// InitrdPath:         placeholder,
 		// KernelCmdline:      placeholder,
-	}
+	}, nil
+}
+
+func toPtr[T any](v T) *T {
+	return &v
 }

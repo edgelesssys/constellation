@@ -10,6 +10,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
@@ -58,7 +60,6 @@ func runUp(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	defer spinner.Stop()
-	creator := cloudcmd.NewCreator(spinner)
 
 	m := &miniUpCmd{
 		log:           log,
@@ -68,15 +69,38 @@ func runUp(cmd *cobra.Command, _ []string) error {
 	if err := m.flags.parse(cmd.Flags()); err != nil {
 		return err
 	}
+
+	creator, cleanUp, err := cloudcmd.NewApplier(
+		cmd.Context(),
+		spinner,
+		constants.TerraformWorkingDir,
+		filepath.Join(constants.UpgradeDir, "create"), // Not used by create
+		m.flags.tfLogLevel,
+		m.fileHandler,
+	)
+	if err != nil {
+		return err
+	}
+	defer cleanUp()
+
 	return m.up(cmd, creator, spinner)
 }
 
-func (m *miniUpCmd) up(cmd *cobra.Command, creator cloudCreator, spinner spinnerInterf) error {
+func (m *miniUpCmd) up(cmd *cobra.Command, creator cloudApplier, spinner spinnerInterf) error {
 	if err := m.checkSystemRequirements(cmd.ErrOrStderr()); err != nil {
 		return fmt.Errorf("system requirements not met: %w", err)
 	}
 
-	// create config if not passed as flag and set default values
+	if clean, err := m.fileHandler.IsEmpty(constants.TerraformWorkingDir); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("checking if terraform working directory is empty: %w", err)
+	} else if err == nil && !clean {
+		return fmt.Errorf(
+			"directory %q already exists and is not empty, run 'constellation mini down' before creating a new cluster",
+			m.flags.pathPrefixer.PrefixPrintablePath(constants.TerraformWorkingDir),
+		)
+	}
+
+	// create config if not present in directory and set default values
 	config, err := m.prepareConfig(cmd)
 	if err != nil {
 		return fmt.Errorf("preparing config: %w", err)
@@ -159,15 +183,12 @@ func (m *miniUpCmd) prepareExistingConfig(cmd *cobra.Command) (*config.Config, e
 }
 
 // createMiniCluster creates a new cluster using the given config.
-func (m *miniUpCmd) createMiniCluster(ctx context.Context, creator cloudCreator, config *config.Config) error {
+func (m *miniUpCmd) createMiniCluster(ctx context.Context, creator cloudApplier, config *config.Config) error {
 	m.log.Debugf("Creating mini cluster")
-	opts := cloudcmd.CreateOptions{
-		Provider:    cloudprovider.QEMU,
-		Config:      config,
-		TFWorkspace: constants.TerraformWorkingDir,
-		TFLogLevel:  m.flags.tfLogLevel,
+	if _, err := creator.Plan(ctx, config); err != nil {
+		return err
 	}
-	infraState, err := creator.Create(ctx, opts)
+	infraState, err := creator.Apply(ctx, config.GetProvider(), cloudcmd.WithoutRollbackOnError)
 	if err != nil {
 		return err
 	}

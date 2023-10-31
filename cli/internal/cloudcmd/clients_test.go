@@ -37,12 +37,16 @@ type stubTerraformClient struct {
 	removeInstallerCalled  bool
 	destroyCalled          bool
 	showCalled             bool
-	createClusterErr       error
+	applyClusterErr        error
 	destroyErr             error
 	prepareWorkspaceErr    error
 	cleanUpWorkspaceErr    error
 	iamOutputErr           error
-	showErr                error
+	showInfrastructureErr  error
+	showIAMErr             error
+	planDiff               bool
+	planErr                error
+	showPlanErr            error
 }
 
 func (c *stubTerraformClient) ApplyCluster(_ context.Context, _ cloudprovider.Provider, _ terraform.LogLevel) (state.Infrastructure, error) {
@@ -53,7 +57,7 @@ func (c *stubTerraformClient) ApplyCluster(_ context.Context, _ cloudprovider.Pr
 		Azure: &state.Azure{
 			AttestationURL: c.attestationURL,
 		},
-	}, c.createClusterErr
+	}, c.applyClusterErr
 }
 
 func (c *stubTerraformClient) ApplyIAM(_ context.Context, _ cloudprovider.Provider, _ terraform.LogLevel) (terraform.IAMOutput, error) {
@@ -80,12 +84,20 @@ func (c *stubTerraformClient) RemoveInstaller() {
 
 func (c *stubTerraformClient) ShowInfrastructure(_ context.Context, _ cloudprovider.Provider) (state.Infrastructure, error) {
 	c.showCalled = true
-	return c.infraState, c.showErr
+	return c.infraState, c.showInfrastructureErr
 }
 
 func (c *stubTerraformClient) ShowIAM(_ context.Context, _ cloudprovider.Provider) (terraform.IAMOutput, error) {
 	c.showCalled = true
-	return c.iamOutput, c.showErr
+	return c.iamOutput, c.showIAMErr
+}
+
+func (c *stubTerraformClient) Plan(_ context.Context, _ terraform.LogLevel) (bool, error) {
+	return c.planDiff, c.planErr
+}
+
+func (c *stubTerraformClient) ShowPlan(_ context.Context, _ terraform.LogLevel, _ io.Writer) error {
+	return c.showPlanErr
 }
 
 type stubLibvirtRunner struct {

@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestPlanUpgrade(t *testing.T) {
+func TestTFPlan(t *testing.T) {
 	const (
 		templateDir       = "templateDir"
 		existingWorkspace = "existing"
@@ -28,36 +28,37 @@ func TestPlanUpgrade(t *testing.T) {
 	)
 	fsWithWorkspace := func(require *require.Assertions) file.Handler {
 		fs := file.NewHandler(afero.NewMemMapFs())
-		require.NoError(fs.MkdirAll(existingWorkspace))
-		require.NoError(fs.Write(filepath.Join(existingWorkspace, testFile), []byte{}))
+		require.NoError(fs.Write(filepath.Join(existingWorkspace, testFile), []byte{}, file.OptMkdirAll))
 		return fs
 	}
 
 	testCases := map[string]struct {
-		prepareFs func(require *require.Assertions) file.Handler
-		tf        *stubUpgradePlanner
-		wantDiff  bool
-		wantErr   bool
+		prepareFs  func(require *require.Assertions) file.Handler
+		tf         *stubUpgradePlanner
+		wantDiff   bool
+		wantBackup bool
+		wantErr    bool
 	}{
 		"success no diff": {
-			prepareFs: fsWithWorkspace,
-			tf:        &stubUpgradePlanner{},
+			prepareFs:  fsWithWorkspace,
+			tf:         &stubUpgradePlanner{},
+			wantBackup: true,
 		},
 		"success diff": {
 			prepareFs: fsWithWorkspace,
 			tf: &stubUpgradePlanner{
 				planDiff: true,
 			},
-			wantDiff: true,
+			wantDiff:   true,
+			wantBackup: true,
 		},
-		"workspace does not exist": {
+		"workspace is empty": {
 			prepareFs: func(require *require.Assertions) file.Handler {
 				return file.NewHandler(afero.NewMemMapFs())
 			},
-			tf:      &stubUpgradePlanner{},
-			wantErr: true,
+			tf: &stubUpgradePlanner{},
 		},
-		"workspace not clean": {
+		"backup dir already exists": {
 			prepareFs: func(require *require.Assertions) file.Handler {
 				fs := fsWithWorkspace(require)
 				require.NoError(fs.MkdirAll(backupDir))
@@ -71,14 +72,16 @@ func TestPlanUpgrade(t *testing.T) {
 			tf: &stubUpgradePlanner{
 				prepareWorkspaceErr: assert.AnError,
 			},
-			wantErr: true,
+			wantBackup: true,
+			wantErr:    true,
 		},
 		"plan error": {
 			prepareFs: fsWithWorkspace,
 			tf: &stubUpgradePlanner{
 				planErr: assert.AnError,
 			},
-			wantErr: true,
+			wantErr:    true,
+			wantBackup: true,
 		},
 		"show plan error": {
 			prepareFs: fsWithWorkspace,
@@ -86,7 +89,8 @@ func TestPlanUpgrade(t *testing.T) {
 				planDiff:    true,
 				showPlanErr: assert.AnError,
 			},
-			wantErr: true,
+			wantErr:    true,
+			wantBackup: true,
 		},
 	}
 
@@ -95,19 +99,23 @@ func TestPlanUpgrade(t *testing.T) {
 			assert := assert.New(t)
 			fs := tc.prepareFs(require.New(t))
 
-			hasDiff, err := planUpgrade(
+			hasDiff, planErr := plan(
 				context.Background(), tc.tf, fs, io.Discard, terraform.LogLevelDebug,
 				&terraform.QEMUVariables{},
 				templateDir, existingWorkspace, backupDir,
 			)
+
+			if tc.wantBackup {
+				_, err := fs.Stat(filepath.Join(backupDir, testFile))
+				assert.NoError(err)
+			}
+
 			if tc.wantErr {
-				assert.Error(err)
+				assert.Error(planErr)
 				return
 			}
-			assert.NoError(err)
+			assert.NoError(planErr)
 			assert.Equal(tc.wantDiff, hasDiff)
-			_, err = fs.Stat(filepath.Join(backupDir, testFile))
-			assert.NoError(err)
 		})
 	}
 }

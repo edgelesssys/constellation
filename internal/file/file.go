@@ -237,3 +237,18 @@ func (h *Handler) CopyFile(src, dst string, opts ...Option) error {
 func (h *Handler) RenameFile(old, new string) error {
 	return h.fs.Rename(old, new)
 }
+
+// IsEmpty returns true if the given directory is empty.
+func (h *Handler) IsEmpty(dirName string) (bool, error) {
+	f, err := h.fs.Open(dirName)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	_, err = f.Readdirnames(1)
+	if err == io.EOF {
+		return true, nil
+	}
+	return false, err
+}

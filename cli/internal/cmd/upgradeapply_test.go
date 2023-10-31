@@ -12,10 +12,10 @@ import (
 	"io"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubecmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/state"
-	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -53,7 +53,7 @@ func TestUpgradeApply(t *testing.T) {
 		kubeUpgrader      *stubKubernetesUpgrader
 		fh                func() file.Handler
 		fhAssertions      func(require *require.Assertions, assert *assert.Assertions, fh file.Handler)
-		terraformUpgrader clusterUpgrader
+		terraformUpgrader cloudApplier
 		wantErr           bool
 		customK8sVersion  string
 		flags             applyFlags
@@ -265,7 +265,9 @@ func TestUpgradeApply(t *testing.T) {
 				newKubeUpgrader: func(_ io.Writer, _ string, _ debugLog) (kubernetesUpgrader, error) {
 					return tc.kubeUpgrader, nil
 				},
-				newClusterApplier: func(ctx context.Context) (clusterUpgrader, error) { return tc.terraformUpgrader, nil },
+				newInfraApplier: func(ctx context.Context) (cloudApplier, func(), error) {
+					return tc.terraformUpgrader, func() {}, nil
+				},
 			}
 			err := upgrader.apply(cmd, stubAttestationFetcher{}, "test")
 			if tc.wantErr {
@@ -321,16 +323,6 @@ func (u *stubKubernetesUpgrader) ExtendClusterConfigCertSANs(_ context.Context, 
 	return nil
 }
 
-// TODO(v2.11): Remove this function after v2.11 is released.
-func (u *stubKubernetesUpgrader) RemoveAttestationConfigHelmManagement(_ context.Context) error {
-	return nil
-}
-
-// TODO(v2.12): Remove this function.
-func (u *stubKubernetesUpgrader) RemoveHelmKeepAnnotation(_ context.Context) error {
-	return nil
-}
-
 type stubTerraformUpgrader struct {
 	terraformDiff        bool
 	planTerraformErr     error
@@ -338,15 +330,15 @@ type stubTerraformUpgrader struct {
 	rollbackWorkspaceErr error
 }
 
-func (u stubTerraformUpgrader) PlanClusterUpgrade(_ context.Context, _ io.Writer, _ terraform.Variables, _ cloudprovider.Provider) (bool, error) {
+func (u stubTerraformUpgrader) Plan(_ context.Context, _ *config.Config) (bool, error) {
 	return u.terraformDiff, u.planTerraformErr
 }
 
-func (u stubTerraformUpgrader) ApplyClusterUpgrade(_ context.Context, _ cloudprovider.Provider) (state.Infrastructure, error) {
+func (u stubTerraformUpgrader) Apply(_ context.Context, _ cloudprovider.Provider, _ cloudcmd.RollbackBehavior) (state.Infrastructure, error) {
 	return state.Infrastructure{}, u.applyTerraformErr
 }
 
-func (u stubTerraformUpgrader) RestoreClusterWorkspace() error {
+func (u stubTerraformUpgrader) RestoreWorkspace() error {
 	return u.rollbackWorkspaceErr
 }
 
@@ -354,17 +346,17 @@ type mockTerraformUpgrader struct {
 	mock.Mock
 }
 
-func (m *mockTerraformUpgrader) PlanClusterUpgrade(ctx context.Context, w io.Writer, variables terraform.Variables, provider cloudprovider.Provider) (bool, error) {
-	args := m.Called(ctx, w, variables, provider)
+func (m *mockTerraformUpgrader) Plan(ctx context.Context, conf *config.Config) (bool, error) {
+	args := m.Called(ctx, conf)
 	return args.Bool(0), args.Error(1)
 }
 
-func (m *mockTerraformUpgrader) ApplyClusterUpgrade(ctx context.Context, provider cloudprovider.Provider) (state.Infrastructure, error) {
-	args := m.Called(ctx, provider)
+func (m *mockTerraformUpgrader) Apply(ctx context.Context, provider cloudprovider.Provider, rollback cloudcmd.RollbackBehavior) (state.Infrastructure, error) {
+	args := m.Called(ctx, provider, rollback)
 	return args.Get(0).(state.Infrastructure), args.Error(1)
 }
 
-func (m *mockTerraformUpgrader) RestoreClusterWorkspace() error {
+func (m *mockTerraformUpgrader) RestoreWorkspace() error {
 	args := m.Called()
 	return args.Error(0)
 }

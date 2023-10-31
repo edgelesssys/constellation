@@ -9,13 +9,9 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"io"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/state"
-	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/rogpeppe/go-internal/diff"
 	"github.com/spf13/cobra"
@@ -72,10 +68,4 @@ type kubernetesUpgrader interface {
 	ApplyJoinConfig(ctx context.Context, newAttestConfig config.AttestationCfg, measurementSalt []byte) error
 	BackupCRs(ctx context.Context, crds []apiextensionsv1.CustomResourceDefinition, upgradeDir string) error
 	BackupCRDs(ctx context.Context, upgradeDir string) ([]apiextensionsv1.CustomResourceDefinition, error)
-}
-
-type clusterUpgrader interface {
-	PlanClusterUpgrade(ctx context.Context, outWriter io.Writer, vars terraform.Variables, csp cloudprovider.Provider) (bool, error)
-	ApplyClusterUpgrade(ctx context.Context, csp cloudprovider.Provider) (state.Infrastructure, error)
-	RestoreClusterWorkspace() error
 }
