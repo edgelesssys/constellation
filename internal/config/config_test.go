@@ -421,6 +421,16 @@ func TestValidate(t *testing.T) {
 			wantErr:      true,
 			wantErrCount: awsErrCount,
 		},
+		"AWS config with upper case name": {
+			cnf: func() *Config {
+				cnf := Default()
+				cnf.RemoveProviderAndAttestationExcept(cloudprovider.AWS)
+				cnf.Name = "testAWS"
+				return cnf
+			}(),
+			wantErr:      true,
+			wantErrCount: awsErrCount + 1,
+		},
 		"AWS config with correct region and zone format": {
 			cnf: func() *Config {
 				cnf := Default()

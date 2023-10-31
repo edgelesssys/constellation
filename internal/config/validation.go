@@ -712,7 +712,7 @@ func returnsTrue(_ validator.FieldLevel) bool {
 }
 
 func registerValidateNameError(ut ut.Translator) error {
-	return ut.Add("validate_name", "{0} must be no more than {1} characters long", true)
+	return ut.Add("validate_name", "{0} must be no more than {1} characters long / contain only lowercase letters on AWS", true)
 }
 
 func (c *Config) translateValidateNameError(ut ut.Translator, fe validator.FieldError) string {
@@ -731,7 +731,8 @@ func (c *Config) translateValidateNameError(ut ut.Translator, fe validator.Field
 // This also allows us to eventually add more validation rules for constellation names if necessary.
 func (c *Config) validateName(fl validator.FieldLevel) bool {
 	if c.Provider.AWS != nil {
-		return len(fl.Field().String()) <= constants.AWSConstellationNameLength
+		name := fl.Field().String()
+		return strings.ToLower(name) == name && len(name) <= constants.AWSConstellationNameLength
 	}
 	return len(fl.Field().String()) <= constants.ConstellationNameLength
 }
