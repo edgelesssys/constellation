@@ -316,13 +316,8 @@ func (s *State) preInitConstraints() []*validation.Constraint {
 				validation.IfNotNil(
 					s.Infrastructure.GCP,
 					func() *validation.Constraint {
-						return validation.And(
-							validation.EvaluateAll,
-							validation.Empty(s.Infrastructure.GCP.ProjectID).
-								WithFieldTrace(s, &s.Infrastructure.GCP.ProjectID),
-							validation.Empty(s.Infrastructure.GCP.IPCidrPod).
-								WithFieldTrace(s, &s.Infrastructure.GCP.IPCidrPod),
-						)
+						return validation.Empty(*s.Infrastructure.GCP).
+							WithFieldTrace(s, &s.Infrastructure.GCP)
 					},
 				),
 			),
