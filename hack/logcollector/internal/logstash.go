@@ -31,7 +31,6 @@ const (
 type LogstashPreparer struct {
 	fh          file.Handler
 	fields      map[string]string
-	indexPrefix string
 	username    string
 	password    string
 	port        int
@@ -39,11 +38,10 @@ type LogstashPreparer struct {
 }
 
 // NewLogstashPreparer returns a new LogstashPreparer.
-func NewLogstashPreparer(fields map[string]string, username, password, indexPrefix string, port int) *LogstashPreparer {
+func NewLogstashPreparer(fields map[string]string, username, password string, port int) *LogstashPreparer {
 	return &LogstashPreparer{
 		username:    username,
 		password:    password,
-		indexPrefix: indexPrefix,
 		fields:      fields,
 		fh:          file.NewHandler(afero.NewOsFs()),
 		port:        port,
@@ -55,7 +53,6 @@ func (p *LogstashPreparer) Prepare(dir string) error {
 	templatedPipelineConf, err := p.template(logstashAssets, "templates/pipeline.conf", pipelineConfTemplate{
 		InfoMap:     p.fields,
 		Host:        openSearchHost,
-		IndexPrefix: p.indexPrefix,
 		Credentials: Credentials{
 			Username: p.username,
 			Password: p.password,
@@ -134,7 +131,6 @@ type LogstashHelmValues struct {
 type pipelineConfTemplate struct {
 	InfoMap     map[string]string
 	Host        string
-	IndexPrefix string
 	Credentials Credentials
 	Port        int
 }
