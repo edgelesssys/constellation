@@ -125,6 +125,7 @@ func NewApplyCmd() *cobra.Command {
 
 	must(cmd.Flags().MarkHidden("timeout"))
 
+	must(cmd.RegisterFlagCompletionFunc("skip-phases", skipPhasesCompletion))
 	return cmd
 }
 
@@ -541,7 +542,7 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 
 	// Validate microservice version (helm versions) in the user's config matches the version of the CLI
 	// This makes sure we catch potential errors early, not just after we already ran Terraform migrations or the init RPC
-	if !a.flags.force && !a.flags.skipPhases.contains(skipHelmPhase) && !a.flags.skipPhases.contains(skipInitPhase) {
+	if !a.flags.force && !a.flags.skipPhases.contains(skipHelmPhase, skipInitPhase) {
 		if err := validateCLIandConstellationVersionAreEqual(constants.BinaryVersion(), conf.Image, conf.MicroserviceVersion); err != nil {
 			return nil, nil, err
 		}
@@ -719,4 +720,41 @@ func printCreateWarnings(out io.Writer, conf *config.Config) {
 	if printedAWarning {
 		fmt.Fprintln(out, "")
 	}
+}
+
+// skipPhasesCompletion returns suggestions for the skip-phases flag.
+// We suggest completion for all phases that can be skipped.
+// The phases may be given in any order, as a comma-separated list.
+// For example, "skip-phases helm,init" should suggest all phases but "helm" and "init".
+func skipPhasesCompletion(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	skippedPhases := strings.Split(toComplete, ",")
+	if len(skippedPhases) == 0 {
+		// No phases were typed yet, so suggest all phases
+		return allPhases(), cobra.ShellCompDirectiveNoFileComp
+	}
+
+	// Determine what phases have already been typed by the user
+	phases := make(map[string]struct{})
+	for _, phase := range allPhases() {
+		phases[phase] = struct{}{}
+	}
+	for _, phase := range skippedPhases {
+		delete(phases, phase)
+	}
+
+	// Get the last phase typed by the user
+	// This is the phase we want to complete
+	lastPhase := skippedPhases[len(skippedPhases)-1]
+	fullyTypedPhases := strings.TrimSuffix(toComplete, lastPhase)
+
+	// Add all phases that have not been typed yet to the suggestions
+	// The suggestion is the fully typed phases + the phase that is being completed
+	var suggestions []string
+	for phase := range phases {
+		if strings.HasPrefix(phase, lastPhase) {
+			suggestions = append(suggestions, fmt.Sprintf("%s%s", fullyTypedPhases, phase))
+		}
+	}
+
+	return suggestions, cobra.ShellCompDirectiveNoFileComp
 }
