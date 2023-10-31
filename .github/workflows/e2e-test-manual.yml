@@ -107,6 +107,10 @@ on:
         description: "Git ref to checkout."
         type: string
         required: true
+      internalLoadBalancer:
+        description: "Enable internal load balancer for the cluster."
+        type: boolean
+        default: false
 
 jobs:
   split-nodeCount:
@@ -260,6 +264,7 @@ jobs:
           cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
           cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
           fetchMeasurements: ${{ contains(needs.find-latest-image.outputs.image, '/stream/stable/') }}
+          internalLoadBalancer: ${{ inputs.internalLoadBalancer }}
           selfManagedInfra: "false"
 
       - name: Always terminate cluster
