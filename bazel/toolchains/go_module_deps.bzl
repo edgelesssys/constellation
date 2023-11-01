@@ -2309,8 +2309,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/google/cadvisor",
-        sum = "h1:YyKnRy/3myRNGOvF1bNF9FFnpjY7Gky5yKi/ZlN+BSo=",
-        version = "v0.47.1",
+        sum = "h1:lOS3Yprk88AIUi260eKYmTC4pKWAFkXV6Xev5jfCIP8=",
+        version = "v0.47.2",
     )
     go_repository(
         name = "com_github_google_cel_go",
@@ -6758,8 +6758,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "k8s.io/kubernetes",
-        sum = "h1:gwufSj7y6X18Q2Gl8v4Ev+AJHdzWkG7A8VNFffS9vu0=",
-        version = "v1.27.3",
+        sum = "h1:qnkrNAPz2jm/k+oWBNOJ6q+kCQ7OXkO8v3WWU9jumwo=",
+        version = "v1.27.5",
     )
     go_repository(
         name = "io_k8s_legacy_cloud_providers",
