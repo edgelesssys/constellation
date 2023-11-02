@@ -111,6 +111,10 @@ on:
         description: "Enable internal load balancer for the cluster."
         type: boolean
         default: false
+      selfManagedInfra:
+        description: "Use self-managed infrastructure."
+        type: boolean
+        default: false
 
 jobs:
   split-nodeCount:
@@ -265,7 +269,7 @@ jobs:
           cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
           fetchMeasurements: ${{ contains(needs.find-latest-image.outputs.image, '/stream/stable/') }}
           internalLoadBalancer: ${{ inputs.internalLoadBalancer }}
-          selfManagedInfra: "false"
+          selfManagedInfra: ${{ inputs.selfManagedInfra }}
 
       - name: Always terminate cluster
         if: always()

@@ -1,4 +1,4 @@
-name: e2e test manual internal LB
+name: e2e test internal LB
 
 on:
   workflow_dispatch:
@@ -66,14 +66,14 @@ on:
         required: false
 
 jobs:
-  e2e-test-manual:
+  e2e-test:
     permissions:
       id-token: write
       checks: write
       contents: read
       packages: write
     secrets: inherit
-    uses: ./.github/workflows/e2e-test-manual.yml
+    uses: ./.github/workflows/e2e-test.yml
     with:
       nodeCount: ${{ inputs.nodeCount }}
       cloudProvider: ${{ inputs.cloudProvider }}
