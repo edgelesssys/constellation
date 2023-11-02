@@ -33,7 +33,7 @@ const (
 	// is validated before cloud infrastructure is created.
 	PreCreate ConstraintSet = iota
 	// PreInit are the constraints that should be enforced when the state file
-	// is validated before "constellation apply" is run.
+	// is validated before the first Constellation node is initialized.
 	PreInit
 	// PostInit are the constraints that should be enforced when the state file
 	// is validated after "constellation apply" is run.
