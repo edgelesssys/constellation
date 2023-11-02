@@ -515,6 +515,31 @@ func (s *State) postInitConstraints(csp cloudprovider.Provider) func() []*valida
 					},
 				),
 			)
+		default:
+			constraints = append(constraints,
+				// GCP values need to be nil or empty.
+				validation.Or(
+					validation.Equal(s.Infrastructure.GCP, nil).
+						WithFieldTrace(s, &s.Infrastructure.GCP),
+					validation.IfNotNil(
+						s.Infrastructure.GCP,
+						func() *validation.Constraint {
+							return validation.Empty(s.Infrastructure.GCP).
+								WithFieldTrace(s, &s.Infrastructure.GCP)
+						},
+					)),
+				// Azure values need to be nil or empty.
+				validation.Or(
+					validation.Equal(s.Infrastructure.Azure, nil).
+						WithFieldTrace(s, &s.Infrastructure.Azure),
+					validation.IfNotNil(
+						s.Infrastructure.Azure,
+						func() *validation.Constraint {
+							return validation.Empty(s.Infrastructure.Azure).
+								WithFieldTrace(s, &s.Infrastructure.Azure)
+						},
+					)),
+			)
 		}
 		return constraints
 	}

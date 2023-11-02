@@ -241,7 +241,8 @@ func TestPostInitValidation(t *testing.T) {
 		errAssertions func(a *assert.Assertions, err error)
 	}{
 		"valid": {
-			stateFile: defaultState,
+			stateFile: defaultGCPState,
+			provider:  cloudprovider.GCP,
 		},
 		"invalid version": {
 			stateFile: func() *State {
