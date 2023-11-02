@@ -202,7 +202,7 @@ func (c *createCmd) create(cmd *cobra.Command, applier cloudApplier, fileHandler
 	if err != nil {
 		return fmt.Errorf("reading state file: %w", err)
 	}
-	if err := stateFile.Validate(state.PreCreate, provider); err != nil {
+	if err := stateFile.Validate(state.PreCreate, conf.GetProvider()); err != nil {
 		return fmt.Errorf("validating state file: %w", err)
 	}
 	stateFile = stateFile.SetInfrastructure(infraState)
