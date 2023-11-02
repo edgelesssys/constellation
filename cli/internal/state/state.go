@@ -227,7 +227,7 @@ func (s *State) Validate(constraintSet ConstraintSet) error {
 			OverrideConstraints: s.postInitConstraints,
 		})
 	default:
-		return fmt.Errorf("unknown constraint set")
+		return errors.New("unknown constraint set")
 	}
 }
 
