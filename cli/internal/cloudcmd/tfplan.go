@@ -67,6 +67,7 @@ func plan(
 }
 
 // restoreBackup replaces the existing Terraform workspace with the backup.
+// If no backup exists, this function simply removes workingDir.
 func restoreBackup(fileHandler file.Handler, workingDir, backupDir string) error {
 	if err := fileHandler.RemoveAll(workingDir); err != nil {
 		return fmt.Errorf("removing existing workspace: %w", err)
@@ -74,7 +75,7 @@ func restoreBackup(fileHandler file.Handler, workingDir, backupDir string) error
 	if err := fileHandler.CopyDir(
 		backupDir,
 		workingDir,
-	); err != nil && !errors.Is(err, os.ErrNotExist) { // ignore not found error because backup might not exist for new clusters
+	); err != nil && !errors.Is(err, os.ErrNotExist) { // ignore not found error because backup does not exist for new clusters
 		return fmt.Errorf("replacing terraform workspace with backup: %w", err)
 	}
 

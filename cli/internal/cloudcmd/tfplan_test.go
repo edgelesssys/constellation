@@ -9,6 +9,7 @@ package cloudcmd
 import (
 	"context"
 	"io"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -123,40 +124,42 @@ func TestTFPlan(t *testing.T) {
 func TestRestoreBackup(t *testing.T) {
 	existingWorkspace := "foo"
 	backupDir := "bar"
+	testFile := "file"
 
 	testCases := map[string]struct {
-		prepareFs func(require *require.Assertions) file.Handler
-		wantErr   bool
+		prepareFs            func(require *require.Assertions) file.Handler
+		wantRemoveWorkingDir bool
+		wantErr              bool
 	}{
 		"success": {
 			prepareFs: func(require *require.Assertions) file.Handler {
 				fs := file.NewHandler(afero.NewMemMapFs())
-				require.NoError(fs.MkdirAll(existingWorkspace))
-				require.NoError(fs.MkdirAll(backupDir))
+				require.NoError(fs.Write(filepath.Join(existingWorkspace, testFile), []byte{}, file.OptMkdirAll))
+				require.NoError(fs.Write(filepath.Join(backupDir, testFile), []byte{}, file.OptMkdirAll))
 				return fs
 			},
 		},
-		"existing workspace does not exist": {
+		"only backup exists": {
 			prepareFs: func(require *require.Assertions) file.Handler {
 				fs := file.NewHandler(afero.NewMemMapFs())
-				require.NoError(fs.MkdirAll(backupDir))
+				require.NoError(fs.Write(filepath.Join(backupDir, testFile), []byte{}, file.OptMkdirAll))
 				return fs
 			},
 		},
-		"backup dir does not exist": {
+		"only existingWorkspace exists": {
 			prepareFs: func(require *require.Assertions) file.Handler {
 				fs := file.NewHandler(afero.NewMemMapFs())
-				require.NoError(fs.MkdirAll(existingWorkspace))
+				require.NoError(fs.Write(filepath.Join(existingWorkspace, testFile), []byte{}, file.OptMkdirAll))
 				return fs
 			},
-			wantErr: true,
+			wantRemoveWorkingDir: true,
 		},
 		"read only file system": {
 			prepareFs: func(require *require.Assertions) file.Handler {
 				memFS := afero.NewMemMapFs()
 				fs := file.NewHandler(memFS)
-				require.NoError(fs.MkdirAll(existingWorkspace))
-				require.NoError(fs.MkdirAll(backupDir))
+				require.NoError(fs.Write(filepath.Join(existingWorkspace, testFile), []byte{}, file.OptMkdirAll))
+				require.NoError(fs.Write(filepath.Join(backupDir, testFile), []byte{}, file.OptMkdirAll))
 				return file.NewHandler(afero.NewReadOnlyFs(memFS))
 			},
 			wantErr: true,
@@ -174,6 +177,14 @@ func TestRestoreBackup(t *testing.T) {
 				return
 			}
 			assert.NoError(err)
+			_, err = fs.Stat(filepath.Join(backupDir, testFile))
+			assert.ErrorIs(err, os.ErrNotExist)
+			_, err = fs.Stat(filepath.Join(existingWorkspace, testFile))
+			if tc.wantRemoveWorkingDir {
+				assert.ErrorIs(err, os.ErrNotExist)
+			} else {
+				assert.NoError(err)
+			}
 		})
 	}
 }
