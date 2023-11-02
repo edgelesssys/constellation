@@ -352,6 +352,10 @@ func TestValidateInputs(t *testing.T) {
 			createAdminConfig:  func(require *require.Assertions, fh file.Handler) {},
 			createTfState:      defaultTfState,
 			flags:              applyFlags{},
+			wantPhases: skipPhases{
+				skipImagePhase: struct{}{},
+				skipK8sPhase:   struct{}{},
+			},
 		},
 		"no tf state, but admin config exists": {
 			createConfig:       defaultConfig(cloudprovider.GCP),
@@ -369,6 +373,10 @@ func TestValidateInputs(t *testing.T) {
 			createAdminConfig:  func(require *require.Assertions, fh file.Handler) {},
 			createTfState:      func(require *require.Assertions, fh file.Handler) {},
 			flags:              applyFlags{},
+			wantPhases: skipPhases{
+				skipImagePhase: struct{}{},
+				skipK8sPhase:   struct{}{},
+			},
 		},
 		"skip terraform": {
 			createConfig:       defaultConfig(cloudprovider.GCP),
@@ -383,6 +391,8 @@ func TestValidateInputs(t *testing.T) {
 			},
 			wantPhases: skipPhases{
 				skipInfrastructurePhase: struct{}{},
+				skipImagePhase:          struct{}{},
+				skipK8sPhase:            struct{}{},
 			},
 		},
 	}

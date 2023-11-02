@@ -413,8 +413,7 @@ func (a *applyCmd) apply(cmd *cobra.Command, configFetcher attestationconfigapi.
 
 	// Upgrade NodeVersion object
 	// This can be skipped if we ran the init RPC, as the NodeVersion object is already up to date
-	if !(a.flags.skipPhases.contains(skipK8sPhase) && a.flags.skipPhases.contains(skipImagePhase)) &&
-		a.flags.skipPhases.contains(skipInitPhase) {
+	if !(a.flags.skipPhases.contains(skipK8sPhase) && a.flags.skipPhases.contains(skipImagePhase)) {
 		if err := a.runK8sUpgrade(cmd, conf, kubeUpgrader); err != nil {
 			return err
 		}
@@ -512,28 +511,31 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 	// We skip version validation if the user explicitly skips the Kubernetes phase
 	a.log.Debugf("Validating Kubernetes version %s", conf.KubernetesVersion)
 	validVersion, err := versions.NewValidK8sVersion(string(conf.KubernetesVersion), true)
-	if err != nil && !a.flags.skipPhases.contains(skipK8sPhase) {
+	if err != nil {
 		a.log.Debugf("Kubernetes version not valid: %s", err)
 		if !a.flags.skipPhases.contains(skipInitPhase) {
 			return nil, nil, err
 		}
-		a.log.Debugf("Checking if user wants to continue anyway")
-		if !a.flags.yes {
-			confirmed, err := askToConfirm(cmd,
-				fmt.Sprintf(
-					"WARNING: The Kubernetes patch version %s is not supported. If you continue, Kubernetes upgrades will be skipped. Do you want to continue anyway?",
-					validVersion,
-				),
-			)
-			if err != nil {
-				return nil, nil, fmt.Errorf("asking for confirmation: %w", err)
+
+		if !a.flags.skipPhases.contains(skipK8sPhase) {
+			a.log.Debugf("Checking if user wants to continue anyway")
+			if !a.flags.yes {
+				confirmed, err := askToConfirm(cmd,
+					fmt.Sprintf(
+						"WARNING: The Kubernetes patch version %s is not supported. If you continue, Kubernetes upgrades will be skipped. Do you want to continue anyway?",
+						validVersion,
+					),
+				)
+				if err != nil {
+					return nil, nil, fmt.Errorf("asking for confirmation: %w", err)
+				}
+				if !confirmed {
+					return nil, nil, fmt.Errorf("aborted by user")
+				}
 			}
-			if !confirmed {
-				return nil, nil, fmt.Errorf("aborted by user")
-			}
+			a.flags.skipPhases.add(skipK8sPhase)
+			a.log.Debugf("Outdated Kubernetes version accepted, Kubernetes upgrade will be skipped")
 		}
-		a.flags.skipPhases.add(skipK8sPhase)
-		a.log.Debugf("Outdated Kubernetes version accepted, Kubernetes upgrade will be skipped")
 	}
 	if versions.IsPreviewK8sVersion(validVersion) {
 		cmd.PrintErrf("Warning: Constellation with Kubernetes %s is still in preview. Use only for evaluation purposes.\n", validVersion)
@@ -553,7 +555,7 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 	// If using one of those providers, print a warning when trying to upgrade the image
 	if !(conf.GetProvider() == cloudprovider.AWS || conf.GetProvider() == cloudprovider.Azure || conf.GetProvider() == cloudprovider.GCP) &&
 		!a.flags.skipPhases.contains(skipImagePhase) {
-		cmd.PrintErrf("Image upgrades are not supported for provider %s", conf.GetProvider())
+		cmd.PrintErrf("Image upgrades are not supported for provider %s\n", conf.GetProvider())
 		cmd.PrintErrln("Image phase will be skipped")
 		a.flags.skipPhases.add(skipImagePhase)
 	}
