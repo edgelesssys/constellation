@@ -10,6 +10,7 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/cli/internal/state",
     visibility = ["//cli:__subpackages__"],
     deps = [
+        "//internal/cloud/cloudprovider",
         "//internal/file",
         "//internal/validation",
         "@cat_dario_mergo//:mergo",
@@ -25,6 +26,7 @@ go_test(
     ],
     embed = [":state"],
     deps = [
+        "//internal/cloud/cloudprovider",
         "//internal/constants",
         "//internal/file",
         "@com_github_siderolabs_talos_pkg_machinery//config/encoder",
