@@ -12,8 +12,12 @@ import (
 	"context"
 	"time"
 
+	//revive:disable:dot-imports
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	//revive:enable:dot-imports
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 

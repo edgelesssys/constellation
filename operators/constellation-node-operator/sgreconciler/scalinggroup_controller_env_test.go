@@ -12,9 +12,13 @@ import (
 	"context"
 	"time"
 
-	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/api"
+	//revive:disable:dot-imports
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	//revive:enable:dot-imports
+
+	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/api"
 	"k8s.io/apimachinery/pkg/types"
 
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"

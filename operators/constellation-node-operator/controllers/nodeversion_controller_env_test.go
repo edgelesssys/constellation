@@ -13,8 +13,12 @@ import (
 	"fmt"
 	"time"
 
+	//revive:disable:dot-imports
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	//revive:enable:dot-imports
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
