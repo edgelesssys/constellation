@@ -36,7 +36,7 @@ const (
 	// is validated before the first Constellation node is initialized.
 	PreInit
 	// PostInit are the constraints that should be enforced when the state file
-	// is validated after "constellation apply" is run.
+	// is validated after the cluster was initialized.
 	PostInit
 )
 
