@@ -549,11 +549,13 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 		}
 	}
 
-	// Constellation on QEMU or OpenStack don't support upgrades
-	// If using one of those providers, make sure the command is only used to initialize a cluster
+	// Constellation does not support image upgrades on all CSPs. Not supported are: QEMU, OpenStack
+	// If using one of those providers, print a warning when trying to upgrade the image
 	if !(conf.GetProvider() == cloudprovider.AWS || conf.GetProvider() == cloudprovider.Azure || conf.GetProvider() == cloudprovider.GCP) &&
-		(!a.flags.skipPhases.contains(skipImagePhase) && a.flags.skipPhases.contains(skipInitPhase)) {
-		return nil, nil, fmt.Errorf("image upgrades are not supported for provider %s", conf.GetProvider())
+		!a.flags.skipPhases.contains(skipImagePhase) {
+		cmd.PrintErrf("Image upgrades are not supported for provider %s", conf.GetProvider())
+		cmd.PrintErrln("Image phase will be skipped")
+		a.flags.skipPhases.add(skipImagePhase)
 	}
 
 	// Print warning about AWS attestation
@@ -565,7 +567,7 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 	return conf, stateFile, nil
 }
 
-// applyJoincConfig creates or updates the cluster's join config.
+// applyJoinConfig creates or updates the cluster's join config.
 // If the config already exists, and is different from the new config, the user is asked to confirm the upgrade.
 func (a *applyCmd) applyJoinConfig(
 	cmd *cobra.Command, kubeUpgrader kubernetesUpgrader, newConfig config.AttestationCfg, measurementSalt []byte,

@@ -237,7 +237,7 @@ func TestUpgradeApply(t *testing.T) {
 			},
 			fh: func() file.Handler {
 				fh := file.NewHandler(afero.NewMemMapFs())
-				require.NoError(t, fh.WriteYAML(constants.StateFilename, defaultState))
+				require.NoError(t, fh.WriteYAML(constants.StateFilename, defaultAzureStateFile))
 				return fh
 			},
 		},

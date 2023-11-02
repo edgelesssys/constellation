@@ -166,21 +166,19 @@ func TestInitialize(t *testing.T) {
 			retriable:     true,
 			wantErr:       true,
 		},
-		"empty state file": {
+		"[create + init] empty state file": {
 			provider:      cloudprovider.GCP,
 			stateFile:     &state.State{},
 			configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
 			serviceAccKey: gcpServiceAccKey,
 			initServerAPI: &stubInitServer{},
-			retriable:     true,
-			wantErr:       true,
 		},
 		"no state file": {
 			provider:      cloudprovider.GCP,
 			configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
 			serviceAccKey: gcpServiceAccKey,
 			retriable:     true,
-			wantErr:       false, // TODO: Reenable once we have validation for the state file
+			wantErr:       true,
 		},
 		"init call fails": {
 			provider:                cloudprovider.GCP,
@@ -736,6 +734,17 @@ func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, cs
 
 	var zone, instanceType, diskType string
 	switch csp {
+	case cloudprovider.AWS:
+		conf.Provider.AWS.Region = "test-region-2"
+		conf.Provider.AWS.Zone = "test-zone-2c"
+		conf.Provider.AWS.IAMProfileControlPlane = "test-iam-profile"
+		conf.Provider.AWS.IAMProfileWorkerNodes = "test-iam-profile"
+		conf.Attestation.AWSSEVSNP.Measurements[4] = measurements.WithAllBytes(0x44, measurements.Enforce, measurements.PCRMeasurementLength)
+		conf.Attestation.AWSSEVSNP.Measurements[9] = measurements.WithAllBytes(0x11, measurements.Enforce, measurements.PCRMeasurementLength)
+		conf.Attestation.AWSSEVSNP.Measurements[12] = measurements.WithAllBytes(0xcc, measurements.Enforce, measurements.PCRMeasurementLength)
+		zone = "test-zone-2c"
+		instanceType = "c6a.xlarge"
+		diskType = "gp3"
 	case cloudprovider.Azure:
 		conf.Provider.Azure.SubscriptionID = "01234567-0123-0123-0123-0123456789ab"
 		conf.Provider.Azure.TenantID = "01234567-0123-0123-0123-0123456789ab"
