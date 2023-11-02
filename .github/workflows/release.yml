@@ -194,6 +194,12 @@ jobs:
             git push
           fi
 
+      - name: Publish s3proxy
+        uses: ./.github/actions/publish_helmchart
+        with:
+          chartPath: ${{ github.workspace }}/s3proxy/deploy/s3proxy
+          githubToken: ${{ secrets.CI_GITHUB_REPOSITORY }}
+
   os-image:
     name: Build OS image
     needs: [verify-inputs, update-versions]
