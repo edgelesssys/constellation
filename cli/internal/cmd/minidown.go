@@ -48,7 +48,7 @@ func checkForMiniCluster(fileHandler file.Handler) error {
 		return fmt.Errorf("reading state file: %w", err)
 	}
 
-	if stateFile.Infrastructure.UID != constants.MiniConstellationUID {
+	if stateFile.Infrastructure.Name != constants.MiniConstellationName {
 		return errors.New("cluster is not a MiniConstellation cluster")
 	}
 

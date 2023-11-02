@@ -16,7 +16,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -76,9 +75,8 @@ func (r *Runner) Start(ctx context.Context, name, imageName string) error {
 		// check if it is using the correct image and if it is running
 		if len(containers) == 1 {
 			// make sure the container we listed is using the correct image
-			imageBase := strings.Split(imageName, ":")[0]
-			if containers[0].Image != imageBase {
-				return fmt.Errorf("existing libvirt container %q is using a different image: expected %q, got %q", containerName, imageBase, containers[0].Image)
+			if containers[0].Image != imageName {
+				return fmt.Errorf("existing libvirt container %q is using a different image: expected %q, got %q", containerName, imageName, containers[0].Image)
 			}
 
 			// container already exists, check if its running
