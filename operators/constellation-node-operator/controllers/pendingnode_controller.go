@@ -93,7 +93,7 @@ func (r *PendingNodeReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	if done {
 		logr.Info("Reached goal", "pendingNodeGoal", pendingNode.Spec.Goal, "cspNodeState", nodeState)
-		if pendingNode.Spec.Goal == updatev1alpha1.NodeGoalLeave {
+		if pendingNode.Spec.Goal == updatev1alpha1.NodeGoalLeave || nodeState == updatev1alpha1.NodeStateTerminated {
 			// delete self after pending node has been terminated successfully
 			if err := r.deletePendingNode(ctx, req.NamespacedName); err != nil {
 				return ctrl.Result{}, err
@@ -213,13 +213,17 @@ func (r *PendingNodeReconciler) findObjectsForNode(ctx context.Context, rawNode 
 // - joining node: CSP reports the node instance as running and node has joined kubernetes cluster.
 // - leaving node: CSP reports node instance as terminated.
 func (r *PendingNodeReconciler) reachedGoal(ctx context.Context, pendingNode updatev1alpha1.PendingNode, nodeState updatev1alpha1.CSPNodeState) (bool, error) {
+	// Always return if the node is terminated so the resource can be cleaned up.
+	if nodeState == updatev1alpha1.NodeStateTerminated {
+		return true, nil
+	}
 	if pendingNode.Spec.Goal == updatev1alpha1.NodeGoalJoin {
 		if err := r.Get(ctx, types.NamespacedName{Name: pendingNode.Spec.NodeName}, &corev1.Node{}); err != nil {
 			return false, client.IgnoreNotFound(err)
 		}
 		return nodeState == updatev1alpha1.NodeStateReady, nil
 	}
-	return nodeState == updatev1alpha1.NodeStateTerminated, nil
+	return false, nil
 }
 
 // deletePendingNode deletes a PendingNode resource.
