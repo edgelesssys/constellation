@@ -158,7 +158,7 @@ func TestRecover(t *testing.T) {
 			))
 			require.NoError(fileHandler.WriteYAML(
 				constants.StateFilename,
-				defaultStateFile(),
+				defaultGCPStateFile(),
 				file.OptNone,
 			))
 

@@ -59,6 +59,18 @@ func defaultStateFile() *state.State {
 	}
 }
 
+func defaultAzureStateFile() *state.State {
+	s := defaultStateFile()
+	s.Infrastructure.GCP = nil
+	return s
+}
+
+func defaultGCPStateFile() *state.State {
+	s := defaultStateFile()
+	s.Infrastructure.Azure = nil
+	return s
+}
+
 func TestParseApplyFlags(t *testing.T) {
 	require := require.New(t)
 	defaultFlags := func() *pflag.FlagSet {

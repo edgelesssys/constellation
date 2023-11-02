@@ -9,6 +9,7 @@ package state
 import (
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -69,7 +70,7 @@ func TestPreCreateValidation(t *testing.T) {
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			err := tc.stateFile().Validate(PreCreate)
+			err := tc.stateFile().Validate(PreCreate, cloudprovider.Azure)
 			if tc.wantErr {
 				require.Error(t, err)
 				if tc.errAssertions != nil {
@@ -219,7 +220,7 @@ func TestPreInitValidation(t *testing.T) {
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			err := tc.stateFile().Validate(PreInit)
+			err := tc.stateFile().Validate(PreInit, cloudprovider.Azure)
 			if tc.wantErr {
 				require.Error(t, err)
 				if tc.errAssertions != nil {
@@ -235,6 +236,7 @@ func TestPreInitValidation(t *testing.T) {
 func TestPostInitValidation(t *testing.T) {
 	testCases := map[string]struct {
 		stateFile     func() *State
+		provider      cloudprovider.Provider
 		wantErr       bool
 		errAssertions func(a *assert.Assertions, err error)
 	}{
@@ -309,54 +311,42 @@ func TestPostInitValidation(t *testing.T) {
 				a.Contains(err.Error(), "validating State.infrastructure.name: must not be empty")
 			},
 		},
-		"gcp empty": {
+		"gcp valid": {
 			stateFile: func() *State {
-				s := defaultState()
-				s.Infrastructure.GCP = &GCP{}
+				s := defaultGCPState()
 				return s
 			},
+			provider: cloudprovider.GCP,
 		},
-		"gcp nil": {
+		"azure valid": {
 			stateFile: func() *State {
-				s := defaultState()
-				s.Infrastructure.GCP = nil
+				s := defaultAzureState()
 				return s
 			},
+			provider: cloudprovider.Azure,
 		},
-		"gcp invalid": {
+		"gcp, azure not nil": {
 			stateFile: func() *State {
 				s := defaultState()
-				s.Infrastructure.GCP.IPCidrPod = "invalid"
 				return s
 			},
-			wantErr: true,
+			provider: cloudprovider.GCP,
+			wantErr:  true,
 			errAssertions: func(a *assert.Assertions, err error) {
-				a.Contains(err.Error(), "validating State.infrastructure.gcp.ipCidrPod: invalid must be a valid CIDR")
+				a.Contains(err.Error(), "must be equal to <nil>")
+				a.Contains(err.Error(), "must be empty")
 			},
 		},
-		"azure empty": {
+		"azure, gcp not nil": {
 			stateFile: func() *State {
 				s := defaultState()
-				s.Infrastructure.Azure = &Azure{}
 				return s
 			},
-		},
-		"azure nil": {
-			stateFile: func() *State {
-				s := defaultState()
-				s.Infrastructure.Azure = nil
-				return s
-			},
-		},
-		"azure invalid": {
-			stateFile: func() *State {
-				s := defaultState()
-				s.Infrastructure.Azure.NetworkSecurityGroupName = ""
-				return s
-			},
-			wantErr: true,
+			provider: cloudprovider.Azure,
+			wantErr:  true,
 			errAssertions: func(a *assert.Assertions, err error) {
-				a.Contains(err.Error(), "validating State.infrastructure.azure.networkSecurityGroupName: must not be empty")
+				a.Contains(err.Error(), "must be equal to <nil>")
+				a.Contains(err.Error(), "must be empty")
 			},
 		},
 		"cluster values invalid": {
@@ -374,7 +364,7 @@ func TestPostInitValidation(t *testing.T) {
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			err := tc.stateFile().Validate(PostInit)
+			err := tc.stateFile().Validate(PostInit, tc.provider)
 			if tc.wantErr {
 				require.Error(t, err)
 				if tc.errAssertions != nil {

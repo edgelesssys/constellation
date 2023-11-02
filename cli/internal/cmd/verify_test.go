@@ -58,7 +58,7 @@ func TestVerify(t *testing.T) {
 			nodeEndpointFlag: "192.0.2.1:1234",
 			clusterIDFlag:    zeroBase64,
 			protoClient:      &stubVerifyClient{},
-			stateFile:        defaultStateFile,
+			stateFile:        defaultGCPStateFile,
 			wantEndpoint:     "192.0.2.1:1234",
 			formatter:        &stubAttDocFormatter{},
 		},
@@ -67,7 +67,7 @@ func TestVerify(t *testing.T) {
 			nodeEndpointFlag: "192.0.2.1:1234",
 			clusterIDFlag:    zeroBase64,
 			protoClient:      &stubVerifyClient{},
-			stateFile:        defaultStateFile,
+			stateFile:        defaultAzureStateFile,
 			wantEndpoint:     "192.0.2.1:1234",
 			formatter:        &stubAttDocFormatter{},
 		},
@@ -76,7 +76,7 @@ func TestVerify(t *testing.T) {
 			nodeEndpointFlag: "192.0.2.1",
 			clusterIDFlag:    zeroBase64,
 			protoClient:      &stubVerifyClient{},
-			stateFile:        defaultStateFile,
+			stateFile:        defaultGCPStateFile,
 			wantEndpoint:     "192.0.2.1:" + strconv.Itoa(constants.VerifyServiceNodePortGRPC),
 			formatter:        &stubAttDocFormatter{},
 		},
@@ -85,7 +85,7 @@ func TestVerify(t *testing.T) {
 			clusterIDFlag: zeroBase64,
 			protoClient:   &stubVerifyClient{},
 			stateFile: func() *state.State {
-				s := defaultStateFile()
+				s := defaultGCPStateFile()
 				s.Infrastructure.ClusterEndpoint = ""
 				return s
 			},
@@ -97,7 +97,7 @@ func TestVerify(t *testing.T) {
 			clusterIDFlag: zeroBase64,
 			protoClient:   &stubVerifyClient{},
 			stateFile: func() *state.State {
-				s := defaultStateFile()
+				s := defaultGCPStateFile()
 				s.Infrastructure.ClusterEndpoint = "192.0.2.1"
 				return s
 			},
@@ -110,7 +110,7 @@ func TestVerify(t *testing.T) {
 			clusterIDFlag:    zeroBase64,
 			protoClient:      &stubVerifyClient{},
 			stateFile: func() *state.State {
-				s := defaultStateFile()
+				s := defaultGCPStateFile()
 				s.Infrastructure.ClusterEndpoint = "192.0.2.1"
 				return s
 			},
@@ -122,7 +122,7 @@ func TestVerify(t *testing.T) {
 			nodeEndpointFlag: ":::::",
 			clusterIDFlag:    zeroBase64,
 			protoClient:      &stubVerifyClient{},
-			stateFile:        defaultStateFile,
+			stateFile:        defaultGCPStateFile,
 			formatter:        &stubAttDocFormatter{},
 			wantErr:          true,
 		},
@@ -130,7 +130,7 @@ func TestVerify(t *testing.T) {
 			provider:         cloudprovider.GCP,
 			nodeEndpointFlag: "192.0.2.1:1234",
 			stateFile: func() *state.State {
-				s := defaultStateFile()
+				s := defaultGCPStateFile()
 				s.ClusterValues.OwnerID = ""
 				s.ClusterValues.ClusterID = ""
 				return s
@@ -144,7 +144,7 @@ func TestVerify(t *testing.T) {
 			nodeEndpointFlag: "192.0.2.1:1234",
 			protoClient:      &stubVerifyClient{},
 			stateFile: func() *state.State {
-				s := defaultStateFile()
+				s := defaultGCPStateFile()
 				s.ClusterValues.OwnerID = zeroBase64
 				return s
 			},
@@ -155,7 +155,7 @@ func TestVerify(t *testing.T) {
 			provider:           cloudprovider.GCP,
 			clusterIDFlag:      zeroBase64,
 			nodeEndpointFlag:   "192.0.2.1:1234",
-			stateFile:          defaultStateFile,
+			stateFile:          defaultGCPStateFile,
 			formatter:          &stubAttDocFormatter{},
 			skipConfigCreation: true,
 			wantErr:            true,
@@ -165,7 +165,7 @@ func TestVerify(t *testing.T) {
 			nodeEndpointFlag: "192.0.2.1:1234",
 			clusterIDFlag:    zeroBase64,
 			protoClient:      &stubVerifyClient{verifyErr: rpcStatus.Error(codes.Internal, "failed")},
-			stateFile:        defaultStateFile,
+			stateFile:        defaultAzureStateFile,
 			formatter:        &stubAttDocFormatter{},
 			wantErr:          true,
 		},
@@ -174,7 +174,7 @@ func TestVerify(t *testing.T) {
 			nodeEndpointFlag: "192.0.2.1:1234",
 			clusterIDFlag:    zeroBase64,
 			protoClient:      &stubVerifyClient{verifyErr: someErr},
-			stateFile:        defaultStateFile,
+			stateFile:        defaultAzureStateFile,
 			formatter:        &stubAttDocFormatter{},
 			wantErr:          true,
 		},
@@ -183,7 +183,7 @@ func TestVerify(t *testing.T) {
 			nodeEndpointFlag: "192.0.2.1:1234",
 			clusterIDFlag:    zeroBase64,
 			protoClient:      &stubVerifyClient{},
-			stateFile:        defaultStateFile,
+			stateFile:        defaultAzureStateFile,
 			wantEndpoint:     "192.0.2.1:1234",
 			formatter:        &stubAttDocFormatter{formatErr: someErr},
 			wantErr:          true,

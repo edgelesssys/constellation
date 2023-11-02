@@ -155,7 +155,7 @@ func (c *verifyCmd) verify(cmd *cobra.Command, verifyClient verifyClient, factor
 	if err != nil {
 		return fmt.Errorf("reading state file: %w", err)
 	}
-	if err := stateFile.Validate(state.PostInit); err != nil {
+	if err := stateFile.Validate(state.PostInit, conf.GetProvider()); err != nil {
 		return fmt.Errorf("validating state file: %w", err)
 	}
 

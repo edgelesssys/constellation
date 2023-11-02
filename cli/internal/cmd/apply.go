@@ -428,12 +428,12 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 	if a.flags.skipPhases.contains(skipInitPhase) {
 		// If the skipInit flag is set, we are in a state where the cluster
 		// has already been initialized and check against the respective constraints.
-		if err := stateFile.Validate(state.PostInit); err != nil {
+		if err := stateFile.Validate(state.PostInit, conf.GetProvider()); err != nil {
 			return nil, nil, err
 		}
 	} else {
 		// The cluster has not been initialized yet, so we check against the pre-init constraints.
-		if err := stateFile.Validate(state.PreInit); err != nil {
+		if err := stateFile.Validate(state.PreInit, conf.GetProvider()); err != nil {
 			return nil, nil, err
 		}
 	}

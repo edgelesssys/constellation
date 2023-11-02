@@ -25,7 +25,7 @@ import (
 // preCreateStateFile returns a state file satisfying the pre-create state file
 // constraints.
 func preCreateStateFile() *state.State {
-	s := defaultStateFile()
+	s := defaultAzureStateFile()
 	s.ClusterValues = state.ClusterValues{}
 	s.Infrastructure = state.Infrastructure{}
 	return s

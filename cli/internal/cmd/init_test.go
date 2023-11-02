@@ -62,7 +62,7 @@ func TestInitArgumentValidation(t *testing.T) {
 // preInitStateFile returns a state file satisfying the pre-init state file
 // constraints.
 func preInitStateFile() *state.State {
-	s := defaultStateFile()
+	s := defaultAzureStateFile()
 	s.ClusterValues = state.ClusterValues{}
 	return s
 }

@@ -54,6 +54,18 @@ func defaultState() *State {
 	}
 }
 
+func defaultAzureState() *State {
+	s := defaultState()
+	s.Infrastructure.GCP = nil
+	return s
+}
+
+func defaultGCPState() *State {
+	s := defaultState()
+	s.Infrastructure.Azure = nil
+	return s
+}
+
 func TestWriteToFile(t *testing.T) {
 	testCases := map[string]struct {
 		state   *State
