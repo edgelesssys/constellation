@@ -119,6 +119,10 @@ func (r *recoverCmd) recover(
 	if err != nil {
 		return fmt.Errorf("reading state file: %w", err)
 	}
+	if err := stateFile.Validate(state.PostInit, provider); err != nil {
+		return fmt.Errorf("validating state file: %w", err)
+	}
+
 	endpoint, err := r.parseEndpoint(stateFile)
 	if err != nil {
 		return err

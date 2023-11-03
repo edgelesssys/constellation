@@ -15,7 +15,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/recoverproto"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -159,7 +158,7 @@ func TestRecover(t *testing.T) {
 			))
 			require.NoError(fileHandler.WriteYAML(
 				constants.StateFilename,
-				state.New(),
+				defaultGCPStateFile(),
 				file.OptNone,
 			))
 

@@ -419,12 +419,6 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 		return nil, nil, err
 	}
 
-	a.log.Debugf("Reading state file from %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename))
-	stateFile, err := state.ReadFromFile(a.fileHandler, constants.StateFilename)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	// Check license
 	a.log.Debugf("Running license check")
 	checker := license.NewChecker(a.quotaChecker, a.fileHandler)
@@ -515,6 +509,27 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 	// TODO(derpsteb): remove once AWS fixes SEV-SNP attestation provisioning issues
 	if !a.flags.skipPhases.contains(skipInitPhase) && conf.GetAttestationConfig().GetVariant().Equal(variant.AWSSEVSNP{}) {
 		cmd.PrintErrln("WARNING: Attestation temporarily relies on AWS nitroTPM. See https://docs.edgeless.systems/constellation/workflows/config#choosing-a-vm-type for more information.")
+	}
+
+	// Read and validate state file
+	// This needs to be done as a last step, as we need to parse all other inputs to
+	// know which phases are skipped.
+	a.log.Debugf("Reading state file from %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename))
+	stateFile, err := state.ReadFromFile(a.fileHandler, constants.StateFilename)
+	if err != nil {
+		return nil, nil, err
+	}
+	if a.flags.skipPhases.contains(skipInitPhase) {
+		// If the skipInit flag is set, we are in a state where the cluster
+		// has already been initialized and check against the respective constraints.
+		if err := stateFile.Validate(state.PostInit, conf.GetProvider()); err != nil {
+			return nil, nil, err
+		}
+	} else {
+		// The cluster has not been initialized yet, so we check against the pre-init constraints.
+		if err := stateFile.Validate(state.PreInit, conf.GetProvider()); err != nil {
+			return nil, nil, err
+		}
 	}
 
 	return conf, stateFile, nil

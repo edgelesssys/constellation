@@ -11,7 +11,19 @@ It validates documents that specify a set of constraints on their content.
 */
 package validation
 
-import "errors"
+import (
+	"errors"
+)
+
+// ErrStrategy is the strategy to use when encountering an error during validation.
+type ErrStrategy int
+
+const (
+	// EvaluateAll continues evaluating all constraints even if one is not satisfied.
+	EvaluateAll ErrStrategy = iota
+	// FailFast stops validation on the first error.
+	FailFast
+)
 
 // NewValidator creates a new Validator.
 func NewValidator() *Validator {
@@ -24,21 +36,31 @@ type Validator struct{}
 // Validatable is implemented by documents that can be validated.
 // It returns a list of constraints that must be satisfied for the document to be valid.
 type Validatable interface {
-	Constraints() []Constraint
+	Constraints() []*Constraint
 }
 
 // ValidateOptions are the options to use when validating a document.
 type ValidateOptions struct {
-	// FailFast stops validation on the first error.
-	FailFast bool
+	// ErrStrategy is the strategy to use when encountering an error during validation.
+	ErrStrategy ErrStrategy
+	// OverrideConstraints overrides the constraints to use for validation.
+	// If nil, the constraints returned by the document are used.
+	OverrideConstraints func() []*Constraint
 }
 
 // Validate validates a document using the given options.
 func (v *Validator) Validate(doc Validatable, opts ValidateOptions) error {
+	var constraints func() []*Constraint
+	if opts.OverrideConstraints != nil {
+		constraints = opts.OverrideConstraints
+	} else {
+		constraints = doc.Constraints
+	}
+
 	var retErr error
-	for _, c := range doc.Constraints() {
+	for _, c := range constraints() {
 		if err := c.Satisfied(); err != nil {
-			if opts.FailFast {
+			if opts.ErrStrategy == FailFast {
 				return err
 			}
 			retErr = errors.Join(retErr, err)

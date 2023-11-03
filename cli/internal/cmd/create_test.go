@@ -22,12 +22,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// preCreateStateFile returns a state file satisfying the pre-create state file
+// constraints.
+func preCreateStateFile() *state.State {
+	s := defaultAzureStateFile()
+	s.ClusterValues = state.ClusterValues{}
+	s.Infrastructure = state.Infrastructure{}
+	return s
+}
+
 func TestCreate(t *testing.T) {
 	fsWithDefaultConfigAndState := func(require *require.Assertions, provider cloudprovider.Provider) afero.Fs {
 		fs := afero.NewMemMapFs()
 		file := file.NewHandler(fs)
 		require.NoError(file.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), provider)))
-		stateFile := state.New()
+		stateFile := preCreateStateFile()
 		switch provider {
 		case cloudprovider.GCP:
 			stateFile.SetInfrastructure(state.Infrastructure{GCP: &state.GCP{}})

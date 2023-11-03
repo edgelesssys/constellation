@@ -19,7 +19,9 @@ import (
 	"os"
 
 	"dario.cat/mergo"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/validation"
 )
 
 const (
@@ -27,25 +29,44 @@ const (
 	Version1 = "v1"
 )
 
-// ReadFromFile reads the state file at the given path and returns the state.
+const (
+	// PreCreate are the constraints that should be enforced when the state file
+	// is validated before cloud infrastructure is created.
+	PreCreate ConstraintSet = iota
+	// PreInit are the constraints that should be enforced when the state file
+	// is validated before the first Constellation node is initialized.
+	PreInit
+	// PostInit are the constraints that should be enforced when the state file
+	// is validated after the cluster was initialized.
+	PostInit
+)
+
+// ConstraintSet defines which constraints the state file
+// should be validated against.
+type ConstraintSet int
+
+// ReadFromFile reads the state file at the given path and validates it.
+// If the state file is valid, the state is returned. Otherwise, an error
+// describing why the validation failed is returned.
 func ReadFromFile(fileHandler file.Handler, path string) (*State, error) {
 	state := &State{}
 	if err := fileHandler.ReadYAML(path, &state); err != nil {
 		return nil, fmt.Errorf("reading state file: %w", err)
 	}
+
 	return state, nil
 }
 
 // CreateOrRead reads the state file at the given path, if it exists, and returns the state.
 // If the file does not exist, a new state is created and written to disk.
 func CreateOrRead(fileHandler file.Handler, path string) (*State, error) {
-	state := &State{}
-	if err := fileHandler.ReadYAML(path, &state); err != nil {
+	state, err := ReadFromFile(fileHandler, path)
+	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
 			return nil, fmt.Errorf("reading state file: %w", err)
 		}
-		state = New()
-		return state, state.WriteToFile(fileHandler, path)
+		newState := New()
+		return newState, newState.WriteToFile(fileHandler, path)
 	}
 	return state, nil
 }
@@ -184,6 +205,349 @@ func (s *State) Merge(other *State) (*State, error) {
 		return nil, fmt.Errorf("merging state file: %w", err)
 	}
 	return s, nil
+}
+
+/*
+Validate validates the state against the given constraint set and CSP, which can be one of
+  - PreCreate, which is the constraint set that should be enforced before "constellation create" is run.
+  - PreInit, which is the constraint set that should be enforced before "constellation apply" is run.
+  - PostInit, which is the constraint set that should be enforced after "constellation apply" is run.
+*/
+func (s *State) Validate(constraintSet ConstraintSet, csp cloudprovider.Provider) error {
+	v := validation.NewValidator()
+
+	switch constraintSet {
+	case PreCreate:
+		return v.Validate(s, validation.ValidateOptions{
+			OverrideConstraints: s.preCreateConstraints,
+		})
+	case PreInit:
+		return v.Validate(s, validation.ValidateOptions{
+			OverrideConstraints: s.preInitConstraints,
+		})
+	case PostInit:
+		return v.Validate(s, validation.ValidateOptions{
+			OverrideConstraints: s.postInitConstraints(csp),
+		})
+	default:
+		return errors.New("unknown constraint set")
+	}
+}
+
+// preCreateConstraints are the constraints on the state that should be enforced
+// before a Constellation cluster is created.
+//
+// The constraints check if the state file version is valid,
+// and if all fields are empty, which is a requirement pre-create.
+func (s *State) preCreateConstraints() []*validation.Constraint {
+	return []*validation.Constraint{
+		// state version needs to be accepted by the parsing CLI.
+		validation.OneOf(s.Version, []string{Version1}).
+			WithFieldTrace(s, &s.Version),
+		// Infrastructure must be empty.
+		// As the infrastructure struct contains slices, we cannot use the
+		// Empty constraint on the entire struct. Instead, we need to check
+		// each field individually.
+		validation.Empty(s.Infrastructure.UID).
+			WithFieldTrace(s, &s.Infrastructure.UID),
+		validation.Empty(s.Infrastructure.ClusterEndpoint).
+			WithFieldTrace(s, &s.Infrastructure.ClusterEndpoint),
+		validation.Empty(s.Infrastructure.InClusterEndpoint).
+			WithFieldTrace(s, &s.Infrastructure.InClusterEndpoint),
+		validation.Empty(s.Infrastructure.Name).
+			WithFieldTrace(s, &s.Infrastructure.Name),
+		validation.Empty(s.Infrastructure.IPCidrNode).
+			WithFieldTrace(s, &s.Infrastructure.IPCidrNode),
+		validation.EmptySlice(s.Infrastructure.APIServerCertSANs).
+			WithFieldTrace(s, &s.Infrastructure.APIServerCertSANs),
+		validation.EmptySlice(s.Infrastructure.InitSecret).
+			WithFieldTrace(s, &s.Infrastructure.InitSecret),
+		// ClusterValues must be empty.
+		// As the clusterValues struct contains slices, we cannot use the
+		// Empty constraint on the entire struct. Instead, we need to check
+		// each field individually.
+		validation.Empty(s.ClusterValues.ClusterID).
+			WithFieldTrace(s, &s.ClusterValues.ClusterID),
+		validation.Empty(s.ClusterValues.OwnerID).
+			WithFieldTrace(s, &s.ClusterValues.OwnerID),
+		validation.EmptySlice(s.ClusterValues.MeasurementSalt).
+			WithFieldTrace(s, &s.ClusterValues.MeasurementSalt),
+	}
+}
+
+// preInitConstraints are the constraints on the state that should be enforced
+// *before* a Constellation cluster is initialized. (i.e. before "constellation apply" is run.)
+//
+// The constraints check if the infrastructure state is valid, and if the cluster values
+// are empty, which is required for the cluster to initialize correctly.
+func (s *State) preInitConstraints() []*validation.Constraint {
+	return []*validation.Constraint{
+		// state version needs to be accepted by the parsing CLI.
+		validation.OneOf(s.Version, []string{Version1}).
+			WithFieldTrace(s, &s.Version),
+		// infrastructure must be valid.
+		// out-of-cluster endpoint needs to be a valid DNS name or IP address.
+		validation.Or(
+			validation.DNSName(s.Infrastructure.ClusterEndpoint).
+				WithFieldTrace(s, &s.Infrastructure.ClusterEndpoint),
+			validation.IPAddress(s.Infrastructure.ClusterEndpoint).
+				WithFieldTrace(s, &s.Infrastructure.ClusterEndpoint),
+		),
+		// in-cluster endpoint needs to be a valid DNS name or IP address.
+		validation.Or(
+			validation.DNSName(s.Infrastructure.InClusterEndpoint).
+				WithFieldTrace(s, &s.Infrastructure.InClusterEndpoint),
+			validation.IPAddress(s.Infrastructure.InClusterEndpoint).
+				WithFieldTrace(s, &s.Infrastructure.InClusterEndpoint),
+		),
+		// Node IP Cidr needs to be a valid CIDR range.
+		validation.CIDR(s.Infrastructure.IPCidrNode).
+			WithFieldTrace(s, &s.Infrastructure.IPCidrNode),
+		// UID needs to be filled.
+		validation.NotEmpty(s.Infrastructure.UID).
+			WithFieldTrace(s, &s.Infrastructure.UID),
+		// Name needs to be filled.
+		validation.NotEmpty(s.Infrastructure.Name).
+			WithFieldTrace(s, &s.Infrastructure.Name),
+		// GCP values need to be nil, empty, or valid.
+		validation.Or(
+			validation.Or(
+				// nil.
+				validation.Equal(s.Infrastructure.GCP, nil).
+					WithFieldTrace(s, &s.Infrastructure.GCP),
+				// empty.
+				validation.IfNotNil(
+					s.Infrastructure.GCP,
+					func() *validation.Constraint {
+						return validation.Empty(*s.Infrastructure.GCP).
+							WithFieldTrace(s, &s.Infrastructure.GCP)
+					},
+				),
+			),
+			// valid.
+			validation.IfNotNil(
+				s.Infrastructure.GCP,
+				func() *validation.Constraint {
+					return validation.And(
+						validation.EvaluateAll,
+						// ProjectID needs to be filled.
+						validation.NotEmpty(s.Infrastructure.GCP.ProjectID).
+							WithFieldTrace(s, &s.Infrastructure.GCP.ProjectID),
+						// Pod IP Cidr needs to be a valid CIDR range.
+						validation.CIDR(s.Infrastructure.GCP.IPCidrPod).
+							WithFieldTrace(s, &s.Infrastructure.GCP.IPCidrPod),
+					)
+				},
+			),
+		),
+		// Azure values need to be nil, empty, or valid.
+		validation.Or(
+			validation.Or(
+				// nil.
+				validation.Equal(s.Infrastructure.Azure, nil).
+					WithFieldTrace(s, &s.Infrastructure.Azure),
+				// empty.
+				validation.IfNotNil(
+					s.Infrastructure.Azure,
+					func() *validation.Constraint {
+						return validation.And(
+							validation.EvaluateAll,
+							validation.Empty(s.Infrastructure.Azure.ResourceGroup).
+								WithFieldTrace(s, &s.Infrastructure.Azure.ResourceGroup),
+							validation.Empty(s.Infrastructure.Azure.SubscriptionID).
+								WithFieldTrace(s, &s.Infrastructure.Azure.SubscriptionID),
+							validation.Empty(s.Infrastructure.Azure.NetworkSecurityGroupName).
+								WithFieldTrace(s, &s.Infrastructure.Azure.NetworkSecurityGroupName),
+							validation.Empty(s.Infrastructure.Azure.LoadBalancerName).
+								WithFieldTrace(s, &s.Infrastructure.Azure.LoadBalancerName),
+							validation.Empty(s.Infrastructure.Azure.UserAssignedIdentity).
+								WithFieldTrace(s, &s.Infrastructure.Azure.UserAssignedIdentity),
+							validation.Empty(s.Infrastructure.Azure.AttestationURL).
+								WithFieldTrace(s, &s.Infrastructure.Azure.AttestationURL),
+						)
+					},
+				),
+			),
+			// valid.
+			validation.IfNotNil(
+				s.Infrastructure.Azure,
+				func() *validation.Constraint {
+					return validation.And(
+						validation.EvaluateAll,
+						validation.NotEmpty(s.Infrastructure.Azure.ResourceGroup).
+							WithFieldTrace(s, &s.Infrastructure.Azure.ResourceGroup),
+						validation.NotEmpty(s.Infrastructure.Azure.SubscriptionID).
+							WithFieldTrace(s, &s.Infrastructure.Azure.SubscriptionID),
+						validation.NotEmpty(s.Infrastructure.Azure.NetworkSecurityGroupName).
+							WithFieldTrace(s, &s.Infrastructure.Azure.NetworkSecurityGroupName),
+						validation.NotEmpty(s.Infrastructure.Azure.LoadBalancerName).
+							WithFieldTrace(s, &s.Infrastructure.Azure.LoadBalancerName),
+						validation.NotEmpty(s.Infrastructure.Azure.UserAssignedIdentity).
+							WithFieldTrace(s, &s.Infrastructure.Azure.UserAssignedIdentity),
+						validation.NotEmpty(s.Infrastructure.Azure.AttestationURL).
+							WithFieldTrace(s, &s.Infrastructure.Azure.AttestationURL),
+					)
+				},
+			),
+		),
+		// ClusterValues must be empty.
+		// As the clusterValues struct contains slices, we cannot use the
+		// Empty constraint on the entire struct. Instead, we need to check
+		// each field individually.
+		validation.Empty(s.ClusterValues.ClusterID).
+			WithFieldTrace(s, &s.ClusterValues.ClusterID),
+		validation.Empty(s.ClusterValues.OwnerID).
+			WithFieldTrace(s, &s.ClusterValues.OwnerID),
+		validation.EmptySlice(s.ClusterValues.MeasurementSalt).
+			WithFieldTrace(s, &s.ClusterValues.MeasurementSalt),
+	}
+}
+
+// postInitConstraints are the constraints on the state that should be enforced
+// *after* a Constellation cluster is initialized. (i.e. before "constellation apply" is run.)
+//
+// The constraints check if the infrastructure state and cluster state
+// is valid, so that the cluster can be used correctly.
+func (s *State) postInitConstraints(csp cloudprovider.Provider) func() []*validation.Constraint {
+	return func() []*validation.Constraint {
+		constraints := []*validation.Constraint{
+			// state version needs to be accepted by the parsing CLI.
+			validation.OneOf(s.Version, []string{Version1}).
+				WithFieldTrace(s, &s.Version),
+			// infrastructure must be valid.
+			// out-of-cluster endpoint needs to be a valid DNS name or IP address.
+			validation.Or(
+				validation.DNSName(s.Infrastructure.ClusterEndpoint).
+					WithFieldTrace(s, &s.Infrastructure.ClusterEndpoint),
+				validation.IPAddress(s.Infrastructure.ClusterEndpoint).
+					WithFieldTrace(s, &s.Infrastructure.ClusterEndpoint),
+			),
+			// in-cluster endpoint needs to be a valid DNS name or IP address.
+			validation.Or(
+				validation.DNSName(s.Infrastructure.InClusterEndpoint).
+					WithFieldTrace(s, &s.Infrastructure.InClusterEndpoint),
+				validation.IPAddress(s.Infrastructure.InClusterEndpoint).
+					WithFieldTrace(s, &s.Infrastructure.InClusterEndpoint),
+			),
+			// Node IP Cidr needs to be a valid CIDR range.
+			validation.CIDR(s.Infrastructure.IPCidrNode).
+				WithFieldTrace(s, &s.Infrastructure.IPCidrNode),
+			// UID needs to be filled.
+			validation.NotEmpty(s.Infrastructure.UID).
+				WithFieldTrace(s, &s.Infrastructure.UID),
+			// Name needs to be filled.
+			validation.NotEmpty(s.Infrastructure.Name).
+				WithFieldTrace(s, &s.Infrastructure.Name),
+			// ClusterValues need to be valid.
+			// ClusterID needs to be filled.
+			validation.NotEmpty(s.ClusterValues.ClusterID).
+				WithFieldTrace(s, &s.ClusterValues.ClusterID),
+			// OwnerID needs to be filled.
+			validation.NotEmpty(s.ClusterValues.OwnerID).
+				WithFieldTrace(s, &s.ClusterValues.OwnerID),
+			// MeasurementSalt needs to be filled.
+			validation.NotEmptySlice(s.ClusterValues.MeasurementSalt).
+				WithFieldTrace(s, &s.ClusterValues.MeasurementSalt),
+		}
+
+		switch csp {
+		case cloudprovider.Azure:
+			constraints = append(constraints,
+				// GCP values need to be nil or empty.
+				validation.Or(
+					validation.Equal(s.Infrastructure.GCP, nil).
+						WithFieldTrace(s, &s.Infrastructure.GCP),
+					validation.IfNotNil(
+						s.Infrastructure.GCP,
+						func() *validation.Constraint {
+							return validation.Empty(s.Infrastructure.GCP).
+								WithFieldTrace(s, &s.Infrastructure.GCP)
+						},
+					)),
+				// Azure values need to be valid.
+				validation.IfNotNil(
+					s.Infrastructure.Azure,
+					func() *validation.Constraint {
+						return validation.And(
+							validation.EvaluateAll,
+							validation.NotEmpty(s.Infrastructure.Azure.ResourceGroup).
+								WithFieldTrace(s, &s.Infrastructure.Azure.ResourceGroup),
+							validation.NotEmpty(s.Infrastructure.Azure.SubscriptionID).
+								WithFieldTrace(s, &s.Infrastructure.Azure.SubscriptionID),
+							validation.NotEmpty(s.Infrastructure.Azure.NetworkSecurityGroupName).
+								WithFieldTrace(s, &s.Infrastructure.Azure.NetworkSecurityGroupName),
+							validation.NotEmpty(s.Infrastructure.Azure.LoadBalancerName).
+								WithFieldTrace(s, &s.Infrastructure.Azure.LoadBalancerName),
+							validation.NotEmpty(s.Infrastructure.Azure.UserAssignedIdentity).
+								WithFieldTrace(s, &s.Infrastructure.Azure.UserAssignedIdentity),
+							validation.NotEmpty(s.Infrastructure.Azure.AttestationURL).
+								WithFieldTrace(s, &s.Infrastructure.Azure.AttestationURL),
+						)
+					},
+				),
+			)
+		case cloudprovider.GCP:
+			constraints = append(constraints,
+				// Azure values need to be nil or empty.
+				validation.Or(
+					validation.Equal(s.Infrastructure.Azure, nil).
+						WithFieldTrace(s, &s.Infrastructure.Azure),
+					validation.IfNotNil(
+						s.Infrastructure.Azure,
+						func() *validation.Constraint {
+							return validation.Empty(s.Infrastructure.Azure).
+								WithFieldTrace(s, &s.Infrastructure.Azure)
+						},
+					)),
+				// GCP values need to be valid.
+				validation.IfNotNil(
+					s.Infrastructure.GCP,
+					func() *validation.Constraint {
+						return validation.And(
+							validation.EvaluateAll,
+							// ProjectID needs to be filled.
+							validation.NotEmpty(s.Infrastructure.GCP.ProjectID).
+								WithFieldTrace(s, &s.Infrastructure.GCP.ProjectID),
+							// Pod IP Cidr needs to be a valid CIDR range.
+							validation.CIDR(s.Infrastructure.GCP.IPCidrPod).
+								WithFieldTrace(s, &s.Infrastructure.GCP.IPCidrPod),
+						)
+					},
+				),
+			)
+		default:
+			constraints = append(constraints,
+				// GCP values need to be nil or empty.
+				validation.Or(
+					validation.Equal(s.Infrastructure.GCP, nil).
+						WithFieldTrace(s, &s.Infrastructure.GCP),
+					validation.IfNotNil(
+						s.Infrastructure.GCP,
+						func() *validation.Constraint {
+							return validation.Empty(s.Infrastructure.GCP).
+								WithFieldTrace(s, &s.Infrastructure.GCP)
+						},
+					)),
+				// Azure values need to be nil or empty.
+				validation.Or(
+					validation.Equal(s.Infrastructure.Azure, nil).
+						WithFieldTrace(s, &s.Infrastructure.Azure),
+					validation.IfNotNil(
+						s.Infrastructure.Azure,
+						func() *validation.Constraint {
+							return validation.Empty(s.Infrastructure.Azure).
+								WithFieldTrace(s, &s.Infrastructure.Azure)
+						},
+					)),
+			)
+		}
+		return constraints
+	}
+}
+
+// Constraints is a no-op implementation to fulfill the "Validatable" interface.
+func (s *State) Constraints() []*validation.Constraint {
+	return []*validation.Constraint{}
 }
 
 // HexBytes is a byte slice that is marshalled to and from a hex string.

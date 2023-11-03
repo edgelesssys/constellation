@@ -13,42 +13,86 @@ import (
 	"strings"
 )
 
-// Error is returned when a document is not valid.
-type Error struct {
-	Path string
-	Err  error
+// TreeError is returned when a document is not valid.
+// It contains the path to the field that failed validation, the error
+// that occurred, as well as a list of child errors, as one constraint
+// can embed multiple other constraints, e.g. in an OR.
+type TreeError struct {
+	path     string
+	err      error
+	children []*TreeError
+}
+
+// NewErrorTree creates a new error tree from the given error.
+func NewErrorTree(err error) *TreeError {
+	return &TreeError{
+		err:      err,
+		children: []*TreeError{},
+	}
 }
 
 /*
-newError creates a new validation Error.
+newTraceError creates a new validation error, traced to a field.
 
 To find the path to the exported field that failed validation, it traverses "doc"
 recursively until it finds a field in "doc" that matches the reference to "field".
 */
-func newError(doc, field referenceableValue, errMsg error) *Error {
+func newTraceError(doc, field referenceableValue, errMsg error) *TreeError {
 	// traverse the top level struct (i.e. the "haystack") until addr (i.e. the "needle") is found
 	path, err := traverse(doc, field, newPathBuilder(doc._type.Name()))
 	if err != nil {
-		return &Error{
-			Path: "unknown",
-			Err:  fmt.Errorf("cannot find path to field: %w. original error: %w", err, errMsg),
+		return &TreeError{
+			path: "unknown",
+			err:  fmt.Errorf("cannot find path to field: %w. original error: %w", err, errMsg),
 		}
 	}
 
-	return &Error{
-		Path: path,
-		Err:  errMsg,
+	return &TreeError{
+		path:     path,
+		err:      errMsg,
+		children: []*TreeError{},
 	}
 }
 
 // Error implements the error interface.
-func (e *Error) Error() string {
-	return fmt.Sprintf("validating %s: %s", e.Path, e.Err)
+func (e *TreeError) Error() string {
+	return e.format(0)
 }
 
 // Unwrap implements the error interface.
-func (e *Error) Unwrap() error {
-	return e.Err
+func (e *TreeError) Unwrap() error {
+	return e.err
+}
+
+// format formats the error tree and all of its children.
+func (e *TreeError) format(indent int) string {
+	var sb strings.Builder
+	if e.path != "" {
+		sb.WriteString(fmt.Sprintf(
+			"%svalidating %s: %s",
+			strings.Repeat("  ", indent),
+			e.path,
+			e.err,
+		))
+	} else {
+		sb.WriteString(fmt.Sprintf(
+			"%s%s",
+			strings.Repeat("  ", indent),
+			e.err,
+		))
+	}
+	for _, child := range e.children {
+		sb.WriteString(fmt.Sprintf(
+			"\n%s",
+			child.format(indent+1),
+		))
+	}
+	return sb.String()
+}
+
+// appendChild adds the given child error to the tree.
+func (e *TreeError) appendChild(child *TreeError) {
+	e.children = append(e.children, child)
 }
 
 /*
@@ -238,9 +282,13 @@ func newPathBuilder(topLevelDoc string) pathBuilder {
 func (p pathBuilder) appendStructField(field reflect.StructField) pathBuilder {
 	switch {
 	case field.Tag.Get("json") != "":
-		p.buf = append(p.buf, fmt.Sprintf(".%s", field.Tag.Get("json")))
+		// cut off omitempty or other options
+		jsonTagName, _, _ := strings.Cut(field.Tag.Get("json"), ",")
+		p.buf = append(p.buf, fmt.Sprintf(".%s", jsonTagName))
 	case field.Tag.Get("yaml") != "":
-		p.buf = append(p.buf, fmt.Sprintf(".%s", field.Tag.Get("yaml")))
+		// cut off omitempty or other options
+		yamlTagName, _, _ := strings.Cut(field.Tag.Get("yaml"), ",")
+		p.buf = append(p.buf, fmt.Sprintf(".%s", yamlTagName))
 	default:
 		p.buf = append(p.buf, fmt.Sprintf(".%s", field.Name))
 	}
