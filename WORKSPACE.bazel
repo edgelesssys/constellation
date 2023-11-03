@@ -29,6 +29,13 @@ nixpkgs_flake_package(
 )
 
 nixpkgs_flake_package(
+    name = "bazel",
+    nix_flake_file = "//:flake.nix",
+    nix_flake_lock_file = "//:flake.lock",
+    package = "bazel_6",
+)
+
+nixpkgs_flake_package(
     name = "createrepo_c",
     nix_flake_file = "//:flake.nix",
     nix_flake_lock_file = "//:flake.lock",

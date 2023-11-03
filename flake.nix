@@ -48,6 +48,8 @@
 
       packages.awscli2 = pkgsUnstable.awscli2;
 
+      packages.bazel_6 = pkgsUnstable.bazel_6;
+
       packages.createrepo_c = pkgsUnstable.createrepo_c;
 
       packages.dnf5 = pkgsUnstable.dnf5;
