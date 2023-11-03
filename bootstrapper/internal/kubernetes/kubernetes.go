@@ -242,17 +242,6 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 		return fmt.Errorf("joining cluster: %v; %w ", string(joinConfigYAML), err)
 	}
 
-	log.Infof("Waiting for Cilium to become healthy")
-	if err := k.clusterUtil.WaitForCilium(context.Background(), log); err != nil {
-		return fmt.Errorf("waiting for Cilium to become healthy: %w", err)
-	}
-
-	log.Infof("Restarting Cilium")
-	if err := k.clusterUtil.FixCilium(context.Background()); err != nil {
-		log.With(zap.Error(err)).Errorf("FixCilium failed")
-		// Continue and don't throw an error here - things might be okay.
-	}
-
 	return nil
 }
 
@@ -307,20 +296,9 @@ func k8sCompliantHostname(in string) (string, error) {
 }
 
 // StartKubelet starts the kubelet service.
-func (k *KubeWrapper) StartKubelet(log *logger.Logger) error {
+func (k *KubeWrapper) StartKubelet() error {
 	if err := k.clusterUtil.StartKubelet(); err != nil {
 		return fmt.Errorf("starting kubelet: %w", err)
-	}
-
-	log.Infof("Waiting for Cilium to become healthy")
-	if err := k.clusterUtil.WaitForCilium(context.Background(), log); err != nil {
-		return fmt.Errorf("waiting for Cilium to become healthy: %w", err)
-	}
-
-	log.Infof("Restarting Cilium")
-	if err := k.clusterUtil.FixCilium(context.Background()); err != nil {
-		log.With(zap.Error(err)).Errorf("FixCilium failed")
-		// Continue and don't throw an error here - things might be okay.
 	}
 
 	return nil

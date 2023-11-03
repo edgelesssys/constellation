@@ -479,14 +479,6 @@ func (s *stubClusterUtil) StartKubelet() error {
 	return s.startKubeletErr
 }
 
-func (s *stubClusterUtil) WaitForCilium(_ context.Context, _ *logger.Logger) error {
-	return nil
-}
-
-func (s *stubClusterUtil) FixCilium(_ context.Context) error {
-	return nil
-}
-
 type stubConfigProvider struct {
 	initConfig k8sapi.KubeadmInitYAML
 	joinConfig k8sapi.KubeadmJoinYAML
