@@ -23,7 +23,7 @@ on:
 
 jobs:
   test-unittest:
-    runs-on: [self-hosted, bazel-cached]
+    runs-on: [arc-runner-set]
     permissions:
       id-token: write
       contents: read
@@ -34,6 +34,13 @@ jobs:
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
           fetch-depth: 0
+
+      - name: Setup bazel
+        uses: ./.github/actions/setup_bazel_nix
+        with:
+          useCache: "rbe"
+          rbePlatform: "ubuntu-22.04"
+          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
 
       - name: Install AWS cli
         run: |
@@ -48,21 +55,15 @@ jobs:
           role-to-assume: arn:aws:iam::795746500882:role/GithubActionGocoverage
           aws-region: eu-central-1
 
-      - name: Setup bazel
-        uses: ./.github/actions/setup_bazel_nix
-        with:
-          useCache: "true"
-          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
-
       - name: Unit Tests
         env:
           TMPDIR: ${{ runner.temp }}
-        run: bazel test //... --test_output=errors --config=nostamp
+        run: bazel test //... --test_output=errors --config=nostamp --remote_download_minimal
 
       - name: Coverage
         id: coverage
         run: |
-          bazel run //bazel/ci:gocoverage_diff
+          bazel run //bazel/ci:gocoverage_diff --config=nostamp
           lines=$(wc -l < coverage_diff.md)
           uploadable=$([[ ${lines} -gt 3 ]] && echo "true" || echo "false")
           echo "uploadable=$uploadable" | tee -a "$GITHUB_OUTPUT"

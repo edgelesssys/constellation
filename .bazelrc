@@ -47,7 +47,6 @@ common:remote_cache --bes_backend=grpcs://remote.buildbuddy.io
 common:remote_cache --remote_cache=grpcs://remote.buildbuddy.io
 common:remote_cache --remote_timeout=3600
 common:remote_cache --experimental_remote_build_event_upload=minimal
-common:remote_cache --experimental_remote_cache_compression
 common:remote_cache --nolegacy_important_outputs
 common:remote_cache_readonly --noremote_upload_local_results # Uploads logs & artifacts without writing to cache
 

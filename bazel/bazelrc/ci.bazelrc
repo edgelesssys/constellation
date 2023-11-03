@@ -77,6 +77,4 @@ common --bes_timeout=600s
 
 # options to limit the amount of data uploaded/downloaded to/from the remote cache
 common --experimental_remote_build_event_upload=minimal
-common --experimental_remote_cache_compression
 common --nolegacy_important_outputs
-common --noremote_upload_local_results
