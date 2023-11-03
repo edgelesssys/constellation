@@ -6,11 +6,6 @@ import %workspace%/bazel/bazelrc/debug.bazelrc
 import %workspace%/bazel/bazelrc/performance.bazelrc
 import %workspace%/bazel/bazelrc/cc.bazelrc
 
-# share bazel cache between checkouts of the same project
-# and keep old build caches around for longer
-common --disk_cache=~/.cache/shared_bazel_action_cache
-common --repository_cache=~/.cache/shared_bazel_repository_cache
-
 # inject version information into binaries
 common --stamp --workspace_status_command=tools/workspace_status.sh
 
