@@ -1,0 +1,88 @@
+name: e2e test internal LB
+
+on:
+  workflow_dispatch:
+    inputs:
+      nodeCount:
+        description: "Number of nodes to use in the cluster. Given in format `<control-plane nodes>:<worker nodes>`."
+        default: "3:2"
+        type: string
+      cloudProvider:
+        description: "Which cloud provider to use."
+        type: choice
+        options:
+          - "gcp"
+          - "azure"
+          - "aws"
+        default: "azure"
+        required: true
+      runner:
+        description: "Architecture of the runner that executes the CLI"
+        type: choice
+        options:
+          - "ubuntu-22.04"
+          - "macos-12"
+        default: "ubuntu-22.04"
+      test:
+        description: "The test to run."
+        type: choice
+        options:
+          - "sonobuoy quick"
+          - "sonobuoy full"
+          - "autoscaling"
+          - "lb"
+          - "perf-bench"
+          - "verify"
+          - "recover"
+          - "malicious join"
+          - "nop"
+        required: true
+      kubernetesVersion:
+        description: "Kubernetes version to create the cluster from."
+        default: "1.27"
+        required: true
+      cliVersion:
+        description: "Version of a released CLI to download. Leave empty to build the CLI from the checked out ref."
+        type: string
+        default: ""
+        required: false
+      imageVersion:
+        description: "Full name of OS image (CSP independent image version UID). Leave empty for latest debug image on main."
+        type: string
+        default: ""
+        required: false
+      machineType:
+        description: "Override VM machine type. Leave as 'default' or empty to use the default VM type for the selected cloud provider."
+        type: string
+        default: "default"
+        required: false
+      regionZone:
+        description: "Region or zone to create the cluster in. Leave empty for default region/zone."
+        type: string
+      git-ref:
+        description: "Git ref to checkout."
+        type: string
+        default: "head"
+        required: false
+
+jobs:
+  e2e-test:
+    permissions:
+      id-token: write
+      checks: write
+      contents: read
+      packages: write
+    secrets: inherit
+    uses: ./.github/workflows/e2e-test.yml
+    with:
+      nodeCount: ${{ inputs.nodeCount }}
+      cloudProvider: ${{ inputs.cloudProvider }}
+      runner: ${{ inputs.runner }}
+      test: ${{ inputs.test }}
+      kubernetesVersion: ${{ inputs.kubernetesVersion }}
+      cliVersion: ${{ inputs.cliVersion }}
+      imageVersion: ${{ inputs.imageVersion }}
+      machineType: ${{ inputs.machineType }}
+      regionZone: ${{ inputs.regionZone }}
+      git-ref: ${{ inputs.git-ref }}
+      internalLoadBalancer: true
