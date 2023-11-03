@@ -256,4 +256,3 @@ moved {
   from = module.load_balancer_target_bootstrapper
   to   = module.load_balancer_targets["bootstrapper"]
 }
-

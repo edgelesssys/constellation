@@ -7,21 +7,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 package terraform
 
 import (
-	"embed"
 	"errors"
 	"io/fs"
 	slashpath "path"
 	"path/filepath"
 	"strings"
 
+	"github.com/edgelesssys/constellation/v2/terraform"
+
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
 )
-
-//go:embed terraform/*
-//go:embed terraform/*/.terraform.lock.hcl
-//go:embed terraform/iam/*/.terraform.lock.hcl
-var terraformFS embed.FS
 
 // prepareWorkspace loads the embedded Terraform files,
 // and writes them into the workspace.
@@ -32,7 +28,7 @@ func prepareWorkspace(rootDir string, fileHandler file.Handler, workingDir strin
 // terraformCopier copies the embedded Terraform files into the workspace.
 func terraformCopier(fileHandler file.Handler, rootDir, workingDir string) error {
 	goEmbedRootDir := filepath.ToSlash(rootDir)
-	return fs.WalkDir(terraformFS, goEmbedRootDir, func(path string, d fs.DirEntry, err error) error {
+	return fs.WalkDir(terraform.Assets, goEmbedRootDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -41,7 +37,7 @@ func terraformCopier(fileHandler file.Handler, rootDir, workingDir string) error
 		}
 
 		goEmbedPath := filepath.ToSlash(path)
-		content, err := terraformFS.ReadFile(goEmbedPath)
+		content, err := terraform.Assets.ReadFile(goEmbedPath)
 		if err != nil {
 			return err
 		}
