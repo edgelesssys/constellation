@@ -11,10 +11,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
@@ -133,34 +131,7 @@ func (a actionFactory) appendNewAction(release Release, configTargetVersion semv
 
 func (a actionFactory) newInstall(release Release) *installAction {
 	action := &installAction{helmAction: newHelmInstallAction(a.cfg, release), release: release, log: a.log}
-	if action.ReleaseName() == ciliumInfo.releaseName {
-		action.postInstall = func(ctx context.Context) error {
-			return ciliumPostInstall(ctx, a.log)
-		}
-	}
 	return action
-}
-
-func ciliumPostInstall(ctx context.Context, log debugLog) error {
-	log.Debugf("Waiting for Cilium to become ready")
-	helper, err := newK8sCiliumHelper(constants.AdminConfFilename)
-	if err != nil {
-		return fmt.Errorf("creating Kubernetes client: %w", err)
-	}
-	timeToStartWaiting := time.Now()
-	// TODO(3u13r): Reduce the timeout when we switched the package repository - this is only this high because we once
-	// saw polling times of ~16 minutes when hitting a slow PoP from Fastly (GitHub's / ghcr.io CDN).
-	if err := helper.WaitForDS(ctx, "kube-system", "cilium", log); err != nil {
-		return fmt.Errorf("waiting for Cilium to become healthy: %w", err)
-	}
-	timeUntilFinishedWaiting := time.Since(timeToStartWaiting)
-	log.Debugf("Cilium became healthy after %s", timeUntilFinishedWaiting.String())
-
-	log.Debugf("Fix Cilium through restart")
-	if err := helper.RestartDS("kube-system", "cilium"); err != nil {
-		return fmt.Errorf("restarting Cilium: %w", err)
-	}
-	return nil
 }
 
 func (a actionFactory) newUpgrade(release Release) *upgradeAction {

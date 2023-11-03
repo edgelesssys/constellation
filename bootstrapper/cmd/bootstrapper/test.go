@@ -33,7 +33,7 @@ func (c *clusterFake) JoinCluster(context.Context, *kubeadm.BootstrapTokenDiscov
 }
 
 // StartKubelet starts the kubelet service.
-func (c *clusterFake) StartKubelet(*logger.Logger) error {
+func (c *clusterFake) StartKubelet() error {
 	return nil
 }
 
