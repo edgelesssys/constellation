@@ -728,7 +728,7 @@ func (c *Config) Validate(force bool) error {
 		return err
 	}
 
-	if err := validate.RegisterTranslation("valid_name", trans, registerValidateNameError, c.translateValidateNameError); err != nil {
+	if err := validate.RegisterTranslation("valid_name", trans, c.registerValidateNameError, c.translateValidateNameError); err != nil {
 		return err
 	}
 

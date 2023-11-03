@@ -711,8 +711,11 @@ func returnsTrue(_ validator.FieldLevel) bool {
 	return true
 }
 
-func registerValidateNameError(ut ut.Translator) error {
-	return ut.Add("validate_name", "{0} must be no more than {1} characters long / contain only lowercase letters on AWS", true)
+func (c *Config) registerValidateNameError(ut ut.Translator) error {
+	if c.Provider.AWS != nil {
+		return ut.Add("validate_name", "{0} must be no more than {1} characters long and contain only lowercase letters", true)
+	}
+	return ut.Add("validate_name", "{0} must be no more than {1} characters long", true)
 }
 
 func (c *Config) translateValidateNameError(ut ut.Translator, fe validator.FieldError) string {
