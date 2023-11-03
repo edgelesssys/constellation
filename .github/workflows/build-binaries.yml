@@ -19,7 +19,7 @@ on:
 
 jobs:
   build-binaries:
-    runs-on: [self-hosted, bazel-cached]
+    runs-on: [arc-runner-set]
     steps:
       - name: Checkout
         uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
@@ -29,7 +29,8 @@ jobs:
       - name: Setup bazel
         uses: ./.github/actions/setup_bazel_nix
         with:
-          useCache: "true"
+          useCache: "rbe"
+          rbePlatform: "ubuntu-22.04"
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
 
       - name: Build all
@@ -44,6 +45,7 @@ jobs:
 
         run: |
           bazel build \
+            --remote_download_minimal \
             "${bootstrapper}" \
             "${debugd}" \
             "${cdbg}" \
