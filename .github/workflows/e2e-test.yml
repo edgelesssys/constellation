@@ -285,9 +285,3 @@ jobs:
           cloudProvider: ${{ inputs.cloudProvider }}
           azureCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
           gcpServiceAccount: "constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"
-
-      - name: Always upload Terraform logs
-        if: always()
-        uses: ./.github/actions/upload_terraform_logs
-        with:
-          artifactNameSuffix: ${{ steps.e2e_test.outputs.namePrefix }}

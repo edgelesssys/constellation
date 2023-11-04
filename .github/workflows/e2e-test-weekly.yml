@@ -283,12 +283,6 @@ jobs:
           provider: ${{ matrix.provider }}
           selfManagedInfra: ${{ matrix.selfManagedInfra == 'true' }}
 
-      - name: Always upload Terraform logs
-        if: always()
-        uses: ./.github/actions/upload_terraform_logs
-        with:
-          artifactNameSuffix: ${{ steps.e2e_test.outputs.namePrefix }}
-
   e2e-upgrade:
     strategy:
       fail-fast: false
