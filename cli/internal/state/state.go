@@ -268,8 +268,10 @@ func (s *State) preCreateConstraints() []*validation.Constraint {
 		// each field individually.
 		validation.Empty(s.ClusterValues.ClusterID).
 			WithFieldTrace(s, &s.ClusterValues.ClusterID),
-		validation.Empty(s.ClusterValues.OwnerID).
-			WithFieldTrace(s, &s.ClusterValues.OwnerID),
+		// ownerID is currently unused as functionality is not implemented
+		// Therefore, we don't want to validate it
+		// validation.Empty(s.ClusterValues.OwnerID).
+		//	WithFieldTrace(s, &s.ClusterValues.OwnerID),
 		validation.EmptySlice(s.ClusterValues.MeasurementSalt).
 			WithFieldTrace(s, &s.ClusterValues.MeasurementSalt),
 	}
@@ -396,8 +398,10 @@ func (s *State) preInitConstraints() []*validation.Constraint {
 		// each field individually.
 		validation.Empty(s.ClusterValues.ClusterID).
 			WithFieldTrace(s, &s.ClusterValues.ClusterID),
-		validation.Empty(s.ClusterValues.OwnerID).
-			WithFieldTrace(s, &s.ClusterValues.OwnerID),
+		// ownerID is currently unused as functionality is not implemented
+		// Therefore, we don't want to validate it
+		// validation.Empty(s.ClusterValues.OwnerID).
+		//	WithFieldTrace(s, &s.ClusterValues.OwnerID),
 		validation.EmptySlice(s.ClusterValues.MeasurementSalt).
 			WithFieldTrace(s, &s.ClusterValues.MeasurementSalt),
 	}
@@ -442,9 +446,10 @@ func (s *State) postInitConstraints(csp cloudprovider.Provider) func() []*valida
 			// ClusterID needs to be filled.
 			validation.NotEmpty(s.ClusterValues.ClusterID).
 				WithFieldTrace(s, &s.ClusterValues.ClusterID),
-			// OwnerID needs to be filled.
-			validation.NotEmpty(s.ClusterValues.OwnerID).
-				WithFieldTrace(s, &s.ClusterValues.OwnerID),
+			// ownerID is currently unused as functionality is not implemented
+			// Therefore, we don't want to validate it
+			// validation.NotEmpty(s.ClusterValues.OwnerID).
+			//	WithFieldTrace(s, &s.ClusterValues.OwnerID),
 			// MeasurementSalt needs to be filled.
 			validation.NotEmptySlice(s.ClusterValues.MeasurementSalt).
 				WithFieldTrace(s, &s.ClusterValues.MeasurementSalt),
