@@ -34,9 +34,10 @@ runs:
           [ \"/malicious-join_bin\", \
           \"--js-endpoint=join-service.kube-system:9090\", \
           \"--csp=${{ inputs.cloudProvider }}\", \
-          \"--variant=default\" ]" job.yaml
+          \"--variant=default\" ]" stamped_job.yaml
+
         kubectl create ns malicious-join
-        kubectl apply -n malicious-join -f job.yaml
+        kubectl apply -n malicious-join -f stamped_job.yaml
         kubectl wait -n malicious-join --for=condition=complete --timeout=10m job/malicious-join
         kubectl logs -n malicious-join job/malicious-join | tail -n 1 | jq '.'
         ALL_TESTS_PASSED=$(kubectl logs -n malicious-join job/malicious-join | tail -n 1 | jq -r '.result.allPassed')

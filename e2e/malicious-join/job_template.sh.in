@@ -22,5 +22,5 @@ else
   workdir="$1"
 fi
 
-echo "Stamping job deployment with $REPO_TAG"
-$yq eval '.spec.template.spec.containers[0].image |= "ghcr.io/edgelesssys/malicious-join-test:" + load_str(strenv(REPO_TAG))' "$template" > "$workdir/stamped_job.yaml"
+echo "Stamping job deployment with $(cat "${REPO_TAG}")"
+$yq eval ".spec.template.spec.containers[0].image = \"$(cat "${REPO_TAG}")\"" "$template" > "$workdir/stamped_job.yaml"
