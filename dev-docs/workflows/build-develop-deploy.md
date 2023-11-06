@@ -55,7 +55,7 @@ To provision the constellation cluster on the provider infrastructure, please au
 E.g. AWS:
 
 ```sh
-aws login
+aws configure
 ```
 
 For more details, see [here](https://docs.edgeless.systems/constellation/getting-started/install#set-up-cloud-credentials).
