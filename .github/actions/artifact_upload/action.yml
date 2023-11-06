@@ -18,7 +18,7 @@ runs:
     - name: Create archive
       run: |
         if ${{ inputs.recursive }}; \
-        then zip -e -P ${{ secrets.LOG_ENCRYPT_PASSWD }} -qq -r archive.zip ${{ inputs.files }}
+        then zip -e -P ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }} -qq -r archive.zip ${{ inputs.files }}
     - name: Upload archive as artifact
       uses: actions/upload-artifact@v3
       with:
