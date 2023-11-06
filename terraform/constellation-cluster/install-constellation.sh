@@ -1,33 +1,31 @@
 #!/usr/bin/env bash
-if [[ -f ./constellation ]]; then
+if [[ -f ./constellation ]]; then # needed to allow using devbuilds
   echo "constellation CLI is already available."
   exit 0
 fi
-
-echo "Fetching constellation ${VERSION}"
-OS=$(uname -s)
-ARCH=$(uname -m)
-VERSION="latest"
-URL=""
-
-if [[ ${OS} == "Darwin" ]]; then
-  if [[ ${ARCH} == "arm64" ]]; then
-    URL="https://github.com/edgelesssys/constellation/releases/${VERSION}/download/constellation-darwin-arm64"
-  elif [[ ${ARCH} == "x86_64" ]]; then
-    URL="https://github.com/edgelesssys/constellation/releases/${VERSION}/download/constellation-darwin-amd64"
+version="v2.13.0"
+os=$(uname -s)
+arch=$(uname -m)
+url=""
+if [[ ${os} == "Darwin" ]]; then
+  if [[ ${arch} == "arm64" ]]; then
+    url="https://github.com/edgelesssys/constellation/releases/download/${version}/constellation-darwin-arm64"
+  elif [[ ${arch} == "x86_64" ]]; then
+    url="https://github.com/edgelesssys/constellation/releases/download/${version}/constellation-darwin-amd64"
   fi
-elif [[ ${OS} == "Linux" ]]; then
-  if [[ ${ARCH} == "x86_64" ]]; then
-    URL="https://github.com/edgelesssys/constellation/releases/${VERSION}/download/constellation-linux-amd64"
-  elif [[ ${ARCH} == "arm64" ]]; then
-    URL="https://github.com/edgelesssys/constellation/releases/${VERSION}/download/constellation-linux-arm64"
+elif [[ ${os} == "Linux" ]]; then
+  if [[ ${arch} == "x86_64" ]]; then
+    url="https://github.com/edgelesssys/constellation/releases/download/${version}/constellation-linux-amd64"
+  elif [[ ${arch} == "arm64" ]]; then
+    url="https://github.com/edgelesssys/constellation/releases/download/${version}/constellation-linux-arm64"
   fi
 fi
 
-if [[ -z ${URL} ]]; then
-  echo "OS \"${OS}\" and/or architecture \"${ARCH}\" is not supported."
+echo "Fetching constellation ${version}"
+if [[ -z ${url} ]]; then
+  echo "OS \"${os}\" and/or architecture \"${arch}\" is not supported."
   exit 1
 else
-  curl -o constellation -L "${URL}"
+  curl -o constellation -L "${url}"
   chmod +x constellation
 fi

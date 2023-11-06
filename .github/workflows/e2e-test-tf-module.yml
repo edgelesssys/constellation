@@ -175,6 +175,7 @@ jobs:
           terraform apply -var-file=terraform.tfvars  -auto-approve
 
       - name: Destroy Terraform Cluster
+        # outcome is part of the steps context (https://docs.github.com/en/actions/learn-github-actions/contexts#steps-context)
         if: always() && steps.apply_terraform.outcome != 'skipped'
         working-directory: ./terraform-module/${{ inputs.cloudProvider }}-constellation
         run: |
