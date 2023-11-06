@@ -9,7 +9,7 @@ inputs:
   recursive:
     description: 'Recursively add everything in given directories.'
     required: false
-    default: false
+    default: true
 runs:
   using: "composite"
   steps:
