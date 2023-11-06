@@ -9,43 +9,17 @@ Subsequently you can initialize your cluster with `constellation apply` as usual
 
 ## Build cdbg
 
-```shell
-mkdir -p build
-cmake ..
-make cdbg
+The `cdbg` tool is part of the `//:devbuild` target, if you follow the generic build instructions at [build-develop-deploy](../dev-docs/workflows/build-develop-deploy.md).
+
+If you need to build `cdbg` standalone for your current platform, you can run
+
+```sh
+bazel build //debugd/cmd/cdbg:cdbg_host
 ```
 
 ## debugd & cdbg usage
 
-Before continuing, remember to [set up](https://docs.edgeless.systems/constellation/getting-started/install#set-up-cloud-credentials) your cloud credentials for the CLI to work.
-
-With `cdbg` and `yq` installed in your path:
-
-1. Run `constellation config generate` to create a new default configuration
-
-2. Locate the latest debugd images by running `(cd internal/api/versionsapi/cli && go build -o versionsapi . && ./versionsapi latest --ref main --stream debug)`
-
-3. Modify the `constellation-conf.yaml` to use an image with the debugd already included and add required firewall rules:
-
-   ```shell-session
-   # Set full reference of cloud provider image name
-   export IMAGE_URI=
-   ```
-
-   ```shell-session
-   yq -i \
-       ".image = \"${IMAGE_URI}\" | \
-       .debugCluster = true" \
-       constellation-conf.yaml
-   ```
-
-4. Run `constellation create […]`
-
-5. Run `./cdbg deploy`
-
-   By default, `cdbg` searches for the bootstrapper in the current path (`./bootstrapper`). You can define a custom path by appending the argument `--bootstrapper <path to bootstrapper>` to `cdbg deploy`.
-
-6. Run `constellation apply […]` as usual
+Follow the [debug-cluster workflow](../dev-docs/workflows/debug-cluster.md) to deploy a bootstrapper with `cdbg` and `debugd`.
 
 ### Logcollection to Opensearch
 
