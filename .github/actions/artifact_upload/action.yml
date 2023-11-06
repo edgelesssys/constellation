@@ -16,6 +16,7 @@ runs:
     - name: Install zip
       uses: montudor/action-zip@v1
     - name: Create archive
+      shell: bash
       run: |
         if ${{ inputs.recursive }} \
         then \
