@@ -1,0 +1,13 @@
+name: Test artifact actions
+on: workflow_dispatch
+jobs:
+  test-upload:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+    - name: Push artifact
+      uses: .github/actions/artifact_upload
+      with:
+        path: .github/actions/artifact_upload
+        name: test-artifact
