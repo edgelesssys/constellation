@@ -7,7 +7,7 @@ jobs:
     - name: Checkout repo
       uses: actions/checkout@v4
     - name: Push artifact
-      uses: .github/actions/artifact_upload
+      uses: ./.github/actions/artifact_upload
       with:
-        path: ./.github/actions/artifact_upload
+        path: .github/actions/artifact_upload
         name: test-artifact
