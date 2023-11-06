@@ -21,13 +21,8 @@ go_binary(
     ],
     embed = [":cmd_lib"],
     # keep
-    # TODO(malt3): The commented out env variable
-    # means we are using `systemd-dissect` from the host.
-    # `systemd-dissect` from nixpkgs breaks GitHub actions runners
-    # for unknown reasons.
-    # Fix this.
-    # env = {
-    #     "DISSECT_TOOLCHAIN": "$(rootpath @systemd//:bin/systemd-dissect)",
-    # },
+    env = {
+        "DISSECT_TOOLCHAIN": "$(rootpath @systemd//:bin/systemd-dissect)",
+    },
     visibility = ["//visibility:public"],
 )

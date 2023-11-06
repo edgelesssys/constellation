@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	ukiPath = "/efi/EFI/BOOT/BOOTX64.EFI"
+	ukiPath = "/boot/EFI/BOOT/BOOTX64.EFI"
 )
 
 func precalculatePCRs(fs afero.Fs, dissectToolchain, imageFile string) (*measure.Simulator, error) {
