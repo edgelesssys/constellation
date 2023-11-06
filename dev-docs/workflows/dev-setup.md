@@ -37,7 +37,7 @@ Additionally, we use the [Redhat YAML formatter](https://marketplace.visualstudi
 * ShellCheck (timonwong.shellcheck): Shell script linter
 * vscode-proto3 (zxh404.vscode-proto3): Protobuf language support
 * Code Spell Checker (streetsidesoftware.code-spell-checker): Highlights potential spelling mistakes
-* Helm Intellisense: (Tim-Koehler.helm-intellisense): Syntax highlighting and more for Helm charts
+* Helm Intellisense: (Tim-Koehler.helm-intellisense): Syntax highlighting and more for Helm charts (not available on [Open VSX Registry](https://open-vsx.org/))
 * YAML (redhat.vscode-yaml): YAML language support. (Does not work with Helm charts)
 * markdownlint (DavidAnson.vscode-markdownlint): Markdown linter
 
