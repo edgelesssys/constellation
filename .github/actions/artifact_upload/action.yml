@@ -2,10 +2,14 @@ name: Upload artifact
 description: Upload an encrypted zip archive as a github artifact.
 inputs:
   path:
-    description: 'The path(s) that should be uploaded'
+    description: 'The path(s) that should be uploaded.'
     required: true
   name:
     description: 'The name of the artifact.'
+    required: true
+  encryption-secret:
+    description: 'The secret to use for encrypting the files.'
+    required: true
   recursive:
     description: 'Recursively add everything in given directories.'
     required: false
@@ -20,9 +24,9 @@ runs:
       run: |
         if ${{ inputs.recursive }} \
         then \
-          zip -e -P ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }} -qq -r archive.zip ${{ inputs.path }} \
+          zip -e -P ${{ inputs.encryption-secret }} -qq -r archive.zip ${{ inputs.path }} \
         else \
-          zip -e -P ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }} -qq archive.zip ${{ inputs.path }} \
+          zip -e -P ${{ inputs.encryption-secret }} -qq archive.zip ${{ inputs.path }} \
         fi
     - name: Upload archive as artifact
       uses: actions/upload-artifact@v3
