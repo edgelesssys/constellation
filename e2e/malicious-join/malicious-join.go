@@ -20,10 +20,14 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/joinservice/joinproto"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
 func main() {
+	log := logger.New(logger.JSONLog, zapcore.DebugLevel)
+	defer log.Sync()
+
 	jsEndpoint := flag.String("js-endpoint", "", "Join service endpoint to use.")
 	csp := flag.String("csp", "", "Cloud service provider to use.")
 	attVariant := flag.String(
@@ -33,10 +37,14 @@ func main() {
 			"or one of: %s", variant.GetAvailableAttestationVariants()),
 	)
 	flag.Parse()
-	fmt.Println(formatFlags(*attVariant, *csp, *jsEndpoint))
+	log.With(
+		zap.String("js-endpoint", *jsEndpoint),
+		zap.String("csp", *csp),
+		zap.String("variant", *attVariant),
+	).Infof("Running tests with flags")
 
 	testCases := map[string]struct {
-		fn      func(attVariant, csp, jsEndpoint string) error
+		fn      func(attVariant, csp, jsEndpoint string, log *logger.Logger) error
 		wantErr bool
 	}{
 		"JoinFromUnattestedNode": {
@@ -50,48 +58,44 @@ func main() {
 		TestCases: make(map[string]testCaseOutput),
 	}
 	for name, tc := range testCases {
-		fmt.Printf("Running testcase %s\n", name)
+		log.With(zap.String("testcase", name)).Infof("Running testcase")
 
-		err := tc.fn(*attVariant, *csp, *jsEndpoint)
+		err := tc.fn(*attVariant, *csp, *jsEndpoint, log)
 
 		switch {
 		case err == nil && tc.wantErr:
-			fmt.Printf("Test case %s failed: Expected error but got none\n", name)
+			log.With(zap.Error(err), zap.String("testcase", name)).Errorf("Test case failed: Expected error but got none")
 			testOutput.TestCases[name] = testCaseOutput{
 				Passed:  false,
 				Message: "Expected error but got none",
 			}
 			allPassed = false
 		case !tc.wantErr && err != nil:
-			fmt.Printf("Test case %s failed: Got unexpected error: %s\n", name, err)
+			log.With(zap.Error(err), zap.String("testcase", name)).Errorf("Test case failed: Got unexpected error")
 			testOutput.TestCases[name] = testCaseOutput{
 				Passed:  false,
 				Message: fmt.Sprintf("Got unexpected error: %s", err),
 			}
 			allPassed = false
 		case tc.wantErr && err != nil:
-			fmt.Printf("Test case %s succeeded\n", name)
+			log.With(zap.String("testcase", name)).Infof("Test case succeeded")
 			testOutput.TestCases[name] = testCaseOutput{
 				Passed:  true,
 				Message: fmt.Sprintf("Got expected error: %s", err),
 			}
 		case !tc.wantErr && err == nil:
-			fmt.Printf("Test case %s succeeded\n", name)
+			log.With(zap.String("testcase", name)).Infof("Test case succeeded")
 			testOutput.TestCases[name] = testCaseOutput{
 				Passed:  true,
 				Message: "No error, as expected",
 			}
 		default:
-			panic("invalid result")
+			log.With(zap.String("testcase", name)).Fatalf("invalid result")
 		}
 	}
 
 	testOutput.AllPassed = allPassed
-	out, err := json.Marshal(testOutput)
-	if err != nil {
-		panic(fmt.Sprintf("marshalling test output: %s", err))
-	}
-	fmt.Println(string(out))
+	log.With(zap.Any("result", testOutput)).Infof("Test completed")
 }
 
 type testOutput struct {
@@ -104,19 +108,9 @@ type testCaseOutput struct {
 	Message string `json:"message"`
 }
 
-func formatFlags(attVariant, csp, jsEndpoint string) string {
-	var sb strings.Builder
-	sb.WriteString("Using Flags:\n")
-	sb.WriteString(fmt.Sprintf("\tjs-endpoint: %s\n", jsEndpoint))
-	sb.WriteString(fmt.Sprintf("\tcsp: %s\n", csp))
-	sb.WriteString(fmt.Sprintf("\tvariant: %s\n", attVariant))
-	return sb.String()
-}
-
 // JoinFromUnattestedNode simulates a join request from a Node that uses a stub issuer
 // and thus cannot be attested correctly.
-func JoinFromUnattestedNode(attVariant, csp, jsEndpoint string) error {
-	log := logger.New(logger.JSONLog, zapcore.DebugLevel)
+func JoinFromUnattestedNode(attVariant, csp, jsEndpoint string, log *logger.Logger) error {
 	joiner, err := newMaliciousJoiner(attVariant, csp, jsEndpoint, log)
 	if err != nil {
 		return fmt.Errorf("creating malicious joiner: %w", err)
