@@ -76,6 +76,9 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.head_ref }}
 
+      - name: Upload Terraform module
+        uses: ./.github/actions/upload_terraform_module
+
       - name: Setup bazel
         uses: ./.github/actions/setup_bazel_nix
         with:
@@ -178,6 +181,11 @@ jobs:
         with:
           name: constellation.spdx.sbom
 
+      - name: Download Terraform module
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        with:
+          name: terraform-module
+
       - name: Generate provenance subjects
         id: provenance-subjects
         run: |
@@ -187,7 +195,8 @@ jobs:
             constellation-linux-amd64 \
             constellation-linux-arm64 \
             constellation-windows-amd64.exe \
-            constellation.spdx.sbom)
+            constellation.spdx.sbom \
+            terraform-module.zip)
           HASHESB64=$(echo "${HASHES}" | base64 -w0)
           echo "${HASHES}"
           echo "${HASHESB64}"
@@ -300,6 +309,11 @@ jobs:
         with:
           name: constellation.spdx.sbom
 
+      - name: Download Terraform module
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        with:
+          name: terraform-module
+
       - name: Download provenance
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
@@ -328,6 +342,9 @@ jobs:
             --provenance-path ${{ needs.provenance.outputs.provenance-name }} \
             --source-uri github.com/edgelesssys/constellation
           slsa-verifier verify-artifact constellation.spdx.sbom \
+            --provenance-path ${{ needs.provenance.outputs.provenance-name }} \
+            --source-uri github.com/edgelesssys/constellation
+          slsa-verifier verify-artifact terraform-module.zip \
             --provenance-path ${{ needs.provenance.outputs.provenance-name }} \
             --source-uri github.com/edgelesssys/constellation
 
@@ -385,6 +402,11 @@ jobs:
         with:
           name: ${{ needs.provenance.outputs.provenance-name }}
 
+      - name: Download Terraform module
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        with:
+          name: terraform-module
+
       - name: Rename provenance file
         run: |
           mv ${{ needs.provenance.outputs.provenance-name }} constellation.intoto.jsonl
@@ -402,3 +424,4 @@ jobs:
             constellation.spdx.sbom
             constellation.spdx.sbom.sig
             constellation.intoto.jsonl
+            terraform-module.zip
