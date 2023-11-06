@@ -11,3 +11,5 @@ jobs:
       with:
         path: .github/actions/artifact_upload
         name: test-artifact
+      secrets:
+        ARTIFACT_ENCRYPT_PASSWD: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
