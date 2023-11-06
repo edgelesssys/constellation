@@ -9,5 +9,5 @@ jobs:
     - name: Push artifact
       uses: .github/actions/artifact_upload
       with:
-        path: .github/actions/artifact_upload
+        path: ./.github/actions/artifact_upload
         name: test-artifact
