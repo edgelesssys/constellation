@@ -18,6 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/google/go-sev-guest/kds"
+	"github.com/google/go-sev-guest/verify/trust"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -113,7 +114,7 @@ func TestParseVCEK(t *testing.T) {
 				ReportSigner: tc.VCEK,
 			}
 
-			vcek, err := instanceInfo.ParseVCEK()
+			vcek, err := instanceInfo.ParseReportSigner()
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
@@ -124,10 +125,13 @@ func TestParseVCEK(t *testing.T) {
 	}
 }
 
-// TestInstanceInfoAttestation tests the basic unmarshalling of the attestation report and the ASK / ARK precedence.
-func TestInstanceInfoAttestation(t *testing.T) {
+// TestAttestationWithCerts tests the basic unmarshalling of the attestation report and the ASK / ARK precedence.
+func TestAttestationWithCerts(t *testing.T) {
 	defaultReport := testdata.AttestationReport
+	vlekReport, err := hex.DecodeString(testdata.AttestationReportVLEK)
+	require.NoError(t, err)
 	testdataArk, testdataAsk := mustCertChainToPem(t, testdata.CertChain)
+	testdataArvk, testdataAsvk := mustCertChainToPem(t, testdata.VlekCertChain)
 	exampleCert := &x509.Certificate{
 		Raw: []byte{1, 2, 3},
 	}
@@ -135,7 +139,8 @@ func TestInstanceInfoAttestation(t *testing.T) {
 
 	testCases := map[string]struct {
 		report        []byte
-		vcek          []byte
+		idkeydigest   string
+		reportSigner  []byte
 		certChain     []byte
 		fallbackCerts CertificateChain
 		getter        *stubHTTPSGetter
@@ -144,15 +149,33 @@ func TestInstanceInfoAttestation(t *testing.T) {
 		wantErr       bool
 	}{
 		"success": {
-			report:      defaultReport,
-			vcek:        testdata.AzureThimVCEK,
-			certChain:   testdata.CertChain,
-			expectedArk: testdataArk,
-			expectedAsk: testdataAsk,
+			report:       defaultReport,
+			idkeydigest:  "57e229e0ffe5fa92d0faddff6cae0e61c926fc9ef9afd20a8b8cfcf7129db9338cbe5bf3f6987733a2bf65d06dc38fc1",
+			reportSigner: testdata.AzureThimVCEK,
+			certChain:    testdata.CertChain,
+			expectedArk:  testdataArk,
+			expectedAsk:  testdataAsk,
+		},
+		"vlek success": {
+			report:       vlekReport,
+			idkeydigest:  "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+			reportSigner: testdata.Vlek,
+			expectedArk:  testdataArvk,
+			expectedAsk:  testdataAsvk,
+			getter: newStubHTTPSGetter(
+				&urlResponseMatcher{
+					certChainResponse:    testdata.VlekCertChain,
+					vcekResponse:         testdata.Vlek,
+					wantCertChainRequest: true,
+					wantVcekRequest:      true,
+				},
+				nil,
+			),
 		},
 		"retrieve vcek": {
-			report:    defaultReport,
-			certChain: testdata.CertChain,
+			report:      defaultReport,
+			idkeydigest: "57e229e0ffe5fa92d0faddff6cae0e61c926fc9ef9afd20a8b8cfcf7129db9338cbe5bf3f6987733a2bf65d06dc38fc1",
+			certChain:   testdata.CertChain,
 			getter: newStubHTTPSGetter(
 				&urlResponseMatcher{
 					vcekResponse:    testdata.AmdKdsVCEK,
@@ -164,8 +187,9 @@ func TestInstanceInfoAttestation(t *testing.T) {
 			expectedAsk: testdataAsk,
 		},
 		"retrieve certchain": {
-			report: defaultReport,
-			vcek:   testdata.AzureThimVCEK,
+			report:       defaultReport,
+			idkeydigest:  "57e229e0ffe5fa92d0faddff6cae0e61c926fc9ef9afd20a8b8cfcf7129db9338cbe5bf3f6987733a2bf65d06dc38fc1",
+			reportSigner: testdata.AzureThimVCEK,
 			getter: newStubHTTPSGetter(
 				&urlResponseMatcher{
 					certChainResponse:    testdata.CertChain,
@@ -178,7 +202,8 @@ func TestInstanceInfoAttestation(t *testing.T) {
 		},
 		"use fallback certs": {
 			report:        defaultReport,
-			vcek:          testdata.AzureThimVCEK,
+			idkeydigest:   "57e229e0ffe5fa92d0faddff6cae0e61c926fc9ef9afd20a8b8cfcf7129db9338cbe5bf3f6987733a2bf65d06dc38fc1",
+			reportSigner:  testdata.AzureThimVCEK,
 			fallbackCerts: NewCertificateChain(exampleCert, exampleCert),
 			getter: newStubHTTPSGetter(
 				&urlResponseMatcher{},
@@ -189,8 +214,9 @@ func TestInstanceInfoAttestation(t *testing.T) {
 		},
 		"use certchain with fallback certs": {
 			report:        defaultReport,
+			idkeydigest:   "57e229e0ffe5fa92d0faddff6cae0e61c926fc9ef9afd20a8b8cfcf7129db9338cbe5bf3f6987733a2bf65d06dc38fc1",
 			certChain:     testdata.CertChain,
-			vcek:          testdata.AzureThimVCEK,
+			reportSigner:  testdata.AzureThimVCEK,
 			fallbackCerts: NewCertificateChain(&x509.Certificate{}, &x509.Certificate{}),
 			getter: newStubHTTPSGetter(
 				&urlResponseMatcher{},
@@ -200,7 +226,8 @@ func TestInstanceInfoAttestation(t *testing.T) {
 			expectedAsk: testdataAsk,
 		},
 		"retrieve vcek and certchain": {
-			report: defaultReport,
+			report:      defaultReport,
+			idkeydigest: "57e229e0ffe5fa92d0faddff6cae0e61c926fc9ef9afd20a8b8cfcf7129db9338cbe5bf3f6987733a2bf65d06dc38fc1",
 			getter: newStubHTTPSGetter(
 				&urlResponseMatcher{
 					certChainResponse:    testdata.CertChain,
@@ -235,10 +262,11 @@ func TestInstanceInfoAttestation(t *testing.T) {
 			instanceInfo := InstanceInfo{
 				AttestationReport: tc.report,
 				CertChain:         tc.certChain,
-				ReportSigner:      tc.vcek,
+				ReportSigner:      tc.reportSigner,
 			}
 
-			att, err := instanceInfo.AttestationWithCerts(logger.NewTest(t), tc.getter, tc.fallbackCerts)
+			defer trust.ClearProductCertCache()
+			att, err := instanceInfo.AttestationWithCerts(tc.getter, tc.fallbackCerts, logger.NewTest(t))
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
@@ -247,7 +275,7 @@ func TestInstanceInfoAttestation(t *testing.T) {
 				assert.NotNil(att.CertificateChain)
 				assert.NotNil(att.Report)
 
-				assert.Equal(hex.EncodeToString(att.Report.IdKeyDigest[:]), "57e229e0ffe5fa92d0faddff6cae0e61c926fc9ef9afd20a8b8cfcf7129db9338cbe5bf3f6987733a2bf65d06dc38fc1")
+				assert.Equal(tc.idkeydigest, hex.EncodeToString(att.Report.IdKeyDigest[:]))
 
 				// This is a canary for us: If this fails in the future we possibly downgraded a SVN.
 				// See https://github.com/google/go-sev-guest/blob/14ac50e9ffcc05cd1d12247b710c65093beedb58/validate/validate.go#L336 for decomposition of the values.
@@ -299,12 +327,12 @@ type urlResponseMatcher struct {
 
 func (m *urlResponseMatcher) match(url string) ([]byte, error) {
 	switch {
-	case url == "https://kdsintf.amd.com/vcek/v1/Milan/cert_chain":
+	case regexp.MustCompile(`https:\/\/kdsintf.amd.com\/(vcek|vlek)\/v1\/Milan\/cert_chain`).MatchString(url):
 		if !m.wantCertChainRequest {
 			return nil, fmt.Errorf("unexpected cert_chain request")
 		}
 		return m.certChainResponse, nil
-	case regexp.MustCompile(`https:\/\/kdsintf.amd.com\/vcek\/v1\/Milan\/.*`).MatchString(url):
+	case regexp.MustCompile(`https:\/\/kdsintf.amd.com\/(vcek|vlek)\/v1\/Milan\/.*`).MatchString(url):
 		if !m.wantVcekRequest {
 			return nil, fmt.Errorf("unexpected VCEK request")
 		}

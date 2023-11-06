@@ -113,7 +113,7 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 		return nil, fmt.Errorf("unmarshalling instanceInfo: %w", err)
 	}
 
-	att, err := instanceInfo.AttestationWithCerts(v.log, v.getter, cachedCerts)
+	att, err := instanceInfo.AttestationWithCerts(v.getter, cachedCerts, v.log)
 	if err != nil {
 		return nil, fmt.Errorf("parsing attestation report: %w", err)
 	}

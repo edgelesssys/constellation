@@ -21,12 +21,12 @@ var (
 	AttestationConfigDoc               encoder.Doc
 	NodeGroupDoc                       encoder.Doc
 	UnsupportedAppRegistrationErrorDoc encoder.Doc
-	AWSSEVSNPDoc                       encoder.Doc
-	AWSNitroTPMDoc                     encoder.Doc
 	SNPFirmwareSignerConfigDoc         encoder.Doc
 	GCPSEVESDoc                        encoder.Doc
 	QEMUVTPMDoc                        encoder.Doc
 	QEMUTDXDoc                         encoder.Doc
+	AWSSEVSNPDoc                       encoder.Doc
+	AWSNitroTPMDoc                     encoder.Doc
 	AzureSEVSNPDoc                     encoder.Doc
 	AzureTrustedLaunchDoc              encoder.Doc
 )
@@ -480,38 +480,6 @@ func init() {
 	UnsupportedAppRegistrationErrorDoc.Description = "UnsupportedAppRegistrationError is returned when the config contains configuration related to now unsupported app registrations."
 	UnsupportedAppRegistrationErrorDoc.Fields = make([]encoder.Doc, 0)
 
-	AWSSEVSNPDoc.Type = "AWSSEVSNP"
-	AWSSEVSNPDoc.Comments[encoder.LineComment] = "AWSSEVSNP is the configuration for AWS SEV-SNP attestation."
-	AWSSEVSNPDoc.Description = "AWSSEVSNP is the configuration for AWS SEV-SNP attestation."
-	AWSSEVSNPDoc.AppearsIn = []encoder.Appearance{
-		{
-			TypeName:  "AttestationConfig",
-			FieldName: "awsSEVSNP",
-		},
-	}
-	AWSSEVSNPDoc.Fields = make([]encoder.Doc, 1)
-	AWSSEVSNPDoc.Fields[0].Name = "measurements"
-	AWSSEVSNPDoc.Fields[0].Type = "M"
-	AWSSEVSNPDoc.Fields[0].Note = ""
-	AWSSEVSNPDoc.Fields[0].Description = "Expected TPM measurements."
-	AWSSEVSNPDoc.Fields[0].Comments[encoder.LineComment] = "Expected TPM measurements."
-
-	AWSNitroTPMDoc.Type = "AWSNitroTPM"
-	AWSNitroTPMDoc.Comments[encoder.LineComment] = "AWSNitroTPM is the configuration for AWS Nitro TPM attestation."
-	AWSNitroTPMDoc.Description = "AWSNitroTPM is the configuration for AWS Nitro TPM attestation."
-	AWSNitroTPMDoc.AppearsIn = []encoder.Appearance{
-		{
-			TypeName:  "AttestationConfig",
-			FieldName: "awsNitroTPM",
-		},
-	}
-	AWSNitroTPMDoc.Fields = make([]encoder.Doc, 1)
-	AWSNitroTPMDoc.Fields[0].Name = "measurements"
-	AWSNitroTPMDoc.Fields[0].Type = "M"
-	AWSNitroTPMDoc.Fields[0].Note = ""
-	AWSNitroTPMDoc.Fields[0].Description = "Expected TPM measurements."
-	AWSNitroTPMDoc.Fields[0].Comments[encoder.LineComment] = "Expected TPM measurements."
-
 	SNPFirmwareSignerConfigDoc.Type = "SNPFirmwareSignerConfig"
 	SNPFirmwareSignerConfigDoc.Comments[encoder.LineComment] = "SNPFirmwareSignerConfig is the configuration for validating the firmware signer."
 	SNPFirmwareSignerConfigDoc.Description = "SNPFirmwareSignerConfig is the configuration for validating the firmware signer."
@@ -585,6 +553,68 @@ func init() {
 	QEMUTDXDoc.Fields[0].Note = ""
 	QEMUTDXDoc.Fields[0].Description = "Expected TDX measurements."
 	QEMUTDXDoc.Fields[0].Comments[encoder.LineComment] = "Expected TDX measurements."
+
+	AWSSEVSNPDoc.Type = "AWSSEVSNP"
+	AWSSEVSNPDoc.Comments[encoder.LineComment] = "AWSSEVSNP is the configuration for AWS SEV-SNP attestation."
+	AWSSEVSNPDoc.Description = "AWSSEVSNP is the configuration for AWS SEV-SNP attestation."
+	AWSSEVSNPDoc.AppearsIn = []encoder.Appearance{
+		{
+			TypeName:  "AttestationConfig",
+			FieldName: "awsSEVSNP",
+		},
+	}
+	AWSSEVSNPDoc.Fields = make([]encoder.Doc, 7)
+	AWSSEVSNPDoc.Fields[0].Name = "measurements"
+	AWSSEVSNPDoc.Fields[0].Type = "M"
+	AWSSEVSNPDoc.Fields[0].Note = ""
+	AWSSEVSNPDoc.Fields[0].Description = "Expected TPM measurements."
+	AWSSEVSNPDoc.Fields[0].Comments[encoder.LineComment] = "Expected TPM measurements."
+	AWSSEVSNPDoc.Fields[1].Name = "bootloaderVersion"
+	AWSSEVSNPDoc.Fields[1].Type = "AttestationVersion"
+	AWSSEVSNPDoc.Fields[1].Note = ""
+	AWSSEVSNPDoc.Fields[1].Description = "Lowest acceptable bootloader version."
+	AWSSEVSNPDoc.Fields[1].Comments[encoder.LineComment] = "Lowest acceptable bootloader version."
+	AWSSEVSNPDoc.Fields[2].Name = "teeVersion"
+	AWSSEVSNPDoc.Fields[2].Type = "AttestationVersion"
+	AWSSEVSNPDoc.Fields[2].Note = ""
+	AWSSEVSNPDoc.Fields[2].Description = "Lowest acceptable TEE version."
+	AWSSEVSNPDoc.Fields[2].Comments[encoder.LineComment] = "Lowest acceptable TEE version."
+	AWSSEVSNPDoc.Fields[3].Name = "snpVersion"
+	AWSSEVSNPDoc.Fields[3].Type = "AttestationVersion"
+	AWSSEVSNPDoc.Fields[3].Note = ""
+	AWSSEVSNPDoc.Fields[3].Description = "Lowest acceptable SEV-SNP version."
+	AWSSEVSNPDoc.Fields[3].Comments[encoder.LineComment] = "Lowest acceptable SEV-SNP version."
+	AWSSEVSNPDoc.Fields[4].Name = "microcodeVersion"
+	AWSSEVSNPDoc.Fields[4].Type = "AttestationVersion"
+	AWSSEVSNPDoc.Fields[4].Note = ""
+	AWSSEVSNPDoc.Fields[4].Description = "Lowest acceptable microcode version."
+	AWSSEVSNPDoc.Fields[4].Comments[encoder.LineComment] = "Lowest acceptable microcode version."
+	AWSSEVSNPDoc.Fields[5].Name = "amdRootKey"
+	AWSSEVSNPDoc.Fields[5].Type = "Certificate"
+	AWSSEVSNPDoc.Fields[5].Note = ""
+	AWSSEVSNPDoc.Fields[5].Description = "AMD Root Key certificate used to verify the SEV-SNP certificate chain."
+	AWSSEVSNPDoc.Fields[5].Comments[encoder.LineComment] = "AMD Root Key certificate used to verify the SEV-SNP certificate chain."
+	AWSSEVSNPDoc.Fields[6].Name = "amdSigningKey"
+	AWSSEVSNPDoc.Fields[6].Type = "Certificate"
+	AWSSEVSNPDoc.Fields[6].Note = ""
+	AWSSEVSNPDoc.Fields[6].Description = "AMD Signing Key certificate used to verify the SEV-SNP VCEK / VLEK certificate."
+	AWSSEVSNPDoc.Fields[6].Comments[encoder.LineComment] = "AMD Signing Key certificate used to verify the SEV-SNP VCEK / VLEK certificate."
+
+	AWSNitroTPMDoc.Type = "AWSNitroTPM"
+	AWSNitroTPMDoc.Comments[encoder.LineComment] = "AWSNitroTPM is the configuration for AWS Nitro TPM attestation."
+	AWSNitroTPMDoc.Description = "AWSNitroTPM is the configuration for AWS Nitro TPM attestation."
+	AWSNitroTPMDoc.AppearsIn = []encoder.Appearance{
+		{
+			TypeName:  "AttestationConfig",
+			FieldName: "awsNitroTPM",
+		},
+	}
+	AWSNitroTPMDoc.Fields = make([]encoder.Doc, 1)
+	AWSNitroTPMDoc.Fields[0].Name = "measurements"
+	AWSNitroTPMDoc.Fields[0].Type = "M"
+	AWSNitroTPMDoc.Fields[0].Note = ""
+	AWSNitroTPMDoc.Fields[0].Description = "Expected TPM measurements."
+	AWSNitroTPMDoc.Fields[0].Comments[encoder.LineComment] = "Expected TPM measurements."
 
 	AzureSEVSNPDoc.Type = "AzureSEVSNP"
 	AzureSEVSNPDoc.Comments[encoder.LineComment] = "AzureSEVSNP is the configuration for Azure SEV-SNP attestation."
@@ -694,14 +724,6 @@ func (_ UnsupportedAppRegistrationError) Doc() *encoder.Doc {
 	return &UnsupportedAppRegistrationErrorDoc
 }
 
-func (_ AWSSEVSNP) Doc() *encoder.Doc {
-	return &AWSSEVSNPDoc
-}
-
-func (_ AWSNitroTPM) Doc() *encoder.Doc {
-	return &AWSNitroTPMDoc
-}
-
 func (_ SNPFirmwareSignerConfig) Doc() *encoder.Doc {
 	return &SNPFirmwareSignerConfigDoc
 }
@@ -716,6 +738,14 @@ func (_ QEMUVTPM) Doc() *encoder.Doc {
 
 func (_ QEMUTDX) Doc() *encoder.Doc {
 	return &QEMUTDXDoc
+}
+
+func (_ AWSSEVSNP) Doc() *encoder.Doc {
+	return &AWSSEVSNPDoc
+}
+
+func (_ AWSNitroTPM) Doc() *encoder.Doc {
+	return &AWSNitroTPMDoc
 }
 
 func (_ AzureSEVSNP) Doc() *encoder.Doc {
@@ -742,12 +772,12 @@ func GetConfigurationDoc() *encoder.FileDoc {
 			&AttestationConfigDoc,
 			&NodeGroupDoc,
 			&UnsupportedAppRegistrationErrorDoc,
-			&AWSSEVSNPDoc,
-			&AWSNitroTPMDoc,
 			&SNPFirmwareSignerConfigDoc,
 			&GCPSEVESDoc,
 			&QEMUVTPMDoc,
 			&QEMUTDXDoc,
+			&AWSSEVSNPDoc,
+			&AWSNitroTPMDoc,
 			&AzureSEVSNPDoc,
 			&AzureTrustedLaunchDoc,
 		},
