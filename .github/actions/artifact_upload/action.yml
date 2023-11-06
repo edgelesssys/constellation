@@ -1,8 +1,8 @@
 name: Upload artifact
 description: Upload an encrypted zip archive as a github artifact.
 inputs:
-  files:
-    description: 'The files and directories that should be uploaded'
+  path:
+    description: 'The path(s) that should be uploaded'
     required: true
   name:
     description: 'The name of the artifact.'
@@ -17,8 +17,12 @@ runs:
       uses: montudor/action-zip@v1
     - name: Create archive
       run: |
-        if ${{ inputs.recursive }}; \
-        then zip -e -P ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }} -qq -r archive.zip ${{ inputs.files }}
+        if ${{ inputs.recursive }} \
+        then \
+          zip -e -P ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }} -qq -r archive.zip ${{ inputs.path }} \
+        else \
+          zip -e -P ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }} -qq archive.zip ${{ inputs.path }} \
+        fi
     - name: Upload archive as artifact
       uses: actions/upload-artifact@v3
       with:
