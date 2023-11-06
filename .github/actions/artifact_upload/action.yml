@@ -22,11 +22,11 @@ runs:
     - name: Create archive
       shell: bash
       run: |
-        if ${{ inputs.recursive }} \
-        then \
-          zip -e -P ${{ inputs.encryption-secret }} -qq -r archive.zip ${{ inputs.path }} \
-        else \
-          zip -e -P ${{ inputs.encryption-secret }} -qq archive.zip ${{ inputs.path }} \
+        if ${{ inputs.recursive }}
+        then
+          zip -e -P ${{ inputs.encryption-secret }} -qq -r archive.zip ${{ inputs.path }}
+        else
+          zip -e -P ${{ inputs.encryption-secret }} -qq archive.zip ${{ inputs.path }}
         fi
     - name: Upload archive as artifact
       uses: actions/upload-artifact@v3
