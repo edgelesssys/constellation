@@ -5,6 +5,7 @@ The following are instructions for building all components in the constellation 
 Prerequisites:
 
 * 20GB (minimum), better 40 GB disk space (required if you want to cross compile for all platforms)
+* 16GB of unutilized RAM for a full Bazel build.
 * [Latest version of Go](https://go.dev/doc/install).
 * Unless you use Nix / NixOS: [Bazelisk installed as `bazel` in your path](https://github.com/bazelbuild/bazelisk/releases).
 * We require Nix to be installed. It is recommended to install nix using the [determinate systems installer](https://github.com/DeterminateSystems/nix-installer) (or to use NixOS as host system).
