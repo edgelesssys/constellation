@@ -4,14 +4,10 @@ go_library(
     name = "testdata",
     srcs = ["testdata.go"],
     embedsrcs = [
-        "attestation.bin",
-        "vcek.cert",
         "certchain.pem",
-        "runtimedata.bin",
-        "vcek.pem",
         "vlek.pem",
-        "vlekcertchain.pem",
+        "report.txt",
     ],
-    importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/snp/testdata",
+    importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/aws/snp/testdata",
     visibility = ["//:__subpackages__"],
 )

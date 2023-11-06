@@ -46,22 +46,26 @@ func NewClient(log *logger.Logger, kubeClient kubeClient, attVariant variant.Var
 // and returns the cached certificates, if applicable.
 // If the certificate chain cache already exists, nothing is done.
 func (c *Client) CreateCertChainCache(ctx context.Context) (*CachedCerts, error) {
+	var reportSigner abi.ReportSigner
 	switch c.attVariant {
 	case variant.AzureSEVSNP{}:
-		c.log.Debugf("Creating Azure SEV-SNP certificate chain cache")
-		ask, ark, err := c.createCertChainCache(ctx, abi.VcekReportSigner)
-		if err != nil {
-			return nil, fmt.Errorf("creating Azure SEV-SNP certificate chain cache: %w", err)
-		}
-		return &CachedCerts{
-			ask: ask,
-			ark: ark,
-		}, nil
-	// TODO(derpsteb): Add AWS
+		reportSigner = abi.VcekReportSigner
+	case variant.AWSSEVSNP{}:
+		reportSigner = abi.VlekReportSigner
 	default:
 		c.log.Debugf("No certificate chain caching possible for attestation variant %s", c.attVariant)
 		return nil, nil
 	}
+
+	c.log.Debugf("Creating %s certificate chain cache", c.attVariant)
+	ask, ark, err := c.createCertChainCache(ctx, reportSigner)
+	if err != nil {
+		return nil, fmt.Errorf("creating %s certificate chain cache: %w", c.attVariant, err)
+	}
+	return &CachedCerts{
+		ask: ask,
+		ark: ark,
+	}, nil
 }
 
 // CachedCerts contains the cached certificates.

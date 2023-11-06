@@ -6,6 +6,7 @@ go_library(
     srcs = [
         "attestation.go",
         "attestationversion.go",
+        "aws.go",
         "azure.go",
         "config.go",
         "config_doc.go",

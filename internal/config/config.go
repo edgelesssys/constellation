@@ -382,7 +382,7 @@ func Default() *Config {
 		// AWS uses aws-nitro-tpm as attestation variant
 		// AWS will have aws-sev-snp as attestation variant
 		Attestation: AttestationConfig{
-			AWSSEVSNP:          &AWSSEVSNP{Measurements: measurements.DefaultsFor(cloudprovider.AWS, variant.AWSSEVSNP{})},
+			AWSSEVSNP:          DefaultForAWSSEVSNP(),
 			AWSNitroTPM:        &AWSNitroTPM{Measurements: measurements.DefaultsFor(cloudprovider.AWS, variant.AWSNitroTPM{})},
 			AzureSEVSNP:        DefaultForAzureSEVSNP(),
 			AzureTrustedLaunch: &AzureTrustedLaunch{Measurements: measurements.DefaultsFor(cloudprovider.Azure, variant.AzureTrustedLaunch{})},
@@ -915,80 +915,6 @@ func (c *Config) setCSPNodeGroupDefaults(csp cloudprovider.Provider) {
 	}
 }
 
-// AWSSEVSNP is the configuration for AWS SEV-SNP attestation.
-type AWSSEVSNP struct {
-	// description: |
-	//   Expected TPM measurements.
-	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
-	// TODO (derpsteb): reenable launchMeasurement once SNP is fixed on AWS.
-	// description: |
-	//   Expected launch measurement in SNP report.
-	// LaunchMeasurement measurements.Measurement `json:"launchMeasurement" yaml:"launchMeasurement" validate:"required"`
-}
-
-// GetVariant returns aws-sev-snp as the variant.
-func (AWSSEVSNP) GetVariant() variant.Variant {
-	return variant.AWSSEVSNP{}
-}
-
-// GetMeasurements returns the measurements used for attestation.
-func (c AWSSEVSNP) GetMeasurements() measurements.M {
-	return c.Measurements
-}
-
-// SetMeasurements updates a config's measurements using the given measurements.
-func (c *AWSSEVSNP) SetMeasurements(m measurements.M) {
-	c.Measurements = m
-}
-
-// EqualTo returns true if the config is equal to the given config.
-func (c AWSSEVSNP) EqualTo(other AttestationCfg) (bool, error) {
-	otherCfg, ok := other.(*AWSSEVSNP)
-	if !ok {
-		return false, fmt.Errorf("cannot compare %T with %T", c, other)
-	}
-	// TODO(derpsteb): reenable launchMeasurement once SNP is fixed on AWS.
-	// if !bytes.Equal(c.LaunchMeasurement.Expected, otherCfg.LaunchMeasurement.Expected) {
-	// 	return false, nil
-	// }
-	// if c.LaunchMeasurement.ValidationOpt != otherCfg.LaunchMeasurement.ValidationOpt {
-	// 	return false, nil
-	// }
-
-	return c.Measurements.EqualTo(otherCfg.Measurements), nil
-}
-
-// AWSNitroTPM is the configuration for AWS Nitro TPM attestation.
-type AWSNitroTPM struct {
-	// description: |
-	//   Expected TPM measurements.
-	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
-}
-
-// GetVariant returns aws-nitro-tpm as the variant.
-func (AWSNitroTPM) GetVariant() variant.Variant {
-	return variant.AWSNitroTPM{}
-}
-
-// GetMeasurements returns the measurements used for attestation.
-func (c AWSNitroTPM) GetMeasurements() measurements.M {
-	return c.Measurements
-}
-
-// SetMeasurements updates a config's measurements using the given measurements.
-func (c *AWSNitroTPM) SetMeasurements(m measurements.M) {
-	c.Measurements = m
-}
-
-// EqualTo returns true if the config is equal to the given config.
-func (c AWSNitroTPM) EqualTo(other AttestationCfg) (bool, error) {
-	otherCfg, ok := other.(*AWSNitroTPM)
-	if !ok {
-		return false, fmt.Errorf("cannot compare %T with %T", c, other)
-	}
-	return c.Measurements.EqualTo(otherCfg.Measurements), nil
-}
-
 // SNPFirmwareSignerConfig is the configuration for validating the firmware signer.
 type SNPFirmwareSignerConfig struct {
 	// description: |
@@ -1102,6 +1028,38 @@ func (c QEMUTDX) EqualTo(other AttestationCfg) (bool, error) {
 		return false, fmt.Errorf("cannot compare %T with %T", c, other)
 	}
 	return c.Measurements.EqualTo(otherCfg.Measurements), nil
+}
+
+// AWSSEVSNP is the configuration for AWS SEV-SNP attestation.
+type AWSSEVSNP struct {
+	// description: |
+	//   Expected TPM measurements.
+	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
+	// description: |
+	//   Lowest acceptable bootloader version.
+	BootloaderVersion AttestationVersion `json:"bootloaderVersion" yaml:"bootloaderVersion"`
+	// description: |
+	//   Lowest acceptable TEE version.
+	TEEVersion AttestationVersion `json:"teeVersion" yaml:"teeVersion"`
+	// description: |
+	//   Lowest acceptable SEV-SNP version.
+	SNPVersion AttestationVersion `json:"snpVersion" yaml:"snpVersion"`
+	// description: |
+	//   Lowest acceptable microcode version.
+	MicrocodeVersion AttestationVersion `json:"microcodeVersion" yaml:"microcodeVersion"`
+	// description: |
+	//   AMD Root Key certificate used to verify the SEV-SNP certificate chain.
+	AMDRootKey Certificate `json:"amdRootKey" yaml:"amdRootKey"`
+	// description: |
+	//   AMD Signing Key certificate used to verify the SEV-SNP VCEK / VLEK certificate.
+	AMDSigningKey Certificate `json:"amdSigningKey,omitempty" yaml:"amdSigningKey,omitempty" validate:"len=0"`
+}
+
+// AWSNitroTPM is the configuration for AWS Nitro TPM attestation.
+type AWSNitroTPM struct {
+	// description: |
+	//   Expected TPM measurements.
+	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
 }
 
 // AzureSEVSNP is the configuration for Azure SEV-SNP attestation.

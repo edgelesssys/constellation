@@ -24,8 +24,7 @@ import (
 
 // InstanceInfo contains the necessary information to establish trust in a SNP CVM.
 type InstanceInfo struct {
-	// ReportSigner is the PEM-encoded ReportSigner/VLEK certificate for the attestation report.
-	// Public key that validates the report's signature.
+	// ReportSigner is the PEM-encoded certificate used to validate the attestation report's signature.
 	ReportSigner []byte
 	// CertChain is the PEM-encoded certificate chain for the attestation report (ASK+ARK).
 	// Intermediate key that validates the ReportSigner and root key.
@@ -44,13 +43,56 @@ type AzureInstanceInfo struct {
 	MAAToken string
 }
 
+// addReportSigner parses the reportSigner certificate (VCEK/VLEK) from a and adds it to the attestation proto att.
+// If reportSigner is empty and a VLEK is required, an error is returned.
+// If reportSigner is empty and a VCEK is required, the VCEK is retrieved from AMD KDS.
+func (a *InstanceInfo) addReportSigner(att *spb.Attestation, report *spb.Report, productName string, getter trust.HTTPSGetter, logger attestation.Logger) (abi.ReportSigner, error) {
+	// If the VCEK certificate is present, parse it and format it.
+	reportSigner, err := a.ParseReportSigner()
+	if err != nil {
+		logger.Warnf("Error parsing report signer: %v", err)
+	}
+
+	signerInfo, err := abi.ParseSignerInfo(report.GetSignerInfo())
+	if err != nil {
+		return abi.NoneReportSigner, fmt.Errorf("parsing signer info: %w", err)
+	}
+
+	switch signerInfo.SigningKey {
+	case abi.VlekReportSigner:
+		if reportSigner == nil {
+			return abi.NoneReportSigner, fmt.Errorf("VLEK certificate required but not present")
+		}
+		att.CertificateChain.VlekCert = reportSigner.Raw
+
+	case abi.VcekReportSigner:
+		var vcekData []byte
+
+		// If no VCEK is present, fetch it from AMD.
+		if reportSigner == nil {
+			logger.Infof("VCEK certificate not present, falling back to retrieving it from AMD KDS")
+			vcekURL := kds.VCEKCertURL(productName, report.GetChipId(), kds.TCBVersion(report.GetReportedTcb()))
+			vcekData, err = getter.Get(vcekURL)
+			if err != nil {
+				return abi.NoneReportSigner, fmt.Errorf("retrieving VCEK certificate from AMD KDS: %w", err)
+			}
+		} else {
+			vcekData = reportSigner.Raw
+		}
+
+		att.CertificateChain.VcekCert = vcekData
+	}
+
+	return signerInfo.SigningKey, nil
+}
+
 // AttestationWithCerts returns a formatted version of the attestation report and its certificates from the instanceInfo.
 // Certificates are retrieved in the following precedence:
 // 1. ASK or ARK from issuer. On Azure: THIM. One AWS: not prefilled.
 // 2. ASK or ARK from fallbackCerts.
 // 3. ASK or ARK from AMD KDS.
-func (a *InstanceInfo) AttestationWithCerts(logger attestation.Logger, getter trust.HTTPSGetter,
-	fallbackCerts CertificateChain,
+func (a *InstanceInfo) AttestationWithCerts(getter trust.HTTPSGetter,
+	fallbackCerts CertificateChain, logger attestation.Logger,
 ) (*spb.Attestation, error) {
 	report, err := abi.ReportToProto(a.AttestationReport)
 	if err != nil {
@@ -67,22 +109,10 @@ func (a *InstanceInfo) AttestationWithCerts(logger attestation.Logger, getter tr
 		Product:          sevProduct,
 	}
 
-	// If the VCEK certificate is present, parse it and format it.
-	vcek, err := a.ParseVCEK()
+	// Add VCEK/VLEK to attestation object.
+	signingInfo, err := a.addReportSigner(att, report, productName, getter, logger)
 	if err != nil {
-		logger.Warnf("Error parsing VCEK: %v", err)
-	}
-	if vcek != nil {
-		att.CertificateChain.VcekCert = vcek.Raw
-	} else {
-		// Otherwise, retrieve it from AMD KDS.
-		logger.Infof("VCEK certificate not present, falling back to retrieving it from AMD KDS")
-		vcekURL := kds.VCEKCertURL(productName, report.GetChipId(), kds.TCBVersion(report.GetReportedTcb()))
-		vcek, err := getter.Get(vcekURL)
-		if err != nil {
-			return nil, fmt.Errorf("retrieving VCEK certificate from AMD KDS: %w", err)
-		}
-		att.CertificateChain.VcekCert = vcek
+		return nil, fmt.Errorf("adding report signer: %w", err)
 	}
 
 	// If the certificate chain from THIM is present, parse it and format it.
@@ -115,7 +145,7 @@ func (a *InstanceInfo) AttestationWithCerts(logger attestation.Logger, getter tr
 			(att.CertificateChain.ArkCert != nil),
 			(att.CertificateChain.AskCert != nil),
 		)
-		kdsCertChain, err := trust.GetProductChain(productName, abi.VcekReportSigner, getter)
+		kdsCertChain, err := trust.GetProductChain(productName, signingInfo, getter)
 		if err != nil {
 			return nil, fmt.Errorf("retrieving certificate chain from AMD KDS: %w", err)
 		}
@@ -174,7 +204,7 @@ func (a *InstanceInfo) ParseCertChain() (ask, ark *x509.Certificate, retErr erro
 		// https://www.amd.com/content/dam/amd/en/documents/epyc-technical-docs/specifications/57230.pdf
 		// Table 6 and 7
 		switch cert.Subject.CommonName {
-		case "SEV-Milan":
+		case "SEV-Milan", "SEV-VLEK-Milan":
 			ask = cert
 		case "ARK-Milan":
 			ark = cert
@@ -196,9 +226,9 @@ func (a *InstanceInfo) ParseCertChain() (ask, ark *x509.Certificate, retErr erro
 	return
 }
 
-// ParseVCEK parses the VCEK certificate from the instanceInfo into an x509-formatted certificate.
-// If the VCEK certificate is not present, nil is returned.
-func (a *InstanceInfo) ParseVCEK() (*x509.Certificate, error) {
+// ParseReportSigner parses the VCEK/VLEK certificate from the instanceInfo into an x509-formatted certificate.
+// If no certificate is present, nil is returned.
+func (a *InstanceInfo) ParseReportSigner() (*x509.Certificate, error) {
 	newlinesTrimmed := bytes.TrimSpace(a.ReportSigner)
 	if len(newlinesTrimmed) == 0 {
 		// VCEK is not present.
@@ -216,10 +246,10 @@ func (a *InstanceInfo) ParseVCEK() (*x509.Certificate, error) {
 		return nil, fmt.Errorf("expected PEM block type 'CERTIFICATE', got '%s'", block.Type)
 	}
 
-	vcek, err := x509.ParseCertificate(block.Bytes)
+	reportSigner, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
 		return nil, fmt.Errorf("parsing VCEK certificate: %w", err)
 	}
 
-	return vcek, nil
+	return reportSigner, nil
 }

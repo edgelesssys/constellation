@@ -105,8 +105,14 @@ func (u *Updatable) configWithCerts(cfg config.AttestationCfg) (config.Attestati
 		}
 		c.AMDSigningKey = config.Certificate(ask)
 		return c, nil
+	case *config.AWSSEVSNP:
+		ask, err := u.getCachedAskCert()
+		if err != nil {
+			return nil, fmt.Errorf("getting cached ASK certificate: %w", err)
+		}
+		c.AMDSigningKey = config.Certificate(ask)
+		return c, nil
 	}
-	// TODO(derpsteb): Add AWS SEV-SNP
 
 	return cfg, nil
 }
