@@ -72,11 +72,11 @@ variable "aws_config" {
 
 variable "gcp_config" {
   type = object({
-    region                = string
-    zone                  = string
-    project               = string
-    serviceAccountKeyPath = string
-    ipCidrPod             = string
+    region            = string
+    zone              = string
+    project           = string
+    ipCidrPod         = string
+    serviceAccountKey = string
   })
   description = "The cluster config for GCP."
   default     = null

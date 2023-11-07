@@ -9,6 +9,7 @@ locals {
       "./yq eval '.nodeGroups.${name}.initialCount = ${group.initial_count}' -i constellation-conf.yaml"
     ]
   ]))
+  gcp_sa_file_path = "service_account_file.json"
 }
 
 resource "null_resource" "ensure_cli" {
@@ -52,6 +53,26 @@ resource "null_resource" "aws_config" {
   ]
 }
 
+
+
+resource "null_resource" "service_account_file" {
+  count = var.gcp_config != null ? 1 : 0
+  provisioner "local-exec" {
+    command = <<EOT
+          echo ${var.gcp_config.serviceAccountKey} | base64 -d > "${local.gcp_sa_file_path}"
+
+    EOT
+  }
+  provisioner "local-exec" {
+    when    = destroy
+    command = "rm ${self.triggers.file_path}"
+  }
+  triggers = {
+    always_run = timestamp()
+    file_path  = local.gcp_sa_file_path
+  }
+}
+
 resource "null_resource" "gcp_config" {
   count = var.gcp_config != null ? 1 : 0
   provisioner "local-exec" {
@@ -59,7 +80,7 @@ resource "null_resource" "gcp_config" {
       ./yq eval '.provider.gcp.project = "${var.gcp_config.project}"' -i constellation-conf.yaml
       ./yq eval '.provider.gcp.region = "${var.gcp_config.region}"' -i constellation-conf.yaml
       ./yq eval '.provider.gcp.zone = "${var.gcp_config.zone}"' -i constellation-conf.yaml
-      ./yq eval '.provider.gcp.serviceAccountKeyPath = "${var.gcp_config.serviceAccountKeyPath}"' -i constellation-conf.yaml
+      ./yq eval '.provider.gcp.serviceAccountKeyPath = "${local.gcp_sa_file_path}"' -i constellation-conf.yaml
 
       ./yq eval '.infrastructure.gcp.projectID = "${var.gcp_config.project}"' -i constellation-state.yaml
       ./yq eval '.infrastructure.gcp.ipCidrPod = "${var.gcp_config.ipCidrPod}"' -i constellation-state.yaml
@@ -69,7 +90,7 @@ resource "null_resource" "gcp_config" {
     always_run = timestamp()
   }
   depends_on = [
-    terraform_data.config_generate
+    terraform_data.config_generate, null_resource.service_account_file
   ]
 }
 
