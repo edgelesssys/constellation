@@ -26,17 +26,23 @@ import (
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/snp"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/go-sev-guest/abi"
 	"github.com/google/go-sev-guest/kds"
+	"github.com/google/go-sev-guest/verify/trust"
+)
+
+const (
+	vcekCert         = "VCEK certificate"
+	vlekCert         = "VLEK certificate"
+	certificateChain = "certificate chain"
 )
 
 // Report contains the entire data reported by constellation verify.
 type Report struct {
 	SNPReport            SNPReport     `json:"snp_report"`
-	ReportSigner         []Certificate `json:"vcek"`
+	ReportSigner         []Certificate `json:"report_signer"`
 	CertChain            []Certificate `json:"cert_chain"`
 	*AzureReportAddition `json:"azure,omitempty"`
 	*AWSReportAddition   `json:"aws,omitempty"`
@@ -51,7 +57,7 @@ type AzureReportAddition struct {
 type AWSReportAddition struct{}
 
 // NewReport transforms a snp.InstanceInfo object into a Report.
-func NewReport(ctx context.Context, instanceInfo snp.InstanceInfo, attestationServiceURL string, log debugLog) (Report, error) {
+func NewReport(ctx context.Context, instanceInfo snp.InstanceInfo, attestationCfg config.AttestationCfg, log debugLog) (Report, error) {
 	snpReport, err := newSNPReport(instanceInfo.AttestationReport)
 	if err != nil {
 		return Report{}, fmt.Errorf("parsing SNP report: %w", err)
@@ -60,34 +66,28 @@ func NewReport(ctx context.Context, instanceInfo snp.InstanceInfo, attestationSe
 	var certTypeName string
 	switch snpReport.SignerInfo.SigningKey {
 	case abi.VlekReportSigner.String():
-		certTypeName = "VLEK certificate"
+		certTypeName = vlekCert
 	case abi.VcekReportSigner.String():
-		certTypeName = "VCEK certificate"
+		certTypeName = vcekCert
 	default:
 		return Report{}, errors.New("unknown report signer")
 	}
 
 	reportSigner, err := newCertificates(certTypeName, instanceInfo.ReportSigner, log)
 	if err != nil {
-		return Report{}, fmt.Errorf("parsing VCEK certificate: %w", err)
+		return Report{}, fmt.Errorf("parsing %s: %w", certTypeName, err)
 	}
 
 	// check if issuer included certChain before parsing. If not included, manually collect from the cluster.
-	var pemCerts []byte
-	if instanceInfo.CertChain == nil {
-		client, err := kubectl.NewFromConfig(constants.AdminConfFilename)
-		if err != nil {
-			return Report{}, fmt.Errorf("creating kubectl client: %w", err)
-		}
-		pemCerts, err = getCertChainCache(ctx, client, log)
+	rawCerts := instanceInfo.CertChain
+	if certTypeName == vlekCert {
+		rawCerts, err = getCertChain(attestationCfg)
 		if err != nil {
 			return Report{}, fmt.Errorf("getting certificate chain cache: %w", err)
 		}
-	} else {
-		pemCerts = instanceInfo.CertChain
 	}
 
-	certChain, err := newCertificates("Certificate chain", pemCerts, log)
+	certChain, err := newCertificates(certificateChain, rawCerts, log)
 	if err != nil {
 		return Report{}, fmt.Errorf("parsing certificate chain: %w", err)
 	}
@@ -95,7 +95,11 @@ func NewReport(ctx context.Context, instanceInfo snp.InstanceInfo, attestationSe
 	var azure *AzureReportAddition
 	var aws *AWSReportAddition
 	if instanceInfo.Azure != nil {
-		maaToken, err := newMAAToken(ctx, instanceInfo.Azure.MAAToken, attestationServiceURL)
+		cfg, ok := attestationCfg.(*config.AzureSEVSNP)
+		if !ok {
+			return Report{}, fmt.Errorf("expected config type *config.AzureSEVSNP, got %T", attestationCfg)
+		}
+		maaToken, err := newMAAToken(ctx, instanceInfo.Azure.MAAToken, cfg.FirmwareSignerConfig.MAAURL)
 		if err != nil {
 			return Report{}, fmt.Errorf("parsing MAA token: %w", err)
 		}
@@ -111,6 +115,46 @@ func NewReport(ctx context.Context, instanceInfo snp.InstanceInfo, attestationSe
 		AzureReportAddition: azure,
 		AWSReportAddition:   aws,
 	}, nil
+}
+
+// inverse of newCertificates.
+// ideally, duplicate encoding/decoding would be removed.
+// AWS specific.
+func getCertChain(cfg config.AttestationCfg) ([]byte, error) {
+	awsCfg, ok := cfg.(*config.AWSSEVSNP)
+	if !ok {
+		return nil, fmt.Errorf("expected config type *config.AWSSEVSNP, got %T", cfg)
+	}
+
+	if awsCfg.AMDRootKey.Equal(config.Certificate{}) {
+		return nil, errors.New("no AMD root key configured")
+	}
+
+	if awsCfg.AMDSigningKey.Equal(config.Certificate{}) {
+		certs, err := trust.GetProductChain(kds.ProductString(snp.Product()), abi.VlekReportSigner, trust.DefaultHTTPSGetter())
+		if err != nil {
+			return nil, fmt.Errorf("getting product certificate chain: %w", err)
+		}
+		// we want an ASVK, but GetProductChain currently does not use the ASVK field.
+		if certs.Ask == nil {
+			return nil, errors.New("no ASVK certificate available")
+		}
+		awsCfg.AMDSigningKey = config.Certificate(*certs.Ask)
+	}
+
+	// ARK
+	certChain := pem.EncodeToMemory(&pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: awsCfg.AMDRootKey.Raw,
+	})
+
+	// append ASK
+	certChain = append(certChain, pem.EncodeToMemory(&pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: awsCfg.AMDSigningKey.Raw,
+	})...)
+
+	return certChain, nil
 }
 
 // FormatString builds a string representation of a report that is inteded for console output.
@@ -163,7 +207,8 @@ type Certificate struct {
 	CertTypeName     string     `json:"cert_type_name"`
 	StructVersion    uint8      `json:"struct_version"`
 	ProductName      string     `json:"product_name"`
-	HardwareID       []byte     `json:"hardware_id"`
+	HardwareID       []byte     `json:"hardware_id,omitempty"`
+	CspID            string     `json:"csp_id,omitempty"`
 	TCBVersion       TCBVersion `json:"tcb_version"`
 }
 
@@ -181,39 +226,47 @@ func newCertificates(certTypeName string, cert []byte, log debugLog) (certs []Ce
 			return certs, fmt.Errorf("parse %s: expected PEM block type 'CERTIFICATE', got '%s'", certTypeName, block.Type)
 		}
 
-		cert, err := x509.ParseCertificate(block.Bytes)
+		certX509, err := x509.ParseCertificate(block.Bytes)
 		if err != nil {
 			return certs, fmt.Errorf("parse %s: %w", certTypeName, err)
 		}
-		if certTypeName == "VCEK certificate" {
-			vcekExts, err := kds.VcekCertificateExtensions(cert)
+
+		var ext *kds.Extensions
+		switch certTypeName {
+		case vcekCert:
+			ext, err = kds.VcekCertificateExtensions(certX509)
 			if err != nil {
-				return certs, fmt.Errorf("parsing VCEK certificate extensions: %w", err)
+				return certs, fmt.Errorf("parsing %s extensions: %w", certTypeName, err)
 			}
-			certPEM := pem.EncodeToMemory(&pem.Block{
-				Type:  "CERTIFICATE",
-				Bytes: cert.Raw,
-			})
-			certs = append(certs, Certificate{
-				Certificate:    *cert,
-				CertificatePEM: string(certPEM),
-				CertTypeName:   certTypeName,
-				StructVersion:  vcekExts.StructVersion,
-				ProductName:    vcekExts.ProductName,
-				TCBVersion:     newTCBVersion(vcekExts.TCBVersion),
-				HardwareID:     vcekExts.HWID,
-			})
-		} else {
-			certPEM := pem.EncodeToMemory(&pem.Block{
-				Type:  "CERTIFICATE",
-				Bytes: cert.Raw,
-			})
-			certs = append(certs, Certificate{
-				Certificate:    *cert,
-				CertificatePEM: string(certPEM),
-				CertTypeName:   certTypeName,
-			})
+		case vlekCert:
+			ext, err = kds.VlekCertificateExtensions(certX509)
+			if err != nil {
+				return certs, fmt.Errorf("parsing %s extensions: %w", certTypeName, err)
+			}
 		}
+		certPEM := pem.EncodeToMemory(&pem.Block{
+			Type:  "CERTIFICATE",
+			Bytes: certX509.Raw,
+		})
+		cert := Certificate{
+			Certificate:    *certX509,
+			CertificatePEM: string(certPEM),
+			CertTypeName:   certTypeName,
+		}
+
+		if ext != nil {
+			cert.StructVersion = ext.StructVersion
+			cert.ProductName = ext.ProductName
+			cert.TCBVersion = newTCBVersion(ext.TCBVersion)
+			if ext.HWID != nil {
+				cert.HardwareID = ext.HWID
+			} else {
+				cert.CspID = ext.CspID
+			}
+		}
+
+		certs = append(certs, cert)
+
 		i++
 	}
 	if i == 1 {
@@ -236,12 +289,12 @@ func (c *Certificate) formatString(b *strings.Builder, idx int) error {
 	writeIndentfln(b, 2, "Signature Algorithm: %s", c.Certificate.SignatureAlgorithm)
 	writeIndentfln(b, 2, "Public Key Algorithm: %s", c.Certificate.PublicKeyAlgorithm)
 
-	if c.CertTypeName == "VCEK certificate" {
+	if c.CertTypeName == vcekCert {
 		// Extensions documented in Table 8 and Table 9 of
 		// https://www.amd.com/system/files/TechDocs/57230.pdf
 		vcekExts, err := kds.VcekCertificateExtensions(&c.Certificate)
 		if err != nil {
-			return fmt.Errorf("parsing VCEK certificate extensions: %w", err)
+			return fmt.Errorf("parsing %s extensions: %w", c.CertTypeName, err)
 		}
 
 		writeIndentfln(b, 2, "Struct version: %d", vcekExts.StructVersion)

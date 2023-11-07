@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package config
 
 import (
+	"bytes"
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
@@ -66,6 +67,11 @@ func unmarshalTypedConfig[T AttestationCfg](data []byte) (AttestationCfg, error)
 
 // Certificate is a wrapper around x509.Certificate allowing custom marshaling.
 type Certificate x509.Certificate
+
+// Equal returns true if the certificates are equal.
+func (c Certificate) Equal(other Certificate) bool {
+	return bytes.Equal(c.Raw, other.Raw)
+}
 
 // MarshalJSON marshals the certificate to PEM.
 func (c Certificate) MarshalJSON() ([]byte, error) {

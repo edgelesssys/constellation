@@ -1052,7 +1052,7 @@ type AWSSEVSNP struct {
 	AMDRootKey Certificate `json:"amdRootKey" yaml:"amdRootKey"`
 	// description: |
 	//   AMD Signing Key certificate used to verify the SEV-SNP VCEK / VLEK certificate.
-	AMDSigningKey Certificate `json:"amdSigningKey,omitempty" yaml:"amdSigningKey,omitempty" validate:"len=0"`
+	AMDSigningKey Certificate `json:"amdSigningKey,omitempty" yaml:"amdSigningKey,omitempty"`
 }
 
 // AWSNitroTPM is the configuration for AWS Nitro TPM attestation.

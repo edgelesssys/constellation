@@ -105,8 +105,8 @@ func runVerify(cmd *cobra.Command, _ []string) error {
 		log:    log,
 	}
 	formatterFactory := func(output string, provider cloudprovider.Provider, log debugLog) (attestationDocFormatter, error) {
-		if output == "json" && provider != cloudprovider.Azure {
-			return nil, errors.New("json output is only supported for Azure")
+		if output == "json" && (provider != cloudprovider.Azure && provider != cloudprovider.AWS) {
+			return nil, errors.New("json output is only supported for Azure and AWS")
 		}
 		switch output {
 		case "json":
@@ -206,8 +206,7 @@ func (c *verifyCmd) verify(cmd *cobra.Command, verifyClient verifyClient, factor
 		cmd.Context(),
 		rawAttestationDoc,
 		(conf.Provider.Azure == nil && conf.Provider.AWS == nil),
-		attConfig.GetMeasurements(),
-		maaURL,
+		attConfig,
 	)
 	if err != nil {
 		return fmt.Errorf("printing attestation document: %w", err)
@@ -254,8 +253,7 @@ func (c *verifyCmd) validateEndpointFlag(cmd *cobra.Command, stateFile *state.St
 // an attestationDocFormatter formats the attestation document.
 type attestationDocFormatter interface {
 	// format returns the raw or formatted attestation doc depending on the rawOutput argument.
-	format(ctx context.Context, docString string, PCRsOnly bool, expectedPCRs measurements.M,
-		attestationServiceURL string) (string, error)
+	format(ctx context.Context, docString string, PCRsOnly bool, attestationCfg config.AttestationCfg) (string, error)
 }
 
 type jsonAttestationDocFormatter struct {
@@ -264,7 +262,7 @@ type jsonAttestationDocFormatter struct {
 
 // format returns the json formatted attestation doc.
 func (f *jsonAttestationDocFormatter) format(ctx context.Context, docString string, _ bool,
-	_ measurements.M, attestationServiceURL string,
+	attestationCfg config.AttestationCfg,
 ) (string, error) {
 	var doc attestationDoc
 	if err := json.Unmarshal([]byte(docString), &doc); err != nil {
@@ -275,7 +273,7 @@ func (f *jsonAttestationDocFormatter) format(ctx context.Context, docString stri
 	if err != nil {
 		return "", fmt.Errorf("unmarshalling instance info: %w", err)
 	}
-	report, err := verify.NewReport(ctx, instanceInfo, attestationServiceURL, f.log)
+	report, err := verify.NewReport(ctx, instanceInfo, attestationCfg, f.log)
 	if err != nil {
 		return "", fmt.Errorf("parsing SNP report: %w", err)
 	}
@@ -291,7 +289,7 @@ type rawAttestationDocFormatter struct {
 
 // format returns the raw attestation doc.
 func (f *rawAttestationDocFormatter) format(_ context.Context, docString string, _ bool,
-	_ measurements.M, _ string,
+	_ config.AttestationCfg,
 ) (string, error) {
 	b := &strings.Builder{}
 	b.WriteString("Attestation Document:\n")
@@ -305,7 +303,7 @@ type defaultAttestationDocFormatter struct {
 
 // format returns the formatted attestation doc.
 func (f *defaultAttestationDocFormatter) format(ctx context.Context, docString string, PCRsOnly bool,
-	expectedPCRs measurements.M, attestationServiceURL string,
+	attestationCfg config.AttestationCfg,
 ) (string, error) {
 	b := &strings.Builder{}
 	b.WriteString("Attestation Document:\n")
@@ -315,7 +313,7 @@ func (f *defaultAttestationDocFormatter) format(ctx context.Context, docString s
 		return "", fmt.Errorf("unmarshal attestation document: %w", err)
 	}
 
-	if err := f.parseQuotes(b, doc.Attestation.Quotes, expectedPCRs); err != nil {
+	if err := f.parseQuotes(b, doc.Attestation.Quotes, attestationCfg.GetMeasurements()); err != nil {
 		return "", fmt.Errorf("parse quote: %w", err)
 	}
 	if PCRsOnly {
@@ -327,7 +325,7 @@ func (f *defaultAttestationDocFormatter) format(ctx context.Context, docString s
 		return "", fmt.Errorf("unmarshalling instance info: %w", err)
 	}
 
-	report, err := verify.NewReport(ctx, instanceInfo, attestationServiceURL, f.log)
+	report, err := verify.NewReport(ctx, instanceInfo, attestationCfg, f.log)
 	if err != nil {
 		return "", fmt.Errorf("parsing SNP report: %w", err)
 	}
