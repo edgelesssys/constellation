@@ -7,7 +7,8 @@ runs:
       shell: bash
       run: |
         cp -r terraform terraform-module
-        rm terraform-module/assets.go terraform-module/BUILD.bazel
+        find terraform-module -name "*.go" -type f -delete
+        find terraform-module -name "*.bazel" -type f -delete
     - name: Zip terraform dir
       shell: bash
       run: |

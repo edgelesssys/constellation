@@ -22,7 +22,7 @@ resource "null_resource" "ensure_yq" {
 
 module "fetch_ami" {
   source              = "./fetch-ami"
-  attestation_variant = "aws-sev-snp"
+  attestation_variant = var.enable_snp ? "aws-sev-snp" : "aws-nitro-tpm"
   region              = local.region
   image               = var.image
   depends_on          = [module.aws_iam, null_resource.ensure_yq]
