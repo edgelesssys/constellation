@@ -22,6 +22,13 @@ import (
 	"github.com/google/go-sev-guest/verify/trust"
 )
 
+// Product returns the SEV product info currently supported by Constellation's SNP attestation.
+func Product() *spb.SevProduct {
+	// sevProduct is the product info of the SEV platform as reported through CPUID[EAX=1].
+	// It may become necessary in the future to differentiate among CSP vendors.
+	return &spb.SevProduct{Name: spb.SevProduct_SEV_PRODUCT_MILAN, Stepping: 0} // Milan-B0
+}
+
 // InstanceInfo contains the necessary information to establish trust in a SNP CVM.
 type InstanceInfo struct {
 	// ReportSigner is the PEM-encoded certificate used to validate the attestation report's signature.
@@ -99,14 +106,12 @@ func (a *InstanceInfo) AttestationWithCerts(getter trust.HTTPSGetter,
 		return nil, fmt.Errorf("converting report to proto: %w", err)
 	}
 
-	// Product info as reported through CPUID[EAX=1]
-	sevProduct := &spb.SevProduct{Name: spb.SevProduct_SEV_PRODUCT_MILAN, Stepping: 0} // Milan-B0
-	productName := kds.ProductString(sevProduct)
+	productName := kds.ProductString(Product())
 
 	att := &spb.Attestation{
 		Report:           report,
 		CertificateChain: &spb.CertificateChain{},
-		Product:          sevProduct,
+		Product:          Product(),
 	}
 
 	// Add VCEK/VLEK to attestation object.
