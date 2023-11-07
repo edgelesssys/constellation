@@ -110,7 +110,7 @@ func TestParseVCEK(t *testing.T) {
 			assert := assert.New(t)
 
 			instanceInfo := &InstanceInfo{
-				VCEK: tc.VCEK,
+				ReportSigner: tc.VCEK,
 			}
 
 			vcek, err := instanceInfo.ParseVCEK()
@@ -235,7 +235,7 @@ func TestInstanceInfoAttestation(t *testing.T) {
 			instanceInfo := InstanceInfo{
 				AttestationReport: tc.report,
 				CertChain:         tc.certChain,
-				VCEK:              tc.vcek,
+				ReportSigner:      tc.vcek,
 			}
 
 			att, err := instanceInfo.AttestationWithCerts(logger.NewTest(t), tc.getter, tc.fallbackCerts)
