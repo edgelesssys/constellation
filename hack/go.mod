@@ -34,7 +34,6 @@ replace (
 replace (
 	github.com/edgelesssys/constellation/v2 => ./..
 	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api => ./../operators/constellation-node-operator/api
-	github.com/google/go-tpm-tools => github.com/msanft/go-tpm-tools v0.0.0-20231009082622-266280269413
 )
 
 require (
