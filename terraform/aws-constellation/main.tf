@@ -12,7 +12,7 @@ module "aws_iam" {
 resource "null_resource" "ensure_yq" {
   provisioner "local-exec" {
     command = <<EOT
-         ${path.module}/install-yq.sh
+         ../constellation-cluster/install-yq.sh
     EOT
   }
   triggers = {
