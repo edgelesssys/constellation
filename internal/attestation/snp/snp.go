@@ -22,15 +22,21 @@ import (
 	"github.com/google/go-sev-guest/verify/trust"
 )
 
-// InstanceInfo contains the necessary information to establish trust in
-// an Azure CVM.
+// InstanceInfo contains the necessary information to establish trust in a SNP CVM.
 type InstanceInfo struct {
-	// VCEK is the PEM-encoded VCEK certificate for the attestation report.
-	VCEK []byte
-	// CertChain is the PEM-encoded certificate chain for the attestation report.
+	// ReportSigner is the PEM-encoded ReportSigner/VLEK certificate for the attestation report.
+	// Public key that validates the report's signature.
+	ReportSigner []byte
+	// CertChain is the PEM-encoded certificate chain for the attestation report (ASK+ARK).
+	// Intermediate key that validates the ReportSigner and root key.
 	CertChain []byte
 	// AttestationReport is the attestation report from the vTPM (NVRAM) of the CVM.
 	AttestationReport []byte
+	Azure             *AzureInstanceInfo
+}
+
+// AzureInstanceInfo contains Azure specific information related to SNP attestation.
+type AzureInstanceInfo struct {
 	// RuntimeData is the Azure runtime data from the vTPM (NVRAM) of the CVM.
 	RuntimeData []byte
 	// MAAToken is the token of the MAA for the attestation report, used as a fallback
@@ -126,11 +132,13 @@ func (a *InstanceInfo) AttestationWithCerts(logger attestation.Logger, getter tr
 	return att, nil
 }
 
+// CertificateChain stores an AMD signing key (ASK) and AMD root key (ARK) certificate.
 type CertificateChain struct {
 	ask *x509.Certificate
 	ark *x509.Certificate
 }
 
+// NewCertificateChain returns a new CertificateChain with the given ASK and ARK certificates.
 func NewCertificateChain(ask, ark *x509.Certificate) CertificateChain {
 	return CertificateChain{
 		ask: ask,
@@ -191,7 +199,7 @@ func (a *InstanceInfo) ParseCertChain() (ask, ark *x509.Certificate, retErr erro
 // ParseVCEK parses the VCEK certificate from the instanceInfo into an x509-formatted certificate.
 // If the VCEK certificate is not present, nil is returned.
 func (a *InstanceInfo) ParseVCEK() (*x509.Certificate, error) {
-	newlinesTrimmed := bytes.TrimSpace(a.VCEK)
+	newlinesTrimmed := bytes.TrimSpace(a.ReportSigner)
 	if len(newlinesTrimmed) == 0 {
 		// VCEK is not present.
 		return nil, nil

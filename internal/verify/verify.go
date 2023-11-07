@@ -9,29 +9,256 @@ Package verify provides the types for the verify report in JSON format.
 
 The package provides an interface for constellation verify and
 the attestationconfigapi upload tool through JSON serialization.
+It exposes a CSP-agnostic interface for printing Reports that may include CSP-specific information.
 */
 package verify
 
 import (
+	"context"
+	"crypto/x509"
+	"encoding/json"
+	"encoding/pem"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strings"
+
+	"github.com/edgelesssys/constellation/v2/internal/attestation/snp"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/go-sev-guest/abi"
+	"github.com/google/go-sev-guest/kds"
 )
 
 // Report contains the entire data reported by constellation verify.
 type Report struct {
-	SNPReport SNPReport      `json:"snp_report"`
-	VCEK      []Certificate  `json:"vcek"`
-	CertChain []Certificate  `json:"cert_chain"`
-	MAAToken  MaaTokenClaims `json:"maa_token"`
+	SNPReport            SNPReport     `json:"snp_report"`
+	ReportSigner         []Certificate `json:"vcek"`
+	CertChain            []Certificate `json:"cert_chain"`
+	*AzureReportAddition `json:"azure,omitempty"`
+	*AWSReportAddition   `json:"aws,omitempty"`
+}
+
+// AzureReportAddition contains attestation report data specific to Azure.
+type AzureReportAddition struct {
+	MAAToken MaaTokenClaims `json:"maa_token"`
+}
+
+// AWSReportAddition contains attestation report data specific to AWS.
+type AWSReportAddition struct{}
+
+// NewReport transforms a snp.InstanceInfo object into a Report.
+func NewReport(ctx context.Context, instanceInfo snp.InstanceInfo, attestationServiceURL string, log debugLog) (Report, error) {
+	snpReport, err := newSNPReport(instanceInfo.AttestationReport)
+	if err != nil {
+		return Report{}, fmt.Errorf("parsing SNP report: %w", err)
+	}
+
+	var certTypeName string
+	switch snpReport.SignerInfo.SigningKey {
+	case abi.VlekReportSigner.String():
+		certTypeName = "VLEK certificate"
+	case abi.VcekReportSigner.String():
+		certTypeName = "VCEK certificate"
+	default:
+		return Report{}, errors.New("unknown report signer")
+	}
+
+	reportSigner, err := newCertificates(certTypeName, instanceInfo.ReportSigner, log)
+	if err != nil {
+		return Report{}, fmt.Errorf("parsing VCEK certificate: %w", err)
+	}
+
+	// check if issuer included certChain before parsing. If not included, manually collect from the cluster.
+	var pemCerts []byte
+	if instanceInfo.CertChain == nil {
+		client, err := kubectl.NewFromConfig(constants.AdminConfFilename)
+		if err != nil {
+			return Report{}, fmt.Errorf("creating kubectl client: %w", err)
+		}
+		pemCerts, err = getCertChainCache(ctx, client, log)
+		if err != nil {
+			return Report{}, fmt.Errorf("getting certificate chain cache: %w", err)
+		}
+	} else {
+		pemCerts = instanceInfo.CertChain
+	}
+
+	certChain, err := newCertificates("Certificate chain", pemCerts, log)
+	if err != nil {
+		return Report{}, fmt.Errorf("parsing certificate chain: %w", err)
+	}
+
+	var azure *AzureReportAddition
+	var aws *AWSReportAddition
+	if instanceInfo.Azure != nil {
+		maaToken, err := newMAAToken(ctx, instanceInfo.Azure.MAAToken, attestationServiceURL)
+		if err != nil {
+			return Report{}, fmt.Errorf("parsing MAA token: %w", err)
+		}
+		azure = &AzureReportAddition{
+			MAAToken: maaToken,
+		}
+	}
+
+	return Report{
+		SNPReport:           snpReport,
+		ReportSigner:        reportSigner,
+		CertChain:           certChain,
+		AzureReportAddition: azure,
+		AWSReportAddition:   aws,
+	}, nil
+}
+
+// FormatString builds a string representation of a report that is inteded for console output.
+func (r *Report) FormatString(b *strings.Builder) (string, error) {
+	if len(r.ReportSigner) != 1 {
+		return "", fmt.Errorf("expected exactly one report signing certificate, found %d", len(r.ReportSigner))
+	}
+
+	if err := formatCertificates(b, r.ReportSigner); err != nil {
+		return "", fmt.Errorf("building report signing certificate string: %w", err)
+	}
+
+	if err := formatCertificates(b, r.CertChain); err != nil {
+		return "", fmt.Errorf("building certificate chain string: %w", err)
+	}
+
+	r.SNPReport.formatString(b)
+	if r.AzureReportAddition != nil {
+		if err := r.AzureReportAddition.MAAToken.formatString(b); err != nil {
+			return "", fmt.Errorf("error building MAAToken string : %w", err)
+		}
+	}
+
+	return b.String(), nil
+}
+
+func formatCertificates(b *strings.Builder, certs []Certificate) error {
+	for i, cert := range certs {
+		if i == 0 {
+			b.WriteString(fmt.Sprintf("\tRaw %s:\n", cert.CertTypeName))
+		}
+		newlinesTrimmed := strings.TrimSpace(cert.CertificatePEM)
+		formattedCert := strings.ReplaceAll(newlinesTrimmed, "\n", "\n\t\t") + "\n"
+		b.WriteString(fmt.Sprintf("\t\t%s", formattedCert))
+	}
+	for i, cert := range certs {
+		// Use 1-based indexing for user output.
+		if err := cert.formatString(b, i+1); err != nil {
+			return fmt.Errorf("error printing certificate chain: %w", err)
+		}
+	}
+
+	return nil
 }
 
 // Certificate contains the certificate data and additional information.
 type Certificate struct {
-	CertificatePEM string     `json:"certificate"`
-	CertTypeName   string     `json:"cert_type_name"`
-	StructVersion  uint8      `json:"struct_version"`
-	ProductName    string     `json:"product_name"`
-	HardwareID     []byte     `json:"hardware_id"`
-	TCBVersion     TCBVersion `json:"tcb_version"`
+	x509.Certificate `json:"-"`
+	CertificatePEM   string     `json:"certificate"`
+	CertTypeName     string     `json:"cert_type_name"`
+	StructVersion    uint8      `json:"struct_version"`
+	ProductName      string     `json:"product_name"`
+	HardwareID       []byte     `json:"hardware_id"`
+	TCBVersion       TCBVersion `json:"tcb_version"`
+}
+
+// newCertificates parses a list of PEM encoded certificate and returns a slice of Certificate objects.
+func newCertificates(certTypeName string, cert []byte, log debugLog) (certs []Certificate, err error) {
+	newlinesTrimmed := strings.TrimSpace(string(cert))
+
+	log.Debugf("Decoding PEM certificate: %s", certTypeName)
+	i := 1
+	var rest []byte
+	var block *pem.Block
+	for block, rest = pem.Decode([]byte(newlinesTrimmed)); block != nil; block, rest = pem.Decode(rest) {
+		log.Debugf("Parsing PEM block: %d", i)
+		if block.Type != "CERTIFICATE" {
+			return certs, fmt.Errorf("parse %s: expected PEM block type 'CERTIFICATE', got '%s'", certTypeName, block.Type)
+		}
+
+		cert, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return certs, fmt.Errorf("parse %s: %w", certTypeName, err)
+		}
+		if certTypeName == "VCEK certificate" {
+			vcekExts, err := kds.VcekCertificateExtensions(cert)
+			if err != nil {
+				return certs, fmt.Errorf("parsing VCEK certificate extensions: %w", err)
+			}
+			certPEM := pem.EncodeToMemory(&pem.Block{
+				Type:  "CERTIFICATE",
+				Bytes: cert.Raw,
+			})
+			certs = append(certs, Certificate{
+				Certificate:    *cert,
+				CertificatePEM: string(certPEM),
+				CertTypeName:   certTypeName,
+				StructVersion:  vcekExts.StructVersion,
+				ProductName:    vcekExts.ProductName,
+				TCBVersion:     newTCBVersion(vcekExts.TCBVersion),
+				HardwareID:     vcekExts.HWID,
+			})
+		} else {
+			certPEM := pem.EncodeToMemory(&pem.Block{
+				Type:  "CERTIFICATE",
+				Bytes: cert.Raw,
+			})
+			certs = append(certs, Certificate{
+				Certificate:    *cert,
+				CertificatePEM: string(certPEM),
+				CertTypeName:   certTypeName,
+			})
+		}
+		i++
+	}
+	if i == 1 {
+		return certs, fmt.Errorf("parse %s: no PEM blocks found", certTypeName)
+	}
+	if len(rest) != 0 {
+		return certs, fmt.Errorf("parse %s: remaining PEM block is not a valid certificate: %s", certTypeName, rest)
+	}
+	return certs, nil
+}
+
+// formatString builds a string representation of a certificate that is inteded for console output.
+func (c *Certificate) formatString(b *strings.Builder, idx int) error {
+	writeIndentfln(b, 1, "%s (%d):", c.CertTypeName, idx)
+	writeIndentfln(b, 2, "Serial Number: %s", c.Certificate.SerialNumber)
+	writeIndentfln(b, 2, "Subject: %s", c.Certificate.Subject)
+	writeIndentfln(b, 2, "Issuer: %s", c.Certificate.Issuer)
+	writeIndentfln(b, 2, "Not Before: %s", c.Certificate.NotBefore)
+	writeIndentfln(b, 2, "Not After: %s", c.Certificate.NotAfter)
+	writeIndentfln(b, 2, "Signature Algorithm: %s", c.Certificate.SignatureAlgorithm)
+	writeIndentfln(b, 2, "Public Key Algorithm: %s", c.Certificate.PublicKeyAlgorithm)
+
+	if c.CertTypeName == "VCEK certificate" {
+		// Extensions documented in Table 8 and Table 9 of
+		// https://www.amd.com/system/files/TechDocs/57230.pdf
+		vcekExts, err := kds.VcekCertificateExtensions(&c.Certificate)
+		if err != nil {
+			return fmt.Errorf("parsing VCEK certificate extensions: %w", err)
+		}
+
+		writeIndentfln(b, 2, "Struct version: %d", vcekExts.StructVersion)
+		writeIndentfln(b, 2, "Product name: %s", vcekExts.ProductName)
+		tcb := kds.DecomposeTCBVersion(vcekExts.TCBVersion)
+		writeIndentfln(b, 2, "Secure Processor bootloader SVN: %d", tcb.BlSpl)
+		writeIndentfln(b, 2, "Secure Processor operating system SVN: %d", tcb.TeeSpl)
+		writeIndentfln(b, 2, "SVN 4 (reserved): %d", tcb.Spl4)
+		writeIndentfln(b, 2, "SVN 5 (reserved): %d", tcb.Spl5)
+		writeIndentfln(b, 2, "SVN 6 (reserved): %d", tcb.Spl6)
+		writeIndentfln(b, 2, "SVN 7 (reserved): %d", tcb.Spl7)
+		writeIndentfln(b, 2, "SEV-SNP firmware SVN: %d", tcb.SnpSpl)
+		writeIndentfln(b, 2, "Microcode SVN: %d", tcb.UcodeSpl)
+		writeIndentfln(b, 2, "Hardware ID: %x", vcekExts.HWID)
+	}
+
+	return nil
 }
 
 // TCBVersion contains the TCB version data.
@@ -44,6 +271,33 @@ type TCBVersion struct {
 	Spl5       uint8 `json:"spl5"`
 	Spl6       uint8 `json:"spl6"`
 	Spl7       uint8 `json:"spl7"`
+}
+
+// formatString builds a string representation of a TCB version that is inteded for console output.
+func (t *TCBVersion) formatString(b *strings.Builder) {
+	writeIndentfln(b, 3, "Secure Processor bootloader SVN: %d", t.Bootloader)
+	writeIndentfln(b, 3, "Secure Processor operating system SVN: %d", t.TEE)
+	writeIndentfln(b, 3, "SVN 4 (reserved): %d", t.Spl4)
+	writeIndentfln(b, 3, "SVN 5 (reserved): %d", t.Spl5)
+	writeIndentfln(b, 3, "SVN 6 (reserved): %d", t.Spl6)
+	writeIndentfln(b, 3, "SVN 7 (reserved): %d", t.Spl7)
+	writeIndentfln(b, 3, "SEV-SNP firmware SVN: %d", t.SNP)
+	writeIndentfln(b, 3, "Microcode SVN: %d", t.Microcode)
+}
+
+// newTCBVersion creates a TCB version from a kds.TCBVersion.
+func newTCBVersion(tcbVersion kds.TCBVersion) TCBVersion {
+	tcb := kds.DecomposeTCBVersion(tcbVersion)
+	return TCBVersion{
+		Bootloader: tcb.BlSpl,
+		TEE:        tcb.TeeSpl,
+		SNP:        tcb.SnpSpl,
+		Microcode:  tcb.UcodeSpl,
+		Spl4:       tcb.Spl4,
+		Spl5:       tcb.Spl5,
+		Spl6:       tcb.Spl6,
+		Spl7:       tcb.Spl7,
+	}
 }
 
 // PlatformInfo contains the platform information.
@@ -94,6 +348,125 @@ type SNPReport struct {
 	CommittedMajor       uint32       `json:"committed_major"`
 	LaunchTCB            TCBVersion   `json:"launch_tcb"`
 	Signature            []byte       `json:"signature"`
+}
+
+// newSNPReport parses a marshalled SNP report and returns a SNPReport object.
+func newSNPReport(reportBytes []byte) (SNPReport, error) {
+	report, err := abi.ReportToProto(reportBytes)
+	if err != nil {
+		return SNPReport{}, fmt.Errorf("parsing report to proto: %w", err)
+	}
+
+	policy, err := abi.ParseSnpPolicy(report.Policy)
+	if err != nil {
+		return SNPReport{}, fmt.Errorf("parsing policy: %w", err)
+	}
+
+	platformInfo, err := abi.ParseSnpPlatformInfo(report.PlatformInfo)
+	if err != nil {
+		return SNPReport{}, fmt.Errorf("parsing platform info: %w", err)
+	}
+
+	signature, err := abi.ReportToSignatureDER(reportBytes)
+	if err != nil {
+		return SNPReport{}, fmt.Errorf("parsing signature: %w", err)
+	}
+
+	signerInfo, err := abi.ParseSignerInfo(report.SignerInfo)
+	if err != nil {
+		return SNPReport{}, fmt.Errorf("parsing signer info: %w", err)
+	}
+	return SNPReport{
+		Version:              report.Version,
+		GuestSvn:             report.GuestSvn,
+		PolicyABIMinor:       policy.ABIMinor,
+		PolicyABIMajor:       policy.ABIMajor,
+		PolicySMT:            policy.SMT,
+		PolicyMigrationAgent: policy.MigrateMA,
+		PolicyDebug:          policy.Debug,
+		PolicySingleSocket:   policy.SingleSocket,
+		FamilyID:             report.FamilyId,
+		ImageID:              report.ImageId,
+		Vmpl:                 report.Vmpl,
+		SignatureAlgo:        report.SignatureAlgo,
+		CurrentTCB:           newTCBVersion(kds.TCBVersion(report.CurrentTcb)),
+		PlatformInfo: PlatformInfo{
+			SMT:  platformInfo.SMTEnabled,
+			TSME: platformInfo.TSMEEnabled,
+		},
+		SignerInfo: SignerInfo{
+			AuthorKey:   signerInfo.AuthorKeyEn,
+			MaskChipKey: signerInfo.MaskChipKey,
+			SigningKey:  signerInfo.SigningKey.String(),
+		},
+		ReportData:      report.ReportData,
+		Measurement:     report.Measurement,
+		HostData:        report.HostData,
+		IDKeyDigest:     report.IdKeyDigest,
+		AuthorKeyDigest: report.AuthorKeyDigest,
+		ReportID:        report.ReportId,
+		ReportIDMa:      report.ReportIdMa,
+		ReportedTCB:     newTCBVersion(kds.TCBVersion(report.ReportedTcb)),
+		ChipID:          report.ChipId,
+		CommittedTCB:    newTCBVersion(kds.TCBVersion(report.CommittedTcb)),
+		CurrentBuild:    report.CurrentBuild,
+		CurrentMinor:    report.CurrentMinor,
+		CurrentMajor:    report.CurrentMajor,
+		CommittedBuild:  report.CommittedBuild,
+		CommittedMinor:  report.CommittedMinor,
+		CommittedMajor:  report.CommittedMajor,
+		LaunchTCB:       newTCBVersion(kds.TCBVersion(report.LaunchTcb)),
+		Signature:       signature,
+	}, nil
+}
+
+// formatString builds a string representation of a SNP report that is inteded for console output.
+func (s *SNPReport) formatString(b *strings.Builder) {
+	writeIndentfln(b, 1, "SNP Report:")
+	writeIndentfln(b, 2, "Version: %d", s.Version)
+	writeIndentfln(b, 2, "Guest SVN: %d", s.GuestSvn)
+	writeIndentfln(b, 2, "Policy:")
+	writeIndentfln(b, 3, "ABI Minor: %d", s.PolicyABIMinor)
+	writeIndentfln(b, 3, "ABI Major: %d", s.PolicyABIMajor)
+	writeIndentfln(b, 3, "Symmetric Multithreading enabled: %t", s.PolicySMT)
+	writeIndentfln(b, 3, "Migration agent enabled: %t", s.PolicyMigrationAgent)
+	writeIndentfln(b, 3, "Debugging enabled (host decryption of VM): %t", s.PolicyDebug)
+	writeIndentfln(b, 3, "Single socket enabled: %t", s.PolicySingleSocket)
+	writeIndentfln(b, 2, "Family ID: %x", s.FamilyID)
+	writeIndentfln(b, 2, "Image ID: %x", s.ImageID)
+	writeIndentfln(b, 2, "VMPL: %d", s.Vmpl)
+	writeIndentfln(b, 2, "Signature Algorithm: %d", s.SignatureAlgo)
+	writeIndentfln(b, 2, "Current TCB:")
+	s.CurrentTCB.formatString(b)
+	writeIndentfln(b, 2, "Platform Info:")
+	writeIndentfln(b, 3, "Symmetric Multithreading enabled (SMT): %t", s.PlatformInfo.SMT)
+	writeIndentfln(b, 3, "Transparent secure memory encryption (TSME): %t", s.PlatformInfo.TSME)
+	writeIndentfln(b, 2, "Signer Info:")
+	writeIndentfln(b, 3, "Author Key Enabled: %t", s.SignerInfo.AuthorKey)
+	writeIndentfln(b, 3, "Chip ID Masking: %t", s.SignerInfo.MaskChipKey)
+	writeIndentfln(b, 3, "Signing Type: %s", s.SignerInfo.SigningKey)
+	writeIndentfln(b, 2, "Report Data: %x", s.ReportData)
+	writeIndentfln(b, 2, "Measurement: %x", s.Measurement)
+	writeIndentfln(b, 2, "Host Data: %x", s.HostData)
+	writeIndentfln(b, 2, "ID Key Digest: %x", s.IDKeyDigest)
+	writeIndentfln(b, 2, "Author Key Digest: %x", s.AuthorKeyDigest)
+	writeIndentfln(b, 2, "Report ID: %x", s.ReportID)
+	writeIndentfln(b, 2, "Report ID MA: %x", s.ReportIDMa)
+	writeIndentfln(b, 2, "Reported TCB:")
+	s.ReportedTCB.formatString(b)
+	writeIndentfln(b, 2, "Chip ID: %x", s.ChipID)
+	writeIndentfln(b, 2, "Committed TCB:")
+	s.CommittedTCB.formatString(b)
+	writeIndentfln(b, 2, "Current Build: %d", s.CurrentBuild)
+	writeIndentfln(b, 2, "Current Minor: %d", s.CurrentMinor)
+	writeIndentfln(b, 2, "Current Major: %d", s.CurrentMajor)
+	writeIndentfln(b, 2, "Committed Build: %d", s.CommittedBuild)
+	writeIndentfln(b, 2, "Committed Minor: %d", s.CommittedMinor)
+	writeIndentfln(b, 2, "Committed Major: %d", s.CommittedMajor)
+	writeIndentfln(b, 2, "Launch TCB:")
+	s.LaunchTCB.formatString(b)
+	writeIndentfln(b, 2, "Signature (DER):")
+	writeIndentfln(b, 3, "%x", s.Signature)
 }
 
 // MaaTokenClaims contains the MAA token claims.
@@ -173,4 +546,114 @@ type MaaTokenClaims struct {
 		} `json:"keys,omitempty"`
 	} `json:"x-ms-runtime,omitempty"`
 	XMsVer string `json:"x-ms-ver,omitempty"`
+}
+
+// newMAAToken parses a MAA token and returns a MaaTokenClaims object.
+func newMAAToken(ctx context.Context, rawToken, attestationServiceURL string) (MaaTokenClaims, error) {
+	var claims MaaTokenClaims
+	_, err := jwt.ParseWithClaims(rawToken, &claims, keyFromJKUFunc(ctx, attestationServiceURL), jwt.WithIssuedAt())
+	return claims, err
+}
+
+// formatString builds a string representation of a MAA token that is inteded for console output.
+func (m *MaaTokenClaims) formatString(b *strings.Builder) error {
+	out, err := json.MarshalIndent(m, "\t\t", "  ")
+	if err != nil {
+		return fmt.Errorf("marshaling claims: %w", err)
+	}
+
+	b.WriteString("\tMicrosoft Azure Attestation Token:\n\t")
+	b.WriteString(string(out))
+
+	return nil
+}
+
+// writeIndentfln writes a formatted string to the builder with the given indentation level
+// and a newline at the end.
+func writeIndentfln(b *strings.Builder, indentLvl int, format string, args ...any) {
+	for i := 0; i < indentLvl; i++ {
+		b.WriteByte('\t')
+	}
+	b.WriteString(fmt.Sprintf(format+"\n", args...))
+}
+
+// keyFromJKUFunc returns a function that gets the JSON Web Key URI from the token
+// and fetches the key from that URI. The keys are then parsed, and the key with
+// the kid that matches the token header is returned.
+func keyFromJKUFunc(ctx context.Context, webKeysURLBase string) func(token *jwt.Token) (any, error) {
+	return func(token *jwt.Token) (any, error) {
+		webKeysURL, err := url.JoinPath(webKeysURLBase, "certs")
+		if err != nil {
+			return nil, fmt.Errorf("joining web keys base URL with path: %w", err)
+		}
+
+		if token.Header["alg"] != "RS256" {
+			return nil, fmt.Errorf("invalid signing algorithm: %s", token.Header["alg"])
+		}
+		kid, ok := token.Header["kid"].(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid kid: %v", token.Header["kid"])
+		}
+		jku, ok := token.Header["jku"].(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid jku: %v", token.Header["jku"])
+		}
+		if jku != webKeysURL {
+			return nil, fmt.Errorf("jku from token (%s) does not match configured attestation service (%s)", jku, webKeysURL)
+		}
+
+		keySetBytes, err := httpGet(ctx, jku)
+		if err != nil {
+			return nil, fmt.Errorf("getting signing keys from jku %s: %w", jku, err)
+		}
+
+		var rawKeySet struct {
+			Keys []struct {
+				X5c [][]byte
+				Kid string
+			}
+		}
+
+		if err := json.Unmarshal(keySetBytes, &rawKeySet); err != nil {
+			return nil, err
+		}
+
+		for _, key := range rawKeySet.Keys {
+			if key.Kid != kid {
+				continue
+			}
+			cert, err := x509.ParseCertificate(key.X5c[0])
+			if err != nil {
+				return nil, fmt.Errorf("parsing certificate: %w", err)
+			}
+
+			return cert.PublicKey, nil
+		}
+
+		return nil, fmt.Errorf("no key found for kid %s", kid)
+	}
+}
+
+func httpGet(ctx context.Context, url string) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(resp.Status)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return body, nil
+}
+
+type debugLog interface {
+	Debugf(format string, args ...any)
 }

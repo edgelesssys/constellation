@@ -233,7 +233,7 @@ func TestValidateAk(t *testing.T) {
 
 	defaultRuntimeDataRaw, err := json.Marshal(runtimeData)
 	require.NoError(err)
-	defaultInstanceInfo := snp.InstanceInfo{RuntimeData: defaultRuntimeDataRaw}
+	defaultInstanceInfo := snp.InstanceInfo{Azure: &snp.AzureInstanceInfo{RuntimeData: defaultRuntimeDataRaw}}
 
 	sig := sha256.Sum256(defaultRuntimeDataRaw)
 	defaultReportData := sig[:]
@@ -794,9 +794,13 @@ func (v *stubAttestationValidator) SNPAttestation(attestation *spb.Attestation, 
 
 type stubInstanceInfo struct {
 	AttestationReport []byte
-	RuntimeData       []byte
-	VCEK              []byte
+	ReportSigner      []byte
 	CertChain         []byte
+	Azure             *stubAzureInstanceInfo
+}
+
+type stubAzureInstanceInfo struct {
+	RuntimeData []byte
 }
 
 func newStubInstanceInfo(vcek, certChain []byte, report, runtimeData string) (stubInstanceInfo, error) {
@@ -812,9 +816,11 @@ func newStubInstanceInfo(vcek, certChain []byte, report, runtimeData string) (st
 
 	return stubInstanceInfo{
 		AttestationReport: validReport,
-		RuntimeData:       decodedRuntime,
-		VCEK:              vcek,
+		ReportSigner:      vcek,
 		CertChain:         certChain,
+		Azure: &stubAzureInstanceInfo{
+			RuntimeData: decodedRuntime,
+		},
 	}, nil
 }
 

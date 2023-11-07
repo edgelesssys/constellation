@@ -1,9 +1,31 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "verify",
-    srcs = ["verify.go"],
+    srcs = [
+        "certchain.go",
+        "verify.go",
+    ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/verify",
     visibility = ["//:__subpackages__"],
-    deps = ["@com_github_golang_jwt_jwt_v5//:jwt"],
+    deps = [
+        "//internal/attestation/snp",
+        "//internal/constants",
+        "//internal/kubernetes/kubectl",
+        "@com_github_golang_jwt_jwt_v5//:jwt",
+        "@com_github_google_go_sev_guest//abi",
+        "@com_github_google_go_sev_guest//kds",
+    ],
+)
+
+go_test(
+    name = "verify_test",
+    srcs = ["verify_test.go"],
+    embed = [":verify"],
+    deps = [
+        "//internal/attestation/snp/testdata",
+        "//internal/logger",
+        "@com_github_stretchr_testify//assert",
+    ],
 )

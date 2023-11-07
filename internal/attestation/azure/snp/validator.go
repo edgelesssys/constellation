@@ -179,7 +179,10 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 	}
 	// Custom check of the IDKeyDigests, taking care of the WarnOnly / MAAFallback cases,
 	// but also double-checking the IDKeyDigests if the enforcement policy is set to Equal.
-	if err := v.checkIDKeyDigest(ctx, att, instanceInfo.MAAToken, extraData); err != nil {
+	if instanceInfo.Azure == nil {
+		return nil, errors.New("missing Azure info from instanceInfo")
+	}
+	if err := v.checkIDKeyDigest(ctx, att, instanceInfo.Azure.MAAToken, extraData); err != nil {
 		return nil, fmt.Errorf("checking IDKey digests: %w", err)
 	}
 
@@ -188,7 +191,7 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 	if err != nil {
 		return nil, err
 	}
-	if err = v.hclValidator.validate(instanceInfo.RuntimeData, att.Report.ReportData, pubArea.RSAParameters); err != nil {
+	if err = v.hclValidator.validate(instanceInfo.Azure.RuntimeData, att.Report.ReportData, pubArea.RSAParameters); err != nil {
 		return nil, fmt.Errorf("validating HCLAkPub: %w", err)
 	}
 

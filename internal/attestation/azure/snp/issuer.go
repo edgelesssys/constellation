@@ -67,11 +67,13 @@ func (i *Issuer) getInstanceInfo(ctx context.Context, tpm io.ReadWriteCloser, us
 	}
 
 	instanceInfo := snp.InstanceInfo{
-		VCEK:              params.VcekCert,
+		ReportSigner:      params.VcekCert,
 		CertChain:         params.VcekChain,
 		AttestationReport: params.SNPReport,
-		RuntimeData:       params.RuntimeData,
-		MAAToken:          maaToken,
+		Azure: &snp.AzureInstanceInfo{
+			RuntimeData: params.RuntimeData,
+			MAAToken:    maaToken,
+		},
 	}
 	statement, err := json.Marshal(instanceInfo)
 	if err != nil {
