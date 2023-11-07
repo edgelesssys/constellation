@@ -47,9 +47,13 @@ resource "null_resource" "sa_account_file" {
   provisioner "local-exec" {
     command = <<EOT
           #echo "${module.gcp_iam.sa_key}" TODO use base64decode fn
-          echo ${module.gcp_iam.sa_key} | base64 -d > "${path.module}/sa_account_file.json"
+          echo ${module.gcp_iam.sa_key} | base64 -d > "sa_account_file.json"
 
     EOT
+  }
+  provisioner "local-exec" {
+    when    = destroy
+    command = "rm sa_account_file.json"
   }
   triggers = {
     always_run = timestamp()
@@ -74,7 +78,7 @@ module "constellation" {
   gcp_config = {
     region                = local.region
     zone                  = var.zone
-    serviceAccountKeyPath = "${path.module}/sa_account_file.json"
+    serviceAccountKeyPath = "sa_account_file.json"
     project               = var.project
     ipCidrPod             = module.gcp.ip_cidr_pods
   }
