@@ -148,13 +148,9 @@ jobs:
         if: inputs.cliVersion != ''
         shell: bash
         run: |
-          mkdir build
           curl -fsSL -o constellation https://github.com/edgelesssys/constellation/releases/download/${{ inputs.cliVersion }}/constellation-linux-amd64
-          chmod u+x constellation
-          PATH_ADD=$(pwd)
-          export PATH="$PATH:$PATH_ADD"
-          constellation version
-          # Do not spam license server from pipeline
+          chmod u+x ./constellation
+          ./constellation version
           sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts'
 
       - name: Login to AWS (IAM + Cluster role)

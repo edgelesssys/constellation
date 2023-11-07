@@ -16,7 +16,7 @@ variable "node_groups" {
     disk_type     = string
     zone          = string
   }))
-  description = "A map of node group names to node group configurations"
+  description = "A map of node group names to node group configurations."
   validation {
     condition     = can([for group in var.node_groups : group.role == "control-plane" || group.role == "worker"])
     error_message = "The role has to be 'control-plane' or 'worker'."
@@ -66,21 +66,21 @@ variable "aws_config" {
     iam_instance_profile_worker_nodes  = string
     iam_instance_profile_control_plane = string
   })
-  description = "The cluster config for AWS"
+  description = "The cluster config for AWS."
   default     = null
 }
 
 variable "image" {
   type        = string
-  description = "The node image reference or semantical release version"
+  description = "The node image reference or semantical release version."
 }
 
 variable "kubernetes_version" {
   type        = string
-  description = "Kubernetes version"
+  description = "Kubernetes version."
 }
 
 variable "microservice_version" {
   type        = string
-  description = "Microservice version"
+  description = "Microservice version."
 }
