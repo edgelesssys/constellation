@@ -9,7 +9,10 @@ jobs:
     - name: Push artifact
       uses: ./.github/actions/artifact_upload
       with:
-        path: test-upload-file
+        path: |
+          test-upload-file
+          test-upload-folder/asdf
+          test-upload-folder/fd*
         name: test-artifact
         encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
     - name: Pull artifact
@@ -17,6 +20,6 @@ jobs:
       with:
         name: test-artifact
         encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
-    - name: Cat file
+    - name: Cat to see if stuff works.
       shell: bash
-      run: cat test-upload-file
+      run: cat test-upload-file; cat test-upload-folder/asdf; cat test-upload-folder/fdsa; cat test-upload-folder/fdas;
