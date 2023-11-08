@@ -2426,8 +2426,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/google/go-tdx-guest",
-        sum = "h1:MgHcWLCEHVpqR0LXxtgJq2uG0oNNszV8+5XYtKs7+Yg=",
-        version = "v0.2.2",
+        sum = "h1:lRlUusuieEuqljjihCXb+Mr73VNitOYPJYWXzJKtBWs=",
+        version = "v0.2.3-0.20231011100059-4cf02bed9d33",
     )
 
     go_repository(
@@ -2450,9 +2450,8 @@ def go_dependencies():
             "//3rdparty/bazel/com_github_google_go_tpm_tools:ms_tpm_20_ref.patch",
             "//3rdparty/bazel/com_github_google_go_tpm_tools:include.patch",
         ],
-        replace = "github.com/msanft/go-tpm-tools",
-        sum = "h1:rxzvNtTPknJTrPhcP4op83F+RwmKWI3TGEiyjrBOSLU=",
-        version = "v0.0.0-20231009082622-266280269413",
+        sum = "h1:iyaCPKt2N5Rd0yz0G8ANa022SgCNZkMpp+db6QELtvI=",
+        version = "v0.4.2",
     )
     go_repository(
         name = "com_github_google_go_tspi",
