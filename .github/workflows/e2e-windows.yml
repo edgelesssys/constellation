@@ -51,9 +51,10 @@ jobs:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
       - name: Download CLI artifact
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        uses: ./.github/actions/artifact_download
         with:
           name: "constell-exe"
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Check CLI version
         shell: pwsh

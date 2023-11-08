@@ -21,6 +21,7 @@ runs:
       with:
         name: ${{ inputs.name }}
         path: ${{ inputs.path }}
+        encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
     - name: Decrypt and unzip archive
       shell: bash
       run: unzip -P '${{ inputs.encryption-secret }}' -o -qq -d ${{ inputs.path }} archive.zip

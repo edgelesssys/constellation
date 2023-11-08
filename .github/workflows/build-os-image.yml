@@ -244,10 +244,11 @@ jobs:
           useCache: "false"
 
       - name: Download OS image artifact
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        uses: ./.github/actions/artifact_download
         with:
           name: image-${{ matrix.csp }}-${{ matrix.attestation_variant }}
           path: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Install tools
         shell: bash
@@ -394,9 +395,10 @@ jobs:
           ref: ${{ inputs.ref || github.head_ref }}
 
       - name: Download OS image artifact
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        uses: ./.github/actions/artifact_download
         with:
           name: image-${{ matrix.csp }}-${{ matrix.attestation_variant }}
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - uses: ./.github/actions/setup_bazel_nix
         with:
@@ -563,9 +565,10 @@ jobs:
           useCache: "false"
 
       - name: Download measurements
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        uses: ./.github/actions/artifact_download
         with:
           name: measurements
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Login to AWS
         uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a # v4.0.1
@@ -644,11 +647,12 @@ jobs:
           aws-region: eu-central-1
 
       - name: Download sbom
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        uses: ./.github/actions/artifact_download
         with:
           # downloading / using only the QEMU manifest is fine
           # since the images only differ in the ESP partition
           name: sbom-qemu-qemu-vtpm
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Upload SBOMs to S3
         shell: bash
@@ -676,9 +680,10 @@ jobs:
           useCache: "false"
 
       - name: Download image lookup table
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3
+        uses: ./.github/actions/artifact_download
         with:
           name: lookup-table
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Login to AWS
         uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a # v4.0.1
