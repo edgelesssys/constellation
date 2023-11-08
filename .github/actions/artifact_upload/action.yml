@@ -23,7 +23,7 @@ runs:
           ${{ inputs.path }}
     - name: Create archive
       shell: bash
-      run: zip -e -P '${{ inputs.encryption-secret }}' -qq -r archive.zip ${{ steps.glob.outputs.path }}
+      run: zip -e -P '${{ inputs.encryption-secret }}' -qq -r archive.zip ${{ steps.glob.outputs.paths }}
     - name: Upload archive as artifact
       uses: actions/upload-artifact@v3
       with:
