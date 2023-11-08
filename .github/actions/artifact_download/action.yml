@@ -16,12 +16,16 @@ runs:
   steps:
     - name: Install unzip
       uses: montudor/action-zip@v1
+    - name: Create temporary directory
+      id: tempdir
+      shell: bash
+      run: echo "directory=$(mktemp -d)" >> "$GITHUB_OUTPUT"
     - name: Download the artifact
       uses: actions/download-artifact@v3
       with:
         name: ${{ inputs.name }}
-        path: ${{ inputs.path }}
+        path: ${{ steps.tempdir.outputs.directory }}
         encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
     - name: Decrypt and unzip archive
       shell: bash
-      run: unzip -P '${{ inputs.encryption-secret }}' -o -qq -d ${{ inputs.path }} archive.zip
+      run: unzip -P '${{ inputs.encryption-secret }}' -o -qq -d ${{ inputs.path }} ${{ steps.tempdir.outputs.directory }}/archive.zip

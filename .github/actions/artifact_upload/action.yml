@@ -25,12 +25,16 @@ runs:
       with:
         files: |
           ${{ inputs.path }}
+    - name: Create temporary directory
+      id: tempdir
+      shell: bash
+      run: echo "directory=$(mktemp -d)" >> "$GITHUB_OUTPUT"
     - name: Create archive
       shell: bash
-      run: zip -e -P '${{ inputs.encryption-secret }}' -qq -r archive.zip ${{ steps.glob.outputs.paths }}
+      run: zip -e -P '${{ inputs.encryption-secret }}' -qq -r ${{ steps.tempdir.outputs.directory }}/archive.zip ${{ steps.glob.outputs.paths }}
     - name: Upload archive as artifact
       uses: actions/upload-artifact@v3
       with:
         name: ${{ inputs.name }}
-        path: ./archive.zip
+        path: ${{ steps.tempdir.outputs.directory }}/archive.zip
         retention-days: ${{ inputs.retention-days }}
