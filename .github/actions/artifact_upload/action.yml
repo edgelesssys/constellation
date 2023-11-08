@@ -10,10 +10,6 @@ inputs:
   encryption-secret:
     description: 'The secret to use for encrypting the files.'
     required: true
-  recursive:
-    description: 'Recursively add everything in given directories.'
-    required: false
-    default: true
 runs:
   using: "composite"
   steps:
@@ -21,13 +17,7 @@ runs:
       uses: montudor/action-zip@v1
     - name: Create archive
       shell: bash
-      run: |
-        if ${{ inputs.recursive }}
-        then
-          zip -e -P '${{ inputs.encryption-secret }}' -qq -r archive.zip ${{ inputs.path }}
-        else
-          zip -e -P '${{ inputs.encryption-secret }}' -qq archive.zip ${{ inputs.path }}
-        fi
+      run: zip -e -P '${{ inputs.encryption-secret }}' -qq -r archive.zip ${{ inputs.path }}
     - name: Upload archive as artifact
       uses: actions/upload-artifact@v3
       with:
