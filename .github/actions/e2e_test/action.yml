@@ -284,7 +284,7 @@ runs:
         kubernetesVersion: ${{ inputs.kubernetesVersion }}
         refStream: ${{ inputs.refStream }}
         selfManagedInfra: ${{ inputs.selfManagedInfra }}
-        
+
     #
     # Test payloads
     #
