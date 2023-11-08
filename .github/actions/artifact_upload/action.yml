@@ -53,6 +53,15 @@ runs:
         if $something_exists
         then
           zip -e -P '${{ inputs.encryption-secret }}' -qq -r ${{ steps.tempdir.outputs.directory }}/archive.zip ${{ steps.glob.outputs.paths }}
+        else
+          if [ ${{ inputs.if-no-files-found }}="warn" ]
+          then
+            echo "::warning No files found with the provided path(s) ${{ inputs.path }}. No artifact will be uploaded."
+          elif [ ${{ inputs.if-no-files-found }}="error" ]
+          then
+            echo "::error No files found with the provided path(s) ${{ inputs.path }}. No artifacts will be uploaded."
+            exit 1
+          fi
         fi
     - name: Upload archive as artifact
       uses: actions/upload-artifact@v3
@@ -60,4 +69,4 @@ runs:
         name: ${{ inputs.name }}
         path: ${{ steps.tempdir.outputs.directory }}/archive.zip
         retention-days: ${{ inputs.retention-days }}
-        if-no-files-found: ${{ inputs.if-no-files-found }}
+        if-no-files-found: ignore
