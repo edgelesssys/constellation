@@ -13,7 +13,7 @@ jobs:
           asojhgiouhgioerwhg
         name: test-artifact
         encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
-        if-no-files-found: error
+        if-no-files-found: ignore
     - name: Pull artifact
       uses: ./.github/actions/artifact_download
       with:
