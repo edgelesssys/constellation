@@ -11,10 +11,6 @@ inputs:
     description: 'How the artifact should be retained.'
     required: false
     default: 60
-  if-no-files-found:
-    description: 'If there are no files found, should the action print a warning (warn), fail and error (error) or ignore it (ignore).'
-    required: false
-    default: warn
   encryption-secret:
     description: 'The secret to use for encrypting the files.'
     required: true
@@ -43,14 +39,7 @@ runs:
         then
           zip -e -P '${{ inputs.encryption-secret }}' -qq -r ${{ steps.tempdir.outputs.directory }}/archive.zip ${{ steps.glob.outputs.paths }}
         else
-          if [ ${{ inputs.if-no-files-found }} = "warn" ]
-          then
-            echo "::warning:: No files/directories found with the provided path(s) $(echo -n ${{ inputs.path }}). No artifact will be uploaded."
-          elif [ ${{ inputs.if-no-files-found }} = "error" ]
-          then
-            echo "::error:: No files/directories found with the provided path(s) $(echo -n ${{ inputs.path }}). No artifacts will be uploaded."
-            exit 1
-          fi
+          echo "::warning:: No files/directories found with the provided path(s) $(echo -n ${{ inputs.path }}). No artifact will be uploaded."
         fi
     - name: Upload archive as artifact
       uses: actions/upload-artifact@v3
