@@ -13,7 +13,7 @@ inputs:
   retention-days:
     description: 'How the artifact should be retained.'
     required: false
-    default: 90
+    default: 60
 runs:
   using: "composite"
   steps:
