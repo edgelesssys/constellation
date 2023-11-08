@@ -36,8 +36,7 @@ runs:
     - name: Create archive
       shell: bash
       run: |
-        # Check if any of the paths
-        # exist.
+        # Check if any of the paths exist.
         something_exists=false
         for path in ${{ steps.glob.outputs.path }};
         do
