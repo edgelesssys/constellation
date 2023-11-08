@@ -9,7 +9,7 @@ jobs:
     - name: Push artifact
       uses: ./.github/actions/artifact_upload
       with:
-        path: |
+        path: >
           test-upload-file
           test-upload-folder/asdf
           test-upload-folder/fd*
