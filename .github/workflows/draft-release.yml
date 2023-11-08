@@ -92,22 +92,24 @@ jobs:
           cosignPassword: ${{ inputs.key == 'release' && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
 
       - name: Upload CLI as artifact (unix)
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        uses: ./.github/actions/artifact_upload
         if : ${{ matrix.os != 'windows' }}
         with:
           name: constellation-${{ matrix.os }}-${{ matrix.arch }}
           path: |
             build/constellation-${{ matrix.os }}-${{ matrix.arch }}
             build/constellation-${{ matrix.os }}-${{ matrix.arch }}.sig
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Upload CLI as artifact (windows)
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        uses: ./.github/actions/artifact_upload
         if : ${{ matrix.os == 'windows' }}
         with:
           name: constellation-${{ matrix.os }}-${{ matrix.arch }}
           path: |
             build/constellation-${{ matrix.os }}-${{ matrix.arch }}.exe
             build/constellation-${{ matrix.os }}-${{ matrix.arch }}.exe.sig
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
   build-terraform-provider:
     runs-on: ubuntu-22.04
@@ -296,16 +298,18 @@ jobs:
           COSIGN_PASSWORD: ${{ inputs.key == 'release' && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
 
       - name: Upload Constellation CLI SBOM
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        uses: ./.github/actions/artifact_upload
         with:
           name: constellation.spdx.sbom
           path: constellation.spdx.sbom
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Upload Constellation CLI SBOM's signature
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        uses: ./.github/actions/artifact_upload
         with:
           name: constellation.spdx.sbom.sig
           path: constellation.spdx.sbom.sig
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
   provenance:
     permissions:

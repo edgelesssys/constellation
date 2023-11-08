@@ -25,7 +25,8 @@ runs:
       shell: bash
       run: zip -e -P '${{ inputs.encryption-secret }}' -qq -r archive.zip ${{ steps.glob.outputs.paths }}
     - name: Upload archive as artifact
-      uses: actions/upload-artifact@v3
+      uses: ./.github/actions/artifact_upload
       with:
         name: ${{ inputs.name }}
         path: ./archive.zip
+        encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
