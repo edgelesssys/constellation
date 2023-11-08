@@ -13,6 +13,9 @@ import (
 	"regexp"
 )
 
+// Used to validate DNS names.
+var domainRegex = regexp.MustCompile(`^(?i)[a-z0-9-]+(\.[a-z0-9-]+)+\.?$`)
+
 // Constraint is a constraint on a document or a field of a document.
 type Constraint struct {
 	// Satisfied returns no error if the constraint is satisfied.
@@ -208,7 +211,7 @@ func CIDR(s string) *Constraint {
 func DNSName(s string) *Constraint {
 	return &Constraint{
 		Satisfied: func() *TreeError {
-			if _, err := net.LookupHost(s); err != nil {
+			if !domainRegex.MatchString(s) {
 				return NewErrorTree(fmt.Errorf("%s must be a valid DNS name", s))
 			}
 			return nil
