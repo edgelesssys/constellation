@@ -19,7 +19,8 @@ runs:
       uses: tj-actions/glob@v17
       id: glob
       with:
-        files: ${{ inputs.path }}
+        files: |
+          ${{ inputs.path }}
     - name: Create archive
       shell: bash
       run: zip -e -P '${{ inputs.encryption-secret }}' -qq -r archive.zip ${{ steps.glob.outputs.path }}
