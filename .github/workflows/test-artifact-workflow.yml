@@ -12,3 +12,8 @@ jobs:
         path: .github/actions/artifact_upload
         name: test-artifact
         encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+    - name: Pull artifact
+      uses: ./.github/actions/artifact_upload
+      with:
+        name: test-artifact
+        encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
