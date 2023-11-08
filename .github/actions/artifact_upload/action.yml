@@ -10,6 +10,10 @@ inputs:
   encryption-secret:
     description: 'The secret to use for encrypting the files.'
     required: true
+  retention-days:
+    description: 'How the artifact should be retained.'
+    required: false
+    default: 90
 runs:
   using: "composite"
   steps:
@@ -25,8 +29,8 @@ runs:
       shell: bash
       run: zip -e -P '${{ inputs.encryption-secret }}' -qq -r archive.zip ${{ steps.glob.outputs.paths }}
     - name: Upload archive as artifact
-      uses: ./.github/actions/artifact_upload
+      uses: actions/upload-artifact@v3
       with:
         name: ${{ inputs.name }}
         path: ./archive.zip
-        encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+        retention-days: ${{ inputs.retention-days }}
