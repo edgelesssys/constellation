@@ -82,7 +82,7 @@ runs:
     - name: Patch MAA Policy
       shell: bash
       working-directory: ${{ github.workspace }}/e2e-infra
-      if: ${{ inputs.cloudProvider }} == 'azure'
+      if: inputs.cloudProvider == 'azure'
       run: |
         bazel run //hack/maa-patch:maa-patch $(terraform output attestationURL | jq -r)
 
