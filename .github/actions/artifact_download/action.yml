@@ -4,6 +4,10 @@ inputs:
   name:
     description: 'The name of the artifact.'
     required: true
+  path:
+    description: 'Download to a specified path.'
+    required: false
+    default: ./
   encryption-secret:
     description: 'The secret to use for decrypting the artifact.'
     required: true
@@ -16,6 +20,7 @@ runs:
       uses: actions/download-artifact@v3
       with:
         name: ${{ inputs.name }}
+        path: ${{ inputs.path }}
     - name: Decrypt and unzip archive
       shell: bash
-      run: unzip -P '${{ inputs.encryption-secret }}' -o -qq archive.zip
+      run: unzip -P '${{ inputs.encryption-secret }}' -o -qq -d ${{ inputs.path }} archive.zip

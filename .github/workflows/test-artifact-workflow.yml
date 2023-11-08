@@ -21,6 +21,7 @@ jobs:
       with:
         name: test-artifact
         encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+        path: test-upload-folder
     - name: Cat to see if stuff works.
       shell: bash
-      run: cat test-upload-file; cat test-upload-folder/asdf; cat test-upload-folder/fdsa;
+      run: cat test-upload-folder/test-upload-file; cat test-upload-folder/test-upload-folder/asdf; cat test-upload-folder/test-upload-folder/fdsa;
