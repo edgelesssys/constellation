@@ -1,7 +1,7 @@
 name: Test artifact actions
 on: workflow_dispatch
 jobs:
-  test-upload:
+  test-upload-download:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repo
