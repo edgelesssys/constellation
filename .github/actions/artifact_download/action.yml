@@ -1,0 +1,21 @@
+name: Download artifact
+description: Download and decrypt an artifact.
+inputs:
+  name:
+    description: 'The name of the artifact.'
+    required: true
+  encryption-secret:
+    description: 'The secret to use for decrypting the artifact.'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Install unzip
+      uses: montudor/action-zip@v1
+    - name: Download the artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: ${{ inputs.name }}
+    - name: Decrypt and unzip archive
+      shell: bash
+      run: unzip -P '${{ inputs.encryption-secret }}' -qq archive.zip
