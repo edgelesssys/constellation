@@ -17,3 +17,6 @@ jobs:
       with:
         name: test-artifact
         encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+    - name: Cat file
+      shell: bash
+      run: cat test-upload-file
