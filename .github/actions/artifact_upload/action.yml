@@ -7,13 +7,17 @@ inputs:
   name:
     description: 'The name of the artifact.'
     required: true
-  encryption-secret:
-    description: 'The secret to use for encrypting the files.'
-    required: true
   retention-days:
     description: 'How the artifact should be retained.'
     required: false
     default: 60
+  if-no-files-found:
+    description: 'If there are no files found, should the action print a warning (warn), fail and error (error) or ignore it (ignore).'
+    required: false
+    default: warn
+  encryption-secret:
+    description: 'The secret to use for encrypting the files.'
+    required: true
 runs:
   using: "composite"
   steps:
@@ -31,10 +35,29 @@ runs:
       run: echo "directory=$(mktemp -d)" >> "$GITHUB_OUTPUT"
     - name: Create archive
       shell: bash
-      run: zip -e -P '${{ inputs.encryption-secret }}' -qq -r ${{ steps.tempdir.outputs.directory }}/archive.zip ${{ steps.glob.outputs.paths }}
+      run: |
+        # Check if any of the paths
+        # exist.
+        something-exists=false
+        for path in ${{ steps.glob.outputs.path }};
+        do
+          if [[ -d $path || -f $path ]]
+          then
+            something-exists=true
+          fi
+        done
+
+        # Don't create a zip file if no files are found.
+        # Later, if-no-files-found will be handled by
+        # the upload-artifact action itself.
+        if $something-exists
+        then
+          zip -e -P '${{ inputs.encryption-secret }}' -qq -r ${{ steps.tempdir.outputs.directory }}/archive.zip ${{ steps.glob.outputs.paths }}
+        fi
     - name: Upload archive as artifact
       uses: actions/upload-artifact@v3
       with:
         name: ${{ inputs.name }}
         path: ${{ steps.tempdir.outputs.directory }}/archive.zip
         retention-days: ${{ inputs.retention-days }}
+        if-no-files-found: ${{ inputs.if-no-files-found }}
