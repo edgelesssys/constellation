@@ -38,19 +38,19 @@ runs:
       run: |
         # Check if any of the paths
         # exist.
-        something-exists=false
+        something_exists=false
         for path in ${{ steps.glob.outputs.path }};
         do
           if [[ -d $path || -f $path ]]
           then
-            something-exists=true
+            something_exists=true
           fi
         done
 
         # Don't create a zip file if no files are found.
         # Later, if-no-files-found will be handled by
         # the upload-artifact action itself.
-        if $something-exists
+        if $something_exists
         then
           zip -e -P '${{ inputs.encryption-secret }}' -qq -r ${{ steps.tempdir.outputs.directory }}/archive.zip ${{ steps.glob.outputs.paths }}
         fi
