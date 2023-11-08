@@ -68,7 +68,7 @@ func unmarshalTypedConfig[T AttestationCfg](data []byte) (AttestationCfg, error)
 // Certificate is a wrapper around x509.Certificate allowing custom marshaling.
 type Certificate x509.Certificate
 
-// Equal returns true if the certificates are equal.
+// Equal returns true if the embedded Raw values are equal.
 func (c Certificate) Equal(other Certificate) bool {
 	return bytes.Equal(c.Raw, other.Raw)
 }

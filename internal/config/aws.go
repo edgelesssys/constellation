@@ -6,8 +6,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 package config
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -47,7 +50,41 @@ func (c AWSSEVSNP) EqualTo(other AttestationCfg) (bool, error) {
 		return false, fmt.Errorf("cannot compare %T with %T", c, other)
 	}
 
-	return c.Measurements.EqualTo(otherCfg.Measurements), nil
+	measurementsEqual := c.Measurements.EqualTo(otherCfg.Measurements)
+	bootloaderEqual := c.BootloaderVersion == otherCfg.BootloaderVersion
+	teeEqual := c.TEEVersion == otherCfg.TEEVersion
+	snpEqual := c.SNPVersion == otherCfg.SNPVersion
+	microcodeEqual := c.MicrocodeVersion == otherCfg.MicrocodeVersion
+	rootKeyEqual := bytes.Equal(c.AMDRootKey.Raw, otherCfg.AMDRootKey.Raw)
+	signingKeyEqual := bytes.Equal(c.AMDSigningKey.Raw, otherCfg.AMDSigningKey.Raw)
+
+	return measurementsEqual && bootloaderEqual && teeEqual && snpEqual && microcodeEqual && rootKeyEqual && signingKeyEqual, nil
+}
+
+// FetchAndSetLatestVersionNumbers fetches the latest version numbers from the configapi and sets them.
+func (c *AWSSEVSNP) FetchAndSetLatestVersionNumbers(ctx context.Context, fetcher attestationconfigapi.Fetcher) error {
+	versions, err := fetcher.FetchSEVSNPVersionLatest(ctx, variant.AWSSEVSNP{})
+	if err != nil {
+		return err
+	}
+	// set number and keep isLatest flag
+	c.mergeWithLatestVersion(versions.SEVSNPVersion)
+	return nil
+}
+
+func (c *AWSSEVSNP) mergeWithLatestVersion(latest attestationconfigapi.SEVSNPVersion) {
+	if c.BootloaderVersion.WantLatest {
+		c.BootloaderVersion.Value = latest.Bootloader
+	}
+	if c.TEEVersion.WantLatest {
+		c.TEEVersion.Value = latest.TEE
+	}
+	if c.SNPVersion.WantLatest {
+		c.SNPVersion.Value = latest.SNP
+	}
+	if c.MicrocodeVersion.WantLatest {
+		c.MicrocodeVersion.Value = latest.Microcode
+	}
 }
 
 // GetVariant returns aws-nitro-tpm as the variant.
