@@ -18,4 +18,4 @@ runs:
         name: ${{ inputs.name }}
     - name: Decrypt and unzip archive
       shell: bash
-      run: unzip -P '${{ inputs.encryption-secret }}' -qq archive.zip
+      run: unzip -P '${{ inputs.encryption-secret }}' -o -qq archive.zip
