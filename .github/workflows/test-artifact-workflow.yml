@@ -13,7 +13,7 @@ jobs:
         name: test-artifact
         encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
     - name: Pull artifact
-      uses: ./.github/actions/artifact_upload
+      uses: ./.github/actions/artifact_download
       with:
         name: test-artifact
         encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
