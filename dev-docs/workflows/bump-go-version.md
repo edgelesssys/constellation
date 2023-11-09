@@ -1,5 +1,5 @@
 # Bump Go version
-`govulncheck` from the bazel `check` target will fail if the Go version is outdated.
+`govulncheck` from the bazel `check` target will fail if our code is vulnerable, which is often the case when a patch version was released with security fixes.
 
 ## Steps
 
@@ -14,3 +14,4 @@
       >             got:    sha256-R7Jqg9K2WjwcG8rOJztpvuSaentRaKdgTe09JqN714c=
     ```
     Simple replace the hash with the got value.
+3. Ask @katexochen to build the thing and push it into his cache.
