@@ -279,7 +279,7 @@ To [create the IAM configuration](../workflows/config.md#creating-an-iam-configu
 
 The built-in `AdministratorAccess` policy is a superset of these permissions.
 
-To [create a Constellation cluster](../workflows/create.md#the-create-step), see the permissions of [main.tf](https://github.com/edgelesssys/constellation/blob/main/cli/internal/terraform/terraform/iam/aws/main.tf).
+To [create a Constellation cluster](../workflows/create.md#the-create-step), see the permissions of [main.tf](https://github.com/edgelesssys/constellation/blob/main/terraform/infrastructure/iam/aws/main.tf).
 
 
 The built-in `PowerUserAccess` policy is a superset of these permissions.

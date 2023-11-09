@@ -39,7 +39,7 @@ Constellation supports managing the infrastructure via Terraform. This allows fo
 Since the Constellation CLI also uses Terraform under the hood, you can reuse the same Terraform files.
 For now, please refrain from changing the Terraform resource definitions, as Constellation is tightly coupled to them.
 
-Download the Terraform files for the selected CSP from the [GitHub repository](https://github.com/edgelesssys/constellation/tree/main/cli/internal/terraform/terraform).
+Download the Terraform files for the selected CSP from the [GitHub repository](https://github.com/edgelesssys/constellation/tree/main/terraform/infrastructure).
 
 Create a `terraform.tfvars` file.
 There, define all needed variables found in `variables.tf` using the values from the `constellation-config.yaml`.
