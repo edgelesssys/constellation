@@ -79,9 +79,29 @@ Continue with [initializing your cluster](#the-apply-step).
 
 The following command initializes and bootstraps your cluster:
 
+<tabs groupId="usage">
+<tabItem value="cli" label="CLI">
+
 ```bash
 constellation apply
 ```
+
+</tabItem>
+<tabItem value="terraform" label="Terraform">
+
+```bash
+constellation apply --skip-phases=infrastructure
+```
+
+</tabItem>
+<tabItem value="self-managed" label="Self-managed">
+
+```bash
+constellation apply --skip-phases=infrastructure
+```
+
+</tabItem>
+</tabs>
 
 Next, configure `kubectl` for your cluster:
 
