@@ -99,7 +99,7 @@ func (a *applyCmd) applyTerraformChanges(
 			"The creation of the cluster was aborted.",
 			"cluster creation aborted by user",
 			"Creating",
-			"Your Constellation cluster was created successfully.",
+			"Cloud infrastructure created successfully.",
 		)
 	}
 

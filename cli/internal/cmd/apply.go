@@ -412,8 +412,7 @@ func (a *applyCmd) apply(cmd *cobra.Command, configFetcher attestationconfigapi.
 	}
 
 	// Upgrade NodeVersion object
-	// This can be skipped if we ran the init RPC, as the NodeVersion object is already up to date
-	if !(a.flags.skipPhases.contains(skipK8sPhase) && a.flags.skipPhases.contains(skipImagePhase)) {
+	if !(a.flags.skipPhases.contains(skipK8sPhase, skipImagePhase)) {
 		if err := a.runK8sUpgrade(cmd, conf, kubeUpgrader); err != nil {
 			return err
 		}
@@ -729,7 +728,7 @@ func printCreateWarnings(out io.Writer, conf *config.Config) {
 // For example, "skip-phases helm,init" should suggest all phases but "helm" and "init".
 func skipPhasesCompletion(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	skippedPhases := strings.Split(toComplete, ",")
-	if len(skippedPhases) == 0 {
+	if skippedPhases[0] == "" {
 		// No phases were typed yet, so suggest all phases
 		return allPhases(), cobra.ShellCompDirectiveNoFileComp
 	}

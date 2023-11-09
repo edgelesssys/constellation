@@ -437,3 +437,53 @@ func TestValidateInputs(t *testing.T) {
 		})
 	}
 }
+
+func TestSkipPhasesCompletion(t *testing.T) {
+	testCases := map[string]struct {
+		toComplete      string
+		wantSuggestions []string
+	}{
+		"empty": {
+			toComplete:      "",
+			wantSuggestions: allPhases(),
+		},
+		"partial": {
+			toComplete:      "hel",
+			wantSuggestions: []string{string(skipHelmPhase)},
+		},
+		"one full word": {
+			toComplete: string(skipHelmPhase),
+		},
+		"one full word with comma": {
+			toComplete: string(skipHelmPhase) + ",",
+			wantSuggestions: func() []string {
+				allPhases := allPhases()
+				var suggestions []string
+				for _, phase := range allPhases {
+					if phase == string(skipHelmPhase) {
+						continue
+					}
+					suggestions = append(suggestions, fmt.Sprintf("%s,%s", skipHelmPhase, phase))
+				}
+				return suggestions
+			}(),
+		},
+		"one full word, one partial": {
+			toComplete:      string(skipHelmPhase) + ",ima",
+			wantSuggestions: []string{fmt.Sprintf("%s,%s", skipHelmPhase, skipImagePhase)},
+		},
+		"all phases": {
+			toComplete:      strings.Join(allPhases(), ","),
+			wantSuggestions: []string{},
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			suggestions, _ := skipPhasesCompletion(nil, nil, tc.toComplete)
+			assert.ElementsMatch(tc.wantSuggestions, suggestions, "got: %v, want: %v", suggestions, tc.wantSuggestions)
+		})
+	}
+}
