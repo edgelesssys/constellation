@@ -180,12 +180,8 @@ func TestUpgradeApply(t *testing.T) {
 			helmUpgrader:      &mockApplier{}, // mocks ensure that no methods are called
 			terraformUpgrader: &mockTerraformUpgrader{},
 			flags: applyFlags{
-				skipPhases: skipPhases{
-					skipInfrastructurePhase: struct{}{}, skipHelmPhase: struct{}{},
-					skipK8sPhase: struct{}{}, skipImagePhase: struct{}{},
-					skipInitPhase: struct{}{},
-				},
-				yes: true,
+				skipPhases: newPhases(skipInfrastructurePhase, skipAttestationConfigPhase, skipCertSANsPhase, skipHelmPhase, skipK8sPhase, skipImagePhase),
+				yes:        true,
 			},
 			fh: fsWithStateFileAndTfState,
 		},
@@ -196,11 +192,8 @@ func TestUpgradeApply(t *testing.T) {
 			helmUpgrader:      &mockApplier{}, // mocks ensure that no methods are called
 			terraformUpgrader: &mockTerraformUpgrader{},
 			flags: applyFlags{
-				skipPhases: skipPhases{
-					skipInfrastructurePhase: struct{}{}, skipHelmPhase: struct{}{},
-					skipK8sPhase: struct{}{}, skipInitPhase: struct{}{},
-				},
-				yes: true,
+				skipPhases: newPhases(skipInfrastructurePhase, skipAttestationConfigPhase, skipCertSANsPhase, skipHelmPhase, skipK8sPhase),
+				yes:        true,
 			},
 			fh: fsWithStateFileAndTfState,
 		},
@@ -230,10 +223,8 @@ func TestUpgradeApply(t *testing.T) {
 			helmUpgrader:      &stubApplier{},
 			terraformUpgrader: &mockTerraformUpgrader{},
 			flags: applyFlags{
-				yes: true,
-				skipPhases: skipPhases{
-					skipInfrastructurePhase: struct{}{},
-				},
+				yes:        true,
+				skipPhases: newPhases(skipInfrastructurePhase),
 			},
 			fh: func() file.Handler {
 				fh := file.NewHandler(afero.NewMemMapFs())

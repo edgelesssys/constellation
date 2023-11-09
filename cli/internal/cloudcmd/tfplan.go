@@ -53,7 +53,7 @@ func plan(
 		return false, fmt.Errorf("terraform plan: %w", err)
 	}
 
-	// If we are planning in a new workspace, we don't want to show a diff
+	// If we are planning in a new workspace, we don't want to show the plan
 	if isNewWorkspace {
 		return hasDiff, nil
 	}

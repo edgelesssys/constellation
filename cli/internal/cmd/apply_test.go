@@ -110,7 +110,7 @@ func TestParseApplyFlags(t *testing.T) {
 				return flags
 			}(),
 			wantFlags: applyFlags{
-				skipPhases:     skipPhases{skipHelmPhase: struct{}{}, skipK8sPhase: struct{}{}},
+				skipPhases:     newPhases(skipHelmPhase, skipK8sPhase),
 				helmWaitMode:   helm.WaitModeAtomic,
 				upgradeTimeout: 5 * time.Minute,
 			},
@@ -219,16 +219,14 @@ func TestSkipPhases(t *testing.T) {
 	cmd.Flags().Bool("debug", false, "")
 
 	require.NoError(cmd.Flags().Set("skip-phases", strings.Join(allPhases(), ",")))
-	wantPhases := skipPhases{}
-	wantPhases.add(skipInfrastructurePhase, skipInitPhase, skipAttestationConfigPhase, skipCertSANsPhase, skipHelmPhase, skipK8sPhase, skipImagePhase)
+	wantPhases := newPhases(skipInfrastructurePhase, skipInitPhase, skipAttestationConfigPhase, skipCertSANsPhase, skipHelmPhase, skipK8sPhase, skipImagePhase)
 
 	var flags applyFlags
 	err := flags.parse(cmd.Flags())
 	require.NoError(err)
 	assert.Equal(wantPhases, flags.skipPhases)
 
-	phases := skipPhases{}
-	phases.add(skipAttestationConfigPhase, skipCertSANsPhase)
+	phases := newPhases(skipAttestationConfigPhase, skipCertSANsPhase)
 	assert.True(phases.contains(skipAttestationConfigPhase, skipCertSANsPhase))
 	assert.False(phases.contains(skipAttestationConfigPhase, skipInitPhase))
 	assert.False(phases.contains(skipInitPhase, skipInfrastructurePhase))
@@ -289,9 +287,7 @@ func TestValidateInputs(t *testing.T) {
 			createAdminConfig:  defaultAdminConfig,
 			createTfState:      defaultTfState,
 			flags:              applyFlags{},
-			wantPhases: skipPhases{
-				skipInitPhase: struct{}{},
-			},
+			wantPhases:         newPhases(skipInitPhase),
 		},
 		"aws: all files exist": {
 			createConfig:       defaultConfig(cloudprovider.AWS),
@@ -300,9 +296,7 @@ func TestValidateInputs(t *testing.T) {
 			createAdminConfig:  defaultAdminConfig,
 			createTfState:      defaultTfState,
 			flags:              applyFlags{},
-			wantPhases: skipPhases{
-				skipInitPhase: struct{}{},
-			},
+			wantPhases:         newPhases(skipInitPhase),
 		},
 		"azure: all files exist": {
 			createConfig:       defaultConfig(cloudprovider.Azure),
@@ -311,9 +305,7 @@ func TestValidateInputs(t *testing.T) {
 			createAdminConfig:  defaultAdminConfig,
 			createTfState:      defaultTfState,
 			flags:              applyFlags{},
-			wantPhases: skipPhases{
-				skipInitPhase: struct{}{},
-			},
+			wantPhases:         newPhases(skipInitPhase),
 		},
 		"qemu: all files exist": {
 			createConfig:       defaultConfig(cloudprovider.QEMU),
@@ -322,10 +314,7 @@ func TestValidateInputs(t *testing.T) {
 			createAdminConfig:  defaultAdminConfig,
 			createTfState:      defaultTfState,
 			flags:              applyFlags{},
-			wantPhases: skipPhases{
-				skipInitPhase:  struct{}{},
-				skipImagePhase: struct{}{}, // No image upgrades on QEMU
-			},
+			wantPhases:         newPhases(skipInitPhase, skipImagePhase), // No image upgrades on QEMU
 		},
 		"no config file": {
 			createConfig:       func(require *require.Assertions, fh file.Handler) {},
@@ -352,10 +341,7 @@ func TestValidateInputs(t *testing.T) {
 			createAdminConfig:  func(require *require.Assertions, fh file.Handler) {},
 			createTfState:      defaultTfState,
 			flags:              applyFlags{},
-			wantPhases: skipPhases{
-				skipImagePhase: struct{}{},
-				skipK8sPhase:   struct{}{},
-			},
+			wantPhases:         newPhases(skipImagePhase, skipK8sPhase),
 		},
 		"no tf state, but admin config exists": {
 			createConfig:       defaultConfig(cloudprovider.GCP),
@@ -373,27 +359,18 @@ func TestValidateInputs(t *testing.T) {
 			createAdminConfig:  func(require *require.Assertions, fh file.Handler) {},
 			createTfState:      func(require *require.Assertions, fh file.Handler) {},
 			flags:              applyFlags{},
-			wantPhases: skipPhases{
-				skipImagePhase: struct{}{},
-				skipK8sPhase:   struct{}{},
-			},
+			wantPhases:         newPhases(skipImagePhase, skipK8sPhase),
 		},
-		"skip terraform": {
+		"skip infrastructure": {
 			createConfig:       defaultConfig(cloudprovider.GCP),
 			createState:        defaultState,
 			createMasterSecret: func(require *require.Assertions, fh file.Handler) {},
 			createAdminConfig:  func(require *require.Assertions, fh file.Handler) {},
 			createTfState:      func(require *require.Assertions, fh file.Handler) {},
 			flags: applyFlags{
-				skipPhases: skipPhases{
-					skipInfrastructurePhase: struct{}{},
-				},
+				skipPhases: newPhases(skipInfrastructurePhase),
 			},
-			wantPhases: skipPhases{
-				skipInfrastructurePhase: struct{}{},
-				skipImagePhase:          struct{}{},
-				skipK8sPhase:            struct{}{},
-			},
+			wantPhases: newPhases(skipInfrastructurePhase, skipImagePhase, skipK8sPhase),
 		},
 	}
 
@@ -486,4 +463,10 @@ func TestSkipPhasesCompletion(t *testing.T) {
 			assert.ElementsMatch(tc.wantSuggestions, suggestions, "got: %v, want: %v", suggestions, tc.wantSuggestions)
 		})
 	}
+}
+
+func newPhases(phases ...skipPhase) skipPhases {
+	skipPhases := skipPhases{}
+	skipPhases.add(phases...)
+	return skipPhases
 }

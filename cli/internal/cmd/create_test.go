@@ -236,8 +236,7 @@ func TestCreate(t *testing.T) {
 
 			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider))
 
-			skipPhases := skipPhases{}
-			skipPhases.add(skipInitPhase, skipAttestationConfigPhase, skipCertSANsPhase, skipHelmPhase, skipImagePhase, skipK8sPhase)
+			skipPhases := newPhases(skipInitPhase, skipAttestationConfigPhase, skipCertSANsPhase, skipHelmPhase, skipImagePhase, skipK8sPhase)
 			a := &applyCmd{
 				fileHandler: fileHandler,
 				flags: applyFlags{

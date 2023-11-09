@@ -262,10 +262,8 @@ func TestInitialize(t *testing.T) {
 			i := &applyCmd{
 				fileHandler: fileHandler,
 				flags: applyFlags{
-					rootFlags: rootFlags{force: true},
-					skipPhases: skipPhases{
-						skipInfrastructurePhase: struct{}{},
-					},
+					rootFlags:  rootFlags{force: true},
+					skipPhases: newPhases(skipInfrastructurePhase),
 				},
 				log:          logger.NewTest(t),
 				spinner:      &nopSpinner{},
