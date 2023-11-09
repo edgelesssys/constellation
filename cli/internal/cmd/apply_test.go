@@ -280,7 +280,7 @@ func TestValidateInputs(t *testing.T) {
 		wantPhases         skipPhases
 		wantErr            bool
 	}{
-		"gcp: all files exist": {
+		"[upgrade] gcp: all files exist": {
 			createConfig:       defaultConfig(cloudprovider.GCP),
 			createState:        defaultState,
 			createMasterSecret: defaultMasterSecret,
@@ -289,7 +289,7 @@ func TestValidateInputs(t *testing.T) {
 			flags:              applyFlags{},
 			wantPhases:         newPhases(skipInitPhase),
 		},
-		"aws: all files exist": {
+		"[upgrade] aws: all files exist": {
 			createConfig:       defaultConfig(cloudprovider.AWS),
 			createState:        defaultState,
 			createMasterSecret: defaultMasterSecret,
@@ -298,7 +298,7 @@ func TestValidateInputs(t *testing.T) {
 			flags:              applyFlags{},
 			wantPhases:         newPhases(skipInitPhase),
 		},
-		"azure: all files exist": {
+		"[upgrade] azure: all files exist": {
 			createConfig:       defaultConfig(cloudprovider.Azure),
 			createState:        defaultState,
 			createMasterSecret: defaultMasterSecret,
@@ -307,7 +307,7 @@ func TestValidateInputs(t *testing.T) {
 			flags:              applyFlags{},
 			wantPhases:         newPhases(skipInitPhase),
 		},
-		"qemu: all files exist": {
+		"[upgrade] qemu: all files exist": {
 			createConfig:       defaultConfig(cloudprovider.QEMU),
 			createState:        defaultState,
 			createMasterSecret: defaultMasterSecret,
@@ -316,7 +316,7 @@ func TestValidateInputs(t *testing.T) {
 			flags:              applyFlags{},
 			wantPhases:         newPhases(skipInitPhase, skipImagePhase), // No image upgrades on QEMU
 		},
-		"no config file": {
+		"no config file errors": {
 			createConfig:       func(require *require.Assertions, fh file.Handler) {},
 			createState:        defaultState,
 			createMasterSecret: defaultMasterSecret,
@@ -325,7 +325,7 @@ func TestValidateInputs(t *testing.T) {
 			flags:              applyFlags{},
 			wantErr:            true,
 		},
-		"no admin config file, but mastersecret file exists": {
+		"no admin config file, but mastersecret file exists errors": {
 			createConfig:       defaultConfig(cloudprovider.GCP),
 			createState:        defaultState,
 			createMasterSecret: defaultMasterSecret,
@@ -334,7 +334,7 @@ func TestValidateInputs(t *testing.T) {
 			flags:              applyFlags{},
 			wantErr:            true,
 		},
-		"no admin config file, no master secret": {
+		"[init] no admin config file, no master secret": {
 			createConfig:       defaultConfig(cloudprovider.GCP),
 			createState:        defaultState,
 			createMasterSecret: func(require *require.Assertions, fh file.Handler) {},
@@ -343,7 +343,7 @@ func TestValidateInputs(t *testing.T) {
 			flags:              applyFlags{},
 			wantPhases:         newPhases(skipImagePhase, skipK8sPhase),
 		},
-		"no tf state, but admin config exists": {
+		"no tf state, but admin config exists errors": {
 			createConfig:       defaultConfig(cloudprovider.GCP),
 			createState:        defaultState,
 			createMasterSecret: defaultMasterSecret,
@@ -352,7 +352,18 @@ func TestValidateInputs(t *testing.T) {
 			flags:              applyFlags{},
 			wantErr:            true,
 		},
-		"only config file": {
+		"[create] only config, skip everything but infrastructure": {
+			createConfig:       defaultConfig(cloudprovider.GCP),
+			createState:        func(require *require.Assertions, fh file.Handler) {},
+			createMasterSecret: func(require *require.Assertions, fh file.Handler) {},
+			createAdminConfig:  func(require *require.Assertions, fh file.Handler) {},
+			createTfState:      func(require *require.Assertions, fh file.Handler) {},
+			flags: applyFlags{
+				skipPhases: newPhases(skipInitPhase, skipAttestationConfigPhase, skipCertSANsPhase, skipHelmPhase, skipK8sPhase, skipImagePhase),
+			},
+			wantPhases: newPhases(skipInitPhase, skipAttestationConfigPhase, skipCertSANsPhase, skipHelmPhase, skipK8sPhase, skipImagePhase),
+		},
+		"[create + init] only config file": {
 			createConfig:       defaultConfig(cloudprovider.GCP),
 			createState:        func(require *require.Assertions, fh file.Handler) {},
 			createMasterSecret: func(require *require.Assertions, fh file.Handler) {},
@@ -361,7 +372,7 @@ func TestValidateInputs(t *testing.T) {
 			flags:              applyFlags{},
 			wantPhases:         newPhases(skipImagePhase, skipK8sPhase),
 		},
-		"skip infrastructure": {
+		"[init] self-managed: config and state file exist, skip-phases=infrastructure": {
 			createConfig:       defaultConfig(cloudprovider.GCP),
 			createState:        defaultState,
 			createMasterSecret: func(require *require.Assertions, fh file.Handler) {},

@@ -236,12 +236,11 @@ func TestCreate(t *testing.T) {
 
 			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider))
 
-			skipPhases := newPhases(skipInitPhase, skipAttestationConfigPhase, skipCertSANsPhase, skipHelmPhase, skipImagePhase, skipK8sPhase)
 			a := &applyCmd{
 				fileHandler: fileHandler,
 				flags: applyFlags{
 					yes:        tc.yesFlag,
-					skipPhases: skipPhases,
+					skipPhases: newPhases(skipInitPhase, skipAttestationConfigPhase, skipCertSANsPhase, skipHelmPhase, skipImagePhase, skipK8sPhase),
 				},
 
 				log:     logger.NewTest(t),

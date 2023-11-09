@@ -197,25 +197,6 @@ func TestUpgradeApply(t *testing.T) {
 			},
 			fh: fsWithStateFileAndTfState,
 		},
-		"no tf state, but existing admin conf file": {
-			kubeUpgrader: &stubKubernetesUpgrader{
-				currentConfig: config.DefaultForAzureSEVSNP(),
-			},
-			helmUpgrader:      &stubApplier{},
-			terraformUpgrader: &mockTerraformUpgrader{},
-			flags: applyFlags{
-				yes: true,
-				skipPhases: skipPhases{
-					skipInitPhase: struct{}{},
-				},
-			},
-			fh: func() file.Handler {
-				fh := file.NewHandler(afero.NewMemMapFs())
-				require.NoError(t, fh.WriteYAML(constants.StateFilename, defaultAzureStateFile()))
-				return fh
-			},
-			wantErr: true,
-		},
 		"no tf state, infra phase skipped": {
 			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig: config.DefaultForAzureSEVSNP(),
