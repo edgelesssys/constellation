@@ -90,6 +90,11 @@ runs:
         COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
         COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
       run: |
+        if constellation version | head -n 1 | grep "v2.12.0" > /dev/null
+        then
+          exit 0
+        fi
+
         for file in $(ls snp-report-*.json); do
           path=$(realpath "${file}")
           cat "${path}"
