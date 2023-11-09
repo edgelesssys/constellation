@@ -93,5 +93,5 @@ runs:
         for file in $(ls snp-report-*.json); do
           path=$(realpath "${file}")
           cat "${path}"
-          bazel run //internal/api/attestationconfigapi/cli -- --snp-report-path "${path}"
+          bazel run //internal/api/attestationconfigapi/cli -- upload azure snp-report "${path}"
         done

@@ -21,11 +21,11 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
-	"github.com/edgelesssys/constellation/v2/internal/verify"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -56,29 +56,40 @@ func main() {
 
 // newRootCmd creates the root command.
 func newRootCmd() *cobra.Command {
-	rootCmd := &cobra.Command{
-		Use:   "COSIGN_PASSWORD=$CPW COSIGN_PRIVATE_KEY=$CKEY upload --version-file $FILE",
-		Short: "Upload a set of versions specific to the azure-sev-snp attestation variant to the config api.",
+	rootCmd := &cobra.Command{}
+	rootCmd.PersistentFlags().StringP("region", "r", awsRegion, "region of the targeted bucket.")
+	rootCmd.PersistentFlags().StringP("bucket", "b", awsBucket, "bucket targeted by all operations.")
+	rootCmd.PersistentFlags().Bool("testing", false, "upload to S3 test bucket.")
 
-		Long: fmt.Sprintf("The CLI uploads an observed version number specific to the azure-sev-snp attestation variant to a cache directory. The CLI then determines the lowest version within the cache-window present in the cache and writes that value to the config api if necessary. "+
+	rootCmd.AddCommand(newUploadCmd())
+	rootCmd.AddCommand(newDeleteCmd())
+
+	return rootCmd
+}
+
+func newUploadCmd() *cobra.Command {
+	uploadCmd := &cobra.Command{
+		Use:   "upload {azure|aws} {snp-report|guest-firmware} <path>",
+		Short: "Upload an object to the attestationconfig API",
+
+		Long: fmt.Sprintf("Upload a new object to the attestationconfig API. For snp-reports the new object is added to a cache folder first."+
+			"The CLI then determines the lowest version within the cache-window present in the cache and writes that value to the config api if necessary. "+
+			"For guest-firmware objects the object is added to the API directly. "+
 			"Please authenticate with AWS through your preferred method (e.g. environment variables, CLI)"+
 			"to be able to upload to S3. Set the %s and %s environment variables to authenticate with cosign.",
 			envCosignPrivateKey, envCosignPwd,
 		),
+
+		Args:    cobra.MatchAll(cobra.ExactArgs(3), isCloudProvider(0), isValidKind(1)),
 		PreRunE: envCheck,
-		RunE:    runCmd,
+		RunE:    runUpload,
 	}
-	rootCmd.Flags().StringP("snp-report-path", "t", "", "File path to a file containing the Constellation verify output.")
-	rootCmd.Flags().StringP("upload-date", "d", "", "upload a version with this date as version name.")
-	rootCmd.Flags().BoolP("force", "f", false, "Use force to manually push a new latest version."+
+	uploadCmd.Flags().StringP("upload-date", "d", "", "upload a version with this date as version name.")
+	uploadCmd.Flags().BoolP("force", "f", false, "Use force to manually push a new latest version."+
 		" The version gets saved to the cache but the version selection logic is skipped.")
-	rootCmd.Flags().IntP("cache-window-size", "s", versionWindowSize, "Number of versions to be considered for the latest version.")
-	rootCmd.PersistentFlags().StringP("region", "r", awsRegion, "region of the targeted bucket.")
-	rootCmd.PersistentFlags().StringP("bucket", "b", awsBucket, "bucket targeted by all operations.")
-	rootCmd.PersistentFlags().Bool("testing", false, "upload to S3 test bucket.")
-	must(rootCmd.MarkFlagRequired("snp-report-path"))
-	rootCmd.AddCommand(newDeleteCmd())
-	return rootCmd
+	uploadCmd.Flags().IntP("cache-window-size", "s", versionWindowSize, "Number of versions to be considered for the latest version.")
+
+	return uploadCmd
 }
 
 func envCheck(_ *cobra.Command, _ []string) error {
@@ -90,38 +101,29 @@ func envCheck(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
+func runUpload(cmd *cobra.Command, args []string) (retErr error) {
 	ctx := cmd.Context()
 	log := logger.New(logger.PlainLog, zap.DebugLevel).Named("attestationconfigapi")
 
-	flags, err := parseCliFlags(cmd)
+	log.Infof("%s", args)
+	uploadCfg, err := newConfig(cmd, ([3]string)(args[:3]))
 	if err != nil {
 		return fmt.Errorf("parsing cli flags: %w", err)
 	}
 
-	cfg := staticupload.Config{
-		Bucket:         flags.bucket,
-		Region:         flags.region,
-		DistributionID: flags.distribution,
-	}
+	client, clientClose, err := attestationconfigapi.NewClient(
+		ctx,
+		staticupload.Config{
+			Bucket:         uploadCfg.bucket,
+			Region:         uploadCfg.region,
+			DistributionID: uploadCfg.distribution,
+		},
+		[]byte(cosignPwd),
+		[]byte(privateKey),
+		false,
+		uploadCfg.cacheWindowSize,
+		log)
 
-	log.Infof("Reading SNP report from file: %s", flags.snpReportPath)
-
-	fs := file.NewHandler(afero.NewOsFs())
-	var report verify.Report
-	if err := fs.ReadJSON(flags.snpReportPath, &report); err != nil {
-		return fmt.Errorf("reading snp report: %w", err)
-	}
-	snpReport := report.SNPReport
-	if !allEqual(snpReport.LaunchTCB, snpReport.CommittedTCB, snpReport.ReportedTCB) {
-		return fmt.Errorf("TCB versions are not equal: \nLaunchTCB:%+v\nCommitted TCB:%+v\nReportedTCB:%+v",
-			snpReport.LaunchTCB, snpReport.CommittedTCB, snpReport.ReportedTCB)
-	}
-	inputVersion := convertTCBVersionToAzureVersion(snpReport.LaunchTCB)
-	log.Infof("Input report: %+v", inputVersion)
-
-	client, clientClose, err := attestationconfigapi.NewClient(ctx, cfg,
-		[]byte(cosignPwd), []byte(privateKey), false, flags.cacheWindowSize, log)
 	defer func() {
 		err := clientClose(cmd.Context())
 		if err != nil {
@@ -133,51 +135,20 @@ func runCmd(cmd *cobra.Command, _ []string) (retErr error) {
 		return fmt.Errorf("creating client: %w", err)
 	}
 
-	latestAPIVersionAPI, err := attestationconfigapi.NewFetcherWithCustomCDNAndCosignKey(flags.url, flags.cosignPublicKey).FetchAzureSEVSNPVersionLatest(ctx)
-	if err != nil {
-		if errors.Is(err, attestationconfigapi.ErrNoVersionsFound) {
-			log.Infof("No versions found in API, but assuming that we are uploading the first version.")
-		} else {
-			return fmt.Errorf("fetching latest version: %w", err)
-		}
-	}
-	latestAPIVersion := latestAPIVersionAPI.AzureSEVSNPVersion
-	if err := client.UploadAzureSEVSNPVersionLatest(ctx, inputVersion, latestAPIVersion, flags.uploadDate, flags.force); err != nil {
-		if errors.Is(err, attestationconfigapi.ErrNoNewerVersion) {
-			log.Infof("Input version: %+v is not newer than latest API version: %+v", inputVersion, latestAPIVersion)
-			return nil
-		}
-		return fmt.Errorf("updating latest version: %w", err)
-	}
-	return nil
-}
-
-func allEqual(args ...verify.TCBVersion) bool {
-	if len(args) < 2 {
-		return true
-	}
-
-	firstArg := args[0]
-	for _, arg := range args[1:] {
-		if arg != firstArg {
-			return false
-		}
-	}
-
-	return true
-}
-
-func convertTCBVersionToAzureVersion(tcb verify.TCBVersion) attestationconfigapi.AzureSEVSNPVersion {
-	return attestationconfigapi.AzureSEVSNPVersion{
-		Bootloader: tcb.Bootloader,
-		TEE:        tcb.TEE,
-		SNP:        tcb.SNP,
-		Microcode:  tcb.Microcode,
+	switch uploadCfg.provider {
+	case cloudprovider.AWS:
+		return uploadAWS(ctx, client, uploadCfg, file.NewHandler(afero.NewOsFs()), log)
+	case cloudprovider.Azure:
+		return uploadAzure(ctx, client, uploadCfg, file.NewHandler(afero.NewOsFs()), log)
+	default:
+		return fmt.Errorf("unsupported cloud provider: %s", uploadCfg.provider)
 	}
 }
 
-type config struct {
-	snpReportPath   string
+type uploadConfig struct {
+	provider        cloudprovider.Provider
+	kind            objectKind
+	path            string
 	uploadDate      time.Time
 	cosignPublicKey string
 	region          string
@@ -188,51 +159,53 @@ type config struct {
 	cacheWindowSize int
 }
 
-func parseCliFlags(cmd *cobra.Command) (config, error) {
-	snpReportFilePath, err := cmd.Flags().GetString("snp-report-path")
-	if err != nil {
-		return config{}, fmt.Errorf("getting maa claims path: %w", err)
-	}
-
+func newConfig(cmd *cobra.Command, args [3]string) (uploadConfig, error) {
 	dateStr, err := cmd.Flags().GetString("upload-date")
 	if err != nil {
-		return config{}, fmt.Errorf("getting upload date: %w", err)
+		return uploadConfig{}, fmt.Errorf("getting upload date: %w", err)
 	}
 	uploadDate := time.Now()
 	if dateStr != "" {
 		uploadDate, err = time.Parse(attestationconfigapi.VersionFormat, dateStr)
 		if err != nil {
-			return config{}, fmt.Errorf("parsing date: %w", err)
+			return uploadConfig{}, fmt.Errorf("parsing date: %w", err)
 		}
 	}
 
 	region, err := cmd.Flags().GetString("region")
 	if err != nil {
-		return config{}, fmt.Errorf("getting region: %w", err)
+		return uploadConfig{}, fmt.Errorf("getting region: %w", err)
 	}
 
 	bucket, err := cmd.Flags().GetString("bucket")
 	if err != nil {
-		return config{}, fmt.Errorf("getting bucket: %w", err)
+		return uploadConfig{}, fmt.Errorf("getting bucket: %w", err)
 	}
 
 	testing, err := cmd.Flags().GetBool("testing")
 	if err != nil {
-		return config{}, fmt.Errorf("getting testing flag: %w", err)
+		return uploadConfig{}, fmt.Errorf("getting testing flag: %w", err)
 	}
 	apiCfg := getAPIEnvironment(testing)
 
 	force, err := cmd.Flags().GetBool("force")
 	if err != nil {
-		return config{}, fmt.Errorf("getting force: %w", err)
+		return uploadConfig{}, fmt.Errorf("getting force: %w", err)
 	}
 
 	cacheWindowSize, err := cmd.Flags().GetInt("cache-window-size")
 	if err != nil {
-		return config{}, fmt.Errorf("getting cache window size: %w", err)
+		return uploadConfig{}, fmt.Errorf("getting cache window size: %w", err)
 	}
-	return config{
-		snpReportPath:   snpReportFilePath,
+
+	provider := cloudprovider.FromString(args[0])
+	kind := kindFromString(args[1])
+	path := args[2]
+
+	return uploadConfig{
+		provider:        provider,
+		kind:            kind,
+		path:            path,
 		uploadDate:      uploadDate,
 		cosignPublicKey: apiCfg.cosignPublicKey,
 		region:          region,
@@ -255,10 +228,4 @@ func getAPIEnvironment(testing bool) apiConfig {
 		return apiConfig{url: "https://d33dzgxuwsgbpw.cloudfront.net", distribution: "ETZGUP1CWRC2P", cosignPublicKey: constants.CosignPublicKeyDev}
 	}
 	return apiConfig{url: constants.CDNRepositoryURL, distribution: constants.CDNDefaultDistributionID, cosignPublicKey: constants.CosignPublicKeyReleases}
-}
-
-func must(err error) {
-	if err != nil {
-		panic(err)
-	}
 }

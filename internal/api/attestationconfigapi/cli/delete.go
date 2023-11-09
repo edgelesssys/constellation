@@ -6,14 +6,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go-v2/service/s3"
-	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
 	"github.com/spf13/cobra"
@@ -23,62 +20,83 @@ import (
 // newDeleteCmd creates the delete command.
 func newDeleteCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "delete",
-		Short:   "delete a specific version from the config api",
+		Use:     "delete {azure|aws} {snp-report|guest-firmware} <version>",
+		Short:   "Upload an object to the attestationconfig API",
+		Long:    "Delete a specific object version from the config api. <version> is the name of the object to delete (without .json suffix)",
+		Args:    cobra.MatchAll(cobra.ExactArgs(3), isCloudProvider(0), isValidKind(1)),
 		PreRunE: envCheck,
 		RunE:    runDelete,
 	}
-	cmd.Flags().StringP("version", "v", "", "Name of the version to delete (without .json suffix)")
-	must(cmd.MarkFlagRequired("version"))
 
 	recursivelyCmd := &cobra.Command{
-		Use:   "recursive",
-		Short: "delete all objects from the API path",
+		Use:   "recursive {azure|aws} {snp-report|guest-firmware}",
+		Short: "delete all objects from the API path constellation/v1/attestation/azure-sev-snp",
+		Long:  "Currently only implemented for azure & snp-report. Delete all objects from the API path constellation/v1/attestation/azure-sev-snp",
+		Args:  cobra.MatchAll(cobra.ExactArgs(2), isCloudProvider(0), isValidKind(1)),
 		RunE:  runRecursiveDelete,
 	}
+
 	cmd.AddCommand(recursivelyCmd)
+
 	return cmd
 }
 
-type deleteCmd struct {
-	attestationClient deleteClient
+type deleteConfig struct {
+	provider        cloudprovider.Provider
+	kind            objectKind
+	version         string
+	region          string
+	bucket          string
+	url             string
+	distribution    string
+	cosignPublicKey string
 }
 
-type deleteClient interface {
-	DeleteAzureSEVSNPVersion(ctx context.Context, versionStr string) error
-}
-
-func (d deleteCmd) delete(cmd *cobra.Command) error {
-	version, err := cmd.Flags().GetString("version")
-	if err != nil {
-		return err
-	}
-	return d.attestationClient.DeleteAzureSEVSNPVersion(cmd.Context(), version)
-}
-
-func runDelete(cmd *cobra.Command, _ []string) (retErr error) {
-	log := logger.New(logger.PlainLog, zap.DebugLevel).Named("attestationconfigapi")
-
+func newDeleteConfig(cmd *cobra.Command, args [3]string) (deleteConfig, error) {
 	region, err := cmd.Flags().GetString("region")
 	if err != nil {
-		return fmt.Errorf("getting region: %w", err)
+		return deleteConfig{}, fmt.Errorf("getting region: %w", err)
 	}
 
 	bucket, err := cmd.Flags().GetString("bucket")
 	if err != nil {
-		return fmt.Errorf("getting bucket: %w", err)
+		return deleteConfig{}, fmt.Errorf("getting bucket: %w", err)
 	}
 
 	testing, err := cmd.Flags().GetBool("testing")
 	if err != nil {
-		return fmt.Errorf("getting testing flag: %w", err)
+		return deleteConfig{}, fmt.Errorf("getting testing flag: %w", err)
 	}
 	apiCfg := getAPIEnvironment(testing)
 
+	provider := cloudprovider.FromString(args[0])
+	kind := kindFromString(args[1])
+	version := args[2]
+
+	return deleteConfig{
+		provider:        provider,
+		kind:            kind,
+		version:         version,
+		region:          region,
+		bucket:          bucket,
+		url:             apiCfg.url,
+		distribution:    apiCfg.distribution,
+		cosignPublicKey: apiCfg.cosignPublicKey,
+	}, nil
+}
+
+func runDelete(cmd *cobra.Command, args []string) (retErr error) {
+	log := logger.New(logger.PlainLog, zap.DebugLevel).Named("attestationconfigapi")
+
+	deleteCfg, err := newDeleteConfig(cmd, ([3]string)(args[:3]))
+	if err != nil {
+		return fmt.Errorf("creating delete config: %w", err)
+	}
+
 	cfg := staticupload.Config{
-		Bucket:         bucket,
-		Region:         region,
-		DistributionID: apiCfg.distribution,
+		Bucket:         deleteCfg.bucket,
+		Region:         deleteCfg.region,
+		DistributionID: deleteCfg.distribution,
 	}
 	client, clientClose, err := attestationconfigapi.NewClient(cmd.Context(), cfg,
 		[]byte(cosignPwd), []byte(privateKey), false, 1, log)
@@ -92,34 +110,29 @@ func runDelete(cmd *cobra.Command, _ []string) (retErr error) {
 		}
 	}()
 
-	deleteCmd := deleteCmd{
-		attestationClient: client,
+	switch deleteCfg.provider {
+	case cloudprovider.AWS:
+		return deleteAWS(cmd.Context(), client, deleteCfg)
+	case cloudprovider.Azure:
+		return deleteAzure(cmd.Context(), client, deleteCfg)
+	default:
+		return fmt.Errorf("unsupported cloud provider: %s", deleteCfg.provider)
 	}
-	return deleteCmd.delete(cmd)
 }
 
-func runRecursiveDelete(cmd *cobra.Command, _ []string) (retErr error) {
-	region, err := cmd.Flags().GetString("region")
+func runRecursiveDelete(cmd *cobra.Command, args []string) (retErr error) {
+	// newDeleteConfig expects 3 args, so we pass "all" for the version argument.
+	args = append(args, "all")
+	deleteCfg, err := newDeleteConfig(cmd, ([3]string)(args[:3]))
 	if err != nil {
-		return fmt.Errorf("getting region: %w", err)
+		return fmt.Errorf("creating delete config: %w", err)
 	}
-
-	bucket, err := cmd.Flags().GetString("bucket")
-	if err != nil {
-		return fmt.Errorf("getting bucket: %w", err)
-	}
-
-	testing, err := cmd.Flags().GetBool("testing")
-	if err != nil {
-		return fmt.Errorf("getting testing flag: %w", err)
-	}
-	apiCfg := getAPIEnvironment(testing)
 
 	log := logger.New(logger.PlainLog, zap.DebugLevel).Named("attestationconfigapi")
 	client, closeFn, err := staticupload.New(cmd.Context(), staticupload.Config{
-		Bucket:         bucket,
-		Region:         region,
-		DistributionID: apiCfg.distribution,
+		Bucket:         deleteCfg.bucket,
+		Region:         deleteCfg.region,
+		DistributionID: deleteCfg.distribution,
 	}, log)
 	if err != nil {
 		return fmt.Errorf("create static upload client: %w", err)
@@ -130,31 +143,10 @@ func runRecursiveDelete(cmd *cobra.Command, _ []string) (retErr error) {
 			retErr = errors.Join(retErr, fmt.Errorf("failed to close client: %w", err))
 		}
 	}()
-	path := "constellation/v1/attestation/azure-sev-snp"
-	resp, err := client.ListObjectsV2(cmd.Context(), &s3.ListObjectsV2Input{
-		Bucket: aws.String(bucket),
-		Prefix: aws.String(path),
-	})
-	if err != nil {
-		return err
+
+	if deleteCfg.provider != cloudprovider.Azure || deleteCfg.kind != snpReport {
+		return fmt.Errorf("provider %s and kind %s not supported", deleteCfg.provider, deleteCfg.kind)
 	}
 
-	// Delete all objects in the path.
-	objIDs := make([]s3types.ObjectIdentifier, len(resp.Contents))
-	for i, obj := range resp.Contents {
-		objIDs[i] = s3types.ObjectIdentifier{Key: obj.Key}
-	}
-	if len(objIDs) > 0 {
-		_, err = client.DeleteObjects(cmd.Context(), &s3.DeleteObjectsInput{
-			Bucket: aws.String(bucket),
-			Delete: &s3types.Delete{
-				Objects: objIDs,
-				Quiet:   true,
-			},
-		})
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return deleteRecursiveAzure(cmd.Context(), client, deleteCfg)
 }
