@@ -39,6 +39,7 @@ Commands:
     * [apply](#constellation-iam-upgrade-apply): Apply an upgrade to an IAM profile
 * [version](#constellation-version): Display version of this CLI
 * [init](#constellation-init): Initialize the Constellation cluster
+* [maa-patch](#constellation-maa-patch): Patch the MAA's attestation policy
 
 ## constellation config
 
@@ -829,6 +830,33 @@ constellation init [flags]
   -h, --help               help for init
       --merge-kubeconfig   merge Constellation kubeconfig file with default kubeconfig file in $HOME/.kube/config
       --skip-helm-wait     install helm charts without waiting for deployments to be ready
+```
+
+### Options inherited from parent commands
+
+```
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
+```
+
+## constellation maa-patch
+
+Patch the MAA's attestation policy
+
+### Synopsis
+
+Patch the MAA's attestation policy.
+
+```
+constellation maa-patch <attestation-url> [flags]
+```
+
+### Options
+
+```
+  -h, --help   help for maa-patch
 ```
 
 ### Options inherited from parent commands
