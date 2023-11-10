@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewInitCmd returns a new cobra.Command for the maa-patch command.
 func NewMaaPatchCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "maa-patch <attestation-url>",
