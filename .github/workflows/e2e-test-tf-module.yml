@@ -1,7 +1,6 @@
 name: e2e test Terraform module
 
 on:
-  push:
   workflow_dispatch:
     inputs:
       ref:
