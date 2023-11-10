@@ -412,10 +412,9 @@ func TestValidateInputs(t *testing.T) {
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 
 			a := applyCmd{
-				log:          logger.NewTest(t),
-				fileHandler:  fileHandler,
-				flags:        tc.flags,
-				quotaChecker: &stubLicenseClient{},
+				log:         logger.NewTest(t),
+				fileHandler: fileHandler,
+				flags:       tc.flags,
 			}
 
 			_, _, err := a.validateInputs(cmd, &stubAttestationFetcher{})

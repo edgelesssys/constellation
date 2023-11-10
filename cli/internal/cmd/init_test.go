@@ -267,10 +267,9 @@ func TestInitialize(t *testing.T) {
 					rootFlags:  rootFlags{force: true},
 					skipPhases: newPhases(skipInfrastructurePhase),
 				},
-				log:          logger.NewTest(t),
-				spinner:      &nopSpinner{},
-				merger:       &stubMerger{},
-				quotaChecker: &stubLicenseClient{},
+				log:     logger.NewTest(t),
+				spinner: &nopSpinner{},
+				merger:  &stubMerger{},
 				newHelmClient: func(string, debugLog) (helmApplier, error) {
 					return &stubApplier{}, nil
 				},
@@ -283,7 +282,7 @@ func TestInitialize(t *testing.T) {
 				},
 			}
 
-			err := i.apply(cmd, stubAttestationFetcher{}, "test")
+			err := i.apply(cmd, stubAttestationFetcher{}, &stubLicenseClient{}, "test")
 
 			if tc.wantErr {
 				assert.Error(err)

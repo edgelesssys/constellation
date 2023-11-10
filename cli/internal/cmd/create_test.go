@@ -230,13 +230,12 @@ func TestCreate(t *testing.T) {
 				log:     logger.NewTest(t),
 				spinner: &nopSpinner{},
 
-				quotaChecker: &stubLicenseClient{},
 				newInfraApplier: func(_ context.Context) (cloudApplier, func(), error) {
 					return tc.creator, func() {}, tc.getCreatorErr
 				},
 			}
 
-			err := a.apply(cmd, stubAttestationFetcher{}, "create")
+			err := a.apply(cmd, stubAttestationFetcher{}, &stubLicenseClient{}, "create")
 
 			if tc.wantErr {
 				assert.Error(err)

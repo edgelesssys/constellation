@@ -242,7 +242,6 @@ func runApply(cmd *cobra.Command, _ []string) error {
 		log:             log,
 		spinner:         spinner,
 		merger:          &kubeconfigMerger{log: log},
-		quotaChecker:    license.NewClient(),
 		newHelmClient:   newHelmClient,
 		newDialer:       newDialer,
 		newKubeUpgrader: newKubeUpgrader,
@@ -253,7 +252,7 @@ func runApply(cmd *cobra.Command, _ []string) error {
 	defer cancel()
 	cmd.SetContext(ctx)
 
-	return apply.apply(cmd, attestationconfigapi.NewFetcher(), upgradeDir)
+	return apply.apply(cmd, attestationconfigapi.NewFetcher(), license.NewClient(), upgradeDir)
 }
 
 type applyCmd struct {
@@ -263,8 +262,7 @@ type applyCmd struct {
 	log     debugLog
 	spinner spinnerInterf
 
-	merger       configMerger
-	quotaChecker license.QuotaChecker
+	merger configMerger
 
 	newHelmClient   func(kubeConfigPath string, log debugLog) (helmApplier, error)
 	newDialer       func(validator atls.Validator) *dialer.Dialer
@@ -340,24 +338,23 @@ The control flow is as follows:
 	                        │Write success output│
 	                        └────────────────────┘
 */
-func (a *applyCmd) apply(cmd *cobra.Command, configFetcher attestationconfigapi.Fetcher, upgradeDir string) error {
-	// Migrate state file
-	stateFile, err := state.ReadFromFile(a.fileHandler, constants.StateFilename)
-	if err != nil {
-		return fmt.Errorf("reading state file: %w", err)
-	}
-	if err := stateFile.Migrate(); err != nil {
-		return fmt.Errorf("migrating state file: %w", err)
-	}
-	if err := stateFile.WriteToFile(a.fileHandler, constants.StateFilename); err != nil {
-		return fmt.Errorf("writing state file: %w", err)
-	}
-
+func (a *applyCmd) apply(
+	cmd *cobra.Command, configFetcher attestationconfigapi.Fetcher,
+	quotaChecker license.QuotaChecker, upgradeDir string,
+) error {
 	// Validate inputs
 	conf, stateFile, err := a.validateInputs(cmd, configFetcher)
 	if err != nil {
 		return err
 	}
+
+	// Check license
+	a.log.Debugf("Running license check")
+	checker := license.NewChecker(quotaChecker, a.fileHandler)
+	if err := checker.CheckLicense(cmd.Context(), conf.GetProvider(), conf.Provider, cmd.Printf); err != nil {
+		cmd.PrintErrf("License check failed: %v", err)
+	}
+	a.log.Debugf("Checked license")
 
 	// Now start actually running the apply command
 
@@ -441,14 +438,6 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 	if err != nil {
 		return nil, nil, err
 	}
-
-	// Check license
-	a.log.Debugf("Running license check")
-	checker := license.NewChecker(a.quotaChecker, a.fileHandler)
-	if err := checker.CheckLicense(cmd.Context(), conf.GetProvider(), conf.Provider, cmd.Printf); err != nil {
-		cmd.PrintErrf("License check failed: %v", err)
-	}
-	a.log.Debugf("Checked license")
 
 	// Validate the state file and set flags accordingly
 	//

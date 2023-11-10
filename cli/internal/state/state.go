@@ -20,9 +20,7 @@ import (
 
 	"dario.cat/mergo"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/validation"
 )
 
@@ -555,24 +553,6 @@ func (s *State) postInitConstraints(csp cloudprovider.Provider) func() []*valida
 // Constraints is a no-op implementation to fulfill the "Validatable" interface.
 func (s *State) Constraints() []*validation.Constraint {
 	return []*validation.Constraint{}
-}
-
-// Migrate migrates the state to the current version.
-// This is mostly done to pass the validation of the current version.
-// The infrastructure will be overwritten by the terraform outputs after the validation.
-func (s *State) Migrate() error {
-	// In v2.13.0 the ClusterEndpoint and InClusterEndpoint fields were added.
-	// So they are expected to be empty when upgrading to this version.
-	// TODO(3u13r): Remove on main after v2.13.0 is released.
-	if constants.BinaryVersion().MajorMinorEqual(semver.NewFromInt(2, 13, 0, "")) {
-		if s.Infrastructure.InClusterEndpoint == "" {
-			s.Infrastructure.InClusterEndpoint = s.Infrastructure.ClusterEndpoint
-		}
-		if s.Infrastructure.IPCidrNode == "" {
-			s.Infrastructure.IPCidrNode = "192.168.2.1/32"
-		}
-	}
-	return nil
 }
 
 // HexBytes is a byte slice that is marshalled to and from a hex string.

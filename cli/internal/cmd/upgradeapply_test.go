@@ -240,12 +240,11 @@ func TestUpgradeApply(t *testing.T) {
 			require.NoError(fh.WriteJSON(constants.MasterSecretFilename, uri.MasterSecret{}))
 
 			upgrader := &applyCmd{
-				fileHandler:  fh,
-				flags:        tc.flags,
-				log:          logger.NewTest(t),
-				spinner:      &nopSpinner{},
-				merger:       &stubMerger{},
-				quotaChecker: &stubLicenseClient{},
+				fileHandler: fh,
+				flags:       tc.flags,
+				log:         logger.NewTest(t),
+				spinner:     &nopSpinner{},
+				merger:      &stubMerger{},
 				newHelmClient: func(string, debugLog) (helmApplier, error) {
 					return tc.helmUpgrader, nil
 				},
@@ -256,7 +255,7 @@ func TestUpgradeApply(t *testing.T) {
 					return tc.terraformUpgrader, func() {}, nil
 				},
 			}
-			err := upgrader.apply(cmd, stubAttestationFetcher{}, "test")
+			err := upgrader.apply(cmd, stubAttestationFetcher{}, &stubLicenseClient{}, "test")
 			if tc.wantErr {
 				assert.Error(err)
 				return
