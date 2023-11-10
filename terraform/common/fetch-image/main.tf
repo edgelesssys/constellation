@@ -1,6 +1,6 @@
 locals {
   image_ref     = startswith(var.image, "v") ? "ref/-/stream/stable/${var.image}" : var.image
-  region_filter = var.region != "" ? " and .region == \"${var.region}\"" : ""
+  region_filter = var.region != "" ? " and .region == \"${var.region}\"" : "" # apply region filter only if region field exists for the CSP
 
   fetch_image_command = <<EOT
     curl -s https://cdn.confidential.cloud/constellation/v2/${local.image_ref}/image/info.json | \

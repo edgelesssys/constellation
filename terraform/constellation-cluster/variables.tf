@@ -6,7 +6,7 @@ variable "constellation_version" {
 
 variable "csp" {
   type        = string
-  description = "The CSP to create the cluster in."
+  description = "The cloud service provider to use."
   validation {
     condition     = var.csp == "aws" || var.csp == "gcp" || var.csp == "azure"
     error_message = "The cloud service provider to use."
@@ -72,7 +72,7 @@ variable "aws_config" {
     iam_instance_profile_worker_nodes  = string
     iam_instance_profile_control_plane = string
   })
-  description = "The cluster config for AWS"
+  description = "The cluster config for AWS."
   default     = null
 }
 
@@ -89,37 +89,37 @@ variable "azure_config" {
     networkSecurityGroupName = string
     loadBalancerName         = string
   })
-  description = "The cluster config for Azure"
+  description = "The cluster config for Azure."
   default     = null
 }
 
 variable "gcp_config" {
   type = object({
-    region                = string
-    zone                  = string
-    project               = string
-    serviceAccountKeyPath = string
-    ipCidrPod             = string
+    region            = string
+    zone              = string
+    project           = string
+    ipCidrPod         = string
+    serviceAccountKey = string
   })
-  description = "The cluster config for GCP"
+  description = "The cluster config for GCP."
   default     = null
 }
 
 variable "image" {
   type        = string
-  description = "The node image reference or semantical release version"
+  description = "The node image reference or semantic release version."
   validation {
     condition     = length(var.image) > 0
-    error_message = "The image variable must not be empty."
+    error_message = "The image reference must not be empty."
   }
 }
 
 variable "kubernetes_version" {
   type        = string
-  description = "Kubernetes version"
+  description = "Kubernetes version."
 }
 
 variable "microservice_version" {
   type        = string
-  description = "Microservice version"
+  description = "Microservice version."
 }

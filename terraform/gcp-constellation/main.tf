@@ -72,11 +72,11 @@ module "constellation" {
   apiServerCertSANs    = module.gcp.api_server_cert_sans
   node_groups          = var.node_groups
   gcp_config = {
-    region                = local.region
-    zone                  = var.zone
-    serviceAccountKeyPath = "${path.module}/sa_account_file.json"
-    project               = var.project
-    ipCidrPod             = module.gcp.ip_cidr_pods
+    region            = local.region
+    zone              = var.zone
+    project           = var.project
+    ipCidrPod         = module.gcp.ip_cidr_pods
+    serviceAccountKey = module.gcp_iam.sa_key
   }
-  depends_on = [module.gcp, null_resource.sa_account_file, null_resource.ensure_yq]
+  depends_on = [module.gcp, null_resource.ensure_yq]
 }

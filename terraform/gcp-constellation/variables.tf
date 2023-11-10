@@ -15,7 +15,7 @@ variable "service_account_id" {
 
 variable "image" {
   type        = string
-  description = "Node image reference or semantical release version."
+  description = "Node image reference or semantic release version."
 }
 
 variable "microservice_version" {

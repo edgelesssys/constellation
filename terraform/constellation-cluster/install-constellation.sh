@@ -4,31 +4,31 @@ if [[ -f ./constellation ]]; then
   exit 0
 fi
 
-OS=$(uname -s)
-ARCH=$(uname -m)
-VERSION=$1
-URL=""
+os=$(uname -s)
+arch=$(uname -m)
+version=$1
+url=""
 
-echo "Fetching constellation ${VERSION}"
+echo "Fetching constellation ${version}"
 
-if [[ ${OS} == "Darwin" ]]; then
-  if [[ ${ARCH} == "arm64" ]]; then
-    URL="https://github.com/edgelesssys/constellation/releases/${VERSION}/download/constellation-darwin-arm64"
-  elif [[ ${ARCH} == "x86_64" ]]; then
-    URL="https://github.com/edgelesssys/constellation/releases/${VERSION}/download/constellation-darwin-amd64"
+if [[ ${os} == "Darwin" ]]; then
+  if [[ ${arch} == "arm64" ]]; then
+    url="https://github.com/edgelesssys/constellation/releases/${version}/download/constellation-darwin-arm64"
+  elif [[ ${arch} == "x86_64" ]]; then
+    url="https://github.com/edgelesssys/constellation/releases/${version}/download/constellation-darwin-amd64"
   fi
-elif [[ ${OS} == "Linux" ]]; then
-  if [[ ${ARCH} == "x86_64" ]]; then
-    URL="https://github.com/edgelesssys/constellation/releases/${VERSION}/download/constellation-linux-amd64"
-  elif [[ ${ARCH} == "arm64" ]]; then
-    URL="https://github.com/edgelesssys/constellation/releases/${VERSION}/download/constellation-linux-arm64"
+elif [[ ${os} == "Linux" ]]; then
+  if [[ ${arch} == "x86_64" ]]; then
+    url="https://github.com/edgelesssys/constellation/releases/${version}/download/constellation-linux-amd64"
+  elif [[ ${arch} == "arm64" ]]; then
+    url="https://github.com/edgelesssys/constellation/releases/${version}/download/constellation-linux-arm64"
   fi
 fi
 
-if [[ -z ${URL} ]]; then
-  echo "OS \"${OS}\" and/or architecture \"${ARCH}\" is not supported."
+if [[ -z ${url} ]]; then
+  echo "os \"${os}\" and/or architecture \"${arch}\" is not supported."
   exit 1
 else
-  curl -o constellation -L "${URL}"
+  curl -o constellation -L "${url}"
   chmod +x constellation
 fi

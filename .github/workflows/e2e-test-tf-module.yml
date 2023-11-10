@@ -17,9 +17,8 @@ on:
       regionZone:
         description: "Region or zone to create the cluster in. Leave empty for default region/zone."
         type: string
-        required: true
       image:
-        description: "Node image reference which is compatible with the current dev release version. If not set, the latest debug image from main is used."
+        description: "OS Image version used in the cluster's VMs. If not set, the latest debug image from main is used."
         type: string
       cliVersion:
         description: "Constellation CLI version to use. Empty value means build from source."
@@ -36,7 +35,6 @@ on:
       regionZone:
         description: "Which zone to use."
         type: string
-        required: true
       image:
         description: "Node image reference which is compatible with the current dev release version. If not set, the latest debug image from main is used."
         type: string
@@ -99,7 +97,7 @@ jobs:
           cat > terraform.tfvars <<EOF
           name = "${{ steps.create-prefix.outputs.prefix }}"
           image = "${{ steps.find-latest-image.outputs.image  }}"
-          zone = "${{ inputs.regionZone }}"
+          zone = "${{ inputs.regionZone || 'us-east-2c' }}"
           name_prefix = "${{ steps.create-prefix.outputs.prefix }}"
           debug = ${{ steps.find-latest-image.outputs.isDebugImage }}
           node_groups = {
@@ -129,7 +127,7 @@ jobs:
           cat > terraform.tfvars <<EOF
           name = "${{ steps.create-prefix.outputs.prefix }}"
           image = "${{ steps.find-latest-image.outputs.image }}"
-          location = "${{ inputs.regionZone }}"
+          location = "${{ inputs.regionZone || 'northeurope' }}"
           service_principal_name = "${{ steps.create-prefix.outputs.prefix }}-sp"
           resource_group_name = "${{ steps.create-prefix.outputs.prefix }}-rg"
           debug = ${{ steps.find-latest-image.outputs.isDebugImage }}
@@ -162,7 +160,7 @@ jobs:
           project = "${{ secrets.GCP_E2E_PROJECT }}"
           service_account_id = "${{ steps.create-prefix.outputs.prefix }}-sa"
           image = "${{ steps.find-latest-image.outputs.image }}"
-          zone = "${{ inputs.regionZone }}"
+          zone = "${{ inputs.regionZone || 'europe-west3-b' }}"
           debug = ${{ steps.find-latest-image.outputs.isDebugImage }}
           node_groups = {
             control_plane_default = {
@@ -219,13 +217,9 @@ jobs:
         if: inputs.cliVersion != ''
         shell: bash
         run: |
-          mkdir build
           curl -fsSL -o constellation https://github.com/edgelesssys/constellation/releases/download/${{ inputs.cliVersion }}/constellation-linux-amd64
           chmod u+x constellation
-          PATH_ADD=$(pwd)
-          export PATH="$PATH:$PATH_ADD"
-          constellation version
-          # Do not spam license server from pipeline
+          ./constellation version
           sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts'
 
       - name: Login to AWS (IAM + Cluster role)
@@ -259,6 +253,7 @@ jobs:
           terraform apply -var-file=terraform.tfvars  -auto-approve
 
       - name: Destroy Terraform Cluster
+      # outcome is part of the steps context (https://docs.github.com/en/actions/learn-github-actions/contexts#steps-context)
         if: always() && steps.apply_terraform.outcome != 'skipped'
         working-directory: ${{ github.workspace }}/terraform-module/${{ inputs.cloudProvider }}-constellation
         shell: bash
