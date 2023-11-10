@@ -1,5 +1,10 @@
 name: Upload Terraform module
 description: "Upload the Terraform module as an artifact."
+
+inputs:
+  version:
+    description: "The Constellation CLI version to use in the Terraform Module. Leave empty when a built CLI is already present when applying the module."
+
 runs:
   using: "composite"
   steps:
@@ -7,17 +12,24 @@ runs:
       shell: bash
       run: |
         cp -r terraform terraform-module
-        find terraform-module -name "*.go" -type f -delete
-        find terraform-module -name "*.bazel" -type f -delete
+        rm terraform-module/assets.go terraform-module/BUILD.bazel
+
+    - name: Stamp version
+      shell: bash
+      run: |
+        sed -i "s/@@CONSTELLATION_VERSION@@/${{ inputs.version }}/g" terraform-module/constellation-cluster/main.tf
+
     - name: Zip terraform dir
       shell: bash
       run: |
         zip -r terraform-module.zip terraform-module
+
     - name: Upload artifact
       uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3
       with:
         name: terraform-module
         path: terraform-module.zip
+
     - name: Cleanup Terraform module dir
       shell: bash
       run: |
