@@ -13,10 +13,10 @@ Each workspace is associated with a single cluster and configuration.
 The CLI stores state in the local filesystem making the current directory the active workspace.
 Multiple clusters require multiple workspaces, hence, multiple directories.
 Note that every operation on a cluster always has to be performed from the directory associated with its workspace.
-While files from the workspace may be copied to different locations, for example to create backups,
-they should not moved or deleted while the Constellation cluster is still being used.
+While files from the workspace may be copied to different locations,
+they should'nt be moved or deleted while the Constellation cluster is still being used.
 The Constellation CLI will take care of managing the workspace.
-Only when a cluster was terminated, and you are sure the files are not needed anymore, should you remove a workspace.
+Only when a cluster was terminated, and you are sure the files are'nt needed anymore, should you remove a workspace.
 
 ## Cluster creation process
 
