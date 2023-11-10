@@ -23,33 +23,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// preCreateStateFile returns a state file satisfying the pre-create state file
-// constraints.
-func preCreateStateFile() *state.State {
-	s := defaultAzureStateFile()
-	s.ClusterValues = state.ClusterValues{}
-	s.Infrastructure = state.Infrastructure{}
-	return s
-}
-
 func TestCreate(t *testing.T) {
 	fsWithDefaultConfig := func(require *require.Assertions, provider cloudprovider.Provider) afero.Fs {
 		fs := afero.NewMemMapFs()
 		file := file.NewHandler(fs)
 		require.NoError(file.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), provider)))
-		return fs
-	}
-	fsWithStateFile := func(require *require.Assertions, provider cloudprovider.Provider) afero.Fs {
-		fs := afero.NewMemMapFs()
-		file := file.NewHandler(fs)
-		require.NoError(file.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), provider)))
-		stateFile := preCreateStateFile()
-		switch provider {
-		case cloudprovider.GCP:
-			stateFile.Infrastructure.GCP = &state.GCP{}
-		case cloudprovider.Azure:
-			stateFile.Infrastructure.Azure = &state.Azure{}
-		}
 		return fs
 	}
 	infraState := state.Infrastructure{ClusterEndpoint: "192.0.2.1"}
@@ -155,7 +133,13 @@ func TestCreate(t *testing.T) {
 			wantErr:  true,
 		},
 		"state file exist (but is empty)": {
-			setupFs: fsWithStateFile,
+			setupFs: func(r *require.Assertions, csp cloudprovider.Provider) afero.Fs {
+				fs := afero.NewMemMapFs()
+				file := file.NewHandler(fs)
+				r.NoError(file.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
+				r.NoError(file.WriteYAML(constants.StateFilename, state.New()))
+				return fs
+			},
 			creator: &stubCloudCreator{
 				state:            infraState,
 				planDiff:         true,

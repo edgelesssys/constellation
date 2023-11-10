@@ -450,6 +450,12 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 	}
 	a.log.Debugf("Checked license")
 
+	// Validate the state file and set flags accordingly
+	//
+	// We don't run "hard" verification of skip-phases flags and state file here,
+	// a user may still end up skipping phases that could result in errors later on.
+	// However, we perform basic steps, like ensuring init phase is not skipped if
+	a.log.Debugf("Validating state file")
 	preCreateValidateErr := stateFile.Validate(state.PreCreate, conf.GetProvider())
 	preInitValidateErr := stateFile.Validate(state.PreInit, conf.GetProvider())
 	postInitValidateErr := stateFile.Validate(state.PostInit, conf.GetProvider())
@@ -471,9 +477,10 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 		printCreateWarnings(cmd.ErrOrStderr(), conf)
 	}
 
-	// Check if the state file is in a pre-init or pre-create state
+	// Check if the state file is in a pre-init OR
+	// if in pre-create state and init should not be skipped
 	// If so, we need to run the init RPC
-	if preInitValidateErr == nil {
+	if preInitValidateErr == nil || (preCreateValidateErr == nil && !a.flags.skipPhases.contains(skipInitPhase)) {
 		// We can't skip the init phase if the init RPC hasn't been run yet
 		a.log.Debugf("State file is in pre-init state, checking workspace")
 		if a.flags.skipPhases.contains(skipInitPhase) {
@@ -501,8 +508,6 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 	} else if preCreateValidateErr != nil && preInitValidateErr != nil {
 		return nil, nil, postInitValidateErr
 	}
-
-	// Validate input arguments
 
 	// Validate Kubernetes version as set in the user's config
 	// If we need to run the init RPC, the version has to be valid

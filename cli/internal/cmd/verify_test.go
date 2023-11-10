@@ -48,7 +48,7 @@ func TestVerify(t *testing.T) {
 		formatter          *stubAttDocFormatter
 		nodeEndpointFlag   string
 		clusterIDFlag      string
-		stateFile          func() *state.State
+		stateFile          *state.State
 		wantEndpoint       string
 		skipConfigCreation bool
 		wantErr            bool
@@ -58,7 +58,7 @@ func TestVerify(t *testing.T) {
 			nodeEndpointFlag: "192.0.2.1:1234",
 			clusterIDFlag:    zeroBase64,
 			protoClient:      &stubVerifyClient{},
-			stateFile:        defaultGCPStateFile,
+			stateFile:        defaultStateFile(cloudprovider.GCP),
 			wantEndpoint:     "192.0.2.1:1234",
 			formatter:        &stubAttDocFormatter{},
 		},
@@ -67,7 +67,7 @@ func TestVerify(t *testing.T) {
 			nodeEndpointFlag: "192.0.2.1:1234",
 			clusterIDFlag:    zeroBase64,
 			protoClient:      &stubVerifyClient{},
-			stateFile:        defaultAzureStateFile,
+			stateFile:        defaultStateFile(cloudprovider.Azure),
 			wantEndpoint:     "192.0.2.1:1234",
 			formatter:        &stubAttDocFormatter{},
 		},
@@ -76,7 +76,7 @@ func TestVerify(t *testing.T) {
 			nodeEndpointFlag: "192.0.2.1",
 			clusterIDFlag:    zeroBase64,
 			protoClient:      &stubVerifyClient{},
-			stateFile:        defaultGCPStateFile,
+			stateFile:        defaultStateFile(cloudprovider.GCP),
 			wantEndpoint:     "192.0.2.1:" + strconv.Itoa(constants.VerifyServiceNodePortGRPC),
 			formatter:        &stubAttDocFormatter{},
 		},
@@ -85,10 +85,10 @@ func TestVerify(t *testing.T) {
 			clusterIDFlag: zeroBase64,
 			protoClient:   &stubVerifyClient{},
 			stateFile: func() *state.State {
-				s := defaultGCPStateFile()
+				s := defaultStateFile(cloudprovider.GCP)
 				s.Infrastructure.ClusterEndpoint = ""
 				return s
-			},
+			}(),
 			formatter: &stubAttDocFormatter{},
 			wantErr:   true,
 		},
@@ -97,10 +97,10 @@ func TestVerify(t *testing.T) {
 			clusterIDFlag: zeroBase64,
 			protoClient:   &stubVerifyClient{},
 			stateFile: func() *state.State {
-				s := defaultGCPStateFile()
+				s := defaultStateFile(cloudprovider.GCP)
 				s.Infrastructure.ClusterEndpoint = "192.0.2.1"
 				return s
-			},
+			}(),
 			wantEndpoint: "192.0.2.1:" + strconv.Itoa(constants.VerifyServiceNodePortGRPC),
 			formatter:    &stubAttDocFormatter{},
 		},
@@ -110,10 +110,10 @@ func TestVerify(t *testing.T) {
 			clusterIDFlag:    zeroBase64,
 			protoClient:      &stubVerifyClient{},
 			stateFile: func() *state.State {
-				s := defaultGCPStateFile()
+				s := defaultStateFile(cloudprovider.GCP)
 				s.Infrastructure.ClusterEndpoint = "192.0.2.1"
 				return s
-			},
+			}(),
 			wantEndpoint: "192.0.2.2:1234",
 			formatter:    &stubAttDocFormatter{},
 		},
@@ -122,7 +122,7 @@ func TestVerify(t *testing.T) {
 			nodeEndpointFlag: ":::::",
 			clusterIDFlag:    zeroBase64,
 			protoClient:      &stubVerifyClient{},
-			stateFile:        defaultGCPStateFile,
+			stateFile:        defaultStateFile(cloudprovider.GCP),
 			formatter:        &stubAttDocFormatter{},
 			wantErr:          true,
 		},
@@ -130,11 +130,11 @@ func TestVerify(t *testing.T) {
 			provider:         cloudprovider.GCP,
 			nodeEndpointFlag: "192.0.2.1:1234",
 			stateFile: func() *state.State {
-				s := defaultGCPStateFile()
+				s := defaultStateFile(cloudprovider.GCP)
 				s.ClusterValues.OwnerID = ""
 				s.ClusterValues.ClusterID = ""
 				return s
-			},
+			}(),
 			formatter:   &stubAttDocFormatter{},
 			protoClient: &stubVerifyClient{},
 			wantErr:     true,
@@ -144,10 +144,10 @@ func TestVerify(t *testing.T) {
 			nodeEndpointFlag: "192.0.2.1:1234",
 			protoClient:      &stubVerifyClient{},
 			stateFile: func() *state.State {
-				s := defaultGCPStateFile()
+				s := defaultStateFile(cloudprovider.GCP)
 				s.ClusterValues.OwnerID = zeroBase64
 				return s
-			},
+			}(),
 			wantEndpoint: "192.0.2.1:1234",
 			formatter:    &stubAttDocFormatter{},
 		},
@@ -155,7 +155,7 @@ func TestVerify(t *testing.T) {
 			provider:           cloudprovider.GCP,
 			clusterIDFlag:      zeroBase64,
 			nodeEndpointFlag:   "192.0.2.1:1234",
-			stateFile:          defaultGCPStateFile,
+			stateFile:          defaultStateFile(cloudprovider.GCP),
 			formatter:          &stubAttDocFormatter{},
 			skipConfigCreation: true,
 			wantErr:            true,
@@ -165,7 +165,7 @@ func TestVerify(t *testing.T) {
 			nodeEndpointFlag: "192.0.2.1:1234",
 			clusterIDFlag:    zeroBase64,
 			protoClient:      &stubVerifyClient{verifyErr: rpcStatus.Error(codes.Internal, "failed")},
-			stateFile:        defaultAzureStateFile,
+			stateFile:        defaultStateFile(cloudprovider.Azure),
 			formatter:        &stubAttDocFormatter{},
 			wantErr:          true,
 		},
@@ -174,7 +174,7 @@ func TestVerify(t *testing.T) {
 			nodeEndpointFlag: "192.0.2.1:1234",
 			clusterIDFlag:    zeroBase64,
 			protoClient:      &stubVerifyClient{verifyErr: someErr},
-			stateFile:        defaultAzureStateFile,
+			stateFile:        defaultStateFile(cloudprovider.Azure),
 			formatter:        &stubAttDocFormatter{},
 			wantErr:          true,
 		},
@@ -183,7 +183,7 @@ func TestVerify(t *testing.T) {
 			nodeEndpointFlag: "192.0.2.1:1234",
 			clusterIDFlag:    zeroBase64,
 			protoClient:      &stubVerifyClient{},
-			stateFile:        defaultAzureStateFile,
+			stateFile:        defaultStateFile(cloudprovider.Azure),
 			wantEndpoint:     "192.0.2.1:1234",
 			formatter:        &stubAttDocFormatter{formatErr: someErr},
 			wantErr:          true,
@@ -204,7 +204,7 @@ func TestVerify(t *testing.T) {
 				cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), tc.provider)
 				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, cfg))
 			}
-			require.NoError(tc.stateFile().WriteToFile(fileHandler, constants.StateFilename))
+			require.NoError(tc.stateFile.WriteToFile(fileHandler, constants.StateFilename))
 
 			v := &verifyCmd{
 				fileHandler: fileHandler,

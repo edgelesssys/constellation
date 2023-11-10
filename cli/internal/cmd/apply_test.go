@@ -32,8 +32,8 @@ import (
 )
 
 // defaultStateFile returns a valid default state for testing.
-func defaultStateFile() *state.State {
-	return &state.State{
+func defaultStateFile(csp cloudprovider.Provider) *state.State {
+	stateFile := &state.State{
 		Version: "v1",
 		Infrastructure: state.Infrastructure{
 			UID:               "123",
@@ -65,18 +65,16 @@ func defaultStateFile() *state.State {
 			MeasurementSalt: []byte{0x41},
 		},
 	}
-}
-
-func defaultAzureStateFile() *state.State {
-	s := defaultStateFile()
-	s.Infrastructure.GCP = nil
-	return s
-}
-
-func defaultGCPStateFile() *state.State {
-	s := defaultStateFile()
-	s.Infrastructure.Azure = nil
-	return s
+	switch csp {
+	case cloudprovider.GCP:
+		stateFile.Infrastructure.Azure = nil
+	case cloudprovider.Azure:
+		stateFile.Infrastructure.GCP = nil
+	default:
+		stateFile.Infrastructure.Azure = nil
+		stateFile.Infrastructure.GCP = nil
+	}
+	return stateFile
 }
 
 func TestParseApplyFlags(t *testing.T) {
@@ -256,8 +254,17 @@ func TestValidateInputs(t *testing.T) {
 			require.NoError(fh.WriteYAML(constants.ConfigFilename, cfg))
 		}
 	}
-	defaultState := func(require *require.Assertions, fh file.Handler) {
-		require.NoError(fh.WriteYAML(constants.StateFilename, &state.State{}))
+	preInitState := func(csp cloudprovider.Provider) func(require *require.Assertions, fh file.Handler) {
+		return func(require *require.Assertions, fh file.Handler) {
+			stateFile := defaultStateFile(csp)
+			stateFile.ClusterValues = state.ClusterValues{}
+			require.NoError(fh.WriteYAML(constants.StateFilename, stateFile))
+		}
+	}
+	postInitState := func(csp cloudprovider.Provider) func(require *require.Assertions, fh file.Handler) {
+		return func(require *require.Assertions, fh file.Handler) {
+			require.NoError(fh.WriteYAML(constants.StateFilename, defaultStateFile(csp)))
+		}
 	}
 	defaultMasterSecret := func(require *require.Assertions, fh file.Handler) {
 		require.NoError(fh.WriteJSON(constants.MasterSecretFilename, &uri.MasterSecret{}))
@@ -282,7 +289,7 @@ func TestValidateInputs(t *testing.T) {
 	}{
 		"[upgrade] gcp: all files exist": {
 			createConfig:       defaultConfig(cloudprovider.GCP),
-			createState:        defaultState,
+			createState:        postInitState(cloudprovider.GCP),
 			createMasterSecret: defaultMasterSecret,
 			createAdminConfig:  defaultAdminConfig,
 			createTfState:      defaultTfState,
@@ -291,7 +298,7 @@ func TestValidateInputs(t *testing.T) {
 		},
 		"[upgrade] aws: all files exist": {
 			createConfig:       defaultConfig(cloudprovider.AWS),
-			createState:        defaultState,
+			createState:        postInitState(cloudprovider.AWS),
 			createMasterSecret: defaultMasterSecret,
 			createAdminConfig:  defaultAdminConfig,
 			createTfState:      defaultTfState,
@@ -300,7 +307,7 @@ func TestValidateInputs(t *testing.T) {
 		},
 		"[upgrade] azure: all files exist": {
 			createConfig:       defaultConfig(cloudprovider.Azure),
-			createState:        defaultState,
+			createState:        postInitState(cloudprovider.Azure),
 			createMasterSecret: defaultMasterSecret,
 			createAdminConfig:  defaultAdminConfig,
 			createTfState:      defaultTfState,
@@ -309,7 +316,7 @@ func TestValidateInputs(t *testing.T) {
 		},
 		"[upgrade] qemu: all files exist": {
 			createConfig:       defaultConfig(cloudprovider.QEMU),
-			createState:        defaultState,
+			createState:        postInitState(cloudprovider.QEMU),
 			createMasterSecret: defaultMasterSecret,
 			createAdminConfig:  defaultAdminConfig,
 			createTfState:      defaultTfState,
@@ -318,16 +325,16 @@ func TestValidateInputs(t *testing.T) {
 		},
 		"no config file errors": {
 			createConfig:       func(require *require.Assertions, fh file.Handler) {},
-			createState:        defaultState,
+			createState:        postInitState(cloudprovider.GCP),
 			createMasterSecret: defaultMasterSecret,
 			createAdminConfig:  defaultAdminConfig,
 			createTfState:      defaultTfState,
 			flags:              applyFlags{},
 			wantErr:            true,
 		},
-		"no admin config file, but mastersecret file exists errors": {
+		"[init] no admin config file, but mastersecret file exists errors": {
 			createConfig:       defaultConfig(cloudprovider.GCP),
-			createState:        defaultState,
+			createState:        preInitState(cloudprovider.GCP),
 			createMasterSecret: defaultMasterSecret,
 			createAdminConfig:  func(require *require.Assertions, fh file.Handler) {},
 			createTfState:      defaultTfState,
@@ -336,16 +343,16 @@ func TestValidateInputs(t *testing.T) {
 		},
 		"[init] no admin config file, no master secret": {
 			createConfig:       defaultConfig(cloudprovider.GCP),
-			createState:        defaultState,
+			createState:        preInitState(cloudprovider.GCP),
 			createMasterSecret: func(require *require.Assertions, fh file.Handler) {},
 			createAdminConfig:  func(require *require.Assertions, fh file.Handler) {},
 			createTfState:      defaultTfState,
 			flags:              applyFlags{},
 			wantPhases:         newPhases(skipImagePhase, skipK8sPhase),
 		},
-		"no tf state, but admin config exists errors": {
+		"[create] no tf state, but admin config exists errors": {
 			createConfig:       defaultConfig(cloudprovider.GCP),
-			createState:        defaultState,
+			createState:        preInitState(cloudprovider.GCP),
 			createMasterSecret: defaultMasterSecret,
 			createAdminConfig:  defaultAdminConfig,
 			createTfState:      func(require *require.Assertions, fh file.Handler) {},
@@ -374,7 +381,7 @@ func TestValidateInputs(t *testing.T) {
 		},
 		"[init] self-managed: config and state file exist, skip-phases=infrastructure": {
 			createConfig:       defaultConfig(cloudprovider.GCP),
-			createState:        defaultState,
+			createState:        preInitState(cloudprovider.GCP),
 			createMasterSecret: func(require *require.Assertions, fh file.Handler) {},
 			createAdminConfig:  func(require *require.Assertions, fh file.Handler) {},
 			createTfState:      func(require *require.Assertions, fh file.Handler) {},

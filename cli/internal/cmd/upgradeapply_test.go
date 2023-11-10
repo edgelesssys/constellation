@@ -36,7 +36,7 @@ func TestUpgradeApply(t *testing.T) {
 	fsWithStateFileAndTfState := func() file.Handler {
 		fh := file.NewHandler(afero.NewMemMapFs())
 		require.NoError(t, fh.MkdirAll(constants.TerraformWorkingDir))
-		require.NoError(t, fh.WriteYAML(constants.StateFilename, defaultAzureStateFile()))
+		require.NoError(t, fh.WriteYAML(constants.StateFilename, defaultStateFile(cloudprovider.Azure)))
 		return fh
 	}
 
@@ -61,7 +61,7 @@ func TestUpgradeApply(t *testing.T) {
 				gotState, err := state.ReadFromFile(fh, constants.StateFilename)
 				require.NoError(err)
 				assert.Equal("v1", gotState.Version)
-				assert.Equal(defaultAzureStateFile(), gotState)
+				assert.Equal(defaultStateFile(cloudprovider.Azure), gotState)
 			},
 		},
 		"id file and state file do not exist": {
@@ -209,7 +209,7 @@ func TestUpgradeApply(t *testing.T) {
 			},
 			fh: func() file.Handler {
 				fh := file.NewHandler(afero.NewMemMapFs())
-				require.NoError(t, fh.WriteYAML(constants.StateFilename, defaultAzureStateFile))
+				require.NoError(t, fh.WriteYAML(constants.StateFilename, defaultStateFile(cloudprovider.Azure)))
 				return fh
 			},
 		},
