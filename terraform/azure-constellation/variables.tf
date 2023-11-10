@@ -80,3 +80,9 @@ variable "secure_boot" {
   default     = false
   description = "Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob."
 }
+
+variable "create_maa" {
+  type        = bool
+  default     = true
+  description = "Create an MAA for attestation."
+}

@@ -33,6 +33,7 @@ module "azure" {
   image_id               = module.fetch_image.image
   debug                  = var.debug
   resource_group         = module.azure_iam.base_resource_group
+  create_maa             = var.create_maa
 }
 
 module "constellation" {
