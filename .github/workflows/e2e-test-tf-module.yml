@@ -6,32 +6,29 @@ on:
       ref:
         type: string
         description: "Git ref to checkout"
-        required: false
       cloudProvider:
         description: "Which cloud provider to use."
         type: choice
         options:
           - "aws"
+          - "azure"
           - "gcp"
         required: true
       regionZone:
         description: "Region or zone to create the cluster in. Leave empty for default region/zone."
         type: string
-      image:
-        description: "Node image version of the cluster."
-        type: string
         required: true
+      image:
+        description: "Node image reference which is compatible with the current dev release version. If not set, the latest debug image from main is used."
+        type: string
       cliVersion:
         description: "Constellation CLI version to use. Empty value means build from source."
         type: string
-        default: ""
-        required: false
   workflow_call:
     inputs:
       ref:
         type: string
         description: "Git ref to checkout"
-        required: false
       cloudProvider:
         description: "Which cloud provider to use."
         type: string
@@ -39,17 +36,16 @@ on:
       regionZone:
         description: "Which zone to use."
         type: string
-      image:
-        description: "Node image reference which is compatible with the current dev release version."
-        type: string
         required: true
+      image:
+        description: "Node image reference which is compatible with the current dev release version. If not set, the latest debug image from main is used."
+        type: string
       cliVersion:
         description: "Constellation CLI version to use. Empty value means build from source."
         type: string
-        default: ""
-        required: false
+
 jobs:
-  build:
+  tf-module-test:
     runs-on: ubuntu-22.04
     permissions:
       id-token: write
@@ -62,16 +58,30 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.head_ref }}
 
-      - name: Upload module
+      - name: Find Latest Image
+        id: find-latest-image
+        uses: ./.github/actions/find_latest_image
+        with:
+          git-ref: ${{ inputs.ref }}
+          imageVersion: ${{ inputs.image }}
+          ref: main
+          stream: debug
+
+      - name: Upload Terraform module
         uses: ./.github/actions/upload_terraform_module
+        with:
+          version: ${{ inputs.cliVersion }}
 
       - name: Download Terraform module
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: terraform-module
 
       - name: Unzip Terraform module
-        run: unzip terraform-module.zip
+        shell: bash
+        run: |
+          unzip terraform-module.zip -d ${{ github.workspace }}
+          rm terraform-module.zip
 
       - name: Create resource prefix
         id: create-prefix
@@ -83,17 +93,18 @@ jobs:
 
       - name: Create AWS Terraform variable input file
         if: inputs.cloudProvider == 'aws'
-        working-directory: ./terraform-module/aws-constellation
+        working-directory: ${{ github.workspace }}/terraform-module/aws-constellation
+        shell: bash
         run: |
           cat > terraform.tfvars <<EOF
           name = "${{ steps.create-prefix.outputs.prefix }}"
-          image = "${{ inputs.image }}"
-          zone = "${{ inputs.regionZone || 'us-east-2c' }}"
+          image = "${{ steps.find-latest-image.outputs.image  }}"
+          zone = "${{ inputs.regionZone }}"
           name_prefix = "${{ steps.create-prefix.outputs.prefix }}"
+          debug = ${{ steps.find-latest-image.outputs.isDebugImage }}
           node_groups = {
             control_plane_default = {
               role          = "control-plane"
-              zone          = "${{ inputs.regionZone || 'us-east-2c' }}"
               instance_type = "m6a.xlarge"
               disk_size     = 30
               disk_type     = "gp3"
@@ -101,7 +112,6 @@ jobs:
             },
             worker_default = {
               role          = "worker"
-              zone          = "${{ inputs.regionZone || 'us-east-2c' }}"
               instance_type = "m6a.xlarge"
               disk_size     = 30
               disk_type     = "gp3"
@@ -111,20 +121,52 @@ jobs:
           EOF
           cat terraform.tfvars
 
+      - name: Create Azure Terraform variable input file
+        if: inputs.cloudProvider == 'azure'
+        working-directory: ${{ github.workspace }}/terraform-module/azure-constellation
+        shell: bash
+        run: |
+          cat > terraform.tfvars <<EOF
+          name = "${{ steps.create-prefix.outputs.prefix }}"
+          image = "${{ steps.find-latest-image.outputs.image }}"
+          location = "${{ inputs.regionZone }}"
+          service_principal_name = "${{ steps.create-prefix.outputs.prefix }}-sp"
+          resource_group_name = "${{ steps.create-prefix.outputs.prefix }}-rg"
+          debug = ${{ steps.find-latest-image.outputs.isDebugImage }}
+          node_groups = {
+            control_plane_default = {
+              role          = "control-plane"
+              instance_type = "Standard_DC4as_v5"
+              disk_size     = 30
+              disk_type     = "Premium_LRS"
+              initial_count = 2
+            },
+            worker_default = {
+              role          = "worker"
+              instance_type = "Standard_DC4as_v5"
+              disk_size     = 30
+              disk_type     = "Premium_LRS"
+              initial_count = 2
+            }
+          }
+          EOF
+          cat terraform.tfvars
+
       - name: Create GCP Terraform variable input file
         if: inputs.cloudProvider == 'gcp'
-        working-directory: ./terraform-module/gcp-constellation
+        working-directory: ${{ github.workspace }}/terraform-module/gcp-constellation
+        shell: bash
         run: |
           cat > terraform.tfvars <<EOF
           name = "${{ steps.create-prefix.outputs.prefix }}"
           project = "${{ secrets.GCP_E2E_PROJECT }}"
           service_account_id = "${{ steps.create-prefix.outputs.prefix }}-sa"
-          image = "${{ inputs.image }}"
-          zone = "${{ inputs.regionZone || 'europe-west3-b' }}"
+          image = "${{ steps.find-latest-image.outputs.image }}"
+          zone = "${{ inputs.regionZone }}"
+          debug = ${{ steps.find-latest-image.outputs.isDebugImage }}
           node_groups = {
             control_plane_default = {
               role          = "control-plane"
-              zone          = "${{ inputs.regionZone || 'europe-west3-b' }}"
               instance_type = "n2d-standard-4"
               disk_size     = 30
               disk_type     = "pd-ssd"
@@ -132,7 +174,6 @@ jobs:
             },
             worker_default = {
               role          = "worker"
-              zone          = "${{ inputs.regionZone || 'europe-west3-b' }}"
               instance_type = "n2d-standard-4"
               disk_size     = 30
               disk_type     = "pd-ssd"
@@ -143,6 +184,7 @@ jobs:
           cat terraform.tfvars
 
       - name: Install dependencies (Terraform)
+        shell: bash
         run: |
           sudo apt update && sudo apt install gpg
           wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
@@ -177,9 +219,13 @@ jobs:
         if: inputs.cliVersion != ''
         shell: bash
         run: |
+          mkdir build
           curl -fsSL -o constellation https://github.com/edgelesssys/constellation/releases/download/${{ inputs.cliVersion }}/constellation-linux-amd64
-          chmod u+x ./constellation
-          ./constellation version
+          chmod u+x constellation
+          PATH_ADD=$(pwd)
+          export PATH="$PATH:$PATH_ADD"
+          constellation version
+          # Do not spam license server from pipeline
           sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts'
 
       - name: Login to AWS (IAM + Cluster role)
@@ -191,6 +237,12 @@ jobs:
           # extend token expiry to 6 hours to ensure constellation can terminate
           role-duration-seconds: 21600
 
+      - name: Login to Azure (IAM + Cluster service principal)
+        if: inputs.cloudProvider == 'azure'
+        uses: ./.github/actions/login_azure
+        with:
+          azure_credentials: ${{ secrets.AZURE_E2E_TF_CREDENTIALS }}
+
       - name: Login to GCP (IAM + Cluster service account)
         if: inputs.cloudProvider == 'gcp'
         uses: ./.github/actions/login_gcp
@@ -199,22 +251,24 @@ jobs:
 
       - name: Apply Terraform Cluster
         id: apply_terraform
-        working-directory: ./terraform-module/${{ inputs.cloudProvider }}-constellation
+        working-directory: ${{ github.workspace }}/terraform-module/${{ inputs.cloudProvider }}-constellation
+        shell: bash
         run: |
           cp ../../constellation .
           terraform init
           terraform apply -var-file=terraform.tfvars  -auto-approve
 
       - name: Destroy Terraform Cluster
-        # outcome is part of the steps context (https://docs.github.com/en/actions/learn-github-actions/contexts#steps-context)
         if: always() && steps.apply_terraform.outcome != 'skipped'
-        working-directory: ./terraform-module/${{ inputs.cloudProvider }}-constellation
+        working-directory: ${{ github.workspace }}/terraform-module/${{ inputs.cloudProvider }}-constellation
+        shell: bash
         run: |
           terraform init
           terraform destroy -var-file=terraform.tfvars -auto-approve
 
       - name: Verify cleanup
-        working-directory: ./terraform-module/${{ inputs.cloudProvider }}-constellation
+        working-directory: ${{ github.workspace }}/terraform-module/${{ inputs.cloudProvider }}-constellation
+        shell: bash
         run: |
           if [ -f constellation-mastersecret.json ] || [ -f constellation-conf.yaml ]; then
             echo "Files  constellation-mastersecret.json or constellation-conf.yaml still exist"

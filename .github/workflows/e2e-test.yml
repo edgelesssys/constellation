@@ -151,63 +151,17 @@ jobs:
       id-token: write
       contents: read
     outputs:
-      image: ${{ steps.find-latest-image.outputs.output }}${{ steps.check-input.outputs.image }}
-      isDebugImage: ${{ steps.isDebugImage.outputs.isDebugImage }}
+      image: ${{ steps.find-latest-image.outputs.image }}
+      isDebugImage: ${{ steps.find-latest-image.outputs.isDebugImage }}
     steps:
-      - name: Check input
-        id: check-input
-        shell: bash
-        run: |
-          if [[ -z "${{ inputs.imageVersion }}" ]]; then
-            echo "Using latest debug image from main."
-            exit 0
-          else
-            echo "image=${{ inputs.imageVersion }}" | tee -a "$GITHUB_OUTPUT"
-          fi
-
-      - name: Checkout head
-        if: inputs.imageVersion == '' && inputs.git-ref == 'head'
-        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
-        with:
-          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
-
-      - name: Checkout ref
-        if: inputs.imageVersion == '' && inputs.git-ref != 'head'
-        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
-        with:
-          ref: ${{ inputs.git-ref }}
-
-      - name: Login to AWS
-        if: inputs.imageVersion == ''
-        uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a # v4.0.1
-        with:
-          role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIRead
-          aws-region: eu-central-1
-
-      - name: Find latest image
+      - name: Find Latest Image
         id: find-latest-image
-        if: inputs.imageVersion == ''
-        uses: ./.github/actions/versionsapi
+        uses: ./.github/actions/find_latest_image
         with:
-          command: latest
+          git-ref: ${{ inputs.git-ref }}
+          imageVersion: ${{ inputs.imageVersion }}
           ref: main
           stream: debug
-
-      - name: Is debug image?
-        id: isDebugImage
-        shell: bash
-        run: |
-          case "${{ inputs.imageVersion }}" in
-            "")
-              echo "isDebugImage=true" | tee -a "$GITHUB_OUTPUT"
-              ;;
-            *"/stream/debug/"*)
-              echo "isDebugImage=true" | tee -a "$GITHUB_OUTPUT"
-              ;;
-            *)
-              echo "isDebugImage=false" | tee -a "$GITHUB_OUTPUT"
-              ;;
-          esac
 
   e2e-test-manual:
     runs-on: ${{ inputs.runner }}
