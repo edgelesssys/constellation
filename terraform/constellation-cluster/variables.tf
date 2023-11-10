@@ -123,3 +123,9 @@ variable "microservice_version" {
   type        = string
   description = "Microservice version."
 }
+
+variable "debug" {
+  type        = bool
+  default     = false
+  description = "DON'T USE IN PRODUCTION: Enable debug mode and allow the use of debug images."
+}

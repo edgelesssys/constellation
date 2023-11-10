@@ -60,6 +60,7 @@ resource "null_resource" "sa_account_file" {
 module "constellation" {
   source               = "../constellation-cluster"
   csp                  = "gcp"
+  debug                = var.debug
   name                 = var.name
   image                = var.image
   microservice_version = var.microservice_version

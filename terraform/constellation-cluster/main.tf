@@ -148,7 +148,7 @@ resource "null_resource" "config" {
         ./yq eval '.microserviceVersion = "${var.microservice_version}"' -i constellation-conf.yaml
       fi
       ${local.yq_node_groups}
-      ./constellation config fetch-measurements
+      ./constellation config fetch-measurements ${var.debug == true ? "--insecure" : ""}
     EOT
   }
 

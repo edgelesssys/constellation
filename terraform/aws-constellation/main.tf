@@ -47,6 +47,7 @@ module "aws" {
 module "constellation" {
   source               = "../constellation-cluster"
   csp                  = "aws"
+  debug                = var.debug
   name                 = var.name
   image                = var.image
   microservice_version = var.microservice_version

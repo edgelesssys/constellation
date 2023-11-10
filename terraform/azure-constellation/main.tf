@@ -38,6 +38,7 @@ module "azure" {
 module "constellation" {
   source               = "../constellation-cluster"
   csp                  = "azure"
+  debug                = var.debug
   name                 = var.name
   image                = var.image
   microservice_version = var.microservice_version
