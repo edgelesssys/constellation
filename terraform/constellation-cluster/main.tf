@@ -80,7 +80,7 @@ resource "null_resource" "azure_config" {
 }
 
 resource "null_resource" "azure_maa_patch" {
-  count = var.azure_config.maaURL != "" ? 1 : 0
+  count = var.azure_config != null ? (var.azure_config.maaURL != "" ? 1 : 0) : 0
   provisioner "local-exec" {
     command = <<EOT
       ./yq eval '.attestation.azureSEVSNP.firmwareSignerConfig.maaURL = "${var.azure_config.maaURL}"' -i constellation-conf.yaml
