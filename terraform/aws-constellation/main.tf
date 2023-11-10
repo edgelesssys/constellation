@@ -12,7 +12,7 @@ module "aws_iam" {
 resource "null_resource" "ensure_yq" {
   provisioner "local-exec" {
     command = <<EOT
-         ${path.module}/install-yq.sh
+         ../constellation-cluster/install-yq.sh
     EOT
   }
   triggers = {
@@ -20,8 +20,9 @@ resource "null_resource" "ensure_yq" {
   }
 }
 
-module "fetch_ami" {
-  source              = "./fetch-ami"
+module "fetch_image" {
+  source              = "../fetch-image"
+  csp                 = "aws"
   attestation_variant = var.enable_snp ? "aws-sev-snp" : "aws-nitro-tpm"
   region              = local.region
   image               = var.image
@@ -35,7 +36,7 @@ module "aws" {
   node_groups                        = var.node_groups
   iam_instance_profile_worker_nodes  = module.aws_iam.worker_nodes_instance_profile
   iam_instance_profile_control_plane = module.aws_iam.control_plane_instance_profile
-  ami                                = module.fetch_ami.ami
+  ami                                = module.fetch_image.image
   region                             = local.region
   zone                               = var.zone
   debug                              = var.debug

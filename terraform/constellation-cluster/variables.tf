@@ -1,9 +1,9 @@
 variable "csp" {
   type        = string
-  description = "The CSP to create the cluster in."
+  description = "The cloud service provider to use."
   validation {
-    condition     = var.csp == "aws"
-    error_message = "The CSP must be 'aws'."
+    condition     = var.csp == "aws" || var.csp == "gcp"
+    error_message = "The CSP must be one of {aws|gcp}."
   }
 }
 
@@ -70,9 +70,25 @@ variable "aws_config" {
   default     = null
 }
 
+variable "gcp_config" {
+  type = object({
+    region            = string
+    zone              = string
+    project           = string
+    ipCidrPod         = string
+    serviceAccountKey = string
+  })
+  description = "The cluster config for GCP."
+  default     = null
+}
+
 variable "image" {
   type        = string
   description = "The node image reference or semantical release version."
+  validation {
+    condition     = length(var.image) > 0
+    error_message = "The image variable must not be empty."
+  }
 }
 
 variable "kubernetes_version" {
