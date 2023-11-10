@@ -16,7 +16,7 @@ variable "service_account_id" {
 variable "image" {
   type        = string
   description = "Node image reference or semantical release version."
-} # is required resolve the AMI
+}
 
 variable "microservice_version" {
   type        = string

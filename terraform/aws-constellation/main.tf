@@ -12,7 +12,7 @@ module "aws_iam" {
 resource "null_resource" "ensure_yq" {
   provisioner "local-exec" {
     command = <<EOT
-         ../constellation-cluster/install-yq.sh
+         ../common/install-yq.sh
     EOT
   }
   triggers = {
@@ -21,9 +21,9 @@ resource "null_resource" "ensure_yq" {
 }
 
 module "fetch_image" {
-  source              = "../fetch-image"
+  source              = "../common/fetch-image"
   csp                 = "aws"
-  attestation_variant = var.enable_snp ? "aws-sev-snp" : "aws-nitro-tpm"
+  attestation_variant = "aws-sev-snp"
   region              = local.region
   image               = var.image
   depends_on          = [module.aws_iam, null_resource.ensure_yq]

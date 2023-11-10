@@ -1,4 +1,4 @@
 output "image" {
-  description = "The resolved image ID of the CSP."
+  description = "The fetched image data."
   value       = data.local_file.image.content
 }

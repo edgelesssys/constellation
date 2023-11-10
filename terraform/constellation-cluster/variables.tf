@@ -1,9 +1,15 @@
+variable "constellation_version" {
+  type        = string
+  description = "Constellation CLI version to use."
+  default     = "@@CONSTELLATION_VERSION@@"
+}
+
 variable "csp" {
   type        = string
-  description = "The cloud service provider to use."
+  description = "The CSP to create the cluster in."
   validation {
-    condition     = var.csp == "aws" || var.csp == "gcp"
-    error_message = "The CSP must be one of {aws|gcp}."
+    condition     = var.csp == "aws" || var.csp == "gcp" || var.csp == "azure"
+    error_message = "The cloud service provider to use."
   }
 }
 
@@ -14,7 +20,8 @@ variable "node_groups" {
     instance_type = string
     disk_size     = number
     disk_type     = string
-    zone          = string
+    zone          = optional(string, "")       # For AWS, GCP
+    zones         = optional(list(string), []) # For Azure
   }))
   description = "A map of node group names to node group configurations."
   validation {
@@ -58,7 +65,6 @@ variable "apiServerCertSANs" {
   description = "List of additional SANs (Subject Alternative Names) for the Kubernetes API server certificate."
 }
 
-
 variable "aws_config" {
   type = object({
     region                             = string
@@ -66,25 +72,42 @@ variable "aws_config" {
     iam_instance_profile_worker_nodes  = string
     iam_instance_profile_control_plane = string
   })
-  description = "The cluster config for AWS."
+  description = "The cluster config for AWS"
+  default     = null
+}
+
+variable "azure_config" {
+  type = object({
+    subscription             = string
+    tenant                   = string
+    location                 = string
+    resourceGroup            = string
+    userAssignedIdentity     = string
+    deployCSIDriver          = bool
+    secureBoot               = bool
+    maaURL                   = string
+    networkSecurityGroupName = string
+    loadBalancerName         = string
+  })
+  description = "The cluster config for Azure"
   default     = null
 }
 
 variable "gcp_config" {
   type = object({
-    region            = string
-    zone              = string
-    project           = string
-    ipCidrPod         = string
-    serviceAccountKey = string
+    region                = string
+    zone                  = string
+    project               = string
+    serviceAccountKeyPath = string
+    ipCidrPod             = string
   })
-  description = "The cluster config for GCP."
+  description = "The cluster config for GCP"
   default     = null
 }
 
 variable "image" {
   type        = string
-  description = "The node image reference or semantical release version."
+  description = "The node image reference or semantical release version"
   validation {
     condition     = length(var.image) > 0
     error_message = "The image variable must not be empty."
@@ -93,10 +116,10 @@ variable "image" {
 
 variable "kubernetes_version" {
   type        = string
-  description = "Kubernetes version."
+  description = "Kubernetes version"
 }
 
 variable "microservice_version" {
   type        = string
-  description = "Microservice version."
+  description = "Microservice version"
 }
