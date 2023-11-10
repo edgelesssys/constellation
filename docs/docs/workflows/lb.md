@@ -1,8 +1,6 @@
 # Expose a service
 Constellation integrates the native load balancers of each CSP. Therefore, to expose a service simply [create a service of type `LoadBalancer`](https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer).
 
-
-
 ## Internet-facing LB service on AWS
 
 To expose your application service externally you might want to use a Kubernetes Service of type `LoadBalancer`. On AWS, load-balancing is achieved through the [AWS Load Balancing Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller) as in the managed EKS.
@@ -14,3 +12,5 @@ For general information on LB with AWS see [Network load balancing on Amazon EKS
 :::caution
 Before terminating the cluster, all LB backed services should be deleted, so that the controller can cleanup the related resources.
 :::
+
+<! -- Trigger build -- >
