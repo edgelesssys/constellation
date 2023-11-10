@@ -37,7 +37,7 @@ variable "node_groups" {
     instance_type = string
     disk_size     = number
     disk_type     = string
-    zone          = string
+    zone          = optional(string, "")
   }))
   description = "A map of node group names to node group configurations."
   validation {
