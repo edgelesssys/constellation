@@ -64,13 +64,11 @@ resource "null_resource" "azure_config" {
       ./yq eval '.provider.azure.userAssignedIdentity = "${var.azure_config.userAssignedIdentity}"' -i constellation-conf.yaml
       ./yq eval '.provider.azure.deployCSIDriver = ${var.azure_config.deployCSIDriver}' -i constellation-conf.yaml
       ./yq eval '.provider.azure.secureBoot = ${var.azure_config.secureBoot}' -i constellation-conf.yaml
-      ./yq eval '.attestation.azureSEVSNP.firmwareSignerConfig.maaURL = "${var.azure_config.maaURL}"' -i constellation-conf.yaml
       ./yq eval '.infrastructure.azure.resourceGroup = "${var.azure_config.resourceGroup}"' -i constellation-state.yaml
       ./yq eval '.infrastructure.azure.subscriptionID = "${var.azure_config.subscription}"' -i constellation-state.yaml
       ./yq eval '.infrastructure.azure.networkSecurityGroupName = "${var.azure_config.networkSecurityGroupName}"' -i constellation-state.yaml
       ./yq eval '.infrastructure.azure.loadBalancerName = "${var.azure_config.loadBalancerName}"' -i constellation-state.yaml
       ./yq eval '.infrastructure.azure.userAssignedIdentity = "${var.azure_config.userAssignedIdentity}"' -i constellation-state.yaml
-      ./yq eval '.infrastructure.azure.attestationURL = "${var.azure_config.maaURL}"' -i constellation-state.yaml
     EOT
   }
   triggers = {
@@ -85,6 +83,8 @@ resource "null_resource" "azure_maa_patch" {
   count = var.azure_config.maaURL != "" ? 1 : 0
   provisioner "local-exec" {
     command = <<EOT
+      ./yq eval '.attestation.azureSEVSNP.firmwareSignerConfig.maaURL = "${var.azure_config.maaURL}"' -i constellation-conf.yaml
+      ./yq eval '.infrastructure.azure.attestationURL = "${var.azure_config.maaURL}"' -i constellation-state.yaml
       ./constellation maa-patch ${var.azure_config.maaURL}
     EOT
   }
