@@ -132,7 +132,7 @@ require (
 	k8s.io/client-go v0.28.2
 	k8s.io/cluster-bootstrap v0.27.3
 	k8s.io/kubelet v0.27.3
-	k8s.io/kubernetes v1.27.3
+	k8s.io/kubernetes v1.27.5
 	k8s.io/mount-utils v0.27.3
 	k8s.io/utils v0.0.0-20230505201702-9f6742963106
 	sigs.k8s.io/yaml v1.3.0
