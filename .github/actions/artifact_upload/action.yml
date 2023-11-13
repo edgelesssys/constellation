@@ -3,7 +3,7 @@ description: Upload an encrypted zip archive as a github artifact.
 
 inputs:
   path:
-    description: 'The path(s) that should be uploaded.'
+    description: 'The path(s) that should be uploaded. Those are evaluated with bash and the extglob option.'
     required: true
   name:
     description: 'The name of the artifact.'
@@ -22,13 +22,6 @@ runs:
     - name: Install zip
       uses: montudor/action-zip@0852c26906e00f8a315c704958823928d8018b28 # @v1
 
-    - name: Find glob pattern matches
-      uses: tj-actions/glob@ac7d983dd3677ab0879d703cfdbde78676cdfaad # @v17.3.0
-      id: glob
-      with:
-        files: |
-          ${{ inputs.path }}
-
     - name: Create temporary directory
       id: tempdir
       shell: bash
@@ -37,12 +30,24 @@ runs:
     - name: Create archive
       shell: bash
       run: |
+        shopt -s extglob
+
+        # Check if any file matches the given pattern(s).
+        something_exists=false
+        for pattern in ${{ inputs.path }}
+        do
+          if compgen -G $pattern > /dev/null
+          then
+            something_exists=true
+          fi
+        done
+
         # Create an archive if files exist.
         # Don't create an archive file if no files are found
         # and warn.
-        if [[ -n "${{ steps.glob.outputs.paths }}" ]]
+        if $something_exists
         then
-          zip -e -P '${{ inputs.encryption-secret }}' -qq -r ${{ steps.tempdir.outputs.directory }}/archive.zip ${{ steps.glob.outputs.paths }}
+          zip -e -P '${{ inputs.encryption-secret }}' -qq -r ${{ steps.tempdir.outputs.directory }}/archive.zip ${{ inputs.path }}
         else
           echo "::warning:: No files/directories found with the provided path(s) $(echo -n ${{ inputs.path }}). No artifact will be uploaded."
         fi
