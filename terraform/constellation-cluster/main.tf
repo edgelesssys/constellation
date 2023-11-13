@@ -69,6 +69,10 @@ resource "null_resource" "azure_config" {
       ./yq eval '.infrastructure.azure.networkSecurityGroupName = "${var.azure_config.networkSecurityGroupName}"' -i constellation-state.yaml
       ./yq eval '.infrastructure.azure.loadBalancerName = "${var.azure_config.loadBalancerName}"' -i constellation-state.yaml
       ./yq eval '.infrastructure.azure.userAssignedIdentity = "${var.azure_config.userAssignedIdentity}"' -i constellation-state.yaml
+      if [ '${var.azure_config.maaURL}' != '' ]; then
+        ./yq eval '.infrastructure.azure.attestationURL = "${var.azure_config.maaURL}"' -i constellation-state.yaml
+        ./constellation maa-patch ${var.azure_config.maaURL}
+      fi
     EOT
   }
   triggers = {
@@ -76,22 +80,6 @@ resource "null_resource" "azure_config" {
   }
   depends_on = [
     terraform_data.config_generate
-  ]
-}
-
-resource "null_resource" "azure_maa_patch" {
-  count = var.create_maa ? 1 : 0
-  provisioner "local-exec" {
-    command = <<EOT
-      ./yq eval '.infrastructure.azure.attestationURL = "${var.azure_config.maaURL}"' -i constellation-state.yaml
-      ./constellation maa-patch ${var.azure_config.maaURL}
-    EOT
-  }
-  triggers = {
-    always_run = timestamp()
-  }
-  depends_on = [
-    null_resource.azure_config
   ]
 }
 
@@ -151,7 +139,7 @@ resource "null_resource" "config" {
   }
 
   depends_on = [
-    null_resource.aws_config, null_resource.gcp_config, null_resource.azure_config, null_resource.azure_maa_patch
+    null_resource.aws_config, null_resource.gcp_config, null_resource.azure_config
   ]
 
   triggers = {
