@@ -7,7 +7,6 @@ variable "constellation_version" {
 variable "image" {
   type        = string
   description = "The node image reference or semantic release version."
-  default     = "@@CONSTELLATION_VERSION@@"
 }
 
 variable "csp" {
