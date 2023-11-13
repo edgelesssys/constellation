@@ -387,4 +387,3 @@ jobs:
     uses: ./.github/workflows/e2e-test-tf-module.yml
     with:
       cloudProvider: "${{ matrix.provider }}"
-      regionZone: "${{ matrix.regionZone }}"
