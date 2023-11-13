@@ -278,7 +278,7 @@ jobs:
         uses: ./.github/actions/artifact_upload
         with:
           name: upgrade-logs
-          path: |
+          path: >
             node-operator.logs
             node-maintenance-operator.logs
             constellation-version.yaml

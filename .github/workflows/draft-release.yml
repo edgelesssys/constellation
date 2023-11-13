@@ -96,7 +96,7 @@ jobs:
         if : ${{ matrix.os != 'windows' }}
         with:
           name: constellation-${{ matrix.os }}-${{ matrix.arch }}
-          path: |
+          path: >
             build/constellation-${{ matrix.os }}-${{ matrix.arch }}
             build/constellation-${{ matrix.os }}-${{ matrix.arch }}.sig
           encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
@@ -106,7 +106,7 @@ jobs:
         if : ${{ matrix.os == 'windows' }}
         with:
           name: constellation-${{ matrix.os }}-${{ matrix.arch }}
-          path: |
+          path: >
             build/constellation-${{ matrix.os }}-${{ matrix.arch }}.exe
             build/constellation-${{ matrix.os }}-${{ matrix.arch }}.exe.sig
           encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}

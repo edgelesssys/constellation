@@ -188,7 +188,7 @@ jobs:
         uses: ./.github/actions/artifact_upload
         with:
           name: parts-${{ matrix.csp }}-${{ matrix.attestation_variant }}
-          path: |
+          path: >
             ${{ steps.build.outputs.image-dir }}/constellation.efi
             ${{ steps.build.outputs.image-dir }}/constellation.initrd
             ${{ steps.build.outputs.image-dir }}/constellation.vmlinuz

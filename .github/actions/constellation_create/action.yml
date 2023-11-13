@@ -262,6 +262,6 @@ runs:
       uses: ./.github/actions/artifact_upload
       with:
         name: serial-logs-${{ inputs.artifactNameSuffix }}
-        path: |
+        path: >
           !(terraform).log
         encryption_secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}

@@ -170,7 +170,7 @@ runs:
       if: (!env.ACT)
       uses: ./.github/actions/artifact_upload
       with:
-        path: |
+        path: >
           benchmarks/constellation-${{ inputs.cloudProvider }}.json
         name: "benchmarks"
         encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
