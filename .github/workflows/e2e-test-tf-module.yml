@@ -18,7 +18,7 @@ on:
         description: "Region or zone to create the cluster in. Leave empty for default region/zone."
         type: string
       image:
-        description: "OS Image version used in the cluster's VMs, as specified in the Constellation config. If not set, the latest debug image from main is used."
+        description: "OS Image version used in the cluster's VMs, as specified in the Constellation config. If not set, the latest nightly image from main is used."
         type: string
       cliVersion:
         description: "Constellation CLI version to use. Empty value means build from source."
@@ -36,7 +36,7 @@ on:
         description: "Which zone to use."
         type: string
       image:
-        description: "OS Image version used in the cluster's VMs, as specified in the Constellation config. If not set, the latest debug image from main is used."
+        description: "OS Image version used in the cluster's VMs, as specified in the Constellation config. If not set, the latest nightly image from main is used."
         type: string
       cliVersion:
         description: "Constellation CLI version to use. Empty value means build from source."
@@ -63,7 +63,7 @@ jobs:
           git-ref: ${{ inputs.ref }}
           imageVersion: ${{ inputs.image }}
           ref: main
-          stream: debug
+          stream: nightly
 
       - name: Upload Terraform module
         uses: ./.github/actions/upload_terraform_module
