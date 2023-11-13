@@ -1,10 +1,3 @@
-module "azure_iam" {
-  source                 = "../infrastructure/iam/azure"
-  region                 = var.location
-  service_principal_name = var.service_principal_name
-  resource_group_name    = var.resource_group_name
-}
-
 resource "null_resource" "ensure_yq" {
   provisioner "local-exec" {
     command = <<EOT
@@ -22,6 +15,13 @@ module "fetch_image" {
   attestation_variant = "azure-sev-snp"
   image               = var.image
   depends_on          = [null_resource.ensure_yq]
+}
+
+module "azure_iam" {
+  source                 = "../infrastructure/iam/azure"
+  region                 = var.location
+  service_principal_name = var.service_principal_name
+  resource_group_name    = var.resource_group_name
 }
 
 module "azure" {
@@ -51,6 +51,7 @@ module "constellation" {
   ipCidrNode           = module.azure.ip_cidr_nodes
   apiServerCertSANs    = module.azure.api_server_cert_sans
   node_groups          = var.node_groups
+  create_maa           = var.create_maa
   azure_config = {
     subscription             = module.azure_iam.subscription_id
     tenant                   = module.azure_iam.tenant_id
@@ -63,5 +64,5 @@ module "constellation" {
     networkSecurityGroupName = module.azure.network_security_group_name
     loadBalancerName         = module.azure.loadbalancer_name
   }
-  depends_on = [module.azure, module.azure_iam, null_resource.ensure_yq]
+  depends_on = [null_resource.ensure_yq]
 }

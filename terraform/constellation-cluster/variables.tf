@@ -129,3 +129,9 @@ variable "debug" {
   default     = false
   description = "DON'T USE IN PRODUCTION: Enable debug mode and allow the use of debug images."
 }
+
+variable "create_maa" {
+  type        = bool
+  default     = false
+  description = "Create a Microsoft Azure Attestation provider."
+}
