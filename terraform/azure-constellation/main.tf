@@ -51,7 +51,6 @@ module "constellation" {
   ipCidrNode           = module.azure.ip_cidr_nodes
   apiServerCertSANs    = module.azure.api_server_cert_sans
   node_groups          = var.node_groups
-  create_maa           = var.create_maa
   azure_config = {
     subscription             = module.azure_iam.subscription_id
     tenant                   = module.azure_iam.tenant_id
