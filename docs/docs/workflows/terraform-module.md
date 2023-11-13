@@ -146,7 +146,7 @@ The submodules are:
 For general information on cluster upgrades, please refer to [Upgrade your cluster](./upgrade.md).
 :::
 
-The usage of a [remote URL as module source](https://developer.hashicorp.com/terraform/language/modules/sources#fetching-archives-over-http) is recommended, because it simplifies the upgrade process. For [local paths as module source](https://developer.hashicorp.com/terraform/language/modules/sources#local-paths), the user needs to manually overwrite the Terraform files in the Terraform workspace. The steps for the remote URL setup are as follows:
+The usage of a [remote address as module source](https://developer.hashicorp.com/terraform/language/modules/sources#fetching-archives-over-http) is recommended, because it simplifies the upgrade process. For [local paths as module source](https://developer.hashicorp.com/terraform/language/modules/sources#local-paths), the user needs to manually overwrite the Terraform files in the Terraform workspace. The steps for the remote source setup are as follows:
 
 1. Update the local `module_version` variable.
 2. Upgrade the Terraform module and provider dependencies and apply the Constellation upgrade.
