@@ -25,7 +25,7 @@ func NewMaaPatchCmd() *cobra.Command {
 			cobra.ExactArgs(1),
 			func(cmd *cobra.Command, args []string) error {
 				if _, err := url.Parse(args[0]); err != nil {
-					return fmt.Errorf("argument %s is not a valid attestion url", args[0])
+					return fmt.Errorf("argument %s is not a valid URL: %w", args[0], err)
 				}
 				return nil
 			},
