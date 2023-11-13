@@ -18,7 +18,7 @@ on:
         description: "Region or zone to create the cluster in. Leave empty for default region/zone."
         type: string
       image:
-        description: "OS Image version used in the cluster's VMs. If not set, the latest debug image from main is used."
+        description: "OS Image version used in the cluster's VMs, as specified in the Constellation config. If not set, the latest debug image from main is used."
         type: string
       cliVersion:
         description: "Constellation CLI version to use. Empty value means build from source."
@@ -36,7 +36,7 @@ on:
         description: "Which zone to use."
         type: string
       image:
-        description: "Node image reference which is compatible with the current dev release version. If not set, the latest debug image from main is used."
+        description: "OS Image version used in the cluster's VMs, as specified in the Constellation config. If not set, the latest debug image from main is used."
         type: string
       cliVersion:
         description: "Constellation CLI version to use. Empty value means build from source."
@@ -56,7 +56,7 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.head_ref }}
 
-      - name: Find Latest Image
+      - name: Get Latest Image
         id: find-latest-image
         uses: ./.github/actions/find_latest_image
         with:

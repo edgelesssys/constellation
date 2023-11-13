@@ -154,7 +154,7 @@ jobs:
       image: ${{ steps.find-latest-image.outputs.image }}
       isDebugImage: ${{ steps.find-latest-image.outputs.isDebugImage }}
     steps:
-      - name: Find Latest Image
+      - name: Get Latest Image
         id: find-latest-image
         uses: ./.github/actions/find_latest_image
         with:
