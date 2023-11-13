@@ -1,5 +1,6 @@
 name: Download artifact
 description: Download and decrypt an artifact.
+
 inputs:
   name:
     description: 'The name of the artifact.'
@@ -11,20 +12,24 @@ inputs:
   encryption-secret:
     description: 'The secret to use for decrypting the artifact.'
     required: true
+
 runs:
   using: "composite"
   steps:
     - name: Install unzip
       uses: montudor/action-zip@v1
+
     - name: Create temporary directory
       id: tempdir
       shell: bash
       run: echo "directory=$(mktemp -d)" >> "$GITHUB_OUTPUT"
+
     - name: Download the artifact
       uses: actions/download-artifact@v3
       with:
         name: ${{ inputs.name }}
         path: ${{ steps.tempdir.outputs.directory }}
+
     - name: Decrypt and unzip archive
       shell: bash
       run: unzip -P '${{ inputs.encryption-secret }}' -qq -d ${{ inputs.path }} ${{ steps.tempdir.outputs.directory }}/archive.zip

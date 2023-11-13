@@ -1,5 +1,6 @@
 name: Upload artifact
 description: Upload an encrypted zip archive as a github artifact.
+
 inputs:
   path:
     description: 'The path(s) that should be uploaded.'
@@ -14,6 +15,7 @@ inputs:
   encryption-secret:
     description: 'The secret to use for encrypting the files.'
     required: true
+
 runs:
   using: "composite"
   steps:
@@ -25,22 +27,25 @@ runs:
       with:
         files: |
           ${{ inputs.path }}
+
     - name: Create temporary directory
       id: tempdir
       shell: bash
       run: echo "directory=$(mktemp -d)" >> "$GITHUB_OUTPUT"
+
     - name: Create archive
       shell: bash
       run: |
         # Create an archive if files exist.
         # Don't create an archive file if no files are found
-        # and warn/error if configured that way.
+        # and warn.
         if [ -n "${{ steps.glob.outputs.paths }}" ]
         then
           zip -e -P '${{ inputs.encryption-secret }}' -qq -r ${{ steps.tempdir.outputs.directory }}/archive.zip ${{ steps.glob.outputs.paths }}
         else
           echo "::warning:: No files/directories found with the provided path(s) $(echo -n ${{ inputs.path }}). No artifact will be uploaded."
         fi
+
     - name: Upload archive as artifact
       uses: actions/upload-artifact@v3
       with:
