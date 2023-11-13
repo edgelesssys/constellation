@@ -263,6 +263,5 @@ runs:
       with:
         name: serial-logs-${{ inputs.artifactNameSuffix }}
         path: |
-          *.log
-          !terraform.log
+          !(terraform).log
         encryption_secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
