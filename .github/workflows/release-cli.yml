@@ -118,11 +118,6 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.head_ref }}
 
-      - name: Setup bazel
-        uses: ./.github/actions/setup_bazel_nix
-        with:
-          useCache: "false"
-
       - name: Upload Terraform module
         uses: ./.github/actions/upload_terraform_module
         with:
