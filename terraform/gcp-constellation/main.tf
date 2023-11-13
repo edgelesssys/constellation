@@ -43,20 +43,6 @@ module "gcp" {
   custom_endpoint = var.custom_endpoint
 }
 
-resource "null_resource" "sa_account_file" {
-  provisioner "local-exec" {
-    command = <<EOT
-          #echo "${module.gcp_iam.sa_key}" TODO use base64decode fn
-          echo ${module.gcp_iam.sa_key} | base64 -d > "${path.module}/sa_account_file.json"
-
-    EOT
-  }
-  triggers = {
-    always_run = timestamp()
-  }
-}
-
-
 module "constellation" {
   source               = "../constellation-cluster"
   csp                  = "gcp"
