@@ -34,6 +34,7 @@ import (
 	spb "github.com/google/go-sev-guest/proto/sevsnp"
 	"github.com/google/go-sev-guest/validate"
 	"github.com/google/go-sev-guest/verify"
+	"github.com/google/go-sev-guest/verify/trust"
 	"github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm/legacy/tpm2"
@@ -283,6 +284,9 @@ func TestInstanceInfoAttestation(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
+
+			// This is important. Without this call, the trust module caches certificates across testcases.
+			defer trust.ClearProductCertCache()
 
 			instanceInfo := azureInstanceInfo{
 				AttestationReport: tc.report,
@@ -564,22 +568,21 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 	if cgo == "0" {
 		t.Skip("skipping test because CGO is disabled and tpm simulator requires it")
 	}
-	require := require.New(t)
 
 	tpm, err := simulator.OpenSimulatedTPM()
-	require.NoError(err)
+	require.NoError(t, err)
 	defer tpm.Close()
 	key, err := client.AttestationKeyRSA(tpm)
-	require.NoError(err)
+	require.NoError(t, err)
 	defer key.Close()
 	akPub, err := key.PublicArea().Encode()
-	require.NoError(err)
+	require.NoError(t, err)
 
 	defaultCfg := config.DefaultForAzureSEVSNP()
 	defaultReport := hex.EncodeToString(testdata.AttestationReport)
 	defaultRuntimeData := hex.EncodeToString(testdata.RuntimeData)
 	defaultIDKeyDigestOld, err := hex.DecodeString("57e229e0ffe5fa92d0faddff6cae0e61c926fc9ef9afd20a8b8cfcf7129db9338cbe5bf3f6987733a2bf65d06dc38fc1")
-	require.NoError(err)
+	require.NoError(t, err)
 	defaultIDKeyDigest := idkeydigest.NewList([][]byte{defaultIDKeyDigestOld})
 	defaultVerifier := &stubAttestationVerifier{}
 	skipVerifier := &stubAttestationVerifier{skipCheck: true}
@@ -588,12 +591,12 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 	// reportTransformer unpacks the hex-encoded report, applies the given transformations and re-encodes it.
 	reportTransformer := func(reportHex string, transformations func(*spb.Report)) string {
 		rawReport, err := hex.DecodeString(reportHex)
-		require.NoError(err)
+		require.NoError(t, err)
 		report, err := abi.ReportToProto(rawReport)
-		require.NoError(err)
+		require.NoError(t, err)
 		transformations(report)
 		reportBytes, err := abi.ReportToAbiBytes(report)
-		require.NoError(err)
+		require.NoError(t, err)
 		return hex.EncodeToString(reportBytes)
 	}
 
@@ -746,6 +749,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 				},
 				nil,
 			),
+			wantErr: true,
 		},
 		"invalid runtime data": {
 			report:               defaultReport,
@@ -821,7 +825,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 				defaultCfg.MicrocodeVersion.Value = 10
 				launchTcb.UcodeSpl = 9
 				newLaunchTcb, err := kds.ComposeTCBParts(launchTcb)
-				require.NoError(err)
+				require.NoError(t, err)
 				r.LaunchTcb = uint64(newLaunchTcb)
 			}),
 			runtimeData:          defaultRuntimeData,
@@ -845,7 +849,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 				reportedTcb := kds.DecomposeTCBVersion(kds.TCBVersion(r.ReportedTcb))
 				reportedTcb.UcodeSpl = defaultCfg.MicrocodeVersion.Value - 1
 				newReportedTcb, err := kds.ComposeTCBParts(reportedTcb)
-				require.NoError(err)
+				require.NoError(t, err)
 				r.ReportedTcb = uint64(newReportedTcb)
 			}),
 			runtimeData:          defaultRuntimeData,
@@ -889,7 +893,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 				currentTcb := kds.DecomposeTCBVersion(kds.TCBVersion(r.CurrentTcb))
 				currentTcb.UcodeSpl = 0x5c // testdata.AzureThimVCEK has ucode version 0x5d
 				newCurrentTcb, err := kds.ComposeTCBParts(currentTcb)
-				require.NoError(err)
+				require.NoError(t, err)
 				r.CurrentTcb = uint64(newCurrentTcb)
 			}),
 			runtimeData:          defaultRuntimeData,
@@ -976,14 +980,16 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
+			require := require.New(t)
+
+			// This is important. Without this call, the trust module caches certificates across testcases.
+			defer trust.ClearProductCertCache()
 
 			instanceInfo, err := newStubAzureInstanceInfo(tc.vcek, tc.certChain, tc.report, tc.runtimeData)
-			assert.NoError(err)
+			require.NoError(err)
 
 			statement, err := json.Marshal(instanceInfo)
-			if err != nil {
-				assert.Error(err)
-			}
+			require.NoError(err)
 
 			attDoc := vtpm.AttestationDocument{
 				InstanceInfo: statement,
@@ -1008,12 +1014,12 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 
 			key, err := validator.getTrustedKey(context.Background(), attDoc, nil)
 			if tc.wantErr {
-				require.Error(err)
+				assert.Error(err)
 				if tc.assertion != nil {
 					tc.assertion(assert, err)
 				}
 			} else {
-				require.NoError(err)
+				assert.NoError(err)
 				assert.NotNil(key)
 			}
 		})

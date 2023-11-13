@@ -1,0 +1,69 @@
+name: E2E Test s3proxy
+description: "Test the s3proxy."
+
+inputs:
+  kubeconfig:
+    description: "Kubeconfig to access target cluster"
+    required: true
+  s3AccessKey:
+    description: "Access key for s3proxy"
+    required: true
+  s3SecretKey:
+    description: "Secret key for s3proxy"
+    required: true
+  buildBuddyApiKey:
+    description: "BuildBuddy API key"
+    required: true
+  githubToken:
+    description: "GitHub token"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup bazel
+      uses: ./.github/actions/setup_bazel_nix
+      with:
+        useCache: "true"
+        buildBuddyApiKey: ${{ inputs.buildBuddyApiKey }}
+
+    - name: Get pseudoversion
+      id: pseudoversion
+      shell: bash
+      run: |
+        bazel build //bazel/settings:tag
+        echo pseudoversion=$(cat ./bazel-bin/bazel/settings/_tag.tags.txt) | tee -a "$GITHUB_OUTPUT"
+
+    - name: Log in to the Container registry
+      uses: ./.github/actions/container_registry_login
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ inputs.githubToken }}
+
+    - name: Build and push s3proxy image
+      id: s3proxybuild
+      shell: bash
+      run: |
+        bazel run //bazel/release:s3proxy_push
+        echo s3proxyImage=$(cat ./bazel-bin/bazel/release/s3proxy_tag.txt) | tee -a "$GITHUB_OUTPUT"
+
+    - name: Setup s3proxy
+      shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+        S3_PROXY_IMAGE: ${{ steps.s3proxybuild.outputs.s3proxyImage }}
+        AWS_ACCESS_KEY_ID: ${{ inputs.s3AccessKey }}
+        AWS_SECRET_ACCESS_KEY: ${{ inputs.s3SecretKey }}
+      run: |
+        helm install s3proxy --set awsAccessKeyID="$AWS_ACCESS_KEY_ID" --set awsSecretAccessKey="$AWS_SECRET_ACCESS_KEY" --set image="$S3_PROXY_IMAGE" --set allowMultipart=true s3proxy/deploy/s3proxy
+
+    - name: Run mint
+      shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+        ACCESS_KEY: ${{ inputs.s3AccessKey }}
+        SECRET_KEY: ${{ inputs.s3SecretKey }}
+        IMAGE: "ghcr.io/edgelesssys/mint:v1.99.0@sha256:96a059733087ec0bcf2c808406a626da2ffefe8e7c7cac786907b1b35b892234" # renovate:mint-fork
+      run: |
+        ./s3proxy/e2e/deploy.sh "$IMAGE"

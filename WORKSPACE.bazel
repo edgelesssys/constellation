@@ -17,8 +17,8 @@ load("@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl", "nixpkgs_cc_configure", "ni
 
 nixpkgs_git_repository(
     name = "nixpkgs",
-    revision = "0c7ffbc66e6d78c50c38e717ec91a2a14e0622fb",
-    sha256 = "2c8c39259595441e2fe529b75b2e69eba486e0f3457e810bf9bb2b531822743e",
+    revision = "ec750fd01963ab6b20ee1f0cb488754e8036d89d",
+    sha256 = "9e809097a0c66334139cda3d1bec3bf73bdfad593e954259ff329c7b4a118041",
 )
 
 nixpkgs_flake_package(
@@ -26,6 +26,13 @@ nixpkgs_flake_package(
     nix_flake_file = "//:flake.nix",
     nix_flake_lock_file = "//:flake.lock",
     package = "awscli2",
+)
+
+nixpkgs_flake_package(
+    name = "bazel",
+    nix_flake_file = "//:flake.nix",
+    nix_flake_lock_file = "//:flake.lock",
+    package = "bazel_6",
 )
 
 nixpkgs_flake_package(

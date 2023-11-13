@@ -11,7 +11,7 @@ on:
 jobs:
   tidycheck:
     name: tidy, check and generate
-    runs-on: [self-hosted, bazel-cached]
+    runs-on: [arc-runner-set]
     permissions:
       id-token: write
       contents: read
@@ -32,7 +32,8 @@ jobs:
       - name: Setup Bazel
         uses: ./.github/actions/setup_bazel_nix
         with:
-          useCache: "true"
+          useCache: "rbe"
+          rbePlatform: "ubuntu-22.04"
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
 
       - name: Assume AWS role to upload Bazel dependencies to S3

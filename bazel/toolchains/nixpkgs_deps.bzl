@@ -5,11 +5,11 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 def nixpkgs_deps():
     http_archive(
         name = "io_tweag_rules_nixpkgs",
-        sha256 = "6a7c2a85b9d21c0ba617229597f1bda3c871b0ec81090d89f75f3acdef32cd16",
-        strip_prefix = "rules_nixpkgs-bb2f6996e1e6933cecaf06e60799ca7c90ef3928",
+        sha256 = "cf84628af3e4698acb200c005c4acf1dddaf5e7b9f839eeca78d983db2e874fb",
+        strip_prefix = "rules_nixpkgs-2c767691d12b66a92f231bccb06bcf9f7477b962",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/6a7c2a85b9d21c0ba617229597f1bda3c871b0ec81090d89f75f3acdef32cd16",
-            "https://github.com/tweag/rules_nixpkgs/archive/bb2f6996e1e6933cecaf06e60799ca7c90ef3928.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/cf84628af3e4698acb200c005c4acf1dddaf5e7b9f839eeca78d983db2e874fb",
+            "https://github.com/tweag/rules_nixpkgs/archive/2c767691d12b66a92f231bccb06bcf9f7477b962.tar.gz",
         ],
         type = "tar.gz",
     )

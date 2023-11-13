@@ -175,6 +175,14 @@ jobs:
           # Update version.
           sed -i "s/${defaultVersionReg}/defaultImage = \"${VERSION}\"/" internal/config/image_enterprise.go
           git add internal/config/image_enterprise.go
+
+      - name: Update s3proxy Chart version
+        run: |
+          yq eval -i ".version = \"$WITHOUT_V\"" s3proxy/deploy/s3proxy/Chart.yaml
+          yq eval -i ".image = \"ghcr.io/edgelesssys/constellation/s3proxy:$VERSION\"" s3proxy/deploy/s3proxy/values.yaml
+
+          git add s3proxy/deploy/s3proxy/Chart.yaml
+
       - name: Commit
         run: |
           git config --global user.name "edgelessci"
@@ -182,9 +190,15 @@ jobs:
           if git diff-index --quiet HEAD --; then
             echo "No changes to commit"
           else
-            git commit -m "deps: update images to ${VERSION}"
+            git commit -m "deps: update versions to ${VERSION}"
             git push
           fi
+
+      - name: Publish s3proxy
+        uses: ./.github/actions/publish_helmchart
+        with:
+          chartPath: ${{ github.workspace }}/s3proxy/deploy/s3proxy
+          githubToken: ${{ secrets.CI_GITHUB_REPOSITORY }}
 
   os-image:
     name: Build OS image
@@ -219,7 +233,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
         with:
-          go-version: "1.21.3"
+          go-version: "1.21.4"
           cache: true
 
       - name: Build generateMeasurements tool

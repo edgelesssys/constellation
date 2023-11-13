@@ -1,0 +1,12 @@
+# Secrets to use for S3 access.
+awsAccessKeyID: "replaceme"
+awsSecretAccessKey: "replaceme"
+
+# Pod image to deploy.
+image: "ghcr.io/edgelesssys/constellation/s3proxy:v2.13.0-pre.0.20231031124640-625dc266446d"
+
+# Control if multipart uploads are blocked.
+allowMultipart: false
+
+# Number of pod replicas to deploy.
+replicaCount: 1

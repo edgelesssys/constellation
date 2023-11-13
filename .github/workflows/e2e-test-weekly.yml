@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        refStream: ["ref/main/stream/debug/?", "ref/release/stream/stable/?"]
+        refStream: ["ref/main/stream/nightly/?","ref/main/stream/debug/?", "ref/release/stream/stable/?"]
     name: Find latest image
     runs-on: ubuntu-22.04
     permissions:
@@ -19,6 +19,7 @@ jobs:
     outputs:
       image-main-debug: ${{ steps.relabel-output.outputs.image-main-debug }}
       image-release-stable: ${{ steps.relabel-output.outputs.image-release-stable }}
+      image-main-nightly: ${{ steps.relabel-output.outputs.image-main-nightly }}
     steps:
       - name: Checkout
         uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
@@ -189,6 +190,12 @@ jobs:
             kubernetes-version: "v1.28"
             selfManagedInfra: "true"
 
+          # s3proxy test on latest k8s version
+          - test: "s3proxy"
+            refStream: "ref/main/stream/debug/?"
+            provider: "gcp"
+            kubernetes-version: "v1.28"
+
           #
           # Tests on release-stable refStream
           #
@@ -251,6 +258,8 @@ jobs:
           fetchMeasurements: ${{ matrix.refStream != 'ref/release/stream/stable/?' }}
           azureSNPEnforcementPolicy: ${{ matrix.azureSNPEnforcementPolicy }}
           selfManagedInfra: ${{ matrix.selfManagedInfra == 'true' }}
+          s3AccessKey: ${{ secrets.AWS_ACCESS_KEY_ID_S3PROXY }}
+          s3SecretKey: ${{ secrets.AWS_SECRET_ACCESS_KEY_S3PROXY }}
 
       - name: Always terminate cluster
         if: always()
@@ -359,3 +368,28 @@ jobs:
     uses: ./.github/workflows/e2e-windows.yml
     with:
       scheduled: ${{ github.event_name == 'schedule' }}
+
+  e2e-tf-module:
+    name: Test Terraform Module
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        include:
+          - test: "GCP"
+            provider: "gcp"
+            regionZone: "europe-west2-a"
+          - test: "AWS"
+            provider: "aws"
+            regionZone: "us-east-2c"
+    permissions:
+      id-token: write
+      contents: read
+      packages: write
+    needs: [find-latest-image]
+    secrets: inherit
+    uses: ./.github/workflows/e2e-test-tf-module.yml
+    with:
+      cloudProvider: "${{ matrix.provider }}"
+      regionZone: "${{ matrix.regionZone }}"
+      image: ${{ needs.find-latest-image.outputs.image-main-nightly }}

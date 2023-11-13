@@ -34,7 +34,6 @@ replace (
 replace (
 	github.com/edgelesssys/constellation/v2 => ./..
 	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api => ./../operators/constellation-node-operator/api
-	github.com/google/go-tpm-tools => github.com/msanft/go-tpm-tools v0.0.0-20231009082622-266280269413
 )
 
 require (
@@ -166,10 +165,10 @@ require (
 	github.com/google/go-attestation v0.5.0 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/go-containerregistry v0.15.2 // indirect
-	github.com/google/go-sev-guest v0.9.1 // indirect
-	github.com/google/go-tdx-guest v0.2.2 // indirect
+	github.com/google/go-sev-guest v0.9.3 // indirect
+	github.com/google/go-tdx-guest v0.2.3-0.20231011100059-4cf02bed9d33 // indirect
 	github.com/google/go-tpm v0.9.0 // indirect
-	github.com/google/go-tpm-tools v0.4.0 // indirect
+	github.com/google/go-tpm-tools v0.4.2 // indirect
 	github.com/google/go-tspi v0.3.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/logger v1.1.1 // indirect

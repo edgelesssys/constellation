@@ -3,8 +3,7 @@
 
   inputs = {
     nixpkgsUnstable = {
-      # TODO(malt3): use github:NixOS/nixpkgs/nixpkgs-unstable after repart fix is upstreamed
-      url = "github:NixOS/nixpkgs/9ef2c8ddff172378496b118f709bfe81280a7e58";
+      url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     };
     flake-utils = {
       url = "github:numtide/flake-utils";
@@ -48,6 +47,8 @@
       };
 
       packages.awscli2 = pkgsUnstable.awscli2;
+
+      packages.bazel_6 = pkgsUnstable.bazel_6;
 
       packages.createrepo_c = pkgsUnstable.createrepo_c;
 

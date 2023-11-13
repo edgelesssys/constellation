@@ -3,11 +3,14 @@ description: Setup Bazel and Nix for CI builds and tests
 
 inputs:
   useCache:
-    description: "Cache Bazel artifacts. Use 'true' to enable with rw, 'readonly' to download, 'log' to disable cache but upload logs, and 'false' to disable."
+    description: "Cache Bazel artifacts. Use 'true' to enable with rw, 'readonly' to download, 'rbe' to enable with remote execution, 'log' to disable cache but upload logs, and 'false' to disable."
     default: "false"
     required: true
   buildBuddyApiKey:
     description: "BuildBuddy API key for caching Bazel artifacts"
+    required: false
+  rbePlatform:
+    description: "RBE platform to use. If empty, RBE will not be used."
     required: false
 
 runs:
@@ -18,13 +21,29 @@ runs:
       shell: bash
       run: |
         echo "::group::Check inputs"
-        if [[ "${{ inputs.useCache }}" != "true" && "${{ inputs.useCache }}" != "readonly" && "${{ inputs.useCache }}" != "logs" && "${{ inputs.useCache }}" != "false" ]]; then
+        if [[ "${{ inputs.useCache }}" != "true" && "${{ inputs.useCache }}" != "readonly" && "${{ inputs.useCache }}" != "rbe" && "${{ inputs.useCache }}" != "logs" && "${{ inputs.useCache }}" != "false" ]]; then
           echo "Invalid value for 'useCache' input: '${{ inputs.useCache }}'. Must be 'true', 'readonly', or 'false'."
           exit 1
         fi
         if [[ "${{ inputs.useCache }}" == "true" || "${{ inputs.useCache }}" == "readonly" || "${{ inputs.useCache }}" == "logs" ]] && [[ -z "${{ inputs.buildBuddyApiKey }}" ]]; then
           echo "BuildBuddy API key is required when cache is enabled."
           exit 1
+        fi
+        if [[ "${{ inputs.useCache }}" == "rbe" && -z "${{ inputs.rbePlatform }}" ]]; then
+          echo "RBE platform is required when cache is enabled."
+          exit 1
+        fi
+        if [[ -n "${{inputs.rbePlatform}}" ]]; then
+        case "${{ inputs.rbePlatform }}" in
+          ubuntu-22.04)
+            echo "rbeConfig=build_barn_rbe_ubuntu_22_04" | tee -a "$GITHUB_OUTPUT"
+            ;;
+
+          *)
+            echo "Invalid value for 'rbePlatform' input: '${{ inputs.rbePlatform }}'. Must be 'ubuntu-22.04'."
+            exit 1
+            ;;
+        esac
         fi
         if command -v nix; then
           echo "nixPreinstalled=true" | tee -a "$GITHUB_OUTPUT"
@@ -61,6 +80,35 @@ runs:
         fi
         echo "::endgroup::"
 
+    - name: Prepare to install tools
+      shell: bash
+      run: |
+        echo "::group::Prepare to install nix and bazel"
+        requiredTools=( "curl" "xz" "unzip" "git" )
+        declare -A packageNamesUbuntu=( ["curl"]="curl" ["xz"]="xz-utils" ["unzip"]="unzip" ["git"]="git" )
+        missingTools=()
+        for tool in "${requiredTools[@]}"; do
+          if ! command -v "$tool"; then
+            echo "$tool not found, installing..."
+            missingTools+=("$tool")
+          else
+            echo "$tool found $(command -v "$tool")"
+          fi
+        done
+        missingPackagesUbuntu=()
+        for tool in "${missingTools[@]}"; do
+          echo "Ubuntu name for $tool is ${packageNamesUbuntu[$tool]}"
+          missingPackagesUbuntu+=("${packageNamesUbuntu[$tool]}")
+        done
+        if [[ "${#missingTools[@]}" -gt 0 ]]; then
+          echo "Installing missing tools ${missingTools[*]}..."
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            sudo apt-get update || true
+            sudo apt-get install -y ${missingPackagesUbuntu[*]} || true
+          fi
+        fi
+        echo "::endgroup::"
+
     - name: Install nix
       if: steps.check_inputs.outputs.nixPreinstalled == 'false'
       uses: cachix/install-nix-action@6a9a9e84a173d90b3ffb42c5ddaf9ea033fad011 # v23
@@ -74,12 +122,6 @@ runs:
         fi
         echo "::endgroup::"
 
-
-    - uses: cachix/cachix-action@6a9a34cdd93d0ae4b4b59fd678660efb08109f2f # v12
-      with:
-        name: katexochen
-        extraPullNames: nix-community
-
     - name: Install Bazelisk
       if: steps.check_inputs.outputs.bazelPreinstalled == 'false' && steps.check_inputs.outputs.nixOS == 'false'
       shell: bash
@@ -88,6 +130,8 @@ runs:
         ARCH: ${{ steps.check_inputs.outputs.arch }}
       run: |
         echo "::group::Install Bazelisk"
+        sudo mkdir -p /usr/local/bin
+        sudo chown -R "$USER" /usr/local/bin
         curl -fsSLo /usr/local/bin/bazel "https://github.com/bazelbuild/bazelisk/releases/download/v1.18.0/bazelisk-${OS}-${ARCH}"
         chmod +x /usr/local/bin/bazel
         echo "::endgroup::"
@@ -163,6 +207,39 @@ runs:
 
     - name: Configure Bazel (logs)
       if: inputs.useCache == 'logs'
+      shell: bash
+      env:
+        BUILDBUDDY_ORG_API_KEY: ${{ inputs.buildBuddyApiKey }}
+        WORKSPACE: ${{ github.workspace }}
+      run: |
+        echo "::group::Configure Bazel"
+        cat <<EOF >> "${WORKSPACE}/.bazeloverwriterc"
+        common --bes_results_url=https://app.buildbuddy.io/invocation/
+        common --bes_backend=grpcs://remote.buildbuddy.io
+        common --remote_header=x-buildbuddy-api-key=${BUILDBUDDY_ORG_API_KEY}
+        cquery --bes_results_url=
+        cquery --bes_backend=
+        query --bes_results_url=
+        query --bes_backend=
+        EOF
+        echo "::endgroup::"
+
+    - name: Configure Bazel (rbe)
+      if: inputs.useCache == 'rbe'
+      shell: bash
+      env:
+        RBE_CONFIG: ${{ steps.check_inputs.outputs.rbeConfig }}
+        WORKSPACE: ${{ github.workspace }}
+      run: |
+        echo "::group::Configure Bazel"
+        cat <<EOF >> "${WORKSPACE}/.bazeloverwriterc"
+        common --config=${RBE_CONFIG}
+        common --repository_cache=/repository_cache
+        common --repo_env=GOPROXY=http://goproxy:3000
+        EOF
+        echo "::endgroup::"
+    - name: Configure Bazel (rbe logs)
+      if: inputs.useCache == 'rbe' && inputs.buildBuddyApiKey != ''
       shell: bash
       env:
         BUILDBUDDY_ORG_API_KEY: ${{ inputs.buildBuddyApiKey }}

@@ -46,7 +46,7 @@ Familiarize with the [Terraform usage policy](../reference/terraform.md) before 
 Please also refrain from changing the Terraform resource definitions, as Constellation is tightly coupled to them.
 :::
 
-Download the Terraform files for the selected CSP from the [GitHub repository](https://github.com/edgelesssys/constellation/tree/main/cli/internal/terraform/terraform).
+Download the Terraform files for the selected CSP from the [GitHub repository](https://github.com/edgelesssys/constellation/tree/main/terraform/infrastructure).
 
 Find the image reference for your CSP and region, execute:
 
@@ -245,7 +245,7 @@ yq eval ".infrastructure.gcp.ipCidrPod =\"$(terraform output ip_cidr_pods | jq -
 Self-managed infrastructure allows for managing the cloud resources necessary for a Constellation cluster separate from the Constellation CLI.
 This provides flexibility in DevOps and can meet potential regulatory requirements.
 
-To self-manage the infrastructure of your cluster, download the Terraform files for the selected CSP from the [Constellation GitHub repository](https://github.com/edgelesssys/constellation/tree/main/cli/internal/terraform/terraform).
+To self-manage the infrastructure of your cluster, download the Terraform files for the selected CSP from the [Constellation GitHub repository](https://github.com/edgelesssys/constellation/tree/main/terraform/infrastructure).
 They contain a minimum configuration for the resources necessary to run a Constellation cluster on the corresponding CSP. From this base, you can now add, edit, or substitute resources per your own requirements with the infrastructure
 management tooling of your choice. You need to keep the essential functionality of the base configuration in order for your cluster to function correctly.
 

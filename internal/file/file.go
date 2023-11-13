@@ -18,7 +18,6 @@ import (
 	"io"
 	"io/fs"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -88,7 +87,7 @@ func (h *Handler) Read(name string) ([]byte, error) {
 // Write writes the data bytes into the file with the given name.
 func (h *Handler) Write(name string, data []byte, options ...Option) error {
 	if hasOption(options, OptMkdirAll) {
-		if err := h.fs.MkdirAll(path.Dir(name), os.ModePerm); err != nil {
+		if err := h.fs.MkdirAll(filepath.Dir(name), os.ModePerm); err != nil {
 			return err
 		}
 	}

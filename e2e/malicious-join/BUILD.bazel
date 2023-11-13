@@ -2,6 +2,7 @@ load("@com_github_ash2k_bazel_tools//multirun:def.bzl", "multirun")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("@rules_oci//oci:defs.bzl", "oci_image", "oci_push")
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
+load("//bazel/oci:containers.bzl", "container_reponame")
 load("//bazel/sh:def.bzl", "sh_template")
 
 go_library(
@@ -15,6 +16,7 @@ go_library(
         "//internal/grpc/dialer",
         "//internal/logger",
         "//joinservice/joinproto",
+        "@org_uber_go_zap//:zap",
         "@org_uber_go_zap//zapcore",
     ],
 )
@@ -46,13 +48,19 @@ oci_image(
     visibility = ["//visibility:public"],
 )
 
+container_reponame(
+    name = "container_name",
+    container_name = "malicious-join-test",
+)
+
 genrule(
     name = "malicious-join-test_repotag",
     srcs = [
+        ":container_name",
         "//bazel/settings:tag",
     ],
     outs = ["repotag.txt"],
-    cmd = "echo -n 'ghcr.io/edgelesssys/malicious-join-test:' | cat - $(location //bazel/settings:tag) > $@",
+    cmd = "cat $(location :container_name) <(echo -n :) $(location //bazel/settings:tag) > $@",
     visibility = ["//visibility:public"],
 )
 

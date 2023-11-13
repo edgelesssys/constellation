@@ -6,11 +6,6 @@ import %workspace%/bazel/bazelrc/debug.bazelrc
 import %workspace%/bazel/bazelrc/performance.bazelrc
 import %workspace%/bazel/bazelrc/cc.bazelrc
 
-# share bazel cache between checkouts of the same project
-# and keep old build caches around for longer
-common --disk_cache=~/.cache/shared_bazel_action_cache
-common --repository_cache=~/.cache/shared_bazel_repository_cache
-
 # inject version information into binaries
 common --stamp --workspace_status_command=tools/workspace_status.sh
 
@@ -46,14 +41,18 @@ common --crosstool_top=@local_config_cc//:toolchain
 # bazel config to explicitly disable stamping (hide version information at build time)
 common:nostamp --nostamp --workspace_status_command=
 
-# bazel config to use remote cache
+# bazel config to use (buildbuddy) remote cache
 common:remote_cache --bes_results_url=https://app.buildbuddy.io/invocation/
 common:remote_cache --bes_backend=grpcs://remote.buildbuddy.io
 common:remote_cache --remote_cache=grpcs://remote.buildbuddy.io
 common:remote_cache --remote_timeout=3600
 common:remote_cache --experimental_remote_build_event_upload=minimal
-common:remote_cache --experimental_remote_cache_compression
 common:remote_cache --nolegacy_important_outputs
 common:remote_cache_readonly --noremote_upload_local_results # Uploads logs & artifacts without writing to cache
+
+common:build_barn_rbe_ubuntu_22_04 --remote_timeout=3600
+common:build_barn_rbe_ubuntu_22_04 --remote_executor=grpc://frontend.buildbarn:8980 # this maps to the kubernetes internal buildbarn/frontend service
+common:build_barn_rbe_ubuntu_22_04 --extra_execution_platforms=//bazel/rbe:ubuntu-act-22-04-platform
+common:build_barn_rbe_ubuntu_22_04 --shell_executable=/bin/bash
 
 try-import %workspace%/.bazeloverwriterc

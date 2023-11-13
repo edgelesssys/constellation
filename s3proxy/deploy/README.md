@@ -5,11 +5,9 @@ The VPN is a feature of Constellation and will not be present by default in othe
 
 Disclaimer: the following steps will be automated next.
 
-- Within `constellation/build`: `bazel run //:devbuild`
-- Copy the container name displayed for the s3proxy image. Look for the line starting with `[@//bazel/release:s3proxy_push]`.
-- Replace the image key in `deployment-s3proxy.yaml` with the image value you just copied. Use the sha256 hash instead of the tag to make sure you use the latest image.
-- Replace the `replaceme` values with valid AWS credentials. The s3proxy uses those credentials to access S3.
-- Run `kubectl apply -f deployment-s3proxy.yaml`
+- Run `bazel run //bazel/release:s3proxy_push`
+- Set `IMAGE` to the newly built s3proxy image.
+- `helm install s3proxy --set awsAccessKeyID="$AWS_ACCESS_KEY_ID" --set awsSecretAccessKey="$AWS_SECRET_ACCESS_KEY" --set image="$IMAGE"  ./s3proxy`
 
 # Deploying Filestash
 

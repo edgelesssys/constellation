@@ -172,7 +172,7 @@ const (
 	// TerraformIAMUpgradeBackupDir is the directory name being used to backup the pre-upgrade state of iam in an upgrade.
 	TerraformIAMUpgradeBackupDir = "terraform-iam-backup"
 	// TerraformEmbeddedDir is the name of the base directory embedded in the CLI binary containing the Terraform files.
-	TerraformEmbeddedDir = "terraform"
+	TerraformEmbeddedDir = "infrastructure"
 	// UpgradeDir is the name of the directory being used for cluster upgrades.
 	UpgradeDir = "constellation-upgrade"
 	// ControlPlaneDefault is the name of the default control plane worker group.
