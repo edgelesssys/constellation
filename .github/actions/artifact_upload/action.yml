@@ -20,9 +20,10 @@ runs:
   using: "composite"
   steps:
     - name: Install zip
-      uses: montudor/action-zip@v1
+      uses: montudor/action-zip@0852c26906e00f8a315c704958823928d8018b28 # @v1
+
     - name: Find glob pattern matches
-      uses: tj-actions/glob@v17
+      uses: tj-actions/glob@ac7d983dd3677ab0879d703cfdbde78676cdfaad # @v17.3.0
       id: glob
       with:
         files: |
