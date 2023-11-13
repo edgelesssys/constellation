@@ -18,7 +18,7 @@ runs:
     - name: Stamp version
       shell: bash
       run: |
-        sed -i "s/@@CONSTELLATION_VERSION@@/${{ inputs.version }}/g" terraform-module/constellation-cluster/main.tf
+        sed -i "s/@@CONSTELLATION_VERSION@@/${{ inputs.version }}/g" terraform-module/constellation-cluster/variables.tf
 
     - name: Zip terraform dir
       shell: bash
