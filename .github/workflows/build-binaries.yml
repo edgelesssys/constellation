@@ -46,6 +46,7 @@ jobs:
         run: |
           bazel build \
             --remote_download_minimal \
+            --jobs=64 \
             "${bootstrapper}" \
             "${debugd}" \
             "${cdbg}" \
