@@ -28,11 +28,7 @@ func NewCreateCmd() *cobra.Command {
 			cmd.Flags().Bool("merge-kubeconfig", false, "")
 			cmd.Flags().Duration("timeout", 5*time.Minute, "")
 			// Skip all phases but the infrastructure phase.
-			cmd.Flags().StringSlice("skip-phases", []string{
-				string(skipInitPhase), string(skipAttestationConfigPhase),
-				string(skipCertSANsPhase), string(skipHelmPhase),
-				string(skipImagePhase), string(skipK8sPhase),
-			}, "")
+			cmd.Flags().StringSlice("skip-phases", allPhases(skipInfrastructurePhase), "")
 			return runApply(cmd, args)
 		},
 	}

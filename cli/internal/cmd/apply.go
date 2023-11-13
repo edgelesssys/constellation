@@ -60,8 +60,8 @@ const (
 )
 
 // allPhases returns a list of all phases that can be skipped as strings.
-func allPhases() []string {
-	return []string{
+func allPhases(except ...skipPhase) []string {
+	phases := []string{
 		string(skipInfrastructurePhase),
 		string(skipInitPhase),
 		string(skipAttestationConfigPhase),
@@ -70,6 +70,14 @@ func allPhases() []string {
 		string(skipImagePhase),
 		string(skipK8sPhase),
 	}
+
+	var returnedPhases []string
+	for idx, phase := range phases {
+		if !slices.Contains(except, skipPhase(phase)) {
+			returnedPhases = append(returnedPhases, phases[idx])
+		}
+	}
+	return returnedPhases
 }
 
 // formatSkipPhases returns a formatted string of all phases that can be skipped.
@@ -352,7 +360,7 @@ func (a *applyCmd) apply(
 	a.log.Debugf("Running license check")
 	checker := license.NewChecker(quotaChecker, a.fileHandler)
 	if err := checker.CheckLicense(cmd.Context(), conf.GetProvider(), conf.Provider, cmd.Printf); err != nil {
-		cmd.PrintErrf("License check failed: %v", err)
+		cmd.PrintErrf("License check failed: %s", err)
 	}
 	a.log.Debugf("Checked license")
 
