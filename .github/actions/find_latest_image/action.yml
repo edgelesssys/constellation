@@ -49,8 +49,8 @@ runs:
       uses: ./.github/actions/versionsapi
       with:
         command: latest
-        ref: main
-        stream: debug
+        ref: ${{ inputs.ref }}
+        stream: ${{ inputs.stream }}
 
     - name: Is debug image?
       id: isDebugImage
