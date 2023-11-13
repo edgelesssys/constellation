@@ -11,7 +11,9 @@ go_library(
     visibility = ["//cli:__subpackages__"],
     deps = [
         "//internal/cloud/cloudprovider",
+        "//internal/constants",
         "//internal/file",
+        "//internal/semver",
         "//internal/validation",
         "@cat_dario_mergo//:mergo",
         "@com_github_siderolabs_talos_pkg_machinery//config/encoder",

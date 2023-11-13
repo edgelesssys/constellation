@@ -337,6 +337,18 @@ The control flow is as follows:
 	                        └────────────────────┘
 */
 func (a *applyCmd) apply(cmd *cobra.Command, configFetcher attestationconfigapi.Fetcher, upgradeDir string) error {
+	// Migrate state file
+	stateFile, err := state.ReadFromFile(a.fileHandler, constants.StateFilename)
+	if err != nil {
+		return fmt.Errorf("reading state file: %w", err)
+	}
+	if err := stateFile.Migrate(); err != nil {
+		return fmt.Errorf("migrating state file: %w", err)
+	}
+	if err := stateFile.WriteToFile(a.fileHandler, constants.StateFilename); err != nil {
+		return fmt.Errorf("writing state file: %w", err)
+	}
+
 	// Validate inputs
 	conf, stateFile, err := a.validateInputs(cmd, configFetcher)
 	if err != nil {
