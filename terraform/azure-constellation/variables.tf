@@ -5,7 +5,7 @@ variable "name" {
 
 variable "image" {
   type        = string
-  description = "Node image reference or semantical release version. When not set, the latest default version will be used."
+  description = "Node image reference or semantic release version. When not set, the latest default version will be used."
   default     = ""
 }
 
