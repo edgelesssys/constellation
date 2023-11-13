@@ -83,7 +83,6 @@ resource "null_resource" "azure_maa_patch" {
   count = var.create_maa ? 1 : 0
   provisioner "local-exec" {
     command = <<EOT
-      ./yq eval '.attestation.azureSEVSNP.firmwareSignerConfig.maaURL = "${var.azure_config.maaURL}"' -i constellation-conf.yaml
       ./yq eval '.infrastructure.azure.attestationURL = "${var.azure_config.maaURL}"' -i constellation-state.yaml
       ./constellation maa-patch ${var.azure_config.maaURL}
     EOT
@@ -95,7 +94,6 @@ resource "null_resource" "azure_maa_patch" {
     null_resource.azure_config
   ]
 }
-
 
 resource "null_resource" "service_account_file" {
   count = var.gcp_config != null ? 1 : 0
