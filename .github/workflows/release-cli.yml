@@ -159,6 +159,7 @@ jobs:
     needs:
       - build-cli
       - signed-sbom
+      - upload-terraform-module
     outputs:
       provenance-subjects: ${{ steps.provenance-subjects.outputs.provenance-subjects }}
     steps:
@@ -289,6 +290,7 @@ jobs:
     needs:
       - build-cli
       - provenance
+      - upload-terraform-module
     steps:
       - name: Download CLI binaries darwin-amd64
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
@@ -367,6 +369,7 @@ jobs:
       - build-cli
       - provenance
       - signed-sbom
+      - upload-terraform-module
     steps:
       - name: Write cosign public key
         run: echo "$COSIGN_PUBLIC_KEY" > cosign.pub
