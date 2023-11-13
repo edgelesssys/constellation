@@ -27,4 +27,4 @@ runs:
         path: ${{ steps.tempdir.outputs.directory }}
     - name: Decrypt and unzip archive
       shell: bash
-      run: unzip -P '${{ inputs.encryption-secret }}' -o -qq -d ${{ inputs.path }} ${{ steps.tempdir.outputs.directory }}/archive.zip
+      run: unzip -P '${{ inputs.encryption-secret }}' -qq -d ${{ inputs.path }} ${{ steps.tempdir.outputs.directory }}/archive.zip
