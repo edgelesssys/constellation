@@ -4,6 +4,12 @@ variable "constellation_version" {
   default     = "@@CONSTELLATION_VERSION@@"
 }
 
+variable "image" {
+  type        = string
+  description = "The node image reference or semantic release version."
+  default     = "@@CONSTELLATION_VERSION@@"
+}
+
 variable "csp" {
   type        = string
   description = "The cloud service provider to use."
@@ -103,15 +109,6 @@ variable "gcp_config" {
   })
   description = "The cluster config for GCP."
   default     = null
-}
-
-variable "image" {
-  type        = string
-  description = "The node image reference or semantic release version."
-  validation {
-    condition     = length(var.image) > 0
-    error_message = "The image reference must not be empty."
-  }
 }
 
 variable "kubernetes_version" {
