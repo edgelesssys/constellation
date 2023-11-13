@@ -376,20 +376,14 @@ jobs:
       max-parallel: 5
       matrix:
         include:
-          - test: "GCP"
-            provider: "gcp"
-            regionZone: "europe-west2-a"
-          - test: "AWS"
-            provider: "aws"
-            regionZone: "us-east-2c"
+          - provider: "gcp"
+          - provider: "aws"
+          - provider: "azure"
     permissions:
       id-token: write
       contents: read
       packages: write
-    needs: [find-latest-image]
     secrets: inherit
     uses: ./.github/workflows/e2e-test-tf-module.yml
     with:
       cloudProvider: "${{ matrix.provider }}"
-      regionZone: "${{ matrix.regionZone }}"
-      image: ${{ needs.find-latest-image.outputs.image-main-nightly }}

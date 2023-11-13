@@ -249,18 +249,20 @@ To self-manage the infrastructure of your cluster, download the Terraform files 
 They contain a minimum configuration for the resources necessary to run a Constellation cluster on the corresponding CSP. From this base, you can now add, edit, or substitute resources per your own requirements with the infrastructure
 management tooling of your choice. You need to keep the essential functionality of the base configuration in order for your cluster to function correctly.
 
+<!-- vale off -->
+
 :::info
 
   On Azure, if the enforcement policy is set to `MAAFallback` in `constellation-config.yaml`, a manual update to the MAA provider's policy is necessary.
-  You can apply the update with the following commands, where `<VERSION>` is the version of Constellation that should be set up. (e.g. `v2.12.0`)
+  You can apply the update with the following command after creating the infrastructure, with `<URL>` being the URL of the MAA provider (i.e., `$(terraform output attestationURL | jq -r)`, when using the minimal Terraform configuration).
 
   ```bash
-  git clone --branch <VERSION> https://github.com/edgelesssys/constellation
-  cd constellation/hack/maa-patch
-  go run . $(terraform output attestationURL | jq -r)
+  constellation maa-patch <URL>
   ```
 
 :::
+
+<!-- vale on -->
 
 Make sure all necessary resources are created, e.g., through checking your CSP's portal and retrieve the necessary values, aligned with the outputs (specified in `outputs.tf`) of the base configuration.
 

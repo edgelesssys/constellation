@@ -28,6 +28,9 @@ func main() {
 	cmdList := &bytes.Buffer{}
 	body := &bytes.Buffer{}
 	for _, c := range allSubCommands(rootCmd) {
+		if c.Hidden {
+			continue
+		}
 		name := c.Name()
 		fullName, level := determineFullNameAndLevel(c)
 

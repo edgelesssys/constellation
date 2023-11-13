@@ -30,10 +30,6 @@ Releases should be performed using [the automated release pipeline](https://gith
    git push origin ${working_branch}
    ```
 
-### Update CLI version for Terraform module
-
-Update the `version` inside `terraform/constellation-cluster/install-constellation.sh` to the new release.
-
 ### Patch release
 
 1. `cherry-pick` (only) the required commits from `main`

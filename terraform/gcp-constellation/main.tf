@@ -14,7 +14,7 @@ module "gcp_iam" {
 resource "null_resource" "ensure_yq" {
   provisioner "local-exec" {
     command = <<EOT
-         ../constellation-cluster/install-yq.sh
+         ../common/install-yq.sh
     EOT
   }
   triggers = {
@@ -23,7 +23,7 @@ resource "null_resource" "ensure_yq" {
 }
 
 module "fetch_image" {
-  source              = "../fetch-image"
+  source              = "../common/fetch-image"
   csp                 = "gcp"
   attestation_variant = "gcp-sev-es"
   image               = var.image
@@ -46,6 +46,7 @@ module "gcp" {
 module "constellation" {
   source               = "../constellation-cluster"
   csp                  = "gcp"
+  debug                = var.debug
   name                 = var.name
   image                = var.image
   microservice_version = var.microservice_version
