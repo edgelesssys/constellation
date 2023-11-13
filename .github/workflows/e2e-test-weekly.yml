@@ -377,11 +377,8 @@ jobs:
       matrix:
         include:
           - provider: "gcp"
-            regionZone: "europe-west2-a"
           - provider: "aws"
-            regionZone: "us-east-2c"
           - provider: "azure"
-            regionZone: "northeurope"
     permissions:
       id-token: write
       contents: read
