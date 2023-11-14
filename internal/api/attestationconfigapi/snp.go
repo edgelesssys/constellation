@@ -16,8 +16,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 )
 
-// attestationURLPath is the URL path to the attestation versions.
-const attestationURLPath = "constellation/v1/attestation"
+// AttestationURLPath is the URL path to the attestation versions.
+const AttestationURLPath = "constellation/v1/attestation"
 
 // SEVSNPVersion tracks the latest version of each component of the Azure SEVSNP.
 type SEVSNPVersion struct {
@@ -43,7 +43,7 @@ type SEVSNPVersionAPI struct {
 
 // JSONPath returns the path to the JSON file for the request to the config api.
 func (i SEVSNPVersionAPI) JSONPath() string {
-	return path.Join(attestationURLPath, i.Variant.String(), i.Version)
+	return path.Join(AttestationURLPath, i.Variant.String(), i.Version)
 }
 
 // ValidateRequest validates the request.
@@ -83,7 +83,7 @@ func (i SEVSNPVersionList) List() []string { return i.list }
 
 // JSONPath returns the path to the JSON file for the request to the config api.
 func (i SEVSNPVersionList) JSONPath() string {
-	return path.Join(attestationURLPath, i.variant.String(), "list")
+	return path.Join(AttestationURLPath, i.variant.String(), "list")
 }
 
 // ValidateRequest is a NoOp as there is no input.
