@@ -1,4 +1,4 @@
-name: notify failure
+name: notify e2e failure
 description: "Post a failure message to project board and teams"
 
 inputs:
@@ -82,32 +82,43 @@ runs:
         echo "opensearchURL=${opensearchURL}" | tee -a "$GITHUB_OUTPUT"
         echo "issueURL=${issueURL}" | tee -a "$GITHUB_OUTPUT"
 
-    - name: Notify teams channel
+    - name: Create notification fields
+      id: create-fields
       continue-on-error: true
       shell: bash
       run: |
-        cp .github/teams_payload_template.json teams_payload.json
-        yq -iP '.attachments[0].content.body[0].columns[1].items[1].text = "${{ github.workflow }}"' teams_payload.json
-        yq -iP '.attachments[0].content.body[0].columns[1].items[2].facts += [ { "title": "CloudProvider", "value": "${{ inputs.provider }}" } ]' teams_payload.json
-        yq -iP '.attachments[0].content.body[0].columns[1].items[2].facts += [ { "title": "Test", "value": "${{ inputs.test }}" } ]' teams_payload.json
+        echo '[ { "title": "CloudProvider", "value": "${{ inputs.provider }}" }, { "title": "Test", "value": "${{ inputs.test }}" } ]' > facts.json
         if [[ -n "${{ inputs.kubernetesVersion }}" ]]; then
-          yq -iP '.attachments[0].content.body[0].columns[1].items[2].facts += [ { "title": "KubernetesVersion", "value": "${{ inputs.kubernetesVersion }}" } ]' teams_payload.json
+          yq -oj -iP '. += [ { "title": "KubernetesVersion", "value": "${{ inputs.kubernetesVersion }}" } ]' facts.json
         fi
         if [[ -n "${{ inputs.refStream }}" ]]; then
-          yq -iP '.attachments[0].content.body[0].columns[1].items[2].facts += [ { "title": "RefStream", "value": "${{ inputs.refStream }}" } ]' teams_payload.json
+          yq -oj -iP '. += [ { "title": "RefStream", "value": "${{ inputs.refStream }}" } ]' facts.json
         fi
-        text_value="<at>${{ steps.pick-assignee.outputs.assignee }}</at>"
-        entities=$(jq -c '.attachments[0].content.msteams.entities[]' teams_payload.json)
-        # need to filter entities to only have entry of mentioned person
-        filtered_entity=$(echo $entities | jq --arg text_value "$text_value" 'select(.text == $text_value)')
-        yq -iP '.attachments[0].content.msteams.entities = [ '"$filtered_entity"' ]' teams_payload.json
 
-        yq -iP '.attachments[0].content.body[0].columns[1].items[2].facts += [ { "title": "Assignee", "value": "<at>${{ steps.pick-assignee.outputs.assignee }}</at>" } ]' teams_payload.json
-        yq -iP '.attachments[0].content.actions[0].url = "${{ steps.create-project-card.outputs.jobURL }}"' teams_payload.json
-        yq -iP '.attachments[0].content.actions[1].url = "${{ steps.create-project-card.outputs.issueURL }}"' teams_payload.json
-        yq -iP ".attachments[0].content.actions[2].url = \"${{ steps.create-project-card.outputs.opensearchURL }}\"" teams_payload.json
-        cat teams_payload.json
-        curl \
-          -H "Content-Type: application/json" \
-          -d @teams_payload.json \
-          "${{ inputs.teamsWebhookUri }}"
+        buttons='[
+          {
+            "type": "Action.OpenUrl",
+            "title": "Project board issue",
+            "url": "${{ steps.create-project-card.outputs.issueURL }}",
+            "style": "positive"
+          },
+          {
+            "type": "Action.OpenUrl",
+            "title": "OpenSearch logs",
+            "url": "${{ steps.create-project-card.outputs.opensearchURL }}",
+            "style": "positive"
+          }
+        ]'
+
+        echo "additionalFields=$(cat facts.json)" | tee -a "$GITHUB_OUTPUT"
+        echo "additionalButtons=$buttons" | tee -a "$GITHUB_OUTPUT"
+
+    - name: Notify teams channel
+      continue-on-error: true
+      uses: ./.github/actions/notify_teams
+      with:
+        teamsWebhookURI: ${{ inputs.teamsWebhookUri }}
+        title: "Constellation E2E test failed"
+        assignee: ${{ steps.pick-assignee.outputs.assignee }}
+        additionalFields: ${{ steps.create-fields.outputs.additionalFields }}
+        additionalButtons: ${{ steps.create-fields.outputs.additionalButtons }}
