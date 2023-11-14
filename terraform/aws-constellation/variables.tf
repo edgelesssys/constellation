@@ -5,8 +5,7 @@ variable "name" {
 
 variable "image" {
   type        = string
-  description = "Node image reference or semantic release version. When not set, the latest default version will be used."
-  default     = ""
+  description = "Node image reference or semantic release version."
 }
 
 variable "microservice_version" {
