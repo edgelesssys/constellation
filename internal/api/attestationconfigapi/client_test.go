@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,20 +18,21 @@ func TestUploadAzureSEVSNP(t *testing.T) {
 		bucketID: "bucket",
 		signer:   fakeSigner{},
 	}
-	version := AzureSEVSNPVersion{}
+	version := SEVSNPVersion{}
 	date := time.Date(2023, 1, 1, 1, 1, 1, 1, time.UTC)
-	ops := sut.constructUploadCmd(version, []string{"2021-01-01-01-01.json", "2019-01-01-01-01.json"}, date)
+	ops := sut.constructUploadCmd(variant.AzureSEVSNP{}, version, SEVSNPVersionList{list: []string{"2021-01-01-01-01.json", "2019-01-01-01-01.json"}, variant: variant.AzureSEVSNP{}}, date)
 	dateStr := "2023-01-01-01-01.json"
 	assert := assert.New(t)
 	assert.Contains(ops, putCmd{
-		apiObject: AzureSEVSNPVersionAPI{
-			Version:            dateStr,
-			AzureSEVSNPVersion: version,
+		apiObject: SEVSNPVersionAPI{
+			Variant:       variant.AzureSEVSNP{},
+			Version:       dateStr,
+			SEVSNPVersion: version,
 		},
 		signer: fakeSigner{},
 	})
 	assert.Contains(ops, putCmd{
-		apiObject: AzureSEVSNPVersionList([]string{"2023-01-01-01-01.json", "2021-01-01-01-01.json", "2019-01-01-01-01.json"}),
+		apiObject: SEVSNPVersionList{variant: variant.AzureSEVSNP{}, list: []string{"2023-01-01-01-01.json", "2021-01-01-01-01.json", "2019-01-01-01-01.json"}},
 		signer:    fakeSigner{},
 	})
 }
@@ -39,20 +41,20 @@ func TestDeleteAzureSEVSNPVersions(t *testing.T) {
 	sut := Client{
 		bucketID: "bucket",
 	}
-	versions := AzureSEVSNPVersionList([]string{"2023-01-01.json", "2021-01-01.json", "2019-01-01.json"})
+	versions := SEVSNPVersionList{list: []string{"2023-01-01.json", "2021-01-01.json", "2019-01-01.json"}}
 
-	ops, err := sut.deleteAzureSEVSNPVersion(versions, "2021-01-01")
+	ops, err := sut.deleteSEVSNPVersion(versions, "2021-01-01")
 
 	assert := assert.New(t)
 	assert.NoError(err)
 	assert.Contains(ops, deleteCmd{
-		apiObject: AzureSEVSNPVersionAPI{
+		apiObject: SEVSNPVersionAPI{
 			Version: "2021-01-01.json",
 		},
 	})
 
 	assert.Contains(ops, putCmd{
-		apiObject: AzureSEVSNPVersionList([]string{"2023-01-01.json", "2019-01-01.json"}),
+		apiObject: SEVSNPVersionList{list: []string{"2023-01-01.json", "2019-01-01.json"}},
 	})
 }
 

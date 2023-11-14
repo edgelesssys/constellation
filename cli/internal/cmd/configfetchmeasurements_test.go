@@ -17,6 +17,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -294,25 +295,23 @@ func TestConfigFetchMeasurements(t *testing.T) {
 
 type stubAttestationFetcher struct{}
 
-func (f stubAttestationFetcher) FetchAzureSEVSNPVersionList(_ context.Context, _ attestationconfigapi.AzureSEVSNPVersionList) (attestationconfigapi.AzureSEVSNPVersionList, error) {
-	return attestationconfigapi.AzureSEVSNPVersionList(
-		[]string{},
-	), nil
+func (f stubAttestationFetcher) FetchSEVSNPVersionList(_ context.Context, _ attestationconfigapi.SEVSNPVersionList) (attestationconfigapi.SEVSNPVersionList, error) {
+	return attestationconfigapi.SEVSNPVersionList{}, nil
 }
 
-func (f stubAttestationFetcher) FetchAzureSEVSNPVersion(_ context.Context, _ attestationconfigapi.AzureSEVSNPVersionAPI) (attestationconfigapi.AzureSEVSNPVersionAPI, error) {
-	return attestationconfigapi.AzureSEVSNPVersionAPI{
-		AzureSEVSNPVersion: testCfg,
+func (f stubAttestationFetcher) FetchSEVSNPVersion(_ context.Context, _ attestationconfigapi.SEVSNPVersionAPI) (attestationconfigapi.SEVSNPVersionAPI, error) {
+	return attestationconfigapi.SEVSNPVersionAPI{
+		SEVSNPVersion: testCfg,
 	}, nil
 }
 
-func (f stubAttestationFetcher) FetchAzureSEVSNPVersionLatest(_ context.Context) (attestationconfigapi.AzureSEVSNPVersionAPI, error) {
-	return attestationconfigapi.AzureSEVSNPVersionAPI{
-		AzureSEVSNPVersion: testCfg,
+func (f stubAttestationFetcher) FetchSEVSNPVersionLatest(_ context.Context, _ variant.Variant) (attestationconfigapi.SEVSNPVersionAPI, error) {
+	return attestationconfigapi.SEVSNPVersionAPI{
+		SEVSNPVersion: testCfg,
 	}, nil
 }
 
-var testCfg = attestationconfigapi.AzureSEVSNPVersion{
+var testCfg = attestationconfigapi.SEVSNPVersion{
 	Microcode:  93,
 	TEE:        0,
 	SNP:        6,

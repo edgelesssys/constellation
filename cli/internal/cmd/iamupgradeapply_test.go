@@ -14,6 +14,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -170,14 +171,14 @@ type stubConfigFetcher struct {
 	fetchLatestErr error
 }
 
-func (s *stubConfigFetcher) FetchAzureSEVSNPVersion(context.Context, attestationconfigapi.AzureSEVSNPVersionAPI) (attestationconfigapi.AzureSEVSNPVersionAPI, error) {
+func (s *stubConfigFetcher) FetchSEVSNPVersion(context.Context, attestationconfigapi.SEVSNPVersionAPI) (attestationconfigapi.SEVSNPVersionAPI, error) {
 	panic("not implemented")
 }
 
-func (s *stubConfigFetcher) FetchAzureSEVSNPVersionList(context.Context, attestationconfigapi.AzureSEVSNPVersionList) (attestationconfigapi.AzureSEVSNPVersionList, error) {
+func (s *stubConfigFetcher) FetchSEVSNPVersionList(context.Context, attestationconfigapi.SEVSNPVersionList) (attestationconfigapi.SEVSNPVersionList, error) {
 	panic("not implemented")
 }
 
-func (s *stubConfigFetcher) FetchAzureSEVSNPVersionLatest(context.Context) (attestationconfigapi.AzureSEVSNPVersionAPI, error) {
-	return attestationconfigapi.AzureSEVSNPVersionAPI{}, s.fetchLatestErr
+func (s *stubConfigFetcher) FetchSEVSNPVersionLatest(context.Context, variant.Variant) (attestationconfigapi.SEVSNPVersionAPI, error) {
+	return attestationconfigapi.SEVSNPVersionAPI{}, s.fetchLatestErr
 }

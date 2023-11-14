@@ -15,13 +15,13 @@ go_library(
         "azure.go",
         "delete.go",
         "main.go",
-        "objectkind_string.go",
         "validargs.go",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi/cli",
     visibility = ["//visibility:private"],
     deps = [
         "//internal/api/attestationconfigapi",
+        "//internal/attestation/variant",
         "//internal/cloud/cloudprovider",
         "//internal/constants",
         "//internal/file",
@@ -44,11 +44,6 @@ go_test(
         "main_test.go",
     ],
     embed = [":cli_lib"],
-    deps = [
-        "//internal/cloud/cloudprovider",
-        "//internal/verify",
-        "@com_github_stretchr_testify//assert",
-    ],
 )
 
 sh_template(
