@@ -8,6 +8,15 @@ inputs:
   selfManagedInfra:
     description: "Use self-managed infrastructure instead of infrastructure created by the Constellation CLI."
     required: true
+  gcpClusterDeleteServiceAccount:
+    description: "Service account with permissions to delete a Constellation cluster on GCP."
+    required: true
+  azureClusterDeleteCredentials:
+    description: "Azure credentials authorized to delete a Constellation cluster."
+    required: true
+  cloudProvider:
+    description: "Either 'aws', 'azure' or 'gcp'."
+    required: true
 
 runs:
   using: "composite"
@@ -40,6 +49,27 @@ runs:
           exit 1
         fi
         echo "::endgroup::"
+
+    - name: Login to GCP (Cluster service account)
+      if: inputs.cloudProvider == 'gcp'
+      uses: ./.github/actions/login_gcp
+      with:
+        service_account: ${{ inputs.gcpClusterDeleteServiceAccount }}
+
+    - name: Login to AWS (Cluster role)
+      if: inputs.cloudProvider == 'aws'
+      uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a # v4.0.1
+      with:
+        role-to-assume: arn:aws:iam::795746500882:role/GithubActionsE2ECluster
+        aws-region: eu-central-1
+        # extend token expiry to 6 hours to ensure constellation can terminate
+        role-duration-seconds: 21600
+
+    - name: Login to Azure (Cluster service principal)
+      if: inputs.cloudProvider == 'azure'
+      uses: ./.github/actions/login_azure
+      with:
+        azure_credentials: ${{ inputs.azureClusterDeleteCredentials }}
 
     - name: Constellation terminate
       if: inputs.selfManagedInfra != 'true'

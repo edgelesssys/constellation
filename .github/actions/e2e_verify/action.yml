@@ -66,8 +66,8 @@ runs:
           forwarderPID=$!
           sleep 5
 
-          if [[ ${{ inputs.cloudProvider }} == "azure" ]]; then
-            echo "Extracting Azure TCB versions for API update"
+          if [[ ${{ inputs.cloudProvider }} == "azure" || ${{ inputs.cloudProvider }} == "aws" ]]; then
+            echo "Extracting TCB versions for API update"
             constellation verify --cluster-id "${clusterID}" --node-endpoint localhost:9090 -o json > "snp-report-${node}.json"
           else
             constellation verify --cluster-id "${clusterID}" --node-endpoint localhost:9090
@@ -84,14 +84,19 @@ runs:
         aws-region: eu-central-1
 
     - name: Upload extracted TCBs
-      if: github.ref_name == 'main' && inputs.cloudProvider == 'azure'
+      if: github.ref_name == 'main' && (inputs.cloudProvider == 'azure' || inputs.cloudProvider == 'aws')
       shell: bash
       env:
         COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
         COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
       run: |
-        for file in $(ls snp-report-*.json); do
+        reports=(snp-report-*.json)
+        if [ -z ${#reports[@]} ]; then
+            exit 1
+        fi
+
+        for file in "${reports[@]}"; do
           path=$(realpath "${file}")
           cat "${path}"
-          bazel run //internal/api/attestationconfigapi/cli -- upload azure snp-report "${path}"
+          bazel run //internal/api/attestationconfigapi/cli -- upload ${{ inputs.cloudProvider }} snp-report "${path}"
         done

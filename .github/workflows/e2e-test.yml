@@ -165,7 +165,7 @@ jobs:
         uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
         with:
           ref: ${{ inputs.git-ref }}
-          
+
       - name: Get Latest Image
         id: find-latest-image
         uses: ./.github/actions/find_latest_image
@@ -246,6 +246,9 @@ jobs:
         with:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
           selfManagedInfra: ${{ inputs.selfManagedInfra }}
+          cloudProvider: ${{ inputs.cloudProvider }}
+          azureClusterDeleteCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
+          gcpClusterDeleteServiceAccount: "constellation-e2e-cluster@constellation-331613.iam.gserviceaccount.com"
 
       - name: Always delete IAM configuration
         if: always()
