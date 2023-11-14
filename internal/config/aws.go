@@ -63,9 +63,14 @@ func (c AWSSEVSNP) EqualTo(other AttestationCfg) (bool, error) {
 
 // FetchAndSetLatestVersionNumbers fetches the latest version numbers from the configapi and sets them.
 func (c *AWSSEVSNP) FetchAndSetLatestVersionNumbers(ctx context.Context, fetcher attestationconfigapi.Fetcher) error {
+	// Only talk to the API if at least one version number is set to latest.
+	if !(c.BootloaderVersion.WantLatest || c.TEEVersion.WantLatest || c.SNPVersion.WantLatest || c.MicrocodeVersion.WantLatest) {
+		return nil
+	}
+
 	versions, err := fetcher.FetchSEVSNPVersionLatest(ctx, variant.AWSSEVSNP{})
 	if err != nil {
-		return err
+		return fmt.Errorf("fetching latest TCB versions from configapi: %w", err)
 	}
 	// set number and keep isLatest flag
 	c.mergeWithLatestVersion(versions.SEVSNPVersion)
