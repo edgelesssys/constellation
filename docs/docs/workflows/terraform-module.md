@@ -23,12 +23,8 @@ This allows to upgrade the cluster to a newer Constellation version by simply up
   <tabItem value="azure" label="Azure">
 
   ```
-  locals {
-    module_version = "v0.0.0" // insert Constellation version here.
-  }
-
   module "azure-constellation" {
-    source = "https://github.com/edgelesssys/constellation/releases/download/${local.module_version}/terraform-module.zip//modules/azure-constellation"
+    source = "https://github.com/edgelesssys/constellation/releases/download/<version>/terraform-module.zip//terraform-module/azure-constellation" // insert Constellation version here.
     name = "constell"
     location = "northeurope"
     service_principal_name = "az-sp"
@@ -57,12 +53,8 @@ This allows to upgrade the cluster to a newer Constellation version by simply up
   <tabItem value="aws" label="AWS">
 
   ```
-  locals {
-    module_version = "v0.0.0" // insert Constellation version here.
-  }
-
   module "aws-constellation" {
-    source = "https://github.com/edgelesssys/constellation/releases/download/${local.module_version}/terraform-module.zip//modules/aws-constellation"
+    source = "https://github.com/edgelesssys/constellation/releases/download/<version>/terraform-module.zip//terraform-module/aws-constellation" // insert Constellation version here.
     name        = "constell"
     zone        = "us-east-2c"
     name_prefix = "example"
@@ -92,12 +84,8 @@ This allows to upgrade the cluster to a newer Constellation version by simply up
   <tabItem value="gcp" label="GCP">
 
   ```
-  locals {
-    module_version = "v0.0.0" // insert Constellation version here.
-  }
-
   module "gcp-constellation" {
-    source = "https://github.com/edgelesssys/constellation/releases/download/${local.module_version}/terraform-module.zip//modules/gcp-constellation"
+    source = "https://github.com/edgelesssys/constellation/releases/download/<version>/terraform-module.zip//terraform-module/gcp-constellation" // insert Constellation version here.
     name    = "constell"
     project = "constell-proj" // replace with your project id
     service_account_id = "constid"
