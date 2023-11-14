@@ -2,6 +2,9 @@ name: E2E Attestationconfig API Test
 description: "Test the attestationconfig CLI is functional."
 
 inputs:
+  csp:
+    description: "Cloud provider to run tests against"
+    default: "azure"
   buildBuddyApiKey:
     description: "BuildBuddy API key for caching Bazel artifacts"
     required: true
@@ -33,4 +36,4 @@ runs:
         COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
         COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
       run: |
-        bazel run //internal/api/attestationconfigapi/cli:cli_e2e_test
+        bazel run //internal/api/attestationconfigapi/cli:cli_e2e_test -- ${{ inputs.csp }}

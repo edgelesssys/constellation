@@ -19,6 +19,22 @@ configapi_cli=$(realpath @@CONFIGAPI_CLI@@)
 stat "${configapi_cli}" >> /dev/null
 configapi_cli="${configapi_cli} --testing"
 ###### script body ######
+function variant() {
+  if [[ $1 == "aws" ]]; then
+    echo "aws-sev-snp"
+    return 0
+  elif [[ $1 == "azure" ]]; then
+    echo "azure-sev-snp"
+    return 0
+  else
+    echo "Unknown CSP: $1"
+    exit 1
+  fi
+}
+
+csp=$1
+readonly csp
+attestationType=$(variant "$csp")
 
 readonly region="eu-west-1"
 readonly bucket="resource-api-testing"
@@ -28,7 +44,7 @@ readonly tmpdir
 registerExitHandler "rm -rf $tmpdir"
 
 # empty the bucket version state
-${configapi_cli} delete recursive azure --region "$region" --bucket "$bucket"
+${configapi_cli} delete recursive "$csp" --region "$region" --bucket "$bucket"
 
 # the high version numbers ensure that it's newer than the current latest value
 readonly current_report_path="$tmpdir/currentSnpReport.json"
@@ -57,7 +73,7 @@ cat << EOF > "$current_report_path"
 }
 EOF
 # upload a fake latest version for the fetcher
-${configapi_cli} upload azure snp-report "$current_report_path" --force --upload-date "2000-01-01-01-01" --region "$region" --bucket "$bucket"
+${configapi_cli} upload "$csp" snp-report "$current_report_path" --force --upload-date "2000-01-01-01-01" --region "$region" --bucket "$bucket"
 
 # the high version numbers ensure that it's newer than the current latest value
 readonly report_path="$tmpdir/snpReport.json"
@@ -115,16 +131,17 @@ EOF
 
 # report 3 versions with different dates to fill the reporter cache
 readonly date_oldest="2023-02-01-03-04"
-${configapi_cli} upload azure snp-report "$older_report_path" --upload-date "$date_oldest" --region "$region" --bucket "$bucket" --cache-window-size 3
+${configapi_cli} upload "$csp" snp-report "$older_report_path" --upload-date "$date_oldest" --region "$region" --bucket "$bucket" --cache-window-size 3
 readonly date_older="2023-02-02-03-04"
-${configapi_cli} upload azure snp-report "$older_report_path" --upload-date "$date_older" --region "$region" --bucket "$bucket" --cache-window-size 3
+${configapi_cli} upload "$csp" snp-report "$older_report_path" --upload-date "$date_older" --region "$region" --bucket "$bucket" --cache-window-size 3
 readonly date="2023-02-03-03-04"
-${configapi_cli} upload azure snp-report "$report_path" --upload-date "$date" --region "$region" --bucket "$bucket" --cache-window-size 3
+${configapi_cli} upload "$csp" snp-report "$report_path" --upload-date "$date" --region "$region" --bucket "$bucket" --cache-window-size 3
 
 # expect that $date_oldest is served as latest version
-baseurl="https://d33dzgxuwsgbpw.cloudfront.net/constellation/v1/attestation/azure-sev-snp"
-if ! curl -fsSL ${baseurl}/${date_oldest}.json > version.json; then
-  echo "Checking for uploaded version file constellation/v1/attestation/azure-sev-snp/${date_oldest}.json: request returned ${?}"
+basepath="constellation/v1/attestation/${attestationType}"
+baseurl="https://d33dzgxuwsgbpw.cloudfront.net/${basepath}"
+if ! curl -fsSL "${baseurl}"/${date_oldest}.json > version.json; then
+  echo "Checking for uploaded version file ${basepath}/${date_oldest}.json: request returned ${?}"
   exit 1
 fi
 # check that version values are equal to expected
@@ -135,13 +152,13 @@ if ! cmp -s <(echo -n '{"bootloader":255,"tee":255,"snp":255,"microcode":254}') 
   echo '{"bootloader":255,"tee":255,"snp":255,"microcode":254}'
   exit 1
 fi
-if ! curl -fsSL ${baseurl}/${date_oldest}.json.sig > /dev/null; then
-  echo "Checking for uploaded version signature file constellation/v1/attestation/azure-sev-snp/${date_oldest}.json.sig: request returned ${?}"
+if ! curl -fsSL "${baseurl}"/${date_oldest}.json.sig > /dev/null; then
+  echo "Checking for uploaded version signature file ${basepath}/${date_oldest}.json.sig: request returned ${?}"
   exit 1
 fi
 # check list endpoint
-if ! curl -fsSL ${baseurl}/list > list.json; then
-  echo "Checking for uploaded list file constellation/v1/attestation/azure-sev-snp/list: request returned ${?}"
+if ! curl -fsSL "${baseurl}"/list > list.json; then
+  echo "Checking for uploaded list file ${basepath}/list: request returned ${?}"
   exit 1
 fi
 # check that version values are equal to expected
@@ -154,28 +171,28 @@ if ! cmp -s <(echo -n '["2023-02-01-03-04.json","2000-01-01-01-01.json"]') list.
 fi
 
 # check that the other versions are not uploaded
-http_code=$(curl -sSL -w '%{http_code}\n' -o /dev/null ${baseurl}/${date_older}.json)
+http_code=$(curl -sSL -w '%{http_code}\n' -o /dev/null "${baseurl}"/${date_older}.json)
 if [[ $http_code -ne 404 ]]; then
-  echo "Expected HTTP code 404 for: constellation/v1/attestation/azure-sev-snp/${date_older}.json, but got ${http_code}"
+  echo "Expected HTTP code 404 for: ${basepath}/${date_older}.json, but got ${http_code}"
   exit 1
 fi
-http_code=$(curl -sSL -w '%{http_code}\n' -o /dev/null ${baseurl}/${date}.json.sig)
+http_code=$(curl -sSL -w '%{http_code}\n' -o /dev/null "${baseurl}"/${date}.json.sig)
 if [[ $http_code -ne 404 ]]; then
-  echo "Expected HTTP code 404 for: constellation/v1/attestation/azure-sev-snp/${date}.json, but got ${http_code}"
+  echo "Expected HTTP code 404 for: ${basepath}/${date}.json, but got ${http_code}"
   exit 1
 fi
 
-${configapi_cli} delete azure snp-report "$date_oldest" --region "$region" --bucket "$bucket"
+${configapi_cli} delete "$csp" snp-report "$date_oldest" --region "$region" --bucket "$bucket"
 
 # Omit -f to check for 404. We want to check that a file was deleted, therefore we expect the query to fail.
-http_code=$(curl -sSL -w '%{http_code}\n' -o /dev/null ${baseurl}/${date_oldest}.json)
+http_code=$(curl -sSL -w '%{http_code}\n' -o /dev/null "${baseurl}"/${date_oldest}.json)
 if [[ $http_code -ne 404 ]]; then
-  echo "Expected HTTP code 404 for: constellation/v1/attestation/azure-sev-snp/${date_oldest}.json, but got ${http_code}"
+  echo "Expected HTTP code 404 for: ${basepath}/${date_oldest}.json, but got ${http_code}"
   exit 1
 fi
 # Omit -f to check for 404. We want to check that a file was deleted, therefore we expect the query to fail.
-http_code=$(curl -sSL -w '%{http_code}\n' -o /dev/null ${baseurl}/${date_oldest}.json.sig)
+http_code=$(curl -sSL -w '%{http_code}\n' -o /dev/null "${baseurl}"/${date_oldest}.json.sig)
 if [[ $http_code -ne 404 ]]; then
-  echo "Expected HTTP code 404 for: constellation/v1/attestation/azure-sev-snp/${date_oldest}.json, but got ${http_code}"
+  echo "Expected HTTP code 404 for: ${basepath}/${date_oldest}.json, but got ${http_code}"
   exit 1
 fi

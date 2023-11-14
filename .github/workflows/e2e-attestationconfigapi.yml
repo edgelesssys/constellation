@@ -16,6 +16,11 @@ on:
 
 jobs:
   e2e-api:
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        csp: ["azure", "aws"]
     runs-on: ubuntu-22.04
     permissions:
       id-token: write
@@ -35,3 +40,4 @@ jobs:
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
           cosignPrivateKey: ${{ secrets.COSIGN_DEV_PRIVATE_KEY }}
           cosignPassword: ${{ secrets.COSIGN_DEV_PASSWORD }}
+          csp: ${{ matrix.csp }}

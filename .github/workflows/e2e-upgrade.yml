@@ -290,6 +290,9 @@ jobs:
         with:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
           selfManagedInfra: "false"
+          cloudProvider: ${{ inputs.cloudProvider }}
+          azureClusterDeleteCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
+          gcpClusterDeleteServiceAccount: "constellation-e2e-cluster@constellation-331613.iam.gserviceaccount.com"
 
       - name: Always delete IAM configuration
         if: always()
