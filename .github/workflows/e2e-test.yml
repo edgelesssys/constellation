@@ -154,6 +154,18 @@ jobs:
       image: ${{ steps.find-latest-image.outputs.image }}
       isDebugImage: ${{ steps.find-latest-image.outputs.isDebugImage }}
     steps:
+      - name: Checkout head
+        if: inputs.git-ref == 'head'
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
+        with:
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
+      - name: Checkout ref
+        if: inputs.git-ref != 'head'
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
+        with:
+          ref: ${{ inputs.git-ref }}
+          
       - name: Get Latest Image
         id: find-latest-image
         uses: ./.github/actions/find_latest_image
