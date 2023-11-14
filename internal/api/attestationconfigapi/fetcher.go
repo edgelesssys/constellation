@@ -12,6 +12,7 @@ import (
 	"fmt"
 
 	apifetcher "github.com/edgelesssys/constellation/v2/internal/api/fetcher"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 )
@@ -23,9 +24,9 @@ var ErrNoVersionsFound = errors.New("no versions found")
 
 // Fetcher fetches config API resources without authentication.
 type Fetcher interface {
-	FetchAzureSEVSNPVersion(ctx context.Context, azureVersion AzureSEVSNPVersionAPI) (AzureSEVSNPVersionAPI, error)
-	FetchAzureSEVSNPVersionList(ctx context.Context, attestation AzureSEVSNPVersionList) (AzureSEVSNPVersionList, error)
-	FetchAzureSEVSNPVersionLatest(ctx context.Context) (AzureSEVSNPVersionAPI, error)
+	FetchSEVSNPVersion(ctx context.Context, version SEVSNPVersionAPI) (SEVSNPVersionAPI, error)
+	FetchSEVSNPVersionList(ctx context.Context, list SEVSNPVersionList) (SEVSNPVersionList, error)
+	FetchSEVSNPVersionLatest(ctx context.Context, attesation variant.Variant) (SEVSNPVersionAPI, error)
 }
 
 // fetcher fetches AttestationCfg API resources without authentication.
@@ -64,35 +65,45 @@ func newFetcherWithClientAndVerifier(client apifetcher.HTTPClient, cosignVerifie
 	return &fetcher{HTTPClient: client, verifier: cosignVerifier, cdnURL: url}
 }
 
-// FetchAzureSEVSNPVersionList fetches the version list information from the config API.
-func (f *fetcher) FetchAzureSEVSNPVersionList(ctx context.Context, attestation AzureSEVSNPVersionList) (AzureSEVSNPVersionList, error) {
+// FetchSEVSNPVersionList fetches the version list information from the config API.
+func (f *fetcher) FetchSEVSNPVersionList(ctx context.Context, list SEVSNPVersionList) (SEVSNPVersionList, error) {
 	// TODO(derpsteb): Replace with FetchAndVerify once we move to v2 of the config API.
-	return apifetcher.Fetch(ctx, f.HTTPClient, f.cdnURL, attestation)
+	fetchedList, err := apifetcher.Fetch(ctx, f.HTTPClient, f.cdnURL, list)
+	if err != nil {
+		return list, fmt.Errorf("fetching version list: %w", err)
+	}
+
+	// Need to set this explicitly as the variant is not part of the marshalled JSON.
+	fetchedList.variant = list.variant
+
+	return fetchedList, nil
 }
 
-// FetchAzureSEVSNPVersion fetches the version information from the config API.
-func (f *fetcher) FetchAzureSEVSNPVersion(ctx context.Context, azureVersion AzureSEVSNPVersionAPI) (AzureSEVSNPVersionAPI, error) {
-	fetchedVersion, err := apifetcher.FetchAndVerify(ctx, f.HTTPClient, f.cdnURL, azureVersion, f.verifier)
+// FetchSEVSNPVersion fetches the version information from the config API.
+func (f *fetcher) FetchSEVSNPVersion(ctx context.Context, version SEVSNPVersionAPI) (SEVSNPVersionAPI, error) {
+	fetchedVersion, err := apifetcher.FetchAndVerify(ctx, f.HTTPClient, f.cdnURL, version, f.verifier)
 	if err != nil {
-		return fetchedVersion, fmt.Errorf("fetching version %s: %w", azureVersion.Version, err)
+		return fetchedVersion, fmt.Errorf("fetching version %s: %w", version.Version, err)
 	}
+
+	// Need to set this explicitly as the variant is not part of the marshalled JSON.
+	fetchedVersion.Variant = version.Variant
+
 	return fetchedVersion, nil
 }
 
-// FetchAzureSEVSNPVersionLatest returns the latest versions of the given type.
-func (f *fetcher) FetchAzureSEVSNPVersionLatest(ctx context.Context) (res AzureSEVSNPVersionAPI, err error) {
-	var list AzureSEVSNPVersionList
-	list, err = f.FetchAzureSEVSNPVersionList(ctx, list)
+// FetchSEVSNPVersionLatest returns the latest versions of the given type.
+func (f *fetcher) FetchSEVSNPVersionLatest(ctx context.Context, attesation variant.Variant) (res SEVSNPVersionAPI, err error) {
+	list, err := f.FetchSEVSNPVersionList(ctx, SEVSNPVersionList{variant: attesation})
 	if err != nil {
 		return res, ErrNoVersionsFound
 	}
-	if len(list) < 1 {
-		return res, ErrNoVersionsFound
+
+	getVersionRequest := SEVSNPVersionAPI{
+		Version: list.List()[0], // latest version is first in list
+		Variant: attesation,
 	}
-	getVersionRequest := AzureSEVSNPVersionAPI{
-		Version: list[0], // latest version is first in list
-	}
-	res, err = f.FetchAzureSEVSNPVersion(ctx, getVersionRequest)
+	res, err = f.FetchSEVSNPVersion(ctx, getVersionRequest)
 	if err != nil {
 		return res, err
 	}

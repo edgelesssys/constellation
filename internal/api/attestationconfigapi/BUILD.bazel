@@ -5,10 +5,10 @@ go_library(
     name = "attestationconfigapi",
     srcs = [
         "attestationconfigapi.go",
-        "azure.go",
         "client.go",
         "fetcher.go",
         "reporter.go",
+        "snp.go",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi",
     visibility = ["//:__subpackages__"],
@@ -31,10 +31,13 @@ go_test(
         "client_test.go",
         "fetcher_test.go",
         "reporter_test.go",
+        "snp_test.go",
     ],
     embed = [":attestationconfigapi"],
     deps = [
+        "//internal/attestation/variant",
         "//internal/constants",
         "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
     ],
 )

@@ -11,8 +11,8 @@ import (
 )
 
 func TestIsInputNewerThanLatestAPI(t *testing.T) {
-	newTestCfg := func() AzureSEVSNPVersion {
-		return AzureSEVSNPVersion{
+	newTestCfg := func() SEVSNPVersion {
+		return SEVSNPVersion{
 			Microcode:  93,
 			TEE:        0,
 			SNP:        6,
@@ -21,13 +21,13 @@ func TestIsInputNewerThanLatestAPI(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		latest AzureSEVSNPVersion
-		input  AzureSEVSNPVersion
+		latest SEVSNPVersion
+		input  SEVSNPVersion
 		expect bool
 		errMsg string
 	}{
 		"input is older than latest": {
-			input: func(c AzureSEVSNPVersion) AzureSEVSNPVersion {
+			input: func(c SEVSNPVersion) SEVSNPVersion {
 				c.Microcode--
 				return c
 			}(newTestCfg()),
@@ -36,7 +36,7 @@ func TestIsInputNewerThanLatestAPI(t *testing.T) {
 			errMsg: "input Microcode version: 92 is older than latest API version: 93",
 		},
 		"input has greater and smaller version field than latest": {
-			input: func(c AzureSEVSNPVersion) AzureSEVSNPVersion {
+			input: func(c SEVSNPVersion) SEVSNPVersion {
 				c.Microcode++
 				c.Bootloader--
 				return c
@@ -46,7 +46,7 @@ func TestIsInputNewerThanLatestAPI(t *testing.T) {
 			errMsg: "input Bootloader version: 1 is older than latest API version: 2",
 		},
 		"input is newer than latest": {
-			input: func(c AzureSEVSNPVersion) AzureSEVSNPVersion {
+			input: func(c SEVSNPVersion) SEVSNPVersion {
 				c.TEE++
 				return c
 			}(newTestCfg()),

@@ -23,6 +23,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config/instancetypes"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -51,10 +52,10 @@ func TestDefaultConfigMarshalsLatestVersion(t *testing.T) {
 	var mp configMap
 	require.NoError(yaml.Unmarshal(bt, &mp))
 	assert := assert.New(t)
-	assert.Equal("latest", mp.getAzureSEVSNPVersion("microcodeVersion"))
-	assert.Equal("latest", mp.getAzureSEVSNPVersion("teeVersion"))
-	assert.Equal("latest", mp.getAzureSEVSNPVersion("snpVersion"))
-	assert.Equal("latest", mp.getAzureSEVSNPVersion("bootloaderVersion"))
+	assert.Equal("latest", mp.getSEVSNPVersion("microcodeVersion"))
+	assert.Equal("latest", mp.getSEVSNPVersion("teeVersion"))
+	assert.Equal("latest", mp.getSEVSNPVersion("snpVersion"))
+	assert.Equal("latest", mp.getSEVSNPVersion("bootloaderVersion"))
 }
 
 func TestGetAttestationConfigMarshalsNumericalVersion(t *testing.T) {
@@ -88,9 +89,9 @@ func TestNew(t *testing.T) {
 				conf := Default() // default configures latest version
 				modifyConfigForAzureToPassValidate(conf)
 				m := getConfigAsMap(conf, t)
-				m.setAzureSEVSNPVersion("microcodeVersion", "Latest") // check uppercase also works
-				m.setAzureSEVSNPVersion("teeVersion", 2)
-				m.setAzureSEVSNPVersion("bootloaderVersion", 1)
+				m.setSEVSNPVersion("microcodeVersion", "Latest") // check uppercase also works
+				m.setSEVSNPVersion("teeVersion", 2)
+				m.setSEVSNPVersion("bootloaderVersion", 1)
 				return m
 			}(),
 
@@ -181,7 +182,7 @@ func TestReadConfigFile(t *testing.T) {
 			config: func() configMap {
 				conf := Default()
 				m := getConfigAsMap(conf, t)
-				m.setAzureSEVSNPVersion("microcodeVersion", "1a")
+				m.setSEVSNPVersion("microcodeVersion", "1a")
 				return m
 			}(),
 			configName: constants.ConfigFilename,
@@ -1053,7 +1054,7 @@ func TestIsAppClientIDError(t *testing.T) {
 // configMap is used to un-/marshal the config as an unstructured map.
 type configMap map[string]interface{}
 
-func (c configMap) setAzureSEVSNPVersion(versionType string, value interface{}) {
+func (c configMap) setSEVSNPVersion(versionType string, value interface{}) {
 	c["attestation"].(configMap)["azureSEVSNP"].(configMap)[versionType] = value
 }
 
@@ -1061,7 +1062,7 @@ func (c configMap) setAzureProvider(azureProviderField string, value interface{}
 	c["provider"].(configMap)["azure"].(configMap)[azureProviderField] = value
 }
 
-func (c configMap) getAzureSEVSNPVersion(versionType string) interface{} {
+func (c configMap) getSEVSNPVersion(versionType string) interface{} {
 	return c["attestation"].(configMap)["azureSEVSNP"].(configMap)[versionType]
 }
 
@@ -1079,25 +1080,23 @@ func getConfigAsMap(conf *Config, t *testing.T) (res configMap) {
 
 type stubAttestationFetcher struct{}
 
-func (f stubAttestationFetcher) FetchAzureSEVSNPVersionList(_ context.Context, _ attestationconfigapi.AzureSEVSNPVersionList) (attestationconfigapi.AzureSEVSNPVersionList, error) {
-	return attestationconfigapi.AzureSEVSNPVersionList(
-		[]string{},
-	), nil
+func (f stubAttestationFetcher) FetchSEVSNPVersionList(_ context.Context, _ attestationconfigapi.SEVSNPVersionList) (attestationconfigapi.SEVSNPVersionList, error) {
+	return attestationconfigapi.SEVSNPVersionList{}, nil
 }
 
-func (f stubAttestationFetcher) FetchAzureSEVSNPVersion(_ context.Context, _ attestationconfigapi.AzureSEVSNPVersionAPI) (attestationconfigapi.AzureSEVSNPVersionAPI, error) {
-	return attestationconfigapi.AzureSEVSNPVersionAPI{
-		AzureSEVSNPVersion: testCfg,
+func (f stubAttestationFetcher) FetchSEVSNPVersion(_ context.Context, _ attestationconfigapi.SEVSNPVersionAPI) (attestationconfigapi.SEVSNPVersionAPI, error) {
+	return attestationconfigapi.SEVSNPVersionAPI{
+		SEVSNPVersion: testCfg,
 	}, nil
 }
 
-func (f stubAttestationFetcher) FetchAzureSEVSNPVersionLatest(_ context.Context) (attestationconfigapi.AzureSEVSNPVersionAPI, error) {
-	return attestationconfigapi.AzureSEVSNPVersionAPI{
-		AzureSEVSNPVersion: testCfg,
+func (f stubAttestationFetcher) FetchSEVSNPVersionLatest(_ context.Context, _ variant.Variant) (attestationconfigapi.SEVSNPVersionAPI, error) {
+	return attestationconfigapi.SEVSNPVersionAPI{
+		SEVSNPVersion: testCfg,
 	}, nil
 }
 
-var testCfg = attestationconfigapi.AzureSEVSNPVersion{
+var testCfg = attestationconfigapi.SEVSNPVersion{
 	Microcode:  93,
 	TEE:        0,
 	SNP:        6,

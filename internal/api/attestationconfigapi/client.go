@@ -48,24 +48,25 @@ func NewClient(ctx context.Context, cfg staticupload.Config, cosignPwd, privateK
 	return repo, clientClose, nil
 }
 
-// uploadAzureSEVSNPVersion uploads the latest version numbers of the Azure SEVSNP. Then version name is the UTC timestamp of the date. The /list entry stores the version name + .json suffix.
-func (a Client) uploadAzureSEVSNPVersion(ctx context.Context, version AzureSEVSNPVersion, date time.Time) error {
-	versions, err := a.List(ctx, variant.AzureSEVSNP{})
+// uploadSEVSNPVersion uploads the latest version numbers of the Azure SEVSNP. Then version name is the UTC timestamp of the date. The /list entry stores the version name + .json suffix.
+func (a Client) uploadSEVSNPVersion(ctx context.Context, attestation variant.Variant, version SEVSNPVersion, date time.Time) error {
+	versions, err := a.List(ctx, attestation)
 	if err != nil {
 		return fmt.Errorf("fetch version list: %w", err)
 	}
-	ops := a.constructUploadCmd(version, versions, date)
+	ops := a.constructUploadCmd(attestation, version, versions, date)
 
 	return executeAllCmds(ctx, a.s3Client, ops)
 }
 
-// DeleteAzureSEVSNPVersion deletes the given version (without .json suffix) from the API.
-func (a Client) DeleteAzureSEVSNPVersion(ctx context.Context, versionStr string) error {
-	versions, err := a.List(ctx, variant.AzureSEVSNP{})
+// DeleteSEVSNPVersion deletes the given version (without .json suffix) from the API.
+func (a Client) DeleteSEVSNPVersion(ctx context.Context, attestation variant.Variant, versionStr string) error {
+	versions, err := a.List(ctx, attestation)
 	if err != nil {
 		return fmt.Errorf("fetch version list: %w", err)
 	}
-	ops, err := a.deleteAzureSEVSNPVersion(versions, versionStr)
+
+	ops, err := a.deleteSEVSNPVersion(versions, versionStr)
 	if err != nil {
 		return err
 	}
@@ -73,25 +74,30 @@ func (a Client) DeleteAzureSEVSNPVersion(ctx context.Context, versionStr string)
 }
 
 // List returns the list of versions for the given attestation variant.
-func (a Client) List(ctx context.Context, attestation variant.Variant) ([]string, error) {
-	if attestation.Equal(variant.AzureSEVSNP{}) {
-		versions, err := apiclient.Fetch(ctx, a.s3Client, AzureSEVSNPVersionList{})
-		if err != nil {
-			var notFoundErr *apiclient.NotFoundError
-			if errors.As(err, &notFoundErr) {
-				return nil, nil
-			}
-			return nil, err
-		}
-		return versions, nil
+func (a Client) List(ctx context.Context, attestation variant.Variant) (SEVSNPVersionList, error) {
+	if !attestation.Equal(variant.AzureSEVSNP{}) && !attestation.Equal(variant.AWSSEVSNP{}) {
+		return SEVSNPVersionList{}, fmt.Errorf("unsupported attestation variant: %s", attestation)
 	}
-	return nil, fmt.Errorf("unsupported attestation variant: %s", attestation)
+
+	versions, err := apiclient.Fetch(ctx, a.s3Client, SEVSNPVersionList{variant: attestation})
+	if err != nil {
+		var notFoundErr *apiclient.NotFoundError
+		if errors.As(err, &notFoundErr) {
+			return SEVSNPVersionList{variant: attestation}, nil
+		}
+		return SEVSNPVersionList{}, err
+	}
+
+	versions.variant = attestation
+
+	return versions, nil
 }
 
-func (a Client) deleteAzureSEVSNPVersion(versions AzureSEVSNPVersionList, versionStr string) (ops []crudCmd, err error) {
+func (a Client) deleteSEVSNPVersion(versions SEVSNPVersionList, versionStr string) (ops []crudCmd, err error) {
 	versionStr = versionStr + ".json"
 	ops = append(ops, deleteCmd{
-		apiObject: AzureSEVSNPVersionAPI{
+		apiObject: SEVSNPVersionAPI{
+			Variant: versions.variant,
 			Version: versionStr,
 		},
 	})
@@ -107,36 +113,42 @@ func (a Client) deleteAzureSEVSNPVersion(versions AzureSEVSNPVersionList, versio
 	return ops, nil
 }
 
-func (a Client) constructUploadCmd(versions AzureSEVSNPVersion, versionNames []string, date time.Time) []crudCmd {
+func (a Client) constructUploadCmd(attestation variant.Variant, version SEVSNPVersion, versionNames SEVSNPVersionList, date time.Time) []crudCmd {
+	if !attestation.Equal(versionNames.variant) {
+		return nil
+	}
+
 	dateStr := date.Format(VersionFormat) + ".json"
 	var res []crudCmd
 
 	res = append(res, putCmd{
-		apiObject: AzureSEVSNPVersionAPI{Version: dateStr, AzureSEVSNPVersion: versions},
+		apiObject: SEVSNPVersionAPI{Version: dateStr, Variant: attestation, SEVSNPVersion: version},
 		signer:    a.signer,
 	})
 
-	newVersions := addVersion(versionNames, dateStr)
+	versionNames.addVersion(dateStr)
+
 	res = append(res, putCmd{
-		apiObject: AzureSEVSNPVersionList(newVersions),
+		apiObject: versionNames,
 		signer:    a.signer,
 	})
 
 	return res
 }
 
-func removeVersion(versions AzureSEVSNPVersionList, versionStr string) (removedVersions AzureSEVSNPVersionList, err error) {
+func removeVersion(list SEVSNPVersionList, versionStr string) (removedVersions SEVSNPVersionList, err error) {
+	versions := list.List()
 	for i, v := range versions {
 		if v == versionStr {
 			if i == len(versions)-1 {
-				removedVersions = versions[:i]
+				removedVersions = SEVSNPVersionList{list: versions[:i], variant: list.variant}
 			} else {
-				removedVersions = append(versions[:i], versions[i+1:]...)
+				removedVersions = SEVSNPVersionList{list: append(versions[:i], versions[i+1:]...), variant: list.variant}
 			}
 			return removedVersions, nil
 		}
 	}
-	return nil, fmt.Errorf("version %s not found in list %v", versionStr, versions)
+	return SEVSNPVersionList{}, fmt.Errorf("version %s not found in list %v", versionStr, versions)
 }
 
 type crudCmd interface {
@@ -167,11 +179,4 @@ func executeAllCmds(ctx context.Context, client *apiclient.Client, cmds []crudCm
 		}
 	}
 	return nil
-}
-
-func addVersion(versions []string, newVersion string) []string {
-	versions = append(versions, newVersion)
-	versions = variant.RemoveDuplicate(versions)
-	SortAzureSEVSNPVersionList(versions)
-	return versions
 }

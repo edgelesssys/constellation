@@ -15,6 +15,7 @@ import (
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -36,7 +37,7 @@ func uploadAzure(ctx context.Context, client *attestationconfigapi.Client, cfg u
 	inputVersion := convertTCBVersionToAzureVersion(report.SNPReport.LaunchTCB)
 	log.Infof("Input report: %+v", inputVersion)
 
-	latestAPIVersionAPI, err := attestationconfigapi.NewFetcherWithCustomCDNAndCosignKey(cfg.url, cfg.cosignPublicKey).FetchAzureSEVSNPVersionLatest(ctx)
+	latestAPIVersionAPI, err := attestationconfigapi.NewFetcherWithCustomCDNAndCosignKey(cfg.url, cfg.cosignPublicKey).FetchSEVSNPVersionLatest(ctx, variant.AzureSEVSNP{})
 	if err != nil {
 		if errors.Is(err, attestationconfigapi.ErrNoVersionsFound) {
 			log.Infof("No versions found in API, but assuming that we are uploading the first version.")
@@ -44,8 +45,8 @@ func uploadAzure(ctx context.Context, client *attestationconfigapi.Client, cfg u
 			return fmt.Errorf("fetching latest version: %w", err)
 		}
 	}
-	latestAPIVersion := latestAPIVersionAPI.AzureSEVSNPVersion
-	if err := client.UploadAzureSEVSNPVersionLatest(ctx, inputVersion, latestAPIVersion, cfg.uploadDate, cfg.force); err != nil {
+	latestAPIVersion := latestAPIVersionAPI.SEVSNPVersion
+	if err := client.UploadSEVSNPVersionLatest(ctx, variant.AzureSEVSNP{}, inputVersion, latestAPIVersion, cfg.uploadDate, cfg.force); err != nil {
 		if errors.Is(err, attestationconfigapi.ErrNoNewerVersion) {
 			log.Infof("Input version: %+v is not newer than latest API version: %+v", inputVersion, latestAPIVersion)
 			return nil
@@ -56,8 +57,8 @@ func uploadAzure(ctx context.Context, client *attestationconfigapi.Client, cfg u
 	return nil
 }
 
-func convertTCBVersionToAzureVersion(tcb verify.TCBVersion) attestationconfigapi.AzureSEVSNPVersion {
-	return attestationconfigapi.AzureSEVSNPVersion{
+func convertTCBVersionToAzureVersion(tcb verify.TCBVersion) attestationconfigapi.SEVSNPVersion {
+	return attestationconfigapi.SEVSNPVersion{
 		Bootloader: tcb.Bootloader,
 		TEE:        tcb.TEE,
 		SNP:        tcb.SNP,
@@ -67,7 +68,7 @@ func convertTCBVersionToAzureVersion(tcb verify.TCBVersion) attestationconfigapi
 
 func deleteAzure(ctx context.Context, client *attestationconfigapi.Client, cfg deleteConfig) error {
 	if cfg.provider == cloudprovider.Azure && cfg.kind == snpReport {
-		return client.DeleteAzureSEVSNPVersion(ctx, cfg.version)
+		return client.DeleteSEVSNPVersion(ctx, variant.AzureSEVSNP{}, cfg.version)
 	}
 
 	return fmt.Errorf("provider %s and kind %s not supported", cfg.provider, cfg.kind)
