@@ -28,7 +28,7 @@ readonly tmpdir
 registerExitHandler "rm -rf $tmpdir"
 
 # empty the bucket version state
-${configapi_cli} delete recursive azure snp-report --region "$region" --bucket "$bucket"
+${configapi_cli} delete recursive azure --region "$region" --bucket "$bucket"
 
 # the high version numbers ensure that it's newer than the current latest value
 readonly current_report_path="$tmpdir/currentSnpReport.json"

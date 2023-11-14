@@ -1,5 +1,4 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
-load("//bazel/go:go_test.bzl", "go_test")
 load("//bazel/sh:def.bzl", "sh_template")
 
 go_binary(
@@ -15,6 +14,7 @@ go_library(
         "azure.go",
         "delete.go",
         "main.go",
+        "upload.go",
         "validargs.go",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi/cli",
@@ -35,15 +35,6 @@ go_library(
         "@com_github_spf13_cobra//:cobra",
         "@org_uber_go_zap//:zap",
     ],
-)
-
-go_test(
-    name = "cli_test",
-    srcs = [
-        "delete_test.go",
-        "main_test.go",
-    ],
-    embed = [":cli_lib"],
 )
 
 sh_template(

@@ -8,16 +8,17 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
-	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 )
 
-func uploadAWS(_ context.Context, _ *attestationconfigapi.Client, _ uploadConfig, _ file.Handler, _ *logger.Logger) error {
-	return nil
-}
+func deleteAWS(ctx context.Context, client *attestationconfigapi.Client, cfg deleteConfig) error {
+	if cfg.provider != cloudprovider.AWS || cfg.kind != snpReport {
+		return fmt.Errorf("provider %s and kind %s not supported", cfg.provider, cfg.kind)
+	}
 
-func deleteAWS(_ context.Context, _ *attestationconfigapi.Client, _ deleteConfig) error {
-	return nil
+	return client.DeleteSEVSNPVersion(ctx, variant.AWSSEVSNP{}, cfg.version)
 }

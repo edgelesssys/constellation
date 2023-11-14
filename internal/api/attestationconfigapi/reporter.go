@@ -34,7 +34,7 @@ const cachedVersionsSubDir = "cached-versions"
 var ErrNoNewerVersion = errors.New("input version is not newer than latest API version")
 
 func reportVersionDir(attestation variant.Variant) string {
-	return path.Join(attestationURLPath, attestation.String(), cachedVersionsSubDir)
+	return path.Join(AttestationURLPath, attestation.String(), cachedVersionsSubDir)
 }
 
 // UploadSEVSNPVersionLatest saves the given version to the cache, determines the smallest
