@@ -39,7 +39,7 @@ This allows to upgrade the cluster to a newer Constellation version by simply up
         instance_type = "Standard_DC4as_v5"
         disk_size     = 30
         disk_type     = "Premium_LRS"
-        initial_count = 2
+        initial_count = 3
       },
       worker_default = {
         role          = "worker"
@@ -134,7 +134,7 @@ This allows to upgrade the cluster to a newer Constellation version by simply up
 
 ## Custom setup
 If you need to separate IAM and cluster management or need custom infrastructure, you can also call the submodules individually.
-You can have a look at the respective convenience module (`{csp}-constellation`) for how the module calls can be structured.
+Look at the respective convenience module (`{csp}-constellation`) for how you can structure the module calls.
 The submodules are:
 - `constellation-cluster`: manages the Constellation cluster
 - `fetch-image`: translates the Constellation image version to the image ID of the cloud service provider
@@ -143,10 +143,10 @@ The submodules are:
 
 ## Cluster upgrades
 :::tip
-For general information on cluster upgrades, please refer to [Upgrade your cluster](./upgrade.md).
+For general information on cluster upgrades, see [Upgrade your cluster](./upgrade.md).
 :::
 
-The usage of a [remote address as module source](https://developer.hashicorp.com/terraform/language/modules/sources#fetching-archives-over-http) is recommended, because it simplifies the upgrade process. For [local paths as module source](https://developer.hashicorp.com/terraform/language/modules/sources#local-paths), the user needs to manually overwrite the Terraform files in the Terraform workspace. The steps for the remote source setup are as follows:
+Using a [remote address as module source](https://developer.hashicorp.com/terraform/language/modules/sources#fetching-archives-over-http) as shown in [Quick setup](#quick-setup) is recommended because it simplifies the upgrade process. For [local paths as module source](https://developer.hashicorp.com/terraform/language/modules/sources#local-paths), you would need to manually overwrite the Terraform files in the Terraform workspace. The steps for the remote source setup are as follows:
 
 1. Update the local `module_version` variable.
 2. Upgrade the Terraform module and provider dependencies and apply the Constellation upgrade.
