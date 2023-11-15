@@ -1,0 +1,52 @@
+name: notify teams
+description: "Post a message to Teams"
+
+inputs:
+  teamsWebhookURI:
+    description: "URI to send a message to the Teams channel"
+    required: true
+  title:
+    description: "Title of the Teams notification"
+    required: true
+  assignee:
+    description: "Assignee of the message"
+    required: true
+  additionalFields:
+    description: "Additional fields to add to the Teams message (JSON formatted)"
+    default: "[]"
+  additionalButtons:
+    description: "Additional Buttons to add to the Teams message (JSON formatted)"
+    default: "[]"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Notify Teams channel
+      continue-on-error: true
+      shell: bash
+      run: |
+        cp .github/teams_payload_template.json teams_payload.json
+
+        # Add workflow name to the notification
+        yq -oj -iP '.attachments[0].content.body[0].columns[1].items[0].text = "${{ inputs.title }}"' teams_payload.json
+        yq -oj -iP '.attachments[0].content.body[0].columns[1].items[1].text = "${{ github.workflow }}"' teams_payload.json
+
+        # Add additional fields
+        yq -oj -iP '.attachments[0].content.body[0].columns[1].items[2].facts += ${{ inputs.additionalFields }} ' teams_payload.json
+
+        # Remove everyone but the assignee from the JSON payload so the final message only contains the assignee
+        filtered_entity=$(yq -oj '.attachments[0].content.msteams.entities[] | select(.text == "<at>${{ inputs.assignee }}</at>")' teams_payload.json)
+        yq -oj -iP '.attachments[0].content.msteams.entities = [ '"$filtered_entity"' ]' teams_payload.json
+        yq -oj -iP '.attachments[0].content.body[0].columns[1].items[2].facts += [ { "title": "Assignee", "value": "<at>${{ inputs.assignee }}</at>" } ]' teams_payload.json
+
+        # Add clickable button which links to the workflow triggering this notification
+        yq -oj -iP '.attachments[0].content.actions[0].url = "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"' teams_payload.json
+
+        # Add additional buttons
+        yq -oj -iP '.attachments[0].content.actions += ${{ inputs.additionalButtons }}' teams_payload.json
+
+        cat teams_payload.json
+        curl \
+          -H "Content-Type: application/json" \
+          -d @teams_payload.json \
+          "${{ inputs.teamsWebhookURI }}"
