@@ -16,8 +16,12 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Setup nix
+      uses: ./.github/actions/setup_bazel_nix
+
     - name: Install unzip
-      uses: montudor/action-zip@0852c26906e00f8a315c704958823928d8018b28 # @v1
+      shell: bash
+      run: nix-env -iA nixpkgs.unzip
 
     - name: Create temporary directory
       id: tempdir
