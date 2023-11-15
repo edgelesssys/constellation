@@ -133,7 +133,7 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("encoding kubeadm init configuration as YAML: %w", err)
 	}
 	log.Infof("Initializing Kubernetes cluster")
-	kubeConfig, err := k.clusterUtil.InitCluster(ctx, initConfigYAML, nodeName, clusterName, validIPs, controlPlaneHost, controlPlanePort, conformanceMode, log)
+	kubeConfig, err := k.clusterUtil.InitCluster(ctx, initConfigYAML, nodeName, clusterName, validIPs, conformanceMode, log)
 	if err != nil {
 		return nil, fmt.Errorf("kubeadm init: %w", err)
 	}
@@ -238,7 +238,7 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 		return fmt.Errorf("encoding kubeadm join configuration as YAML: %w", err)
 	}
 	log.With(zap.String("apiServerEndpoint", args.APIServerEndpoint)).Infof("Joining Kubernetes cluster")
-	if err := k.clusterUtil.JoinCluster(ctx, joinConfigYAML, peerRole, loadBalancerHost, loadBalancerPort, log); err != nil {
+	if err := k.clusterUtil.JoinCluster(ctx, joinConfigYAML, log); err != nil {
 		return fmt.Errorf("joining cluster: %v; %w ", string(joinConfigYAML), err)
 	}
 
