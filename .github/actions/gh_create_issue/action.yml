@@ -1,0 +1,64 @@
+name: Create a GitHub issue
+description: "Create an issue on GitHub, and optionally add it to a project board."
+
+inputs:
+  title:
+    description: "The title of the issue."
+    required: true
+  owner:
+    description: "The owner of the repository to create the issue in."
+    required: false
+    default: ${{ github.repository_owner }}
+  repo:
+    description: "The repository to create the issue in."
+    required: false
+    default: ${{ github.repository }}
+  token:
+    description: "The GitHub token to use to authenticate."
+    required: false
+    default: ${{ github.token }}
+  body:
+    description: "The body of the issue."
+    required: false
+  body-file:
+    description: "The path to a file containing the body of the issue."
+    required: false
+  assignee:
+    description: "The GitHub username to assign the issue to."
+    required: false
+  labels:
+    description: "A comma-separated list of labels to add to the issue."
+    required: false
+  milestone:
+    description: "The milestone to add the issue to."
+    required: false
+  project:
+    description: "Number of the project to add the issue to."
+    required: false
+  template:
+    description: "The template to use for the issue."
+    required: false
+  fields:
+    description: "A JSON object containing the fields to use for the issue."
+    required: false
+
+outputs:
+  issue-url:
+    description: "The URL of the created issue."
+    value: ${{ steps.run.outputs.issue-url }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Run create_issue.sh
+      id: run
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+      run: |
+        set -x
+        cat << EOF | tee inputs.json
+        ${{ toJSON(inputs) }}
+        EOF
+        out=$(./.github/actions/gh_create_issue/create_issue.sh inputs.json)
+        echo "issue-url=${out}" | tee -a "$GITHUB_OUTPUT"
