@@ -2,195 +2,33 @@ name: Versionsapi cli
 
 on:
   workflow_dispatch:
-    inputs:
-      command:
-        description: Command to run
-        required: true
-        type: choice
-        options:
-          - latest
-          - list
-          - add
-          - remove
-      ref:
-        description: --ref flag
-        required: false
-        type: string
-      stream:
-        description: --stream flag
-        required: false
-        type: string
-      version:
-        description: --version flag
-        required: false
-        type: string
-      kind:
-        description: --kind flag
-        required: false
-        type: string
-      version_path:
-        description: --version-path flag
-        required: false
-        type: string
-      add_latest:
-        description: --latest flag
-        required: false
-        default: false
-        type: boolean
-      add_release:
-        description: --release flag
-        required: false
-        default: false
-        type: boolean
-      rm_all:
-        description: --all flag
-        required: false
-        default: false
-        type: boolean
-      dryrun:
-        description: --dryrun flag
-        required: false
-        default: false
-        type: boolean
-  workflow_call:
-    inputs:
-      command:
-        description: Command to run
-        required: true
-        type: string
-      ref:
-        description: --ref flag
-        required: false
-        type: string
-      stream:
-        description: --stream flag
-        required: false
-        type: string
-      version:
-        description: --version flag
-        required: false
-        type: string
-      kind:
-        description: --kind flag
-        required: false
-        type: string
-      version_path:
-        description: --version-path flag
-        required: false
-        type: string
-      add_latest:
-        description: --latest flag
-        required: false
-        type: boolean
-      add_release:
-        description: --release flag
-        required: false
-        type: boolean
-      rm_all:
-        description: --all flag
-        required: false
-        type: boolean
-      dryrun:
-        description: --dryrun flag
-        required: false
-        default: false
-        type: boolean
-    outputs:
-      output:
-        description: Output of the command
-        value: ${{ jobs.versionsapi.outputs.output }}
-
-concurrency:
-  group: versionsapi
-  cancel-in-progress: false
 
 jobs:
   versionsapi:
     runs-on: ubuntu-22.04
     permissions:
-      id-token: write
-      contents: read
-    outputs:
-      output: ${{ steps.run.outputs.output }}
+      issues: write
+      repository-projects: write
     steps:
       - name: Check out repository
         id: checkout
         uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
-
-      - name: Check required rights
-        id: check-rights
-        shell: bash
-        run: |
-          case "${{ inputs.command }}" in
-            add)
-              echo "Write access to S3 bucket required."
-              echo "write=true" | tee -a "$GITHUB_OUTPUT"
-              echo "No authentication at cloud provider required."
-              echo "auth=false" | tee -a "$GITHUB_OUTPUT"
-            ;;
-            remove)
-              echo "Write access to S3 bucket required."
-              echo "write=true" | tee -a "$GITHUB_OUTPUT"
-              echo "Authentication at cloud provider required."
-              echo "auth=true" | tee -a "$GITHUB_OUTPUT"
-              ;;
-            latest | list)
-              echo "Only read access required."
-              echo "write=false" | tee -a "$GITHUB_OUTPUT"
-              echo "auth=false" | tee -a "$GITHUB_OUTPUT"
-              ;;
-            *)
-              echo "Unknown command '${{ inputs.command }}'."
-              exit 1
-              ;;
-          esac
-
-      - name: Login to AWS without write access
-        if: steps.check-rights.outputs.write == 'false'
-        uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a # v4.0.1
+      - uses: ./.github/actions/gh_create_issue
+        id: gh_create_issue
         with:
-          role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIRead
-          aws-region: eu-central-1
-
-      - name: Login to AWS with write access
-        if: steps.check-rights.outputs.write == 'true' && steps.check-rights.outputs.auth == 'false'
-        uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a # v4.0.1
-        with:
-          role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIWrite
-          aws-region: eu-central-1
-
-      - name: Login to AWS with write and image remove access
-        if: steps.check-rights.outputs.write == 'true' && steps.check-rights.outputs.auth == 'true'
-        uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a # v4.0.1
-        with:
-          role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIRemove
-          aws-region: eu-central-1
-
-      - name: Login to Azure
-        if: steps.check-rights.outputs.auth == 'true'
-        uses: ./.github/actions/login_azure
-        with:
-          azure_credentials: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Login to GCP
-        if: steps.check-rights.outputs.auth == 'true'
-        uses: ./.github/actions/login_gcp
-        with:
-          service_account: "constellation-cos-builder@constellation-331613.iam.gserviceaccount.com"
-
-      - name: Execute versionsapi CLI
-        id: run
-        uses: ./.github/actions/versionsapi
-        with:
-          command: ${{ inputs.command }}
-          ref: ${{ inputs.ref }}
-          stream: ${{ inputs.stream }}
-          version: ${{ inputs.version }}
-          kind: ${{ inputs.kind }}
-          version_path: ${{ inputs.version_path }}
-          add_latest: ${{ inputs.add_latest }}
-          add_release: ${{ inputs.add_release }}
-          rm_all: ${{ inputs.rm_all }}
-          dryrun: ${{ inputs.dryrun }}
+          title: test
+          body: test
+          repo: issues
+          labels: test
+          assignee: katexochen
+          project: Constellation bugs
+          fields: |
+            kubernetesVersion: v1.18.0
+            cloudProvider: azure
+            test: e2e
+            workflow: wf
+            refStream: main
+          token: ${{ secrets.PROJECT_WRITE_TOKEN }}
+      - run: echo ${{ steps.gh_create_issue.outputs.issue-url }}
