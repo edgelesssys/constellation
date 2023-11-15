@@ -19,7 +19,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Setup nix
+    - name: Install nix
       uses: ./.github/actions/setup_bazel_nix
 
     - name: Create temporary directory
@@ -30,10 +30,6 @@ runs:
     - name: Create archive
       shell: bash
       run: |
-        nix-channel --add https://nixos.org/channels/nixpkgs-unstable
-        nix-channel --update
-        nix-shell -p zip
-
         shopt -s extglob
 
         # Check if any file matches the given pattern(s).
@@ -51,7 +47,7 @@ runs:
         # and warn.
         if $something_exists
         then
-          zip -e -P '${{ inputs.encryption-secret }}' -qq -r ${{ steps.tempdir.outputs.directory }}/archive.zip ${{ inputs.path }}
+          nix run github:NixOS/nixpgs/eb52b838ce38d5018c5a0d4597616e2c9d83ff39#zip -- -e -P '${{ inputs.encryption-secret }}' -qq -r ${{ steps.tempdir.outputs.directory }}/archive.zip ${{ inputs.path }}
         else
           echo "::warning:: No files/directories found with the provided path(s) $(echo -n ${{ inputs.path }}). No artifact will be uploaded."
         fi
