@@ -256,7 +256,24 @@ There is no additional configuration available for GCP.
 </tabItem>
 <tabItem value="aws" label="AWS">
 
-There is no additional configuration available for AWS.
+On AWS, AMD SEV-SNP is used to provide runtime encryption to the VMs.
+An SEV-SNP attestation report is used to establish trust in the VM and it's vTPM.
+You may customize certain parameters for verification of the attestation statement using the Constellation config file.
+
+* TCB versions
+
+  You can set the minimum version numbers of components in the SEV-SNP TCB.
+  Use the latest versions to enforce that only machines with the most recent firmware updates are allowed to join the cluster.
+  Alternatively, you can set a lower minimum version to allow slightly out-of-date machines to still be able to join the cluster.
+
+* AMD Root Key Certificate
+
+  This certificate is the root of trust for verifying the SEV-SNP certificate chain.
+
+* AMD Signing Key Certificate
+
+  This is the intermediate certificate for verifying the SEV-SNP report's signature.
+  If it's not specified, the CLI fetches it from the AMD key distribution server.
 
 </tabItem>
 </tabs>
