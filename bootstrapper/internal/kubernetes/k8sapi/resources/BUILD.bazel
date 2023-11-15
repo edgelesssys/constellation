@@ -5,19 +5,13 @@ go_library(
     name = "resources",
     srcs = [
         "auditpolicy.go",
-        "konnectivity.go",
         "resources.go",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi/resources",
     visibility = ["//bootstrapper:__subpackages__"],
     deps = [
-        "//bootstrapper/internal/certificate",
         "//internal/kubernetes",
-        "//internal/versions",
-        "@io_k8s_api//core/v1:core",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
-        "@io_k8s_apimachinery//pkg/util/intstr",
-        "@io_k8s_apiserver//pkg/apis/apiserver",
         "@io_k8s_apiserver//pkg/apis/audit/v1:audit",
     ],
 )
