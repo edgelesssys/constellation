@@ -33,6 +33,8 @@ runs:
     - name: Decrypt and unzip archive
       shell: bash
       run: |
+        nix-channel --add https://nixos.org/channels/nixpkgs-unstable
+        nix-channel --update
         nix-shell -p unzip
 
         unzip -P '${{ inputs.encryption-secret }}' -qq -d ${{ inputs.path }} ${{ steps.tempdir.outputs.directory }}/archive.zip

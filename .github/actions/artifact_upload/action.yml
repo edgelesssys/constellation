@@ -30,6 +30,8 @@ runs:
     - name: Create archive
       shell: bash
       run: |
+        nix-channel --add https://nixos.org/channels/nixpkgs-unstable
+        nix-channel --update
         nix-shell -p zip
 
         shopt -s extglob
