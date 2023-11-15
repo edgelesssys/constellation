@@ -180,16 +180,6 @@ func (k *KubernetesUtil) InitCluster(
 	return out, nil
 }
 
-// SetupPodNetworkInput holds all configuration options to setup the pod network.
-type SetupPodNetworkInput struct {
-	CloudProvider     string
-	NodeName          string
-	FirstNodePodCIDR  string
-	SubnetworkPodCIDR string
-	LoadBalancerHost  string
-	LoadBalancerPort  string
-}
-
 // JoinCluster joins existing Kubernetes cluster using kubeadm join.
 func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, log *logger.Logger) error {
 	// TODO(3u13r): audit policy should be user input
