@@ -19,10 +19,6 @@ runs:
     - name: Setup nix
       uses: ./.github/actions/setup_bazel_nix
 
-    - name: Install unzip
-      shell: bash
-      run: nix-env -iA nixpkgs.unzip
-
     - name: Create temporary directory
       id: tempdir
       shell: bash
@@ -36,4 +32,7 @@ runs:
 
     - name: Decrypt and unzip archive
       shell: bash
-      run: unzip -P '${{ inputs.encryption-secret }}' -qq -d ${{ inputs.path }} ${{ steps.tempdir.outputs.directory }}/archive.zip
+      run: |
+        nix-shell -p unzip
+
+        unzip -P '${{ inputs.encryption-secret }}' -qq -d ${{ inputs.path }} ${{ steps.tempdir.outputs.directory }}/archive.zip
