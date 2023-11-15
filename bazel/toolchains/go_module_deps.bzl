@@ -4921,8 +4921,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/vmware/govmomi",
-        sum = "h1:Fm8ugPnnlMSTSceDKY9goGvjmqc6eQLPUSUeNXdpeXA=",
-        version = "v0.30.0",
+        sum = "h1:O3tjSwQBy0XwI5uK1/yVIfQ1LP9bAECEDUfifnyGs9U=",
+        version = "v0.30.6",
     )
     go_repository(
         name = "com_github_vtolstov_go_ioctl",
@@ -6209,8 +6209,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "gopkg.in/gcfg.v1",
-        sum = "h1:0HIbH907iBTAntm+88IJV2qmJALDAh8sPekI9Vc1fm0=",
-        version = "v1.2.0",
+        sum = "h1:m8OOJ4ccYHnx2f4gQwpno8nAX5OGOh7RLaaz0pj3Ogs=",
+        version = "v1.2.3",
     )
     go_repository(
         name = "in_gopkg_inf_v0",
@@ -6617,8 +6617,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "k8s.io/kubernetes",
-        sum = "h1:qnkrNAPz2jm/k+oWBNOJ6q+kCQ7OXkO8v3WWU9jumwo=",
-        version = "v1.27.5",
+        sum = "h1:K848lTo/D0jvrxUlTvw4nNADixbhXLHgKNDP/KlFGy8=",
+        version = "v1.27.8",
     )
     go_repository(
         name = "io_k8s_legacy_cloud_providers",
