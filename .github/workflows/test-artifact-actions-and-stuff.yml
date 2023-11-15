@@ -3,6 +3,7 @@ on: workflow_dispatch
 
 jobs:
   test:
+    name: Test artifact actions
     runs-on: ubuntu-22.04
     steps:
       - name: Upload
