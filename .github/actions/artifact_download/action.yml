@@ -33,4 +33,4 @@ runs:
     - name: Decrypt and unzip archive
       shell: bash
       run: |
-        nix run github:NixOS/nixpgs/eb52b838ce38d5018c5a0d4597616e2c9d83ff39#unzip -- -P '${{ inputs.encryption-secret }}' -qq -d ${{ inputs.path }} ${{ steps.tempdir.outputs.directory }}/archive.zip
+        nix run github:NixOS/nixpgs/592047fc9e4f7b74a4dc85d1b9f5243dfe4899e3#unzip -- -P '${{ inputs.encryption-secret }}' -qq -d ${{ inputs.path }} ${{ steps.tempdir.outputs.directory }}/archive.zip

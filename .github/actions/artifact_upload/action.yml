@@ -47,7 +47,7 @@ runs:
         # and warn.
         if $something_exists
         then
-          nix run github:NixOS/nixpgs/eb52b838ce38d5018c5a0d4597616e2c9d83ff39#zip -- -e -P '${{ inputs.encryption-secret }}' -qq -r ${{ steps.tempdir.outputs.directory }}/archive.zip ${{ inputs.path }}
+          nix run github:NixOS/nixpgs/592047fc9e4f7b74a4dc85d1b9f5243dfe4899e3#zip -- -e -P '${{ inputs.encryption-secret }}' -qq -r ${{ steps.tempdir.outputs.directory }}/archive.zip ${{ inputs.path }}
         else
           echo "::warning:: No files/directories found with the provided path(s) $(echo -n ${{ inputs.path }}). No artifact will be uploaded."
         fi
