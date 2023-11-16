@@ -143,7 +143,7 @@ For general information on cluster upgrades, see [Upgrade your cluster](./upgrad
 
 Using a [remote address as module source](https://developer.hashicorp.com/terraform/language/modules/sources#fetching-archives-over-http) as shown in [Quick setup](#quick-setup) is recommended because it simplifies the upgrade process. For [local paths as module source](https://developer.hashicorp.com/terraform/language/modules/sources#local-paths), you would need to manually overwrite the Terraform files in the Terraform workspace. The steps for the remote source setup are as follows:
 
-1. Update the local `module_version` variable.
+1. Update the `<version>` variable inside the `source` field of the module.
 2. Upgrade the Terraform module and provider dependencies and apply the Constellation upgrade.
   ```bash
   terraform init -upgrade
