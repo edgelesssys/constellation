@@ -10,6 +10,13 @@ The module package is available as part of the [GitHub release](https://github.c
 The convenience module allows setting up a Constellation cluster with a single module. It's easiest to consume the module through a remote source, as shown below.
 This allows to upgrade the cluster to a newer Constellation version by simply updating the module source.
 
+:::caution
+
+The current module still relies on the Constellation CLI. Consequently, `terraform apply` creates files such as `constellation.conf.yaml`, `constellation-state.yaml` , `constellation-admin.conf`, `constellation-mastersecret.json` and a directory `constellation-terraform"` containing backups. Make sure to check in these files in your version control when using GitOps.
+The resources are deleted on `terraform destroy`.
+
+:::
+
 1. Create a directory (workspace) for your Constellation cluster.
   ```bash
   mkdir constellation-workspace
