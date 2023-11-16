@@ -195,6 +195,11 @@ const sidebars = {
           label: 'Use persistent storage',
           id: 'workflows/storage',
         },
+        {
+          type: 'doc',
+          label: 'Use the Terraform module',
+          id: 'workflows/terraform-module',
+        },
         // {
         //   type: 'doc',
         //   label: 'Use Azure trusted launch VMs',
