@@ -158,13 +158,3 @@ runs:
 
         echo "additionalFields=$(cat facts.json)" | tee -a "$GITHUB_OUTPUT"
         echo "additionalButtons=$buttons" | tee -a "$GITHUB_OUTPUT"
-
-    - name: Notify teams channel
-      continue-on-error: true
-      uses: ./.github/actions/notify_teams
-      with:
-        teamsWebhookURI: ${{ inputs.teamsWebhookUri }}
-        title: "Constellation E2E test failed"
-        assignee: ${{ steps.pick-assignee.outputs.assignee }}
-        additionalFields: ${{ steps.create-fields.outputs.additionalFields }}
-        additionalButtons: ${{ steps.create-fields.outputs.additionalButtons }}
