@@ -227,7 +227,7 @@ jobs:
           cliVersion: ${{ inputs.cliVersion }}
           isDebugImage: ${{ needs.find-latest-image.outputs.isDebugImage }}
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
-          azureClusterCreateCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
+          azureClusterCreateCredentials: ${{ inputs.internalLoadBalancer && secrets.AZURE_E2E_INTERNAL_LB_CREDENTIALS || secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
           azureIAMCreateCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
           registry: ghcr.io
           githubToken: ${{ secrets.GITHUB_TOKEN }}
