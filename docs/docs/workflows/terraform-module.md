@@ -13,7 +13,7 @@ This allows to upgrade the cluster to a newer Constellation version by simply up
 :::caution
 
 In the current release of the module, `terraform apply` creates files such as `constellation-conf.yaml`, `constellation-state.yaml` , `constellation-admin.conf`, `constellation-mastersecret.json`, and a directory `constellation-terraform"` containing backups. Make sure to check in these files in your version control when using GitOps.
-The resources are deleted on `terraform destroy`.
+The files are deleted on `terraform destroy`.
 
 :::
 
