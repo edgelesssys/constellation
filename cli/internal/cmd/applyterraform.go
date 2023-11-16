@@ -161,10 +161,21 @@ func printCreateInfo(out io.Writer, conf *config.Config, log debugLog) error {
 	if !ok {
 		return fmt.Errorf("default control-plane node group %q not found in configuration", constants.DefaultControlPlaneGroupName)
 	}
+	controlPlaneType := controlPlaneGroup.InstanceType
+
 	workerGroup, ok := conf.NodeGroups[constants.DefaultWorkerGroupName]
 	if !ok {
 		return fmt.Errorf("default worker node group %q not found in configuration", constants.DefaultWorkerGroupName)
 	}
+	workerGroupType := workerGroup.InstanceType
+
+	var qemuInstanceType string
+	if conf.GetProvider() == cloudprovider.QEMU {
+		qemuInstanceType = fmt.Sprintf("%d-vCPUs", conf.Provider.QEMU.VCPUs)
+		controlPlaneType = qemuInstanceType
+		workerGroupType = qemuInstanceType
+	}
+
 	otherGroupNames := make([]string, 0, len(conf.NodeGroups)-2)
 	for groupName := range conf.NodeGroups {
 		if groupName != constants.DefaultControlPlaneGroupName && groupName != constants.DefaultWorkerGroupName {
@@ -176,11 +187,15 @@ func printCreateInfo(out io.Writer, conf *config.Config, log debugLog) error {
 	}
 
 	fmt.Fprintf(out, "The following Constellation cluster will be created:\n")
-	fmt.Fprintf(out, "  %d control-plane node%s of type %s will be created.\n", controlPlaneGroup.InitialCount, isPlural(controlPlaneGroup.InitialCount), controlPlaneGroup.InstanceType)
-	fmt.Fprintf(out, "  %d worker node%s of type %s will be created.\n", workerGroup.InitialCount, isPlural(workerGroup.InitialCount), workerGroup.InstanceType)
+	fmt.Fprintf(out, "  %d control-plane node%s of type %s will be created.\n", controlPlaneGroup.InitialCount, isPlural(controlPlaneGroup.InitialCount), controlPlaneType)
+	fmt.Fprintf(out, "  %d worker node%s of type %s will be created.\n", workerGroup.InitialCount, isPlural(workerGroup.InitialCount), workerGroupType)
 	for _, groupName := range otherGroupNames {
 		group := conf.NodeGroups[groupName]
-		fmt.Fprintf(out, "  group %s with %d node%s of type %s will be created.\n", groupName, group.InitialCount, isPlural(group.InitialCount), group.InstanceType)
+		groupInstanceType := group.InstanceType
+		if conf.GetProvider() == cloudprovider.QEMU {
+			groupInstanceType = qemuInstanceType
+		}
+		fmt.Fprintf(out, "  group %s with %d node%s of type %s will be created.\n", groupName, group.InitialCount, isPlural(group.InitialCount), groupInstanceType)
 	}
 
 	return nil

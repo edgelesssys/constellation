@@ -31,6 +31,7 @@ func NewCreateCmd() *cobra.Command {
 			cmd.Flags().StringSlice("skip-phases", allPhases(skipInfrastructurePhase), "")
 			return runApply(cmd, args)
 		},
+		Deprecated: "use 'constellation apply' instead.",
 	}
 	cmd.Flags().BoolP("yes", "y", false, "create the cluster without further confirmation")
 	return cmd
