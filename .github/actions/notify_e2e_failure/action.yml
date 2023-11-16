@@ -31,6 +31,52 @@ runs:
       id: pick-assignee
       uses: ./.github/actions/pick_assignee
 
+    - name: Get the current date
+      id: date
+      shell: bash
+      run: echo "CURRENT_DATE=$(date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_ENV
+
+    - name: Create body template
+      id: body-template
+      run: |
+        # TODO(katexochen): add job number when possible
+        jobURL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        # TODO(msanft): Add Self-managed param once logcollection is fixed.
+        opensearchURL="https://search-e2e-logs-y46renozy42lcojbvrt3qq7csm.eu-central-1.es.amazonaws.com/_dashboards/app/discover#/?_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-7d,to:now))&_a=(columns:!(metadata.name,systemd.unit,kubernetes.pod_name,message),filters:!(('$state':(store:appState),meta:(alias:!n,disabled:!f,index:'74517cf0-6442-11ed-acf1-47dda8fdfbbb',key:metadata.github.e2e-test-provider,negate:!f,params:(query:${{ inputs.provider }}),type:phrase),query:(match_phrase:(metadata.github.e2e-test-provider:${{ inputs.provider }}))),('$state':(store:appState),meta:(alias:!n,disabled:!f,index:'74517cf0-6442-11ed-acf1-47dda8fdfbbb',key:metadata.github.run-id,negate:!f,params:(query:${{ github.run_id }}),type:phrase),query:(match_phrase:(metadata.github.run-id:${{ github.run_id }}))),('$state':(store:appState),meta:(alias:!n,disabled:!f,index:'74517cf0-6442-11ed-acf1-47dda8fdfbbb',key:metadata.github.ref-stream.keyword,negate:!f,params:(query:'${{ inputs.refStream }}'),type:phrase),query:(match_phrase:(metadata.github.ref-stream.keyword:'${{ inputs.refStream }}'))),('$state':(store:appState),meta:(alias:!n,disabled:!f,index:'74517cf0-6442-11ed-acf1-47dda8fdfbbb',key:metadata.github.kubernetes-version.keyword,negate:!f,params:(query:'${{ inputs.kubernetesVersion }}'),type:phrase),query:(match_phrase:(metadata.github.kubernetes-version.keyword:'${{ inputs.kubernetesVersion }}'))),('$state':(store:appState),meta:(alias:!n,disabled:!f,index:'74517cf0-6442-11ed-acf1-47dda8fdfbbb',key:metadata.github.e2e-test-payload,negate:!f,params:(query:'${{ inputs.test }}'),type:phrase),query:(match_phrase:(metadata.github.e2e-test-payload:'${{ inputs.test }}')))),index:'74517cf0-6442-11ed-acf1-47dda8fdfbbb',interval:auto,query:(language:kuery,query:''),sort:!())"
+        cat << EOF > header.md
+
+        ## Metadata
+
+        * [Job URL](${jobURL})
+        * [OpenSearch URL](${opensearchURL// /%20})
+
+        EOF
+
+        cat header.md .github/failure_project_template.md > body.md
+        echo "BODY_PATH=$(pwd)/body.md" >> $GITHUB_ENV
+
+    - uses: ./.github/actions/gh_create_issue
+      id: gh_create_issue
+      with:
+        title: "${{ inputs.test }} - ${{ env.CURRENT_DATE }}"
+        body-file: ${{ env.BODY_PATH }}
+        repo: issues
+        label: "e2e failure"
+        assignee: ${{ steps.pick-assignee.outputs.assignee }}
+        project: Constellation bugs
+        fields: |
+          Status: New failures
+          workflow: ${{ github.workflow }}
+          kubernetesVersion: ${{ inputs.kubernetesVersion }}
+          cloudProvider: ${{ inputs.provider }}
+          test: ${{ inputs.test }}
+          refStream: ${{ inputs.refStream }}
+        token: ${{ inputs.projectWriteToken }}
+
+    - name: Issue URL
+      run: echo ${{ steps.gh_create_issue.outputs.issue-url }} # TODO rm
+      shell: bash
+
     - name: Create project card in case of failure
       id: create-project-card
       continue-on-error: true

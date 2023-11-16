@@ -15,7 +15,7 @@ function inputs() {
   name="${1}"
   local val
   val=$(jq -r ".\"${name}\"" "${inputFile}")
-  if [[ "${val}" == "null" ]]; then
+  if [[ ${val} == "null" ]]; then
     warn "Input ${name} not found in ${inputFile}"
     return
   fi
@@ -26,7 +26,7 @@ function flagsFromInput() {
   flagNames=("${@}")
   for name in "${flagNames[@]}"; do
     val=$(inputs "${name}")
-    if [[ -n "${val}" ]]; then
+    if [[ -n ${val} ]]; then
       echo "--${name}=${val}"
     fi
   done
@@ -63,7 +63,7 @@ function findProjectID() {
   project=$(inputs "project")
   out="$(
     jq -r \
-    --arg project "${project}" \
+      --arg project "${project}" \
       '.projects[]
         | select(.title == $project)
         | .id' \
@@ -77,7 +77,7 @@ function findProjectNo() {
   project=$(inputs "project")
   out="$(
     jq -r \
-    --arg project "${project}" \
+      --arg project "${project}" \
       '.projects[]
         | select(.title == $project)
         | .number' \
@@ -103,7 +103,7 @@ function findIssueItemID() {
   local issueURL="${1}"
   out="$(
     jq -r \
-    --arg issueURL "${issueURL}" \
+      --arg issueURL "${issueURL}" \
       '.items[]
         | select(.content.url == $issueURL)
         | .id' \
@@ -129,7 +129,7 @@ function findFieldID() {
   local fieldName="${1}"
   out="$(
     jq -r \
-    --arg fieldName "${fieldName}" \
+      --arg fieldName "${fieldName}" \
       '.fields[]
         | select(.name == $fieldName)
         | .id' \
@@ -161,7 +161,7 @@ function findFieldType() {
   local fieldName="${1}"
   out="$(
     jq -r \
-    --arg fieldName "${fieldName}" \
+      --arg fieldName "${fieldName}" \
       '.fields[]
         | select(.name == $fieldName)
         | .type' \
@@ -181,7 +181,7 @@ function editItem() {
     "--id=${itemID}"
     "--field-id=${id}"
     "--text=${value}"
-    )
+  )
   debug gh project item-edit "${flags[@]}"
   gh project item-edit "${flags[@]}" > /dev/null
 }
@@ -193,23 +193,24 @@ function setFields() {
   fieldsLen="$(jq -r '.fields' "${inputFile}" | yq 'length')"
   debug "Number of fields in input: ${fieldsLen}"
   for ((i = 0; i < fieldsLen; i++)); do
-    name="$(jq -r '.fields' "${inputFile}" \
-          | yq "to_entries | .[${i}].key")"
-    value="$(jq -r '.fields' "${inputFile}" \
-          | yq "to_entries | .[${i}].value")"
+    name="$(jq -r '.fields' "${inputFile}" |
+      yq "to_entries | .[${i}].key")"
+    value="$(jq -r '.fields' "${inputFile}" |
+      yq "to_entries | .[${i}].value")"
     debug "Field ${i}: ${name} = ${value}"
     type=$(findFieldType "${name}")
 
     case "${type}" in
     "ProjectV2Field")
       id=$(findFieldID "${name}")
-    ;;
+      ;;
     "ProjectV2SingleSelectField")
       id=$(findSelectFieldID "${name}" "${value}")
-    ;;
+      ;;
     *)
       warn "Unknown field type: ${type}"
       return 1
+      ;;
     esac
 
     editItem "${projectID}" "${itemID}" "${id}" "${value}"
@@ -227,7 +228,7 @@ function main() {
   echo "${issueURL}"
 
   project=$(inputs "project")
-  if [[ -z "${project}" ]]; then
+  if [[ -z ${project} ]]; then
     return
   fi
 

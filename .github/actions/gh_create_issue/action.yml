@@ -21,12 +21,12 @@ inputs:
     description: "The body of the issue."
     required: false
   body-file:
-    description: "The path to a file containing the body of the issue."
+    description: "The absolute path to a file containing the body of the issue."
     required: false
   assignee:
     description: "The GitHub username to assign the issue to."
     required: false
-  labels:
+  label:
     description: "A comma-separated list of labels to add to the issue."
     required: false
   milestone:
