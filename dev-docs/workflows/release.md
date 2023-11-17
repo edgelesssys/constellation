@@ -89,7 +89,7 @@ Releases should be performed using [the automated release pipeline](https://gith
    4. Move open issues and PRs from closed milestone to next milestone
 3. If the release is a minor version release, bump the pre-release version in the `version.txt` file.
 4. Update the `fromVersion` in `e2e-test-release.yml` and `e2e-test-weekly.yaml` to the newly released version. To check the current values, run: `grep "fromVersion: \[.*\]" -R .github`.
-5. Reset `upgradeRequiresIAMMigration`  in [`iamupgrade.go`](https://github.com/edgelesssys/constellation/blob/fix/dev-docs/release-target/cli/internal/cloudcmd/iamupgrade.go#L23).
+5. Reset `UpgradeRequiresIAMMigration`  in [`iamupgrade.go`](https://github.com/edgelesssys/constellation/blob/a88a731576184e3c5ee8527741c4a0cdaa4e9b24/cli/internal/cloudcmd/iamupgrade.go#L23).
 
 ## Troubleshooting: Pipeline cleanup
 
