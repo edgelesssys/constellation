@@ -11,7 +11,7 @@ If something doesn't work, check out the [known issues](https://github.com/edgel
 
 ### Azure: Resource Providers can't be registered
 
-On Azure, you may receive the following error when running `create` or `terminate` with limited IAM permissions:
+On Azure, you may receive the following error when running `apply` or `terminate` with limited IAM permissions:
 
 ```shell-session
 Error: Error ensuring Resource Providers are registered.
@@ -27,11 +27,11 @@ If you don't have permission to register Resource Providers you may wish to use 
 
 To continue, please ensure that the [required resource providers](../getting-started/install.md#required-permissions) have been registered in your subscription by your administrator.
 
-Afterward, set `ARM_SKIP_PROVIDER_REGISTRATION=true` as an environment variable and either run `create` or `terminate` again.
+Afterward, set `ARM_SKIP_PROVIDER_REGISTRATION=true` as an environment variable and either run `apply` or `terminate` again.
 For example:
 
 ```bash
-ARM_SKIP_PROVIDER_REGISTRATION=true constellation create
+ARM_SKIP_PROVIDER_REGISTRATION=true constellation apply
 ```
 
 Or alternatively, for `terminate`:

@@ -118,7 +118,7 @@ If you encounter any problem with the following steps, make sure to use the [lat
     :::
 -->
 
-3. Create the cluster. `constellation create` uses options set in `constellation-conf.yaml`.
+3. Create the cluster. `constellation apply` uses options set in `constellation-conf.yaml`.
     If you want to manually manage your cloud resources, for example by using [Terraform](../reference/terraform.md), follow the corresponding instructions in the [Create workflow](../workflows/create.md).
 
     :::tip
@@ -128,26 +128,19 @@ If you encounter any problem with the following steps, make sure to use the [lat
     :::
 
     ```bash
-    constellation create -y
+    constellation apply -y
     ```
 
-    This should give the following output:
+    This should look similar to the following:
 
     ```shell-session
-    $ constellation create -y
-    Your Constellation cluster was created successfully.
-    ```
-
-4. Initialize the cluster.
-
-    ```bash
-    constellation apply
-    ```
-
-    This should give the following output:
-
-    ```shell-session
-    $ constellation apply
+    $ constellation apply -y
+    Checking for infrastructure changes
+    The following Constellation cluster will be created:
+      3 control-plane node of type n2d-standard-4 will be created.
+      2 worker node of type n2d-standard-4 will be created.
+    Creating
+    Cloud infrastructure created successfully
     Your Constellation master secret was successfully written to ./constellation-mastersecret.json
     Connecting
     Initializing cluster
@@ -171,7 +164,7 @@ If you encounter any problem with the following steps, make sure to use the [lat
 
     :::
 
-5. Configure kubectl.
+4. Configure kubectl.
 
     ```bash
     export KUBECONFIG="$PWD/constellation-admin.conf"
