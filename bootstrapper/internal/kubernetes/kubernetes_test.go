@@ -420,16 +420,15 @@ func TestK8sCompliantHostname(t *testing.T) {
 }
 
 type stubClusterUtil struct {
-	installComponentsErr   error
-	initClusterErr         error
-	setupAutoscalingError  error
-	setupKonnectivityError error
-	setupGCPGuestAgentErr  error
-	setupOLMErr            error
-	setupNMOErr            error
-	setupNodeOperatorErr   error
-	joinClusterErr         error
-	startKubeletErr        error
+	installComponentsErr  error
+	initClusterErr        error
+	setupAutoscalingError error
+	setupGCPGuestAgentErr error
+	setupOLMErr           error
+	setupNMOErr           error
+	setupNodeOperatorErr  error
+	joinClusterErr        error
+	startKubeletErr       error
 
 	kubeconfig []byte
 
@@ -437,15 +436,11 @@ type stubClusterUtil struct {
 	joinConfigs [][]byte
 }
 
-func (s *stubClusterUtil) SetupKonnectivity(_ k8sapi.Client, _ kubernetes.Marshaler) error {
-	return s.setupKonnectivityError
-}
-
 func (s *stubClusterUtil) InstallComponents(_ context.Context, _ components.Components) error {
 	return s.installComponentsErr
 }
 
-func (s *stubClusterUtil) InitCluster(_ context.Context, initConfig []byte, _, _ string, _ []net.IP, _, _ string, _ bool, _ *logger.Logger) ([]byte, error) {
+func (s *stubClusterUtil) InitCluster(_ context.Context, initConfig []byte, _, _ string, _ []net.IP, _ bool, _ *logger.Logger) ([]byte, error) {
 	s.initConfigs = append(s.initConfigs, initConfig)
 	return s.kubeconfig, s.initClusterErr
 }
@@ -470,21 +465,13 @@ func (s *stubClusterUtil) SetupNodeOperator(_ context.Context, _ k8sapi.Client, 
 	return s.setupNodeOperatorErr
 }
 
-func (s *stubClusterUtil) JoinCluster(_ context.Context, joinConfig []byte, _ role.Role, _, _ string, _ *logger.Logger) error {
+func (s *stubClusterUtil) JoinCluster(_ context.Context, joinConfig []byte, _ *logger.Logger) error {
 	s.joinConfigs = append(s.joinConfigs, joinConfig)
 	return s.joinClusterErr
 }
 
 func (s *stubClusterUtil) StartKubelet() error {
 	return s.startKubeletErr
-}
-
-func (s *stubClusterUtil) WaitForCilium(_ context.Context, _ *logger.Logger) error {
-	return nil
-}
-
-func (s *stubClusterUtil) FixCilium(_ context.Context) error {
-	return nil
 }
 
 type stubConfigProvider struct {

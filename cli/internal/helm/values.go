@@ -14,9 +14,16 @@ var ciliumVals = map[string]map[string]any{
 		"endpointRoutes": map[string]any{
 			"enabled": true,
 		},
+		"extraArgs": []string{"--node-encryption-opt-out-labels=invalid.label"},
 		"encryption": map[string]any{
-			"enabled": true,
-			"type":    "wireguard",
+			"enabled":        true,
+			"type":           "wireguard",
+			"nodeEncryption": true,
+			"strictMode": map[string]any{
+				"enabled":                   true,
+				"allowRemoteNodeIdentities": false,
+				"podCIDRList":               []string{"10.244.0.0/16"},
+			},
 		},
 		"l7Proxy": false,
 		"ipam": map[string]any{
@@ -26,20 +33,19 @@ var ciliumVals = map[string]map[string]any{
 				},
 			},
 		},
-		"strictModeCIDR": "10.244.0.0/16",
 		"image": map[string]any{
 			"repository": "ghcr.io/3u13r/cilium",
 			"suffix":     "",
-			"tag":        "v1.12.1-edg",
-			"digest":     "sha256:fdac430143fe719331698b76fbe66410631a21afd3405407d56db260d2d6999b",
+			"tag":        "v1.15.0-pre.2-edg.1",
+			"digest":     "sha256:eebf631fd0f27e1f28f1fdeb2e049f2c83b887381466245c4b3e26440daefa27",
 			"useDigest":  true,
 		},
 		"operator": map[string]any{
 			"image": map[string]any{
 				"repository":    "ghcr.io/3u13r/operator",
-				"tag":           "v1.12.1-edg",
+				"tag":           "v1.15.0-pre.2-edg.1",
 				"suffix":        "",
-				"genericDigest": "sha256:a225d8d3976fd2a05cfa0c929cd32e60283abedf6bae51db4709df19b2fb70cb",
+				"genericDigest": "sha256:bfaeac2e05e8c38f439b0fbc36558fd8d11602997f2641423e8d86bd7ac6a88c",
 				"useDigest":     true,
 			},
 		},
@@ -51,9 +57,16 @@ var ciliumVals = map[string]map[string]any{
 		"endpointRoutes": map[string]any{
 			"enabled": true,
 		},
+		"extraArgs": []string{"--node-encryption-opt-out-labels=invalid.label"},
 		"encryption": map[string]any{
-			"enabled": true,
-			"type":    "wireguard",
+			"enabled":        true,
+			"type":           "wireguard",
+			"nodeEncryption": true,
+			"strictMode": map[string]any{
+				"enabled":                   true,
+				"allowRemoteNodeIdentities": false,
+				"podCIDRList":               []string{"10.244.0.0/16"},
+			},
 		},
 		"l7Proxy": false,
 		"ipam": map[string]any{
@@ -63,20 +76,19 @@ var ciliumVals = map[string]map[string]any{
 				},
 			},
 		},
-		"strictModeCIDR": "10.244.0.0/16",
 		"image": map[string]any{
 			"repository": "ghcr.io/3u13r/cilium",
 			"suffix":     "",
-			"tag":        "v1.12.1-edg",
-			"digest":     "sha256:fdac430143fe719331698b76fbe66410631a21afd3405407d56db260d2d6999b",
+			"tag":        "v1.15.0-pre.2-edg.1",
+			"digest":     "sha256:eebf631fd0f27e1f28f1fdeb2e049f2c83b887381466245c4b3e26440daefa27",
 			"useDigest":  true,
 		},
 		"operator": map[string]any{
 			"image": map[string]any{
 				"repository":    "ghcr.io/3u13r/operator",
-				"tag":           "v1.12.1-edg",
+				"tag":           "v1.15.0-pre.2-edg.1",
 				"suffix":        "",
-				"genericDigest": "sha256:a225d8d3976fd2a05cfa0c929cd32e60283abedf6bae51db4709df19b2fb70cb",
+				"genericDigest": "sha256:bfaeac2e05e8c38f439b0fbc36558fd8d11602997f2641423e8d86bd7ac6a88c",
 				"useDigest":     true,
 			},
 		},
@@ -90,24 +102,30 @@ var ciliumVals = map[string]map[string]any{
 		"endpointRoutes": map[string]any{
 			"enabled": true,
 		},
-		"tunnel": "disabled",
+		"extraArgs": []string{"--node-encryption-opt-out-labels=invalid.label"},
+		"tunnel":    "disabled",
 		"encryption": map[string]any{
-			"enabled": true,
-			"type":    "wireguard",
+			"enabled":        true,
+			"type":           "wireguard",
+			"nodeEncryption": true,
+			"strictMode": map[string]any{
+				"enabled":                   true,
+				"allowRemoteNodeIdentities": false,
+			},
 		},
 		"image": map[string]any{
 			"repository": "ghcr.io/3u13r/cilium",
 			"suffix":     "",
-			"tag":        "v1.12.1-edg",
-			"digest":     "sha256:fdac430143fe719331698b76fbe66410631a21afd3405407d56db260d2d6999b",
+			"tag":        "v1.15.0-pre.2-edg.1",
+			"digest":     "sha256:eebf631fd0f27e1f28f1fdeb2e049f2c83b887381466245c4b3e26440daefa27",
 			"useDigest":  true,
 		},
 		"operator": map[string]any{
 			"image": map[string]any{
 				"repository":    "ghcr.io/3u13r/operator",
 				"suffix":        "",
-				"tag":           "v1.12.1-edg",
-				"genericDigest": "sha256:a225d8d3976fd2a05cfa0c929cd32e60283abedf6bae51db4709df19b2fb70cb",
+				"tag":           "v1.15.0-pre.2-edg.1",
+				"genericDigest": "sha256:bfaeac2e05e8c38f439b0fbc36558fd8d11602997f2641423e8d86bd7ac6a88c",
 				"useDigest":     true,
 			},
 		},
@@ -123,9 +141,15 @@ var ciliumVals = map[string]map[string]any{
 		"endpointRoutes": map[string]any{
 			"enabled": true,
 		},
+		"extraArgs": []string{"--node-encryption-opt-out-labels=invalid.label"},
 		"encryption": map[string]any{
-			"enabled": true,
-			"type":    "wireguard",
+			"enabled":        true,
+			"type":           "wireguard",
+			"nodeEncryption": true,
+			"strictMode": map[string]any{
+				"enabled":     true,
+				"podCIDRList": []string{"10.244.0.0/16"},
+			},
 		},
 		"l7Proxy": false,
 		"ipam": map[string]any{
@@ -135,20 +159,19 @@ var ciliumVals = map[string]map[string]any{
 				},
 			},
 		},
-		"strictModeCIDR": "10.244.0.0/16",
 		"image": map[string]any{
 			"repository": "ghcr.io/3u13r/cilium",
 			"suffix":     "",
-			"tag":        "v1.12.1-edg",
-			"digest":     "sha256:fdac430143fe719331698b76fbe66410631a21afd3405407d56db260d2d6999b",
+			"tag":        "v1.15.0-pre.2-edg.1",
+			"digest":     "sha256:eebf631fd0f27e1f28f1fdeb2e049f2c83b887381466245c4b3e26440daefa27",
 			"useDigest":  true,
 		},
 		"operator": map[string]any{
 			"image": map[string]any{
 				"repository":    "ghcr.io/3u13r/operator",
-				"tag":           "v1.12.1-edg",
+				"tag":           "v1.15.0-pre.2-edg.1",
 				"suffix":        "",
-				"genericDigest": "sha256:a225d8d3976fd2a05cfa0c929cd32e60283abedf6bae51db4709df19b2fb70cb",
+				"genericDigest": "sha256:bfaeac2e05e8c38f439b0fbc36558fd8d11602997f2641423e8d86bd7ac6a88c",
 				"useDigest":     true,
 			},
 		},
@@ -161,22 +184,27 @@ var ciliumVals = map[string]map[string]any{
 			"enabled": true,
 		},
 		"encryption": map[string]any{
-			"enabled": true,
-			"type":    "wireguard",
+			"enabled":        true,
+			"type":           "wireguard",
+			"nodeEncryption": true,
+			"strictMode": map[string]any{
+				"enabled":     true,
+				"podCIDRList": []string{"10.244.0.0/16"},
+			},
 		},
 		"image": map[string]any{
 			"repository": "ghcr.io/3u13r/cilium",
 			"suffix":     "",
-			"tag":        "v1.12.1-edg",
-			"digest":     "sha256:fdac430143fe719331698b76fbe66410631a21afd3405407d56db260d2d6999b",
+			"tag":        "v1.15.0-pre.2-edg.1",
+			"digest":     "sha256:eebf631fd0f27e1f28f1fdeb2e049f2c83b887381466245c4b3e26440daefa27",
 			"useDigest":  true,
 		},
 		"operator": map[string]any{
 			"image": map[string]any{
 				"repository":    "ghcr.io/3u13r/operator",
 				"suffix":        "",
-				"tag":           "v1.12.1-edg",
-				"genericDigest": "sha256:a225d8d3976fd2a05cfa0c929cd32e60283abedf6bae51db4709df19b2fb70cb",
+				"tag":           "v1.15.0-pre.2-edg.1",
+				"genericDigest": "sha256:bfaeac2e05e8c38f439b0fbc36558fd8d11602997f2641423e8d86bd7ac6a88c",
 				"useDigest":     true,
 			},
 		},

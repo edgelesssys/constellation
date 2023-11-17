@@ -13,7 +13,7 @@ runs:
       shell: bash
       working-directory:
       run: |
-        cp -r ${{ github.workspace }}/cli/internal/terraform/terraform/${{ inputs.cloudProvider }} ${{ github.workspace }}/e2e-infra
+        cp -r ${{ github.workspace }}/terraform/infrastructure/${{ inputs.cloudProvider }} ${{ github.workspace }}/e2e-infra
         cp ${{ github.workspace }}/constellation-conf.yaml ${{ github.workspace }}/e2e-infra
 
     - name: Get CSP image reference
@@ -82,9 +82,9 @@ runs:
     - name: Patch MAA Policy
       shell: bash
       working-directory: ${{ github.workspace }}/e2e-infra
-      if: ${{ inputs.cloudProvider }} == 'azure'
+      if: inputs.cloudProvider == 'azure'
       run: |
-        bazel run //hack/maa-patch:maa-patch $(terraform output attestationURL | jq -r)
+        ./constellation maa-patch $(terraform output attestationURL | jq -r)
 
     - name: Write outputs to state file
       shell: bash

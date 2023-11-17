@@ -93,7 +93,7 @@
                                 "items": [
                                     {
                                         "type": "TextBlock",
-                                        "text": "Constellation E2E test failed",
+                                        "text": "Title",
                                         "wrap": true,
                                         "fontType": "Default",
                                         "size": "large",
@@ -121,18 +121,6 @@
                     {
                         "type": "Action.OpenUrl",
                         "title": "GitHub workflow run",
-                        "url": "",
-                        "style": "positive"
-                    },
-                    {
-                        "type": "Action.OpenUrl",
-                        "title": "Project board issue",
-                        "url": "",
-                        "style": "positive"
-                    },
-                    {
-                        "type": "Action.OpenUrl",
-                        "title": "OpenSearch logs",
                         "url": "",
                         "style": "positive"
                     }

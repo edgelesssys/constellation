@@ -14,18 +14,14 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/certificate"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apiserver/pkg/authentication/user"
@@ -91,7 +87,7 @@ func (k *KubernetesUtil) InstallComponents(ctx context.Context, kubernetesCompon
 // InitCluster instruments kubeadm to initialize the K8s cluster.
 // On success an admin kubeconfig file is returned.
 func (k *KubernetesUtil) InitCluster(
-	ctx context.Context, initConfig []byte, nodeName, clusterName string, ips []net.IP, controlPlaneHost, controlPlanePort string, conformanceMode bool, log *logger.Logger,
+	ctx context.Context, initConfig []byte, nodeName, clusterName string, ips []net.IP, conformanceMode bool, log *logger.Logger,
 ) ([]byte, error) {
 	// TODO(3u13r): audit policy should be user input
 	auditPolicy, err := resources.NewDefaultAuditPolicy().Marshal()
@@ -147,12 +143,6 @@ func (k *KubernetesUtil) InitCluster(
 		return nil, fmt.Errorf("creating static pods directory: %w", err)
 	}
 
-	log.Infof("Preparing node for Konnectivity")
-	controlPlaneEndpoint := net.JoinHostPort(controlPlaneHost, controlPlanePort)
-	if err := k.prepareControlPlaneForKonnectivity(ctx, controlPlaneEndpoint); err != nil {
-		return nil, fmt.Errorf("setup konnectivity: %w", err)
-	}
-
 	// initialize the cluster
 	log.Infof("Initializing the cluster using kubeadm init")
 	skipPhases := "--skip-phases=preflight,certs"
@@ -190,133 +180,8 @@ func (k *KubernetesUtil) InitCluster(
 	return out, nil
 }
 
-func (k *KubernetesUtil) prepareControlPlaneForKonnectivity(ctx context.Context, loadBalancerEndpoint string) error {
-	if !strings.Contains(loadBalancerEndpoint, ":") {
-		loadBalancerEndpoint = net.JoinHostPort(loadBalancerEndpoint, strconv.Itoa(constants.KubernetesPort))
-	}
-
-	konnectivityServerYaml, err := resources.NewKonnectivityServerStaticPod().Marshal()
-	if err != nil {
-		return fmt.Errorf("generating konnectivity server static pod: %w", err)
-	}
-	if err := os.WriteFile("/etc/kubernetes/manifests/konnectivity-server.yaml", konnectivityServerYaml, 0o644); err != nil {
-		return fmt.Errorf("writing konnectivity server pod: %w", err)
-	}
-
-	egressConfigYaml, err := resources.NewEgressSelectorConfiguration().Marshal()
-	if err != nil {
-		return fmt.Errorf("generating egress selector configuration: %w", err)
-	}
-	if err := os.WriteFile("/etc/kubernetes/egress-selector-configuration.yaml", egressConfigYaml, 0o644); err != nil {
-		return fmt.Errorf("writing egress selector config: %w", err)
-	}
-
-	if err := k.createSignedKonnectivityCert(); err != nil {
-		return fmt.Errorf("generating konnectivity server certificate: %w", err)
-	}
-
-	if out, err := exec.CommandContext(ctx, constants.KubectlPath, "config", "set-credentials", "--kubeconfig", "/etc/kubernetes/konnectivity-server.conf", "system:konnectivity-server",
-		"--client-certificate", "/etc/kubernetes/konnectivity.crt", "--client-key", "/etc/kubernetes/konnectivity.key", "--embed-certs=true").CombinedOutput(); err != nil {
-		return fmt.Errorf("konnectivity kubeconfig set-credentials: %w, %s", err, string(out))
-	}
-	if out, err := exec.CommandContext(ctx, constants.KubectlPath, "--kubeconfig", "/etc/kubernetes/konnectivity-server.conf", "config", "set-cluster", "kubernetes", "--server", "https://"+loadBalancerEndpoint,
-		"--certificate-authority", "/etc/kubernetes/pki/ca.crt", "--embed-certs=true").CombinedOutput(); err != nil {
-		return fmt.Errorf("konnectivity kubeconfig set-cluster: %w, %s", err, string(out))
-	}
-	if out, err := exec.CommandContext(ctx, constants.KubectlPath, "--kubeconfig", "/etc/kubernetes/konnectivity-server.conf", "config", "set-context", "system:konnectivity-server@kubernetes",
-		"--cluster", "kubernetes", "--user", "system:konnectivity-server").CombinedOutput(); err != nil {
-		return fmt.Errorf("konnectivity kubeconfig set-context: %w, %s", err, string(out))
-	}
-	if out, err := exec.CommandContext(ctx, constants.KubectlPath, "--kubeconfig", "/etc/kubernetes/konnectivity-server.conf", "config", "use-context", "system:konnectivity-server@kubernetes").CombinedOutput(); err != nil {
-		return fmt.Errorf("konnectivity kubeconfig use-context: %w, %s", err, string(out))
-	}
-	// cleanup
-	if err := os.Remove("/etc/kubernetes/konnectivity.crt"); err != nil {
-		return fmt.Errorf("removing konnectivity certificate: %w", err)
-	}
-	if err := os.Remove("/etc/kubernetes/konnectivity.key"); err != nil {
-		return fmt.Errorf("removing konnectivity key: %w", err)
-	}
-	return nil
-}
-
-// SetupPodNetworkInput holds all configuration options to setup the pod network.
-type SetupPodNetworkInput struct {
-	CloudProvider     string
-	NodeName          string
-	FirstNodePodCIDR  string
-	SubnetworkPodCIDR string
-	LoadBalancerHost  string
-	LoadBalancerPort  string
-}
-
-// WaitForCilium waits until Cilium reports a healthy status over its /healthz endpoint.
-func (k *KubernetesUtil) WaitForCilium(ctx context.Context, log *logger.Logger) error {
-	// wait for cilium pod to be healthy
-	client := http.Client{}
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-			time.Sleep(5 * time.Second)
-			req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://127.0.0.1:9879/healthz", http.NoBody)
-			if err != nil {
-				return fmt.Errorf("unable to create request: %w", err)
-			}
-			resp, err := client.Do(req)
-			if err != nil {
-				log.With(zap.Error(err)).Infof("Waiting for local Cilium DaemonSet - Pod not healthy yet")
-				continue
-			}
-			resp.Body.Close()
-			if resp.StatusCode == 200 {
-				return nil
-			}
-		}
-	}
-}
-
-// FixCilium fixes https://github.com/cilium/cilium/issues/19958
-// Instead of a rollout restart of the Cilium DaemonSet, it only restarts the local Cilium Pod.
-func (k *KubernetesUtil) FixCilium(ctx context.Context) error {
-	// get cilium container id
-	out, err := exec.CommandContext(ctx, "/run/state/bin/crictl", "ps", "--name", "cilium-agent", "-q").CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("getting cilium container id failed: %s", out)
-	}
-	outLines := strings.Split(string(out), "\n")
-	if len(outLines) < 2 {
-		return fmt.Errorf("getting cilium container id returned invalid output: %s", out)
-	}
-	containerID := outLines[len(outLines)-2]
-
-	// get cilium pod id
-	out, err = exec.CommandContext(ctx, "/run/state/bin/crictl", "inspect", "-o", "go-template", "--template", "{{ .info.sandboxID }}", containerID).CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("getting Cilium Pod ID failed: %s", out)
-	}
-	outLines = strings.Split(string(out), "\n")
-	if len(outLines) < 2 {
-		return fmt.Errorf("getting Cilium Pod ID returned invalid output: %s", out)
-	}
-	podID := outLines[len(outLines)-2]
-
-	// stop and delete pod
-	out, err = exec.CommandContext(ctx, "/run/state/bin/crictl", "stopp", podID).CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("stopping Cilium agent Pod failed: %s", out)
-	}
-	out, err = exec.CommandContext(ctx, "/run/state/bin/crictl", "rmp", podID).CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("removing Cilium agent Pod failed: %s", out)
-	}
-
-	return nil
-}
-
 // JoinCluster joins existing Kubernetes cluster using kubeadm join.
-func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, peerRole role.Role, controlPlaneHost, controlPlanePort string, log *logger.Logger) error {
+func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, log *logger.Logger) error {
 	// TODO(3u13r): audit policy should be user input
 	auditPolicy, err := resources.NewDefaultAuditPolicy().Marshal()
 	if err != nil {
@@ -339,14 +204,6 @@ func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, pee
 	log.Infof("Creating static Pod directory /etc/kubernetes/manifests")
 	if err := os.MkdirAll("/etc/kubernetes/manifests", os.ModePerm); err != nil {
 		return fmt.Errorf("creating static pods directory: %w", err)
-	}
-
-	if peerRole == role.ControlPlane {
-		log.Infof("Prep Init Kubernetes cluster")
-		controlPlaneEndpoint := net.JoinHostPort(controlPlaneHost, controlPlanePort)
-		if err := k.prepareControlPlaneForKonnectivity(ctx, controlPlaneEndpoint); err != nil {
-			return fmt.Errorf("setup konnectivity: %w", err)
-		}
 	}
 
 	// run `kubeadm join` to join a worker node to an existing Kubernetes cluster
@@ -433,58 +290,6 @@ func (k *KubernetesUtil) createSignedKubeletCert(nodeName string, ips []net.IP) 
 	})
 
 	return k.file.Write(certificate.CertificateFilename, kubeletCert, file.OptMkdirAll)
-}
-
-// createSignedKonnectivityCert manually creates a Kubernetes CA signed certificate for the Konnectivity server.
-func (k *KubernetesUtil) createSignedKonnectivityCert() error {
-	// Create CSR
-	certRequestRaw, keyPem, err := resources.GetKonnectivityCertificateRequest()
-	if err != nil {
-		return err
-	}
-	if err := k.file.Write(resources.KonnectivityKeyFilename, keyPem, file.OptMkdirAll); err != nil {
-		return err
-	}
-
-	certRequest, err := x509.ParseCertificateRequest(certRequestRaw)
-	if err != nil {
-		return err
-	}
-
-	// Prepare certificate signing
-	serialNumber, err := crypto.GenerateCertificateSerialNumber()
-	if err != nil {
-		return err
-	}
-
-	now := time.Now()
-	// Create the kubelet certificate
-	// For a reference on the certificate fields, see: https://kubernetes.io/docs/setup/best-practices/certificates/
-	certTmpl := &x509.Certificate{
-		SerialNumber: serialNumber,
-		NotBefore:    now.Add(-2 * time.Hour),
-		NotAfter:     now.Add(24 * 365 * time.Hour),
-		Subject:      certRequest.Subject,
-	}
-
-	parentCert, parentKey, err := k.getKubernetesCACertAndKey()
-	if err != nil {
-		return err
-	}
-
-	// Sign the certificate
-	certRaw, err := x509.CreateCertificate(rand.Reader, certTmpl, parentCert, certRequest.PublicKey, parentKey)
-	if err != nil {
-		return err
-	}
-
-	// Write the certificate
-	konnectivityCert := pem.EncodeToMemory(&pem.Block{
-		Type:  "CERTIFICATE",
-		Bytes: certRaw,
-	})
-
-	return k.file.Write(resources.KonnectivityCertificateFilename, konnectivityCert, file.OptMkdirAll)
 }
 
 // getKubernetesCACertAndKey returns the Kubernetes CA certificate and key.

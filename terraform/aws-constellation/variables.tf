@@ -5,7 +5,8 @@ variable "name" {
 
 variable "image" {
   type        = string
-  description = "Node image reference or semantical release version. The field is required to resolve the AMI."
+  description = "Node image reference or semantic release version. When not set, the latest default version will be used."
+  default     = "@@CONSTELLATION_VERSION@@"
 }
 
 variable "microservice_version" {

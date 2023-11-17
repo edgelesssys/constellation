@@ -27,7 +27,7 @@ locals {
     constellation-uid = local.uid,
   }
   ports_node_range      = "30000-32767"
-  cidr_vpc_subnet_nodes = "192.168.178.0/24"
+  cidr_vpc_subnet_nodes = "10.9.0.0/16"
   ports = flatten([
     { name = "kubernetes", port = "6443", health_check_protocol = "Https", path = "/readyz", priority = 100 },
     { name = "bootstrapper", port = "9000", health_check_protocol = "Tcp", path = null, priority = 101 },
@@ -208,7 +208,7 @@ resource "azurerm_subnet" "node_subnet" {
   name                 = "${local.name}-node"
   resource_group_name  = var.resource_group
   virtual_network_name = azurerm_virtual_network.network.name
-  address_prefixes     = ["10.9.0.0/16"]
+  address_prefixes     = [local.cidr_vpc_subnet_nodes]
 }
 
 resource "azurerm_network_security_group" "security_group" {

@@ -1,0 +1,69 @@
+name: Find latest image
+description: 'Find the latest image reference for a given ref/stream.'
+
+inputs:
+  git-ref:
+    description: 'Git ref to checkout.'
+  imageVersion:
+    description: 'Image version to use. If set, no image will be searched for and the specified image will be returned.'
+  ref:
+    description: 'The ref the image was built on. (e.g. "main")'
+    default: 'main'
+  stream:
+    description: 'The publication stream of the image. (e.g. "debug")'
+    default: 'debug'
+
+outputs:
+  image:
+    description: "Image reference to be used in the cluster."
+    value: ${{ steps.find-latest-image.outputs.output }}${{ steps.check-input.outputs.image }}
+  isDebugImage:
+    description: "Whether the image is a debug image."
+    value: ${{ steps.isDebugImage.outputs.isDebugImage }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout head
+      if: inputs.imageVersion == '' && inputs.git-ref == 'head'
+      uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
+      with:
+        ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
+    - name: Checkout ref
+      if: inputs.imageVersion == '' && inputs.git-ref != 'head'
+      uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
+      with:
+        ref: ${{ inputs.git-ref }}
+
+    - name: Login to AWS
+      if: inputs.imageVersion == ''
+      uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a # v4.0.1
+      with:
+        role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIRead
+        aws-region: eu-central-1
+
+    - name: Find latest image
+      id: find-latest-image
+      if: inputs.imageVersion == ''
+      uses: ./.github/actions/versionsapi
+      with:
+        command: latest
+        ref: ${{ inputs.ref }}
+        stream: ${{ inputs.stream }}
+
+    - name: Is debug image?
+      id: isDebugImage
+      shell: bash
+      run: |
+        case "${{ inputs.imageVersion }}" in
+          "")
+            echo "isDebugImage=true" | tee -a "$GITHUB_OUTPUT"
+            ;;
+          *"/stream/debug/"*)
+            echo "isDebugImage=true" | tee -a "$GITHUB_OUTPUT"
+            ;;
+          *)
+            echo "isDebugImage=false" | tee -a "$GITHUB_OUTPUT"
+            ;;
+        esac

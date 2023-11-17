@@ -133,7 +133,7 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("encoding kubeadm init configuration as YAML: %w", err)
 	}
 	log.Infof("Initializing Kubernetes cluster")
-	kubeConfig, err := k.clusterUtil.InitCluster(ctx, initConfigYAML, nodeName, clusterName, validIPs, controlPlaneHost, controlPlanePort, conformanceMode, log)
+	kubeConfig, err := k.clusterUtil.InitCluster(ctx, initConfigYAML, nodeName, clusterName, validIPs, conformanceMode, log)
 	if err != nil {
 		return nil, fmt.Errorf("kubeadm init: %w", err)
 	}
@@ -209,6 +209,9 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 		return fmt.Errorf("retrieving own instance metadata: %w", err)
 	}
 
+	// override join endpoint to go over lb
+	args.APIServerEndpoint = net.JoinHostPort(loadBalancerHost, loadBalancerPort)
+
 	log.With(
 		zap.String("nodeName", nodeName),
 		zap.String("providerID", providerID),
@@ -235,19 +238,8 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 		return fmt.Errorf("encoding kubeadm join configuration as YAML: %w", err)
 	}
 	log.With(zap.String("apiServerEndpoint", args.APIServerEndpoint)).Infof("Joining Kubernetes cluster")
-	if err := k.clusterUtil.JoinCluster(ctx, joinConfigYAML, peerRole, loadBalancerHost, loadBalancerPort, log); err != nil {
+	if err := k.clusterUtil.JoinCluster(ctx, joinConfigYAML, log); err != nil {
 		return fmt.Errorf("joining cluster: %v; %w ", string(joinConfigYAML), err)
-	}
-
-	log.Infof("Waiting for Cilium to become healthy")
-	if err := k.clusterUtil.WaitForCilium(context.Background(), log); err != nil {
-		return fmt.Errorf("waiting for Cilium to become healthy: %w", err)
-	}
-
-	log.Infof("Restarting Cilium")
-	if err := k.clusterUtil.FixCilium(context.Background()); err != nil {
-		log.With(zap.Error(err)).Errorf("FixCilium failed")
-		// Continue and don't throw an error here - things might be okay.
 	}
 
 	return nil
@@ -304,20 +296,9 @@ func k8sCompliantHostname(in string) (string, error) {
 }
 
 // StartKubelet starts the kubelet service.
-func (k *KubeWrapper) StartKubelet(log *logger.Logger) error {
+func (k *KubeWrapper) StartKubelet() error {
 	if err := k.clusterUtil.StartKubelet(); err != nil {
 		return fmt.Errorf("starting kubelet: %w", err)
-	}
-
-	log.Infof("Waiting for Cilium to become healthy")
-	if err := k.clusterUtil.WaitForCilium(context.Background(), log); err != nil {
-		return fmt.Errorf("waiting for Cilium to become healthy: %w", err)
-	}
-
-	log.Infof("Restarting Cilium")
-	if err := k.clusterUtil.FixCilium(context.Background()); err != nil {
-		log.With(zap.Error(err)).Errorf("FixCilium failed")
-		// Continue and don't throw an error here - things might be okay.
 	}
 
 	return nil

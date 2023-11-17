@@ -4,8 +4,13 @@ kind: CronJob
 metadata:
   name: clustermesh-apiserver-generate-certs
   namespace: {{ .Release.Namespace }}
+  {{- with .Values.clustermesh.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   labels:
     k8s-app: clustermesh-apiserver-generate-certs
+    app.kubernetes.io/part-of: cilium
 spec:
   schedule: {{ .Values.clustermesh.apiserver.tls.auto.schedule | quote }}
   concurrencyPolicy: Forbid

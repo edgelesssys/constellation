@@ -1,9 +1,20 @@
+variable "constellation_version" {
+  type        = string
+  description = "Constellation CLI version to use."
+  default     = "@@CONSTELLATION_VERSION@@"
+}
+
+variable "image" {
+  type        = string
+  description = "The node image reference or semantic release version."
+}
+
 variable "csp" {
   type        = string
   description = "The cloud service provider to use."
   validation {
-    condition     = var.csp == "aws" || var.csp == "gcp"
-    error_message = "The CSP must be one of {aws|gcp}."
+    condition     = var.csp == "aws" || var.csp == "gcp" || var.csp == "azure"
+    error_message = "The cloud service provider to use."
   }
 }
 
@@ -14,7 +25,8 @@ variable "node_groups" {
     instance_type = string
     disk_size     = number
     disk_type     = string
-    zone          = string
+    zone          = optional(string, "")       # For AWS, GCP
+    zones         = optional(list(string), []) # For Azure
   }))
   description = "A map of node group names to node group configurations."
   validation {
@@ -58,7 +70,6 @@ variable "apiServerCertSANs" {
   description = "List of additional SANs (Subject Alternative Names) for the Kubernetes API server certificate."
 }
 
-
 variable "aws_config" {
   type = object({
     region                             = string
@@ -67,6 +78,23 @@ variable "aws_config" {
     iam_instance_profile_control_plane = string
   })
   description = "The cluster config for AWS."
+  default     = null
+}
+
+variable "azure_config" {
+  type = object({
+    subscription             = string
+    tenant                   = string
+    location                 = string
+    resourceGroup            = string
+    userAssignedIdentity     = string
+    deployCSIDriver          = bool
+    secureBoot               = bool
+    maaURL                   = string
+    networkSecurityGroupName = string
+    loadBalancerName         = string
+  })
+  description = "The cluster config for Azure."
   default     = null
 }
 
@@ -82,15 +110,6 @@ variable "gcp_config" {
   default     = null
 }
 
-variable "image" {
-  type        = string
-  description = "The node image reference or semantical release version."
-  validation {
-    condition     = length(var.image) > 0
-    error_message = "The image variable must not be empty."
-  }
-}
-
 variable "kubernetes_version" {
   type        = string
   description = "Kubernetes version."
@@ -99,4 +118,10 @@ variable "kubernetes_version" {
 variable "microservice_version" {
   type        = string
   description = "Microservice version."
+}
+
+variable "debug" {
+  type        = bool
+  default     = false
+  description = "DON'T USE IN PRODUCTION: Enable debug mode and allow the use of debug images."
 }

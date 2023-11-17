@@ -1,25 +1,46 @@
 diff --git a/install/kubernetes/cilium/templates/cilium-configmap.yaml b/install/kubernetes/cilium/templates/cilium-configmap.yaml
-index 13c4b01414..348d1281b2 100644
+index 4ac3b006e3..3541e3d380 100644
 --- a/install/kubernetes/cilium/templates/cilium-configmap.yaml
 +++ b/install/kubernetes/cilium/templates/cilium-configmap.yaml
-@@ -500,4 +500,7 @@ data:
- {{- end }}
+@@ -608,7 +608,9 @@ data:
+ {{- if .Values.encryption.strictMode.enabled }}
+   enable-encryption-strict-mode: {{ .Values.encryption.strictMode.enabled | quote }}
  
-+{{- if .Values.strictModeCIDR }}
-+  strict-mode-cidr: {{ .Values.strictModeCIDR | quote }}
-+{{- end }}
-   enable-xt-socket-fallback: {{ .Values.enableXTSocketFallback | quote }}
-   install-iptables-rules: {{ .Values.installIptablesRules | quote }}
+-  encryption-strict-mode-cidr: {{ .Values.encryption.strictMode.cidr | quote }}
++  encryption-strict-mode-node-cidrs: {{ .Values.encryption.strictMode.nodeCIDRList | join " " | quote }}
++
++  encryption-strict-mode-pod-cidrs: {{ .Values.encryption.strictMode.podCIDRList | join " " | quote }}
+ 
+   encryption-strict-mode-allow-remote-node-identities: {{ .Values.encryption.strictMode.allowRemoteNodeIdentities | quote }}
+ {{- end }}
 diff --git a/install/kubernetes/cilium/values.yaml b/install/kubernetes/cilium/values.yaml
-index bbdccc1465..7dece98eac 100644
+index c00e9af831..4661c16f56 100644
 --- a/install/kubernetes/cilium/values.yaml
 +++ b/install/kubernetes/cilium/values.yaml
-@@ -550,6 +550,8 @@ encryption:
-   # This option is only effective when encryption.type is set to ipsec.
-   interface: ""
+@@ -794,17 +794,21 @@ encryption:
+   # This option is only effective when encryption.type is set to "wireguard".
+   nodeEncryption: false
  
-+strictModeCIDR: ""
+-  # -- Configure the WireGuard Pod2Pod strict mode.
++  # -- Configure the WireGuard strict mode.
+   strictMode:
+-    # -- Enable WireGuard Pod2Pod strict mode.
++    # -- Enable WireGuard strict mode.
+     enabled: false
 +
- endpointHealthChecking:
-   # -- Enable connectivity health checking between virtual endpoints.
-   enabled: true
++    # -- podCIDRList for the WireGuard strict mode.
++    podCIDRList: []
+ 
+-    # -- CIDR for the WireGuard Pod2Pod strict mode.
+-    cidr: ""
++    # -- nodeCIDRList for the WireGuard strict mode.
++    nodeCIDRList: []
+ 
+     # -- Allow dynamic lookup of remote node identities.
+     # This is required when tunneling is used or direct routing is used and the node CIDR and pod CIDR overlap.
+-    allowRemoteNodeIdentities: false
++    # This is also required when control-plane nodes are exempted from node-to-node encryption.
++    allowRemoteNodeIdentities: true
+ 
+   ipsec:
+     # -- Name of the key file inside the Kubernetes secret configured via secretName.

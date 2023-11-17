@@ -4,6 +4,13 @@ kind: Deployment
 metadata:
   name: cilium-pre-flight-check
   namespace: {{ .Release.Namespace }}
+  {{- with .Values.preflight.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  labels:
+    app.kubernetes.io/part-of: cilium
+    app.kubernetes.io/name: cilium-pre-flight-check
 spec:
   selector:
     matchLabels:
@@ -16,8 +23,10 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
+        app.kubernetes.io/part-of: cilium
         k8s-app: cilium-pre-flight-check-deployment
         kubernetes.io/cluster-service: "true"
+        app.kubernetes.io/name: cilium-pre-flight-check
         {{- with .Values.preflight.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -34,7 +43,7 @@ spec:
           args:
           - -ec
           - |
-            cilium preflight validate-cnp;
+            cilium-dbg preflight validate-cnp;
             touch /tmp/ready-validate-cnp;
             sleep 1h;
           livenessProbe:
@@ -67,6 +76,7 @@ spec:
           resources:
             {{- toYaml . | trim | nindent 12 }}
           {{- end }}
+          terminationMessagePolicy: FallbackToLogsOnError
       hostNetwork: true
       restartPolicy: Always
       priorityClassName: {{ include "cilium.priorityClass" (list $ .Values.preflight.priorityClassName "system-cluster-critical") }}

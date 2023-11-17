@@ -15,8 +15,9 @@ variable "service_account_id" {
 
 variable "image" {
   type        = string
-  description = "Node image reference or semantical release version."
-} # is required resolve the AMI
+  description = "Node image reference or semantic release version. When not set, the latest default version will be used."
+  default     = "@@CONSTELLATION_VERSION@@"
+}
 
 variable "microservice_version" {
   type        = string

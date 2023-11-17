@@ -12,7 +12,7 @@ module "aws_iam" {
 resource "null_resource" "ensure_yq" {
   provisioner "local-exec" {
     command = <<EOT
-         ../constellation-cluster/install-yq.sh
+         ../common/install-yq.sh
     EOT
   }
   triggers = {
@@ -21,7 +21,7 @@ resource "null_resource" "ensure_yq" {
 }
 
 module "fetch_image" {
-  source              = "../fetch-image"
+  source              = "../common/fetch-image"
   csp                 = "aws"
   attestation_variant = var.enable_snp ? "aws-sev-snp" : "aws-nitro-tpm"
   region              = local.region
@@ -47,6 +47,7 @@ module "aws" {
 module "constellation" {
   source               = "../constellation-cluster"
   csp                  = "aws"
+  debug                = var.debug
   name                 = var.name
   image                = var.image
   microservice_version = var.microservice_version

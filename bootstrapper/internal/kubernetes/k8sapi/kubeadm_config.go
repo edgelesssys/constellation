@@ -71,10 +71,9 @@ func (c *KubdeadmConfiguration) InitConfiguration(externalCloudProvider bool, cl
 						"audit-log-path":    filepath.Join(auditLogDir, auditLogFile), // CIS benchmark
 						"audit-log-maxage":  "30",                                     // CIS benchmark - Default value of Rancher
 						// log size = 10 files * 100MB + 100 MB (which is currently being written) = 1.1GB
-						"audit-log-maxbackup":         "10",    // CIS benchmark - Default value of Rancher
-						"audit-log-maxsize":           "100",   // CIS benchmark - Default value of Rancher
-						"profiling":                   "false", // CIS benchmark
-						"egress-selector-config-file": "/etc/kubernetes/egress-selector-configuration.yaml",
+						"audit-log-maxbackup": "10",    // CIS benchmark - Default value of Rancher
+						"audit-log-maxsize":   "100",   // CIS benchmark - Default value of Rancher
+						"profiling":           "false", // CIS benchmark
 						"kubelet-certificate-authority": filepath.Join(
 							kubeconstants.KubernetesDir,
 							kubeconstants.DefaultCertificateDir,
@@ -103,20 +102,6 @@ func (c *KubdeadmConfiguration) InitConfiguration(externalCloudProvider bool, cl
 							MountPath: auditPolicyPath,
 							ReadOnly:  true,
 							PathType:  corev1.HostPathFile,
-						},
-						{
-							Name:      "egress-config",
-							HostPath:  "/etc/kubernetes/egress-selector-configuration.yaml",
-							MountPath: "/etc/kubernetes/egress-selector-configuration.yaml",
-							ReadOnly:  true,
-							PathType:  corev1.HostPathFile,
-						},
-						{
-							Name:      "konnectivity-uds",
-							HostPath:  "/run/konnectivity-server",
-							MountPath: "/run/konnectivity-server",
-							ReadOnly:  false,
-							PathType:  corev1.HostPathDirectoryOrCreate,
 						},
 					},
 				},

@@ -67,8 +67,6 @@ const (
 	RecoveryPort = 9999
 	// DebugdPort port for debugd process.
 	DebugdPort = 4000
-	// KonnectivityPort port for konnectivity k8s service.
-	KonnectivityPort = 8132
 
 	//
 	// Filenames.

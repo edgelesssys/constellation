@@ -42,11 +42,21 @@ func extraCiliumValues(provider cloudprovider.Provider, conformanceMode bool, ou
 		}
 	}
 
+	strictMode := map[string]any{}
+	if provider != cloudprovider.QEMU {
+		strictMode = map[string]any{
+			"nodeCIDRList": []string{output.IPCidrNode},
+		}
+	}
+
 	extraVals["k8sServiceHost"] = output.InClusterEndpoint
 	extraVals["k8sServicePort"] = constants.KubernetesPort
 	if provider == cloudprovider.GCP {
 		extraVals["ipv4NativeRoutingCIDR"] = output.GCP.IPCidrPod
-		extraVals["strictModeCIDR"] = output.GCP.IPCidrPod
+		strictMode["podCIDRList"] = []string{output.GCP.IPCidrPod}
+	}
+	extraVals["encryption"] = map[string]any{
+		"strictMode": strictMode,
 	}
 	return extraVals
 }

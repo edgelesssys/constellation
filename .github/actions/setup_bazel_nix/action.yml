@@ -12,6 +12,10 @@ inputs:
   rbePlatform:
     description: "RBE platform to use. If empty, RBE will not be used."
     required: false
+  nixTools:
+    description: "Nix tools to install as list of strings separated by newlines. If empty, no tools will be installed."
+    default: ""
+    required: false
 
 runs:
   using: "composite"
@@ -266,4 +270,48 @@ runs:
         echo "::group::Configure Bazel (disk cache)"
         echo "common --disk_cache=" >> "${WORKSPACE}/.bazeloverwriterc"
         echo "common --repository_cache=" >> "${WORKSPACE}/.bazeloverwriterc"
+        echo "::endgroup::"
+
+    - name: Install nix tools
+      if: inputs.nixTools != ''
+      shell: bash
+      env:
+        tools: ${{ inputs.nixTools }}
+        repository: ${{ github.repository }}
+        gitSha: ${{ github.sha }}
+      run: |
+        echo "::group::Install nix tools"
+        toolsNixList=$(printf ' "%s"' ${tools[@]})
+        toolsNixList="[ ${toolsNixList} ]"
+        expressionFile=$(mktemp)
+        cat << "EOF" > "${expressionFile}"
+        { tools, repository, rev }:
+        let
+          repoFlake = builtins.getFlake ("github:" + repository + "/" + rev);
+          nixpkgs = repoFlake.inputs.nixpkgsUnstable;
+          pkgs = import nixpkgs { system = builtins.currentSystem; };
+          toolPkgs = map (p: pkgs.${p}) tools;
+        in
+        {
+          tools = pkgs.symlinkJoin { name = "tools"; paths = [ toolPkgs ]; };
+          pathVar = pkgs.lib.makeBinPath toolPkgs;
+        }
+        EOF
+        # ensure the store paths are created
+        nix-build \
+          --no-out-link \
+          --arg tools "${toolsNixList}" \
+          --argstr repository "${repository}" \
+          --argstr rev "${gitSha}" \
+          --attr tools \
+          "${expressionFile}"
+        # evaluate the path expression
+        # EXTRA_PATH=/nix/store/...:/nix/store/...:/nix/store/...
+        EXTRA_PATH=$(nix eval --raw --file "${expressionFile}" \
+          --arg tools "${toolsNixList}" \
+          --argstr repository "${repository}" \
+          --argstr rev "${gitSha}" \
+          pathVar)
+        echo "EXTRA_PATH=${EXTRA_PATH}"
+        echo "${EXTRA_PATH}" >> "${GITHUB_PATH}"
         echo "::endgroup::"

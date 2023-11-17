@@ -5,13 +5,19 @@ metadata:
   name: hubble
   namespace: {{ .Values.prometheus.serviceMonitor.namespace | default .Release.Namespace }}
   labels:
+    app.kubernetes.io/part-of: cilium
     {{- with .Values.hubble.metrics.serviceMonitor.labels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
+  {{- if or .Values.hubble.metrics.serviceMonitor.annotations .Values.hubble.annotations }}
   annotations:
-    {{- with .Values.hubble.metrics.serviceMonitor.annotations }}
-    {{- toYaml . | nindent 4 }}
+    {{- with .Values.hubble.annotations }}
+      {{- toYaml . | nindent 4 }}
     {{- end }}
+    {{- with .Values.hubble.metrics.serviceMonitor.annotations }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- end }}
 spec:
   selector:
     matchLabels:
@@ -21,12 +27,18 @@ spec:
     - {{ .Release.Namespace }}
   endpoints:
   - port: hubble-metrics
-    interval: 10s
+    interval: {{ .Values.hubble.metrics.serviceMonitor.interval | quote }}
     honorLabels: true
     path: /metrics
+    {{- with .Values.hubble.metrics.serviceMonitor.relabelings }}
     relabelings:
-    - sourceLabels:
-      - __meta_kubernetes_pod_node_name
-      targetLabel: node
-      replacement: ${1}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- with .Values.hubble.metrics.serviceMonitor.metricRelabelings }}
+    metricRelabelings:
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+{{- if .Values.hubble.metrics.serviceMonitor.jobLabel }}
+  jobLabel: {{ .Values.hubble.metrics.serviceMonitor.jobLabel | quote }}
+{{- end }}
 {{- end }}

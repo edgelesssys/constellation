@@ -15,7 +15,7 @@ locals {
 resource "null_resource" "ensure_cli" {
   provisioner "local-exec" {
     command = <<EOT
-         ${path.module}/install-constellation.sh
+         ${path.module}/install-constellation.sh ${var.constellation_version}
     EOT
   }
   triggers = {
@@ -53,14 +53,41 @@ resource "null_resource" "aws_config" {
   ]
 }
 
-
+resource "null_resource" "azure_config" {
+  count = var.azure_config != null ? 1 : 0
+  provisioner "local-exec" {
+    command = <<EOT
+      ./yq eval '.provider.azure.subscription = "${var.azure_config.subscription}"' -i constellation-conf.yaml
+      ./yq eval '.provider.azure.tenant = "${var.azure_config.tenant}"' -i constellation-conf.yaml
+      ./yq eval '.provider.azure.location = "${var.azure_config.location}"' -i constellation-conf.yaml
+      ./yq eval '.provider.azure.resourceGroup = "${var.azure_config.resourceGroup}"' -i constellation-conf.yaml
+      ./yq eval '.provider.azure.userAssignedIdentity = "${var.azure_config.userAssignedIdentity}"' -i constellation-conf.yaml
+      ./yq eval '.provider.azure.deployCSIDriver = ${var.azure_config.deployCSIDriver}' -i constellation-conf.yaml
+      ./yq eval '.provider.azure.secureBoot = ${var.azure_config.secureBoot}' -i constellation-conf.yaml
+      ./yq eval '.infrastructure.azure.resourceGroup = "${var.azure_config.resourceGroup}"' -i constellation-state.yaml
+      ./yq eval '.infrastructure.azure.subscriptionID = "${var.azure_config.subscription}"' -i constellation-state.yaml
+      ./yq eval '.infrastructure.azure.networkSecurityGroupName = "${var.azure_config.networkSecurityGroupName}"' -i constellation-state.yaml
+      ./yq eval '.infrastructure.azure.loadBalancerName = "${var.azure_config.loadBalancerName}"' -i constellation-state.yaml
+      ./yq eval '.infrastructure.azure.userAssignedIdentity = "${var.azure_config.userAssignedIdentity}"' -i constellation-state.yaml
+      if [ '${var.azure_config.maaURL}' != '' ]; then
+        ./yq eval '.infrastructure.azure.attestationURL = "${var.azure_config.maaURL}"' -i constellation-state.yaml
+        ./constellation maa-patch ${var.azure_config.maaURL}
+      fi
+    EOT
+  }
+  triggers = {
+    always_run = timestamp()
+  }
+  depends_on = [
+    terraform_data.config_generate
+  ]
+}
 
 resource "null_resource" "service_account_file" {
   count = var.gcp_config != null ? 1 : 0
   provisioner "local-exec" {
     command = <<EOT
           echo ${var.gcp_config.serviceAccountKey} | base64 -d > "${local.gcp_sa_file_path}"
-
     EOT
   }
   provisioner "local-exec" {
@@ -81,7 +108,6 @@ resource "null_resource" "gcp_config" {
       ./yq eval '.provider.gcp.region = "${var.gcp_config.region}"' -i constellation-conf.yaml
       ./yq eval '.provider.gcp.zone = "${var.gcp_config.zone}"' -i constellation-conf.yaml
       ./yq eval '.provider.gcp.serviceAccountKeyPath = "${local.gcp_sa_file_path}"' -i constellation-conf.yaml
-
       ./yq eval '.infrastructure.gcp.projectID = "${var.gcp_config.project}"' -i constellation-state.yaml
       ./yq eval '.infrastructure.gcp.ipCidrPod = "${var.gcp_config.ipCidrPod}"' -i constellation-state.yaml
     EOT
@@ -99,21 +125,21 @@ resource "null_resource" "config" {
     command = <<EOT
       ./yq eval '.name = "${var.name}"' -i constellation-conf.yaml
       if [ "${var.image}" != "" ]; then
-      ./yq eval '.image = "${var.image}"' -i constellation-conf.yaml
+        ./yq eval '.image = "${var.image}"' -i constellation-conf.yaml
       fi
       if [ "${var.kubernetes_version}" != "" ]; then
-      ./yq eval '.kubernetesVersion = "${var.kubernetes_version}"' -i constellation-conf.yaml
+        ./yq eval '.kubernetesVersion = "${var.kubernetes_version}"' -i constellation-conf.yaml
       fi
       if [ "${var.microservice_version}" != "" ]; then
-      ./yq eval '.microserviceVersion = "${var.microservice_version}"' -i constellation-conf.yaml
+        ./yq eval '.microserviceVersion = "${var.microservice_version}"' -i constellation-conf.yaml
       fi
       ${local.yq_node_groups}
-      ./constellation config fetch-measurements
+      ./constellation config fetch-measurements ${var.debug == true ? "--insecure" : ""}
     EOT
   }
 
   depends_on = [
-    null_resource.aws_config, null_resource.gcp_config
+    null_resource.aws_config, null_resource.gcp_config, null_resource.azure_config
   ]
 
   triggers = {

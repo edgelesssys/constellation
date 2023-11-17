@@ -12,24 +12,18 @@ certificate would be signed by a different CA.
 {{- define "hubble-generate-certs.helm.setup-ca" }}
   {{- if not .ca }}
     {{- $ca := "" -}}
-    {{- $crt := .Values.hubble.tls.ca.cert | default .Values.tls.ca.cert -}}
-    {{- $key := .Values.hubble.tls.ca.key | default .Values.tls.ca.key -}}
+    {{- $crt := .Values.tls.ca.cert -}}
+    {{- $key := .Values.tls.ca.key -}}
     {{- if and $crt $key }}
       {{- $ca = buildCustomCert $crt $key -}}
     {{- else }}
-      {{- with lookup "v1" "Secret" .Release.Namespace "hubble-ca-secret" }}
+      {{- $_ := include "cilium.ca.setup" . -}}
+      {{- with lookup "v1" "Secret" .Release.Namespace .commonCASecretName }}
         {{- $crt := index .data "ca.crt" }}
         {{- $key := index .data "ca.key" }}
         {{- $ca = buildCustomCert $crt $key -}}
       {{- else }}
-        {{- $_ := include "cilium.ca.setup" . -}}
-        {{- with lookup "v1" "Secret" .Release.Namespace .commonCASecretName }}
-          {{- $crt := index .data "ca.crt" }}
-          {{- $key := index .data "ca.key" }}
-          {{- $ca = buildCustomCert $crt $key -}}
-        {{- else }}
-          {{- $ca = .commonCA -}}
-        {{- end }}
+        {{- $ca = .commonCA -}}
       {{- end }}
     {{- end }}
     {{- $_ := set . "ca" $ca -}}
