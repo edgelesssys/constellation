@@ -8,7 +8,7 @@ For pull requests, we employ the following workflow:
 1. Fork the repository to your own GitHub account
 2. Create a branch locally with a descriptive name
 3. Commit changes to the branch
-4. Write your code according to our development guidelines
+4. Write your code according to our [development guidelines](../conventions.md)
 5. Push changes to your fork
 6. Clean up your commit history
 7. Open a PR in our repository and summarize the changes in the description

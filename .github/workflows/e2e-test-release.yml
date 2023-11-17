@@ -262,7 +262,7 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        fromVersion: ["v2.12.0"]
+        fromVersion: ["v2.13.0"]
         cloudProvider: ["gcp", "azure", "aws"]
     name: Run upgrade tests
     secrets: inherit
