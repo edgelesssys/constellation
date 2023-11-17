@@ -1,0 +1,39 @@
+
+# Constellation Pod IP range to expose via VPN. The default is for GCP.
+podCIDR: "10.10.0.0/16"
+
+# Constellation Service IPs to expose via VPN. The default is for GCP.
+serviceCIDR: "10.96.0.0/12"
+
+# on-prem IP ranges to expose to Constellation. Must contain at least one CIDR.
+peerCIDRs: []
+
+
+# The sections below configure the VPN connectivity to the Constellation
+# cluster. Exactly one `enabled` must be set to true.
+
+# IPSec configuration
+ipsec:
+  enabled: false
+  # pre-shared key used for authentication
+  psk: ""
+  # Address of the peer's gateway router.
+  peer: ""
+
+# Wireguard configuration
+wireguard:
+  enabled: false
+
+  # If Wireguard is enabled, these fields for the Constellation side must be populated. 
+  private_key: ""
+  peer_key: ""
+
+  # Listening port of the Constellation Wireguard.
+  port: 51820
+
+  # Optional host:port of the on-prem Wireguard.
+  endpoint: ""
+
+  # Optional interval for keep-alive packets in seconds. Setting this helps the on-prem server to
+  # discover a restarted Constellation VPN frontend.
+  keepAlive: ""

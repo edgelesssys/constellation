@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "..fullname" . }}-tproxy-script
+  labels:
+    {{- include "..labels" . | nindent 4 }}
+data:
+  entrypoint.sh: |
+    {{- include "tproxy.script" . | nindent 4}}
+---
+{{- if .Values.wireguard.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "..fullname" . }}-wg-script
+  labels:
+    {{- include "..labels" . | nindent 4 }}
+data:
+  entrypoint.sh: |
+    ip link add dev vpn_wg0 type wireguard
+    wg setconf vpn_wg0 /etc/wireguard/wg.conf
+    ip link set dev vpn_wg0 up
+    {{- range .Values.peerCIDRs }}
+    ip route replace {{ . }} dev vpn_wg0
+    {{- end }} 
+{{- end }}
+---
+{{ if .Values.ipsec.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "..fullname" . }}-strongswan-conf
+  labels:
+    {{- include "..labels" . | nindent 4 }}
+data:
+  entrypoint.sh: |
+    #!/bin/sh
+    $(dirname $(readlink -f $(which charon-systemd)))/../libexec/ipsec/charon &
+    while ! swanctl --stats >/dev/null 2>/dev/null
+    do
+        sleep 1
+    done
+    swanctl --load-all
+    wait
+  charon-logging.conf: |
+    charon {
+        filelog {
+            stderr {
+              time_format = %b %e %T
+              ike_name = yes
+              default = 1
+              ike = 2
+              flush_line = yes
+            }
+        }
+    }
+{{- end }}

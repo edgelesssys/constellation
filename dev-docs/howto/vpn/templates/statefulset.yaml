@@ -1,0 +1,108 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "..fullname" . }}-frontend
+  labels:
+    {{- include "..labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "..selectorLabels" . | nindent 6 }}
+      component: frontend
+  template:
+    metadata:
+      labels:
+        {{- include "..selectorLabels" . | nindent 8 }}
+        component: frontend
+    spec:
+      hostNetwork: false
+      initContainers:
+      - name: tproxy-setup
+        image: nixery.dev/busybox/iptables
+        command: ["/bin/sh", "-x", "/entrypoint.sh"] 
+        securityContext:
+          capabilities:
+            add: ["NET_ADMIN"]
+        volumeMounts:
+        - name: tproxy-setup
+          mountPath: "/entrypoint.sh"
+          subPath: "entrypoint.sh"
+          readOnly: true
+      {{- if .Values.wireguard.enabled }}
+      - name: wg-setup
+        image: "nixery.dev/busybox/wireguard-tools"
+        command: ["/bin/sh", "-x", "/etc/wireguard/entrypoint.sh"]
+        securityContext:
+          capabilities:
+            add: ["NET_ADMIN"]
+        volumeMounts:
+        - name: wireguard
+          mountPath: "/etc/wireguard"
+          readOnly: true
+      {{- end }}
+      containers:
+      - name: tproxy
+        image: docker.io/burgerdev/tproxy:latest
+        imagePullPolicy: Always
+        command: ["/tproxy", "--port=61001", "--nat=true"] 
+        securityContext:
+          capabilities:
+            add: ["NET_RAW"]
+      {{- if .Values.ipsec.enabled }}
+      - name: strongswan
+        image: "nixery.dev/shell/strongswan"
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/sh", "/entrypoint.sh"]
+        securityContext:
+          capabilities:
+            add: ["NET_ADMIN"]
+        volumeMounts:
+        - name: strongswan
+          mountPath: "/entrypoint.sh"
+          subPath: "entrypoint.sh"
+          readOnly: true
+        - name: strongswan
+          mountPath: "/etc/strongswan.d/charon-logging.conf"
+          subPath: "charon-logging.conf"
+          readOnly: true
+        - name: swanctl-conf
+          mountPath: "/etc/swanctl/swanctl.conf"
+          subPath: "swanctl.conf"
+          readOnly: true
+      {{- end }}
+      volumes:
+      - name: tproxy-setup
+        configMap:
+          name: {{ include "..fullname" . }}-tproxy-script
+      {{- if .Values.wireguard.enabled }}
+      - name: wireguard
+        projected:
+          sources:
+          - secret:
+              name: {{ include "..fullname" . }}-wg-conf
+              items:
+                - key: wg.conf
+                  path: wg.conf
+          - configMap:
+              name: {{ include "..fullname" . }}-wg-script
+              items:
+                - key: entrypoint.sh
+                  path: entrypoint.sh
+      {{- end }}
+      {{- if .Values.ipsec.enabled }}
+      - name: strongswan
+        projected:
+          sources:
+          - secret:
+              name: {{ include "..fullname" . }}-swanctl-conf
+              items:
+                - key: swanctl.conf
+                  path: swanctl.conf
+          - configMap:
+              name: {{ include "..fullname" . }}-strongswan-conf
+              items:
+                - key: entrypoint.sh
+                  path: entrypoint.sh
+                - key: charon-logging.conf
+                  path: charon-logging.conf
+      {{- end }}
