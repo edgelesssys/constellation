@@ -65,7 +65,7 @@ spec:
           mountPath: "/etc/strongswan.d/charon-logging.conf"
           subPath: "charon-logging.conf"
           readOnly: true
-        - name: swanctl-conf
+        - name: strongswan
           mountPath: "/etc/swanctl/swanctl.conf"
           subPath: "swanctl.conf"
           readOnly: true
