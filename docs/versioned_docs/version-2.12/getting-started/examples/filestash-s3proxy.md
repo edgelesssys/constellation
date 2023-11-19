@@ -98,7 +98,7 @@ This will bring you to an overview of your buckets.
 If you want to deploy Filestash in production, take a look at its [documentation](https://www.filestash.app/docs/).
 
 5. To see the logs of s3proxy intercepting requests made to S3, run: `kubectl logs -f pod/$(kubectl get pod --selector='app=s3proxy' -o=jsonpath='{.items[*].metadata.name}')`
-Look out for log messages labeled "intercepting".
+Look out for log messages labeled `intercepting`.
 There is one such log message for each message that's encrypted, decrypted, or blocked.
 
 6. Once you have uploaded a file with Filestash, you should be able to view the file in Filestash.

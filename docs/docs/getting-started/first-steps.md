@@ -171,20 +171,6 @@ If you encounter any problem with the following steps, make sure to use the [lat
 
     :::
 
-    :::note
-
-    **AWS**: Currently, confidential VMs may temporarily fail to boot.
-    AWS is actively working on a solution.
-    If creating or initializing a cluster fails, terminate the cluster and try again later.
-    Alternatively, you can use non-confidential Nitro VMs for evaluation purposes.
-    To do so, generate a new configuration with the `aws-nitro-tpm` attestation variant:
-
-    ```bash
-    constellation config generate aws --attestation aws-nitro-tpm
-    ```
-
-    :::
-
 5. Configure kubectl.
 
     ```bash
