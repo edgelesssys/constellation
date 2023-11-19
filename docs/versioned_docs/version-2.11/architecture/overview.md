@@ -25,6 +25,6 @@ Encryption of data at-rest, in-transit, and in-use is the fundamental building b
 
 ## About observability
 
-Observability in Kubernetes refers to the capability to swiftly troubleshoot issues using telemetry signals such as logs, metrics, and traces.
+Observability in Kubernetes refers to the capability to troubleshoot issues using telemetry signals such as logs, metrics, and traces.
 In the realm of Confidential Computing, it's crucial that observability aligns with confidentiality, necessitating careful implementation.
 Learn more about the [observability capabilities in Constellation](./observability.md).
