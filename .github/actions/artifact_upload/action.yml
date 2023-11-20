@@ -9,7 +9,7 @@ inputs:
     description: 'The name of the artifact.'
     required: true
   retention-days:
-    description: 'How the artifact should be retained.'
+    description: 'How long the artifact should be retained for.'
     required: false
     default: 60
   encryption-secret:
