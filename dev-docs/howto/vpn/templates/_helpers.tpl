@@ -29,3 +29,12 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/name: {{ include "..name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{- define "..commonEnv" -}}
+- name: VPN_PEER_CIDRS
+  value: {{ join " " .Values.peerCIDRs | quote }}
+- name: VPN_POD_CIDR
+  value: {{ .Values.podCIDR | quote }}
+- name: VPN_SERVICE_CIDR
+  value: {{ .Values.serviceCIDR | quote }}
+{{- end }}

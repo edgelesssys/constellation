@@ -2,8 +2,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: {{ include "..fullname" . }}-frontend
-  labels:
-    {{- include "..labels" . | nindent 4 }}
+  labels: {{- include "..labels" . | nindent 4 }}
 spec:
   selector:
     matchLabels:
@@ -19,19 +18,21 @@ spec:
       initContainers:
       - name: tproxy-setup
         image: nixery.dev/busybox/iptables
-        command: ["/bin/sh", "-x", "/entrypoint.sh"] 
+        command: ["/bin/sh", "-x", "/entrypoint.sh"]
+        env: {{- include "..commonEnv" . | nindent 10 }}
         securityContext:
           capabilities:
             add: ["NET_ADMIN"]
         volumeMounts:
         - name: tproxy-setup
           mountPath: "/entrypoint.sh"
-          subPath: "entrypoint.sh"
+          subPath: "tproxy-setup.sh"
           readOnly: true
       {{- if .Values.wireguard.enabled }}
       - name: wg-setup
         image: "nixery.dev/busybox/wireguard-tools"
-        command: ["/bin/sh", "-x", "/etc/wireguard/entrypoint.sh"]
+        command: ["/bin/sh", "-x", "/etc/wireguard/wireguard-setup.sh"]
+        env: {{- include "..commonEnv" . | nindent 10 }}
         securityContext:
           capabilities:
             add: ["NET_ADMIN"]
@@ -44,16 +45,14 @@ spec:
       - name: tproxy
         # Image source: github.com/burgerdev/go-tproxy
         image:  ghcr.io/burgerdev/go-tproxy:latest
-        imagePullPolicy: Always
-        command: ["/tproxy", "--port=61001", "--nat=true"] 
+        command: ["/tproxy", "--port=61001", "--nat=true"]
         securityContext:
           capabilities:
             add: ["NET_RAW"]
       {{- if .Values.ipsec.enabled }}
       - name: strongswan
         image: "nixery.dev/shell/strongswan"
-        imagePullPolicy: IfNotPresent
-        command: ["/bin/sh", "/entrypoint.sh"]
+        command: ["/bin/sh", "-x", "/entrypoint.sh"]
         securityContext:
           capabilities:
             add: ["NET_ADMIN"]
@@ -74,33 +73,33 @@ spec:
       volumes:
       - name: tproxy-setup
         configMap:
-          name: {{ include "..fullname" . }}-tproxy-script
+          name: {{ include "..fullname" . }}-tproxy
       {{- if .Values.wireguard.enabled }}
       - name: wireguard
         projected:
           sources:
           - secret:
-              name: {{ include "..fullname" . }}-wg-conf
+              name: {{ include "..fullname" . }}-wg
               items:
                 - key: wg.conf
                   path: wg.conf
           - configMap:
-              name: {{ include "..fullname" . }}-wg-script
+              name: {{ include "..fullname" . }}-wg
               items:
-                - key: entrypoint.sh
-                  path: entrypoint.sh
+                - key: wireguard-setup.sh
+                  path: wireguard-setup.sh
       {{- end }}
       {{- if .Values.ipsec.enabled }}
       - name: strongswan
         projected:
           sources:
           - secret:
-              name: {{ include "..fullname" . }}-swanctl-conf
+              name: {{ include "..fullname" . }}-strongswan
               items:
                 - key: swanctl.conf
                   path: swanctl.conf
           - configMap:
-              name: {{ include "..fullname" . }}-strongswan-conf
+              name: {{ include "..fullname" . }}-strongswan
               items:
                 - key: entrypoint.sh
                   path: entrypoint.sh
