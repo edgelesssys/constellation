@@ -67,8 +67,7 @@ genrule(
 oci_push(
     name = "malicious-join_push",
     image = ":malicious-join_image",
-    remote_tags = "//bazel/settings:tag",
-    repository_file = ":container_name",
+    repotags = ":repotag.txt",
 )
 
 sh_template(
