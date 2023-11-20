@@ -103,16 +103,16 @@ attaching persistent storage, or autoscaling aren't available.
 2. Now you can create your cluster and its nodes. `constellation apply` uses the options set in `constellation-conf.yaml`.
 
   ```bash
-  constellation apply
+  constellation apply -y
   ```
 
-  The Output should look like the following::
+  The Output should look like the following:
 
   ```shell-session
   $ constellation apply -y
   Checking for infrastructure changes
   The following Constellation cluster will be created:
-    1 control-plane node of type 2-vCPUs will be created.
+    3 control-plane nodes of type 2-vCPUs will be created.
     1 worker node of type 2-vCPUs will be created.
   Creating
   Cloud infrastructure created successfully.

@@ -137,8 +137,8 @@ If you encounter any problem with the following steps, make sure to use the [lat
     $ constellation apply -y
     Checking for infrastructure changes
     The following Constellation cluster will be created:
-      3 control-plane node of type n2d-standard-4 will be created.
-      2 worker node of type n2d-standard-4 will be created.
+      3 control-plane nodes of type n2d-standard-4 will be created.
+      1 worker node of type n2d-standard-4 will be created.
     Creating
     Cloud infrastructure created successfully
     Your Constellation master secret was successfully written to ./constellation-mastersecret.json
