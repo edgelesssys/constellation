@@ -121,6 +121,11 @@ func (a *Applier) RestoreWorkspace() error {
 	return restoreBackup(a.fileHandler, a.workingDir, filepath.Join(a.backupDir, constants.TerraformUpgradeBackupDir))
 }
 
+// WorkingDirIsEmpty returns true if the working directory of the Applier is empty.
+func (a *Applier) WorkingDirIsEmpty() (bool, error) {
+	return a.fileHandler.IsEmpty(a.workingDir)
+}
+
 func (a *Applier) terraformApplyVars(ctx context.Context, conf *config.Config) (terraform.Variables, error) {
 	imageRef, err := a.imageFetcher.FetchReference(
 		ctx,

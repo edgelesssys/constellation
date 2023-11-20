@@ -100,29 +100,22 @@ attaching persistent storage, or autoscaling aren't available.
 
   This creates a [configuration file](../workflows/config.md) for QEMU called `constellation-conf.yaml`. After that, your current folder also becomes your [workspace](../architecture/orchestration.md#workspaces). All `constellation` commands for your cluster need to be executed from this directory.
 
-2. Now you can create your cluster and its nodes. `constellation create` uses the options set in `constellation-conf.yaml`.
+2. Now you can create your cluster and its nodes. `constellation apply` uses the options set in `constellation-conf.yaml`.
 
   ```bash
-  constellation create
+  constellation apply -y
   ```
 
   The Output should look like the following:
 
   ```shell-session
-  $ constellation create
-  Your Constellation cluster was created successfully.
-  ```
-
-3. Initialize the cluster
-
-  ```bash
-  constellation apply
-  ```
-
-  This should give the following output:
-
-  ```shell-session
-  $ constellation apply
+  $ constellation apply -y
+  Checking for infrastructure changes
+  The following Constellation cluster will be created:
+    3 control-plane nodes of type 2-vCPUs will be created.
+    1 worker node of type 2-vCPUs will be created.
+  Creating
+  Cloud infrastructure created successfully.
   Your Constellation master secret was successfully written to ./constellation-mastersecret.json
   Connecting
   Initializing cluster
@@ -146,7 +139,7 @@ attaching persistent storage, or autoscaling aren't available.
 
   :::
 
-4. Configure kubectl
+3. Configure kubectl
 
   ```bash
   export KUBECONFIG="$PWD/constellation-admin.conf"

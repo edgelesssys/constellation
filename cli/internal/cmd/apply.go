@@ -14,7 +14,6 @@ import (
 	"io"
 	"io/fs"
 	"net"
-	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -61,8 +60,8 @@ const (
 )
 
 // allPhases returns a list of all phases that can be skipped as strings.
-func allPhases() []string {
-	return []string{
+func allPhases(except ...skipPhase) []string {
+	phases := []string{
 		string(skipInfrastructurePhase),
 		string(skipInitPhase),
 		string(skipAttestationConfigPhase),
@@ -71,6 +70,14 @@ func allPhases() []string {
 		string(skipImagePhase),
 		string(skipK8sPhase),
 	}
+
+	var returnedPhases []string
+	for idx, phase := range phases {
+		if !slices.Contains(except, skipPhase(phase)) {
+			returnedPhases = append(returnedPhases, phases[idx])
+		}
+	}
+	return returnedPhases
 }
 
 // formatSkipPhases returns a formatted string of all phases that can be skipped.
@@ -84,10 +91,14 @@ type skipPhase string
 // skipPhases is a list of phases that can be skipped during the upgrade process.
 type skipPhases map[skipPhase]struct{}
 
-// contains returns true if the list of phases contains the given phase.
-func (s skipPhases) contains(phase skipPhase) bool {
-	_, ok := s[skipPhase(strings.ToLower(string(phase)))]
-	return ok
+// contains returns true if skipPhases contains all of the given phases.
+func (s skipPhases) contains(phases ...skipPhase) bool {
+	for _, phase := range phases {
+		if _, ok := s[skipPhase(strings.ToLower(string(phase)))]; !ok {
+			return false
+		}
+	}
+	return true
 }
 
 // add a phase to the list of phases.
@@ -122,6 +133,7 @@ func NewApplyCmd() *cobra.Command {
 
 	must(cmd.Flags().MarkHidden("timeout"))
 
+	must(cmd.RegisterFlagCompletionFunc("skip-phases", skipPhasesCompletion))
 	return cmd
 }
 
@@ -238,7 +250,6 @@ func runApply(cmd *cobra.Command, _ []string) error {
 		log:             log,
 		spinner:         spinner,
 		merger:          &kubeconfigMerger{log: log},
-		quotaChecker:    license.NewClient(),
 		newHelmClient:   newHelmClient,
 		newDialer:       newDialer,
 		newKubeUpgrader: newKubeUpgrader,
@@ -249,7 +260,7 @@ func runApply(cmd *cobra.Command, _ []string) error {
 	defer cancel()
 	cmd.SetContext(ctx)
 
-	return apply.apply(cmd, attestationconfigapi.NewFetcher(), upgradeDir)
+	return apply.apply(cmd, attestationconfigapi.NewFetcher(), license.NewClient(), upgradeDir)
 }
 
 type applyCmd struct {
@@ -259,8 +270,7 @@ type applyCmd struct {
 	log     debugLog
 	spinner spinnerInterf
 
-	merger       configMerger
-	quotaChecker license.QuotaChecker
+	merger configMerger
 
 	newHelmClient   func(kubeConfigPath string, log debugLog) (helmApplier, error)
 	newDialer       func(validator atls.Validator) *dialer.Dialer
@@ -336,24 +346,23 @@ The control flow is as follows:
 	                        │Write success output│
 	                        └────────────────────┘
 */
-func (a *applyCmd) apply(cmd *cobra.Command, configFetcher attestationconfigapi.Fetcher, upgradeDir string) error {
-	// Migrate state file
-	stateFile, err := state.ReadFromFile(a.fileHandler, constants.StateFilename)
-	if err != nil {
-		return fmt.Errorf("reading state file: %w", err)
-	}
-	if err := stateFile.Migrate(); err != nil {
-		return fmt.Errorf("migrating state file: %w", err)
-	}
-	if err := stateFile.WriteToFile(a.fileHandler, constants.StateFilename); err != nil {
-		return fmt.Errorf("writing state file: %w", err)
-	}
-
+func (a *applyCmd) apply(
+	cmd *cobra.Command, configFetcher attestationconfigapi.Fetcher,
+	quotaChecker license.QuotaChecker, upgradeDir string,
+) error {
 	// Validate inputs
 	conf, stateFile, err := a.validateInputs(cmd, configFetcher)
 	if err != nil {
 		return err
 	}
+
+	// Check license
+	a.log.Debugf("Running license check")
+	checker := license.NewChecker(quotaChecker, a.fileHandler)
+	if err := checker.CheckLicense(cmd.Context(), conf.GetProvider(), conf.Provider, cmd.Printf); err != nil {
+		cmd.PrintErrf("License check failed: %s", err)
+	}
+	a.log.Debugf("Checked license")
 
 	// Now start actually running the apply command
 
@@ -361,7 +370,7 @@ func (a *applyCmd) apply(cmd *cobra.Command, configFetcher attestationconfigapi.
 	// and apply migrations if necessary.
 	if !a.flags.skipPhases.contains(skipInfrastructurePhase) {
 		if err := a.runTerraformApply(cmd, conf, stateFile, upgradeDir); err != nil {
-			return fmt.Errorf("applying Terraform configuration : %w", err)
+			return fmt.Errorf("applying Terraform configuration: %w", err)
 		}
 	}
 
@@ -375,10 +384,13 @@ func (a *applyCmd) apply(cmd *cobra.Command, configFetcher attestationconfigapi.
 	}
 
 	// From now on we can assume a valid Kubernetes admin config file exists
-	a.log.Debugf("Creating Kubernetes client using %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename))
-	kubeUpgrader, err := a.newKubeUpgrader(cmd.OutOrStdout(), constants.AdminConfFilename, a.log)
-	if err != nil {
-		return err
+	var kubeUpgrader kubernetesUpgrader
+	if !a.flags.skipPhases.contains(skipAttestationConfigPhase, skipCertSANsPhase, skipHelmPhase, skipK8sPhase, skipImagePhase) {
+		a.log.Debugf("Creating Kubernetes client using %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename))
+		kubeUpgrader, err = a.newKubeUpgrader(cmd.OutOrStdout(), constants.AdminConfFilename, a.log)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Apply Attestation Config
@@ -405,9 +417,7 @@ func (a *applyCmd) apply(cmd *cobra.Command, configFetcher attestationconfigapi.
 	}
 
 	// Upgrade NodeVersion object
-	// This can be skipped if we ran the init RPC, as the NodeVersion object is already up to date
-	if !(a.flags.skipPhases.contains(skipK8sPhase) && a.flags.skipPhases.contains(skipImagePhase)) &&
-		a.flags.skipPhases.contains(skipInitPhase) {
+	if !(a.flags.skipPhases.contains(skipK8sPhase, skipImagePhase)) {
 		if err := a.runK8sUpgrade(cmd, conf, kubeUpgrader); err != nil {
 			return err
 		}
@@ -431,29 +441,70 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 		return nil, nil, err
 	}
 
-	// Check license
-	a.log.Debugf("Running license check")
-	checker := license.NewChecker(a.quotaChecker, a.fileHandler)
-	if err := checker.CheckLicense(cmd.Context(), conf.GetProvider(), conf.Provider, cmd.Printf); err != nil {
-		cmd.PrintErrf("License check failed: %v", err)
+	a.log.Debugf("Reading state file from %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename))
+	stateFile, err := state.CreateOrRead(a.fileHandler, constants.StateFilename)
+	if err != nil {
+		return nil, nil, err
 	}
-	a.log.Debugf("Checked license")
 
-	// Check if we already have a running Kubernetes cluster
-	// by checking if the Kubernetes admin config file exists
-	// If it exist, we skip the init phase
-	// If it does not exist, we need to run the init RPC first
-	// This may break things further down the line
-	// It is the user's responsibility to make sure the cluster is in a valid state
-	a.log.Debugf("Checking if %s exists", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename))
-	if _, err := a.fileHandler.Stat(constants.AdminConfFilename); err == nil {
+	// Validate the state file and set flags accordingly
+	//
+	// We don't run "hard" verification of skip-phases flags and state file here,
+	// a user may still end up skipping phases that could result in errors later on.
+	// However, we perform basic steps, like ensuring init phase is not skipped if
+	a.log.Debugf("Validating state file")
+	preCreateValidateErr := stateFile.Validate(state.PreCreate, conf.GetProvider())
+	preInitValidateErr := stateFile.Validate(state.PreInit, conf.GetProvider())
+	postInitValidateErr := stateFile.Validate(state.PostInit, conf.GetProvider())
+
+	// If the state file is in a pre-create state, we need to create the cluster,
+	// in which case the workspace has to be clean
+	if preCreateValidateErr == nil {
+		// We can't skip the infrastructure phase if no infrastructure has been defined
+		a.log.Debugf("State file is in pre-create state, checking workspace")
+		if a.flags.skipPhases.contains(skipInfrastructurePhase) {
+			return nil, nil, preInitValidateErr
+		}
+
+		if err := a.checkCreateFilesClean(); err != nil {
+			return nil, nil, err
+		}
+
+		a.log.Debugf("No Terraform state found in current working directory. Preparing to create a new cluster.")
+		printCreateWarnings(cmd.ErrOrStderr(), conf)
+	}
+
+	// Check if the state file is in a pre-init OR
+	// if in pre-create state and init should not be skipped
+	// If so, we need to run the init RPC
+	if preInitValidateErr == nil || (preCreateValidateErr == nil && !a.flags.skipPhases.contains(skipInitPhase)) {
+		// We can't skip the init phase if the init RPC hasn't been run yet
+		a.log.Debugf("State file is in pre-init state, checking workspace")
+		if a.flags.skipPhases.contains(skipInitPhase) {
+			return nil, nil, postInitValidateErr
+		}
+
+		if err := a.checkInitFilesClean(); err != nil {
+			return nil, nil, err
+		}
+
+		// Skip image and k8s phase, since they are covered by the init RPC
+		a.flags.skipPhases.add(skipImagePhase, skipK8sPhase)
+	}
+
+	// If the state file is in a post-init state,
+	// we need to make sure specific files exist in the workspace
+	if postInitValidateErr == nil {
+		a.log.Debugf("State file is in post-init state, checking workspace")
+		if err := a.checkPostInitFilesExist(); err != nil {
+			return nil, nil, err
+		}
+
+		// Skip init phase, since the init RPC has already been run
 		a.flags.skipPhases.add(skipInitPhase)
-	} else if !errors.Is(err, os.ErrNotExist) {
-		return nil, nil, fmt.Errorf("checking for %s: %w", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename), err)
+	} else if preCreateValidateErr != nil && preInitValidateErr != nil {
+		return nil, nil, postInitValidateErr
 	}
-	a.log.Debugf("Init RPC required: %t", !a.flags.skipPhases.contains(skipInitPhase))
-
-	// Validate input arguments
 
 	// Validate Kubernetes version as set in the user's config
 	// If we need to run the init RPC, the version has to be valid
@@ -461,28 +512,31 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 	// We skip version validation if the user explicitly skips the Kubernetes phase
 	a.log.Debugf("Validating Kubernetes version %s", conf.KubernetesVersion)
 	validVersion, err := versions.NewValidK8sVersion(string(conf.KubernetesVersion), true)
-	if err != nil && !a.flags.skipPhases.contains(skipK8sPhase) {
+	if err != nil {
 		a.log.Debugf("Kubernetes version not valid: %s", err)
 		if !a.flags.skipPhases.contains(skipInitPhase) {
 			return nil, nil, err
 		}
-		a.log.Debugf("Checking if user wants to continue anyway")
-		if !a.flags.yes {
-			confirmed, err := askToConfirm(cmd,
-				fmt.Sprintf(
-					"WARNING: The Kubernetes patch version %s is not supported. If you continue, Kubernetes upgrades will be skipped. Do you want to continue anyway?",
-					validVersion,
-				),
-			)
-			if err != nil {
-				return nil, nil, fmt.Errorf("asking for confirmation: %w", err)
+
+		if !a.flags.skipPhases.contains(skipK8sPhase) {
+			a.log.Debugf("Checking if user wants to continue anyway")
+			if !a.flags.yes {
+				confirmed, err := askToConfirm(cmd,
+					fmt.Sprintf(
+						"WARNING: The Kubernetes patch version %s is not supported. If you continue, Kubernetes upgrades will be skipped. Do you want to continue anyway?",
+						validVersion,
+					),
+				)
+				if err != nil {
+					return nil, nil, fmt.Errorf("asking for confirmation: %w", err)
+				}
+				if !confirmed {
+					return nil, nil, fmt.Errorf("aborted by user")
+				}
 			}
-			if !confirmed {
-				return nil, nil, fmt.Errorf("aborted by user")
-			}
+			a.flags.skipPhases.add(skipK8sPhase)
+			a.log.Debugf("Outdated Kubernetes version accepted, Kubernetes upgrade will be skipped")
 		}
-		a.flags.skipPhases.add(skipK8sPhase)
-		a.log.Debugf("Outdated Kubernetes version accepted, Kubernetes upgrade will be skipped")
 	}
 	if versions.IsPreviewK8sVersion(validVersion) {
 		cmd.PrintErrf("Warning: Constellation with Kubernetes %s is still in preview. Use only for evaluation purposes.\n", validVersion)
@@ -492,29 +546,19 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 
 	// Validate microservice version (helm versions) in the user's config matches the version of the CLI
 	// This makes sure we catch potential errors early, not just after we already ran Terraform migrations or the init RPC
-	if !a.flags.force && !a.flags.skipPhases.contains(skipHelmPhase) && !a.flags.skipPhases.contains(skipInitPhase) {
+	if !a.flags.force && !a.flags.skipPhases.contains(skipHelmPhase, skipInitPhase) {
 		if err := validateCLIandConstellationVersionAreEqual(constants.BinaryVersion(), conf.Image, conf.MicroserviceVersion); err != nil {
 			return nil, nil, err
 		}
 	}
 
-	// Constellation on QEMU or OpenStack don't support upgrades
-	// If using one of those providers, make sure the command is only used to initialize a cluster
-	if !(conf.GetProvider() == cloudprovider.AWS || conf.GetProvider() == cloudprovider.Azure || conf.GetProvider() == cloudprovider.GCP) {
-		if a.flags.skipPhases.contains(skipInitPhase) {
-			return nil, nil, fmt.Errorf("upgrades are not supported for provider %s", conf.GetProvider())
-		}
-		// Skip Terraform phase
-		a.log.Debugf("Skipping Infrastructure upgrade")
-		a.flags.skipPhases.add(skipInfrastructurePhase)
-	}
-
-	// Check if Terraform state exists
-	if tfStateExists, err := a.tfStateExists(); err != nil {
-		return nil, nil, fmt.Errorf("checking Terraform state: %w", err)
-	} else if !tfStateExists {
-		a.flags.skipPhases.add(skipInfrastructurePhase)
-		a.log.Debugf("No Terraform state found in current working directory. Assuming self-managed infrastructure. Infrastructure upgrades will not be performed.")
+	// Constellation does not support image upgrades on all CSPs. Not supported are: QEMU, OpenStack
+	// If using one of those providers, print a warning when trying to upgrade the image
+	if !(conf.GetProvider() == cloudprovider.AWS || conf.GetProvider() == cloudprovider.Azure || conf.GetProvider() == cloudprovider.GCP) &&
+		!a.flags.skipPhases.contains(skipImagePhase) {
+		cmd.PrintErrf("Image upgrades are not supported for provider %s\n", conf.GetProvider())
+		cmd.PrintErrln("Image phase will be skipped")
+		a.flags.skipPhases.add(skipImagePhase)
 	}
 
 	// Print warning about AWS attestation
@@ -523,31 +567,10 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 		cmd.PrintErrln("WARNING: Attestation temporarily relies on AWS nitroTPM. See https://docs.edgeless.systems/constellation/workflows/config#choosing-a-vm-type for more information.")
 	}
 
-	// Read and validate state file
-	// This needs to be done as a last step, as we need to parse all other inputs to
-	// know which phases are skipped.
-	a.log.Debugf("Reading state file from %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename))
-	stateFile, err := state.ReadFromFile(a.fileHandler, constants.StateFilename)
-	if err != nil {
-		return nil, nil, err
-	}
-	if a.flags.skipPhases.contains(skipInitPhase) {
-		// If the skipInit flag is set, we are in a state where the cluster
-		// has already been initialized and check against the respective constraints.
-		if err := stateFile.Validate(state.PostInit, conf.GetProvider()); err != nil {
-			return nil, nil, err
-		}
-	} else {
-		// The cluster has not been initialized yet, so we check against the pre-init constraints.
-		if err := stateFile.Validate(state.PreInit, conf.GetProvider()); err != nil {
-			return nil, nil, err
-		}
-	}
-
 	return conf, stateFile, nil
 }
 
-// applyJoincConfig creates or updates the cluster's join config.
+// applyJoinConfig creates or updates the cluster's join config.
 // If the config already exists, and is different from the new config, the user is asked to confirm the upgrade.
 func (a *applyCmd) applyJoinConfig(
 	cmd *cobra.Command, kubeUpgrader kubernetesUpgrader, newConfig config.AttestationCfg, measurementSalt []byte,
@@ -619,14 +642,121 @@ func (a *applyCmd) runK8sUpgrade(cmd *cobra.Command, conf *config.Config, kubeUp
 	return nil
 }
 
-// tfStateExists checks whether a Constellation Terraform state exists in the current working directory.
-func (a *applyCmd) tfStateExists() (bool, error) {
-	_, err := a.fileHandler.Stat(constants.TerraformWorkingDir)
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return false, nil
-		}
-		return false, fmt.Errorf("reading Terraform state: %w", err)
+// checkCreateFilesClean ensures that the workspace is clean before creating a new cluster.
+func (a *applyCmd) checkCreateFilesClean() error {
+	if err := a.checkInitFilesClean(); err != nil {
+		return err
 	}
-	return true, nil
+	a.log.Debugf("Checking Terraform state")
+	if _, err := a.fileHandler.Stat(constants.TerraformWorkingDir); err == nil {
+		return fmt.Errorf(
+			"terraform state %q already exists in working directory, run 'constellation terminate' before creating a new cluster",
+			a.flags.pathPrefixer.PrefixPrintablePath(constants.TerraformWorkingDir),
+		)
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("checking for %s: %w", a.flags.pathPrefixer.PrefixPrintablePath(constants.TerraformWorkingDir), err)
+	}
+
+	return nil
+}
+
+// checkInitFilesClean ensures that the workspace is clean before running the init RPC.
+func (a *applyCmd) checkInitFilesClean() error {
+	a.log.Debugf("Checking admin configuration file")
+	if _, err := a.fileHandler.Stat(constants.AdminConfFilename); err == nil {
+		return fmt.Errorf(
+			"file %q already exists in working directory, run 'constellation terminate' before creating a new cluster",
+			a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename),
+		)
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("checking for %q: %w", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename), err)
+	}
+	a.log.Debugf("Checking master secrets file")
+	if _, err := a.fileHandler.Stat(constants.MasterSecretFilename); err == nil {
+		return fmt.Errorf(
+			"file %q already exists in working directory. Constellation won't overwrite previous master secrets. Move it somewhere or delete it before creating a new cluster",
+			a.flags.pathPrefixer.PrefixPrintablePath(constants.MasterSecretFilename),
+		)
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("checking for %q: %w", a.flags.pathPrefixer.PrefixPrintablePath(constants.MasterSecretFilename), err)
+	}
+
+	return nil
+}
+
+// checkPostInitFilesExist ensures that the workspace contains the files from a previous init RPC.
+func (a *applyCmd) checkPostInitFilesExist() error {
+	if _, err := a.fileHandler.Stat(constants.AdminConfFilename); err != nil {
+		return fmt.Errorf("checking for %q: %w", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename), err)
+	}
+	if _, err := a.fileHandler.Stat(constants.MasterSecretFilename); err != nil {
+		return fmt.Errorf("checking for %q: %w", a.flags.pathPrefixer.PrefixPrintablePath(constants.MasterSecretFilename), err)
+	}
+	return nil
+}
+
+func printCreateWarnings(out io.Writer, conf *config.Config) {
+	var printedAWarning bool
+	if !conf.IsReleaseImage() {
+		fmt.Fprintln(out, "Configured image doesn't look like a released production image. Double check image before deploying to production.")
+		printedAWarning = true
+	}
+
+	if conf.IsNamedLikeDebugImage() && !conf.IsDebugCluster() {
+		fmt.Fprintln(out, "WARNING: A debug image is used but debugCluster is false.")
+		printedAWarning = true
+	}
+
+	if conf.IsDebugCluster() {
+		fmt.Fprintln(out, "WARNING: Creating a debug cluster. This cluster is not secure and should only be used for debugging purposes.")
+		fmt.Fprintln(out, "DO NOT USE THIS CLUSTER IN PRODUCTION.")
+		printedAWarning = true
+	}
+
+	if conf.GetAttestationConfig().GetVariant().Equal(variant.AzureTrustedLaunch{}) {
+		fmt.Fprintln(out, "Disabling Confidential VMs is insecure. Use only for evaluation purposes.")
+		printedAWarning = true
+	}
+
+	// Print an extra new line later to separate warnings from the prompt message of the create command
+	if printedAWarning {
+		fmt.Fprintln(out, "")
+	}
+}
+
+// skipPhasesCompletion returns suggestions for the skip-phases flag.
+// We suggest completion for all phases that can be skipped.
+// The phases may be given in any order, as a comma-separated list.
+// For example, "skip-phases helm,init" should suggest all phases but "helm" and "init".
+func skipPhasesCompletion(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	skippedPhases := strings.Split(toComplete, ",")
+	if skippedPhases[0] == "" {
+		// No phases were typed yet, so suggest all phases
+		return allPhases(), cobra.ShellCompDirectiveNoFileComp
+	}
+
+	// Determine what phases have already been typed by the user
+	phases := make(map[string]struct{})
+	for _, phase := range allPhases() {
+		phases[phase] = struct{}{}
+	}
+	for _, phase := range skippedPhases {
+		delete(phases, phase)
+	}
+
+	// Get the last phase typed by the user
+	// This is the phase we want to complete
+	lastPhase := skippedPhases[len(skippedPhases)-1]
+	fullyTypedPhases := strings.TrimSuffix(toComplete, lastPhase)
+
+	// Add all phases that have not been typed yet to the suggestions
+	// The suggestion is the fully typed phases + the phase that is being completed
+	var suggestions []string
+	for phase := range phases {
+		if strings.HasPrefix(phase, lastPhase) {
+			suggestions = append(suggestions, fmt.Sprintf("%s%s", fullyTypedPhases, phase))
+		}
+	}
+
+	return suggestions, cobra.ShellCompDirectiveNoFileComp
 }

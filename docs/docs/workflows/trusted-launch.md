@@ -26,6 +26,7 @@ AZURE_IMAGE_VERSION=2.2.0 AZURE_RESOURCE_GROUP_NAME=constellation-images AZURE_I
 ```
 
 The script creates the following resources:
+
 1. A new image gallery with the default name `constellation-import`
 2. A new image definition with the default name `constellation`
 3. The actual image with the provided version. In this case `2.2.0`
@@ -42,7 +43,7 @@ constellation config fetch-measurements -u$URL -s$URL.sig
 
 :::info
 
-The [constellation create](create.md) command will issue a warning because manually imported images aren't recognized as production grade images:
+The [`constellation apply`](create.md) command will issue a warning because manually imported images aren't recognized as production grade images:
 
 ```shell-session
 Configured image doesn't look like a released production image. Double check image before deploying to production.

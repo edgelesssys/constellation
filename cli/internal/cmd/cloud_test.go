@@ -27,16 +27,20 @@ func TestMain(m *testing.M) {
 }
 
 type stubCloudCreator struct {
-	state       state.Infrastructure
-	planCalled  bool
-	planErr     error
-	applyCalled bool
-	applyErr    error
+	state               state.Infrastructure
+	planCalled          bool
+	planDiff            bool
+	planErr             error
+	applyCalled         bool
+	applyErr            error
+	restoreErr          error
+	workspaceIsEmpty    bool
+	workspaceIsEmptyErr error
 }
 
 func (c *stubCloudCreator) Plan(_ context.Context, _ *config.Config) (bool, error) {
 	c.planCalled = true
-	return false, c.planErr
+	return c.planDiff, c.planErr
 }
 
 func (c *stubCloudCreator) Apply(_ context.Context, _ cloudprovider.Provider, _ cloudcmd.RollbackBehavior) (state.Infrastructure, error) {
@@ -45,7 +49,11 @@ func (c *stubCloudCreator) Apply(_ context.Context, _ cloudprovider.Provider, _ 
 }
 
 func (c *stubCloudCreator) RestoreWorkspace() error {
-	return nil
+	return c.restoreErr
+}
+
+func (c *stubCloudCreator) WorkingDirIsEmpty() (bool, error) {
+	return c.workspaceIsEmpty, c.workspaceIsEmptyErr
 }
 
 type stubCloudTerminator struct {

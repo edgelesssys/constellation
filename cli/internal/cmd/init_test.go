@@ -61,8 +61,8 @@ func TestInitArgumentValidation(t *testing.T) {
 
 // preInitStateFile returns a state file satisfying the pre-init state file
 // constraints.
-func preInitStateFile() *state.State {
-	s := defaultAzureStateFile()
+func preInitStateFile(csp cloudprovider.Provider) *state.State {
+	s := defaultStateFile(csp)
 	s.ClusterValues = state.ClusterValues{}
 	return s
 }
@@ -109,24 +109,24 @@ func TestInitialize(t *testing.T) {
 	}{
 		"initialize some gcp instances": {
 			provider:      cloudprovider.GCP,
-			stateFile:     preInitStateFile(),
+			stateFile:     preInitStateFile(cloudprovider.GCP),
 			configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
 			serviceAccKey: gcpServiceAccKey,
 			initServerAPI: &stubInitServer{res: []*initproto.InitResponse{{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}}},
 		},
 		"initialize some azure instances": {
 			provider:      cloudprovider.Azure,
-			stateFile:     preInitStateFile(),
+			stateFile:     preInitStateFile(cloudprovider.Azure),
 			initServerAPI: &stubInitServer{res: []*initproto.InitResponse{{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}}},
 		},
 		"initialize some qemu instances": {
 			provider:      cloudprovider.QEMU,
-			stateFile:     preInitStateFile(),
+			stateFile:     preInitStateFile(cloudprovider.QEMU),
 			initServerAPI: &stubInitServer{res: []*initproto.InitResponse{{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}}},
 		},
 		"non retriable error": {
 			provider:                cloudprovider.QEMU,
-			stateFile:               preInitStateFile(),
+			stateFile:               preInitStateFile(cloudprovider.QEMU),
 			initServerAPI:           &stubInitServer{initErr: &nonRetriableError{err: assert.AnError}},
 			retriable:               false,
 			masterSecretShouldExist: true,
@@ -134,7 +134,7 @@ func TestInitialize(t *testing.T) {
 		},
 		"non retriable error with failed log collection": {
 			provider:  cloudprovider.QEMU,
-			stateFile: preInitStateFile(),
+			stateFile: preInitStateFile(cloudprovider.QEMU),
 			initServerAPI: &stubInitServer{
 				res: []*initproto.InitResponse{
 					{
@@ -185,7 +185,7 @@ func TestInitialize(t *testing.T) {
 		"init call fails": {
 			provider:                cloudprovider.GCP,
 			configMutator:           func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
-			stateFile:               preInitStateFile(),
+			stateFile:               preInitStateFile(cloudprovider.GCP),
 			serviceAccKey:           gcpServiceAccKey,
 			initServerAPI:           &stubInitServer{initErr: assert.AnError},
 			retriable:               false,
@@ -194,7 +194,7 @@ func TestInitialize(t *testing.T) {
 		},
 		"k8s version without v works": {
 			provider:      cloudprovider.Azure,
-			stateFile:     preInitStateFile(),
+			stateFile:     preInitStateFile(cloudprovider.Azure),
 			initServerAPI: &stubInitServer{res: []*initproto.InitResponse{{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}}},
 			configMutator: func(c *config.Config) {
 				res, err := versions.NewValidK8sVersion(strings.TrimPrefix(string(versions.Default), "v"), true)
@@ -204,7 +204,7 @@ func TestInitialize(t *testing.T) {
 		},
 		"outdated k8s patch version doesn't work": {
 			provider:      cloudprovider.Azure,
-			stateFile:     preInitStateFile(),
+			stateFile:     preInitStateFile(cloudprovider.Azure),
 			initServerAPI: &stubInitServer{res: []*initproto.InitResponse{{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}}},
 			configMutator: func(c *config.Config) {
 				v, err := semver.New(versions.SupportedK8sVersions()[0])
@@ -262,12 +262,14 @@ func TestInitialize(t *testing.T) {
 			cmd.SetContext(ctx)
 
 			i := &applyCmd{
-				fileHandler:  fileHandler,
-				flags:        applyFlags{rootFlags: rootFlags{force: true}},
-				log:          logger.NewTest(t),
-				spinner:      &nopSpinner{},
-				merger:       &stubMerger{},
-				quotaChecker: &stubLicenseClient{},
+				fileHandler: fileHandler,
+				flags: applyFlags{
+					rootFlags:  rootFlags{force: true},
+					skipPhases: newPhases(skipInfrastructurePhase),
+				},
+				log:     logger.NewTest(t),
+				spinner: &nopSpinner{},
+				merger:  &stubMerger{},
 				newHelmClient: func(string, debugLog) (helmApplier, error) {
 					return &stubApplier{}, nil
 				},
@@ -278,15 +280,13 @@ func TestInitialize(t *testing.T) {
 						getClusterAttestationConfigErr: k8serrors.NewNotFound(schema.GroupResource{}, ""),
 					}, nil
 				},
-				newInfraApplier: func(ctx context.Context) (cloudApplier, func(), error) {
-					return stubTerraformUpgrader{}, func() {}, nil
-				},
 			}
 
-			err := i.apply(cmd, stubAttestationFetcher{}, "test")
+			err := i.apply(cmd, stubAttestationFetcher{}, &stubLicenseClient{}, "test")
 
 			if tc.wantErr {
 				assert.Error(err)
+				fmt.Println(err)
 				if !tc.retriable {
 					assert.Contains(errOut.String(), "This error is not recoverable")
 				} else {
@@ -733,6 +733,17 @@ func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, cs
 
 	var zone, instanceType, diskType string
 	switch csp {
+	case cloudprovider.AWS:
+		conf.Provider.AWS.Region = "test-region-2"
+		conf.Provider.AWS.Zone = "test-zone-2c"
+		conf.Provider.AWS.IAMProfileControlPlane = "test-iam-profile"
+		conf.Provider.AWS.IAMProfileWorkerNodes = "test-iam-profile"
+		conf.Attestation.AWSSEVSNP.Measurements[4] = measurements.WithAllBytes(0x44, measurements.Enforce, measurements.PCRMeasurementLength)
+		conf.Attestation.AWSSEVSNP.Measurements[9] = measurements.WithAllBytes(0x11, measurements.Enforce, measurements.PCRMeasurementLength)
+		conf.Attestation.AWSSEVSNP.Measurements[12] = measurements.WithAllBytes(0xcc, measurements.Enforce, measurements.PCRMeasurementLength)
+		zone = "test-zone-2c"
+		instanceType = "c6a.xlarge"
+		diskType = "gp3"
 	case cloudprovider.Azure:
 		conf.Provider.Azure.SubscriptionID = "01234567-0123-0123-0123-0123456789ab"
 		conf.Provider.Azure.TenantID = "01234567-0123-0123-0123-0123456789ab"

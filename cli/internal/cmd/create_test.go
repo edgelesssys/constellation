@@ -8,6 +8,7 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/state"
@@ -22,31 +23,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// preCreateStateFile returns a state file satisfying the pre-create state file
-// constraints.
-func preCreateStateFile() *state.State {
-	s := defaultAzureStateFile()
-	s.ClusterValues = state.ClusterValues{}
-	s.Infrastructure = state.Infrastructure{}
-	return s
-}
-
 func TestCreate(t *testing.T) {
-	fsWithDefaultConfigAndState := func(require *require.Assertions, provider cloudprovider.Provider) afero.Fs {
-		fs := afero.NewMemMapFs()
-		file := file.NewHandler(fs)
-		require.NoError(file.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), provider)))
-		stateFile := preCreateStateFile()
-		switch provider {
-		case cloudprovider.GCP:
-			stateFile.SetInfrastructure(state.Infrastructure{GCP: &state.GCP{}})
-		case cloudprovider.Azure:
-			stateFile.SetInfrastructure(state.Infrastructure{Azure: &state.Azure{}})
-		}
-		require.NoError(stateFile.WriteToFile(file, constants.StateFilename))
-		return fs
-	}
-	fsWithoutState := func(require *require.Assertions, provider cloudprovider.Provider) afero.Fs {
+	fsWithDefaultConfig := func(require *require.Assertions, provider cloudprovider.Provider) afero.Fs {
 		fs := afero.NewMemMapFs()
 		file := file.NewHandler(fs)
 		require.NoError(file.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), provider)))
@@ -62,31 +40,49 @@ func TestCreate(t *testing.T) {
 		controllerCountFlag *int
 		workerCountFlag     *int
 		stdin               string
+		getCreatorErr       error
 		wantErr             bool
 		wantAbort           bool
 	}{
 		"create": {
-			setupFs:  fsWithDefaultConfigAndState,
-			creator:  &stubCloudCreator{state: infraState},
+			setupFs: fsWithDefaultConfig,
+			creator: &stubCloudCreator{
+				state:            infraState,
+				planDiff:         true,
+				workspaceIsEmpty: true,
+			},
 			provider: cloudprovider.GCP,
 			yesFlag:  true,
 		},
 		"interactive": {
-			setupFs:  fsWithDefaultConfigAndState,
-			creator:  &stubCloudCreator{state: infraState},
+			setupFs: fsWithDefaultConfig,
+			creator: &stubCloudCreator{
+				state:            infraState,
+				planDiff:         true,
+				workspaceIsEmpty: true,
+			},
 			provider: cloudprovider.Azure,
 			stdin:    "yes\n",
 		},
 		"interactive abort": {
-			setupFs:   fsWithDefaultConfigAndState,
-			creator:   &stubCloudCreator{state: infraState},
+			setupFs: fsWithDefaultConfig,
+			creator: &stubCloudCreator{
+				state:            infraState,
+				planDiff:         true,
+				workspaceIsEmpty: true,
+			},
 			provider:  cloudprovider.GCP,
 			stdin:     "no\n",
 			wantAbort: true,
+			wantErr:   true,
 		},
 		"interactive error": {
-			setupFs:  fsWithDefaultConfigAndState,
-			creator:  &stubCloudCreator{state: infraState},
+			setupFs: fsWithDefaultConfig,
+			creator: &stubCloudCreator{
+				state:            infraState,
+				planDiff:         true,
+				workspaceIsEmpty: true,
+			},
 			provider: cloudprovider.GCP,
 			stdin:    "foo\nfoo\nfoo\n",
 			wantErr:  true,
@@ -99,7 +95,11 @@ func TestCreate(t *testing.T) {
 				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
 				return fs
 			},
-			creator:  &stubCloudCreator{state: infraState},
+			creator: &stubCloudCreator{
+				state:            infraState,
+				planDiff:         true,
+				workspaceIsEmpty: true,
+			},
 			provider: cloudprovider.GCP,
 			yesFlag:  true,
 			wantErr:  true,
@@ -112,27 +112,45 @@ func TestCreate(t *testing.T) {
 				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
 				return fs
 			},
-			creator:  &stubCloudCreator{state: infraState},
+			creator: &stubCloudCreator{
+				state:            infraState,
+				planDiff:         true,
+				workspaceIsEmpty: true,
+			},
 			provider: cloudprovider.GCP,
 			yesFlag:  true,
 			wantErr:  true,
 		},
 		"config does not exist": {
-			setupFs:  func(a *require.Assertions, p cloudprovider.Provider) afero.Fs { return afero.NewMemMapFs() },
-			creator:  &stubCloudCreator{state: infraState},
+			setupFs: func(a *require.Assertions, p cloudprovider.Provider) afero.Fs { return afero.NewMemMapFs() },
+			creator: &stubCloudCreator{
+				state:            infraState,
+				planDiff:         true,
+				workspaceIsEmpty: true,
+			},
 			provider: cloudprovider.GCP,
 			yesFlag:  true,
 			wantErr:  true,
 		},
-		"state file does not exist": {
-			setupFs:  fsWithoutState,
-			creator:  &stubCloudCreator{state: infraState},
+		"state file exist (but is empty)": {
+			setupFs: func(r *require.Assertions, csp cloudprovider.Provider) afero.Fs {
+				fs := afero.NewMemMapFs()
+				file := file.NewHandler(fs)
+				r.NoError(file.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
+				r.NoError(file.WriteYAML(constants.StateFilename, state.New()))
+				return fs
+			},
+			creator: &stubCloudCreator{
+				state:            infraState,
+				planDiff:         true,
+				workspaceIsEmpty: true,
+			},
 			provider: cloudprovider.GCP,
 			yesFlag:  true,
 		},
 		"create error": {
-			setupFs:  fsWithDefaultConfigAndState,
-			creator:  &stubCloudCreator{applyErr: assert.AnError},
+			setupFs:  fsWithDefaultConfig,
+			creator:  &stubCloudCreator{applyErr: assert.AnError, planDiff: true, workspaceIsEmpty: true},
 			provider: cloudprovider.GCP,
 			yesFlag:  true,
 			wantErr:  true,
@@ -144,7 +162,46 @@ func TestCreate(t *testing.T) {
 				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
 				return afero.NewReadOnlyFs(fs)
 			},
-			creator:  &stubCloudCreator{state: infraState},
+			creator: &stubCloudCreator{
+				state:            infraState,
+				planDiff:         true,
+				workspaceIsEmpty: true,
+			},
+			provider: cloudprovider.GCP,
+			yesFlag:  true,
+			wantErr:  true,
+		},
+		"check dir clean error": {
+			setupFs: fsWithDefaultConfig,
+			creator: &stubCloudCreator{
+				state:               infraState,
+				planDiff:            true,
+				workspaceIsEmptyErr: assert.AnError,
+			},
+			provider: cloudprovider.GCP,
+			yesFlag:  true,
+			wantErr:  true,
+		},
+		"get creator error": {
+			setupFs: fsWithDefaultConfig,
+			creator: &stubCloudCreator{
+				state:               infraState,
+				planDiff:            true,
+				workspaceIsEmptyErr: assert.AnError,
+			},
+			provider:      cloudprovider.GCP,
+			yesFlag:       true,
+			getCreatorErr: assert.AnError,
+			wantErr:       true,
+		},
+		"plan error": {
+			setupFs: fsWithDefaultConfig,
+			creator: &stubCloudCreator{
+				state:            infraState,
+				planDiff:         true,
+				planErr:          assert.AnError,
+				workspaceIsEmpty: true,
+			},
 			provider: cloudprovider.GCP,
 			yesFlag:  true,
 			wantErr:  true,
@@ -162,30 +219,46 @@ func TestCreate(t *testing.T) {
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 
 			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider))
-			c := &createCmd{log: logger.NewTest(t), flags: createFlags{yes: tc.yesFlag}}
-			err := c.create(cmd, tc.creator, fileHandler, &nopSpinner{}, stubAttestationFetcher{})
+
+			a := &applyCmd{
+				fileHandler: fileHandler,
+				flags: applyFlags{
+					yes:        tc.yesFlag,
+					skipPhases: newPhases(skipInitPhase, skipAttestationConfigPhase, skipCertSANsPhase, skipHelmPhase, skipImagePhase, skipK8sPhase),
+				},
+
+				log:     logger.NewTest(t),
+				spinner: &nopSpinner{},
+
+				newInfraApplier: func(_ context.Context) (cloudApplier, func(), error) {
+					return tc.creator, func() {}, tc.getCreatorErr
+				},
+			}
+
+			err := a.apply(cmd, stubAttestationFetcher{}, &stubLicenseClient{}, "create")
 
 			if tc.wantErr {
 				assert.Error(err)
+				if tc.wantAbort {
+					assert.True(tc.creator.planCalled)
+					assert.False(tc.creator.applyCalled)
+				}
 			} else {
 				assert.NoError(err)
-				if tc.wantAbort {
-					assert.False(tc.creator.planCalled)
-					assert.False(tc.creator.applyCalled)
-				} else {
-					assert.True(tc.creator.planCalled)
-					assert.True(tc.creator.applyCalled)
 
-					var gotState state.State
-					expectedState := state.Infrastructure{
-						ClusterEndpoint:   "192.0.2.1",
-						APIServerCertSANs: []string{},
-						InitSecret:        []byte{},
-					}
-					require.NoError(fileHandler.ReadYAML(constants.StateFilename, &gotState))
-					assert.Equal("v1", gotState.Version)
-					assert.Equal(expectedState, gotState.Infrastructure)
+				assert.True(tc.creator.planCalled)
+				assert.True(tc.creator.applyCalled)
+
+				var gotState state.State
+				expectedState := state.Infrastructure{
+					ClusterEndpoint:   "192.0.2.1",
+					APIServerCertSANs: []string{},
+					InitSecret:        []byte{},
 				}
+				require.NoError(fileHandler.ReadYAML(constants.StateFilename, &gotState))
+				assert.Equal("v1", gotState.Version)
+				assert.Equal(expectedState, gotState.Infrastructure)
+
 			}
 		})
 	}
@@ -209,10 +282,6 @@ func TestCheckDirClean(t *testing.T) {
 			existingFiles: []string{constants.AdminConfFilename, constants.MasterSecretFilename},
 			wantErr:       true,
 		},
-		"terraform dir exists": {
-			existingFiles: []string{constants.TerraformWorkingDir},
-			wantErr:       true,
-		},
 	}
 
 	for name, tc := range testCases {
@@ -224,8 +293,8 @@ func TestCheckDirClean(t *testing.T) {
 			for _, f := range tc.existingFiles {
 				require.NoError(fh.Write(f, []byte{1, 2, 3}, file.OptNone))
 			}
-			c := &createCmd{log: logger.NewTest(t)}
-			err := c.checkDirClean(fh)
+			a := &applyCmd{log: logger.NewTest(t), fileHandler: fh}
+			err := a.checkInitFilesClean()
 
 			if tc.wantErr {
 				assert.Error(err)

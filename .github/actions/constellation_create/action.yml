@@ -138,7 +138,12 @@ runs:
       if : inputs.selfManagedInfra != 'true'
       shell: bash
       run: |
-        constellation create -y --debug --tf-log=DEBUG
+        # TODO(v2.14): Remove workaround for CLIs not supporting apply command
+        cmd='apply --skip-phases="init,attestationconfig,certsans,helm,image,k8s"'
+        if constellation --help | grep -q init; then
+          cmd=create
+        fi
+        constellation $cmd -y --debug --tf-log=DEBUG -
 
     - name: Constellation create (self-managed)
       if : inputs.selfManagedInfra == 'true'
@@ -163,7 +168,7 @@ runs:
       shell: bash
       run: |
         # TODO(v2.14): Remove workaround for CLIs not supporting apply command
-        cmd=apply
+        cmd="apply --skip-phases=infrastructure"
         if constellation --help | grep -q init; then
           cmd=init
         fi

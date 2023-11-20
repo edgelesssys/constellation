@@ -8,10 +8,16 @@ This recording presents the essence of this page. It's recommended to read it in
 
 ---
 
-Creating your cluster requires two steps:
+Creating your cluster happens through multiple phases.
+The most significant ones are:
 
 1. Creating the necessary resources in your cloud environment
 2. Bootstrapping the Constellation cluster and setting up a connection
+3. Installing the necessary Kubernetes components
+
+`constellation apply` handles all this in a single command.
+You can use the `--skip-phases` flag to skip specific phases of the process.
+For example, if you created the infrastructure manually, you can skip the cloud resource creation phase.
 
 See the [architecture](../architecture/orchestration.md) section for details on the inner workings of this process.
 
@@ -19,21 +25,16 @@ See the [architecture](../architecture/orchestration.md) section for details on 
 If you don't have a cloud subscription, you can also set up a [local Constellation cluster using virtualization](../getting-started/first-steps-local.md) for testing.
 :::
 
-## The *create* step
-
-This step creates the necessary resources for your cluster in your cloud environment.
 Before you create the cluster, make sure to have a [valid configuration file](./config.md).
-
-### Create
 
 <tabs groupId="usage">
 <tabItem value="cli" label="CLI">
 
 ```bash
-constellation create
+constellation apply
 ```
 
-*create* stores your cluster's state in a [`constellation-terraform`](../architecture/orchestration.md#cluster-creation-process) directory in your workspace.
+`apply` stores the state of your cluster's cloud resources in a [`constellation-terraform`](../architecture/orchestration.md#cluster-creation-process) directory in your workspace.
 
 </tabItem>
 <tabItem value="self-managed" label="Self-managed">
@@ -70,20 +71,16 @@ Make sure all necessary resources are created, e.g., through checking your CSP's
 
 Fill these outputs into the corresponding fields of the `Infrastructure` block inside the `constellation-state.yaml` file. For example, fill the IP or DNS name your cluster can be reached at into the `.Infrastructure.ClusterEndpoint` field.
 
-Continue with [initializing your cluster](#the-apply-step).
+With the required cloud resources set up, continue with initializing your cluster.
+
+```bash
+constellation apply --skip-phases=infrastructure
+```
 
 </tabItem>
 </tabs>
 
-## The *apply* step
-
-The following command initializes and bootstraps your cluster:
-
-```bash
-constellation apply
-```
-
-Next, configure `kubectl` for your cluster:
+Finally, configure `kubectl` for your cluster:
 
 ```bash
 export KUBECONFIG="$PWD/constellation-admin.conf"

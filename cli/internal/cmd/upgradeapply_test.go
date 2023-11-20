@@ -36,7 +36,7 @@ func TestUpgradeApply(t *testing.T) {
 	fsWithStateFileAndTfState := func() file.Handler {
 		fh := file.NewHandler(afero.NewMemMapFs())
 		require.NoError(t, fh.MkdirAll(constants.TerraformWorkingDir))
-		require.NoError(t, fh.WriteYAML(constants.StateFilename, defaultAzureStateFile()))
+		require.NoError(t, fh.WriteYAML(constants.StateFilename, defaultStateFile(cloudprovider.Azure)))
 		return fh
 	}
 
@@ -61,7 +61,7 @@ func TestUpgradeApply(t *testing.T) {
 				gotState, err := state.ReadFromFile(fh, constants.StateFilename)
 				require.NoError(err)
 				assert.Equal("v1", gotState.Version)
-				assert.Equal(defaultAzureStateFile(), gotState)
+				assert.Equal(defaultStateFile(cloudprovider.Azure), gotState)
 			},
 		},
 		"id file and state file do not exist": {
@@ -180,12 +180,8 @@ func TestUpgradeApply(t *testing.T) {
 			helmUpgrader:      &mockApplier{}, // mocks ensure that no methods are called
 			terraformUpgrader: &mockTerraformUpgrader{},
 			flags: applyFlags{
-				skipPhases: skipPhases{
-					skipInfrastructurePhase: struct{}{}, skipHelmPhase: struct{}{},
-					skipK8sPhase: struct{}{}, skipImagePhase: struct{}{},
-					skipInitPhase: struct{}{},
-				},
-				yes: true,
+				skipPhases: newPhases(skipInfrastructurePhase, skipAttestationConfigPhase, skipCertSANsPhase, skipHelmPhase, skipK8sPhase, skipImagePhase),
+				yes:        true,
 			},
 			fh: fsWithStateFileAndTfState,
 		},
@@ -196,29 +192,24 @@ func TestUpgradeApply(t *testing.T) {
 			helmUpgrader:      &mockApplier{}, // mocks ensure that no methods are called
 			terraformUpgrader: &mockTerraformUpgrader{},
 			flags: applyFlags{
-				skipPhases: skipPhases{
-					skipInfrastructurePhase: struct{}{}, skipHelmPhase: struct{}{},
-					skipK8sPhase: struct{}{}, skipInitPhase: struct{}{},
-				},
-				yes: true,
+				skipPhases: newPhases(skipInfrastructurePhase, skipAttestationConfigPhase, skipCertSANsPhase, skipHelmPhase, skipK8sPhase),
+				yes:        true,
 			},
 			fh: fsWithStateFileAndTfState,
 		},
-		"no tf state, skip infrastructure upgrade": {
+		"no tf state, infra phase skipped": {
 			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig: config.DefaultForAzureSEVSNP(),
 			},
 			helmUpgrader:      &stubApplier{},
 			terraformUpgrader: &mockTerraformUpgrader{},
 			flags: applyFlags{
-				yes: true,
-				skipPhases: skipPhases{
-					skipInitPhase: struct{}{},
-				},
+				yes:        true,
+				skipPhases: newPhases(skipInfrastructurePhase),
 			},
 			fh: func() file.Handler {
 				fh := file.NewHandler(afero.NewMemMapFs())
-				require.NoError(t, fh.WriteYAML(constants.StateFilename, defaultAzureStateFile()))
+				require.NoError(t, fh.WriteYAML(constants.StateFilename, defaultStateFile(cloudprovider.Azure)))
 				return fh
 			},
 		},
@@ -249,12 +240,11 @@ func TestUpgradeApply(t *testing.T) {
 			require.NoError(fh.WriteJSON(constants.MasterSecretFilename, uri.MasterSecret{}))
 
 			upgrader := &applyCmd{
-				fileHandler:  fh,
-				flags:        tc.flags,
-				log:          logger.NewTest(t),
-				spinner:      &nopSpinner{},
-				merger:       &stubMerger{},
-				quotaChecker: &stubLicenseClient{},
+				fileHandler: fh,
+				flags:       tc.flags,
+				log:         logger.NewTest(t),
+				spinner:     &nopSpinner{},
+				merger:      &stubMerger{},
 				newHelmClient: func(string, debugLog) (helmApplier, error) {
 					return tc.helmUpgrader, nil
 				},
@@ -265,7 +255,7 @@ func TestUpgradeApply(t *testing.T) {
 					return tc.terraformUpgrader, func() {}, nil
 				},
 			}
-			err := upgrader.apply(cmd, stubAttestationFetcher{}, "test")
+			err := upgrader.apply(cmd, stubAttestationFetcher{}, &stubLicenseClient{}, "test")
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -338,6 +328,10 @@ func (u stubTerraformUpgrader) RestoreWorkspace() error {
 	return u.rollbackWorkspaceErr
 }
 
+func (u stubTerraformUpgrader) WorkingDirIsEmpty() (bool, error) {
+	return false, nil
+}
+
 type mockTerraformUpgrader struct {
 	mock.Mock
 }
@@ -355,6 +349,11 @@ func (m *mockTerraformUpgrader) Apply(ctx context.Context, provider cloudprovide
 func (m *mockTerraformUpgrader) RestoreWorkspace() error {
 	args := m.Called()
 	return args.Error(0)
+}
+
+func (m *mockTerraformUpgrader) WorkingDirIsEmpty() (bool, error) {
+	args := m.Called()
+	return args.Bool(0), args.Error(1)
 }
 
 type mockApplier struct {

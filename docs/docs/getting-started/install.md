@@ -129,7 +129,7 @@ To [create the IAM configuration](../workflows/config.md#creating-an-iam-configu
 
 The built-in `Owner` role is a superset of these permissions.
 
-To [create a Constellation cluster](../workflows/create.md#the-create-step), you need the following permissions:
+To [create a Constellation cluster](../workflows/create.md), you need the following permissions:
 * `Microsoft.Attestation/attestationProviders/*` \[2]
 * `Microsoft.Compute/virtualMachineScaleSets/*`
 * `Microsoft.Insights/components/*`
@@ -168,7 +168,7 @@ To [create the IAM configuration](../workflows/config.md#creating-an-iam-configu
 
 Together, the built-in roles `roles/editor` and `roles/resourcemanager.projectIamAdmin` form a superset of these permissions.
 
-To [create a Constellation cluster](../workflows/create.md#the-create-step), you need the following permissions:
+To [create a Constellation cluster](../workflows/create.md), you need the following permissions:
 * `compute.addresses.createInternal`
 * `compute.addresses.deleteInternal`
 * `compute.addresses.get`
@@ -279,7 +279,7 @@ To [create the IAM configuration](../workflows/config.md#creating-an-iam-configu
 
 The built-in `AdministratorAccess` policy is a superset of these permissions.
 
-To [create a Constellation cluster](../workflows/create.md#the-create-step), see the permissions of [main.tf](https://github.com/edgelesssys/constellation/blob/main/terraform/infrastructure/iam/aws/main.tf).
+To [create a Constellation cluster](../workflows/create.md), see the permissions of [main.tf](https://github.com/edgelesssys/constellation/blob/main/terraform/infrastructure/iam/aws/main.tf).
 
 
 The built-in `PowerUserAccess` policy is a superset of these permissions.

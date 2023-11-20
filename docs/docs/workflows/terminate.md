@@ -31,7 +31,7 @@ constellation terminate --yes
 ```
 
 This deletes all resources created by Constellation in your cloud environment.
-All local files created by the `create` and `apply` commands are deleted as well, except for `constellation-mastersecret.json` and the configuration file.
+All local files created by the `apply` command are deleted as well, except for `constellation-mastersecret.json` and the configuration file.
 
 :::caution
 

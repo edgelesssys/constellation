@@ -14,6 +14,11 @@ The CLI stores state in the local filesystem making the current directory the ac
 Multiple clusters require multiple workspaces, hence, multiple directories.
 Note that every operation on a cluster always has to be performed from the directory associated with its workspace.
 
+You may copy files from the workspace to other locations,
+but you shouldn't move or delete them while the cluster is still being used.
+The Constellation CLI takes care of managing the workspace.
+Only when a cluster was terminated, and you are sure the files aren't needed anymore, should you remove a workspace.
+
 ## Cluster creation process
 
 To allow for fine-grained configuration of your cluster and cloud environment, Constellation supports an extensive configuration file with strong defaults. [Generating the configuration file](../workflows/config.md) is typically the first thing you do in the workspace.
@@ -32,11 +37,11 @@ In addition, the cluster's [identifier](orchestration.md#post-installation-confi
 
 ### Creation process details
 
-1. The CLI `create` command creates the confidential VM (CVM) resources in your cloud environment and configures the network
+1. The CLI `apply` command first creates the confidential VM (CVM) resources in your cloud environment and configures the network
 2. Each CVM boots the Constellation node image and measures every component in the boot chain
 3. The first microservice launched in each node is the [*Bootstrapper*](microservices.md#bootstrapper)
 4. The *Bootstrapper* waits until it either receives an initialization request or discovers an initialized cluster
-5. The CLI `apply` command connects to the *Bootstrapper* of a selected node, sends the configuration, and initiates the initialization of the cluster
+5. The CLI then connects to the *Bootstrapper* of a selected node, sends the configuration, and initiates the initialization of the cluster
 6. The *Bootstrapper* of **that** node [initializes the Kubernetes cluster](microservices.md#bootstrapper) and deploys the other Constellation [microservices](microservices.md) including the [*JoinService*](microservices.md#joinservice)
 7. Subsequently, the *Bootstrappers* of the other nodes discover the initialized cluster and send join requests to the *JoinService*
 8. As part of the join request each node includes an attestation statement of its boot measurements as authentication

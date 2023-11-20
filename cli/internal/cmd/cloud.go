@@ -21,6 +21,7 @@ type cloudApplier interface {
 	Plan(ctx context.Context, conf *config.Config) (bool, error)
 	Apply(ctx context.Context, csp cloudprovider.Provider, rollback cloudcmd.RollbackBehavior) (state.Infrastructure, error)
 	RestoreWorkspace() error
+	WorkingDirIsEmpty() (bool, error)
 }
 
 type cloudIAMCreator interface {
