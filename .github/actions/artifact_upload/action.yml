@@ -10,7 +10,6 @@ inputs:
     required: true
   retention-days:
     description: 'How long the artifact should be retained for.'
-    required: false
     default: 60
   encryption-secret:
     description: 'The secret to use for encrypting the files.'
@@ -19,8 +18,11 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Install nix
+    - name: Install zip
       uses: ./.github/actions/setup_bazel_nix
+      with:
+        nixTools: |
+          zip
 
     - name: Create temporary directory
       id: tempdir
@@ -47,7 +49,7 @@ runs:
         # and warn.
         if $something_exists
         then
-          nix run github:NixOS/nixpgs/592047fc9e4f7b74a4dc85d1b9f5243dfe4899e3#zip -- -e -P '${{ inputs.encryption-secret }}' -qq -r ${{ steps.tempdir.outputs.directory }}/archive.zip ${{ inputs.path }}
+          zip -e -P '${{ inputs.encryption-secret }}' -qq -r ${{ steps.tempdir.outputs.directory }}/archive.zip ${{ inputs.path }}
         else
           echo "::warning:: No files/directories found with the provided path(s) $(echo -n ${{ inputs.path }}). No artifact will be uploaded."
         fi

@@ -16,8 +16,11 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Install nix
+    - name: Install unzip
       uses: ./.github/actions/setup_bazel_nix
+      with:
+        nixTools: |
+          unzip
 
     - name: Create temporary directory
       id: tempdir
@@ -33,4 +36,4 @@ runs:
     - name: Decrypt and unzip archive
       shell: bash
       run: |
-        nix run github:NixOS/nixpgs/592047fc9e4f7b74a4dc85d1b9f5243dfe4899e3#unzip -- -P '${{ inputs.encryption-secret }}' -qq -d ${{ inputs.path }} ${{ steps.tempdir.outputs.directory }}/archive.zip
+        unzip -P '${{ inputs.encryption-secret }}' -qq -d ${{ inputs.path }} ${{ steps.tempdir.outputs.directory }}/archive.zip
