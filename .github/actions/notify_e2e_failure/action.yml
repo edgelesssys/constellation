@@ -58,7 +58,7 @@ runs:
     - uses: ./.github/actions/gh_create_issue
       id: gh_create_issue
       with:
-        title: "${{ inputs.test }} - ${{ env.CURRENT_DATE }}"
+        title: "${{ env.CURRENT_DATE }}"
         body-file: ${{ env.BODY_PATH }}
         repo: issues
         label: "e2e failure"
@@ -73,9 +73,9 @@ runs:
           refStream: ${{ inputs.refStream }}
         token: ${{ inputs.projectWriteToken }}
 
-    - name: Issue URL
-      run: echo ${{ steps.gh_create_issue.outputs.issue-url }} # TODO rm
+    - name: Issue URL ${{ steps.gh_create_issue.outputs.issue-url }}
       shell: bash
+      run: echo ${{ steps.gh_create_issue.outputs.issue-url }}
 
     - name: Create project card in case of failure
       id: create-project-card
