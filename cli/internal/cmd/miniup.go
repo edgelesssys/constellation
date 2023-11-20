@@ -7,17 +7,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/featureset"
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
-	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -55,11 +51,6 @@ func runUp(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("creating logger: %w", err)
 	}
 	defer log.Sync()
-	spinner, err := newSpinnerOrStderr(cmd)
-	if err != nil {
-		return err
-	}
-	defer spinner.Stop()
 
 	m := &miniUpCmd{
 		log:           log,
@@ -70,23 +61,10 @@ func runUp(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	creator, cleanUp, err := cloudcmd.NewApplier(
-		cmd.Context(),
-		spinner,
-		constants.TerraformWorkingDir,
-		filepath.Join(constants.UpgradeDir, "create"), // Not used by create
-		m.flags.tfLogLevel,
-		m.fileHandler,
-	)
-	if err != nil {
-		return err
-	}
-	defer cleanUp()
-
-	return m.up(cmd, creator, spinner)
+	return m.up(cmd)
 }
 
-func (m *miniUpCmd) up(cmd *cobra.Command, creator cloudApplier, spinner spinnerInterf) error {
+func (m *miniUpCmd) up(cmd *cobra.Command) (retErr error) {
 	if err := m.checkSystemRequirements(cmd.ErrOrStderr()); err != nil {
 		return fmt.Errorf("system requirements not met: %w", err)
 	}
@@ -106,27 +84,39 @@ func (m *miniUpCmd) up(cmd *cobra.Command, creator cloudApplier, spinner spinner
 		return fmt.Errorf("preparing config: %w", err)
 	}
 
-	// create cluster
-	spinner.Start("Creating cluster in QEMU ", false)
-	err = m.createMiniCluster(cmd.Context(), creator, config)
-	spinner.Stop()
-	if err != nil {
+	// clean up cluster resources if setup fails
+	defer func() {
+		if retErr != nil {
+			cmd.PrintErrf("An error occurred: %s\n", retErr)
+			cmd.PrintErrln("Attempting to roll back.")
+			err = runDown(cmd, []string{})
+			if err != nil {
+				cmd.PrintErrf("Rollback failed: %s\n", err)
+			} else {
+				cmd.PrintErrf("Rollback succeeded.\n\n")
+			}
+		}
+	}()
+
+	// set flags not defined by "mini up"
+	cmd.Flags().StringSlice("skip-phases", []string{}, "")
+	cmd.Flags().Bool("yes", true, "")
+	cmd.Flags().Bool("skip-helm-wait", false, "")
+	cmd.Flags().Bool("conformance", false, "")
+	cmd.Flags().Duration("timeout", time.Hour, "")
+
+	// create and initialize the cluster
+	if err := runApply(cmd, nil); err != nil {
 		return fmt.Errorf("creating cluster: %w", err)
 	}
-	cmd.Println("Cluster successfully created.")
+
 	connectURI := config.Provider.QEMU.LibvirtURI
-	m.log.Debugf("Using connect URI %s", connectURI)
 	if connectURI == "" {
 		connectURI = libvirt.LibvirtTCPConnectURI
 	}
 	cmd.Println("Connect to the VMs by executing:")
 	cmd.Printf("\tvirsh -c %s\n\n", connectURI)
 
-	// initialize cluster
-	if err := m.initializeMiniCluster(cmd); err != nil {
-		return fmt.Errorf("initializing cluster: %w", err)
-	}
-	m.log.Debugf("Initialized cluster")
 	return nil
 }
 
@@ -180,55 +170,4 @@ func (m *miniUpCmd) prepareExistingConfig(cmd *cobra.Command) (*config.Config, e
 		return nil, errors.New("invalid provider for MiniConstellation cluster")
 	}
 	return conf, nil
-}
-
-// createMiniCluster creates a new cluster using the given config.
-func (m *miniUpCmd) createMiniCluster(ctx context.Context, creator cloudApplier, config *config.Config) error {
-	m.log.Debugf("Creating mini cluster")
-	if _, err := creator.Plan(ctx, config); err != nil {
-		return err
-	}
-	infraState, err := creator.Apply(ctx, config.GetProvider(), cloudcmd.WithoutRollbackOnError)
-	if err != nil {
-		return err
-	}
-
-	infraState.UID = constants.MiniConstellationUID // use UID "mini" to identify MiniConstellation clusters.
-
-	stateFile := state.New().
-		SetInfrastructure(infraState)
-
-	m.log.Debugf("Cluster state file contains %v", stateFile)
-	return stateFile.WriteToFile(m.fileHandler, constants.StateFilename)
-}
-
-// initializeMiniCluster initializes a QEMU cluster.
-func (m *miniUpCmd) initializeMiniCluster(cmd *cobra.Command) (retErr error) {
-	m.log.Debugf("Initializing mini cluster")
-	// clean up cluster resources if initialization fails
-	defer func() {
-		if retErr != nil {
-			cmd.PrintErrf("An error occurred: %s\n", retErr)
-			cmd.PrintErrln("Attempting to roll back.")
-			_ = runDown(cmd, []string{})
-			cmd.PrintErrf("Rollback succeeded.\n\n")
-		}
-	}()
-
-	// Define flags for apply backend that are not set by mini up
-	cmd.Flags().StringSlice(
-		"skip-phases",
-		[]string{string(skipInfrastructurePhase), string(skipK8sPhase), string(skipImagePhase)},
-		"",
-	)
-	cmd.Flags().Bool("yes", false, "")
-	cmd.Flags().Bool("skip-helm-wait", false, "")
-	cmd.Flags().Bool("conformance", false, "")
-	cmd.Flags().Duration("timeout", time.Hour, "")
-
-	if err := runApply(cmd, nil); err != nil {
-		return err
-	}
-	m.log.Debugf("Initialized mini cluster")
-	return nil
 }
