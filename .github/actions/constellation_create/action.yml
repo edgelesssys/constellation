@@ -139,8 +139,8 @@ runs:
       shell: bash
       run: |
         # TODO(v2.14): Remove workaround for CLIs not supporting apply command
-        cmd='apply --skip-phases="init,attestationconfig,certsans,helm,image,k8s"'
-        if constellation --help | grep -q init; then
+        cmd='apply --skip-phases=init,attestationconfig,certsans,helm,image,k8s'
+        if constellation --help | grep -q create; then
           cmd=create
         fi
         constellation $cmd -y --debug --tf-log=DEBUG
