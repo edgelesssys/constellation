@@ -62,7 +62,8 @@ oci_sum_merge(
     oci_push(
         name = container["name"] + "_push",
         image = container["oci"],
-        repotags = container["repotag_file"],
+        remote_tags = "//bazel/settings:tag",
+        repository_file = "//bazel/release:" + container["name"] + "_reponame",
     )
     for container in containers()
 ]
