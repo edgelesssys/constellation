@@ -8,9 +8,8 @@ set -eu
 
 iptables -t nat -N VPN_POST || iptables -t nat -F VPN_POST
 
-for cidr in ${VPN_PEER_CIDRS}
-do
-    iptables -t nat -A VPN_POST -s "${cidr}" -d "${VPN_POD_CIDR}" -j MASQUERADE
+for cidr in ${VPN_PEER_CIDRS}; do
+  iptables -t nat -A VPN_POST -s "${cidr}" -d "${VPN_POD_CIDR}" -j MASQUERADE
 done
 
 iptables -t nat -C POSTROUTING -j VPN_POST || iptables -t nat -A POSTROUTING -j VPN_POST
@@ -28,13 +27,11 @@ ip route replace local 0.0.0.0/0 dev lo table "${table}"
 
 iptables -t mangle -N VPN_PRE || iptables -t mangle -F VPN_PRE
 
-for cidr in ${VPN_PEER_CIDRS}
-do
-    for proto in tcp udp
-    do
-        iptables -t mangle -A VPN_PRE -p "${proto}" -s "${cidr}" -d "${VPN_SERVICE_CIDR}" \
-          -j TPROXY --tproxy-mark "${mark}" --on-port 61001
-    done
+for cidr in ${VPN_PEER_CIDRS}; do
+  for proto in tcp udp; do
+    iptables -t mangle -A VPN_PRE -p "${proto}" -s "${cidr}" -d "${VPN_SERVICE_CIDR}" \
+      -j TPROXY --tproxy-mark "${mark}" --on-port 61001
+  done
 done
 
 iptables -t mangle -C PREROUTING -j VPN_PRE || iptables -t mangle -A PREROUTING -j VPN_PRE
