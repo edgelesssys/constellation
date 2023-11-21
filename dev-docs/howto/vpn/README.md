@@ -13,7 +13,7 @@ This Helm chart deploys a VPN server to your Constellation cluster.
 2. Install the Helm chart.
 
    ```sh
-   helm install vpn . >config.yaml
+   helm install -f config.yaml vpn . 
    ```
 
 3. Follow the post-installation instructions displayed by the CLI.
