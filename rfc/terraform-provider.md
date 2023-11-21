@@ -81,7 +81,7 @@ data "constellation_image" "foo" {
 ```
 
 The `constellation_cluster` resource is the main resource implemented by the provider.
-It resembles a Constellation cluster with a specific configuration.
+It declares a Constellation cluster with a specific configuration.
 Applying it will create the cluster if not existing, upgrade the cluster when the changes can be performed in place (e.g. K8s / node image / microservice update) *or* recreate the resource when the update can't be performed in-place (e.g. changing the master secret).
 updates it with the according configuration if already existing, or deletes it if not present in the configuration but in the state.
 
