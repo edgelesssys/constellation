@@ -232,6 +232,14 @@ def go_dependencies():
         version = "v13.0.0",
     )
     go_repository(
+        name = "com_github_apparentlymart_go_textseg_v15",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/apparentlymart/go-textseg/v15",
+        sum = "h1:uYvfpb3DyLSCGWnctWKGj857c6ew1u1fNQOlOtuGxQY=",
+        version = "v15.0.0",
+    )
+    go_repository(
         name = "com_github_armon_circbuf",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
@@ -2788,8 +2796,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/hashicorp/hcl/v2",
-        sum = "h1:z1XvSUyXd1HP10U4lrLg5e0JMVz6CPaJvAgxM0KNZVY=",
-        version = "v2.17.0",
+        sum = "h1://i05Jqznmb2EXqa39Nsvyan2o5XyMowW5fnCKW5RPI=",
+        version = "v2.19.1",
     )
     go_repository(
         name = "com_github_hashicorp_logutils",
