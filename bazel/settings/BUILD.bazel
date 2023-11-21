@@ -19,17 +19,6 @@ config_setting(
     visibility = ["//visibility:public"],
 )
 
-bool_flag(
-    name = "integration_tests",
-    build_setting_default = False,
-)
-
-config_setting(
-    name = "integration_tests_enabled",
-    flag_values = {":integration_tests": "True"},
-    visibility = ["//visibility:public"],
-)
-
 string_flag(
     # cryptsetup_provider is used to decide if you want to link against the
     # cryptsetup library provided by the host system or the one provided by

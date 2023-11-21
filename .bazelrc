@@ -55,4 +55,11 @@ common:build_barn_rbe_ubuntu_22_04 --remote_executor=grpc://frontend.buildbarn:8
 common:build_barn_rbe_ubuntu_22_04 --extra_execution_platforms=//bazel/rbe:ubuntu-act-22-04-platform
 common:build_barn_rbe_ubuntu_22_04 --shell_executable=/bin/bash
 
+# disable integration tests by default
+test --test_tag_filters=-integration
+# enable all tests (including integration)
+test:integration --test_tag_filters=
+# enable only integration tests
+test:integration-only --test_tag_filters=integration
+
 try-import %workspace%/.bazeloverwriterc

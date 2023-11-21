@@ -6,12 +6,13 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package license
+package integration
 
 import (
 	"context"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/license"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,7 +23,7 @@ func TestQuotaCheckIntegration(t *testing.T) {
 		wantError bool
 	}{
 		"OSS license has quota 8": {
-			license:   CommunityLicense,
+			license:   license.CommunityLicense,
 			wantQuota: 8,
 		},
 		"Empty license assumes community": {
@@ -35,10 +36,10 @@ func TestQuotaCheckIntegration(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			client := NewClient()
+			client := license.NewClient()
 
-			req := QuotaCheckRequest{
-				Action:  test,
+			req := license.QuotaCheckRequest{
+				Action:  "test",
 				License: tc.license,
 			}
 			resp, err := client.QuotaCheck(context.Background(), req)
