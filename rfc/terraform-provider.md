@@ -42,8 +42,8 @@ resource "constellation_cluster" "foo" {
         # which would make constellation_microservice_version obsolete.
         # exact API TBD
     }
-    master_secret = "foo"
-    init_secret = "bar" # maybe derive from master_secret
+    master_secret = "foo" # updating this would force recreation of the cluster
+    init_secret = "bar" # maybe derive from master_secret, updating this would force recreation of the cluster
     network_config = {
         # TBD
         # should contain CIDRs for pod network, service cidr, node network... for Cilium
