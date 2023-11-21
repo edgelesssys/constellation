@@ -301,7 +301,7 @@ func TestPlan(t *testing.T) {
 			}
 
 			cfg := config.Default()
-			cfg.RemoveProviderAndAttestationExcept(cloudprovider.QEMU)
+			cfg.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
 
 			diff, err := u.Plan(context.Background(), cfg)
 			if tc.wantErr {
