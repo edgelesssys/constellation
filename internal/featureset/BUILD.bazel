@@ -1,0 +1,14 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "featureset",
+    srcs = [
+        "featureset.go",
+        # keep
+        "featureset_enterprise.go",
+        # keep
+        "featureset_oss.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/featureset",
+    visibility = ["//cli:__subpackages__"],
+)

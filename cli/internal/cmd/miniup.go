@@ -12,13 +12,13 @@ import (
 	"os"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/featureset"
-	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/featureset"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/libvirt"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )

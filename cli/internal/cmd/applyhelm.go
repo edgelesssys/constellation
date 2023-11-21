@@ -12,9 +12,9 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
-	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
-	"github.com/edgelesssys/constellation/v2/cli/internal/state"
+	"github.com/edgelesssys/constellation/v2/internal/cloudcmd"
+	"github.com/edgelesssys/constellation/v2/internal/helm"
+	"github.com/edgelesssys/constellation/v2/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"

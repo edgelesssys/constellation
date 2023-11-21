@@ -1,0 +1,38 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "state",
+    srcs = [
+        "state.go",
+        "state_doc.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/state",
+    visibility = ["//cli:__subpackages__"],
+    deps = [
+        "//internal/cloud/cloudprovider",
+        "//internal/file",
+        "//internal/validation",
+        "@cat_dario_mergo//:mergo",
+        "@com_github_siderolabs_talos_pkg_machinery//config/encoder",
+    ],
+)
+
+go_test(
+    name = "state_test",
+    srcs = [
+        "state_test.go",
+        "validation_test.go",
+    ],
+    embed = [":state"],
+    deps = [
+        "//internal/cloud/cloudprovider",
+        "//internal/constants",
+        "//internal/file",
+        "@com_github_siderolabs_talos_pkg_machinery//config/encoder",
+        "@com_github_spf13_afero//:afero",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@in_gopkg_yaml_v3//:yaml_v3",
+    ],
+)

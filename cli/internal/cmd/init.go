@@ -23,13 +23,13 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
-	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
-	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/grpclog"
+	"github.com/edgelesssys/constellation/v2/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
+	"github.com/edgelesssys/constellation/v2/internal/state"
 )
 
 // NewInitCmd returns a new cobra.Command for the init command.

@@ -1,0 +1,39 @@
+# gazelle:ignore
+
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/oci:containers.bzl", "helm_containers")
+load("//bazel/oci:pin.bzl", "oci_go_source")
+
+GENERATED_SRCS = [
+    ":" + container["name"]
+    for container in helm_containers()
+]
+
+go_library(
+    name = "imageversion",
+    srcs = ["imageversion.go"] + GENERATED_SRCS,  # keep
+    importpath = "github.com/edgelesssys/constellation/v2/internal/helm/imageversion",
+    visibility = ["//cli:__subpackages__"],
+    deps = ["//internal/containerimage"],
+)
+
+[
+    oci_go_source(
+        name = container["name"],
+        identifier = container["identifier"],
+        image_name = container["image_name"],
+        oci = container["oci"],
+        package = "imageversion",
+        repotag_file = container["repotag_file"],
+        visibility = ["//cli:__subpackages__"],
+    )
+    for container in helm_containers()
+]
+
+# TODO(malt3): add missing third-party images
+# - logstash
+# - filebeat
+# - konnectivity-agent
+# - konnectivity-server
+# - node-maintenance-operator
+# - gcp-guest-agent
