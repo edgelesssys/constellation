@@ -265,10 +265,10 @@ func TestStatus(t *testing.T) {
 			cmd.SetErr(&errOut)
 
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
-			cfg, err := createConfigWithAttestationVariant(cloudprovider.QEMU, "", variant.QEMUVTPM{})
+			cfg, err := createConfigWithAttestationVariant(cloudprovider.Azure, "", variant.AzureSEVSNP{})
 			require.NoError(err)
+			modifyConfigForAzureToPassValidate(cfg)
 			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, cfg))
-
 			s := statusCmd{fileHandler: fileHandler}
 
 			err = s.status(
@@ -284,6 +284,37 @@ func TestStatus(t *testing.T) {
 			require.NoError(err)
 			assert.Equal(tc.expectedOutput, out.String())
 		})
+	}
+}
+
+func modifyConfigForAzureToPassValidate(c *config.Config) {
+	c.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
+	c.Image = constants.BinaryVersion().String()
+	c.Provider.Azure.SubscriptionID = "11111111-1111-1111-1111-111111111111"
+	c.Provider.Azure.TenantID = "11111111-1111-1111-1111-111111111111"
+	c.Provider.Azure.Location = "westus"
+	c.Provider.Azure.ResourceGroup = "test"
+	c.Provider.Azure.UserAssignedIdentity = "/subscriptions/11111111-1111-1111-1111-111111111111/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity"
+	c.Attestation.AzureSEVSNP.Measurements = measurements.M{
+		0: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength),
+	}
+	c.NodeGroups = map[string]config.NodeGroup{
+		constants.ControlPlaneDefault: {
+			Role:            "control-plane",
+			Zone:            "",
+			InstanceType:    "Standard_DC4as_v5",
+			StateDiskSizeGB: 30,
+			StateDiskType:   "StandardSSD_LRS",
+			InitialCount:    3,
+		},
+		constants.WorkerDefault: {
+			Role:            "worker",
+			Zone:            "",
+			InstanceType:    "Standard_DC4as_v5",
+			StateDiskSizeGB: 30,
+			StateDiskType:   "StandardSSD_LRS",
+			InitialCount:    3,
+		},
 	}
 }
 
