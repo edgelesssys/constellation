@@ -1,9 +1,0 @@
-{{- if .Values.ipsec.enabled }}
-Required postinstallation steps (also see README.md):
-
-# Configure the LoadBalancer
-
-1. Find the node hosting the VPN server: 
-   kubectl get pods {{ include "..fullname" . }}-frontend-0 -o jsonpath={.spec.nodeName}
-2. Edit the load balancer resource in GCP and remove all other endpoints.
-{{- end }}

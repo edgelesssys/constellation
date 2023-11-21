@@ -5,5 +5,3 @@ description: A VPN server for Constellation
 type: application
 
 version: 0.1.0
-
-appVersion: "v2.13.0"  # target Constellation version

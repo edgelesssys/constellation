@@ -1,0 +1,78 @@
+{{ if .Values.ipsec.enabled -}}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "..fullname" . }}-frontend
+  labels: {{- include "..labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "..selectorLabels" . | nindent 6 }}
+      component: frontend
+  template:
+    metadata:
+      labels:
+        {{- include "..selectorLabels" . | nindent 8 }}
+        component: frontend
+    spec:
+      hostNetwork: false
+      initContainers:
+      - name: tproxy-setup
+        image: nixery.dev/busybox/iptables
+        command: ["/bin/sh", "-x", "/entrypoint.sh"]
+        env: {{- include "..commonEnv" . | nindent 10 }}
+        securityContext:
+          capabilities:
+            add: ["NET_ADMIN"]
+        volumeMounts:
+        - name: tproxy-setup
+          mountPath: "/entrypoint.sh"
+          subPath: "tproxy-setup.sh"
+          readOnly: true
+      containers:
+      - name: tproxy
+        # Image source: github.com/burgerdev/go-tproxy
+        image:  ghcr.io/burgerdev/go-tproxy:latest
+        command: ["/tproxy", "--port=61001", "--nat=true"]
+        securityContext:
+          capabilities:
+            add: ["NET_RAW"]
+      - name: strongswan
+        image: "nixery.dev/shell/strongswan"
+        command: ["/bin/sh", "-x", "/entrypoint.sh"]
+        securityContext:
+          capabilities:
+            add: ["NET_ADMIN"]
+        volumeMounts:
+        - name: strongswan
+          mountPath: "/entrypoint.sh"
+          subPath: "entrypoint.sh"
+          readOnly: true
+        - name: strongswan
+          mountPath: "/etc/strongswan.d/charon-logging.conf"
+          subPath: "charon-logging.conf"
+          readOnly: true
+        - name: strongswan
+          mountPath: "/etc/swanctl/swanctl.conf"
+          subPath: "swanctl.conf"
+          readOnly: true
+      volumes:
+      - name: tproxy-setup
+        configMap:
+          name: {{ include "..fullname" . }}-tproxy
+      - name: strongswan
+        projected:
+          sources:
+          - secret:
+              name: {{ include "..fullname" . }}-strongswan
+              items:
+                - key: swanctl.conf
+                  path: swanctl.conf
+          - configMap:
+              name: {{ include "..fullname" . }}-strongswan
+              items:
+                - key: entrypoint.sh
+                  path: entrypoint.sh
+                - key: charon-logging.conf
+                  path: charon-logging.conf
+{{- end }}

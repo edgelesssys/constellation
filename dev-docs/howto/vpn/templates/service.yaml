@@ -9,6 +9,7 @@ spec:
   selector:
     {{- include "..selectorLabels" . | nindent 4 }}
     component: frontend
+  externalTrafficPolicy: Local
   ports:
     {{- if .Values.ipsec.enabled }}
     - name: isakmp
