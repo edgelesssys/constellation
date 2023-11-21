@@ -1,0 +1,17 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "tf_provider_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/terraform-provider",
+    visibility = ["//visibility:private"],
+    deps = ["@com_github_hashicorp_terraform_plugin_framework//providerserver"],
+)
+
+# keep
+go_binary(
+    name = "tf_provider",
+    embed = [":tf_provider_lib"],
+    pure = "on",
+    visibility = ["//visibility:public"],
+)
