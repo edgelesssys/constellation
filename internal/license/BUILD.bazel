@@ -30,6 +30,13 @@ go_test(
         "license_test.go",
     ],
     embed = [":license"],
+    gotags = select({
+        "//bazel/settings:integration_tests_enabled": ["integration"],
+        "//conditions:default": [],
+    }),
+    tags = [
+        "requires-network",
+    ],
     deps = [
         "//internal/constants",
         "//internal/file",
