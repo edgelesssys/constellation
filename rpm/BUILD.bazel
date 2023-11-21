@@ -2,14 +2,14 @@ load("@bazeldnf//:def.bzl", "bazeldnf")
 load("@bazeldnf//:deps.bzl", "rpmtree", "tar2files")
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
-cc_library(
-    name = "cryptsetup",
-    srcs = ["//rpm:cryptsetup-libs/usr/lib64"],
-    hdrs = ["//rpm:cryptsetup-libs/usr/include"],
-    linkstatic = 1,
-    strip_include_prefix = "/rpm/cryptsetup-libs/",
-    visibility = ["//visibility:public"],
-)
+# cc_library(
+#     name = "cryptsetup",
+#     srcs = ["//rpm:cryptsetup-libs/usr/lib64"],
+#     hdrs = ["//rpm:cryptsetup-libs/usr/include"],
+#     linkstatic = 1,
+#     strip_include_prefix = "/rpm/cryptsetup-libs/",
+#     visibility = ["//visibility:public"],
+# )
 
 cc_library(
     name = "libvirt",

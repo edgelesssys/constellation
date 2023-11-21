@@ -61,7 +61,8 @@ go_binary(
 
 platform_binary(
     name = "bootstrapper_linux_amd64",
-    platform = "@zig_sdk//libc_aware/platform:linux_amd64_gnu.2.23",
+    # platform = "@zig_sdk//libc_aware/platform:linux_amd64_gnu.2.23",
+    platform = "//bazel/platforms:constellation_os_x86_64",
     target_file = ":bootstrapper",
     visibility = ["//visibility:public"],
 )

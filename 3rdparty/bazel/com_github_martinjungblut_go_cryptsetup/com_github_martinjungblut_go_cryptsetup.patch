@@ -5,7 +5,7 @@
      ],
      cgo = True,
 +    cdeps = [
-+        "@//rpm:cryptsetup",
++        "@cryptsetup//:cryptsetup",
 +    ],
      importpath = "github.com/martinjungblut/go-cryptsetup",
      visibility = ["//visibility:public"],

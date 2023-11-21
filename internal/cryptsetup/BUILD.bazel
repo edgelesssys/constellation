@@ -9,7 +9,7 @@ go_library(
     ],
     # keep
     cdeps = [
-        "@//rpm:cryptsetup",
+        "@cryptsetup//:cryptsetup",
     ],
     cgo = True,
     importpath = "github.com/edgelesssys/constellation/v2/internal/cryptsetup",
