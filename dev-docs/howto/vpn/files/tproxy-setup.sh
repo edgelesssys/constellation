@@ -19,6 +19,7 @@ iptables -t nat -C POSTROUTING -j VPN_POST || iptables -t nat -A POSTROUTING -j 
 # Service IPs need to be connected to locally to trigger the cgroup connect hook, thus we send them to the transparent proxy.
 
 # Packets with mark 1 are for tproxy and need to be delivered locally.
+# For more information see: https://www.kernel.org/doc/Documentation/networking/tproxy.txt
 pref=42
 table=42
 mark=0x1/0x1
