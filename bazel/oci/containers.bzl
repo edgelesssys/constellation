@@ -51,7 +51,7 @@ def containers():
             "identifier": "libvirt",
             "image_name": "libvirt",
             "name": "libvirt",
-            "oci": "//cli/internal/libvirt:constellation_libvirt",
+            "oci": "//internal/libvirt:constellation_libvirt",
             "repotag_file": "//bazel/release:libvirt_tag.txt",
             "used_by": ["config"],
         },

@@ -7,7 +7,7 @@ go_library(
     name = "libvirt",
     srcs = ["libvirt.go"],
     importpath = "github.com/edgelesssys/constellation/v2/internal/libvirt",
-    visibility = ["//cli:__subpackages__"],
+    visibility = ["//:__subpackages__"],
     deps = [
         "//internal/file",
         "@com_github_docker_docker//api/types",
@@ -21,7 +21,7 @@ go_library(
 pkg_files(
     name = "etc",
     srcs = [
-        "//cli/internal/libvirt/etc:passwd_db",
+        "//internal/libvirt/etc:passwd_db",
     ],
     attributes = pkg_attributes(
         group = "root",
@@ -35,7 +35,7 @@ pkg_files(
 pkg_files(
     name = "nvram",
     srcs = [
-        "//cli/internal/libvirt/nvram:nvram_vars",
+        "//internal/libvirt/nvram:nvram_vars",
     ],
     prefix = "usr/share/OVMF",
     strip_prefix = strip_prefix.from_pkg(),

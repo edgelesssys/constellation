@@ -13,9 +13,8 @@ set -o nounset
 # dependencies on anything that is part of the startup script
 # itself, and can be safely run multiple times per node (e.g. in
 # case of a restart).
-if [[ "$(iptables-save | grep -c AWS-SNAT-CHAIN)" != "0" ]];
-then
-    echo 'Deleting iptables rules created by the AWS CNI VPC plugin'
-    iptables-save | grep -v AWS-SNAT-CHAIN | iptables-restore
+if [[ "$(iptables-save | grep -c AWS-SNAT-CHAIN)" != "0" ]]; then
+  echo 'Deleting iptables rules created by the AWS CNI VPC plugin'
+  iptables-save | grep -v AWS-SNAT-CHAIN | iptables-restore
 fi
 echo 'Done!'
