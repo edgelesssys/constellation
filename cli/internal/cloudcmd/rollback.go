@@ -12,8 +12,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/terraform"
 )
 
 // rollbacker does a rollback.

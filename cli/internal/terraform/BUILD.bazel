@@ -9,7 +9,7 @@ go_library(
         "terraform.go",
         "variables.go",
     ],
-    importpath = "github.com/edgelesssys/constellation/v2/internal/terraform",
+    importpath = "github.com/edgelesssys/constellation/v2/cli/internal/terraform",
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/cloud/cloudprovider",

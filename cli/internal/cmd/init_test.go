@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
-	"github.com/edgelesssys/constellation/v2/cli/internal/pathprefix"
+	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"

@@ -9,8 +9,8 @@ package cloudcmd
 import (
 	"context"
 
-	"github.com/edgelesssys/constellation/v2/internal/libvirt"
-	"github.com/edgelesssys/constellation/v2/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 )
 
 // Terminator deletes cloud provider resources.

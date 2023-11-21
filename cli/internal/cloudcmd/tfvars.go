@@ -17,14 +17,14 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/internal/role"
-	"github.com/edgelesssys/constellation/v2/internal/terraform"
 )
 
 // The azurerm Terraform provider enforces its own convention of case sensitivity for Azure URIs which Azure's API itself does not enforce or, even worse, actually returns.

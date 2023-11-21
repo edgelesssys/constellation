@@ -13,8 +13,8 @@ import (
 	"io"
 	"os"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/terraform"
 )
 
 // plan prepares a workspace and plans the possible Terraform actions.

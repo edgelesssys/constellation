@@ -6,7 +6,7 @@ load("@rules_pkg//pkg:mappings.bzl", "pkg_attributes", "pkg_files", "strip_prefi
 go_library(
     name = "libvirt",
     srcs = ["libvirt.go"],
-    importpath = "github.com/edgelesssys/constellation/v2/internal/libvirt",
+    importpath = "github.com/edgelesssys/constellation/v2/cli/internal/libvirt",
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/file",
@@ -21,7 +21,7 @@ go_library(
 pkg_files(
     name = "etc",
     srcs = [
-        "//internal/libvirt/etc:passwd_db",
+        "//cli/internal/libvirt/etc:passwd_db",
     ],
     attributes = pkg_attributes(
         group = "root",
@@ -35,7 +35,7 @@ pkg_files(
 pkg_files(
     name = "nvram",
     srcs = [
-        "//internal/libvirt/nvram:nvram_vars",
+        "//cli/internal/libvirt/nvram:nvram_vars",
     ],
     prefix = "usr/share/OVMF",
     strip_prefix = strip_prefix.from_pkg(),
