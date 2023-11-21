@@ -95,7 +95,7 @@ require (
 	github.com/hashicorp/go-kms-wrapping/wrappers/gcpckms/v2 v2.0.8
 	github.com/hashicorp/go-version v1.6.0
 	github.com/hashicorp/hc-install v0.5.2
-	github.com/hashicorp/hcl/v2 v2.17.0
+	github.com/hashicorp/hcl/v2 v2.19.1
 	github.com/hashicorp/terraform-exec v0.18.1
 	github.com/hashicorp/terraform-json v0.15.0
 	github.com/martinjungblut/go-cryptsetup v0.0.0-20220520180014-fd0874fd07a6
@@ -140,6 +140,7 @@ require (
 
 require (
 	github.com/Microsoft/hcsshim v0.11.0 // indirect
+	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
 )
 
