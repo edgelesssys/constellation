@@ -439,6 +439,17 @@ sh_template(
     template = "cli_docgen.sh.in",
 )
 
+sh_template(
+    name = "terraform_docgen",
+    data = [
+        "@go_sdk//:bin/go",
+    ],
+    substitutions = {
+        "@@GO@@": "$(rootpath @go_sdk//:bin/go)",
+    },
+    template = "terraform_docgen.sh.in",
+)
+
 alias(
     name = "com_github_katexochen_ghh",
     actual = select({
@@ -537,6 +548,7 @@ multirun(
         ":go_generate",
         ":proto_generate",
         ":cli_docgen",
+        ":terraform_docgen",
     ],
     jobs = 0,  # execute concurrently
     visibility = ["//visibility:public"],

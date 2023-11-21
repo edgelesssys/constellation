@@ -9,4 +9,5 @@ use (
 	./hack/tools
 	./operators/constellation-node-operator
 	./operators/constellation-node-operator/api
+	./terraform-provider
 )
