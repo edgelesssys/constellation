@@ -9,10 +9,11 @@
 #
 
 # Create IAM configuration
-pushd constellation || exit
-constellation config generate gcp
-constellation iam create gcp --update-config --projectID constellation-331613 --serviceAccountID constellation-demo --zone europe-west3-b --yes
-popd || exit
+docker run -it \
+  -v "${HOME}"/.config/gcloud:/root/.config/gcloud \
+  -v "$(pwd)"/recordings:/recordings \
+  -v "$(pwd)"/constellation:/constellation \
+  screenrecodings /scripts/configure-cluster.expect
 
 docker build -t screenrecodings docker
 
@@ -40,9 +41,8 @@ cp readme.svg ../static/img/shell-windowframe.svg
 rm readme.svg new_header.cast
 
 # cleanup Constellation
-sudo chown -R "$USER":"$USER" ./constellation
-pushd constellation || exit
-constellation terminate -y
-constellation iam destroy -y
-rm -rf ./*
-popd || exit
+docker run -it \
+  -v "${HOME}"/.config/gcloud:/root/.config/gcloud \
+  -v "$(pwd)"/recordings:/recordings \
+  -v "$(pwd)"/constellation:/constellation \
+  screenrecodings /scripts/terminate-cluster.expect
