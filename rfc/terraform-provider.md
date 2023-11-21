@@ -1,6 +1,6 @@
 # Constellation Terraform Provider
 
-The Constellation Terraform Provider should allow it's user to manage the full lifecycle of a Constellation cluster -- namely creation, updates, and deletion -- via Terraform.
+The Constellation Terraform Provider allows its user to manage the full lifecycle of a Constellation cluster -- namely creation, updates, and deletion -- via Terraform.
 
 ## Design Goals
 
