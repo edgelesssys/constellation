@@ -80,6 +80,8 @@ data "constellation_image" "foo" {
 # constellation_image.foo.reference (CSP-specific image reference)
 ```
 
+The Terraform state is to be considered sensitive, as it contains the Master- & Init-Secret, as well as the Kubeconfig.
+
 The `constellation_cluster` resource is the main resource implemented by the provider.
 It declares a Constellation cluster with a specific configuration.
 Applying it will create the cluster if not existing, upgrade the cluster when the changes can be performed in place (e.g. K8s / node image / microservice update) *or*
