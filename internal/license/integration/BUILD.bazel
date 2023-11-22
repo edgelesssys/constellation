@@ -1,0 +1,13 @@
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_test(
+    name = "integration_test",
+    srcs = ["license_integration_test.go"],
+    tags = [
+        "requires-network",
+    ],
+    deps = [
+        "//internal/license",
+        "@com_github_stretchr_testify//assert",
+    ],
+)
