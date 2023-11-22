@@ -93,5 +93,5 @@ persistent volumes (encrypted with the old mastersecret) cannot be retrieved wit
 The "constellation_attestation" and "constellation_image" objects are [data sources](https://developer.hashicorp.com/terraform/language/data-sources),
 which are objects that should be evaluated by the Provider each time the state is refreshed (i.e. each time any Terraform command that evaluates configuration against state),
 but have no observable side effects. For image and attestation, this is required as the provider need to evaluate `latest` values or map CSP-agnostic image references (e.g. `v2.13.0`)
-to CSP-specific image references (e.g. `/CommunityGalleries/.../Image` for Azure). This is implemented as an idempotent API call and thus has no observable side-effects, but needs
+to CSP-specific image references (e.g. `/CommunityGalleries/.../Image` for Azure). This is implemented as an nilpotent API call and thus has no observable side-effects, but needs
 to be re-evaluated as the values returned by the API might change between evaluations.
