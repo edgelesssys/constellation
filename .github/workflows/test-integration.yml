@@ -42,6 +42,17 @@ jobs:
         run: mkdir build && cd build && cmake ..
 
       # Runs all test targets starting with "integration-"
-      - name: Integration Tests
+      - name: CMake-based Integration Tests
         working-directory: build
         run: ctest -R integration-
+
+      - name: Setup bazel
+        uses: ./.github/actions/setup_bazel_nix
+        with:
+          useCache: "true"
+          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
+
+      - name: Integration Tests
+        env:
+          TMPDIR: ${{ runner.temp }}
+        run: bazel test //... --test_output=errors --config=nostamp --config=integration-only --remote_download_minimal

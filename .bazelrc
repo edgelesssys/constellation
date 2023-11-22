@@ -27,6 +27,13 @@ build --flag_alias=container_prefix=//bazel/settings:container_prefix
 # set cli edition flag alias
 build --flag_alias=cli_edition=//bazel/settings:cli_edition
 
+# disable integration tests by default
+test --test_tag_filters=-integration
+# enable all tests (including integration)
+test:integration --test_tag_filters= --@io_bazel_rules_go//go/config:tags=integration
+# enable only integration tests
+test:integration-only --test_tag_filters=+integration --@io_bazel_rules_go//go/config:tags=integration
+
 # bazel configs to explicitly target a platform
 common:host --platforms @local_config_platform//:host
 common:linux_amd64 --platforms @zig_sdk//libc_aware/platform:linux_amd64_gnu.2.23
