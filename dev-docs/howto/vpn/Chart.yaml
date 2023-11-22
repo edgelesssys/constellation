@@ -1,0 +1,7 @@
+apiVersion: v2
+name: vpn
+description: A VPN server for Constellation
+
+type: application
+
+version: 0.1.0

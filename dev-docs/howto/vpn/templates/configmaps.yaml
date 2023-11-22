@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "..fullname" . }}-tproxy
+  labels: {{- include "..labels" . | nindent 4 }}
+data:
+{{ (.Files.Glob "files/tproxy-setup.sh").AsConfig | indent 2 }}
+---
+{{- if .Values.wireguard.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "..fullname" . }}-wg
+  labels: {{- include "..labels" . | nindent 4 }}
+data:
+{{ (.Files.Glob "files/wireguard-setup.sh").AsConfig | indent 2 }}
+{{- end }}
+---
+{{ if .Values.ipsec.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "..fullname" . }}-strongswan
+  labels: {{- include "..labels" . | nindent 4 }}
+data:
+{{ (.Files.Glob "files/strongswan/*").AsConfig | indent 2 }}
+{{- end }}
