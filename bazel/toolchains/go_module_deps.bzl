@@ -3540,14 +3540,6 @@ def go_dependencies():
         version = "v1.13.3",
     )
     go_repository(
-        name = "com_github_matryer_is",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/matryer/is",
-        sum = "h1:92UTHpy8CDwaJ08GqLDzhhuixiBUUD1p3AU6PHddz4A=",
-        version = "v1.2.0",
-    )
-    go_repository(
         name = "com_github_mattn_go_colorable",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
@@ -3778,14 +3770,6 @@ def go_dependencies():
         importpath = "github.com/mitchellh/reflectwalk",
         sum = "h1:G2LzWKi524PWgd3mLHV8Y5k7s6XUvT0Gef6zxSIeXaQ=",
         version = "v1.0.2",
-    )
-    go_repository(
-        name = "com_github_mmcloughlin_avo",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/mmcloughlin/avo",
-        sum = "h1:nAco9/aI9Lg2kiuROBY6BhCI/z0t5jEvJfjWbL8qXLU=",
-        version = "v0.5.0",
     )
     go_repository(
         name = "com_github_moby_ipvs",
@@ -4354,14 +4338,6 @@ def go_dependencies():
         importpath = "github.com/rogpeppe/fastuuid",
         sum = "h1:Ppwyp6VYCF1nvBTXL3trRso7mXMlRrw9ooo375wvi2s=",
         version = "v1.2.0",
-    )
-    go_repository(
-        name = "com_github_rogpeppe_go_charset",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/rogpeppe/go-charset",
-        sum = "h1:BN/Nyn2nWMoqGRA7G7paDNDqTXE30mXGqzzybrfo05w=",
-        version = "v0.0.0-20180617210344-2471d30d28b4",
     )
     go_repository(
         name = "com_github_rogpeppe_go_internal",
