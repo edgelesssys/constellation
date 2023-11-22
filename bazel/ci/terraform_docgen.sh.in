@@ -27,6 +27,10 @@ PATH="$(dirname "${terraform}"):$PATH"
 export PATH
 echo Using terraform at "$(command -v terraform)"
 
+# Use hermetic Terraform binary.
+export PATH="$(dirname "${terraform}"):$PATH"
+echo Using terraform at "$(command -v terraform)"
+
 # TODO(msanft): Pin TF version or use built provider to generate schema and feed in here.
 ${tfplugindocs} generate \
   --provider-dir ${TERRAFORM_PROVIDER_DIR} \
