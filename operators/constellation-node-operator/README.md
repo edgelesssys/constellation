@@ -206,4 +206,4 @@ More information can be found via the [Kubebuilder Documentation](https://book.k
 The operator is deployed automatically during `constellation-init`.
 Prerequisite for this is that cert-manager is installed.
 cert-manager is also installed during `constellation-init`.
-To deploy you can use the Helm chart at `/cli/internal/helm/charts/edgeless/operators/constellation-operator`.
+To deploy you can use the Helm chart at `/internal/helm/charts/edgeless/operators/constellation-operator`.

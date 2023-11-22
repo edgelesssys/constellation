@@ -25,7 +25,7 @@ readarray -t <<< "${scriptsStr}"
 scripts=("${MAPFILE[@]}")
 
 excludeDirs=(
-  "cli/internal/helm/charts/cilium"
+  "internal/helm/charts/cilium"
   "build"
   "docs/node_modules"
 )

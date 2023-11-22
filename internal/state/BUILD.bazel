@@ -7,8 +7,8 @@ go_library(
         "state.go",
         "state_doc.go",
     ],
-    importpath = "github.com/edgelesssys/constellation/v2/cli/internal/state",
-    visibility = ["//cli:__subpackages__"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/state",
+    visibility = ["//:__subpackages__"],
     deps = [
         "//internal/cloud/cloudprovider",
         "//internal/file",

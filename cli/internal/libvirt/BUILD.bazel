@@ -7,7 +7,7 @@ go_library(
     name = "libvirt",
     srcs = ["libvirt.go"],
     importpath = "github.com/edgelesssys/constellation/v2/cli/internal/libvirt",
-    visibility = ["//cli:__subpackages__"],
+    visibility = ["//:__subpackages__"],
     deps = [
         "//internal/file",
         "@com_github_docker_docker//api/types",

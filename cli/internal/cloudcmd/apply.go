@@ -14,7 +14,6 @@ import (
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
-	"github.com/edgelesssys/constellation/v2/cli/internal/state"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -22,6 +21,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
 	"github.com/edgelesssys/constellation/v2/internal/maa"
+	"github.com/edgelesssys/constellation/v2/internal/state"
 )
 
 const (

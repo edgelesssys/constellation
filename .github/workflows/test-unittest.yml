@@ -14,7 +14,7 @@ on:
       - ".github/workflows/test-unittest.yml"
   pull_request:
     paths:
-      - "cli/internal/helm/**"
+      - "internal/helm/**"
       - "**.go"
       - "**/go.mod"
       - "**/go.sum"
