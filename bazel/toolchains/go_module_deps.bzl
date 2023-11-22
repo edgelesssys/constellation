@@ -216,6 +216,22 @@ def go_dependencies():
         version = "v0.0.0-20180507223929-23540a00eaa3",
     )
     go_repository(
+        name = "com_github_apparentlymart_go_textseg",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/apparentlymart/go-textseg",
+        sum = "h1:rRmlIsPEEhUTIKQb7T++Nz/A5Q6C9IuX2wFoYVvnCs0=",
+        version = "v1.0.0",
+    )
+    go_repository(
+        name = "com_github_apparentlymart_go_textseg_v12",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/apparentlymart/go-textseg/v12",
+        sum = "h1:bNEQyAGak9tojivJNkoqWErVCQbjdL7GzRt3F8NvfJ0=",
+        version = "v12.0.0",
+    )
+    go_repository(
         name = "com_github_apparentlymart_go_textseg_v13",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
@@ -2824,6 +2840,62 @@ def go_dependencies():
         version = "v0.18.0",
     )
     go_repository(
+        name = "com_github_hashicorp_terraform_plugin_framework",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/hashicorp/terraform-plugin-framework",
+        sum = "h1:P7a7VP1GZbjc4rv921Xy5OckzhoiO3ig6SGxwelD2sI=",
+        version = "v1.4.2",
+    )
+    go_repository(
+        name = "com_github_hashicorp_terraform_plugin_go",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/hashicorp/terraform-plugin-go",
+        sum = "h1:lf/jTGTeELcz5IIbn/94mJdmnTjRYm6S6ct/JqCSr50=",
+        version = "v0.19.1",
+    )
+    go_repository(
+        name = "com_github_hashicorp_terraform_plugin_log",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/hashicorp/terraform-plugin-log",
+        sum = "h1:i7hOA+vdAItN1/7UrfBqBwvYPQ9TFvymaRGZED3FCV0=",
+        version = "v0.9.0",
+    )
+    go_repository(
+        name = "com_github_hashicorp_terraform_plugin_sdk_v2",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/hashicorp/terraform-plugin-sdk/v2",
+        sum = "h1:wcOKYwPI9IorAJEBLzgclh3xVolO7ZorYd6U1vnok14=",
+        version = "v2.29.0",
+    )
+    go_repository(
+        name = "com_github_hashicorp_terraform_plugin_testing",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/hashicorp/terraform-plugin-testing",
+        sum = "h1:T4aQh9JAhmWo4+t1A7x+rnxAJHCDIYW9kXyo4sVO92c=",
+        version = "v1.5.1",
+    )
+    go_repository(
+        name = "com_github_hashicorp_terraform_registry_address",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/hashicorp/terraform-registry-address",
+        sum = "h1:2TAiKJ1A3MAkZlH1YI/aTVcLZRu7JseiXNRHbOAyoTI=",
+        version = "v0.2.3",
+    )
+    go_repository(
+        name = "com_github_hashicorp_terraform_svchost",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/hashicorp/terraform-svchost",
+        sum = "h1:EZZimZ1GxdqFRinZ1tpJwVxxt49xc/S52uzrw4x0jKQ=",
+        version = "v0.1.1",
+    )
+    go_repository(
         name = "com_github_hashicorp_vault_api",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
@@ -3468,14 +3540,6 @@ def go_dependencies():
         version = "v1.13.3",
     )
     go_repository(
-        name = "com_github_matryer_is",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/matryer/is",
-        sum = "h1:92UTHpy8CDwaJ08GqLDzhhuixiBUUD1p3AU6PHddz4A=",
-        version = "v1.2.0",
-    )
-    go_repository(
         name = "com_github_mattn_go_colorable",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
@@ -3706,14 +3770,6 @@ def go_dependencies():
         importpath = "github.com/mitchellh/reflectwalk",
         sum = "h1:G2LzWKi524PWgd3mLHV8Y5k7s6XUvT0Gef6zxSIeXaQ=",
         version = "v1.0.2",
-    )
-    go_repository(
-        name = "com_github_mmcloughlin_avo",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/mmcloughlin/avo",
-        sum = "h1:nAco9/aI9Lg2kiuROBY6BhCI/z0t5jEvJfjWbL8qXLU=",
-        version = "v0.5.0",
     )
     go_repository(
         name = "com_github_moby_ipvs",
@@ -4284,14 +4340,6 @@ def go_dependencies():
         version = "v1.2.0",
     )
     go_repository(
-        name = "com_github_rogpeppe_go_charset",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/rogpeppe/go-charset",
-        sum = "h1:BN/Nyn2nWMoqGRA7G7paDNDqTXE30mXGqzzybrfo05w=",
-        version = "v0.0.0-20180617210344-2471d30d28b4",
-    )
-    go_repository(
         name = "com_github_rogpeppe_go_internal",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
@@ -4843,6 +4891,14 @@ def go_dependencies():
         importpath = "github.com/vishvananda/netns",
         sum = "h1:Cn05BRLm+iRP/DZxyVSsfVyrzgjDbwHwkVt38qvXnNI=",
         version = "v0.0.2",
+    )
+    go_repository(
+        name = "com_github_vmihailenco_msgpack",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/vmihailenco/msgpack",
+        sum = "h1:dSLoQfGFAo3F6OoNhwUmLwVgaUXK79GlxNBwueZn0xI=",
+        version = "v4.0.4+incompatible",
     )
     go_repository(
         name = "com_github_vmihailenco_msgpack_v5",

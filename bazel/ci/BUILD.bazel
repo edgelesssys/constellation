@@ -444,11 +444,11 @@ sh_template(
     data = [
         ":com_github_hashicorp_terraform",
         "//terraform-provider-constellation:tf_provider",
-        "@terraform-plugin-docs//:bin/tfplugindocs"
+        "@terraform-plugin-docs//:bin/tfplugindocs",
     ],
     substitutions = {
         "@@TERRAFORM@@": "$(rootpath :com_github_hashicorp_terraform)",
-        "@@TFPLUGINDOCS@@": "$(rootpath @terraform-plugin-docs//:bin/tfplugindocs)"
+        "@@TFPLUGINDOCS@@": "$(rootpath @terraform-plugin-docs//:bin/tfplugindocs)",
     },
     template = "terraform_docgen.sh.in",
 )
