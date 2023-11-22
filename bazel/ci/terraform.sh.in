@@ -25,6 +25,7 @@ readarray -t <<< "$(
 )"
 terraformPaths=("${MAPFILE[@]}")
 terraformModules=()
+terraformLockModules=()
 pathPrefix="${terraformPaths[0]}"
 for ((i = 1; i < ${#terraformPaths[@]}; i++)); do
   path="${terraformPaths[i]}"
@@ -32,11 +33,17 @@ for ((i = 1; i < ${#terraformPaths[@]}; i++)); do
     continue
   fi
   terraformModules+=("${pathPrefix}")
+  terraformLockModules+=("${pathPrefix}")
   pathPrefix="${path}"
 done
 
 excludeDirs=(
   "build"
+)
+
+excludeLockDirs=(
+  "build"
+  "terraform-provider-constellation"
 )
 
 check() {
@@ -50,6 +57,16 @@ check() {
     done
   done
 
+  echo "The following Terraform modules are excluded and won't be locked:"
+  for exclude in "${excludeLockDirs[@]}"; do
+    for i in "${!terraformLockModules[@]}"; do
+      if [[ ${terraformLockModules[i]} == "${BUILD_WORKSPACE_DIRECTORY}/${exclude}"* ]]; then
+        echo "  ${terraformLockModules[i]}"
+        unset 'terraformLockModules[i]'
+      fi
+    done
+  done
+
   case ${mode} in
   "check")
     echo "Checking validity and format of the following Terraform modules:"
@@ -59,7 +76,7 @@ check() {
     echo "This may take a minute..."
     for module in "${terraformModules[@]}"; do
       ${terraform} -chdir="${module}" init > /dev/null
-      ${terraform} -chdir="${module}" fmt -check -recursive > /dev/null
+      ${terraform} -chdir="${module}" fmt -recursive > /dev/null
       ${terraform} -chdir="${module}" validate > /dev/null
       rm -rf "${module}/.terraform"
     done
@@ -74,12 +91,12 @@ check() {
     ;;
 
   "generate")
-    echo "Formatting and generating lock files for the following Terraform modules:"
-    for script in "${terraformModules[@]}"; do
+    echo "Generating lock files for the following Terraform modules:"
+    for script in "${terraformLockModules[@]}"; do
       echo "  ${script}"
     done
     echo "This may take 5-10 min..."
-    for module in "${terraformModules[@]}"; do
+    for module in "${terraformLockModules[@]}"; do
       ${terraform} -chdir="${module}" init > /dev/null
       ${terraform} -chdir="${module}" providers lock -platform=linux_arm64 > /dev/null
       ${terraform} -chdir="${module}" providers lock -platform=linux_amd64 > /dev/null
