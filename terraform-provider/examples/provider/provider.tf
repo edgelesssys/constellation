@@ -1,3 +1,3 @@
-provider "scaffolding" {
-  # example configuration here
+provider "constellation" {
+  example_value = "test"
 }

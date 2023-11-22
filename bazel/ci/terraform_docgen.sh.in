@@ -18,5 +18,10 @@ cd "${BUILD_WORKSPACE_DIRECTORY}"
 
 ###### script body ######
 
-cd terraform-provider
-${go} run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
+TERRAFORM_PROVIDER_DIR=terraform-provider
+
+# TODO(msanft): Pin TF version or use built provider to generate schema and feed in here.
+${go} run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate \
+  --provider-dir ${TERRAFORM_PROVIDER_DIR} \
+  --provider-name constellation \
+  --rendered-provider-name Constellation
