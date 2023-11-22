@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 set -euo pipefail
-set -x
 
 function debug() {
   echo "DEBUG: $*" >&2
