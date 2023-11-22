@@ -215,10 +215,9 @@ jobs:
           cloudProvider: ${{ inputs.cloudProvider }}
           machineType: ${{ inputs.machineType }}
           regionZone: ${{ inputs.regionZone }}
-          gcpProject: ${{ secrets.GCP_E2E_PROJECT }}
-          gcpClusterCreateServiceAccount: "constellation-e2e-cluster@constellation-331613.iam.gserviceaccount.com"
-          gcpIAMCreateServiceAccount: "constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"
-          gcpInClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
+          gcpProject: constellation-e2e # ${{ secrets.GCP_E2E_PROJECT }}
+          gcpClusterCreateServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
+          gcpIAMCreateServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
           test: ${{ inputs.test }}
           kubernetesVersion: ${{ inputs.kubernetesVersion }}
           awsOpenSearchDomain: ${{ secrets.AWS_OPENSEARCH_DOMAIN }}
@@ -256,4 +255,4 @@ jobs:
         with:
           cloudProvider: ${{ inputs.cloudProvider }}
           azureCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
-          gcpServiceAccount: "constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"
+          gcpServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"

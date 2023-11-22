@@ -226,10 +226,9 @@ jobs:
           awsOpenSearchDomain: ${{ secrets.AWS_OPENSEARCH_DOMAIN }}
           awsOpenSearchUsers: ${{ secrets.AWS_OPENSEARCH_USER }}
           awsOpenSearchPwd: ${{ secrets.AWS_OPENSEARCH_PWD }}
-          gcpProject: ${{ secrets.GCP_E2E_PROJECT }}
-          gcpClusterCreateServiceAccount: "constellation-e2e-cluster@constellation-331613.iam.gserviceaccount.com"
-          gcpIAMCreateServiceAccount: "constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"
-          gcpInClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
+          gcpProject: constellation-e2e # ${{ secrets.GCP_E2E_PROJECT }}
+          gcpClusterCreateServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
+          gcpIAMCreateServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
           test: ${{ matrix.test }}
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
           azureClusterCreateCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
@@ -258,7 +257,7 @@ jobs:
         with:
           cloudProvider: ${{ matrix.provider }}
           azureCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
-          gcpServiceAccount: "constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"
+          gcpServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
 
   e2e-upgrade:
     strategy:
