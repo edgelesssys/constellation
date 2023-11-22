@@ -82,8 +82,9 @@ data "constellation_image" "foo" {
 
 The `constellation_cluster` resource is the main resource implemented by the provider.
 It declares a Constellation cluster with a specific configuration.
-Applying it will create the cluster if not existing, upgrade the cluster when the changes can be performed in place (e.g. K8s / node image / microservice update) *or* recreate the resource when the update can't be performed in-place (e.g. changing the master secret).
-updates it with the according configuration if already existing, or deletes it if not present in the configuration but in the state.
+Applying it will create the cluster if not existing, upgrade the cluster when the changes can be performed in place (e.g. K8s / node image / microservice update) *or*
+recreate the resource when the update can't be performed in-place (e.g. changing the master secret), update it with the according configuration if already existing,
+or deletes it if not present in the configuration but in the state.
 
 The "constellation_attestation" and "constellation_image" objects are [data sources](https://developer.hashicorp.com/terraform/language/data-sources),
 which are objects that should be evaluated by the Provider each time the state is refreshed (i.e. each time any Terraform command that evaluates configuration against state),
