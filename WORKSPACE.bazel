@@ -84,6 +84,11 @@ nixpkgs_package(
 )
 
 nixpkgs_package(
+    name = "terraform-plugin-docs",
+    repository = "@nixpkgs",
+)
+
+nixpkgs_package(
     name = "systemd",
     repository = "@nixpkgs",
 )
@@ -216,6 +221,19 @@ load("@rules_pkg//:deps.bzl", "rules_pkg_dependencies")
 
 rules_pkg_dependencies()
 
+# Aspect Bazel Lib
+load("//bazel/toolchains:aspect_bazel_lib.bzl", "aspect_bazel_lib")
+
+aspect_bazel_lib()
+
+load("@aspect_bazel_lib//lib:repositories.bzl", "aspect_bazel_lib_dependencies", "aspect_bazel_lib_register_toolchains", "register_coreutils_toolchains", "register_yq_toolchains")
+
+aspect_bazel_lib_dependencies()
+
+aspect_bazel_lib_register_toolchains()
+
+register_coreutils_toolchains()
+
 # OCI rules
 load("//bazel/toolchains:oci_deps.bzl", "oci_deps")
 
@@ -232,7 +250,6 @@ oci_register_toolchains(
     crane_version = LATEST_CRANE_VERSION,
 )
 
-load("@aspect_bazel_lib//lib:repositories.bzl", "register_yq_toolchains")
 load("//bazel/toolchains:container_images.bzl", "containter_image_deps")
 
 containter_image_deps()

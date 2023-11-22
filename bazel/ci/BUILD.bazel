@@ -442,10 +442,13 @@ sh_template(
 sh_template(
     name = "terraform_docgen",
     data = [
-        "@go_sdk//:bin/go",
+        ":com_github_hashicorp_terraform",
+        "//terraform-provider-constellation:tf_provider",
+        "@terraform-plugin-docs//:bin/tfplugindocs"
     ],
     substitutions = {
-        "@@GO@@": "$(rootpath @go_sdk//:bin/go)",
+        "@@TERRAFORM@@": "$(rootpath :com_github_hashicorp_terraform)",
+        "@@TFPLUGINDOCS@@": "$(rootpath @terraform-plugin-docs//:bin/tfplugindocs)"
     },
     template = "terraform_docgen.sh.in",
 )

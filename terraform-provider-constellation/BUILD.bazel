@@ -1,3 +1,4 @@
+load("@aspect_bazel_lib//lib:copy_file.bzl", "copy_file")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
 # keep
@@ -17,4 +18,12 @@ go_library(
         "//terraform-provider-constellation/internal/provider",
         "@com_github_hashicorp_terraform_plugin_framework//providerserver",
     ],
+)
+
+copy_file(
+    name = "terraform_rc",
+    src = "config.tfrc.tpl",
+    out = "config.tfrc",
+    allow_symlink = True,
+    visibility = ["//visibility:public"],
 )

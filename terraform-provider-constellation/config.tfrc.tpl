@@ -1,7 +1,8 @@
 provider_installation {
 
   dev_overrides {
-      "registry.terraform.io/edgelesssys/constellation" = "@@PROVIDER_BINARY_PATH@@"
+    # The substitution is made in terraform-provider-devbuild
+    "registry.terraform.io/edgelesssys/constellation" = "@@TERRAFORM_PROVIDER_PATH@@"
   }
 
   # For all other providers, install them directly from their origin provider
