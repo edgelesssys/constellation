@@ -64,7 +64,7 @@ check() {
     done
   done
 
-  echo "The following Terraform modules are excluded and won't be locked:"
+  echo "The following Terraform modules are excluded and their lockfiles won't be updated:"
   for exclude in "${excludeLockDirs[@]}"; do
     for i in "${!terraformLockModules[@]}"; do
       if [[ ${terraformLockModules[i]} == "${BUILD_WORKSPACE_DIRECTORY}/${exclude}"* ]]; then
