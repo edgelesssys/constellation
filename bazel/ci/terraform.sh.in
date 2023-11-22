@@ -94,6 +94,16 @@ check() {
     done
   done
 
+  echo "The following Terraform modules are excluded and won't be checked:"
+  for exclude in "${excludeCheckDirs[@]}"; do
+    for i in "${!terraformCheckModules[@]}"; do
+      if [[ ${terraformCheckModules[i]} == "${BUILD_WORKSPACE_DIRECTORY}/${exclude}"* ]]; then
+        echo "  ${terraformCheckModules[i]}"
+        unset 'terraformCheckModules[i]'
+      fi
+    done
+  done
+
   case ${mode} in
   "check")
     echo "Checking validity and format of the following Terraform modules:"
