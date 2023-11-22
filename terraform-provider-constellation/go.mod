@@ -1,4 +1,4 @@
-module github.com/hashicorp/terraform-provider-scaffolding-framework
+module github.com/edgelesssys/constellation/v2/terraform-provider-constellation
 
 go 1.19
 

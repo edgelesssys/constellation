@@ -11,8 +11,8 @@ import (
 	"flag"
 	"log"
 
+	"github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/provider"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
-	"github.com/hashicorp/terraform-provider-scaffolding-framework/internal/provider"
 )
 
 // TODO(msanft): Set this accordingly in the release CI.

@@ -8,8 +8,8 @@ go_library(
         "example_resource.go",
         "provider.go",
     ],
-    importpath = "github.com/edgelesssys/constellation/v2/terraform-provider/internal/provider",
-    visibility = ["//visibility:private"],
+    importpath = "github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/provider",
+    visibility = ["//terraform-provider-constellation:__subpackages__"],
     deps = [
         "@com_github_hashicorp_terraform_plugin_framework//datasource",
         "@com_github_hashicorp_terraform_plugin_framework//datasource/schema",
