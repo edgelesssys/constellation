@@ -1,10 +1,10 @@
 # Constellation Terraform Provider
 
-The Constellation Terraform Provider allows its user to manage the full lifecycle of a Constellation cluster -- namely creation, updates, and deletion -- via Terraform.
+The Constellation Terraform Provider allows its user to manage the full lifecycle of a Constellation cluster -- namely initialization and updates (`constellation apply`) -- via Terraform.
 
 ## Design Goals
 
-- The User needs to be able to perform Creation, Upgrades and Deletion of a Cluster through the provider.
+- The User needs to be able to perform initialization and upgrades of a Cluster through the provider. Deletion is covered by deleting the underlying infrastructure through Terraform.
 - Infrastructure provisioning should explicitly **not** be performed by the Constellation Terraform provider.
 - The User needs to receive some sort of Access Token to the Cluster (e.g. a Kubeconfig, whether long- or short-lived)
 when applying a configuration containing the provider and the resources listed below.
@@ -86,7 +86,7 @@ The `constellation_cluster` resource is the main resource implemented by the pro
 It declares a Constellation cluster with a specific configuration.
 Applying it will create the cluster if not existing, upgrade the cluster when the changes can be performed in place (e.g. K8s / node image / microservice update) *or*
 recreate the resource when the update can't be performed in-place (e.g. changing the master secret), update it with the according configuration if already existing,
-or deletes it if not present in the configuration but in the state. If resource recreation is necessary (i.e. if the resources cannot be updated in-place), an
+or deletes it ("it" as in the state, but not the underlying infrastructure) if not present in the configuration but in the state. If resource recreation is necessary (i.e. if the resources cannot be updated in-place), an
 [error](https://developer.hashicorp.com/terraform/plugin/framework/migrating/attributes-blocks/force-new#framework) is thrown that indicates that content on previously created
 persistent volumes (encrypted with the old mastersecret) cannot be retrieved with the post-recreation / new mastersecret.
 
