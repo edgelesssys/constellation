@@ -47,6 +47,8 @@ resource "constellation_cluster" "foo" {
     network_config = {
         # TBD
         # should contain CIDRs for pod network, service cidr, node network... for Cilium
+        # the aforementioned values might be outputs of infrastructure that is also provisioned
+        # through Terraform, such as a VPC.
         # and in-cluster Kubernetes API endpoint, e.g. for Kubelets
     }
     attestation = data.constellation_attestation.attestation # or provide manually crafted values
