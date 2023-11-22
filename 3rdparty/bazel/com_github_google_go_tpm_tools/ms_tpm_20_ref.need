@@ -229,7 +229,7 @@ cc_library(
     ],
     deps = [
         ":ms_tpm_20_ref_google_samples",
-        "@org_openssl//:org_openssl",
+        "@//nix/cc:org_openssl",
     ],
     target_compatible_with = [
         "@platforms//os:linux",

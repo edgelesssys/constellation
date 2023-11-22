@@ -56,50 +56,6 @@ nixpkgs_flake_package(
     package = "mkosi",
 )
 
-nixpkgs_flake_package(
-    name = "org_openssl",
-    build_file_content = """\
-load("@rules_cc//cc:defs.bzl", "cc_library")
-filegroup(
-    name = "include",
-    srcs = glob(["include/**/*.h"]),
-    visibility = ["//visibility:public"],
-)
-cc_library(
-    name = "org_openssl",
-    srcs = glob(["lib/**/*.a"]),
-    hdrs = [":include"],
-    strip_include_prefix = "include",
-    visibility = ["//visibility:public"],
-)
-""",
-    nix_flake_file = "//:flake.nix",
-    nix_flake_lock_file = "//:flake.lock",
-    package = "openssl",
-)
-
-nixpkgs_flake_package(
-    name = "cryptsetup",
-    build_file_content = """\
-load("@rules_cc//cc:defs.bzl", "cc_library")
-filegroup(
-    name = "include",
-    srcs = glob(["include/**/*.h"]),
-    visibility = ["//visibility:public"],
-)
-cc_library(
-    name = "cryptsetup",
-    srcs = glob(["lib/**/*.so*"]),
-    hdrs = [":include"],
-    strip_include_prefix = "include",
-    visibility = ["//visibility:public"],
-)
-""",
-    nix_flake_file = "//:flake.nix",
-    nix_flake_lock_file = "//:flake.lock",
-    package = "cryptsetup",
-)
-
 nixpkgs_package(
     name = "diffutils",
     repository = "@nixpkgs",
@@ -109,6 +65,10 @@ nixpkgs_package(
     name = "systemd",
     repository = "@nixpkgs",
 )
+
+load("//nix/cc:nixpkgs_cc_libraries.bzl", "nixpkgs_cc_library_deps")
+
+nixpkgs_cc_library_deps()
 
 load("//bazel/mkosi:mkosi_configure.bzl", "register_mkosi")
 

@@ -17,12 +17,16 @@ _platform_transition = transition(
 def _platform_binary_impl(ctx):
     out = ctx.actions.declare_file("{}_{}".format(ctx.file.target_file.basename, ctx.attr.platform))
     ctx.actions.symlink(output = out, target_file = ctx.file.target_file)
+    runfiles = ctx.runfiles(files = ctx.files.target_file)
+    runfiles = runfiles.merge(ctx.attr.target_file[DefaultInfo].default_runfiles)
+    runfiles = runfiles.merge(ctx.attr.target_file[DefaultInfo].data_runfiles)
 
     return [
         DefaultInfo(
             executable = out,
             files = depset([out]),
-            runfiles = ctx.runfiles(files = ctx.files.target_file),
+            runfiles = runfiles,
+            # runfiles = ctx.attr.target_file[DefaultInfo].default_runfiles,
         ),
     ]
 

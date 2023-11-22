@@ -1,0 +1,66 @@
+load("@bazel_skylib//lib:selects.bzl", "selects")
+
+alias(
+    name = "org_openssl",
+    actual = select({
+        ":aarch64-linux": "@org_openssl_aarch64-linux//:org_openssl",
+        ":aarch64-darwin": "@org_openssl_aarch64-darwin//:org_openssl",
+        ":x86_64-linux": "@org_openssl_x86_64-linux//:org_openssl",
+        ":x86_64-darwin": "@org_openssl_x86_64-darwin//:org_openssl",
+    }),
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "cryptsetup",
+    actual = select({
+        ":aarch64-linux": "@cryptsetup_aarch64-linux//:cryptsetup",
+        ":aarch64-darwin": "@cryptsetup_aarch64-darwin//:cryptsetup",
+        ":x86_64-linux": "@cryptsetup_x86_64-linux//:cryptsetup",
+        ":x86_64-darwin": "@cryptsetup_x86_64-darwin//:cryptsetup",
+    }),
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "libvirt",
+    actual = select({
+        ":aarch64-linux": "@libvirt_aarch64-linux//:libvirt",
+        ":aarch64-darwin": "@libvirt_aarch64-darwin//:libvirt",
+        ":x86_64-linux": "@libvirt_x86_64-linux//:libvirt",
+        ":x86_64-darwin": "@libvirt_x86_64-darwin//:libvirt",
+    }),
+    visibility = ["//visibility:public"],
+)
+
+selects.config_setting_group(
+    name = "aarch64-linux",
+    match_all = [
+        "@platforms//cpu:aarch64",
+        "@platforms//os:linux",
+    ],
+)
+
+selects.config_setting_group(
+    name = "aarch64-darwin",
+    match_all = [
+        "@platforms//cpu:aarch64",
+        "@platforms//os:macos",
+    ],
+)
+
+selects.config_setting_group(
+    name = "x86_64-darwin",
+    match_all = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:macos",
+    ],
+)
+
+selects.config_setting_group(
+    name = "x86_64-linux",
+    match_all = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:linux",
+    ],
+)
