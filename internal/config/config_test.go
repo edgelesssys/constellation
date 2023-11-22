@@ -397,17 +397,6 @@ func TestValidate(t *testing.T) {
 				cnf := Default()
 				cnf.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
 				cnf.Image = constants.BinaryVersion().String()
-				az := cnf.Provider.Azure
-				az.SubscriptionID = "01234567-0123-0123-0123-0123456789ab"
-				az.TenantID = "01234567-0123-0123-0123-0123456789ab"
-				az.Location = "test-location"
-				az.UserAssignedIdentity = "test-identity"
-				az.ResourceGroup = "test-resource-group"
-				cnf.Provider = ProviderConfig{}
-				cnf.Provider.Azure = az
-				cnf.Attestation.AzureSEVSNP.Measurements = measurements.M{
-					0: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength),
-				}
 				modifyConfigForAzureToPassValidate(cnf)
 				return cnf
 			}(),

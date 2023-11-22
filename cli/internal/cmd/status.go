@@ -84,6 +84,9 @@ func (s *statusCmd) status(
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
 	}
+	if err != nil {
+		return fmt.Errorf("loading config file: %w", err)
+	}
 
 	nodeVersion, err := kubeClient.GetConstellationVersion(cmd.Context())
 	if err != nil {
