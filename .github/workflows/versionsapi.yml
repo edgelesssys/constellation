@@ -178,7 +178,7 @@ jobs:
         if: steps.check-rights.outputs.auth == 'true'
         uses: ./.github/actions/login_gcp
         with:
-          service_account: "constellation-cos-builder@constellation-331613.iam.gserviceaccount.com"
+          service_account: "image-deleter@constellation-images.iam.gserviceaccount.com"
 
       - name: Execute versionsapi CLI
         id: run

@@ -273,7 +273,7 @@ jobs:
         if: matrix.csp == 'gcp'
         uses: ./.github/actions/login_gcp
         with:
-          service_account: "constellation-cos-builder@constellation-331613.iam.gserviceaccount.com"
+          service_account: "image-uploader@constellation-images.iam.gserviceaccount.com"
 
       - name: Upload AWS image
         if: matrix.csp == 'aws'
