@@ -6,7 +6,7 @@ sh_template(
     data = [
         ":devbuild_cli_edition",
         "//bazel/release:container_sums",
-        "//bootstrapper/cmd/bootstrapper:bootstrapper_linux_amd64",
+        "//bootstrapper/cmd/bootstrapper:bootstrapper_patched",
         "//cli:cli_edition_host",
         "//debugd/cmd/cdbg:cdbg_host",
         "//terraform-provider-constellation:terraform_rc",
@@ -15,7 +15,7 @@ sh_template(
         "@yq_toolchains//:resolved_toolchain",
     ],
     substitutions = {
-        "@@BOOTSTRAPPER@@": "$(rootpath //bootstrapper/cmd/bootstrapper:bootstrapper_linux_amd64)",
+        "@@BOOTSTRAPPER@@": "$(rootpath //bootstrapper/cmd/bootstrapper:bootstrapper_patched)",
         "@@CDBG@@": "$(rootpath //debugd/cmd/cdbg:cdbg_host)",
         "@@CLI@@": "$(rootpath //cli:cli_edition_host)",
         "@@CONTAINER_SUMS@@": "$(rootpath //bazel/release:container_sums)",

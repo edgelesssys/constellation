@@ -18,7 +18,7 @@ runs:
       run: |
         echo "::group::Build the bootstrapper"
         mkdir -p "$(dirname "${OUTPUT_PATH}")"
-        label=//bootstrapper/cmd/bootstrapper:bootstrapper_linux_amd64
+        label=//bootstrapper/cmd/bootstrapper:bootstrapper_patched
         bazel build "${label}"
         repository_root=$(git rev-parse --show-toplevel)
         out_rel=$(bazel cquery --output=files "${label}")
