@@ -98,6 +98,10 @@ nixpkgs_package(
     repository = "@nixpkgs",
 )
 
+load("//nix/cc:nixpkgs_cc_libraries.bzl", "nixpkgs_cc_library_deps")
+
+nixpkgs_cc_library_deps()
+
 load("//bazel/mkosi:mkosi_configure.bzl", "register_mkosi")
 
 register_mkosi(
@@ -201,7 +205,10 @@ load("@hermetic_cc_toolchain//toolchain:defs.bzl", zig_toolchains = "toolchains"
 
 zig_toolchains()
 
-nixpkgs_cc_configure(repository = "@nixpkgs")
+nixpkgs_cc_configure(
+    name = "nixpkgs_cc_toolchain",
+    repository = "@nixpkgs",
+)
 
 register_toolchains(
     "@zig_sdk//libc_aware/toolchain:linux_amd64_gnu.2.23",
