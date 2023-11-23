@@ -31,7 +31,10 @@ import (
 
 // NewHTTPClient returns a new http client.
 func NewHTTPClient() HTTPClient {
-	return &http.Client{Transport: &http.Transport{DisableKeepAlives: true}} // DisableKeepAlives fixes concurrency issue see https://stackoverflow.com/a/75816347
+	return &http.Client{Transport: &http.Transport{
+		DisableKeepAlives: true, // DisableKeepAlives fixes concurrency issue see https://stackoverflow.com/a/75816347
+		Proxy:             http.ProxyFromEnvironment,
+	}}
 }
 
 // Fetch fetches the given apiObject from the public Constellation CDN.
