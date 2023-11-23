@@ -1,4 +1,4 @@
-# CLI compatibility information
+# RFC 010: CLI compatibility information
 
 The CLI API provides information about the compatibility of the Constellation CLI and other components of the Constellation ecosystem such as Kubernetes versions.
 

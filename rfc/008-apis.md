@@ -1,4 +1,4 @@
-# Constellation APIs (v1)
+# RFC 008: Constellation APIs (v1)
 
 ## Base
 
@@ -13,8 +13,8 @@ At this moment, the only valid API version is `v1`:
 
 The API version is followed by the API group. Possible values are:
 
-- [`versions`: version information for Constellation components](version-api.md)
-- [`image`: metadata for individual Constellation OS images](image-api.md)
+- [`versions`: version information for Constellation components](007-version-api.md)
+- [`image`: metadata for individual Constellation OS images](009-image-api.md)
   - `info`: image reference lookup for each cloud provider and additional metadata
   - `measurements`: TPM measurements for Constellation OS images
   - `raw`: raw OS images
@@ -24,15 +24,15 @@ There may be more API groups in the future (e.g. `cli`)
 
 ## API paths overview
 
-- [`/constellation/v1/ref/<ref>/stream/<stream>/versions/latest/<kind>.json`](version-api.md#latest)
-- [`/constellation/v1/ref/<ref>/stream/<stream>/versions/major/<base>/<kind>.json`](version-api.md#major-to-minor-version-list)
-- [`/constellation/v1/ref/<ref>/stream/<stream>/versions/minor/<base>/<kind>.json`](version-api.md#minor-to-patch-version-list)
-- [`/constellation/v1/ref/<ref>/stream/<stream>/<version>/image/info.json`](image-api.md#image-lookup-table)
-- [`/constellation/v1/ref/<ref>/stream/<stream>/<version>/image/sbom.<format>.json`](image-api.md)
-- [`/constellation/v1/ref/<ref>/stream/<stream>/<version>/image/csp/<csp>/measurements.json`](image-api.md)
-- [`/constellation/v1/ref/<ref>/stream/<stream>/<version>/image/csp/<csp>/measurements.json.sig`](image-api.md)
-- [`/constellation/v1/ref/<ref>/stream/<stream>/<version>/image/csp/<csp>/image.raw`](image-api.md)
-- [`/constellation/v1/ref/<ref>/stream/<stream>/<version>/cli/info.json`](cli-api.md#cli-lookup-table)
+- [`/constellation/v1/ref/<ref>/stream/<stream>/versions/latest/<kind>.json`](007-version-api.md#latest)
+- [`/constellation/v1/ref/<ref>/stream/<stream>/versions/major/<base>/<kind>.json`](007-version-api.md#major-to-minor-version-list)
+- [`/constellation/v1/ref/<ref>/stream/<stream>/versions/minor/<base>/<kind>.json`](007-version-api.md#minor-to-patch-version-list)
+- [`/constellation/v1/ref/<ref>/stream/<stream>/<version>/image/info.json`](009-image-api.md#image-lookup-table)
+- [`/constellation/v1/ref/<ref>/stream/<stream>/<version>/image/sbom.<format>.json`](009-image-api.md)
+- [`/constellation/v1/ref/<ref>/stream/<stream>/<version>/image/csp/<csp>/measurements.json`](009-image-api.md)
+- [`/constellation/v1/ref/<ref>/stream/<stream>/<version>/image/csp/<csp>/measurements.json.sig`](009-image-api.md)
+- [`/constellation/v1/ref/<ref>/stream/<stream>/<version>/image/csp/<csp>/image.raw`](009-image-api.md)
+- [`/constellation/v1/ref/<ref>/stream/<stream>/<version>/cli/info.json`](010-cli-api.md#cli-lookup-table)
 
 ## API path identifiers  `ref`, `stream` and `version`
 

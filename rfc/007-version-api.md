@@ -1,4 +1,4 @@
-# Version API
+# RFC 007: Version API
 
 The version API should expose easy, straightforward, extensible and forward compatible version information to the Constellation CLI (and possibly more consumers).
 

@@ -1,4 +1,4 @@
-# Constellation Terraform Provider
+# RFC 014: Constellation Terraform Provider
 
 The Constellation Terraform Provider allows its user to manage the full lifecycle of a Constellation cluster -- namely initialization and updates (`constellation apply`) -- via Terraform.
 

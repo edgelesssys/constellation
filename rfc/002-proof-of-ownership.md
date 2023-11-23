@@ -1,4 +1,4 @@
-# Proof of Ownership
+# RFC 002: Proof of Ownership
 
 A cluster owner needs a way to prove a cluster belongs to them, while a third-party needs to be able to verify the owner's claims.
 For that, the owner generates a private/public key pair.

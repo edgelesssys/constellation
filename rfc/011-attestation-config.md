@@ -1,4 +1,4 @@
-# Attestation configuration options
+# RFC 011: Attestation configuration options
 
 To allow users more in-depth control over validating attestation statements, a separate, attestation-specific entry in the user's Constellation config file needs to be added.
 
@@ -116,7 +116,7 @@ The value substitution is part of the unmarshalling logic.
 
 Config values are uploaded to S3 and can be accessed via HTTP.
 
-The attestation config API uses the same CSP names as [the image API](./image-api.md#image-api-endpoints).
+The attestation config API uses the same CSP names as [the image API](./009-image-api.md#image-api-endpoints).
 
 The following HTTP endpoint is available:
 

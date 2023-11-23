@@ -1,4 +1,4 @@
-# External KMS
+# RFC 005: External KMS
 
 Currently, Constellation only supports [Constellation-managed key management](https://docs.edgeless.systems/constellation/2.0/architecture/keys#constellation-managed-key-management).
 The owner provides a master secret to the cluster on initialization.

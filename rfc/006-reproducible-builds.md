@@ -1,4 +1,4 @@
-# Reproducible Builds
+# RFC 006: Reproducible Builds
 
 To ensure the security of constellation's supply chain, we need to make our software builds reproducible.
 This is the only way to ensure a verifiable path from source code to binary.

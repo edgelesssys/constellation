@@ -1,4 +1,4 @@
-# Constellation updates
+# RFC 004: Constellation updates
 
 Things we manage for the user:
 
@@ -292,5 +292,5 @@ If users decide to change specific versions by changing the Kubernetes resources
 
 The compatibility information should be separated from the enforcement code.
 This way a minimal implementation can be created where the compatibility information is embedded into the CLI.
-As a next step the information can be served through the [Constellation API](./apis.md).
+As a next step the information can be served through the [Constellation API](./008-apis.md).
 By serving the compatibility information dynamically, faulty versions can be excluded from upgrade paths even after they have been released.
