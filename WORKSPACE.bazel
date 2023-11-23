@@ -89,6 +89,11 @@ nixpkgs_package(
 )
 
 nixpkgs_package(
+    name = "patchelf",
+    repository = "@nixpkgs",
+)
+
+nixpkgs_package(
     name = "systemd",
     repository = "@nixpkgs",
 )
