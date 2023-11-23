@@ -1,0 +1,16 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "image",
+    srcs = ["image_data_source.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/image",
+    visibility = ["//terraform-provider-constellation:__subpackages__"],
+    deps = [
+        "//internal/attestation/variant",
+        "//internal/cloud/cloudprovider",
+        "//terraform-provider-constellation/internal/data",
+        "@com_github_hashicorp_terraform_plugin_framework//datasource",
+        "@com_github_hashicorp_terraform_plugin_framework//datasource/schema",
+        "@com_github_hashicorp_terraform_plugin_framework//types",
+    ],
+)
