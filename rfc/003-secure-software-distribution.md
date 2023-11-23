@@ -104,7 +104,7 @@ measurements and keep them in a file (`measurements.yaml`) compatible with our c
 
 Comments should be omitted in final file. They show why certain values might be missing.
 
-Those measurements are signed and uploaded to AWS S3. Stored at a path matching the configured image (see [image API](image-api.md)).
+Those measurements are signed and uploaded to AWS S3. Stored at a path matching the configured image (see [image API](009-image-api.md)).
 
 ```yaml
 csp: azure
