@@ -1,3 +1,4 @@
+load("@aspect_bazel_lib//lib:copy_file.bzl", "copy_file")
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
 load("@rules_pkg//pkg:mappings.bzl", "pkg_files", "strip_prefix")
 
@@ -16,5 +17,13 @@ pkg_files(
 pkg_tar(
     name = "sysroot_tar",
     srcs = [":sysroot"],
+    visibility = ["//visibility:public"],
+)
+
+copy_file(
+    name = "cryptsetup_closure",
+    src = "@cryptsetup_x86_64-linux//:closure.tar",
+    out = "cryptsetup_closure.tar",
+    allow_symlink = True,
     visibility = ["//visibility:public"],
 )
