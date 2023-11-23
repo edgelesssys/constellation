@@ -48,18 +48,16 @@ func (d *ImageDataSource) Metadata(_ context.Context, req datasource.MetadataReq
 // Schema returns the schema for the image data source.
 func (d *ImageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		// This description is used by the documentation generator and the language server.
-		MarkdownDescription: "Example data source",
-
+		Description:         "Data source to retrieve the Constellation OS image reference for a given CSP and Attestation Variant.",
+		MarkdownDescription: "Data source to retrieve the Constellation OS image reference for a given CSP and Attestation Variant.",
 		Attributes: map[string]schema.Attribute{
 			"attestation_variant": schema.StringAttribute{
 				Description: "Attestation variant the image should work with. (e.g. `azure-sev-snp`)",
-				MarkdownDescription: "Attestation variant the image should work with.\n" +
-					"Can be one of:" +
-					"* `aws-sev-snp`" +
-					"* `aws-nitro-tpm`" +
-					"* `azure-sev-snp`" +
-					"* `gcp-sev-es`",
+				MarkdownDescription: "Attestation variant the image should work with. Can be one of:\n" +
+					"  * `aws-sev-snp`\n" +
+					"  * `aws-nitro-tpm`\n" +
+					"  * `azure-sev-snp`\n" +
+					"  * `gcp-sev-es`\n",
 				Required: true,
 				// TODO(msanft): Add validators.
 			},
