@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package image
+package provider
 
 import (
 	"context"
@@ -13,9 +13,11 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/data"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -27,7 +29,8 @@ func NewImageDataSource() datasource.DataSource {
 	return &ImageDataSource{}
 }
 
-// ImageDataSource defines the data source implementation.
+// ImageDataSource defines the data source implementation for the image data source.
+// It is used to retrieve the Constellation OS image reference for a given CSP and Attestation Variant.
 type ImageDataSource struct {
 	imageFetcher data.ImageFetcher
 }
@@ -64,20 +67,23 @@ func (d *ImageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 					"  * `azure-sev-snp`\n" +
 					"  * `gcp-sev-es`\n",
 				Required: true,
-				// TODO(msanft): Add validators.
+				Validators: []validator.String{
+					stringvalidator.OneOf("aws-sev-snp", "aws-nitro-tpm", "azure-sev-snp", "gcp-sev-es"),
+				},
 			},
 			"image_version": schema.StringAttribute{
 				Description:         "Version of the Constellation OS image to use. (e.g. `v2.13.0`)",
 				MarkdownDescription: "Version of the Constellation OS image to use. (e.g. `v2.13.0`)",
 				Required:            true, // TODO(msanft): Make this optional to support "lockstep" mode.
-				// TODO(msanft): Add validators.
 			},
 			"csp": schema.StringAttribute{
 				Description: "CSP (Cloud Service Provider) to use. (e.g. `azure`)",
 				MarkdownDescription: "CSP (Cloud Service Provider) to use. (e.g. `azure`)\n" +
 					"See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview/clouds) that Constellation supports.",
 				Required: true,
-				// TODO(msanft): Add validators.
+				Validators: []validator.String{
+					stringvalidator.OneOf("aws", "azure", "gcp"),
+				},
 			},
 			"region": schema.StringAttribute{
 				Description: "Region to retrieve the image for. Only required for AWS.",
@@ -85,7 +91,6 @@ func (d *ImageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 					"The Constellation OS image must be [replicated to the region](https://docs.edgeless.systems/constellation/workflows/config)," +
 					"and the region must [support AMD SEV-SNP](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snp-requirements.html), if it is used for Attestation.",
 				Required: true,
-				// TODO(msanft): Add validators.
 			},
 			"reference": schema.StringAttribute{
 				Description:         "CSP-specific reference to the image.",
@@ -95,6 +100,9 @@ func (d *ImageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 		},
 	}
 }
+
+// TODO(msanft): Possibly implement more complex validation for inter-dependencies between attributes.
+// E.g., region should be required if, and only if, AWS is used.
 
 // Configure configures the data source.
 func (d *ImageDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {

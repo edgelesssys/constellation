@@ -168,7 +168,7 @@ func (m *Maintainer) checkAuthenticated(ctx context.Context, expectedHash string
 	}
 
 	hasChecksum := attributes.Checksum != nil && attributes.Checksum.ChecksumSHA256 != nil && len(*attributes.Checksum.ChecksumSHA256) > 0
-	isSinglePart := attributes.ObjectParts == nil || attributes.ObjectParts.TotalPartsCount == 1
+	isSinglePart := attributes.ObjectParts == nil || *attributes.ObjectParts.TotalPartsCount == 1
 
 	if !hasChecksum || !isSinglePart {
 		// checksums are not guaranteed to be present

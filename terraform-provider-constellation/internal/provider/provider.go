@@ -13,7 +13,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
 	datastruct "github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/data"
-	"github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/image"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
@@ -90,6 +89,6 @@ func (p *ConstellationProvider) Resources(_ context.Context) []func() resource.R
 // DataSources lists the data sources implemented by the provider.
 func (p *ConstellationProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		image.NewImageDataSource,
+		NewImageDataSource,
 	}
 }
