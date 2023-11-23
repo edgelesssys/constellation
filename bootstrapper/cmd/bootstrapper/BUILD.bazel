@@ -1,6 +1,7 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
 load("//bazel/go:platform.bzl", "platform_binary")
+load("//bazel/patchelf:patchelf.bzl", "patchelf")
 
 go_library(
     name = "bootstrapper_lib",
@@ -61,17 +62,25 @@ go_binary(
 
 platform_binary(
     name = "bootstrapper_linux_amd64",
-    platform = "@zig_sdk//libc_aware/platform:linux_amd64_gnu.2.23",
+    platform = "//bazel/platforms:constellation_os",
     target_file = ":bootstrapper",
+)
+
+patchelf(
+    name = "bootstrapper_patched",
+    src = ":bootstrapper_linux_amd64",
+    out = "bootstrapper_with_nix_rpath",
+    interpreter = "@cryptsetup_x86_64-linux//:dynamic-linker",
+    rpath = "@cryptsetup_x86_64-linux//:rpath",
     visibility = ["//visibility:public"],
 )
 
 pkg_tar(
     name = "bootstrapper-package",
     srcs = [
-        ":bootstrapper_linux_amd64",
+        ":bootstrapper_patched",
     ],
     mode = "0755",
-    remap_paths = {"/platform:linux_amd64_gnu.2.23": "/usr/bin/bootstrapper"},
+    remap_paths = {"/bootstrapper_with_nix_rpath": "/usr/bin/bootstrapper"},
     visibility = ["//visibility:public"],
 )
