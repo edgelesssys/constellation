@@ -11,6 +11,7 @@ go_library(
         "//terraform-provider-constellation/internal/data",
         "@com_github_hashicorp_terraform_plugin_framework//datasource",
         "@com_github_hashicorp_terraform_plugin_framework//datasource/schema",
+        "@com_github_hashicorp_terraform_plugin_framework//path",
         "@com_github_hashicorp_terraform_plugin_framework//types",
     ],
 )

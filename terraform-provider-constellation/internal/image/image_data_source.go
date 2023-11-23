@@ -15,6 +15,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/data"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -33,6 +34,7 @@ type ImageDataSource struct {
 
 // ImageDataSourceModel defines the image data source's data model.
 type ImageDataSourceModel struct {
+	ID                 types.String `tfsdk:"id"` // Required for testing.
 	AttestationVariant types.String `tfsdk:"attestation_variant"`
 	ImageVersion       types.String `tfsdk:"image_version"`
 	CSP                types.String `tfsdk:"csp"`
@@ -51,6 +53,9 @@ func (d *ImageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 		Description:         "Data source to retrieve the Constellation OS image reference for a given CSP and Attestation Variant.",
 		MarkdownDescription: "Data source to retrieve the Constellation OS image reference for a given CSP and Attestation Variant.",
 		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Computed: true,
+			},
 			"attestation_variant": schema.StringAttribute{
 				Description: "Attestation variant the image should work with. (e.g. `azure-sev-snp`)",
 				MarkdownDescription: "Attestation variant the image should work with. Can be one of:\n" +
@@ -120,19 +125,23 @@ func (d *ImageDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 	// Check configuration for errors.
 	csp := cloudprovider.FromString(data.CSP.ValueString())
 	if csp == cloudprovider.Unknown {
-		resp.Diagnostics.AddError(
+		resp.Diagnostics.AddAttributeError(
+			path.Root("csp"),
 			"Invalid CSP",
 			fmt.Sprintf("Invalid CSP: %s", data.CSP.ValueString()),
 		)
-		return
 	}
 
 	attestationVariant, err := variant.FromString(data.AttestationVariant.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError(
+		resp.Diagnostics.AddAttributeError(
+			path.Root("attestation_variant"),
 			"Invalid Attestation Variant",
 			fmt.Sprintf("When parsing the Attestation Variant (%s), an error occured: %s", data.AttestationVariant.ValueString(), err),
 		)
+	}
+
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -148,6 +157,8 @@ func (d *ImageDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 
 	// Save data into Terraform state
 	data.Reference = types.StringValue(imageRef)
+	// Use a placeholder ID for testing, as per
+	data.ID = types.StringValue("placeholder")
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
