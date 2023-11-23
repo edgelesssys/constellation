@@ -19,6 +19,8 @@
     let
       pkgsUnstable = import nixpkgsUnstable { inherit system; };
 
+      callPackage = pkgsUnstable.callPackage;
+
       mkosiDev = (pkgsUnstable.mkosi.overrideAttrs (oldAttrs: rec {
         propagatedBuildInputs = oldAttrs.propagatedBuildInputs ++ (with pkgsUnstable;  [
           # package management
@@ -41,10 +43,11 @@
     {
       packages.mkosi = mkosiDev;
 
-      packages.openssl = pkgsUnstable.symlinkJoin {
-        name = "openssl";
-        paths = [ openssl-static.out openssl-static.dev ];
-      };
+      packages.openssl = callPackage ./nix/cc/openssl.nix { pkgs = pkgsUnstable; };
+
+      packages.cryptsetup = callPackage ./nix/cc/cryptsetup.nix { pkgs = pkgsUnstable; pkgsLinux = import nixpkgsUnstable { system = "x86_64-linux"; }; };
+
+      packages.libvirt = callPackage ./nix/cc/libvirt.nix { pkgs = pkgsUnstable; pkgsLinux = import nixpkgsUnstable { system = "x86_64-linux"; }; };
 
       packages.awscli2 = pkgsUnstable.awscli2;
 
