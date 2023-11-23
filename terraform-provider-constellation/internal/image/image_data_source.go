@@ -101,7 +101,7 @@ func (d *ImageDataSource) Configure(ctx context.Context, req datasource.Configur
 	}
 
 	// check if the right type is passed down.
-	providerData, ok := req.ProviderData.(*data.ProviderData)
+	providerData, ok := req.ProviderData.(data.ProviderData)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",
