@@ -26,7 +26,6 @@ sed -i "s|@@TERRAFORM_PROVIDER_PATH@@|$(realpath bazel-bin/terraform-provider-co
 Afterwards, all Terraform commands that should use the local provider build should be prefixed with `TF_CLI_CONFIG_FILE=config.tfrc` like so:
 
 ```bash
-TF_CLI_CONFIG_FILE=config.tfrc terraform init
 TF_CLI_CONFIG_FILE=config.tfrc terraform apply
 ...
 ```
