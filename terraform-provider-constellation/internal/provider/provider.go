@@ -34,13 +34,13 @@ type ConstellationProviderModel struct {
 }
 
 // Metadata returns the Providers name and version upon request.
-func (p *ConstellationProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
+func (p *ConstellationProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
 	resp.TypeName = "constellation"
 	resp.Version = p.version
 }
 
 // Schema defines the HCL schema of the provider, i.e. what attributes it has and what they are used for.
-func (p *ConstellationProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
+func (p *ConstellationProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"example_value": schema.StringAttribute{
@@ -72,14 +72,14 @@ func (p *ConstellationProvider) Configure(ctx context.Context, req provider.Conf
 }
 
 // Resources lists the resources implemented by the provider.
-func (p *ConstellationProvider) Resources(ctx context.Context) []func() resource.Resource {
+func (p *ConstellationProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewExampleResource,
 	}
 }
 
 // DataSources lists the data sources implemented by the provider.
-func (p *ConstellationProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
+func (p *ConstellationProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		NewExampleDataSource,
 	}

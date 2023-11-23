@@ -20,6 +20,7 @@ import (
 // Ensure provider defined types fully satisfy framework interfaces.
 var _ datasource.DataSource = &ExampleDataSource{}
 
+// NewExampleDataSource creates a new examplary data source.
 func NewExampleDataSource() datasource.DataSource {
 	return &ExampleDataSource{}
 }
@@ -32,14 +33,16 @@ type ExampleDataSource struct {
 // ExampleDataSourceModel describes the data source data model.
 type ExampleDataSourceModel struct {
 	ConfigurableAttribute types.String `tfsdk:"configurable_attribute"`
-	Id                    types.String `tfsdk:"id"`
+	ID                    types.String `tfsdk:"id"`
 }
 
-func (d *ExampleDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+// Metadata returns the metadata for the data source.
+func (d *ExampleDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_example"
 }
 
-func (d *ExampleDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+// Schema returns the schema for the data source.
+func (d *ExampleDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		// This description is used by the documentation generator and the language server.
 		MarkdownDescription: "Example data source",
@@ -57,7 +60,8 @@ func (d *ExampleDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 	}
 }
 
-func (d *ExampleDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+// Configure configures the data source.
+func (d *ExampleDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
 		return
@@ -77,6 +81,7 @@ func (d *ExampleDataSource) Configure(ctx context.Context, req datasource.Config
 	d.client = client
 }
 
+// Read reads from the data source.
 func (d *ExampleDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var data ExampleDataSourceModel
 
@@ -97,7 +102,7 @@ func (d *ExampleDataSource) Read(ctx context.Context, req datasource.ReadRequest
 
 	// For the purposes of this example code, hardcoding a response value to
 	// save into the Terraform state.
-	data.Id = types.StringValue("example-id")
+	data.ID = types.StringValue("example-id")
 
 	// Write logs using the tflog package
 	// Documentation: https://terraform.io/plugin/log

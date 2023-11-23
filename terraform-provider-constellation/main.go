@@ -16,7 +16,7 @@ import (
 )
 
 // TODO(msanft): Set this accordingly in the release CI.
-var version string = "dev"
+var version = "dev"
 
 func main() {
 	var debug bool
