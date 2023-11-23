@@ -1,4 +1,4 @@
-# Secure Distribution of CLI & Measurements
+# RFC 003: Secure Distribution of CLI & Measurements
 
 ## Goal / Motivation
 

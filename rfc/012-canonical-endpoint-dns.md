@@ -1,4 +1,4 @@
-# Canonical endpoint / Constellation with custom DNS name
+# RFC 012: Canonical endpoint / Constellation with custom DNS name
 
 Customers may want to use a DNS name for the cluster endpoint instead of the public ip address.
 The public ip may be bound to a zonal loadbalancer (AWS), limiting the availability of the cluster to a single zone.

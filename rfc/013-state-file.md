@@ -1,4 +1,4 @@
-# Constellation state file
+# RFC 013: Constellation state file
 
 During a cluster's lifecycle, Constellation needs to keep track of multiple different values and state information of the cluster,
 like loadbalancer IPs or UID of the cluster.

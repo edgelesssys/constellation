@@ -1,4 +1,4 @@
-# Attestation configuration options
+# RFC 011: Attestation configuration options
 
 To allow users more in-depth control over validating attestation statements, a separate, attestation-specific entry in the user's Constellation config file needs to be added.
 

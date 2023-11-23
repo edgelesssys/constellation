@@ -1,4 +1,4 @@
-# OS image & measurement discovery
+# RFC 009: OS image & measurement discovery
 
 The Constellation OS image build pipeline generates a set of images using a chosen commit of the Constellation monorepo and a desired release version number.
 

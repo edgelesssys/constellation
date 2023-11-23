@@ -1,4 +1,4 @@
-# Constellation updates
+# RFC 004: Constellation updates
 
 Things we manage for the user:
 

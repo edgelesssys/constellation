@@ -1,4 +1,4 @@
-# Key derivation
+# RFC 001: Key derivation
 
 To derive disk-encryption keys and other secret material in a Constellation Kubernetes cluster, we use [HKDF](https://datatracker.ietf.org/doc/html/rfc5869).
 
