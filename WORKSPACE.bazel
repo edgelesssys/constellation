@@ -56,28 +56,6 @@ nixpkgs_flake_package(
     package = "mkosi",
 )
 
-nixpkgs_flake_package(
-    name = "org_openssl",
-    build_file_content = """\
-load("@rules_cc//cc:defs.bzl", "cc_library")
-filegroup(
-    name = "include",
-    srcs = glob(["include/**/*.h"]),
-    visibility = ["//visibility:public"],
-)
-cc_library(
-    name = "org_openssl",
-    srcs = glob(["lib/**/*.a"]),
-    hdrs = [":include"],
-    strip_include_prefix = "include",
-    visibility = ["//visibility:public"],
-)
-""",
-    nix_flake_file = "//:flake.nix",
-    nix_flake_lock_file = "//:flake.lock",
-    package = "openssl",
-)
-
 nixpkgs_package(
     name = "diffutils",
     repository = "@nixpkgs",
