@@ -1,7 +1,6 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_cross_binary", "go_library")
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
 load("@rules_pkg//pkg:mappings.bzl", "pkg_files")
-load("//bazel/go:platform.bzl", "platform_binary")
 
 go_library(
     name = "debugd_lib",
@@ -38,10 +37,10 @@ go_binary(
     visibility = ["//visibility:public"],
 )
 
-platform_binary(
+go_cross_binary(
     name = "debugd_linux_amd64",
-    platform = "@zig_sdk//libc_aware/platform:linux_amd64_gnu.2.23",
-    target_file = ":debugd",
+    platform = "//bazel/platforms:go-pure_x86_64-linux",
+    target = "debugd",
     visibility = ["//visibility:public"],
 )
 
@@ -61,6 +60,6 @@ pkg_tar(
         ":debugd_unit",
     ],
     mode = "0755",
-    remap_paths = {"/platform:linux_amd64_gnu.2.23": "/usr/bin/debugd"},
+    remap_paths = {"/debugd_linux_amd64": "/usr/bin/debugd"},
     visibility = ["//visibility:public"],
 )

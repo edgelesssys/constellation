@@ -49,6 +49,7 @@ mkosi_image(
     ],
     extra_trees = [
         "//image:sysroot_tar",
+        "//image:cryptsetup_closure",
     ],
     local_mirror = ["@mkosi_rpms//:repo"],
     mkosi_conf = "mkosi.conf",

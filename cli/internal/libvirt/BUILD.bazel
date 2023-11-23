@@ -67,7 +67,9 @@ oci_image(
     entrypoint = ["/start.sh"],
     os = "linux",
     tars = [
-        "//rpm:containerized-libvirt",
+        # TODO(malt3): test if libvirt works
+        "@libvirt_x86_64-linux//:closure.tar",
+        "@libvirt_x86_64-linux//:bin-linktree.tar",
         ":start",
     ],
     visibility = ["//visibility:public"],

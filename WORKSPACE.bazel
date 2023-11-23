@@ -66,6 +66,11 @@ nixpkgs_package(
     repository = "@nixpkgs",
 )
 
+nixpkgs_package(
+    name = "patchelf",
+    repository = "@nixpkgs",
+)
+
 load("//nix/cc:nixpkgs_cc_libraries.bzl", "nixpkgs_cc_library_deps")
 
 nixpkgs_cc_library_deps()
@@ -177,16 +182,6 @@ nixpkgs_cc_configure(
     name = "nixpkgs_cc_toolchain",
     repository = "@nixpkgs",
 )
-
-nixpkgs_cc_configure(
-    name = "nixpkgs_cc_toolchain_x86_64",
-    cross_cpu = "k8",
-    repository = "@nixpkgs",
-)
-
-# register_toolchains(
-#     "@nixpkgs_cc_toolchain//:toolchain",
-# )
 
 register_toolchains(
     "@zig_sdk//libc_aware/toolchain:linux_amd64_gnu.2.23",

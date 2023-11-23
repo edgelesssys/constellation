@@ -72,6 +72,7 @@ filegroup(
     srcs = glob(["include/**/*.h"]),
     visibility = ["//visibility:public"],
 )
+exports_files(["closure.tar", "rpath"])
 cc_library(
     name = "cryptsetup",
     srcs = glob(["lib/**/*.so*"]),
@@ -91,6 +92,7 @@ filegroup(
     srcs = glob(["include/**/*.h"]),
     visibility = ["//visibility:public"],
 )
+exports_files(["bin-linktree.tar", "closure.tar", "rpath"])
 cc_library(
     name = "libvirt",
     srcs = glob([

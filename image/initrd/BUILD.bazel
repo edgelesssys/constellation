@@ -14,6 +14,7 @@ mkosi_image(
     ],
     extra_trees = [
         "//image:sysroot_tar",
+        "//image:cryptsetup_closure",
         "//disk-mapper/cmd:disk-mapper-package.tar",
     ],
     local_mirror = ["@mkosi_rpms//:repo"],

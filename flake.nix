@@ -46,7 +46,7 @@
 
         packages.cryptsetup = callPackage ./nix/cc/cryptsetup.nix { pkgs = pkgsUnstable; };
 
-        packages.libvirt = pkgsUnstable.libvirt;
+        packages.libvirt = callPackage ./nix/cc/libvirt.nix { pkgs = pkgsUnstable; };
 
         packages.awscli2 = pkgsUnstable.awscli2;
 

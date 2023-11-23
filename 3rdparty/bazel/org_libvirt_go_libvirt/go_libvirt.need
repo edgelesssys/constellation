@@ -96,7 +96,7 @@ go_library(
         "typedparams.go",
     ],
     cdeps = [
-        "@libvirt//:libvirt",
+        "@//nix/cc:libvirt",
     ],
     cgo = True,
     importpath = "libvirt.org/go/libvirt",
