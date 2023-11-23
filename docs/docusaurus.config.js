@@ -12,7 +12,7 @@ async function createConfig() {
     url: 'https://constellation-docs.netlify.app',
     baseUrl: '/constellation/',
     onBrokenLinks: 'throw',
-    onBrokenMarkdownLinks: 'warn',
+    onBrokenMarkdownLinks: 'throw',
     favicon: 'img/favicon.ico',
 
     // GitHub pages deployment config.
@@ -139,7 +139,7 @@ async function createConfig() {
                 },
                 {
                   label: 'Newsletter',
-                  href: 'https://www.edgeless.systems/#newsletter-signup'
+                  href: 'https://www.edgeless.systems/#footer'
                 },
               ],
             },
@@ -170,11 +170,11 @@ async function createConfig() {
               items: [
                 {
                   label: 'Imprint',
-                  href: 'https://www.edgeless.systems/imprint',
+                  href: 'https://www.edgeless.systems/imprint/',
                 },
                 {
                   label: 'Privacy Policy',
-                  href: 'https://www.edgeless.systems/privacy',
+                  href: 'https://www.edgeless.systems/privacy/',
                 },
                 {
                   html: `<a href="javascript: Cookiebot.renew()" class="footer__link-item">Cookie Settings</a>`
@@ -182,7 +182,7 @@ async function createConfig() {
 
                 {
                   label: 'Contact Us',
-                  href: 'https://www.edgeless.systems/contact/',
+                  href: 'https://www.edgeless.systems/contact-us/',
                 },
               ],
             },
