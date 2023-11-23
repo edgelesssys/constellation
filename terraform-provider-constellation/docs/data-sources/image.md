@@ -39,4 +39,5 @@ The Constellation OS image must be [replicated to the region](https://docs.edgel
 
 ### Read-Only
 
+- `id` (String) The ID of this resource.
 - `reference` (String) CSP-specific reference to the image.

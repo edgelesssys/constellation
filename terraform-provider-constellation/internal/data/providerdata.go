@@ -12,7 +12,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 )
 
-// Data is the data that get's passed down from the provider
+// ProviderData is the data that get's passed down from the provider
 // configuration to the resources and data sources.
 type ProviderData struct {
 	ImageFetcher ImageFetcher

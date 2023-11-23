@@ -134,9 +134,8 @@ func (c *Client) DeletePath(ctx context.Context, path string) error {
 	}
 	c.Logger.Debugf("Listing objects in %s", path)
 	objs := []s3types.Object{}
-	isTruncated := true
-	out := &s3.ListObjectsV2Output{IsTruncated: &isTruncated}
-	for *out.IsTruncated {
+	out := &s3.ListObjectsV2Output{IsTruncated: true}
+	for out.IsTruncated {
 		var err error
 		out, err = c.s3Client.ListObjectsV2(ctx, listIn)
 		if err != nil {

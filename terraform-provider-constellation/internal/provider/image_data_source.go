@@ -105,7 +105,7 @@ func (d *ImageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 // E.g., region should be required if, and only if, AWS is used.
 
 // Configure configures the data source.
-func (d *ImageDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (d *ImageDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
 		return
@@ -145,7 +145,7 @@ func (d *ImageDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 		resp.Diagnostics.AddAttributeError(
 			path.Root("attestation_variant"),
 			"Invalid Attestation Variant",
-			fmt.Sprintf("When parsing the Attestation Variant (%s), an error occured: %s", data.AttestationVariant.ValueString(), err),
+			fmt.Sprintf("When parsing the Attestation Variant (%s), an error occurred: %s", data.AttestationVariant.ValueString(), err),
 		)
 	}
 
@@ -158,7 +158,7 @@ func (d *ImageDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error fetching Image Reference",
-			fmt.Sprintf("When fetching the image reference, an error occured: %s", err),
+			fmt.Sprintf("When fetching the image reference, an error occurred: %s", err),
 		)
 		return
 	}

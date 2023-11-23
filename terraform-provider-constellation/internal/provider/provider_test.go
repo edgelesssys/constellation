@@ -52,10 +52,10 @@ func bazelSetTerraformBinaryPath(t *testing.T) {
 	}
 
 	// Set the path to the absolute Terraform binary for acceptance testing.
-	os.Setenv("TF_ACC_TERRAFORM_PATH", absTfPath)
+	t.Setenv("TF_ACC_TERRAFORM_PATH", absTfPath)
 }
 
-// runsUnderBazel checks whether the test is ran under bazel
+// runsUnderBazel checks whether the test is ran under bazel.
 func runsUnderBazel() bool {
 	return runsUnder == "bazel"
 }

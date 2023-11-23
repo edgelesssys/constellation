@@ -230,7 +230,7 @@ func TestCheck(t *testing.T) {
 					ChecksumSHA256: toPtr("tcH7Lvxta0Z0wv3MSM4BtDo7fAN2PAwzVd4Ame4PjHM="),
 				},
 				ObjectParts: &types.GetObjectAttributesParts{
-					TotalPartsCount: toPtr(int32(1)),
+					TotalPartsCount: 1,
 				},
 			},
 			wantErr: true,
@@ -242,7 +242,7 @@ func TestCheck(t *testing.T) {
 					ChecksumSHA256: toPtr("LCa0a2j/xo/5m0U8HTBBNBNCLXBkg7+g+YpeiGJm564="),
 				},
 				ObjectParts: &types.GetObjectAttributesParts{
-					TotalPartsCount: toPtr(int32(1)),
+					TotalPartsCount: 1,
 				},
 			},
 		},
@@ -250,7 +250,7 @@ func TestCheck(t *testing.T) {
 			hash: "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
 			authenticatedResponse: &s3.GetObjectAttributesOutput{
 				ObjectParts: &types.GetObjectAttributesParts{
-					TotalPartsCount: toPtr(int32(2)),
+					TotalPartsCount: 2,
 				},
 			},
 			unauthenticatedResponse:   []byte("foo"),
