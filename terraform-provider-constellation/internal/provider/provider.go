@@ -5,7 +5,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 
 // The provider package implements the Constellation Terraform provider's
-// "provider" resource.
+// "provider" resource, which is the main entrypoint for Terraform to
+// interact with the provider.
 package provider
 
 import (

@@ -24,7 +24,8 @@ import (
 // Ensure provider defined types fully satisfy framework interfaces.
 var _ datasource.DataSource = &ImageDataSource{}
 
-// NewImageDataSource creates a new examplary data source.
+// NewImageDataSource creates a new data source for fetching Constellation OS images
+// from the Versions-API.
 func NewImageDataSource() datasource.DataSource {
 	return &ImageDataSource{}
 }
