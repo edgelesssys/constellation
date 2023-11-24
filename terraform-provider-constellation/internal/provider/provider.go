@@ -11,7 +11,6 @@ package provider
 import (
 	"context"
 
-	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
 	datastruct "github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/data"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -67,12 +66,8 @@ func (p *ConstellationProvider) Configure(ctx context.Context, req provider.Conf
 		return
 	}
 
-	// Create the image-fetcher client.
-	imageFetcher := imagefetcher.New()
-
-	config := datastruct.ProviderData{
-		ImageFetcher: imageFetcher,
-	}
+	// TODO(msanft): Initialize persistent clients here.
+	config := datastruct.ProviderData{}
 
 	// Make the clients available during data source and resource "Configure" methods.
 	resp.DataSourceData = config

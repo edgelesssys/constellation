@@ -12,7 +12,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/data"
+	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -32,7 +32,15 @@ func NewImageDataSource() datasource.DataSource {
 // ImageDataSource defines the data source implementation for the image data source.
 // It is used to retrieve the Constellation OS image reference for a given CSP and Attestation Variant.
 type ImageDataSource struct {
-	imageFetcher data.ImageFetcher
+	imageFetcher imageFetcher
+}
+
+// imageFetcher gets an image reference from the versionsapi.
+type imageFetcher interface {
+	FetchReference(ctx context.Context,
+		provider cloudprovider.Provider, attestationVariant variant.Variant,
+		image, region string,
+	) (string, error)
 }
 
 // ImageDataSourceModel defines the image data source's data model.
@@ -106,22 +114,8 @@ func (d *ImageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 
 // Configure configures the data source.
 func (d *ImageDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
-	// Prevent panic if the provider has not been configured.
-	if req.ProviderData == nil {
-		return
-	}
-
-	// check if the right type is passed down.
-	providerData, ok := req.ProviderData.(data.ProviderData)
-	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected *data.ProviderData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
-		return
-	}
-
-	d.imageFetcher = providerData.ImageFetcher
+	// Create the image-fetcher client.
+	d.imageFetcher = imagefetcher.New()
 }
 
 // Read reads from the data source.
