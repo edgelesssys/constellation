@@ -90,7 +90,7 @@ func (d *ImageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 				MarkdownDescription: "Region to retrieve the image for. Only required for AWS.\n" +
 					"The Constellation OS image must be [replicated to the region](https://docs.edgeless.systems/constellation/workflows/config)," +
 					"and the region must [support AMD SEV-SNP](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snp-requirements.html), if it is used for Attestation.",
-				Required: true,
+				Optional: true,
 			},
 			"reference": schema.StringAttribute{
 				Description:         "CSP-specific reference to the image.",

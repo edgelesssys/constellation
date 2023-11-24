@@ -34,6 +34,9 @@ data "constellation_image" "example" {
 - `csp` (String) CSP (Cloud Service Provider) to use. (e.g. `azure`)
 See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview/clouds) that Constellation supports.
 - `image_version` (String) Version of the Constellation OS image to use. (e.g. `v2.13.0`)
+
+### Optional
+
 - `region` (String) Region to retrieve the image for. Only required for AWS.
 The Constellation OS image must be [replicated to the region](https://docs.edgeless.systems/constellation/workflows/config),and the region must [support AMD SEV-SNP](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snp-requirements.html), if it is used for Attestation.
 
