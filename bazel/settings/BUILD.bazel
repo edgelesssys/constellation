@@ -80,6 +80,6 @@ config_setting(
 stamp_tags(
     # generates a container image version tag based on the version stamp
     name = "tag",
-    repotags = [""""v"+($stamp.STABLE_STAMP_VERSION // "0.0.0")"""],
+    repotags = [""""v"+($stamp[0].STABLE_STAMP_VERSION // "0.0.0")"""],
     visibility = ["//visibility:public"],
 )

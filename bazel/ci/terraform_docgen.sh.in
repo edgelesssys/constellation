@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+###### script header ######
+
+lib=$(realpath @@BASE_LIB@@) || exit 1
+stat "${lib}" >> /dev/null || exit 1
+
+# shellcheck source=../sh/lib.bash
+if ! source "${lib}"; then
+  echo "Error: could not find import"
+  exit 1
+fi
+
+terraform=$(realpath @@TERRAFORM@@)
+stat "${terraform}" >> /dev/null
+tfplugindocs=$(realpath @@TFPLUGINDOCS@@)
+stat "${tfplugindocs}" >> /dev/null
+
+cd "${BUILD_WORKSPACE_DIRECTORY}"
+
+###### script body ######
+
+TERRAFORM_PROVIDER_DIR="terraform-provider-constellation"
+
+# Use hermetic Terraform binary.
+PATH="$(dirname "${terraform}"):$PATH"
+export PATH
+echo Using terraform at "$(command -v terraform)"
+
+# TODO(msanft): Pin TF version or use built provider to generate schema and feed in here.
+${tfplugindocs} generate \
+  --provider-dir ${TERRAFORM_PROVIDER_DIR} \
+  --provider-name constellation \
+  --rendered-provider-name Constellation

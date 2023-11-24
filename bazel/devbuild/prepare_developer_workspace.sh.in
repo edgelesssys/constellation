@@ -27,6 +27,10 @@ stat "${cdbg}" >> /dev/null
 container_sums=$(realpath @@CONTAINER_SUMS@@)
 stat "${container_sums}" >> /dev/null
 edition=$(cat @@EDITION@@)
+terraform_provider=$(realpath @@TERRAFORM_PROVIDER@@)
+stat "${terraform_provider}" >> /dev/null
+terraform_rc=$(realpath @@TERRAFORM_RC@@)
+stat "${terraform_rc}" >> /dev/null
 
 cd "${BUILD_WORKING_DIRECTORY}"
 
@@ -61,6 +65,12 @@ ln -sf "$(replace_prefix "${host_cache}" "${builder_cache}" "${upgrade_agent}")"
 ln -sf "$(replace_prefix "${host_cache}" "${builder_cache}" "${cdbg}")" "${workdir}/cdbg"
 ln -sf "$(replace_prefix "${host_cache}" "${builder_cache}" "${container_sums}")" "${workdir}/container_sums.sha256"
 ln -sf "$(replace_prefix "${host_cache}" "${builder_cache}" "${cli}")" "${workdir}/constellation"
+
+TF_PROVIDER_DIR="${workdir}/terraform"
+mkdir -p "${TF_PROVIDER_DIR}"
+ln -sf "$(replace_prefix "${host_cache}" "${builder_cache}" "${terraform_provider}")" "${TF_PROVIDER_DIR}/terraform-provider-constellation"
+cp "$(replace_prefix "${host_cache}" "${builder_cache}" "${terraform_rc}")" "${TF_PROVIDER_DIR}/config.tfrc"
+sed -i "s|@@TERRAFORM_PROVIDER_PATH@@|${terraform_provider}|g" "${TF_PROVIDER_DIR}/config.tfrc"
 
 build_version=$("${cli}" version | grep ^Version: | awk '{print $2}')
 if [[ ! -f "${workdir}/constellation-conf.yaml" ]]; then

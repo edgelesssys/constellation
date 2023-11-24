@@ -439,6 +439,20 @@ sh_template(
     template = "cli_docgen.sh.in",
 )
 
+sh_template(
+    name = "terraform_docgen",
+    data = [
+        ":com_github_hashicorp_terraform",
+        "//terraform-provider-constellation:tf_provider",
+        "@terraform-plugin-docs//:bin/tfplugindocs",
+    ],
+    substitutions = {
+        "@@TERRAFORM@@": "$(rootpath :com_github_hashicorp_terraform)",
+        "@@TFPLUGINDOCS@@": "$(rootpath @terraform-plugin-docs//:bin/tfplugindocs)",
+    },
+    template = "terraform_docgen.sh.in",
+)
+
 alias(
     name = "com_github_katexochen_ghh",
     actual = select({
@@ -537,6 +551,7 @@ multirun(
         ":go_generate",
         ":proto_generate",
         ":cli_docgen",
+        ":terraform_docgen",
     ],
     jobs = 0,  # execute concurrently
     visibility = ["//visibility:public"],
