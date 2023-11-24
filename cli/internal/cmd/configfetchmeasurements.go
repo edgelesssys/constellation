@@ -22,7 +22,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/featureset"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
-	"github.com/edgelesssys/constellation/v2/internal/sigstore/keyselect"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -132,58 +131,15 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	if err := cfm.flags.updateURLs(conf); err != nil {
 		return err
 	}
-
-	cfm.log.Debugf("Fetching and verifying measurements")
-	imageVersion, err := versionsapi.NewVersionFromShortPath(conf.Image, versionsapi.VersionKindImage)
+	verifyFetcher := measurements.NewVerifyFetcher(newCosignVerifier, cfm.flags.insecure, rekor, client)
+	fetchedMeasurements, err := verifyFetcher.FetchAndVerifyMeasurements(ctx, conf.Image, conf.GetProvider(), conf.GetAttestationConfig().GetVariant())
 	if err != nil {
-		return err
-	}
-
-	publicKey, err := keyselect.CosignPublicKeyForVersion(imageVersion)
-	if err != nil {
-		return fmt.Errorf("getting public key: %w", err)
-	}
-	cosign, err := newCosignVerifier(publicKey)
-	if err != nil {
-		return fmt.Errorf("creating cosign verifier: %w", err)
-	}
-
-	var fetchedMeasurements measurements.M
-	var hash string
-	if cfm.flags.insecure {
-		if err := fetchedMeasurements.FetchNoVerify(
-			ctx,
-			client,
-			cfm.flags.measurementsURL,
-			imageVersion,
-			conf.GetProvider(),
-			conf.GetAttestationConfig().GetVariant(),
-		); err != nil {
-			return fmt.Errorf("fetching measurements without verification: %w", err)
-		}
-
-		cfm.log.Debugf("Fetched measurements without verification")
-	} else {
-		hash, err = fetchedMeasurements.FetchAndVerify(
-			ctx,
-			client,
-			cosign,
-			cfm.flags.measurementsURL,
-			cfm.flags.signatureURL,
-			imageVersion,
-			conf.GetProvider(),
-			conf.GetAttestationConfig().GetVariant(),
-		)
-		if err != nil {
-			return fmt.Errorf("fetching and verifying measurements: %w", err)
-		}
-		cfm.log.Debugf("Fetched and verified measurements, hash is %s", hash)
-		if err := sigstore.VerifyWithRekor(cmd.Context(), publicKey, rekor, hash); err != nil {
+		if _, ok := err.(measurements.ErrRekor); ok {
 			cmd.PrintErrf("Ignoring Rekor related error: %v\n", err)
 			cmd.PrintErrln("Make sure the downloaded measurements are trustworthy!")
+		} else {
+			return fmt.Errorf("fetching and verifying measurements: %w", err)
 		}
-
-		cfm.log.Debugf("Verified measurements with Rekor")
 	}
 	cfm.log.Debugf("Measurements:\n", fetchedMeasurements)
 

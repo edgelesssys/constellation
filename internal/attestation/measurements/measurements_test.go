@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -1042,4 +1043,10 @@ func TestMeasurementsCompare(t *testing.T) {
 			assert.Equal(tc.wantWarnings, len(gotWarnings))
 		})
 	}
+}
+
+func TestRekorErrCheck(t *testing.T) {
+	err := newRekorErr(errors.New("test"))
+	_, ok := err.(ErrRekor)
+	assert.True(t, ok)
 }

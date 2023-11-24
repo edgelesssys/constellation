@@ -71,7 +71,7 @@ func (p *ConstellationProvider) Configure(ctx context.Context, req provider.Conf
 	config := datastruct.ProviderData{}
 
 	// Make the clients available during data source and resource "Configure" methods.
-	resp.DataSourceData = config
+	// resp.DataSourceData = config // TODO check with moritz
 	resp.ResourceData = config
 }
 
@@ -85,6 +85,6 @@ func (p *ConstellationProvider) Resources(_ context.Context) []func() resource.R
 // DataSources lists the data sources implemented by the provider.
 func (p *ConstellationProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		NewImageDataSource,
+		NewImageDataSource, NewAttestationDataSource,
 	}
 }
