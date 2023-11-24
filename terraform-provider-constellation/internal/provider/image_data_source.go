@@ -113,7 +113,7 @@ func (d *ImageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 // E.g., region should be required if, and only if, AWS is used.
 
 // Configure configures the data source.
-func (d *ImageDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (d *ImageDataSource) Configure(_ context.Context, _ datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	// Create the image-fetcher client.
 	d.imageFetcher = imagefetcher.New()
 }
