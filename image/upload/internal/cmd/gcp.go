@@ -30,7 +30,7 @@ func newGCPCommand() *cobra.Command {
 
 	cmd.Flags().String("gcp-project", "constellation-images", "GCP project to use")
 	cmd.Flags().String("gcp-location", "europe-west3", "GCP location to use")
-	cmd.Flags().String("gcp-bucket", "constellation-images", "GCP bucket to use")
+	cmd.Flags().String("gcp-bucket", "constellation-os-images", "GCP bucket to use")
 	return cmd
 }
 
