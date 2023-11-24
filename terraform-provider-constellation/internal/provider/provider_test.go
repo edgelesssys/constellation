@@ -34,16 +34,19 @@ var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServe
 // bazelSetTerraformBinaryPath sets the path to the Terraform binary for
 // acceptance testing when running under Bazel.
 func bazelSetTerraformBinaryPath(t *testing.T) {
+	if v := os.Getenv("TF_ACC"); v != "1" {
+		t.Fatal("TF_ACC must be set to \"1\" for acceptance tests")
+	}
+
+	// If we don't run under Bazel, we need to use the host Terraform binary.
+	// Print a warning and return without setting the path.
 	if !runsUnderBazel() {
 		fmt.Println(
 			"Test is not runding under Bazel.\n" +
 				"Using Host Terraform binary for acceptance testing.\n" +
 				"Tests results may vary from the defaults (which run under Bazel).",
 		)
-	}
-
-	if v := os.Getenv("TF_ACC"); v != "1" {
-		t.Fatal("TF_ACC must be set to \"1\" for acceptance tests")
+		return
 	}
 
 	tfPath := os.Getenv("TF_ACC_TERRAFORM_PATH")
