@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -34,7 +35,11 @@ var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServe
 // acceptance testing when running under Bazel.
 func bazelSetTerraformBinaryPath(t *testing.T) {
 	if !runsUnderBazel() {
-		t.Skip("Skipping test as not running under Bazel.")
+		fmt.Println(
+			"Test is not runding under Bazel.\n" +
+				"Using Host Terraform binary for acceptance testing.\n" +
+				"Tests results may vary from the defaults (which run under Bazel).",
+		)
 	}
 
 	if v := os.Getenv("TF_ACC"); v != "1" {
