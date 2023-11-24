@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"strings"
 	"testing"
 	"time"
 
@@ -34,9 +35,61 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	kubeadmv1beta3 "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
 
 func TestUpgradeNodeVersion(t *testing.T) {
+	clusterConf := kubeadmv1beta3.ClusterConfiguration{
+		APIServer: kubeadmv1beta3.APIServer{
+			ControlPlaneComponent: kubeadmv1beta3.ControlPlaneComponent{
+				ExtraArgs:    map[string]string{},
+				ExtraVolumes: []kubeadmv1beta3.HostPathMount{},
+			},
+		},
+	}
+
+	clusterConfBytes, err := json.Marshal(clusterConf)
+	require.NoError(t, err)
+	validKubeadmConfig := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: constants.KubeadmConfigMap,
+		},
+		Data: map[string]string{
+			constants.ClusterConfigurationKey: string(clusterConfBytes),
+		},
+	}
+
+	clusterConfWithKonnectivity := kubeadmv1beta3.ClusterConfiguration{
+		APIServer: kubeadmv1beta3.APIServer{
+			ControlPlaneComponent: kubeadmv1beta3.ControlPlaneComponent{
+				ExtraArgs: map[string]string{
+					"egress-selector-config-file": "/etc/kubernetes/egress-selector-config-file.yaml",
+				},
+				ExtraVolumes: []kubeadmv1beta3.HostPathMount{
+					{
+						Name:     "egress-config",
+						HostPath: "/etc/kubernetes/egress-selector-config-file.yaml",
+					},
+					{
+						Name:     "konnectivity-uds",
+						HostPath: "/some/path/to/konnectivity-uds",
+					},
+				},
+			},
+		},
+	}
+
+	clusterConfBytesWithKonnectivity, err := json.Marshal(clusterConfWithKonnectivity)
+	require.NoError(t, err)
+	validKubeadmConfigWithKonnectivity := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: constants.KubeadmConfigMap,
+		},
+		Data: map[string]string{
+			constants.ClusterConfigurationKey: string(clusterConfBytesWithKonnectivity),
+		},
+	}
+
 	testCases := map[string]struct {
 		kubectl               *stubKubectl
 		conditions            []metav1.Condition
@@ -63,7 +116,25 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			currentClusterVersion: supportedValidK8sVersions()[0],
 			kubectl: &stubKubectl{
 				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+					constants.JoinConfigMap:    newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+					constants.KubeadmConfigMap: validKubeadmConfig,
+				},
+			},
+			wantUpdate: true,
+		},
+		"success with konnectivity migration": {
+			conf: func() *config.Config {
+				conf := config.Default()
+				conf.Image = "v1.2.3"
+				conf.KubernetesVersion = supportedValidK8sVersions()[1]
+				return conf
+			}(),
+			currentImageVersion:   "v1.2.2",
+			currentClusterVersion: supportedValidK8sVersions()[0],
+			kubectl: &stubKubectl{
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.JoinConfigMap:    newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+					constants.KubeadmConfigMap: validKubeadmConfigWithKonnectivity,
 				},
 			},
 			wantUpdate: true,
@@ -79,7 +150,8 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			currentClusterVersion: supportedValidK8sVersions()[0],
 			kubectl: &stubKubectl{
 				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+					constants.JoinConfigMap:    newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+					constants.KubeadmConfigMap: validKubeadmConfig,
 				},
 			},
 			wantUpdate: true,
@@ -100,7 +172,8 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			currentClusterVersion: supportedValidK8sVersions()[0],
 			kubectl: &stubKubectl{
 				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+					constants.JoinConfigMap:    newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+					constants.KubeadmConfigMap: validKubeadmConfig,
 				},
 			},
 			wantUpdate: true,
@@ -119,8 +192,12 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			}(),
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: supportedValidK8sVersions()[0],
-			kubectl:               &stubKubectl{},
-			wantErr:               true,
+			kubectl: &stubKubectl{
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.KubeadmConfigMap: validKubeadmConfig,
+				},
+			},
+			wantErr: true,
 			assertCorrectError: func(t *testing.T, err error) bool {
 				var upgradeErr *compatibility.InvalidUpgradeError
 				return assert.ErrorAs(t, err, &upgradeErr)
@@ -139,8 +216,12 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			}},
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: supportedValidK8sVersions()[0],
-			kubectl:               &stubKubectl{},
-			wantErr:               true,
+			kubectl: &stubKubectl{
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.KubeadmConfigMap: validKubeadmConfig,
+				},
+			},
+			wantErr: true,
 			assertCorrectError: func(t *testing.T, err error) bool {
 				return assert.ErrorIs(t, err, ErrInProgress)
 			},
@@ -158,9 +239,13 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			}},
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: supportedValidK8sVersions()[0],
-			kubectl:               &stubKubectl{},
-			force:                 true,
-			wantUpdate:            true,
+			kubectl: &stubKubectl{
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.KubeadmConfigMap: validKubeadmConfig,
+				},
+			},
+			force:      true,
+			wantUpdate: true,
 		},
 		"get error": {
 			conf: func() *config.Config {
@@ -173,7 +258,8 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			currentClusterVersion: supportedValidK8sVersions()[0],
 			kubectl: &stubKubectl{
 				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+					constants.JoinConfigMap:    newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+					constants.KubeadmConfigMap: validKubeadmConfig,
 				},
 			},
 			getCRErr: assert.AnError,
@@ -194,7 +280,8 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			currentClusterVersion: supportedValidK8sVersions()[0],
 			kubectl: &stubKubectl{
 				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":true}}`),
+					constants.JoinConfigMap:    newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":true}}`),
+					constants.KubeadmConfigMap: validKubeadmConfig,
 				},
 			},
 			wantUpdate: true,
@@ -216,7 +303,8 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			currentClusterVersion: supportedValidK8sVersions()[0],
 			kubectl: &stubKubectl{
 				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+					constants.JoinConfigMap:    newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+					constants.KubeadmConfigMap: validKubeadmConfig,
 				},
 			},
 			wantUpdate: true,
@@ -234,7 +322,8 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			badImageVersion:       "v3.2.1",
 			kubectl: &stubKubectl{
 				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+					constants.JoinConfigMap:    newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+					constants.KubeadmConfigMap: validKubeadmConfig,
 				},
 			},
 			wantUpdate: true,
@@ -255,7 +344,8 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			currentClusterVersion: supportedValidK8sVersions()[0],
 			kubectl: &stubKubectl{
 				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+					constants.JoinConfigMap:    newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+					constants.KubeadmConfigMap: validKubeadmConfig,
 				},
 			},
 			wantUpdate: false,
@@ -276,7 +366,8 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			currentClusterVersion: supportedValidK8sVersions()[0],
 			kubectl: &stubKubectl{
 				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+					constants.JoinConfigMap:    newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+					constants.KubeadmConfigMap: validKubeadmConfig,
 				},
 			},
 			wantUpdate: false, // because customClient is used
@@ -346,6 +437,12 @@ func TestUpgradeNodeVersion(t *testing.T) {
 				return
 			}
 			assert.NoError(err)
+			// The ConfigMap only exists in the updatedConfigMaps map it needed to remove the Konnectivity values
+			if strings.Contains(tc.kubectl.configMaps[constants.KubeadmConfigMap].Data[constants.ClusterConfigurationKey], "konnectivity-uds") {
+				assert.NotContains(tc.kubectl.updatedConfigMaps[constants.KubeadmConfigMap].Data[constants.ClusterConfigurationKey], "konnectivity-uds")
+				assert.NotContains(tc.kubectl.updatedConfigMaps[constants.KubeadmConfigMap].Data[constants.ClusterConfigurationKey], "egress-config")
+				assert.NotContains(tc.kubectl.updatedConfigMaps[constants.KubeadmConfigMap].Data[constants.ClusterConfigurationKey], "egress-selector-config-file")
+			}
 		})
 	}
 }
