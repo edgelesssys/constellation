@@ -63,7 +63,7 @@ go_test(
     env = {
         "TF_ACC": "1",
         "TF_ACC_TERRAFORM_PATH": "$(rlocationpath //bazel/ci:com_github_hashicorp_terraform)",
-        "TF_ACC_TEMP_DIR": "$TMPDIR", # /tmp is not writable on CI runners, use $TMPDIR instead
+        "TF_ACC_TEMP_DIR": "", # TODO(msanft): find a writable path on remote runners.
     },
     # keep
     tags = [
