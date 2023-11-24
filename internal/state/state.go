@@ -121,7 +121,7 @@ type Infrastructure struct {
 	InitSecret HexBytes `yaml:"initSecret"`
 	// description: |
 	//   List of Subject Alternative Names (SANs) to add to the Kubernetes API server certificate.
-	// 	 If no SANs should be added, this field can be left empty.
+	//   If no SANs should be added, this field can be left empty.
 	APIServerCertSANs []string `yaml:"apiServerCertSANs"`
 	// description: |
 	//   Name used in the cluster's named resources.
