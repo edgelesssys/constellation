@@ -11,6 +11,14 @@ with the provider binary and some utility files in the current working directory
 bazel build //terraform-provider-constellation:tf_provider
 ```
 
+Documentation for the provider can be generated with:
+
+```bash
+bazel run //:generate
+# or
+bazel run //bazel/ci:terraform_docgen
+```
+
 ## Using the Terraform Provider
 
 The Terraform provider binary can be used with the normal Terraform CLI, by setting a [development override](https://developer.hashicorp.com/terraform/cli/config/config-file#development-overrides-for-provider-developers),
