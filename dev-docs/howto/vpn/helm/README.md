@@ -18,6 +18,20 @@ This Helm chart deploys a VPN server to your Constellation cluster.
 
 3. Follow the post-installation instructions displayed by the CLI.
 
+## Things to try
+
+Ask CoreDNS about its own service IP:
+
+```sh
+dig +notcp @10.96.0.10 kube-dns.kube-system.svc.cluster.local
+```
+
+Ask the Kubernetes API server about its wellbeing:
+
+```sh
+curl --insecure https://10.96.0.1:6443/healthz
+```
+
 ## Architecture
 
 The VPN server is deployed as a `StatefulSet` to the cluster. It hosts the VPN frontend component, which is responsible for relaying traffic between the pod and the on-prem network, and the routing components that provide access to Constellation resources. The frontend supports IPSec and Wireguard.
