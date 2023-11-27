@@ -79,6 +79,7 @@ variable "marketplace_image" {
     name      = string
     publisher = string
     product   = string
+    version   = string
   })
   default     = null
   description = "Marketplace image to use for the cluster nodes."

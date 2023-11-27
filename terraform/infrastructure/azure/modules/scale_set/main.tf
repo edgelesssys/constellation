@@ -46,9 +46,10 @@ resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
   disable_password_authentication = false
   upgrade_mode                    = "Manual"
   secure_boot_enabled             = var.secure_boot
-  source_image_id                 = var.image_id
-  tags                            = local.tags
-  zones                           = var.zones
+  # specify the image id only if a non-marketplace image is used
+  source_image_id = var.marketplace_image != null ? null : var.image_id
+  tags            = local.tags
+  zones           = var.zones
   identity {
     type         = "UserAssigned"
     identity_ids = [var.user_assigned_identity]
@@ -72,6 +73,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
     }
   }
 
+  # Specify marketplace plan and image if set
   dynamic "plan" {
     for_each = var.marketplace_image != null ? [1] : [] # if a marketplace image is set
     content {
@@ -80,6 +82,16 @@ resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
       product   = var.marketplace_image.product
     }
   }
+  dynamic "source_image_reference" {
+    for_each = var.marketplace_image != null ? [1] : [] # if a marketplace image is set
+    content {
+      publisher = var.marketplace_image.publisher
+      offer     = var.marketplace_image.product
+      sku       = var.marketplace_image.name
+      version   = var.marketplace_image.version
+    }
+  }
+
 
   data_disk {
     storage_account_type = var.state_disk_type

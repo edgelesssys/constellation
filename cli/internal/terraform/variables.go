@@ -260,6 +260,8 @@ type AzureMarketplaceImageVariables struct {
 	Product string `hcl:"product" cty:"product"`
 	// Name is the name of the image.
 	Name string `hcl:"name" cty:"name"`
+	// Version is the version of the image.
+	Version string `hcl:"version" cty:"version"`
 }
 
 // String returns a string representation of the IAM-specific variables, formatted as Terraform variables.

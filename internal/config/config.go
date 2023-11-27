@@ -176,6 +176,9 @@ type AzureMarketplaceImageConfig struct {
 	// description: |
 	//   Name of the Azure Marketplace image.
 	Name string `yaml:"name" validate:"required"`
+	// description: |
+	//   Version of the Azure Marketplace image.
+	Version string `yaml:"version" validate:"required"`
 }
 
 // GCPConfig are GCP specific configuration values used by the CLI.
