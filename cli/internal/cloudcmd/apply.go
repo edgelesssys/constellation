@@ -141,7 +141,7 @@ func (a *Applier) terraformApplyVars(ctx context.Context, conf *config.Config) (
 	case cloudprovider.AWS:
 		return awsTerraformVars(conf, imageRef), nil
 	case cloudprovider.Azure:
-		return azureTerraformVars(conf, imageRef), nil
+		return azureTerraformVars(conf, imageRef)
 	case cloudprovider.GCP:
 		return gcpTerraformVars(conf, imageRef), nil
 	case cloudprovider.OpenStack:

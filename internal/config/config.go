@@ -163,22 +163,7 @@ type AzureConfig struct {
 	SecureBoot *bool `yaml:"secureBoot" validate:"required"`
 	// description: |
 	//   Use the specified Azure Marketplace image offering.
-	AzureMarketplaceImage *AzureMarketplaceImageConfig `yaml:"azureMarketplaceImage" validate:"omitempty,dive"`
-}
-
-type AzureMarketplaceImageConfig struct {
-	// description: |
-	//   Publisher ID of the Azure Marketplace image.
-	Publisher string `yaml:"publisher" validate:"required"`
-	// description: |
-	//   Product ID of the Azure Marketplace image.
-	Product string `yaml:"product" validate:"required"`
-	// description: |
-	//   Name of the Azure Marketplace image.
-	Name string `yaml:"name" validate:"required"`
-	// description: |
-	//   Version of the Azure Marketplace image.
-	Version string `yaml:"version" validate:"required"`
+	UseMarketplaceImage *bool `yaml:"useMarketplaceImage" validate:"omitempty,dive"`
 }
 
 // GCPConfig are GCP specific configuration values used by the CLI.

@@ -25,6 +25,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/role"
+	"github.com/edgelesssys/constellation/v2/internal/semver"
 )
 
 // The azurerm Terraform provider enforces its own convention of case sensitivity for Azure URIs which Azure's API itself does not enforce or, even worse, actually returns.
@@ -127,7 +128,7 @@ func normalizeAzureURIs(vars *terraform.AzureClusterVariables) *terraform.AzureC
 
 // azureTerraformVars provides variables required to execute the Terraform scripts.
 // It should be the only place to declare the Azure variables.
-func azureTerraformVars(conf *config.Config, imageRef string) *terraform.AzureClusterVariables {
+func azureTerraformVars(conf *config.Config, imageRef string) (*terraform.AzureClusterVariables, error) {
 	nodeGroups := make(map[string]terraform.AzureNodeGroup)
 	for groupName, group := range conf.NodeGroups {
 		zones := strings.Split(group.Zone, ",")
@@ -158,17 +159,22 @@ func azureTerraformVars(conf *config.Config, imageRef string) *terraform.AzureCl
 		InternalLoadBalancer: conf.InternalLoadBalancer,
 	}
 
-	if conf.Provider.Azure.AzureMarketplaceImage != nil {
+	if conf.Provider.Azure.UseMarketplaceImage != nil {
+		imageVersion, err := semver.New(conf.Image)
+		if err != nil {
+			return nil, fmt.Errorf("parsing image version: %w. %s does not look like a valid release image", err, conf.Image)
+		}
+
 		vars.MarketplaceImage = terraform.AzureMarketplaceImageVariables{
-			Publisher: conf.Provider.Azure.AzureMarketplaceImage.Publisher,
-			Product:   conf.Provider.Azure.AzureMarketplaceImage.Product,
-			Name:      conf.Provider.Azure.AzureMarketplaceImage.Name,
-			Version:   conf.Provider.Azure.AzureMarketplaceImage.Version,
+			Publisher: constants.AzureMarketplaceImagePublisher,
+			Product:   constants.AzureMarketplaceImageOffer,
+			Name:      constants.AzureMarketplaceImagePlan,
+			Version:   imageVersion.StringWithoutPrefix(),
 		}
 	}
 
 	vars = normalizeAzureURIs(vars)
-	return vars
+	return vars, nil
 }
 
 func azureTerraformIAMVars(conf *config.Config, oldVars terraform.AzureIAMVariables) *terraform.AzureIAMVariables {

@@ -181,6 +181,17 @@ const (
 	WorkerDefault = "worker_default"
 
 	//
+	// Azure.
+	//
+
+	// AzureMarketplaceImagePublisher is the publisher of the Azure Marketplace image.
+	AzureMarketplaceImagePublisher = "edgelesssystems"
+	// AzureMarketplaceImageOffer is the offer of the Azure Marketplace image.
+	AzureMarketplaceImageOffer = "constellation"
+	// AzureMarketplaceImagePlan is the plan of the Azure Marketplace image.
+	AzureMarketplaceImagePlan = "constellation"
+
+	//
 	// Kubernetes.
 	//
 
