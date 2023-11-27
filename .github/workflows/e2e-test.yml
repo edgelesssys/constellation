@@ -270,7 +270,6 @@ jobs:
         uses: ./.github/actions/notify_e2e_failure
         with:
           projectWriteToken: ${{ secrets.PROJECT_WRITE_TOKEN }}
-          teamsWebhookUri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
           refStream: "test/debug"
           test: "intentional"
           kubernetesVersion: "v1.99.99"

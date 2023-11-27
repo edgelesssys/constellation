@@ -5,9 +5,6 @@ inputs:
   projectWriteToken:
     description: "Token to write to the project board"
     required: true
-  teamsWebhookUri:
-    description: "URI to send a message to the teams channel"
-    required: true
   test:
     description: "Test name"
     required: true
@@ -77,85 +74,3 @@ runs:
     - name: Issue URL ${{ steps.gh_create_issue.outputs.issue-url }}
       shell: bash
       run: echo ${{ steps.gh_create_issue.outputs.issue-url }}
-
-    - name: Create project card in case of failure
-      id: create-project-card
-      continue-on-error: true
-      shell: bash
-      env:
-        GHH_TOKEN: ${{ inputs.projectWriteToken }}
-      run: |
-        # TODO(katexochen): add job number when possible
-        jobURL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-        # TODO(msanft): Add Self-managed param once logcollection is fixed.
-        opensearchURL="https://search-e2e-logs-y46renozy42lcojbvrt3qq7csm.eu-central-1.es.amazonaws.com/_dashboards/app/discover#/?_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-7d,to:now))&_a=(columns:!(metadata.name,systemd.unit,kubernetes.pod_name,message),filters:!(('$state':(store:appState),meta:(alias:!n,disabled:!f,index:'74517cf0-6442-11ed-acf1-47dda8fdfbbb',key:metadata.github.e2e-test-provider,negate:!f,params:(query:${{ inputs.provider }}),type:phrase),query:(match_phrase:(metadata.github.e2e-test-provider:${{ inputs.provider }}))),('$state':(store:appState),meta:(alias:!n,disabled:!f,index:'74517cf0-6442-11ed-acf1-47dda8fdfbbb',key:metadata.github.run-id,negate:!f,params:(query:${{ github.run_id }}),type:phrase),query:(match_phrase:(metadata.github.run-id:${{ github.run_id }}))),('$state':(store:appState),meta:(alias:!n,disabled:!f,index:'74517cf0-6442-11ed-acf1-47dda8fdfbbb',key:metadata.github.ref-stream.keyword,negate:!f,params:(query:'${{ inputs.refStream }}'),type:phrase),query:(match_phrase:(metadata.github.ref-stream.keyword:'${{ inputs.refStream }}'))),('$state':(store:appState),meta:(alias:!n,disabled:!f,index:'74517cf0-6442-11ed-acf1-47dda8fdfbbb',key:metadata.github.kubernetes-version.keyword,negate:!f,params:(query:'${{ inputs.kubernetesVersion }}'),type:phrase),query:(match_phrase:(metadata.github.kubernetes-version.keyword:'${{ inputs.kubernetesVersion }}'))),('$state':(store:appState),meta:(alias:!n,disabled:!f,index:'74517cf0-6442-11ed-acf1-47dda8fdfbbb',key:metadata.github.e2e-test-payload,negate:!f,params:(query:'${{ inputs.test }}'),type:phrase),query:(match_phrase:(metadata.github.e2e-test-payload:'${{ inputs.test }}')))),index:'74517cf0-6442-11ed-acf1-47dda8fdfbbb',interval:auto,query:(language:kuery,query:''),sort:!())"
-        cat << EOF > header.md
-
-        ## Metadata
-
-        * [Job URL](${jobURL})
-        * [OpenSearch URL](${opensearchURL// /%20})
-
-        EOF
-
-        cat header.md .github/failure_project_template.md > body.md
-        cp .github/failure_project_metadata.json metadata.json
-        DATE=$(date '+%F %a %T %Z') yq -iP '.issueTitle = env(DATE)' metadata.json
-        yq -iP '.assignees += [ "${{ steps.pick-assignee.outputs.assignee }}" ]' metadata.json
-        yq -iP '.fields.cloudProvider = "${{ inputs.provider }}"' metadata.json
-        if [[ ${{ inputs.selfManagedInfra }} == 'true' ]]; then
-          yq -iP '.fields.test = "${{ inputs.test }} (Self-managed infrastructure)"' metadata.json
-        else
-          yq -iP '.fields.test = "${{ inputs.test }}"' metadata.json
-        fi
-        yq -iP '.fields.workflow = "${{ github.workflow }}"' metadata.json
-        if [[ -n "${{ inputs.kubernetesVersion }}" ]]; then
-          yq -iP '.fields.kubernetesVersion = "${{ inputs.kubernetesVersion }}"' metadata.json
-        fi
-        if [[ -n "${{ inputs.refStream }}" ]]; then
-          yq -iP '.fields.refStream = "${{ inputs.refStream }}"' metadata.json
-        fi
-
-        cat metadata.json
-
-        issueURL=$(
-        bazel run //bazel/ci:ghh -- create-project-issue \
-          --body body.md \
-          --metadata metadata.json \
-          -v
-        )
-
-        echo "jobURL=${jobURL}" | tee -a "$GITHUB_OUTPUT"
-        echo "opensearchURL=${opensearchURL}" | tee -a "$GITHUB_OUTPUT"
-        echo "issueURL=${issueURL}" | tee -a "$GITHUB_OUTPUT"
-
-    - name: Create notification fields
-      id: create-fields
-      continue-on-error: true
-      shell: bash
-      run: |
-        echo '[ { "title": "CloudProvider", "value": "${{ inputs.provider }}" }, { "title": "Test", "value": "${{ inputs.test }}" } ]' > facts.json
-        if [[ -n "${{ inputs.kubernetesVersion }}" ]]; then
-          yq -oj -iP '. += [ { "title": "KubernetesVersion", "value": "${{ inputs.kubernetesVersion }}" } ]' facts.json
-        fi
-        if [[ -n "${{ inputs.refStream }}" ]]; then
-          yq -oj -iP '. += [ { "title": "RefStream", "value": "${{ inputs.refStream }}" } ]' facts.json
-        fi
-
-        buttons='[
-          {
-            "type": "Action.OpenUrl",
-            "title": "Project board issue",
-            "url": "${{ steps.create-project-card.outputs.issueURL }}",
-            "style": "positive"
-          },
-          {
-            "type": "Action.OpenUrl",
-            "title": "OpenSearch logs",
-            "url": "${{ steps.create-project-card.outputs.opensearchURL }}",
-            "style": "positive"
-          }
-        ]'
-
-        echo "additionalFields=$(cat facts.json)" | tee -a "$GITHUB_OUTPUT"
-        echo "additionalButtons=$buttons" | tee -a "$GITHUB_OUTPUT"
