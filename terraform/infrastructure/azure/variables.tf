@@ -73,3 +73,13 @@ variable "internal_load_balancer" {
   default     = false
   description = "Whether to use an internal load balancer for the Constellation."
 }
+
+variable "marketplace_image" {
+  type = object({
+    name      = string
+    publisher = string
+    product   = string
+  })
+  default     = null
+  description = "Marketplace image to use for the cluster nodes."
+}

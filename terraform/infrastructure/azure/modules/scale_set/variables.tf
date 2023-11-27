@@ -96,3 +96,13 @@ variable "secure_boot" {
   default     = false
   description = "Whether to deploy the cluster nodes with secure boot."
 }
+
+variable "marketplace_image" {
+  type = object({
+    name      = string
+    publisher = string
+    product   = string
+  })
+  default     = null
+  description = "Marketplace image to use for the cluster nodes."
+}

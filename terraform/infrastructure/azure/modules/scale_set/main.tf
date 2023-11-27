@@ -72,6 +72,15 @@ resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
     }
   }
 
+  dynamic "plan" {
+    for_each = var.marketplace_image != null ? [1] : [] # if a marketplace image is set
+    content {
+      name      = var.marketplace_image.name
+      publisher = var.marketplace_image.publisher
+      product   = var.marketplace_image.product
+    }
+  }
+
   data_disk {
     storage_account_type = var.state_disk_type
     disk_size_gb         = var.state_disk_size

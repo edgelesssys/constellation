@@ -209,6 +209,8 @@ type AzureClusterVariables struct {
 	CustomEndpoint string `hcl:"custom_endpoint" cty:"custom_endpoint"`
 	// InternalLoadBalancer is true if an internal load balancer should be created.
 	InternalLoadBalancer bool `hcl:"internal_load_balancer" cty:"internal_load_balancer"`
+	// MarketplaceImage is the (optional) Azure Marketplace image to use.
+	MarketplaceImage AzureMarketplaceImageVariables `hcl:"marketplace_image" cty:"marketplace_image"`
 }
 
 // GetCreateMAA gets the CreateMAA variable.
@@ -248,6 +250,16 @@ type AzureIAMVariables struct {
 	ServicePrincipal string `hcl:"service_principal_name" cty:"service_principal_name"`
 	// ResourceGroup is the name of the resource group to use.
 	ResourceGroup string `hcl:"resource_group_name" cty:"resource_group_name"`
+}
+
+// AzureMarketplaceImageVariables is a configuration for specifying an Azure Marketplace image.
+type AzureMarketplaceImageVariables struct {
+	// Publisher is the publisher ID of the image.
+	Publisher string `hcl:"publisher" cty:"publisher"`
+	// Product is the product ID of the image.
+	Product string `hcl:"product" cty:"product"`
+	// Name is the name of the image.
+	Name string `hcl:"name" cty:"name"`
 }
 
 // String returns a string representation of the IAM-specific variables, formatted as Terraform variables.

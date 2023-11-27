@@ -158,6 +158,15 @@ func azureTerraformVars(conf *config.Config, imageRef string) *terraform.AzureCl
 		InternalLoadBalancer: conf.InternalLoadBalancer,
 	}
 
+	// TODO(msanft): Use this accordingly once config fields are added.
+	if false {
+		vars.MarketplaceImage = terraform.AzureMarketplaceImageVariables{
+			Publisher: "",
+			Product:   "",
+			Name:      "",
+		}
+	}
+
 	vars = normalizeAzureURIs(vars)
 	return vars
 }
