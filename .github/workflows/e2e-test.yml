@@ -202,6 +202,9 @@ jobs:
         with:
           ref: ${{ inputs.git-ref }}
 
+      - name: Fail
+        run: exit 1
+
       - name: Set up gcloud CLI (macOS)
         if: inputs.cloudProvider == 'gcp' && runner.os == 'macOS'
         uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b # v1.1.1
@@ -239,20 +242,37 @@ jobs:
           s3AccessKey: ${{ secrets.AWS_ACCESS_KEY_ID_S3PROXY }}
           s3SecretKey: ${{ secrets.AWS_SECRET_ACCESS_KEY_S3PROXY }}
 
-      - name: Always terminate cluster
-        if: always()
-        uses: ./.github/actions/constellation_destroy
-        with:
-          kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
-          selfManagedInfra: ${{ inputs.selfManagedInfra }}
-          cloudProvider: ${{ inputs.cloudProvider }}
-          azureClusterDeleteCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
-          gcpClusterDeleteServiceAccount: "constellation-e2e-cluster@constellation-331613.iam.gserviceaccount.com"
+      #- name: Always terminate cluster
+      #  if: always()
+      #  uses: ./.github/actions/constellation_destroy
+      #  with:
+      #    kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
+      #    selfManagedInfra: ${{ inputs.selfManagedInfra }}
+      #    cloudProvider: ${{ inputs.cloudProvider }}
+      #    azureClusterDeleteCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
+      #    gcpClusterDeleteServiceAccount: "constellation-e2e-cluster@constellation-331613.iam.gserviceaccount.com"
 
-      - name: Always delete IAM configuration
+      #- name: Always delete IAM configuration
+      #  if: always()
+      #  uses: ./.github/actions/constellation_iam_destroy
+      #  with:
+      #    cloudProvider: ${{ inputs.cloudProvider }}
+      #    azureCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
+      #    gcpServiceAccount: "constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"
+
+      - name: Setup bazel
         if: always()
-        uses: ./.github/actions/constellation_iam_destroy
+        uses: ./.github/actions/setup_bazel_nix
+
+      - name: Notify failure
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/notify_e2e_failure
         with:
-          cloudProvider: ${{ inputs.cloudProvider }}
-          azureCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
-          gcpServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
+          projectWriteToken: ${{ secrets.PROJECT_WRITE_TOKEN }}
+          teamsWebhookUri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+          refStream: "test/debug"
+          test: "intentional"
+          kubernetesVersion: "v1.99.99"
+          provider: "aws"
+          selfManagedInfra: "false"
