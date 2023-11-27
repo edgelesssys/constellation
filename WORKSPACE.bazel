@@ -139,20 +139,6 @@ rules_proto_dependencies()
 
 rules_proto_toolchains()
 
-# dnf / rpm toolchain
-
-load("//bazel/toolchains:dnf_deps.bzl", "dnf_deps")
-
-dnf_deps()
-
-load("@bazeldnf//:deps.bzl", "bazeldnf_dependencies")
-
-bazeldnf_dependencies()
-
-load("//rpm:rpms.bzl", "rpms")
-
-rpms()
-
 # Buildifier
 load("//bazel/toolchains:buildifier_deps.bzl", "buildifier_deps")
 
