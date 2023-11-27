@@ -61,9 +61,6 @@ __pycache__/
 /bazel-*
 .bazeloverwriterc
 
-# bazeldnf
-.bazeldnf/
-
 # mkosi
 .mkosi-tmp*
 
