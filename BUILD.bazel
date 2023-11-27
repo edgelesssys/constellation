@@ -1,10 +1,6 @@
-load("@bazeldnf//:def.bzl", "bazeldnf")
-
 exports_files([
     "WORKSPACE.bazel",
 ])
-
-bazeldnf(name = "bazeldnf")
 
 alias(
     name = "tidy",
