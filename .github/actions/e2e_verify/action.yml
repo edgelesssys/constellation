@@ -91,6 +91,11 @@ runs:
         COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
         COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
       run: |
+        if [[ ${{ inputs.cloudProvider }} == "aws" ]] && constellation version | grep -q "v2.13."; then
+          echo "Skipping TCB upload for AWS on CLI v2.13"
+          exit 0
+        fi
+
         reports=(snp-report-*.json)
         if [ -z ${#reports[@]} ]; then
             exit 1
