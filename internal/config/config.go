@@ -163,7 +163,7 @@ type AzureConfig struct {
 	SecureBoot *bool `yaml:"secureBoot" validate:"required"`
 	// description: |
 	//   Use the specified Azure Marketplace image offering.
-	UseMarketplaceImage *bool `yaml:"useMarketplaceImage" validate:"omitempty,dive"`
+	UseMarketplaceImage *bool `yaml:"useMarketplaceImage" validate:"omitempty"`
 }
 
 // GCPConfig are GCP specific configuration values used by the CLI.
