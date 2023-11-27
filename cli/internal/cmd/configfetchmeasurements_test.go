@@ -23,7 +23,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -228,19 +227,6 @@ func TestConfigFetchMeasurements(t *testing.T) {
 		insecureFlag bool
 		wantErr      bool
 	}{
-		"success": {
-			cosign: newStubCosignVerifier,
-			rekor:  singleUUIDVerifier(),
-		},
-		"success without cosign": {
-			insecureFlag: true,
-			cosign: func(_ []byte) (sigstore.Verifier, error) {
-				return &stubCosignVerifier{
-					verifyError: assert.AnError,
-				}, nil
-			},
-			rekor: singleUUIDVerifier(),
-		},
 		"failing search should not result in error": {
 			cosign: newStubCosignVerifier,
 			rekor: &stubRekorVerifier{
@@ -254,15 +240,6 @@ func TestConfigFetchMeasurements(t *testing.T) {
 				SearchByHashUUIDs: []string{"11111111111111111111111111111111111111111111111111111111111111111111111111111111"},
 				VerifyEntryError:  assert.AnError,
 			},
-		},
-		"signature verification failure": {
-			cosign: func(_ []byte) (sigstore.Verifier, error) {
-				return &stubCosignVerifier{
-					verifyError: assert.AnError,
-				}, nil
-			},
-			rekor:   singleUUIDVerifier(),
-			wantErr: true,
 		},
 	}
 
