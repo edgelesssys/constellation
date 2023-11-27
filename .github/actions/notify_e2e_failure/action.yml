@@ -63,7 +63,6 @@ runs:
         assignee: ${{ steps.pick-assignee.outputs.assignee }}
         project: Constellation bugs
         fields: |
-          Status: New failures
           workflow: ${{ github.workflow }}
           kubernetesVersion: ${{ inputs.kubernetesVersion }}
           cloudProvider: ${{ inputs.provider }}
