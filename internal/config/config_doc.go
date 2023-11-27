@@ -15,6 +15,7 @@ var (
 	ProviderConfigDoc                  encoder.Doc
 	AWSConfigDoc                       encoder.Doc
 	AzureConfigDoc                     encoder.Doc
+	AzureMarketplaceImageConfigDoc     encoder.Doc
 	GCPConfigDoc                       encoder.Doc
 	OpenStackConfigDoc                 encoder.Doc
 	QEMUConfigDoc                      encoder.Doc
@@ -178,7 +179,7 @@ func init() {
 			FieldName: "azure",
 		},
 	}
-	AzureConfigDoc.Fields = make([]encoder.Doc, 7)
+	AzureConfigDoc.Fields = make([]encoder.Doc, 8)
 	AzureConfigDoc.Fields[0].Name = "subscription"
 	AzureConfigDoc.Fields[0].Type = "string"
 	AzureConfigDoc.Fields[0].Note = ""
@@ -214,6 +215,37 @@ func init() {
 	AzureConfigDoc.Fields[6].Note = ""
 	AzureConfigDoc.Fields[6].Description = "Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob."
 	AzureConfigDoc.Fields[6].Comments[encoder.LineComment] = "Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob."
+	AzureConfigDoc.Fields[7].Name = "azureMarketplaceImage"
+	AzureConfigDoc.Fields[7].Type = "AzureMarketplaceImageConfig"
+	AzureConfigDoc.Fields[7].Note = ""
+	AzureConfigDoc.Fields[7].Description = "Use the specified Azure Marketplace image offering."
+	AzureConfigDoc.Fields[7].Comments[encoder.LineComment] = "Use the specified Azure Marketplace image offering."
+
+	AzureMarketplaceImageConfigDoc.Type = "AzureMarketplaceImageConfig"
+	AzureMarketplaceImageConfigDoc.Comments[encoder.LineComment] = ""
+	AzureMarketplaceImageConfigDoc.Description = ""
+	AzureMarketplaceImageConfigDoc.AppearsIn = []encoder.Appearance{
+		{
+			TypeName:  "AzureConfig",
+			FieldName: "azureMarketplaceImage",
+		},
+	}
+	AzureMarketplaceImageConfigDoc.Fields = make([]encoder.Doc, 3)
+	AzureMarketplaceImageConfigDoc.Fields[0].Name = "publisher"
+	AzureMarketplaceImageConfigDoc.Fields[0].Type = "string"
+	AzureMarketplaceImageConfigDoc.Fields[0].Note = ""
+	AzureMarketplaceImageConfigDoc.Fields[0].Description = "Publisher ID of the Azure Marketplace image."
+	AzureMarketplaceImageConfigDoc.Fields[0].Comments[encoder.LineComment] = "Publisher ID of the Azure Marketplace image."
+	AzureMarketplaceImageConfigDoc.Fields[1].Name = "product"
+	AzureMarketplaceImageConfigDoc.Fields[1].Type = "string"
+	AzureMarketplaceImageConfigDoc.Fields[1].Note = ""
+	AzureMarketplaceImageConfigDoc.Fields[1].Description = "Product ID of the Azure Marketplace image."
+	AzureMarketplaceImageConfigDoc.Fields[1].Comments[encoder.LineComment] = "Product ID of the Azure Marketplace image."
+	AzureMarketplaceImageConfigDoc.Fields[2].Name = "name"
+	AzureMarketplaceImageConfigDoc.Fields[2].Type = "string"
+	AzureMarketplaceImageConfigDoc.Fields[2].Note = ""
+	AzureMarketplaceImageConfigDoc.Fields[2].Description = "Name of the Azure Marketplace image."
+	AzureMarketplaceImageConfigDoc.Fields[2].Comments[encoder.LineComment] = "Name of the Azure Marketplace image."
 
 	GCPConfigDoc.Type = "GCPConfig"
 	GCPConfigDoc.Comments[encoder.LineComment] = "GCPConfig are GCP specific configuration values used by the CLI."
@@ -705,6 +737,10 @@ func (_ AzureConfig) Doc() *encoder.Doc {
 	return &AzureConfigDoc
 }
 
+func (_ AzureMarketplaceImageConfig) Doc() *encoder.Doc {
+	return &AzureMarketplaceImageConfigDoc
+}
+
 func (_ GCPConfig) Doc() *encoder.Doc {
 	return &GCPConfigDoc
 }
@@ -771,6 +807,7 @@ func GetConfigurationDoc() *encoder.FileDoc {
 			&ProviderConfigDoc,
 			&AWSConfigDoc,
 			&AzureConfigDoc,
+			&AzureMarketplaceImageConfigDoc,
 			&GCPConfigDoc,
 			&OpenStackConfigDoc,
 			&QEMUConfigDoc,
