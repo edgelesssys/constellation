@@ -38,6 +38,7 @@ runs:
 
     - name: Create body template
       id: body-template
+      shell: bash
       run: |
         # TODO(katexochen): add job number when possible
         jobURL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
