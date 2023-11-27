@@ -159,11 +159,11 @@ func azureTerraformVars(conf *config.Config, imageRef string) *terraform.AzureCl
 	}
 
 	// TODO(msanft): Use this accordingly once config fields are added.
-	if false {
+	if conf.Provider.Azure.AzureMarketplaceImage != nil {
 		vars.MarketplaceImage = terraform.AzureMarketplaceImageVariables{
-			Publisher: "",
-			Product:   "",
-			Name:      "",
+			Publisher: conf.Provider.Azure.AzureMarketplaceImage.Publisher,
+			Product:   conf.Provider.Azure.AzureMarketplaceImage.Product,
+			Name:      conf.Provider.Azure.AzureMarketplaceImage.Name,
 		}
 	}
 
