@@ -216,14 +216,6 @@ def go_dependencies():
         version = "v0.0.0-20180507223929-23540a00eaa3",
     )
     go_repository(
-        name = "com_github_apparentlymart_go_textseg",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/apparentlymart/go-textseg",
-        sum = "h1:rRmlIsPEEhUTIKQb7T++Nz/A5Q6C9IuX2wFoYVvnCs0=",
-        version = "v1.0.0",
-    )
-    go_repository(
         name = "com_github_apparentlymart_go_textseg_v12",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
@@ -732,8 +724,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/bazelbuild/rules_go",
-        sum = "h1:aY2smc3JWyUKOjGYmOKVLX70fPK9ON0rtwQojuIeUHc=",
-        version = "v0.42.0",
+        sum = "h1:Q+vDhH4yzafZ0xHBT0JEVawb+1nDHUXhjvWTqSGCCyU=",
+        version = "v0.43.0",
     )
     go_repository(
         name = "com_github_beeker1121_goque",
@@ -2846,6 +2838,14 @@ def go_dependencies():
         importpath = "github.com/hashicorp/terraform-plugin-framework",
         sum = "h1:P7a7VP1GZbjc4rv921Xy5OckzhoiO3ig6SGxwelD2sI=",
         version = "v1.4.2",
+    )
+    go_repository(
+        name = "com_github_hashicorp_terraform_plugin_framework_validators",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/hashicorp/terraform-plugin-framework-validators",
+        sum = "h1:HOjBuMbOEzl7snOdOoUfE2Jgeto6JOjLVQ39Ls2nksc=",
+        version = "v0.12.0",
     )
     go_repository(
         name = "com_github_hashicorp_terraform_plugin_go",

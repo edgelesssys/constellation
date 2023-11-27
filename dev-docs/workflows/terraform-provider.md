@@ -11,6 +11,14 @@ with the provider binary and some utility files in the current working directory
 bazel build //terraform-provider-constellation:tf_provider
 ```
 
+Documentation for the provider can be generated with:
+
+```bash
+bazel run //:generate
+# or
+bazel run //bazel/ci:terraform_docgen
+```
+
 ## Using the Terraform Provider
 
 The Terraform provider binary can be used with the normal Terraform CLI, by setting a [development override](https://developer.hashicorp.com/terraform/cli/config/config-file#development-overrides-for-provider-developers),
@@ -26,7 +34,16 @@ sed -i "s|@@TERRAFORM_PROVIDER_PATH@@|$(realpath bazel-bin/terraform-provider-co
 Afterwards, all Terraform commands that should use the local provider build should be prefixed with `TF_CLI_CONFIG_FILE=config.tfrc` like so:
 
 ```bash
-TF_CLI_CONFIG_FILE=config.tfrc terraform init
 TF_CLI_CONFIG_FILE=config.tfrc terraform apply
 ...
 ```
+
+## Testing the Terraform Provider
+
+Terraform acceptance tests can be run hermetically through Bazel (recommended):
+
+```bash
+bazel test //terraform-provider-constellation/internal/provider:provider_acc_test
+```
+
+The tests can also be run through Go, but the `TF_ACC` environment variable needs to be set to `1`, and the host's Terraform binary is used, which may produce inaccurate test results.

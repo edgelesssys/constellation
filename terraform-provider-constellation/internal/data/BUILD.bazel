@@ -1,0 +1,11 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "data",
+    srcs = [
+        "data.go",
+        "providerdata.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/data",
+    visibility = ["//terraform-provider-constellation:__subpackages__"],
+)

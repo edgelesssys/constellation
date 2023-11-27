@@ -6,6 +6,4 @@ terraform {
   }
 }
 
-provider "constellation" {
-  example_value = "test"
-}
+provider "constellation" {}

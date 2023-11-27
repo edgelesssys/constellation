@@ -4,13 +4,17 @@ load("//bazel/go:go_test.bzl", "go_test")
 go_library(
     name = "provider",
     srcs = [
-        "example_data_source.go",
         "example_resource.go",
+        "image_data_source.go",
         "provider.go",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/provider",
     visibility = ["//terraform-provider-constellation:__subpackages__"],
     deps = [
+        "//internal/attestation/variant",
+        "//internal/cloud/cloudprovider",
+        "//internal/imagefetcher",
+        "//terraform-provider-constellation/internal/data",
         "@com_github_hashicorp_terraform_plugin_framework//datasource",
         "@com_github_hashicorp_terraform_plugin_framework//datasource/schema",
         "@com_github_hashicorp_terraform_plugin_framework//path",
@@ -21,7 +25,9 @@ go_library(
         "@com_github_hashicorp_terraform_plugin_framework//resource/schema/planmodifier",
         "@com_github_hashicorp_terraform_plugin_framework//resource/schema/stringdefault",
         "@com_github_hashicorp_terraform_plugin_framework//resource/schema/stringplanmodifier",
+        "@com_github_hashicorp_terraform_plugin_framework//schema/validator",
         "@com_github_hashicorp_terraform_plugin_framework//types",
+        "@com_github_hashicorp_terraform_plugin_framework_validators//stringvalidator",
         "@com_github_hashicorp_terraform_plugin_log//tflog",
     ],
 )
@@ -29,8 +35,7 @@ go_library(
 go_test(
     name = "provider_test",
     srcs = [
-        "example_data_source_test.go",
-        "example_resource_test.go",
+        "image_data_source_test.go",
         "provider_test.go",
     ],
     embed = [":provider"],
@@ -38,5 +43,39 @@ go_test(
         "@com_github_hashicorp_terraform_plugin_framework//providerserver",
         "@com_github_hashicorp_terraform_plugin_go//tfprotov6",
         "@com_github_hashicorp_terraform_plugin_testing//helper/resource",
+        "@io_bazel_rules_go//go/runfiles:go_default_library",
+    ],
+)
+
+go_test(
+    name = "provider_acc_test",
+    srcs = [
+        "image_data_source_test.go",
+        "provider_test.go",
+    ],
+    # keep
+    count = 1,
+    data = [
+        "//bazel/ci:com_github_hashicorp_terraform",
+    ],
+    embed = [":provider"],
+    # keep
+    env = {
+        "TF_ACC": "1",
+        "TF_ACC_TEMP_DIR": "",  # TODO(msanft): find a writable path on remote runners.
+        "TF_ACC_TERRAFORM_PATH": "$(rlocationpath //bazel/ci:com_github_hashicorp_terraform)",
+    },
+    # keep
+    tags = [
+        "integration",
+        "requires-network",
+    ],
+    # keep
+    x_defs = {"runsUnder": "bazel"},
+    deps = [
+        "@com_github_hashicorp_terraform_plugin_framework//providerserver",
+        "@com_github_hashicorp_terraform_plugin_go//tfprotov6",
+        "@com_github_hashicorp_terraform_plugin_testing//helper/resource",
+        "@io_bazel_rules_go//go/runfiles:go_default_library",
     ],
 )
