@@ -1,4 +1,8 @@
 # Terraform development
+## Lock file generation
+
+Lock files are only checked in for modules where the provider is explicitly used.
+For modules that only consume other modules no lock file is provided to avoid duplication.
 
 ## iamlive
 
