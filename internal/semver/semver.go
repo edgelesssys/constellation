@@ -130,6 +130,12 @@ func (v Semver) String() string {
 	return version
 }
 
+// StringWithoutPrefix returns the string representation of the version without the "v" prefix.
+// Note that this is not a valid semantic version string.
+func (v Semver) StringWithoutPrefix() string {
+	return strings.TrimPrefix(v.String(), "v")
+}
+
 // Compare compares two versions. It relies on the semver.Compare function internally.
 // The result will be 0 if v == w, -1 if v < w, or +1 if v > w.
 func (v Semver) Compare(other Semver) int {
