@@ -134,7 +134,7 @@ func (d *AttestationDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 					"microcode_version": schema.Int64Attribute{
 						Computed: true,
 					},
-					"firmware_signer_config": schema.SingleNestedAttribute{
+					"azure_firmware_signer_config": schema.SingleNestedAttribute{
 						Computed: true,
 						Attributes: map[string]schema.Attribute{
 							"accepted_key_digests": schema.ListAttribute{
@@ -186,7 +186,7 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 			resp.Diagnostics.AddError("Fetching SNP Version numbers", err.Error())
 			return
 		}
-		tfSnpVersions := convertSNPAttestationTfStateCompatible(resp, snpVersions)
+		tfSnpVersions := convertSNPAttestationTfStateCompatible(resp, attestationVariant, snpVersions)
 		diags := resp.State.SetAttribute(ctx, path.Root("attestation"), tfSnpVersions)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
@@ -220,30 +220,39 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 	tflog.Trace(ctx, "read constellation attestation data source")
 }
 
-func convertSNPAttestationTfStateCompatible(resp *datasource.ReadResponse,
+func convertSNPAttestationTfStateCompatible(resp *datasource.ReadResponse, attestationVariant variant.Variant,
 	snpVersions attestationconfigapi.SEVSNPVersionAPI,
 ) sevSnpAttestation {
-	cert, err := config.DefaultForAzureSEVSNP().AMDRootKey.MarshalJSON()
+	var cert config.Certificate
+	switch attestationVariant.(type) {
+	case variant.AWSSEVSNP:
+		cert = config.DefaultForAWSSEVSNP().AMDRootKey
+	case variant.AzureSEVSNP:
+		cert = config.DefaultForAzureSEVSNP().AMDRootKey
+	}
+	certBytes, err := cert.MarshalJSON()
 	if err != nil {
 		resp.Diagnostics.AddError("Marshalling AMD Root Key", err.Error())
 	}
-	firmwareCfg := config.DefaultForAzureSEVSNP().FirmwareSignerConfig
-	keyDigestAny, err := firmwareCfg.AcceptedKeyDigests.MarshalYAML()
-	if err != nil {
-		resp.Diagnostics.AddError("Marshalling Accepted Key Digests", err.Error())
-	}
-	keyDigest := keyDigestAny.([]string)
 	tfSnpVersions := sevSnpAttestation{
 		BootloaderVersion: snpVersions.Bootloader,
 		TEEVersion:        snpVersions.TEE,
 		SNPVersion:        snpVersions.SNP,
 		MicrocodeVersion:  snpVersions.Microcode,
-		AMDRootKey:        string(cert),
-		SNPFirmwareSignerConfig: snpFirmwareSignerConfig{
+		AMDRootKey:        string(certBytes),
+	}
+	if attestationVariant.Equal(variant.AzureSEVSNP{}) {
+		firmwareCfg := config.DefaultForAzureSEVSNP().FirmwareSignerConfig
+		keyDigestAny, err := firmwareCfg.AcceptedKeyDigests.MarshalYAML()
+		keyDigest := keyDigestAny.([]string)
+		if err != nil {
+			resp.Diagnostics.AddError("Marshalling Accepted Key Digests", err.Error())
+		}
+		tfSnpVersions.AzureSNPFirmwareSignerConfig = azureSnpFirmwareSignerConfig{
 			AcceptedKeyDigests: keyDigest,
 			EnforcementPolicy:  firmwareCfg.EnforcementPolicy.String(),
 			MAAURL:             firmwareCfg.MAAURL,
-		},
+		}
 	}
 	return tfSnpVersions
 }
@@ -266,15 +275,15 @@ type measurement struct {
 }
 
 type sevSnpAttestation struct {
-	BootloaderVersion       uint8                   `tfsdk:"bootloader_version"`
-	TEEVersion              uint8                   `tfsdk:"tee_version"`
-	SNPVersion              uint8                   `tfsdk:"snp_version"`
-	MicrocodeVersion        uint8                   `tfsdk:"microcode_version"`
-	AMDRootKey              string                  `tfsdk:"amd_root_key"`
-	SNPFirmwareSignerConfig snpFirmwareSignerConfig `tfsdk:"firmware_signer_config"`
+	BootloaderVersion            uint8                        `tfsdk:"bootloader_version"`
+	TEEVersion                   uint8                        `tfsdk:"tee_version"`
+	SNPVersion                   uint8                        `tfsdk:"snp_version"`
+	MicrocodeVersion             uint8                        `tfsdk:"microcode_version"`
+	AMDRootKey                   string                       `tfsdk:"amd_root_key"`
+	AzureSNPFirmwareSignerConfig azureSnpFirmwareSignerConfig `tfsdk:"azure_firmware_signer_config"`
 }
 
-type snpFirmwareSignerConfig struct {
+type azureSnpFirmwareSignerConfig struct {
 	AcceptedKeyDigests []string `tfsdk:"accepted_key_digests"`
 	EnforcementPolicy  string   `tfsdk:"enforcement_policy"`
 	MAAURL             string   `tfsdk:"maa_url"`

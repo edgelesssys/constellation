@@ -25,8 +25,8 @@ provider "constellation" {
 }
 
 data "constellation_attestation" "test" {
-  csp                 = "azure"
-  attestation_variant = "azure-sev-snp"
+  csp                 = "aws"
+  attestation_variant = "aws-sev-snp"
   image_version       = "v2.13.0"
 }
 
@@ -69,14 +69,14 @@ See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview
 Read-Only:
 
 - `amd_root_key` (String)
+- `azure_firmware_signer_config` (Attributes) (see [below for nested schema](#nestedatt--attestation--azure_firmware_signer_config))
 - `bootloader_version` (Number)
-- `firmware_signer_config` (Attributes) (see [below for nested schema](#nestedatt--attestation--firmware_signer_config))
 - `microcode_version` (Number)
 - `snp_version` (Number)
 - `tee_version` (Number)
 
-<a id="nestedatt--attestation--firmware_signer_config"></a>
-### Nested Schema for `attestation.firmware_signer_config`
+<a id="nestedatt--attestation--azure_firmware_signer_config"></a>
+### Nested Schema for `attestation.azure_firmware_signer_config`
 
 Read-Only:
 
