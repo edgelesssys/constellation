@@ -82,7 +82,7 @@ section. It's a bit of a hack, but we can parse the registry part and the
 tag/hash part from the full image and set it in that `DNS` section of the
 config.
 
-The patches need to be materialized to the stateful filesystem by the
+The patches need to be written to the stateful filesystem by the
 bootstrapper. As there are a lot of similarities between these patches and
 `components.Components`, we could extend that definition to also allow inline
 file content as an alternative to remote URI and hash. Alternatively, we could
