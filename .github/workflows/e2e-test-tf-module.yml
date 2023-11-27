@@ -159,7 +159,8 @@ jobs:
         run: |
           cat > terraform.tfvars <<EOF
           name = "${{ steps.create-prefix.outputs.prefix }}"
-          project = "${{ secrets.GCP_E2E_PROJECT }}"
+          # project = "${{ secrets.GCP_E2E_PROJECT }}"
+          project = "constellation-e2e"
           service_account_id = "${{ steps.create-prefix.outputs.prefix }}-sa"
           image = "${{ steps.find-latest-image.outputs.image }}"
           zone = "${{ inputs.regionZone || 'europe-west3-b' }}"
@@ -245,7 +246,7 @@ jobs:
         if: inputs.cloudProvider == 'gcp'
         uses: ./.github/actions/login_gcp
         with:
-          service_account: "constellation-e2e-tf@constellation-331613.iam.gserviceaccount.com"
+          service_account: "terraform-e2e@constellation-e2e.iam.gserviceaccount.com"
 
       - name: Apply Terraform Cluster
         id: apply_terraform

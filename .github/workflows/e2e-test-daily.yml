@@ -74,10 +74,9 @@ jobs:
           isDebugImage: ${{ matrix.refStream == 'ref/main/stream/debug/?' }}
           cliVersion: ${{ matrix.refStream == 'ref/release/stream/stable/?' && needs.find-latest-image.outputs.image-release-stable || '' }}
           refStream: ${{ matrix.refStream }}
-          gcpProject: ${{ secrets.GCP_E2E_PROJECT }}
-          gcpClusterCreateServiceAccount: "constellation-e2e-cluster@constellation-331613.iam.gserviceaccount.com"
-          gcpIAMCreateServiceAccount: "constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"
-          gcpInClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
+          gcpProject: constellation-e2e # ${{ secrets.GCP_E2E_PROJECT }}
+          gcpClusterCreateServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
+          gcpIAMCreateServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
           kubernetesVersion: ${{ matrix.kubernetesVersion }}
           test: ${{ matrix.test }}
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
@@ -109,7 +108,7 @@ jobs:
         with:
           cloudProvider: ${{ matrix.provider }}
           azureCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
-          gcpServiceAccount: "constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"
+          gcpServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
 
       - name: Notify about failure
         if: |

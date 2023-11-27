@@ -37,9 +37,6 @@ inputs:
   gcpClusterCreateServiceAccount:
     description: "Service account with permissions to create a Constellation cluster on GCP."
     required: true
-  gcpInClusterServiceAccountKey:
-    description: "Service account to use inside the created Constellation cluster on GCP."
-    required: true
   awsOpenSearchDomain:
     description: "AWS OpenSearch Endpoint Domain to upload the benchmark results."
   awsOpenSearchUsers:

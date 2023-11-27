@@ -30,11 +30,11 @@ When using `--mode` be aware that `--e2e-focus` and `e2e-skip` will be overwritt
 
 ## Local Development
 
-Using [***act***](https://github.com/nektos/act) you can run GitHub actions locally.
+Using [`act`](https://github.com/nektos/act) you can run GitHub actions locally.
 
 **These instructions are for internal use.**
 In case you want to use the E2E actions externally, you need to adjust other configuration parameters.
-Check the assignments made in the [/.github/actions/e2e_test/action.yml](E2E action) and adjust any hard-coded values.
+Check the assignments made in the [E2E action](/.github/actions/e2e_test/action.yml) and adjust any hard-coded values.
 
 ### Specific Jobs
 
@@ -59,7 +59,7 @@ Create a new JSON file to describe the event ([relevant issue](https://github.co
 }
 ```
 
-Then run *act* with the event as input:
+Then run `act` with the event as input:
 
 ```bash
 act -j e2e-test-manual --eventpath event.json
@@ -67,20 +67,8 @@ act -j e2e-test-manual --eventpath event.json
 
 ### Authorizing GCP
 
-For creating Kubernetes clusters in GCP a local copy of the service account secret is required.
-
-1. [Create a new service account key](https://console.cloud.google.com/iam-admin/serviceaccounts/details/112741463528383500960/keys?authuser=0&project=constellation-331613&supportedpurview=project)
-2. Create a compact (one line) JSON representation of the file `jq -c`
-3. Store in a GitHub Action Secret called `GCP_SERVICE_ACCOUNT` or create a local secret file for *act* to consume:
-
-```bash
-$ cat secrets.env
-GCP_SERVICE_ACCOUNT={"type":"service_account", ... }
-
-$ act --secret-file secrets.env
-```
-
-In addition, you need to create a Service Account which Constellation itself is supposed to use. Refer to [First steps](https://docs.edgeless.systems/constellation/getting-started/first-steps#create-a-cluster) in the documentation on how to create it. What you need here specifically is the `gcpServiceAccountKey`, which needs to be stored in a secret called `GCP_CLUSTER_SERVICE_ACCOUNT`.
+For GCP, OIDC is used to authenticate the CI runner.
+This means the workflow cannot be run locally, as the runner created by `act` is not authenticated.
 
 ### Authorizing Azure
 
