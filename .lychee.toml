@@ -1,0 +1,45 @@
+# Verbose program output
+# Accepts log level: "error", "warn", "info", "debug", "trace"
+verbose = "info"
+
+# Don't show interactive progress bar while checking links.
+no_progress = true
+
+# Enable link caching. This can be helpful to avoid checking the same links on
+# multiple runs.
+cache = true
+
+# Discard all cached requests older than this duration.
+max_cache_age = "10m"
+
+# Maximum number of concurrent link checks.
+max_concurrency = 5
+
+# Comma-separated list of accepted status codes for valid links.
+# accept = ["200"]
+
+# Request method
+method = "head"
+
+# Check links inside `<code>` and `<pre>` blocks as well as Markdown code
+# blocks.
+include_verbatim = false
+
+# Exclude URLs and mail addresses from checking (supports regex).
+exclude = [
+    # Blocked for robots.
+    '^https://twitter\.com',
+    # Only available when logged in.
+    '^https://portal\.azure\.com/',
+]
+
+# Exclude these filesystem paths from getting checked.
+exclude_path = ["internal/constellation/helm/charts/cilium"]
+
+# Exclude all private IPs from checking.
+# Equivalent to setting `exclude_private`, `exclude_link_local`, and
+# `exclude_loopback` to true.
+exclude_all_private = true
+
+# Check mail addresses
+include_mail = false
