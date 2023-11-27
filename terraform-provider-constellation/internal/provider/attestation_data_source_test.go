@@ -32,6 +32,7 @@ func TestAccAttestationSource(t *testing.T) {
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr("data.constellation_attestation.aws_test", "measurements.0.expected", "7b068c0c3ac29afe264134536b9be26f1d4ccd575b88d3c3ceabf36ac99c0278"),
 						resource.TestCheckResourceAttr("data.constellation_attestation.aws_test", "measurements.0.warn_only", "true"),
+						resource.TestCheckResourceAttr("data.constellation_attestation.aws_test", "attestation.bootloader", "true"),
 						// TODO(elchead): waiting for attestation from PR.
 					),
 				},

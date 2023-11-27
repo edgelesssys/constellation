@@ -142,8 +142,8 @@ func TestFetchMeasurements(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			sut := NewVerifyFetcher(tc.cosign, tc.noVerify, tc.rekor, client)
-			m, err := sut.FetchAndVerifyMeasurements(context.Background(), "v999.999.999", cloudprovider.GCP, variant.GCPSEVES{})
+			sut := NewVerifyFetcher(tc.cosign, tc.rekor, client)
+			m, err := sut.FetchAndVerifyMeasurements(context.Background(), "v999.999.999", cloudprovider.GCP, variant.GCPSEVES{}, tc.noVerify)
 			if tc.wantErr {
 				assert.Error(err)
 				if tc.isErr != nil {

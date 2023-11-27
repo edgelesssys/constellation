@@ -17,6 +17,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/featureset"
@@ -72,10 +74,18 @@ func (f *fetchMeasurementsFlags) parse(flags *pflag.FlagSet) error {
 	return nil
 }
 
+type verifyFetcher interface {
+	FetchAndVerifyMeasurements(ctx context.Context,
+		image string, csp cloudprovider.Provider, attestationVariant variant.Variant,
+		noVerify bool,
+	) (measurements.M, error)
+}
+
 type configFetchMeasurementsCmd struct {
 	flags                fetchMeasurementsFlags
 	canFetchMeasurements bool
 	log                  debugLog
+	verifyFetcher        verifyFetcher
 }
 
 func runConfigFetchMeasurements(cmd *cobra.Command, _ []string) error {
@@ -89,19 +99,21 @@ func runConfigFetchMeasurements(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("constructing Rekor client: %w", err)
 	}
-	cfm := &configFetchMeasurementsCmd{log: log, canFetchMeasurements: featureset.CanFetchMeasurements}
+
+	verifyFetcher := measurements.NewVerifyFetcher(sigstore.NewCosignVerifier, rekor, http.DefaultClient)
+	cfm := &configFetchMeasurementsCmd{log: log, canFetchMeasurements: featureset.CanFetchMeasurements, verifyFetcher: verifyFetcher}
 	if err := cfm.flags.parse(cmd.Flags()); err != nil {
 		return fmt.Errorf("parsing flags: %w", err)
 	}
 	cfm.log.Debugf("Using flags %+v", cfm.flags)
 
 	fetcher := attestationconfigapi.NewFetcherWithClient(http.DefaultClient, constants.CDNRepositoryURL)
-	return cfm.configFetchMeasurements(cmd, sigstore.NewCosignVerifier, rekor, fileHandler, fetcher, http.DefaultClient)
+	return cfm.configFetchMeasurements(cmd, fileHandler, fetcher)
 }
 
 func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
-	cmd *cobra.Command, newCosignVerifier cosignVerifierConstructor, rekor rekorVerifier,
-	fileHandler file.Handler, fetcher attestationconfigapi.Fetcher, client *http.Client,
+	cmd *cobra.Command,
+	fileHandler file.Handler, fetcher attestationconfigapi.Fetcher,
 ) error {
 	if !cfm.canFetchMeasurements {
 		cmd.PrintErrln("Fetching measurements is not supported in the OSS build of the Constellation CLI. Consult the documentation for instructions on where to download the enterprise version.")
@@ -131,8 +143,8 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	if err := cfm.flags.updateURLs(conf); err != nil {
 		return err
 	}
-	verifyFetcher := measurements.NewVerifyFetcher(newCosignVerifier, cfm.flags.insecure, rekor, client)
-	fetchedMeasurements, err := verifyFetcher.FetchAndVerifyMeasurements(ctx, conf.Image, conf.GetProvider(), conf.GetAttestationConfig().GetVariant())
+	fetchedMeasurements, err := cfm.verifyFetcher.FetchAndVerifyMeasurements(ctx, conf.Image, conf.GetProvider(),
+		conf.GetAttestationConfig().GetVariant(), cfm.flags.insecure)
 	if err != nil {
 		if errors.Is(err, measurements.ErrRekor) {
 			cmd.PrintErrf("Ignoring Rekor related error: %v\n", err)
@@ -190,5 +202,3 @@ type rekorVerifier interface {
 	SearchByHash(context.Context, string) ([]string, error)
 	VerifyEntry(context.Context, string, string) error
 }
-
-type cosignVerifierConstructor func([]byte) (sigstore.Verifier, error)

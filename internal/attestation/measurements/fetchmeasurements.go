@@ -27,22 +27,21 @@ type VerifyFetcher struct {
 	client            *http.Client
 	newCosignVerifier cosignVerifierConstructor
 	rekor             rekorVerifier
-	noVerify          bool // do not verify measurements
 }
 
 // NewVerifyFetcher creates a new MeasurementFetcher.
-func NewVerifyFetcher(newCosignVerifier func([]byte) (sigstore.Verifier, error), noVerify bool, rekor rekorVerifier, client *http.Client) *VerifyFetcher {
+func NewVerifyFetcher(newCosignVerifier func([]byte) (sigstore.Verifier, error), rekor rekorVerifier, client *http.Client) *VerifyFetcher {
 	return &VerifyFetcher{
 		newCosignVerifier: newCosignVerifier,
 		rekor:             rekor,
 		client:            client,
-		noVerify:          noVerify,
 	}
 }
 
 // FetchAndVerifyMeasurements fetches and verifies measurements for the given version and attestation variant.
 func (m *VerifyFetcher) FetchAndVerifyMeasurements(ctx context.Context,
 	image string, csp cloudprovider.Provider, attestationVariant variant.Variant,
+	noVerify bool,
 ) (M, error) {
 	version, err := versionsapi.NewVersionFromShortPath(image, versionsapi.VersionKindImage)
 	if err != nil {
@@ -63,7 +62,7 @@ func (m *VerifyFetcher) FetchAndVerifyMeasurements(ctx context.Context,
 		return nil, err
 	}
 	var fetchedMeasurements M
-	if m.noVerify {
+	if noVerify {
 		if err := fetchedMeasurements.FetchNoVerify(
 			ctx,
 			m.client,

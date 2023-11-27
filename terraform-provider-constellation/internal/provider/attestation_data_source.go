@@ -176,11 +176,12 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 	}
 	attestationVariant, err := variant.FromString(data.AttestationVariant.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Unknown Attestation Variant", fmt.Sprintf("Unknown Attestation Variant: %s", data.AttestationVariant.ValueString()))
+		resp.Diagnostics.AddError("Unknown Attestation Variant",
+			fmt.Sprintf("Unknown Attestation Variant: %s", data.AttestationVariant.ValueString()))
 		return
 	}
-	if csp == cloudprovider.Azure && attestationVariant.Equal(variant.AzureSEVSNP{}) {
-		snpVersions, err := d.fetcher.FetchAzureSEVSNPVersionLatest(ctx)
+	if attestationVariant.Equal(variant.AzureSEVSNP{}) || attestationVariant.Equal(variant.AWSSEVSNP{}) {
+		snpVersions, err := d.fetcher.FetchSEVSNPVersionLatest(ctx, attestationVariant)
 		if err != nil {
 			resp.Diagnostics.AddError("Fetching SNP Version numbers", err.Error())
 			return
@@ -192,19 +193,16 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 			return
 		}
 	}
-	// TODO align with reenable AWS PR
-	if attestationVariant.Equal(variant.AWSSEVSNP{}) {
-		resp.Diagnostics.AddWarning("AWS attestation not supported", "AWS is not supported yet")
-	}
 
 	rekor, err := sigstore.NewRekor()
 	if err != nil {
 		resp.Diagnostics.AddError("constructing rekor client", err.Error())
 		return
 	}
-	verifyFetcher := measurements.NewVerifyFetcher(sigstore.NewCosignVerifier, false, rekor, d.client)
+	verifyFetcher := measurements.NewVerifyFetcher(sigstore.NewCosignVerifier, rekor, d.client)
 
-	fetchedMeasurements, err := verifyFetcher.FetchAndVerifyMeasurements(ctx, data.ImageVersion.ValueString(), csp, attestationVariant)
+	fetchedMeasurements, err := verifyFetcher.FetchAndVerifyMeasurements(ctx, data.ImageVersion.ValueString(),
+		csp, attestationVariant, false)
 	if err != nil {
 		if errors.Is(err, measurements.ErrRekor) {
 			resp.Diagnostics.AddWarning("Ignoring Rekor related error", err.Error())
@@ -222,7 +220,9 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 	tflog.Trace(ctx, "read constellation attestation data source")
 }
 
-func convertSNPAttestationTfStateCompatible(resp *datasource.ReadResponse, snpVersions attestationconfigapi.AzureSEVSNPVersionAPI) sevSnpAttestation {
+func convertSNPAttestationTfStateCompatible(resp *datasource.ReadResponse,
+	snpVersions attestationconfigapi.SEVSNPVersionAPI,
+) sevSnpAttestation {
 	cert, err := config.DefaultForAzureSEVSNP().AMDRootKey.MarshalJSON()
 	if err != nil {
 		resp.Diagnostics.AddError("Marshalling AMD Root Key", err.Error())

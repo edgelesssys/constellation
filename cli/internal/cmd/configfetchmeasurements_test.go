@@ -7,16 +7,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
-	"bytes"
 	"context"
-	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -153,93 +151,13 @@ func newTestClient(fn roundTripFunc) *http.Client {
 }
 
 func TestConfigFetchMeasurements(t *testing.T) {
-	measurements := `{
-	"version": "v999.999.999",
-	"ref": "-",
-	"stream": "stable",
-	"list": [
-		{
-			"csp": "GCP",
-			"attestationVariant":"gcp-sev-es",
-			"measurements": {
-				"0": {
-					"expected": "0000000000000000000000000000000000000000000000000000000000000000",
-					"warnOnly":false
-				},
-				"1": {
-					"expected": "1111111111111111111111111111111111111111111111111111111111111111",
-					"warnOnly":false
-				},
-				"2": {
-					"expected": "2222222222222222222222222222222222222222222222222222222222222222",
-					"warnOnly":false
-				},
-				"3": {
-					"expected": "3333333333333333333333333333333333333333333333333333333333333333",
-					"warnOnly":false
-				},
-				"4": {
-					"expected": "4444444444444444444444444444444444444444444444444444444444444444",
-					"warnOnly":false
-				},
-				"5": {
-					"expected": "5555555555555555555555555555555555555555555555555555555555555555",
-					"warnOnly":false
-				},
-				"6": {
-					"expected": "6666666666666666666666666666666666666666666666666666666666666666",
-					"warnOnly":false
-				}
-			}
-		}
-	]
-}
-`
-	signature := "placeholder-signature"
-
-	client := newTestClient(func(req *http.Request) *http.Response {
-		if req.URL.Path == "/constellation/v2/ref/-/stream/stable/v999.999.999/image/measurements.json" {
-			return &http.Response{
-				StatusCode: http.StatusOK,
-				Body:       io.NopCloser(bytes.NewBufferString(measurements)),
-				Header:     make(http.Header),
-			}
-		}
-		if req.URL.Path == "/constellation/v2/ref/-/stream/stable/v999.999.999/image/measurements.json.sig" {
-			return &http.Response{
-				StatusCode: http.StatusOK,
-				Body:       io.NopCloser(bytes.NewBufferString(signature)),
-				Header:     make(http.Header),
-			}
-		}
-
-		fmt.Println("unexpected request", req.URL.String())
-		return &http.Response{
-			StatusCode: http.StatusNotFound,
-			Body:       io.NopCloser(bytes.NewBufferString("Not found.")),
-			Header:     make(http.Header),
-		}
-	})
-
 	testCases := map[string]struct {
-		cosign       cosignVerifierConstructor
-		rekor        rekorVerifier
 		insecureFlag bool
 		wantErr      bool
+		isRekorErr   bool
 	}{
-		"failing search should not result in error": {
-			cosign: newStubCosignVerifier,
-			rekor: &stubRekorVerifier{
-				SearchByHashUUIDs: []string{},
-				SearchByHashError: assert.AnError,
-			},
-		},
-		"failing verify should not result in error": {
-			cosign: newStubCosignVerifier,
-			rekor: &stubRekorVerifier{
-				SearchByHashUUIDs: []string{"11111111111111111111111111111111111111111111111111111111111111111111111111111111"},
-				VerifyEntryError:  assert.AnError,
-			},
+		"failing rekor verify should not result in error": {
+			isRekorErr: true,
 		},
 	}
 
@@ -256,11 +174,11 @@ func TestConfigFetchMeasurements(t *testing.T) {
 
 			err := fileHandler.WriteYAML(constants.ConfigFilename, gcpConfig, file.OptMkdirAll)
 			require.NoError(err)
-			cfm := &configFetchMeasurementsCmd{canFetchMeasurements: true, log: logger.NewTest(t)}
+			cfm := &configFetchMeasurementsCmd{canFetchMeasurements: true, log: logger.NewTest(t), verifyFetcher: stubVerifyFetcher{isRekorErr: tc.isRekorErr}}
 			cfm.flags.insecure = tc.insecureFlag
 			cfm.flags.force = true
 
-			err = cfm.configFetchMeasurements(cmd, tc.cosign, tc.rekor, fileHandler, stubAttestationFetcher{}, client)
+			err = cfm.configFetchMeasurements(cmd, fileHandler, stubAttestationFetcher{})
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -268,6 +186,17 @@ func TestConfigFetchMeasurements(t *testing.T) {
 			assert.NoError(err)
 		})
 	}
+}
+
+type stubVerifyFetcher struct {
+	isRekorErr bool
+}
+
+func (f stubVerifyFetcher) FetchAndVerifyMeasurements(_ context.Context, _ string, _ cloudprovider.Provider, _ variant.Variant, _ bool) (measurements.M, error) {
+	if f.isRekorErr {
+		return nil, measurements.ErrRekor
+	}
+	return nil, nil
 }
 
 type stubAttestationFetcher struct{}

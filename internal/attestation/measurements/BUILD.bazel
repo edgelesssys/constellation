@@ -27,7 +27,10 @@ go_library(
 
 go_test(
     name = "measurements_test",
-    srcs = ["measurements_test.go"],
+    srcs = [
+        "fetchmeasurements_test.go",
+        "measurements_test.go",
+    ],
     embed = [":measurements"],
     deps = [
         "//internal/api/versionsapi",
