@@ -9,6 +9,7 @@ package provider
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -205,7 +206,7 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 
 	fetchedMeasurements, err := verifyFetcher.FetchAndVerifyMeasurements(ctx, data.ImageVersion.ValueString(), csp, attestationVariant)
 	if err != nil {
-		if _, ok := err.(measurements.ErrRekor); ok {
+		if errors.Is(err, measurements.ErrRekor) {
 			resp.Diagnostics.AddWarning("Ignoring Rekor related error", err.Error())
 		} else {
 			resp.Diagnostics.AddError("fetching and verifying measurements", err.Error())

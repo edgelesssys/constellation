@@ -134,7 +134,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	verifyFetcher := measurements.NewVerifyFetcher(newCosignVerifier, cfm.flags.insecure, rekor, client)
 	fetchedMeasurements, err := verifyFetcher.FetchAndVerifyMeasurements(ctx, conf.Image, conf.GetProvider(), conf.GetAttestationConfig().GetVariant())
 	if err != nil {
-		if _, ok := err.(measurements.ErrRekor); ok {
+		if errors.Is(err, measurements.ErrRekor) {
 			cmd.PrintErrf("Ignoring Rekor related error: %v\n", err)
 			cmd.PrintErrln("Make sure the downloaded measurements are trustworthy!")
 		} else {

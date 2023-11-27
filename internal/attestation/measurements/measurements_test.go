@@ -11,6 +11,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -1046,7 +1047,6 @@ func TestMeasurementsCompare(t *testing.T) {
 }
 
 func TestRekorErrCheck(t *testing.T) {
-	err := newRekorErr(errors.New("test"))
-	_, ok := err.(ErrRekor)
-	assert.True(t, ok)
+	err := fmt.Errorf("%w: %w", ErrRekor, errors.New("test"))
+	assert.ErrorIs(t, err, ErrRekor)
 }
