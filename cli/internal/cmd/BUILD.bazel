@@ -170,7 +170,6 @@ go_test(
         "//internal/license",
         "//internal/logger",
         "//internal/semver",
-        "//internal/sigstore",
         "//internal/state",
         "//internal/versions",
         "//operators/constellation-node-operator/api/v1alpha1",

@@ -85,6 +85,6 @@ func (p *ConstellationProvider) Resources(_ context.Context) []func() resource.R
 // DataSources lists the data sources implemented by the provider.
 func (p *ConstellationProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		NewImageDataSource,
+		NewImageDataSource, NewAttestationDataSource,
 	}
 }

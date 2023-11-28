@@ -8,8 +8,6 @@ package cmd
 
 import (
 	"context"
-
-	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 )
 
 // singleUUIDVerifier constructs a RekorVerifier that returns a single UUID and no errors,
@@ -41,10 +39,6 @@ func (v *stubRekorVerifier) VerifyEntry(context.Context, string, string) error {
 
 type stubCosignVerifier struct {
 	verifyError error
-}
-
-func newStubCosignVerifier(_ []byte) (sigstore.Verifier, error) {
-	return &stubCosignVerifier{}, nil
 }
 
 func (v *stubCosignVerifier) VerifySignature(_, _ []byte) error {

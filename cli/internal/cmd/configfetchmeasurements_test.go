@@ -7,23 +7,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
-	"bytes"
 	"context"
-	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -154,114 +151,17 @@ func newTestClient(fn roundTripFunc) *http.Client {
 }
 
 func TestConfigFetchMeasurements(t *testing.T) {
-	measurements := `{
-	"version": "v999.999.999",
-	"ref": "-",
-	"stream": "stable",
-	"list": [
-		{
-			"csp": "GCP",
-			"attestationVariant":"gcp-sev-es",
-			"measurements": {
-				"0": {
-					"expected": "0000000000000000000000000000000000000000000000000000000000000000",
-					"warnOnly":false
-				},
-				"1": {
-					"expected": "1111111111111111111111111111111111111111111111111111111111111111",
-					"warnOnly":false
-				},
-				"2": {
-					"expected": "2222222222222222222222222222222222222222222222222222222222222222",
-					"warnOnly":false
-				},
-				"3": {
-					"expected": "3333333333333333333333333333333333333333333333333333333333333333",
-					"warnOnly":false
-				},
-				"4": {
-					"expected": "4444444444444444444444444444444444444444444444444444444444444444",
-					"warnOnly":false
-				},
-				"5": {
-					"expected": "5555555555555555555555555555555555555555555555555555555555555555",
-					"warnOnly":false
-				},
-				"6": {
-					"expected": "6666666666666666666666666666666666666666666666666666666666666666",
-					"warnOnly":false
-				}
-			}
-		}
-	]
-}
-`
-	signature := "placeholder-signature"
-
-	client := newTestClient(func(req *http.Request) *http.Response {
-		if req.URL.Path == "/constellation/v2/ref/-/stream/stable/v999.999.999/image/measurements.json" {
-			return &http.Response{
-				StatusCode: http.StatusOK,
-				Body:       io.NopCloser(bytes.NewBufferString(measurements)),
-				Header:     make(http.Header),
-			}
-		}
-		if req.URL.Path == "/constellation/v2/ref/-/stream/stable/v999.999.999/image/measurements.json.sig" {
-			return &http.Response{
-				StatusCode: http.StatusOK,
-				Body:       io.NopCloser(bytes.NewBufferString(signature)),
-				Header:     make(http.Header),
-			}
-		}
-
-		fmt.Println("unexpected request", req.URL.String())
-		return &http.Response{
-			StatusCode: http.StatusNotFound,
-			Body:       io.NopCloser(bytes.NewBufferString("Not found.")),
-			Header:     make(http.Header),
-		}
-	})
-
 	testCases := map[string]struct {
-		cosign       cosignVerifierConstructor
-		rekor        rekorVerifier
 		insecureFlag bool
+		err          error
 		wantErr      bool
 	}{
-		"success": {
-			cosign: newStubCosignVerifier,
-			rekor:  singleUUIDVerifier(),
+		"no error succeeds": {},
+		"failing rekor verify should not result in error": {
+			err: &measurements.RekorError{},
 		},
-		"success without cosign": {
-			insecureFlag: true,
-			cosign: func(_ []byte) (sigstore.Verifier, error) {
-				return &stubCosignVerifier{
-					verifyError: assert.AnError,
-				}, nil
-			},
-			rekor: singleUUIDVerifier(),
-		},
-		"failing search should not result in error": {
-			cosign: newStubCosignVerifier,
-			rekor: &stubRekorVerifier{
-				SearchByHashUUIDs: []string{},
-				SearchByHashError: assert.AnError,
-			},
-		},
-		"failing verify should not result in error": {
-			cosign: newStubCosignVerifier,
-			rekor: &stubRekorVerifier{
-				SearchByHashUUIDs: []string{"11111111111111111111111111111111111111111111111111111111111111111111111111111111"},
-				VerifyEntryError:  assert.AnError,
-			},
-		},
-		"signature verification failure": {
-			cosign: func(_ []byte) (sigstore.Verifier, error) {
-				return &stubCosignVerifier{
-					verifyError: assert.AnError,
-				}, nil
-			},
-			rekor:   singleUUIDVerifier(),
+		"error other than Rekor fails": {
+			err:     assert.AnError,
 			wantErr: true,
 		},
 	}
@@ -279,11 +179,12 @@ func TestConfigFetchMeasurements(t *testing.T) {
 
 			err := fileHandler.WriteYAML(constants.ConfigFilename, gcpConfig, file.OptMkdirAll)
 			require.NoError(err)
-			cfm := &configFetchMeasurementsCmd{canFetchMeasurements: true, log: logger.NewTest(t)}
+			fetcher := stubVerifyFetcher{err: tc.err}
+			cfm := &configFetchMeasurementsCmd{canFetchMeasurements: true, log: logger.NewTest(t), verifyFetcher: fetcher}
 			cfm.flags.insecure = tc.insecureFlag
 			cfm.flags.force = true
 
-			err = cfm.configFetchMeasurements(cmd, tc.cosign, tc.rekor, fileHandler, stubAttestationFetcher{}, client)
+			err = cfm.configFetchMeasurements(cmd, fileHandler, stubAttestationFetcher{})
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -291,6 +192,14 @@ func TestConfigFetchMeasurements(t *testing.T) {
 			assert.NoError(err)
 		})
 	}
+}
+
+type stubVerifyFetcher struct {
+	err error
+}
+
+func (f stubVerifyFetcher) FetchAndVerifyMeasurements(_ context.Context, _ string, _ cloudprovider.Provider, _ variant.Variant, _ bool) (measurements.M, error) {
+	return nil, f.err
 }
 
 type stubAttestationFetcher struct{}

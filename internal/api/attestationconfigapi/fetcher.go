@@ -26,7 +26,7 @@ var ErrNoVersionsFound = errors.New("no versions found")
 type Fetcher interface {
 	FetchSEVSNPVersion(ctx context.Context, version SEVSNPVersionAPI) (SEVSNPVersionAPI, error)
 	FetchSEVSNPVersionList(ctx context.Context, list SEVSNPVersionList) (SEVSNPVersionList, error)
-	FetchSEVSNPVersionLatest(ctx context.Context, attesation variant.Variant) (SEVSNPVersionAPI, error)
+	FetchSEVSNPVersionLatest(ctx context.Context, attestation variant.Variant) (SEVSNPVersionAPI, error)
 }
 
 // fetcher fetches AttestationCfg API resources without authentication.

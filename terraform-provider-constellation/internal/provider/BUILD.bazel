@@ -4,6 +4,7 @@ load("//bazel/go:go_test.bzl", "go_test")
 go_library(
     name = "provider",
     srcs = [
+        "attestation_data_source.go",
         "example_resource.go",
         "image_data_source.go",
         "provider.go",
@@ -11,9 +12,13 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/provider",
     visibility = ["//terraform-provider-constellation:__subpackages__"],
     deps = [
+        "//internal/api/attestationconfigapi",
+        "//internal/attestation/measurements",
         "//internal/attestation/variant",
         "//internal/cloud/cloudprovider",
+        "//internal/config",
         "//internal/imagefetcher",
+        "//internal/sigstore",
         "//terraform-provider-constellation/internal/data",
         "@com_github_hashicorp_terraform_plugin_framework//datasource",
         "@com_github_hashicorp_terraform_plugin_framework//datasource/schema",
@@ -35,6 +40,7 @@ go_library(
 go_test(
     name = "provider_test",
     srcs = [
+        "attestation_data_source_test.go",
         "image_data_source_test.go",
         "provider_test.go",
     ],
