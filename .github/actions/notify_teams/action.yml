@@ -2,6 +2,9 @@ name: notify teams
 description: "Post a message to Teams"
 
 inputs:
+  teamsWebhookURI:
+    description: "URI to send a message to the Teams channel"
+    required: true
   title:
     description: "Title of the Teams notification"
     required: true

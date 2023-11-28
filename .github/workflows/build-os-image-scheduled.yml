@@ -134,5 +134,6 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/notify_teams
         with:
+          teamsWebhookURI: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
           title: "Constellation image build failed"
           assignee: ${{ steps.pick-assignee.outputs.assignee }}

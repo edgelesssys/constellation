@@ -39,7 +39,7 @@ inputs:
     description: "The template to use for the issue."
     required: false
   fields:
-    description: "A JSON object containing the fields to use for the issue."
+    description: "A YAML or JSON object containing the fields to use for the issue."
     required: false
 
 outputs:
