@@ -215,7 +215,7 @@ jobs:
           cloudProvider: ${{ inputs.cloudProvider }}
           machineType: ${{ inputs.machineType }}
           regionZone: ${{ inputs.regionZone }}
-          gcpProject: constellation-e2e # ${{ secrets.GCP_E2E_PROJECT }}
+          gcpProject: constellation-e2e
           gcpClusterCreateServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
           gcpIAMCreateServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
           test: ${{ inputs.test }}
