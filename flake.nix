@@ -49,6 +49,8 @@
 
       packages.libvirt = callPackage ./nix/cc/libvirt.nix { pkgs = pkgsUnstable; pkgsLinux = import nixpkgsUnstable { system = "x86_64-linux"; }; };
 
+      packages.libvirtd_base = callPackage ./nix/container/libvirtd_base.nix { pkgs = pkgsUnstable; pkgsLinux = import nixpkgsUnstable { system = "x86_64-linux"; }; };
+
       packages.awscli2 = pkgsUnstable.awscli2;
 
       packages.bazel_6 = pkgsUnstable.bazel_6;

@@ -11,7 +11,7 @@ You may either use [your local libvirt setup](#local-libvirt-setup) if it meets 
 ## Containerized libvirt
 
 Constellation will automatically deploy a containerized libvirt instance, if no connection URI is defined in the Constellation config file.
-Follow the steps in our [libvirt readme](../../cli/internal/libvirt/README.md) if you wish to build your own image.
+Follow the steps in our [libvirt readme](../../nix/container/README.md) if you wish to build your own image.
 
 ## Local libvirt setup
 
