@@ -159,7 +159,6 @@ jobs:
         run: |
           cat > terraform.tfvars <<EOF
           name = "${{ steps.create-prefix.outputs.prefix }}"
-          # project = "${{ secrets.GCP_E2E_PROJECT }}"
           project = "constellation-e2e"
           service_account_id = "${{ steps.create-prefix.outputs.prefix }}-sa"
           image = "${{ steps.find-latest-image.outputs.image }}"
