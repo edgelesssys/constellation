@@ -100,7 +100,7 @@ jobs:
           selfManagedInfra: "false"
           cloudProvider: ${{ matrix.provider }}
           azureClusterDeleteCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
-          gcpClusterDeleteServiceAccount: "constellation-e2e-cluster@constellation-331613.iam.gserviceaccount.com"
+          gcpClusterDeleteServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
 
       - name: Always delete IAM configuration
         if: always()
