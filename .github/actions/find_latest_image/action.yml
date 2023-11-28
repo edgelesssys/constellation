@@ -16,7 +16,7 @@ inputs:
 outputs:
   image:
     description: "Image reference to be used in the cluster."
-    value: ${{ steps.find-latest-image.outputs.output }}${{ steps.check-input.outputs.image }}
+    value: ${{ steps.find-latest-image.outputs.output }}${{ steps.use-given-image.outputs.output }}
   isDebugImage:
     description: "Whether the image is a debug image."
     value: ${{ steps.isDebugImage.outputs.isDebugImage }}
@@ -51,6 +51,13 @@ runs:
         command: latest
         ref: ${{ inputs.ref }}
         stream: ${{ inputs.stream }}
+
+    - name: Use given image
+      id: use-given-image
+      if: inputs.imageVersion != ''
+      shell: bash
+      run: |
+        echo "output=${{ inputs.imageVersion }}" | tee -a "$GITHUB_OUTPUT"
 
     - name: Is debug image?
       id: isDebugImage
