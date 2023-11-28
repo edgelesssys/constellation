@@ -696,6 +696,11 @@ func (c *Config) DeployYawolLoadBalancer() bool {
 	return c.Provider.OpenStack != nil && c.Provider.OpenStack.DeployYawolLoadBalancer != nil && *c.Provider.OpenStack.DeployYawolLoadBalancer
 }
 
+// UseMarketplaceImage returns whether a marketplace image should be used.
+func (c *Config) UseMarketplaceImage() bool {
+	return c.Provider.Azure != nil && c.Provider.Azure.UseMarketplaceImage != nil && *c.Provider.Azure.UseMarketplaceImage
+}
+
 // Validate checks the config values and returns validation errors.
 func (c *Config) Validate(force bool) error {
 	trans := ut.New(en.New()).GetFallback()

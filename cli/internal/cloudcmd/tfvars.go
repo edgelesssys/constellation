@@ -148,7 +148,6 @@ func azureTerraformVars(conf *config.Config, imageRef string) (*terraform.AzureC
 		Name:                 conf.Name,
 		NodeGroups:           nodeGroups,
 		Location:             conf.Provider.Azure.Location,
-		ImageID:              imageRef,
 		CreateMAA:            toPtr(conf.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})),
 		Debug:                toPtr(conf.IsDebugCluster()),
 		ConfidentialVM:       toPtr(conf.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})),
@@ -159,7 +158,8 @@ func azureTerraformVars(conf *config.Config, imageRef string) (*terraform.AzureC
 		InternalLoadBalancer: conf.InternalLoadBalancer,
 	}
 
-	if conf.Provider.Azure.UseMarketplaceImage != nil {
+	if conf.UseMarketplaceImage() {
+		// If a marketplace image is used, only the marketplace reference is required.
 		imageVersion, err := semver.New(conf.Image)
 		if err != nil {
 			return nil, fmt.Errorf("parsing image version: %w. %s does not look like a valid release image", err, conf.Image)
@@ -171,6 +171,9 @@ func azureTerraformVars(conf *config.Config, imageRef string) (*terraform.AzureC
 			Name:      constants.AzureMarketplaceImagePlan,
 			Version:   imageVersion.StringWithoutPrefix(),
 		}
+	} else {
+		// If not, we need to specify the exact CommunityGalleries/.. image reference.
+		vars.ImageID = imageRef
 	}
 
 	vars = normalizeAzureURIs(vars)
