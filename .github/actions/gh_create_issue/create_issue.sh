@@ -175,6 +175,12 @@ function editItem() {
   local itemID="${2}"
   local id="${3}"
   local value="${4}"
+
+  if [[ -z ${value} ]]; then
+    debug skipping empty value
+    return
+  fi
+
   flags=(
     "--project-id=${projectID}"
     "--id=${itemID}"
