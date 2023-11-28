@@ -160,8 +160,6 @@ func (d *ImageDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 
 	// Save data into Terraform state
 	data.Reference = types.StringValue(imageRef)
-	// Use a placeholder ID for testing, as per https://developer.hashicorp.com/terraform/plugin/framework/acctests#no-id-found-in-attributes
-	data.ID = types.StringValue("placeholder")
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
