@@ -1,8 +1,0 @@
-filegroup(
-    name = "nvram_vars",
-    srcs = glob(
-        ["**/*.fd"],
-        exclude = ["BUILD"],
-    ),
-    visibility = ["//visibility:public"],
-)
