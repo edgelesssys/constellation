@@ -11,14 +11,19 @@ Connecting to the libvirt daemon running in the container and manage the deploym
 virsh -c "qemu+tcp://localhost:16599/system"
 ```
 
-## Docker image
+## Container image
 
-Build the image:
+Update the base image (`ghcr.io/edgelesssys/constellation/libvirtd-base`):
 
 ```shell
-bazel build //cli/internal/libvirt:constellation_libvirt
-bazel build //bazel/release:libvirt_sum
-bazel build //bazel/release:libvirt_tar
+nix build .#libvirtd_base
+cat result | gunzip > libvirtd_base.tar
+crane push libvirtd_base.tar ghcr.io/edgelesssys/constellation/libvirtd-base
+```
+
+Push the final image to your own registry (`ghcr.io/<USERNAME>/constellation/libvirtd`):
+
+```shell
 bazel run //bazel/release:libvirt_push
 ```
 
