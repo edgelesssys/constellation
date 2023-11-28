@@ -561,12 +561,6 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 		a.flags.skipPhases.add(skipImagePhase)
 	}
 
-	// Print warning about AWS attestation
-	// TODO(derpsteb): remove once AWS fixes SEV-SNP attestation provisioning issues
-	if !a.flags.skipPhases.contains(skipInitPhase) && conf.GetAttestationConfig().GetVariant().Equal(variant.AWSSEVSNP{}) {
-		cmd.PrintErrln("WARNING: Attestation temporarily relies on AWS nitroTPM. See https://docs.edgeless.systems/constellation/workflows/config#choosing-a-vm-type for more information.")
-	}
-
 	return conf, stateFile, nil
 }
 

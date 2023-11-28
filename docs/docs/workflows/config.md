@@ -67,14 +67,6 @@ If you are using the attestation variant `awsNitroTPM`, you can choose any of th
 
 The Constellation CLI can also print the supported instance types with: `constellation config instance-types`.
 
-:::caution
-Due to a bug in AWS's SNP implementation, SNP report generation currently fails in unforeseeable circumstances.
-Therefore, even if you select attestation variant `awsSEVSNP`, Constellation still uses NitroTPM-based attestation.
-Nonetheless, runtime encryption is enabled.
-AWS is currently investigating the issue.
-SNP-based attestation will be enabled as soon as a fix is verified.
-:::
-
 </tabItem>
 </tabs>
 
@@ -85,7 +77,6 @@ Fill the desired VM type into the **instanceType** fields in the `constellation-
 By default, Constellation creates the node groups `control_plane_default` and `worker_default` for control-plane nodes and workers, respectively.
 If you require additional control-plane or worker groups with different instance types, zone placements, or disk sizes, you can add additional node groups to the `constellation-conf.yml` file.
 Each node group can be scaled individually.
-
 
 Consider the following example for AWS:
 
@@ -120,9 +111,9 @@ You can use the field `zone` to specify what availability zone nodes of the grou
 On Azure, this field is empty by default and nodes are automatically spread across availability zones.
 Consult the documentation of your cloud provider for more information:
 
-- [AWS](https://aws.amazon.com/about-aws/global-infrastructure/regions_az/)
-- [Azure](https://azure.microsoft.com/en-us/explore/global-infrastructure/availability-zones)
-- [GCP](https://cloud.google.com/compute/docs/regions-zones)
+* [AWS](https://aws.amazon.com/about-aws/global-infrastructure/regions_az/)
+* [Azure](https://azure.microsoft.com/en-us/explore/global-infrastructure/availability-zones)
+* [GCP](https://cloud.google.com/compute/docs/regions-zones)
 
 ## Choosing a Kubernetes version
 
