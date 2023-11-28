@@ -41,6 +41,7 @@ func NewAttestationDataSource() datasource.DataSource {
 type AttestationDataSource struct {
 	client  *http.Client
 	fetcher attestationconfigapi.Fetcher
+	rekor   *sigstore.Rekor
 }
 
 // AttestationDataSourceModel describes the data source data model.
@@ -55,9 +56,15 @@ type AttestationDataSourceModel struct {
 }
 
 // Configure configures the data source.
-func (d *AttestationDataSource) Configure(_ context.Context, _ datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
+func (d *AttestationDataSource) Configure(_ context.Context, _ datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	d.client = http.DefaultClient
 	d.fetcher = attestationconfigapi.NewFetcher()
+	rekor, err := sigstore.NewRekor()
+	if err != nil {
+		resp.Diagnostics.AddError("constructing rekor client", err.Error())
+		return
+	}
+	d.rekor = rekor
 }
 
 // Metadata returns the metadata for the data source.
@@ -194,13 +201,7 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 		}
 	}
 
-	rekor, err := sigstore.NewRekor()
-	if err != nil {
-		resp.Diagnostics.AddError("constructing rekor client", err.Error())
-		return
-	}
-	verifyFetcher := measurements.NewVerifyFetcher(sigstore.NewCosignVerifier, rekor, d.client)
-
+	verifyFetcher := measurements.NewVerifyFetcher(sigstore.NewCosignVerifier, d.rekor, d.client)
 	fetchedMeasurements, err := verifyFetcher.FetchAndVerifyMeasurements(ctx, data.ImageVersion.ValueString(),
 		csp, attestationVariant, false)
 	if err != nil {
