@@ -8,7 +8,6 @@ package measurements
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -19,8 +18,20 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/sigstore/keyselect"
 )
 
-// ErrRekor is returned when verifying measurements with Rekor fails.
-var ErrRekor = errors.New("verifying measurements with Rekor")
+// RekorError is returned when verifying measurements with Rekor fails.
+type RekorError struct {
+	err error
+}
+
+// Error returns the error message.
+func (e *RekorError) Error() string {
+	return fmt.Sprintf("verifying measurements with Rekor failed: %s", e.err)
+}
+
+// Unwrap returns the wrapped error.
+func (e *RekorError) Unwrap() error {
+	return e.err
+}
 
 // VerifyFetcher is a high-level fetcher that fetches measurements and verifies them.
 type VerifyFetcher struct {
@@ -88,7 +99,7 @@ func (m *VerifyFetcher) FetchAndVerifyMeasurements(ctx context.Context,
 			return nil, fmt.Errorf("fetching and verifying measurements: %w", err)
 		}
 		if err := sigstore.VerifyWithRekor(ctx, publicKey, m.rekor, hash); err != nil {
-			return nil, fmt.Errorf("%w: %w", ErrRekor, err)
+			return nil, &RekorError{err: err}
 		}
 	}
 	return fetchedMeasurements, nil

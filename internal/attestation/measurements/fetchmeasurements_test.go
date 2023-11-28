@@ -10,7 +10,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
-	"fmt"
 	"io"
 	"net/http"
 	"testing"
@@ -82,7 +81,6 @@ func TestFetchMeasurements(t *testing.T) {
 			}
 		}
 
-		fmt.Println("unexpected request", req.URL.String())
 		return &http.Response{
 			StatusCode: http.StatusNotFound,
 			Body:       io.NopCloser(bytes.NewBufferString("Not found.")),
@@ -91,11 +89,11 @@ func TestFetchMeasurements(t *testing.T) {
 	})
 
 	testCases := map[string]struct {
-		cosign   cosignVerifierConstructor
-		rekor    rekorVerifier
-		noVerify bool
-		wantErr  bool
-		isErr    error
+		cosign     cosignVerifierConstructor
+		rekor      rekorVerifier
+		noVerify   bool
+		wantErr    bool
+		asRekorErr bool
 	}{
 		"success": {
 			cosign: newStubCosignVerifier,
@@ -116,8 +114,8 @@ func TestFetchMeasurements(t *testing.T) {
 				SearchByHashUUIDs: []string{},
 				SearchByHashError: assert.AnError,
 			},
-			wantErr: true,
-			isErr:   ErrRekor,
+			wantErr:    true,
+			asRekorErr: true,
 		},
 		"failing verify is ErrRekor": {
 			cosign: newStubCosignVerifier,
@@ -125,8 +123,8 @@ func TestFetchMeasurements(t *testing.T) {
 				SearchByHashUUIDs: []string{"11111111111111111111111111111111111111111111111111111111111111111111111111111111"},
 				VerifyEntryError:  assert.AnError,
 			},
-			wantErr: true,
-			isErr:   ErrRekor,
+			wantErr:    true,
+			asRekorErr: true,
 		},
 		"signature verification failure": {
 			cosign: func(_ []byte) (sigstore.Verifier, error) {
@@ -146,8 +144,9 @@ func TestFetchMeasurements(t *testing.T) {
 			m, err := sut.FetchAndVerifyMeasurements(context.Background(), "v999.999.999", cloudprovider.GCP, variant.GCPSEVES{}, tc.noVerify)
 			if tc.wantErr {
 				assert.Error(err)
-				if tc.isErr != nil {
-					assert.ErrorIs(err, tc.isErr)
+				if tc.asRekorErr {
+					var rekErr *RekorError
+					assert.ErrorAs(err, &rekErr)
 				}
 				return
 			}

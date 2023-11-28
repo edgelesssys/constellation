@@ -145,7 +145,8 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	fetchedMeasurements, err := cfm.verifyFetcher.FetchAndVerifyMeasurements(ctx, conf.Image, conf.GetProvider(),
 		conf.GetAttestationConfig().GetVariant(), cfm.flags.insecure)
 	if err != nil {
-		if errors.Is(err, measurements.ErrRekor) {
+		var rekorErr *measurements.RekorError
+		if errors.As(err, &rekorErr) {
 			cmd.PrintErrf("Ignoring Rekor related error: %v\n", err)
 			cmd.PrintErrln("Make sure the downloaded measurements are trustworthy!")
 		} else {

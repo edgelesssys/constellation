@@ -158,7 +158,7 @@ func TestConfigFetchMeasurements(t *testing.T) {
 	}{
 		"no error succeeds": {},
 		"failing rekor verify should not result in error": {
-			err: measurements.ErrRekor,
+			err: &measurements.RekorError{},
 		},
 		"error other than Rekor fails": {
 			err:     assert.AnError,

@@ -215,7 +215,8 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 	fetchedMeasurements, err := verifyFetcher.FetchAndVerifyMeasurements(ctx, data.ImageVersion.ValueString(),
 		csp, attestationVariant, false)
 	if err != nil {
-		if errors.Is(err, measurements.ErrRekor) {
+		var rekErr *measurements.RekorError
+		if errors.As(err, &rekErr) {
 			resp.Diagnostics.AddWarning("Ignoring Rekor related error", err.Error())
 		} else {
 			resp.Diagnostics.AddError("fetching and verifying measurements", err.Error())
