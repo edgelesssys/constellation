@@ -71,7 +71,7 @@ check() {
   for exclude in "${excludeLockDirs[@]}"; do
     for i in "${!terraformLockModules[@]}"; do
       if [[ ${terraformLockModules[i]} == "${BUILD_WORKSPACE_DIRECTORY}/${exclude}"* ]]; then
-        echo "  ${terraformLockModules[i]}"
+        echo "${terraformLockModules[i]}"
         unset 'terraformLockModules[i]'
       fi
     done
@@ -119,6 +119,14 @@ check() {
       ${terraform} -chdir="${module}" fmt -recursive > /dev/null
       ${terraform} -chdir="${module}" validate > /dev/null
       rm -rf "${module}/.terraform"
+      echo "Deleting lock files in the following directories:" # init generates lockfiles which should only be generated in the generate mode.
+      for dir in "${excludeLockDirs[@]}"; do
+        if [[ -d ${dir} ]]; then
+          find "${dir}" -name '*.lock.hcl' -type f -delete
+        else
+          echo "  Directory ${dir} does not exist, skipping"
+        fi
+      done
     done
     ;;
 
