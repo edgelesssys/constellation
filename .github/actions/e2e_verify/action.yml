@@ -66,7 +66,8 @@ runs:
           forwarderPID=$!
           sleep 5
 
-          if [[ ${{ inputs.cloudProvider }} == "azure" || ${{ inputs.cloudProvider }} == "aws" ]]; then
+          # TODO(v2.15): Remove workaround since we don't need to support v2.13 anymore
+          if [[ ${{ inputs.cloudProvider }} == "azure" ]] || { [[ ${{ inputs.cloudProvider }} == "aws" ]] && ! constellation version | grep -q "v2.13."; }; then
             echo "Extracting TCB versions for API update"
             constellation verify --cluster-id "${clusterID}" --node-endpoint localhost:9090 -o json > "snp-report-${node}.json"
           else
@@ -90,6 +91,11 @@ runs:
         COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
         COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
       run: |
+        if [[ ${{ inputs.cloudProvider }} == "aws" ]] && constellation version | grep -q "v2.13."; then
+          echo "Skipping TCB upload for AWS on CLI v2.13"
+          exit 0
+        fi
+
         reports=(snp-report-*.json)
         if [ -z ${#reports[@]} ]; then
             exit 1
