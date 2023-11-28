@@ -273,3 +273,15 @@ jobs:
             echo "Files  constellation-mastersecret.json or constellation-conf.yaml still exist"
             exit 1
           fi
+
+      - name: Notify about failure
+        if: |
+          failure() &&
+          github.ref == 'refs/heads/main' &&
+          github.event_name == 'schedule'
+        continue-on-error: true
+        uses: ./.github/actions/notify_e2e_failure
+        with:
+          projectWriteToken: ${{ secrets.PROJECT_WRITE_TOKEN }}
+          test: "terraform-module"
+          provider: ${{ inputs.cloudProvider }}
