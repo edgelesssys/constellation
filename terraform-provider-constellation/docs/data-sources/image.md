@@ -37,6 +37,7 @@ See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview
 
 ### Optional
 
+- `marketplace_image` (Boolean) Whether a marketplace image should be used. Currently only supported for Azure.
 - `region` (String) Region to retrieve the image for. Only required for AWS.
 The Constellation OS image must be [replicated to the region](https://docs.edgeless.systems/constellation/workflows/config),and the region must [support AMD SEV-SNP](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snp-requirements.html), if it is used for Attestation.
 

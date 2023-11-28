@@ -256,7 +256,8 @@ func TestFetchReference(t *testing.T) {
 				fs:      af,
 			}
 
-			reference, err := fetcher.FetchReference(context.Background(), tc.provider, variant.Dummy{}, tc.image, "someRegion")
+			reference, err := fetcher.FetchReference(context.Background(), tc.provider, variant.Dummy{},
+				tc.image, "someRegion", false)
 
 			if tc.wantErr {
 				assert.Error(err)

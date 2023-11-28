@@ -20,7 +20,7 @@ import (
 type imageFetcher interface {
 	FetchReference(ctx context.Context,
 		provider cloudprovider.Provider, attestationVariant variant.Variant,
-		image, region string,
+		image, region string, useMarketplaceImage bool,
 	) (string, error)
 }
 

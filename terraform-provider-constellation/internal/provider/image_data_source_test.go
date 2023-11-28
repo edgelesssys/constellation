@@ -55,6 +55,25 @@ func TestAccImageDataSource(t *testing.T) {
 				},
 			},
 		},
+		"azure marketplace success": {
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			PreCheck:                 bazelPreCheck,
+			Steps: []resource.TestStep{
+				// Read testing
+				{
+					Config: testingConfig + `
+					data "constellation_image" "test" {
+						image_version       = "v2.13.0"
+						attestation_variant = "azure-sev-snp"
+						csp                 = "azure"
+						marketplace_image   = true
+					}
+				`,
+					Check: resource.TestCheckResourceAttr("data.constellation_image.test", "reference", "constellation-marketplace-image://Azure?offer=constellation&publisher=edgelesssystems&sku=constellation&version=2.13.0"), // should be immutable
+
+				},
+			},
+		},
 		"gcp success": {
 			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 			PreCheck:                 bazelPreCheck,

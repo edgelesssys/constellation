@@ -24,8 +24,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/mpimage"
 	"github.com/edgelesssys/constellation/v2/internal/role"
-	"github.com/edgelesssys/constellation/v2/internal/semver"
 )
 
 // The azurerm Terraform provider enforces its own convention of case sensitivity for Azure URIs which Azure's API itself does not enforce or, even worse, actually returns.
@@ -159,17 +159,22 @@ func azureTerraformVars(conf *config.Config, imageRef string) (*terraform.AzureC
 	}
 
 	if conf.UseMarketplaceImage() {
-		// If a marketplace image is used, only the marketplace reference is required.
-		imageVersion, err := semver.New(conf.Image)
+		image, err := mpimage.NewFromURI(imageRef)
 		if err != nil {
-			return nil, fmt.Errorf("parsing image version: %w. %s does not look like a valid release image", err, conf.Image)
+			return nil, fmt.Errorf("parsing marketplace image URI: %w", err)
 		}
 
+		azureImage, ok := image.(mpimage.AzureMarketplaceImage)
+		if !ok {
+			return nil, fmt.Errorf("expected Azure marketplace image, got %T", image)
+		}
+
+		// If a marketplace image is used, only the marketplace reference is required.
 		vars.MarketplaceImage = terraform.AzureMarketplaceImageVariables{
-			Publisher: constants.AzureMarketplaceImagePublisher,
-			Product:   constants.AzureMarketplaceImageOffer,
-			Name:      constants.AzureMarketplaceImagePlan,
-			Version:   imageVersion.StringWithoutPrefix(),
+			Publisher: azureImage.Publisher,
+			Product:   azureImage.Offer,
+			Name:      azureImage.SKU,
+			Version:   azureImage.Version,
 		}
 	} else {
 		// If not, we need to specify the exact CommunityGalleries/.. image reference.

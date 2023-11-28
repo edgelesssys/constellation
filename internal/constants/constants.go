@@ -181,9 +181,24 @@ const (
 	WorkerDefault = "worker_default"
 
 	//
+	// CSP.
+	//
+
+	// MarketplaceImageURIScheme is the scheme used for Constellation marketplace OS images.
+	MarketplaceImageURIScheme = "constellation-marketplace-image"
+
+	//
 	// Azure.
 	//
 
+	// AzureMarketplaceImagePublisherKey is the URI key for the Azure Marketplace image publisher.
+	AzureMarketplaceImagePublisherKey = "publisher"
+	// AzureMarketplaceImageOfferKey is the URI key for the Azure Marketplace image offer.
+	AzureMarketplaceImageOfferKey = "offer"
+	// AzureMarketplaceImageSkuKey is the URI key for the Azure Marketplace image SKU.
+	AzureMarketplaceImageSkuKey = "sku"
+	// AzureMarketplaceImageVersionKey is the URI key for the Azure Marketplace image version.
+	AzureMarketplaceImageVersionKey = "version"
 	// AzureMarketplaceImagePublisher is the publisher of the Azure Marketplace image.
 	AzureMarketplaceImagePublisher = "edgelesssystems"
 	// AzureMarketplaceImageOffer is the offer of the Azure Marketplace image.

@@ -127,18 +127,14 @@ func (a *Applier) WorkingDirIsEmpty() (bool, error) {
 }
 
 func (a *Applier) terraformApplyVars(ctx context.Context, conf *config.Config) (terraform.Variables, error) {
-	var imageRef string
-	var err error
-	if !conf.UseMarketplaceImage() {
-		imageRef, err = a.imageFetcher.FetchReference(
-			ctx,
-			conf.GetProvider(),
-			conf.GetAttestationConfig().GetVariant(),
-			conf.Image, conf.GetRegion(),
-		)
-		if err != nil {
-			return nil, fmt.Errorf("fetching image reference: %w", err)
-		}
+	imageRef, err := a.imageFetcher.FetchReference(
+		ctx,
+		conf.GetProvider(),
+		conf.GetAttestationConfig().GetVariant(),
+		conf.Image, conf.GetRegion(), conf.UseMarketplaceImage(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("fetching image reference: %w", err)
 	}
 
 	switch conf.GetProvider() {
