@@ -264,7 +264,7 @@ type QEMUConfig struct {
 // if not required.
 type AttestationConfig struct {
 	// description: |
-	//   AWS SEV-SNP attestation. WARNING: Attestation temporarily relies on AWS nitroTPM. See https://docs.edgeless.systems/constellation/workflows/config#choosing-a-vm-type for more information.
+	//   AWS SEV-SNP attestation.
 	AWSSEVSNP *AWSSEVSNP `yaml:"awsSEVSNP,omitempty" validate:"omitempty,dive"`
 	// description: |
 	//   AWS Nitro TPM attestation.
