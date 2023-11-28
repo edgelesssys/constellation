@@ -127,7 +127,8 @@ func (d *AttestationDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 			},
 			"attestation": schema.SingleNestedAttribute{
 				Computed:            true,
-				MarkdownDescription: "Only relevant for Azure SEV-SNP.",
+				MarkdownDescription: "Only relevant for SEV-SNP.",
+				Description:         "The values provide sensible defaults. See the docs for advanced usage.", // TODO(elchead): AB#3568
 				Attributes: map[string]schema.Attribute{
 					"bootloader_version": schema.Int64Attribute{
 						Computed: true,

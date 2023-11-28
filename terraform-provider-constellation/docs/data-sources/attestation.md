@@ -40,7 +40,7 @@ See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview
 
 ### Read-Only
 
-- `attestation` (Attributes) Only relevant for Azure SEV-SNP. (see [below for nested schema](#nestedatt--attestation))
+- `attestation` (Attributes) Only relevant for SEV-SNP. (see [below for nested schema](#nestedatt--attestation))
 - `id` (String) The ID of the data source
 - `measurements` (Attributes Map) (see [below for nested schema](#nestedatt--measurements))
 
