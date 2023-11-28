@@ -119,7 +119,6 @@ jobs:
         uses: ./.github/actions/notify_e2e_failure
         with:
           projectWriteToken: ${{ secrets.PROJECT_WRITE_TOKEN }}
-          teamsWebhookUri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
           refStream: ${{ matrix.refStream }}
           test: ${{ matrix.test }}
           kubernetesVersion: ${{ matrix.kubernetesVersion }}
@@ -167,6 +166,5 @@ jobs:
         uses: ./.github/actions/notify_e2e_failure
         with:
           projectWriteToken: ${{ secrets.PROJECT_WRITE_TOKEN }}
-          teamsWebhookUri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
           test: "MiniConstellation"
           provider: "QEMU"
