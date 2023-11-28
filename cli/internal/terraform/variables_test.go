@@ -197,6 +197,7 @@ func TestAzureClusterVariables(t *testing.T) {
 			Publisher: "edgelesssys",
 			Product:   "constellation",
 			Name:      "constellation",
+			Version:   "2.13.0",
 		},
 	}
 
@@ -225,6 +226,7 @@ marketplace_image = {
   name      = "constellation"
   product   = "constellation"
   publisher = "edgelesssys"
+  version   = "2.13.0"
 }
 `
 	got := vars.String()
