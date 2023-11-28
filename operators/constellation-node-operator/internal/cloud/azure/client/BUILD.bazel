@@ -19,6 +19,7 @@ go_library(
     visibility = ["//operators/constellation-node-operator:__subpackages__"],
     deps = [
         "//internal/constants",
+        "//internal/mpimage",
         "//operators/constellation-node-operator/api/v1alpha1",
         "//operators/constellation-node-operator/internal/cloud/api",
         "//operators/constellation-node-operator/internal/poller",
