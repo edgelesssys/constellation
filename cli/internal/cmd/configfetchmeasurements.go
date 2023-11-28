@@ -112,8 +112,7 @@ func runConfigFetchMeasurements(cmd *cobra.Command, _ []string) error {
 }
 
 func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
-	cmd *cobra.Command,
-	fileHandler file.Handler, fetcher attestationconfigapi.Fetcher,
+	cmd *cobra.Command, fileHandler file.Handler, fetcher attestationconfigapi.Fetcher,
 ) error {
 	if !cfm.canFetchMeasurements {
 		cmd.PrintErrln("Fetching measurements is not supported in the OSS build of the Constellation CLI. Consult the documentation for instructions on where to download the enterprise version.")

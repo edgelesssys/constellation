@@ -153,11 +153,16 @@ func newTestClient(fn roundTripFunc) *http.Client {
 func TestConfigFetchMeasurements(t *testing.T) {
 	testCases := map[string]struct {
 		insecureFlag bool
+		err          error
 		wantErr      bool
-		isRekorErr   bool
 	}{
+		"no error succeeds": {},
 		"failing rekor verify should not result in error": {
-			isRekorErr: true,
+			err: measurements.ErrRekor,
+		},
+		"error other than Rekor fails": {
+			err:     assert.AnError,
+			wantErr: true,
 		},
 	}
 
@@ -174,7 +179,8 @@ func TestConfigFetchMeasurements(t *testing.T) {
 
 			err := fileHandler.WriteYAML(constants.ConfigFilename, gcpConfig, file.OptMkdirAll)
 			require.NoError(err)
-			cfm := &configFetchMeasurementsCmd{canFetchMeasurements: true, log: logger.NewTest(t), verifyFetcher: stubVerifyFetcher{isRekorErr: tc.isRekorErr}}
+			fetcher := stubVerifyFetcher{err: tc.err}
+			cfm := &configFetchMeasurementsCmd{canFetchMeasurements: true, log: logger.NewTest(t), verifyFetcher: fetcher}
 			cfm.flags.insecure = tc.insecureFlag
 			cfm.flags.force = true
 
@@ -189,14 +195,11 @@ func TestConfigFetchMeasurements(t *testing.T) {
 }
 
 type stubVerifyFetcher struct {
-	isRekorErr bool
+	err error
 }
 
 func (f stubVerifyFetcher) FetchAndVerifyMeasurements(_ context.Context, _ string, _ cloudprovider.Provider, _ variant.Variant, _ bool) (measurements.M, error) {
-	if f.isRekorErr {
-		return nil, measurements.ErrRekor
-	}
-	return nil, nil
+	return nil, f.err
 }
 
 type stubAttestationFetcher struct{}

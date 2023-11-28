@@ -178,13 +178,20 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 
 	csp := cloudprovider.FromString(data.CSP.ValueString())
 	if csp == cloudprovider.Unknown {
-		resp.Diagnostics.AddError("Unknown CSP", fmt.Sprintf("Unknown CSP: %s", data.CSP.ValueString()))
+		resp.Diagnostics.AddAttributeError(
+			path.Root("csp"),
+			"Invalid CSP",
+			fmt.Sprintf("Invalid CSP: %s", data.CSP.ValueString()),
+		)
 		return
 	}
 	attestationVariant, err := variant.FromString(data.AttestationVariant.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Unknown Attestation Variant",
-			fmt.Sprintf("Unknown Attestation Variant: %s", data.AttestationVariant.ValueString()))
+		resp.Diagnostics.AddAttributeError(
+			path.Root("attestation_variant"),
+			"Invalid Attestation Variant",
+			fmt.Sprintf("Invalid attestation variant: %s", data.CSP.ValueString()),
+		)
 		return
 	}
 	if attestationVariant.Equal(variant.AzureSEVSNP{}) || attestationVariant.Equal(variant.AWSSEVSNP{}) {
@@ -193,8 +200,11 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 			resp.Diagnostics.AddError("Fetching SNP Version numbers", err.Error())
 			return
 		}
-		tfSnpVersions := convertSNPAttestationTfStateCompatible(resp, attestationVariant, snpVersions)
-		diags := resp.State.SetAttribute(ctx, path.Root("attestation"), tfSnpVersions)
+		tfSnpAttestation, err := convertSNPAttestationTfStateCompatible(attestationVariant, snpVersions)
+		if err != nil {
+			resp.Diagnostics.AddError("Converting SNP attestation", err.Error())
+		}
+		diags := resp.State.SetAttribute(ctx, path.Root("attestation"), tfSnpAttestation)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -221,9 +231,9 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 	tflog.Trace(ctx, "read constellation attestation data source")
 }
 
-func convertSNPAttestationTfStateCompatible(resp *datasource.ReadResponse, attestationVariant variant.Variant,
+func convertSNPAttestationTfStateCompatible(attestationVariant variant.Variant,
 	snpVersions attestationconfigapi.SEVSNPVersionAPI,
-) sevSnpAttestation {
+) (tfSnpAttestation sevSnpAttestation, err error) {
 	var cert config.Certificate
 	switch attestationVariant.(type) {
 	case variant.AWSSEVSNP:
@@ -233,9 +243,9 @@ func convertSNPAttestationTfStateCompatible(resp *datasource.ReadResponse, attes
 	}
 	certBytes, err := cert.MarshalJSON()
 	if err != nil {
-		resp.Diagnostics.AddError("Marshalling AMD Root Key", err.Error())
+		return tfSnpAttestation, err
 	}
-	tfSnpVersions := sevSnpAttestation{
+	tfSnpAttestation = sevSnpAttestation{
 		BootloaderVersion: snpVersions.Bootloader,
 		TEEVersion:        snpVersions.TEE,
 		SNPVersion:        snpVersions.SNP,
@@ -245,17 +255,20 @@ func convertSNPAttestationTfStateCompatible(resp *datasource.ReadResponse, attes
 	if attestationVariant.Equal(variant.AzureSEVSNP{}) {
 		firmwareCfg := config.DefaultForAzureSEVSNP().FirmwareSignerConfig
 		keyDigestAny, err := firmwareCfg.AcceptedKeyDigests.MarshalYAML()
-		keyDigest := keyDigestAny.([]string)
 		if err != nil {
-			resp.Diagnostics.AddError("Marshalling Accepted Key Digests", err.Error())
+			return tfSnpAttestation, err
 		}
-		tfSnpVersions.AzureSNPFirmwareSignerConfig = azureSnpFirmwareSignerConfig{
+		keyDigest, ok := keyDigestAny.([]string)
+		if !ok {
+			return tfSnpAttestation, errors.New("reading Accepted Key Digests: could not convert to []string")
+		}
+		tfSnpAttestation.AzureSNPFirmwareSignerConfig = azureSnpFirmwareSignerConfig{
 			AcceptedKeyDigests: keyDigest,
 			EnforcementPolicy:  firmwareCfg.EnforcementPolicy.String(),
 			MAAURL:             firmwareCfg.MAAURL,
 		}
 	}
-	return tfSnpVersions
+	return tfSnpAttestation, nil
 }
 
 func convertMeasurementsTfStateCompatible(m measurements.M) map[string]measurement {
