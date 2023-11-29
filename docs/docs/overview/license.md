@@ -21,3 +21,7 @@ You are free to use the Constellation binaries provided by Edgeless Systems to c
 Enterprise Licenses don't have the above limitations and come with support and additional features. Find out more at the [product website](https://www.edgeless.systems/products/constellation/).
 
 Once you have received your Enterprise License file, place it in your [Constellation workspace](../architecture/orchestration.md#workspaces) in a file named `constellation.license`.
+
+### Azure Marketplace
+
+Constellation is now available through the Azure Marketplace. This allows you to create self-managed Constellation cluster deployments which are billed on pay-per-use basis (hourly, per vCPU) with your Azure account while still being supported by Edgeless Systems directly. For more information please [contact us](https://www.edgeless.systems/enterprise-support/).
