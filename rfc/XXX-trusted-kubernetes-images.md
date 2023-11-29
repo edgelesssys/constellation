@@ -1,4 +1,4 @@
-# RFC XXX: Trusted Kubernetes Images
+# RFC XXX: Trusted Kubernetes Container Images
 
 Kubernetes control plane images should be verified by the Constellation installation.
 
@@ -7,7 +7,7 @@ Kubernetes control plane images should be verified by the Constellation installa
 When we bootstrap the Constellation Kubernetes cluster, `kubeadm` places a set
 of static pods for the control plane components into the filesystem. The
 manifests refer to images in a registry beyond the users' control, and the
-image content is not reproducible.
+container image content is not reproducible.
 
 This is obviously a trust issue, because the Kubernetes control plane is
 part of Constellation's TCB, but it is also a problem when Constellation is set
@@ -36,7 +36,7 @@ Out of scope:
 
 ## Solution
 
-Kubernetes control plane images are going to be pinned by hash and verified by
+Kubernetes control plane images are going to be pinned by a hash, which is verified by
 the CRI. Images hashes are added to the Constellation codebase when support for
 a new version is added. During installation, the `kubeadm` configuration is
 modified so that images are pinned.
