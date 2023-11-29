@@ -27,6 +27,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/constellation"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/helm"
@@ -244,6 +245,8 @@ func runApply(cmd *cobra.Command, _ []string) error {
 		)
 	}
 
+	applier := constellation.NewApplier(log)
+
 	apply := &applyCmd{
 		fileHandler:     fileHandler,
 		flags:           flags,
@@ -254,13 +257,14 @@ func runApply(cmd *cobra.Command, _ []string) error {
 		newDialer:       newDialer,
 		newKubeUpgrader: newKubeUpgrader,
 		newInfraApplier: newInfraApplier,
+		applier:         applier,
 	}
 
 	ctx, cancel := context.WithTimeout(cmd.Context(), time.Hour)
 	defer cancel()
 	cmd.SetContext(ctx)
 
-	return apply.apply(cmd, attestationconfigapi.NewFetcher(), license.NewClient(), upgradeDir)
+	return apply.apply(cmd, attestationconfigapi.NewFetcher(), upgradeDir)
 }
 
 type applyCmd struct {
@@ -272,10 +276,16 @@ type applyCmd struct {
 
 	merger configMerger
 
+	applier applier
+
 	newHelmClient   func(kubeConfigPath string, log debugLog) (helmApplier, error)
 	newDialer       func(validator atls.Validator) *dialer.Dialer
 	newKubeUpgrader func(out io.Writer, kubeConfigPath string, log debugLog) (kubernetesUpgrader, error)
 	newInfraApplier func(context.Context) (cloudApplier, func(), error)
+}
+
+type applier interface {
+	CheckLicense(ctx context.Context, csp cloudprovider.Provider, licenseID string) (int, error)
 }
 
 /*
@@ -339,7 +349,7 @@ The control flow is as follows:
 	                                  │                          ───┐
 	                    ┌─────────────▼────────────┐                │
 	     Can be skipped │Upgrade NodeVersion object│                │K8s/Image
-	  if we ran Init RP │  (Image and K8s update)  │                │Phase
+	 if we ran Init RPC │  (Image and K8s update)  │                │Phase
 	                    └─────────────┬────────────┘                │
 	                                  │                          ───┘
 	                        ┌─────────▼──────────┐
@@ -347,8 +357,7 @@ The control flow is as follows:
 	                        └────────────────────┘
 */
 func (a *applyCmd) apply(
-	cmd *cobra.Command, configFetcher attestationconfigapi.Fetcher,
-	quotaChecker license.QuotaChecker, upgradeDir string,
+	cmd *cobra.Command, configFetcher attestationconfigapi.Fetcher, upgradeDir string,
 ) error {
 	// Validate inputs
 	conf, stateFile, err := a.validateInputs(cmd, configFetcher)
@@ -357,12 +366,7 @@ func (a *applyCmd) apply(
 	}
 
 	// Check license
-	a.log.Debugf("Running license check")
-	checker := license.NewChecker(quotaChecker, a.fileHandler)
-	if err := checker.CheckLicense(cmd.Context(), conf.GetProvider(), conf.Provider, cmd.Printf); err != nil {
-		cmd.PrintErrf("License check failed: %s", err)
-	}
-	a.log.Debugf("Checked license")
+	a.checkLicenseFile(cmd, conf.GetProvider())
 
 	// Now start actually running the apply command
 
@@ -427,6 +431,43 @@ func (a *applyCmd) apply(
 	cmd.Print(bufferedOutput.String())
 
 	return nil
+}
+
+// checkLicenseFile reads the local license file and checks it's quota
+// with the license server. If no license file is present or if errors
+// occur during the check, the user is informed and the community license
+// is used.
+func (a *applyCmd) checkLicenseFile(cmd *cobra.Command, csp cloudprovider.Provider) {
+	var licenseID string
+	a.log.Debugf("Running license check")
+
+	readBytes, err := a.fileHandler.Read(constants.LicenseFilename)
+	if errors.Is(err, fs.ErrNotExist) {
+		cmd.Printf("Using community license.\n")
+		licenseID = license.CommunityLicense
+	} else if err != nil {
+		cmd.Printf("Error: %v\nContinuing with community license.\n", err)
+		licenseID = license.CommunityLicense
+	} else {
+		cmd.Printf("Constellation license found!\n")
+		licenseID, err = license.FromBytes(readBytes)
+		if err != nil {
+			cmd.Printf("Error: %v\nContinuing with community license.\n", err)
+			licenseID = license.CommunityLicense
+		}
+	}
+
+	quota, err := a.applier.CheckLicense(cmd.Context(), csp, licenseID)
+	if err != nil {
+		cmd.Printf("Unable to contact license server.\n")
+		cmd.Printf("Please keep your vCPU quota in mind.\n")
+	} else if licenseID == license.CommunityLicense {
+		cmd.Printf("For details, see https://docs.edgeless.systems/constellation/overview/license\n")
+	} else {
+		cmd.Printf("Please keep your vCPU quota (%d) in mind.\n", quota)
+	}
+
+	a.log.Debugf("Checked license")
 }
 
 func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationconfigapi.Fetcher) (*config.Config, *state.State, error) {

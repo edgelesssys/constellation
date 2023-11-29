@@ -9,20 +9,13 @@ package license
 import (
 	"encoding/base64"
 	"fmt"
-
-	"github.com/edgelesssys/constellation/v2/internal/file"
 )
 
-// FromFile reads the license from fileHandler at path and returns it as a string.
-func FromFile(fileHandler file.Handler, path string) (string, error) {
-	readBytes, err := fileHandler.Read(path)
-	if err != nil {
-		return "", fmt.Errorf("unable to read from '%s': %w", path, err)
-	}
-
-	maxSize := base64.StdEncoding.DecodedLen(len(readBytes))
+// FromBytes reads the given license bytes and returns it as a string.
+func FromBytes(license []byte) (string, error) {
+	maxSize := base64.StdEncoding.DecodedLen(len(license))
 	decodedLicense := make([]byte, maxSize)
-	n, err := base64.StdEncoding.Decode(decodedLicense, readBytes)
+	n, err := base64.StdEncoding.Decode(decodedLicense, license)
 	if err != nil {
 		return "", fmt.Errorf("unable to base64 decode license file: %w", err)
 	}
@@ -30,6 +23,5 @@ func FromFile(fileHandler file.Handler, path string) (string, error) {
 		return "", fmt.Errorf("license file corrupt: wrong length")
 	}
 	decodedLicense = decodedLicense[:n]
-
 	return string(decodedLicense), nil
 }

@@ -68,6 +68,7 @@ go_library(
         "//internal/config/instancetypes",
         "//internal/config/migration",
         "//internal/constants",
+        "//internal/constellation",
         "//internal/crypto",
         "//internal/featureset",
         "//internal/file",

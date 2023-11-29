@@ -280,9 +280,10 @@ func TestInitialize(t *testing.T) {
 						getClusterAttestationConfigErr: k8serrors.NewNotFound(schema.GroupResource{}, ""),
 					}, nil
 				},
+				applier: &stubConstellApplier{},
 			}
 
-			err := i.apply(cmd, stubAttestationFetcher{}, &stubLicenseClient{}, "test")
+			err := i.apply(cmd, stubAttestationFetcher{}, "test")
 
 			if tc.wantErr {
 				assert.Error(err)

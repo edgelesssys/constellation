@@ -12,19 +12,17 @@ import (
 	"context"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/edgelesssys/constellation/v2/internal/file"
 )
 
 // Checker checks the Constellation license.
 type Checker struct{}
 
 // NewChecker creates a new Checker.
-func NewChecker(_ QuotaChecker, _ file.Handler) *Checker {
+func NewChecker(QuotaChecker) *Checker {
 	return &Checker{}
 }
 
 // CheckLicense is a no-op for open source version of Constellation.
-func (c *Checker) CheckLicense(_ context.Context, _ cloudprovider.Provider, _ config.ProviderConfig, _ func(string, ...any)) error {
-	return nil
+func (c *Checker) CheckLicense(ctx context.Context, provider cloudprovider.Provider, licenseID string) (QuotaCheckResponse, error) {
+	return QuotaCheckResponse{}, nil
 }

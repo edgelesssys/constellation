@@ -233,9 +233,11 @@ func TestCreate(t *testing.T) {
 				newInfraApplier: func(_ context.Context) (cloudApplier, func(), error) {
 					return tc.creator, func() {}, tc.getCreatorErr
 				},
+
+				applier: &stubConstellApplier{},
 			}
 
-			err := a.apply(cmd, stubAttestationFetcher{}, &stubLicenseClient{}, "create")
+			err := a.apply(cmd, stubAttestationFetcher{}, "create")
 
 			if tc.wantErr {
 				assert.Error(err)
