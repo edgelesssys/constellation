@@ -17,8 +17,8 @@ load("@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl", "nixpkgs_cc_configure", "ni
 
 nixpkgs_git_repository(
     name = "nixpkgs",
-    revision = "ec750fd01963ab6b20ee1f0cb488754e8036d89d",
-    sha256 = "9e809097a0c66334139cda3d1bec3bf73bdfad593e954259ff329c7b4a118041",
+    revision = "85306ef2470ba705c97ce72741d56e42d0264015",
+    sha256 = "adbbcfd49b5180e51e2971626cafb14123e3ec06c18fa143b1f386b029081f12",
 )
 
 nixpkgs_flake_package(
@@ -185,7 +185,31 @@ zig_toolchains()
 
 nixpkgs_cc_configure(
     name = "nixpkgs_cc_toolchain",
+    # TODO(malt3): Use clang once cc-wrapper path reset bug is fixed upstream.
+    # attribute_path = "clang_11",
     repository = "@nixpkgs",
+)
+
+nixpkgs_cc_configure(
+    name = "nixpkgs_cc_aarch64_darwin_x86_64_linux",
+    cross_cpu = "k8",
+    exec_constraints = [
+        "@platforms//os:osx",
+        "@platforms//cpu:arm64",
+    ],
+    nix_file = "//nix/toolchains:cc_cross_darwin_x86_64_linux.nix",
+    nixopts = [
+        "--arg",
+        "ccPkgs",
+        "import <nixpkgs> { crossSystem = \"x86_64-linux\";}",
+        "--show-trace",
+    ],
+    repository = "@nixpkgs",
+    target_constraints = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:linux",
+        "@rules_nixpkgs_core//constraints:support_nix",
+    ],
 )
 
 register_toolchains(
