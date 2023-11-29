@@ -168,7 +168,6 @@ go_test(
         "//internal/helm",
         "//internal/kms/uri",
         "//internal/kubecmd",
-        "//internal/license",
         "//internal/logger",
         "//internal/semver",
         "//internal/state",
