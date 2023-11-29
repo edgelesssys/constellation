@@ -298,6 +298,13 @@ func (k *KubeadmInitYAML) SetProviderID(providerID string) {
 	}
 }
 
+// SetServiceSubnet sets the service subnet.
+func (k *KubeadmInitYAML) SetServiceSubnet(subnet string) {
+	if subnet != "" {
+		k.ClusterConfiguration.Networking.ServiceSubnet = subnet
+	}
+}
+
 // Marshal into a k8s resource YAML.
 func (k *KubeadmInitYAML) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(k)

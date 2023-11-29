@@ -69,7 +69,7 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
-	ctx context.Context, versionString, clusterName string, conformanceMode bool, kubernetesComponents components.Components, apiServerCertSANs []string, log *logger.Logger,
+	ctx context.Context, versionString, clusterName string, conformanceMode bool, kubernetesComponents components.Components, apiServerCertSANs []string, serviceCIDR string, log *logger.Logger,
 ) ([]byte, error) {
 	log.With(zap.String("version", versionString)).Infof("Installing Kubernetes components")
 	if err := k.clusterUtil.InstallComponents(ctx, kubernetesComponents); err != nil {
@@ -128,6 +128,7 @@ func (k *KubeWrapper) InitCluster(
 	initConfig.SetNodeName(nodeName)
 	initConfig.SetProviderID(instance.ProviderID)
 	initConfig.SetControlPlaneEndpoint(controlPlaneHost)
+	initConfig.SetServiceSubnet(serviceCIDR)
 	initConfigYAML, err := initConfig.Marshal()
 	if err != nil {
 		return nil, fmt.Errorf("encoding kubeadm init configuration as YAML: %w", err)
