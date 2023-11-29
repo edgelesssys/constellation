@@ -47,7 +47,7 @@ func newActionFactory(kubeClient crdClient, lister releaseVersionLister, actionC
 
 // GetActions returns a list of actions to apply the given releases.
 func (a actionFactory) GetActions(
-	releases []Release, configTargetVersion semver.Semver, force, allowDestructive bool, timeout time.Duration,
+	releases []release, configTargetVersion semver.Semver, force, allowDestructive bool, timeout time.Duration,
 ) (actions []applyAction, includesUpgrade bool, err error) {
 	upgradeErrs := []error{}
 	for _, release := range releases {
@@ -58,7 +58,7 @@ func (a actionFactory) GetActions(
 			continue
 		}
 		if err != nil {
-			return actions, includesUpgrade, fmt.Errorf("creating action for %s: %w", release.ReleaseName, err)
+			return actions, includesUpgrade, fmt.Errorf("creating action for %s: %w", release.releaseName, err)
 		}
 	}
 	for _, action := range actions {
@@ -71,18 +71,18 @@ func (a actionFactory) GetActions(
 }
 
 func (a actionFactory) appendNewAction(
-	release Release, configTargetVersion semver.Semver, force, allowDestructive bool, timeout time.Duration, actions *[]applyAction,
+	release release, configTargetVersion semver.Semver, force, allowDestructive bool, timeout time.Duration, actions *[]applyAction,
 ) error {
-	newVersion, err := semver.New(release.Chart.Metadata.Version)
+	newVersion, err := semver.New(release.chart.Metadata.Version)
 	if err != nil {
 		return fmt.Errorf("parsing chart version: %w", err)
 	}
 	cliSupportsConfigVersion := configTargetVersion.Compare(newVersion) != 0
 
-	currentVersion, err := a.versionLister.currentVersion(release.ReleaseName)
+	currentVersion, err := a.versionLister.currentVersion(release.releaseName)
 	if errors.Is(err, errReleaseNotFound) {
 		// Don't install a new release if the user's config specifies a different version than the CLI offers.
-		if !force && isCLIVersionedRelease(release.ReleaseName) && cliSupportsConfigVersion {
+		if !force && isCLIVersionedRelease(release.releaseName) && cliSupportsConfigVersion {
 			return compatibility.NewInvalidUpgradeError(
 				currentVersion.String(),
 				configTargetVersion.String(),
@@ -90,23 +90,23 @@ func (a actionFactory) appendNewAction(
 			)
 		}
 
-		a.log.Debugf("Release %s not found, adding to new releases...", release.ReleaseName)
+		a.log.Debugf("release %s not found, adding to new releases...", release.releaseName)
 		*actions = append(*actions, a.newInstall(release, timeout))
 		return nil
 	}
 	if err != nil {
-		return fmt.Errorf("getting version for %s: %w", release.ReleaseName, err)
+		return fmt.Errorf("getting version for %s: %w", release.releaseName, err)
 	}
-	a.log.Debugf("Current %s version: %s", release.ReleaseName, currentVersion)
-	a.log.Debugf("New %s version: %s", release.ReleaseName, newVersion)
+	a.log.Debugf("Current %s version: %s", release.releaseName, currentVersion)
+	a.log.Debugf("New %s version: %s", release.releaseName, newVersion)
 
 	if !force {
 		// For charts we package ourselves, the version is equal to the CLI version (charts are embedded in the binary).
 		// We need to make sure this matches with the version in a user's config, if an upgrade should be applied.
-		if isCLIVersionedRelease(release.ReleaseName) {
+		if isCLIVersionedRelease(release.releaseName) {
 			// If target version is not a valid upgrade, don't upgrade any charts.
 			if err := configTargetVersion.IsUpgradeTo(currentVersion); err != nil {
-				return fmt.Errorf("invalid upgrade for %s: %w", release.ReleaseName, err)
+				return fmt.Errorf("invalid upgrade for %s: %w", release.releaseName, err)
 			}
 			// Target version is newer than current version, so we should perform an upgrade.
 			// Now make sure the target version is equal to the the CLI version.
@@ -122,32 +122,32 @@ func (a actionFactory) appendNewAction(
 			if err := newVersion.IsUpgradeTo(currentVersion); err != nil {
 				// TODO(3u13r): Remove when Constellation v2.14 is released.
 				// We need to ignore that we jump from Cilium v1.12 to v1.15-pre. We have verified that this works.
-				if !(errors.Is(err, compatibility.ErrMinorDrift) && release.ReleaseName == "cilium") {
-					return fmt.Errorf("invalid upgrade for %s: %w", release.ReleaseName, err)
+				if !(errors.Is(err, compatibility.ErrMinorDrift) && release.releaseName == "cilium") {
+					return fmt.Errorf("invalid upgrade for %s: %w", release.releaseName, err)
 				}
 			}
 		}
 	}
 
 	if !allowDestructive &&
-		release.ReleaseName == certManagerInfo.releaseName {
+		release.releaseName == certManagerInfo.releaseName {
 		return ErrConfirmationMissing
 	}
-	a.log.Debugf("Upgrading %s from %s to %s", release.ReleaseName, currentVersion, newVersion)
+	a.log.Debugf("Upgrading %s from %s to %s", release.releaseName, currentVersion, newVersion)
 	*actions = append(*actions, a.newUpgrade(release, timeout))
 	return nil
 }
 
-func (a actionFactory) newInstall(release Release, timeout time.Duration) *installAction {
+func (a actionFactory) newInstall(release release, timeout time.Duration) *installAction {
 	action := &installAction{helmAction: newHelmInstallAction(a.cfg, release, timeout), release: release, log: a.log}
 	return action
 }
 
-func (a actionFactory) newUpgrade(release Release, timeout time.Duration) *upgradeAction {
+func (a actionFactory) newUpgrade(release release, timeout time.Duration) *upgradeAction {
 	action := &upgradeAction{helmAction: newHelmUpgradeAction(a.cfg, timeout), release: release, log: a.log}
-	if release.ReleaseName == constellationOperatorsInfo.releaseName {
+	if release.releaseName == constellationOperatorsInfo.releaseName {
 		action.preUpgrade = func(ctx context.Context) error {
-			if err := a.updateCRDs(ctx, release.Chart); err != nil {
+			if err := a.updateCRDs(ctx, release.chart); err != nil {
 				return fmt.Errorf("updating operator CRDs: %w", err)
 			}
 			return nil

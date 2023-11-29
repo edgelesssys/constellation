@@ -106,7 +106,7 @@ func (h Client) PrepareApply(
 func (h Client) loadReleases(
 	conf *config.Config, secret uri.MasterSecret,
 	stateFile *state.State, flags Options, serviceAccURI string,
-) ([]Release, error) {
+) ([]release, error) {
 	helmLoader := newLoader(conf, stateFile, h.cliVersion)
 	h.log.Debugf("Created new Helm loader")
 	return helmLoader.loadReleases(flags.Conformance, flags.HelmWaitMode, secret, serviceAccURI)

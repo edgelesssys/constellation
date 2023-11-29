@@ -10,11 +10,11 @@ package helm
 import "helm.sh/helm/v3/pkg/chart"
 
 // Release bundles all information necessary to create a helm release.
-type Release struct {
-	Chart       *chart.Chart
-	Values      map[string]any
-	ReleaseName string
-	WaitMode    WaitMode
+type release struct {
+	chart       *chart.Chart
+	values      map[string]any
+	releaseName string
+	waitMode    WaitMode
 }
 
 // WaitMode specifies the wait mode for a helm release.
