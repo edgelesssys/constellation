@@ -454,6 +454,17 @@ sh_template(
     template = "terraform_docgen.sh.in",
 )
 
+sh_template(
+    name = "version_info_gen",
+    data = [
+        "//hack/versioninfogen",
+    ],
+    substitutions = {
+        "@@VERSIONINFOGEN@@": "$(rootpath //hack/versioninfogen:versioninfogen)",
+    },
+    template = "version_info_gen.sh.in",
+)
+
 alias(
     name = "com_github_katexochen_ghh",
     actual = select({
@@ -553,6 +564,7 @@ multirun(
         ":proto_generate",
         ":cli_docgen",
         ":terraform_docgen",
+        ":version_info_gen",
     ],
     jobs = 0,  # execute concurrently
     visibility = ["//visibility:public"],

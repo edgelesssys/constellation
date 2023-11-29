@@ -12,3 +12,10 @@ New releases are published on [GitHub](https://github.com/edgelesssys/constellat
 Constellation is aligned to the [version support policy of Kubernetes](https://kubernetes.io/releases/version-skew-policy/#supported-versions), and therefore usually supports the most recent three minor versions.
 When a new minor version of Kubernetes is released, support is added to the next Constellation release, and that version then supports four Kubernetes versions.
 Subsequent Constellation releases drop support for the oldest (and deprecated) Kubernetes version.
+
+The following Kubernetes versions are currently supported:
+<!--AUTO_GENERATED_BY_BAZEL-->
+<!--DO_NOT_EDIT-->
+* v1.26.10
+* v1.27.7
+* v1.28.3
