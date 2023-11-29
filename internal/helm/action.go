@@ -19,11 +19,7 @@ import (
 	"helm.sh/helm/v3/pkg/cli"
 )
 
-const (
-	// timeout is the maximum time given per helm action.
-	timeout            = 10 * time.Minute
-	applyRetryInterval = 30 * time.Second
-)
+const applyRetryInterval = 30 * time.Second
 
 type applyAction interface {
 	Apply(context.Context) error
@@ -45,7 +41,7 @@ func newActionConfig(kubeconfig string, logger debugLog) (*action.Configuration,
 	return actionConfig, nil
 }
 
-func newHelmInstallAction(config *action.Configuration, release Release) *action.Install {
+func newHelmInstallAction(config *action.Configuration, release Release, timeout time.Duration) *action.Install {
 	action := action.NewInstall(config)
 	action.Namespace = constants.HelmNamespace
 	action.Timeout = timeout
@@ -118,7 +114,7 @@ func (a *installAction) IsAtomic() bool {
 	return a.helmAction.Atomic
 }
 
-func newHelmUpgradeAction(config *action.Configuration) *action.Upgrade {
+func newHelmUpgradeAction(config *action.Configuration, timeout time.Duration) *action.Upgrade {
 	action := action.NewUpgrade(config)
 	action.Namespace = constants.HelmNamespace
 	action.Timeout = timeout

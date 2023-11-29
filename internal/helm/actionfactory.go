@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
@@ -45,10 +46,12 @@ func newActionFactory(kubeClient crdClient, lister releaseVersionLister, actionC
 }
 
 // GetActions returns a list of actions to apply the given releases.
-func (a actionFactory) GetActions(releases []Release, configTargetVersion semver.Semver, force, allowDestructive bool) (actions []applyAction, includesUpgrade bool, err error) {
+func (a actionFactory) GetActions(
+	releases []Release, configTargetVersion semver.Semver, force, allowDestructive bool, timeout time.Duration,
+) (actions []applyAction, includesUpgrade bool, err error) {
 	upgradeErrs := []error{}
 	for _, release := range releases {
-		err := a.appendNewAction(release, configTargetVersion, force, allowDestructive, &actions)
+		err := a.appendNewAction(release, configTargetVersion, force, allowDestructive, timeout, &actions)
 		var invalidUpgrade *compatibility.InvalidUpgradeError
 		if errors.As(err, &invalidUpgrade) {
 			upgradeErrs = append(upgradeErrs, err)
@@ -67,7 +70,9 @@ func (a actionFactory) GetActions(releases []Release, configTargetVersion semver
 	return actions, includesUpgrade, errors.Join(upgradeErrs...)
 }
 
-func (a actionFactory) appendNewAction(release Release, configTargetVersion semver.Semver, force, allowDestructive bool, actions *[]applyAction) error {
+func (a actionFactory) appendNewAction(
+	release Release, configTargetVersion semver.Semver, force, allowDestructive bool, timeout time.Duration, actions *[]applyAction,
+) error {
 	newVersion, err := semver.New(release.Chart.Metadata.Version)
 	if err != nil {
 		return fmt.Errorf("parsing chart version: %w", err)
@@ -86,7 +91,7 @@ func (a actionFactory) appendNewAction(release Release, configTargetVersion semv
 		}
 
 		a.log.Debugf("Release %s not found, adding to new releases...", release.ReleaseName)
-		*actions = append(*actions, a.newInstall(release))
+		*actions = append(*actions, a.newInstall(release, timeout))
 		return nil
 	}
 	if err != nil {
@@ -129,17 +134,17 @@ func (a actionFactory) appendNewAction(release Release, configTargetVersion semv
 		return ErrConfirmationMissing
 	}
 	a.log.Debugf("Upgrading %s from %s to %s", release.ReleaseName, currentVersion, newVersion)
-	*actions = append(*actions, a.newUpgrade(release))
+	*actions = append(*actions, a.newUpgrade(release, timeout))
 	return nil
 }
 
-func (a actionFactory) newInstall(release Release) *installAction {
-	action := &installAction{helmAction: newHelmInstallAction(a.cfg, release), release: release, log: a.log}
+func (a actionFactory) newInstall(release Release, timeout time.Duration) *installAction {
+	action := &installAction{helmAction: newHelmInstallAction(a.cfg, release, timeout), release: release, log: a.log}
 	return action
 }
 
-func (a actionFactory) newUpgrade(release Release) *upgradeAction {
-	action := &upgradeAction{helmAction: newHelmUpgradeAction(a.cfg), release: release, log: a.log}
+func (a actionFactory) newUpgrade(release Release, timeout time.Duration) *upgradeAction {
+	action := &upgradeAction{helmAction: newHelmUpgradeAction(a.cfg, timeout), release: release, log: a.log}
 	if release.ReleaseName == constellationOperatorsInfo.releaseName {
 		action.preUpgrade = func(ctx context.Context) error {
 			if err := a.updateCRDs(ctx, release.Chart); err != nil {

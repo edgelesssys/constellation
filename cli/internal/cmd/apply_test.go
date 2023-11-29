@@ -97,8 +97,8 @@ func TestParseApplyFlags(t *testing.T) {
 		"default flags": {
 			flags: defaultFlags(),
 			wantFlags: applyFlags{
-				helmWaitMode:   helm.WaitModeAtomic,
-				upgradeTimeout: 5 * time.Minute,
+				helmWaitMode: helm.WaitModeAtomic,
+				helmTimeout:  10 * time.Minute,
 			},
 		},
 		"skip phases": {
@@ -108,9 +108,9 @@ func TestParseApplyFlags(t *testing.T) {
 				return flags
 			}(),
 			wantFlags: applyFlags{
-				skipPhases:     newPhases(skipHelmPhase, skipK8sPhase),
-				helmWaitMode:   helm.WaitModeAtomic,
-				upgradeTimeout: 5 * time.Minute,
+				skipPhases:   newPhases(skipHelmPhase, skipK8sPhase),
+				helmWaitMode: helm.WaitModeAtomic,
+				helmTimeout:  10 * time.Minute,
 			},
 		},
 		"skip helm wait": {
@@ -120,8 +120,8 @@ func TestParseApplyFlags(t *testing.T) {
 				return flags
 			}(),
 			wantFlags: applyFlags{
-				helmWaitMode:   helm.WaitModeNone,
-				upgradeTimeout: 5 * time.Minute,
+				helmWaitMode: helm.WaitModeNone,
+				helmTimeout:  10 * time.Minute,
 			},
 		},
 	}

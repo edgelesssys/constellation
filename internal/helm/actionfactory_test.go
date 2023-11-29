@@ -9,6 +9,7 @@ package helm
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -241,7 +242,7 @@ func TestAppendNewAction(t *testing.T) {
 			actions := []applyAction{}
 			actionFactory := newActionFactory(nil, tc.lister, &action.Configuration{}, logger.NewTest(t))
 
-			err := actionFactory.appendNewAction(tc.release, tc.configTargetVersion, tc.force, tc.allowDestructive, &actions)
+			err := actionFactory.appendNewAction(tc.release, tc.configTargetVersion, tc.force, tc.allowDestructive, time.Second, &actions)
 			if tc.wantErr {
 				assert.Error(err)
 				if tc.assertErr != nil {
