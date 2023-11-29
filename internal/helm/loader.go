@@ -115,7 +115,7 @@ func newLoader(config *config.Config, stateFile *state.State, cliVersion semver.
 // makes sure if a release was removed as a dependency from one chart,
 // and then added as a new standalone chart (or as a dependency of another chart),
 // that the new release is installed after the existing one to avoid name conflicts.
-type releaseApplyOrder []Release
+type releaseApplyOrder []release
 
 // loadReleases loads the embedded helm charts and returns them as a HelmReleases object.
 func (i *chartLoader) loadReleases(conformanceMode bool, helmWaitMode WaitMode, masterSecret uri.MasterSecret,
@@ -126,7 +126,7 @@ func (i *chartLoader) loadReleases(conformanceMode bool, helmWaitMode WaitMode, 
 		return nil, fmt.Errorf("loading cilium: %w", err)
 	}
 	ciliumVals := extraCiliumValues(i.config.GetProvider(), conformanceMode, i.stateFile.Infrastructure)
-	ciliumRelease.Values = mergeMaps(ciliumRelease.Values, ciliumVals)
+	ciliumRelease.values = mergeMaps(ciliumRelease.values, ciliumVals)
 
 	certManagerRelease, err := i.loadRelease(certManagerInfo, helmWaitMode)
 	if err != nil {
@@ -137,7 +137,7 @@ func (i *chartLoader) loadReleases(conformanceMode bool, helmWaitMode WaitMode, 
 	if err != nil {
 		return nil, fmt.Errorf("loading operators: %w", err)
 	}
-	operatorRelease.Values = mergeMaps(operatorRelease.Values, extraOperatorValues(i.stateFile.Infrastructure.UID))
+	operatorRelease.values = mergeMaps(operatorRelease.values, extraOperatorValues(i.stateFile.Infrastructure.UID))
 
 	conServicesRelease, err := i.loadRelease(constellationServicesInfo, helmWaitMode)
 	if err != nil {
@@ -148,7 +148,7 @@ func (i *chartLoader) loadReleases(conformanceMode bool, helmWaitMode WaitMode, 
 	if err != nil {
 		return nil, fmt.Errorf("extending constellation-services values: %w", err)
 	}
-	conServicesRelease.Values = mergeMaps(conServicesRelease.Values, svcVals)
+	conServicesRelease.values = mergeMaps(conServicesRelease.values, svcVals)
 
 	releases := releaseApplyOrder{ciliumRelease, conServicesRelease, certManagerRelease}
 	if i.config.DeployCSIDriver() {
@@ -160,7 +160,7 @@ func (i *chartLoader) loadReleases(conformanceMode bool, helmWaitMode WaitMode, 
 		if err != nil {
 			return nil, fmt.Errorf("extending CSI values: %w", err)
 		}
-		csiRelease.Values = mergeMaps(csiRelease.Values, extraCSIvals)
+		csiRelease.values = mergeMaps(csiRelease.values, extraCSIvals)
 		releases = append(releases, csiRelease)
 	}
 	if i.config.HasProvider(cloudprovider.AWS) {
@@ -177,10 +177,10 @@ func (i *chartLoader) loadReleases(conformanceMode bool, helmWaitMode WaitMode, 
 
 // loadRelease loads the embedded chart and values depending on the given info argument.
 // IMPORTANT: .helmignore rules specifying files in subdirectories are not applied (e.g. crds/kustomization.yaml).
-func (i *chartLoader) loadRelease(info chartInfo, helmWaitMode WaitMode) (Release, error) {
+func (i *chartLoader) loadRelease(info chartInfo, helmWaitMode WaitMode) (release, error) {
 	chart, err := loadChartsDir(helmFS, info.path)
 	if err != nil {
-		return Release{}, fmt.Errorf("loading %s chart: %w", info.releaseName, err)
+		return release{}, fmt.Errorf("loading %s chart: %w", info.releaseName, err)
 	}
 
 	var values map[string]any
@@ -190,7 +190,7 @@ func (i *chartLoader) loadRelease(info chartInfo, helmWaitMode WaitMode) (Releas
 		var ok bool
 		values, ok = ciliumVals[i.csp.String()]
 		if !ok {
-			return Release{}, fmt.Errorf("cilium values for csp %q not found", i.csp.String())
+			return release{}, fmt.Errorf("cilium values for csp %q not found", i.csp.String())
 		}
 	case certManagerInfo.releaseName:
 		values = i.loadCertManagerValues()
@@ -210,7 +210,7 @@ func (i *chartLoader) loadRelease(info chartInfo, helmWaitMode WaitMode) (Releas
 		updateVersions(chart, i.cliVersion)
 	}
 
-	return Release{Chart: chart, Values: values, ReleaseName: info.releaseName, WaitMode: helmWaitMode}, nil
+	return release{chart: chart, values: values, releaseName: info.releaseName, waitMode: helmWaitMode}, nil
 }
 
 func (i *chartLoader) loadAWSLBControllerValues() map[string]any {

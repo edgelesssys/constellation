@@ -19,11 +19,7 @@ import (
 	"helm.sh/helm/v3/pkg/cli"
 )
 
-const (
-	// timeout is the maximum time given per helm action.
-	timeout            = 10 * time.Minute
-	applyRetryInterval = 30 * time.Second
-)
+const applyRetryInterval = 30 * time.Second
 
 type applyAction interface {
 	Apply(context.Context) error
@@ -45,12 +41,12 @@ func newActionConfig(kubeconfig string, logger debugLog) (*action.Configuration,
 	return actionConfig, nil
 }
 
-func newHelmInstallAction(config *action.Configuration, release Release) *action.Install {
+func newHelmInstallAction(config *action.Configuration, release release, timeout time.Duration) *action.Install {
 	action := action.NewInstall(config)
 	action.Namespace = constants.HelmNamespace
 	action.Timeout = timeout
-	action.ReleaseName = release.ReleaseName
-	setWaitMode(action, release.WaitMode)
+	action.ReleaseName = release.releaseName
+	setWaitMode(action, release.waitMode)
 	return action
 }
 
@@ -73,7 +69,7 @@ func setWaitMode(a *action.Install, waitMode WaitMode) {
 // installAction is an action that installs a helm chart.
 type installAction struct {
 	preInstall  func(context.Context) error
-	release     Release
+	release     release
 	helmAction  *action.Install
 	postInstall func(context.Context) error
 	log         debugLog
@@ -104,13 +100,13 @@ func (a *installAction) SaveChart(chartsDir string, fileHandler file.Handler) er
 }
 
 func (a *installAction) apply(ctx context.Context) error {
-	_, err := a.helmAction.RunWithContext(ctx, a.release.Chart, a.release.Values)
+	_, err := a.helmAction.RunWithContext(ctx, a.release.chart, a.release.values)
 	return err
 }
 
 // ReleaseName returns the release name.
 func (a *installAction) ReleaseName() string {
-	return a.release.ReleaseName
+	return a.release.releaseName
 }
 
 // IsAtomic returns true if the action is atomic.
@@ -118,7 +114,7 @@ func (a *installAction) IsAtomic() bool {
 	return a.helmAction.Atomic
 }
 
-func newHelmUpgradeAction(config *action.Configuration) *action.Upgrade {
+func newHelmUpgradeAction(config *action.Configuration, timeout time.Duration) *action.Upgrade {
 	action := action.NewUpgrade(config)
 	action.Namespace = constants.HelmNamespace
 	action.Timeout = timeout
@@ -131,7 +127,7 @@ func newHelmUpgradeAction(config *action.Configuration) *action.Upgrade {
 type upgradeAction struct {
 	preUpgrade  func(context.Context) error
 	postUpgrade func(context.Context) error
-	release     Release
+	release     release
 	helmAction  *action.Upgrade
 	log         debugLog
 }
@@ -160,13 +156,13 @@ func (a *upgradeAction) SaveChart(chartsDir string, fileHandler file.Handler) er
 }
 
 func (a *upgradeAction) apply(ctx context.Context) error {
-	_, err := a.helmAction.RunWithContext(ctx, a.release.ReleaseName, a.release.Chart, a.release.Values)
+	_, err := a.helmAction.RunWithContext(ctx, a.release.releaseName, a.release.chart, a.release.values)
 	return err
 }
 
 // ReleaseName returns the release name.
 func (a *upgradeAction) ReleaseName() string {
-	return a.release.ReleaseName
+	return a.release.releaseName
 }
 
 // IsAtomic returns true if the action is atomic.
@@ -174,12 +170,12 @@ func (a *upgradeAction) IsAtomic() bool {
 	return a.helmAction.Atomic
 }
 
-func saveChart(release Release, chartsDir string, fileHandler file.Handler) error {
-	if err := saveChartToDisk(release.Chart, chartsDir, fileHandler); err != nil {
-		return fmt.Errorf("saving chart %s to %q: %w", release.ReleaseName, chartsDir, err)
+func saveChart(release release, chartsDir string, fileHandler file.Handler) error {
+	if err := saveChartToDisk(release.chart, chartsDir, fileHandler); err != nil {
+		return fmt.Errorf("saving chart %s to %q: %w", release.releaseName, chartsDir, err)
 	}
-	if err := fileHandler.WriteYAML(filepath.Join(chartsDir, release.Chart.Metadata.Name, "overrides.yaml"), release.Values); err != nil {
-		return fmt.Errorf("saving override values for chart %s to %q: %w", release.ReleaseName, filepath.Join(chartsDir, release.Chart.Metadata.Name), err)
+	if err := fileHandler.WriteYAML(filepath.Join(chartsDir, release.chart.Metadata.Name, "overrides.yaml"), release.values); err != nil {
+		return fmt.Errorf("saving override values for chart %s to %q: %w", release.releaseName, filepath.Join(chartsDir, release.chart.Metadata.Name), err)
 	}
 
 	return nil

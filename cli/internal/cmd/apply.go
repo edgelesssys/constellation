@@ -126,12 +126,12 @@ func NewApplyCmd() *cobra.Command {
 	cmd.Flags().Bool("merge-kubeconfig", false, "merge Constellation kubeconfig file with default kubeconfig file in $HOME/.kube/config")
 	cmd.Flags().BoolP("yes", "y", false, "run command without further confirmation\n"+
 		"WARNING: the command might delete or update existing resources without additional checks. Please read the docs.\n")
-	cmd.Flags().Duration("timeout", 5*time.Minute, "change helm upgrade timeout\n"+
+	cmd.Flags().Duration("helm-timeout", 10*time.Minute, "change helm install/upgrade timeout\n"+
 		"Might be useful for slow connections or big clusters.")
 	cmd.Flags().StringSlice("skip-phases", nil, "comma-separated list of upgrade phases to skip\n"+
 		fmt.Sprintf("one or multiple of %s", formatSkipPhases()))
 
-	must(cmd.Flags().MarkHidden("timeout"))
+	must(cmd.Flags().MarkHidden("helm-timeout"))
 
 	must(cmd.RegisterFlagCompletionFunc("skip-phases", skipPhasesCompletion))
 	return cmd
@@ -140,12 +140,12 @@ func NewApplyCmd() *cobra.Command {
 // applyFlags defines the flags for the apply command.
 type applyFlags struct {
 	rootFlags
-	yes            bool
-	conformance    bool
-	mergeConfigs   bool
-	upgradeTimeout time.Duration
-	helmWaitMode   helm.WaitMode
-	skipPhases     skipPhases
+	yes          bool
+	conformance  bool
+	mergeConfigs bool
+	helmTimeout  time.Duration
+	helmWaitMode helm.WaitMode
+	skipPhases   skipPhases
 }
 
 // parse the apply command flags.
@@ -174,9 +174,9 @@ func (f *applyFlags) parse(flags *pflag.FlagSet) error {
 		return fmt.Errorf("getting 'yes' flag: %w", err)
 	}
 
-	f.upgradeTimeout, err = flags.GetDuration("timeout")
+	f.helmTimeout, err = flags.GetDuration("helm-timeout")
 	if err != nil {
-		return fmt.Errorf("getting 'timeout' flag: %w", err)
+		return fmt.Errorf("getting 'helm-timeout' flag: %w", err)
 	}
 
 	f.conformance, err = flags.GetBool("conformance")

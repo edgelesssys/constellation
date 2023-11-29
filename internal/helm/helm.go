@@ -31,6 +31,7 @@ package helm
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -81,6 +82,7 @@ type Options struct {
 	HelmWaitMode     WaitMode
 	AllowDestructive bool
 	Force            bool
+	ApplyTimeout     time.Duration
 }
 
 // PrepareApply loads the charts and returns the executor to apply them.
@@ -93,15 +95,18 @@ func (h Client) PrepareApply(
 	if err != nil {
 		return nil, false, fmt.Errorf("loading Helm releases: %w", err)
 	}
+
 	h.log.Debugf("Loaded Helm releases")
-	actions, includesUpgrades, err := h.factory.GetActions(releases, conf.MicroserviceVersion, flags.Force, flags.AllowDestructive)
+	actions, includesUpgrades, err := h.factory.GetActions(
+		releases, conf.MicroserviceVersion, flags.Force, flags.AllowDestructive, flags.ApplyTimeout,
+	)
 	return &ChartApplyExecutor{actions: actions, log: h.log}, includesUpgrades, err
 }
 
 func (h Client) loadReleases(
 	conf *config.Config, secret uri.MasterSecret,
 	stateFile *state.State, flags Options, serviceAccURI string,
-) ([]Release, error) {
+) ([]release, error) {
 	helmLoader := newLoader(conf, stateFile, h.cliVersion)
 	h.log.Debugf("Created new Helm loader")
 	return helmLoader.loadReleases(flags.Conformance, flags.HelmWaitMode, secret, serviceAccURI)

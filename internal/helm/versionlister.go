@@ -12,7 +12,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/release"
+	helmrelease "helm.sh/helm/v3/pkg/release"
 	"k8s.io/client-go/util/retry"
 )
 
@@ -34,7 +34,7 @@ func NewReleaseVersionClient(kubeConfigPath string, log debugLog) (*ReleaseVersi
 
 // listAction execute a List action by wrapping helm's action package.
 // It creates the action, runs it at returns results and errors.
-func (c ReleaseVersionClient) listAction(release string) (res []*release.Release, err error) {
+func (c ReleaseVersionClient) listAction(release string) (res []*helmrelease.Release, err error) {
 	action := action.NewList(c.config)
 	action.Filter = release
 	// during init, the kube API might not yet be reachable, so we retry

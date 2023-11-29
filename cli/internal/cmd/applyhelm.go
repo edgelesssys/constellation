@@ -37,6 +37,7 @@ func (a *applyCmd) runHelmApply(
 		Force:            a.flags.force,
 		Conformance:      a.flags.conformance,
 		HelmWaitMode:     a.flags.helmWaitMode,
+		ApplyTimeout:     a.flags.helmTimeout,
 		AllowDestructive: helm.DenyDestructive,
 	}
 	helmApplier, err := a.newHelmClient(constants.AdminConfFilename, a.log)

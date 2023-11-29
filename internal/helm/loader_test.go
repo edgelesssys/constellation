@@ -84,8 +84,8 @@ func TestLoadReleases(t *testing.T) {
 	)
 	require.NoError(err)
 	for _, release := range helmReleases {
-		if release.ReleaseName == constellationServicesInfo.releaseName {
-			assert.NotNil(release.Chart.Dependencies())
+		if release.releaseName == constellationServicesInfo.releaseName {
+			assert.NotNil(release.chart.Dependencies())
 		}
 	}
 }
