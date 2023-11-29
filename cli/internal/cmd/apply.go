@@ -32,7 +32,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/kubecmd"
-	"github.com/edgelesssys/constellation/v2/internal/license"
 	"github.com/edgelesssys/constellation/v2/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
@@ -431,43 +430,6 @@ func (a *applyCmd) apply(
 	cmd.Print(bufferedOutput.String())
 
 	return nil
-}
-
-// checkLicenseFile reads the local license file and checks it's quota
-// with the license server. If no license file is present or if errors
-// occur during the check, the user is informed and the community license
-// is used.
-func (a *applyCmd) checkLicenseFile(cmd *cobra.Command, csp cloudprovider.Provider) {
-	var licenseID string
-	a.log.Debugf("Running license check")
-
-	readBytes, err := a.fileHandler.Read(constants.LicenseFilename)
-	if errors.Is(err, fs.ErrNotExist) {
-		cmd.Printf("Using community license.\n")
-		licenseID = license.CommunityLicense
-	} else if err != nil {
-		cmd.Printf("Error: %v\nContinuing with community license.\n", err)
-		licenseID = license.CommunityLicense
-	} else {
-		cmd.Printf("Constellation license found!\n")
-		licenseID, err = license.FromBytes(readBytes)
-		if err != nil {
-			cmd.Printf("Error: %v\nContinuing with community license.\n", err)
-			licenseID = license.CommunityLicense
-		}
-	}
-
-	quota, err := a.applier.CheckLicense(cmd.Context(), csp, licenseID)
-	if err != nil {
-		cmd.Printf("Unable to contact license server.\n")
-		cmd.Printf("Please keep your vCPU quota in mind.\n")
-	} else if licenseID == license.CommunityLicense {
-		cmd.Printf("For details, see https://docs.edgeless.systems/constellation/overview/license\n")
-	} else {
-		cmd.Printf("Please keep your vCPU quota (%d) in mind.\n", quota)
-	}
-
-	a.log.Debugf("Checked license")
 }
 
 func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationconfigapi.Fetcher) (*config.Config, *state.State, error) {
