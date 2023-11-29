@@ -133,6 +133,9 @@ resource "null_resource" "config" {
       if [ "${var.microservice_version}" != "" ]; then
         ./yq eval '.microserviceVersion = "${var.microservice_version}"' -i constellation-conf.yaml
       fi
+      if [ "${var.serviceCidr}" != "" ]; then
+        ./yq eval '.serviceCIDR = "${var.serviceCidr}"' -i constellation-conf.yaml
+      fi
       ${local.yq_node_groups}
       ./constellation config fetch-measurements ${var.debug == true ? "--insecure" : ""}
     EOT
