@@ -9,16 +9,19 @@ package license
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestFromBytes(t *testing.T) {
 	testCases := map[string]struct {
 		licenseBytes []byte
+		wantLicense  string
 		wantErr      bool
 	}{
-		"success": {
+		"community license": {
 			licenseBytes: []byte("MDAwMDAwMDAtMDAwMC0wMDAwLTAwMDAtMDAwMDAwMDAwMDAw"),
+			wantLicense:  CommunityLicense,
 		},
 		"too short": {
 			licenseBytes: []byte("MDAwMDAwMDAtMDAwMC0wMDAwLTAwMDA="),
@@ -45,13 +48,15 @@ func TestFromBytes(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			require := require.New(t)
+			assert := assert.New(t)
 
-			_, err := FromBytes(tc.licenseBytes)
+			out, err := FromBytes(tc.licenseBytes)
 			if tc.wantErr {
 				require.Error(err)
 			} else {
 				require.NoError(err)
 			}
+			assert.Equal(tc.wantLicense, out)
 		})
 	}
 }
