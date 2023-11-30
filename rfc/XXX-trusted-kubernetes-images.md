@@ -37,7 +37,7 @@ Out of scope:
 ## Solution
 
 Kubernetes control plane images are going to be pinned by a hash, which is verified by
-the CRI. Images hashes are added to the Constellation codebase when support for
+the CRI. Image hashes are added to the Constellation codebase when support for
 a new version is added. During installation, the `kubeadm` configuration is
 modified so that images are pinned.
 
@@ -81,7 +81,7 @@ with a list of [JSON Patch](https://datatracker.ietf.org/doc/html/rfc6902)
 files that replace the container image with the pinned alternative.
 
 The patches need to be written to the stateful filesystem by the
-bootstrapper. This is very similar to what `components.Component`, which also
+bootstrapper. This is very similar to `components.Component`, which also
 place Kubernetes-related data onto the filesystem:
 
 ```go
