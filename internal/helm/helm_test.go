@@ -10,13 +10,14 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
-	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/state"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"helm.sh/helm/v3/pkg/action"
@@ -121,6 +122,7 @@ func TestMergeMaps(t *testing.T) {
 func TestHelmApply(t *testing.T) {
 	cliVersion := semver.NewFromInt(1, 99, 0, "")
 	csp := cloudprovider.AWS // using AWS since it has an additional chart: aws-load-balancer-controller
+	attestationVariant := variant.AWSSEVSNP{}
 	microserviceCharts := []string{
 		"constellation-services",
 		"constellation-operators",
@@ -171,11 +173,9 @@ func TestHelmApply(t *testing.T) {
 		},
 	}
 
-	cfg := config.Default()
-	cfg.RemoveProviderAndAttestationExcept(csp)
-	cfg.MicroserviceVersion = cliVersion
 	log := logger.NewTest(t)
 	options := Options{
+		DeployCSIDriver:  true,
 		Conformance:      false,
 		HelmWaitMode:     WaitModeWait,
 		AllowDestructive: true,
@@ -206,7 +206,7 @@ func TestHelmApply(t *testing.T) {
 			helmListVersion(lister, "aws-load-balancer-controller", awsLbVersion)
 
 			options.AllowDestructive = tc.allowDestructive
-			ex, includesUpgrade, err := sut.PrepareApply(cfg,
+			ex, includesUpgrade, err := sut.PrepareApply(csp, attestationVariant, versions.Default, cliVersion,
 				state.New().
 					SetInfrastructure(state.Infrastructure{UID: "testuid"}).
 					SetClusterValues(state.ClusterValues{MeasurementSalt: []byte{0x41}}),

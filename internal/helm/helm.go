@@ -33,13 +33,15 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/state"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 )
 
 const (
@@ -80,36 +82,36 @@ func NewClient(kubeConfig []byte, log debugLog) (*Client, error) {
 type Options struct {
 	Conformance      bool
 	HelmWaitMode     WaitMode
+	DeployCSIDriver  bool
 	AllowDestructive bool
 	Force            bool
 	ApplyTimeout     time.Duration
 }
 
 // PrepareApply loads the charts and returns the executor to apply them.
-// TODO(elchead): remove validK8sVersion by putting ValidK8sVersion into config.Config, see AB#3374.
 func (h Client) PrepareApply(
-	conf *config.Config, stateFile *state.State,
+	csp cloudprovider.Provider, attestationVariant variant.Variant, k8sVersion versions.ValidK8sVersion, microserviceVersion semver.Semver, stateFile *state.State,
 	flags Options, serviceAccURI string, masterSecret uri.MasterSecret,
 ) (Applier, bool, error) {
-	releases, err := h.loadReleases(conf, masterSecret, stateFile, flags, serviceAccURI)
+	releases, err := h.loadReleases(csp, attestationVariant, k8sVersion, masterSecret, stateFile, flags, serviceAccURI)
 	if err != nil {
 		return nil, false, fmt.Errorf("loading Helm releases: %w", err)
 	}
 
 	h.log.Debugf("Loaded Helm releases")
 	actions, includesUpgrades, err := h.factory.GetActions(
-		releases, conf.MicroserviceVersion, flags.Force, flags.AllowDestructive, flags.ApplyTimeout,
+		releases, microserviceVersion, flags.Force, flags.AllowDestructive, flags.ApplyTimeout,
 	)
 	return &ChartApplyExecutor{actions: actions, log: h.log}, includesUpgrades, err
 }
 
 func (h Client) loadReleases(
-	conf *config.Config, secret uri.MasterSecret,
+	csp cloudprovider.Provider, attestationVariant variant.Variant, k8sVersion versions.ValidK8sVersion, secret uri.MasterSecret,
 	stateFile *state.State, flags Options, serviceAccURI string,
 ) ([]release, error) {
-	helmLoader := newLoader(conf, stateFile, h.cliVersion)
+	helmLoader := newLoader(csp, attestationVariant, k8sVersion, stateFile, h.cliVersion)
 	h.log.Debugf("Created new Helm loader")
-	return helmLoader.loadReleases(flags.Conformance, flags.HelmWaitMode, secret, serviceAccURI)
+	return helmLoader.loadReleases(flags.Conformance, flags.DeployCSIDriver, flags.HelmWaitMode, secret, serviceAccURI)
 }
 
 // Applier runs the Helm actions.

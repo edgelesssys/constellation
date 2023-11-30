@@ -19,8 +19,8 @@ import (
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/helm/imageversion"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
@@ -59,7 +59,7 @@ var (
 // chartLoader loads embedded helm charts.
 type chartLoader struct {
 	csp                          cloudprovider.Provider
-	config                       *config.Config
+	attestationVariant           variant.Variant
 	joinServiceImage             string
 	keyServiceImage              string
 	ccmImage                     string // cloud controller manager image
@@ -76,12 +76,10 @@ type chartLoader struct {
 }
 
 // newLoader creates a new ChartLoader.
-func newLoader(config *config.Config, stateFile *state.State, cliVersion semver.Semver) *chartLoader {
+func newLoader(csp cloudprovider.Provider, attestationVariant variant.Variant, k8sVersion versions.ValidK8sVersion, stateFile *state.State, cliVersion semver.Semver) *chartLoader {
 	// TODO(malt3): Allow overriding container image registry + prefix for all images
 	// (e.g. for air-gapped environments).
 	var ccmImage, cnmImage string
-	csp := config.GetProvider()
-	k8sVersion := config.KubernetesVersion
 	switch csp {
 	case cloudprovider.AWS:
 		ccmImage = versions.VersionConfigs[k8sVersion].CloudControllerManagerImageAWS
@@ -96,10 +94,10 @@ func newLoader(config *config.Config, stateFile *state.State, cliVersion semver.
 	return &chartLoader{
 		cliVersion:                   cliVersion,
 		csp:                          csp,
+		attestationVariant:           attestationVariant,
 		stateFile:                    stateFile,
 		ccmImage:                     ccmImage,
 		azureCNMImage:                cnmImage,
-		config:                       config,
 		joinServiceImage:             imageversion.JoinService("", ""),
 		keyServiceImage:              imageversion.KeyService("", ""),
 		autoscalerImage:              versions.VersionConfigs[k8sVersion].ClusterAutoscalerImage,
@@ -118,14 +116,14 @@ func newLoader(config *config.Config, stateFile *state.State, cliVersion semver.
 type releaseApplyOrder []release
 
 // loadReleases loads the embedded helm charts and returns them as a HelmReleases object.
-func (i *chartLoader) loadReleases(conformanceMode bool, helmWaitMode WaitMode, masterSecret uri.MasterSecret,
+func (i *chartLoader) loadReleases(conformanceMode, deployCSIDriver bool, helmWaitMode WaitMode, masterSecret uri.MasterSecret,
 	serviceAccURI string,
 ) (releaseApplyOrder, error) {
 	ciliumRelease, err := i.loadRelease(ciliumInfo, helmWaitMode)
 	if err != nil {
 		return nil, fmt.Errorf("loading cilium: %w", err)
 	}
-	ciliumVals := extraCiliumValues(i.config.GetProvider(), conformanceMode, i.stateFile.Infrastructure)
+	ciliumVals := extraCiliumValues(i.csp, conformanceMode, i.stateFile.Infrastructure)
 	ciliumRelease.values = mergeMaps(ciliumRelease.values, ciliumVals)
 
 	certManagerRelease, err := i.loadRelease(certManagerInfo, helmWaitMode)
@@ -144,26 +142,26 @@ func (i *chartLoader) loadReleases(conformanceMode bool, helmWaitMode WaitMode, 
 		return nil, fmt.Errorf("loading constellation-services: %w", err)
 	}
 
-	svcVals, err := extraConstellationServicesValues(i.config, masterSecret, serviceAccURI, i.stateFile.Infrastructure)
+	svcVals, err := extraConstellationServicesValues(i.csp, i.attestationVariant, masterSecret, serviceAccURI, i.stateFile.Infrastructure)
 	if err != nil {
 		return nil, fmt.Errorf("extending constellation-services values: %w", err)
 	}
 	conServicesRelease.values = mergeMaps(conServicesRelease.values, svcVals)
 
 	releases := releaseApplyOrder{ciliumRelease, conServicesRelease, certManagerRelease}
-	if i.config.DeployCSIDriver() {
+	if deployCSIDriver {
 		csiRelease, err := i.loadRelease(csiInfo, helmWaitMode)
 		if err != nil {
 			return nil, fmt.Errorf("loading snapshot CRDs: %w", err)
 		}
-		extraCSIvals, err := extraCSIValues(i.config.GetProvider(), serviceAccURI)
+		extraCSIvals, err := extraCSIValues(i.csp, serviceAccURI)
 		if err != nil {
 			return nil, fmt.Errorf("extending CSI values: %w", err)
 		}
 		csiRelease.values = mergeMaps(csiRelease.values, extraCSIvals)
 		releases = append(releases, csiRelease)
 	}
-	if i.config.HasProvider(cloudprovider.AWS) {
+	if i.csp == cloudprovider.AWS {
 		awsRelease, err := i.loadRelease(awsLBControllerInfo, helmWaitMode)
 		if err != nil {
 			return nil, fmt.Errorf("loading aws-services: %w", err)

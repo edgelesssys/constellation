@@ -13,11 +13,11 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/openstack"
-	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/state"
@@ -64,14 +64,14 @@ func extraCiliumValues(provider cloudprovider.Provider, conformanceMode bool, ou
 // extraConstellationServicesValues extends the given values map by some values depending on user input.
 // Values set inside this function are only applied during init, not during upgrade.
 func extraConstellationServicesValues(
-	cfg *config.Config, masterSecret uri.MasterSecret, serviceAccURI string, output state.Infrastructure,
+	csp cloudprovider.Provider, attestationVariant variant.Variant, masterSecret uri.MasterSecret, serviceAccURI string, output state.Infrastructure,
 ) (map[string]any, error) {
 	extraVals := map[string]any{}
 	extraVals["join-service"] = map[string]any{
-		"attestationVariant": cfg.GetAttestationConfig().GetVariant().String(),
+		"attestationVariant": attestationVariant.String(),
 	}
 	extraVals["verification-service"] = map[string]any{
-		"attestationVariant": cfg.GetAttestationConfig().GetVariant().String(),
+		"attestationVariant": attestationVariant.String(),
 	}
 	extraVals["konnectivity"] = map[string]any{
 		"loadBalancerIP": output.ClusterEndpoint,
@@ -81,21 +81,22 @@ func extraConstellationServicesValues(
 		"masterSecret": base64.StdEncoding.EncodeToString(masterSecret.Key),
 		"salt":         base64.StdEncoding.EncodeToString(masterSecret.Salt),
 	}
-	switch cfg.GetProvider() {
-	case cloudprovider.OpenStack:
-		extraVals["openstack"] = map[string]any{
-			"deployYawolLoadBalancer": cfg.DeployYawolLoadBalancer(),
-		}
-		if cfg.DeployYawolLoadBalancer() {
-			extraVals["yawol-controller"] = map[string]any{
-				"yawolOSSecretName": "yawolkey",
-				// has to be larger than ~30s to account for slow OpenStack API calls.
-				"openstackTimeout": "1m",
-				"yawolFloatingID":  cfg.Provider.OpenStack.FloatingIPPoolID,
-				"yawolFlavorID":    cfg.Provider.OpenStack.YawolFlavorID,
-				"yawolImageID":     cfg.Provider.OpenStack.YawolImageID,
-			}
-		}
+	switch csp {
+	// TODO(elchead): hardcode OpenStack here?
+	// case cloudprovider.OpenStack:
+	//	extraVals["openstack"] = map[string]any{
+	//		"deployYawolLoadBalancer": cfg.DeployYawolLoadBalancer(),
+	//	}
+	//	if cfg.DeployYawolLoadBalancer() {
+	//		extraVals["yawol-controller"] = map[string]any{
+	//			"yawolOSSecretName": "yawolkey",
+	//			// has to be larger than ~30s to account for slow OpenStack API calls.
+	//			"openstackTimeout": "1m",
+	//			"yawolFloatingID":  cfg.Provider.OpenStack.FloatingIPPoolID,
+	//			"yawolFlavorID":    cfg.Provider.OpenStack.YawolFlavorID,
+	//			"yawolImageID":     cfg.Provider.OpenStack.YawolImageID,
+	//		}
+	//	}
 	case cloudprovider.GCP:
 		serviceAccountKey, err := gcpshared.ServiceAccountKeyFromURI(serviceAccURI)
 		if err != nil {

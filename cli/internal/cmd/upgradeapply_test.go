@@ -361,9 +361,9 @@ type mockApplier struct {
 	mock.Mock
 }
 
-func (m *mockApplier) PrepareApply(cfg *config.Config, stateFile *state.State,
+func (m *mockApplier) PrepareApply(csp cloudprovider.Provider, variant variant.Variant, k8sVersion versions.ValidK8sVersion, microserviceVersion semver.Semver, stateFile *state.State,
 	helmOpts helm.Options, str string, masterSecret uri.MasterSecret,
 ) (helm.Applier, bool, error) {
-	args := m.Called(cfg, stateFile, helmOpts, str, masterSecret)
+	args := m.Called(csp, variant, k8sVersion, microserviceVersion, stateFile, helmOpts, str, masterSecret)
 	return args.Get(0).(helm.Applier), args.Bool(1), args.Error(2)
 }
