@@ -11,14 +11,18 @@ import (
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/crypto"
+	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/license"
 )
 
-// An Applier handles applying a specific configuration to a Constellation cluster.
+// An Applier handles applying a specific configuration to a Constellation cluster
+// with existing Infrastructure.
 // In Particular, this involves Initialization and Upgrading of the cluster.
 type Applier struct {
 	log            debugLog
 	licenseChecker *license.Checker
+	spinner        spinnerInterf
 }
 
 type debugLog interface {
@@ -26,9 +30,10 @@ type debugLog interface {
 }
 
 // NewApplier creates a new Applier.
-func NewApplier(log debugLog) *Applier {
+func NewApplier(log debugLog, spinner spinnerInterf) *Applier {
 	return &Applier{
 		log:            log,
+		spinner:        spinner,
 		licenseChecker: license.NewChecker(license.NewClient()),
 	}
 }
@@ -44,4 +49,34 @@ func (a *Applier) CheckLicense(ctx context.Context, csp cloudprovider.Provider, 
 	a.log.Debugf("Got response from license server for license '%s'", licenseID)
 
 	return quotaResp.Quota, nil
+}
+
+// GenerateMasterSecret generates a new master secret.
+func (a *Applier) GenerateMasterSecret() (uri.MasterSecret, error) {
+	a.log.Debugf("Generating master secret")
+	key, err := crypto.GenerateRandomBytes(crypto.MasterSecretLengthDefault)
+	if err != nil {
+		return uri.MasterSecret{}, err
+	}
+	salt, err := crypto.GenerateRandomBytes(crypto.RNGLengthDefault)
+	if err != nil {
+		return uri.MasterSecret{}, err
+	}
+	secret := uri.MasterSecret{
+		Key:  key,
+		Salt: salt,
+	}
+	a.log.Debugf("Generated master secret key and salt values")
+	return secret, nil
+}
+
+// GenerateMeasurementSalt generates a new measurement salt.
+func (a *Applier) GenerateMeasurementSalt() ([]byte, error) {
+	a.log.Debugf("Generating measurement salt")
+	measurementSalt, err := crypto.GenerateRandomBytes(crypto.RNGLengthDefault)
+	if err != nil {
+		return nil, fmt.Errorf("generating measurement salt: %w", err)
+	}
+	a.log.Debugf("Generated measurement salt")
+	return measurementSalt, nil
 }

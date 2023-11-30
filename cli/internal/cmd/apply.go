@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
@@ -31,6 +32,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/helm"
+	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/kubecmd"
 	"github.com/edgelesssys/constellation/v2/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
@@ -252,12 +254,13 @@ func runApply(cmd *cobra.Command, _ []string) error {
 		)
 	}
 
-	applier := constellation.NewApplier(log)
+	applier := constellation.NewApplier(log, spinner)
 
 	apply := &applyCmd{
 		fileHandler:     fileHandler,
 		flags:           flags,
 		log:             log,
+		wLog:            &cloudcmd.WarnLogger{Cmd: cmd, Log: log},
 		spinner:         spinner,
 		merger:          &kubeconfigMerger{log: log},
 		newHelmClient:   newHelmClient,
@@ -279,6 +282,7 @@ type applyCmd struct {
 	flags       applyFlags
 
 	log     debugLog
+	wLog    warnLog
 	spinner spinnerInterf
 
 	merger configMerger
@@ -293,6 +297,23 @@ type applyCmd struct {
 
 type applier interface {
 	CheckLicense(ctx context.Context, csp cloudprovider.Provider, licenseID string) (int, error)
+	GenerateMasterSecret() (uri.MasterSecret, error)
+	GenerateMeasurementSalt() ([]byte, error)
+	Init(
+		ctx context.Context,
+		dialer constellation.GrpcDialer,
+		state *state.State,
+		payload constellation.InitPayload,
+	) (
+		*initproto.InitSuccessResponse,
+		[]byte,
+		error,
+	)
+}
+
+type warnLog interface {
+	Warnf(format string, args ...any)
+	Infof(format string, args ...any)
 }
 
 /*

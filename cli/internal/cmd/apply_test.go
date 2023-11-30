@@ -16,10 +16,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/constellation"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
@@ -488,8 +490,25 @@ func newPhases(phases ...skipPhase) skipPhases {
 	return skipPhases
 }
 
-type stubConstellApplier struct{}
+type stubConstellApplier struct {
+	checkLicenseErr            error
+	generateMasterSecretErr    error
+	generateMeasurementSaltErr error
+	initErr                    error
+}
 
 func (s *stubConstellApplier) CheckLicense(context.Context, cloudprovider.Provider, string) (int, error) {
-	return 0, nil
+	return 0, s.checkLicenseErr
+}
+
+func (s *stubConstellApplier) GenerateMasterSecret() (uri.MasterSecret, error) {
+	return uri.MasterSecret{}, s.generateMasterSecretErr
+}
+
+func (s *stubConstellApplier) GenerateMeasurementSalt() ([]byte, error) {
+	return nil, s.generateMeasurementSaltErr
+}
+
+func (s *stubConstellApplier) Init(context.Context, constellation.GrpcDialer, *state.State, constellation.InitPayload) (*initproto.InitSuccessResponse, []byte, error) {
+	return nil, nil, s.initErr
 }
