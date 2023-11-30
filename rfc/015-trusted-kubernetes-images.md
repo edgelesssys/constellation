@@ -1,4 +1,4 @@
-# RFC XXX: Trusted Kubernetes Container Images
+# RFC 015: Trusted Kubernetes Container Images
 
 Kubernetes control plane images should be verified by the Constellation installation.
 
