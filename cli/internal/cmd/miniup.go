@@ -103,7 +103,7 @@ func (m *miniUpCmd) up(cmd *cobra.Command) (retErr error) {
 	cmd.Flags().Bool("yes", true, "")
 	cmd.Flags().Bool("skip-helm-wait", false, "")
 	cmd.Flags().Bool("conformance", false, "")
-	cmd.Flags().Duration("timeout", time.Hour, "")
+	cmd.Flags().Duration("helm-timeout", time.Hour, "")
 
 	// create and initialize the cluster
 	if err := runApply(cmd, nil); err != nil {
