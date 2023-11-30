@@ -23,7 +23,6 @@ type Applier struct {
 
 type debugLog interface {
 	Debugf(format string, args ...any)
-	Sync()
 }
 
 // NewApplier creates a new Applier.
