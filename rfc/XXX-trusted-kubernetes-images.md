@@ -103,7 +103,7 @@ A patch definition as Component would look like this:
 patch := &components.Component{
   URL: "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL215LWNvbnRyb2wtcGxhbmUtaW1hZ2U6djEuMjcuN0BzaGEyNTY6Li4uIn1dCg=="
   InstallPath: "/opt/kubernetes/patches/kube-apiserver+json.json"
-  // InstallPath and Extract deliberately left empty.
+  // Hash and Extract deliberately left empty.
 }
 ```
 
