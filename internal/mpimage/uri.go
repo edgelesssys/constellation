@@ -9,6 +9,7 @@ package mpimage
 import (
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -57,7 +58,7 @@ func NewAzureMarketplaceImage(version semver.Semver) AzureMarketplaceImage {
 		Publisher: constants.AzureMarketplaceImagePublisher,
 		Offer:     constants.AzureMarketplaceImageOffer,
 		SKU:       constants.AzureMarketplaceImagePlan,
-		Version:   version.StringWithoutPrefix(),
+		Version:   strings.TrimPrefix(version.String(), "v"), // Azure requires X.Y.Z format
 	}
 }
 
