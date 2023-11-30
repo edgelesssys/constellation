@@ -61,12 +61,12 @@ type Client struct {
 }
 
 // NewClient returns a new Helm client.
-func NewClient(kubeConfigPath string, log debugLog) (*Client, error) {
-	kubeClient, err := kubectl.NewFromConfig(kubeConfigPath)
+func NewClient(kubeConfig []byte, log debugLog) (*Client, error) {
+	kubeClient, err := kubectl.NewFromConfig(kubeConfig)
 	if err != nil {
 		return nil, fmt.Errorf("initializing kubectl: %w", err)
 	}
-	actionConfig, err := newActionConfig(kubeConfigPath, log)
+	actionConfig, err := newActionConfig(kubeConfig, log)
 	if err != nil {
 		return nil, fmt.Errorf("creating action config: %w", err)
 	}

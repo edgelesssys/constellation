@@ -22,8 +22,8 @@ type ReleaseVersionClient struct {
 }
 
 // NewReleaseVersionClient creates a new ReleaseVersionClient.
-func NewReleaseVersionClient(kubeConfigPath string, log debugLog) (*ReleaseVersionClient, error) {
-	config, err := newActionConfig(kubeConfigPath, log)
+func NewReleaseVersionClient(kubeConfig []byte, log debugLog) (*ReleaseVersionClient, error) {
+	config, err := newActionConfig(kubeConfig, log)
 	if err != nil {
 		return nil, err
 	}
