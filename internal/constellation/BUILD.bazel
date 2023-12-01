@@ -1,4 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "constellation",
@@ -12,7 +13,6 @@ go_library(
     deps = [
         "//bootstrapper/initproto",
         "//internal/cloud/cloudprovider",
-        "//internal/config",
         "//internal/constants",
         "//internal/crypto",
         "//internal/grpc/grpclog",
@@ -22,6 +22,31 @@ go_library(
         "//internal/retry",
         "//internal/state",
         "//internal/versions",
+        "@org_golang_google_grpc//:go_default_library",
+    ],
+)
+
+go_test(
+    name = "constellation_test",
+    srcs = [
+        "apply_test.go",
+        "applyinit_test.go",
+    ],
+    embed = [":constellation"],
+    deps = [
+        "//bootstrapper/initproto",
+        "//internal/cloud/cloudprovider",
+        "//internal/constants",
+        "//internal/crypto",
+        "//internal/grpc/atlscredentials",
+        "//internal/grpc/dialer",
+        "//internal/grpc/testdialer",
+        "//internal/kms/uri",
+        "//internal/license",
+        "//internal/logger",
+        "//internal/state",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
         "@org_golang_google_grpc//:go_default_library",
     ],
 )

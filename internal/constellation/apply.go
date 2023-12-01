@@ -21,8 +21,12 @@ import (
 // In Particular, this involves Initialization and Upgrading of the cluster.
 type Applier struct {
 	log            debugLog
-	licenseChecker *license.Checker
+	licenseChecker licenseChecker
 	spinner        spinnerInterf
+}
+
+type licenseChecker interface {
+	CheckLicense(context.Context, cloudprovider.Provider, string) (license.QuotaCheckResponse, error)
 }
 
 type debugLog interface {
