@@ -27,7 +27,9 @@ type Applier struct {
 	spinner        spinnerInterf
 
 	// newDialer creates a new aTLS gRPC dialer.
-	newDialer func(validator atls.Validator) *dialer.Dialer
+	newDialer        func(validator atls.Validator) *dialer.Dialer
+	getKubecmdClient func(kubeConfig []byte, log debugLog) (kubecmdClient, error)
+	kubeConfig       []byte
 }
 
 type licenseChecker interface {
@@ -45,11 +47,17 @@ func NewApplier(
 	newDialer func(validator atls.Validator) *dialer.Dialer,
 ) *Applier {
 	return &Applier{
-		log:            log,
-		spinner:        spinner,
-		licenseChecker: license.NewChecker(license.NewClient()),
-		newDialer:      newDialer,
+		log:              log,
+		spinner:          spinner,
+		licenseChecker:   license.NewChecker(license.NewClient()),
+		getKubecmdClient: kubecmdGetter,
+		newDialer:        newDialer,
 	}
+}
+
+// SetKubeConfig sets the config file to use for creating Kubernetes clients.
+func (a *Applier) SetKubeConfig(kubeConfig []byte) {
+	a.kubeConfig = kubeConfig
 }
 
 // CheckLicense checks the given Constellation license with the license server

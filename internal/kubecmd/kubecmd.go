@@ -186,8 +186,8 @@ func (k *KubeCmd) ClusterStatus(ctx context.Context) (map[string]NodeStatus, err
 	return clusterStatus, nil
 }
 
-// GetClusterAttestationConfig fetches the join-config configmap from the cluster, extracts the config
-// and returns both the full configmap and the attestation config.
+// GetClusterAttestationConfig fetches the join-config configmap from the cluster,
+// and returns the attestation config.
 func (k *KubeCmd) GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, error) {
 	existingConf, err := retryGetJoinConfig(ctx, k.kubectl, k.retryInterval, k.log)
 	if err != nil {
@@ -245,7 +245,7 @@ func (k *KubeCmd) ApplyJoinConfig(ctx context.Context, newAttestConfig config.At
 }
 
 // ExtendClusterConfigCertSANs extends the ClusterConfig stored under "kube-system/kubeadm-config" with the given SANs.
-// Existing SANs are preserved.
+// Empty strings are ignored, existing SANs are preserved.
 func (k *KubeCmd) ExtendClusterConfigCertSANs(ctx context.Context, alternativeNames []string) error {
 	clusterConfiguration, kubeadmConfig, err := k.getClusterConfiguration(ctx)
 	if err != nil {
