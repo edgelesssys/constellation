@@ -51,15 +51,17 @@ func (a *applyCmd) runInit(cmd *cobra.Command, conf *config.Config, stateFile *s
 		return nil, fmt.Errorf("generating measurement salt: %w", err)
 	}
 
-	resp, logs, err := a.applier.Init(cmd.Context(), a.newDialer(validator), stateFile,
+	clusterLogs := &bytes.Buffer{}
+	resp, err := a.applier.Init(
+		cmd.Context(), a.newDialer(validator), stateFile, clusterLogs,
 		constellation.InitPayload{
 			MasterSecret:    masterSecret,
 			MeasurementSalt: measurementSalt,
 			K8sVersion:      conf.KubernetesVersion,
 			ConformanceMode: a.flags.conformance,
 		})
-	if len(logs) > 0 {
-		if err := a.fileHandler.Write(constants.ErrorLog, logs, file.OptAppend); err != nil {
+	if len(clusterLogs.Bytes()) > 0 {
+		if err := a.fileHandler.Write(constants.ErrorLog, clusterLogs.Bytes(), file.OptAppend); err != nil {
 			return nil, fmt.Errorf("writing bootstrapper logs: %w", err)
 		}
 	}

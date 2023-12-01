@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package constellation
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -46,10 +45,10 @@ func (a *Applier) Init(
 	ctx context.Context,
 	dialer GrpcDialer,
 	state *state.State,
+	clusterLogWriter io.Writer,
 	payload InitPayload,
 ) (
 	*initproto.InitSuccessResponse,
-	[]byte,
 	error,
 ) {
 	// Prepare the Request
@@ -71,9 +70,10 @@ func (a *Applier) Init(
 			state.Infrastructure.ClusterEndpoint,
 			strconv.Itoa(constants.BootstrapperPort),
 		),
-		req:     req,
-		log:     a.log,
-		spinner: a.spinner,
+		req:              req,
+		log:              a.log,
+		clusterLogWriter: clusterLogWriter,
+		spinner:          a.spinner,
 	}
 
 	// Create a wrapper function that allows logging any returned error from the retrier before checking if it's the expected retriable one.
@@ -88,12 +88,12 @@ func (a *Applier) Init(
 	a.spinner.Start("Connecting ", false)
 	retrier := retry.NewIntervalRetrier(doer, 30*time.Second, serviceIsUnavailable)
 	if err := retrier.Do(ctx); err != nil {
-		return nil, nil, fmt.Errorf("doing init call: %w", err)
+		return nil, fmt.Errorf("doing init call: %w", err)
 	}
 	a.spinner.Stop()
 	a.log.Debugf("Initialization request finished")
 
-	return doer.resp, doer.clusterLog, nil
+	return doer.resp, nil
 }
 
 // the initDoer performs the actual init RPC with retry logic.
@@ -105,10 +105,11 @@ type initDoer struct {
 	connectedOnce bool
 	spinner       spinnerInterf
 
+	// clusterLogWriter is the writer to which the cluster logs are written.
+	clusterLogWriter io.Writer
+
 	// Read-Only-fields:
 
-	// clusterLog is the log collected from the cluster if the init call fails.
-	clusterLog []byte
 	// resp is the response returned upon successful initialization.
 	resp *initproto.InitSuccessResponse
 }
@@ -207,7 +208,6 @@ func (d *initDoer) Do(ctx context.Context) error {
 // getLogs retrieves the cluster logs from the bootstrapper and saves them in the initDoer.
 func (d *initDoer) getLogs(resp initproto.API_InitClient) error {
 	d.log.Debugf("Attempting to collect cluster logs")
-	logOutput := &bytes.Buffer{}
 	for {
 		res, err := resp.Recv()
 		if err == io.EOF {
@@ -230,13 +230,12 @@ func (d *initDoer) getLogs(resp initproto.API_InitClient) error {
 		if log == nil {
 			return errors.New("received empty logs")
 		}
-		if _, err := logOutput.Write(log); err != nil {
+		if _, err := d.clusterLogWriter.Write(log); err != nil {
 			return fmt.Errorf("writing logs: %w", err)
 		}
 	}
 
 	d.log.Debugf("Received cluster logs")
-	d.clusterLog = logOutput.Bytes()
 	return nil
 }
 

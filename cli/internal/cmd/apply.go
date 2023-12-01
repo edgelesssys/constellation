@@ -303,10 +303,10 @@ type applier interface {
 		ctx context.Context,
 		dialer constellation.GrpcDialer,
 		state *state.State,
+		clusterLogWriter io.Writer,
 		payload constellation.InitPayload,
 	) (
 		*initproto.InitSuccessResponse,
-		[]byte,
 		error,
 	)
 }

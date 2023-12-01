@@ -11,6 +11,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -509,6 +510,6 @@ func (s *stubConstellApplier) GenerateMeasurementSalt() ([]byte, error) {
 	return nil, s.generateMeasurementSaltErr
 }
 
-func (s *stubConstellApplier) Init(context.Context, constellation.GrpcDialer, *state.State, constellation.InitPayload) (*initproto.InitSuccessResponse, []byte, error) {
-	return nil, nil, s.initErr
+func (s *stubConstellApplier) Init(context.Context, constellation.GrpcDialer, *state.State, io.Writer, constellation.InitPayload) (*initproto.InitSuccessResponse, error) {
+	return nil, s.initErr
 }
