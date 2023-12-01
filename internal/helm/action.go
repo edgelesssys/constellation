@@ -183,14 +183,18 @@ func saveChart(release release, chartsDir string, fileHandler file.Handler) erro
 	return nil
 }
 
+// clientGetter implements the genericclioptions.RESTClientGetter interface.
+// We implement our own to allow creating clients from an in-memory kubeconfig.
 type clientGetter struct {
 	kubeConfig []byte
 }
 
+// ToRESTConfig implements the genericclioptions.RESTClientGetter interface.
 func (c *clientGetter) ToRESTConfig() (*rest.Config, error) {
 	return clientcmd.RESTConfigFromKubeConfig(c.kubeConfig)
 }
 
+// ToDiscoveryClient implements the genericclioptions.RESTClientGetter interface.
 func (c *clientGetter) ToDiscoveryClient() (discovery.CachedDiscoveryInterface, error) {
 	config, err := c.ToRESTConfig()
 	if err != nil {
@@ -203,6 +207,7 @@ func (c *clientGetter) ToDiscoveryClient() (discovery.CachedDiscoveryInterface, 
 	return memory.NewMemCacheClient(discoveryClient), nil
 }
 
+// ToRESTMapper implements the genericclioptions.RESTClientGetter interface.
 func (c *clientGetter) ToRESTMapper() (meta.RESTMapper, error) {
 	discoveryClient, err := c.ToDiscoveryClient()
 	if err != nil {
@@ -213,6 +218,7 @@ func (c *clientGetter) ToRESTMapper() (meta.RESTMapper, error) {
 	return expander, nil
 }
 
+// ToRawKubeConfigLoader implements the genericclioptions.RESTClientGetter interface.
 func (c *clientGetter) ToRawKubeConfigLoader() clientcmd.ClientConfig {
 	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(&clientcmd.ClientConfigLoadingRules{}, &clientcmd.ConfigOverrides{})
 }
