@@ -61,7 +61,7 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 	}
 
 	fetcher := attestationconfigapi.NewFetcher()
-	kubeClient, err := kubecmd.New(cmd.OutOrStdout(), kubeConfig, fileHandler, log)
+	kubeClient, err := kubecmd.New(kubeConfig, log)
 	if err != nil {
 		return fmt.Errorf("setting up kubernetes client: %w", err)
 	}

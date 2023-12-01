@@ -23,9 +23,7 @@ import (
 )
 
 // runHelmApply handles installing or upgrading helm charts for the cluster.
-func (a *applyCmd) runHelmApply(
-	cmd *cobra.Command, conf *config.Config, stateFile *state.State,
-	kubeUpgrader kubernetesUpgrader, upgradeDir string,
+func (a *applyCmd) runHelmApply(cmd *cobra.Command, conf *config.Config, stateFile *state.State, upgradeDir string,
 ) error {
 	a.log.Debugf("Installing or upgrading Helm charts")
 	var masterSecret uri.MasterSecret
@@ -80,7 +78,7 @@ func (a *applyCmd) runHelmApply(
 	}
 
 	a.log.Debugf("Backing up Helm charts")
-	if err := a.backupHelmCharts(cmd.Context(), kubeUpgrader, executor, includesUpgrades, upgradeDir); err != nil {
+	if err := a.backupHelmCharts(cmd.Context(), executor, includesUpgrades, upgradeDir); err != nil {
 		return err
 	}
 
@@ -105,7 +103,7 @@ func (a *applyCmd) runHelmApply(
 
 // backupHelmCharts saves the Helm charts for the upgrade to disk and creates a backup of existing CRDs and CRs.
 func (a *applyCmd) backupHelmCharts(
-	ctx context.Context, kubeUpgrader kubernetesUpgrader, executor helm.Applier, includesUpgrades bool, upgradeDir string,
+	ctx context.Context, executor helm.Applier, includesUpgrades bool, upgradeDir string,
 ) error {
 	// Save the Helm charts for the upgrade to disk
 	chartDir := filepath.Join(upgradeDir, "helm-charts")
@@ -116,11 +114,11 @@ func (a *applyCmd) backupHelmCharts(
 
 	if includesUpgrades {
 		a.log.Debugf("Creating backup of CRDs and CRs")
-		crds, err := kubeUpgrader.BackupCRDs(ctx, upgradeDir)
+		crds, err := a.applier.BackupCRDs(ctx, a.fileHandler, upgradeDir)
 		if err != nil {
 			return fmt.Errorf("creating CRD backup: %w", err)
 		}
-		if err := kubeUpgrader.BackupCRs(ctx, crds, upgradeDir); err != nil {
+		if err := a.applier.BackupCRs(ctx, a.fileHandler, crds, upgradeDir); err != nil {
 			return fmt.Errorf("creating CR backup: %w", err)
 		}
 	}

@@ -79,6 +79,7 @@ go_library(
         "//internal/grpc/dialer",
         "//internal/grpc/retry",
         "//internal/helm",
+        "//internal/imagefetcher",
         "//internal/kms/uri",
         "//internal/kubecmd",
         # keep

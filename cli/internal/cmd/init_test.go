@@ -10,19 +10,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
-	"net"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
-	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -31,9 +25,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/constellation"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
-	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
-	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
 	"github.com/edgelesssys/constellation/v2/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -43,7 +34,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/clientcmd"
@@ -102,7 +92,8 @@ func TestInitialize(t *testing.T) {
 		stateFile               *state.State
 		configMutator           func(*config.Config)
 		serviceAccKey           *gcpshared.ServiceAccountKey
-		initServerAPI           *stubInitServer
+		initResponse            *initproto.InitSuccessResponse
+		initErr                 error
 		retriable               bool
 		masterSecretShouldExist bool
 		wantErr                 bool
@@ -112,47 +103,30 @@ func TestInitialize(t *testing.T) {
 			stateFile:     preInitStateFile(cloudprovider.GCP),
 			configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
 			serviceAccKey: gcpServiceAccKey,
-			initServerAPI: &stubInitServer{res: []*initproto.InitResponse{{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}}},
+			initResponse:  testInitResp,
 		},
 		"initialize some azure instances": {
-			provider:      cloudprovider.Azure,
-			stateFile:     preInitStateFile(cloudprovider.Azure),
-			initServerAPI: &stubInitServer{res: []*initproto.InitResponse{{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}}},
+			provider:     cloudprovider.Azure,
+			stateFile:    preInitStateFile(cloudprovider.Azure),
+			initResponse: testInitResp,
 		},
 		"initialize some qemu instances": {
-			provider:      cloudprovider.QEMU,
-			stateFile:     preInitStateFile(cloudprovider.QEMU),
-			initServerAPI: &stubInitServer{res: []*initproto.InitResponse{{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}}},
+			provider:     cloudprovider.QEMU,
+			stateFile:    preInitStateFile(cloudprovider.QEMU),
+			initResponse: testInitResp,
 		},
 		"non retriable error": {
 			provider:                cloudprovider.QEMU,
 			stateFile:               preInitStateFile(cloudprovider.QEMU),
-			initServerAPI:           &stubInitServer{initErr: &constellation.NonRetriableInitError{Err: assert.AnError}},
+			initErr:                 &constellation.NonRetriableInitError{Err: assert.AnError},
 			retriable:               false,
 			masterSecretShouldExist: true,
 			wantErr:                 true,
 		},
 		"non retriable error with failed log collection": {
-			provider:  cloudprovider.QEMU,
-			stateFile: preInitStateFile(cloudprovider.QEMU),
-			initServerAPI: &stubInitServer{
-				res: []*initproto.InitResponse{
-					{
-						Kind: &initproto.InitResponse_InitFailure{
-							InitFailure: &initproto.InitFailureResponse{
-								Error: "error",
-							},
-						},
-					},
-					{
-						Kind: &initproto.InitResponse_InitFailure{
-							InitFailure: &initproto.InitFailureResponse{
-								Error: "error",
-							},
-						},
-					},
-				},
-			},
+			provider:                cloudprovider.QEMU,
+			stateFile:               preInitStateFile(cloudprovider.QEMU),
+			initErr:                 &constellation.NonRetriableInitError{Err: assert.AnError, LogCollectionErr: assert.AnError},
 			retriable:               false,
 			masterSecretShouldExist: true,
 			wantErr:                 true,
@@ -162,7 +136,7 @@ func TestInitialize(t *testing.T) {
 			stateFile:     &state.State{Version: "invalid"},
 			configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
 			serviceAccKey: gcpServiceAccKey,
-			initServerAPI: &stubInitServer{},
+			initResponse:  testInitResp,
 			retriable:     true,
 			wantErr:       true,
 		},
@@ -171,7 +145,7 @@ func TestInitialize(t *testing.T) {
 			stateFile:     &state.State{},
 			configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
 			serviceAccKey: gcpServiceAccKey,
-			initServerAPI: &stubInitServer{},
+			initResponse:  testInitResp,
 			retriable:     true,
 			wantErr:       true,
 		},
@@ -179,6 +153,7 @@ func TestInitialize(t *testing.T) {
 			provider:      cloudprovider.GCP,
 			configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
 			serviceAccKey: gcpServiceAccKey,
+			initResponse:  testInitResp,
 			retriable:     true,
 			wantErr:       true,
 		},
@@ -187,15 +162,15 @@ func TestInitialize(t *testing.T) {
 			configMutator:           func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
 			stateFile:               preInitStateFile(cloudprovider.GCP),
 			serviceAccKey:           gcpServiceAccKey,
-			initServerAPI:           &stubInitServer{initErr: assert.AnError},
+			initErr:                 &constellation.NonRetriableInitError{Err: assert.AnError},
 			retriable:               false,
 			masterSecretShouldExist: true,
 			wantErr:                 true,
 		},
 		"k8s version without v works": {
-			provider:      cloudprovider.Azure,
-			stateFile:     preInitStateFile(cloudprovider.Azure),
-			initServerAPI: &stubInitServer{res: []*initproto.InitResponse{{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}}},
+			provider:     cloudprovider.Azure,
+			stateFile:    preInitStateFile(cloudprovider.Azure),
+			initResponse: testInitResp,
 			configMutator: func(c *config.Config) {
 				res, err := versions.NewValidK8sVersion(strings.TrimPrefix(string(versions.Default), "v"), true)
 				require.NoError(t, err)
@@ -203,9 +178,9 @@ func TestInitialize(t *testing.T) {
 			},
 		},
 		"outdated k8s patch version doesn't work": {
-			provider:      cloudprovider.Azure,
-			stateFile:     preInitStateFile(cloudprovider.Azure),
-			initServerAPI: &stubInitServer{res: []*initproto.InitResponse{{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}}},
+			provider:     cloudprovider.Azure,
+			stateFile:    preInitStateFile(cloudprovider.Azure),
+			initResponse: testInitResp,
 			configMutator: func(c *config.Config) {
 				v, err := semver.New(versions.SupportedK8sVersions()[0])
 				require.NoError(t, err)
@@ -221,18 +196,6 @@ func TestInitialize(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
-			// Networking
-			netDialer := testdialer.NewBufconnDialer()
-			newDialer := func(atls.Validator) *dialer.Dialer {
-				return dialer.New(nil, nil, netDialer)
-			}
-			serverCreds := atlscredentials.New(nil, nil)
-			initServer := grpc.NewServer(grpc.Creds(serverCreds))
-			initproto.RegisterAPIServer(initServer, tc.initServerAPI)
-			port := strconv.Itoa(constants.BootstrapperPort)
-			listener := netDialer.GetListener(net.JoinHostPort("192.0.2.1", port))
-			go initServer.Serve(listener)
-			defer initServer.GracefulStop()
 
 			// Command
 			cmd := NewInitCmd()
@@ -271,20 +234,21 @@ func TestInitialize(t *testing.T) {
 				spinner: &nopSpinner{},
 				merger:  &stubMerger{},
 				newHelmClient: func(string, debugLog) (helmApplier, error) {
-					return &stubApplier{}, nil
+					return &stubHelmApplier{}, nil
 				},
-				newDialer: newDialer,
-				newKubeUpgrader: func(io.Writer, string, debugLog) (kubernetesUpgrader, error) {
-					return &stubKubernetesUpgrader{
+				applier: &stubConstellApplier{
+					masterSecret: uri.MasterSecret{
+						Key:  bytes.Repeat([]byte{0x01}, 32),
+						Salt: bytes.Repeat([]byte{0x02}, 32),
+					},
+					measurementSalt: bytes.Repeat([]byte{0x03}, 32),
+					initErr:         tc.initErr,
+					initResponse:    tc.initResponse,
+					stubKubernetesUpgrader: &stubKubernetesUpgrader{
 						// On init, no attestation config exists yet
 						getClusterAttestationConfigErr: k8serrors.NewNotFound(schema.GroupResource{}, ""),
-					}, nil
+					},
 				},
-				applier: constellation.NewApplier(
-					logger.NewTest(t),
-					&nopSpinner{},
-					newDialer,
-				),
 			}
 
 			err := i.apply(cmd, stubAttestationFetcher{}, "test")
@@ -314,11 +278,14 @@ func TestInitialize(t *testing.T) {
 	}
 }
 
-type stubApplier struct {
+type stubHelmApplier struct {
 	err error
 }
 
-func (s stubApplier) PrepareApply(_ cloudprovider.Provider, _ variant.Variant, _ versions.ValidK8sVersion, _ semver.Semver, _ *state.State, _ helm.Options, _ string, _ uri.MasterSecret, _ *config.OpenStackConfig) (helm.Applier, bool, error) {
+func (s stubHelmApplier) PrepareApply(
+	_ cloudprovider.Provider, _ variant.Variant, _ versions.ValidK8sVersion, _ semver.Semver,
+	_ *state.State, _ helm.Options, _ string, _ uri.MasterSecret, _ *config.OpenStackConfig,
+) (helm.Applier, bool, error) {
 	return stubRunner{}, false, s.err
 }
 
@@ -511,153 +478,6 @@ func TestGenerateMasterSecret(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestAttestation(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
-
-	initServerAPI := &stubInitServer{res: []*initproto.InitResponse{
-		{
-			Kind: &initproto.InitResponse_InitSuccess{
-				InitSuccess: &initproto.InitSuccessResponse{
-					Kubeconfig: []byte("kubeconfig"),
-					OwnerId:    []byte("ownerID"),
-					ClusterId:  []byte("clusterID"),
-				},
-			},
-		},
-	}}
-
-	existingStateFile := &state.State{Version: state.Version1, Infrastructure: state.Infrastructure{ClusterEndpoint: "192.0.2.4"}}
-
-	netDialer := testdialer.NewBufconnDialer()
-
-	issuer := &testIssuer{
-		Getter: variant.QEMUVTPM{},
-		pcrs: map[uint32][]byte{
-			0: bytes.Repeat([]byte{0xFF}, 32),
-			1: bytes.Repeat([]byte{0xFF}, 32),
-			2: bytes.Repeat([]byte{0xFF}, 32),
-			3: bytes.Repeat([]byte{0xFF}, 32),
-		},
-	}
-	serverCreds := atlscredentials.New(issuer, nil)
-	initServer := grpc.NewServer(grpc.Creds(serverCreds))
-	initproto.RegisterAPIServer(initServer, initServerAPI)
-	port := strconv.Itoa(constants.BootstrapperPort)
-	listener := netDialer.GetListener(net.JoinHostPort("192.0.2.4", port))
-	go initServer.Serve(listener)
-	defer initServer.GracefulStop()
-
-	cmd := NewInitCmd()
-	cmd.Flags().String("workspace", "", "") // register persistent flag manually
-	cmd.Flags().Bool("force", true, "")     // register persistent flag manually
-	var out bytes.Buffer
-	cmd.SetOut(&out)
-	var errOut bytes.Buffer
-	cmd.SetErr(&errOut)
-
-	fs := afero.NewMemMapFs()
-	fileHandler := file.NewHandler(fs)
-	require.NoError(existingStateFile.WriteToFile(fileHandler, constants.StateFilename))
-
-	cfg := config.Default()
-	cfg.Image = constants.BinaryVersion().String()
-	cfg.RemoveProviderAndAttestationExcept(cloudprovider.QEMU)
-	cfg.Attestation.QEMUVTPM.Measurements[0] = measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength)
-	cfg.Attestation.QEMUVTPM.Measurements[1] = measurements.WithAllBytes(0x11, measurements.Enforce, measurements.PCRMeasurementLength)
-	cfg.Attestation.QEMUVTPM.Measurements[2] = measurements.WithAllBytes(0x22, measurements.Enforce, measurements.PCRMeasurementLength)
-	cfg.Attestation.QEMUVTPM.Measurements[3] = measurements.WithAllBytes(0x33, measurements.Enforce, measurements.PCRMeasurementLength)
-	cfg.Attestation.QEMUVTPM.Measurements[4] = measurements.WithAllBytes(0x44, measurements.Enforce, measurements.PCRMeasurementLength)
-	cfg.Attestation.QEMUVTPM.Measurements[9] = measurements.WithAllBytes(0x99, measurements.Enforce, measurements.PCRMeasurementLength)
-	cfg.Attestation.QEMUVTPM.Measurements[12] = measurements.WithAllBytes(0xcc, measurements.Enforce, measurements.PCRMeasurementLength)
-	require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, cfg, file.OptNone))
-
-	newDialer := func(v atls.Validator) *dialer.Dialer {
-		validator := &testValidator{
-			Getter: variant.QEMUVTPM{},
-			pcrs:   cfg.GetAttestationConfig().GetMeasurements(),
-		}
-		return dialer.New(nil, validator, netDialer)
-	}
-
-	ctx := context.Background()
-	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
-	defer cancel()
-	cmd.SetContext(ctx)
-
-	i := &applyCmd{
-		fileHandler: fileHandler,
-		spinner:     &nopSpinner{},
-		merger:      &stubMerger{},
-		log:         logger.NewTest(t),
-		newKubeUpgrader: func(io.Writer, string, debugLog) (kubernetesUpgrader, error) {
-			return &stubKubernetesUpgrader{}, nil
-		},
-		newDialer: newDialer,
-		applier:   constellation.NewApplier(logger.NewTest(t), &nopSpinner{}, newDialer),
-	}
-	_, err := i.runInit(cmd, cfg, existingStateFile)
-	assert.Error(err)
-	// make sure the error is actually a TLS handshake error
-	assert.Contains(err.Error(), "transport: authentication handshake failed")
-	if validationErr, ok := err.(*config.ValidationError); ok {
-		t.Log(validationErr.LongMessage())
-	}
-}
-
-type testValidator struct {
-	variant.Getter
-	pcrs measurements.M
-}
-
-func (v *testValidator) Validate(_ context.Context, attDoc []byte, _ []byte) ([]byte, error) {
-	var attestation struct {
-		UserData []byte
-		PCRs     map[uint32][]byte
-	}
-	if err := json.Unmarshal(attDoc, &attestation); err != nil {
-		return nil, err
-	}
-
-	for k, pcr := range v.pcrs {
-		if !bytes.Equal(attestation.PCRs[k], pcr.Expected[:]) {
-			return nil, errors.New("invalid PCR value")
-		}
-	}
-	return attestation.UserData, nil
-}
-
-type testIssuer struct {
-	variant.Getter
-	pcrs map[uint32][]byte
-}
-
-func (i *testIssuer) Issue(_ context.Context, userData []byte, _ []byte) ([]byte, error) {
-	return json.Marshal(
-		struct {
-			UserData []byte
-			PCRs     map[uint32][]byte
-		}{
-			UserData: userData,
-			PCRs:     i.pcrs,
-		},
-	)
-}
-
-type stubInitServer struct {
-	res     []*initproto.InitResponse
-	initErr error
-
-	initproto.UnimplementedAPIServer
-}
-
-func (s *stubInitServer) Init(_ *initproto.InitRequest, stream initproto.API_InitServer) error {
-	for _, r := range s.res {
-		_ = stream.Send(r)
-	}
-	return s.initErr
 }
 
 type stubMerger struct {

@@ -120,7 +120,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("reading kubeconfig: %w", err)
 	}
-	kubeChecker, err := kubecmd.New(cmd.OutOrStdout(), kubeConfig, fileHandler, log)
+	kubeChecker, err := kubecmd.New(kubeConfig, log)
 	if err != nil {
 		return fmt.Errorf("setting up Kubernetes upgrader: %w", err)
 	}
