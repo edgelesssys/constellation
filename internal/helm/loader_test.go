@@ -23,6 +23,7 @@ import (
 	"helm.sh/helm/v3/pkg/engine"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
@@ -30,6 +31,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/state"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 )
 
 func fakeServiceAccURI(provider cloudprovider.Provider) string {
@@ -64,9 +66,8 @@ func fakeServiceAccURI(provider cloudprovider.Provider) string {
 func TestLoadReleases(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
-	config := &config.Config{Provider: config.ProviderConfig{GCP: &config.GCPConfig{}}}
 	chartLoader := newLoader(
-		config,
+		cloudprovider.GCP, variant.GCPSEVES{}, versions.Default,
 		state.New().
 			SetInfrastructure(state.Infrastructure{
 				GCP: &state.GCP{
@@ -78,9 +79,9 @@ func TestLoadReleases(t *testing.T) {
 		semver.NewFromInt(2, 10, 0, ""),
 	)
 	helmReleases, err := chartLoader.loadReleases(
-		true, WaitModeAtomic,
+		true, false, WaitModeAtomic,
 		uri.MasterSecret{Key: []byte("secret"), Salt: []byte("masterSalt")},
-		fakeServiceAccURI(cloudprovider.GCP),
+		fakeServiceAccURI(cloudprovider.GCP), nil,
 	)
 	require.NoError(err)
 	for _, release := range helmReleases {
@@ -92,7 +93,6 @@ func TestLoadReleases(t *testing.T) {
 
 func TestLoadAWSLoadBalancerValues(t *testing.T) {
 	sut := chartLoader{
-		config:      &config.Config{Name: "testCluster"},
 		clusterName: "testCluster",
 		stateFile:   state.New().SetInfrastructure(state.Infrastructure{UID: "testuid", Name: "testCluster-testuid"}),
 	}
@@ -180,14 +180,14 @@ func TestConstellationServices(t *testing.T) {
 			values := chartLoader.loadConstellationServicesValues()
 			serviceAccURI := fakeServiceAccURI(tc.config.GetProvider())
 			extraVals, err := extraConstellationServicesValues(
-				tc.config, uri.MasterSecret{
+				tc.config.GetProvider(), tc.config.GetAttestationConfig().GetVariant(), uri.MasterSecret{
 					Key:  []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
 					Salt: []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
 				}, serviceAccURI, state.Infrastructure{
 					UID:   "uid",
 					Azure: &state.Azure{},
 					GCP:   &state.GCP{},
-				})
+				}, tc.config.Provider.OpenStack)
 			require.NoError(err)
 			values = mergeMaps(values, extraVals)
 

@@ -457,6 +457,7 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/internal/helm",
     visibility = ["//:__subpackages__"],
     deps = [
+        "//internal/attestation/variant",
         "//internal/cloud/azureshared",
         "//internal/cloud/cloudprovider",
         "//internal/cloud/gcpshared",
@@ -501,6 +502,7 @@ go_test(
     embed = [":helm"],
     deps = [
         "//internal/attestation/measurements",
+        "//internal/attestation/variant",
         "//internal/cloud/azureshared",
         "//internal/cloud/cloudprovider",
         "//internal/cloud/gcpshared",
@@ -510,6 +512,7 @@ go_test(
         "//internal/logger",
         "//internal/semver",
         "//internal/state",
+        "//internal/versions",
         "@com_github_pkg_errors//:errors",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//mock",
