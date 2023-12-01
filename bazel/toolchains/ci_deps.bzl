@@ -28,7 +28,7 @@ def _shellcheck_deps():
         type = "tar.xz",
     )
     http_archive(
-        name = "com_github_koalaman_shellcheck_linux_aamd64",
+        name = "com_github_koalaman_shellcheck_linux_arm64",
         urls = [
             "https://cdn.confidential.cloud/constellation/cas/sha256/179c579ef3481317d130adebede74a34dbbc2df961a70916dd4039ebf0735fae",
             "https://github.com/koalaman/shellcheck/releases/download/v0.9.0/shellcheck-v0.9.0.linux.aarch64.tar.xz",
