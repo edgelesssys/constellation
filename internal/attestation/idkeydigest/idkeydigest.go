@@ -159,7 +159,7 @@ func (d *List) UnmarshalYAML(unmarshal func(any) error) error {
 		}
 		encodedDigests = append(encodedDigests, unmarshalledString)
 	}
-	if err := d.unmarshal(encodedDigests); err != nil {
+	if err := d.ParseStringSlice(encodedDigests); err != nil {
 		return fmt.Errorf("unmarshalling yaml: %w", err)
 	}
 	return nil
@@ -188,14 +188,14 @@ func (d *List) UnmarshalJSON(b []byte) error {
 		}
 		encodedDigests = []string{unmarshalledString}
 	}
-	if err := d.unmarshal(encodedDigests); err != nil {
+	if err := d.ParseStringSlice(encodedDigests); err != nil {
 		return fmt.Errorf("unmarshalling json: %w", err)
 	}
 	return nil
 }
 
-// unmarshal is a helper function for unmarshalling encodedIDKeyDigests into IDKeyDigests.
-func (d *List) unmarshal(encodedDigests encodedList) error {
+// ParseStringSlice is a helper function for unmarshalling encodedIDKeyDigests into IDKeyDigests.
+func (d *List) ParseStringSlice(encodedDigests encodedList) error {
 	for _, encodedDigest := range encodedDigests {
 		if len(encodedDigest) != encodedDigestLength {
 			return fmt.Errorf("invalid digest length: %d", len(encodedDigest))

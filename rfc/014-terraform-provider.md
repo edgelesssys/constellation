@@ -31,10 +31,10 @@ resource "constellation_cluster" "foo" {
     name = "baz"
     image = data.constellation_image.ref # or provide manually crafted values
     kubernetes_version = "v1.27.6"
-    constellation_microservice_version = "lockstep" # or pinned to a specific version
     debug = false
     init_endpoint = "10.10.10.10" # should use public ip of LB resource, ideally also provisioned through TF
     kubernetes_api_endpoint = "10.10.10.10" # should use public ip of LB resource, ideally also provisioned through TF
+    constellation_microservice_version = "v2.13.0" # optional value, set to provider version by default.
     extra_microservices = {
         csi_driver = true
         # + more
@@ -51,7 +51,9 @@ resource "constellation_cluster" "foo" {
         # through Terraform, such as a VPC.
         # and in-cluster Kubernetes API endpoint, e.g. for Kubelets
     }
+    attestation_variant = "azure-sev-snp" # merging with '.attestation' is not possible due to struct parsing (nested data structure and simple string)
     attestation = data.constellation_attestation.attestation # or provide manually crafted values
+    measurements = data.constellation_attestation.measurements # or provide manually crafted values
 }
 
 # constellation_cluster provides:

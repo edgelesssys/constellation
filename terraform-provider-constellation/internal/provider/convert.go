@@ -1,0 +1,173 @@
+/*
+Copyright (c) Edgeless Systems GmbH
+
+SPDX-License-Identifier: AGPL-3.0-only
+*/
+
+package provider
+
+import (
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"strconv"
+
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
+	"github.com/edgelesssys/constellation/v2/internal/config"
+)
+
+func parseAttestationConfig(tfMeasurements map[string]measurement, tfSnpAttestation sevSnpAttestation, attestationVariant variant.Variant) (config.AttestationCfg, error) {
+	c11nMeasurements := make(measurements.M)
+	for strIdx, v := range tfMeasurements {
+		idx, err := strconv.ParseUint(strIdx, 10, 32)
+		if err != nil {
+			return nil, err
+		}
+		expectedBt, err := hex.DecodeString(v.Expected)
+		if err != nil {
+			return nil, err
+		}
+		var valOption measurements.MeasurementValidationOption
+		switch v.WarnOnly {
+		case true:
+			valOption = measurements.WarnOnly
+		case false:
+			valOption = measurements.Enforce
+		}
+		c11nMeasurements[uint32(idx)] = measurements.Measurement{
+			Expected:      expectedBt,
+			ValidationOpt: valOption,
+		}
+	}
+
+	// parser := attestationParser{attestation: attestation}
+	var attestationConfig config.AttestationCfg
+	switch attestationVariant {
+	case variant.AzureSEVSNP{}:
+		firmwareCfg, err := convertFromTfSNPFirmwareSignerConfig(tfSnpAttestation.AzureSNPFirmwareSignerConfig)
+		if err != nil {
+			return nil, fmt.Errorf("converting firmware signer config: %w", err)
+		}
+		var rootKey config.Certificate
+		if err := json.Unmarshal([]byte(tfSnpAttestation.AMDRootKey), &rootKey); err != nil {
+			return nil, fmt.Errorf("unmarshalling root key: %w", err)
+		}
+
+		attestationConfig = &config.AzureSEVSNP{
+			Measurements:         c11nMeasurements,
+			BootloaderVersion:    newVersion(tfSnpAttestation.BootloaderVersion),
+			TEEVersion:           newVersion(tfSnpAttestation.TEEVersion),
+			SNPVersion:           newVersion(tfSnpAttestation.SNPVersion),
+			MicrocodeVersion:     newVersion(tfSnpAttestation.MicrocodeVersion),
+			FirmwareSignerConfig: firmwareCfg,
+			AMDRootKey:           rootKey,
+		}
+	}
+	return attestationConfig, nil
+}
+
+func convertSNPAttestationTfStateCompatible(attestationVariant variant.Variant,
+	snpVersions attestationconfigapi.SEVSNPVersionAPI,
+) (tfSnpAttestation sevSnpAttestation, err error) {
+	var cert config.Certificate
+	switch attestationVariant.(type) {
+	case variant.AWSSEVSNP:
+		cert = config.DefaultForAWSSEVSNP().AMDRootKey
+	case variant.AzureSEVSNP:
+		cert = config.DefaultForAzureSEVSNP().AMDRootKey
+	}
+	certBytes, err := cert.MarshalJSON()
+	if err != nil {
+		return tfSnpAttestation, err
+	}
+	tfSnpAttestation = sevSnpAttestation{
+		BootloaderVersion: snpVersions.Bootloader,
+		TEEVersion:        snpVersions.TEE,
+		SNPVersion:        snpVersions.SNP,
+		MicrocodeVersion:  snpVersions.Microcode,
+		AMDRootKey:        string(certBytes),
+	}
+	if attestationVariant.Equal(variant.AzureSEVSNP{}) {
+		firmwareCfg := config.DefaultForAzureSEVSNP().FirmwareSignerConfig
+		tfFirmwareCfg, err := convertToTfSNPFirmwareSignerConfig(firmwareCfg)
+		if err != nil {
+			return tfSnpAttestation, err
+		}
+		tfSnpAttestation.AzureSNPFirmwareSignerConfig = tfFirmwareCfg
+	}
+	return tfSnpAttestation, nil
+}
+
+func convertToTfSNPFirmwareSignerConfig(firmwareCfg config.SNPFirmwareSignerConfig) (azureSnpFirmwareSignerConfig, error) {
+	keyDigestAny, err := firmwareCfg.AcceptedKeyDigests.MarshalYAML()
+	if err != nil {
+		return azureSnpFirmwareSignerConfig{}, err
+	}
+	keyDigest, ok := keyDigestAny.([]string)
+	if !ok {
+		return azureSnpFirmwareSignerConfig{}, errors.New("reading Accepted Key Digests: could not convert to []string")
+	}
+	return azureSnpFirmwareSignerConfig{
+		AcceptedKeyDigests: keyDigest,
+		EnforcementPolicy:  firmwareCfg.EnforcementPolicy.String(),
+		MAAURL:             firmwareCfg.MAAURL,
+	}, nil
+}
+
+func convertFromTfSNPFirmwareSignerConfig(tfFirmwareCfg azureSnpFirmwareSignerConfig) (config.SNPFirmwareSignerConfig, error) {
+	var keyDigests idkeydigest.List
+	if err := keyDigests.ParseStringSlice(tfFirmwareCfg.AcceptedKeyDigests); err != nil {
+		return config.SNPFirmwareSignerConfig{}, err
+	}
+	return config.SNPFirmwareSignerConfig{
+		AcceptedKeyDigests: keyDigests,
+		EnforcementPolicy:  idkeydigest.EnforcePolicyFromString(tfFirmwareCfg.EnforcementPolicy),
+		MAAURL:             tfFirmwareCfg.MAAURL,
+	}, nil
+}
+
+func convertMeasurementsTfStateCompatible(m measurements.M) map[string]measurement {
+	tfMeasurements := map[string]measurement{}
+	for key, value := range m {
+		keyStr := strconv.FormatUint(uint64(key), 10)
+		tfMeasurements[keyStr] = measurement{
+			Expected: hex.EncodeToString(value.Expected),
+			WarnOnly: bool(value.ValidationOpt),
+		}
+	}
+	return tfMeasurements
+}
+
+type extraMicroservices struct {
+	CSIDriver bool `tfsdk:"csi_driver"`
+}
+
+type measurement struct {
+	Expected string `tfsdk:"expected"`
+	WarnOnly bool   `tfsdk:"warn_only"`
+}
+
+type sevSnpAttestation struct {
+	BootloaderVersion            uint8                        `tfsdk:"bootloader_version"`
+	TEEVersion                   uint8                        `tfsdk:"tee_version"`
+	SNPVersion                   uint8                        `tfsdk:"snp_version"`
+	MicrocodeVersion             uint8                        `tfsdk:"microcode_version"`
+	AMDRootKey                   string                       `tfsdk:"amd_root_key"`
+	AzureSNPFirmwareSignerConfig azureSnpFirmwareSignerConfig `tfsdk:"azure_firmware_signer_config"`
+}
+
+type azureSnpFirmwareSignerConfig struct {
+	AcceptedKeyDigests []string `tfsdk:"accepted_key_digests"`
+	EnforcementPolicy  string   `tfsdk:"enforcement_policy"`
+	MAAURL             string   `tfsdk:"maa_url"`
+}
+
+func newVersion(v uint8) config.AttestationVersion {
+	return config.AttestationVersion{
+		Value: v,
+	}
+}
