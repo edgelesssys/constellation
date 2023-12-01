@@ -34,6 +34,7 @@ func (a *applyCmd) runHelmApply(
 	}
 
 	options := helm.Options{
+		DeployCSIDriver:  conf.DeployCSIDriver(),
 		Force:            a.flags.force,
 		Conformance:      a.flags.conformance,
 		HelmWaitMode:     a.flags.helmWaitMode,
@@ -52,7 +53,8 @@ func (a *applyCmd) runHelmApply(
 	}
 
 	a.log.Debugf("Preparing Helm charts")
-	executor, includesUpgrades, err := helmApplier.PrepareApply(conf, stateFile, options, serviceAccURI, masterSecret)
+	executor, includesUpgrades, err := helmApplier.PrepareApply(conf.GetProvider(), conf.GetAttestationConfig().GetVariant(),
+		conf.KubernetesVersion, conf.MicroserviceVersion, stateFile, options, serviceAccURI, masterSecret, conf.Provider.OpenStack)
 	if errors.Is(err, helm.ErrConfirmationMissing) {
 		if !a.flags.yes {
 			cmd.PrintErrln("WARNING: Upgrading cert-manager will destroy all custom resources you have manually created that are based on the current version of cert-manager.")
@@ -66,7 +68,8 @@ func (a *applyCmd) runHelmApply(
 			}
 		}
 		options.AllowDestructive = helm.AllowDestructive
-		executor, includesUpgrades, err = helmApplier.PrepareApply(conf, stateFile, options, serviceAccURI, masterSecret)
+		executor, includesUpgrades, err = helmApplier.PrepareApply(conf.GetProvider(), conf.GetAttestationConfig().GetVariant(),
+			conf.KubernetesVersion, conf.MicroserviceVersion, stateFile, options, serviceAccURI, masterSecret, conf.Provider.OpenStack)
 	}
 	var upgradeErr *compatibility.InvalidUpgradeError
 	if err != nil {

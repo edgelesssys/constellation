@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
@@ -64,14 +65,15 @@ func extraCiliumValues(provider cloudprovider.Provider, conformanceMode bool, ou
 // extraConstellationServicesValues extends the given values map by some values depending on user input.
 // Values set inside this function are only applied during init, not during upgrade.
 func extraConstellationServicesValues(
-	cfg *config.Config, masterSecret uri.MasterSecret, serviceAccURI string, output state.Infrastructure,
+	csp cloudprovider.Provider, attestationVariant variant.Variant, masterSecret uri.MasterSecret, serviceAccURI string,
+	output state.Infrastructure, openStackCfg *config.OpenStackConfig,
 ) (map[string]any, error) {
 	extraVals := map[string]any{}
 	extraVals["join-service"] = map[string]any{
-		"attestationVariant": cfg.GetAttestationConfig().GetVariant().String(),
+		"attestationVariant": attestationVariant.String(),
 	}
 	extraVals["verification-service"] = map[string]any{
-		"attestationVariant": cfg.GetAttestationConfig().GetVariant().String(),
+		"attestationVariant": attestationVariant.String(),
 	}
 	extraVals["konnectivity"] = map[string]any{
 		"loadBalancerIP": output.ClusterEndpoint,
@@ -81,19 +83,22 @@ func extraConstellationServicesValues(
 		"masterSecret": base64.StdEncoding.EncodeToString(masterSecret.Key),
 		"salt":         base64.StdEncoding.EncodeToString(masterSecret.Salt),
 	}
-	switch cfg.GetProvider() {
+	switch csp {
 	case cloudprovider.OpenStack:
-		extraVals["openstack"] = map[string]any{
-			"deployYawolLoadBalancer": cfg.DeployYawolLoadBalancer(),
+		if openStackCfg == nil {
+			return nil, fmt.Errorf("no OpenStack config")
 		}
-		if cfg.DeployYawolLoadBalancer() {
+		extraVals["openstack"] = map[string]any{
+			"deployYawolLoadBalancer": openStackCfg.DeployYawolLoadBalancer != nil && *openStackCfg.DeployYawolLoadBalancer,
+		}
+		if openStackCfg.DeployYawolLoadBalancer != nil && *openStackCfg.DeployYawolLoadBalancer {
 			extraVals["yawol-controller"] = map[string]any{
 				"yawolOSSecretName": "yawolkey",
 				// has to be larger than ~30s to account for slow OpenStack API calls.
 				"openstackTimeout": "1m",
-				"yawolFloatingID":  cfg.Provider.OpenStack.FloatingIPPoolID,
-				"yawolFlavorID":    cfg.Provider.OpenStack.YawolFlavorID,
-				"yawolImageID":     cfg.Provider.OpenStack.YawolImageID,
+				"yawolFloatingID":  openStackCfg.FloatingIPPoolID,
+				"yawolFlavorID":    openStackCfg.YawolFlavorID,
+				"yawolImageID":     openStackCfg.YawolImageID,
 			}
 		}
 	case cloudprovider.GCP:

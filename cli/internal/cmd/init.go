@@ -23,13 +23,17 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/grpclog"
 	"github.com/edgelesssys/constellation/v2/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
+	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/state"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 )
 
 // NewInitCmd returns a new cobra.Command for the init command.
@@ -270,7 +274,9 @@ func (e *nonRetriableError) Unwrap() error {
 }
 
 type helmApplier interface {
-	PrepareApply(conf *config.Config, stateFile *state.State,
-		flags helm.Options, serviceAccURI string, masterSecret uri.MasterSecret) (
+	PrepareApply(
+		csp cloudprovider.Provider, attestationVariant variant.Variant, k8sVersion versions.ValidK8sVersion, microserviceVersion semver.Semver, stateFile *state.State,
+		flags helm.Options, serviceAccURI string, masterSecret uri.MasterSecret, openStackCfg *config.OpenStackConfig,
+	) (
 		helm.Applier, bool, error)
 }

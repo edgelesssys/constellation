@@ -313,7 +313,7 @@ type stubApplier struct {
 	err error
 }
 
-func (s stubApplier) PrepareApply(_ *config.Config, _ *state.State, _ helm.Options, _ string, _ uri.MasterSecret) (helm.Applier, bool, error) {
+func (s stubApplier) PrepareApply(_ cloudprovider.Provider, _ variant.Variant, _ versions.ValidK8sVersion, _ semver.Semver, _ *state.State, _ helm.Options, _ string, _ uri.MasterSecret, _ *config.OpenStackConfig) (helm.Applier, bool, error) {
 	return stubRunner{}, false, s.err
 }
 
