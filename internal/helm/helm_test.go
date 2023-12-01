@@ -211,7 +211,7 @@ func TestHelmApply(t *testing.T) {
 					SetInfrastructure(state.Infrastructure{UID: "testuid"}).
 					SetClusterValues(state.ClusterValues{MeasurementSalt: []byte{0x41}}),
 				options, fakeServiceAccURI(csp),
-				uri.MasterSecret{Key: []byte("secret"), Salt: []byte("masterSalt")})
+				uri.MasterSecret{Key: []byte("secret"), Salt: []byte("masterSalt")}, nil)
 			var upgradeErr *compatibility.InvalidUpgradeError
 			if tc.expectError {
 				assert.Error(t, err)

@@ -362,8 +362,8 @@ type mockApplier struct {
 }
 
 func (m *mockApplier) PrepareApply(csp cloudprovider.Provider, variant variant.Variant, k8sVersion versions.ValidK8sVersion, microserviceVersion semver.Semver, stateFile *state.State,
-	helmOpts helm.Options, str string, masterSecret uri.MasterSecret,
+	helmOpts helm.Options, str string, masterSecret uri.MasterSecret, openStackCfg *config.OpenStackConfig,
 ) (helm.Applier, bool, error) {
-	args := m.Called(csp, variant, k8sVersion, microserviceVersion, stateFile, helmOpts, str, masterSecret)
+	args := m.Called(csp, variant, k8sVersion, microserviceVersion, stateFile, helmOpts, str, masterSecret, openStackCfg)
 	return args.Get(0).(helm.Applier), args.Bool(1), args.Error(2)
 }

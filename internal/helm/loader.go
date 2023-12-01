@@ -21,6 +21,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/helm/imageversion"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
@@ -117,7 +118,7 @@ type releaseApplyOrder []release
 
 // loadReleases loads the embedded helm charts and returns them as a HelmReleases object.
 func (i *chartLoader) loadReleases(conformanceMode, deployCSIDriver bool, helmWaitMode WaitMode, masterSecret uri.MasterSecret,
-	serviceAccURI string,
+	serviceAccURI string, openStackCfg *config.OpenStackConfig,
 ) (releaseApplyOrder, error) {
 	ciliumRelease, err := i.loadRelease(ciliumInfo, helmWaitMode)
 	if err != nil {
@@ -142,7 +143,8 @@ func (i *chartLoader) loadReleases(conformanceMode, deployCSIDriver bool, helmWa
 		return nil, fmt.Errorf("loading constellation-services: %w", err)
 	}
 
-	svcVals, err := extraConstellationServicesValues(i.csp, i.attestationVariant, masterSecret, serviceAccURI, i.stateFile.Infrastructure)
+	svcVals, err := extraConstellationServicesValues(i.csp, i.attestationVariant, masterSecret,
+		serviceAccURI, i.stateFile.Infrastructure, openStackCfg)
 	if err != nil {
 		return nil, fmt.Errorf("extending constellation-services values: %w", err)
 	}

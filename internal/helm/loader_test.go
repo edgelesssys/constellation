@@ -81,7 +81,7 @@ func TestLoadReleases(t *testing.T) {
 	helmReleases, err := chartLoader.loadReleases(
 		true, false, WaitModeAtomic,
 		uri.MasterSecret{Key: []byte("secret"), Salt: []byte("masterSalt")},
-		fakeServiceAccURI(cloudprovider.GCP),
+		fakeServiceAccURI(cloudprovider.GCP), nil,
 	)
 	require.NoError(err)
 	for _, release := range helmReleases {
@@ -187,7 +187,7 @@ func TestConstellationServices(t *testing.T) {
 					UID:   "uid",
 					Azure: &state.Azure{},
 					GCP:   &state.GCP{},
-				})
+				}, tc.config.Provider.OpenStack)
 			require.NoError(err)
 			values = mergeMaps(values, extraVals)
 

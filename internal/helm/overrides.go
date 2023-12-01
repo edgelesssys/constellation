@@ -18,6 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/openstack"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/state"
@@ -64,7 +65,8 @@ func extraCiliumValues(provider cloudprovider.Provider, conformanceMode bool, ou
 // extraConstellationServicesValues extends the given values map by some values depending on user input.
 // Values set inside this function are only applied during init, not during upgrade.
 func extraConstellationServicesValues(
-	csp cloudprovider.Provider, attestationVariant variant.Variant, masterSecret uri.MasterSecret, serviceAccURI string, output state.Infrastructure,
+	csp cloudprovider.Provider, attestationVariant variant.Variant, masterSecret uri.MasterSecret, serviceAccURI string,
+	output state.Infrastructure, openStackCfg *config.OpenStackConfig,
 ) (map[string]any, error) {
 	extraVals := map[string]any{}
 	extraVals["join-service"] = map[string]any{
@@ -82,21 +84,23 @@ func extraConstellationServicesValues(
 		"salt":         base64.StdEncoding.EncodeToString(masterSecret.Salt),
 	}
 	switch csp {
-	// TODO(elchead): hardcode OpenStack here?
-	// case cloudprovider.OpenStack:
-	//	extraVals["openstack"] = map[string]any{
-	//		"deployYawolLoadBalancer": cfg.DeployYawolLoadBalancer(),
-	//	}
-	//	if cfg.DeployYawolLoadBalancer() {
-	//		extraVals["yawol-controller"] = map[string]any{
-	//			"yawolOSSecretName": "yawolkey",
-	//			// has to be larger than ~30s to account for slow OpenStack API calls.
-	//			"openstackTimeout": "1m",
-	//			"yawolFloatingID":  cfg.Provider.OpenStack.FloatingIPPoolID,
-	//			"yawolFlavorID":    cfg.Provider.OpenStack.YawolFlavorID,
-	//			"yawolImageID":     cfg.Provider.OpenStack.YawolImageID,
-	//		}
-	//	}
+	case cloudprovider.OpenStack:
+		if openStackCfg == nil {
+			return nil, fmt.Errorf("no OpenStack config")
+		}
+		extraVals["openstack"] = map[string]any{
+			"deployYawolLoadBalancer": openStackCfg.DeployYawolLoadBalancer != nil && *openStackCfg.DeployYawolLoadBalancer,
+		}
+		if openStackCfg.DeployYawolLoadBalancer != nil && *openStackCfg.DeployYawolLoadBalancer {
+			extraVals["yawol-controller"] = map[string]any{
+				"yawolOSSecretName": "yawolkey",
+				// has to be larger than ~30s to account for slow OpenStack API calls.
+				"openstackTimeout": "1m",
+				"yawolFloatingID":  openStackCfg.FloatingIPPoolID,
+				"yawolFlavorID":    openStackCfg.YawolFlavorID,
+				"yawolImageID":     openStackCfg.YawolImageID,
+			}
+		}
 	case cloudprovider.GCP:
 		serviceAccountKey, err := gcpshared.ServiceAccountKeyFromURI(serviceAccURI)
 		if err != nil {

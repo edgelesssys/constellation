@@ -25,6 +25,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/grpclog"
@@ -275,7 +276,7 @@ func (e *nonRetriableError) Unwrap() error {
 type helmApplier interface {
 	PrepareApply(
 		csp cloudprovider.Provider, attestationVariant variant.Variant, k8sVersion versions.ValidK8sVersion, microserviceVersion semver.Semver, stateFile *state.State,
-		flags helm.Options, serviceAccURI string, masterSecret uri.MasterSecret,
+		flags helm.Options, serviceAccURI string, masterSecret uri.MasterSecret, openStackCfg *config.OpenStackConfig,
 	) (
 		helm.Applier, bool, error)
 }
