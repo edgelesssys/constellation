@@ -21,23 +21,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"slices"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
 	internalk8s "github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
 	conretry "github.com/edgelesssys/constellation/v2/internal/retry"
+	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
@@ -73,15 +69,12 @@ func (e *applyError) Error() string {
 // KubeCmd handles interaction with the cluster's components using the CLI.
 type KubeCmd struct {
 	kubectl       kubectlInterface
-	imageFetcher  imageFetcher
-	outWriter     io.Writer
-	fileHandler   file.Handler
 	retryInterval time.Duration
 	log           debugLog
 }
 
 // New returns a new KubeCmd.
-func New(outWriter io.Writer, kubeConfig []byte, fileHandler file.Handler, log debugLog) (*KubeCmd, error) {
+func New(kubeConfig []byte, log debugLog) (*KubeCmd, error) {
 	client, err := kubectl.NewFromConfig(kubeConfig)
 	if err != nil {
 		return nil, fmt.Errorf("creating kubectl client: %w", err)
@@ -89,103 +82,93 @@ func New(outWriter io.Writer, kubeConfig []byte, fileHandler file.Handler, log d
 
 	return &KubeCmd{
 		kubectl:       client,
-		fileHandler:   fileHandler,
-		imageFetcher:  imagefetcher.New(),
-		outWriter:     outWriter,
 		retryInterval: time.Second * 5,
 		log:           log,
 	}, nil
 }
 
-// UpgradeNodeVersion upgrades the cluster's NodeVersion object and in turn triggers image & k8s version upgrades.
-// The versions set in the config are validated against the versions running in the cluster.
-// TODO(elchead): AB#3434 Split K8s and image upgrade of UpgradeNodeVersion.
-func (k *KubeCmd) UpgradeNodeVersion(ctx context.Context, conf *config.Config, force, skipImage, skipK8s bool) error {
-	provider := conf.GetProvider()
-	attestationVariant := conf.GetAttestationConfig().GetVariant()
-	region := conf.GetRegion()
-	imageReference, err := k.imageFetcher.FetchReference(ctx, provider, attestationVariant, conf.Image, region)
-	if err != nil {
-		return fmt.Errorf("fetching image reference: %w", err)
-	}
-
-	imageVersion, err := versionsapi.NewVersionFromShortPath(conf.Image, versionsapi.VersionKindImage)
-	if err != nil {
-		return fmt.Errorf("parsing version from image short path: %w", err)
-	}
-
+// UpgradeNodeImage upgrades the image version of a Constellation cluster.
+func (k *KubeCmd) UpgradeNodeImage(ctx context.Context, imageVersion semver.Semver, imageReference string, force bool) error {
 	nodeVersion, err := k.getConstellationVersion(ctx)
 	if err != nil {
 		return err
 	}
 
-	upgradeErrs := []error{}
+	k.log.Debugf("Checking if image upgrade is valid")
 	var upgradeErr *compatibility.InvalidUpgradeError
-	if !skipImage {
-		err = k.isValidImageUpgrade(nodeVersion, imageVersion.Version(), force)
-		switch {
-		case errors.As(err, &upgradeErr):
-			upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping image upgrades: %w", err))
-		case err != nil:
-			return fmt.Errorf("updating image version: %w", err)
-		}
-
-		// TODO(3u13r): remove `reconcileKubeadmConfigMap` after v2.14.0 has been released.
-		if err := k.reconcileKubeadmConfigMap(ctx); err != nil {
-			return fmt.Errorf("reconciling kubeadm config: %w", err)
-		}
-
-		k.log.Debugf("Updating local copy of nodeVersion image version from %s to %s", nodeVersion.Spec.ImageVersion, imageVersion.Version())
-		nodeVersion.Spec.ImageReference = imageReference
-		nodeVersion.Spec.ImageVersion = imageVersion.Version()
+	err = k.isValidImageUpgrade(nodeVersion, imageVersion.String(), force)
+	switch {
+	case errors.As(err, &upgradeErr):
+		return fmt.Errorf("skipping image upgrade: %w", err)
+	case err != nil:
+		return fmt.Errorf("updating image version: %w", err)
 	}
 
-	if !skipK8s {
-		// We have to allow users to specify outdated k8s patch versions.
-		// Therefore, this code has to skip k8s updates if a user configures an outdated (i.e. invalid) k8s version.
-		var components *corev1.ConfigMap
-		_, err = versions.NewValidK8sVersion(string(conf.KubernetesVersion), true)
-		if err != nil {
-			innerErr := fmt.Errorf("unsupported Kubernetes version, supported versions are %s",
-				strings.Join(versions.SupportedK8sVersions(), ", "))
-			err = compatibility.NewInvalidUpgradeError(nodeVersion.Spec.KubernetesClusterVersion,
-				string(conf.KubernetesVersion), innerErr)
+	// TODO(3u13r): remove `reconcileKubeadmConfigMap` after v2.14.0 has been released.
+	if err := k.reconcileKubeadmConfigMap(ctx); err != nil {
+		return fmt.Errorf("reconciling kubeadm config: %w", err)
+	}
+
+	k.log.Debugf("Updating local copy of nodeVersion image version from %s to %s", nodeVersion.Spec.ImageVersion, imageVersion.String())
+	nodeVersion.Spec.ImageReference = imageReference
+	nodeVersion.Spec.ImageVersion = imageVersion.String()
+
+	updatedNodeVersion, err := k.applyNodeVersion(ctx, nodeVersion)
+	if err != nil {
+		return fmt.Errorf("applying upgrade: %w", err)
+	}
+	return checkForApplyError(nodeVersion, updatedNodeVersion)
+}
+
+// UpgradeKubernetesVersion upgrades the Kubernetes version of a Constellation cluster.
+func (k *KubeCmd) UpgradeKubernetesVersion(ctx context.Context, kubernetesVersion versions.ValidK8sVersion, force bool) error {
+	nodeVersion, err := k.getConstellationVersion(ctx)
+	if err != nil {
+		return err
+	}
+
+	var upgradeErr *compatibility.InvalidUpgradeError
+	// We have to allow users to specify outdated k8s patch versions.
+	// Therefore, this code has to skip k8s updates if a user configures an outdated (i.e. invalid) k8s version.
+	var components *corev1.ConfigMap
+	_, err = versions.NewValidK8sVersion(string(kubernetesVersion), true)
+	if err != nil {
+		err = compatibility.NewInvalidUpgradeError(
+			nodeVersion.Spec.KubernetesClusterVersion,
+			string(kubernetesVersion),
+			fmt.Errorf("unsupported Kubernetes version, supported versions are %s", strings.Join(versions.SupportedK8sVersions(), ", ")),
+		)
+	} else {
+		versionConfig, ok := versions.VersionConfigs[kubernetesVersion]
+		if !ok {
+			err = compatibility.NewInvalidUpgradeError(
+				nodeVersion.Spec.KubernetesClusterVersion,
+				string(kubernetesVersion),
+				fmt.Errorf("no version config matching K8s %s", kubernetesVersion),
+			)
 		} else {
-			versionConfig, ok := versions.VersionConfigs[conf.KubernetesVersion]
-			if !ok {
-				err = compatibility.NewInvalidUpgradeError(nodeVersion.Spec.KubernetesClusterVersion,
-					string(conf.KubernetesVersion), fmt.Errorf("no version config matching K8s %s", conf.KubernetesVersion))
-			} else {
-				components, err = k.prepareUpdateK8s(&nodeVersion, versionConfig.ClusterVersion,
-					versionConfig.KubernetesComponents, force)
-			}
-		}
-
-		switch {
-		case err == nil:
-			err := k.applyComponentsCM(ctx, components)
-			if err != nil {
-				return fmt.Errorf("applying k8s components ConfigMap: %w", err)
-			}
-		case errors.As(err, &upgradeErr):
-			upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping Kubernetes upgrades: %w", err))
-		default:
-			return fmt.Errorf("updating Kubernetes version: %w", err)
+			components, err = k.prepareUpdateK8s(&nodeVersion, versionConfig.ClusterVersion,
+				versionConfig.KubernetesComponents, force)
 		}
 	}
-	if len(upgradeErrs) == 2 {
-		return errors.Join(upgradeErrs...)
+
+	switch {
+	case err == nil:
+		err := k.applyComponentsCM(ctx, components)
+		if err != nil {
+			return fmt.Errorf("applying k8s components ConfigMap: %w", err)
+		}
+	case errors.As(err, &upgradeErr):
+		return fmt.Errorf("skipping Kubernetes upgrade: %w", err)
+	default:
+		return fmt.Errorf("updating Kubernetes version: %w", err)
 	}
 
 	updatedNodeVersion, err := k.applyNodeVersion(ctx, nodeVersion)
 	if err != nil {
 		return fmt.Errorf("applying upgrade: %w", err)
 	}
-
-	if err := checkForApplyError(nodeVersion, updatedNodeVersion); err != nil {
-		return err
-	}
-	return errors.Join(upgradeErrs...)
+	return checkForApplyError(nodeVersion, updatedNodeVersion)
 }
 
 // ClusterStatus returns a map from node name to NodeStatus.
@@ -305,7 +288,7 @@ func (k *KubeCmd) ExtendClusterConfigCertSANs(ctx context.Context, alternativeNa
 		return fmt.Errorf("setting new kubeadm config: %w", err)
 	}
 
-	fmt.Fprintln(k.outWriter, "Successfully extended the cluster's apiserver SAN field")
+	k.log.Debugf("Successfully extended the cluster's apiserver SAN field")
 	return nil
 }
 
@@ -434,7 +417,7 @@ func (k *KubeCmd) reconcileKubeadmConfigMap(ctx context.Context) error {
 		return fmt.Errorf("setting new kubeadm config: %w", err)
 	}
 
-	fmt.Fprintln(k.outWriter, "Successfully reconciled the cluster's kubeadm config")
+	k.log.Debugf("Successfully reconciled the cluster's kubeadm config")
 	return nil
 }
 
@@ -564,12 +547,4 @@ type kubectlInterface interface {
 
 type debugLog interface {
 	Debugf(format string, args ...any)
-}
-
-// imageFetcher gets an image reference from the versionsapi.
-type imageFetcher interface {
-	FetchReference(ctx context.Context,
-		provider cloudprovider.Provider, attestationVariant variant.Variant,
-		image, region string,
-	) (string, error)
 }

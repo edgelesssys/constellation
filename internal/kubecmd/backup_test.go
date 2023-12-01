@@ -53,12 +53,11 @@ func TestBackupCRDs(t *testing.T) {
 			err := yaml.Unmarshal([]byte(tc.crd), &crd)
 			require.NoError(err)
 			client := KubeCmd{
-				kubectl:     &stubKubectl{crds: []apiextensionsv1.CustomResourceDefinition{crd}, getCRDsError: tc.getCRDsError},
-				fileHandler: file.NewHandler(memFs),
-				log:         stubLog{},
+				kubectl: &stubKubectl{crds: []apiextensionsv1.CustomResourceDefinition{crd}, getCRDsError: tc.getCRDsError},
+				log:     stubLog{},
 			}
 
-			_, err = client.BackupCRDs(context.Background(), tc.upgradeID)
+			_, err = client.BackupCRDs(context.Background(), file.NewHandler(memFs), tc.upgradeID)
 			if tc.wantError {
 				assert.Error(err)
 				return
@@ -143,12 +142,11 @@ func TestBackupCRs(t *testing.T) {
 			memFs := afero.NewMemMapFs()
 
 			client := KubeCmd{
-				kubectl:     &stubKubectl{crs: []unstructured.Unstructured{tc.resource}, getCRsError: tc.getCRsError},
-				fileHandler: file.NewHandler(memFs),
-				log:         stubLog{},
+				kubectl: &stubKubectl{crs: []unstructured.Unstructured{tc.resource}, getCRsError: tc.getCRsError},
+				log:     stubLog{},
 			}
 
-			err := client.BackupCRs(context.Background(), []apiextensionsv1.CustomResourceDefinition{tc.crd}, tc.upgradeID)
+			err := client.BackupCRs(context.Background(), file.NewHandler(memFs), []apiextensionsv1.CustomResourceDefinition{tc.crd}, tc.upgradeID)
 			if tc.wantError {
 				assert.Error(err)
 				return
