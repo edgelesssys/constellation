@@ -81,8 +81,8 @@ type KubeCmd struct {
 }
 
 // New returns a new KubeCmd.
-func New(outWriter io.Writer, kubeConfigPath string, fileHandler file.Handler, log debugLog) (*KubeCmd, error) {
-	client, err := kubectl.NewFromConfig(kubeConfigPath)
+func New(outWriter io.Writer, kubeConfig []byte, fileHandler file.Handler, log debugLog) (*KubeCmd, error) {
+	client, err := kubectl.NewFromConfig(kubeConfig)
 	if err != nil {
 		return nil, fmt.Errorf("creating kubectl client: %w", err)
 	}

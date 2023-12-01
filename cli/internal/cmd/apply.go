@@ -224,10 +224,18 @@ func runApply(cmd *cobra.Command, _ []string) error {
 		return dialer.New(nil, validator, &net.Dialer{})
 	}
 	newKubeUpgrader := func(w io.Writer, kubeConfigPath string, log debugLog) (kubernetesUpgrader, error) {
-		return kubecmd.New(w, kubeConfigPath, fileHandler, log)
+		kubeConfig, err := fileHandler.Read(kubeConfigPath)
+		if err != nil {
+			return nil, fmt.Errorf("reading kubeconfig: %w", err)
+		}
+		return kubecmd.New(w, kubeConfig, fileHandler, log)
 	}
 	newHelmClient := func(kubeConfigPath string, log debugLog) (helmApplier, error) {
-		return helm.NewClient(kubeConfigPath, log)
+		kubeConfig, err := fileHandler.Read(kubeConfigPath)
+		if err != nil {
+			return nil, fmt.Errorf("reading kubeconfig: %w", err)
+		}
+		return helm.NewClient(kubeConfig, log)
 	}
 
 	upgradeID := generateUpgradeID(upgradeCmdKindApply)

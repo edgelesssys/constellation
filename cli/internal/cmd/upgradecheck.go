@@ -116,9 +116,17 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 	}
 	defer cleanUp()
 
-	kubeChecker, err := kubecmd.New(cmd.OutOrStdout(), constants.AdminConfFilename, fileHandler, log)
+	kubeConfig, err := fileHandler.Read(constants.AdminConfFilename)
+	if err != nil {
+		return fmt.Errorf("reading kubeconfig: %w", err)
+	}
+	kubeChecker, err := kubecmd.New(cmd.OutOrStdout(), kubeConfig, fileHandler, log)
 	if err != nil {
 		return fmt.Errorf("setting up Kubernetes upgrader: %w", err)
+	}
+	helmClient, err := helm.NewReleaseVersionClient(kubeConfig, log)
+	if err != nil {
+		return fmt.Errorf("setting up helm client: %w", err)
 	}
 
 	versionfetcher := versionsapi.NewFetcher()
@@ -137,6 +145,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 			rekor:          rekor,
 			flags:          flags,
 			cliVersion:     constants.BinaryVersion(),
+			helmClient:     helmClient,
 			log:            log,
 			versionsapi:    versionfetcher,
 		},
@@ -327,6 +336,7 @@ type versionCollector struct {
 	flags          upgradeCheckFlags
 	versionsapi    versionFetcher
 	cliVersion     consemver.Semver
+	helmClient     *helm.ReleaseVersionClient
 	log            debugLog
 }
 
@@ -368,12 +378,7 @@ type currentVersionInfo struct {
 }
 
 func (v *versionCollector) currentVersions(ctx context.Context) (currentVersionInfo, error) {
-	helmClient, err := helm.NewReleaseVersionClient(constants.AdminConfFilename, v.log)
-	if err != nil {
-		return currentVersionInfo{}, fmt.Errorf("setting up helm client: %w", err)
-	}
-
-	serviceVersions, err := helmClient.Versions()
+	serviceVersions, err := v.helmClient.Versions()
 	if err != nil {
 		return currentVersionInfo{}, fmt.Errorf("getting service versions: %w", err)
 	}

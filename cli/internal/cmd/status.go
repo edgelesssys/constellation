@@ -47,7 +47,12 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 
 	fileHandler := file.NewHandler(afero.NewOsFs())
 
-	helmClient, err := helm.NewReleaseVersionClient(constants.AdminConfFilename, log)
+	kubeConfig, err := fileHandler.Read(constants.AdminConfFilename)
+	if err != nil {
+		return fmt.Errorf("reading kubeconfig: %w", err)
+	}
+
+	helmClient, err := helm.NewReleaseVersionClient(kubeConfig, log)
 	if err != nil {
 		return fmt.Errorf("setting up helm client: %w", err)
 	}
@@ -56,7 +61,7 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 	}
 
 	fetcher := attestationconfigapi.NewFetcher()
-	kubeClient, err := kubecmd.New(cmd.OutOrStdout(), constants.AdminConfFilename, fileHandler, log)
+	kubeClient, err := kubecmd.New(cmd.OutOrStdout(), kubeConfig, fileHandler, log)
 	if err != nil {
 		return fmt.Errorf("setting up kubernetes client: %w", err)
 	}

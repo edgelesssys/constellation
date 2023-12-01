@@ -48,14 +48,10 @@ func NewUninitialized() *Kubectl {
 }
 
 // NewFromConfig returns a Kubectl client using the given kubeconfig.
-func NewFromConfig(kubeconfigPath string) (*Kubectl, error) {
-	clientConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
-	if err != nil {
-		return nil, fmt.Errorf("creating k8s client from kubeconfig: %w", err)
-	}
-	k := &Kubectl{}
-	if err := k.initialize(clientConfig); err != nil {
-		return nil, fmt.Errorf("initializing kubectl: %w", err)
+func NewFromConfig(kubeconfig []byte) (*Kubectl, error) {
+	k := NewUninitialized()
+	if err := k.Initialize(kubeconfig); err != nil {
+		return nil, err
 	}
 	return k, nil
 }

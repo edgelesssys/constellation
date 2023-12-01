@@ -14,9 +14,14 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/discovery/cached/memory"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/restmapper"
+	"k8s.io/client-go/tools/clientcmd"
 
 	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/cli"
 )
 
 const applyRetryInterval = 30 * time.Second
@@ -29,12 +34,9 @@ type applyAction interface {
 }
 
 // newActionConfig creates a new action configuration for helm actions.
-func newActionConfig(kubeconfig string, logger debugLog) (*action.Configuration, error) {
-	settings := cli.New()
-	settings.KubeConfig = kubeconfig
-
+func newActionConfig(kubeConfig []byte, logger debugLog) (*action.Configuration, error) {
 	actionConfig := &action.Configuration{}
-	if err := actionConfig.Init(settings.RESTClientGetter(), constants.HelmNamespace,
+	if err := actionConfig.Init(&clientGetter{kubeConfig: kubeConfig}, constants.HelmNamespace,
 		"secret", logger.Debugf); err != nil {
 		return nil, err
 	}
@@ -179,4 +181,44 @@ func saveChart(release release, chartsDir string, fileHandler file.Handler) erro
 	}
 
 	return nil
+}
+
+// clientGetter implements the genericclioptions.RESTClientGetter interface.
+// We implement our own to allow creating clients from an in-memory kubeconfig.
+type clientGetter struct {
+	kubeConfig []byte
+}
+
+// ToRESTConfig implements the genericclioptions.RESTClientGetter interface.
+func (c *clientGetter) ToRESTConfig() (*rest.Config, error) {
+	return clientcmd.RESTConfigFromKubeConfig(c.kubeConfig)
+}
+
+// ToDiscoveryClient implements the genericclioptions.RESTClientGetter interface.
+func (c *clientGetter) ToDiscoveryClient() (discovery.CachedDiscoveryInterface, error) {
+	config, err := c.ToRESTConfig()
+	if err != nil {
+		return nil, err
+	}
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	return memory.NewMemCacheClient(discoveryClient), nil
+}
+
+// ToRESTMapper implements the genericclioptions.RESTClientGetter interface.
+func (c *clientGetter) ToRESTMapper() (meta.RESTMapper, error) {
+	discoveryClient, err := c.ToDiscoveryClient()
+	if err != nil {
+		return nil, err
+	}
+	mapper := restmapper.NewDeferredDiscoveryRESTMapper(discoveryClient)
+	expander := restmapper.NewShortcutExpander(mapper, discoveryClient)
+	return expander, nil
+}
+
+// ToRawKubeConfigLoader implements the genericclioptions.RESTClientGetter interface.
+func (c *clientGetter) ToRawKubeConfigLoader() clientcmd.ClientConfig {
+	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(&clientcmd.ClientConfigLoadingRules{}, &clientcmd.ConfigOverrides{})
 }
