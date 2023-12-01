@@ -31,10 +31,10 @@ resource "constellation_cluster" "foo" {
     name = "baz"
     image = data.constellation_image.ref # or provide manually crafted values
     kubernetes_version = "v1.27.6"
-    constellation_microservice_version = "lockstep" # or pinned to a specific version
     debug = false
     init_endpoint = "10.10.10.10" # should use public ip of LB resource, ideally also provisioned through TF
     kubernetes_api_endpoint = "10.10.10.10" # should use public ip of LB resource, ideally also provisioned through TF
+    constellation_microservice_version = "v2.13.0" # optional value, set to provider version by default.
     extra_microservices = {
         csi_driver = true
         # + more

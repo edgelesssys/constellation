@@ -78,7 +78,7 @@ func (p *ConstellationProvider) Configure(ctx context.Context, req provider.Conf
 // Resources lists the resources implemented by the provider.
 func (p *ConstellationProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewExampleResource,
+		NewClusterResource,
 	}
 }
 
