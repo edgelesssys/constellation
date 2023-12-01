@@ -487,3 +487,9 @@ func newPhases(phases ...skipPhase) skipPhases {
 	skipPhases.add(phases...)
 	return skipPhases
 }
+
+type stubConstellApplier struct{}
+
+func (s *stubConstellApplier) CheckLicense(context.Context, cloudprovider.Provider, string) (int, error) {
+	return 0, nil
+}

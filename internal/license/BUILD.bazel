@@ -15,10 +15,8 @@ go_library(
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/cloud/cloudprovider",
-        "//internal/config",
         # keep
         "//internal/constants",
-        "//internal/file",
     ],
 )
 
@@ -30,9 +28,6 @@ go_test(
     ],
     embed = [":license"],
     deps = [
-        "//internal/constants",
-        "//internal/file",
-        "@com_github_spf13_afero//:afero",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],

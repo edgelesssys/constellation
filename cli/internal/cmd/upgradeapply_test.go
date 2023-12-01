@@ -254,8 +254,9 @@ func TestUpgradeApply(t *testing.T) {
 				newInfraApplier: func(ctx context.Context) (cloudApplier, func(), error) {
 					return tc.terraformUpgrader, func() {}, nil
 				},
+				applier: &stubConstellApplier{},
 			}
-			err := upgrader.apply(cmd, stubAttestationFetcher{}, &stubLicenseClient{}, "test")
+			err := upgrader.apply(cmd, stubAttestationFetcher{}, "test")
 			if tc.wantErr {
 				assert.Error(err)
 				return

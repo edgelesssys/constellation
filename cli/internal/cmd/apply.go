@@ -27,11 +27,11 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/constellation"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/kubecmd"
-	"github.com/edgelesssys/constellation/v2/internal/license"
 	"github.com/edgelesssys/constellation/v2/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
@@ -244,6 +244,8 @@ func runApply(cmd *cobra.Command, _ []string) error {
 		)
 	}
 
+	applier := constellation.NewApplier(log)
+
 	apply := &applyCmd{
 		fileHandler:     fileHandler,
 		flags:           flags,
@@ -254,13 +256,14 @@ func runApply(cmd *cobra.Command, _ []string) error {
 		newDialer:       newDialer,
 		newKubeUpgrader: newKubeUpgrader,
 		newInfraApplier: newInfraApplier,
+		applier:         applier,
 	}
 
 	ctx, cancel := context.WithTimeout(cmd.Context(), time.Hour)
 	defer cancel()
 	cmd.SetContext(ctx)
 
-	return apply.apply(cmd, attestationconfigapi.NewFetcher(), license.NewClient(), upgradeDir)
+	return apply.apply(cmd, attestationconfigapi.NewFetcher(), upgradeDir)
 }
 
 type applyCmd struct {
@@ -272,10 +275,16 @@ type applyCmd struct {
 
 	merger configMerger
 
+	applier applier
+
 	newHelmClient   func(kubeConfigPath string, log debugLog) (helmApplier, error)
 	newDialer       func(validator atls.Validator) *dialer.Dialer
 	newKubeUpgrader func(out io.Writer, kubeConfigPath string, log debugLog) (kubernetesUpgrader, error)
 	newInfraApplier func(context.Context) (cloudApplier, func(), error)
+}
+
+type applier interface {
+	CheckLicense(ctx context.Context, csp cloudprovider.Provider, licenseID string) (int, error)
 }
 
 /*
@@ -339,7 +348,7 @@ The control flow is as follows:
 	                                  │                          ───┐
 	                    ┌─────────────▼────────────┐                │
 	     Can be skipped │Upgrade NodeVersion object│                │K8s/Image
-	  if we ran Init RP │  (Image and K8s update)  │                │Phase
+	 if we ran Init RPC │  (Image and K8s update)  │                │Phase
 	                    └─────────────┬────────────┘                │
 	                                  │                          ───┘
 	                        ┌─────────▼──────────┐
@@ -347,8 +356,7 @@ The control flow is as follows:
 	                        └────────────────────┘
 */
 func (a *applyCmd) apply(
-	cmd *cobra.Command, configFetcher attestationconfigapi.Fetcher,
-	quotaChecker license.QuotaChecker, upgradeDir string,
+	cmd *cobra.Command, configFetcher attestationconfigapi.Fetcher, upgradeDir string,
 ) error {
 	// Validate inputs
 	conf, stateFile, err := a.validateInputs(cmd, configFetcher)
@@ -357,12 +365,7 @@ func (a *applyCmd) apply(
 	}
 
 	// Check license
-	a.log.Debugf("Running license check")
-	checker := license.NewChecker(quotaChecker, a.fileHandler)
-	if err := checker.CheckLicense(cmd.Context(), conf.GetProvider(), conf.Provider, cmd.Printf); err != nil {
-		cmd.PrintErrf("License check failed: %s", err)
-	}
-	a.log.Debugf("Checked license")
+	a.checkLicenseFile(cmd, conf.GetProvider())
 
 	// Now start actually running the apply command
 

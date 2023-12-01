@@ -2,7 +2,14 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "constellation",
-    srcs = ["constellation.go"],
+    srcs = [
+        "apply.go",
+        "constellation.go",
+    ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/constellation",
     visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/cloud/cloudprovider",
+        "//internal/license",
+    ],
 )

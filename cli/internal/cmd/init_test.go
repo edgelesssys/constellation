@@ -35,7 +35,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
 	"github.com/edgelesssys/constellation/v2/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
-	"github.com/edgelesssys/constellation/v2/internal/license"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/state"
@@ -280,9 +279,10 @@ func TestInitialize(t *testing.T) {
 						getClusterAttestationConfigErr: k8serrors.NewNotFound(schema.GroupResource{}, ""),
 					}, nil
 				},
+				applier: &stubConstellApplier{},
 			}
 
-			err := i.apply(cmd, stubAttestationFetcher{}, &stubLicenseClient{}, "test")
+			err := i.apply(cmd, stubAttestationFetcher{}, "test")
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -780,14 +780,6 @@ func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, cs
 	}
 
 	return conf
-}
-
-type stubLicenseClient struct{}
-
-func (c *stubLicenseClient) QuotaCheck(_ context.Context, _ license.QuotaCheckRequest) (license.QuotaCheckResponse, error) {
-	return license.QuotaCheckResponse{
-		Quota: 25,
-	}, nil
 }
 
 type stubInitClient struct {

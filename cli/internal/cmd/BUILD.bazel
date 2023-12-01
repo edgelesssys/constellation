@@ -25,6 +25,9 @@ go_library(
         "iamdestroy.go",
         "iamupgradeapply.go",
         "init.go",
+        # keep
+        "license_enterprise.go",
+        "license_oss.go",
         "log.go",
         "maapatch.go",
         "mini.go",
@@ -68,6 +71,7 @@ go_library(
         "//internal/config/instancetypes",
         "//internal/config/migration",
         "//internal/constants",
+        "//internal/constellation",
         "//internal/crypto",
         "//internal/featureset",
         "//internal/file",
@@ -77,6 +81,7 @@ go_library(
         "//internal/helm",
         "//internal/kms/uri",
         "//internal/kubecmd",
+        # keep
         "//internal/license",
         "//internal/logger",
         "//internal/maa",
@@ -167,7 +172,6 @@ go_test(
         "//internal/helm",
         "//internal/kms/uri",
         "//internal/kubecmd",
-        "//internal/license",
         "//internal/logger",
         "//internal/semver",
         "//internal/state",

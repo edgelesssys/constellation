@@ -9,72 +9,54 @@ package license
 import (
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestFromFile(t *testing.T) {
+func TestFromBytes(t *testing.T) {
 	testCases := map[string]struct {
-		licenseFileBytes []byte
-		licenseFilePath  string
-		dontCreate       bool
-		wantLicense      string
-		wantError        bool
+		licenseBytes []byte
+		wantLicense  string
+		wantErr      bool
 	}{
 		"community license": {
-			licenseFileBytes: []byte("MDAwMDAwMDAtMDAwMC0wMDAwLTAwMDAtMDAwMDAwMDAwMDAw"),
-			licenseFilePath:  constants.LicenseFilename,
-			wantLicense:      "00000000-0000-0000-0000-000000000000",
+			licenseBytes: []byte("MDAwMDAwMDAtMDAwMC0wMDAwLTAwMDAtMDAwMDAwMDAwMDAw"),
+			wantLicense:  CommunityLicense,
 		},
-		"license file corrupt: too short": {
-			licenseFileBytes: []byte("MDAwMDAwMDAtMDAwMC0wMDAwLTAwMDA="),
-			licenseFilePath:  constants.LicenseFilename,
-			wantError:        true,
+		"too short": {
+			licenseBytes: []byte("MDAwMDAwMDAtMDAwMC0wMDAwLTAwMDA="),
+			wantErr:      true,
 		},
-		"license file corrupt: too short by 1 character": {
-			licenseFileBytes: []byte("MDAwMDAwMDAtMDAwMC0wMDAwLTAwMDAtMDAwMDAwMDAwMDA="),
-			licenseFilePath:  constants.LicenseFilename,
-			wantError:        true,
+		"too long": {
+			licenseBytes: []byte("MDAwMDAwMDAtMDAwMC0wMDAwLTAwMDAtMDAwMDAwMDAwMDAwMA=="),
+			wantErr:      true,
 		},
-		"license file corrupt: too long by 1 character": {
-			licenseFileBytes: []byte("MDAwMDAwMDAtMDAwMC0wMDAwLTAwMDAtMDAwMDAwMDAwMDAwMA=="),
-			licenseFilePath:  constants.LicenseFilename,
-			wantError:        true,
+		"not base64": {
+			licenseBytes: []byte("not base64"),
+			wantErr:      true,
 		},
-		"license file corrupt: not base64": {
-			licenseFileBytes: []byte("I am a license file."),
-			licenseFilePath:  constants.LicenseFilename,
-			wantError:        true,
+		"empty": {
+			licenseBytes: []byte(""),
+			wantErr:      true,
 		},
-		"license file missing": {
-			licenseFilePath: constants.LicenseFilename,
-			dontCreate:      true,
-			wantError:       true,
+		"nil": {
+			licenseBytes: nil,
+			wantErr:      true,
 		},
 	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
 			require := require.New(t)
+			assert := assert.New(t)
 
-			testFS := file.NewHandler(afero.NewMemMapFs())
-
-			if !tc.dontCreate {
-				err := testFS.Write(tc.licenseFilePath, tc.licenseFileBytes)
+			out, err := FromBytes(tc.licenseBytes)
+			if tc.wantErr {
+				require.Error(err)
+			} else {
 				require.NoError(err)
 			}
-
-			license, err := FromFile(testFS, tc.licenseFilePath)
-			if tc.wantError {
-				assert.Error(err)
-				return
-			}
-			assert.NoError(err)
-			assert.Equal(tc.wantLicense, license)
+			assert.Equal(tc.wantLicense, out)
 		})
 	}
 }
