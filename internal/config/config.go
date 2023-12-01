@@ -85,6 +85,9 @@ type Config struct {
 	//   Flag to enable/disable the internal load balancer. If enabled, the Constellation is only accessible from within the VPC.
 	InternalLoadBalancer bool `yaml:"internalLoadBalancer" validate:"omitempty"`
 	// description: |
+	//   The Kubernetes Service CIDR to be used for the cluster. This value will only be used during the first initialization of the Constellation.
+	ServiceCIDR string `yaml:"serviceCIDR" validate:"omitempty,cidrv4"`
+	// description: |
 	//   Supported cloud providers and their specific configurations.
 	Provider ProviderConfig `yaml:"provider" validate:"dive"`
 	// description: |
@@ -319,6 +322,7 @@ func Default() *Config {
 		MicroserviceVersion: constants.BinaryVersion(),
 		KubernetesVersion:   versions.Default,
 		DebugCluster:        toPtr(false),
+		ServiceCIDR:         "10.96.0.0/12",
 		Provider: ProviderConfig{
 			AWS: &AWSConfig{
 				Region:                 "",

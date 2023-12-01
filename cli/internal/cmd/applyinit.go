@@ -72,6 +72,7 @@ func (a *applyCmd) runInit(cmd *cobra.Command, conf *config.Config, stateFile *s
 		InitSecret:           stateFile.Infrastructure.InitSecret,
 		ClusterName:          stateFile.Infrastructure.Name,
 		ApiserverCertSans:    stateFile.Infrastructure.APIServerCertSANs,
+		ServiceCidr:          conf.ServiceCIDR,
 	}
 	a.log.Debugf("Sending initialization request")
 	resp, err := a.initCall(cmd.Context(), a.newDialer(validator), stateFile.Infrastructure.ClusterEndpoint, req)

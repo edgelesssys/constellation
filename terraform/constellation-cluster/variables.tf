@@ -65,6 +65,12 @@ variable "ipCidrNode" {
   description = "Node IP CIDR."
 }
 
+variable "serviceCidr" {
+  type        = string
+  default     = ""
+  description = "Kubernetes service CIDR. This is only used during first initialization of Constellation."
+}
+
 variable "apiServerCertSANs" {
   type        = list(string)
   description = "List of additional SANs (Subject Alternative Names) for the Kubernetes API server certificate."

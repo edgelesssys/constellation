@@ -30,6 +30,8 @@ message InitRequest {
   string cluster_name = 9;
   // ApiserverCertSans is a list of Subject Alternative Names to add to the apiserver certificate.
   repeated string apiserver_cert_sans = 10;
+  // ServiceCIDR is the CIDR to use for Kubernetes ClusterIPs.
+  string service_cidr = 11;
 }
 
 // InitResponse is the rpc message sent by the Constellation bootstrapper in response to the InitRequest.
