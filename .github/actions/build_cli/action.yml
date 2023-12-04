@@ -66,8 +66,8 @@ runs:
         out_loc="$(realpath "${repository_root}/${out_rel}")"
         cp "${out_loc}" "${OUTPUT_PATH}"
         chmod +w "${OUTPUT_PATH}"
-        echo "$(dirname "${OUTPUT_PATH}")" >> $GITHUB_PATH
-        export PATH="$PATH:$(dirname "${OUTPUT_PATH}")"
+        export PATH="$PATH:$(realpath $(dirname "${OUTPUT_PATH}"))"
+        echo "$(realpath $(dirname "${OUTPUT_PATH}"))" >> $GITHUB_PATH
         echo "::endgroup::"
 
     - name: Upload container images
