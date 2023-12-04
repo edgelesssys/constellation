@@ -36,13 +36,13 @@ func newUpgradeApplyCmd() *cobra.Command {
 	cmd.Flags().BoolP("yes", "y", false, "run upgrades without further confirmation\n"+
 		"WARNING: might delete your resources in case you are using cert-manager in your cluster. Please read the docs.\n"+
 		"WARNING: might unintentionally overwrite measurements in the running cluster.")
-	cmd.Flags().Duration("timeout", 5*time.Minute, "change helm upgrade timeout\n"+
+	cmd.Flags().Duration("helm-timeout", 10*time.Minute, "change helm upgrade timeout\n"+
 		"Might be useful for slow connections or big clusters.")
 	cmd.Flags().Bool("conformance", false, "enable conformance mode")
 	cmd.Flags().Bool("skip-helm-wait", false, "install helm charts without waiting for deployments to be ready")
 	cmd.Flags().StringSlice("skip-phases", nil, "comma-separated list of upgrade phases to skip\n"+
 		"one or multiple of { infrastructure | helm | image | k8s }")
-	must(cmd.Flags().MarkHidden("timeout"))
+	must(cmd.Flags().MarkHidden("helm-timeout"))
 
 	return cmd
 }

@@ -26,7 +26,7 @@ func NewCreateCmd() *cobra.Command {
 			cmd.Flags().Bool("conformance", false, "")
 			cmd.Flags().Bool("skip-helm-wait", false, "")
 			cmd.Flags().Bool("merge-kubeconfig", false, "")
-			cmd.Flags().Duration("timeout", 5*time.Minute, "")
+			cmd.Flags().Duration("helm-timeout", 10*time.Minute, "")
 			// Skip all phases but the infrastructure phase.
 			cmd.Flags().StringSlice("skip-phases", allPhases(skipInfrastructurePhase), "")
 			return runApply(cmd, args)
