@@ -50,7 +50,7 @@ func NewInitCmd() *cobra.Command {
 			// We always want to skip the infrastructure phase here, to be aligned with the
 			// functionality of the old init command.
 			cmd.Flags().StringSlice("skip-phases", []string{string(skipInfrastructurePhase)}, "")
-			cmd.Flags().Duration("timeout", time.Hour, "")
+			cmd.Flags().Duration("helm-timeout", 10*time.Minute, "")
 			return runApply(cmd, args)
 		},
 		Deprecated: "use 'constellation apply' instead.",
