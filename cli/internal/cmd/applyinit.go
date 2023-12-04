@@ -8,7 +8,6 @@ package cmd
 
 import (
 	"bytes"
-	"context"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -16,22 +15,16 @@ import (
 	"net"
 	"net/url"
 	"path/filepath"
-	"strconv"
 	"text/tabwriter"
-	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
-	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/crypto"
+	"github.com/edgelesssys/constellation/v2/internal/constellation"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	grpcRetry "github.com/edgelesssys/constellation/v2/internal/grpc/retry"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
-	"github.com/edgelesssys/constellation/v2/internal/retry"
 	"github.com/edgelesssys/constellation/v2/internal/state"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
-	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -41,51 +34,45 @@ import (
 // On success, it writes the Kubernetes admin config file to disk.
 // Therefore it is skipped if the Kubernetes admin config file already exists.
 func (a *applyCmd) runInit(cmd *cobra.Command, conf *config.Config, stateFile *state.State) (*bytes.Buffer, error) {
-	a.log.Debugf("Running init RPC")
 	a.log.Debugf("Creating aTLS Validator for %s", conf.GetAttestationConfig().GetVariant())
-	validator, err := cloudcmd.NewValidator(cmd, conf.GetAttestationConfig(), a.log)
+	validator, err := choose.Validator(conf.GetAttestationConfig(), a.wLog)
 	if err != nil {
-		return nil, fmt.Errorf("creating new validator: %w", err)
+		return nil, fmt.Errorf("creating validator: %w", err)
 	}
 
-	a.log.Debugf("Generating master secret")
+	a.log.Debugf("Running init RPC")
 	masterSecret, err := a.generateAndPersistMasterSecret(cmd.OutOrStdout())
 	if err != nil {
 		return nil, fmt.Errorf("generating master secret: %w", err)
 	}
-	a.log.Debugf("Generated master secret key and salt values")
 
-	a.log.Debugf("Generating measurement salt")
-	measurementSalt, err := crypto.GenerateRandomBytes(crypto.RNGLengthDefault)
+	measurementSalt, err := a.applier.GenerateMeasurementSalt()
 	if err != nil {
 		return nil, fmt.Errorf("generating measurement salt: %w", err)
 	}
 
-	a.spinner.Start("Connecting ", false)
-	req := &initproto.InitRequest{
-		KmsUri:               masterSecret.EncodeToURI(),
-		StorageUri:           uri.NoStoreURI,
-		MeasurementSalt:      measurementSalt,
-		KubernetesVersion:    versions.VersionConfigs[conf.KubernetesVersion].ClusterVersion,
-		KubernetesComponents: versions.VersionConfigs[conf.KubernetesVersion].KubernetesComponents.ToInitProto(),
-		ConformanceMode:      a.flags.conformance,
-		InitSecret:           stateFile.Infrastructure.InitSecret,
-		ClusterName:          stateFile.Infrastructure.Name,
-		ApiserverCertSans:    stateFile.Infrastructure.APIServerCertSANs,
-		ServiceCidr:          conf.ServiceCIDR,
+	clusterLogs := &bytes.Buffer{}
+	resp, err := a.applier.Init(
+		cmd.Context(), validator, stateFile, clusterLogs,
+		constellation.InitPayload{
+			MasterSecret:    masterSecret,
+			MeasurementSalt: measurementSalt,
+			K8sVersion:      conf.KubernetesVersion,
+			ConformanceMode: a.flags.conformance,
+			ServiceCIDR:     conf.ServiceCIDR,
+		})
+	if len(clusterLogs.Bytes()) > 0 {
+		if err := a.fileHandler.Write(constants.ErrorLog, clusterLogs.Bytes(), file.OptAppend); err != nil {
+			return nil, fmt.Errorf("writing bootstrapper logs: %w", err)
+		}
 	}
-	a.log.Debugf("Sending initialization request")
-	resp, err := a.initCall(cmd.Context(), a.newDialer(validator), stateFile.Infrastructure.ClusterEndpoint, req)
-	a.spinner.Stop()
-	a.log.Debugf("Initialization request finished")
-
 	if err != nil {
-		var nonRetriable *nonRetriableError
+		var nonRetriable *constellation.NonRetriableInitError
 		if errors.As(err, &nonRetriable) {
 			cmd.PrintErrln("Cluster initialization failed. This error is not recoverable.")
 			cmd.PrintErrln("Terminate your cluster and try again.")
-			if nonRetriable.logCollectionErr != nil {
-				cmd.PrintErrf("Failed to collect logs from bootstrapper: %s\n", nonRetriable.logCollectionErr)
+			if nonRetriable.LogCollectionErr != nil {
+				cmd.PrintErrf("Failed to collect logs from bootstrapper: %s\n", nonRetriable.LogCollectionErr)
 			} else {
 				cmd.PrintErrf("Fetched bootstrapper logs are stored in %q\n", a.flags.pathPrefixer.PrefixPrintablePath(constants.ErrorLog))
 			}
@@ -103,49 +90,14 @@ func (a *applyCmd) runInit(cmd *cobra.Command, conf *config.Config, stateFile *s
 	return bufferedOutput, nil
 }
 
-// initCall performs the gRPC call to the bootstrapper to initialize the cluster.
-func (a *applyCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, req *initproto.InitRequest) (*initproto.InitSuccessResponse, error) {
-	doer := &initDoer{
-		dialer:   dialer,
-		endpoint: net.JoinHostPort(ip, strconv.Itoa(constants.BootstrapperPort)),
-		req:      req,
-		log:      a.log,
-		spinner:  a.spinner,
-		fh:       file.NewHandler(afero.NewOsFs()),
-	}
-
-	// Create a wrapper function that allows logging any returned error from the retrier before checking if it's the expected retriable one.
-	serviceIsUnavailable := func(err error) bool {
-		isServiceUnavailable := grpcRetry.ServiceIsUnavailable(err)
-		a.log.Debugf("Encountered error (retriable: %t): %s", isServiceUnavailable, err)
-		return isServiceUnavailable
-	}
-
-	a.log.Debugf("Making initialization call, doer is %+v", doer)
-	retrier := retry.NewIntervalRetrier(doer, 30*time.Second, serviceIsUnavailable)
-	if err := retrier.Do(ctx); err != nil {
-		return nil, err
-	}
-	return doer.resp, nil
-}
-
 // generateAndPersistMasterSecret generates a 32 byte master secret and saves it to disk.
 func (a *applyCmd) generateAndPersistMasterSecret(outWriter io.Writer) (uri.MasterSecret, error) {
-	// No file given, generate a new secret, and save it to disk
-	key, err := crypto.GenerateRandomBytes(crypto.MasterSecretLengthDefault)
+	secret, err := a.applier.GenerateMasterSecret()
 	if err != nil {
-		return uri.MasterSecret{}, err
-	}
-	salt, err := crypto.GenerateRandomBytes(crypto.RNGLengthDefault)
-	if err != nil {
-		return uri.MasterSecret{}, err
-	}
-	secret := uri.MasterSecret{
-		Key:  key,
-		Salt: salt,
+		return uri.MasterSecret{}, fmt.Errorf("generating master secret: %w", err)
 	}
 	if err := a.fileHandler.WriteJSON(constants.MasterSecretFilename, secret, file.OptNone); err != nil {
-		return uri.MasterSecret{}, err
+		return uri.MasterSecret{}, fmt.Errorf("writing master secret: %w", err)
 	}
 	fmt.Fprintf(outWriter, "Your Constellation master secret was successfully written to %q\n", a.flags.pathPrefixer.PrefixPrintablePath(constants.MasterSecretFilename))
 	return secret, nil

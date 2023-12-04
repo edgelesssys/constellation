@@ -29,6 +29,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/constellation"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
@@ -126,7 +127,7 @@ func TestInitialize(t *testing.T) {
 		"non retriable error": {
 			provider:                cloudprovider.QEMU,
 			stateFile:               preInitStateFile(cloudprovider.QEMU),
-			initServerAPI:           &stubInitServer{initErr: &nonRetriableError{err: assert.AnError}},
+			initServerAPI:           &stubInitServer{initErr: &constellation.NonRetriableInitError{Err: assert.AnError}},
 			retriable:               false,
 			masterSecretShouldExist: true,
 			wantErr:                 true,
@@ -279,7 +280,11 @@ func TestInitialize(t *testing.T) {
 						getClusterAttestationConfigErr: k8serrors.NewNotFound(schema.GroupResource{}, ""),
 					}, nil
 				},
-				applier: &stubConstellApplier{},
+				applier: constellation.NewApplier(
+					logger.NewTest(t),
+					&nopSpinner{},
+					newDialer,
+				),
 			}
 
 			err := i.apply(cmd, stubAttestationFetcher{}, "test")
@@ -328,63 +333,6 @@ func (s stubRunner) Apply(_ context.Context) error {
 
 func (s stubRunner) SaveCharts(_ string, _ file.Handler) error {
 	return s.saveChartsErr
-}
-
-func TestGetLogs(t *testing.T) {
-	someErr := errors.New("failed")
-
-	testCases := map[string]struct {
-		resp         initproto.API_InitClient
-		fh           file.Handler
-		wantedOutput []byte
-		wantErr      bool
-	}{
-		"success": {
-			resp:         stubInitClient{res: bytes.NewReader([]byte("asdf"))},
-			fh:           file.NewHandler(afero.NewMemMapFs()),
-			wantedOutput: []byte("asdf"),
-		},
-		"receive error": {
-			resp:    stubInitClient{err: someErr},
-			fh:      file.NewHandler(afero.NewMemMapFs()),
-			wantErr: true,
-		},
-		"nil log": {
-			resp:    stubInitClient{res: bytes.NewReader([]byte{1}), setResNil: true},
-			fh:      file.NewHandler(afero.NewMemMapFs()),
-			wantErr: true,
-		},
-		"failed write": {
-			resp:    stubInitClient{res: bytes.NewReader([]byte("asdf"))},
-			fh:      file.NewHandler(afero.NewReadOnlyFs(afero.NewMemMapFs())),
-			wantErr: true,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-
-			doer := initDoer{
-				fh:  tc.fh,
-				log: logger.NewTest(t),
-			}
-
-			err := doer.getLogs(tc.resp)
-
-			if tc.wantErr {
-				assert.Error(err)
-			}
-
-			text, err := tc.fh.Read(constants.ErrorLog)
-
-			if tc.wantedOutput == nil {
-				assert.Error(err)
-			}
-
-			assert.Equal(tc.wantedOutput, text)
-		})
-	}
 }
 
 func TestWriteOutput(t *testing.T) {
@@ -545,6 +493,7 @@ func TestGenerateMasterSecret(t *testing.T) {
 			i := &applyCmd{
 				fileHandler: fileHandler,
 				log:         logger.NewTest(t),
+				applier:     constellation.NewApplier(logger.NewTest(t), &nopSpinner{}, nil),
 			}
 			secret, err := i.generateAndPersistMasterSecret(&out)
 
@@ -647,6 +596,7 @@ func TestAttestation(t *testing.T) {
 			return &stubKubernetesUpgrader{}, nil
 		},
 		newDialer: newDialer,
+		applier:   constellation.NewApplier(logger.NewTest(t), &nopSpinner{}, newDialer),
 	}
 	_, err := i.runInit(cmd, cfg, existingStateFile)
 	assert.Error(err)
@@ -780,40 +730,4 @@ func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, cs
 	}
 
 	return conf
-}
-
-type stubInitClient struct {
-	res       io.Reader
-	err       error
-	setResNil bool
-	grpc.ClientStream
-}
-
-func (c stubInitClient) Recv() (*initproto.InitResponse, error) {
-	if c.err != nil {
-		return &initproto.InitResponse{}, c.err
-	}
-
-	text := make([]byte, 1024)
-	n, err := c.res.Read(text)
-	text = text[:n]
-
-	res := &initproto.InitResponse{
-		Kind: &initproto.InitResponse_Log{
-			Log: &initproto.LogResponseType{
-				Log: text,
-			},
-		},
-	}
-	if c.setResNil {
-		res = &initproto.InitResponse{
-			Kind: &initproto.InitResponse_Log{
-				Log: &initproto.LogResponseType{
-					Log: nil,
-				},
-			},
-		}
-	}
-
-	return res, err
 }

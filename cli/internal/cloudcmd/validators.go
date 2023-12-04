@@ -23,7 +23,7 @@ import (
 
 // NewValidator creates a new Validator.
 func NewValidator(cmd *cobra.Command, config config.AttestationCfg, log debugLog) (atls.Validator, error) {
-	return choose.Validator(config, warnLogger{cmd: cmd, log: log})
+	return choose.Validator(config, WarnLogger{Cmd: cmd, Log: log})
 }
 
 // UpdateInitMeasurements sets the owner and cluster measurement values.
@@ -102,21 +102,21 @@ func decodeMeasurement(encoded string) ([]byte, error) {
 	return decoded, nil
 }
 
-// warnLogger implements logging of warnings for validators.
-type warnLogger struct {
-	cmd *cobra.Command
-	log debugLog
+// WarnLogger implements logging of warnings for validators.
+type WarnLogger struct {
+	Cmd *cobra.Command
+	Log debugLog
 }
 
 // Infof messages are reduced to debug messages, since we don't want
 // the extra info when using the CLI without setting the debug flag.
-func (wl warnLogger) Infof(fmtStr string, args ...any) {
-	wl.log.Debugf(fmtStr, args...)
+func (wl WarnLogger) Infof(fmtStr string, args ...any) {
+	wl.Log.Debugf(fmtStr, args...)
 }
 
 // Warnf prints a formatted warning from the validator.
-func (wl warnLogger) Warnf(fmtStr string, args ...any) {
-	wl.cmd.PrintErrf("Warning: %s\n", fmt.Sprintf(fmtStr, args...))
+func (wl WarnLogger) Warnf(fmtStr string, args ...any) {
+	wl.Cmd.PrintErrf("Warning: %s\n", fmt.Sprintf(fmtStr, args...))
 }
 
 type debugLog interface {
