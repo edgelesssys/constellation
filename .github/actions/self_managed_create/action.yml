@@ -84,7 +84,7 @@ runs:
       working-directory: ${{ github.workspace }}/e2e-infra
       if: inputs.cloudProvider == 'azure'
       run: |
-        ./constellation maa-patch $(terraform output attestationURL | jq -r)
+        constellation maa-patch $(terraform output attestationURL | jq -r)
 
     - name: Write outputs to state file
       shell: bash
