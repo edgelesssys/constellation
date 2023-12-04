@@ -53,7 +53,7 @@ func (a *applyCmd) runInit(cmd *cobra.Command, conf *config.Config, stateFile *s
 
 	clusterLogs := &bytes.Buffer{}
 	resp, err := a.applier.Init(
-		cmd.Context(), a.newDialer(validator), stateFile, clusterLogs,
+		cmd.Context(), validator, stateFile, clusterLogs,
 		constellation.InitPayload{
 			MasterSecret:    masterSecret,
 			MeasurementSalt: measurementSalt,

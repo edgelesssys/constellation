@@ -12,9 +12,11 @@ go_library(
     visibility = ["//:__subpackages__"],
     deps = [
         "//bootstrapper/initproto",
+        "//internal/atls",
         "//internal/cloud/cloudprovider",
         "//internal/constants",
         "//internal/crypto",
+        "//internal/grpc/dialer",
         "//internal/grpc/grpclog",
         "//internal/grpc/retry",
         "//internal/kms/uri",
@@ -35,6 +37,7 @@ go_test(
     embed = [":constellation"],
     deps = [
         "//bootstrapper/initproto",
+        "//internal/atls",
         "//internal/cloud/cloudprovider",
         "//internal/constants",
         "//internal/crypto",

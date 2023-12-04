@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
+	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -510,6 +511,6 @@ func (s *stubConstellApplier) GenerateMeasurementSalt() ([]byte, error) {
 	return nil, s.generateMeasurementSaltErr
 }
 
-func (s *stubConstellApplier) Init(context.Context, constellation.GrpcDialer, *state.State, io.Writer, constellation.InitPayload) (*initproto.InitSuccessResponse, error) {
+func (s *stubConstellApplier) Init(context.Context, atls.Validator, *state.State, io.Writer, constellation.InitPayload) (*initproto.InitSuccessResponse, error) {
 	return nil, s.initErr
 }

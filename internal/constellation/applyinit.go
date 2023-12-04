@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
+	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/grpclog"
 	grpcRetry "github.com/edgelesssys/constellation/v2/internal/grpc/retry"
@@ -43,7 +44,7 @@ type GrpcDialer interface {
 // Init performs the init RPC.
 func (a *Applier) Init(
 	ctx context.Context,
-	dialer GrpcDialer,
+	validator atls.Validator,
 	state *state.State,
 	clusterLogWriter io.Writer,
 	payload InitPayload,
@@ -65,7 +66,7 @@ func (a *Applier) Init(
 	}
 
 	doer := &initDoer{
-		dialer: dialer,
+		dialer: a.newDialer(validator),
 		endpoint: net.JoinHostPort(
 			state.Infrastructure.ClusterEndpoint,
 			strconv.Itoa(constants.BootstrapperPort),

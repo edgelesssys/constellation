@@ -254,7 +254,7 @@ func runApply(cmd *cobra.Command, _ []string) error {
 		)
 	}
 
-	applier := constellation.NewApplier(log, spinner)
+	applier := constellation.NewApplier(log, spinner, newDialer)
 
 	apply := &applyCmd{
 		fileHandler:     fileHandler,
@@ -301,7 +301,7 @@ type applier interface {
 	GenerateMeasurementSalt() ([]byte, error)
 	Init(
 		ctx context.Context,
-		dialer constellation.GrpcDialer,
+		validator atls.Validator,
 		state *state.State,
 		clusterLogWriter io.Writer,
 		payload constellation.InitPayload,

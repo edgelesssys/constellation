@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
+	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
@@ -169,16 +170,21 @@ func TestInit(t *testing.T) {
 			assert := require.New(t)
 
 			netDialer := testdialer.NewBufconnDialer()
-			dialer := dialer.New(nil, nil, netDialer)
 			stop := setupTestInitServer(netDialer, tc.server, tc.initServerEndpoint)
 			defer stop()
 
-			a := &Applier{log: logger.NewTest(t), spinner: &nopSpinner{}}
+			a := &Applier{
+				log:     logger.NewTest(t),
+				spinner: &nopSpinner{},
+				newDialer: func(atls.Validator) *dialer.Dialer {
+					return dialer.New(nil, nil, netDialer)
+				},
+			}
 
 			clusterLogs := &bytes.Buffer{}
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*4)
 			defer cancel()
-			_, err := a.Init(ctx, dialer, tc.state, clusterLogs, InitPayload{
+			_, err := a.Init(ctx, nil, tc.state, clusterLogs, InitPayload{
 				MasterSecret:    uri.MasterSecret{},
 				MeasurementSalt: []byte{},
 				K8sVersion:      "v1.26.5",

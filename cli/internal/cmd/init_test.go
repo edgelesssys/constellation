@@ -283,6 +283,7 @@ func TestInitialize(t *testing.T) {
 				applier: constellation.NewApplier(
 					logger.NewTest(t),
 					&nopSpinner{},
+					newDialer,
 				),
 			}
 
@@ -492,7 +493,7 @@ func TestGenerateMasterSecret(t *testing.T) {
 			i := &applyCmd{
 				fileHandler: fileHandler,
 				log:         logger.NewTest(t),
-				applier:     constellation.NewApplier(logger.NewTest(t), &nopSpinner{}),
+				applier:     constellation.NewApplier(logger.NewTest(t), &nopSpinner{}, nil),
 			}
 			secret, err := i.generateAndPersistMasterSecret(&out)
 
@@ -595,7 +596,7 @@ func TestAttestation(t *testing.T) {
 			return &stubKubernetesUpgrader{}, nil
 		},
 		newDialer: newDialer,
-		applier:   constellation.NewApplier(logger.NewTest(t), &nopSpinner{}),
+		applier:   constellation.NewApplier(logger.NewTest(t), &nopSpinner{}, newDialer),
 	}
 	_, err := i.runInit(cmd, cfg, existingStateFile)
 	assert.Error(err)

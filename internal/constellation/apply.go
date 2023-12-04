@@ -10,8 +10,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
+	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/license"
 )
@@ -23,6 +25,9 @@ type Applier struct {
 	log            debugLog
 	licenseChecker licenseChecker
 	spinner        spinnerInterf
+
+	// newDialer creates a new aTLS gRPC dialer.
+	newDialer func(validator atls.Validator) *dialer.Dialer
 }
 
 type licenseChecker interface {
@@ -34,11 +39,16 @@ type debugLog interface {
 }
 
 // NewApplier creates a new Applier.
-func NewApplier(log debugLog, spinner spinnerInterf) *Applier {
+func NewApplier(
+	log debugLog,
+	spinner spinnerInterf,
+	newDialer func(validator atls.Validator) *dialer.Dialer,
+) *Applier {
 	return &Applier{
 		log:            log,
 		spinner:        spinner,
 		licenseChecker: license.NewChecker(license.NewClient()),
+		newDialer:      newDialer,
 	}
 }
 
