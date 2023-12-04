@@ -260,7 +260,7 @@ func runApply(cmd *cobra.Command, _ []string) error {
 		fileHandler:     fileHandler,
 		flags:           flags,
 		log:             log,
-		wLog:            &cloudcmd.WarnLogger{Cmd: cmd, Log: log},
+		wLog:            &warnLogger{Cmd: cmd, Log: log},
 		spinner:         spinner,
 		merger:          &kubeconfigMerger{log: log},
 		newHelmClient:   newHelmClient,
@@ -785,4 +785,21 @@ func skipPhasesCompletion(_ *cobra.Command, _ []string, toComplete string) ([]st
 	}
 
 	return suggestions, cobra.ShellCompDirectiveNoFileComp
+}
+
+// warnLogger implements logging of warnings for validators.
+type warnLogger struct {
+	Cmd *cobra.Command
+	Log debugLog
+}
+
+// Infof messages are reduced to debug messages, since we don't want
+// the extra info when using the CLI without setting the debug flag.
+func (wl warnLogger) Infof(fmtStr string, args ...any) {
+	wl.Log.Debugf(fmtStr, args...)
+}
+
+// Warnf prints a formatted warning from the validator.
+func (wl warnLogger) Warnf(fmtStr string, args ...any) {
+	wl.Cmd.PrintErrf("Warning: %s\n", fmt.Sprintf(fmtStr, args...))
 }

@@ -15,10 +15,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/recoverproto"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -132,7 +132,7 @@ func (r *recoverCmd) recover(
 	}
 
 	r.log.Debugf("Creating aTLS Validator for %s", conf.GetAttestationConfig().GetVariant())
-	validator, err := cloudcmd.NewValidator(cmd, conf.GetAttestationConfig(), r.log)
+	validator, err := choose.Validator(conf.GetAttestationConfig(), warnLogger{Cmd: cmd, Log: r.log})
 	if err != nil {
 		return fmt.Errorf("creating new validator: %w", err)
 	}
