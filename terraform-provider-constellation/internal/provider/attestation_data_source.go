@@ -45,7 +45,6 @@ type AttestationDataSourceModel struct {
 	AttestationVariant types.String `tfsdk:"attestation_variant"`
 	ImageVersion       types.String `tfsdk:"image_version"`
 	MaaURL             types.String `tfsdk:"maa_url"`
-	ID                 types.String `tfsdk:"id"`
 	Measurements       types.Map    `tfsdk:"measurements"`
 	Attestation        types.Object `tfsdk:"attestation"`
 }
@@ -83,10 +82,6 @@ func (d *AttestationDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 			"maa_url": schema.StringAttribute{
 				MarkdownDescription: "For Azure only, the URL of the Microsoft Azure Attestation service",
 				Optional:            true,
-			},
-			"id": schema.StringAttribute{
-				Computed:            true,
-				MarkdownDescription: "The ID of the data source",
 			},
 			"measurements": schema.MapNestedAttribute{
 				Computed: true,

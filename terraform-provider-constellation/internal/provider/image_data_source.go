@@ -44,7 +44,6 @@ type imageFetcher interface {
 
 // ImageDataSourceModel defines the image data source's data model.
 type ImageDataSourceModel struct {
-	ID                 types.String `tfsdk:"id"` // Required for testing.
 	AttestationVariant types.String `tfsdk:"attestation_variant"`
 	ImageVersion       types.String `tfsdk:"image_version"`
 	CSP                types.String `tfsdk:"csp"`
@@ -63,9 +62,6 @@ func (d *ImageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 		Description:         "Data source to retrieve the Constellation OS image reference for a given CSP and Attestation Variant.",
 		MarkdownDescription: "Data source to retrieve the Constellation OS image reference for a given CSP and Attestation Variant.",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Computed: true,
-			},
 			"attestation_variant": newAttesationVariantAttribute(),
 			"image_version": schema.StringAttribute{
 				Description:         "Version of the Constellation OS image to use. (e.g. `v2.13.0`)",
