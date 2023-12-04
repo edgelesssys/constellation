@@ -26,10 +26,10 @@ import (
 // terraform struct: used to parse the terraform state
 // constellation struct: used to call the constellation API
 
-// convertFromTfAttestationCfg converts the related terraform structs to a constellation attestation config.
-func convertFromTfAttestationCfg(tfMeasurements map[string]measurement, tfSnpAttestation sevSnpAttestation, attestationVariant variant.Variant) (config.AttestationCfg, error) {
+// convertFromTfAttestationCfg converts the related terraform struct to a constellation attestation config.
+func convertFromTfAttestationCfg(tfAttestation attestation, attestationVariant variant.Variant) (config.AttestationCfg, error) {
 	c11nMeasurements := make(measurements.M)
-	for strIdx, v := range tfMeasurements {
+	for strIdx, v := range tfAttestation.Measurements {
 		idx, err := strconv.ParseUint(strIdx, 10, 32)
 		if err != nil {
 			return nil, err
@@ -55,21 +55,21 @@ func convertFromTfAttestationCfg(tfMeasurements map[string]measurement, tfSnpAtt
 	var attestationConfig config.AttestationCfg
 	switch attestationVariant {
 	case variant.AzureSEVSNP{}:
-		firmwareCfg, err := convertFromTfFirmwareCfg(tfSnpAttestation.AzureSNPFirmwareSignerConfig)
+		firmwareCfg, err := convertFromTfFirmwareCfg(tfAttestation.AzureSNPFirmwareSignerConfig)
 		if err != nil {
 			return nil, fmt.Errorf("converting firmware signer config: %w", err)
 		}
 		var rootKey config.Certificate
-		if err := json.Unmarshal([]byte(tfSnpAttestation.AMDRootKey), &rootKey); err != nil {
+		if err := json.Unmarshal([]byte(tfAttestation.AMDRootKey), &rootKey); err != nil {
 			return nil, fmt.Errorf("unmarshalling root key: %w", err)
 		}
 
 		attestationConfig = &config.AzureSEVSNP{
 			Measurements:         c11nMeasurements,
-			BootloaderVersion:    newVersion(tfSnpAttestation.BootloaderVersion),
-			TEEVersion:           newVersion(tfSnpAttestation.TEEVersion),
-			SNPVersion:           newVersion(tfSnpAttestation.SNPVersion),
-			MicrocodeVersion:     newVersion(tfSnpAttestation.MicrocodeVersion),
+			BootloaderVersion:    newVersion(tfAttestation.BootloaderVersion),
+			TEEVersion:           newVersion(tfAttestation.TEEVersion),
+			SNPVersion:           newVersion(tfAttestation.SNPVersion),
+			MicrocodeVersion:     newVersion(tfAttestation.MicrocodeVersion),
 			FirmwareSignerConfig: firmwareCfg,
 			AMDRootKey:           rootKey,
 		}
@@ -80,9 +80,9 @@ func convertFromTfAttestationCfg(tfMeasurements map[string]measurement, tfSnpAtt
 // convertToTfAttestationCfg converts the constellation attestation config to the related terraform structs.
 func convertToTfAttestation(attestationVariant variant.Variant,
 	snpVersions attestationconfigapi.SEVSNPVersionAPI,
-) (tfSnpAttestation sevSnpAttestation, err error) {
+) (tfSnpAttestation attestation, err error) {
 	// set fields that apply to all variants
-	tfSnpAttestation = sevSnpAttestation{
+	tfSnpAttestation = attestation{
 		Variant:           attestationVariant.String(),
 		BootloaderVersion: snpVersions.Bootloader,
 		TEEVersion:        snpVersions.TEE,
@@ -174,7 +174,7 @@ type measurement struct {
 	WarnOnly bool   `tfsdk:"warn_only"`
 }
 
-type sevSnpAttestation struct {
+type attestation struct {
 	BootloaderVersion            uint8                        `tfsdk:"bootloader_version"`
 	TEEVersion                   uint8                        `tfsdk:"tee_version"`
 	SNPVersion                   uint8                        `tfsdk:"snp_version"`
@@ -182,6 +182,7 @@ type sevSnpAttestation struct {
 	AMDRootKey                   string                       `tfsdk:"amd_root_key"`
 	AzureSNPFirmwareSignerConfig azureSnpFirmwareSignerConfig `tfsdk:"azure_firmware_signer_config"`
 	Variant                      string                       `tfsdk:"variant"`
+	Measurements                 map[string]measurement       `tfsdk:"measurements"`
 }
 
 type azureSnpFirmwareSignerConfig struct {

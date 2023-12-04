@@ -18,12 +18,7 @@ import (
 )
 
 func TestParseAttestationConfig(t *testing.T) {
-	testMeasurements := map[string]measurement{
-		"1": {Expected: "48656c6c6f", WarnOnly: false}, // "Hello" in hex
-		"2": {Expected: "776f726c64", WarnOnly: true},  // "world" in hex
-	}
-
-	testSnpAttestation := sevSnpAttestation{
+	testAttestation := attestation{
 		BootloaderVersion: 1,
 		TEEVersion:        2,
 		SNPVersion:        3,
@@ -34,11 +29,15 @@ func TestParseAttestationConfig(t *testing.T) {
 			EnforcementPolicy:  "equal",
 			MAAURL:             "https://example.com",
 		},
+		Measurements: map[string]measurement{
+			"1": {Expected: "48656c6c6f", WarnOnly: false}, // "Hello" in hex
+			"2": {Expected: "776f726c64", WarnOnly: true},  // "world" in hex
+		},
 	}
 	t.Run("Azure SEV-SNP success", func(t *testing.T) {
 		attestationVariant := variant.AzureSEVSNP{}
 
-		cfg, err := convertFromTfAttestationCfg(testMeasurements, testSnpAttestation, attestationVariant)
+		cfg, err := convertFromTfAttestationCfg(testAttestation, attestationVariant)
 		require.NoError(t, err)
 		require.NotNil(t, cfg)
 
@@ -66,20 +65,20 @@ func TestParseAttestationConfig(t *testing.T) {
 
 	// Test error scenarios
 	t.Run("invalid_measurement_index", func(t *testing.T) {
-		invalidMeasurements := map[string]measurement{"invalid": {Expected: "data"}}
+		testAttestation.Measurements = map[string]measurement{"invalid": {Expected: "data"}}
 		attestationVariant := variant.AzureSEVSNP{}
 
-		_, err := convertFromTfAttestationCfg(invalidMeasurements, testSnpAttestation, attestationVariant)
+		_, err := convertFromTfAttestationCfg(testAttestation, attestationVariant)
 		assert.Error(t, err)
 	})
 
 	t.Run("invalid_amd_root_key", func(t *testing.T) {
-		invalidAttestation := testSnpAttestation
+		invalidAttestation := testAttestation
 		invalidAttestation.AMDRootKey = "not valid json"
 
 		attestationVariant := variant.AzureSEVSNP{}
 
-		_, err := convertFromTfAttestationCfg(testMeasurements, invalidAttestation, attestationVariant)
+		_, err := convertFromTfAttestationCfg(invalidAttestation, attestationVariant)
 		assert.Error(t, err)
 	})
 }

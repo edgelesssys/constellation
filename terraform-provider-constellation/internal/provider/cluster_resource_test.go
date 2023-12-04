@@ -34,7 +34,6 @@ func TestAccClusterResource(t *testing.T) {
 						master_secret = "secret"
 						init_secret = "secret"
 						attestation = data.constellation_attestation.att.attestation
-						measurements = data.constellation_attestation.att.measurements
 						extra_microservices = {
 							csi_driver = true
 						}

@@ -143,12 +143,6 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 	if err != nil {
 		resp.Diagnostics.AddError("Converting SNP attestation", err.Error())
 	}
-	diags := resp.State.SetAttribute(ctx, path.Root("attestation"), tfSnpAttestation)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	verifyFetcher := measurements.NewVerifyFetcher(sigstore.NewCosignVerifier, d.rekor, d.client)
 	fetchedMeasurements, err := verifyFetcher.FetchAndVerifyMeasurements(ctx, data.ImageVersion.ValueString(),
 		csp, attestationVariant, false)
@@ -161,8 +155,8 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 			return
 		}
 	}
-	tfMeasurements := convertToTfMeasurements(fetchedMeasurements)
-	diags = resp.State.SetAttribute(ctx, path.Root("measurements"), tfMeasurements)
+	tfSnpAttestation.Measurements = convertToTfMeasurements(fetchedMeasurements)
+	diags := resp.State.SetAttribute(ctx, path.Root("attestation"), tfSnpAttestation)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

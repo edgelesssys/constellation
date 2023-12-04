@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -48,7 +49,6 @@ type ClusterResourceModel struct {
 	MasterSecret          types.String `tfsdk:"master_secret"`
 	InitSecret            types.String `tfsdk:"init_secret"`
 	Attestation           types.Object `tfsdk:"attestation"`
-	Measurements          types.Map    `tfsdk:"measurements"`
 	OwnerID               types.String `tfsdk:"owner_id"`
 	ClusterID             types.String `tfsdk:"cluster_id"`
 	Kubeconfig            types.String `tfsdk:"kubeconfig"`
@@ -129,8 +129,7 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Description:         "The init secret to use for the cluster.",
 				Required:            true,
 			}, // TODO merge / derive from master secret?
-			"attestation":  newAttestationConfigAttribute(true),
-			"measurements": newMeasurementsAttribute(true),
+			"attestation": newAttestationConfigAttribute(true),
 			"owner_id": schema.StringAttribute{
 				MarkdownDescription: "The owner ID of the cluster.",
 				Description:         "The owner ID of the cluster.",
@@ -179,30 +178,22 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	// Run init
-	measurementsMap := make(map[string]measurement, len(data.Measurements.Elements()))
-	diags := data.Measurements.ElementsAs(ctx, &measurementsMap, false)
+	var tfAttestation attestation
+	diags := data.Attestation.As(ctx, &tfAttestation, basetypes.ObjectAsOptions{})
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	var tfSnpAttestation sevSnpAttestation
-	diags = data.Attestation.As(ctx, &tfSnpAttestation, basetypes.ObjectAsOptions{})
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	attestationVariant, err := variant.FromString(tfSnpAttestation.Variant)
+	attestationVariant, err := variant.FromString(tfAttestation.Variant)
 	if err != nil {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("attestation_variant"),
 			"Invalid Attestation Variant",
-			fmt.Sprintf("Invalid attestation variant: %s", tfSnpAttestation.Variant))
+			fmt.Sprintf("Invalid attestation variant: %s", tfAttestation.Variant))
 		return
 	}
-	_, err = convertFromTfAttestationCfg(measurementsMap, tfSnpAttestation, attestationVariant)
+	attestationCfg, err := convertFromTfAttestationCfg(tfAttestation, attestationVariant)
 	if err != nil {
 		resp.Diagnostics.AddError("Parsing attestation config", err.Error())
 		return
@@ -219,11 +210,11 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 	data.ClusterID = types.StringValue("cluster_id")
 	data.Kubeconfig = types.StringValue("kubeconfig")
 	// applier := constellation.NewApplier(log)
-	//validator, err := choose.Validator(attestationCfg, &tfLogger{dg: &resp.Diagnostics})
-	//if err != nil {
-	//	resp.Diagnostics.AddError("Choosing validator", err.Error())
-	//	return
-	//}
+	_, err = choose.Validator(attestationCfg, &tfLogger{dg: &resp.Diagnostics})
+	if err != nil {
+		resp.Diagnostics.AddError("Choosing validator", err.Error())
+		return
+	}
 
 	// Write logs using the tflog package
 	// Documentation: https://terraform.io/plugin/log

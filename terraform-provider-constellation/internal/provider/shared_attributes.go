@@ -64,7 +64,7 @@ func newAttestationConfigAttribute(isInput bool) schema.Attribute {
 	return schema.SingleNestedAttribute{
 		Computed:            !isInput,
 		Required:            isInput,
-		MarkdownDescription: "Only relevant for SEV-SNP.",
+		MarkdownDescription: "Attestation comprises the measurements and SEV-SNP specific parameters.",
 		Description:         "The values provide sensible defaults. See the docs for advanced usage.", // TODO(elchead): AB#3568
 		Attributes: map[string]schema.Attribute{
 			"variant": newAttestationVariantAttribute(isInput), // duplicated for convenience in cluster resource
@@ -107,6 +107,7 @@ func newAttestationConfigAttribute(isInput bool) schema.Attribute {
 				Computed: !isInput,
 				Required: isInput,
 			},
+			"measurements": newMeasurementsAttribute(isInput),
 		},
 	}
 }
