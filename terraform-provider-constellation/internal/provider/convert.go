@@ -20,7 +20,14 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 )
 
-func parseAttestationConfig(tfMeasurements map[string]measurement, tfSnpAttestation sevSnpAttestation, attestationVariant variant.Variant) (config.AttestationCfg, error) {
+// naming schema:
+// convertFromTf<type> : convert a terraform struct to a constellation struct
+// convertToTf<type> : convert a constellation struct to a terraform struct
+// terraform struct: used to parse the terraform state
+// constellation struct: used to call the constellation API
+
+// convertFromTfAttestationCfg converts the related terraform structs to a constellation attestation config.
+func convertFromTfAttestationCfg(tfMeasurements map[string]measurement, tfSnpAttestation sevSnpAttestation, attestationVariant variant.Variant) (config.AttestationCfg, error) {
 	c11nMeasurements := make(measurements.M)
 	for strIdx, v := range tfMeasurements {
 		idx, err := strconv.ParseUint(strIdx, 10, 32)
@@ -48,7 +55,7 @@ func parseAttestationConfig(tfMeasurements map[string]measurement, tfSnpAttestat
 	var attestationConfig config.AttestationCfg
 	switch attestationVariant {
 	case variant.AzureSEVSNP{}:
-		firmwareCfg, err := convertFromTfSNPFirmwareSignerConfig(tfSnpAttestation.AzureSNPFirmwareSignerConfig)
+		firmwareCfg, err := convertFromTfFirmwareCfg(tfSnpAttestation.AzureSNPFirmwareSignerConfig)
 		if err != nil {
 			return nil, fmt.Errorf("converting firmware signer config: %w", err)
 		}
@@ -70,7 +77,8 @@ func parseAttestationConfig(tfMeasurements map[string]measurement, tfSnpAttestat
 	return attestationConfig, nil
 }
 
-func convertSNPAttestationTfStateCompatible(attestationVariant variant.Variant,
+// convertToTfAttestationCfg converts the constellation attestation config to the related terraform structs.
+func convertToTfAttestation(attestationVariant variant.Variant,
 	snpVersions attestationconfigapi.SEVSNPVersionAPI,
 ) (tfSnpAttestation sevSnpAttestation, err error) {
 	var cert config.Certificate
@@ -93,7 +101,7 @@ func convertSNPAttestationTfStateCompatible(attestationVariant variant.Variant,
 	}
 	if attestationVariant.Equal(variant.AzureSEVSNP{}) {
 		firmwareCfg := config.DefaultForAzureSEVSNP().FirmwareSignerConfig
-		tfFirmwareCfg, err := convertToTfSNPFirmwareSignerConfig(firmwareCfg)
+		tfFirmwareCfg, err := convertToTfFirmwareCfg(firmwareCfg)
 		if err != nil {
 			return tfSnpAttestation, err
 		}
@@ -102,7 +110,8 @@ func convertSNPAttestationTfStateCompatible(attestationVariant variant.Variant,
 	return tfSnpAttestation, nil
 }
 
-func convertToTfSNPFirmwareSignerConfig(firmwareCfg config.SNPFirmwareSignerConfig) (azureSnpFirmwareSignerConfig, error) {
+// convertToTfFirmwareCfg converts the constellation firmware config to the terraform struct.
+func convertToTfFirmwareCfg(firmwareCfg config.SNPFirmwareSignerConfig) (azureSnpFirmwareSignerConfig, error) {
 	keyDigestAny, err := firmwareCfg.AcceptedKeyDigests.MarshalYAML()
 	if err != nil {
 		return azureSnpFirmwareSignerConfig{}, err
@@ -118,9 +127,10 @@ func convertToTfSNPFirmwareSignerConfig(firmwareCfg config.SNPFirmwareSignerConf
 	}, nil
 }
 
-func convertFromTfSNPFirmwareSignerConfig(tfFirmwareCfg azureSnpFirmwareSignerConfig) (config.SNPFirmwareSignerConfig, error) {
+// convertFromTfFirmwareCfg converts the terraform struct to a constellation firmware config.
+func convertFromTfFirmwareCfg(tfFirmwareCfg azureSnpFirmwareSignerConfig) (config.SNPFirmwareSignerConfig, error) {
 	var keyDigests idkeydigest.List
-	if err := keyDigests.ParseStringSlice(tfFirmwareCfg.AcceptedKeyDigests); err != nil {
+	if err := keyDigests.Unmarshal(tfFirmwareCfg.AcceptedKeyDigests); err != nil {
 		return config.SNPFirmwareSignerConfig{}, err
 	}
 	return config.SNPFirmwareSignerConfig{
@@ -130,7 +140,8 @@ func convertFromTfSNPFirmwareSignerConfig(tfFirmwareCfg azureSnpFirmwareSignerCo
 	}, nil
 }
 
-func convertMeasurementsTfStateCompatible(m measurements.M) map[string]measurement {
+// convertToTfMeasurements converts the constellation measurements to the terraform struct.
+func convertToTfMeasurements(m measurements.M) map[string]measurement {
 	tfMeasurements := map[string]measurement{}
 	for key, value := range m {
 		keyStr := strconv.FormatUint(uint64(key), 10)

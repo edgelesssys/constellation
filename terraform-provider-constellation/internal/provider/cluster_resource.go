@@ -76,7 +76,7 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 			"name": schema.StringAttribute{
 				MarkdownDescription: "Name used in the cluster's named resources / cluster name.",
 				Description:         "Name used in the cluster's named resources / cluster name.",
-				Optional:            true, // use "constell" as default
+				Optional:            true, // TODO(elchead): use "constell" as default
 			},
 			"image": schema.StringAttribute{
 				MarkdownDescription: "The Constellation OS image to use in the CSP specific reference format. Use the `constellation_image` data source to find the correct image for your CSP.",
@@ -94,12 +94,12 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Optional:            true,
 			},
 			"debug": schema.BoolAttribute{
-				MarkdownDescription: "DON'T USE IN PRODUCTION: Enable debug mode and allow the use of debug images.",
+				MarkdownDescription: "~> **Warning:** Do not enable Debug mode in production environments.\nEnable debug mode and allow the use of debug images.",
 				Description:         "DON'T USE IN PRODUCTION: Enable debug mode and allow the use of debug images.",
 				Optional:            true,
 			},
-			"init_endpoint": schema.StringAttribute{ // TODO what is this?
-				MarkdownDescription: "The endpoint to use for cluster initialization.",
+			"init_endpoint": schema.StringAttribute{
+				MarkdownDescription: "The endpoint to use for cluster initialization. This is the endpoint of the node running the bootstrapper.",
 				Description:         "The endpoint to use for cluster initialization.",
 				Optional:            true,
 			},
@@ -130,7 +130,7 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Description:         "The init secret to use for the cluster.",
 				Required:            true,
 			}, // TODO merge / derive from master secret?
-			"attestation_variant": newAttesationVariantAttribute(),
+			"attestation_variant": newAttestationVariantAttribute(),
 			"attestation":         newAttestationConfigAttribute(true),
 			"measurements":        newMeasurementsAttribute(true),
 			"owner_id": schema.StringAttribute{
@@ -204,7 +204,7 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 			fmt.Sprintf("Invalid attestation variant: %s", data.AttestationVariant.ValueString()))
 		return
 	}
-	_, err = parseAttestationConfig(measurementsMap, tfSnpAttestation, attestationVariant)
+	_, err = convertFromTfAttestationCfg(measurementsMap, tfSnpAttestation, attestationVariant)
 	if err != nil {
 		resp.Diagnostics.AddError("Parsing attestation config", err.Error())
 		return

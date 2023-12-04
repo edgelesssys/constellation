@@ -74,7 +74,7 @@ func (d *AttestationDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 
 		Attributes: map[string]schema.Attribute{
 			"csp":                 newCSPAttribute(),
-			"attestation_variant": newAttesationVariantAttribute(),
+			"attestation_variant": newAttestationVariantAttribute(),
 			"image_version": schema.StringAttribute{
 				MarkdownDescription: "The image version to use",
 				Required:            true,
@@ -136,7 +136,7 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 			resp.Diagnostics.AddError("Fetching SNP Version numbers", err.Error())
 			return
 		}
-		tfSnpAttestation, err := convertSNPAttestationTfStateCompatible(attestationVariant, snpVersions)
+		tfSnpAttestation, err := convertToTfAttestation(attestationVariant, snpVersions)
 		if err != nil {
 			resp.Diagnostics.AddError("Converting SNP attestation", err.Error())
 		}
@@ -159,7 +159,7 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 			return
 		}
 	}
-	tfMeasurements := convertMeasurementsTfStateCompatible(fetchedMeasurements)
+	tfMeasurements := convertToTfMeasurements(fetchedMeasurements)
 	diags := resp.State.SetAttribute(ctx, path.Root("measurements"), tfMeasurements)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {

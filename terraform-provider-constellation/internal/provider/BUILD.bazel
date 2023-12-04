@@ -6,10 +6,10 @@ go_library(
     srcs = [
         "attestation_data_source.go",
         "cluster_resource.go",
-        "common.go",
         "convert.go",
         "image_data_source.go",
         "provider.go",
+        "shared_attributes.go",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/provider",
     visibility = ["//terraform-provider-constellation:__subpackages__"],

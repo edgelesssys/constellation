@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func newAttesationVariantAttribute() schema.Attribute {
+func newAttestationVariantAttribute() schema.Attribute {
 	return schema.StringAttribute{
 		Description: "Attestation variant the image should work with. (e.g. `azure-sev-snp`)",
 		MarkdownDescription: "Attestation variant the image should work with. Can be one of:\n" +
