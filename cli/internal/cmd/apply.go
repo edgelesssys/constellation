@@ -292,7 +292,7 @@ type applyCmd struct {
 }
 
 type applier interface {
-	SetKubeConfig(kubeConfig []byte)
+	SetKubeConfig(kubeConfig []byte) error
 	CheckLicense(ctx context.Context, csp cloudprovider.Provider, licenseID string) (int, error)
 	GenerateMasterSecret() (uri.MasterSecret, error)
 	GenerateMeasurementSalt() ([]byte, error)
@@ -429,7 +429,9 @@ func (a *applyCmd) apply(
 	if err != nil {
 		return fmt.Errorf("reading kubeconfig: %w", err)
 	}
-	a.applier.SetKubeConfig(kubeConfig)
+	if err := a.applier.SetKubeConfig(kubeConfig); err != nil {
+		return err
+	}
 
 	// Apply Attestation Config
 	if !a.flags.skipPhases.contains(skipAttestationConfigPhase) {

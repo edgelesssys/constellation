@@ -504,7 +504,7 @@ type stubConstellApplier struct {
 	*stubKubernetesUpgrader
 }
 
-func (s *stubConstellApplier) SetKubeConfig([]byte) {}
+func (s *stubConstellApplier) SetKubeConfig([]byte) error { return nil }
 
 func (s *stubConstellApplier) CheckLicense(context.Context, cloudprovider.Provider, string) (int, error) {
 	return 0, s.checkLicenseErr
