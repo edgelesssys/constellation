@@ -6,6 +6,9 @@ import %workspace%/bazel/bazelrc/debug.bazelrc
 import %workspace%/bazel/bazelrc/performance.bazelrc
 import %workspace%/bazel/bazelrc/cc.bazelrc
 
+# default to use bzlmod on all commands
+common --enable_bzlmod
+
 # inject version information into binaries
 common --stamp --workspace_status_command=tools/workspace_status.sh
 
