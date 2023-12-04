@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func newAttestationVariantAttribute() schema.Attribute {
+func newAttestationVariantAttribute(isInput bool) schema.Attribute {
 	return schema.StringAttribute{
 		Description: "Attestation variant the image should work with. (e.g. `azure-sev-snp`)",
 		MarkdownDescription: "Attestation variant the image should work with. Can be one of:\n" +
@@ -21,7 +21,8 @@ func newAttestationVariantAttribute() schema.Attribute {
 			"  * `aws-nitro-tpm`\n" +
 			"  * `azure-sev-snp`\n" +
 			"  * `gcp-sev-es`\n",
-		Required: true,
+		Required: isInput,
+		Computed: !isInput,
 		Validators: []validator.String{
 			stringvalidator.OneOf("aws-sev-snp", "aws-nitro-tpm", "azure-sev-snp", "gcp-sev-es"),
 		},
@@ -66,6 +67,7 @@ func newAttestationConfigAttribute(isInput bool) schema.Attribute {
 		MarkdownDescription: "Only relevant for SEV-SNP.",
 		Description:         "The values provide sensible defaults. See the docs for advanced usage.", // TODO(elchead): AB#3568
 		Attributes: map[string]schema.Attribute{
+			"variant": newAttestationVariantAttribute(isInput), // duplicated for convenience in cluster resource
 			"bootloader_version": schema.Int64Attribute{
 				Computed: !isInput,
 				Required: isInput,

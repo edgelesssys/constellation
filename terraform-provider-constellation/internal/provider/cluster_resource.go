@@ -47,7 +47,6 @@ type ClusterResourceModel struct {
 	ExtraMicroservices    types.Object `tfsdk:"extra_microservices"`
 	MasterSecret          types.String `tfsdk:"master_secret"`
 	InitSecret            types.String `tfsdk:"init_secret"`
-	AttestationVariant    types.String `tfsdk:"attestation_variant"`
 	Attestation           types.Object `tfsdk:"attestation"`
 	Measurements          types.Map    `tfsdk:"measurements"`
 	OwnerID               types.String `tfsdk:"owner_id"`
@@ -130,9 +129,8 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Description:         "The init secret to use for the cluster.",
 				Required:            true,
 			}, // TODO merge / derive from master secret?
-			"attestation_variant": newAttestationVariantAttribute(),
-			"attestation":         newAttestationConfigAttribute(true),
-			"measurements":        newMeasurementsAttribute(true),
+			"attestation":  newAttestationConfigAttribute(true),
+			"measurements": newMeasurementsAttribute(true),
 			"owner_id": schema.StringAttribute{
 				MarkdownDescription: "The owner ID of the cluster.",
 				Description:         "The owner ID of the cluster.",
@@ -196,12 +194,12 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	attestationVariant, err := variant.FromString(data.AttestationVariant.ValueString())
+	attestationVariant, err := variant.FromString(tfSnpAttestation.Variant)
 	if err != nil {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("attestation_variant"),
 			"Invalid Attestation Variant",
-			fmt.Sprintf("Invalid attestation variant: %s", data.AttestationVariant.ValueString()))
+			fmt.Sprintf("Invalid attestation variant: %s", tfSnpAttestation.Variant))
 		return
 	}
 	_, err = convertFromTfAttestationCfg(measurementsMap, tfSnpAttestation, attestationVariant)

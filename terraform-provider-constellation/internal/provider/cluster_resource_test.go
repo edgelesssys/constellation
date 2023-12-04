@@ -33,7 +33,6 @@ func TestAccClusterResource(t *testing.T) {
 						uid = "test"
 						master_secret = "secret"
 						init_secret = "secret"
-						attestation_variant = "azure-sev-snp"
 						attestation = data.constellation_attestation.att.attestation
 						measurements = data.constellation_attestation.att.measurements
 						extra_microservices = {

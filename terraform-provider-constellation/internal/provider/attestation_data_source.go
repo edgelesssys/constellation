@@ -74,7 +74,7 @@ func (d *AttestationDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 
 		Attributes: map[string]schema.Attribute{
 			"csp":                 newCSPAttribute(),
-			"attestation_variant": newAttestationVariantAttribute(),
+			"attestation_variant": newAttestationVariantAttribute(true),
 			"image_version": schema.StringAttribute{
 				MarkdownDescription: "The image version to use",
 				Required:            true,
@@ -130,21 +130,23 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 		)
 		return
 	}
+
+	snpVersions := attestationconfigapi.SEVSNPVersionAPI{}
 	if attestationVariant.Equal(variant.AzureSEVSNP{}) || attestationVariant.Equal(variant.AWSSEVSNP{}) {
-		snpVersions, err := d.fetcher.FetchSEVSNPVersionLatest(ctx, attestationVariant)
+		snpVersions, err = d.fetcher.FetchSEVSNPVersionLatest(ctx, attestationVariant)
 		if err != nil {
 			resp.Diagnostics.AddError("Fetching SNP Version numbers", err.Error())
 			return
 		}
-		tfSnpAttestation, err := convertToTfAttestation(attestationVariant, snpVersions)
-		if err != nil {
-			resp.Diagnostics.AddError("Converting SNP attestation", err.Error())
-		}
-		diags := resp.State.SetAttribute(ctx, path.Root("attestation"), tfSnpAttestation)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
+	}
+	tfSnpAttestation, err := convertToTfAttestation(attestationVariant, snpVersions)
+	if err != nil {
+		resp.Diagnostics.AddError("Converting SNP attestation", err.Error())
+	}
+	diags := resp.State.SetAttribute(ctx, path.Root("attestation"), tfSnpAttestation)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	verifyFetcher := measurements.NewVerifyFetcher(sigstore.NewCosignVerifier, d.rekor, d.client)
@@ -160,7 +162,7 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 		}
 	}
 	tfMeasurements := convertToTfMeasurements(fetchedMeasurements)
-	diags := resp.State.SetAttribute(ctx, path.Root("measurements"), tfMeasurements)
+	diags = resp.State.SetAttribute(ctx, path.Root("measurements"), tfMeasurements)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

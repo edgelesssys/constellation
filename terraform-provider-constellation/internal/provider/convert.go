@@ -81,25 +81,29 @@ func convertFromTfAttestationCfg(tfMeasurements map[string]measurement, tfSnpAtt
 func convertToTfAttestation(attestationVariant variant.Variant,
 	snpVersions attestationconfigapi.SEVSNPVersionAPI,
 ) (tfSnpAttestation sevSnpAttestation, err error) {
-	var cert config.Certificate
-	switch attestationVariant.(type) {
-	case variant.AWSSEVSNP:
-		cert = config.DefaultForAWSSEVSNP().AMDRootKey
-	case variant.AzureSEVSNP:
-		cert = config.DefaultForAzureSEVSNP().AMDRootKey
-	}
-	certBytes, err := cert.MarshalJSON()
-	if err != nil {
-		return tfSnpAttestation, err
-	}
+	// set fields that apply to all variants
 	tfSnpAttestation = sevSnpAttestation{
+		Variant:           attestationVariant.String(),
 		BootloaderVersion: snpVersions.Bootloader,
 		TEEVersion:        snpVersions.TEE,
 		SNPVersion:        snpVersions.SNP,
 		MicrocodeVersion:  snpVersions.Microcode,
-		AMDRootKey:        string(certBytes),
 	}
-	if attestationVariant.Equal(variant.AzureSEVSNP{}) {
+	switch attestationVariant.(type) {
+	case variant.AWSSEVSNP:
+		certStr, err := certAsString(config.DefaultForAWSSEVSNP().AMDRootKey)
+		if err != nil {
+			return tfSnpAttestation, err
+		}
+		tfSnpAttestation.AMDRootKey = certStr
+
+	case variant.AzureSEVSNP:
+		certStr, err := certAsString(config.DefaultForAWSSEVSNP().AMDRootKey)
+		if err != nil {
+			return tfSnpAttestation, err
+		}
+		tfSnpAttestation.AMDRootKey = certStr
+
 		firmwareCfg := config.DefaultForAzureSEVSNP().FirmwareSignerConfig
 		tfFirmwareCfg, err := convertToTfFirmwareCfg(firmwareCfg)
 		if err != nil {
@@ -108,6 +112,14 @@ func convertToTfAttestation(attestationVariant variant.Variant,
 		tfSnpAttestation.AzureSNPFirmwareSignerConfig = tfFirmwareCfg
 	}
 	return tfSnpAttestation, nil
+}
+
+func certAsString(cert config.Certificate) (string, error) {
+	certBytes, err := cert.MarshalJSON()
+	if err != nil {
+		return "", err
+	}
+	return string(certBytes), nil
 }
 
 // convertToTfFirmwareCfg converts the constellation firmware config to the terraform struct.
@@ -169,6 +181,7 @@ type sevSnpAttestation struct {
 	MicrocodeVersion             uint8                        `tfsdk:"microcode_version"`
 	AMDRootKey                   string                       `tfsdk:"amd_root_key"`
 	AzureSNPFirmwareSignerConfig azureSnpFirmwareSignerConfig `tfsdk:"azure_firmware_signer_config"`
+	Variant                      string                       `tfsdk:"variant"`
 }
 
 type azureSnpFirmwareSignerConfig struct {
