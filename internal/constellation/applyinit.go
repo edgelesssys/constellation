@@ -34,6 +34,7 @@ type InitPayload struct {
 	MeasurementSalt []byte
 	K8sVersion      versions.ValidK8sVersion
 	ConformanceMode bool
+	ServiceCIDR     string
 }
 
 // GrpcDialer dials a gRPC server.
@@ -63,6 +64,7 @@ func (a *Applier) Init(
 		InitSecret:           state.Infrastructure.InitSecret,
 		ClusterName:          state.Infrastructure.Name,
 		ApiserverCertSans:    state.Infrastructure.APIServerCertSANs,
+		ServiceCidr:          payload.ServiceCIDR,
 	}
 
 	doer := &initDoer{

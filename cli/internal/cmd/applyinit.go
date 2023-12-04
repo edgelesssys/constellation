@@ -59,6 +59,7 @@ func (a *applyCmd) runInit(cmd *cobra.Command, conf *config.Config, stateFile *s
 			MeasurementSalt: measurementSalt,
 			K8sVersion:      conf.KubernetesVersion,
 			ConformanceMode: a.flags.conformance,
+			ServiceCIDR:     conf.ServiceCIDR,
 		})
 	if len(clusterLogs.Bytes()) > 0 {
 		if err := a.fileHandler.Write(constants.ErrorLog, clusterLogs.Bytes(), file.OptAppend); err != nil {

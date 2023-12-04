@@ -20,6 +20,8 @@ import (
 	clientcodec "k8s.io/client-go/tools/clientcmd/api/latest"
 	"sigs.k8s.io/yaml"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/helm"
