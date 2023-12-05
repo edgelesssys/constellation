@@ -12,7 +12,7 @@ GENERATED_SRCS = [
 go_library(
     name = "imageversion",
     srcs = ["imageversion.go"] + GENERATED_SRCS,  # keep
-    importpath = "github.com/edgelesssys/constellation/v2/internal/helm/imageversion",
+    importpath = "github.com/edgelesssys/constellation/v2/internal/constellation/helm/imageversion",
     visibility = ["//:__subpackages__"],
     deps = ["//internal/containerimage"],
 )

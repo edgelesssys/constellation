@@ -454,7 +454,7 @@ go_library(
         "charts/cilium/templates/spire/server/serviceaccount.yaml",
         "charts/cilium/templates/spire/server/statefulset.yaml",
     ],
-    importpath = "github.com/edgelesssys/constellation/v2/internal/helm",
+    importpath = "github.com/edgelesssys/constellation/v2/internal/constellation/helm",
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/attestation/variant",
@@ -465,8 +465,8 @@ go_library(
         "//internal/compatibility",
         "//internal/config",
         "//internal/constants",
+        "//internal/constellation/helm/imageversion",
         "//internal/file",
-        "//internal/helm/imageversion",
         "//internal/kms/uri",
         "//internal/kubernetes/kubectl",
         "//internal/retry",

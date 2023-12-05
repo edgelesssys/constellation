@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # updates the Helm charts for the AWS Load Balancer Controller in the CLI.
-# script is mostly copied from internal/helm/update-csi-charts.sh
+# script is mostly copied from internal/constellation/helm/update-csi-charts.sh
 
 set -euo pipefail
 set -o errtrace
