@@ -796,10 +796,10 @@ type warnLogger struct {
 // Infof messages are reduced to debug messages, since we don't want
 // the extra info when using the CLI without setting the debug flag.
 func (wl warnLogger) Infof(fmtStr string, args ...any) {
-	wl.Log.Debugf(fmtStr, args...)
+	wl.log.Debugf(fmtStr, args...)
 }
 
 // Warnf prints a formatted warning from the validator.
 func (wl warnLogger) Warnf(fmtStr string, args ...any) {
-	wl.Cmd.PrintErrf("Warning: %s\n", fmt.Sprintf(fmtStr, args...))
+	wl.cmd.PrintErrf("Warning: %s\n", fmt.Sprintf(fmtStr, args...))
 }
