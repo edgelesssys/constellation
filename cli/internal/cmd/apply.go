@@ -789,8 +789,8 @@ func skipPhasesCompletion(_ *cobra.Command, _ []string, toComplete string) ([]st
 
 // warnLogger implements logging of warnings for validators.
 type warnLogger struct {
-	Cmd *cobra.Command
-	Log debugLog
+	cmd *cobra.Command
+	log debugLog
 }
 
 // Infof messages are reduced to debug messages, since we don't want
