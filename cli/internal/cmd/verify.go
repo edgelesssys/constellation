@@ -178,7 +178,7 @@ func (c *verifyCmd) verify(cmd *cobra.Command, verifyClient verifyClient, factor
 	}
 
 	c.log.Debugf("Creating aTLS Validator for %s", conf.GetAttestationConfig().GetVariant())
-	validator, err := choose.Validator(attConfig, warnLogger{Cmd: cmd, Log: c.log})
+	validator, err := choose.Validator(attConfig, warnLogger{cmd: cmd, log: c.log})
 	if err != nil {
 		return fmt.Errorf("creating aTLS validator: %w", err)
 	}

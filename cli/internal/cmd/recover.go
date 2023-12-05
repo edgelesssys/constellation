@@ -132,7 +132,7 @@ func (r *recoverCmd) recover(
 	}
 
 	r.log.Debugf("Creating aTLS Validator for %s", conf.GetAttestationConfig().GetVariant())
-	validator, err := choose.Validator(conf.GetAttestationConfig(), warnLogger{Cmd: cmd, Log: r.log})
+	validator, err := choose.Validator(conf.GetAttestationConfig(), warnLogger{cmd: cmd, log: r.log})
 	if err != nil {
 		return fmt.Errorf("creating new validator: %w", err)
 	}

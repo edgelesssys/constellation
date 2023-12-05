@@ -260,7 +260,7 @@ func runApply(cmd *cobra.Command, _ []string) error {
 		fileHandler:     fileHandler,
 		flags:           flags,
 		log:             log,
-		wLog:            &warnLogger{Cmd: cmd, Log: log},
+		wLog:            &warnLogger{cmd: cmd, log: log},
 		spinner:         spinner,
 		merger:          &kubeconfigMerger{log: log},
 		newHelmClient:   newHelmClient,
