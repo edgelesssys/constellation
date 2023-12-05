@@ -9,7 +9,10 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -20,11 +23,12 @@ import (
 
 	tpmProto "github.com/google/go-tpm-tools/proto/tpm"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/snp"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -169,12 +173,12 @@ func (c *verifyCmd) verify(cmd *cobra.Command, verifyClient verifyClient, factor
 
 	c.log.Debugf("Updating expected PCRs")
 	attConfig := conf.GetAttestationConfig()
-	if err := cloudcmd.UpdateInitMeasurements(attConfig, ownerID, clusterID); err != nil {
+	if err := updateInitMeasurements(attConfig, ownerID, clusterID); err != nil {
 		return fmt.Errorf("updating expected PCRs: %w", err)
 	}
 
 	c.log.Debugf("Creating aTLS Validator for %s", conf.GetAttestationConfig().GetVariant())
-	validator, err := cloudcmd.NewValidator(cmd, attConfig, c.log)
+	validator, err := choose.Validator(attConfig, warnLogger{cmd: cmd, log: c.log})
 	if err != nil {
 		return fmt.Errorf("creating aTLS validator: %w", err)
 	}
@@ -455,4 +459,84 @@ func addPortIfMissing(endpoint string, defaultPort int) (string, error) {
 	}
 
 	return "", err
+}
+
+// UpdateInitMeasurements sets the owner and cluster measurement values in the attestation config depending on the
+// attestation variant.
+func updateInitMeasurements(config config.AttestationCfg, ownerID, clusterID string) error {
+	m := config.GetMeasurements()
+
+	switch config.GetVariant() {
+	case variant.AWSNitroTPM{}, variant.AWSSEVSNP{}, variant.AzureTrustedLaunch{}, variant.AzureSEVSNP{}, variant.GCPSEVES{}, variant.QEMUVTPM{}:
+		if err := updateMeasurementTPM(m, uint32(measurements.PCRIndexOwnerID), ownerID); err != nil {
+			return err
+		}
+		return updateMeasurementTPM(m, uint32(measurements.PCRIndexClusterID), clusterID)
+	case variant.QEMUTDX{}:
+		// Measuring ownerID is currently not implemented for Constellation
+		// Since adding support for measuring ownerID to TDX would require additional code changes,
+		// the current implementation does not support it, but can be changed if we decide to add support in the future
+		return updateMeasurementTDX(m, uint32(measurements.TDXIndexClusterID), clusterID)
+	default:
+		return errors.New("selecting attestation variant: unknown attestation variant")
+	}
+}
+
+// updateMeasurementTDX updates the TDX measurement value in the attestation config for the given measurement index.
+func updateMeasurementTDX(m measurements.M, measurementIdx uint32, encoded string) error {
+	if encoded == "" {
+		delete(m, measurementIdx)
+		return nil
+	}
+	decoded, err := decodeMeasurement(encoded)
+	if err != nil {
+		return err
+	}
+
+	// new_measurement_value := hash(old_measurement_value || data_to_extend)
+	// Since we use the DG.MR.RTMR.EXTEND call to extend the register, data_to_extend is the hash of our input
+	hashedInput := sha512.Sum384(decoded)
+	oldExpected := m[measurementIdx].Expected
+	expectedMeasurementSum := sha512.Sum384(append(oldExpected[:], hashedInput[:]...))
+	m[measurementIdx] = measurements.Measurement{
+		Expected:      expectedMeasurementSum[:],
+		ValidationOpt: m[measurementIdx].ValidationOpt,
+	}
+	return nil
+}
+
+// updateMeasurementTPM updates the TPM measurement value in the attestation config for the given measurement index.
+func updateMeasurementTPM(m measurements.M, measurementIdx uint32, encoded string) error {
+	if encoded == "" {
+		delete(m, measurementIdx)
+		return nil
+	}
+	decoded, err := decodeMeasurement(encoded)
+	if err != nil {
+		return err
+	}
+
+	// new_pcr_value := hash(old_pcr_value || data_to_extend)
+	// Since we use the TPM2_PCR_Event call to extend the PCR, data_to_extend is the hash of our input
+	hashedInput := sha256.Sum256(decoded)
+	oldExpected := m[measurementIdx].Expected
+	expectedMeasurement := sha256.Sum256(append(oldExpected[:], hashedInput[:]...))
+	m[measurementIdx] = measurements.Measurement{
+		Expected:      expectedMeasurement[:],
+		ValidationOpt: m[measurementIdx].ValidationOpt,
+	}
+	return nil
+}
+
+// decodeMeasurement is a utility function that decodes the given string as hex or base64.
+func decodeMeasurement(encoded string) ([]byte, error) {
+	decoded, err := hex.DecodeString(encoded)
+	if err != nil {
+		hexErr := err
+		decoded, err = base64.StdEncoding.DecodeString(encoded)
+		if err != nil {
+			return nil, fmt.Errorf("input [%s] could neither be hex decoded (%w) nor base64 decoded (%w)", encoded, hexErr, err)
+		}
+	}
+	return decoded, nil
 }

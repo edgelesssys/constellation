@@ -14,16 +14,12 @@ go_library(
         "terminate.go",
         "tfplan.go",
         "tfvars.go",
-        "validators.go",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd",
     visibility = ["//cli:__subpackages__"],
     deps = [
         "//cli/internal/libvirt",
         "//cli/internal/terraform",
-        "//internal/atls",
-        "//internal/attestation/choose",
-        "//internal/attestation/measurements",
         "//internal/attestation/variant",
         "//internal/cloud/azureshared",
         "//internal/cloud/cloudprovider",
@@ -36,7 +32,6 @@ go_library(
         "//internal/maa",
         "//internal/role",
         "//internal/state",
-        "@com_github_spf13_cobra//:cobra",
     ],
 )
 
@@ -50,12 +45,10 @@ go_test(
         "terminate_test.go",
         "tfplan_test.go",
         "tfvars_test.go",
-        "validators_test.go",
     ],
     embed = [":cloudcmd"],
     deps = [
         "//cli/internal/terraform",
-        "//internal/attestation/measurements",
         "//internal/attestation/variant",
         "//internal/cloud/cloudprovider",
         "//internal/cloud/gcpshared",
