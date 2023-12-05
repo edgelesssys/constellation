@@ -9,7 +9,6 @@ package provider
 import (
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strconv"
 
@@ -129,7 +128,7 @@ func convertToTfFirmwareCfg(firmwareCfg config.SNPFirmwareSignerConfig) (azureSn
 	}
 	keyDigest, ok := keyDigestAny.([]string)
 	if !ok {
-		return azureSnpFirmwareSignerConfig{}, errors.New("reading Accepted Key Digests: could not convert to []string")
+		return azureSnpFirmwareSignerConfig{}, fmt.Errorf("reading Accepted Key Digests: could not convert %T to []string", keyDigestAny)
 	}
 	return azureSnpFirmwareSignerConfig{
 		AcceptedKeyDigests: keyDigest,

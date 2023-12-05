@@ -41,7 +41,6 @@ See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview
 ### Read-Only
 
 - `attestation` (Attributes) Attestation comprises the measurements and SEV-SNP specific parameters. (see [below for nested schema](#nestedatt--attestation))
-- `measurements` (Attributes Map) (see [below for nested schema](#nestedatt--measurements))
 
 <a id="nestedatt--attestation"></a>
 ### Nested Schema for `attestation`
@@ -73,16 +72,6 @@ Read-Only:
 
 <a id="nestedatt--attestation--measurements"></a>
 ### Nested Schema for `attestation.measurements`
-
-Read-Only:
-
-- `expected` (String)
-- `warn_only` (Boolean)
-
-
-
-<a id="nestedatt--measurements"></a>
-### Nested Schema for `measurements`
 
 Read-Only:
 

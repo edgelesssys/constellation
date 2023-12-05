@@ -14,9 +14,9 @@ import (
 )
 
 const (
-	// AttributeInput is used for input variables.
+	// AttributeInput is the attribute type used for input variables.
 	AttributeInput attributeType = true
-	// AttributeOutput is used for output variables.
+	// AttributeOutput is the attribute type used for output variables.
 	AttributeOutput attributeType = false
 )
 

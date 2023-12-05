@@ -45,7 +45,6 @@ type AttestationDataSourceModel struct {
 	AttestationVariant types.String `tfsdk:"attestation_variant"`
 	ImageVersion       types.String `tfsdk:"image_version"`
 	MaaURL             types.String `tfsdk:"maa_url"`
-	Measurements       types.Map    `tfsdk:"measurements"`
 	Attestation        types.Object `tfsdk:"attestation"`
 }
 
@@ -82,19 +81,6 @@ func (d *AttestationDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 			"maa_url": schema.StringAttribute{
 				MarkdownDescription: "For Azure only, the URL of the Microsoft Azure Attestation service",
 				Optional:            true,
-			},
-			"measurements": schema.MapNestedAttribute{
-				Computed: true,
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"expected": schema.StringAttribute{
-							Computed: true,
-						},
-						"warn_only": schema.BoolAttribute{
-							Computed: true,
-						},
-					},
-				},
 			},
 			"attestation": newAttestationConfigAttribute(AttributeOutput),
 		},
@@ -156,6 +142,7 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 		}
 	}
 	tfAttestation.Measurements = convertToTfMeasurements(fetchedMeasurements)
+
 	diags := resp.State.SetAttribute(ctx, path.Root("attestation"), tfAttestation)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
