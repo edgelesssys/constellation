@@ -34,13 +34,13 @@ func main() {
 		k8sVersions = append(k8sVersions, k8sVersion)
 	}
 
-	if err := updateMatrix(*filePath, k8sVersions); err != nil {
+	if err := updateDocFile(*filePath, k8sVersions); err != nil {
 		fmt.Fprintf(os.Stderr, "error updating versions file: %s\n", err)
 		os.Exit(1)
 	}
 }
 
-func updateMatrix(filePath string, supportedVersions []semver.Semver) error {
+func updateDocFile(filePath string, supportedVersions []semver.Semver) error {
 	fileHeader, err := readVersionsFile(filePath)
 	if err != nil {
 		return err
