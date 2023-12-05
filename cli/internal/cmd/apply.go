@@ -686,7 +686,7 @@ func (a *applyCmd) runNodeImageUpgrade(cmd *cobra.Command, conf *config.Config) 
 	var upgradeErr *compatibility.InvalidUpgradeError
 	switch {
 	case errors.Is(err, kubecmd.ErrInProgress):
-		cmd.PrintErrln("Skipping image upgraded: Another upgrade is already in progress.")
+		cmd.PrintErrln("Skipping image upgrade: Another upgrade is already in progress.")
 	case errors.As(err, &upgradeErr):
 		cmd.PrintErrln(err)
 	case err != nil:
