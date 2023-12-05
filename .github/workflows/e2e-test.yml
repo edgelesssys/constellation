@@ -116,6 +116,9 @@ on:
         description: "Use self-managed infrastructure."
         type: boolean
         default: false
+      marketplaceImageVersion:
+        description: "Marketplace image version to use."
+        type: string
 
 jobs:
   split-nodeCount:
@@ -238,6 +241,7 @@ jobs:
           selfManagedInfra: ${{ inputs.selfManagedInfra }}
           s3AccessKey: ${{ secrets.AWS_ACCESS_KEY_ID_S3PROXY }}
           s3SecretKey: ${{ secrets.AWS_SECRET_ACCESS_KEY_S3PROXY }}
+          marketplaceImageVersion: ${{ inputs.marketplaceImageVersion }}
 
       - name: Always terminate cluster
         if: always()
