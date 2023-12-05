@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+###### script header ######
+
+lib=$(realpath @@BASE_LIB@@) || exit 1
+stat "${lib}" >> /dev/null || exit 1
+
+# shellcheck source=../sh/lib.bash
+if ! source "${lib}"; then
+  echo "Error: could not find import"
+  exit 1
+fi
+
+versioninfogen=$(realpath @@VERSIONINFOGEN@@)
+stat "${versioninfogen}" >> /dev/null
+
+cd "${BUILD_WORKSPACE_DIRECTORY}"
+
+###### script body ######
+
+cd hack/versioninfogen
+${versioninfogen}

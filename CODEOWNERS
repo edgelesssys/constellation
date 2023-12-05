@@ -30,6 +30,7 @@
 /hack/remove-tf-providers @katexochen
 /hack/terraform @3u13r
 /hack/tools @katexochen
+/hack/versioninfogen @daniel-weisse
 /image @malt3
 /internal/api @derpsteb
 /internal/atls @thomasten
