@@ -33,6 +33,7 @@ resource "constellation_cluster" "foo" {
     kubernetes_version = "v1.27.6"
     debug = false
     init_endpoint = "10.10.10.10" # should use public ip of LB resource, ideally also provisioned through TF
+    api_server_cert_sans = ["10.10.10.10"] # should use output from infra module
     kubernetes_api_endpoint = "10.10.10.10" # should use public ip of LB resource, ideally also provisioned through TF
     constellation_microservice_version = "v2.13.0" # optional value, set to provider version by default.
     extra_microservices = {

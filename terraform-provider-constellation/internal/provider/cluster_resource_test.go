@@ -31,11 +31,16 @@ func TestAccClusterResource(t *testing.T) {
 
 					resource "constellation_cluster" "test" {
 						uid = "test"
-						master_secret = "secret"
-						init_secret = "secret"
+						master_secret = "48656c6c6f"
+						init_secret = "48656c6c6f"
 						attestation = data.constellation_attestation.att.attestation
 						extra_microservices = {
 							csi_driver = true
+						}
+						network_config = {
+							ip_cidr_node = "10.10.10.0/16"
+							service_cidr = "10.10.10.0/24"
+							in_cluster_endpoint = "10.10.10.10"
 						}
 					}
 					`,

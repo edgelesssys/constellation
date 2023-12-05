@@ -9,9 +9,17 @@ package provider
 import (
 	"context"
 	"fmt"
+	"io"
+	"net"
 
+	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
+	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/constellation"
+	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
+	"github.com/edgelesssys/constellation/v2/internal/state"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -43,6 +51,7 @@ type ClusterResourceModel struct {
 	KubernetesVersion     types.String `tfsdk:"kubernetes_version"`
 	Debug                 types.Bool   `tfsdk:"debug"`
 	InitEndpoint          types.String `tfsdk:"init_endpoint"`
+	APIServerCertSANs     types.List   `tfsdk:"api_server_cert_sans"`
 	KubernetesAPIEndpoint types.String `tfsdk:"kubernetes_api_endpoint"`
 	MicroserviceVersion   types.String `tfsdk:"constellation_microservices_version"`
 	ExtraMicroservices    types.Object `tfsdk:"extra_microservices"`
@@ -52,7 +61,7 @@ type ClusterResourceModel struct {
 	OwnerID               types.String `tfsdk:"owner_id"`
 	ClusterID             types.String `tfsdk:"cluster_id"`
 	Kubeconfig            types.String `tfsdk:"kubeconfig"`
-	// NetworkConfig 			 types.Object `tfsdk:"network_config"` // TODO(elchead): do when clear what is needed
+	NetworkConfig         types.Object `tfsdk:"network_config"`
 }
 
 // Metadata returns the metadata of the resource.
@@ -119,14 +128,42 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 					},
 				},
 			},
+			"api_server_cert_sans": schema.ListAttribute{
+				MarkdownDescription: "The additional certificate SANs to use for the API server.",
+				Description:         "The additional certificate SANs to use for the API server.",
+				ElementType:         types.StringType,
+				Optional:            true,
+			},
+			"network_config": schema.SingleNestedAttribute{
+				MarkdownDescription: "Network config settings.",
+				Description:         "Network config settings.",
+				Required:            true,
+				Attributes: map[string]schema.Attribute{
+					"ip_cidr_node": schema.StringAttribute{
+						Required:            true,
+						MarkdownDescription: "The CIDR to use for the node network.",
+						Description:         "The CIDR to use for the node network.",
+					},
+					"service_cidr": schema.StringAttribute{
+						Required:            true,
+						MarkdownDescription: "The CIDR to use for the service network.",
+						Description:         "The CIDR to use for the service network.",
+					},
+					"in_cluster_endpoint": schema.StringAttribute{
+						Required:            true,
+						MarkdownDescription: "The endpoint to use for the in-cluster communication.",
+						Description:         "The endpoint to use for the in-cluster communication.",
+					},
+				},
+			},
 			"master_secret": schema.StringAttribute{
 				MarkdownDescription: "The master secret to use for the cluster.",
 				Description:         "The master secret to use for the cluster.",
 				Required:            true,
 			},
 			"init_secret": schema.StringAttribute{
-				MarkdownDescription: "The init secret to use for the cluster.",
-				Description:         "The init secret to use for the cluster.",
+				MarkdownDescription: "The hex-encoded init secret to use for the cluster.",
+				Description:         "The hex-encoded init secret to use for the cluster.",
 				Required:            true,
 			}, // TODO merge / derive from master secret?
 			"attestation": newAttestationConfigAttribute(true),
@@ -209,12 +246,102 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 	data.OwnerID = types.StringValue("owner_id")
 	data.ClusterID = types.StringValue("cluster_id")
 	data.Kubeconfig = types.StringValue("kubeconfig")
-	// applier := constellation.NewApplier(log)
-	_, err = choose.Validator(attestationCfg, &tfLogger{dg: &resp.Diagnostics})
+
+	// run init RPC
+	log := &tfLogger{dg: &resp.Diagnostics}
+	newDialer := func(validator atls.Validator) *dialer.Dialer {
+		return dialer.New(nil, validator, &net.Dialer{})
+	}
+	applier := constellation.NewApplier(log, &nopSpinner{}, newDialer)
+	validator, err := choose.Validator(attestationCfg, log)
 	if err != nil {
 		resp.Diagnostics.AddError("Choosing validator", err.Error())
 		return
 	}
+	masterSecret, err := applier.GenerateMasterSecret()
+	if err != nil {
+		resp.Diagnostics.AddError("Generating master secret", err.Error())
+	}
+	measurementSalt, err := applier.GenerateMeasurementSalt()
+	if err != nil {
+		resp.Diagnostics.AddError("Generating measurement salt", err.Error())
+	}
+
+	initSecret, err := state.UnmarshalHexBytes(data.InitSecret.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("Unmarshalling init secret. Needs to be hex encoded.", err.Error())
+		return
+	}
+
+	apiServerCertSANs := make([]string, 0, len(data.APIServerCertSANs.Elements()))
+	for _, san := range data.APIServerCertSANs.Elements() {
+		apiServerCertSANs = append(apiServerCertSANs, san.String())
+	}
+
+	var networkCfg networkConfig
+	diags = data.NetworkConfig.As(ctx, &networkCfg, basetypes.ObjectAsOptions{})
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	infra := state.Infrastructure{
+		UID:               data.UID.ValueString(),
+		ClusterEndpoint:   data.KubernetesAPIEndpoint.ValueString(),
+		InClusterEndpoint: networkCfg.InClusterEndpoint, // TODO(elchead): optional or not?; otherwise default to ClusterEndpoint?
+		InitSecret:        initSecret,
+		APIServerCertSANs: apiServerCertSANs,
+		Name:              data.Name.ValueString(),
+		IPCidrNode:        networkCfg.IPCIDRNode,
+	}
+
+	state := state.New().SetInfrastructure(infra)
+	var k8sVersion versions.ValidK8sVersion
+	if data.KubernetesVersion.ValueString() != "" {
+		k8sVersion, err = versions.NewValidK8sVersion(data.KubernetesVersion.ValueString(), true)
+		if err != nil {
+			resp.Diagnostics.AddError("Parsing Kubernetes version", err.Error())
+		}
+	} else {
+		k8sVersion = config.Default().KubernetesVersion
+		resp.Diagnostics.AddWarning("Using default Kubernetes version", string(k8sVersion))
+	}
+	fmt.Println(state, validator, measurementSalt, masterSecret, k8sVersion)
+	//clusterLogs := &bytes.Buffer{} // write to tflog?
+	//initResp, err := applier.Init(
+	//	ctx, validator, state, clusterLogs,
+	//	constellation.InitPayload{
+	//		MasterSecret:    masterSecret,
+	//		MeasurementSalt: measurementSalt,
+	//		K8sVersion:      k8sVersion,
+	//		ConformanceMode: false, // TODO(elchead): leo?
+	//		ServiceCIDR:     networkCfg.ServiceCIDR,
+	//	})
+	//if err != nil {
+	//	if err != nil {
+	//		var nonRetriable *constellation.NonRetriableInitError
+	//		if errors.As(err, &nonRetriable) {
+	//			resp.Diagnostics.AddError("Cluster initialization failed.", fmt.Sprintf("This error is not recoverable. Cleanup resources and try again. Error: %s", err.Error()))
+	//			//if nonRetriable.LogCollectionErr != nil { // TODO how to store logs from clusterLogs?
+	//			//	resp.Diagnostics.AddWarning("Bootstrapper log collection fialed.", fmt.Sprintf("Failed to collect logs from bootstrapper: %s\n", nonRetriable.LogCollectionErr))
+	//			//} else {
+	//			//	cmd.PrintErrf("Fetched bootstrapper logs are stored in %q\n", a.flags.pathPrefixer.PrefixPrintablePath(constants.ErrorLog))
+	//			//}
+	//		} else {
+	//			resp.Diagnostics.AddError("Cluster initialization failed.", fmt.Sprintf("You might try to apply the resource again. Error: %s", err.Error()))
+	//		}
+	//		return
+	//	}
+	//	resp.Diagnostics.AddError("Running init RPC", err.Error())
+	//	return
+	//}
+
+	//k8sLogs := &bytes.Buffer{}                                                                                // write to tflog?
+	//kubeUpgrader, err := kubecmd.New(k8sLogs, initResp.Kubeconfig, file.NewHandler(afero.NewMemMapFs()), log) // fileHandler should not be needed since no backups are supported.. maybe defer Backup Impl to wrapped struct for CLI?
+	//if err != nil {
+	//	resp.Diagnostics.AddError("Creating kube upgrader", err.Error())
+	//}
+	// fmt.Println(initResp)
 
 	// Write logs using the tflog package
 	// Documentation: https://terraform.io/plugin/log
@@ -299,10 +426,30 @@ type tfLogger struct {
 	dg *diag.Diagnostics
 }
 
+func (l *tfLogger) Debugf(format string, args ...any) {
+	tflog.Debug(context.Background(), fmt.Sprintf(format, args...))
+}
+
 func (l *tfLogger) Infof(format string, args ...any) {
 	tflog.Info(context.Background(), fmt.Sprintf(format, args...))
 }
 
 func (l *tfLogger) Warnf(format string, args ...any) {
 	l.dg.AddWarning(fmt.Sprintf(format, args...), "")
+}
+
+type nopSpinner struct {
+	io.Writer
+}
+
+func (s *nopSpinner) Start(string, bool) {}
+func (s *nopSpinner) Stop()              {}
+func (s *nopSpinner) Write(_ []byte) (n int, err error) {
+	return 1, nil
+}
+
+type networkConfig struct {
+	IPCIDRNode        string `tfsdk:"ip_cidr_node"`
+	ServiceCIDR       string `tfsdk:"service_cidr"`
+	InClusterEndpoint string `tfsdk:"in_cluster_endpoint"`
 }

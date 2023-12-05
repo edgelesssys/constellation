@@ -570,14 +570,21 @@ func (h *HexBytes) UnmarshalYAML(unmarshal func(any) error) error {
 		}
 		hexString = hex.EncodeToString(oldHexBytes)
 	}
-
-	bytes, err := hex.DecodeString(hexString)
+	s, err := UnmarshalHexBytes(hexString)
 	if err != nil {
-		return fmt.Errorf("decoding hex bytes: %w", err)
+		return fmt.Errorf("unmarshalling hex bytes: %w", err)
 	}
-
-	*h = bytes
+	*h = s
 	return nil
+}
+
+// UnmarshalHexBytes unmarshals a hex-encoded string into the byte slice.
+func UnmarshalHexBytes(hexEncoded string) (HexBytes, error) {
+	bytes, err := hex.DecodeString(hexEncoded)
+	if err != nil {
+		return nil, fmt.Errorf("decoding hex bytes: %w", err)
+	}
+	return HexBytes(bytes), nil
 }
 
 // MarshalYAML implements the yaml.Marshaler interface.
