@@ -13,9 +13,13 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 	"sync"
+	"syscall"
 	"testing"
 
+	"github.com/bazelbuild/rules_go/go/runfiles"
 	"github.com/edgelesssys/constellation/v2/csi/cryptmapper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -27,14 +31,40 @@ const (
 	deviceName string = "testDeviceName"
 )
 
+var toolsEnvs []string = []string{"CP", "DD", "RM", "FSCK_EXT4", "MKFS_EXT4", "BLKID", "FSCK", "MOUNT", "UMOUNT"}
+
+// addToolsToPATH is used to update the PATH to contain necessary tool binaries for
+// coreutils, util-linux and ext4.
+func addToolsToPATH() error {
+	path := ":" + os.Getenv("PATH") + ":"
+	for _, tool := range toolsEnvs {
+		toolPath := os.Getenv(tool)
+		if toolPath == "" {
+			continue
+		}
+		toolPath, err := runfiles.Rlocation(toolPath)
+		if err != nil {
+			return err
+		}
+		pathComponent := filepath.Dir(toolPath)
+		if strings.Contains(path, ":"+pathComponent+":") {
+			continue
+		}
+		path = ":" + pathComponent + path
+	}
+	path = strings.Trim(path, ":")
+	os.Setenv("PATH", path)
+	return nil
+}
+
 func setup(devicePath string) {
-	if err := exec.Command("/bin/dd", "if=/dev/zero", fmt.Sprintf("of=%s", devicePath), "bs=64M", "count=1").Run(); err != nil {
+	if err := exec.Command("dd", "if=/dev/zero", fmt.Sprintf("of=%s", devicePath), "bs=64M", "count=1").Run(); err != nil {
 		panic(err)
 	}
 }
 
 func teardown(devicePath string) {
-	if err := exec.Command("/bin/rm", "-f", devicePath).Run(); err != nil {
+	if err := exec.Command("rm", "-f", devicePath).Run(); err != nil {
 		panic(err)
 	}
 }
@@ -44,14 +74,20 @@ func cp(source, target string) error {
 }
 
 func resize(devicePath string) {
-	if err := exec.Command("/bin/dd", "if=/dev/zero", fmt.Sprintf("of=%s", devicePath), "bs=32M", "count=1", "oflag=append", "conv=notrunc").Run(); err != nil {
+	if err := exec.Command("dd", "if=/dev/zero", fmt.Sprintf("of=%s", devicePath), "bs=32M", "count=1", "oflag=append", "conv=notrunc").Run(); err != nil {
 		panic(err)
 	}
 }
 
 func TestMain(m *testing.M) {
+	// try to become root (best effort)
+	_ = syscall.Setuid(0)
 	if os.Getuid() != 0 {
 		fmt.Printf("This test suite requires root privileges, as libcryptsetup uses the kernel's device mapper.\n")
+		os.Exit(1)
+	}
+	if err := addToolsToPATH(); err != nil {
+		fmt.Printf("Failed to add tools to PATH: %v\n", err)
 		os.Exit(1)
 	}
 

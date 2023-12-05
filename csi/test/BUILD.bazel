@@ -3,19 +3,51 @@ load("//bazel/go:go_test.bzl", "go_test")
 go_test(
     name = "test_test",
     srcs = ["mount_integration_test.go"],
+    count = 1,
+    # tool dependencies come from the test code itself (dd, rm, cp)
+    # and from github.com/kubernetes/mount-utils/mount_linux.go
+    data = [
+        "@coreutils//:bin/cp",
+        "@coreutils//:bin/dd",
+        "@coreutils//:bin/rm",
+        "@e2fsprogs//:bin/fsck.ext4",
+        "@e2fsprogs//:bin/mkfs.ext4",
+        "@util-linux//:bin/blkid",
+        "@util-linux//:bin/fsck",
+        "@util-linux//:bin/mount",
+        "@util-linux//:bin/umount",
+    ],
+    env = {
+        "BLKID": "$(rlocationpath @util-linux//:bin/blkid)",
+        "CP": "$(rlocationpath @coreutils//:bin/cp)",
+        "DD": "$(rlocationpath @coreutils//:bin/dd)",
+        "FSCK": "$(rlocationpath @util-linux//:bin/fsck)",
+        "FSCK_EXT4": "$(rlocationpath @e2fsprogs//:bin/fsck.ext4)",
+        "MKFS_EXT4": "$(rlocationpath @e2fsprogs//:bin/mkfs.ext4)",
+        "MOUNT": "$(rlocationpath @util-linux//:bin/mount)",
+        "RM": "$(rlocationpath @coreutils//:bin/rm)",
+        "UMOUNT": "$(rlocationpath @util-linux//:bin/umount)",
+    },
     # keep
-    tags = ["manual"],
+    tags = [
+        "integration",
+        "local",
+        "no-sandbox",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = select({
         "@io_bazel_rules_go//go/platform:android": [
             "//csi/cryptmapper",
             "@com_github_stretchr_testify//assert",
             "@com_github_stretchr_testify//require",
+            "@io_bazel_rules_go//go/runfiles:go_default_library",
             "@org_uber_go_goleak//:goleak",
         ],
         "@io_bazel_rules_go//go/platform:linux": [
             "//csi/cryptmapper",
             "@com_github_stretchr_testify//assert",
             "@com_github_stretchr_testify//require",
+            "@io_bazel_rules_go//go/runfiles:go_default_library",
             "@org_uber_go_goleak//:goleak",
         ],
         "//conditions:default": [],

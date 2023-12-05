@@ -14,8 +14,12 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
+	"syscall"
 	"testing"
 
+	"github.com/bazelbuild/rules_go/go/runfiles"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/diskencryption"
 	ccryptsetup "github.com/edgelesssys/constellation/v2/internal/cryptsetup"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -32,19 +36,51 @@ const (
 
 var diskPath = flag.String("disk", "", "Path to the disk to use for the benchmark")
 
+var toolsEnvs []string = []string{"DD", "RM"}
+
+// addToolsToPATH is used to update the PATH to contain necessary tool binaries for
+// coreutils.
+func addToolsToPATH() error {
+	path := ":" + os.Getenv("PATH") + ":"
+	for _, tool := range toolsEnvs {
+		toolPath := os.Getenv(tool)
+		if toolPath == "" {
+			continue
+		}
+		toolPath, err := runfiles.Rlocation(toolPath)
+		if err != nil {
+			return err
+		}
+		pathComponent := filepath.Dir(toolPath)
+		if strings.Contains(path, ":"+pathComponent+":") {
+			continue
+		}
+		path = ":" + pathComponent + path
+	}
+	path = strings.Trim(path, ":")
+	os.Setenv("PATH", path)
+	return nil
+}
+
 func setup(sizeGB int) error {
-	return exec.Command("/bin/dd", "if=/dev/random", fmt.Sprintf("of=%s", devicePath), "bs=1G", fmt.Sprintf("count=%d", sizeGB)).Run()
+	return exec.Command("dd", "if=/dev/random", fmt.Sprintf("of=%s", devicePath), "bs=1G", fmt.Sprintf("count=%d", sizeGB)).Run()
 }
 
 func teardown() error {
-	return exec.Command("/bin/rm", "-f", devicePath).Run()
+	return exec.Command("rm", "-f", devicePath).Run()
 }
 
 func TestMain(m *testing.M) {
 	flag.Parse()
 
+	// try to become root (best effort)
+	_ = syscall.Setuid(0)
 	if os.Getuid() != 0 {
 		fmt.Printf("This test suite requires root privileges, as libcrypsetup uses the kernel's device mapper.\n")
+		os.Exit(1)
+	}
+	if err := addToolsToPATH(); err != nil {
+		fmt.Printf("Failed to add tools to PATH: %v\n", err)
 		os.Exit(1)
 	}
 
