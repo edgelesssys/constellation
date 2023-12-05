@@ -13,11 +13,9 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -46,7 +44,6 @@ type imageFetcher interface {
 
 // ImageDataSourceModel defines the image data source's data model.
 type ImageDataSourceModel struct {
-	ID                 types.String `tfsdk:"id"` // Required for testing.
 	AttestationVariant types.String `tfsdk:"attestation_variant"`
 	ImageVersion       types.String `tfsdk:"image_version"`
 	CSP                types.String `tfsdk:"csp"`
@@ -65,35 +62,13 @@ func (d *ImageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 		Description:         "Data source to retrieve the Constellation OS image reference for a given CSP and Attestation Variant.",
 		MarkdownDescription: "Data source to retrieve the Constellation OS image reference for a given CSP and Attestation Variant.",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Computed: true,
-			},
-			"attestation_variant": schema.StringAttribute{
-				Description: "Attestation variant the image should work with. (e.g. `azure-sev-snp`)",
-				MarkdownDescription: "Attestation variant the image should work with. Can be one of:\n" +
-					"  * `aws-sev-snp`\n" +
-					"  * `aws-nitro-tpm`\n" +
-					"  * `azure-sev-snp`\n" +
-					"  * `gcp-sev-es`\n",
-				Required: true,
-				Validators: []validator.String{
-					stringvalidator.OneOf("aws-sev-snp", "aws-nitro-tpm", "azure-sev-snp", "gcp-sev-es"),
-				},
-			},
+			"attestation_variant": newAttestationVariantAttribute(attributeInput),
 			"image_version": schema.StringAttribute{
 				Description:         "Version of the Constellation OS image to use. (e.g. `v2.13.0`)",
 				MarkdownDescription: "Version of the Constellation OS image to use. (e.g. `v2.13.0`)",
 				Required:            true, // TODO(msanft): Make this optional to support "lockstep" mode.
 			},
-			"csp": schema.StringAttribute{
-				Description: "CSP (Cloud Service Provider) to use. (e.g. `azure`)",
-				MarkdownDescription: "CSP (Cloud Service Provider) to use. (e.g. `azure`)\n" +
-					"See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview/clouds) that Constellation supports.",
-				Required: true,
-				Validators: []validator.String{
-					stringvalidator.OneOf("aws", "azure", "gcp"),
-				},
-			},
+			"csp": newCSPAttribute(),
 			"region": schema.StringAttribute{
 				Description: "Region to retrieve the image for. Only required for AWS.",
 				MarkdownDescription: "Region to retrieve the image for. Only required for AWS.\n" +
