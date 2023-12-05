@@ -32,16 +32,16 @@ func (a *applyCmd) runHelmApply(cmd *cobra.Command, conf *config.Config, stateFi
 	}
 
 	options := helm.Options{
-		DeployCSIDriver:  conf.DeployCSIDriver(),
-		Force:            a.flags.force,
-		Conformance:      a.flags.conformance,
-		HelmWaitMode:     a.flags.helmWaitMode,
-		ApplyTimeout:     a.flags.helmTimeout,
-		AllowDestructive: helm.DenyDestructive,
-	}
-	helmApplier, err := a.newHelmClient(constants.AdminConfFilename, a.log)
-	if err != nil {
-		return fmt.Errorf("creating Helm client: %w", err)
+		CSP:                 conf.GetProvider(),
+		AttestationVariant:  conf.GetAttestationConfig().GetVariant(),
+		K8sVersion:          conf.KubernetesVersion,
+		MicroserviceVersion: conf.MicroserviceVersion,
+		DeployCSIDriver:     conf.DeployCSIDriver(),
+		Force:               a.flags.force,
+		Conformance:         a.flags.conformance,
+		HelmWaitMode:        a.flags.helmWaitMode,
+		ApplyTimeout:        a.flags.helmTimeout,
+		AllowDestructive:    helm.DenyDestructive,
 	}
 
 	a.log.Debugf("Getting service account URI")
@@ -51,8 +51,7 @@ func (a *applyCmd) runHelmApply(cmd *cobra.Command, conf *config.Config, stateFi
 	}
 
 	a.log.Debugf("Preparing Helm charts")
-	executor, includesUpgrades, err := helmApplier.PrepareApply(conf.GetProvider(), conf.GetAttestationConfig().GetVariant(),
-		conf.KubernetesVersion, conf.MicroserviceVersion, stateFile, options, serviceAccURI, masterSecret, conf.Provider.OpenStack)
+	executor, includesUpgrades, err := a.applier.PrepareHelmCharts(options, stateFile, serviceAccURI, masterSecret, conf.Provider.OpenStack)
 	if errors.Is(err, helm.ErrConfirmationMissing) {
 		if !a.flags.yes {
 			cmd.PrintErrln("WARNING: Upgrading cert-manager will destroy all custom resources you have manually created that are based on the current version of cert-manager.")
@@ -66,8 +65,7 @@ func (a *applyCmd) runHelmApply(cmd *cobra.Command, conf *config.Config, stateFi
 			}
 		}
 		options.AllowDestructive = helm.AllowDestructive
-		executor, includesUpgrades, err = helmApplier.PrepareApply(conf.GetProvider(), conf.GetAttestationConfig().GetVariant(),
-			conf.KubernetesVersion, conf.MicroserviceVersion, stateFile, options, serviceAccURI, masterSecret, conf.Provider.OpenStack)
+		executor, includesUpgrades, err = a.applier.PrepareHelmCharts(options, stateFile, serviceAccURI, masterSecret, conf.Provider.OpenStack)
 	}
 	var upgradeErr *compatibility.InvalidUpgradeError
 	if err != nil {
