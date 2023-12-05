@@ -478,7 +478,7 @@ func updateInitMeasurements(config config.AttestationCfg, ownerID, clusterID str
 		// the current implementation does not support it, but can be changed if we decide to add support in the future
 		return updateMeasurementTDX(m, uint32(measurements.TDXIndexClusterID), clusterID)
 	default:
-		return fmt.Errorf("selecting attestation variant: unknown attestation variant")
+		return errors.New("selecting attestation variant: unknown attestation variant")
 	}
 }
 
