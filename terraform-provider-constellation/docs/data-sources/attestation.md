@@ -40,8 +40,7 @@ See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview
 
 ### Read-Only
 
-- `attestation` (Attributes) Only relevant for SEV-SNP. (see [below for nested schema](#nestedatt--attestation))
-- `id` (String) The ID of the data source
+- `attestation` (Attributes) Attestation comprises the measurements and SEV-SNP specific parameters. (see [below for nested schema](#nestedatt--attestation))
 - `measurements` (Attributes Map) (see [below for nested schema](#nestedatt--measurements))
 
 <a id="nestedatt--attestation"></a>
@@ -52,9 +51,15 @@ Read-Only:
 - `amd_root_key` (String)
 - `azure_firmware_signer_config` (Attributes) (see [below for nested schema](#nestedatt--attestation--azure_firmware_signer_config))
 - `bootloader_version` (Number)
+- `measurements` (Attributes Map) (see [below for nested schema](#nestedatt--attestation--measurements))
 - `microcode_version` (Number)
 - `snp_version` (Number)
 - `tee_version` (Number)
+- `variant` (String) Attestation variant the image should work with. Can be one of:
+  * `aws-sev-snp`
+  * `aws-nitro-tpm`
+  * `azure-sev-snp`
+  * `gcp-sev-es`
 
 <a id="nestedatt--attestation--azure_firmware_signer_config"></a>
 ### Nested Schema for `attestation.azure_firmware_signer_config`
@@ -64,6 +69,15 @@ Read-Only:
 - `accepted_key_digests` (List of String)
 - `enforcement_policy` (String)
 - `maa_url` (String)
+
+
+<a id="nestedatt--attestation--measurements"></a>
+### Nested Schema for `attestation.measurements`
+
+Read-Only:
+
+- `expected` (String)
+- `warn_only` (Boolean)
 
 
 
