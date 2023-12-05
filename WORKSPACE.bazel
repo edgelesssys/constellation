@@ -76,6 +76,21 @@ nixpkgs_package(
     repository = "@nixpkgs",
 )
 
+nixpkgs_package(
+    name = "util-linux",
+    repository = "@nixpkgs",
+)
+
+nixpkgs_package(
+    name = "coreutils",
+    repository = "@nixpkgs",
+)
+
+nixpkgs_package(
+    name = "e2fsprogs",
+    repository = "@nixpkgs",
+)
+
 load("//nix/cc:nixpkgs_cc_libraries.bzl", "nixpkgs_cc_library_deps")
 
 nixpkgs_cc_library_deps()

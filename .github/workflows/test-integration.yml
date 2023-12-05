@@ -29,23 +29,6 @@ jobs:
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
-      - name: Setup Go environment
-        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
-        with:
-          go-version: "1.21.5"
-          cache: true
-
-      - name: Install Dependencies
-        run: sudo apt-get update && sudo apt-get install -y libcryptsetup12 libcryptsetup-dev
-
-      - name: Create and populate build folder
-        run: mkdir build && cd build && cmake ..
-
-      # Runs all test targets starting with "integration-"
-      - name: CMake-based Integration Tests
-        working-directory: build
-        run: ctest -R integration-
-
       - name: Setup bazel
         uses: ./.github/actions/setup_bazel_nix
         with:
@@ -55,4 +38,4 @@ jobs:
       - name: Integration Tests
         env:
           TMPDIR: ${{ runner.temp }}
-        run: bazel test //... --test_output=errors --config=nostamp --config=integration-only --remote_download_minimal
+        run: sudo -E "PATH=$PATH" bazel test //... --config=nostamp --remote_download_minimal --config=integration  --spawn_strategy=standalone

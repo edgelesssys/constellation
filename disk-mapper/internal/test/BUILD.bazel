@@ -6,8 +6,21 @@ go_test(
         "benchmark_test.go",
         "integration_test.go",
     ],
+    data = [
+        "@coreutils//:bin/dd",
+        "@coreutils//:bin/rm",
+    ],
+    env = {
+        "DD": "$(rlocationpath @coreutils//:bin/dd)",
+        "RM": "$(rlocationpath @coreutils//:bin/rm)",
+    },
     # keep
-    tags = ["manual"],
+    tags = [
+        "integration",
+        "local",
+        "no-sandbox",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = select({
         "@io_bazel_rules_go//go/platform:android": [
             "//disk-mapper/internal/diskencryption",
@@ -16,6 +29,7 @@ go_test(
             "@com_github_martinjungblut_go_cryptsetup//:go-cryptsetup",
             "@com_github_stretchr_testify//assert",
             "@com_github_stretchr_testify//require",
+            "@io_bazel_rules_go//go/runfiles:go_default_library",
             "@org_uber_go_goleak//:goleak",
             "@org_uber_go_zap//zapcore",
         ],
@@ -26,6 +40,7 @@ go_test(
             "@com_github_martinjungblut_go_cryptsetup//:go-cryptsetup",
             "@com_github_stretchr_testify//assert",
             "@com_github_stretchr_testify//require",
+            "@io_bazel_rules_go//go/runfiles:go_default_library",
             "@org_uber_go_goleak//:goleak",
             "@org_uber_go_zap//zapcore",
         ],
