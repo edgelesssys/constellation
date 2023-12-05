@@ -9,6 +9,8 @@ package constellation
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"io"
 	"net"
 	"strconv"
@@ -17,6 +19,9 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
@@ -198,6 +203,119 @@ func TestInit(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAttestation(t *testing.T) {
+	assert := assert.New(t)
+
+	initServerAPI := &stubInitServer{res: []*initproto.InitResponse{
+		{
+			Kind: &initproto.InitResponse_InitSuccess{
+				InitSuccess: &initproto.InitSuccessResponse{
+					Kubeconfig: []byte("kubeconfig"),
+					OwnerId:    []byte("ownerID"),
+					ClusterId:  []byte("clusterID"),
+				},
+			},
+		},
+	}}
+
+	netDialer := testdialer.NewBufconnDialer()
+
+	issuer := &testIssuer{
+		Getter: variant.QEMUVTPM{},
+		pcrs: map[uint32][]byte{
+			0: bytes.Repeat([]byte{0xFF}, 32),
+			1: bytes.Repeat([]byte{0xFF}, 32),
+			2: bytes.Repeat([]byte{0xFF}, 32),
+			3: bytes.Repeat([]byte{0xFF}, 32),
+		},
+	}
+	serverCreds := atlscredentials.New(issuer, nil)
+	initServer := grpc.NewServer(grpc.Creds(serverCreds))
+	initproto.RegisterAPIServer(initServer, initServerAPI)
+	port := strconv.Itoa(constants.BootstrapperPort)
+	listener := netDialer.GetListener(net.JoinHostPort("192.0.2.4", port))
+	go initServer.Serve(listener)
+	defer initServer.GracefulStop()
+
+	validator := &testValidator{
+		Getter: variant.QEMUVTPM{},
+		pcrs: measurements.M{
+			0:  measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength),
+			1:  measurements.WithAllBytes(0x11, measurements.Enforce, measurements.PCRMeasurementLength),
+			2:  measurements.WithAllBytes(0x22, measurements.Enforce, measurements.PCRMeasurementLength),
+			3:  measurements.WithAllBytes(0x33, measurements.Enforce, measurements.PCRMeasurementLength),
+			4:  measurements.WithAllBytes(0x44, measurements.Enforce, measurements.PCRMeasurementLength),
+			9:  measurements.WithAllBytes(0x99, measurements.Enforce, measurements.PCRMeasurementLength),
+			12: measurements.WithAllBytes(0xcc, measurements.Enforce, measurements.PCRMeasurementLength),
+		},
+	}
+	state := &state.State{Version: state.Version1, Infrastructure: state.Infrastructure{ClusterEndpoint: "192.0.2.4"}}
+
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
+	defer cancel()
+
+	initer := &Applier{
+		log: logger.NewTest(t),
+		newDialer: func(v atls.Validator) *dialer.Dialer {
+			return dialer.New(nil, v, netDialer)
+		},
+		spinner: &nopSpinner{},
+	}
+
+	_, err := initer.Init(ctx, validator, state, io.Discard, InitPayload{
+		MasterSecret:    uri.MasterSecret{},
+		MeasurementSalt: []byte{},
+		K8sVersion:      "v1.26.5",
+		ConformanceMode: false,
+	})
+	assert.Error(err)
+	// make sure the error is actually a TLS handshake error
+	assert.Contains(err.Error(), "transport: authentication handshake failed")
+	if validationErr, ok := err.(*config.ValidationError); ok {
+		t.Log(validationErr.LongMessage())
+	}
+}
+
+type testValidator struct {
+	variant.Getter
+	pcrs measurements.M
+}
+
+func (v *testValidator) Validate(_ context.Context, attDoc []byte, _ []byte) ([]byte, error) {
+	var attestation struct {
+		UserData []byte
+		PCRs     map[uint32][]byte
+	}
+	if err := json.Unmarshal(attDoc, &attestation); err != nil {
+		return nil, err
+	}
+
+	for k, pcr := range v.pcrs {
+		if !bytes.Equal(attestation.PCRs[k], pcr.Expected[:]) {
+			return nil, errors.New("invalid PCR value")
+		}
+	}
+	return attestation.UserData, nil
+}
+
+type testIssuer struct {
+	variant.Getter
+	pcrs map[uint32][]byte
+}
+
+func (i *testIssuer) Issue(_ context.Context, userData []byte, _ []byte) ([]byte, error) {
+	return json.Marshal(
+		struct {
+			UserData []byte
+			PCRs     map[uint32][]byte
+		}{
+			UserData: userData,
+			PCRs:     i.pcrs,
+		},
+	)
 }
 
 type nopSpinner struct {

@@ -7,16 +7,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/rogpeppe/go-internal/diff"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
 func newUpgradeApplyCmd() *cobra.Command {
@@ -59,13 +56,4 @@ func diffAttestationCfg(currentAttestationCfg config.AttestationCfg, newAttestat
 	}
 	diff := string(diff.Diff("current", currentYml, "new", newYml))
 	return diff, nil
-}
-
-type kubernetesUpgrader interface {
-	UpgradeNodeVersion(ctx context.Context, conf *config.Config, force, skipImage, skipK8s bool) error
-	ExtendClusterConfigCertSANs(ctx context.Context, alternativeNames []string) error
-	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, error)
-	ApplyJoinConfig(ctx context.Context, newAttestConfig config.AttestationCfg, measurementSalt []byte) error
-	BackupCRs(ctx context.Context, crds []apiextensionsv1.CustomResourceDefinition, upgradeDir string) error
-	BackupCRDs(ctx context.Context, upgradeDir string) ([]apiextensionsv1.CustomResourceDefinition, error)
 }

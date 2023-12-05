@@ -193,10 +193,11 @@ func TestBackupHelmCharts(t *testing.T) {
 
 			a := applyCmd{
 				fileHandler: file.NewHandler(afero.NewMemMapFs()),
+				applier:     &stubConstellApplier{stubKubernetesUpgrader: tc.backupClient},
 				log:         logger.NewTest(t),
 			}
 
-			err := a.backupHelmCharts(context.Background(), tc.backupClient, tc.helmApplier, tc.includesUpgrades, "")
+			err := a.backupHelmCharts(context.Background(), tc.helmApplier, tc.includesUpgrades, "")
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -494,23 +495,29 @@ func newPhases(phases ...skipPhase) skipPhases {
 
 type stubConstellApplier struct {
 	checkLicenseErr            error
+	masterSecret               uri.MasterSecret
+	measurementSalt            []byte
 	generateMasterSecretErr    error
 	generateMeasurementSaltErr error
 	initErr                    error
+	initResponse               *initproto.InitSuccessResponse
+	*stubKubernetesUpgrader
 }
+
+func (s *stubConstellApplier) SetKubeConfig([]byte) error { return nil }
 
 func (s *stubConstellApplier) CheckLicense(context.Context, cloudprovider.Provider, string) (int, error) {
 	return 0, s.checkLicenseErr
 }
 
 func (s *stubConstellApplier) GenerateMasterSecret() (uri.MasterSecret, error) {
-	return uri.MasterSecret{}, s.generateMasterSecretErr
+	return s.masterSecret, s.generateMasterSecretErr
 }
 
 func (s *stubConstellApplier) GenerateMeasurementSalt() ([]byte, error) {
-	return nil, s.generateMeasurementSaltErr
+	return s.measurementSalt, s.generateMeasurementSaltErr
 }
 
 func (s *stubConstellApplier) Init(context.Context, atls.Validator, *state.State, io.Writer, constellation.InitPayload) (*initproto.InitSuccessResponse, error) {
-	return nil, s.initErr
+	return s.initResponse, s.initErr
 }

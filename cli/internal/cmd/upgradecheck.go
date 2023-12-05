@@ -26,10 +26,10 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/constellation/kubecmd"
 	"github.com/edgelesssys/constellation/v2/internal/featureset"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/helm"
-	"github.com/edgelesssys/constellation/v2/internal/kubecmd"
 	consemver "github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore/keyselect"
@@ -120,7 +120,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("reading kubeconfig: %w", err)
 	}
-	kubeChecker, err := kubecmd.New(cmd.OutOrStdout(), kubeConfig, fileHandler, log)
+	kubeChecker, err := kubecmd.New(kubeConfig, log)
 	if err != nil {
 		return fmt.Errorf("setting up Kubernetes upgrader: %w", err)
 	}

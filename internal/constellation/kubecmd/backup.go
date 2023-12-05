@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/edgelesssys/constellation/v2/internal/file"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -24,7 +25,7 @@ type crdLister interface {
 }
 
 // BackupCRDs backs up all CRDs to the upgrade workspace.
-func (k *KubeCmd) BackupCRDs(ctx context.Context, upgradeDir string) ([]apiextensionsv1.CustomResourceDefinition, error) {
+func (k *KubeCmd) BackupCRDs(ctx context.Context, fileHandler file.Handler, upgradeDir string) ([]apiextensionsv1.CustomResourceDefinition, error) {
 	k.log.Debugf("Starting CRD backup")
 	crds, err := k.kubectl.ListCRDs(ctx)
 	if err != nil {
@@ -32,7 +33,7 @@ func (k *KubeCmd) BackupCRDs(ctx context.Context, upgradeDir string) ([]apiexten
 	}
 
 	crdBackupFolder := k.crdBackupFolder(upgradeDir)
-	if err := k.fileHandler.MkdirAll(crdBackupFolder); err != nil {
+	if err := fileHandler.MkdirAll(crdBackupFolder); err != nil {
 		return nil, fmt.Errorf("creating backup dir: %w", err)
 	}
 	for i := range crds {
@@ -51,7 +52,7 @@ func (k *KubeCmd) BackupCRDs(ctx context.Context, upgradeDir string) ([]apiexten
 		if err != nil {
 			return nil, err
 		}
-		if err := k.fileHandler.Write(path, yamlBytes); err != nil {
+		if err := fileHandler.Write(path, yamlBytes); err != nil {
 			return nil, err
 		}
 	}
@@ -60,7 +61,7 @@ func (k *KubeCmd) BackupCRDs(ctx context.Context, upgradeDir string) ([]apiexten
 }
 
 // BackupCRs backs up all CRs to the upgrade workspace.
-func (k *KubeCmd) BackupCRs(ctx context.Context, crds []apiextensionsv1.CustomResourceDefinition, upgradeDir string) error {
+func (k *KubeCmd) BackupCRs(ctx context.Context, fileHandler file.Handler, crds []apiextensionsv1.CustomResourceDefinition, upgradeDir string) error {
 	k.log.Debugf("Starting CR backup")
 	for _, crd := range crds {
 		k.log.Debugf("Creating backup for resource type: %s", crd.Name)
@@ -86,7 +87,7 @@ func (k *KubeCmd) BackupCRs(ctx context.Context, crds []apiextensionsv1.CustomRe
 			backupFolder := k.backupFolder(upgradeDir)
 			for _, cr := range crs {
 				targetFolder := filepath.Join(backupFolder, gvr.Group, gvr.Version, cr.GetNamespace(), cr.GetKind())
-				if err := k.fileHandler.MkdirAll(targetFolder); err != nil {
+				if err := fileHandler.MkdirAll(targetFolder); err != nil {
 					return fmt.Errorf("creating resource dir: %w", err)
 				}
 				path := filepath.Join(targetFolder, cr.GetName()+".yaml")
@@ -94,7 +95,7 @@ func (k *KubeCmd) BackupCRs(ctx context.Context, crds []apiextensionsv1.CustomRe
 				if err != nil {
 					return err
 				}
-				if err := k.fileHandler.Write(path, yamlBytes); err != nil {
+				if err := fileHandler.Write(path, yamlBytes); err != nil {
 					return err
 				}
 			}

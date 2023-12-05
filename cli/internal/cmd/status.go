@@ -16,9 +16,9 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/constellation/kubecmd"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/helm"
-	"github.com/edgelesssys/constellation/v2/internal/kubecmd"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -61,7 +61,7 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 	}
 
 	fetcher := attestationconfigapi.NewFetcher()
-	kubeClient, err := kubecmd.New(cmd.OutOrStdout(), kubeConfig, fileHandler, log)
+	kubeClient, err := kubecmd.New(kubeConfig, log)
 	if err != nil {
 		return fmt.Errorf("setting up kubernetes client: %w", err)
 	}

@@ -10,18 +10,17 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
@@ -38,7 +37,7 @@ import (
 	kubeadmv1beta3 "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
 
-func TestUpgradeNodeVersion(t *testing.T) {
+func TestUpgradeNodeImage(t *testing.T) {
 	clusterConf := kubeadmv1beta3.ClusterConfiguration{
 		APIServer: kubeadmv1beta3.APIServer{
 			ControlPlaneComponent: kubeadmv1beta3.ControlPlaneComponent{
@@ -91,286 +90,99 @@ func TestUpgradeNodeVersion(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		kubectl               *stubKubectl
-		conditions            []metav1.Condition
-		currentImageVersion   string
-		newImageReference     string
-		badImageVersion       string
-		currentClusterVersion versions.ValidK8sVersion
-		conf                  *config.Config
-		force                 bool
-		getCRErr              error
-		wantErr               bool
-		wantUpdate            bool
-		assertCorrectError    func(t *testing.T, err error) bool
-		customClientFn        func(nodeVersion updatev1alpha1.NodeVersion) unstructuredInterface
+		conditions          []metav1.Condition
+		currentImageVersion semver.Semver
+		newImageVersion     semver.Semver
+		badImageVersion     string
+		force               bool
+		customKubeadmConfig *corev1.ConfigMap
+		getCRErr            error
+		wantErr             bool
+		wantUpdate          bool
+		assertCorrectError  func(t *testing.T, err error) bool
+		customClientFn      func(nodeVersion updatev1alpha1.NodeVersion) unstructuredInterface
 	}{
-		"success": {
-			conf: func() *config.Config {
-				conf := config.Default()
-				conf.Image = "v1.2.3"
-				conf.KubernetesVersion = supportedValidK8sVersions()[1]
-				return conf
-			}(),
-			currentImageVersion:   "v1.2.2",
-			currentClusterVersion: supportedValidK8sVersions()[0],
-			kubectl: &stubKubectl{
-				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap:    newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
-					constants.KubeadmConfigMap: validKubeadmConfig,
-				},
-			},
-			wantUpdate: true,
-		},
 		"success with konnectivity migration": {
-			conf: func() *config.Config {
-				conf := config.Default()
-				conf.Image = "v1.2.3"
-				conf.KubernetesVersion = supportedValidK8sVersions()[1]
-				return conf
-			}(),
-			currentImageVersion:   "v1.2.2",
-			currentClusterVersion: supportedValidK8sVersions()[0],
-			kubectl: &stubKubectl{
-				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap:    newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
-					constants.KubeadmConfigMap: validKubeadmConfigWithKonnectivity,
-				},
-			},
-			wantUpdate: true,
+			currentImageVersion: semver.NewFromInt(1, 2, 2, ""),
+			newImageVersion:     semver.NewFromInt(1, 2, 3, ""),
+			customKubeadmConfig: validKubeadmConfigWithKonnectivity,
+			wantUpdate:          true,
 		},
-		"only k8s upgrade": {
-			conf: func() *config.Config {
-				conf := config.Default()
-				conf.Image = "v1.2.2"
-				conf.KubernetesVersion = supportedValidK8sVersions()[1]
-				return conf
-			}(),
-			currentImageVersion:   "v1.2.2",
-			currentClusterVersion: supportedValidK8sVersions()[0],
-			kubectl: &stubKubectl{
-				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap:    newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
-					constants.KubeadmConfigMap: validKubeadmConfig,
-				},
-			},
-			wantUpdate: true,
-			wantErr:    true,
-			assertCorrectError: func(t *testing.T, err error) bool {
-				var upgradeErr *compatibility.InvalidUpgradeError
-				return assert.ErrorAs(t, err, &upgradeErr)
-			},
-		},
-		"only image upgrade": {
-			conf: func() *config.Config {
-				conf := config.Default()
-				conf.Image = "v1.2.3"
-				conf.KubernetesVersion = supportedValidK8sVersions()[0]
-				return conf
-			}(),
-			currentImageVersion:   "v1.2.2",
-			currentClusterVersion: supportedValidK8sVersions()[0],
-			kubectl: &stubKubectl{
-				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap:    newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
-					constants.KubeadmConfigMap: validKubeadmConfig,
-				},
-			},
-			wantUpdate: true,
-			wantErr:    true,
-			assertCorrectError: func(t *testing.T, err error) bool {
-				var upgradeErr *compatibility.InvalidUpgradeError
-				return assert.ErrorAs(t, err, &upgradeErr)
-			},
+		"success": {
+			currentImageVersion: semver.NewFromInt(1, 2, 2, ""),
+			newImageVersion:     semver.NewFromInt(1, 2, 3, ""),
+			wantUpdate:          true,
 		},
 		"not an upgrade": {
-			conf: func() *config.Config {
-				conf := config.Default()
-				conf.Image = "v1.2.2"
-				conf.KubernetesVersion = supportedValidK8sVersions()[0]
-				return conf
-			}(),
-			currentImageVersion:   "v1.2.2",
-			currentClusterVersion: supportedValidK8sVersions()[0],
-			kubectl: &stubKubectl{
-				configMaps: map[string]*corev1.ConfigMap{
-					constants.KubeadmConfigMap: validKubeadmConfig,
-				},
-			},
-			wantErr: true,
+			currentImageVersion: semver.NewFromInt(1, 2, 2, ""),
+			newImageVersion:     semver.NewFromInt(1, 2, 2, ""),
+			wantErr:             true,
 			assertCorrectError: func(t *testing.T, err error) bool {
 				var upgradeErr *compatibility.InvalidUpgradeError
 				return assert.ErrorAs(t, err, &upgradeErr)
 			},
 		},
 		"upgrade in progress": {
-			conf: func() *config.Config {
-				conf := config.Default()
-				conf.Image = "v1.2.3"
-				conf.KubernetesVersion = supportedValidK8sVersions()[1]
-				return conf
-			}(),
 			conditions: []metav1.Condition{{
 				Type:   updatev1alpha1.ConditionOutdated,
 				Status: metav1.ConditionTrue,
 			}},
-			currentImageVersion:   "v1.2.2",
-			currentClusterVersion: supportedValidK8sVersions()[0],
-			kubectl: &stubKubectl{
-				configMaps: map[string]*corev1.ConfigMap{
-					constants.KubeadmConfigMap: validKubeadmConfig,
-				},
-			},
-			wantErr: true,
+			currentImageVersion: semver.NewFromInt(1, 2, 2, ""),
+			newImageVersion:     semver.NewFromInt(1, 2, 3, ""),
+			wantErr:             true,
 			assertCorrectError: func(t *testing.T, err error) bool {
 				return assert.ErrorIs(t, err, ErrInProgress)
 			},
 		},
 		"success with force and upgrade in progress": {
-			conf: func() *config.Config {
-				conf := config.Default()
-				conf.Image = "v1.2.3"
-				conf.KubernetesVersion = supportedValidK8sVersions()[1]
-				return conf
-			}(),
 			conditions: []metav1.Condition{{
 				Type:   updatev1alpha1.ConditionOutdated,
 				Status: metav1.ConditionTrue,
 			}},
-			currentImageVersion:   "v1.2.2",
-			currentClusterVersion: supportedValidK8sVersions()[0],
-			kubectl: &stubKubectl{
-				configMaps: map[string]*corev1.ConfigMap{
-					constants.KubeadmConfigMap: validKubeadmConfig,
-				},
-			},
-			force:      true,
-			wantUpdate: true,
+			currentImageVersion: semver.NewFromInt(1, 2, 2, ""),
+			newImageVersion:     semver.NewFromInt(1, 2, 3, ""),
+			force:               true,
+			wantUpdate:          true,
 		},
 		"get error": {
-			conf: func() *config.Config {
-				conf := config.Default()
-				conf.Image = "v1.2.3"
-				conf.KubernetesVersion = supportedValidK8sVersions()[1]
-				return conf
-			}(),
-			currentImageVersion:   "v1.2.2",
-			currentClusterVersion: supportedValidK8sVersions()[0],
-			kubectl: &stubKubectl{
-				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap:    newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
-					constants.KubeadmConfigMap: validKubeadmConfig,
-				},
-			},
-			getCRErr: assert.AnError,
-			wantErr:  true,
+			currentImageVersion: semver.NewFromInt(1, 2, 2, ""),
+			newImageVersion:     semver.NewFromInt(1, 2, 3, ""),
+			getCRErr:            assert.AnError,
+			wantErr:             true,
 			assertCorrectError: func(t *testing.T, err error) bool {
 				return assert.ErrorIs(t, err, assert.AnError)
 			},
 		},
-		"image too new valid k8s": {
-			conf: func() *config.Config {
-				conf := config.Default()
-				conf.Image = "v1.4.2"
-				conf.KubernetesVersion = supportedValidK8sVersions()[1]
-				return conf
-			}(),
-			newImageReference:     "path/to/image:v1.4.2",
-			currentImageVersion:   "v1.2.2",
-			currentClusterVersion: supportedValidK8sVersions()[0],
-			kubectl: &stubKubectl{
-				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap:    newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":true}}`),
-					constants.KubeadmConfigMap: validKubeadmConfig,
-				},
-			},
-			wantUpdate: true,
-			wantErr:    true,
+		"image too new": {
+			currentImageVersion: semver.NewFromInt(1, 2, 2, ""),
+			newImageVersion:     semver.NewFromInt(1, 4, 3, ""),
+			wantErr:             true,
 			assertCorrectError: func(t *testing.T, err error) bool {
 				var upgradeErr *compatibility.InvalidUpgradeError
 				return assert.ErrorAs(t, err, &upgradeErr)
 			},
 		},
 		"success with force and image too new": {
-			conf: func() *config.Config {
-				conf := config.Default()
-				conf.Image = "v1.4.2"
-				conf.KubernetesVersion = supportedValidK8sVersions()[1]
-				return conf
-			}(),
-			newImageReference:     "path/to/image:v1.4.2",
-			currentImageVersion:   "v1.2.2",
-			currentClusterVersion: supportedValidK8sVersions()[0],
-			kubectl: &stubKubectl{
-				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap:    newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
-					constants.KubeadmConfigMap: validKubeadmConfig,
-				},
-			},
-			wantUpdate: true,
-			force:      true,
+			currentImageVersion: semver.NewFromInt(1, 2, 2, ""),
+			newImageVersion:     semver.NewFromInt(1, 2, 4, ""),
+			wantUpdate:          true,
+			force:               true,
 		},
 		"apply returns bad object": {
-			conf: func() *config.Config {
-				conf := config.Default()
-				conf.Image = "v1.2.3"
-				conf.KubernetesVersion = supportedValidK8sVersions()[1]
-				return conf
-			}(),
-			currentImageVersion:   "v1.2.2",
-			currentClusterVersion: supportedValidK8sVersions()[0],
-			badImageVersion:       "v3.2.1",
-			kubectl: &stubKubectl{
-				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap:    newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
-					constants.KubeadmConfigMap: validKubeadmConfig,
-				},
-			},
-			wantUpdate: true,
-			wantErr:    true,
+			currentImageVersion: semver.NewFromInt(1, 2, 2, ""),
+			newImageVersion:     semver.NewFromInt(1, 2, 3, ""),
+			badImageVersion:     "v3.2.1",
+			wantUpdate:          true,
+			wantErr:             true,
 			assertCorrectError: func(t *testing.T, err error) bool {
 				var target *applyError
 				return assert.ErrorAs(t, err, &target)
 			},
 		},
-		"outdated k8s version skips k8s upgrade": {
-			conf: func() *config.Config {
-				conf := config.Default()
-				conf.Image = "v1.2.2"
-				conf.KubernetesVersion = "v1.25.8"
-				return conf
-			}(),
-			currentImageVersion:   "v1.2.2",
-			currentClusterVersion: supportedValidK8sVersions()[0],
-			kubectl: &stubKubectl{
-				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap:    newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
-					constants.KubeadmConfigMap: validKubeadmConfig,
-				},
-			},
-			wantUpdate: false,
-			wantErr:    true,
-			assertCorrectError: func(t *testing.T, err error) bool {
-				var upgradeErr *compatibility.InvalidUpgradeError
-				return assert.ErrorAs(t, err, &upgradeErr)
-			},
-		},
 		"succeed after update retry when the updated node object is outdated": {
-			conf: func() *config.Config {
-				conf := config.Default()
-				conf.Image = "v1.2.3"
-				conf.KubernetesVersion = supportedValidK8sVersions()[1]
-				return conf
-			}(),
-			currentImageVersion:   "v1.2.2",
-			currentClusterVersion: supportedValidK8sVersions()[0],
-			kubectl: &stubKubectl{
-				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap:    newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
-					constants.KubeadmConfigMap: validKubeadmConfig,
-				},
-			},
-			wantUpdate: false, // because customClient is used
+			currentImageVersion: semver.NewFromInt(1, 2, 2, ""),
+			newImageVersion:     semver.NewFromInt(1, 2, 3, ""),
+			wantUpdate:          false, // because customClient is used
 			customClientFn: func(nodeVersion updatev1alpha1.NodeVersion) unstructuredInterface {
 				fakeClient := &fakeUnstructuredClient{}
 				fakeClient.On("GetCR", mock.Anything, mock.Anything).Return(unstructedObjectWithGeneration(nodeVersion, 1), nil)
@@ -388,13 +200,15 @@ func TestUpgradeNodeVersion(t *testing.T) {
 
 			nodeVersion := updatev1alpha1.NodeVersion{
 				Spec: updatev1alpha1.NodeVersionSpec{
-					ImageVersion:             tc.currentImageVersion,
-					KubernetesClusterVersion: string(tc.currentClusterVersion),
+					ImageVersion:             tc.currentImageVersion.String(),
+					KubernetesClusterVersion: "v1.2.3",
 				},
 				Status: updatev1alpha1.NodeVersionStatus{
 					Conditions: tc.conditions,
 				},
 			}
+			unstrNodeVersion, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&nodeVersion)
+			require.NoError(err)
 
 			var badUpdatedObject *unstructured.Unstructured
 			if tc.badImageVersion != "" {
@@ -404,26 +218,30 @@ func TestUpgradeNodeVersion(t *testing.T) {
 				badUpdatedObject = &unstructured.Unstructured{Object: unstrBadNodeVersion}
 			}
 
-			unstrNodeVersion, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&nodeVersion)
-			require.NoError(err)
 			unstructuredClient := &stubUnstructuredClient{
 				object:           &unstructured.Unstructured{Object: unstrNodeVersion},
 				badUpdatedObject: badUpdatedObject,
 				getCRErr:         tc.getCRErr,
 			}
-			tc.kubectl.unstructuredInterface = unstructuredClient
+			kubectl := &stubKubectl{
+				unstructuredInterface: unstructuredClient,
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.KubeadmConfigMap: validKubeadmConfig,
+				},
+			}
 			if tc.customClientFn != nil {
-				tc.kubectl.unstructuredInterface = tc.customClientFn(nodeVersion)
+				kubectl.unstructuredInterface = tc.customClientFn(nodeVersion)
+			}
+			if tc.customKubeadmConfig != nil {
+				kubectl.configMaps[constants.KubeadmConfigMap] = tc.customKubeadmConfig
 			}
 
 			upgrader := KubeCmd{
-				kubectl:      tc.kubectl,
-				imageFetcher: &stubImageFetcher{reference: tc.newImageReference},
-				log:          logger.NewTest(t),
-				outWriter:    io.Discard,
+				kubectl: kubectl,
+				log:     logger.NewTest(t),
 			}
 
-			err = upgrader.UpgradeNodeVersion(context.Background(), tc.conf, tc.force, false, false)
+			err = upgrader.UpgradeNodeImage(context.Background(), tc.newImageVersion, fmt.Sprintf("/path/to/image:%s", tc.newImageVersion.String()), tc.force)
 			// Check upgrades first because if we checked err first, UpgradeImage may error due to other reasons and still trigger an upgrade.
 			if tc.wantUpdate {
 				assert.NotNil(unstructuredClient.updatedObject)
@@ -437,17 +255,128 @@ func TestUpgradeNodeVersion(t *testing.T) {
 				return
 			}
 			assert.NoError(err)
-			// The ConfigMap only exists in the updatedConfigMaps map it needed to remove the Konnectivity values
-			if strings.Contains(tc.kubectl.configMaps[constants.KubeadmConfigMap].Data[constants.ClusterConfigurationKey], "konnectivity-uds") {
-				assert.NotContains(tc.kubectl.updatedConfigMaps[constants.KubeadmConfigMap].Data[constants.ClusterConfigurationKey], "konnectivity-uds")
-				assert.NotContains(tc.kubectl.updatedConfigMaps[constants.KubeadmConfigMap].Data[constants.ClusterConfigurationKey], "egress-config")
-				assert.NotContains(tc.kubectl.updatedConfigMaps[constants.KubeadmConfigMap].Data[constants.ClusterConfigurationKey], "egress-selector-config-file")
+			// If the ConfigMap only exists in the updatedConfigMaps map, the Konnectivity values should have been removed
+			if strings.Contains(kubectl.configMaps[constants.KubeadmConfigMap].Data[constants.ClusterConfigurationKey], "konnectivity-uds") {
+				assert.NotContains(kubectl.updatedConfigMaps[constants.KubeadmConfigMap].Data[constants.ClusterConfigurationKey], "konnectivity-uds")
+				assert.NotContains(kubectl.updatedConfigMaps[constants.KubeadmConfigMap].Data[constants.ClusterConfigurationKey], "egress-config")
+				assert.NotContains(kubectl.updatedConfigMaps[constants.KubeadmConfigMap].Data[constants.ClusterConfigurationKey], "egress-selector-config-file")
 			}
 		})
 	}
 }
 
-func TestUpdateImage(t *testing.T) {
+func TestUpgradeKubernetesVersion(t *testing.T) {
+	testCases := map[string]struct {
+		conditions               []metav1.Condition
+		newKubernetesVersion     versions.ValidK8sVersion
+		currentKubernetesVersion versions.ValidK8sVersion
+		force                    bool
+		getCRErr                 error
+		wantErr                  bool
+		wantUpdate               bool
+		assertCorrectError       func(t *testing.T, err error) bool
+		customClientFn           func(nodeVersion updatev1alpha1.NodeVersion) unstructuredInterface
+	}{
+		"success": {
+			currentKubernetesVersion: supportedValidK8sVersions()[0],
+			newKubernetesVersion:     supportedValidK8sVersions()[1],
+			wantUpdate:               true,
+			wantErr:                  false,
+		},
+		"not an upgrade": {
+			currentKubernetesVersion: supportedValidK8sVersions()[0],
+			newKubernetesVersion:     supportedValidK8sVersions()[0],
+			wantErr:                  true,
+			assertCorrectError: func(t *testing.T, err error) bool {
+				var upgradeErr *compatibility.InvalidUpgradeError
+				return assert.ErrorAs(t, err, &upgradeErr)
+			},
+		},
+		"get error": {
+			currentKubernetesVersion: supportedValidK8sVersions()[0],
+			newKubernetesVersion:     supportedValidK8sVersions()[1],
+			getCRErr:                 assert.AnError,
+			wantErr:                  true,
+			assertCorrectError: func(t *testing.T, err error) bool {
+				return assert.ErrorIs(t, err, assert.AnError)
+			},
+		},
+		"outdated k8s version skips k8s upgrade": {
+			currentKubernetesVersion: supportedValidK8sVersions()[0],
+			newKubernetesVersion:     versions.ValidK8sVersion("v1.1.0"),
+			wantUpdate:               false,
+			wantErr:                  true,
+			assertCorrectError: func(t *testing.T, err error) bool {
+				var upgradeErr *compatibility.InvalidUpgradeError
+				return assert.ErrorAs(t, err, &upgradeErr)
+			},
+		},
+		"succeed after update retry when the updated node object is outdated": {
+			currentKubernetesVersion: supportedValidK8sVersions()[0],
+			newKubernetesVersion:     supportedValidK8sVersions()[1],
+			wantUpdate:               false, // because customClient is used
+			customClientFn: func(nodeVersion updatev1alpha1.NodeVersion) unstructuredInterface {
+				fakeClient := &fakeUnstructuredClient{}
+				fakeClient.On("GetCR", mock.Anything, mock.Anything).Return(unstructedObjectWithGeneration(nodeVersion, 1), nil)
+				fakeClient.On("UpdateCR", mock.Anything, mock.Anything).Return(nil, k8serrors.NewConflict(schema.GroupResource{Resource: nodeVersion.Name}, nodeVersion.Name, nil)).Once()
+				fakeClient.On("UpdateCR", mock.Anything, mock.Anything).Return(unstructedObjectWithGeneration(nodeVersion, 2), nil).Once()
+				return fakeClient
+			},
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			nodeVersion := updatev1alpha1.NodeVersion{
+				Spec: updatev1alpha1.NodeVersionSpec{
+					ImageVersion:             "v1.2.3",
+					KubernetesClusterVersion: string(tc.currentKubernetesVersion),
+				},
+				Status: updatev1alpha1.NodeVersionStatus{
+					Conditions: tc.conditions,
+				},
+			}
+
+			unstrNodeVersion, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&nodeVersion)
+			require.NoError(err)
+			unstructuredClient := &stubUnstructuredClient{
+				object:   &unstructured.Unstructured{Object: unstrNodeVersion},
+				getCRErr: tc.getCRErr,
+			}
+			kubectl := &stubKubectl{
+				unstructuredInterface: unstructuredClient,
+			}
+			if tc.customClientFn != nil {
+				kubectl.unstructuredInterface = tc.customClientFn(nodeVersion)
+			}
+
+			upgrader := KubeCmd{
+				kubectl: kubectl,
+				log:     logger.NewTest(t),
+			}
+
+			err = upgrader.UpgradeKubernetesVersion(context.Background(), tc.newKubernetesVersion, tc.force)
+			// Check upgrades first because if we checked err first, UpgradeImage may error due to other reasons and still trigger an upgrade.
+			if tc.wantUpdate {
+				assert.NotNil(unstructuredClient.updatedObject)
+			} else {
+				assert.Nil(unstructuredClient.updatedObject)
+			}
+
+			if tc.wantErr {
+				assert.Error(err)
+				tc.assertCorrectError(t, err)
+				return
+			}
+			assert.NoError(err)
+		})
+	}
+}
+
+func TestIsValidImageUpgrade(t *testing.T) {
 	someErr := errors.New("error")
 	testCases := map[string]struct {
 		newImageReference string
@@ -729,7 +658,6 @@ func TestApplyJoinConfig(t *testing.T) {
 				kubectl:       tc.kubectl,
 				log:           logger.NewTest(t),
 				retryInterval: time.Millisecond,
-				outWriter:     io.Discard,
 			}
 
 			err := cmd.ApplyJoinConfig(context.Background(), tc.newAttestationCfg, []byte{0x11})
@@ -837,18 +765,6 @@ func (s *stubKubectl) KubernetesVersion() (string, error) {
 
 func (s *stubKubectl) GetNodes(_ context.Context) ([]corev1.Node, error) {
 	return s.nodes, s.nodesErr
-}
-
-type stubImageFetcher struct {
-	reference         string
-	fetchReferenceErr error
-}
-
-func (f *stubImageFetcher) FetchReference(_ context.Context,
-	_ cloudprovider.Provider, _ variant.Variant,
-	_, _ string,
-) (string, error) {
-	return f.reference, f.fetchReferenceErr
 }
 
 func unstructedObjectWithGeneration(nodeVersion updatev1alpha1.NodeVersion, generation int64) *unstructured.Unstructured {
