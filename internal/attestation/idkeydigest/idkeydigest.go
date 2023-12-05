@@ -159,9 +159,11 @@ func (d *List) UnmarshalYAML(unmarshal func(any) error) error {
 		}
 		encodedDigests = append(encodedDigests, unmarshalledString)
 	}
-	if err := d.Unmarshal(encodedDigests); err != nil {
+	res, err := UnmarshalHexString(encodedDigests)
+	if err != nil {
 		return fmt.Errorf("unmarshalling yaml: %w", err)
 	}
+	*d = *res
 	return nil
 }
 
@@ -188,23 +190,26 @@ func (d *List) UnmarshalJSON(b []byte) error {
 		}
 		encodedDigests = []string{unmarshalledString}
 	}
-	if err := d.Unmarshal(encodedDigests); err != nil {
+	res, err := UnmarshalHexString(encodedDigests)
+	if err != nil {
 		return fmt.Errorf("unmarshalling json: %w", err)
 	}
+	*d = *res
 	return nil
 }
 
-// Unmarshal is a helper function for unmarshalling encodedIDKeyDigests into IDKeyDigests.
-func (d *List) Unmarshal(encodedDigests encodedList) error {
+// UnmarshalHexString unmarshals a list of hex encoded ID key digest strings.
+func UnmarshalHexString(encodedDigests []string) (*List, error) {
+	res := &List{}
 	for _, encodedDigest := range encodedDigests {
 		if len(encodedDigest) != encodedDigestLength {
-			return fmt.Errorf("invalid digest length: %d", len(encodedDigest))
+			return nil, fmt.Errorf("invalid digest length: %d", len(encodedDigest))
 		}
 		digest, err := hex.DecodeString(encodedDigest)
 		if err != nil {
-			return fmt.Errorf("decoding digest: %w", err)
+			return nil, fmt.Errorf("decoding digest: %w", err)
 		}
-		*d = append(*d, digest)
+		*res = append(*res, digest)
 	}
-	return nil
+	return res, nil
 }

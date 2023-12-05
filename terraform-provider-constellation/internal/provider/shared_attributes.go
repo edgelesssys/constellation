@@ -13,7 +13,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func newAttestationVariantAttribute(isInput bool) schema.Attribute {
+const (
+	// AttributeInput is used for input variables.
+	AttributeInput attributeType = true
+	// AttributeOutput is used for output variables.
+	AttributeOutput attributeType = false
+)
+
+type attributeType bool
+
+func newAttestationVariantAttribute(t attributeType) schema.Attribute {
+	isInput := bool(t)
 	return schema.StringAttribute{
 		Description: "Attestation variant the image should work with. (e.g. `azure-sev-snp`)",
 		MarkdownDescription: "Attestation variant the image should work with. Can be one of:\n" +
@@ -41,7 +51,8 @@ func newCSPAttribute() schema.Attribute {
 	}
 }
 
-func newMeasurementsAttribute(isInput bool) schema.Attribute {
+func newMeasurementsAttribute(t attributeType) schema.Attribute {
+	isInput := bool(t)
 	return schema.MapNestedAttribute{
 		Computed: !isInput,
 		Required: isInput,
@@ -60,14 +71,15 @@ func newMeasurementsAttribute(isInput bool) schema.Attribute {
 	}
 }
 
-func newAttestationConfigAttribute(isInput bool) schema.Attribute {
+func newAttestationConfigAttribute(t attributeType) schema.Attribute {
+	isInput := bool(t)
 	return schema.SingleNestedAttribute{
 		Computed:            !isInput,
 		Required:            isInput,
 		MarkdownDescription: "Attestation comprises the measurements and SEV-SNP specific parameters.",
 		Description:         "The values provide sensible defaults. See the docs for advanced usage.", // TODO(elchead): AB#3568
 		Attributes: map[string]schema.Attribute{
-			"variant": newAttestationVariantAttribute(isInput), // duplicated for convenience in cluster resource
+			"variant": newAttestationVariantAttribute(t), // duplicated for convenience in cluster resource
 			"bootloader_version": schema.Int64Attribute{
 				Computed: !isInput,
 				Required: isInput,
@@ -107,7 +119,7 @@ func newAttestationConfigAttribute(isInput bool) schema.Attribute {
 				Computed: !isInput,
 				Required: isInput,
 			},
-			"measurements": newMeasurementsAttribute(isInput),
+			"measurements": newMeasurementsAttribute(t),
 		},
 	}
 }

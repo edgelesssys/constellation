@@ -12,6 +12,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -83,8 +84,8 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Optional:            true,
 			},
 			"kubernetes_version": schema.StringAttribute{
-				MarkdownDescription: "The Kubernetes version to use for the cluster.",
-				Description:         "The Kubernetes version to use for the cluster. When not set, the latest default version will be used.", // TODO(elchead): refer to supported versions; wait for https://github.com/edgelesssys/constellation/pull/2661
+				MarkdownDescription: fmt.Sprintf("The Kubernetes version to use for the cluster. When not set, the latest default version (%q) will be used.", versions.Default), // TODO(elchead): refer to supported versions; wait for https://github.com/edgelesssys/constellation/pull/2661
+				Description:         fmt.Sprintf("The Kubernetes version to use for the cluster. When not set, the latest default version (%q) will be used.", versions.Default), // TODO(elchead): refer to supported versions; wait for https://github.com/edgelesssys/constellation/pull/2661
 				Optional:            true,
 			},
 			"constellation_microservices_version": schema.StringAttribute{
@@ -128,8 +129,8 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				MarkdownDescription: "The init secret to use for the cluster.",
 				Description:         "The init secret to use for the cluster.",
 				Required:            true,
-			}, // TODO merge / derive from master secret?
-			"attestation": newAttestationConfigAttribute(true),
+			},
+			"attestation": newAttestationConfigAttribute(AttributeInput),
 			"owner_id": schema.StringAttribute{
 				MarkdownDescription: "The owner ID of the cluster.",
 				Description:         "The owner ID of the cluster.",

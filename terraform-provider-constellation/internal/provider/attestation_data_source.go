@@ -74,7 +74,7 @@ func (d *AttestationDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 
 		Attributes: map[string]schema.Attribute{
 			"csp":                 newCSPAttribute(),
-			"attestation_variant": newAttestationVariantAttribute(true),
+			"attestation_variant": newAttestationVariantAttribute(AttributeInput),
 			"image_version": schema.StringAttribute{
 				MarkdownDescription: "The image version to use",
 				Required:            true,
@@ -96,7 +96,7 @@ func (d *AttestationDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 					},
 				},
 			},
-			"attestation": newAttestationConfigAttribute(false),
+			"attestation": newAttestationConfigAttribute(AttributeOutput),
 		},
 	}
 }
@@ -139,7 +139,7 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 			return
 		}
 	}
-	tfSnpAttestation, err := convertToTfAttestation(attestationVariant, snpVersions)
+	tfAttestation, err := convertToTfAttestation(attestationVariant, snpVersions)
 	if err != nil {
 		resp.Diagnostics.AddError("Converting SNP attestation", err.Error())
 	}
@@ -155,8 +155,8 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 			return
 		}
 	}
-	tfSnpAttestation.Measurements = convertToTfMeasurements(fetchedMeasurements)
-	diags := resp.State.SetAttribute(ctx, path.Root("attestation"), tfSnpAttestation)
+	tfAttestation.Measurements = convertToTfMeasurements(fetchedMeasurements)
+	diags := resp.State.SetAttribute(ctx, path.Root("attestation"), tfAttestation)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

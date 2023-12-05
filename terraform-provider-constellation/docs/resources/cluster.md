@@ -31,7 +31,7 @@ Enable debug mode and allow the use of debug images.
 - `image` (String) The Constellation OS image to use in the CSP specific reference format. Use the `constellation_image` data source to find the correct image for your CSP.
 - `init_endpoint` (String) The endpoint to use for cluster initialization. This is the endpoint of the node running the bootstrapper.
 - `kubernetes_api_endpoint` (String) The endpoint to use for the Kubernetes API.
-- `kubernetes_version` (String) The Kubernetes version to use for the cluster.
+- `kubernetes_version` (String) The Kubernetes version to use for the cluster. When not set, the latest default version ("v1.27.7") will be used.
 - `name` (String) Name used in the cluster's named resources / cluster name.
 
 ### Read-Only

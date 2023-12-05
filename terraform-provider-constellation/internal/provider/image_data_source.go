@@ -62,7 +62,7 @@ func (d *ImageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 		Description:         "Data source to retrieve the Constellation OS image reference for a given CSP and Attestation Variant.",
 		MarkdownDescription: "Data source to retrieve the Constellation OS image reference for a given CSP and Attestation Variant.",
 		Attributes: map[string]schema.Attribute{
-			"attestation_variant": newAttestationVariantAttribute(true),
+			"attestation_variant": newAttestationVariantAttribute(AttributeInput),
 			"image_version": schema.StringAttribute{
 				Description:         "Version of the Constellation OS image to use. (e.g. `v2.13.0`)",
 				MarkdownDescription: "Version of the Constellation OS image to use. (e.g. `v2.13.0`)",

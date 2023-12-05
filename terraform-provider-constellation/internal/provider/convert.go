@@ -51,7 +51,6 @@ func convertFromTfAttestationCfg(tfAttestation attestation, attestationVariant v
 		}
 	}
 
-	// parser := attestationParser{attestation: attestation}
 	var attestationConfig config.AttestationCfg
 	switch attestationVariant {
 	case variant.AzureSEVSNP{}:
@@ -80,9 +79,9 @@ func convertFromTfAttestationCfg(tfAttestation attestation, attestationVariant v
 // convertToTfAttestationCfg converts the constellation attestation config to the related terraform structs.
 func convertToTfAttestation(attestationVariant variant.Variant,
 	snpVersions attestationconfigapi.SEVSNPVersionAPI,
-) (tfSnpAttestation attestation, err error) {
+) (tfAttestation attestation, err error) {
 	// set fields that apply to all variants
-	tfSnpAttestation = attestation{
+	tfAttestation = attestation{
 		Variant:           attestationVariant.String(),
 		BootloaderVersion: snpVersions.Bootloader,
 		TEEVersion:        snpVersions.TEE,
@@ -93,25 +92,25 @@ func convertToTfAttestation(attestationVariant variant.Variant,
 	case variant.AWSSEVSNP:
 		certStr, err := certAsString(config.DefaultForAWSSEVSNP().AMDRootKey)
 		if err != nil {
-			return tfSnpAttestation, err
+			return tfAttestation, err
 		}
-		tfSnpAttestation.AMDRootKey = certStr
+		tfAttestation.AMDRootKey = certStr
 
 	case variant.AzureSEVSNP:
 		certStr, err := certAsString(config.DefaultForAWSSEVSNP().AMDRootKey)
 		if err != nil {
-			return tfSnpAttestation, err
+			return tfAttestation, err
 		}
-		tfSnpAttestation.AMDRootKey = certStr
+		tfAttestation.AMDRootKey = certStr
 
 		firmwareCfg := config.DefaultForAzureSEVSNP().FirmwareSignerConfig
 		tfFirmwareCfg, err := convertToTfFirmwareCfg(firmwareCfg)
 		if err != nil {
-			return tfSnpAttestation, err
+			return tfAttestation, err
 		}
-		tfSnpAttestation.AzureSNPFirmwareSignerConfig = tfFirmwareCfg
+		tfAttestation.AzureSNPFirmwareSignerConfig = tfFirmwareCfg
 	}
-	return tfSnpAttestation, nil
+	return tfAttestation, nil
 }
 
 func certAsString(cert config.Certificate) (string, error) {
@@ -141,12 +140,12 @@ func convertToTfFirmwareCfg(firmwareCfg config.SNPFirmwareSignerConfig) (azureSn
 
 // convertFromTfFirmwareCfg converts the terraform struct to a constellation firmware config.
 func convertFromTfFirmwareCfg(tfFirmwareCfg azureSnpFirmwareSignerConfig) (config.SNPFirmwareSignerConfig, error) {
-	var keyDigests idkeydigest.List
-	if err := keyDigests.Unmarshal(tfFirmwareCfg.AcceptedKeyDigests); err != nil {
+	keyDigests, err := idkeydigest.UnmarshalHexString(tfFirmwareCfg.AcceptedKeyDigests)
+	if err != nil {
 		return config.SNPFirmwareSignerConfig{}, err
 	}
 	return config.SNPFirmwareSignerConfig{
-		AcceptedKeyDigests: keyDigests,
+		AcceptedKeyDigests: *keyDigests,
 		EnforcementPolicy:  idkeydigest.EnforcePolicyFromString(tfFirmwareCfg.EnforcementPolicy),
 		MAAURL:             tfFirmwareCfg.MAAURL,
 	}, nil
