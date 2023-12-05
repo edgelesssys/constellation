@@ -14,10 +14,10 @@ import (
 )
 
 const (
-	// AttributeInput is the attribute type used for input variables.
-	AttributeInput attributeType = true
-	// AttributeOutput is the attribute type used for output variables.
-	AttributeOutput attributeType = false
+	// attributeInput is the attribute type used for input variables.
+	attributeInput attributeType = true
+	// attributeOutput is the attribute type used for output variables.
+	attributeOutput attributeType = false
 )
 
 type attributeType bool

@@ -144,7 +144,7 @@ func convertFromTfFirmwareCfg(tfFirmwareCfg azureSnpFirmwareSignerConfig) (confi
 		return config.SNPFirmwareSignerConfig{}, err
 	}
 	return config.SNPFirmwareSignerConfig{
-		AcceptedKeyDigests: *keyDigests,
+		AcceptedKeyDigests: keyDigests,
 		EnforcementPolicy:  idkeydigest.EnforcePolicyFromString(tfFirmwareCfg.EnforcementPolicy),
 		MAAURL:             tfFirmwareCfg.MAAURL,
 	}, nil

@@ -42,7 +42,6 @@ type ClusterResourceModel struct {
 	Name                  types.String `tfsdk:"name"`
 	Image                 types.String `tfsdk:"image"`
 	KubernetesVersion     types.String `tfsdk:"kubernetes_version"`
-	Debug                 types.Bool   `tfsdk:"debug"`
 	InitEndpoint          types.String `tfsdk:"init_endpoint"`
 	KubernetesAPIEndpoint types.String `tfsdk:"kubernetes_api_endpoint"`
 	MicroserviceVersion   types.String `tfsdk:"constellation_microservices_version"`
@@ -84,18 +83,13 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Optional:            true,
 			},
 			"kubernetes_version": schema.StringAttribute{
-				MarkdownDescription: fmt.Sprintf("The Kubernetes version to use for the cluster. When not set, the latest default version (%q) will be used.", versions.Default), // TODO(elchead): refer to supported versions; wait for https://github.com/edgelesssys/constellation/pull/2661
-				Description:         fmt.Sprintf("The Kubernetes version to use for the cluster. When not set, the latest default version (%q) will be used.", versions.Default), // TODO(elchead): refer to supported versions; wait for https://github.com/edgelesssys/constellation/pull/2661
+				MarkdownDescription: fmt.Sprintf("The Kubernetes version to use for the cluster. When not set, the latest default version (%q) will be used. The supported versions are %s.", versions.Default, versions.SupportedK8sVersions()),
+				Description:         fmt.Sprintf("The Kubernetes version to use for the cluster. When not set, the latest default version (%q) will be used. The supported versions are %s.", versions.Default, versions.SupportedK8sVersions()),
 				Optional:            true,
 			},
 			"constellation_microservices_version": schema.StringAttribute{
 				MarkdownDescription: "The Constellation microservices version to use for the cluster.",
 				Description:         "The Constellation microservices version to use for the cluster. When not set, the latest default version will be used.",
-				Optional:            true,
-			},
-			"debug": schema.BoolAttribute{
-				MarkdownDescription: "~> **Warning:** Do not enable Debug mode in production environments.\nEnable debug mode and allow the use of debug images.",
-				Description:         "DON'T USE IN PRODUCTION: Enable debug mode and allow the use of debug images.",
 				Optional:            true,
 			},
 			"init_endpoint": schema.StringAttribute{
@@ -130,7 +124,7 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Description:         "The init secret to use for the cluster.",
 				Required:            true,
 			},
-			"attestation": newAttestationConfigAttribute(AttributeInput),
+			"attestation": newAttestationConfigAttribute(attributeInput),
 			"owner_id": schema.StringAttribute{
 				MarkdownDescription: "The owner ID of the cluster.",
 				Description:         "The owner ID of the cluster.",

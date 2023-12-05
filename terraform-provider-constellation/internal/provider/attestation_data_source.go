@@ -73,7 +73,7 @@ func (d *AttestationDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 
 		Attributes: map[string]schema.Attribute{
 			"csp":                 newCSPAttribute(),
-			"attestation_variant": newAttestationVariantAttribute(AttributeInput),
+			"attestation_variant": newAttestationVariantAttribute(attributeInput),
 			"image_version": schema.StringAttribute{
 				MarkdownDescription: "The image version to use",
 				Required:            true,
@@ -82,7 +82,7 @@ func (d *AttestationDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 				MarkdownDescription: "For Azure only, the URL of the Microsoft Azure Attestation service",
 				Optional:            true,
 			},
-			"attestation": newAttestationConfigAttribute(AttributeOutput),
+			"attestation": newAttestationConfigAttribute(attributeOutput),
 		},
 	}
 }

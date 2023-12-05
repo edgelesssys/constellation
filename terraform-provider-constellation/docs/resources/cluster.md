@@ -25,13 +25,11 @@ Resource for a Constellation cluster.
 ### Optional
 
 - `constellation_microservices_version` (String) The Constellation microservices version to use for the cluster.
-- `debug` (Boolean) ~> **Warning:** Do not enable Debug mode in production environments.
-Enable debug mode and allow the use of debug images.
 - `extra_microservices` (Attributes) Extra microservice settings. (see [below for nested schema](#nestedatt--extra_microservices))
 - `image` (String) The Constellation OS image to use in the CSP specific reference format. Use the `constellation_image` data source to find the correct image for your CSP.
 - `init_endpoint` (String) The endpoint to use for cluster initialization. This is the endpoint of the node running the bootstrapper.
 - `kubernetes_api_endpoint` (String) The endpoint to use for the Kubernetes API.
-- `kubernetes_version` (String) The Kubernetes version to use for the cluster. When not set, the latest default version ("v1.27.7") will be used.
+- `kubernetes_version` (String) The Kubernetes version to use for the cluster. When not set, the latest default version ("v1.27.7") will be used. The supported versions are [v1.26.10 v1.27.7 v1.28.3].
 - `name` (String) Name used in the cluster's named resources / cluster name.
 
 ### Read-Only
