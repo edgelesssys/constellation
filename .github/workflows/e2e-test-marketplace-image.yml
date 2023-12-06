@@ -11,9 +11,7 @@ on:
         description: "Which cloud provider to use."
         type: choice
         options:
-          - "gcp"
           - "azure"
-          - "aws"
         default: "azure"
         required: true
       runner:
