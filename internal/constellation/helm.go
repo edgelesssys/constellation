@@ -11,8 +11,8 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constellation/helm"
+	"github.com/edgelesssys/constellation/v2/internal/constellation/state"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
-	"github.com/edgelesssys/constellation/v2/internal/state"
 )
 
 // PrepareHelmCharts loads Helm charts for Constellation and returns an executor to apply them.

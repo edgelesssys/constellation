@@ -37,7 +37,7 @@
 /internal/containerimage @malt3
 /internal/crypto @thomasten
 /internal/cryptsetup @daniel-weisse
-/internal/featureset @malt3
+/internal/constellation/featureset @malt3
 /internal/file @daniel-weisse
 /internal/grpc @thomasten
 /internal/constellation/helm @derpsteb
@@ -52,7 +52,7 @@
 /internal/retry @katexochen
 /internal/semver @derpsteb
 /internal/sigstore @elchead
-/internal/state @elchead
+/internal/constellation/state @elchead
 /internal/staticupload @malt3
 /internal/versions @3u13r
 /joinservice @daniel-weisse

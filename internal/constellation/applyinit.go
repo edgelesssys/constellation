@@ -19,11 +19,11 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/constellation/state"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/grpclog"
 	grpcRetry "github.com/edgelesssys/constellation/v2/internal/grpc/retry"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/retry"
-	"github.com/edgelesssys/constellation/v2/internal/state"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"google.golang.org/grpc"
 )

@@ -9,6 +9,6 @@ go_library(
         # keep
         "featureset_oss.go",
     ],
-    importpath = "github.com/edgelesssys/constellation/v2/internal/featureset",
+    importpath = "github.com/edgelesssys/constellation/v2/internal/constellation/featureset",
     visibility = ["//cli:__subpackages__"],
 )

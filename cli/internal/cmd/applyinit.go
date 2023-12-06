@@ -22,9 +22,9 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/constellation"
+	"github.com/edgelesssys/constellation/v2/internal/constellation/state"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
-	"github.com/edgelesssys/constellation/v2/internal/state"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/tools/clientcmd"
 )
