@@ -1,7 +1,6 @@
-name: e2e test self managed infrastructure
+name: e2e test marketplace image
 
 on:
-  push:
   workflow_dispatch:
     inputs:
       nodeCount:
