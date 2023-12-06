@@ -206,11 +206,17 @@ func TestHelmApply(t *testing.T) {
 			helmListVersion(lister, "aws-load-balancer-controller", awsLbVersion)
 
 			options.AllowDestructive = tc.allowDestructive
-			ex, includesUpgrade, err := sut.PrepareApply(csp, attestationVariant, versions.Default, cliVersion,
+			options.CSP = csp
+			options.AttestationVariant = attestationVariant
+			options.K8sVersion = versions.Default
+			options.MicroserviceVersion = cliVersion
+
+			ex, includesUpgrade, err := sut.PrepareApply(
+				options,
 				state.New().
 					SetInfrastructure(state.Infrastructure{UID: "testuid"}).
 					SetClusterValues(state.ClusterValues{MeasurementSalt: []byte{0x41}}),
-				options, fakeServiceAccURI(csp),
+				fakeServiceAccURI(csp),
 				uri.MasterSecret{Key: []byte("secret"), Salt: []byte("masterSalt")}, nil)
 			var upgradeErr *compatibility.InvalidUpgradeError
 			if tc.expectError {

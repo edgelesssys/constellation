@@ -16,9 +16,9 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/constellation/helm"
 	"github.com/edgelesssys/constellation/v2/internal/constellation/kubecmd"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
@@ -53,7 +53,7 @@ func TestUpgradeApply(t *testing.T) {
 	}{
 		"success": {
 			kubeUpgrader:      &stubKubernetesUpgrader{currentConfig: config.DefaultForAzureSEVSNP()},
-			helmUpgrader:      stubHelmApplier{},
+			helmUpgrader:      &stubHelmApplier{},
 			terraformUpgrader: &stubTerraformUpgrader{},
 			flags:             applyFlags{yes: true, skipPhases: skipPhases{skipInitPhase: struct{}{}}},
 			fh:                fsWithStateFileAndTfState,
@@ -66,7 +66,7 @@ func TestUpgradeApply(t *testing.T) {
 		},
 		"id file and state file do not exist": {
 			kubeUpgrader:      &stubKubernetesUpgrader{currentConfig: config.DefaultForAzureSEVSNP()},
-			helmUpgrader:      stubHelmApplier{},
+			helmUpgrader:      &stubHelmApplier{},
 			terraformUpgrader: &stubTerraformUpgrader{},
 			flags:             applyFlags{yes: true, skipPhases: skipPhases{skipInitPhase: struct{}{}}},
 			fh: func() file.Handler {
@@ -79,7 +79,7 @@ func TestUpgradeApply(t *testing.T) {
 				currentConfig:  config.DefaultForAzureSEVSNP(),
 				nodeVersionErr: assert.AnError,
 			},
-			helmUpgrader:      stubHelmApplier{},
+			helmUpgrader:      &stubHelmApplier{},
 			terraformUpgrader: &stubTerraformUpgrader{},
 			wantErr:           true,
 			flags:             applyFlags{yes: true, skipPhases: skipPhases{skipInitPhase: struct{}{}}},
@@ -90,7 +90,7 @@ func TestUpgradeApply(t *testing.T) {
 				currentConfig:  config.DefaultForAzureSEVSNP(),
 				nodeVersionErr: kubecmd.ErrInProgress,
 			},
-			helmUpgrader:      stubHelmApplier{},
+			helmUpgrader:      &stubHelmApplier{},
 			terraformUpgrader: &stubTerraformUpgrader{},
 			flags:             applyFlags{yes: true, skipPhases: skipPhases{skipInitPhase: struct{}{}}},
 			fh:                fsWithStateFileAndTfState,
@@ -99,7 +99,7 @@ func TestUpgradeApply(t *testing.T) {
 			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig: config.DefaultForAzureSEVSNP(),
 			},
-			helmUpgrader:      stubHelmApplier{err: assert.AnError},
+			helmUpgrader:      &stubHelmApplier{err: assert.AnError},
 			terraformUpgrader: &stubTerraformUpgrader{},
 			wantErr:           true,
 			flags:             applyFlags{yes: true, skipPhases: skipPhases{skipInitPhase: struct{}{}}},
@@ -109,7 +109,7 @@ func TestUpgradeApply(t *testing.T) {
 			kubeUpgrader: &stubKubernetesUpgrader{
 				currentConfig: config.DefaultForAzureSEVSNP(),
 			},
-			helmUpgrader:      stubHelmApplier{},
+			helmUpgrader:      &stubHelmApplier{},
 			terraformUpgrader: &stubTerraformUpgrader{terraformDiff: true},
 			wantErr:           true,
 			stdin:             "no\n",
@@ -215,7 +215,7 @@ func TestUpgradeApply(t *testing.T) {
 		},
 		"attempt to change attestation variant": {
 			kubeUpgrader:      &stubKubernetesUpgrader{currentConfig: &config.AzureTrustedLaunch{}},
-			helmUpgrader:      stubHelmApplier{},
+			helmUpgrader:      &stubHelmApplier{},
 			terraformUpgrader: &stubTerraformUpgrader{},
 			flags:             applyFlags{yes: true, skipPhases: skipPhases{skipInitPhase: struct{}{}}},
 			fh:                fsWithStateFileAndTfState,
@@ -223,7 +223,7 @@ func TestUpgradeApply(t *testing.T) {
 		},
 		"image fetching fails": {
 			kubeUpgrader:      &stubKubernetesUpgrader{currentConfig: config.DefaultForAzureSEVSNP()},
-			helmUpgrader:      stubHelmApplier{},
+			helmUpgrader:      &stubHelmApplier{},
 			terraformUpgrader: &stubTerraformUpgrader{},
 			fetchImageErr:     assert.AnError,
 			flags:             applyFlags{yes: true, skipPhases: skipPhases{skipInitPhase: struct{}{}}},
@@ -254,13 +254,13 @@ func TestUpgradeApply(t *testing.T) {
 				log:         logger.NewTest(t),
 				spinner:     &nopSpinner{},
 				merger:      &stubMerger{},
-				newHelmClient: func(string, debugLog) (helmApplier, error) {
-					return tc.helmUpgrader, nil
-				},
 				newInfraApplier: func(ctx context.Context) (cloudApplier, func(), error) {
 					return tc.terraformUpgrader, func() {}, nil
 				},
-				applier:      &stubConstellApplier{stubKubernetesUpgrader: tc.kubeUpgrader},
+				applier: &stubConstellApplier{
+					stubKubernetesUpgrader: tc.kubeUpgrader,
+					helmApplier:            tc.helmUpgrader,
+				},
 				imageFetcher: &stubImageFetcher{fetchReferenceErr: tc.fetchImageErr},
 			}
 			err := upgrader.apply(cmd, stubAttestationFetcher{}, "test")
@@ -375,10 +375,10 @@ type mockApplier struct {
 	mock.Mock
 }
 
-func (m *mockApplier) PrepareApply(csp cloudprovider.Provider, variant variant.Variant, k8sVersion versions.ValidK8sVersion, microserviceVersion semver.Semver, stateFile *state.State,
-	helmOpts helm.Options, str string, masterSecret uri.MasterSecret, openStackCfg *config.OpenStackConfig,
+func (m *mockApplier) PrepareHelmCharts(
+	helmOpts helm.Options, stateFile *state.State, str string, masterSecret uri.MasterSecret, openStackCfg *config.OpenStackConfig,
 ) (helm.Applier, bool, error) {
-	args := m.Called(csp, variant, k8sVersion, microserviceVersion, stateFile, helmOpts, str, masterSecret, openStackCfg)
+	args := m.Called(helmOpts, stateFile, helmOpts, str, masterSecret, openStackCfg)
 	return args.Get(0).(helm.Applier), args.Bool(1), args.Error(2)
 }
 

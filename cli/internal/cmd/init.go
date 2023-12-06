@@ -20,15 +20,7 @@ import (
 	clientcodec "k8s.io/client-go/tools/clientcmd/api/latest"
 	"sigs.k8s.io/yaml"
 
-	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/helm"
-	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
-	"github.com/edgelesssys/constellation/v2/internal/semver"
-	"github.com/edgelesssys/constellation/v2/internal/state"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
 )
 
 // NewInitCmd returns a new cobra.Command for the init command.
@@ -115,11 +107,4 @@ func (c *kubeconfigMerger) kubeconfigEnvVar() string {
 
 type grpcDialer interface {
 	Dial(ctx context.Context, target string) (*grpc.ClientConn, error)
-}
-type helmApplier interface {
-	PrepareApply(
-		csp cloudprovider.Provider, attestationVariant variant.Variant, k8sVersion versions.ValidK8sVersion, microserviceVersion semver.Semver, stateFile *state.State,
-		flags helm.Options, serviceAccURI string, masterSecret uri.MasterSecret, openStackCfg *config.OpenStackConfig,
-	) (
-		helm.Applier, bool, error)
 }

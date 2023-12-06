@@ -18,14 +18,13 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/constellation"
+	"github.com/edgelesssys/constellation/v2/internal/constellation/helm"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
@@ -233,9 +232,6 @@ func TestInitialize(t *testing.T) {
 				log:     logger.NewTest(t),
 				spinner: &nopSpinner{},
 				merger:  &stubMerger{},
-				newHelmClient: func(string, debugLog) (helmApplier, error) {
-					return &stubHelmApplier{}, nil
-				},
 				applier: &stubConstellApplier{
 					masterSecret: uri.MasterSecret{
 						Key:  bytes.Repeat([]byte{0x01}, 32),
@@ -248,6 +244,7 @@ func TestInitialize(t *testing.T) {
 						// On init, no attestation config exists yet
 						getClusterAttestationConfigErr: k8serrors.NewNotFound(schema.GroupResource{}, ""),
 					},
+					helmApplier: &stubHelmApplier{},
 				},
 			}
 
@@ -282,9 +279,8 @@ type stubHelmApplier struct {
 	err error
 }
 
-func (s stubHelmApplier) PrepareApply(
-	_ cloudprovider.Provider, _ variant.Variant, _ versions.ValidK8sVersion, _ semver.Semver,
-	_ *state.State, _ helm.Options, _ string, _ uri.MasterSecret, _ *config.OpenStackConfig,
+func (s stubHelmApplier) PrepareHelmCharts(
+	_ helm.Options, _ *state.State, _ string, _ uri.MasterSecret, _ *config.OpenStackConfig,
 ) (helm.Applier, bool, error) {
 	return stubRunner{}, false, s.err
 }

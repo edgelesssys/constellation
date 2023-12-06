@@ -81,28 +81,30 @@ func NewClient(kubeConfig []byte, log debugLog) (*Client, error) {
 
 // Options are options for loading charts.
 type Options struct {
-	Conformance      bool
-	HelmWaitMode     WaitMode
-	DeployCSIDriver  bool
-	AllowDestructive bool
-	Force            bool
-	ApplyTimeout     time.Duration
+	CSP                 cloudprovider.Provider
+	AttestationVariant  variant.Variant
+	Conformance         bool
+	DeployCSIDriver     bool
+	AllowDestructive    bool
+	Force               bool
+	K8sVersion          versions.ValidK8sVersion
+	MicroserviceVersion semver.Semver
+	HelmWaitMode        WaitMode
+	ApplyTimeout        time.Duration
 }
 
 // PrepareApply loads the charts and returns the executor to apply them.
 func (h Client) PrepareApply(
-	csp cloudprovider.Provider, attestationVariant variant.Variant, k8sVersion versions.ValidK8sVersion,
-	microserviceVersion semver.Semver, stateFile *state.State, flags Options, serviceAccURI string,
-	masterSecret uri.MasterSecret, openStackCfg *config.OpenStackConfig,
+	flags Options, stateFile *state.State, serviceAccURI string, masterSecret uri.MasterSecret, openStackCfg *config.OpenStackConfig,
 ) (Applier, bool, error) {
-	releases, err := h.loadReleases(csp, attestationVariant, k8sVersion, masterSecret, stateFile, flags, serviceAccURI, openStackCfg)
+	releases, err := h.loadReleases(flags.CSP, flags.AttestationVariant, flags.K8sVersion, masterSecret, stateFile, flags, serviceAccURI, openStackCfg)
 	if err != nil {
 		return nil, false, fmt.Errorf("loading Helm releases: %w", err)
 	}
 
 	h.log.Debugf("Loaded Helm releases")
 	actions, includesUpgrades, err := h.factory.GetActions(
-		releases, microserviceVersion, flags.Force, flags.AllowDestructive, flags.ApplyTimeout,
+		releases, flags.MicroserviceVersion, flags.Force, flags.AllowDestructive, flags.ApplyTimeout,
 	)
 	return &ChartApplyExecutor{actions: actions, log: h.log}, includesUpgrades, err
 }

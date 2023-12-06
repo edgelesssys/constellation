@@ -24,8 +24,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/constellation"
+	"github.com/edgelesssys/constellation/v2/internal/constellation/helm"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/state"
@@ -193,8 +193,10 @@ func TestBackupHelmCharts(t *testing.T) {
 
 			a := applyCmd{
 				fileHandler: file.NewHandler(afero.NewMemMapFs()),
-				applier:     &stubConstellApplier{stubKubernetesUpgrader: tc.backupClient},
-				log:         logger.NewTest(t),
+				applier: &stubConstellApplier{
+					stubKubernetesUpgrader: tc.backupClient,
+				},
+				log: logger.NewTest(t),
 			}
 
 			err := a.backupHelmCharts(context.Background(), tc.helmApplier, tc.includesUpgrades, "")
@@ -502,6 +504,7 @@ type stubConstellApplier struct {
 	initErr                    error
 	initResponse               *initproto.InitSuccessResponse
 	*stubKubernetesUpgrader
+	helmApplier
 }
 
 func (s *stubConstellApplier) SetKubeConfig([]byte) error { return nil }
@@ -520,4 +523,11 @@ func (s *stubConstellApplier) GenerateMeasurementSalt() ([]byte, error) {
 
 func (s *stubConstellApplier) Init(context.Context, atls.Validator, *state.State, io.Writer, constellation.InitPayload) (*initproto.InitSuccessResponse, error) {
 	return s.initResponse, s.initErr
+}
+
+type helmApplier interface {
+	PrepareHelmCharts(
+		flags helm.Options, stateFile *state.State, serviceAccURI string, masterSecret uri.MasterSecret, openStackCfg *config.OpenStackConfig,
+	) (
+		helm.Applier, bool, error)
 }

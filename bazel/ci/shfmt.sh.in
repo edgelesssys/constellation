@@ -23,7 +23,7 @@ readarray -t <<< "${scriptsStr}"
 scripts=("${MAPFILE[@]}")
 
 excludeDirs=(
-  "internal/helm/charts/cilium"
+  "internal/constellation/helm/charts/cilium"
   "build"
   "docs/node_modules"
 )

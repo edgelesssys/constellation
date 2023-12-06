@@ -11,20 +11,13 @@ import (
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/atls"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/constellation/helm"
 	"github.com/edgelesssys/constellation/v2/internal/constellation/kubecmd"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
-	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
-	"github.com/edgelesssys/constellation/v2/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/license"
-	"github.com/edgelesssys/constellation/v2/internal/semver"
-	"github.com/edgelesssys/constellation/v2/internal/state"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
 // An Applier handles applying a specific configuration to a Constellation cluster
@@ -119,22 +112,4 @@ func (a *Applier) GenerateMeasurementSalt() ([]byte, error) {
 	}
 	a.log.Debugf("Generated measurement salt")
 	return measurementSalt, nil
-}
-
-type helmApplier interface {
-	PrepareApply(
-		csp cloudprovider.Provider, attestationVariant variant.Variant, k8sVersion versions.ValidK8sVersion, microserviceVersion semver.Semver, stateFile *state.State,
-		flags helm.Options, serviceAccURI string, masterSecret uri.MasterSecret, openStackCfg *config.OpenStackConfig,
-	) (
-		helm.Applier, bool, error)
-}
-
-type kubecmdClient interface {
-	UpgradeNodeImage(ctx context.Context, imageVersion semver.Semver, imageReference string, force bool) error
-	UpgradeKubernetesVersion(ctx context.Context, kubernetesVersion versions.ValidK8sVersion, force bool) error
-	ExtendClusterConfigCertSANs(ctx context.Context, alternativeNames []string) error
-	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, error)
-	ApplyJoinConfig(ctx context.Context, newAttestConfig config.AttestationCfg, measurementSalt []byte) error
-	BackupCRs(ctx context.Context, fileHandler file.Handler, crds []apiextensionsv1.CustomResourceDefinition, upgradeDir string) error
-	BackupCRDs(ctx context.Context, fileHandler file.Handler, upgradeDir string) ([]apiextensionsv1.CustomResourceDefinition, error)
 }

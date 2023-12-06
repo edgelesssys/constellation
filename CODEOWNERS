@@ -40,7 +40,7 @@
 /internal/featureset @malt3
 /internal/file @daniel-weisse
 /internal/grpc @thomasten
-/internal/helm @derpsteb
+/internal/constellation/helm @derpsteb
 /internal/imagefetcher @malt3
 /internal/installer @3u13r
 /internal/kms @daniel-weisse

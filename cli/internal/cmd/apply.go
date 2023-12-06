@@ -30,10 +30,10 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/constellation"
+	"github.com/edgelesssys/constellation/v2/internal/constellation/helm"
 	"github.com/edgelesssys/constellation/v2/internal/constellation/kubecmd"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
-	"github.com/edgelesssys/constellation/v2/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
@@ -230,14 +230,6 @@ func runApply(cmd *cobra.Command, _ []string) error {
 		return dialer.New(nil, validator, &net.Dialer{})
 	}
 
-	newHelmClient := func(kubeConfigPath string, log debugLog) (helmApplier, error) {
-		kubeConfig, err := fileHandler.Read(kubeConfigPath)
-		if err != nil {
-			return nil, fmt.Errorf("reading kubeconfig: %w", err)
-		}
-		return helm.NewClient(kubeConfig, log)
-	}
-
 	upgradeID := generateUpgradeID(upgradeCmdKindApply)
 	upgradeDir := filepath.Join(constants.UpgradeDir, upgradeID)
 
@@ -261,7 +253,6 @@ func runApply(cmd *cobra.Command, _ []string) error {
 		wLog:            &warnLogger{cmd: cmd, log: log},
 		spinner:         spinner,
 		merger:          &kubeconfigMerger{log: log},
-		newHelmClient:   newHelmClient,
 		newInfraApplier: newInfraApplier,
 		imageFetcher:    imagefetcher.New(),
 		applier:         applier,
@@ -287,37 +278,7 @@ type applyCmd struct {
 	imageFetcher imageFetcher
 	applier      applier
 
-	newHelmClient   func(kubeConfigPath string, log debugLog) (helmApplier, error)
 	newInfraApplier func(context.Context) (cloudApplier, func(), error)
-}
-
-type applier interface {
-	SetKubeConfig(kubeConfig []byte) error
-	CheckLicense(ctx context.Context, csp cloudprovider.Provider, licenseID string) (int, error)
-	GenerateMasterSecret() (uri.MasterSecret, error)
-	GenerateMeasurementSalt() ([]byte, error)
-	Init(
-		ctx context.Context,
-		validator atls.Validator,
-		state *state.State,
-		clusterLogWriter io.Writer,
-		payload constellation.InitPayload,
-	) (
-		*initproto.InitSuccessResponse,
-		error,
-	)
-	ExtendClusterConfigCertSANs(ctx context.Context, clusterEndpoint, customEndpoint string, additionalAPIServerCertSANs []string) error
-	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, error)
-	ApplyJoinConfig(ctx context.Context, newAttestConfig config.AttestationCfg, measurementSalt []byte) error
-	UpgradeNodeImage(ctx context.Context, imageVersion semver.Semver, imageReference string, force bool) error
-	UpgradeKubernetesVersion(ctx context.Context, kubernetesVersion versions.ValidK8sVersion, force bool) error
-	BackupCRDs(ctx context.Context, fileHandler file.Handler, upgradeDir string) ([]apiextensionsv1.CustomResourceDefinition, error)
-	BackupCRs(ctx context.Context, fileHandler file.Handler, crds []apiextensionsv1.CustomResourceDefinition, upgradeDir string) error
-}
-
-type warnLog interface {
-	Warnf(format string, args ...any)
-	Infof(format string, args ...any)
 }
 
 /*
@@ -843,6 +804,42 @@ func (wl warnLogger) Infof(fmtStr string, args ...any) {
 // Warnf prints a formatted warning from the validator.
 func (wl warnLogger) Warnf(fmtStr string, args ...any) {
 	wl.cmd.PrintErrf("Warning: %s\n", fmt.Sprintf(fmtStr, args...))
+}
+
+type warnLog interface {
+	Warnf(format string, args ...any)
+	Infof(format string, args ...any)
+}
+
+// applier is used to run the different phases of the apply command.
+type applier interface {
+	SetKubeConfig(kubeConfig []byte) error
+	CheckLicense(ctx context.Context, csp cloudprovider.Provider, licenseID string) (int, error)
+
+	// methods required by "init"
+
+	GenerateMasterSecret() (uri.MasterSecret, error)
+	GenerateMeasurementSalt() ([]byte, error)
+	Init(
+		ctx context.Context, validator atls.Validator, state *state.State,
+		clusterLogWriter io.Writer, payload constellation.InitPayload,
+	) (*initproto.InitSuccessResponse, error)
+
+	// methods required to install/upgrade Helm charts
+
+	PrepareHelmCharts(
+		flags helm.Options, state *state.State, serviceAccURI string, masterSecret uri.MasterSecret, openStackCfg *config.OpenStackConfig,
+	) (helm.Applier, bool, error)
+
+	// methods to interact with Kubernetes
+
+	ExtendClusterConfigCertSANs(ctx context.Context, clusterEndpoint, customEndpoint string, additionalAPIServerCertSANs []string) error
+	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, error)
+	ApplyJoinConfig(ctx context.Context, newAttestConfig config.AttestationCfg, measurementSalt []byte) error
+	UpgradeNodeImage(ctx context.Context, imageVersion semver.Semver, imageReference string, force bool) error
+	UpgradeKubernetesVersion(ctx context.Context, kubernetesVersion versions.ValidK8sVersion, force bool) error
+	BackupCRDs(ctx context.Context, fileHandler file.Handler, upgradeDir string) ([]apiextensionsv1.CustomResourceDefinition, error)
+	BackupCRs(ctx context.Context, fileHandler file.Handler, crds []apiextensionsv1.CustomResourceDefinition, upgradeDir string) error
 }
 
 // imageFetcher gets an image reference from the versionsapi.

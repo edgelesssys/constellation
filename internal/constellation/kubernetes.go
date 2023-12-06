@@ -87,3 +87,13 @@ func (a *Applier) BackupCRs(ctx context.Context, fileHandler file.Handler, crds 
 
 	return a.kubecmdClient.BackupCRs(ctx, fileHandler, crds, upgradeDir)
 }
+
+type kubecmdClient interface {
+	UpgradeNodeImage(ctx context.Context, imageVersion semver.Semver, imageReference string, force bool) error
+	UpgradeKubernetesVersion(ctx context.Context, kubernetesVersion versions.ValidK8sVersion, force bool) error
+	ExtendClusterConfigCertSANs(ctx context.Context, alternativeNames []string) error
+	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, error)
+	ApplyJoinConfig(ctx context.Context, newAttestConfig config.AttestationCfg, measurementSalt []byte) error
+	BackupCRs(ctx context.Context, fileHandler file.Handler, crds []apiextensionsv1.CustomResourceDefinition, upgradeDir string) error
+	BackupCRDs(ctx context.Context, fileHandler file.Handler, upgradeDir string) ([]apiextensionsv1.CustomResourceDefinition, error)
+}
