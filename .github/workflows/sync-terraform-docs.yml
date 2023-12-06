@@ -1,0 +1,66 @@
+name: Sync Terraform provider docs
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "terraform-provider-constellation/docs/**"
+      - ".github/workflows/sync-terraform-provider-docs.yml"
+
+jobs:
+  sync-docs:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout constellation repo
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
+        with:
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+          fetch-depth: 0
+          path: constellation
+
+      - name: Checkout terraform-provider-constellation repo
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
+        with:
+          repository: edgelesssys/terraform-provider-constellation
+          ref: main
+          path: terraform-provider-constellation
+          token: ${{ !github.event.pull_request.head.repo.fork && secrets.CI_GITHUB_REPOSITORY || '' }}
+
+      - name: Update docs
+        shell: bash
+        run: |
+          rm -rf terraform-provider-constellation/docs
+          cp -r constellation/terraform-provider-constellation/docs terraform-provider-constellation/docs
+
+      - name: Create pull request
+        id: create-pull-request
+        uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38 # v5.0.2
+        with:
+          path: terraform-provider-constellation
+          branch: "feat/docs/update"
+          base: main
+          title: "Update provider documentation"
+          body: |
+            :robot: *This is an automated PR.* :robot:
+
+            This PR is triggered as part of the [Constellation CI](https://github.com/edgelesssys/constellation/actions/runs/${{ github.run_id }}).
+            It updates the documentation for Constellation's Terraform provider docs.
+          commit-message: "Update provider documentation"
+          committer: edgelessci <edgelessci@users.noreply.github.com>
+          # We need to push changes using a token, otherwise triggers like on:push and on:pull_request won't work.
+          token: ${{ !github.event.pull_request.head.repo.fork && secrets.CI_GITHUB_REPOSITORY || '' }}
+          delete-branch: true
+
+      #- name: Merge pull request
+      #  uses: peter-evans/enable-pull-request-automerge@v3
+      #  with:
+      #    pull-request-number: ${{ steps.create-pull-request.outputs.pull-request-number }}
+      #    merge-method: squash
+      #    repository: edgelesssys/terraform-provider-constellation
+      #    token: ${{ !github.event.pull_request.head.repo.fork && secrets.CI_GITHUB_REPOSITORY || '' }}
