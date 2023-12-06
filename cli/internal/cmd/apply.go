@@ -629,7 +629,7 @@ func (a *applyCmd) runNodeImageUpgrade(cmd *cobra.Command, conf *config.Config) 
 	provider := conf.GetProvider()
 	attestationVariant := conf.GetAttestationConfig().GetVariant()
 	region := conf.GetRegion()
-	imageReference, err := a.imageFetcher.FetchReference(cmd.Context(), provider, attestationVariant, conf.Image, region)
+	imageReference, err := a.imageFetcher.FetchReference(cmd.Context(), provider, attestationVariant, conf.Image, region, conf.UseMarketplaceImage())
 	if err != nil {
 		return fmt.Errorf("fetching image reference: %w", err)
 	}
