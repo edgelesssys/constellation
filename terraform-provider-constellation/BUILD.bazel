@@ -35,6 +35,10 @@ go_library(
         "//terraform-provider-constellation/internal/provider",
         "@com_github_hashicorp_terraform_plugin_framework//providerserver",
     ],
+    x_defs = {
+        "version": "{STABLE_STAMP_VERSION}",
+    },
+
 )
 
 copy_file(
