@@ -52,3 +52,6 @@ jobs:
             "${disk_mapper}" \
             "${measurement_reader}" \
             "${cli}"
+
+      - name: Build Terraform Provider Binary
+        uses: ./.github/actions/build_tf_provider

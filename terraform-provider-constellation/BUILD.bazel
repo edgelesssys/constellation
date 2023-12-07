@@ -1,5 +1,5 @@
 load("@aspect_bazel_lib//lib:copy_file.bzl", "copy_file")
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_cross_binary", "go_library")
 
 # keep
 go_binary(
@@ -9,6 +9,22 @@ go_binary(
     pure = "on",
     visibility = ["//visibility:public"],
 )
+
+[
+    go_cross_binary(
+        name = "tf_provider_%s" % platform,
+        platform = "@io_bazel_rules_go//go/toolchain:" + platform,
+        target = ":tf_provider",
+        visibility = ["//visibility:public"],
+    )
+    for platform in [
+        "darwin_amd64",
+        "darwin_arm64",
+        "linux_amd64",
+        "linux_arm64",
+        "windows_amd64",
+    ]
+]
 
 go_library(
     name = "terraform-provider-constellation_lib",
