@@ -57,10 +57,10 @@ jobs:
           token: ${{ !github.event.pull_request.head.repo.fork && secrets.CI_GITHUB_REPOSITORY || '' }}
           delete-branch: true
 
-      #- name: Merge pull request
-      #  uses: peter-evans/enable-pull-request-automerge@v3
-      #  with:
-      #    pull-request-number: ${{ steps.create-pull-request.outputs.pull-request-number }}
-      #    merge-method: squash
-      #    repository: edgelesssys/terraform-provider-constellation
-      #    token: ${{ !github.event.pull_request.head.repo.fork && secrets.CI_GITHUB_REPOSITORY || '' }}
+      - name: Merge pull request
+        uses: peter-evans/enable-pull-request-automerge@v3
+        with:
+          pull-request-number: ${{ steps.create-pull-request.outputs.pull-request-number }}
+          merge-method: squash
+          repository: edgelesssys/terraform-provider-constellation
+          token: ${{ !github.event.pull_request.head.repo.fork && secrets.CI_GITHUB_REPOSITORY || '' }}
