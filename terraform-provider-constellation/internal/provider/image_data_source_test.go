@@ -53,6 +53,23 @@ func TestAccImageDataSource(t *testing.T) {
 				},
 			},
 		},
+		"aws without region fails": {
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			PreCheck:                 bazelPreCheck,
+			Steps: []resource.TestStep{
+				// Read testing
+				{
+					Config: testingConfig + `
+					data "constellation_image" "test" {
+						image_version       = "v2.13.0"
+						attestation_variant = "aws-sev-snp"
+						csp                 = "aws"
+					}
+				`,
+					ExpectError: regexp.MustCompile(".*Region must be set for AWS.*"),
+				},
+			},
+		},
 		"azure success": {
 			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 			PreCheck:                 bazelPreCheck,

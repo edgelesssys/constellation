@@ -98,8 +98,24 @@ func (d *ImageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 	}
 }
 
-// TODO(msanft): Possibly implement more complex validation for inter-dependencies between attributes.
-// E.g., region should be required if, and only if, AWS is used.
+// ValidateConfig validates the configuration for the image data source.
+func (d *ImageDataSource) ValidateConfig(ctx context.Context, req datasource.ValidateConfigRequest, resp *datasource.ValidateConfigResponse) {
+	var data ImageDataSourceModel
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if data.CSP.Equal(types.StringValue("aws")) && data.Region.IsNull() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("region"),
+			"Region must be set for AWS", "When CSP is set to AWS, 'region' must be specified.",
+		)
+		return
+	}
+}
 
 // Configure configures the data source.
 func (d *ImageDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
