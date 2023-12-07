@@ -1,0 +1,43 @@
+name: Build Terraform provider
+description: |
+  Builds Terraform provider binaries cross platform.
+inputs:
+  targetOS:
+    description: "Build for this OS. [linux, darwin, windows]"
+    required: true
+    default: "linux"
+  targetArch:
+    description: "Build for this architecture. [amd64, arm64]"
+    required: true
+    default: "amd64"
+  outputPath:
+    description: "Output path of the binary"
+    required: false
+runs:
+  using: "composite"
+  steps:
+    # https://github.blog/2022-04-12-git-security-vulnerability-announced/
+    - name: Mark repository safe
+      shell: bash
+      run: |
+        git config --global --add safe.directory /__w/constellation/constellation
+
+    - name: Build Binaries
+      shell: bash
+      env:
+        TARGET_GOOS: ${{ inputs.targetOS }}
+        TARGET_GOARCH: ${{ inputs.targetArch }}
+        OUTPUT_PATH: ${{ inputs.outputPath || format('./build/terraform-provider-constellation-{0}-{1}', inputs.targetOS, inputs.targetArch) }}${{ inputs.targetOS == 'windows' && '.exe' || '' }}
+      run: |
+        echo "::group::Build Terraform provider"
+        mkdir -p "$(dirname "${OUTPUT_PATH}")"
+        label="//terraform-provider-constellation:tf_provider_${TARGET_GOOS}_${TARGET_GOARCH}"
+        bazel build "${label}"
+        repository_root=$(git rev-parse --show-toplevel)
+        out_rel=$(bazel cquery --output=files "${label}")
+        out_loc="$(realpath "${repository_root}/${out_rel}")"
+        cp "${out_loc}" "${OUTPUT_PATH}"
+        chmod +w "${OUTPUT_PATH}"
+        export PATH="$PATH:$(realpath $(dirname "${OUTPUT_PATH}"))"
+        echo "$(realpath $(dirname "${OUTPUT_PATH}"))" >> $GITHUB_PATH
+        echo "::endgroup::"
