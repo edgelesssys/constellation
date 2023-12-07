@@ -51,8 +51,12 @@ func (p *ConstellationProvider) Metadata(_ context.Context, _ provider.MetadataR
 // Schema defines the HCL schema of the provider, i.e. what attributes it has and what they are used for.
 func (p *ConstellationProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description:         "The Constellation provider manages Constellation clusters.",
-		MarkdownDescription: `The Constellation provider manages Constellation clusters.`, // TODO(msanft): Provide a more sophisticated description.
+		Description: "The Constellation provider manages Constellation clusters.",
+		MarkdownDescription: `The Constellation provider manages Constellation clusters.
+
+Given user-defined infrastructure in Terraform, the provider with its main 'constellation_cluster' resource manages the entire lifecycle of a cluster.
+The provider has feature parity with the Constellation CLI and provides easy usage for custom infrastructure setups and GitOps workflows.
+It is released as part of Constellation releases, such that each provider version is compatible with the corresponding Constellation version.`,
 	}
 }
 

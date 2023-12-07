@@ -66,8 +66,8 @@ func (d *ImageDataSource) Metadata(_ context.Context, req datasource.MetadataReq
 // Schema returns the schema for the image data source.
 func (d *ImageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description:         "Data source to retrieve the Constellation OS image reference for a given CSP and Attestation Variant.",
-		MarkdownDescription: "Data source to retrieve the Constellation OS image reference for a given CSP and Attestation Variant.",
+		Description:         "The data source to resolve the CSP-specific OS image reference for a given version and attestation variant.",
+		MarkdownDescription: "Data source to resolve the CSP-specific OS image reference for a given version and attestation variant. The `reference` output of this data source is needed as `image` input for the `constellation_cluster` resource.",
 		Attributes: map[string]schema.Attribute{
 			"attestation_variant": newAttestationVariantAttribute(attributeInput),
 			"image_version": schema.StringAttribute{
@@ -111,7 +111,6 @@ func (d *ImageDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 	// Retrieve the configuration values for this data source instance.
 	var data ImageDataSourceModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
-
 	// Check configuration for errors.
 	csp := cloudprovider.FromString(data.CSP.ValueString())
 	if csp == cloudprovider.Unknown {

@@ -3,12 +3,12 @@
 page_title: "constellation_attestation Data Source - constellation"
 subcategory: ""
 description: |-
-  The data source to fetch measurements from a configured cloud provider and image.
+  The data source to fetch measurements from a configured cloud provider and image. The output attribute 'attestation' contains all the information needed for the constellation_cluster resource. To provide your own attestation config for a cluster, you don't need this data source and can directly provide the attestation object in the cluster resource.
 ---
 
 # constellation_attestation (Data Source)
 
-The data source to fetch measurements from a configured cloud provider and image.
+The data source to fetch measurements from a configured cloud provider and image. The output attribute 'attestation' contains all the information needed for the `constellation_cluster` resource. To provide your own attestation config for a cluster, you don't need this data source and can directly provide the attestation object in the cluster resource.
 
 ## Example Usage
 

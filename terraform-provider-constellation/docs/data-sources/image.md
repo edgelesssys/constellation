@@ -3,12 +3,12 @@
 page_title: "constellation_image Data Source - constellation"
 subcategory: ""
 description: |-
-  Data source to retrieve the Constellation OS image reference for a given CSP and Attestation Variant.
+  Data source to resolve the CSP-specific OS image reference for a given version and attestation variant. The reference output of this data source is needed as image input for the constellation_cluster resource.
 ---
 
 # constellation_image (Data Source)
 
-Data source to retrieve the Constellation OS image reference for a given CSP and Attestation Variant.
+Data source to resolve the CSP-specific OS image reference for a given version and attestation variant. The `reference` output of this data source is needed as `image` input for the `constellation_cluster` resource.
 
 ## Example Usage
 

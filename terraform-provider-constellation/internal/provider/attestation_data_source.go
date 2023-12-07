@@ -69,8 +69,7 @@ func (d *AttestationDataSource) Metadata(_ context.Context, req datasource.Metad
 func (d *AttestationDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		// This description is used by the documentation generator and the language server.
-		MarkdownDescription: "The data source to fetch measurements from a configured cloud provider and image.",
-
+		MarkdownDescription: "The data source to fetch measurements from a configured cloud provider and image. The output attribute 'attestation' contains all the information needed for the `constellation_cluster` resource. To provide your own attestation config for a cluster, you don't need this data source and can directly provide the attestation object in the cluster resource.",
 		Attributes: map[string]schema.Attribute{
 			"csp":                 newCSPAttribute(),
 			"attestation_variant": newAttestationVariantAttribute(attributeInput),
