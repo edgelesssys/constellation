@@ -1,4 +1,4 @@
-name: Build CLI and prepare release
+name: Prepare release
 
 on:
   workflow_dispatch:
@@ -109,6 +109,60 @@ jobs:
             build/constellation-${{ matrix.os }}-${{ matrix.arch }}.exe
             build/constellation-${{ matrix.os }}-${{ matrix.arch }}.exe.sig
 
+  build-terraform-provider:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            os: linux
+
+          - arch: amd64
+            os: darwin
+
+          - arch: amd64
+            os: windows
+
+          - arch: arm64
+            os: linux
+
+          - arch: arm64
+            os: darwin
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
+        with:
+          ref: ${{ inputs.ref || github.head_ref }}
+
+      - name: Setup bazel
+        uses: ./.github/actions/setup_bazel_nix
+        with:
+          useCache: "false"
+
+      - name: Build Terraform Provider Binary
+        uses: ./.github/actions/build_tf_provider
+        with:
+          targetOS: ${{ matrix.os }}
+          targetArch: ${{ matrix.arch }}
+
+      - name: Upload Terraform Provider Binary as artifact (unix)
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        if : ${{ matrix.os != 'windows' }}
+        with:
+          name: terraform-provider-constellation-${{ matrix.os }}-${{ matrix.arch }}
+          path: |
+            build/terraform-provider-constellation-${{ matrix.os }}-${{ matrix.arch }}
+
+      - name: Upload Terraform Provider Binary as artifact (windows)
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        if : ${{ matrix.os == 'windows' }}
+        with:
+          name: terraform-provider-constellation-${{ matrix.os }}-${{ matrix.arch }}
+          path: |
+            build/terraform-provider-constellation-${{ matrix.os }}-${{ matrix.arch }}.exe
+
   upload-terraform-module:
     runs-on: ubuntu-22.04
     steps:
@@ -160,43 +214,23 @@ jobs:
       - build-cli
       - signed-sbom
       - upload-terraform-module
+      - build-terraform-provider
     outputs:
       provenance-subjects: ${{ steps.provenance-subjects.outputs.provenance-subjects }}
     steps:
-      - name: Download CLI binaries darwin-amd64
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
         with:
-          name: constellation-darwin-amd64
+          ref: ${{ inputs.ref || github.head_ref }}
 
-      - name: Download CLI binaries darwin-arm64
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-        with:
-          name: constellation-darwin-arm64
-
-      - name: Download CLI binaries linux-amd64
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-        with:
-          name: constellation-linux-amd64
-
-      - name: Download CLI binaries linux-arm64
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-        with:
-          name: constellation-linux-arm64
-
-      - name: Download CLI binaries windows-amd64
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-        with:
-          name: constellation-windows-amd64
+      - name: Download release binaries
+        uses: ./.github/actions/download_release_binaries
 
       - name: Download CLI SBOM
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: constellation.spdx.sbom
-
-      - name: Download Terraform module
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-        with:
-          name: terraform-module
 
       - name: Generate provenance subjects
         id: provenance-subjects
@@ -208,7 +242,12 @@ jobs:
             constellation-linux-arm64 \
             constellation-windows-amd64.exe \
             constellation.spdx.sbom \
-            terraform-module.zip)
+            terraform-module.zip \
+            terraform-provider-constellation-darwin-amd64 \
+            terraform-provider-constellation-darwin-arm64 \
+            terraform-provider-constellation-linux-amd64 \
+            terraform-provider-constellation-linux-arm64 \
+            terraform-provider-constellation-windows-amd64.exe)
           HASHESB64=$(echo "${HASHES}" | base64 -w0)
           echo "${HASHES}"
           echo "${HASHESB64}"
@@ -291,41 +330,21 @@ jobs:
       - build-cli
       - provenance
       - upload-terraform-module
+      - build-terraform-provider
     steps:
-      - name: Download CLI binaries darwin-amd64
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
         with:
-          name: constellation-darwin-amd64
+          ref: ${{ inputs.ref || github.head_ref }}
 
-      - name: Download CLI binaries darwin-arm64
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-        with:
-          name: constellation-darwin-arm64
-
-      - name: Download CLI binaries linux-amd64
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-        with:
-          name: constellation-linux-amd64
-
-      - name: Download CLI binaries linux-arm64
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-        with:
-          name: constellation-linux-arm64
-
-      - name: Download CLI binaries windows-amd64
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-        with:
-          name: constellation-windows-amd64
+      - name: Download release binaries
+        uses: ./.github/actions/download_release_binaries
 
       - name: Download CLI SBOM
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: constellation.spdx.sbom
-
-      - name: Download Terraform module
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-        with:
-          name: terraform-module
 
       - name: Download provenance
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
@@ -354,6 +373,23 @@ jobs:
           slsa-verifier verify-artifact constellation-windows-amd64.exe \
             --provenance-path ${{ needs.provenance.outputs.provenance-name }} \
             --source-uri github.com/edgelesssys/constellation
+
+          slsa-verifier verify-artifact terraform-provider-constellation-darwin-amd64 \
+            --provenance-path ${{ needs.provenance.outputs.provenance-name }} \
+            --source-uri github.com/edgelesssys/constellation
+          slsa-verifier verify-artifact terraform-provider-constellation-darwin-arm64 \
+            --provenance-path ${{ needs.provenance.outputs.provenance-name }} \
+            --source-uri github.com/edgelesssys/constellation
+          slsa-verifier verify-artifact terraform-provider-constellation-linux-amd64 \
+            --provenance-path ${{ needs.provenance.outputs.provenance-name }} \
+            --source-uri github.com/edgelesssys/constellation
+          slsa-verifier verify-artifact terraform-provider-constellation-linux-arm64 \
+            --provenance-path ${{ needs.provenance.outputs.provenance-name }} \
+            --source-uri github.com/edgelesssys/constellation
+          slsa-verifier verify-artifact terraform-provider-constellation-windows-amd64.exe \
+            --provenance-path ${{ needs.provenance.outputs.provenance-name }} \
+            --source-uri github.com/edgelesssys/constellation
+
           slsa-verifier verify-artifact constellation.spdx.sbom \
             --provenance-path ${{ needs.provenance.outputs.provenance-name }} \
             --source-uri github.com/edgelesssys/constellation
@@ -370,38 +406,23 @@ jobs:
       - provenance
       - signed-sbom
       - upload-terraform-module
+      - build-terraform-provider
     steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
+        with:
+          ref: ${{ inputs.ref || github.head_ref }}
+
       - name: Write cosign public key
         run: echo "$COSIGN_PUBLIC_KEY" > cosign.pub
         env:
           COSIGN_PUBLIC_KEY: ${{ inputs.key == 'release' && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
 
-      - name: Download CLI binaries darwin-amd64
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-        with:
-          name: constellation-darwin-amd64
+      - name: Download binaries
+        uses: ./.github/actions/download_release_binaries
 
-      - name: Download CLI binaries darwin-arm64
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-        with:
-          name: constellation-darwin-arm64
-
-      - name: Download CLI binaries linux-amd64
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-        with:
-          name: constellation-linux-amd64
-
-      - name: Download CLI binaries linux-arm64
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-        with:
-          name: constellation-linux-arm64
-
-      - name: Download CLI binaries windows-amd64
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-        with:
-          name: constellation-windows-amd64
-
-      - name: Download Constellation CLI SBOM
+      - name: Download CLI SBOM
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: constellation.spdx.sbom
@@ -416,16 +437,44 @@ jobs:
         with:
           name: ${{ needs.provenance.outputs.provenance-name }}
 
-      - name: Download Terraform module
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-        with:
-          name: terraform-module
-
       - name: Rename provenance file
         run: |
           mv ${{ needs.provenance.outputs.provenance-name }} constellation.intoto.jsonl
 
+      - name: Create Terraform provider release files
+        run: |
+          # Remove the "v" prefix from the version as required by the Terraform registry
+          version="${{ inputs.versionName }}"
+          version="${version#v}"
+
+          # Create a zip file with the Terraform provider binaries
+          for file in terraform-provider-constellation-*; do
+            # Special case for Windows binaries: They need to keep the .exe extension
+            ext="${file##*.}"
+            distribution_arch="${file#terraform-provider-constellation-}"
+            distribution_arch="${distribution_arch%.exe}"
+            folder_name="terraform-provider-constellation_${version}_${distribution_arch//-/_}"
+
+            mkdir -p "${folder_name}"
+            if [[ "${ext}" = "exe" ]]; then
+              cp "${file}" "${folder_name}/terraform-provider-constellation_${version}.exe"
+            else
+              cp "${file}" "${folder_name}/terraform-provider-constellation_${version}"
+            fi
+            zip -r "${folder_name}.zip" "${folder_name}"
+            rm -r "${folder_name}"
+          done
+
+          # Create a manifest file for the Terraform provider
+          echo '{"version":1,"metadata":{"protocol_versions":["6.0"]}}' > "terraform-provider-constellation_${version}_manifest.json"
+
+          # Create a SHA256SUMS file of the zip files and manifest, and sign it
+          shasum -a 256 "terraform-provider-constellation_${version}"* > "terraform-provider-constellation_${version}_SHA256SUMS"
+          echo "${{ secrets.TERRAFORM_GPG_SIGNING_KEY }}" | gpg --import --batch --yes
+          gpg -u 3C75E56351F8F3F6 --batch --yes --detach-sign "terraform-provider-constellation_${version}_SHA256SUMS"
+
       - name: Create release with artifacts
+        id: create-release
         # GitHub endorsed release project. See: https://github.com/actions/create-release
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v0.1.15
         with:
@@ -439,3 +488,17 @@ jobs:
             constellation.spdx.sbom.sig
             constellation.intoto.jsonl
             terraform-module.zip
+
+      - name: Create Terraform provider release with artifcats
+        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v0.1.15
+        with:
+          draft: true
+          generate_release_notes: false
+          body: |
+            This release contains the Terraform provider binaries for Constellation ${{ inputs.versionName }}.
+            Check out [the release page](https://github.com/edgelesssys/constellation/releases/tag/${{ inputs.versionName }}) for more information and a full changelog.
+          token: ${{ secrets.CI_GITHUB_REPOSITORY }}
+          repository: edgelesssys/terraform-provider-constellation
+          tag_name: ${{ inputs.versionName || inputs.ref || github.head_ref }}
+          files: |
+            terraform-provider-constellation_*

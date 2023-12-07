@@ -253,7 +253,7 @@ jobs:
           git commit -m "attestation: hardcode measurements for ${VERSION}"
           git push
 
-  draft-release-cli:
+  draft-release:
     name: Draft release (CLI)
     needs: [verify-inputs, update-hardcoded-measurements]
     uses: ./.github/workflows/release-cli.yml
@@ -271,7 +271,7 @@ jobs:
 
   e2e-tests:
     name: Run E2E tests
-    needs: [verify-inputs, draft-release-cli]
+    needs: [verify-inputs, draft-release]
     uses: ./.github/workflows/e2e-test-release.yml
     permissions:
       checks: write
@@ -285,7 +285,7 @@ jobs:
 
   mini-e2e:
     name: Run mini E2E tests
-    needs: [verify-inputs, draft-release-cli]
+    needs: [verify-inputs, draft-release]
     uses: ./.github/workflows/e2e-mini.yml
     permissions:
       checks: write
