@@ -99,6 +99,33 @@ func (d *AttestationDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 	}
 }
 
+// ValidateConfig validates the configuration for the image data source.
+func (d *AttestationDataSource) ValidateConfig(ctx context.Context, req datasource.ValidateConfigRequest, resp *datasource.ValidateConfigResponse) {
+	var data AttestationDataSourceModel
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if !data.AttestationVariant.Equal(types.StringValue("azure-sev-snp")) && !data.MaaURL.IsNull() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("maa_url"),
+			"MAA URL can only be set for Azure SEV-SNP", "Only when attestation_variant is set to 'azure-sev-snp', 'maa_url' must be specified.",
+		)
+		return
+	}
+
+	if data.AttestationVariant.Equal(types.StringValue("azure-sev-snp")) && data.MaaURL.IsNull() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("maa_url"),
+			"MAA URL must be set for Azure SEV-SNP", "Only when attestation_variant is set to 'azure-sev-snp', 'maa_url' must be specified.",
+		)
+		return
+	}
+}
+
 // Read reads from the data source.
 func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var data AttestationDataSourceModel

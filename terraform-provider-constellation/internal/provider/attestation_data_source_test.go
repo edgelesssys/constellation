@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package provider
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -54,6 +55,7 @@ func TestAccAttestationSource(t *testing.T) {
 						csp = "azure"
 						attestation_variant = "azure-sev-snp"
 						image_version = "v2.13.0"
+						maa_url = "https://www.example.com"
 					}
 					`,
 					Check: resource.ComposeAggregateTestCheckFunc(
@@ -94,6 +96,39 @@ func TestAccAttestationSource(t *testing.T) {
 						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.measurements.1.expected", "745f2fb4235e4647aa0ad5ace781cd929eb68c28870e7dd5d1a1535854325e56"),
 						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.measurements.1.warn_only", "true"),
 					),
+				},
+			},
+		},
+		"azure fails without maa_url": {
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			PreCheck:                 bazelPreCheck,
+			Steps: []resource.TestStep{
+				{
+					Config: testingConfig + `
+					data "constellation_attestation" "test" {
+						csp = "azure"
+						attestation_variant = "azure-sev-snp"
+						image_version = "v2.13.0"
+					}
+					`,
+					ExpectError: regexp.MustCompile(".*MAA URL must be set for Azure SEV-SNP.*"),
+				},
+			},
+		},
+		"aws sev-snp with maaURL fails": {
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			PreCheck:                 bazelPreCheck,
+			Steps: []resource.TestStep{
+				{
+					Config: testingConfig + `
+					data "constellation_attestation" "test" {
+						csp = "aws"
+						attestation_variant = "aws-sev-snp"
+						image_version = "v2.13.0"
+						maa_url = "https://www.example.com"
+					}
+					`,
+					ExpectError: regexp.MustCompile(".*MAA URL can only be set for Azure SEV-SNP.*"),
 				},
 			},
 		},
