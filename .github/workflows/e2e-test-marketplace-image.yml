@@ -84,3 +84,4 @@ jobs:
       regionZone: ${{ inputs.regionZone }}
       git-ref: ${{ inputs.git-ref }}
       marketplaceImageVersion: ${{ inputs.marketplaceImageVersion }}
+      force: true
