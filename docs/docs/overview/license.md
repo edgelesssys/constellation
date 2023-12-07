@@ -24,4 +24,4 @@ Once you have received your Enterprise License file, place it in your [Constella
 
 ### Azure Marketplace
 
-Constellation is now available through the Azure Marketplace. This allows you to create self-managed Constellation cluster deployments which are billed on pay-per-use basis (hourly, per vCPU) with your Azure account while still being supported by Edgeless Systems directly. For more information please [contact us](https://www.edgeless.systems/enterprise-support/).
+Constellation is available through the Azure Marketplace. This allows you to create self-managed Constellation clusters that are billed on a pay-per-use basis (hourly, per vCPU) with your Azure account. You can still get direct support by Edgeless Systems. For more information, please [contact us](https://www.edgeless.systems/enterprise-support/).
