@@ -50,16 +50,17 @@ func convertFromTfAttestationCfg(tfAttestation attestation, attestationVariant v
 		}
 	}
 
+	var rootKey config.Certificate
+	if err := json.Unmarshal([]byte(tfAttestation.AMDRootKey), &rootKey); err != nil {
+		return nil, fmt.Errorf("unmarshalling root key: %w", err)
+	}
+
 	var attestationConfig config.AttestationCfg
 	switch attestationVariant {
 	case variant.AzureSEVSNP{}:
 		firmwareCfg, err := convertFromTfFirmwareCfg(tfAttestation.AzureSNPFirmwareSignerConfig)
 		if err != nil {
 			return nil, fmt.Errorf("converting firmware signer config: %w", err)
-		}
-		var rootKey config.Certificate
-		if err := json.Unmarshal([]byte(tfAttestation.AMDRootKey), &rootKey); err != nil {
-			return nil, fmt.Errorf("unmarshalling root key: %w", err)
 		}
 
 		attestationConfig = &config.AzureSEVSNP{
@@ -71,32 +72,48 @@ func convertFromTfAttestationCfg(tfAttestation attestation, attestationVariant v
 			FirmwareSignerConfig: firmwareCfg,
 			AMDRootKey:           rootKey,
 		}
+	case variant.AWSSEVSNP{}:
+		attestationConfig = &config.AWSSEVSNP{
+			Measurements:      c11nMeasurements,
+			BootloaderVersion: newVersion(tfAttestation.BootloaderVersion),
+			TEEVersion:        newVersion(tfAttestation.TEEVersion),
+			SNPVersion:        newVersion(tfAttestation.SNPVersion),
+			MicrocodeVersion:  newVersion(tfAttestation.MicrocodeVersion),
+			AMDRootKey:        rootKey,
+		}
+	case variant.GCPSEVES{}:
+		attestationConfig = &config.GCPSEVES{
+			Measurements: c11nMeasurements,
+		}
+	default:
+		return nil, fmt.Errorf("unknown attestation variant: %s", attestationVariant)
 	}
 	return attestationConfig, nil
 }
 
 // convertToTfAttestationCfg converts the constellation attestation config to the related terraform structs.
-func convertToTfAttestation(attestationVariant variant.Variant,
-	snpVersions attestationconfigapi.SEVSNPVersionAPI,
-) (tfAttestation attestation, err error) {
-	// set fields that apply to all variants
+func convertToTfAttestation(attVar variant.Variant, snpVersions *attestationconfigapi.SEVSNPVersionAPI) (tfAttestation attestation, err error) {
 	tfAttestation = attestation{
-		Variant:           attestationVariant.String(),
-		BootloaderVersion: snpVersions.Bootloader,
-		TEEVersion:        snpVersions.TEE,
-		SNPVersion:        snpVersions.SNP,
-		MicrocodeVersion:  snpVersions.Microcode,
+		Variant: attVar.String(),
 	}
-	switch attestationVariant.(type) {
-	case variant.AWSSEVSNP:
+	if snpVersions != nil {
+		tfAttestation.BootloaderVersion = snpVersions.Bootloader
+		tfAttestation.TEEVersion = snpVersions.TEE
+		tfAttestation.SNPVersion = snpVersions.SNP
+		tfAttestation.MicrocodeVersion = snpVersions.Microcode
+
+	}
+
+	switch attVar {
+	case variant.AWSSEVSNP{}:
 		certStr, err := certAsString(config.DefaultForAWSSEVSNP().AMDRootKey)
 		if err != nil {
 			return tfAttestation, err
 		}
 		tfAttestation.AMDRootKey = certStr
 
-	case variant.AzureSEVSNP:
-		certStr, err := certAsString(config.DefaultForAWSSEVSNP().AMDRootKey)
+	case variant.AzureSEVSNP{}:
+		certStr, err := certAsString(config.DefaultForAzureSEVSNP().AMDRootKey)
 		if err != nil {
 			return tfAttestation, err
 		}
@@ -108,6 +125,10 @@ func convertToTfAttestation(attestationVariant variant.Variant,
 			return tfAttestation, err
 		}
 		tfAttestation.AzureSNPFirmwareSignerConfig = tfFirmwareCfg
+	case variant.GCPSEVES{}:
+		// no additional fields
+	default:
+		return tfAttestation, fmt.Errorf("unknown attestation variant: %s", attVar)
 	}
 	return tfAttestation, nil
 }
