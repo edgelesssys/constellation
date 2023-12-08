@@ -70,6 +70,15 @@ func TestInstall(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		"hash is not mandatory": {
+			server: newHTTPBufconnServerWithBody([]byte("file-contents")),
+			component: components.Component{
+				URL:         serverURL,
+				Hash:        "",
+				InstallPath: "/destination",
+			},
+			wantFiles: map[string][]byte{"/destination": []byte("file-contents")},
+		},
 		"download fails": {
 			server: newHTTPBufconnServer(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(500) }),
 			component: components.Component{
