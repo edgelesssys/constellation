@@ -72,7 +72,7 @@ require (
 	github.com/aws/smithy-go v1.13.5
 	github.com/bazelbuild/rules_go v0.42.0
 	github.com/coreos/go-systemd/v22 v22.5.0
-	github.com/docker/docker v24.0.6+incompatible
+	github.com/docker/docker v24.0.7+incompatible
 	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api v0.0.0
 	github.com/edgelesssys/go-azguestattestation v0.0.0-20230707101700-a683be600fcf
 	github.com/edgelesssys/go-tdx-qpl v0.0.0-20230530085549-fd2878a4dead
