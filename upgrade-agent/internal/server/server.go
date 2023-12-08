@@ -110,9 +110,9 @@ func (s *Server) ExecuteUpdate(ctx context.Context, updateRequest *upgradeproto.
 		return nil, status.Errorf(codes.Internal, "unable to install the kubeadm binary: %s", err)
 	}
 
-	upgradeCmd := exec.CommandContext(ctx, "kubeadm", "upgrade", "plan")
+	upgradeCmd := exec.CommandContext(ctx, "kubeadm", "upgrade", "plan", updateRequest.WantedKubernetesVersion)
 	if out, err := upgradeCmd.CombinedOutput(); err != nil {
-		return nil, status.Errorf(codes.Internal, "unable to execute kubeadm upgrade plan: %s: %s", err, string(out))
+		return nil, status.Errorf(codes.Internal, "unable to execute kubeadm upgrade plan %s: %s: %s", updateRequest.WantedKubernetesVersion, err, string(out))
 	}
 
 	applyCmd := exec.CommandContext(ctx, "kubeadm", "upgrade", "apply", "--yes", updateRequest.WantedKubernetesVersion)
