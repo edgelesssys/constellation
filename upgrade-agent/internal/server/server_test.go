@@ -56,8 +56,37 @@ func TestVersionVerifier(t *testing.T) {
 }
 
 func TestPrepareUpdate(t *testing.T) {
-	validUpdateRequest := &upgradeproto.ExecuteUpdateRequest{
+	invalidUpgradeRequest := &upgradeproto.ExecuteUpdateRequest{
+		WantedKubernetesVersion: "1337",
+	}
+	slimUpdateRequest := &upgradeproto.ExecuteUpdateRequest{
 		WantedKubernetesVersion: "v1.1.1",
+	}
+	oldStyleUpdateRequest := &upgradeproto.ExecuteUpdateRequest{
+		WantedKubernetesVersion: "v1.1.1",
+		KubeadmUrl:              "http://example.com/kubeadm",
+		KubeadmHash:             "sha256:foo",
+	}
+	newStyleUpdateRequest := &upgradeproto.ExecuteUpdateRequest{
+		WantedKubernetesVersion: "v1.1.1",
+		KubernetesComponents: []*components.Component{
+			{
+				Url:         "http://example.com/kubeadm",
+				Hash:        "sha256:foo",
+				InstallPath: "/tmp/kubeadm",
+			},
+		},
+	}
+	combinedStyleUpdateRequest := &upgradeproto.ExecuteUpdateRequest{
+		WantedKubernetesVersion: "v1.1.1",
+		KubeadmUrl:              "http://example.com/kubeadm",
+		KubeadmHash:             "sha256:foo",
+		KubernetesComponents: []*components.Component{
+			{
+				Url:         "data:application/octet-stream,foo",
+				InstallPath: "/tmp/foo",
+			},
+		},
 	}
 	testCases := map[string]struct {
 		installer     osInstaller
@@ -66,16 +95,34 @@ func TestPrepareUpdate(t *testing.T) {
 	}{
 		"works": {
 			installer:     stubOsInstaller{},
-			updateRequest: validUpdateRequest,
+			updateRequest: slimUpdateRequest,
 		},
 		"invalid version string": {
 			installer:     stubOsInstaller{},
-			updateRequest: &upgradeproto.ExecuteUpdateRequest{WantedKubernetesVersion: "1337"},
+			updateRequest: invalidUpgradeRequest,
 			wantErr:       true,
 		},
 		"install error": {
 			installer:     stubOsInstaller{InstallErr: fmt.Errorf("install error")},
-			updateRequest: validUpdateRequest,
+			updateRequest: oldStyleUpdateRequest,
+			wantErr:       true,
+		},
+		"new style works": {
+			installer:     stubOsInstaller{},
+			updateRequest: newStyleUpdateRequest,
+		},
+		"new style install error": {
+			installer:     stubOsInstaller{InstallErr: fmt.Errorf("install error")},
+			updateRequest: newStyleUpdateRequest,
+			wantErr:       true,
+		},
+		"combined style works": {
+			installer:     stubOsInstaller{},
+			updateRequest: combinedStyleUpdateRequest,
+		},
+		"combined style install error": {
+			installer:     stubOsInstaller{InstallErr: fmt.Errorf("install error")},
+			updateRequest: combinedStyleUpdateRequest,
 			wantErr:       true,
 		},
 	}
