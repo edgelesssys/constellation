@@ -2,7 +2,7 @@ module github.com/edgelesssys/constellation/v2/terraform-provider-constellation
 
 go 1.21
 
-toolchain go1.21.4
+toolchain go1.21.5
 
 replace github.com/edgelesssys/constellation/v2 => ./..
 
