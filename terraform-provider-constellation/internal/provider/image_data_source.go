@@ -9,6 +9,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"regexp"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -19,8 +20,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Ensure provider defined types fully satisfy framework interfaces.
-var _ datasource.DataSource = &ImageDataSource{}
+var (
+	// Ensure provider defined types fully satisfy framework interfaces.
+	_                                       datasource.DataSource = &ImageDataSource{}
+	caseInsensitiveCommunityGalleriesRegexp                       = regexp.MustCompile(`(?i)\/communitygalleries\/`)
+	caseInsensitiveImagesRegExp                                   = regexp.MustCompile(`(?i)\/images\/`)
+	caseInsensitiveVersionsRegExp                                 = regexp.MustCompile(`(?i)\/versions\/`)
+)
 
 // NewImageDataSource creates a new data source for fetching Constellation OS images
 // from the Versions-API.
@@ -138,6 +144,13 @@ func (d *ImageDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 			fmt.Sprintf("When fetching the image reference, an error occurred: %s", err),
 		)
 		return
+	}
+
+	// Do adjustments for Azure casing
+	if csp == cloudprovider.Azure {
+		imageRef = caseInsensitiveCommunityGalleriesRegexp.ReplaceAllString(imageRef, "/communityGalleries/")
+		imageRef = caseInsensitiveImagesRegExp.ReplaceAllString(imageRef, "/images/")
+		imageRef = caseInsensitiveVersionsRegExp.ReplaceAllString(imageRef, "/versions/")
 	}
 
 	// Save data into Terraform state
