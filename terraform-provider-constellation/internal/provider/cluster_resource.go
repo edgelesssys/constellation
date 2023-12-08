@@ -326,145 +326,8 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	// Parse and convert values from the Terraform state
-	// to formats the Constellation library can work with.
-
-	att, diags := r.convertAttestationConfig(ctx, data)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	log := &tfContextLogger{ctx: ctx}
-	newDialer := func(validator atls.Validator) *dialer.Dialer {
-		return dialer.New(nil, validator, &net.Dialer{})
-	}
-	r.applier = constellation.NewApplier(log, &nopSpinner{}, newDialer)
-	validator, err := choose.Validator(att.config, log)
-	if err != nil {
-		resp.Diagnostics.AddError("Choosing validator", err.Error())
-		return
-	}
-
-	secrets, diags := r.convertSecrets(data)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	apiServerCertSANs := make([]string, 0, len(data.ExtraAPIServerCertSANs.Elements()))
-	for _, san := range data.ExtraAPIServerCertSANs.Elements() {
-		apiServerCertSANs = append(apiServerCertSANs, san.String())
-	}
-
-	var microserviceCfg extraMicroservices
-	diags = data.ExtraMicroservices.As(ctx, &microserviceCfg, basetypes.ObjectAsOptions{
-		UnhandledNullAsEmpty: true, // we want to allow null values, as the CSIDriver field is optional
-	})
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	microserviceVersion, err := semver.New(data.MicroserviceVersion.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("constellation_microservice_version"),
-			"Invalid microservice version",
-			fmt.Sprintf("Parsing microservice version: %s", err))
-		return
-	}
-
-	k8sVersion, diags := r.getK8sVersion(ctx, &data)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	csp := cloudprovider.FromString(data.CSP.ValueString())
-
-	serviceAccPayload := constellation.ServiceAccountPayload{}
-	var gcpConfig gcp
-	var azureConfig azure
-	switch csp {
-	case cloudprovider.GCP:
-		diags = data.GCP.As(ctx, &gcpConfig, basetypes.ObjectAsOptions{})
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		if err := json.Unmarshal([]byte(gcpConfig.ServiceAccountKey), &serviceAccPayload.GCP); err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("gcp").AtName("service_account_key"),
-				"Unmarshalling service account key",
-				fmt.Sprintf("Unmarshalling service account key: %s", err))
-			return
-		}
-	case cloudprovider.Azure:
-		diags = data.Azure.As(ctx, &azureConfig, basetypes.ObjectAsOptions{})
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		serviceAccPayload.Azure = azureshared.ApplicationCredentials{
-			TenantID:            azureConfig.TenantID,
-			Location:            azureConfig.Location,
-			PreferredAuthMethod: azureshared.AuthMethodUserAssignedIdentity,
-			UamiResourceID:      azureConfig.UamiResourceID,
-		}
-	}
-	serviceAccURI, err := constellation.MarshalServiceAccountURI(csp, serviceAccPayload)
-	if err != nil {
-		resp.Diagnostics.AddError("Marshalling service account URI", err.Error())
-		return
-	}
-
-	// Run init RPC
-	initRPCPayload := initRPCPayload{
-		csp:               csp,
-		masterSecret:      secrets.masterSecret,
-		measurementSalt:   secrets.measurementSalt,
-		apiServerCertSANs: apiServerCertSANs,
-		azureConfig:       azureConfig,
-		gcpConfig:         gcpConfig,
-		maaURL:            att.maaURL,
-		k8sVersion:        k8sVersion,
-	}
-	postInitState, diags := r.runInitRPC(ctx, initRPCPayload, &data, validator)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if err := r.applier.SetKubeConfig([]byte(data.Kubeconfig.ValueString())); err != nil {
-		resp.Diagnostics.AddError("Setting kubeconfig", err.Error())
-		return
-	}
-
-	// Apply attestation config
-	if err := r.applier.ApplyJoinConfig(ctx, att.config, secrets.measurementSalt); err != nil {
-		resp.Diagnostics.AddError("Applying attestation config", err.Error())
-		return
-	}
-
-	// Extend API Server Certificate SANs
-	if err := r.applier.ExtendClusterConfigCertSANs(ctx, data.OutOfClusterEndpoint.ValueString(),
-		"", apiServerCertSANs); err != nil {
-		resp.Diagnostics.AddError("Extending API server certificate SANs", err.Error())
-		return
-	}
-
-	// Apply Helm Charts
-	payload := applyHelmChartsPayload{
-		csp:                 cloudprovider.FromString(data.CSP.ValueString()),
-		attestationVariant:  att.variant,
-		k8sVersion:          k8sVersion,
-		microserviceVersion: microserviceVersion,
-		DeployCSIDriver:     microserviceCfg.CSIDriver,
-		masterSecret:        secrets.masterSecret,
-		serviceAccURI:       serviceAccURI,
-	}
-	diags = r.applyHelmCharts(ctx, payload, postInitState)
+	// Apply changes to the cluster, including the init RPC and skipping the node upgrade.
+	diags := r.apply(ctx, data, false, true)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -506,105 +369,11 @@ func (r *ClusterResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	// Parse and convert values from the Terraform state
-
-	att, diags := r.convertAttestationConfig(ctx, data)
+	// Apply changes to the cluster, skipping the init RPC.
+	diags := r.apply(ctx, data, true, false)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
-	}
-
-	secrets, diags := r.convertSecrets(data)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	apiServerCertSANs := make([]string, 0, len(data.ExtraAPIServerCertSANs.Elements()))
-	for _, san := range data.ExtraAPIServerCertSANs.Elements() {
-		apiServerCertSANs = append(apiServerCertSANs, san.String())
-	}
-
-	var microserviceCfg extraMicroservices
-	diags = data.ExtraMicroservices.As(ctx, &microserviceCfg, basetypes.ObjectAsOptions{})
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	microserviceVersion, err := semver.New(data.MicroserviceVersion.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("constellation_microservice_version"),
-			"Invalid microservice version",
-			fmt.Sprintf("Parsing microservice version: %s", err))
-		return
-	}
-
-	k8sVersion, diags := r.getK8sVersion(ctx, &data)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	imageVersion, err := semver.New(data.ImageVersion.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("image_version"),
-			"Invalid image version",
-			fmt.Sprintf("Parsing image version: %s", err))
-		return
-	}
-
-	log := &tfContextLogger{ctx: ctx}
-	newDialer := func(validator atls.Validator) *dialer.Dialer {
-		return dialer.New(nil, validator, &net.Dialer{})
-	}
-	r.applier = constellation.NewApplier(log, &nopSpinner{}, newDialer)
-
-	// Run the actual update steps
-
-	// Apply attestation config
-	if err := r.applier.ApplyJoinConfig(ctx, att.config, secrets.measurementSalt); err != nil {
-		resp.Diagnostics.AddError("Applying attestation config", err.Error())
-		return
-	}
-
-	// Extend API Server Certificate SANs
-	if err := r.applier.ExtendClusterConfigCertSANs(ctx, data.OutOfClusterEndpoint.ValueString(),
-		"", apiServerCertSANs); err != nil {
-		resp.Diagnostics.AddError("Extending API server certificate SANs", err.Error())
-		return
-	}
-
-	// Apply Helm Charts
-	payload := applyHelmChartsPayload{
-		csp:                 cloudprovider.FromString(data.CSP.ValueString()),
-		attestationVariant:  att.variant,
-		k8sVersion:          k8sVersion,
-		microserviceVersion: microserviceVersion,
-		DeployCSIDriver:     microserviceCfg.CSIDriver,
-		masterSecret:        secrets.masterSecret,
-		serviceAccURI:       "", // TODO
-	}
-	diags = r.applyHelmCharts(ctx, payload, state.New())
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Upgrade node image
-	err = r.applier.UpgradeNodeImage(ctx,
-		imageVersion,
-		data.ImageReference.ValueString(),
-		false)
-	if err != nil {
-		resp.Diagnostics.AddError("Upgrading node OS image", err.Error())
-	}
-
-	// Upgrade Kubernetes version
-	if err := r.applier.UpgradeKubernetesVersion(ctx, k8sVersion, false); err != nil {
-		resp.Diagnostics.AddError("Upgrading Kubernetes version", err.Error())
 	}
 
 	// Save updated data into Terraform state
@@ -628,65 +397,278 @@ func (r *ClusterResource) ImportState(_ context.Context, _ resource.ImportStateR
 	// Take Kubeconfig, Cluster Endpoint and Master Secret and save to state
 }
 
-// initRPCPayload groups the data required to run the init RPC.
-type initRPCPayload struct {
-	csp               cloudprovider.Provider
-	masterSecret      uri.MasterSecret
-	measurementSalt   []byte
-	apiServerCertSANs []string
-	azureConfig       azure
-	gcpConfig         gcp
-	maaURL            string
-	k8sVersion        versions.ValidK8sVersion
-}
-
-// runInitRPC runs the init RPC on the cluster.
-func (r *ClusterResource) runInitRPC(ctx context.Context, payload initRPCPayload,
-	data *ClusterResourceModel, validator atls.Validator,
-) (*state.State, diag.Diagnostics) {
+// apply applies changes to a cluster. It can be used for both creating and updating a cluster.
+// This implements the core part of the Create and Update methods.
+func (r *ClusterResource) apply(ctx context.Context, data ClusterResourceModel, skipInitRPC, skipNodeUpgrade bool) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
-	var networkCfg networkConfig
-	castDiags := data.NetworkConfig.As(ctx, &networkCfg, basetypes.ObjectAsOptions{
-		UnhandledNullAsEmpty: true, // we want to allow null values, as some of the field's subfields are optional
-	})
-	diags.Append(castDiags...)
+	// Parse and convert values from the Terraform state
+	// to formats the Constellation library can work with.
+
+	csp := cloudprovider.FromString(data.CSP.ValueString())
+
+	// parse attestation config
+	att, convertDiags := r.convertAttestationConfig(ctx, data)
+	diags.Append(convertDiags...)
 	if diags.HasError() {
-		return nil, diags
+		return diags
 	}
 
-	// fall back to outOfClusterEndpoint if inClusterEndpoint is not set
+	// parse secrets (i.e. measurement salt, master secret, etc.)
+	secrets, convertDiags := r.convertSecrets(data)
+	diags.Append(convertDiags...)
+	if diags.HasError() {
+		return diags
+	}
+
+	// parse API server certificate SANs
+	apiServerCertSANs := make([]string, 0, len(data.ExtraAPIServerCertSANs.Elements()))
+	for _, san := range data.ExtraAPIServerCertSANs.Elements() {
+		apiServerCertSANs = append(apiServerCertSANs, san.String())
+	}
+
+	// parse network config
+	var networkCfg networkConfig
+	convertDiags = data.NetworkConfig.As(ctx, &networkCfg, basetypes.ObjectAsOptions{
+		UnhandledNullAsEmpty: true, // we want to allow null values, as some of the field's subfields are optional.
+	})
+	diags.Append(convertDiags...)
+	if diags.HasError() {
+		return diags
+	}
+
+	// parse Constellation microservice config
+	var microserviceCfg extraMicroservices
+	convertDiags = data.ExtraMicroservices.As(ctx, &microserviceCfg, basetypes.ObjectAsOptions{
+		UnhandledNullAsEmpty: true, // we want to allow null values, as the CSIDriver field is optional
+	})
+	diags.Append(convertDiags...)
+	if diags.HasError() {
+		return diags
+	}
+
+	// parse Constellation microservice version
+	microserviceVersion, err := semver.New(data.MicroserviceVersion.ValueString())
+	if err != nil {
+		diags.AddAttributeError(
+			path.Root("constellation_microservice_version"),
+			"Invalid microservice version",
+			fmt.Sprintf("Parsing microservice version: %s", err))
+		return diags
+	}
+
+	// parse Kubernetes version
+	k8sVersion, getDiags := r.getK8sVersion(ctx, &data)
+	diags.Append(getDiags...)
+	if diags.HasError() {
+		return diags
+	}
+
+	// parse OS image version
+	imageVersion, err := semver.New(data.ImageVersion.ValueString())
+	if err != nil {
+		diags.AddAttributeError(
+			path.Root("image_version"),
+			"Invalid image version",
+			fmt.Sprintf("Parsing image version: %s", err))
+		return diags
+	}
+
+	// Parse in-cluster service account info.
+	serviceAccPayload := constellation.ServiceAccountPayload{}
+	var gcpConfig gcp
+	var azureConfig azure
+	switch csp {
+	case cloudprovider.GCP:
+		convertDiags = data.GCP.As(ctx, &gcpConfig, basetypes.ObjectAsOptions{})
+		diags.Append(convertDiags...)
+		if diags.HasError() {
+			return diags
+		}
+		if err := json.Unmarshal([]byte(gcpConfig.ServiceAccountKey), &serviceAccPayload.GCP); err != nil {
+			diags.AddAttributeError(
+				path.Root("gcp").AtName("service_account_key"),
+				"Unmarshalling service account key",
+				fmt.Sprintf("Unmarshalling service account key: %s", err))
+			return diags
+		}
+	case cloudprovider.Azure:
+		convertDiags = data.Azure.As(ctx, &azureConfig, basetypes.ObjectAsOptions{})
+		diags.Append(convertDiags...)
+		if diags.HasError() {
+			return diags
+		}
+		serviceAccPayload.Azure = azureshared.ApplicationCredentials{
+			TenantID:            azureConfig.TenantID,
+			Location:            azureConfig.Location,
+			PreferredAuthMethod: azureshared.AuthMethodUserAssignedIdentity,
+			UamiResourceID:      azureConfig.UamiResourceID,
+		}
+	}
+	serviceAccURI, err := constellation.MarshalServiceAccountURI(csp, serviceAccPayload)
+	if err != nil {
+		diags.AddError("Marshalling service account URI", err.Error())
+		return diags
+	}
+
+	// we want to fall back to outOfClusterEndpoint if inClusterEndpoint is not set.
 	inClusterEndpoint := data.InClusterEndpoint.ValueString()
 	if inClusterEndpoint == "" {
 		inClusterEndpoint = data.OutOfClusterEndpoint.ValueString()
 	}
 
+	// setup clients
+	log := &tfContextLogger{ctx: ctx}
+	newDialer := func(validator atls.Validator) *dialer.Dialer {
+		return dialer.New(nil, validator, &net.Dialer{})
+	}
+	r.applier = constellation.NewApplier(log, &nopSpinner{}, newDialer)
+	validator, err := choose.Validator(att.config, log)
+	if err != nil {
+		diags.AddError("Choosing validator", err.Error())
+		return diags
+	}
+
+	// Construct in-memory state file
 	stateFile := state.New().SetInfrastructure(state.Infrastructure{
 		UID:               data.UID.ValueString(),
 		ClusterEndpoint:   data.OutOfClusterEndpoint.ValueString(),
 		InClusterEndpoint: inClusterEndpoint,
 		InitSecret:        []byte(data.InitSecret.ValueString()),
-		APIServerCertSANs: payload.apiServerCertSANs,
+		APIServerCertSANs: apiServerCertSANs,
 		Name:              data.Name.ValueString(),
 		IPCidrNode:        networkCfg.IPCidrNode,
 	})
-	switch payload.csp {
+	switch csp {
 	case cloudprovider.Azure:
 		stateFile.Infrastructure.Azure = &state.Azure{
-			ResourceGroup:            payload.azureConfig.ResourceGroup,
-			SubscriptionID:           payload.azureConfig.SubscriptionID,
-			NetworkSecurityGroupName: payload.azureConfig.NetworkSecurityGroupName,
-			LoadBalancerName:         payload.azureConfig.LoadBalancerName,
-			UserAssignedIdentity:     payload.azureConfig.UamiID,
-			AttestationURL:           payload.maaURL,
+			ResourceGroup:            azureConfig.ResourceGroup,
+			SubscriptionID:           azureConfig.SubscriptionID,
+			NetworkSecurityGroupName: azureConfig.NetworkSecurityGroupName,
+			LoadBalancerName:         azureConfig.LoadBalancerName,
+			UserAssignedIdentity:     azureConfig.UamiID,
+			AttestationURL:           att.maaURL,
 		}
 	case cloudprovider.GCP:
 		stateFile.Infrastructure.GCP = &state.GCP{
-			ProjectID: payload.gcpConfig.ProjectID,
+			ProjectID: gcpConfig.ProjectID,
 			IPCidrPod: networkCfg.IPCidrPod,
 		}
 	}
 
+	// Now, we perform the actual applying.
+
+	// Run init RPC
+	var postInitState *state.State
+	var initDiags diag.Diagnostics
+	if !skipInitRPC {
+		// run the init RPC and retrieve the post-init state
+		initRPCPayload := initRPCPayload{
+			csp:               csp,
+			masterSecret:      secrets.masterSecret,
+			measurementSalt:   secrets.measurementSalt,
+			apiServerCertSANs: apiServerCertSANs,
+			azureCfg:          azureConfig,
+			gcpCfg:            gcpConfig,
+			networkCfg:        networkCfg,
+			maaURL:            att.maaURL,
+			k8sVersion:        k8sVersion,
+			inClusterEndpoint: inClusterEndpoint,
+		}
+		initDiags = r.runInitRPC(ctx, initRPCPayload, &data, validator, stateFile)
+		diags.Append(initDiags...)
+		if diags.HasError() {
+			return diags
+		}
+	}
+
+	// Here, we either have the post-init values from the actual init RPC
+	// or, if performing an upgrade and skipping the init RPC, we have the
+	// values from the Terraform state.
+	stateFile.SetClusterValues(state.ClusterValues{
+		ClusterID:       data.ClusterID.ValueString(),
+		OwnerID:         data.OwnerID.ValueString(),
+		MeasurementSalt: secrets.measurementSalt,
+	})
+
+	// Kubeconfig is in the state by now. Either through the init RPC or through
+	// already being in the state.
+	if err := r.applier.SetKubeConfig([]byte(data.Kubeconfig.ValueString())); err != nil {
+		diags.AddError("Setting kubeconfig", err.Error())
+		return diags
+	}
+
+	// Apply attestation config
+	if err := r.applier.ApplyJoinConfig(ctx, att.config, secrets.measurementSalt); err != nil {
+		diags.AddError("Applying attestation config", err.Error())
+		return diags
+	}
+
+	// Extend API Server Certificate SANs
+	if err := r.applier.ExtendClusterConfigCertSANs(ctx, data.OutOfClusterEndpoint.ValueString(),
+		"", apiServerCertSANs); err != nil {
+		diags.AddError("Extending API server certificate SANs", err.Error())
+		return diags
+	}
+
+	// Apply Helm Charts
+	payload := applyHelmChartsPayload{
+		csp:                 cloudprovider.FromString(data.CSP.ValueString()),
+		attestationVariant:  att.variant,
+		k8sVersion:          k8sVersion,
+		microserviceVersion: microserviceVersion,
+		DeployCSIDriver:     microserviceCfg.CSIDriver,
+		masterSecret:        secrets.masterSecret,
+		serviceAccURI:       serviceAccURI,
+	}
+	helmDiags := r.applyHelmCharts(ctx, payload, postInitState)
+	diags.Append(helmDiags...)
+	if diags.HasError() {
+		return diags
+	}
+
+	if !skipNodeUpgrade {
+		// Upgrade node image
+		err = r.applier.UpgradeNodeImage(ctx,
+			imageVersion,
+			data.ImageReference.ValueString(),
+			false)
+		if err != nil {
+			diags.AddError("Upgrading node OS image", err.Error())
+			return diags
+		}
+
+		// Upgrade Kubernetes version
+		if err := r.applier.UpgradeKubernetesVersion(ctx, k8sVersion, false); err != nil {
+			diags.AddError("Upgrading Kubernetes version", err.Error())
+			return diags
+		}
+	}
+
+	return diags
+}
+
+// initRPCPayload groups the data required to run the init RPC.
+type initRPCPayload struct {
+	csp               cloudprovider.Provider   // cloud service provider the cluster runs on.
+	masterSecret      uri.MasterSecret         // master secret of the cluster.
+	measurementSalt   []byte                   // measurement salt of the cluster.
+	apiServerCertSANs []string                 // additional SANs to add to the API server certificate.
+	azureCfg          azure                    // Azure-specific configuration.
+	gcpCfg            gcp                      // GCP-specific configuration.
+	networkCfg        networkConfig            // network configuration of the cluster.
+	maaURL            string                   // URL of the MAA service. Only used for Azure clusters.
+	k8sVersion        versions.ValidK8sVersion // Kubernetes version of the cluster.
+	// Internal Endpoint of the cluster.
+	// If no internal LB is used, this should be the same as the out-of-cluster endpoint.
+	inClusterEndpoint string
+}
+
+// runInitRPC runs the init RPC on the cluster.
+func (r *ClusterResource) runInitRPC(ctx context.Context, payload initRPCPayload,
+	data *ClusterResourceModel, validator atls.Validator, stateFile *state.State,
+) diag.Diagnostics {
+	diags := diag.Diagnostics{}
 	clusterLogs := &bytes.Buffer{}
 	initResp, err := r.applier.Init(
 		ctx, validator, stateFile, clusterLogs,
@@ -695,7 +677,7 @@ func (r *ClusterResource) runInitRPC(ctx context.Context, payload initRPCPayload
 			MeasurementSalt: payload.measurementSalt,
 			K8sVersion:      payload.k8sVersion,
 			ConformanceMode: false, // Conformance mode does't need to be configurable through the TF provider for now.
-			ServiceCIDR:     networkCfg.IPCidrService,
+			ServiceCIDR:     payload.networkCfg.IPCidrService,
 		})
 	if err != nil {
 		var nonRetriable *constellation.NonRetriableInitError
@@ -711,7 +693,7 @@ func (r *ClusterResource) runInitRPC(ctx context.Context, payload initRPCPayload
 		} else {
 			diags.AddError("Cluster initialization failed.", fmt.Sprintf("You might try to apply the resource again.\nError: %s", err))
 		}
-		return nil, diags
+		return diags
 	}
 
 	rewrittenKubeconfig, err := r.applier.
@@ -725,25 +707,18 @@ func (r *ClusterResource) runInitRPC(ctx context.Context, payload initRPCPayload
 	data.ClusterID = types.StringValue(string(initResp.ClusterId))
 	data.OwnerID = types.StringValue(string(initResp.OwnerId))
 
-	// Save data from init response into the state
-	stateFile.SetClusterValues(state.ClusterValues{
-		ClusterID:       string(initResp.ClusterId),
-		OwnerID:         string(initResp.OwnerId),
-		MeasurementSalt: payload.measurementSalt,
-	})
-
-	return stateFile, diags
+	return diags
 }
 
 // applyHelmChartsPayload groups the data required to apply the Helm charts.
 type applyHelmChartsPayload struct {
-	csp                 cloudprovider.Provider
-	attestationVariant  variant.Variant
-	k8sVersion          versions.ValidK8sVersion
-	microserviceVersion semver.Semver
-	DeployCSIDriver     bool
-	masterSecret        uri.MasterSecret
-	serviceAccURI       string
+	csp                 cloudprovider.Provider   // cloud service provider the cluster runs on.
+	attestationVariant  variant.Variant          // attestation variant used on the cluster's nodes.
+	k8sVersion          versions.ValidK8sVersion // Kubernetes version of the cluster.
+	microserviceVersion semver.Semver            // version of the Constellation microservices used on the cluster.
+	DeployCSIDriver     bool                     // Whether to deploy the CSI driver.
+	masterSecret        uri.MasterSecret         // master secret of the cluster.
+	serviceAccURI       string                   // URI of the service account used within the cluster.
 }
 
 // applyHelmCharts applies the Helm charts to the cluster.
