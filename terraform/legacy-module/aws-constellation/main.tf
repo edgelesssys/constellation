@@ -3,11 +3,10 @@ locals {
 }
 
 module "aws_iam" {
-  source      = "../infrastructure/iam/aws"
+  source      = "../../infrastructure/iam/aws"
   name_prefix = var.name_prefix
   region      = local.region
 }
-
 
 resource "null_resource" "ensure_yq" {
   provisioner "local-exec" {
@@ -29,9 +28,8 @@ module "fetch_image" {
   depends_on          = [module.aws_iam, null_resource.ensure_yq]
 }
 
-
 module "aws" {
-  source                             = "../infrastructure/aws"
+  source                             = "../../infrastructure/aws"
   name                               = var.name
   node_groups                        = var.node_groups
   iam_instance_profile_worker_nodes  = module.aws_iam.worker_nodes_instance_profile

@@ -91,7 +91,7 @@ jobs:
 
       - name: Create AWS Terraform variable input file
         if: inputs.cloudProvider == 'aws'
-        working-directory: ${{ github.workspace }}/terraform-module/aws-constellation
+        working-directory: ${{ github.workspace }}/terraform-module/legacy-module/aws-constellation
         shell: bash
         run: |
           cat > terraform.tfvars <<EOF
@@ -123,7 +123,7 @@ jobs:
 
       - name: Create Azure Terraform variable input file
         if: inputs.cloudProvider == 'azure'
-        working-directory: ${{ github.workspace }}/terraform-module/azure-constellation
+        working-directory: ${{ github.workspace }}/terraform-module/legacy-module/azure-constellation
         shell: bash
         run: |
           cat > terraform.tfvars <<EOF
@@ -154,7 +154,7 @@ jobs:
 
       - name: Create GCP Terraform variable input file
         if: inputs.cloudProvider == 'gcp'
-        working-directory: ${{ github.workspace }}/terraform-module/gcp-constellation
+        working-directory: ${{ github.workspace }}/terraform-module/legacy-module/gcp-constellation
         shell: bash
         run: |
           cat > terraform.tfvars <<EOF

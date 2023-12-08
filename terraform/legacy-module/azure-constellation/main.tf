@@ -18,14 +18,14 @@ module "fetch_image" {
 }
 
 module "azure_iam" {
-  source                 = "../infrastructure/iam/azure"
+  source                 = "../../infrastructure/iam/azure"
   region                 = var.location
   service_principal_name = var.service_principal_name
   resource_group_name    = var.resource_group_name
 }
 
 module "azure" {
-  source                 = "../infrastructure/azure"
+  source                 = "../../infrastructure/azure"
   name                   = var.name
   user_assigned_identity = module.azure_iam.uami_id
   node_groups            = var.node_groups

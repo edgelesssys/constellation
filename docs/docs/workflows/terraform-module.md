@@ -31,7 +31,7 @@ The files are deleted on `terraform destroy`.
 
   ```
   module "azure-constellation" {
-    source = "https://github.com/edgelesssys/constellation/releases/download/<version>/terraform-module.zip//terraform-module/azure-constellation" // replace <version> with a Constellation version, e.g., v2.13.0
+    source = "https://github.com/edgelesssys/constellation/releases/download/<version>/terraform-module.zip//terraform-module/legacy-module/azure-constellation" // replace <version> with a Constellation version, e.g., v2.13.0
     name = "constell"
     location = "northeurope"
     service_principal_name = "az-sp"
@@ -61,7 +61,7 @@ The files are deleted on `terraform destroy`.
 
   ```
   module "aws-constellation" {
-    source = "https://github.com/edgelesssys/constellation/releases/download/<version>/terraform-module.zip//terraform-module/aws-constellation" // replace <version> with a Constellation version, e.g., v2.13.0
+    source = "https://github.com/edgelesssys/constellation/releases/download/<version>/terraform-module.zip//terraform-module/legacy-module/aws-constellation" // replace <version> with a Constellation version, e.g., v2.13.0
     name        = "constell"
     zone        = "us-east-2c"
     name_prefix = "example"
@@ -92,7 +92,7 @@ The files are deleted on `terraform destroy`.
 
   ```
   module "gcp-constellation" {
-    source = "https://github.com/edgelesssys/constellation/releases/download/<version>/terraform-module.zip//terraform-module/gcp-constellation" // replace <version> with a Constellation version, e.g., v2.13.0
+    source = "https://github.com/edgelesssys/constellation/releases/download/<version>/terraform-module.zip//terraform-module/legacy-module/gcp-constellation" // replace <version> with a Constellation version, e.g., v2.13.0
     name    = "constell"
     project = "constell-proj" // replace with your project id
     service_account_id = "constid"

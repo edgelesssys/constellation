@@ -3,7 +3,7 @@ locals {
 }
 
 module "gcp_iam" {
-  source             = "../infrastructure/iam/gcp"
+  source             = "../../infrastructure/iam/gcp"
   project_id         = var.project
   service_account_id = var.service_account_id
   region             = local.region
@@ -32,7 +32,7 @@ module "fetch_image" {
 
 
 module "gcp" {
-  source          = "../infrastructure/gcp"
+  source          = "../../infrastructure/gcp"
   project         = var.project
   image_id        = module.fetch_image.image
   name            = var.name
