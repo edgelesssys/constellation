@@ -1,10 +1,10 @@
 let
   pkgs = import <nixpkgs> { };
   goAttr = pkgs.go_1_21.overrideAttrs (_: rec {
-    version = "1.21.4";
+    version = "1.21.5";
     src = pkgs.fetchurl {
       url = "https://go.dev/dl/go${version}.src.tar.gz";
-      hash = "sha256-R7Jqg9K2WjwcG8rOJztpvuSaentRaKdgTe09JqN714c=";
+      hash = "sha256-KFy730tubmLtWPNw8/bYwwgl1uVsWFPGbTwjvNsJ2xk=";
     };
   });
 in
