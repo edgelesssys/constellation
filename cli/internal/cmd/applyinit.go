@@ -12,8 +12,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
-	"net/url"
 	"path/filepath"
 	"text/tabwriter"
 
@@ -26,7 +24,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/spf13/cobra"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 // runInit runs the init RPC to set up the Kubernetes cluster.
@@ -126,25 +123,9 @@ func (a *applyCmd) writeInitOutput(
 	tw.Flush()
 	fmt.Fprintln(wr)
 
-	a.log.Debugf("Rewriting cluster server address in kubeconfig to %s", stateFile.Infrastructure.ClusterEndpoint)
-	kubeconfig, err := clientcmd.Load(initResp.GetKubeconfig())
+	kubeconfigBytes, err := a.applier.RewrittenKubeconfigBytes(initResp.GetKubeconfig(), stateFile.Infrastructure.ClusterEndpoint)
 	if err != nil {
-		return fmt.Errorf("loading kubeconfig: %w", err)
-	}
-	if len(kubeconfig.Clusters) != 1 {
-		return fmt.Errorf("expected exactly one cluster in kubeconfig, got %d", len(kubeconfig.Clusters))
-	}
-	for _, cluster := range kubeconfig.Clusters {
-		kubeEndpoint, err := url.Parse(cluster.Server)
-		if err != nil {
-			return fmt.Errorf("parsing kubeconfig server URL: %w", err)
-		}
-		kubeEndpoint.Host = net.JoinHostPort(stateFile.Infrastructure.ClusterEndpoint, kubeEndpoint.Port())
-		cluster.Server = kubeEndpoint.String()
-	}
-	kubeconfigBytes, err := clientcmd.Write(*kubeconfig)
-	if err != nil {
-		return fmt.Errorf("marshaling kubeconfig: %w", err)
+		return fmt.Errorf("rewriting kubeconfig: %w", err)
 	}
 
 	if err := a.fileHandler.Write(constants.AdminConfFilename, kubeconfigBytes, file.OptNone); err != nil {

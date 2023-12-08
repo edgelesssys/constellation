@@ -525,6 +525,10 @@ func (s *stubConstellApplier) Init(context.Context, atls.Validator, *state.State
 	return s.initResponse, s.initErr
 }
 
+func (s *stubConstellApplier) RewrittenKubeconfigBytes(kubeconfigBytes []byte, clusterEndpoint string) ([]byte, error) {
+	return kubeconfigBytes, nil
+}
+
 type helmApplier interface {
 	PrepareHelmCharts(
 		flags helm.Options, stateFile *state.State, serviceAccURI string, masterSecret uri.MasterSecret, openStackCfg *config.OpenStackConfig,

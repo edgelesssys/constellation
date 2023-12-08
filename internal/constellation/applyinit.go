@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/url"
 	"strconv"
 	"sync"
 	"time"
@@ -26,6 +27,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/retry"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"google.golang.org/grpc"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 // InitPayload contains the configurable data for the init RPC.
@@ -97,6 +99,29 @@ func (a *Applier) Init(
 	a.log.Debugf("Initialization request finished")
 
 	return doer.resp, nil
+}
+
+// RewrittenKubeconfigBytes returns the kubeconfig bytes with the cluster server address rewritten to the given endpoint.
+// This is usually used to rewrite the cluster endpoint to a public endpoint in case a private LB is used.
+func (a *Applier) RewrittenKubeconfigBytes(kubeconfigBytes []byte, clusterEndpoint string) ([]byte, error) {
+	a.log.Debugf("Rewriting cluster server address in kubeconfig to %s", clusterEndpoint)
+	kubeconfig, err := clientcmd.Load(kubeconfigBytes)
+	if err != nil {
+		return nil, fmt.Errorf("loading kubeconfig: %w", err)
+	}
+	if len(kubeconfig.Clusters) != 1 {
+		return nil, fmt.Errorf("expected exactly one cluster in kubeconfig, got %d", len(kubeconfig.Clusters))
+	}
+	for _, cluster := range kubeconfig.Clusters {
+		kubeEndpoint, err := url.Parse(cluster.Server)
+		if err != nil {
+			return nil, fmt.Errorf("parsing kubeconfig server URL: %w", err)
+		}
+		kubeEndpoint.Host = net.JoinHostPort(clusterEndpoint, kubeEndpoint.Port())
+		cluster.Server = kubeEndpoint.String()
+	}
+
+	return clientcmd.Write(*kubeconfig)
 }
 
 // the initDoer performs the actual init RPC with retry logic.

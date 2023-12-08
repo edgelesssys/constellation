@@ -824,6 +824,7 @@ type applier interface {
 		ctx context.Context, validator atls.Validator, state *state.State,
 		clusterLogWriter io.Writer, payload constellation.InitPayload,
 	) (*initproto.InitSuccessResponse, error)
+	RewrittenKubeconfigBytes(kubeconfigBytes []byte, clusterEndpoint string) ([]byte, error)
 
 	// methods required to install/upgrade Helm charts
 
