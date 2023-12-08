@@ -16,6 +16,6 @@ Subsequent Constellation releases drop support for the oldest (and deprecated) K
 The following Kubernetes versions are currently supported:
 <!--AUTO_GENERATED_BY_BAZEL-->
 <!--DO_NOT_EDIT-->
-* v1.26.10
-* v1.27.7
-* v1.28.3
+* v1.26.11
+* v1.27.8
+* v1.28.4
