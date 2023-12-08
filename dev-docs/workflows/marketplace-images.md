@@ -1,6 +1,6 @@
 # Using Marketplace Images in Constellation
 
-This document explains the steps a user needs to take
+This document explains the steps a user needs to take to run Constellation with dynamic billing via the cloud marketplaces.
 
 ## AWS
 
