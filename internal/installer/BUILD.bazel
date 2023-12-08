@@ -10,6 +10,7 @@ go_library(
         "//internal/retry",
         "//internal/versions/components",
         "@com_github_spf13_afero//:afero",
+        "@com_github_vincent_petithory_dataurl//:dataurl",
         "@io_k8s_utils//clock",
     ],
 )

@@ -9,6 +9,7 @@ package installer
 
 import (
 	"archive/tar"
+	"bytes"
 	"compress/gzip"
 	"context"
 	"crypto/sha256"
@@ -17,13 +18,16 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
+	"slices"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/retry"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"github.com/spf13/afero"
+	"github.com/vincent-petithory/dataurl"
 	"k8s.io/utils/clock"
 )
 
@@ -178,36 +182,81 @@ func (i *OsInstaller) retryDownloadToTempDir(ctx context.Context, url string) (f
 	return doer.path, nil
 }
 
-// downloadToTempDir downloads a file to a temporary location.
-func (i *OsInstaller) downloadToTempDir(ctx context.Context, url string) (fileName string, retErr error) {
-	out, err := afero.TempFile(i.fs, "", "")
-	if err != nil {
-		return "", fmt.Errorf("creating destination temp file: %w", err)
-	}
-	// Remove the created file if an error occurs.
-	defer func() {
-		if retErr != nil {
-			_ = i.fs.Remove(fileName)
-			retErr = &retriableError{err: retErr} // mark any error after this point as retriable
-		}
-	}()
-	defer out.Close()
+// retriableHTTPStatusCodes are status codes that might flip to 200 if retried.
+// This arguably depends on the web server implementation, but below list is
+// a reasonable selection, cf. https://stackoverflow.com/a/74627395.
+var retriableHTTPStatusCodes = []int{
+	http.StatusRequestTimeout,
+	http.StatusTooEarly,
+	http.StatusTooManyRequests,
+	http.StatusBadGateway,
+	http.StatusServiceUnavailable,
+	http.StatusGatewayTimeout,
+}
 
+// downloadHTTP downloads the given URL with the embedded HTTP client and writes the content to out.
+func (i *OsInstaller) downloadHTTP(ctx context.Context, url string, out io.Writer) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return "", fmt.Errorf("request to download %q: %w", url, err)
+		return fmt.Errorf("request to download %q: %w", url, err)
 	}
 	resp, err := i.hClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("request to download %q: %w", url, err)
+		// A failure at this point might be transient, such as network connectivity.
+		return fmt.Errorf("request to download %q: %w", url, &retriableError{err: err})
 	}
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("request to download %q failed with status code: %v", url, resp.Status)
+		// The HTTP request went through, but the result is not what we
+		// expected. Wrap the error return in case we think the request could
+		// be retried.
+		err = fmt.Errorf("request to download %q failed with status code: %v", url, resp.Status)
+		if slices.Contains(retriableHTTPStatusCodes, resp.StatusCode) {
+			err = &retriableError{err: err}
+		}
+		return err
 	}
 	defer resp.Body.Close()
 
 	if _, err = io.Copy(out, resp.Body); err != nil {
-		return "", fmt.Errorf("downloading %q: %w", url, err)
+		return fmt.Errorf("downloading %q: %w", url, &retriableError{err: err})
+	}
+	return nil
+}
+
+// unpackData parses the given data URL and writes the content to out.
+func (i *OsInstaller) unpackData(url string, out io.Writer) error {
+	dataURL, err := dataurl.DecodeString(url)
+	if err != nil {
+		return fmt.Errorf("parsing data URL: %w", err)
+	}
+	buf := bytes.NewBuffer(dataURL.Data)
+	if _, err = io.Copy(out, buf); err != nil {
+		return fmt.Errorf("writing content of data URL %q: %w", url, err)
+	}
+	return nil
+}
+
+// downloadToTempDir downloads a file from the given URL to a temporary location and returns the path to the downloaded file.
+func (i *OsInstaller) downloadToTempDir(ctx context.Context, u string) (string, error) {
+	url, err := url.Parse(u)
+	if err != nil {
+		return "", fmt.Errorf("parsing component URL: %w", err)
+	}
+
+	out, err := afero.TempFile(i.fs, "", "")
+	if err != nil {
+		return "", fmt.Errorf("creating destination temp file: %w", err)
+	}
+
+	if url.Scheme == "data" {
+		err = i.unpackData(u, out)
+	} else {
+		err = i.downloadHTTP(ctx, u, out)
+	}
+	out.Close()
+	if err != nil {
+		removeErr := i.fs.Remove(out.Name())
+		return "", errors.Join(err, removeErr)
 	}
 	return out.Name(), nil
 }
