@@ -88,6 +88,24 @@ func TestInstall(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		"dataurl works": {
+			server: newHTTPBufconnServer(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(500) }),
+			component: &components.Component{
+				Url:         "data:text/plain,file-contents",
+				Hash:        "",
+				InstallPath: "/destination",
+			},
+			wantFiles: map[string][]byte{"/destination": []byte("file-contents")},
+		},
+		"broken dataurl fails": {
+			server: newHTTPBufconnServer(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(500) }),
+			component: &components.Component{
+				Url:         "data:file-contents",
+				Hash:        "",
+				InstallPath: "/destination",
+			},
+			wantErr: true,
+		},
 	}
 
 	for name, tc := range testCases {

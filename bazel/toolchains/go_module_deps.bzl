@@ -4877,6 +4877,14 @@ def go_dependencies():
         version = "v1.1.0",
     )
     go_repository(
+        name = "com_github_vincent_petithory_dataurl",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/vincent-petithory/dataurl",
+        sum = "h1:cXw+kPto8NLuJtlMsI152irrVw9fRDX8AbShPRpg2CI=",
+        version = "v1.0.0",
+    )
+    go_repository(
         name = "com_github_vishvananda_netlink",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
