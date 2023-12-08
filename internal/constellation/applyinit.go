@@ -52,7 +52,7 @@ func (a *Applier) Init(
 	clusterLogWriter io.Writer,
 	payload InitPayload,
 ) (
-	*initproto.InitSuccessResponse,
+	InitOutput,
 	error,
 ) {
 	// Prepare the Request
@@ -93,35 +93,48 @@ func (a *Applier) Init(
 	a.spinner.Start("Connecting ", false)
 	retrier := retry.NewIntervalRetrier(doer, 30*time.Second, serviceIsUnavailable)
 	if err := retrier.Do(ctx); err != nil {
-		return nil, fmt.Errorf("doing init call: %w", err)
+		return InitOutput{}, fmt.Errorf("doing init call: %w", err)
 	}
 	a.spinner.Stop()
 	a.log.Debugf("Initialization request finished")
 
-	return doer.resp, nil
-}
-
-// RewrittenKubeconfigBytes returns the kubeconfig bytes with the cluster server address rewritten to the given endpoint.
-// This is usually used to rewrite the cluster endpoint to a public endpoint in case a private LB is used.
-func (a *Applier) RewrittenKubeconfigBytes(kubeconfigBytes []byte, clusterEndpoint string) ([]byte, error) {
-	a.log.Debugf("Rewriting cluster server address in kubeconfig to %s", clusterEndpoint)
-	kubeconfig, err := clientcmd.Load(kubeconfigBytes)
+	a.log.Debugf("Rewriting cluster server address in kubeconfig to %s", state.Infrastructure.ClusterEndpoint)
+	kubeconfig, err := clientcmd.Load(doer.resp.Kubeconfig)
 	if err != nil {
-		return nil, fmt.Errorf("loading kubeconfig: %w", err)
+		return InitOutput{}, fmt.Errorf("loading kubeconfig: %w", err)
 	}
 	if len(kubeconfig.Clusters) != 1 {
-		return nil, fmt.Errorf("expected exactly one cluster in kubeconfig, got %d", len(kubeconfig.Clusters))
+		return InitOutput{}, fmt.Errorf("expected exactly one cluster in kubeconfig, got %d", len(kubeconfig.Clusters))
 	}
 	for _, cluster := range kubeconfig.Clusters {
 		kubeEndpoint, err := url.Parse(cluster.Server)
 		if err != nil {
-			return nil, fmt.Errorf("parsing kubeconfig server URL: %w", err)
+			return InitOutput{}, fmt.Errorf("parsing kubeconfig server URL: %w", err)
 		}
-		kubeEndpoint.Host = net.JoinHostPort(clusterEndpoint, kubeEndpoint.Port())
+		kubeEndpoint.Host = net.JoinHostPort(state.Infrastructure.ClusterEndpoint, kubeEndpoint.Port())
 		cluster.Server = kubeEndpoint.String()
 	}
 
-	return clientcmd.Write(*kubeconfig)
+	kubeconfigBytes, err := clientcmd.Write(*kubeconfig)
+	if err != nil {
+		return InitOutput{}, fmt.Errorf("writing kubeconfig: %w", err)
+	}
+
+	return InitOutput{
+		ClusterID:  string(doer.resp.OwnerId),
+		OwnerID:    string(doer.resp.ClusterId),
+		Kubeconfig: kubeconfigBytes,
+	}, nil
+}
+
+// InitOutput contains the output of the init RPC.
+type InitOutput struct {
+	// ClusterID is the ID of the cluster.
+	ClusterID string
+	// OwnerID is the ID of the owner of the cluster.
+	OwnerID string
+	// Kubeconfig is the kubeconfig for the cluster.
+	Kubeconfig []byte
 }
 
 // the initDoer performs the actual init RPC with retry logic.

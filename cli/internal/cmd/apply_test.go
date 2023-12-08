@@ -17,7 +17,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
@@ -502,7 +501,7 @@ type stubConstellApplier struct {
 	generateMasterSecretErr    error
 	generateMeasurementSaltErr error
 	initErr                    error
-	initResponse               *initproto.InitSuccessResponse
+	initOutput                 constellation.InitOutput
 	*stubKubernetesUpgrader
 	helmApplier
 }
@@ -521,12 +520,8 @@ func (s *stubConstellApplier) GenerateMeasurementSalt() ([]byte, error) {
 	return s.measurementSalt, s.generateMeasurementSaltErr
 }
 
-func (s *stubConstellApplier) Init(context.Context, atls.Validator, *state.State, io.Writer, constellation.InitPayload) (*initproto.InitSuccessResponse, error) {
-	return s.initResponse, s.initErr
-}
-
-func (s *stubConstellApplier) RewrittenKubeconfigBytes(kubeconfigBytes []byte, _ string) ([]byte, error) {
-	return kubeconfigBytes, nil
+func (s *stubConstellApplier) Init(context.Context, atls.Validator, *state.State, io.Writer, constellation.InitPayload) (constellation.InitOutput, error) {
+	return s.initOutput, s.initErr
 }
 
 type helmApplier interface {

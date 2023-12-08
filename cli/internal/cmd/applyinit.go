@@ -8,14 +8,12 @@ package cmd
 
 import (
 	"bytes"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
 	"text/tabwriter"
 
-	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -103,32 +101,24 @@ func (a *applyCmd) generateAndPersistMasterSecret(outWriter io.Writer) (uri.Mast
 // writeInitOutput writes the output of a cluster initialization to the
 // state- / kubeconfig-file and saves it to disk.
 func (a *applyCmd) writeInitOutput(
-	stateFile *state.State, initResp *initproto.InitSuccessResponse,
+	stateFile *state.State, initResp constellation.InitOutput,
 	mergeConfig bool, wr io.Writer, measurementSalt []byte,
 ) error {
 	fmt.Fprint(wr, "Your Constellation cluster was successfully initialized.\n\n")
 
-	ownerID := hex.EncodeToString(initResp.GetOwnerId())
-	clusterID := hex.EncodeToString(initResp.GetClusterId())
-
 	stateFile.SetClusterValues(state.ClusterValues{
 		MeasurementSalt: measurementSalt,
-		OwnerID:         ownerID,
-		ClusterID:       clusterID,
+		OwnerID:         initResp.OwnerID,
+		ClusterID:       initResp.ClusterID,
 	})
 
 	tw := tabwriter.NewWriter(wr, 0, 0, 2, ' ', 0)
-	writeRow(tw, "Constellation cluster identifier", clusterID)
+	writeRow(tw, "Constellation cluster identifier", initResp.ClusterID)
 	writeRow(tw, "Kubernetes configuration", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename))
 	tw.Flush()
 	fmt.Fprintln(wr)
 
-	kubeconfigBytes, err := a.applier.RewrittenKubeconfigBytes(initResp.Kubeconfig, stateFile.Infrastructure.ClusterEndpoint)
-	if err != nil {
-		return fmt.Errorf("rewriting kubeconfig: %w", err)
-	}
-
-	if err := a.fileHandler.Write(constants.AdminConfFilename, kubeconfigBytes, file.OptNone); err != nil {
+	if err := a.fileHandler.Write(constants.AdminConfFilename, initResp.Kubeconfig, file.OptNone); err != nil {
 		return fmt.Errorf("writing kubeconfig: %w", err)
 	}
 	a.log.Debugf("Kubeconfig written to %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename))

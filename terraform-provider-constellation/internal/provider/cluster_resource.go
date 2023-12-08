@@ -670,7 +670,7 @@ func (r *ClusterResource) runInitRPC(ctx context.Context, payload initRPCPayload
 ) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 	clusterLogs := &bytes.Buffer{}
-	initResp, err := r.applier.Init(
+	initOutput, err := r.applier.Init(
 		ctx, validator, stateFile, clusterLogs,
 		constellation.InitPayload{
 			MasterSecret:    payload.masterSecret,
@@ -696,16 +696,10 @@ func (r *ClusterResource) runInitRPC(ctx context.Context, payload initRPCPayload
 		return diags
 	}
 
-	rewrittenKubeconfig, err := r.applier.
-		RewrittenKubeconfigBytes(initResp.GetKubeconfig(), stateFile.Infrastructure.ClusterEndpoint)
-	if err != nil {
-		diags.AddError("Rewriting kubeconfig endpoint", err.Error())
-	}
-
 	// Save data from init response into the Terraform state
-	data.Kubeconfig = types.StringValue(string(rewrittenKubeconfig))
-	data.ClusterID = types.StringValue(string(initResp.ClusterId))
-	data.OwnerID = types.StringValue(string(initResp.OwnerId))
+	data.Kubeconfig = types.StringValue(string(initOutput.Kubeconfig))
+	data.ClusterID = types.StringValue(initOutput.ClusterID)
+	data.OwnerID = types.StringValue(initOutput.OwnerID)
 
 	return diags
 }
