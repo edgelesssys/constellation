@@ -60,7 +60,8 @@ type ClusterResourceModel struct {
 	Name                   types.String `tfsdk:"name"`
 	CSP                    types.String `tfsdk:"csp"`
 	UID                    types.String `tfsdk:"uid"`
-	Image                  types.String `tfsdk:"image"`
+	ImageVersion           types.String `tfsdk:"image_version"`
+	ImageReference         types.String `tfsdk:"image_reference"`
 	KubernetesVersion      types.String `tfsdk:"kubernetes_version"`
 	MicroserviceVersion    types.String `tfsdk:"constellation_microservice_version"`
 	OutOfClusterEndpoint   types.String `tfsdk:"out_of_cluster_endpoint"`
@@ -132,9 +133,14 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Description:         "The UID of the cluster.",
 				Required:            true,
 			},
-			"image": schema.StringAttribute{
-				MarkdownDescription: "The Constellation OS image to use in the CSP specific reference format. Use the [`constellation_image`](../data-sources/image.md) data source to find the correct image for your CSP.",
-				Description:         "The Constellation OS image to use in the CSP specific reference format. Use the `constellation_image` data source to find the correct image for your CSP.",
+			"image_version": schema.StringAttribute{
+				MarkdownDescription: "Constellation OS image version to use in the CSP specific reference format. Use the [`constellation_image`](../data-sources/image.md) data source to find the correct image version for your CSP.",
+				Description:         "Constellation OS image version to use in the CSP specific reference format. Use the `constellation_image` data source to find the correct image version for your CSP.",
+				Required:            true,
+			},
+			"image_reference": schema.StringAttribute{
+				MarkdownDescription: "Constellation OS image reference to use in the CSP specific reference format. Use the [`constellation_image`](../data-sources/image.md) data source to find the correct image reference for your CSP.",
+				Description:         "Constellation OS image reference to use in the CSP specific reference format. Use the `constellation_image` data source to find the correct image reference for your CSP.",
 				Required:            true,
 			},
 			"kubernetes_version": schema.StringAttribute{
@@ -541,6 +547,15 @@ func (r *ClusterResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
+	imageVersion, err := semver.New(data.ImageVersion.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("image_version"),
+			"Invalid image version",
+			fmt.Sprintf("Parsing image version: %s", err))
+		return
+	}
+
 	log := &tfContextLogger{ctx: ctx}
 	newDialer := func(validator atls.Validator) *dialer.Dialer {
 		return dialer.New(nil, validator, &net.Dialer{})
@@ -579,10 +594,18 @@ func (r *ClusterResource) Update(ctx context.Context, req resource.UpdateRequest
 	}
 
 	// Upgrade node image
-	// TODO
+	err = r.applier.UpgradeNodeImage(ctx,
+		imageVersion,
+		data.ImageReference.ValueString(),
+		false)
+	if err != nil {
+		resp.Diagnostics.AddError("Upgrading node OS image", err.Error())
+	}
 
 	// Upgrade Kubernetes version
-	// TODO
+	if err := r.applier.UpgradeKubernetesVersion(ctx, k8sVersion, false); err != nil {
+		resp.Diagnostics.AddError("Upgrading Kubernetes version", err.Error())
+	}
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)

@@ -44,7 +44,8 @@ resource "constellation_cluster" "aws_example" {
 
 - `attestation` (Attributes) Attestation comprises the measurements and SEV-SNP specific parameters. (see [below for nested schema](#nestedatt--attestation))
 - `csp` (String) The Cloud Service Provider (CSP) the cluster should run on.
-- `image` (String) The Constellation OS image to use in the CSP specific reference format. Use the [`constellation_image`](../data-sources/image.md) data source to find the correct image for your CSP.
+- `image_reference` (String) Constellation OS image reference to use in the CSP specific reference format. Use the [`constellation_image`](../data-sources/image.md) data source to find the correct image reference for your CSP.
+- `image_version` (String) Constellation OS image version to use in the CSP specific reference format. Use the [`constellation_image`](../data-sources/image.md) data source to find the correct image version for your CSP.
 - `init_secret` (String) Secret used for initialization of the cluster.
 - `master_secret` (String) Hex-encoded 32-byte master secret for the cluster.
 - `master_secret_salt` (String) Hex-encoded 32-byte master secret salt for the cluster.
