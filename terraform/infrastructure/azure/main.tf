@@ -268,6 +268,7 @@ module "scale_set_group" {
     azurerm_lb_backend_address_pool.all.id,
     module.loadbalancer_backend_worker.backendpool_id
   ]
+  marketplace_image = var.marketplace_image
 }
 
 module "jump_host" {

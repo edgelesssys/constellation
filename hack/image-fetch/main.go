@@ -53,7 +53,8 @@ func main() {
 	provider := conf.GetProvider()
 	attestationVariant := conf.GetAttestationConfig().GetVariant()
 	region := conf.GetRegion()
-	image, err := imgFetcher.FetchReference(ctx, provider, attestationVariant, conf.Image, region)
+	image, err := imgFetcher.FetchReference(ctx, provider, attestationVariant,
+		conf.Image, region, conf.UseMarketplaceImage())
 	if err != nil {
 		panic(err)
 	}

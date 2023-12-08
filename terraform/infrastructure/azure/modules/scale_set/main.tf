@@ -46,9 +46,10 @@ resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
   disable_password_authentication = false
   upgrade_mode                    = "Manual"
   secure_boot_enabled             = var.secure_boot
-  source_image_id                 = var.image_id
-  tags                            = local.tags
-  zones                           = var.zones
+  # specify the image id only if a non-marketplace image is used
+  source_image_id = var.marketplace_image != null ? null : var.image_id
+  tags            = local.tags
+  zones           = var.zones
   identity {
     type         = "UserAssigned"
     identity_ids = [var.user_assigned_identity]
@@ -72,6 +73,26 @@ resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
     }
   }
 
+  # Specify marketplace plan and image if set
+  dynamic "plan" {
+    for_each = var.marketplace_image != null ? [1] : [] # if a marketplace image is set
+    content {
+      name      = var.marketplace_image.name
+      publisher = var.marketplace_image.publisher
+      product   = var.marketplace_image.product
+    }
+  }
+  dynamic "source_image_reference" {
+    for_each = var.marketplace_image != null ? [1] : [] # if a marketplace image is set
+    content {
+      publisher = var.marketplace_image.publisher
+      offer     = var.marketplace_image.product
+      sku       = var.marketplace_image.name
+      version   = var.marketplace_image.version
+    }
+  }
+
+
   data_disk {
     storage_account_type = var.state_disk_type
     disk_size_gb         = var.state_disk_size
@@ -94,9 +115,10 @@ resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
 
   lifecycle {
     ignore_changes = [
-      name,            # required. Allow legacy scale sets to keep their old names
-      instances,       # required. autoscaling modifies the instance count externally
-      source_image_id, # required. update procedure modifies the image id externally
+      name,                   # required. Allow legacy scale sets to keep their old names
+      instances,              # required. autoscaling modifies the instance count externally
+      source_image_id,        # required. update procedure modifies the image id externally
+      source_image_reference, # required. update procedure modifies the image reference externally
     ]
   }
 }

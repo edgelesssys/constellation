@@ -23,6 +23,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/mpimage"
+	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/spf13/afero"
 )
 
@@ -43,11 +45,15 @@ func New() *Fetcher {
 // FetchReference fetches the image reference for a given image version uid, CSP and image variant.
 func (f *Fetcher) FetchReference(ctx context.Context,
 	provider cloudprovider.Provider, attestationVariant variant.Variant,
-	image, region string,
+	image, region string, useMarketplaceImage bool,
 ) (string, error) {
 	ver, err := versionsapi.NewVersionFromShortPath(image, versionsapi.VersionKindImage)
 	if err != nil {
 		return "", fmt.Errorf("parsing config image short path: %w", err)
+	}
+
+	if useMarketplaceImage {
+		return buildMarketplaceImage(ver, provider)
 	}
 
 	imgInfoReq := versionsapi.ImageInfo{
@@ -80,6 +86,21 @@ func (f *Fetcher) FetchReference(ctx context.Context,
 	}
 
 	return getReferenceFromImageInfo(provider, attestationVariant.String(), imgInfo, filters(provider, region)...)
+}
+
+// buildMarketplaceImage returns a marketplace image URI for the given CSP and version.
+func buildMarketplaceImage(ver versionsapi.Version, provider cloudprovider.Provider) (string, error) {
+	sv, err := semver.New(ver.Version())
+	if err != nil {
+		return "", fmt.Errorf("parsing image version: %w", err)
+	}
+
+	switch provider {
+	case cloudprovider.Azure:
+		return mpimage.NewAzureMarketplaceImage(sv).URI(), nil
+	default:
+		return "", fmt.Errorf("marketplace images are not supported for csp %s", provider.String())
+	}
 }
 
 func filters(provider cloudprovider.Provider, region string) []filter {

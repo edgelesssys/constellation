@@ -178,7 +178,7 @@ func init() {
 			FieldName: "azure",
 		},
 	}
-	AzureConfigDoc.Fields = make([]encoder.Doc, 7)
+	AzureConfigDoc.Fields = make([]encoder.Doc, 8)
 	AzureConfigDoc.Fields[0].Name = "subscription"
 	AzureConfigDoc.Fields[0].Type = "string"
 	AzureConfigDoc.Fields[0].Note = ""
@@ -214,6 +214,11 @@ func init() {
 	AzureConfigDoc.Fields[6].Note = ""
 	AzureConfigDoc.Fields[6].Description = "Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob."
 	AzureConfigDoc.Fields[6].Comments[encoder.LineComment] = "Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob."
+	AzureConfigDoc.Fields[7].Name = "useMarketplaceImage"
+	AzureConfigDoc.Fields[7].Type = "bool"
+	AzureConfigDoc.Fields[7].Note = ""
+	AzureConfigDoc.Fields[7].Description = "Use the specified Azure Marketplace image offering."
+	AzureConfigDoc.Fields[7].Comments[encoder.LineComment] = "Use the specified Azure Marketplace image offering."
 
 	GCPConfigDoc.Type = "GCPConfig"
 	GCPConfigDoc.Comments[encoder.LineComment] = "GCPConfig are GCP specific configuration values used by the CLI."

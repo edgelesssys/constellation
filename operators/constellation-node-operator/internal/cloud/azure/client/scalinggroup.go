@@ -14,6 +14,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/mpimage"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/api"
 )
@@ -47,11 +48,17 @@ func (c *Client) SetScalingGroupImage(ctx context.Context, scalingGroupID, image
 	if err != nil {
 		return err
 	}
+
+	imageRef, err := imageReferenceFromImage(imageURI)
+	if err != nil {
+		return fmt.Errorf("parsing image reference: %w", err)
+	}
+
 	poller, err := c.scaleSetsAPI.BeginUpdate(ctx, resourceGroup, scaleSet, armcompute.VirtualMachineScaleSetUpdate{
 		Properties: &armcompute.VirtualMachineScaleSetUpdateProperties{
 			VirtualMachineProfile: &armcompute.VirtualMachineScaleSetUpdateVMProfile{
 				StorageProfile: &armcompute.VirtualMachineScaleSetUpdateStorageProfile{
-					ImageReference: imageReferenceFromImage(imageURI),
+					ImageReference: imageRef,
 				},
 			},
 		},
@@ -141,14 +148,28 @@ func (c *Client) ListScalingGroups(ctx context.Context, uid string) ([]cspapi.Sc
 	return results, nil
 }
 
-func imageReferenceFromImage(img string) *armcompute.ImageReference {
+func imageReferenceFromImage(img string) (*armcompute.ImageReference, error) {
 	ref := &armcompute.ImageReference{}
 
+	marketplaceImage, err := mpimage.NewFromURI(img)
+	if err == nil {
+		// expecting image to be an azure marketplace image
+		if azureMarketplaceImage, ok := marketplaceImage.(mpimage.AzureMarketplaceImage); ok {
+			ref.Publisher = to.Ptr(azureMarketplaceImage.Publisher)
+			ref.Offer = to.Ptr(azureMarketplaceImage.Offer)
+			ref.SKU = to.Ptr(azureMarketplaceImage.SKU)
+			ref.Version = to.Ptr(azureMarketplaceImage.Version)
+			return ref, nil
+		}
+		return nil, fmt.Errorf("marketplace image csp is unsupported: %s", img)
+	}
+
+	// expecting image to not be a marketplace image
 	if strings.HasPrefix(img, "/CommunityGalleries") {
 		ref.CommunityGalleryImageID = to.Ptr(img)
 	} else {
 		ref.ID = to.Ptr(img)
 	}
 
-	return ref
+	return ref, nil
 }

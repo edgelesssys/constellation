@@ -38,7 +38,7 @@ type ImageDataSource struct {
 type imageFetcher interface {
 	FetchReference(ctx context.Context,
 		provider cloudprovider.Provider, attestationVariant variant.Variant,
-		image, region string,
+		image, region string, useMarketplaceImage bool,
 	) (string, error)
 }
 
@@ -47,6 +47,7 @@ type ImageDataSourceModel struct {
 	AttestationVariant types.String `tfsdk:"attestation_variant"`
 	ImageVersion       types.String `tfsdk:"image_version"`
 	CSP                types.String `tfsdk:"csp"`
+	MarketplaceImage   types.Bool   `tfsdk:"marketplace_image"`
 	Region             types.String `tfsdk:"region"`
 	Reference          types.String `tfsdk:"reference"`
 }
@@ -69,6 +70,11 @@ func (d *ImageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 				Required:            true, // TODO(msanft): Make this optional to support "lockstep" mode.
 			},
 			"csp": newCSPAttribute(),
+			"marketplace_image": schema.BoolAttribute{
+				Description:         "Whether a marketplace image should be used. Currently only supported for Azure.",
+				MarkdownDescription: "Whether a marketplace image should be used. Currently only supported for Azure.",
+				Optional:            true,
+			},
 			"region": schema.StringAttribute{
 				Description: "Region to retrieve the image for. Only required for AWS.",
 				MarkdownDescription: "Region to retrieve the image for. Only required for AWS.\n" +
@@ -124,7 +130,8 @@ func (d *ImageDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 	}
 
 	// Retrieve Image Reference
-	imageRef, err := d.imageFetcher.FetchReference(ctx, csp, attestationVariant, data.ImageVersion.ValueString(), data.Region.ValueString())
+	imageRef, err := d.imageFetcher.FetchReference(ctx, csp, attestationVariant,
+		data.ImageVersion.ValueString(), data.Region.ValueString(), data.MarketplaceImage.ValueBool())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error fetching Image Reference",

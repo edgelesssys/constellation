@@ -265,7 +265,7 @@ func writeUpgradeConfig(require *require.Assertions, image string, kubernetes st
 		cfg.GetProvider(),
 		cfg.GetAttestationConfig().GetVariant(),
 		image,
-		cfg.GetRegion(),
+		cfg.GetRegion(), cfg.UseMarketplaceImage(),
 	)
 	require.NoError(err)
 

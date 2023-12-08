@@ -193,6 +193,12 @@ func TestAzureClusterVariables(t *testing.T) {
 		Debug:                to.Ptr(true),
 		Location:             "eu-central-1",
 		CustomEndpoint:       "example.com",
+		MarketplaceImage: AzureMarketplaceImageVariables{
+			Publisher: "edgelesssys",
+			Product:   "constellation",
+			Name:      "constellation",
+			Version:   "2.13.0",
+		},
 	}
 
 	// test that the variables are correctly rendered
@@ -216,6 +222,12 @@ node_groups = {
 }
 custom_endpoint        = "example.com"
 internal_load_balancer = false
+marketplace_image = {
+  name      = "constellation"
+  product   = "constellation"
+  publisher = "edgelesssys"
+  version   = "2.13.0"
+}
 `
 	got := vars.String()
 	assert.Equal(t, want, got)

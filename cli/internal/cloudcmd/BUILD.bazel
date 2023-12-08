@@ -30,6 +30,7 @@ go_library(
         "//internal/file",
         "//internal/imagefetcher",
         "//internal/maa",
+        "//internal/mpimage",
         "//internal/role",
         "//internal/state",
     ],

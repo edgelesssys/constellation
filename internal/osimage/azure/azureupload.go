@@ -169,6 +169,7 @@ func (u *Uploader) createDisk(ctx context.Context, diskName string, diskType Dis
 	if diskType == DiskTypeWithVMGS && vmgs == nil {
 		return "", errors.New("cannot create disk with vmgs: vmgs reader is nil")
 	}
+
 	var createOption armcomputev5.DiskCreateOption
 	var requestVMGSSAS bool
 	switch diskType {

@@ -161,6 +161,9 @@ type AzureConfig struct {
 	// description: |
 	//   Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob.
 	SecureBoot *bool `yaml:"secureBoot" validate:"required"`
+	// description: |
+	//   Use the specified Azure Marketplace image offering.
+	UseMarketplaceImage *bool `yaml:"useMarketplaceImage" validate:"omitempty"`
 }
 
 // GCPConfig are GCP specific configuration values used by the CLI.
@@ -691,6 +694,11 @@ func (c *Config) DeployCSIDriver() bool {
 // DeployYawolLoadBalancer returns whether the Yawol load balancer should be deployed.
 func (c *Config) DeployYawolLoadBalancer() bool {
 	return c.Provider.OpenStack != nil && c.Provider.OpenStack.DeployYawolLoadBalancer != nil && *c.Provider.OpenStack.DeployYawolLoadBalancer
+}
+
+// UseMarketplaceImage returns whether a marketplace image should be used.
+func (c *Config) UseMarketplaceImage() bool {
+	return c.Provider.Azure != nil && c.Provider.Azure.UseMarketplaceImage != nil && *c.Provider.Azure.UseMarketplaceImage
 }
 
 // Validate checks the config values and returns validation errors.

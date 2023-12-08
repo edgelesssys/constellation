@@ -389,7 +389,7 @@ type stubImageFetcher struct {
 
 func (f *stubImageFetcher) FetchReference(_ context.Context,
 	_ cloudprovider.Provider, _ variant.Variant,
-	_, _ string,
+	_, _ string, _ bool,
 ) (string, error) {
 	return f.reference, f.fetchReferenceErr
 }

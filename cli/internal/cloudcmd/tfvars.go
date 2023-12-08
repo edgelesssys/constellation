@@ -24,6 +24,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/mpimage"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 )
 
@@ -127,7 +128,7 @@ func normalizeAzureURIs(vars *terraform.AzureClusterVariables) *terraform.AzureC
 
 // azureTerraformVars provides variables required to execute the Terraform scripts.
 // It should be the only place to declare the Azure variables.
-func azureTerraformVars(conf *config.Config, imageRef string) *terraform.AzureClusterVariables {
+func azureTerraformVars(conf *config.Config, imageRef string) (*terraform.AzureClusterVariables, error) {
 	nodeGroups := make(map[string]terraform.AzureNodeGroup)
 	for groupName, group := range conf.NodeGroups {
 		zones := strings.Split(group.Zone, ",")
@@ -147,7 +148,6 @@ func azureTerraformVars(conf *config.Config, imageRef string) *terraform.AzureCl
 		Name:                 conf.Name,
 		NodeGroups:           nodeGroups,
 		Location:             conf.Provider.Azure.Location,
-		ImageID:              imageRef,
 		CreateMAA:            toPtr(conf.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})),
 		Debug:                toPtr(conf.IsDebugCluster()),
 		ConfidentialVM:       toPtr(conf.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})),
@@ -158,8 +158,31 @@ func azureTerraformVars(conf *config.Config, imageRef string) *terraform.AzureCl
 		InternalLoadBalancer: conf.InternalLoadBalancer,
 	}
 
+	if conf.UseMarketplaceImage() {
+		image, err := mpimage.NewFromURI(imageRef)
+		if err != nil {
+			return nil, fmt.Errorf("parsing marketplace image URI: %w", err)
+		}
+
+		azureImage, ok := image.(mpimage.AzureMarketplaceImage)
+		if !ok {
+			return nil, fmt.Errorf("expected Azure marketplace image, got %T", image)
+		}
+
+		// If a marketplace image is used, only the marketplace reference is required.
+		vars.MarketplaceImage = terraform.AzureMarketplaceImageVariables{
+			Publisher: azureImage.Publisher,
+			Product:   azureImage.Offer,
+			Name:      azureImage.SKU,
+			Version:   azureImage.Version,
+		}
+	} else {
+		// If not, we need to specify the exact CommunityGalleries/.. image reference.
+		vars.ImageID = imageRef
+	}
+
 	vars = normalizeAzureURIs(vars)
-	return vars
+	return vars, nil
 }
 
 func azureTerraformIAMVars(conf *config.Config, oldVars terraform.AzureIAMVariables) *terraform.AzureIAMVariables {

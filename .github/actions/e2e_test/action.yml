@@ -80,6 +80,12 @@ inputs:
     description: "Access key for s3proxy"
   s3SecretKey:
     description: "Secret key for s3proxy"
+  marketplaceImageVersion:
+    description: "Marketplace OS image version. Used instead of osImage."
+    required: false
+  force:
+    description: "Set the force-flag on apply to ignore version mismatches."
+    required: false
 
 outputs:
   kubeconfig:
@@ -266,6 +272,8 @@ runs:
         internalLoadBalancer: ${{ inputs.internalLoadBalancer }}
         test: ${{ inputs.test }}
         selfManagedInfra: ${{ inputs.selfManagedInfra }}
+        marketplaceImageVersion: ${{ inputs.marketplaceImageVersion }}
+        force: ${{ inputs.force }}
 
     - name: Deploy log- and metrics-collection (Kubernetes)
       id: deploy-logcollection

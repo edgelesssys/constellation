@@ -1,0 +1,24 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "mpimage",
+    srcs = [
+        "mpimage.go",
+        "uri.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/mpimage",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/cloud/cloudprovider",
+        "//internal/constants",
+        "//internal/semver",
+    ],
+)
+
+go_test(
+    name = "mpimage_test",
+    srcs = ["uri_test.go"],
+    embed = [":mpimage"],
+    deps = ["@com_github_stretchr_testify//assert"],
+)

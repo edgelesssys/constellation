@@ -53,6 +53,12 @@ inputs:
   selfManagedInfra:
     description: "Use self-managed infrastructure instead of infrastructure created by the Constellation CLI."
     required: true
+  marketplaceImageVersion:
+    description: "Marketplace OS image version. Used instead of osImage."
+    required: false
+  force:
+    description: "Set the force-flag on apply to ignore version mismatches."
+    required: false
 
 outputs:
   kubeconfig:
@@ -96,6 +102,13 @@ runs:
 
         yq eval -i "(.image) = \"${imageInput}\"" constellation-conf.yaml
         echo "image=${imageInput}" | tee -a "$GITHUB_OUTPUT"
+
+    - name: Set marketplace image flag (Azure)
+      if: inputs.marketplaceImageVersion != '' && inputs.cloudProvider == 'azure'
+      shell: bash
+      run: |
+        yq eval -i "(.provider.azure.useMarketplaceImage) = true" constellation-conf.yaml
+        yq eval -i "(.image) = \"${{ inputs.marketplaceImageVersion }}\"" constellation-conf.yaml
 
     - name: Update measurements for non-stable images
       if: inputs.fetchMeasurements
@@ -163,11 +176,18 @@ runs:
         kubernetesVersion: ${{ inputs.kubernetesVersion }}
         selfManagedInfra: ${{ inputs.selfManagedInfra }}
 
+    - name: Set force flag
+      id: set-force-flag
+      if: inputs.force == 'true'
+      shell: bash
+      run: |
+        echo "flag=--force" | tee -a $GITHUB_OUTPUT
+
     - name: Constellation init
       id: constellation-init
       shell: bash
       run: |
-        constellation apply --skip-phases=infrastructure --debug
+        constellation apply --skip-phases=infrastructure --debug ${{ steps.set-force-flag.outputs.flag }}
         echo "KUBECONFIG=$(pwd)/constellation-admin.conf" | tee -a $GITHUB_OUTPUT
 
     - name: Wait for nodes to join and become ready
