@@ -70,7 +70,7 @@ func (i *OsInstaller) Install(ctx context.Context, kubernetesComponent *componen
 		return fmt.Errorf("reading file %q: %w", tempPath, err)
 	}
 	calculatedHash := fmt.Sprintf("sha256:%x", sha.Sum(nil))
-	if calculatedHash != kubernetesComponent.Hash {
+	if len(kubernetesComponent.Hash) > 0 && calculatedHash != kubernetesComponent.Hash {
 		return fmt.Errorf("hash of file %q %s does not match expected hash %s", tempPath, calculatedHash, kubernetesComponent.Hash)
 	}
 
