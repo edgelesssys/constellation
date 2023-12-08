@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package upgrade;
 
+import "internal/versions/components/components.proto";
+
 option go_package = "github.com/edgelesssys/constellation/v2/upgrade-agent/upgradeproto";
 
 service Update {
@@ -12,6 +14,8 @@ message ExecuteUpdateRequest {
   string kubeadm_url = 1;
   string kubeadm_hash = 2;
   string wanted_kubernetes_version = 3;
+
+  repeated components.Component kubernetes_components = 4;
 }
 
 message ExecuteUpdateResponse {}

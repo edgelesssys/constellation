@@ -7,6 +7,7 @@ proto_library(
     name = "upgradeproto_proto",
     srcs = ["upgrade.proto"],
     visibility = ["//visibility:public"],
+    deps = ["//internal/versions/components:components_proto"],
 )
 
 go_proto_library(
@@ -16,6 +17,7 @@ go_proto_library(
     importpath = "github.com/edgelesssys/constellation/v2/upgrade-agent/upgradeproto",
     proto = ":upgradeproto_proto",
     visibility = ["//visibility:public"],
+    deps = ["//internal/versions/components"],
 )
 
 go_library(
