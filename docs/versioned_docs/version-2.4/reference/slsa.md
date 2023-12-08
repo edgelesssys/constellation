@@ -10,7 +10,7 @@ SLSA is still in alpha status. The presented levels and their requirements might
 
 **[Build - Scripted](https://slsa.dev/spec/v0.1/requirements#scripted-build)**
 
-All build steps are automated via [CMake](https://github.com/edgelesssys/constellation/blob/main/CMakeLists.txt) and [GitHub Actions](https://github.com/edgelesssys/constellation/tree/main/.github).
+All build steps are automated via [CMake](https://github.com/edgelesssys/constellation/blob/v2.4.0/CMakeLists.txt) and [GitHub Actions](https://github.com/edgelesssys/constellation/tree/main/.github).
 
 **[Provenance - Available](https://slsa.dev/spec/v0.1/requirements#available)**
 
