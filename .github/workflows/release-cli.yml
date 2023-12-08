@@ -481,6 +481,7 @@ jobs:
           draft: true
           generate_release_notes: true
           tag_name: ${{ inputs.versionName || inputs.ref || github.head_ref }}
+          target_commitish: ${{ inputs.ref }}
           files: |
             constellation-*
             cosign.pub
