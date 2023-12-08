@@ -83,9 +83,9 @@ type ClusterResourceModel struct {
 }
 
 type networkConfig struct {
-	IpCidrNode    string `tfsdk:"ip_cidr_node"`
-	IpCidrPod     string `tfsdk:"ip_cidr_pod"`
-	IpCidrService string `tfsdk:"ip_cidr_service"`
+	IPCidrNode    string `tfsdk:"ip_cidr_node"`
+	IPCidrPod     string `tfsdk:"ip_cidr_pod"`
+	IPCidrService string `tfsdk:"ip_cidr_service"`
 }
 
 type gcp struct {
@@ -346,7 +346,7 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	secrets, diags := r.convertSecrets(ctx, data)
+	secrets, diags := r.convertSecrets(data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -420,7 +420,7 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 	}
 
 	// Run init RPC
-	initRpcPayload := initRpcPayload{
+	initRPCPayload := initRPCPayload{
 		csp:               csp,
 		masterSecret:      secrets.masterSecret,
 		measurementSalt:   secrets.measurementSalt,
@@ -430,7 +430,7 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 		maaURL:            att.maaURL,
 		k8sVersion:        k8sVersion,
 	}
-	postInitState, diags := r.runInitRPC(ctx, initRpcPayload, &data, validator)
+	postInitState, diags := r.runInitRPC(ctx, initRPCPayload, &data, validator)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -514,7 +514,7 @@ func (r *ClusterResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	secrets, diags := r.convertSecrets(ctx, data)
+	secrets, diags := r.convertSecrets(data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -622,14 +622,14 @@ func (r *ClusterResource) Delete(ctx context.Context, req resource.DeleteRequest
 }
 
 // ImportState imports to the resource.
-func (r *ClusterResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *ClusterResource) ImportState(_ context.Context, _ resource.ImportStateRequest, _ *resource.ImportStateResponse) {
 	// TODO: Implement
 
 	// Take Kubeconfig, Cluster Endpoint and Master Secret and save to state
 }
 
-// initRpcPayload groups the data required to run the init RPC.
-type initRpcPayload struct {
+// initRPCPayload groups the data required to run the init RPC.
+type initRPCPayload struct {
 	csp               cloudprovider.Provider
 	masterSecret      uri.MasterSecret
 	measurementSalt   []byte
@@ -641,7 +641,7 @@ type initRpcPayload struct {
 }
 
 // runInitRPC runs the init RPC on the cluster.
-func (r *ClusterResource) runInitRPC(ctx context.Context, payload initRpcPayload,
+func (r *ClusterResource) runInitRPC(ctx context.Context, payload initRPCPayload,
 	data *ClusterResourceModel, validator atls.Validator,
 ) (*state.State, diag.Diagnostics) {
 	diags := diag.Diagnostics{}
@@ -668,7 +668,7 @@ func (r *ClusterResource) runInitRPC(ctx context.Context, payload initRpcPayload
 		InitSecret:        []byte(data.InitSecret.ValueString()),
 		APIServerCertSANs: payload.apiServerCertSANs,
 		Name:              data.Name.ValueString(),
-		IPCidrNode:        networkCfg.IpCidrNode,
+		IPCidrNode:        networkCfg.IPCidrNode,
 	})
 	switch payload.csp {
 	case cloudprovider.Azure:
@@ -683,7 +683,7 @@ func (r *ClusterResource) runInitRPC(ctx context.Context, payload initRpcPayload
 	case cloudprovider.GCP:
 		stateFile.Infrastructure.GCP = &state.GCP{
 			ProjectID: payload.gcpConfig.ProjectID,
-			IPCidrPod: networkCfg.IpCidrPod,
+			IPCidrPod: networkCfg.IPCidrPod,
 		}
 	}
 
@@ -695,7 +695,7 @@ func (r *ClusterResource) runInitRPC(ctx context.Context, payload initRpcPayload
 			MeasurementSalt: payload.measurementSalt,
 			K8sVersion:      payload.k8sVersion,
 			ConformanceMode: false, // Conformance mode does't need to be configurable through the TF provider for now.
-			ServiceCIDR:     networkCfg.IpCidrService,
+			ServiceCIDR:     networkCfg.IPCidrService,
 		})
 	if err != nil {
 		var nonRetriable *constellation.NonRetriableInitError
@@ -706,7 +706,7 @@ func (r *ClusterResource) runInitRPC(ctx context.Context, payload initRpcPayload
 				diags.AddError("Bootstrapper log collection failed.",
 					fmt.Sprintf("Failed to collect logs from bootstrapper: %s\n", nonRetriable.LogCollectionErr))
 			} else {
-				diags.AddWarning("Cluster log collection suceeded.", clusterLogs.String())
+				diags.AddWarning("Cluster log collection succeeded.", clusterLogs.String())
 			}
 		} else {
 			diags.AddError("Cluster initialization failed.", fmt.Sprintf("You might try to apply the resource again.\nError: %s", err))
@@ -758,7 +758,7 @@ func (r *ClusterResource) applyHelmCharts(ctx context.Context, payload applyHelm
 		Force:               false,
 		Conformance:         false, // Conformance mode does't need to be configurable through the TF provider for now.
 		HelmWaitMode:        helm.WaitModeAtomic,
-		ApplyTimeout:        time.Duration(10 * time.Minute),
+		ApplyTimeout:        10 * time.Minute,
 		AllowDestructive:    helm.DenyDestructive,
 	}
 
@@ -824,7 +824,7 @@ type secretInput struct {
 
 // convertFromTfAttestationCfg converts the secrets and salts from the Terraform state to the format
 // used by the Constellation library.
-func (r *ClusterResource) convertSecrets(ctx context.Context, data ClusterResourceModel) (secretInput, diag.Diagnostics) {
+func (r *ClusterResource) convertSecrets(data ClusterResourceModel) (secretInput, diag.Diagnostics) {
 	diags := diag.Diagnostics{}
 	masterSecret, err := hex.DecodeString(data.MasterSecret.ValueString())
 	if err != nil {
@@ -902,6 +902,6 @@ func (l *tfContextLogger) Warnf(format string, args ...any) {
 
 type nopSpinner struct{ io.Writer }
 
-func (s *nopSpinner) Start(string, bool)                {}
-func (s *nopSpinner) Stop()                             {}
-func (s *nopSpinner) Write(p []byte) (n int, err error) { return 1, nil }
+func (s *nopSpinner) Start(string, bool)              {}
+func (s *nopSpinner) Stop()                           {}
+func (s *nopSpinner) Write([]byte) (n int, err error) { return 1, nil }

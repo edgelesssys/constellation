@@ -525,7 +525,7 @@ func (s *stubConstellApplier) Init(context.Context, atls.Validator, *state.State
 	return s.initResponse, s.initErr
 }
 
-func (s *stubConstellApplier) RewrittenKubeconfigBytes(kubeconfigBytes []byte, clusterEndpoint string) ([]byte, error) {
+func (s *stubConstellApplier) RewrittenKubeconfigBytes(kubeconfigBytes []byte, _ string) ([]byte, error) {
 	return kubeconfigBytes, nil
 }
 

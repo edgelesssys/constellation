@@ -365,6 +365,7 @@ func TestWriteOutput(t *testing.T) {
 		spinner:     &nopSpinner{},
 		merger:      &stubMerger{},
 		log:         logger.NewTest(t),
+		applier:     constellation.NewApplier(logger.NewTest(t), &nopSpinner{}, nil),
 	}
 	err = i.writeInitOutput(stateFile, resp.GetInitSuccess(), false, &out, measurementSalt)
 	require.NoError(err)

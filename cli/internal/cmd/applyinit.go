@@ -123,7 +123,7 @@ func (a *applyCmd) writeInitOutput(
 	tw.Flush()
 	fmt.Fprintln(wr)
 
-	kubeconfigBytes, err := a.applier.RewrittenKubeconfigBytes(initResp.GetKubeconfig(), stateFile.Infrastructure.ClusterEndpoint)
+	kubeconfigBytes, err := a.applier.RewrittenKubeconfigBytes(initResp.Kubeconfig, stateFile.Infrastructure.ClusterEndpoint)
 	if err != nil {
 		return fmt.Errorf("rewriting kubeconfig: %w", err)
 	}
