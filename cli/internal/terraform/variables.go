@@ -210,7 +210,7 @@ type AzureClusterVariables struct {
 	// InternalLoadBalancer is true if an internal load balancer should be created.
 	InternalLoadBalancer bool `hcl:"internal_load_balancer" cty:"internal_load_balancer"`
 	// MarketplaceImage is the (optional) Azure Marketplace image to use.
-	MarketplaceImage AzureMarketplaceImageVariables `hcl:"marketplace_image" cty:"marketplace_image"`
+	MarketplaceImage *AzureMarketplaceImageVariables `hcl:"marketplace_image" cty:"marketplace_image"`
 }
 
 // GetCreateMAA gets the CreateMAA variable.
