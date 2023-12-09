@@ -341,6 +341,7 @@ func Default() *Config {
 				ResourceGroup:        "",
 				DeployCSIDriver:      toPtr(true),
 				SecureBoot:           toPtr(false),
+				UseMarketplaceImage:  toPtr(false),
 			},
 			GCP: &GCPConfig{
 				Project:               "",
