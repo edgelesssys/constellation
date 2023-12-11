@@ -70,7 +70,7 @@ func (d *ImageDataSource) Metadata(_ context.Context, req datasource.MetadataReq
 func (d *ImageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description:         "The data source to resolve the CSP-specific OS image reference for a given version and attestation variant.",
-		MarkdownDescription: "Data source to resolve the CSP-specific OS image reference for a given version and attestation variant. The `reference` output of this data source is needed as `image` input for the `constellation_cluster` resource.",
+		MarkdownDescription: "Data source to resolve the CSP-specific OS image reference for a given version and attestation variant.",
 		Attributes: map[string]schema.Attribute{
 			"attestation_variant": newAttestationVariantAttribute(attributeInput),
 			"image_version": schema.StringAttribute{
