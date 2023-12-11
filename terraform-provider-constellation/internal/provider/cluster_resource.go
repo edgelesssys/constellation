@@ -52,9 +52,7 @@ func NewClusterResource() resource.Resource {
 
 // ClusterResource defines the resource implementation.
 type ClusterResource struct {
-	applier   *constellation.Applier
-	newDialer func(validator atls.Validator) *dialer.Dialer
-	newLogger func(ctx context.Context) *tfContextLogger
+	newApplier func(ctx context.Context, validator atls.Validator) *constellation.Applier
 }
 
 // ClusterResourceModel describes the resource data model.
@@ -316,18 +314,16 @@ func (r *ClusterResource) Configure(_ context.Context, req resource.ConfigureReq
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
 		return
+
 	}
 
-	r.newLogger = func(ctx context.Context) *tfContextLogger {
-		return &tfContextLogger{ctx: ctx}
-	}
-
-	r.newDialer = func(validator atls.Validator) *dialer.Dialer {
+	newDialer := func(validator atls.Validator) *dialer.Dialer {
 		return dialer.New(nil, validator, &net.Dialer{})
 	}
 
-	// Use the background context as we don't have a long-lived context here.
-	r.applier = constellation.NewApplier(r.newLogger(context.Background()), &nopSpinner{}, r.newDialer)
+	r.newApplier = func(ctx context.Context, validator atls.Validator) *constellation.Applier {
+		return constellation.NewApplier(&tfContextLogger{ctx: ctx}, &nopSpinner{}, newDialer)
+	}
 }
 
 // Create is called when the resource is created.
@@ -531,11 +527,12 @@ func (r *ClusterResource) apply(ctx context.Context, data ClusterResourceModel, 
 	}
 
 	// setup clients
-	validator, err := choose.Validator(att.config, r.newLogger(ctx))
+	validator, err := choose.Validator(att.config, &tfContextLogger{ctx: ctx})
 	if err != nil {
 		diags.AddError("Choosing validator", err.Error())
 		return diags
 	}
+	applier := r.newApplier(ctx, validator)
 
 	// Construct in-memory state file
 	stateFile := state.New().SetInfrastructure(state.Infrastructure{
@@ -583,7 +580,7 @@ func (r *ClusterResource) apply(ctx context.Context, data ClusterResourceModel, 
 			k8sVersion:        k8sVersion,
 			inClusterEndpoint: inClusterEndpoint,
 		}
-		initDiags = r.runInitRPC(ctx, initRPCPayload, &data, validator, stateFile)
+		initDiags = r.runInitRPC(ctx, applier, initRPCPayload, &data, validator, stateFile)
 		diags.Append(initDiags...)
 		if diags.HasError() {
 			return diags
@@ -601,19 +598,19 @@ func (r *ClusterResource) apply(ctx context.Context, data ClusterResourceModel, 
 
 	// Kubeconfig is in the state by now. Either through the init RPC or through
 	// already being in the state.
-	if err := r.applier.SetKubeConfig([]byte(data.Kubeconfig.ValueString())); err != nil {
+	if err := applier.SetKubeConfig([]byte(data.Kubeconfig.ValueString())); err != nil {
 		diags.AddError("Setting kubeconfig", err.Error())
 		return diags
 	}
 
 	// Apply attestation config
-	if err := r.applier.ApplyJoinConfig(ctx, att.config, secrets.measurementSalt); err != nil {
+	if err := applier.ApplyJoinConfig(ctx, att.config, secrets.measurementSalt); err != nil {
 		diags.AddError("Applying attestation config", err.Error())
 		return diags
 	}
 
 	// Extend API Server Certificate SANs
-	if err := r.applier.ExtendClusterConfigCertSANs(ctx, data.OutOfClusterEndpoint.ValueString(),
+	if err := applier.ExtendClusterConfigCertSANs(ctx, data.OutOfClusterEndpoint.ValueString(),
 		"", apiServerCertSANs); err != nil {
 		diags.AddError("Extending API server certificate SANs", err.Error())
 		return diags
@@ -629,7 +626,7 @@ func (r *ClusterResource) apply(ctx context.Context, data ClusterResourceModel, 
 		masterSecret:        secrets.masterSecret,
 		serviceAccURI:       serviceAccURI,
 	}
-	helmDiags := r.applyHelmCharts(ctx, payload, postInitState)
+	helmDiags := r.applyHelmCharts(ctx, applier, payload, postInitState)
 	diags.Append(helmDiags...)
 	if diags.HasError() {
 		return diags
@@ -637,7 +634,7 @@ func (r *ClusterResource) apply(ctx context.Context, data ClusterResourceModel, 
 
 	if !skipNodeUpgrade {
 		// Upgrade node image
-		err = r.applier.UpgradeNodeImage(ctx,
+		err = applier.UpgradeNodeImage(ctx,
 			imageVersion,
 			data.ImageReference.ValueString(),
 			false)
@@ -647,7 +644,7 @@ func (r *ClusterResource) apply(ctx context.Context, data ClusterResourceModel, 
 		}
 
 		// Upgrade Kubernetes version
-		if err := r.applier.UpgradeKubernetesVersion(ctx, k8sVersion, false); err != nil {
+		if err := applier.UpgradeKubernetesVersion(ctx, k8sVersion, false); err != nil {
 			diags.AddError("Upgrading Kubernetes version", err.Error())
 			return diags
 		}
@@ -673,12 +670,12 @@ type initRPCPayload struct {
 }
 
 // runInitRPC runs the init RPC on the cluster.
-func (r *ClusterResource) runInitRPC(ctx context.Context, payload initRPCPayload,
+func (r *ClusterResource) runInitRPC(ctx context.Context, applier *constellation.Applier, payload initRPCPayload,
 	data *ClusterResourceModel, validator atls.Validator, stateFile *state.State,
 ) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 	clusterLogs := &bytes.Buffer{}
-	initOutput, err := r.applier.Init(
+	initOutput, err := applier.Init(
 		ctx, validator, stateFile, clusterLogs,
 		constellation.InitPayload{
 			MasterSecret:    payload.masterSecret,
@@ -724,7 +721,8 @@ type applyHelmChartsPayload struct {
 }
 
 // applyHelmCharts applies the Helm charts to the cluster.
-func (r *ClusterResource) applyHelmCharts(ctx context.Context, payload applyHelmChartsPayload, state *state.State) diag.Diagnostics {
+func (r *ClusterResource) applyHelmCharts(ctx context.Context, applier *constellation.Applier,
+	payload applyHelmChartsPayload, state *state.State) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 	options := helm.Options{
 		CSP:                 payload.csp,
@@ -739,7 +737,7 @@ func (r *ClusterResource) applyHelmCharts(ctx context.Context, payload applyHelm
 		AllowDestructive:    helm.DenyDestructive,
 	}
 
-	executor, _, err := r.applier.PrepareHelmCharts(options, state,
+	executor, _, err := applier.PrepareHelmCharts(options, state,
 		payload.serviceAccURI, payload.masterSecret, nil)
 	if err != nil {
 		diags.AddError("Preparing Helm charts", err.Error())
