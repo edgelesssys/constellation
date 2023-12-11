@@ -17,7 +17,7 @@ jobs:
             - "cli_enterprise_linux_amd64"
             - "cli_enterprise_linux_arm64"
             - "cli_enterprise_windows_amd64"
-          runner: ["ubuntu-22.04", "macos-13"]
+          runner: ["ubuntu-22.04", "ubuntu-20.04"]
     env:
         bazel_target: "//cli:${{ matrix.target }}"
         binary: "${{ matrix.target }}-${{ matrix.runner }}"
@@ -33,10 +33,6 @@ jobs:
         with:
           useCache: "logs"
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
-
-      - name: Install current Bash on macOS
-        if: runner.os == 'macOS'
-        run: brew install bash
 
       - name: Build
         shell: bash
