@@ -72,8 +72,8 @@ func TestInstall(t *testing.T) {
 		},
 		"hash is not mandatory": {
 			server: newHTTPBufconnServerWithBody([]byte("file-contents")),
-			component: components.Component{
-				URL:         serverURL,
+			component: &components.Component{
+				Url:         serverURL,
 				Hash:        "",
 				InstallPath: "/destination",
 			},
