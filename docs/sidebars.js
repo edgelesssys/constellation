@@ -197,8 +197,8 @@ const sidebars = {
         },
         {
           type: 'doc',
-          label: 'Use the Terraform module',
-          id: 'workflows/terraform-module',
+          label: 'Use the Terraform provider',
+          id: 'workflows/terraform-provider',
         },
         // {
         //   type: 'doc',
