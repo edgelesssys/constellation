@@ -22,9 +22,10 @@ build --show_timestamps
 # https://bazel.build/reference/command-line-reference#flag--show_progress_rate_limit
 common --show_progress_rate_limit=15
 
-# Use cursor controls in screen output.
+# Github Action logs don't support curses, so we disable curses to prevent the logs from filling up
+# with garbage. 
 # Docs: https://bazel.build/docs/user-manual#curses
-common --curses=yes
+common --curses=no
 
 # Use colors to highlight output on the screen. Set to `no` if your CI does not display colors.
 # Docs: https://bazel.build/docs/user-manual#color
