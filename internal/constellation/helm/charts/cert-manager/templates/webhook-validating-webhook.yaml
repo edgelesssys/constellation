@@ -21,6 +21,10 @@ webhooks:
         operator: "NotIn"
         values:
         - "true"
+      - key: "name"
+        operator: "NotIn"
+        values:
+        - {{ include "cert-manager.namespace" . }}
     rules:
       - apiGroups:
           - "cert-manager.io"

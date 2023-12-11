@@ -17,13 +17,10 @@ spec:
       app.kubernetes.io/instance: {{ .Release.Name }}
       app.kubernetes.io/component: "controller"
 
-  {{- if not (or (hasKey .Values.podDisruptionBudget "minAvailable") (hasKey .Values.podDisruptionBudget "maxUnavailable")) }}
-  minAvailable: 1 # Default value because minAvailable and maxUnavailable are not set
+  {{- with .Values.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ . }}
   {{- end }}
-  {{- if hasKey .Values.podDisruptionBudget "minAvailable" }}
-  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
-  {{- end }}
-  {{- if hasKey .Values.podDisruptionBudget "maxUnavailable" }}
-  maxUnavailable: {{ .Values.podDisruptionBudget.maxUnavailable }}
+  {{- with .Values.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ . }}
   {{- end }}
 {{- end }}
