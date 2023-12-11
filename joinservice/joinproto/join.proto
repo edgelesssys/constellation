@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package join;
 
+import "internal/versions/components/components.proto";
+
 option go_package = "github.com/edgelesssys/constellation/v2/joinservice/joinproto";
 
 service API {
@@ -42,7 +44,7 @@ message IssueJoinTicketResponse {
   // kubernetes_version is the Kubernetes version to install on the node.
   string kubernetes_version = 9;
   // kubernetes_components is a list of components to install on the node.
-  repeated KubernetesComponent kubernetes_components = 10;
+  repeated components.Component kubernetes_components = 10;
 }
 
 message control_plane_cert_or_key {
@@ -63,16 +65,4 @@ message IssueRejoinTicketResponse {
   // measurement_secret is a secret used to derive the node's ClusterID.
   // This value is NOT persisted on the state disk.
   bytes measurement_secret = 2;
-}
-
-// Discuss if we want to import the init proto instead of duplicating it
-message KubernetesComponent {
-  // url to download the component from.
-  string url = 1;
-  // hash of the component.
-  string hash = 2;
-  // install_path is the path to install the component to.
-  string install_path = 3;
-  // extract indicates whether the component is an archive and needs to be extracted.
-  bool extract = 4;
 }

@@ -7,6 +7,7 @@ proto_library(
     name = "initproto_proto",
     srcs = ["init.proto"],
     visibility = ["//visibility:public"],
+    deps = ["//internal/versions/components:components_proto"],
 )
 
 go_proto_library(
@@ -16,6 +17,7 @@ go_proto_library(
     importpath = "github.com/edgelesssys/constellation/v2/bootstrapper/initproto",
     proto = ":initproto_proto",
     visibility = ["//visibility:public"],
+    deps = ["//internal/versions/components"],
 )
 
 go_library(

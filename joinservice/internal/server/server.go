@@ -165,7 +165,7 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 		DiscoveryTokenCaCertHash: kubeArgs.CACertHashes[0],
 		KubeletCert:              kubeletCert,
 		ControlPlaneFiles:        controlPlaneFiles,
-		KubernetesComponents:     components.ToJoinProto(),
+		KubernetesComponents:     components,
 	}, nil
 }
 

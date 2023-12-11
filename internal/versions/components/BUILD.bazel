@@ -1,12 +1,32 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("//bazel/proto:rules.bzl", "write_go_proto_srcs")
 
 go_library(
     name = "components",
     srcs = ["components.go"],
+    embed = [":components_go_proto"],
     importpath = "github.com/edgelesssys/constellation/v2/internal/versions/components",
     visibility = ["//:__subpackages__"],
-    deps = [
-        "//bootstrapper/initproto",
-        "//joinservice/joinproto",
-    ],
+)
+
+proto_library(
+    name = "components_proto",
+    srcs = ["components.proto"],
+    visibility = ["//:__subpackages__"],
+)
+
+go_proto_library(
+    name = "components_go_proto",
+    importpath = "github.com/edgelesssys/constellation/v2/internal/versions/components",
+    proto = ":components_proto",
+    visibility = ["//:__subpackages__"],
+)
+
+write_go_proto_srcs(
+    name = "write_generated_protos",
+    src = "components.pb.go",
+    go_proto_library = ":components_go_proto",
+    visibility = ["//visibility:public"],
 )

@@ -365,7 +365,7 @@ func (r *NodeVersionReconciler) tryStartClusterVersionUpgrade(ctx context.Contex
 	}
 
 	// talk to the upgrade-agent to start the upgrade
-	if err := r.Upgrade(ctx, kubeadm.URL, kubeadm.Hash, nodeVersion.Spec.KubernetesClusterVersion); err != nil {
+	if err := r.Upgrade(ctx, kubeadm.Url, kubeadm.Hash, nodeVersion.Spec.KubernetesClusterVersion); err != nil {
 		log.FromContext(ctx).Error(err, "Unable to upgrade cluster")
 		return
 	}

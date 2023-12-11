@@ -215,7 +215,7 @@ func TestJoinCluster(t *testing.T) {
 
 	k8sComponents := components.Components{
 		{
-			URL:         "URL",
+			Url:         "URL",
 			Hash:        "Hash",
 			InstallPath: "InstallPath",
 			Extract:     true,

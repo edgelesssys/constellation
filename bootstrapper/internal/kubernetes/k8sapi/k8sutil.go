@@ -55,7 +55,7 @@ type Client interface {
 
 type componentsInstaller interface {
 	Install(
-		ctx context.Context, kubernetesComponent components.Component,
+		ctx context.Context, kubernetesComponent *components.Component,
 	) error
 }
 
@@ -77,7 +77,7 @@ func NewKubernetesUtil() *KubernetesUtil {
 func (k *KubernetesUtil) InstallComponents(ctx context.Context, kubernetesComponents components.Components) error {
 	for _, component := range kubernetesComponents {
 		if err := k.inst.Install(ctx, component); err != nil {
-			return fmt.Errorf("installing kubernetes component from URL %s: %w", component.URL, err)
+			return fmt.Errorf("installing kubernetes component from URL %s: %w", component.Url, err)
 		}
 	}
 
