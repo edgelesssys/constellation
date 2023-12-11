@@ -1,13 +1,13 @@
 variable "name" {
   type        = string
-  description = "Name of your Constellation"
+  description = "Name of your Constellation."
   validation {
     condition     = length(var.name) <= 10
     error_message = "The length of the name of the Constellation must be <= 10 characters."
   }
   validation {
     condition     = var.name == lower(var.name)
-    error_message = "The name of the Constellation must be in lowercase"
+    error_message = "The name of the Constellation must be in lowercase."
   }
 }
 
@@ -29,17 +29,17 @@ variable "node_groups" {
 
 variable "iam_instance_profile_worker_nodes" {
   type        = string
-  description = "Name of the IAM instance profile for worker nodes"
+  description = "Name of the IAM instance profile for worker nodes."
 }
 
 variable "iam_instance_profile_control_plane" {
   type        = string
-  description = "Name of the IAM instance profile for control plane nodes"
+  description = "Name of the IAM instance profile for control plane nodes."
 }
 
 variable "ami" {
   type        = string
-  description = "AMI ID"
+  description = "AMI ID."
   validation {
     condition     = length(var.ami) > 4 && substr(var.ami, 0, 4) == "ami-"
     error_message = "The image_id value must be a valid AMI id, starting with \"ami-\"."
@@ -48,12 +48,12 @@ variable "ami" {
 
 variable "region" {
   type        = string
-  description = "The AWS region to create the cluster in"
+  description = "The AWS region to create the cluster in."
 }
 
 variable "zone" {
   type        = string
-  description = "The AWS availability zone name to create the cluster in"
+  description = "The AWS availability zone name to create the cluster in."
 }
 
 variable "debug" {

@@ -1,9 +1,11 @@
 output "out_of_cluster_endpoint" {
   value = local.out_of_cluster_endpoint
+  description = "The external endpoint for the Kubernetes API server. This only varies from the `in_cluster_endpoint` when using an internal load balancer setup."
 }
 
 output "in_cluster_endpoint" {
   value = local.in_cluster_endpoint
+  description = "The internal endpoint for the Kubernetes API server. This only varies from the `in_cluster_endpoint` when using an internal load balancer setup."
 }
 output "api_server_cert_sans" {
   value = sort(
@@ -17,21 +19,26 @@ output "api_server_cert_sans" {
       )
     )
   )
+  description = "List of Subject Alternative Names (SANs) for the API server certificate."
 }
 
 output "uid" {
   value = local.uid
+  description = "The UID of the cluster."
 }
 
 output "init_secret" {
   value     = random_password.initSecret.result
   sensitive = true
+  description = "The init secret for the cluster."
 }
 
 output "name" {
   value = local.name
+  description = "The name of the cluster."
 }
 
 output "ip_cidr_nodes" {
   value = local.cidr_vpc_subnet_nodes
+  description = "The CIDR block for the nodes subnet."
 }

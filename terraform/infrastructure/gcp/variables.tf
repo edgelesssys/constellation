@@ -37,7 +37,7 @@ variable "zone" {
 
 variable "image_id" {
   type        = string
-  description = "The GCP image to use for the cluster nodes."
+  description = "The GCP image reference to use for the cluster nodes."
 }
 
 variable "debug" {
