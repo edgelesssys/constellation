@@ -1,5 +1,5 @@
-name: e2e test Terraform module
-
+name: e2e test Terraform provider
+# TODO(elchead): will be fixed in AB#3547
 on:
   workflow_dispatch:
     inputs:
@@ -65,12 +65,10 @@ jobs:
           ref: main
           stream: nightly
 
-      - name: Upload Terraform module
+      - name: Upload Terraform infrastructure module
         uses: ./.github/actions/upload_terraform_module
-        with:
-          version: ${{ inputs.cliVersion }}
 
-      - name: Download Terraform module
+      - name: Download Terraform infrastructure module
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: terraform-module
