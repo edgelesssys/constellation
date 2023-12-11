@@ -63,7 +63,7 @@ inputs:
 outputs:
   kubeconfig:
     description: "The kubeconfig for the cluster."
-    value: ${{ steps.constellation-init.outputs.KUBECONFIG }}
+    value: ${{ steps.get-kubeconfig.outputs.KUBECONFIG }}
   osImageUsed:
     description: "The OS image used in the cluster."
     value: ${{ steps.setImage.outputs.image }}
@@ -186,20 +186,27 @@ runs:
     - name: Constellation apply (Terraform)
       id: constellation-apply-terraform
       if: inputs.clusterCreation == 'terraform'
-      shell: bash
       uses: ./.github/actions/terraform_apply
+      with:
+        cloudProvider: ${{ inputs.cloudProvider }}
 
     - name: Constellation apply
       id: constellation-apply-cli
+      if: inputs.clusterCreation != 'terraform'
       shell: bash
       run: |
         constellation apply --skip-phases=infrastructure --debug ${{ steps.set-force-flag.outputs.flag }}
+
+    - name: Get kubeconfig
+      id: get-kubeconfig
+      shell: bash
+      run: |
         echo "KUBECONFIG=$(pwd)/constellation-admin.conf" | tee -a $GITHUB_OUTPUT
 
     - name: Wait for nodes to join and become ready
       shell: bash
       env:
-        KUBECONFIG: "${{ steps.constellation-init.outputs.KUBECONFIG }}"
+        KUBECONFIG: "${{ steps.get-kubeconfig.outputs.KUBECONFIG }}"
         JOINTIMEOUT: "1200" # 20 minutes timeout for all nodes to join
       run: |
         echo "::group::Wait for nodes"

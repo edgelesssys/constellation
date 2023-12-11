@@ -1,0 +1,156 @@
+name: Terraform provider apply
+description: "Create/Apply a Constellation cluster using the Terraform provider."
+
+inputs:
+  cloudProvider:
+    description: "The cloud provider the test runs on."
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Create Terraform file
+      shell: bash
+      run: |
+        attestationVariant=""
+        case "$(yq '.attestation | keys | .[0]' constellation-conf.yaml)" in
+          "awsSEVSNP")
+            attestationVariant="aws-sev-snp"
+            ;;
+          "azureSEVSNP")
+            attestationVariant="azure-sev-snp"
+            ;;
+          "gcpSEVES")
+            attestationVariant="gcp-sev-es"
+            ;;
+          *)
+            echo "Unknown attestation variant: $(yq '.attestation | keys | .[0]' constellation-conf.yaml)"
+            exit 1
+            ;;
+        esac
+
+        cat << EOF > main.tf
+        terraform {
+          required_providers {
+            constellation = {
+              source  = "edgelesssys/constellation"
+              version = "$(yq '.microserviceVersion' constellation-conf.yaml | sed 's/^v//')"
+            }
+            random = {
+              source  = "hashicorp/random"
+              version = "3.6.0"
+            }
+          }
+        }
+
+        resource "random_bytes" "master_secret" {
+          length = 32
+        }
+
+        resource "random_bytes" "master_secret_salt" {
+          length = 32
+        }
+
+        resource "random_bytes" "measurement_salt" {
+          length = 32
+        }
+
+        data "constellation_attestation" "con_attestation" {
+          csp                 = "${{ inputs.cloudProvider }}"
+          attestation_variant = "${attestationVariant}"
+          image_version       = "$(yq '.image' constellation-conf.yaml)"
+          maa_url             = "$(yq '.infrastructure.azure.attestationURL' constellation-state.yaml)"
+        }
+
+        data "constellation_image" "con_image" {
+          image_version       = "$(yq '.image' constellation-conf.yaml)"
+          attestation_variant = "${attestationVariant}"
+          csp                 = "${{ inputs.cloudProvider }}"
+          region              = "$(yq '.provider.aws.region' constellation-conf.yaml)"
+        }
+
+        resource "constellation_cluster" "cluster" {
+          csp                                = "${{ inputs.cloudProvider }}"
+          constellation_microservice_version = "$(yq '.microserviceVersion' constellation-conf.yaml)"
+          name                               = "$(yq '.name' constellation-conf.yaml)"
+          uid                                = "$(yq '.infrastructure.uid' constellation-state.yaml)"
+          image_reference                    = data.constellation_image.con_image.reference
+          image_version                      = "$(yq '.microserviceVersion' constellation-conf.yaml)"
+          attestation                        = data.constellation_attestation.con_attestation.attestation
+          init_secret                        = "$(yq '.infrastructure.initSecret' constellation-state.yaml | xxd -r -p)"
+          master_secret                      = random_bytes.master_secret.hex
+          master_secret_salt                 = random_bytes.master_secret_salt.hex
+          measurement_salt                   = random_bytes.measurement_salt.hex
+          out_of_cluster_endpoint            = "$(yq '.infrastructure.clusterEndpoint' constellation-state.yaml)"
+          in_cluster_endpoint                = "$(yq '.infrastructure.inClusterEndpoint' constellation-state.yaml)"
+          azure = {
+            count = "$(yq '.provider | keys | .[0]' constellation-conf.yaml)" == "azure" ? 1 : 0
+            tenant_id                   = "$(yq '.provider.azure.tenant' constellation-conf.yaml)"
+            subscription_id             = "$(yq '.infrastructure.azure.subscriptionID' constellation-state.yaml)"
+            uami_client_id              = "$(yq '.infrastructure.azure.userAssignedIdentity' constellation-state.yaml)"
+            uami_resource_id            = "$(yq '.provider.azure.userAssignedIdentity' constellation-conf.yaml)"
+            location                    = "$(yq '.provider.azure.location' constellation-conf.yaml)"
+            resource_group              = "$(yq '.infrastructure.azure.resourceGroup' constellation-state.yaml)"
+            load_balancer_name          = "$(yq '.infrastructure.azure.loadBalancerName' constellation-state.yaml)"
+            network_security_group_name = "$(yq '.infrastructure.azure.networkSecurityGroupName' constellation-state.yaml)"
+          }
+          gcp = {
+            count = "$(yq '.provider | keys | .[0]' constellation-conf.yaml)" == "gcp" ? 1 : 0
+            project_id          = "$(yq '.infrastructure.gcp.projectID' constellation-state.yaml)"
+            service_account_key = "$(cat $(yq '.provider.gcp.serviceAccountKeyPath' constellation-conf.yaml) | base64 -w0)"
+          }
+          network_config = {
+            ip_cidr_node    = "$(yq '.infrastructure.ipCidrNode' constellation-state.yaml)"
+            ip_cidr_service = "$(yq '.serviceCIDR' constellation-conf.yaml)"
+            ip_cidr_pod     = "$(yq '.infrastructure.gcp.ipCidrPod' constellation-state.yaml)" # This is null for everything but GCP
+          }
+        }
+
+        output "master_secret" {
+          value = random_bytes.master_secret.base64
+          sensitive = true
+        }
+
+        output "master_secret_salt" {
+          value = random_bytes.master_secret_salt.base64
+          sensitive = true
+        }
+
+        output "measurement_salt" {
+          value = random_bytes.measurement_salt.hex
+          sensitive = true
+        }
+
+        output "cluster_id" {
+          value = constellation_cluster.cluster.cluster_id
+        }
+
+        output "owner_id" {
+          value = constellation_cluster.cluster.owner_id
+        }
+
+        output "kubeconfig" {
+          value = constellation_cluster.cluster.kubeconfig
+          sensitive = true
+        }
+        EOF
+
+    - name: Apply Terraform configuration
+      shell: bash
+      run: |
+        terraform init
+        terraform apply -auto-approve
+
+    - name: Write output
+      shell: bash
+      run: |
+        terraform output -raw kubeconfig > "$(pwd)/constellation-admin.conf"
+        yq -i ".clusterValues.measurementSalt = $(terraform output measurement_salt)" constellation-state.yaml
+        yq -i ".clusterValues.clusterID = $(terraform output cluster_id)" constellation-state.yaml
+        yq -i ".clusterValues.ownerID = $(terraform output owner_id)" constellation-state.yaml
+        cat << EOF > constellation-mastersecret.json
+        {
+          "key": "$(terraform output -raw master_secret)",
+          "salt": "$(terraform output -raw master_secret_salt)"
+        }
+        EOF

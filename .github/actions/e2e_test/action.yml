@@ -184,7 +184,7 @@ runs:
         out_rel=$(bazel cquery --output=files //bazel/settings:tag)
         build_version=$(cat "$(realpath "${repository_root}/${out_rel}")")
 
-        terraform_provider_dir="~/.terraform.d/plugins/registry.terraform.io/edgelesssys/constellation/${build_version#v}/${{ steps.determine-build-target.outputs.hostOS }}_${{ steps.determine-build-target.outputs.hostArch }}/"
+        terraform_provider_dir="${HOME}/.terraform.d/plugins/registry.terraform.io/edgelesssys/constellation/${build_version#v}/${{ steps.determine-build-target.outputs.hostOS }}_${{ steps.determine-build-target.outputs.hostArch }}/"
         mkdir -p "${terraform_provider_dir}"
         mv build/terraform-provider-constellation "${terraform_provider_dir}/terraform-provider-constellation_${build_version}"
 
