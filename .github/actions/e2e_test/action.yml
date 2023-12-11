@@ -356,7 +356,6 @@ runs:
       with:
         controlNodesCount: ${{ inputs.controlNodesCount }}
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
-        masterSecret: ${{ steps.constellation-create.outputs.masterSecret }}
 
     - name: Run malicious join test
       if: inputs.test == 'malicious join'
