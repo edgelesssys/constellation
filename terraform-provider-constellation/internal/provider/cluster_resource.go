@@ -80,7 +80,7 @@ type ClusterResourceModel struct {
 
 	OwnerID    types.String `tfsdk:"owner_id"`
 	ClusterID  types.String `tfsdk:"cluster_id"`
-	Kubeconfig types.String `tfsdk:"kubeconfig"`
+	KubeConfig types.String `tfsdk:"kubeconfig"`
 }
 
 type networkConfig struct {
@@ -315,7 +315,6 @@ func (r *ClusterResource) Configure(_ context.Context, req resource.ConfigureReq
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
 		return
-
 	}
 
 	newDialer := func(validator atls.Validator) *dialer.Dialer {
@@ -608,7 +607,7 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 
 	// Kubeconfig is in the state by now. Either through the init RPC or through
 	// already being in the state.
-	if err := applier.SetKubeConfig([]byte(data.Kubeconfig.ValueString())); err != nil {
+	if err := applier.SetKubeConfig([]byte(data.KubeConfig.ValueString())); err != nil {
 		diags.AddError("Setting kubeconfig", err.Error())
 		return diags
 	}
@@ -712,7 +711,7 @@ func (r *ClusterResource) runInitRPC(ctx context.Context, applier *constellation
 	}
 
 	// Save data from init response into the Terraform state
-	data.Kubeconfig = types.StringValue(string(initOutput.Kubeconfig))
+	data.KubeConfig = types.StringValue(string(initOutput.Kubeconfig))
 	data.ClusterID = types.StringValue(initOutput.ClusterID)
 	data.OwnerID = types.StringValue(initOutput.OwnerID)
 
@@ -732,7 +731,8 @@ type applyHelmChartsPayload struct {
 
 // applyHelmCharts applies the Helm charts to the cluster.
 func (r *ClusterResource) applyHelmCharts(ctx context.Context, applier *constellation.Applier,
-	payload applyHelmChartsPayload, state *state.State) diag.Diagnostics {
+	payload applyHelmChartsPayload, state *state.State,
+) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 	options := helm.Options{
 		CSP:                 payload.csp,
