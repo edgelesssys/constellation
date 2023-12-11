@@ -136,7 +136,7 @@ Required:
 - `resource_group` (String) Name of the Azure resource group the cluster resides in.
 - `subscription_id` (String) ID of the Azure subscription the cluster resides in.
 - `tenant_id` (String) Tenant ID of the Azure account.
-- `uami_id` (String) ID of the User assigned managed identity (UAMI) used within the cluster.
+- `uami_client_id` (String) Client ID of the User assigned managed identity (UAMI) used within the cluster.
 - `uami_resource_id` (String) Resource ID of the User assigned managed identity (UAMI) used within the cluster.
 
 
@@ -154,4 +154,4 @@ Required:
 Required:
 
 - `project_id` (String) ID of the GCP project the cluster resides in.
-- `service_account_key` (String) Private key of the service account used within the cluster.
+- `service_account_key` (String) Base64-encoded private key JSON object of the service account used within the cluster.
