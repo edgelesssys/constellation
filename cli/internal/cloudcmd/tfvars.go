@@ -156,6 +156,7 @@ func azureTerraformVars(conf *config.Config, imageRef string) (*terraform.AzureC
 		ResourceGroup:        conf.Provider.Azure.ResourceGroup,
 		CustomEndpoint:       conf.CustomEndpoint,
 		InternalLoadBalancer: conf.InternalLoadBalancer,
+		MarketplaceImage:     nil,
 	}
 
 	if conf.UseMarketplaceImage() {
@@ -170,7 +171,7 @@ func azureTerraformVars(conf *config.Config, imageRef string) (*terraform.AzureC
 		}
 
 		// If a marketplace image is used, only the marketplace reference is required.
-		vars.MarketplaceImage = terraform.AzureMarketplaceImageVariables{
+		vars.MarketplaceImage = &terraform.AzureMarketplaceImageVariables{
 			Publisher: azureImage.Publisher,
 			Product:   azureImage.Offer,
 			Name:      azureImage.SKU,

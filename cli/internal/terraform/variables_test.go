@@ -193,7 +193,7 @@ func TestAzureClusterVariables(t *testing.T) {
 		Debug:                to.Ptr(true),
 		Location:             "eu-central-1",
 		CustomEndpoint:       "example.com",
-		MarketplaceImage: AzureMarketplaceImageVariables{
+		MarketplaceImage: &AzureMarketplaceImageVariables{
 			Publisher: "edgelesssys",
 			Product:   "constellation",
 			Name:      "constellation",
