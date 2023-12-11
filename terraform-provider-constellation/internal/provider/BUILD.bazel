@@ -28,7 +28,6 @@ go_library(
         "//internal/constellation/helm",
         "//internal/constellation/state",
         "//internal/grpc/dialer",
-        "//internal/imagefetcher",
         "//internal/kms/uri",
         "//internal/semver",
         "//internal/sigstore",
@@ -78,7 +77,10 @@ go_test(
         "requires-network",
     ],
     # keep
-    x_defs = {"runsUnder": "bazel"},
+    x_defs = {
+        "runsUnder": "bazel",
+        "version": "v2.13.0",  # TODO(elchead): inject dynamically?
+    },
     deps = [
         "//internal/attestation/idkeydigest",
         "//internal/attestation/measurements",

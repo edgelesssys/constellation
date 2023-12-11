@@ -32,10 +32,10 @@ data "constellation_attestation" "test" {
   * `gcp-sev-es`
 - `csp` (String) CSP (Cloud Service Provider) to use. (e.g. `azure`)
 See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview/clouds) that Constellation supports.
-- `image_version` (String) The image version to use
 
 ### Optional
 
+- `image_version` (String) The image version to use
 - `maa_url` (String) For Azure only, the URL of the Microsoft Azure Attestation service
 
 ### Read-Only

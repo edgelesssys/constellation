@@ -17,6 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
+	"github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/data"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -37,6 +38,7 @@ type AttestationDataSource struct {
 	client  *http.Client
 	fetcher attestationconfigapi.Fetcher
 	rekor   *sigstore.Rekor
+	version string
 }
 
 // AttestationDataSourceModel describes the data source data model.
@@ -49,7 +51,7 @@ type AttestationDataSourceModel struct {
 }
 
 // Configure configures the data source.
-func (d *AttestationDataSource) Configure(_ context.Context, _ datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (d *AttestationDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	d.client = http.DefaultClient
 	d.fetcher = attestationconfigapi.NewFetcher()
 	rekor, err := sigstore.NewRekor()
@@ -58,6 +60,17 @@ func (d *AttestationDataSource) Configure(_ context.Context, _ datasource.Config
 		return
 	}
 	d.rekor = rekor
+
+	providerData, ok := req.ProviderData.(data.ProviderData)
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected Data Source Configure Type",
+			fmt.Sprintf("Expected *data.ProviderData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+		)
+		return
+	}
+
+	d.version = providerData.Version
 }
 
 // Metadata returns the metadata for the data source.
@@ -75,7 +88,7 @@ func (d *AttestationDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 			"attestation_variant": newAttestationVariantAttribute(attributeInput),
 			"image_version": schema.StringAttribute{
 				MarkdownDescription: "The image version to use",
-				Required:            true,
+				Optional:            true,
 			},
 			"maa_url": schema.StringAttribute{
 				MarkdownDescription: "For Azure only, the URL of the Microsoft Azure Attestation service",
@@ -129,7 +142,12 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 		resp.Diagnostics.AddError("Converting SNP attestation", err.Error())
 	}
 	verifyFetcher := measurements.NewVerifyFetcher(sigstore.NewCosignVerifier, d.rekor, d.client)
-	fetchedMeasurements, err := verifyFetcher.FetchAndVerifyMeasurements(ctx, data.ImageVersion.ValueString(),
+
+	imageVersion := data.ImageVersion.ValueString()
+	if imageVersion == "" {
+		imageVersion = d.version // Use provider version as default.
+	}
+	fetchedMeasurements, err := verifyFetcher.FetchAndVerifyMeasurements(ctx, imageVersion,
 		csp, attestationVariant, false)
 	if err != nil {
 		var rekErr *measurements.RekorError

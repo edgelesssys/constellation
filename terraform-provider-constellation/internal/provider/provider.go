@@ -28,7 +28,7 @@ type ConstellationProviderModel struct{}
 // ConstellationProvider is the provider implementation.
 type ConstellationProvider struct {
 	// version is set to the provider version on release, "dev" when the
-	// provider is built and ran locally, and "test" when running acceptance
+	// provider is built and ran locally, and "v2.13.0" when running acceptance
 	// testing.
 	version string
 }
@@ -71,8 +71,9 @@ func (p *ConstellationProvider) Configure(ctx context.Context, req provider.Conf
 		return
 	}
 
-	// TODO(msanft): Initialize persistent clients here.
-	config := datastruct.ProviderData{}
+	config := datastruct.ProviderData{
+		Version: p.version,
+	}
 
 	// Make the clients available during data source and resource "Configure" methods.
 	resp.DataSourceData = config

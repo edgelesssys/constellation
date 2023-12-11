@@ -23,12 +23,14 @@ const (
 	testingConfig = `provider "constellation" {}`
 )
 
+var version = "v2.13.0" // inject existing release to test if default version behavior is correct (lockstep)
+
 // testAccProtoV6ProviderFactories are used to instantiate a provider during
 // acceptance testing. The factory function will be invoked for every Terraform
 // CLI command executed to create a provider server to which the CLI can
 // reattach.
 var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){
-	"constellation": providerserver.NewProtocol6WithError(New("test")()),
+	"constellation": providerserver.NewProtocol6WithError(New(version)()),
 }
 
 // bazelSetTerraformBinaryPath sets the path to the Terraform binary for

@@ -13,7 +13,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
+	"github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/data"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -38,6 +38,7 @@ func NewImageDataSource() datasource.DataSource {
 // It is used to retrieve the Constellation OS image reference for a given CSP and Attestation Variant.
 type ImageDataSource struct {
 	imageFetcher imageFetcher
+	version      string
 }
 
 // imageFetcher gets an image reference from the versionsapi.
@@ -73,7 +74,7 @@ func (d *ImageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 			"image_version": schema.StringAttribute{
 				Description:         "Version of the Constellation OS image to use. (e.g. `v2.13.0`)",
 				MarkdownDescription: "Version of the Constellation OS image to use. (e.g. `v2.13.0`)",
-				Required:            true, // TODO(msanft): Make this optional to support "lockstep" mode.
+				Optional:            true,
 			},
 			"csp": newCSPAttribute(),
 			"marketplace_image": schema.BoolAttribute{
@@ -101,9 +102,21 @@ func (d *ImageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 // E.g., region should be required if, and only if, AWS is used.
 
 // Configure configures the data source.
-func (d *ImageDataSource) Configure(_ context.Context, _ datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
-	// Create the image-fetcher client.
-	d.imageFetcher = imagefetcher.New()
+func (d *ImageDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+	// Prevent panic if the provider has not been configured. is necessary!
+	if req.ProviderData == nil {
+		return
+	}
+	providerData, ok := req.ProviderData.(data.ProviderData)
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected Data Source Configure Type",
+			fmt.Sprintf("Expected *data.ProviderData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+		)
+		return
+	}
+
+	d.version = providerData.Version
 }
 
 // Read reads from the data source.
@@ -134,9 +147,14 @@ func (d *ImageDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 		return
 	}
 
+	imageVersion := data.ImageVersion.ValueString()
+	if imageVersion == "" {
+		imageVersion = d.version // Use provider version as default.
+	}
+
 	// Retrieve Image Reference
 	imageRef, err := d.imageFetcher.FetchReference(ctx, csp, attestationVariant,
-		data.ImageVersion.ValueString(), data.Region.ValueString(), data.MarketplaceImage.ValueBool())
+		imageVersion, data.Region.ValueString(), data.MarketplaceImage.ValueBool())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error fetching Image Reference",

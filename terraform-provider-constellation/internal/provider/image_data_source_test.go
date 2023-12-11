@@ -18,6 +18,22 @@ func TestAccImageDataSource(t *testing.T) {
 	bazelPreCheck := func() { bazelSetTerraformBinaryPath(t) }
 
 	testCases := map[string]resource.TestCase{
+		"no image_version succeeds": {
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			PreCheck:                 bazelPreCheck,
+			Steps: []resource.TestStep{
+				{
+					Config: testingConfig + `
+					data "constellation_image" "test" {
+						attestation_variant = "aws-sev-snp"
+						csp                 = "aws"
+						region              = "eu-west-1"
+					}
+				`,
+					Check: resource.TestCheckResourceAttrSet("data.constellation_image.test", "reference"),
+				},
+			},
+		},
 		"aws succcess": {
 			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 			PreCheck:                 bazelPreCheck,
