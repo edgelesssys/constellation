@@ -98,7 +98,7 @@ type gcp struct {
 type azure struct {
 	TenantID                 string `tfsdk:"tenant_id"`
 	Location                 string `tfsdk:"location"`
-	UamiID                   string `tfsdk:"uami"`
+	UamiClientID             string `tfsdk:"uami_client_id"`
 	UamiResourceID           string `tfsdk:"uami_resource_id"`
 	ResourceGroup            string `tfsdk:"resource_group"`
 	SubscriptionID           string `tfsdk:"subscription_id"`
@@ -257,9 +257,9 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 						Description:         "Azure Location of the cluster.",
 						Required:            true,
 					},
-					"uami_id": schema.StringAttribute{
-						MarkdownDescription: "ID of the User assigned managed identity (UAMI) used within the cluster.",
-						Description:         "ID of the User assigned managed identity (UAMI) used within the cluster.",
+					"uami_client_id": schema.StringAttribute{
+						MarkdownDescription: "Client ID of the User assigned managed identity (UAMI) used within the cluster.",
+						Description:         "Client ID of the User assigned managed identity (UAMI) used within the cluster.",
 						Required:            true,
 					},
 					"uami_resource_id": schema.StringAttribute{
@@ -562,7 +562,7 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 			SubscriptionID:           azureConfig.SubscriptionID,
 			NetworkSecurityGroupName: azureConfig.NetworkSecurityGroupName,
 			LoadBalancerName:         azureConfig.LoadBalancerName,
-			UserAssignedIdentity:     azureConfig.UamiID,
+			UserAssignedIdentity:     azureConfig.UamiClientID,
 			AttestationURL:           att.maaURL,
 		}
 	case cloudprovider.GCP:
