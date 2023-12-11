@@ -1,11 +1,11 @@
 variable "project_id" {
   type        = string
-  description = "GCP Project ID"
+  description = "GCP Project ID."
 }
 
 variable "service_account_id" {
   type        = string
-  description = "ID for the service account being created. Must match ^[a-z](?:[-a-z0-9]{4,28}[a-z0-9])$"
+  description = "ID for the service account being created. Must match ^[a-z](?:[-a-z0-9]{4,28}[a-z0-9])$."
 }
 
 variable "region" {
