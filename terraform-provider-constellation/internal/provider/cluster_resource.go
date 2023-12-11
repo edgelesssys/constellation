@@ -52,7 +52,9 @@ func NewClusterResource() resource.Resource {
 
 // ClusterResource defines the resource implementation.
 type ClusterResource struct {
-	applier *constellation.Applier
+	applier   *constellation.Applier
+	newDialer func(validator atls.Validator) *dialer.Dialer
+	newLogger func(ctx context.Context) *tfContextLogger
 }
 
 // ClusterResourceModel describes the resource data model.
@@ -315,6 +317,17 @@ func (r *ClusterResource) Configure(_ context.Context, req resource.ConfigureReq
 	if req.ProviderData == nil {
 		return
 	}
+
+	r.newLogger = func(ctx context.Context) *tfContextLogger {
+		return &tfContextLogger{ctx: ctx}
+	}
+
+	r.newDialer = func(validator atls.Validator) *dialer.Dialer {
+		return dialer.New(nil, validator, &net.Dialer{})
+	}
+
+	// Use the background context as we don't have a long-lived context here.
+	r.applier = constellation.NewApplier(r.newLogger(context.Background()), &nopSpinner{}, r.newDialer)
 }
 
 // Create is called when the resource is created.
@@ -518,12 +531,7 @@ func (r *ClusterResource) apply(ctx context.Context, data ClusterResourceModel, 
 	}
 
 	// setup clients
-	log := &tfContextLogger{ctx: ctx}
-	newDialer := func(validator atls.Validator) *dialer.Dialer {
-		return dialer.New(nil, validator, &net.Dialer{})
-	}
-	r.applier = constellation.NewApplier(log, &nopSpinner{}, newDialer)
-	validator, err := choose.Validator(att.config, log)
+	validator, err := choose.Validator(att.config, r.newLogger(ctx))
 	if err != nil {
 		diags.AddError("Choosing validator", err.Error())
 		return diags
