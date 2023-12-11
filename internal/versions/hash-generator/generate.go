@@ -140,7 +140,7 @@ func main() {
 					continue
 				}
 				switch ident.Name {
-				case "URL":
+				case "Url":
 					url = kv
 				case "Hash":
 					hash = kv

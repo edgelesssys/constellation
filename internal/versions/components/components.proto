@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package components;
+
+option go_package = "github.com/edgelesssys/constellation/v2/internal/versions/components";
+
+// Component is a Kubernetes component to install.
+message Component {
+  // URL of the component. Usually, this would be an HTTP download link.
+  string url = 1;
+  // Hash contains the expected digest of the resource retrieved from the URL,
+  // in the format "<algo>:<hex-digest>".
+  string hash = 2;
+  // InstallPath is the path to install the component to.
+  string install_path = 3;
+  // Extract indicates whether the resource at above URL is an archive, such as
+  // a gzipped tarball, and should be extracted to the install_path.
+  bool extract = 4;
+}

@@ -59,7 +59,7 @@ func (a *Applier) Init(
 		StorageUri:           uri.NoStoreURI,
 		MeasurementSalt:      payload.MeasurementSalt,
 		KubernetesVersion:    versions.VersionConfigs[payload.K8sVersion].ClusterVersion,
-		KubernetesComponents: versions.VersionConfigs[payload.K8sVersion].KubernetesComponents.ToInitProto(),
+		KubernetesComponents: versions.VersionConfigs[payload.K8sVersion].KubernetesComponents,
 		ConformanceMode:      payload.ConformanceMode,
 		InitSecret:           state.Infrastructure.InitSecret,
 		ClusterName:          state.Infrastructure.Name,

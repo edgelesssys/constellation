@@ -310,9 +310,8 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 		Token:             ticket.Token,
 		CACertHashes:      []string{ticket.DiscoveryTokenCaCertHash},
 	}
-	k8sComponents := components.NewComponentsFromJoinProto(ticket.KubernetesComponents)
 
-	if err := c.joiner.JoinCluster(ctx, btd, c.role, k8sComponents, c.log); err != nil {
+	if err := c.joiner.JoinCluster(ctx, btd, c.role, ticket.KubernetesComponents, c.log); err != nil {
 		return fmt.Errorf("joining Kubernetes cluster: %w", err)
 	}
 

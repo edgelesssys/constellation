@@ -133,8 +133,8 @@ func prepareUpdate(ctx context.Context, installer osInstaller, updateRequest *up
 	}
 
 	// download & install the kubeadm binary
-	return installer.Install(ctx, components.Component{
-		URL:         updateRequest.KubeadmUrl,
+	return installer.Install(ctx, &components.Component{
+		Url:         updateRequest.KubeadmUrl,
 		Hash:        updateRequest.KubeadmHash,
 		InstallPath: constants.KubeadmPath,
 		Extract:     false,
@@ -151,7 +151,7 @@ func verifyVersion(version string) error {
 
 type osInstaller interface {
 	// Install downloads, installs and verifies the kubernetes component.
-	Install(ctx context.Context, kubernetesComponent components.Component) error
+	Install(ctx context.Context, kubernetesComponent *components.Component) error
 }
 
 type serveStopper interface {

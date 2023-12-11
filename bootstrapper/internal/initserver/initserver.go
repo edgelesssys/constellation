@@ -216,7 +216,7 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 		req.KubernetesVersion,
 		clusterName,
 		req.ConformanceMode,
-		components.NewComponentsFromInitProto(req.KubernetesComponents),
+		req.KubernetesComponents,
 		req.ApiserverCertSans,
 		req.ServiceCidr,
 		s.log,

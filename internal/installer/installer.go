@@ -55,8 +55,8 @@ func NewOSInstaller() *OsInstaller {
 
 // Install downloads a resource from a URL, applies any given text transformations and extracts the resulting file if required.
 // The resulting file(s) are copied to the destination. It also verifies the sha256 hash of the downloaded file.
-func (i *OsInstaller) Install(ctx context.Context, kubernetesComponent components.Component) error {
-	tempPath, err := i.retryDownloadToTempDir(ctx, kubernetesComponent.URL)
+func (i *OsInstaller) Install(ctx context.Context, kubernetesComponent *components.Component) error {
+	tempPath, err := i.retryDownloadToTempDir(ctx, kubernetesComponent.Url)
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func (i *OsInstaller) Install(ctx context.Context, kubernetesComponent component
 		err = i.copy(tempPath, kubernetesComponent.InstallPath, executablePerm)
 	}
 	if err != nil {
-		return fmt.Errorf("installing from %q: copying to destination %q: %w", kubernetesComponent.URL, kubernetesComponent.InstallPath, err)
+		return fmt.Errorf("installing from %q: copying to destination %q: %w", kubernetesComponent.Url, kubernetesComponent.InstallPath, err)
 	}
 
 	return nil

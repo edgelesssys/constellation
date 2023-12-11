@@ -41,7 +41,7 @@ func TestIssueJoinTicket(t *testing.T) {
 
 	clusterComponents := components.Components{
 		{
-			URL:         "URL",
+			Url:         "URL",
 			Hash:        "hash",
 			InstallPath: "install-path",
 			Extract:     true,
@@ -183,7 +183,7 @@ func TestIssueJoinTicket(t *testing.T) {
 			assert.Equal(tc.kubeadm.token.CACertHashes[0], resp.DiscoveryTokenCaCertHash)
 			assert.Equal(tc.kubeadm.token.Token, resp.Token)
 			assert.Equal(tc.ca.cert, resp.KubeletCert)
-			assert.Equal(tc.kubeClient.getComponentsVal.ToJoinProto(), resp.KubernetesComponents)
+			assert.Equal(tc.kubeClient.getComponentsVal, resp.KubernetesComponents)
 			assert.Equal(tc.ca.nodeName, tc.kubeClient.joiningNodeName)
 			assert.Equal(tc.kubeClient.getK8sComponentsRefFromNodeVersionCRDVal, tc.kubeClient.componentsRef)
 
@@ -286,7 +286,7 @@ func (f stubCA) GetNodeNameFromCSR(_ []byte) (string, error) {
 }
 
 type stubKubeClient struct {
-	getComponentsVal components.Components
+	getComponentsVal []*components.Component
 	getComponentsErr error
 
 	getK8sComponentsRefFromNodeVersionCRDErr error

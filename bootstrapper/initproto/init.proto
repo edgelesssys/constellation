@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package init;
 
+import "internal/versions/components/components.proto";
+
 option go_package = "github.com/edgelesssys/constellation/v2/bootstrapper/initproto";
 
 service API {
@@ -23,7 +25,7 @@ message InitRequest {
   // ConformanceMode is a flag to indicate whether the cluster should be bootstrapped for Kubernetes conformance testing.
   bool conformance_mode = 6;
   // KubernetesComponents is a list of Kubernetes components to install.
-  repeated KubernetesComponent kubernetes_components = 7;
+  repeated components.Component kubernetes_components = 7;
   // InitSecret is a secret used to authenticate the initial bootstrapping node.
   bytes init_secret = 8;
   // ClusterName is the name of the cluster.
