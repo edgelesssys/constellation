@@ -50,17 +50,17 @@ func convertFromTfAttestationCfg(tfAttestation attestation, attestationVariant v
 		}
 	}
 
-	var rootKey config.Certificate
-	if err := json.Unmarshal([]byte(tfAttestation.AMDRootKey), &rootKey); err != nil {
-		return nil, fmt.Errorf("unmarshalling root key: %w", err)
-	}
-
 	var attestationConfig config.AttestationCfg
 	switch attestationVariant {
 	case variant.AzureSEVSNP{}:
 		firmwareCfg, err := convertFromTfFirmwareCfg(tfAttestation.AzureSNPFirmwareSignerConfig)
 		if err != nil {
 			return nil, fmt.Errorf("converting firmware signer config: %w", err)
+		}
+
+		var rootKey config.Certificate
+		if err := json.Unmarshal([]byte(tfAttestation.AMDRootKey), &rootKey); err != nil {
+			return nil, fmt.Errorf("unmarshalling root key: %w", err)
 		}
 
 		attestationConfig = &config.AzureSEVSNP{
@@ -73,6 +73,11 @@ func convertFromTfAttestationCfg(tfAttestation attestation, attestationVariant v
 			AMDRootKey:           rootKey,
 		}
 	case variant.AWSSEVSNP{}:
+		var rootKey config.Certificate
+		if err := json.Unmarshal([]byte(tfAttestation.AMDRootKey), &rootKey); err != nil {
+			return nil, fmt.Errorf("unmarshalling root key: %w", err)
+		}
+
 		attestationConfig = &config.AWSSEVSNP{
 			Measurements:      c11nMeasurements,
 			BootloaderVersion: newVersion(tfAttestation.BootloaderVersion),

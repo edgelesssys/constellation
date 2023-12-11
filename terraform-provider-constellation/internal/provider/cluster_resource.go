@@ -9,6 +9,7 @@ package provider
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -230,8 +231,8 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"service_account_key": schema.StringAttribute{
-						MarkdownDescription: "Private key of the service account used within the cluster.",
-						Description:         "Private key of the service account used within the cluster.",
+						MarkdownDescription: "Base64-encoded private key JSON object of the service account used within the cluster.",
+						Description:         "Base64-encoded private key JSON object of the service account used within the cluster.",
 						Required:            true,
 					},
 					"project_id": schema.StringAttribute{
@@ -336,7 +337,7 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 	}
 
 	// Apply changes to the cluster, including the init RPC and skipping the node upgrade.
-	diags := r.apply(ctx, data, false, true)
+	diags := r.apply(ctx, &data, false, true)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -379,7 +380,7 @@ func (r *ClusterResource) Update(ctx context.Context, req resource.UpdateRequest
 	}
 
 	// Apply changes to the cluster, skipping the init RPC.
-	diags := r.apply(ctx, data, true, false)
+	diags := r.apply(ctx, &data, true, false)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -408,7 +409,7 @@ func (r *ClusterResource) ImportState(_ context.Context, _ resource.ImportStateR
 
 // apply applies changes to a cluster. It can be used for both creating and updating a cluster.
 // This implements the core part of the Create and Update methods.
-func (r *ClusterResource) apply(ctx context.Context, data ClusterResourceModel, skipInitRPC, skipNodeUpgrade bool) diag.Diagnostics {
+func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel, skipInitRPC, skipNodeUpgrade bool) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
 	// Parse and convert values from the Terraform state
@@ -417,14 +418,14 @@ func (r *ClusterResource) apply(ctx context.Context, data ClusterResourceModel, 
 	csp := cloudprovider.FromString(data.CSP.ValueString())
 
 	// parse attestation config
-	att, convertDiags := r.convertAttestationConfig(ctx, data)
+	att, convertDiags := r.convertAttestationConfig(ctx, *data)
 	diags.Append(convertDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
 	// parse secrets (i.e. measurement salt, master secret, etc.)
-	secrets, convertDiags := r.convertSecrets(data)
+	secrets, convertDiags := r.convertSecrets(*data)
 	diags.Append(convertDiags...)
 	if diags.HasError() {
 		return diags
@@ -467,7 +468,7 @@ func (r *ClusterResource) apply(ctx context.Context, data ClusterResourceModel, 
 	}
 
 	// parse Kubernetes version
-	k8sVersion, getDiags := r.getK8sVersion(ctx, &data)
+	k8sVersion, getDiags := r.getK8sVersion(ctx, data)
 	diags.Append(getDiags...)
 	if diags.HasError() {
 		return diags
@@ -494,7 +495,17 @@ func (r *ClusterResource) apply(ctx context.Context, data ClusterResourceModel, 
 		if diags.HasError() {
 			return diags
 		}
-		if err := json.Unmarshal([]byte(gcpConfig.ServiceAccountKey), &serviceAccPayload.GCP); err != nil {
+
+		decodedSaKey, err := base64.StdEncoding.DecodeString(gcpConfig.ServiceAccountKey)
+		if err != nil {
+			diags.AddAttributeError(
+				path.Root("gcp").AtName("service_account_key"),
+				"Decoding service account key",
+				fmt.Sprintf("Decoding base64-encoded service account key: %s", err))
+			return diags
+		}
+
+		if err := json.Unmarshal(decodedSaKey, &serviceAccPayload.GCP); err != nil {
 			diags.AddAttributeError(
 				path.Root("gcp").AtName("service_account_key"),
 				"Unmarshalling service account key",
@@ -564,7 +575,6 @@ func (r *ClusterResource) apply(ctx context.Context, data ClusterResourceModel, 
 	// Now, we perform the actual applying.
 
 	// Run init RPC
-	var postInitState *state.State
 	var initDiags diag.Diagnostics
 	if !skipInitRPC {
 		// run the init RPC and retrieve the post-init state
@@ -580,7 +590,7 @@ func (r *ClusterResource) apply(ctx context.Context, data ClusterResourceModel, 
 			k8sVersion:        k8sVersion,
 			inClusterEndpoint: inClusterEndpoint,
 		}
-		initDiags = r.runInitRPC(ctx, applier, initRPCPayload, &data, validator, stateFile)
+		initDiags = r.runInitRPC(ctx, applier, initRPCPayload, data, validator, stateFile)
 		diags.Append(initDiags...)
 		if diags.HasError() {
 			return diags
@@ -626,7 +636,7 @@ func (r *ClusterResource) apply(ctx context.Context, data ClusterResourceModel, 
 		masterSecret:        secrets.masterSecret,
 		serviceAccURI:       serviceAccURI,
 	}
-	helmDiags := r.applyHelmCharts(ctx, applier, payload, postInitState)
+	helmDiags := r.applyHelmCharts(ctx, applier, payload, stateFile)
 	diags.Append(helmDiags...)
 	if diags.HasError() {
 		return diags
