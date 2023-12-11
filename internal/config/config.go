@@ -853,8 +853,8 @@ func (c *Config) Validate(force bool) error {
 	}
 
 	if c.InternalLoadBalancer {
-		if c.GetProvider() != cloudprovider.AWS && c.GetProvider() != cloudprovider.GCP {
-			return &ValidationError{validationErrMsgs: []string{"internalLoadBalancer is only supported for AWS and GCP"}}
+		if c.GetProvider() != cloudprovider.Azure && c.GetProvider() != cloudprovider.AWS && c.GetProvider() != cloudprovider.GCP {
+			return &ValidationError{validationErrMsgs: []string{"internalLoadBalancer is only supported for AWS, Azure, and GCP"}}
 		}
 	}
 

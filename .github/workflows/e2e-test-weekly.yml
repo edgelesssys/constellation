@@ -195,6 +195,26 @@ jobs:
             refStream: "ref/main/stream/debug/?"
             provider: "gcp"
             kubernetes-version: "v1.28"
+            internal-lb: false
+
+          # internal-lb tests (at least one test on each supported provider)
+          - test: "sonobuoy quick"
+            refStream: "ref/main/stream/debug/?"
+            provider: "gcp"
+            kubernetes-version: "v1.28"
+            internal-lb: "true"
+          - test: "lb"
+            refStream: "ref/main/stream/debug/?"
+            provider: "azure"
+            kubernetes-version: "v1.28"
+            internal-lb: "true"
+          - test: "recover"
+            refStream: "ref/main/stream/debug/?"
+            provider: "aws"
+            kubernetes-version: "v1.28"
+            internal-lb: "true"
+          
+          
 
           #
           # Tests on release-stable refStream
@@ -205,14 +225,17 @@ jobs:
             refStream: "ref/release/stream/stable/?"
             provider: "gcp"
             kubernetes-version: "v1.27"
+            internal-lb: false
           - test: "verify"
             refStream: "ref/release/stream/stable/?"
             provider: "azure"
             kubernetes-version: "v1.27"
+            internal-lb: false
           - test: "verify"
             refStream: "ref/release/stream/stable/?"
             provider: "aws"
             kubernetes-version: "v1.27"
+            internal-lb: false
 
     runs-on: ubuntu-22.04
     permissions:
@@ -248,7 +271,7 @@ jobs:
           gcpIAMCreateServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
           test: ${{ matrix.test }}
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
-          azureClusterCreateCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
+          azureClusterCreateCredentials: ${{ matrix.internal-lb == 'true' && secrets.AZURE_E2E_INTERNAL_LB_CREDENTIALS || secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
           azureIAMCreateCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
           registry: ghcr.io
           githubToken: ${{ secrets.GITHUB_TOKEN }}
@@ -259,6 +282,7 @@ jobs:
           selfManagedInfra: ${{ matrix.selfManagedInfra == 'true' }}
           s3AccessKey: ${{ secrets.AWS_ACCESS_KEY_ID_S3PROXY }}
           s3SecretKey: ${{ secrets.AWS_SECRET_ACCESS_KEY_S3PROXY }}
+          internalLoadBalancer: ${{ matrix.internal-lb == 'true' }}
 
       - name: Always terminate cluster
         if: always()
