@@ -18,6 +18,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 var (
@@ -111,7 +112,7 @@ func (d *ImageDataSource) ValidateConfig(ctx context.Context, req datasource.Val
 	if data.CSP.Equal(types.StringValue("aws")) && data.Region.IsNull() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("region"),
-			"Region must be set for AWS", "When CSP is set to AWS, 'region' must be specified.",
+			"Region must be set for AWS", "When csp is set to 'aws', 'region' must be specified.",
 		)
 		return
 	}
@@ -127,7 +128,7 @@ func (d *ImageDataSource) Configure(_ context.Context, req datasource.ConfigureR
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected *data.ProviderData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected data.ProviderData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 		return
 	}
@@ -165,6 +166,7 @@ func (d *ImageDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 
 	imageVersion := data.ImageVersion.ValueString()
 	if imageVersion == "" {
+		tflog.Info(ctx, "No image version specified, using provider version")
 		imageVersion = d.version // Use provider version as default.
 	}
 

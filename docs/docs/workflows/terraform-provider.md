@@ -8,8 +8,7 @@ The provider is available through the [Terraform registry](https://registry.terr
 - a Terraform installation of version `v1.4.4` or above
 
 ## Quick setup
-The example shows how to set up a Constellation cluster with the default infrastructure and IAM setup. It's easiest to consume the module through a remote source, as shown below.
-This allows to upgrade the cluster to a newer Constellation version by simply updating the module source. When using custom infrastructure, make sure to check the Constellation release notes for potential breaking changes in the infrastructure setup.
+The example shows how to set up a Constellation cluster with the default infrastructure and IAM setup. The modules can either be consumed by using the remote source shown below (recommended) or by downloading them from the [Constellation release page ](https://github.com/edgelesssys/constellation/releases/latest) and placing them in the Terraform workspace directory.
 
 
 1. Create a directory (workspace) for your Constellation cluster.
@@ -18,8 +17,7 @@ This allows to upgrade the cluster to a newer Constellation version by simply up
   cd constellation-workspace
   ```
 
-1. Create a `main.tf` file to call the CSP specific Constellation module.
-
+1. Create a `main.tf` file.
 <!-- TODO: put file in repo to reuse in e2e test? -->
 
   <tabs groupId="csp">
@@ -37,13 +35,16 @@ This allows to upgrade the cluster to a newer Constellation version by simply up
 }
 
 data "constellation_attestation" "att" {
+    csp = "azure"
     attestation_variant = "azure-sev-snp"
-    maa_url = "https://www.example.com" #  need to set this value!
+    maa_url = "https://www.example.com" #  need to set this value
+    image_version = "vX.Y.Z"  # defaults to provider version when not set
 }
 
 data "constellation_image" "img" {
-    attestation_variant = "azure-sev-snp"
     csp = "azure"
+    attestation_variant = "azure-sev-snp"
+    image_version = "vX.Y.Z"  # defaults to provider version when not set
 }
 
 module "azure_iam" {
@@ -64,57 +65,35 @@ module "azure" {
   resource_group         = module.azure_iam.base_resource_group
   create_maa             = var.create_maa
 }
-
 resource "constellation_cluster" "foo" {
-    uid = "bar"
-    name = "baz"
-    image = data.constellation_image.ref # or provide manually crafted values
-    kubernetes_version = "v1.27.6"
-    init_endpoint = "10.10.10.10" # should use public ip of LB resource, ideally also provisioned through TF
-    kubernetes_api_endpoint = "10.10.10.10" # should use public ip of LB resource, ideally also provisioned through TF
-    constellation_microservice_version = "v2.13.0" # optional value, set to provider version by default.
-    extra_microservices = {
-        csi_driver = true
-        # + more
-        # possiblly also constellation microservices with version and maybe service options,
-        # which would make constellation_microservice_version obsolete.
-        # exact API TBD
-    }
-    master_secret = "foo" # updating this would force recreation of the cluster
-    init_secret = "bar" # maybe derive from master_secret, updating this would force recreation of the cluster
-    network_config = {
-        # TBD
-        # should contain CIDRs for pod network, service cidr, node network... for Cilium
-        # the aforementioned values might be outputs of infrastructure that is also provisioned
-        # through Terraform, such as a VPC.
-        # and in-cluster Kubernetes API endpoint, e.g. for Kubelets
-    }
-    attestation = data.constellation_attestation.attestation # or provide manually crafted values
+   csp                                = "azure"
+  constellation_microservice_version = "vX.Y.Z"
+  name                               = module.azure.name
+  uid                                = module.azure.uid
+  image                              = data.constellation_image.img.reference
+  attestation                        = data.constellation_attestation.att.attestation
+  init_secret                        = module.azure.initSecret
+  master_secret                      = ...
+  master_secret_salt                 = ...
+  measurement_salt                   = ...
+  out_of_cluster_endpoint            = module.azure.out_of_cluster_endpoint
+  in_cluster_endpoint                = module.azure.in_cluster_endpoint
+  azure = {
+    tenant_id                   = module.azure_iam.tenant_id
+    subscription_id             = module.azure_iam.subscription_id
+    uami                        = module.azure_iam.uami_id
+    location                    = "northeurope"
+    resource_group              = module.azure_iam.base_resource_group
+    load_balancer_name          = module.azure.loadbalancer_name
+    network_security_group_name = module.azure.network_security_group_name
+  }
+  network_config = {
+    ip_cidr_node    = module.azure.ip_cidr_nodes
+    ip_cidr_service = "10.96.0.0/12"
+  }
+}
 }
 
-  <!--module "azure-constellation" {
-    source = "https://github.com/edgelesssys/constellation/releases/download/<version>/terraform-module.zip//terraform-module/azure-constellation" // replace <version> with a Constellation version, e.g., v2.13.0
-    name = "constell"
-    location = "northeurope"
-    service_principal_name = "az-sp"
-    resource_group_name = "constell-rg"
-    node_groups = {
-      control_plane_default = {
-        role          = "control-plane"
-        instance_type = "Standard_DC4as_v5"
-        disk_size     = 30
-        disk_type     = "Premium_LRS"
-        initial_count = 3
-      },
-      worker_default = {
-        role          = "worker"
-        instance_type = "Standard_DC4as_v5"
-        disk_size     = 30
-        disk_type     = "Premium_LRS"
-        initial_count = 2
-      }
-    }
-  }-->
   ```
 
   </tabItem>
@@ -202,8 +181,9 @@ For cluster upgrades, please make sure to check the Constellation release notes 
 For general information on cluster upgrades, see [Upgrade your cluster](./upgrade.md).
 :::
 
-Using a [remote address as module source](https://developer.hashicorp.com/terraform/language/modules/sources#fetching-archives-over-http) as shown in [Quick setup](#quick-setup) is recommended because it simplifies the upgrade process. For [local paths as module source](https://developer.hashicorp.com/terraform/language/modules/sources#local-paths), you would need to look out for potential breaking changes in the infrastructure setup.
-The steps for the remote source setup are as follows:
+First update the version of the Constellation Terraform provider. If you explicitly set versions (e.g. `image_version` or `constellation_microservice_version`), make sure to update them. Refer to [version support](https://github.com/edgelesssys/constellation/blob/main/dev-docs/workflows/versions-support.md), for more information on the version support policy.
+Regarding the infrastructure / IAM modules, using a [remote address as module source](https://developer.hashicorp.com/terraform/language/modules/sources#fetching-archives-over-http) as shown in [Quick setup](#quick-setup) is recommended because it simplifies the upgrade process. For [local paths as module source](https://developer.hashicorp.com/terraform/language/modules/sources#local-paths), you would update the local files with the ones from the `terraform-module.zip` of the [Constellation release](https://github.com/edgelesssys/constellation/releases) and look out for potential breaking changes in the infrastructure setup.
+The steps for applying the upgrade are as follows:
 
 1. Update the `<version>` variable inside the `source` field of the module.
 2. Upgrade the Terraform module and provider dependencies and apply the Constellation upgrade.

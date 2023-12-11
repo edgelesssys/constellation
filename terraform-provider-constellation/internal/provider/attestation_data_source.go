@@ -65,7 +65,7 @@ func (d *AttestationDataSource) Configure(_ context.Context, req datasource.Conf
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected *data.ProviderData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected data.ProviderData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 		return
 	}
@@ -172,6 +172,7 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 
 	imageVersion := data.ImageVersion.ValueString()
 	if imageVersion == "" {
+		tflog.Info(ctx, "No image version specified, using provider version")
 		imageVersion = d.version // Use provider version as default.
 	}
 	fetchedMeasurements, err := verifyFetcher.FetchAndVerifyMeasurements(ctx, imageVersion,
