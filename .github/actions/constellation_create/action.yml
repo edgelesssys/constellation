@@ -50,9 +50,9 @@ inputs:
   internalLoadBalancer:
     description: "Whether to use an internal load balancer for the control plane"
     required: false
-  selfManagedInfra:
-    description: "Use self-managed infrastructure instead of infrastructure created by the Constellation CLI."
-    required: true
+  clusterCreation:
+    description: "How to create infrastructure for the e2e test. One of [cli, self-managed, terraform]."
+    default: "cli"
   marketplaceImageVersion:
     description: "Marketplace OS image version. Used instead of osImage."
     required: false
@@ -148,7 +148,7 @@ runs:
         sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts' || true
 
     - name: Constellation create (CLI)
-      if : inputs.selfManagedInfra != 'true'
+      if : inputs.clusterCreation != 'self-managed'
       shell: bash
       run: |
         # TODO(v2.14): Remove workaround for CLIs not supporting apply command
@@ -159,7 +159,7 @@ runs:
         constellation $cmd -y --debug --tf-log=DEBUG
 
     - name: Constellation create (self-managed)
-      if : inputs.selfManagedInfra == 'true'
+      if : inputs.clusterCreation == 'self-managed'
       uses: ./.github/actions/self_managed_create
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
@@ -174,7 +174,7 @@ runs:
         azureIAMCreateCredentials: ${{ inputs.azureIAMCreateCredentials }}
         refStream: ${{ inputs.refStream }}
         kubernetesVersion: ${{ inputs.kubernetesVersion }}
-        selfManagedInfra: ${{ inputs.selfManagedInfra }}
+        clusterCreation: ${{ inputs.clusterCreation }}
 
     - name: Set force flag
       id: set-force-flag
@@ -183,8 +183,14 @@ runs:
       run: |
         echo "flag=--force" | tee -a $GITHUB_OUTPUT
 
-    - name: Constellation init
-      id: constellation-init
+    - name: Constellation apply (Terraform)
+      id: constellation-apply-terraform
+      if: inputs.clusterCreation == 'terraform'
+      shell: bash
+      uses: ./.github/actions/terraform_apply
+
+    - name: Constellation apply
+      id: constellation-apply-cli
       shell: bash
       run: |
         constellation apply --skip-phases=infrastructure --debug ${{ steps.set-force-flag.outputs.flag }}

@@ -35,7 +35,7 @@ var (
 		"github.e2e-test-provider":  {},
 		"github.ref-stream":         {},
 		"github.kubernetes-version": {},
-		"github.self-managed-infra": {},
+		"github.cluster-creation":   {},
 		"deployment-type":           {}, // deployment type, e.g. "debugd", "k8s"
 	}
 )

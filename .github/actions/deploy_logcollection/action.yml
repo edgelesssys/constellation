@@ -29,9 +29,9 @@ inputs:
   kubernetesVersion:
     description: "Kubernetes version of the cluster"
     required: false
-  selfManagedInfra:
-    description: "Use self-managed infrastructure instead of infrastructure created by the Constellation CLI."
-    default: "false"
+  clusterCreation:
+    description: "How the infrastructure for the e2e test was created. One of [cli, self-managed, terraform]."
+    default: "cli"
 
 runs:
   using: "composite"
@@ -57,7 +57,7 @@ runs:
          --fields github.e2e-test-provider="${{ inputs.provider }}" \
          --fields github.ref-stream="${{ inputs.refStream }}" \
          --fields github.kubernetes-version="${{ inputs.kubernetesVersion }}" \
-         --fields github.self-managed-infra="${{ inputs.selfManagedInfra }}" \
+         --fields github.cluster-creation="${{ inputs.clusterCreation }}" \
          --fields deployment-type="k8s"
 
     # Make sure that helm is installed

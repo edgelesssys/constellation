@@ -56,121 +56,147 @@ jobs:
             refStream: "ref/main/stream/debug/?"
             provider: "gcp"
             kubernetes-version: "v1.28"
+            clusterCreation: "cli"
           - test: "sonobuoy full"
             refStream: "ref/main/stream/debug/?"
             provider: "azure"
             kubernetes-version: "v1.28"
+            clusterCreation: "cli"
           - test: "sonobuoy full"
             refStream: "ref/main/stream/debug/?"
             provider: "aws"
             kubernetes-version: "v1.28"
+            clusterCreation: "cli"
 
           - test: "sonobuoy full"
             refStream: "ref/main/stream/debug/?"
             provider: "gcp"
             kubernetes-version: "v1.27"
+            clusterCreation: "cli"
           - test: "sonobuoy full"
             refStream: "ref/main/stream/debug/?"
             provider: "azure"
             kubernetes-version: "v1.27"
+            clusterCreation: "cli"
           - test: "sonobuoy full"
             refStream: "ref/main/stream/debug/?"
             provider: "aws"
             kubernetes-version: "v1.27"
+            clusterCreation: "cli"
 
           - test: "sonobuoy full"
             refStream: "ref/main/stream/debug/?"
             provider: "gcp"
             kubernetes-version: "v1.26"
+            clusterCreation: "cli"
           - test: "sonobuoy full"
             refStream: "ref/main/stream/debug/?"
             provider: "azure"
             kubernetes-version: "v1.26"
+            clusterCreation: "cli"
           - test: "sonobuoy full"
             refStream: "ref/main/stream/debug/?"
             provider: "aws"
             kubernetes-version: "v1.26"
+            clusterCreation: "cli"
 
           # verify test on latest k8s version
           - test: "verify"
             refStream: "ref/main/stream/debug/?"
             provider: "gcp"
             kubernetes-version: "v1.28"
+            clusterCreation: "cli"
           - test: "verify"
             refStream: "ref/main/stream/debug/?"
             provider: "azure"
             kubernetes-version: "v1.28"
             azureSNPEnforcementPolicy: "equal" # This run checks for unknown ID Key disgests.
+            clusterCreation: "cli"
           - test: "verify"
             provider: "aws"
             refStream: "ref/main/stream/debug/?"
             kubernetes-version: "v1.28"
+            clusterCreation: "cli"
 
           # recover test on latest k8s version
           - test: "recover"
             refStream: "ref/main/stream/debug/?"
             provider: "gcp"
             kubernetes-version: "v1.28"
+            clusterCreation: "cli"
           - test: "recover"
             refStream: "ref/main/stream/debug/?"
             provider: "azure"
             kubernetes-version: "v1.28"
+            clusterCreation: "cli"
           - test: "recover"
             refStream: "ref/main/stream/debug/?"
             provider: "aws"
             kubernetes-version: "v1.28"
+            clusterCreation: "cli"
 
           # lb test on latest k8s version
           - test: "lb"
             refStream: "ref/main/stream/debug/?"
             provider: "gcp"
             kubernetes-version: "v1.28"
+            clusterCreation: "cli"
           - test: "lb"
             refStream: "ref/main/stream/debug/?"
             provider: "azure"
             kubernetes-version: "v1.28"
+            clusterCreation: "cli"
           - test: "lb"
             refStream: "ref/main/stream/debug/?"
             provider: "aws"
             kubernetes-version: "v1.28"
+            clusterCreation: "cli"
 
           # autoscaling test on latest k8s version
           - test: "autoscaling"
             refStream: "ref/main/stream/debug/?"
             provider: "gcp"
             kubernetes-version: "v1.28"
+            clusterCreation: "cli"
           - test: "autoscaling"
             refStream: "ref/main/stream/debug/?"
             provider: "azure"
             kubernetes-version: "v1.28"
+            clusterCreation: "cli"
           - test: "autoscaling"
             refStream: "ref/main/stream/debug/?"
             provider: "aws"
             kubernetes-version: "v1.28"
+            clusterCreation: "cli"
 
           # perf-bench test on latest k8s version, not supported on AWS
           - test: "perf-bench"
             refStream: "ref/main/stream/debug/?"
             provider: "gcp"
             kubernetes-version: "v1.28"
+            clusterCreation: "cli"
           - test: "perf-bench"
             refStream: "ref/main/stream/debug/?"
             provider: "azure"
             kubernetes-version: "v1.28"
+            clusterCreation: "cli"
 
           # malicious join test on latest k8s version
           - test: "malicious join"
             refStream: "ref/main/stream/debug/?"
             provider: "gcp"
             kubernetes-version: "v1.28"
+            clusterCreation: "cli"
           - test: "malicious join"
             refStream: "ref/main/stream/debug/?"
             provider: "azure"
             kubernetes-version: "v1.28"
+            clusterCreation: "cli"
           - test: "malicious join"
             refStream: "ref/main/stream/debug/?"
             provider: "aws"
             kubernetes-version: "v1.28"
+            clusterCreation: "cli"
 
           # self-managed infra test on latest k8s version
           # with Sonobuoy full
@@ -178,23 +204,24 @@ jobs:
             refStream: "ref/main/stream/debug/?"
             provider: "gcp"
             kubernetes-version: "v1.28"
-            selfManagedInfra: "true"
+            clusterCreation: "self-managed"
           - test: "sonobuoy full"
             refStream: "ref/main/stream/debug/?"
             provider: "azure"
             kubernetes-version: "v1.28"
-            selfManagedInfra: "true"
+            clusterCreation: "self-managed"
           - test: "sonobuoy full"
             provider: "aws"
             refStream: "ref/main/stream/debug/?"
             kubernetes-version: "v1.28"
-            selfManagedInfra: "true"
+            clusterCreation: "self-managed"
 
           # s3proxy test on latest k8s version
           - test: "s3proxy"
             refStream: "ref/main/stream/debug/?"
             provider: "gcp"
             kubernetes-version: "v1.28"
+            clusterCreation: "cli"
 
           #
           # Tests on release-stable refStream
@@ -205,14 +232,17 @@ jobs:
             refStream: "ref/release/stream/stable/?"
             provider: "gcp"
             kubernetes-version: "v1.27"
+            clusterCreation: "cli"
           - test: "verify"
             refStream: "ref/release/stream/stable/?"
             provider: "azure"
             kubernetes-version: "v1.27"
+            clusterCreation: "cli"
           - test: "verify"
             refStream: "ref/release/stream/stable/?"
             provider: "aws"
             kubernetes-version: "v1.27"
+            clusterCreation: "cli"
 
     runs-on: ubuntu-22.04
     permissions:
@@ -256,7 +286,7 @@ jobs:
           cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
           fetchMeasurements: ${{ matrix.refStream != 'ref/release/stream/stable/?' }}
           azureSNPEnforcementPolicy: ${{ matrix.azureSNPEnforcementPolicy }}
-          selfManagedInfra: ${{ matrix.selfManagedInfra == 'true' }}
+          clusterCreation: ${{ matrix.clusterCreation }}
           s3AccessKey: ${{ secrets.AWS_ACCESS_KEY_ID_S3PROXY }}
           s3SecretKey: ${{ secrets.AWS_SECRET_ACCESS_KEY_S3PROXY }}
 
@@ -265,7 +295,7 @@ jobs:
         uses: ./.github/actions/constellation_destroy
         with:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
-          selfManagedInfra: ${{ matrix.selfManagedInfra == 'true' }}
+          clusterCreation: ${{ matrix.clusterCreation }}
           cloudProvider: ${{ matrix.provider }}
           azureClusterDeleteCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
           gcpClusterDeleteServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
@@ -291,7 +321,7 @@ jobs:
           test: ${{ matrix.test }}
           kubernetesVersion: ${{ matrix.kubernetes-version }}
           provider: ${{ matrix.provider }}
-          selfManagedInfra: ${{ matrix.selfManagedInfra == 'true' }}
+          clusterCreation: ${{ matrix.clusterCreation }}
 
   e2e-upgrade:
     strategy:

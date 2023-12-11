@@ -1,4 +1,4 @@
-name: e2e test self managed infrastructure
+name: e2e test Terraform provider
 
 on:
   workflow_dispatch:
@@ -41,8 +41,8 @@ on:
         description: "Kubernetes version to create the cluster from."
         default: "1.27"
         required: true
-      cliVersion:
-        description: "Version of a released CLI to download. Leave empty to build the CLI from the checked out ref."
+      releaseVersion:
+        description: "Version of a released provider to download. Leave empty to build the provider from the checked out ref."
         type: string
         default: ""
         required: false
@@ -80,9 +80,9 @@ jobs:
       runner: ${{ inputs.runner }}
       test: ${{ inputs.test }}
       kubernetesVersion: ${{ inputs.kubernetesVersion }}
-      cliVersion: ${{ inputs.cliVersion }}
+      cliVersion: ${{ inputs.releaseVersion }}
       imageVersion: ${{ inputs.imageVersion }}
       machineType: ${{ inputs.machineType }}
       regionZone: ${{ inputs.regionZone }}
       git-ref: ${{ inputs.git-ref }}
-      clusterCreation: "self-managed"
+      clusterCreation: "terraform"

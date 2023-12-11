@@ -49,107 +49,130 @@ jobs:
             provider: "gcp"
             kubernetes-version: "v1.28"
             runner: "ubuntu-22.04"
+            clusterCreation: "cli"
           - test: "sonobuoy full"
             provider: "azure"
             kubernetes-version: "v1.28"
             runner: "ubuntu-22.04"
+            clusterCreation: "cli"
           - test: "sonobuoy full"
             provider: "aws"
             kubernetes-version: "v1.28"
             runner: "ubuntu-22.04"
+            clusterCreation: "cli"
 
 
           - test: "sonobuoy full"
             provider: "gcp"
             kubernetes-version: "v1.27"
             runner: "ubuntu-22.04"
+            clusterCreation: "cli"
           - test: "sonobuoy full"
             provider: "azure"
             kubernetes-version: "v1.27"
             runner: "ubuntu-22.04"
+            clusterCreation: "cli"
           - test: "sonobuoy full"
             provider: "aws"
             kubernetes-version: "v1.27"
             runner: "ubuntu-22.04"
+            clusterCreation: "cli"
 
           - test: "sonobuoy full"
             provider: "gcp"
             kubernetes-version: "v1.26"
             runner: "ubuntu-22.04"
+            clusterCreation: "cli"
           - test: "sonobuoy full"
             provider: "azure"
             kubernetes-version: "v1.26"
             runner: "ubuntu-22.04"
+            clusterCreation: "cli"
           - test: "sonobuoy full"
             provider: "aws"
             kubernetes-version: "v1.26"
             runner: "ubuntu-22.04"
+            clusterCreation: "cli"
 
           # verify test on latest k8s version
           - test: "verify"
             provider: "gcp"
             kubernetes-version: "v1.28"
             runner: "ubuntu-22.04"
+            clusterCreation: "cli"
           - test: "verify"
             provider: "azure"
             kubernetes-version: "v1.28"
             runner: "ubuntu-22.04"
+            clusterCreation: "cli"
           - test: "verify"
             provider: "aws"
             kubernetes-version: "v1.28"
             runner: "ubuntu-22.04"
+            clusterCreation: "cli"
 
           # recover test on latest k8s version
           - test: "recover"
             provider: "gcp"
             kubernetes-version: "v1.28"
             runner: "ubuntu-22.04"
+            clusterCreation: "cli"
           - test: "recover"
             provider: "azure"
             kubernetes-version: "v1.28"
             runner: "ubuntu-22.04"
+            clusterCreation: "cli"
           - test: "recover"
             provider: "aws"
             kubernetes-version: "v1.28"
             runner: "ubuntu-22.04"
+            clusterCreation: "cli"
 
           # lb test on latest k8s version
           - test: "lb"
             provider: "gcp"
             kubernetes-version: "v1.28"
             runner: "ubuntu-22.04"
+            clusterCreation: "cli"
           - test: "lb"
             provider: "azure"
             kubernetes-version: "v1.28"
             runner: "ubuntu-22.04"
+            clusterCreation: "cli"
           - test: "lb"
             provider: "aws"
             kubernetes-version: "v1.28"
             runner: "ubuntu-22.04"
+            clusterCreation: "cli"
 
           # autoscaling test on latest k8s version
           - test: "autoscaling"
             provider: "gcp"
             kubernetes-version: "v1.28"
             runner: "ubuntu-22.04"
+            clusterCreation: "cli"
           - test: "autoscaling"
             provider: "azure"
             kubernetes-version: "v1.28"
             runner: "ubuntu-22.04"
+            clusterCreation: "cli"
           - test: "autoscaling"
             provider: "aws"
             kubernetes-version: "v1.28"
             runner: "ubuntu-22.04"
+            clusterCreation: "cli"
 
           # perf-bench test on latest k8s version, not supported on AWS
           - test: "perf-bench"
             provider: "gcp"
             kubernetes-version: "v1.28"
             runner: "ubuntu-22.04"
+            clusterCreation: "cli"
           - test: "perf-bench"
             provider: "azure"
             kubernetes-version: "v1.28"
             runner: "ubuntu-22.04"
+            clusterCreation: "cli"
 
           # self-managed infra test on latest k8s version
           # runs Sonobuoy full test
@@ -157,17 +180,17 @@ jobs:
             provider: "gcp"
             kubernetes-version: "v1.28"
             runner: "ubuntu-22.04"
-            selfManagedInfra: "true"
+            clusterCreation: "self-managed"
           - test: "sonobuoy full"
             provider: "azure"
             kubernetes-version: "v1.28"
             runner: "ubuntu-22.04"
-            selfManagedInfra: "true"
+            clusterCreation: "self-managed"
           - test: "sonobuoy full"
             provider: "aws"
             kubernetes-version: "v1.28"
             runner: "ubuntu-22.04"
-            selfManagedInfra: "true"
+            clusterCreation: "self-managed"
 
           # s3proxy test on latest k8s version
           - test: "s3proxy"
@@ -175,6 +198,7 @@ jobs:
             provider: "gcp"
             kubernetes-version: "v1.28"
             runner: "ubuntu-22.04"
+            clusterCreation: "cli"
 
           #
           # Tests on macOS runner
@@ -189,6 +213,7 @@ jobs:
             provider: "gcp"
             kubernetes-version: "v1.28"
             runner: "macos-12"
+            clusterCreation: "cli"
     runs-on: ${{ matrix.runner }}
     permissions:
       id-token: write
@@ -237,7 +262,7 @@ jobs:
           cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
           cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
           githubToken: ${{ secrets.GITHUB_TOKEN }}
-          selfManagedInfra: ${{ matrix.selfManagedInfra == 'true' }}
+          clusterCreation: ${{ matrix.clusterCreation }}
           s3AccessKey: ${{ secrets.AWS_ACCESS_KEY_ID_S3PROXY }}
           s3SecretKey: ${{ secrets.AWS_SECRET_ACCESS_KEY_S3PROXY }}
 
@@ -246,7 +271,7 @@ jobs:
         uses: ./.github/actions/constellation_destroy
         with:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
-          selfManagedInfra: ${{ matrix.selfManagedInfra == 'true' }}
+          clusterCreation: ${{ matrix.clusterCreation }}
           cloudProvider: ${{ matrix.provider }}
           azureClusterDeleteCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
           gcpClusterDeleteServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"

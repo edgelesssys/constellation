@@ -112,10 +112,10 @@ on:
         description: "Enable internal load balancer for the cluster."
         type: boolean
         default: false
-      selfManagedInfra:
-        description: "Use self-managed infrastructure."
-        type: boolean
-        default: false
+      clusterCreation:
+        description: "How to create infrastructure for the e2e test. One of [cli, self-managed, terraform]."
+        type: string
+        default: "cli"
       marketplaceImageVersion:
         description: "Marketplace image version to use."
         type: string
@@ -241,7 +241,7 @@ jobs:
           cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
           fetchMeasurements: ${{ contains(needs.find-latest-image.outputs.image, '/stream/stable/') }}
           internalLoadBalancer: ${{ inputs.internalLoadBalancer }}
-          selfManagedInfra: ${{ inputs.selfManagedInfra }}
+          clusterCreation: ${{ inputs.clusterCreation }}
           s3AccessKey: ${{ secrets.AWS_ACCESS_KEY_ID_S3PROXY }}
           s3SecretKey: ${{ secrets.AWS_SECRET_ACCESS_KEY_S3PROXY }}
           marketplaceImageVersion: ${{ inputs.marketplaceImageVersion }}
@@ -252,7 +252,7 @@ jobs:
         uses: ./.github/actions/constellation_destroy
         with:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
-          selfManagedInfra: ${{ inputs.selfManagedInfra }}
+          clusterCreation: ${{ inputs.clusterCreation }}
           cloudProvider: ${{ inputs.cloudProvider }}
           azureClusterDeleteCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
           gcpClusterDeleteServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
