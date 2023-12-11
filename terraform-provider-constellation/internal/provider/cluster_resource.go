@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/url"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/atls"
@@ -24,6 +25,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/constellation"
 	"github.com/edgelesssys/constellation/v2/internal/constellation/helm"
 	"github.com/edgelesssys/constellation/v2/internal/constellation/state"
@@ -400,10 +402,80 @@ func (r *ClusterResource) Delete(ctx context.Context, req resource.DeleteRequest
 }
 
 // ImportState imports to the resource.
-func (r *ClusterResource) ImportState(_ context.Context, _ resource.ImportStateRequest, _ *resource.ImportStateResponse) {
-	// TODO: Implement
+func (r *ClusterResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	expectedSchemaMsg := fmt.Sprintf(
+		"Expected URI of schema '%s://?%s=<...>&%s=<...>&%s=<...>&%s=<...>'",
+		constants.ConstellationClusterURIScheme, constants.KubeConfigURIKey, constants.ClusterEndpointURIKey,
+		constants.MasterSecretURIKey, constants.MasterSecretSaltURIKey)
 
-	// Take Kubeconfig, Cluster Endpoint and Master Secret and save to state
+	uri, err := url.Parse(req.ID)
+	if err != nil {
+		resp.Diagnostics.AddError("Parsing cluster URI",
+			fmt.Sprintf("Parsing cluster URI: %s.\n%s", err, expectedSchemaMsg))
+		return
+	}
+
+	if uri.Scheme != constants.ConstellationClusterURIScheme {
+		resp.Diagnostics.AddError("Parsing cluster URI",
+			fmt.Sprintf("Parsing cluster URI: Invalid scheme '%s'.\n%s", uri.Scheme, expectedSchemaMsg))
+		return
+	}
+
+	// Parse query parameters
+	query := uri.Query()
+	kubeConfig := query.Get(constants.KubeConfigURIKey)
+	clusterEndpoint := query.Get(constants.ClusterEndpointURIKey)
+	masterSecret := query.Get(constants.MasterSecretURIKey)
+	masterSecretSalt := query.Get(constants.MasterSecretSaltURIKey)
+
+	if kubeConfig == "" {
+		resp.Diagnostics.AddError("Parsing cluster URI",
+			fmt.Sprintf("Parsing cluster URI: Missing query parameter '%s'.\n%s", constants.KubeConfigURIKey, expectedSchemaMsg))
+		return
+	}
+
+	if clusterEndpoint == "" {
+		resp.Diagnostics.AddError("Parsing cluster URI",
+			fmt.Sprintf("Parsing cluster URI: Missing query parameter '%s'.\n%s", constants.ClusterEndpointURIKey, expectedSchemaMsg))
+		return
+	}
+
+	if masterSecret == "" {
+		resp.Diagnostics.AddError("Parsing cluster URI",
+			fmt.Sprintf("Parsing cluster URI: Missing query parameter '%s'.\n%s", constants.MasterSecretURIKey, expectedSchemaMsg))
+		return
+	}
+
+	if masterSecretSalt == "" {
+		resp.Diagnostics.AddError("Parsing cluster URI",
+			fmt.Sprintf("Parsing cluster URI: Missing query parameter '%s'.\n%s", constants.MasterSecretSaltURIKey, expectedSchemaMsg))
+		return
+	}
+
+	decodedKubeConfig, err := base64.StdEncoding.DecodeString(kubeConfig)
+	if err != nil {
+		resp.Diagnostics.AddError("Parsing cluster URI",
+			fmt.Sprintf("Parsing cluster URI: Decoding base64-encoded kubeconfig: %s.", err))
+		return
+	}
+
+	// Sanity checks for master secret and master secret salt
+	if _, err := hex.DecodeString(masterSecret); err != nil {
+		resp.Diagnostics.AddError("Parsing cluster URI",
+			fmt.Sprintf("Parsing cluster URI: Decoding hex-encoded master secret: %s.", err))
+		return
+	}
+
+	if _, err := hex.DecodeString(masterSecretSalt); err != nil {
+		resp.Diagnostics.AddError("Parsing cluster URI",
+			fmt.Sprintf("Parsing cluster URI: Decoding hex-encoded master secret salt: %s.", err))
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("kubeconfig"), string(decodedKubeConfig))...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("out_of_cluster_endpoint"), clusterEndpoint)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("master_secret"), masterSecret)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("master_secret_salt"), masterSecretSalt)...)
 }
 
 // apply applies changes to a cluster. It can be used for both creating and updating a cluster.

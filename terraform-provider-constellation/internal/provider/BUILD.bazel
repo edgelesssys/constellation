@@ -23,6 +23,7 @@ go_library(
         "//internal/cloud/azureshared",
         "//internal/cloud/cloudprovider",
         "//internal/config",
+        "//internal/constants",
         "//internal/constellation",
         "//internal/constellation/helm",
         "//internal/constellation/state",
@@ -53,33 +54,14 @@ go_test(
     name = "provider_test",
     srcs = [
         "attestation_data_source_test.go",
+        "cluster_resource_test.go",
         "convert_test.go",
-        "image_data_source_test.go",
-        "provider_test.go",
-    ],
-    embed = [":provider"],
-    deps = [
-        "//internal/attestation/idkeydigest",
-        "//internal/attestation/measurements",
-        "//internal/attestation/variant",
-        "//internal/config",
-        "@com_github_hashicorp_terraform_plugin_framework//providerserver",
-        "@com_github_hashicorp_terraform_plugin_go//tfprotov6",
-        "@com_github_hashicorp_terraform_plugin_testing//helper/resource",
-        "@com_github_stretchr_testify//assert",
-        "@com_github_stretchr_testify//require",
-        "@io_bazel_rules_go//go/runfiles:go_default_library",
-    ],
-)
-
-go_test(
-    name = "provider_acc_test",
-    srcs = [
         "image_data_source_test.go",
         "provider_test.go",
     ],
     # keep
     count = 1,
+    # keep
     data = [
         "//bazel/ci:com_github_hashicorp_terraform",
     ],
@@ -98,9 +80,16 @@ go_test(
     # keep
     x_defs = {"runsUnder": "bazel"},
     deps = [
+        "//internal/attestation/idkeydigest",
+        "//internal/attestation/measurements",
+        "//internal/attestation/variant",
+        "//internal/config",
         "@com_github_hashicorp_terraform_plugin_framework//providerserver",
         "@com_github_hashicorp_terraform_plugin_go//tfprotov6",
         "@com_github_hashicorp_terraform_plugin_testing//helper/resource",
+        "@com_github_hashicorp_terraform_plugin_testing//terraform",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
         "@io_bazel_rules_go//go/runfiles:go_default_library",
     ],
 )

@@ -268,6 +268,21 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAELcPl4Ik+qZuH4K049wksoXK/Os3Z
 b92PDCpM7FZAINQF88s1TZS/HmRXYk62UJ4eqPduvUnJmXhNikhLbMi6fw==
 -----END PUBLIC KEY-----
 `
+
+	//
+	// Terraform Provider
+	//
+
+	// ConstellationClusterURIScheme is the scheme used in Terraform Constellation cluster import URIs.
+	ConstellationClusterURIScheme = "constellation-cluster"
+	// KubeConfigURIKey is the key used for the KubeConfig in Terraform Constellation cluster import URIs.
+	KubeConfigURIKey = "kubeConfig"
+	// ClusterEndpointURIKey is the key used for the cluster endpoint in Terraform Constellation cluster import URIs.
+	ClusterEndpointURIKey = "clusterEndpoint"
+	// MasterSecretURIKey is the key used for the master secret in Terraform Constellation cluster import URIs.
+	MasterSecretURIKey = "masterSecret"
+	// MasterSecretSaltURIKey is the key used for the master secret salt in Terraform Constellation cluster import URIs.
+	MasterSecretSaltURIKey = "masterSecretSalt"
 )
 
 // BinaryVersion returns the version of this Binary.
