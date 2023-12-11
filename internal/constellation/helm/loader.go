@@ -239,7 +239,7 @@ func (i *chartLoader) loadCertManagerValues() map[string]any {
 		"startupapicheck": map[string]any{
 			"timeout": "5m",
 			"extraArgs": []string{
-				"--verbose",
+				"-v",
 			},
 			"tolerations": controlPlaneTolerations,
 		},
