@@ -42,6 +42,7 @@ jobs:
           disk_mapper: "//disk-mapper/cmd:disk-mapper_linux_amd64"
           measurement_reader: "//measurement-reader/cmd:measurement-reader_linux_amd64"
           cli: "//cli:all"
+          terraform_provider: "//terraform-provider-constellation:all"
 
         run: |
           bazel build \
@@ -51,7 +52,5 @@ jobs:
             "${cdbg}" \
             "${disk_mapper}" \
             "${measurement_reader}" \
-            "${cli}"
-
-      - name: Build Terraform Provider Binary
-        uses: ./.github/actions/build_tf_provider
+            "${cli}" \
+            "${terraform_provider}"
