@@ -14,7 +14,7 @@ output "uid" {
   value = "qemu" // placeholder
 }
 
-output "initSecret" {
+output "init_secret" {
   value     = random_password.initSecret.result
   sensitive = true
 }

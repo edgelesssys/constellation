@@ -14,7 +14,7 @@ output "uid" {
   value = local.uid
 }
 
-output "initSecret" {
+output "init_secret" {
   value     = random_password.initSecret.result
   sensitive = true
 }

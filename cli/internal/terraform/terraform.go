@@ -209,13 +209,13 @@ func (c *Client) ShowInfrastructure(ctx context.Context, provider cloudprovider.
 		return state.Infrastructure{}, fmt.Errorf("convert api_server_cert_sans output: %w", err)
 	}
 
-	secretOutput, ok := tfState.Values.Outputs["initSecret"]
+	secretOutput, ok := tfState.Values.Outputs["init_secret"]
 	if !ok {
-		return state.Infrastructure{}, errors.New("no initSecret output found")
+		return state.Infrastructure{}, errors.New("no init_secret output found")
 	}
 	secret, ok := secretOutput.Value.(string)
 	if !ok {
-		return state.Infrastructure{}, errors.New("invalid type in initSecret output: not a string")
+		return state.Infrastructure{}, errors.New("invalid type in init_Secret output: not a string")
 	}
 
 	uidOutput, ok := tfState.Values.Outputs["uid"]
@@ -280,13 +280,13 @@ func (c *Client) ShowInfrastructure(ctx context.Context, provider cloudprovider.
 			IPCidrPod: cidrPods,
 		}
 	case cloudprovider.Azure:
-		attestationURLOutput, ok := tfState.Values.Outputs["attestationURL"]
+		attestationURLOutput, ok := tfState.Values.Outputs["attestation_url"]
 		if !ok {
-			return state.Infrastructure{}, errors.New("no attestationURL output found")
+			return state.Infrastructure{}, errors.New("no attestation_url output found")
 		}
 		attestationURL, ok := attestationURLOutput.Value.(string)
 		if !ok {
-			return state.Infrastructure{}, errors.New("invalid type in attestationURL output: not a string")
+			return state.Infrastructure{}, errors.New("invalid type in attestation_url output: not a string")
 		}
 
 		azureUAMIOutput, ok := tfState.Values.Outputs["user_assigned_identity_client_id"]

@@ -25,12 +25,12 @@ output "uid" {
   value = local.uid
 }
 
-output "initSecret" {
+output "init_secret" {
   value     = random_password.initSecret.result
   sensitive = true
 }
 
-output "attestationURL" {
+output "attestation_url" {
   value = var.create_maa ? azurerm_attestation_provider.attestation_provider[0].attestation_uri : ""
 }
 
