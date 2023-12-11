@@ -32,9 +32,21 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"k8s.io/client-go/tools/clientcmd"
+	k8sclientapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
 func TestInit(t *testing.T) {
+	respKubeconfig := k8sclientapi.Config{
+		Clusters: map[string]*k8sclientapi.Cluster{
+			"cluster": {
+				Server: "https://192.0.2.1:6443",
+			},
+		},
+	}
+	respKubeconfigBytes, err := clientcmd.Write(respKubeconfig)
+	require.NoError(t, err)
+
 	clusterEndpoint := "192.0.2.1"
 	newState := func(endpoint string) *state.State {
 		return &state.State{
@@ -62,6 +74,20 @@ func TestInit(t *testing.T) {
 				&initproto.InitResponse{
 					Kind: &initproto.InitResponse_InitSuccess{
 						InitSuccess: &initproto.InitSuccessResponse{
+							Kubeconfig: respKubeconfigBytes,
+							OwnerId:    []byte{},
+							ClusterId:  []byte{},
+						},
+					},
+				}),
+			state:              newState(clusterEndpoint),
+			initServerEndpoint: clusterEndpoint,
+		},
+		"kubeconfig without clusters": {
+			server: newInitServer(nil,
+				&initproto.InitResponse{
+					Kind: &initproto.InitResponse_InitSuccess{
+						InitSuccess: &initproto.InitSuccessResponse{
 							Kubeconfig: []byte{},
 							OwnerId:    []byte{},
 							ClusterId:  []byte{},
@@ -70,6 +96,7 @@ func TestInit(t *testing.T) {
 				}),
 			state:              newState(clusterEndpoint),
 			initServerEndpoint: clusterEndpoint,
+			wantErr:            true,
 		},
 		"no response": {
 			server:             newInitServer(nil),
@@ -135,7 +162,7 @@ func TestInit(t *testing.T) {
 				&initproto.InitResponse{
 					Kind: &initproto.InitResponse_InitSuccess{
 						InitSuccess: &initproto.InitSuccessResponse{
-							Kubeconfig: []byte{},
+							Kubeconfig: respKubeconfigBytes,
 							OwnerId:    []byte{},
 							ClusterId:  []byte{},
 						},
