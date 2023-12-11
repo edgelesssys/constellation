@@ -22,6 +22,13 @@
       callPackage = pkgsUnstable.callPackage;
 
       mkosiDev = (pkgsUnstable.mkosi.overrideAttrs (oldAttrs: rec {
+        # TODO(malt3): remove patch once merged and released upstream (systemd/mkosi#2163)
+        src = pkgsUnstable.fetchFromGitHub {
+          owner = "systemd";
+          repo = "mkosi";
+          rev = "5629e6b88ef4bfc8d372682350bfcdf0963f75d3";
+          hash = "sha256-4VwAaZYj8CoWJbOa8+C/TriPUijowQ0OCzxxgDFh1tE=";
+        };
         propagatedBuildInputs = oldAttrs.propagatedBuildInputs ++ (with pkgsUnstable;  [
           # package management
           dnf5
@@ -34,6 +41,9 @@
           cryptsetup # dm-verity
           util-linux # flock
           kmod # depmod
+          cpio # cpio
+          zstd # zstd
+          xz # xz
         ]);
       }));
 
