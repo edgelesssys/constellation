@@ -121,8 +121,9 @@ jobs:
           - arch: amd64
             os: darwin
 
-          - arch: amd64
-            os: windows
+          # No Windows release until we have a test suite for it
+          #- arch: amd64
+          #  os: windows
 
           - arch: arm64
             os: linux
@@ -246,8 +247,8 @@ jobs:
             terraform-provider-constellation-darwin-amd64 \
             terraform-provider-constellation-darwin-arm64 \
             terraform-provider-constellation-linux-amd64 \
-            terraform-provider-constellation-linux-arm64 \
-            terraform-provider-constellation-windows-amd64.exe)
+            terraform-provider-constellation-linux-arm64)
+          # terraform-provider-constellation-windows-amd64.exe)
           HASHESB64=$(echo "${HASHES}" | base64 -w0)
           echo "${HASHES}"
           echo "${HASHESB64}"
@@ -386,9 +387,9 @@ jobs:
           slsa-verifier verify-artifact terraform-provider-constellation-linux-arm64 \
             --provenance-path ${{ needs.provenance.outputs.provenance-name }} \
             --source-uri github.com/edgelesssys/constellation
-          slsa-verifier verify-artifact terraform-provider-constellation-windows-amd64.exe \
-            --provenance-path ${{ needs.provenance.outputs.provenance-name }} \
-            --source-uri github.com/edgelesssys/constellation
+          #slsa-verifier verify-artifact terraform-provider-constellation-windows-amd64.exe \
+          #  --provenance-path ${{ needs.provenance.outputs.provenance-name }} \
+          #  --source-uri github.com/edgelesssys/constellation
 
           slsa-verifier verify-artifact constellation.spdx.sbom \
             --provenance-path ${{ needs.provenance.outputs.provenance-name }} \
