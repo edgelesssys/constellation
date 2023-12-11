@@ -27,6 +27,7 @@ go_library(
         "//internal/cloud/openstack",
         "//internal/config",
         "//internal/constants",
+        "//internal/constellation",
         "//internal/constellation/state",
         "//internal/file",
         "//internal/imagefetcher",

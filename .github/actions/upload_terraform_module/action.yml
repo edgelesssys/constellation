@@ -19,10 +19,10 @@ runs:
       shell: bash
       run: |
         sed -i "s/@@CONSTELLATION_VERSION@@/${{ inputs.version }}/g" \
-          terraform-module/constellation-cluster/variables.tf \
-          terraform-module/aws-constellation/variables.tf \
-          terraform-module/azure-constellation/variables.tf \
-          terraform-module/gcp-constellation/variables.tf
+          terraform-module/legacy-module/constellation-cluster/variables.tf \
+          terraform-module/legacy-module/aws-constellation/variables.tf \
+          terraform-module/legacy-module/azure-constellation/variables.tf \
+          terraform-module/legacy-module/gcp-constellation/variables.tf
 
     - name: Zip terraform dir
       shell: bash

@@ -19,7 +19,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
@@ -823,7 +822,7 @@ type applier interface {
 	Init(
 		ctx context.Context, validator atls.Validator, state *state.State,
 		clusterLogWriter io.Writer, payload constellation.InitPayload,
-	) (*initproto.InitSuccessResponse, error)
+	) (constellation.InitOutput, error)
 
 	// methods required to install/upgrade Helm charts
 

@@ -9,7 +9,6 @@ package cmd
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
 	"fmt"
 	"strings"
 	"testing"
@@ -79,10 +78,10 @@ func TestInitialize(t *testing.T) {
 		AuthProviderX509CertURL: "cert",
 		ClientX509CertURL:       "client_cert",
 	}
-	testInitResp := &initproto.InitSuccessResponse{
+	testInitOutput := constellation.InitOutput{
 		Kubeconfig: respKubeconfigBytes,
-		OwnerId:    []byte("ownerID"),
-		ClusterId:  []byte("clusterID"),
+		OwnerID:    "ownerID",
+		ClusterID:  "clusterID",
 	}
 	serviceAccPath := "/test/service-account.json"
 
@@ -91,7 +90,7 @@ func TestInitialize(t *testing.T) {
 		stateFile               *state.State
 		configMutator           func(*config.Config)
 		serviceAccKey           *gcpshared.ServiceAccountKey
-		initResponse            *initproto.InitSuccessResponse
+		initOutput              constellation.InitOutput
 		initErr                 error
 		retriable               bool
 		masterSecretShouldExist bool
@@ -102,17 +101,17 @@ func TestInitialize(t *testing.T) {
 			stateFile:     preInitStateFile(cloudprovider.GCP),
 			configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
 			serviceAccKey: gcpServiceAccKey,
-			initResponse:  testInitResp,
+			initOutput:    testInitOutput,
 		},
 		"initialize some azure instances": {
-			provider:     cloudprovider.Azure,
-			stateFile:    preInitStateFile(cloudprovider.Azure),
-			initResponse: testInitResp,
+			provider:   cloudprovider.Azure,
+			stateFile:  preInitStateFile(cloudprovider.Azure),
+			initOutput: testInitOutput,
 		},
 		"initialize some qemu instances": {
-			provider:     cloudprovider.QEMU,
-			stateFile:    preInitStateFile(cloudprovider.QEMU),
-			initResponse: testInitResp,
+			provider:   cloudprovider.QEMU,
+			stateFile:  preInitStateFile(cloudprovider.QEMU),
+			initOutput: testInitOutput,
 		},
 		"non retriable error": {
 			provider:                cloudprovider.QEMU,
@@ -135,7 +134,7 @@ func TestInitialize(t *testing.T) {
 			stateFile:     &state.State{Version: "invalid"},
 			configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
 			serviceAccKey: gcpServiceAccKey,
-			initResponse:  testInitResp,
+			initOutput:    testInitOutput,
 			retriable:     true,
 			wantErr:       true,
 		},
@@ -144,7 +143,7 @@ func TestInitialize(t *testing.T) {
 			stateFile:     &state.State{},
 			configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
 			serviceAccKey: gcpServiceAccKey,
-			initResponse:  testInitResp,
+			initOutput:    testInitOutput,
 			retriable:     true,
 			wantErr:       true,
 		},
@@ -152,7 +151,7 @@ func TestInitialize(t *testing.T) {
 			provider:      cloudprovider.GCP,
 			configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
 			serviceAccKey: gcpServiceAccKey,
-			initResponse:  testInitResp,
+			initOutput:    testInitOutput,
 			retriable:     true,
 			wantErr:       true,
 		},
@@ -167,9 +166,9 @@ func TestInitialize(t *testing.T) {
 			wantErr:                 true,
 		},
 		"k8s version without v works": {
-			provider:     cloudprovider.Azure,
-			stateFile:    preInitStateFile(cloudprovider.Azure),
-			initResponse: testInitResp,
+			provider:   cloudprovider.Azure,
+			stateFile:  preInitStateFile(cloudprovider.Azure),
+			initOutput: testInitOutput,
 			configMutator: func(c *config.Config) {
 				res, err := versions.NewValidK8sVersion(strings.TrimPrefix(string(versions.Default), "v"), true)
 				require.NoError(t, err)
@@ -177,9 +176,9 @@ func TestInitialize(t *testing.T) {
 			},
 		},
 		"outdated k8s patch version doesn't work": {
-			provider:     cloudprovider.Azure,
-			stateFile:    preInitStateFile(cloudprovider.Azure),
-			initResponse: testInitResp,
+			provider:   cloudprovider.Azure,
+			stateFile:  preInitStateFile(cloudprovider.Azure),
+			initOutput: testInitOutput,
 			configMutator: func(c *config.Config) {
 				v, err := semver.New(versions.SupportedK8sVersions()[0])
 				require.NoError(t, err)
@@ -239,7 +238,7 @@ func TestInitialize(t *testing.T) {
 					},
 					measurementSalt: bytes.Repeat([]byte{0x03}, 32),
 					initErr:         tc.initErr,
-					initResponse:    tc.initResponse,
+					initOutput:      tc.initOutput,
 					stubKubernetesUpgrader: &stubKubernetesUpgrader{
 						// On init, no attestation config exists yet
 						getClusterAttestationConfigErr: k8serrors.NewNotFound(schema.GroupResource{}, ""),
@@ -266,7 +265,7 @@ func TestInitialize(t *testing.T) {
 			}
 			require.NoError(err)
 			// assert.Contains(out.String(), base64.StdEncoding.EncodeToString([]byte("ownerID")))
-			assert.Contains(out.String(), hex.EncodeToString([]byte("clusterID")))
+			assert.Contains(out.String(), "clusterID")
 			var secret uri.MasterSecret
 			assert.NoError(fileHandler.ReadJSON(constants.MasterSecretFilename, &secret))
 			assert.NotEmpty(secret.Key)
@@ -317,7 +316,7 @@ func TestWriteOutput(t *testing.T) {
 	respKubeconfig := k8sclientapi.Config{
 		Clusters: map[string]*k8sclientapi.Cluster{
 			"cluster": {
-				Server: "https://192.0.2.1:6443",
+				Server: "https://cluster-endpoint:6443",
 			},
 		},
 	}
@@ -333,9 +332,14 @@ func TestWriteOutput(t *testing.T) {
 			},
 		},
 	}
+	ownerID := string(resp.GetInitSuccess().GetOwnerId())
+	clusterID := string(resp.GetInitSuccess().GetClusterId())
+	initOutput := constellation.InitOutput{
+		OwnerID:    "ownerID",
+		ClusterID:  "clusterID",
+		Kubeconfig: respKubeconfigBytes,
+	}
 
-	ownerID := hex.EncodeToString(resp.GetInitSuccess().GetOwnerId())
-	clusterID := hex.EncodeToString(resp.GetInitSuccess().GetClusterId())
 	measurementSalt := []byte{0x41}
 
 	expectedStateFile := &state.State{
@@ -343,7 +347,7 @@ func TestWriteOutput(t *testing.T) {
 		ClusterValues: state.ClusterValues{
 			ClusterID:       clusterID,
 			OwnerID:         ownerID,
-			MeasurementSalt: []byte{0x41},
+			MeasurementSalt: measurementSalt,
 		},
 		Infrastructure: state.Infrastructure{
 			APIServerCertSANs: []string{},
@@ -365,8 +369,9 @@ func TestWriteOutput(t *testing.T) {
 		spinner:     &nopSpinner{},
 		merger:      &stubMerger{},
 		log:         logger.NewTest(t),
+		applier:     constellation.NewApplier(logger.NewTest(t), &nopSpinner{}, nil),
 	}
-	err = i.writeInitOutput(stateFile, resp.GetInitSuccess(), false, &out, measurementSalt)
+	err = i.writeInitOutput(stateFile, initOutput, false, &out, measurementSalt)
 	require.NoError(err)
 	assert.Contains(out.String(), clusterID)
 	assert.Contains(out.String(), constants.AdminConfFilename)
@@ -386,7 +391,7 @@ func TestWriteOutput(t *testing.T) {
 
 	// test custom workspace
 	i.flags.pathPrefixer = pathprefix.New("/some/path")
-	err = i.writeInitOutput(stateFile, resp.GetInitSuccess(), true, &out, measurementSalt)
+	err = i.writeInitOutput(stateFile, initOutput, true, &out, measurementSalt)
 	require.NoError(err)
 	assert.Contains(out.String(), clusterID)
 	assert.Contains(out.String(), i.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename))
@@ -396,7 +401,7 @@ func TestWriteOutput(t *testing.T) {
 	i.flags.pathPrefixer = pathprefix.PathPrefixer{}
 
 	// test config merging
-	err = i.writeInitOutput(stateFile, resp.GetInitSuccess(), true, &out, measurementSalt)
+	err = i.writeInitOutput(stateFile, initOutput, true, &out, measurementSalt)
 	require.NoError(err)
 	assert.Contains(out.String(), clusterID)
 	assert.Contains(out.String(), constants.AdminConfFilename)
@@ -407,7 +412,7 @@ func TestWriteOutput(t *testing.T) {
 
 	// test config merging with env vars set
 	i.merger = &stubMerger{envVar: "/some/path/to/kubeconfig"}
-	err = i.writeInitOutput(stateFile, resp.GetInitSuccess(), true, &out, measurementSalt)
+	err = i.writeInitOutput(stateFile, initOutput, true, &out, measurementSalt)
 	require.NoError(err)
 	assert.Contains(out.String(), clusterID)
 	assert.Contains(out.String(), constants.AdminConfFilename)

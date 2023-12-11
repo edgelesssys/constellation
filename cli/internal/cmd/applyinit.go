@@ -8,16 +8,12 @@ package cmd
 
 import (
 	"bytes"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
-	"net"
-	"net/url"
 	"path/filepath"
 	"text/tabwriter"
 
-	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -26,7 +22,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/spf13/cobra"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 // runInit runs the init RPC to set up the Kubernetes cluster.
@@ -106,48 +101,24 @@ func (a *applyCmd) generateAndPersistMasterSecret(outWriter io.Writer) (uri.Mast
 // writeInitOutput writes the output of a cluster initialization to the
 // state- / kubeconfig-file and saves it to disk.
 func (a *applyCmd) writeInitOutput(
-	stateFile *state.State, initResp *initproto.InitSuccessResponse,
+	stateFile *state.State, initResp constellation.InitOutput,
 	mergeConfig bool, wr io.Writer, measurementSalt []byte,
 ) error {
 	fmt.Fprint(wr, "Your Constellation cluster was successfully initialized.\n\n")
 
-	ownerID := hex.EncodeToString(initResp.GetOwnerId())
-	clusterID := hex.EncodeToString(initResp.GetClusterId())
-
 	stateFile.SetClusterValues(state.ClusterValues{
 		MeasurementSalt: measurementSalt,
-		OwnerID:         ownerID,
-		ClusterID:       clusterID,
+		OwnerID:         initResp.OwnerID,
+		ClusterID:       initResp.ClusterID,
 	})
 
 	tw := tabwriter.NewWriter(wr, 0, 0, 2, ' ', 0)
-	writeRow(tw, "Constellation cluster identifier", clusterID)
+	writeRow(tw, "Constellation cluster identifier", initResp.ClusterID)
 	writeRow(tw, "Kubernetes configuration", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename))
 	tw.Flush()
 	fmt.Fprintln(wr)
 
-	a.log.Debugf("Rewriting cluster server address in kubeconfig to %s", stateFile.Infrastructure.ClusterEndpoint)
-	kubeconfig, err := clientcmd.Load(initResp.GetKubeconfig())
-	if err != nil {
-		return fmt.Errorf("loading kubeconfig: %w", err)
-	}
-	if len(kubeconfig.Clusters) != 1 {
-		return fmt.Errorf("expected exactly one cluster in kubeconfig, got %d", len(kubeconfig.Clusters))
-	}
-	for _, cluster := range kubeconfig.Clusters {
-		kubeEndpoint, err := url.Parse(cluster.Server)
-		if err != nil {
-			return fmt.Errorf("parsing kubeconfig server URL: %w", err)
-		}
-		kubeEndpoint.Host = net.JoinHostPort(stateFile.Infrastructure.ClusterEndpoint, kubeEndpoint.Port())
-		cluster.Server = kubeEndpoint.String()
-	}
-	kubeconfigBytes, err := clientcmd.Write(*kubeconfig)
-	if err != nil {
-		return fmt.Errorf("marshaling kubeconfig: %w", err)
-	}
-
-	if err := a.fileHandler.Write(constants.AdminConfFilename, kubeconfigBytes, file.OptNone); err != nil {
+	if err := a.fileHandler.Write(constants.AdminConfFilename, initResp.Kubeconfig, file.OptNone); err != nil {
 		return fmt.Errorf("writing kubeconfig: %w", err)
 	}
 	a.log.Debugf("Kubeconfig written to %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename))

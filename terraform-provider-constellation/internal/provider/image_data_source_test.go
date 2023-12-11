@@ -50,7 +50,7 @@ func TestAccImageDataSource(t *testing.T) {
 						csp                 = "azure"
 					}
 				`,
-					Check: resource.TestCheckResourceAttr("data.constellation_image.test", "reference", "/CommunityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/Images/constellation/Versions/2.13.0"), // should be immutable
+					Check: resource.TestCheckResourceAttr("data.constellation_image.test", "reference", "/communityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/images/constellation/versions/2.13.0"), // should be immutable
 
 				},
 			},

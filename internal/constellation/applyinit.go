@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/url"
 	"strconv"
 	"sync"
 	"time"
@@ -26,6 +27,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/retry"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"google.golang.org/grpc"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 // InitPayload contains the configurable data for the init RPC.
@@ -50,7 +52,7 @@ func (a *Applier) Init(
 	clusterLogWriter io.Writer,
 	payload InitPayload,
 ) (
-	*initproto.InitSuccessResponse,
+	InitOutput,
 	error,
 ) {
 	// Prepare the Request
@@ -91,12 +93,48 @@ func (a *Applier) Init(
 	a.spinner.Start("Connecting ", false)
 	retrier := retry.NewIntervalRetrier(doer, 30*time.Second, serviceIsUnavailable)
 	if err := retrier.Do(ctx); err != nil {
-		return nil, fmt.Errorf("doing init call: %w", err)
+		return InitOutput{}, fmt.Errorf("doing init call: %w", err)
 	}
 	a.spinner.Stop()
 	a.log.Debugf("Initialization request finished")
 
-	return doer.resp, nil
+	a.log.Debugf("Rewriting cluster server address in kubeconfig to %s", state.Infrastructure.ClusterEndpoint)
+	kubeconfig, err := clientcmd.Load(doer.resp.Kubeconfig)
+	if err != nil {
+		return InitOutput{}, fmt.Errorf("loading kubeconfig: %w", err)
+	}
+	if len(kubeconfig.Clusters) != 1 {
+		return InitOutput{}, fmt.Errorf("expected exactly one cluster in kubeconfig, got %d", len(kubeconfig.Clusters))
+	}
+	for _, cluster := range kubeconfig.Clusters {
+		kubeEndpoint, err := url.Parse(cluster.Server)
+		if err != nil {
+			return InitOutput{}, fmt.Errorf("parsing kubeconfig server URL: %w", err)
+		}
+		kubeEndpoint.Host = net.JoinHostPort(state.Infrastructure.ClusterEndpoint, kubeEndpoint.Port())
+		cluster.Server = kubeEndpoint.String()
+	}
+
+	kubeconfigBytes, err := clientcmd.Write(*kubeconfig)
+	if err != nil {
+		return InitOutput{}, fmt.Errorf("writing kubeconfig: %w", err)
+	}
+
+	return InitOutput{
+		ClusterID:  string(doer.resp.OwnerId),
+		OwnerID:    string(doer.resp.ClusterId),
+		Kubeconfig: kubeconfigBytes,
+	}, nil
+}
+
+// InitOutput contains the output of the init RPC.
+type InitOutput struct {
+	// ClusterID is the ID of the cluster.
+	ClusterID string
+	// OwnerID is the ID of the owner of the cluster.
+	OwnerID string
+	// Kubeconfig is the kubeconfig for the cluster.
+	Kubeconfig []byte
 }
 
 // the initDoer performs the actual init RPC with retry logic.
