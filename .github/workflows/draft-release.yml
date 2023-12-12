@@ -458,9 +458,9 @@ jobs:
 
             mkdir -p "${folder_name}"
             if [[ "${ext}" = "exe" ]]; then
-              cp "${file}" "${folder_name}/terraform-provider-constellation_${version}.exe"
+              cp "${file}" "${folder_name}/terraform-provider-constellation_v${version}.exe"
             else
-              cp "${file}" "${folder_name}/terraform-provider-constellation_${version}"
+              cp "${file}" "${folder_name}/terraform-provider-constellation_v${version}"
             fi
             zip -r "${folder_name}.zip" "${folder_name}"
             rm -r "${folder_name}"
