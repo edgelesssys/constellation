@@ -12,6 +12,7 @@ sh_template(
         "//terraform-provider-constellation:terraform_rc",
         "//terraform-provider-constellation:tf_provider",
         "//upgrade-agent/cmd:upgrade_agent_linux_amd64",
+        "@gnused//:bin/sed",
         "@yq_toolchains//:resolved_toolchain",
     ],
     substitutions = {
@@ -20,6 +21,7 @@ sh_template(
         "@@CLI@@": "$(rootpath //cli:cli_edition_host)",
         "@@CONTAINER_SUMS@@": "$(rootpath //bazel/release:container_sums)",
         "@@EDITION@@": "$(rootpath :devbuild_cli_edition)",
+        "@@SED@@": "$(rootpath @gnused//:bin/sed)",
         "@@TERRAFORM_PROVIDER@@": "$(rootpath //terraform-provider-constellation:tf_provider)",
         "@@TERRAFORM_RC@@": "$(rootpath //terraform-provider-constellation:terraform_rc)",
         "@@UPGRADE_AGENT@@": "$(rootpath //upgrade-agent/cmd:upgrade_agent_linux_amd64)",

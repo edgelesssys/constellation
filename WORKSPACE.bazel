@@ -91,6 +91,11 @@ nixpkgs_package(
     repository = "@nixpkgs",
 )
 
+nixpkgs_package(
+    name = "gnused",
+    repository = "@nixpkgs",
+)
+
 load("//nix/cc:nixpkgs_cc_libraries.bzl", "nixpkgs_cc_library_deps")
 
 nixpkgs_cc_library_deps()

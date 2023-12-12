@@ -16,6 +16,8 @@ fi
 
 yq=$(realpath @@YQ@@)
 stat "${yq}" >> /dev/null
+sed=$(realpath @@SED@@)
+stat "${sed}" >> /dev/null
 bootstrapper=$(realpath @@BOOTSTRAPPER@@)
 stat "${bootstrapper}" >> /dev/null
 upgrade_agent=$(realpath @@UPGRADE_AGENT@@)
@@ -70,7 +72,7 @@ TF_PROVIDER_DIR="${workdir}/terraform"
 mkdir -p "${TF_PROVIDER_DIR}"
 ln -sf "$(replace_prefix "${host_cache}" "${builder_cache}" "${terraform_provider}")" "${TF_PROVIDER_DIR}/terraform-provider-constellation"
 cp "$(replace_prefix "${host_cache}" "${builder_cache}" "${terraform_rc}")" "${TF_PROVIDER_DIR}/config.tfrc"
-sed -i "s|@@TERRAFORM_PROVIDER_PATH@@|$(dirname "${terraform_provider}")|g" "${TF_PROVIDER_DIR}/config.tfrc"
+${sed} -i "s|@@TERRAFORM_PROVIDER_PATH@@|$(dirname "${terraform_provider}")|g" "${TF_PROVIDER_DIR}/config.tfrc"
 
 build_version=$("${cli}" version | grep ^Version: | awk '{print $2}')
 if [[ ! -f "${workdir}/constellation-conf.yaml" ]]; then
