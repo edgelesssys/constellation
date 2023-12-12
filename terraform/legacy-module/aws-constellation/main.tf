@@ -32,8 +32,8 @@ module "aws" {
   source                                  = "../../infrastructure/aws"
   name                                    = var.name
   node_groups                             = var.node_groups
-  iam_instance_profile_name_worker_nodes  = module.aws_iam.worker_nodes_instance_profile_name
-  iam_instance_profile_name_control_plane = module.aws_iam.control_plane_instance_profile_name
+  iam_instance_profile_name_worker_nodes  = module.aws_iam.iam_instance_profile_name_worker_nodes
+  iam_instance_profile_name_control_plane = module.aws_iam.iam_instance_profile_name_control_plane
   image_id                                = module.fetch_image.image
   region                                  = local.region
   zone                                    = var.zone
