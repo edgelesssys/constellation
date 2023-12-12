@@ -55,7 +55,7 @@ locals {
     for name, node_group in var.node_groups : node_group.role => name...
   }
   control_plane_instance_groups = [
-    for control_plane in local.node_groups_by_role["control-plane"] : module.instance_group[control_plane].instance_group
+    for control_plane in local.node_groups_by_role["control-plane"] : module.instance_group[control_plane].instance_group_url
   ]
   in_cluster_endpoint     = var.internal_load_balancer ? google_compute_address.loadbalancer_ip_internal[0].address : google_compute_global_address.loadbalancer_ip[0].address
   out_of_cluster_endpoint = var.debug && var.internal_load_balancer ? module.jump_host[0].ip : local.in_cluster_endpoint

@@ -107,5 +107,5 @@ runs:
           yq eval ".infrastructure.azure.attestationURL =\"$(terraform output attestation_url | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
         elif [[ "${{ inputs.cloudProvider }}" == 'gcp' ]]; then
           yq eval ".infrastructure.gcp.projectID =\"$(terraform output project | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
-          yq eval ".infrastructure.gcp.ipCidrPod =\"$(terraform output ip_cidr_pods | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
+          yq eval ".infrastructure.gcp.ipCidrPod =\"$(terraform output ip_cidr_pod | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
         fi

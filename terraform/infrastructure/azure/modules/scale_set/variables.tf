@@ -56,7 +56,7 @@ variable "location" {
 
 variable "image_id" {
   type        = string
-  description = "OS Image for the cluster's nodes."
+  description = "OS Image reference for the cluster's nodes."
 }
 
 variable "user_assigned_identity" {

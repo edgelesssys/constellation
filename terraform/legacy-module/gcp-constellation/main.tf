@@ -62,7 +62,7 @@ module "constellation" {
     region            = local.region
     zone              = var.zone
     project           = var.project
-    ipCidrPod         = module.gcp.ip_cidr_pods
+    ipCidrPod         = module.gcp.ip_cidr_pod
     serviceAccountKey = module.gcp_iam.sa_key
   }
   depends_on = [module.gcp, null_resource.ensure_yq]

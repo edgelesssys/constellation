@@ -12,7 +12,6 @@ terraform {
   }
 }
 
-
 data "google_compute_image" "image_ubuntu" {
   family  = "ubuntu-2204-lts"
   project = "ubuntu-os-cloud"
@@ -47,7 +46,7 @@ resource "google_compute_instance" "vm_instance" {
 
   metadata_startup_script = <<EOF
 #!/bin/bash
-set -x 
+set -x
 
 # Uncomment to create user with password
 # useradd -m user
@@ -69,5 +68,4 @@ iptables -t nat -A PREROUTING -p tcp --dport ${port} -j DNAT --to-destination ${
 iptables -t nat -A POSTROUTING -p tcp -d ${var.lb_internal_ip} --dport ${port} -j SNAT --to-source $${internal_ip}
 %{endfor~}
 EOF
-
 }

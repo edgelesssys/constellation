@@ -23,7 +23,7 @@ variable "node_groups" {
 
 variable "image_id" {
   type        = string
-  description = "OS image for the cluster's nodes."
+  description = "OS image reference for the cluster's nodes."
 }
 
 variable "debug" {

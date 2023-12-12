@@ -266,13 +266,13 @@ func (c *Client) ShowInfrastructure(ctx context.Context, provider cloudprovider.
 			return state.Infrastructure{}, errors.New("invalid type in project output: not a string")
 		}
 
-		cidrPodsOutput, ok := tfState.Values.Outputs["ip_cidr_pods"]
+		cidrPodsOutput, ok := tfState.Values.Outputs["ip_cidr_pod"]
 		if !ok {
-			return state.Infrastructure{}, errors.New("no ip_cidr_pods output found")
+			return state.Infrastructure{}, errors.New("no ip_cidr_pod output found")
 		}
 		cidrPods, ok := cidrPodsOutput.Value.(string)
 		if !ok {
-			return state.Infrastructure{}, errors.New("invalid type in ip_cidr_pods output: not a string")
+			return state.Infrastructure{}, errors.New("invalid type in ip_cidr_pod output: not a string")
 		}
 
 		res.GCP = &state.GCP{
