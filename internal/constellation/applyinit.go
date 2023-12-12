@@ -8,6 +8,7 @@ package constellation
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -121,17 +122,17 @@ func (a *Applier) Init(
 	}
 
 	return InitOutput{
-		ClusterID:  string(doer.resp.OwnerId),
-		OwnerID:    string(doer.resp.ClusterId),
+		ClusterID:  hex.EncodeToString(doer.resp.ClusterId),
+		OwnerID:    hex.EncodeToString(doer.resp.OwnerId),
 		Kubeconfig: kubeconfigBytes,
 	}, nil
 }
 
 // InitOutput contains the output of the init RPC.
 type InitOutput struct {
-	// ClusterID is the ID of the cluster.
+	// ClusterID is the hex encoded ID of the cluster.
 	ClusterID string
-	// OwnerID is the ID of the owner of the cluster.
+	// OwnerID is the hex encoded ID of the owner of the cluster.
 	OwnerID string
 	// Kubeconfig is the kubeconfig for the cluster.
 	Kubeconfig []byte
