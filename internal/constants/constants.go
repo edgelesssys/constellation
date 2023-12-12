@@ -270,7 +270,7 @@ b92PDCpM7FZAINQF88s1TZS/HmRXYk62UJ4eqPduvUnJmXhNikhLbMi6fw==
 `
 
 	//
-	// Terraform Provider
+	// Terraform Provider.
 	//
 
 	// ConstellationClusterURIScheme is the scheme used in Terraform Constellation cluster import URIs.
