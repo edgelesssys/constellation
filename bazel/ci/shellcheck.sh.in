@@ -28,6 +28,7 @@ excludeDirs=(
   "internal/constellation/helm/charts/cilium"
   "build"
   "docs/node_modules"
+  "terraform-provider-constellation/examples"
 )
 
 excludeFiles=(

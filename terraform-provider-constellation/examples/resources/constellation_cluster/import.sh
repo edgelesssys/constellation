@@ -1,0 +1,1 @@
+terraform import constellation_cluster.constellation_cluster constellation-cluster://?kubeConfig=<base64-encoded-kubeconfig>&clusterEndpoint=<cluster-endpoint>&masterSecret=<hex-encoded-mastersecret>&masterSecretSalt=<hex-encoded-mastersecret-salt>

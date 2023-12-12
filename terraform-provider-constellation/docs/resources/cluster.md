@@ -155,3 +155,11 @@ Required:
 
 - `project_id` (String) ID of the GCP project the cluster resides in.
 - `service_account_key` (String) Base64-encoded private key JSON object of the service account used within the cluster.
+
+## Import
+
+Import is supported using the following syntax:
+
+```shell
+terraform import constellation_cluster.constellation_cluster constellation-cluster://?kubeConfig=<base64-encoded-kubeconfig>&clusterEndpoint=<cluster-endpoint>&masterSecret=<hex-encoded-mastersecret>&masterSecretSalt=<hex-encoded-mastersecret-salt>
+```

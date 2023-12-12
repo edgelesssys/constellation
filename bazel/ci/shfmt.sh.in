@@ -26,6 +26,7 @@ excludeDirs=(
   "internal/constellation/helm/charts/cilium"
   "build"
   "docs/node_modules"
+  "terraform-provider-constellation/examples"
 )
 
 echo "The following scripts are excluded and won't be formatted with shfmt:"

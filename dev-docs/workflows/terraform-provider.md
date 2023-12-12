@@ -43,7 +43,7 @@ TF_CLI_CONFIG_FILE=config.tfrc terraform apply
 Terraform acceptance tests can be run hermetically through Bazel (recommended):
 
 ```bash
-bazel test --test_tag_filters=integration //terraform-provider-constellation/internal/provider:provider_acc_test
+bazel test --config=integration-only //terraform-provider-constellation/internal/provider:provider_test
 ```
 
 The tests can also be run through Go, but the `TF_ACC` environment variable needs to be set to `1`, and the host's Terraform binary is used, which may produce inaccurate test results.
