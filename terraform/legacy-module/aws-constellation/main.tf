@@ -34,7 +34,7 @@ module "aws" {
   node_groups                             = var.node_groups
   iam_instance_profile_name_worker_nodes  = module.aws_iam.worker_nodes_instance_profile_name
   iam_instance_profile_name_control_plane = module.aws_iam.control_plane_instance_profile_name
-  ami_id                                  = module.fetch_image.image
+  image_id                                = module.fetch_image.image
   region                                  = local.region
   zone                                    = var.zone
   debug                                   = var.debug
