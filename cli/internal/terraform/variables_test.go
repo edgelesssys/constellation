@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package terraform
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
@@ -47,14 +48,14 @@ func TestAWSClusterVariables(t *testing.T) {
 	}
 
 	// test that the variables are correctly rendered
-	want := `name                               = "cluster-name"
-region                             = "eu-central-1"
-zone                               = "eu-central-1a"
+	want := `name                                    = "cluster-name"
+region                                  = "eu-central-1"
+zone                                    = "eu-central-1a"
 image_id                                = "ami-0123456789abcdef"
 iam_instance_profile_name_control_plane = "arn:aws:iam::123456789012:instance-profile/cluster-name-controlplane"
 iam_instance_profile_name_worker_nodes  = "arn:aws:iam::123456789012:instance-profile/cluster-name-worker"
-debug                              = true
-enable_snp                         = true
+debug                                   = true
+enable_snp                              = true
 node_groups = {
   control_plane_default = {
     disk_size     = 30
@@ -77,7 +78,7 @@ custom_endpoint        = "example.com"
 internal_load_balancer = false
 `
 	got := vars.String()
-	assert.Equal(t, want, got)
+	assert.Equal(t, strings.Fields(want), strings.Fields(got)) // to ignore whitespace differences
 }
 
 func TestAWSIAMVariables(t *testing.T) {

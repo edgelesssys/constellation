@@ -238,7 +238,7 @@ func (c *Client) ShowInfrastructure(ctx context.Context, provider cloudprovider.
 
 	cidrNodesOutput, ok := tfState.Values.Outputs["ip_cidr_node"]
 	if !ok {
-		return state.Infrastructure{}, errors.New("no ip_cidr_nodes output found")
+		return state.Infrastructure{}, errors.New("no ip_cidr_node output found")
 	}
 	cidrNodes, ok := cidrNodesOutput.Value.(string)
 	if !ok {

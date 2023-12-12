@@ -46,7 +46,6 @@ go_library(
         "infrastructure/gcp/outputs.tf",
         "infrastructure/gcp/variables.tf",
         "infrastructure/iam/aws/.terraform.lock.hcl",
-        "infrastructure/iam/aws/README.md",
         "infrastructure/iam/aws/main.tf",
         "infrastructure/iam/aws/outputs.tf",
         "infrastructure/iam/aws/variables.tf",

@@ -230,7 +230,7 @@ func TestCreateCluster(t *testing.T) {
 					"name": {
 						Value: "constell-12345abc",
 					},
-					"ip_cidr_nodes": {
+					"ip_cidr_node": {
 						Value: "192.0.2.103/32",
 					},
 				},
@@ -278,7 +278,7 @@ func TestCreateCluster(t *testing.T) {
 					"name": {
 						Value: "constell-12345abc",
 					},
-					"ip_cidr_nodes": {
+					"ip_cidr_node": {
 						Value: "192.0.2.103/32",
 					},
 				},
