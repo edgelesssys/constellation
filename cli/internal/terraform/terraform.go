@@ -95,13 +95,13 @@ func (c *Client) ShowIAM(ctx context.Context, provider cloudprovider.Provider) (
 
 	switch provider {
 	case cloudprovider.GCP:
-		saKeyOutputRaw, ok := tfState.Values.Outputs["sa_key"]
+		saKeyOutputRaw, ok := tfState.Values.Outputs["service_account_key"]
 		if !ok {
-			return IAMOutput{}, errors.New("no service account key output found")
+			return IAMOutput{}, errors.New("no service_account_key output found")
 		}
 		saKeyOutput, ok := saKeyOutputRaw.Value.(string)
 		if !ok {
-			return IAMOutput{}, errors.New("invalid type in service account key output: not a string")
+			return IAMOutput{}, errors.New("invalid type in service_account_key output: not a string")
 		}
 		return IAMOutput{
 			GCP: GCPIAMOutput{
@@ -111,27 +111,27 @@ func (c *Client) ShowIAM(ctx context.Context, provider cloudprovider.Provider) (
 	case cloudprovider.Azure:
 		subscriptionIDRaw, ok := tfState.Values.Outputs["subscription_id"]
 		if !ok {
-			return IAMOutput{}, errors.New("no subscription id output found")
+			return IAMOutput{}, errors.New("no subscription_id output found")
 		}
 		subscriptionIDOutput, ok := subscriptionIDRaw.Value.(string)
 		if !ok {
-			return IAMOutput{}, errors.New("invalid type in subscription id output: not a string")
+			return IAMOutput{}, errors.New("invalid type in subscription_id output: not a string")
 		}
 		tenantIDRaw, ok := tfState.Values.Outputs["tenant_id"]
 		if !ok {
-			return IAMOutput{}, errors.New("no tenant id output found")
+			return IAMOutput{}, errors.New("no tenant_id output found")
 		}
 		tenantIDOutput, ok := tenantIDRaw.Value.(string)
 		if !ok {
-			return IAMOutput{}, errors.New("invalid type in tenant id output: not a string")
+			return IAMOutput{}, errors.New("invalid type in tenant_id output: not a string")
 		}
 		uamiIDRaw, ok := tfState.Values.Outputs["uami_id"]
 		if !ok {
-			return IAMOutput{}, errors.New("no UAMI id output found")
+			return IAMOutput{}, errors.New("no uami_id output found")
 		}
 		uamiIDOutput, ok := uamiIDRaw.Value.(string)
 		if !ok {
-			return IAMOutput{}, errors.New("invalid type in UAMI id output: not a string")
+			return IAMOutput{}, errors.New("invalid type in uami_id output: not a string")
 		}
 		return IAMOutput{
 			Azure: AzureIAMOutput{
@@ -141,21 +141,21 @@ func (c *Client) ShowIAM(ctx context.Context, provider cloudprovider.Provider) (
 			},
 		}, nil
 	case cloudprovider.AWS:
-		controlPlaneProfileRaw, ok := tfState.Values.Outputs["control_plane_instance_profile_name"]
+		controlPlaneProfileRaw, ok := tfState.Values.Outputs["iam_instance_profile_name_control_plane"]
 		if !ok {
-			return IAMOutput{}, errors.New("no control plane instance profile output found")
+			return IAMOutput{}, errors.New("no iam_instance_profile_name_control_plane output found")
 		}
 		controlPlaneProfileOutput, ok := controlPlaneProfileRaw.Value.(string)
 		if !ok {
-			return IAMOutput{}, errors.New("invalid type in control plane instance profile output: not a string")
+			return IAMOutput{}, errors.New("invalid type in iam_instance_profile_name_control_plane output: not a string")
 		}
-		workerNodeProfileRaw, ok := tfState.Values.Outputs["worker_nodes_instance_profile_name"]
+		workerNodeProfileRaw, ok := tfState.Values.Outputs["iam_instance_profile_name_worker_nodes"]
 		if !ok {
-			return IAMOutput{}, errors.New("no worker node instance profile output found")
+			return IAMOutput{}, errors.New("no iam_instance_profile_name_worker_nodes output found")
 		}
 		workerNodeProfileOutput, ok := workerNodeProfileRaw.Value.(string)
 		if !ok {
-			return IAMOutput{}, errors.New("invalid type in worker node instance profile output: not a string")
+			return IAMOutput{}, errors.New("invalid type in iam_instance_profile_name_worker_nodes output: not a string")
 		}
 		return IAMOutput{
 			AWS: AWSIAMOutput{

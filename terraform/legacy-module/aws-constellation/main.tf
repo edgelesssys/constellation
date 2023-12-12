@@ -60,8 +60,8 @@ module "constellation" {
   aws_config = {
     region                                  = local.region
     zone                                    = var.zone
-    iam_instance_profile_name_worker_nodes  = module.aws_iam.worker_nodes_instance_profile_name
-    iam_instance_profile_name_control_plane = module.aws_iam.control_plane_instance_profile_name
+    iam_instance_profile_name_worker_nodes  = module.aws_iam.iam_instance_profile_name_worker_nodes
+    iam_instance_profile_name_control_plane = module.aws_iam.iam_instance_profile_name_control_plane
   }
   depends_on = [module.aws, null_resource.ensure_yq]
 }

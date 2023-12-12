@@ -31,7 +31,7 @@ func NewIAMDestroyer() *IAMDestroyer {
 	return &IAMDestroyer{newTerraformClient: newTerraformIAMClient}
 }
 
-// GetTfStateServiceAccountKey returns the sa_key output from the terraform state.
+// GetTfStateServiceAccountKey returns the service_account_key output from the terraform state.
 func (d *IAMDestroyer) GetTfStateServiceAccountKey(ctx context.Context, tfWorkspace string) (gcpshared.ServiceAccountKey, error) {
 	client, err := d.newTerraformClient(ctx, tfWorkspace)
 	if err != nil {

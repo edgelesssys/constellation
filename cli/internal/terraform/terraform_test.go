@@ -506,7 +506,7 @@ func TestCreateIAM(t *testing.T) {
 		workingState := tfjson.State{
 			Values: &tfjson.StateValues{
 				Outputs: map[string]*tfjson.StateOutput{
-					"sa_key": {
+					"service_account_key": {
 						Value: "12345678_abcdefg",
 					},
 					"subscription_id": {
@@ -524,11 +524,11 @@ func TestCreateIAM(t *testing.T) {
 					"application_client_secret_value": {
 						Value: "test_application_client_secret_value",
 					},
-					"control_plane_instance_profile_name": {
-						Value: "test_control_plane_instance_profile",
+					"iam_instance_profile_name_control_plane": {
+						Value: "test_iam_instance_profile_name_control_plane",
 					},
-					"worker_nodes_instance_profile_name": {
-						Value: "test_worker_nodes_instance_profile_name",
+					"iam_instance_profile_name_worker_nodes": {
+						Value: "test_iam_instance_profile_name_worker_nodes",
 					},
 				},
 			},
@@ -607,7 +607,7 @@ func TestCreateIAM(t *testing.T) {
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
-		"gcp no sa_key": {
+		"gcp no service_account_key": {
 			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.GCP,
 			vars:     gcpVars,
@@ -621,14 +621,14 @@ func TestCreateIAM(t *testing.T) {
 			fs:      afero.NewMemMapFs(),
 			wantErr: true,
 		},
-		"gcp sa_key has wrong type": {
+		"gcp service_account_key has wrong type": {
 			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.GCP,
 			vars:     gcpVars,
 			tf: &stubTerraform{
 				showState: &tfjson.State{
 					Values: &tfjson.StateValues{
-						Outputs: map[string]*tfjson.StateOutput{"sa_key": {Value: 42}},
+						Outputs: map[string]*tfjson.StateOutput{"service_account_key": {Value: 42}},
 					},
 				},
 			},
@@ -706,8 +706,8 @@ func TestCreateIAM(t *testing.T) {
 			tf:       &stubTerraform{showState: newTestState()},
 			fs:       afero.NewMemMapFs(),
 			want: IAMOutput{AWS: AWSIAMOutput{
-				ControlPlaneInstanceProfile: "test_control_plane_instance_profile",
-				WorkerNodeInstanceProfile:   "test_worker_nodes_instance_profile_name",
+				ControlPlaneInstanceProfile: "test_iam_instance_profile_name_control_plane",
+				WorkerNodeInstanceProfile:   "test_iam_instance_profile_name_worker_nodes",
 			}},
 		},
 		"aws init fails": {
@@ -734,7 +734,7 @@ func TestCreateIAM(t *testing.T) {
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
-		"aws no control_plane_instance_profile_name": {
+		"aws no iam_instance_profile_name_control_plane": {
 			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.AWS,
 			vars:     awsVars,
@@ -748,14 +748,14 @@ func TestCreateIAM(t *testing.T) {
 			fs:      afero.NewMemMapFs(),
 			wantErr: true,
 		},
-		"azure control_plane_instance_profile_name has wrong type": {
+		"azure iam_instance_profile_name_control_plane has wrong type": {
 			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.AWS,
 			vars:     awsVars,
 			tf: &stubTerraform{
 				showState: &tfjson.State{
 					Values: &tfjson.StateValues{
-						Outputs: map[string]*tfjson.StateOutput{"control_plane_instance_profile_name": {Value: 42}},
+						Outputs: map[string]*tfjson.StateOutput{"iam_instance_profile_name_control_plane": {Value: 42}},
 					},
 				},
 			},
@@ -1129,7 +1129,7 @@ func TestShowIAM(t *testing.T) {
 		"GCP success": {
 			tf: &stubTerraform{
 				showState: getTfjsonState(map[string]any{
-					"sa_key": "key",
+					"service_account_key": "key",
 				}),
 			},
 			csp: cloudprovider.GCP,
@@ -1137,7 +1137,7 @@ func TestShowIAM(t *testing.T) {
 		"GCP wrong data type": {
 			tf: &stubTerraform{
 				showState: getTfjsonState(map[string]any{
-					"sa_key": map[string]any{},
+					"service_account_key": map[string]any{},
 				}),
 			},
 			csp:     cloudprovider.GCP,
@@ -1226,45 +1226,45 @@ func TestShowIAM(t *testing.T) {
 		"AWS success": {
 			tf: &stubTerraform{
 				showState: getTfjsonState(map[string]any{
-					"control_plane_instance_profile_name": "profile",
-					"worker_nodes_instance_profile_name":  "profile",
+					"iam_instance_profile_name_control_plane": "profile",
+					"iam_instance_profile_name_worker_nodes":  "profile",
 				}),
 			},
 			csp: cloudprovider.AWS,
 		},
-		"AWS wrong data type control_plane_instance_profile_name": {
+		"AWS wrong data type iam_instance_profile_name_control_plane": {
 			tf: &stubTerraform{
 				showState: getTfjsonState(map[string]any{
-					"control_plane_instance_profile_name": map[string]any{},
-					"worker_nodes_instance_profile_name":  "profile",
+					"iam_instance_profile_name_control_plane": map[string]any{},
+					"iam_instance_profile_name_worker_nodes":  "profile",
 				}),
 			},
 			csp:     cloudprovider.AWS,
 			wantErr: true,
 		},
-		"AWS wrong data type worker_nodes_instance_profile_name": {
+		"AWS wrong data type iam_instance_profile_name_worker_nodes": {
 			tf: &stubTerraform{
 				showState: getTfjsonState(map[string]any{
-					"control_plane_instance_profile_name": "profile",
-					"worker_nodes_instance_profile":       map[string]any{},
+					"iam_instance_profile_name_control_plane": "profile",
+					"iam_instance_profile_name_worker_nodes":  map[string]any{},
 				}),
 			},
 			csp:     cloudprovider.AWS,
 			wantErr: true,
 		},
-		"AWS missing control_plane_instance_profile_name": {
+		"AWS missing iam_instance_profile_name_control_plane": {
 			tf: &stubTerraform{
 				showState: getTfjsonState(map[string]any{
-					"worker_nodes_instance_profile": "profile",
+					"iam_instance_profile_name_worker_nodes": "profile",
 				}),
 			},
 			csp:     cloudprovider.AWS,
 			wantErr: true,
 		},
-		"AWS missing worker_nodes_instance_profile_name": {
+		"AWS missing iam_instance_profile_name_worker_nodes": {
 			tf: &stubTerraform{
 				showState: getTfjsonState(map[string]any{
-					"control_plane_instance_profile_name": "profile",
+					"iam_instance_profile_name_control_plane": "profile",
 				}),
 			},
 			csp:     cloudprovider.AWS,
