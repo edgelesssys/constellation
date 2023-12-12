@@ -1,6 +1,6 @@
 variable "name_prefix" {
   type        = string
-  description = "Prefix for all resources to easily identify related IAM resources."
+  description = "Name prefix to use on named resources."
 }
 
 variable "region" {

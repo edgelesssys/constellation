@@ -27,33 +27,33 @@ variable "node_groups" {
   }
 }
 
-variable "iam_instance_profile_worker_nodes" {
+variable "iam_instance_profile_name_worker_nodes" {
   type        = string
   description = "Name of the IAM instance profile for worker nodes."
 }
 
-variable "iam_instance_profile_control_plane" {
+variable "iam_instance_profile_name_control_plane" {
   type        = string
   description = "Name of the IAM instance profile for control plane nodes."
 }
 
-variable "ami" {
+variable "ami_id" {
   type        = string
-  description = "AMI ID."
+  description = "Amazon Machine Image (AMI) ID for the cluster's nodes."
   validation {
     condition     = length(var.ami) > 4 && substr(var.ami, 0, 4) == "ami-"
-    error_message = "The image_id value must be a valid AMI id, starting with \"ami-\"."
+    error_message = "The \"ami\" value must be a valid AMI id, starting with \"ami-\"."
   }
 }
 
 variable "region" {
   type        = string
-  description = "The AWS region to create the cluster in."
+  description = "AWS region to create the cluster in."
 }
 
 variable "zone" {
   type        = string
-  description = "The AWS availability zone name to create the cluster in."
+  description = "AWS availability zone name to create the cluster in."
 }
 
 variable "debug" {

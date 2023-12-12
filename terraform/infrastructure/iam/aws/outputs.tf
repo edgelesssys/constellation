@@ -1,9 +1,9 @@
-output "control_plane_instance_profile" {
+output "control_plane_instance_profile_name" {
   value = aws_iam_instance_profile.control_plane_instance_profile.name
-  description = "The name of the instance profile for the control plane."
+  description = "Name of the control plane's instance profile."
 }
 
-output "worker_nodes_instance_profile" {
+output "worker_nodes_instance_profile_name" {
   value = aws_iam_instance_profile.worker_node_instance_profile.name
-  description = "The name of the instance profile for the worker nodes."
+  description = "Name of the worker nodes' instance profile"
 }
