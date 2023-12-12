@@ -3,6 +3,11 @@ variable "base_name" {
   type        = string
 }
 
+variable "ports" {
+  description = "Ports to forward to the load balancer."
+  type        = list(number)
+}
+
 variable "subnet_id" {
   description = "Subnet ID to deploy the jump host into."
   type        = string

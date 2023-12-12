@@ -1,3 +1,5 @@
+# Outputs common to all CSPs
+
 output "out_of_cluster_endpoint" {
   value       = local.out_of_cluster_endpoint
   description = "External endpoint for the Kubernetes API server. Only varies from the `in_cluster_endpoint` when using an internal load balancer."
@@ -31,7 +33,7 @@ output "uid" {
 output "init_secret" {
   value       = random_password.init_secret.result
   sensitive   = true
-  description = "The init secret for the cluster."
+  description = "Initialization secret to authenticate the bootstrapping node."
 }
 
 output "name" {

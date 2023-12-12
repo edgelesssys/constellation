@@ -1,3 +1,5 @@
+# Variables common to all CSPs
+
 variable "name" {
   type        = string
   description = "Name of the Constellation cluster."
@@ -27,6 +29,35 @@ variable "node_groups" {
   }
 }
 
+variable "image_id" {
+  type        = string
+  description = "Amazon Machine Image (AMI) ID for the cluster's nodes."
+  validation {
+    condition     = length(var.image_id) > 4 && substr(var.image_id, 0, 4) == "ami-"
+    error_message = "The \"image_id\" value must be a valid AMI ID, starting with \"ami-\"."
+  }
+}
+
+variable "debug" {
+  type        = bool
+  default     = false
+  description = "DO NOT USE IN PRODUCTION. Enable debug mode. This opens up a debugd port that can be used to deploy a custom bootstrapper."
+}
+
+variable "custom_endpoint" {
+  type        = string
+  default     = ""
+  description = "Custom endpoint to use for the Kubernetes API server. If not set, the default endpoint will be used."
+}
+
+variable "internal_load_balancer" {
+  type        = bool
+  default     = false
+  description = "Whether to use an internal load balancer for the cluster."
+}
+
+# AWS-specific variables
+
 variable "iam_instance_profile_name_worker_nodes" {
   type        = string
   description = "Name of the IAM instance profile for worker nodes."
@@ -35,15 +66,6 @@ variable "iam_instance_profile_name_worker_nodes" {
 variable "iam_instance_profile_name_control_plane" {
   type        = string
   description = "Name of the IAM instance profile for control plane nodes."
-}
-
-variable "image_id" {
-  type        = string
-  description = "Amazon Machine Image (AMI) ID for the cluster's nodes."
-  validation {
-    condition     = length(var.image_id) > 4 && substr(var.image_id, 0, 4) == "ami-"
-    error_message = "The \"image_id\" value must be a valid AMI ID, starting with \"ami-\"."
-  }
 }
 
 variable "region" {
@@ -56,26 +78,8 @@ variable "zone" {
   description = "AWS availability zone name to create the cluster in."
 }
 
-variable "debug" {
-  type        = bool
-  default     = false
-  description = "Enable debug mode. This opens up a debugd port that can be used to deploy a custom bootstrapper."
-}
-
 variable "enable_snp" {
   type        = bool
   default     = true
   description = "Enable AMD SEV SNP. Setting this to true sets the cpu-option AmdSevSnp to enable."
-}
-
-variable "custom_endpoint" {
-  type        = string
-  default     = ""
-  description = "Custom endpoint to use for the Kubernetes apiserver. If not set, the default endpoint will be used."
-}
-
-variable "internal_load_balancer" {
-  type        = bool
-  default     = false
-  description = "Use an internal load balancer."
 }
