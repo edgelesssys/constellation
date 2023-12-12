@@ -48,7 +48,7 @@ module "constellation" {
   clusterEndpoint      = module.azure.out_of_cluster_endpoint
   inClusterEndpoint    = module.azure.in_cluster_endpoint
   initSecretHash       = module.azure.init_secret
-  ipCidrNode           = module.azure.ip_cidr_nodes
+  ipCidrNode           = module.azure.ip_cidr_node
   apiServerCertSANs    = module.azure.extra_api_server_cert_sans
   node_groups          = var.node_groups
   azure_config = {
