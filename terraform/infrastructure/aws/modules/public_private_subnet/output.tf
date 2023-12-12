@@ -3,6 +3,7 @@ output "private_subnet_id" {
     for az in data.aws_availability_zone.all :
     az.name => aws_subnet.private[az.name].id
   }
+  description = "Map of availability zones to private subnet id."
 }
 
 output "public_subnet_id" {

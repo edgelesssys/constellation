@@ -11,7 +11,6 @@ terraform {
   }
 }
 
-# Configure the AWS Provider
 provider "aws" {
   region = var.region
 }
@@ -172,7 +171,7 @@ resource "aws_cloudwatch_log_group" "log_group" {
 module "load_balancer_targets" {
   for_each             = { for port in local.load_balancer_ports : port.name => port }
   source               = "./modules/load_balancer_target"
-  name                 = "${local.name}-${each.value.name}"
+  base_name            = "${local.name}-${each.value.name}"
   port                 = each.value.port
   healthcheck_protocol = each.value.health_check
   healthcheck_path     = each.value.name == "kubernetes" ? "/readyz" : ""
@@ -191,7 +190,7 @@ module "instance_group" {
   uid                  = local.uid
   instance_type        = each.value.instance_type
   initial_count        = each.value.initial_count
-  image_id             = var.ami_id
+  image_id             = var.image_id
   state_disk_type      = each.value.disk_type
   state_disk_size      = each.value.disk_size
   target_group_arns    = local.target_group_arns[each.value.role]
@@ -219,40 +218,4 @@ module "jump_host" {
   ports                = [for port in local.load_balancer_ports : port.port]
   security_groups      = [aws_security_group.security_group.id]
   iam_instance_profile = var.iam_instance_profile_name_worker_nodes
-}
-
-# TODO(31u3r): Remove once 2.12 is released
-moved {
-  from = module.load_balancer_target_konnectivity
-  to   = module.load_balancer_targets["konnectivity"]
-}
-
-moved {
-  from = module.load_balancer_target_verify
-  to   = module.load_balancer_targets["verify"]
-}
-
-moved {
-  from = module.load_balancer_target_recovery
-  to   = module.load_balancer_targets["recovery"]
-}
-
-moved {
-  from = module.load_balancer_target_join
-  to   = module.load_balancer_targets["join"]
-}
-
-moved {
-  from = module.load_balancer_target_debugd[0]
-  to   = module.load_balancer_targets["debugd"]
-}
-
-moved {
-  from = module.load_balancer_target_kubernetes
-  to   = module.load_balancer_targets["kubernetes"]
-}
-
-moved {
-  from = module.load_balancer_target_bootstrapper
-  to   = module.load_balancer_targets["bootstrapper"]
 }

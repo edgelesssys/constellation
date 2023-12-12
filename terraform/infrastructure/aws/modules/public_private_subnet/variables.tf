@@ -1,6 +1,6 @@
 variable "name" {
   type        = string
-  description = "Name of your Constellation, which is used as a prefix for tags."
+  description = "Name of the Constellation cluster."
 }
 
 variable "vpc_id" {
@@ -30,5 +30,5 @@ variable "cidr_vpc_subnet_internet" {
 
 variable "tags" {
   type        = map(string)
-  description = "The tags to add to the resource."
+  description = "Zags to add to the resource."
 }

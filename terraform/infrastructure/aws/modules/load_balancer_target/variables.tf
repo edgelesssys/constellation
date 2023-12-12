@@ -1,6 +1,6 @@
-variable "name" {
+variable "base_name" {
   type        = string
-  description = "Name of the load balancer target."
+  description = "Base name of the load balancer target."
 }
 
 variable "port" {
@@ -32,5 +32,5 @@ variable "healthcheck_path" {
 
 variable "tags" {
   type        = map(string)
-  description = "The tags to add to the loadbalancer."
+  description = "Tags to add to the loadbalancer."
 }

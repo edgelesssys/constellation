@@ -53,9 +53,9 @@ module "constellation" {
   uid                  = module.aws.uid
   clusterEndpoint      = module.aws.out_of_cluster_endpoint
   inClusterEndpoint    = module.aws.in_cluster_endpoint
-  initSecretHash       = module.aws.init_secret
-  ipCidrNode           = module.aws.ip_cidr_nodes
-  apiServerCertSANs    = module.aws.extra_api_server_cert_sans
+  initSecretHash       = module.aws.initSecret
+  ipCidrNode           = module.aws.ip_cidr_node
+  apiServerCertSANs    = module.aws.api_server_cert_sans
   node_groups          = var.node_groups
   aws_config = {
     region                                  = local.region

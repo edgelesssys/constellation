@@ -7,7 +7,8 @@ output "in_cluster_endpoint" {
   value       = local.in_cluster_endpoint
   description = "Internal endpoint for the Kubernetes API server."
 }
-output "extra_api_server_cert_sans" {
+
+output "api_server_cert_sans" {
   value = sort(
     distinct(
       concat(
@@ -35,10 +36,10 @@ output "init_secret" {
 
 output "name" {
   value       = local.name
-  description = "Name of the cluster."
+  description = "Unique name of the Constellation cluster, comprised by name and UID."
 }
 
-output "ip_cidr_nodes" {
+output "ip_cidr_node" {
   value       = local.cidr_vpc_subnet_nodes
-  description = "CIDR range of the node network."
+  description = "CIDR block of the node network."
 }

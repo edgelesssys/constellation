@@ -38,7 +38,7 @@ func TestAWSClusterVariables(t *testing.T) {
 		},
 		Region:                 "eu-central-1",
 		Zone:                   "eu-central-1a",
-		AMIImageID:             "ami-0123456789abcdef",
+		ImageID:                "ami-0123456789abcdef",
 		IAMProfileControlPlane: "arn:aws:iam::123456789012:instance-profile/cluster-name-controlplane",
 		IAMProfileWorkerNodes:  "arn:aws:iam::123456789012:instance-profile/cluster-name-worker",
 		Debug:                  true,
@@ -47,14 +47,14 @@ func TestAWSClusterVariables(t *testing.T) {
 	}
 
 	// test that the variables are correctly rendered
-	want := `name                                    = "cluster-name"
-region                                  = "eu-central-1"
-zone                                    = "eu-central-1a"
-ami_id                                  = "ami-0123456789abcdef"
+	want := `name                               = "cluster-name"
+region                             = "eu-central-1"
+zone                               = "eu-central-1a"
+image_id                                = "ami-0123456789abcdef"
 iam_instance_profile_name_control_plane = "arn:aws:iam::123456789012:instance-profile/cluster-name-controlplane"
 iam_instance_profile_name_worker_nodes  = "arn:aws:iam::123456789012:instance-profile/cluster-name-worker"
-debug                                   = true
-enable_snp                              = true
+debug                              = true
+enable_snp                         = true
 node_groups = {
   control_plane_default = {
     disk_size     = 30

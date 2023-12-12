@@ -54,7 +54,7 @@ runs:
           echo "iam_instance_profile_name_worker_nodes = \"$(yq '.provider.aws.iamProfileWorkerNodes' constellation-conf.yaml)\"" >> terraform.tfvars
           echo "region = \"$(yq '.provider.aws.region' constellation-conf.yaml)\"" >> terraform.tfvars
           echo "zone = \"$(yq '.provider.aws.zone' constellation-conf.yaml)\"" >> terraform.tfvars
-          echo "ami_id = \"${{ steps.get_image.outputs.image_ref }}\"" >> terraform.tfvars
+          echo "image_id = \"${{ steps.get_image.outputs.image_ref }}\"" >> terraform.tfvars
           echo "enable_snp = $(yq '.attestation | has("awsSEVSNP")' constellation-conf.yaml)" >> terraform.tfvars
         elif [[ "${{ inputs.cloudProvider }}" == 'azure' ]]; then
           echo "location = \"$(yq '.provider.azure.location' constellation-conf.yaml)\"" >> terraform.tfvars

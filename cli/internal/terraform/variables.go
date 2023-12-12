@@ -52,11 +52,11 @@ type AWSClusterVariables struct {
 	Region string `hcl:"region" cty:"region"`
 	// Zone is the AWS zone to use in the given region.
 	Zone string `hcl:"zone" cty:"zone"`
-	// AMIImageID is the ID of the AMI image to use.
-	AMIImageID string `hcl:"ami_id" cty:"ami_id"`
-	// IAMGroupControlPlane is the IAM group to use for the control-plane nodes.
+	// ImageID is the ID of the AMI to use.
+	ImageID string `hcl:"image_id" cty:"image_id"`
+	// IAMProfileControlPlane is the IAM group to use for the control-plane nodes.
 	IAMProfileControlPlane string `hcl:"iam_instance_profile_name_control_plane" cty:"iam_instance_profile_name_control_plane"`
-	// IAMGroupWorkerNodes is the IAM group to use for the worker nodes.
+	// IAMProfileWorkerNodes is the IAM group to use for the worker nodes.
 	IAMProfileWorkerNodes string `hcl:"iam_instance_profile_name_worker_nodes" cty:"iam_instance_profile_name_worker_nodes"`
 	// Debug is true if debug mode is enabled.
 	Debug bool `hcl:"debug" cty:"debug"`

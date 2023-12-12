@@ -10,7 +10,7 @@ variable "node_group_name" {
 
 variable "role" {
   type        = string
-  description = "The role of the instance group."
+  description = "Role of the instance group."
   validation {
     condition     = contains(["control-plane", "worker"], var.role)
     error_message = "The role has to be 'control-plane' or 'worker'."
@@ -19,7 +19,7 @@ variable "role" {
 
 variable "uid" {
   type        = string
-  description = "UID of the cluster. This is used for tags."
+  description = "Unique Identifier (UID) of the cluster."
 }
 
 variable "instance_type" {
@@ -34,7 +34,7 @@ variable "initial_count" {
 
 variable "image_id" {
   type        = string
-  description = "Image ID for the nodes."
+  description = "Amazon Machine Image (AMI) ID for the cluster's nodes."
 }
 
 variable "state_disk_type" {
@@ -64,18 +64,18 @@ variable "iam_instance_profile" {
 
 variable "security_groups" {
   type        = list(string)
-  description = "List of IDs of the security groups for an instance."
+  description = "List of security group IDs for an instance."
 }
 
 variable "tags" {
   type        = map(string)
-  description = "The tags to add to the instance group."
+  description = "Tags to add to the instance group."
 }
 
 variable "enable_snp" {
   type        = bool
   default     = true
-  description = "Enable AMD SEV SNP. Setting this to true sets the cpu-option AmdSevSnp to enable."
+  description = "Enable AMD SEV-SNP for the instances."
 }
 
 variable "zone" {

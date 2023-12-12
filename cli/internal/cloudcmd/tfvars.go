@@ -96,7 +96,7 @@ func awsTerraformVars(conf *config.Config, imageRef string) *terraform.AWSCluste
 		NodeGroups:             nodeGroups,
 		Region:                 conf.Provider.AWS.Region,
 		Zone:                   conf.Provider.AWS.Zone,
-		AMIImageID:             imageRef,
+		ImageID:                imageRef,
 		IAMProfileControlPlane: conf.Provider.AWS.IAMProfileControlPlane,
 		IAMProfileWorkerNodes:  conf.Provider.AWS.IAMProfileWorkerNodes,
 		Debug:                  conf.IsDebugCluster(),
