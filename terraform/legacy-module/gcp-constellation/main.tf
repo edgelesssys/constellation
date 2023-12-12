@@ -54,9 +54,9 @@ module "constellation" {
   uid                  = module.gcp.uid
   clusterEndpoint      = module.gcp.out_of_cluster_endpoint
   inClusterEndpoint    = module.gcp.in_cluster_endpoint
-  initSecretHash       = module.gcp.initSecret
+  initSecretHash       = module.gcp.init_secret
   ipCidrNode           = module.gcp.ip_cidr_nodes
-  apiServerCertSANs    = module.gcp.api_server_cert_sans
+  apiServerCertSANs    = module.gcp.extra_api_server_cert_sans
   node_groups          = var.node_groups
   gcp_config = {
     region            = local.region

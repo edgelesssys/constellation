@@ -30,9 +30,9 @@ provider "google-beta" {
 }
 
 locals {
-  uid            = random_id.uid.hex
-  name           = "${var.name}-${local.uid}"
-  initSecretHash = random_password.initSecret.bcrypt_hash
+  uid              = random_id.uid.hex
+  name             = "${var.name}-${local.uid}"
+  init_secret_hash = random_password.init_secret.bcrypt_hash
   labels = {
     constellation-uid = local.uid,
   }
@@ -65,7 +65,7 @@ resource "random_id" "uid" {
   byte_length = 4
 }
 
-resource "random_password" "initSecret" {
+resource "random_password" "init_secret" {
   length           = 32
   special          = true
   override_special = "_%@"
@@ -187,7 +187,7 @@ module "instance_group" {
   debug               = var.debug
   named_ports         = each.value.role == "control-plane" ? local.control_plane_named_ports : []
   labels              = local.labels
-  init_secret_hash    = local.initSecretHash
+  init_secret_hash    = local.init_secret_hash
   custom_endpoint     = var.custom_endpoint
 }
 

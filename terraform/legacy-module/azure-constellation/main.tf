@@ -47,9 +47,9 @@ module "constellation" {
   uid                  = module.azure.uid
   clusterEndpoint      = module.azure.out_of_cluster_endpoint
   inClusterEndpoint    = module.azure.in_cluster_endpoint
-  initSecretHash       = module.azure.initSecret
+  initSecretHash       = module.azure.init_secret
   ipCidrNode           = module.azure.ip_cidr_nodes
-  apiServerCertSANs    = module.azure.api_server_cert_sans
+  apiServerCertSANs    = module.azure.extra_api_server_cert_sans
   node_groups          = var.node_groups
   azure_config = {
     subscription             = module.azure_iam.subscription_id
@@ -59,7 +59,7 @@ module "constellation" {
     userAssignedIdentity     = module.azure_iam.uami_id
     deployCSIDriver          = var.deploy_csi_driver
     secureBoot               = var.secure_boot
-    maaURL                   = module.azure.attestationURL
+    maaURL                   = module.azure.attestation_url
     networkSecurityGroupName = module.azure.network_security_group_name
     loadBalancerName         = module.azure.loadbalancer_name
   }

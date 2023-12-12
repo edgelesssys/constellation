@@ -47,14 +47,14 @@ func TestAWSClusterVariables(t *testing.T) {
 	}
 
 	// test that the variables are correctly rendered
-	want := `name                               = "cluster-name"
-region                             = "eu-central-1"
-zone                               = "eu-central-1a"
-ami                                = "ami-0123456789abcdef"
-iam_instance_profile_control_plane = "arn:aws:iam::123456789012:instance-profile/cluster-name-controlplane"
-iam_instance_profile_worker_nodes  = "arn:aws:iam::123456789012:instance-profile/cluster-name-worker"
-debug                              = true
-enable_snp                         = true
+	want := `name                                    = "cluster-name"
+region                                  = "eu-central-1"
+zone                                    = "eu-central-1a"
+ami_id                                  = "ami-0123456789abcdef"
+iam_instance_profile_name_control_plane = "arn:aws:iam::123456789012:instance-profile/cluster-name-controlplane"
+iam_instance_profile_name_worker_nodes  = "arn:aws:iam::123456789012:instance-profile/cluster-name-worker"
+debug                                   = true
+enable_snp                              = true
 node_groups = {
   control_plane_default = {
     disk_size     = 30

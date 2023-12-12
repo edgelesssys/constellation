@@ -78,10 +78,10 @@ variable "apiServerCertSANs" {
 
 variable "aws_config" {
   type = object({
-    region                             = string
-    zone                               = string
-    iam_instance_profile_worker_nodes  = string
-    iam_instance_profile_control_plane = string
+    region                                  = string
+    zone                                    = string
+    iam_instance_profile_name_worker_nodes  = string
+    iam_instance_profile_name_control_plane = string
   })
   description = "The cluster config for AWS."
   default     = null

@@ -218,13 +218,13 @@ func TestCreateCluster(t *testing.T) {
 					"in_cluster_endpoint": {
 						Value: "192.0.2.101",
 					},
-					"initSecret": {
+					"init_secret": {
 						Value: "initSecret",
 					},
 					"uid": {
 						Value: "12345abc",
 					},
-					"api_server_cert_sans": {
+					"extra_api_server_cert_sans": {
 						Value: []any{"192.0.2.100"},
 					},
 					"name": {
@@ -248,16 +248,16 @@ func TestCreateCluster(t *testing.T) {
 					"in_cluster_endpoint": {
 						Value: "192.0.2.101",
 					},
-					"initSecret": {
+					"init_secret": {
 						Value: "initSecret",
 					},
 					"uid": {
 						Value: "12345abc",
 					},
-					"attestationURL": {
+					"attestation_url": {
 						Value: "https://12345.neu.attest.azure.net",
 					},
-					"api_server_cert_sans": {
+					"extra_api_server_cert_sans": {
 						Value: []any{"192.0.2.100"},
 					},
 					"user_assigned_identity_client_id": {
@@ -460,7 +460,7 @@ func TestCreateCluster(t *testing.T) {
 			tf: &stubTerraform{
 				showState: &tfjson.State{
 					Values: &tfjson.StateValues{
-						Outputs: map[string]*tfjson.StateOutput{"attestationURL": {Value: 42}},
+						Outputs: map[string]*tfjson.StateOutput{"attestation_url": {Value: 42}},
 					},
 				},
 			},
@@ -524,11 +524,11 @@ func TestCreateIAM(t *testing.T) {
 					"application_client_secret_value": {
 						Value: "test_application_client_secret_value",
 					},
-					"control_plane_instance_profile": {
+					"control_plane_instance_profile_name": {
 						Value: "test_control_plane_instance_profile",
 					},
-					"worker_nodes_instance_profile": {
-						Value: "test_worker_nodes_instance_profile",
+					"worker_nodes_instance_profile_name": {
+						Value: "test_worker_nodes_instance_profile_name",
 					},
 				},
 			},
@@ -707,7 +707,7 @@ func TestCreateIAM(t *testing.T) {
 			fs:       afero.NewMemMapFs(),
 			want: IAMOutput{AWS: AWSIAMOutput{
 				ControlPlaneInstanceProfile: "test_control_plane_instance_profile",
-				WorkerNodeInstanceProfile:   "test_worker_nodes_instance_profile",
+				WorkerNodeInstanceProfile:   "test_worker_nodes_instance_profile_name",
 			}},
 		},
 		"aws init fails": {
@@ -734,7 +734,7 @@ func TestCreateIAM(t *testing.T) {
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
-		"aws no control_plane_instance_profile": {
+		"aws no control_plane_instance_profile_name": {
 			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.AWS,
 			vars:     awsVars,
@@ -748,14 +748,14 @@ func TestCreateIAM(t *testing.T) {
 			fs:      afero.NewMemMapFs(),
 			wantErr: true,
 		},
-		"azure control_plane_instance_profile has wrong type": {
+		"azure control_plane_instance_profile_name has wrong type": {
 			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
 			provider: cloudprovider.AWS,
 			vars:     awsVars,
 			tf: &stubTerraform{
 				showState: &tfjson.State{
 					Values: &tfjson.StateValues{
-						Outputs: map[string]*tfjson.StateOutput{"control_plane_instance_profile": {Value: 42}},
+						Outputs: map[string]*tfjson.StateOutput{"control_plane_instance_profile_name": {Value: 42}},
 					},
 				},
 			},
@@ -1226,33 +1226,33 @@ func TestShowIAM(t *testing.T) {
 		"AWS success": {
 			tf: &stubTerraform{
 				showState: getTfjsonState(map[string]any{
-					"control_plane_instance_profile": "profile",
-					"worker_nodes_instance_profile":  "profile",
+					"control_plane_instance_profile_name": "profile",
+					"worker_nodes_instance_profile_name":  "profile",
 				}),
 			},
 			csp: cloudprovider.AWS,
 		},
-		"AWS wrong data type control_plane_instance_profile": {
+		"AWS wrong data type control_plane_instance_profile_name": {
 			tf: &stubTerraform{
 				showState: getTfjsonState(map[string]any{
-					"control_plane_instance_profile": map[string]any{},
-					"worker_nodes_instance_profile":  "profile",
+					"control_plane_instance_profile_name": map[string]any{},
+					"worker_nodes_instance_profile_name":  "profile",
 				}),
 			},
 			csp:     cloudprovider.AWS,
 			wantErr: true,
 		},
-		"AWS wrong data type worker_nodes_instance_profile": {
+		"AWS wrong data type worker_nodes_instance_profile_name": {
 			tf: &stubTerraform{
 				showState: getTfjsonState(map[string]any{
-					"control_plane_instance_profile": "profile",
-					"worker_nodes_instance_profile":  map[string]any{},
+					"control_plane_instance_profile_name": "profile",
+					"worker_nodes_instance_profile":       map[string]any{},
 				}),
 			},
 			csp:     cloudprovider.AWS,
 			wantErr: true,
 		},
-		"AWS missing control_plane_instance_profile": {
+		"AWS missing control_plane_instance_profile_name": {
 			tf: &stubTerraform{
 				showState: getTfjsonState(map[string]any{
 					"worker_nodes_instance_profile": "profile",
@@ -1261,10 +1261,10 @@ func TestShowIAM(t *testing.T) {
 			csp:     cloudprovider.AWS,
 			wantErr: true,
 		},
-		"AWS missing worker_nodes_instance_profile": {
+		"AWS missing worker_nodes_instance_profile_name": {
 			tf: &stubTerraform{
 				showState: getTfjsonState(map[string]any{
-					"control_plane_instance_profile": "profile",
+					"control_plane_instance_profile_name": "profile",
 				}),
 			},
 			csp:     cloudprovider.AWS,

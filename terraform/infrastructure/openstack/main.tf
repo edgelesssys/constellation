@@ -23,7 +23,7 @@ data "openstack_identity_auth_scope_v3" "scope" {
 locals {
   uid                    = random_id.uid.hex
   name                   = "${var.name}-${local.uid}"
-  initSecretHash         = random_password.initSecret.bcrypt_hash
+  init_secret_hash       = random_password.init_secret.bcrypt_hash
   ports_node_range_start = "30000"
   ports_node_range_end   = "32767"
   ports_kubernetes       = "6443"
@@ -49,7 +49,7 @@ resource "random_id" "uid" {
   byte_length = 4
 }
 
-resource "random_password" "initSecret" {
+resource "random_password" "init_secret" {
   length           = 32
   special          = true
   override_special = "_%@"
@@ -174,7 +174,7 @@ module "instance_group" {
   tags                       = local.tags
   uid                        = local.uid
   network_id                 = openstack_networking_network_v2.vpc_network.id
-  init_secret_hash           = local.initSecretHash
+  init_secret_hash           = local.init_secret_hash
   identity_internal_url      = local.identity_internal_url
   openstack_username         = var.openstack_username
   openstack_password         = var.openstack_password

@@ -6,7 +6,7 @@ output "in_cluster_endpoint" {
   value = module.node_group["control_plane_default"].instance_ips[0]
 }
 
-output "api_server_cert_sans" {
+output "extra_api_server_cert_sans" {
   value = sort(concat([module.node_group["control_plane_default"].instance_ips[0]], var.custom_endpoint == "" ? [] : [var.custom_endpoint]))
 }
 
@@ -15,7 +15,7 @@ output "uid" {
 }
 
 output "init_secret" {
-  value     = random_password.initSecret.result
+  value     = random_password.init_secret.result
   sensitive = true
 }
 

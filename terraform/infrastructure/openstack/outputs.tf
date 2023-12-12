@@ -6,7 +6,7 @@ output "in_cluster_endpoint" {
   value = openstack_networking_floatingip_v2.public_ip.address
 }
 
-output "api_server_cert_sans" {
+output "extra_api_server_cert_sans" {
   value = sort(concat([openstack_networking_floatingip_v2.public_ip.address], var.custom_endpoint == "" ? [] : [var.custom_endpoint]))
 }
 
@@ -15,7 +15,7 @@ output "uid" {
 }
 
 output "init_secret" {
-  value     = random_password.initSecret.result
+  value     = random_password.init_secret.result
   sensitive = true
 }
 

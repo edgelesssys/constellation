@@ -41,8 +41,8 @@ variable "ami_id" {
   type        = string
   description = "Amazon Machine Image (AMI) ID for the cluster's nodes."
   validation {
-    condition     = length(var.ami) > 4 && substr(var.ami, 0, 4) == "ami-"
-    error_message = "The \"ami\" value must be a valid AMI id, starting with \"ami-\"."
+    condition     = length(var.ami_id) > 4 && substr(var.ami_id, 0, 4) == "ami-"
+    error_message = "The \"ami_id\" value must be a valid AMI id, starting with \"ami-\"."
   }
 }
 

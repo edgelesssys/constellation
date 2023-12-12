@@ -1,13 +1,13 @@
 output "out_of_cluster_endpoint" {
-  value = local.out_of_cluster_endpoint
+  value       = local.out_of_cluster_endpoint
   description = "The external endpoint for the Kubernetes API server. This only varies from the `in_cluster_endpoint` when using an internal load balancer setup."
 }
 
 output "in_cluster_endpoint" {
-  value = local.in_cluster_endpoint
+  value       = local.in_cluster_endpoint
   description = "The internal endpoint for the Kubernetes API server. This only varies from the `in_cluster_endpoint` when using an internal load balancer setup."
 }
-output "api_server_cert_sans" {
+output "extra_api_server_cert_sans" {
   value = sort(
     distinct(
       concat(
@@ -23,18 +23,18 @@ output "api_server_cert_sans" {
 }
 
 output "uid" {
-  value = local.uid
+  value       = local.uid
   description = "The UID of the cluster."
 }
 
 output "init_secret" {
-  value     = random_password.initSecret.result
-  sensitive = true
+  value       = random_password.init_secret.result
+  sensitive   = true
   description = "The init secret for the cluster."
 }
 
 output "project" {
-  value = var.project
+  value       = var.project
   description = "The GCP project to deploy the cluster in."
 }
 

@@ -75,7 +75,7 @@ func TestIAMCreateAWS(t *testing.T) {
 		CloudProvider: cloudprovider.AWS,
 		AWSOutput: cloudcmd.AWSIAMOutput{
 			ControlPlaneInstanceProfile: "test_control_plane_instance_profile",
-			WorkerNodeInstanceProfile:   "test_worker_nodes_instance_profile",
+			WorkerNodeInstanceProfile:   "test_worker_nodes_instance_profile_name",
 		},
 	}
 

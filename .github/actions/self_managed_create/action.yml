@@ -50,11 +50,11 @@ runs:
           }
         }" >> terraform.tfvars
         if [[ "${{ inputs.cloudProvider }}" == 'aws' ]]; then
-          echo "iam_instance_profile_control_plane = \"$(yq '.provider.aws.iamProfileControlPlane' constellation-conf.yaml)\"" >> terraform.tfvars
-          echo "iam_instance_profile_worker_nodes = \"$(yq '.provider.aws.iamProfileWorkerNodes' constellation-conf.yaml)\"" >> terraform.tfvars
+          echo "iam_instance_profile_name_control_plane = \"$(yq '.provider.aws.iamProfileControlPlane' constellation-conf.yaml)\"" >> terraform.tfvars
+          echo "iam_instance_profile_name_worker_nodes = \"$(yq '.provider.aws.iamProfileWorkerNodes' constellation-conf.yaml)\"" >> terraform.tfvars
           echo "region = \"$(yq '.provider.aws.region' constellation-conf.yaml)\"" >> terraform.tfvars
           echo "zone = \"$(yq '.provider.aws.zone' constellation-conf.yaml)\"" >> terraform.tfvars
-          echo "ami = \"${{ steps.get_image.outputs.image_ref }}\"" >> terraform.tfvars
+          echo "ami_id = \"${{ steps.get_image.outputs.image_ref }}\"" >> terraform.tfvars
           echo "enable_snp = $(yq '.attestation | has("awsSEVSNP")' constellation-conf.yaml)" >> terraform.tfvars
         elif [[ "${{ inputs.cloudProvider }}" == 'azure' ]]; then
           echo "location = \"$(yq '.provider.azure.location' constellation-conf.yaml)\"" >> terraform.tfvars
@@ -84,27 +84,27 @@ runs:
       working-directory: ${{ github.workspace }}/e2e-infra
       if: inputs.cloudProvider == 'azure'
       run: |
-        constellation maa-patch $(terraform output attestationURL | jq -r)
+        constellation maa-patch $(terraform output attestation_url | jq -r)
 
     - name: Write outputs to state file
       shell: bash
       working-directory: ${{ github.workspace }}/e2e-infra
       run: |
         yq eval '.version ="v1"' --inplace ${{ github.workspace }}/constellation-state.yaml
-        yq eval ".infrastructure.initSecret =\"$(terraform output initSecret | jq -r | tr -d '\n' | hexdump -ve '/1 "%02x"' && echo '')\"" --inplace ${{ github.workspace }}/constellation-state.yaml
+        yq eval ".infrastructure.initSecret =\"$(terraform output init_secret | jq -r | tr -d '\n' | hexdump -ve '/1 "%02x"' && echo '')\"" --inplace ${{ github.workspace }}/constellation-state.yaml
         yq eval ".infrastructure.clusterEndpoint =\"$(terraform output out_of_cluster_endpoint | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
         yq eval ".infrastructure.inClusterEndpoint =\"$(terraform output in_cluster_endpoint | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
         yq eval ".infrastructure.ipCidrNode =\"$(terraform output ip_cidr_nodes | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
         yq eval ".infrastructure.uid =\"$(terraform output uid | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
         yq eval ".infrastructure.name =\"$(terraform output name | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
-        yq eval ".infrastructure.apiServerCertSANs =$(terraform output -json api_server_cert_sans)" --inplace ${{ github.workspace }}/constellation-state.yaml
+        yq eval ".infrastructure.apiServerCertSANs =$(terraform output -json extra_api_server_cert_sans)" --inplace ${{ github.workspace }}/constellation-state.yaml
         if [[ "${{ inputs.cloudProvider }}" == 'azure' ]]; then
           yq eval ".infrastructure.azure.resourceGroup =\"$(terraform output resource_group | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
           yq eval ".infrastructure.azure.subscriptionID =\"$(terraform output subscription_id | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
           yq eval ".infrastructure.azure.networkSecurityGroupName =\"$(terraform output network_security_group_name | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
           yq eval ".infrastructure.azure.loadBalancerName =\"$(terraform output loadbalancer_name | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
           yq eval ".infrastructure.azure.userAssignedIdentity =\"$(terraform output user_assigned_identity_client_id | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
-          yq eval ".infrastructure.azure.attestationURL =\"$(terraform output attestationURL | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
+          yq eval ".infrastructure.azure.attestationURL =\"$(terraform output attestation_url | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
         elif [[ "${{ inputs.cloudProvider }}" == 'gcp' ]]; then
           yq eval ".infrastructure.gcp.projectID =\"$(terraform output project | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
           yq eval ".infrastructure.gcp.ipCidrPod =\"$(terraform output ip_cidr_pods | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml

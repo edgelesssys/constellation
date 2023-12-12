@@ -25,7 +25,7 @@ locals {
   cidr_vpc_subnet_worker         = "10.42.2.0/24"
 }
 
-resource "random_password" "initSecret" {
+resource "random_password" "init_secret" {
   length           = 32
   special          = true
   override_special = "_%@"
@@ -46,7 +46,7 @@ resource "docker_container" "qemu_metadata" {
     "--libvirt-uri",
     "${var.metadata_libvirt_uri}",
     "--initsecrethash",
-    "${random_password.initSecret.bcrypt_hash}",
+    "${random_password.init_secret.bcrypt_hash}",
   ]
   mounts {
     source = abspath(var.libvirt_socket_path)

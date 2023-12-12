@@ -976,7 +976,7 @@ func TestConfigVersionCompatibility(t *testing.T) {
 					AWS: &AWSConfig{
 						Region:                 "us-east-2",
 						Zone:                   "us-east-2a",
-						IAMProfileControlPlane: "control_plane_instance_profile",
+						IAMProfileControlPlane: "control_plane_instance_profile_name",
 						IAMProfileWorkerNodes:  "node_instance_profile",
 					},
 				},

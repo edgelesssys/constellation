@@ -141,7 +141,7 @@ func (c *Client) ShowIAM(ctx context.Context, provider cloudprovider.Provider) (
 			},
 		}, nil
 	case cloudprovider.AWS:
-		controlPlaneProfileRaw, ok := tfState.Values.Outputs["control_plane_instance_profile"]
+		controlPlaneProfileRaw, ok := tfState.Values.Outputs["control_plane_instance_profile_name"]
 		if !ok {
 			return IAMOutput{}, errors.New("no control plane instance profile output found")
 		}
@@ -149,7 +149,7 @@ func (c *Client) ShowIAM(ctx context.Context, provider cloudprovider.Provider) (
 		if !ok {
 			return IAMOutput{}, errors.New("invalid type in control plane instance profile output: not a string")
 		}
-		workerNodeProfileRaw, ok := tfState.Values.Outputs["worker_nodes_instance_profile"]
+		workerNodeProfileRaw, ok := tfState.Values.Outputs["worker_nodes_instance_profile_name"]
 		if !ok {
 			return IAMOutput{}, errors.New("no worker node instance profile output found")
 		}
@@ -196,17 +196,17 @@ func (c *Client) ShowInfrastructure(ctx context.Context, provider cloudprovider.
 		return state.Infrastructure{}, errors.New("invalid type in IP output: not a string")
 	}
 
-	apiServerCertSANsOutput, ok := tfState.Values.Outputs["api_server_cert_sans"]
+	apiServerCertSANsOutput, ok := tfState.Values.Outputs["extra_api_server_cert_sans"]
 	if !ok {
-		return state.Infrastructure{}, errors.New("no api_server_cert_sans output found")
+		return state.Infrastructure{}, errors.New("no extra_api_server_cert_sans output found")
 	}
 	apiServerCertSANsUntyped, ok := apiServerCertSANsOutput.Value.([]any)
 	if !ok {
-		return state.Infrastructure{}, fmt.Errorf("invalid type in api_server_cert_sans output: %s is not a list of elements", apiServerCertSANsOutput.Type.FriendlyName())
+		return state.Infrastructure{}, fmt.Errorf("invalid type in extra_api_server_cert_sans output: %s is not a list of elements", apiServerCertSANsOutput.Type.FriendlyName())
 	}
 	apiServerCertSANs, err := toStringSlice(apiServerCertSANsUntyped)
 	if err != nil {
-		return state.Infrastructure{}, fmt.Errorf("convert api_server_cert_sans output: %w", err)
+		return state.Infrastructure{}, fmt.Errorf("convert extra_api_server_cert_sans output: %w", err)
 	}
 
 	secretOutput, ok := tfState.Values.Outputs["init_secret"]

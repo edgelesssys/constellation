@@ -41,8 +41,8 @@ resource "null_resource" "aws_config" {
     command = <<EOT
       ./yq eval '.provider.aws.region = "${var.aws_config.region}"' -i constellation-conf.yaml
       ./yq eval '.provider.aws.zone = "${var.aws_config.zone}"' -i constellation-conf.yaml
-      ./yq eval '.provider.aws.iamProfileControlPlane = "${var.aws_config.iam_instance_profile_control_plane}"' -i constellation-conf.yaml
-      ./yq eval '.provider.aws.iamProfileWorkerNodes = "${var.aws_config.iam_instance_profile_worker_nodes}"' -i constellation-conf.yaml
+      ./yq eval '.provider.aws.iamProfileControlPlane = "${var.aws_config.iam_instance_profile_name_control_plane}"' -i constellation-conf.yaml
+      ./yq eval '.provider.aws.iamProfileWorkerNodes = "${var.aws_config.iam_instance_profile_name_worker_nodes}"' -i constellation-conf.yaml
     EOT
   }
   triggers = {
