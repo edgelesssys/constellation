@@ -55,7 +55,6 @@ resource "docker_container" "qemu_metadata" {
   }
 }
 
-
 module "node_group" {
   source           = "./modules/instance_group"
   base_name        = var.name
@@ -71,7 +70,7 @@ module "node_group" {
   network_id       = libvirt_network.constellation.id
   pool             = libvirt_pool.cluster.name
   boot_mode        = var.constellation_boot_mode
-  boot_volume_id   = libvirt_volume.constellation_os_image.id
+  boot_volume_id   = libvirt_volume.image_id.id
   kernel_volume_id = local.kernel_volume_id
   initrd_volume_id = local.initrd_volume_id
   kernel_cmdline   = each.value.role == "control-plane" ? local.kernel_cmdline : var.constellation_cmdline
@@ -85,10 +84,10 @@ resource "libvirt_pool" "cluster" {
   path = "/var/lib/libvirt/images"
 }
 
-resource "libvirt_volume" "constellation_os_image" {
+resource "libvirt_volume" "image_id" {
   name   = "${var.name}-node-image"
   pool   = libvirt_pool.cluster.name
-  source = var.constellation_os_image
+  source = var.image_id
   format = var.image_format
 }
 

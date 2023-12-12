@@ -347,7 +347,7 @@ type QEMUVariables struct {
 	// Can be either "uefi" or "direct-linux-boot".
 	BootMode string `hcl:"constellation_boot_mode" cty:"constellation_boot_mode"`
 	// ImagePath is the path to the image to use for the nodes.
-	ImagePath string `hcl:"constellation_os_image" cty:"constellation_os_image"`
+	ImagePath string `hcl:"image_id" cty:"image_id"`
 	// ImageFormat is the format of the image from ImagePath.
 	ImageFormat string `hcl:"image_format" cty:"image_format"`
 	// MetadataAPIImage is the container image to use for the metadata API.

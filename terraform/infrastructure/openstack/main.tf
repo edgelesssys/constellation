@@ -55,7 +55,7 @@ resource "random_password" "init_secret" {
   override_special = "_%@"
 }
 
-resource "openstack_images_image_v2" "constellation_os_image" {
+resource "openstack_images_image_v2" "image_id" {
   name             = local.name
   image_source_url = var.image_id
   web_download     = var.direct_download
@@ -168,7 +168,7 @@ module "instance_group" {
   disk_size                  = each.value.state_disk_size
   state_disk_type            = each.value.state_disk_type
   availability_zone          = each.value.zone
-  image_id                   = openstack_images_image_v2.constellation_os_image.image_id
+  image_id                   = openstack_images_image_v2.image_id.image_id
   flavor_id                  = each.value.flavor_id
   security_groups            = [openstack_compute_secgroup_v2.vpc_secgroup.id]
   tags                       = local.tags
