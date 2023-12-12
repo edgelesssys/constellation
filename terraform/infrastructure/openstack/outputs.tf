@@ -21,7 +21,7 @@ output "uid" {
 }
 
 output "init_secret" {
-  value     = random_password.init_secret.result
+  value       = random_password.init_secret.result
   sensitive   = true
   description = "Initialization secret to authenticate the bootstrapping node."
 }
@@ -32,6 +32,6 @@ output "name" {
 }
 
 output "ip_cidr_node" {
-  value = local.cidr_vpc_subnet_nodes
+  value       = local.cidr_vpc_subnet_nodes
   description = "CIDR block of the node network."
 }

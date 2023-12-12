@@ -53,6 +53,6 @@ output "project" {
 }
 
 output "ip_cidr_pod" {
-  value = local.cidr_vpc_subnet_pods
+  value       = local.cidr_vpc_subnet_pods
   description = "CIDR block of the pod network."
 }
