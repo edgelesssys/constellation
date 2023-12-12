@@ -138,12 +138,21 @@ func (k *KubeCmd) UpgradeKubernetesVersion(ctx context.Context, kubernetesVersio
 		))
 	}
 	components, err := k.prepareUpdateK8s(&nodeVersion, versionConfig.ClusterVersion, versionConfig.KubernetesComponents, force)
-	if err != nil {
-		return err
-	}
 
-	if err := k.applyComponentsCM(ctx, components); err != nil {
-		return fmt.Errorf("applying k8s components ConfigMap: %w", err)
+	var invalidUpgradeErr *compatibility.InvalidUpgradeError
+	var unnecessaryUpgradeErr *compatibility.UnnecessaryUpgradeError
+	switch {
+	case err == nil:
+		err := k.applyComponentsCM(ctx, components)
+		if err != nil {
+			return fmt.Errorf("applying k8s components ConfigMap: %w", err)
+		}
+	case errors.As(err, &unnecessaryUpgradeErr):
+		return nil
+	case errors.As(err, &invalidUpgradeErr):
+		return fmt.Errorf("skipping Kubernetes upgrade: %w", err)
+	default:
+		return fmt.Errorf("updating Kubernetes version: %w", err)
 	}
 
 	updatedNodeVersion, err := k.applyNodeVersion(ctx, nodeVersion)

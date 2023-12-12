@@ -100,6 +100,11 @@ func (a actionFactory) appendNewAction(
 	a.log.Debug(fmt.Sprintf("Current %q version: %q", release.releaseName, currentVersion))
 	a.log.Debug(fmt.Sprintf("New %q version: %q", release.releaseName, newVersion))
 
+	if currentVersion.Compare(newVersion) == 0 {
+		// Nothing to do.
+		return nil
+	}
+
 	if !force {
 		// For charts we package ourselves, the version is equal to the CLI version (charts are embedded in the binary).
 		// We need to make sure this matches with the version in a user's config, if an upgrade should be applied.

@@ -50,6 +50,17 @@ func (e *InvalidUpgradeError) Error() string {
 	return fmt.Sprintf("upgrading from %s to %s is not a valid upgrade: %s", e.from, e.to, e.innerErr)
 }
 
+// UnnecessaryUpgradeError is returned if both versions are the same.
+type UnnecessaryUpgradeError struct {
+	from string
+	to   string
+}
+
+// Error returns the String representation of this error.
+func (e *UnnecessaryUpgradeError) Error() string {
+	return fmt.Sprintf("no upgrade required from %s to %s", e.from, e.to)
+}
+
 // EnsurePrefixV returns the input string prefixed with the letter "v", if the string doesn't already start with that letter.
 func EnsurePrefixV(str string) string {
 	if strings.HasPrefix(str, "v") {
@@ -67,7 +78,11 @@ func IsValidUpgrade(a, b string) error {
 		return NewInvalidUpgradeError(a, b, ErrSemVer)
 	}
 
-	if semver.Compare(a, b) >= 0 {
+	if semver.Compare(a, b) == 0 {
+		return &UnnecessaryUpgradeError{a, b}
+	}
+
+	if semver.Compare(a, b) > 0 {
 		return NewInvalidUpgradeError(a, b, errors.New("current version newer than or equal to new version"))
 	}
 
