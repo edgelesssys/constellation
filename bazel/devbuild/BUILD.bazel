@@ -6,6 +6,7 @@ sh_template(
     data = [
         ":devbuild_cli_edition",
         "//bazel/release:container_sums",
+        "//bazel/settings:tag",
         "//bootstrapper/cmd/bootstrapper:bootstrapper_patched",
         "//cli:cli_edition_host",
         "//debugd/cmd/cdbg:cdbg_host",
@@ -25,8 +26,23 @@ sh_template(
         "@@TERRAFORM_PROVIDER@@": "$(rootpath //terraform-provider-constellation:tf_provider)",
         "@@TERRAFORM_RC@@": "$(rootpath //terraform-provider-constellation:terraform_rc)",
         "@@UPGRADE_AGENT@@": "$(rootpath //upgrade-agent/cmd:upgrade_agent_linux_amd64)",
+        "@@VERSION_FILE@@": "$(rootpath //bazel/settings:tag)",
         "@@YQ@@": "$(rootpath @yq_toolchains//:resolved_toolchain)",
-    },
+    } | select({
+        "@platforms//os:linux": {
+            "@@GOOS@@": "linux",
+        },
+        "@platforms//os:macos": {
+            "@@GOOS@@": "darwin",
+        },
+    }) | select({
+        "@platforms//cpu:arm64": {
+            "@@GOARCH@@": "arm64",
+        },
+        "@platforms//cpu:x86_64": {
+            "@@GOARCH@@": "amd64",
+        },
+    }),
     template = "prepare_developer_workspace.sh.in",
     visibility = ["//visibility:public"],
 )
