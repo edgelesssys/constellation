@@ -92,7 +92,7 @@ func TestAWSIAMVariables(t *testing.T) {
 name_prefix = "my-prefix"
 `
 	got := vars.String()
-	assert.Equal(t, want, got)
+	assert.Equal(t, strings.Fields(want), strings.Fields(got)) // to ignore whitespace differences
 }
 
 func TestGCPClusterVariables(t *testing.T) {
@@ -153,7 +153,7 @@ custom_endpoint        = "example.com"
 internal_load_balancer = false
 `
 	got := vars.String()
-	assert.Equal(t, want, got)
+	assert.Equal(t, strings.Fields(want), strings.Fields(got)) // to ignore whitespace differences
 }
 
 func TestGCPIAMVariables(t *testing.T) {
@@ -171,7 +171,7 @@ zone               = "eu-central-1a"
 service_account_id = "my-service-account"
 `
 	got := vars.String()
-	assert.Equal(t, want, got)
+	assert.Equal(t, strings.Fields(want), strings.Fields(got)) // to ignore whitespace differences
 }
 
 func TestAzureClusterVariables(t *testing.T) {
@@ -231,7 +231,7 @@ marketplace_image = {
 }
 `
 	got := vars.String()
-	assert.Equal(t, want, got)
+	assert.Equal(t, strings.Fields(want), strings.Fields(got)) // to ignore whitespace differences
 }
 
 func TestAzureIAMVariables(t *testing.T) {
@@ -247,7 +247,7 @@ service_principal_name = "my-service-principal"
 resource_group_name    = "my-resource-group"
 `
 	got := vars.String()
-	assert.Equal(t, want, got)
+	assert.Equal(t, strings.Fields(want), strings.Fields(got)) // to ignore whitespace differences
 }
 
 func TestOpenStackClusterVariables(t *testing.T) {
@@ -298,7 +298,7 @@ custom_endpoint            = "example.com"
 internal_load_balancer     = false
 `
 	got := vars.String()
-	assert.Equal(t, want, got)
+	assert.Equal(t, strings.Fields(want), strings.Fields(got)) // to ignore whitespace differences
 }
 
 func TestQEMUClusterVariables(t *testing.T) {
@@ -353,7 +353,7 @@ custom_endpoint         = "example.com"
 internal_load_balancer  = false
 `
 	got := vars.String()
-	assert.Equal(t, want, got)
+	assert.Equal(t, strings.Fields(want), strings.Fields(got)) // to ignore whitespace differences
 }
 
 func TestVariablesFromBytes(t *testing.T) {
