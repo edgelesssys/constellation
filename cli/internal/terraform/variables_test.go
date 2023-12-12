@@ -288,7 +288,7 @@ node_groups = {
 }
 cloud                      = "my-cloud"
 floating_ip_pool_id        = "fip-pool-0123456789abcdef"
-image_url                  = "https://example.com/image.raw"
+image_id                  = "https://example.com/image.raw"
 direct_download            = true
 openstack_user_domain_name = "my-user-domain"
 openstack_username         = "my-username"

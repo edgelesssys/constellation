@@ -57,7 +57,7 @@ resource "random_password" "init_secret" {
 
 resource "openstack_images_image_v2" "constellation_os_image" {
   name             = local.name
-  image_source_url = var.image_url
+  image_source_url = var.image_id
   web_download     = var.direct_download
   container_format = "bare"
   disk_format      = "raw"
