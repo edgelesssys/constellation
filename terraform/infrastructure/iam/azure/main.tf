@@ -28,7 +28,7 @@ provider "azuread" {
 # Access current subscription (available via Azure CLI)
 data "azurerm_subscription" "current" {}
 
-# # Access current AzureAD configuration
+# Access current AzureAD configuration
 data "azuread_client_config" "current" {}
 
 # Create base resource group
