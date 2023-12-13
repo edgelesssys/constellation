@@ -85,8 +85,9 @@ func (d *AttestationDataSource) Metadata(_ context.Context, req datasource.Metad
 // Schema returns the schema for the data source.
 func (d *AttestationDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		// This description is used by the documentation generator and the language server.
-		MarkdownDescription: "The data source to fetch measurements from a configured cloud provider and image.",
+		Description:         "Data source to fetch an attestation configuration for a given cloud service provider, attestation variant, and OS image.",
+		MarkdownDescription: "Data source to fetch an attestation configuration for a given cloud service provider, attestation variant, and OS image.",
+
 		Attributes: map[string]schema.Attribute{
 			"csp":                 newCSPAttribute(),
 			"attestation_variant": newAttestationVariantAttribute(attributeInput),

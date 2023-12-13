@@ -3,12 +3,12 @@
 page_title: "constellation_attestation Data Source - constellation"
 subcategory: ""
 description: |-
-  The data source to fetch measurements from a configured cloud provider and image.
+  Data source to fetch an attestation configuration for a given cloud service provider, attestation variant, and OS image.
 ---
 
 # constellation_attestation (Data Source)
 
-The data source to fetch measurements from a configured cloud provider and image.
+Data source to fetch an attestation configuration for a given cloud service provider, attestation variant, and OS image.
 
 ## Example Usage
 
