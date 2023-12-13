@@ -49,7 +49,7 @@ module "constellation" {
   inClusterEndpoint    = module.azure.in_cluster_endpoint
   initSecretHash       = module.azure.init_secret
   ipCidrNode           = module.azure.ip_cidr_node
-  apiServerCertSANs    = module.azure.extra_api_server_cert_sans
+  apiServerCertSANs    = module.azure.api_server_cert_sans
   node_groups          = var.node_groups
   azure_config = {
     subscription             = module.azure_iam.subscription_id

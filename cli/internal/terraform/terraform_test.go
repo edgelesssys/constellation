@@ -224,7 +224,7 @@ func TestCreateCluster(t *testing.T) {
 					"uid": {
 						Value: "12345abc",
 					},
-					"extra_api_server_cert_sans": {
+					"api_server_cert_sans": {
 						Value: []any{"192.0.2.100"},
 					},
 					"name": {
@@ -257,7 +257,7 @@ func TestCreateCluster(t *testing.T) {
 					"attestation_url": {
 						Value: "https://12345.neu.attest.azure.net",
 					},
-					"extra_api_server_cert_sans": {
+					"api_server_cert_sans": {
 						Value: []any{"192.0.2.100"},
 					},
 					"user_assigned_identity_client_id": {

@@ -10,7 +10,7 @@ output "in_cluster_endpoint" {
   description = "Internal endpoint for the Kubernetes API server."
 }
 
-output "extra_api_server_cert_sans" {
+output "api_server_cert_sans" {
   value       = sort(concat([module.node_group["control_plane_default"].instance_ips[0]], var.custom_endpoint == "" ? [] : [var.custom_endpoint]))
   description = "List of Subject Alternative Names (SANs) for the API server certificate."
 }

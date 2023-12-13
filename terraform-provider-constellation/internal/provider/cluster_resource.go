@@ -60,25 +60,25 @@ type ClusterResource struct {
 
 // ClusterResourceModel describes the resource data model.
 type ClusterResourceModel struct {
-	Name                   types.String `tfsdk:"name"`
-	CSP                    types.String `tfsdk:"csp"`
-	UID                    types.String `tfsdk:"uid"`
-	ImageVersion           types.String `tfsdk:"image_version"`
-	ImageReference         types.String `tfsdk:"image_reference"`
-	KubernetesVersion      types.String `tfsdk:"kubernetes_version"`
-	MicroserviceVersion    types.String `tfsdk:"constellation_microservice_version"`
-	OutOfClusterEndpoint   types.String `tfsdk:"out_of_cluster_endpoint"`
-	InClusterEndpoint      types.String `tfsdk:"in_cluster_endpoint"`
-	ExtraMicroservices     types.Object `tfsdk:"extra_microservices"`
-	ExtraAPIServerCertSANs types.List   `tfsdk:"extra_api_server_cert_sans"`
-	NetworkConfig          types.Object `tfsdk:"network_config"`
-	MasterSecret           types.String `tfsdk:"master_secret"`
-	MasterSecretSalt       types.String `tfsdk:"master_secret_salt"`
-	MeasurementSalt        types.String `tfsdk:"measurement_salt"`
-	InitSecret             types.String `tfsdk:"init_secret"`
-	Attestation            types.Object `tfsdk:"attestation"`
-	GCP                    types.Object `tfsdk:"gcp"`
-	Azure                  types.Object `tfsdk:"azure"`
+	Name                 types.String `tfsdk:"name"`
+	CSP                  types.String `tfsdk:"csp"`
+	UID                  types.String `tfsdk:"uid"`
+	ImageVersion         types.String `tfsdk:"image_version"`
+	ImageReference       types.String `tfsdk:"image_reference"`
+	KubernetesVersion    types.String `tfsdk:"kubernetes_version"`
+	MicroserviceVersion  types.String `tfsdk:"constellation_microservice_version"`
+	OutOfClusterEndpoint types.String `tfsdk:"out_of_cluster_endpoint"`
+	InClusterEndpoint    types.String `tfsdk:"in_cluster_endpoint"`
+	ExtraMicroservices   types.Object `tfsdk:"extra_microservices"`
+	APIServerCertSANs    types.List   `tfsdk:"api_server_cert_sans"`
+	NetworkConfig        types.Object `tfsdk:"network_config"`
+	MasterSecret         types.String `tfsdk:"master_secret"`
+	MasterSecretSalt     types.String `tfsdk:"master_secret_salt"`
+	MeasurementSalt      types.String `tfsdk:"measurement_salt"`
+	InitSecret           types.String `tfsdk:"init_secret"`
+	Attestation          types.Object `tfsdk:"attestation"`
+	GCP                  types.Object `tfsdk:"gcp"`
+	Azure                types.Object `tfsdk:"azure"`
 
 	OwnerID    types.String `tfsdk:"owner_id"`
 	ClusterID  types.String `tfsdk:"cluster_id"`
@@ -178,11 +178,12 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 					},
 				},
 			},
-			"extra_api_server_cert_sans": schema.ListAttribute{
-				MarkdownDescription: "List of additional Subject Alternative Names (SANs) for the API server certificate.",
-				Description:         "List of additional Subject Alternative Names (SANs) for the API server certificate.",
-				ElementType:         types.StringType,
-				Optional:            true,
+			"api_server_cert_sans": schema.ListAttribute{
+				MarkdownDescription: "List of Subject Alternative Names (SANs) for the API server certificate. Usually, this will be" +
+					" the out-of-cluster endpoint and the in-cluster endpoint, if existing.",
+				Description: "List of Subject Alternative Names (SANs) for the API server certificate.",
+				ElementType: types.StringType,
+				Optional:    true,
 			},
 			"network_config": schema.SingleNestedAttribute{
 				MarkdownDescription: "Configuration for the cluster's network.",
@@ -503,8 +504,8 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 	}
 
 	// parse API server certificate SANs
-	apiServerCertSANs := make([]string, 0, len(data.ExtraAPIServerCertSANs.Elements()))
-	for _, san := range data.ExtraAPIServerCertSANs.Elements() {
+	apiServerCertSANs := make([]string, 0, len(data.APIServerCertSANs.Elements()))
+	for _, san := range data.APIServerCertSANs.Elements() {
 		apiServerCertSANs = append(apiServerCertSANs, san.String())
 	}
 

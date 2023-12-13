@@ -9,7 +9,7 @@ output "in_cluster_endpoint" {
   value       = local.in_cluster_endpoint
   description = "Internal endpoint for the Kubernetes API server."
 }
-output "extra_api_server_cert_sans" {
+output "api_server_cert_sans" {
   value = sort(
     distinct(
       concat(

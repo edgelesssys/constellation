@@ -196,17 +196,17 @@ func (c *Client) ShowInfrastructure(ctx context.Context, provider cloudprovider.
 		return state.Infrastructure{}, errors.New("invalid type in IP output: not a string")
 	}
 
-	apiServerCertSANsOutput, ok := tfState.Values.Outputs["extra_api_server_cert_sans"]
+	apiServerCertSANsOutput, ok := tfState.Values.Outputs["api_server_cert_sans"]
 	if !ok {
-		return state.Infrastructure{}, errors.New("no extra_api_server_cert_sans output found")
+		return state.Infrastructure{}, errors.New("no api_server_cert_sans output found")
 	}
 	apiServerCertSANsUntyped, ok := apiServerCertSANsOutput.Value.([]any)
 	if !ok {
-		return state.Infrastructure{}, fmt.Errorf("invalid type in extra_api_server_cert_sans output: %s is not a list of elements", apiServerCertSANsOutput.Type.FriendlyName())
+		return state.Infrastructure{}, fmt.Errorf("invalid type in api_server_cert_sans output: %s is not a list of elements", apiServerCertSANsOutput.Type.FriendlyName())
 	}
 	apiServerCertSANs, err := toStringSlice(apiServerCertSANsUntyped)
 	if err != nil {
-		return state.Infrastructure{}, fmt.Errorf("convert extra_api_server_cert_sans output: %w", err)
+		return state.Infrastructure{}, fmt.Errorf("convert api_server_cert_sans output: %w", err)
 	}
 
 	secretOutput, ok := tfState.Values.Outputs["init_secret"]
