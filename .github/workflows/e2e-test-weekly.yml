@@ -216,6 +216,22 @@ jobs:
             kubernetes-version: "v1.28"
             clusterCreation: "self-managed"
 
+          - test: "sonobuoy full"
+            refStream: "ref/main/stream/debug/?"
+            provider: "gcp"
+            kubernetes-version: "v1.28"
+            clusterCreation: "terraform"
+          - test: "sonobuoy full"
+            refStream: "ref/main/stream/debug/?"
+            provider: "azure"
+            kubernetes-version: "v1.28"
+            clusterCreation: "terraform"
+          - test: "sonobuoy full"
+            refStream: "ref/main/stream/debug/?"
+            provider: "aws"
+            kubernetes-version: "v1.28"
+            clusterCreation: "terraform"
+
           # s3proxy test on latest k8s version
           - test: "s3proxy"
             refStream: "ref/main/stream/debug/?"
