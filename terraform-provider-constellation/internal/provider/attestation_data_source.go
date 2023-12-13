@@ -52,15 +52,10 @@ type AttestationDataSourceModel struct {
 
 // Configure configures the data source.
 func (d *AttestationDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
-	d.client = http.DefaultClient
-	d.fetcher = attestationconfigapi.NewFetcher()
-	rekor, err := sigstore.NewRekor()
-	if err != nil {
-		resp.Diagnostics.AddError("constructing rekor client", err.Error())
+	// Prevent panic if the provider has not been configured. is necessary!
+	if req.ProviderData == nil {
 		return
 	}
-	d.rekor = rekor
-
 	providerData, ok := req.ProviderData.(data.ProviderData)
 	if !ok {
 		resp.Diagnostics.AddError(
@@ -69,8 +64,16 @@ func (d *AttestationDataSource) Configure(_ context.Context, req datasource.Conf
 		)
 		return
 	}
-
 	d.version = providerData.Version
+
+	d.client = http.DefaultClient
+	d.fetcher = attestationconfigapi.NewFetcher()
+	rekor, err := sigstore.NewRekor()
+	if err != nil {
+		resp.Diagnostics.AddError("constructing rekor client", err.Error())
+		return
+	}
+	d.rekor = rekor
 }
 
 // Metadata returns the metadata for the data source.
