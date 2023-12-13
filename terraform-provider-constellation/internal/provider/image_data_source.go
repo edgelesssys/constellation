@@ -74,8 +74,8 @@ func (d *ImageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 		Attributes: map[string]schema.Attribute{
 			"attestation_variant": newAttestationVariantAttribute(attributeInput),
 			"image_version": schema.StringAttribute{
-				Description:         "Version of the Constellation OS image to use. (e.g. `v2.13.0`)",
-				MarkdownDescription: "Version of the Constellation OS image to use. (e.g. `v2.13.0`)",
+				Description:         "Version of the Constellation OS image to use. (e.g. `v2.13.0`). If not set, the provider version value is used.",
+				MarkdownDescription: "Version of the Constellation OS image to use. (e.g. `v2.13.0`). If not set, the provider version value is used.",
 				Optional:            true,
 			},
 			"csp": newCSPAttribute(),
@@ -169,7 +169,7 @@ func (d *ImageDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 
 	imageVersion := data.ImageVersion.ValueString()
 	if imageVersion == "" {
-		tflog.Info(ctx, "No image version specified, using provider version")
+		tflog.Info(ctx, fmt.Sprintf("No image version specified, using provider version %s", d.version))
 		imageVersion = d.version // Use provider version as default.
 	}
 

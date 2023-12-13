@@ -114,7 +114,7 @@ func TestAccAttestationSource(t *testing.T) {
 				},
 			},
 		},
-		"aws sev-snp with maaURL fails": {
+		"aws sev-snp with maa_url fails": {
 			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{

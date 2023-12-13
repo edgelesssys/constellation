@@ -90,7 +90,7 @@ func (d *AttestationDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 			"csp":                 newCSPAttribute(),
 			"attestation_variant": newAttestationVariantAttribute(attributeInput),
 			"image_version": schema.StringAttribute{
-				MarkdownDescription: "The image version to use",
+				MarkdownDescription: "The image version to use. If not set, the provider version value is used.",
 				Optional:            true,
 			},
 			"maa_url": schema.StringAttribute{
@@ -115,7 +115,7 @@ func (d *AttestationDataSource) ValidateConfig(ctx context.Context, req datasour
 	if !data.AttestationVariant.Equal(types.StringValue("azure-sev-snp")) && !data.MaaURL.IsNull() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("maa_url"),
-			"MAA URL can only be set for Azure SEV-SNP", "Only when attestation_variant is set to 'azure-sev-snp', 'maa_url' must be specified.",
+			"MAA URL can only be set for Azure SEV-SNP", "When using other attestation variants, it should not be set.",
 		)
 		return
 	}
@@ -175,7 +175,7 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 
 	imageVersion := data.ImageVersion.ValueString()
 	if imageVersion == "" {
-		tflog.Info(ctx, "No image version specified, using provider version")
+		tflog.Info(ctx, fmt.Sprintf("No image version specified, using provider version %s", d.version))
 		imageVersion = d.version // Use provider version as default.
 	}
 	fetchedMeasurements, err := verifyFetcher.FetchAndVerifyMeasurements(ctx, imageVersion,
