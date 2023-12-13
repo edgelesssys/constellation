@@ -60,6 +60,7 @@ runs:
           attestation_variant = "${attestationVariant}"
           image_version       = "$(yq '.image' constellation-conf.yaml)"
           maa_url             = "$(yq '.infrastructure.azure.attestationURL' constellation-state.yaml)"
+          insecure            = true
         }
 
         data "constellation_image" "con_image" {
@@ -97,7 +98,7 @@ runs:
           gcp = {
             count = "$(yq '.provider | keys | .[0]' constellation-conf.yaml)" == "gcp" ? 1 : 0
             project_id          = "$(yq '.infrastructure.gcp.projectID' constellation-state.yaml)"
-            service_account_key = "$(cat $(yq '.provider.gcp.serviceAccountKeyPath' constellation-conf.yaml) | base64 -w0)"
+            service_account_key = sensitive("$(cat $(yq '.provider.gcp.serviceAccountKeyPath' constellation-conf.yaml) | base64 -w0)")
           }
           network_config = {
             ip_cidr_node    = "$(yq '.infrastructure.ipCidrNode' constellation-state.yaml)"
