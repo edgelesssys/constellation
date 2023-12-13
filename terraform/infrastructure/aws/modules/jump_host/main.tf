@@ -23,9 +23,9 @@ resource "aws_instance" "jump_host" {
   instance_type               = "c5a.large"
   associate_public_ip_address = true
 
-  iam_instance_profile = var.iam_instance_profile
-  subnet_id            = var.subnet_id
-  security_groups      = [var.security_group_id]
+  iam_instance_profile   = var.iam_instance_profile
+  subnet_id              = var.subnet_id
+  vpc_security_group_ids = var.security_groups
 
   tags = {
     "Name" = "${var.base_name}-jump-host"
