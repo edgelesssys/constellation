@@ -88,7 +88,7 @@ resource "constellation_cluster" "azure_example" {
   image_version                      = local.version
   image_reference                    = data.constellation_image.bar.reference
   attestation                        = data.constellation_attestation.foo.attestation
-  init_secret                        = module.azure_infrastructure.initSecret
+  init_secret                        = module.azure_infrastructure.init_secret
   master_secret                      = local.master_secret
   master_secret_salt                 = local.master_secret_salt
   measurement_salt                   = local.measurement_salt
@@ -105,7 +105,7 @@ resource "constellation_cluster" "azure_example" {
     network_security_group_name = module.azure_infrastructure.network_security_group_name
   }
   network_config = {
-    ip_cidr_node    = module.azure_infrastructure.ip_cidr_nodes
+    ip_cidr_node    = module.azure_infrastructure.ip_cidr_node
     ip_cidr_service = "10.96.0.0/12"
   }
 }
