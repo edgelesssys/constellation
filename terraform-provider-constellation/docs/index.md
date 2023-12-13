@@ -5,7 +5,7 @@ subcategory: ""
 description: |-
   The Constellation provider manages Constellation clusters.
   Given user-defined infrastructure in Terraform, the provider with its main 'constellation_cluster' resource manages the entire lifecycle of a cluster.
-  The provider has feature parity with the Constellation CLI and provides easy usage for custom infrastructure setups and GitOps workflows.
+  The provider provides easy usage for custom infrastructure setups and GitOps workflows.
   It is released as part of Constellation releases, such that each provider version is compatible with the corresponding Constellation version.
 ---
 
@@ -14,7 +14,7 @@ description: |-
 The Constellation provider manages Constellation clusters.
 
 Given user-defined infrastructure in Terraform, the provider with its main 'constellation_cluster' resource manages the entire lifecycle of a cluster.
-The provider has feature parity with the Constellation CLI and provides easy usage for custom infrastructure setups and GitOps workflows.
+The provider provides easy usage for custom infrastructure setups and GitOps workflows.
 It is released as part of Constellation releases, such that each provider version is compatible with the corresponding Constellation version.
 
 ## Example Usage

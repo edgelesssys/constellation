@@ -27,9 +27,7 @@ type ConstellationProviderModel struct{}
 
 // ConstellationProvider is the provider implementation.
 type ConstellationProvider struct {
-	// version is set to the provider version on release, "dev" when the
-	// provider is built and ran locally, and "v2.13.0" when running acceptance
-	// testing.
+	// version is set to the provider version on release, and the pseudo version on local builds. The pseudo version is not a valid default for the image_version attribute.
 	version string
 }
 
@@ -55,7 +53,7 @@ func (p *ConstellationProvider) Schema(_ context.Context, _ provider.SchemaReque
 		MarkdownDescription: `The Constellation provider manages Constellation clusters.
 
 Given user-defined infrastructure in Terraform, the provider with its main 'constellation_cluster' resource manages the entire lifecycle of a cluster.
-The provider has feature parity with the Constellation CLI and provides easy usage for custom infrastructure setups and GitOps workflows.
+The provider provides easy usage for custom infrastructure setups and GitOps workflows.
 It is released as part of Constellation releases, such that each provider version is compatible with the corresponding Constellation version.`,
 	}
 }

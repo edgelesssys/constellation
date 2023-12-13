@@ -19,7 +19,7 @@ func TestAccImageDataSource(t *testing.T) {
 
 	testCases := map[string]resource.TestCase{
 		"no image_version succeeds": {
-			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion("v2.13.0"),
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{

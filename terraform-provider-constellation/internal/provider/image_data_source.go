@@ -13,6 +13,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
 	"github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/data"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -120,6 +121,8 @@ func (d *ImageDataSource) ValidateConfig(ctx context.Context, req datasource.Val
 
 // Configure configures the data source.
 func (d *ImageDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+	d.imageFetcher = imagefetcher.New()
+
 	// Prevent panic if the provider has not been configured. is necessary!
 	if req.ProviderData == nil {
 		return

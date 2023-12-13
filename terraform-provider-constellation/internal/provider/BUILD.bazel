@@ -28,6 +28,7 @@ go_library(
         "//internal/constellation/helm",
         "//internal/constellation/state",
         "//internal/grpc/dialer",
+        "//internal/imagefetcher",
         "//internal/kms/uri",
         "//internal/semver",
         "//internal/sigstore",
@@ -79,13 +80,13 @@ go_test(
     # keep
     x_defs = {
         "runsUnder": "bazel",
-        "version": "v2.13.0",  # TODO(elchead): inject dynamically?
     },
     deps = [
         "//internal/attestation/idkeydigest",
         "//internal/attestation/measurements",
         "//internal/attestation/variant",
         "//internal/config",
+        "//internal/constants",
         "@com_github_hashicorp_terraform_plugin_framework//providerserver",
         "@com_github_hashicorp_terraform_plugin_go//tfprotov6",
         "@com_github_hashicorp_terraform_plugin_testing//helper/resource",

@@ -1,5 +1,5 @@
 name: e2e test Terraform provider
-# TODO(elchead): will be fixed in AB#3547
+# TODO(elchead): not working until reworked in AB#3547 with new provider
 on:
   workflow_dispatch:
     inputs:

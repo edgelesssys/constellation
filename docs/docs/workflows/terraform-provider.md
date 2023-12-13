@@ -8,7 +8,7 @@ The provider is available through the [Terraform registry](https://registry.terr
 - a Terraform installation of version `v1.4.4` or above
 
 ## Quick setup
-The example shows how to set up a Constellation cluster with the default infrastructure and IAM setup. The modules can either be consumed by using the remote source shown below (recommended) or by downloading them from the [Constellation release page ](https://github.com/edgelesssys/constellation/releases/latest) and placing them in the Terraform workspace directory.
+The example shows how to set up a Constellation cluster with the default infrastructure and IAM setup. The IAM / infrastructure modules can be either consumed through a remote source (recommended) or local files. The latter requires downloading the submodules from `terraform-modules.zip` on the [Constellation release page](https://github.com/edgelesssys/constellation/releases/latest) and placing them in the Terraform workspace directory.
 
 
 1. Create a directory (workspace) for your Constellation cluster.
@@ -19,6 +19,7 @@ The example shows how to set up a Constellation cluster with the default infrast
 
 1. Create a `main.tf` file.
 <!-- TODO: put file in repo to reuse in e2e test? -->
+<!-- TODO(elchead): AB#3607 put correct examples -->
 
   <tabs groupId="csp">
 
@@ -182,7 +183,8 @@ For general information on cluster upgrades, see [Upgrade your cluster](./upgrad
 :::
 
 First update the version of the Constellation Terraform provider. If you explicitly set versions (e.g. `image_version` or `constellation_microservice_version`), make sure to update them. Refer to [version support](https://github.com/edgelesssys/constellation/blob/main/dev-docs/workflows/versions-support.md), for more information on the version support policy.
-Regarding the infrastructure / IAM modules, using a [remote address as module source](https://developer.hashicorp.com/terraform/language/modules/sources#fetching-archives-over-http) as shown in [Quick setup](#quick-setup) is recommended because it simplifies the upgrade process. For [local paths as module source](https://developer.hashicorp.com/terraform/language/modules/sources#local-paths), you would update the local files with the ones from the `terraform-module.zip` of the [Constellation release](https://github.com/edgelesssys/constellation/releases) and look out for potential breaking changes in the infrastructure setup.
+Regarding the infrastructure / IAM modules, using a [remote address as module source](https://developer.hashicorp.com/terraform/language/modules/sources#fetching-archives-over-http) as shown in [Quick setup](#quick-setup) is recommended because it simplifies the upgrade process. For [local paths as module source](https://developer.hashicorp.com/terraform/language/modules/sources#local-paths), you need to replace the local files with those from the [Constellation release](https://github.com/edgelesssys/constellation/releases). Please also look out for potential breaking changes in the infrastructure setup in the release notes.
+
 The steps for applying the upgrade are as follows:
 
 1. Update the `<version>` variable inside the `source` field of the module.

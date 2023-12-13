@@ -18,8 +18,8 @@ func TestAccAttestationSource(t *testing.T) {
 	bazelPreCheck := func() { bazelSetTerraformBinaryPath(t) }
 
 	testCases := map[string]resource.TestCase{
-		"aws sev-snp succcess": {
-			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		"aws sev-snp succcess without explicit image_version": {
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion("v2.13.0"), // do this to test if a valid default version is set
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
@@ -27,7 +27,6 @@ func TestAccAttestationSource(t *testing.T) {
 					data "constellation_attestation" "test" {
 						csp = "aws"
 						attestation_variant = "aws-sev-snp"
-						image_version = "v2.13.0"
 					}
 					`,
 					Check: resource.ComposeAggregateTestCheckFunc(
