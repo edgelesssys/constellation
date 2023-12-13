@@ -18,148 +18,20 @@ This example shows how to set up a Constellation cluster with the reference IAM 
   ```
 
 1. Create a `main.tf` file.
-<!-- TODO: put file in repo to reuse in e2e test? -->
 <!-- TODO(elchead): AB#3607 put correct examples -->
 
   <tabs groupId="csp">
 
   <tabItem value="azure" label="Azure">
-
-```
-terraform {
-  required_providers {
-    constellation = {
-      source  = "tbd/constellation"
-      version = "2.13.0"
-    }
-  }
-}
-
-data "constellation_attestation" "att" {
-    csp = "azure"
-    attestation_variant = "azure-sev-snp"
-    maa_url = "https://www.example.com" #  need to set this value
-    image_version = "vX.Y.Z"  # defaults to provider version when not set
-}
-
-data "constellation_image" "img" {
-    csp = "azure"
-    attestation_variant = "azure-sev-snp"
-    image_version = "vX.Y.Z"  # defaults to provider version when not set
-}
-
-module "azure_iam" {
-  source = "https://github.com/edgelesssys/constellation/releases/download/<version>/terraform-module.zip//terraform-module/iam/azure" // replace <version> with a Constellation version, e.g., v2.13.0
-  region                 = var.location
-  service_principal_name = var.service_principal_name
-  resource_group_name    = var.resource_group_name
-}
-
-module "azure" {
-  source = "https://github.com/edgelesssys/constellation/releases/download/<version>/terraform-module.zip//terraform-module/azure" // replace <version> with a Constellation version, e.g., v2.13.0
-  name                   = var.name
-  user_assigned_identity = module.azure_iam.uami_id
-  node_groups            = var.node_groups
-  location               = var.location
-  image_id               = module.fetch_image.image
-  debug                  = var.debug
-  resource_group         = module.azure_iam.base_resource_group
-  create_maa             = var.create_maa
-}
-resource "constellation_cluster" "foo" {
-   csp                                = "azure"
-  constellation_microservice_version = "vX.Y.Z"
-  name                               = module.azure.name
-  uid                                = module.azure.uid
-  image                              = data.constellation_image.img.reference
-  attestation                        = data.constellation_attestation.att.attestation
-  init_secret                        = module.azure.initSecret
-  master_secret                      = ...
-  master_secret_salt                 = ...
-  measurement_salt                   = ...
-  out_of_cluster_endpoint            = module.azure.out_of_cluster_endpoint
-  in_cluster_endpoint                = module.azure.in_cluster_endpoint
-  azure = {
-    tenant_id                   = module.azure_iam.tenant_id
-    subscription_id             = module.azure_iam.subscription_id
-    uami                        = module.azure_iam.uami_id
-    location                    = "northeurope"
-    resource_group              = module.azure_iam.base_resource_group
-    load_balancer_name          = module.azure.loadbalancer_name
-    network_security_group_name = module.azure.network_security_group_name
-  }
-  network_config = {
-    ip_cidr_node    = module.azure.ip_cidr_nodes
-    ip_cidr_service = "10.96.0.0/12"
-  }
-}
-}
-
-```
-
+<!-- TODO(elchead): follow up PR with #2713 examples -->
   </tabItem>
 
   <tabItem value="aws" label="AWS">
-
-  ```
-  module "aws-constellation" {
-    source = "https://github.com/edgelesssys/constellation/releases/download/<version>/terraform-module.zip//terraform-module/aws-constellation" // replace <version> with a Constellation version, e.g., v2.13.0
-    name        = "constell"
-    zone        = "us-east-2c"
-    name_prefix = "example"
-    node_groups = {
-      control_plane_default = {
-        role          = "control-plane"
-        zone          = "us-east-2c"
-        instance_type = "m6a.xlarge"
-        disk_size     = 30
-        disk_type     = "gp3"
-        initial_count = 3
-      },
-      worker_default = {
-        role          = "worker"
-        zone          = "us-east-2c"
-        instance_type = "m6a.xlarge"
-        disk_size     = 30
-        disk_type     = "gp3"
-        initial_count = 2
-      }
-    }
-  }
-  ```
-
+<!-- TODO(elchead): follow up PR with #2713 examples -->
   </tabItem>
 
   <tabItem value="gcp" label="GCP">
-
-  ```
-  module "gcp-constellation" {
-    source = "https://github.com/edgelesssys/constellation/releases/download/<version>/terraform-module.zip//terraform-module/gcp-constellation" // replace <version> with a Constellation version, e.g., v2.13.0
-    name    = "constell"
-    project = "constell-proj" // replace with your project id
-    service_account_id = "constid"
-    zone    = "europe-west2-a"
-    node_groups = {
-      control_plane_default = {
-        role          = "control-plane"
-        zone          = "europe-west2-a"
-        instance_type = "n2d-standard-4"
-        disk_size     = 30
-        disk_type     = "pd-ssd"
-        initial_count = 3
-      },
-      worker_default = {
-        role          = "worker"
-        zone          = "europe-west2-a"
-        instance_type = "n2d-standard-4"
-        disk_size     = 30
-        disk_type     = "pd-ssd"
-        initial_count = 2
-      }
-    }
-  }
-  ```
-
+<!-- TODO(elchead): follow up PR with #2713 examples -->
   </tabItem>
   </tabs>
 
