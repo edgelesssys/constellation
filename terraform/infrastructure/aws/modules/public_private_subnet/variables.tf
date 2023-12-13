@@ -30,5 +30,5 @@ variable "cidr_vpc_subnet_internet" {
 
 variable "tags" {
   type        = map(string)
-  description = "Zags to add to the resource."
+  description = "Tags to add to the resource."
 }
