@@ -23,7 +23,7 @@ variable "ports" {
   type        = list(number)
 }
 
-variable "security_group_id" {
-  description = "Security group to attach to the jump host"
-  type        = string
+variable "security_groups" {
+  type        = list(string)
+  description = "List of IDs of the security groups for an instance."
 }

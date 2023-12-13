@@ -218,7 +218,7 @@ module "jump_host" {
   lb_internal_ip       = aws_lb.front_end.dns_name
   ports                = [for port in local.load_balancer_ports : port.port]
   iam_instance_profile = var.iam_instance_profile_worker_nodes
-  security_group_id    = aws_security_group.security_group.id
+  security_groups      = [aws_security_group.security_group.id]
 }
 
 # TODO(31u3r): Remove once 2.12 is released
