@@ -19,7 +19,7 @@ module "fetch_image" {
 
 module "azure_iam" {
   source                 = "../../infrastructure/iam/azure"
-  region                 = var.location
+  location               = var.location
   service_principal_name = var.service_principal_name
   resource_group_name    = var.resource_group_name
 }

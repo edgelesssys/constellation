@@ -188,7 +188,7 @@ func azureTerraformVars(conf *config.Config, imageRef string) (*terraform.AzureC
 
 func azureTerraformIAMVars(conf *config.Config, oldVars terraform.AzureIAMVariables) *terraform.AzureIAMVariables {
 	return &terraform.AzureIAMVariables{
-		Region:           conf.Provider.Azure.Location,
+		Location:         conf.Provider.Azure.Location,
 		ServicePrincipal: oldVars.ServicePrincipal,
 		ResourceGroup:    conf.Provider.Azure.ResourceGroup,
 	}

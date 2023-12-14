@@ -236,13 +236,13 @@ marketplace_image = {
 
 func TestAzureIAMVariables(t *testing.T) {
 	vars := AzureIAMVariables{
-		Region:           "eu-central-1",
+		Location:         "eu-central-1",
 		ServicePrincipal: "my-service-principal",
 		ResourceGroup:    "my-resource-group",
 	}
 
 	// test that the variables are correctly rendered
-	want := `region                 = "eu-central-1"
+	want := `location                 = "eu-central-1"
 service_principal_name = "my-service-principal"
 resource_group_name    = "my-resource-group"
 `
@@ -368,7 +368,7 @@ func TestVariablesFromBytes(t *testing.T) {
 	assert.Equal(awsVars, loadedAWSVars)
 
 	azureVars := AzureIAMVariables{
-		Region: "test",
+		Location: "test",
 	}
 	var loadedAzureVars AzureIAMVariables
 	err = VariablesFromBytes([]byte(azureVars.String()), &loadedAzureVars)

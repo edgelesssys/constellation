@@ -8,7 +8,7 @@ variable "service_principal_name" {
   description = "Name for the service principal used within the cluster."
 }
 
-variable "region" {
+variable "location" {
   type        = string
-  description = "Azure region the cluster should reside in."
+  description = "Azure location the cluster should reside in."
 }

@@ -122,7 +122,7 @@ func TestPrepareIAM(t *testing.T) {
 		ServiceAccountID: "const-test-case",
 	}
 	azureVars := &AzureIAMVariables{
-		Region:        "westus",
+		Location:      "westus",
 		ResourceGroup: "constell-test-rg",
 	}
 	awsVars := &AWSIAMVariables{
@@ -542,7 +542,7 @@ func TestCreateIAM(t *testing.T) {
 		ServiceAccountID: "const-test-case",
 	}
 	azureVars := &AzureIAMVariables{
-		Region:        "westus",
+		Location:      "westus",
 		ResourceGroup: "constell-test-rg",
 	}
 	awsVars := &AWSIAMVariables{

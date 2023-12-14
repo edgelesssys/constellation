@@ -75,7 +75,7 @@ type azureIAMCreator struct {
 func (c *azureIAMCreator) getIAMConfigOptions() *cloudcmd.IAMConfigOptions {
 	return &cloudcmd.IAMConfigOptions{
 		Azure: cloudcmd.AzureIAMConfig{
-			Region:           c.flags.region,
+			Location:         c.flags.region,
 			ResourceGroup:    c.flags.resourceGroup,
 			ServicePrincipal: c.flags.servicePrincipal,
 		},

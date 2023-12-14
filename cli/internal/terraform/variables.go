@@ -244,8 +244,8 @@ type AzureNodeGroup struct {
 
 // AzureIAMVariables is user configuration for creating the IAM configuration with Terraform on Microsoft Azure.
 type AzureIAMVariables struct {
-	// Region is the Azure region to use. (e.g. westus)
-	Region string `hcl:"region" cty:"region"`
+	// Location is the Azure location to use. (e.g. westus)
+	Location string `hcl:"location" cty:"location"`
 	// ServicePrincipal is the name of the service principal to use.
 	ServicePrincipal string `hcl:"service_principal_name" cty:"service_principal_name"`
 	// ResourceGroup is the name of the resource group to use.
