@@ -358,14 +358,8 @@ func (r *NodeVersionReconciler) tryStartClusterVersionUpgrade(ctx context.Contex
 
 	log.FromContext(ctx).Info("Starting cluster upgrade", "clusterVersion", nodeVersion.Spec.KubernetesClusterVersion)
 
-	kubeadm, err := clusterComponents.GetKubeadmComponent()
-	if err != nil {
-		log.FromContext(ctx).Error(err, "Unable to get kubeadm component")
-		return
-	}
-
 	// talk to the upgrade-agent to start the upgrade
-	if err := r.Upgrade(ctx, kubeadm.Url, kubeadm.Hash, nodeVersion.Spec.KubernetesClusterVersion); err != nil {
+	if err := r.Upgrade(ctx, clusterComponents.GetUpgradableComponents(), nodeVersion.Spec.KubernetesClusterVersion); err != nil {
 		log.FromContext(ctx).Error(err, "Unable to upgrade cluster")
 		return
 	}
@@ -935,7 +929,7 @@ type etcdRemover interface {
 
 type clusterUpgrader interface {
 	// UpgradeCluster upgrades the cluster to the specified version.
-	Upgrade(ctx context.Context, KubeadmURL, KubeadmHash, WantedKubernetesVersion string) error
+	Upgrade(ctx context.Context, kubernetesComponents components.Components, WantedKubernetesVersion string) error
 }
 
 type kubernetesServerVersionGetter interface {
