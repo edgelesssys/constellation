@@ -72,6 +72,7 @@ data "constellation_attestation" "foo" {
   csp                 = local.csp
   attestation_variant = local.attestation_variant
   image_version       = local.version
+  maa_url             = module.azure_infrastructure.attestation_url
 }
 
 data "constellation_image" "bar" {
