@@ -74,7 +74,7 @@ func (d *ImageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 		Attributes: map[string]schema.Attribute{
 			"attestation_variant": newAttestationVariantAttribute(attributeInput),
 			"image_version": schema.StringAttribute{
-				Description:         "Version of the Constellation OS image to use. (e.g. `v2.13.0`). If not set, the provider version value is used.",
+				Description:         "Version of the Constellation OS image to use. (e.g. `v2.13.0`). If not set, the provider version is used.",
 				MarkdownDescription: "Version of the Constellation OS image to use. (e.g. `v2.13.0`). If not set, the provider version value is used.",
 				Optional:            true,
 			},
