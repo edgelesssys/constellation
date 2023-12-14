@@ -115,7 +115,7 @@ func (s *Server) ExecuteUpdate(ctx context.Context, updateRequest *upgradeproto.
 		return nil, status.Errorf(codes.Internal, "unable to execute kubeadm upgrade plan %s: %s: %s", updateRequest.WantedKubernetesVersion, err, string(out))
 	}
 
-	applyCmd := exec.CommandContext(ctx, "kubeadm", "upgrade", "apply", "--yes", updateRequest.WantedKubernetesVersion)
+	applyCmd := exec.CommandContext(ctx, "kubeadm", "upgrade", "apply", "--yes", "--patches", "/opt/kubernetes/patches", updateRequest.WantedKubernetesVersion)
 	if out, err := applyCmd.CombinedOutput(); err != nil {
 		return nil, status.Errorf(codes.Internal, "unable to execute kubeadm upgrade apply: %s: %s", err, string(out))
 	}
