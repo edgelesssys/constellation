@@ -54,6 +54,7 @@ func (c *KubdeadmConfiguration) InitConfiguration(externalCloudProvider bool, cl
 			LocalAPIEndpoint: kubeadm.APIEndpoint{
 				BindPort: constants.KubernetesPort,
 			},
+			Patches: &kubeadm.Patches{Directory: "/opt/kubernetes/patches"},
 		},
 		// https://pkg.go.dev/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3#ClusterConfiguration
 		ClusterConfiguration: kubeadm.ClusterConfiguration{
@@ -179,6 +180,7 @@ func (c *KubdeadmConfiguration) JoinConfiguration(externalCloudProvider bool) Ku
 			Discovery: kubeadm.Discovery{
 				BootstrapToken: &kubeadm.BootstrapTokenDiscovery{},
 			},
+			Patches: &kubeadm.Patches{Directory: "/opt/kubernetes/patches"},
 		},
 		KubeletConfiguration: kubeletconf.KubeletConfiguration{
 			TypeMeta: metav1.TypeMeta{
