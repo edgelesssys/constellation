@@ -106,6 +106,8 @@ const (
 	KubeadmPath = "/run/state/bin/kubeadm"
 	// KubeletPath install path for kubelet.
 	KubeletPath = "/run/state/bin/kubelet"
+	// KubeadmPatchDir directory for kubeadm patches .
+	KubeadmPatchDir = "/opt/kubernetes/patches"
 
 	//
 	// Filenames for Constellation's micro services.

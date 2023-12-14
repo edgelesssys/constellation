@@ -7,9 +7,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 package versions
 
 import (
+	"fmt"
+	"path"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/vincent-petithory/dataurl"
 )
 
 func TestVersionFromDockerImage(t *testing.T) {
@@ -40,6 +45,28 @@ func TestVersionFromDockerImage(t *testing.T) {
 				assert.Panics(func() { versionFromDockerImage(tc.imageName) })
 			} else {
 				assert.Equal(tc.wantVersion, versionFromDockerImage(tc.imageName))
+			}
+		})
+	}
+}
+
+func TestKubernetesImagePatchCompatibility(t *testing.T) {
+	// This test ensures that pinned Kubernetes images correspond to the
+	// supported Kubernetes versions. It prevents automatic upgrades until
+	// a patch generator is added to the codebase.
+	// TODO(burgerdev): remove after patches are generated automatically.
+	for v, clusterConfig := range VersionConfigs {
+		t.Run(string(v), func(t *testing.T) {
+			for i, component := range clusterConfig.KubernetesComponents.GetUpgradableComponents() {
+				if !strings.HasPrefix(component.Url, "data:") {
+					continue
+				}
+				t.Run(fmt.Sprintf("%d-%s", i, path.Base(component.InstallPath)), func(t *testing.T) {
+					require := require.New(t)
+					dataURL, err := dataurl.DecodeString(component.Url)
+					require.NoError(err)
+					require.Contains(string(dataURL.Data), clusterConfig.ClusterVersion)
+				})
 			}
 		})
 	}

@@ -13,6 +13,7 @@ package versions
 
 import (
 	"fmt"
+	"path"
 	"sort"
 	"strings"
 
@@ -154,6 +155,12 @@ func hasPatchVersion(version string) bool {
 	return semver.MajorMinor(version) != version
 }
 
+// patchFilePath returns the canonical path for kubeadm patch files for the given component.
+// See https://pkg.go.dev/k8s.io/kubernetes@v1.27.7/cmd/kubeadm/app/apis/kubeadm/v1beta3#InitConfiguration.
+func patchFilePath(component string) string {
+	return path.Join(constants.KubeadmPatchDir, fmt.Sprintf("%s+json.json", component))
+}
+
 const (
 	//
 	// Constellation images.
@@ -227,6 +234,18 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 				InstallPath: constants.KubectlPath,
 				Extract:     false,
 			},
+			{
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtYXBpc2VydmVyOnYxLjI2LjExQHNoYTI1NjozOTUzNWQwZWZlODk1YWU5MWI1NTExZmRhZGI1MmVjOTMyOWYzODk4NzYxMTYzYThjMGRlMjAzZTIzZTMzODUzIn1d",
+				InstallPath: patchFilePath("kube-apiserver"),
+			},
+			{
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtY29udHJvbGxlci1tYW5hZ2VyOnYxLjI2LjExQHNoYTI1NjpjZGJlZmZmMTU0ZDRjY2I1ZDhlOGIxNmI4MDRjYmM2Y2M5MzI2YTc2MGI5ZjkxNDIyMjcwOGY5OTExOThkNTdjIn1d",
+				InstallPath: patchFilePath("kube-controller-manager"),
+			},
+			{
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtc2NoZWR1bGVyOnYxLjI2LjExQHNoYTI1NjowNjg0ZTIzMTcyZDkyMDMxNDk3MTU4MGFiMTE1YTViNjc5YWMxZmFlMmNiOTRkODNlOTEwNWMwYjFlOTNhMWJjIn1d",
+				InstallPath: patchFilePath("kube-scheduler"),
+			},
 		},
 		// CloudControllerManagerImageAWS is the CCM image used on AWS.
 		CloudControllerManagerImageAWS: "registry.k8s.io/provider-aws/cloud-controller-manager:v1.26.6@sha256:33445ab57f48938fe989ffe311dacee0044b82f2bd23cb7f7b563275926f0ce9", // renovate:container
@@ -278,6 +297,18 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 				InstallPath: constants.KubectlPath,
 				Extract:     false,
 			},
+			{
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtYXBpc2VydmVyOnYxLjI3LjhAc2hhMjU2OjcwYjA1YjYxZDg0NmViYjY5YTkwN2ZlMjU1ZDM5YTZmNmMxMGQ1Y2E5NTA0ZjNkMmMwZGZmM2Y4NjQ2OTBkMzMifV0=",
+				InstallPath: patchFilePath("kube-apiserver"),
+			},
+			{
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtY29udHJvbGxlci1tYW5hZ2VyOnYxLjI3LjhAc2hhMjU2OmU1OWM2MzczZDI2YjY4NGE5MWNmYTU5NDJjMGY3MzcxYmRhOWI0YmI3Njg5ZTNmOTBmN2VlNGY5NjUxZWUyMmIifV0=",
+				InstallPath: patchFilePath("kube-controller-manager"),
+			},
+			{
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtc2NoZWR1bGVyOnYxLjI3LjhAc2hhMjU2OjYyMzdlNzEwMGNjZGJiZDVlMGU3Y2ZmNzc5NjgzMWMxODVhMzk0NzE5OTgyM2YzOTEyODNjNzlkMDBhZmYwNzAifV0=",
+				InstallPath: patchFilePath("kube-scheduler"),
+			},
 		},
 		// CloudControllerManagerImageAWS is the CCM image used on AWS.
 		CloudControllerManagerImageAWS: "registry.k8s.io/provider-aws/cloud-controller-manager:v1.27.2@sha256:42be09a2b13b4e69b42905639d6b005ebe1ca490aabefad427256abf2cc892c7", // renovate:container
@@ -328,6 +359,18 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 				Hash:        "sha256:893c92053adea6edbbd4e959c871f5c21edce416988f968bec565d115383f7b8",
 				InstallPath: constants.KubectlPath,
 				Extract:     false,
+			},
+			{
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtYXBpc2VydmVyOnYxLjI4LjRAc2hhMjU2OjViMjhhMzY0NDY3Y2Y3ZTEzNDM0M2JiM2VlMmM2ZDQwNjgyYjQ3M2E3NDNhNzIxNDJjN2JiZTI1NzY3ZDM2ZWIifV0=",
+				InstallPath: patchFilePath("kube-apiserver"),
+			},
+			{
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtY29udHJvbGxlci1tYW5hZ2VyOnYxLjI4LjRAc2hhMjU2OjY1NDg2YzhjMzM4Zjk2ZGMwMjJkZDFhMGFiZTg3NjNlMzhmMzUwOTViODRiMjA4Yzc4ZjQ0ZDllOTk0NDdkMWMifV0=",
+				InstallPath: patchFilePath("kube-controller-manager"),
+			},
+			{
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtc2NoZWR1bGVyOnYxLjI4LjRAc2hhMjU2OjMzNWJiYTllODYxYjg4ZmE4YjdiYjkyNTBiY2Q2OWI3YTMzZjgzZGE0ZmVlOTNmOWZjMGVlZGM2ZjM0ZTI4YmEifV0=",
+				InstallPath: patchFilePath("kube-scheduler"),
 			},
 		},
 		// CloudControllerManagerImageAWS is the CCM image used on AWS.

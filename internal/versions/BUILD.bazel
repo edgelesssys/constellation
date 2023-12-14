@@ -18,5 +18,9 @@ go_test(
     name = "versions_test",
     srcs = ["versions_test.go"],
     embed = [":versions"],
-    deps = ["@com_github_stretchr_testify//assert"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@com_github_vincent_petithory_dataurl//:dataurl",
+    ],
 )
