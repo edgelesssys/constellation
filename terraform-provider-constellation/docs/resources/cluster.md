@@ -42,7 +42,7 @@ resource "constellation_cluster" "aws_example" {
 
 ### Required
 
-- `attestation` (Attributes) Attestation comprises the measurements and SEV-SNP specific parameters. (see [below for nested schema](#nestedatt--attestation))
+- `attestation` (Attributes) Attestation comprises the measurements and SEV-SNP specific parameters. The output of the [constellation_attestation](../data-sources/attestation.md) data source provides sensible defaults. (see [below for nested schema](#nestedatt--attestation))
 - `csp` (String) The Cloud Service Provider (CSP) the cluster should run on.
 - `image_reference` (String) Constellation OS image reference to use in the CSP specific reference format. Use the [`constellation_image`](../data-sources/image.md) data source to find the correct image reference for your CSP.
 - `image_version` (String) Constellation OS image version to use in the CSP specific reference format. Use the [`constellation_image`](../data-sources/image.md) data source to find the correct image version for your CSP.

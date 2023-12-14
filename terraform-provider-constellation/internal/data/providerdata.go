@@ -8,4 +8,6 @@ package data
 
 // ProviderData is the data that get's passed down from the provider
 // configuration to the resources and data sources.
-type ProviderData struct{}
+type ProviderData struct {
+	Version string
+}

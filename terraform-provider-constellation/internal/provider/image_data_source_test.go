@@ -18,6 +18,22 @@ func TestAccImageDataSource(t *testing.T) {
 	bazelPreCheck := func() { bazelSetTerraformBinaryPath(t) }
 
 	testCases := map[string]resource.TestCase{
+		"no image_version succeeds": {
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion("v2.13.0"),
+			PreCheck:                 bazelPreCheck,
+			Steps: []resource.TestStep{
+				{
+					Config: testingConfig + `
+					data "constellation_image" "test" {
+						attestation_variant = "aws-sev-snp"
+						csp                 = "aws"
+						region              = "eu-west-1"
+					}
+				`,
+					Check: resource.TestCheckResourceAttrSet("data.constellation_image.test", "reference"),
+				},
+			},
+		},
 		"aws succcess": {
 			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 			PreCheck:                 bazelPreCheck,
@@ -34,6 +50,23 @@ func TestAccImageDataSource(t *testing.T) {
 				`,
 					Check: resource.TestCheckResourceAttr("data.constellation_image.test", "reference", "ami-04f8d522b113b73bf"), // should be immutable
 
+				},
+			},
+		},
+		"aws without region fails": {
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			PreCheck:                 bazelPreCheck,
+			Steps: []resource.TestStep{
+				// Read testing
+				{
+					Config: testingConfig + `
+					data "constellation_image" "test" {
+						image_version       = "v2.13.0"
+						attestation_variant = "aws-sev-snp"
+						csp                 = "aws"
+					}
+				`,
+					ExpectError: regexp.MustCompile(".*Region must be set for AWS.*"),
 				},
 			},
 		},

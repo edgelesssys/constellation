@@ -173,10 +173,8 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.head_ref }}
 
-      - name: Upload Terraform module
+      - name: Upload Terraform infrastructure module
         uses: ./.github/actions/upload_terraform_module
-        with:
-          version: ${{ inputs.versionName }}
 
   push-containers:
     runs-on: ubuntu-22.04

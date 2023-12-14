@@ -15,7 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 )
 
-// TODO(msanft): Set this accordingly in the release CI.
+// version is the version of Constellation to use. Left as a separate variable to allow override during build.
 var version = "dev"
 
 func main() {

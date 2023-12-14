@@ -31,6 +31,9 @@ go_library(
     srcs = ["main.go"],
     importpath = "github.com/edgelesssys/constellation/v2/terraform-provider-constellation",
     visibility = ["//visibility:private"],
+    x_defs = {
+        "version": "{STABLE_STAMP_VERSION}",
+    },
     deps = [
         "//terraform-provider-constellation/internal/provider",
         "@com_github_hashicorp_terraform_plugin_framework//providerserver",

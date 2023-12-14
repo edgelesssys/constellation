@@ -27,9 +27,7 @@ type ConstellationProviderModel struct{}
 
 // ConstellationProvider is the provider implementation.
 type ConstellationProvider struct {
-	// version is set to the provider version on release, "dev" when the
-	// provider is built and ran locally, and "test" when running acceptance
-	// testing.
+	// version is set to the provider version on release, and the pseudo version on local builds. The pseudo version is not a valid default for the image_version attribute.
 	version string
 }
 
@@ -51,8 +49,12 @@ func (p *ConstellationProvider) Metadata(_ context.Context, _ provider.MetadataR
 // Schema defines the HCL schema of the provider, i.e. what attributes it has and what they are used for.
 func (p *ConstellationProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description:         "The Constellation provider manages Constellation clusters.",
-		MarkdownDescription: `The Constellation provider manages Constellation clusters.`, // TODO(msanft): Provide a more sophisticated description.
+		Description: "The Constellation provider manages Constellation clusters.",
+		MarkdownDescription: `The Constellation provider manages Constellation clusters.
+
+Given user-defined infrastructure in Terraform, the provider with its main 'constellation_cluster' resource manages the entire lifecycle of a cluster.
+The provider allows easy usage of custom infrastructure setups and GitOps workflows.
+It is released as part of Constellation releases, such that each provider version is compatible with the corresponding Constellation version.`,
 	}
 }
 
@@ -67,8 +69,9 @@ func (p *ConstellationProvider) Configure(ctx context.Context, req provider.Conf
 		return
 	}
 
-	// TODO(msanft): Initialize persistent clients here.
-	config := datastruct.ProviderData{}
+	config := datastruct.ProviderData{
+		Version: p.version,
+	}
 
 	// Make the clients available during data source and resource "Configure" methods.
 	resp.DataSourceData = config

@@ -17,6 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
+	"github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/data"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -37,6 +38,7 @@ type AttestationDataSource struct {
 	client  *http.Client
 	fetcher attestationconfigapi.Fetcher
 	rekor   *sigstore.Rekor
+	version string
 }
 
 // AttestationDataSourceModel describes the data source data model.
@@ -49,7 +51,21 @@ type AttestationDataSourceModel struct {
 }
 
 // Configure configures the data source.
-func (d *AttestationDataSource) Configure(_ context.Context, _ datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (d *AttestationDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+	// Prevent panic if the provider has not been configured. is necessary!
+	if req.ProviderData == nil {
+		return
+	}
+	providerData, ok := req.ProviderData.(data.ProviderData)
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected Data Source Configure Type",
+			fmt.Sprintf("Expected data.ProviderData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+		)
+		return
+	}
+	d.version = providerData.Version
+
 	d.client = http.DefaultClient
 	d.fetcher = attestationconfigapi.NewFetcher()
 	rekor, err := sigstore.NewRekor()
@@ -70,13 +86,12 @@ func (d *AttestationDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 	resp.Schema = schema.Schema{
 		// This description is used by the documentation generator and the language server.
 		MarkdownDescription: "The data source to fetch measurements from a configured cloud provider and image.",
-
 		Attributes: map[string]schema.Attribute{
 			"csp":                 newCSPAttribute(),
 			"attestation_variant": newAttestationVariantAttribute(attributeInput),
 			"image_version": schema.StringAttribute{
-				MarkdownDescription: "The image version to use",
-				Required:            true,
+				MarkdownDescription: "The image version to use. If not set, the provider version value is used.",
+				Optional:            true,
 			},
 			"maa_url": schema.StringAttribute{
 				MarkdownDescription: "For Azure only, the URL of the Microsoft Azure Attestation service",
@@ -84,6 +99,28 @@ func (d *AttestationDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 			},
 			"attestation": newAttestationConfigAttribute(attributeOutput),
 		},
+	}
+}
+
+// ValidateConfig validates the configuration for the image data source.
+func (d *AttestationDataSource) ValidateConfig(ctx context.Context, req datasource.ValidateConfigRequest, resp *datasource.ValidateConfigResponse) {
+	var data AttestationDataSourceModel
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if !data.AttestationVariant.Equal(types.StringValue("azure-sev-snp")) && !data.MaaURL.IsNull() {
+		resp.Diagnostics.AddAttributeWarning(
+			path.Root("maa_url"),
+			"MAA URL should only be set for Azure SEV-SNP", "Only when attestation_variant is set to 'azure-sev-snp', 'maa_url' should be specified.",
+		)
+		return
+	}
+	if data.AttestationVariant.Equal(types.StringValue("azure-sev-snp")) && data.MaaURL.IsNull() {
+		tflog.Info(ctx, "MAA URL not set, MAA fallback will be unavaiable")
 	}
 }
 
@@ -130,7 +167,13 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 		resp.Diagnostics.AddError("Converting SNP attestation", err.Error())
 	}
 	verifyFetcher := measurements.NewVerifyFetcher(sigstore.NewCosignVerifier, d.rekor, d.client)
-	fetchedMeasurements, err := verifyFetcher.FetchAndVerifyMeasurements(ctx, data.ImageVersion.ValueString(),
+
+	imageVersion := data.ImageVersion.ValueString()
+	if imageVersion == "" {
+		tflog.Info(ctx, fmt.Sprintf("No image version specified, using provider version %s", d.version))
+		imageVersion = d.version // Use provider version as default.
+	}
+	fetchedMeasurements, err := verifyFetcher.FetchAndVerifyMeasurements(ctx, imageVersion,
 		csp, attestationVariant, false)
 	if err != nil {
 		var rekErr *measurements.RekorError

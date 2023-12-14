@@ -78,12 +78,15 @@ go_test(
         "requires-network",
     ],
     # keep
-    x_defs = {"runsUnder": "bazel"},
+    x_defs = {
+        "runsUnder": "bazel",
+    },
     deps = [
         "//internal/attestation/idkeydigest",
         "//internal/attestation/measurements",
         "//internal/attestation/variant",
         "//internal/config",
+        "//internal/constants",
         "@com_github_hashicorp_terraform_plugin_framework//providerserver",
         "@com_github_hashicorp_terraform_plugin_go//tfprotov6",
         "@com_github_hashicorp_terraform_plugin_testing//helper/resource",

@@ -73,11 +73,15 @@ func newMeasurementsAttribute(t attributeType) schema.Attribute {
 
 func newAttestationConfigAttribute(t attributeType) schema.Attribute {
 	isInput := bool(t)
+	var additionalDescription string
+	if isInput {
+		additionalDescription = " The output of the [constellation_attestation](../data-sources/attestation.md) data source provides sensible defaults.  "
+	}
 	return schema.SingleNestedAttribute{
 		Computed:            !isInput,
 		Required:            isInput,
-		MarkdownDescription: "Attestation comprises the measurements and SEV-SNP specific parameters.",
-		Description:         "The values provide sensible defaults. See the docs for advanced usage.", // TODO(elchead): AB#3568
+		MarkdownDescription: "Attestation comprises the measurements and SEV-SNP specific parameters." + additionalDescription,
+		Description:         "Attestation comprises the measurements and SEV-SNP specific parameters." + additionalDescription,
 		Attributes: map[string]schema.Attribute{
 			"variant": newAttestationVariantAttribute(t), // duplicated for convenience in cluster resource
 			"bootloader_version": schema.Int64Attribute{

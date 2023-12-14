@@ -3,12 +3,12 @@
 page_title: "constellation_image Data Source - constellation"
 subcategory: ""
 description: |-
-  Data source to retrieve the Constellation OS image reference for a given CSP and Attestation Variant.
+  Data source to resolve the CSP-specific OS image reference for a given version and attestation variant.
 ---
 
 # constellation_image (Data Source)
 
-Data source to retrieve the Constellation OS image reference for a given CSP and Attestation Variant.
+Data source to resolve the CSP-specific OS image reference for a given version and attestation variant.
 
 ## Example Usage
 
@@ -33,10 +33,10 @@ data "constellation_image" "example" {
   * `gcp-sev-es`
 - `csp` (String) CSP (Cloud Service Provider) to use. (e.g. `azure`)
 See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview/clouds) that Constellation supports.
-- `image_version` (String) Version of the Constellation OS image to use. (e.g. `v2.13.0`)
 
 ### Optional
 
+- `image_version` (String) Version of the Constellation OS image to use. (e.g. `v2.13.0`). If not set, the provider version value is used.
 - `marketplace_image` (Boolean) Whether a marketplace image should be used. Currently only supported for Azure.
 - `region` (String) Region to retrieve the image for. Only required for AWS.
 The Constellation OS image must be [replicated to the region](https://docs.edgeless.systems/constellation/workflows/config),and the region must [support AMD SEV-SNP](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snp-requirements.html), if it is used for Attestation.

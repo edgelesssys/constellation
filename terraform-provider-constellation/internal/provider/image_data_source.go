@@ -14,10 +14,12 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
+	"github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/data"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 var (
@@ -38,6 +40,7 @@ func NewImageDataSource() datasource.DataSource {
 // It is used to retrieve the Constellation OS image reference for a given CSP and Attestation Variant.
 type ImageDataSource struct {
 	imageFetcher imageFetcher
+	version      string
 }
 
 // imageFetcher gets an image reference from the versionsapi.
@@ -66,14 +69,14 @@ func (d *ImageDataSource) Metadata(_ context.Context, req datasource.MetadataReq
 // Schema returns the schema for the image data source.
 func (d *ImageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description:         "Data source to retrieve the Constellation OS image reference for a given CSP and Attestation Variant.",
-		MarkdownDescription: "Data source to retrieve the Constellation OS image reference for a given CSP and Attestation Variant.",
+		Description:         "The data source to resolve the CSP-specific OS image reference for a given version and attestation variant.",
+		MarkdownDescription: "Data source to resolve the CSP-specific OS image reference for a given version and attestation variant.",
 		Attributes: map[string]schema.Attribute{
 			"attestation_variant": newAttestationVariantAttribute(attributeInput),
 			"image_version": schema.StringAttribute{
-				Description:         "Version of the Constellation OS image to use. (e.g. `v2.13.0`)",
-				MarkdownDescription: "Version of the Constellation OS image to use. (e.g. `v2.13.0`)",
-				Required:            true, // TODO(msanft): Make this optional to support "lockstep" mode.
+				Description:         "Version of the Constellation OS image to use. (e.g. `v2.13.0`). If not set, the provider version is used.",
+				MarkdownDescription: "Version of the Constellation OS image to use. (e.g. `v2.13.0`). If not set, the provider version value is used.",
+				Optional:            true,
 			},
 			"csp": newCSPAttribute(),
 			"marketplace_image": schema.BoolAttribute{
@@ -97,13 +100,43 @@ func (d *ImageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 	}
 }
 
-// TODO(msanft): Possibly implement more complex validation for inter-dependencies between attributes.
-// E.g., region should be required if, and only if, AWS is used.
+// ValidateConfig validates the configuration for the image data source.
+func (d *ImageDataSource) ValidateConfig(ctx context.Context, req datasource.ValidateConfigRequest, resp *datasource.ValidateConfigResponse) {
+	var data ImageDataSourceModel
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if data.CSP.Equal(types.StringValue("aws")) && data.Region.IsNull() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("region"),
+			"Region must be set for AWS", "When csp is set to 'aws', 'region' must be specified.",
+		)
+		return
+	}
+}
 
 // Configure configures the data source.
-func (d *ImageDataSource) Configure(_ context.Context, _ datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
-	// Create the image-fetcher client.
+func (d *ImageDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	d.imageFetcher = imagefetcher.New()
+
+	// Prevent panic if the provider has not been configured. is necessary!
+	if req.ProviderData == nil {
+		return
+	}
+	providerData, ok := req.ProviderData.(data.ProviderData)
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected Data Source Configure Type",
+			fmt.Sprintf("Expected data.ProviderData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+		)
+		return
+	}
+
+	d.version = providerData.Version
 }
 
 // Read reads from the data source.
@@ -111,7 +144,6 @@ func (d *ImageDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 	// Retrieve the configuration values for this data source instance.
 	var data ImageDataSourceModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
-
 	// Check configuration for errors.
 	csp := cloudprovider.FromString(data.CSP.ValueString())
 	if csp == cloudprovider.Unknown {
@@ -135,9 +167,15 @@ func (d *ImageDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 		return
 	}
 
+	imageVersion := data.ImageVersion.ValueString()
+	if imageVersion == "" {
+		tflog.Info(ctx, fmt.Sprintf("No image version specified, using provider version %s", d.version))
+		imageVersion = d.version // Use provider version as default.
+	}
+
 	// Retrieve Image Reference
 	imageRef, err := d.imageFetcher.FetchReference(ctx, csp, attestationVariant,
-		data.ImageVersion.ValueString(), data.Region.ValueString(), data.MarketplaceImage.ValueBool())
+		imageVersion, data.Region.ValueString(), data.MarketplaceImage.ValueBool())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error fetching Image Reference",
