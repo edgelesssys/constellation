@@ -12,6 +12,7 @@ import (
 	"net"
 
 	mainconstants "github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 
 	"github.com/edgelesssys/constellation/v2/upgrade-agent/upgradeproto"
 	"google.golang.org/grpc"
@@ -31,7 +32,7 @@ func NewClient() *Client {
 }
 
 // Upgrade upgrades the Constellation node to the given Kubernetes version.
-func (c *Client) Upgrade(ctx context.Context, KubeadmURL, KubeadmHash, WantedKubernetesVersion string) error {
+func (c *Client) Upgrade(ctx context.Context, kubernetesComponents components.Components, WantedKubernetesVersion string) error {
 	conn, err := grpc.DialContext(ctx, mainconstants.UpgradeAgentMountPath, grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithContextDialer(
 			func(ctx context.Context, addr string) (net.Conn, error) {
@@ -43,11 +44,24 @@ func (c *Client) Upgrade(ctx context.Context, KubeadmURL, KubeadmHash, WantedKub
 	}
 	defer conn.Close()
 
+	// While we're transitioning between version 2.13 and 2.14, we need to
+	// expect an upgrade-agent that does not yet understand the
+	// KubernetesComponents proto field. Therefore, we pass the kubeadm
+	// component twice: once via KubeadmUrl/KubeadmHash, once as part of the
+	// kubernetesComponents argument.
+	kubeadm, err := kubernetesComponents.GetKubeadmComponent()
+	if err != nil {
+		return fmt.Errorf("expected a kubeadm Component: %w", err)
+	}
 	protoClient := upgradeproto.NewUpdateClient(conn)
 	_, err = protoClient.ExecuteUpdate(ctx, &upgradeproto.ExecuteUpdateRequest{
-		KubeadmUrl:              KubeadmURL,
-		KubeadmHash:             KubeadmHash,
+		// TODO(burgerdev): remove these fields after releasing 2.14.
+		// %< ---------------------------------
+		KubeadmUrl:  kubeadm.Url,
+		KubeadmHash: kubeadm.Hash,
+		// %< ---------------------------------
 		WantedKubernetesVersion: WantedKubernetesVersion,
+		KubernetesComponents:    kubernetesComponents,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to execute update: %w", err)
