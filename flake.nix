@@ -26,8 +26,8 @@
         src = pkgsUnstable.fetchFromGitHub {
           owner = "systemd";
           repo = "mkosi";
-          rev = "5629e6b88ef4bfc8d372682350bfcdf0963f75d3";
-          hash = "sha256-4VwAaZYj8CoWJbOa8+C/TriPUijowQ0OCzxxgDFh1tE=";
+          rev = "abf22cdc6ccb13f2cd84679ede77231455ec6813";
+          hash = "sha256-njtYWSXSLMcn6AtGfAeL/ncZQ6g+Vgpe7EaKLkzAOl4=";
         };
         propagatedBuildInputs = oldAttrs.propagatedBuildInputs ++ (with pkgsUnstable;  [
           # package management
