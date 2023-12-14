@@ -114,7 +114,6 @@ func main() {
 		)
 		openDevice = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
-		log.Infof("Added load balancer IP to routing table")
 
 	case cloudprovider.Azure:
 		metadata, err := azurecloud.New(ctx)
