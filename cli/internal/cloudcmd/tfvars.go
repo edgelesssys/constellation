@@ -65,7 +65,7 @@ func TerraformIAMUpgradeVars(conf *config.Config, fileHandler file.Handler) (ter
 			return nil, fmt.Errorf("parsing existing IAM workspace: %w", err)
 		}
 
-		// Migration from the "region" to the "location" field name.
+		// Migration from the "region" to the "location" field na.
 		// TODO(msanft): Remove after v2.14.0 is released.
 		if oldVars.Region != nil && *oldVars.Region != "" && oldVars.Location == "" {
 			oldVars.Location = *oldVars.Region

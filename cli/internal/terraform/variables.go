@@ -38,8 +38,9 @@ func VariablesFromBytes[T any](b []byte, vars *T) error {
 		return fmt.Errorf("parsing variables: %w", err)
 	}
 
-	if err := gohcl.DecodeBody(file.Body, nil, vars); err != nil {
-		return fmt.Errorf("decoding variables: %w", err)
+	diags := gohcl.DecodeBody(file.Body, nil, vars)
+	if diags.HasErrors() {
+		return fmt.Errorf("decoding variables: %w", diags)
 	}
 	return nil
 }
@@ -246,9 +247,9 @@ type AzureNodeGroup struct {
 type AzureIAMVariables struct {
 	// Region is the Azure location to use. (e.g. westus).
 	// THIS FIELD IS DEPRECATED AND ONLY KEPT FOR MIGRATION PURPOSES. DO NOT USE.
-	Region *string `hcl:"region" cty:"region"`
+	Region *string `hcl:"region" cty:"region"` // TODO(msanft): Remove this field once v2.14.0 is released.
 	// Location is the Azure location to use. (e.g. westus)
-	Location string `hcl:"location" cty:"location"`
+	Location string `hcl:"location,optional" cty:"location"` // TODO(msanft): Make this required once v2.14.0 is released.
 	// ServicePrincipal is the name of the service principal to use.
 	ServicePrincipal string `hcl:"service_principal_name" cty:"service_principal_name"`
 	// ResourceGroup is the name of the resource group to use.
