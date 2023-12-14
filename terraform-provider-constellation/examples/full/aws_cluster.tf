@@ -38,14 +38,14 @@ resource "random_bytes" "measurement_salt" {
 
 module "aws_iam" {
   // replace $VERSION with the Constellation version you want to use, e.g., v2.14.0
-  source                 = "https://github.com/edgelesssys/constellation/releases/download/$VERSION/terraform-module.zip//terraform-module/iam/aws"
+  source      = "https://github.com/edgelesssys/constellation/releases/download/$VERSION/terraform-module.zip//terraform-module/iam/aws"
   name_prefix = "constell"
   region      = local.region
 }
 
 module "aws_infrastructure" {
   // replace $VERSION with the Constellation version you want to use, e.g., v2.14.0
-  source                 = "https://github.com/edgelesssys/constellation/releases/download/$VERSION/terraform-module.zip//terraform-module/aws"
+  source = "https://github.com/edgelesssys/constellation/releases/download/$VERSION/terraform-module.zip//terraform-module/aws"
   name   = "constell"
   node_groups = {
     control_plane_default = {
