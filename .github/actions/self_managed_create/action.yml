@@ -93,7 +93,7 @@ runs:
         yq eval ".infrastructure.initSecret =\"$(terraform output init_secret | jq -r | tr -d '\n' | hexdump -ve '/1 "%02x"' && echo '')\"" --inplace ${{ github.workspace }}/constellation-state.yaml
         yq eval ".infrastructure.clusterEndpoint =\"$(terraform output out_of_cluster_endpoint | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
         yq eval ".infrastructure.inClusterEndpoint =\"$(terraform output in_cluster_endpoint | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
-        yq eval ".infrastructure.ipCidrNode =\"$(terraform output ip_cidr_nodes | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
+        yq eval ".infrastructure.ipCidrNode =\"$(terraform output ip_cidr_node | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
         yq eval ".infrastructure.uid =\"$(terraform output uid | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
         yq eval ".infrastructure.name =\"$(terraform output name | jq -r)\"" --inplace ${{ github.workspace }}/constellation-state.yaml
         yq eval ".infrastructure.apiServerCertSANs =$(terraform output -json api_server_cert_sans)" --inplace ${{ github.workspace }}/constellation-state.yaml
