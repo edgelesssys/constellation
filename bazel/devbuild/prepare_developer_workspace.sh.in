@@ -14,6 +14,15 @@ if ! source "${lib}"; then
   exit 1
 fi
 
+if [[ ${BUILD_WORKSPACE_DIRECTORY} == "${BUILD_WORKING_DIRECTORY}" ]]; then
+  echo "Error: You are trying to run a devbuild in the project root directory."
+  echo "You probably want to run it in a subdirectory instead:"
+  echo "mkdir -p build && cd build && bazel run //:devbuild"
+  exit 1
+fi
+
+goos=@@GOOS@@
+goarch=@@GOARCH@@
 yq=$(realpath @@YQ@@)
 stat "${yq}" >> /dev/null
 sed=$(realpath @@SED@@)
@@ -31,8 +40,11 @@ stat "${container_sums}" >> /dev/null
 edition=$(cat @@EDITION@@)
 terraform_provider=$(realpath @@TERRAFORM_PROVIDER@@)
 stat "${terraform_provider}" >> /dev/null
-terraform_rc=$(realpath @@TERRAFORM_RC@@)
-stat "${terraform_rc}" >> /dev/null
+build_version=$(cat @@VERSION_FILE@@)
+if [[ -z ${build_version} ]]; then
+  echo "Error: version file is empty"
+  exit 1
+fi
 
 cd "${BUILD_WORKING_DIRECTORY}"
 
@@ -68,13 +80,10 @@ ln -sf "$(replace_prefix "${host_cache}" "${builder_cache}" "${cdbg}")" "${workd
 ln -sf "$(replace_prefix "${host_cache}" "${builder_cache}" "${container_sums}")" "${workdir}/container_sums.sha256"
 ln -sf "$(replace_prefix "${host_cache}" "${builder_cache}" "${cli}")" "${workdir}/constellation"
 
-TF_PROVIDER_DIR="${workdir}/terraform"
-mkdir -p "${TF_PROVIDER_DIR}"
-ln -sf "$(replace_prefix "${host_cache}" "${builder_cache}" "${terraform_provider}")" "${TF_PROVIDER_DIR}/terraform-provider-constellation"
-cp "$(replace_prefix "${host_cache}" "${builder_cache}" "${terraform_rc}")" "${TF_PROVIDER_DIR}/config.tfrc"
-${sed} -i "s|@@TERRAFORM_PROVIDER_PATH@@|$(dirname "${terraform_provider}")|g" "${TF_PROVIDER_DIR}/config.tfrc"
+terraform_provider_dir=${HOME}/.terraform.d/plugins/registry.terraform.io/edgelesssys/constellation/${build_version#v}/${goos}_${goarch}/
+mkdir -p "${terraform_provider_dir}"
+ln -sf "${terraform_provider}" "${terraform_provider_dir}/terraform-provider-constellation_${build_version}"
 
-build_version=$("${cli}" version | grep ^Version: | awk '{print $2}')
 if [[ ! -f "${workdir}/constellation-conf.yaml" ]]; then
   echo "constellation-conf.yaml not present in workspace"
   echo "Build version: ${build_version}"

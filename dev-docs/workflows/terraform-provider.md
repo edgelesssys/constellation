@@ -21,9 +21,24 @@ bazel run //bazel/ci:terraform_docgen
 
 ## Using the Terraform Provider
 
-The Terraform provider binary can be used with the normal Terraform CLI, by setting a [development override](https://developer.hashicorp.com/terraform/cli/config/config-file#development-overrides-for-provider-developers),
-so that the registry path to the provider is replaced with the path to the locally built provider. If using the [`devbuild` target](./build-develop-deploy.md), a `config.tfrc` file with the override set to the path
-of the built binary is placed automatically in the `terraform` directory in the current working directory. Otherwise, the file can be also built and copied to the current working directory explicitly via this command:
+If using the [`devbuild` target](./build-develop-deploy.md), the Terraform provider binary is automatically copied to your local registry cache
+at `${HOME}/.terraform.d/plugins/registry.terraform.io/edgelesssys/constellation/<version>/<os>_<arch>/`.
+After running `devbuild`, you can use the provider by simply adding the following to your Terraform configuration:
+
+```hcl
+terraform {
+  required_providers {
+    constellation = {
+      source = "edgelesssys/constellation"
+      version = "<version>"
+    }
+  }
+}
+```
+
+Alternatively, you can configure Terraform to use your binary by setting a [development override](https://developer.hashicorp.com/terraform/cli/config/config-file#development-overrides-for-provider-developers),
+so that the registry path to the provider is replaced with the path to the locally built provider.
+A `config.tfrc` file containing the necessary configuration can be created with the following commands:
 
 ```bash
 bazel build //terraform-provider-constellation:terraform_rc
