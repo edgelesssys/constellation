@@ -113,19 +113,14 @@ func (d *AttestationDataSource) ValidateConfig(ctx context.Context, req datasour
 	}
 
 	if !data.AttestationVariant.Equal(types.StringValue("azure-sev-snp")) && !data.MaaURL.IsNull() {
-		resp.Diagnostics.AddAttributeError(
+		resp.Diagnostics.AddAttributeWarning(
 			path.Root("maa_url"),
-			"MAA URL can only be set for Azure SEV-SNP", "When using other attestation variants, it should not be set.",
+			"MAA URL should only be set for Azure SEV-SNP", "Only when attestation_variant is set to 'azure-sev-snp', 'maa_url' should be specified.",
 		)
 		return
 	}
-
 	if data.AttestationVariant.Equal(types.StringValue("azure-sev-snp")) && data.MaaURL.IsNull() {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("maa_url"),
-			"MAA URL must be set for Azure SEV-SNP", "Only when attestation_variant is set to 'azure-sev-snp', 'maa_url' must be specified.",
-		)
-		return
+		tflog.Info(ctx, "MAA URL not set, MAA fallback will be unavaiable")
 	}
 }
 

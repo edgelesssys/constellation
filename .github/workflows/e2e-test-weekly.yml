@@ -368,23 +368,3 @@ jobs:
     uses: ./.github/workflows/e2e-windows.yml
     with:
       scheduled: ${{ github.event_name == 'schedule' }}
-
-  # TODO(elchead): AB#3547 enable again
-  #e2e-tf-module:
-    #name: Test Terraform Provider
-    #strategy:
-    #  fail-fast: false
-    #  max-parallel: 5
-    #  matrix:
-    #    include:
-    #      - provider: "gcp"
-    #      - provider: "aws"
-    #      - provider: "azure"
-    #permissions:
-    #  id-token: write
-    #  contents: read
-    #  packages: write
-    #secrets: inherit
-    #uses: ./.github/workflows/e2e-test-tf-provider.yml
-    #with:
-    #  cloudProvider: "${{ matrix.provider }}"

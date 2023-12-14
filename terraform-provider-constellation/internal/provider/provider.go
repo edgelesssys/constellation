@@ -53,7 +53,7 @@ func (p *ConstellationProvider) Schema(_ context.Context, _ provider.SchemaReque
 		MarkdownDescription: `The Constellation provider manages Constellation clusters.
 
 Given user-defined infrastructure in Terraform, the provider with its main 'constellation_cluster' resource manages the entire lifecycle of a cluster.
-The provider provides easy usage for custom infrastructure setups and GitOps workflows.
+The provider allows easy usage of custom infrastructure setups and GitOps workflows.
 It is released as part of Constellation releases, such that each provider version is compatible with the corresponding Constellation version.`,
 	}
 }
