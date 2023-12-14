@@ -38,7 +38,7 @@ resource "random_bytes" "measurement_salt" {
 module "azure_iam" {
   // replace $VERSION with the Constellation version you want to use, e.g., v2.14.0
   source                 = "https://github.com/edgelesssys/constellation/releases/download/$VERSION/terraform-module.zip//terraform-module/iam/azure"
-  region                 = local.location
+  location               = local.location
   service_principal_name = "${local.name}-test-sp"
   resource_group_name    = "${local.name}-test-rg"
 }
