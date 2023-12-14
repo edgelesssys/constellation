@@ -455,6 +455,9 @@ type versionContainer struct {
 // runCommandWithSeparateOutputs runs the given command while separating buffers for
 // stdout and stderr.
 func runCommandWithSeparateOutputs(cmd *exec.Cmd) (stdout, stderr []byte, err error) {
+	stdout = []byte{}
+	stderr = []byte{}
+
 	stdoutIn, err := cmd.StdoutPipe()
 	if err != nil {
 		err = fmt.Errorf("create stdout pipe: %w", err)
@@ -475,7 +478,14 @@ func runCommandWithSeparateOutputs(cmd *exec.Cmd) (stdout, stderr []byte, err er
 	continuouslyPrintOutput := func(r io.Reader, prefix string) {
 		scanner := bufio.NewScanner(r)
 		for scanner.Scan() {
-			fmt.Printf("%s: %s\n", prefix, scanner.Text())
+			output := scanner.Text()
+			fmt.Printf("%s: %s\n", prefix, output)
+			switch prefix {
+			case "stdout":
+				stdout = append(stdout, output...)
+			case "stderr":
+				stderr = append(stderr, output...)
+			}
 		}
 	}
 
@@ -486,5 +496,5 @@ func runCommandWithSeparateOutputs(cmd *exec.Cmd) (stdout, stderr []byte, err er
 		err = fmt.Errorf("wait for command to finish: %w", err)
 	}
 
-	return
+	return stdout, stderr, err
 }
