@@ -36,14 +36,16 @@ resource "random_bytes" "measurement_salt" {
 }
 
 module "azure_iam" {
-  source                 = "./infrastructure/iam/azure" # TODO: Replace with remote source URL
+  // replace $VERSION with the Constellation version you want to use, e.g., v2.14.0
+  source                 = "https://github.com/edgelesssys/constellation/releases/download/$VERSION/terraform-module.zip//terraform-module/iam/azure"
   region                 = local.location
   service_principal_name = "${local.name}-test-sp"
   resource_group_name    = "${local.name}-test-rg"
 }
 
 module "azure_infrastructure" {
-  source                 = "./infrastructure/azure" # TODO: Replace with remote source URL
+  // replace $VERSION with the Constellation version you want to use, e.g., v2.14.0
+  source                 = "https://github.com/edgelesssys/constellation/releases/download/$VERSION/terraform-module.zip//terraform-module/azure"
   name                   = local.name
   user_assigned_identity = module.azure_iam.uami_id
   node_groups = {
