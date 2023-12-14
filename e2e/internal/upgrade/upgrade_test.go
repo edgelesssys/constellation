@@ -9,6 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package upgrade
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"flag"
@@ -471,17 +472,15 @@ func runCommandWithSeparateOutputs(cmd *exec.Cmd) (stdout, stderr []byte, err er
 		return
 	}
 
-	stdout, err = io.ReadAll(stdoutIn)
-	if err != nil {
-		err = fmt.Errorf("start command: %w", err)
-		return
+	continuouslyPrintOutput := func(r io.Reader, prefix string) {
+		scanner := bufio.NewScanner(r)
+		for scanner.Scan() {
+			fmt.Printf("%s: %s\n", prefix, scanner.Text())
+		}
 	}
 
-	stderr, err = io.ReadAll(stderrIn)
-	if err != nil {
-		err = fmt.Errorf("start command: %w", err)
-		return
-	}
+	go continuouslyPrintOutput(stdoutIn, "stdout")
+	go continuouslyPrintOutput(stderrIn, "stderr")
 
 	if err = cmd.Wait(); err != nil {
 		err = fmt.Errorf("wait for command to finish: %w", err)
