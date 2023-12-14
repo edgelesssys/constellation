@@ -23,11 +23,6 @@ variable "iam_instance_profile" {
   type        = string
 }
 
-variable "ports" {
-  description = "Ports to forward to the load balancer."
-  type        = list(number)
-}
-
 variable "security_groups" {
   type        = list(string)
   description = "List of IDs of the security groups for an instance."
