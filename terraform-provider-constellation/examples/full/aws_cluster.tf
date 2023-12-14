@@ -83,6 +83,7 @@ data "constellation_image" "bar" {
   csp                 = local.csp
   attestation_variant = local.attestation_variant
   image_version       = local.version
+  region              = local.region
 }
 
 resource "constellation_cluster" "aws_example" {
