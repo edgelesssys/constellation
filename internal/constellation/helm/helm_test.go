@@ -194,7 +194,7 @@ func TestHelmApply(t *testing.T) {
 				awsLbVersion = *tc.clusterAWSLBVersion
 			}
 
-			certManagerVersion := "v1.13.2" // current version
+			certManagerVersion := "v1.12.6" // current version
 			if tc.clusterCertManagerVersion != nil {
 				certManagerVersion = *tc.clusterCertManagerVersion
 			}
