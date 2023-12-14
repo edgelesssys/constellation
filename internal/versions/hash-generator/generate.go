@@ -19,6 +19,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"golang.org/x/tools/go/ast/astutil"
 )
@@ -147,8 +148,13 @@ func main() {
 				}
 			}
 
-			fmt.Println("Generating hash for", url.Value.(*ast.BasicLit).Value)
-			hash.Value.(*ast.BasicLit).Value = mustGetHash(url.Value.(*ast.BasicLit).Value)
+			urlValue := url.Value.(*ast.BasicLit).Value
+			if strings.HasPrefix(urlValue, `"data:`) {
+				// TODO(burgerdev): support patch generation
+				continue
+			}
+			fmt.Println("Generating hash for", urlValue)
+			hash.Value.(*ast.BasicLit).Value = mustGetHash(urlValue)
 		}
 
 		return true
