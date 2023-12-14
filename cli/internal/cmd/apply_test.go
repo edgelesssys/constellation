@@ -28,6 +28,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
@@ -291,6 +292,7 @@ func TestValidateInputs(t *testing.T) {
 		stdin              string
 		flags              applyFlags
 		wantPhases         skipPhases
+		assert             func(require *require.Assertions, assert *assert.Assertions, conf *config.Config, stateFile *state.State)
 		wantErr            bool
 	}{
 		"[upgrade] gcp: all files exist": {
@@ -396,6 +398,28 @@ func TestValidateInputs(t *testing.T) {
 			},
 			wantPhases: newPhases(skipInfrastructurePhase, skipImagePhase, skipK8sPhase),
 		},
+		"[upgrade] k8s patch version no longer supported, user confirms to skip k8s and continue upgrade. Valid K8s patch version is used in config afterwards": {
+			createConfig: func(require *require.Assertions, fh file.Handler) {
+				cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.GCP)
+
+				// use first version in list (oldest) as it should never have a patch version
+				versionParts := strings.Split(versions.SupportedK8sVersions()[0], ".")
+				versionParts[len(versionParts)-1] = "0"
+				cfg.KubernetesVersion = versions.ValidK8sVersion(strings.Join(versionParts, "."))
+				require.NoError(fh.WriteYAML(constants.ConfigFilename, cfg))
+			},
+			createState:        postInitState(cloudprovider.GCP),
+			createMasterSecret: defaultMasterSecret,
+			createAdminConfig:  defaultAdminConfig,
+			createTfState:      defaultTfState,
+			stdin:              "y\n",
+			wantPhases:         newPhases(skipInitPhase, skipK8sPhase),
+			assert: func(require *require.Assertions, assert *assert.Assertions, conf *config.Config, stateFile *state.State) {
+				assert.NotEmpty(conf.KubernetesVersion)
+				_, err := versions.NewValidK8sVersion(string(conf.KubernetesVersion), true)
+				assert.NoError(err)
+			},
+		},
 	}
 
 	for name, tc := range testCases {
@@ -423,7 +447,7 @@ func TestValidateInputs(t *testing.T) {
 				flags:       tc.flags,
 			}
 
-			_, _, err := a.validateInputs(cmd, &stubAttestationFetcher{})
+			conf, state, err := a.validateInputs(cmd, &stubAttestationFetcher{})
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -434,6 +458,10 @@ func TestValidateInputs(t *testing.T) {
 				t.Log(cfgErr.LongMessage())
 			}
 			assert.Equal(tc.wantPhases, a.flags.skipPhases)
+
+			if tc.assert != nil {
+				tc.assert(require, assert, conf, state)
+			}
 		})
 	}
 }
