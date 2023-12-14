@@ -6,7 +6,14 @@ go_library(
     srcs = ["generate.go"],
     importpath = "github.com/edgelesssys/constellation/v2/internal/versions/hash-generator",
     visibility = ["//visibility:private"],
-    deps = ["@org_golang_x_tools//go/ast/astutil"],
+    deps = [
+        "@com_github_regclient_regclient//:regclient",
+        "@com_github_regclient_regclient//types/ref",
+        "@com_github_vincent_petithory_dataurl//:dataurl",
+        "@io_k8s_kubernetes//cmd/kubeadm/app/apis/kubeadm",
+        "@io_k8s_kubernetes//cmd/kubeadm/app/images",
+        "@org_golang_x_tools//go/ast/astutil",
+    ],
 )
 
 go_binary(

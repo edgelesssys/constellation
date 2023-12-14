@@ -52,13 +52,16 @@ func TestVersionFromDockerImage(t *testing.T) {
 
 func TestKubernetesImagePatchCompatibility(t *testing.T) {
 	// This test ensures that pinned Kubernetes images correspond to the
-	// supported Kubernetes versions. It prevents automatic upgrades until
-	// a patch generator is added to the codebase.
-	// TODO(burgerdev): remove after patches are generated automatically.
+	// supported Kubernetes versions.
 	for v, clusterConfig := range VersionConfigs {
 		t.Run(string(v), func(t *testing.T) {
 			for i, component := range clusterConfig.KubernetesComponents.GetUpgradableComponents() {
 				if !strings.HasPrefix(component.Url, "data:") {
+					// This test only applies to kubeadm patches.
+					continue
+				}
+				if strings.Contains(component.InstallPath, "/etcd") {
+					// The etcd version is not derived from the Kubernetes version
 					continue
 				}
 				t.Run(fmt.Sprintf("%d-%s", i, path.Base(component.InstallPath)), func(t *testing.T) {
