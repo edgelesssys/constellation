@@ -83,3 +83,14 @@ func (c Components) GetKubeadmComponent() (*Component, error) {
 	}
 	return nil, errors.New("kubeadm component not found")
 }
+
+// GetUpgradableComponents returns only those Components that should be passed to the upgrade-agent.
+func (c Components) GetUpgradableComponents() Components {
+	var cs Components
+	for _, c := range c {
+		if strings.HasPrefix(c.Url, "data:") || strings.HasSuffix(c.InstallPath, "kubeadm") {
+			cs = append(cs, c)
+		}
+	}
+	return cs
+}
