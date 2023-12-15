@@ -65,14 +65,14 @@ module "aws_infrastructure" {
       zone          = local.zone
     }
   }
-  iam_instance_profile_worker_nodes  = module.aws_iam.worker_nodes_instance_profile
-  iam_instance_profile_control_plane = module.aws_iam.control_plane_instance_profile
-  ami                                = data.constellation_image.bar.reference
-  region                             = local.region
-  zone                               = local.zone
-  debug                              = false
-  enable_snp                         = true
-  custom_endpoint                    = ""
+  iam_instance_profile_name_worker_nodes  = module.aws_iam.iam_instance_profile_name_worker_nodes
+  iam_instance_profile_name_control_plane = module.aws_iam.iam_instance_profile_name_control_plane
+  image_id                                = data.constellation_image.bar.reference
+  region                                  = local.region
+  zone                                    = local.zone
+  debug                                   = false
+  enable_snp                              = true
+  custom_endpoint                         = ""
 }
 
 data "constellation_attestation" "foo" {
