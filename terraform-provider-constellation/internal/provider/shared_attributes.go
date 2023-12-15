@@ -168,16 +168,19 @@ func newImageAttributeSchema(t attributeType) schema.Attribute {
 				Required:            isInput,
 			},
 			"reference": schema.StringAttribute{
-				Description:         "CSP-specific unique reference to the image.",
-				MarkdownDescription: "CSP-specific unique reference to the image.",
+				Description:         "CSP-specific unique reference to the image. The format differs per CSP.",
+				MarkdownDescription: "CSP-specific unique reference to the image. The format differs per CSP.",
 				Computed:            !isInput,
 				Required:            isInput,
 			},
 			"short_path": schema.StringAttribute{
-				Description:         "CSP-agnostic short path to the image.",
-				MarkdownDescription: "CSP-agnostic short path to the image.",
-				Computed:            !isInput,
-				Required:            isInput,
+				Description: "CSP-agnostic short path to the image. The format is `vX.Y.Z` for release images and `ref/$GIT_REF/stream/$STREAM/$SEMANTIC_VERSION` for pre-release images.",
+				MarkdownDescription: "CSP-agnostic short path to the image. The format is `vX.Y.Z` for release images and `ref/$GIT_REF/stream/$STREAM/$SEMANTIC_VERSION` for pre-release images.\n" +
+					"- `$GIT_REF` is the git reference (i.e. branch name) the image was built on, e.g. `main`.\n" +
+					"- `$STREAM` is the stream the image was built on, e.g. `nightly`.\n" +
+					"- `$SEMANTIC_VERSION` is the semantic version of the image, e.g. `vX.Y.Z` or `vX.Y.Z-pre...`.",
+				Computed: !isInput,
+				Required: isInput,
 			},
 		},
 	}

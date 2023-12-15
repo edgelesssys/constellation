@@ -137,8 +137,11 @@ Optional:
 
 Required:
 
-- `reference` (String) CSP-specific unique reference to the image.
-- `short_path` (String) CSP-agnostic short path to the image.
+- `reference` (String) CSP-specific unique reference to the image. The format differs per CSP.
+- `short_path` (String) CSP-agnostic short path to the image. The format is `vX.Y.Z` for release images and `ref/$GIT_REF/stream/$STREAM/$SEMANTIC_VERSION` for pre-release images.
+- `$GIT_REF` is the git reference (i.e. branch name) the image was built on, e.g. `main`.
+- `$STREAM` is the stream the image was built on, e.g. `nightly`.
+- `$SEMANTIC_VERSION` is the semantic version of the image, e.g. `vX.Y.Z` or `vX.Y.Z-pre...`.
 - `version` (String) Semantic version of the image.
 
 
