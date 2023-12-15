@@ -117,3 +117,8 @@ output "maa_url" {
   value       = module.azure_infrastructure.attestation_url
   description = "URL of the MAA provider, required for manual patching."
 }
+
+output "kubeconfig" {
+  value       = module.constellation_cluster.kubeconfig
+  description = "KubeConfig for the Constellation cluster."
+}

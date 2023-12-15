@@ -107,3 +107,8 @@ resource "constellation_cluster" "aws_example" {
     ip_cidr_service = "10.96.0.0/12"
   }
 }
+
+output "kubeconfig" {
+  value       = module.constellation_cluster.kubeconfig
+  description = "KubeConfig for the Constellation cluster."
+}

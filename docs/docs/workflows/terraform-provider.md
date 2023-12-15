@@ -24,9 +24,9 @@ This example shows how to set up a Constellation cluster with the reference IAM 
 3. Initialize and apply the Terraform configuration.
   <tabs>
   <tabItem value="azure" label="Azure">
-  When creating a cluster on Azure, you will need to manually patch the policy of the MAA provider before creating the Constellation cluster, as this feature is not yet available in Azure's Terraform provider. The Constellation CLI provides a utility for patching, but it
+  When creating a cluster on Azure, you will need to manually patch the policy of the MAA provider before creating the Constellation cluster, as this feature isn't yet available in Azure's Terraform provider. The Constellation CLI provides a utility for patching, but it
   can also be done manually.
-  
+
   ```bash
   terraform init
   terraform apply -target module.azure_iam # adjust resource path if not using the example configuration
@@ -34,6 +34,8 @@ This example shows how to set up a Constellation cluster with the reference IAM 
   constellation maa-patch $(terraform output maa_url) # adjust output path / input if not using the example configuration or manually patch the resource
   terraform apply -target constellation_cluster.azure_example # adjust resource path if not using the example configuration
   ```
+
+  Optionally, you can prefix the `terraform apply` command with `TF_LOG=INFO` to collect [Terraform logs](https://developer.hashicorp.com/terraform/internals/debugging) while applying the configuration. This may provide helpful output in debugging scenarios.
 
   Use the following policy if manually performing the patch.
 
@@ -62,6 +64,8 @@ This example shows how to set up a Constellation cluster with the reference IAM 
   terraform init
   terraform apply
   ```
+
+  Optionally, you can prefix the `terraform apply` command with `TF_LOG=INFO` to collect [Terraform logs](https://developer.hashicorp.com/terraform/internals/debugging) while applying the configuration. This may provide helpful output in debugging scenarios.
   </tabItem>
   <tabItem value="gcp" label="GCP">
   Initialize the providers and apply the configuration.
@@ -70,8 +74,16 @@ This example shows how to set up a Constellation cluster with the reference IAM 
   terraform init
   terraform apply
   ```
+
+  Optionally, you can prefix the `terraform apply` command with `TF_LOG=INFO` to collect [Terraform logs](https://developer.hashicorp.com/terraform/internals/debugging) while applying the configuration. This may provide helpful output in debugging scenarios.
   </tabItem>
   </tabs>
+4. Connect to the cluster.
+
+  ```bash
+  terraform output -raw kubeconfig > constellation-admin.conf
+  export KUBECONFIG=$(realpath constellation-admin.conf)
+  ```
 
 ## Bringing your own infrastructure
 

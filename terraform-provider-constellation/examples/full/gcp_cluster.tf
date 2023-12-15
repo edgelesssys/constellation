@@ -111,3 +111,8 @@ resource "constellation_cluster" "gcp_example" {
     ip_cidr_pod     = module.gcp_infrastructure.ip_cidr_pod
   }
 }
+
+output "kubeconfig" {
+  value       = module.constellation_cluster.kubeconfig
+  description = "KubeConfig for the Constellation cluster."
+}
