@@ -35,21 +35,19 @@ get_sha256_hash() {
 }
 
 echo "Pinning cert-manager images..."
-yq=$(realpath @@YQ@@)
-stat "${yq}" >> /dev/null
 v=$(get_sha256_hash "cert-manager-controller")
-${yq} eval -i '.image.digest = "sha256:'"$v"'"' charts/cert-manager/values.yaml
+yq eval -i '.image.digest = "sha256:'"$v"'"' charts/cert-manager/values.yaml
 
 v=$(get_sha256_hash "cert-manager-webhook")
-${yq} eval -i '.webhook.image.digest = "sha256:'"$v"'"' charts/cert-manager/values.yaml
+yq eval -i '.webhook.image.digest = "sha256:'"$v"'"' charts/cert-manager/values.yaml
 
 v=$(get_sha256_hash "cert-manager-cainjector")
-${yq} eval -i '.cainjector.image.digest = "sha256:'"$v"'"' charts/cert-manager/values.yaml
+yq eval -i '.cainjector.image.digest = "sha256:'"$v"'"' charts/cert-manager/values.yaml
 
 v=$(get_sha256_hash "cert-manager-acmesolver")
-${yq} eval -i '.acmesolver.image.digest = "sha256:'"$v"'"' charts/cert-manager/values.yaml
+yq eval -i '.acmesolver.image.digest = "sha256:'"$v"'"' charts/cert-manager/values.yaml
 
 v=$(get_sha256_hash "cert-manager-ctl")
-${yq} eval -i '.startupapicheck.image.digest = "sha256:'"$v"'"' charts/cert-manager/values.yaml
+yq eval -i '.startupapicheck.image.digest = "sha256:'"$v"'"' charts/cert-manager/values.yaml
 
 echo # final newline
