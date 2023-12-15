@@ -110,8 +110,6 @@ var ciliumVals = map[string]map[string]any{
 				"masqLinkLocal": true,
 			},
 		},
-		"egressMasqueradeInterfaces":          "eth0",
-		"enableIPv4Masquerade":                true,
 		"kubeProxyReplacement":                "strict",
 		"enableCiliumEndpointSlice":           true,
 		"kubeProxyReplacementHealthzBindAddr": "0.0.0.0:10256",
