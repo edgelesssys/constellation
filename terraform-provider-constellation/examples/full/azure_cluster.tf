@@ -119,6 +119,6 @@ output "maa_url" {
 }
 
 output "kubeconfig" {
-  value       = module.constellation_cluster.kubeconfig
+  value       = constellation_cluster.azure_example.kubeconfig
   description = "KubeConfig for the Constellation cluster."
 }

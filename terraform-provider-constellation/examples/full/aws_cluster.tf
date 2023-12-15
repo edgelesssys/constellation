@@ -109,6 +109,6 @@ resource "constellation_cluster" "aws_example" {
 }
 
 output "kubeconfig" {
-  value       = module.constellation_cluster.kubeconfig
+  value       = constellation_cluster.aws_example.kubeconfig
   description = "KubeConfig for the Constellation cluster."
 }

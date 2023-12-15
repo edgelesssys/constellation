@@ -113,6 +113,6 @@ resource "constellation_cluster" "gcp_example" {
 }
 
 output "kubeconfig" {
-  value       = module.constellation_cluster.kubeconfig
+  value       = constellation_cluster.gcp_example.kubeconfig
   description = "KubeConfig for the Constellation cluster."
 }
