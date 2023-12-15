@@ -68,7 +68,7 @@ module "gcp_infrastructure" {
       zone          = local.zone
     }
   }
-  image_id = data.constellation_image.bar.reference
+  image_id = data.constellation_image.bar.image.reference
   debug    = false
   zone     = local.zone
   region   = local.region
@@ -78,13 +78,13 @@ module "gcp_infrastructure" {
 data "constellation_attestation" "foo" {
   csp                 = local.csp
   attestation_variant = local.attestation_variant
-  image_version       = local.version
+  image               = data.constellation_image.bar.image
 }
 
 data "constellation_image" "bar" {
   csp                 = local.csp
   attestation_variant = local.attestation_variant
-  image_version       = local.version
+  version             = local.version
 }
 
 resource "constellation_cluster" "gcp_example" {
@@ -92,8 +92,7 @@ resource "constellation_cluster" "gcp_example" {
   constellation_microservice_version = local.version
   name                               = module.gcp_infrastructure.name
   uid                                = module.gcp_infrastructure.uid
-  image_version                      = local.version
-  image_reference                    = data.constellation_image.bar.reference
+  image                              = data.constellation_image.bar.image
   attestation                        = data.constellation_attestation.foo.attestation
   init_secret                        = module.gcp_infrastructure.init_secret
   master_secret                      = local.master_secret

@@ -26,7 +26,7 @@ import (
 // constellation struct: used to call the constellation API
 
 // convertFromTfAttestationCfg converts the related terraform struct to a constellation attestation config.
-func convertFromTfAttestationCfg(tfAttestation attestation, attestationVariant variant.Variant) (config.AttestationCfg, error) {
+func convertFromTfAttestationCfg(tfAttestation attestationAttribute, attestationVariant variant.Variant) (config.AttestationCfg, error) {
 	c11nMeasurements := make(measurements.M)
 	for strIdx, v := range tfAttestation.Measurements {
 		idx, err := strconv.ParseUint(strIdx, 10, 32)
@@ -97,8 +97,8 @@ func convertFromTfAttestationCfg(tfAttestation attestation, attestationVariant v
 }
 
 // convertToTfAttestationCfg converts the constellation attestation config to the related terraform structs.
-func convertToTfAttestation(attVar variant.Variant, snpVersions attestationconfigapi.SEVSNPVersionAPI) (tfAttestation attestation, err error) {
-	tfAttestation = attestation{
+func convertToTfAttestation(attVar variant.Variant, snpVersions attestationconfigapi.SEVSNPVersionAPI) (tfAttestation attestationAttribute, err error) {
+	tfAttestation = attestationAttribute{
 		Variant:           attVar.String(),
 		BootloaderVersion: snpVersions.Bootloader,
 		TEEVersion:        snpVersions.TEE,
@@ -144,16 +144,16 @@ func certAsString(cert config.Certificate) (string, error) {
 }
 
 // convertToTfFirmwareCfg converts the constellation firmware config to the terraform struct.
-func convertToTfFirmwareCfg(firmwareCfg config.SNPFirmwareSignerConfig) (azureSnpFirmwareSignerConfig, error) {
+func convertToTfFirmwareCfg(firmwareCfg config.SNPFirmwareSignerConfig) (azureSnpFirmwareSignerConfigAttribute, error) {
 	keyDigestAny, err := firmwareCfg.AcceptedKeyDigests.MarshalYAML()
 	if err != nil {
-		return azureSnpFirmwareSignerConfig{}, err
+		return azureSnpFirmwareSignerConfigAttribute{}, err
 	}
 	keyDigest, ok := keyDigestAny.([]string)
 	if !ok {
-		return azureSnpFirmwareSignerConfig{}, fmt.Errorf("reading Accepted Key Digests: could not convert %T to []string", keyDigestAny)
+		return azureSnpFirmwareSignerConfigAttribute{}, fmt.Errorf("reading Accepted Key Digests: could not convert %T to []string", keyDigestAny)
 	}
-	return azureSnpFirmwareSignerConfig{
+	return azureSnpFirmwareSignerConfigAttribute{
 		AcceptedKeyDigests: keyDigest,
 		EnforcementPolicy:  firmwareCfg.EnforcementPolicy.String(),
 		MAAURL:             firmwareCfg.MAAURL,
@@ -161,7 +161,7 @@ func convertToTfFirmwareCfg(firmwareCfg config.SNPFirmwareSignerConfig) (azureSn
 }
 
 // convertFromTfFirmwareCfg converts the terraform struct to a constellation firmware config.
-func convertFromTfFirmwareCfg(tfFirmwareCfg azureSnpFirmwareSignerConfig) (config.SNPFirmwareSignerConfig, error) {
+func convertFromTfFirmwareCfg(tfFirmwareCfg azureSnpFirmwareSignerConfigAttribute) (config.SNPFirmwareSignerConfig, error) {
 	keyDigests, err := idkeydigest.UnmarshalHexString(tfFirmwareCfg.AcceptedKeyDigests)
 	if err != nil {
 		return config.SNPFirmwareSignerConfig{}, err
@@ -174,42 +174,16 @@ func convertFromTfFirmwareCfg(tfFirmwareCfg azureSnpFirmwareSignerConfig) (confi
 }
 
 // convertToTfMeasurements converts the constellation measurements to the terraform struct.
-func convertToTfMeasurements(m measurements.M) map[string]measurement {
-	tfMeasurements := map[string]measurement{}
+func convertToTfMeasurements(m measurements.M) map[string]measurementAttribute {
+	tfMeasurements := map[string]measurementAttribute{}
 	for key, value := range m {
 		keyStr := strconv.FormatUint(uint64(key), 10)
-		tfMeasurements[keyStr] = measurement{
+		tfMeasurements[keyStr] = measurementAttribute{
 			Expected: hex.EncodeToString(value.Expected),
 			WarnOnly: bool(value.ValidationOpt),
 		}
 	}
 	return tfMeasurements
-}
-
-type extraMicroservices struct {
-	CSIDriver bool `tfsdk:"csi_driver"`
-}
-
-type measurement struct {
-	Expected string `tfsdk:"expected"`
-	WarnOnly bool   `tfsdk:"warn_only"`
-}
-
-type attestation struct {
-	BootloaderVersion            uint8                        `tfsdk:"bootloader_version"`
-	TEEVersion                   uint8                        `tfsdk:"tee_version"`
-	SNPVersion                   uint8                        `tfsdk:"snp_version"`
-	MicrocodeVersion             uint8                        `tfsdk:"microcode_version"`
-	AMDRootKey                   string                       `tfsdk:"amd_root_key"`
-	AzureSNPFirmwareSignerConfig azureSnpFirmwareSignerConfig `tfsdk:"azure_firmware_signer_config"`
-	Variant                      string                       `tfsdk:"variant"`
-	Measurements                 map[string]measurement       `tfsdk:"measurements"`
-}
-
-type azureSnpFirmwareSignerConfig struct {
-	AcceptedKeyDigests []string `tfsdk:"accepted_key_digests"`
-	EnforcementPolicy  string   `tfsdk:"enforcement_policy"`
-	MAAURL             string   `tfsdk:"maa_url"`
 }
 
 func newVersion(v uint8) config.AttestationVersion {

@@ -32,16 +32,29 @@ data "constellation_attestation" "test" {
   * `gcp-sev-es`
 - `csp` (String) CSP (Cloud Service Provider) to use. (e.g. `azure`)
 See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview/clouds) that Constellation supports.
+- `image` (Attributes) Constellation OS Image to use on the nodes. (see [below for nested schema](#nestedatt--image))
 
 ### Optional
 
-- `image_version` (String) The image version to use. If not set, the provider version value is used.
 - `insecure` (Boolean) DON'T USE IN PRODUCTION Skip the signature verification when fetching measurements for the image.
 - `maa_url` (String) For Azure only, the URL of the Microsoft Azure Attestation service
 
 ### Read-Only
 
 - `attestation` (Attributes) Attestation comprises the measurements and SEV-SNP specific parameters. (see [below for nested schema](#nestedatt--attestation))
+
+<a id="nestedatt--image"></a>
+### Nested Schema for `image`
+
+Required:
+
+- `reference` (String) CSP-specific unique reference to the image. The format differs per CSP.
+- `short_path` (String) CSP-agnostic short path to the image. The format is `vX.Y.Z` for release images and `ref/$GIT_REF/stream/$STREAM/$SEMANTIC_VERSION` for pre-release images.
+- `$GIT_REF` is the git reference (i.e. branch name) the image was built on, e.g. `main`.
+- `$STREAM` is the stream the image was built on, e.g. `nightly`.
+- `$SEMANTIC_VERSION` is the semantic version of the image, e.g. `vX.Y.Z` or `vX.Y.Z-pre...`.
+- `version` (String) Semantic version of the image.
+
 
 <a id="nestedatt--attestation"></a>
 ### Nested Schema for `attestation`

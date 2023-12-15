@@ -22,6 +22,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
@@ -45,7 +46,7 @@ type AttestationDataSource struct {
 type AttestationDataSourceModel struct {
 	CSP                types.String `tfsdk:"csp"`
 	AttestationVariant types.String `tfsdk:"attestation_variant"`
-	ImageVersion       types.String `tfsdk:"image_version"`
+	Image              types.Object `tfsdk:"image"`
 	MaaURL             types.String `tfsdk:"maa_url"`
 	Insecure           types.Bool   `tfsdk:"insecure"`
 	Attestation        types.Object `tfsdk:"attestation"`
@@ -89,12 +90,9 @@ func (d *AttestationDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 		MarkdownDescription: "Data source to fetch an attestation configuration for a given cloud service provider, attestation variant, and OS image.",
 
 		Attributes: map[string]schema.Attribute{
-			"csp":                 newCSPAttribute(),
-			"attestation_variant": newAttestationVariantAttribute(attributeInput),
-			"image_version": schema.StringAttribute{
-				MarkdownDescription: "The image version to use. If not set, the provider version value is used.",
-				Optional:            true,
-			},
+			"csp":                 newCSPAttributeSchema(),
+			"attestation_variant": newAttestationVariantAttributeSchema(attributeInput),
+			"image":               newImageAttributeSchema(attributeInput),
 			"maa_url": schema.StringAttribute{
 				MarkdownDescription: "For Azure only, the URL of the Microsoft Azure Attestation service",
 				Optional:            true,
@@ -103,7 +101,7 @@ func (d *AttestationDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 				MarkdownDescription: "DON'T USE IN PRODUCTION Skip the signature verification when fetching measurements for the image.",
 				Optional:            true,
 			},
-			"attestation": newAttestationConfigAttribute(attributeOutput),
+			"attestation": newAttestationConfigAttributeSchema(attributeOutput),
 		},
 	}
 }
@@ -176,12 +174,15 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 	}
 	verifyFetcher := measurements.NewVerifyFetcher(sigstore.NewCosignVerifier, d.rekor, d.client)
 
-	imageVersion := data.ImageVersion.ValueString()
-	if imageVersion == "" {
-		tflog.Info(ctx, fmt.Sprintf("No image version specified, using provider version %s", d.version))
-		imageVersion = d.version // Use provider version as default.
+	// parse OS image version
+	var image imageAttribute
+	convertDiags := data.Image.As(ctx, &image, basetypes.ObjectAsOptions{})
+	resp.Diagnostics.Append(convertDiags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
-	fetchedMeasurements, err := verifyFetcher.FetchAndVerifyMeasurements(ctx, imageVersion,
+
+	fetchedMeasurements, err := verifyFetcher.FetchAndVerifyMeasurements(ctx, image.ShortPath,
 		csp, attestationVariant, insecureFetch)
 	if err != nil {
 		var rekErr *measurements.RekorError
