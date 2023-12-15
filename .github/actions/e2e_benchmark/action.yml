@@ -17,7 +17,7 @@ inputs:
   awsOpenSearchPwd:
     description: "AWS OpenSearch Password to upload the results."
     required: false
-  encryptionSecret:
+  encryption-secret:
     description: 'The secret to use for encrypting the artifact.'
     required: true
 
@@ -100,7 +100,7 @@ runs:
       with:
         path: "out/fio-constellation-${{ inputs.cloudProvider }}.json"
         name: "fio-constellation-${{ inputs.cloudProvider }}.json"
-        encryptionSecret: ${{ inputs.encryptionSecret }}
+        encryption-secret: ${{ inputs.encryption-secret }}
 
     - name: Run knb benchmark
       shell: bash
@@ -122,7 +122,7 @@ runs:
       with:
         path: "out/knb-constellation-${{ inputs.cloudProvider }}.json"
         name: "knb-constellation-${{ inputs.cloudProvider }}.json"
-        encryptionSecret: ${{ inputs.encryptionSecret }}
+        encryption-secret: ${{ inputs.encryption-secret }}
 
     - name: Assume AWS role to retrieve and update benchmarks in S3
       uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a # v4.0.1
@@ -176,7 +176,7 @@ runs:
         path: >
           benchmarks/constellation-${{ inputs.cloudProvider }}.json
         name: "benchmarks"
-        encryptionSecret: ${{ inputs.encryptionSecret }}
+        encryption-secret: ${{ inputs.encryption-secret }}
 
     - name: Upload benchmark results to opensearch
       if: (!env.ACT)

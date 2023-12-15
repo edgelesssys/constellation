@@ -59,7 +59,7 @@ inputs:
   force:
     description: "Set the force-flag on apply to ignore version mismatches."
     required: false
-  encryptionSecret:
+  encryption-secret:
     description: "The secret to use for encrypting the artifact."
     required: true
 
@@ -274,4 +274,4 @@ runs:
         name: serial-logs-${{ inputs.artifactNameSuffix }}
         path: >
           !(terraform).log
-        encryptionSecret: ${{ inputs.encryptionSecret }}
+        encryption-secret: ${{ inputs.encryption-secret }}

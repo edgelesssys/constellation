@@ -265,7 +265,7 @@ jobs:
           clusterCreation: ${{ matrix.clusterCreation }}
           s3AccessKey: ${{ secrets.AWS_ACCESS_KEY_ID_S3PROXY }}
           s3SecretKey: ${{ secrets.AWS_SECRET_ACCESS_KEY_S3PROXY }}
-          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Always terminate cluster
         if: always()

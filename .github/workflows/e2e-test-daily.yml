@@ -91,7 +91,7 @@ jobs:
           awsOpenSearchUsers: ${{ secrets.AWS_OPENSEARCH_USER }}
           awsOpenSearchPwd: ${{ secrets.AWS_OPENSEARCH_PWD }}
           clusterCreation: "cli"
-          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Always terminate cluster
         if: always()

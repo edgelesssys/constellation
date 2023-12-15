@@ -11,7 +11,7 @@ inputs:
   retention-days:
     description: 'How long the artifact should be retained for.'
     default: 60
-  encryptionSecret:
+  encryption-secret:
     description: 'The secret to use for encrypting the files.'
     required: true
 
@@ -58,7 +58,7 @@ runs:
         for target in ${paths}
         do
           pushd "$(dirname "${target}")" || exit 1
-          zip -e -P '${{ inputs.encryptionSecret }}' -r "${{ steps.tempdir.outputs.directory }}/archive.zip" "$(basename "${target}")"
+          zip -e -P '${{ inputs.encryption-secret }}' -r "${{ steps.tempdir.outputs.directory }}/archive.zip" "$(basename "${target}")"
           popd || exit 1
         done
 

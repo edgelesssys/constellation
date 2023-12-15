@@ -9,7 +9,7 @@ inputs:
     description: 'Download to a specified path.'
     required: false
     default: ./
-  encryptionSecret:
+  encryption-secret:
     description: 'The secret to use for decrypting the artifact.'
     required: true
 
@@ -37,4 +37,4 @@ runs:
       shell: bash
       run: |
         mkdir -p ${{ inputs.path }}
-        unzip -P '${{ inputs.encryptionSecret }}' -qq -d ${{ inputs.path }} ${{ steps.tempdir.outputs.directory }}/archive.zip
+        unzip -P '${{ inputs.encryption-secret }}' -qq -d ${{ inputs.path }} ${{ steps.tempdir.outputs.directory }}/archive.zip
