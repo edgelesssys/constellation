@@ -86,7 +86,7 @@ func (a actionFactory) appendNewAction(
 			return compatibility.NewInvalidUpgradeError(
 				currentVersion.String(),
 				configTargetVersion.String(),
-				fmt.Errorf("this CLI only supports installing microservice version %s", newVersion),
+				fmt.Errorf("this Constellation version only supports installing microservice version %s", newVersion),
 			)
 		}
 
@@ -114,7 +114,7 @@ func (a actionFactory) appendNewAction(
 				return compatibility.NewInvalidUpgradeError(
 					currentVersion.String(),
 					configTargetVersion.String(),
-					fmt.Errorf("this CLI only supports upgrading to microservice version %s", newVersion),
+					fmt.Errorf("this Constellation version only supports upgrading to microservice version %s", newVersion),
 				)
 			}
 		} else {
