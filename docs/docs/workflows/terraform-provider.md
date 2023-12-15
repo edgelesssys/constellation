@@ -61,7 +61,8 @@ This example shows how to set up a Constellation cluster with the reference IAM 
 
 ## Bringing your own infrastructure
 
-If you need a custom infrastructure setup, you can download the infrastructure / IAM Terraform modules for the respective CSP from the Constellation [GitHub releases](https://github.com/edgelesssys/constellation/releases). You can modify and extend the modules per your requirements, while keeping the basic functionality intact.
+Instead of using the example infrastructure used in the [quick setup](#quick-setup), you can also provide your own infrastructure.
+If you need a starting point for a custom infrastructure setup, you can download the infrastructure / IAM Terraform modules for the respective CSP from the Constellation [GitHub releases](https://github.com/edgelesssys/constellation/releases). You can modify and extend the modules per your requirements, while keeping the basic functionality intact.
 The module contains:
 
 - `{csp}`: cloud resources the cluster runs on
