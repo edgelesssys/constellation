@@ -1,7 +1,8 @@
+# Variables common to all CSPs
+
 variable "name" {
   type        = string
-  default     = "constell"
-  description = "Base name of the cluster."
+  description = "Name of the Constellation cluster."
 }
 
 variable "node_groups" {
@@ -20,40 +21,42 @@ variable "node_groups" {
   }
 }
 
-variable "project" {
-  type        = string
-  description = "The GCP project to deploy the cluster in."
-}
-
-variable "region" {
-  type        = string
-  description = "The GCP region to deploy the cluster in."
-}
-
-variable "zone" {
-  type        = string
-  description = "The GCP zone to deploy the cluster in."
-}
-
 variable "image_id" {
   type        = string
-  description = "The GCP image to use for the cluster nodes."
+  description = "OS image reference for the cluster's nodes."
 }
 
 variable "debug" {
   type        = bool
   default     = false
-  description = "Enable debug mode. This opens up a debugd port that can be used to deploy a custom bootstrapper."
+  description = "DO NOT USE IN PRODUCTION. Enable debug mode. This opens up a debugd port that can be used to deploy a custom bootstrapper."
 }
 
 variable "custom_endpoint" {
   type        = string
   default     = ""
-  description = "Custom endpoint to use for the Kubernetes apiserver. If not set, the default endpoint will be used."
+  description = "Custom endpoint to use for the Kubernetes API server. If not set, the default endpoint will be used."
 }
 
 variable "internal_load_balancer" {
   type        = bool
   default     = false
-  description = "Enable internal load balancer. This can only be enabled if the control-plane is deployed in one zone."
+  description = "Whether to use an internal load balancer for the cluster."
+}
+
+# GCP-specific variables
+
+variable "project" {
+  type        = string
+  description = "GCP project to deploy the cluster in."
+}
+
+variable "region" {
+  type        = string
+  description = "GCP region to deploy the cluster in."
+}
+
+variable "zone" {
+  type        = string
+  description = "GCP zone to deploy the cluster in."
 }

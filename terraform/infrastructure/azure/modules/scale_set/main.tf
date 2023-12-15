@@ -24,6 +24,7 @@ locals {
 resource "random_id" "uid" {
   byte_length = 4
 }
+
 resource "random_password" "password" {
   length      = 16
   min_lower   = 1
@@ -91,7 +92,6 @@ resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
       version   = var.marketplace_image.version
     }
   }
-
 
   data_disk {
     storage_account_type = var.state_disk_type

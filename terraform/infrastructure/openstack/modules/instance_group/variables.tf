@@ -1,16 +1,11 @@
-variable "node_group_name" {
-  type        = string
-  description = "Constellation name for the node group (used for configuration and CSP-independent naming)."
-}
-
 variable "base_name" {
   type        = string
   description = "Base name of the instance group."
 }
 
-variable "uid" {
+variable "node_group_name" {
   type        = string
-  description = "Unique ID of the Constellation."
+  description = "Constellation name for the instance group (used for configuration and CSP-independent naming)."
 }
 
 variable "role" {
@@ -22,14 +17,24 @@ variable "role" {
   }
 }
 
+variable "tags" {
+  type        = list(string)
+  description = "Tags to attach to each node."
+}
+
+variable "uid" {
+  type        = string
+  description = "Unique ID of the Constellation."
+}
+
 variable "initial_count" {
   type        = number
-  description = "Number of instances in the instance group."
+  description = "Number of instances in this instance group."
 }
 
 variable "image_id" {
   type        = string
-  description = "Image ID for the nodes."
+  description = "OS Image reference for the cluster's nodes."
 }
 
 variable "flavor_id" {
@@ -42,24 +47,19 @@ variable "security_groups" {
   description = "Security groups to place the nodes in."
 }
 
-variable "tags" {
-  type        = list(string)
-  description = "Tags to attach to each node."
-}
-
 variable "disk_size" {
   type        = number
-  description = "Disk size for the nodes, in GiB."
+  description = "Disk size for the state disk of the nodes [GB]."
 }
 
 variable "state_disk_type" {
   type        = string
-  description = "Disk/volume type to be used."
+  description = "Type of the state disk."
 }
 
 variable "availability_zone" {
   type        = string
-  description = "The availability zone to deploy the nodes in."
+  description = "Availability zone to deploy the nodes in."
 }
 
 variable "network_id" {

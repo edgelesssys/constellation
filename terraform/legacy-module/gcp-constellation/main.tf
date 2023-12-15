@@ -54,16 +54,16 @@ module "constellation" {
   uid                  = module.gcp.uid
   clusterEndpoint      = module.gcp.out_of_cluster_endpoint
   inClusterEndpoint    = module.gcp.in_cluster_endpoint
-  initSecretHash       = module.gcp.initSecret
-  ipCidrNode           = module.gcp.ip_cidr_nodes
+  initSecretHash       = module.gcp.init_secret
+  ipCidrNode           = module.gcp.ip_cidr_node
   apiServerCertSANs    = module.gcp.api_server_cert_sans
   node_groups          = var.node_groups
   gcp_config = {
     region            = local.region
     zone              = var.zone
     project           = var.project
-    ipCidrPod         = module.gcp.ip_cidr_pods
-    serviceAccountKey = module.gcp_iam.sa_key
+    ipCidrPod         = module.gcp.ip_cidr_pod
+    serviceAccountKey = module.gcp_iam.service_account_key
   }
   depends_on = [module.gcp, null_resource.ensure_yq]
 }

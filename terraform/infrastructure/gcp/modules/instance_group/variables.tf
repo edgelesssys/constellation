@@ -10,7 +10,7 @@ variable "node_group_name" {
 
 variable "role" {
   type        = string
-  description = "The role of the instance group."
+  description = "Role of the instance group."
   validation {
     condition     = contains(["control-plane", "worker"], var.role)
     error_message = "The role has to be 'control-plane' or 'worker'."
@@ -19,7 +19,7 @@ variable "role" {
 
 variable "uid" {
   type        = string
-  description = "UID of the cluster. This is used for tags."
+  description = "Unique Identifier (UID) of the cluster."
 }
 
 variable "labels" {
@@ -35,22 +35,22 @@ variable "instance_type" {
 
 variable "initial_count" {
   type        = number
-  description = "Number of instances in the instance group."
+  description = "Number of instances in the group."
 }
 
 variable "image_id" {
   type        = string
-  description = "Image ID for the nodes."
+  description = "OS Image reference for the cluster's nodes."
 }
 
 variable "disk_size" {
   type        = number
-  description = "Disk size for the nodes, in GB."
+  description = "Disk size for the state disk of the nodes [GB]."
 }
 
 variable "disk_type" {
   type        = string
-  description = "Disk type for the nodes. Has to be 'pd-standard' or 'pd-ssd'."
+  description = "Disk type for the nodes. Has to be either 'pd-standard' or 'pd-ssd'."
 }
 
 variable "network" {
@@ -65,12 +65,12 @@ variable "subnetwork" {
 
 variable "kube_env" {
   type        = string
-  description = "Kubernetes env."
+  description = "Value of the \"kube-env\" metadata key."
 }
 
 variable "init_secret_hash" {
   type        = string
-  description = "Hash of the init secret."
+  description = "BCrypt Hash of the initialization secret."
 }
 
 variable "named_ports" {
@@ -82,7 +82,7 @@ variable "named_ports" {
 variable "debug" {
   type        = bool
   default     = false
-  description = "Enable debug mode. This will enable serial port access on the instances."
+  description = "DO NOT USE IN PRODUCTION. Enable debug mode. This opens up a debugd port that can be used to deploy a custom bootstrapper."
 }
 
 variable "alias_ip_range_name" {
@@ -97,5 +97,5 @@ variable "zone" {
 
 variable "custom_endpoint" {
   type        = string
-  description = "Custom endpoint to use for the Kubernetes apiserver. If not set, the default endpoint will be used."
+  description = "Custom endpoint to use for the Kubernetes API server. If not set, the default endpoint will be used."
 }

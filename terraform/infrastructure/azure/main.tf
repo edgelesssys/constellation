@@ -20,9 +20,9 @@ provider "azurerm" {
 }
 
 locals {
-  uid            = random_id.uid.hex
-  name           = "${var.name}-${local.uid}"
-  initSecretHash = random_password.initSecret.bcrypt_hash
+  uid              = random_id.uid.hex
+  name             = "${var.name}-${local.uid}"
+  init_secret_hash = random_password.init_secret.bcrypt_hash
   tags = {
     constellation-uid = local.uid,
   }
@@ -54,7 +54,7 @@ resource "random_id" "uid" {
   byte_length = 4
 }
 
-resource "random_password" "initSecret" {
+resource "random_password" "init_secret" {
   length           = 32
   special          = true
   override_special = "_%@"
@@ -245,7 +245,7 @@ module "scale_set_group" {
   zones           = each.value.zones
   tags = merge(
     local.tags,
-    { constellation-init-secret-hash = local.initSecretHash },
+    { constellation-init-secret-hash = local.init_secret_hash },
     { constellation-maa-url = var.create_maa ? azurerm_attestation_provider.attestation_provider[0].attestation_uri : "" },
   )
 

@@ -95,13 +95,13 @@ func (c *Client) ShowIAM(ctx context.Context, provider cloudprovider.Provider) (
 
 	switch provider {
 	case cloudprovider.GCP:
-		saKeyOutputRaw, ok := tfState.Values.Outputs["sa_key"]
+		saKeyOutputRaw, ok := tfState.Values.Outputs["service_account_key"]
 		if !ok {
-			return IAMOutput{}, errors.New("no service account key output found")
+			return IAMOutput{}, errors.New("no service_account_key output found")
 		}
 		saKeyOutput, ok := saKeyOutputRaw.Value.(string)
 		if !ok {
-			return IAMOutput{}, errors.New("invalid type in service account key output: not a string")
+			return IAMOutput{}, errors.New("invalid type in service_account_key output: not a string")
 		}
 		return IAMOutput{
 			GCP: GCPIAMOutput{
@@ -111,27 +111,27 @@ func (c *Client) ShowIAM(ctx context.Context, provider cloudprovider.Provider) (
 	case cloudprovider.Azure:
 		subscriptionIDRaw, ok := tfState.Values.Outputs["subscription_id"]
 		if !ok {
-			return IAMOutput{}, errors.New("no subscription id output found")
+			return IAMOutput{}, errors.New("no subscription_id output found")
 		}
 		subscriptionIDOutput, ok := subscriptionIDRaw.Value.(string)
 		if !ok {
-			return IAMOutput{}, errors.New("invalid type in subscription id output: not a string")
+			return IAMOutput{}, errors.New("invalid type in subscription_id output: not a string")
 		}
 		tenantIDRaw, ok := tfState.Values.Outputs["tenant_id"]
 		if !ok {
-			return IAMOutput{}, errors.New("no tenant id output found")
+			return IAMOutput{}, errors.New("no tenant_id output found")
 		}
 		tenantIDOutput, ok := tenantIDRaw.Value.(string)
 		if !ok {
-			return IAMOutput{}, errors.New("invalid type in tenant id output: not a string")
+			return IAMOutput{}, errors.New("invalid type in tenant_id output: not a string")
 		}
 		uamiIDRaw, ok := tfState.Values.Outputs["uami_id"]
 		if !ok {
-			return IAMOutput{}, errors.New("no UAMI id output found")
+			return IAMOutput{}, errors.New("no uami_id output found")
 		}
 		uamiIDOutput, ok := uamiIDRaw.Value.(string)
 		if !ok {
-			return IAMOutput{}, errors.New("invalid type in UAMI id output: not a string")
+			return IAMOutput{}, errors.New("invalid type in uami_id output: not a string")
 		}
 		return IAMOutput{
 			Azure: AzureIAMOutput{
@@ -141,21 +141,21 @@ func (c *Client) ShowIAM(ctx context.Context, provider cloudprovider.Provider) (
 			},
 		}, nil
 	case cloudprovider.AWS:
-		controlPlaneProfileRaw, ok := tfState.Values.Outputs["control_plane_instance_profile"]
+		controlPlaneProfileRaw, ok := tfState.Values.Outputs["iam_instance_profile_name_control_plane"]
 		if !ok {
-			return IAMOutput{}, errors.New("no control plane instance profile output found")
+			return IAMOutput{}, errors.New("no iam_instance_profile_name_control_plane output found")
 		}
 		controlPlaneProfileOutput, ok := controlPlaneProfileRaw.Value.(string)
 		if !ok {
-			return IAMOutput{}, errors.New("invalid type in control plane instance profile output: not a string")
+			return IAMOutput{}, errors.New("invalid type in iam_instance_profile_name_control_plane output: not a string")
 		}
-		workerNodeProfileRaw, ok := tfState.Values.Outputs["worker_nodes_instance_profile"]
+		workerNodeProfileRaw, ok := tfState.Values.Outputs["iam_instance_profile_name_worker_nodes"]
 		if !ok {
-			return IAMOutput{}, errors.New("no worker node instance profile output found")
+			return IAMOutput{}, errors.New("no iam_instance_profile_name_worker_nodes output found")
 		}
 		workerNodeProfileOutput, ok := workerNodeProfileRaw.Value.(string)
 		if !ok {
-			return IAMOutput{}, errors.New("invalid type in worker node instance profile output: not a string")
+			return IAMOutput{}, errors.New("invalid type in iam_instance_profile_name_worker_nodes output: not a string")
 		}
 		return IAMOutput{
 			AWS: AWSIAMOutput{
@@ -209,13 +209,13 @@ func (c *Client) ShowInfrastructure(ctx context.Context, provider cloudprovider.
 		return state.Infrastructure{}, fmt.Errorf("convert api_server_cert_sans output: %w", err)
 	}
 
-	secretOutput, ok := tfState.Values.Outputs["initSecret"]
+	secretOutput, ok := tfState.Values.Outputs["init_secret"]
 	if !ok {
-		return state.Infrastructure{}, errors.New("no initSecret output found")
+		return state.Infrastructure{}, errors.New("no init_secret output found")
 	}
 	secret, ok := secretOutput.Value.(string)
 	if !ok {
-		return state.Infrastructure{}, errors.New("invalid type in initSecret output: not a string")
+		return state.Infrastructure{}, errors.New("invalid type in init_Secret output: not a string")
 	}
 
 	uidOutput, ok := tfState.Values.Outputs["uid"]
@@ -236,13 +236,13 @@ func (c *Client) ShowInfrastructure(ctx context.Context, provider cloudprovider.
 		return state.Infrastructure{}, errors.New("invalid type in name output: not a string")
 	}
 
-	cidrNodesOutput, ok := tfState.Values.Outputs["ip_cidr_nodes"]
+	cidrNodesOutput, ok := tfState.Values.Outputs["ip_cidr_node"]
 	if !ok {
-		return state.Infrastructure{}, errors.New("no ip_cidr_nodes output found")
+		return state.Infrastructure{}, errors.New("no ip_cidr_node output found")
 	}
 	cidrNodes, ok := cidrNodesOutput.Value.(string)
 	if !ok {
-		return state.Infrastructure{}, errors.New("invalid type in ip_cidr_nodes output: not a string")
+		return state.Infrastructure{}, errors.New("invalid type in ip_cidr_node output: not a string")
 	}
 
 	res := state.Infrastructure{
@@ -266,13 +266,13 @@ func (c *Client) ShowInfrastructure(ctx context.Context, provider cloudprovider.
 			return state.Infrastructure{}, errors.New("invalid type in project output: not a string")
 		}
 
-		cidrPodsOutput, ok := tfState.Values.Outputs["ip_cidr_pods"]
+		cidrPodsOutput, ok := tfState.Values.Outputs["ip_cidr_pod"]
 		if !ok {
-			return state.Infrastructure{}, errors.New("no ip_cidr_pods output found")
+			return state.Infrastructure{}, errors.New("no ip_cidr_pod output found")
 		}
 		cidrPods, ok := cidrPodsOutput.Value.(string)
 		if !ok {
-			return state.Infrastructure{}, errors.New("invalid type in ip_cidr_pods output: not a string")
+			return state.Infrastructure{}, errors.New("invalid type in ip_cidr_pod output: not a string")
 		}
 
 		res.GCP = &state.GCP{
@@ -280,13 +280,13 @@ func (c *Client) ShowInfrastructure(ctx context.Context, provider cloudprovider.
 			IPCidrPod: cidrPods,
 		}
 	case cloudprovider.Azure:
-		attestationURLOutput, ok := tfState.Values.Outputs["attestationURL"]
+		attestationURLOutput, ok := tfState.Values.Outputs["attestation_url"]
 		if !ok {
-			return state.Infrastructure{}, errors.New("no attestationURL output found")
+			return state.Infrastructure{}, errors.New("no attestation_url output found")
 		}
 		attestationURL, ok := attestationURLOutput.Value.(string)
 		if !ok {
-			return state.Infrastructure{}, errors.New("invalid type in attestationURL output: not a string")
+			return state.Infrastructure{}, errors.New("invalid type in attestation_url output: not a string")
 		}
 
 		azureUAMIOutput, ok := tfState.Values.Outputs["user_assigned_identity_client_id"]

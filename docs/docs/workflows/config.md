@@ -273,13 +273,13 @@ The following describes the configuration fields and how you obtain the required
 
 * **iamProfileControlPlane**: The name of an IAM instance profile attached to all control-plane nodes.
 
-  You can create the resource with [Terraform](https://www.terraform.io/). For that, use the [provided Terraform script](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam) to generate the necessary profile. The profile name will be provided as Terraform output value: `control_plane_instance_profile`.
+  You can create the resource with [Terraform](https://www.terraform.io/). For that, use the [provided Terraform script](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam) to generate the necessary profile. The profile name will be provided as Terraform output value: `control_plane_instance_profile_name`.
 
   Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [main.tf](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam/main.tf) in the resource `aws_iam_policy.control_plane_policy`.
 
 * **iamProfileWorkerNodes**: The name of an IAM instance profile attached to all worker nodes.
 
-  You can create the resource with [Terraform](https://www.terraform.io/). For that, use the [provided Terraform script](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam) to generate the necessary profile. The profile name will be provided as Terraform output value: `worker_nodes_instance_profile`.
+  You can create the resource with [Terraform](https://www.terraform.io/). For that, use the [provided Terraform script](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam) to generate the necessary profile. The profile name will be provided as Terraform output value: `worker_nodes_instance_profile_name`.
 
   Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [main.tf](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam/main.tf) in the resource `aws_iam_policy.worker_node_policy`.
 

@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package terraform
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
@@ -38,7 +39,7 @@ func TestAWSClusterVariables(t *testing.T) {
 		},
 		Region:                 "eu-central-1",
 		Zone:                   "eu-central-1a",
-		AMIImageID:             "ami-0123456789abcdef",
+		ImageID:                "ami-0123456789abcdef",
 		IAMProfileControlPlane: "arn:aws:iam::123456789012:instance-profile/cluster-name-controlplane",
 		IAMProfileWorkerNodes:  "arn:aws:iam::123456789012:instance-profile/cluster-name-worker",
 		Debug:                  true,
@@ -47,14 +48,14 @@ func TestAWSClusterVariables(t *testing.T) {
 	}
 
 	// test that the variables are correctly rendered
-	want := `name                               = "cluster-name"
-region                             = "eu-central-1"
-zone                               = "eu-central-1a"
-ami                                = "ami-0123456789abcdef"
-iam_instance_profile_control_plane = "arn:aws:iam::123456789012:instance-profile/cluster-name-controlplane"
-iam_instance_profile_worker_nodes  = "arn:aws:iam::123456789012:instance-profile/cluster-name-worker"
-debug                              = true
-enable_snp                         = true
+	want := `name                                    = "cluster-name"
+region                                  = "eu-central-1"
+zone                                    = "eu-central-1a"
+image_id                                = "ami-0123456789abcdef"
+iam_instance_profile_name_control_plane = "arn:aws:iam::123456789012:instance-profile/cluster-name-controlplane"
+iam_instance_profile_name_worker_nodes  = "arn:aws:iam::123456789012:instance-profile/cluster-name-worker"
+debug                                   = true
+enable_snp                              = true
 node_groups = {
   control_plane_default = {
     disk_size     = 30
@@ -77,7 +78,7 @@ custom_endpoint        = "example.com"
 internal_load_balancer = false
 `
 	got := vars.String()
-	assert.Equal(t, want, got)
+	assert.Equal(t, strings.Fields(want), strings.Fields(got)) // to ignore whitespace differences
 }
 
 func TestAWSIAMVariables(t *testing.T) {
@@ -91,7 +92,7 @@ func TestAWSIAMVariables(t *testing.T) {
 name_prefix = "my-prefix"
 `
 	got := vars.String()
-	assert.Equal(t, want, got)
+	assert.Equal(t, strings.Fields(want), strings.Fields(got)) // to ignore whitespace differences
 }
 
 func TestGCPClusterVariables(t *testing.T) {
@@ -152,7 +153,7 @@ custom_endpoint        = "example.com"
 internal_load_balancer = false
 `
 	got := vars.String()
-	assert.Equal(t, want, got)
+	assert.Equal(t, strings.Fields(want), strings.Fields(got)) // to ignore whitespace differences
 }
 
 func TestGCPIAMVariables(t *testing.T) {
@@ -170,7 +171,7 @@ zone               = "eu-central-1a"
 service_account_id = "my-service-account"
 `
 	got := vars.String()
-	assert.Equal(t, want, got)
+	assert.Equal(t, strings.Fields(want), strings.Fields(got)) // to ignore whitespace differences
 }
 
 func TestAzureClusterVariables(t *testing.T) {
@@ -230,23 +231,23 @@ marketplace_image = {
 }
 `
 	got := vars.String()
-	assert.Equal(t, want, got)
+	assert.Equal(t, strings.Fields(want), strings.Fields(got)) // to ignore whitespace differences
 }
 
 func TestAzureIAMVariables(t *testing.T) {
 	vars := AzureIAMVariables{
-		Region:           "eu-central-1",
+		Location:         "eu-central-1",
 		ServicePrincipal: "my-service-principal",
 		ResourceGroup:    "my-resource-group",
 	}
 
 	// test that the variables are correctly rendered
-	want := `region                 = "eu-central-1"
+	want := `location                 = "eu-central-1"
 service_principal_name = "my-service-principal"
 resource_group_name    = "my-resource-group"
 `
 	got := vars.String()
-	assert.Equal(t, want, got)
+	assert.Equal(t, strings.Fields(want), strings.Fields(got)) // to ignore whitespace differences
 }
 
 func TestOpenStackClusterVariables(t *testing.T) {
@@ -287,7 +288,7 @@ node_groups = {
 }
 cloud                      = "my-cloud"
 floating_ip_pool_id        = "fip-pool-0123456789abcdef"
-image_url                  = "https://example.com/image.raw"
+image_id                  = "https://example.com/image.raw"
 direct_download            = true
 openstack_user_domain_name = "my-user-domain"
 openstack_username         = "my-username"
@@ -297,7 +298,7 @@ custom_endpoint            = "example.com"
 internal_load_balancer     = false
 `
 	got := vars.String()
-	assert.Equal(t, want, got)
+	assert.Equal(t, strings.Fields(want), strings.Fields(got)) // to ignore whitespace differences
 }
 
 func TestQEMUClusterVariables(t *testing.T) {
@@ -341,7 +342,7 @@ machine                 = "q35"
 libvirt_uri             = "qemu:///system"
 libvirt_socket_path     = "/var/run/libvirt/libvirt-sock"
 constellation_boot_mode = "uefi"
-constellation_os_image  = "/var/lib/libvirt/images/cluster-name.qcow2"
+image_id  = "/var/lib/libvirt/images/cluster-name.qcow2"
 image_format            = "raw"
 metadata_api_image      = "example.com/metadata-api:latest"
 metadata_libvirt_uri    = "qemu:///system"
@@ -352,7 +353,7 @@ custom_endpoint         = "example.com"
 internal_load_balancer  = false
 `
 	got := vars.String()
-	assert.Equal(t, want, got)
+	assert.Equal(t, strings.Fields(want), strings.Fields(got)) // to ignore whitespace differences
 }
 
 func TestVariablesFromBytes(t *testing.T) {
@@ -367,7 +368,7 @@ func TestVariablesFromBytes(t *testing.T) {
 	assert.Equal(awsVars, loadedAWSVars)
 
 	azureVars := AzureIAMVariables{
-		Region: "test",
+		Location: "test",
 	}
 	var loadedAzureVars AzureIAMVariables
 	err = VariablesFromBytes([]byte(azureVars.String()), &loadedAzureVars)

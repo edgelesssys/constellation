@@ -5,22 +5,22 @@ variable "name" {
 
 variable "region" {
   type        = string
-  description = "The region where the load balancer will be created."
+  description = "Region to create the load balancer in."
 }
 
 variable "network" {
   type        = string
-  description = "The network to which all network resources will be attached."
+  description = "Network to which network resources will be attached."
 }
 
 variable "backend_subnet" {
   type        = string
-  description = "The subnet to which all backend network resources will be attached."
+  description = "Subnet to which backend network resources will be attached."
 }
 
 variable "health_check" {
   type        = string
-  description = "The type of the health check. 'HTTPS' or 'TCP'."
+  description = "Type of the health check. Can either be 'HTTPS' or 'TCP'."
   validation {
     condition     = contains(["HTTPS", "TCP"], var.health_check)
     error_message = "Health check must be either 'HTTPS' or 'TCP'."
@@ -29,22 +29,22 @@ variable "health_check" {
 
 variable "port" {
   type        = string
-  description = "The port on which to listen for incoming traffic."
+  description = "Port to listen on for incoming traffic."
 }
 
 variable "backend_port_name" {
   type        = string
-  description = "Name of backend port. The same name should appear in the instance groups referenced by this service."
+  description = "Name of the load balancer's backend port. The same name should appear in the instance groups referenced by this service."
 }
 
 variable "backend_instance_group" {
   type        = string
-  description = "The URL of the instance group resource from which the load balancer will direct traffic."
+  description = "Full URL of the instance group resource from which the load balancer will direct traffic."
 }
 
 variable "ip_address" {
   type        = string
-  description = "The IP address that this forwarding rule serves."
+  description = "IP address that this forwarding rule serves."
 }
 
 variable "frontend_labels" {

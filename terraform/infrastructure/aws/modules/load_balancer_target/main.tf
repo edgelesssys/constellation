@@ -8,7 +8,7 @@ terraform {
 }
 
 resource "aws_lb_target_group" "front_end" {
-  name               = var.name
+  name               = var.base_name
   port               = var.port
   protocol           = "TCP"
   vpc_id             = var.vpc_id

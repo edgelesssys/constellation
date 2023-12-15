@@ -1,6 +1,6 @@
 variable "base_name" {
   type        = string
-  description = "Base name of the instance group."
+  description = "Base name of the scale set."
 }
 
 variable "node_group_name" {
@@ -10,7 +10,7 @@ variable "node_group_name" {
 
 variable "role" {
   type        = string
-  description = "The role of the instance group."
+  description = "Role of the instance group."
   validation {
     condition     = contains(["control-plane", "worker"], var.role)
     error_message = "The role has to be 'control-plane' or 'worker'."
@@ -19,7 +19,7 @@ variable "role" {
 
 variable "tags" {
   type        = map(string)
-  description = "Tags to include in the scale_set."
+  description = "Tags to include in the scale set."
 }
 
 variable "zones" {
@@ -30,59 +30,59 @@ variable "zones" {
 
 variable "initial_count" {
   type        = number
-  description = "The number of instances in this scale set."
+  description = "Number of instances in this scale set."
 }
 
 variable "instance_type" {
   type        = string
-  description = "The Azure instance type to deploy."
+  description = "Azure instance type to deploy."
 }
 
 variable "state_disk_size" {
   type        = number
   default     = 30
-  description = "The size of the state disk in GB."
+  description = "Disk size for the state disk of the nodes [GB]."
 }
 
 variable "resource_group" {
   type        = string
-  description = "The name of the Azure resource group to create the Constellation cluster in."
+  description = "Name of the Azure resource group to create the Constellation cluster in."
 }
 
 variable "location" {
   type        = string
-  description = "The Azure location to deploy the cluster in."
+  description = "Azure location to deploy the cluster in."
 }
 
 variable "image_id" {
   type        = string
-  description = "The image to use for the cluster nodes."
+  description = "OS Image reference for the cluster's nodes."
 }
 
 variable "user_assigned_identity" {
   type        = string
-  description = "The name of the user assigned identity to attache to the nodes of the cluster."
+  description = "Name of the user assigned identity to attache to the nodes of the cluster."
 }
 
 variable "state_disk_type" {
   type        = string
   default     = "Premium_LRS"
-  description = "The type of the state disk."
+  description = "Type of the state disk."
 }
 
 variable "network_security_group_id" {
   type        = string
-  description = "The ID of the network security group to use for the scale set."
+  description = "ID of the network security group to use for the scale set."
 }
 
 variable "backend_address_pool_ids" {
   type        = list(string)
-  description = "The IDs of the backend address pools to use for the scale set."
+  description = "IDs of the backend address pools to use for the scale set."
 }
 
 variable "subnet_id" {
   type        = string
-  description = "The ID of the subnet to use for the scale set."
+  description = "ID of the subnet to use for the scale set."
 }
 
 variable "confidential_vm" {

@@ -28,24 +28,24 @@ provider "azuread" {
 # Access current subscription (available via Azure CLI)
 data "azurerm_subscription" "current" {}
 
-# # Access current AzureAD configuration
+# Access current AzureAD configuration
 data "azuread_client_config" "current" {}
 
 # Create base resource group
 resource "azurerm_resource_group" "base_resource_group" {
   name     = var.resource_group_name
-  location = var.region
+  location = var.location
 }
 
 # Create identity resource group
 resource "azurerm_resource_group" "identity_resource_group" {
   name     = "${var.resource_group_name}-identity"
-  location = var.region
+  location = var.location
 }
 
 # Create managed identity
 resource "azurerm_user_assigned_identity" "identity_uami" {
-  location            = var.region
+  location            = var.location
   name                = var.service_principal_name
   resource_group_name = azurerm_resource_group.identity_resource_group.name
 }

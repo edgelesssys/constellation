@@ -23,7 +23,7 @@ data "openstack_identity_auth_scope_v3" "scope" {
 locals {
   uid                    = random_id.uid.hex
   name                   = "${var.name}-${local.uid}"
-  initSecretHash         = random_password.initSecret.bcrypt_hash
+  init_secret_hash       = random_password.init_secret.bcrypt_hash
   ports_node_range_start = "30000"
   ports_node_range_end   = "32767"
   ports_kubernetes       = "6443"
@@ -49,15 +49,15 @@ resource "random_id" "uid" {
   byte_length = 4
 }
 
-resource "random_password" "initSecret" {
+resource "random_password" "init_secret" {
   length           = 32
   special          = true
   override_special = "_%@"
 }
 
-resource "openstack_images_image_v2" "constellation_os_image" {
+resource "openstack_images_image_v2" "image_id" {
   name             = local.name
-  image_source_url = var.image_url
+  image_source_url = var.image_id
   web_download     = var.direct_download
   container_format = "bare"
   disk_format      = "raw"
@@ -168,13 +168,13 @@ module "instance_group" {
   disk_size                  = each.value.state_disk_size
   state_disk_type            = each.value.state_disk_type
   availability_zone          = each.value.zone
-  image_id                   = openstack_images_image_v2.constellation_os_image.image_id
+  image_id                   = openstack_images_image_v2.image_id.image_id
   flavor_id                  = each.value.flavor_id
   security_groups            = [openstack_compute_secgroup_v2.vpc_secgroup.id]
   tags                       = local.tags
   uid                        = local.uid
   network_id                 = openstack_networking_network_v2.vpc_network.id
-  init_secret_hash           = local.initSecretHash
+  init_secret_hash           = local.init_secret_hash
   identity_internal_url      = local.identity_internal_url
   openstack_username         = var.openstack_username
   openstack_password         = var.openstack_password

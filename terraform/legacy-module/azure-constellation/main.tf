@@ -19,7 +19,7 @@ module "fetch_image" {
 
 module "azure_iam" {
   source                 = "../../infrastructure/iam/azure"
-  region                 = var.location
+  location               = var.location
   service_principal_name = var.service_principal_name
   resource_group_name    = var.resource_group_name
 }
@@ -47,8 +47,8 @@ module "constellation" {
   uid                  = module.azure.uid
   clusterEndpoint      = module.azure.out_of_cluster_endpoint
   inClusterEndpoint    = module.azure.in_cluster_endpoint
-  initSecretHash       = module.azure.initSecret
-  ipCidrNode           = module.azure.ip_cidr_nodes
+  initSecretHash       = module.azure.init_secret
+  ipCidrNode           = module.azure.ip_cidr_node
   apiServerCertSANs    = module.azure.api_server_cert_sans
   node_groups          = var.node_groups
   azure_config = {
@@ -59,7 +59,7 @@ module "constellation" {
     userAssignedIdentity     = module.azure_iam.uami_id
     deployCSIDriver          = var.deploy_csi_driver
     secureBoot               = var.secure_boot
-    maaURL                   = module.azure.attestationURL
+    maaURL                   = module.azure.attestation_url
     networkSecurityGroupName = module.azure.network_security_group_name
     loadBalancerName         = module.azure.loadbalancer_name
   }

@@ -11,7 +11,6 @@ terraform {
   }
 }
 
-# Configure the AWS Provider
 provider "aws" {
   region = var.region
 }
@@ -19,7 +18,7 @@ provider "aws" {
 locals {
   uid                   = random_id.uid.hex
   name                  = "${var.name}-${local.uid}"
-  initSecretHash        = random_password.initSecret.bcrypt_hash
+  init_secret_hash      = random_password.init_secret.bcrypt_hash
   cidr_vpc_subnet_nodes = "192.168.176.0/20"
   ports_node_range      = "30000-32767"
   load_balancer_ports = flatten([
@@ -38,8 +37,8 @@ locals {
     worker : []
   }
   iam_instance_profile = {
-    control-plane : var.iam_instance_profile_control_plane
-    worker : var.iam_instance_profile_worker_nodes
+    control-plane : var.iam_instance_profile_name_control_plane
+    worker : var.iam_instance_profile_name_worker_nodes
   }
   # zones are all availability zones that are used by the node groups
   zones = distinct(sort([
@@ -61,7 +60,7 @@ resource "random_id" "uid" {
   byte_length = 4
 }
 
-resource "random_password" "initSecret" {
+resource "random_password" "init_secret" {
   length           = 32
   special          = true
   override_special = "_%@"
@@ -172,7 +171,7 @@ resource "aws_cloudwatch_log_group" "log_group" {
 module "load_balancer_targets" {
   for_each             = { for port in local.load_balancer_ports : port.name => port }
   source               = "./modules/load_balancer_target"
-  name                 = "${local.name}-${each.value.name}"
+  base_name            = "${local.name}-${each.value.name}"
   port                 = each.value.port
   healthcheck_protocol = each.value.health_check
   healthcheck_path     = each.value.name == "kubernetes" ? "/readyz" : ""
@@ -191,7 +190,7 @@ module "instance_group" {
   uid                  = local.uid
   instance_type        = each.value.instance_type
   initial_count        = each.value.initial_count
-  image_id             = var.ami
+  image_id             = var.image_id
   state_disk_type      = each.value.disk_type
   state_disk_size      = each.value.disk_size
   target_group_arns    = local.target_group_arns[each.value.role]
@@ -205,7 +204,7 @@ module "instance_group" {
     { constellation-role = each.value.role },
     { constellation-node-group = each.key },
     { constellation-uid = local.uid },
-    { constellation-init-secret-hash = local.initSecretHash },
+    { constellation-init-secret-hash = local.init_secret_hash },
     { "kubernetes.io/cluster/${local.name}" = "owned" }
   )
 }
@@ -217,42 +216,6 @@ module "jump_host" {
   subnet_id            = module.public_private_subnet.public_subnet_id[var.zone]
   lb_internal_ip       = aws_lb.front_end.dns_name
   ports                = [for port in local.load_balancer_ports : port.port]
-  iam_instance_profile = var.iam_instance_profile_worker_nodes
   security_groups      = [aws_security_group.security_group.id]
-}
-
-# TODO(31u3r): Remove once 2.12 is released
-moved {
-  from = module.load_balancer_target_konnectivity
-  to   = module.load_balancer_targets["konnectivity"]
-}
-
-moved {
-  from = module.load_balancer_target_verify
-  to   = module.load_balancer_targets["verify"]
-}
-
-moved {
-  from = module.load_balancer_target_recovery
-  to   = module.load_balancer_targets["recovery"]
-}
-
-moved {
-  from = module.load_balancer_target_join
-  to   = module.load_balancer_targets["join"]
-}
-
-moved {
-  from = module.load_balancer_target_debugd[0]
-  to   = module.load_balancer_targets["debugd"]
-}
-
-moved {
-  from = module.load_balancer_target_kubernetes
-  to   = module.load_balancer_targets["kubernetes"]
-}
-
-moved {
-  from = module.load_balancer_target_bootstrapper
-  to   = module.load_balancer_targets["bootstrapper"]
+  iam_instance_profile = var.iam_instance_profile_name_worker_nodes
 }

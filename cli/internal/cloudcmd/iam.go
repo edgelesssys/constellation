@@ -31,7 +31,7 @@ func NewIAMDestroyer() *IAMDestroyer {
 	return &IAMDestroyer{newTerraformClient: newTerraformIAMClient}
 }
 
-// GetTfStateServiceAccountKey returns the sa_key output from the terraform state.
+// GetTfStateServiceAccountKey returns the service_account_key output from the terraform state.
 func (d *IAMDestroyer) GetTfStateServiceAccountKey(ctx context.Context, tfWorkspace string) (gcpshared.ServiceAccountKey, error) {
 	client, err := d.newTerraformClient(ctx, tfWorkspace)
 	if err != nil {
@@ -95,7 +95,7 @@ type GCPIAMConfig struct {
 
 // AzureIAMConfig holds the necessary values for Azure IAM configuration.
 type AzureIAMConfig struct {
-	Region           string
+	Location         string
 	ServicePrincipal string
 	ResourceGroup    string
 }
@@ -167,7 +167,7 @@ func (c *IAMCreator) createAzure(ctx context.Context, cl tfIAMClient, opts *IAMC
 	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl}, opts.TFLogLevel)
 
 	vars := terraform.AzureIAMVariables{
-		Region:           opts.Azure.Region,
+		Location:         opts.Azure.Location,
 		ResourceGroup:    opts.Azure.ResourceGroup,
 		ServicePrincipal: opts.Azure.ServicePrincipal,
 	}

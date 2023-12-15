@@ -1,10 +1,10 @@
 variable "name_prefix" {
   type        = string
-  description = "Prefix for all resources"
+  description = "Name prefix to use on named resources."
 }
 
 variable "region" {
   type        = string
-  description = "AWS region"
+  description = "AWS region."
   default     = "us-east-2"
 }

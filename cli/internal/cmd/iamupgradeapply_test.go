@@ -37,7 +37,7 @@ func TestIamUpgradeApply(t *testing.T) {
 			require.NoError(t, fh.Write(
 				filepath.Join(constants.TerraformIAMWorkingDir, "terraform.tfvars"),
 				[]byte(
-					"region = \"foo\"\n"+
+					"location = \"foo\"\n"+
 						"resource_group_name = \"bar\"\n"+
 						"service_principal_name = \"baz\"\n",
 				),

@@ -38,8 +38,9 @@ func VariablesFromBytes[T any](b []byte, vars *T) error {
 		return fmt.Errorf("parsing variables: %w", err)
 	}
 
-	if err := gohcl.DecodeBody(file.Body, nil, vars); err != nil {
-		return fmt.Errorf("decoding variables: %w", err)
+	diags := gohcl.DecodeBody(file.Body, nil, vars)
+	if diags.HasErrors() {
+		return fmt.Errorf("decoding variables: %w", diags)
 	}
 	return nil
 }
@@ -52,12 +53,12 @@ type AWSClusterVariables struct {
 	Region string `hcl:"region" cty:"region"`
 	// Zone is the AWS zone to use in the given region.
 	Zone string `hcl:"zone" cty:"zone"`
-	// AMIImageID is the ID of the AMI image to use.
-	AMIImageID string `hcl:"ami" cty:"ami"`
-	// IAMGroupControlPlane is the IAM group to use for the control-plane nodes.
-	IAMProfileControlPlane string `hcl:"iam_instance_profile_control_plane" cty:"iam_instance_profile_control_plane"`
-	// IAMGroupWorkerNodes is the IAM group to use for the worker nodes.
-	IAMProfileWorkerNodes string `hcl:"iam_instance_profile_worker_nodes" cty:"iam_instance_profile_worker_nodes"`
+	// ImageID is the ID of the AMI to use.
+	ImageID string `hcl:"image_id" cty:"image_id"`
+	// IAMProfileControlPlane is the IAM group to use for the control-plane nodes.
+	IAMProfileControlPlane string `hcl:"iam_instance_profile_name_control_plane" cty:"iam_instance_profile_name_control_plane"`
+	// IAMProfileWorkerNodes is the IAM group to use for the worker nodes.
+	IAMProfileWorkerNodes string `hcl:"iam_instance_profile_name_worker_nodes" cty:"iam_instance_profile_name_worker_nodes"`
 	// Debug is true if debug mode is enabled.
 	Debug bool `hcl:"debug" cty:"debug"`
 	// EnableSNP controls enablement of the EC2 cpu-option "AmdSevSnp".
@@ -244,8 +245,11 @@ type AzureNodeGroup struct {
 
 // AzureIAMVariables is user configuration for creating the IAM configuration with Terraform on Microsoft Azure.
 type AzureIAMVariables struct {
-	// Region is the Azure region to use. (e.g. westus)
-	Region string `hcl:"region" cty:"region"`
+	// Region is the Azure location to use. (e.g. westus).
+	// THIS FIELD IS DEPRECATED AND ONLY KEPT FOR MIGRATION PURPOSES. DO NOT USE.
+	Region *string `hcl:"region" cty:"region"` // TODO(msanft): Remove this field once v2.14.0 is released.
+	// Location is the Azure location to use. (e.g. westus)
+	Location string `hcl:"location,optional" cty:"location"` // TODO(msanft): Make this required once v2.14.0 is released.
 	// ServicePrincipal is the name of the service principal to use.
 	ServicePrincipal string `hcl:"service_principal_name" cty:"service_principal_name"`
 	// ResourceGroup is the name of the resource group to use.
@@ -282,7 +286,7 @@ type OpenStackClusterVariables struct {
 	// FloatingIPPoolID is the ID of the OpenStack floating IP pool to use for public IPs.
 	FloatingIPPoolID string `hcl:"floating_ip_pool_id" cty:"floating_ip_pool_id"`
 	// ImageURL is the URL of the OpenStack image to use.
-	ImageURL string `hcl:"image_url" cty:"image_url"`
+	ImageURL string `hcl:"image_id" cty:"image_id"`
 	// DirectDownload decides whether to download the image directly from the URL to OpenStack or to upload it from the local machine.
 	DirectDownload bool `hcl:"direct_download" cty:"direct_download"`
 	// OpenstackUserDomainName is the OpenStack user domain name to use.
@@ -347,7 +351,7 @@ type QEMUVariables struct {
 	// Can be either "uefi" or "direct-linux-boot".
 	BootMode string `hcl:"constellation_boot_mode" cty:"constellation_boot_mode"`
 	// ImagePath is the path to the image to use for the nodes.
-	ImagePath string `hcl:"constellation_os_image" cty:"constellation_os_image"`
+	ImagePath string `hcl:"image_id" cty:"image_id"`
 	// ImageFormat is the format of the image from ImagePath.
 	ImageFormat string `hcl:"image_format" cty:"image_format"`
 	// MetadataAPIImage is the container image to use for the metadata API.

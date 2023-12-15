@@ -40,7 +40,7 @@ func TestIAMCreator(t *testing.T) {
 	}
 
 	validAzureIAMConfig := AzureIAMConfig{
-		Region:           "westus",
+		Location:         "westus",
 		ServicePrincipal: "constell-test",
 		ResourceGroup:    "constell-test",
 	}

@@ -30,9 +30,9 @@ provider "google-beta" {
 }
 
 locals {
-  uid            = random_id.uid.hex
-  name           = "${var.name}-${local.uid}"
-  initSecretHash = random_password.initSecret.bcrypt_hash
+  uid              = random_id.uid.hex
+  name             = "${var.name}-${local.uid}"
+  init_secret_hash = random_password.init_secret.bcrypt_hash
   labels = {
     constellation-uid = local.uid,
   }
@@ -55,7 +55,7 @@ locals {
     for name, node_group in var.node_groups : node_group.role => name...
   }
   control_plane_instance_groups = [
-    for control_plane in local.node_groups_by_role["control-plane"] : module.instance_group[control_plane].instance_group
+    for control_plane in local.node_groups_by_role["control-plane"] : module.instance_group[control_plane].instance_group_url
   ]
   in_cluster_endpoint     = var.internal_load_balancer ? google_compute_address.loadbalancer_ip_internal[0].address : google_compute_global_address.loadbalancer_ip[0].address
   out_of_cluster_endpoint = var.debug && var.internal_load_balancer ? module.jump_host[0].ip : local.in_cluster_endpoint
@@ -65,7 +65,7 @@ resource "random_id" "uid" {
   byte_length = 4
 }
 
-resource "random_password" "initSecret" {
+resource "random_password" "init_secret" {
   length           = 32
   special          = true
   override_special = "_%@"
@@ -187,7 +187,7 @@ module "instance_group" {
   debug               = var.debug
   named_ports         = each.value.role == "control-plane" ? local.control_plane_named_ports : []
   labels              = local.labels
-  init_secret_hash    = local.initSecretHash
+  init_secret_hash    = local.init_secret_hash
   custom_endpoint     = var.custom_endpoint
 }
 

@@ -25,7 +25,7 @@ locals {
   cidr_vpc_subnet_worker         = "10.42.2.0/24"
 }
 
-resource "random_password" "initSecret" {
+resource "random_password" "init_secret" {
   length           = 32
   special          = true
   override_special = "_%@"
@@ -46,7 +46,7 @@ resource "docker_container" "qemu_metadata" {
     "--libvirt-uri",
     "${var.metadata_libvirt_uri}",
     "--initsecrethash",
-    "${random_password.initSecret.bcrypt_hash}",
+    "${random_password.init_secret.bcrypt_hash}",
   ]
   mounts {
     source = abspath(var.libvirt_socket_path)
@@ -54,7 +54,6 @@ resource "docker_container" "qemu_metadata" {
     type   = "bind"
   }
 }
-
 
 module "node_group" {
   source           = "./modules/instance_group"
@@ -71,7 +70,7 @@ module "node_group" {
   network_id       = libvirt_network.constellation.id
   pool             = libvirt_pool.cluster.name
   boot_mode        = var.constellation_boot_mode
-  boot_volume_id   = libvirt_volume.constellation_os_image.id
+  boot_volume_id   = libvirt_volume.image_id.id
   kernel_volume_id = local.kernel_volume_id
   initrd_volume_id = local.initrd_volume_id
   kernel_cmdline   = each.value.role == "control-plane" ? local.kernel_cmdline : var.constellation_cmdline
@@ -85,10 +84,10 @@ resource "libvirt_pool" "cluster" {
   path = "/var/lib/libvirt/images"
 }
 
-resource "libvirt_volume" "constellation_os_image" {
+resource "libvirt_volume" "image_id" {
   name   = "${var.name}-node-image"
   pool   = libvirt_pool.cluster.name
-  source = var.constellation_os_image
+  source = var.image_id
   format = var.image_format
 }
 

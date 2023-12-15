@@ -7,7 +7,6 @@ terraform {
   }
 }
 
-
 data "aws_ami" "ubuntu" {
   most_recent = true
   owners      = ["099720109477"] # Canonical
@@ -55,5 +54,4 @@ iptables -t nat -A PREROUTING -p tcp --dport ${port} -j DNAT --to-destination $$
 iptables -t nat -A POSTROUTING -p tcp -d $${lb_ip} --dport ${port} -j SNAT --to-source $${internal_ip}
 %{endfor~}
 EOF
-
 }

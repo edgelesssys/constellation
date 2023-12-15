@@ -64,6 +64,14 @@ func TerraformIAMUpgradeVars(conf *config.Config, fileHandler file.Handler) (ter
 		if err := terraform.VariablesFromBytes(oldVarBytes, &oldVars); err != nil {
 			return nil, fmt.Errorf("parsing existing IAM workspace: %w", err)
 		}
+
+		// Migration from the "region" to the "location" field na.
+		// TODO(msanft): Remove after v2.14.0 is released.
+		if oldVars.Region != nil && *oldVars.Region != "" && oldVars.Location == "" {
+			oldVars.Location = *oldVars.Region
+			oldVars.Region = nil
+		}
+
 		vars = azureTerraformIAMVars(conf, oldVars)
 	case cloudprovider.GCP:
 		var oldVars terraform.GCPIAMVariables
@@ -96,7 +104,7 @@ func awsTerraformVars(conf *config.Config, imageRef string) *terraform.AWSCluste
 		NodeGroups:             nodeGroups,
 		Region:                 conf.Provider.AWS.Region,
 		Zone:                   conf.Provider.AWS.Zone,
-		AMIImageID:             imageRef,
+		ImageID:                imageRef,
 		IAMProfileControlPlane: conf.Provider.AWS.IAMProfileControlPlane,
 		IAMProfileWorkerNodes:  conf.Provider.AWS.IAMProfileWorkerNodes,
 		Debug:                  conf.IsDebugCluster(),
@@ -188,7 +196,7 @@ func azureTerraformVars(conf *config.Config, imageRef string) (*terraform.AzureC
 
 func azureTerraformIAMVars(conf *config.Config, oldVars terraform.AzureIAMVariables) *terraform.AzureIAMVariables {
 	return &terraform.AzureIAMVariables{
-		Region:           conf.Provider.Azure.Location,
+		Location:         conf.Provider.Azure.Location,
 		ServicePrincipal: oldVars.ServicePrincipal,
 		ResourceGroup:    conf.Provider.Azure.ResourceGroup,
 	}

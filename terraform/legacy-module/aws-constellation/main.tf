@@ -29,17 +29,17 @@ module "fetch_image" {
 }
 
 module "aws" {
-  source                             = "../../infrastructure/aws"
-  name                               = var.name
-  node_groups                        = var.node_groups
-  iam_instance_profile_worker_nodes  = module.aws_iam.worker_nodes_instance_profile
-  iam_instance_profile_control_plane = module.aws_iam.control_plane_instance_profile
-  ami                                = module.fetch_image.image
-  region                             = local.region
-  zone                               = var.zone
-  debug                              = var.debug
-  enable_snp                         = var.enable_snp
-  custom_endpoint                    = var.custom_endpoint
+  source                                  = "../../infrastructure/aws"
+  name                                    = var.name
+  node_groups                             = var.node_groups
+  iam_instance_profile_name_worker_nodes  = module.aws_iam.iam_instance_profile_name_worker_nodes
+  iam_instance_profile_name_control_plane = module.aws_iam.iam_instance_profile_name_control_plane
+  image_id                                = module.fetch_image.image
+  region                                  = local.region
+  zone                                    = var.zone
+  debug                                   = var.debug
+  enable_snp                              = var.enable_snp
+  custom_endpoint                         = var.custom_endpoint
 }
 
 module "constellation" {
@@ -53,15 +53,15 @@ module "constellation" {
   uid                  = module.aws.uid
   clusterEndpoint      = module.aws.out_of_cluster_endpoint
   inClusterEndpoint    = module.aws.in_cluster_endpoint
-  initSecretHash       = module.aws.initSecret
-  ipCidrNode           = module.aws.ip_cidr_nodes
+  initSecretHash       = module.aws.init_secret
+  ipCidrNode           = module.aws.ip_cidr_node
   apiServerCertSANs    = module.aws.api_server_cert_sans
   node_groups          = var.node_groups
   aws_config = {
-    region                             = local.region
-    zone                               = var.zone
-    iam_instance_profile_worker_nodes  = module.aws_iam.worker_nodes_instance_profile
-    iam_instance_profile_control_plane = module.aws_iam.control_plane_instance_profile
+    region                                  = local.region
+    zone                                    = var.zone
+    iam_instance_profile_name_worker_nodes  = module.aws_iam.iam_instance_profile_name_worker_nodes
+    iam_instance_profile_name_control_plane = module.aws_iam.iam_instance_profile_name_control_plane
   }
   depends_on = [module.aws, null_resource.ensure_yq]
 }
