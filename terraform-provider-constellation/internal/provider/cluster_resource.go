@@ -79,6 +79,7 @@ type ClusterResourceModel struct {
 	Attestation          types.Object `tfsdk:"attestation"`
 	GCP                  types.Object `tfsdk:"gcp"`
 	Azure                types.Object `tfsdk:"azure"`
+	Force                types.Bool   `tfsdk:"force"`
 
 	OwnerID    types.String `tfsdk:"owner_id"`
 	ClusterID  types.String `tfsdk:"cluster_id"`
@@ -308,6 +309,12 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				MarkdownDescription: "The kubeconfig of the cluster.",
 				Description:         "The kubeconfig of the cluster.",
 				Computed:            true,
+			},
+			"force": schema.BoolAttribute{
+				MarkdownDescription: "Force the microservices to be created or updated.",
+				Description:         "Force the microservices to be created or updated.",
+				Optional:            true,
+				//Default:           true, TODO(): discuss
 			},
 		},
 	}
@@ -707,6 +714,7 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 		DeployCSIDriver:     microserviceCfg.CSIDriver,
 		masterSecret:        secrets.masterSecret,
 		serviceAccURI:       serviceAccURI,
+		force:               data.Force.ValueBool(),
 	}
 	helmDiags := r.applyHelmCharts(ctx, applier, payload, stateFile)
 	diags.Append(helmDiags...)
@@ -800,6 +808,7 @@ type applyHelmChartsPayload struct {
 	DeployCSIDriver     bool                     // Whether to deploy the CSI driver.
 	masterSecret        uri.MasterSecret         // master secret of the cluster.
 	serviceAccURI       string                   // URI of the service account used within the cluster.
+	force               bool                     // Whether to force the Helm charts to be applied.
 }
 
 // applyHelmCharts applies the Helm charts to the cluster.
@@ -813,11 +822,14 @@ func (r *ClusterResource) applyHelmCharts(ctx context.Context, applier *constell
 		K8sVersion:          payload.k8sVersion,
 		MicroserviceVersion: payload.microserviceVersion,
 		DeployCSIDriver:     payload.DeployCSIDriver,
-		Force:               false,
+		Force:               payload.force,
 		Conformance:         false, // Conformance mode does't need to be configurable through the TF provider for now.
 		HelmWaitMode:        helm.WaitModeAtomic,
 		ApplyTimeout:        10 * time.Minute,
 		AllowDestructive:    helm.DenyDestructive,
+	}
+	if payload.force {
+		options.AllowDestructive = helm.AllowDestructive
 	}
 
 	executor, _, err := applier.PrepareHelmCharts(options, state,
