@@ -21,16 +21,12 @@ This example shows how to set up a Constellation cluster with the reference IAM 
   ```
 
 2. Use one of the [example configurations for using the Constellation Terraform provider](https://github.com/edgelesssys/constellation/tree/main/terraform-provider-constellation/examples/full) or create a `main.tf` file and fill it with the resources you want to create. The [Constellation Terraform provider documentation](https://registry.terraform.io/providers/edgelesssys/constellation/latest) offers thorough documentation on the resources and their attributes.
-3. When creating a cluster on AWS or GCP, Initialize the providers and apply the configuration.
-
-  ```bash
-  terraform init
-  terraform apply
-  ```
-
+3. Initialize and apply the Terraform configuration.
+  <tabs>
+  <tabItem value="azure" label="Azure">
   When creating a cluster on Azure, you will need to manually patch the policy of the MAA provider before creating the Constellation cluster, as this feature is not yet available in Azure's Terraform provider. The Constellation CLI provides a utility for patching, but it
   can also be done manually.
-
+  
   ```bash
   terraform init
   terraform apply -target module.azure_iam # adjust resource path if not using the example configuration
@@ -58,6 +54,24 @@ This example shows how to set up a Constellation cluster with the reference IAM 
   {
   };
   ```
+  </tabItem>
+  <tabItem value="aws" label="AWS">
+  Initialize the providers and apply the configuration.
+
+  ```bash
+  terraform init
+  terraform apply
+  ```
+  </tabItem>
+  <tabItem value="gcp" label="GCP">
+  Initialize the providers and apply the configuration.
+
+  ```bash
+  terraform init
+  terraform apply
+  ```
+  </tabItem>
+  </tabs>
 
 ## Bringing your own infrastructure
 
