@@ -112,3 +112,8 @@ resource "constellation_cluster" "azure_example" {
     ip_cidr_service = "10.96.0.0/12"
   }
 }
+
+output "maa_url" {
+  value       = module.azure_infrastructure.attestation_url
+  description = "URL of the MAA provider, required for manual patching."
+}

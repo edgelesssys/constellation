@@ -45,7 +45,7 @@ It's recommended to use Terraform for infrastructure management, but you can use
 
 :::info
 
-  When using Terraform, you can use the [Terraform provider](./terraform-provider.md) to manage the entire Constellation cluster lifecycle.
+  When using Terraform, you can use the [Constellation Terraform provider](./terraform-provider.md) to manage the entire Constellation cluster lifecycle.
 
 :::
 
