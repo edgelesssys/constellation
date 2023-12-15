@@ -20,7 +20,7 @@ This example shows how to set up a Constellation cluster with the reference IAM 
   cd constellation-workspace
   ```
 
-2. Use one of the [examplary configurations for using the Constellation Terraform provider](https://github.com/edgelesssys/constellation/tree/main/terraform-provider-constellation/examples/full) or create a `main.tf` file and fill it with the resources you want to create. The [Constellation Terraform provider documentation](https://registry.terraform.io/providers/edgelesssys/constellation/latest) offers thorough documentation on the resources and their attributes.
+2. Use one of the [example configurations for using the Constellation Terraform provider](https://github.com/edgelesssys/constellation/tree/main/terraform-provider-constellation/examples/full) or create a `main.tf` file and fill it with the resources you want to create. The [Constellation Terraform provider documentation](https://registry.terraform.io/providers/edgelesssys/constellation/latest) offers thorough documentation on the resources and their attributes.
 3. When creating a cluster on AWS or GCP, Initialize the providers and apply the configuration.
 
   ```bash
