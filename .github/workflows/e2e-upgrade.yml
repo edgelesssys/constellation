@@ -182,7 +182,7 @@ jobs:
           awsOpenSearchDomain: ${{ secrets.AWS_OPENSEARCH_DOMAIN }}
           awsOpenSearchUsers: ${{ secrets.AWS_OPENSEARCH_USER }}
           awsOpenSearchPwd: ${{ secrets.AWS_OPENSEARCH_PWD }}
-          selfManagedInfra: "false"
+          clusterCreation: "cli"
 
       - name: Build CLI
         uses: ./.github/actions/build_cli
@@ -288,7 +288,7 @@ jobs:
         uses: ./.github/actions/constellation_destroy
         with:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
-          selfManagedInfra: "false"
+          clusterCreation: "cli"
           cloudProvider: ${{ inputs.cloudProvider }}
           azureClusterDeleteCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
           gcpClusterDeleteServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"

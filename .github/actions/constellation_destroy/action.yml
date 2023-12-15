@@ -5,9 +5,9 @@ inputs:
   kubeconfig:
     description: "The kubeconfig for the cluster."
     required: true
-  selfManagedInfra:
-    description: "Use self-managed infrastructure instead of infrastructure created by the Constellation CLI."
-    required: true
+  clusterCreation:
+    description: "How the infrastructure for the e2e test was created. One of [cli, self-managed, terraform]."
+    default: "cli"
   gcpClusterDeleteServiceAccount:
     description: "Service account with permissions to delete a Constellation cluster on GCP."
     required: true
@@ -72,13 +72,13 @@ runs:
         azure_credentials: ${{ inputs.azureClusterDeleteCredentials }}
 
     - name: Constellation terminate
-      if: inputs.selfManagedInfra != 'true'
+      if: inputs.clusterCreation != 'self-managed'
       shell: bash
       run: |
         constellation terminate --yes --tf-log=DEBUG
 
     - name: Constellation terminate (self-managed)
-      if: inputs.selfManagedInfra == 'true'
+      if: inputs.clusterCreation == 'self-managed'
       shell: bash
       working-directory: ${{ github.workspace }}/e2e-infra
       run: |

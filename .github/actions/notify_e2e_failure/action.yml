@@ -17,8 +17,8 @@ inputs:
   kubernetesVersion:
     description: "Kubernetes version"
     required: false
-  selfManagedInfra:
-    description: "Use self-managed infrastructure instead of infrastructure created by the Constellation CLI."
+  clusterCreation:
+    description: "How the infrastructure for the e2e test was created. One of [cli, self-managed, terraform]."
     default: "false"
 
 runs:
@@ -66,6 +66,7 @@ runs:
           workflow: ${{ github.workflow }}
           kubernetesVersion: ${{ inputs.kubernetesVersion }}
           cloudProvider: ${{ inputs.provider }}
+          clusterCreation: ${{ inputs.clusterCreation }}
           test: ${{ inputs.test }}
           refStream: ${{ inputs.refStream }}
         token: ${{ inputs.projectWriteToken }}

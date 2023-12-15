@@ -73,9 +73,9 @@ inputs:
     description: "Enable security policy for the cluster."
   internalLoadBalancer:
     description: "Enable internal load balancer for the cluster."
-  selfManagedInfra:
-    description: "Use self-managed infrastructure instead of infrastructure created by the Constellation CLI."
-    default: "false"
+  clusterCreation:
+    description: "How to create infrastructure for the e2e test. One of [cli, self-managed, terraform]."
+    default: "cli"
   s3AccessKey:
     description: "Access key for s3proxy"
   s3SecretKey:
@@ -165,6 +165,28 @@ runs:
         constellation version
         # Do not spam license server from pipeline
         sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts'
+
+    - name: Build Terraform provider binary
+      if: inputs.clusterCreation == 'terraform' && inputs.cliVersion == ''
+      uses: ./.github/actions/build_tf_provider
+      with:
+        targetOS: ${{ steps.determine-build-target.outputs.hostOS }}
+        targetArch: ${{ steps.determine-build-target.outputs.hostArch }}
+        outputPath: "build/terraform-provider-constellation"
+
+    - name: Move Terraform provider binary
+      if: inputs.clusterCreation == 'terraform' && inputs.cliVersion == ''
+      shell: bash
+      run: |
+        bazel build //bazel/settings:tag
+
+        repository_root=$(git rev-parse --show-toplevel)
+        out_rel=$(bazel cquery --output=files //bazel/settings:tag)
+        build_version=$(cat "$(realpath "${repository_root}/${out_rel}")")
+
+        terraform_provider_dir="${HOME}/.terraform.d/plugins/registry.terraform.io/edgelesssys/constellation/${build_version#v}/${{ steps.determine-build-target.outputs.hostOS }}_${{ steps.determine-build-target.outputs.hostArch }}/"
+        mkdir -p "${terraform_provider_dir}"
+        mv build/terraform-provider-constellation "${terraform_provider_dir}/terraform-provider-constellation_${build_version}"
 
     - name: Build the bootstrapper
       id: build-bootstrapper
@@ -271,7 +293,7 @@ runs:
         refStream: ${{ inputs.refStream }}
         internalLoadBalancer: ${{ inputs.internalLoadBalancer }}
         test: ${{ inputs.test }}
-        selfManagedInfra: ${{ inputs.selfManagedInfra }}
+        clusterCreation: ${{ inputs.clusterCreation }}
         marketplaceImageVersion: ${{ inputs.marketplaceImageVersion }}
         force: ${{ inputs.force }}
 
@@ -288,7 +310,7 @@ runs:
         isDebugImage: ${{ inputs.isDebugImage }}
         kubernetesVersion: ${{ inputs.kubernetesVersion }}
         refStream: ${{ inputs.refStream }}
-        selfManagedInfra: ${{ inputs.selfManagedInfra }}
+        clusterCreation: ${{ inputs.clusterCreation }}
 
     #
     # Test payloads

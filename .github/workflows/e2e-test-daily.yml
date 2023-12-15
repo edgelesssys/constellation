@@ -90,14 +90,14 @@ jobs:
           awsOpenSearchDomain: ${{ secrets.AWS_OPENSEARCH_DOMAIN }}
           awsOpenSearchUsers: ${{ secrets.AWS_OPENSEARCH_USER }}
           awsOpenSearchPwd: ${{ secrets.AWS_OPENSEARCH_PWD }}
-          selfManagedInfra: "false"
+          clusterCreation: "cli"
 
       - name: Always terminate cluster
         if: always()
         uses: ./.github/actions/constellation_destroy
         with:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
-          selfManagedInfra: "false"
+          clusterCreation: "cli"
           cloudProvider: ${{ matrix.provider }}
           azureClusterDeleteCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
           gcpClusterDeleteServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
@@ -123,7 +123,7 @@ jobs:
           test: ${{ matrix.test }}
           kubernetesVersion: ${{ matrix.kubernetesVersion }}
           provider: ${{ matrix.provider }}
-          selfManagedInfra: "false"
+          clusterCreation: "cli"
 
   e2e-mini:
     name: Run miniconstellation E2E test

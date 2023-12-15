@@ -20,9 +20,9 @@ inputs:
   refStream:
     description: "The refStream of the image the test runs on."
     required: true
-  selfManagedInfra:
-    description: "Use self-managed infrastructure instead of infrastructure created by the Constellation CLI."
-    default: "false"
+  clusterCreation:
+    description: "How the infrastructure for the e2e test was created. One of [cli, self-managed, terraform]."
+    default: "cli"
 
 runs:
   using: "composite"
@@ -97,7 +97,7 @@ runs:
           --info logcollect.github.is-debug-cluster=false \
           --info logcollect.github.ref-stream="${{ inputs.refStream }}" \
           --info logcollect.github.kubernetes-version="${{ inputs.kubernetesVersion }}" \
-          --info logcollect.github.self-managed-infra="${{ inputs.selfManagedInfra }}" \
+          --info logcollect.github.cluster-creation="${{ inputs.clusterCreation }}" \
           --info logcollect.deployment-type="debugd" \
           --verbosity=-1 \
           --force

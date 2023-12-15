@@ -47,6 +47,7 @@ type AttestationDataSourceModel struct {
 	AttestationVariant types.String `tfsdk:"attestation_variant"`
 	ImageVersion       types.String `tfsdk:"image_version"`
 	MaaURL             types.String `tfsdk:"maa_url"`
+	Insecure           types.Bool   `tfsdk:"insecure"`
 	Attestation        types.Object `tfsdk:"attestation"`
 }
 
@@ -95,6 +96,10 @@ func (d *AttestationDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 			},
 			"maa_url": schema.StringAttribute{
 				MarkdownDescription: "For Azure only, the URL of the Microsoft Azure Attestation service",
+				Optional:            true,
+			},
+			"insecure": schema.BoolAttribute{
+				MarkdownDescription: "DON'T USE IN PRODUCTION Skip the signature verification when fetching measurements for the image.",
 				Optional:            true,
 			},
 			"attestation": newAttestationConfigAttribute(attributeOutput),
@@ -154,6 +159,8 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 		return
 	}
 
+	insecureFetch := data.Insecure.ValueBool()
+
 	snpVersions := attestationconfigapi.SEVSNPVersionAPI{}
 	if attestationVariant.Equal(variant.AzureSEVSNP{}) || attestationVariant.Equal(variant.AWSSEVSNP{}) {
 		snpVersions, err = d.fetcher.FetchSEVSNPVersionLatest(ctx, attestationVariant)
@@ -174,7 +181,7 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 		imageVersion = d.version // Use provider version as default.
 	}
 	fetchedMeasurements, err := verifyFetcher.FetchAndVerifyMeasurements(ctx, imageVersion,
-		csp, attestationVariant, false)
+		csp, attestationVariant, insecureFetch)
 	if err != nil {
 		var rekErr *measurements.RekorError
 		if errors.As(err, &rekErr) {
