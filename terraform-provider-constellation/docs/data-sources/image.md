@@ -36,11 +36,20 @@ See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview
 
 ### Optional
 
-- `image_version` (String) Version of the Constellation OS image to use. (e.g. `v2.13.0`). If not set, the provider version value is used.
 - `marketplace_image` (Boolean) Whether a marketplace image should be used. Currently only supported for Azure.
 - `region` (String) Region to retrieve the image for. Only required for AWS.
 The Constellation OS image must be [replicated to the region](https://docs.edgeless.systems/constellation/workflows/config),and the region must [support AMD SEV-SNP](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snp-requirements.html), if it is used for Attestation.
+- `version` (String) Version of the Constellation OS image to use. (e.g. `v2.13.0`). If not set, the provider version value is used.
 
 ### Read-Only
 
-- `reference` (String) CSP-specific reference to the image.
+- `image` (Attributes) Constellation OS Image to use on the nodes. (see [below for nested schema](#nestedatt--image))
+
+<a id="nestedatt--image"></a>
+### Nested Schema for `image`
+
+Read-Only:
+
+- `reference` (String) CSP-specific unique reference to the image.
+- `short_path` (String) CSP-agnostic short path to the image.
+- `version` (String) Semantic version of the image.

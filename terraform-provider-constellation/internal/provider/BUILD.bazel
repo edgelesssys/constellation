@@ -15,6 +15,7 @@ go_library(
     visibility = ["//terraform-provider-constellation:__subpackages__"],
     deps = [
         "//internal/api/attestationconfigapi",
+        "//internal/api/versionsapi",
         "//internal/atls",
         "//internal/attestation/choose",
         "//internal/attestation/idkeydigest",

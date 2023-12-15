@@ -22,7 +22,7 @@ const (
 
 type attributeType bool
 
-func newAttestationVariantAttribute(t attributeType) schema.Attribute {
+func newAttestationVariantAttributeSchema(t attributeType) schema.Attribute {
 	isInput := bool(t)
 	return schema.StringAttribute{
 		Description: "Attestation variant the image should work with. (e.g. `azure-sev-snp`)",
@@ -39,7 +39,7 @@ func newAttestationVariantAttribute(t attributeType) schema.Attribute {
 	}
 }
 
-func newCSPAttribute() schema.Attribute {
+func newCSPAttributeSchema() schema.Attribute {
 	return schema.StringAttribute{
 		Description: "CSP (Cloud Service Provider) to use. (e.g. `azure`)",
 		MarkdownDescription: "CSP (Cloud Service Provider) to use. (e.g. `azure`)\n" +
@@ -51,7 +51,7 @@ func newCSPAttribute() schema.Attribute {
 	}
 }
 
-func newMeasurementsAttribute(t attributeType) schema.Attribute {
+func newMeasurementsAttributeSchema(t attributeType) schema.Attribute {
 	isInput := bool(t)
 	return schema.MapNestedAttribute{
 		Computed: !isInput,
@@ -71,7 +71,13 @@ func newMeasurementsAttribute(t attributeType) schema.Attribute {
 	}
 }
 
-func newAttestationConfigAttribute(t attributeType) schema.Attribute {
+// measurementAttribute is the measurement attribute's data model.
+type measurementAttribute struct {
+	Expected string `tfsdk:"expected"`
+	WarnOnly bool   `tfsdk:"warn_only"`
+}
+
+func newAttestationConfigAttributeSchema(t attributeType) schema.Attribute {
 	isInput := bool(t)
 	var additionalDescription string
 	if isInput {
@@ -83,7 +89,7 @@ func newAttestationConfigAttribute(t attributeType) schema.Attribute {
 		MarkdownDescription: "Attestation comprises the measurements and SEV-SNP specific parameters." + additionalDescription,
 		Description:         "Attestation comprises the measurements and SEV-SNP specific parameters." + additionalDescription,
 		Attributes: map[string]schema.Attribute{
-			"variant": newAttestationVariantAttribute(t), // duplicated for convenience in cluster resource
+			"variant": newAttestationVariantAttributeSchema(t), // duplicated for convenience in cluster resource
 			"bootloader_version": schema.Int64Attribute{
 				Computed: !isInput,
 				Required: isInput,
@@ -123,7 +129,63 @@ func newAttestationConfigAttribute(t attributeType) schema.Attribute {
 				Computed: !isInput,
 				Required: isInput,
 			},
-			"measurements": newMeasurementsAttribute(t),
+			"measurements": newMeasurementsAttributeSchema(t),
 		},
 	}
+}
+
+// attestationAttribute is the attestation attribute's data model.
+type attestationAttribute struct {
+	BootloaderVersion            uint8                                 `tfsdk:"bootloader_version"`
+	TEEVersion                   uint8                                 `tfsdk:"tee_version"`
+	SNPVersion                   uint8                                 `tfsdk:"snp_version"`
+	MicrocodeVersion             uint8                                 `tfsdk:"microcode_version"`
+	AMDRootKey                   string                                `tfsdk:"amd_root_key"`
+	AzureSNPFirmwareSignerConfig azureSnpFirmwareSignerConfigAttribute `tfsdk:"azure_firmware_signer_config"`
+	Variant                      string                                `tfsdk:"variant"`
+	Measurements                 map[string]measurementAttribute       `tfsdk:"measurements"`
+}
+
+// azureSnpFirmwareSignerConfigAttribute is the azure firmware signer config attribute's data model.
+type azureSnpFirmwareSignerConfigAttribute struct {
+	AcceptedKeyDigests []string `tfsdk:"accepted_key_digests"`
+	EnforcementPolicy  string   `tfsdk:"enforcement_policy"`
+	MAAURL             string   `tfsdk:"maa_url"`
+}
+
+func newImageAttributeSchema(t attributeType) schema.Attribute {
+	isInput := bool(t)
+	return schema.SingleNestedAttribute{
+		Description:         "Constellation OS Image to use on the nodes.",
+		MarkdownDescription: "Constellation OS Image to use on the nodes.",
+		Computed:            !isInput,
+		Required:            isInput,
+		Attributes: map[string]schema.Attribute{
+			"version": schema.StringAttribute{
+				Description:         "Semantic version of the image.",
+				MarkdownDescription: "Semantic version of the image.",
+				Computed:            !isInput,
+				Required:            isInput,
+			},
+			"reference": schema.StringAttribute{
+				Description:         "CSP-specific unique reference to the image.",
+				MarkdownDescription: "CSP-specific unique reference to the image.",
+				Computed:            !isInput,
+				Required:            isInput,
+			},
+			"short_path": schema.StringAttribute{
+				Description:         "CSP-agnostic short path to the image.",
+				MarkdownDescription: "CSP-agnostic short path to the image.",
+				Computed:            !isInput,
+				Required:            isInput,
+			},
+		},
+	}
+}
+
+// imageAttribute is the image attribute's data model.
+type imageAttribute struct {
+	Reference string `tfsdk:"reference"`
+	Version   string `tfsdk:"version"`
+	ShortPath string `tfsdk:"short_path"`
 }

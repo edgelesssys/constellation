@@ -67,7 +67,7 @@ module "aws_infrastructure" {
   }
   iam_instance_profile_name_worker_nodes  = module.aws_iam.iam_instance_profile_name_worker_nodes
   iam_instance_profile_name_control_plane = module.aws_iam.iam_instance_profile_name_control_plane
-  image_id                                = data.constellation_image.bar.reference
+  image_id                                = data.constellation_image.bar.image.reference
   region                                  = local.region
   zone                                    = local.zone
   debug                                   = false
@@ -78,13 +78,13 @@ module "aws_infrastructure" {
 data "constellation_attestation" "foo" {
   csp                 = local.csp
   attestation_variant = local.attestation_variant
-  image_version       = local.version
+  image               = data.constellation_image.bar.image
 }
 
 data "constellation_image" "bar" {
   csp                 = local.csp
   attestation_variant = local.attestation_variant
-  image_version       = local.version
+  version             = local.version
   region              = local.region
 }
 
@@ -93,8 +93,7 @@ resource "constellation_cluster" "aws_example" {
   constellation_microservice_version = local.version
   name                               = module.aws_infrastructure.name
   uid                                = module.aws_infrastructure.uid
-  image_version                      = local.version
-  image_reference                    = data.constellation_image.bar.reference
+  image                              = data.constellation_image.bar.image
   attestation                        = data.constellation_attestation.foo.attestation
   init_secret                        = module.aws_infrastructure.init_secret
   master_secret                      = local.master_secret

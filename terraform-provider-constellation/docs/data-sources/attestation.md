@@ -32,6 +32,7 @@ data "constellation_attestation" "test" {
   * `gcp-sev-es`
 - `csp` (String) CSP (Cloud Service Provider) to use. (e.g. `azure`)
 See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview/clouds) that Constellation supports.
+- `image` (Attributes) Constellation OS Image to use on the nodes. (see [below for nested schema](#nestedatt--image))
 
 ### Optional
 
@@ -42,6 +43,16 @@ See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview
 ### Read-Only
 
 - `attestation` (Attributes) Attestation comprises the measurements and SEV-SNP specific parameters. (see [below for nested schema](#nestedatt--attestation))
+
+<a id="nestedatt--image"></a>
+### Nested Schema for `image`
+
+Required:
+
+- `reference` (String) CSP-specific unique reference to the image.
+- `short_path` (String) CSP-agnostic short path to the image.
+- `version` (String) Semantic version of the image.
+
 
 <a id="nestedatt--attestation"></a>
 ### Nested Schema for `attestation`

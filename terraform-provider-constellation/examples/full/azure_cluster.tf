@@ -65,7 +65,7 @@ module "azure_infrastructure" {
     }
   }
   location       = local.location
-  image_id       = data.constellation_image.bar.reference
+  image_id       = data.constellation_image.bar.image.reference
   resource_group = module.azure_iam.base_resource_group
   create_maa     = true
 }
@@ -73,14 +73,14 @@ module "azure_infrastructure" {
 data "constellation_attestation" "foo" {
   csp                 = local.csp
   attestation_variant = local.attestation_variant
-  image_version       = local.version
+  image               = data.constellation_image.bar.image
   maa_url             = module.azure_infrastructure.attestation_url
 }
 
 data "constellation_image" "bar" {
   csp                 = local.csp
   attestation_variant = local.attestation_variant
-  image_version       = local.version
+  version             = local.version
 }
 
 resource "constellation_cluster" "azure_example" {
@@ -88,8 +88,7 @@ resource "constellation_cluster" "azure_example" {
   constellation_microservice_version = local.version
   name                               = module.azure_infrastructure.name
   uid                                = module.azure_infrastructure.uid
-  image_version                      = local.version
-  image_reference                    = data.constellation_image.bar.reference
+  image                              = data.constellation_image.bar.image
   attestation                        = data.constellation_attestation.foo.attestation
   init_secret                        = module.azure_infrastructure.init_secret
   master_secret                      = local.master_secret
