@@ -59,6 +59,12 @@ func extraCiliumValues(provider cloudprovider.Provider, conformanceMode bool, ou
 	extraVals["encryption"] = map[string]any{
 		"strictMode": strictMode,
 	}
+	extraVals["ipMasqAgent"] = map[string]any{
+		"config": map[string]any{
+			"nonMasqueradeCIDRs": []string{output.IPCidrNode},
+		},
+	}
+
 	return extraVals
 }
 

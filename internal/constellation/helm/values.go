@@ -52,6 +52,12 @@ var ciliumVals = map[string]map[string]any{
 		"bpf": map[string]any{
 			"masquerade": true,
 		},
+		"ipMasqAgent": map[string]any{
+			"enabled": true,
+			"config": map[string]any{
+				"masqLinkLocal": true,
+			},
+		},
 		"kubeProxyReplacement":                "strict",
 		"enableCiliumEndpointSlice":           true,
 		"kubeProxyReplacementHealthzBindAddr": "0.0.0.0:10256",
@@ -98,6 +104,12 @@ var ciliumVals = map[string]map[string]any{
 		"bpf": map[string]any{
 			"masquerade": true,
 		},
+		"ipMasqAgent": map[string]any{
+			"enabled": true,
+			"config": map[string]any{
+				"masqLinkLocal": true,
+			},
+		},
 		"egressMasqueradeInterfaces":          "eth0",
 		"enableIPv4Masquerade":                true,
 		"kubeProxyReplacement":                "strict",
@@ -141,6 +153,12 @@ var ciliumVals = map[string]map[string]any{
 		},
 		"bpf": map[string]any{
 			"masquerade": true,
+		},
+		"ipMasqAgent": map[string]any{
+			"enabled": true,
+			"config": map[string]any{
+				"masqLinkLocal": true,
+			},
 		},
 		"kubeProxyReplacement":                "strict",
 		"enableCiliumEndpointSlice":           true,
@@ -187,6 +205,12 @@ var ciliumVals = map[string]map[string]any{
 		"bpf": map[string]any{
 			"masquerade": true,
 		},
+		"ipMasqAgent": map[string]any{
+			"enabled": true,
+			"config": map[string]any{
+				"masqLinkLocal": true,
+			},
+		},
 		"kubeProxyReplacement":                "strict",
 		"enableCiliumEndpointSlice":           true,
 		"kubeProxyReplacementHealthzBindAddr": "0.0.0.0:10256",
@@ -229,6 +253,12 @@ var ciliumVals = map[string]map[string]any{
 		},
 		"bpf": map[string]any{
 			"masquerade": true,
+		},
+		"ipMasqAgent": map[string]any{
+			"enabled": true,
+			"config": map[string]any{
+				"masqLinkLocal": true,
+			},
 		},
 		"kubeProxyReplacement":                "strict",
 		"enableCiliumEndpointSlice":           true,
