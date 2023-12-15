@@ -524,6 +524,9 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 		UnhandledNullAsEmpty: true, // we want to allow null values, as the CSIDriver field is optional
 	})
 	diags.Append(convertDiags...)
+	if diags.HasError() {
+		return diags
+	}
 
 	// parse Constellation microservice version
 	microserviceVersion, err := semver.New(data.MicroserviceVersion.ValueString())
