@@ -37,6 +37,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -296,17 +298,29 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				MarkdownDescription: "The owner ID of the cluster.",
 				Description:         "The owner ID of the cluster.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					// We know that this value will never change after creation, so we can use the state value for upgrades.
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"cluster_id": schema.StringAttribute{
 				MarkdownDescription: "The cluster ID of the cluster.",
 				Description:         "The cluster ID of the cluster.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					// We know that this value will never change after creation, so we can use the state value for upgrades.
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"kubeconfig": schema.StringAttribute{
 				MarkdownDescription: "The kubeconfig of the cluster.",
 				Description:         "The kubeconfig of the cluster.",
 				Computed:            true,
 				Sensitive:           true,
+				PlanModifiers: []planmodifier.String{
+					// We know that this value will never change after creation, so we can use the state value for upgrades.
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 		},
 	}
