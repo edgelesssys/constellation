@@ -33,10 +33,10 @@ This example shows how to set up a Constellation cluster with the reference IAM 
 
   ```bash
   terraform init
-  terraform apply -target module.azure_iam # adjust resource path if not using the examplary configuration
-  terraform apply -target module.azure_infrastructure # adjust resource path if not using the examplary configuration
-  constellation maa-patch $(terraform output maa_url) # adjust output path / input if not using the examplary configuration or manually patch the resource
-  terraform apply -target constellation_cluster.azure_example # adjust resource path if not using the examplary configuration
+  terraform apply -target module.azure_iam # adjust resource path if not using the example configuration
+  terraform apply -target module.azure_infrastructure # adjust resource path if not using the example configuration
+  constellation maa-patch $(terraform output maa_url) # adjust output path / input if not using the example configuration or manually patch the resource
+  terraform apply -target constellation_cluster.azure_example # adjust resource path if not using the example configuration
   ```
 
   Use the following policy if manually performing the patch.
