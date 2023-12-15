@@ -114,5 +114,6 @@ resource "constellation_cluster" "gcp_example" {
 
 output "kubeconfig" {
   value       = constellation_cluster.gcp_example.kubeconfig
+  sensitive   = true
   description = "KubeConfig for the Constellation cluster."
 }

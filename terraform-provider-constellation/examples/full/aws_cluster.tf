@@ -110,5 +110,6 @@ resource "constellation_cluster" "aws_example" {
 
 output "kubeconfig" {
   value       = constellation_cluster.aws_example.kubeconfig
+  sensitive   = true
   description = "KubeConfig for the Constellation cluster."
 }

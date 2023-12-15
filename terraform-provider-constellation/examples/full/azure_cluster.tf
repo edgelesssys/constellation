@@ -120,5 +120,6 @@ output "maa_url" {
 
 output "kubeconfig" {
   value       = constellation_cluster.azure_example.kubeconfig
+  sensitive   = true
   description = "KubeConfig for the Constellation cluster."
 }
