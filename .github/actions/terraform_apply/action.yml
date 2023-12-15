@@ -64,7 +64,7 @@ runs:
         }
 
         data "constellation_image" "con_image" {
-          image_version       = "$(yq '.image' constellation-conf.yaml)"
+          version             = "$(yq '.image' constellation-conf.yaml)"
           attestation_variant = "${attestationVariant}"
           csp                 = "${{ inputs.cloudProvider }}"
           region              = "$(yq '.provider.aws.region' constellation-conf.yaml)"
