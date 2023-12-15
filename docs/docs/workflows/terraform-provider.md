@@ -24,8 +24,8 @@ This example shows how to set up a Constellation cluster with the reference IAM 
 3. Initialize and apply the Terraform configuration.
   <tabs>
   <tabItem value="azure" label="Azure">
-  When creating a cluster on Azure, you will need to manually patch the policy of the MAA provider before creating the Constellation cluster, as this feature isn't yet available in Azure's Terraform provider. The Constellation CLI provides a utility for patching, but it
-  can also be done manually.
+  When creating a cluster on Azure, you need to manually patch the policy of the MAA provider before creating the Constellation cluster, as this feature isn't available in Azure's Terraform provider yet. The Constellation CLI provides a utility for patching, but you
+  can also do it manually.
 
   ```bash
   terraform init
