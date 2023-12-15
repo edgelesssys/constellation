@@ -49,6 +49,15 @@ var ciliumVals = map[string]map[string]any{
 				"useDigest":     true,
 			},
 		},
+		"bpf": map[string]any{
+			"masquerade": true,
+		},
+		"ipMasqAgent": map[string]any{
+			"enabled": true,
+			"config": map[string]any{
+				"masqLinkLocal": true,
+			},
+		},
 		"kubeProxyReplacement":                "strict",
 		"enableCiliumEndpointSlice":           true,
 		"kubeProxyReplacementHealthzBindAddr": "0.0.0.0:10256",
@@ -92,8 +101,15 @@ var ciliumVals = map[string]map[string]any{
 				"useDigest":     true,
 			},
 		},
-		"egressMasqueradeInterfaces":          "eth0",
-		"enableIPv4Masquerade":                true,
+		"bpf": map[string]any{
+			"masquerade": true,
+		},
+		"ipMasqAgent": map[string]any{
+			"enabled": true,
+			"config": map[string]any{
+				"masqLinkLocal": true,
+			},
+		},
 		"kubeProxyReplacement":                "strict",
 		"enableCiliumEndpointSlice":           true,
 		"kubeProxyReplacementHealthzBindAddr": "0.0.0.0:10256",
@@ -132,6 +148,15 @@ var ciliumVals = map[string]map[string]any{
 		"l7Proxy": false,
 		"ipam": map[string]any{
 			"mode": "kubernetes",
+		},
+		"bpf": map[string]any{
+			"masquerade": true,
+		},
+		"ipMasqAgent": map[string]any{
+			"enabled": true,
+			"config": map[string]any{
+				"masqLinkLocal": true,
+			},
 		},
 		"kubeProxyReplacement":                "strict",
 		"enableCiliumEndpointSlice":           true,
@@ -175,6 +200,15 @@ var ciliumVals = map[string]map[string]any{
 				"useDigest":     true,
 			},
 		},
+		"bpf": map[string]any{
+			"masquerade": true,
+		},
+		"ipMasqAgent": map[string]any{
+			"enabled": true,
+			"config": map[string]any{
+				"masqLinkLocal": true,
+			},
+		},
 		"kubeProxyReplacement":                "strict",
 		"enableCiliumEndpointSlice":           true,
 		"kubeProxyReplacementHealthzBindAddr": "0.0.0.0:10256",
@@ -213,6 +247,15 @@ var ciliumVals = map[string]map[string]any{
 				"clusterPoolIPv4PodCIDRList": []string{
 					"10.244.0.0/16",
 				},
+			},
+		},
+		"bpf": map[string]any{
+			"masquerade": true,
+		},
+		"ipMasqAgent": map[string]any{
+			"enabled": true,
+			"config": map[string]any{
+				"masqLinkLocal": true,
 			},
 		},
 		"kubeProxyReplacement":                "strict",
