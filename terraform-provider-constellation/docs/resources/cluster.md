@@ -34,8 +34,7 @@ resource "constellation_cluster" "azure_example" {
   constellation_microservice_version = "vX.Y.Z"
   name                               = "constell"
   uid                                = "..."
-  image_version                      = "vX.Y.Z"
-  image_reference                    = data.constellation_image.bar.reference
+  image                              = data.constellation_image.bar.image
   attestation                        = data.constellation_attestation.foo.attestation
   init_secret                        = "..."
   master_secret                      = random_bytes.master_secret.hex

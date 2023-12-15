@@ -36,7 +36,6 @@ See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview
 
 ### Optional
 
-- `image_version` (String) The image version to use. If not set, the provider version value is used.
 - `insecure` (Boolean) DON'T USE IN PRODUCTION Skip the signature verification when fetching measurements for the image.
 - `maa_url` (String) For Azure only, the URL of the Microsoft Azure Attestation service
 
