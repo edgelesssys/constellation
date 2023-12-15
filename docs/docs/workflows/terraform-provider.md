@@ -99,7 +99,15 @@ The steps for applying the upgrade are as follows:
    - For [local paths as module sources](https://developer.hashicorp.com/terraform/language/modules/sources#local-paths) or when [providing your own infrastructure](#bringing-your-own-infrastructure), see the changes made in the reference modules since the upgrade's origin version and adjust your infrastructure / IAM configuration accordingly.
 4. Upgrade the Terraform module and provider dependencies and apply the targeted configuration.
 
-```bash
-  terraform init -upgrade
-  terraform apply
-```
+  ```bash
+    terraform init -upgrade
+    TF_LOG=INFO terraform apply
+  ```
+
+  While verbose when creating all resources together, we recommend to enable logging to get output during the cluster resource creation.
+
+5. Connect to the cluster
+
+  ```bash
+  terraform output -raw kubeconfig > "$(pwd)/constellation-admin.conf"
+  ```
