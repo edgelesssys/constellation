@@ -1,6 +1,7 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
+load("//bazel/go:go_test.bzl", "go_test")
 load("//bazel/proto:rules.bzl", "write_go_proto_srcs")
 
 go_library(
@@ -29,4 +30,14 @@ write_go_proto_srcs(
     src = "components.pb.go",
     go_proto_library = ":components_go_proto",
     visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "components_test",
+    srcs = ["components_test.go"],
+    embed = [":components"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
 )
