@@ -41,6 +41,7 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	xsemver "golang.org/x/mod/semver"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 )
@@ -545,8 +546,18 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 					return nil, nil, fmt.Errorf("aborted by user")
 				}
 			}
+
 			a.flags.skipPhases.add(skipK8sPhase)
 			a.log.Debugf("Outdated Kubernetes version accepted, Kubernetes upgrade will be skipped")
+		}
+
+		validVersionString, err := versions.ResolveK8sPatchVersion(xsemver.MajorMinor(string(conf.KubernetesVersion)))
+		if err != nil {
+			return nil, nil, fmt.Errorf("resolving Kubernetes patch version: %w", err)
+		}
+		validVersion, err = versions.NewValidK8sVersion(validVersionString, true)
+		if err != nil {
+			return nil, nil, fmt.Errorf("parsing Kubernetes version: %w", err)
 		}
 	}
 	if versions.IsPreviewK8sVersion(validVersion) {
