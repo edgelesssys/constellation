@@ -53,12 +53,12 @@ mkosi_image(
     ],
     local_mirror = ["@mkosi_rpms//:repo"],
     mkosi_conf = "mkosi.conf",
-    package_files = [
-        ":kernel",
-        ":kernel_core",
-        ":kernel_modules",
-        ":kernel_modules_core",
-    ],
+    # package_files = [
+    #     ":kernel",
+    #     ":kernel_core",
+    #     ":kernel_modules",
+    #     ":kernel_modules_core",
+    # ],
     tags = [
         "manual",
         "no-cache",

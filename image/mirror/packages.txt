@@ -14,6 +14,10 @@ gzip
 iproute
 iproute-tc
 iptables-nft
+kernel
+kernel-core
+kernel-modules
+kernel-modules-core
 kmod
 mokutil
 nano
