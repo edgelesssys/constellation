@@ -23,51 +23,41 @@ global:
     create: true
     # Aggregate ClusterRoles to Kubernetes default user-facing roles. Ref: https://kubernetes.io/docs/reference/access-authn-authz/rbac/#user-facing-roles
     aggregateClusterRoles: true
-
   podSecurityPolicy:
     enabled: false
     useAppArmor: true
-
   # Set the verbosity of cert-manager. Range of 0 - 6 with 6 being the most verbose.
   logLevel: 2
-
   leaderElection:
     # Override the namespace used for the leader election lease
     namespace: "kube-system"
-
     # The duration that non-leader candidates will wait after observing a
     # leadership renewal until attempting to acquire leadership of a led but
     # unrenewed leader slot. This is effectively the maximum duration that a
     # leader can be stopped before it is replaced by another candidate.
     # leaseDuration: 60s
+# The interval between attempts by the acting master to renew a leadership
+# slot before it stops leading. This must be less than or equal to the
+# lease duration.
+# renewDeadline: 40s
 
-    # The interval between attempts by the acting master to renew a leadership
-    # slot before it stops leading. This must be less than or equal to the
-    # lease duration.
-    # renewDeadline: 40s
-
-    # The duration the clients should wait between attempting acquisition and
-    # renewal of a leadership.
-    # retryPeriod: 15s
-
+# The duration the clients should wait between attempting acquisition and
+# renewal of a leadership.
+# retryPeriod: 15s
 installCRDs: false
-
 replicaCount: 1
-
 strategy: {}
-  # type: RollingUpdate
-  # rollingUpdate:
-  #   maxSurge: 0
-  #   maxUnavailable: 1
+# type: RollingUpdate
+# rollingUpdate:
+#   maxSurge: 0
+#   maxUnavailable: 1
 
 podDisruptionBudget:
   enabled: false
-
   minAvailable: 1
   # maxUnavailable: 1
-
-  # minAvailable and maxUnavailable can either be set to an integer (e.g. 1)
-  # or a percentage value (e.g. 25%)
+# minAvailable and maxUnavailable can either be set to an integer (e.g. 1)
+# or a percentage value (e.g. 25%)
 
 # Comma separated list of feature gates that should be enabled on the controller
 # Note: do not use this field to pass feature gate values into webhook
@@ -75,10 +65,8 @@ podDisruptionBudget:
 # https://github.com/cert-manager/cert-manager/pull/6093
 # Use webhook.extraArgs to pass --feature-gates flag directly instead.
 featureGates: ""
-
 # The maximum number of challenges that can be scheduled as 'processing' at once
 maxConcurrentChallenges: 60
-
 image:
   repository: quay.io/jetstack/cert-manager-controller
   # You can manage a registry with
@@ -92,17 +80,15 @@ image:
   # Setting a digest will override any tag
   # digest: sha256:0e072dddd1f7f8fc8909a2ca6f65e76c5f0d2fcfb8be47935ae3457e8bbceb20
   pullPolicy: IfNotPresent
-
+  digest: sha256:fb2546fe51e49206dbf72bb0d6f909a0018eda0c2b024547b03d3f3d604e4c5e
 # Override the namespace used to store DNS provider credentials etc. for ClusterIssuer
 # resources. By default, the same namespace as cert-manager is deployed within is
 # used. This namespace will not be automatically created by the Helm chart.
 clusterResourceNamespace: ""
-
 # This namespace allows you to define where the services will be installed into
 # if not set then they will use the namespace of the release
 # This is helpful when installing cert manager as a chart dependency (sub chart)
 namespace: ""
-
 serviceAccount:
   # Specifies whether a service account should be created
   create: true
@@ -115,37 +101,33 @@ serviceAccount:
   # Optional additional labels to add to the controller's ServiceAccount
   # labels: {}
   automountServiceAccountToken: true
-
 # Automounting API credentials for a particular pod
 # automountServiceAccountToken: true
 
 # When this flag is enabled, secrets will be automatically removed when the certificate resource is deleted
 enableCertificateOwnerRef: false
-
 # Setting Nameservers for DNS01 Self Check
 # See: https://cert-manager.io/docs/configuration/acme/dns01/#setting-nameservers-for-dns01-self-check
 
 # Comma separated string with host and port of the recursive nameservers cert-manager should query
 dns01RecursiveNameservers: ""
-
 # Forces cert-manager to only use the recursive nameservers for verification.
 # Enabling this option could cause the DNS01 self check to take longer due to caching performed by the recursive nameservers
 dns01RecursiveNameserversOnly: false
-
 # Additional command line flags to pass to cert-manager controller binary.
 # To see all available flags run docker run quay.io/jetstack/cert-manager-controller:<version> --help
 extraArgs: []
-  # Use this flag to enable or disable arbitrary controllers, for example, disable the CertificiateRequests approver
-  # - --controllers=*,-certificaterequests-approver
+# Use this flag to enable or disable arbitrary controllers, for example, disable the CertificiateRequests approver
+# - --controllers=*,-certificaterequests-approver
 
 extraEnv: []
 # - name: SOME_VAR
 #   value: 'some value'
 
 resources: {}
-  # requests:
-  #   cpu: 10m
-  #   memory: 32Mi
+# requests:
+#   cpu: 10m
+#   memory: 32Mi
 
 # Pod Security Context
 # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
@@ -153,30 +135,23 @@ securityContext:
   runAsNonRoot: true
   seccompProfile:
     type: RuntimeDefault
-
 # Container Security Context to be set on the controller component container
 # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
 containerSecurityContext:
   allowPrivilegeEscalation: false
   capabilities:
     drop:
-    - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-
-
+      - ALL
+      # readOnlyRootFilesystem: true
+      # runAsNonRoot: true
 volumes: []
-
 volumeMounts: []
-
 # Optional additional annotations to add to the controller Deployment
 # deploymentAnnotations: {}
 
 # Optional additional annotations to add to the controller Pods
 # podAnnotations: {}
-
 podLabels: {}
-
 # Optional annotations to add to the controller Service
 # serviceAnnotations: {}
 
@@ -193,14 +168,12 @@ podLabels: {}
 #   nameservers:
 #     - "1.1.1.1"
 #     - "8.8.8.8"
-
 nodeSelector:
   kubernetes.io/os: linux
-
 ingressShim: {}
-  # defaultIssuerName: ""
-  # defaultIssuerKind: ""
-  # defaultIssuerGroup: ""
+# defaultIssuerName: ""
+# defaultIssuerKind: ""
+# defaultIssuerGroup: ""
 
 prometheus:
   enabled: true
@@ -214,7 +187,6 @@ prometheus:
     labels: {}
     annotations: {}
     honorLabels: false
-
 # Use these variables to configure the HTTP_PROXY environment variables
 # http_proxy: "http://proxy:8080"
 # https_proxy: "https://proxy:8080"
@@ -232,7 +204,6 @@ prometheus:
 #            values:
 #            - master
 affinity: {}
-
 # A list of Kubernetes Tolerations, if required; see https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core
 # for example:
 #   tolerations:
@@ -241,7 +212,6 @@ affinity: {}
 #     value: master
 #     effect: NoSchedule
 tolerations: []
-
 # A list of Kubernetes TopologySpreadConstraints, if required; see https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#topologyspreadconstraint-v1-core
 # for example:
 #   topologySpreadConstraints:
@@ -253,7 +223,6 @@ tolerations: []
 #         app.kubernetes.io/instance: cert-manager
 #         app.kubernetes.io/component: controller
 topologySpreadConstraints: []
-
 # LivenessProbe settings for the controller container of the controller Pod.
 #
 # Disabled by default, because the controller has a leader election mechanism
@@ -269,33 +238,30 @@ livenessProbe:
   timeoutSeconds: 15
   successThreshold: 1
   failureThreshold: 8
-
 webhook:
   replicaCount: 1
   timeoutSeconds: 10
-
   # Used to configure options for the webhook pod.
   # This allows setting options that'd usually be provided via flags.
   # An APIVersion and Kind must be specified in your values.yaml file.
   # Flags will override options that are set here.
   config:
-    # apiVersion: webhook.config.cert-manager.io/v1alpha1
-    # kind: WebhookConfiguration
+  # apiVersion: webhook.config.cert-manager.io/v1alpha1
+  # kind: WebhookConfiguration
 
-    # The port that the webhook should listen on for requests.
-    # In GKE private clusters, by default kubernetes apiservers are allowed to
-    # talk to the cluster nodes only on 443 and 10250. so configuring
-    # securePort: 10250, will work out of the box without needing to add firewall
-    # rules or requiring NET_BIND_SERVICE capabilities to bind port numbers <1000.
-    # This should be uncommented and set as a default by the chart once we graduate
-    # the apiVersion of WebhookConfiguration past v1alpha1.
-    # securePort: 10250
-
+  # The port that the webhook should listen on for requests.
+  # In GKE private clusters, by default kubernetes apiservers are allowed to
+  # talk to the cluster nodes only on 443 and 10250. so configuring
+  # securePort: 10250, will work out of the box without needing to add firewall
+  # rules or requiring NET_BIND_SERVICE capabilities to bind port numbers <1000.
+  # This should be uncommented and set as a default by the chart once we graduate
+  # the apiVersion of WebhookConfiguration past v1alpha1.
+  # securePort: 10250
   strategy: {}
-    # type: RollingUpdate
-    # rollingUpdate:
-    #   maxSurge: 0
-    #   maxUnavailable: 1
+  # type: RollingUpdate
+  # rollingUpdate:
+  #   maxSurge: 0
+  #   maxUnavailable: 1
 
   # Pod Security Context to be set on the webhook component Pod
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
@@ -303,15 +269,12 @@ webhook:
     runAsNonRoot: true
     seccompProfile:
       type: RuntimeDefault
-
   podDisruptionBudget:
     enabled: false
-
     minAvailable: 1
     # maxUnavailable: 1
-
-    # minAvailable and maxUnavailable can either be set to an integer (e.g. 1)
-    # or a percentage value (e.g. 25%)
+  # minAvailable and maxUnavailable can either be set to an integer (e.g. 1)
+  # or a percentage value (e.g. 25%)
 
   # Container Security Context to be set on the webhook component container
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
@@ -319,10 +282,9 @@ webhook:
     allowPrivilegeEscalation: false
     capabilities:
       drop:
-      - ALL
-    # readOnlyRootFilesystem: true
-    # runAsNonRoot: true
-
+        - ALL
+        # readOnlyRootFilesystem: true
+        # runAsNonRoot: true
   # Optional additional annotations to add to the webhook Deployment
   # deploymentAnnotations: {}
 
@@ -345,9 +307,9 @@ webhook:
   # - --config=<path-to-config-file>
 
   resources: {}
-    # requests:
-    #   cpu: 10m
-    #   memory: 32Mi
+  # requests:
+  #   cpu: 10m
+  #   memory: 32Mi
 
   ## Liveness and readiness probe values
   ## Ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
@@ -364,22 +326,15 @@ webhook:
     periodSeconds: 5
     successThreshold: 1
     timeoutSeconds: 1
-
   nodeSelector:
     kubernetes.io/os: linux
-
   affinity: {}
-
   tolerations: []
-
   topologySpreadConstraints: []
-
   # Optional additional labels to add to the Webhook Pods
   podLabels: {}
-
   # Optional additional labels to add to the Webhook Service
   serviceLabels: {}
-
   image:
     repository: quay.io/jetstack/cert-manager-webhook
     # You can manage a registry with
@@ -392,9 +347,8 @@ webhook:
 
     # Setting a digest will override any tag
     # digest: sha256:0e072dddd1f7f8fc8909a2ca6f65e76c5f0d2fcfb8be47935ae3457e8bbceb20
-
     pullPolicy: IfNotPresent
-
+    digest: sha256:db0bb8c02c0b82f3055315fbc52ad41b90fbe94f82431a0d76666f7c6beeb7f0
   serviceAccount:
     # Specifies whether a service account should be created
     create: true
@@ -407,7 +361,6 @@ webhook:
     # labels: {}
     # Automount API credentials for a Service Account.
     automountServiceAccountToken: true
-
   # Automounting API credentials for a particular pod
   # automountServiceAccountToken: true
 
@@ -417,7 +370,6 @@ webhook:
   # securePort: 10250, will work out of the box without needing to add firewall
   # rules or requiring NET_BIND_SERVICE capabilities to bind port numbers <1000
   securePort: 10250
-
   # Specifies if the webhook should be started in hostNetwork mode.
   #
   # Required for use in some managed kubernetes clusters (such as AWS EKS) with custom
@@ -428,7 +380,6 @@ webhook:
   # network, `webhook.securePort` should be changed to an available port if
   # running in hostNetwork mode.
   hostNetwork: false
-
   # Specifies how the service should be handled. Useful if you want to expose the
   # webhook to outside of the cluster. In some cases, the control plane cannot
   # reach internal services.
@@ -438,45 +389,42 @@ webhook:
   # Overrides the mutating webhook and validating webhook so they reach the webhook
   # service using the `url` field instead of a service.
   url: {}
-    # host:
+  # host:
 
   # Enables default network policies for webhooks.
   networkPolicy:
     enabled: false
     ingress:
-    - from:
-      - ipBlock:
-          cidr: 0.0.0.0/0
+      - from:
+          - ipBlock:
+              cidr: 0.0.0.0/0
     egress:
-    - ports:
-      - port: 80
-        protocol: TCP
-      - port: 443
-        protocol: TCP
-      - port: 53
-        protocol: TCP
-      - port: 53
-        protocol: UDP
-      # On OpenShift and OKD, the Kubernetes API server listens on
-      # port 6443.
-      - port: 6443
-        protocol: TCP
-      to:
-      - ipBlock:
-          cidr: 0.0.0.0/0
-
+      - ports:
+          - port: 80
+            protocol: TCP
+          - port: 443
+            protocol: TCP
+          - port: 53
+            protocol: TCP
+          - port: 53
+            protocol: UDP
+          # On OpenShift and OKD, the Kubernetes API server listens on
+          # port 6443.
+          - port: 6443
+            protocol: TCP
+        to:
+          - ipBlock:
+              cidr: 0.0.0.0/0
   volumes: []
   volumeMounts: []
-
 cainjector:
   enabled: true
   replicaCount: 1
-
   strategy: {}
-    # type: RollingUpdate
-    # rollingUpdate:
-    #   maxSurge: 0
-    #   maxUnavailable: 1
+  # type: RollingUpdate
+  # rollingUpdate:
+  #   maxSurge: 0
+  #   maxUnavailable: 1
 
   # Pod Security Context to be set on the cainjector component Pod
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
@@ -484,15 +432,12 @@ cainjector:
     runAsNonRoot: true
     seccompProfile:
       type: RuntimeDefault
-
   podDisruptionBudget:
     enabled: false
-
     minAvailable: 1
     # maxUnavailable: 1
-
-    # minAvailable and maxUnavailable can either be set to an integer (e.g. 1)
-    # or a percentage value (e.g. 25%)
+  # minAvailable and maxUnavailable can either be set to an integer (e.g. 1)
+  # or a percentage value (e.g. 25%)
 
   # Container Security Context to be set on the cainjector component container
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
@@ -500,11 +445,9 @@ cainjector:
     allowPrivilegeEscalation: false
     capabilities:
       drop:
-      - ALL
-    # readOnlyRootFilesystem: true
-    # runAsNonRoot: true
-
-
+        - ALL
+        # readOnlyRootFilesystem: true
+        # runAsNonRoot: true
   # Optional additional annotations to add to the cainjector Deployment
   # deploymentAnnotations: {}
 
@@ -518,22 +461,17 @@ cainjector:
   # - --enable-profiling=true
 
   resources: {}
-    # requests:
-    #   cpu: 10m
-    #   memory: 32Mi
+  # requests:
+  #   cpu: 10m
+  #   memory: 32Mi
 
   nodeSelector:
     kubernetes.io/os: linux
-
   affinity: {}
-
   tolerations: []
-
   topologySpreadConstraints: []
-
   # Optional additional labels to add to the CA Injector Pods
   podLabels: {}
-
   image:
     repository: quay.io/jetstack/cert-manager-cainjector
     # You can manage a registry with
@@ -546,9 +484,8 @@ cainjector:
 
     # Setting a digest will override any tag
     # digest: sha256:0e072dddd1f7f8fc8909a2ca6f65e76c5f0d2fcfb8be47935ae3457e8bbceb20
-
     pullPolicy: IfNotPresent
-
+    digest: sha256:2a70d9497a645101210d077874c35dc0431233d8c6e53a851835ca301523d64b
   serviceAccount:
     # Specifies whether a service account should be created
     create: true
@@ -561,13 +498,10 @@ cainjector:
     # Optional additional labels to add to the cainjector's ServiceAccount
     # labels: {}
     automountServiceAccountToken: true
-
   # Automounting API credentials for a particular pod
   # automountServiceAccountToken: true
-
   volumes: []
   volumeMounts: []
-
 acmesolver:
   image:
     repository: quay.io/jetstack/cert-manager-acmesolver
@@ -575,12 +509,13 @@ acmesolver:
     # registry: quay.io
     # repository: jetstack/cert-manager-acmesolver
 
-    # Override the image tag to deploy by setting this variable.
-    # If no value is set, the chart's appVersion will be used.
-    # tag: canary
+    digest: sha256:12a62e54ba8defda94df71ef76f9c8fe68405d59370f665991734d6b692e35f2
+# Override the image tag to deploy by setting this variable.
+# If no value is set, the chart's appVersion will be used.
+# tag: canary
 
-    # Setting a digest will override any tag
-    # digest: sha256:0e072dddd1f7f8fc8909a2ca6f65e76c5f0d2fcfb8be47935ae3457e8bbceb20
+# Setting a digest will override any tag
+# digest: sha256:0e072dddd1f7f8fc8909a2ca6f65e76c5f0d2fcfb8be47935ae3457e8bbceb20
 
 # This startupapicheck is a Helm post-install hook that waits for the webhook
 # endpoints to become available.
@@ -591,58 +526,47 @@ acmesolver:
 # See https://github.com/cert-manager/cert-manager/pull/4414 for context.
 startupapicheck:
   enabled: true
-
   # Pod Security Context to be set on the startupapicheck component Pod
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
   securityContext:
     runAsNonRoot: true
     seccompProfile:
       type: RuntimeDefault
-
   # Container Security Context to be set on the controller component container
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
   containerSecurityContext:
     allowPrivilegeEscalation: false
     capabilities:
       drop:
-      - ALL
-    # readOnlyRootFilesystem: true
-    # runAsNonRoot: true
-
+        - ALL
+        # readOnlyRootFilesystem: true
+        # runAsNonRoot: true
   # Timeout for 'kubectl check api' command
   timeout: 1m
-
   # Job backoffLimit
   backoffLimit: 4
-
   # Optional additional annotations to add to the startupapicheck Job
   jobAnnotations:
     helm.sh/hook: post-install
     helm.sh/hook-weight: "1"
     helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
-
   # Optional additional annotations to add to the startupapicheck Pods
   # podAnnotations: {}
 
   # Additional command line flags to pass to startupapicheck binary.
   # To see all available flags run docker run quay.io/jetstack/cert-manager-ctl:<version> --help
   extraArgs: []
-
   resources: {}
-    # requests:
-    #   cpu: 10m
-    #   memory: 32Mi
+  # requests:
+  #   cpu: 10m
+  #   memory: 32Mi
 
   nodeSelector:
     kubernetes.io/os: linux
-
   affinity: {}
-
   tolerations: []
-
   # Optional additional labels to add to the startupapicheck Pods
   podLabels: {}
-
   image:
     repository: quay.io/jetstack/cert-manager-ctl
     # You can manage a registry with
@@ -655,23 +579,19 @@ startupapicheck:
 
     # Setting a digest will override any tag
     # digest: sha256:0e072dddd1f7f8fc8909a2ca6f65e76c5f0d2fcfb8be47935ae3457e8bbceb20
-
     pullPolicy: IfNotPresent
-
+    digest: sha256:1b988a4a2ae83aae995d396fa67fdb4c90bc55bc91ea74679f17c6c347541406
   rbac:
     # annotations for the startup API Check job RBAC and PSP resources
     annotations:
       helm.sh/hook: post-install
       helm.sh/hook-weight: "-5"
       helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
-
   # Automounting API credentials for a particular pod
   # automountServiceAccountToken: true
-
   serviceAccount:
     # Specifies whether a service account should be created
     create: true
-
     # The name of the service account to use.
     # If not set and create is true, a name is generated using the fullname template
     # name: ""
@@ -681,12 +601,9 @@ startupapicheck:
       helm.sh/hook: post-install
       helm.sh/hook-weight: "-5"
       helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
-
     # Automount API credentials for a Service Account.
     automountServiceAccountToken: true
-
     # Optional additional labels to add to the startupapicheck's ServiceAccount
     # labels: {}
-
   volumes: []
   volumeMounts: []
