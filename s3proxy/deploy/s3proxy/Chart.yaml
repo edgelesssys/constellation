@@ -2,4 +2,4 @@ apiVersion: v2
 name: s3proxy
 description: Helm chart to deploy s3proxy.
 type: application
-version: 0.0.0
+version: 2.14.0
