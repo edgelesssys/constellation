@@ -349,7 +349,7 @@ func (r *ClusterResource) Configure(_ context.Context, req resource.ConfigureReq
 // warnings and errors.
 func (r *ClusterResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 	// Checks running on updates to the resource. (i.e. state and plan != nil)
-	if !req.Plan.Raw.IsNull() || !req.State.Raw.IsNull() {
+	if !req.Plan.Raw.IsNull() && !req.State.Raw.IsNull() {
 		// Read currentState supplied by Terraform runtime into the model
 		var currentState ClusterResourceModel
 		resp.Diagnostics.Append(req.State.Get(ctx, &currentState)...)
