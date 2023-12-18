@@ -365,9 +365,7 @@ func (r *ClusterResource) ModifyPlan(ctx context.Context, req resource.ModifyPla
 		}
 
 		// Warn the user about possibly destructive changes in case microservice changes are to be applied.
-		if currentState.MicroserviceVersion.ValueString() != "" && // current version is set (i.e. no create operation)
-			plannedState.MicroserviceVersion.ValueString() != "" && // planned version is set (i.e. no destroy operation)
-			currentState.MicroserviceVersion.ValueString() != plannedState.MicroserviceVersion.ValueString() {
+		if currentState.MicroserviceVersion.ValueString() != plannedState.MicroserviceVersion.ValueString() {
 			resp.Diagnostics.AddWarning("Microservice version change",
 				"Changing the microservice version can be a destructive operation.\n"+
 					"Upgrading cert-manager will destroy all custom resources you have manually created that are based on the current version of cert-manager.\n"+
