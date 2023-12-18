@@ -20,6 +20,7 @@ runs:
           "daniel-weisse"
           "derpsteb"
           "msanft"
+          "burgerdev"
         )
         assignee=${possibleAssignees[$RANDOM % ${#possibleAssignees[@]}]}
         echo "assignee=$assignee" | tee -a "$GITHUB_OUTPUT"
