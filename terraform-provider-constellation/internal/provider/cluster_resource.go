@@ -348,28 +348,31 @@ func (r *ClusterResource) Configure(_ context.Context, req resource.ConfigureReq
 // ModifyPlan is called when the resource is planned for creation, updates, or deletion. This allows to set pre-apply
 // warnings and errors.
 func (r *ClusterResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
-	// Read currentState supplied by Terraform runtime into the model
-	var currentState ClusterResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &currentState)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	// Checks running on updates to the resource. (i.e. state and plan != nil)
+	if !req.Plan.Raw.IsNull() || !req.State.Raw.IsNull() {
+		// Read currentState supplied by Terraform runtime into the model
+		var currentState ClusterResourceModel
+		resp.Diagnostics.Append(req.State.Get(ctx, &currentState)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 
-	// Read plannedState supplied by Terraform runtime into the model
-	var plannedState ClusterResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plannedState)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+		// Read plannedState supplied by Terraform runtime into the model
+		var plannedState ClusterResourceModel
+		resp.Diagnostics.Append(req.Plan.Get(ctx, &plannedState)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 
-	// Warn the user about possibly destructive changes in case microservice changes are to be applied.
-	if currentState.MicroserviceVersion.ValueString() != "" && // current version is set (i.e. no create operation)
-		plannedState.MicroserviceVersion.ValueString() != "" && // planned version is set (i.e. no destroy operation)
-		currentState.MicroserviceVersion.ValueString() != plannedState.MicroserviceVersion.ValueString() {
-		resp.Diagnostics.AddWarning("Microservice version change",
-			"Changing the microservice version can be a destructive operation.\n"+
-				"Upgrading cert-manager will destroy all custom resources you have manually created that are based on the current version of cert-manager.\n"+
-				"It is recommended to backup the cluster's CRDs before applying this change.")
+		// Warn the user about possibly destructive changes in case microservice changes are to be applied.
+		if currentState.MicroserviceVersion.ValueString() != "" && // current version is set (i.e. no create operation)
+			plannedState.MicroserviceVersion.ValueString() != "" && // planned version is set (i.e. no destroy operation)
+			currentState.MicroserviceVersion.ValueString() != plannedState.MicroserviceVersion.ValueString() {
+			resp.Diagnostics.AddWarning("Microservice version change",
+				"Changing the microservice version can be a destructive operation.\n"+
+					"Upgrading cert-manager will destroy all custom resources you have manually created that are based on the current version of cert-manager.\n"+
+					"It is recommended to backup the cluster's CRDs before applying this change.")
+		}
 	}
 }
 
