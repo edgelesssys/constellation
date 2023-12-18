@@ -6,9 +6,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 package instancetypes
 
-// AzureCVMInstanceTypes are valid Azure CVM instance types.
-var AzureCVMInstanceTypes = []string{
-	// CVMs (3rd Generation EPYC 7763v processors)
+// AzureSNPInstanceTypes are valid Azure SEV-SNP instance types.
+var AzureSNPInstanceTypes = []string{
+	// SEV-SNP CVMs (3rd Generation EPYC 7763v processors)
 	// DCasv5-series
 	"Standard_DC4as_v5",
 	"Standard_DC8as_v5",
@@ -43,6 +43,43 @@ var AzureCVMInstanceTypes = []string{
 	"Standard_EC48ads_v5",
 	"Standard_EC64ads_v5",
 	"Standard_EC96ads_v5",
+}
+
+// AzureTDXInstanceTypes are valid Azure TDX instance types.
+var AzureTDXInstanceTypes = []string{
+	// TDX CVMs
+	// DCesv5-series
+	"Standard_DC4es_v5",
+	"Standard_DC8es_v5",
+	"Standard_DC16es_v5",
+	"Standard_DC32es_v5",
+	"Standard_DC48es_v5",
+	"Standard_DC64es_v5",
+	"Standard_DC96es_v5",
+	// DCedsv5-series
+	"Standard_DC4eds_v5",
+	"Standard_DC8eds_v5",
+	"Standard_DC16eds_v5",
+	"Standard_DC32eds_v5",
+	"Standard_DC48eds_v5",
+	"Standard_DC64eds_v5",
+	"Standard_DC96eds_v5",
+	// ECesv5-series
+	"Standard_EC4es_v5",
+	"Standard_EC8es_v5",
+	"Standard_EC16es_v5",
+	"Standard_EC32es_v5",
+	"Standard_EC48es_v5",
+	"Standard_EC64es_v5",
+	"Standard_EC128es_v5",
+	// ECedsv5-series
+	"Standard_EC4eds_v5",
+	"Standard_EC8eds_v5",
+	"Standard_EC16eds_v5",
+	"Standard_EC32eds_v5",
+	"Standard_EC48eds_v5",
+	"Standard_EC64eds_v5",
+	"Standard_EC128eds_v5",
 }
 
 // AzureTrustedLaunchInstanceTypes are valid Azure Trusted Launch instance types.
