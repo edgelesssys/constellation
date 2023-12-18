@@ -84,18 +84,17 @@ data "constellation_image" "bar" {
 }
 
 resource "constellation_cluster" "azure_example" {
-  csp                                = local.csp
-  constellation_microservice_version = local.version
-  name                               = module.azure_infrastructure.name
-  uid                                = module.azure_infrastructure.uid
-  image                              = data.constellation_image.bar.image
-  attestation                        = data.constellation_attestation.foo.attestation
-  init_secret                        = module.azure_infrastructure.init_secret
-  master_secret                      = local.master_secret
-  master_secret_salt                 = local.master_secret_salt
-  measurement_salt                   = local.measurement_salt
-  out_of_cluster_endpoint            = module.azure_infrastructure.out_of_cluster_endpoint
-  in_cluster_endpoint                = module.azure_infrastructure.in_cluster_endpoint
+  csp                     = local.csp
+  name                    = module.azure_infrastructure.name
+  uid                     = module.azure_infrastructure.uid
+  image                   = data.constellation_image.bar.image
+  attestation             = data.constellation_attestation.foo.attestation
+  init_secret             = module.azure_infrastructure.init_secret
+  master_secret           = local.master_secret
+  master_secret_salt      = local.master_secret_salt
+  measurement_salt        = local.measurement_salt
+  out_of_cluster_endpoint = module.azure_infrastructure.out_of_cluster_endpoint
+  in_cluster_endpoint     = module.azure_infrastructure.in_cluster_endpoint
   azure = {
     tenant_id                   = module.azure_iam.tenant_id
     subscription_id             = module.azure_iam.subscription_id

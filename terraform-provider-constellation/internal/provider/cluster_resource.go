@@ -35,6 +35,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
+	datastruct "github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/data"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -60,7 +61,8 @@ func NewClusterResource() resource.Resource {
 
 // ClusterResource defines the resource implementation.
 type ClusterResource struct {
-	newApplier func(ctx context.Context, validator atls.Validator) *constellation.Applier
+	providerData datastruct.ProviderData
+	newApplier   func(ctx context.Context, validator atls.Validator) *constellation.Applier
 }
 
 // ClusterResourceModel describes the resource data model.
@@ -155,8 +157,8 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Optional:            true,
 			},
 			"constellation_microservice_version": schema.StringAttribute{
-				MarkdownDescription: "The version of Constellation's microservices used within the cluster. When not set, the provider default version is used.",
-				Description:         "The version of Constellation's microservices used within the cluster. When not set, the provider default version is used.",
+				MarkdownDescription: "The version of Constellation's microservices used within the cluster. When not set, the provider version is used.",
+				Description:         "The version of Constellation's microservices used within the cluster. When not set, the provider version is used.",
 				Optional:            true,
 			},
 			"out_of_cluster_endpoint": schema.StringAttribute{
@@ -330,9 +332,18 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 }
 
 // Configure configures the resource.
-func (r *ClusterResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
+func (r *ClusterResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
+		return
+	}
+	var ok bool
+	r.providerData, ok = req.ProviderData.(datastruct.ProviderData)
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected Resource Configure Type",
+			fmt.Sprintf("Expected datastruct.ProviderData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+		)
 		return
 	}
 
@@ -365,7 +376,19 @@ func (r *ClusterResource) ModifyPlan(ctx context.Context, req resource.ModifyPla
 		}
 
 		// Warn the user about possibly destructive changes in case microservice changes are to be applied.
-		if currentState.MicroserviceVersion.ValueString() != plannedState.MicroserviceVersion.ValueString() {
+		currVer, diags := r.getMicroserviceVersion(ctx, &currentState)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		plannedVer, diags := r.getMicroserviceVersion(ctx, &plannedState)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		if currVer.Compare(plannedVer) != 0 { // if versions are not equal
 			resp.Diagnostics.AddWarning("Microservice version change",
 				"Changing the microservice version can be a destructive operation.\n"+
 					"Upgrading cert-manager will destroy all custom resources you have manually created that are based on the current version of cert-manager.\n"+
@@ -575,12 +598,9 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 	}
 
 	// parse Constellation microservice version
-	microserviceVersion, err := semver.New(data.MicroserviceVersion.ValueString())
-	if err != nil {
-		diags.AddAttributeError(
-			path.Root("constellation_microservice_version"),
-			"Invalid microservice version",
-			fmt.Sprintf("Parsing microservice version: %s", err))
+	microserviceVersion, convertDiags := r.getMicroserviceVersion(ctx, data)
+	diags.Append(convertDiags...)
+	if diags.HasError() {
 		return diags
 	}
 
@@ -1006,6 +1026,28 @@ func (r *ClusterResource) getK8sVersion(ctx context.Context, data *ClusterResour
 		k8sVersion = versions.Default
 	}
 	return k8sVersion, diags
+}
+
+// getK8sVersion returns the Microservice version from the Terraform state if set, and the default
+// version otherwise.
+func (r *ClusterResource) getMicroserviceVersion(ctx context.Context, data *ClusterResourceModel) (semver.Semver, diag.Diagnostics) {
+	diags := diag.Diagnostics{}
+	var ver semver.Semver
+	var err error
+	if data.MicroserviceVersion.ValueString() != "" {
+		ver, err = semver.New(data.MicroserviceVersion.ValueString())
+		if err != nil {
+			diags.AddAttributeError(
+				path.Root("constellation_microservice_version"),
+				"Invalid microservice version",
+				fmt.Sprintf("Parsing microservice version: %s", err))
+			return semver.Semver{}, diags
+		}
+	} else {
+		tflog.Info(ctx, fmt.Sprintf("No Microservice version specified. Using default version %s.", r.providerData.Version))
+		ver = r.providerData.Version
+	}
+	return ver, diags
 }
 
 // tfContextLogger is a logging adapter between the tflog package and

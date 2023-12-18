@@ -31,7 +31,6 @@ resource "random_bytes" "measurement_salt" {
 
 resource "constellation_cluster" "azure_example" {
   csp                                = "azure"
-  constellation_microservice_version = "vX.Y.Z"
   name                               = "constell"
   uid                                = "..."
   image                              = data.constellation_image.bar.image
@@ -79,7 +78,7 @@ resource "constellation_cluster" "azure_example" {
 
 - `api_server_cert_sans` (List of String) List of Subject Alternative Names (SANs) for the API server certificate. Usually, this will be the out-of-cluster endpoint and the in-cluster endpoint, if existing.
 - `azure` (Attributes) Azure-specific configuration. (see [below for nested schema](#nestedatt--azure))
-- `constellation_microservice_version` (String) The version of Constellation's microservices used within the cluster. When not set, the provider default version is used.
+- `constellation_microservice_version` (String) The version of Constellation's microservices used within the cluster. When not set, the provider version is used.
 - `extra_microservices` (Attributes) Extra microservice settings. (see [below for nested schema](#nestedatt--extra_microservices))
 - `gcp` (Attributes) GCP-specific configuration. (see [below for nested schema](#nestedatt--gcp))
 - `in_cluster_endpoint` (String) The endpoint of the cluster. When not set, the out-of-cluster endpoint is used.

@@ -8,4 +8,5 @@ go_library(
     ],
     importpath = "github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/data",
     visibility = ["//terraform-provider-constellation:__subpackages__"],
+    deps = ["//internal/semver"],
 )
