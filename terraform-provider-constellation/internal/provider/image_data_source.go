@@ -10,7 +10,9 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
@@ -54,11 +56,11 @@ type imageFetcher interface {
 // ImageDataSourceModel defines the image data source's data model.
 type ImageDataSourceModel struct {
 	AttestationVariant types.String `tfsdk:"attestation_variant"`
-	ImageVersion       types.String `tfsdk:"image_version"`
+	Version            types.String `tfsdk:"version"`
 	CSP                types.String `tfsdk:"csp"`
 	MarketplaceImage   types.Bool   `tfsdk:"marketplace_image"`
 	Region             types.String `tfsdk:"region"`
-	Reference          types.String `tfsdk:"reference"`
+	Image              types.Object `tfsdk:"image"`
 }
 
 // Metadata returns the metadata for the image data source.
@@ -72,13 +74,14 @@ func (d *ImageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 		Description:         "The data source to resolve the CSP-specific OS image reference for a given version and attestation variant.",
 		MarkdownDescription: "Data source to resolve the CSP-specific OS image reference for a given version and attestation variant.",
 		Attributes: map[string]schema.Attribute{
-			"attestation_variant": newAttestationVariantAttribute(attributeInput),
-			"image_version": schema.StringAttribute{
+			// Input Attributes
+			"attestation_variant": newAttestationVariantAttributeSchema(attributeInput),
+			"version": schema.StringAttribute{
 				Description:         "Version of the Constellation OS image to use. (e.g. `v2.13.0`). If not set, the provider version is used.",
 				MarkdownDescription: "Version of the Constellation OS image to use. (e.g. `v2.13.0`). If not set, the provider version value is used.",
 				Optional:            true,
 			},
-			"csp": newCSPAttribute(),
+			"csp": newCSPAttributeSchema(),
 			"marketplace_image": schema.BoolAttribute{
 				Description:         "Whether a marketplace image should be used. Currently only supported for Azure.",
 				MarkdownDescription: "Whether a marketplace image should be used. Currently only supported for Azure.",
@@ -91,11 +94,8 @@ func (d *ImageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 					"and the region must [support AMD SEV-SNP](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snp-requirements.html), if it is used for Attestation.",
 				Optional: true,
 			},
-			"reference": schema.StringAttribute{
-				Description:         "CSP-specific reference to the image.",
-				MarkdownDescription: "CSP-specific reference to the image.",
-				Computed:            true,
-			},
+			// Output Attributes
+			"image": newImageAttributeSchema(attributeOutput),
 		},
 	}
 }
@@ -162,15 +162,49 @@ func (d *ImageDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 			fmt.Sprintf("When parsing the Attestation Variant (%s), an error occurred: %s", data.AttestationVariant.ValueString(), err),
 		)
 	}
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	imageVersion := data.ImageVersion.ValueString()
+	// lock-step with the provider
+	imageVersion := data.Version.ValueString()
 	if imageVersion == "" {
 		tflog.Info(ctx, fmt.Sprintf("No image version specified, using provider version %s", d.version))
 		imageVersion = d.version // Use provider version as default.
+	}
+
+	// determine semver from version string
+	var imageSemver string
+	var apiCompatibleVer versionsapi.Version
+	if strings.HasPrefix(imageVersion, "v") {
+		// If the version is a release version, it should look like vX.Y.Z
+		imageSemver = imageVersion
+		apiCompatibleVer, err = versionsapi.NewVersion(
+			versionsapi.ReleaseRef,
+			"stable",
+			imageVersion,
+			versionsapi.VersionKindImage,
+		)
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("version"),
+				"Invalid Version",
+				fmt.Sprintf("When parsing the version (%s), an error occurred: %s", imageVersion, err),
+			)
+			return
+		}
+	} else {
+		// otherwise, it should be a versionsapi short path
+		apiCompatibleVer, err = versionsapi.NewVersionFromShortPath(imageVersion, versionsapi.VersionKindImage)
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("version"),
+				"Invalid Version",
+				fmt.Sprintf("When parsing the version (%s), an error occurred: %s", imageVersion, err),
+			)
+			return
+		}
+		imageSemver = apiCompatibleVer.Version()
 	}
 
 	// Retrieve Image Reference
@@ -192,7 +226,13 @@ func (d *ImageDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 	}
 
 	// Save data into Terraform state
-	data.Reference = types.StringValue(imageRef)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	diags := resp.State.SetAttribute(ctx, path.Root("image"), imageAttribute{
+		Reference: imageRef,
+		Version:   imageSemver,
+		ShortPath: apiCompatibleVer.ShortPath(),
+	})
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }

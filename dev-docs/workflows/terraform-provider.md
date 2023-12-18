@@ -36,6 +36,12 @@ terraform {
 }
 ```
 
+Make sure to add the build's pseudo-version (without the `v` prefix) as the `<version>`. Alternatively, check the available versions in your local plugin cache:
+
+```bash
+ls ~/.terraform.d/plugins/registry.terraform.io/edgelesssys/constellation
+```
+
 Alternatively, you can configure Terraform to use your binary by setting a [development override](https://developer.hashicorp.com/terraform/cli/config/config-file#development-overrides-for-provider-developers),
 so that the registry path to the provider is replaced with the path to the locally built provider.
 A `config.tfrc` file containing the necessary configuration can be created with the following commands:

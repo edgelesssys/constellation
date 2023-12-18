@@ -20,30 +20,75 @@ This example shows how to set up a Constellation cluster with the reference IAM 
   cd constellation-workspace
   ```
 
-1. Create a `main.tf` file.
-<!--TODO(elchead): AB#3607 put correct examples, with follow up PR with #2713 examples
+2. Use one of the [example configurations for using the Constellation Terraform provider](https://github.com/edgelesssys/constellation/tree/main/terraform-provider-constellation/examples/full) or create a `main.tf` file and fill it with the resources you want to create. The [Constellation Terraform provider documentation](https://registry.terraform.io/providers/edgelesssys/constellation/latest) offers thorough documentation on the resources and their attributes.
+3. Initialize and apply the Terraform configuration.
   <tabs groupId="csp">
-
   <tabItem value="azure" label="Azure">
-  </tabItem>
+  When creating a cluster on Azure, you need to manually patch the policy of the MAA provider before creating the Constellation cluster, as this feature isn't available in Azure's Terraform provider yet. The Constellation CLI provides a utility for patching, but you
+  can also do it manually.
 
+  ```bash
+  terraform init
+  terraform apply -target module.azure_iam # adjust resource path if not using the example configuration
+  terraform apply -target module.azure_infrastructure # adjust resource path if not using the example configuration
+  constellation maa-patch $(terraform output maa_url) # adjust output path / input if not using the example configuration or manually patch the resource
+  terraform apply -target constellation_cluster.azure_example # adjust resource path if not using the example configuration
+  ```
+
+  Optionally, you can prefix the `terraform apply` command with `TF_LOG=INFO` to collect [Terraform logs](https://developer.hashicorp.com/terraform/internals/debugging) while applying the configuration. This may provide helpful output in debugging scenarios.
+
+  Use the following policy if manually performing the patch.
+
+  ```
+  version= 1.0;
+  authorizationrules
+  {
+      [type=="x-ms-azurevm-default-securebootkeysvalidated", value==false] => deny();
+      [type=="x-ms-azurevm-debuggersdisabled", value==false] => deny();
+      // The line below was edited to use the MAA provider within Constellation. Do not edit manually.
+      //[type=="secureboot", value==false] => deny();
+      [type=="x-ms-azurevm-signingdisabled", value==false] => deny();
+      [type=="x-ms-azurevm-dbvalidated", value==false] => deny();
+      [type=="x-ms-azurevm-dbxvalidated", value==false] => deny();
+      => permit();
+  };
+  issuancerules
+  {
+  };
+  ```
+  </tabItem>
   <tabItem value="aws" label="AWS">
-  </tabItem>
-
-  <tabItem value="gcp" label="GCP">
-  </tabItem>
-  </tabs>-->
-
-1. Initialize and apply the file.
+  Initialize the providers and apply the configuration.
 
   ```bash
   terraform init
   terraform apply
   ```
 
+  Optionally, you can prefix the `terraform apply` command with `TF_LOG=INFO` to collect [Terraform logs](https://developer.hashicorp.com/terraform/internals/debugging) while applying the configuration. This may provide helpful output in debugging scenarios.
+  </tabItem>
+  <tabItem value="gcp" label="GCP">
+  Initialize the providers and apply the configuration.
+
+  ```bash
+  terraform init
+  terraform apply
+  ```
+
+  Optionally, you can prefix the `terraform apply` command with `TF_LOG=INFO` to collect [Terraform logs](https://developer.hashicorp.com/terraform/internals/debugging) while applying the configuration. This may provide helpful output in debugging scenarios.
+  </tabItem>
+  </tabs>
+4. Connect to the cluster.
+
+  ```bash
+  terraform output -raw kubeconfig > constellation-admin.conf
+  export KUBECONFIG=$(realpath constellation-admin.conf)
+  ```
+
 ## Bringing your own infrastructure
 
-If you need a custom infrastructure setup, you can download the infrastructure / IAM Terraform modules for the respective CSP from the Constellation [GitHub releases](https://github.com/edgelesssys/constellation/releases). You can modify / extend the modules, per your requirements, while keeping the basic functionality intact.
+Instead of using the example infrastructure used in the [quick setup](#quick-setup), you can also provide your own infrastructure.
+If you need a starting point for a custom infrastructure setup, you can download the infrastructure / IAM Terraform modules for the respective CSP from the Constellation [GitHub releases](https://github.com/edgelesssys/constellation/releases). You can modify and extend the modules per your requirements, while keeping the basic functionality intact.
 The module contains:
 
 - `{csp}`: cloud resources the cluster runs on
@@ -54,16 +99,16 @@ When upgrading your cluster, make sure to check the Constellation release notes 
 ## Cluster upgrades
 
 :::tip
-For general information on cluster upgrades, see the [dedicated upgrade page](./upgrade.md).
+Also see the [general documentation on cluster upgrades](./upgrade.md).
 :::
 
 The steps for applying the upgrade are as follows:
 
 1. Update the version constraint of the Constellation Terraform provider in the `required_providers` block in your Terraform configuration.
-2. If you explicitly set any of the version attributes of the provider's resources and data sources (e.g. `image_version` or `constellation_microservice_version`), make sure to update them too. Refer to the [version support policy](https://github.com/edgelesssys/constellation/blob/main/dev-docs/workflows/versions-support.md) for more information on how each Constellation version and its dependencies are supported.
-3. Update the IAM / infrastructure modules.
-   - For [remote address as module source](https://developer.hashicorp.com/terraform/language/modules/sources#fetching-archives-over-http), update the version number inside the address of the `source` field  of the infra / IAM module to the target version.
-   - For [local paths as module source](https://developer.hashicorp.com/terraform/language/modules/sources#local-paths), see the changes made in the reference modules since the upgrade's origin version and adjust your infrastructure configuration accordingly.
+2. If you explicitly set any of the version attributes of the provider's resources and data sources (e.g. `image_version` or `constellation_microservice_version`), make sure to update them too. Refer to Constellation's [version support policy](https://github.com/edgelesssys/constellation/blob/main/dev-docs/workflows/versions-support.md) for more information on how each Constellation version and its dependencies are supported.
+3. Update the IAM / infrastructure configuration.
+   - For [remote addresses as module sources](https://developer.hashicorp.com/terraform/language/modules/sources#fetching-archives-over-http), update the version number inside the address of the `source` field of the infrastructure / IAM module to the target version.
+   - For [local paths as module sources](https://developer.hashicorp.com/terraform/language/modules/sources#local-paths) or when [providing your own infrastructure](#bringing-your-own-infrastructure), see the changes made in the reference modules since the upgrade's origin version and adjust your infrastructure / IAM configuration accordingly.
 4. Upgrade the Terraform module and provider dependencies and apply the targeted configuration.
 
 ```bash

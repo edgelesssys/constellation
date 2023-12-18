@@ -24,10 +24,12 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/constellation"
 	"github.com/edgelesssys/constellation/v2/internal/constellation/helm"
+	"github.com/edgelesssys/constellation/v2/internal/constellation/kubecmd"
 	"github.com/edgelesssys/constellation/v2/internal/constellation/state"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
@@ -37,6 +39,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -63,8 +67,7 @@ type ClusterResourceModel struct {
 	Name                 types.String `tfsdk:"name"`
 	CSP                  types.String `tfsdk:"csp"`
 	UID                  types.String `tfsdk:"uid"`
-	ImageVersion         types.String `tfsdk:"image_version"`
-	ImageReference       types.String `tfsdk:"image_reference"`
+	Image                types.Object `tfsdk:"image"`
 	KubernetesVersion    types.String `tfsdk:"kubernetes_version"`
 	MicroserviceVersion  types.String `tfsdk:"constellation_microservice_version"`
 	OutOfClusterEndpoint types.String `tfsdk:"out_of_cluster_endpoint"`
@@ -85,19 +88,22 @@ type ClusterResourceModel struct {
 	KubeConfig types.String `tfsdk:"kubeconfig"`
 }
 
-type networkConfig struct {
+// networkConfigAttribute is the network config attribute's data model.
+type networkConfigAttribute struct {
 	IPCidrNode    string `tfsdk:"ip_cidr_node"`
 	IPCidrPod     string `tfsdk:"ip_cidr_pod"`
 	IPCidrService string `tfsdk:"ip_cidr_service"`
 }
 
-type gcp struct {
+// gcpAttribute is the gcp attribute's data model.
+type gcpAttribute struct {
 	// ServiceAccountKey is the private key of the service account used within the cluster.
 	ServiceAccountKey string `tfsdk:"service_account_key"`
 	ProjectID         string `tfsdk:"project_id"`
 }
 
-type azure struct {
+// azureAttribute is the azure attribute's data model.
+type azureAttribute struct {
 	TenantID                 string `tfsdk:"tenant_id"`
 	Location                 string `tfsdk:"location"`
 	UamiClientID             string `tfsdk:"uami_client_id"`
@@ -106,6 +112,11 @@ type azure struct {
 	SubscriptionID           string `tfsdk:"subscription_id"`
 	NetworkSecurityGroupName string `tfsdk:"network_security_group_name"`
 	LoadBalancerName         string `tfsdk:"load_balancer_name"`
+}
+
+// extraMicroservicesAttribute is the extra microservices attribute's data model.
+type extraMicroservicesAttribute struct {
+	CSIDriver bool `tfsdk:"csi_driver"`
 }
 
 // Metadata returns the metadata of the resource.
@@ -136,16 +147,7 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Description:         "The UID of the cluster.",
 				Required:            true,
 			},
-			"image_version": schema.StringAttribute{
-				MarkdownDescription: "Constellation OS image version to use in the CSP specific reference format. Use the [`constellation_image`](../data-sources/image.md) data source to find the correct image version for your CSP.",
-				Description:         "Constellation OS image version to use in the CSP specific reference format. Use the `constellation_image` data source to find the correct image version for your CSP.",
-				Required:            true,
-			},
-			"image_reference": schema.StringAttribute{
-				MarkdownDescription: "Constellation OS image reference to use in the CSP specific reference format. Use the [`constellation_image`](../data-sources/image.md) data source to find the correct image reference for your CSP.",
-				Description:         "Constellation OS image reference to use in the CSP specific reference format. Use the `constellation_image` data source to find the correct image reference for your CSP.",
-				Required:            true,
-			},
+			"image": newImageAttributeSchema(attributeInput),
 			"kubernetes_version": schema.StringAttribute{
 				MarkdownDescription: fmt.Sprintf("The Kubernetes version to use for the cluster. When not set, version %s is used. The supported versions are %s.", versions.Default, versions.SupportedK8sVersions()),
 				Description:         fmt.Sprintf("The Kubernetes version to use for the cluster. When not set, version %s is used. The supported versions are %s.", versions.Default, versions.SupportedK8sVersions()),
@@ -227,7 +229,7 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Description:         "Secret used for initialization of the cluster.",
 				Required:            true,
 			},
-			"attestation": newAttestationConfigAttribute(attributeInput),
+			"attestation": newAttestationConfigAttributeSchema(attributeInput),
 			"gcp": schema.SingleNestedAttribute{
 				MarkdownDescription: "GCP-specific configuration.",
 				Description:         "GCP-specific configuration.",
@@ -298,16 +300,29 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				MarkdownDescription: "The owner ID of the cluster.",
 				Description:         "The owner ID of the cluster.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					// We know that this value will never change after creation, so we can use the state value for upgrades.
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"cluster_id": schema.StringAttribute{
 				MarkdownDescription: "The cluster ID of the cluster.",
 				Description:         "The cluster ID of the cluster.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					// We know that this value will never change after creation, so we can use the state value for upgrades.
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"kubeconfig": schema.StringAttribute{
 				MarkdownDescription: "The kubeconfig of the cluster.",
 				Description:         "The kubeconfig of the cluster.",
 				Computed:            true,
+				Sensitive:           true,
+				PlanModifiers: []planmodifier.String{
+					// We know that this value will never change after creation, so we can use the state value for upgrades.
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 		},
 	}
@@ -510,7 +525,7 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 	}
 
 	// parse network config
-	var networkCfg networkConfig
+	var networkCfg networkConfigAttribute
 	convertDiags = data.NetworkConfig.As(ctx, &networkCfg, basetypes.ObjectAsOptions{
 		UnhandledNullAsEmpty: true, // we want to allow null values, as some of the field's subfields are optional.
 	})
@@ -520,7 +535,7 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 	}
 
 	// parse Constellation microservice config
-	var microserviceCfg extraMicroservices
+	var microserviceCfg extraMicroservicesAttribute
 	convertDiags = data.ExtraMicroservices.As(ctx, &microserviceCfg, basetypes.ObjectAsOptions{
 		UnhandledNullAsEmpty: true, // we want to allow null values, as the CSIDriver field is optional
 	})
@@ -547,19 +562,25 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 	}
 
 	// parse OS image version
-	imageVersion, err := semver.New(data.ImageVersion.ValueString())
+	var image imageAttribute
+	convertDiags = data.Image.As(ctx, &image, basetypes.ObjectAsOptions{})
+	diags.Append(convertDiags...)
+	if diags.HasError() {
+		return diags
+	}
+	imageSemver, err := semver.New(image.Version)
 	if err != nil {
 		diags.AddAttributeError(
-			path.Root("image_version"),
+			path.Root("image").AtName("version"),
 			"Invalid image version",
-			fmt.Sprintf("Parsing image version: %s", err))
+			fmt.Sprintf("Parsing image version (%s): %s", image.Version, err))
 		return diags
 	}
 
 	// Parse in-cluster service account info.
 	serviceAccPayload := constellation.ServiceAccountPayload{}
-	var gcpConfig gcp
-	var azureConfig azure
+	var gcpConfig gcpAttribute
+	var azureConfig azureAttribute
 	switch csp {
 	case cloudprovider.GCP:
 		convertDiags = data.GCP.As(ctx, &gcpConfig, basetypes.ObjectAsOptions{})
@@ -717,17 +738,28 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 	if !skipNodeUpgrade {
 		// Upgrade node image
 		err = applier.UpgradeNodeImage(ctx,
-			imageVersion,
-			data.ImageReference.ValueString(),
+			imageSemver,
+			image.Reference,
 			false)
-		if err != nil {
-			diags.AddError("Upgrading node OS image", err.Error())
+		var upgradeImageErr *compatibility.InvalidUpgradeError
+		switch {
+		case errors.Is(err, kubecmd.ErrInProgress):
+			diags.AddWarning("Skipping OS image upgrade", "Another upgrade is already in progress.")
+		case errors.As(err, &upgradeImageErr):
+			diags.AddWarning("Ignoring invalid OS image upgrade", err.Error())
+		case err != nil:
+			diags.AddError("Upgrading OS image", err.Error())
 			return diags
 		}
 
-		// Upgrade Kubernetes version
-		if err := applier.UpgradeKubernetesVersion(ctx, k8sVersion, false); err != nil {
-			diags.AddError("Upgrading Kubernetes version", err.Error())
+		// Upgrade Kubernetes components
+		err = applier.UpgradeKubernetesVersion(ctx, k8sVersion, false)
+		var upgradeK8sErr *compatibility.InvalidUpgradeError
+		switch {
+		case errors.As(err, &upgradeK8sErr):
+			diags.AddWarning("Ignoring invalid Kubernetes components upgrade", err.Error())
+		case err != nil:
+			diags.AddError("Upgrading Kubernetes components", err.Error())
 			return diags
 		}
 	}
@@ -741,9 +773,9 @@ type initRPCPayload struct {
 	masterSecret      uri.MasterSecret         // master secret of the cluster.
 	measurementSalt   []byte                   // measurement salt of the cluster.
 	apiServerCertSANs []string                 // additional SANs to add to the API server certificate.
-	azureCfg          azure                    // Azure-specific configuration.
-	gcpCfg            gcp                      // GCP-specific configuration.
-	networkCfg        networkConfig            // network configuration of the cluster.
+	azureCfg          azureAttribute           // Azure-specific configuration.
+	gcpCfg            gcpAttribute             // GCP-specific configuration.
+	networkCfg        networkConfigAttribute   // network configuration of the cluster.
 	maaURL            string                   // URL of the MAA service. Only used for Azure clusters.
 	k8sVersion        versions.ValidK8sVersion // Kubernetes version of the cluster.
 	// Internal Endpoint of the cluster.
@@ -822,9 +854,13 @@ func (r *ClusterResource) applyHelmCharts(ctx context.Context, applier *constell
 
 	executor, _, err := applier.PrepareHelmCharts(options, state,
 		payload.serviceAccURI, payload.masterSecret, nil)
+	var upgradeErr *compatibility.InvalidUpgradeError
 	if err != nil {
-		diags.AddError("Preparing Helm charts", err.Error())
-		return diags
+		if !errors.As(err, &upgradeErr) {
+			diags.AddError("Upgrading microservices", err.Error())
+			return diags
+		}
+		diags.AddWarning("Ignoring invalid microservice upgrade(s)", err.Error())
 	}
 
 	if err := executor.Apply(ctx); err != nil {
@@ -845,7 +881,7 @@ type attestationInput struct {
 // used by the Constellation library.
 func (r *ClusterResource) convertAttestationConfig(ctx context.Context, data ClusterResourceModel) (attestationInput, diag.Diagnostics) {
 	diags := diag.Diagnostics{}
-	var tfAttestation attestation
+	var tfAttestation attestationAttribute
 	castDiags := data.Attestation.As(ctx, &tfAttestation, basetypes.ObjectAsOptions{})
 	diags.Append(castDiags...)
 	if diags.HasError() {

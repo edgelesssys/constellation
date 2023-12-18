@@ -13,23 +13,44 @@ Resource for a Constellation cluster.
 ## Example Usage
 
 ```terraform
-// Not up-to-date
-
 data "constellation_attestation" "foo" {} # Fill accordingly for the CSP and attestation variant
 
 data "constellation_image" "bar" {} # Fill accordingly for the CSP
 
-resource "constellation_cluster" "aws_example" {
-  csp                                = "aws"
+resource "random_bytes" "master_secret" {
+  length = 32
+}
+
+resource "random_bytes" "master_secret_salt" {
+  length = 32
+}
+
+resource "random_bytes" "measurement_salt" {
+  length = 32
+}
+
+resource "constellation_cluster" "azure_example" {
+  csp                                = "azure"
+  constellation_microservice_version = "vX.Y.Z"
   name                               = "constell"
-  uid                                = "deadbeef"
-  constellation_microservice_version = "vx.y.z"
+  uid                                = "..."
   image                              = data.constellation_image.bar.image
   attestation                        = data.constellation_attestation.foo.attestation
-  init_secret                        = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
-  master_secret                      = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
-  master_secret_salt                 = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+  init_secret                        = "..."
+  master_secret                      = random_bytes.master_secret.hex
+  master_secret_salt                 = random_bytes.master_secret_salt.hex
+  measurement_salt                   = random_bytes.measurement_salt.hex
   out_of_cluster_endpoint            = "123.123.123.123"
+  azure = {
+    tenant_id                   = "..."
+    subscription_id             = "..."
+    uami_client_id              = "..."
+    uami_resource_id            = "..."
+    location                    = "..."
+    resource_group              = "..."
+    load_balancer_name          = "..."
+    network_security_group_name = "..."
+  }
   network_config = {
     ip_cidr_node    = "192.168.176.0/20"
     ip_cidr_service = "10.96.0.0/12"
@@ -44,8 +65,7 @@ resource "constellation_cluster" "aws_example" {
 
 - `attestation` (Attributes) Attestation comprises the measurements and SEV-SNP specific parameters. The output of the [constellation_attestation](../data-sources/attestation.md) data source provides sensible defaults. (see [below for nested schema](#nestedatt--attestation))
 - `csp` (String) The Cloud Service Provider (CSP) the cluster should run on.
-- `image_reference` (String) Constellation OS image reference to use in the CSP specific reference format. Use the [`constellation_image`](../data-sources/image.md) data source to find the correct image reference for your CSP.
-- `image_version` (String) Constellation OS image version to use in the CSP specific reference format. Use the [`constellation_image`](../data-sources/image.md) data source to find the correct image version for your CSP.
+- `image` (Attributes) Constellation OS Image to use on the nodes. (see [below for nested schema](#nestedatt--image))
 - `init_secret` (String) Secret used for initialization of the cluster.
 - `master_secret` (String) Hex-encoded 32-byte master secret for the cluster.
 - `master_secret_salt` (String) Hex-encoded 32-byte master secret salt for the cluster.
@@ -68,7 +88,7 @@ resource "constellation_cluster" "aws_example" {
 ### Read-Only
 
 - `cluster_id` (String) The cluster ID of the cluster.
-- `kubeconfig` (String) The kubeconfig of the cluster.
+- `kubeconfig` (String, Sensitive) The kubeconfig of the cluster.
 - `owner_id` (String) The owner ID of the cluster.
 
 <a id="nestedatt--attestation"></a>
@@ -110,6 +130,19 @@ Optional:
 - `enforcement_policy` (String)
 - `maa_url` (String)
 
+
+
+<a id="nestedatt--image"></a>
+### Nested Schema for `image`
+
+Required:
+
+- `reference` (String) CSP-specific unique reference to the image. The format differs per CSP.
+- `short_path` (String) CSP-agnostic short path to the image. The format is `vX.Y.Z` for release images and `ref/$GIT_REF/stream/$STREAM/$SEMANTIC_VERSION` for pre-release images.
+- `$GIT_REF` is the git reference (i.e. branch name) the image was built on, e.g. `main`.
+- `$STREAM` is the stream the image was built on, e.g. `nightly`.
+- `$SEMANTIC_VERSION` is the semantic version of the image, e.g. `vX.Y.Z` or `vX.Y.Z-pre...`.
+- `version` (String) Semantic version of the image.
 
 
 <a id="nestedatt--network_config"></a>

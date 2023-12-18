@@ -58,13 +58,13 @@ runs:
         data "constellation_attestation" "con_attestation" {
           csp                 = "${{ inputs.cloudProvider }}"
           attestation_variant = "${attestationVariant}"
-          image_version       = "$(yq '.image' constellation-conf.yaml)"
+          image               = data.constellation_image.con_image.image
           maa_url             = "$(yq '.infrastructure.azure.attestationURL' constellation-state.yaml)"
           insecure            = true
         }
 
         data "constellation_image" "con_image" {
-          image_version       = "$(yq '.image' constellation-conf.yaml)"
+          version             = "$(yq '.image' constellation-conf.yaml)"
           attestation_variant = "${attestationVariant}"
           csp                 = "${{ inputs.cloudProvider }}"
           region              = "$(yq '.provider.aws.region' constellation-conf.yaml)"
@@ -75,8 +75,7 @@ runs:
           constellation_microservice_version = "$(yq '.microserviceVersion' constellation-conf.yaml)"
           name                               = "$(yq '.name' constellation-conf.yaml)"
           uid                                = "$(yq '.infrastructure.uid' constellation-state.yaml)"
-          image_reference                    = data.constellation_image.con_image.reference
-          image_version                      = "$(yq '.microserviceVersion' constellation-conf.yaml)"
+          image                              = data.constellation_image.con_image.image
           attestation                        = data.constellation_attestation.con_attestation.attestation
           init_secret                        = "$(yq '.infrastructure.initSecret' constellation-state.yaml | xxd -r -p)"
           master_secret                      = random_bytes.master_secret.hex
