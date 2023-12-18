@@ -1,5 +1,7 @@
+data "constellation_image" "example" {} # Fill accordingly for the CSP
+
 data "constellation_attestation" "test" {
   csp                 = "aws"
   attestation_variant = "aws-sev-snp"
-  image_version       = "v2.13.0"
+  image               = data.constellation_image.example.image
 }
