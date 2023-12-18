@@ -38,4 +38,4 @@ jobs:
       - name: Integration Tests
         env:
           TMPDIR: ${{ runner.temp }}
-        run: sudo -E "PATH=$PATH" bazel test //... --config=nostamp --remote_download_minimal --config=integration  --spawn_strategy=standalone
+        run: sudo -E "PATH=$PATH" bazel test //... --config=nostamp --remote_download_minimal --config=integration-only  --spawn_strategy=standalone
