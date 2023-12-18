@@ -53,8 +53,3 @@ runs:
       uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
       with:
         name: terraform-provider-constellation-linux-arm64
-
-    - name: Download Terraform provider binary windows-amd64
-      uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-      with:
-        name: terraform-provider-constellation-windows-amd64
