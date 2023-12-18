@@ -16,7 +16,6 @@ resource "random_bytes" "measurement_salt" {
 
 resource "constellation_cluster" "azure_example" {
   csp                                = "azure"
-  constellation_microservice_version = "vX.Y.Z"
   name                               = "constell"
   uid                                = "..."
   image                              = data.constellation_image.bar.image

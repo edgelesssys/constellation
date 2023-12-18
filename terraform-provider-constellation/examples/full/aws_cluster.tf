@@ -89,18 +89,17 @@ data "constellation_image" "bar" {
 }
 
 resource "constellation_cluster" "aws_example" {
-  csp                                = local.csp
-  constellation_microservice_version = local.version
-  name                               = module.aws_infrastructure.name
-  uid                                = module.aws_infrastructure.uid
-  image                              = data.constellation_image.bar.image
-  attestation                        = data.constellation_attestation.foo.attestation
-  init_secret                        = module.aws_infrastructure.init_secret
-  master_secret                      = local.master_secret
-  master_secret_salt                 = local.master_secret_salt
-  measurement_salt                   = local.measurement_salt
-  out_of_cluster_endpoint            = module.aws_infrastructure.out_of_cluster_endpoint
-  in_cluster_endpoint                = module.aws_infrastructure.in_cluster_endpoint
+  csp                     = local.csp
+  name                    = module.aws_infrastructure.name
+  uid                     = module.aws_infrastructure.uid
+  image                   = data.constellation_image.bar.image
+  attestation             = data.constellation_attestation.foo.attestation
+  init_secret             = module.aws_infrastructure.init_secret
+  master_secret           = local.master_secret
+  master_secret_salt      = local.master_secret_salt
+  measurement_salt        = local.measurement_salt
+  out_of_cluster_endpoint = module.aws_infrastructure.out_of_cluster_endpoint
+  in_cluster_endpoint     = module.aws_infrastructure.in_cluster_endpoint
   network_config = {
     ip_cidr_node    = module.aws_infrastructure.ip_cidr_node
     ip_cidr_service = "10.96.0.0/12"

@@ -11,7 +11,9 @@ package provider
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/edgelesssys/constellation/v2/internal/semver"
 	datastruct "github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/data"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -69,8 +71,16 @@ func (p *ConstellationProvider) Configure(ctx context.Context, req provider.Conf
 		return
 	}
 
+	ver, err := semver.New(p.version)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid provider version",
+			fmt.Sprintf("Expected a valid semantic version, got %s: %s", p.version, err),
+		)
+		return
+	}
+
 	config := datastruct.ProviderData{
-		Version: p.version,
+		Version: ver,
 	}
 
 	// Make the clients available during data source and resource "Configure" methods.

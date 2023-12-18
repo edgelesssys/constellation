@@ -136,7 +136,7 @@ func (d *ImageDataSource) Configure(_ context.Context, req datasource.ConfigureR
 		return
 	}
 
-	d.version = providerData.Version
+	d.version = providerData.Version.String()
 }
 
 // Read reads from the data source.

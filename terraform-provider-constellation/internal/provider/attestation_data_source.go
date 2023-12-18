@@ -66,7 +66,7 @@ func (d *AttestationDataSource) Configure(_ context.Context, req datasource.Conf
 		)
 		return
 	}
-	d.version = providerData.Version
+	d.version = providerData.Version.String()
 
 	d.client = http.DefaultClient
 	d.fetcher = attestationconfigapi.NewFetcher()
