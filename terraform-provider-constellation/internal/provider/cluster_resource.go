@@ -24,10 +24,12 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/constellation"
 	"github.com/edgelesssys/constellation/v2/internal/constellation/helm"
+	"github.com/edgelesssys/constellation/v2/internal/constellation/kubecmd"
 	"github.com/edgelesssys/constellation/v2/internal/constellation/state"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
@@ -739,14 +741,25 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 			imageSemver,
 			image.Reference,
 			false)
-		if err != nil {
-			diags.AddError("Upgrading node OS image", err.Error())
+		var upgradeImageErr *compatibility.InvalidUpgradeError
+		switch {
+		case errors.Is(err, kubecmd.ErrInProgress):
+			diags.AddWarning("Skipping OS image upgrade", "Another upgrade is already in progress.")
+		case errors.As(err, &upgradeImageErr):
+			diags.AddWarning("Ignoring invalid OS image upgrade", err.Error())
+		case err != nil:
+			diags.AddError("Upgrading OS image", err.Error())
 			return diags
 		}
 
-		// Upgrade Kubernetes version
-		if err := applier.UpgradeKubernetesVersion(ctx, k8sVersion, false); err != nil {
-			diags.AddError("Upgrading Kubernetes version", err.Error())
+		// Upgrade Kubernetes components
+		err = applier.UpgradeKubernetesVersion(ctx, k8sVersion, false)
+		var upgradeK8sErr *compatibility.InvalidUpgradeError
+		switch {
+		case errors.As(err, &upgradeK8sErr):
+			diags.AddWarning("Ignoring invalid Kubernetes components upgrade", err.Error())
+		case err != nil:
+			diags.AddError("Upgrading Kubernetes components", err.Error())
 			return diags
 		}
 	}
@@ -841,9 +854,13 @@ func (r *ClusterResource) applyHelmCharts(ctx context.Context, applier *constell
 
 	executor, _, err := applier.PrepareHelmCharts(options, state,
 		payload.serviceAccURI, payload.masterSecret, nil)
+	var upgradeErr *compatibility.InvalidUpgradeError
 	if err != nil {
-		diags.AddError("Preparing Helm charts", err.Error())
-		return diags
+		if !errors.As(err, &upgradeErr) {
+			diags.AddError("Upgrading microservices", err.Error())
+			return diags
+		}
+		diags.AddWarning("Ignoring invalid microservice upgrade(s)", err.Error())
 	}
 
 	if err := executor.Apply(ctx); err != nil {
