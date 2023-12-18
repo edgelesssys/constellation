@@ -717,14 +717,19 @@ func TestValidInstanceTypeForProvider(t *testing.T) {
 			instanceTypes:  []string{},
 			expectedResult: false,
 		},
-		"azure only CVMs": {
+		"azure only CVMs (SNP)": {
 			provider:       cloudprovider.Azure,
-			instanceTypes:  instancetypes.AzureCVMInstanceTypes,
+			instanceTypes:  instancetypes.AzureSNPInstanceTypes,
+			expectedResult: true,
+		},
+		"azure only CVMs (TDX)": {
+			provider:       cloudprovider.Azure,
+			instanceTypes:  instancetypes.AzureTDXInstanceTypes,
 			expectedResult: true,
 		},
 		"azure CVMs but CVMs disabled": {
 			provider:       cloudprovider.Azure,
-			instanceTypes:  instancetypes.AzureCVMInstanceTypes,
+			instanceTypes:  instancetypes.AzureSNPInstanceTypes,
 			nonCVMsAllowed: true,
 			expectedResult: false,
 		},
@@ -757,7 +762,7 @@ func TestValidInstanceTypeForProvider(t *testing.T) {
 		},
 		"put azure when gcp is set": {
 			provider:       cloudprovider.GCP,
-			instanceTypes:  instancetypes.AzureCVMInstanceTypes,
+			instanceTypes:  instancetypes.AzureSNPInstanceTypes,
 			expectedResult: false,
 		},
 		"put azure when gcp is set with CVMs disabled": {

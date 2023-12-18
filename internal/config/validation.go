@@ -452,9 +452,14 @@ func (c *Config) translateAzureInstanceTypeError(ut ut.Translator, fe validator.
 
 	attestVariant := c.GetAttestationConfig().GetVariant()
 
-	instances := instancetypes.AzureCVMInstanceTypes
-	if attestVariant.Equal(variant.AzureTrustedLaunch{}) {
+	var instances []string
+	switch attestVariant.String() {
+	case variant.AzureTrustedLaunch{}.String():
 		instances = instancetypes.AzureTrustedLaunchInstanceTypes
+	case variant.AzureSEVSNP{}.String():
+		instances = instancetypes.AzureSNPInstanceTypes
+	case variant.AzureTDX{}.String():
+		instances = instancetypes.AzureTDXInstanceTypes
 	}
 
 	t, _ = ut.T("instance_type", fe.Field(), fmt.Sprintf("%v", instances))
@@ -515,7 +520,12 @@ func validInstanceTypeForProvider(insType string, acceptNonCVM bool, provider cl
 				}
 			}
 		} else {
-			for _, instanceType := range instancetypes.AzureCVMInstanceTypes {
+			for _, instanceType := range instancetypes.AzureTDXInstanceTypes {
+				if insType == instanceType {
+					return true
+				}
+			}
+			for _, instanceType := range instancetypes.AzureSNPInstanceTypes {
 				if insType == instanceType {
 					return true
 				}
