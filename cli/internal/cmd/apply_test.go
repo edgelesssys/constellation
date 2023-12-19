@@ -536,7 +536,7 @@ type stubConstellApplier struct {
 
 func (s *stubConstellApplier) SetKubeConfig([]byte) error { return nil }
 
-func (s *stubConstellApplier) CheckLicense(context.Context, cloudprovider.Provider, string) (int, error) {
+func (s *stubConstellApplier) CheckLicense(context.Context, cloudprovider.Provider, bool, string) (int, error) {
 	return 0, s.checkLicenseErr
 }
 
