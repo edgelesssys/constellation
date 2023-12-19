@@ -1,9 +1,6 @@
 name: e2e test Terraform provider example
 
 on:
-  push:
-    branches:
-      - feat/ci/test-provider-example
   workflow_dispatch:
     inputs:
       ref:
@@ -23,8 +20,8 @@ on:
       image:
         description: "OS Image version used in the cluster's VMs, as specified in the Constellation config. If not set, the latest nightly image from main is used."
         type: string
-      cliVersion:
-        description: "Constellation CLI version to use. Empty value means build from source."
+      providerVersion:
+        description: "Constellation Terraform provider version to use. Empty value means build from source."
         type: string
   workflow_call:
     inputs:
@@ -41,12 +38,12 @@ on:
       image:
         description: "OS Image version used in the cluster's VMs, as specified in the Constellation config. If not set, the latest nightly image from main is used."
         type: string
-      cliVersion:
-        description: "Constellation CLI version to use. Empty value means build from source."
+      providerVersion:
+        description: "Constellation Terraform provider version to use. Empty value means build from source."
         type: string
 
 jobs:
-  tf-module-test:
+  provider-example-test:
     runs-on: ubuntu-22.04
     permissions:
       id-token: write
@@ -71,7 +68,7 @@ jobs:
       - name: Upload Terraform module
         uses: ./.github/actions/upload_terraform_module
         with:
-          version: ${{ inputs.cliVersion }}
+          version: ${{ inputs.providerVersion }}
 
       - name: Download Terraform module
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
@@ -110,7 +107,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup bazel
-        if: inputs.cliVersion == ''
+        if: inputs.providerVersion == ''
         uses: ./.github/actions/setup_bazel_nix
         with:
           useCache: "true"
@@ -136,13 +133,14 @@ jobs:
           terraform_provider_dir="${HOME}/.terraform.d/plugins/registry.terraform.io/edgelesssys/constellation/${build_version#v}/linux_amd64/"
           mkdir -p "${terraform_provider_dir}"
           mv build/terraform-provider-constellation "${terraform_provider_dir}/terraform-provider-constellation_${build_version}"
-          echo "BUILD_VERSION=${build_version}"
+          echo "build_version=${build_version}" | tee -a "$GITHUB_OUTPUT"
+
 
       #- name: Download Provider
-      #  if: inputs.cliVersion != ''
+      #  if: inputs.providerVersion != ''
       #  shell: bash
       #  run: |
-      #    curl -fsSL -o constellation https://github.com/edgelesssys/constellation/releases/download/${{ inputs.cliVersion }}/constellation-linux-amd64
+      #    curl -fsSL -o constellation https://github.com/edgelesssys/constellation/releases/download/${{ inputs.providerVersion }}/constellation-linux-amd64
       #    chmod u+x constellation
       #    ./constellation version
       #    sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts'
@@ -168,19 +166,27 @@ jobs:
         with:
           service_account: "terraform-e2e@constellation-e2e.iam.gserviceaccount.com"
 
-      - name: Create GCP TF overrides
+      - name: Get GCP region
+        if: inputs.cloudProvider == 'gcp'
+        id: get_gcp_region
+        shell: bash
+        run: |
+         echo "region=$(echo ${{ inputs.regionZone || 'europe-west3-b' }} | rev | cut -c 3- | rev)" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Create GCP Terraform overrides
         if: inputs.cloudProvider == 'gcp'
         working-directory: ${{ github.workspace }}
         shell: bash
         run: |
           mkdir cluster
           cd cluster
+          version="$(echo ${{ steps.install_tf_provider.outputs.build_version }} | cut -c 2-)"
           cat > _override.tf <<EOF
           terraform {
             required_providers {
               constellation = {
                 source  = "edgelesssys/constellation"
-                version = "${{ steps.install_tf_provider.outputs.BUILD_VERSION }}" # TODO support released versions
+                version = "${version}" # TODO support released versions
               }
             }
           }
@@ -188,6 +194,8 @@ jobs:
             name                = "${{ steps.create-prefix.outputs.prefix }}"
             version            = "${{ steps.find-latest-image.outputs.image }}"
             project_id         = "constellation-e2e"
+            region = "${{ steps.get_gcp_region.outputs.region }}"
+            zone = "${{ inputs.regionZone || 'europe-west3-b' }}"
 
           }
           module "gcp_iam" {
@@ -203,7 +211,7 @@ jobs:
         working-directory: ${{ github.workspace }}
         shell: bash
         run: |
-          cp ${{ github.workspace }}/terraform-provider-constellation/examples/full/${{ inputs.cloudProvider }}_cluster.tf ${{ github.workspace }}/cluster/main.tf
+          cp ${{ github.workspace }}/terraform-provider-constellation/examples/full/${{ inputs.cloudProvider }}/main.tf ${{ github.workspace }}/cluster/main.tf
 
       - name: Apply Terraform Cluster
         id: apply_terraform
@@ -211,7 +219,7 @@ jobs:
         shell: bash
         run: |
           terraform init
-          terraform apply -auto-approve
+          TF_LOG=INFO terraform apply -auto-approve
 
       - name: Destroy Terraform Cluster
       # outcome is part of the steps context (https://docs.github.com/en/actions/learn-github-actions/contexts#steps-context)
