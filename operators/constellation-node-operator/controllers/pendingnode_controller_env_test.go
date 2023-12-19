@@ -43,6 +43,22 @@ var _ = Describe("PendingNode controller", func() {
 		interval = time.Millisecond * 250
 	)
 
+	beGone := func() OmegaMatcher {
+		return MatchError(&errors.StatusError{
+			ErrStatus: metav1.Status{
+				Status:  "Failure",
+				Message: `pendingnodes.update.edgeless.systems "pending-node" not found`,
+				Reason:  "NotFound",
+				Details: &metav1.StatusDetails{
+					Name:  pendingNodeName,
+					Group: "update.edgeless.systems",
+					Kind:  "pendingnodes",
+				},
+				Code: http.StatusNotFound,
+			},
+		})
+	}
+
 	pendingNodeLookupKey := types.NamespacedName{Name: pendingNodeName}
 
 	Context("When creating pending node with goal join", func() {
@@ -107,27 +123,17 @@ var _ = Describe("PendingNode controller", func() {
 			fakes.nodeStateGetter.setNodeState(updatev1alpha1.NodeStateTerminated)
 			// trigger reconciliation before regular check interval to speed up test by changing the spec
 			Eventually(func() error {
-				Expect(k8sClient.Get(ctx, pendingNodeLookupKey, pendingNode)).Should(Succeed())
+				if err := k8sClient.Get(ctx, pendingNodeLookupKey, pendingNode); err != nil {
+					return err
+				}
 				pendingNode.Spec.Deadline = &metav1.Time{Time: fakes.clock.Now().Add(time.Second)}
 				return k8sClient.Update(ctx, pendingNode)
-			}, timeout, interval).Should(Succeed())
+			}, timeout, interval).Should(Or(Succeed(), beGone()))
 
 			By("checking if the pending node resource is deleted")
 			Eventually(func() error {
 				return k8sClient.Get(ctx, pendingNodeLookupKey, createdPendingNode)
-			}, timeout, interval).Should(MatchError(&errors.StatusError{
-				ErrStatus: metav1.Status{
-					Status:  "Failure",
-					Message: `pendingnodes.update.edgeless.systems "pending-node" not found`,
-					Reason:  "NotFound",
-					Details: &metav1.StatusDetails{
-						Name:  pendingNodeName,
-						Group: "update.edgeless.systems",
-						Kind:  "pendingnodes",
-					},
-					Code: http.StatusNotFound,
-				},
-			}))
+			}, timeout, interval).Should(beGone())
 		})
 
 		It("Should should detect successful node join", func() {
