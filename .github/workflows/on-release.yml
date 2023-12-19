@@ -32,11 +32,7 @@ jobs:
 
       - name: Determine branch names
         run: |
-          WITHOUT_V=${FULL_VERSION#v}
-          PART_MAJOR=${WITHOUT_V%%.*}
-          PART_MINOR=${WITHOUT_V#*.}
-          MAJOR_MINOR=${PART_MAJOR}.${PART_MINOR}
-          RELEASE_BRANCH="release/v${MAJOR_MINOR}"
+          RELEASE_BRANCH="release/${FULL_VERSION%.*}"
           WORKING_BRANCH="tmp/${FULL_VERSION}"
           echo "RELEASE_BRANCH=${RELEASE_BRANCH}" | tee -a "$GITHUB_ENV"
           echo "WORKING_BRANCH=${WORKING_BRANCH}" | tee -a "$GITHUB_ENV"
