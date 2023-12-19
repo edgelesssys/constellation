@@ -29,16 +29,6 @@ load("//bazel/oci:pin.bzl", "oci_sum", "oci_sum_merge")
     for container in containers()
 ]
 
-# TODO(3u13r): re-enable target once https://github.com/bazel-contrib/rules_oci/issues/184 is fixed
-# [
-#     oci_tarball(
-#         name = container["name"] + "_tar",
-#         image = container["oci"],
-#         repotag_file = container["repotag_file"],
-#     )
-#     for container in containers()
-# ]
-
 [
     oci_sum(
         name = container["name"] + "_sum",
@@ -62,7 +52,8 @@ oci_sum_merge(
     oci_push(
         name = container["name"] + "_push",
         image = container["oci"],
-        repotags = container["repotag_file"],
+        remote_tags = "//bazel/settings:tag",
+        repository_file = "//bazel/release:" + container["name"] + "_reponame",
     )
     for container in containers()
 ]
