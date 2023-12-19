@@ -21,7 +21,7 @@ on:
         description: "OS Image version used in the cluster's VMs, as specified in the Constellation config. If not set, the latest nightly image from main is used."
         type: string
       providerVersion:
-        description: "Constellation Terraform provider version to use. Empty value means build from source."
+        description: "Constellation Terraform provider version to use (without v prefix). Empty value means build from source."
         type: string
   workflow_call:
     inputs:
@@ -114,6 +114,7 @@ jobs:
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
 
       - name: Build Terraform provider binary
+        if: inputs.providerVersion == ''
         uses: ./.github/actions/build_tf_provider
         with:
           targetOS: 'linux'
@@ -121,6 +122,7 @@ jobs:
           outputPath: "build/terraform-provider-constellation"
 
       - name: Move Terraform provider binary
+        if: inputs.providerVersion == ''
         shell: bash
         id: install_tf_provider
         run: |
@@ -134,16 +136,6 @@ jobs:
           mkdir -p "${terraform_provider_dir}"
           mv build/terraform-provider-constellation "${terraform_provider_dir}/terraform-provider-constellation_${build_version}"
           echo "build_version=${build_version}" | tee -a "$GITHUB_OUTPUT"
-
-
-      #- name: Download Provider
-      #  if: inputs.providerVersion != ''
-      #  shell: bash
-      #  run: |
-      #    curl -fsSL -o constellation https://github.com/edgelesssys/constellation/releases/download/${{ inputs.providerVersion }}/constellation-linux-amd64
-      #    chmod u+x constellation
-      #    ./constellation version
-      #    sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts'
 
       - name: Login to AWS (IAM + Cluster role)
         if: inputs.cloudProvider == 'aws'
@@ -166,43 +158,75 @@ jobs:
         with:
           service_account: "terraform-e2e@constellation-e2e.iam.gserviceaccount.com"
 
-      - name: Get GCP region
-        if: inputs.cloudProvider == 'gcp'
-        id: get_gcp_region
-        shell: bash
-        run: |
-         echo "region=$(echo ${{ inputs.regionZone || 'europe-west3-b' }} | rev | cut -c 3- | rev)" | tee -a "$GITHUB_OUTPUT"
-
-      - name: Create GCP Terraform overrides
-        if: inputs.cloudProvider == 'gcp'
+      - name: Common CSP Terraform overrides
         working-directory: ${{ github.workspace }}
         shell: bash
         run: |
           mkdir cluster
           cd cluster
-          version="$(echo ${{ steps.install_tf_provider.outputs.build_version }} | cut -c 2-)"
+          if [[ "${{ inputs.providerVersion }}" == "" ]]; then
+            # cut v prefix
+            version="$(echo ${{ steps.install_tf_provider.outputs.build_version }} | cut -c 2-)"
+          else
+            version="${{ inputs.providerVersion }}"
+          fi
+          echo $version
           cat > _override.tf <<EOF
           terraform {
             required_providers {
               constellation = {
                 source  = "edgelesssys/constellation"
-                version = "${version}" # TODO support released versions
+                version = "${version}"
               }
             }
           }
           locals {
             name                = "${{ steps.create-prefix.outputs.prefix }}"
             version            = "${{ steps.find-latest-image.outputs.image }}"
-            project_id         = "constellation-e2e"
-            region = "${{ steps.get_gcp_region.outputs.region }}"
-            zone = "${{ inputs.regionZone || 'europe-west3-b' }}"
+          }
+          if [[ "${{ inputs.providerVersion }}" == "" ]]; then
+            iam_src = "../terraform-module/iam/${{ inputs.cloudProvider }}"
+            infra_src = "../terraform-module/${{ inputs.cloudProvider }}"
+          else
+            iam_src = "https://github.com/edgelesssys/constellation/releases/download/${{ inputs.providerVersion }}/terraform-module.zip//terraform-module/iam/${{ inputs.cloudProvider }}"
+            infra_src = ""https://github.com/edgelesssys/constellation/releases/download/${{ inputs.providerVersion }}/terraform-module.zip//terraform-module/${{ inputs.cloudProvider }}"
+          fi
+          module "${{ inputs.cloudProvider }}_iam" {
+            source = ${iam_src}
+          }
+          module "${{ inputs.cloudProvider }}_infrastructure" {
+            source = ${infra_src}
+          }
+          EOF
+          cat _override.tf
 
+      - name: Create GCP Terraform overrides
+        if: inputs.cloudProvider == 'gcp'
+        working-directory: ${{ github.workspace }}/cluster
+        shell: bash
+        run: |
+          region=$(echo ${{ inputs.regionZone || 'europe-west3-b' }} | rev | cut -c 3- | rev)
+
+          cat >> _override.tf <<EOF
+          locals {
+            project_id         = "constellation-e2e"
+            region = "${region}"
+            zone = "${{ inputs.regionZone || 'europe-west3-b' }}"
           }
-          module "gcp_iam" {
-            source = "../terraform-module/iam/${{ inputs.cloudProvider }}"
-          }
-          module "gcp_infrastructure" {
-            source = "../terraform-module/${{ inputs.cloudProvider }}"
+          EOF
+          cat _override.tf
+
+      - name: Create AWS Terraform overrides
+        if: inputs.cloudProvider == 'aws'
+        working-directory: ${{ github.workspace }}/cluster
+        shell: bash
+        run: |
+          region=$(echo ${{ inputs.regionZone || 'us-east-2c' }} | rev | cut -c 2- | rev)
+
+          cat >> _override.tf <<EOF
+          locals {
+            region = "${region}"
+            zone = "${{ inputs.regionZone || 'us-east-2c' }}"
           }
           EOF
           cat _override.tf
