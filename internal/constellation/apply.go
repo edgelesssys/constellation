@@ -35,7 +35,7 @@ type Applier struct {
 }
 
 type licenseChecker interface {
-	CheckLicense(context.Context, cloudprovider.Provider, string) (license.QuotaCheckResponse, error)
+	CheckLicense(ctx context.Context, csp cloudprovider.Provider, initRequest bool, licenseID string) (int, error)
 }
 
 type debugLog interface {
@@ -51,7 +51,7 @@ func NewApplier(
 	return &Applier{
 		log:            log,
 		spinner:        spinner,
-		licenseChecker: license.NewChecker(license.NewClient()),
+		licenseChecker: license.NewChecker(),
 		newDialer:      newDialer,
 	}
 }
@@ -73,15 +73,15 @@ func (a *Applier) SetKubeConfig(kubeConfig []byte) error {
 
 // CheckLicense checks the given Constellation license with the license server
 // and returns the allowed quota for the license.
-func (a *Applier) CheckLicense(ctx context.Context, csp cloudprovider.Provider, licenseID string) (int, error) {
+func (a *Applier) CheckLicense(ctx context.Context, csp cloudprovider.Provider, initRequest bool, licenseID string) (int, error) {
 	a.log.Debugf("Contacting license server for license '%s'", licenseID)
-	quotaResp, err := a.licenseChecker.CheckLicense(ctx, csp, licenseID)
+	quota, err := a.licenseChecker.CheckLicense(ctx, csp, initRequest, licenseID)
 	if err != nil {
 		return 0, fmt.Errorf("checking license: %w", err)
 	}
 	a.log.Debugf("Got response from license server for license '%s'", licenseID)
 
-	return quotaResp.Quota, nil
+	return quota, nil
 }
 
 // GenerateMasterSecret generates a new master secret.

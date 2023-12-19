@@ -12,6 +12,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/license"
 	"github.com/stretchr/testify/assert"
 )
@@ -36,20 +37,16 @@ func TestQuotaCheckIntegration(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			client := license.NewClient()
+			client := license.NewChecker()
 
-			req := license.QuotaCheckRequest{
-				Action:  license.Action("test"),
-				License: tc.license,
-			}
-			resp, err := client.QuotaCheck(context.Background(), req)
+			quota, err := client.CheckLicense(context.Background(), cloudprovider.Unknown, license.InitRequest, tc.license)
 
 			if tc.wantError {
 				assert.Error(err)
 				return
 			}
 			assert.NoError(err)
-			assert.Equal(tc.wantQuota, resp.Quota)
+			assert.Equal(tc.wantQuota, quota)
 		})
 	}
 }
