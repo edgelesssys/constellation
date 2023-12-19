@@ -171,6 +171,17 @@ jobs:
             version="${{ inputs.providerVersion }}"
           fi
           echo $version
+
+          if [[ "${{ inputs.providerVersion }}" == "" ]]; then
+            iam_src="../terraform-module/iam/${{ inputs.cloudProvider }}"
+            infra_src="../terraform-module/${{ inputs.cloudProvider }}"
+          else
+            iam_src="https://github.com/edgelesssys/constellation/releases/download/${{ inputs.providerVersion }}/terraform-module.zip//terraform-module/iam/${{ inputs.cloudProvider }}"
+            infra_src="https://github.com/edgelesssys/constellation/releases/download/${{ inputs.providerVersion }}/terraform-module.zip//terraform-module/${{ inputs.cloudProvider }}"
+          fi
+          echo $iam_src
+          echo $infra_src
+
           cat > _override.tf <<EOF
           terraform {
             required_providers {
@@ -184,18 +195,11 @@ jobs:
             name                = "${{ steps.create-prefix.outputs.prefix }}"
             version            = "${{ steps.find-latest-image.outputs.image }}"
           }
-          if [[ "${{ inputs.providerVersion }}" == "" ]]; then
-            iam_src = "../terraform-module/iam/${{ inputs.cloudProvider }}"
-            infra_src = "../terraform-module/${{ inputs.cloudProvider }}"
-          else
-            iam_src = "https://github.com/edgelesssys/constellation/releases/download/${{ inputs.providerVersion }}/terraform-module.zip//terraform-module/iam/${{ inputs.cloudProvider }}"
-            infra_src = ""https://github.com/edgelesssys/constellation/releases/download/${{ inputs.providerVersion }}/terraform-module.zip//terraform-module/${{ inputs.cloudProvider }}"
-          fi
           module "${{ inputs.cloudProvider }}_iam" {
-            source = ${iam_src}
+            source = "${iam_src}"
           }
           module "${{ inputs.cloudProvider }}_infrastructure" {
-            source = ${infra_src}
+            source = "${infra_src}"
           }
           EOF
           cat _override.tf
@@ -239,11 +243,33 @@ jobs:
 
       - name: Apply Terraform Cluster
         id: apply_terraform
+        if: inputs.cloudProvider != 'azure'
         working-directory: ${{ github.workspace }}/cluster
         shell: bash
         run: |
           terraform init
           TF_LOG=INFO terraform apply -auto-approve
+
+      - name: Download CLI
+        if: inputs.cloudProvider == 'azure'
+        shell: bash
+        run: |
+          curl -fsSL -o constellation https://github.com/edgelesssys/constellation/releases/download/v2.13.0/constellation-linux-amd64
+          chmod u+x constellation
+          ./constellation version
+          cp ./constellation ${{ github.workspace }}/cluster
+
+      - name: Apply Azure Terraform Cluster
+        id: apply_azure_terraform
+        if: inputs.cloudProvider == 'azure'
+        working-directory: ${{ github.workspace }}/cluster
+        shell: bash
+        run: |
+          terraform init
+          terraform apply -target module.azure_iam -auto-approve
+          terraform apply -target module.azure_infrastructure -auto-approve
+          ./constellation maa-patch $(terraform output -raw maa_url)
+          TF_LOG=INFO terraform apply -target constellation_cluster.azure_example -auto-approve
 
       - name: Destroy Terraform Cluster
       # outcome is part of the steps context (https://docs.github.com/en/actions/learn-github-actions/contexts#steps-context)
