@@ -8,6 +8,7 @@ go_test(
         "requires-network",
     ],
     deps = [
+        "//internal/cloud/cloudprovider",
         "//internal/license",
         "@com_github_stretchr_testify//assert",
     ],

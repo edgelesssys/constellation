@@ -244,7 +244,7 @@ func runApply(cmd *cobra.Command, _ []string) error {
 		)
 	}
 
-	applier := constellation.NewApplier(log, spinner, newDialer)
+	applier := constellation.NewApplier(log, spinner, constellation.ApplyContextCLI, newDialer)
 
 	apply := &applyCmd{
 		fileHandler:     fileHandler,

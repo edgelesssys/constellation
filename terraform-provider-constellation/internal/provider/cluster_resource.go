@@ -33,6 +33,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constellation/state"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
+	"github.com/edgelesssys/constellation/v2/internal/license"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	datastruct "github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/data"
@@ -82,6 +83,7 @@ type ClusterResourceModel struct {
 	MasterSecretSalt     types.String `tfsdk:"master_secret_salt"`
 	MeasurementSalt      types.String `tfsdk:"measurement_salt"`
 	InitSecret           types.String `tfsdk:"init_secret"`
+	LicenseID            types.String `tfsdk:"license_id"`
 	Attestation          types.Object `tfsdk:"attestation"`
 	GCP                  types.Object `tfsdk:"gcp"`
 	Azure                types.Object `tfsdk:"azure"`
@@ -232,7 +234,14 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Description:         "Secret used for initialization of the cluster.",
 				Required:            true,
 			},
+			"license_id": schema.StringAttribute{
+				MarkdownDescription: "Constellation license ID. When not set, the community license is used.",
+				Description:         "Constellation license ID. When not set, the community license is used.",
+				Optional:            true,
+			},
 			"attestation": newAttestationConfigAttributeSchema(attributeInput),
+
+			// CSP specific inputs
 			"gcp": schema.SingleNestedAttribute{
 				MarkdownDescription: "GCP-specific configuration.",
 				Description:         "GCP-specific configuration.",
@@ -352,25 +361,39 @@ func (r *ClusterResource) Configure(_ context.Context, req resource.ConfigureReq
 	}
 
 	r.newApplier = func(ctx context.Context, validator atls.Validator) *constellation.Applier {
-		return constellation.NewApplier(&tfContextLogger{ctx: ctx}, &nopSpinner{}, newDialer)
+		return constellation.NewApplier(&tfContextLogger{ctx: ctx}, &nopSpinner{}, constellation.ApplyContextTerraform, newDialer)
 	}
 }
 
 // ModifyPlan is called when the resource is planned for creation, updates, or deletion. This allows to set pre-apply
 // warnings and errors.
 func (r *ClusterResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() {
+		return
+	}
+
+	// Read plannedState supplied by Terraform runtime into the model
+	var plannedState ClusterResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plannedState)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	licenseID := plannedState.LicenseID.ValueString()
+	if licenseID == "" {
+		resp.Diagnostics.AddWarning("Constellation license not found.",
+			"Using community license.\nFor details, see https://docs.edgeless.systems/constellation/overview/license")
+	}
+	if licenseID == license.CommunityLicense {
+		resp.Diagnostics.AddWarning("Using community license.",
+			"For details, see https://docs.edgeless.systems/constellation/overview/license")
+	}
+
 	// Checks running on updates to the resource. (i.e. state and plan != nil)
-	if !req.Plan.Raw.IsNull() && !req.State.Raw.IsNull() {
+	if !req.State.Raw.IsNull() {
 		// Read currentState supplied by Terraform runtime into the model
 		var currentState ClusterResourceModel
 		resp.Diagnostics.Append(req.State.Get(ctx, &currentState)...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-
-		// Read plannedState supplied by Terraform runtime into the model
-		var plannedState ClusterResourceModel
-		resp.Diagnostics.Append(req.Plan.Get(ctx, &plannedState)...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
@@ -627,6 +650,12 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 		return diags
 	}
 
+	// parse license ID
+	licenseID := data.LicenseID.ValueString()
+	if licenseID == "" {
+		licenseID = license.CommunityLicense
+	}
+
 	// Parse in-cluster service account info.
 	serviceAccPayload := constellation.ServiceAccountPayload{}
 	var gcpConfig gcpAttribute
@@ -713,6 +742,16 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 			ProjectID: gcpConfig.ProjectID,
 			IPCidrPod: networkCfg.IPCidrPod,
 		}
+	}
+
+	// Check license
+	quota, err := applier.CheckLicense(ctx, csp, !skipInitRPC, licenseID)
+	if err != nil {
+		diags.AddWarning("Unable to contact license server.", "Please keep your vCPU quota in mind.")
+	} else if licenseID == license.CommunityLicense {
+		diags.AddWarning("Using community license.", "For details, see https://docs.edgeless.systems/constellation/overview/license")
+	} else {
+		tflog.Info(ctx, fmt.Sprintf("Please keep your vCPU quota (%d) in mind.", quota))
 	}
 
 	// Now, we perform the actual applying.

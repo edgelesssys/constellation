@@ -369,7 +369,7 @@ func TestWriteOutput(t *testing.T) {
 		spinner:     &nopSpinner{},
 		merger:      &stubMerger{},
 		log:         logger.NewTest(t),
-		applier:     constellation.NewApplier(logger.NewTest(t), &nopSpinner{}, nil),
+		applier:     constellation.NewApplier(logger.NewTest(t), &nopSpinner{}, constellation.ApplyContextCLI, nil),
 	}
 	err = i.writeInitOutput(stateFile, initOutput, false, &out, measurementSalt)
 	require.NoError(err)
@@ -461,7 +461,7 @@ func TestGenerateMasterSecret(t *testing.T) {
 			i := &applyCmd{
 				fileHandler: fileHandler,
 				log:         logger.NewTest(t),
-				applier:     constellation.NewApplier(logger.NewTest(t), &nopSpinner{}, nil),
+				applier:     constellation.NewApplier(logger.NewTest(t), &nopSpinner{}, constellation.ApplyContextCLI, nil),
 			}
 			secret, err := i.generateAndPersistMasterSecret(&out)
 

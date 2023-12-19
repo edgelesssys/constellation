@@ -22,10 +22,7 @@ go_library(
 
 go_test(
     name = "license_test",
-    srcs = [
-        "file_test.go",
-        "license_test.go",
-    ],
+    srcs = ["file_test.go"],
     embed = [":license"],
     deps = [
         "@com_github_stretchr_testify//assert",

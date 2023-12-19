@@ -83,7 +83,7 @@ func TestQuotaCheck(t *testing.T) {
 				}),
 			}
 
-			quota, err := client.CheckLicense(context.Background(), cloudprovider.Unknown, InitRequest, tc.license)
+			quota, err := client.CheckLicense(context.Background(), cloudprovider.Unknown, Init, tc.license)
 
 			if tc.wantError {
 				assert.Error(err)

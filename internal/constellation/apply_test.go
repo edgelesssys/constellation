@@ -38,7 +38,7 @@ func TestCheckLicense(t *testing.T) {
 			require := require.New(t)
 
 			a := &Applier{licenseChecker: tc.licenseChecker, log: logger.NewTest(t)}
-			_, err := a.CheckLicense(context.Background(), cloudprovider.Unknown, license.InitRequest, license.CommunityLicense)
+			_, err := a.CheckLicense(context.Background(), cloudprovider.Unknown, true, license.CommunityLicense)
 			if tc.wantErr {
 				require.Error(err)
 			} else {
@@ -52,7 +52,7 @@ type stubLicenseChecker struct {
 	checkLicenseErr error
 }
 
-func (c *stubLicenseChecker) CheckLicense(context.Context, cloudprovider.Provider, bool, string) (int, error) {
+func (c *stubLicenseChecker) CheckLicense(context.Context, cloudprovider.Provider, license.Action, string) (int, error) {
 	return 0, c.checkLicenseErr
 }
 

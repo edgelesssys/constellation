@@ -23,6 +23,6 @@ func NewChecker() *Checker {
 }
 
 // CheckLicense is a no-op for open source version of Constellation.
-func (c *Checker) CheckLicense(context.Context, cloudprovider.Provider, bool, string) (int, error) {
+func (c *Checker) CheckLicense(context.Context, cloudprovider.Provider, Action, string) (int, error) {
 	return 0, nil
 }
