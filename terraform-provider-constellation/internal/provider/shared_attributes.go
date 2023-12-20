@@ -171,7 +171,7 @@ func newImageAttributeSchema(t attributeType) schema.Attribute {
 				Computed:            !isInput,
 				Required:            isInput,
 				Validators: []validator.String{
-					stringvalidator.RegexMatches(semverRegex, "must be a valid semantic version"),
+					stringvalidator.RegexMatches(semverRegex, "must be a valid semantic version with a v prefix in the form of vX.Y.Z"),
 				},
 			},
 			"reference": schema.StringAttribute{
