@@ -287,7 +287,7 @@ jobs:
             TF_LOG=INFO terraform apply -auto-approve
           fi
 
-      - name: Upgrade cluster
+      - name: Update cluster configuration
         working-directory: ${{ github.workspace }}/cluster
         shell: bash
         run: |

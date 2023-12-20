@@ -1,3 +1,5 @@
+//go:build e2e
+
 /*
 Copyright (c) Edgeless Systems GmbH
 
