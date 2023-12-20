@@ -87,7 +87,7 @@ jobs:
         run: |
           run_id=${{ github.run_id }}
           last_three="${run_id: -3}"
-          echo "prefix=e2e-${last_three}" | tee -a "$GITHUB_OUTPUT"
+          echo "prefix=e2e-${last_three}-${{ github.run_attempt }}" | tee -a "$GITHUB_OUTPUT"
 
       - name: Install dependencies (Terraform)
         shell: bash
@@ -171,7 +171,6 @@ jobs:
           else
             version="${{ inputs.providerVersion }}"
           fi
-          echo $version
 
           if [[ "${{ inputs.providerVersion }}" == "" ]]; then
             iam_src="../terraform-module/iam/${{ inputs.cloudProvider }}"
@@ -180,8 +179,6 @@ jobs:
             iam_src="https://github.com/edgelesssys/constellation/releases/download/${{ inputs.providerVersion }}/terraform-module.zip//terraform-module/iam/${{ inputs.cloudProvider }}"
             infra_src="https://github.com/edgelesssys/constellation/releases/download/${{ inputs.providerVersion }}/terraform-module.zip//terraform-module/${{ inputs.cloudProvider }}"
           fi
-          echo $iam_src
-          echo $infra_src
 
           cat > _override.tf <<EOF
           terraform {
