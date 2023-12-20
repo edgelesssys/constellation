@@ -89,49 +89,6 @@ jobs:
           last_three="${run_id: -3}"
           echo "prefix=e2e-${last_three}-${{ github.run_attempt }}" | tee -a "$GITHUB_OUTPUT"
 
-      - name: Common CSP Terraform overrides
-        working-directory: ${{ github.workspace }}
-        shell: bash
-        run: |
-          mkdir cluster
-          cd cluster
-          if [[ "${{ inputs.providerVersion }}" == "" ]]; then
-            vversion="v2.14.0-pre.0.20231214193540-2c50abcc919b"
-          else
-            vversion="${{ inputs.providerVersion }}"
-          fi
-          version=${vversion#v} # remove v prefix
-
-          if [[ "${{ inputs.providerVersion }}" == "" ]]; then
-            iam_src="../terraform-module/iam/${{ inputs.cloudProvider }}"
-            infra_src="../terraform-module/${{ inputs.cloudProvider }}"
-          else
-            iam_src="https://github.com/edgelesssys/constellation/releases/download/${{ inputs.providerVersion }}/terraform-module.zip//terraform-module/iam/${{ inputs.cloudProvider }}"
-            infra_src="https://github.com/edgelesssys/constellation/releases/download/${{ inputs.providerVersion }}/terraform-module.zip//terraform-module/${{ inputs.cloudProvider }}"
-          fi
-
-          cat > _override.tf <<EOF
-          terraform {
-            required_providers {
-              constellation = {
-                source  = "edgelesssys/constellation"
-                version = "${version}"
-              }
-            }
-          }
-          locals {
-            name                = "${{ steps.create-prefix.outputs.prefix }}"
-            version            = "${vversion}"
-          }
-          module "${{ inputs.cloudProvider }}_iam" {
-            source = "${iam_src}"
-          }
-          module "${{ inputs.cloudProvider }}_infrastructure" {
-            source = "${infra_src}"
-          }
-          EOF
-          cat _override.tf
-
       - name: Install dependencies (Terraform)
         shell: bash
         run: |
@@ -203,17 +160,16 @@ jobs:
 
       - name: Common CSP Terraform overrides
         working-directory: ${{ github.workspace }}
-        id: common_override
         shell: bash
         run: |
           mkdir cluster
           cd cluster
           if [[ "${{ inputs.providerVersion }}" == "" ]]; then
-            version=${{ steps.install_tf_provider.outputs.build_version }}
+            vversion=${{ steps.install_tf_provider.outputs.build_version }}
           else
-            version="${{ inputs.providerVersion }}"
+            vversion="${{ inputs.providerVersion }}"
           fi
-          version=${version#v} # remove v prefix
+          version=${vversion#v} # remove v prefix
 
           if [[ "${{ inputs.providerVersion }}" == "" ]]; then
             iam_src="../terraform-module/iam/${{ inputs.cloudProvider }}"
@@ -228,7 +184,7 @@ jobs:
             required_providers {
               constellation = {
                 source  = "edgelesssys/constellation"
-                version = "${version}"
+                version            = "${version}"
               }
             }
           }
