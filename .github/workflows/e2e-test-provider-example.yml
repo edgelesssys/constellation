@@ -111,7 +111,7 @@ jobs:
         run: |
           run_id=${{ github.run_id }}
           last_three="${run_id: -3}"
-          echo "prefix=e2e-${last_three}-${{ github.run_attempt }}" | tee -a "$GITHUB_OUTPUT"
+          echo "prefix=e2e-${last_three}" | tee -a "$GITHUB_OUTPUT"
 
       - name: Install dependencies (Terraform)
         shell: bash
