@@ -8,6 +8,7 @@ go_test(
     deps = [
         "//e2e/internal/kubectl",
         "//e2e/internal/upgrade",
+        "//internal/config",
         "//internal/semver",
         "//internal/versions",
         "@com_github_stretchr_testify//require",

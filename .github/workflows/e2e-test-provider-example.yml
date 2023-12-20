@@ -356,5 +356,5 @@ jobs:
         uses: ./.github/actions/notify_e2e_failure
         with:
           projectWriteToken: ${{ secrets.PROJECT_WRITE_TOKEN }}
-          test: "terraform-module"
+          test: "terraform-provider-example"
           provider: ${{ inputs.cloudProvider }}
