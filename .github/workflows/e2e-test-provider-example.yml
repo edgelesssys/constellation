@@ -258,19 +258,14 @@ jobs:
         shell: bash
         run: |
           terraform init
-          TF_LOG=INFO terraform apply -auto-approve
-
-      - name: Apply Azure Terraform Cluster
-        id: apply_azure_terraform
-        if: inputs.cloudProvider == 'azure'
-        working-directory: ${{ github.workspace }}/cluster
-        shell: bash
-        run: |
-          terraform init
-          terraform apply -target module.azure_iam -auto-approve
-          terraform apply -target module.azure_infrastructure -auto-approve
-          ./constellation maa-patch $(terraform output -raw maa_url)
-          TF_LOG=INFO terraform apply -target constellation_cluster.azure_example -auto-approve
+          if [[ "${{ inputs.providerVersion }}" == "azure" ]]; then
+            terraform apply -target module.azure_iam -auto-approve
+            terraform apply -target module.azure_infrastructure -auto-approve
+            ./constellation maa-patch $(terraform output -raw maa_url)
+            TF_LOG=INFO terraform apply -target constellation_cluster.azure_example -auto-approve
+          else
+            TF_LOG=INFO terraform apply -auto-approve
+          fi
 
       - name: Upgrade cluster
         working-directory: ${{ github.workspace }}/cluster
@@ -313,7 +308,7 @@ jobs:
 
       - name: Destroy Terraform Cluster
       # outcome is part of the steps context (https://docs.github.com/en/actions/learn-github-actions/contexts#steps-context)
-        if: always() && (steps.apply_terraform.outcome != 'skipped' || steps.apply_azure_terraform.outcome != 'skipped')
+        if: always() && steps.apply_terraform.outcome != 'skipped'
         working-directory: ${{ github.workspace }}/cluster
         shell: bash
         run: |
