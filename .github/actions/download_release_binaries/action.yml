@@ -1,69 +1,55 @@
 name: Download release binaries
 description: "Downloads all binaries created by a different job (and therefore not available in this job) in the release pipeline."
-inputs:
-  encryption-secret:
-    description: 'The secret to use for decrypting the artifact.'
-    required: true
 
 runs:
   using: "composite"
   steps:
     - name: Download CLI binaries darwin-amd64
-      uses: ./.github/actions/artifact_download
+      uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
       with:
         name: constellation-darwin-amd64
-        encryption-secret: ${{ inputs.encryption-secret }}
 
     - name: Download CLI binaries darwin-arm64
-      uses: ./.github/actions/artifact_download
+      uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
       with:
         name: constellation-darwin-arm64
-        encryption-secret: ${{ inputs.encryption-secret }}
 
     - name: Download CLI binaries linux-amd64
-      uses: ./.github/actions/artifact_download
+      uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
       with:
         name: constellation-linux-amd64
-        encryption-secret: ${{ inputs.encryption-secret }}
 
     - name: Download CLI binaries linux-arm64
-      uses: ./.github/actions/artifact_download
+      uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
       with:
         name: constellation-linux-arm64
-        encryption-secret: ${{ inputs.encryption-secret }}
 
     - name: Download CLI binaries windows-amd64
-      uses: ./.github/actions/artifact_download
+      uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
       with:
         name: constellation-windows-amd64
-        encryption-secret: ${{ inputs.encryption-secret }}
 
     - name: Download Terraform module
-      uses: ./.github/actions/artifact_download
+      uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
       with:
         name: terraform-module
-        encryption-secret: ${{ inputs.encryption-secret }}
 
     - name: Download Terraform provider binary darwin-amd64
-      uses: ./.github/actions/artifact_download
+      uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
       with:
         name: terraform-provider-constellation-darwin-amd64
-        encryption-secret: ${{ inputs.encryption-secret }}
 
     - name: Download Terraform provider binary darwin-arm64
-      uses: ./.github/actions/artifact_download
+      uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
       with:
         name: terraform-provider-constellation-darwin-arm64
-        encryption-secret: ${{ inputs.encryption-secret }}
 
     - name: Download Terraform provider binary linux-amd64
-      uses: ./.github/actions/artifact_download
+      uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
       with:
         name: terraform-provider-constellation-linux-amd64
-        encryption-secret: ${{ inputs.encryption-secret }}
 
     - name: Download Terraform provider binary linux-arm64
-      uses: ./.github/actions/artifact_download
+      uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
       with:
         name: terraform-provider-constellation-linux-arm64
-        encryption-secret: ${{ inputs.encryption-secret }}
