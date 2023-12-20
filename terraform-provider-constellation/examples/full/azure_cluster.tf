@@ -96,7 +96,7 @@ resource "constellation_cluster" "azure_example" {
   measurement_salt        = local.measurement_salt
   out_of_cluster_endpoint = module.azure_infrastructure.out_of_cluster_endpoint
   in_cluster_endpoint     = module.azure_infrastructure.in_cluster_endpoint
-  api_server_cert_sans    = module.gcp_infrastructure.api_server_cert_sans
+  api_server_cert_sans    = module.azure_infrastructure.api_server_cert_sans
   azure = {
     tenant_id                   = module.azure_iam.tenant_id
     subscription_id             = module.azure_iam.subscription_id
