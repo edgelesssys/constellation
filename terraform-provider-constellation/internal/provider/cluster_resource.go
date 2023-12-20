@@ -662,9 +662,10 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 	}
 
 	// parse API server certificate SANs
-	apiServerCertSANs := make([]string, 0, len(data.APIServerCertSANs.Elements()))
-	for _, san := range data.APIServerCertSANs.Elements() {
-		apiServerCertSANs = append(apiServerCertSANs, san.String())
+	apiServerCertSANs, convertDiags := r.getAPIServerCertSANs(ctx, data)
+	diags.Append(convertDiags...)
+	if diags.HasError() {
+		return diags
 	}
 
 	// parse network config
@@ -1144,6 +1145,15 @@ func (r *ClusterResource) getNetworkConfig(ctx context.Context, data *ClusterRes
 		UnhandledNullAsEmpty: true, // we want to allow null values, as some of the field's subfields are optional.
 	})
 	return networkCfg, diags
+}
+
+func (r *ClusterResource) getAPIServerCertSANs(ctx context.Context, data *ClusterResourceModel) ([]string, diag.Diagnostics) {
+	if data.APIServerCertSANs.IsNull() {
+		return nil, nil
+	}
+	apiServerCertSANs := make([]string, 0, len(data.APIServerCertSANs.Elements()))
+	diags := data.APIServerCertSANs.ElementsAs(ctx, &apiServerCertSANs, false)
+	return apiServerCertSANs, diags
 }
 
 // tfContextLogger is a logging adapter between the tflog package and
