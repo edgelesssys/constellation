@@ -18,7 +18,7 @@ on:
         description: "Region or zone to create the cluster in. Leave empty for default region/zone."
         type: string
       image:
-        description: "OS Image version used in the cluster's VMs, as specified in the Constellation config. If not set, the latest nightly image from main is used."
+        description: "OS Image version used in the cluster's VMs. If not set, the latest nightly image from main is used."
         type: string
       providerVersion:
         description: "Constellation Terraform provider version to use (without v prefix). Empty value means build from source."
@@ -87,7 +87,7 @@ jobs:
         run: |
           run_id=${{ github.run_id }}
           last_three="${run_id: -3}"
-          echo "prefix=e2e-${last_three}-${{ github.run_attempt }}" | tee -a "$GITHUB_OUTPUT"
+          echo "prefix=e2e-${last_three}" | tee -a "$GITHUB_OUTPUT"
 
       - name: Install dependencies (Terraform)
         shell: bash
@@ -160,6 +160,7 @@ jobs:
 
       - name: Common CSP Terraform overrides
         working-directory: ${{ github.workspace }}
+        id: common_override
         shell: bash
         run: |
           mkdir cluster
@@ -202,7 +203,7 @@ jobs:
             source = "${infra_src}"
           }
           EOF
-          cat _override.tf
+          echo "common_override=$(cat _override.tf)" | tee -a "$GITHUB_OUTPUT
 
       - name: Create GCP Terraform overrides
         if: inputs.cloudProvider == 'gcp'
@@ -273,7 +274,7 @@ jobs:
 
       - name: Destroy Terraform Cluster
       # outcome is part of the steps context (https://docs.github.com/en/actions/learn-github-actions/contexts#steps-context)
-        if: always() && steps.apply_terraform.outcome != 'skipped'
+        if: always() && (steps.apply_terraform.outcome != 'skipped' || steps.apply_azure_terraform.outcome != 'skipped')
         working-directory: ${{ github.workspace }}/cluster
         shell: bash
         run: |
