@@ -27,9 +27,6 @@ fi
 #   $3: path to the Helm chart in the git repo
 #   $4: name of the Helm chart
 download_chart() {
-  cleanup() {
-    rm -r "${repo_tmp_dir}"
-  }
   chart_url=$1
   branch=$2
   chart_dir=$3
@@ -55,19 +52,19 @@ download_chart() {
   cd "${callDir}"
 
   # remove old chart
-  rm -r "${chart_base_path:?}/${chart_name}"
+  rm -rf -- "${chart_base_path:?}/${chart_name}"
 
   # move new chart
   mkdir -p "${chart_base_path}/${chart_name}"
   cp -r "${repo_tmp_dir}/${chart_dir}"/* "${chart_base_path}/${chart_name}"
+
+  rm -r -- "${repo_tmp_dir}"
 
   # get new version from Chart.yaml
   new_version=$(yq '.version' "${chart_base_path}/${chart_name}/Chart.yaml")
 
   # update dependency version in parent Chart.yaml
   yq -i "(.dependencies[] | select( .name== \"${chart_name}\").version) = \"${new_version}\"" "${csi_chart_path}/Chart.yaml"
-
-  return
 }
 
 ## AWS CSI Driver
