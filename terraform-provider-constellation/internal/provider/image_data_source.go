@@ -8,6 +8,7 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -135,13 +136,17 @@ func (d *ImageDataSource) ValidateConfig(ctx context.Context, req datasource.Val
 		)
 	}
 
-	// Version should be a valid semver, if set
+	// Version should be a valid semver or short path, if set
 	if !data.Version.IsNull() {
-		if _, err := semver.New(data.Version.ValueString()); err != nil {
+		_, semverErr := semver.New(data.Version.ValueString())
+
+		_, shortpathErr := versionsapi.NewVersionFromShortPath(data.Version.ValueString(), versionsapi.VersionKindImage)
+
+		if semverErr != nil && shortpathErr != nil {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("version"),
 				"Invalid Version",
-				fmt.Sprintf("When parsing the semantic version (%s), an error occurred: %s", data.Version.ValueString(), err),
+				fmt.Sprintf("When parsing the version (%s), an error occurred: %s", data.Version.ValueString(), errors.Join(semverErr, shortpathErr)),
 			)
 		}
 	}
