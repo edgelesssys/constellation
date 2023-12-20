@@ -23,15 +23,19 @@ package upgrade
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/bazelbuild/rules_go/go/runfiles"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/stretchr/testify/require"
@@ -39,12 +43,14 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+// VersionContainer contains the versions that the cluster should be upgraded to.
 type VersionContainer struct {
 	ImageRef      string
 	Kubernetes    versions.ValidK8sVersion
 	Microservices semver.Semver
 }
 
+// AssertUpgradeSuccessful tests that the upgrade to the target version is successful.
 func AssertUpgradeSuccessful(t *testing.T, cli string, targetVersions VersionContainer, k *kubernetes.Clientset, wantControl, wantWorker int, timeout time.Duration) {
 	wg := queryStatusAsync(t, cli)
 	require.NotNil(t, k)
@@ -183,4 +189,69 @@ func runCommandWithSeparateOutputs(cmd *exec.Cmd) (stdout, stderr []byte, err er
 	}
 
 	return stdout, stderr, err
+}
+
+// Setup checks that the prerequisites for the test are met:
+// - a workspace is set
+// - a CLI path is set
+// - the constellation-upgrade folder does not exist.
+func Setup(workspace, cliPath string) error {
+	workingDir, err := workingDir(workspace)
+	if err != nil {
+		return fmt.Errorf("getting working directory: %w", err)
+	}
+
+	if err := os.Chdir(workingDir); err != nil {
+		return fmt.Errorf("changing working directory: %w", err)
+	}
+
+	if _, err := getCLIPath(cliPath); err != nil {
+		return fmt.Errorf("getting CLI path: %w", err)
+	}
+	return nil
+}
+
+// workingDir returns the path to the workspace.
+func workingDir(workspace string) (string, error) {
+	workingDir := os.Getenv("BUILD_WORKING_DIRECTORY")
+	switch {
+	case workingDir != "":
+		return workingDir, nil
+	case workspace != "":
+		return workspace, nil
+	default:
+		return "", errors.New("neither 'BUILD_WORKING_DIRECTORY' nor 'workspace' flag set")
+	}
+}
+
+// getCLIPath returns the path to the CLI.
+func getCLIPath(cliPathFlag string) (string, error) {
+	pathCLI := os.Getenv("PATH_CLI")
+	var relCLIPath string
+	switch {
+	case pathCLI != "":
+		relCLIPath = pathCLI
+	case cliPathFlag != "":
+		relCLIPath = cliPathFlag
+	default:
+		return "", errors.New("neither 'PATH_CLI' nor 'cli' flag set")
+	}
+
+	// try to find the CLI in the working directory
+	// (e.g. when running via `go test` or when specifying a path manually)
+	workdir, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("getting working directory: %w", err)
+	}
+
+	absCLIPath := relCLIPath
+	if !filepath.IsAbs(relCLIPath) {
+		absCLIPath = filepath.Join(workdir, relCLIPath)
+	}
+	if _, err := os.Stat(absCLIPath); err == nil {
+		return absCLIPath, nil
+	}
+
+	// fall back to runfiles (e.g. when running via bazel)
+	return runfiles.Rlocation(pathCLI)
 }

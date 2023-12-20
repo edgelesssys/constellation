@@ -328,7 +328,6 @@ jobs:
           CONTROLNODES: 2
         run: |
           terraform output -raw kubeconfig > constellation-admin.conf
-          export KUBECONFIG=$(realpath constellation-admin.conf)
 
           if [[ -n ${MICROSERVICES} ]]; then
           MICROSERVICES_FLAG="--target-microservices=$MICROSERVICES"
@@ -336,8 +335,10 @@ jobs:
           if [[ -n ${KUBERNETES} ]]; then
             KUBERNETES_FLAG="--target-kubernetes=$KUBERNETES"
           fi
+
+          # cfg must be in same dir as KUBECONFIG
           ./constellation config generate ${{ inputs.cloudProvider }}
-          bazel run //e2e/provider-upgrade:provider-upgrade_test -- --want-worker $WORKERNODES --want-control $CONTROLNODES --target-image "$IMAGE" "$KUBERNETES_FLAG" "$MICROSERVICES_FLAG" --cli ${{ github.workspace }}/cluster/constellation
+          KUBECONFIG=${{ github.workspace }}/cluster/constellation-admin.conf bazel run //e2e/provider-upgrade:provider-upgrade_test -- --want-worker $WORKERNODES --want-control $CONTROLNODES --target-image "$IMAGE" "$KUBERNETES_FLAG" "$MICROSERVICES_FLAG" --cli ${{ github.workspace }}/cluster/constellation
 
       - name: Destroy Terraform Cluster
       # outcome is part of the steps context (https://docs.github.com/en/actions/learn-github-actions/contexts#steps-context)

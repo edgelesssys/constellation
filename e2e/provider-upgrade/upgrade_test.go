@@ -26,6 +26,8 @@ var (
 	targetMicroservices = flag.String("target-microservices", "", "Microservice version (MAJOR.MINOR.PATCH) to upgrade to. Defaults to default version of target CLI.")
 	// When executing the test as a bazel target the CLI path is supplied through an env variable that bazel sets.
 	// When executing via `go test` extra care should be taken that the supplied CLI is built on the same commit as this test.
+	// When executing the test as a bazel target the workspace path is supplied through an env variable that bazel sets.
+	workspace   = flag.String("workspace", "", "Constellation workspace in which to run the tests.")
 	cliPath     = flag.String("cli", "", "Constellation CLI to run the tests.")
 	wantWorker  = flag.Int("want-worker", 0, "Number of wanted worker nodes.")
 	wantControl = flag.Int("want-control", 0, "Number of wanted control nodes.")
@@ -55,6 +57,9 @@ func TestUpgradeSuccessful(t *testing.T) {
 		Microservices: microV,
 	}
 	k, err := kubectl.New()
+	require.NoError(t, err)
+
+	err = upgrade.Setup(*workspace, *cliPath)
 	require.NoError(t, err)
 	upgrade.AssertUpgradeSuccessful(t, *cliPath, v, k, *wantControl, *wantWorker, *timeout)
 }

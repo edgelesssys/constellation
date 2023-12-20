@@ -16,12 +16,10 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/bazelbuild/rules_go/go/runfiles"
 	"github.com/edgelesssys/constellation/v2/e2e/internal/kubectl"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -60,7 +58,7 @@ var (
 func TestUpgrade(t *testing.T) {
 	require := require.New(t)
 
-	err := setup()
+	err := Setup(*workspace, *cliPath)
 	require.NoError(err)
 
 	k, err := kubectl.New()
@@ -95,71 +93,6 @@ func TestUpgrade(t *testing.T) {
 	runUpgradeApply(require, cli)
 
 	AssertUpgradeSuccessful(t, cli, targetVersions, k, *wantControl, *wantWorker, *timeout)
-}
-
-// setup checks that the prerequisites for the test are met:
-// - a workspace is set
-// - a CLI path is set
-// - the constellation-upgrade folder does not exist.
-func setup() error {
-	workingDir, err := workingDir(*workspace)
-	if err != nil {
-		return fmt.Errorf("getting working directory: %w", err)
-	}
-
-	if err := os.Chdir(workingDir); err != nil {
-		return fmt.Errorf("changing working directory: %w", err)
-	}
-
-	if _, err := getCLIPath(*cliPath); err != nil {
-		return fmt.Errorf("getting CLI path: %w", err)
-	}
-	return nil
-}
-
-// workingDir returns the path to the workspace.
-func workingDir(workspace string) (string, error) {
-	workingDir := os.Getenv("BUILD_WORKING_DIRECTORY")
-	switch {
-	case workingDir != "":
-		return workingDir, nil
-	case workspace != "":
-		return workspace, nil
-	default:
-		return "", errors.New("neither 'BUILD_WORKING_DIRECTORY' nor 'workspace' flag set")
-	}
-}
-
-// getCLIPath returns the path to the CLI.
-func getCLIPath(cliPathFlag string) (string, error) {
-	pathCLI := os.Getenv("PATH_CLI")
-	var relCLIPath string
-	switch {
-	case pathCLI != "":
-		relCLIPath = pathCLI
-	case cliPathFlag != "":
-		relCLIPath = cliPathFlag
-	default:
-		return "", errors.New("neither 'PATH_CLI' nor 'cli' flag set")
-	}
-
-	// try to find the CLI in the working directory
-	// (e.g. when running via `go test` or when specifying a path manually)
-	workdir, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("getting working directory: %w", err)
-	}
-
-	absCLIPath := relCLIPath
-	if !filepath.IsAbs(relCLIPath) {
-		absCLIPath = filepath.Join(workdir, relCLIPath)
-	}
-	if _, err := os.Stat(absCLIPath); err == nil {
-		return absCLIPath, nil
-	}
-
-	// fall back to runfiles (e.g. when running via bazel)
-	return runfiles.Rlocation(pathCLI)
 }
 
 // testPodsEventuallyReady checks that:
