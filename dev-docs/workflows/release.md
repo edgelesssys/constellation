@@ -81,15 +81,17 @@ Releases should be performed using [the automated release pipeline](https://gith
 
 ## Post release steps
 
-1. Close fixed "known issues"
-2. Milestones management
+1. Publish the [provider release](https://github.com/edgelesssys/terraform-provider-constellation/releases)
+2. Merge the versioned docs PR
+3. Close fixed "known issues"
+4. Milestones management
    1. Create a new milestone for the next release
    2. Add the next release manager and an approximate release date to the milestone description
    3. Close the milestone for the release
    4. Move open issues and PRs from closed milestone to next milestone
-3. If the release is a minor version release, bump the pre-release version in the `version.txt` file.
-4. Update the `fromVersion` in `e2e-test-release.yml` and `e2e-test-weekly.yaml` to the newly released version. To check the current values, run: `grep "fromVersion: \[.*\]" -R .github`.
-5. Reset `UpgradeRequiresIAMMigration`  in [`iamupgrade.go`](https://github.com/edgelesssys/constellation/blob/a88a731576184e3c5ee8527741c4a0cdaa4e9b24/cli/internal/cloudcmd/iamupgrade.go#L23).
+5. If the release is a minor version release, bump the pre-release version in the `version.txt` file.
+6. Update the `fromVersion` in `e2e-test-release.yml` and `e2e-test-weekly.yaml` to the newly released version. To check the current values, run: `grep "fromVersion: \[.*\]" -R .github`.
+7. Reset `UpgradeRequiresIAMMigration`  in [`iamupgrade.go`](https://github.com/edgelesssys/constellation/blob/a88a731576184e3c5ee8527741c4a0cdaa4e9b24/cli/internal/cloudcmd/iamupgrade.go#L23).
 
 ## Troubleshooting: Pipeline cleanup
 
