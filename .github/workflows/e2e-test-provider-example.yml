@@ -166,11 +166,11 @@ jobs:
           mkdir cluster
           cd cluster
           if [[ "${{ inputs.providerVersion }}" == "" ]]; then
-            # cut v prefix
-            version="$(echo ${{ steps.install_tf_provider.outputs.build_version }} | cut -c 2-)"
+            version=${{ steps.install_tf_provider.outputs.build_version }}
           else
             version="${{ inputs.providerVersion }}"
           fi
+          version=${version#v} # remove v prefix
 
           if [[ "${{ inputs.providerVersion }}" == "" ]]; then
             iam_src="../terraform-module/iam/${{ inputs.cloudProvider }}"
@@ -200,7 +200,7 @@ jobs:
             source = "${infra_src}"
           }
           EOF
-          echo "common_override=$(cat _override.tf)" | tee -a "$GITHUB_OUTPUT
+          echo "common_override=$(cat _override.tf)" | tee -a "$GITHUB_OUTPUT"
 
       - name: Create GCP Terraform overrides
         if: inputs.cloudProvider == 'gcp'
