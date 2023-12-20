@@ -4,6 +4,7 @@ go_test(
     name = "integration_test",
     srcs = ["license_integration_test.go"],
     tags = [
+        "enterprise",
         "integration",
         "requires-network",
     ],

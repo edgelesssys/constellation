@@ -24,6 +24,9 @@ go_test(
     name = "license_test",
     srcs = ["file_test.go"],
     embed = [":license"],
+    tags = [
+        "enterprise",
+    ],
     deps = [
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
