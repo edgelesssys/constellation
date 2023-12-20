@@ -336,7 +336,7 @@ jobs:
           if [[ -n ${KUBERNETES} ]]; then
             KUBERNETES_FLAG="--target-kubernetes=$KUBERNETES"
           fi
-          bazel run //e2e/provider-upgrade:provider-upgrade_test -- --want-worker $WORKERNODES --want-control $CONTROLNODES --target-image "$IMAGE" "$KUBERNETES_FLAG" "$MICROSERVICES_FLAG"
+          bazel run //e2e/provider-upgrade:provider-upgrade_test -- --want-worker $WORKERNODES --want-control $CONTROLNODES --target-image "$IMAGE" "$KUBERNETES_FLAG" "$MICROSERVICES_FLAG" --cli ${{ github.workspace }}/cluster/constellation
 
       - name: Destroy Terraform Cluster
       # outcome is part of the steps context (https://docs.github.com/en/actions/learn-github-actions/contexts#steps-context)
