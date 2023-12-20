@@ -1,7 +1,6 @@
 # Use the Terraform provider
 
 The Constellation Terraform provider allows to manage the full lifecycle of a Constellation cluster (namely creation, upgrades, and deletion) via Terraform.
-<!-- TODO(elchead): check link during release -->
 The provider is available through the [Terraform registry](https://registry.terraform.io/providers/edgelesssys/constellation/latest) and is released in lock-step with Constellation releases.
 
 ## Prerequisites
