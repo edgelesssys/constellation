@@ -655,6 +655,11 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 	if licenseID == "" {
 		licenseID = license.CommunityLicense
 	}
+	// license ID can be base64-encoded
+	licenseIDFromB64, err := base64.StdEncoding.DecodeString(licenseID)
+	if err == nil {
+		licenseID = string(licenseIDFromB64)
+	}
 
 	// Parse in-cluster service account info.
 	serviceAccPayload := constellation.ServiceAccountPayload{}
