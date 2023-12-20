@@ -273,7 +273,6 @@ jobs:
 
       - name: Apply Terraform Cluster
         id: apply_terraform
-        if: inputs.cloudProvider != 'azure'
         working-directory: ${{ github.workspace }}/cluster
         shell: bash
         run: |
@@ -292,23 +291,23 @@ jobs:
         shell: bash
         run: |
           if [[ "${{ inputs.toImage }}" != "" ]]; then
-            cat >> _override.tf <<EOF
-            locals {
-              version = "${{ inputs.toImage }}"
-            }
-            EOF
+          cat >> _override.tf <<EOF
+          locals {
+            version = "${{ inputs.toImage }}"
+          }
+          EOF
           fi
           if [[ "${{ inputs.toProviderVersion }}" != "" ]]; then
-            cat >> _override.tf <<EOF
-            terraform {
-              required_providers {
-                constellation = {
-                  source  = "edgelesssys/constellation"
-                  version = "${{ inputs.toProviderVersion }}"
-                }
+          cat >> _override.tf <<EOF
+          terraform {
+            required_providers {
+              constellation = {
+                source  = "edgelesssys/constellation"
+                version = "${{ inputs.toProviderVersion }}"
               }
             }
-            EOF
+          }
+          EOF
           fi
           # TODO rename version to image_version
 
