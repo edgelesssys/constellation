@@ -64,10 +64,11 @@ module "azure_infrastructure" {
       initial_count = 2
     }
   }
-  location       = local.location
-  image_id       = data.constellation_image.bar.image.reference
-  resource_group = module.azure_iam.base_resource_group
-  create_maa     = true
+  location               = local.location
+  image_id               = data.constellation_image.bar.image.reference
+  resource_group         = module.azure_iam.base_resource_group
+  internal_load_balancer = false
+  create_maa             = true
 }
 
 data "constellation_attestation" "foo" {
@@ -95,6 +96,7 @@ resource "constellation_cluster" "azure_example" {
   measurement_salt        = local.measurement_salt
   out_of_cluster_endpoint = module.azure_infrastructure.out_of_cluster_endpoint
   in_cluster_endpoint     = module.azure_infrastructure.in_cluster_endpoint
+  api_server_cert_sans    = module.gcp_infrastructure.api_server_cert_sans
   azure = {
     tenant_id                   = module.azure_iam.tenant_id
     subscription_id             = module.azure_iam.subscription_id
