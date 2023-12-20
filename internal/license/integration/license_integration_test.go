@@ -39,7 +39,7 @@ func TestQuotaCheckIntegration(t *testing.T) {
 
 			client := license.NewChecker()
 
-			quota, err := client.CheckLicense(context.Background(), cloudprovider.Unknown, license.Init, tc.license)
+			quota, err := client.CheckLicense(context.Background(), cloudprovider.Unknown, "test", tc.license)
 
 			if tc.wantError {
 				assert.Error(err)
