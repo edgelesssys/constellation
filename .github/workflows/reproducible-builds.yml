@@ -166,9 +166,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
         - name: Download os images
-          uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+          uses: ./.github/actions/artifact_download
           with:
             name: "osimages-${{ matrix.target }}"
+            encryption_secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
         - name: Hash
           shell: bash
