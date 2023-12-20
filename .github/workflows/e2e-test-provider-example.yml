@@ -242,15 +242,6 @@ jobs:
         run: |
           cp ${{ github.workspace }}/terraform-provider-constellation/examples/full/${{ inputs.cloudProvider }}/main.tf ${{ github.workspace }}/cluster/main.tf
 
-      - name: Apply Terraform Cluster
-        id: apply_terraform
-        if: inputs.cloudProvider != 'azure'
-        working-directory: ${{ github.workspace }}/cluster
-        shell: bash
-        run: |
-          terraform init
-          TF_LOG=INFO terraform apply -auto-approve
-
       - name: Download CLI
         if: inputs.cloudProvider == 'azure'
         shell: bash
@@ -259,6 +250,15 @@ jobs:
           chmod u+x constellation
           ./constellation version
           cp ./constellation ${{ github.workspace }}/cluster
+
+      - name: Apply Terraform Cluster
+        id: apply_terraform
+        if: inputs.cloudProvider != 'azure'
+        working-directory: ${{ github.workspace }}/cluster
+        shell: bash
+        run: |
+          terraform init
+          TF_LOG=INFO terraform apply -auto-approve
 
       - name: Apply Azure Terraform Cluster
         id: apply_azure_terraform
@@ -271,6 +271,45 @@ jobs:
           terraform apply -target module.azure_infrastructure -auto-approve
           ./constellation maa-patch $(terraform output -raw maa_url)
           TF_LOG=INFO terraform apply -target constellation_cluster.azure_example -auto-approve
+
+      - name: Upgrade cluster
+        working-directory: ${{ github.workspace }}/cluster
+        shell: bash
+        run: |
+          cat >> _override.tf <<EOF
+          locals {
+            version = "v2.14.0"
+          }
+          EOF
+          # TODO change provider version (once registry is available)
+          # TODO rename version to image_version
+
+      - name: Apply Terraform Cluster
+        working-directory: ${{ github.workspace }}/cluster
+        shell: bash
+        run: |
+          terraform init
+          TF_LOG=INFO terraform apply -auto-approve
+
+      - name: Assert upgrade successful
+        # ${{ inputs.toImage && inputs.toImage || steps.find-image.outputs.output }}
+        env:
+          IMAGE: v2.14.0
+          #KUBERNETES: ${{ inputs.toKubernetes }}
+          #MICROSERVICES: ${{ inputs.toMicroservices }}
+          #WORKERNODES:  ${{ needs.split-nodeCount.outputs.workerNodes }}
+          #CONTROLNODES: ${{ needs.split-nodeCount.outputs.controlPlaneNodes }}
+        run: |
+          terraform output -raw kubeconfig > constellation-admin.conf
+          export KUBECONFIG=$(realpath constellation-admin.conf)
+
+          if [[ -n ${MICROSERVICES} ]]; then
+          MICROSERVICES_FLAG="--target-microservices=$MICROSERVICES"
+          fi
+          if [[ -n ${KUBERNETES} ]]; then
+            KUBERNETES_FLAG="--target-kubernetes=$KUBERNETES"
+          fi
+          bazel run //e2e/provider-upgrade:provider-upgrade_test -- --want-worker 2 --want-control 2 --target-image "$IMAGE" "$KUBERNETES_FLAG" "$MICROSERVICES_FLAG"
 
       - name: Destroy Terraform Cluster
       # outcome is part of the steps context (https://docs.github.com/en/actions/learn-github-actions/contexts#steps-context)

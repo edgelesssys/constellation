@@ -9,18 +9,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 package upgrade
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -97,12 +94,7 @@ func TestUpgrade(t *testing.T) {
 	log.Println("Triggering upgrade.")
 	runUpgradeApply(require, cli)
 
-	wg := queryStatusAsync(t, cli)
-
-	testMicroservicesEventuallyHaveVersion(t, targetVersions.microservices, *timeout)
-	testNodesEventuallyHaveVersion(t, k, targetVersions, *wantControl+*wantWorker, *timeout)
-
-	wg.Wait()
+	AssertUpgradeSuccessful(t, cli, targetVersions, k, *wantControl, *wantWorker, *timeout)
 }
 
 // setup checks that the prerequisites for the test are met:
@@ -249,7 +241,7 @@ func testNodesEventuallyAvailable(t *testing.T, k *kubernetes.Clientset, wantCon
 	}, time.Minute*30, time.Minute)
 }
 
-func writeUpgradeConfig(require *require.Assertions, image string, kubernetes string, microservices string) versionContainer {
+func writeUpgradeConfig(require *require.Assertions, image string, kubernetes string, microservices string) VersionContainer {
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	attestationFetcher := attestationconfigapi.NewFetcher()
 	cfg, err := config.New(fileHandler, constants.ConfigFilename, attestationFetcher, true)
@@ -298,7 +290,7 @@ func writeUpgradeConfig(require *require.Assertions, image string, kubernetes st
 	err = fileHandler.WriteYAML(constants.ConfigFilename, cfg, file.OptOverwrite)
 	require.NoError(err)
 
-	return versionContainer{imageRef: imageRef, kubernetes: kubernetesVersion, microservices: microserviceVersion}
+	return VersionContainer{ImageRef: imageRef, Kubernetes: kubernetesVersion, Microservices: microserviceVersion}
 }
 
 // runUpgradeCheck executes 'upgrade check' and does basic checks on the output.
@@ -360,141 +352,4 @@ func containsUnexepectedMsg(input string) error {
 		return errors.New("unexpected upgrade in progress")
 	}
 	return nil
-}
-
-func queryStatusAsync(t *testing.T, cli string) *sync.WaitGroup {
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		// The first control plane node should finish upgrading after 20 minutes. If it does not, something is fishy.
-		// Nodes can upgrade in <5mins.
-		testStatusEventuallyWorks(t, cli, 20*time.Minute)
-	}()
-
-	return &wg
-}
-
-func testStatusEventuallyWorks(t *testing.T, cli string, timeout time.Duration) {
-	require.Eventually(t, func() bool {
-		// Show versions set in cluster.
-		// The string after "Cluster status:" in the output might not be updated yet.
-		// This is only updated after the operator finishes one reconcile loop.
-		cmd := exec.CommandContext(context.Background(), cli, "status")
-		stdout, stderr, err := runCommandWithSeparateOutputs(cmd)
-		if err != nil {
-			log.Printf("Stdout: %s\nStderr: %s", string(stdout), string(stderr))
-			return false
-		}
-
-		log.Println(string(stdout))
-		return true
-	}, timeout, time.Minute)
-}
-
-func testMicroservicesEventuallyHaveVersion(t *testing.T, wantMicroserviceVersion semver.Semver, timeout time.Duration) {
-	require.Eventually(t, func() bool {
-		version, err := servicesVersion(t)
-		if err != nil {
-			log.Printf("Unable to fetch microservice version: %v\n", err)
-			return false
-		}
-
-		if version != wantMicroserviceVersion {
-			log.Printf("Microservices still at version %v, want %v\n", version, wantMicroserviceVersion)
-			return false
-		}
-
-		return true
-	}, timeout, time.Minute)
-}
-
-func testNodesEventuallyHaveVersion(t *testing.T, k *kubernetes.Clientset, targetVersions versionContainer, totalNodeCount int, timeout time.Duration) {
-	require.Eventually(t, func() bool {
-		nodes, err := k.CoreV1().Nodes().List(context.Background(), metaV1.ListOptions{})
-		if err != nil {
-			log.Println(err)
-			return false
-		}
-		require.False(t, len(nodes.Items) < totalNodeCount, "expected at least %v nodes, got %v", totalNodeCount, len(nodes.Items))
-
-		allUpdated := true
-		log.Printf("Node status (%v):", time.Now())
-		for _, node := range nodes.Items {
-			for key, value := range node.Annotations {
-				if key == "constellation.edgeless.systems/node-image" {
-					if !strings.EqualFold(value, targetVersions.imageRef) {
-						log.Printf("\t%s: Image %s, want %s\n", node.Name, value, targetVersions.imageRef)
-						allUpdated = false
-					}
-				}
-			}
-
-			kubeletVersion := node.Status.NodeInfo.KubeletVersion
-			if kubeletVersion != string(targetVersions.kubernetes) {
-				log.Printf("\t%s: K8s (Kubelet) %s, want %s\n", node.Name, kubeletVersion, targetVersions.kubernetes)
-				allUpdated = false
-			}
-			kubeProxyVersion := node.Status.NodeInfo.KubeProxyVersion
-			if kubeProxyVersion != string(targetVersions.kubernetes) {
-				log.Printf("\t%s: K8s (Proxy) %s, want %s\n", node.Name, kubeProxyVersion, targetVersions.kubernetes)
-				allUpdated = false
-			}
-		}
-
-		return allUpdated
-	}, timeout, time.Minute)
-}
-
-type versionContainer struct {
-	imageRef      string
-	kubernetes    versions.ValidK8sVersion
-	microservices semver.Semver
-}
-
-// runCommandWithSeparateOutputs runs the given command while separating buffers for
-// stdout and stderr.
-func runCommandWithSeparateOutputs(cmd *exec.Cmd) (stdout, stderr []byte, err error) {
-	stdout = []byte{}
-	stderr = []byte{}
-
-	stdoutIn, err := cmd.StdoutPipe()
-	if err != nil {
-		err = fmt.Errorf("create stdout pipe: %w", err)
-		return
-	}
-	stderrIn, err := cmd.StderrPipe()
-	if err != nil {
-		err = fmt.Errorf("create stderr pipe: %w", err)
-		return
-	}
-
-	err = cmd.Start()
-	if err != nil {
-		err = fmt.Errorf("start command: %w", err)
-		return
-	}
-
-	continuouslyPrintOutput := func(r io.Reader, prefix string) {
-		scanner := bufio.NewScanner(r)
-		for scanner.Scan() {
-			output := scanner.Text()
-			fmt.Printf("%s: %s\n", prefix, output)
-			switch prefix {
-			case "stdout":
-				stdout = append(stdout, output...)
-			case "stderr":
-				stderr = append(stderr, output...)
-			}
-		}
-	}
-
-	go continuouslyPrintOutput(stdoutIn, "stdout")
-	go continuouslyPrintOutput(stderrIn, "stderr")
-
-	if err = cmd.Wait(); err != nil {
-		err = fmt.Errorf("wait for command to finish: %w", err)
-	}
-
-	return stdout, stderr, err
 }

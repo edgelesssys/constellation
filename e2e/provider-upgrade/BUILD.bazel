@@ -1,0 +1,13 @@
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_test(
+    name = "provider-upgrade_test",
+    srcs = ["upgrade_test.go"],
+    deps = [
+        "//e2e/internal/kubectl",
+        "//e2e/internal/upgrade",
+        "//internal/semver",
+        "//internal/versions",
+        "@com_github_stretchr_testify//require",
+    ],
+)
