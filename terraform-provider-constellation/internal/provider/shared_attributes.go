@@ -7,8 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package provider
 
 import (
-	"regexp"
-
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -21,8 +19,6 @@ const (
 	// attributeOutput is the attribute type used for output variables.
 	attributeOutput attributeType = false
 )
-
-var semverRegex = regexp.MustCompile(`^v\d+\.\d+\.\d+(-pre.*)?$`)
 
 type attributeType bool
 
