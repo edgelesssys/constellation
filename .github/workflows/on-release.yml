@@ -126,6 +126,4 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Remove temporary branch
-        env:
-          WORKING_BRANCH: ${{needs.complete-release-branch-transaction.outputs.WORKING_BRANCH}}
-        run: git push origin --delete "${WORKING_BRANCH}"
+        run: git push origin --delete "${{needs.complete-release-branch-transaction.outputs.WORKING_BRANCH}}"
