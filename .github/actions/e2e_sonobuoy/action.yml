@@ -11,6 +11,9 @@ inputs:
   kubeconfig:
     description: "The kubeconfig of the cluster to test."
     required: true
+  encryption-secret:
+    description: 'The secret to use for encrypting the artifact.'
+    required: true
 
 runs:
   using: "composite"
@@ -48,7 +51,7 @@ runs:
       with:
         name: "sonobuoy-logs-${{ inputs.artifactNameSuffix }}.tar.gz"
         path: "*_sonobuoy_*.tar.gz"
-        encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+        encryption-secret: ${{ inputs.encryption-secret }}
 
     # Only works on "sonobuoy full" tests (e2e plugin)
     - name: Extract test results

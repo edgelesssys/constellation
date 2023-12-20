@@ -177,6 +177,8 @@ jobs:
 
       - name: Upload Terraform infrastructure module
         uses: ./.github/actions/upload_terraform_module
+        with:
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
   push-containers:
     runs-on: ubuntu-22.04

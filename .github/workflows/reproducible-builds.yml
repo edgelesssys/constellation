@@ -169,7 +169,7 @@ jobs:
           uses: ./.github/actions/artifact_download
           with:
             name: "osimages-${{ matrix.target }}"
-            encryption_secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+            encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
         - name: Hash
           shell: bash

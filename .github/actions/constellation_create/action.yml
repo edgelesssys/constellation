@@ -59,6 +59,9 @@ inputs:
   force:
     description: "Set the force-flag on apply to ignore version mismatches."
     required: false
+  encryption-secret:
+    description: 'The secret to use for encrypting the artifact.'
+    required: true
 
 outputs:
   kubeconfig:
@@ -264,4 +267,4 @@ runs:
         name: serial-logs-${{ inputs.artifactNameSuffix }}
         path: >
           !(terraform).log
-        encryption_secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+        encryption-secret: ${{ inputs.encryption-secret }}
