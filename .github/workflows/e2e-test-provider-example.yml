@@ -319,7 +319,7 @@ jobs:
           TF_LOG=INFO terraform apply -auto-approve
 
       - name: Assert upgrade successful
-        # ${{ inputs.toImage && inputs.toImage || steps.find-image.outputs.output }}
+        working-directory: ${{ github.workspace }}/cluster
         env:
           IMAGE: ${{ inputs.toImage }}
           KUBERNETES: ${{ inputs.toKubernetes }}
@@ -336,6 +336,7 @@ jobs:
           if [[ -n ${KUBERNETES} ]]; then
             KUBERNETES_FLAG="--target-kubernetes=$KUBERNETES"
           fi
+          ./constellation config generate ${{ inputs.cloudProvider }}
           bazel run //e2e/provider-upgrade:provider-upgrade_test -- --want-worker $WORKERNODES --want-control $CONTROLNODES --target-image "$IMAGE" "$KUBERNETES_FLAG" "$MICROSERVICES_FLAG" --cli ${{ github.workspace }}/cluster/constellation
 
       - name: Destroy Terraform Cluster
