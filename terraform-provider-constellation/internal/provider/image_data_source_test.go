@@ -167,7 +167,7 @@ func TestAccImageDataSource(t *testing.T) {
 						csp                 = "azure"
 					}
 				`,
-					ExpectError: regexp.MustCompile(".*invalid version.*"),
+					ExpectError: regexp.MustCompile(".*Invalid Version.*"),
 				},
 			},
 		},
