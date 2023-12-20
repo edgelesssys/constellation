@@ -170,9 +170,6 @@ func newImageAttributeSchema(t attributeType) schema.Attribute {
 				MarkdownDescription: "Semantic version of the image.",
 				Computed:            !isInput,
 				Required:            isInput,
-				Validators: []validator.String{
-					stringvalidator.RegexMatches(semverRegex, "must be a valid semantic version with a v prefix in the form of vX.Y.Z"),
-				},
 			},
 			"reference": schema.StringAttribute{
 				Description:         "CSP-specific unique reference to the image. The format differs per CSP.",
