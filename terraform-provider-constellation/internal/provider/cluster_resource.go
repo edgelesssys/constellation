@@ -369,8 +369,6 @@ func (r *ClusterResource) ValidateConfig(ctx context.Context, req resource.Valid
 	}
 
 	// Azure Config is required for Azure
-	tflog.Info(ctx, fmt.Sprintf("CSP: %s", data.CSP.ValueString()))
-	tflog.Info(ctx, fmt.Sprintf("Azure: %v", data.Azure.IsNull()))
 	if strings.EqualFold(data.CSP.ValueString(), cloudprovider.Azure.String()) && data.Azure.IsNull() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("azure"),
