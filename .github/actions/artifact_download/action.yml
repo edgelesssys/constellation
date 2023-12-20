@@ -28,7 +28,7 @@ runs:
       run: echo "directory=$(mktemp -d)" >> "$GITHUB_OUTPUT"
 
     - name: Download the artifact
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
       with:
         name: ${{ inputs.name }}
         path: ${{ steps.tempdir.outputs.directory }}
