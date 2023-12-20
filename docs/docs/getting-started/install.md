@@ -1,19 +1,23 @@
 # Installation and setup
 
-Constellation runs entirely in your cloud environment and can be controlled via a dedicated command-line interface (CLI).
-
-The following guides you through the steps of installing the CLI on your machine, verifying it, and connecting it to your cloud service provider (CSP).
+Constellation runs entirely in your cloud environment and can be controlled via a dedicated [command-line interface (CLI)](../reference/cli.md) or a [Terraform provider](../workflows/terraform-provider.md).
 
 ## Prerequisites
 
 Make sure the following requirements are met:
 
-- Your machine is running Linux or macOS
-- You have admin rights on your machine
-- [kubectl](https://kubernetes.io/docs/tasks/tools/) is installed
-- Your CSP is Microsoft Azure, Google Cloud Platform (GCP), or Amazon Web Services (AWS)
+* Your machine is running Linux or macOS
+* You have admin rights on your machine
+* [kubectl](https://kubernetes.io/docs/tasks/tools/) is installed
+* Your CSP is Microsoft Azure, Google Cloud Platform (GCP), or Amazon Web Services (AWS)
 
 ## Install the Constellation CLI
+
+:::tip
+
+If you prefer to use Terraform, you can alternatively use the [Terraform provider](../workflows/terraform-provider.md) to manage the cluster's lifecycle.
+
+:::
 
 The CLI executable is available at [GitHub](https://github.com/edgelesssys/constellation/releases).
 Install it with the following commands:
@@ -52,7 +56,6 @@ curl -LO https://github.com/edgelesssys/constellation/releases/latest/download/c
 sudo install constellation-linux-arm64 /usr/local/bin/constellation
 ```
 
-
 </tabItem>
 
 <tabItem value="darwin-arm64" label="macOS (Apple Silicon)">
@@ -70,8 +73,6 @@ curl -LO https://github.com/edgelesssys/constellation/releases/latest/download/c
 ```bash
 sudo install constellation-darwin-arm64 /usr/local/bin/constellation
 ```
-
-
 
 </tabItem>
 
@@ -100,7 +101,7 @@ The CLI supports autocompletion for various shells. To set it up, run `constella
 
 ## Set up cloud credentials
 
-The CLI makes authenticated calls to the CSP API. Therefore, you need to set up Constellation with the credentials for your CSP.
+Constellation makes authenticated calls to the CSP API. Therefore, you need to set up Constellation with the credentials for your CSP.
 
 :::tip
 If you don't have a cloud subscription, you can also set up a [local Constellation cluster using virtualization](../getting-started/first-steps-local.md) for testing.
@@ -112,6 +113,7 @@ If you don't have a cloud subscription, you can also set up a [local Constellati
 <tabItem value="azure" label="Azure">
 
 The following [resource providers need to be registered](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/resource-providers-and-types#register-resource-provider) in your subscription:
+
 * `Microsoft.Attestation` \[2]
 * `Microsoft.Compute`
 * `Microsoft.Insights`
@@ -121,6 +123,7 @@ The following [resource providers need to be registered](https://learn.microsoft
 By default, Constellation tries to register these automatically if they haven't been registered before.
 
 To [create the IAM configuration](../workflows/config.md#creating-an-iam-configuration) for Constellation, you need the following permissions:
+
 * `*/register/action` \[1]
 * `Microsoft.Authorization/roleAssignments/*`
 * `Microsoft.Authorization/roleDefinitions/*`
@@ -130,6 +133,7 @@ To [create the IAM configuration](../workflows/config.md#creating-an-iam-configu
 The built-in `Owner` role is a superset of these permissions.
 
 To [create a Constellation cluster](../workflows/create.md), you need the following permissions:
+
 * `Microsoft.Attestation/attestationProviders/*` \[2]
 * `Microsoft.Compute/virtualMachineScaleSets/*`
 * `Microsoft.Insights/components/*`
@@ -157,6 +161,7 @@ Create a new project for Constellation or use an existing one.
 Enable the [Compute Engine API](https://console.cloud.google.com/apis/library/compute.googleapis.com) on it.
 
 To [create the IAM configuration](../workflows/config.md#creating-an-iam-configuration) for Constellation, you need the following permissions:
+
 * `iam.serviceAccountKeys.create`
 * `iam.serviceAccountKeys.delete`
 * `iam.serviceAccountKeys.get`
@@ -169,6 +174,7 @@ To [create the IAM configuration](../workflows/config.md#creating-an-iam-configu
 Together, the built-in roles `roles/editor` and `roles/resourcemanager.projectIamAdmin` form a superset of these permissions.
 
 To [create a Constellation cluster](../workflows/create.md), you need the following permissions:
+
 * `compute.addresses.createInternal`
 * `compute.addresses.deleteInternal`
 * `compute.addresses.get`
@@ -281,7 +287,6 @@ The built-in `AdministratorAccess` policy is a superset of these permissions.
 
 To [create a Constellation cluster](../workflows/create.md), see the permissions of [main.tf](https://github.com/edgelesssys/constellation/blob/main/terraform/infrastructure/iam/aws/main.tf).
 
-
 The built-in `PowerUserAccess` policy is a superset of these permissions.
 
 Follow Amazon's guide on [understanding](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html) and [managing policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html).
@@ -325,7 +330,7 @@ You can use the [Google Cloud Shell](https://cloud.google.com/shell). Make sure 
 
 Use one of the following options on a trusted machine:
 
-- Use the [`gcloud` CLI](https://cloud.google.com/sdk/gcloud)
+* Use the [`gcloud` CLI](https://cloud.google.com/sdk/gcloud)
 
     ```bash
     gcloud auth application-default login
@@ -334,7 +339,7 @@ Use one of the following options on a trusted machine:
     This will ask you to log-in to your Google account and create your credentials.
     The Constellation CLI will automatically load these credentials when needed.
 
-- Set up a service account and pass the credentials manually
+* Set up a service account and pass the credentials manually
 
     Follow [Google's guide](https://cloud.google.com/docs/authentication/production#manually) for setting up your credentials.
 
@@ -356,7 +361,6 @@ aws configure
 Options and first steps are described in the [AWS CLI documentation](https://docs.aws.amazon.com/cli/index.html).
 
 </tabItem>
-
 
 </tabs>
 

@@ -60,12 +60,13 @@ Encrypting your K8s is good for:
 * Constellation is a [CNCF-certified][certified] Kubernetes. It's aligned to Kubernetes' [version support policy][k8s-version-support] and will likely work with your existing workloads and tools.
 * Support for Azure, GCP, and AWS.
 * Support for local installations with [MiniConstellation][first-steps-local].
+* Support for [Terraform][terraform-provider]
 
 ## Getting started
 
 If you're already familiar with Kubernetes, it's easy to get started with Constellation:
 
-1. 📦 [Install the CLI][install]
+1. 📦 [Install the CLI][install] or use the [Terraform provider][terraform-provider]
 2. ⌨️ Create a Constellation cluster in the [cloud][first-steps] or [locally][first-steps-local]
 3. 🏎️ [Run your app][examples]
 
@@ -139,3 +140,4 @@ The Constellation source code is licensed under the [GNU Affero General Public L
 [linkedin]: https://www.linkedin.com/company/edgeless-systems
 [whitepaper]: https://content.edgeless.systems/hubfs/Confidential%20Computing%20Whitepaper.pdf
 [performance]: https://docs.edgeless.systems/constellation/overview/performance
+[terraform-provider]: https://docs.edgeless.systems/constellation/workflows/terraform-provider
