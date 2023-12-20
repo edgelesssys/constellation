@@ -17,6 +17,8 @@ import (
 	"io"
 	"net"
 	"net/url"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/atls"
@@ -36,22 +38,29 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	datastruct "github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/data"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-// Ensure provider defined types fully satisfy framework interfaces.
 var (
-	_ resource.Resource                = &ClusterResource{}
-	_ resource.ResourceWithImportState = &ClusterResource{}
-	_ resource.ResourceWithModifyPlan  = &ClusterResource{}
+	// Ensure provider defined types fully satisfy framework interfaces.
+	_ resource.Resource                   = &ClusterResource{}
+	_ resource.ResourceWithImportState    = &ClusterResource{}
+	_ resource.ResourceWithModifyPlan     = &ClusterResource{}
+	_ resource.ResourceWithValidateConfig = &ClusterResource{}
+
+	cidrRegex   = regexp.MustCompile(`^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$`)
+	hexRegex    = regexp.MustCompile(`^[0-9a-fA-F]+$`)
+	base64Regex = regexp.MustCompile(`^[-A-Za-z0-9+/]*={0,3}$`)
 )
 
 // NewClusterResource creates a new cluster resource.
@@ -140,11 +149,7 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Description:         "Name used in the cluster's named resources / cluster name.",
 				Required:            true, // TODO: Make optional and default to Constell.
 			},
-			"csp": schema.StringAttribute{
-				MarkdownDescription: "The Cloud Service Provider (CSP) the cluster should run on.",
-				Description:         "The Cloud Service Provider (CSP) the cluster should run on.",
-				Required:            true,
-			},
+			"csp": newCSPAttributeSchema(),
 			"uid": schema.StringAttribute{
 				MarkdownDescription: "The UID of the cluster.",
 				Description:         "The UID of the cluster.",
@@ -199,16 +204,25 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 						MarkdownDescription: "CIDR range of the cluster's node network.",
 						Description:         "CIDR range of the cluster's node network.",
 						Required:            true,
+						Validators: []validator.String{
+							stringvalidator.RegexMatches(cidrRegex, "Node IP CIDR must be a valid CIDR range."),
+						},
 					},
 					"ip_cidr_pod": schema.StringAttribute{
 						MarkdownDescription: "CIDR range of the cluster's pod network. Only required for clusters running on GCP.",
 						Description:         "CIDR range of the cluster's pod network. Only required for clusters running on GCP.",
 						Optional:            true,
+						Validators: []validator.String{
+							stringvalidator.RegexMatches(cidrRegex, "Pod IP CIDR must be a valid CIDR range."),
+						},
 					},
 					"ip_cidr_service": schema.StringAttribute{
 						MarkdownDescription: "CIDR range of the cluster's service network.",
 						Description:         "CIDR range of the cluster's service network.",
 						Required:            true,
+						Validators: []validator.String{
+							stringvalidator.RegexMatches(cidrRegex, "Service IP CIDR must be a valid CIDR range."),
+						},
 					},
 				},
 			},
@@ -216,16 +230,28 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				MarkdownDescription: "Hex-encoded 32-byte master secret for the cluster.",
 				Description:         "Hex-encoded 32-byte master secret for the cluster.",
 				Required:            true,
+				Validators: []validator.String{
+					stringvalidator.LengthBetween(64, 64),
+					stringvalidator.RegexMatches(hexRegex, "Master secret must be a hex-encoded 32-byte value."),
+				},
 			},
 			"master_secret_salt": schema.StringAttribute{
 				MarkdownDescription: "Hex-encoded 32-byte master secret salt for the cluster.",
 				Description:         "Hex-encoded 32-byte master secret salt for the cluster.",
 				Required:            true,
+				Validators: []validator.String{
+					stringvalidator.LengthBetween(64, 64),
+					stringvalidator.RegexMatches(hexRegex, "Master secret salt must be a hex-encoded 32-byte value."),
+				},
 			},
 			"measurement_salt": schema.StringAttribute{
 				MarkdownDescription: "Hex-encoded 32-byte measurement salt for the cluster.",
 				Description:         "Hex-encoded 32-byte measurement salt for the cluster.",
 				Required:            true,
+				Validators: []validator.String{
+					stringvalidator.LengthBetween(64, 64),
+					stringvalidator.RegexMatches(hexRegex, "Measurement salt must be a hex-encoded 32-byte value."),
+				},
 			},
 			"init_secret": schema.StringAttribute{
 				MarkdownDescription: "Secret used for initialization of the cluster.",
@@ -242,6 +268,9 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 						MarkdownDescription: "Base64-encoded private key JSON object of the service account used within the cluster.",
 						Description:         "Base64-encoded private key JSON object of the service account used within the cluster.",
 						Required:            true,
+						Validators: []validator.String{
+							stringvalidator.RegexMatches(base64Regex, "Service account key must be a base64-encoded JSON object."),
+						},
 					},
 					"project_id": schema.StringAttribute{
 						MarkdownDescription: "ID of the GCP project the cluster resides in.",
@@ -328,6 +357,67 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				},
 			},
 		},
+	}
+}
+
+// ValidateConfig validates the configuration for the resource.
+func (r *ClusterResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var data ClusterResourceModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Azure Config is required for Azure
+	if strings.EqualFold(data.CSP.ValueString(), cloudprovider.Azure.String()) && data.Azure.IsNull() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("azure"),
+			"Azure configuration missing", "When csp is set to 'azure', the 'azure' configuration must be set.",
+		)
+	}
+
+	// Azure Config should not be set for other CSPs
+	if !strings.EqualFold(data.CSP.ValueString(), cloudprovider.Azure.String()) && !data.Azure.IsNull() {
+		resp.Diagnostics.AddAttributeWarning(
+			path.Root("azure"),
+			"Azure configuration not allowed", "When csp is not set to 'azure', setting the 'azure' configuration has no effect.",
+		)
+	}
+
+	// GCP Config is required for GCP
+	if strings.EqualFold(data.CSP.ValueString(), cloudprovider.GCP.String()) && data.GCP.IsNull() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("gcp"),
+			"GCP configuration missing", "When csp is set to 'gcp', the 'gcp' configuration must be set.",
+		)
+	}
+
+	// GCP Config should not be set for other CSPs
+	if !strings.EqualFold(data.CSP.ValueString(), cloudprovider.GCP.String()) && !data.GCP.IsNull() {
+		resp.Diagnostics.AddAttributeWarning(
+			path.Root("gcp"),
+			"GCP configuration not allowed", "When csp is not set to 'gcp', setting the 'gcp' configuration has no effect.",
+		)
+	}
+
+	networkCfg, diags := r.getNetworkConfig(ctx, &data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	// Pod IP CIDR is required for GCP
+	if strings.EqualFold(data.CSP.ValueString(), cloudprovider.GCP.String()) && networkCfg.IPCidrPod == "" {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("network_config").AtName("ip_cidr_pod"),
+			"Pod IP CIDR missing", "When csp is set to 'gcp', 'ip_cidr_pod' must be set.",
+		)
+	}
+	// Pod IP CIDR should not be set for other CSPs
+	if !strings.EqualFold(data.CSP.ValueString(), cloudprovider.GCP.String()) && networkCfg.IPCidrPod != "" {
+		resp.Diagnostics.AddAttributeWarning(
+			path.Root("network_config").AtName("ip_cidr_pod"),
+			"Pod IP CIDR not allowed", "When csp is not set to 'gcp', setting 'ip_cidr_pod' has no effect.",
+		)
 	}
 }
 
@@ -578,11 +668,8 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 	}
 
 	// parse network config
-	var networkCfg networkConfigAttribute
-	convertDiags = data.NetworkConfig.As(ctx, &networkCfg, basetypes.ObjectAsOptions{
-		UnhandledNullAsEmpty: true, // we want to allow null values, as some of the field's subfields are optional.
-	})
-	diags.Append(convertDiags...)
+	networkCfg, getDiags := r.getNetworkConfig(ctx, data)
+	diags.Append(getDiags...)
 	if diags.HasError() {
 		return diags
 	}
@@ -1048,6 +1135,15 @@ func (r *ClusterResource) getMicroserviceVersion(ctx context.Context, data *Clus
 		ver = r.providerData.Version
 	}
 	return ver, diags
+}
+
+// getNetworkConfig returns the network config from the Terraform state.
+func (r *ClusterResource) getNetworkConfig(ctx context.Context, data *ClusterResourceModel) (networkConfigAttribute, diag.Diagnostics) {
+	var networkCfg networkConfigAttribute
+	diags := data.NetworkConfig.As(ctx, &networkCfg, basetypes.ObjectAsOptions{
+		UnhandledNullAsEmpty: true, // we want to allow null values, as some of the field's subfields are optional.
+	})
+	return networkCfg, diags
 }
 
 // tfContextLogger is a logging adapter between the tflog package and

@@ -26,8 +26,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-// Ensure provider defined types fully satisfy framework interfaces.
-var _ datasource.DataSource = &AttestationDataSource{}
+var (
+	// Ensure provider defined types fully satisfy framework interfaces.
+	_ datasource.DataSource                   = &AttestationDataSource{}
+	_ datasource.DataSourceWithValidateConfig = &AttestationDataSource{}
+	_ datasource.DataSourceWithConfigure      = &AttestationDataSource{}
+)
 
 // NewAttestationDataSource creates a new attestation data source.
 func NewAttestationDataSource() datasource.DataSource {
@@ -109,9 +113,7 @@ func (d *AttestationDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 // ValidateConfig validates the configuration for the image data source.
 func (d *AttestationDataSource) ValidateConfig(ctx context.Context, req datasource.ValidateConfigRequest, resp *datasource.ValidateConfigResponse) {
 	var data AttestationDataSourceModel
-
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}

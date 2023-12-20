@@ -63,7 +63,8 @@ resource "constellation_cluster" "azure_example" {
 ### Required
 
 - `attestation` (Attributes) Attestation comprises the measurements and SEV-SNP specific parameters. The output of the [constellation_attestation](../data-sources/attestation.md) data source provides sensible defaults. (see [below for nested schema](#nestedatt--attestation))
-- `csp` (String) The Cloud Service Provider (CSP) the cluster should run on.
+- `csp` (String) CSP (Cloud Service Provider) to use. (e.g. `azure`)
+See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview/clouds) that Constellation supports.
 - `image` (Attributes) Constellation OS Image to use on the nodes. (see [below for nested schema](#nestedatt--image))
 - `init_secret` (String) Secret used for initialization of the cluster.
 - `master_secret` (String) Hex-encoded 32-byte master secret for the cluster.

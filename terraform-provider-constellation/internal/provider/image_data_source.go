@@ -8,6 +8,7 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -16,6 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
+	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/data"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -26,10 +28,12 @@ import (
 
 var (
 	// Ensure provider defined types fully satisfy framework interfaces.
-	_                                       datasource.DataSource = &ImageDataSource{}
-	caseInsensitiveCommunityGalleriesRegexp                       = regexp.MustCompile(`(?i)\/communitygalleries\/`)
-	caseInsensitiveImagesRegExp                                   = regexp.MustCompile(`(?i)\/images\/`)
-	caseInsensitiveVersionsRegExp                                 = regexp.MustCompile(`(?i)\/versions\/`)
+	_                                       datasource.DataSource                   = &ImageDataSource{}
+	_                                       datasource.DataSourceWithValidateConfig = &ImageDataSource{}
+	_                                       datasource.DataSourceWithConfigure      = &ImageDataSource{}
+	caseInsensitiveCommunityGalleriesRegexp                                         = regexp.MustCompile(`(?i)\/communitygalleries\/`)
+	caseInsensitiveImagesRegExp                                                     = regexp.MustCompile(`(?i)\/images\/`)
+	caseInsensitiveVersionsRegExp                                                   = regexp.MustCompile(`(?i)\/versions\/`)
 )
 
 // NewImageDataSource creates a new data source for fetching Constellation OS images
@@ -103,19 +107,48 @@ func (d *ImageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 // ValidateConfig validates the configuration for the image data source.
 func (d *ImageDataSource) ValidateConfig(ctx context.Context, req datasource.ValidateConfigRequest, resp *datasource.ValidateConfigResponse) {
 	var data ImageDataSourceModel
-
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	// Region must be set for AWS
 	if data.CSP.Equal(types.StringValue("aws")) && data.Region.IsNull() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("region"),
 			"Region must be set for AWS", "When csp is set to 'aws', 'region' must be specified.",
 		)
-		return
+	}
+
+	// Setting Region for non-AWS CSPs has no effect
+	if !data.CSP.Equal(types.StringValue("aws")) && !data.Region.IsNull() {
+		resp.Diagnostics.AddAttributeWarning(
+			path.Root("region"),
+			"Region should only be set for AWS", "When another CSP than AWS is used, setting 'region' has no effect.",
+		)
+	}
+
+	// Marketplace image is only supported for Azure
+	if !data.CSP.Equal(types.StringValue("azure")) && !data.MarketplaceImage.IsNull() {
+		resp.Diagnostics.AddAttributeWarning(
+			path.Root("marketplace_image"),
+			"Marketplace images are currently only supported on Azure", "When another CSP than Azure is used, setting 'marketplace_image' has no effect.",
+		)
+	}
+
+	// Version should be a valid semver or short path, if set
+	if !data.Version.IsNull() {
+		_, semverErr := semver.New(data.Version.ValueString())
+
+		_, shortpathErr := versionsapi.NewVersionFromShortPath(data.Version.ValueString(), versionsapi.VersionKindImage)
+
+		if semverErr != nil && shortpathErr != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("version"),
+				"Invalid Version",
+				fmt.Sprintf("When parsing the version (%s), an error occurred: %s", data.Version.ValueString(), errors.Join(semverErr, shortpathErr)),
+			)
+		}
 	}
 }
 

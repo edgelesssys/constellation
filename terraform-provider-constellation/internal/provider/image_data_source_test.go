@@ -42,7 +42,6 @@ func TestAccImageDataSource(t *testing.T) {
 			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
-				// Read testing
 				{
 					Config: testingConfig + `
 					data "constellation_image" "test" {
@@ -61,7 +60,6 @@ func TestAccImageDataSource(t *testing.T) {
 			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
-				// Read testing
 				{
 					Config: testingConfig + `
 					data "constellation_image" "test" {
@@ -78,7 +76,6 @@ func TestAccImageDataSource(t *testing.T) {
 			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
-				// Read testing
 				{
 					Config: testingConfig + `
 					data "constellation_image" "test" {
@@ -96,7 +93,6 @@ func TestAccImageDataSource(t *testing.T) {
 			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
-				// Read testing
 				{
 					Config: testingConfig + `
 					data "constellation_image" "test" {
@@ -115,7 +111,6 @@ func TestAccImageDataSource(t *testing.T) {
 			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
-				// Read testing
 				{
 					Config: testingConfig + `
 					data "constellation_image" "test" {
@@ -132,7 +127,6 @@ func TestAccImageDataSource(t *testing.T) {
 			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
-				// Read testing
 				{
 					Config: testingConfig + `
 					data "constellation_image" "test" {
@@ -149,7 +143,6 @@ func TestAccImageDataSource(t *testing.T) {
 			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
-				// Read testing
 				{
 					Config: testingConfig + `
 					data "constellation_image" "test" {
@@ -159,6 +152,22 @@ func TestAccImageDataSource(t *testing.T) {
 					}
 				`,
 					ExpectError: regexp.MustCompile(".*Attribute csp value must be one of.*"),
+				},
+			},
+		},
+		"invalid version": {
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			PreCheck:                 bazelPreCheck,
+			Steps: []resource.TestStep{
+				{
+					Config: testingConfig + `
+					data "constellation_image" "test" {
+						version             = "xxx"
+						attestation_variant = "azure-sev-snp"
+						csp                 = "azure"
+					}
+				`,
+					ExpectError: regexp.MustCompile(".*Invalid Version.*"),
 				},
 			},
 		},
