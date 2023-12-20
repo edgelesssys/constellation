@@ -23,6 +23,18 @@ on:
       providerVersion:
         description: "Constellation Terraform provider version to use (without v prefix). Empty value means build from source."
         type: string
+      toImage:
+        description: Image (shortpath) the cluster is upgraded to, or empty for main/nightly.
+        type: string
+        required: false
+      toKubernetes:
+        description: Kubernetes version to target for the upgrade, empty for no upgrade.
+        type: string
+        required: false
+      toProviderVersion:
+        description: Provider version and microservice version to target for the upgrade, empty for no upgrade.
+        type: string
+        required: false
   workflow_call:
     inputs:
       ref:
@@ -41,6 +53,18 @@ on:
       providerVersion:
         description: "Constellation Terraform provider version to use. Empty value means build from source."
         type: string
+      toImage:
+        description: Image (shortpath) the cluster is upgraded to, or empty for main/nightly.
+        type: string
+        required: false
+      toKubernetes:
+        description: Kubernetes version to target for the upgrade, empty for target's default version.
+        type: string
+        required: false
+      toProviderVersion:
+        description: Provider version and microservice version to target for the upgrade, empty for no upgrade.
+        type: string
+        required: false
 
 jobs:
   provider-example-test:
@@ -267,29 +291,42 @@ jobs:
         working-directory: ${{ github.workspace }}/cluster
         shell: bash
         run: |
-          cat >> _override.tf <<EOF
-          locals {
-            version = "v2.14.0"
-          }
-          EOF
-          # TODO change provider version (once registry is available)
+          if [[ "${{ inputs.toImage }}" != "" ]]; then
+            cat >> _override.tf <<EOF
+            locals {
+              version = "${{ inputs.toImage }}"
+            }
+            EOF
+          fi
+          if [[ "${{ inputs.toProviderVersion }}" != "" ]]; then
+            cat >> _override.tf <<EOF
+            terraform {
+              required_providers {
+                constellation = {
+                  source  = "edgelesssys/constellation"
+                  version = "${{ inputs.toProviderVersion }}"
+                }
+              }
+            }
+            EOF
+          fi
           # TODO rename version to image_version
 
-      - name: Apply Terraform Cluster
+      - name: Upgrade Terraform Cluster
         working-directory: ${{ github.workspace }}/cluster
         shell: bash
         run: |
-          terraform init
+          terraform init --upgrade
           TF_LOG=INFO terraform apply -auto-approve
 
       - name: Assert upgrade successful
         # ${{ inputs.toImage && inputs.toImage || steps.find-image.outputs.output }}
         env:
-          IMAGE: v2.14.0
-          #KUBERNETES: ${{ inputs.toKubernetes }}
-          #MICROSERVICES: ${{ inputs.toMicroservices }}
-          #WORKERNODES:  ${{ needs.split-nodeCount.outputs.workerNodes }}
-          #CONTROLNODES: ${{ needs.split-nodeCount.outputs.controlPlaneNodes }}
+          IMAGE: ${{ inputs.toImage }}
+          KUBERNETES: ${{ inputs.toKubernetes }}
+          MICROSERVICES: ${{ inputs.toProviderVersion }}
+          WORKERNODES:  2
+          CONTROLNODES: 2
         run: |
           terraform output -raw kubeconfig > constellation-admin.conf
           export KUBECONFIG=$(realpath constellation-admin.conf)
@@ -300,7 +337,7 @@ jobs:
           if [[ -n ${KUBERNETES} ]]; then
             KUBERNETES_FLAG="--target-kubernetes=$KUBERNETES"
           fi
-          bazel run //e2e/provider-upgrade:provider-upgrade_test -- --want-worker 2 --want-control 2 --target-image "$IMAGE" "$KUBERNETES_FLAG" "$MICROSERVICES_FLAG"
+          bazel run //e2e/provider-upgrade:provider-upgrade_test -- --want-worker $WORKERNODES --want-control $CONTROLNODES --target-image "$IMAGE" "$KUBERNETES_FLAG" "$MICROSERVICES_FLAG"
 
       - name: Destroy Terraform Cluster
       # outcome is part of the steps context (https://docs.github.com/en/actions/learn-github-actions/contexts#steps-context)

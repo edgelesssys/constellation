@@ -14,6 +14,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/e2e/internal/kubectl"
 	"github.com/edgelesssys/constellation/v2/e2e/internal/upgrade"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/stretchr/testify/require"
@@ -33,9 +34,21 @@ var (
 
 // TestUpgradeSuccessful tests that the upgrade to the target version is successful.
 func TestUpgradeSuccessful(t *testing.T) {
-	k8sV := versions.ValidK8sVersion(*targetKubernetes)
-	microV, err := semver.New(*targetMicroservices)
-	require.NoError(t, err)
+	defaultConfig := config.Default()
+	var k8sV versions.ValidK8sVersion
+	if *targetKubernetes == "" {
+		k8sV = defaultConfig.KubernetesVersion
+	} else {
+		k8sV = versions.ValidK8sVersion(*targetKubernetes)
+	}
+	var microV semver.Semver
+	if *targetMicroservices == "" {
+		microV = defaultConfig.MicroserviceVersion
+	} else {
+		var err error
+		microV, err = semver.New(*targetMicroservices)
+		require.NoError(t, err)
+	}
 	v := upgrade.VersionContainer{
 		ImageRef:      *targetImage,
 		Kubernetes:    k8sV,
