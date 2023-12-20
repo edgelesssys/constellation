@@ -96,7 +96,7 @@ jobs:
         if : ${{ matrix.os != 'windows' }}
         with:
           name: constellation-${{ matrix.os }}-${{ matrix.arch }}
-          path: |
+          path: >
             build/constellation-${{ matrix.os }}-${{ matrix.arch }}
             build/constellation-${{ matrix.os }}-${{ matrix.arch }}.sig
 
@@ -105,7 +105,7 @@ jobs:
         if : ${{ matrix.os == 'windows' }}
         with:
           name: constellation-${{ matrix.os }}-${{ matrix.arch }}
-          path: |
+          path: >
             build/constellation-${{ matrix.os }}-${{ matrix.arch }}.exe
             build/constellation-${{ matrix.os }}-${{ matrix.arch }}.exe.sig
 
@@ -175,6 +175,8 @@ jobs:
 
       - name: Upload Terraform infrastructure module
         uses: ./.github/actions/upload_terraform_module
+        with:
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
   push-containers:
     runs-on: ubuntu-22.04
@@ -225,11 +227,14 @@ jobs:
 
       - name: Download release binaries
         uses: ./.github/actions/download_release_binaries
+        with:
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Download CLI SBOM
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        uses: ./.github/actions/artifact_download
         with:
           name: constellation.spdx.sbom
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Generate provenance subjects
         id: provenance-subjects
@@ -338,16 +343,20 @@ jobs:
 
       - name: Download release binaries
         uses: ./.github/actions/download_release_binaries
+        with:
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Download CLI SBOM
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        uses: ./.github/actions/artifact_download
         with:
           name: constellation.spdx.sbom
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Download provenance
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        uses: ./.github/actions/artifact_download
         with:
           name: ${{ needs.provenance.outputs.provenance-name }}
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Install slsa-verifier
         run: |
@@ -416,21 +425,26 @@ jobs:
 
       - name: Download binaries
         uses: ./.github/actions/download_release_binaries
+        with:
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Download CLI SBOM
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        uses: ./.github/actions/artifact_download
         with:
           name: constellation.spdx.sbom
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Download Constellation CLI SBOM's signature
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        uses: ./.github/actions/artifact_download
         with:
           name: constellation.spdx.sbom.sig
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Download Constellation provenance
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        uses: ./.github/actions/artifact_download
         with:
           name: ${{ needs.provenance.outputs.provenance-name }}
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Rename provenance file
         run: |

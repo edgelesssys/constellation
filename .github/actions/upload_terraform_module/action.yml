@@ -1,5 +1,10 @@
 name: Upload Terraform infrastructure module
 description: "Upload the Terraform infrastructure module as an artifact."
+inputs:
+  encryption-secret:
+      description: 'The secret to use for encrypting the artifact.'
+      required: true
+
 
 runs:
   using: "composite"
@@ -15,10 +20,11 @@ runs:
         zip -r terraform-module.zip terraform-module
 
     - name: Upload artifact
-      uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3
+      uses: ./.github/actions/artifact_upload
       with:
         name: terraform-module
         path: terraform-module.zip
+        encryption-secret: ${{ inputs.encryption-secret }}
 
     - name: Cleanup Terraform module dir
       shell: bash

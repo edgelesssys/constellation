@@ -183,6 +183,7 @@ jobs:
           awsOpenSearchUsers: ${{ secrets.AWS_OPENSEARCH_USER }}
           awsOpenSearchPwd: ${{ secrets.AWS_OPENSEARCH_PWD }}
           clusterCreation: "cli"
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Build CLI
         uses: ./.github/actions/build_cli
@@ -275,13 +276,14 @@ jobs:
 
       - name: Always upload logs
         if: always()
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        uses: ./.github/actions/artifact_upload
         with:
           name: upgrade-logs
-          path: |
+          path: >
             node-operator.logs
             node-maintenance-operator.logs
             constellation-version.yaml
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Always terminate cluster
         if: always()

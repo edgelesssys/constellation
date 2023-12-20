@@ -1,0 +1,60 @@
+name: Upload artifact
+description: Upload an encrypted zip archive as a github artifact.
+
+inputs:
+  path:
+    description: 'The path(s) that should be uploaded. Those are evaluated with bash and the extglob option.'
+    required: true
+  name:
+    description: 'The name of the artifact.'
+    required: true
+  retention-days:
+    description: 'How long the artifact should be retained for.'
+    default: 60
+  encryption-secret:
+    description: 'The secret to use for encrypting the files.'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install zip
+      uses: ./.github/actions/setup_bazel_nix
+      with:
+        nixTools: |
+          zip
+
+    - name: Create temporary directory
+      id: tempdir
+      shell: bash
+      run: echo "directory=$(mktemp -d)" >> "$GITHUB_OUTPUT"
+
+    - name: Create archive
+      shell: bash
+      run: |
+        shopt -s extglob
+
+        # Check if any file matches the given pattern(s).
+        something_exists=false
+        for pattern in ${{ inputs.path }}; do
+          if compgen -G $pattern > /dev/null; then
+            something_exists=true
+          fi
+        done
+
+        # Create an archive if files exist.
+        # Don't create an archive file if no files are found
+        # and warn.
+        if $something_exists; then
+          zip -e -P '${{ inputs.encryption-secret }}' -qq -r ${{ steps.tempdir.outputs.directory }}/archive.zip ${{ inputs.path }}
+        else
+          echo "::warning:: No files/directories found with the provided path(s) $(echo -n ${{ inputs.path }}). No artifact will be uploaded."
+        fi
+
+    - name: Upload archive as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ steps.tempdir.outputs.directory }}/archive.zip
+        retention-days: ${{ inputs.retention-days }}
+        if-no-files-found: ignore
