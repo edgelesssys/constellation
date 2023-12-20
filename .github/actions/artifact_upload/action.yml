@@ -34,10 +34,13 @@ runs:
       run: |
         shopt -s extglob
 
+        paths="${{ inputs.path }}"
+        paths=${paths%$'\n'} # Remove trailing newline
+
         # Check if any file matches the given pattern(s).
         something_exists=false
-        for pattern in ${{ inputs.path }}; do
-          if compgen -G $pattern > /dev/null; then
+        for pattern in ${paths}; do
+          if compgen -G ${pattern} > /dev/null; then
             something_exists=true
           fi
         done
@@ -45,10 +48,10 @@ runs:
         # Create an archive if files exist.
         # Don't create an archive file if no files are found
         # and warn.
-        if $something_exists; then
-          zip -e -P '${{ inputs.encryption-secret }}' -qq -r ${{ steps.tempdir.outputs.directory }}/archive.zip ${{ inputs.path }}
+        if ${something_exists}; then
+          zip -e -P '${{ inputs.encryption-secret }}' -qq -r ${{ steps.tempdir.outputs.directory }}/archive.zip ${paths}
         else
-          echo "::warning:: No files/directories found with the provided path(s) $(echo -n ${{ inputs.path }}). No artifact will be uploaded."
+          echo "::warning:: No files/directories found with the provided path(s): ${paths}. No artifact will be uploaded."
         fi
 
     - name: Upload archive as artifact
