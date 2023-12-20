@@ -508,24 +508,24 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/Azure/azure-sdk-for-go/sdk/azcore",
-        sum = "h1:SEy2xmstIphdPwNBUi7uhvjyjhVKISfwjfOJmuy7kg4=",
-        version = "v1.6.1",
+        sum = "h1:fb8kj/Dh4CSwgsOzHeZY4Xh68cFVbzXx+ONXGMY//4w=",
+        version = "v1.9.0",
     )
     go_repository(
         name = "com_github_azure_azure_sdk_for_go_sdk_azidentity",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/Azure/azure-sdk-for-go/sdk/azidentity",
-        sum = "h1:vcYCAze6p19qBW7MhZybIsqD8sMV8js0NyQM8JDnVtg=",
-        version = "v1.3.0",
+        sum = "h1:BMAjVKJM0U/CYF27gA0ZMmXGkOcvfFtD0oHVZ1TIPRI=",
+        version = "v1.4.0",
     )
     go_repository(
         name = "com_github_azure_azure_sdk_for_go_sdk_internal",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/Azure/azure-sdk-for-go/sdk/internal",
-        sum = "h1:sXr+ck84g/ZlZUOZiNELInmMgOsuGwdjjVkEIde0OtY=",
-        version = "v1.3.0",
+        sum = "h1:d81/ng9rET2YqdVkVwkb6EXeRrLJIwyGnJcAlAWKwhs=",
+        version = "v1.5.0",
     )
     go_repository(
         name = "com_github_azure_azure_sdk_for_go_sdk_keyvault_azsecrets",
@@ -568,12 +568,20 @@ def go_dependencies():
         version = "v1.1.2",
     )
     go_repository(
-        name = "com_github_azure_azure_sdk_for_go_sdk_resourcemanager_network_armnetwork_v4",
+        name = "com_github_azure_azure_sdk_for_go_sdk_resourcemanager_internal_v2",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
-        importpath = "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4",
-        sum = "h1:pqCyNi/Paz03SbWRmGlb5WBzK14aOXVuSJuOTWzOM5M=",
-        version = "v4.0.0",
+        importpath = "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/internal/v2",
+        sum = "h1:PTFGRSlMKCQelWwxUyYVEUqseBJVemLyqWJjvMyt0do=",
+        version = "v2.0.0",
+    )
+    go_repository(
+        name = "com_github_azure_azure_sdk_for_go_sdk_resourcemanager_network_armnetwork_v5",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v5",
+        sum = "h1:9CrwzqQ+e8EqD+A2bh547GjBU4K0o30FhiTB981LFNI=",
+        version = "v5.0.0",
     )
     go_repository(
         name = "com_github_azure_azure_sdk_for_go_sdk_resourcemanager_resources_armresources",
@@ -708,8 +716,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/AzureAD/microsoft-authentication-library-for-go",
-        sum = "h1:OBhqkivkhkMqLPymWEppkm7vgPQY2XsHoEkaMQ0AdZY=",
-        version = "v1.0.0",
+        sum = "h1:WpB/QDNLpMw72xHJc34BNNykqSOeEJDAWkhf0u12/Jk=",
+        version = "v1.1.1",
     )
     go_repository(
         name = "com_github_bazelbuild_buildtools",
