@@ -57,7 +57,6 @@ runs:
 
         for target in ${paths}
         do
-          echo "Adding ${target} to archive"
           pushd "$(dirname "${target}")" || exit 1
           zip -e -P '${{ inputs.encryptionSecret }}' -r "${{ steps.tempdir.outputs.directory }}/archive.zip" "$(basename "${target}")"
           popd || exit 1

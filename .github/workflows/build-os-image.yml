@@ -316,6 +316,7 @@ jobs:
         working-directory: ${{ github.workspace }}/image
         run: |
           echo "::group::Upload Azure image"
+          chmod +w "${RAW_IMAGE_PATH}"
           upload/pack.sh azure "${RAW_IMAGE_PATH}" "${AZURE_IMAGE_PATH}"
           bazel run //image/upload -- image azure \
             --verbose \
