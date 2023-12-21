@@ -104,13 +104,14 @@ require (
 	github.com/mattn/go-isatty v0.0.19
 	github.com/microsoft/ApplicationInsights-Go v0.4.4
 	github.com/pkg/errors v0.9.1
+	github.com/regclient/regclient v0.5.5
 	github.com/rogpeppe/go-internal v1.11.0
 	github.com/schollz/progressbar/v3 v3.13.1
 	github.com/siderolabs/talos/pkg/machinery v1.4.6
 	github.com/sigstore/rekor v1.2.2
 	github.com/sigstore/sigstore v1.7.1
 	github.com/spf13/afero v1.10.0
-	github.com/spf13/cobra v1.7.0
+	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.4
 	github.com/theupdateframework/go-tuf v0.5.2
@@ -144,9 +145,11 @@ require (
 require (
 	github.com/Microsoft/hcsshim v0.11.0 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
+	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
+	github.com/ulikunitz/xz v0.5.11 // indirect
 	go.opentelemetry.io/otel/metric v1.19.0 // indirect
 )
 

@@ -1251,8 +1251,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/cpuguy83/go-md2man/v2",
-        sum = "h1:p1EgwI/C7NhT0JmVkwCD2ZBK8j4aeHQX2pMHHBfMQ6w=",
-        version = "v2.0.2",
+        sum = "h1:qMCsGGgs+MAzDFyp9LpAe1Lqy/fY/qCovCm0qnXZOBM=",
+        version = "v2.0.3",
     )
     go_repository(
         name = "com_github_creack_pty",
@@ -1443,8 +1443,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/docker/libtrust",
-        sum = "h1:ZClxb8laGDf5arXfYcAtECDFgAgHklGI8CxgjHnXKJ4=",
-        version = "v0.0.0-20150114040149-fa567046d9b1",
+        sum = "h1:UhxFibDNY/bfvqU5CAUmr9zpesgbU6SWc8/B4mflAE4=",
+        version = "v0.0.0-20160708172513-aabc10ec26b7",
     )
     go_repository(
         name = "com_github_dustin_go_humanize",
@@ -4348,6 +4348,14 @@ def go_dependencies():
         version = "v9.0.5",
     )
     go_repository(
+        name = "com_github_regclient_regclient",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/regclient/regclient",
+        sum = "h1:fDh5afBCRbeSU71vcvbN0fI88D1fTfp2m39BPqki7EU=",
+        version = "v0.5.5",
+    )
+    go_repository(
         name = "com_github_rivo_uniseg",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
@@ -4704,8 +4712,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/spf13/cobra",
-        sum = "h1:hyqWnYt1ZQShIddO5kBpj3vu05/++x6tJ6dg8EC572I=",
-        version = "v1.7.0",
+        sum = "h1:7aJaZx1B85qltLMc546zn58BxxfZdR/W22ej9CFoEf0=",
+        version = "v1.8.0",
     )
     go_repository(
         name = "com_github_spf13_jwalterweatherman",
@@ -5131,6 +5139,14 @@ def go_dependencies():
         importpath = "github.com/yuin/goldmark",
         sum = "h1:fVcFKWvrslecOb/tg+Cc05dkeYx540o0FuFt3nUVDoE=",
         version = "v1.4.13",
+    )
+    go_repository(
+        name = "com_github_yuin_gopher_lua",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/yuin/gopher-lua",
+        sum = "h1:BojcDhfyDWgU2f2TOzYK/g5p2gxMrku8oupLDqlnSqE=",
+        version = "v1.1.0",
     )
     go_repository(
         name = "com_github_yvasiyarov_go_metrics",
