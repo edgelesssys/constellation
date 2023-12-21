@@ -7,13 +7,103 @@ SPDX-License-Identifier: AGPL-3.0-only
 package provider
 
 import (
+	"context"
 	"regexp"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/semver"
+	"github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/data"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestMicroserviceConstraint(t *testing.T) {
+	sut := &ClusterResource{
+		providerData: data.ProviderData{
+			Version: semver.NewFromInt(2, 15, 0, ""),
+		},
+	}
+	testCases := []struct {
+		name               string
+		version            string
+		expectedErrorCount int
+	}{
+		{
+			name:               "outdated by 2 minor  versions is invalid",
+			version:            "v2.13.0",
+			expectedErrorCount: 1,
+		},
+		{
+			name:               "outdated by 1 minor is allowed for upgrade",
+			version:            "v2.14.0",
+			expectedErrorCount: 0,
+		},
+		{
+			name:               "same version is valid",
+			version:            "v2.15.0",
+			expectedErrorCount: 0,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, diags := sut.getMicroserviceVersion(context.Background(), &ClusterResourceModel{
+				MicroserviceVersion: basetypes.NewStringValue(tc.version),
+			})
+			require.Equal(t, tc.expectedErrorCount, diags.ErrorsCount())
+		})
+	}
+}
+
+func TestViolatedImageConstraint(t *testing.T) {
+	sut := &ClusterResource{
+		providerData: data.ProviderData{
+			Version: semver.NewFromInt(2, 15, 0, ""),
+		},
+	}
+	testCases := []struct {
+		name               string
+		version            string
+		expectedErrorCount int
+	}{
+		{
+			name:               "outdated by 2 minor versions is invalid",
+			version:            "v2.13.0",
+			expectedErrorCount: 1,
+		},
+		{
+			name:               "outdated by 1 minor is allowed for upgrade",
+			version:            "v2.14.0",
+			expectedErrorCount: 0,
+		},
+		{
+			name:               "same version is valid",
+			version:            "v2.15.0",
+			expectedErrorCount: 0,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			img := imageAttribute{
+				Version: tc.version,
+			}
+
+			input, diags := basetypes.NewObjectValueFrom(context.Background(), map[string]attr.Type{
+				"version":    basetypes.StringType{},
+				"reference":  basetypes.StringType{},
+				"short_path": basetypes.StringType{},
+			}, img)
+			require.Equal(t, 0, diags.ErrorsCount())
+			_, _, diags2 := sut.getImageVersion(context.TODO(), &ClusterResourceModel{
+				Image: input,
+			})
+			require.Equal(t, tc.expectedErrorCount, diags2.ErrorsCount())
+		})
+	}
+}
 
 func TestAccClusterResourceImports(t *testing.T) {
 	// Set the path to the Terraform binary for acceptance testing when running under Bazel.

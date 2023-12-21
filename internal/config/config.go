@@ -846,7 +846,7 @@ func (c *Config) Validate(force bool) error {
 		// Because of this we can't print the offending field name in the error message, resulting in
 		// suboptimal UX. Adding the field name to the struct validation of Semver would make it
 		// impossible to use Semver for other fields.
-		if err := validateMicroserviceVersion(constants.BinaryVersion(), c.MicroserviceVersion); err != nil {
+		if err := ValidateMicroserviceVersion(constants.BinaryVersion(), c.MicroserviceVersion); err != nil {
 			msg := "microserviceVersion: " + msgFromCompatibilityError(err, constants.BinaryVersion().String(), c.MicroserviceVersion.String())
 			return &ValidationError{validationErrMsgs: []string{msg}}
 		}

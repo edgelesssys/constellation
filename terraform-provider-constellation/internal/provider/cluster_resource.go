@@ -699,18 +699,9 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 	}
 
 	// parse OS image version
-	var image imageAttribute
-	convertDiags = data.Image.As(ctx, &image, basetypes.ObjectAsOptions{})
+	image, imageSemver, convertDiags := r.getImageVersion(ctx, data)
 	diags.Append(convertDiags...)
 	if diags.HasError() {
-		return diags
-	}
-	imageSemver, err := semver.New(image.Version)
-	if err != nil {
-		diags.AddAttributeError(
-			path.Root("image").AtName("version"),
-			"Invalid image version",
-			fmt.Sprintf("Parsing image version (%s): %s", image.Version, err))
 		return diags
 	}
 
@@ -902,6 +893,26 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 	}
 
 	return diags
+}
+
+func (r *ClusterResource) getImageVersion(ctx context.Context, data *ClusterResourceModel) (imageAttribute, semver.Semver, diag.Diagnostics) {
+	var image imageAttribute
+	diags := data.Image.As(ctx, &image, basetypes.ObjectAsOptions{})
+	imageSemver, err := semver.New(image.Version)
+	if err != nil {
+		diags.AddAttributeError(
+			path.Root("image").AtName("version"),
+			"Invalid image version",
+			fmt.Sprintf("Parsing image version (%s): %s", image.Version, err))
+		return imageAttribute{}, semver.Semver{}, diags
+	}
+	if err := compatibility.BinaryWith(r.providerData.Version.String(), imageSemver.String()); err != nil {
+		diags.AddAttributeError(
+			path.Root("image").AtName("version"),
+			"Image version incompatible with provider version",
+			fmt.Sprintf("Image version (%s) incompatible with provider version (%s): %s", image.Version, r.providerData.Version.String(), err))
+	}
+	return image, imageSemver, diags
 }
 
 // initRPCPayload groups the data required to run the init RPC.
@@ -1133,6 +1144,12 @@ func (r *ClusterResource) getMicroserviceVersion(ctx context.Context, data *Clus
 	} else {
 		tflog.Info(ctx, fmt.Sprintf("No Microservice version specified. Using default version %s.", r.providerData.Version))
 		ver = r.providerData.Version
+	}
+	if err := config.ValidateMicroserviceVersion(r.providerData.Version, ver); err != nil {
+		diags.AddAttributeError(
+			path.Root("constellation_microservice_version"),
+			"Invalid microservice version",
+			fmt.Sprintf("Microservice version (%s) incompatible with provider version (%s): %s", ver, r.providerData.Version, err))
 	}
 	return ver, diags
 }

@@ -690,7 +690,8 @@ func msgFromCompatibilityError(err error, binaryVersion, fieldValue string) stri
 	}
 }
 
-func validateMicroserviceVersion(binaryVersion, version consemver.Semver) error {
+// ValidateMicroserviceVersion checks that the version of the microservice is compatible with the binary version.
+func ValidateMicroserviceVersion(binaryVersion, version consemver.Semver) error {
 	// Major versions always have to match.
 	if binaryVersion.Major() != version.Major() {
 		return compatibility.ErrMajorMismatch
