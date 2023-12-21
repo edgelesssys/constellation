@@ -23,7 +23,7 @@ jobs:
         sudo python3 -m pip install --user --require-hashes -r constellation/.github/workflows/aws-snp-launchmeasurements-requirements.txt
 
     - name: Install Nix
-      uses: cachix/install-nix-action@6a9a9e84a173d90b3ffb42c5ddaf9ea033fad011 # v23
+      uses: cachix/install-nix-action@7ac1ec25491415c381d9b62f0657c7a028df52a7 # v24
 
     - name: Download Firmware release
       id: download-firmware
