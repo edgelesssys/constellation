@@ -19,6 +19,7 @@ sh_template(
                 "//terraform-provider-constellation:terraform_rc",
                 "//terraform-provider-constellation:tf_provider",
             ],
+            "//conditions:default": [],
         },
     ),
     substitutions = {
@@ -50,6 +51,10 @@ sh_template(
             "//bazel/settings:cli_edition_enterprise": {
                 "@@TERRAFORM_PROVIDER@@": "$(rootpath //terraform-provider-constellation:tf_provider)",
                 "@@TERRAFORM_RC@@": "$(rootpath //terraform-provider-constellation:terraform_rc)",
+            },
+            "//conditions:default": {
+                "@@TERRAFORM_PROVIDER@@": "",
+                "@@TERRAFORM_RC@@": "",
             },
         },
     ),
