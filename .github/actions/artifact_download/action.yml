@@ -36,4 +36,5 @@ runs:
     - name: Decrypt and unzip archive
       shell: bash
       run: |
+        mkdir -p ${{ inputs.path }}
         unzip -P '${{ inputs.encryption-secret }}' -qq -d ${{ inputs.path }} ${{ steps.tempdir.outputs.directory }}/archive.zip
