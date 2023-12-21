@@ -84,6 +84,11 @@ runs:
         fi
         echo "::endgroup::"
 
+    - name: Install current Bash on macOS
+      shell: bash
+      if: runner.os == 'macOS'
+      run: brew install bash
+
     - name: Prepare to install tools
       shell: bash
       run: |
