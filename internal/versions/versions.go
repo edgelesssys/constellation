@@ -247,7 +247,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 				InstallPath: patchFilePath("kube-scheduler"),
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2V0Y2Q6My41LjctMEBzaGEyNTY6NTFlYWU4MzgxZGNiMTA3ODI4OWZhN2I0ZjNkZjI2MzBjZGMxOGQwOWZiNTZmOGU1NmI0MWM0MGUxOTFkNmM4MyJ9XQ==",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2V0Y2Q6My41LjEwLTBAc2hhMjU2OjIyZjg5MmQ3NjcyYWRjMGI5Yzg2ZGY2Nzc5MmFmZGI4YjJkYzA4ODgwZjQ5ZjY2OWVhYWE1OWM0N2Q3OTA4YzIifV0=",
 				InstallPath: patchFilePath("etcd"),
 			},
 		},
@@ -314,7 +314,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 				InstallPath: patchFilePath("kube-scheduler"),
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2V0Y2Q6My41LjktMEBzaGEyNTY6ZTAxM2QwZDVlNGUyNWQwMGM2MWE3ZmY4Mzk5MjdhMWYzNjQ3OTY3OGYxMWU0OTUwMmI1M2E1ZTBiMTRmMTBjMyJ9XQ==",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2V0Y2Q6My41LjEwLTBAc2hhMjU2OjIyZjg5MmQ3NjcyYWRjMGI5Yzg2ZGY2Nzc5MmFmZGI4YjJkYzA4ODgwZjQ5ZjY2OWVhYWE1OWM0N2Q3OTA4YzIifV0=",
 				InstallPath: patchFilePath("etcd"),
 			},
 		},
@@ -381,7 +381,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 				InstallPath: patchFilePath("kube-scheduler"),
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2V0Y2Q6My41LjktMEBzaGEyNTY6ZTAxM2QwZDVlNGUyNWQwMGM2MWE3ZmY4Mzk5MjdhMWYzNjQ3OTY3OGYxMWU0OTUwMmI1M2E1ZTBiMTRmMTBjMyJ9XQ==",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2V0Y2Q6My41LjEwLTBAc2hhMjU2OjIyZjg5MmQ3NjcyYWRjMGI5Yzg2ZGY2Nzc5MmFmZGI4YjJkYzA4ODgwZjQ5ZjY2OWVhYWE1OWM0N2Q3OTA4YzIifV0=",
 				InstallPath: patchFilePath("etcd"),
 			},
 		},
