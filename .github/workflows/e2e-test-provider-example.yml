@@ -254,18 +254,11 @@ jobs:
           if [[ "${{ inputs.providerVersion }}" == "azure" ]]; then
             terraform apply -target module.azure_iam -auto-approve
             terraform apply -target module.azure_infrastructure -auto-approve
-            ./constellation maa-patch $(terraform output -raw maa_url)
+            ./constellation maa-patch "$(terraform output -raw maa_url)"
             TF_LOG=INFO terraform apply -target constellation_cluster.azure_example -auto-approve
           else
             TF_LOG=INFO terraform apply -auto-approve
           fi
-
-      - name: Upgrade Terraform Cluster
-        working-directory: ${{ github.workspace }}/cluster
-        shell: bash
-        run: |
-          terraform init --upgrade
-          TF_LOG=INFO terraform apply -auto-approve
 
       - name: Destroy Terraform Cluster
       # outcome is part of the steps context (https://docs.github.com/en/actions/learn-github-actions/contexts#steps-context)
