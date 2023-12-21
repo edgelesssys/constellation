@@ -16,6 +16,7 @@ go_library(
         "@io_k8s_client_go//rest",
         "@io_k8s_client_go//tools/clientcmd",
         "@io_k8s_client_go//util/cert",
+        "@io_k8s_cluster_bootstrap//token/api",
         "@io_k8s_cluster_bootstrap//token/util",
         "@io_k8s_kubernetes//cmd/kubeadm/app/apis/bootstraptoken/v1:bootstraptoken",
         "@io_k8s_kubernetes//cmd/kubeadm/app/apis/kubeadm/v1beta3",
