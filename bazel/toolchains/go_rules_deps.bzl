@@ -11,9 +11,9 @@ def go_deps():
         name = "io_bazel_rules_go",
         sha256 = "91585017debb61982f7054c9688857a2ad1fd823fc3f9cb05048b0025c47d023",
         urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.42.0/rules_go-v0.42.0.zip",
+            "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.44.0/rules_go-v0.44.0.zip",
             "https://cdn.confidential.cloud/constellation/cas/sha256/91585017debb61982f7054c9688857a2ad1fd823fc3f9cb05048b0025c47d023",
-            "https://github.com/bazelbuild/rules_go/releases/download/v0.42.0/rules_go-v0.42.0.zip",
+            "https://github.com/bazelbuild/rules_go/releases/download/v0.44.0/rules_go-v0.44.0.zip",
         ],
         type = "zip",
     )
