@@ -103,7 +103,7 @@ type ClusterResourceModel struct {
 }
 
 // networkConfigAttribute is the network config attribute's data model.
-// needs basetypes because the struct is used in ValidateConfig where these values might still be unknown. A go string type cannot handle unknown values.
+// needs basetypes because the struct might be used in ValidateConfig where these values might still be unknown. A go string type cannot handle unknown values.
 type networkConfigAttribute struct {
 	IPCidrNode    basetypes.StringValue `tfsdk:"ip_cidr_node"`
 	IPCidrPod     basetypes.StringValue `tfsdk:"ip_cidr_pod"`
@@ -409,26 +409,6 @@ func (r *ClusterResource) ValidateConfig(ctx context.Context, req resource.Valid
 			"GCP configuration not allowed", "When csp is not set to 'gcp', setting the 'gcp' configuration has no effect.",
 		)
 	}
-
-	networkCfg, diags := r.getNetworkConfig(ctx, &data)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	// Pod IP CIDR is required for GCP
-	if strings.EqualFold(data.CSP.ValueString(), cloudprovider.GCP.String()) && networkCfg.IPCidrPod.ValueString() == "" {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("network_config").AtName("ip_cidr_pod"),
-			"Pod IP CIDR missing", "When csp is set to 'gcp', 'ip_cidr_pod' must be set.",
-		)
-	}
-	// Pod IP CIDR should not be set for other CSPs
-	if !strings.EqualFold(data.CSP.ValueString(), cloudprovider.GCP.String()) && networkCfg.IPCidrPod.ValueString() != "" {
-		resp.Diagnostics.AddAttributeWarning(
-			path.Root("network_config").AtName("ip_cidr_pod"),
-			"Pod IP CIDR not allowed", "When csp is not set to 'gcp', setting 'ip_cidr_pod' has no effect.",
-		)
-	}
 }
 
 // Configure configures the resource.
@@ -661,6 +641,26 @@ func (r *ClusterResource) ImportState(ctx context.Context, req resource.ImportSt
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("master_secret_salt"), masterSecretSalt)...)
 }
 
+func (r *ClusterResource) validateGCPNetworkConfig(ctx context.Context, data *ClusterResourceModel) diag.Diagnostics {
+	networkCfg, diags := r.getNetworkConfig(ctx, data)
+
+	// Pod IP CIDR is required for GCP
+	if strings.EqualFold(data.CSP.ValueString(), cloudprovider.GCP.String()) && networkCfg.IPCidrPod.ValueString() == "" {
+		diags.AddAttributeError(
+			path.Root("network_config").AtName("ip_cidr_pod"),
+			"Pod IP CIDR missing", "When csp is set to 'gcp', 'ip_cidr_pod' must be set.",
+		)
+	}
+	// Pod IP CIDR should not be set for other CSPs
+	if !strings.EqualFold(data.CSP.ValueString(), cloudprovider.GCP.String()) && networkCfg.IPCidrPod.ValueString() != "" {
+		diags.AddAttributeWarning(
+			path.Root("network_config").AtName("ip_cidr_pod"),
+			"Pod IP CIDR not allowed", "When csp is not set to 'gcp', setting 'ip_cidr_pod' has no effect.",
+		)
+	}
+	return diags
+}
+
 // apply applies changes to a cluster. It can be used for both creating and updating a cluster.
 // This implements the core part of the Create and Update methods.
 func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel, skipInitRPC, skipNodeUpgrade bool) diag.Diagnostics {
@@ -668,6 +668,11 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 
 	// Parse and convert values from the Terraform state
 	// to formats the Constellation library can work with.
+	convertDiags := r.validateGCPNetworkConfig(ctx, data)
+	diags.Append(convertDiags...)
+	if diags.HasError() {
+		return diags
+	}
 
 	csp := cloudprovider.FromString(data.CSP.ValueString())
 
