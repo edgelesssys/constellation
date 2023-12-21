@@ -57,14 +57,14 @@ jobs:
         with:
           name: "binaries-${{ matrix.target }}"
           path: "${{ env.binary }}"
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Upload hash artifact
         uses: ./.github/actions/artifact_upload
         with:
           name: "sha256sums"
           path: "${{ env.binary }}.sha256"
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
   build-osimages:
     strategy:
@@ -139,7 +139,7 @@ jobs:
           uses: ./.github/actions/artifact_download
           with:
             name: "binaries-${{ matrix.target }}"
-            encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+            encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
         - name: Hash
           shell: bash
@@ -169,7 +169,7 @@ jobs:
           uses: ./.github/actions/artifact_download
           with:
             name: "osimages-${{ matrix.target }}"
-            encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+            encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
         - name: Hash
           shell: bash

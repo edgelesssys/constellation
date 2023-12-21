@@ -182,7 +182,7 @@ jobs:
         with:
           name: image-${{ matrix.csp }}-${{ matrix.attestation_variant }}
           path: ${{ steps.build.outputs.image-dir }}/constellation.raw
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Upload individual OS parts as artifacts
         uses: ./.github/actions/artifact_upload
@@ -192,14 +192,14 @@ jobs:
             ${{ steps.build.outputs.image-dir }}/constellation.efi
             ${{ steps.build.outputs.image-dir }}/constellation.initrd
             ${{ steps.build.outputs.image-dir }}/constellation.vmlinuz
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Upload sbom info as artifact
         uses: ./.github/actions/artifact_upload
         with:
           name: sbom-${{ matrix.csp }}-${{ matrix.attestation_variant }}
           path: ${{ steps.build.outputs.rpmdb }}
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
   upload-os-image:
     name: "Upload OS image to CSP"
@@ -248,7 +248,7 @@ jobs:
         with:
           name: image-${{ matrix.csp }}-${{ matrix.attestation_variant }}
           path: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Install tools
         shell: bash
@@ -361,7 +361,7 @@ jobs:
         with:
           name: lookup-table
           path: ${{ github.workspace }}/image/mkosi.output.*/*/image-upload*.json
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
   calculate-pcrs:
     name: "Calculate PCRs"
@@ -398,7 +398,7 @@ jobs:
         uses: ./.github/actions/artifact_download
         with:
           name: image-${{ matrix.csp }}-${{ matrix.attestation_variant }}
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - uses: ./.github/actions/setup_bazel_nix
         with:
@@ -545,7 +545,7 @@ jobs:
         with:
           name: measurements
           path: pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
   upload-pcrs:
     name: "Sign & upload PCRs"
@@ -568,7 +568,7 @@ jobs:
         uses: ./.github/actions/artifact_download
         with:
           name: measurements
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Login to AWS
         uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a # v4.0.1
@@ -652,7 +652,7 @@ jobs:
           # downloading / using only the QEMU manifest is fine
           # since the images only differ in the ESP partition
           name: sbom-qemu-qemu-vtpm
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Upload SBOMs to S3
         shell: bash
@@ -683,7 +683,7 @@ jobs:
         uses: ./.github/actions/artifact_download
         with:
           name: lookup-table
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Login to AWS
         uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a # v4.0.1
