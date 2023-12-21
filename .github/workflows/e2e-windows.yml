@@ -38,7 +38,7 @@ jobs:
         with:
           path: "bazel-bin/cli/cli_enterprise_windows_amd64"
           name: "constell-exe"
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
   e2e-test:
     name: E2E Test Windows
@@ -54,7 +54,7 @@ jobs:
         uses: ./.github/actions/artifact_download
         with:
           name: "constell-exe"
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Check CLI version
         shell: pwsh

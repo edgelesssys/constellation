@@ -176,7 +176,7 @@ jobs:
       - name: Upload Terraform infrastructure module
         uses: ./.github/actions/upload_terraform_module
         with:
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
   push-containers:
     runs-on: ubuntu-22.04
@@ -232,7 +232,7 @@ jobs:
         uses: ./.github/actions/artifact_download
         with:
           name: constellation.spdx.sbom
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Generate provenance subjects
         id: provenance-subjects
@@ -346,13 +346,13 @@ jobs:
         uses: ./.github/actions/artifact_download
         with:
           name: constellation.spdx.sbom
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Download provenance
         uses: ./.github/actions/artifact_download
         with:
           name: ${{ needs.provenance.outputs.provenance-name }}
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Install slsa-verifier
         run: |
@@ -426,19 +426,19 @@ jobs:
         uses: ./.github/actions/artifact_download
         with:
           name: constellation.spdx.sbom
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Download Constellation CLI SBOM's signature
         uses: ./.github/actions/artifact_download
         with:
           name: constellation.spdx.sbom.sig
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Download Constellation provenance
         uses: ./.github/actions/artifact_download
         with:
           name: ${{ needs.provenance.outputs.provenance-name }}
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Rename provenance file
         run: |
