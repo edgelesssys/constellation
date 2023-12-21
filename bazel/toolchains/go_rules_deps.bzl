@@ -9,13 +9,12 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 def go_deps():
     http_archive(
         name = "io_bazel_rules_go",
-        sha256 = "91585017debb61982f7054c9688857a2ad1fd823fc3f9cb05048b0025c47d023",
         urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.44.0/rules_go-v0.44.0.zip",
-            "https://cdn.confidential.cloud/constellation/cas/sha256/91585017debb61982f7054c9688857a2ad1fd823fc3f9cb05048b0025c47d023",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/c8035e8ae248b56040a65ad3f0b7434712e2037e5dfdcebfe97576e620422709",
             "https://github.com/bazelbuild/rules_go/releases/download/v0.44.0/rules_go-v0.44.0.zip",
         ],
         type = "zip",
+        sha256 = "c8035e8ae248b56040a65ad3f0b7434712e2037e5dfdcebfe97576e620422709",
     )
     http_archive(
         name = "bazel_gazelle",
