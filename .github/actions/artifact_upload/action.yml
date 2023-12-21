@@ -3,7 +3,7 @@ description: Upload an encrypted zip archive as a github artifact.
 
 inputs:
   path:
-    description: 'The path(s) that should be uploaded. Those are evaluated with bash and the extglob option.'
+    description: 'The path(s) that should be uploaded. Paths may contain globs. Only the final component of a path is uploaded.'
     required: true
   name:
     description: 'The name of the artifact.'

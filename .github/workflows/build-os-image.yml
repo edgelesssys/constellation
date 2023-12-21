@@ -698,12 +698,7 @@ jobs:
 
       - name: Upload lookup table to S3
         shell: bash
-        run: bazel run //image/upload -- info --verbose mkosi.output.*/*/image-upload*.json
-
-      - name: Checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-        with:
-          ref: ${{ inputs.ref || github.head_ref }}
+        run: bazel run //image/upload -- info --verbose image-upload*.json
 
       - name: Create CLI compatibility information artifact
         shell: bash
