@@ -227,8 +227,6 @@ jobs:
 
       - name: Download release binaries
         uses: ./.github/actions/download_release_binaries
-        with:
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Download CLI SBOM
         uses: ./.github/actions/artifact_download
@@ -343,8 +341,6 @@ jobs:
 
       - name: Download release binaries
         uses: ./.github/actions/download_release_binaries
-        with:
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Download CLI SBOM
         uses: ./.github/actions/artifact_download
@@ -425,8 +421,6 @@ jobs:
 
       - name: Download binaries
         uses: ./.github/actions/download_release_binaries
-        with:
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Download CLI SBOM
         uses: ./.github/actions/artifact_download
