@@ -299,7 +299,7 @@ runs:
         clusterCreation: ${{ inputs.clusterCreation }}
         marketplaceImageVersion: ${{ inputs.marketplaceImageVersion }}
         force: ${{ inputs.force }}
-        encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+        encryptionSecret: ${{ inputs.encryptionSecret }}
 
     - name: Deploy log- and metrics-collection (Kubernetes)
       id: deploy-logcollection
