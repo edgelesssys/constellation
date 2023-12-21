@@ -103,10 +103,11 @@ type ClusterResourceModel struct {
 }
 
 // networkConfigAttribute is the network config attribute's data model.
+// needs basetypes because the struct is used in ValidateConfig where these values might still be unknown. A go string type cannot handle unknown values.
 type networkConfigAttribute struct {
-	IPCidrNode    string `tfsdk:"ip_cidr_node"`
-	IPCidrPod     string `tfsdk:"ip_cidr_pod"`
-	IPCidrService string `tfsdk:"ip_cidr_service"`
+	IPCidrNode    basetypes.StringValue `tfsdk:"ip_cidr_node"`
+	IPCidrPod     basetypes.StringValue `tfsdk:"ip_cidr_pod"`
+	IPCidrService basetypes.StringValue `tfsdk:"ip_cidr_service"`
 }
 
 // gcpAttribute is the gcp attribute's data model.
@@ -415,14 +416,14 @@ func (r *ClusterResource) ValidateConfig(ctx context.Context, req resource.Valid
 		return
 	}
 	// Pod IP CIDR is required for GCP
-	if strings.EqualFold(data.CSP.ValueString(), cloudprovider.GCP.String()) && networkCfg.IPCidrPod == "" {
+	if strings.EqualFold(data.CSP.ValueString(), cloudprovider.GCP.String()) && networkCfg.IPCidrPod.ValueString() == "" {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("network_config").AtName("ip_cidr_pod"),
 			"Pod IP CIDR missing", "When csp is set to 'gcp', 'ip_cidr_pod' must be set.",
 		)
 	}
 	// Pod IP CIDR should not be set for other CSPs
-	if !strings.EqualFold(data.CSP.ValueString(), cloudprovider.GCP.String()) && networkCfg.IPCidrPod != "" {
+	if !strings.EqualFold(data.CSP.ValueString(), cloudprovider.GCP.String()) && networkCfg.IPCidrPod.ValueString() != "" {
 		resp.Diagnostics.AddAttributeWarning(
 			path.Root("network_config").AtName("ip_cidr_pod"),
 			"Pod IP CIDR not allowed", "When csp is not set to 'gcp', setting 'ip_cidr_pod' has no effect.",
@@ -809,7 +810,7 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 		InitSecret:        []byte(data.InitSecret.ValueString()),
 		APIServerCertSANs: apiServerCertSANs,
 		Name:              data.Name.ValueString(),
-		IPCidrNode:        networkCfg.IPCidrNode,
+		IPCidrNode:        networkCfg.IPCidrNode.ValueString(),
 	})
 	switch csp {
 	case cloudprovider.Azure:
@@ -824,7 +825,7 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 	case cloudprovider.GCP:
 		stateFile.Infrastructure.GCP = &state.GCP{
 			ProjectID: gcpConfig.ProjectID,
-			IPCidrPod: networkCfg.IPCidrPod,
+			IPCidrPod: networkCfg.IPCidrPod.ValueString(),
 		}
 	}
 
@@ -992,7 +993,7 @@ func (r *ClusterResource) runInitRPC(ctx context.Context, applier *constellation
 			MeasurementSalt: payload.measurementSalt,
 			K8sVersion:      payload.k8sVersion,
 			ConformanceMode: false, // Conformance mode does't need to be configurable through the TF provider for now.
-			ServiceCIDR:     payload.networkCfg.IPCidrService,
+			ServiceCIDR:     payload.networkCfg.IPCidrService.ValueString(),
 		})
 	if err != nil {
 		var nonRetriable *constellation.NonRetriableInitError
