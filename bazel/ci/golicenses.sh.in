@@ -61,6 +61,8 @@ license_report() {
 
         github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/api/v1alpha1) ;;
 
+        github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/api) ;;
+
         *)
           not_allowed
           ;;
