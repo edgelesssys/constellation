@@ -15,7 +15,7 @@ go_library(
         "scalinggroup.go",
         "vmss.go",
     ],
-    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/azure/client",
+    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/cloud/azure/client",
     visibility = ["//operators/constellation-node-operator:__subpackages__"],
     deps = [
         "//internal/constants",

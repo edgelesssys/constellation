@@ -204,25 +204,25 @@ ok  	github.com/edgelesssys/constellation/v2/hack/oci-pin/internal/extract	(cach
 ok  	github.com/edgelesssys/constellation/v2/hack/oci-pin/internal/inject	(cached)	coverage: 100.0% of statements
 ok  	github.com/edgelesssys/constellation/v2/hack/oci-pin/internal/sums	(cached)	coverage: 98.9% of statements
 ok  	github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api/server	(cached)	coverage: 60.7% of statements
-?   	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2	[no test files]
-?   	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/api	[no test files]
-ok  	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/controllers	(cached)	coverage: 30.6% of statements
-?   	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/fake/client	[no test files]
-ok  	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/aws/client	(cached)	coverage: 78.4% of statements
-ok  	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/azure/client	(cached)	coverage: 89.3% of statements
-?   	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/constants	[no test files]
-ok  	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/gcp/client	(cached)	coverage: 80.8% of statements
-ok  	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/controlplane	(cached)	coverage: 100.0% of statements
-?   	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/upgrade	[no test files]
-ok  	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/deploy	(cached)	coverage: 76.6% of statements
-ok  	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/etcd	(cached)	coverage: 65.8% of statements
-ok  	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/executor	(cached)	coverage: 93.2% of statements
-ok  	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/node	(cached)	coverage: 100.0% of statements
-ok  	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/patch	(cached)	coverage: 100.0% of statements
-ok  	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/poller	(cached)	coverage: 91.4% of statements
-ok  	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/sgreconciler	(cached)	coverage: 34.9% of statements
-?   	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api	[no test files]
-?   	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1	[no test files]
+?   	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator	[no test files]
+?   	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/cloud/api	[no test files]
+ok  	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/controllers	(cached)	coverage: 30.6% of statements
+?   	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/cloud/fake/client	[no test files]
+ok  	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/cloud/aws/client	(cached)	coverage: 78.4% of statements
+ok  	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/cloud/azure/client	(cached)	coverage: 89.3% of statements
+?   	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/constants	[no test files]
+ok  	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/cloud/gcp/client	(cached)	coverage: 80.8% of statements
+ok  	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/controlplane	(cached)	coverage: 100.0% of statements
+?   	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/upgrade	[no test files]
+ok  	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/deploy	(cached)	coverage: 76.6% of statements
+ok  	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/etcd	(cached)	coverage: 65.8% of statements
+ok  	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/executor	(cached)	coverage: 93.2% of statements
+ok  	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/node	(cached)	coverage: 100.0% of statements
+ok  	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/patch	(cached)	coverage: 100.0% of statements
+ok  	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/poller	(cached)	coverage: 91.4% of statements
+ok  	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/sgreconciler	(cached)	coverage: 34.9% of statements
+?   	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/api	[no test files]
+?   	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/api/v1alpha1	[no test files]
 `
 
 const (

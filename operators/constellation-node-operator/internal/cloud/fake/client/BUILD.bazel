@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "client",
     srcs = ["client.go"],
-    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/fake/client",
+    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/cloud/fake/client",
     visibility = ["//operators/constellation-node-operator:__subpackages__"],
     deps = [
         "//operators/constellation-node-operator/api/v1alpha1",

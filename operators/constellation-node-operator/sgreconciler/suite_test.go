@@ -28,8 +28,8 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
-	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/executor"
+	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/api/v1alpha1"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/executor"
 	//+kubebuilder:scaffold:imports
 )
 

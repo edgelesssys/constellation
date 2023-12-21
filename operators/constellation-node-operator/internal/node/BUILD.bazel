@@ -4,7 +4,7 @@ load("//bazel/go:go_test.bzl", "go_test")
 go_library(
     name = "node",
     srcs = ["node.go"],
-    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/node",
+    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/node",
     visibility = ["//operators/constellation-node-operator:__subpackages__"],
     deps = [
         "//operators/constellation-node-operator/api/v1alpha1",

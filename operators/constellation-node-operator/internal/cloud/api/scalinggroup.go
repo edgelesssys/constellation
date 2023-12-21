@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 package api
 
-import updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
+import updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/api/v1alpha1"
 
 // ScalingGroup is a cloud provider scaling group.
 type ScalingGroup struct {

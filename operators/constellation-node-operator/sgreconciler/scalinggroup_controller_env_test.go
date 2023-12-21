@@ -18,10 +18,10 @@ import (
 
 	//revive:enable:dot-imports
 
-	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/api"
+	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/cloud/api"
 	"k8s.io/apimachinery/pkg/types"
 
-	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
+	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/api/v1alpha1"
 )
 
 var _ = Describe("ExternalScalingGroup controller", func() {

@@ -3,6 +3,6 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "api",
     srcs = ["api.go"],
-    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api",
+    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/api",
     visibility = ["//visibility:public"],
 )
