@@ -75,7 +75,7 @@ func TestValidateMicroserviceVersion(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			err := validateMicroserviceVersion(tc.cli, tc.services)
+			err := ValidateMicroserviceVersion(tc.cli, tc.services)
 			if tc.wantError {
 				assert.Error(err)
 				return
