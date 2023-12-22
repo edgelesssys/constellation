@@ -36,7 +36,7 @@ func NewChecker() *Checker {
 	}
 }
 
-// CheckLicense checks the Constellation license.
+// CheckLicense checks the Constellation license. If the license is valid, it returns the vCPU quota.
 func (c *Checker) CheckLicense(ctx context.Context, csp cloudprovider.Provider, action Action, licenseID string) (int, error) {
 	checkRequest := quotaCheckRequest{
 		Provider: csp.String(),
