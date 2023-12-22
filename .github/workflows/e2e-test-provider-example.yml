@@ -251,17 +251,11 @@ jobs:
         shell: bash
         run: |
           terraform init
-          set -x
           if [[ "${{ inputs.cloudProvider }}" == "azure" ]]; then
             terraform apply -target module.azure_iam -auto-approve
             terraform apply -target module.azure_infrastructure -auto-approve
-            echo "CONSTELLATIONCLI"
-            ./constellaton version
-            echo "MAA"
-            echo "$(terraform output -raw maa_url)"
             ./constellation maa-patch "$(terraform output -raw maa_url)"
-            echo "PATCHED MAA"
-            terraform apply -target constellation_cluster.azure_example -auto-approve
+            TF_LOG=INFO terraform apply -target constellation_cluster.azure_example -auto-approve
           else
             TF_LOG=INFO terraform apply -auto-approve
           fi
