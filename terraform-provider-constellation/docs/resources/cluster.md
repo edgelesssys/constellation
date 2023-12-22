@@ -83,7 +83,7 @@ See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview
 - `extra_microservices` (Attributes) Extra microservice settings. (see [below for nested schema](#nestedatt--extra_microservices))
 - `gcp` (Attributes) GCP-specific configuration. (see [below for nested schema](#nestedatt--gcp))
 - `in_cluster_endpoint` (String) The endpoint of the cluster. When not set, the out-of-cluster endpoint is used.
-- `kubernetes_version` (String) The Kubernetes version to use for the cluster. When not set, version v1.27.8 is used. The supported versions are [v1.26.11 v1.27.8 v1.28.4].
+- `kubernetes_version` (String) The Kubernetes version to use for the cluster. When not set, version v1.27.9 is used. The supported versions are [v1.26.12 v1.27.9 v1.28.5].
 - `license_id` (String) Constellation license ID. When not set, the community license is used.
 
 ### Read-Only
