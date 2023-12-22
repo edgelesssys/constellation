@@ -252,7 +252,7 @@ jobs:
         run: |
           terraform init
           set -x
-          if [[ "${{ inputs.providerVersion }}" == "azure" ]]; then
+          if [[ "${{ inputs.cloudProvider }}" == "azure" ]]; then
             terraform apply -target module.azure_iam -auto-approve
             terraform apply -target module.azure_infrastructure -auto-approve
             echo "CONSTELLATIONCLI"
