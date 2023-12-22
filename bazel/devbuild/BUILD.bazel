@@ -10,12 +10,18 @@ sh_template(
         "//bootstrapper/cmd/bootstrapper:bootstrapper_patched",
         "//cli:cli_edition_host",
         "//debugd/cmd/cdbg:cdbg_host",
-        "//terraform-provider-constellation:terraform_rc",
-        "//terraform-provider-constellation:tf_provider",
         "//upgrade-agent/cmd:upgrade_agent_linux_amd64",
         "@gnused//:bin/sed",
         "@yq_toolchains//:resolved_toolchain",
-    ],
+    ] + select(
+        {
+            "//bazel/settings:cli_edition_enterprise": [
+                "//terraform-provider-constellation:terraform_rc",
+                "//terraform-provider-constellation:tf_provider",
+            ],
+            "//conditions:default": [],
+        },
+    ),
     substitutions = {
         "@@BOOTSTRAPPER@@": "$(rootpath //bootstrapper/cmd/bootstrapper:bootstrapper_patched)",
         "@@CDBG@@": "$(rootpath //debugd/cmd/cdbg:cdbg_host)",
@@ -23,8 +29,6 @@ sh_template(
         "@@CONTAINER_SUMS@@": "$(rootpath //bazel/release:container_sums)",
         "@@EDITION@@": "$(rootpath :devbuild_cli_edition)",
         "@@SED@@": "$(rootpath @gnused//:bin/sed)",
-        "@@TERRAFORM_PROVIDER@@": "$(rootpath //terraform-provider-constellation:tf_provider)",
-        "@@TERRAFORM_RC@@": "$(rootpath //terraform-provider-constellation:terraform_rc)",
         "@@UPGRADE_AGENT@@": "$(rootpath //upgrade-agent/cmd:upgrade_agent_linux_amd64)",
         "@@VERSION_FILE@@": "$(rootpath //bazel/settings:tag)",
         "@@YQ@@": "$(rootpath @yq_toolchains//:resolved_toolchain)",
@@ -42,7 +46,18 @@ sh_template(
         "@platforms//cpu:x86_64": {
             "@@GOARCH@@": "amd64",
         },
-    }),
+    }) | select(
+        {
+            "//bazel/settings:cli_edition_enterprise": {
+                "@@TERRAFORM_PROVIDER@@": "$(rootpath //terraform-provider-constellation:tf_provider)",
+                "@@TERRAFORM_RC@@": "$(rootpath //terraform-provider-constellation:terraform_rc)",
+            },
+            "//conditions:default": {
+                "@@TERRAFORM_PROVIDER@@": "",
+                "@@TERRAFORM_RC@@": "",
+            },
+        },
+    ),
     template = "prepare_developer_workspace.sh.in",
     visibility = ["//visibility:public"],
 )
