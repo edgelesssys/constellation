@@ -97,7 +97,7 @@ func TestViolatedImageConstraint(t *testing.T) {
 				"short_path": basetypes.StringType{},
 			}, img)
 			require.Equal(t, 0, diags.ErrorsCount())
-			_, _, diags2 := sut.getImageVersion(context.TODO(), &ClusterResourceModel{
+			_, _, diags2 := sut.getImageVersion(context.Background(), &ClusterResourceModel{
 				Image: input,
 			})
 			require.Equal(t, tc.expectedErrorCount, diags2.ErrorsCount())

@@ -898,6 +898,9 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 func (r *ClusterResource) getImageVersion(ctx context.Context, data *ClusterResourceModel) (imageAttribute, semver.Semver, diag.Diagnostics) {
 	var image imageAttribute
 	diags := data.Image.As(ctx, &image, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		return imageAttribute{}, semver.Semver{}, diags
+	}
 	imageSemver, err := semver.New(image.Version)
 	if err != nil {
 		diags.AddAttributeError(
@@ -909,7 +912,7 @@ func (r *ClusterResource) getImageVersion(ctx context.Context, data *ClusterReso
 	if err := compatibility.BinaryWith(r.providerData.Version.String(), imageSemver.String()); err != nil {
 		diags.AddAttributeError(
 			path.Root("image").AtName("version"),
-			"Image version incompatible with provider version",
+			"Invalid image version",
 			fmt.Sprintf("Image version (%s) incompatible with provider version (%s): %s", image.Version, r.providerData.Version.String(), err))
 	}
 	return image, imageSemver, diags
