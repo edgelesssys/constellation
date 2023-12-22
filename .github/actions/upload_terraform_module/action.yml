@@ -1,10 +1,5 @@
 name: Upload Terraform infrastructure module
 description: "Upload the Terraform infrastructure module as an artifact."
-inputs:
-  encryptionSecret:
-      description: 'The secret to use for encrypting the artifact.'
-      required: true
-
 
 runs:
   using: "composite"
