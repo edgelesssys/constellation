@@ -33,6 +33,7 @@ go_library(
         "//internal/grpc/dialer",
         "//internal/imagefetcher",
         "//internal/kms/uri",
+        "//internal/license",
         "//internal/semver",
         "//internal/sigstore",
         "//internal/versions",

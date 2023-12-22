@@ -244,7 +244,7 @@ func runApply(cmd *cobra.Command, _ []string) error {
 		)
 	}
 
-	applier := constellation.NewApplier(log, spinner, newDialer)
+	applier := constellation.NewApplier(log, spinner, constellation.ApplyContextCLI, newDialer)
 
 	apply := &applyCmd{
 		fileHandler:     fileHandler,
@@ -824,7 +824,7 @@ type warnLog interface {
 // applier is used to run the different phases of the apply command.
 type applier interface {
 	SetKubeConfig(kubeConfig []byte) error
-	CheckLicense(ctx context.Context, csp cloudprovider.Provider, licenseID string) (int, error)
+	CheckLicense(ctx context.Context, csp cloudprovider.Provider, initRequest bool, licenseID string) (int, error)
 
 	// methods required by "init"
 

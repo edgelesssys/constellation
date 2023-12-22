@@ -32,7 +32,7 @@ test --test_tag_filters=-integration
 # enable all tests (including integration)
 test:integration --test_tag_filters= --@io_bazel_rules_go//go/config:tags=integration
 # enable only integration tests
-test:integration-only --test_tag_filters=+integration --@io_bazel_rules_go//go/config:tags=integration
+test:integration-only --test_tag_filters=+integration --@io_bazel_rules_go//go/config:tags=integration,enterprise
 
 # bazel configs to explicitly target a platform
 common:host --platforms @local_config_platform//:host
