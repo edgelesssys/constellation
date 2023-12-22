@@ -1,3 +1,5 @@
+//go:build enterprise
+
 /*
 Copyright (c) Edgeless Systems GmbH
 
@@ -13,6 +15,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,11 +28,9 @@ func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 // newTestClient returns *http.Client with Transport replaced to avoid making real calls.
-func newTestClient(fn roundTripFunc) *Client {
-	return &Client{
-		httpClient: &http.Client{
-			Transport: fn,
-		},
+func newTestClient(fn roundTripFunc) *http.Client {
+	return &http.Client{
+		Transport: fn,
 	}
 }
 
@@ -70,31 +71,26 @@ func TestQuotaCheck(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			client := newTestClient(func(req *http.Request) *http.Response {
-				r := &http.Response{
-					StatusCode: tc.serverResponseCode,
-					Body:       io.NopCloser(bytes.NewBufferString(tc.serverResponse)),
-					Header:     make(http.Header),
-				}
-				r.Header.Set("Content-Type", tc.serverResponseContent)
-				return r
-			})
+			client := &Checker{
+				httpClient: newTestClient(func(req *http.Request) *http.Response {
+					r := &http.Response{
+						StatusCode: tc.serverResponseCode,
+						Body:       io.NopCloser(bytes.NewBufferString(tc.serverResponse)),
+						Header:     make(http.Header),
+					}
+					r.Header.Set("Content-Type", tc.serverResponseContent)
+					return r
+				}),
+			}
 
-			resp, err := client.QuotaCheck(context.Background(), QuotaCheckRequest{
-				Action:  test,
-				License: tc.license,
-			})
+			quota, err := client.CheckLicense(context.Background(), cloudprovider.Unknown, Init, tc.license)
 
 			if tc.wantError {
 				assert.Error(err)
 				return
 			}
 			assert.NoError(err)
-			assert.Equal(tc.wantQuota, resp.Quota)
+			assert.Equal(tc.wantQuota, quota)
 		})
 	}
-}
-
-func Test_licenseURL(t *testing.T) {
-	assert.Equal(t, "https://license.confidential.cloud/api/v1/license", licenseURL().String())
 }

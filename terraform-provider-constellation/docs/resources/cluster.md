@@ -83,6 +83,7 @@ resource "constellation_cluster" "azure_example" {
 - `gcp` (Attributes) GCP-specific configuration. (see [below for nested schema](#nestedatt--gcp))
 - `in_cluster_endpoint` (String) The endpoint of the cluster. When not set, the out-of-cluster endpoint is used.
 - `kubernetes_version` (String) The Kubernetes version to use for the cluster. When not set, version v1.27.8 is used. The supported versions are [v1.26.11 v1.27.8 v1.28.4].
+- `license_id` (String) Constellation license ID. When not set, the community license is used.
 
 ### Read-Only
 

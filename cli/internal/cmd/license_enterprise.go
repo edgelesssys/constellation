@@ -42,7 +42,7 @@ func (a *applyCmd) checkLicenseFile(cmd *cobra.Command, csp cloudprovider.Provid
 		}
 	}
 
-	quota, err := a.applier.CheckLicense(cmd.Context(), csp, licenseID)
+	quota, err := a.applier.CheckLicense(cmd.Context(), csp, !a.flags.skipPhases.contains(skipInitPhase), licenseID)
 	if err != nil {
 		cmd.Printf("Unable to contact license server.\n")
 		cmd.Printf("Please keep your vCPU quota in mind.\n")
