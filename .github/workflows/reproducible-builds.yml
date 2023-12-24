@@ -1,4 +1,11 @@
-# Build Constellation CLI + OS images and check for reproducible builds
+# Verify that Constellation builds are reproducible.
+#
+# The build-* jobs' matrix has two dimensions: a list of targets to build and
+# a list of runners to build on. The produced binaries and OS images are
+# expected to be bit-for-bit identical, regardless of the chosen build runner.
+#
+# The compare-* jobs only have the target dimension. They obtain the built
+# targets from all runners and check that there are no diffs between them.
 name: Reproducible Builds
 
 on:
