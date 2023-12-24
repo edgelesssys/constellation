@@ -9,6 +9,7 @@ package cmd
 import (
 	"os"
 
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +33,7 @@ func NewImageCmd() *cobra.Command {
 	cmd.PersistentFlags().String("timestamp", "", "Optional timestamp to use for resource names. Uses format 2006-01-02T15:04:05Z07:00.")
 	cmd.PersistentFlags().String("region", "eu-central-1", "AWS region of the archive S3 bucket")
 	cmd.PersistentFlags().String("bucket", "cdn-constellation-backend", "S3 bucket name of the archive")
-	cmd.PersistentFlags().String("distribution-id", "E1H77EZTHC3NE4", "CloudFront distribution ID of the API")
+	cmd.PersistentFlags().String("distribution-id", constants.CDNDefaultDistributionID, "CloudFront distribution ID of the API")
 	cmd.PersistentFlags().String("out", "", "Optional path to write the upload result to. If not set, the result is written to stdout.")
 	cmd.PersistentFlags().Bool("verbose", false, "Enable verbose output")
 	must(cmd.MarkPersistentFlagRequired("raw-image"))
