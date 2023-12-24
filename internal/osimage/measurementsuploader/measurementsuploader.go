@@ -84,11 +84,11 @@ func (a *Uploader) Upload(ctx context.Context, rawMeasurement, signature io.Read
 	if err != nil {
 		return "", "", fmt.Errorf("creating version: %w", err)
 	}
-	key, err := url.JoinPath(ver.ArtifactPath(versionsapi.APIV2), ver.Kind().String(), "measurements.json")
+	key, err := url.JoinPath(ver.ArtifactPath(versionsapi.APIV2), ver.Kind().String(), constants.CDNMeasurementsFile)
 	if err != nil {
 		return "", "", err
 	}
-	sigKey, err := url.JoinPath(ver.ArtifactPath(versionsapi.APIV2), ver.Kind().String(), "measurements.json.sig")
+	sigKey, err := url.JoinPath(ver.ArtifactPath(versionsapi.APIV2), ver.Kind().String(), constants.CDNMeasurementsSignature)
 	if err != nil {
 		return "", "", err
 	}

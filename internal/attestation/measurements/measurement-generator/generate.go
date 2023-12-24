@@ -27,6 +27,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore/keyselect"
 	"golang.org/x/tools/go/ast/astutil"
@@ -109,11 +110,11 @@ func main() {
 
 // mustGetMeasurements fetches the measurements for the given image and CSP and verifies them.
 func mustGetMeasurements(ctx context.Context, verifier rekorVerifier, provider cloudprovider.Provider, attestationVariant variant.Variant, image string) measurements.M {
-	measurementsURL, err := measurementURL(image, "measurements.json")
+	measurementsURL, err := measurementURL(image, constants.CDNMeasurementsFile)
 	if err != nil {
 		panic(err)
 	}
-	signatureURL, err := measurementURL(image, "measurements.json.sig")
+	signatureURL, err := measurementURL(image, constants.CDNMeasurementsSignature)
 	if err != nil {
 		panic(err)
 	}
