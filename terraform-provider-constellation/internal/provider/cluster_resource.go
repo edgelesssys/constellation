@@ -643,6 +643,9 @@ func (r *ClusterResource) ImportState(ctx context.Context, req resource.ImportSt
 
 func (r *ClusterResource) validateGCPNetworkConfig(ctx context.Context, data *ClusterResourceModel) diag.Diagnostics {
 	networkCfg, diags := r.getNetworkConfig(ctx, data)
+	if diags.HasError() {
+		return diags
+	}
 
 	// Pod IP CIDR is required for GCP
 	if strings.EqualFold(data.CSP.ValueString(), cloudprovider.GCP.String()) && networkCfg.IPCidrPod.ValueString() == "" {

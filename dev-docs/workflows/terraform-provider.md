@@ -6,21 +6,21 @@ This document explains the basic ways of working with the [Constellation Terrafo
 
 The Constellation Terraform provider can be built through Bazel.
 
-Recommended:
+Use the all-in-one Target (Recommended):
 
-Use the [`devbuild` target](./build-develop-deploy.md) (recommended), which will create a `terraform` directory
-with the provider binary and some utility files in the dedicated Terraform local registry directory.
+The [`devbuild` target](./build-develop-deploy.md), will create a `terraform` directory
+with the provider binary and some utility files in the dedicated local Terraform registry directory.
 
 ```bash
 bazel run //:devbuild'
 ```
 
-IMPORTANT: when making changes on the provider without a commit, subsequent applies will apply due to changed binary hash. To solve this, in your Terraform directory run:
-
-```bash
-rm .terraform.lock.hcl
-terraform init --upgrade
-```
+> [!IMPORTANT] when making changes on the provider without a commit, subsequent applies will fail due to the changed binary hash. To solve this, in your Terraform directory run:
+>
+> ```bash
+> rm .terraform.lock.hcl
+> terraform init
+> ```
 
 Only build:
 

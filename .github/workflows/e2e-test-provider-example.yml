@@ -163,11 +163,11 @@ jobs:
           mkdir cluster
           cd cluster
           if [[ "${{ inputs.providerVersion }}" == "" ]]; then
-            vversion=${{ steps.install_tf_provider.outputs.build_version }}
+            prefixed_version=${{ steps.install_tf_provider.outputs.build_version }}
           else
-            vversion="${{ inputs.providerVersion }}"
+            prefixed_version="${{ inputs.providerVersion }}"
           fi
-          version=${vversion#v} # remove v prefix
+          version=${prefixed_version#v} # remove v prefix
 
           if [[ "${{ inputs.providerVersion }}" == "" ]]; then
             iam_src="../terraform-module/iam/${{ inputs.cloudProvider }}"
