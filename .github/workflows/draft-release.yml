@@ -464,7 +464,7 @@ jobs:
             else
               cp "${file}" "${folder_name}/terraform-provider-constellation_v${version}"
             fi
-            zip -r "${folder_name}.zip" "${folder_name}"
+            (cd "${folder_name}" && zip "../${folder_name}.zip" ./*) # do not zip the folder itself
             rm -r "${folder_name}"
           done
 
