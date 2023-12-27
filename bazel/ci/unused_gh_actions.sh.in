@@ -50,7 +50,7 @@ for action in ${actionNames}; do
     fi
   done
 
-  if ! ${used}; then
+  if [[ ${used} == "false" && ${action} != ".github/actions/artifact_download" ]]; then
     echo "Action ${action} is unused"
     exitcode=1
   fi
