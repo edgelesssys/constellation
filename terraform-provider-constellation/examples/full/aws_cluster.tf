@@ -53,7 +53,7 @@ module "aws_infrastructure" {
       instance_type = "m6a.xlarge"
       disk_size     = 30
       disk_type     = "gp3"
-      initial_count = 2
+      initial_count = 3
       zone          = local.zone
     },
     worker_default = {
@@ -70,6 +70,7 @@ module "aws_infrastructure" {
   image_id                                = data.constellation_image.bar.image.reference
   region                                  = local.region
   zone                                    = local.zone
+  internal_load_balancer                  = false
   debug                                   = false
   enable_snp                              = true
   custom_endpoint                         = ""
@@ -100,6 +101,7 @@ resource "constellation_cluster" "aws_example" {
   measurement_salt        = local.measurement_salt
   out_of_cluster_endpoint = module.aws_infrastructure.out_of_cluster_endpoint
   in_cluster_endpoint     = module.aws_infrastructure.in_cluster_endpoint
+  api_server_cert_sans    = module.aws_infrastructure.api_server_cert_sans
   network_config = {
     ip_cidr_node    = module.aws_infrastructure.ip_cidr_node
     ip_cidr_service = "10.96.0.0/12"
