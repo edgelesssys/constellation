@@ -8,13 +8,6 @@
 # screenrecordings container. A full script run takes ~20min.
 #
 
-# Create IAM configuration
-docker run -it \
-  -v "${HOME}"/.config/gcloud:/root/.config/gcloud \
-  -v "$(pwd)"/recordings:/recordings \
-  -v "$(pwd)"/constellation:/constellation \
-  screenrecodings /scripts/configure-cluster.expect
-
 docker build -t screenrecodings docker
 
 # Create cast
@@ -34,7 +27,7 @@ tail -n+2 recordings/github-readme.cast >> new_header.cast
 
 # Then render cast into svg using:
 #   https://github.com/nbedos/termtosvg
-termtosvg render new_header.cast readme.svg -t window-frame.svg -D 1ms
+python3 -m termtosvg render new_header.cast readme.svg -t window-frame.svg -D 1ms
 
 # Copy and cleanup
 cp readme.svg ../static/img/shell-windowframe.svg

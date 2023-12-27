@@ -23,17 +23,12 @@ spawn asciinema rec --overwrite /recordings/create-cluster.cast
 send "\r"
 expect_prompt
 
-run_command "# Step 1: Create cloud environment"
+run_command "# Step 1: Create the Constellation cluster"
 expect_prompt
-run_command "constellation create"
+run_command "constellation apply"
 expect -re "y\/n"
 send "y"
 send "\r"
-expect_prompt
-
-run_command "# Step 2: Initialize Constellation"
-expect_prompt
-run_command "constellation apply"
 expect_prompt
 
 run_command "# Wait for cluster to finish bootstrapping..."
@@ -42,7 +37,7 @@ expect_prompt
 run_command "sleep 300"
 expect_prompt
 
-run_command "# Step 3: Connect to Constellation"
+run_command "# Step 2: Connect to Constellation"
 expect_prompt
 run_command "export KUBECONFIG=/constellation/constellation-admin.conf"
 expect_prompt
