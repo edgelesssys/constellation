@@ -56,7 +56,7 @@ module "gcp_infrastructure" {
       instance_type = "n2d-standard-4"
       disk_size     = 30
       disk_type     = "pd-ssd"
-      initial_count = 2
+      initial_count = 3
       zone          = local.zone
     },
     worker_default = {
@@ -68,11 +68,12 @@ module "gcp_infrastructure" {
       zone          = local.zone
     }
   }
-  image_id = data.constellation_image.bar.image.reference
-  debug    = false
-  zone     = local.zone
-  region   = local.region
-  project  = local.project_id
+  image_id               = data.constellation_image.bar.image.reference
+  debug                  = false
+  zone                   = local.zone
+  region                 = local.region
+  project                = local.project_id
+  internal_load_balancer = false
 }
 
 data "constellation_attestation" "foo" {
@@ -99,6 +100,7 @@ resource "constellation_cluster" "gcp_example" {
   measurement_salt        = local.measurement_salt
   out_of_cluster_endpoint = module.gcp_infrastructure.out_of_cluster_endpoint
   in_cluster_endpoint     = module.gcp_infrastructure.in_cluster_endpoint
+  api_server_cert_sans    = module.gcp_infrastructure.api_server_cert_sans
   gcp = {
     project_id          = module.gcp_infrastructure.project
     service_account_key = module.gcp_iam.service_account_key
