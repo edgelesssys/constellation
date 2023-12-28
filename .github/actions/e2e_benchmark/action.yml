@@ -74,7 +74,7 @@ runs:
         mkdir -p out
         kubestr fio -e "out/fio-constellation-${{ inputs.cloudProvider }}.json" -o json -s encrypted-rwo-no-cache -z 400Gi -f .github/actions/e2e_benchmark/fio.ini
 
-    - name: Run FIO benchmark
+    - name: Run FIO benchmark in GCP
       if: inputs.cloudProvider == 'gcp'
       shell: bash
       env:
@@ -93,6 +93,27 @@ runs:
         EOF
         mkdir -p out
         kubestr fio -e "out/fio-constellation-${{ inputs.cloudProvider }}.json" -o json -s encrypted-balanced-rwo -z 400Gi -f .github/actions/e2e_benchmark/fio.ini
+
+    - name: Run FIO benchmark in AWS
+      if: inputs.cloudProvider == 'aws'
+      shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+      run: |
+        cat <<EOF | kubectl apply -f -
+        apiVersion: storage.k8s.io/v1
+        kind: StorageClass
+        metadata:
+          name: encrypted-125-rwo
+        provisioner: aws.csi.confidential.cloud
+        volumeBindingMode: Immediate
+        allowVolumeExpansion: true
+        parameters:
+          type: gp3
+          throughput: 125
+        EOF
+        mkdir -p out
+        kubestr fio -e "out/fio-constellation-${{ inputs.cloudProvider }}.json" -o json -s encrypted-125-rwo -z 400Gi -f .github/actions/e2e_benchmark/fio.ini
 
     - name: Upload raw FIO benchmark results
       if: (!env.ACT)
