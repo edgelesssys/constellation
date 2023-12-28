@@ -59,9 +59,18 @@ func extraCiliumValues(provider cloudprovider.Provider, conformanceMode bool, ou
 	extraVals["encryption"] = map[string]any{
 		"strictMode": strictMode,
 	}
+
+	// On QEMU e.g. the join-service must talk to our mini-qemu-metadata docker container
+	// This container runs inside the node CIDR, so we need to masq any pod traffic to it
+	// with the node's IP address. To archive that, we override Cilium's default masq ranges
+	// with an empty list.
+	masqCIDRs := []string{}
+	if provider != cloudprovider.QEMU {
+		masqCIDRs = append(masqCIDRs, output.IPCidrNode)
+	}
 	extraVals["ipMasqAgent"] = map[string]any{
 		"config": map[string]any{
-			"nonMasqueradeCIDRs": []string{output.IPCidrNode},
+			"nonMasqueradeCIDRs": masqCIDRs,
 		},
 	}
 
