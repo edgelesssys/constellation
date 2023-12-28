@@ -110,7 +110,7 @@ runs:
         allowVolumeExpansion: true
         parameters:
           type: gp3
-          throughput: 125
+          throughput: "125"
         EOF
         mkdir -p out
         kubestr fio -e "out/fio-constellation-${{ inputs.cloudProvider }}.json" -o json -s encrypted-125-rwo -z 400Gi -f .github/actions/e2e_benchmark/fio.ini
