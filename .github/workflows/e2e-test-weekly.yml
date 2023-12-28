@@ -180,6 +180,11 @@ jobs:
             provider: "azure"
             kubernetes-version: "v1.28"
             clusterCreation: "cli"
+          - test: "perf-bench"
+            refStream: "ref/main/stream/debug/?"
+            provider: "aws"
+            kubernetes-version: "v1.28"
+            clusterCreation: "cli"
 
           # malicious join test on latest k8s version
           - test: "malicious join"
