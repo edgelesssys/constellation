@@ -187,10 +187,9 @@ func (i *chartLoader) loadRelease(info chartInfo, helmWaitMode WaitMode) (releas
 
 	switch info.releaseName {
 	case ciliumInfo.releaseName:
-		var ok bool
-		values, ok = ciliumVals[i.csp.String()]
-		if !ok {
-			return release{}, fmt.Errorf("cilium values for csp %q not found", i.csp.String())
+		values, err = i.loadCiliumValues(i.csp)
+		if err != nil {
+			return release{}, fmt.Errorf("loading cilium values: %w", err)
 		}
 	case certManagerInfo.releaseName:
 		values = i.loadCertManagerValues()
@@ -324,6 +323,86 @@ func (i *chartLoader) cspTags() map[string]any {
 	return map[string]any{
 		i.csp.String(): true,
 	}
+}
+
+func (i *chartLoader) loadCiliumValues(cloudprovider.Provider) (map[string]any, error) {
+	sharedConfig := map[string]any{
+		"extraArgs": []string{"--node-encryption-opt-out-labels=invalid.label"},
+		"endpointRoutes": map[string]any{
+			"enabled": true,
+		},
+		"l7Proxy": false,
+		"image": map[string]any{
+			"repository": "ghcr.io/3u13r/cilium",
+			"suffix":     "",
+			"tag":        "v1.15.0-pre.2-edg.1",
+			"digest":     "sha256:eebf631fd0f27e1f28f1fdeb2e049f2c83b887381466245c4b3e26440daefa27",
+			"useDigest":  true,
+		},
+		"operator": map[string]any{
+			"image": map[string]any{
+				"repository":    "ghcr.io/3u13r/operator",
+				"tag":           "v1.15.0-pre.2-edg.1",
+				"suffix":        "",
+				"genericDigest": "sha256:bfaeac2e05e8c38f439b0fbc36558fd8d11602997f2641423e8d86bd7ac6a88c",
+				"useDigest":     true,
+			},
+		},
+		"encryption": map[string]any{
+			"enabled":        true,
+			"type":           "wireguard",
+			"nodeEncryption": true,
+			"strictMode": map[string]any{
+				"enabled":                   true,
+				"podCIDRList":               []string{"10.244.0.0/16"},
+				"allowRemoteNodeIdentities": false,
+			},
+		},
+		"ipam": map[string]any{
+			"operator": map[string]any{
+				"clusterPoolIPv4PodCIDRList": []string{
+					"10.244.0.0/16",
+				},
+			},
+		},
+		"bpf": map[string]any{
+			"masquerade": true,
+		},
+		"ipMasqAgent": map[string]any{
+			"enabled": true,
+			"config": map[string]any{
+				"masqLinkLocal": true,
+			},
+		},
+		"kubeProxyReplacement":                "strict",
+		"enableCiliumEndpointSlice":           true,
+		"kubeProxyReplacementHealthzBindAddr": "0.0.0.0:10256",
+	}
+	cspOverrideConfigs := map[string]map[string]any{
+		cloudprovider.AWS.String():   {},
+		cloudprovider.Azure.String(): {},
+		cloudprovider.GCP.String(): {
+			"tunnel": "disabled",
+			"encryption": map[string]any{
+				"strictMode": map[string]any{
+					"podCIDRList": []string{""},
+				},
+			},
+			"ipam": map[string]any{
+				"mode": "kubernetes",
+			},
+		},
+		cloudprovider.OpenStack.String(): {},
+		cloudprovider.QEMU.String(): {
+			"extraArgs": []string{""},
+		},
+	}
+
+	cspValues, ok := cspOverrideConfigs[i.csp.String()]
+	if !ok {
+		return nil, fmt.Errorf("cilium values for csp %q not found", i.csp.String())
+	}
+	return mergeMaps(sharedConfig, cspValues), nil
 }
 
 // updateVersions changes all versions of direct dependencies that are set to "0.0.0" to newVersion.
