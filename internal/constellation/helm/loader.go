@@ -231,9 +231,17 @@ func (i *chartLoader) loadCertManagerValues() map[string]any {
 		"tolerations": controlPlaneTolerations,
 		"webhook": map[string]any{
 			"tolerations": controlPlaneTolerations,
+			"podDisruptionBudget": map[string]any{
+				"enabled": true,
+			},
+			"replicaCount": 2,
 		},
 		"cainjector": map[string]any{
 			"tolerations": controlPlaneTolerations,
+			"podDisruptionBudget": map[string]any{
+				"enabled": true,
+			},
+			"replicaCount": 2,
 		},
 		"startupapicheck": map[string]any{
 			"timeout": "5m",
@@ -242,6 +250,10 @@ func (i *chartLoader) loadCertManagerValues() map[string]any {
 			},
 			"tolerations": controlPlaneTolerations,
 		},
+		"podDisruptionBudget": map[string]any{
+			"enabled": true,
+		},
+		"replicaCount": 2,
 	}
 }
 
@@ -346,6 +358,9 @@ func (i *chartLoader) loadCiliumValues(cloudprovider.Provider) (map[string]any, 
 				"suffix":        "",
 				"genericDigest": "sha256:bfaeac2e05e8c38f439b0fbc36558fd8d11602997f2641423e8d86bd7ac6a88c",
 				"useDigest":     true,
+			},
+			"podDisruptionBudget": map[string]any{
+				"enabled": true,
 			},
 		},
 		"encryption": map[string]any{
