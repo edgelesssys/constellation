@@ -454,6 +454,7 @@ jobs:
             if [[ "${ext}" = "exe" ]]; then
               cp "${file}" "${folder_name}/terraform-provider-constellation_v${version}.exe"
             else
+              chmod 755 "${file}" # the upload artifact does not preserve file permissions (https://github.com/actions/upload-artifact/tree/main/?tab=readme-ov-file#permission-loss)
               cp "${file}" "${folder_name}/terraform-provider-constellation_v${version}"
             fi
             (cd "${folder_name}" && zip "../${folder_name}.zip" ./*) # do not zip the folder itself
