@@ -229,10 +229,9 @@ jobs:
         uses: ./.github/actions/download_release_binaries
 
       - name: Download CLI SBOM
-        uses: ./.github/actions/artifact_download
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: constellation.spdx.sbom
-          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Generate provenance subjects
         id: provenance-subjects
@@ -343,16 +342,14 @@ jobs:
         uses: ./.github/actions/download_release_binaries
 
       - name: Download CLI SBOM
-        uses: ./.github/actions/artifact_download
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: constellation.spdx.sbom
-          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Download provenance
-        uses: ./.github/actions/artifact_download
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: ${{ needs.provenance.outputs.provenance-name }}
-          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Install slsa-verifier
         run: |
@@ -423,22 +420,19 @@ jobs:
         uses: ./.github/actions/download_release_binaries
 
       - name: Download CLI SBOM
-        uses: ./.github/actions/artifact_download
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: constellation.spdx.sbom
-          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Download Constellation CLI SBOM's signature
-        uses: ./.github/actions/artifact_download
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: constellation.spdx.sbom.sig
-          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Download Constellation provenance
-        uses: ./.github/actions/artifact_download
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: ${{ needs.provenance.outputs.provenance-name }}
-          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Rename provenance file
         run: |
