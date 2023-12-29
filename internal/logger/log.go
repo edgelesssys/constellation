@@ -41,11 +41,12 @@ package logger
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
+	"runtime"
 	"testing"
-  "runtime"
-  "time"
+	"time"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"go.uber.org/zap"
@@ -230,4 +231,13 @@ func middlewareLogger(l *slog.Logger) logging.Logger {
 		}
     _ = l.Handler().Handle(context.Background(), r)
 	})
+}
+
+type TestWriter struct {
+  t *testing.T
+}
+
+func (t TestWriter) Write(p []byte) (int, error) {
+  t.t.Log(p)
+  return len(p), nil
 }
