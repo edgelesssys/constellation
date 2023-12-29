@@ -8,10 +8,12 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/semver"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/data"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -208,7 +210,7 @@ func TestAccClusterResource(t *testing.T) {
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
-					Config: fullClusterTestingConfig(t, "aws") + `
+					Config: fullClusterTestingConfig(t, "aws") + fmt.Sprintf(`
 					resource "constellation_cluster" "test" {
 						csp                     = "aws"
 						name                    = "constell"
@@ -225,8 +227,9 @@ func TestAccClusterResource(t *testing.T) {
 						  ip_cidr_node    = "0.0.0.0/24"
 						  ip_cidr_service = "0.0.0.0/24"
 						}
+						kubernetes_version = "%s"
 					  }
-				`,
+				`, versions.Default),
 					ExpectError: regexp.MustCompile(".*Master secret must be a hex-encoded 32-byte.*"),
 				},
 			},
@@ -236,7 +239,7 @@ func TestAccClusterResource(t *testing.T) {
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
-					Config: fullClusterTestingConfig(t, "aws") + `
+					Config: fullClusterTestingConfig(t, "aws") + fmt.Sprintf(`
 					resource "constellation_cluster" "test" {
 						csp                     = "aws"
 						name                    = "constell"
@@ -253,8 +256,9 @@ func TestAccClusterResource(t *testing.T) {
 						  ip_cidr_node    = "0.0.0.0/24"
 						  ip_cidr_service = "0.0.0.0/24"
 						}
+						kubernetes_version = "%s"
 					  }
-				`,
+				`, versions.Default),
 					ExpectError: regexp.MustCompile(".*Master secret salt must be a hex-encoded 32-byte.*"),
 				},
 			},
@@ -264,7 +268,7 @@ func TestAccClusterResource(t *testing.T) {
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
-					Config: fullClusterTestingConfig(t, "aws") + `
+					Config: fullClusterTestingConfig(t, "aws") + fmt.Sprintf(`
 					resource "constellation_cluster" "test" {
 						csp                     = "aws"
 						name                    = "constell"
@@ -281,8 +285,9 @@ func TestAccClusterResource(t *testing.T) {
 						  ip_cidr_node    = "0.0.0.0/24"
 						  ip_cidr_service = "0.0.0.0/24"
 						}
+						kubernetes_version = "%s"
 					  }
-				`,
+				`, versions.Default),
 					ExpectError: regexp.MustCompile(".*Measurement salt must be a hex-encoded 32-byte.*"),
 				},
 			},
@@ -292,7 +297,7 @@ func TestAccClusterResource(t *testing.T) {
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
-					Config: fullClusterTestingConfig(t, "aws") + `
+					Config: fullClusterTestingConfig(t, "aws") + fmt.Sprintf(`
 					resource "constellation_cluster" "test" {
 						csp                     = "aws"
 						name                    = "constell"
@@ -309,8 +314,9 @@ func TestAccClusterResource(t *testing.T) {
 						  ip_cidr_node    = "0.0.0x.0/xxx"
 						  ip_cidr_service = "0.0.0.0/24"
 						}
+						kubernetes_version = "%s"
 					  }
-				`,
+				`, versions.Default),
 					ExpectError: regexp.MustCompile(".*Node IP CIDR must be a valid CIDR.*"),
 				},
 			},
@@ -320,7 +326,7 @@ func TestAccClusterResource(t *testing.T) {
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
-					Config: fullClusterTestingConfig(t, "aws") + `
+					Config: fullClusterTestingConfig(t, "aws") + fmt.Sprintf(`
 					resource "constellation_cluster" "test" {
 						csp                     = "aws"
 						name                    = "constell"
@@ -337,8 +343,9 @@ func TestAccClusterResource(t *testing.T) {
 						  ip_cidr_node    = "0.0.0.0/24"
 						  ip_cidr_service = "0.0.0x.0/xxx"
 						}
+						kubernetes_version = "%s"
 					  }
-				`,
+				`, versions.Default),
 					ExpectError: regexp.MustCompile(".*Service IP CIDR must be a valid CIDR.*"),
 				},
 			},
@@ -348,7 +355,7 @@ func TestAccClusterResource(t *testing.T) {
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
-					Config: fullClusterTestingConfig(t, "azure") + `
+					Config: fullClusterTestingConfig(t, "azure") + fmt.Sprintf(`
 					resource "constellation_cluster" "test" {
 						csp                     = "azure"
 						name                    = "constell"
@@ -365,8 +372,9 @@ func TestAccClusterResource(t *testing.T) {
 						  ip_cidr_node    = "0.0.0.0/24"
 						  ip_cidr_service = "0.0.0.0/24"
 						}
+						kubernetes_version = "%s"
 					  }
-				`,
+				`, versions.Default),
 					ExpectError: regexp.MustCompile(".*When csp is set to 'azure', the 'azure' configuration must be set.*"),
 				},
 			},
@@ -376,7 +384,7 @@ func TestAccClusterResource(t *testing.T) {
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
-					Config: fullClusterTestingConfig(t, "gcp") + `
+					Config: fullClusterTestingConfig(t, "gcp") + fmt.Sprintf(`
 					resource "constellation_cluster" "test" {
 						csp                     = "gcp"
 						name                    = "constell"
@@ -394,8 +402,9 @@ func TestAccClusterResource(t *testing.T) {
 						  ip_cidr_service = "0.0.0.0/24"
 						  ip_cidr_pod    = "0.0.0.0/24"
 						}
+						kubernetes_version = "%s"
 					  }
-				`,
+				`, versions.Default),
 					ExpectError: regexp.MustCompile(".*When csp is set to 'gcp', the 'gcp' configuration must be set.*"),
 				},
 			},
@@ -405,29 +414,29 @@ func TestAccClusterResource(t *testing.T) {
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
-					Config: fullClusterTestingConfig(t, "gcp") + `
+					Config: fullClusterTestingConfig(t, "gcp") + fmt.Sprintf(`
 					resource "constellation_cluster" "test" {
-						csp                     = "gcp"
-						name                    = "constell"
-						uid                     = "test"
-						image                   = data.constellation_image.bar.image
-						attestation             = data.constellation_attestation.foo.attestation
-						init_secret             = "deadbeef"
-						master_secret           = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
-						master_secret_salt      = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
-						measurement_salt        = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
-						out_of_cluster_endpoint = "192.0.2.1"
-						in_cluster_endpoint     = "192.0.2.1"
-						network_config = {
-						  ip_cidr_node    = "0.0.0.0/24"
-						  ip_cidr_service = "0.0.0.0/24"
-						}
-						gcp = {
-							project_id = "test"
-							service_account_key = "eyJ0ZXN0IjogInRlc3QifQ=="
-						}
-					  }
-				`,
+							csp                     = "gcp"
+							name                    = "constell"
+							uid                     = "test"
+							image                   = data.constellation_image.bar.image
+							attestation             = data.constellation_attestation.foo.attestation
+							init_secret             = "deadbeef"
+							master_secret           = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+							master_secret_salt      = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+							measurement_salt        = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+							out_of_cluster_endpoint = "192.0.2.1"
+							in_cluster_endpoint     = "192.0.2.1"
+							network_config = {
+									ip_cidr_node    = "0.0.0.0/24"
+									ip_cidr_service = "0.0.0.0/24"
+							}
+							gcp = {
+									project_id = "test"
+									service_account_key = "eyJ0ZXN0IjogInRlc3QifQ=="
+							}
+							kubernetes_version = "%s"
+					}`, versions.Default),
 					ExpectError: regexp.MustCompile(".*When csp is set to 'gcp', 'ip_cidr_pod' must be set.*"),
 				},
 			},

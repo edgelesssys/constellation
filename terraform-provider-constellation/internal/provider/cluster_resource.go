@@ -160,9 +160,9 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 			},
 			"image": newImageAttributeSchema(attributeInput),
 			"kubernetes_version": schema.StringAttribute{
-				MarkdownDescription: fmt.Sprintf("The Kubernetes version to use for the cluster. When not set, version %s is used. The supported versions are %s.", versions.Default, versions.SupportedK8sVersions()),
-				Description:         fmt.Sprintf("The Kubernetes version to use for the cluster. When not set, version %s is used. The supported versions are %s.", versions.Default, versions.SupportedK8sVersions()),
-				Optional:            true,
+				MarkdownDescription: fmt.Sprintf("The Kubernetes version to use for the cluster. The supported versions are %s.", versions.SupportedK8sVersions()),
+				Description:         fmt.Sprintf("The Kubernetes version to use for the cluster. The supported versions are %s.", versions.SupportedK8sVersions()),
+				Required:            true,
 			},
 			"constellation_microservice_version": schema.StringAttribute{
 				MarkdownDescription: "The version of Constellation's microservices used within the cluster. When not set, the provider version is used.",
@@ -1165,20 +1165,13 @@ func (r *ClusterResource) convertSecrets(data ClusterResourceModel) (secretInput
 // version otherwise.
 func (r *ClusterResource) getK8sVersion(ctx context.Context, data *ClusterResourceModel) (versions.ValidK8sVersion, diag.Diagnostics) {
 	diags := diag.Diagnostics{}
-	var k8sVersion versions.ValidK8sVersion
-	var err error
-	if data.KubernetesVersion.ValueString() != "" {
-		k8sVersion, err = versions.NewValidK8sVersion(data.KubernetesVersion.ValueString(), true)
-		if err != nil {
-			diags.AddAttributeError(
-				path.Root("kubernetes_vesion"),
-				"Invalid Kubernetes version",
-				fmt.Sprintf("Parsing Kubernetes version: %s", err))
-			return "", diags
-		}
-	} else {
-		tflog.Info(ctx, fmt.Sprintf("No Kubernetes version specified. Using default version %s.", versions.Default))
-		k8sVersion = versions.Default
+	k8sVersion, err := versions.NewValidK8sVersion(data.KubernetesVersion.ValueString(), true)
+	if err != nil {
+		diags.AddAttributeError(
+			path.Root("kubernetes_version"),
+			"Invalid Kubernetes version",
+			fmt.Sprintf("Parsing Kubernetes version: %s", err))
+		return "", diags
 	}
 	return k8sVersion, diags
 }

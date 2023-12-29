@@ -14,6 +14,7 @@ terraform {
 locals {
   name                = "constell"
   version             = "vX.Y.Z"
+  kubernetes_version  = "vX.Y.Z"
   csp                 = "gcp"
   attestation_variant = "gcp-sev-es"
   region              = "europe-west3"
@@ -94,6 +95,7 @@ resource "constellation_cluster" "gcp_example" {
   uid                     = module.gcp_infrastructure.uid
   image                   = data.constellation_image.bar.image
   attestation             = data.constellation_attestation.foo.attestation
+  kubernetes_version      = local.kubernetes_version
   init_secret             = module.gcp_infrastructure.init_secret
   master_secret           = local.master_secret
   master_secret_salt      = local.master_secret_salt

@@ -14,6 +14,7 @@ terraform {
 locals {
   name                = "constell"
   version             = "vX.Y.Z"
+  kubernetes_version  = "vX.Y.Z"
   csp                 = "azure"
   attestation_variant = "azure-sev-snp"
   location            = "northeurope"
@@ -90,6 +91,7 @@ resource "constellation_cluster" "azure_example" {
   uid                     = module.azure_infrastructure.uid
   image                   = data.constellation_image.bar.image
   attestation             = data.constellation_attestation.foo.attestation
+  kubernetes_version      = local.kubernetes_version
   init_secret             = module.azure_infrastructure.init_secret
   master_secret           = local.master_secret
   master_secret_salt      = local.master_secret_salt
