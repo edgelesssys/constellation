@@ -41,8 +41,11 @@ package logger
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"testing"
+  "runtime"
+  "time"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"go.uber.org/zap"
@@ -157,30 +160,30 @@ func (l *Logger) ReplaceGRPCLogger() {
 }
 
 // GetServerUnaryInterceptor returns a gRPC server option for intercepting unary gRPC logs.
-func (l *Logger) GetServerUnaryInterceptor() grpc.ServerOption {
+func GetServerUnaryInterceptor(l *slog.Logger) grpc.ServerOption {
 	return grpc.UnaryInterceptor(
-		logging.UnaryServerInterceptor(l.middlewareLogger()),
+		logging.UnaryServerInterceptor(middlewareLogger(l)),
 	)
 }
 
 // GetServerStreamInterceptor returns a gRPC server option for intercepting streaming gRPC logs.
-func (l *Logger) GetServerStreamInterceptor() grpc.ServerOption {
+func GetServerStreamInterceptor(l *slog.Logger) grpc.ServerOption {
 	return grpc.StreamInterceptor(
-		logging.StreamServerInterceptor(l.middlewareLogger()),
+		logging.StreamServerInterceptor(middlewareLogger(l)),
 	)
 }
 
 // GetClientUnaryInterceptor returns a gRPC client option for intercepting unary gRPC logs.
-func (l *Logger) GetClientUnaryInterceptor() grpc.DialOption {
+func GetClientUnaryInterceptor(l *slog.Logger) grpc.DialOption {
 	return grpc.WithUnaryInterceptor(
-		logging.UnaryClientInterceptor(l.middlewareLogger()),
+		logging.UnaryClientInterceptor(middlewareLogger(l)),
 	)
 }
 
 // GetClientStreamInterceptor returns a gRPC client option for intercepting stream gRPC logs.
-func (l *Logger) GetClientStreamInterceptor() grpc.DialOption {
+func GetClientStreamInterceptor(l *slog.Logger) grpc.DialOption {
 	return grpc.WithStreamInterceptor(
-		logging.StreamClientInterceptor(l.middlewareLogger()),
+		logging.StreamClientInterceptor(middlewareLogger(l)),
 	)
 }
 
@@ -189,7 +192,7 @@ func (l *Logger) getZapLogger() *zap.Logger {
 	return l.logger.Desugar()
 }
 
-func (l *Logger) middlewareLogger() logging.Logger {
+func middlewareLogger(l *slog.Logger) logging.Logger {
 	return logging.LoggerFunc(func(ctx context.Context, lvl logging.Level, msg string, fields ...any) {
 		f := make([]zap.Field, 0, len(fields)/2)
 
@@ -209,19 +212,22 @@ func (l *Logger) middlewareLogger() logging.Logger {
 			}
 		}
 
-		logger := l.getZapLogger().WithOptions(zap.AddCallerSkip(1)).With(f...)
+    var pcs [1]uintptr
+    runtime.Callers(2, pcs[:]) // skip [Callers, LoggerFunc]
+    r := slog.Record{}
 
 		switch lvl {
 		case logging.LevelDebug:
-			logger.Debug(msg)
+      r = slog.NewRecord(time.Now(), slog.LevelDebug, fmt.Sprintf(msg, fields...), pcs[0])
 		case logging.LevelInfo:
-			logger.Info(msg)
+      r = slog.NewRecord(time.Now(), slog.LevelInfo, fmt.Sprintf(msg, fields...), pcs[0])
 		case logging.LevelWarn:
-			logger.Warn(msg)
+      r = slog.NewRecord(time.Now(), slog.LevelWarn, fmt.Sprintf(msg, fields...), pcs[0])
 		case logging.LevelError:
-			logger.Error(msg)
+      r = slog.NewRecord(time.Now(), slog.LevelError, fmt.Sprintf(msg, fields...), pcs[0])
 		default:
 			panic(fmt.Sprintf("unknown level %v", lvl))
 		}
+    _ = l.Handler().Handle(context.Background(), r)
 	})
 }

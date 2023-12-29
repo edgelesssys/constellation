@@ -7,25 +7,24 @@ SPDX-License-Identifier: AGPL-3.0-only
 package logger
 
 import (
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+  "log/slog"
 )
 
 // CmdLineVerbosityDescription explains numeric log levels.
 const CmdLineVerbosityDescription = "log verbosity in zap logging levels. Use -1 for debug information, 0 for info, 1 for warn, 2 for error"
 
 // VerbosityFromInt converts a verbosity level from an integer to a zapcore.Level.
-func VerbosityFromInt(verbosity int) zapcore.Level {
+func VerbosityFromInt(verbosity int) slog.Level {
 	switch {
 	case verbosity <= -1:
-		return zap.DebugLevel
+		return slog.LevelDebug
 	case verbosity == 0:
-		return zap.InfoLevel
+		return slog.LevelInfo
 	case verbosity == 1:
-		return zap.WarnLevel
+		return slog.LevelWarn
 	case verbosity >= 2:
-		return zap.ErrorLevel
+		return slog.LevelError
 	default:
-		return zap.InfoLevel
+		return slog.LevelInfo
 	}
 }
