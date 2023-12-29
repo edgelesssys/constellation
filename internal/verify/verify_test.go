@@ -45,7 +45,7 @@ func TestParseCerts(t *testing.T) {
 
 			b := &strings.Builder{}
 
-			certs, err := newCertificates("Some Cert", tc.cert, logger.NewTest(t))
+			certs, err := newCertificates("Some Cert", tc.cert, slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
 			if err != nil {
 				assert.True(tc.wantErr)
 				return

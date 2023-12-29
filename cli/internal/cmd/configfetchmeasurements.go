@@ -93,7 +93,6 @@ func runConfigFetchMeasurements(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
 	}
-	defer log.Sync()
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	rekor, err := sigstore.NewRekor()
 	if err != nil {
@@ -105,7 +104,7 @@ func runConfigFetchMeasurements(cmd *cobra.Command, _ []string) error {
 	if err := cfm.flags.parse(cmd.Flags()); err != nil {
 		return fmt.Errorf("parsing flags: %w", err)
 	}
-	cfm.log.Debugf("Using flags %+v", cfm.flags)
+	cfm.log.Debug("Using flags %+v", cfm.flags)
 
 	fetcher := attestationconfigapi.NewFetcherWithClient(http.DefaultClient, constants.CDNRepositoryURL)
 	return cfm.configFetchMeasurements(cmd, fileHandler, fetcher)
@@ -119,7 +118,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 		return errors.New("fetching measurements is not supported")
 	}
 
-	cfm.log.Debugf("Loading configuration file from %q", cfm.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
+	cfm.log.Debug("Loading configuration file from %q", cfm.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
 
 	conf, err := config.New(fileHandler, constants.ConfigFilename, fetcher, cfm.flags.force)
 	var configValidationErr *config.ValidationError
@@ -134,11 +133,11 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 		cmd.PrintErrln("Configured image doesn't look like a released production image. Double check image before deploying to production.")
 	}
 
-	cfm.log.Debugf("Creating context")
+	cfm.log.Debug("Creating context")
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	cfm.log.Debugf("Updating URLs")
+	cfm.log.Debug("Updating URLs")
 	if err := cfm.flags.updateURLs(conf); err != nil {
 		return err
 	}
@@ -155,12 +154,12 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	}
 	cfm.log.Debugf("Measurements: %#v\n", fetchedMeasurements)
 
-	cfm.log.Debugf("Updating measurements in configuration")
+	cfm.log.Debug("Updating measurements in configuration")
 	conf.UpdateMeasurements(fetchedMeasurements)
 	if err := fileHandler.WriteYAML(constants.ConfigFilename, conf, file.OptOverwrite); err != nil {
 		return err
 	}
-	cfm.log.Debugf("Configuration written to %s", cfm.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
+	cfm.log.Debug("Configuration written to %s", cfm.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
 	cmd.Print("Successfully fetched measurements and updated Configuration\n")
 	return nil
 }

@@ -9,6 +9,7 @@ package joinclient
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net"
 	"strconv"
 	"sync"
@@ -220,7 +221,7 @@ func TestClient(t *testing.T) {
 				fileHandler: fileHandler,
 				metadataAPI: metadataAPI,
 				clock:       clock,
-				log:         logger.NewTest(t),
+        log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 			}
 
 			serverCreds := atlscredentials.New(nil, nil)
@@ -275,7 +276,7 @@ func TestClientConcurrentStartStop(t *testing.T) {
 		fileHandler: file.NewHandler(afero.NewMemMapFs()),
 		metadataAPI: &stubRepeaterMetadataAPI{},
 		clock:       testclock.NewFakeClock(time.Now()),
-		log:         logger.NewTest(t),
+    log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 	}
 
 	wg := sync.WaitGroup{}

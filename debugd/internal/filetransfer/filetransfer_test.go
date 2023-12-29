@@ -117,7 +117,7 @@ func TestSendFiles(t *testing.T) {
 			streamer := &stubStreamReadWriter{readStreamErr: tc.readStreamErr}
 			stream := &stubSendFilesStream{sendErr: tc.sendErr}
 			transfer := &FileTransferer{
-				log:          logger.NewTest(t),
+				log:          slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				streamer:     streamer,
 				showProgress: false,
 			}
@@ -254,7 +254,7 @@ func TestRecvFiles(t *testing.T) {
 
 			streamer := &stubStreamReadWriter{writeStreamErr: tc.writeStreamErr}
 			stream := &fakeRecvFilesStream{msgs: tc.msgs, recvErr: tc.recvErr}
-			transfer := New(logger.NewTest(t), streamer, false)
+			transfer := New(slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), streamer, false)
 			if tc.recvAlreadyStarted {
 				transfer.receiveStarted = true
 			}
@@ -307,7 +307,7 @@ func TestGetSetFiles(t *testing.T) {
 			assert := assert.New(t)
 
 			streamer := &dummyStreamReadWriter{}
-			transfer := New(logger.NewTest(t), streamer, false)
+			transfer := New(slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), streamer, false)
 			if tc.setFiles != nil {
 				transfer.SetFiles(*tc.setFiles)
 			}
@@ -319,7 +319,7 @@ func TestGetSetFiles(t *testing.T) {
 }
 
 func TestConcurrency(t *testing.T) {
-	ft := New(logger.NewTest(t), &stubStreamReadWriter{}, false)
+	ft := New(slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), &stubStreamReadWriter{}, false)
 
 	sendFiles := func() {
 		_ = ft.SendFiles(&stubSendFilesStream{})

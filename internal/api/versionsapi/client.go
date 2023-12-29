@@ -10,13 +10,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"path"
 
 	"golang.org/x/mod/semver"
 
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 )
 
 // Client is a client for the versions API.
@@ -27,7 +27,7 @@ type Client struct {
 
 // NewClient creates a new client for the versions API.
 func NewClient(ctx context.Context, region, bucket, distributionID string, dryRun bool,
-	log *logger.Logger,
+	log *slog.Logger,
 ) (*Client, CloseFunc, error) {
 	genericClient, genericClientClose, err := apiclient.NewClient(ctx, region, bucket, distributionID, dryRun, log)
 	versionsClient := &Client{
@@ -43,7 +43,7 @@ func NewClient(ctx context.Context, region, bucket, distributionID string, dryRu
 // NewReadOnlyClient creates a new read-only client.
 // This client can be used to fetch objects but cannot write updates.
 func NewReadOnlyClient(ctx context.Context, region, bucket, distributionID string,
-	log *logger.Logger,
+	log *slog.Logger,
 ) (*Client, CloseFunc, error) {
 	genericClient, genericClientClose, err := apiclient.NewReadOnlyClient(ctx, region, bucket, distributionID, log)
 	if err != nil {

@@ -9,11 +9,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
@@ -32,7 +32,7 @@ type Client struct {
 }
 
 // NewClient returns a new Client.
-func NewClient(ctx context.Context, cfg staticupload.Config, cosignPwd, privateKey []byte, dryRun bool, versionWindowSize int, log *logger.Logger) (*Client, apiclient.CloseFunc, error) {
+func NewClient(ctx context.Context, cfg staticupload.Config, cosignPwd, privateKey []byte, dryRun bool, versionWindowSize int, log *slog.Logger) (*Client, apiclient.CloseFunc, error) {
 	s3Client, clientClose, err := apiclient.NewClient(ctx, cfg.Region, cfg.Bucket, cfg.DistributionID, dryRun, log)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create s3 storage: %w", err)

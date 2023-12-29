@@ -10,12 +10,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"os"
 
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap/zapcore"
 	"golang.org/x/mod/semver"
 )
 
@@ -52,21 +52,21 @@ func runAdd(cmd *cobra.Command, _ []string) (retErr error) {
 	if err != nil {
 		return err
 	}
-	log := logger.New(logger.PlainLog, flags.logLevel)
-	log.Debugf("Parsed flags: %+v", flags)
+	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: flags.logLevel}))
+	log.Debug("Parsed flags: %+v", flags)
 
-	log.Debugf("Validating flags")
+	log.Debug("Validating flags")
 	if err := flags.validate(log); err != nil {
 		return err
 	}
 
-	log.Debugf("Creating version struct")
+	log.Debug("Creating version struct")
 	ver, err := versionsapi.NewVersion(flags.ref, flags.stream, flags.version, flags.kind)
 	if err != nil {
 		return fmt.Errorf("creating version: %w", err)
 	}
 
-	log.Debugf("Creating versions API client")
+	log.Debug("Creating versions API client")
 	client, clientClose, err := versionsapi.NewClient(cmd.Context(), flags.region, flags.bucket, flags.distributionID, flags.dryRun, log)
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
@@ -78,7 +78,7 @@ func runAdd(cmd *cobra.Command, _ []string) (retErr error) {
 		}
 	}()
 
-	log.Infof("Adding version")
+	log.Info("Adding version")
 	if err := ensureVersion(cmd.Context(), client, flags.kind, ver, versionsapi.GranularityMajor, log); err != nil {
 		return err
 	}
@@ -93,14 +93,14 @@ func runAdd(cmd *cobra.Command, _ []string) (retErr error) {
 		}
 	}
 
-	log.Infof("List major->minor URL: %s", ver.ListURL(versionsapi.GranularityMajor))
-	log.Infof("List minor->patch URL: %s", ver.ListURL(versionsapi.GranularityMinor))
+	log.Info("List major->minor URL: %s", ver.ListURL(versionsapi.GranularityMajor))
+	log.Info("List minor->patch URL: %s", ver.ListURL(versionsapi.GranularityMinor))
 
 	return nil
 }
 
 func ensureVersion(ctx context.Context, client *versionsapi.Client, kind versionsapi.VersionKind, ver versionsapi.Version, gran versionsapi.Granularity,
-	log *logger.Logger,
+	log *slog.Logger,
 ) error {
 	verListReq := versionsapi.List{
 		Ref:         ver.Ref(),
@@ -112,34 +112,34 @@ func ensureVersion(ctx context.Context, client *versionsapi.Client, kind version
 	verList, err := client.FetchVersionList(ctx, verListReq)
 	var notFoundErr *apiclient.NotFoundError
 	if errors.As(err, &notFoundErr) {
-		log.Infof("Version list for %s versions under %q does not exist. Creating new list", gran.String(), ver.Major())
+		log.Info("Version list for %s versions under %q does not exist. Creating new list", gran.String(), ver.Major())
 		verList = verListReq
 	} else if err != nil {
 		return fmt.Errorf("failed to list minor versions: %w", err)
 	}
-	log.Debugf("%s version list: %v", gran.String(), verList)
+	log.Debug("%s version list: %v", gran.String(), verList)
 
 	insertGran := gran + 1
 	insertVersion := ver.WithGranularity(insertGran)
 
 	if verList.Contains(insertVersion) {
-		log.Infof("Version %q already exists in list %v", insertVersion, verList.Versions)
+		log.Info("Version %q already exists in list %v", insertVersion, verList.Versions)
 		return nil
 	}
-	log.Infof("Inserting %s version %q into list", insertGran.String(), insertVersion)
+	log.Info("Inserting %s version %q into list", insertGran.String(), insertVersion)
 
 	verList.Versions = append(verList.Versions, insertVersion)
-	log.Debugf("New %s version list: %v", gran.String(), verList)
+	log.Debug("New %s version list: %v", gran.String(), verList)
 
 	if err := client.UpdateVersionList(ctx, verList); err != nil {
 		return fmt.Errorf("failed to add %s version: %w", gran.String(), err)
 	}
 
-	log.Infof("Added %q to list", insertVersion)
+	log.Info("Added %q to list", insertVersion)
 	return nil
 }
 
-func updateLatest(ctx context.Context, client *versionsapi.Client, kind versionsapi.VersionKind, ver versionsapi.Version, log *logger.Logger) error {
+func updateLatest(ctx context.Context, client *versionsapi.Client, kind versionsapi.VersionKind, ver versionsapi.Version, log *slog.Logger) error {
 	latest := versionsapi.Latest{
 		Ref:    ver.Ref(),
 		Stream: ver.Stream(),
@@ -148,17 +148,17 @@ func updateLatest(ctx context.Context, client *versionsapi.Client, kind versions
 	latest, err := client.FetchVersionLatest(ctx, latest)
 	var notFoundErr *apiclient.NotFoundError
 	if errors.As(err, &notFoundErr) {
-		log.Debugf("Latest version for ref %q and stream %q not found", ver.Ref(), ver.Stream())
+		log.Debug("Latest version for ref %q and stream %q not found", ver.Ref(), ver.Stream())
 	} else if err != nil {
 		return fmt.Errorf("fetching latest version: %w", err)
 	}
 
 	if latest.Version == ver.Version() {
-		log.Infof("Version %q is already latest version", ver)
+		log.Info("Version %q is already latest version", ver)
 		return nil
 	}
 
-	log.Infof("Setting %q as latest version", ver)
+	log.Info("Setting %q as latest version", ver)
 	latest = versionsapi.Latest{
 		Ref:     ver.Ref(),
 		Stream:  ver.Stream(),
@@ -183,10 +183,10 @@ type addFlags struct {
 	bucket         string
 	distributionID string
 	kind           versionsapi.VersionKind
-	logLevel       zapcore.Level
+	logLevel       slog.Level
 }
 
-func (f *addFlags) validate(log *logger.Logger) error {
+func (f *addFlags) validate(log *slog.Logger) error {
 	if !semver.IsValid(f.version) {
 		return fmt.Errorf("version %q is not a valid semantic version", f.version)
 	}
@@ -203,10 +203,10 @@ func (f *addFlags) validate(log *logger.Logger) error {
 	}
 
 	if f.release {
-		log.Debugf("Setting ref to %q, as release flag is set", versionsapi.ReleaseRef)
+		log.Debug("Setting ref to %q, as release flag is set", versionsapi.ReleaseRef)
 		f.ref = versionsapi.ReleaseRef
 	} else {
-		log.Debugf("Setting latest to true, as release flag is not set")
+		log.Debug("Setting latest to true, as release flag is not set")
 		f.latest = true // always set latest for non-release versions
 	}
 
@@ -256,9 +256,9 @@ func parseAddFlags(cmd *cobra.Command) (addFlags, error) {
 	if err != nil {
 		return addFlags{}, err
 	}
-	logLevel := zapcore.InfoLevel
+	logLevel := slog.LevelInfo
 	if verbose {
-		logLevel = zapcore.DebugLevel
+		logLevel = slog.LevelDebug
 	}
 	region, err := cmd.Flags().GetString("region")
 	if err != nil {

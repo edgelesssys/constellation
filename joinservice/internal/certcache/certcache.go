@@ -11,11 +11,11 @@ import (
 	"context"
 	"crypto/x509"
 	"fmt"
+	"log/slog"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/joinservice/internal/certcache/amdkds"
 	"github.com/google/go-sev-guest/abi"
 	"github.com/google/go-sev-guest/verify/trust"
@@ -24,14 +24,14 @@ import (
 
 // Client is a client for interacting with the certificate chain cache.
 type Client struct {
-	log        *logger.Logger
+	log        *slog.Logger
 	attVariant variant.Variant
 	kdsClient
 	kubeClient kubeClient
 }
 
 // NewClient creates a new CertCacheClient.
-func NewClient(log *logger.Logger, kubeClient kubeClient, attVariant variant.Variant) *Client {
+func NewClient(log *slog.Logger, kubeClient kubeClient, attVariant variant.Variant) *Client {
 	kdsClient := amdkds.NewKDSClient(trust.DefaultHTTPSGetter())
 
 	return &Client{
@@ -53,11 +53,11 @@ func (c *Client) CreateCertChainCache(ctx context.Context) (*CachedCerts, error)
 	case variant.AWSSEVSNP{}:
 		reportSigner = abi.VlekReportSigner
 	default:
-		c.log.Debugf("No certificate chain caching possible for attestation variant %s", c.attVariant)
+		c.log.Debug("No certificate chain caching possible for attestation variant %s", c.attVariant)
 		return nil, nil
 	}
 
-	c.log.Debugf("Creating %s certificate chain cache", c.attVariant)
+	c.log.Debug("Creating %s certificate chain cache", c.attVariant)
 	ask, ark, err := c.createCertChainCache(ctx, reportSigner)
 	if err != nil {
 		return nil, fmt.Errorf("creating %s certificate chain cache: %w", c.attVariant, err)
@@ -84,7 +84,7 @@ func (c *CachedCerts) SevSnpCerts() (ask, ark *x509.Certificate) {
 // nothing is done and the existing ASK and ARK are returned. If the configmap already exists but either ASK or ARK
 // are missing, the missing certificate is retrieved from the KDS and the configmap is updated with the missing value.
 func (c *Client) createCertChainCache(ctx context.Context, signingType abi.ReportSigner) (ask, ark *x509.Certificate, err error) {
-	c.log.Debugf("Creating certificate chain cache")
+	c.log.Debug("Creating certificate chain cache")
 	var shouldCreateConfigMap bool
 
 	// Check if ASK or ARK is already cached.
@@ -93,13 +93,13 @@ func (c *Client) createCertChainCache(ctx context.Context, signingType abi.Repor
 	// KDS and update the configmap with the missing value.
 	cacheAsk, cacheArk, err := c.getCertChainCache(ctx)
 	if k8serrors.IsNotFound(err) {
-		c.log.Debugf("Certificate chain cache does not exist")
+		c.log.Debug("Certificate chain cache does not exist")
 		shouldCreateConfigMap = true
 	} else if err != nil {
 		return nil, nil, fmt.Errorf("getting certificate chain cache: %w", err)
 	}
 	if cacheAsk != nil && cacheArk != nil {
-		c.log.Debugf("ASK and ARK present in cache, returning cached values")
+		c.log.Debug("ASK and ARK present in cache, returning cached values")
 		return cacheAsk, cacheArk, nil
 	}
 	if cacheAsk != nil {
@@ -110,7 +110,7 @@ func (c *Client) createCertChainCache(ctx context.Context, signingType abi.Repor
 	}
 
 	// If only one certificate is cached, retrieve the other one from the KDS.
-	c.log.Debugf("Retrieving certificate chain from KDS")
+	c.log.Debug("Retrieving certificate chain from KDS")
 	kdsAsk, kdsArk, err := c.kdsClient.CertChain(signingType)
 	if err != nil {
 		return nil, nil, fmt.Errorf("retrieving certificate chain from KDS: %w", err)
@@ -133,7 +133,7 @@ func (c *Client) createCertChainCache(ctx context.Context, signingType abi.Repor
 
 	if shouldCreateConfigMap {
 		// ConfigMap does not exist, create it.
-		c.log.Debugf("Creating certificate chain cache configmap")
+		c.log.Debug("Creating certificate chain cache configmap")
 		if err := c.kubeClient.CreateConfigMap(ctx, constants.SevSnpCertCacheConfigMapName, map[string]string{
 			constants.CertCacheAskKey: string(askPem),
 			constants.CertCacheArkKey: string(arkPem),
@@ -141,7 +141,7 @@ func (c *Client) createCertChainCache(ctx context.Context, signingType abi.Repor
 			// If the ConfigMap already exists, another JoinService instance created the certificate cache while this operation was running.
 			// Calling this function again should now retrieve the cached certificates.
 			if k8serrors.IsAlreadyExists(err) {
-				c.log.Debugf("Certificate chain cache configmap already exists, retrieving cached certificates")
+				c.log.Debug("Certificate chain cache configmap already exists, retrieving cached certificates")
 				return c.getCertChainCache(ctx)
 			}
 			return nil, nil, fmt.Errorf("creating certificate chain cache configmap: %w", err)
@@ -168,13 +168,13 @@ func (c *Client) createCertChainCache(ctx context.Context, signingType abi.Repor
 // getCertChainCache returns the cached ASK and ARK certificate, if available. If either of the keys
 // is not present in the configmap, no error is returned.
 func (c *Client) getCertChainCache(ctx context.Context) (ask, ark *x509.Certificate, err error) {
-	c.log.Debugf("Retrieving certificate chain from cache")
+	c.log.Debug("Retrieving certificate chain from cache")
 	askRaw, err := c.kubeClient.GetConfigMapData(ctx, constants.SevSnpCertCacheConfigMapName, constants.CertCacheAskKey)
 	if err != nil {
 		return nil, nil, fmt.Errorf("getting ASK from configmap: %w", err)
 	}
 	if askRaw != "" {
-		c.log.Debugf("ASK cache hit")
+		c.log.Debug("ASK cache hit")
 		ask, err = crypto.PemToX509Cert([]byte(askRaw))
 		if err != nil {
 			return nil, nil, fmt.Errorf("parsing ASK: %w", err)
@@ -186,7 +186,7 @@ func (c *Client) getCertChainCache(ctx context.Context) (ask, ark *x509.Certific
 		return nil, nil, fmt.Errorf("getting ARK from configmap: %w", err)
 	}
 	if arkRaw != "" {
-		c.log.Debugf("ARK cache hit")
+		c.log.Debug("ARK cache hit")
 		ark, err = crypto.PemToX509Cert([]byte(arkRaw))
 		if err != nil {
 			return nil, nil, fmt.Errorf("parsing ARK: %w", err)

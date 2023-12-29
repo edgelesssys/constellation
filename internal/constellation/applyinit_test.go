@@ -206,7 +206,7 @@ func TestInit(t *testing.T) {
 			defer stop()
 
 			a := &Applier{
-				log:     logger.NewTest(t),
+				log:     slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				spinner: &nopSpinner{},
 				newDialer: func(atls.Validator) *dialer.Dialer {
 					return dialer.New(nil, nil, netDialer)
@@ -285,7 +285,7 @@ func TestAttestation(t *testing.T) {
 	defer cancel()
 
 	initer := &Applier{
-		log: logger.NewTest(t),
+		log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 		newDialer: func(v atls.Validator) *dialer.Dialer {
 			return dialer.New(nil, v, netDialer)
 		},

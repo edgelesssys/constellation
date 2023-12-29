@@ -9,10 +9,10 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -53,8 +53,8 @@ func runEnvelopeMeasurements(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	log := logger.New(logger.PlainLog, flags.logLevel)
-	log.Debugf("Parsed flags: %+v", flags)
+	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: flags.logLevel}))
+	log.Debug("Parsed flags: %+v", flags)
 
 	f, err := os.Open(flags.in)
 	if err != nil {
@@ -97,7 +97,7 @@ func runEnvelopeMeasurements(cmd *cobra.Command, _ []string) error {
 	if err := json.NewEncoder(out).Encode(enveloped); err != nil {
 		return fmt.Errorf("enveloping measurements: writing output file: %w", err)
 	}
-	log.Infof("Enveloped image measurements")
+	log.Info("Enveloped image measurements")
 	return nil
 }
 

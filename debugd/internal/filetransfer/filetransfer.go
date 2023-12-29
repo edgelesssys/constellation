@@ -12,13 +12,13 @@ import (
 	"errors"
 	"io"
 	"io/fs"
+	"log/slog"
 	"sync"
 	"sync/atomic"
 
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/filetransfer/streamer"
 	pb "github.com/edgelesssys/constellation/v2/debugd/service"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"go.uber.org/zap"
 )
 
@@ -35,7 +35,7 @@ type SendFilesStream interface {
 // FileTransferer manages sending and receiving of files.
 type FileTransferer struct {
 	fileMux         sync.RWMutex
-	log             *logger.Logger
+	log             *slog.Logger
 	receiveStarted  bool
 	receiveFinished atomic.Bool
 	files           []FileStat
@@ -44,7 +44,7 @@ type FileTransferer struct {
 }
 
 // New creates a new FileTransferer.
-func New(log *logger.Logger, streamer streamReadWriter, showProgress bool) *FileTransferer {
+func New(log *slog.Logger, streamer streamReadWriter, showProgress bool) *FileTransferer {
 	return &FileTransferer{
 		log:          log,
 		streamer:     streamer,
@@ -146,7 +146,7 @@ func (s *FileTransferer) handleFileRecv(stream RecvFilesStream) (bool, error) {
 	if header == nil {
 		return false, errors.New("first message must be a header message")
 	}
-	s.log.Infof("Starting file receive of %q", header.TargetPath)
+	s.log.Info("Starting file receive of %q", header.TargetPath)
 	s.addFile(FileStat{
 		SourcePath: header.TargetPath,
 		TargetPath: header.TargetPath,
@@ -160,10 +160,10 @@ func (s *FileTransferer) handleFileRecv(stream RecvFilesStream) (bool, error) {
 	})
 	recvChunkStream := &recvChunkStream{stream: stream}
 	if err := s.streamer.WriteStream(header.TargetPath, recvChunkStream, s.showProgress); err != nil {
-		s.log.With(zap.Error(err)).Errorf("Receive of file %q failed", header.TargetPath)
+		s.log.With(slog.Any("error", err)).Error("Receive of file %q failed", header.TargetPath)
 		return false, err
 	}
-	s.log.Infof("Finished file receive of %q", header.TargetPath)
+	s.log.Info("Finished file receive of %q", header.TargetPath)
 	return false, nil
 }
 

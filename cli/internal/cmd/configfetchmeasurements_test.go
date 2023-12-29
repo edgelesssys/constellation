@@ -8,6 +8,7 @@ package cmd
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"testing"
@@ -180,7 +181,7 @@ func TestConfigFetchMeasurements(t *testing.T) {
 			err := fileHandler.WriteYAML(constants.ConfigFilename, gcpConfig, file.OptMkdirAll)
 			require.NoError(err)
 			fetcher := stubVerifyFetcher{err: tc.err}
-			cfm := &configFetchMeasurementsCmd{canFetchMeasurements: true, log: logger.NewTest(t), verifyFetcher: fetcher}
+      cfm := &configFetchMeasurementsCmd{canFetchMeasurements: true, log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), verifyFetcher: fetcher}
 			cfm.flags.insecure = tc.insecureFlag
 			cfm.flags.force = true
 

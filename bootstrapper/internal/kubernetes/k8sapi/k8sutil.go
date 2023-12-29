@@ -13,6 +13,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"os"
 	"os/exec"
@@ -30,9 +31,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/installer"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
-	"go.uber.org/zap"
 )
 
 const (
@@ -87,7 +86,7 @@ func (k *KubernetesUtil) InstallComponents(ctx context.Context, kubernetesCompon
 // InitCluster instruments kubeadm to initialize the K8s cluster.
 // On success an admin kubeconfig file is returned.
 func (k *KubernetesUtil) InitCluster(
-	ctx context.Context, initConfig []byte, nodeName, clusterName string, ips []net.IP, conformanceMode bool, log *logger.Logger,
+	ctx context.Context, initConfig []byte, nodeName, clusterName string, ips []net.IP, conformanceMode bool, log *slog.Logger,
 ) ([]byte, error) {
 	// TODO(3u13r): audit policy should be user input
 	auditPolicy, err := resources.NewDefaultAuditPolicy().Marshal()
@@ -108,7 +107,7 @@ func (k *KubernetesUtil) InitCluster(
 	}
 
 	// preflight
-	log.Infof("Running kubeadm preflight checks")
+	log.Info("Running kubeadm preflight checks")
 	cmd := exec.CommandContext(ctx, constants.KubeadmPath, "init", "phase", "preflight", "-v=5", "--config", initConfigFile.Name())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -120,7 +119,7 @@ func (k *KubernetesUtil) InitCluster(
 	}
 
 	// create CA certs
-	log.Infof("Creating Kubernetes control-plane certificates and keys")
+	log.Info("Creating Kubernetes control-plane certificates and keys")
 	cmd = exec.CommandContext(ctx, constants.KubeadmPath, "init", "phase", "certs", "all", "-v=5", "--config", initConfigFile.Name())
 	out, err = cmd.CombinedOutput()
 	if err != nil {
@@ -132,19 +131,19 @@ func (k *KubernetesUtil) InitCluster(
 	}
 
 	// create kubelet key and CA signed certificate for the node
-	log.Infof("Creating signed kubelet certificate")
+	log.Info("Creating signed kubelet certificate")
 	if err := k.createSignedKubeletCert(nodeName, ips); err != nil {
 		return nil, fmt.Errorf("creating signed kubelete certificate: %w", err)
 	}
 
 	// Create static pods directory for all nodes (the Kubelets on the worker nodes also expect the path to exist)
-	log.Infof("Creating static Pod directory /etc/kubernetes/manifests")
+	log.Info("Creating static Pod directory /etc/kubernetes/manifests")
 	if err := os.MkdirAll("/etc/kubernetes/manifests", os.ModePerm); err != nil {
 		return nil, fmt.Errorf("creating static pods directory: %w", err)
 	}
 
 	// initialize the cluster
-	log.Infof("Initializing the cluster using kubeadm init")
+	log.Info("Initializing the cluster using kubeadm init")
 	skipPhases := "--skip-phases=preflight,certs"
 	if !conformanceMode {
 		skipPhases += ",addon/kube-proxy"
@@ -159,11 +158,11 @@ func (k *KubernetesUtil) InitCluster(
 		}
 		return nil, fmt.Errorf("kubeadm init: %w", err)
 	}
-	log.With(zap.String("output", string(out))).Infof("kubeadm init succeeded")
+	log.With(slog.String("output", string(out))).Info("kubeadm init succeeded")
 
 	userName := clusterName + "-admin"
 
-	log.With(zap.String("userName", userName)).Infof("Creating admin kubeconfig file")
+	log.With(slog.String("userName", userName)).Info("Creating admin kubeconfig file")
 	cmd = exec.CommandContext(
 		ctx, constants.KubeadmPath, "kubeconfig", "user",
 		"--client-name", userName, "--config", initConfigFile.Name(), "--org", user.SystemPrivilegedGroup,
@@ -176,12 +175,12 @@ func (k *KubernetesUtil) InitCluster(
 		}
 		return nil, fmt.Errorf("kubeadm kubeconfig user: %w", err)
 	}
-	log.Infof("kubeadm kubeconfig user succeeded")
+	log.Info("kubeadm kubeconfig user succeeded")
 	return out, nil
 }
 
 // JoinCluster joins existing Kubernetes cluster using kubeadm join.
-func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, log *logger.Logger) error {
+func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, log *slog.Logger) error {
 	// TODO(3u13r): audit policy should be user input
 	auditPolicy, err := resources.NewDefaultAuditPolicy().Marshal()
 	if err != nil {
@@ -201,7 +200,7 @@ func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, log
 	}
 
 	// Create static pods directory for all nodes (the Kubelets on the worker nodes also expect the path to exist)
-	log.Infof("Creating static Pod directory /etc/kubernetes/manifests")
+	log.Info("Creating static Pod directory /etc/kubernetes/manifests")
 	if err := os.MkdirAll("/etc/kubernetes/manifests", os.ModePerm); err != nil {
 		return fmt.Errorf("creating static pods directory: %w", err)
 	}
@@ -216,7 +215,7 @@ func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, log
 		}
 		return fmt.Errorf("kubeadm join: %w", err)
 	}
-	log.With(zap.String("output", string(out))).Infof("kubeadm join succeeded")
+	log.With(slog.String("output", string(out))).Info("kubeadm join succeeded")
 
 	return nil
 }

@@ -156,8 +156,8 @@ func (l *Logger) Named(name string) *Logger {
 }
 
 // ReplaceGRPCLogger replaces grpc's internal logger with the given logger.
-func (l *Logger) ReplaceGRPCLogger() {
-	replaceGRPCLogger(l.getZapLogger())
+func ReplaceGRPCLogger(l *slog.Logger) {
+	replaceGRPCLogger(l)
 }
 
 // GetServerUnaryInterceptor returns a gRPC server option for intercepting unary gRPC logs.
@@ -234,10 +234,10 @@ func middlewareLogger(l *slog.Logger) logging.Logger {
 }
 
 type TestWriter struct {
-  t *testing.T
+  T *testing.T
 }
 
 func (t TestWriter) Write(p []byte) (int, error) {
-  t.t.Log(p)
+  t.T.Log(p)
   return len(p), nil
 }

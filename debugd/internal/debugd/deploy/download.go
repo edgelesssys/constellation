@@ -11,21 +11,20 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"strconv"
 
 	"github.com/edgelesssys/constellation/v2/debugd/internal/filetransfer"
 	pb "github.com/edgelesssys/constellation/v2/debugd/service"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
 // Download downloads a bootstrapper from a given debugd instance.
 type Download struct {
-	log            *logger.Logger
+	log            *slog.Logger
 	dialer         NetDialer
 	transfer       fileTransferer
 	serviceManager serviceManager
@@ -33,7 +32,7 @@ type Download struct {
 }
 
 // New creates a new Download.
-func New(log *logger.Logger, dialer NetDialer, serviceManager serviceManager,
+func New(log *slog.Logger, dialer NetDialer, serviceManager serviceManager,
 	transfer fileTransferer, info infoSetter,
 ) *Download {
 	return &Download{
@@ -51,7 +50,7 @@ func (d *Download) DownloadInfo(ctx context.Context, ip string) error {
 		return nil
 	}
 
-	log := d.log.With(zap.String("ip", ip))
+	log := d.log.With(slog.String("ip", ip))
 	serverAddr := net.JoinHostPort(ip, strconv.Itoa(constants.DebugdPort))
 
 	client, closer, err := d.newClient(ctx, serverAddr, log)
@@ -60,19 +59,19 @@ func (d *Download) DownloadInfo(ctx context.Context, ip string) error {
 	}
 	defer closer.Close()
 
-	log.Infof("Trying to download info")
+	log.Info("Trying to download info")
 	resp, err := client.GetInfo(ctx, &pb.GetInfoRequest{})
 	if err != nil {
 		return fmt.Errorf("getting info from other instance: %w", err)
 	}
-	log.Infof("Successfully downloaded info")
+	log.Info("Successfully downloaded info")
 
 	return d.info.SetProto(resp.Info)
 }
 
 // DownloadDeployment will open a new grpc connection to another instance, attempting to download files from that instance.
 func (d *Download) DownloadDeployment(ctx context.Context, ip string) error {
-	log := d.log.With(zap.String("ip", ip))
+	log := d.log.With(slog.String("ip", ip))
 	serverAddr := net.JoinHostPort(ip, strconv.Itoa(constants.DebugdPort))
 
 	client, closer, err := d.newClient(ctx, serverAddr, log)
@@ -81,7 +80,7 @@ func (d *Download) DownloadDeployment(ctx context.Context, ip string) error {
 	}
 	defer closer.Close()
 
-	log.Infof("Trying to download files")
+	log.Info("Trying to download files")
 	stream, err := client.DownloadFiles(ctx, &pb.DownloadFilesRequest{})
 	if err != nil {
 		return fmt.Errorf("starting file download from other instance: %w", err)
@@ -90,15 +89,15 @@ func (d *Download) DownloadDeployment(ctx context.Context, ip string) error {
 	err = d.transfer.RecvFiles(stream)
 	switch {
 	case err == nil:
-		d.log.Infof("Downloading files succeeded")
+		d.log.Info("Downloading files succeeded")
 	case errors.Is(err, filetransfer.ErrReceiveRunning):
-		d.log.Warnf("Download already in progress")
+		d.log.Warn("Download already in progress")
 		return err
 	case errors.Is(err, filetransfer.ErrReceiveFinished):
-		d.log.Warnf("Download already finished")
+		d.log.Warn("Download already finished")
 		return nil
 	default:
-		d.log.With(zap.Error(err)).Errorf("Downloading files failed")
+		d.log.With(slog.Any("error", err)).Error("Downloading files failed")
 		return err
 	}
 
@@ -111,15 +110,15 @@ func (d *Download) DownloadDeployment(ctx context.Context, ip string) error {
 			ctx, file.OverrideServiceUnit, file.TargetPath,
 		); err != nil {
 			// continue on error to allow other units to be overridden
-			d.log.With(zap.Error(err)).Errorf("Failed to override service unit %s", file.OverrideServiceUnit)
+			d.log.With(slog.Any("error", err)).Error("Failed to override service unit %s", file.OverrideServiceUnit)
 		}
 	}
 
 	return nil
 }
 
-func (d *Download) newClient(ctx context.Context, serverAddr string, log *logger.Logger) (pb.DebugdClient, io.Closer, error) {
-	log.Infof("Connecting to server")
+func (d *Download) newClient(ctx context.Context, serverAddr string, log *slog.Logger) (pb.DebugdClient, io.Closer, error) {
+	log.Info("Connecting to server")
 	conn, err := d.dial(ctx, serverAddr)
 	if err != nil {
 		return nil, nil, fmt.Errorf("connecting to other instance via gRPC: %w", err)

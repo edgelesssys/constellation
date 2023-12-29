@@ -8,15 +8,14 @@ package main
 import (
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/hack/oci-pin/internal/extract"
 	"github.com/edgelesssys/constellation/v2/hack/oci-pin/internal/sums"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap/zapcore"
 )
 
 func newSumCmd() *cobra.Command {
@@ -41,15 +40,15 @@ func runSum(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	log := logger.New(logger.PlainLog, flags.logLevel)
-	log.Debugf("Parsed flags: %+v", flags)
+	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: flags.logLevel}))
+	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
 
 	registry, prefix, name, tag, err := splitRepoTag(flags.imageRepoTag)
 	if err != nil {
 		return fmt.Errorf("splitting repo tag: %w", err)
 	}
 
-	log.Debugf("Generating sum file for OCI image %s.", name)
+	log.Debug(fmt.Sprintf("Generating sum file for OCI image %s.", name))
 
 	ociIndexPath := filepath.Join(flags.ociPath, "index.json")
 	index, err := os.Open(ociIndexPath)
@@ -75,7 +74,7 @@ func runSum(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("extracting OCI image digest: %w", err)
 	}
 
-	log.Debugf("OCI image digest: %s", digest)
+	log.Debug(fmt.Sprintf("OCI image digest: %s", digest))
 
 	refs := []sums.PinnedImageReference{
 		{
@@ -91,7 +90,7 @@ func runSum(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("creating sum file: %w", err)
 	}
 
-	log.Debugf("Sum file created at %q 🤖", flags.output)
+	log.Debug(fmt.Sprintf("Sum file created at %q 🤖", flags.output))
 	return nil
 }
 
@@ -99,7 +98,7 @@ type sumFlags struct {
 	ociPath      string
 	output       string
 	imageRepoTag string
-	logLevel     zapcore.Level
+	logLevel     slog.Level
 }
 
 func parseSumFlags(cmd *cobra.Command) (sumFlags, error) {
@@ -126,9 +125,9 @@ func parseSumFlags(cmd *cobra.Command) (sumFlags, error) {
 	if err != nil {
 		return sumFlags{}, err
 	}
-	logLevel := zapcore.InfoLevel
+	logLevel := slog.LevelInfo
 	if verbose {
-		logLevel = zapcore.DebugLevel
+		logLevel = slog.LevelDebug
 	}
 
 	return sumFlags{

@@ -8,6 +8,7 @@ package helm
 
 import (
 	"errors"
+	"log/slog"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -173,7 +174,7 @@ func TestHelmApply(t *testing.T) {
 		},
 	}
 
-	log := logger.NewTest(t)
+  log := slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil))
 	options := Options{
 		DeployCSIDriver:  true,
 		Conformance:      false,

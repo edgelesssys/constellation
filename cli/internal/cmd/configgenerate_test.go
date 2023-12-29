@@ -8,6 +8,7 @@ package cmd
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 	"testing"
 
@@ -92,7 +93,7 @@ func TestConfigGenerateDefault(t *testing.T) {
 	cmd := newConfigGenerateCmd()
 
 	cg := &configGenerateCmd{
-		log: logger.NewTest(t),
+    log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 		flags: generateFlags{
 			attestationVariant: variant.Dummy{},
 			k8sVersion:         versions.Default,
@@ -144,7 +145,7 @@ func TestConfigGenerateDefaultProviderSpecific(t *testing.T) {
 			wantConf.RemoveProviderAndAttestationExcept(tc.provider)
 
 			cg := &configGenerateCmd{
-				log: logger.NewTest(t),
+        log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				flags: generateFlags{
 					attestationVariant: variant.Dummy{},
 					k8sVersion:         versions.Default,
@@ -177,7 +178,7 @@ func TestConfigGenerateDefaultExists(t *testing.T) {
 	cmd := newConfigGenerateCmd()
 
 	cg := &configGenerateCmd{
-		log:   logger.NewTest(t),
+    log:   slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 		flags: generateFlags{attestationVariant: variant.Dummy{}},
 	}
 	require.Error(cg.configGenerate(cmd, fileHandler, cloudprovider.Unknown, ""))

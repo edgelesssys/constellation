@@ -53,7 +53,7 @@ const (
 )
 
 type debugLog interface {
-	Debugf(format string, args ...any)
+	Debug(format string, args ...any)
 }
 
 // Client is a Helm client to apply charts.
@@ -102,7 +102,7 @@ func (h Client) PrepareApply(
 		return nil, false, fmt.Errorf("loading Helm releases: %w", err)
 	}
 
-	h.log.Debugf("Loaded Helm releases")
+	h.log.Debug("Loaded Helm releases")
 	actions, includesUpgrades, err := h.factory.GetActions(
 		releases, flags.MicroserviceVersion, flags.Force, flags.AllowDestructive, flags.ApplyTimeout,
 	)
@@ -114,7 +114,7 @@ func (h Client) loadReleases(
 	stateFile *state.State, flags Options, serviceAccURI string, openStackCfg *config.OpenStackConfig,
 ) ([]release, error) {
 	helmLoader := newLoader(csp, attestationVariant, k8sVersion, stateFile, h.cliVersion)
-	h.log.Debugf("Created new Helm loader")
+	h.log.Debug("Created new Helm loader")
 	return helmLoader.loadReleases(flags.Conformance, flags.DeployCSIDriver, flags.HelmWaitMode, secret, serviceAccURI, openStackCfg)
 }
 
@@ -133,7 +133,7 @@ type ChartApplyExecutor struct {
 // Apply applies the charts in order.
 func (c ChartApplyExecutor) Apply(ctx context.Context) error {
 	for _, action := range c.actions {
-		c.log.Debugf("Applying %q", action.ReleaseName())
+		c.log.Debug("Applying %q", action.ReleaseName())
 		if err := action.Apply(ctx); err != nil {
 			return fmt.Errorf("applying %s: %w", action.ReleaseName(), err)
 		}

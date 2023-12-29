@@ -58,7 +58,6 @@ func runIAMDestroy(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
 	}
-	defer log.Sync()
 	spinner := newSpinner(cmd.ErrOrStderr())
 	destroyer := cloudcmd.NewIAMDestroyer()
 	fsHandler := file.NewHandler(afero.NewOsFs())
@@ -78,25 +77,25 @@ type destroyCmd struct {
 
 func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destroyer iamDestroyer, fsHandler file.Handler) error {
 	// check if there is a possibility that the cluster is still running by looking out for specific files
-	c.log.Debugf("Checking if %q exists", c.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename))
+	c.log.Debug("Checking if %q exists", c.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename))
 	if _, err := fsHandler.Stat(constants.AdminConfFilename); !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("file %q still exists, please make sure to terminate your cluster before destroying your IAM configuration", c.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename))
 	}
 
-	c.log.Debugf("Checking if %q exists", c.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename))
+	c.log.Debug("Checking if %q exists", c.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename))
 	if _, err := fsHandler.Stat(constants.StateFilename); !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("file %q still exists, please make sure to terminate your cluster before destroying your IAM configuration", c.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename))
 	}
 
 	gcpFileExists := false
 
-	c.log.Debugf("Checking if %q exists", c.flags.pathPrefixer.PrefixPrintablePath(constants.GCPServiceAccountKeyFilename))
+	c.log.Debug("Checking if %q exists", c.flags.pathPrefixer.PrefixPrintablePath(constants.GCPServiceAccountKeyFilename))
 	if _, err := fsHandler.Stat(constants.GCPServiceAccountKeyFilename); err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
 			return err
 		}
 	} else {
-		c.log.Debugf("%q exists", c.flags.pathPrefixer.PrefixPrintablePath(constants.GCPServiceAccountKeyFilename))
+		c.log.Debug("%q exists", c.flags.pathPrefixer.PrefixPrintablePath(constants.GCPServiceAccountKeyFilename))
 		gcpFileExists = true
 	}
 
@@ -117,7 +116,7 @@ func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destr
 	}
 
 	if gcpFileExists {
-		c.log.Debugf("Starting to delete %q", c.flags.pathPrefixer.PrefixPrintablePath(constants.GCPServiceAccountKeyFilename))
+		c.log.Debug("Starting to delete %q", c.flags.pathPrefixer.PrefixPrintablePath(constants.GCPServiceAccountKeyFilename))
 		proceed, err := c.deleteGCPServiceAccountKeyFile(cmd, destroyer, fsHandler)
 		if err != nil {
 			return err
@@ -128,7 +127,7 @@ func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destr
 		}
 	}
 
-	c.log.Debugf("Starting to destroy IAM configuration")
+	c.log.Debug("Starting to destroy IAM configuration")
 
 	spinner.Start("Destroying IAM configuration", false)
 	defer spinner.Stop()
@@ -144,18 +143,18 @@ func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destr
 func (c *destroyCmd) deleteGCPServiceAccountKeyFile(cmd *cobra.Command, destroyer iamDestroyer, fsHandler file.Handler) (bool, error) {
 	var fileSaKey gcpshared.ServiceAccountKey
 
-	c.log.Debugf("Parsing %q", c.flags.pathPrefixer.PrefixPrintablePath(constants.GCPServiceAccountKeyFilename))
+	c.log.Debug("Parsing %q", c.flags.pathPrefixer.PrefixPrintablePath(constants.GCPServiceAccountKeyFilename))
 	if err := fsHandler.ReadJSON(constants.GCPServiceAccountKeyFilename, &fileSaKey); err != nil {
 		return false, err
 	}
 
-	c.log.Debugf("Getting service account key from the tfstate")
+	c.log.Debug("Getting service account key from the tfstate")
 	tfSaKey, err := destroyer.GetTfStateServiceAccountKey(cmd.Context(), constants.TerraformIAMWorkingDir)
 	if err != nil {
 		return false, err
 	}
 
-	c.log.Debugf("Checking if keys are the same")
+	c.log.Debug("Checking if keys are the same")
 	if tfSaKey != fileSaKey {
 		cmd.Printf(
 			"The key in %q don't match up with your Terraform state. %q will not be deleted.\n",
@@ -169,6 +168,6 @@ func (c *destroyCmd) deleteGCPServiceAccountKeyFile(cmd *cobra.Command, destroye
 		return false, err
 	}
 
-	c.log.Debugf("Successfully deleted %q", c.flags.pathPrefixer.PrefixPrintablePath(constants.GCPServiceAccountKeyFilename))
+	c.log.Debug("Successfully deleted %q", c.flags.pathPrefixer.PrefixPrintablePath(constants.GCPServiceAccountKeyFilename))
 	return true, nil
 }

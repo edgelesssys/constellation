@@ -8,12 +8,11 @@ package main
 import (
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 
 	"github.com/edgelesssys/constellation/v2/hack/oci-pin/internal/sums"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap/zapcore"
 )
 
 func newMergeCmd() *cobra.Command {
@@ -35,10 +34,10 @@ func runMerge(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	log := logger.New(logger.PlainLog, flags.logLevel)
-	log.Debugf("Parsed flags: %+v", flags)
+	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: flags.logLevel}))
+	log.Debug("Parsed flags: %+v", flags)
 
-	log.Debugf("Merging sum file from %q into %q.", flags.inputs, flags.output)
+	log.Debug("Merging sum file from %q into %q.", flags.inputs, flags.output)
 
 	var out io.Writer
 	if flags.output == "-" {
@@ -61,7 +60,7 @@ func runMerge(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("creating merged sum file: %w", err)
 	}
 
-	log.Debugf("Sum file created at %q 🤖", flags.output)
+	log.Debug("Sum file created at %q 🤖", flags.output)
 	return nil
 }
 
@@ -93,7 +92,7 @@ func parseInput(input string) ([]sums.PinnedImageReference, error) {
 type mergeFlags struct {
 	inputs   []string
 	output   string
-	logLevel zapcore.Level
+	logLevel slog.Level
 }
 
 func parseMergeFlags(cmd *cobra.Command) (mergeFlags, error) {
@@ -109,9 +108,9 @@ func parseMergeFlags(cmd *cobra.Command) (mergeFlags, error) {
 	if err != nil {
 		return mergeFlags{}, err
 	}
-	logLevel := zapcore.InfoLevel
+	logLevel := slog.LevelInfo
 	if verbose {
-		logLevel = zapcore.DebugLevel
+		logLevel = slog.LevelDebug
 	}
 
 	return mergeFlags{

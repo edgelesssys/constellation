@@ -8,12 +8,11 @@ package metadata
 
 import (
 	"context"
+	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"go.uber.org/zap"
 )
 
 // Fetcher retrieves other debugd IPs from cloud provider metadata.
@@ -24,7 +23,7 @@ type Fetcher interface {
 
 // Scheduler schedules fetching of metadata using timers.
 type Scheduler struct {
-	log            *logger.Logger
+	log            *slog.Logger
 	fetcher        Fetcher
 	downloader     downloader
 	deploymentDone bool
@@ -33,7 +32,7 @@ type Scheduler struct {
 }
 
 // NewScheduler returns a new scheduler.
-func NewScheduler(log *logger.Logger, fetcher Fetcher, downloader downloader) *Scheduler {
+func NewScheduler(log *slog.Logger, fetcher Fetcher, downloader downloader) *Scheduler {
 	return &Scheduler{
 		log:        log,
 		fetcher:    fetcher,
@@ -60,22 +59,22 @@ func (s *Scheduler) Start(ctx context.Context, wg *sync.WaitGroup) {
 
 			ips, err := s.fetcher.DiscoverDebugdIPs(ctx)
 			if err != nil {
-				s.log.With(zap.Error(err)).Warnf("Discovering debugd IPs failed")
+				s.log.With(slog.Any("error", err)).Warn("Discovering debugd IPs failed")
 			}
 
 			lbip, err := s.fetcher.DiscoverLoadBalancerIP(ctx)
 			if err != nil {
-				s.log.With(zap.Error(err)).Warnf("Discovering load balancer IP failed")
+				s.log.With(slog.Any("error", err)).Warn("Discovering load balancer IP failed")
 			} else {
 				ips = append(ips, lbip)
 			}
 
 			if len(ips) == 0 {
-				s.log.With(zap.Error(err)).Warnf("No debugd IPs discovered")
+				s.log.With(slog.Any("error", err)).Warn("No debugd IPs discovered")
 				continue
 			}
 
-			s.log.With(zap.Strings("ips", ips)).Infof("Discovered instances")
+			s.log.With(slog.Any("ips", ips)).Info("Discovered instances")
 			s.download(ctx, ips)
 			if s.deploymentDone && s.infoDone {
 				return
@@ -90,8 +89,8 @@ func (s *Scheduler) download(ctx context.Context, ips []string) {
 	for _, ip := range ips {
 		if !s.deploymentDone {
 			if err := s.downloader.DownloadDeployment(ctx, ip); err != nil {
-				s.log.With(zap.Error(err), zap.String("peer", ip)).
-					Warnf("Downloading deployment from %s: %s", ip, err)
+				s.log.With(slog.Any("error", err), slog.String("peer", ip)).
+					Warn("Downloading deployment from %s: %s", ip, err)
 			} else {
 				s.deploymentDone = true
 			}
@@ -99,8 +98,8 @@ func (s *Scheduler) download(ctx context.Context, ips []string) {
 
 		if !s.infoDone {
 			if err := s.downloader.DownloadInfo(ctx, ip); err != nil {
-				s.log.With(zap.Error(err), zap.String("peer", ip)).
-					Warnf("Downloading info from %s: %s", ip, err)
+				s.log.With(slog.Any("error", err), slog.String("peer", ip)).
+					Warn("Downloading info from %s: %s", ip, err)
 			} else {
 				s.infoDone = true
 			}

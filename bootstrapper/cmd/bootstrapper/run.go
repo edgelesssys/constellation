@@ -7,8 +7,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 package main
 
 import (
-	"context"
-	"net"
+  "context"
+  "log/slog"
+  "net"
+  "os"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/clean"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/diskencryption"
@@ -38,57 +40,61 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 		log.Infof("Disk UUID: %s", uuid)
 	}
 
-	nodeBootstrapped, err := initialize.IsNodeBootstrapped(openDevice)
-	if err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to check if node was previously bootstrapped")
-	}
+  nodeBootstrapped, err := initialize.IsNodeBootstrapped(openDevice)
+  if err != nil {
+    log.With(slog.Any("error", err)).Error("Failed to check if node was previously bootstrapped")
+    os.Exit(1)
+  }
 
-	if nodeBootstrapped {
-		if err := kube.StartKubelet(); err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to restart kubelet")
-		}
-		return
-	}
+  if nodeBootstrapped {
+    if err := kube.StartKubelet(); err != nil {
+      log.With(slog.Any("error", err)).Error("Failed to restart kubelet")
+      os.Exit(1)
+    }
+    return
+  }
 
-	nodeLock := nodelock.New(openDevice)
-	initServer, err := initserver.New(context.Background(), nodeLock, kube, issuer, fileHandler, metadata, log)
-	if err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to create init server")
-	}
+  nodeLock := nodelock.New(openDevice)
+  initServer, err := initserver.New(context.Background(), nodeLock, kube, issuer, fileHandler, metadata, log)
+  if err != nil {
+    log.With(slog.Any("error", err)).Error("Failed to create init server")
+    os.Exit(1)
+  }
 
-	dialer := dialer.New(issuer, nil, &net.Dialer{})
-	joinClient := joinclient.New(nodeLock, dialer, kube, metadata, log)
+  dialer := dialer.New(issuer, nil, &net.Dialer{})
+  joinClient := joinclient.New(nodeLock, dialer, kube, metadata, log)
 
-	cleaner := clean.New().With(initServer).With(joinClient)
-	go cleaner.Start()
-	defer cleaner.Done()
+  cleaner := clean.New().With(initServer).With(joinClient)
+  go cleaner.Start()
+  defer cleaner.Done()
 
-	joinClient.Start(cleaner)
+  joinClient.Start(cleaner)
 
-	if err := initServer.Serve(bindIP, bindPort, cleaner); err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to serve init server")
-	}
+  if err := initServer.Serve(bindIP, bindPort, cleaner); err != nil {
+    log.With(slog.Any("error", err)).Error("Failed to serve init server")
+    os.Exit(1)
+  }
 
 	log.Infof("bootstrapper done")
 }
 
 func getDiskUUID() (string, error) {
-	disk := diskencryption.New()
-	free, err := disk.Open()
-	if err != nil {
-		return "", err
-	}
-	defer free()
-	return disk.UUID()
+  disk := diskencryption.New()
+  free, err := disk.Open()
+  if err != nil {
+    return "", err
+  }
+  defer free()
+  return disk.UUID()
 }
 
 type clusterInitJoiner interface {
-	joinclient.ClusterJoiner
-	initserver.ClusterInitializer
-	StartKubelet() error
+  joinclient.ClusterJoiner
+  initserver.ClusterInitializer
+  StartKubelet() error
 }
 
 type metadataAPI interface {
-	joinclient.MetadataAPI
-	initserver.MetadataAPI
+  joinclient.MetadataAPI
+  initserver.MetadataAPI
 }

@@ -9,6 +9,7 @@ package cmd
 import (
 	"bytes"
 	"errors"
+	"log/slog"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -139,7 +140,7 @@ func TestTerminate(t *testing.T) {
 			fileHandler := file.NewHandler(tc.setupFs(require, tc.stateFile))
 
 			tCmd := &terminateCmd{
-				log:         logger.NewTest(t),
+        log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				fileHandler: fileHandler,
 				flags: terminateFlags{
 					yes: tc.yesFlag,

@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+  "log/slog"
 
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
@@ -210,7 +211,7 @@ func TestVerify(t *testing.T) {
 
 			v := &verifyCmd{
 				fileHandler: fileHandler,
-				log:         logger.NewTest(t),
+				log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				flags: verifyFlags{
 					clusterID: tc.clusterIDFlag,
 					endpoint:  tc.nodeEndpointFlag,
@@ -242,7 +243,7 @@ func (f *stubAttDocFormatter) format(_ context.Context, _ string, _ bool, _ conf
 func TestFormat(t *testing.T) {
 	formatter := func() *defaultAttestationDocFormatter {
 		return &defaultAttestationDocFormatter{
-			log: logger.NewTest(t),
+			log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 		}
 	}
 
@@ -333,7 +334,7 @@ func TestVerifyClient(t *testing.T) {
 			go verifyServer.Serve(listener)
 			defer verifyServer.GracefulStop()
 
-			verifier := &constellationVerifier{dialer: dialer, log: logger.NewTest(t)}
+			verifier := &constellationVerifier{dialer: dialer, log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil))}
 			request := &verifyproto.GetAttestationRequest{
 				Nonce: tc.nonce,
 			}

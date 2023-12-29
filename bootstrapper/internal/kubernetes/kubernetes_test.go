@@ -9,6 +9,7 @@ package kubernetes
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net"
 	"strconv"
 	"testing"
@@ -187,7 +188,7 @@ func TestInitCluster(t *testing.T) {
 
 			_, err := kube.InitCluster(
 				context.Background(), string(tc.k8sVersion), "kubernetes",
-				false, nil, nil, "", logger.NewTest(t),
+        false, nil, nil, "", slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 			)
 
 			if tc.wantErr {
@@ -359,7 +360,7 @@ func TestJoinCluster(t *testing.T) {
 				getIPAddr:        func() (string, error) { return privateIP, nil },
 			}
 
-			err := kube.JoinCluster(context.Background(), joinCommand, tc.role, tc.k8sComponents, logger.NewTest(t))
+			err := kube.JoinCluster(context.Background(), joinCommand, tc.role, tc.k8sComponents, slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -440,7 +441,7 @@ func (s *stubClusterUtil) InstallComponents(_ context.Context, _ components.Comp
 	return s.installComponentsErr
 }
 
-func (s *stubClusterUtil) InitCluster(_ context.Context, initConfig []byte, _, _ string, _ []net.IP, _ bool, _ *logger.Logger) ([]byte, error) {
+func (s *stubClusterUtil) InitCluster(_ context.Context, initConfig []byte, _, _ string, _ []net.IP, _ bool, _ *slog.Logger) ([]byte, error) {
 	s.initConfigs = append(s.initConfigs, initConfig)
 	return s.kubeconfig, s.initClusterErr
 }
@@ -465,7 +466,7 @@ func (s *stubClusterUtil) SetupNodeOperator(_ context.Context, _ k8sapi.Client, 
 	return s.setupNodeOperatorErr
 }
 
-func (s *stubClusterUtil) JoinCluster(_ context.Context, joinConfig []byte, _ *logger.Logger) error {
+func (s *stubClusterUtil) JoinCluster(_ context.Context, joinConfig []byte, _ *slog.Logger) error {
 	s.joinConfigs = append(s.joinConfigs, joinConfig)
 	return s.joinClusterErr
 }

@@ -14,6 +14,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"testing"
@@ -189,7 +190,7 @@ func TestGetAttestationCert(t *testing.T) {
 			))
 			require.NoError(tpm2.NVWrite(tpm, tpm2.HandleOwner, tpmAkCertIdx, "", akCert, 0))
 
-			issuer := NewIssuer(logger.NewTest(t))
+      issuer := NewIssuer(slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
 			issuer.hClient = newTestClient(tc.crlServer)
 
 			certs, err := issuer.getAttestationCert(context.Background(), tpm, nil)

@@ -9,6 +9,7 @@ package watcher
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/fsnotify/fsnotify"
@@ -17,14 +18,14 @@ import (
 
 // FileWatcher watches for changes to the file and calls the waiter's Update method.
 type FileWatcher struct {
-	log     *logger.Logger
+	log     *slog.Logger
 	updater updater
 	watcher eventWatcher
 	done    chan struct{}
 }
 
 // New creates a new FileWatcher for the given validator.
-func New(log *logger.Logger, updater updater) (*FileWatcher, error) {
+func New(log *slog.Logger, updater updater) (*FileWatcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
@@ -59,28 +60,28 @@ func (f *FileWatcher) Watch(file string) error {
 		select {
 		case event, ok := <-f.watcher.Events():
 			if !ok {
-				log.Infof("Watcher closed")
+				log.Info("Watcher closed")
 				return nil
 			}
 
 			// file changes may be indicated by either a WRITE, CHMOD, CREATE or RENAME event
 			if event.Op&(fsnotify.Write|fsnotify.Chmod|fsnotify.Create|fsnotify.Rename) != 0 {
 				if err := f.updater.Update(); err != nil {
-					log.With(zap.Error(err)).Errorf("Update failed")
+					log.With(slog.Any("error", err)).Error("Update failed")
 				}
 			}
 
 			// if a file gets removed, e.g. by a rename event, we need to re-add the file to the watcher
 			if event.Has(fsnotify.Remove) {
 				if err := f.watcher.Add(event.Name); err != nil {
-					log.With(zap.Error(err)).Errorf("Failed to re-add file to watcher")
+					log.With(slog.Any("error", err)).Error("Failed to re-add file to watcher")
 					return fmt.Errorf("failed to re-add file %q to watcher: %w", event.Name, err)
 				}
 			}
 
 		case err := <-f.watcher.Errors():
 			if err != nil {
-				log.With(zap.Error(err)).Errorf("Watching for measurements updates")
+				log.With(slog.Any("error", err)).Error("Watching for measurements updates")
 				return fmt.Errorf("watching for measurements updates: %w", err)
 			}
 		}

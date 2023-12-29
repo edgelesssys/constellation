@@ -8,6 +8,7 @@ package cmd
 import (
 	"bytes"
 	"encoding/base64"
+	"log/slog"
 	"strings"
 	"testing"
 
@@ -209,7 +210,7 @@ func TestIAMCreateAWS(t *testing.T) {
 
 			iamCreator := &iamCreator{
 				cmd:         cmd,
-				log:         logger.NewTest(t),
+        log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				spinner:     &nopSpinner{},
 				creator:     tc.creator,
 				fileHandler: fileHandler,
@@ -385,7 +386,7 @@ func TestIAMCreateAzure(t *testing.T) {
 
 			iamCreator := &iamCreator{
 				cmd:         cmd,
-				log:         logger.NewTest(t),
+        log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				spinner:     &nopSpinner{},
 				creator:     tc.creator,
 				fileHandler: fileHandler,
@@ -576,7 +577,7 @@ func TestIAMCreateGCP(t *testing.T) {
 
 			iamCreator := &iamCreator{
 				cmd:         cmd,
-				log:         logger.NewTest(t),
+        log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				spinner:     &nopSpinner{},
 				creator:     tc.creator,
 				fileHandler: fileHandler,

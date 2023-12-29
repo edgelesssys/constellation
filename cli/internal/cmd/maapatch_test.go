@@ -8,6 +8,7 @@ package cmd
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -38,7 +39,7 @@ func TestMAAPatch(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			require := require.New(t)
 
-			c := &maaPatchCmd{log: logger.NewTest(t), patcher: tc.patcher}
+      c := &maaPatchCmd{log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), patcher: tc.patcher}
 			err := c.patchMAA(&cobra.Command{}, tc.attestationURL)
 			if tc.wantErr {
 				require.Error(err)

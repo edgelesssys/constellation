@@ -10,6 +10,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
@@ -17,7 +18,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/keyservice/keyserviceproto"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -28,13 +28,13 @@ import (
 // The server serves aTLS for cluster external requests
 // and plain gRPC for cluster internal requests.
 type Server struct {
-	log    *logger.Logger
+	log    *slog.Logger
 	conKMS kms.CloudKMS
 	keyserviceproto.UnimplementedAPIServer
 }
 
 // New creates a new Server.
-func New(log *logger.Logger, conKMS kms.CloudKMS) *Server {
+func New(log *slog.Logger, conKMS kms.CloudKMS) *Server {
 	return &Server{
 		log:    log,
 		conKMS: conKMS,
@@ -49,12 +49,13 @@ func (s *Server) Run(port string) error {
 		return fmt.Errorf("failed to listen on port %s: %v", port, err)
 	}
 
-	server := grpc.NewServer(s.log.Named("gRPC").GetServerUnaryInterceptor())
+	server := grpc.NewServer(logger.GetServerUnaryInterceptor(s.log.WithGroup("gRPC")))
 	keyserviceproto.RegisterAPIServer(server, s)
-	s.log.Named("gRPC").WithIncreasedLevel(zapcore.WarnLevel).ReplaceGRPCLogger()
+  // TODO(miampf): Find out a good way to pass an increased Level to slog
+	s.log.WithGroup("gRPC").WithIncreasedLevel(zapcore.WarnLevel).ReplaceGRPCLogger()
 
 	// start the server
-	s.log.Infof("Starting Constellation key management service on %s", listener.Addr().String())
+	s.log.Info("Starting Constellation key management service on %s", listener.Addr().String())
 	return server.Serve(listener)
 }
 
@@ -64,19 +65,19 @@ func (s *Server) GetDataKey(ctx context.Context, in *keyserviceproto.GetDataKeyR
 
 	// Error on 0 key length
 	if in.Length == 0 {
-		log.Errorf("Requested key length is zero")
+		log.Error("Requested key length is zero")
 		return nil, status.Error(codes.InvalidArgument, "can't derive key with length zero")
 	}
 
 	// Error on empty DataKeyId
 	if in.DataKeyId == "" {
-		log.Errorf("No data key ID specified")
+		log.Error("No data key ID specified")
 		return nil, status.Error(codes.InvalidArgument, "no data key ID specified")
 	}
 
 	key, err := s.conKMS.GetDEK(ctx, crypto.DEKPrefix+in.DataKeyId, int(in.Length))
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Failed to get data key")
+		log.With(slog.Any("error", err)).Error("Failed to get data key")
 		return nil, status.Errorf(codes.Internal, "%v", err)
 	}
 	return &keyserviceproto.GetDataKeyResponse{DataKey: key}, nil

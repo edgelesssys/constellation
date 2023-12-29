@@ -15,6 +15,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"log/slog"
 	"math/big"
 	"strings"
 	"testing"
@@ -185,7 +186,7 @@ Q29uc3RlbGxhdGlvbg==
 			}
 
 			ca := New(
-				logger.NewTest(t),
+        slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				fileHandler,
 			)
 

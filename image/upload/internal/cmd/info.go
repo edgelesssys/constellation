@@ -9,6 +9,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
@@ -49,8 +50,8 @@ func runInfo(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	log := logger.New(logger.PlainLog, flags.logLevel)
-	log.Debugf("Parsed flags: %+v", flags)
+	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: flags.logLevel}))
+	log.Debug("Parsed flags: %+v", flags)
 	info, err := readInfoArgs(args)
 	if err != nil {
 		return err
@@ -62,7 +63,7 @@ func runInfo(cmd *cobra.Command, args []string) error {
 	}
 	defer func() {
 		if err := uploadCClose(cmd.Context()); err != nil {
-			log.Errorf("closing upload client: %v", err)
+			log.Error("closing upload client: %v", err)
 		}
 	}()
 
@@ -70,7 +71,7 @@ func runInfo(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("uploading image info: %w", err)
 	}
-	log.Infof("Uploaded image info to %s", url)
+	log.Info("Uploaded image info to %s", url)
 	return nil
 }
 

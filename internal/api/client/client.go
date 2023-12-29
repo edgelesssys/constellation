@@ -33,16 +33,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
 	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
-	"go.uber.org/zap"
 )
 
 // Client is the a general client for all APIs.
@@ -54,13 +53,13 @@ type Client struct {
 	dirtyPaths []string // written paths to be invalidated
 	DryRun     bool     // no write operations are performed
 
-	Logger *logger.Logger
+	Logger *slog.Logger
 }
 
 // NewReadOnlyClient creates a new read-only client.
 // This client can be used to fetch objects but cannot write updates.
 func NewReadOnlyClient(ctx context.Context, region, bucket, distributionID string,
-	log *logger.Logger,
+	log *slog.Logger,
 ) (*Client, CloseFunc, error) {
 	staticUploadClient, staticUploadClientClose, err := staticupload.New(ctx, staticupload.Config{
 		Region:                       region,
@@ -89,7 +88,7 @@ func NewReadOnlyClient(ctx context.Context, region, bucket, distributionID strin
 
 // NewClient creates a new client for the versions API.
 func NewClient(ctx context.Context, region, bucket, distributionID string, dryRun bool,
-	log *logger.Logger,
+	log *slog.Logger,
 ) (*Client, CloseFunc, error) {
 	staticUploadClient, staticUploadClientClose, err := staticupload.New(ctx, staticupload.Config{
 		Region:                       region,
@@ -120,7 +119,7 @@ func NewClient(ctx context.Context, region, bucket, distributionID string, dryRu
 // It invalidates the CDN cache for all uploaded files.
 func (c *Client) Close(ctx context.Context) error {
 	if c.s3ClientClose == nil {
-		c.Logger.Debugf("Client has no s3ClientClose")
+		c.Logger.Debug("Client has no s3ClientClose")
 		return nil
 	}
 	return c.s3ClientClose(ctx)
@@ -132,7 +131,7 @@ func (c *Client) DeletePath(ctx context.Context, path string) error {
 		Bucket: &c.bucket,
 		Prefix: &path,
 	}
-	c.Logger.Debugf("Listing objects in %s", path)
+	c.Logger.Debug("Listing objects in %s", path)
 	objs := []s3types.Object{}
 	out := &s3.ListObjectsV2Output{IsTruncated: ptr(true)}
 	for out.IsTruncated != nil && *out.IsTruncated {
@@ -143,10 +142,10 @@ func (c *Client) DeletePath(ctx context.Context, path string) error {
 		}
 		objs = append(objs, out.Contents...)
 	}
-	c.Logger.Debugf("Found %d objects in %s", len(objs), path)
+	c.Logger.Debug("Found %d objects in %s", len(objs), path)
 
 	if len(objs) == 0 {
-		c.Logger.Warnf("Path %s is already empty", path)
+		c.Logger.Warn("Path %s is already empty", path)
 		return nil
 	}
 
@@ -156,7 +155,7 @@ func (c *Client) DeletePath(ctx context.Context, path string) error {
 	}
 
 	if c.DryRun {
-		c.Logger.Debugf("DryRun: Deleting %d objects with IDs %v", len(objs), objIDs)
+		c.Logger.Debug("DryRun: Deleting %d objects with IDs %v", len(objs), objIDs)
 		return nil
 	}
 
@@ -168,7 +167,7 @@ func (c *Client) DeletePath(ctx context.Context, path string) error {
 			Objects: objIDs,
 		},
 	}
-	c.Logger.Debugf("Deleting %d objects in %s", len(objs), path)
+	c.Logger.Debug("Deleting %d objects in %s", len(objs), path)
 	if _, err := c.s3Client.DeleteObjects(ctx, deleteIn); err != nil {
 		return fmt.Errorf("deleting objects in %s: %w", path, err)
 	}
@@ -198,7 +197,7 @@ func Fetch[T APIObject](ctx context.Context, c *Client, obj T) (T, error) {
 		Key:    ptr(obj.JSONPath()),
 	}
 
-	c.Logger.Debugf("Fetching %T from s3: %s", obj, obj.JSONPath())
+	c.Logger.Debug("Fetching %T from s3: %s", obj, obj.JSONPath())
 	out, err := c.s3Client.GetObject(ctx, in)
 	var noSuchkey *s3types.NoSuchKey
 	if errors.As(err, &noSuchkey) {
@@ -232,7 +231,7 @@ func Update(ctx context.Context, c *Client, obj APIObject) error {
 	}
 
 	if c.DryRun {
-		c.Logger.With(zap.String("bucket", c.bucket), zap.String("key", obj.JSONPath()), zap.String("body", string(rawJSON))).Debugf("DryRun: s3 put object")
+		c.Logger.With(slog.String("bucket", c.bucket), slog.String("key", obj.JSONPath()), slog.String("body", string(rawJSON))).Debug("DryRun: s3 put object")
 		return nil
 	}
 
@@ -244,7 +243,7 @@ func Update(ctx context.Context, c *Client, obj APIObject) error {
 
 	c.dirtyPaths = append(c.dirtyPaths, "/"+obj.JSONPath())
 
-	c.Logger.Debugf("Uploading %T to s3: %v", obj, obj.JSONPath())
+	c.Logger.Debug("Uploading %T to s3: %v", obj, obj.JSONPath())
 	if _, err := c.Upload(ctx, in); err != nil {
 		return fmt.Errorf("uploading %T: %w", obj, err)
 	}
@@ -307,7 +306,7 @@ func Delete(ctx context.Context, c *Client, obj APIObject) error {
 		Key:    ptr(obj.JSONPath()),
 	}
 
-	c.Logger.Debugf("Deleting %T from s3: %s", obj, obj.JSONPath())
+	c.Logger.Debug("Deleting %T from s3: %s", obj, obj.JSONPath())
 	if _, err := c.DeleteObject(ctx, in); err != nil {
 		return fmt.Errorf("deleting s3 object at %s: %w", obj.JSONPath(), err)
 	}

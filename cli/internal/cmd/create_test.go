@@ -9,6 +9,7 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"log/slog"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -227,7 +228,7 @@ func TestCreate(t *testing.T) {
 					skipPhases: newPhases(skipInitPhase, skipAttestationConfigPhase, skipCertSANsPhase, skipHelmPhase, skipImagePhase, skipK8sPhase),
 				},
 
-				log:     logger.NewTest(t),
+        log:     slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				spinner: &nopSpinner{},
 
 				newInfraApplier: func(_ context.Context) (cloudApplier, func(), error) {
@@ -295,7 +296,7 @@ func TestCheckDirClean(t *testing.T) {
 			for _, f := range tc.existingFiles {
 				require.NoError(fh.Write(f, []byte{1, 2, 3}, file.OptNone))
 			}
-			a := &applyCmd{log: logger.NewTest(t), fileHandler: fh}
+      a := &applyCmd{log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), fileHandler: fh}
 			err := a.checkInitFilesClean()
 
 			if tc.wantErr {

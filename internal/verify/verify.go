@@ -216,12 +216,12 @@ type Certificate struct {
 func newCertificates(certTypeName string, cert []byte, log debugLog) (certs []Certificate, err error) {
 	newlinesTrimmed := strings.TrimSpace(string(cert))
 
-	log.Debugf("Decoding PEM certificate: %s", certTypeName)
+	log.Debug("Decoding PEM certificate: %s", certTypeName)
 	i := 1
 	var rest []byte
 	var block *pem.Block
 	for block, rest = pem.Decode([]byte(newlinesTrimmed)); block != nil; block, rest = pem.Decode(rest) {
-		log.Debugf("Parsing PEM block: %d", i)
+		log.Debug("Parsing PEM block: %d", i)
 		if block.Type != "CERTIFICATE" {
 			return certs, fmt.Errorf("parse %s: expected PEM block type 'CERTIFICATE', got '%s'", certTypeName, block.Type)
 		}
@@ -708,5 +708,5 @@ func httpGet(ctx context.Context, url string) ([]byte, error) {
 }
 
 type debugLog interface {
-	Debugf(format string, args ...any)
+	Debug(format string, args ...any)
 }

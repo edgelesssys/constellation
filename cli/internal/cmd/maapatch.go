@@ -47,7 +47,6 @@ func runPatchMAA(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
 	}
-	defer log.Sync()
 
 	p := maa.NewAzurePolicyPatcher()
 
@@ -57,7 +56,7 @@ func runPatchMAA(cmd *cobra.Command, args []string) error {
 }
 
 func (c *maaPatchCmd) patchMAA(cmd *cobra.Command, attestationURL string) error {
-	c.log.Debugf("Using attestation URL %s", attestationURL)
+	c.log.Debug("Using attestation URL %s", attestationURL)
 
 	if err := c.patcher.Patch(cmd.Context(), attestationURL); err != nil {
 		return fmt.Errorf("patching MAA attestation policy: %w", err)

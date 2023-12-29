@@ -55,23 +55,23 @@ func (c Client) UploadSEVSNPVersionLatest(ctx context.Context, attestation varia
 		return fmt.Errorf("list reported versions: %w", err)
 	}
 	if len(versionDates) < c.cacheWindowSize {
-		c.s3Client.Logger.Warnf("Skipping version update, found %d, expected %d reported versions.", len(versionDates), c.cacheWindowSize)
+		c.s3Client.Logger.Warn(fmt.Sprintf("Skipping version update, found %d, expected %d reported versions.", len(versionDates), c.cacheWindowSize))
 		return nil
 	}
 	minVersion, minDate, err := c.findMinVersion(ctx, attestation, versionDates)
 	if err != nil {
 		return fmt.Errorf("get minimal version: %w", err)
 	}
-	c.s3Client.Logger.Infof("Found minimal version: %+v with date: %s", minVersion, minDate)
+	c.s3Client.Logger.Info(fmt.Sprintf("Found minimal version: %+v with date: %s", minVersion, minDate))
 	shouldUpdateAPI, err := isInputNewerThanOtherVersion(minVersion, latestAPIVersion)
 	if err != nil {
 		return ErrNoNewerVersion
 	}
 	if !shouldUpdateAPI {
-		c.s3Client.Logger.Infof("Input version: %+v is not newer than latest API version: %+v", minVersion, latestAPIVersion)
+		c.s3Client.Logger.Info(fmt.Sprintf("Input version: %+v is not newer than latest API version: %+v", minVersion, latestAPIVersion))
 		return nil
 	}
-	c.s3Client.Logger.Infof("Input version: %+v is newer than latest API version: %+v", minVersion, latestAPIVersion)
+	c.s3Client.Logger.Info(fmt.Sprintf("Input version: %+v is newer than latest API version: %+v", minVersion, latestAPIVersion))
 	t, err := time.Parse(VersionFormat, minDate)
 	if err != nil {
 		return fmt.Errorf("parsing date: %w", err)
@@ -79,7 +79,7 @@ func (c Client) UploadSEVSNPVersionLatest(ctx context.Context, attestation varia
 	if err := c.uploadSEVSNPVersion(ctx, attestation, minVersion, t); err != nil {
 		return fmt.Errorf("uploading version: %w", err)
 	}
-	c.s3Client.Logger.Infof("Successfully uploaded new Azure SEV-SNP version: %+v", minVersion)
+	c.s3Client.Logger.Info(fmt.Sprintf("Successfully uploaded new Azure SEV-SNP version: %+v", minVersion))
 	return nil
 }
 

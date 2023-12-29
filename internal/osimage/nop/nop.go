@@ -9,6 +9,7 @@ package nop
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -17,16 +18,16 @@ import (
 
 // Uploader is a no-op uploader.
 type Uploader struct {
-	log *logger.Logger
+	log *slog.Logger
 }
 
 // New creates a new Uploader.
-func New(log *logger.Logger) *Uploader {
+func New(log *slog.Logger) *Uploader {
 	return &Uploader{log: log}
 }
 
 // Upload pretends to upload images to a csp.
 func (u *Uploader) Upload(_ context.Context, req *osimage.UploadRequest) ([]versionsapi.ImageInfoEntry, error) {
-	u.log.Debugf("Skipping image upload of %s since this CSP does not require images to be uploaded in advance.", req.Version.ShortPath())
+	u.log.Debug("Skipping image upload of %s since this CSP does not require images to be uploaded in advance.", req.Version.ShortPath())
 	return nil, nil
 }

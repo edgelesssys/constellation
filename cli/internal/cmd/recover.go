@@ -76,7 +76,6 @@ func runRecover(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
 	}
-	defer log.Sync()
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	newDialer := func(validator atls.Validator) *dialer.Dialer {
 		return dialer.New(nil, validator, &net.Dialer{})
@@ -85,7 +84,7 @@ func runRecover(cmd *cobra.Command, _ []string) error {
 	if err := r.flags.parse(cmd.Flags()); err != nil {
 		return err
 	}
-	r.log.Debugf("Using flags: %+v", r.flags)
+	r.log.Debug("Using flags: %+v", r.flags)
 	return r.recover(cmd, fileHandler, 5*time.Second, &recoverDoer{log: r.log}, newDialer)
 }
 
@@ -94,12 +93,12 @@ func (r *recoverCmd) recover(
 	doer recoverDoerInterface, newDialer func(validator atls.Validator) *dialer.Dialer,
 ) error {
 	var masterSecret uri.MasterSecret
-	r.log.Debugf("Loading master secret file from %s", r.flags.pathPrefixer.PrefixPrintablePath(constants.MasterSecretFilename))
+	r.log.Debug("Loading master secret file from %s", r.flags.pathPrefixer.PrefixPrintablePath(constants.MasterSecretFilename))
 	if err := fileHandler.ReadJSON(constants.MasterSecretFilename, &masterSecret); err != nil {
 		return err
 	}
 
-	r.log.Debugf("Loading configuration file from %q", r.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
+	r.log.Debug("Loading configuration file from %q", r.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
 	conf, err := config.New(fileHandler, constants.ConfigFilename, r.configFetcher, r.flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
@@ -130,16 +129,16 @@ func (r *recoverCmd) recover(
 		conf.UpdateMAAURL(stateFile.Infrastructure.Azure.AttestationURL)
 	}
 
-	r.log.Debugf("Creating aTLS Validator for %s", conf.GetAttestationConfig().GetVariant())
+	r.log.Debug("Creating aTLS Validator for %s", conf.GetAttestationConfig().GetVariant())
 	validator, err := choose.Validator(conf.GetAttestationConfig(), warnLogger{cmd: cmd, log: r.log})
 	if err != nil {
 		return fmt.Errorf("creating new validator: %w", err)
 	}
-	r.log.Debugf("Created a new validator")
+	r.log.Debug("Created a new validator")
 	doer.setDialer(newDialer(validator), endpoint)
-	r.log.Debugf("Set dialer for endpoint %s", endpoint)
+	r.log.Debug("Set dialer for endpoint %s", endpoint)
 	doer.setURIs(masterSecret.EncodeToURI(), uri.NoStoreURI)
-	r.log.Debugf("Set secrets")
+	r.log.Debug("Set secrets")
 	if err := r.recoverCall(cmd.Context(), cmd.OutOrStdout(), interval, doer); err != nil {
 		if grpcRetry.ServiceIsUnavailable(err) {
 			return nil
@@ -167,12 +166,12 @@ func (r *recoverCmd) recoverCall(ctx context.Context, out io.Writer, interval ti
 				})
 			}
 
-			r.log.Debugf("Encountered error (retriable: %t): %s", retry, err)
+			r.log.Debug("Encountered error (retriable: %t): %s", retry, err)
 			return retry
 		}
 
 		retrier := retry.NewIntervalRetrier(doer, interval, retryOnceOnFailure)
-		r.log.Debugf("Created new interval retrier")
+		r.log.Debug("Created new interval retrier")
 		err = retrier.Do(ctx)
 		if err != nil {
 			break
@@ -180,7 +179,7 @@ func (r *recoverCmd) recoverCall(ctx context.Context, out io.Writer, interval ti
 		fmt.Fprintln(out, "Pushed recovery key.")
 		ctr++
 	}
-	r.log.Debugf("Retry counter is %d", ctr)
+	r.log.Debug("Retry counter is %d", ctr)
 	if ctr > 0 {
 		fmt.Fprintf(out, "Recovered %d control-plane nodes.\n", ctr)
 	} else if grpcRetry.ServiceIsUnavailable(err) {
@@ -222,11 +221,11 @@ func (d *recoverDoer) Do(ctx context.Context) (retErr error) {
 	if err != nil {
 		return fmt.Errorf("dialing recovery server: %w", err)
 	}
-	d.log.Debugf("Dialed recovery server")
+	d.log.Debug("Dialed recovery server")
 	defer conn.Close()
 
 	protoClient := recoverproto.NewAPIClient(conn)
-	d.log.Debugf("Created protoClient")
+	d.log.Debug("Created protoClient")
 
 	req := &recoverproto.RecoverMessage{
 		KmsUri:     d.kmsURI,
@@ -238,7 +237,7 @@ func (d *recoverDoer) Do(ctx context.Context) (retErr error) {
 		return fmt.Errorf("calling recover: %w", err)
 	}
 
-	d.log.Debugf("Received confirmation")
+	d.log.Debug("Received confirmation")
 	return nil
 }
 

@@ -82,7 +82,6 @@ func runIAMCreate(cmd *cobra.Command, providerCreator providerIAMCreator, provid
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
 	}
-	defer log.Sync()
 
 	iamCreator := &iamCreator{
 		cmd:             cmd,
@@ -134,7 +133,7 @@ func (c *iamCreator) create(ctx context.Context) error {
 
 	var conf config.Config
 	if c.flags.updateConfig {
-		c.log.Debugf("Parsing config %s", c.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
+		c.log.Debug("Parsing config %s", c.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
 		if err := c.fileHandler.ReadYAML(constants.ConfigFilename, &conf); err != nil {
 			return fmt.Errorf("error reading the configuration file: %w", err)
 		}
@@ -154,7 +153,7 @@ func (c *iamCreator) create(ctx context.Context) error {
 		return err
 	}
 	c.cmd.Println() // Print empty line to separate after spinner ended.
-	c.log.Debugf("Successfully created the IAM cloud resources")
+	c.log.Debug("Successfully created the IAM cloud resources")
 
 	err = c.providerCreator.parseAndWriteIDFile(iamFile, c.fileHandler)
 	if err != nil {
@@ -162,7 +161,7 @@ func (c *iamCreator) create(ctx context.Context) error {
 	}
 
 	if c.flags.updateConfig {
-		c.log.Debugf("Writing IAM configuration to %s", c.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
+		c.log.Debug("Writing IAM configuration to %s", c.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
 		c.providerCreator.writeOutputValuesToConfig(&conf, iamFile)
 		if err := c.fileHandler.WriteYAML(constants.ConfigFilename, conf, file.OptOverwrite); err != nil {
 			return err

@@ -9,6 +9,7 @@ package deploy
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net"
 	"strconv"
 	"testing"
@@ -117,7 +118,7 @@ func TestDownloadDeployment(t *testing.T) {
 			defer grpcServ.GracefulStop()
 
 			download := &Download{
-				log:            logger.NewTest(t),
+        log:            slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				dialer:         dialer,
 				transfer:       transfer,
 				serviceManager: serviceMgr,
@@ -189,7 +190,7 @@ func TestDownloadInfo(t *testing.T) {
 			defer grpcServer.GracefulStop()
 
 			download := &Download{
-				log:    logger.NewTest(t),
+        log:    slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				dialer: dialer,
 				info:   &tc.infoSetter,
 			}

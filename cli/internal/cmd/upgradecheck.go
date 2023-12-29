@@ -92,7 +92,6 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
 	}
-	defer log.Sync()
 
 	var flags upgradeCheckFlags
 	if err := flags.parse(cmd.Flags()); err != nil {
@@ -188,7 +187,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fetcher attestationco
 	// get current image version of the cluster
 	csp := conf.GetProvider()
 	attestationVariant := conf.GetAttestationConfig().GetVariant()
-	u.log.Debugf("Using provider %s with attestation variant %s", csp.String(), attestationVariant.String())
+	u.log.Debug("Using provider %s with attestation variant %s", csp.String(), attestationVariant.String())
 
 	current, err := u.collect.currentVersions(cmd.Context())
 	if err != nil {
@@ -199,18 +198,18 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fetcher attestationco
 	if err != nil {
 		return err
 	}
-	u.log.Debugf("Current cli version: %s", current.cli)
-	u.log.Debugf("Supported cli version(s): %s", supported.cli)
-	u.log.Debugf("Current service version: %s", current.service)
-	u.log.Debugf("Supported service version: %s", supported.service)
-	u.log.Debugf("Current k8s version: %s", current.k8s)
-	u.log.Debugf("Supported k8s version(s): %s", supported.k8s)
+	u.log.Debug("Current cli version: %s", current.cli)
+	u.log.Debug("Supported cli version(s): %s", supported.cli)
+	u.log.Debug("Current service version: %s", current.service)
+	u.log.Debug("Supported service version: %s", supported.service)
+	u.log.Debug("Current k8s version: %s", current.k8s)
+	u.log.Debug("Supported k8s version(s): %s", supported.k8s)
 
 	// Filter versions to only include upgrades
 	newServices := supported.service
 	if err := supported.service.IsUpgradeTo(current.service); err != nil {
 		newServices = consemver.Semver{}
-		u.log.Debugf("No valid service upgrades are available from %q to %q. The minor version can only drift by 1.\n", current.service.String(), supported.service.String())
+		u.log.Debug("No valid service upgrades are available from %q to %q. The minor version can only drift by 1.\n", current.service.String(), supported.service.String())
 	}
 
 	newKubernetes := filterK8sUpgrades(current.k8s, supported.k8s)
@@ -222,13 +221,13 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fetcher attestationco
 		return err
 	}
 
-	u.log.Debugf("Planning Terraform migrations")
+	u.log.Debug("Planning Terraform migrations")
 
 	// Add manual migrations here if required
 	//
 	// var manualMigrations []terraform.StateMigration
 	// for _, migration := range manualMigrations {
-	// 	  u.log.Debugf("Adding manual Terraform migration: %s", migration.DisplayName)
+	// 	  u.log.Debug("Adding manual Terraform migration: %s", migration.DisplayName)
 	// 	  u.terraformChecker.AddManualStateMigration(migration)
 	// }
 	cmd.Println("The following Terraform migrations are available with this CLI:")
@@ -344,7 +343,7 @@ func (v *versionCollector) newMeasurements(ctx context.Context, csp cloudprovide
 	// get expected measurements for each image
 	upgrades := make(map[string]measurements.M)
 	for _, version := range versions {
-		v.log.Debugf("Fetching measurements for image: %s", version)
+		v.log.Debug("Fetching measurements for image: %s", version)
 		shortPath := version.ShortPath()
 
 		publicKey, err := keyselect.CosignPublicKeyForVersion(version)
@@ -365,7 +364,7 @@ func (v *versionCollector) newMeasurements(ctx context.Context, csp cloudprovide
 		}
 		upgrades[shortPath] = measurements
 	}
-	v.log.Debugf("Compatible image measurements are %v", upgrades)
+	v.log.Debug("Compatible image measurements are %v", upgrades)
 
 	return upgrades, nil
 }
@@ -453,9 +452,9 @@ func (v *versionCollector) newImages(ctx context.Context, currentImageVersion co
 	if err != nil {
 		return nil, fmt.Errorf("calculating next image minor version: %w", err)
 	}
-	v.log.Debugf("Current image minor version is %s", currentImageMinorVer)
-	v.log.Debugf("Current CLI minor version is %s", currentCLIMinorVer)
-	v.log.Debugf("Next image minor version is %s", nextImageMinorVer)
+	v.log.Debug("Current image minor version is %s", currentImageMinorVer)
+	v.log.Debug("Current CLI minor version is %s", currentCLIMinorVer)
+	v.log.Debug("Next image minor version is %s", nextImageMinorVer)
 
 	allowedMinorVersions := []string{currentImageMinorVer, nextImageMinorVer}
 	switch cliImageCompare := semver.Compare(currentCLIMinorVer, currentImageMinorVer); {
@@ -471,7 +470,7 @@ func (v *versionCollector) newImages(ctx context.Context, currentImageVersion co
 	case cliImageCompare > 0:
 		allowedMinorVersions = []string{currentImageMinorVer, nextImageMinorVer}
 	}
-	v.log.Debugf("Allowed minor versions are %#v", allowedMinorVersions)
+	v.log.Debug("Allowed minor versions are %#v", allowedMinorVersions)
 
 	newerImages, err := v.newerVersions(ctx, allowedMinorVersions)
 	if err != nil {
@@ -494,7 +493,7 @@ func (v *versionCollector) newerVersions(ctx context.Context, allowedVersions []
 		patchList, err := v.verListFetcher.FetchVersionList(ctx, patchList)
 		var notFound *fetcher.NotFoundError
 		if errors.As(err, &notFound) {
-			v.log.Debugf("Skipping version: %s", err)
+			v.log.Debug("Skipping version: %s", err)
 			continue
 		}
 		if err != nil {
@@ -502,7 +501,7 @@ func (v *versionCollector) newerVersions(ctx context.Context, allowedVersions []
 		}
 		updateCandidates = append(updateCandidates, patchList.StructuredVersions()...)
 	}
-	v.log.Debugf("Update candidates are %v", updateCandidates)
+	v.log.Debug("Update candidates are %v", updateCandidates)
 
 	return updateCandidates, nil
 }
@@ -604,7 +603,7 @@ func getCompatibleImageMeasurements(ctx context.Context, writer io.Writer, clien
 	}
 
 	var fetchedMeasurements measurements.M
-	log.Debugf("Fetching for measurement url: %s", measurementsURL)
+	log.Debug("Fetching for measurement url: %s", measurementsURL)
 
 	hash, err := fetchedMeasurements.FetchAndVerify(
 		ctx, client, cosign,
@@ -658,7 +657,7 @@ func (v *versionCollector) newCLIVersions(ctx context.Context) ([]consemver.Semv
 			return nil, fmt.Errorf("parsing version %s: %w", version, err)
 		}
 		if err := target.IsUpgradeTo(v.cliVersion); err != nil {
-			v.log.Debugf("Skipping incompatible minor version %q: %s", version, err)
+			v.log.Debug("Skipping incompatible minor version %q: %s", version, err)
 			continue
 		}
 		list := versionsapi.List{
@@ -692,7 +691,7 @@ func (v *versionCollector) filterCompatibleCLIVersions(ctx context.Context, cliP
 	var compatibleVersions []consemver.Semver
 	for _, version := range cliPatchVersions {
 		if err := version.IsUpgradeTo(v.cliVersion); err != nil {
-			v.log.Debugf("Skipping incompatible patch version %q: %s", version, err)
+			v.log.Debug("Skipping incompatible patch version %q: %s", version, err)
 			continue
 		}
 		req := versionsapi.CLIInfo{

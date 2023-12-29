@@ -8,21 +8,22 @@ package logger
 
 import (
 	"fmt"
+	"log/slog"
 
-	"go.uber.org/zap"
 	"google.golang.org/grpc/grpclog"
 )
 
-func replaceGRPCLogger(log *zap.Logger) {
+func replaceGRPCLogger(log *slog.Logger) {
 	gl := &grpcLogger{
-		logger:    log.With(zap.String("system", "grpc"), zap.Bool("grpc_log", true)).WithOptions(zap.AddCallerSkip(2)),
+    // TODO(miampf): Find a way to permanently skip two callers with slog
+		logger:    log.With(slog.String("system", "grpc"), slog.Bool("grpc_log", true)), // .WithOptions(zap.AddCallerSkip(2)),
 		verbosity: 0,
 	}
 	grpclog.SetLoggerV2(gl)
 }
 
 type grpcLogger struct {
-	logger    *zap.Logger
+	logger    *slog.Logger
 	verbosity int
 }
 

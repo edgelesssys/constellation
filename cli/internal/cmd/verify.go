@@ -100,7 +100,6 @@ func runVerify(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
 	}
-	defer log.Sync()
 
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	verifyClient := &constellationVerifier{
@@ -129,7 +128,7 @@ func runVerify(cmd *cobra.Command, _ []string) error {
 	if err := v.flags.parse(cmd.Flags()); err != nil {
 		return err
 	}
-	v.log.Debugf("Using flags: %+v", v.flags)
+	v.log.Debug("Using flags: %+v", v.flags)
 	fetcher := attestationconfigapi.NewFetcher()
 	return v.verify(cmd, verifyClient, formatterFactory, fetcher)
 }
@@ -137,7 +136,7 @@ func runVerify(cmd *cobra.Command, _ []string) error {
 type formatterFactory func(output string, attestation variant.Variant, log debugLog) (attestationDocFormatter, error)
 
 func (c *verifyCmd) verify(cmd *cobra.Command, verifyClient verifyClient, factory formatterFactory, configFetcher attestationconfigapi.Fetcher) error {
-	c.log.Debugf("Loading configuration file from %q", c.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
+	c.log.Debug("Loading configuration file from %q", c.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
 	conf, err := config.New(c.fileHandler, constants.ConfigFilename, configFetcher, c.flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
@@ -170,13 +169,13 @@ func (c *verifyCmd) verify(cmd *cobra.Command, verifyClient verifyClient, factor
 	}
 	conf.UpdateMAAURL(maaURL)
 
-	c.log.Debugf("Updating expected PCRs")
+	c.log.Debug("Updating expected PCRs")
 	attConfig := conf.GetAttestationConfig()
 	if err := updateInitMeasurements(attConfig, ownerID, clusterID); err != nil {
 		return fmt.Errorf("updating expected PCRs: %w", err)
 	}
 
-	c.log.Debugf("Creating aTLS Validator for %s", conf.GetAttestationConfig().GetVariant())
+	c.log.Debug("Creating aTLS Validator for %s", conf.GetAttestationConfig().GetVariant())
 	validator, err := choose.Validator(attConfig, warnLogger{cmd: cmd, log: c.log})
 	if err != nil {
 		return fmt.Errorf("creating aTLS validator: %w", err)
@@ -186,7 +185,7 @@ func (c *verifyCmd) verify(cmd *cobra.Command, verifyClient verifyClient, factor
 	if err != nil {
 		return fmt.Errorf("generating random nonce: %w", err)
 	}
-	c.log.Debugf("Generated random nonce: %x", nonce)
+	c.log.Debug("Generated random nonce: %x", nonce)
 
 	rawAttestationDoc, err := verifyClient.Verify(
 		cmd.Context(),
@@ -385,7 +384,7 @@ type constellationVerifier struct {
 func (v *constellationVerifier) Verify(
 	ctx context.Context, endpoint string, req *verifyproto.GetAttestationRequest, validator atls.Validator,
 ) (string, error) {
-	v.log.Debugf("Dialing endpoint: %q", endpoint)
+	v.log.Debug("Dialing endpoint: %q", endpoint)
 	conn, err := v.dialer.DialInsecure(ctx, endpoint)
 	if err != nil {
 		return "", fmt.Errorf("dialing init server: %w", err)
@@ -394,13 +393,13 @@ func (v *constellationVerifier) Verify(
 
 	client := verifyproto.NewAPIClient(conn)
 
-	v.log.Debugf("Sending attestation request")
+	v.log.Debug("Sending attestation request")
 	resp, err := client.GetAttestation(ctx, req)
 	if err != nil {
 		return "", fmt.Errorf("getting attestation: %w", err)
 	}
 
-	v.log.Debugf("Verifying attestation")
+	v.log.Debug("Verifying attestation")
 	signedData, err := validator.Validate(ctx, resp.Attestation, req.Nonce)
 	if err != nil {
 		return "", fmt.Errorf("validating attestation: %w", err)

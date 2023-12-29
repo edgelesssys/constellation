@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"net"
 	"os"
 	"os/exec"
@@ -39,13 +40,13 @@ var errInvalidKubernetesVersion = errors.New("invalid kubernetes version")
 type Server struct {
 	file       file.Handler
 	grpcServer serveStopper
-	log        *logger.Logger
+	log        *slog.Logger
 	upgradeproto.UnimplementedUpdateServer
 }
 
 // New creates a new upgrade-agent server.
-func New(log *logger.Logger, fileHandler file.Handler) (*Server, error) {
-	log = log.Named("upgradeServer")
+func New(log *slog.Logger, fileHandler file.Handler) (*Server, error) {
+	log = log.WithGroup("upgradeServer")
 
 	server := &Server{
 		log:  log,
@@ -53,7 +54,7 @@ func New(log *logger.Logger, fileHandler file.Handler) (*Server, error) {
 	}
 
 	grpcServer := grpc.NewServer(
-		log.Named("gRPC").GetServerUnaryInterceptor(),
+		logger.GetServerUnaryInterceptor(log.WithGroup("gRPC")),
 	)
 	upgradeproto.RegisterUpdateServer(grpcServer, server)
 
@@ -85,22 +86,22 @@ func (s *Server) Run(protocol string, sockAddr string) error {
 		return fmt.Errorf("failed to listen: %s", err)
 	}
 
-	s.log.Infof("Starting")
+	s.log.Info("Starting")
 	return grpcServer.Serve(lis)
 }
 
 // Stop stops the upgrade-agent server gracefully.
 func (s *Server) Stop() {
-	s.log.Infof("Stopping")
+	s.log.Info("Stopping")
 
 	s.grpcServer.GracefulStop()
 
-	s.log.Infof("Stopped")
+	s.log.Info("Stopped")
 }
 
 // ExecuteUpdate installs & verifies the provided kubeadm, then executes `kubeadm upgrade plan` & `kubeadm upgrade apply {wanted_Kubernetes_Version}` to upgrade to the specified version.
 func (s *Server) ExecuteUpdate(ctx context.Context, updateRequest *upgradeproto.ExecuteUpdateRequest) (*upgradeproto.ExecuteUpdateResponse, error) {
-	s.log.Infof("Upgrade to Kubernetes version started: %s", updateRequest.WantedKubernetesVersion)
+	s.log.Info("Upgrade to Kubernetes version started: %s", updateRequest.WantedKubernetesVersion)
 
 	installer := installer.NewOSInstaller()
 	err := prepareUpdate(ctx, installer, updateRequest)
@@ -120,7 +121,7 @@ func (s *Server) ExecuteUpdate(ctx context.Context, updateRequest *upgradeproto.
 		return nil, status.Errorf(codes.Internal, "unable to execute kubeadm upgrade apply: %s: %s", err, string(out))
 	}
 
-	s.log.Infof("Upgrade to Kubernetes version succeeded: %s", updateRequest.WantedKubernetesVersion)
+	s.log.Info("Upgrade to Kubernetes version succeeded: %s", updateRequest.WantedKubernetesVersion)
 	return &upgradeproto.ExecuteUpdateResponse{}, nil
 }
 

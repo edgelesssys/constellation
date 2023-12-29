@@ -8,8 +8,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 package main
 
 import (
-	"context"
-	"flag"
+  "context"
+  "flag"
+  "log/slog"
+  "os"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -19,36 +21,39 @@ import (
 )
 
 var (
-	refFlag     = flag.String("ref", "", "the reference name of the image")
-	streamFlag  = flag.String("stream", "", "the stream name of the image")
-	versionFlag = flag.String("version", "", "the version of the image")
+  refFlag     = flag.String("ref", "", "the reference name of the image")
+  streamFlag  = flag.String("stream", "", "the stream name of the image")
+  versionFlag = flag.String("version", "", "the version of the image")
 )
 
 func main() {
-	log := logger.New(logger.PlainLog, zapcore.DebugLevel)
-	ctx := context.Background()
+  log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+  ctx := context.Background()
 
-	flag.Parse()
-	if *refFlag == "" {
-		log.Fatalf("ref must be set")
-	}
-	if *streamFlag == "" {
-		log.Fatalf("stream must be set")
-	}
-	if *versionFlag == "" {
-		log.Fatalf("version must be set")
-	}
+  flag.Parse()
+  if *refFlag == "" {
+    log.Error("ref must be set")
+    os.Exit(1)
+  }
+  if *streamFlag == "" {
+    log.Error("stream must be set")
+    os.Exit(1)
+  }
+  if *versionFlag == "" {
+    log.Error("version must be set")
+    os.Exit(1)
+  }
 
-	cliInfo := versionsapi.CLIInfo{
-		Ref:        *refFlag,
-		Stream:     *streamFlag,
-		Version:    *versionFlag,
-		Kubernetes: []string{},
-	}
+  cliInfo := versionsapi.CLIInfo{
+    Ref:        *refFlag,
+    Stream:     *streamFlag,
+    Version:    *versionFlag,
+    Kubernetes: []string{},
+  }
 
-	for _, v := range versions.VersionConfigs {
-		cliInfo.Kubernetes = append(cliInfo.Kubernetes, v.ClusterVersion)
-	}
+  for _, v := range versions.VersionConfigs {
+    cliInfo.Kubernetes = append(cliInfo.Kubernetes, v.ClusterVersion)
+  }
 
 	c, cclose, err := versionsapi.NewClient(ctx, "eu-central-1", "cdn-constellation-backend", constants.CDNDefaultDistributionID, false, log)
 	if err != nil {
@@ -60,7 +65,8 @@ func main() {
 		}
 	}()
 
-	if err := c.UpdateCLIInfo(ctx, cliInfo); err != nil {
-		log.Fatalf("updating cli info: %w", err)
-	}
+  if err := c.UpdateCLIInfo(ctx, cliInfo); err != nil {
+    log.Error("updating cli info: %w", err)
+    os.Exit(1)
+  }
 }

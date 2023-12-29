@@ -27,6 +27,7 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -61,7 +62,7 @@ type Router struct {
 }
 
 // New creates a new Router.
-func New(region, endpoint string, forwardMultipartReqs bool, log *logger.Logger) (Router, error) {
+func New(region, endpoint string, forwardMultipartReqs bool, log *slog.Logger) (Router, error) {
 	kms := kms.New(log, endpoint)
 
 	// Get the key encryption key that encrypts all DEKs.

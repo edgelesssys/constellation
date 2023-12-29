@@ -266,7 +266,7 @@ func TestAttestationWithCerts(t *testing.T) {
 			}
 
 			defer trust.ClearProductCertCache()
-			att, err := instanceInfo.AttestationWithCerts(tc.getter, tc.fallbackCerts, logger.NewTest(t))
+			att, err := instanceInfo.AttestationWithCerts(tc.getter, tc.fallbackCerts, slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

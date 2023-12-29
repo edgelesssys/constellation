@@ -18,11 +18,11 @@ import (
 	"strings"
 	"syscall"
 	"testing"
+  "log/slog"
 
 	"github.com/bazelbuild/rules_go/go/runfiles"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/diskencryption"
 	ccryptsetup "github.com/edgelesssys/constellation/v2/internal/cryptsetup"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	cryptsetup "github.com/martinjungblut/go-cryptsetup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -103,7 +103,7 @@ func TestMapper(t *testing.T) {
 	require.NoError(setup(1), "failed to setup test disk")
 	defer func() { require.NoError(teardown(), "failed to delete test disk") }()
 
-	mapper, free, err := diskencryption.New(devicePath, logger.NewTest(t))
+	mapper, free, err := diskencryption.New(devicePath, slog.New(slog.NewPlainTextHandler(logger.TestWriter{T: t}, nil))
 	require.NoError(err, "failed to initialize crypt device")
 	defer free()
 

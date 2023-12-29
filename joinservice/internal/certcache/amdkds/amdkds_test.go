@@ -7,7 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 package amdkds
 
 import (
+  "fmt"
 	"testing"
+  "log/slog"
 
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/joinservice/internal/certcache/amdkds/testdata"
@@ -23,20 +25,20 @@ func TestCertChain(t *testing.T) {
 	}{
 		"success": {
 			getter: &stubGetter{
-				log: logger.NewTest(t),
+				log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				ret: testdata.CertChain,
 			},
 		},
 		"getter error": {
 			getter: &stubGetter{
-				log: logger.NewTest(t),
+				log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				err: assert.AnError,
 			},
 			wantErr: true,
 		},
 		"empty cert chain": {
 			getter: &stubGetter{
-				log: logger.NewTest(t),
+				log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				ret: nil,
 			},
 			wantErr: true,
@@ -63,12 +65,12 @@ func TestCertChain(t *testing.T) {
 }
 
 type stubGetter struct {
-	log *logger.Logger
+	log *slog.Logger
 	ret []byte
 	err error
 }
 
 func (s *stubGetter) Get(url string) ([]byte, error) {
-	s.log.Debugf("Request to %s", url)
+	s.log.Debug(fmt.Sprintf("Request to %s", url))
 	return s.ret, s.err
 }

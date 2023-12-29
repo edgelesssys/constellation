@@ -10,6 +10,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 	"time"
 
@@ -33,7 +34,7 @@ import (
 type Server struct {
 	measurementSalt []byte
 
-	log             *logger.Logger
+	log             *slog.Logger
 	joinTokenGetter joinTokenGetter
 	dataKeyGetter   dataKeyGetter
 	ca              certificateAuthority
@@ -44,7 +45,7 @@ type Server struct {
 // New initializes a new Server.
 func New(
 	measurementSalt []byte, ca certificateAuthority,
-	joinTokenGetter joinTokenGetter, dataKeyGetter dataKeyGetter, kubeClient kubeClient, log *logger.Logger,
+	joinTokenGetter joinTokenGetter, dataKeyGetter dataKeyGetter, kubeClient kubeClient, log *slog.Logger,
 ) (*Server, error) {
 	return &Server{
 		measurementSalt: measurementSalt,
@@ -58,10 +59,11 @@ func New(
 
 // Run starts the gRPC server on the given port, using the provided tlsConfig.
 func (s *Server) Run(creds credentials.TransportCredentials, port string) error {
+  // TODO(miampf): Find a good way to increase slogs log level
 	s.log.WithIncreasedLevel(zap.WarnLevel).Named("gRPC").ReplaceGRPCLogger()
 	grpcServer := grpc.NewServer(
 		grpc.Creds(creds),
-		s.log.Named("gRPC").GetServerUnaryInterceptor(),
+		logger.GetServerUnaryInterceptor(s.log.WithGroup("gRPC")),
 	)
 
 	joinproto.RegisterAPIServer(grpcServer, s)
@@ -70,7 +72,7 @@ func (s *Server) Run(creds credentials.TransportCredentials, port string) error 
 	if err != nil {
 		return fmt.Errorf("failed to listen: %s", err)
 	}
-	s.log.Infof("Starting join service on %s", lis.Addr().String())
+	s.log.Info("Starting join service on %s", lis.Addr().String())
 	return grpcServer.Serve(lis)
 }
 
@@ -82,57 +84,57 @@ func (s *Server) Run(creds credentials.TransportCredentials, port string) error 
 // In addition, control plane nodes receive:
 // - a decryption key for CA certificates uploaded to the Kubernetes cluster.
 func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTicketRequest) (*joinproto.IssueJoinTicketResponse, error) {
-	log := s.log.With(zap.String("peerAddress", grpclog.PeerAddrFromContext(ctx)))
-	log.Infof("IssueJoinTicket called")
+	log := s.log.With(slog.String("peerAddress", grpclog.PeerAddrFromContext(ctx)))
+	log.Info("IssueJoinTicket called")
 
-	log.Infof("Requesting measurement secret")
+	log.Info("Requesting measurement secret")
 	measurementSecret, err := s.dataKeyGetter.GetDataKey(ctx, attestation.MeasurementSecretContext, crypto.DerivedKeyLengthDefault)
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Failed to get measurement secret")
+		log.With(slog.Any("error", err)).Error("Failed to get measurement secret")
 		return nil, status.Errorf(codes.Internal, "getting measurement secret: %s", err)
 	}
 
-	log.Infof("Requesting disk encryption key")
+	log.Info("Requesting disk encryption key")
 	stateDiskKey, err := s.dataKeyGetter.GetDataKey(ctx, req.DiskUuid, crypto.StateDiskKeyLength)
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Failed to get key for stateful disk")
+		log.With(slog.Any("error", err)).Error("Failed to get key for stateful disk")
 		return nil, status.Errorf(codes.Internal, "getting key for stateful disk: %s", err)
 	}
 
-	log.Infof("Creating Kubernetes join token")
+	log.Info("Creating Kubernetes join token")
 	kubeArgs, err := s.joinTokenGetter.GetJoinToken(constants.KubernetesJoinTokenTTL)
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Failed to generate Kubernetes join arguments")
+		log.With(slog.Any("error", err)).Error("Failed to generate Kubernetes join arguments")
 		return nil, status.Errorf(codes.Internal, "generating Kubernetes join arguments: %s", err)
 	}
 
-	log.Infof("Querying NodeVersion custom resource for components ConfigMap name")
+	log.Info("Querying NodeVersion custom resource for components ConfigMap name")
 	componentsConfigMapName, err := s.getK8sComponentsConfigMapName(ctx)
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Failed getting components ConfigMap name")
+		log.With(slog.Any("error", err)).Error("Failed getting components ConfigMap name")
 		return nil, status.Errorf(codes.Internal, "getting components ConfigMap name: %s", err)
 	}
 
-	log.Infof("Querying %s ConfigMap for components", componentsConfigMapName)
+	log.Info("Querying %s ConfigMap for components", componentsConfigMapName)
 	components, err := s.kubeClient.GetComponents(ctx, componentsConfigMapName)
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Failed getting components from ConfigMap")
+		log.With(slog.Any("error", err)).Error("Failed getting components from ConfigMap")
 		return nil, status.Errorf(codes.Internal, "getting components: %s", err)
 	}
 
-	log.Infof("Creating signed kubelet certificate")
+	log.Info("Creating signed kubelet certificate")
 	kubeletCert, err := s.ca.GetCertificate(req.CertificateRequest)
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Failed generating kubelet certificate")
+		log.With(slog.Any("error", err)).Error("Failed generating kubelet certificate")
 		return nil, status.Errorf(codes.Internal, "Generating kubelet certificate: %s", err)
 	}
 
 	var controlPlaneFiles []*joinproto.ControlPlaneCertOrKey
 	if req.IsControlPlane {
-		log.Infof("Loading control plane certificates and keys")
+		log.Info("Loading control plane certificates and keys")
 		filesMap, err := s.joinTokenGetter.GetControlPlaneCertificatesAndKeys()
 		if err != nil {
-			log.With(zap.Error(err)).Errorf("Failed to load control plane certificates and keys")
+			log.With(slog.Any("error", err)).Error("Failed to load control plane certificates and keys")
 			return nil, status.Errorf(codes.Internal, "loading control-plane certificates and keys: %s", err)
 		}
 
@@ -146,16 +148,16 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 
 	nodeName, err := s.ca.GetNodeNameFromCSR(req.CertificateRequest)
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Failed getting node name from CSR")
+		log.With(slog.Any("error", err)).Error("Failed getting node name from CSR")
 		return nil, status.Errorf(codes.Internal, "getting node name from CSR: %s", err)
 	}
 
 	if err := s.kubeClient.AddNodeToJoiningNodes(ctx, nodeName, componentsConfigMapName, req.IsControlPlane); err != nil {
-		log.With(zap.Error(err)).Errorf("Failed adding node to joining nodes")
+		log.With(slog.Any("error", err)).Error("Failed adding node to joining nodes")
 		return nil, status.Errorf(codes.Internal, "adding node to joining nodes: %s", err)
 	}
 
-	log.Infof("IssueJoinTicket successful")
+	log.Info("IssueJoinTicket successful")
 	return &joinproto.IssueJoinTicketResponse{
 		StateDiskKey:             stateDiskKey,
 		MeasurementSalt:          s.measurementSalt,
@@ -171,24 +173,24 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 
 // IssueRejoinTicket issues a ticket for nodes to rejoin cluster.
 func (s *Server) IssueRejoinTicket(ctx context.Context, req *joinproto.IssueRejoinTicketRequest) (*joinproto.IssueRejoinTicketResponse, error) {
-	log := s.log.With(zap.String("peerAddress", grpclog.PeerAddrFromContext(ctx)))
-	log.Infof("IssueRejoinTicket called")
+	log := s.log.With(slog.String("peerAddress", grpclog.PeerAddrFromContext(ctx)))
+	log.Info("IssueRejoinTicket called")
 
-	log.Infof("Requesting measurement secret")
+	log.Info("Requesting measurement secret")
 	measurementSecret, err := s.dataKeyGetter.GetDataKey(ctx, attestation.MeasurementSecretContext, crypto.DerivedKeyLengthDefault)
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Unable to get measurement secret")
+		log.With(slog.Any("error", err)).Error("Unable to get measurement secret")
 		return nil, status.Errorf(codes.Internal, "unable to get measurement secret: %s", err)
 	}
 
-	log.Infof("Requesting disk encryption key")
+	log.Info("Requesting disk encryption key")
 	stateDiskKey, err := s.dataKeyGetter.GetDataKey(ctx, req.DiskUuid, crypto.StateDiskKeyLength)
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Unable to get key for stateful disk")
+		log.With(slog.Any("error", err)).Error("Unable to get key for stateful disk")
 		return nil, status.Errorf(codes.Internal, "unable to get key for stateful disk: %s", err)
 	}
 
-	log.Infof("IssueRejoinTicket successful")
+	log.Info("IssueRejoinTicket successful")
 	return &joinproto.IssueRejoinTicketResponse{
 		StateDiskKey:      stateDiskKey,
 		MeasurementSecret: measurementSecret,

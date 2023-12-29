@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"sync"
 	"testing"
 
@@ -102,7 +103,7 @@ func TestSystemdAction(t *testing.T) {
 
 			fs := afero.NewMemMapFs()
 			manager := ServiceManager{
-				log:                      logger.NewTest(t),
+        log:                      slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				dbus:                     &tc.dbus,
 				fs:                       fs,
 				systemdUnitFilewriteLock: sync.Mutex{},
@@ -181,7 +182,7 @@ func TestWriteSystemdUnitFile(t *testing.T) {
 				fs = afero.NewReadOnlyFs(fs)
 			}
 			manager := ServiceManager{
-				log:                      logger.NewTest(t),
+        log:                      slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				dbus:                     &tc.dbus,
 				fs:                       fs,
 				systemdUnitFilewriteLock: sync.Mutex{},
@@ -294,7 +295,7 @@ func TestOverrideServiceUnitExecStart(t *testing.T) {
 				fs = afero.NewReadOnlyFs(fs)
 			}
 			manager := ServiceManager{
-				log:                      logger.NewTest(t),
+        log:                      slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				dbus:                     &tc.dbus,
 				fs:                       fs,
 				systemdUnitFilewriteLock: sync.Mutex{},

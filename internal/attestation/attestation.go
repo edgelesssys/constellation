@@ -45,8 +45,8 @@ const (
 
 // Logger is a logger used to print warnings and infos during attestation validation.
 type Logger interface {
-	Infof(format string, args ...any)
-	Warnf(format string, args ...any)
+	Info(format string, args ...any)
+	Warn(format string, args ...any)
 }
 
 // NOPLogger is a no-op implementation of [Logger].

@@ -10,12 +10,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log/slog"
 	"net"
 	"os"
 	"sync"
 
 	"github.com/spf13/afero"
-	"go.uber.org/zap"
 
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/deploy"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/info"
@@ -46,11 +46,11 @@ func main() {
 	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 	flag.Parse()
 
-	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity))
+	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logger.VerbosityFromInt(*verbosity)}))
 	fs := afero.NewOsFs()
 	streamer := streamer.New(fs)
-	filetransferer := filetransfer.New(log.Named("filetransfer"), streamer, filetransfer.DontShowProgress)
-	serviceManager := deploy.NewServiceManager(log.Named("serviceManager"))
+	filetransferer := filetransfer.New(log.WithGroup("filetransfer"), streamer, filetransfer.DontShowProgress)
+	serviceManager := deploy.NewServiceManager(log.WithGroup("serviceManager"))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -64,21 +64,24 @@ func main() {
 	case platform.AWS:
 		meta, err := awscloud.New(ctx)
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to initialize AWS metadata")
+			log.With(slog.Any("error", err)).Error("Failed to initialize AWS metadata")
+			os.Exit(1)
 		}
 		fetcher = cloudprovider.New(meta)
 
 	case platform.Azure:
 		meta, err := azurecloud.New(ctx)
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to initialize Azure metadata")
+			log.With(slog.Any("error", err)).Error("Failed to initialize Azure metadata")
+			os.Exit(1)
 		}
 		fetcher = cloudprovider.New(meta)
 
 	case platform.GCP:
 		meta, err := gcpcloud.New(ctx)
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to initialize GCP metadata")
+			log.With(slog.Any("error", err)).Error("Failed to initialize GCP metadata")
+			os.Exit(1)
 		}
 		defer meta.Close()
 		fetcher = cloudprovider.New(meta)
@@ -86,26 +89,27 @@ func main() {
 	case platform.OpenStack:
 		meta, err := openstackcloud.New(ctx)
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to initialize OpenStack metadata")
+			log.With(slog.Any("error", err)).Error("Failed to initialize OpenStack metadata")
+			os.Exit(1)
 		}
 		fetcher = cloudprovider.New(meta)
 	case platform.QEMU:
 		fetcher = cloudprovider.New(qemucloud.New())
 
 	default:
-		log.Errorf("Unknown / unimplemented cloud provider CONSTEL_CSP=%v. Using fallback", csp)
+		log.Error("Unknown / unimplemented cloud provider CONSTEL_CSP=%v. Using fallback", csp)
 		fetcher = fallback.NewFallbackFetcher()
 	}
 
 	infoMap := info.NewMap()
 	infoMap.RegisterOnReceiveTrigger(
-		logcollector.NewStartTrigger(ctx, wg, platform.FromString(csp), fetcher, log.Named("logcollector")),
+		logcollector.NewStartTrigger(ctx, wg, platform.FromString(csp), fetcher, log.WithGroup("logcollector")),
 	)
 
-	download := deploy.New(log.Named("download"), &net.Dialer{}, serviceManager, filetransferer, infoMap)
+	download := deploy.New(log.WithGroup("download"), &net.Dialer{}, serviceManager, filetransferer, infoMap)
 
-	sched := metadata.NewScheduler(log.Named("scheduler"), fetcher, download)
-	serv := server.New(log.Named("server"), serviceManager, filetransferer, infoMap)
+	sched := metadata.NewScheduler(log.WithGroup("scheduler"), fetcher, download)
+	serv := server.New(log.WithGroup("server"), serviceManager, filetransferer, infoMap)
 
 	writeDebugBanner(log)
 
@@ -114,14 +118,14 @@ func main() {
 	wg.Wait()
 }
 
-func writeDebugBanner(log *logger.Logger) {
+func writeDebugBanner(log *slog.Logger) {
 	tty, err := os.OpenFile("/dev/ttyS0", os.O_WRONLY, os.ModeAppend)
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Unable to open /dev/ttyS0 for printing banner")
+		log.With(slog.Any("error", err)).Error("Unable to open /dev/ttyS0 for printing banner")
 		return
 	}
 	defer tty.Close()
 	if _, err := fmt.Fprint(tty, debugBanner); err != nil {
-		log.With(zap.Error(err)).Errorf("Unable to print to /dev/ttyS0")
+		log.With(slog.Any("error", err)).Error("Unable to print to /dev/ttyS0")
 	}
 }

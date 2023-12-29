@@ -8,15 +8,14 @@ package main
 import (
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/hack/oci-pin/internal/extract"
 	"github.com/edgelesssys/constellation/v2/hack/oci-pin/internal/inject"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap/zapcore"
 )
 
 func newCodegenCmd() *cobra.Command {
@@ -44,15 +43,15 @@ func runCodegen(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	log := logger.New(logger.PlainLog, flags.logLevel)
-	log.Debugf("Parsed flags: %+v", flags)
+	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: flags.logLevel}))
+	log.Debug("Parsed flags: %+v", flags)
 
 	registry, prefix, name, tag, err := splitRepoTag(flags.imageRepoTag)
 	if err != nil {
 		return fmt.Errorf("splitting OCI image reference %q: %w", flags.imageRepoTag, err)
 	}
 
-	log.Debugf("Generating Go code for OCI image %s.", name)
+	log.Debug("Generating Go code for OCI image %s.", name)
 
 	ociIndexPath := filepath.Join(flags.ociPath, "index.json")
 	index, err := os.Open(ociIndexPath)
@@ -78,7 +77,7 @@ func runCodegen(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	log.Debugf("OCI image digest: %s", digest)
+	log.Debug("OCI image digest: %s", digest)
 
 	if err := inject.Render(out, inject.PinningValues{
 		Package:  flags.pkg,
@@ -92,7 +91,7 @@ func runCodegen(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("rendering Go code: %w", err)
 	}
 
-	log.Debugf("Go code created at %q 🤖", flags.output)
+	log.Debug("Go code created at %q 🤖", flags.output)
 	return nil
 }
 
@@ -102,7 +101,7 @@ type codegenFlags struct {
 	pkg          string
 	identifier   string
 	imageRepoTag string
-	logLevel     zapcore.Level
+	logLevel     slog.Level
 }
 
 func parseCodegenFlags(cmd *cobra.Command) (codegenFlags, error) {
@@ -137,9 +136,9 @@ func parseCodegenFlags(cmd *cobra.Command) (codegenFlags, error) {
 	if err != nil {
 		return codegenFlags{}, err
 	}
-	logLevel := zapcore.InfoLevel
+	logLevel := slog.LevelInfo
 	if verbose {
-		logLevel = zapcore.DebugLevel
+		logLevel = slog.LevelDebug
 	}
 
 	return codegenFlags{

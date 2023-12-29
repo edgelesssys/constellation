@@ -15,6 +15,7 @@ package staticupload
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 	"sync"
 	"time"
@@ -25,7 +26,6 @@ import (
 	cftypes "github.com/aws/aws-sdk-go-v2/service/cloudfront/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/google/uuid"
 )
 
@@ -45,7 +45,7 @@ type Client struct {
 	dirtyKeys []string
 	// invalidationIDs is a list of invalidation IDs that are currently in progress.
 	invalidationIDs []string
-	logger          *logger.Logger
+	logger          *slog.Logger
 }
 
 // Config is the configuration for the Client.
@@ -101,7 +101,7 @@ func (e *InvalidationError) Unwrap() error {
 }
 
 // New creates a new Client. Call CloseFunc when done with operations.
-func New(ctx context.Context, config Config, log *logger.Logger) (*Client, CloseFunc, error) {
+func New(ctx context.Context, config Config, log *slog.Logger) (*Client, CloseFunc, error) {
 	config.SetsDefault()
 	cfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(config.Region))
 	if err != nil {
@@ -134,7 +134,7 @@ func (c *Client) Flush(ctx context.Context) error {
 	c.mux.Lock()
 	defer c.mux.Unlock()
 
-	c.logger.Debugf("Invalidating keys: %s", c.dirtyKeys)
+	c.logger.Debug(fmt.Sprintf("Invalidating keys: %s", c.dirtyKeys))
 	if len(c.dirtyKeys) == 0 {
 		return nil
 	}
@@ -214,12 +214,12 @@ func (c *Client) invalidateCacheForKeys(ctx context.Context, keys []string) (str
 // waitForInvalidations waits for all invalidations to finish.
 func (c *Client) waitForInvalidations(ctx context.Context) error {
 	if c.cacheInvalidationWaitTimeout == 0 {
-		c.logger.Warnf("cacheInvalidationWaitTimeout set to 0, not waiting for invalidations to finish")
+		c.logger.Warn("cacheInvalidationWaitTimeout set to 0, not waiting for invalidations to finish")
 		return nil
 	}
 
 	waiter := cloudfront.NewInvalidationCompletedWaiter(c.cdnClient)
-	c.logger.Debugf("Waiting for invalidations %s in distribution %s", c.invalidationIDs, c.distributionID)
+	c.logger.Debug(fmt.Sprintf("Waiting for invalidations %s in distribution %s", c.invalidationIDs, c.distributionID))
 	for _, invalidationID := range c.invalidationIDs {
 		waitIn := &cloudfront.GetInvalidationInput{
 			DistributionId: &c.distributionID,
@@ -230,7 +230,7 @@ func (c *Client) waitForInvalidations(ctx context.Context) error {
 		}
 
 	}
-	c.logger.Debugf("Invalidations finished")
+	c.logger.Debug("Invalidations finished")
 	c.invalidationIDs = nil
 	return nil
 }

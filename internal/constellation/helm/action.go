@@ -37,7 +37,7 @@ type applyAction interface {
 func newActionConfig(kubeConfig []byte, logger debugLog) (*action.Configuration, error) {
 	actionConfig := &action.Configuration{}
 	if err := actionConfig.Init(&clientGetter{kubeConfig: kubeConfig}, constants.HelmNamespace,
-		"secret", logger.Debugf); err != nil {
+		"secret", logger.Debug); err != nil {
 		return nil, err
 	}
 	return actionConfig, nil

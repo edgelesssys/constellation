@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -196,7 +197,7 @@ func TestBackupHelmCharts(t *testing.T) {
 				applier: &stubConstellApplier{
 					stubKubernetesUpgrader: tc.backupClient,
 				},
-				log: logger.NewTest(t),
+        log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 			}
 
 			err := a.backupHelmCharts(context.Background(), tc.helmApplier, tc.includesUpgrades, "")
@@ -442,7 +443,7 @@ func TestValidateInputs(t *testing.T) {
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 
 			a := applyCmd{
-				log:         logger.NewTest(t),
+        log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				fileHandler: fileHandler,
 				flags:       tc.flags,
 			}

@@ -10,6 +10,7 @@ package kubernetes
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 	"regexp"
 	"strings"
@@ -20,10 +21,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
-	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
@@ -69,9 +68,9 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
-	ctx context.Context, versionString, clusterName string, conformanceMode bool, kubernetesComponents components.Components, apiServerCertSANs []string, serviceCIDR string, log *logger.Logger,
+	ctx context.Context, versionString, clusterName string, conformanceMode bool, kubernetesComponents components.Components, apiServerCertSANs []string, serviceCIDR string, log *slog.Logger,
 ) ([]byte, error) {
-	log.With(zap.String("version", versionString)).Infof("Installing Kubernetes components")
+	log.With(slog.String("version", versionString)).Info("Installing Kubernetes components")
 	if err := k.clusterUtil.InstallComponents(ctx, kubernetesComponents); err != nil {
 		return nil, err
 	}
@@ -79,7 +78,7 @@ func (k *KubeWrapper) InitCluster(
 	var validIPs []net.IP
 
 	// Step 1: retrieve cloud metadata for Kubernetes configuration
-	log.Infof("Retrieving node metadata")
+	log.Info("Retrieving node metadata")
 	instance, err := k.providerMetadata.Self(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving own instance metadata: %w", err)
@@ -108,14 +107,14 @@ func (k *KubeWrapper) InitCluster(
 	certSANs = append(certSANs, apiServerCertSANs...)
 
 	log.With(
-		zap.String("nodeName", nodeName),
-		zap.String("providerID", instance.ProviderID),
-		zap.String("nodeIP", nodeIP),
-		zap.String("controlPlaneHost", controlPlaneHost),
-		zap.String("controlPlanePort", controlPlanePort),
-		zap.String("certSANs", strings.Join(certSANs, ",")),
-		zap.String("podCIDR", subnetworkPodCIDR),
-	).Infof("Setting information for node")
+		slog.String("nodeName", nodeName),
+		slog.String("providerID", instance.ProviderID),
+		slog.String("nodeIP", nodeIP),
+		slog.String("controlPlaneHost", controlPlaneHost),
+		slog.String("controlPlanePort", controlPlanePort),
+		slog.String("certSANs", strings.Join(certSANs, ",")),
+		slog.String("podCIDR", subnetworkPodCIDR),
+	).Info("Setting information for node")
 
 	// Step 2: configure kubeadm init config
 	ccmSupported := cloudprovider.FromString(k.cloudProvider) == cloudprovider.Azure ||
@@ -133,7 +132,7 @@ func (k *KubeWrapper) InitCluster(
 	if err != nil {
 		return nil, fmt.Errorf("encoding kubeadm init configuration as YAML: %w", err)
 	}
-	log.Infof("Initializing Kubernetes cluster")
+	log.Info("Initializing Kubernetes cluster")
 	kubeConfig, err := k.clusterUtil.InitCluster(ctx, initConfigYAML, nodeName, clusterName, validIPs, conformanceMode, log)
 	if err != nil {
 		return nil, fmt.Errorf("kubeadm init: %w", err)
@@ -186,7 +185,7 @@ func (k *KubeWrapper) InitCluster(
 }
 
 // JoinCluster joins existing Kubernetes cluster.
-func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTokenDiscovery, peerRole role.Role, k8sComponents components.Components, log *logger.Logger) error {
+func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTokenDiscovery, peerRole role.Role, k8sComponents components.Components, log *slog.Logger) error {
 	log.With("k8sComponents", k8sComponents).Infof("Installing provided kubernetes components")
 	if err := k.clusterUtil.InstallComponents(ctx, k8sComponents); err != nil {
 		return fmt.Errorf("installing kubernetes components: %w", err)
@@ -214,12 +213,12 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 	args.APIServerEndpoint = net.JoinHostPort(loadBalancerHost, loadBalancerPort)
 
 	log.With(
-		zap.String("nodeName", nodeName),
-		zap.String("providerID", providerID),
-		zap.String("nodeIP", nodeInternalIP),
-		zap.String("loadBalancerHost", loadBalancerHost),
-		zap.String("loadBalancerPort", loadBalancerPort),
-	).Infof("Setting information for node")
+		slog.String("nodeName", nodeName),
+		slog.String("providerID", providerID),
+		slog.String("nodeIP", nodeInternalIP),
+		slog.String("loadBalancerHost", loadBalancerHost),
+		slog.String("loadBalancerPort", loadBalancerPort),
+	).Info("Setting information for node")
 
 	// Step 2: configure kubeadm join config
 	ccmSupported := cloudprovider.FromString(k.cloudProvider) == cloudprovider.Azure ||
@@ -238,7 +237,7 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 	if err != nil {
 		return fmt.Errorf("encoding kubeadm join configuration as YAML: %w", err)
 	}
-	log.With(zap.String("apiServerEndpoint", args.APIServerEndpoint)).Infof("Joining Kubernetes cluster")
+	log.With(slog.String("apiServerEndpoint", args.APIServerEndpoint)).Info("Joining Kubernetes cluster")
 	if err := k.clusterUtil.JoinCluster(ctx, joinConfigYAML, log); err != nil {
 		return fmt.Errorf("joining cluster: %v; %w ", string(joinConfigYAML), err)
 	}

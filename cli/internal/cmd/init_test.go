@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+  "log/slog"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
@@ -228,7 +229,7 @@ func TestInitialize(t *testing.T) {
 					rootFlags:  rootFlags{force: true},
 					skipPhases: newPhases(skipInfrastructurePhase),
 				},
-				log:     logger.NewTest(t),
+				log:     slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				spinner: &nopSpinner{},
 				merger:  &stubMerger{},
 				applier: &stubConstellApplier{
@@ -368,8 +369,8 @@ func TestWriteOutput(t *testing.T) {
 		fileHandler: fileHandler,
 		spinner:     &nopSpinner{},
 		merger:      &stubMerger{},
-		log:         logger.NewTest(t),
-		applier:     constellation.NewApplier(logger.NewTest(t), &nopSpinner{}, constellation.ApplyContextCLI, nil),
+		log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+		applier:     constellation.NewApplier(slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), &nopSpinner{}, constellation.ApplyContextCLI, nil),
 	}
 	err = i.writeInitOutput(stateFile, initOutput, false, &out, measurementSalt)
 	require.NoError(err)
@@ -460,8 +461,8 @@ func TestGenerateMasterSecret(t *testing.T) {
 			var out bytes.Buffer
 			i := &applyCmd{
 				fileHandler: fileHandler,
-				log:         logger.NewTest(t),
-				applier:     constellation.NewApplier(logger.NewTest(t), &nopSpinner{}, constellation.ApplyContextCLI, nil),
+				log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				applier:     constellation.NewApplier(slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), &nopSpinner{}, constellation.ApplyContextCLI, nil),
 			}
 			secret, err := i.generateAndPersistMasterSecret(&out)
 

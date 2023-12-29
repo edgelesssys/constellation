@@ -17,6 +17,7 @@ package recoveryserver
 
 import (
 	"context"
+	"log/slog"
 	"net"
 	"sync"
 
@@ -44,13 +45,13 @@ type RecoveryServer struct {
 	grpcServer        server
 	factory           kmsFactory
 
-	log *logger.Logger
+	log *slog.Logger
 
 	recoverproto.UnimplementedAPIServer
 }
 
 // New returns a new RecoveryServer.
-func New(issuer atls.Issuer, factory kmsFactory, log *logger.Logger) *RecoveryServer {
+func New(issuer atls.Issuer, factory kmsFactory, log *slog.Logger) *RecoveryServer {
 	server := &RecoveryServer{
 		log:     log,
 		factory: factory,
@@ -58,7 +59,7 @@ func New(issuer atls.Issuer, factory kmsFactory, log *logger.Logger) *RecoverySe
 
 	grpcServer := grpc.NewServer(
 		grpc.Creds(atlscredentials.New(issuer, nil)),
-		log.Named("gRPC").GetServerStreamInterceptor(),
+		logger.GetServerStreamInterceptor(log.WithGroup("gRPC")),
 	)
 	recoverproto.RegisterAPIServer(grpcServer, server)
 
@@ -71,7 +72,7 @@ func New(issuer atls.Issuer, factory kmsFactory, log *logger.Logger) *RecoverySe
 // The server will shut down when the call is successful and the keys are returned.
 // Additionally, the server can be shutdown by canceling the context.
 func (s *RecoveryServer) Serve(ctx context.Context, listener net.Listener, diskUUID string) (diskKey, measurementSecret []byte, err error) {
-	s.log.Infof("Starting RecoveryServer")
+	s.log.Info("Starting RecoveryServer")
 	s.diskUUID = diskUUID
 	recoveryDone := make(chan struct{}, 1)
 	var serveErr error
@@ -88,7 +89,7 @@ func (s *RecoveryServer) Serve(ctx context.Context, listener net.Listener, diskU
 	for {
 		select {
 		case <-ctx.Done():
-			s.log.Infof("Context canceled, shutting down server")
+			s.log.Info("Context canceled, shutting down server")
 			s.grpcServer.GracefulStop()
 			return nil, nil, ctx.Err()
 		case <-recoveryDone:
@@ -106,7 +107,7 @@ func (s *RecoveryServer) Recover(ctx context.Context, req *recoverproto.RecoverM
 	defer s.mux.Unlock()
 	log := s.log.With(slog.String("peer", grpclog.PeerAddrFromContext(ctx)))
 
-	log.Infof("Received recover call")
+	log.Info("Received recover call")
 
 	cloudKms, err := s.factory(ctx, req.StorageUri, req.KmsUri)
 	if err != nil {
@@ -123,7 +124,7 @@ func (s *RecoveryServer) Recover(ctx context.Context, req *recoverproto.RecoverM
 	}
 	s.stateDiskKey = stateDiskKey
 	s.measurementSecret = measurementSecret
-	log.Infof("Received state disk key and measurement secret, shutting down server")
+	log.Info("Received state disk key and measurement secret, shutting down server")
 
 	go s.grpcServer.GracefulStop()
 	return &recoverproto.RecoverResponse{}, nil
@@ -131,18 +132,18 @@ func (s *RecoveryServer) Recover(ctx context.Context, req *recoverproto.RecoverM
 
 // StubServer implements the RecoveryServer interface but does not actually start a server.
 type StubServer struct {
-	log *logger.Logger
+	log *slog.Logger
 }
 
 // NewStub returns a new stubbed RecoveryServer.
 // We use this to avoid having to start a server for worker nodes, since they don't require manual recovery.
-func NewStub(log *logger.Logger) *StubServer {
+func NewStub(log *slog.Logger) *StubServer {
 	return &StubServer{log: log}
 }
 
 // Serve waits until the context is canceled and returns nil.
 func (s *StubServer) Serve(ctx context.Context, _ net.Listener, _ string) ([]byte, []byte, error) {
-	s.log.Infof("Running as worker node, skipping recovery server")
+	s.log.Info("Running as worker node, skipping recovery server")
 	<-ctx.Done()
 	return nil, nil, ctx.Err()
 }

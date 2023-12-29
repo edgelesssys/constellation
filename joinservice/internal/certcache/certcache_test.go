@@ -9,6 +9,7 @@ package certcache
 import (
 	"context"
 	"crypto/x509"
+	"log/slog"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -120,7 +121,7 @@ func TestCreateCertChainCache(t *testing.T) {
 
 			c := &Client{
 				attVariant: variant.Dummy{},
-				log:        logger.NewTest(t),
+        log:        slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				kubeClient: tc.kubeClient,
 				kdsClient:  tc.kdsClient,
 			}
@@ -206,7 +207,7 @@ func TestGetCertChainCache(t *testing.T) {
 
 			ctx := context.Background()
 
-			c := NewClient(logger.NewTest(t), tc.kubeClient, variant.Dummy{})
+      c := NewClient(slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), tc.kubeClient, variant.Dummy{})
 
 			ask, ark, err := c.getCertChainCache(ctx)
 			if tc.wantErr {

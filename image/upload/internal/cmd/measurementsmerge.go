@@ -9,10 +9,10 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -44,8 +44,8 @@ func runMergeMeasurements(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	log := logger.New(logger.PlainLog, flags.logLevel)
-	log.Debugf("Parsed flags: %+v", flags)
+	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: flags.logLevel}))
+	log.Debug("Parsed flags: %+v", flags)
 
 	mergedMeasurements, err := readMeasurementsArgs(args)
 	if err != nil {
@@ -65,7 +65,7 @@ func runMergeMeasurements(cmd *cobra.Command, args []string) error {
 	if err := json.NewEncoder(out).Encode(mergedMeasurements); err != nil {
 		return fmt.Errorf("merging measurements: writing output file: %w", err)
 	}
-	log.Infof("Merged image measurements")
+	log.Info("Merged image measurements")
 	return nil
 }
 

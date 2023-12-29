@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package kubeadm
 
 import (
+	"log/slog"
 	"path/filepath"
 	"testing"
 	"time"
@@ -85,7 +86,7 @@ kind: Config`,
 			require := require.New(t)
 
 			client := &Kubeadm{
-				log:    logger.NewTest(t),
+        log:    slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				file:   file.NewHandler(afero.NewMemMapFs()),
 				client: fake.NewSimpleClientset(),
 			}
@@ -149,7 +150,7 @@ func TestGetControlPlaneCertificatesAndKeys(t *testing.T) {
 			require := require.New(t)
 
 			client := &Kubeadm{
-				log:    logger.NewTest(t),
+        log:    slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				file:   file.NewHandler(afero.NewMemMapFs()),
 				client: fake.NewSimpleClientset(),
 			}

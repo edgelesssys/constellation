@@ -149,7 +149,7 @@ func (i iamUpgradeApplyCmd) iamUpgradeApply(cmd *cobra.Command, iamUpgrader iamU
 			return errors.New("IAM upgrade aborted by user")
 		}
 	}
-	i.log.Debugf("Applying Terraform IAM migrations")
+	i.log.Debug("Applying Terraform IAM migrations")
 	if err := iamUpgrader.ApplyIAMUpgrade(cmd.Context(), conf.GetProvider()); err != nil {
 		return fmt.Errorf("applying terraform migrations: %w", err)
 	}

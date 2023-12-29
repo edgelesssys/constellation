@@ -65,7 +65,7 @@ func TestSetInfo(t *testing.T) {
 			require := require.New(t)
 
 			serv := debugdServer{
-				log:  logger.NewTest(t),
+				log:  slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				info: tc.info,
 			}
 
@@ -128,7 +128,7 @@ func TestGetInfo(t *testing.T) {
 			}
 
 			serv := debugdServer{
-				log:  logger.NewTest(t),
+				log:  slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				info: tc.info,
 			}
 
@@ -192,7 +192,7 @@ func TestUploadFiles(t *testing.T) {
 			transfer := &stubTransfer{files: tc.files, recvFilesErr: tc.recvFilesErr}
 
 			serv := debugdServer{
-				log:            logger.NewTest(t),
+				log:            slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				serviceManager: serviceMgr,
 				transfer:       transfer,
 			}
@@ -237,7 +237,7 @@ func TestDownloadFiles(t *testing.T) {
 
 			transfer := &stubTransfer{canSend: tc.canSend}
 			serv := debugdServer{
-				log:      logger.NewTest(t),
+				log:      slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				transfer: transfer,
 			}
 
@@ -317,7 +317,7 @@ func TestUploadSystemServiceUnits(t *testing.T) {
 			require := require.New(t)
 
 			serv := debugdServer{
-				log:            logger.NewTest(t),
+				log:            slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				serviceManager: &tc.serviceManager,
 			}
 			grpcServ, conn, err := setupServerWithConn(endpoint, &serv)
