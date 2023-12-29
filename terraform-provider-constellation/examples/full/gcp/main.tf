@@ -21,6 +21,8 @@ locals {
   region               = "europe-west3"
   zone                 = "europe-west3-b"
   project_id           = "constellation-331613"
+  control_plane_count = 3
+  worker_count        = 2
 
   master_secret      = random_bytes.master_secret.hex
   master_secret_salt = random_bytes.master_secret_salt.hex
@@ -58,7 +60,7 @@ module "gcp_infrastructure" {
       instance_type = "n2d-standard-4"
       disk_size     = 30
       disk_type     = "pd-ssd"
-      initial_count = 3
+      initial_count = local.control_plane_count
       zone          = local.zone
     },
     worker_default = {
@@ -66,7 +68,7 @@ module "gcp_infrastructure" {
       instance_type = "n2d-standard-4"
       disk_size     = 30
       disk_type     = "pd-ssd"
-      initial_count = 2
+      initial_count = local.worker_count
       zone          = local.zone
     }
   }
