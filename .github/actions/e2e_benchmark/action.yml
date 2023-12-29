@@ -104,16 +104,17 @@ runs:
         apiVersion: storage.k8s.io/v1
         kind: StorageClass
         metadata:
-          name: encrypted-125-rwo
+          name: encrypted-1000-rwo
         provisioner: aws.csi.confidential.cloud
         volumeBindingMode: Immediate
         allowVolumeExpansion: true
         parameters:
           type: gp3
-          throughput: "125"
+          throughput: "1000"
+          iops: "16000"
         EOF
         mkdir -p out
-        kubestr fio -e "out/fio-constellation-${{ inputs.cloudProvider }}.json" -o json -s encrypted-125-rwo -z 400Gi -f .github/actions/e2e_benchmark/fio.ini
+        kubestr fio -e "out/fio-constellation-${{ inputs.cloudProvider }}.json" -o json -s encrypted-1000-rwo -z 400Gi -f .github/actions/e2e_benchmark/fio.ini
 
     - name: Upload raw FIO benchmark results
       if: (!env.ACT)
