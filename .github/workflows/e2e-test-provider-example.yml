@@ -215,6 +215,11 @@ jobs:
           }
 
           locals {
+            control_plane_count = 1
+            worker_count        = 1
+          }
+
+          locals {
             name                = "${{ steps.create-prefix.outputs.prefix }}"
             image_version            = "${image_version}"
             microservice_version= "${prefixed_version}"
