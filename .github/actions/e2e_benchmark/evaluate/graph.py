@@ -12,14 +12,16 @@ from matplotlib import font_manager as fm
 
 SUBJECTS_AZURE = ['constellation-azure', 'AKS']
 SUBJECTS_GCP = ['constellation-gcp', 'GKE']
+SUBJECTS_AWS = ['constellation-aws', 'EKS']
 
 LEGEND_NAMES_AZURE = ['Constellation', 'AKS']
 LEGEND_NAMES_GCP = ['Constellation', 'GKE']
+LEGEND_NAMES_AWS = ['Constellation', 'EKS']
 
 
 BAR_COLORS = ['#90FF99', '#929292', '#8B04DD', '#000000']
 
-FONT_URL = "https://github.com/google/fonts/raw/main/apache/roboto/static/Roboto-Regular.ttf"
+FONT_URL = "https://github.com/openmaptiles/fonts/raw/master/roboto/Roboto-Regular.ttf"
 FONT_NAME = "Roboto-Regular.ttf"
 FONT_SIZE = 13
 
@@ -115,7 +117,7 @@ def main():
     out_dir = configure()
     combined_results = defaultdict(dict)
 
-    for test in SUBJECTS_AZURE+SUBJECTS_GCP:
+    for test in SUBJECTS_AZURE+SUBJECTS_GCP+SUBJECTS_AWS:
         # Read the previous results
         read_path = os.path.join(
             out_dir, '{subject}.json'.format(subject=test))
@@ -157,6 +159,21 @@ def main():
     save_name = os.path.join(out_dir, 'benchmark_net_p2p_gcp.png')
     plt.savefig(save_name)
 
+    # P2P TCP + UDP AWS
+    net_data = {}
+    for s, l in zip(SUBJECTS_AWS, LEGEND_NAMES_AWS):
+        net_data[l+" - TCP"] = int(combined_results[s]
+                                   ['knb']['pod2pod']['tcp_bw_mbit'])
+    for s, l in zip(SUBJECTS_AWS, LEGEND_NAMES_AWS):
+        net_data[l+" - UDP"] = int(combined_results[s]
+                                   ['knb']['pod2pod']['udp_bw_mbit'])
+    bar_chart(data=net_data,
+              title='K8S CNI Benchmark - Pod to Pod - AWS - Bandwidth',
+              unit=net_unit,
+              x_label=f"Bandwidth in {net_unit} - Higher is better")
+    save_name = os.path.join(out_dir, 'benchmark_net_p2p_aws.png')
+    plt.savefig(save_name)
+
     # P2SVC TCP + UDP Azure
     net_data = {}
     for s, l in zip(SUBJECTS_AZURE, LEGEND_NAMES_AZURE):
@@ -172,7 +189,7 @@ def main():
     save_name = os.path.join(out_dir, 'benchmark_net_p2svc_azure.png')
     plt.savefig(save_name)
 
-    # P2P TCP + UDP GCP
+    # P2SVC TCP + UDP GCP
     net_data = {}
     for s, l in zip(SUBJECTS_GCP, LEGEND_NAMES_GCP):
         net_data[l+" - TCP"] = int(combined_results[s]
@@ -185,6 +202,21 @@ def main():
               unit=net_unit,
               x_label=f"Bandwidth in {net_unit} - Higher is better")
     save_name = os.path.join(out_dir, 'benchmark_net_p2svc_gcp.png')
+    plt.savefig(save_name)
+
+    # P2SVC TCP + UDP GCP
+    net_data = {}
+    for s, l in zip(SUBJECTS_AWS, LEGEND_NAMES_AWS):
+        net_data[l+" - TCP"] = int(combined_results[s]
+                                   ['knb']['pod2svc']['tcp_bw_mbit'])
+    for s, l in zip(SUBJECTS_AWS, LEGEND_NAMES_AWS):
+        net_data[l+" - UDP"] = int(combined_results[s]
+                                   ['knb']['pod2svc']['udp_bw_mbit'])
+    bar_chart(data=net_data,
+              title='K8S CNI Benchmark - Pod to Service - AWS - Bandwidth',
+              unit=net_unit,
+              x_label=f"Bandwidth in {net_unit} - Higher is better")
+    save_name = os.path.join(out_dir, 'benchmark_net_p2svc_aws.png')
     plt.savefig(save_name)
 
     # FIO charts
@@ -217,6 +249,20 @@ def main():
     save_name = os.path.join(out_dir, 'benchmark_fio_gcp_iops.png')
     plt.savefig(save_name)
 
+    # IOPS on AWS
+    fio_data = {}
+    for s, l in zip(SUBJECTS_AWS, LEGEND_NAMES_AWS):
+        fio_data[l+" - Read"] = int(combined_results[s]
+                                    ['fio']['read_iops']['iops'])
+    for s, l in zip(SUBJECTS_AWS, LEGEND_NAMES_AWS):
+        fio_data[l+" - Write"] = int(combined_results[s]
+                                     ['fio']['write_iops']['iops'])
+    bar_chart(data=fio_data,
+              title='FIO Benchmark - AWS - IOPS',
+              x_label=f"{fio_iops_unit} - Higher is better")
+    save_name = os.path.join(out_dir, 'benchmark_fio_aws_iops.png')
+    plt.savefig(save_name)
+
     # Bandwidth on Azure
     fio_data = {}
     for s, l in zip(SUBJECTS_AZURE, LEGEND_NAMES_AZURE):
@@ -245,6 +291,19 @@ def main():
     save_name = os.path.join(out_dir, 'benchmark_fio_gcp_bw.png')
     plt.savefig(save_name)
 
+    # Bandwidth on AWS
+    fio_data = {}
+    for s, l in zip(SUBJECTS_AWS, LEGEND_NAMES_AWS):
+        fio_data[l+" - Read"] = int(combined_results[s]
+                                    ['fio']['read_bw']['bw_kbytes'] / 1024)
+    for s, l in zip(SUBJECTS_AWS, LEGEND_NAMES_AWS):
+        fio_data[l+" - Write"] = int(combined_results[s]
+                                     ['fio']['write_bw']['bw_kbytes'] / 1024)
+    bar_chart(data=fio_data,
+              title='FIO Benchmark - AWS - Bandwidth',
+              x_label=f"Bandwidth in {fio_bw_unit} - Higher is better")
+    save_name = os.path.join(out_dir, 'benchmark_fio_aws_bw.png')
+    plt.savefig(save_name)
 
 if __name__ == '__main__':
     main()

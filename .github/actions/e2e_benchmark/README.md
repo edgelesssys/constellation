@@ -93,7 +93,7 @@ EOF
 
 # Run kubestr
 mkdir -p out
-kubestr fio -e "out/fio-AKS.json" -o json -s default -z 400Gi -f constellation/.github/actions/e2e_benchmark/fio.ini
+kubestr fio -e "out/fio-AKS.json" -o json -s default-no-cache -z 400Gi -f constellation/.github/actions/e2e_benchmark/fio.ini
 
 # Run knb
 workers="$(kubectl get nodes | grep nodepool)"
@@ -263,7 +263,7 @@ The action updates the stored Constellation records for the selected cloud provi
 ## Drawing Performance Charts
 The action also contains the code to draw graphs as used in the [Constellation docs](https://docs.edgeless.systems/constellation/next/overview/performance).
 The graphs compare the performance of Constellation to the performance of managed Kubernetes clusters.
-It expects the results of `[AKS.json, GKE.json, constellation-azure.json, constellation-gcp.json]` to be present in the `BDIR` folder.
+It expects the results of `[AKS.json, GKE.json, EKS.json, constellation-azure.json, constellation-gcp.json, constellation-aws.json]` to be present in the `BDIR` folder.
 
 Graphs can then be created using the `graphs.py` script:
 
