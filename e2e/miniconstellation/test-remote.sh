@@ -49,20 +49,29 @@ echo "Done waiting."
 
 export KUBECONFIG="${PWD}/constellation-admin.conf"
 
-# Wait for nodes to actually show up in K8s
-count=0
-until kubectl wait --for=condition=Ready --timeout=2s nodes control-plane-0 2> /dev/null || [[ ${count} -eq 30 ]]; do
-  echo "Control-planes are not registered in Kubernetes yet. Waiting..."
-  sleep 10
-  count=$((count + 1))
+# Wait for nodes to actually show up in K8s (taken from .github/actions/constellation_create/action.yml)
+echo "::group::Wait for nodes"
+NODES_COUNT=2
+JOINWAIT=0
+JOINTIMEOUT="600" # 10 minutes timeout for all nodes to join
+until [[ "$(kubectl get nodes -o json | jq '.items | length')" == "${NODES_COUNT}" ]] || [[ $JOINWAIT -gt $JOINTIMEOUT ]]; do
+  echo "$(kubectl get nodes -o json | jq '.items | length')/${NODES_COUNT} nodes have joined.. waiting.."
+  JOINWAIT=$((JOINWAIT + 30))
+  sleep 30
 done
-
-count=0
-until kubectl wait --for=condition=Ready --timeout=2s nodes worker-0 2> /dev/null || [[ ${count} -eq 30 ]]; do
-  echo "Worker nodes are not registered in Kubernetes yet. Waiting..."
-  sleep 10
-  count=$((count + 1))
-done
+if [[ $JOINWAIT -gt $JOINTIMEOUT ]]; then
+  echo "Timed out waiting for nodes to join"
+  exit 1
+fi
+echo "$(kubectl get nodes -o json | jq '.items | length')/${NODES_COUNT} nodes have joined"
+if ! kubectl wait --for=condition=ready --all nodes --timeout=20m; then
+  kubectl get pods -n kube-system
+  kubectl get events -n kube-system
+  echo "::error::kubectl wait timed out before all nodes became ready"
+  echo "::endgroup::"
+  exit 1
+fi
+echo "::endgroup::"
 
 # Wait for deployments
 kubectl -n kube-system wait --for=condition=Available=True --timeout=180s deployment coredns
