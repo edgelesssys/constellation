@@ -165,7 +165,7 @@ func imageReferenceFromImage(img string) (*armcompute.ImageReference, error) {
 	}
 
 	// expecting image to not be a marketplace image
-	if strings.HasPrefix(img, "/CommunityGalleries") {
+	if strings.HasPrefix(strings.ToLower(img), "/communitygalleries") {
 		ref.CommunityGalleryImageID = to.Ptr(img)
 	} else {
 		ref.ID = to.Ptr(img)
