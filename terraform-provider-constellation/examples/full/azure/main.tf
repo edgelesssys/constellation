@@ -12,12 +12,13 @@ terraform {
 }
 
 locals {
-  name                = "constell"
-  version             = "vX.Y.Z"
-  kubernetes_version  = "vX.Y.Z"
-  csp                 = "azure"
-  attestation_variant = "azure-sev-snp"
-  location            = "northeurope"
+  name                 = "constell"
+  version              = "vX.Y.Z"
+  kubernetes_version   = "vX.Y.Z"
+  microservice_version = "vX.Y.Z"
+  csp                  = "azure"
+  attestation_variant  = "azure-sev-snp"
+  location             = "northeurope"
 
   master_secret      = random_bytes.master_secret.hex
   master_secret_salt = random_bytes.master_secret_salt.hex
@@ -86,19 +87,20 @@ data "constellation_image" "bar" {
 }
 
 resource "constellation_cluster" "azure_example" {
-  csp                     = local.csp
-  name                    = module.azure_infrastructure.name
-  uid                     = module.azure_infrastructure.uid
-  image                   = data.constellation_image.bar.image
-  attestation             = data.constellation_attestation.foo.attestation
-  kubernetes_version      = local.kubernetes_version
-  init_secret             = module.azure_infrastructure.init_secret
-  master_secret           = local.master_secret
-  master_secret_salt      = local.master_secret_salt
-  measurement_salt        = local.measurement_salt
-  out_of_cluster_endpoint = module.azure_infrastructure.out_of_cluster_endpoint
-  in_cluster_endpoint     = module.azure_infrastructure.in_cluster_endpoint
-  api_server_cert_sans    = module.azure_infrastructure.api_server_cert_sans
+  csp                                = local.csp
+  name                               = module.azure_infrastructure.name
+  uid                                = module.azure_infrastructure.uid
+  image                              = data.constellation_image.bar.image
+  attestation                        = data.constellation_attestation.foo.attestation
+  kubernetes_version                 = local.kubernetes_version
+  constellation_microservice_version = local.microservice_version
+  init_secret                        = module.azure_infrastructure.init_secret
+  master_secret                      = local.master_secret
+  master_secret_salt                 = local.master_secret_salt
+  measurement_salt                   = local.measurement_salt
+  out_of_cluster_endpoint            = module.azure_infrastructure.out_of_cluster_endpoint
+  in_cluster_endpoint                = module.azure_infrastructure.in_cluster_endpoint
+  api_server_cert_sans               = module.azure_infrastructure.api_server_cert_sans
   azure = {
     tenant_id                   = module.azure_iam.tenant_id
     subscription_id             = module.azure_iam.subscription_id

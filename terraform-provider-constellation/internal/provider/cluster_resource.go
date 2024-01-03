@@ -165,9 +165,9 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Required:            true,
 			},
 			"constellation_microservice_version": schema.StringAttribute{
-				MarkdownDescription: "The version of Constellation's microservices used within the cluster. When not set, the provider version is used.",
-				Description:         "The version of Constellation's microservices used within the cluster. When not set, the provider version is used.",
-				Optional:            true,
+				MarkdownDescription: "The version of Constellation's microservices used within the cluster.",
+				Description:         "The version of Constellation's microservices used within the cluster.",
+				Required:            true,
 			},
 			"out_of_cluster_endpoint": schema.StringAttribute{
 				MarkdownDescription: "The endpoint of the cluster. Typically, this is the public IP of a loadbalancer.",
@@ -1180,20 +1180,13 @@ func (r *ClusterResource) getK8sVersion(ctx context.Context, data *ClusterResour
 // version otherwise.
 func (r *ClusterResource) getMicroserviceVersion(ctx context.Context, data *ClusterResourceModel) (semver.Semver, diag.Diagnostics) {
 	diags := diag.Diagnostics{}
-	var ver semver.Semver
-	var err error
-	if data.MicroserviceVersion.ValueString() != "" {
-		ver, err = semver.New(data.MicroserviceVersion.ValueString())
-		if err != nil {
-			diags.AddAttributeError(
-				path.Root("constellation_microservice_version"),
-				"Invalid microservice version",
-				fmt.Sprintf("Parsing microservice version: %s", err))
-			return semver.Semver{}, diags
-		}
-	} else {
-		tflog.Info(ctx, fmt.Sprintf("No Microservice version specified. Using default version %s.", r.providerData.Version))
-		ver = r.providerData.Version
+	ver, err := semver.New(data.MicroserviceVersion.ValueString())
+	if err != nil {
+		diags.AddAttributeError(
+			path.Root("constellation_microservice_version"),
+			"Invalid microservice version",
+			fmt.Sprintf("Parsing microservice version: %s", err))
+		return semver.Semver{}, diags
 	}
 	if err := config.ValidateMicroserviceVersion(r.providerData.Version, ver); err != nil {
 		diags.AddAttributeError(

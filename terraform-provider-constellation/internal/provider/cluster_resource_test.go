@@ -23,10 +23,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var providerVersion = semver.NewFromInt(2, 15, 0, "")
+
 func TestMicroserviceConstraint(t *testing.T) {
 	sut := &ClusterResource{
 		providerData: data.ProviderData{
-			Version: semver.NewFromInt(2, 15, 0, ""),
+			Version: providerVersion,
 		},
 	}
 	testCases := []struct {
@@ -228,8 +230,9 @@ func TestAccClusterResource(t *testing.T) {
 						  ip_cidr_service = "0.0.0.0/24"
 						}
 						kubernetes_version = "%s"
+						constellation_microservice_version = "%s"
 					  }
-				`, versions.Default),
+				`, versions.Default, providerVersion.String()),
 					ExpectError: regexp.MustCompile(".*Master secret must be a hex-encoded 32-byte.*"),
 				},
 			},
@@ -257,8 +260,9 @@ func TestAccClusterResource(t *testing.T) {
 						  ip_cidr_service = "0.0.0.0/24"
 						}
 						kubernetes_version = "%s"
+						constellation_microservice_version = "%s"
 					  }
-				`, versions.Default),
+				`, versions.Default, providerVersion.String()),
 					ExpectError: regexp.MustCompile(".*Master secret salt must be a hex-encoded 32-byte.*"),
 				},
 			},
@@ -286,8 +290,9 @@ func TestAccClusterResource(t *testing.T) {
 						  ip_cidr_service = "0.0.0.0/24"
 						}
 						kubernetes_version = "%s"
+						constellation_microservice_version = "%s"
 					  }
-				`, versions.Default),
+				`, versions.Default, providerVersion.String()),
 					ExpectError: regexp.MustCompile(".*Measurement salt must be a hex-encoded 32-byte.*"),
 				},
 			},
@@ -315,8 +320,9 @@ func TestAccClusterResource(t *testing.T) {
 						  ip_cidr_service = "0.0.0.0/24"
 						}
 						kubernetes_version = "%s"
+						constellation_microservice_version = "%s"
 					  }
-				`, versions.Default),
+				`, versions.Default, providerVersion.String()),
 					ExpectError: regexp.MustCompile(".*Node IP CIDR must be a valid CIDR.*"),
 				},
 			},
@@ -344,8 +350,9 @@ func TestAccClusterResource(t *testing.T) {
 						  ip_cidr_service = "0.0.0x.0/xxx"
 						}
 						kubernetes_version = "%s"
+						constellation_microservice_version = "%s"
 					  }
-				`, versions.Default),
+				`, versions.Default, providerVersion.String()),
 					ExpectError: regexp.MustCompile(".*Service IP CIDR must be a valid CIDR.*"),
 				},
 			},
@@ -373,8 +380,9 @@ func TestAccClusterResource(t *testing.T) {
 						  ip_cidr_service = "0.0.0.0/24"
 						}
 						kubernetes_version = "%s"
+						constellation_microservice_version = "%s"
 					  }
-				`, versions.Default),
+				`, versions.Default, providerVersion.String()),
 					ExpectError: regexp.MustCompile(".*When csp is set to 'azure', the 'azure' configuration must be set.*"),
 				},
 			},
@@ -403,8 +411,9 @@ func TestAccClusterResource(t *testing.T) {
 						  ip_cidr_pod    = "0.0.0.0/24"
 						}
 						kubernetes_version = "%s"
+						constellation_microservice_version = "%s"
 					  }
-				`, versions.Default),
+				`, versions.Default, providerVersion.String()),
 					ExpectError: regexp.MustCompile(".*When csp is set to 'gcp', the 'gcp' configuration must be set.*"),
 				},
 			},
@@ -436,7 +445,9 @@ func TestAccClusterResource(t *testing.T) {
 									service_account_key = "eyJ0ZXN0IjogInRlc3QifQ=="
 							}
 							kubernetes_version = "%s"
-					}`, versions.Default),
+							constellation_microservice_version = "%s"
+					  }
+				`, versions.Default, providerVersion.String()),
 					ExpectError: regexp.MustCompile(".*When csp is set to 'gcp', 'ip_cidr_pod' must be set.*"),
 				},
 			},
