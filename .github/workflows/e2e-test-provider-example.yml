@@ -87,16 +87,6 @@ jobs:
           last_three="${run_id: -3}"
           echo "prefix=e2e-${last_three}" | tee -a "$GITHUB_OUTPUT"
 
-      - name: Install dependencies (Terraform)
-        shell: bash
-        run: |
-          sudo apt update && sudo apt install gpg
-          wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-          gpg --no-default-keyring --keyring /usr/share/keyrings/hashicorp-archive-keyring.gpg --fingerprint
-          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-          sudo apt update
-          sudo apt install terraform=1.4.4-*
-
       - name: Log in to the Container registry
         uses: ./.github/actions/container_registry_login
         with:
@@ -105,11 +95,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup bazel
-        if: inputs.providerVersion == ''
         uses: ./.github/actions/setup_bazel_nix
         with:
           useCache: "true"
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
+          nixTools: terraform
 
       - name: Build Terraform provider binary
         if: inputs.providerVersion == ''
