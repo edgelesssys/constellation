@@ -24,4 +24,13 @@ And ensure that the cluster uses a release image (i.e. `.image=vX.Y.Z` in the `c
 
 ## GCP
 
-Marketplace Images on GCP are not available yet.
+On GCP, to use a marketplace image, ensure that the account is entitled to use marketplace images by Edgeless Systems
+by accepting the terms through the [web portal](https://console.cloud.google.com/marketplace/vm/config/edgeless-systems-public/constellation).
+
+Then, set the VMs to use the marketplace image in the `constellation-conf.yaml` file:
+
+```bash
+yq eval -i ".provider.gcp.useMarketplaceImage = true" constellation-conf.yaml
+```
+
+And ensure that the cluster uses a release image (i.e. `.image=vX.Y.Z` in the `constellation-conf.yaml` file). Afterwards, proceed with the cluster creation as usual.
