@@ -49,13 +49,13 @@ func TestGetScalingGroupImage(t *testing.T) {
 					VirtualMachineProfile: &armcompute.VirtualMachineScaleSetVMProfile{
 						StorageProfile: &armcompute.VirtualMachineScaleSetStorageProfile{
 							ImageReference: &armcompute.ImageReference{
-								CommunityGalleryImageID: to.Ptr("/CommunityGalleries/gallery-name/Images/image-name/Versions/1.2.3"),
+								CommunityGalleryImageID: to.Ptr("/communityGalleries/gallery-name/Images/image-name/Versions/1.2.3"),
 							},
 						},
 					},
 				},
 			},
-			wantImage: "/CommunityGalleries/gallery-name/Images/image-name/Versions/1.2.3",
+			wantImage: "/communityGalleries/gallery-name/Images/image-name/Versions/1.2.3",
 		},
 		"splitting scalingGroupID fails": {
 			scalingGroupID: "invalid",
@@ -299,8 +299,8 @@ func TestImageReferenceFromImage(t *testing.T) {
 			wantID: to.Ptr("/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/constellation-images/providers/Microsoft.Compute/galleries/Constellation/images/constellation/versions/1.5.0"),
 		},
 		"Community": {
-			img:             "/CommunityGalleries/ConstellationCVM-728bd310-e898-4450-a1ed-21cf2fb0d735/Images/feat-azure-cvm-sharing/Versions/2022.0826.084922",
-			wantCommunityID: to.Ptr("/CommunityGalleries/ConstellationCVM-728bd310-e898-4450-a1ed-21cf2fb0d735/Images/feat-azure-cvm-sharing/Versions/2022.0826.084922"),
+			img:             "/communityGalleries/ConstellationCVM-728bd310-e898-4450-a1ed-21cf2fb0d735/Images/feat-azure-cvm-sharing/Versions/2022.0826.084922",
+			wantCommunityID: to.Ptr("/communityGalleries/ConstellationCVM-728bd310-e898-4450-a1ed-21cf2fb0d735/Images/feat-azure-cvm-sharing/Versions/2022.0826.084922"),
 		},
 		"Marketplace": {
 			img:           "constellation-marketplace-image://Azure?offer=constellation&publisher=edgelesssystems&sku=constellation&version=1.2.3",
