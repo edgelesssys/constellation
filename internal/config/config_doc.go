@@ -229,7 +229,7 @@ func init() {
 			FieldName: "gcp",
 		},
 	}
-	GCPConfigDoc.Fields = make([]encoder.Doc, 5)
+	GCPConfigDoc.Fields = make([]encoder.Doc, 6)
 	GCPConfigDoc.Fields[0].Name = "project"
 	GCPConfigDoc.Fields[0].Type = "string"
 	GCPConfigDoc.Fields[0].Note = ""
@@ -255,6 +255,11 @@ func init() {
 	GCPConfigDoc.Fields[4].Note = ""
 	GCPConfigDoc.Fields[4].Description = "Deploy Persistent Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage"
 	GCPConfigDoc.Fields[4].Comments[encoder.LineComment] = "Deploy Persistent Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage"
+	GCPConfigDoc.Fields[5].Name = "useMarketplaceImage"
+	GCPConfigDoc.Fields[5].Type = "bool"
+	GCPConfigDoc.Fields[5].Note = ""
+	GCPConfigDoc.Fields[5].Description = "Use the specified GCP Marketplace image offering."
+	GCPConfigDoc.Fields[5].Comments[encoder.LineComment] = "Use the specified GCP Marketplace image offering."
 
 	OpenStackConfigDoc.Type = "OpenStackConfig"
 	OpenStackConfigDoc.Comments[encoder.LineComment] = "OpenStackConfig holds config information for OpenStack based Constellation deployments."
