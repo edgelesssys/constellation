@@ -45,14 +45,6 @@ dependencies:
       - GCP
       - OpenStack
       - QEMU
-  - name: konnectivity
-    version: 0.0.0
-    tags:
-      - AWS
-      - Azure
-      - GCP
-      - OpenStack
-      - QEMU
   - name: gcp-guest-agent
     version: 0.0.0
     tags:
