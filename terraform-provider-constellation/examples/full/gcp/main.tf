@@ -13,7 +13,7 @@ terraform {
 
 locals {
   name                 = "constell"
-  version              = "vX.Y.Z"
+  image_version              = "vX.Y.Z"
   kubernetes_version   = "vX.Y.Z"
   microservice_version = "vX.Y.Z"
   csp                  = "gcp"
@@ -87,7 +87,7 @@ data "constellation_attestation" "foo" {
 data "constellation_image" "bar" {
   csp                 = local.csp
   attestation_variant = local.attestation_variant
-  version             = local.version
+  version             = local.image_version
 }
 
 resource "constellation_cluster" "gcp_example" {
