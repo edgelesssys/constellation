@@ -68,7 +68,6 @@ type chartLoader struct {
 	autoscalerImage              string
 	verificationServiceImage     string
 	gcpGuestAgentImage           string
-	konnectivityImage            string
 	constellationOperatorImage   string
 	nodeMaintenanceOperatorImage string
 	clusterName                  string
@@ -104,7 +103,6 @@ func newLoader(csp cloudprovider.Provider, attestationVariant variant.Variant, k
 		autoscalerImage:              versions.VersionConfigs[k8sVersion].ClusterAutoscalerImage,
 		verificationServiceImage:     imageversion.VerificationService("", ""),
 		gcpGuestAgentImage:           versions.GcpGuestImage,
-		konnectivityImage:            versions.KonnectivityAgentImage,
 		constellationOperatorImage:   imageversion.ConstellationNodeOperator("", ""),
 		nodeMaintenanceOperatorImage: versions.NodeMaintenanceOperatorImage,
 	}
@@ -306,9 +304,6 @@ func (i *chartLoader) loadConstellationServicesValues() map[string]any {
 		},
 		"gcp-guest-agent": map[string]any{
 			"image": i.gcpGuestAgentImage,
-		},
-		"konnectivity": map[string]any{
-			"image": i.konnectivityImage,
 		},
 		"tags": i.cspTags(),
 	}

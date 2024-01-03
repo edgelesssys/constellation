@@ -171,7 +171,6 @@ func TestConstellationServices(t *testing.T) {
 				azureCNMImage:            tc.cnmImage,
 				autoscalerImage:          "autoscalerImage",
 				verificationServiceImage: "verificationImage",
-				konnectivityImage:        "konnectivityImage",
 				gcpGuestAgentImage:       "gcpGuestAgentImage",
 				clusterName:              "testCluster",
 			}
@@ -383,12 +382,6 @@ func addInClusterValues(values map[string]any, csp cloudprovider.Provider) error
 		return fmt.Errorf("missing 'verification-service' key %v", values)
 	}
 	verificationVals["loadBalancerIP"] = "127.0.0.1"
-
-	konnectivityVals, ok := values["konnectivity"].(map[string]any)
-	if !ok {
-		return errors.New("missing 'konnectivity' key")
-	}
-	konnectivityVals["loadBalancerIP"] = "127.0.0.1"
 
 	ccmVals, ok := values["ccm"].(map[string]any)
 	if !ok {
