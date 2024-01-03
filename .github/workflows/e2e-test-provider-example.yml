@@ -21,7 +21,7 @@ on:
         description: "OS Image version used in the cluster's VMs. If not set, the latest nightly image from main is used."
         type: string
       providerVersion:
-        description: "Constellation Terraform provider version to use (without v prefix). Empty value means build from source."
+        description: "Constellation Terraform provider version to use (with v prefix). Empty value means build from source."
         type: string
   workflow_call:
     inputs:
@@ -39,7 +39,7 @@ on:
         description: "OS Image version used in the cluster's VMs, as specified in the Constellation config. If not set, the latest nightly image from main is used."
         type: string
       providerVersion:
-        description: "Constellation Terraform provider version to use. Empty value means build from source."
+        description: "Constellation Terraform provider version to use (with v prefix). Empty value means build from source."
         type: string
 
 jobs:
@@ -101,29 +101,32 @@ jobs:
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
           nixTools: terraform
 
-      - name: Build Terraform provider binary
-        if: inputs.providerVersion == ''
-        uses: ./.github/actions/build_tf_provider
-        with:
-          targetOS: 'linux'
-          targetArch: 'amd64'
-          outputPath: "build/terraform-provider-constellation"
-
-      - name: Move Terraform provider binary
-        if: inputs.providerVersion == ''
+      - name: Build Constellation provider and CLI # CLI is needed for the upgrade assert and container push is needed for the microservice upgrade
+        working-directory: ${{ github.workspace }}
+        id: build
         shell: bash
-        id: install_tf_provider
+        run: |
+          mkdir build
+          cd build
+          bazel run //:devbuild --cli_edition=enterprise
+
+          bazel build //bazel/settings:tag
+          repository_root=$(git rev-parse --show-toplevel)
+          out_rel=$(bazel cquery --output=files //bazel/settings:tag)
+          build_version=$(cat "$(realpath "${repository_root}/${out_rel}")")
+          echo "build_version=${build_version}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Remove local Terraform registry # otherwise the local registry would be used instead of the public registry
+        if: inputs.providerVersion != ''
+        shell: bash
         run: |
           bazel build //bazel/settings:tag
-
           repository_root=$(git rev-parse --show-toplevel)
           out_rel=$(bazel cquery --output=files //bazel/settings:tag)
           build_version=$(cat "$(realpath "${repository_root}/${out_rel}")")
 
           terraform_provider_dir="${HOME}/.terraform.d/plugins/registry.terraform.io/edgelesssys/constellation/${build_version#v}/linux_amd64/"
-          mkdir -p "${terraform_provider_dir}"
-          mv build/terraform-provider-constellation "${terraform_provider_dir}/terraform-provider-constellation_${build_version}"
-          echo "build_version=${build_version}" | tee -a "$GITHUB_OUTPUT"
+          rm -rf "${terraform_provider_dir}"
 
       - name: Login to AWS (IAM + Cluster role)
         if: inputs.cloudProvider == 'aws'
@@ -153,7 +156,7 @@ jobs:
           mkdir cluster
           cd cluster
           if [[ "${{ inputs.providerVersion }}" == "" ]]; then
-            prefixed_version=${{ steps.install_tf_provider.outputs.build_version }}
+            prefixed_version=${{ steps.build.outputs.build_version }}
           else
             prefixed_version="${{ inputs.providerVersion }}"
           fi
@@ -167,6 +170,21 @@ jobs:
             infra_src="https://github.com/edgelesssys/constellation/releases/download/${{ inputs.providerVersion }}/terraform-module.zip//terraform-module/${{ inputs.cloudProvider }}"
           fi
 
+          # by default use latest nightly image for devbuilds and release image otherwise
+          if [[ "${{ inputs.providerVersion }}" == "" ]]; then
+            if [[ "${{ inputs.image }}" == "" ]]; then
+              image_version="${{ steps.find-latest-image.outputs.image }}"
+            else
+              image_version="${{ inputs.image }}"
+            fi
+          else
+            if [[ "${{ inputs.image }}" == "" ]]; then
+              image_version="${prefixed_version}"
+            else
+              image_version="${{ inputs.image }}"
+            fi
+          fi
+
           cat > _override.tf <<EOF
           terraform {
             required_providers {
@@ -178,7 +196,7 @@ jobs:
           }
           locals {
             name                = "${{ steps.create-prefix.outputs.prefix }}"
-            version            = "${{ steps.find-latest-image.outputs.image }}"
+            version            = "${image_version}"
           }
           module "${{ inputs.cloudProvider }}_iam" {
             source = "${iam_src}"
@@ -226,15 +244,6 @@ jobs:
         run: |
           cp ${{ github.workspace }}/terraform-provider-constellation/examples/full/${{ inputs.cloudProvider }}/main.tf ${{ github.workspace }}/cluster/main.tf
 
-      - name: Download CLI
-        if: inputs.cloudProvider == 'azure'
-        shell: bash
-        run: |
-          curl -fsSL -o constellation https://github.com/edgelesssys/constellation/releases/download/v2.13.0/constellation-linux-amd64
-          chmod u+x constellation
-          ./constellation version
-          cp ./constellation ${{ github.workspace }}/cluster
-
       - name: Apply Terraform Cluster
         id: apply_terraform
         working-directory: ${{ github.workspace }}/cluster
@@ -244,7 +253,7 @@ jobs:
           if [[ "${{ inputs.cloudProvider }}" == "azure" ]]; then
             terraform apply -target module.azure_iam -auto-approve
             terraform apply -target module.azure_infrastructure -auto-approve
-            ./constellation maa-patch "$(terraform output -raw maa_url)"
+            ../build/constellation maa-patch "$(terraform output -raw maa_url)"
             TF_LOG=INFO terraform apply -target constellation_cluster.azure_example -auto-approve
           else
             TF_LOG=INFO terraform apply -auto-approve
