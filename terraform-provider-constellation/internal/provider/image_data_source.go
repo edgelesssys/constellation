@@ -87,8 +87,8 @@ func (d *ImageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 			},
 			"csp": newCSPAttributeSchema(),
 			"marketplace_image": schema.BoolAttribute{
-				Description:         "Whether a marketplace image should be used. Currently only supported for Azure.",
-				MarkdownDescription: "Whether a marketplace image should be used. Currently only supported for Azure.",
+				Description:         "Whether a marketplace image should be used. Currently only supported for Azure and GCP.",
+				MarkdownDescription: "Whether a marketplace image should be used. Currently only supported for Azure and GCP.",
 				Optional:            true,
 			},
 			"region": schema.StringAttribute{
