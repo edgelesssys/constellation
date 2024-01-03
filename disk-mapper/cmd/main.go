@@ -35,7 +35,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/spf13/afero"
-	"go.uber.org/zap"
 )
 
 const (

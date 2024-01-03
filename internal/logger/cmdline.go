@@ -11,9 +11,9 @@ import (
 )
 
 // CmdLineVerbosityDescription explains numeric log levels.
-const CmdLineVerbosityDescription = "log verbosity in zap logging levels. Use -1 for debug information, 0 for info, 1 for warn, 2 for error"
+const CmdLineVerbosityDescription = "log verbosity in slog logging levels. Use -1 for debug information, 0 for info, 1 for warn, 2 for error"
 
-// VerbosityFromInt converts a verbosity level from an integer to a zapcore.Level.
+// VerbosityFromInt converts a verbosity level from an integer to a slog.Level.
 func VerbosityFromInt(verbosity int) slog.Level {
 	switch {
 	case verbosity <= -1:
