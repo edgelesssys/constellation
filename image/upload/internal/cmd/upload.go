@@ -19,12 +19,13 @@ import (
 
 func uploadImage(ctx context.Context, archiveC archivist, uploadC uploader, req *osimage.UploadRequest, out io.Writer) error {
 	// upload to S3 archive
-	archiveURL, err := archiveC.Archive(ctx, req.Version, strings.ToLower(req.Provider.String()), req.AttestationVariant, req.Image)
+	imageReader, err := req.ImageReader()
 	if err != nil {
 		return err
 	}
-	// rewind reader so we can read again
-	if _, err := req.Image.Seek(0, io.SeekStart); err != nil {
+	defer imageReader.Close()
+	archiveURL, err := archiveC.Archive(ctx, req.Version, strings.ToLower(req.Provider.String()), req.AttestationVariant, imageReader)
+	if err != nil {
 		return err
 	}
 	// upload to CSP
