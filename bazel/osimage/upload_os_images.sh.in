@@ -1,0 +1,144 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+shopt -s inherit_errexit
+
+# This script handles the upload of OS images and their corresponding image info.
+
+POSITIONAL_ARGS=()
+
+ref=""
+upload_signed_measurements=0
+fake_sign=0
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+  --ref)
+    ref="$2"
+    shift # past argument
+    shift # past value
+    ;;
+  --upload-measurements)
+    upload_signed_measurements=1
+    shift # past argument
+    ;;
+  --fake-sign)
+    fake_sign=1
+    shift # past argument
+    ;;
+  -*)
+    echo "Unknown option $1"
+    exit 1
+    ;;
+  *)
+    POSITIONAL_ARGS+=("$1") # save positional arg
+    shift                   # past argument
+    ;;
+  esac
+done
+
+set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
+
+if [[ $# -ne 0 ]]; then
+  echo "Unknown positional arguments: $*"
+  exit 1
+fi
+
+if [[ -z ${ref} ]]; then
+  echo "Missing required argument --ref"
+  exit 1
+fi
+
+version_file=$(realpath @@VERSION@@)
+stat "${version_file}" >> /dev/null
+version=$(cat "${version_file}")
+
+uplosi=$(realpath @@UPLOSI@@)
+stat "${uplosi}" >> /dev/null
+
+systemd_dissect=$(realpath @@DISSECT_TOOLCHAIN@@)
+stat "${systemd_dissect}" >> /dev/null
+export DISSECT_TOOLCHAIN="${systemd_dissect}"
+
+cosign=$(realpath @@COSIGN@@)
+stat "${cosign}" >> /dev/null
+
+rekor_cli=$(realpath @@REKOR_CLI@@)
+stat "${rekor_cli}" >> /dev/null
+
+upload_cli=$(realpath @@UPLOAD_CLI@@)
+stat "${upload_cli}" >> /dev/null
+
+measured_boot=$(realpath @@MEASURED_BOOT@@)
+stat "${measured_boot}" >> /dev/null
+
+parallel=$(realpath @@PARALLEL@@)
+stat "${parallel}" >> /dev/null
+
+FILES=(@@FILES@@)
+
+workspace=$(mktemp -d)
+# shellcheck disable=SC2064
+trap "rm -rf ${workspace}" EXIT
+
+echo Uploading "${#FILES[@]}" OS images. This may take a while... >&2
+
+"${parallel}" --will-cite \
+  "${upload_cli}" uplosi \
+  --uplosi-path "${uplosi}" \
+  --version "${version}" \
+  --ref "${ref}" \
+  --raw-image {} \
+  --out "${workspace}/image-upload-{#}.json" \
+  ::: "${FILES[@]}"
+
+"${upload_cli}" info "${workspace}/"image-upload-*.json
+
+if [[ ${upload_signed_measurements} -eq 0 ]]; then
+  echo "Skipping signed measurements upload. Enable by setting --upload-measurements" >&2
+  exit 0
+fi
+
+echo Uploading signed measurements. This requires sudo and a signing key. >&2
+i=1
+for file in "${FILES[@]}"; do
+  combined_name=$(basename "$(dirname "${file}")")
+  IFS="_" read -r csp attestation_variant stream <<< "${combined_name}"
+  sudo -E "${measured_boot}" "${file}" "${workspace}/pcrs-${i}.json"
+  sudo chown "$(id -u -n)" "${workspace}/pcrs-${i}.json"
+  "${upload_cli}" measurements envelope \
+    --in "${workspace}/pcrs-${i}.json" \
+    --out "${workspace}/pcrs-${i}.json" \
+    --version "ref/${ref}/stream/${stream}/${version}" \
+    --csp "${csp}" \
+    --attestation-variant "${attestation_variant}"
+  i=$((i + 1))
+done
+
+"${upload_cli}" measurements merge \
+  --out "${workspace}/measurements.json" \
+  "${workspace}"/pcrs-*.json
+
+if [[ ${fake_sign} -eq 1 ]]; then
+  echo "Skipping signing of measurements and using fake signature instead (--fake-sign is set)." >&2
+  echo "THOSE MEASUREMENTS BELONG TO A DEBUG IMAGE. THOSE ARE NOT SINGED BY ANY KEY." > "${workspace}/measurements.json.sig"
+else
+  # shellcheck disable=SC2016
+  echo 'Creating real signature with keys referenced in $COSIGN_PUBLIC_KEY_PATH, $COSIGN_PRIVATE_KEY and $COSIGN_PASSWORD. Set "--fake-sign" for debugging purposes.' >&2
+  # Enabling experimental mode also publishes signature to Rekor
+  COSIGN_EXPERIMENTAL=1 "${cosign}" sign-blob --yes --key env://COSIGN_PRIVATE_KEY \
+    "${workspace}/measurements.json" > "${workspace}/measurements.json.sig"
+  # Verify - As documentation & check
+  # Local Signature (input: artifact, key, signature)
+  "${cosign}" verify-blob --key "${COSIGN_PUBLIC_KEY_PATH}" \
+    --signature "${workspace}/measurements.json.sig" \
+    "${workspace}/measurements.json"
+  # Transparency Log Signature (input: artifact, key)
+  uuid=$("${rekor_cli}" search --artifact "${workspace}/measurements.json" | tail -n 1)
+  sig=$("${rekor_cli}" get --uuid="${uuid}" --format=json | jq -r .Body.HashedRekordObj.signature.content)
+  "${cosign}" verify-blob --key "${COSIGN_PUBLIC_KEY_PATH}" --signature <(echo "${sig}") "${workspace}/measurements.json"
+fi
+
+"${upload_cli}" measurements upload \
+  --measurements "${workspace}/measurements.json" \
+  --signature "${workspace}/measurements.json.sig"

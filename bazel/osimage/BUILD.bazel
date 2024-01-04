@@ -1,0 +1,1 @@
+exports_files(["upload_os_images.sh.in"])
