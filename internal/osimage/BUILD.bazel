@@ -8,6 +8,5 @@ go_library(
     deps = [
         "//internal/api/versionsapi",
         "//internal/cloud/cloudprovider",
-        "//internal/osimage/secureboot",
     ],
 )
