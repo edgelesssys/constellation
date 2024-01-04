@@ -129,107 +129,13 @@ jobs:
             echo "imageNameShort=ref/${REF}/stream/${STREAM}/${IMAGE_VERSION}" | tee -a "$GITHUB_OUTPUT"
           fi
 
-  make-os-image:
-    name: "Build OS using mkosi"
+  upload-os-image:
+    name: "Build OS using mkosi and upload it to CSPs"
     needs: [build-settings]
     runs-on: ubuntu-latest-8-cores
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - csp: aws
-            attestation_variant: aws-nitro-tpm
-          - csp: aws
-            attestation_variant: aws-sev-snp
-          - csp: azure
-            attestation_variant: azure-sev-snp
-          - csp: gcp
-            attestation_variant: gcp-sev-es
-          - csp: gcp
-            attestation_variant: gcp-sev-snp
-          - csp: qemu
-            attestation_variant: qemu-vtpm
-          - csp: openstack
-            attestation_variant: qemu-vtpm
-    steps:
-      - name: Checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-        with:
-          ref: ${{ inputs.ref || github.head_ref }}
-
-      - uses: ./.github/actions/setup_bazel_nix
-        with:
-          useCache: "false"
-
-      - name: Build
-        id: build
-        shell: bash
-        working-directory: ${{ github.workspace }}/image
-        env:
-          TARGET: //image/system:${{ matrix.csp }}_${{ matrix.attestation_variant }}_${{ needs.build-settings.outputs.stream }}
-        run: |
-          echo "::group::Build"
-          bazel build //image/base:rpmdb
-          bazel build "${TARGET}"
-          {
-            echo "image-dir=$(bazel cquery --output=files "$TARGET")"
-            echo "rpmdb=$(bazel cquery --output=files //image/base:rpmdb)"
-          } | tee -a "$GITHUB_OUTPUT"
-          echo "::endgroup::"
-
-      - name: Upload raw OS image as artifact
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
-        with:
-          name: image-${{ matrix.csp }}-${{ matrix.attestation_variant }}
-          path: ${{ steps.build.outputs.image-dir }}/constellation.raw
-
-      - name: Upload individual OS parts as artifacts
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
-        with:
-          name: parts-${{ matrix.csp }}-${{ matrix.attestation_variant }}
-          path: |
-            ${{ steps.build.outputs.image-dir }}/constellation.efi
-            ${{ steps.build.outputs.image-dir }}/constellation.initrd
-            ${{ steps.build.outputs.image-dir }}/constellation.vmlinuz
-
-      - name: Upload sbom info as artifact
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
-        with:
-          name: sbom-${{ matrix.csp }}-${{ matrix.attestation_variant }}
-          path: ${{ steps.build.outputs.rpmdb }}
-
-  upload-os-image:
-    name: "Upload OS image to CSP"
-    needs: [build-settings, make-os-image]
-    runs-on: ubuntu-22.04
     permissions:
       id-token: write
       contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - csp: aws
-            attestation_variant: aws-nitro-tpm
-          - csp: aws
-            attestation_variant: aws-sev-snp
-          - csp: azure
-            attestation_variant: azure-sev-snp
-          - csp: gcp
-            attestation_variant: gcp-sev-es
-          - csp: gcp
-            attestation_variant: gcp-sev-snp
-          - csp: qemu
-            attestation_variant: qemu-vtpm
-          - csp: openstack
-            attestation_variant: qemu-vtpm
-    env:
-      RAW_IMAGE_PATH: mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38/constellation.raw
-      JSON_OUTPUT: mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38/image-upload.json
-      AZURE_IMAGE_PATH: mkosi.output.azure_${{ matrix.attestation_variant }}/fedora~38/image.vhd
-      GCP_IMAGE_PATH: mkosi.output.gcp_${{ matrix.attestation_variant }}/fedora~38/image.tar.gz
-      SHORTNAME: ${{ needs.build-settings.outputs.imageNameShort }}
-      ATTESTATION_VARIANT: ${{ matrix.attestation_variant }}
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -239,23 +145,6 @@ jobs:
       - uses: ./.github/actions/setup_bazel_nix
         with:
           useCache: "false"
-
-      - name: Download OS image artifact
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-        with:
-          name: image-${{ matrix.csp }}-${{ matrix.attestation_variant }}
-          path: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38
-
-      - name: Install tools
-        shell: bash
-        run: |
-          echo "::group::Install tools"
-          sudo apt-get update
-          sudo apt-get install -y \
-            pigz \
-            qemu-utils \
-            python3-pip
-          echo "::endgroup::"
 
       - name: Login to AWS
         uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a # v4.0.1
@@ -264,431 +153,56 @@ jobs:
           aws-region: eu-central-1
 
       - name: Login to Azure
-        if: matrix.csp == 'azure'
         uses: ./.github/actions/login_azure
         with:
           azure_credentials: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Login to GCP
-        if: matrix.csp == 'gcp'
         uses: ./.github/actions/login_gcp
         with:
           service_account: "image-uploader@constellation-images.iam.gserviceaccount.com"
 
-      - name: Upload AWS image
-        if: matrix.csp == 'aws'
+      - name: Build and upload
+        id: build
         shell: bash
         working-directory: ${{ github.workspace }}/image
-        run: |
-          echo "::group::Upload AWS image"
-          bazel run //image/upload -- image aws \
-            --verbose \
-            --raw-image "${RAW_IMAGE_PATH}" \
-            --attestation-variant "${ATTESTATION_VARIANT}" \
-            --version "${SHORTNAME}" \
-            --out "${JSON_OUTPUT}"
-          echo -e "Uploaded AWS image: \n\n\`\`\`\n$(jq < "${JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
-          echo "::endgroup::"
-
-      - name: Upload GCP image
-        if: matrix.csp == 'gcp'
-        shell: bash
-        working-directory: ${{ github.workspace }}/image
-        run: |
-          echo "::group::Upload GCP image"
-          upload/pack.sh gcp "${RAW_IMAGE_PATH}" "${GCP_IMAGE_PATH}"
-          bazel run //image/upload -- image gcp \
-            --verbose \
-            --raw-image "${GCP_IMAGE_PATH}" \
-            --attestation-variant "${ATTESTATION_VARIANT}" \
-            --version "${SHORTNAME}" \
-            --out "${JSON_OUTPUT}"
-          echo -e "Uploaded GCP image: \n\n\`\`\`\n$(jq < "${JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
-          echo "::endgroup::"
-
-      - name: Upload Azure image
-        if: matrix.csp == 'azure'
-        shell: bash
-        working-directory: ${{ github.workspace }}/image
-        run: |
-          echo "::group::Upload Azure image"
-          upload/pack.sh azure "${RAW_IMAGE_PATH}" "${AZURE_IMAGE_PATH}"
-          bazel run //image/upload -- image azure \
-            --verbose \
-            --raw-image "${AZURE_IMAGE_PATH}" \
-            --attestation-variant "${ATTESTATION_VARIANT}" \
-            --version "${SHORTNAME}" \
-            --out "${JSON_OUTPUT}"
-          echo -e "Uploaded Azure image: \n\n\`\`\`\n$(jq < "${JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
-          echo "::endgroup::"
-
-      - name: Upload OpenStack image
-        if: matrix.csp == 'openstack'
-        shell: bash
-        working-directory: ${{ github.workspace }}/image
-        run: |
-          echo "::group::Upload OpenStack image"
-          bazel run //image/upload -- image openstack \
-            --verbose \
-            --raw-image "${RAW_IMAGE_PATH}" \
-            --attestation-variant "${ATTESTATION_VARIANT}" \
-            --version "${SHORTNAME}" \
-            --out "${JSON_OUTPUT}"
-          echo -e "Uploaded OpenStack image: \n\n\`\`\`\n$(jq < "${JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
-          echo "::endgroup::"
-
-      - name: Upload QEMU image
-        if: matrix.csp == 'qemu'
-        shell: bash
-        working-directory: ${{ github.workspace }}/image
-        run: |
-          echo "::group::Upload QEMU image"
-          bazel run //image/upload -- image qemu \
-            --verbose \
-            --raw-image "${RAW_IMAGE_PATH}" \
-            --attestation-variant "${ATTESTATION_VARIANT}" \
-            --version "${SHORTNAME}" \
-            --out "${JSON_OUTPUT}"
-          echo -e "Uploaded QEMU image: \n\n\`\`\`\n$(jq < "${JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
-          echo "::endgroup::"
-
-      - name: Upload image lookup table as artifact
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
-        with:
-          name: lookup-table
-          path: ${{ github.workspace }}/image/mkosi.output.*/*/image-upload*.json
-
-  calculate-pcrs:
-    name: "Calculate PCRs"
-    needs: [build-settings, make-os-image]
-    permissions:
-      id-token: write
-      contents: read
-    runs-on: ubuntu-22.04
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - csp: aws
-            attestation_variant: aws-nitro-tpm
-          - csp: aws
-            attestation_variant: aws-sev-snp
-          - csp: azure
-            attestation_variant: azure-sev-snp
-          - csp: gcp
-            attestation_variant: gcp-sev-es
-          - csp: gcp
-            attestation_variant: gcp-sev-snp
-          - csp: qemu
-            attestation_variant: qemu-vtpm
-          - csp: openstack
-            attestation_variant: qemu-vtpm
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-        with:
-          ref: ${{ inputs.ref || github.head_ref }}
-
-      - name: Download OS image artifact
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-        with:
-          name: image-${{ matrix.csp }}-${{ matrix.attestation_variant }}
-
-      - uses: ./.github/actions/setup_bazel_nix
-        with:
-          useCache: "false"
-
-      - name: Install dependencies
-        run: |
-          echo "::group::Install dependencies"
-          sudo apt-get update
-          sudo apt-get install -y systemd-container # for systemd-dissect
-          echo "::endgroup::"
-
-      - name: Calculate expected PCRs
-        working-directory: ${{ github.workspace }}/image/measured-boot
-        run: |
-          echo "::group::Calculate expected PCRs"
-          bazel run --run_under="sudo -E" //image/measured-boot/cmd ${{ github.workspace }}/constellation.raw ${{ github.workspace }}/pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json >> "$GITHUB_STEP_SUMMARY"
-          echo "::endgroup::"
-
-      - name: Add static PCRs
-        run: |
-          case ${{ matrix.csp }} in
-            aws)
-              yq e '.csp = "AWS" |
-                .attestationVariant = "${{ matrix.attestation_variant }}" |
-                .measurements.0.warnOnly = true |
-                .measurements.0.expected = "737f767a12f54e70eecbc8684011323ae2fe2dd9f90785577969d7a2013e8c12" |
-                .measurements.2.warnOnly = true |
-                .measurements.2.expected = "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969" |
-                .measurements.3.warnOnly = true |
-                .measurements.3.expected = "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969" |
-                .measurements.4.warnOnly = false |
-                .measurements.6.warnOnly = true |
-                .measurements.6.expected = "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969" |
-                .measurements.8.warnOnly = false |
-                .measurements.9.warnOnly = false |
-                .measurements.11.warnOnly = false |
-                .measurements.12.warnOnly = false |
-                .measurements.13.warnOnly = false |
-                .measurements.14.warnOnly = true |
-                .measurements.14.expected = "0000000000000000000000000000000000000000000000000000000000000000" |
-                .measurements.15.warnOnly = false' \
-                -I 0 -o json -i "${{ github.workspace }}/pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json"
-            ;;
-            azure)
-              yq e '.csp = "Azure" |
-                .attestationVariant = "${{ matrix.attestation_variant }}" |
-                .measurements.1.warnOnly = true |
-                .measurements.1.expected = "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969" |
-                .measurements.2.warnOnly = true |
-                .measurements.2.expected = "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969" |
-                .measurements.3.warnOnly = true |
-                .measurements.3.expected = "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969" |
-                .measurements.4.warnOnly = false |
-                .measurements.8.warnOnly = false |
-                .measurements.9.warnOnly = false |
-                .measurements.11.warnOnly = false |
-                .measurements.12.warnOnly = false |
-                .measurements.13.warnOnly = false |
-                .measurements.14.warnOnly = true |
-                .measurements.14.expected = "0000000000000000000000000000000000000000000000000000000000000000" |
-                .measurements.15.warnOnly = false' \
-                -I 0 -o json -i "${{ github.workspace }}/pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json"
-            ;;
-            gcp)
-              yq e '.csp = "GCP" |
-                .attestationVariant = "${{ matrix.attestation_variant }}" |
-                .measurements.1.warnOnly = true |
-                .measurements.1.expected = "745f2fb4235e4647aa0ad5ace781cd929eb68c28870e7dd5d1a1535854325e56" |
-                .measurements.2.warnOnly = true |
-                .measurements.2.expected = "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969" |
-                .measurements.3.warnOnly = true |
-                .measurements.3.expected = "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969" |
-                .measurements.4.warnOnly = false |
-                .measurements.6.warnOnly = true |
-                .measurements.6.expected = "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969" |
-                .measurements.8.warnOnly = false |
-                .measurements.9.warnOnly = false |
-                .measurements.11.warnOnly = false |
-                .measurements.12.warnOnly = false |
-                .measurements.13.warnOnly = false |
-                .measurements.14.warnOnly = true |
-                .measurements.14.expected = "0000000000000000000000000000000000000000000000000000000000000000" |
-                .measurements.15.warnOnly = false' \
-                -I 0 -o json -i "${{ github.workspace }}/pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json"
-            ;;
-            openstack)
-              yq e '.csp = "OpenStack" |
-                .attestationVariant = "${{ matrix.attestation_variant }}" |
-                .measurements.4.warnOnly = false |
-                .measurements.8.warnOnly = false |
-                .measurements.9.warnOnly = false |
-                .measurements.11.warnOnly = false |
-                .measurements.12.warnOnly = false |
-                .measurements.13.warnOnly = false |
-                .measurements.14.warnOnly = true |
-                .measurements.14.expected = "0000000000000000000000000000000000000000000000000000000000000000" |
-                .measurements.15.warnOnly = false' \
-                -I 0 -o json -i "${{ github.workspace }}/pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json"
-            ;;
-            qemu)
-              yq e '.csp = "QEMU" |
-                .attestationVariant = "${{ matrix.attestation_variant }}" |
-                .measurements.4.warnOnly = false |
-                .measurements.8.warnOnly = false |
-                .measurements.9.warnOnly = false |
-                .measurements.11.warnOnly = false |
-                .measurements.12.warnOnly = false |
-                .measurements.13.warnOnly = false |
-                .measurements.14.warnOnly = true |
-                .measurements.14.expected = "0000000000000000000000000000000000000000000000000000000000000000" |
-                .measurements.15.warnOnly = false' \
-                -I 0 -o json -i "${{ github.workspace }}/pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json"
-            ;;
-            *)
-              echo "Unknown CSP: ${{ matrix.csp }}"
-              exit 1
-            ;;
-          esac
-
-          # TODO (malt3): Calculate PCR from firmware blob.
-          # AWS SNP machines have a different expected value for PCR 0.
-          if [[ ${{ matrix.attestation_variant }} = "aws-sev-snp" ]]
-          then
-            yq e '.csp = "AWS" |
-                  .measurements.0.expected = "7b068c0c3ac29afe264134536b9be26f1d4ccd575b88d3c3ceabf36ac99c0278"' \
-                  -I 0 -o json -i "${{ github.workspace }}/pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json"
-          fi
-
-      - name: Envelope measurements
-        shell: bash
-        run: |
-          echo "::group::Envelope measurements"
-          bazel run //image/upload -- measurements envelope \
-            --in "${{ github.workspace }}/pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json" \
-            --out "${{ github.workspace }}/pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json" \
-            --version "${{ needs.build-settings.outputs.imageNameShort }}" \
-            --csp "${{ matrix.csp }}" \
-            --attestation-variant "${{ matrix.attestation_variant }}"
-          echo "::endgroup::"
-
-      - name: Upload expected measurements as artifact
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
-        with:
-          name: measurements
-          path: pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json
-
-  upload-pcrs:
-    name: "Sign & upload PCRs"
-    needs: [build-settings, calculate-pcrs]
-    permissions:
-      id-token: write
-      contents: read
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-        with:
-          ref: ${{ inputs.ref || github.head_ref }}
-
-      - uses: ./.github/actions/setup_bazel_nix
-        with:
-          useCache: "false"
-
-      - name: Download measurements
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-        with:
-          name: measurements
-
-      - name: Login to AWS
-        uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a # v4.0.1
-        with:
-          role-to-assume: arn:aws:iam::795746500882:role/GitHubConstellationImagePipeline
-          aws-region: eu-central-1
-
-      - name: Install Cosign
-        uses: sigstore/cosign-installer@c85d0e205a72a294fe064f618a87dbac13084086 # v2.8.1
-
-      - name: Install Rekor
-        shell: bash
-        run: |
-          curl -fsSLO https://github.com/sigstore/rekor/releases/download/v0.12.0/rekor-cli-linux-amd64
-          sudo install rekor-cli-linux-amd64 /usr/local/bin/rekor-cli
-          rm rekor-cli-linux-amd64
-
-      - name: Merge measurements
-        shell: bash
-        run: |
-          echo "::group::Merge measurements"
-          bazel run //image/upload -- measurements merge \
-            --out measurements.json \
-            pcrs-*.json
-          echo "::endgroup::"
-
-      - name: Sign measurements
-        if: inputs.stream != 'debug'
-        shell: bash
         env:
+          TARGET: //image/system:upload_${{ needs.build-settings.outputs.stream }}
+          REF: ${{ needs.build-settings.outputs.ref }}
+          STREAM: ${{ needs.build-settings.outputs.stream }}
+          SHORT_NAME: ${{ needs.build-settings.outputs.imageNameShort }}
           COSIGN_PUBLIC_KEY: ${{ inputs.isRelease && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
           COSIGN_PRIVATE_KEY: ${{ inputs.isRelease && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
           COSIGN_PASSWORD: ${{ inputs.isRelease && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
         run: |
+          echo "::group::Build"
           echo "${COSIGN_PUBLIC_KEY}" > cosign.pub
-          # Enabling experimental mode also publishes signature to Rekor
-          COSIGN_EXPERIMENTAL=1 cosign sign-blob --key env://COSIGN_PRIVATE_KEY \
-            "${{ github.workspace }}/measurements.json" > "${{ github.workspace }}/measurements.json.sig"
-          # Verify - As documentation & check
-          # Local Signature (input: artifact, key, signature)
-          cosign verify-blob --key cosign.pub \
-            --signature "measurements.json.sig" \
-            "measurements.json"
-          # Transparency Log Signature (input: artifact, key)
-          uuid=$(rekor-cli search --artifact "${{ github.workspace }}/measurements.json" | tail -n 1)
-          sig=$(rekor-cli get --uuid="${uuid}" --format=json | jq -r .Body.HashedRekordObj.signature.content)
-          cosign verify-blob --key cosign.pub --signature <(echo "${sig}") "${{ github.workspace }}/measurements.json"
-
-      - name: Create stub signature file
-        if: inputs.stream == 'debug'
-        shell: bash
-        run: |
-          echo "THOSE MEASUREMENTS BELONG TO A DEBUG IMAGE. THOSE ARE NOT SINGED BY ANY KEY." > "${{ github.workspace }}/measurements.json.sig"
-
-      - name: Upload measurements
-        shell: bash
-        run: |
-          echo "::group::Upload measurements"
-          bazel run //image/upload -- measurements upload \
-            --measurements measurements.json \
-            --signature measurements.json.sig
+          COSIGN_PUBLIC_KEY_PATH="$(realpath ./cosign.pub)"
+          export COSIGN_PUBLIC_KEY_PATH
+          opts=(
+            --ref "${REF}"
+            --upload-measurements
+          )
+          if [[ "${STREAM}" = "debug" ]]; then
+            opts+=(--fake-sign)
+          fi
+          bazel build //image/base:rpmdb
+          bazel run "${TARGET}" -- "${opts[@]}"
+          {
+            echo "rpmdb=$(bazel cquery --output=files //image/base:rpmdb)"
+          } | tee -a "$GITHUB_OUTPUT"
+          echo -ne "Uploaded OS image:\n\n\`\`\`\n${SHORT_NAME}\n\`\`\`" | tee -a "$GITHUB_STEP_SUMMARY"
           echo "::endgroup::"
 
-  upload-sbom:
-    name: "Upload SBOM"
-    needs: [build-settings, make-os-image]
-    permissions:
-      id-token: write
-      contents: read
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Login to AWS
-        uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a # v4.0.1
-        with:
-          role-to-assume: arn:aws:iam::795746500882:role/GitHubConstellationImagePipeline
-          aws-region: eu-central-1
-
-      - name: Download sbom
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-        with:
-          # downloading / using only the QEMU manifest is fine
-          # since the images only differ in the ESP partition
-          name: sbom-qemu-qemu-vtpm
-
-      - name: Upload SBOMs to S3
+      - name: Upload SBOM to S3
         shell: bash
+        env:
+          RPMDB: ${{ steps.build.outputs.rpmdb }}
         run: |
           aws s3 cp \
-          rpmdb.tar \
+            "${RPMDB}" \
             "s3://cdn-constellation-backend/${{needs.build-settings.outputs.imageApiBasePath}}/${file}" \
             --no-progress
-
-  upload-artifacts:
-    name: "Upload image lookup table and CLI compatibility info"
-    runs-on: ubuntu-22.04
-    needs: [build-settings, upload-os-image]
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-        with:
-          ref: ${{ inputs.ref || github.head_ref }}
-
-      - uses: ./.github/actions/setup_bazel_nix
-        with:
-          useCache: "false"
-
-      - name: Download image lookup table
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-        with:
-          name: lookup-table
-
-      - name: Login to AWS
-        uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a # v4.0.1
-        with:
-          role-to-assume: arn:aws:iam::795746500882:role/GitHubConstellationImagePipeline
-          aws-region: eu-central-1
-
-      - name: Upload lookup table to S3
-        shell: bash
-        run: bazel run //image/upload -- info --verbose mkosi.output.*/*/image-upload*.json
-
-      - name: Checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-        with:
-          ref: ${{ inputs.ref || github.head_ref }}
 
       - name: Create CLI compatibility information artifact
         shell: bash
@@ -696,10 +210,10 @@ jobs:
           bazel run //hack/cli-k8s-compatibility -- \
             --ref=${{  needs.build-settings.outputs.ref }} \
             --stream=${{  needs.build-settings.outputs.stream }} \
-            --version=${{  needs.build-settings.outputs.imageVersion }} \
+            --version=${{  needs.build-settings.outputs.imageVersion }}
 
   add-image-version-to-versionsapi:
-    needs: [upload-artifacts, upload-pcrs, build-settings]
+    needs: [upload-os-image, build-settings]
     name: "Add image version to versionsapi"
     if: needs.build-settings.outputs.ref != '-'
     permissions:
@@ -715,7 +229,7 @@ jobs:
       add_latest: true
 
   add-cli-version-to-versionsapi:
-    needs: [upload-artifacts, build-settings, add-image-version-to-versionsapi]
+    needs: [upload-os-image, build-settings, add-image-version-to-versionsapi]
     name: "Add CLI version to versionsapi"
     if: needs.build-settings.outputs.ref != '-'
     permissions:
