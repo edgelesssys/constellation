@@ -56,6 +56,13 @@ nixpkgs_flake_package(
     package = "mkosi",
 )
 
+nixpkgs_flake_package(
+    name = "uplosi",
+    nix_flake_file = "//:flake.nix",
+    nix_flake_lock_file = "//:flake.lock",
+    package = "uplosi",
+)
+
 nixpkgs_package(
     name = "diffutils",
     repository = "@nixpkgs",
@@ -93,6 +100,21 @@ nixpkgs_package(
 
 nixpkgs_package(
     name = "gnused",
+    repository = "@nixpkgs",
+)
+
+nixpkgs_package(
+    name = "parallel",
+    repository = "@nixpkgs",
+)
+
+nixpkgs_package(
+    name = "cosign",
+    repository = "@nixpkgs",
+)
+
+nixpkgs_package(
+    name = "rekor-cli",
     repository = "@nixpkgs",
 )
 
