@@ -94,6 +94,7 @@ go_test(
         "//internal/config",
         "//internal/constants",
         "//internal/semver",
+        "//internal/versions",
         "//terraform-provider-constellation/internal/data",
         "@com_github_hashicorp_terraform_plugin_framework//attr",
         "@com_github_hashicorp_terraform_plugin_framework//providerserver",

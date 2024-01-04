@@ -12,12 +12,14 @@ terraform {
 }
 
 locals {
-  name                = "constell"
-  version             = "vX.Y.Z"
-  csp                 = "aws"
-  attestation_variant = "aws-sev-snp"
-  region              = "us-east-2"
-  zone                = "us-east-2c"
+  name                 = "constell"
+  version              = "vX.Y.Z"
+  kubernetes_version   = "vX.Y.Z"
+  microservice_version = "vX.Y.Z"
+  csp                  = "aws"
+  attestation_variant  = "aws-sev-snp"
+  region               = "us-east-2"
+  zone                 = "us-east-2c"
 
   master_secret      = random_bytes.master_secret.hex
   master_secret_salt = random_bytes.master_secret_salt.hex
@@ -90,18 +92,20 @@ data "constellation_image" "bar" {
 }
 
 resource "constellation_cluster" "aws_example" {
-  csp                     = local.csp
-  name                    = module.aws_infrastructure.name
-  uid                     = module.aws_infrastructure.uid
-  image                   = data.constellation_image.bar.image
-  attestation             = data.constellation_attestation.foo.attestation
-  init_secret             = module.aws_infrastructure.init_secret
-  master_secret           = local.master_secret
-  master_secret_salt      = local.master_secret_salt
-  measurement_salt        = local.measurement_salt
-  out_of_cluster_endpoint = module.aws_infrastructure.out_of_cluster_endpoint
-  in_cluster_endpoint     = module.aws_infrastructure.in_cluster_endpoint
-  api_server_cert_sans    = module.aws_infrastructure.api_server_cert_sans
+  csp                                = local.csp
+  name                               = module.aws_infrastructure.name
+  uid                                = module.aws_infrastructure.uid
+  image                              = data.constellation_image.bar.image
+  attestation                        = data.constellation_attestation.foo.attestation
+  kubernetes_version                 = local.kubernetes_version
+  constellation_microservice_version = local.microservice_version
+  init_secret                        = module.aws_infrastructure.init_secret
+  master_secret                      = local.master_secret
+  master_secret_salt                 = local.master_secret_salt
+  measurement_salt                   = local.measurement_salt
+  out_of_cluster_endpoint            = module.aws_infrastructure.out_of_cluster_endpoint
+  in_cluster_endpoint                = module.aws_infrastructure.in_cluster_endpoint
+  api_server_cert_sans               = module.aws_infrastructure.api_server_cert_sans
   network_config = {
     ip_cidr_node    = module.aws_infrastructure.ip_cidr_node
     ip_cidr_service = "10.96.0.0/12"

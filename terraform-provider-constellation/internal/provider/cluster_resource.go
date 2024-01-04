@@ -160,14 +160,14 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 			},
 			"image": newImageAttributeSchema(attributeInput),
 			"kubernetes_version": schema.StringAttribute{
-				MarkdownDescription: fmt.Sprintf("The Kubernetes version to use for the cluster. When not set, version %s is used. The supported versions are %s.", versions.Default, versions.SupportedK8sVersions()),
-				Description:         fmt.Sprintf("The Kubernetes version to use for the cluster. When not set, version %s is used. The supported versions are %s.", versions.Default, versions.SupportedK8sVersions()),
-				Optional:            true,
+				MarkdownDescription: fmt.Sprintf("The Kubernetes version to use for the cluster. The supported versions are %s.", versions.SupportedK8sVersions()),
+				Description:         fmt.Sprintf("The Kubernetes version to use for the cluster. The supported versions are %s.", versions.SupportedK8sVersions()),
+				Required:            true,
 			},
 			"constellation_microservice_version": schema.StringAttribute{
-				MarkdownDescription: "The version of Constellation's microservices used within the cluster. When not set, the provider version is used.",
-				Description:         "The version of Constellation's microservices used within the cluster. When not set, the provider version is used.",
-				Optional:            true,
+				MarkdownDescription: "The version of Constellation's microservices used within the cluster.",
+				Description:         "The version of Constellation's microservices used within the cluster.",
+				Required:            true,
 			},
 			"out_of_cluster_endpoint": schema.StringAttribute{
 				MarkdownDescription: "The endpoint of the cluster. Typically, this is the public IP of a loadbalancer.",
@@ -470,13 +470,13 @@ func (r *ClusterResource) ModifyPlan(ctx context.Context, req resource.ModifyPla
 		}
 
 		// Warn the user about possibly destructive changes in case microservice changes are to be applied.
-		currVer, diags := r.getMicroserviceVersion(ctx, &currentState)
+		currVer, diags := r.getMicroserviceVersion(&currentState)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 
-		plannedVer, diags := r.getMicroserviceVersion(ctx, &plannedState)
+		plannedVer, diags := r.getMicroserviceVersion(&plannedState)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -718,14 +718,14 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 	}
 
 	// parse Constellation microservice version
-	microserviceVersion, convertDiags := r.getMicroserviceVersion(ctx, data)
+	microserviceVersion, convertDiags := r.getMicroserviceVersion(data)
 	diags.Append(convertDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
 	// parse Kubernetes version
-	k8sVersion, getDiags := r.getK8sVersion(ctx, data)
+	k8sVersion, getDiags := r.getK8sVersion(data)
 	diags.Append(getDiags...)
 	if diags.HasError() {
 		return diags
@@ -1163,44 +1163,30 @@ func (r *ClusterResource) convertSecrets(data ClusterResourceModel) (secretInput
 
 // getK8sVersion returns the Kubernetes version from the Terraform state if set, and the default
 // version otherwise.
-func (r *ClusterResource) getK8sVersion(ctx context.Context, data *ClusterResourceModel) (versions.ValidK8sVersion, diag.Diagnostics) {
+func (r *ClusterResource) getK8sVersion(data *ClusterResourceModel) (versions.ValidK8sVersion, diag.Diagnostics) {
 	diags := diag.Diagnostics{}
-	var k8sVersion versions.ValidK8sVersion
-	var err error
-	if data.KubernetesVersion.ValueString() != "" {
-		k8sVersion, err = versions.NewValidK8sVersion(data.KubernetesVersion.ValueString(), true)
-		if err != nil {
-			diags.AddAttributeError(
-				path.Root("kubernetes_vesion"),
-				"Invalid Kubernetes version",
-				fmt.Sprintf("Parsing Kubernetes version: %s", err))
-			return "", diags
-		}
-	} else {
-		tflog.Info(ctx, fmt.Sprintf("No Kubernetes version specified. Using default version %s.", versions.Default))
-		k8sVersion = versions.Default
+	k8sVersion, err := versions.NewValidK8sVersion(data.KubernetesVersion.ValueString(), true)
+	if err != nil {
+		diags.AddAttributeError(
+			path.Root("kubernetes_version"),
+			"Invalid Kubernetes version",
+			fmt.Sprintf("Parsing Kubernetes version: %s", err))
+		return "", diags
 	}
 	return k8sVersion, diags
 }
 
 // getK8sVersion returns the Microservice version from the Terraform state if set, and the default
 // version otherwise.
-func (r *ClusterResource) getMicroserviceVersion(ctx context.Context, data *ClusterResourceModel) (semver.Semver, diag.Diagnostics) {
+func (r *ClusterResource) getMicroserviceVersion(data *ClusterResourceModel) (semver.Semver, diag.Diagnostics) {
 	diags := diag.Diagnostics{}
-	var ver semver.Semver
-	var err error
-	if data.MicroserviceVersion.ValueString() != "" {
-		ver, err = semver.New(data.MicroserviceVersion.ValueString())
-		if err != nil {
-			diags.AddAttributeError(
-				path.Root("constellation_microservice_version"),
-				"Invalid microservice version",
-				fmt.Sprintf("Parsing microservice version: %s", err))
-			return semver.Semver{}, diags
-		}
-	} else {
-		tflog.Info(ctx, fmt.Sprintf("No Microservice version specified. Using default version %s.", r.providerData.Version))
-		ver = r.providerData.Version
+	ver, err := semver.New(data.MicroserviceVersion.ValueString())
+	if err != nil {
+		diags.AddAttributeError(
+			path.Root("constellation_microservice_version"),
+			"Invalid microservice version",
+			fmt.Sprintf("Parsing microservice version: %s", err))
+		return semver.Semver{}, diags
 	}
 	if err := config.ValidateMicroserviceVersion(r.providerData.Version, ver); err != nil {
 		diags.AddAttributeError(
