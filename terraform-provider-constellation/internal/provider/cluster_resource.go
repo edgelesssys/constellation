@@ -470,13 +470,13 @@ func (r *ClusterResource) ModifyPlan(ctx context.Context, req resource.ModifyPla
 		}
 
 		// Warn the user about possibly destructive changes in case microservice changes are to be applied.
-		currVer, diags := r.getMicroserviceVersion(ctx, &currentState)
+		currVer, diags := r.getMicroserviceVersion(&currentState)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 
-		plannedVer, diags := r.getMicroserviceVersion(ctx, &plannedState)
+		plannedVer, diags := r.getMicroserviceVersion(&plannedState)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -718,14 +718,14 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 	}
 
 	// parse Constellation microservice version
-	microserviceVersion, convertDiags := r.getMicroserviceVersion(ctx, data)
+	microserviceVersion, convertDiags := r.getMicroserviceVersion(data)
 	diags.Append(convertDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
 	// parse Kubernetes version
-	k8sVersion, getDiags := r.getK8sVersion(ctx, data)
+	k8sVersion, getDiags := r.getK8sVersion(data)
 	diags.Append(getDiags...)
 	if diags.HasError() {
 		return diags
@@ -1163,7 +1163,7 @@ func (r *ClusterResource) convertSecrets(data ClusterResourceModel) (secretInput
 
 // getK8sVersion returns the Kubernetes version from the Terraform state if set, and the default
 // version otherwise.
-func (r *ClusterResource) getK8sVersion(ctx context.Context, data *ClusterResourceModel) (versions.ValidK8sVersion, diag.Diagnostics) {
+func (r *ClusterResource) getK8sVersion(data *ClusterResourceModel) (versions.ValidK8sVersion, diag.Diagnostics) {
 	diags := diag.Diagnostics{}
 	k8sVersion, err := versions.NewValidK8sVersion(data.KubernetesVersion.ValueString(), true)
 	if err != nil {
@@ -1178,7 +1178,7 @@ func (r *ClusterResource) getK8sVersion(ctx context.Context, data *ClusterResour
 
 // getK8sVersion returns the Microservice version from the Terraform state if set, and the default
 // version otherwise.
-func (r *ClusterResource) getMicroserviceVersion(ctx context.Context, data *ClusterResourceModel) (semver.Semver, diag.Diagnostics) {
+func (r *ClusterResource) getMicroserviceVersion(data *ClusterResourceModel) (semver.Semver, diag.Diagnostics) {
 	diags := diag.Diagnostics{}
 	ver, err := semver.New(data.MicroserviceVersion.ValueString())
 	if err != nil {

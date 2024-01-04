@@ -185,6 +185,9 @@ jobs:
             fi
           fi
 
+          # take the middle (2nd) supported Kubernetes version (default)
+          kubernetes_version="$(../build/constellation config kubernetes-versions | awk 'NR==3{print $1}')"
+
           cat > _override.tf <<EOF
           terraform {
             required_providers {
@@ -197,6 +200,8 @@ jobs:
           locals {
             name                = "${{ steps.create-prefix.outputs.prefix }}"
             version            = "${image_version}"
+            microservice_version= "${prefixed_version}"
+            kubernetes_version = "${kubernetes_version}"
           }
           module "${{ inputs.cloudProvider }}_iam" {
             source = "${iam_src}"

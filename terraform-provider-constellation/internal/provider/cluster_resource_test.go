@@ -54,7 +54,7 @@ func TestMicroserviceConstraint(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, diags := sut.getMicroserviceVersion(context.Background(), &ClusterResourceModel{
+			_, diags := sut.getMicroserviceVersion(&ClusterResourceModel{
 				MicroserviceVersion: basetypes.NewStringValue(tc.version),
 			})
 			require.Equal(t, tc.expectedErrorCount, diags.ErrorsCount())
