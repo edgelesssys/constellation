@@ -10,6 +10,7 @@ go_library(
         "measurements_enterprise.go",
         # keep
         "measurements_oss.go",
+        "overrides.go",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/measurements",
     visibility = ["//:__subpackages__"],

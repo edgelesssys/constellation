@@ -66,6 +66,11 @@ func runEnvelopeMeasurements(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("enveloping measurements: reading input file: %w", err)
 	}
 
+	measuremnt.Measurements, err = measurements.ApplyOverrides(measuremnt.Measurements, flags.csp, flags.attestationVariant)
+	if err != nil {
+		return fmt.Errorf("enveloping measurements: overriding static measurements: %w", err)
+	}
+
 	enveloped := measurements.ImageMeasurementsV2{
 		Ref:     flags.version.Ref(),
 		Stream:  flags.version.Stream(),
