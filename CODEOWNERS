@@ -63,3 +63,4 @@
 /tools @malt3
 /upgrade-agent @3u13r
 /verify @daniel-weisse
+/terraform-provider-constellation @msanft @elchead

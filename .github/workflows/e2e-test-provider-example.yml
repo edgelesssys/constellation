@@ -1,0 +1,281 @@
+name: e2e test Terraform provider example
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        type: string
+        description: "Git ref to checkout"
+      cloudProvider:
+        description: "Which cloud provider to use."
+        type: choice
+        options:
+          - "aws"
+          - "azure"
+          - "gcp"
+        required: true
+      regionZone:
+        description: "Region or zone to create the cluster in. Leave empty for default region/zone."
+        type: string
+      image:
+        description: "OS Image version used in the cluster's VMs. If not set, the latest nightly image from main is used."
+        type: string
+      providerVersion:
+        description: "Constellation Terraform provider version to use (with v prefix). Empty value means build from source."
+        type: string
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        description: "Git ref to checkout"
+      cloudProvider:
+        description: "Which cloud provider to use."
+        type: string
+        required: true
+      regionZone:
+        description: "Which zone to use."
+        type: string
+      image:
+        description: "OS Image version used in the cluster's VMs, as specified in the Constellation config. If not set, the latest nightly image from main is used."
+        type: string
+      providerVersion:
+        description: "Constellation Terraform provider version to use (with v prefix). Empty value means build from source."
+        type: string
+
+jobs:
+  provider-example-test:
+    runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
+        with:
+          ref: ${{ inputs.ref || github.head_ref }}
+
+      - name: Get Latest Image
+        id: find-latest-image
+        uses: ./.github/actions/find_latest_image
+        with:
+          git-ref: ${{ inputs.ref }}
+          imageVersion: ${{ inputs.image }}
+          ref: main
+          stream: nightly
+
+      - name: Upload Terraform module
+        uses: ./.github/actions/upload_terraform_module
+
+      - name: Download Terraform module
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        with:
+          name: terraform-module
+
+      - name: Unzip Terraform module
+        shell: bash
+        run: |
+          unzip terraform-module.zip -d ${{ github.workspace }}
+          rm terraform-module.zip
+
+      - name: Create resource prefix
+        id: create-prefix
+        shell: bash
+        run: |
+          run_id=${{ github.run_id }}
+          last_three="${run_id: -3}"
+          echo "prefix=e2e-${last_three}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Log in to the Container registry
+        uses: ./.github/actions/container_registry_login
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup bazel
+        uses: ./.github/actions/setup_bazel_nix
+        with:
+          useCache: "true"
+          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
+          nixTools: terraform
+
+      - name: Build Constellation provider and CLI # CLI is needed for the upgrade assert and container push is needed for the microservice upgrade
+        working-directory: ${{ github.workspace }}
+        id: build
+        shell: bash
+        run: |
+          mkdir build
+          cd build
+          bazel run //:devbuild --cli_edition=enterprise
+
+          bazel build //bazel/settings:tag
+          repository_root=$(git rev-parse --show-toplevel)
+          out_rel=$(bazel cquery --output=files //bazel/settings:tag)
+          build_version=$(cat "$(realpath "${repository_root}/${out_rel}")")
+          echo "build_version=${build_version}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Remove local Terraform registry # otherwise the local registry would be used instead of the public registry
+        if: inputs.providerVersion != ''
+        shell: bash
+        run: |
+          bazel build //bazel/settings:tag
+          repository_root=$(git rev-parse --show-toplevel)
+          out_rel=$(bazel cquery --output=files //bazel/settings:tag)
+          build_version=$(cat "$(realpath "${repository_root}/${out_rel}")")
+
+          terraform_provider_dir="${HOME}/.terraform.d/plugins/registry.terraform.io/edgelesssys/constellation/${build_version#v}/linux_amd64/"
+          rm -rf "${terraform_provider_dir}"
+
+      - name: Login to AWS (IAM + Cluster role)
+        if: inputs.cloudProvider == 'aws'
+        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 # v2.2.0
+        with:
+          role-to-assume: arn:aws:iam::795746500882:role/GithubActionsE2ETerraform
+          aws-region: eu-central-1
+          # extend token expiry to 6 hours to ensure constellation can terminate
+          role-duration-seconds: 21600
+
+      - name: Login to Azure (IAM + Cluster service principal)
+        if: inputs.cloudProvider == 'azure'
+        uses: ./.github/actions/login_azure
+        with:
+          azure_credentials: ${{ secrets.AZURE_E2E_TF_CREDENTIALS }}
+
+      - name: Login to GCP (IAM + Cluster service account)
+        if: inputs.cloudProvider == 'gcp'
+        uses: ./.github/actions/login_gcp
+        with:
+          service_account: "terraform-e2e@constellation-e2e.iam.gserviceaccount.com"
+
+      - name: Common CSP Terraform overrides
+        working-directory: ${{ github.workspace }}
+        shell: bash
+        run: |
+          mkdir cluster
+          cd cluster
+          if [[ "${{ inputs.providerVersion }}" == "" ]]; then
+            prefixed_version=${{ steps.build.outputs.build_version }}
+          else
+            prefixed_version="${{ inputs.providerVersion }}"
+          fi
+          version=${prefixed_version#v} # remove v prefix
+
+          if [[ "${{ inputs.providerVersion }}" == "" ]]; then
+            iam_src="../terraform-module/iam/${{ inputs.cloudProvider }}"
+            infra_src="../terraform-module/${{ inputs.cloudProvider }}"
+          else
+            iam_src="https://github.com/edgelesssys/constellation/releases/download/${{ inputs.providerVersion }}/terraform-module.zip//terraform-module/iam/${{ inputs.cloudProvider }}"
+            infra_src="https://github.com/edgelesssys/constellation/releases/download/${{ inputs.providerVersion }}/terraform-module.zip//terraform-module/${{ inputs.cloudProvider }}"
+          fi
+
+          # by default use latest nightly image for devbuilds and release image otherwise
+          if [[ "${{ inputs.providerVersion }}" == "" ]]; then
+            if [[ "${{ inputs.image }}" == "" ]]; then
+              image_version="${{ steps.find-latest-image.outputs.image }}"
+            else
+              image_version="${{ inputs.image }}"
+            fi
+          else
+            if [[ "${{ inputs.image }}" == "" ]]; then
+              image_version="${prefixed_version}"
+            else
+              image_version="${{ inputs.image }}"
+            fi
+          fi
+
+          cat > _override.tf <<EOF
+          terraform {
+            required_providers {
+              constellation = {
+                source  = "edgelesssys/constellation"
+                version            = "${version}"
+              }
+            }
+          }
+          locals {
+            name                = "${{ steps.create-prefix.outputs.prefix }}"
+            version            = "${image_version}"
+          }
+          module "${{ inputs.cloudProvider }}_iam" {
+            source = "${iam_src}"
+          }
+          module "${{ inputs.cloudProvider }}_infrastructure" {
+            source = "${infra_src}"
+          }
+          EOF
+          cat _override.tf
+
+      - name: Create GCP Terraform overrides
+        if: inputs.cloudProvider == 'gcp'
+        working-directory: ${{ github.workspace }}/cluster
+        shell: bash
+        run: |
+          region=$(echo ${{ inputs.regionZone || 'europe-west3-b' }} | rev | cut -c 3- | rev)
+
+          cat >> _override.tf <<EOF
+          locals {
+            project_id         = "constellation-e2e"
+            region = "${region}"
+            zone = "${{ inputs.regionZone || 'europe-west3-b' }}"
+          }
+          EOF
+          cat _override.tf
+
+      - name: Create AWS Terraform overrides
+        if: inputs.cloudProvider == 'aws'
+        working-directory: ${{ github.workspace }}/cluster
+        shell: bash
+        run: |
+          region=$(echo ${{ inputs.regionZone || 'us-east-2c' }} | rev | cut -c 2- | rev)
+
+          cat >> _override.tf <<EOF
+          locals {
+            region = "${region}"
+            zone = "${{ inputs.regionZone || 'us-east-2c' }}"
+          }
+          EOF
+          cat _override.tf
+
+      - name: Copy example Terraform file
+        working-directory: ${{ github.workspace }}
+        shell: bash
+        run: |
+          cp ${{ github.workspace }}/terraform-provider-constellation/examples/full/${{ inputs.cloudProvider }}/main.tf ${{ github.workspace }}/cluster/main.tf
+
+      - name: Apply Terraform Cluster
+        id: apply_terraform
+        working-directory: ${{ github.workspace }}/cluster
+        shell: bash
+        run: |
+          terraform init
+          if [[ "${{ inputs.cloudProvider }}" == "azure" ]]; then
+            terraform apply -target module.azure_iam -auto-approve
+            terraform apply -target module.azure_infrastructure -auto-approve
+            ../build/constellation maa-patch "$(terraform output -raw maa_url)"
+            TF_LOG=INFO terraform apply -target constellation_cluster.azure_example -auto-approve
+          else
+            TF_LOG=INFO terraform apply -auto-approve
+          fi
+
+      - name: Destroy Terraform Cluster
+      # outcome is part of the steps context (https://docs.github.com/en/actions/learn-github-actions/contexts#steps-context)
+        if: always() && steps.apply_terraform.outcome != 'skipped'
+        working-directory: ${{ github.workspace }}/cluster
+        shell: bash
+        run: |
+          terraform init
+          terraform destroy -auto-approve
+
+      - name: Notify about failure
+        if: |
+          failure() &&
+          github.ref == 'refs/heads/main' &&
+          github.event_name == 'schedule'
+        continue-on-error: true
+        uses: ./.github/actions/notify_e2e_failure
+        with:
+          projectWriteToken: ${{ secrets.PROJECT_WRITE_TOKEN }}
+          test: "terraform-provider-example"
+          provider: ${{ inputs.cloudProvider }}
