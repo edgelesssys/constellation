@@ -1,4 +1,5 @@
 load("//bazel/mkosi:mkosi_image.bzl", "mkosi_image")
+load("//bazel/osimage:upload_os_images.bzl", "upload_os_images")
 load(":variants.bzl", "CSPS", "STREAMS", "VARIANTS", "autologin", "constellation_packages", "images_for_csp", "images_for_csp_and_stream", "images_for_stream", "kernel_command_line", "kernel_command_line_dict")
 
 [
@@ -38,6 +39,16 @@ load(":variants.bzl", "CSPS", "STREAMS", "VARIANTS", "autologin", "constellation
             "no-cache",
         ],
         version_file = "//bazel/settings:tag",
+        visibility = ["//visibility:public"],
+    )
+    for variant in VARIANTS
+    for stream in STREAMS
+]
+
+[
+    upload_os_images(
+        name = "upload_" + variant["csp"] + "_" + variant["attestation_variant"] + "_" + stream,
+        image_dirs = [":" + variant["csp"] + "_" + variant["attestation_variant"] + "_" + stream],
     )
     for variant in VARIANTS
     for stream in STREAMS
@@ -51,6 +62,15 @@ load(":variants.bzl", "CSPS", "STREAMS", "VARIANTS", "autologin", "constellation
             "manual",
             "no-cache",
         ],
+        visibility = ["//visibility:public"],
+    )
+    for stream in STREAMS
+]
+
+[
+    upload_os_images(
+        name = "upload_" + stream,
+        image_dirs = [":" + stream],
     )
     for stream in STREAMS
 ]
@@ -63,6 +83,7 @@ load(":variants.bzl", "CSPS", "STREAMS", "VARIANTS", "autologin", "constellation
             "manual",
             "no-cache",
         ],
+        visibility = ["//visibility:public"],
     )
     for csp in CSPS
 ]
@@ -75,6 +96,7 @@ load(":variants.bzl", "CSPS", "STREAMS", "VARIANTS", "autologin", "constellation
             "manual",
             "no-cache",
         ],
+        visibility = ["//visibility:public"],
     )
     for csp in CSPS
     for stream in STREAMS
