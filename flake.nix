@@ -47,11 +47,22 @@
         ]);
       }));
 
+      uplosiDev = (pkgsUnstable.uplosi.overrideAttrs (oldAttrs: rec {
+        src = pkgsUnstable.fetchFromGitHub {
+          owner = "edgelesssys";
+          repo = "uplosi";
+          rev = "0190e8c548b5811066b7e2d9db5e3167f51c005f";
+          hash = "sha256-AHj3XTX+vd8QP4hWGPAt2iJnrIGoiH61UgQMK7vlYU0=";
+        };
+      }));
+
       openssl-static = pkgsUnstable.openssl.override { static = true; };
 
     in
     {
       packages.mkosi = mkosiDev;
+
+      packages.uplosi = uplosiDev;
 
       packages.openssl = callPackage ./nix/cc/openssl.nix { pkgs = pkgsUnstable; };
 
