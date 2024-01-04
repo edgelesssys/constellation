@@ -1,0 +1,21 @@
+[base]
+name = "constellation"
+
+[base.aws]
+region = "eu-central-1"
+replicationRegions = ["eu-west-1", "eu-west-3", "us-east-2", "ap-south-1"]
+bucket = "constellation-images"
+publish = true
+
+[base.azure]
+subscriptionID = "0d202bbb-4fa7-4af8-8125-58c269a05435"
+location = "northeurope"
+resourceGroup = "constellation-images"
+sharingNamePrefix = "constellation"
+sku = "constellation"
+publisher = "edgelesssys"
+
+[base.gcp]
+project = "constellation-images"
+location = "europe-west3"
+bucket = "constellation-os-images"

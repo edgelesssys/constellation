@@ -1,0 +1,16 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "uplosi",
+    srcs = ["uplosiupload.go"],
+    embedsrcs = ["uplosi.conf.in"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/osimage/uplosi",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/api/versionsapi",
+        "//internal/cloud/cloudprovider",
+        "//internal/logger",
+        "//internal/osimage",
+        "@com_github_burntsushi_toml//:toml",
+    ],
+)
