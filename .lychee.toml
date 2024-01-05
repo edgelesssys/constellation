@@ -31,6 +31,8 @@ exclude = [
     '^https://twitter\.com',
     # Only available when logged in.
     '^https://portal\.azure\.com/',
+    # The Wireguard PDF sproadically returns 500.
+    'wireguard\.pdf$',
 ]
 
 # Exclude these filesystem paths from getting checked.
