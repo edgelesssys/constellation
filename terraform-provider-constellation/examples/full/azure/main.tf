@@ -13,14 +13,14 @@ terraform {
 
 locals {
   name                 = "constell"
-  image_version              = "vX.Y.Z"
+  image_version        = "vX.Y.Z"
   kubernetes_version   = "vX.Y.Z"
   microservice_version = "vX.Y.Z"
   csp                  = "azure"
   attestation_variant  = "azure-sev-snp"
   location             = "northeurope"
-  control_plane_count = 3
-  worker_count        = 2
+  control_plane_count  = 3
+  worker_count         = 2
 
   master_secret      = random_bytes.master_secret.hex
   master_secret_salt = random_bytes.master_secret_salt.hex

@@ -110,6 +110,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Download CLI # needed to determine K8s version for release versions
+        if: inputs.providerVersion != ''
+        shell: bash
+        run: |
+          curl -fsSL -o constellation https://github.com/edgelesssys/constellation/releases/download/${{ inputs.providerVersion }}/constellation-linux-amd64
+          chmod u+x constellation
+          ./constellation version
+          mkdir -p ${{ github.workspace }}/release
+          cp ./constellation ${{ github.workspace }}/release
+
       - name: Setup bazel
         uses: ./.github/actions/setup_bazel_nix
         with:
@@ -202,7 +212,11 @@ jobs:
           fi
 
           # take the middle (2nd) supported Kubernetes version (default)
-          kubernetes_version="$(../build/constellation config kubernetes-versions | awk 'NR==3{print $1}')"
+          if [[ "${{ inputs.providerVersion }}" != "" ]]; then
+            kubernetes_version="$(../release/constellation config kubernetes-versions | awk 'NR==3{print $1}')"
+          else
+            kubernetes_version="$(../build/constellation config kubernetes-versions | awk 'NR==3{print $1}')"
+          fi
 
           cat > _override.tf <<EOF
           terraform {
