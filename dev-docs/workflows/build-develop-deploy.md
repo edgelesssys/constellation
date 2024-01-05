@@ -15,13 +15,22 @@ Prerequisites:
 
 ### Linux
 
-* If you don't want to perform any setup, you can get a shell with Bazel and all required dependencies by running:
+If you don't want to perform any setup, you can get a shell with Bazel and all required dependencies by running:
 
-  ```sh
-  # better would be: nix develop -i
-  # but this doesn't play nice with bashrc, colored output and non-hermetic tools
-  nix develop
-  ```
+```sh
+# better would be: nix develop -i
+# but this doesn't play nice with bashrc, colored output and non-hermetic tools
+nix develop
+```
+
+Or activate [direnv](https://direnv.net/) to automatically enter the nix shell.
+It is recommended to use [nix-direnv](https://github.com/nix-community/nix-direnv).
+If your system ships outdated bash, [install direnv](https://direnv.net/docs/installation.html) via package manager.
+Additionally, you may want to add the [vscode extension](https://github.com/direnv/direnv-vscode).
+
+```sh
+direnv allow
+```
 
 ### Mac
 

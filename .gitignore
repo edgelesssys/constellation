@@ -73,3 +73,6 @@ s3proxy-ca.crt
 
 # Lychee link checker
 .lycheecache
+
+# direnv
+.direnv
