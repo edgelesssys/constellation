@@ -29,5 +29,3 @@ jobs:
         with:
           args: "--config ./.lychee.toml './**/*.md' './**/*.html'"
           fail: true
-        env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
