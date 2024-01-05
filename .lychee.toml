@@ -19,7 +19,7 @@ max_concurrency = 5
 # accept = ["200"]
 
 # Request method
-method = "head"
+method = "get"
 
 # Check links inside `<code>` and `<pre>` blocks as well as Markdown code
 # blocks.
