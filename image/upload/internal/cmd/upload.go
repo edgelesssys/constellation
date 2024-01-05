@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/osimage"
 )
 
@@ -24,10 +25,16 @@ func uploadImage(ctx context.Context, archiveC archivist, uploadC uploader, req 
 		return err
 	}
 	defer imageReader.Close()
-	archiveURL, err := archiveC.Archive(ctx, req.Version, strings.ToLower(req.Provider.String()), req.AttestationVariant, imageReader)
-	if err != nil {
-		return err
+
+	var archiveURL string
+	if needsArchival(req.Provider, req.Version) {
+		var err error
+		archiveURL, err = archiveC.Archive(ctx, req.Version, strings.ToLower(req.Provider.String()), req.AttestationVariant, imageReader)
+		if err != nil {
+			return err
+		}
 	}
+
 	// upload to CSP
 	imageReferences, err := uploadC.Upload(ctx, req)
 	if err != nil {
@@ -55,4 +62,13 @@ func uploadImage(ctx context.Context, archiveC archivist, uploadC uploader, req 
 	}
 
 	return nil
+}
+
+func needsArchival(provider cloudprovider.Provider, version versionsapi.Version) bool {
+	switch provider {
+	case cloudprovider.OpenStack, cloudprovider.QEMU: // image upload for some CSPs only consists of this archival step
+		return true
+	}
+
+	return version.Stream() == "stable" || version.Ref() == "-"
 }
