@@ -70,3 +70,6 @@ __pycache__/
 # s3proxy misc files
 port-forward.log
 s3proxy-ca.crt
+
+# Lychee link checker
+.lycheecache
