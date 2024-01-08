@@ -13,7 +13,7 @@ import (
 	"net"
 	"net/url"
 
-	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/controlplane"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/controlplane"
 	"go.etcd.io/etcd/client/pkg/v3/transport"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"sigs.k8s.io/controller-runtime/pkg/client"

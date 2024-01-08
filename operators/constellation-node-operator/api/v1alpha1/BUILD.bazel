@@ -11,7 +11,7 @@ go_library(
         "scalinggroup_types.go",
         "zz_generated.deepcopy.go",
     ],
-    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1",
+    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/api/v1alpha1",
     visibility = ["//visibility:public"],
     deps = [
         "@io_k8s_api//core/v1:core",

@@ -26,7 +26,7 @@ import (
 
 	nodemaintenancev1beta1 "github.com/edgelesssys/constellation/v2/3rdparty/node-maintenance-operator/api/v1beta1"
 	mainconstants "github.com/edgelesssys/constellation/v2/internal/constants"
-	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
+	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/api/v1alpha1"
 )
 
 var _ = Describe("NodeVersion controller", func() {

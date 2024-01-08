@@ -11,7 +11,7 @@ go_library(
         "pendingnode_controller.go",
         "scalinggroup_controller.go",
     ],
-    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/controllers",
+    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/controllers",
     visibility = ["//visibility:public"],
     deps = [
         "//3rdparty/node-maintenance-operator/api/v1beta1",

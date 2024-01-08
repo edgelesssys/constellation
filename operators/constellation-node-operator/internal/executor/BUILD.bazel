@@ -4,7 +4,7 @@ load("//bazel/go:go_test.bzl", "go_test")
 go_library(
     name = "executor",
     srcs = ["executor.go"],
-    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/executor",
+    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/executor",
     visibility = ["//operators/constellation-node-operator:__subpackages__"],
     deps = [
         "@io_k8s_client_go//util/workqueue",

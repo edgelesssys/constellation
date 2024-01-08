@@ -4,7 +4,7 @@ load("//bazel/go:go_test.bzl", "go_test")
 go_library(
     name = "etcd",
     srcs = ["etcd.go"],
-    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/etcd",
+    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/etcd",
     visibility = ["//operators/constellation-node-operator:__subpackages__"],
     deps = [
         "//operators/constellation-node-operator/internal/controlplane",

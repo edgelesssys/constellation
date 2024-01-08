@@ -13,7 +13,7 @@ import (
 
 	"cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/api"
+	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/cloud/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"

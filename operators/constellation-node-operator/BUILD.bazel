@@ -2,12 +2,10 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_cross_binary", "go_libra
 load("@rules_oci//oci:defs.bzl", "oci_image")
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
 
-# gazelle:prefix github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2
-
 go_library(
     name = "constellation-node-operator_lib",
     srcs = ["main.go"],
-    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2",
+    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator",
     visibility = ["//visibility:private"],
     deps = [
         "//3rdparty/node-maintenance-operator/api/v1beta1",
