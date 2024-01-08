@@ -1,5 +1,11 @@
+# Sadly, some Bazel rules we depend on have no support for bzlmod yet
+# Here is an (incomplete) list of rules known to not support bzlmod.
+# Please extend this list as you find more.
+# - rules_nixpkgs: https://github.com/tweag/rules_nixpkgs/issues/181
+common --noenable_bzlmod
+
 # Import bazelrc presets
-import %workspace%/bazel/bazelrc/bazel6.bazelrc
+import %workspace%/bazel/bazelrc/bazel7.bazelrc
 import %workspace%/bazel/bazelrc/convenience.bazelrc
 import %workspace%/bazel/bazelrc/correctness.bazelrc
 import %workspace%/bazel/bazelrc/debug.bazelrc

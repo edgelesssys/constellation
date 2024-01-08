@@ -6,7 +6,6 @@ mkosi_image(
         "mkosi.postinst",
     ] + glob([
         "mkosi.skeleton/**",
-        "reposdir/**",
     ]),
     outs = [
         "image",

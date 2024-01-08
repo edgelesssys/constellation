@@ -1,7 +1,7 @@
 { pkgs, ... }:
 pkgs.mkShell {
   nativeBuildInputs = with pkgs; [
-    bazel_6
+    bazel_7
     git
   ];
 }
