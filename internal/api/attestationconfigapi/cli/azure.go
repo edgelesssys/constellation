@@ -27,6 +27,8 @@ func deleteAzure(ctx context.Context, client *attestationconfigapi.Client, cfg d
 	return client.DeleteSEVSNPVersion(ctx, variant.AzureSEVSNP{}, cfg.version)
 }
 
+func ptr[A any](a A) *A { return &a }
+
 func deleteRecursive(ctx context.Context, path string, client *staticupload.Client, cfg deleteConfig) error {
 	resp, err := client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
 		Bucket: aws.String(cfg.bucket),
@@ -46,7 +48,7 @@ func deleteRecursive(ctx context.Context, path string, client *staticupload.Clie
 			Bucket: aws.String(cfg.bucket),
 			Delete: &s3types.Delete{
 				Objects: objIDs,
-				Quiet:   true,
+				Quiet:   ptr(true),
 			},
 		})
 		if err != nil {
