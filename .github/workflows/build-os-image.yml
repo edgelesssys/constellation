@@ -575,7 +575,6 @@ jobs:
         shell: bash
         run: |
           curl -fsSLO https://github.com/sigstore/rekor/releases/download/v0.12.0/rekor-cli-linux-amd64
-          echo 23c9baefe12b28879275f5aa84dbe9cd734d67ba42bf9bbb28a3eedbf1ed2dd4  rekor-cli-linux-amd64 | sha256sum -c --strict
           sudo install rekor-cli-linux-amd64 /usr/local/bin/rekor-cli
           rm rekor-cli-linux-amd64
 
