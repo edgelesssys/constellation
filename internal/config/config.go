@@ -183,6 +183,9 @@ type GCPConfig struct {
 	// description: |
 	//   Deploy Persistent Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage
 	DeployCSIDriver *bool `yaml:"deployCSIDriver" validate:"required"`
+	// description: |
+	//   Use the specified GCP Marketplace image offering.
+	UseMarketplaceImage *bool `yaml:"useMarketplaceImage" validate:"omitempty"`
 }
 
 // OpenStackConfig holds config information for OpenStack based Constellation deployments.
@@ -349,6 +352,7 @@ func Default() *Config {
 				Zone:                  "",
 				ServiceAccountKeyPath: "",
 				DeployCSIDriver:       toPtr(true),
+				UseMarketplaceImage:   toPtr(false),
 			},
 			OpenStack: &OpenStackConfig{
 				DirectDownload:          toPtr(true),
@@ -699,7 +703,8 @@ func (c *Config) DeployYawolLoadBalancer() bool {
 
 // UseMarketplaceImage returns whether a marketplace image should be used.
 func (c *Config) UseMarketplaceImage() bool {
-	return c.Provider.Azure != nil && c.Provider.Azure.UseMarketplaceImage != nil && *c.Provider.Azure.UseMarketplaceImage
+	return (c.Provider.Azure != nil && c.Provider.Azure.UseMarketplaceImage != nil && *c.Provider.Azure.UseMarketplaceImage) ||
+		(c.Provider.GCP != nil && c.Provider.GCP.UseMarketplaceImage != nil && *c.Provider.GCP.UseMarketplaceImage)
 }
 
 // Validate checks the config values and returns validation errors.

@@ -28,6 +28,6 @@ Enterprise Licenses don't have the above limitations and come with support and a
 
 Once you have received your Enterprise License file, place it in your [Constellation workspace](../architecture/orchestration.md#workspaces) in a file named `constellation.license`.
 
-## Azure Marketplace
+## CSP Marketplaces
 
-Constellation is available through the Azure Marketplace. This allows you to create self-managed Constellation clusters that are billed on a pay-per-use basis (hourly, per vCPU) with your Azure account. You can still get direct support by Edgeless Systems. For more information, please [contact us](https://www.edgeless.systems/enterprise-support/).
+Constellation is available through the Marketplaces of Azure and GCP. This allows you to create self-managed Constellation clusters that are billed on a pay-per-use basis (hourly, per vCPU) with your CSP account. You can still get direct support by Edgeless Systems. For more information, please [contact us](https://www.edgeless.systems/enterprise-support/).

@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io/fs"
 	"regexp"
+	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
@@ -52,10 +53,6 @@ func (f *Fetcher) FetchReference(ctx context.Context,
 		return "", fmt.Errorf("parsing config image short path: %w", err)
 	}
 
-	if useMarketplaceImage {
-		return buildMarketplaceImage(ver, provider)
-	}
-
 	imgInfoReq := versionsapi.ImageInfo{
 		Ref:     ver.Ref(),
 		Stream:  ver.Stream(),
@@ -85,21 +82,54 @@ func (f *Fetcher) FetchReference(ctx context.Context,
 		return "", fmt.Errorf("validating image info file: %w", err)
 	}
 
+	if useMarketplaceImage {
+		return buildMarketplaceImage(marketplaceImagePayload{
+			ver:                ver,
+			provider:           provider,
+			attestationVariant: attestationVariant,
+			imgInfo:            imgInfo,
+			filters:            filters(provider, region),
+		})
+	}
+
 	return getReferenceFromImageInfo(provider, attestationVariant.String(), imgInfo, filters(provider, region)...)
 }
 
+// marketplaceImagePayload is a helper struct to pass around the required information to build a marketplace image URI.
+type marketplaceImagePayload struct {
+	ver                versionsapi.Version
+	provider           cloudprovider.Provider
+	attestationVariant variant.Variant
+	imgInfo            versionsapi.ImageInfo
+	filters            []filter
+}
+
 // buildMarketplaceImage returns a marketplace image URI for the given CSP and version.
-func buildMarketplaceImage(ver versionsapi.Version, provider cloudprovider.Provider) (string, error) {
-	sv, err := semver.New(ver.Version())
+func buildMarketplaceImage(payload marketplaceImagePayload) (string, error) {
+	sv, err := semver.New(payload.ver.Version())
 	if err != nil {
 		return "", fmt.Errorf("parsing image version: %w", err)
 	}
 
-	switch provider {
+	if sv.Prerelease() != "" {
+		return "", fmt.Errorf("marketplace images are not supported for prerelease versions")
+	}
+
+	switch payload.provider {
 	case cloudprovider.Azure:
+		// For Azure, multiple fields of information are required to use marketplace images,
+		// so we pack them in a custom URI.
 		return mpimage.NewAzureMarketplaceImage(sv).URI(), nil
+	case cloudprovider.GCP:
+		// For GCP, we just need to replace the GCP project name (constellation-images) to the public project that
+		// hosts the marketplace images (mpi-edgeless-systems-public).
+		imageRef, err := getReferenceFromImageInfo(payload.provider, payload.attestationVariant.String(), payload.imgInfo, payload.filters...)
+		if err != nil {
+			return "", fmt.Errorf("getting image reference: %w", err)
+		}
+		return strings.Replace(imageRef, "constellation-images", "mpi-edgeless-systems-public", 1), nil
 	default:
-		return "", fmt.Errorf("marketplace images are not supported for csp %s", provider.String())
+		return "", fmt.Errorf("marketplace images are not supported for csp %s", payload.provider.String())
 	}
 }
 
