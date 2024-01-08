@@ -46,7 +46,9 @@ runs:
       shell: bash
       run: |
         bazel run //bazel/release:s3proxy_push
-        echo s3proxyImage=$(cat ./bazel-bin/bazel/release/s3proxy_tag.txt) | tee -a "$GITHUB_OUTPUT"
+        bazel build //bazel/release:s3proxy_tag.txt
+        tagpath=$(bazel cquery --output=files //bazel/release:s3proxy_tag.txt)
+        echo s3proxyImage=$(cat "${tagpath}") | tee -a "$GITHUB_OUTPUT"
 
     - name: Setup s3proxy
       shell: bash
