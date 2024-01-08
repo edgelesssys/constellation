@@ -12,7 +12,7 @@ on:
         type: choice
         options:
           - "azure"
-        default: "azure"
+          - "gcp"
         required: true
       runner:
         description: "Architecture of the runner that executes the CLI"
