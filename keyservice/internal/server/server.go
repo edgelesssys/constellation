@@ -51,8 +51,11 @@ func (s *Server) Run(port string) error {
 
 	server := grpc.NewServer(logger.GetServerUnaryInterceptor(s.log.WithGroup("gRPC")))
 	keyserviceproto.RegisterAPIServer(server, s)
-  // TODO(miampf): Find out a good way to pass an increased Level to slog
-	s.log.WithGroup("gRPC").WithIncreasedLevel(zapcore.WarnLevel).ReplaceGRPCLogger()
+  // TODO(miampf): Find out a good way to pass an increased Level to slog.
+  // A reference implementation for something like that exists
+  // [here](https://pkg.go.dev/log/slog#Handler), however, this would
+  // utilise structs in the logger package again which is not optimal.
+	logger.ReplaceGRPCLogger(s.log.WithGroup("gRPC").WithIncreasedLevel(zapcore.WarnLevel))
 
 	// start the server
 	s.log.Info("Starting Constellation key management service on %s", listener.Addr().String())

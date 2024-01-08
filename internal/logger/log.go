@@ -50,12 +50,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-// TODO(miampf): maybe rewrite as a solution for increasing log level?
-// WithIncreasedLevel returns a logger with increased logging level.
-// func (l *Logger) WithIncreasedLevel(level zapcore.Level) *Logger {
-// 	return &Logger{logger: l.getZapLogger().WithOptions(zap.IncreaseLevel(level)).Sugar()}
-// }
-
 // ReplaceGRPCLogger replaces grpc's internal logger with the given logger.
 func ReplaceGRPCLogger(l *slog.Logger) {
 	replaceGRPCLogger(l)
