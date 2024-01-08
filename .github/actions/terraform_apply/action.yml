@@ -83,6 +83,7 @@ runs:
           measurement_salt                   = random_bytes.measurement_salt.hex
           out_of_cluster_endpoint            = "$(yq '.infrastructure.clusterEndpoint' constellation-state.yaml)"
           in_cluster_endpoint                = "$(yq '.infrastructure.inClusterEndpoint' constellation-state.yaml)"
+          kubernetes_version                 = "$(yq '.kubernetesVersion' constellation-conf.yaml)"
           azure = {
             count = "$(yq '.provider | keys | .[0]' constellation-conf.yaml)" == "azure" ? 1 : 0
             tenant_id                   = "$(yq '.provider.azure.tenant' constellation-conf.yaml)"
