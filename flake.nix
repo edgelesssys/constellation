@@ -73,7 +73,7 @@
 
       packages.awscli2 = pkgsUnstable.awscli2;
 
-      packages.bazel_6 = pkgsUnstable.bazel_6;
+      packages.bazel_7 = pkgsUnstable.bazel_7;
 
       packages.createrepo_c = pkgsUnstable.createrepo_c;
 
