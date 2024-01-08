@@ -41,119 +41,20 @@ package logger
 import (
 	"context"
 	"fmt"
-	"io"
 	"log/slog"
-	"os"
 	"runtime"
 	"testing"
 	"time"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest"
 	"google.golang.org/grpc"
 )
 
-// LogType indicates the output encoding of the log.
-type LogType int
-
-const (
-	// JSONLog encodes logs in JSON format.
-	JSONLog LogType = iota
-	// PlainLog encodes logs as human readable text.
-	PlainLog
-)
-
-// Logger is a wrapper for zap logger.
-// The purpose is to provide a simple interface for logging with sensible defaults.
-type Logger struct {
-	logger *zap.SugaredLogger
-}
-
-// New creates a new Logger.
-// Set name to an empty string to create an unnamed logger.
-func New(logType LogType, logLevel zapcore.Level) *Logger {
-	encoderCfg := zap.NewProductionEncoderConfig()
-	encoderCfg.StacktraceKey = zapcore.OmitKey
-	encoderCfg.EncodeLevel = zapcore.CapitalLevelEncoder
-	encoderCfg.EncodeTime = zapcore.RFC3339TimeEncoder
-
-	var encoder zapcore.Encoder
-	if logType == PlainLog {
-		encoder = zapcore.NewConsoleEncoder(encoderCfg)
-	} else {
-		encoder = zapcore.NewJSONEncoder(encoderCfg)
-	}
-
-	logCore := zapcore.NewCore(encoder, zapcore.Lock(os.Stderr), zap.NewAtomicLevelAt(logLevel))
-
-	logger := zap.New(
-		logCore,
-		zap.AddCaller(),      // add the file and line number of the logging call
-		zap.AddCallerSkip(1), // skip the first caller so that we don't only see this package as the caller
-	)
-
-	return &Logger{logger: logger.Sugar()}
-}
-
-// NewTest creates a logger for unit / integration tests.
-func NewTest(t *testing.T) *Logger {
-	return &Logger{
-		logger: zaptest.NewLogger(t).Sugar().Named(fmt.Sprintf("%q", t.Name())),
-	}
-}
-
-// Debugf logs a message at Debug level.
-// Debug logs are typically voluminous, and contain detailed information on the flow of execution.
-func (l *Logger) Debugf(format string, args ...any) {
-	l.logger.Debugf(format, args...)
-}
-
-// Infof logs a message at Info level.
-// This is the default logging priority and should be used for all normal messages.
-func (l *Logger) Infof(format string, args ...any) {
-	l.logger.Infof(format, args...)
-}
-
-// Warnf logs a message at Warn level.
-// Warn logs are more important than Info, but they don't need human review or necessarily indicate an error.
-func (l *Logger) Warnf(format string, args ...any) {
-	l.logger.Warnf(format, args...)
-}
-
-// Errorf logs a message at Error level.
-// Error logs are high priority and indicate something has gone wrong.
-func (l *Logger) Errorf(format string, args ...any) {
-	l.logger.Errorf(format, args...)
-}
-
-// Fatalf logs the message and then calls os.Exit(1).
-// Use this to exit your program when a fatal error occurs.
-func (l *Logger) Fatalf(format string, args ...any) {
-	l.logger.Fatalf(format, args...)
-}
-
-// Sync flushes any buffered log entries.
-// Applications should take care to call Sync before exiting.
-func (l *Logger) Sync() {
-	_ = l.logger.Sync()
-}
-
+// TODO(miampf): maybe rewrite as a solution for increasing log level?
 // WithIncreasedLevel returns a logger with increased logging level.
-func (l *Logger) WithIncreasedLevel(level zapcore.Level) *Logger {
-	return &Logger{logger: l.getZapLogger().WithOptions(zap.IncreaseLevel(level)).Sugar()}
-}
-
-// With returns a logger with structured context.
-func (l *Logger) With(fields ...any) *Logger {
-	return &Logger{logger: l.logger.With(fields...)}
-}
-
-// Named returns a named logger.
-func (l *Logger) Named(name string) *Logger {
-	return &Logger{logger: l.logger.Named(name)}
-}
+// func (l *Logger) WithIncreasedLevel(level zapcore.Level) *Logger {
+// 	return &Logger{logger: l.getZapLogger().WithOptions(zap.IncreaseLevel(level)).Sugar()}
+// }
 
 // ReplaceGRPCLogger replaces grpc's internal logger with the given logger.
 func ReplaceGRPCLogger(l *slog.Logger) {
@@ -188,14 +89,9 @@ func GetClientStreamInterceptor(l *slog.Logger) grpc.DialOption {
 	)
 }
 
-// getZapLogger returns the underlying zap logger.
-func (l *Logger) getZapLogger() *zap.Logger {
-	return l.logger.Desugar()
-}
-
 func middlewareLogger(l *slog.Logger) logging.Logger {
 	return logging.LoggerFunc(func(ctx context.Context, lvl logging.Level, msg string, fields ...any) {
-		f := make([]zap.Field, 0, len(fields)/2)
+		f := make([]slog.Attr, 0, len(fields)/2)
 
 		for i := 0; i < len(fields); i += 2 {
 			key := fields[i]
@@ -203,13 +99,13 @@ func middlewareLogger(l *slog.Logger) logging.Logger {
 
 			switch v := value.(type) {
 			case string:
-				f = append(f, zap.String(key.(string), v))
+				f = append(f, slog.String(key.(string), v))
 			case int:
-				f = append(f, zap.Int(key.(string), v))
+				f = append(f, slog.Int(key.(string), v))
 			case bool:
-				f = append(f, zap.Bool(key.(string), v))
+				f = append(f, slog.Bool(key.(string), v))
 			default:
-				f = append(f, zap.Any(key.(string), v))
+				f = append(f, slog.Any(key.(string), v))
 			}
 		}
 
