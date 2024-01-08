@@ -130,9 +130,9 @@ func (d *ImageDataSource) ValidateConfig(ctx context.Context, req datasource.Val
 
 	// Marketplace image is only supported for Azure and GCP
 	if data.CSP.Equal(types.StringValue("aws")) && !data.MarketplaceImage.IsNull() {
-		resp.Diagnostics.AddAttributeWarning(
+		resp.Diagnostics.AddAttributeError(
 			path.Root("marketplace_image"),
-			"Marketplace images are currently only supported on Azure and GCP", "When another CSP than Azure or GCP is used, setting 'marketplace_image' has no effect.",
+			"Marketplace images are currently only supported on Azure and GCP", "When another CSP than Azure or GCP is used, marketplace images are unavailable.",
 		)
 	}
 
