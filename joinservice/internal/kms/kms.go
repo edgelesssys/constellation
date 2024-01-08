@@ -12,9 +12,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/keyservice/keyserviceproto"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -37,10 +35,10 @@ func New(log *slog.Logger, endpoint string) Client {
 
 // GetDataKey returns a data encryption key for the given UUID.
 func (c Client) GetDataKey(ctx context.Context, keyID string, length int) ([]byte, error) {
-	log := c.log.With(zap.String("keyID", keyID), zap.String("endpoint", c.endpoint))
+	log := c.log.With(slog.String("keyID", keyID), slog.String("endpoint", c.endpoint))
 	// the KMS does not use aTLS since traffic is only routed through the Constellation cluster
 	// cluster internal connections are considered trustworthy
-	log.Info("Connecting to KMS at %s", c.endpoint)
+	log.Info(fmt.Sprintf("Connecting to KMS at %s", c.endpoint))
 	conn, err := grpc.DialContext(ctx, c.endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
