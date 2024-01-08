@@ -1,5 +1,0 @@
-apiVersion: v2
-name: konnectivity
-description: A chart to deploy konnectivity for Constellation
-type: application
-version: 0.0.0

@@ -15,8 +15,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/mpimage"
-	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
-	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/api"
+	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/api/v1alpha1"
+	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/cloud/api"
 )
 
 // GetScalingGroupImage returns the image URI of the scaling group.
@@ -165,7 +165,7 @@ func imageReferenceFromImage(img string) (*armcompute.ImageReference, error) {
 	}
 
 	// expecting image to not be a marketplace image
-	if strings.HasPrefix(img, "/CommunityGalleries") {
+	if strings.HasPrefix(strings.ToLower(img), "/communitygalleries") {
 		ref.CommunityGalleryImageID = to.Ptr(img)
 	} else {
 		ref.ID = to.Ptr(img)

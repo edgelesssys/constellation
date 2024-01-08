@@ -9,7 +9,7 @@ package client
 import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
-	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/poller"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/poller"
 	"github.com/spf13/afero"
 )
 

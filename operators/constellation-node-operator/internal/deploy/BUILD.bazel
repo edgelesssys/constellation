@@ -7,7 +7,7 @@ go_library(
         "deploy.go",
         "imageinfo.go",
     ],
-    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/deploy",
+    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/deploy",
     visibility = ["//operators/constellation-node-operator:__subpackages__"],
     deps = [
         "//internal/constants",

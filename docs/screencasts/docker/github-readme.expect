@@ -23,13 +23,12 @@ spawn asciinema rec --overwrite /recordings/github-readme.cast
 send "\r"
 expect_prompt
 
-run_command "constellation create"
-expect -re "y\/n"
-send "y"
-send "\r"
+run_command "constellation config generate gcp"
+expect_prompt
+run_command "constellation iam create gcp --update-config --projectID constellation-331613 --serviceAccountID constellation-demo --zone europe-west3-b -y"
 expect_prompt
 
-run_command "constellation apply"
+run_command "constellation apply -y"
 expect_prompt
 
 run_command "export KUBECONFIG=/constellation/constellation-admin.conf"

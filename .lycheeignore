@@ -1,7 +1,0 @@
-http://localhost:
-# TODO: Remove when site fixed their TLS chain (<https://github.com/edgelesssys/constellation/pull/430>)
-https://www.ntia.gov/SBOM
-# Twitter times out on request, maybe someone pulled the plug of this subsystem
-https://twitter.com/EdgelessSystems
-# Azure portal internal link, will return 403 for crawlers, or error when not logged in
-https://portal.azure.com/#view/HubsExtension/BrowseResource/resourceType/Microsoft.Compute%2Fgalleries

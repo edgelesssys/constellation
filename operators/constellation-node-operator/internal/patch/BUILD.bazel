@@ -7,7 +7,7 @@ go_library(
         "annotations.go",
         "labels.go",
     ],
-    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/patch",
+    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/patch",
     visibility = ["//operators/constellation-node-operator:__subpackages__"],
     deps = ["@io_k8s_sigs_controller_runtime//pkg/client"],
 )

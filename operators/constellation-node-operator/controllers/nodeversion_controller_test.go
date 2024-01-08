@@ -20,7 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/version"
 
 	mainconstants "github.com/edgelesssys/constellation/v2/internal/constants"
-	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
+	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/api/v1alpha1"
 )
 
 func TestAnnotateNodes(t *testing.T) {

@@ -3,6 +3,6 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "constants",
     srcs = ["constants.go"],
-    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/constants",
+    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/constants",
     visibility = ["//operators/constellation-node-operator:__subpackages__"],
 )

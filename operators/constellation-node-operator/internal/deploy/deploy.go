@@ -14,9 +14,9 @@ import (
 	"strings"
 
 	mainconstants "github.com/edgelesssys/constellation/v2/internal/constants"
-	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
-	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/api"
-	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/constants"
+	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/api/v1alpha1"
+	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/cloud/api"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/constants"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

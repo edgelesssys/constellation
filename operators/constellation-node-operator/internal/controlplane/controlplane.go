@@ -13,7 +13,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	nodeutil "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/node"
+	nodeutil "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/node"
 )
 
 // ListControlPlaneIPs retrieves a list of VPC IPs for the control plane nodes from kubernetes.

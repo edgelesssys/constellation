@@ -33,7 +33,5 @@ go_library(
 # TODO(malt3): add missing third-party images
 # - logstash
 # - filebeat
-# - konnectivity-agent
-# - konnectivity-server
 # - node-maintenance-operator
 # - gcp-guest-agent

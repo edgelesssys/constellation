@@ -12,7 +12,7 @@ import (
 	"net/http"
 
 	"cloud.google.com/go/compute/apiv1/computepb"
-	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
+	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/api/v1alpha1"
 	"google.golang.org/api/googleapi"
 )
 

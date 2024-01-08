@@ -25,6 +25,7 @@ resource "constellation_cluster" "azure_example" {
   master_secret_salt                 = random_bytes.master_secret_salt.hex
   measurement_salt                   = random_bytes.measurement_salt.hex
   out_of_cluster_endpoint            = "123.123.123.123"
+  kubernetes_version                 = "v1.2.3"
   azure = {
     tenant_id                   = "..."
     subscription_id             = "..."

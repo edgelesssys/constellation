@@ -26,20 +26,20 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/api"
-	awsclient "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/aws/client"
-	azureclient "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/azure/client"
-	cloudfake "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/fake/client"
-	gcpclient "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/gcp/client"
-	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/deploy"
-	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/executor"
-	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/upgrade"
-	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/sgreconciler"
+	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/cloud/api"
+	awsclient "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/cloud/aws/client"
+	azureclient "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/cloud/azure/client"
+	cloudfake "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/cloud/fake/client"
+	gcpclient "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/cloud/gcp/client"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/deploy"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/executor"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/upgrade"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/sgreconciler"
 
 	nodemaintenancev1beta1 "github.com/edgelesssys/constellation/v2/3rdparty/node-maintenance-operator/api/v1beta1"
-	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
-	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/controllers"
-	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/etcd"
+	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/api/v1alpha1"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/controllers"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/etcd"
 	//+kubebuilder:scaffold:imports
 )
 

@@ -19,7 +19,7 @@ go_library(
         "providerid.go",
         "scalinggroup.go",
     ],
-    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/gcp/client",
+    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/cloud/gcp/client",
     visibility = ["//operators/constellation-node-operator:__subpackages__"],
     deps = [
         "//internal/constants",

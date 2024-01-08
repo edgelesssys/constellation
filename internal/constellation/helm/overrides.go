@@ -90,9 +90,6 @@ func extraConstellationServicesValues(
 	extraVals["verification-service"] = map[string]any{
 		"attestationVariant": attestationVariant.String(),
 	}
-	extraVals["konnectivity"] = map[string]any{
-		"loadBalancerIP": output.ClusterEndpoint,
-	}
 
 	extraVals["key-service"] = map[string]any{
 		"masterSecret": base64.StdEncoding.EncodeToString(masterSecret.Key),

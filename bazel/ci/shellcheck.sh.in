@@ -25,15 +25,14 @@ readarray -t <<< "${scriptsStr}"
 scripts=("${MAPFILE[@]}")
 
 excludeDirs=(
+  ".direnv"
   "internal/constellation/helm/charts/cilium"
   "build"
   "docs/node_modules"
   "terraform-provider-constellation/examples"
 )
 
-excludeFiles=(
-  "bazel/bazel-complete.bash"
-)
+excludeFiles=()
 
 echo "The following scripts are excluded by their directory and won't be linted with shellcheck:"
 for exclude in "${excludeDirs[@]}"; do

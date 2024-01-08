@@ -9,7 +9,7 @@ package controllers
 import (
 	"context"
 
-	node "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/node"
+	node "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/node"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -18,7 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	nodemaintenancev1beta1 "github.com/edgelesssys/constellation/v2/3rdparty/node-maintenance-operator/api/v1beta1"
-	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
+	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/api/v1alpha1"
 )
 
 // scalingGroupImageChangedPredicate checks if a scaling group has adopted a new node image for future nodes.

@@ -103,10 +103,11 @@ type ClusterResourceModel struct {
 }
 
 // networkConfigAttribute is the network config attribute's data model.
+// needs basetypes because the struct might be used in ValidateConfig where these values might still be unknown. A go string type cannot handle unknown values.
 type networkConfigAttribute struct {
-	IPCidrNode    string `tfsdk:"ip_cidr_node"`
-	IPCidrPod     string `tfsdk:"ip_cidr_pod"`
-	IPCidrService string `tfsdk:"ip_cidr_service"`
+	IPCidrNode    basetypes.StringValue `tfsdk:"ip_cidr_node"`
+	IPCidrPod     basetypes.StringValue `tfsdk:"ip_cidr_pod"`
+	IPCidrService basetypes.StringValue `tfsdk:"ip_cidr_service"`
 }
 
 // gcpAttribute is the gcp attribute's data model.
@@ -159,14 +160,14 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 			},
 			"image": newImageAttributeSchema(attributeInput),
 			"kubernetes_version": schema.StringAttribute{
-				MarkdownDescription: fmt.Sprintf("The Kubernetes version to use for the cluster. When not set, version %s is used. The supported versions are %s.", versions.Default, versions.SupportedK8sVersions()),
-				Description:         fmt.Sprintf("The Kubernetes version to use for the cluster. When not set, version %s is used. The supported versions are %s.", versions.Default, versions.SupportedK8sVersions()),
-				Optional:            true,
+				MarkdownDescription: fmt.Sprintf("The Kubernetes version to use for the cluster. The supported versions are %s.", versions.SupportedK8sVersions()),
+				Description:         fmt.Sprintf("The Kubernetes version to use for the cluster. The supported versions are %s.", versions.SupportedK8sVersions()),
+				Required:            true,
 			},
 			"constellation_microservice_version": schema.StringAttribute{
-				MarkdownDescription: "The version of Constellation's microservices used within the cluster. When not set, the provider version is used.",
-				Description:         "The version of Constellation's microservices used within the cluster. When not set, the provider version is used.",
-				Optional:            true,
+				MarkdownDescription: "The version of Constellation's microservices used within the cluster.",
+				Description:         "The version of Constellation's microservices used within the cluster.",
+				Required:            true,
 			},
 			"out_of_cluster_endpoint": schema.StringAttribute{
 				MarkdownDescription: "The endpoint of the cluster. Typically, this is the public IP of a loadbalancer.",
@@ -408,26 +409,6 @@ func (r *ClusterResource) ValidateConfig(ctx context.Context, req resource.Valid
 			"GCP configuration not allowed", "When csp is not set to 'gcp', setting the 'gcp' configuration has no effect.",
 		)
 	}
-
-	networkCfg, diags := r.getNetworkConfig(ctx, &data)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	// Pod IP CIDR is required for GCP
-	if strings.EqualFold(data.CSP.ValueString(), cloudprovider.GCP.String()) && networkCfg.IPCidrPod == "" {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("network_config").AtName("ip_cidr_pod"),
-			"Pod IP CIDR missing", "When csp is set to 'gcp', 'ip_cidr_pod' must be set.",
-		)
-	}
-	// Pod IP CIDR should not be set for other CSPs
-	if !strings.EqualFold(data.CSP.ValueString(), cloudprovider.GCP.String()) && networkCfg.IPCidrPod != "" {
-		resp.Diagnostics.AddAttributeWarning(
-			path.Root("network_config").AtName("ip_cidr_pod"),
-			"Pod IP CIDR not allowed", "When csp is not set to 'gcp', setting 'ip_cidr_pod' has no effect.",
-		)
-	}
 }
 
 // Configure configures the resource.
@@ -489,13 +470,13 @@ func (r *ClusterResource) ModifyPlan(ctx context.Context, req resource.ModifyPla
 		}
 
 		// Warn the user about possibly destructive changes in case microservice changes are to be applied.
-		currVer, diags := r.getMicroserviceVersion(ctx, &currentState)
+		currVer, diags := r.getMicroserviceVersion(&currentState)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 
-		plannedVer, diags := r.getMicroserviceVersion(ctx, &plannedState)
+		plannedVer, diags := r.getMicroserviceVersion(&plannedState)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -660,6 +641,29 @@ func (r *ClusterResource) ImportState(ctx context.Context, req resource.ImportSt
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("master_secret_salt"), masterSecretSalt)...)
 }
 
+func (r *ClusterResource) validateGCPNetworkConfig(ctx context.Context, data *ClusterResourceModel) diag.Diagnostics {
+	networkCfg, diags := r.getNetworkConfig(ctx, data)
+	if diags.HasError() {
+		return diags
+	}
+
+	// Pod IP CIDR is required for GCP
+	if strings.EqualFold(data.CSP.ValueString(), cloudprovider.GCP.String()) && networkCfg.IPCidrPod.ValueString() == "" {
+		diags.AddAttributeError(
+			path.Root("network_config").AtName("ip_cidr_pod"),
+			"Pod IP CIDR missing", "When csp is set to 'gcp', 'ip_cidr_pod' must be set.",
+		)
+	}
+	// Pod IP CIDR should not be set for other CSPs
+	if !strings.EqualFold(data.CSP.ValueString(), cloudprovider.GCP.String()) && networkCfg.IPCidrPod.ValueString() != "" {
+		diags.AddAttributeWarning(
+			path.Root("network_config").AtName("ip_cidr_pod"),
+			"Pod IP CIDR not allowed", "When csp is not set to 'gcp', setting 'ip_cidr_pod' has no effect.",
+		)
+	}
+	return diags
+}
+
 // apply applies changes to a cluster. It can be used for both creating and updating a cluster.
 // This implements the core part of the Create and Update methods.
 func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel, skipInitRPC, skipNodeUpgrade bool) diag.Diagnostics {
@@ -667,6 +671,11 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 
 	// Parse and convert values from the Terraform state
 	// to formats the Constellation library can work with.
+	convertDiags := r.validateGCPNetworkConfig(ctx, data)
+	diags.Append(convertDiags...)
+	if diags.HasError() {
+		return diags
+	}
 
 	csp := cloudprovider.FromString(data.CSP.ValueString())
 
@@ -709,14 +718,14 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 	}
 
 	// parse Constellation microservice version
-	microserviceVersion, convertDiags := r.getMicroserviceVersion(ctx, data)
+	microserviceVersion, convertDiags := r.getMicroserviceVersion(data)
 	diags.Append(convertDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
 	// parse Kubernetes version
-	k8sVersion, getDiags := r.getK8sVersion(ctx, data)
+	k8sVersion, getDiags := r.getK8sVersion(data)
 	diags.Append(getDiags...)
 	if diags.HasError() {
 		return diags
@@ -809,7 +818,7 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 		InitSecret:        []byte(data.InitSecret.ValueString()),
 		APIServerCertSANs: apiServerCertSANs,
 		Name:              data.Name.ValueString(),
-		IPCidrNode:        networkCfg.IPCidrNode,
+		IPCidrNode:        networkCfg.IPCidrNode.ValueString(),
 	})
 	switch csp {
 	case cloudprovider.Azure:
@@ -824,7 +833,7 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 	case cloudprovider.GCP:
 		stateFile.Infrastructure.GCP = &state.GCP{
 			ProjectID: gcpConfig.ProjectID,
-			IPCidrPod: networkCfg.IPCidrPod,
+			IPCidrPod: networkCfg.IPCidrPod.ValueString(),
 		}
 	}
 
@@ -992,7 +1001,7 @@ func (r *ClusterResource) runInitRPC(ctx context.Context, applier *constellation
 			MeasurementSalt: payload.measurementSalt,
 			K8sVersion:      payload.k8sVersion,
 			ConformanceMode: false, // Conformance mode does't need to be configurable through the TF provider for now.
-			ServiceCIDR:     payload.networkCfg.IPCidrService,
+			ServiceCIDR:     payload.networkCfg.IPCidrService.ValueString(),
 		})
 	if err != nil {
 		var nonRetriable *constellation.NonRetriableInitError
@@ -1154,44 +1163,30 @@ func (r *ClusterResource) convertSecrets(data ClusterResourceModel) (secretInput
 
 // getK8sVersion returns the Kubernetes version from the Terraform state if set, and the default
 // version otherwise.
-func (r *ClusterResource) getK8sVersion(ctx context.Context, data *ClusterResourceModel) (versions.ValidK8sVersion, diag.Diagnostics) {
+func (r *ClusterResource) getK8sVersion(data *ClusterResourceModel) (versions.ValidK8sVersion, diag.Diagnostics) {
 	diags := diag.Diagnostics{}
-	var k8sVersion versions.ValidK8sVersion
-	var err error
-	if data.KubernetesVersion.ValueString() != "" {
-		k8sVersion, err = versions.NewValidK8sVersion(data.KubernetesVersion.ValueString(), true)
-		if err != nil {
-			diags.AddAttributeError(
-				path.Root("kubernetes_vesion"),
-				"Invalid Kubernetes version",
-				fmt.Sprintf("Parsing Kubernetes version: %s", err))
-			return "", diags
-		}
-	} else {
-		tflog.Info(ctx, fmt.Sprintf("No Kubernetes version specified. Using default version %s.", versions.Default))
-		k8sVersion = versions.Default
+	k8sVersion, err := versions.NewValidK8sVersion(data.KubernetesVersion.ValueString(), true)
+	if err != nil {
+		diags.AddAttributeError(
+			path.Root("kubernetes_version"),
+			"Invalid Kubernetes version",
+			fmt.Sprintf("Parsing Kubernetes version: %s", err))
+		return "", diags
 	}
 	return k8sVersion, diags
 }
 
 // getK8sVersion returns the Microservice version from the Terraform state if set, and the default
 // version otherwise.
-func (r *ClusterResource) getMicroserviceVersion(ctx context.Context, data *ClusterResourceModel) (semver.Semver, diag.Diagnostics) {
+func (r *ClusterResource) getMicroserviceVersion(data *ClusterResourceModel) (semver.Semver, diag.Diagnostics) {
 	diags := diag.Diagnostics{}
-	var ver semver.Semver
-	var err error
-	if data.MicroserviceVersion.ValueString() != "" {
-		ver, err = semver.New(data.MicroserviceVersion.ValueString())
-		if err != nil {
-			diags.AddAttributeError(
-				path.Root("constellation_microservice_version"),
-				"Invalid microservice version",
-				fmt.Sprintf("Parsing microservice version: %s", err))
-			return semver.Semver{}, diags
-		}
-	} else {
-		tflog.Info(ctx, fmt.Sprintf("No Microservice version specified. Using default version %s.", r.providerData.Version))
-		ver = r.providerData.Version
+	ver, err := semver.New(data.MicroserviceVersion.ValueString())
+	if err != nil {
+		diags.AddAttributeError(
+			path.Root("constellation_microservice_version"),
+			"Invalid microservice version",
+			fmt.Sprintf("Parsing microservice version: %s", err))
+		return semver.Semver{}, diags
 	}
 	if err := config.ValidateMicroserviceVersion(r.providerData.Version, ver); err != nil {
 		diags.AddAttributeError(

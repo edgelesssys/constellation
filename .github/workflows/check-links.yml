@@ -27,7 +27,5 @@ jobs:
       - name: Link Checker
         uses: lycheeverse/lychee-action@ec3ed119d4f44ad2673a7232460dc7dff59d2421 # v1.8.0
         with:
-          args: "--verbose --no-progress --max-concurrency 5 --exclude-path './internal/constellation/helm/charts/cilium' './**/*.md' './**/*.html'"
+          args: "--config ./.lychee.toml './**/*.md' './**/*.html'"
           fail: true
-        env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}

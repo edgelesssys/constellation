@@ -11,7 +11,7 @@ go_library(
         "pendingnode.go",
         "scalinggroup.go",
     ],
-    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/aws/client",
+    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/cloud/aws/client",
     visibility = ["//operators/constellation-node-operator:__subpackages__"],
     deps = [
         "//internal/constants",

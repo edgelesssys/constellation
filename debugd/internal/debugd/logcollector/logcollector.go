@@ -116,23 +116,6 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 				return
 			}
 
-			logger.Infof("Getting metricbeat config template from image %s", versions.MetricbeatImage)
-			tmpl, err = getTemplate(ctx, logger, versions.MetricbeatImage, "/run/metricbeat/templates/metricbeat.yml", "/run/metricbeat")
-			if err != nil {
-				logger.Errorf("Getting metricbeat config template: %v", err)
-				return
-			}
-			metricbeatConf := metricbeatConfInput{
-				LogstashHost:         "localhost:5044",
-				Port:                 5066,
-				CollectSystemMetrics: true,
-				AddCloudMetadata:     true,
-			}
-			if err := writeTemplate("/run/metricbeat/metricbeat.yml", tmpl, metricbeatConf); err != nil {
-				logger.Errorf("Writing metricbeat pipeline: %v", err)
-				return
-			}
-
 			logger.Infof("Starting log collection pod")
 			if err := startPod(ctx, logger); err != nil {
 				logger.Errorf("Starting log collection: %v", err)
@@ -243,28 +226,6 @@ func startPod(ctx context.Context, logger *logger.Logger) error {
 		return fmt.Errorf("failed to run filebeat: %w", err)
 	}
 
-	// start metricbeat container
-	metricbeatLog := newCmdLogger(logger.Named("metricbeat"))
-	runMetricbeatArgs := []string{
-		"run",
-		"--rm",
-		"--name=metricbeat",
-		"--pod=logcollection",
-		"--privileged",
-		"--log-driver=none",
-		"--volume=/proc:/hostfs/proc:ro",
-		"--volume=/sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro",
-		"--volume=/run/metricbeat/metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro",
-		versions.MetricbeatImage,
-	}
-	runMetricbeatCmd := exec.CommandContext(ctx, "podman", runMetricbeatArgs...)
-	logger.Infof("Run metricbeat command: %v", runMetricbeatCmd.String())
-	runMetricbeatCmd.Stdout = metricbeatLog
-	runMetricbeatCmd.Stderr = metricbeatLog
-	if err := runMetricbeatCmd.Start(); err != nil {
-		return fmt.Errorf("failed to run metricbeat: %w", err)
-	}
-
 	return nil
 }
 
@@ -278,14 +239,6 @@ type logstashConfInput struct {
 type filebeatConfInput struct {
 	LogstashHost     string
 	AddCloudMetadata bool
-}
-
-type metricbeatConfInput struct {
-	Port                 int
-	LogstashHost         string
-	CollectEtcdMetrics   bool
-	CollectSystemMetrics bool
-	AddCloudMetadata     bool
 }
 
 func writeTemplate(path string, templ *template.Template, in any) error {

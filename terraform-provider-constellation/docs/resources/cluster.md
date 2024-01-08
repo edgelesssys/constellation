@@ -40,6 +40,7 @@ resource "constellation_cluster" "azure_example" {
   master_secret_salt                 = random_bytes.master_secret_salt.hex
   measurement_salt                   = random_bytes.measurement_salt.hex
   out_of_cluster_endpoint            = "123.123.123.123"
+  kubernetes_version                 = "v1.2.3"
   azure = {
     tenant_id                   = "..."
     subscription_id             = "..."
@@ -63,10 +64,12 @@ resource "constellation_cluster" "azure_example" {
 ### Required
 
 - `attestation` (Attributes) Attestation comprises the measurements and SEV-SNP specific parameters. The output of the [constellation_attestation](../data-sources/attestation.md) data source provides sensible defaults. (see [below for nested schema](#nestedatt--attestation))
+- `constellation_microservice_version` (String) The version of Constellation's microservices used within the cluster.
 - `csp` (String) CSP (Cloud Service Provider) to use. (e.g. `azure`)
 See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview/clouds) that Constellation supports.
 - `image` (Attributes) Constellation OS Image to use on the nodes. (see [below for nested schema](#nestedatt--image))
 - `init_secret` (String) Secret used for initialization of the cluster.
+- `kubernetes_version` (String) The Kubernetes version to use for the cluster. The supported versions are [v1.26.12 v1.27.9 v1.28.5].
 - `master_secret` (String) Hex-encoded 32-byte master secret for the cluster.
 - `master_secret_salt` (String) Hex-encoded 32-byte master secret salt for the cluster.
 - `measurement_salt` (String) Hex-encoded 32-byte measurement salt for the cluster.
@@ -79,11 +82,9 @@ See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview
 
 - `api_server_cert_sans` (List of String) List of Subject Alternative Names (SANs) for the API server certificate. Usually, this will be the out-of-cluster endpoint and the in-cluster endpoint, if existing.
 - `azure` (Attributes) Azure-specific configuration. (see [below for nested schema](#nestedatt--azure))
-- `constellation_microservice_version` (String) The version of Constellation's microservices used within the cluster. When not set, the provider version is used.
 - `extra_microservices` (Attributes) Extra microservice settings. (see [below for nested schema](#nestedatt--extra_microservices))
 - `gcp` (Attributes) GCP-specific configuration. (see [below for nested schema](#nestedatt--gcp))
 - `in_cluster_endpoint` (String) The endpoint of the cluster. When not set, the out-of-cluster endpoint is used.
-- `kubernetes_version` (String) The Kubernetes version to use for the cluster. When not set, version v1.27.9 is used. The supported versions are [v1.26.12 v1.27.9 v1.28.5].
 - `license_id` (String) Constellation license ID. When not set, the community license is used.
 
 ### Read-Only
