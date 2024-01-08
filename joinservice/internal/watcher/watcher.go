@@ -11,9 +11,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/fsnotify/fsnotify"
-	"go.uber.org/zap"
 )
 
 // FileWatcher watches for changes to the file and calls the waiter's Update method.
