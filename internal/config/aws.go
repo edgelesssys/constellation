@@ -16,6 +16,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 )
 
+var _ sevsnpMarshaller = &AWSSEVSNP{}
+
 // DefaultForAWSSEVSNP provides a valid default configuration for AWS SEV-SNP attestation.
 func DefaultForAWSSEVSNP() *AWSSEVSNP {
 	return &AWSSEVSNP{
@@ -59,6 +61,15 @@ func (c AWSSEVSNP) EqualTo(other AttestationCfg) (bool, error) {
 	signingKeyEqual := bytes.Equal(c.AMDSigningKey.Raw, otherCfg.AMDSigningKey.Raw)
 
 	return measurementsEqual && bootloaderEqual && teeEqual && snpEqual && microcodeEqual && rootKeyEqual && signingKeyEqual, nil
+}
+
+func (c *AWSSEVSNP) getToMarshallLatestWithResolvedVersions() AttestationCfg {
+	cp := *c
+	cp.BootloaderVersion.WantLatest = false
+	cp.TEEVersion.WantLatest = false
+	cp.SNPVersion.WantLatest = false
+	cp.MicrocodeVersion.WantLatest = false
+	return &cp
 }
 
 // FetchAndSetLatestVersionNumbers fetches the latest version numbers from the configapi and sets them.

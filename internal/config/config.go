@@ -629,15 +629,13 @@ func (c *Config) GetProvider() cloudprovider.Provider {
 // GetAttestationConfig returns the configured attestation config.
 func (c *Config) GetAttestationConfig() AttestationCfg {
 	if c.Attestation.AWSSEVSNP != nil {
-		return c.Attestation.AWSSEVSNP
+		return c.Attestation.AWSSEVSNP.getToMarshallLatestWithResolvedVersions()
 	}
 	if c.Attestation.AWSNitroTPM != nil {
 		return c.Attestation.AWSNitroTPM
 	}
 	if c.Attestation.AzureSEVSNP != nil {
-		cp := *c.Attestation.AzureSEVSNP
-		cp.setWantLatestToFalse()
-		return &cp
+		return c.Attestation.AzureSEVSNP.getToMarshallLatestWithResolvedVersions()
 	}
 	if c.Attestation.AzureTrustedLaunch != nil {
 		return c.Attestation.AzureTrustedLaunch
@@ -1114,17 +1112,15 @@ type AzureSEVSNP struct {
 	AMDSigningKey Certificate `json:"amdSigningKey,omitempty" yaml:"amdSigningKey,omitempty" validate:"len=0"`
 }
 
-// setWantLatestToFalse sets the WantLatest field to false for all versions in order to unmarshal the numerical versions instead of the string "latest".
-func (c *AzureSEVSNP) setWantLatestToFalse() {
-	c.BootloaderVersion.WantLatest = false
-	c.TEEVersion.WantLatest = false
-	c.SNPVersion.WantLatest = false
-	c.MicrocodeVersion.WantLatest = false
-}
-
 // AzureTrustedLaunch is the configuration for Azure Trusted Launch attestation.
 type AzureTrustedLaunch struct {
 	// description: |
 	//   Expected TPM measurements.
 	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
+}
+
+// sevsnpMarshaller is used to marshall "latest" versions with resolved version numbers.
+type sevsnpMarshaller interface {
+	// getToMarshallLatestWithResolvedVersions brings the attestation config into a state where marshalling uses the numerical version numbers for "latest" versions.
+	getToMarshallLatestWithResolvedVersions() AttestationCfg
 }

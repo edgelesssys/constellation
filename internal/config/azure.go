@@ -17,6 +17,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 )
 
+var _ sevsnpMarshaller = &AzureSEVSNP{}
+
 // DefaultForAzureSEVSNP returns the default configuration for Azure SEV-SNP attestation.
 // Version numbers have placeholder values and the latest available values can be fetched using [AzureSEVSNP.FetchAndSetLatestVersionNumbers].
 func DefaultForAzureSEVSNP() *AzureSEVSNP {
@@ -96,6 +98,15 @@ func (c *AzureSEVSNP) mergeWithLatestVersion(latest attestationconfigapi.SEVSNPV
 	if c.MicrocodeVersion.WantLatest {
 		c.MicrocodeVersion.Value = latest.Microcode
 	}
+}
+
+func (c *AzureSEVSNP) getToMarshallLatestWithResolvedVersions() AttestationCfg {
+	cp := *c
+	cp.BootloaderVersion.WantLatest = false
+	cp.TEEVersion.WantLatest = false
+	cp.SNPVersion.WantLatest = false
+	cp.MicrocodeVersion.WantLatest = false
+	return &cp
 }
 
 // GetVariant returns azure-trusted-launch as the variant.
