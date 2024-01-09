@@ -8,7 +8,7 @@ echo "Pulling cert-manager Helm chart..."
 version="1.12.6"
 
 function cleanup {
-  rm -r "charts/cert-manager/README.md" "charts/cert-manager-v${version}.tgz"
+  rm -rf "charts/cert-manager/README.md" "charts/cert-manager-v${version}.tgz"
 }
 
 trap cleanup EXIT

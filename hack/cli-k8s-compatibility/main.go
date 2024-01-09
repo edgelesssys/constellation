@@ -12,6 +12,7 @@ import (
 	"flag"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"go.uber.org/zap/zapcore"
@@ -49,7 +50,7 @@ func main() {
 		cliInfo.Kubernetes = append(cliInfo.Kubernetes, v.ClusterVersion)
 	}
 
-	c, cclose, err := versionsapi.NewClient(ctx, "eu-central-1", "cdn-constellation-backend", "E1H77EZTHC3NE4", false, log)
+	c, cclose, err := versionsapi.NewClient(ctx, "eu-central-1", "cdn-constellation-backend", constants.CDNDefaultDistributionID, false, log)
 	if err != nil {
 		log.Fatalf("creating s3 client: %w", err)
 	}

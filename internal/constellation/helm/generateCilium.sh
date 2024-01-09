@@ -7,7 +7,7 @@ shopt -s inherit_errexit
 echo "Pulling Cilium Helm chart..."
 
 function cleanup {
-  rm -r "${ciliumTmpDir}"
+  rm -rf -- "${ciliumTmpDir}"
 }
 
 trap cleanup EXIT

@@ -94,7 +94,7 @@ func runList(cmd *cobra.Command, _ []string) (retErr error) {
 		for _, v := range patchVersions {
 			vers = append(vers, v.Version())
 		}
-		raw, err := json.Marshal(vers)
+		raw, err := json.MarshalIndent(vers, "", "  ")
 		if err != nil {
 			return fmt.Errorf("marshaling versions: %w", err)
 		}
