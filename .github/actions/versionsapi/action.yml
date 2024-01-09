@@ -54,6 +54,7 @@ runs:
   steps:
     - name: Get versionsapi binary
       shell: bash
+      # TODO: This should probably be `bazel run`.
       run: |
         containerID=$(docker create "ghcr.io/edgelesssys/constellation/versionsapi-ci-cli:latest")
         docker cp ${containerID}:/versionsapi .
