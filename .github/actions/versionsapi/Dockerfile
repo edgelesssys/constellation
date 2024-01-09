@@ -4,8 +4,6 @@ FROM golang:1.21.5@sha256:1a9d253b11048b1c76b690b0c09d78d200652e4e913d5d1dcc8eb8
 WORKDIR /workspace
 COPY go.mod go.mod
 COPY go.sum go.sum
-COPY operators/constellation-node-operator/api/go.mod ./operators/constellation-node-operator/api/go.mod
-COPY operators/constellation-node-operator/api/go.sum ./operators/constellation-node-operator/api/go.sum
 # cache deps before building and copying source so that we don't need to re-download as much
 # and so that source changes don't invalidate our downloaded layer
 RUN go mod download

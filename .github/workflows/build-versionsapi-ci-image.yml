@@ -9,6 +9,7 @@ on:
       - "internal/api/versionsapi/**"
       - ".github/workflows/build-versionsapi-ci-image.yml"
       - ".github/actions/versionsapi/**"
+      - "go.mod"
 
 jobs:
   build-versionsapi-ci-cli:
