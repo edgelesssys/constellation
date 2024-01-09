@@ -65,7 +65,7 @@ func cleanUpBucket(ctx context.Context, require *require.Assertions, bucketID, a
 	require.NoError(err)
 	var objects []string
 	var i int32
-	for i = 0; i < output.KeyCount; i++ {
+	for i = 0; i < *output.KeyCount; i++ {
 		objects = append(objects, *output.Contents[i].Key)
 	}
 	// Delete all objects of the bucket
