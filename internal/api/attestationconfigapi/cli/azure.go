@@ -46,7 +46,7 @@ func deleteRecursive(ctx context.Context, path string, client *staticupload.Clie
 			Bucket: aws.String(cfg.bucket),
 			Delete: &s3types.Delete{
 				Objects: objIDs,
-				Quiet:   true,
+				Quiet:   toPtr(true),
 			},
 		})
 		if err != nil {
@@ -54,4 +54,8 @@ func deleteRecursive(ctx context.Context, path string, client *staticupload.Clie
 		}
 	}
 	return nil
+}
+
+func toPtr[T any](v T) *T {
+	return &v
 }
