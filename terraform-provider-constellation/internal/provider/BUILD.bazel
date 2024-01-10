@@ -92,6 +92,7 @@ go_test(
         "//internal/attestation/idkeydigest",
         "//internal/attestation/measurements",
         "//internal/attestation/variant",
+        "//internal/compatibility",
         "//internal/config",
         "//internal/constants",
         "//internal/semver",
