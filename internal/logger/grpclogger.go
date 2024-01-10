@@ -93,11 +93,6 @@ func (l *grpcLogger) Errorf(format string, args ...interface{}) {
   _ = l.logger.Handler().Handle(context.Background(), r)
 }
 
-// TODO(miampf): Find a way to log on a fatal level, not an error level?
-// A ReplaceAttr function could be implemented in the logger package, however
-// this would increase it's complexity again (look [here](https://pkg.go.dev/log/slog#HandlerOptions)
-// for a reference implementation.
-
 func (l *grpcLogger) Fatal(args ...interface{}) {
 	var pcs [1]uintptr
   runtime.Callers(2, pcs[:])
