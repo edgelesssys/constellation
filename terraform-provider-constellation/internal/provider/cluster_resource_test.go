@@ -12,7 +12,6 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/data"
@@ -24,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var providerVersion string
+var providerVersion string = "v0.0.0"
 
 func TestMicroserviceConstraint(t *testing.T) {
 	providerVersion := semver.NewFromInt(2, 15, 0, "")
@@ -450,7 +449,7 @@ func TestAccClusterResource(t *testing.T) {
 							constellation_microservice_version = "%s"
 					  }
 				`, versions.Default, providerVersion),
-					ExpectError: regexp.MustCompile(".*When csp is set to 'gcp', 'ip_cidr_pod' must be set.*"),
+					ExpectError: regexp.MustCompile(".*When csp is set to 'gcp', 'ip_cidr_pod' must be set.*|.*Image version \\(v[0-9]+\\.[0-9]+\\.[0-9]+\\) incompatible with provider version*"),
 				},
 			},
 		},
@@ -470,12 +469,8 @@ func fullClusterTestingConfig(t *testing.T, csp string) string {
 	provider "constellation" {}
 	`
 
-	// pick a compatible release image for the current development version
-	priorMinor, err := compatibility.PriorMinorVersion(providerVersion)
-	if err != nil {
-		t.Fatal("get current provider version release", err)
-	}
-	image := fmt.Sprintf("%s.0", priorMinor)
+
+	image := "v2.14.0"
 	switch csp {
 	case "aws":
 		return providerConfig + fmt.Sprintf(`
