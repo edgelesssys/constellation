@@ -13,11 +13,9 @@ import (
   "log/slog"
   "os"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
-	"go.uber.org/zap/zapcore"
+  "github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
+  "github.com/edgelesssys/constellation/v2/internal/constants"
+  "github.com/edgelesssys/constellation/v2/internal/versions"
 )
 
 var (
@@ -55,15 +53,17 @@ func main() {
     cliInfo.Kubernetes = append(cliInfo.Kubernetes, v.ClusterVersion)
   }
 
-	c, cclose, err := versionsapi.NewClient(ctx, "eu-central-1", "cdn-constellation-backend", constants.CDNDefaultDistributionID, false, log)
-	if err != nil {
-		log.Fatalf("creating s3 client: %w", err)
-	}
-	defer func() {
-		if err := cclose(ctx); err != nil {
-			log.Fatalf("invalidating cache: %w", err)
-		}
-	}()
+  c, cclose, err := versionsapi.NewClient(ctx, "eu-central-1", "cdn-constellation-backend", constants.CDNDefaultDistributionID, false, log)
+  if err != nil {
+    log.Error("creating s3 client: %w", err)
+    os.Exit(1)
+  }
+  defer func() {
+    if err := cclose(ctx); err != nil {
+      log.Error("invalidating cache: %w", err)
+      os.Exit(1)
+    }
+  }()
 
   if err := c.UpdateCLIInfo(ctx, cliInfo); err != nil {
     log.Error("updating cli info: %w", err)

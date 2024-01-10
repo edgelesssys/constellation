@@ -51,7 +51,7 @@ func main() {
     logger.ReplaceGRPCLogger(log.WithGroup("gRPC"))
   } else {
     //TODO(miampf): Find a good way to dynamically increase slog logLevel
-    logger.ReplaceGRPCLogger(log.WithGroup("gRPC").WithIncreasedLevel(slog.LevelWarn))
+    logger.ReplaceGRPCLogger(log.WithGroup("gRPC")).WithIncreasedLevel(slog.LevelWarn)
   }
 
   ctx, cancel := context.WithCancel(context.Background())
@@ -66,12 +66,12 @@ func main() {
 
   attestVariant, err := variant.FromString(os.Getenv(constants.AttestationVariant))
   if err != nil {
-    log.With(slog.Any("error", err).Error("Failed to parse attestation variant")
+    log.With(slog.Any("error", err)).Error("Failed to parse attestation variant")
     os.Exit(1)
   }
   issuer, err := choose.Issuer(attestVariant, log)
   if err != nil {
-    log.With(slog.Any("error", err).Error("Failed to select issuer")
+    log.With(slog.Any("error", err)).Error("Failed to select issuer")
     os.Exit(1)
   }
 
@@ -79,7 +79,7 @@ func main() {
   case cloudprovider.AWS:
     metadata, err := awscloud.New(ctx)
     if err != nil {
-      log.With(slog.Any("error", err).Error("Failed to set up AWS metadata API")
+      log.With(slog.Any("error", err)).Error("Failed to set up AWS metadata API")
       os.Exit(1)
     }
     metadataAPI = metadata
@@ -94,7 +94,7 @@ func main() {
   case cloudprovider.GCP:
     metadata, err := gcpcloud.New(ctx)
     if err != nil {
-      log.With(slog.Any("error", err).Error("Failed to create GCP metadata client")
+      log.With(slog.Any("error", err)).Error("Failed to create GCP metadata client")
       os.Exit(1)
     }
     defer metadata.Close()
