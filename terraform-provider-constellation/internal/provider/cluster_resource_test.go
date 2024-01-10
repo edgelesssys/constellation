@@ -10,9 +10,10 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strconv"
+	"strings"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/data"
@@ -471,7 +472,7 @@ func fullClusterTestingConfig(t *testing.T, csp string) string {
 	`
 
 	// pick a compatible release image for the current development version
-	priorMinor, err := compatibility.PriorMinorVersion(providerVersion)
+	priorMinor, err := priorMinorVersion(providerVersion)
 	if err != nil {
 		t.Fatal("get current provider version release", err)
 	}
@@ -521,4 +522,15 @@ func fullClusterTestingConfig(t *testing.T, csp string) string {
 		t.Fatal("unknown csp")
 		return ""
 	}
+}
+
+// priorMinorVersion returns the prior minor version for a given canonical semver.
+// The returned format is vMAJOR.MINOR.
+func priorMinorVersion(version string) (string, error) {
+	split := strings.Split(version, ".")
+	num, err := strconv.Atoi(split[1])
+	if err != nil {
+		return "", nil
+	}
+	return fmt.Sprintf("v%s.%d", split[0], num-1), nil
 }
