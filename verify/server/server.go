@@ -21,7 +21,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/verify/verifyproto"
-	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"
@@ -57,8 +56,7 @@ func (s *Server) Run(httpListener, grpcListener net.Listener) error {
 	var wg sync.WaitGroup
 	var once sync.Once
 
-  //TODO(miampf): Find a good way to dynamically increase/change log level
-	s.log.WithIncreasedLevel(zapcore.WarnLevel).Named("grpc").ReplaceGRPCLogger()
+	logger.ReplaceGRPCLogger(slog.New(logger.NewLevelHandler(slog.LevelWarn, s.log.Handler()).WithGroup("grpc")))
 	grpcServer := grpc.NewServer(
 		logger.GetServerUnaryInterceptor(s.log.WithGroup("gRPC")),
 		grpc.KeepaliveParams(keepalive.ServerParameters{Time: 15 * time.Second}),
@@ -74,7 +72,7 @@ func (s *Server) Run(httpListener, grpcListener net.Listener) error {
 		defer wg.Done()
 		defer grpcServer.GracefulStop()
 
-		s.log.Info("Starting HTTP server on %s", httpListener.Addr().String())
+		s.log.Info(fmt.Sprintf("Starting HTTP server on %s", httpListener.Addr().String()))
 		httpErr := httpServer.Serve(httpListener)
 		if httpErr != nil && httpErr != http.ErrServerClosed {
 			once.Do(func() { err = httpErr })
@@ -86,7 +84,7 @@ func (s *Server) Run(httpListener, grpcListener net.Listener) error {
 		defer wg.Done()
 		defer func() { _ = httpServer.Shutdown(context.Background()) }()
 
-		s.log.Info("Starting gRPC server on %s", grpcListener.Addr().String())
+		s.log.Info(fmt.Sprintf("Starting gRPC server on %s", grpcListener.Addr().String()))
 		grpcErr := grpcServer.Serve(grpcListener)
 		if grpcErr != nil {
 			once.Do(func() { err = grpcErr })

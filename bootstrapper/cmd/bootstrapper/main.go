@@ -50,8 +50,7 @@ func main() {
   if *gRPCDebug {
     logger.ReplaceGRPCLogger(log.WithGroup("gRPC"))
   } else {
-    //TODO(miampf): Find a good way to dynamically increase slog logLevel
-    logger.ReplaceGRPCLogger(log.WithGroup("gRPC")).WithIncreasedLevel(slog.LevelWarn)
+    logger.ReplaceGRPCLogger(slog.New(logger.NewLevelHandler(slog.LevelWarn, log.Handler())).WithGroup("gRPC"))
   }
 
   ctx, cancel := context.WithCancel(context.Background())

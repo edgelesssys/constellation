@@ -23,7 +23,6 @@ import (
 	pb "github.com/edgelesssys/constellation/v2/debugd/service"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 )
@@ -157,8 +156,7 @@ func Start(log *slog.Logger, wg *sync.WaitGroup, serv pb.DebugdServer) {
 		defer wg.Done()
 
 		grpcLog := log.WithGroup("gRPC")
-    // TODO(miampf): Find a way to dynamically increase the log level
-		grpcLog.WithIncreasedLevel(zap.WarnLevel).ReplaceGRPCLogger()
+		logger.ReplaceGRPCLogger(slog.New(logger.NewLevelHandler(slog.LevelWarn, grpcLog.Handler())))
 
 		grpcServer := grpc.NewServer(
 			logger.GetServerStreamInterceptor(grpcLog),

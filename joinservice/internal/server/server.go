@@ -21,7 +21,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"github.com/edgelesssys/constellation/v2/joinservice/joinproto"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -59,8 +58,7 @@ func New(
 
 // Run starts the gRPC server on the given port, using the provided tlsConfig.
 func (s *Server) Run(creds credentials.TransportCredentials, port string) error {
-  // TODO(miampf): Find a good way to increase slogs log level
-	s.log.WithIncreasedLevel(zap.WarnLevel).Named("gRPC").ReplaceGRPCLogger()
+	logger.ReplaceGRPCLogger(slog.New(logger.NewLevelHandler(slog.LevelWarn, s.log.Handler())).WithGroup("gRPC"))
 	grpcServer := grpc.NewServer(
 		grpc.Creds(creds),
 		logger.GetServerUnaryInterceptor(s.log.WithGroup("gRPC")),
@@ -72,7 +70,7 @@ func (s *Server) Run(creds credentials.TransportCredentials, port string) error 
 	if err != nil {
 		return fmt.Errorf("failed to listen: %s", err)
 	}
-	s.log.Info("Starting join service on %s", lis.Addr().String())
+	s.log.Info(fmt.Sprintf("Starting join service on %s", lis.Addr().String()))
 	return grpcServer.Serve(lis)
 }
 
@@ -115,7 +113,7 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 		return nil, status.Errorf(codes.Internal, "getting components ConfigMap name: %s", err)
 	}
 
-	log.Info("Querying %s ConfigMap for components", componentsConfigMapName)
+	log.Info(fmt.Sprintf("Querying %s ConfigMap for components", componentsConfigMapName))
 	components, err := s.kubeClient.GetComponents(ctx, componentsConfigMapName)
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed getting components from ConfigMap")

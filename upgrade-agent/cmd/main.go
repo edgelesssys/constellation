@@ -16,7 +16,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/upgrade-agent/internal/server"
 	"github.com/spf13/afero"
-	"go.uber.org/zap"
 )
 
 const (
@@ -33,8 +32,7 @@ func main() {
 	if *gRPCDebug {
 		logger.ReplaceGRPCLogger(log.WithGroup("gRPC"))
 	} else {
-    // TODO(miampf): Find a good way to change log level dynamically
-		log.WithGroup("gRPC").WithIncreasedLevel(zap.WarnLevel).ReplaceGRPCLogger()
+		logger.ReplaceGRPCLogger(slog.New(logger.NewLevelHandler(slog.LevelWarn, log.Handler())).WithGroup("gRPC"))
 	}
 
 	handler := file.NewHandler(afero.NewOsFs())

@@ -18,7 +18,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/keyservice/keyserviceproto"
-	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -51,11 +50,7 @@ func (s *Server) Run(port string) error {
 
 	server := grpc.NewServer(logger.GetServerUnaryInterceptor(s.log.WithGroup("gRPC")))
 	keyserviceproto.RegisterAPIServer(server, s)
-  // TODO(miampf): Find out a good way to pass an increased Level to slog.
-  // A reference implementation for something like that exists
-  // [here](https://pkg.go.dev/log/slog#Handler), however, this would
-  // utilise structs in the logger package again which is not optimal.
-	logger.ReplaceGRPCLogger(s.log.WithGroup("gRPC").WithIncreasedLevel(zapcore.WarnLevel))
+	logger.ReplaceGRPCLogger(slog.New(logger.NewLevelHandler(slog.LevelWarn, s.log.Handler())).WithGroup("gRPC"))
 
 	// start the server
 	s.log.Info("Starting Constellation key management service on %s", listener.Addr().String())
