@@ -25,7 +25,6 @@ func main() {
 	flag.Parse()
 
 	opts := providerserver.ServeOpts{
-		// TODO(msanft): Verify that this will be the published name.
 		Address: "registry.terraform.io/edgelesssys/constellation",
 		Debug:   debug,
 	}

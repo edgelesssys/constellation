@@ -86,6 +86,7 @@ go_test(
     # keep
     x_defs = {
         "runsUnder": "bazel",
+        "providerVersion": "{STABLE_STAMP_VERSION}",
     },
     deps = [
         "//internal/attestation/idkeydigest",
