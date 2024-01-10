@@ -5,36 +5,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 
 /*
-Package logger provides logging functionality for Constellation services.
-It is a thin wrapper around the zap package, providing a consistent interface for logging.
-Use this package to implement logging for your Constellation services.
+Package logger provides helper functions that can be used in combination with slog to increase functionality or make
+working with slog easier.
 
-# Usage
+1. Logging in unit tests
 
-1. Create a logger using New().
+To log in unit tests you can create a new slog logger that uses logger.TestWriter as its writer. This can be constructed
+by creating a logger like this: `slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil))`.
 
-2. Defer the Sync() method to ensure that all log entries are flushed.
+2. Creating a new logger with an increased log level based on another logger
 
-3. Use the Debugf(), Infof(), Warnf(), Errorf(), and Fatalf() methods depending on the level of logging you need.
-
-4. Use the Named() method to create a named child logger.
-
-5. Use the With() method to create a child logger with structured context.
-This can also be used to add context to a single log message:
-
-	logger.With(zap.String("key", "value")).Infof("log message")
-
-# Log Levels
-
-Use [Logger.Debugf] to log low level and detailed information that is useful for debugging.
-
-Use [Logger.Infof] to log general information. This method is correct for most logging purposes.
-
-Use [Logger.Warnf] to log information that may indicate unwanted behavior, but is not an error.
-
-Use [Logger.Errorf] to log information about any errors that occurred.
-
-Use [Logger.Fatalf] to log information about any errors that occurred and then exit the program.
+You can create a new logger with a new log level by creating a new slog.Logger with the LevelHandler in this package
+and passing the handler of the other logger. As an example, if you have a slog.Logger named `log` you can create a
+new logger with an increased log level (here slog.LevelWarn) like this:
+`slog.New(logger.NewLevelHandler(slog.LevelWarn, log.Handler()))`
 */
 package logger
 
