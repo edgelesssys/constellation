@@ -149,16 +149,6 @@ func NextMinorVersion(version string) (string, error) {
 	return fmt.Sprintf("v%d.%d", major, minor+1), nil
 }
 
-// PriorMinorVersion returns the prior minor version for a given canonical semver.
-// The returned format is vMAJOR.MINOR.
-func PriorMinorVersion(version string) (string, error) {
-	major, minor, err := parseCanonicalSemver(EnsurePrefixV(version))
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("v%d.%d", major, minor-1), nil
-}
-
 func parseCanonicalSemver(version string) (major int, minor int, err error) {
 	version = semver.MajorMinor(version) // ensure version is in canonical form (vX.Y.Z)
 	if version == "" {

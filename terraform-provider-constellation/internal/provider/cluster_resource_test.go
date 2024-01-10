@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var providerVersion string = "v0.0.0"
+const providerVersion string = "v0.0.0"
 
 func TestMicroserviceConstraint(t *testing.T) {
 	providerVersion := semver.NewFromInt(2, 15, 0, "")
@@ -449,7 +449,7 @@ func TestAccClusterResource(t *testing.T) {
 							constellation_microservice_version = "%s"
 					  }
 				`, versions.Default, providerVersion),
-					ExpectError: regexp.MustCompile(".*When csp is set to 'gcp', 'ip_cidr_pod' must be set.*|.*Image version \\(v[0-9]+\\.[0-9]+\\.[0-9]+\\) incompatible with provider version*"),
+				ExpectError: regexp.MustCompile(`.*When csp is set to 'gcp', 'ip_cidr_pod' must be set.*|.*Image version \(v[0-9]+\.[0-9]+\.[0-9]+\) incompatible with provider version.*`),
 				},
 			},
 		},
@@ -468,7 +468,6 @@ func fullClusterTestingConfig(t *testing.T, csp string) string {
 	providerConfig := `
 	provider "constellation" {}
 	`
-
 
 	image := "v2.14.0"
 	switch csp {
