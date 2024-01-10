@@ -44,7 +44,7 @@ func runList(cmd *cobra.Command, _ []string) (retErr error) {
 		return err
 	}
   log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: flags.logLevel}))
-	log.Debug("Parsed flags: %+v", flags)
+	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
 
 	log.Debug("Validating flags")
 	if err := flags.validate(); err != nil {
@@ -82,7 +82,7 @@ func runList(cmd *cobra.Command, _ []string) (retErr error) {
 	patchVersions, err := listPatchVersions(cmd.Context(), client, flags.ref, flags.stream, minorVersions)
 	var errNotFound *apiclient.NotFoundError
 	if err != nil && errors.As(err, &errNotFound) {
-		log.Info("No patch versions found for ref %q, stream %q and minor versions %v.", flags.ref, flags.stream, minorVersions)
+		log.Info(fmt.Sprintf("No patch versions found for ref %q, stream %q and minor versions %v.", flags.ref, flags.stream, minorVersions))
 		return nil
 	} else if err != nil {
 		return err

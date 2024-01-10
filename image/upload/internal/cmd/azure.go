@@ -45,7 +45,7 @@ func runAzure(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: flags.logLevel}))
-	log.Debug("Parsed flags: %+v", flags)
+	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
 
 	archiveC, archiveCClose, err := archive.New(cmd.Context(), flags.region, flags.bucket, flags.distributionID, log)
 	if err != nil {

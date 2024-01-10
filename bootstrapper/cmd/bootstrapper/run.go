@@ -7,10 +7,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 package main
 
 import (
-  "context"
-  "log/slog"
-  "net"
-  "os"
+	"context"
+	"fmt"
+	"log/slog"
+	"net"
+	"os"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/clean"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/diskencryption"

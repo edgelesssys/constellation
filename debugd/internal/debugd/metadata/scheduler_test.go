@@ -12,8 +12,9 @@ import (
 	"sync"
 	"testing"
 	"time"
+  "log/slog"
 
-	"github.com/edgelesssys/constellation/v2/internal/logger"
+  "github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"
 )

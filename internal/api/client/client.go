@@ -131,7 +131,7 @@ func (c *Client) DeletePath(ctx context.Context, path string) error {
 		Bucket: &c.bucket,
 		Prefix: &path,
 	}
-	c.Logger.Debug("Listing objects in %s", path)
+	c.Logger.Debug(fmt.Sprintf("Listing objects in %s", path))
 	objs := []s3types.Object{}
 	out := &s3.ListObjectsV2Output{IsTruncated: ptr(true)}
 	for out.IsTruncated != nil && *out.IsTruncated {
@@ -142,10 +142,10 @@ func (c *Client) DeletePath(ctx context.Context, path string) error {
 		}
 		objs = append(objs, out.Contents...)
 	}
-	c.Logger.Debug("Found %d objects in %s", len(objs), path)
+	c.Logger.Debug(fmt.Sprintf("Found %d objects in %s", len(objs), path))
 
 	if len(objs) == 0 {
-		c.Logger.Warn("Path %s is already empty", path)
+		c.Logger.Warn(fmt.Sprintf("Path %s is already empty", path))
 		return nil
 	}
 
@@ -155,7 +155,7 @@ func (c *Client) DeletePath(ctx context.Context, path string) error {
 	}
 
 	if c.DryRun {
-		c.Logger.Debug("DryRun: Deleting %d objects with IDs %v", len(objs), objIDs)
+		c.Logger.Debug(fmt.Sprintf("DryRun: Deleting %d objects with IDs %v", len(objs), objIDs))
 		return nil
 	}
 
@@ -167,7 +167,7 @@ func (c *Client) DeletePath(ctx context.Context, path string) error {
 			Objects: objIDs,
 		},
 	}
-	c.Logger.Debug("Deleting %d objects in %s", len(objs), path)
+	c.Logger.Debug(fmt.Sprintf("Deleting %d objects in %s", len(objs), path))
 	if _, err := c.s3Client.DeleteObjects(ctx, deleteIn); err != nil {
 		return fmt.Errorf("deleting objects in %s: %w", path, err)
 	}

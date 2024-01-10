@@ -12,7 +12,6 @@ import (
 	"os"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/osimage/measurementsuploader"
 	"github.com/spf13/cobra"
 )
@@ -54,7 +53,7 @@ func runMeasurementsUpload(cmd *cobra.Command, _ []string) error {
 	}
 
 	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: flags.logLevel}))
-	log.Debug("Parsed flags: %+v", flags)
+	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
 
 	uploadC, uploadCClose, err := measurementsuploader.New(cmd.Context(), flags.region, flags.bucket, flags.distributionID, log)
 	if err != nil {

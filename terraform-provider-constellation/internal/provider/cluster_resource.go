@@ -1240,15 +1240,15 @@ type tfContextLogger struct {
 	ctx context.Context // bind context to struct to satisfy interface
 }
 
-func (l *tfContextLogger) Debugf(format string, args ...any) {
+func (l *tfContextLogger) Debug(format string, args ...any) {
 	tflog.Debug(l.ctx, fmt.Sprintf(format, args...))
 }
 
-func (l *tfContextLogger) Infof(format string, args ...any) {
+func (l *tfContextLogger) Info(format string, args ...any) {
 	tflog.Info(l.ctx, fmt.Sprintf(format, args...))
 }
 
-func (l *tfContextLogger) Warnf(format string, args ...any) {
+func (l *tfContextLogger) Warn(format string, args ...any) {
 	tflog.Warn(l.ctx, fmt.Sprintf(format, args...))
 }
 

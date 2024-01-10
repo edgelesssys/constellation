@@ -8,6 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package archive
 
 import (
+  "fmt"
 	"context"
 	"io"
 	"log/slog"
@@ -73,7 +74,7 @@ func (a *Archivist) Archive(ctx context.Context, version versionsapi.Version, cs
 	if err != nil {
 		return "", err
 	}
-	a.log.Debug("Archiving OS image %s %s %v to s3://%v/%v", csp, attestationVariant, version.ShortPath(), a.bucket, key)
+	a.log.Debug(fmt.Sprintf("Archiving OS image %s %s %v to s3://%v/%v", csp, attestationVariant, version.ShortPath(), a.bucket, key))
 	_, err = a.uploadClient.Upload(ctx, &s3.PutObjectInput{
 		Bucket:            &a.bucket,
 		Key:               &key,

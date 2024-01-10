@@ -9,6 +9,7 @@ package constellation
 import (
 	"context"
 	"testing"
+  "log/slog"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"

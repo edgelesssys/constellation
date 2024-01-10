@@ -14,6 +14,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+  "fmt"
 
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/diskencryption"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/recoveryserver"
@@ -124,7 +125,7 @@ func main() {
 		metadataClient = qemucloud.New()
 
 	default:
-		log.Error("CSP %s is not supported by Constellation", *csp)
+		log.Error(fmt.Sprintf("CSP %s is not supported by Constellation", *csp))
     os.Exit(1)
 	}
 

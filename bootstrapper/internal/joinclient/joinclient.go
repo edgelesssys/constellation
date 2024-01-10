@@ -34,7 +34,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/nodestate"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
@@ -174,7 +173,7 @@ func (c *JoinClient) Stop() {
 		return
 	}
 
-	c.log.Infof("Stopping")
+	c.log.Info("Stopping")
 
 	c.stopC <- struct{}{}
 	<-c.stopDone
@@ -182,7 +181,7 @@ func (c *JoinClient) Stop() {
 	c.stopC = nil
 	c.stopDone = nil
 
-	c.log.Infof("Stopped")
+	c.log.Info("Stopped")
 }
 
 func (c *JoinClient) tryJoinWithAvailableServices() error {
@@ -423,7 +422,7 @@ type ClusterJoiner interface {
 		args *kubeadm.BootstrapTokenDiscovery,
 		peerRole role.Role,
 		k8sComponents components.Components,
-		log *logger.Logger,
+		log *slog.Logger,
 	) error
 }
 

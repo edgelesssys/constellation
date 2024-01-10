@@ -101,7 +101,7 @@ func (s *Server) Stop() {
 
 // ExecuteUpdate installs & verifies the provided kubeadm, then executes `kubeadm upgrade plan` & `kubeadm upgrade apply {wanted_Kubernetes_Version}` to upgrade to the specified version.
 func (s *Server) ExecuteUpdate(ctx context.Context, updateRequest *upgradeproto.ExecuteUpdateRequest) (*upgradeproto.ExecuteUpdateResponse, error) {
-	s.log.Info("Upgrade to Kubernetes version started: %s", updateRequest.WantedKubernetesVersion)
+	s.log.Info(fmt.Sprintf("Upgrade to Kubernetes version started: %s", updateRequest.WantedKubernetesVersion))
 
 	installer := installer.NewOSInstaller()
 	err := prepareUpdate(ctx, installer, updateRequest)
@@ -121,7 +121,7 @@ func (s *Server) ExecuteUpdate(ctx context.Context, updateRequest *upgradeproto.
 		return nil, status.Errorf(codes.Internal, "unable to execute kubeadm upgrade apply: %s: %s", err, string(out))
 	}
 
-	s.log.Info("Upgrade to Kubernetes version succeeded: %s", updateRequest.WantedKubernetesVersion)
+	s.log.Info(fmt.Sprintf("Upgrade to Kubernetes version succeeded: %s", updateRequest.WantedKubernetesVersion))
 	return &upgradeproto.ExecuteUpdateResponse{}, nil
 }
 

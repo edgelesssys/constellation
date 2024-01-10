@@ -53,7 +53,7 @@ func runAdd(cmd *cobra.Command, _ []string) (retErr error) {
 		return err
 	}
 	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: flags.logLevel}))
-	log.Debug("Parsed flags: %+v", flags)
+	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
 
 	log.Debug("Validating flags")
 	if err := flags.validate(log); err != nil {
@@ -93,8 +93,8 @@ func runAdd(cmd *cobra.Command, _ []string) (retErr error) {
 		}
 	}
 
-	log.Info("List major->minor URL: %s", ver.ListURL(versionsapi.GranularityMajor))
-	log.Info("List minor->patch URL: %s", ver.ListURL(versionsapi.GranularityMinor))
+	log.Info(fmt.Sprintf("List major->minor URL: %s", ver.ListURL(versionsapi.GranularityMajor)))
+	log.Info(fmt.Sprintf("List minor->patch URL: %s", ver.ListURL(versionsapi.GranularityMinor)))
 
 	return nil
 }
@@ -135,7 +135,7 @@ func ensureVersion(ctx context.Context, client *versionsapi.Client, kind version
 		return fmt.Errorf("failed to add %s version: %w", gran.String(), err)
 	}
 
-	log.Info("Added %q to list", insertVersion)
+	log.Info(fmt.Sprintf("Added %q to list", insertVersion))
 	return nil
 }
 
@@ -154,11 +154,11 @@ func updateLatest(ctx context.Context, client *versionsapi.Client, kind versions
 	}
 
 	if latest.Version == ver.Version() {
-		log.Info("Version %q is already latest version", ver)
+		log.Info(fmt.Sprintf("Version %q is already latest version", ver.Version()))
 		return nil
 	}
 
-	log.Info("Setting %q as latest version", ver)
+	log.Info(fmt.Sprintf("Setting %q as latest version", ver.Version()))
 	latest = versionsapi.Latest{
 		Ref:     ver.Ref(),
 		Stream:  ver.Stream(),
@@ -203,7 +203,7 @@ func (f *addFlags) validate(log *slog.Logger) error {
 	}
 
 	if f.release {
-		log.Debug("Setting ref to %q, as release flag is set", versionsapi.ReleaseRef)
+		log.Debug(fmt.Sprintf("Setting ref to %q, as release flag is set", versionsapi.ReleaseRef))
 		f.ref = versionsapi.ReleaseRef
 	} else {
 		log.Debug("Setting latest to true, as release flag is not set")

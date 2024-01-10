@@ -115,14 +115,14 @@ func uploadReport(ctx context.Context,
 		return fmt.Errorf("kind %s not supported", cfg.kind)
 	}
 
-	log.Info("Reading SNP report from file: %s", cfg.path)
+	log.Info(fmt.Sprintf("Reading SNP report from file: %s", cfg.path))
 	var report verify.Report
 	if err := fs.ReadJSON(cfg.path, &report); err != nil {
 		return fmt.Errorf("reading snp report: %w", err)
 	}
 
 	inputVersion := convertTCBVersionToSNPVersion(report.SNPReport.LaunchTCB)
-	log.Info("Input report: %+v", inputVersion)
+	log.Info(fmt.Sprintf("Input report: %+v", inputVersion))
 
 	latestAPIVersionAPI, err := attestationconfigapi.NewFetcherWithCustomCDNAndCosignKey(cfg.url, cfg.cosignPublicKey).FetchSEVSNPVersionLatest(ctx, attestation)
 	if err != nil {
@@ -136,7 +136,7 @@ func uploadReport(ctx context.Context,
 	latestAPIVersion := latestAPIVersionAPI.SEVSNPVersion
 	if err := client.UploadSEVSNPVersionLatest(ctx, attestation, inputVersion, latestAPIVersion, cfg.uploadDate, cfg.force); err != nil {
 		if errors.Is(err, attestationconfigapi.ErrNoNewerVersion) {
-			log.Info("Input version: %+v is not newer than latest API version: %+v", inputVersion, latestAPIVersion)
+			log.Info(fmt.Sprintf("Input version: %+v is not newer than latest API version: %+v", inputVersion, latestAPIVersion))
 			return nil
 		}
 		return fmt.Errorf("updating latest version: %w", err)

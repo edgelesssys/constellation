@@ -11,6 +11,7 @@ import (
 	"errors"
 	"log/slog"
 	"os"
+  "fmt"
 
 	"github.com/bazelbuild/buildtools/build"
 	"github.com/edgelesssys/constellation/v2/hack/bazel-deps-mirror/internal/bazelfiles"
@@ -39,7 +40,7 @@ func runFix(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: flags.logLevel}))
-	log.Debug("Parsed flags: %+v", flags)
+	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
 
 	fileHelper, err := bazelfiles.New()
 	if err != nil {
@@ -76,7 +77,7 @@ func runFix(cmd *cobra.Command, _ []string) error {
 		}
 	}
 	if len(issues) > 0 {
-		log.Warn("Found %d unfixable issues in rules", len(issues))
+		log.Warn(fmt.Sprintf("Found %d unfixable issues in rules", len(issues)))
 		issues.Report(cmd.OutOrStdout())
 		return errors.New("found issues in rules")
 	}
@@ -88,17 +89,17 @@ func runFix(cmd *cobra.Command, _ []string) error {
 func fixBazelFile(ctx context.Context, fileHelper *bazelfiles.Helper, mirrorUpload mirrorUploader, bazelFile bazelfiles.BazelFile, dryRun bool, log *slog.Logger) (iss issues.ByFile, err error) {
 	iss = issues.NewByFile()
 	var changed bool // true if any rule in this file was changed
-	log.Info("Checking file: %s", bazelFile.RelPath)
+	log.Info(fmt.Sprintf("Checking file: %s", bazelFile.RelPath))
 	buildfile, err := fileHelper.LoadFile(bazelFile)
 	if err != nil {
 		return iss, err
 	}
 	found := rules.Rules(buildfile, rules.SupportedRules)
 	if len(found) == 0 {
-		log.Debug("No rules found in file: %s", bazelFile.RelPath)
+		log.Debug(fmt.Sprintf("No rules found in file: %s", bazelFile.RelPath))
 		return iss, nil
 	}
-	log.Debug("Found %d rules in file: %s", len(found), bazelFile.RelPath)
+	log.Debug(fmt.Sprintf("Found %d rules in file: %s", len(found), bazelFile.RelPath))
 	for _, rule := range found {
 		changedRule, ruleIssues := fixRule(ctx, mirrorUpload, rule, log)
 		if len(ruleIssues) > 0 {
@@ -108,11 +109,11 @@ func fixBazelFile(ctx context.Context, fileHelper *bazelfiles.Helper, mirrorUplo
 	}
 
 	if len(iss) > 0 {
-		log.Warn("File %s has issues. Not saving!", bazelFile.RelPath)
+		log.Warn(fmt.Sprintf("File %s has issues. Not saving!", bazelFile.RelPath))
 		return iss, nil
 	}
 	if !changed {
-		log.Debug("No changes to file: %s", bazelFile.RelPath)
+		log.Debug(fmt.Sprintf("No changes to file: %s", bazelFile.RelPath))
 		return iss, nil
 	}
 	if dryRun {
@@ -123,7 +124,7 @@ func fixBazelFile(ctx context.Context, fileHelper *bazelfiles.Helper, mirrorUplo
 		log.Info("Dry run: would save updated file %s with diff:\n%s", bazelFile.RelPath, diff)
 		return iss, nil
 	}
-	log.Info("Saving updated file: %s", bazelFile.RelPath)
+	log.Info(fmt.Sprintf("Saving updated file: %s", bazelFile.RelPath))
 	if err := fileHelper.WriteFile(bazelFile, buildfile); err != nil {
 		return iss, err
 	}
@@ -146,7 +147,7 @@ func learnHashForRule(ctx context.Context, mirrorUpload mirrorUploader, rule *bu
 }
 
 func fixRule(ctx context.Context, mirrorUpload mirrorUploader, rule *build.Rule, log *slog.Logger) (changed bool, iss []error) {
-	log.Debug("Fixing rule: %s", rule.Name())
+	log.Debug(fmt.Sprintf("Fixing rule: %s", rule.Name()))
 
 	// try to learn the hash
 	if hash, err := rules.GetHash(rule); err != nil || hash == "" {

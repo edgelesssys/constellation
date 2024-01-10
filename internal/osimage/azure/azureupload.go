@@ -345,10 +345,10 @@ func (u *Uploader) ensureSIG(ctx context.Context, sigName string) error {
 func (u *Uploader) ensureImageDefinition(ctx context.Context, sigName, definitionName string, version versionsapi.Version, attestationVariant string) error {
 	_, err := u.image.Get(ctx, u.resourceGroup, sigName, definitionName, &armcomputev5.GalleryImagesClientGetOptions{})
 	if err == nil {
-		u.log.Debug("Image definition %s/%s in %s exists", sigName, definitionName, u.resourceGroup)
+		u.log.Debug(fmt.Sprintf("Image definition %s/%s in %s exists", sigName, definitionName, u.resourceGroup))
 		return nil
 	}
-	u.log.Debug("Creating image definition  %s/%s in %s", sigName, definitionName, u.resourceGroup)
+	u.log.Debug(fmt.Sprintf("Creating image definition  %s/%s in %s", sigName, definitionName, u.resourceGroup))
 	var securityType string
 	// TODO(malt3): This needs to allow the *Supported or the normal variant
 	// based on wether a VMGS was provided or not.
@@ -472,7 +472,7 @@ func (u *Uploader) getImageReference(ctx context.Context, sigName, definitionNam
 		return "", fmt.Errorf("image gallery %s in %s is a community gallery but has no public names", sigName, u.resourceGroup)
 	}
 	communityGalleryName := *galleryResp.Properties.SharingProfile.CommunityGalleryInfo.PublicNames[0]
-	u.log.Debug("Image gallery %s in %s is shared. Using community identifier in %s", sigName, u.resourceGroup, communityGalleryName)
+	u.log.Debug(fmt.Sprintf("Image gallery %s in %s is shared. Using community identifier in %s", sigName, u.resourceGroup, communityGalleryName))
 	communityVersionResp, err := u.communityVersions.Get(ctx, u.location, communityGalleryName,
 		definitionName, versionName,
 		&armcomputev5.CommunityGalleryImageVersionsClientGetOptions{},

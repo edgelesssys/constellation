@@ -166,8 +166,7 @@ func TestBackupCRs(t *testing.T) {
 
 type stubLog struct{}
 
-func (s stubLog) Debugf(_ string, _ ...any) {}
-func (s stubLog) Sync()                     {}
+func (s stubLog) Debug(_ string, _ ...any) {}
 
 func (c stubKubectl) ListCRDs(_ context.Context) ([]apiextensionsv1.CustomResourceDefinition, error) {
 	if c.getCRDsError != nil {

@@ -103,10 +103,10 @@ func NewIssuer(
 
 // Issue generates an attestation document using a TPM.
 func (i *Issuer) Issue(ctx context.Context, userData []byte, nonce []byte) (res []byte, err error) {
-	i.log.Infof("Issuing attestation statement")
+	i.log.Info("Issuing attestation statement")
 	defer func() {
 		if err != nil {
-			i.log.Warnf("Failed to issue attestation statement: %s", err)
+			i.log.Warn("Failed to issue attestation statement: %s", err)
 		}
 	}()
 
@@ -147,7 +147,7 @@ func (i *Issuer) Issue(ctx context.Context, userData []byte, nonce []byte) (res 
 		return nil, fmt.Errorf("marshaling attestation document: %w", err)
 	}
 
-	i.log.Infof("Successfully issued attestation statement")
+	i.log.Info("Successfully issued attestation statement")
 	return rawAttDoc, nil
 }
 
@@ -177,10 +177,10 @@ func NewValidator(expected measurements.M, getTrustedKey GetTPMTrustedAttestatio
 
 // Validate a TPM based attestation.
 func (v *Validator) Validate(ctx context.Context, attDocRaw []byte, nonce []byte) (userData []byte, err error) {
-	v.log.Infof("Validating attestation document")
+	v.log.Info("Validating attestation document")
 	defer func() {
 		if err != nil {
-			v.log.Warnf("Failed to validate attestation document: %s", err)
+			v.log.Warn("Failed to validate attestation document: %s", err)
 		}
 	}()
 
@@ -233,13 +233,13 @@ func (v *Validator) Validate(ctx context.Context, attDocRaw []byte, nonce []byte
 	}
 	warnings, errs := v.expected.Compare(attDoc.Attestation.Quotes[quoteIdx].Pcrs.Pcrs)
 	for _, warning := range warnings {
-		v.log.Warnf(warning)
+		v.log.Warn(warning)
 	}
 	if len(errs) > 0 {
 		return nil, fmt.Errorf("measurement validation failed:\n%w", errors.Join(errs...))
 	}
 
-	v.log.Infof("Successfully validated attestation document")
+	v.log.Info("Successfully validated attestation document")
 	return attDoc.UserData, nil
 }
 

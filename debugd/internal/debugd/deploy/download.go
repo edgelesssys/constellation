@@ -110,7 +110,7 @@ func (d *Download) DownloadDeployment(ctx context.Context, ip string) error {
 			ctx, file.OverrideServiceUnit, file.TargetPath,
 		); err != nil {
 			// continue on error to allow other units to be overridden
-			d.log.With(slog.Any("error", err)).Error("Failed to override service unit %s", file.OverrideServiceUnit)
+			d.log.With(slog.Any("error", err)).Error(fmt.Sprintf("Failed to override service unit %s", file.OverrideServiceUnit))
 		}
 	}
 

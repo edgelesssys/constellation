@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
+  "fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
@@ -46,7 +47,7 @@ func main() {
     os.Exit(1)
 	}
 	if len(masterKey) < crypto.MasterSecretLengthMin {
-		log.With(slog.Any("error", errors.New("invalid key length"))).Error("Provided master secret is smaller than the required minimum of %d bytes", crypto.MasterSecretLengthMin)
+		log.With(slog.Any("error", errors.New("invalid key length"))).Error(fmt.Sprintf("Provided master secret is smaller than the required minimum of %d bytes", crypto.MasterSecretLengthMin))
     os.Exit(1)
 	}
 	salt, err := file.Read(*saltPath)
@@ -55,7 +56,7 @@ func main() {
     os.Exit(1)
 	}
 	if len(salt) < crypto.RNGLengthDefault {
-		log.With(slog.Any("error", errors.New("invalid salt length"))).Error("Expected salt to be %d bytes, but got %d", crypto.RNGLengthDefault, len(salt))
+		log.With(slog.Any("error", errors.New("invalid salt length"))).Error(fmt.Sprintf("Expected salt to be %d bytes, but got %d", crypto.RNGLengthDefault, len(salt)))
     os.Exit(1)
 	}
 	masterSecret := uri.MasterSecret{Key: masterKey, Salt: salt}

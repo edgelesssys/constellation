@@ -13,11 +13,12 @@ import (
 	"log"
 	"net/http"
 	"testing"
+  "log/slog"
 
+  "github.com/edgelesssys/constellation/v2/internal/logger"
 	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"

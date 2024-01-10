@@ -135,7 +135,7 @@ func (s *ServiceManager) SystemdAction(ctx context.Context, request ServiceManag
 
 	switch result {
 	case "done":
-		log.Info("%s on systemd unit %s succeeded", request.Action, request.Unit)
+		log.Info(fmt.Sprintf("%s on systemd unit %s succeeded", request.Action, request.Unit))
 		return nil
 
 	default:
@@ -193,6 +193,6 @@ func (s *ServiceManager) OverrideServiceUnitExecStart(ctx context.Context, unitN
 		return fmt.Errorf("performing systemd unit restart: %w", err)
 	}
 
-	log.Info("Overrode systemd unit file execStart, performed daemon-reload and restarted unit %v", unitName)
+	log.Info(fmt.Sprintf("Overrode systemd unit file execStart, performed daemon-reload and restarted unit %v", unitName))
 	return nil
 }

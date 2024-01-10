@@ -9,6 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package filetransfer
 
 import (
+  "fmt"
 	"errors"
 	"io"
 	"io/fs"
@@ -19,7 +20,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/filetransfer/streamer"
 	pb "github.com/edgelesssys/constellation/v2/debugd/service"
-	"go.uber.org/zap"
 )
 
 // RecvFilesStream is a stream that receives FileTransferMessages.
@@ -146,7 +146,7 @@ func (s *FileTransferer) handleFileRecv(stream RecvFilesStream) (bool, error) {
 	if header == nil {
 		return false, errors.New("first message must be a header message")
 	}
-	s.log.Info("Starting file receive of %q", header.TargetPath)
+	s.log.Info(fmt.Sprintf("Starting file receive of %q", header.TargetPath))
 	s.addFile(FileStat{
 		SourcePath: header.TargetPath,
 		TargetPath: header.TargetPath,
@@ -160,10 +160,10 @@ func (s *FileTransferer) handleFileRecv(stream RecvFilesStream) (bool, error) {
 	})
 	recvChunkStream := &recvChunkStream{stream: stream}
 	if err := s.streamer.WriteStream(header.TargetPath, recvChunkStream, s.showProgress); err != nil {
-		s.log.With(slog.Any("error", err)).Error("Receive of file %q failed", header.TargetPath)
+		s.log.With(slog.Any("error", err)).Error(fmt.Sprintf("Receive of file %q failed", header.TargetPath))
 		return false, err
 	}
-	s.log.Info("Finished file receive of %q", header.TargetPath)
+	s.log.Info(fmt.Sprintf("Finished file receive of %q", header.TargetPath))
 	return false, nil
 }
 

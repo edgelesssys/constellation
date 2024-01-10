@@ -35,9 +35,9 @@ func runMerge(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: flags.logLevel}))
-	log.Debug("Parsed flags: %+v", flags)
+	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
 
-	log.Debug("Merging sum file from %q into %q.", flags.inputs, flags.output)
+	log.Debug(fmt.Sprintf("Merging sum file from %q into %q.", flags.inputs, flags.output))
 
 	var out io.Writer
 	if flags.output == "-" {
@@ -60,7 +60,7 @@ func runMerge(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("creating merged sum file: %w", err)
 	}
 
-	log.Debug("Sum file created at %q 🤖", flags.output)
+	log.Debug(fmt.Sprintf("Sum file created at %q 🤖", flags.output))
 	return nil
 }
 

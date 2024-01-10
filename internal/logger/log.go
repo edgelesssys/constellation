@@ -158,6 +158,7 @@ type TestWriter struct {
 }
 
 func (t TestWriter) Write(p []byte) (int, error) {
+  t.T.Helper()
   t.T.Log(p)
   return len(p), nil
 }

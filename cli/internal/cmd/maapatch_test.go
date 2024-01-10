@@ -11,7 +11,7 @@ import (
 	"log/slog"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/internal/logger"
+  "github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

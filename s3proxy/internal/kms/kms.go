@@ -15,7 +15,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/keyservice/keyserviceproto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"

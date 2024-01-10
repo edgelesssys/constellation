@@ -37,10 +37,10 @@ func NewIssuer(log attestation.Logger) *Issuer {
 
 // Issue issues a TDX attestation document.
 func (i *Issuer) Issue(_ context.Context, userData []byte, nonce []byte) (attDoc []byte, err error) {
-	i.log.Infof("Issuing attestation statement")
+	i.log.Info("Issuing attestation statement")
 	defer func() {
 		if err != nil {
-			i.log.Warnf("Failed to issue attestation document: %s", err)
+			i.log.Warn("Failed to issue attestation document: %s", err)
 		}
 	}()
 

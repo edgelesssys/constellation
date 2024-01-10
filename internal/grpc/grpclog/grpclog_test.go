@@ -88,7 +88,7 @@ type spyLog struct {
 	msgs []string
 }
 
-func (f *spyLog) Debugf(format string, args ...any) {
+func (f *spyLog) Debug(format string, args ...any) {
 	f.msgs = append(f.msgs, fmt.Sprintf(format, args...))
 }
 

@@ -13,7 +13,6 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/s3proxy/internal/s3"
 )
 
@@ -151,41 +150,41 @@ func handleForwards(log *slog.Logger) http.HandlerFunc {
 }
 
 // handleCreateMultipartUpload logs the request and blocks with an error message.
-func handleCreateMultipartUpload(log *logger.Logger) http.HandlerFunc {
+func handleCreateMultipartUpload(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		log.With(slog.String("path", req.URL.Path), slog.String("method", req.Method), slog.String("host", req.Host)).Debugf("intercepting CreateMultipartUpload")
+		log.With(slog.String("path", req.URL.Path), slog.String("method", req.Method), slog.String("host", req.Host)).Debug("intercepting CreateMultipartUpload")
 
-		log.Errorf("Blocking CreateMultipartUpload request")
+		log.Error("Blocking CreateMultipartUpload request")
 		http.Error(w, "s3proxy is configured to block CreateMultipartUpload requests", http.StatusNotImplemented)
 	}
 }
 
 // handleUploadPart logs the request and blocks with an error message.
-func handleUploadPart(log *logger.Logger) http.HandlerFunc {
+func handleUploadPart(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		log.With(slog.String("path", req.URL.Path), slog.String("method", req.Method), slog.String("host", req.Host)).Debugf("intercepting UploadPart")
+		log.With(slog.String("path", req.URL.Path), slog.String("method", req.Method), slog.String("host", req.Host)).Debug("intercepting UploadPart")
 
-		log.Errorf("Blocking UploadPart request")
+		log.Error("Blocking UploadPart request")
 		http.Error(w, "s3proxy is configured to block UploadPart requests", http.StatusNotImplemented)
 	}
 }
 
 // handleCompleteMultipartUpload logs the request and blocks with an error message.
-func handleCompleteMultipartUpload(log *logger.Logger) http.HandlerFunc {
+func handleCompleteMultipartUpload(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		log.With(slog.String("path", req.URL.Path), slog.String("method", req.Method), slog.String("host", req.Host)).Debugf("intercepting CompleteMultipartUpload")
+		log.With(slog.String("path", req.URL.Path), slog.String("method", req.Method), slog.String("host", req.Host)).Debug("intercepting CompleteMultipartUpload")
 
-		log.Errorf("Blocking CompleteMultipartUpload request")
+		log.Error("Blocking CompleteMultipartUpload request")
 		http.Error(w, "s3proxy is configured to block CompleteMultipartUpload requests", http.StatusNotImplemented)
 	}
 }
 
 // handleAbortMultipartUpload logs the request and blocks with an error message.
-func handleAbortMultipartUpload(log *logger.Logger) http.HandlerFunc {
+func handleAbortMultipartUpload(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		log.With(slog.String("path", req.URL.Path), slog.String("method", req.Method), slog.String("host", req.Host)).Debugf("intercepting AbortMultipartUpload")
+		log.With(slog.String("path", req.URL.Path), slog.String("method", req.Method), slog.String("host", req.Host)).Debug("intercepting AbortMultipartUpload")
 
-		log.Errorf("Blocking AbortMultipartUpload request")
+		log.Error("Blocking AbortMultipartUpload request")
 		http.Error(w, "s3proxy is configured to block AbortMultipartUpload requests", http.StatusNotImplemented)
 	}
 }

@@ -177,7 +177,7 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("annotating node with Kubernetes components hash: %w", err)
 	}
 
-	log.Infof("Setting up internal-config ConfigMap")
+	log.Info("Setting up internal-config ConfigMap")
 	if err := k.setupInternalConfigMap(ctx); err != nil {
 		return nil, fmt.Errorf("failed to setup internal ConfigMap: %w", err)
 	}
@@ -186,13 +186,13 @@ func (k *KubeWrapper) InitCluster(
 
 // JoinCluster joins existing Kubernetes cluster.
 func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTokenDiscovery, peerRole role.Role, k8sComponents components.Components, log *slog.Logger) error {
-	log.With("k8sComponents", k8sComponents).Infof("Installing provided kubernetes components")
+	log.With("k8sComponents", k8sComponents).Info("Installing provided kubernetes components")
 	if err := k.clusterUtil.InstallComponents(ctx, k8sComponents); err != nil {
 		return fmt.Errorf("installing kubernetes components: %w", err)
 	}
 
 	// Step 1: retrieve cloud metadata for Kubernetes configuration
-	log.Infof("Retrieving node metadata")
+	log.Info("Retrieving node metadata")
 	instance, err := k.providerMetadata.Self(ctx)
 	if err != nil {
 		return fmt.Errorf("retrieving own instance metadata: %w", err)

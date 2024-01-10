@@ -53,7 +53,7 @@ func (s *Server) Run(port string) error {
 	logger.ReplaceGRPCLogger(slog.New(logger.NewLevelHandler(slog.LevelWarn, s.log.Handler())).WithGroup("gRPC"))
 
 	// start the server
-	s.log.Info("Starting Constellation key management service on %s", listener.Addr().String())
+	s.log.Info(fmt.Sprintf("Starting Constellation key management service on %s", listener.Addr().String()))
 	return server.Serve(listener)
 }
 

@@ -79,7 +79,7 @@ func (u *Updatable) Update() error {
 	if err != nil {
 		return fmt.Errorf("unmarshaling config: %w", err)
 	}
-	u.log.Debug("New expected measurements: %+v", cfg.GetMeasurements())
+	u.log.Debug(fmt.Sprintf("New expected measurements: %+v", cfg.GetMeasurements()))
 
 	cfgWithCerts, err := u.configWithCerts(cfg)
 	if err != nil {

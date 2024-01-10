@@ -103,7 +103,7 @@ func (u *Uploader) Upload(ctx context.Context, req *osimage.UploadRequest) ([]ve
 	}
 	defer func() {
 		if err := u.ensureBlobDeleted(ctx, blobName); err != nil {
-			u.log.Errorf("post-cleaning: deleting temporary blob from s3", err)
+			u.log.Error("post-cleaning: deleting temporary blob from s3", err)
 		}
 	}()
 	snapshotID, err := u.importSnapshot(ctx, blobName, imageName)
@@ -163,14 +163,14 @@ func (u *Uploader) ensureBucket(ctx context.Context) error {
 		Bucket: &u.bucketName,
 	})
 	if err == nil {
-		u.log.Debug("Bucket %s exists", u.bucketName)
+		u.log.Debug(fmt.Sprintf("Bucket %s exists", u.bucketName))
 		return nil
 	}
 	var noSuchBucketErr *types.NoSuchBucket
 	if !errors.As(err, &noSuchBucketErr) {
 		return fmt.Errorf("determining if bucket %s exists: %w", u.bucketName, err)
 	}
-	u.log.Debug("Creating bucket %s", u.bucketName)
+	u.log.Debug(fmt.Sprintf("Creating bucket %s", u.bucketName))
 	_, err = s3C.CreateBucket(ctx, &s3.CreateBucketInput{
 		Bucket: &u.bucketName,
 	})
@@ -181,7 +181,7 @@ func (u *Uploader) ensureBucket(ctx context.Context) error {
 }
 
 func (u *Uploader) uploadBlob(ctx context.Context, blobName string, img io.Reader) error {
-	u.log.Debug("Uploading os image as %s", blobName)
+	u.log.Debug(fmt.Sprintf("Uploading os image as %s", blobName))
 	uploadC, err := u.s3uploader(ctx, u.region)
 	if err != nil {
 		return err
@@ -212,7 +212,7 @@ func (u *Uploader) ensureBlobDeleted(ctx context.Context, blobName string) error
 	if err != nil {
 		return err
 	}
-	u.log.Debug("Deleting blob %s", blobName)
+	u.log.Debug(fmt.Sprintf("Deleting blob %s", blobName))
 	_, err = s3C.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket: &u.bucketName,
 		Key:    &blobName,
@@ -272,7 +272,7 @@ func (u *Uploader) importSnapshot(ctx context.Context, blobName, snapshotName st
 	if importResp.ImportTaskId == nil {
 		return "", fmt.Errorf("importing snapshot: no import task ID returned")
 	}
-	u.log.Debug("Waiting for snapshot %s to be ready", snapshotName)
+	u.log.Debug(fmt.Sprintf("Waiting for snapshot %s to be ready", snapshotName))
 	return waitForSnapshotImport(ctx, ec2C, *importResp.ImportTaskId)
 }
 
@@ -464,7 +464,7 @@ func (u *Uploader) ensureImageDeleted(ctx context.Context, imageName, region str
 	}
 	snapshotID, err := getBackingSnapshotID(ctx, ec2C, amiID)
 	if err == errAMIDoesNotExist {
-		u.log.Debug("Image %s doesn't exist. Nothing to clean up.", amiID)
+		u.log.Debug(fmt.Sprintf("Image %s doesn't exist. Nothing to clean up.", amiID))
 		return nil
 	}
 	u.log.Debug("Deleting image %s in %s with backing snapshot", amiID, region)

@@ -103,7 +103,7 @@ func TestMapper(t *testing.T) {
 	require.NoError(setup(1), "failed to setup test disk")
 	defer func() { require.NoError(teardown(), "failed to delete test disk") }()
 
-	mapper, free, err := diskencryption.New(devicePath, slog.New(slog.NewPlainTextHandler(logger.TestWriter{T: t}, nil))
+	mapper, free, err := diskencryption.New(devicePath, slog.New(slog.NewPlainTextHandler(os.Stderr, nil))
 	require.NoError(err, "failed to initialize crypt device")
 	defer free()
 

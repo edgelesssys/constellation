@@ -34,7 +34,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/s3proxy/internal/kms"
 	"github.com/edgelesssys/constellation/v2/s3proxy/internal/s3"
 )
@@ -58,7 +57,7 @@ type Router struct {
 	// s3proxy does not implement those yet.
 	// Setting forwardMultipartReqs to true will forward those requests to the S3 API, otherwise we block them (secure defaults).
 	forwardMultipartReqs bool
-	log                  *logger.Logger
+	log                  *slog.Logger
 }
 
 // New creates a new Router.

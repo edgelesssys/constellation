@@ -97,7 +97,7 @@ func main() {
 		fetcher = cloudprovider.New(qemucloud.New())
 
 	default:
-		log.Error("Unknown / unimplemented cloud provider CONSTEL_CSP=%v. Using fallback", csp)
+		log.Error(fmt.Sprintf("Unknown / unimplemented cloud provider CONSTEL_CSP=%v. Using fallback", csp))
 		fetcher = fallback.NewFallbackFetcher()
 	}
 

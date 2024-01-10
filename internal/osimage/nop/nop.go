@@ -10,9 +10,9 @@ package nop
 import (
 	"context"
 	"log/slog"
+  "fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/osimage"
 )
 
@@ -28,6 +28,6 @@ func New(log *slog.Logger) *Uploader {
 
 // Upload pretends to upload images to a csp.
 func (u *Uploader) Upload(_ context.Context, req *osimage.UploadRequest) ([]versionsapi.ImageInfoEntry, error) {
-	u.log.Debug("Skipping image upload of %s since this CSP does not require images to be uploaded in advance.", req.Version.ShortPath())
+	u.log.Debug(fmt.Sprintf("Skipping image upload of %s since this CSP does not require images to be uploaded in advance.", req.Version.ShortPath()))
 	return nil, nil
 }

@@ -74,7 +74,7 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 				return
 			}
 
-			logger.Info("Getting logstash pipeline template from image %s", versions.LogstashImage)
+			logger.Info(fmt.Sprintf("Getting logstash pipeline template from image %s", versions.LogstashImage))
 			tmpl, err := getTemplate(ctx, logger, versions.LogstashImage, "/run/logstash/templates/pipeline.conf", "/run/logstash")
 			if err != nil {
 				logger.Error("Getting logstash pipeline template: %v", err)
@@ -101,7 +101,7 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 				return
 			}
 
-			logger.Info("Getting filebeat config template from image %s", versions.FilebeatImage)
+			logger.Info(fmt.Sprintf("Getting filebeat config template from image %s", versions.FilebeatImage))
 			tmpl, err = getTemplate(ctx, logger, versions.FilebeatImage, "/run/filebeat/templates/filebeat.yml", "/run/filebeat")
 			if err != nil {
 				logger.Error("Getting filebeat config template: %v", err)
@@ -177,7 +177,7 @@ func startPod(ctx context.Context, logger *slog.Logger) error {
 		"logcollection",
 	}
 	createPodCmd := exec.CommandContext(ctx, "podman", createPodArgs...)
-	logger.Info("Create pod command: %v", createPodCmd.String())
+	logger.Info(fmt.Sprintf("Create pod command: %v", createPodCmd.String()))
 	if out, err := createPodCmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to create pod: %w; output: %s", err, out)
 	}
@@ -194,7 +194,7 @@ func startPod(ctx context.Context, logger *slog.Logger) error {
 		versions.LogstashImage,
 	}
 	runLogstashCmd := exec.CommandContext(ctx, "podman", runLogstashArgs...)
-	logger.Info("Run logstash command: %v", runLogstashCmd.String())
+	logger.Info(fmt.Sprintf("Run logstash command: %v", runLogstashCmd.String()))
 	runLogstashCmd.Stdout = logstashLog
 	runLogstashCmd.Stderr = logstashLog
 	if err := runLogstashCmd.Start(); err != nil {
@@ -219,7 +219,7 @@ func startPod(ctx context.Context, logger *slog.Logger) error {
 		versions.FilebeatImage,
 	}
 	runFilebeatCmd := exec.CommandContext(ctx, "podman", runFilebeatArgs...)
-	logger.Info("Run filebeat command: %v", runFilebeatCmd.String())
+	logger.Info(fmt.Sprintf("Run filebeat command: %v", runFilebeatCmd.String()))
 	runFilebeatCmd.Stdout = filebeatLog
 	runFilebeatCmd.Stderr = filebeatLog
 	if err := runFilebeatCmd.Start(); err != nil {
@@ -304,7 +304,7 @@ type cmdLogger struct {
 }
 
 func (c *cmdLogger) Write(p []byte) (n int, err error) {
-	c.logger.Info("%s", p)
+	c.logger.Info(fmt.Sprintf("%s", p)) 
 	return len(p), nil
 }
 

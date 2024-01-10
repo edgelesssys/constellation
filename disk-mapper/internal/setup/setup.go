@@ -196,7 +196,7 @@ func (s *Manager) LogDevices() error {
 		var stat syscall.Statfs_t
 		dev := "/dev/" + device.Name()
 		if err := syscall.Statfs(dev, &stat); err != nil {
-			s.log.With(slog.Any("error", err)).Error("failed to statfs %s", dev)
+			s.log.With(slog.Any("error", err)).Error(fmt.Sprintf("failed to statfs %s", dev))
 			continue
 		}
 
@@ -205,7 +205,7 @@ func (s *Manager) LogDevices() error {
 		free := stat.Bfree * uint64(stat.Bsize)
 		avail := stat.Bavail * uint64(stat.Bsize)
 
-		s.log.Info(
+		s.log.Info(fmt.Sprintf(
 			"Name: %-15s, Size: %-10d, Mode: %s, ModTime: %s, Size = %-10d, Free = %-10d, Available = %-10d\n",
 			dev,
 			device.Size(),
@@ -213,7 +213,7 @@ func (s *Manager) LogDevices() error {
 			device.ModTime(),
 			size,
 			free,
-			avail)
+			avail))
 	}
 	return nil
 }

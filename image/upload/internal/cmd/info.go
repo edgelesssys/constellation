@@ -14,7 +14,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	infoupload "github.com/edgelesssys/constellation/v2/internal/osimage/imageinfo"
 	"github.com/spf13/cobra"
 )
@@ -51,7 +50,7 @@ func runInfo(cmd *cobra.Command, args []string) error {
 	}
 
 	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: flags.logLevel}))
-	log.Debug("Parsed flags: %+v", flags)
+	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags)) 
 	info, err := readInfoArgs(args)
 	if err != nil {
 		return err
@@ -71,7 +70,7 @@ func runInfo(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("uploading image info: %w", err)
 	}
-	log.Info("Uploaded image info to %s", url)
+	log.Info(fmt.Sprintf("Uploaded image info to %s", url))
 	return nil
 }
 

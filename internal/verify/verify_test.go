@@ -8,6 +8,7 @@ package verify
 import (
 	"strings"
 	"testing"
+  "log/slog"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/snp/testdata"
 	"github.com/edgelesssys/constellation/v2/internal/logger"

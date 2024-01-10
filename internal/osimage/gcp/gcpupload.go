@@ -98,13 +98,13 @@ func (u *Uploader) Upload(ctx context.Context, req *osimage.UploadRequest) ([]ve
 func (u *Uploader) ensureBucket(ctx context.Context) error {
 	_, err := u.bucket.Attrs(ctx)
 	if err == nil {
-		u.log.Debug("Bucket %s exists", u.bucketName)
+		u.log.Debug(fmt.Sprintf("Bucket %s exists", u.bucketName))
 		return nil
 	}
 	if err != storage.ErrBucketNotExist {
 		return err
 	}
-	u.log.Debug("Creating bucket %s", u.bucketName)
+	u.log.Debug(fmt.Sprintf("Creating bucket %s", u.bucketName))
 	return u.bucket.Create(ctx, u.project, &storage.BucketAttrs{
 		PublicAccessPrevention: storage.PublicAccessPreventionEnforced,
 		Location:               u.location,
@@ -112,7 +112,7 @@ func (u *Uploader) ensureBucket(ctx context.Context) error {
 }
 
 func (u *Uploader) uploadBlob(ctx context.Context, blobName string, img io.Reader) error {
-	u.log.Debug("Uploading os image as %s", blobName)
+	u.log.Debug(fmt.Sprintf("Uploading os image as %s", blobName))
 	writer := u.bucket.Object(blobName).NewWriter(ctx)
 	_, err := io.Copy(writer, img)
 	if err != nil {
@@ -130,12 +130,12 @@ func (u *Uploader) ensureBlobDeleted(ctx context.Context, blobName string) error
 	if err != nil {
 		return err
 	}
-	u.log.Debug("Deleting blob %s", blobName)
+	u.log.Debug(fmt.Sprintf("Deleting blob %s", blobName))
 	return u.bucket.Object(blobName).Delete(ctx)
 }
 
 func (u *Uploader) createImage(ctx context.Context, version versionsapi.Version, imageName, blobName string, enableSecureBoot bool, sbDatabase secureboot.Database) (string, error) {
-	u.log.Debug("Creating image %s", imageName)
+	u.log.Debug(fmt.Sprintf("Creating image %s", imageName))
 	blobURL := u.blobURL(blobName)
 	family := u.imageFamily(version)
 	var initialState *computepb.InitialStateConfig
@@ -206,10 +206,10 @@ func (u *Uploader) ensureImageDeleted(ctx context.Context, imageName string) err
 		Project: u.project,
 	})
 	if err != nil {
-		u.log.Debug("Image %s doesn't exist. Nothing to clean up.", imageName)
+		u.log.Debug(fmt.Sprintf("Image %s doesn't exist. Nothing to clean up.", imageName))
 		return nil
 	}
-	u.log.Debug("Deleting image %s", imageName)
+	u.log.Debug(fmt.Sprintf("Deleting image %s", imageName))
 	op, err := u.image.Delete(ctx, &computepb.DeleteImageRequest{
 		Image:   imageName,
 		Project: u.project,

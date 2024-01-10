@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
+  "fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -129,7 +130,7 @@ func main() {
 	defer watcher.Close()
 
 	go func() {
-		log.Info("starting file watcher for measurements file %s", filepath.Join(constants.ServiceBasePath, constants.AttestationConfigFilename))
+		log.Info(fmt.Sprintf("starting file watcher for measurements file %s", filepath.Join(constants.ServiceBasePath, constants.AttestationConfigFilename)))
 		if err := watcher.Watch(filepath.Join(constants.ServiceBasePath, constants.AttestationConfigFilename)); err != nil {
 			log.With(slog.Any("error", err)).Error("Failed to watch measurements file")
       os.Exit(1)

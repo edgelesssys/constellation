@@ -15,6 +15,7 @@ import (
 	"io"
 	"os"
 	"testing"
+  "log/slog"
 
 	tpmclient "github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm-tools/proto/attest"
@@ -481,10 +482,10 @@ type testAttestationLogger struct {
 	warnings []string
 }
 
-func (w *testAttestationLogger) Infof(format string, args ...any) {
+func (w *testAttestationLogger) Info(format string, args ...any) {
 	w.infos = append(w.infos, fmt.Sprintf(format, args...))
 }
 
-func (w *testAttestationLogger) Warnf(format string, args ...any) {
+func (w *testAttestationLogger) Warn(format string, args ...any) {
 	w.warnings = append(w.warnings, fmt.Sprintf(format, args...))
 }

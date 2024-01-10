@@ -44,14 +44,14 @@ func runCodegen(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: flags.logLevel}))
-	log.Debug("Parsed flags: %+v", flags)
+	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
 
 	registry, prefix, name, tag, err := splitRepoTag(flags.imageRepoTag)
 	if err != nil {
 		return fmt.Errorf("splitting OCI image reference %q: %w", flags.imageRepoTag, err)
 	}
 
-	log.Debug("Generating Go code for OCI image %s.", name)
+	log.Debug(fmt.Sprintf("Generating Go code for OCI image %s.", name))
 
 	ociIndexPath := filepath.Join(flags.ociPath, "index.json")
 	index, err := os.Open(ociIndexPath)
@@ -77,7 +77,7 @@ func runCodegen(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	log.Debug("OCI image digest: %s", digest)
+	log.Debug(fmt.Sprintf("OCI image digest: %s", digest))
 
 	if err := inject.Render(out, inject.PinningValues{
 		Package:  flags.pkg,
@@ -91,7 +91,7 @@ func runCodegen(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("rendering Go code: %w", err)
 	}
 
-	log.Debug("Go code created at %q 🤖", flags.output)
+	log.Debug(fmt.Sprintf("Go code created at %q 🤖", flags.output)) 
 	return nil
 }
 

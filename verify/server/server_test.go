@@ -20,8 +20,8 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/verify/verifyproto"
+  "github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
