@@ -8,7 +8,7 @@ jobs:
     e2e-daily:
       strategy:
         matrix:
-          kubernetesVersion: ["v1.28"]
+          kubernetesVersion: ["1.28"] # should be default
           provider: ["azure"]
           refStream: ["ref/main/stream/debug/?"]
           test: ["autoscaling"]
