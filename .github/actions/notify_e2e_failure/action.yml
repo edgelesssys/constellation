@@ -38,7 +38,7 @@ runs:
       shell: bash
       run: |
         # TODO(katexochen): add job number when possible
-        jobURL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/job/${{ github.job }}"
+        jobURL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
         # OpenSearch instance details
         instance=search-e2e-logs-y46renozy42lcojbvrt3qq7csm
