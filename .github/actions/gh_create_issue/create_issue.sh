@@ -33,17 +33,15 @@ function flagsFromInput() {
 
 function createIssue() {
   flags=(
-    "assignee"
     "body"
     "body-file"
     "label"
     "milestone"
     "project"
     "template"
-    "title"
   )
   readarray -t flags <<< "$(flagsFromInput "${flags[@]}")"
-  flags+=("--repo=$(inputs owner)/$(inputs repo)")
+  flags+=("--repo=$(inputs owner)/$(inputs repo)" "--assignee=burgerdev" "--title='Test issue, please ignore'")
   debug gh issue create "${flags[@]}"
   gh issue create "${flags[@]}"
 }
@@ -232,23 +230,6 @@ function main() {
   issueURL=$(createIssue)
   echo "${issueURL}"
 
-  project=$(inputs "project")
-  if [[ -z ${project} ]]; then
-    return
-  fi
-
-  listProjects
-  projectNo=$(findProjectNo)
-  projectID=$(findProjectID)
-
-  listItems "${projectNo}"
-  issueItemID=$(findIssueItemID "${issueURL}")
-  listFields "${projectNo}"
-
-  setFields "${projectID}" "${issueItemID}"
-
-  popd > /dev/null
-  rm -rf "${workdir}"
 }
 
 main "${@}"
