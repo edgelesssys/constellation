@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/edgelesssys/constellation/v2/terraform-provider-constellation/internal/data"
@@ -24,6 +25,7 @@ import (
 )
 
 var providerVersion string
+
 func TestMicroserviceConstraint(t *testing.T) {
 	providerVersion := semver.NewFromInt(2, 15, 0, "")
 	sut := &ClusterResource{
@@ -468,11 +470,17 @@ func fullClusterTestingConfig(t *testing.T, csp string) string {
 	provider "constellation" {}
 	`
 
+	// pick a compatible release image for the current development version
+	priorMinor, err := compatibility.PriorMinorVersion(providerVersion)
+	if err != nil {
+		t.Fatal("get current provider version release", err)
+	}
+	image := fmt.Sprintf("%s.0", priorMinor)
 	switch csp {
 	case "aws":
-		return providerConfig + `
+		return providerConfig + fmt.Sprintf(`
 		data "constellation_image" "bar" {
-			version             = "v2.14.0"
+			version             = "%s"
 			attestation_variant = "aws-sev-snp"
 			csp                 = "aws"
 			region			    = "us-east-2"
@@ -482,11 +490,11 @@ func fullClusterTestingConfig(t *testing.T, csp string) string {
 			csp                 = "aws"
 			attestation_variant = "aws-sev-snp"
 			image               = data.constellation_image.bar.image
-		}`
+		}`, image)
 	case "azure":
-		return providerConfig + `
+		return providerConfig + fmt.Sprintf(`
 		data "constellation_image" "bar" {
-			version             = "v2.14.0"
+			version             = "%s"
 			attestation_variant = "azure-sev-snp"
 			csp                 = "azure"
 		}
@@ -495,11 +503,11 @@ func fullClusterTestingConfig(t *testing.T, csp string) string {
 			csp                 = "azure"
 			attestation_variant = "azure-sev-snp"
 			image               = data.constellation_image.bar.image
-		}`
+		}`, image)
 	case "gcp":
-		return providerConfig + `
+		return providerConfig + fmt.Sprintf(`
 		data "constellation_image" "bar" {
-			version             = "v2.14.0"
+			version             = "%s"
 			attestation_variant = "gcp-sev-es"
 			csp                 = "gcp"
 		}
@@ -508,7 +516,7 @@ func fullClusterTestingConfig(t *testing.T, csp string) string {
 			csp                 = "gcp"
 			attestation_variant = "gcp-sev-es"
 			image               = data.constellation_image.bar.image
-		}`
+		}`, image)
 	default:
 		t.Fatal("unknown csp")
 		return ""
