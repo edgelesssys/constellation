@@ -460,6 +460,18 @@ func (r *ClusterResource) ModifyPlan(ctx context.Context, req resource.ModifyPla
 			"For details, see https://docs.edgeless.systems/constellation/overview/license")
 	}
 
+	// Validate during plan. Must be done in ModifyPlan to read provider data.
+	// See https://developer.hashicorp.com/terraform/plugin/framework/resources/configure#define-resource-configure-method.
+	_, diags := r.getMicroserviceVersion(&plannedState)
+	resp.Diagnostics.Append(diags...)
+
+	_, _, diags = r.getImageVersion(ctx, &plannedState)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Checks running on updates to the resource. (i.e. state and plan != nil)
 	if !req.State.Raw.IsNull() {
 		// Read currentState supplied by Terraform runtime into the model

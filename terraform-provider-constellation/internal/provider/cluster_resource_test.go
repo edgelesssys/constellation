@@ -23,9 +23,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var providerVersion = semver.NewFromInt(2, 15, 0, "")
+const providerVersion string = "v2.14.0"
 
 func TestMicroserviceConstraint(t *testing.T) {
+	providerVersion := semver.NewFromInt(2, 15, 0, "")
 	sut := &ClusterResource{
 		providerData: data.ProviderData{
 			Version: providerVersion,
@@ -115,7 +116,7 @@ func TestAccClusterResourceImports(t *testing.T) {
 
 	testCases := map[string]resource.TestCase{
 		"import success": {
-			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion(providerVersion),
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
@@ -141,7 +142,7 @@ func TestAccClusterResourceImports(t *testing.T) {
 			},
 		},
 		"kubeconfig not base64": {
-			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion(providerVersion),
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
@@ -159,7 +160,7 @@ func TestAccClusterResourceImports(t *testing.T) {
 			},
 		},
 		"mastersecret not hex": {
-			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion(providerVersion),
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
@@ -177,7 +178,7 @@ func TestAccClusterResourceImports(t *testing.T) {
 			},
 		},
 		"parameter missing": {
-			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion(providerVersion),
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
@@ -208,7 +209,7 @@ func TestAccClusterResource(t *testing.T) {
 
 	testCases := map[string]resource.TestCase{
 		"master secret not hex": {
-			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion("v2.13.0"),
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion(providerVersion),
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
@@ -232,13 +233,13 @@ func TestAccClusterResource(t *testing.T) {
 						kubernetes_version = "%s"
 						constellation_microservice_version = "%s"
 					  }
-				`, versions.Default, providerVersion.String()),
+				`, versions.Default, providerVersion),
 					ExpectError: regexp.MustCompile(".*Master secret must be a hex-encoded 32-byte.*"),
 				},
 			},
 		},
 		"master secret salt not hex": {
-			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion("v2.13.0"),
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion(providerVersion),
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
@@ -262,13 +263,13 @@ func TestAccClusterResource(t *testing.T) {
 						kubernetes_version = "%s"
 						constellation_microservice_version = "%s"
 					  }
-				`, versions.Default, providerVersion.String()),
+				`, versions.Default, providerVersion),
 					ExpectError: regexp.MustCompile(".*Master secret salt must be a hex-encoded 32-byte.*"),
 				},
 			},
 		},
 		"measurement salt not hex": {
-			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion("v2.13.0"),
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion(providerVersion),
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
@@ -292,13 +293,13 @@ func TestAccClusterResource(t *testing.T) {
 						kubernetes_version = "%s"
 						constellation_microservice_version = "%s"
 					  }
-				`, versions.Default, providerVersion.String()),
+				`, versions.Default, providerVersion),
 					ExpectError: regexp.MustCompile(".*Measurement salt must be a hex-encoded 32-byte.*"),
 				},
 			},
 		},
 		"invalid node ip cidr": {
-			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion("v2.13.0"),
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion(providerVersion),
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
@@ -322,13 +323,13 @@ func TestAccClusterResource(t *testing.T) {
 						kubernetes_version = "%s"
 						constellation_microservice_version = "%s"
 					  }
-				`, versions.Default, providerVersion.String()),
+				`, versions.Default, providerVersion),
 					ExpectError: regexp.MustCompile(".*Node IP CIDR must be a valid CIDR.*"),
 				},
 			},
 		},
 		"invalid service ip cidr": {
-			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion("v2.13.0"),
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion(providerVersion),
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
@@ -352,13 +353,13 @@ func TestAccClusterResource(t *testing.T) {
 						kubernetes_version = "%s"
 						constellation_microservice_version = "%s"
 					  }
-				`, versions.Default, providerVersion.String()),
+				`, versions.Default, providerVersion),
 					ExpectError: regexp.MustCompile(".*Service IP CIDR must be a valid CIDR.*"),
 				},
 			},
 		},
 		"azure config missing": {
-			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion("v2.13.0"),
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion(providerVersion),
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
@@ -382,13 +383,13 @@ func TestAccClusterResource(t *testing.T) {
 						kubernetes_version = "%s"
 						constellation_microservice_version = "%s"
 					  }
-				`, versions.Default, providerVersion.String()),
+				`, versions.Default, providerVersion),
 					ExpectError: regexp.MustCompile(".*When csp is set to 'azure', the 'azure' configuration must be set.*"),
 				},
 			},
 		},
 		"gcp config missing": {
-			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion("v2.13.0"),
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion(providerVersion),
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
@@ -413,13 +414,13 @@ func TestAccClusterResource(t *testing.T) {
 						kubernetes_version = "%s"
 						constellation_microservice_version = "%s"
 					  }
-				`, versions.Default, providerVersion.String()),
+				`, versions.Default, providerVersion),
 					ExpectError: regexp.MustCompile(".*When csp is set to 'gcp', the 'gcp' configuration must be set.*"),
 				},
 			},
 		},
 		"gcp pod ip cidr missing": {
-			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion("v2.13.0"),
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion(providerVersion),
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
@@ -447,8 +448,8 @@ func TestAccClusterResource(t *testing.T) {
 							kubernetes_version = "%s"
 							constellation_microservice_version = "%s"
 					  }
-				`, versions.Default, providerVersion.String()),
-					ExpectError: regexp.MustCompile(".*When csp is set to 'gcp', 'ip_cidr_pod' must be set.*"),
+				`, versions.Default, providerVersion),
+					ExpectError: regexp.MustCompile(`.*When csp is set to 'gcp', 'ip_cidr_pod' must be set.*`),
 				},
 			},
 		},
@@ -468,11 +469,12 @@ func fullClusterTestingConfig(t *testing.T, csp string) string {
 	provider "constellation" {}
 	`
 
+	image := providerVersion
 	switch csp {
 	case "aws":
-		return providerConfig + `
+		return providerConfig + fmt.Sprintf(`
 		data "constellation_image" "bar" {
-			version             = "v2.13.0"
+			version             = "%s"
 			attestation_variant = "aws-sev-snp"
 			csp                 = "aws"
 			region			    = "us-east-2"
@@ -482,11 +484,11 @@ func fullClusterTestingConfig(t *testing.T, csp string) string {
 			csp                 = "aws"
 			attestation_variant = "aws-sev-snp"
 			image               = data.constellation_image.bar.image
-		}`
+		}`, image)
 	case "azure":
-		return providerConfig + `
+		return providerConfig + fmt.Sprintf(`
 		data "constellation_image" "bar" {
-			version             = "v2.13.0"
+			version             = "%s"
 			attestation_variant = "azure-sev-snp"
 			csp                 = "azure"
 		}
@@ -495,11 +497,11 @@ func fullClusterTestingConfig(t *testing.T, csp string) string {
 			csp                 = "azure"
 			attestation_variant = "azure-sev-snp"
 			image               = data.constellation_image.bar.image
-		}`
+		}`, image)
 	case "gcp":
-		return providerConfig + `
+		return providerConfig + fmt.Sprintf(`
 		data "constellation_image" "bar" {
-			version             = "v2.13.0"
+			version             = "%s"
 			attestation_variant = "gcp-sev-es"
 			csp                 = "gcp"
 		}
@@ -508,7 +510,7 @@ func fullClusterTestingConfig(t *testing.T, csp string) string {
 			csp                 = "gcp"
 			attestation_variant = "gcp-sev-es"
 			image               = data.constellation_image.bar.image
-		}`
+		}`, image)
 	default:
 		t.Fatal("unknown csp")
 		return ""
