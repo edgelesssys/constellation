@@ -85,7 +85,6 @@ go_test(
     ],
     # keep
     x_defs = {
-        "providerVersion": "{STABLE_STAMP_VERSION}",
         "runsUnder": "bazel",
     },
     deps = [

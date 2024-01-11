@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// integration tests have no version stamping, so we expect v0.0.0
 const providerVersion string = "v0.0.0"
 
 func TestMicroserviceConstraint(t *testing.T) {
@@ -449,7 +450,7 @@ func TestAccClusterResource(t *testing.T) {
 							constellation_microservice_version = "%s"
 					  }
 				`, versions.Default, providerVersion),
-				ExpectError: regexp.MustCompile(`.*When csp is set to 'gcp', 'ip_cidr_pod' must be set.*|.*Image version \(v[0-9]+\.[0-9]+\.[0-9]+\) incompatible with provider version.*`),
+					ExpectError: regexp.MustCompile(`.*When csp is set to 'gcp', 'ip_cidr_pod' must be set.*|.*Image version \(v[0-9]+\.[0-9]+\.[0-9]+\) incompatible with provider version.*`),
 				},
 			},
 		},
