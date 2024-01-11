@@ -334,7 +334,7 @@ func (i *chartLoader) cspTags() map[string]any {
 
 func (i *chartLoader) loadCiliumValues(cloudprovider.Provider) (map[string]any, error) {
 	sharedConfig := map[string]any{
-		"extraArgs": []string{"--node-encryption-opt-out-labels=invalid.label"},
+		"extraArgs": []string{"--node-encryption-opt-out-labels=invalid.label", "--bpf-filter-priority=50"},
 		"endpointRoutes": map[string]any{
 			"enabled": true,
 		},
