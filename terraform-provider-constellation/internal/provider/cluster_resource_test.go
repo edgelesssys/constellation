@@ -23,8 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// integration tests have no version stamping, so we expect v0.0.0
-const providerVersion string = "v0.0.0"
+const providerVersion string = "v2.14.0"
 
 func TestMicroserviceConstraint(t *testing.T) {
 	providerVersion := semver.NewFromInt(2, 15, 0, "")
@@ -117,7 +116,7 @@ func TestAccClusterResourceImports(t *testing.T) {
 
 	testCases := map[string]resource.TestCase{
 		"import success": {
-			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion(providerVersion),
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
@@ -143,7 +142,7 @@ func TestAccClusterResourceImports(t *testing.T) {
 			},
 		},
 		"kubeconfig not base64": {
-			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion(providerVersion),
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
@@ -161,7 +160,7 @@ func TestAccClusterResourceImports(t *testing.T) {
 			},
 		},
 		"mastersecret not hex": {
-			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion(providerVersion),
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
@@ -179,7 +178,7 @@ func TestAccClusterResourceImports(t *testing.T) {
 			},
 		},
 		"parameter missing": {
-			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion(providerVersion),
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
@@ -210,7 +209,7 @@ func TestAccClusterResource(t *testing.T) {
 
 	testCases := map[string]resource.TestCase{
 		"master secret not hex": {
-			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion(providerVersion),
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
@@ -240,7 +239,7 @@ func TestAccClusterResource(t *testing.T) {
 			},
 		},
 		"master secret salt not hex": {
-			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion(providerVersion),
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
@@ -270,7 +269,7 @@ func TestAccClusterResource(t *testing.T) {
 			},
 		},
 		"measurement salt not hex": {
-			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion(providerVersion),
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
@@ -300,7 +299,7 @@ func TestAccClusterResource(t *testing.T) {
 			},
 		},
 		"invalid node ip cidr": {
-			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion(providerVersion),
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
@@ -330,7 +329,7 @@ func TestAccClusterResource(t *testing.T) {
 			},
 		},
 		"invalid service ip cidr": {
-			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion(providerVersion),
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
@@ -360,7 +359,7 @@ func TestAccClusterResource(t *testing.T) {
 			},
 		},
 		"azure config missing": {
-			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion(providerVersion),
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
@@ -390,7 +389,7 @@ func TestAccClusterResource(t *testing.T) {
 			},
 		},
 		"gcp config missing": {
-			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion(providerVersion),
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
@@ -421,7 +420,7 @@ func TestAccClusterResource(t *testing.T) {
 			},
 		},
 		"gcp pod ip cidr missing": {
-			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion(providerVersion),
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
 				{
@@ -450,7 +449,7 @@ func TestAccClusterResource(t *testing.T) {
 							constellation_microservice_version = "%s"
 					  }
 				`, versions.Default, providerVersion),
-					ExpectError: regexp.MustCompile(`.*When csp is set to 'gcp', 'ip_cidr_pod' must be set.*|.*Image version \(v[0-9]+\.[0-9]+\.[0-9]+\) incompatible with provider version.*`),
+					ExpectError: regexp.MustCompile(`.*When csp is set to 'gcp', 'ip_cidr_pod' must be set.*`),
 				},
 			},
 		},
@@ -470,7 +469,7 @@ func fullClusterTestingConfig(t *testing.T, csp string) string {
 	provider "constellation" {}
 	`
 
-	image := "v2.14.0"
+	image := providerVersion
 	switch csp {
 	case "aws":
 		return providerConfig + fmt.Sprintf(`
