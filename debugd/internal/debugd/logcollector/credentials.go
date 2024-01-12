@@ -86,7 +86,7 @@ func newGCPCloudCredentialGetter(ctx context.Context) (*gcpCloudCredentialGetter
 }
 
 func (g *gcpCloudCredentialGetter) GetOpensearchCredentials(ctx context.Context) (credentials, error) {
-	const secretName = "projects/796962942582/secrets/e2e-logs-OpenSearch-password/versions/1"
+	const secretName = "projects/1052692473304/secrets/e2e-logs-OpenSearch-password/versions/1"
 	const username = "cluster-instance-gcp"
 
 	req := &gcpsecretmanagerpb.AccessSecretVersionRequest{Name: secretName}
