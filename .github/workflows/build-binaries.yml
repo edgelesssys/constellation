@@ -19,7 +19,7 @@ on:
 
 jobs:
   build-binaries:
-    runs-on: [arc-runner-set]
+    runs-on: [ubuntu-22.04]
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -29,8 +29,7 @@ jobs:
       - name: Setup bazel
         uses: ./.github/actions/setup_bazel_nix
         with:
-          useCache: "rbe"
-          rbePlatform: "ubuntu-22.04"
+          useCache: "true"
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
 
       - name: Build all

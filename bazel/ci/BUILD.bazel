@@ -550,7 +550,7 @@ multirun(
             ":actionlint",
         ],
     }),
-    jobs = 0,  # execute concurrently
+    jobs = 1,  # execute sequentially
     stop_on_error = False,
     visibility = ["//visibility:public"],
 )
