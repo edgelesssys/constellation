@@ -26,8 +26,8 @@
         src = pkgsUnstable.fetchFromGitHub {
           owner = "systemd";
           repo = "mkosi";
-          rev = "abf22cdc6ccb13f2cd84679ede77231455ec6813";
-          hash = "sha256-njtYWSXSLMcn6AtGfAeL/ncZQ6g+Vgpe7EaKLkzAOl4=";
+          rev = "0a4e1276af191e64c57cd3c1ab50271ab3b706c8";
+          hash = "sha256-vcXa+oc+5hpWPQvzloNPTM8ra7ShUTLtBiQjqoAB09Y=";
         };
         propagatedBuildInputs = oldAttrs.propagatedBuildInputs ++ (with pkgsUnstable;  [
           # package management
@@ -35,6 +35,10 @@
           rpm
 
           # filesystem tools
+          bash # sh and bash for sandboxed scripts
+          coreutils # cp, rm, mkdir, chmod, chown, chgrp, ln, readlink, stat, ...
+          btrfs-progs # btrfs subvolumes
+          gnutar # tar
           squashfsTools # mksquashfs
           dosfstools # mkfs.vfat
           mtools # mcopy

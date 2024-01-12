@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -xeuo pipefail
 shopt -s inherit_errexit
 
 export PATH=/run/wrappers/bin:/run/current-system/sw/bin:/bin:/usr/bin:/usr/local/bin
@@ -22,6 +22,7 @@ enabled=1
 gpgcheck=0
 EOF
   args+=("--package-manager-tree=${reposdir}:/etc/yum.repos.d")
+  args+=("--local-mirror=${LOCAL_MIRROR}")
 fi
 
-exec @@MKOSI@@ "${args[@]}" build
+exec @@MKOSI@@ --debug "${args[@]}" build
