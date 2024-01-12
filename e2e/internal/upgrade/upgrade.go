@@ -65,10 +65,10 @@ func AssertUpgradeSuccessful(t *testing.T, cli string, targetVersions VersionCon
 	require.NotNil(t, k)
 
 	testMicroservicesEventuallyHaveVersion(t, targetVersions.Microservices, timeout)
-	fmt.Println("Microservices are upgraded.")
+	log.Println("Microservices are upgraded.")
 
 	testNodesEventuallyHaveVersion(t, k, targetVersions, wantControl+wantWorker, timeout)
-	fmt.Println("Nodes are upgraded.")
+	log.Println("Nodes are upgraded.")
 	wg.Wait()
 }
 

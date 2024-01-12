@@ -41,8 +41,8 @@ var (
 	// When executing the test as a bazel target the CLI path is supplied through an env variable that bazel sets.
 	// When executing via `go test` extra care should be taken that the supplied CLI is built on the same commit as this test.
 	cliPath     = flag.String("cli", "", "Constellation CLI to run the tests.")
-	wantWorker  = flag.Int("want-worker", 0, "Number of wanted worker nodes.")
-	wantControl = flag.Int("want-control", 0, "Number of wanted control nodes.")
+	wantWorker  = flag.Int("want-worker", 1, "Number of wanted worker nodes.")
+	wantControl = flag.Int("want-control", 1, "Number of wanted control nodes.")
 	timeout     = flag.Duration("timeout", 3*time.Hour, "Timeout after which the cluster should have converged to the target version.")
 )
 

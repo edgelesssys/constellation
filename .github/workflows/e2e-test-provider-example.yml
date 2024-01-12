@@ -223,7 +223,7 @@ jobs:
             required_providers {
               constellation = {
                 source  = "edgelesssys/constellation"
-                version            = "${version}"
+                version = "${version}"
               }
             }
           }
@@ -234,9 +234,9 @@ jobs:
           }
 
           locals {
-            name                = "${{ steps.create-prefix.outputs.prefix }}"
-            image_version            = "${image_version}"
-            microservice_version= "${prefixed_version}"
+            name = "${{ steps.create-prefix.outputs.prefix }}"
+            image_version = "${image_version}"
+            microservice_version = "${prefixed_version}"
             kubernetes_version = "${kubernetes_version}"
           }
 
@@ -323,13 +323,11 @@ jobs:
         working-directory: ${{ github.workspace }}/cluster
         shell: bash
         run: |
-          if [[ "${{ inputs.toImage }}" != "" ]]; then
           cat >> _override.tf <<EOF
           locals {
-            image_version = "${{ inputs.toImage && inputs.toImage || steps.find-latest-image.outputs.image }}"
+            image_version = "${{ inputs.toImage || steps.find-latest-image.outputs.image }}"
           }
           EOF
-          fi
 
           if [[ "${{ inputs.toKubernetes }}" != "" ]]; then
           cat >> _override.tf <<EOF
@@ -425,7 +423,6 @@ jobs:
             yq e '.nodeGroups.control_plane_default.zone = "eu-central-1a"' -i constellation-conf.yaml
             yq e '.nodeGroups.worker_default.zone = "eu-central-1a"' -i constellation-conf.yaml
           fi
-
           KUBECONFIG=${{ github.workspace }}/cluster/constellation-admin.conf bazel run //e2e/provider-upgrade:provider-upgrade_test -- --want-worker "$WORKERNODES" --want-control "$CONTROLNODES" --cli "${{ github.workspace }}/build/constellation" "$IMAGE_FLAG" "$KUBERNETES_FLAG" "$MICROSERVICES_FLAG"
 
       - name: Destroy Terraform Cluster
