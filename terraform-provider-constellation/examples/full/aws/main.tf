@@ -13,13 +13,15 @@ terraform {
 
 locals {
   name                 = "constell"
-  version              = "vX.Y.Z"
+  image_version        = "vX.Y.Z"
   kubernetes_version   = "vX.Y.Z"
   microservice_version = "vX.Y.Z"
   csp                  = "aws"
   attestation_variant  = "aws-sev-snp"
   region               = "us-east-2"
   zone                 = "us-east-2c"
+  control_plane_count  = 3
+  worker_count         = 2
 
   master_secret      = random_bytes.master_secret.hex
   master_secret_salt = random_bytes.master_secret_salt.hex
@@ -55,7 +57,7 @@ module "aws_infrastructure" {
       instance_type = "m6a.xlarge"
       disk_size     = 30
       disk_type     = "gp3"
-      initial_count = 3
+      initial_count = local.control_plane_count
       zone          = local.zone
     },
     worker_default = {
@@ -63,7 +65,7 @@ module "aws_infrastructure" {
       instance_type = "m6a.xlarge"
       disk_size     = 30
       disk_type     = "gp3"
-      initial_count = 2
+      initial_count = local.worker_count
       zone          = local.zone
     }
   }
@@ -87,7 +89,7 @@ data "constellation_attestation" "foo" {
 data "constellation_image" "bar" {
   csp                 = local.csp
   attestation_variant = local.attestation_variant
-  version             = local.version
+  version             = local.image_version
   region              = local.region
 }
 

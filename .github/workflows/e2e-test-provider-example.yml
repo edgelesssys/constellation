@@ -23,6 +23,14 @@ on:
       providerVersion:
         description: "Constellation Terraform provider version to use (with v prefix). Empty value means build from source."
         type: string
+      toImage:
+        description: Image (shortpath) the cluster is upgraded to, or empty for main/nightly.
+        type: string
+        required: false
+      toKubernetes:
+        description: Kubernetes version to target for the upgrade, empty for no upgrade.
+        type: string
+        required: false
   workflow_call:
     inputs:
       ref:
@@ -41,6 +49,14 @@ on:
       providerVersion:
         description: "Constellation Terraform provider version to use (with v prefix). Empty value means build from source."
         type: string
+      toImage:
+        description: Image (shortpath) the cluster is upgraded to, or empty for main/nightly.
+        type: string
+        required: false
+      toKubernetes:
+        description: Kubernetes version to target for the upgrade, empty for target's default version.
+        type: string
+        required: false
 
 jobs:
   provider-example-test:
@@ -93,6 +109,16 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download CLI # needed to determine K8s version for release versions
+        if: inputs.providerVersion != ''
+        shell: bash
+        run: |
+          curl -fsSL -o constellation https://github.com/edgelesssys/constellation/releases/download/${{ inputs.providerVersion }}/constellation-linux-amd64
+          chmod u+x constellation
+          ./constellation version
+          mkdir -p ${{ github.workspace }}/release
+          cp ./constellation ${{ github.workspace }}/release
 
       - name: Setup bazel
         uses: ./.github/actions/setup_bazel_nix
@@ -186,26 +212,38 @@ jobs:
           fi
 
           # take the middle (2nd) supported Kubernetes version (default)
-          kubernetes_version="$(../build/constellation config kubernetes-versions | awk 'NR==3{print $1}')"
+          if [[ "${{ inputs.providerVersion }}" != "" ]]; then
+            kubernetes_version="$(../release/constellation config kubernetes-versions | awk 'NR==3{print $1}')"
+          else
+            kubernetes_version="$(../build/constellation config kubernetes-versions | awk 'NR==3{print $1}')"
+          fi
 
           cat > _override.tf <<EOF
           terraform {
             required_providers {
               constellation = {
                 source  = "edgelesssys/constellation"
-                version            = "${version}"
+                version = "${version}"
               }
             }
           }
+
           locals {
-            name                = "${{ steps.create-prefix.outputs.prefix }}"
-            version            = "${image_version}"
-            microservice_version= "${prefixed_version}"
+            control_plane_count = 1
+            worker_count        = 1
+          }
+
+          locals {
+            name = "${{ steps.create-prefix.outputs.prefix }}"
+            image_version = "${image_version}"
+            microservice_version = "${prefixed_version}"
             kubernetes_version = "${kubernetes_version}"
           }
+
           module "${{ inputs.cloudProvider }}_iam" {
             source = "${iam_src}"
           }
+
           module "${{ inputs.cloudProvider }}_infrastructure" {
             source = "${infra_src}"
           }
@@ -259,10 +297,133 @@ jobs:
             terraform apply -target module.azure_iam -auto-approve
             terraform apply -target module.azure_infrastructure -auto-approve
             ../build/constellation maa-patch "$(terraform output -raw maa_url)"
-            TF_LOG=INFO terraform apply -target constellation_cluster.azure_example -auto-approve
+            terraform apply -target constellation_cluster.azure_example -auto-approve
           else
-            TF_LOG=INFO terraform apply -auto-approve
+            terraform apply -auto-approve
           fi
+
+      - name: Cleanup Terraform Cluster on failure
+        # cleanup here already on failure, because the subsequent TF overrides might make the TF config invalid and thus the destroy would fail later
+        # outcome is part of the steps context (https://docs.github.com/en/actions/learn-github-actions/contexts#steps-context)
+        if: failure() && steps.apply_terraform.outcome != 'skipped'
+        working-directory: ${{ github.workspace }}/cluster
+        shell: bash
+        run: |
+          terraform init
+          terraform destroy -auto-approve
+
+      - name: Add Provider to local Terraform registry # needed if release version was used before
+        if: inputs.providerVersion != ''
+        working-directory: ${{ github.workspace }}/build
+        shell: bash
+        run: |
+          bazel run //:devbuild --cli_edition=enterprise
+
+      - name: Update cluster configuration # for duplicate variable declaration, the last one is used
+        working-directory: ${{ github.workspace }}/cluster
+        shell: bash
+        run: |
+          cat >> _override.tf <<EOF
+          locals {
+            image_version = "${{ inputs.toImage || steps.find-latest-image.outputs.image }}"
+          }
+          EOF
+
+          if [[ "${{ inputs.toKubernetes }}" != "" ]]; then
+          cat >> _override.tf <<EOF
+          resource "constellation_cluster" "${{ inputs.cloudProvider }}_example" {
+            kubernetes_version = "${{ inputs.toKubernetes }}"
+          }
+          EOF
+          fi
+
+          prefixed_version=${{ steps.build.outputs.build_version }}
+          version=${prefixed_version#v} # remove v prefix
+
+          # needs to be explicitly set to upgrade
+          cat >> _override.tf <<EOF
+          resource "constellation_cluster" "${{ inputs.cloudProvider }}_example" {
+            constellation_microservice_version = "${prefixed_version}"
+          }
+          EOF
+
+          cat >> _override.tf <<EOF
+          terraform {
+            required_providers {
+              constellation = {
+                source  = "edgelesssys/constellation"
+                version = "${version}"
+              }
+            }
+          }
+          EOF
+          cat _override.tf
+
+      - name: Upgrade Terraform Cluster
+        working-directory: ${{ github.workspace }}/cluster
+        shell: bash
+        run: |
+          terraform init --upgrade
+          terraform apply -auto-approve
+
+      - name: Assert upgrade successful
+        working-directory: ${{ github.workspace }}/cluster
+        env:
+          IMAGE: ${{ inputs.toImage && inputs.toImage || steps.find-latest-image.outputs.image }}
+          KUBERNETES: ${{ inputs.toKubernetes }}
+          MICROSERVICES: ${{ steps.build.outputs.build_version }}
+          WORKERNODES:  1
+          CONTROLNODES: 1
+        run: |
+          terraform output -raw kubeconfig > constellation-admin.conf
+
+          if [[ -n "${MICROSERVICES}" ]]; then
+            MICROSERVICES_FLAG="--target-microservices=${MICROSERVICES}"
+          fi
+          if [[ -n "${KUBERNETES}" ]]; then
+            KUBERNETES_FLAG="--target-kubernetes=${KUBERNETES}"
+          fi
+          if [[ -n "${IMAGE}" ]]; then
+            IMAGE_FLAG="--target-image=${IMAGE}"
+          fi
+
+          # cfg must be in same dir as KUBECONFIG
+          ../build/constellation config generate "${{ inputs.cloudProvider }}"
+          # make cfg valid with fake data
+          # IMPORTANT: zone needs to be correct because it is used to resolve the CSP image ref
+          if [[ "${{ inputs.cloudProvider }}" == "azure" ]]; then
+            location="${{ inputs.regionZone || 'northeurope' }}"
+            yq e ".provider.azure.location = \"${location}\"" -i constellation-conf.yaml
+
+            yq e '.provider.azure.subscription = "123e4567-e89b-12d3-a456-426614174000"' -i constellation-conf.yaml
+            yq e '.provider.azure.tenant = "123e4567-e89b-12d3-a456-426614174001"' -i constellation-conf.yaml
+            yq e '.provider.azure.resourceGroup = "myResourceGroup"' -i constellation-conf.yaml
+            yq e '.provider.azure.userAssignedIdentity = "myIdentity"' -i constellation-conf.yaml
+          fi
+          if [[ "${{ inputs.cloudProvider }}" == "gcp" ]]; then
+            zone="${{ inputs.regionZone || 'europe-west3-b' }}"
+            region=$(echo "${zone}" | rev | cut -c 2- | rev)
+            yq e ".provider.gcp.region = \"${region}\"" -i constellation-conf.yaml
+            yq e ".provider.gcp.zone = \"${zone}\"" -i constellation-conf.yaml
+
+            yq e '.provider.gcp.project = "demo-gcp-project"' -i constellation-conf.yaml
+            yq e '.nodeGroups.control_plane_default.zone = "europe-west3-b"' -i constellation-conf.yaml
+            # Set the zone for worker_default node group to a fictional value
+            yq e '.nodeGroups.worker_default.zone = "europe-west3-b"' -i constellation-conf.yaml
+            yq e '.provider.gcp.serviceAccountKeyPath = "/path/to/your/service-account-key.json"' -i constellation-conf.yaml
+          fi
+          if [[ "${{ inputs.cloudProvider }}" == "aws" ]]; then
+            zone=${{ inputs.regionZone || 'us-east-2c' }}
+            region=$(echo "${zone}" | rev | cut -c 2- | rev)
+            yq e ".provider.aws.region = \"${region}\"" -i constellation-conf.yaml
+            yq e ".provider.aws.zone = \"${zone}\"" -i constellation-conf.yaml
+
+            yq e '.provider.aws.iamProfileControlPlane = "demoControlPlaneIAMProfile"' -i constellation-conf.yaml
+            yq e '.provider.aws.iamProfileWorkerNodes = "demoWorkerNodesIAMProfile"' -i constellation-conf.yaml
+            yq e '.nodeGroups.control_plane_default.zone = "eu-central-1a"' -i constellation-conf.yaml
+            yq e '.nodeGroups.worker_default.zone = "eu-central-1a"' -i constellation-conf.yaml
+          fi
+          KUBECONFIG=${{ github.workspace }}/cluster/constellation-admin.conf bazel run //e2e/provider-upgrade:provider-upgrade_test -- --want-worker "$WORKERNODES" --want-control "$CONTROLNODES" --cli "${{ github.workspace }}/build/constellation" "$IMAGE_FLAG" "$KUBERNETES_FLAG" "$MICROSERVICES_FLAG"
 
       - name: Destroy Terraform Cluster
       # outcome is part of the steps context (https://docs.github.com/en/actions/learn-github-actions/contexts#steps-context)
