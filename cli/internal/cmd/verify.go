@@ -128,7 +128,7 @@ func runVerify(cmd *cobra.Command, _ []string) error {
 	if err := v.flags.parse(cmd.Flags()); err != nil {
 		return err
 	}
-	v.log.Debug("Using flags: %+v", v.flags)
+	v.log.Debug(fmt.Sprintf("Using flags: %+v", v.flags))
 	fetcher := attestationconfigapi.NewFetcher()
 	return v.verify(cmd, verifyClient, formatterFactory, fetcher)
 }
@@ -136,7 +136,7 @@ func runVerify(cmd *cobra.Command, _ []string) error {
 type formatterFactory func(output string, attestation variant.Variant, log debugLog) (attestationDocFormatter, error)
 
 func (c *verifyCmd) verify(cmd *cobra.Command, verifyClient verifyClient, factory formatterFactory, configFetcher attestationconfigapi.Fetcher) error {
-	c.log.Debug("Loading configuration file from %q", c.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
+	c.log.Debug(fmt.Sprintf("Loading configuration file from %q", c.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename)))
 	conf, err := config.New(c.fileHandler, constants.ConfigFilename, configFetcher, c.flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
@@ -175,7 +175,7 @@ func (c *verifyCmd) verify(cmd *cobra.Command, verifyClient verifyClient, factor
 		return fmt.Errorf("updating expected PCRs: %w", err)
 	}
 
-	c.log.Debug("Creating aTLS Validator for %s", conf.GetAttestationConfig().GetVariant())
+	c.log.Debug(fmt.Sprintf("Creating aTLS Validator for %s", conf.GetAttestationConfig().GetVariant()))
 	validator, err := choose.Validator(attConfig, warnLogger{cmd: cmd, log: c.log})
 	if err != nil {
 		return fmt.Errorf("creating aTLS validator: %w", err)
@@ -185,7 +185,7 @@ func (c *verifyCmd) verify(cmd *cobra.Command, verifyClient verifyClient, factor
 	if err != nil {
 		return fmt.Errorf("generating random nonce: %w", err)
 	}
-	c.log.Debug("Generated random nonce: %x", nonce)
+	c.log.Debug(fmt.Sprintf("Generated random nonce: %x", nonce))
 
 	rawAttestationDoc, err := verifyClient.Verify(
 		cmd.Context(),
@@ -384,7 +384,7 @@ type constellationVerifier struct {
 func (v *constellationVerifier) Verify(
 	ctx context.Context, endpoint string, req *verifyproto.GetAttestationRequest, validator atls.Validator,
 ) (string, error) {
-	v.log.Debug("Dialing endpoint: %q", endpoint)
+	v.log.Debug(fmt.Sprintf("Dialing endpoint: %q", endpoint))
 	conn, err := v.dialer.DialInsecure(ctx, endpoint)
 	if err != nil {
 		return "", fmt.Errorf("dialing init server: %w", err)

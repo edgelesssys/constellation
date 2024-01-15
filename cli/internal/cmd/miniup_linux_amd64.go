@@ -45,7 +45,7 @@ func (m *miniUpCmd) checkSystemRequirements(out io.Writer) error {
 	if runtime.NumCPU() < 6 {
 		fmt.Fprintf(out, "WARNING: Only %d CPU cores available. This may cause performance issues.\n", runtime.NumCPU())
 	}
-	m.log.Debug("Checked CPU cores - there are %d", runtime.NumCPU())
+	m.log.Debug(fmt.Sprintf("Checked CPU cores - there are %d", runtime.NumCPU()))
 
 	// check memory
 	f, err := os.Open("/proc/meminfo")
@@ -71,7 +71,7 @@ func (m *miniUpCmd) checkSystemRequirements(out io.Writer) error {
 	if memGB < 6 {
 		fmt.Fprintln(out, "WARNING: Less than 6GB of memory available. This may cause performance issues.")
 	}
-	m.log.Debug("Checked available memory, you have %dGB available", memGB)
+	m.log.Debug(fmt.Sprintf("Checked available memory, you have %dGB available", memGB))
 
 	var stat unix.Statfs_t
 	if err := unix.Statfs(".", &stat); err != nil {
@@ -81,7 +81,7 @@ func (m *miniUpCmd) checkSystemRequirements(out io.Writer) error {
 	if freeSpaceGB < 20 {
 		return fmt.Errorf("insufficient disk space: %dGB, at least 20GB of disk space are required by MiniConstellation", freeSpaceGB)
 	}
-	m.log.Debug("Checked for free space available, you have %dGB available", freeSpaceGB)
+	m.log.Debug(fmt.Sprintf("Checked for free space available, you have %dGB available", freeSpaceGB))
 
 	return nil
 }

@@ -13,6 +13,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -23,7 +24,6 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/osimage"
 )
 
@@ -36,11 +36,11 @@ const timestampFormat = "20060102150405"
 type Uploader struct {
 	uplosiPath string
 
-	log *logger.Logger
+	log *slog.Logger
 }
 
 // New creates a new Uploader.
-func New(uplosiPath string, log *logger.Logger) *Uploader {
+func New(uplosiPath string, log *slog.Logger) *Uploader {
 	return &Uploader{
 		uplosiPath: uplosiPath,
 		log:        log,

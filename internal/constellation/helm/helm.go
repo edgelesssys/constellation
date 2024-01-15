@@ -133,7 +133,7 @@ type ChartApplyExecutor struct {
 // Apply applies the charts in order.
 func (c ChartApplyExecutor) Apply(ctx context.Context) error {
 	for _, action := range c.actions {
-		c.log.Debug("Applying %q", action.ReleaseName())
+		c.log.Debug(fmt.Sprintf("Applying %q", action.ReleaseName()))
 		if err := action.Apply(ctx); err != nil {
 			return fmt.Errorf("applying %s: %w", action.ReleaseName(), err)
 		}

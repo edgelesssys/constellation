@@ -56,7 +56,7 @@ func runPatchMAA(cmd *cobra.Command, args []string) error {
 }
 
 func (c *maaPatchCmd) patchMAA(cmd *cobra.Command, attestationURL string) error {
-	c.log.Debug("Using attestation URL %s", attestationURL)
+	c.log.Debug(fmt.Sprintf("Using attestation URL %s", attestationURL))
 
 	if err := c.patcher.Patch(cmd.Context(), attestationURL); err != nil {
 		return fmt.Errorf("patching MAA attestation policy: %w", err)

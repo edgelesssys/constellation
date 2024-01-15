@@ -53,7 +53,7 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 			logger.Info("Get flags from infos")
 			_, ok, err := infoMap.Get("logcollect")
 			if err != nil {
-				logger.Error("Getting infos: %v", err)
+				logger.Error(fmt.Sprintf("Getting infos: %v", err))
 				return
 			}
 			if !ok {
@@ -63,27 +63,27 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 
 			cerdsGetter, err := newCloudCredentialGetter(ctx, provider, infoMap)
 			if err != nil {
-				logger.Error("Creating cloud credential getter: %v", err)
+				logger.Error(fmt.Sprintf("Creating cloud credential getter: %v", err))
 				return
 			}
 
 			logger.Info("Getting credentials")
 			creds, err := cerdsGetter.GetOpensearchCredentials(ctx)
 			if err != nil {
-				logger.Error("Getting opensearch credentials: %v", err)
+				logger.Error(fmt.Sprintf("Getting opensearch credentials: %v", err))
 				return
 			}
 
 			logger.Info(fmt.Sprintf("Getting logstash pipeline template from image %s", versions.LogstashImage))
 			tmpl, err := getTemplate(ctx, logger, versions.LogstashImage, "/run/logstash/templates/pipeline.conf", "/run/logstash")
 			if err != nil {
-				logger.Error("Getting logstash pipeline template: %v", err)
+				logger.Error(fmt.Sprintf("Getting logstash pipeline template: %v", err))
 				return
 			}
 
 			infoMapM, err := infoMap.GetCopy()
 			if err != nil {
-				logger.Error("Getting copy of map from info: %v", err)
+				logger.Error(fmt.Sprintf("Getting copy of map from info: %v", err))
 				return
 			}
 			infoMapM = filterInfoMap(infoMapM)
@@ -97,14 +97,14 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 				Credentials: creds,
 			}
 			if err := writeTemplate("/run/logstash/pipeline/pipeline.conf", tmpl, pipelineConf); err != nil {
-				logger.Error("Writing logstash config: %v", err)
+				logger.Error(fmt.Sprintf("Writing logstash config: %v", err))
 				return
 			}
 
 			logger.Info(fmt.Sprintf("Getting filebeat config template from image %s", versions.FilebeatImage))
 			tmpl, err = getTemplate(ctx, logger, versions.FilebeatImage, "/run/filebeat/templates/filebeat.yml", "/run/filebeat")
 			if err != nil {
-				logger.Error("Getting filebeat config template: %v", err)
+				logger.Error(fmt.Sprintf("Getting filebeat config template: %v", err))
 				return
 			}
 			filebeatConf := filebeatConfInput{
@@ -112,13 +112,13 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 				AddCloudMetadata: true,
 			}
 			if err := writeTemplate("/run/filebeat/filebeat.yml", tmpl, filebeatConf); err != nil {
-				logger.Error("Writing filebeat pipeline: %v", err)
+				logger.Error(fmt.Sprintf("Writing filebeat pipeline: %v", err))
 				return
 			}
 
 			logger.Info("Starting log collection pod")
 			if err := startPod(ctx, logger); err != nil {
-				logger.Error("Starting log collection: %v", err)
+				logger.Error(fmt.Sprintf("Starting log collection: %v", err))
 			}
 		}()
 	}

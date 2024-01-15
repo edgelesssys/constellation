@@ -9,6 +9,7 @@ package grpclog
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"google.golang.org/grpc/connectivity"
@@ -30,15 +31,15 @@ func LogStateChangesUntilReady(ctx context.Context, conn getStater, log debugLog
 	go func() {
 		defer wg.Done()
 		state := conn.GetState()
-		log.Debug("Connection state started as %s", state)
+		log.Debug(fmt.Sprintf("Connection state started as %s", state))
 		for ; state != connectivity.Ready && conn.WaitForStateChange(ctx, state); state = conn.GetState() {
-			log.Debug("Connection state changed to %s", state)
+			log.Debug(fmt.Sprintf("Connection state changed to %s", state))
 		}
 		if state == connectivity.Ready {
 			log.Debug("Connection ready")
 			isReadyCallback()
 		} else {
-			log.Debug("Connection state ended with %s", state)
+			log.Debug(fmt.Sprintf("Connection state ended with %s", state))
 		}
 	}()
 }

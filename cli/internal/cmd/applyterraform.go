@@ -76,7 +76,7 @@ func (a *applyCmd) planTerraformChanges(cmd *cobra.Command, conf *config.Config,
 	//
 	// var manualMigrations []terraform.StateMigration
 	// for _, migration := range manualMigrations {
-	// 	  u.log.Debug("Adding manual Terraform migration: %s", migration.DisplayName)
+	// 	  u.log.Debug(fmt.Sprintf("Adding manual Terraform migration: %s", migration.DisplayName))
 	// 	  u.infraApplier.AddManualStateMigration(migration)
 	// }
 
@@ -186,7 +186,7 @@ func printCreateInfo(out io.Writer, conf *config.Config, log debugLog) error {
 		}
 	}
 	if len(otherGroupNames) > 0 {
-		log.Debug("Creating %d additional node groups: %v", len(otherGroupNames), otherGroupNames)
+		log.Debug(fmt.Sprintf("Creating %d additional node groups: %v", len(otherGroupNames), otherGroupNames))
 	}
 
 	fmt.Fprintf(out, "The following Constellation cluster will be created:\n")

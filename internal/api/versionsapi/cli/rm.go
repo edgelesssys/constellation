@@ -410,7 +410,7 @@ func (a *awsClient) deleteImage(ctx context.Context, ami string, region string, 
 
 	snapshotID, err := a.getSnapshotID(ctx, ami, log)
 	if err != nil {
-		log.Warn("Failed to get AWS snapshot ID for image %s: %v", ami, err)
+		log.Warn(fmt.Sprintf("Failed to get AWS snapshot ID for image %s: %v", ami, err))
 	}
 
 	if err := a.deregisterImage(ctx, ami, dryrun, log); err != nil {
@@ -686,10 +686,10 @@ type azImage struct {
 
 func (a *azureClient) parseImage(ctx context.Context, image string, log *slog.Logger) (azImage, error) {
 	if m := azImageRegex.FindStringSubmatch(image); len(m) == 5 {
-		log.Debug(
+		log.Debug(fmt.Sprintf(
 			"Image matches local image format, resource group: %s, gallery: %s, image definition: %s, version: %s",
 			m[1], m[2], m[3], m[4],
-		)
+		))
 		return azImage{
 			resourceGroup:   m[1],
 			gallery:         m[2],

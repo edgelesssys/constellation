@@ -85,13 +85,13 @@ func runConfigGenerate(cmd *cobra.Command, args []string) error {
 	if err := cg.flags.parse(cmd.Flags()); err != nil {
 		return fmt.Errorf("parsing flags: %w", err)
 	}
-	log.Debug("Parsed flags as %+v", cg.flags)
+	log.Debug(fmt.Sprintf("Parsed flags as %+v", cg.flags))
 
 	return cg.configGenerate(cmd, fileHandler, provider, args[0])
 }
 
 func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file.Handler, provider cloudprovider.Provider, rawProvider string) error {
-	cg.log.Debug("Using cloud provider %s", provider.String())
+	cg.log.Debug(fmt.Sprintf("Using cloud provider %s", provider.String()))
 
 	// Config creation
 	conf, err := createConfigWithAttestationVariant(provider, rawProvider, cg.flags.attestationVariant)

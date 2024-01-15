@@ -214,13 +214,13 @@ func (k *KubeCmd) ApplyJoinConfig(ctx context.Context, newAttestConfig config.At
 			return fmt.Errorf("getting %s ConfigMap: %w", constants.JoinConfigMap, err)
 		}
 
-		k.log.Debug("ConfigMap %q does not exist in namespace %q, creating it now", constants.JoinConfigMap, constants.ConstellationNamespace)
+		k.log.Debug(fmt.Sprintf("ConfigMap %q does not exist in namespace %q, creating it now", constants.JoinConfigMap, constants.ConstellationNamespace))
 		if err := retryAction(ctx, k.retryInterval, maxRetryAttempts, func(ctx context.Context) error {
 			return k.kubectl.CreateConfigMap(ctx, joinConfigMap(newConfigJSON, measurementSalt))
 		}, k.log); err != nil {
 			return fmt.Errorf("creating join-config ConfigMap: %w", err)
 		}
-		k.log.Debug("Created %q ConfigMap in namespace %q", constants.JoinConfigMap, constants.ConstellationNamespace)
+		k.log.Debug(fmt.Sprintf("Created %q ConfigMap in namespace %q", constants.JoinConfigMap, constants.ConstellationNamespace))
 		return nil
 	}
 
@@ -266,7 +266,7 @@ func (k *KubeCmd) ExtendClusterConfigCertSANs(ctx context.Context, alternativeNa
 		k.log.Debug("No new SANs to add to the cluster's apiserver SAN field")
 		return nil
 	}
-	k.log.Debug("Extending the cluster's apiserver SAN field with the following SANs: %s\n", strings.Join(missingSANs, ", "))
+	k.log.Debug(fmt.Sprintf("Extending the cluster's apiserver SAN field with the following SANs: %s\n", strings.Join(missingSANs, ", ")))
 
 	clusterConfiguration.APIServer.CertSANs = append(clusterConfiguration.APIServer.CertSANs, missingSANs...)
 	sort.Strings(clusterConfiguration.APIServer.CertSANs)
@@ -409,7 +409,7 @@ func (k *KubeCmd) prepareUpdateK8s(nodeVersion *updatev1alpha1.NodeVersion, newC
 		}
 	}
 
-	k.log.Debug("Updating local copy of nodeVersion Kubernetes version from %s to %s", nodeVersion.Spec.KubernetesClusterVersion, newClusterVersion)
+	k.log.Debug(fmt.Sprintf("Updating local copy of nodeVersion Kubernetes version from %s to %s", nodeVersion.Spec.KubernetesClusterVersion, newClusterVersion))
 	nodeVersion.Spec.KubernetesComponentsReference = configMap.ObjectMeta.Name
 	nodeVersion.Spec.KubernetesClusterVersion = newClusterVersion
 
@@ -461,7 +461,7 @@ func retryGetJoinConfig(ctx context.Context, kubectl kubectlInterface, retryInte
 			return false
 		}
 		retries++
-		log.Debug("Getting join-config ConfigMap failed (attempt %d/%d): %s", retries, maxRetryAttempts, err)
+		log.Debug(fmt.Sprintf("Getting join-config ConfigMap failed (attempt %d/%d): %s", retries, maxRetryAttempts, err))
 		return retries < maxRetryAttempts
 	}
 
@@ -483,7 +483,7 @@ func retryAction(ctx context.Context, retryInterval time.Duration, maxRetries in
 	ctr := 0
 	retrier := conretry.NewIntervalRetrier(&kubeDoer{action: action}, retryInterval, func(err error) bool {
 		ctr++
-		log.Debug("Action failed (attempt %d/%d): %s", ctr, maxRetries, err)
+		log.Debug(fmt.Sprintf("Action failed (attempt %d/%d): %s", ctr, maxRetries, err))
 		return ctr < maxRetries
 	})
 	return retrier.Do(ctx)

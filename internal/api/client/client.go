@@ -197,7 +197,7 @@ func Fetch[T APIObject](ctx context.Context, c *Client, obj T) (T, error) {
 		Key:    ptr(obj.JSONPath()),
 	}
 
-	c.Logger.Debug("Fetching %T from s3: %s", obj, obj.JSONPath())
+	c.Logger.Debug(fmt.Sprintf("Fetching %T from s3: %s", obj, obj.JSONPath()))
 	out, err := c.s3Client.GetObject(ctx, in)
 	var noSuchkey *s3types.NoSuchKey
 	if errors.As(err, &noSuchkey) {
@@ -243,7 +243,7 @@ func Update(ctx context.Context, c *Client, obj APIObject) error {
 
 	c.dirtyPaths = append(c.dirtyPaths, "/"+obj.JSONPath())
 
-	c.Logger.Debug("Uploading %T to s3: %v", obj, obj.JSONPath())
+	c.Logger.Debug(fmt.Sprintf("Uploading %T to s3: %v", obj, obj.JSONPath()))
 	if _, err := c.Upload(ctx, in); err != nil {
 		return fmt.Errorf("uploading %T: %w", obj, err)
 	}
@@ -306,7 +306,7 @@ func Delete(ctx context.Context, c *Client, obj APIObject) error {
 		Key:    ptr(obj.JSONPath()),
 	}
 
-	c.Logger.Debug("Deleting %T from s3: %s", obj, obj.JSONPath())
+	c.Logger.Debug(fmt.Sprintf("Deleting %T from s3: %s", obj, obj.JSONPath()))
 	if _, err := c.DeleteObject(ctx, in); err != nil {
 		return fmt.Errorf("deleting s3 object at %s: %w", obj.JSONPath(), err)
 	}

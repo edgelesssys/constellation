@@ -57,7 +57,7 @@ func (a *InstanceInfo) addReportSigner(att *spb.Attestation, report *spb.Report,
 	// If the VCEK certificate is present, parse it and format it.
 	reportSigner, err := a.ParseReportSigner()
 	if err != nil {
-		logger.Warn("Error parsing report signer: %v", err)
+		logger.Warn(fmt.Sprintf("Error parsing report signer: %v", err))
 	}
 
 	signerInfo, err := abi.ParseSignerInfo(report.GetSignerInfo())
@@ -123,7 +123,7 @@ func (a *InstanceInfo) AttestationWithCerts(getter trust.HTTPSGetter,
 	// If the certificate chain from THIM is present, parse it and format it.
 	ask, ark, err := a.ParseCertChain()
 	if err != nil {
-		logger.Warn("Error parsing certificate chain: %v", err)
+		logger.Warn(fmt.Sprintf("Error parsing certificate chain: %v", err))
 	}
 	if ask != nil {
 		logger.Info("Using ASK certificate from Azure THIM")
@@ -140,16 +140,16 @@ func (a *InstanceInfo) AttestationWithCerts(getter trust.HTTPSGetter,
 		att.CertificateChain.AskCert = fallbackCerts.ask.Raw
 	}
 	if att.CertificateChain.ArkCert == nil && fallbackCerts.ark != nil {
-		logger.Info("Using ARK certificate from %s", constants.ConfigFilename)
+		logger.Info(fmt.Sprintf("Using ARK certificate from %s", constants.ConfigFilename))
 		att.CertificateChain.ArkCert = fallbackCerts.ark.Raw
 	}
 	// Otherwise, retrieve it from AMD KDS.
 	if att.CertificateChain.AskCert == nil || att.CertificateChain.ArkCert == nil {
-		logger.Info(
+		logger.Info(fmt.Sprintf(
 			"Certificate chain not fully present (ARK present: %t, ASK present: %t), falling back to retrieving it from AMD KDS",
 			(att.CertificateChain.ArkCert != nil),
 			(att.CertificateChain.AskCert != nil),
-		)
+		))
 		kdsCertChain, err := trust.GetProductChain(productName, signingInfo, getter)
 		if err != nil {
 			return nil, fmt.Errorf("retrieving certificate chain from AMD KDS: %w", err)

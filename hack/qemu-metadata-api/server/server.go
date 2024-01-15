@@ -55,7 +55,7 @@ func (s *Server) ListenAndServe(port string) error {
 		return err
 	}
 
-	s.log.Info("Starting QEMU metadata API on %s", lis.Addr())
+	s.log.Info(fmt.Sprintf("Starting QEMU metadata API on %s", lis.Addr()))
 	return server.Serve(lis)
 }
 

@@ -9,7 +9,6 @@ package cmd
 import (
 	"errors"
 	"log/slog"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -177,7 +176,7 @@ type uplosiFlags struct {
 	bucket         string
 	distributionID string
 
-	logLevel zapcore.Level
+	logLevel slog.Level
 }
 
 func parseUplosiFlags(cmd *cobra.Command) (uplosiFlags, error) {
@@ -272,10 +271,10 @@ func parseUplosiFlags(cmd *cobra.Command) (uplosiFlags, error) {
 	if err != nil {
 		return uplosiFlags{}, err
 	}
-	logLevel := zapcore.InfoLevel
-	if verbose {
-		logLevel = zapcore.DebugLevel
-	}
+	logLevel := slog.LevelInfo
+  if verbose {
+		logLevel = slog.LevelDebug
+  }
 
 	return uplosiFlags{
 		rawImage:           rawImage,

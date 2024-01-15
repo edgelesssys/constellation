@@ -112,24 +112,24 @@ func ensureVersion(ctx context.Context, client *versionsapi.Client, kind version
 	verList, err := client.FetchVersionList(ctx, verListReq)
 	var notFoundErr *apiclient.NotFoundError
 	if errors.As(err, &notFoundErr) {
-		log.Info("Version list for %s versions under %q does not exist. Creating new list", gran.String(), ver.Major())
+		log.Info(fmt.Sprintf("Version list for %s versions under %q does not exist. Creating new list", gran.String(), ver.Major()))
 		verList = verListReq
 	} else if err != nil {
 		return fmt.Errorf("failed to list minor versions: %w", err)
 	}
-	log.Debug("%s version list: %v", gran.String(), verList)
+	log.Debug(fmt.Sprintf("%s version list: %v", gran.String(), verList))
 
 	insertGran := gran + 1
 	insertVersion := ver.WithGranularity(insertGran)
 
 	if verList.Contains(insertVersion) {
-		log.Info("Version %q already exists in list %v", insertVersion, verList.Versions)
+		log.Info(fmt.Sprintf("Version %q already exists in list %v", insertVersion, verList.Versions))
 		return nil
 	}
-	log.Info("Inserting %s version %q into list", insertGran.String(), insertVersion)
+	log.Info(fmt.Sprintf("Inserting %s version %q into list", insertGran.String(), insertVersion))
 
 	verList.Versions = append(verList.Versions, insertVersion)
-	log.Debug("New %s version list: %v", gran.String(), verList)
+	log.Debug(fmt.Sprintf("New %s version list: %v", gran.String(), verList))
 
 	if err := client.UpdateVersionList(ctx, verList); err != nil {
 		return fmt.Errorf("failed to add %s version: %w", gran.String(), err)
@@ -148,7 +148,7 @@ func updateLatest(ctx context.Context, client *versionsapi.Client, kind versions
 	latest, err := client.FetchVersionLatest(ctx, latest)
 	var notFoundErr *apiclient.NotFoundError
 	if errors.As(err, &notFoundErr) {
-		log.Debug("Latest version for ref %q and stream %q not found", ver.Ref(), ver.Stream())
+		log.Debug(fmt.Sprintf("Latest version for ref %q and stream %q not found", ver.Ref(), ver.Stream()))
 	} else if err != nil {
 		return fmt.Errorf("fetching latest version: %w", err)
 	}

@@ -62,7 +62,7 @@ func runInfo(cmd *cobra.Command, args []string) error {
 	}
 	defer func() {
 		if err := uploadCClose(cmd.Context()); err != nil {
-			log.Error("closing upload client: %v", err)
+			log.Error(fmt.Sprintf("closing upload client: %v", err))
 		}
 	}()
 

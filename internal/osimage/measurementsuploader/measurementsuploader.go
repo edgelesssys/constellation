@@ -92,7 +92,7 @@ func (a *Uploader) Upload(ctx context.Context, rawMeasurement, signature io.Read
 	if err != nil {
 		return "", "", err
 	}
-	a.log.Debug("Archiving image measurements to s3://%v/%v and s3://%v/%v", a.bucket, key, a.bucket, sigKey)
+	a.log.Debug(fmt.Sprintf("Archiving image measurements to s3://%v/%v and s3://%v/%v", a.bucket, key, a.bucket, sigKey))
 	if _, err = a.uploadClient.Upload(ctx, &s3.PutObjectInput{
 		Bucket:            &a.bucket,
 		Key:               &key,

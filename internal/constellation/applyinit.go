@@ -85,12 +85,12 @@ func (a *Applier) Init(
 	// Create a wrapper function that allows logging any returned error from the retrier before checking if it's the expected retriable one.
 	serviceIsUnavailable := func(err error) bool {
 		isServiceUnavailable := grpcRetry.ServiceIsUnavailable(err)
-		a.log.Debug("Encountered error (retriable: %t): %s", isServiceUnavailable, err)
+		a.log.Debug(fmt.Sprintf("Encountered error (retriable: %t): %s", isServiceUnavailable, err))
 		return isServiceUnavailable
 	}
 
 	// Perform the RPC
-	a.log.Debug("Making initialization call, doer is %+v", doer)
+	a.log.Debug(fmt.Sprintf("Making initialization call, doer is %+v", doer))
 	a.spinner.Start("Connecting ", false)
 	retrier := retry.NewIntervalRetrier(doer, 30*time.Second, serviceIsUnavailable)
 	if err := retrier.Do(ctx); err != nil {
@@ -99,7 +99,7 @@ func (a *Applier) Init(
 	a.spinner.Stop()
 	a.log.Debug("Initialization request finished")
 
-	a.log.Debug("Rewriting cluster server address in kubeconfig to %s", state.Infrastructure.ClusterEndpoint)
+	a.log.Debug(fmt.Sprintf("Rewriting cluster server address in kubeconfig to %s", state.Infrastructure.ClusterEndpoint))
 	kubeconfig, err := clientcmd.Load(doer.resp.Kubeconfig)
 	if err != nil {
 		return InitOutput{}, fmt.Errorf("loading kubeconfig: %w", err)
@@ -175,7 +175,7 @@ func (d *initDoer) Do(ctx context.Context) error {
 
 	conn, err := d.dialer.Dial(ctx, d.endpoint)
 	if err != nil {
-		d.log.Debug("Dialing init server failed: %s. Retrying...", err)
+		d.log.Debug(fmt.Sprintf("Dialing init server failed: %s. Retrying...", err))
 		return fmt.Errorf("dialing init server: %w", err)
 	}
 	defer conn.Close()
@@ -200,7 +200,7 @@ func (d *initDoer) Do(ctx context.Context) error {
 	res, err := resp.Recv() // get first response, either success or failure
 	if err != nil {
 		if e := d.getLogs(resp); e != nil {
-			d.log.Debug("Failed to collect logs: %s", e)
+			d.log.Debug(fmt.Sprintf("Failed to collect logs: %s", e))
 			return &NonRetriableInitError{
 				LogCollectionErr: e,
 				Err:              err,
@@ -214,7 +214,7 @@ func (d *initDoer) Do(ctx context.Context) error {
 		d.resp = res.GetInitSuccess()
 	case *initproto.InitResponse_InitFailure:
 		if e := d.getLogs(resp); e != nil {
-			d.log.Debug("Failed to get logs from cluster: %s", e)
+			d.log.Debug(fmt.Sprintf("Failed to get logs from cluster: %s", e))
 			return &NonRetriableInitError{
 				LogCollectionErr: e,
 				Err:              errors.New(res.GetInitFailure().GetError()),
@@ -225,7 +225,7 @@ func (d *initDoer) Do(ctx context.Context) error {
 		d.log.Debug("Cluster returned nil response type")
 		err = errors.New("empty response from cluster")
 		if e := d.getLogs(resp); e != nil {
-			d.log.Debug("Failed to collect logs: %s", e)
+			d.log.Debug(fmt.Sprintf("Failed to collect logs: %s", e))
 			return &NonRetriableInitError{
 				LogCollectionErr: e,
 				Err:              err,
@@ -236,7 +236,7 @@ func (d *initDoer) Do(ctx context.Context) error {
 		d.log.Debug("Cluster returned unknown response type")
 		err = errors.New("unknown response from cluster")
 		if e := d.getLogs(resp); e != nil {
-			d.log.Debug("Failed to collect logs: %s", e)
+			d.log.Debug(fmt.Sprintf("Failed to collect logs: %s", e))
 			return &NonRetriableInitError{
 				LogCollectionErr: e,
 				Err:              err,

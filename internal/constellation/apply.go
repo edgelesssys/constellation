@@ -87,7 +87,7 @@ func (a *Applier) SetKubeConfig(kubeConfig []byte) error {
 // CheckLicense checks the given Constellation license with the license server
 // and returns the allowed quota for the license.
 func (a *Applier) CheckLicense(ctx context.Context, csp cloudprovider.Provider, initRequest bool, licenseID string) (int, error) {
-	a.log.Debug("Contacting license server for license '%s'", licenseID)
+	a.log.Debug(fmt.Sprintf("Contacting license server for license '%s'", licenseID))
 
 	var action license.Action
 	if initRequest {
@@ -103,7 +103,7 @@ func (a *Applier) CheckLicense(ctx context.Context, csp cloudprovider.Provider, 
 	if err != nil {
 		return 0, fmt.Errorf("checking license: %w", err)
 	}
-	a.log.Debug("Got response from license server for license '%s'", licenseID)
+	a.log.Debug(fmt.Sprintf("Got response from license server for license '%s'", licenseID))
 
 	return quota, nil
 }

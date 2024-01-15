@@ -133,7 +133,7 @@ func (c *iamCreator) create(ctx context.Context) error {
 
 	var conf config.Config
 	if c.flags.updateConfig {
-		c.log.Debug("Parsing config %s", c.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
+		c.log.Debug(fmt.Sprintf("Parsing config %s", c.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename)))
 		if err := c.fileHandler.ReadYAML(constants.ConfigFilename, &conf); err != nil {
 			return fmt.Errorf("error reading the configuration file: %w", err)
 		}
@@ -161,7 +161,7 @@ func (c *iamCreator) create(ctx context.Context) error {
 	}
 
 	if c.flags.updateConfig {
-		c.log.Debug("Writing IAM configuration to %s", c.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
+		c.log.Debug(fmt.Sprintf("Writing IAM configuration to %s", c.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename)))
 		c.providerCreator.writeOutputValuesToConfig(&conf, iamFile)
 		if err := c.fileHandler.WriteYAML(constants.ConfigFilename, conf, file.OptOverwrite); err != nil {
 			return err

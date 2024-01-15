@@ -80,6 +80,6 @@ func runMeasurementsUpload(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("uploading image info: %w", err)
 	}
-	log.Info("Uploaded image measurements to %s (and signature to %s)", measurementsURL, signatureURL)
+	log.Info(fmt.Sprintf("Uploaded image measurements to %s (and signature to %s)", measurementsURL, signatureURL))
 	return nil
 }

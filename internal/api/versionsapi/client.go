@@ -171,7 +171,7 @@ func (c *Client) deleteVersionFromMinorVersionList(ctx context.Context, ver Vers
 	}
 
 	if !minorList.Contains(ver.version) {
-		c.Client.Logger.Warn("Version %s is not in minor version list %s", ver.version, minorList.JSONPath())
+		c.Client.Logger.Warn(fmt.Sprintf("Version %s is not in minor version list %s", ver.version, minorList.JSONPath()))
 		c.Client.Logger.Warn("Skipping update of minor version list")
 		return nil, nil
 	}
@@ -242,7 +242,7 @@ func (c *Client) deleteVersionFromLatest(ctx context.Context, ver Version, possi
 		return nil
 	}
 
-	c.Client.Logger.Info("Updating latest version from %s to %s", latest.Version, possibleNewLatest.Version)
+	c.Client.Logger.Info(fmt.Sprintf("Updating latest version from %s to %s", latest.Version, possibleNewLatest.Version))
 	if err := c.UpdateVersionLatest(ctx, *possibleNewLatest); err != nil {
 		return fmt.Errorf("updating latest version: %w", err)
 	}

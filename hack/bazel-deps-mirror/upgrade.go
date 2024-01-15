@@ -121,7 +121,7 @@ func upgradeBazelFile(ctx context.Context, fileHelper *bazelfiles.Helper, mirror
 		if err != nil {
 			return iss, err
 		}
-		log.Info("Dry run: would save updated file %s with diff:\n%s", bazelFile.RelPath, diff)
+		log.Info(fmt.Sprintf("Dry run: would save updated file %s with diff:\n%s", bazelFile.RelPath, diff))
 		return iss, nil
 	}
 	log.Info(fmt.Sprintf("Saving updated file: %s", bazelFile.RelPath))

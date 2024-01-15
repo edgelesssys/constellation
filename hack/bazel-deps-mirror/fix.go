@@ -121,7 +121,7 @@ func fixBazelFile(ctx context.Context, fileHelper *bazelfiles.Helper, mirrorUplo
 		if err != nil {
 			return iss, err
 		}
-		log.Info("Dry run: would save updated file %s with diff:\n%s", bazelFile.RelPath, diff)
+		log.Info(fmt.Sprintf("Dry run: would save updated file %s with diff:\n%s", bazelFile.RelPath, diff))
 		return iss, nil
 	}
 	log.Info(fmt.Sprintf("Saving updated file: %s", bazelFile.RelPath))
@@ -142,7 +142,7 @@ func learnHashForRule(ctx context.Context, mirrorUpload mirrorUploader, rule *bu
 		return err
 	}
 	rules.SetHash(rule, learnedHash)
-	log.Debug("Learned hash for rule %s: %s", rule.Name(), learnedHash)
+	log.Debug(fmt.Sprintf("Learned hash for rule %s: %s", rule.Name(), learnedHash))
 	return nil
 }
 
@@ -183,14 +183,14 @@ func fixRule(ctx context.Context, mirrorUpload mirrorUploader, rule *build.Rule,
 	}
 
 	if checkErr := mirrorUpload.Check(ctx, expectedHash); checkErr != nil {
-		log.Info("Artifact %s with hash %s is not yet mirrored. Uploading...", rule.Name(), expectedHash)
+		log.Info(fmt.Sprintf("Artifact %s with hash %s is not yet mirrored. Uploading...", rule.Name(), expectedHash))
 		if uploadErr := mirrorUpload.Mirror(ctx, expectedHash, rules.GetURLs(rule)); uploadErr != nil {
 			// don't try to fix the rule if the upload failed
 			iss = append(iss, uploadErr)
 			return changed, iss
 		}
 	} else {
-		log.Info("Artifact %s with hash %s was already uploaded before. Adding to rule...", rule.Name(), expectedHash)
+		log.Info(fmt.Sprintf("Artifact %s with hash %s was already uploaded before. Adding to rule...", rule.Name(), expectedHash))
 	}
 
 	// now the artifact is mirrored (if it wasn't already) and we can fix the rule

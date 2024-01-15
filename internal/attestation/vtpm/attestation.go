@@ -106,7 +106,7 @@ func (i *Issuer) Issue(ctx context.Context, userData []byte, nonce []byte) (res 
 	i.log.Info("Issuing attestation statement")
 	defer func() {
 		if err != nil {
-			i.log.Warn("Failed to issue attestation statement: %s", err)
+			i.log.Warn(fmt.Sprintf("Failed to issue attestation statement: %s", err))
 		}
 	}()
 
@@ -180,7 +180,7 @@ func (v *Validator) Validate(ctx context.Context, attDocRaw []byte, nonce []byte
 	v.log.Info("Validating attestation document")
 	defer func() {
 		if err != nil {
-			v.log.Warn("Failed to validate attestation document: %s", err)
+			v.log.Warn(fmt.Sprintf("Failed to validate attestation document: %s", err))
 		}
 	}()
 

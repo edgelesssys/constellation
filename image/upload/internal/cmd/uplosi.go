@@ -9,12 +9,12 @@ package cmd
 import (
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"strconv"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/osimage"
 	"github.com/edgelesssys/constellation/v2/internal/osimage/archive"
 	nopupload "github.com/edgelesssys/constellation/v2/internal/osimage/nop"
@@ -58,8 +58,8 @@ func runUplosi(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	log := logger.New(logger.PlainLog, flags.logLevel)
-	log.Debugf("Parsed flags: %+v", flags)
+	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: flags.logLevel}))	
+  log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
 
 	archiveC, archiveCClose, err := archive.New(cmd.Context(), flags.region, flags.bucket, flags.distributionID, log)
 	if err != nil {
@@ -67,7 +67,7 @@ func runUplosi(cmd *cobra.Command, _ []string) error {
 	}
 	defer func() {
 		if err := archiveCClose(cmd.Context()); err != nil {
-			log.Errorf("closing archive client: %v", err)
+			log.Error(fmt.Sprintf("closing archive client: %v", err))
 		}
 	}()
 

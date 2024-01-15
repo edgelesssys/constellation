@@ -104,7 +104,7 @@ func runConfigFetchMeasurements(cmd *cobra.Command, _ []string) error {
 	if err := cfm.flags.parse(cmd.Flags()); err != nil {
 		return fmt.Errorf("parsing flags: %w", err)
 	}
-	cfm.log.Debug("Using flags %+v", cfm.flags)
+	cfm.log.Debug(fmt.Sprintf("Using flags %+v", cfm.flags))
 
 	fetcher := attestationconfigapi.NewFetcherWithClient(http.DefaultClient, constants.CDNRepositoryURL)
 	return cfm.configFetchMeasurements(cmd, fileHandler, fetcher)
@@ -118,7 +118,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 		return errors.New("fetching measurements is not supported")
 	}
 
-	cfm.log.Debug("Loading configuration file from %q", cfm.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
+	cfm.log.Debug(fmt.Sprintf("Loading configuration file from %q", cfm.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename)))
 
 	conf, err := config.New(fileHandler, constants.ConfigFilename, fetcher, cfm.flags.force)
 	var configValidationErr *config.ValidationError
@@ -152,14 +152,14 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 			return fmt.Errorf("fetching and verifying measurements: %w", err)
 		}
 	}
-	cfm.log.Debug("Measurements: %#v\n", fetchedMeasurements)
+	cfm.log.Debug(fmt.Sprintf("Measurements: %#v\n", fetchedMeasurements))
 
 	cfm.log.Debug("Updating measurements in configuration")
 	conf.UpdateMeasurements(fetchedMeasurements)
 	if err := fileHandler.WriteYAML(constants.ConfigFilename, conf, file.OptOverwrite); err != nil {
 		return err
 	}
-	cfm.log.Debug("Configuration written to %s", cfm.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
+	cfm.log.Debug(fmt.Sprintf("Configuration written to %s", cfm.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename)))
 	cmd.Print("Successfully fetched measurements and updated Configuration\n")
 	return nil
 }

@@ -71,7 +71,7 @@ func runList(cmd *cobra.Command, _ []string) (retErr error) {
 		minorVersions, err = listMinorVersions(cmd.Context(), client, flags.ref, flags.stream)
 		var errNotFound *apiclient.NotFoundError
 		if err != nil && errors.As(err, &errNotFound) {
-			log.Info("No minor versions found for ref %q and stream %q.", flags.ref, flags.stream)
+			log.Info(fmt.Sprintf("No minor versions found for ref %q and stream %q.", flags.ref, flags.stream))
 			return nil
 		} else if err != nil {
 			return err

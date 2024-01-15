@@ -186,10 +186,10 @@ func (s *ServiceManager) OverrideServiceUnitExecStart(ctx context.Context, unitN
 		// do not return early here
 		// the "daemon-reload" command may return an unrelated error
 		// and there is no way to know if the override was successful
-		log.Warn("Failed to perform systemd daemon-reload: %v", err)
+		log.Warn(fmt.Sprintf("Failed to perform systemd daemon-reload: %v", err))
 	}
 	if err := s.SystemdAction(ctx, ServiceManagerRequest{Unit: unitName + ".service", Action: Restart}); err != nil {
-		log.Warn("Failed to perform unit restart: %v", err)
+		log.Warn(fmt.Sprintf("Failed to perform unit restart: %v", err))
 		return fmt.Errorf("performing systemd unit restart: %w", err)
 	}
 

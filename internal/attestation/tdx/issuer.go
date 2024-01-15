@@ -40,7 +40,7 @@ func (i *Issuer) Issue(_ context.Context, userData []byte, nonce []byte) (attDoc
 	i.log.Info("Issuing attestation statement")
 	defer func() {
 		if err != nil {
-			i.log.Warn("Failed to issue attestation document: %s", err)
+			i.log.Warn(fmt.Sprintf("Failed to issue attestation document: %s", err))
 		}
 	}()
 

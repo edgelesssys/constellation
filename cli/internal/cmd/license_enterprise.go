@@ -24,7 +24,7 @@ import (
 // is used. It is a no-op in the open source version of Constellation.
 func (a *applyCmd) checkLicenseFile(cmd *cobra.Command, csp cloudprovider.Provider) {
 	var licenseID string
-	a.log.Debugf("Running license check")
+	a.log.Debug("Running license check")
 
 	readBytes, err := a.fileHandler.Read(constants.LicenseFilename)
 	if errors.Is(err, fs.ErrNotExist) {
@@ -52,5 +52,5 @@ func (a *applyCmd) checkLicenseFile(cmd *cobra.Command, csp cloudprovider.Provid
 		cmd.Printf("Please keep your vCPU quota (%d) in mind.\n", quota)
 	}
 
-	a.log.Debugf("Checked license")
+	a.log.Debug("Checked license")
 }

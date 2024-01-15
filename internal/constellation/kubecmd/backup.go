@@ -39,7 +39,7 @@ func (k *KubeCmd) BackupCRDs(ctx context.Context, fileHandler file.Handler, upgr
 	for i := range crds {
 		path := filepath.Join(crdBackupFolder, crds[i].Name+".yaml")
 
-		k.log.Debug("Creating CRD backup: %s", path)
+		k.log.Debug(fmt.Sprintf("Creating CRD backup: %s", path))
 
 		// We have to manually set kind/apiversion because of a long-standing limitation of the API:
 		// https://github.com/kubernetes/kubernetes/issues/3030#issuecomment-67543738
@@ -64,7 +64,7 @@ func (k *KubeCmd) BackupCRDs(ctx context.Context, fileHandler file.Handler, upgr
 func (k *KubeCmd) BackupCRs(ctx context.Context, fileHandler file.Handler, crds []apiextensionsv1.CustomResourceDefinition, upgradeDir string) error {
 	k.log.Debug("Starting CR backup")
 	for _, crd := range crds {
-		k.log.Debug("Creating backup for resource type: %s", crd.Name)
+		k.log.Debug(fmt.Sprintf("Creating backup for resource type: %s", crd.Name))
 
 		// Iterate over all versions of the CRD
 		// TODO(daniel-weisse): Consider iterating over crd.Status.StoredVersions instead
@@ -72,7 +72,7 @@ func (k *KubeCmd) BackupCRs(ctx context.Context, fileHandler file.Handler, crds 
 		// a version that is not installed in the cluster.
 		// With the StoredVersions field, we could only iterate over the installed versions.
 		for _, version := range crd.Spec.Versions {
-			k.log.Debug("Creating backup of CRs for %q at version %q", crd.Name, version.Name)
+			k.log.Debug(fmt.Sprintf("Creating backup of CRs for %q at version %q", crd.Name, version.Name))
 
 			gvr := schema.GroupVersionResource{Group: crd.Spec.Group, Version: version.Name, Resource: crd.Spec.Names.Plural}
 			crs, err := k.kubectl.ListCRs(ctx, gvr)
@@ -80,7 +80,7 @@ func (k *KubeCmd) BackupCRs(ctx context.Context, fileHandler file.Handler, crds 
 				if !k8serrors.IsNotFound(err) {
 					return fmt.Errorf("retrieving CR %s: %w", crd.Name, err)
 				}
-				k.log.Debug("No CRs found for %q at version %q, skipping...", crd.Name, version.Name)
+				k.log.Debug(fmt.Sprintf("No CRs found for %q at version %q, skipping...", crd.Name, version.Name))
 				continue
 			}
 
@@ -101,7 +101,7 @@ func (k *KubeCmd) BackupCRs(ctx context.Context, fileHandler file.Handler, crds 
 			}
 		}
 
-		k.log.Debug("Backup for resource type %q complete", crd.Name)
+		k.log.Debug(fmt.Sprintf("Backup for resource type %q complete", crd.Name))
 	}
 	k.log.Debug("CR backup complete")
 	return nil

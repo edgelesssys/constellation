@@ -95,17 +95,17 @@ func (m *Maintainer) Mirror(ctx context.Context, hash string, urls []string) err
 	}
 
 	for _, url := range urls {
-		m.log.Debug("Mirroring file with hash %v from %q", hash, url)
+		m.log.Debug(fmt.Sprintf("Mirroring file with hash %v from %q", hash, url))
 		body, err := m.downloadFromUpstream(ctx, url)
 		if err != nil {
-			m.log.Debug("Failed to download file from %q: %v", url, err)
+			m.log.Debug(fmt.Sprintf("Failed to download file from %q: %v", url, err))
 			continue
 		}
 		defer body.Close()
 		streamedHash := sha256.New()
 		tee := io.TeeReader(body, streamedHash)
 		if err := m.put(ctx, hash, tee); err != nil {
-			m.log.Warn("Failed to stream file from upstream %q to mirror: %v.. Trying next url.", url, err)
+			m.log.Warn(fmt.Sprintf("Failed to stream file from upstream %q to mirror: %v.. Trying next url.", url, err))
 			continue
 		}
 		actualHash := hex.EncodeToString(streamedHash.Sum(nil))
@@ -117,7 +117,7 @@ func (m *Maintainer) Mirror(ctx context.Context, hash string, urls []string) err
 		if err != nil {
 			return err
 		}
-		m.log.Debug("File uploaded successfully to mirror from %q as %q", url, pubURL)
+		m.log.Debug(fmt.Sprintf("File uploaded successfully to mirror from %q as %q", url, pubURL))
 		return nil
 	}
 	return fmt.Errorf("failed to download / reupload file with hash %v from any of the urls: %v", hash, urls)
@@ -129,16 +129,16 @@ func (m *Maintainer) Learn(ctx context.Context, urls []string) (string, error) {
 		m.log.Debug(fmt.Sprintf("Learning new hash from %q", url))
 		body, err := m.downloadFromUpstream(ctx, url)
 		if err != nil {
-			m.log.Debug("Failed to download file from %q: %v", url, err)
+			m.log.Debug(fmt.Sprintf("Failed to download file from %q: %v", url, err))
 			continue
 		}
 		defer body.Close()
 		streamedHash := sha256.New()
 		if _, err := io.Copy(streamedHash, body); err != nil {
-			m.log.Debug("Failed to stream file from %q: %v", url, err)
+			m.log.Debug(fmt.Sprintf("Failed to stream file from %q: %v", url, err))
 		}
 		learnedHash := hex.EncodeToString(streamedHash.Sum(nil))
-		m.log.Debug("File successfully downloaded from %q with %q", url, learnedHash)
+		m.log.Debug(fmt.Sprintf("File successfully downloaded from %q with %q", url, learnedHash))
 		return learnedHash, nil
 	}
 	return "", fmt.Errorf("failed to download file / learn hash from any of the urls: %v", urls)
@@ -157,7 +157,7 @@ func (m *Maintainer) Check(ctx context.Context, expectedHash string) error {
 // It uses the authenticated CAS s3 endpoint to download the file metadata.
 func (m *Maintainer) checkAuthenticated(ctx context.Context, expectedHash string) error {
 	key := path.Join(keyBase, expectedHash)
-	m.log.Debug("Check: s3 getObjectAttributes {Bucket: %v, Key: %v}", m.bucket, key)
+	m.log.Debug(fmt.Sprintf("Check: s3 getObjectAttributes {Bucket: %v, Key: %v}", m.bucket, key))
 	attributes, err := m.objectStorageClient.GetObjectAttributes(ctx, &s3.GetObjectAttributesInput{
 		Bucket:           &m.bucket,
 		Key:              &key,
@@ -221,10 +221,10 @@ func (m *Maintainer) put(ctx context.Context, hash string, data io.Reader) error
 
 	key := path.Join(keyBase, hash)
 	if m.dryRun {
-		m.log.Debug("DryRun: s3 put object {Bucket: %v, Key: %v}", m.bucket, key)
+		m.log.Debug(fmt.Sprintf("DryRun: s3 put object {Bucket: %v, Key: %v}", m.bucket, key))
 		return nil
 	}
-	m.log.Debug(fmt.Sprintf("Uploading object with hash %v to s3://%v/%v", hash, m.bucket, key))
+	m.log.Debug(fmt.Sprintf(fmt.Sprintf("Uploading object with hash %v to s3://%v/%v", hash, m.bucket, key)))
 	_, err := m.uploadClient.Upload(ctx, &s3.PutObjectInput{
 		Bucket:            &m.bucket,
 		Key:               &key,

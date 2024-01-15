@@ -52,7 +52,7 @@ func (v *Validator) Validate(ctx context.Context, attDocRaw []byte, nonce []byte
 	v.log.Info("Validating attestation document")
 	defer func() {
 		if err != nil {
-			v.log.Warn("Failed to validate attestation document: %s", err)
+			v.log.Warn(fmt.Sprintf("Failed to validate attestation document: %s", err))
 		}
 	}()
 
