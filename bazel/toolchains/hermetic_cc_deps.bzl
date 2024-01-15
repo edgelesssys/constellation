@@ -8,9 +8,9 @@ def hermetic_cc_deps():
     http_archive(
         name = "hermetic_cc_toolchain",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/a5caccbf6d86d4f60afd45b541a05ca4cc3f5f523aec7d3f7711e584600fb075",
-            "https://github.com/uber/hermetic_cc_toolchain/releases/download/v2.1.3/hermetic_cc_toolchain-v2.1.3.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/3b8107de0d017fe32e6434086a9568f97c60a111b49dc34fc7001e139c30fdea",
+            "https://github.com/uber/hermetic_cc_toolchain/releases/download/v2.2.1/hermetic_cc_toolchain-v2.2.1.tar.gz",
         ],
         type = "tar.gz",
-        sha256 = "a5caccbf6d86d4f60afd45b541a05ca4cc3f5f523aec7d3f7711e584600fb075",
+        sha256 = "3b8107de0d017fe32e6434086a9568f97c60a111b49dc34fc7001e139c30fdea",
     )
