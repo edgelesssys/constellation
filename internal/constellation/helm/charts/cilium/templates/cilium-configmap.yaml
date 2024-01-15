@@ -1,6 +1,5 @@
 {{- if and (.Values.agent) (not .Values.preflight.enabled) }}
 {{- /*  Default values with backwards compatibility */ -}}
-{{- $defaultEnableCnpStatusUpdates := "true" -}}
 {{- $defaultBpfMapDynamicSizeRatio := 0.0 -}}
 {{- $defaultBpfMasquerade := "false" -}}
 {{- $defaultBpfClockProbe := "false" -}}
@@ -13,10 +12,11 @@
 {{- $fragmentTracking := "true" -}}
 {{- $defaultKubeProxyReplacement := "false" -}}
 {{- $azureUsePrimaryAddress := "true" -}}
+{{- $defaultK8sClientQPS := 5 -}}
+{{- $defaultK8sClientBurst := 10 -}}
 
 {{- /* Default values when 1.8 was initially deployed */ -}}
 {{- if semverCompare ">=1.8" (default "1.8" .Values.upgradeCompatibility) -}}
-  {{- $defaultEnableCnpStatusUpdates = "false" -}}
   {{- $defaultBpfMapDynamicSizeRatio = 0.0025 -}}
   {{- $defaultBpfMasquerade = "true" -}}
   {{- $defaultBpfClockProbe = "true" -}}
@@ -75,6 +75,11 @@
   {{- $cniChainingMode = .Values.cni.chainingMode  -}}
 {{- else if (not (kindIs "invalid" .Values.cni.chainingTarget)) -}}
   {{- $cniChainingMode = "generic-veth" -}}
+{{- end -}}
+
+{{- if semverCompare ">=1.27-0" .Capabilities.KubeVersion.Version -}}
+  {{- $defaultK8sClientQPS = 10 -}}
+  {{- $defaultK8sClientBurst = 20 -}}
 {{- end -}}
 ---
 apiVersion: v1
@@ -451,19 +456,9 @@ data:
 {{- else if .Values.routingMode }}
   routing-mode: {{ .Values.routingMode | quote }}
 {{- else }}
-  {{- if eq .Values.tunnel "disabled" }}
-  routing-mode: "native"
-  {{- else if eq .Values.tunnel "vxlan" }}
-  routing-mode: "tunnel"
-  tunnel-protocol: "vxlan"
-  {{- else if eq .Values.tunnel "geneve" }}
-  routing-mode: "tunnel"
-  tunnel-protocol: "geneve"
-  {{- else }}
   # Default case
   routing-mode: "tunnel"
   tunnel-protocol: "vxlan"
-  {{- end }}
 {{- end }}
 
 {{- if .Values.tunnelProtocol }}
@@ -473,6 +468,10 @@ data:
 {{- if .Values.tunnelPort }}
   tunnel-port: {{ .Values.tunnelPort | quote }}
 {{- end }}
+
+{{- if .Values.serviceNoBackendResponse }}
+  service-no-backend-response: "{{ .Values.serviceNoBackendResponse }}"
+{{- end}}
 
 {{- if .Values.MTU }}
   mtu: {{ .Values.MTU | quote }}
@@ -819,6 +818,9 @@ data:
 {{- if (not (kindIs "invalid" .Values.cni.chainingTarget)) }}
   cni-chaining-target: {{ .Values.cni.chainingTarget | quote }}
 {{- end}}
+{{- if (not (kindIs "invalid" .Values.cni.externalRouting)) }}
+  cni-external-routing: {{ .Values.cni.externalRouting | quote }}
+{{- end}}
 {{- if .Values.kubeConfigPath }}
   k8s-kubeconfig-path: {{ .Values.kubeConfigPath | quote }}
 {{- end }}
@@ -883,6 +885,8 @@ data:
 {{- if .Values.hubble.redact.http }}
   # Enables redaction of the http URL query part in flows
   hubble-redact-http-urlquery: {{ .Values.hubble.redact.http.urlQuery | quote }}
+  # Enables redaction of the http user info in flows
+  hubble-redact-http-userinfo: {{ .Values.hubble.redact.http.userInfo | quote }}
 {{- if .Values.hubble.redact.http.headers }}
 {{- if .Values.hubble.redact.http.headers.allow }}
   # Redact all http headers that do not match this list
@@ -902,6 +906,19 @@ data:
   # Enables redaction of the Kafka API key part in flows
   hubble-redact-kafka-apikey: {{ .Values.hubble.redact.kafka.apiKey | quote }}
 {{- end }}
+{{- end }}
+{{- end }}
+{{- if .Values.hubble.export }}
+  hubble-export-file-max-size-mb: {{ .Values.hubble.export.fileMaxSizeMb | quote }}
+  hubble-export-file-max-backups: {{ .Values.hubble.export.fileMaxBackups | quote }}
+{{- if .Values.hubble.export.static.enabled }}
+  hubble-export-file-path: {{ .Values.hubble.export.static.filePath | quote }}
+  hubble-export-fieldmask: {{ .Values.hubble.export.static.fieldMask | join " " | quote }}
+  hubble-export-allowlist: {{ .Values.hubble.export.static.allowList | join "," | quote }}
+  hubble-export-denylist: {{ .Values.hubble.export.static.denyList | join "," | quote }}
+{{- end }}
+{{- if .Values.hubble.export.dynamic.enabled }}
+  hubble-flowlogs-config-path: /flowlog-config/flowlogs.yaml
 {{- end }}
 {{- end }}
 {{- if hasKey .Values.hubble "listenAddress" }}
@@ -983,13 +1000,6 @@ data:
   api-rate-limit: {{ .Values.apiRateLimit | quote }}
 {{- end }}
 
-{{- if .Values.enableCnpStatusUpdates }}
-  disable-cnp-status-updates: "false"
-{{- else if (eq $defaultEnableCnpStatusUpdates "false") }}
-  disable-cnp-status-updates: "true"
-  cnp-node-status-gc-interval: "0s"
-{{- end }}
-
 {{- if .Values.egressGateway.enabled }}
   enable-ipv4-egress-gateway: "true"
 {{- end }}
@@ -1017,10 +1027,6 @@ data:
 {{- if hasKey .Values.vtep "mac" }}
   vtep-mac: {{ .Values.vtep.mac | quote }}
 {{- end }}
-{{- end }}
-
-{{- if .Values.enableK8sEventHandover }}
-  enable-k8s-event-handover: "true"
 {{- end }}
 
 {{- if .Values.crdWaitTimeout }}
@@ -1121,10 +1127,8 @@ data:
   annotate-k8s-node: "true"
 {{- end }}
 
-{{- if hasKey .Values "k8sClientRateLimit" }}
-  k8s-client-qps: {{ .Values.k8sClientRateLimit.qps | quote }}
-  k8s-client-burst: {{ .Values.k8sClientRateLimit.burst | quote }}
-{{- end }}
+  k8s-client-qps: {{ .Values.k8sClientRateLimit.qps | default $defaultK8sClientQPS | quote}}
+  k8s-client-burst: {{ .Values.k8sClientRateLimit.burst | default $defaultK8sClientBurst | quote }}
 
 {{- if and .Values.operator.setNodeTaints (not .Values.operator.removeNodeTaints) -}}
   {{ fail "Cannot have operator.setNodeTaintsMaxNodes and not operator.removeNodeTaints = false" }}
@@ -1210,6 +1214,10 @@ data:
 
 {{- if .Values.envoy.log.path }}
   envoy-log: {{ .Values.envoy.log.path | quote }}
+{{- end }}
+
+{{- if hasKey .Values.clustermesh "maxConnectedClusters" }}
+  max-connected-clusters: {{ .Values.clustermesh.maxConnectedClusters | quote }}
 {{- end }}
 
 # Extra config allows adding arbitrary properties to the cilium config.

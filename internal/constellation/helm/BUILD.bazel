@@ -451,6 +451,7 @@ go_library(
         "charts/cert-manager/templates/poddisruptionbudget.yaml",
         "charts/cert-manager/templates/webhook-poddisruptionbudget.yaml",
         "charts/edgeless/constellation-services/charts/autoscaler/templates/coredns-pdb.yaml",
+        "charts/cilium/templates/cilium-flowlog-configmap.yaml",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/constellation/helm",
     visibility = ["//:__subpackages__"],
