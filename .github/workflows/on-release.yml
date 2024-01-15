@@ -127,3 +127,54 @@ jobs:
 
       - name: Remove temporary branch
         run: git push origin --delete "${{needs.complete-release-branch-transaction.outputs.WORKING_BRANCH}}"
+
+  mirror-gcp-mpi:
+    name: "Mirror GCP Marketplace Image"
+    needs: [add-image-version-to-versionsapi]
+    runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - uses: ./.github/actions/setup_bazel_nix
+        with:
+          useCache: "false"
+
+      - name: Login to AWS
+        uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a # v4.0.1
+        with:
+          role-to-assume: arn:aws:iam::795746500882:role/GitHubConstellationImagePipeline
+          aws-region: eu-central-1
+
+      - name: Fetch latest release version
+        id: fetch-version
+        uses: ./.github/actions/versionsapi
+        with:
+          command: latest
+          stream: stable
+          ref: "-"
+
+      - name: Fetch GCP image reference
+        id: fetch-reference
+        shell: bash
+        run: |
+          aws s3 cp s3://cdn-constellation-backend/constellation/v2/ref/-/stream/stable/${{ steps.fetch-version.outputs.output }}/image/info.json .
+          FULL_REF=$(yq e -r -oy '.list.[] | select(.attestationVariant == "gcp-sev-es") | .reference' info.json)
+          IMAGE_NAME=$(echo "${FULL_REF}" | cut -d / -f 5)
+          echo "reference=$IMAGE_NAME" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Login to GCP
+        uses: ./.github/actions/login_gcp
+        with:
+          service_account: "mp-image-uploader@edgeless-systems-public.iam.gserviceaccount.com"
+
+      - name: Mirror
+        shell: bash
+        run: |
+          gcloud --project=edgeless-systems-public compute images create ${{ steps.fetch-reference.outputs.reference }} \
+            --source-image=${{ steps.fetch-reference.outputs.reference }} \
+            --source-image-project=constellation-images \
+            --licenses=projects/edgeless-systems-public/global/licenses/cloud-marketplace-c3d24830a0502e29-df1ebeb69c0ba664
