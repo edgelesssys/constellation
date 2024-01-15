@@ -39,12 +39,12 @@ func main() {
 	server, err := server.New(log, handler)
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to create update server")
-    os.Exit(1)
+		os.Exit(1)
 	}
 
 	err = server.Run(protocol, constants.UpgradeAgentSocketPath)
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to start update server")
-    os.Exit(1)
+		os.Exit(1)
 	}
 }

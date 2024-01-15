@@ -9,12 +9,12 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"io"
 	"log/slog"
 	"net"
 	"os"
 	"path/filepath"
-  "fmt"
 
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/diskencryption"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/recoveryserver"
@@ -60,12 +60,12 @@ func main() {
 	attestVariant, err := variant.FromString(os.Getenv(constants.AttestationVariant))
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to parse attestation variant")
-    os.Exit(1)
+		os.Exit(1)
 	}
 	issuer, err := choose.Issuer(attestVariant, log)
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to select issuer")
-    os.Exit(1)
+		os.Exit(1)
 	}
 
 	// set up metadata API
@@ -78,36 +78,36 @@ func main() {
 		diskPath, err = filepath.EvalSymlinks(awsStateDiskPath)
 		if err != nil {
 			log.With(slog.Any("error", err)).Error("Unable to resolve Azure state disk path")
-      os.Exit(1)
+			os.Exit(1)
 		}
 		metadataClient, err = awscloud.New(context.Background())
 		if err != nil {
 			log.With(slog.Any("error", err)).Error("Failed to set up AWS metadata client")
-      os.Exit(1)
+			os.Exit(1)
 		}
 
 	case cloudprovider.Azure:
 		diskPath, err = filepath.EvalSymlinks(azureStateDiskPath)
 		if err != nil {
 			log.With(slog.Any("error", err)).Error("Unable to resolve Azure state disk path")
-      os.Exit(1)
+			os.Exit(1)
 		}
 		metadataClient, err = azurecloud.New(context.Background())
 		if err != nil {
 			log.With(slog.Any("error", err)).Error("Failed to set up Azure metadata client")
-      os.Exit(1)
+			os.Exit(1)
 		}
 
 	case cloudprovider.GCP:
 		diskPath, err = filepath.EvalSymlinks(gcpStateDiskPath)
 		if err != nil {
 			log.With(slog.Any("error", err)).Error("Unable to resolve GCP state disk path")
-      os.Exit(1)
+			os.Exit(1)
 		}
 		gcpMeta, err := gcpcloud.New(context.Background())
 		if err != nil {
 			log.With(slog.Any("error", err)).Error(("Failed to create GCP metadata client"))
-		os.Exit(1)
+			os.Exit(1)
 		}
 		defer gcpMeta.Close()
 		metadataClient = gcpMeta
@@ -117,7 +117,7 @@ func main() {
 		metadataClient, err = openstack.New(context.Background())
 		if err != nil {
 			log.With(slog.Any("error", err)).Error(("Failed to create OpenStack metadata client"))
-		os.Exit(1)
+			os.Exit(1)
 		}
 
 	case cloudprovider.QEMU:
@@ -126,7 +126,7 @@ func main() {
 
 	default:
 		log.Error(fmt.Sprintf("CSP %s is not supported by Constellation", *csp))
-    os.Exit(1)
+		os.Exit(1)
 	}
 
 	// initialize device mapper
@@ -166,7 +166,7 @@ func main() {
 		self, err = metadataClient.Self(context.Background())
 		if err != nil {
 			log.With(slog.Any("error", err)).Error(("Failed to get self metadata"))
-		os.Exit(1)
+			os.Exit(1)
 		}
 		rejoinClient := rejoinclient.New(
 			dialer.New(issuer, nil, &net.Dialer{}),

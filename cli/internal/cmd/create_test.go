@@ -12,12 +12,12 @@ import (
 	"log/slog"
 	"testing"
 
-  "github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/constellation/state"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	consemver "github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -228,7 +228,7 @@ func TestCreate(t *testing.T) {
 					skipPhases: newPhases(skipInitPhase, skipAttestationConfigPhase, skipCertSANsPhase, skipHelmPhase, skipImagePhase, skipK8sPhase),
 				},
 
-        log:     slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:     slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				spinner: &nopSpinner{},
 
 				newInfraApplier: func(_ context.Context) (cloudApplier, func(), error) {
@@ -296,7 +296,7 @@ func TestCheckDirClean(t *testing.T) {
 			for _, f := range tc.existingFiles {
 				require.NoError(fh.Write(f, []byte{1, 2, 3}, file.OptNone))
 			}
-      a := &applyCmd{log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), fileHandler: fh}
+			a := &applyCmd{log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), fileHandler: fh}
 			err := a.checkInitFilesClean()
 
 			if tc.wantErr {

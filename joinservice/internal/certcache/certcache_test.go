@@ -121,7 +121,7 @@ func TestCreateCertChainCache(t *testing.T) {
 
 			c := &Client{
 				attVariant: variant.Dummy{},
-        log:        slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:        slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				kubeClient: tc.kubeClient,
 				kdsClient:  tc.kdsClient,
 			}
@@ -207,7 +207,7 @@ func TestGetCertChainCache(t *testing.T) {
 
 			ctx := context.Background()
 
-      c := NewClient(slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), tc.kubeClient, variant.Dummy{})
+			c := NewClient(slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), tc.kubeClient, variant.Dummy{})
 
 			ask, ark, err := c.getCertChainCache(ctx)
 			if tc.wantErr {

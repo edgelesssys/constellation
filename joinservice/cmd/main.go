@@ -10,13 +10,13 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"log/slog"
 	"net"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
-  "fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -51,7 +51,7 @@ func main() {
 	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 	flag.Parse()
 
-  log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logger.VerbosityFromInt(*verbosity)}))
+	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logger.VerbosityFromInt(*verbosity)}))
 	log.With(
 		slog.String("version", constants.BinaryVersion().String()),
 		slog.String("cloudProvider", *provider),
@@ -63,27 +63,27 @@ func main() {
 	kubeClient, err := kubernetes.New()
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to create Kubernetes client")
-    os.Exit(1)
+		os.Exit(1)
 	}
 
 	attVariant, err := variant.FromString(*attestationVariant)
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to parse attestation variant")
-    os.Exit(1)
+		os.Exit(1)
 	}
 
 	certCacheClient := certcache.NewClient(log.WithGroup("certcache"), kubeClient, attVariant)
 	cachedCerts, err := certCacheClient.CreateCertChainCache(context.Background())
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to create certificate chain cache")
-    os.Exit(1)
+		os.Exit(1)
 	}
 
 	validator, err := watcher.NewValidator(log.WithGroup("validator"), attVariant, handler, cachedCerts)
 	if err != nil {
 		flag.Usage()
 		log.With(slog.Any("error", err)).Error("Failed to create validator")
-    os.Exit(1)
+		os.Exit(1)
 	}
 
 	creds := atlscredentials.New(nil, []atls.Validator{validator})
@@ -94,7 +94,7 @@ func main() {
 	vpcIP, err := getVPCIP(vpcCtx, *provider)
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to get IP in VPC")
-    os.Exit(1)
+		os.Exit(1)
 	}
 	apiServerEndpoint := net.JoinHostPort(vpcIP, strconv.Itoa(constants.KubernetesPort))
 	kubeadm, err := kubeadm.New(apiServerEndpoint, log.WithGroup("kubeadm"))
@@ -106,7 +106,7 @@ func main() {
 	measurementSalt, err := handler.Read(filepath.Join(constants.ServiceBasePath, constants.MeasurementSaltFilename))
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to read measurement salt")
-    os.Exit(1)
+		os.Exit(1)
 	}
 
 	server, err := server.New(
@@ -119,13 +119,13 @@ func main() {
 	)
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to create server")
-    os.Exit(1)
+		os.Exit(1)
 	}
 
 	watcher, err := watcher.New(log.WithGroup("fileWatcher"), validator)
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to create watcher for measurements updates")
-    os.Exit(1)
+		os.Exit(1)
 	}
 	defer watcher.Close()
 
@@ -133,13 +133,13 @@ func main() {
 		log.Info(fmt.Sprintf("starting file watcher for measurements file %s", filepath.Join(constants.ServiceBasePath, constants.AttestationConfigFilename)))
 		if err := watcher.Watch(filepath.Join(constants.ServiceBasePath, constants.AttestationConfigFilename)); err != nil {
 			log.With(slog.Any("error", err)).Error("Failed to watch measurements file")
-      os.Exit(1)
+			os.Exit(1)
 		}
 	}()
 
 	if err := server.Run(creds, strconv.Itoa(constants.JoinServicePort)); err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to run server")
-    os.Exit(1)
+		os.Exit(1)
 	}
 }
 

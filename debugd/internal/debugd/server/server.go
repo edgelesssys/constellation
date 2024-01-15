@@ -167,7 +167,7 @@ func Start(log *slog.Logger, wg *sync.WaitGroup, serv pb.DebugdServer) {
 		lis, err := net.Listen("tcp", net.JoinHostPort("0.0.0.0", strconv.Itoa(constants.DebugdPort)))
 		if err != nil {
 			log.With(slog.Any("error", err)).Error("Listening failed")
-      os.Exit(1)
+			os.Exit(1)
 		}
 		log.Info("gRPC server is waiting for connections")
 		grpcServer.Serve(lis)

@@ -174,7 +174,7 @@ func TestHelmApply(t *testing.T) {
 		},
 	}
 
-  log := slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil))
+	log := slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil))
 	options := Options{
 		DeployCSIDriver:  true,
 		Conformance:      false,

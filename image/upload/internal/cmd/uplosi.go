@@ -58,8 +58,8 @@ func runUplosi(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: flags.logLevel}))	
-  log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
+	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: flags.logLevel}))
+	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
 
 	archiveC, archiveCClose, err := archive.New(cmd.Context(), flags.region, flags.bucket, flags.distributionID, log)
 	if err != nil {

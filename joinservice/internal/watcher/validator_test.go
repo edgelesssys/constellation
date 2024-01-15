@@ -88,7 +88,7 @@ func TestNewUpdateableValidator(t *testing.T) {
 			}
 
 			_, err := NewValidator(
-        slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				tc.variant,
 				handler,
 				tc.snpCerts,
@@ -119,7 +119,7 @@ func TestUpdate(t *testing.T) {
 
 	// create server
 	validator := &Updatable{
-    log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+		log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 		variant:     variant.Dummy{},
 		fileHandler: handler,
 	}
@@ -179,7 +179,7 @@ func TestOIDConcurrency(t *testing.T) {
 
 	// create server
 	validator := &Updatable{
-    log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+		log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 		variant:     variant.Dummy{},
 		fileHandler: handler,
 	}
@@ -208,7 +208,7 @@ func TestUpdateConcurrency(t *testing.T) {
 
 	handler := file.NewHandler(afero.NewMemMapFs())
 	validator := &Updatable{
-    log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+		log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 		fileHandler: handler,
 		variant:     variant.Dummy{},
 	}

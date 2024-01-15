@@ -272,9 +272,9 @@ func parseUplosiFlags(cmd *cobra.Command) (uplosiFlags, error) {
 		return uplosiFlags{}, err
 	}
 	logLevel := slog.LevelInfo
-  if verbose {
+	if verbose {
 		logLevel = slog.LevelDebug
-  }
+	}
 
 	return uplosiFlags{
 		rawImage:           rawImage,

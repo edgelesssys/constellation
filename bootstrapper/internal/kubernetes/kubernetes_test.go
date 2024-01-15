@@ -14,12 +14,12 @@ import (
 	"strconv"
 	"testing"
 
-  "github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubewaiter"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
@@ -188,7 +188,7 @@ func TestInitCluster(t *testing.T) {
 
 			_, err := kube.InitCluster(
 				context.Background(), string(tc.k8sVersion), "kubernetes",
-        false, nil, nil, "", slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				false, nil, nil, "", slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 			)
 
 			if tc.wantErr {

@@ -9,8 +9,8 @@ package nop
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
-  "fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/osimage"

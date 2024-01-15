@@ -12,13 +12,13 @@ import (
 	"strings"
 	"testing"
 
-  "github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/constellation/state"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -93,7 +93,7 @@ func TestConfigGenerateDefault(t *testing.T) {
 	cmd := newConfigGenerateCmd()
 
 	cg := &configGenerateCmd{
-    log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+		log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 		flags: generateFlags{
 			attestationVariant: variant.Dummy{},
 			k8sVersion:         versions.Default,
@@ -145,7 +145,7 @@ func TestConfigGenerateDefaultProviderSpecific(t *testing.T) {
 			wantConf.RemoveProviderAndAttestationExcept(tc.provider)
 
 			cg := &configGenerateCmd{
-        log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				flags: generateFlags{
 					attestationVariant: variant.Dummy{},
 					k8sVersion:         versions.Default,
@@ -178,7 +178,7 @@ func TestConfigGenerateDefaultExists(t *testing.T) {
 	cmd := newConfigGenerateCmd()
 
 	cg := &configGenerateCmd{
-    log:   slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+		log:   slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 		flags: generateFlags{attestationVariant: variant.Dummy{}},
 	}
 	require.Error(cg.configGenerate(cmd, fileHandler, cloudprovider.Unknown, ""))

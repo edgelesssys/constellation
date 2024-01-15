@@ -12,11 +12,11 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"net"
 	"strconv"
 	"testing"
 	"time"
-  "log/slog"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/internal/atls"

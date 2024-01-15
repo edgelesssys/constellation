@@ -16,7 +16,6 @@ import (
 	"strings"
 	"testing"
 
-  "github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -24,6 +23,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	consemver "github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -140,7 +140,7 @@ func TestGetCompatibleImageMeasurements(t *testing.T) {
 		}
 	})
 
-  upgrades, err := getCompatibleImageMeasurements(context.Background(), &bytes.Buffer{}, client, &stubCosignVerifier{}, singleUUIDVerifier(), csp, attestationVariant, versionZero, slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
+	upgrades, err := getCompatibleImageMeasurements(context.Background(), &bytes.Buffer{}, client, &stubCosignVerifier{}, singleUUIDVerifier(), csp, attestationVariant, versionZero, slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
 	assert.NoError(err)
 
 	for _, measurement := range upgrades {
@@ -216,7 +216,7 @@ func TestUpgradeCheck(t *testing.T) {
 				collect:          &tc.collector,
 				terraformChecker: tc.checker,
 				fileHandler:      fileHandler,
-        log:              slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:              slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 			}
 
 			cmd := newUpgradeCheckCmd()

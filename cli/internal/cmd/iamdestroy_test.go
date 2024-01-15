@@ -10,10 +10,10 @@ import (
 	"log/slog"
 	"testing"
 
-  "github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -107,7 +107,7 @@ func TestIAMDestroy(t *testing.T) {
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 
-      c := &destroyCmd{log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), flags: iamDestroyFlags{
+			c := &destroyCmd{log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), flags: iamDestroyFlags{
 				yes: tc.yesFlag,
 			}}
 
@@ -197,7 +197,7 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 
-      c := &destroyCmd{log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil))}
+			c := &destroyCmd{log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil))}
 
 			proceed, err := c.deleteGCPServiceAccountKeyFile(cmd, tc.destroyer, tc.fsHandler)
 			if tc.wantErr {

@@ -7,15 +7,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 package main
 
 import (
-  "context"
-  "flag"
-  "io"
-  "log/slog"
-  "os"
-  "strconv"
-  "fmt"
+	"context"
+	"flag"
+	"fmt"
+	"io"
+	"log/slog"
+	"os"
+	"strconv"
 
-  "github.com/spf13/afero"
+	"github.com/spf13/afero"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
@@ -38,24 +38,24 @@ import (
 )
 
 const (
-  // constellationCSP is the environment variable stating which Cloud Service Provider Constellation is running on.
-  constellationCSP = "CONSTEL_CSP"
+	// constellationCSP is the environment variable stating which Cloud Service Provider Constellation is running on.
+	constellationCSP = "CONSTEL_CSP"
 )
 
 func main() {
-  gRPCDebug := flag.Bool("debug", false, "Enable gRPC debug logging")
-  verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
-  flag.Parse()
-  log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logger.VerbosityFromInt(*verbosity)})).WithGroup("bootstrapper")
+	gRPCDebug := flag.Bool("debug", false, "Enable gRPC debug logging")
+	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
+	flag.Parse()
+	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logger.VerbosityFromInt(*verbosity)})).WithGroup("bootstrapper")
 
-  if *gRPCDebug {
-    logger.ReplaceGRPCLogger(log.WithGroup("gRPC"))
-  } else {
-    logger.ReplaceGRPCLogger(slog.New(logger.NewLevelHandler(slog.LevelWarn, log.Handler())).WithGroup("gRPC"))
-  }
+	if *gRPCDebug {
+		logger.ReplaceGRPCLogger(log.WithGroup("gRPC"))
+	} else {
+		logger.ReplaceGRPCLogger(slog.New(logger.NewLevelHandler(slog.LevelWarn, log.Handler())).WithGroup("gRPC"))
+	}
 
-  ctx, cancel := context.WithCancel(context.Background())
-  defer cancel()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	bindIP := "0.0.0.0"
 	bindPort := strconv.Itoa(constants.BootstrapperPort)
@@ -64,25 +64,25 @@ func main() {
 	var openDevice vtpm.TPMOpenFunc
 	var fs afero.Fs
 
-  attestVariant, err := variant.FromString(os.Getenv(constants.AttestationVariant))
-  if err != nil {
-    log.With(slog.Any("error", err)).Error("Failed to parse attestation variant")
-    os.Exit(1)
-  }
-  issuer, err := choose.Issuer(attestVariant, log)
-  if err != nil {
-    log.With(slog.Any("error", err)).Error("Failed to select issuer")
-    os.Exit(1)
-  }
+	attestVariant, err := variant.FromString(os.Getenv(constants.AttestationVariant))
+	if err != nil {
+		log.With(slog.Any("error", err)).Error("Failed to parse attestation variant")
+		os.Exit(1)
+	}
+	issuer, err := choose.Issuer(attestVariant, log)
+	if err != nil {
+		log.With(slog.Any("error", err)).Error("Failed to select issuer")
+		os.Exit(1)
+	}
 
-  switch cloudprovider.FromString(os.Getenv(constellationCSP)) {
-  case cloudprovider.AWS:
-    metadata, err := awscloud.New(ctx)
-    if err != nil {
-      log.With(slog.Any("error", err)).Error("Failed to set up AWS metadata API")
-      os.Exit(1)
-    }
-    metadataAPI = metadata
+	switch cloudprovider.FromString(os.Getenv(constellationCSP)) {
+	case cloudprovider.AWS:
+		metadata, err := awscloud.New(ctx)
+		if err != nil {
+			log.With(slog.Any("error", err)).Error("Failed to set up AWS metadata API")
+			os.Exit(1)
+		}
+		metadataAPI = metadata
 
 		clusterInitJoiner = kubernetes.New(
 			"aws", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.NewUninitialized(),
@@ -91,13 +91,13 @@ func main() {
 		openDevice = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
 
-  case cloudprovider.GCP:
-    metadata, err := gcpcloud.New(ctx)
-    if err != nil {
-      log.With(slog.Any("error", err)).Error("Failed to create GCP metadata client")
-      os.Exit(1)
-    }
-    defer metadata.Close()
+	case cloudprovider.GCP:
+		metadata, err := gcpcloud.New(ctx)
+		if err != nil {
+			log.With(slog.Any("error", err)).Error("Failed to create GCP metadata client")
+			os.Exit(1)
+		}
+		defer metadata.Close()
 
 		metadataAPI = metadata
 		clusterInitJoiner = kubernetes.New(
@@ -117,14 +117,14 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to prepare Azure control plane node")
 		}
 
-    metadataAPI = metadata
-    clusterInitJoiner = kubernetes.New(
-      "azure", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.NewUninitialized(),
-      metadata, &kubewaiter.CloudKubeAPIWaiter{},
-    )
+		metadataAPI = metadata
+		clusterInitJoiner = kubernetes.New(
+			"azure", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.NewUninitialized(),
+			metadata, &kubewaiter.CloudKubeAPIWaiter{},
+		)
 
-    openDevice = vtpm.OpenVTPM
-    fs = afero.NewOsFs()
+		openDevice = vtpm.OpenVTPM
+		fs = afero.NewOsFs()
 
 	case cloudprovider.QEMU:
 		metadata := qemucloud.New()
@@ -166,7 +166,7 @@ func main() {
 		fs = afero.NewMemMapFs()
 	}
 
-  fileHandler := file.NewHandler(fs)
+	fileHandler := file.NewHandler(fs)
 
 	run(issuer, openDevice, fileHandler, clusterInitJoiner, metadataAPI, bindIP, bindPort, log)
 }

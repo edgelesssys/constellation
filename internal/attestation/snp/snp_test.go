@@ -10,10 +10,10 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strings"
 	"testing"
-  "log/slog"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/snp/testdata"
 	"github.com/edgelesssys/constellation/v2/internal/config"

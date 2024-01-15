@@ -16,13 +16,13 @@ import (
 	"testing"
 	"time"
 
-  "github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"github.com/edgelesssys/constellation/v2/joinservice/joinproto"
@@ -221,7 +221,7 @@ func TestClient(t *testing.T) {
 				fileHandler: fileHandler,
 				metadataAPI: metadataAPI,
 				clock:       clock,
-        log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 			}
 
 			serverCreds := atlscredentials.New(nil, nil)
@@ -276,7 +276,7 @@ func TestClientConcurrentStartStop(t *testing.T) {
 		fileHandler: file.NewHandler(afero.NewMemMapFs()),
 		metadataAPI: &stubRepeaterMetadataAPI{},
 		clock:       testclock.NewFakeClock(time.Now()),
-    log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+		log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 	}
 
 	wg := sync.WaitGroup{}

@@ -9,12 +9,12 @@ package filetransfer
 import (
 	"errors"
 	"io"
+	"log/slog"
 	"testing"
-  "log/slog"
 
-  "github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/filetransfer/streamer"
 	pb "github.com/edgelesssys/constellation/v2/debugd/service"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"

@@ -87,23 +87,23 @@ func middlewareLogger(l *slog.Logger) logging.Logger {
 			}
 		}
 
-    var pcs [1]uintptr
-    runtime.Callers(2, pcs[:]) // skip [Callers, LoggerFunc]
-    r := slog.Record{}
+		var pcs [1]uintptr
+		runtime.Callers(2, pcs[:]) // skip [Callers, LoggerFunc]
+		r := slog.Record{}
 
 		switch lvl {
 		case logging.LevelDebug:
-      r = slog.NewRecord(time.Now(), slog.LevelDebug, fmt.Sprintf(msg, fields...), pcs[0])
+			r = slog.NewRecord(time.Now(), slog.LevelDebug, fmt.Sprintf(msg, fields...), pcs[0])
 		case logging.LevelInfo:
-      r = slog.NewRecord(time.Now(), slog.LevelInfo, fmt.Sprintf(msg, fields...), pcs[0])
+			r = slog.NewRecord(time.Now(), slog.LevelInfo, fmt.Sprintf(msg, fields...), pcs[0])
 		case logging.LevelWarn:
-      r = slog.NewRecord(time.Now(), slog.LevelWarn, fmt.Sprintf(msg, fields...), pcs[0])
+			r = slog.NewRecord(time.Now(), slog.LevelWarn, fmt.Sprintf(msg, fields...), pcs[0])
 		case logging.LevelError:
-      r = slog.NewRecord(time.Now(), slog.LevelError, fmt.Sprintf(msg, fields...), pcs[0])
+			r = slog.NewRecord(time.Now(), slog.LevelError, fmt.Sprintf(msg, fields...), pcs[0])
 		default:
 			panic(fmt.Sprintf("unknown level %v", lvl))
 		}
-    _ = l.Handler().Handle(context.Background(), r)
+		_ = l.Handler().Handle(context.Background(), r)
 	})
 }
 
@@ -154,11 +154,11 @@ func (h *LevelHandler) Handler() slog.Handler {
 
 // TestWriter is a writer to a testing.T used in tests for logging with slog.
 type TestWriter struct {
-  T *testing.T
+	T *testing.T
 }
 
 func (t TestWriter) Write(p []byte) (int, error) {
-  t.T.Helper()
-  t.T.Log(string(p))
-  return len(p), nil
+	t.T.Helper()
+	t.T.Log(string(p))
+	return len(p), nil
 }

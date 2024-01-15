@@ -89,7 +89,7 @@ func main() {
 			}
 		default:
 			log.With(slog.String("testcase", name)).Error("invalid result")
-      os.Exit(1)
+			os.Exit(1)
 		}
 	}
 

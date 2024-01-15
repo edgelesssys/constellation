@@ -6,9 +6,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 package verify
 
 import (
+	"log/slog"
 	"strings"
 	"testing"
-  "log/slog"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/snp/testdata"
 	"github.com/edgelesssys/constellation/v2/internal/logger"

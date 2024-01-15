@@ -18,7 +18,6 @@ import (
 	"testing"
 	"time"
 
-  "github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
@@ -29,6 +28,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constellation/state"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"github.com/spf13/pflag"
@@ -197,7 +197,7 @@ func TestBackupHelmCharts(t *testing.T) {
 				applier: &stubConstellApplier{
 					stubKubernetesUpgrader: tc.backupClient,
 				},
-        log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 			}
 
 			err := a.backupHelmCharts(context.Background(), tc.helmApplier, tc.includesUpgrades, "")
@@ -443,7 +443,7 @@ func TestValidateInputs(t *testing.T) {
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 
 			a := applyCmd{
-        log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				fileHandler: fileHandler,
 				flags:       tc.flags,
 			}

@@ -11,14 +11,13 @@ import (
 	"context"
 	"errors"
 	"io"
+	"log/slog"
 	"net"
 	"strings"
 	"sync"
 	"testing"
 	"time"
-  "log/slog"
 
-  "github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -26,6 +25,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	kmssetup "github.com/edgelesssys/constellation/v2/internal/kms/setup"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -67,7 +67,7 @@ func TestNew(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-      server, err := New(context.TODO(), newFakeLock(), &stubClusterInitializer{}, atls.NewFakeIssuer(variant.Dummy{}), fh, &tc.metadata, slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
+			server, err := New(context.TODO(), newFakeLock(), &stubClusterInitializer{}, atls.NewFakeIssuer(variant.Dummy{}), fh, &tc.metadata, slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -215,7 +215,7 @@ func TestInit(t *testing.T) {
 				initializer:       tc.initializer,
 				disk:              tc.disk,
 				fileHandler:       tc.fileHandler,
-        log:               slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:               slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				grpcServer:        serveStopper,
 				cleaner:           &fakeCleaner{serveStopper: serveStopper},
 				initSecretHash:    tc.initSecretHash,

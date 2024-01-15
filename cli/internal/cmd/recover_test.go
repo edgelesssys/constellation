@@ -16,7 +16,6 @@ import (
 	"testing"
 	"time"
 
-  "github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/recoverproto"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -29,6 +28,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -165,7 +165,7 @@ func TestRecover(t *testing.T) {
 
 			newDialer := func(atls.Validator) *dialer.Dialer { return nil }
 			r := &recoverCmd{
-        log:           slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:           slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				configFetcher: stubAttestationFetcher{},
 				flags: recoverFlags{
 					rootFlags: rootFlags{force: true},
@@ -219,7 +219,7 @@ func TestDoRecovery(t *testing.T) {
 			go recoverServer.Serve(listener)
 			defer recoverServer.GracefulStop()
 
-      r := &recoverCmd{log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil))}
+			r := &recoverCmd{log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil))}
 			recoverDoer := &recoverDoer{
 				dialer:   dialer.New(nil, nil, netDialer),
 				endpoint: addr,

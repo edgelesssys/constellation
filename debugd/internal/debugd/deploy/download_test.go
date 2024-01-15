@@ -14,11 +14,11 @@ import (
 	"strconv"
 	"testing"
 
-  "github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/filetransfer"
 	pb "github.com/edgelesssys/constellation/v2/debugd/service"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"
 	"google.golang.org/grpc"
@@ -118,7 +118,7 @@ func TestDownloadDeployment(t *testing.T) {
 			defer grpcServ.GracefulStop()
 
 			download := &Download{
-        log:            slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:            slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				dialer:         dialer,
 				transfer:       transfer,
 				serviceManager: serviceMgr,
@@ -190,7 +190,7 @@ func TestDownloadInfo(t *testing.T) {
 			defer grpcServer.GracefulStop()
 
 			download := &Download{
-        log:    slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:    slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				dialer: dialer,
 				info:   &tc.infoSetter,
 			}

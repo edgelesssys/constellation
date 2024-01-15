@@ -17,10 +17,10 @@ import (
 	"sync"
 	"testing"
 
-  "github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/nodestate"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -137,7 +137,7 @@ func TestPrepareExistingDisk(t *testing.T) {
 			}
 
 			setupManager := &Manager{
-        log:        slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:        slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				csp:        "test",
 				diskPath:   "disk-path",
 				fs:         fs,
@@ -215,7 +215,7 @@ func TestPrepareNewDisk(t *testing.T) {
 			assert := assert.New(t)
 
 			setupManager := &Manager{
-        log:      slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:      slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				csp:      "test",
 				diskPath: "disk-path",
 				fs:       tc.fs,
@@ -271,7 +271,7 @@ func TestReadMeasurementSalt(t *testing.T) {
 				require.NoError(handler.WriteJSON("test-state.json", state, file.OptMkdirAll))
 			}
 
-      setupManager := New(slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), "test", "disk-path", fs, nil, nil, nil)
+			setupManager := New(slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), "test", "disk-path", fs, nil, nil, nil)
 
 			measurementSalt, err := setupManager.readMeasurementSalt("test-state.json")
 			if tc.wantErr {

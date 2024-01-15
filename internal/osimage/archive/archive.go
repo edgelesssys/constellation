@@ -8,8 +8,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 package archive
 
 import (
-  "fmt"
 	"context"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/url"

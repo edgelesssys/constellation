@@ -9,9 +9,9 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"os"
-  "fmt"
 
 	"github.com/bazelbuild/buildtools/build"
 	"github.com/edgelesssys/constellation/v2/hack/bazel-deps-mirror/internal/bazelfiles"

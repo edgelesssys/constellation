@@ -24,7 +24,7 @@ func main() {
 	attestationVariant, err := variant.FromString(variantString)
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to parse attestation variant")
-    os.Exit(1)
+		os.Exit(1)
 	}
 
 	var m []sorted.Measurement
@@ -33,17 +33,17 @@ func main() {
 		m, err = tpm.Measurements()
 		if err != nil {
 			log.With(slog.Any("error", err)).Error("Failed to read TPM measurements")
-      os.Exit(1)
+			os.Exit(1)
 		}
 	case variant.QEMUTDX{}:
 		m, err = tdx.Measurements()
 		if err != nil {
 			log.With(slog.Any("error", err)).Error("Failed to read Intel TDX measurements")
-      os.Exit(1)
+			os.Exit(1)
 		}
 	default:
 		log.With(slog.String("attestationVariant", variantString)).Error("Unsupported attestation variant")
-    os.Exit(1)
+		os.Exit(1)
 	}
 
 	fmt.Println("Measurements:")

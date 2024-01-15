@@ -8,8 +8,8 @@ package constellation
 
 import (
 	"context"
+	"log/slog"
 	"testing"
-  "log/slog"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"

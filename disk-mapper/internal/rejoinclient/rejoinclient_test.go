@@ -16,12 +16,12 @@ import (
 	"testing"
 	"time"
 
-  "github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/joinservice/joinproto"
 	"github.com/stretchr/testify/assert"
@@ -57,7 +57,7 @@ func TestStartCancel(t *testing.T) {
 		dialer:      dialer,
 		nodeInfo:    metadata.InstanceMetadata{Role: role.Worker},
 		metadataAPI: metaAPI,
-    log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+		log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 		timeout:     time.Second * 30,
 		interval:    time.Second,
 		clock:       clock,
@@ -217,7 +217,7 @@ func TestGetJoinEndpoints(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-      client := New(nil, tc.nodeInfo, tc.meta, slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
+			client := New(nil, tc.nodeInfo, tc.meta, slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
 
 			endpoints, err := client.getJoinEndpoints()
 			if tc.wantErr {
@@ -293,7 +293,7 @@ func TestStart(t *testing.T) {
 				},
 			}
 
-      client := New(dialer, tc.nodeInfo, meta, slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
+			client := New(dialer, tc.nodeInfo, meta, slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
 
 			passphrase, secret := client.Start(context.Background(), "uuid")
 			assert.Equal(diskKey, passphrase)

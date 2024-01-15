@@ -14,13 +14,13 @@ import (
 	"testing"
 	"time"
 
-  "github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/recoverproto"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -36,7 +36,7 @@ func TestMain(m *testing.M) {
 
 func TestServe(t *testing.T) {
 	assert := assert.New(t)
-  log := slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil))
+	log := slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil))
 	uuid := "uuid"
 	server := New(atls.NewFakeIssuer(variant.Dummy{}), newStubKMS(nil, nil), log)
 	dialer := testdialer.NewBufconnDialer()
@@ -107,7 +107,7 @@ func TestRecover(t *testing.T) {
 
 			ctx := context.Background()
 			serverUUID := "uuid"
-      server := New(atls.NewFakeIssuer(variant.Dummy{}), tc.factory, slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
+			server := New(atls.NewFakeIssuer(variant.Dummy{}), tc.factory, slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
 			netDialer := testdialer.NewBufconnDialer()
 			listener := netDialer.GetListener("192.0.2.1:1234")
 

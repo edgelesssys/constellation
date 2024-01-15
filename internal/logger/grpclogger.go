@@ -19,7 +19,7 @@ import (
 
 func replaceGRPCLogger(log *slog.Logger) {
 	gl := &grpcLogger{
-		logger:    log.With(slog.String("system", "grpc"), slog.Bool("grpc_log", true)), 
+		logger:    log.With(slog.String("system", "grpc"), slog.Bool("grpc_log", true)),
 		verbosity: 0,
 	}
 	grpclog.SetLoggerV2(gl)
@@ -31,90 +31,90 @@ type grpcLogger struct {
 }
 
 func (l *grpcLogger) Info(args ...interface{}) {
-  var pcs [1]uintptr
-  runtime.Callers(2, pcs[:])
-  r := slog.NewRecord(time.Now(), slog.LevelInfo, fmt.Sprint(args...), pcs[0])
-  _ = l.logger.Handler().Handle(context.Background(), r)
+	var pcs [1]uintptr
+	runtime.Callers(2, pcs[:])
+	r := slog.NewRecord(time.Now(), slog.LevelInfo, fmt.Sprint(args...), pcs[0])
+	_ = l.logger.Handler().Handle(context.Background(), r)
 }
 
 func (l *grpcLogger) Infoln(args ...interface{}) {
 	var pcs [1]uintptr
-  runtime.Callers(2, pcs[:])
-  r := slog.NewRecord(time.Now(), slog.LevelInfo, fmt.Sprint(args...), pcs[0])
-  _ = l.logger.Handler().Handle(context.Background(), r)
+	runtime.Callers(2, pcs[:])
+	r := slog.NewRecord(time.Now(), slog.LevelInfo, fmt.Sprint(args...), pcs[0])
+	_ = l.logger.Handler().Handle(context.Background(), r)
 }
 
 func (l *grpcLogger) Infof(format string, args ...interface{}) {
 	var pcs [1]uintptr
-  runtime.Callers(2, pcs[:])
-  r := slog.NewRecord(time.Now(), slog.LevelInfo, fmt.Sprintf(format, args...), pcs[0])
-  _ = l.logger.Handler().Handle(context.Background(), r)
+	runtime.Callers(2, pcs[:])
+	r := slog.NewRecord(time.Now(), slog.LevelInfo, fmt.Sprintf(format, args...), pcs[0])
+	_ = l.logger.Handler().Handle(context.Background(), r)
 }
 
 func (l *grpcLogger) Warning(args ...interface{}) {
 	var pcs [1]uintptr
-  runtime.Callers(2, pcs[:])
-  r := slog.NewRecord(time.Now(), slog.LevelWarn, fmt.Sprint(args...), pcs[0])
-  _ = l.logger.Handler().Handle(context.Background(), r)
+	runtime.Callers(2, pcs[:])
+	r := slog.NewRecord(time.Now(), slog.LevelWarn, fmt.Sprint(args...), pcs[0])
+	_ = l.logger.Handler().Handle(context.Background(), r)
 }
 
 func (l *grpcLogger) Warningln(args ...interface{}) {
 	var pcs [1]uintptr
-  runtime.Callers(2, pcs[:])
-  r := slog.NewRecord(time.Now(), slog.LevelWarn, fmt.Sprint(args...), pcs[0])
-  _ = l.logger.Handler().Handle(context.Background(), r)
+	runtime.Callers(2, pcs[:])
+	r := slog.NewRecord(time.Now(), slog.LevelWarn, fmt.Sprint(args...), pcs[0])
+	_ = l.logger.Handler().Handle(context.Background(), r)
 }
 
 func (l *grpcLogger) Warningf(format string, args ...interface{}) {
 	var pcs [1]uintptr
-  runtime.Callers(2, pcs[:])
-  r := slog.NewRecord(time.Now(), slog.LevelWarn, fmt.Sprintf(format, args...), pcs[0])
-  _ = l.logger.Handler().Handle(context.Background(), r)
+	runtime.Callers(2, pcs[:])
+	r := slog.NewRecord(time.Now(), slog.LevelWarn, fmt.Sprintf(format, args...), pcs[0])
+	_ = l.logger.Handler().Handle(context.Background(), r)
 }
 
 func (l *grpcLogger) Error(args ...interface{}) {
 	var pcs [1]uintptr
-  runtime.Callers(2, pcs[:])
-  r := slog.NewRecord(time.Now(), slog.LevelError, fmt.Sprint(args...), pcs[0])
-  _ = l.logger.Handler().Handle(context.Background(), r)
+	runtime.Callers(2, pcs[:])
+	r := slog.NewRecord(time.Now(), slog.LevelError, fmt.Sprint(args...), pcs[0])
+	_ = l.logger.Handler().Handle(context.Background(), r)
 }
 
 func (l *grpcLogger) Errorln(args ...interface{}) {
 	var pcs [1]uintptr
-  runtime.Callers(2, pcs[:])
-  r := slog.NewRecord(time.Now(), slog.LevelError, fmt.Sprint(args...), pcs[0])
-  _ = l.logger.Handler().Handle(context.Background(), r)
+	runtime.Callers(2, pcs[:])
+	r := slog.NewRecord(time.Now(), slog.LevelError, fmt.Sprint(args...), pcs[0])
+	_ = l.logger.Handler().Handle(context.Background(), r)
 }
 
 func (l *grpcLogger) Errorf(format string, args ...interface{}) {
 	var pcs [1]uintptr
-  runtime.Callers(2, pcs[:])
-  r := slog.NewRecord(time.Now(), slog.LevelError, fmt.Sprintf(format, args...), pcs[0])
-  _ = l.logger.Handler().Handle(context.Background(), r)
+	runtime.Callers(2, pcs[:])
+	r := slog.NewRecord(time.Now(), slog.LevelError, fmt.Sprintf(format, args...), pcs[0])
+	_ = l.logger.Handler().Handle(context.Background(), r)
 }
 
 func (l *grpcLogger) Fatal(args ...interface{}) {
 	var pcs [1]uintptr
-  runtime.Callers(2, pcs[:])
-  r := slog.NewRecord(time.Now(), slog.LevelError, fmt.Sprint(args...), pcs[0])
-  _ = l.logger.Handler().Handle(context.Background(), r)
-  os.Exit(1)
+	runtime.Callers(2, pcs[:])
+	r := slog.NewRecord(time.Now(), slog.LevelError, fmt.Sprint(args...), pcs[0])
+	_ = l.logger.Handler().Handle(context.Background(), r)
+	os.Exit(1)
 }
 
 func (l *grpcLogger) Fatalln(args ...interface{}) {
 	var pcs [1]uintptr
-  runtime.Callers(2, pcs[:])
-  r := slog.NewRecord(time.Now(), slog.LevelError, fmt.Sprint(args...), pcs[0])
-  _ = l.logger.Handler().Handle(context.Background(), r)
-  os.Exit(1)
+	runtime.Callers(2, pcs[:])
+	r := slog.NewRecord(time.Now(), slog.LevelError, fmt.Sprint(args...), pcs[0])
+	_ = l.logger.Handler().Handle(context.Background(), r)
+	os.Exit(1)
 }
 
 func (l *grpcLogger) Fatalf(format string, args ...interface{}) {
 	var pcs [1]uintptr
-  runtime.Callers(2, pcs[:])
-  r := slog.NewRecord(time.Now(), slog.LevelError, fmt.Sprintf(format, args...), pcs[0])
-  _ = l.logger.Handler().Handle(context.Background(), r)
-  os.Exit(1)
+	runtime.Callers(2, pcs[:])
+	r := slog.NewRecord(time.Now(), slog.LevelError, fmt.Sprintf(format, args...), pcs[0])
+	_ = l.logger.Handler().Handle(context.Background(), r)
+	os.Exit(1)
 }
 
 func (l *grpcLogger) V(level int) bool {

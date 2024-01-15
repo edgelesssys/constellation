@@ -86,7 +86,7 @@ kind: Config`,
 			require := require.New(t)
 
 			client := &Kubeadm{
-        log:    slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:    slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				file:   file.NewHandler(afero.NewMemMapFs()),
 				client: fake.NewSimpleClientset(),
 			}
@@ -150,7 +150,7 @@ func TestGetControlPlaneCertificatesAndKeys(t *testing.T) {
 			require := require.New(t)
 
 			client := &Kubeadm{
-        log:    slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:    slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				file:   file.NewHandler(afero.NewMemMapFs()),
 				client: fake.NewSimpleClientset(),
 			}

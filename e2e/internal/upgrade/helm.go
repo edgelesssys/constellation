@@ -21,7 +21,7 @@ import (
 
 func servicesVersion(t *testing.T) (semver.Semver, error) {
 	t.Helper()
-  log := slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil))
+	log := slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil))
 	settings := cli.New()
 	settings.KubeConfig = "constellation-admin.conf"
 	actionConfig := &action.Configuration{}

@@ -12,10 +12,10 @@ import (
 	"log/slog"
 	"testing"
 
-  "github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/constellation/state"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -140,7 +140,7 @@ func TestTerminate(t *testing.T) {
 			fileHandler := file.NewHandler(tc.setupFs(require, tc.stateFile))
 
 			tCmd := &terminateCmd{
-        log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				fileHandler: fileHandler,
 				flags: terminateFlags{
 					yes: tc.yesFlag,

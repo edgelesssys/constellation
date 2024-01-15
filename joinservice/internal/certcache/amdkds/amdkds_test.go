@@ -7,9 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 package amdkds
 
 import (
-  "fmt"
+	"fmt"
+	"log/slog"
 	"testing"
-  "log/slog"
 
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/joinservice/internal/certcache/amdkds/testdata"

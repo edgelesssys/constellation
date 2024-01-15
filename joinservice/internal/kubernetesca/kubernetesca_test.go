@@ -186,7 +186,7 @@ Q29uc3RlbGxhdGlvbg==
 			}
 
 			ca := New(
-        slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				fileHandler,
 			)
 

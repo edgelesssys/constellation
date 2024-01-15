@@ -241,7 +241,7 @@ func TestAppendNewAction(t *testing.T) {
 			assert := assert.New(t)
 
 			actions := []applyAction{}
-      actionFactory := newActionFactory(nil, tc.lister, &action.Configuration{}, slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
+			actionFactory := newActionFactory(nil, tc.lister, &action.Configuration{}, slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
 
 			err := actionFactory.appendNewAction(tc.release, tc.configTargetVersion, tc.force, tc.allowDestructive, time.Second, &actions)
 			if tc.wantErr {

@@ -91,7 +91,7 @@ func runCodegen(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("rendering Go code: %w", err)
 	}
 
-	log.Debug(fmt.Sprintf("Go code created at %q 🤖", flags.output)) 
+	log.Debug(fmt.Sprintf("Go code created at %q 🤖", flags.output))
 	return nil
 }
 

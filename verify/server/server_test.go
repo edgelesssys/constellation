@@ -20,8 +20,8 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/verify/verifyproto"
-  "github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -38,7 +38,7 @@ func TestRun(t *testing.T) {
 	var err error
 	var wg sync.WaitGroup
 	s := &Server{
-    log:    slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+		log:    slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 		issuer: stubIssuer{attestation: []byte("quote")},
 	}
 
@@ -105,7 +105,7 @@ func TestGetAttestationGRPC(t *testing.T) {
 			assert := assert.New(t)
 
 			server := &Server{
-        log:    slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:    slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				issuer: tc.issuer,
 			}
 
@@ -158,7 +158,7 @@ func TestGetAttestationHTTP(t *testing.T) {
 			require := require.New(t)
 
 			server := &Server{
-        log:    slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:    slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				issuer: tc.issuer,
 			}
 

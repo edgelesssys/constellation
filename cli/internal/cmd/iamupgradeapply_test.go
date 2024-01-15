@@ -13,7 +13,6 @@ import (
 	"strings"
 	"testing"
 
-  "github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -21,6 +20,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -132,7 +132,7 @@ func TestIamUpgradeApply(t *testing.T) {
 
 			iamUpgradeApplyCmd := &iamUpgradeApplyCmd{
 				fileHandler:   tc.fh,
-        log:           slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:           slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				configFetcher: tc.configFetcher,
 				flags: iamUpgradeApplyFlags{
 					yes: tc.yesFlag,

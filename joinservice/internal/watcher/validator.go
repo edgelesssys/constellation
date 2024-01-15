@@ -11,9 +11,9 @@ import (
 	"crypto/x509"
 	"encoding/asn1"
 	"fmt"
+	"log/slog"
 	"path/filepath"
 	"sync"
-  "log/slog"
 
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"

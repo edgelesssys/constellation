@@ -10,12 +10,12 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
-  "fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
@@ -44,20 +44,20 @@ func main() {
 	masterKey, err := file.Read(*masterSecretPath)
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to read master secret")
-    os.Exit(1)
+		os.Exit(1)
 	}
 	if len(masterKey) < crypto.MasterSecretLengthMin {
 		log.With(slog.Any("error", errors.New("invalid key length"))).Error(fmt.Sprintf("Provided master secret is smaller than the required minimum of %d bytes", crypto.MasterSecretLengthMin))
-    os.Exit(1)
+		os.Exit(1)
 	}
 	salt, err := file.Read(*saltPath)
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to read salt")
-    os.Exit(1)
+		os.Exit(1)
 	}
 	if len(salt) < crypto.RNGLengthDefault {
 		log.With(slog.Any("error", errors.New("invalid salt length"))).Error(fmt.Sprintf("Expected salt to be %d bytes, but got %d", crypto.RNGLengthDefault, len(salt)))
-    os.Exit(1)
+		os.Exit(1)
 	}
 	masterSecret := uri.MasterSecret{Key: masterKey, Salt: salt}
 
@@ -67,12 +67,12 @@ func main() {
 	conKMS, err := setup.KMS(ctx, uri.NoStoreURI, masterSecret.EncodeToURI())
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to setup KMS")
-    os.Exit(1)
+		os.Exit(1)
 	}
 	defer conKMS.Close()
 
 	if err := server.New(log.WithGroup("keyService"), conKMS).Run(*port); err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to run key-service server")
-    os.Exit(1)
+		os.Exit(1)
 	}
 }

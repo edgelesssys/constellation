@@ -13,7 +13,6 @@ import (
 	"net/url"
 	"testing"
 
-  "github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
@@ -22,6 +21,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -181,7 +181,7 @@ func TestConfigFetchMeasurements(t *testing.T) {
 			err := fileHandler.WriteYAML(constants.ConfigFilename, gcpConfig, file.OptMkdirAll)
 			require.NoError(err)
 			fetcher := stubVerifyFetcher{err: tc.err}
-      cfm := &configFetchMeasurementsCmd{canFetchMeasurements: true, log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), verifyFetcher: fetcher}
+			cfm := &configFetchMeasurementsCmd{canFetchMeasurements: true, log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), verifyFetcher: fetcher}
 			cfm.flags.insecure = tc.insecureFlag
 			cfm.flags.force = true
 

@@ -68,7 +68,7 @@ func TestListAll(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-      server := New(slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), "test", "initSecretHash", tc.connect)
+			server := New(slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), "test", "initSecretHash", tc.connect)
 
 			res, err := server.listAll()
 
@@ -139,7 +139,7 @@ func TestListSelf(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-      server := New(slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), "test", "initSecretHash", tc.connect)
+			server := New(slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), "test", "initSecretHash", tc.connect)
 
 			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://192.0.0.1/self", nil)
 			require.NoError(err)
@@ -199,7 +199,7 @@ func TestListPeers(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-      server := New(slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), "test", "initSecretHash", tc.connect)
+			server := New(slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), "test", "initSecretHash", tc.connect)
 
 			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://192.0.0.1/peers", nil)
 			require.NoError(err)
@@ -254,7 +254,7 @@ func TestInitSecretHash(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-      server := New(slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), "test", tc.wantHash, defaultConnect)
+			server := New(slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), "test", tc.wantHash, defaultConnect)
 
 			req, err := http.NewRequestWithContext(context.Background(), tc.method, "http://192.0.0.1/initsecrethash", nil)
 			require.NoError(err)

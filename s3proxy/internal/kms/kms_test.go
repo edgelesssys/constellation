@@ -55,7 +55,7 @@ func TestGetDataKey(t *testing.T) {
 			defer listener.Close()
 
 			client := New(
-        slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
 				listener.Addr().String(),
 			)
 

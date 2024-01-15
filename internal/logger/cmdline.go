@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package logger
 
 import (
-  "log/slog"
+	"log/slog"
 )
 
 // CmdLineVerbosityDescription explains numeric log levels.
