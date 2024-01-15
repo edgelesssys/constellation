@@ -16,6 +16,8 @@ def _mkosi_image_impl(ctx):
         args.add("--distribution", ctx.attr.distribution)
     if ctx.attr.architecture:
         args.add("--architecture", ctx.attr.architecture)
+    if ctx.attr.output:
+        args.add("--output", ctx.attr.output)
     args.add_all(ctx.attr.packages, before_each = "--package")
     for package_file in ctx.files.package_files:
         args.add("--package", config_rel(package_file.path))
@@ -122,6 +124,7 @@ mkosi_image = rule(
             doc = "main mkosi.conf file",
         ),
         "out_dir": attr.string(),
+        "output": attr.string(),
         "outs": attr.output_list(),
         "package_files": attr.label_list(allow_files = True),
         "package_manager_trees": attr.label_list(allow_files = True),

@@ -4,14 +4,26 @@ load("@rules_pkg//:pkg.bzl", "pkg_tar")
 load("//bazel/mkosi:mkosi_image.bzl", "mkosi_image")
 
 copy_to_directory(
-    name = "rpms",
+    name = "rpms_lts",
     srcs = [
-        "@kernel//file",
-        "@kernel_core//file",
-        "@kernel_modules//file",
-        "@kernel_modules_core//file",
+        "@kernel_core_lts//file",
+        "@kernel_lts//file",
+        "@kernel_modules_core_lts//file",
+        "@kernel_modules_lts//file",
     ],
-    include_external_repositories = ["kernel*"],
+    include_external_repositories = ["kernel*lts"],
+    replace_prefixes = {"file": ""},
+)
+
+copy_to_directory(
+    name = "rpms_mainline",
+    srcs = [
+        "@kernel_core_mainline//file",
+        "@kernel_mainline//file",
+        "@kernel_modules_core_mainline//file",
+        "@kernel_modules_mainline//file",
+    ],
+    include_external_repositories = ["kernel*mainline"],
     replace_prefixes = {"file": ""},
 )
 
@@ -23,64 +35,75 @@ copy_to_directory(
         allow_symlink = True,
     )
     for name in [
-        "kernel",
-        "kernel_core",
-        "kernel_modules",
-        "kernel_modules_core",
+        "kernel_lts",
+        "kernel_core_lts",
+        "kernel_modules_lts",
+        "kernel_modules_core_lts",
+        "kernel_mainline",
+        "kernel_core_mainline",
+        "kernel_modules_mainline",
+        "kernel_modules_core_mainline",
     ]
 ]
 
-mkosi_image(
-    name = "base",
-    srcs = [
-        "mkosi.postinst",
-        "mkosi.prepare",
-    ] + glob([
-        "mkosi.skeleton/**",
-    ]),
-    outs = [
-        "image",
-        "image.tar",
-        "image-.rpm.lock",
-        "image-packagemanifest",
-        "image-rpmdb.sqlite",
-        "image-rpmdb.sqlite-shm",
-        "image-rpmdb.sqlite-wal",
-    ],
-    extra_trees = [
-        "//image:sysroot_tar",
-        "//image:cryptsetup_closure",
-    ],
-    local_mirror = ["@mkosi_rpms//:repo"],
-    mkosi_conf = "mkosi.conf",
-    package_files = [
-        ":kernel",
-        ":kernel_core",
-        ":kernel_modules",
-        ":kernel_modules_core",
-    ],
-    tags = [
-        "manual",
-        "no-cache",
-    ],
-    visibility = ["//visibility:public"],
-)
+[
+    mkosi_image(
+        name = "base_" + kernel_variant,
+        srcs = [
+            "mkosi.postinst",
+            "mkosi.prepare",
+        ] + glob([
+            "mkosi.skeleton/**",
+        ]),
+        outs = [
+            kernel_variant,
+            kernel_variant + ".tar",
+            kernel_variant + "-.rpm.lock",
+            kernel_variant + "-packagemanifest",
+            kernel_variant + "-rpmdb.sqlite",
+            kernel_variant + "-rpmdb.sqlite-shm",
+            kernel_variant + "-rpmdb.sqlite-wal",
+        ],
+        extra_trees = [
+            "//image:sysroot_tar",
+            "//image:cryptsetup_closure",
+        ],
+        local_mirror = ["@mkosi_rpms//:repo"],
+        mkosi_conf = "mkosi.conf",
+        output = kernel_variant,
+        package_files = [
+            ":kernel_" + kernel_variant,
+            ":kernel_core_" + kernel_variant,
+            ":kernel_modules_" + kernel_variant,
+            ":kernel_modules_core_" + kernel_variant,
+        ],
+        tags = [
+            "manual",
+            "no-cache",
+        ],
+        visibility = ["//visibility:public"],
+    )
+    for kernel_variant in [
+        "lts",
+        "mainline",
+    ]
+]
 
 pkg_tar(
     name = "rpmdb",
     srcs = [
-        "image-.rpm.lock",
-        "image-packagemanifest",
-        "image-rpmdb.sqlite",
-        "image-rpmdb.sqlite-shm",
-        "image-rpmdb.sqlite-wal",
+        "lts-.rpm.lock",
+        "lts-packagemanifest",
+        "lts-rpmdb.sqlite",
+        "lts-rpmdb.sqlite-shm",
+        "lts-rpmdb.sqlite-wal",
     ],
     remap_paths = {
-        "/image-.rpm.lock": "/var/lib/rpm/.rpm.lock",
-        "/image-packagemanifest": "/usr/share/constellation/packagemanifest",
-        "/image-rpmdb.sqlite": "/var/lib/rpm/rpmdb.sqlite",
-        "/image-rpmdb.sqlite-shm": "/var/lib/rpm/rpmdb.sqlite-shm",
-        "/image-rpmdb.sqlite-wal": "/var/lib/rpm/image-rpmdb.sqlite-wal",
+        "/lts-.rpm.lock": "/var/lib/rpm/.rpm.lock",
+        "/lts-packagemanifest": "/usr/share/constellation/packagemanifest",
+        "/lts-rpmdb.sqlite": "/var/lib/rpm/rpmdb.sqlite",
+        "/lts-rpmdb.sqlite-shm": "/var/lib/rpm/rpmdb.sqlite-shm",
+        "/lts-rpmdb.sqlite-wal": "/var/lib/rpm/image-rpmdb.sqlite-wal",
     },
     tags = ["manual"],
     visibility = ["//visibility:public"],

@@ -14,6 +14,10 @@ VARIANTS = [
         "csp": "azure",
     },
     {
+        "attestation_variant": "azure-tdx",
+        "csp": "azure",
+    },
+    {
         "attestation_variant": "gcp-sev-es",
         "csp": "gcp",
     },
@@ -103,6 +107,12 @@ attestation_variant_settings = {
     "azure-sev-snp": {
         "kernel_command_line_dict": {
             "constel.attestation-variant": "azure-sev-snp",
+        },
+    },
+    "azure-tdx": {
+        "base_image": "//image/base:mainline",
+        "kernel_command_line_dict": {
+            "constel.attestation-variant": "azure-tdx",
         },
     },
     "gcp-sev-es": {
@@ -200,6 +210,12 @@ def kernel_command_line_dict(csp, attestation_variant, stream):
     for settings in from_settings(csp, attestation_variant, stream, default = {}):
         commandline_dict = commandline_dict | settings.get("kernel_command_line_dict", {})
     return commandline_dict
+
+def base_image(csp, attestation_variant, stream):
+    for settings in from_settings(csp, attestation_variant, stream):
+        if "base_image" in settings:
+            return settings["base_image"]
+    return "//image/base:lts"
 
 def append_cmdline(current, append):
     """Append a string to an existing commandline, separating them with a space.
