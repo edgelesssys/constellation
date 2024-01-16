@@ -14,6 +14,7 @@ go_library(
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/attestation",
+        "//internal/attestation/azure",
         "//internal/attestation/idkeydigest",
         "//internal/attestation/snp",
         "//internal/attestation/variant",
@@ -28,7 +29,6 @@ go_library(
         "@com_github_google_go_sev_guest//verify",
         "@com_github_google_go_sev_guest//verify/trust",
         "@com_github_google_go_tpm//legacy/tpm2",
-        "@com_github_google_go_tpm_tools//client",
         "@com_github_google_go_tpm_tools//proto/attest",
     ],
 )

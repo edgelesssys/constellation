@@ -114,6 +114,8 @@ func FromString(oid string) (Variant, error) {
 		return AzureSEVSNP{}, nil
 	case azureTrustedLaunch:
 		return AzureTrustedLaunch{}, nil
+	case azureTDX:
+		return AzureTDX{}, nil
 	case qemuVTPM:
 		return QEMUVTPM{}, nil
 	case qemuTDX:

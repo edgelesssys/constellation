@@ -986,10 +986,6 @@ func (c GCPSEVES) EqualTo(other AttestationCfg) (bool, error) {
 	return c.Measurements.EqualTo(otherCfg.Measurements), nil
 }
 
-func toPtr[T any](v T) *T {
-	return &v
-}
-
 // QEMUVTPM is the configuration for QEMU vTPM attestation.
 type QEMUVTPM struct {
 	// description: |
@@ -1117,6 +1113,38 @@ type AzureTrustedLaunch struct {
 	// description: |
 	//   Expected TPM measurements.
 	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
+}
+
+// AzureTDX is the configuration for Azure TDX attestation.
+type AzureTDX struct {
+	// description: |
+	//   Expected TDX measurements.
+	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
+	// description: |
+	//   Minimum required QE security version number (SVN).
+	QESVN uint16 `json:"qeSVN" yaml:"qeSVN"`
+	// description: |
+	//   Minimum required PCE security version number (SVN).
+	PCESVN uint16 `json:"pceSVN" yaml:"pceSVN"`
+	// description: |
+	//   Component-wise minimum required TEE_TCB security version number (SVN).
+	TEETCBSVN [16]byte `json:"teeTCBSVN" yaml:"teeTCBSVN"`
+	// description: |
+	//   Expected QE_VENDOR_ID field.
+	QEVendorID [16]byte `json:"qeVendorID" yaml:"qeVendorID"`
+	// description: |
+	//   Expected MR_SEAM value.
+	MRSeam [48]byte `json:"mrSeam" yaml:"mrSeam"`
+	// description: |
+	//   Expected XFAM field.
+	XFAM [8]byte `json:"xfam" yaml:"xfam"`
+	// description: |
+	//   Intel Root Key certificate used to verify the TDX certificate chain.
+	IntelRootKey Certificate `json:"intelRootKey" yaml:"intelRootKey"`
+}
+
+func toPtr[T any](v T) *T {
+	return &v
 }
 
 // sevsnpMarshaller is used to marshall "latest" versions with resolved version numbers.

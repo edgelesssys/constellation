@@ -132,3 +132,36 @@ func (c AzureTrustedLaunch) EqualTo(other AttestationCfg) (bool, error) {
 	}
 	return c.Measurements.EqualTo(otherCfg.Measurements), nil
 }
+
+// DefaultForAzureTDX returns the default configuration for Azure TDX attestation.
+func DefaultForAzureTDX() *AzureTDX {
+	return &AzureTDX{
+		Measurements: measurements.DefaultsFor(cloudprovider.Azure, variant.AzureTDX{}),
+		// TODO: Set default values for version numbers once enabled.
+		IntelRootKey: mustParsePEM(tdxRootPEM),
+	}
+}
+
+// GetVariant returns azure-tdx as the variant.
+func (AzureTDX) GetVariant() variant.Variant {
+	return variant.AzureTDX{}
+}
+
+// GetMeasurements returns the measurements used for attestation.
+func (c AzureTDX) GetMeasurements() measurements.M {
+	return c.Measurements
+}
+
+// SetMeasurements updates a config's measurements using the given measurements.
+func (c *AzureTDX) SetMeasurements(m measurements.M) {
+	c.Measurements = m
+}
+
+// EqualTo returns true if the config is equal to the given config.
+func (c AzureTDX) EqualTo(other AttestationCfg) (bool, error) {
+	otherCfg, ok := other.(*AzureTDX)
+	if !ok {
+		return false, fmt.Errorf("cannot compare %T with %T", c, other)
+	}
+	return c.Measurements.EqualTo(otherCfg.Measurements), nil
+}

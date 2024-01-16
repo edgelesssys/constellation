@@ -258,7 +258,7 @@ require (
 	github.com/google/go-attestation v0.5.0 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/go-containerregistry v0.15.2 // indirect
-	github.com/google/go-tdx-guest v0.2.3-0.20231011100059-4cf02bed9d33 // indirect
+	github.com/google/go-tdx-guest v0.2.3-0.20231011100059-4cf02bed9d33
 	github.com/google/go-tspi v0.3.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/logger v1.1.1 // indirect

@@ -29,6 +29,7 @@ var (
 	AWSNitroTPMDoc                     encoder.Doc
 	AzureSEVSNPDoc                     encoder.Doc
 	AzureTrustedLaunchDoc              encoder.Doc
+	AzureTDXDoc                        encoder.Doc
 )
 
 func init() {
@@ -697,6 +698,51 @@ func init() {
 	AzureTrustedLaunchDoc.Fields[0].Note = ""
 	AzureTrustedLaunchDoc.Fields[0].Description = "Expected TPM measurements."
 	AzureTrustedLaunchDoc.Fields[0].Comments[encoder.LineComment] = "Expected TPM measurements."
+
+	AzureTDXDoc.Type = "AzureTDX"
+	AzureTDXDoc.Comments[encoder.LineComment] = "AzureTDX is the configuration for Azure TDX attestation."
+	AzureTDXDoc.Description = "AzureTDX is the configuration for Azure TDX attestation."
+	AzureTDXDoc.Fields = make([]encoder.Doc, 8)
+	AzureTDXDoc.Fields[0].Name = "measurements"
+	AzureTDXDoc.Fields[0].Type = "M"
+	AzureTDXDoc.Fields[0].Note = ""
+	AzureTDXDoc.Fields[0].Description = "Expected TDX measurements."
+	AzureTDXDoc.Fields[0].Comments[encoder.LineComment] = "Expected TDX measurements."
+	AzureTDXDoc.Fields[1].Name = "qeSVN"
+	AzureTDXDoc.Fields[1].Type = "uint16"
+	AzureTDXDoc.Fields[1].Note = ""
+	AzureTDXDoc.Fields[1].Description = "Minimum required QE security version number (SVN)."
+	AzureTDXDoc.Fields[1].Comments[encoder.LineComment] = "Minimum required QE security version number (SVN)."
+	AzureTDXDoc.Fields[2].Name = "pceSVN"
+	AzureTDXDoc.Fields[2].Type = "uint16"
+	AzureTDXDoc.Fields[2].Note = ""
+	AzureTDXDoc.Fields[2].Description = "Minimum required PCE security version number (SVN)."
+	AzureTDXDoc.Fields[2].Comments[encoder.LineComment] = "Minimum required PCE security version number (SVN)."
+	AzureTDXDoc.Fields[3].Name = "teeTCBSVN"
+	AzureTDXDoc.Fields[3].Type = "[]byte"
+	AzureTDXDoc.Fields[3].Note = ""
+	AzureTDXDoc.Fields[3].Description = "Component-wise minimum required TEE_TCB security version number (SVN)."
+	AzureTDXDoc.Fields[3].Comments[encoder.LineComment] = "Component-wise minimum required TEE_TCB security version number (SVN)."
+	AzureTDXDoc.Fields[4].Name = "qeVendorID"
+	AzureTDXDoc.Fields[4].Type = "[]byte"
+	AzureTDXDoc.Fields[4].Note = ""
+	AzureTDXDoc.Fields[4].Description = "Expected QE_VENDOR_ID field."
+	AzureTDXDoc.Fields[4].Comments[encoder.LineComment] = "Expected QE_VENDOR_ID field."
+	AzureTDXDoc.Fields[5].Name = "mrSeam"
+	AzureTDXDoc.Fields[5].Type = "[]byte"
+	AzureTDXDoc.Fields[5].Note = ""
+	AzureTDXDoc.Fields[5].Description = "Expected MR_SEAM value."
+	AzureTDXDoc.Fields[5].Comments[encoder.LineComment] = "Expected MR_SEAM value."
+	AzureTDXDoc.Fields[6].Name = "xfam"
+	AzureTDXDoc.Fields[6].Type = "[]byte"
+	AzureTDXDoc.Fields[6].Note = ""
+	AzureTDXDoc.Fields[6].Description = "Expected XFAM field."
+	AzureTDXDoc.Fields[6].Comments[encoder.LineComment] = "Expected XFAM field."
+	AzureTDXDoc.Fields[7].Name = "intelRootKey"
+	AzureTDXDoc.Fields[7].Type = "Certificate"
+	AzureTDXDoc.Fields[7].Note = ""
+	AzureTDXDoc.Fields[7].Description = "Intel Root Key certificate used to verify the TDX certificate chain."
+	AzureTDXDoc.Fields[7].Comments[encoder.LineComment] = "Intel Root Key certificate used to verify the TDX certificate chain."
 }
 
 func (_ Config) Doc() *encoder.Doc {
@@ -771,6 +817,10 @@ func (_ AzureTrustedLaunch) Doc() *encoder.Doc {
 	return &AzureTrustedLaunchDoc
 }
 
+func (_ AzureTDX) Doc() *encoder.Doc {
+	return &AzureTDXDoc
+}
+
 // GetConfigurationDoc returns documentation for the file ./config_doc.go.
 func GetConfigurationDoc() *encoder.FileDoc {
 	return &encoder.FileDoc{
@@ -795,6 +845,7 @@ func GetConfigurationDoc() *encoder.FileDoc {
 			&AWSNitroTPMDoc,
 			&AzureSEVSNPDoc,
 			&AzureTrustedLaunchDoc,
+			&AzureTDXDoc,
 		},
 	}
 }
