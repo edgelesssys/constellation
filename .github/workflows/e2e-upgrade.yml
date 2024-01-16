@@ -147,6 +147,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Simulate patch upgrade
+        if: inputs.simulatedTargetVersion != ''
+        run: |
+          echo ${{ inputs.simulatedTargetVersion }} > version.txt
+
       - name: Build CLI
         uses: ./.github/actions/build_cli
         with:
@@ -284,11 +289,6 @@ jobs:
           command: latest
           ref: main
           stream: nightly
-
-      - name: Simulate patch upgrade
-        if: inputs.simulatedTargetVersion != ''
-        run: |
-          echo ${{ inputs.simulatedTargetVersion }} > version.txt
 
       - name: Login to GCP (IAM service account)
         if: inputs.cloudProvider == 'gcp'
