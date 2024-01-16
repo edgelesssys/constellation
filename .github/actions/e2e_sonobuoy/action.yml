@@ -21,7 +21,7 @@ runs:
     - name: Install sonobuoy
       shell: bash
       env:
-        SONOBUOY_VER: "0.56.17"
+        SONOBUOY_VER: "0.57.1"
       run: |
         HOSTOS="$(go env GOOS)"
         HOSTARCH="$(go env GOARCH)"
@@ -43,7 +43,10 @@ runs:
       shell: bash
       env:
         KUBECONFIG: ${{ inputs.kubeconfig }}
-      run: sonobuoy retrieve --kubeconfig constellation-admin.conf
+      run: |
+        sonobuoy retrieve --kubeconfig constellation-admin.conf
+        sonobuoy results *_sonobuoy_*.tar.gz
+        sonobuoy results *_sonobuoy_*.tar.gz --mode detailed | jq 'select(.status!="passed")' | jq 'select(.status!="skipped")' || true
 
     - name: Upload test results
       if: always() && !env.ACT
