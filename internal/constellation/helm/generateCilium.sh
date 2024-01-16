@@ -21,7 +21,7 @@ git clone \
   --no-checkout \
   --sparse \
   --depth 1 \
-  -b 1.15.0-pre.2 \
+  -b 1.15.0-pre.3 \
   https://github.com/cilium/cilium.git
 cd cilium
 

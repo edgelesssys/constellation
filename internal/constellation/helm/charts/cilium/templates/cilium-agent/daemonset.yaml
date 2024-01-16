@@ -128,6 +128,7 @@ spec:
           failureThreshold: {{ .Values.startupProbe.failureThreshold }}
           periodSeconds: {{ .Values.startupProbe.periodSeconds }}
           successThreshold: 1
+          initialDelaySeconds: 5
         {{- end }}
         livenessProbe:
           {{- if or .Values.keepDeprecatedProbes $defaultKeepDeprecatedProbes }}
@@ -374,6 +375,11 @@ spec:
           {{- if .mountPropagation }}
           mountPropagation: {{ .mountPropagation }}
           {{- end }}
+        {{- end }}
+        {{- if .Values.hubble.export.dynamic.enabled }}
+        - name: hubble-flowlog-config
+          mountPath: /flowlog-config
+          readOnly: true
         {{- end }}
         {{- with .Values.extraVolumeMounts }}
         {{- toYaml . | nindent 8 }}
@@ -688,10 +694,10 @@ spec:
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         command:
           - "/install-plugin.sh"
+        {{- with .Values.cni.resources }}
         resources:
-          requests:
-            cpu: 100m
-            memory: 10Mi
+          {{- toYaml . | trim | nindent 10 }}
+        {{- end }}
         securityContext:
           {{- if .Values.securityContext.privileged }}
           privileged: true
@@ -928,6 +934,12 @@ spec:
               - key: {{ .Values.tls.caBundle.key }}
                 path: client-ca.crt
           {{- end }}
+      {{- end }}
+      {{- if .Values.hubble.export.dynamic.enabled }}
+      - name: hubble-flowlog-config
+        configMap:
+          name: {{ .Values.hubble.export.dynamic.config.configMapName }}
+          optional: true
       {{- end }}
       {{- range .Values.extraHostPathMounts }}
       - name: {{ .name }}
