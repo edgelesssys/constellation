@@ -8,12 +8,16 @@
     flake-utils = {
       url = "github:numtide/flake-utils";
     };
+    uplosi = {
+      url = "github:edgelesssys/uplosi/629e2bcff551bf3d972a7c21bfea6d881b9d9bc2";
+    };
   };
 
   outputs =
     { self
     , nixpkgsUnstable
     , flake-utils
+    , uplosi
     }:
     flake-utils.lib.eachDefaultSystem (system:
     let
@@ -47,14 +51,7 @@
         ]);
       }));
 
-      uplosiDev = (pkgsUnstable.uplosi.overrideAttrs (oldAttrs: rec {
-        src = pkgsUnstable.fetchFromGitHub {
-          owner = "edgelesssys";
-          repo = "uplosi";
-          rev = "0190e8c548b5811066b7e2d9db5e3167f51c005f";
-          hash = "sha256-AHj3XTX+vd8QP4hWGPAt2iJnrIGoiH61UgQMK7vlYU0=";
-        };
-      }));
+      uplosiDev = uplosi.outputs.packages."${system}".uplosi;
 
       openssl-static = pkgsUnstable.openssl.override { static = true; };
 
