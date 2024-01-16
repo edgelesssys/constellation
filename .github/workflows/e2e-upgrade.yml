@@ -122,14 +122,14 @@ jobs:
     steps:
       - name: Checkout
         if: inputs.gitRef == 'head'
-        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
       - name: Checkout ref
         if: inputs.gitRef != 'head'
-        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
           ref: ${{ inputs.gitRef }}
@@ -215,7 +215,7 @@ jobs:
           awsOpenSearchUsers: ${{ secrets.AWS_OPENSEARCH_USER }}
           awsOpenSearchPwd: ${{ secrets.AWS_OPENSEARCH_PWD }}
           clusterCreation: "cli"
-          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Remove Terraform plugin cache
         if: always()
@@ -235,7 +235,7 @@ jobs:
             constellation-conf.yaml
             constellation-state.yaml
             constellation-mastersecret.json
-          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
   e2e-upgrade:
     name: Run upgrade test
@@ -252,14 +252,14 @@ jobs:
     steps:
       - name: Checkout
         if: inputs.gitRef == 'head'
-        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
       - name: Checkout ref
         if: inputs.gitRef != 'head'
-        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
           ref: ${{ inputs.gitRef }}
@@ -321,7 +321,7 @@ jobs:
         uses: ./.github/actions/artifact_download
         with:
           name: constellation-pre-test
-          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Make Constellation executable and add to PATH
         if: always()
@@ -400,7 +400,7 @@ jobs:
             constellation-conf.yaml
             constellation-state.yaml
             constellation-mastersecret.json
-          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
   clean-up:
     name: Clean up resources
@@ -415,14 +415,14 @@ jobs:
     steps:
       - name: Checkout
         if: inputs.gitRef == 'head'
-        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
       - name: Checkout ref
         if: inputs.gitRef != 'head'
-        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
           ref: ${{ inputs.gitRef }}
@@ -438,14 +438,14 @@ jobs:
         uses: ./.github/actions/artifact_download
         with:
           name: constellation-pre-test
-          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Download Working Directory (Post-test)
         if: always() && needs.e2e-upgrade.result == 'success'
         uses: ./.github/actions/artifact_download
         with:
           name: constellation-post-test
-          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Make Constellation executable and add to PATH
         if: always()
@@ -472,7 +472,7 @@ jobs:
             node-operator.logs
             node-maintenance-operator.logs
             constellation-version.yaml
-          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Always terminate cluster
         if: always()
