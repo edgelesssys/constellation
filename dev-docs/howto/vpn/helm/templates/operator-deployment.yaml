@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "..fullname" . }}-operator
+  labels: {{- include "..labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "..selectorLabels" . | nindent 6 }}
+      component: operator
+  template:
+    metadata:
+      labels:
+        {{- include "..selectorLabels" . | nindent 8 }}
+        component: operator
+    spec:
+      serviceAccountName: {{ include "..fullname" . }}
+      automountServiceAccountToken: true
+      containers:
+      - name: operator
+        image: {{ .Values.image | quote }}
+        command: ["sh", "/scripts/entrypoint.sh"]
+        env: {{- include "..commonEnv" . | nindent 10 }}
+        volumeMounts:
+        - name: scripts
+          mountPath: "/scripts"
+          readOnly: true
+      volumes:
+      - name: scripts
+        configMap:
+          name: {{ include "..fullname" . }}-operator

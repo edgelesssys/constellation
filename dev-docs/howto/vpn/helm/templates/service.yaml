@@ -11,16 +11,9 @@ spec:
     component: frontend
   externalTrafficPolicy: Local
   ports:
-    {{- if .Values.ipsec.enabled }}
     - name: isakmp
       protocol: UDP
       port: 500
     - name: ipsec-nat-t
       protocol: UDP
       port: 4500
-    {{- end }}
-    {{- if .Values.wireguard.enabled }}
-    - name: wg
-      protocol: UDP
-      port: {{ .Values.wireguard.port }}
-    {{- end }}

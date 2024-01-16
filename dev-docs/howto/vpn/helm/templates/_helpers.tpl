@@ -37,4 +37,6 @@ app.kubernetes.io/instance: {{ .Release.Name }}
   value: {{ .Values.podCIDR | quote }}
 - name: VPN_SERVICE_CIDR
   value: {{ .Values.serviceCIDR | quote }}
+- name: VPN_FRONTEND_POD
+  value: {{ include "..fullname" . }}-frontend-0
 {{- end }}
