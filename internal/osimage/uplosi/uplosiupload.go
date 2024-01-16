@@ -209,21 +209,32 @@ func awsParseAMIARN(arn string) (region string, amiID string, retErr error) {
 
 func extendAzureConfig(azureConfig map[string]any, version versionsapi.Version, attestationVariant string, timestamp time.Time) {
 	azureConfig["attestationVariant"] = attestationVariant
-	azureConfig["sharedImageGallery"] = azureGalleryName(version)
+	azureConfig["sharedImageGallery"] = azureGalleryName(version, attestationVariant)
 	azureConfig["imageDefinitionName"] = azureImageOffer(version)
 	azureConfig["offer"] = azureImageOffer(version)
 	formattedTime := timestamp.Format(timestampFormat)
 	azureConfig["diskName"] = fmt.Sprintf("constellation-%s-%s-%s", version.Stream(), formattedTime, attestationVariant)
 }
 
-func azureGalleryName(version versionsapi.Version) string {
+func azureGalleryName(version versionsapi.Version, attestationVariant string) string {
+	var prefix string
 	switch version.Stream() {
 	case "stable":
-		return "Constellation_CVM"
+		prefix = "Constellation"
 	case "debug":
-		return "Constellation_Debug_CVM"
+		prefix = "Constellation_Debug"
+	default:
+		prefix = "Constellation_Testing"
 	}
-	return "Constellation_Testing_CVM"
+
+	var suffix string
+	switch attestationVariant {
+	case "azure-tdx":
+		suffix = "_TDX"
+	case "azure-sev-snp":
+		suffix = "_CVM"
+	}
+	return prefix + suffix
 }
 
 func azureImageOffer(version versionsapi.Version) string {
