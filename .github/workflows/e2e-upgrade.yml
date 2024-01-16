@@ -220,7 +220,7 @@ jobs:
           awsOpenSearchUsers: ${{ secrets.AWS_OPENSEARCH_USER }}
           awsOpenSearchPwd: ${{ secrets.AWS_OPENSEARCH_PWD }}
           clusterCreation: "cli"
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Remove Terraform plugin cache
         if: always()
@@ -240,7 +240,7 @@ jobs:
             constellation-conf.yaml
             constellation-state.yaml
             constellation-mastersecret.json
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
   e2e-upgrade:
     name: Run upgrade test
@@ -321,7 +321,7 @@ jobs:
         uses: ./.github/actions/artifact_download
         with:
           name: constellation-pre-test
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Make Constellation executable and add to PATH
         if: always()
@@ -400,7 +400,7 @@ jobs:
             constellation-conf.yaml
             constellation-state.yaml
             constellation-mastersecret.json
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
   clean-up:
     name: Clean up resources
@@ -438,14 +438,14 @@ jobs:
         uses: ./.github/actions/artifact_download
         with:
           name: constellation-pre-test
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Download Working Directory (Post-test)
         if: always() && needs.e2e-upgrade.result == 'success'
         uses: ./.github/actions/artifact_download
         with:
           name: constellation-post-test
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Make Constellation executable and add to PATH
         if: always()
@@ -472,7 +472,7 @@ jobs:
             node-operator.logs
             node-maintenance-operator.logs
             constellation-version.yaml
-          encryption-secret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Always terminate cluster
         if: always()
