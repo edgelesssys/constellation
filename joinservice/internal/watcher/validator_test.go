@@ -35,6 +35,7 @@ func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m,
 		// https://github.com/census-instrumentation/opencensus-go/issues/1262
 		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+		goleak.IgnoreAnyFunction("github.com/bazelbuild/rules_go/go/tools/bzltestutil.RegisterTimeoutHandler.func1"),
 	)
 }
 

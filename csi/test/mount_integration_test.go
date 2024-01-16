@@ -91,7 +91,7 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	goleak.VerifyTestMain(m)
+	goleak.VerifyTestMain(m, goleak.IgnoreAnyFunction("github.com/bazelbuild/rules_go/go/tools/bzltestutil.RegisterTimeoutHandler.func1"))
 
 	result := m.Run()
 	os.Exit(result)
