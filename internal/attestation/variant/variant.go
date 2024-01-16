@@ -44,6 +44,7 @@ const (
 	awsNitroTPM        = "aws-nitro-tpm"
 	awsSEVSNP          = "aws-sev-snp"
 	gcpSEVES           = "gcp-sev-es"
+	azureTDX           = "azure-tdx"
 	azureSEVSNP        = "azure-sev-snp"
 	azureTrustedLaunch = "azure-trustedlaunch"
 	qemuVTPM           = "qemu-vtpm"
@@ -204,6 +205,24 @@ func (GCPSEVES) String() string {
 // Equal returns true if the other variant is also GCPSEVES.
 func (GCPSEVES) Equal(other Getter) bool {
 	return other.OID().Equal(GCPSEVES{}.OID())
+}
+
+// AzureTDX holds the OID for Azure TDX CVMs.
+type AzureTDX struct{}
+
+// OID returns the struct's object identifier.
+func (AzureTDX) OID() asn1.ObjectIdentifier {
+	return asn1.ObjectIdentifier{1, 3, 9900, 4, 3}
+}
+
+// String returns the string representation of the OID.
+func (AzureTDX) String() string {
+	return azureTDX
+}
+
+// Equal returns true if the other variant is also AzureTDX.
+func (AzureTDX) Equal(other Getter) bool {
+	return other.OID().Equal(AzureTDX{}.OID())
 }
 
 // AzureSEVSNP holds the OID for Azure SNP CVMs.
