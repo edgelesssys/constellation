@@ -98,11 +98,11 @@ type valueOverride struct {
 func ApplyOverrides(in M, csp cloudprovider.Provider, attestationVariant string) (M, error) {
 	out := in.Copy()
 	var matchingOverrides []measurementOverride
-	if cspOverride, ok := measurementOverridesForCSP[csp.String()]; ok {
-		matchingOverrides = append(matchingOverrides, cspOverride)
-	}
 	if attestationVariantOverride, ok := measurementOverridesForAttestationVariant[attestationVariant]; ok {
 		matchingOverrides = append(matchingOverrides, attestationVariantOverride)
+	}
+	if cspOverride, ok := measurementOverridesForCSP[csp.String()]; ok {
+		matchingOverrides = append(matchingOverrides, cspOverride)
 	}
 	for _, override := range matchingOverrides {
 		for _, i := range override.ValueOverrides {
