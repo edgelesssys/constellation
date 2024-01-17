@@ -173,7 +173,7 @@ func imageVersion(csp cloudprovider.Provider, version versionsapi.Version, times
 func extendAWSConfig(awsConfig map[string]any, version versionsapi.Version, attestationVariant string, timestamp time.Time) {
 	awsConfig["amiName"] = awsAMIName(version, attestationVariant, timestamp)
 	awsConfig["snapshotName"] = awsAMIName(version, attestationVariant, timestamp)
-	awsConfig["blobName"] = fmt.Sprintf("image-%s-%s-%d.raw", version.Stream(), version.Version(), timestamp.Unix())
+	awsConfig["blobName"] = fmt.Sprintf("image-%s-%s-%s-%d.raw", version.Stream(), version.Version(), attestationVariant, timestamp.Unix())
 }
 
 func awsAMIName(version versionsapi.Version, attestationVariant string, timestamp time.Time) string {
