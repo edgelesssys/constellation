@@ -1,4 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "tdx",
@@ -22,5 +23,16 @@ go_library(
         "@com_github_google_go_tdx_guest//verify/trust",
         "@com_github_google_go_tpm//legacy/tpm2",
         "@com_github_google_go_tpm_tools//proto/attest",
+    ],
+)
+
+go_test(
+    name = "tdx_test",
+    srcs = ["issuer_test.go"],
+    embed = [":tdx"],
+    deps = [
+        "//internal/attestation/azure/tdx/testdata",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
     ],
 )

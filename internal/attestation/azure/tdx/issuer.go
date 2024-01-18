@@ -78,12 +78,22 @@ func (i *Issuer) getInstanceInfo(ctx context.Context, tpm io.ReadWriteCloser, _ 
 		return nil, err
 	}
 
-	// Parse the report and get quote
-	instanceInfo, err := i.getHCLReport(ctx, report)
+	// Parse the report from the TPM
+	hwReport, runtimeData, err := parseHCLReport(report)
 	if err != nil {
 		return nil, fmt.Errorf("getting HCL report: %w", err)
 	}
 
+	// Get quote from IMDS API
+	quote, err := i.quoteGetter.getQuote(ctx, hwReport)
+	if err != nil {
+		return nil, fmt.Errorf("getting quote: %w", err)
+	}
+
+	instanceInfo := instanceInfo{
+		AttestationReport: quote,
+		RuntimeData:       runtimeData,
+	}
 	instanceInfoJSON, err := json.Marshal(instanceInfo)
 	if err != nil {
 		return nil, fmt.Errorf("marshalling instance info: %w", err)
@@ -91,43 +101,36 @@ func (i *Issuer) getInstanceInfo(ctx context.Context, tpm io.ReadWriteCloser, _ 
 	return instanceInfoJSON, nil
 }
 
-func (i *Issuer) getHCLReport(ctx context.Context, report []byte) (instanceInfo, error) {
+func parseHCLReport(report []byte) (hwReport, runtimeData []byte, err error) {
 	// First, ensure the extracted report is actually for TDX
-	if len(report) < runtimeDataSizeOffset+4 {
-		return instanceInfo{}, fmt.Errorf("invalid HCL report: expected at least %d bytes to read HCL report type, got %d", runtimeDataSizeOffset+4, len(report))
+	if len(report) < hclReportTypeOffsetStart+4 {
+		return nil, nil, fmt.Errorf("invalid HCL report: expected at least %d bytes to read HCL report type, got %d", runtimeDataSizeOffset+4, len(report))
 	}
 	reportType := binary.LittleEndian.Uint32(report[hclReportTypeOffsetStart : hclReportTypeOffsetStart+4])
 	if reportType != hclReportTypeTDX {
-		return instanceInfo{}, fmt.Errorf("invalid HCL report type: expected TDX (%d), got %d", hclReportTypeTDX, reportType)
+		return nil, nil, fmt.Errorf("invalid HCL report type: expected TDX (%d), got %d", hclReportTypeTDX, reportType)
 	}
 
 	// We need the td report (generally called HW report in Azure's samples) from the HCL report to send to the IMDS API
 	if len(report) < hwReportStart+tdReportSize {
-		return instanceInfo{}, fmt.Errorf("invalid HCL report: expected at least %d bytes to read td report, got %d", hwReportStart+tdReportSize, len(report))
+		return nil, nil, fmt.Errorf("invalid HCL report: expected at least %d bytes to read td report, got %d", hwReportStart+tdReportSize, len(report))
 	}
-	hwReport := report[hwReportStart : hwReportStart+tdReportSize]
+	hwReport = report[hwReportStart : hwReportStart+tdReportSize]
 
 	// We also need the runtime data to verify the attestation key later on the validator side
 	if len(report) < runtimeDataSizeOffset+4 {
-		return instanceInfo{}, fmt.Errorf("invalid HCL report: expected at least %d bytes to read runtime data size, got %d", runtimeDataSizeOffset+4, len(report))
+		return nil, nil, fmt.Errorf("invalid HCL report: expected at least %d bytes to read runtime data size, got %d", runtimeDataSizeOffset+4, len(report))
 	}
 	runtimeDataSize := binary.LittleEndian.Uint32(report[runtimeDataSizeOffset : runtimeDataSizeOffset+4])
 	if len(report) < runtimeDataOffset+int(runtimeDataSize) {
-		return instanceInfo{}, fmt.Errorf("invalid HCL report: expected at least %d bytes to read runtime data, got %d", runtimeDataOffset+int(runtimeDataSize), len(report))
+		return nil, nil, fmt.Errorf("invalid HCL report: expected at least %d bytes to read runtime data, got %d", runtimeDataOffset+int(runtimeDataSize), len(report))
 	}
-	runtimeData := report[runtimeDataOffset : runtimeDataOffset+runtimeDataSize]
+	runtimeData = report[runtimeDataOffset : runtimeDataOffset+runtimeDataSize]
 
-	quote, err := i.quoteGetter.getQuote(ctx, hwReport)
-	if err != nil {
-		return instanceInfo{}, fmt.Errorf("getting quote: %w", err)
-	}
-
-	return instanceInfo{
-		AttestationReport: quote,
-		RuntimeData:       runtimeData,
-	}, nil
+	return hwReport, runtimeData, nil
 }
 
+// imdsQuoteGetter issues TDX quotes using Azure's IMDS API.
 type imdsQuoteGetter struct {
 	client *http.Client
 }
