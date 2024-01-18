@@ -45,7 +45,13 @@ func (h HexBytes) MarshalJSON() ([]byte, error) {
 func (h *HexBytes) UnmarshalYAML(unmarshal func(any) error) error {
 	var hexString string
 	if err := unmarshal(&hexString); err != nil {
-		return err
+		// compatibility mode for old state file format:
+		// fall back to unmarshalling as a byte slice for backwards compatibility
+		var oldHexBytes []byte
+		if err := unmarshal(&oldHexBytes); err != nil {
+			return fmt.Errorf("unmarshalling hex bytes: %w", err)
+		}
+		hexString = hex.EncodeToString(oldHexBytes)
 	}
 	return h.unmarshal(hexString)
 }

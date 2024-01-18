@@ -76,6 +76,16 @@ func TestUnmarshalHexBytes(t *testing.T) {
 			jsonString: "\"\"",
 			expected:   nil,
 		},
+		"byte slice compat": {
+			yamlString: "[0xab, 0xcd, 0xef]",
+			jsonString: "\"abcdef\"", // no backwards compatibility since we never used this format for json
+			expected:   []byte{0xab, 0xcd, 0xef},
+		},
+		"byte slice compat 2": {
+			yamlString: "[00, 12, 34]",
+			jsonString: "\"000c22\"", // no backwards compatibility since we never used this format for json
+			expected:   []byte{0x00, 0x0c, 0x22},
+		},
 	}
 
 	for name, tc := range testCases {
