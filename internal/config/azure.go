@@ -15,6 +15,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/encoding"
 )
 
 var _ sevsnpMarshaller = &AzureSEVSNP{}
@@ -138,6 +139,13 @@ func DefaultForAzureTDX() *AzureTDX {
 	return &AzureTDX{
 		Measurements: measurements.DefaultsFor(cloudprovider.Azure, variant.AzureTDX{}),
 		// TODO: Set default values for version numbers once enabled.
+		QESVN:      0,
+		PCESVN:     0,
+		TEETCBSVN:  encoding.HexBytes(bytes.Repeat([]byte{0x00}, 16)), // equivalent of accepting all TEE versions
+		QEVendorID: encoding.HexBytes(bytes.Repeat([]byte{0x00}, 16)), // TODO: Decide on consistent value or remove
+		MRSeam:     encoding.HexBytes(bytes.Repeat([]byte{0x00}, 48)), // TODO: Decide on consistent value or remove
+		XFAM:       encoding.HexBytes(bytes.Repeat([]byte{0x00}, 8)),  // TODO: Decide on consistent value or remove
+
 		IntelRootKey: mustParsePEM(tdxRootPEM),
 	}
 }
@@ -164,4 +172,11 @@ func (c AzureTDX) EqualTo(other AttestationCfg) (bool, error) {
 		return false, fmt.Errorf("cannot compare %T with %T", c, other)
 	}
 	return c.Measurements.EqualTo(otherCfg.Measurements), nil
+}
+
+func (c *AzureTDX) getToMarshallLatestWithResolvedVersions() AttestationCfg {
+	cp := *c
+	// TODO: We probably want to support "latest" pseudo versioning for Azure TDX
+	// But we should decide on which claims can be reliably used for attestation first
+	return &cp
 }

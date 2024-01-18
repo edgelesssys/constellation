@@ -497,6 +497,9 @@ func DefaultsFor(provider cloudprovider.Provider, attestationVariant variant.Var
 	case provider == cloudprovider.Azure && attestationVariant == variant.AzureSEVSNP{}:
 		return azure_AzureSEVSNP.Copy()
 
+	case provider == cloudprovider.Azure && attestationVariant == variant.AzureTDX{}:
+		return azure_AzureTDX.Copy()
+
 	case provider == cloudprovider.Azure && attestationVariant == variant.AzureTrustedLaunch{}:
 		return azure_AzureTrustedLaunch.Copy()
 

@@ -41,6 +41,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config/imageversion"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/encoding"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
@@ -282,6 +283,9 @@ type AttestationConfig struct {
 	//   Azure SEV-SNP attestation.\nFor details see: https://docs.edgeless.systems/constellation/architecture/attestation#cvm-verification
 	AzureSEVSNP *AzureSEVSNP `yaml:"azureSEVSNP,omitempty" validate:"omitempty,dive"`
 	// description: |
+	//   Azure TDX attestation.
+	AzureTDX *AzureTDX `yaml:"azureTDX,omitempty" validate:"omitempty,dive"`
+	// description: |
 	//   Azure TPM attestation (Trusted Launch).
 	AzureTrustedLaunch *AzureTrustedLaunch `yaml:"azureTrustedLaunch,omitempty" validate:"omitempty,dive"`
 	// description: |
@@ -397,6 +401,7 @@ func Default() *Config {
 			AWSSEVSNP:          DefaultForAWSSEVSNP(),
 			AWSNitroTPM:        &AWSNitroTPM{Measurements: measurements.DefaultsFor(cloudprovider.AWS, variant.AWSNitroTPM{})},
 			AzureSEVSNP:        DefaultForAzureSEVSNP(),
+			AzureTDX:           DefaultForAzureTDX(),
 			AzureTrustedLaunch: &AzureTrustedLaunch{Measurements: measurements.DefaultsFor(cloudprovider.Azure, variant.AzureTrustedLaunch{})},
 			GCPSEVES:           &GCPSEVES{Measurements: measurements.DefaultsFor(cloudprovider.GCP, variant.GCPSEVES{})},
 			QEMUVTPM:           &QEMUVTPM{Measurements: measurements.DefaultsFor(cloudprovider.QEMU, variant.QEMUVTPM{})},
@@ -523,6 +528,9 @@ func (c *Config) UpdateMeasurements(newMeasurements measurements.M) {
 	if c.Attestation.AzureSEVSNP != nil {
 		c.Attestation.AzureSEVSNP.Measurements.CopyFrom(newMeasurements)
 	}
+	if c.Attestation.AzureTDX != nil {
+		c.Attestation.AzureTDX.Measurements.CopyFrom(newMeasurements)
+	}
 	if c.Attestation.AzureTrustedLaunch != nil {
 		c.Attestation.AzureTrustedLaunch.Measurements.CopyFrom(newMeasurements)
 	}
@@ -569,12 +577,14 @@ func (c *Config) SetAttestation(attestation variant.Variant) {
 	currentAttestationConfigs := c.Attestation
 	c.Attestation = AttestationConfig{}
 	switch attestation.(type) {
-	case variant.AzureSEVSNP:
-		c.Attestation = AttestationConfig{AzureSEVSNP: currentAttestationConfigs.AzureSEVSNP}
 	case variant.AWSSEVSNP:
 		c.Attestation = AttestationConfig{AWSSEVSNP: currentAttestationConfigs.AWSSEVSNP}
 	case variant.AWSNitroTPM:
 		c.Attestation = AttestationConfig{AWSNitroTPM: currentAttestationConfigs.AWSNitroTPM}
+	case variant.AzureSEVSNP:
+		c.Attestation = AttestationConfig{AzureSEVSNP: currentAttestationConfigs.AzureSEVSNP}
+	case variant.AzureTDX:
+		c.Attestation = AttestationConfig{AzureTDX: currentAttestationConfigs.AzureTDX}
 	case variant.AzureTrustedLaunch:
 		c.Attestation = AttestationConfig{AzureTrustedLaunch: currentAttestationConfigs.AzureTrustedLaunch}
 	case variant.GCPSEVES:
@@ -636,6 +646,9 @@ func (c *Config) GetAttestationConfig() AttestationCfg {
 	}
 	if c.Attestation.AzureSEVSNP != nil {
 		return c.Attestation.AzureSEVSNP.getToMarshallLatestWithResolvedVersions()
+	}
+	if c.Attestation.AzureTDX != nil {
+		return c.Attestation.AzureTDX.getToMarshallLatestWithResolvedVersions()
 	}
 	if c.Attestation.AzureTrustedLaunch != nil {
 		return c.Attestation.AzureTrustedLaunch
@@ -1127,17 +1140,17 @@ type AzureTDX struct {
 	//   Minimum required PCE security version number (SVN).
 	PCESVN uint16 `json:"pceSVN" yaml:"pceSVN"`
 	// description: |
-	//   Component-wise minimum required TEE_TCB security version number (SVN).
-	TEETCBSVN [16]byte `json:"teeTCBSVN" yaml:"teeTCBSVN"`
+	//   Component-wise minimum required 16 byte hex-encoded TEE_TCB security version number (SVN).
+	TEETCBSVN encoding.HexBytes `json:"teeTCBSVN" yaml:"teeTCBSVN"`
 	// description: |
-	//   Expected QE_VENDOR_ID field.
-	QEVendorID [16]byte `json:"qeVendorID" yaml:"qeVendorID"`
+	//   Expected 16 byte hex-encoded QE_VENDOR_ID field.
+	QEVendorID encoding.HexBytes `json:"qeVendorID" yaml:"qeVendorID"`
 	// description: |
-	//   Expected MR_SEAM value.
-	MRSeam [48]byte `json:"mrSeam" yaml:"mrSeam"`
+	//   Expected 48 byte hex-encoded MR_SEAM value.
+	MRSeam encoding.HexBytes `json:"mrSeam" yaml:"mrSeam"`
 	// description: |
-	//   Expected XFAM field.
-	XFAM [8]byte `json:"xfam" yaml:"xfam"`
+	//   Expected 8 byte hex-encoded XFAM field.
+	XFAM encoding.HexBytes `json:"xfam" yaml:"xfam"`
 	// description: |
 	//   Intel Root Key certificate used to verify the TDX certificate chain.
 	IntelRootKey Certificate `json:"intelRootKey" yaml:"intelRootKey"`

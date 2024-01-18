@@ -30,6 +30,7 @@ go_library(
         "//internal/config/imageversion",
         "//internal/config/instancetypes",
         "//internal/constants",
+        "//internal/encoding",
         "//internal/file",
         "//internal/role",
         "//internal/semver",

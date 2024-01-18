@@ -13,13 +13,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 package state
 
 import (
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
 
 	"dario.cat/mergo"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/encoding"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/validation"
 )
@@ -101,7 +101,7 @@ type ClusterValues struct {
 	OwnerID string `yaml:"ownerID"`
 	// description: |
 	//   Salt used to generate the ClusterID on the bootstrapping node.
-	MeasurementSalt HexBytes `yaml:"measurementSalt"`
+	MeasurementSalt encoding.HexBytes `yaml:"measurementSalt"`
 }
 
 // Infrastructure describe the state related to the cloud resources of the cluster.
@@ -118,7 +118,7 @@ type Infrastructure struct {
 	InClusterEndpoint string `yaml:"inClusterEndpoint"`
 	// description: |
 	//   Secret used to authenticate the bootstrapping node.
-	InitSecret HexBytes `yaml:"initSecret"`
+	InitSecret encoding.HexBytes `yaml:"initSecret"`
 	// description: |
 	//   List of Subject Alternative Names (SANs) to add to the Kubernetes API server certificate.
 	//   If no SANs should be added, this field can be left empty.
@@ -553,34 +553,4 @@ func (s *State) postInitConstraints(csp cloudprovider.Provider) func() []*valida
 // Constraints is a no-op implementation to fulfill the "Validatable" interface.
 func (s *State) Constraints() []*validation.Constraint {
 	return []*validation.Constraint{}
-}
-
-// HexBytes is a byte slice that is marshalled to and from a hex string.
-type HexBytes []byte
-
-// UnmarshalYAML implements the yaml.Unmarshaler interface.
-func (h *HexBytes) UnmarshalYAML(unmarshal func(any) error) error {
-	var hexString string
-	if err := unmarshal(&hexString); err != nil {
-		// TODO(msanft): Remove with v2.14.0
-		// fall back to unmarshalling as a byte slice for backwards compatibility
-		var oldHexBytes []byte
-		if err := unmarshal(&oldHexBytes); err != nil {
-			return fmt.Errorf("unmarshalling hex bytes: %w", err)
-		}
-		hexString = hex.EncodeToString(oldHexBytes)
-	}
-
-	bytes, err := hex.DecodeString(hexString)
-	if err != nil {
-		return fmt.Errorf("decoding hex bytes: %w", err)
-	}
-
-	*h = bytes
-	return nil
-}
-
-// MarshalYAML implements the yaml.Marshaler interface.
-func (h HexBytes) MarshalYAML() (any, error) {
-	return hex.EncodeToString(h), nil
 }

@@ -44,7 +44,7 @@ go_test(
     deps = [
         "//internal/cloud/cloudprovider",
         "//internal/constants",
-        "//internal/constellation/state",
+        "//internal/encoding",
         "//internal/file",
         "//internal/role",
         "@com_github_azure_azure_sdk_for_go_sdk_azcore//to",
