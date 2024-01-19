@@ -240,6 +240,14 @@ jobs:
             constellation-conf.yaml
             constellation-state.yaml
             constellation-mastersecret.json
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+
+      - name: Upload SA Key
+        if: always() && inputs.cloudProvider == 'gcp'
+        uses: ./.github/actions/artifact_upload
+        with:
+          name: sa-key
+          path: >
             gcpServiceAccountKey.json
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
@@ -324,6 +332,13 @@ jobs:
           name: constellation-pre-test
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
+      - name: Download SA Key
+        if: inputs.cloudProvider == 'gcp'
+        uses: ./.github/actions/artifact_download
+        with:
+          name: sa-key
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+
       - name: Make Constellation executable and add to PATH
         if: always()
         run: |
@@ -401,7 +416,6 @@ jobs:
             constellation-conf.yaml
             constellation-state.yaml
             constellation-mastersecret.json
-            gcpServiceAccountKey.json
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
   clean-up:
