@@ -240,6 +240,7 @@ jobs:
             constellation-conf.yaml
             constellation-state.yaml
             constellation-mastersecret.json
+            gcpServiceAccountKey.json
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
   e2e-upgrade:
@@ -400,6 +401,7 @@ jobs:
             constellation-conf.yaml
             constellation-state.yaml
             constellation-mastersecret.json
+            gcpServiceAccountKey.json
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
   clean-up:
