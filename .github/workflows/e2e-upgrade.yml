@@ -111,7 +111,62 @@ jobs:
           echo "workerNodes=${workerNodes}" | tee -a "$GITHUB_OUTPUT"
           echo "controlPlaneNodes=${controlPlaneNodes}" | tee -a "$GITHUB_OUTPUT"
 
-  e2e-upgrade:
+  build-target-cli:
+    name: Build upgrade target version CLI
+    runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+      checks: write
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        if: inputs.gitRef == 'head'
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
+      - name: Checkout ref
+        if: inputs.gitRef != 'head'
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.gitRef }}
+
+      - name: Setup Bazel & Nix
+        uses: ./.github/actions/setup_bazel_nix
+        with:
+          useCache: "true"
+          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
+
+      - name: Log in to the Container registry
+        uses: ./.github/actions/container_registry_login
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Simulate patch upgrade
+        if: inputs.simulatedTargetVersion != ''
+        run: |
+          echo ${{ inputs.simulatedTargetVersion }} > version.txt
+
+      - name: Build CLI
+        uses: ./.github/actions/build_cli
+        with:
+          enterpriseCLI: true
+          outputPath: "build/constellation"
+          push: true
+
+      - name: Upload CLI binary
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        with:
+          name: constellation
+          path: build/constellation
+
+  create-cluster:
+    name: Create upgrade origin version cluster
     runs-on: ubuntu-22.04
     permissions:
       id-token: write
@@ -119,6 +174,8 @@ jobs:
       contents: read
       packages: write
     needs: [split-nodeCount]
+    outputs:
+      kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
     steps:
       - name: Checkout
         if: inputs.gitRef == 'head'
@@ -138,26 +195,6 @@ jobs:
         with:
           useCache: "true"
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
-
-      - name: Login to AWS
-        uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a # v4.0.1
-        with:
-          role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIRead
-          aws-region: eu-central-1
-
-      - name: Find latest nightly image
-        id: find-image
-        if: inputs.toImage == ''
-        uses: ./.github/actions/versionsapi
-        with:
-          command: latest
-          ref: main
-          stream: nightly
-
-      - name: Simulate patch upgrade
-        if: inputs.simulatedTargetVersion != ''
-        run: |
-          echo ${{ inputs.simulatedTargetVersion }} > version.txt
 
       - name: Create cluster with 'fromVersion' CLI.
         id: e2e_test
@@ -185,12 +222,82 @@ jobs:
           clusterCreation: "cli"
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
-      - name: Build CLI
-        uses: ./.github/actions/build_cli
+      - name: Remove Terraform plugin cache
+        if: always()
+        run: |
+          rm -rf constellation-terraform/.terraform
+          rm -rf constellation-iam-terraform/.terraform
+
+      - name: Upload Working Directory
+        if: always()
+        uses: ./.github/actions/artifact_upload
         with:
-          enterpriseCLI: true
-          outputPath: "build/constellation"
-          push: true
+          name: constellation-pre-test
+          path: >
+            ${{ steps.e2e_test.outputs.kubeconfig }}
+            constellation-terraform
+            constellation-iam-terraform
+            constellation-conf.yaml
+            constellation-state.yaml
+            constellation-mastersecret.json
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+
+      - name: Upload SA Key
+        if: always() && inputs.cloudProvider == 'gcp'
+        uses: ./.github/actions/artifact_upload
+        with:
+          name: sa-key
+          path: >
+            gcpServiceAccountKey.json
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+
+  e2e-upgrade:
+    name: Run upgrade test
+    runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+      checks: write
+      contents: read
+      packages: write
+    needs:
+      - split-nodeCount
+      - build-target-cli
+      - create-cluster
+    steps:
+      - name: Checkout
+        if: inputs.gitRef == 'head'
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
+      - name: Checkout ref
+        if: inputs.gitRef != 'head'
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.gitRef }}
+
+      - name: Setup Bazel & Nix
+        uses: ./.github/actions/setup_bazel_nix
+        with:
+          useCache: "true"
+          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
+
+      - name: Login to AWS
+        uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a # v4.0.1
+        with:
+          role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIRead
+          aws-region: eu-central-1
+
+      - name: Find latest nightly image
+        id: find-image
+        if: inputs.toImage == ''
+        uses: ./.github/actions/versionsapi
+        with:
+          command: latest
+          ref: main
+          stream: nightly
 
       - name: Login to GCP (IAM service account)
         if: inputs.cloudProvider == 'gcp'
@@ -212,6 +319,32 @@ jobs:
         uses: ./.github/actions/login_azure
         with:
           azure_credentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
+
+      - name: Download CLI
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        with:
+          name: constellation
+          path: build
+
+      - name: Download Working Directory (Pre-test)
+        uses: ./.github/actions/artifact_download
+        with:
+          name: constellation-pre-test
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+
+      - name: Download SA Key
+        if: inputs.cloudProvider == 'gcp'
+        uses: ./.github/actions/artifact_download
+        with:
+          name: sa-key
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+
+      - name: Make Constellation executable and add to PATH
+        if: always()
+        run: |
+          chmod +x build/constellation
+          export PATH="$PATH:build"
+          echo "build" >> "$GITHUB_PATH"
 
       - name: Migrate config
         id: constellation-config-migrate
@@ -245,7 +378,7 @@ jobs:
 
       - name: Run upgrade test
         env:
-          KUBECONFIG: ${{ steps.e2e_test.outputs.kubeconfig }}
+          KUBECONFIG: ${{ needs.create-cluster.outputs.kubeconfig }}
           IMAGE: ${{ inputs.toImage && inputs.toImage || steps.find-image.outputs.output }}
           KUBERNETES: ${{ inputs.toKubernetes }}
           MICROSERVICES: ${{ inputs.toMicroservices }}
@@ -265,10 +398,82 @@ jobs:
 
           bazel run //e2e/internal/upgrade:upgrade_test -- --want-worker "$WORKERNODES" --want-control "$CONTROLNODES" --target-image "$IMAGE" "$KUBERNETES_FLAG" "$MICROSERVICES_FLAG"
 
+      - name: Remove Terraform plugin cache
+        if: always()
+        run: |
+          rm -rf constellation-terraform/.terraform
+          rm -rf constellation-iam-terraform/.terraform
+
+      - name: Upload Working Directory
+        if: always()
+        uses: ./.github/actions/artifact_upload
+        with:
+          name: constellation-post-test
+          path: |
+            ${{ needs.create-cluster.outputs.kubeconfig }}
+            constellation-terraform
+            constellation-iam-terraform
+            constellation-conf.yaml
+            constellation-state.yaml
+            constellation-mastersecret.json
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+
+  clean-up:
+    name: Clean up resources
+    runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+      checks: write
+      contents: read
+      packages: write
+    if: always()
+    needs: [create-cluster, e2e-upgrade]
+    steps:
+      - name: Checkout
+        if: inputs.gitRef == 'head'
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
+      - name: Checkout ref
+        if: inputs.gitRef != 'head'
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.gitRef }}
+
+      - name: Download CLI
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        with:
+          name: constellation
+          path: build
+
+      - name: Download Working Directory (Pre-test)
+        if: always() && needs.e2e-upgrade.result != 'success'
+        uses: ./.github/actions/artifact_download
+        with:
+          name: constellation-pre-test
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+
+      - name: Download Working Directory (Post-test)
+        if: always() && needs.e2e-upgrade.result == 'success'
+        uses: ./.github/actions/artifact_download
+        with:
+          name: constellation-post-test
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+
+      - name: Make Constellation executable and add to PATH
+        if: always()
+        run: |
+          chmod +x build/constellation
+          export PATH="$PATH:build"
+          echo "build" >> "$GITHUB_PATH"
+
       - name: Always fetch logs
         if: always()
         env:
-          KUBECONFIG: ${{ steps.e2e_test.outputs.kubeconfig }}
+          KUBECONFIG: ${{ needs.create-cluster.outputs.kubeconfig }}
         run: |
           kubectl logs -n kube-system -l "app.kubernetes.io/name=constellation-operator" --tail=-1 > node-operator.logs
           kubectl logs -n kube-system -l "app.kubernetes.io/name=node-maintenance-operator" --tail=-1 > node-maintenance-operator.logs
@@ -289,8 +494,8 @@ jobs:
         if: always()
         uses: ./.github/actions/constellation_destroy
         with:
-          kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
           clusterCreation: "cli"
+          kubeconfig: ${{ needs.create-cluster.outputs.kubeconfig }}
           cloudProvider: ${{ inputs.cloudProvider }}
           azureClusterDeleteCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
           gcpClusterDeleteServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
@@ -305,7 +510,9 @@ jobs:
 
       - name: Notify about failure
         if: |
-          failure() &&
+          always() &&
+          needs.create-cluster.result != 'success' &&
+          needs.e2e-upgrade.result != 'success' &&
           github.ref == 'refs/heads/main' &&
           inputs.scheduled
         continue-on-error: true
