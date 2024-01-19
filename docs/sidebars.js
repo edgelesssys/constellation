@@ -97,6 +97,11 @@ const sidebars = {
           id: 'getting-started/first-steps-local',
         },
         {
+          type: 'doc',
+          label: 'Cloud Marketplaces',
+          id: 'getting-started/marketplaces',
+        },
+        {
           type: 'category',
           label: 'Examples',
           link: {
