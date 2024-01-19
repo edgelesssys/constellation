@@ -5,7 +5,7 @@ What works on which cloud? Currently, Confidential VMs (CVMs) are available in v
 For Constellation, the ideal environment provides the following:
 
 1. Ability to run arbitrary software and images inside CVMs
-2. CVMs based on AMD SEV-SNP (available in EPYC CPUs since the Milan generation) or, in the future, Intel TDX (available in Xeon CPUs from the Sapphire Rapids generation onward)
+2. CVMs based on AMD SEV-SNP (available in EPYC CPUs since the Milan generation) or, Intel TDX (available in Xeon CPUs since the Sapphire Rapids generation)
 3. Ability for CVM guests to obtain raw hardware attestation statements
 4. Reviewable, open-source firmware inside CVMs
 5. Capability of the firmware to attest the integrity of the code it passes control to, e.g., with an embedded virtual TPM (vTPM)
@@ -19,27 +19,31 @@ The following table summarizes the state of features for different infrastructur
 | **1. Custom images**              | Yes       | Yes     | Yes     | Yes                  |
 | **2. SEV-SNP or TDX**             | Yes       | Yes     | Yes     | Depends on kernel/HV |
 | **3. Raw guest attestation**      | Yes       | Yes     | Yes     | Depends on kernel/HV |
-| **4. Reviewable firmware**        | No*       | No      | Yes     | Depends on kernel/HV |
+| **4. Reviewable firmware**        | No        | No      | Yes     | Depends on kernel/HV |
 | **5. Confidential measured boot** | Yes       | No      | No      | Depends on kernel/HV |
 
 ## Microsoft Azure
 
 With its [CVM offering](https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview), Azure provides the best foundations for Constellation.
 Regarding (3), Azure provides direct access to remote-attestation statements.
-The CVM firmware running in VM Privilege Level (VMPL) 0 provides a vTPM (5), but it's closed source (4).
+The firmware runs in an isolated domain inside the CVM and exposes a vTPM (5), but it's closed source (4).
+On SEV-SNP Azure leverages VM Privilege Level (VMPL) isolation for the separation of firmware and the rest of the VM, on TDX they leverage TD partitioning.
 This firmware is signed by Azure.
 The signature is reflected in the remote-attestation statements of CVMs.
 Thus, the Azure closed-source firmware becomes part of Constellation's trusted computing base (TCB).
 
-\* Recently, Azure [announced](https://techcommunity.microsoft.com/t5/azure-confidential-computing/azure-confidential-vms-using-sev-snp-dcasv5-ecasv5-are-now/ba-p/3573747) the *limited preview* of CVMs with customizable firmware. With this CVM type, (4) switches from *No* to *Yes*. Constellation will support customizable firmware on Azure in the future.
-
 ## Google Cloud Platform (GCP)
 
 The [CVMs Generally Available in GCP](https://cloud.google.com/compute/confidential-vm/docs/create-confidential-vm-instance) are based on AMD SEV but don't have SNP features enabled.
-CVMs with SEV-SNP enabled are currently in [private preview](https://cloud.google.com/blog/products/identity-security/rsa-snp-vm-more-confidential). Regarding (3), with their SEV-SNP offering Google provides direct access to remote-attestation statements.
-However, regarding (4), the CVMs still include closed-source firmware.
+CVMs with SEV-SNP enabled are currently in [public preview](https://cloud.google.com/blog/products/identity-security/rsa-snp-vm-more-confidential). Regarding (3), with their SEV-SNP offering Google provides direct access to remote-attestation statements.
+However, regarding (5), attestation is partially based on the [Shielded VM vTPM](https://cloud.google.com/compute/shielded-vm/docs/shielded-vm#vtpm) for [measured boot](../architecture/attestation.md#measured-boot), which is a vTPM managed by Google's hypervisor.
+Hence, the hypervisor is currently part of Constellation's TCB.
+Regarding (4), the CVMs still include closed-source firmware.
 
-Intel and Google have [collaborated](https://cloud.google.com/blog/products/identity-security/rsa-google-intel-confidential-computing-more-secure) to enhance the security of TDX, and have recently [revealed](https://venturebeat.com/security/intel-launches-confidential-computing-solution-for-virtual-machines/) their plans to make TDX compatible with Google Cloud.
+
+In the past, Intel and Google have [collaborated](https://cloud.google.com/blog/products/identity-security/rsa-google-intel-confidential-computing-more-secure) to enhance the security of TDX.
+Recently, Google has announced a [private preview for TDX](https://cloud.google.com/blog/products/identity-security/confidential-vms-on-intel-cpus-your-datas-new-intelligent-defense?hl=en).
+With TDX on Google, Constellation has a similar TCB and attestation flow as with the current SEV-SNP offering.
 
 ## Amazon Web Services (AWS)
 
