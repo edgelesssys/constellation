@@ -15,4 +15,5 @@ import (
 	_ "github.com/katexochen/sh/v3/cmd/shfmt"
 	_ "golang.org/x/tools/cmd/stringer"
 	_ "golang.org/x/vuln/cmd/govulncheck"
+	_ "sigs.k8s.io/controller-tools/cmd/controller-gen"
 )

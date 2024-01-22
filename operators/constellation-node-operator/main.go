@@ -4,6 +4,8 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+//go:generate controller-gen rbac:roleName=constellation-operator-manager-role paths="./..." output:rbac:dir=../../internal/constellation/helm/charts/edgeless/operators/charts/constellation-operator/templates
+
 package main
 
 import (
