@@ -18,7 +18,8 @@ by creating a logger like this: `logger.NewTest(t)`.
 You can create a new logger with a new log level by creating a new slog.Logger with the LevelHandler in this package
 and passing the handler of the other logger. As an example, if you have a slog.Logger named `log` you can create a
 new logger with an increased log level (here slog.LevelWarn) like this:
-`slog.New(logger.NewLevelHandler(slog.LevelWarn, log.Handler()))`
+
+  slog.New(logger.NewLevelHandler(slog.LevelWarn, log.Handler()))
 */
 package logger
 
