@@ -126,7 +126,6 @@ require (
 	go.etcd.io/etcd/client/pkg/v3 v3.5.10
 	go.etcd.io/etcd/client/v3 v3.5.10
 	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.26.0
 	golang.org/x/crypto v0.17.0
 	golang.org/x/exp v0.0.0-20231219180239-dc181d75b848
 	golang.org/x/mod v0.14.0
@@ -152,6 +151,8 @@ require (
 	libvirt.org/go/libvirt v1.9008.0
 	sigs.k8s.io/yaml v1.4.0
 )
+
+require go.uber.org/zap v1.26.0 // indirect
 
 require (
 	cloud.google.com/go v0.110.8 // indirect

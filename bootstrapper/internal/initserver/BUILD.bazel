@@ -27,7 +27,6 @@ go_library(
         "@org_golang_google_grpc//keepalive",
         "@org_golang_google_grpc//status",
         "@org_golang_x_crypto//bcrypt",
-        "@org_uber_go_zap//:zap",
     ],
 )
 

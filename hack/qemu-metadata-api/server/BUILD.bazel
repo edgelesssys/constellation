@@ -12,9 +12,7 @@ go_library(
     deps = [
         "//hack/qemu-metadata-api/virtwrapper",
         "//internal/cloud/metadata",
-        "//internal/logger",
         "//internal/role",
-        "@org_uber_go_zap//:zap",
     ],
 )
 

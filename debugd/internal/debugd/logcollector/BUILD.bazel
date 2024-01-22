@@ -14,7 +14,6 @@ go_library(
         "//debugd/internal/debugd/info",
         "//internal/cloud/cloudprovider",
         "//internal/cloud/metadata",
-        "//internal/logger",
         "//internal/versions",
         "@com_github_aws_aws_sdk_go_v2_config//:config",
         "@com_github_aws_aws_sdk_go_v2_service_secretsmanager//:secretsmanager",

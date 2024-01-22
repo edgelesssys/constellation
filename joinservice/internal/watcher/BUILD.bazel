@@ -16,9 +16,7 @@ go_library(
         "//internal/config",
         "//internal/constants",
         "//internal/file",
-        "//internal/logger",
         "@com_github_fsnotify_fsnotify//:fsnotify",
-        "@org_uber_go_zap//:zap",
     ],
 )
 

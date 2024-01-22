@@ -16,12 +16,10 @@ go_library(
         "//debugd/internal/filetransfer",
         "//debugd/service",
         "//internal/constants",
-        "//internal/logger",
         "@com_github_coreos_go_systemd_v22//dbus",
         "@com_github_spf13_afero//:afero",
         "@org_golang_google_grpc//:go_default_library",
         "@org_golang_google_grpc//credentials/insecure",
-        "@org_uber_go_zap//:zap",
     ],
 )
 

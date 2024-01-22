@@ -14,9 +14,7 @@ go_library(
         "//hack/oci-pin/internal/extract",
         "//hack/oci-pin/internal/inject",
         "//hack/oci-pin/internal/sums",
-        "//internal/logger",
         "@com_github_spf13_cobra//:cobra",
-        "@org_uber_go_zap//zapcore",
     ],
 )
 

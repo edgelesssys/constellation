@@ -8,9 +8,7 @@ go_library(
     deps = [
         "//internal/api/versionsapi",
         "//internal/constants",
-        "//internal/logger",
         "//internal/versions",
-        "@org_uber_go_zap//zapcore",
     ],
 )
 

@@ -15,7 +15,6 @@ go_library(
         "//internal/logger",
         "@org_golang_google_grpc//:go_default_library",
         "@org_golang_google_grpc//keepalive",
-        "@org_uber_go_zap//:zap",
     ],
 )
 

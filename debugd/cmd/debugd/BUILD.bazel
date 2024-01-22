@@ -25,7 +25,6 @@ go_library(
         "//internal/cloud/qemu",
         "//internal/logger",
         "@com_github_spf13_afero//:afero",
-        "@org_uber_go_zap//:zap",
     ],
 )
 

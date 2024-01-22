@@ -9,12 +9,9 @@ go_library(
     deps = [
         "//internal/attestation/variant",
         "//internal/constants",
-        "//internal/logger",
         "//measurement-reader/internal/sorted",
         "//measurement-reader/internal/tdx",
         "//measurement-reader/internal/tpm",
-        "@org_uber_go_zap//:zap",
-        "@org_uber_go_zap//zapcore",
     ],
 )
 

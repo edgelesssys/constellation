@@ -13,8 +13,6 @@ go_library(
         "//debugd/internal/debugd",
         "//debugd/internal/filetransfer/streamer",
         "//debugd/service",
-        "//internal/logger",
-        "@org_uber_go_zap//:zap",
     ],
 )
 

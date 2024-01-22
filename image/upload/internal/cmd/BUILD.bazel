@@ -21,7 +21,6 @@ go_library(
         "//internal/attestation/measurements",
         "//internal/cloud/cloudprovider",
         "//internal/constants",
-        "//internal/logger",
         "//internal/osimage",
         "//internal/osimage/archive",
         "//internal/osimage/imageinfo",
@@ -29,6 +28,5 @@ go_library(
         "//internal/osimage/nop",
         "//internal/osimage/uplosi",
         "@com_github_spf13_cobra//:cobra",
-        "@org_uber_go_zap//zapcore",
     ],
 )

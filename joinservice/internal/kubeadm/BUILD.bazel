@@ -9,7 +9,6 @@ go_library(
     deps = [
         "//internal/constants",
         "//internal/file",
-        "//internal/logger",
         "@com_github_spf13_afero//:afero",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
         "@io_k8s_client_go//kubernetes",

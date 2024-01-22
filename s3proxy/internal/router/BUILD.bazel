@@ -11,12 +11,10 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/s3proxy/internal/router",
     visibility = ["//s3proxy:__subpackages__"],
     deps = [
-        "//internal/logger",
         "//s3proxy/internal/crypto",
         "//s3proxy/internal/kms",
         "//s3proxy/internal/s3",
         "@com_github_aws_aws_sdk_go_v2_service_s3//:s3",
-        "@org_uber_go_zap//:zap",
     ],
 )
 
