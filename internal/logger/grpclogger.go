@@ -25,95 +25,73 @@ func replaceGRPCLogger(log *slog.Logger) {
 	grpclog.SetLoggerV2(gl)
 }
 
+func (l *grpcLogger) log(level slog.Level, args ...interface{}) {
+  var pcs [1]uintptr
+	runtime.Callers(3, pcs[:])
+	r := slog.NewRecord(time.Now(), slog.LevelInfo, fmt.Sprint(args...), pcs[0])
+	_ = l.logger.Handler().Handle(context.Background(), r)
+}
+
+func (l *grpcLogger) logf(level slog.Level, format string, args ...interface{}) {
+  var pcs [1]uintptr
+	runtime.Callers(3, pcs[:])
+	r := slog.NewRecord(time.Now(), slog.LevelInfo, fmt.Sprintf(format, args...), pcs[0])
+	_ = l.logger.Handler().Handle(context.Background(), r)
+}
+
 type grpcLogger struct {
 	logger    *slog.Logger
 	verbosity int
 }
 
 func (l *grpcLogger) Info(args ...interface{}) {
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:])
-	r := slog.NewRecord(time.Now(), slog.LevelInfo, fmt.Sprint(args...), pcs[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+  l.log(slog.LevelInfo, args...)
 }
 
 func (l *grpcLogger) Infoln(args ...interface{}) {
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:])
-	r := slog.NewRecord(time.Now(), slog.LevelInfo, fmt.Sprint(args...), pcs[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+  l.log(slog.LevelInfo, args...)
 }
 
 func (l *grpcLogger) Infof(format string, args ...interface{}) {
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:])
-	r := slog.NewRecord(time.Now(), slog.LevelInfo, fmt.Sprintf(format, args...), pcs[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+  l.logf(slog.LevelInfo, format, args...)
 }
 
 func (l *grpcLogger) Warning(args ...interface{}) {
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:])
-	r := slog.NewRecord(time.Now(), slog.LevelWarn, fmt.Sprint(args...), pcs[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+  l.log(slog.LevelWarn, args...)
 }
 
 func (l *grpcLogger) Warningln(args ...interface{}) {
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:])
-	r := slog.NewRecord(time.Now(), slog.LevelWarn, fmt.Sprint(args...), pcs[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+  l.log(slog.LevelWarn, args...)
 }
 
 func (l *grpcLogger) Warningf(format string, args ...interface{}) {
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:])
-	r := slog.NewRecord(time.Now(), slog.LevelWarn, fmt.Sprintf(format, args...), pcs[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+  l.logf(slog.LevelWarn, format, args...)
 }
 
 func (l *grpcLogger) Error(args ...interface{}) {
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:])
-	r := slog.NewRecord(time.Now(), slog.LevelError, fmt.Sprint(args...), pcs[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+  l.log(slog.LevelError, args...)
 }
 
 func (l *grpcLogger) Errorln(args ...interface{}) {
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:])
-	r := slog.NewRecord(time.Now(), slog.LevelError, fmt.Sprint(args...), pcs[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+  l.log(slog.LevelError, args...)
 }
 
 func (l *grpcLogger) Errorf(format string, args ...interface{}) {
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:])
-	r := slog.NewRecord(time.Now(), slog.LevelError, fmt.Sprintf(format, args...), pcs[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+  l.logf(slog.LevelError, format, args...)
 }
 
 func (l *grpcLogger) Fatal(args ...interface{}) {
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:])
-	r := slog.NewRecord(time.Now(), slog.LevelError, fmt.Sprint(args...), pcs[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+  l.log(slog.LevelError, args...)
 	os.Exit(1)
 }
 
 func (l *grpcLogger) Fatalln(args ...interface{}) {
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:])
-	r := slog.NewRecord(time.Now(), slog.LevelError, fmt.Sprint(args...), pcs[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+  l.log(slog.LevelError, args...)
 	os.Exit(1)
 }
 
 func (l *grpcLogger) Fatalf(format string, args ...interface{}) {
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:])
-	r := slog.NewRecord(time.Now(), slog.LevelError, fmt.Sprintf(format, args...), pcs[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+  l.logf(slog.LevelError, format, args...)
 	os.Exit(1)
 }
 
