@@ -11,7 +11,6 @@ import (
 	"errors"
 	"io"
 	"io/fs"
-	"log/slog"
 	"net"
 	"path/filepath"
 	"sync"
@@ -137,7 +136,7 @@ func TestPrepareExistingDisk(t *testing.T) {
 			}
 
 			setupManager := &Manager{
-				log:        slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:        logger.NewTest(t),
 				csp:        "test",
 				diskPath:   "disk-path",
 				fs:         fs,
@@ -215,7 +214,7 @@ func TestPrepareNewDisk(t *testing.T) {
 			assert := assert.New(t)
 
 			setupManager := &Manager{
-				log:      slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:      logger.NewTest(t),
 				csp:      "test",
 				diskPath: "disk-path",
 				fs:       tc.fs,
@@ -271,7 +270,7 @@ func TestReadMeasurementSalt(t *testing.T) {
 				require.NoError(handler.WriteJSON("test-state.json", state, file.OptMkdirAll))
 			}
 
-			setupManager := New(slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), "test", "disk-path", fs, nil, nil, nil)
+			setupManager := New(logger.NewTest(t), "test", "disk-path", fs, nil, nil, nil)
 
 			measurementSalt, err := setupManager.readMeasurementSalt("test-state.json")
 			if tc.wantErr {

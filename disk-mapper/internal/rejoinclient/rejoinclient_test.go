@@ -9,7 +9,6 @@ package rejoinclient
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"net"
 	"strconv"
 	"sync"
@@ -57,7 +56,7 @@ func TestStartCancel(t *testing.T) {
 		dialer:      dialer,
 		nodeInfo:    metadata.InstanceMetadata{Role: role.Worker},
 		metadataAPI: metaAPI,
-		log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+		log:         logger.NewTest(t),
 		timeout:     time.Second * 30,
 		interval:    time.Second,
 		clock:       clock,
@@ -217,7 +216,7 @@ func TestGetJoinEndpoints(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			client := New(nil, tc.nodeInfo, tc.meta, slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
+			client := New(nil, tc.nodeInfo, tc.meta, logger.NewTest(t))
 
 			endpoints, err := client.getJoinEndpoints()
 			if tc.wantErr {
@@ -293,7 +292,7 @@ func TestStart(t *testing.T) {
 				},
 			}
 
-			client := New(dialer, tc.nodeInfo, meta, slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
+			client := New(dialer, tc.nodeInfo, meta, logger.NewTest(t))
 
 			passphrase, secret := client.Start(context.Background(), "uuid")
 			assert.Equal(diskKey, passphrase)

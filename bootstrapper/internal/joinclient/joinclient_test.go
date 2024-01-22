@@ -9,12 +9,12 @@ package joinclient
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"net"
 	"strconv"
 	"sync"
 	"testing"
 	"time"
+  "log/slog"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -221,7 +221,7 @@ func TestClient(t *testing.T) {
 				fileHandler: fileHandler,
 				metadataAPI: metadataAPI,
 				clock:       clock,
-				log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:         logger.NewTest(t),
 			}
 
 			serverCreds := atlscredentials.New(nil, nil)
@@ -276,7 +276,7 @@ func TestClientConcurrentStartStop(t *testing.T) {
 		fileHandler: file.NewHandler(afero.NewMemMapFs()),
 		metadataAPI: &stubRepeaterMetadataAPI{},
 		clock:       testclock.NewFakeClock(time.Now()),
-		log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+		log:         logger.NewTest(t),
 	}
 
 	wg := sync.WaitGroup{}

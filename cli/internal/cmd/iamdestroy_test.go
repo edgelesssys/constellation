@@ -7,7 +7,6 @@ package cmd
 import (
 	"bytes"
 	"errors"
-	"log/slog"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
@@ -107,7 +106,7 @@ func TestIAMDestroy(t *testing.T) {
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 
-			c := &destroyCmd{log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), flags: iamDestroyFlags{
+			c := &destroyCmd{log: logger.NewTest(t), flags: iamDestroyFlags{
 				yes: tc.yesFlag,
 			}}
 
@@ -197,7 +196,7 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 
-			c := &destroyCmd{log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil))}
+			c := &destroyCmd{log: logger.NewTest(t)}
 
 			proceed, err := c.deleteGCPServiceAccountKeyFile(cmd, tc.destroyer, tc.fsHandler)
 			if tc.wantErr {

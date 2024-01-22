@@ -10,8 +10,8 @@ working with slog easier.
 
 1. Logging in unit tests
 
-To log in unit tests you can create a new slog logger that uses logger.TestWriter as its writer. This can be constructed
-by creating a logger like this: `slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil))`.
+To log in unit tests you can create a new slog logger that uses logger.testWriter as its writer. This can be constructed
+by creating a logger like this: `logger.NewTest(t)`.
 
 2. Creating a new logger with an increased log level based on another logger
 
@@ -152,13 +152,17 @@ func (h *LevelHandler) Handler() slog.Handler {
 	return h.handler
 }
 
-// TestWriter is a writer to a testing.T used in tests for logging with slog.
-type TestWriter struct {
-	T *testing.T
+func NewTest(t * testing.T) *slog.Logger {
+  return slog.New(slog.NewTextHandler(testWriter{t: t}, nil))
 }
 
-func (t TestWriter) Write(p []byte) (int, error) {
-	t.T.Helper()
-	t.T.Log(string(p))
+// TestWriter is a writer to a testing.T used in tests for logging with slog.
+type testWriter struct {
+	t *testing.T
+}
+
+func (t testWriter) Write(p []byte) (int, error) {
+	t.t.Helper()
+	t.t.Log(string(p))
 	return len(p), nil
 }

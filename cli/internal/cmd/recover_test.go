@@ -10,7 +10,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"log/slog"
 	"net"
 	"strconv"
 	"testing"
@@ -165,7 +164,7 @@ func TestRecover(t *testing.T) {
 
 			newDialer := func(atls.Validator) *dialer.Dialer { return nil }
 			r := &recoverCmd{
-				log:           slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:           logger.NewTest(t),
 				configFetcher: stubAttestationFetcher{},
 				flags: recoverFlags{
 					rootFlags: rootFlags{force: true},
@@ -219,7 +218,7 @@ func TestDoRecovery(t *testing.T) {
 			go recoverServer.Serve(listener)
 			defer recoverServer.GracefulStop()
 
-			r := &recoverCmd{log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil))}
+			r := &recoverCmd{log: logger.NewTest(t)}
 			recoverDoer := &recoverDoer{
 				dialer:   dialer.New(nil, nil, netDialer),
 				endpoint: addr,

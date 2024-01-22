@@ -17,7 +17,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"log/slog"
 	"regexp"
 	"testing"
 
@@ -162,7 +161,7 @@ func TestValidateSNPReport(t *testing.T) {
 			require.NoError(err)
 
 			v := awsValidator{httpsGetter: newStubHTTPSGetter(&urlResponseMatcher{}, nil), verifier: tc.verifier, validator: tc.validator}
-			err = v.validate(vtpm.AttestationDocument{InstanceInfo: infoMarshalled}, ask, ark, [64]byte(hash), config.DefaultForAWSSEVSNP(), slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
+			err = v.validate(vtpm.AttestationDocument{InstanceInfo: infoMarshalled}, ask, ark, [64]byte(hash), config.DefaultForAWSSEVSNP(), logger.NewTest(t))
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

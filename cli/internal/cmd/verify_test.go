@@ -14,7 +14,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"net"
 	"strconv"
 	"strings"
@@ -211,7 +210,7 @@ func TestVerify(t *testing.T) {
 
 			v := &verifyCmd{
 				fileHandler: fileHandler,
-				log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:         logger.NewTest(t),
 				flags: verifyFlags{
 					clusterID: tc.clusterIDFlag,
 					endpoint:  tc.nodeEndpointFlag,
@@ -243,7 +242,7 @@ func (f *stubAttDocFormatter) format(_ context.Context, _ string, _ bool, _ conf
 func TestFormat(t *testing.T) {
 	formatter := func() *defaultAttestationDocFormatter {
 		return &defaultAttestationDocFormatter{
-			log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+			log: logger.NewTest(t),
 		}
 	}
 
@@ -334,7 +333,7 @@ func TestVerifyClient(t *testing.T) {
 			go verifyServer.Serve(listener)
 			defer verifyServer.GracefulStop()
 
-			verifier := &constellationVerifier{dialer: dialer, log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil))}
+			verifier := &constellationVerifier{dialer: dialer, log: logger.NewTest(t)}
 			request := &verifyproto.GetAttestationRequest{
 				Nonce: tc.nonce,
 			}

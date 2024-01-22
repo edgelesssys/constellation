@@ -10,7 +10,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log/slog"
 	"strings"
 	"testing"
 	"time"
@@ -229,7 +228,7 @@ func TestInitialize(t *testing.T) {
 					rootFlags:  rootFlags{force: true},
 					skipPhases: newPhases(skipInfrastructurePhase),
 				},
-				log:     slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:     logger.NewTest(t),
 				spinner: &nopSpinner{},
 				merger:  &stubMerger{},
 				applier: &stubConstellApplier{
@@ -369,8 +368,8 @@ func TestWriteOutput(t *testing.T) {
 		fileHandler: fileHandler,
 		spinner:     &nopSpinner{},
 		merger:      &stubMerger{},
-		log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
-		applier:     constellation.NewApplier(slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), &nopSpinner{}, constellation.ApplyContextCLI, nil),
+		log:         logger.NewTest(t),
+		applier:     constellation.NewApplier(logger.NewTest(t), &nopSpinner{}, constellation.ApplyContextCLI, nil),
 	}
 	err = i.writeInitOutput(stateFile, initOutput, false, &out, measurementSalt)
 	require.NoError(err)
@@ -461,8 +460,8 @@ func TestGenerateMasterSecret(t *testing.T) {
 			var out bytes.Buffer
 			i := &applyCmd{
 				fileHandler: fileHandler,
-				log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
-				applier:     constellation.NewApplier(slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), &nopSpinner{}, constellation.ApplyContextCLI, nil),
+				log:         logger.NewTest(t),
+				applier:     constellation.NewApplier(logger.NewTest(t), &nopSpinner{}, constellation.ApplyContextCLI, nil),
 			}
 			secret, err := i.generateAndPersistMasterSecret(&out)
 

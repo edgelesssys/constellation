@@ -9,7 +9,6 @@ package cmd
 import (
 	"bytes"
 	"context"
-	"log/slog"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
@@ -252,7 +251,7 @@ func TestUpgradeApply(t *testing.T) {
 			upgrader := &applyCmd{
 				fileHandler: fh,
 				flags:       tc.flags,
-				log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:         logger.NewTest(t),
 				spinner:     &nopSpinner{},
 				merger:      &stubMerger{},
 				newInfraApplier: func(ctx context.Context) (cloudApplier, func(), error) {

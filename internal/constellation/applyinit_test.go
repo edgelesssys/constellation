@@ -12,7 +12,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"log/slog"
 	"net"
 	"strconv"
 	"testing"
@@ -207,7 +206,7 @@ func TestInit(t *testing.T) {
 			defer stop()
 
 			a := &Applier{
-				log:     slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:     logger.NewTest(t),
 				spinner: &nopSpinner{},
 				newDialer: func(atls.Validator) *dialer.Dialer {
 					return dialer.New(nil, nil, netDialer)
@@ -286,7 +285,7 @@ func TestAttestation(t *testing.T) {
 	defer cancel()
 
 	initer := &Applier{
-		log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+		log: logger.NewTest(t),
 		newDialer: func(v atls.Validator) *dialer.Dialer {
 			return dialer.New(nil, v, netDialer)
 		},

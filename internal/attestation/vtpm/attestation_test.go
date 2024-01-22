@@ -13,7 +13,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"os"
 	"testing"
 
@@ -85,8 +84,8 @@ func TestValidate(t *testing.T) {
 	tpmOpen, tpmCloser := tpmsim.NewSimulatedTPMOpenFunc()
 	defer tpmCloser.Close()
 
-	issuer := NewIssuer(tpmOpen, tpmclient.AttestationKeyRSA, fakeGetInstanceInfo, slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
-	validator := NewValidator(testExpectedPCRs, fakeGetTrustedKey, fakeValidateCVM, slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
+	issuer := NewIssuer(tpmOpen, tpmclient.AttestationKeyRSA, fakeGetInstanceInfo, logger.NewTest(t))
+	validator := NewValidator(testExpectedPCRs, fakeGetTrustedKey, fakeValidateCVM, logger.NewTest(t))
 
 	nonce := []byte{1, 2, 3, 4}
 	challenge := []byte("Constellation")
@@ -238,7 +237,7 @@ func TestValidate(t *testing.T) {
 				},
 				fakeGetTrustedKey,
 				fakeValidateCVM,
-				slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil))),
+				logger.NewTest(t)),
 			attDoc:  mustMarshalAttestation(attDoc, require),
 			nonce:   nonce,
 			wantErr: false,
@@ -346,7 +345,7 @@ func TestFailIssuer(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			tc.issuer.log = slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil))
+			tc.issuer.log = logger.NewTest(t)
 
 			_, err := tc.issuer.Issue(context.Background(), tc.userData, tc.nonce)
 			assert.Error(err)

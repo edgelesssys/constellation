@@ -8,7 +8,6 @@ package helm
 
 import (
 	"context"
-	"log/slog"
 	"testing"
 	"time"
 
@@ -65,7 +64,7 @@ func TestRetryApply(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			err := retryApply(context.Background(), tc.applier, time.Millisecond, slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
+			err := retryApply(context.Background(), tc.applier, time.Millisecond, logger.NewTest(t))
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

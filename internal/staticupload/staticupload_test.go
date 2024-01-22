@@ -12,7 +12,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"sync"
 	"testing"
 	"time"
@@ -107,7 +106,7 @@ func TestUpload(t *testing.T) {
 				distributionID:               "test-distribution-id",
 				cacheInvalidationStrategy:    tc.cacheInvalidationStrategy,
 				cacheInvalidationWaitTimeout: tc.cacheInvalidationWaitTimeout,
-				logger:                       slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				logger:                       logger.NewTest(t),
 			}
 			_, err := client.Upload(context.Background(), tc.in)
 
@@ -219,7 +218,7 @@ func TestDeleteObject(t *testing.T) {
 				distributionID:               "test-distribution-id",
 				cacheInvalidationStrategy:    tc.cacheInvalidationStrategy,
 				cacheInvalidationWaitTimeout: tc.cacheInvalidationWaitTimeout,
-				logger:                       slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				logger:                       logger.NewTest(t),
 			}
 			_, err := client.DeleteObject(context.Background(), newObjectInput(tc.nilInput, tc.nilKey))
 
@@ -258,7 +257,7 @@ func TestDeleteObject(t *testing.T) {
 				distributionID:               "test-distribution-id",
 				cacheInvalidationStrategy:    tc.cacheInvalidationStrategy,
 				cacheInvalidationWaitTimeout: tc.cacheInvalidationWaitTimeout,
-				logger:                       slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				logger:                       logger.NewTest(t),
 			}
 			_, err := client.DeleteObjects(context.Background(), newObjectsInput(tc.nilInput, tc.nilKey))
 
@@ -400,7 +399,7 @@ func TestFlush(t *testing.T) {
 				cacheInvalidationWaitTimeout: tc.cacheInvalidationWaitTimeout,
 				dirtyKeys:                    tc.dirtyKeys,
 				invalidationIDs:              tc.invalidationIDs,
-				logger:                       slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				logger:                       logger.NewTest(t),
 			}
 			err := client.Flush(context.Background())
 
@@ -438,7 +437,7 @@ func TestConcurrency(t *testing.T) {
 		uploadClient:                 uploadClient,
 		distributionID:               "test-distribution-id",
 		cacheInvalidationWaitTimeout: 50 * time.Millisecond,
-		logger:                       slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+		logger:                       logger.NewTest(t),
 	}
 
 	var wg sync.WaitGroup

@@ -8,7 +8,6 @@ package watcher
 
 import (
 	"errors"
-	"log/slog"
 	"sync"
 	"testing"
 	"time"
@@ -107,7 +106,7 @@ func TestWatcher(t *testing.T) {
 			assert := assert.New(t)
 
 			watcher := &FileWatcher{
-				log:     slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:     logger.NewTest(t),
 				updater: tc.updater,
 				watcher: tc.watcher,
 				done:    make(chan struct{}, 1),

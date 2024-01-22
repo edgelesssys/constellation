@@ -8,7 +8,6 @@ package cmd
 import (
 	"context"
 	"io"
-	"log/slog"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -132,7 +131,7 @@ func TestIamUpgradeApply(t *testing.T) {
 
 			iamUpgradeApplyCmd := &iamUpgradeApplyCmd{
 				fileHandler:   tc.fh,
-				log:           slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:           logger.NewTest(t),
 				configFetcher: tc.configFetcher,
 				flags: iamUpgradeApplyFlags{
 					yes: tc.yesFlag,

@@ -9,10 +9,10 @@ package kubernetes
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"net"
 	"strconv"
 	"testing"
+  "log/slog"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubewaiter"
@@ -188,7 +188,7 @@ func TestInitCluster(t *testing.T) {
 
 			_, err := kube.InitCluster(
 				context.Background(), string(tc.k8sVersion), "kubernetes",
-				false, nil, nil, "", slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				false, nil, nil, "", logger.NewTest(t),
 			)
 
 			if tc.wantErr {
@@ -360,7 +360,7 @@ func TestJoinCluster(t *testing.T) {
 				getIPAddr:        func() (string, error) { return privateIP, nil },
 			}
 
-			err := kube.JoinCluster(context.Background(), joinCommand, tc.role, tc.k8sComponents, slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
+			err := kube.JoinCluster(context.Background(), joinCommand, tc.role, tc.k8sComponents, logger.NewTest(t))
 			if tc.wantErr {
 				assert.Error(err)
 				return

@@ -12,7 +12,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"log/slog"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -38,7 +37,7 @@ func TestRun(t *testing.T) {
 	var err error
 	var wg sync.WaitGroup
 	s := &Server{
-		log:    slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+		log:    logger.NewTest(t),
 		issuer: stubIssuer{attestation: []byte("quote")},
 	}
 
@@ -105,7 +104,7 @@ func TestGetAttestationGRPC(t *testing.T) {
 			assert := assert.New(t)
 
 			server := &Server{
-				log:    slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:    logger.NewTest(t),
 				issuer: tc.issuer,
 			}
 
@@ -158,7 +157,7 @@ func TestGetAttestationHTTP(t *testing.T) {
 			require := require.New(t)
 
 			server := &Server{
-				log:    slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:    logger.NewTest(t),
 				issuer: tc.issuer,
 			}
 

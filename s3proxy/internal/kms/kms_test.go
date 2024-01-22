@@ -9,7 +9,6 @@ package kms
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -55,7 +54,7 @@ func TestGetDataKey(t *testing.T) {
 			defer listener.Close()
 
 			client := New(
-				slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				logger.NewTest(t),
 				listener.Addr().String(),
 			)
 

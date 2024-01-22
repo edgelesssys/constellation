@@ -9,7 +9,6 @@ package filetransfer
 import (
 	"errors"
 	"io"
-	"log/slog"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/debugd/internal/filetransfer/streamer"
@@ -118,7 +117,7 @@ func TestSendFiles(t *testing.T) {
 			streamer := &stubStreamReadWriter{readStreamErr: tc.readStreamErr}
 			stream := &stubSendFilesStream{sendErr: tc.sendErr}
 			transfer := &FileTransferer{
-				log:          slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:          logger.NewTest(t),
 				streamer:     streamer,
 				showProgress: false,
 			}
@@ -255,7 +254,7 @@ func TestRecvFiles(t *testing.T) {
 
 			streamer := &stubStreamReadWriter{writeStreamErr: tc.writeStreamErr}
 			stream := &fakeRecvFilesStream{msgs: tc.msgs, recvErr: tc.recvErr}
-			transfer := New(slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), streamer, false)
+			transfer := New(logger.NewTest(t), streamer, false)
 			if tc.recvAlreadyStarted {
 				transfer.receiveStarted = true
 			}
@@ -308,7 +307,7 @@ func TestGetSetFiles(t *testing.T) {
 			assert := assert.New(t)
 
 			streamer := &dummyStreamReadWriter{}
-			transfer := New(slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), streamer, false)
+			transfer := New(logger.NewTest(t), streamer, false)
 			if tc.setFiles != nil {
 				transfer.SetFiles(*tc.setFiles)
 			}
@@ -320,7 +319,7 @@ func TestGetSetFiles(t *testing.T) {
 }
 
 func TestConcurrency(t *testing.T) {
-	ft := New(slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)), &stubStreamReadWriter{}, false)
+	ft := New(logger.NewTest(t), &stubStreamReadWriter{}, false)
 
 	sendFiles := func() {
 		_ = ft.SendFiles(&stubSendFilesStream{})

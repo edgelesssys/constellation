@@ -14,7 +14,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"os"
 	"regexp"
 	"testing"
@@ -49,7 +48,7 @@ func TestNewValidator(t *testing.T) {
 	}{
 		"success": {
 			cfg:    config.DefaultForAzureSEVSNP(),
-			logger: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+			logger: logger.NewTest(t),
 		},
 		"nil logger": {
 			cfg:    config.DefaultForAzureSEVSNP(),
@@ -128,7 +127,7 @@ func TestCheckIDKeyDigest(t *testing.T) {
 		return report
 	}
 	newTestValidator := func(cfg *config.AzureSEVSNP, validateTokenErr error) *Validator {
-		validator := NewValidator(cfg, slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
+		validator := NewValidator(cfg, logger.NewTest(t))
 		validator.maa = &stubMaaValidator{
 			validateTokenErr: validateTokenErr,
 		}
@@ -645,7 +644,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			validator := &Validator{
 				hclValidator:         &stubAttestationKey{},
 				config:               defaultCfg,
-				log:                  slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:                  logger.NewTest(t),
 				getter:               tc.getter,
 				attestationVerifier:  tc.verifier,
 				attestationValidator: tc.validator,

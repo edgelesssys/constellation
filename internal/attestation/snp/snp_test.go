@@ -10,7 +10,6 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"fmt"
-	"log/slog"
 	"regexp"
 	"strings"
 	"testing"
@@ -267,7 +266,7 @@ func TestAttestationWithCerts(t *testing.T) {
 			}
 
 			defer trust.ClearProductCertCache()
-			att, err := instanceInfo.AttestationWithCerts(tc.getter, tc.fallbackCerts, slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
+			att, err := instanceInfo.AttestationWithCerts(tc.getter, tc.fallbackCerts, logger.NewTest(t))
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

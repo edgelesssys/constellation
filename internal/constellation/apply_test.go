@@ -8,7 +8,6 @@ package constellation
 
 import (
 	"context"
-	"log/slog"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -38,7 +37,7 @@ func TestCheckLicense(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			require := require.New(t)
 
-			a := &Applier{licenseChecker: tc.licenseChecker, log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil))}
+			a := &Applier{licenseChecker: tc.licenseChecker, log: logger.NewTest(t)}
 			_, err := a.CheckLicense(context.Background(), cloudprovider.Unknown, true, license.CommunityLicense)
 			if tc.wantErr {
 				require.Error(err)
@@ -59,7 +58,7 @@ func (c *stubLicenseChecker) CheckLicense(context.Context, cloudprovider.Provide
 
 func TestGenerateMasterSecret(t *testing.T) {
 	assert := assert.New(t)
-	a := &Applier{log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil))}
+	a := &Applier{log: logger.NewTest(t)}
 	sec, err := a.GenerateMasterSecret()
 	assert.NoError(err)
 	assert.Len(sec.Key, crypto.MasterSecretLengthDefault)
@@ -68,7 +67,7 @@ func TestGenerateMasterSecret(t *testing.T) {
 
 func TestGenerateMeasurementSalt(t *testing.T) {
 	assert := assert.New(t)
-	a := &Applier{log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil))}
+	a := &Applier{log: logger.NewTest(t)}
 	salt, err := a.GenerateMeasurementSalt()
 	assert.NoError(err)
 	assert.Len(salt, crypto.RNGLengthDefault)

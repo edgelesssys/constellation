@@ -8,8 +8,8 @@ package amdkds
 
 import (
 	"fmt"
-	"log/slog"
 	"testing"
+  "log/slog"
 
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/joinservice/internal/certcache/amdkds/testdata"
@@ -25,20 +25,20 @@ func TestCertChain(t *testing.T) {
 	}{
 		"success": {
 			getter: &stubGetter{
-				log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log: logger.NewTest(t),
 				ret: testdata.CertChain,
 			},
 		},
 		"getter error": {
 			getter: &stubGetter{
-				log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log: logger.NewTest(t),
 				err: assert.AnError,
 			},
 			wantErr: true,
 		},
 		"empty cert chain": {
 			getter: &stubGetter{
-				log: slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log: logger.NewTest(t),
 				ret: nil,
 			},
 			wantErr: true,

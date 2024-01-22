@@ -11,7 +11,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"log/slog"
 	"net/http"
 	"strings"
 	"testing"
@@ -140,7 +139,7 @@ func TestGetCompatibleImageMeasurements(t *testing.T) {
 		}
 	})
 
-	upgrades, err := getCompatibleImageMeasurements(context.Background(), &bytes.Buffer{}, client, &stubCosignVerifier{}, singleUUIDVerifier(), csp, attestationVariant, versionZero, slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
+	upgrades, err := getCompatibleImageMeasurements(context.Background(), &bytes.Buffer{}, client, &stubCosignVerifier{}, singleUUIDVerifier(), csp, attestationVariant, versionZero, logger.NewTest(t))
 	assert.NoError(err)
 
 	for _, measurement := range upgrades {
@@ -216,7 +215,7 @@ func TestUpgradeCheck(t *testing.T) {
 				collect:          &tc.collector,
 				terraformChecker: tc.checker,
 				fileHandler:      fileHandler,
-				log:              slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:              logger.NewTest(t),
 			}
 
 			cmd := newUpgradeCheckCmd()

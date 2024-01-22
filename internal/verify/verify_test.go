@@ -6,7 +6,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package verify
 
 import (
-	"log/slog"
 	"strings"
 	"testing"
 
@@ -46,7 +45,7 @@ func TestParseCerts(t *testing.T) {
 
 			b := &strings.Builder{}
 
-			certs, err := newCertificates("Some Cert", tc.cert, slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
+			certs, err := newCertificates("Some Cert", tc.cert, logger.NewTest(t))
 			if err != nil {
 				assert.True(tc.wantErr)
 				return

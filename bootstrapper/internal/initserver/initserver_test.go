@@ -11,12 +11,12 @@ import (
 	"context"
 	"errors"
 	"io"
-	"log/slog"
 	"net"
 	"strings"
 	"sync"
 	"testing"
 	"time"
+  "log/slog"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
@@ -67,7 +67,7 @@ func TestNew(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			server, err := New(context.TODO(), newFakeLock(), &stubClusterInitializer{}, atls.NewFakeIssuer(variant.Dummy{}), fh, &tc.metadata, slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)))
+			server, err := New(context.TODO(), newFakeLock(), &stubClusterInitializer{}, atls.NewFakeIssuer(variant.Dummy{}), fh, &tc.metadata, logger.NewTest(t))
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -215,7 +215,7 @@ func TestInit(t *testing.T) {
 				initializer:       tc.initializer,
 				disk:              tc.disk,
 				fileHandler:       tc.fileHandler,
-				log:               slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:               logger.NewTest(t),
 				grpcServer:        serveStopper,
 				cleaner:           &fakeCleaner{serveStopper: serveStopper},
 				initSecretHash:    tc.initSecretHash,

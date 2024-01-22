@@ -9,7 +9,6 @@ package server
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"testing"
 	"time"
 
@@ -163,7 +162,7 @@ func TestIssueJoinTicket(t *testing.T) {
 				joinTokenGetter: tc.kubeadm,
 				dataKeyGetter:   tc.kms,
 				kubeClient:      &tc.kubeClient,
-				log:             slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:             logger.NewTest(t),
 			}
 
 			req := &joinproto.IssueJoinTicketRequest{
@@ -228,7 +227,7 @@ func TestIssueRejoinTicker(t *testing.T) {
 				ca:              stubCA{},
 				joinTokenGetter: stubTokenGetter{},
 				dataKeyGetter:   tc.keyGetter,
-				log:             slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:             logger.NewTest(t),
 			}
 
 			req := &joinproto.IssueRejoinTicketRequest{

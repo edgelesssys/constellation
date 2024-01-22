@@ -9,7 +9,6 @@ package metadata
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"sync"
 	"testing"
 	"time"
@@ -85,7 +84,7 @@ func TestSchedulerStart(t *testing.T) {
 			assert := assert.New(t)
 
 			scheduler := Scheduler{
-				log:        slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				log:        logger.NewTest(t),
 				fetcher:    &tc.fetcher,
 				downloader: &tc.downloader,
 				interval:   20 * time.Millisecond,

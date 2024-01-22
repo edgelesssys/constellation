@@ -10,7 +10,6 @@ package integration
 
 import (
 	"fmt"
-	"log/slog"
 	"math"
 	"testing"
 

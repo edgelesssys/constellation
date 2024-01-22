@@ -9,7 +9,6 @@ package server
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms"
@@ -28,7 +27,7 @@ func TestGetDataKey(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	log := slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil))
+	log := logger.NewTest(t)
 
 	kms := &stubKMS{derivedKey: []byte{0x0, 0x1, 0x2, 0x3, 0x4, 0x5}}
 	api := New(log, kms)

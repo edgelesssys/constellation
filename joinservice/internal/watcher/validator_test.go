@@ -12,7 +12,6 @@ import (
 	"encoding/asn1"
 	"encoding/json"
 	"io"
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -88,7 +87,7 @@ func TestNewUpdateableValidator(t *testing.T) {
 			}
 
 			_, err := NewValidator(
-				slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+				logger.NewTest(t),
 				tc.variant,
 				handler,
 				tc.snpCerts,
@@ -119,7 +118,7 @@ func TestUpdate(t *testing.T) {
 
 	// create server
 	validator := &Updatable{
-		log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+		log:         logger.NewTest(t),
 		variant:     variant.Dummy{},
 		fileHandler: handler,
 	}
@@ -179,7 +178,7 @@ func TestOIDConcurrency(t *testing.T) {
 
 	// create server
 	validator := &Updatable{
-		log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+		log:         logger.NewTest(t),
 		variant:     variant.Dummy{},
 		fileHandler: handler,
 	}
@@ -208,7 +207,7 @@ func TestUpdateConcurrency(t *testing.T) {
 
 	handler := file.NewHandler(afero.NewMemMapFs())
 	validator := &Updatable{
-		log:         slog.New(slog.NewTextHandler(logger.TestWriter{T: t}, nil)),
+		log:         logger.NewTest(t),
 		fileHandler: handler,
 		variant:     variant.Dummy{},
 	}
