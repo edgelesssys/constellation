@@ -415,3 +415,18 @@ jobs:
     uses: ./.github/workflows/e2e-windows.yml
     with:
       scheduled: ${{ github.event_name == 'schedule' }}
+
+  e2e-terraform-provider-example:
+    name: Run Terraform provider example E2E test
+    strategy:
+      fail-fast: false
+      matrix:
+        cloudProvider: ["gcp", "azure", "aws"]
+    permissions:
+      id-token: write
+      contents: read
+      packages: write
+    secrets: inherit
+    uses: ./.github/workflows/e2e-test-provider-example.yml
+    with:
+      cloudProvider: ${{ matrix.cloudProvider }}
