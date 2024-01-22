@@ -18,6 +18,7 @@ import (
 	"strings"
 	"syscall"
 	"testing"
+  "log/slog"
 
 	"github.com/bazelbuild/rules_go/go/runfiles"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/diskencryption"

@@ -12,6 +12,8 @@ import (
 	"fmt"
 	"math"
 	"testing"
+  "log/slog"
+  "os"
 
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/diskencryption"
 	"github.com/martinjungblut/go-cryptsetup"
