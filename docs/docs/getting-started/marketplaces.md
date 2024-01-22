@@ -6,7 +6,8 @@ This document explains how to run Constellation with the dynamically billed clou
 
 ## Azure
 
-On Azure, Constellation has a private marketplace plan. Please [contact us](https://www.edgeless.systems/enterprise-support/) directly to gain access.
+On Azure, Constellation has a private marketplace plan. Please [contact us](https://www.edgeless.systems/enterprise-support/) to gain access.
+
 To use a marketplace image, you need to accept the marketplace image's terms once for your subscription with the [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/vm/image/terms?view=azure-cli-latest):
 
 ```bash
