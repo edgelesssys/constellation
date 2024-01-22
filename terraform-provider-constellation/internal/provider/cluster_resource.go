@@ -215,9 +215,6 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 						MarkdownDescription: "CIDR range of the cluster's pod network. Only required for clusters running on GCP.",
 						Description:         "CIDR range of the cluster's pod network. Only required for clusters running on GCP.",
 						Optional:            true,
-						Validators: []validator.String{
-							stringvalidator.RegexMatches(cidrRegex, "Pod IP CIDR must be a valid CIDR range."),
-						},
 					},
 					"ip_cidr_service": schema.StringAttribute{
 						MarkdownDescription: "CIDR range of the cluster's service network.",
@@ -673,6 +670,16 @@ func (r *ClusterResource) validateGCPNetworkConfig(ctx context.Context, data *Cl
 			"Pod IP CIDR not allowed", "When csp is not set to 'gcp', setting 'ip_cidr_pod' has no effect.",
 		)
 	}
+
+	// Pod IP CIDR should be a valid CIDR on GCP
+	if strings.EqualFold(data.CSP.ValueString(), cloudprovider.GCP.String()) &&
+		!cidrRegex.MatchString(networkCfg.IPCidrPod.ValueString()) {
+		diags.AddAttributeError(
+			path.Root("network_config").AtName("ip_pod_cidr"),
+			"Invalid CIDR range", "Pod IP CIDR must be a valid CIDR range.",
+		)
+	}
+
 	return diags
 }
 
