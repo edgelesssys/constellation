@@ -26,14 +26,14 @@ func replaceGRPCLogger(log *slog.Logger) {
 }
 
 func (l *grpcLogger) log(level slog.Level, args ...interface{}) {
-  var pcs [1]uintptr
+	var pcs [1]uintptr
 	runtime.Callers(3, pcs[:])
 	r := slog.NewRecord(time.Now(), slog.LevelInfo, fmt.Sprint(args...), pcs[0])
 	_ = l.logger.Handler().Handle(context.Background(), r)
 }
 
 func (l *grpcLogger) logf(level slog.Level, format string, args ...interface{}) {
-  var pcs [1]uintptr
+	var pcs [1]uintptr
 	runtime.Callers(3, pcs[:])
 	r := slog.NewRecord(time.Now(), slog.LevelInfo, fmt.Sprintf(format, args...), pcs[0])
 	_ = l.logger.Handler().Handle(context.Background(), r)
@@ -45,53 +45,53 @@ type grpcLogger struct {
 }
 
 func (l *grpcLogger) Info(args ...interface{}) {
-  l.log(slog.LevelInfo, args...)
+	l.log(slog.LevelInfo, args...)
 }
 
 func (l *grpcLogger) Infoln(args ...interface{}) {
-  l.log(slog.LevelInfo, args...)
+	l.log(slog.LevelInfo, args...)
 }
 
 func (l *grpcLogger) Infof(format string, args ...interface{}) {
-  l.logf(slog.LevelInfo, format, args...)
+	l.logf(slog.LevelInfo, format, args...)
 }
 
 func (l *grpcLogger) Warning(args ...interface{}) {
-  l.log(slog.LevelWarn, args...)
+	l.log(slog.LevelWarn, args...)
 }
 
 func (l *grpcLogger) Warningln(args ...interface{}) {
-  l.log(slog.LevelWarn, args...)
+	l.log(slog.LevelWarn, args...)
 }
 
 func (l *grpcLogger) Warningf(format string, args ...interface{}) {
-  l.logf(slog.LevelWarn, format, args...)
+	l.logf(slog.LevelWarn, format, args...)
 }
 
 func (l *grpcLogger) Error(args ...interface{}) {
-  l.log(slog.LevelError, args...)
+	l.log(slog.LevelError, args...)
 }
 
 func (l *grpcLogger) Errorln(args ...interface{}) {
-  l.log(slog.LevelError, args...)
+	l.log(slog.LevelError, args...)
 }
 
 func (l *grpcLogger) Errorf(format string, args ...interface{}) {
-  l.logf(slog.LevelError, format, args...)
+	l.logf(slog.LevelError, format, args...)
 }
 
 func (l *grpcLogger) Fatal(args ...interface{}) {
-  l.log(slog.LevelError, args...)
+	l.log(slog.LevelError, args...)
 	os.Exit(1)
 }
 
 func (l *grpcLogger) Fatalln(args ...interface{}) {
-  l.log(slog.LevelError, args...)
+	l.log(slog.LevelError, args...)
 	os.Exit(1)
 }
 
 func (l *grpcLogger) Fatalf(format string, args ...interface{}) {
-  l.logf(slog.LevelError, format, args...)
+	l.logf(slog.LevelError, format, args...)
 	os.Exit(1)
 }
 

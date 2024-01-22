@@ -9,10 +9,10 @@ package kubernetes
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net"
 	"strconv"
 	"testing"
-  "log/slog"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubewaiter"

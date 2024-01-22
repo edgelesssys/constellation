@@ -9,12 +9,12 @@ package joinclient
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net"
 	"strconv"
 	"sync"
 	"testing"
 	"time"
-  "log/slog"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/constants"

@@ -10,10 +10,10 @@ package integration
 
 import (
 	"fmt"
+	"log/slog"
 	"math"
+	"os"
 	"testing"
-  "log/slog"
-  "os"
 
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/diskencryption"
 	"github.com/martinjungblut/go-cryptsetup"

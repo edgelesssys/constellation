@@ -11,12 +11,12 @@ import (
 	"context"
 	"errors"
 	"io"
+	"log/slog"
 	"net"
 	"strings"
 	"sync"
 	"testing"
 	"time"
-  "log/slog"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/internal/atls"

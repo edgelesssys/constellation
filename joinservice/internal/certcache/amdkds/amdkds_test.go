@@ -8,8 +8,8 @@ package amdkds
 
 import (
 	"fmt"
+	"log/slog"
 	"testing"
-  "log/slog"
 
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/joinservice/internal/certcache/amdkds/testdata"

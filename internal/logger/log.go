@@ -19,7 +19,7 @@ You can create a new logger with a new log level by creating a new slog.Logger w
 and passing the handler of the other logger. As an example, if you have a slog.Logger named `log` you can create a
 new logger with an increased log level (here slog.LevelWarn) like this:
 
-  slog.New(logger.NewLevelHandler(slog.LevelWarn, log.Handler()))
+	slog.New(logger.NewLevelHandler(slog.LevelWarn, log.Handler()))
 */
 package logger
 
@@ -90,13 +90,13 @@ func middlewareLogger(l *slog.Logger) logging.Logger {
 
 		var pcs [1]uintptr
 		runtime.Callers(2, pcs[:]) // skip [Callers, LoggerFunc]
-    level := slog.LevelDebug
+		level := slog.LevelDebug
 
 		switch lvl {
 		case logging.LevelDebug:
-      break
+			break
 		case logging.LevelInfo:
-		  level = slog.LevelInfo
+			level = slog.LevelInfo
 		case logging.LevelWarn:
 			level = slog.LevelWarn
 		case logging.LevelError:
@@ -105,13 +105,13 @@ func middlewareLogger(l *slog.Logger) logging.Logger {
 			panic(fmt.Sprintf("unknown level %v", lvl))
 		}
 
-    r := slog.NewRecord(time.Now(), level, fmt.Sprintf(msg, fields...), pcs[0])
+		r := slog.NewRecord(time.Now(), level, fmt.Sprintf(msg, fields...), pcs[0])
 		_ = l.Handler().Handle(context.Background(), r)
 	})
 }
 
-func NewTest(t * testing.T) *slog.Logger {
-  return slog.New(slog.NewTextHandler(testWriter{t: t}, nil))
+func NewTest(t *testing.T) *slog.Logger {
+	return slog.New(slog.NewTextHandler(testWriter{t: t}, nil))
 }
 
 // TestWriter is a writer to a testing.T used in tests for logging with slog.

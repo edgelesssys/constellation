@@ -4,12 +4,11 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-
 package logger
 
 import (
-  "log/slog"
-  "context"
+	"context"
+	"log/slog"
 )
 
 // LevelHandler copied from the official LevelHandler example in the slog package documentation.
