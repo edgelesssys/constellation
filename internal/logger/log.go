@@ -89,20 +89,22 @@ func middlewareLogger(l *slog.Logger) logging.Logger {
 
 		var pcs [1]uintptr
 		runtime.Callers(2, pcs[:]) // skip [Callers, LoggerFunc]
-		r := slog.Record{}
+    level := slog.LevelDebug
 
 		switch lvl {
 		case logging.LevelDebug:
-			r = slog.NewRecord(time.Now(), slog.LevelDebug, fmt.Sprintf(msg, fields...), pcs[0])
+      break
 		case logging.LevelInfo:
-			r = slog.NewRecord(time.Now(), slog.LevelInfo, fmt.Sprintf(msg, fields...), pcs[0])
+		  level = slog.LevelInfo
 		case logging.LevelWarn:
-			r = slog.NewRecord(time.Now(), slog.LevelWarn, fmt.Sprintf(msg, fields...), pcs[0])
+			level = slog.LevelWarn
 		case logging.LevelError:
-			r = slog.NewRecord(time.Now(), slog.LevelError, fmt.Sprintf(msg, fields...), pcs[0])
+			level = slog.LevelError
 		default:
 			panic(fmt.Sprintf("unknown level %v", lvl))
 		}
+
+    r := slog.NewRecord(time.Now(), level, fmt.Sprintf(msg, fields...), pcs[0])
 		_ = l.Handler().Handle(context.Background(), r)
 	})
 }
