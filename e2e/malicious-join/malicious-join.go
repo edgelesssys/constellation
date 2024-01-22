@@ -24,7 +24,7 @@ import (
 )
 
 func main() {
-	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	log := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug}))
 
 	jsEndpoint := flag.String("js-endpoint", "", "Join service endpoint to use.")
 	csp := flag.String("csp", "", "Cloud service provider to use.")

@@ -44,11 +44,11 @@ func main() {
 	// logLevel can be made a public variable so logging level can be changed dynamically.
 	// TODO (derpsteb): enable once we are on go 1.21.
 	// logLevel := new(slog.LevelVar)
-	// handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})
+	// handler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel})
 	// logger := slog.New(handler)
 	// logLevel.Set(flags.logLevel)
 
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logger.VerbosityFromInt(flags.logLevel)}))
+	logger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: logger.VerbosityFromInt(flags.logLevel)}))
 
 	if flags.forwardMultipartReqs {
 		logger.Warn("configured to forward multipart uploads, this may leak data to AWS")

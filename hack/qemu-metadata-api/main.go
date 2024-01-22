@@ -25,7 +25,7 @@ func main() {
 	initSecretHash := flag.String("initsecrethash", "", "brcypt hash of the init secret")
 	flag.Parse()
 
-	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	log := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
 	conn, err := libvirt.NewConnect(*libvirtURI)
 	if err != nil {

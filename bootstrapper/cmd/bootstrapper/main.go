@@ -46,7 +46,7 @@ func main() {
 	gRPCDebug := flag.Bool("debug", false, "Enable gRPC debug logging")
 	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 	flag.Parse()
-	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logger.VerbosityFromInt(*verbosity)})).WithGroup("bootstrapper")
+	log := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: logger.VerbosityFromInt(*verbosity)})).WithGroup("bootstrapper")
 
 	if *gRPCDebug {
 		logger.ReplaceGRPCLogger(log.WithGroup("gRPC"))

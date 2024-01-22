@@ -19,7 +19,7 @@ import (
 )
 
 func main() {
-	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	log := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	variantString := os.Getenv(constants.AttestationVariant)
 	attestationVariant, err := variant.FromString(variantString)
 	if err != nil {

@@ -27,5 +27,5 @@ func newCLILogger(cmd *cobra.Command) (debugLog, error) {
 		logLvl = slog.LevelDebug
 	}
 
-	return slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: logLvl})), nil
+	return slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logLvl})), nil
 }

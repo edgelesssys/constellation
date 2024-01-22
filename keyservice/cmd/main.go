@@ -34,7 +34,7 @@ func main() {
 	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 
 	flag.Parse()
-	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: logger.VerbosityFromInt(*verbosity)}))
+	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logger.VerbosityFromInt(*verbosity)}))
 
 	log.With(slog.String("version", constants.BinaryVersion().String())).
 		Info("Constellation Key Management Service")

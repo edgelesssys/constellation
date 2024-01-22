@@ -62,7 +62,7 @@ func runDeploy(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: logger.VerbosityFromInt(verbosity)}))
+	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logger.VerbosityFromInt(verbosity)}))
 	force, err := cmd.Flags().GetBool("force")
 	if err != nil {
 		return fmt.Errorf("getting force flag: %w", err)

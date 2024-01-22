@@ -60,7 +60,7 @@ func envCheck(_ *cobra.Command, _ []string) error {
 
 func runUpload(cmd *cobra.Command, args []string) (retErr error) {
 	ctx := cmd.Context()
-	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})).WithGroup("attestationconfigapi")
+	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})).WithGroup("attestationconfigapi")
 
 	uploadCfg, err := newConfig(cmd, ([3]string)(args[:3]))
 	if err != nil {

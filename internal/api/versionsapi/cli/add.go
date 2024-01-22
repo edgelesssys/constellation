@@ -52,7 +52,7 @@ func runAdd(cmd *cobra.Command, _ []string) (retErr error) {
 	if err != nil {
 		return err
 	}
-	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: flags.logLevel}))
+	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: flags.logLevel}))
 	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
 
 	log.Debug("Validating flags")

@@ -51,7 +51,7 @@ func main() {
 	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 	flag.Parse()
 
-	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logger.VerbosityFromInt(*verbosity)}))
+	log := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: logger.VerbosityFromInt(*verbosity)}))
 	log.With(
 		slog.String("version", constants.BinaryVersion().String()),
 		slog.String("cloudProvider", *provider),

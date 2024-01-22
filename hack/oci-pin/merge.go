@@ -34,7 +34,7 @@ func runMerge(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: flags.logLevel}))
+	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: flags.logLevel}))
 	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
 
 	log.Debug(fmt.Sprintf("Merging sum file from %q into %q.", flags.inputs, flags.output))
