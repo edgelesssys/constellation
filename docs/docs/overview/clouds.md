@@ -5,7 +5,7 @@ What works on which cloud? Currently, Confidential VMs (CVMs) are available in v
 For Constellation, the ideal environment provides the following:
 
 1. Ability to run arbitrary software and images inside CVMs
-2. CVMs based on AMD SEV-SNP (available in EPYC CPUs since the Milan generation) or, Intel TDX (available in Xeon CPUs since the Sapphire Rapids generation)
+2. CVMs based on AMD SEV-SNP (available in EPYC CPUs since the Milan generation) or Intel TDX (available in Xeon CPUs since the Sapphire Rapids generation)
 3. Ability for CVM guests to obtain raw hardware attestation statements
 4. Reviewable, open-source firmware inside CVMs
 5. Capability of the firmware to attest the integrity of the code it passes control to, e.g., with an embedded virtual TPM (vTPM)
@@ -27,7 +27,7 @@ The following table summarizes the state of features for different infrastructur
 With its [CVM offering](https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview), Azure provides the best foundations for Constellation.
 Regarding (3), Azure provides direct access to remote-attestation statements.
 The firmware runs in an isolated domain inside the CVM and exposes a vTPM (5), but it's closed source (4).
-On SEV-SNP Azure leverages VM Privilege Level (VMPL) isolation for the separation of firmware and the rest of the VM, on TDX they leverage TD partitioning.
+On SEV-SNP, Azure uses VM Privilege Level (VMPL) isolation for the separation of firmware and the rest of the VM; on TDX, they use TD partitioning.
 This firmware is signed by Azure.
 The signature is reflected in the remote-attestation statements of CVMs.
 Thus, the Azure closed-source firmware becomes part of Constellation's trusted computing base (TCB).
