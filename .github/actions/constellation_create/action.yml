@@ -275,3 +275,13 @@ runs:
         path: >
           !(terraform).log
         encryptionSecret: ${{ inputs.encryptionSecret }}
+    - name: Upload terraform state
+      if: always()
+      uses: ./.github/actions/artifact_upload
+      with:
+        name: terraform-state
+        path: >
+          constellation_terraform
+          constellation_iam_terraform
+        encryptionSecret: ${{ inputs.encryptionSecret }}
+
