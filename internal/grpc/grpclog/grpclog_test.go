@@ -87,7 +87,7 @@ type spyLog struct {
 	msgs []string
 }
 
-func (f *spyLog) Debug(msg string, args ...any) {
+func (f *spyLog) Debug(msg string, _ ...any) {
 	f.msgs = append(f.msgs, msg)
 }
 

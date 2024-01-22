@@ -52,10 +52,10 @@ type Logger interface {
 // NOPLogger is a no-op implementation of [Logger].
 type NOPLogger struct{}
 
-// Infof is a no-op.
+// Info is a no-op.
 func (NOPLogger) Info(string, ...interface{}) {}
 
-// Warnf is a no-op.
+// Warn is a no-op.
 func (NOPLogger) Warn(string, ...interface{}) {}
 
 // DeriveClusterID derives the cluster ID from a salt and secret value.

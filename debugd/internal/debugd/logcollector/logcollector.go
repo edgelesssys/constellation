@@ -304,7 +304,7 @@ type cmdLogger struct {
 }
 
 func (c *cmdLogger) Write(p []byte) (n int, err error) {
-	c.logger.Info(fmt.Sprintf("%s", p))
+	c.logger.Info(string(p))
 	return len(p), nil
 }
 

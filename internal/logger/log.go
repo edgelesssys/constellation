@@ -105,11 +105,12 @@ func middlewareLogger(l *slog.Logger) logging.Logger {
 			panic(fmt.Sprintf("unknown level %v", lvl))
 		}
 
-		r := slog.NewRecord(time.Now(), level, fmt.Sprintf(msg, fields...), pcs[0])
+		r := slog.NewRecord(time.Now(), level, fmt.Sprintf(msg, f), pcs[0])
 		_ = l.Handler().Handle(context.Background(), r)
 	})
 }
 
+// NewTest creates a new slog.Logger that writes to a testing.T.
 func NewTest(t *testing.T) *slog.Logger {
 	return slog.New(slog.NewTextHandler(testWriter{t: t}, nil))
 }

@@ -224,7 +224,7 @@ func (m *Maintainer) put(ctx context.Context, hash string, data io.Reader) error
 		m.log.Debug(fmt.Sprintf("DryRun: s3 put object {Bucket: %v, Key: %v}", m.bucket, key))
 		return nil
 	}
-	m.log.Debug(fmt.Sprintf(fmt.Sprintf("Uploading object with hash %v to s3://%v/%v", hash, m.bucket, key)))
+	m.log.Debug(fmt.Sprintf("Uploading object with hash %v to s3://%v/%v", hash, m.bucket, key))
 	_, err := m.uploadClient.Upload(ctx, &s3.PutObjectInput{
 		Bucket:            &m.bucket,
 		Key:               &key,

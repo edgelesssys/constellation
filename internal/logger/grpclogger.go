@@ -28,14 +28,14 @@ func replaceGRPCLogger(log *slog.Logger) {
 func (l *grpcLogger) log(level slog.Level, args ...interface{}) {
 	var pcs [1]uintptr
 	runtime.Callers(3, pcs[:])
-	r := slog.NewRecord(time.Now(), slog.LevelInfo, fmt.Sprint(args...), pcs[0])
+	r := slog.NewRecord(time.Now(), level, fmt.Sprint(args...), pcs[0])
 	_ = l.logger.Handler().Handle(context.Background(), r)
 }
 
 func (l *grpcLogger) logf(level slog.Level, format string, args ...interface{}) {
 	var pcs [1]uintptr
 	runtime.Callers(3, pcs[:])
-	r := slog.NewRecord(time.Now(), slog.LevelInfo, fmt.Sprintf(format, args...), pcs[0])
+	r := slog.NewRecord(time.Now(), level, fmt.Sprintf(format, args...), pcs[0])
 	_ = l.logger.Handler().Handle(context.Background(), r)
 }
 
