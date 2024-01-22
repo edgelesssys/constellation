@@ -160,7 +160,9 @@ jobs:
 
       - name: Notify about failure
         if: |
-          failure()
+          failure() &&
+          github.ref == 'refs/heads/main' &&
+          github.event_name == 'schedule'
         continue-on-error: true
         uses: ./.github/actions/notify_e2e_failure
         with:

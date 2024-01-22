@@ -72,9 +72,6 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.head_ref }}
 
-      - name: Fail workflow
-        run: exit 1
-
       - name: Get Latest Image
         id: find-latest-image
         uses: ./.github/actions/find_latest_image
@@ -439,10 +436,12 @@ jobs:
 
       - name: Notify about failure
         if: |
-          failure()
+          failure() &&
+          github.ref == 'refs/heads/main' &&
+          github.event_name == 'schedule'
         continue-on-error: true
         uses: ./.github/actions/notify_e2e_failure
         with:
           projectWriteToken: ${{ secrets.PROJECT_WRITE_TOKEN }}
-          test: "terraform provider example"
+          test: "terraform-provider-example"
           provider: ${{ inputs.cloudProvider }}
