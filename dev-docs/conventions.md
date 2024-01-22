@@ -62,7 +62,6 @@ Further we try to adhere to the following guidelines:
   * `Info()` for general information.
   * `Warn()` for information that may indicate unwanted behavior, but is not an application error. Commonly used by retry loops.
   * `Error()` to log information about any errors that occurred.
-  * `Fatal()` to log information about any errors that occurred and then exit the program. Should only be used in the main package of an application.
 
 * Loggers passed to subpackages of an application may use the `WithGroup()` method for better understanding of where a message originated.
 
