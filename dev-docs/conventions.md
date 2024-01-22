@@ -40,20 +40,24 @@ Further we try to adhere to the following guidelines:
   log.Error("A critical error occurred!")
   ```
 
-* Use the `WithAttrs()` method to add structured context to your log messages. The context tags should be easily searchable to allow for easy log filtering. Try to keep consistent tag naming!
+* Use the `With()` method to add structured context to your log messages. The context tags should be easily searchable to allow for easy log filtering. Try to keep consistent tag naming!
 
   Example:
 
   ```Go
-  log.WithAttrs(slog.Any("error" someError), slog.String("ip", "192.0.2.1")).Error("Connecting to IP failed")
+  log.With(slog.Any("error" someError), slog.String("ip", "192.0.2.1")).Error("Connecting to IP failed")
   ```
 
-* Slog does not support format strings out of the box. You have to wrap any format strings in `fmt.Sprintf()`.
-
-  Example:
+* Log messages may use format strings to produce human readable messages. However, the information should also be present as structured context fields if it might be valuable for debugging purposes. So, instead of writing
 
   ```Go
   log.Info(fmt.Sprintf("Starting server on %s:%s", addr, port))
+  ```
+
+  You should write
+
+  ```Go
+  log.With(slog.String("address", addr), slog.Int("port", port)).Info("Starting server")
   ```
 
 * Use log levels to configure how detailed the logs of you application should be.
