@@ -1,8 +1,0 @@
-apiVersion: update.edgeless.systems/v1alpha1
-kind: AutoscalingStrategy
-metadata:
-  name: autoscalingstrategy-sample
-spec:
-  deploymentName: constellation-cluster-autoscaler
-  deploymentNamespace: kube-system
-  enabled: true
