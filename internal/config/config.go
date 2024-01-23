@@ -1131,7 +1131,7 @@ type AzureTrustedLaunch struct {
 // AzureTDX is the configuration for Azure TDX attestation.
 type AzureTDX struct {
 	// description: |
-	//   Expected TDX measurements.
+	//   Expected TPM measurements.
 	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
 	// description: |
 	//   Minimum required QE security version number (SVN).
@@ -1160,8 +1160,8 @@ func toPtr[T any](v T) *T {
 	return &v
 }
 
-// sevsnpMarshaller is used to marshall "latest" versions with resolved version numbers.
-type sevsnpMarshaller interface {
+// svnResolveMarshaller is used to marshall "latest" security version numbers with resolved versions.
+type svnResolveMarshaller interface {
 	// getToMarshallLatestWithResolvedVersions brings the attestation config into a state where marshalling uses the numerical version numbers for "latest" versions.
 	getToMarshallLatestWithResolvedVersions() AttestationCfg
 }

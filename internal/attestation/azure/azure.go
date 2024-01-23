@@ -13,6 +13,10 @@ Constellation supports multiple attestation technologies on Azure.
 
     TPM attestation verified using an SEV-SNP attestation statement.
 
+  - TDX - Trust Domain Extensions
+
+    TPM attestation verified using a TDX attestation statement.
+
   - Trusted Launch
 
     Basic TPM attestation.

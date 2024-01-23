@@ -104,7 +104,7 @@ func (i *Issuer) getInstanceInfo(ctx context.Context, tpm io.ReadWriteCloser, _ 
 func parseHCLReport(report []byte) (hwReport, runtimeData []byte, err error) {
 	// First, ensure the extracted report is actually for TDX
 	if len(report) < hclReportTypeOffsetStart+4 {
-		return nil, nil, fmt.Errorf("invalid HCL report: expected at least %d bytes to read HCL report type, got %d", runtimeDataSizeOffset+4, len(report))
+		return nil, nil, fmt.Errorf("invalid HCL report: expected at least %d bytes to read HCL report type, got %d", hclReportTypeOffsetStart+4, len(report))
 	}
 	reportType := binary.LittleEndian.Uint32(report[hclReportTypeOffsetStart : hclReportTypeOffsetStart+4])
 	if reportType != hclReportTypeTDX {
@@ -121,9 +121,9 @@ func parseHCLReport(report []byte) (hwReport, runtimeData []byte, err error) {
 	if len(report) < runtimeDataSizeOffset+4 {
 		return nil, nil, fmt.Errorf("invalid HCL report: expected at least %d bytes to read runtime data size, got %d", runtimeDataSizeOffset+4, len(report))
 	}
-	runtimeDataSize := binary.LittleEndian.Uint32(report[runtimeDataSizeOffset : runtimeDataSizeOffset+4])
+	runtimeDataSize := int(binary.LittleEndian.Uint32(report[runtimeDataSizeOffset : runtimeDataSizeOffset+4]))
 	if len(report) < runtimeDataOffset+int(runtimeDataSize) {
-		return nil, nil, fmt.Errorf("invalid HCL report: expected at least %d bytes to read runtime data, got %d", runtimeDataOffset+int(runtimeDataSize), len(report))
+		return nil, nil, fmt.Errorf("invalid HCL report: expected at least %d bytes to read runtime data, got %d", runtimeDataOffset+runtimeDataSize, len(report))
 	}
 	runtimeData = report[runtimeDataOffset : runtimeDataOffset+runtimeDataSize]
 

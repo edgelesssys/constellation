@@ -2271,6 +2271,14 @@ def go_dependencies():
         version = "v0.6.0",
     )
     go_repository(
+        name = "com_github_google_go_configfs_tsm",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/google/go-configfs-tsm",
+        sum = "h1:YnJ9rXIOj5BYD7/0DNnzs8AOp7UcvjfTvt215EWcs98=",
+        version = "v0.2.2",
+    )
+    go_repository(
         name = "com_github_google_go_containerregistry",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
@@ -2316,8 +2324,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/google/go-tdx-guest",
-        sum = "h1:lRlUusuieEuqljjihCXb+Mr73VNitOYPJYWXzJKtBWs=",
-        version = "v0.2.3-0.20231011100059-4cf02bed9d33",
+        sum = "h1:fwe2ROo/XIpC3JWdD5My75NP1oYCQFc6wCITLP1vXCE=",
+        version = "v0.2.3-0.20240122115010-59d674a08de0",
     )
     go_repository(
         name = "com_github_google_go_tpm",

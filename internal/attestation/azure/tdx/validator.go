@@ -63,9 +63,13 @@ func (v *Validator) getTrustedTPMKey(_ context.Context, attDoc vtpm.AttestationD
 		return nil, err
 	}
 
-	quote, err := abi.QuoteToProto(instanceInfo.AttestationReport)
+	quotePb, err := abi.QuoteToProto(instanceInfo.AttestationReport)
 	if err != nil {
 		return nil, err
+	}
+	quote, ok := quotePb.(*tdx.QuoteV4)
+	if !ok {
+		return nil, fmt.Errorf("unexpected quote type: %T", quote)
 	}
 
 	if err := v.validateQuote(quote); err != nil {
@@ -98,7 +102,6 @@ func (v *Validator) validateQuote(tdxQuote *tdx.QuoteV4) error {
 		return err
 	}
 
-	// TODO: enable checks for QeVendorID, MrSeam, and Xfam
 	if err := validate.TdxQuote(tdxQuote, &validate.Options{
 		HeaderOptions: validate.HeaderOptions{
 			MinimumQeSvn:  v.cfg.QESVN,

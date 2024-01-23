@@ -78,8 +78,9 @@ func TestParseHCLReport(t *testing.T) {
 				return
 			}
 			assert.NoError(err)
-			assert.NotNil(hwReport)
-			assert.NotNil(runtimeData)
+			assert.Equal(tc.report[hwReportStart:hwReportStart+tdReportSize], hwReport)
+			assert.Greater(len(runtimeData), 0)
+			assert.Equal(tc.report[runtimeDataOffset:runtimeDataOffset+len(runtimeData)], runtimeData)
 		})
 	}
 }
