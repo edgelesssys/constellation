@@ -392,7 +392,7 @@ func (i *chartLoader) loadCiliumValues(cloudprovider.Provider) (map[string]any, 
 		cloudprovider.AWS.String():   {},
 		cloudprovider.Azure.String(): {},
 		cloudprovider.GCP.String(): {
-			"tunnel": "disabled",
+			"routingMode": "native",
 			"encryption": map[string]any{
 				"strictMode": map[string]any{
 					"podCIDRList": []string{""},
