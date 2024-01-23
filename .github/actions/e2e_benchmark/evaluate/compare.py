@@ -40,11 +40,14 @@ API_UNIT_STR = "ms"
 
 # List of allowed deviation
 ALLOWED_RATIO_DELTA = {
-    'iops': 0.7,
-    'bw_kbytes': 0.7,
-    'tcp_bw_mbit': 0.7,
-    'udp_bw_mbit': 0.7,
+    'iops': 0.8,
+    'bw_kbytes': 0.8,
+    'tcp_bw_mbit': 0.8,
+    'udp_bw_mbit': 0.8,
 }
+
+# Track failed comparison status
+failed = False
 
 
 def is_bigger_better(bench_suite: str) -> bool:
@@ -171,7 +174,8 @@ class BenchmarkComparer:
 
 
 def set_failed() -> None:
-    os.environ['COMPARISON_SUCCESS'] = str(False)
+    global failed
+    failed = True
 
 
 def main():
@@ -179,6 +183,8 @@ def main():
     c = BenchmarkComparer(path_prev, path_curr)
     output = c.compare()
     print(output)
+    if failed:
+        exit(1)
 
 
 if __name__ == '__main__':

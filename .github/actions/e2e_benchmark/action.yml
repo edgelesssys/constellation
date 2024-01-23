@@ -124,6 +124,27 @@ runs:
         name: "knb-constellation-${{ inputs.cloudProvider }}.json"
         encryptionSecret: ${{ inputs.encryptionSecret }}
 
+    - name: Parse results, create diagrams and post the progression summary
+      shell: bash
+      env:
+        # Original result directory
+        BENCH_RESULTS: out/
+        # Working directory containing the previous results as JSON and to contain the graphs
+        BDIR: benchmarks
+        CSP: ${{ inputs.cloudProvider }}
+      run: |
+        mkdir -p benchmarks
+        python .github/actions/e2e_benchmark/evaluate/parse.py
+
+    - name: Upload benchmark results to action run
+      if: (!env.ACT)
+      uses: ./.github/actions/artifact_upload
+      with:
+        path: >
+          benchmarks/constellation-${{ inputs.cloudProvider }}.json
+        name: "benchmarks"
+        encryptionSecret: ${{ inputs.encryptionSecret }}
+
     - name: Assume AWS role to retrieve and update benchmarks in S3
       uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a # v4.0.1
       with:
@@ -141,42 +162,24 @@ runs:
       env:
         CSP: ${{ inputs.cloudProvider }}
       run: |
-        mkdir -p benchmarks
-        aws s3 cp --recursive ${S3_PATH} benchmarks --no-progress
-        if [[ -f benchmarks/constellation-${CSP}.json ]]; then
-          mv benchmarks/constellation-${CSP}.json benchmarks/constellation-${CSP}-previous.json
+        aws s3 cp --recursive ${S3_PATH} ./ --no-progress
+        if [[ -f constellation-${CSP}.json ]]; then
+          mv constellation-${CSP}.json benchmarks/constellation-${CSP}-previous.json
         else
             echo "::warning::Couldn't retrieve previous benchmark records from s3"
         fi
 
-    - name: Parse results, create diagrams and post the progression summary
+    - name: Compare results
       shell: bash
       env:
-        # Original result directory
-        BENCH_RESULTS: out/
-        # Working directory containing the previous results as JSON and to contain the graphs
-        BDIR: benchmarks
         # Paths to benchmark results as JSON of the previous run and the current run
         PREV_BENCH: benchmarks/constellation-${{ inputs.cloudProvider }}-previous.json
         CURR_BENCH: benchmarks/constellation-${{ inputs.cloudProvider }}.json
-        CSP: ${{ inputs.cloudProvider }}
       run: |
-        python .github/actions/e2e_benchmark/evaluate/parse.py
-        export BENCHMARK_SUCCESS=true
         if [[ -f "$PREV_BENCH" ]]; then
-          # Sets $BENCHMARK_SUCCESS=false if delta is bigger than defined in compare.py
+          # Fails if the results are outside the threshold range
           python .github/actions/e2e_benchmark/evaluate/compare.py >> $GITHUB_STEP_SUMMARY
         fi
-        echo BENCHMARK_SUCCESS=$BENCHMARK_SUCCESS >> $GITHUB_ENV
-
-    - name: Upload benchmark results to action run
-      if: (!env.ACT)
-      uses: ./.github/actions/artifact_upload
-      with:
-        path: >
-          benchmarks/constellation-${{ inputs.cloudProvider }}.json
-        name: "benchmarks"
-        encryptionSecret: ${{ inputs.encryptionSecret }}
 
     - name: Upload benchmark results to opensearch
       if: (!env.ACT)
@@ -199,13 +202,3 @@ runs:
         CSP: ${{ inputs.cloudProvider }}
       run: |
         aws s3 cp benchmarks/constellation-${CSP}.json ${S3_PATH}/constellation-${CSP}.json
-
-    - name: Check performance comparison result
-      shell: bash
-      run: |
-        if [[ $BENCHMARK_SUCCESS == true ]] ; then
-          echo "Benchmark successful, all metrics in the expected range."
-        else
-          echo "::error::Benchmark failed, some metrics are outside of the expected range."
-          exit 1
-        fi
