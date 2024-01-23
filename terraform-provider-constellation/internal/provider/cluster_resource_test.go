@@ -453,6 +453,41 @@ func TestAccClusterResource(t *testing.T) {
 				},
 			},
 		},
+		"gcp pod ip cidr not a valid cidr": {
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion(providerVersion),
+			PreCheck:                 bazelPreCheck,
+			Steps: []resource.TestStep{
+				{
+					Config: fullClusterTestingConfig(t, "gcp") + fmt.Sprintf(`
+					resource "constellation_cluster" "test" {
+							csp                     = "gcp"
+							name                    = "constell"
+							uid                     = "test"
+							image                   = data.constellation_image.bar.image
+							attestation             = data.constellation_attestation.foo.attestation
+							init_secret             = "deadbeef"
+							master_secret           = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+							master_secret_salt      = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+							measurement_salt        = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+							out_of_cluster_endpoint = "192.0.2.1"
+							in_cluster_endpoint     = "192.0.2.1"
+							network_config = {
+									ip_cidr_node    = "0.0.0.0/24"
+									ip_cidr_service = "0.0.0.0/24"
+									ip_cidr_pod     = "0.0.0.0/xxxx"
+							}
+							gcp = {
+									project_id = "test"
+									service_account_key = "eyJ0ZXN0IjogInRlc3QifQ=="
+							}
+							kubernetes_version = "%s"
+							constellation_microservice_version = "%s"
+					  }
+				`, versions.Default, providerVersion),
+					ExpectError: regexp.MustCompile(`.*Pod IP CIDR must be a valid CIDR range.*`),
+				},
+			},
+		},
 	}
 
 	for name, tc := range testCases {
