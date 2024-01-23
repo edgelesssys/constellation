@@ -1,5 +1,7 @@
 extends: substitution
 message: "Prefer '%s' over '%s'."
+# term preference should be based on microsoft style guide, such as
+link: https://learn.microsoft.com/en-us/style-guide/a-z-word-list-term-collections/a/adapter
 level: warning
 ignorecase: true
 action:
@@ -24,10 +26,8 @@ swap:
   anti-spyware: antispyware
   anti-virus: antivirus
   appendixes: appendices
-  artificial intelligence: artificial intelligence
-  assembler: assembly language
-  bpp: bpp
-  bps: bps
+  artificial intelligence: AI
+  '(?:assembler|machine language)': assembly language
   caap: CaaP
   conversation-as-a-platform: conversation as a platform
   eb: EB
@@ -39,5 +39,3 @@ swap:
   pb: PB
   tb: TB
   zb: ZB
-  viz: namely
-  ergo: therefore
