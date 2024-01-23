@@ -46,20 +46,20 @@ Constellation supports the following VM types:
 <tabs groupId="csp">
 <tabItem value="azure" label="Azure">
 
-By default, Constellation uses `Standard_DC4as_v5` CVMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. For CVMs, any VM type with a minimum of 4 vCPUs from the [DCasv5 & DCadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/dcasv5-dcadsv5-series) or [ECasv5 & ECadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/ecasv5-ecadsv5-series) families is supported.
+By default, Constellation uses `Standard_DC4as_v5` CVMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying `instanceType` in the configuration file. For CVMs, any VM type with a minimum of 4 vCPUs from the [DCasv5 & DCadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/dcasv5-dcadsv5-series) or [ECasv5 & ECadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/ecasv5-ecadsv5-series) families is supported.
 
 You can also run `constellation config instance-types` to get the list of all supported options.
 
 </tabItem>
 <tabItem value="gcp" label="GCP">
 
-By default, Constellation uses `n2d-standard-4` VMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. Supported are all machines with a minimum of 4 vCPUs from the [C2D](https://cloud.google.com/compute/docs/compute-optimized-machines#c2d_machine_types) or [N2D](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) family. You can run  `constellation config instance-types` to get the list of all supported options.
+By default, Constellation uses `n2d-standard-4` VMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying `instanceType` in the configuration file. Supported are all machines with a minimum of 4 vCPUs from the [C2D](https://cloud.google.com/compute/docs/compute-optimized-machines#c2d_machine_types) or [N2D](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) family. You can run  `constellation config instance-types` to get the list of all supported options.
 
 </tabItem>
 <tabItem value="aws" label="AWS">
 
 By default, Constellation uses `m6a.xlarge` VMs (4 vCPUs, 16 GB RAM) to create your cluster.
-Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file.
+Optionally, you can switch to a different VM type by modifying `instanceType` in the configuration file.
 If you are using the default attestation variant `awsSEVSNP`, you can use the instance types described in [AWS's AMD SEV-SNP docs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snp-requirements.html).
 Please mind the region restrictions mentioned in the [Getting started](../getting-started/first-steps.md#create-a-cluster) section.
 
@@ -70,7 +70,7 @@ The Constellation CLI can also print the supported instance types with: `constel
 </tabItem>
 </tabs>
 
-Fill the desired VM type into the **instanceType** fields in the `constellation-conf.yml` file.
+Fill the desired VM type into the `instanceType` fields in the `constellation-conf.yml` file.
 
 ## Creating additional node groups
 
