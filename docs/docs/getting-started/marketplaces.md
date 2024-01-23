@@ -1,12 +1,12 @@
 # Using Constellation via Cloud Marketplaces
 
-Constellation is available through the Marketplaces of Azure and GCP. This allows you to create self-managed Constellation clusters that are billed on a pay-per-use basis (hourly, per vCPU) with your CSP account. You can still get direct support by Edgeless Systems. For more information, please [contact us](https://www.edgeless.systems/enterprise-support/).
+Constellation is available through the Marketplaces of Azure and GCP. This allows you to create self-managed Constellation clusters that are billed on a pay-per-use basis (hourly, per vCPU) with your CSP account. You can still get direct support by Edgeless Systems. For more information, please [contact sales](https://www.edgeless.systems/enterprise-support/).
 
 This document explains how to run Constellation with the dynamically billed cloud marketplace images.
 
 ## Azure
 
-On Azure, Constellation has a private marketplace plan. Please [contact us](https://www.edgeless.systems/enterprise-support/) to gain access.
+On Azure, Constellation has a private marketplace plan. Please [contact sales](https://www.edgeless.systems/enterprise-support/) to gain access.
 
 To use a marketplace image, you need to accept the marketplace image's terms once for your subscription with the [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/vm/image/terms?view=azure-cli-latest):
 

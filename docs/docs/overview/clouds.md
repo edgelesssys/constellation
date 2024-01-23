@@ -36,7 +36,7 @@ Thus, the Azure closed-source firmware becomes part of Constellation's trusted c
 
 The [CVMs Generally Available in GCP](https://cloud.google.com/compute/confidential-vm/docs/create-confidential-vm-instance) are based on AMD SEV but don't have SNP features enabled.
 CVMs with SEV-SNP enabled are currently in [public preview](https://cloud.google.com/blog/products/identity-security/rsa-snp-vm-more-confidential). Regarding (3), with their SEV-SNP offering Google provides direct access to remote-attestation statements.
-However, regarding (5), attestation is partially based on the [Shielded VM vTPM](https://cloud.google.com/compute/shielded-vm/docs/shielded-vm#vtpm) for [measured boot](../architecture/attestation.md#measured-boot), which is a vTPM managed by Google's hypervisor.
+However, regarding (5), attestation is in parts based on the [Shielded VM vTPM](https://cloud.google.com/compute/shielded-vm/docs/shielded-vm#vtpm) for [measured boot](../architecture/attestation.md#measured-boot), which is a vTPM managed by Google's hypervisor.
 Hence, the hypervisor is currently part of Constellation's TCB.
 Regarding (4), the CVMs still include closed-source firmware.
 
@@ -49,7 +49,7 @@ With TDX on Google, Constellation has a similar TCB and attestation flow as with
 
 Amazon EC2 [supports AMD SEV-SNP](https://aws.amazon.com/de/about-aws/whats-new/2023/04/amazon-ec2-amd-sev-snp/).
 Regarding (3), AWS provides direct access to remote-attestation statements.
-However, regarding (5), attestation is partially based on the [NitroTPM](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nitrotpm.html) for [measured boot](../architecture/attestation.md#measured-boot), which is a vTPM managed by the Nitro hypervisor.
+However, regarding (5), attestation is in parts based on the [NitroTPM](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nitrotpm.html) for [measured boot](../architecture/attestation.md#measured-boot), which is a vTPM managed by the Nitro hypervisor.
 Hence, the hypervisor is currently part of Constellation's TCB.
 Regarding (4), the [firmware is open source](https://github.com/aws/uefi) and can be reproducibly built.
 
