@@ -569,7 +569,7 @@ func (c *Config) RemoveProviderExcept(provider cloudprovider.Provider) {
 	default:
 		c.Provider = currentProviderConfigs
 	}
-	c.setCSPNodeGroupDefaults(provider)
+	c.SetCSPNodeGroupDefaults(provider)
 }
 
 // SetAttestation sets the attestation config for the given attestation variant and removes all other attestation configs.
@@ -918,7 +918,8 @@ func (c *Config) WithOpenStackProviderDefaults(openStackProvider string) *Config
 	return c
 }
 
-func (c *Config) setCSPNodeGroupDefaults(csp cloudprovider.Provider) {
+// SetCSPNodeGroupDefaults sets the default values for the node groups based on the configured CSP.
+func (c *Config) SetCSPNodeGroupDefaults(csp cloudprovider.Provider) {
 	var instanceType, stateDiskType, zone string
 	switch csp {
 	case cloudprovider.AWS:
@@ -926,14 +927,19 @@ func (c *Config) setCSPNodeGroupDefaults(csp cloudprovider.Provider) {
 		stateDiskType = "gp3"
 		zone = c.Provider.AWS.Zone
 	case cloudprovider.Azure:
-		instanceType = "Standard_DC4as_v5"
+		// Check attestation variant, and use different default instance type if we have TDX
+		if c.GetAttestationConfig().GetVariant().Equal(variant.AzureTDX{}) {
+			instanceType = "Standard_DC4as_v5"
+		} else {
+			instanceType = "Standard_DC4es_v5"
+		}
 		stateDiskType = "Premium_LRS"
 	case cloudprovider.GCP:
 		instanceType = "n2d-standard-4"
 		stateDiskType = "pd-ssd"
 		zone = c.Provider.GCP.Zone
 	case cloudprovider.QEMU, cloudprovider.OpenStack:
-		// empty. There are now defaults for this CSP
+		// empty. There are no defaults for this CSP
 	}
 
 	for groupName, group := range c.NodeGroups {

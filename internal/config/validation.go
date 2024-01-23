@@ -193,6 +193,9 @@ func validateAttestation(sl validator.StructLevel) {
 	if attestation.AzureSEVSNP != nil {
 		attestationCount++
 	}
+	if attestation.AzureTDX != nil {
+		attestationCount++
+	}
 	if attestation.AzureTrustedLaunch != nil {
 		attestationCount++
 	}
@@ -244,7 +247,7 @@ func translateNoAttestationError(ut ut.Translator, fe validator.FieldError) stri
 }
 
 func registerNoAttestationError(ut ut.Translator) error {
-	return ut.Add("no_attestation", "{0}: No attestation has been defined (requires either awsSEVSNP, awsNitroTPM, azureSEVSNP, azureTrustedLaunch, gcpSEVES, or qemuVTPM)", true)
+	return ut.Add("no_attestation", "{0}: No attestation has been defined (requires either awsSEVSNP, awsNitroTPM, azureSEVSNP, azureTDX, azureTrustedLaunch, gcpSEVES, or qemuVTPM)", true)
 }
 
 func translateNoDefaultControlPlaneGroupError(ut ut.Translator, fe validator.FieldError) string {
@@ -351,6 +354,9 @@ func (c *Config) translateMoreThanOneAttestationError(ut ut.Translator, fe valid
 	}
 	if c.Attestation.AzureSEVSNP != nil {
 		definedAttestations = append(definedAttestations, "AzureSEVSNP")
+	}
+	if c.Attestation.AzureTDX != nil {
+		definedAttestations = append(definedAttestations, "AzureTDX")
 	}
 	if c.Attestation.AzureTrustedLaunch != nil {
 		definedAttestations = append(definedAttestations, "AzureTrustedLaunch")
@@ -508,42 +514,47 @@ func (c *Config) translateMoreThanOneProviderError(ut ut.Translator, fe validato
 	return t
 }
 
-func validInstanceTypeForProvider(insType string, acceptNonCVM bool, provider cloudprovider.Provider) bool {
-	switch provider {
-	case cloudprovider.AWS:
+func validInstanceTypeForProvider(insType string, acceptNonCVM bool, attestation variant.Variant) bool {
+	switch attestation {
+	case variant.AWSSEVSNP{}, variant.AWSNitroTPM{}:
 		return isSupportedAWSInstanceType(insType, acceptNonCVM)
-	case cloudprovider.Azure:
+	case variant.AzureSEVSNP{}:
 		if acceptNonCVM {
-			for _, instanceType := range instancetypes.AzureTrustedLaunchInstanceTypes {
-				if insType == instanceType {
-					return true
-				}
-			}
-		} else {
-			for _, instanceType := range instancetypes.AzureTDXInstanceTypes {
-				if insType == instanceType {
-					return true
-				}
-			}
-			for _, instanceType := range instancetypes.AzureSNPInstanceTypes {
-				if insType == instanceType {
-					return true
-				}
+			return false
+		}
+		for _, instanceType := range instancetypes.AzureSNPInstanceTypes {
+			if insType == instanceType {
+				return true
 			}
 		}
-		return false
-	case cloudprovider.GCP:
+	case variant.AzureTDX{}:
+		if acceptNonCVM {
+			return false
+		}
+		for _, instanceType := range instancetypes.AzureTDXInstanceTypes {
+			if insType == instanceType {
+				return true
+			}
+		}
+	case variant.AzureTrustedLaunch{}:
+		if !acceptNonCVM {
+			return false
+		}
+		for _, instanceType := range instancetypes.AzureTrustedLaunchInstanceTypes {
+			if insType == instanceType {
+				return true
+			}
+		}
+	case variant.GCPSEVES{}:
 		for _, instanceType := range instancetypes.GCPInstanceTypes {
 			if insType == instanceType {
 				return true
 			}
 		}
-		return false
-	case cloudprovider.OpenStack, cloudprovider.QEMU:
+	case variant.QEMUVTPM{}, variant.QEMUTDX{}:
 		return true
-	default:
-		return false
 	}
+	return false
 }
 
 // isSupportedAWSInstanceType checks if an AWS instance type passed as user input is in one of the supported instance types.
@@ -790,7 +801,7 @@ func (c *Config) validateInstanceType(fl validator.FieldLevel) bool {
 		acceptNonCVM = true
 	}
 
-	return validInstanceTypeForProvider(fl.Field().String(), acceptNonCVM, c.GetProvider())
+	return validInstanceTypeForProvider(fl.Field().String(), acceptNonCVM, c.GetAttestationConfig().GetVariant())
 }
 
 func (c *Config) validateStateDiskTypeField(fl validator.FieldLevel) bool {
