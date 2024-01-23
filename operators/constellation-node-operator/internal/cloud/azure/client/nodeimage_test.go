@@ -53,6 +53,22 @@ func TestGetNodeImage(t *testing.T) {
 			},
 			wantImage: "/CommunityGalleries/gallery-name/Images/image-name/Versions/1.2.3",
 		},
+		"getting marketplace image works": {
+			providerID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
+			vm: armcompute.VirtualMachineScaleSetVM{
+				Properties: &armcompute.VirtualMachineScaleSetVMProperties{
+					StorageProfile: &armcompute.StorageProfile{
+						ImageReference: &armcompute.ImageReference{
+							Publisher: to.Ptr("edgelesssystems"),
+							Offer:     to.Ptr("constellation"),
+							SKU:       to.Ptr("constellation"),
+							Version:   to.Ptr("2.14.2"),
+						},
+					},
+				},
+			},
+			wantImage: "constellation-marketplace-image://Azure?offer=constellation&publisher=edgelesssystems&sku=constellation&version=2.14.2",
+		},
 		"splitting providerID fails": {
 			providerID: "invalid",
 			wantErr:    true,
