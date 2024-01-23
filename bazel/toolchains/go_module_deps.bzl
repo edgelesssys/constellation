@@ -2347,8 +2347,8 @@ def go_dependencies():
             "//3rdparty/bazel/com_github_google_go_tpm_tools:ms_tpm_20_ref.patch",
             "//3rdparty/bazel/com_github_google_go_tpm_tools:include.patch",
         ],
-        sum = "h1:iyaCPKt2N5Rd0yz0G8ANa022SgCNZkMpp+db6QELtvI=",
-        version = "v0.4.2",
+        sum = "h1:EQ1rGgyI8IEBApvDH9HPF7ehUd/6H6SxSNKVDF5z/GU=",
+        version = "v0.4.3-0.20240112165732-912a43636883",
     )
     go_repository(
         name = "com_github_google_go_tspi",

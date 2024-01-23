@@ -87,7 +87,7 @@ require (
 	github.com/google/go-sev-guest v0.9.3
 	github.com/google/go-tdx-guest v0.2.3-0.20240122115010-59d674a08de0
 	github.com/google/go-tpm v0.9.0
-	github.com/google/go-tpm-tools v0.4.2
+	github.com/google/go-tpm-tools v0.4.3-0.20240112165732-912a43636883
 	github.com/google/uuid v1.4.0
 	github.com/googleapis/gax-go/v2 v2.12.0
 	github.com/gophercloud/gophercloud v1.5.0
