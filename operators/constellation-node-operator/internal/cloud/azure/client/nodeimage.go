@@ -30,24 +30,11 @@ func (c *Client) GetNodeImage(ctx context.Context, providerID string) (string, e
 		resp.Properties.StorageProfile.ImageReference == nil ||
 		resp.Properties.StorageProfile.ImageReference.ID == nil &&
 			resp.Properties.StorageProfile.ImageReference.CommunityGalleryImageID == nil &&
-			resp.Properties.StorageProfile.ImageReference.Publisher == nil &&
-			resp.Properties.StorageProfile.ImageReference.Offer == nil &&
-			resp.Properties.StorageProfile.ImageReference.SKU == nil &&
-			resp.Properties.StorageProfile.ImageReference.Version == nil {
+			(resp.Properties.StorageProfile.ImageReference.Publisher == nil ||
+				resp.Properties.StorageProfile.ImageReference.Offer == nil ||
+				resp.Properties.StorageProfile.ImageReference.SKU == nil ||
+				resp.Properties.StorageProfile.ImageReference.Version == nil) {
 		return "", fmt.Errorf("node %q does not have valid image reference", providerID)
-	}
-
-	// Marketplace Image is used, format it to an URI and return it.
-	if resp.Properties.StorageProfile.ImageReference.Publisher != nil &&
-		resp.Properties.StorageProfile.ImageReference.Offer != nil &&
-		resp.Properties.StorageProfile.ImageReference.SKU != nil &&
-		resp.Properties.StorageProfile.ImageReference.Version != nil {
-		return mpimage.AzureMarketplaceImage{
-			Publisher: *resp.Properties.StorageProfile.ImageReference.Publisher,
-			Offer:     *resp.Properties.StorageProfile.ImageReference.Offer,
-			SKU:       *resp.Properties.StorageProfile.ImageReference.SKU,
-			Version:   *resp.Properties.StorageProfile.ImageReference.Version,
-		}.URI(), nil
 	}
 
 	// Image ID is set, return it.
@@ -55,8 +42,18 @@ func (c *Client) GetNodeImage(ctx context.Context, providerID string) (string, e
 		return *resp.Properties.StorageProfile.ImageReference.ID, nil
 	}
 
-	// Community Gallery image ID is set otherwise.
-	return *resp.Properties.StorageProfile.ImageReference.CommunityGalleryImageID, nil
+	// Community Gallery image ID is set, return it.
+	if resp.Properties.StorageProfile.ImageReference.CommunityGalleryImageID != nil {
+		return *resp.Properties.StorageProfile.ImageReference.CommunityGalleryImageID, nil
+	}
+
+	// Last possible option: Marketplace Image is used, format it to an URI and return it.
+	return mpimage.AzureMarketplaceImage{
+		Publisher: *resp.Properties.StorageProfile.ImageReference.Publisher,
+		Offer:     *resp.Properties.StorageProfile.ImageReference.Offer,
+		SKU:       *resp.Properties.StorageProfile.ImageReference.SKU,
+		Version:   *resp.Properties.StorageProfile.ImageReference.Version,
+	}.URI(), nil
 }
 
 // GetScalingGroupID returns the scaling group ID of the node.
