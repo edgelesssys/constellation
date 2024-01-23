@@ -21,12 +21,7 @@ jobs:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
       - name: Vale
-        uses: errata-ai/vale-action@c4213d4de3d5f718b8497bd86161531c78992084 # tag=v2.0.1
+        uses: errata-ai/vale-action@3f7188c866bcb3259339a09f517d7c4a8838303c # tag=reviewdog
         with:
           version: 2.17.0
           files: docs/docs
-          reviewdog_url: https://github.com/reviewdog/reviewdog/releases/download/v0.16.0/reviewdog_0.16.0_Linux_x86_64.tar.gz
-        env:
-          # Required, set by GitHub actions automatically:
-          # https://docs.github.com/en/actions/security-guides/automatic-token-authentication#about-the-github_token-secret
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
