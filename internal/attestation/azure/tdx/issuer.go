@@ -122,7 +122,7 @@ func parseHCLReport(report []byte) (hwReport, runtimeData []byte, err error) {
 		return nil, nil, fmt.Errorf("invalid HCL report: expected at least %d bytes to read runtime data size, got %d", runtimeDataSizeOffset+4, len(report))
 	}
 	runtimeDataSize := int(binary.LittleEndian.Uint32(report[runtimeDataSizeOffset : runtimeDataSizeOffset+4]))
-	if len(report) < runtimeDataOffset+int(runtimeDataSize) {
+	if len(report) < runtimeDataOffset+runtimeDataSize {
 		return nil, nil, fmt.Errorf("invalid HCL report: expected at least %d bytes to read runtime data, got %d", runtimeDataOffset+runtimeDataSize, len(report))
 	}
 	runtimeData = report[runtimeDataOffset : runtimeDataOffset+runtimeDataSize]
