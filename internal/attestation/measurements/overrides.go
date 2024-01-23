@@ -119,6 +119,7 @@ func ApplyOverrides(in M, csp cloudprovider.Provider, attestationVariant string)
 				return nil, fmt.Errorf("missing measurement for PCR %d", i)
 			}
 			m.ValidationOpt = Enforce
+			out[i] = m
 		}
 		for _, i := range override.MustWarn {
 			m, ok := out[i]
@@ -126,6 +127,7 @@ func ApplyOverrides(in M, csp cloudprovider.Provider, attestationVariant string)
 				return nil, fmt.Errorf("missing measurement for PCR %d", i)
 			}
 			m.ValidationOpt = WarnOnly
+			out[i] = m
 		}
 	}
 	return out, nil
