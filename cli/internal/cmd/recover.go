@@ -108,7 +108,7 @@ func (r *recoverCmd) recover(
 		return err
 	}
 
-	r.log.Debugf("Got provider %s", conf.GetProvider())
+	r.log.Debug(fmt.Sprintf("Got provider %s", conf.GetProvider()))
 	if conf.GetProvider() == cloudprovider.Azure {
 		interval = 20 * time.Second // Azure LB takes a while to remove unhealthy instances
 	}
