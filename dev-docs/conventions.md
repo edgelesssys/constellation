@@ -40,12 +40,12 @@ Further we try to adhere to the following guidelines:
   log.Error("A critical error occurred!")
   ```
 
-* Use the `With()` method to add structured context to your log messages. The context tags should be easily searchable to allow for easy log filtering. Try to keep consistent tag naming!
+* Use additional arguments to add structured context to your log messages. The context tags should be easily searchable to allow for easy log filtering. Try to keep consistent tag naming!
 
   Example:
 
   ```Go
-  log.With(slog.Any("error" someError), slog.String("ip", "192.0.2.1")).Error("Connecting to IP failed")
+  log.Error("Connecting to IP failed", "error", someError, "ip", "192.0.2.1")
   ```
 
 * Log messages may use format strings to produce human readable messages. However, the information should also be present as structured context fields if it might be valuable for debugging purposes. So, instead of writing
