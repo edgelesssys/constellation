@@ -63,7 +63,7 @@ runs:
             (query:(match_phrase:(metadata.github.run-id:${{ github.run_id }}))),
             (query:(match_phrase:(metadata.github.ref-stream:${{ inputs.refStream }}))),
             (query:(match_phrase:(metadata.github.kubernetes-version:${{ inputs.kubernetesVersion }}))),
-            (query:(match_phrase:(metadata.github.e2e-test-payload:${{ steps.encode-uri-component.outputs.string }})))
+            (query:(match_phrase:(metadata.github.e2e-test-payload:'${{ steps.encode-uri-component.outputs.string }}')))
           ))" | tr -d "\t\n ")
 
         # URL construction
