@@ -216,7 +216,7 @@ func TestVerify(t *testing.T) {
 					endpoint:  tc.nodeEndpointFlag,
 				},
 			}
-			formatterFac := func(_ string, _ cloudprovider.Provider, _ debugLog) (attestationDocFormatter, error) {
+			formatterFac := func(_ string, _ variant.Variant, _ debugLog) (attestationDocFormatter, error) {
 				return tc.formatter, nil
 			}
 			err := v.verify(cmd, tc.protoClient, formatterFac, stubAttestationFetcher{})

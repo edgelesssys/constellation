@@ -12,6 +12,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -44,7 +45,7 @@ func (c *stubCloudCreator) Plan(_ context.Context, _ *config.Config) (bool, erro
 	return c.planDiff, c.planErr
 }
 
-func (c *stubCloudCreator) Apply(_ context.Context, _ cloudprovider.Provider, _ cloudcmd.RollbackBehavior) (state.Infrastructure, error) {
+func (c *stubCloudCreator) Apply(_ context.Context, _ cloudprovider.Provider, _ variant.Variant, _ cloudcmd.RollbackBehavior) (state.Infrastructure, error) {
 	c.applyCalled = true
 	return c.state, c.applyErr
 }

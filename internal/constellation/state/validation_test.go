@@ -9,7 +9,7 @@ package state
 import (
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -70,7 +70,7 @@ func TestPreCreateValidation(t *testing.T) {
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			err := tc.stateFile().Validate(PreCreate, cloudprovider.Azure)
+			err := tc.stateFile().Validate(PreCreate, variant.AzureSEVSNP{})
 			if tc.wantErr {
 				require.Error(t, err)
 				if tc.errAssertions != nil {
@@ -92,6 +92,7 @@ func TestPreInitValidation(t *testing.T) {
 
 	testCases := map[string]struct {
 		stateFile     func() *State
+		variant       variant.Variant
 		wantErr       bool
 		errAssertions func(a *assert.Assertions, err error)
 	}{
@@ -172,6 +173,8 @@ func TestPreInitValidation(t *testing.T) {
 				s.Infrastructure.GCP = &GCP{}
 				return s
 			},
+			variant: variant.GCPSEVES{},
+			wantErr: true,
 		},
 		"gcp nil": {
 			stateFile: func() *State {
@@ -179,6 +182,8 @@ func TestPreInitValidation(t *testing.T) {
 				s.Infrastructure.GCP = nil
 				return s
 			},
+			variant: variant.GCPSEVES{},
+			wantErr: true,
 		},
 		"gcp invalid": {
 			stateFile: func() *State {
@@ -187,6 +192,7 @@ func TestPreInitValidation(t *testing.T) {
 				return s
 			},
 			wantErr: true,
+			variant: variant.GCPSEVES{},
 			errAssertions: func(a *assert.Assertions, err error) {
 				a.Contains(err.Error(), "validating State.infrastructure.gcp.ipCidrPod: invalid must be a valid CIDR")
 			},
@@ -197,6 +203,8 @@ func TestPreInitValidation(t *testing.T) {
 				s.Infrastructure.Azure = &Azure{}
 				return s
 			},
+			variant: variant.AzureSEVSNP{},
+			wantErr: true,
 		},
 		"azure nil": {
 			stateFile: func() *State {
@@ -204,6 +212,8 @@ func TestPreInitValidation(t *testing.T) {
 				s.Infrastructure.Azure = nil
 				return s
 			},
+			variant: variant.AzureSEVSNP{},
+			wantErr: true,
 		},
 		"azure invalid": {
 			stateFile: func() *State {
@@ -215,12 +225,13 @@ func TestPreInitValidation(t *testing.T) {
 			errAssertions: func(a *assert.Assertions, err error) {
 				a.Contains(err.Error(), "validating State.infrastructure.azure.networkSecurityGroupName: must not be empty")
 			},
+			variant: variant.AzureSEVSNP{},
 		},
 	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			err := tc.stateFile().Validate(PreInit, cloudprovider.Azure)
+			err := tc.stateFile().Validate(PreInit, tc.variant)
 			if tc.wantErr {
 				require.Error(t, err)
 				if tc.errAssertions != nil {
@@ -236,13 +247,13 @@ func TestPreInitValidation(t *testing.T) {
 func TestPostInitValidation(t *testing.T) {
 	testCases := map[string]struct {
 		stateFile     func() *State
-		provider      cloudprovider.Provider
+		variant       variant.Variant
 		wantErr       bool
 		errAssertions func(a *assert.Assertions, err error)
 	}{
 		"valid": {
 			stateFile: defaultGCPState,
-			provider:  cloudprovider.GCP,
+			variant:   variant.GCPSEVES{},
 		},
 		"invalid version": {
 			stateFile: func() *State {
@@ -317,22 +328,39 @@ func TestPostInitValidation(t *testing.T) {
 				s := defaultGCPState()
 				return s
 			},
-			provider: cloudprovider.GCP,
+			variant: variant.GCPSEVES{},
 		},
 		"azure valid": {
 			stateFile: func() *State {
 				s := defaultAzureState()
 				return s
 			},
-			provider: cloudprovider.Azure,
+			variant: variant.AzureSEVSNP{},
+		},
+		"azure SEV needs attestation URL": {
+			stateFile: func() *State {
+				s := defaultAzureState()
+				s.Infrastructure.Azure.AttestationURL = ""
+				return s
+			},
+			variant: variant.AzureSEVSNP{},
+			wantErr: true,
+		},
+		"azure TDX does not need attestation URL": {
+			stateFile: func() *State {
+				s := defaultAzureState()
+				s.Infrastructure.Azure.AttestationURL = ""
+				return s
+			},
+			variant: variant.AzureTDX{},
 		},
 		"gcp, azure not nil": {
 			stateFile: func() *State {
 				s := defaultState()
 				return s
 			},
-			provider: cloudprovider.GCP,
-			wantErr:  true,
+			variant: variant.GCPSEVES{},
+			wantErr: true,
 			errAssertions: func(a *assert.Assertions, err error) {
 				a.Contains(err.Error(), "must be equal to <nil>")
 				a.Contains(err.Error(), "must be empty")
@@ -343,8 +371,8 @@ func TestPostInitValidation(t *testing.T) {
 				s := defaultState()
 				return s
 			},
-			provider: cloudprovider.Azure,
-			wantErr:  true,
+			variant: variant.AzureSEVSNP{},
+			wantErr: true,
 			errAssertions: func(a *assert.Assertions, err error) {
 				a.Contains(err.Error(), "must be equal to <nil>")
 				a.Contains(err.Error(), "must be empty")
@@ -365,7 +393,7 @@ func TestPostInitValidation(t *testing.T) {
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			err := tc.stateFile().Validate(PostInit, tc.provider)
+			err := tc.stateFile().Validate(PostInit, tc.variant)
 			if tc.wantErr {
 				require.Error(t, err)
 				if tc.errAssertions != nil {

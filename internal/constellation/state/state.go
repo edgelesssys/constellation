@@ -18,7 +18,7 @@ import (
 	"os"
 
 	"dario.cat/mergo"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/encoding"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/validation"
@@ -213,7 +213,7 @@ Validate validates the state against the given constraint set and CSP, which can
   - PreInit, which is the constraint set that should be enforced before "constellation apply" is run.
   - PostInit, which is the constraint set that should be enforced after "constellation apply" is run.
 */
-func (s *State) Validate(constraintSet ConstraintSet, csp cloudprovider.Provider) error {
+func (s *State) Validate(constraintSet ConstraintSet, variant variant.Variant) error {
 	v := validation.NewValidator()
 
 	switch constraintSet {
@@ -223,11 +223,11 @@ func (s *State) Validate(constraintSet ConstraintSet, csp cloudprovider.Provider
 		})
 	case PreInit:
 		return v.Validate(s, validation.ValidateOptions{
-			OverrideConstraints: s.preInitConstraints,
+			OverrideConstraints: s.preInitConstraints(variant),
 		})
 	case PostInit:
 		return v.Validate(s, validation.ValidateOptions{
-			OverrideConstraints: s.postInitConstraints(csp),
+			OverrideConstraints: s.postInitConstraints(variant),
 		})
 	default:
 		return errors.New("unknown constraint set")
@@ -282,128 +282,130 @@ func (s *State) preCreateConstraints() []*validation.Constraint {
 //
 // The constraints check if the infrastructure state is valid, and if the cluster values
 // are empty, which is required for the cluster to initialize correctly.
-func (s *State) preInitConstraints() []*validation.Constraint {
-	return []*validation.Constraint{
-		// state version needs to be accepted by the parsing CLI.
-		validation.OneOf(s.Version, []string{Version1}).
-			WithFieldTrace(s, &s.Version),
-		// infrastructure must be valid.
-		// out-of-cluster endpoint needs to be a valid DNS name or IP address.
-		validation.Or(
-			validation.DNSName(s.Infrastructure.ClusterEndpoint).
-				WithFieldTrace(s, &s.Infrastructure.ClusterEndpoint),
-			validation.IPAddress(s.Infrastructure.ClusterEndpoint).
-				WithFieldTrace(s, &s.Infrastructure.ClusterEndpoint),
-		),
-		// in-cluster endpoint needs to be a valid DNS name or IP address.
-		validation.Or(
-			validation.DNSName(s.Infrastructure.InClusterEndpoint).
-				WithFieldTrace(s, &s.Infrastructure.InClusterEndpoint),
-			validation.IPAddress(s.Infrastructure.InClusterEndpoint).
-				WithFieldTrace(s, &s.Infrastructure.InClusterEndpoint),
-		),
-		// Node IP Cidr needs to be a valid CIDR range.
-		validation.CIDR(s.Infrastructure.IPCidrNode).
-			WithFieldTrace(s, &s.Infrastructure.IPCidrNode),
-		// UID needs to be filled.
-		validation.NotEmpty(s.Infrastructure.UID).
-			WithFieldTrace(s, &s.Infrastructure.UID),
-		// Name needs to be filled.
-		validation.NotEmpty(s.Infrastructure.Name).
-			WithFieldTrace(s, &s.Infrastructure.Name),
-		// GCP values need to be nil, empty, or valid.
-		validation.Or(
+func (s *State) preInitConstraints(attestation variant.Variant) func() []*validation.Constraint {
+	return func() []*validation.Constraint {
+		constraints := []*validation.Constraint{
+			// state version needs to be accepted by the parsing CLI.
+			validation.OneOf(s.Version, []string{Version1}).
+				WithFieldTrace(s, &s.Version),
+			// infrastructure must be valid.
+			// out-of-cluster endpoint needs to be a valid DNS name or IP address.
 			validation.Or(
-				// nil.
-				validation.Equal(s.Infrastructure.GCP, nil).
-					WithFieldTrace(s, &s.Infrastructure.GCP),
-				// empty.
-				validation.IfNotNil(
-					s.Infrastructure.GCP,
-					func() *validation.Constraint {
-						return validation.Empty(*s.Infrastructure.GCP).
-							WithFieldTrace(s, &s.Infrastructure.GCP)
-					},
+				validation.DNSName(s.Infrastructure.ClusterEndpoint).
+					WithFieldTrace(s, &s.Infrastructure.ClusterEndpoint),
+				validation.IPAddress(s.Infrastructure.ClusterEndpoint).
+					WithFieldTrace(s, &s.Infrastructure.ClusterEndpoint),
+			),
+			// in-cluster endpoint needs to be a valid DNS name or IP address.
+			validation.Or(
+				validation.DNSName(s.Infrastructure.InClusterEndpoint).
+					WithFieldTrace(s, &s.Infrastructure.InClusterEndpoint),
+				validation.IPAddress(s.Infrastructure.InClusterEndpoint).
+					WithFieldTrace(s, &s.Infrastructure.InClusterEndpoint),
+			),
+			// Node IP Cidr needs to be a valid CIDR range.
+			validation.CIDR(s.Infrastructure.IPCidrNode).
+				WithFieldTrace(s, &s.Infrastructure.IPCidrNode),
+			// UID needs to be filled.
+			validation.NotEmpty(s.Infrastructure.UID).
+				WithFieldTrace(s, &s.Infrastructure.UID),
+			// Name needs to be filled.
+			validation.NotEmpty(s.Infrastructure.Name).
+				WithFieldTrace(s, &s.Infrastructure.Name),
+			// ClusterValues must be empty.
+			// As the clusterValues struct contains slices, we cannot use the
+			// Empty constraint on the entire struct. Instead, we need to check
+			// each field individually.
+			validation.Empty(s.ClusterValues.ClusterID).
+				WithFieldTrace(s, &s.ClusterValues.ClusterID),
+			// ownerID is currently unused as functionality is not implemented
+			// Therefore, we don't want to validate it
+			// validation.Empty(s.ClusterValues.OwnerID).
+			//	WithFieldTrace(s, &s.ClusterValues.OwnerID),
+			validation.EmptySlice(s.ClusterValues.MeasurementSalt).
+				WithFieldTrace(s, &s.ClusterValues.MeasurementSalt),
+		}
+
+		switch attestation {
+		case variant.AzureSEVSNP{}, variant.AzureTDX{}, variant.AzureTrustedLaunch{}:
+			// Azure values need to be valid after infrastructure creation.
+			constraints = append(constraints,
+				// GCP values need to be nil or empty.
+				validation.Or(
+					validation.Equal(s.Infrastructure.GCP, nil).
+						WithFieldTrace(s, &s.Infrastructure.GCP),
+					validation.IfNotNil(
+						s.Infrastructure.GCP,
+						func() *validation.Constraint {
+							return validation.Empty(s.Infrastructure.GCP).
+								WithFieldTrace(s, &s.Infrastructure.GCP)
+						},
+					),
 				),
-			),
-			// valid.
-			validation.IfNotNil(
-				s.Infrastructure.GCP,
-				func() *validation.Constraint {
-					return validation.And(
-						validation.EvaluateAll,
-						// ProjectID needs to be filled.
-						validation.NotEmpty(s.Infrastructure.GCP.ProjectID).
-							WithFieldTrace(s, &s.Infrastructure.GCP.ProjectID),
-						// Pod IP Cidr needs to be a valid CIDR range.
-						validation.CIDR(s.Infrastructure.GCP.IPCidrPod).
-							WithFieldTrace(s, &s.Infrastructure.GCP.IPCidrPod),
-					)
-				},
-			),
-		),
-		// Azure values need to be nil, empty, or valid.
-		validation.Or(
-			validation.Or(
-				// nil.
-				validation.Equal(s.Infrastructure.Azure, nil).
-					WithFieldTrace(s, &s.Infrastructure.Azure),
-				// empty.
 				validation.IfNotNil(
 					s.Infrastructure.Azure,
 					func() *validation.Constraint {
 						return validation.And(
 							validation.EvaluateAll,
-							validation.Empty(s.Infrastructure.Azure.ResourceGroup).
+							validation.NotEmpty(s.Infrastructure.Azure.ResourceGroup).
 								WithFieldTrace(s, &s.Infrastructure.Azure.ResourceGroup),
-							validation.Empty(s.Infrastructure.Azure.SubscriptionID).
+							validation.NotEmpty(s.Infrastructure.Azure.SubscriptionID).
 								WithFieldTrace(s, &s.Infrastructure.Azure.SubscriptionID),
-							validation.Empty(s.Infrastructure.Azure.NetworkSecurityGroupName).
+							validation.NotEmpty(s.Infrastructure.Azure.NetworkSecurityGroupName).
 								WithFieldTrace(s, &s.Infrastructure.Azure.NetworkSecurityGroupName),
-							validation.Empty(s.Infrastructure.Azure.LoadBalancerName).
+							validation.NotEmpty(s.Infrastructure.Azure.LoadBalancerName).
 								WithFieldTrace(s, &s.Infrastructure.Azure.LoadBalancerName),
-							validation.Empty(s.Infrastructure.Azure.UserAssignedIdentity).
+							validation.NotEmpty(s.Infrastructure.Azure.UserAssignedIdentity).
 								WithFieldTrace(s, &s.Infrastructure.Azure.UserAssignedIdentity),
-							validation.Empty(s.Infrastructure.Azure.AttestationURL).
-								WithFieldTrace(s, &s.Infrastructure.Azure.AttestationURL),
 						)
 					},
 				),
-			),
-			// valid.
-			validation.IfNotNil(
-				s.Infrastructure.Azure,
-				func() *validation.Constraint {
-					return validation.And(
-						validation.EvaluateAll,
-						validation.NotEmpty(s.Infrastructure.Azure.ResourceGroup).
-							WithFieldTrace(s, &s.Infrastructure.Azure.ResourceGroup),
-						validation.NotEmpty(s.Infrastructure.Azure.SubscriptionID).
-							WithFieldTrace(s, &s.Infrastructure.Azure.SubscriptionID),
-						validation.NotEmpty(s.Infrastructure.Azure.NetworkSecurityGroupName).
-							WithFieldTrace(s, &s.Infrastructure.Azure.NetworkSecurityGroupName),
-						validation.NotEmpty(s.Infrastructure.Azure.LoadBalancerName).
-							WithFieldTrace(s, &s.Infrastructure.Azure.LoadBalancerName),
-						validation.NotEmpty(s.Infrastructure.Azure.UserAssignedIdentity).
-							WithFieldTrace(s, &s.Infrastructure.Azure.UserAssignedIdentity),
-						validation.NotEmpty(s.Infrastructure.Azure.AttestationURL).
-							WithFieldTrace(s, &s.Infrastructure.Azure.AttestationURL),
-					)
-				},
-			),
-		),
-		// ClusterValues must be empty.
-		// As the clusterValues struct contains slices, we cannot use the
-		// Empty constraint on the entire struct. Instead, we need to check
-		// each field individually.
-		validation.Empty(s.ClusterValues.ClusterID).
-			WithFieldTrace(s, &s.ClusterValues.ClusterID),
-		// ownerID is currently unused as functionality is not implemented
-		// Therefore, we don't want to validate it
-		// validation.Empty(s.ClusterValues.OwnerID).
-		//	WithFieldTrace(s, &s.ClusterValues.OwnerID),
-		validation.EmptySlice(s.ClusterValues.MeasurementSalt).
-			WithFieldTrace(s, &s.ClusterValues.MeasurementSalt),
+			)
+			if attestation.Equal(variant.AzureSEVSNP{}) {
+				constraints = append(constraints,
+					validation.IfNotNil(
+						s.Infrastructure.Azure,
+						func() *validation.Constraint {
+							// For SEV-SNP attestation, we require the attestation URL to be set.
+							return validation.NotEmpty(s.Infrastructure.Azure.AttestationURL).
+								WithFieldTrace(s, &s.Infrastructure.Azure.AttestationURL)
+						},
+					),
+				)
+			}
+		case variant.GCPSEVES{}:
+			// GCP values need to be valid after infrastructure creation.
+			constraints = append(constraints,
+				// Azure values need to be nil or empty.
+				validation.Or(
+					validation.Equal(s.Infrastructure.Azure, nil).
+						WithFieldTrace(s, &s.Infrastructure.Azure),
+					validation.IfNotNil(
+						s.Infrastructure.Azure,
+						func() *validation.Constraint {
+							return validation.Empty(s.Infrastructure.Azure).
+								WithFieldTrace(s, &s.Infrastructure.Azure)
+						},
+					),
+				),
+				validation.IfNotNil(
+					s.Infrastructure.GCP,
+					func() *validation.Constraint {
+						return validation.And(
+							validation.EvaluateAll,
+							// ProjectID needs to be filled.
+							validation.NotEmpty(s.Infrastructure.GCP.ProjectID).
+								WithFieldTrace(s, &s.Infrastructure.GCP.ProjectID),
+							// Pod IP Cidr needs to be a valid CIDR range.
+							validation.CIDR(s.Infrastructure.GCP.IPCidrPod).
+								WithFieldTrace(s, &s.Infrastructure.GCP.IPCidrPod),
+						)
+					},
+				),
+			)
+		}
+
+		return constraints
 	}
 }
 
@@ -412,7 +414,7 @@ func (s *State) preInitConstraints() []*validation.Constraint {
 //
 // The constraints check if the infrastructure state and cluster state
 // is valid, so that the cluster can be used correctly.
-func (s *State) postInitConstraints(csp cloudprovider.Provider) func() []*validation.Constraint {
+func (s *State) postInitConstraints(attestation variant.Variant) func() []*validation.Constraint {
 	return func() []*validation.Constraint {
 		constraints := []*validation.Constraint{
 			// state version needs to be accepted by the parsing CLI.
@@ -455,8 +457,8 @@ func (s *State) postInitConstraints(csp cloudprovider.Provider) func() []*valida
 				WithFieldTrace(s, &s.ClusterValues.MeasurementSalt),
 		}
 
-		switch csp {
-		case cloudprovider.Azure:
+		switch attestation {
+		case variant.AzureSEVSNP{}, variant.AzureTDX{}, variant.AzureTrustedLaunch{}:
 			constraints = append(constraints,
 				// GCP values need to be nil or empty.
 				validation.Or(
@@ -468,7 +470,8 @@ func (s *State) postInitConstraints(csp cloudprovider.Provider) func() []*valida
 							return validation.Empty(s.Infrastructure.GCP).
 								WithFieldTrace(s, &s.Infrastructure.GCP)
 						},
-					)),
+					),
+				),
 				// Azure values need to be valid.
 				validation.IfNotNil(
 					s.Infrastructure.Azure,
@@ -485,13 +488,23 @@ func (s *State) postInitConstraints(csp cloudprovider.Provider) func() []*valida
 								WithFieldTrace(s, &s.Infrastructure.Azure.LoadBalancerName),
 							validation.NotEmpty(s.Infrastructure.Azure.UserAssignedIdentity).
 								WithFieldTrace(s, &s.Infrastructure.Azure.UserAssignedIdentity),
-							validation.NotEmpty(s.Infrastructure.Azure.AttestationURL).
-								WithFieldTrace(s, &s.Infrastructure.Azure.AttestationURL),
 						)
 					},
 				),
 			)
-		case cloudprovider.GCP:
+			if attestation.Equal(variant.AzureSEVSNP{}) {
+				constraints = append(constraints,
+					validation.IfNotNil(
+						s.Infrastructure.Azure,
+						func() *validation.Constraint {
+							// For SEV-SNP attestation, we require the attestation URL to be set.
+							return validation.NotEmpty(s.Infrastructure.Azure.AttestationURL).
+								WithFieldTrace(s, &s.Infrastructure.Azure.AttestationURL)
+						},
+					),
+				)
+			}
+		case variant.GCPSEVES{}:
 			constraints = append(constraints,
 				// Azure values need to be nil or empty.
 				validation.Or(
@@ -503,7 +516,8 @@ func (s *State) postInitConstraints(csp cloudprovider.Provider) func() []*valida
 							return validation.Empty(s.Infrastructure.Azure).
 								WithFieldTrace(s, &s.Infrastructure.Azure)
 						},
-					)),
+					),
+				),
 				// GCP values need to be valid.
 				validation.IfNotNil(
 					s.Infrastructure.GCP,

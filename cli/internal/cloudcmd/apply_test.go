@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -192,7 +193,7 @@ func TestApplier(t *testing.T) {
 			}
 			assert.False(diff)
 
-			idFile, err := applier.Apply(context.Background(), tc.provider, true)
+			idFile, err := applier.Apply(context.Background(), tc.provider, tc.config.GetAttestationConfig().GetVariant(), true)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -352,7 +353,7 @@ func TestApply(t *testing.T) {
 				out:             io.Discard,
 			}
 
-			_, err := u.Apply(context.Background(), cloudprovider.QEMU, WithoutRollbackOnError)
+			_, err := u.Apply(context.Background(), cloudprovider.QEMU, variant.QEMUVTPM{}, WithoutRollbackOnError)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

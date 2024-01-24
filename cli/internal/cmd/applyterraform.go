@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -94,7 +95,8 @@ func (a *applyCmd) applyTerraformChanges(
 			return state.Infrastructure{}, err
 		}
 		return a.applyTerraformChangesWithMessage(
-			cmd, conf.GetProvider(), cloudcmd.WithRollbackOnError, terraformClient, upgradeDir,
+			cmd, conf.GetProvider(), conf.GetAttestationConfig().GetVariant(),
+			cloudcmd.WithRollbackOnError, terraformClient, upgradeDir,
 			"Do you want to create this cluster?",
 			"The creation of the cluster was aborted.",
 			"cluster creation aborted by user",
@@ -105,7 +107,8 @@ func (a *applyCmd) applyTerraformChanges(
 
 	cmd.Println("Changes of Constellation cloud resources are required by applying an updated Terraform template.")
 	return a.applyTerraformChangesWithMessage(
-		cmd, conf.GetProvider(), cloudcmd.WithoutRollbackOnError, terraformClient, upgradeDir,
+		cmd, conf.GetProvider(), conf.GetAttestationConfig().GetVariant(),
+		cloudcmd.WithoutRollbackOnError, terraformClient, upgradeDir,
 		"Do you want to apply these Terraform changes?",
 		"Aborting upgrade.",
 		"cluster upgrade aborted by user",
@@ -119,8 +122,8 @@ func (a *applyCmd) applyTerraformChanges(
 }
 
 func (a *applyCmd) applyTerraformChangesWithMessage(
-	cmd *cobra.Command, csp cloudprovider.Provider, rollbackBehavior cloudcmd.RollbackBehavior,
-	terraformClient cloudApplier, upgradeDir string,
+	cmd *cobra.Command, csp cloudprovider.Provider, attestation variant.Variant,
+	rollbackBehavior cloudcmd.RollbackBehavior, terraformClient cloudApplier, upgradeDir string,
 	confirmationQst, abortMsg, abortErrorMsg, progressMsg, successMsg string,
 ) (state.Infrastructure, error) {
 	// Ask for confirmation first
@@ -146,7 +149,7 @@ func (a *applyCmd) applyTerraformChangesWithMessage(
 	a.log.Debugf("Applying Terraform changes")
 
 	a.spinner.Start(progressMsg, false)
-	infraState, err := terraformClient.Apply(cmd.Context(), csp, rollbackBehavior)
+	infraState, err := terraformClient.Apply(cmd.Context(), csp, attestation, rollbackBehavior)
 	a.spinner.Stop()
 	if err != nil {
 		return state.Infrastructure{}, fmt.Errorf("applying terraform changes: %w", err)

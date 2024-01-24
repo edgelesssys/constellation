@@ -465,9 +465,9 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 	// a user may still end up skipping phases that could result in errors later on.
 	// However, we perform basic steps, like ensuring init phase is not skipped if
 	a.log.Debugf("Validating state file")
-	preCreateValidateErr := stateFile.Validate(state.PreCreate, conf.GetProvider())
-	preInitValidateErr := stateFile.Validate(state.PreInit, conf.GetProvider())
-	postInitValidateErr := stateFile.Validate(state.PostInit, conf.GetProvider())
+	preCreateValidateErr := stateFile.Validate(state.PreCreate, conf.GetAttestationConfig().GetVariant())
+	preInitValidateErr := stateFile.Validate(state.PreInit, conf.GetAttestationConfig().GetVariant())
+	postInitValidateErr := stateFile.Validate(state.PostInit, conf.GetAttestationConfig().GetVariant())
 
 	// If the state file is in a pre-create state, we need to create the cluster,
 	// in which case the workspace has to be clean

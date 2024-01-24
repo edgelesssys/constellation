@@ -15,6 +15,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -89,7 +90,9 @@ func (a *Applier) Plan(ctx context.Context, conf *config.Config) (bool, error) {
 }
 
 // Apply applies the prepared configuration by creating or updating cloud resources.
-func (a *Applier) Apply(ctx context.Context, csp cloudprovider.Provider, withRollback RollbackBehavior) (infra state.Infrastructure, retErr error) {
+func (a *Applier) Apply(
+	ctx context.Context, csp cloudprovider.Provider, attestation variant.Variant, withRollback RollbackBehavior,
+) (infra state.Infrastructure, retErr error) {
 	if withRollback {
 		var rollbacker rollbacker
 		switch csp {
@@ -105,7 +108,7 @@ func (a *Applier) Apply(ctx context.Context, csp cloudprovider.Provider, withRol
 	if err != nil {
 		return infraState, fmt.Errorf("terraform apply: %w", err)
 	}
-	if csp == cloudprovider.Azure && infraState.Azure != nil {
+	if csp == cloudprovider.Azure && attestation.Equal(variant.AzureSEVSNP{}) && infraState.Azure != nil {
 		if err := a.policyPatcher.Patch(ctx, infraState.Azure.AttestationURL); err != nil {
 			return infraState, fmt.Errorf("patching policies: %w", err)
 		}

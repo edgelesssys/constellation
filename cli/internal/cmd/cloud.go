@@ -11,6 +11,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -19,7 +20,7 @@ import (
 
 type cloudApplier interface {
 	Plan(ctx context.Context, conf *config.Config) (bool, error)
-	Apply(ctx context.Context, csp cloudprovider.Provider, rollback cloudcmd.RollbackBehavior) (state.Infrastructure, error)
+	Apply(ctx context.Context, csp cloudprovider.Provider, variant variant.Variant, rollback cloudcmd.RollbackBehavior) (state.Infrastructure, error)
 	RestoreWorkspace() error
 	WorkingDirIsEmpty() (bool, error)
 }
