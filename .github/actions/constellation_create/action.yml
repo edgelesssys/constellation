@@ -279,9 +279,9 @@ runs:
       if: always()
       uses: ./.github/actions/artifact_upload
       with:
-        name: terraform-state
+        name: terraform-state-${{ inputs.artifactNameSuffix }}
         path: >
-          constellation_terraform
-          constellation_iam_terraform
+          constellation-terraform
+          constellation-iam-terraform
         encryptionSecret: ${{ inputs.encryptionSecret }}
 
