@@ -29,17 +29,37 @@ func (c *Client) GetScalingGroupImage(ctx context.Context, scalingGroupID string
 	if err != nil {
 		return "", err
 	}
+
 	if res.Properties == nil ||
 		res.Properties.VirtualMachineProfile == nil ||
 		res.Properties.VirtualMachineProfile.StorageProfile == nil ||
 		res.Properties.VirtualMachineProfile.StorageProfile.ImageReference == nil ||
-		res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.ID == nil && res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.CommunityGalleryImageID == nil {
+		res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.ID == nil &&
+			res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.CommunityGalleryImageID == nil &&
+			(res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.Publisher == nil ||
+				res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.Offer == nil ||
+				res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.SKU == nil ||
+				res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.Version == nil) {
 		return "", fmt.Errorf("scalet set %q does not have valid image reference", scalingGroupID)
 	}
+
+	// Image ID is set, return it.
 	if res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.ID != nil {
 		return *res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.ID, nil
 	}
-	return *res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.CommunityGalleryImageID, nil
+
+	// Community Gallery Image ID is set, return it.
+	if res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.CommunityGalleryImageID != nil {
+		return *res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.CommunityGalleryImageID, nil
+	}
+
+	// Last possible option: Marketplace Image is used, format it to an URI and return it.
+	return mpimage.AzureMarketplaceImage{
+		Publisher: *res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.Publisher,
+		Offer:     *res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.Offer,
+		SKU:       *res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.SKU,
+		Version:   *res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.Version,
+	}.URI(), nil
 }
 
 // SetScalingGroupImage sets the image URI of the scaling group.

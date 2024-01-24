@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
+	"github.com/edgelesssys/constellation/v2/internal/mpimage"
 )
 
 // GetNodeImage returns the image name of the node.
@@ -27,13 +28,32 @@ func (c *Client) GetNodeImage(ctx context.Context, providerID string) (string, e
 	if resp.Properties == nil ||
 		resp.Properties.StorageProfile == nil ||
 		resp.Properties.StorageProfile.ImageReference == nil ||
-		resp.Properties.StorageProfile.ImageReference.ID == nil && resp.Properties.StorageProfile.ImageReference.CommunityGalleryImageID == nil {
+		resp.Properties.StorageProfile.ImageReference.ID == nil &&
+			resp.Properties.StorageProfile.ImageReference.CommunityGalleryImageID == nil &&
+			(resp.Properties.StorageProfile.ImageReference.Publisher == nil ||
+				resp.Properties.StorageProfile.ImageReference.Offer == nil ||
+				resp.Properties.StorageProfile.ImageReference.SKU == nil ||
+				resp.Properties.StorageProfile.ImageReference.Version == nil) {
 		return "", fmt.Errorf("node %q does not have valid image reference", providerID)
 	}
+
+	// Image ID is set, return it.
 	if resp.Properties.StorageProfile.ImageReference.ID != nil {
 		return *resp.Properties.StorageProfile.ImageReference.ID, nil
 	}
-	return *resp.Properties.StorageProfile.ImageReference.CommunityGalleryImageID, nil
+
+	// Community Gallery image ID is set, return it.
+	if resp.Properties.StorageProfile.ImageReference.CommunityGalleryImageID != nil {
+		return *resp.Properties.StorageProfile.ImageReference.CommunityGalleryImageID, nil
+	}
+
+	// Last possible option: Marketplace Image is used, format it to an URI and return it.
+	return mpimage.AzureMarketplaceImage{
+		Publisher: *resp.Properties.StorageProfile.ImageReference.Publisher,
+		Offer:     *resp.Properties.StorageProfile.ImageReference.Offer,
+		SKU:       *resp.Properties.StorageProfile.ImageReference.SKU,
+		Version:   *resp.Properties.StorageProfile.ImageReference.Version,
+	}.URI(), nil
 }
 
 // GetScalingGroupID returns the scaling group ID of the node.
