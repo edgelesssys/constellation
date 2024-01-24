@@ -53,6 +53,38 @@ func TestAccAttestationSource(t *testing.T) {
 				},
 			},
 		},
+		"azure tdx success": {
+			// TODO(v2.15): Use regular image tag instead of pseudo version
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			PreCheck:                 bazelPreCheck,
+			Steps: []resource.TestStep{
+				{
+					Config: testingConfig + `
+					data "constellation_attestation" "test" {
+						csp = "azure"
+						attestation_variant = "azure-tdx"
+						image = {
+							version = "ref/main/stream/debug/v2.15.0-pre.0.20240124172919-4431ac3233bd"
+							reference = "ref/main/stream/debug/v2.15.0-pre.0.20240124172919-4431ac3233bd"
+							short_path = "ref/main/stream/debug/v2.15.0-pre.0.20240124172919-4431ac3233bd"
+						}
+						insecure = true
+					}
+					`,
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.variant", "azure-tdx"),
+
+						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.bootloader_version", "0"), // not support for TDX
+						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.tdx.pce_svn", "0"),        // Current default value for TDX
+
+						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.tdx.intel_root_key", `"-----BEGIN CERTIFICATE-----\nMIICjzCCAjSgAwIBAgIUImUM1lqdNInzg7SVUr9QGzknBqwwCgYIKoZIzj0EAwIw\naDEaMBgGA1UEAwwRSW50ZWwgU0dYIFJvb3QgQ0ExGjAYBgNVBAoMEUludGVsIENv\ncnBvcmF0aW9uMRQwEgYDVQQHDAtTYW50YSBDbGFyYTELMAkGA1UECAwCQ0ExCzAJ\nBgNVBAYTAlVTMB4XDTE4MDUyMTEwNDUxMFoXDTQ5MTIzMTIzNTk1OVowaDEaMBgG\nA1UEAwwRSW50ZWwgU0dYIFJvb3QgQ0ExGjAYBgNVBAoMEUludGVsIENvcnBvcmF0\naW9uMRQwEgYDVQQHDAtTYW50YSBDbGFyYTELMAkGA1UECAwCQ0ExCzAJBgNVBAYT\nAlVTMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEC6nEwMDIYZOj/iPWsCzaEKi7\n1OiOSLRFhWGjbnBVJfVnkY4u3IjkDYYL0MxO4mqsyYjlBalTVYxFP2sJBK5zlKOB\nuzCBuDAfBgNVHSMEGDAWgBQiZQzWWp00ifODtJVSv1AbOScGrDBSBgNVHR8ESzBJ\nMEegRaBDhkFodHRwczovL2NlcnRpZmljYXRlcy50cnVzdGVkc2VydmljZXMuaW50\nZWwuY29tL0ludGVsU0dYUm9vdENBLmRlcjAdBgNVHQ4EFgQUImUM1lqdNInzg7SV\nUr9QGzknBqwwDgYDVR0PAQH/BAQDAgEGMBIGA1UdEwEB/wQIMAYBAf8CAQEwCgYI\nKoZIzj0EAwIDSQAwRgIhAOW/5QkR+S9CiSDcNoowLuPRLsWGf/Yi7GSX94BgwTwg\nAiEA4J0lrHoMs+Xo5o/sX6O9QWxHRAvZUGOdRQ7cvqRXaqI=\n-----END CERTIFICATE-----\n"`),
+
+						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.measurements.15.expected", "0000000000000000000000000000000000000000000000000000000000000000"),
+						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.measurements.15.warn_only", "false"),
+					),
+				},
+			},
+		},
 		"gcp sev-snp succcess": {
 			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 			PreCheck:                 bazelPreCheck,

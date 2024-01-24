@@ -126,7 +126,7 @@ func (d *AttestationDataSource) ValidateConfig(ctx context.Context, req datasour
 		return
 	}
 	if data.AttestationVariant.Equal(types.StringValue("azure-sev-snp")) && data.MaaURL.IsNull() {
-		tflog.Info(ctx, "MAA URL not set, MAA fallback will be unavaiable")
+		tflog.Info(ctx, "MAA URL not set, MAA fallback will be unavailable")
 	}
 }
 
@@ -172,7 +172,7 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 	}
 	tfAttestation, err := convertToTfAttestation(attestationVariant, snpVersions)
 	if err != nil {
-		resp.Diagnostics.AddError("Converting SNP attestation", err.Error())
+		resp.Diagnostics.AddError("Converting attestation", err.Error())
 	}
 	verifyFetcher := measurements.NewVerifyFetcher(sigstore.NewCosignVerifier, d.rekor, d.client)
 

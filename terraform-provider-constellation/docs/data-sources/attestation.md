@@ -31,6 +31,7 @@ data "constellation_attestation" "test" {
   * `aws-sev-snp`
   * `aws-nitro-tpm`
   * `azure-sev-snp`
+  * `azure-tdx`
   * `gcp-sev-es`
 - `csp` (String) CSP (Cloud Service Provider) to use. (e.g. `azure`)
 See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview/clouds) that Constellation supports.
@@ -43,7 +44,7 @@ See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview
 
 ### Read-Only
 
-- `attestation` (Attributes) Attestation comprises the measurements and SEV-SNP specific parameters. (see [below for nested schema](#nestedatt--attestation))
+- `attestation` (Attributes) Attestation comprises the measurements and CVM specific parameters. (see [below for nested schema](#nestedatt--attestation))
 
 <a id="nestedatt--image"></a>
 ### Nested Schema for `image`
@@ -69,11 +70,13 @@ Read-Only:
 - `measurements` (Attributes Map) (see [below for nested schema](#nestedatt--attestation--measurements))
 - `microcode_version` (Number)
 - `snp_version` (Number)
+- `tdx` (Attributes) (see [below for nested schema](#nestedatt--attestation--tdx))
 - `tee_version` (Number)
 - `variant` (String) Attestation variant the image should work with. Can be one of:
   * `aws-sev-snp`
   * `aws-nitro-tpm`
   * `azure-sev-snp`
+  * `azure-tdx`
   * `gcp-sev-es`
 
 <a id="nestedatt--attestation--azure_firmware_signer_config"></a>
@@ -93,3 +96,17 @@ Read-Only:
 
 - `expected` (String)
 - `warn_only` (Boolean)
+
+
+<a id="nestedatt--attestation--tdx"></a>
+### Nested Schema for `attestation.tdx`
+
+Read-Only:
+
+- `intel_root_key` (String)
+- `mr_seam` (String)
+- `pce_svn` (Number)
+- `qe_svn` (Number)
+- `qe_vendor_id` (String)
+- `tee_tcb_svn` (String)
+- `xfam` (String)

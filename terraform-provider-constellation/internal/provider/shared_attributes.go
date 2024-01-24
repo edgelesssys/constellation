@@ -30,11 +30,12 @@ func newAttestationVariantAttributeSchema(t attributeType) schema.Attribute {
 			"  * `aws-sev-snp`\n" +
 			"  * `aws-nitro-tpm`\n" +
 			"  * `azure-sev-snp`\n" +
+			"  * `azure-tdx`\n" +
 			"  * `gcp-sev-es`\n",
 		Required: isInput,
 		Computed: !isInput,
 		Validators: []validator.String{
-			stringvalidator.OneOf("aws-sev-snp", "aws-nitro-tpm", "azure-sev-snp", "gcp-sev-es"),
+			stringvalidator.OneOf("aws-sev-snp", "aws-nitro-tpm", "azure-sev-snp", "azure-tdx", "gcp-sev-es"),
 		},
 	}
 }
@@ -86,8 +87,8 @@ func newAttestationConfigAttributeSchema(t attributeType) schema.Attribute {
 	return schema.SingleNestedAttribute{
 		Computed:            !isInput,
 		Required:            isInput,
-		MarkdownDescription: "Attestation comprises the measurements and SEV-SNP specific parameters." + additionalDescription,
-		Description:         "Attestation comprises the measurements and SEV-SNP specific parameters." + additionalDescription,
+		MarkdownDescription: "Attestation comprises the measurements and CVM specific parameters." + additionalDescription,
+		Description:         "Attestation comprises the measurements and CVM specific parameters." + additionalDescription,
 		Attributes: map[string]schema.Attribute{
 			"variant": newAttestationVariantAttributeSchema(t), // duplicated for convenience in cluster resource
 			"bootloader_version": schema.Int64Attribute{
@@ -129,6 +130,40 @@ func newAttestationConfigAttributeSchema(t attributeType) schema.Attribute {
 				Computed: !isInput,
 				Required: isInput,
 			},
+			"tdx": schema.SingleNestedAttribute{
+				Computed: !isInput,
+				Optional: isInput,
+				Attributes: map[string]schema.Attribute{
+					"qe_svn": schema.Int64Attribute{
+						Computed: !isInput,
+						Optional: isInput,
+					},
+					"pce_svn": schema.Int64Attribute{
+						Computed: !isInput,
+						Optional: isInput,
+					},
+					"tee_tcb_svn": schema.StringAttribute{
+						Computed: !isInput,
+						Optional: isInput,
+					},
+					"qe_vendor_id": schema.StringAttribute{
+						Computed: !isInput,
+						Optional: isInput,
+					},
+					"mr_seam": schema.StringAttribute{
+						Computed: !isInput,
+						Optional: isInput,
+					},
+					"xfam": schema.StringAttribute{
+						Computed: !isInput,
+						Optional: isInput,
+					},
+					"intel_root_key": schema.StringAttribute{
+						Computed: !isInput,
+						Optional: isInput,
+					},
+				},
+			},
 			"measurements": newMeasurementsAttributeSchema(t),
 		},
 	}
@@ -142,6 +177,7 @@ type attestationAttribute struct {
 	MicrocodeVersion             uint8                                 `tfsdk:"microcode_version"`
 	AMDRootKey                   string                                `tfsdk:"amd_root_key"`
 	AzureSNPFirmwareSignerConfig azureSnpFirmwareSignerConfigAttribute `tfsdk:"azure_firmware_signer_config"`
+	TDX                          tdxConfigAttribute                    `tfsdk:"tdx"`
 	Variant                      string                                `tfsdk:"variant"`
 	Measurements                 map[string]measurementAttribute       `tfsdk:"measurements"`
 }
@@ -151,6 +187,17 @@ type azureSnpFirmwareSignerConfigAttribute struct {
 	AcceptedKeyDigests []string `tfsdk:"accepted_key_digests"`
 	EnforcementPolicy  string   `tfsdk:"enforcement_policy"`
 	MAAURL             string   `tfsdk:"maa_url"`
+}
+
+// tdxConfigAttribute groups the TDX specific attributes for Constellation.
+type tdxConfigAttribute struct {
+	QESVN        uint16 `tfsdk:"qe_svn"`
+	PCESVN       uint16 `tfsdk:"pce_svn"`
+	TEETCBSVN    string `tfsdk:"tee_tcb_svn"`
+	QEVendorID   string `tfsdk:"qe_vendor_id"`
+	MRSeam       string `tfsdk:"mr_seam"`
+	XFAM         string `tfsdk:"xfam"`
+	IntelRootKey string `tfsdk:"intel_root_key"`
 }
 
 func newImageAttributeSchema(t attributeType) schema.Attribute {

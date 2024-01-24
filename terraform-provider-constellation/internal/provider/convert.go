@@ -86,6 +86,38 @@ func convertFromTfAttestationCfg(tfAttestation attestationAttribute, attestation
 			MicrocodeVersion:  newVersion(tfAttestation.MicrocodeVersion),
 			AMDRootKey:        rootKey,
 		}
+	case variant.AzureTDX{}:
+		var rootKey config.Certificate
+		if err := json.Unmarshal([]byte(tfAttestation.TDX.IntelRootKey), &rootKey); err != nil {
+			return nil, fmt.Errorf("unmarshalling root key: %w", err)
+		}
+		teeTCBSVN, err := hex.DecodeString(tfAttestation.TDX.TEETCBSVN)
+		if err != nil {
+			return nil, fmt.Errorf("decoding tee_tcb_svn: %w", err)
+		}
+		qeVendorID, err := hex.DecodeString(tfAttestation.TDX.QEVendorID)
+		if err != nil {
+			return nil, fmt.Errorf("decoding qe_vendor_id: %w", err)
+		}
+		mrSeam, err := hex.DecodeString(tfAttestation.TDX.MRSeam)
+		if err != nil {
+			return nil, fmt.Errorf("decoding mr_seam: %w", err)
+		}
+		xfam, err := hex.DecodeString(tfAttestation.TDX.XFAM)
+		if err != nil {
+			return nil, fmt.Errorf("decoding xfam: %w", err)
+		}
+
+		attestationConfig = &config.AzureTDX{
+			Measurements: c11nMeasurements,
+			QESVN:        tfAttestation.TDX.QESVN,
+			PCESVN:       tfAttestation.TDX.PCESVN,
+			TEETCBSVN:    teeTCBSVN,
+			QEVendorID:   qeVendorID,
+			MRSeam:       mrSeam,
+			XFAM:         xfam,
+			IntelRootKey: rootKey,
+		}
 	case variant.GCPSEVES{}:
 		attestationConfig = &config.GCPSEVES{
 			Measurements: c11nMeasurements,
@@ -127,6 +159,24 @@ func convertToTfAttestation(attVar variant.Variant, snpVersions attestationconfi
 			return tfAttestation, err
 		}
 		tfAttestation.AzureSNPFirmwareSignerConfig = tfFirmwareCfg
+	case variant.AzureTDX{}:
+		tdxCfg := config.DefaultForAzureTDX()
+		certStr, err := certAsString(tdxCfg.IntelRootKey)
+		if err != nil {
+			return tfAttestation, err
+		}
+
+		tfTdxCfg := tdxConfigAttribute{
+			IntelRootKey: certStr,
+			// TODO(AB#3798): Load these values dynamically from our attestation API
+			QESVN:      tdxCfg.QESVN,
+			PCESVN:     tdxCfg.PCESVN,
+			TEETCBSVN:  hex.EncodeToString(tdxCfg.TEETCBSVN),
+			QEVendorID: hex.EncodeToString(tdxCfg.QEVendorID),
+			MRSeam:     hex.EncodeToString(tdxCfg.MRSeam),
+			XFAM:       hex.EncodeToString(tdxCfg.XFAM),
+		}
+		tfAttestation.TDX = tfTdxCfg
 	case variant.GCPSEVES{}:
 		// no additional fields
 	default:
