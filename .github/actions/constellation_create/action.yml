@@ -275,6 +275,7 @@ runs:
         path: >
           !(terraform).log
         encryptionSecret: ${{ inputs.encryptionSecret }}
+
     - name: Upload terraform state
       if: always()
       uses: ./.github/actions/artifact_upload
