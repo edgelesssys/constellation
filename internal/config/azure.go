@@ -15,9 +15,13 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/encoding"
 )
 
-var _ sevsnpMarshaller = &AzureSEVSNP{}
+var (
+	_ svnResolveMarshaller = &AzureSEVSNP{}
+	_ svnResolveMarshaller = &AzureTDX{}
+)
 
 // DefaultForAzureSEVSNP returns the default configuration for Azure SEV-SNP attestation.
 // Version numbers have placeholder values and the latest available values can be fetched using [AzureSEVSNP.FetchAndSetLatestVersionNumbers].
@@ -131,4 +135,50 @@ func (c AzureTrustedLaunch) EqualTo(other AttestationCfg) (bool, error) {
 		return false, fmt.Errorf("cannot compare %T with %T", c, other)
 	}
 	return c.Measurements.EqualTo(otherCfg.Measurements), nil
+}
+
+// DefaultForAzureTDX returns the default configuration for Azure TDX attestation.
+func DefaultForAzureTDX() *AzureTDX {
+	return &AzureTDX{
+		Measurements: measurements.DefaultsFor(cloudprovider.Azure, variant.AzureTDX{}),
+		QESVN:        0,
+		PCESVN:       0,
+		TEETCBSVN:    encoding.HexBytes{0x02, 0x01, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+		QEVendorID:   encoding.HexBytes{0x93, 0x9a, 0x72, 0x33, 0xf7, 0x9c, 0x4c, 0xa9, 0x94, 0x0a, 0x0d, 0xb3, 0x95, 0x7f, 0x06, 0x07},
+		MRSeam:       encoding.HexBytes{0x36, 0x03, 0x04, 0xd3, 0x4a, 0x16, 0xaa, 0xce, 0x0a, 0x18, 0xe0, 0x9a, 0xd2, 0xd0, 0x7d, 0x2b, 0x9f, 0xd3, 0xc1, 0x74, 0x37, 0x8e, 0x5b, 0xf1, 0x08, 0x38, 0x80, 0x79, 0x82, 0x7f, 0x89, 0xff, 0x62, 0xac, 0xc5, 0xf8, 0xc4, 0x73, 0xdd, 0x40, 0x70, 0x63, 0x24, 0x83, 0x4e, 0x20, 0x29, 0x46},
+		XFAM:         encoding.HexBytes{0xe7, 0x18, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00},
+
+		IntelRootKey: mustParsePEM(tdxRootPEM),
+	}
+}
+
+// GetVariant returns azure-tdx as the variant.
+func (AzureTDX) GetVariant() variant.Variant {
+	return variant.AzureTDX{}
+}
+
+// GetMeasurements returns the measurements used for attestation.
+func (c AzureTDX) GetMeasurements() measurements.M {
+	return c.Measurements
+}
+
+// SetMeasurements updates a config's measurements using the given measurements.
+func (c *AzureTDX) SetMeasurements(m measurements.M) {
+	c.Measurements = m
+}
+
+// EqualTo returns true if the config is equal to the given config.
+func (c AzureTDX) EqualTo(other AttestationCfg) (bool, error) {
+	otherCfg, ok := other.(*AzureTDX)
+	if !ok {
+		return false, fmt.Errorf("cannot compare %T with %T", c, other)
+	}
+	return c.Measurements.EqualTo(otherCfg.Measurements), nil
+}
+
+func (c *AzureTDX) getToMarshallLatestWithResolvedVersions() AttestationCfg {
+	cp := *c
+	// TODO: We probably want to support "latest" pseudo versioning for Azure TDX
+	// But we should decide on which claims can be reliably used for attestation first
+	return &cp
 }

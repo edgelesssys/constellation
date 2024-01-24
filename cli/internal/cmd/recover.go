@@ -109,9 +109,8 @@ func (r *recoverCmd) recover(
 		return err
 	}
 
-	provider := conf.GetProvider()
-	r.log.Debugf("Got provider %s", provider.String())
-	if provider == cloudprovider.Azure {
+	r.log.Debugf("Got provider %s", conf.GetProvider())
+	if conf.GetProvider() == cloudprovider.Azure {
 		interval = 20 * time.Second // Azure LB takes a while to remove unhealthy instances
 	}
 
@@ -119,7 +118,7 @@ func (r *recoverCmd) recover(
 	if err != nil {
 		return fmt.Errorf("reading state file: %w", err)
 	}
-	if err := stateFile.Validate(state.PostInit, provider); err != nil {
+	if err := stateFile.Validate(state.PostInit, conf.GetAttestationConfig().GetVariant()); err != nil {
 		return fmt.Errorf("validating state file: %w", err)
 	}
 

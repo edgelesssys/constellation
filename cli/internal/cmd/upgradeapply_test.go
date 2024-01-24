@@ -335,7 +335,7 @@ func (u stubTerraformUpgrader) Plan(_ context.Context, _ *config.Config) (bool, 
 	return u.terraformDiff, u.planTerraformErr
 }
 
-func (u stubTerraformUpgrader) Apply(_ context.Context, _ cloudprovider.Provider, _ cloudcmd.RollbackBehavior) (state.Infrastructure, error) {
+func (u stubTerraformUpgrader) Apply(_ context.Context, _ cloudprovider.Provider, _ variant.Variant, _ cloudcmd.RollbackBehavior) (state.Infrastructure, error) {
 	return state.Infrastructure{}, u.applyTerraformErr
 }
 
@@ -356,8 +356,8 @@ func (m *mockTerraformUpgrader) Plan(ctx context.Context, conf *config.Config) (
 	return args.Bool(0), args.Error(1)
 }
 
-func (m *mockTerraformUpgrader) Apply(ctx context.Context, provider cloudprovider.Provider, rollback cloudcmd.RollbackBehavior) (state.Infrastructure, error) {
-	args := m.Called(ctx, provider, rollback)
+func (m *mockTerraformUpgrader) Apply(ctx context.Context, provider cloudprovider.Provider, variant variant.Variant, rollback cloudcmd.RollbackBehavior) (state.Infrastructure, error) {
+	args := m.Called(ctx, provider, variant, rollback)
 	return args.Get(0).(state.Infrastructure), args.Error(1)
 }
 

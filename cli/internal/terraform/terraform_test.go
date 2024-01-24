@@ -18,7 +18,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/constellation/state"
+	"github.com/edgelesssys/constellation/v2/internal/encoding"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/hashicorp/terraform-exec/tfexec"
@@ -490,7 +490,7 @@ func TestCreateCluster(t *testing.T) {
 			}
 			assert.NoError(err)
 			assert.Equal("192.0.2.100", infraState.ClusterEndpoint)
-			assert.Equal(state.HexBytes("initSecret"), infraState.InitSecret)
+			assert.Equal(encoding.HexBytes("initSecret"), infraState.InitSecret)
 			assert.Equal("12345abc", infraState.UID)
 			assert.Equal("192.0.2.101", infraState.InClusterEndpoint)
 			assert.Equal("192.0.2.103/32", infraState.IPCidrNode)

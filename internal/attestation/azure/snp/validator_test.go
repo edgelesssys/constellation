@@ -10,8 +10,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
-	"encoding/base64"
-	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -23,7 +21,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/snp/testdata"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -201,107 +198,6 @@ type stubMaaValidator struct {
 
 func (v *stubMaaValidator) validateToken(_ context.Context, _ string, _ string, _ []byte) error {
 	return v.validateTokenErr
-}
-
-// TestValidateAk tests the attestation key validation with a simulated TPM device.
-func TestValidateAk(t *testing.T) {
-	cgo := os.Getenv("CGO_ENABLED")
-	if cgo == "0" {
-		t.Skip("skipping test because CGO is disabled and tpm simulator requires it")
-	}
-
-	int32ToBytes := func(val uint32) []byte {
-		r := make([]byte, 4)
-		binary.PutUvarint(r, uint64(val))
-		return r
-	}
-
-	require := require.New(t)
-
-	tpm, err := simulator.OpenSimulatedTPM()
-	require.NoError(err)
-	defer tpm.Close()
-	key, err := client.AttestationKeyRSA(tpm)
-	require.NoError(err)
-	defer key.Close()
-
-	e := base64.RawURLEncoding.EncodeToString(int32ToBytes(key.PublicArea().RSAParameters.ExponentRaw))
-	n := base64.RawURLEncoding.EncodeToString(key.PublicArea().RSAParameters.ModulusRaw)
-
-	ak := akPub{E: e, N: n}
-	runtimeData := attestationKey{PublicPart: []akPub{ak}}
-
-	defaultRuntimeDataRaw, err := json.Marshal(runtimeData)
-	require.NoError(err)
-	defaultInstanceInfo := snp.InstanceInfo{Azure: &snp.AzureInstanceInfo{RuntimeData: defaultRuntimeDataRaw}}
-
-	sig := sha256.Sum256(defaultRuntimeDataRaw)
-	defaultReportData := sig[:]
-	defaultRsaParams := key.PublicArea().RSAParameters
-
-	testCases := map[string]struct {
-		instanceInfo   snp.InstanceInfo
-		runtimeDataRaw []byte
-		reportData     []byte
-		rsaParameters  *tpm2.RSAParams
-		wantErr        bool
-	}{
-		"success": {
-			instanceInfo:   defaultInstanceInfo,
-			runtimeDataRaw: defaultRuntimeDataRaw,
-			reportData:     defaultReportData,
-			rsaParameters:  defaultRsaParams,
-		},
-		"invalid json": {
-			instanceInfo:   defaultInstanceInfo,
-			runtimeDataRaw: []byte(""),
-			reportData:     defaultReportData,
-			rsaParameters:  defaultRsaParams,
-			wantErr:        true,
-		},
-		"invalid hash": {
-			instanceInfo:   defaultInstanceInfo,
-			runtimeDataRaw: defaultRuntimeDataRaw,
-			reportData:     bytes.Repeat([]byte{0}, 64),
-			rsaParameters:  defaultRsaParams,
-			wantErr:        true,
-		},
-		"invalid E": {
-			instanceInfo:   defaultInstanceInfo,
-			runtimeDataRaw: defaultRuntimeDataRaw,
-			reportData:     defaultReportData,
-			rsaParameters: func() *tpm2.RSAParams {
-				tmp := *defaultRsaParams
-				tmp.ExponentRaw = 1
-				return &tmp
-			}(),
-			wantErr: true,
-		},
-		"invalid N": {
-			instanceInfo:   defaultInstanceInfo,
-			runtimeDataRaw: defaultRuntimeDataRaw,
-			reportData:     defaultReportData,
-			rsaParameters: func() *tpm2.RSAParams {
-				tmp := *defaultRsaParams
-				tmp.ModulusRaw = []byte{0, 1, 2, 3}
-				return &tmp
-			}(),
-			wantErr: true,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-			ak := attestationKey{}
-			err = ak.validate(tc.runtimeDataRaw, tc.reportData, tc.rsaParameters)
-			if tc.wantErr {
-				assert.Error(err)
-			} else {
-				assert.NoError(err)
-			}
-		})
-	}
 }
 
 // TestGetTrustedKey tests the verification and validation of attestation report.
@@ -824,11 +720,9 @@ func newStubInstanceInfo(vcek, certChain []byte, report, runtimeData string) (st
 	}, nil
 }
 
-type stubAttestationKey struct {
-	PublicPart []akPub
-}
+type stubAttestationKey struct{}
 
-func (s *stubAttestationKey) validate(runtimeDataRaw []byte, reportData []byte, _ *tpm2.RSAParams) error {
+func (s *stubAttestationKey) Validate(runtimeDataRaw []byte, reportData []byte, _ *tpm2.RSAParams) error {
 	if err := json.Unmarshal(runtimeDataRaw, s); err != nil {
 		return fmt.Errorf("unmarshalling json: %w", err)
 	}

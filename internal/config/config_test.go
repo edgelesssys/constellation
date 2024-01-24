@@ -328,7 +328,7 @@ func TestFromFile(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	const defaultErrCount = 37 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
+	const defaultErrCount = 38 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
 	const azErrCount = 7
 	const awsErrCount = 8
 	const gcpErrCount = 8
@@ -686,137 +686,95 @@ func TestConfig_IsReleaseImage(t *testing.T) {
 
 func TestValidInstanceTypeForProvider(t *testing.T) {
 	testCases := map[string]struct {
-		provider       cloudprovider.Provider
+		variant        variant.Variant
 		instanceTypes  []string
-		nonCVMsAllowed bool
 		expectedResult bool
 	}{
 		"empty all": {
-			provider:       cloudprovider.Unknown,
+			variant:        variant.Dummy{},
 			instanceTypes:  []string{},
 			expectedResult: false,
 		},
 		"empty aws": {
-			provider:       cloudprovider.AWS,
+			variant:        variant.AWSSEVSNP{},
 			instanceTypes:  []string{},
 			expectedResult: false,
 		},
 		"empty azure only CVMs": {
-			provider:       cloudprovider.Azure,
+			variant:        variant.AzureSEVSNP{},
 			instanceTypes:  []string{},
 			expectedResult: false,
 		},
 		"empty azure with non-CVMs": {
-			provider:       cloudprovider.Azure,
+			variant:        variant.AzureTrustedLaunch{},
 			instanceTypes:  []string{},
-			nonCVMsAllowed: true,
 			expectedResult: false,
 		},
 		"empty gcp": {
-			provider:       cloudprovider.GCP,
+			variant:        variant.GCPSEVES{},
 			instanceTypes:  []string{},
 			expectedResult: false,
 		},
 		"azure only CVMs (SNP)": {
-			provider:       cloudprovider.Azure,
+			variant:        variant.AzureSEVSNP{},
 			instanceTypes:  instancetypes.AzureSNPInstanceTypes,
 			expectedResult: true,
 		},
 		"azure only CVMs (TDX)": {
-			provider:       cloudprovider.Azure,
+			variant:        variant.AzureTDX{},
 			instanceTypes:  instancetypes.AzureTDXInstanceTypes,
 			expectedResult: true,
 		},
-		"azure CVMs but CVMs disabled": {
-			provider:       cloudprovider.Azure,
-			instanceTypes:  instancetypes.AzureSNPInstanceTypes,
-			nonCVMsAllowed: true,
-			expectedResult: false,
-		},
-		"azure trusted launch VMs with CVMs enabled": {
-			provider:       cloudprovider.Azure,
+		"azure trusted launch VMs": {
+			variant:        variant.AzureTrustedLaunch{},
 			instanceTypes:  instancetypes.AzureTrustedLaunchInstanceTypes,
-			expectedResult: false,
-		},
-		"azure trusted launch VMs with CVMs disabled": {
-			provider:       cloudprovider.Azure,
-			instanceTypes:  instancetypes.AzureTrustedLaunchInstanceTypes,
-			nonCVMsAllowed: true,
 			expectedResult: true,
 		},
 		"gcp": {
-			provider:       cloudprovider.GCP,
+			variant:        variant.GCPSEVES{},
 			instanceTypes:  instancetypes.GCPInstanceTypes,
 			expectedResult: true,
 		},
 		"put gcp when azure is set": {
-			provider:       cloudprovider.Azure,
+			variant:        variant.AzureSEVSNP{},
 			instanceTypes:  instancetypes.GCPInstanceTypes,
-			expectedResult: false,
-		},
-		"put gcp when azure is set with CVMs disabled": {
-			provider:       cloudprovider.Azure,
-			instanceTypes:  instancetypes.GCPInstanceTypes,
-			nonCVMsAllowed: true,
 			expectedResult: false,
 		},
 		"put azure when gcp is set": {
-			provider:       cloudprovider.GCP,
+			variant:        variant.GCPSEVES{},
 			instanceTypes:  instancetypes.AzureSNPInstanceTypes,
-			expectedResult: false,
-		},
-		"put azure when gcp is set with CVMs disabled": {
-			provider:       cloudprovider.GCP,
-			instanceTypes:  instancetypes.AzureTrustedLaunchInstanceTypes,
-			nonCVMsAllowed: true,
 			expectedResult: false,
 		},
 		// Testing every possible instance type for AWS is not feasible, so we just test a few based on known supported / unsupported families
 		// Also serves as a test for checkIfInstanceInValidAWSFamilys
 		"aws two valid instances": {
-			provider:       cloudprovider.AWS,
+			variant:        variant.AWSSEVSNP{},
 			instanceTypes:  []string{"c5.xlarge", "c5a.2xlarge", "c5a.16xlarge", "u-12tb1.112xlarge"},
-			expectedResult: true,
-			nonCVMsAllowed: true,
+			expectedResult: false, // False because 2 two of the instances are not valid
 		},
 		"aws one valid instance one with too little vCPUs": {
-			provider:       cloudprovider.AWS,
+			variant:        variant.AWSSEVSNP{},
 			instanceTypes:  []string{"c5.medium"},
 			expectedResult: false,
-			nonCVMsAllowed: true,
 		},
 		"aws graviton sub-family unsupported": {
-			provider:       cloudprovider.AWS,
+			variant:        variant.AWSSEVSNP{},
 			instanceTypes:  []string{"m6g.xlarge", "r6g.2xlarge", "x2gd.xlarge", "g5g.8xlarge"},
 			expectedResult: false,
-			nonCVMsAllowed: true,
 		},
 		"aws combined two valid instances as one string": {
-			provider:       cloudprovider.AWS,
+			variant:        variant.AWSSEVSNP{},
 			instanceTypes:  []string{"c5.xlarge, c5a.2xlarge"},
 			expectedResult: false,
-			nonCVMsAllowed: true,
 		},
 		"aws only CVMs": {
-			provider:       cloudprovider.AWS,
+			variant:        variant.AWSSEVSNP{},
 			instanceTypes:  []string{"c6a.xlarge", "m6a.xlarge", "r6a.xlarge"},
 			expectedResult: true,
 		},
-		"aws CVMs but CVMs disabled": {
-			provider:       cloudprovider.AWS,
-			instanceTypes:  []string{"m6a.xlarge", "c6a.xlarge", "r6a.xlarge"},
-			nonCVMsAllowed: true,
-			expectedResult: true,
-		},
-		"aws nitroTPM VMs with CVMs enabled": {
-			provider:       cloudprovider.AWS,
+		"aws nitroTPM VMs": {
+			variant:        variant.AWSNitroTPM{},
 			instanceTypes:  []string{"c5.xlarge", "c5a.2xlarge", "c5a.16xlarge", "u-12tb1.112xlarge"},
-			expectedResult: false,
-		},
-		"aws nitroTPM VMs with CVMs disabled": {
-			provider:       cloudprovider.AWS,
-			instanceTypes:  []string{"c5.xlarge", "c5a.2xlarge", "c5a.16xlarge", "u-12tb1.112xlarge"},
-			nonCVMsAllowed: true,
 			expectedResult: true,
 		},
 	}
@@ -824,7 +782,10 @@ func TestValidInstanceTypeForProvider(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 			for _, instanceType := range tc.instanceTypes {
-				assert.Equal(tc.expectedResult, validInstanceTypeForProvider(instanceType, tc.nonCVMsAllowed, tc.provider), instanceType)
+				assert.Equal(
+					tc.expectedResult, validInstanceTypeForProvider(instanceType, tc.variant),
+					instanceType,
+				)
 			}
 		})
 	}

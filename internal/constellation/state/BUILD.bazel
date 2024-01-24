@@ -10,7 +10,8 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/internal/constellation/state",
     visibility = ["//:__subpackages__"],
     deps = [
-        "//internal/cloud/cloudprovider",
+        "//internal/attestation/variant",
+        "//internal/encoding",
         "//internal/file",
         "//internal/validation",
         "@cat_dario_mergo//:mergo",
@@ -26,13 +27,12 @@ go_test(
     ],
     embed = [":state"],
     deps = [
-        "//internal/cloud/cloudprovider",
+        "//internal/attestation/variant",
         "//internal/constants",
         "//internal/file",
         "@com_github_siderolabs_talos_pkg_machinery//config/encoder",
         "@com_github_spf13_afero//:afero",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
-        "@in_gopkg_yaml_v3//:yaml_v3",
     ],
 )

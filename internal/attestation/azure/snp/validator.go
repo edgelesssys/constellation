@@ -10,15 +10,13 @@ import (
 	"bytes"
 	"context"
 	"crypto"
-	"crypto/sha256"
 	"crypto/x509"
-	"encoding/base64"
-	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/azure"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -78,7 +76,7 @@ func NewValidator(cfg *config.AzureSEVSNP, log attestation.Logger) *Validator {
 		log = nopAttestationLogger{}
 	}
 	v := &Validator{
-		hclValidator:         &attestationKey{},
+		hclValidator:         &azure.HCLAkValidator{},
 		maa:                  newMAAClient(),
 		config:               cfg,
 		log:                  log,
@@ -191,7 +189,7 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 	if err != nil {
 		return nil, err
 	}
-	if err = v.hclValidator.validate(instanceInfo.Azure.RuntimeData, att.Report.ReportData, pubArea.RSAParameters); err != nil {
+	if err = v.hclValidator.Validate(instanceInfo.Azure.RuntimeData, att.Report.ReportData, pubArea.RSAParameters); err != nil {
 		return nil, fmt.Errorf("validating HCLAkPub: %w", err)
 	}
 
@@ -238,70 +236,6 @@ func (v *Validator) checkIDKeyDigest(ctx context.Context, report *spb.Attestatio
 	return nil
 }
 
-type attestationKey struct {
-	PublicPart []akPub `json:"keys"`
-}
-
-// validate validates that the attestation key from the TPM is trustworthy. The steps are:
-// 1. runtime data read from the TPM has the same sha256 digest as reported in `report_data` of the SNP report.
-// 2. modulus reported in runtime data matches modulus from key at idx 0x81000003.
-// 3. exponent reported in runtime data matches exponent from key at idx 0x81000003.
-// The function is currently tested manually on a Azure Ubuntu CVM.
-func (a *attestationKey) validate(runtimeDataRaw []byte, reportData []byte, rsaParameters *tpm2.RSAParams) error {
-	if err := json.Unmarshal(runtimeDataRaw, a); err != nil {
-		return fmt.Errorf("unmarshalling json: %w", err)
-	}
-
-	sum := sha256.Sum256(runtimeDataRaw)
-	if len(reportData) < len(sum) {
-		return fmt.Errorf("reportData has unexpected size: %d", len(reportData))
-	}
-	if !bytes.Equal(sum[:], reportData[:len(sum)]) {
-		return errors.New("unexpected runtimeData digest in TPM")
-	}
-
-	if len(a.PublicPart) < 1 {
-		return errors.New("did not receive any keys in runtime data")
-	}
-	rawN, err := base64.RawURLEncoding.DecodeString(a.PublicPart[0].N)
-	if err != nil {
-		return fmt.Errorf("decoding modulus string: %w", err)
-	}
-	if !bytes.Equal(rawN, rsaParameters.ModulusRaw) {
-		return fmt.Errorf("unexpected modulus value in TPM")
-	}
-
-	rawE, err := base64.RawURLEncoding.DecodeString(a.PublicPart[0].E)
-	if err != nil {
-		return fmt.Errorf("decoding exponent string: %w", err)
-	}
-	paddedRawE := make([]byte, 4)
-	copy(paddedRawE, rawE)
-	exponent := binary.LittleEndian.Uint32(paddedRawE)
-
-	// According to this comment [1] the TPM uses "0" to represent the default exponent "65537".
-	// The go tpm library also reports the exponent as 0. Thus we have to handle it specially.
-	// [1] https://github.com/tpm2-software/tpm2-tools/pull/1973#issue-596685005
-	if !((exponent == 65537 && rsaParameters.ExponentRaw == 0) || exponent == rsaParameters.ExponentRaw) {
-		return fmt.Errorf("unexpected N value in TPM")
-	}
-
-	return nil
-}
-
-// hclAkValidator validates an attestation key issued by the Host Compatibility Layer (HCL).
-// The HCL is written by Azure, and sits between the Hypervisor and CVM OS.
-// The HCL runs in the protected context of the CVM.
-type hclAkValidator interface {
-	validate(runtimeDataRaw []byte, reportData []byte, rsaParameters *tpm2.RSAParams) error
-}
-
-// akPub are the public parameters of an RSA attestation key.
-type akPub struct {
-	E string `json:"e"`
-	N string `json:"n"`
-}
-
 // nopAttestationLogger is a no-op implementation of AttestationLogger.
 type nopAttestationLogger struct{}
 
@@ -313,4 +247,8 @@ func (nopAttestationLogger) Warnf(string, ...interface{}) {}
 
 type maaValidator interface {
 	validateToken(ctx context.Context, maaURL string, token string, extraData []byte) error
+}
+
+type hclAkValidator interface {
+	Validate(runtimeDataRaw []byte, reportData []byte, rsaParameters *tpm2.RSAParams) error
 }

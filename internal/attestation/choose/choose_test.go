@@ -31,6 +31,9 @@ func TestIssuer(t *testing.T) {
 		"azure-sev-snp": {
 			variant: variant.AzureSEVSNP{},
 		},
+		"azure-tdx": {
+			variant: variant.AzureTDX{},
+		},
 		"azure-trusted-launch": {
 			variant: variant.AzureTrustedLaunch{},
 		},
@@ -76,6 +79,9 @@ func TestValidator(t *testing.T) {
 		},
 		"azure-sev-snp": {
 			cfg: &config.AzureSEVSNP{},
+		},
+		"azure-tdx": {
+			cfg: &config.AzureTDX{},
 		},
 		"azure-trusted-launch": {
 			cfg: &config.AzureTrustedLaunch{},

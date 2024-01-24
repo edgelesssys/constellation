@@ -152,6 +152,8 @@ func createConfigWithAttestationVariant(provider cloudprovider.Provider, rawProv
 		return nil, fmt.Errorf("provider %s does not support attestation variant %s", provider, attestationVariant)
 	}
 	conf.SetAttestation(attestationVariant)
+
+	conf.SetCSPNodeGroupDefaults(provider)
 	return conf, nil
 }
 

@@ -41,6 +41,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config/imageversion"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/encoding"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
@@ -282,6 +283,9 @@ type AttestationConfig struct {
 	//   Azure SEV-SNP attestation.\nFor details see: https://docs.edgeless.systems/constellation/architecture/attestation#cvm-verification
 	AzureSEVSNP *AzureSEVSNP `yaml:"azureSEVSNP,omitempty" validate:"omitempty,dive"`
 	// description: |
+	//   Azure TDX attestation.
+	AzureTDX *AzureTDX `yaml:"azureTDX,omitempty" validate:"omitempty,dive"`
+	// description: |
 	//   Azure TPM attestation (Trusted Launch).
 	AzureTrustedLaunch *AzureTrustedLaunch `yaml:"azureTrustedLaunch,omitempty" validate:"omitempty,dive"`
 	// description: |
@@ -397,6 +401,7 @@ func Default() *Config {
 			AWSSEVSNP:          DefaultForAWSSEVSNP(),
 			AWSNitroTPM:        &AWSNitroTPM{Measurements: measurements.DefaultsFor(cloudprovider.AWS, variant.AWSNitroTPM{})},
 			AzureSEVSNP:        DefaultForAzureSEVSNP(),
+			AzureTDX:           DefaultForAzureTDX(),
 			AzureTrustedLaunch: &AzureTrustedLaunch{Measurements: measurements.DefaultsFor(cloudprovider.Azure, variant.AzureTrustedLaunch{})},
 			GCPSEVES:           &GCPSEVES{Measurements: measurements.DefaultsFor(cloudprovider.GCP, variant.GCPSEVES{})},
 			QEMUVTPM:           &QEMUVTPM{Measurements: measurements.DefaultsFor(cloudprovider.QEMU, variant.QEMUVTPM{})},
@@ -523,6 +528,9 @@ func (c *Config) UpdateMeasurements(newMeasurements measurements.M) {
 	if c.Attestation.AzureSEVSNP != nil {
 		c.Attestation.AzureSEVSNP.Measurements.CopyFrom(newMeasurements)
 	}
+	if c.Attestation.AzureTDX != nil {
+		c.Attestation.AzureTDX.Measurements.CopyFrom(newMeasurements)
+	}
 	if c.Attestation.AzureTrustedLaunch != nil {
 		c.Attestation.AzureTrustedLaunch.Measurements.CopyFrom(newMeasurements)
 	}
@@ -561,7 +569,7 @@ func (c *Config) RemoveProviderExcept(provider cloudprovider.Provider) {
 	default:
 		c.Provider = currentProviderConfigs
 	}
-	c.setCSPNodeGroupDefaults(provider)
+	c.SetCSPNodeGroupDefaults(provider)
 }
 
 // SetAttestation sets the attestation config for the given attestation variant and removes all other attestation configs.
@@ -569,12 +577,14 @@ func (c *Config) SetAttestation(attestation variant.Variant) {
 	currentAttestationConfigs := c.Attestation
 	c.Attestation = AttestationConfig{}
 	switch attestation.(type) {
-	case variant.AzureSEVSNP:
-		c.Attestation = AttestationConfig{AzureSEVSNP: currentAttestationConfigs.AzureSEVSNP}
 	case variant.AWSSEVSNP:
 		c.Attestation = AttestationConfig{AWSSEVSNP: currentAttestationConfigs.AWSSEVSNP}
 	case variant.AWSNitroTPM:
 		c.Attestation = AttestationConfig{AWSNitroTPM: currentAttestationConfigs.AWSNitroTPM}
+	case variant.AzureSEVSNP:
+		c.Attestation = AttestationConfig{AzureSEVSNP: currentAttestationConfigs.AzureSEVSNP}
+	case variant.AzureTDX:
+		c.Attestation = AttestationConfig{AzureTDX: currentAttestationConfigs.AzureTDX}
 	case variant.AzureTrustedLaunch:
 		c.Attestation = AttestationConfig{AzureTrustedLaunch: currentAttestationConfigs.AzureTrustedLaunch}
 	case variant.GCPSEVES:
@@ -636,6 +646,9 @@ func (c *Config) GetAttestationConfig() AttestationCfg {
 	}
 	if c.Attestation.AzureSEVSNP != nil {
 		return c.Attestation.AzureSEVSNP.getToMarshallLatestWithResolvedVersions()
+	}
+	if c.Attestation.AzureTDX != nil {
+		return c.Attestation.AzureTDX.getToMarshallLatestWithResolvedVersions()
 	}
 	if c.Attestation.AzureTrustedLaunch != nil {
 		return c.Attestation.AzureTrustedLaunch
@@ -905,7 +918,8 @@ func (c *Config) WithOpenStackProviderDefaults(openStackProvider string) *Config
 	return c
 }
 
-func (c *Config) setCSPNodeGroupDefaults(csp cloudprovider.Provider) {
+// SetCSPNodeGroupDefaults sets the default values for the node groups based on the configured CSP.
+func (c *Config) SetCSPNodeGroupDefaults(csp cloudprovider.Provider) {
 	var instanceType, stateDiskType, zone string
 	switch csp {
 	case cloudprovider.AWS:
@@ -913,14 +927,19 @@ func (c *Config) setCSPNodeGroupDefaults(csp cloudprovider.Provider) {
 		stateDiskType = "gp3"
 		zone = c.Provider.AWS.Zone
 	case cloudprovider.Azure:
-		instanceType = "Standard_DC4as_v5"
+		// Check attestation variant, and use different default instance type if we have TDX
+		if c.GetAttestationConfig().GetVariant().Equal(variant.AzureTDX{}) {
+			instanceType = "Standard_DC4es_v5"
+		} else {
+			instanceType = "Standard_DC4as_v5"
+		}
 		stateDiskType = "Premium_LRS"
 	case cloudprovider.GCP:
 		instanceType = "n2d-standard-4"
 		stateDiskType = "pd-ssd"
 		zone = c.Provider.GCP.Zone
 	case cloudprovider.QEMU, cloudprovider.OpenStack:
-		// empty. There are now defaults for this CSP
+		// empty. There are no defaults for this CSP
 	}
 
 	for groupName, group := range c.NodeGroups {
@@ -984,10 +1003,6 @@ func (c GCPSEVES) EqualTo(other AttestationCfg) (bool, error) {
 		return false, fmt.Errorf("cannot compare %T with %T", c, other)
 	}
 	return c.Measurements.EqualTo(otherCfg.Measurements), nil
-}
-
-func toPtr[T any](v T) *T {
-	return &v
 }
 
 // QEMUVTPM is the configuration for QEMU vTPM attestation.
@@ -1119,8 +1134,40 @@ type AzureTrustedLaunch struct {
 	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
 }
 
-// sevsnpMarshaller is used to marshall "latest" versions with resolved version numbers.
-type sevsnpMarshaller interface {
+// AzureTDX is the configuration for Azure TDX attestation.
+type AzureTDX struct {
+	// description: |
+	//   Expected TPM measurements.
+	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
+	// description: |
+	//   Minimum required QE security version number (SVN).
+	QESVN uint16 `json:"qeSVN" yaml:"qeSVN"`
+	// description: |
+	//   Minimum required PCE security version number (SVN).
+	PCESVN uint16 `json:"pceSVN" yaml:"pceSVN"`
+	// description: |
+	//   Component-wise minimum required 16 byte hex-encoded TEE_TCB security version number (SVN).
+	TEETCBSVN encoding.HexBytes `json:"teeTCBSVN" yaml:"teeTCBSVN"`
+	// description: |
+	//   Expected 16 byte hex-encoded QE_VENDOR_ID field.
+	QEVendorID encoding.HexBytes `json:"qeVendorID" yaml:"qeVendorID"`
+	// description: |
+	//   Expected 48 byte hex-encoded MR_SEAM value.
+	MRSeam encoding.HexBytes `json:"mrSeam" yaml:"mrSeam"`
+	// description: |
+	//   Expected 8 byte hex-encoded XFAM field.
+	XFAM encoding.HexBytes `json:"xfam" yaml:"xfam"`
+	// description: |
+	//   Intel Root Key certificate used to verify the TDX certificate chain.
+	IntelRootKey Certificate `json:"intelRootKey" yaml:"intelRootKey"`
+}
+
+func toPtr[T any](v T) *T {
+	return &v
+}
+
+// svnResolveMarshaller is used to marshall "latest" security version numbers with resolved versions.
+type svnResolveMarshaller interface {
 	// getToMarshallLatestWithResolvedVersions brings the attestation config into a state where marshalling uses the numerical version numbers for "latest" versions.
 	getToMarshallLatestWithResolvedVersions() AttestationCfg
 }

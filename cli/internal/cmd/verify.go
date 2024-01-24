@@ -30,7 +30,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/constellation/state"
@@ -108,9 +107,9 @@ func runVerify(cmd *cobra.Command, _ []string) error {
 		dialer: dialer.New(nil, nil, &net.Dialer{}),
 		log:    log,
 	}
-	formatterFactory := func(output string, provider cloudprovider.Provider, log debugLog) (attestationDocFormatter, error) {
-		if output == "json" && (provider != cloudprovider.Azure && provider != cloudprovider.AWS) {
-			return nil, errors.New("json output is only supported for Azure and AWS")
+	formatterFactory := func(output string, attestation variant.Variant, log debugLog) (attestationDocFormatter, error) {
+		if output == "json" && (!attestation.Equal(variant.AzureSEVSNP{}) && !attestation.Equal(variant.AWSSEVSNP{})) {
+			return nil, errors.New("json output is only supported for Azure SEV-SNP and AWS SEV-SNP")
 		}
 		switch output {
 		case "json":
@@ -135,7 +134,7 @@ func runVerify(cmd *cobra.Command, _ []string) error {
 	return v.verify(cmd, verifyClient, formatterFactory, fetcher)
 }
 
-type formatterFactory func(output string, provider cloudprovider.Provider, log debugLog) (attestationDocFormatter, error)
+type formatterFactory func(output string, attestation variant.Variant, log debugLog) (attestationDocFormatter, error)
 
 func (c *verifyCmd) verify(cmd *cobra.Command, verifyClient verifyClient, factory formatterFactory, configFetcher attestationconfigapi.Fetcher) error {
 	c.log.Debugf("Loading configuration file from %q", c.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename))
@@ -152,7 +151,7 @@ func (c *verifyCmd) verify(cmd *cobra.Command, verifyClient verifyClient, factor
 	if err != nil {
 		return fmt.Errorf("reading state file: %w", err)
 	}
-	if err := stateFile.Validate(state.PostInit, conf.GetProvider()); err != nil {
+	if err := stateFile.Validate(state.PostInit, conf.GetAttestationConfig().GetVariant()); err != nil {
 		return fmt.Errorf("validating state file: %w", err)
 	}
 
@@ -201,15 +200,15 @@ func (c *verifyCmd) verify(cmd *cobra.Command, verifyClient verifyClient, factor
 		return fmt.Errorf("verifying: %w", err)
 	}
 
-	// certificates are only available for Azure
-	formatter, err := factory(c.flags.output, conf.GetProvider(), c.log)
+	// certificates are only available for Azure SEV-SNP and AWS SEV-SNP
+	formatter, err := factory(c.flags.output, conf.GetAttestationConfig().GetVariant(), c.log)
 	if err != nil {
 		return fmt.Errorf("creating formatter: %w", err)
 	}
 	attDocOutput, err := formatter.format(
 		cmd.Context(),
 		rawAttestationDoc,
-		(conf.Provider.Azure == nil && conf.Provider.AWS == nil),
+		(!attConfig.GetVariant().Equal(variant.AzureSEVSNP{}) && !attConfig.GetVariant().Equal(variant.AWSSEVSNP{})),
 		attConfig,
 	)
 	if err != nil {
@@ -467,7 +466,10 @@ func updateInitMeasurements(config config.AttestationCfg, ownerID, clusterID str
 	m := config.GetMeasurements()
 
 	switch config.GetVariant() {
-	case variant.AWSNitroTPM{}, variant.AWSSEVSNP{}, variant.AzureTrustedLaunch{}, variant.AzureSEVSNP{}, variant.GCPSEVES{}, variant.QEMUVTPM{}:
+	case variant.AWSNitroTPM{}, variant.AWSSEVSNP{},
+		variant.AzureTrustedLaunch{}, variant.AzureSEVSNP{}, variant.AzureTDX{}, // AzureTDX also uses a vTPM for measurements
+		variant.GCPSEVES{},
+		variant.QEMUVTPM{}:
 		if err := updateMeasurementTPM(m, uint32(measurements.PCRIndexOwnerID), ownerID); err != nil {
 			return err
 		}

@@ -16,7 +16,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 )
 
-var _ sevsnpMarshaller = &AWSSEVSNP{}
+var _ svnResolveMarshaller = &AWSSEVSNP{}
 
 // DefaultForAWSSEVSNP provides a valid default configuration for AWS SEV-SNP attestation.
 func DefaultForAWSSEVSNP() *AWSSEVSNP {

@@ -1,8 +1,27 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "azure",
     srcs = ["azure.go"],
     importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/azure",
     visibility = ["//:__subpackages__"],
+    deps = [
+        "@com_github_google_go_tpm//legacy/tpm2",
+        "@com_github_google_go_tpm_tools//client",
+    ],
+)
+
+go_test(
+    name = "azure_test",
+    srcs = ["azure_test.go"],
+    embed = [":azure"],
+    deps = [
+        "//internal/attestation/simulator",
+        "//internal/attestation/snp",
+        "@com_github_google_go_tpm//legacy/tpm2",
+        "@com_github_google_go_tpm_tools//client",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
 )

@@ -13,14 +13,12 @@ import (
 	"io"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/azure"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/go-azguestattestation/maa"
-	tpmclient "github.com/google/go-tpm-tools/client"
 )
-
-const tpmAkIdx = 0x81000003
 
 // Issuer for Azure TPM attestation.
 type Issuer struct {
@@ -40,7 +38,7 @@ func NewIssuer(log attestation.Logger) *Issuer {
 
 	i.Issuer = vtpm.NewIssuer(
 		vtpm.OpenVTPM,
-		getAttestationKey,
+		azure.GetAttestationKey,
 		i.getInstanceInfo,
 		log,
 	)
@@ -81,16 +79,6 @@ func (i *Issuer) getInstanceInfo(ctx context.Context, tpm io.ReadWriteCloser, us
 	}
 
 	return statement, nil
-}
-
-// getAttestationKey reads the attestation key put into the TPM during early boot.
-func getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
-	ak, err := tpmclient.LoadCachedKey(tpm, tpmAkIdx, tpmclient.NullSession{})
-	if err != nil {
-		return nil, fmt.Errorf("reading HCL attestation key from TPM: %w", err)
-	}
-
-	return ak, nil
 }
 
 type imdsAPI interface {
