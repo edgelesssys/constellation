@@ -263,6 +263,8 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		// External service image. Depends on k8s version.
 		// Check for new versions at https://github.com/kubernetes/autoscaler/releases.
 		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.27.3@sha256:0e1ab1bfeb1beaa82f59356ef36364503df22aeb8f8d0d7383bac449b4e808fb", // renovate:container
+		// Check for new versions in https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go.
+		CoreDNSImage: "registry.k8s.io/coredns/coredns:v1.10.1@sha256:a0ead06651cf580044aeb0a0feba63591858fb2e43ade8c9dea45a6a89ae7e5e",
 	},
 	V1_28: {
 		ClusterVersion: "v1.28.5", // renovate:kubernetes-release
@@ -330,6 +332,8 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		// External service image. Depends on k8s version.
 		// Check for new versions at https://github.com/kubernetes/autoscaler/releases.
 		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.27.3@sha256:0e1ab1bfeb1beaa82f59356ef36364503df22aeb8f8d0d7383bac449b4e808fb", // renovate:container
+		// Check for new versions in https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go.
+		CoreDNSImage: "registry.k8s.io/coredns/coredns:v1.10.1@sha256:a0ead06651cf580044aeb0a0feba63591858fb2e43ade8c9dea45a6a89ae7e5e",
 	},
 	V1_29: {
 		ClusterVersion: "v1.29.0", // renovate:kubernetes-release
@@ -397,6 +401,8 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		// External service image. Depends on k8s version.
 		// Check for new versions at https://github.com/kubernetes/autoscaler/releases.
 		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.29.0@sha256:808185c1090107f06ea69b0a5e507e387ad2ee3a3b12b7cd08ea0dac730cf58b", // renovate:container
+		// Check for new versions in https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go.
+		CoreDNSImage: "registry.k8s.io/coredns/coredns:v1.11.1@sha256:1eeb4c7316bacb1d4c8ead65571cd92dd21e27359f0d4917f1a5822a73b75db1",
 	},
 }
 
@@ -410,6 +416,7 @@ type KubernetesVersion struct {
 	CloudControllerManagerImageOpenStack string // k8s version dependency.
 	CloudNodeManagerImageAzure           string // k8s version dependency. Same version as above.
 	ClusterAutoscalerImage               string // Matches k8s versioning scheme.
+	CoreDNSImage                         string // Each Kubernetes version has a corresponding CoreDNS version, which is stored in a constant for kubeadm.
 }
 
 // versionFromDockerImage returns the version tag from the image name, e.g. "v1.22.2" from "foocr.io/org/repo:v1.22.2@sha256:3009fj0...".

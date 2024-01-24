@@ -8,10 +8,12 @@ package k8sapi
 
 import (
 	"path/filepath"
+	"strings"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/certificate"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeletconf "k8s.io/kubelet/config/v1beta1"
@@ -38,7 +40,7 @@ func (c *KubdeadmConfiguration) InitConfiguration(externalCloudProvider bool, cl
 		cloudProvider = "external"
 	}
 
-	return KubeadmInitYAML{
+	initYAML := KubeadmInitYAML{
 		InitConfiguration: kubeadm.InitConfiguration{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: kubeadm.SchemeGroupVersion.String(),
@@ -157,6 +159,21 @@ func (c *KubdeadmConfiguration) InitConfiguration(externalCloudProvider bool, cl
 			TLSPrivateKeyFile: certificate.KeyFilename,
 		},
 	}
+
+	v, err := versions.NewValidK8sVersion(clusterVersion /*strict=*/, true)
+	if err != nil {
+		// TODO: would be good to have a logger here
+		return initYAML
+	}
+	_, tag, ok := strings.Cut(versions.VersionConfigs[v].CoreDNSImage, ":")
+	if !ok {
+		// TODO: would be good to have a logger here
+		return initYAML
+	}
+	// We only need to set the tag, the rest is defaulted correctly - see
+	// https://github.com/kubernetes/kubernetes/blob/0fa26ae/cmd/kubeadm/app/images/images.go#L44-L63.
+	initYAML.ClusterConfiguration.DNS.ImageTag = tag
+	return initYAML
 }
 
 // JoinConfiguration returns a new kubeadm join configuration.
