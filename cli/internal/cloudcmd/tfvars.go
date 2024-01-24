@@ -158,7 +158,7 @@ func azureTerraformVars(conf *config.Config, imageRef string) (*terraform.AzureC
 		Location:             conf.Provider.Azure.Location,
 		CreateMAA:            toPtr(conf.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})),
 		Debug:                toPtr(conf.IsDebugCluster()),
-		ConfidentialVM:       toPtr(conf.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})),
+		ConfidentialVM:       toPtr(!conf.GetAttestationConfig().GetVariant().Equal(variant.AzureTrustedLaunch{})),
 		SecureBoot:           conf.Provider.Azure.SecureBoot,
 		UserAssignedIdentity: conf.Provider.Azure.UserAssignedIdentity,
 		ResourceGroup:        conf.Provider.Azure.ResourceGroup,
