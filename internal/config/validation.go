@@ -514,32 +514,23 @@ func (c *Config) translateMoreThanOneProviderError(ut ut.Translator, fe validato
 	return t
 }
 
-func validInstanceTypeForProvider(insType string, acceptNonCVM bool, attestation variant.Variant) bool {
+func validInstanceTypeForProvider(insType string, attestation variant.Variant) bool {
 	switch attestation {
 	case variant.AWSSEVSNP{}, variant.AWSNitroTPM{}:
-		return isSupportedAWSInstanceType(insType, acceptNonCVM)
+		return isSupportedAWSInstanceType(insType, attestation.Equal(variant.AWSNitroTPM{}))
 	case variant.AzureSEVSNP{}:
-		if acceptNonCVM {
-			return false
-		}
 		for _, instanceType := range instancetypes.AzureSNPInstanceTypes {
 			if insType == instanceType {
 				return true
 			}
 		}
 	case variant.AzureTDX{}:
-		if acceptNonCVM {
-			return false
-		}
 		for _, instanceType := range instancetypes.AzureTDXInstanceTypes {
 			if insType == instanceType {
 				return true
 			}
 		}
 	case variant.AzureTrustedLaunch{}:
-		if !acceptNonCVM {
-			return false
-		}
 		for _, instanceType := range instancetypes.AzureTrustedLaunchInstanceTypes {
 			if insType == instanceType {
 				return true
@@ -792,16 +783,7 @@ func (c *Config) validateNodeGroupZoneField(fl validator.FieldLevel) bool {
 }
 
 func (c *Config) validateInstanceType(fl validator.FieldLevel) bool {
-	acceptNonCVM := false
-
-	if c.GetAttestationConfig().GetVariant().Equal(variant.AzureTrustedLaunch{}) {
-		acceptNonCVM = true
-	}
-	if c.GetAttestationConfig().GetVariant().Equal(variant.AWSNitroTPM{}) {
-		acceptNonCVM = true
-	}
-
-	return validInstanceTypeForProvider(fl.Field().String(), acceptNonCVM, c.GetAttestationConfig().GetVariant())
+	return validInstanceTypeForProvider(fl.Field().String(), c.GetAttestationConfig().GetVariant())
 }
 
 func (c *Config) validateStateDiskTypeField(fl validator.FieldLevel) bool {

@@ -688,7 +688,6 @@ func TestValidInstanceTypeForProvider(t *testing.T) {
 	testCases := map[string]struct {
 		variant        variant.Variant
 		instanceTypes  []string
-		nonCVMsAllowed bool
 		expectedResult bool
 	}{
 		"empty all": {
@@ -709,7 +708,6 @@ func TestValidInstanceTypeForProvider(t *testing.T) {
 		"empty azure with non-CVMs": {
 			variant:        variant.AzureTrustedLaunch{},
 			instanceTypes:  []string{},
-			nonCVMsAllowed: true,
 			expectedResult: false,
 		},
 		"empty gcp": {
@@ -727,21 +725,9 @@ func TestValidInstanceTypeForProvider(t *testing.T) {
 			instanceTypes:  instancetypes.AzureTDXInstanceTypes,
 			expectedResult: true,
 		},
-		"azure CVMs but CVMs disabled": {
-			variant:        variant.AzureSEVSNP{},
-			instanceTypes:  instancetypes.AzureSNPInstanceTypes,
-			nonCVMsAllowed: true,
-			expectedResult: false,
-		},
-		"azure trusted launch VMs with CVMs enabled": {
+		"azure trusted launch VMs": {
 			variant:        variant.AzureTrustedLaunch{},
 			instanceTypes:  instancetypes.AzureTrustedLaunchInstanceTypes,
-			expectedResult: false,
-		},
-		"azure trusted launch VMs with CVMs disabled": {
-			variant:        variant.AzureTrustedLaunch{},
-			instanceTypes:  instancetypes.AzureTrustedLaunchInstanceTypes,
-			nonCVMsAllowed: true,
 			expectedResult: true,
 		},
 		"gcp": {
@@ -754,21 +740,9 @@ func TestValidInstanceTypeForProvider(t *testing.T) {
 			instanceTypes:  instancetypes.GCPInstanceTypes,
 			expectedResult: false,
 		},
-		"put gcp when azure is set with CVMs disabled": {
-			variant:        variant.AzureSEVSNP{},
-			instanceTypes:  instancetypes.GCPInstanceTypes,
-			nonCVMsAllowed: true,
-			expectedResult: false,
-		},
 		"put azure when gcp is set": {
 			variant:        variant.GCPSEVES{},
 			instanceTypes:  instancetypes.AzureSNPInstanceTypes,
-			expectedResult: false,
-		},
-		"put azure when gcp is set with CVMs disabled": {
-			variant:        variant.GCPSEVES{},
-			instanceTypes:  instancetypes.AzureTrustedLaunchInstanceTypes,
-			nonCVMsAllowed: true,
 			expectedResult: false,
 		},
 		// Testing every possible instance type for AWS is not feasible, so we just test a few based on known supported / unsupported families
@@ -776,47 +750,31 @@ func TestValidInstanceTypeForProvider(t *testing.T) {
 		"aws two valid instances": {
 			variant:        variant.AWSSEVSNP{},
 			instanceTypes:  []string{"c5.xlarge", "c5a.2xlarge", "c5a.16xlarge", "u-12tb1.112xlarge"},
-			expectedResult: true,
-			nonCVMsAllowed: true,
+			expectedResult: false, // False because 2 two of the instances are not valid
 		},
 		"aws one valid instance one with too little vCPUs": {
 			variant:        variant.AWSSEVSNP{},
 			instanceTypes:  []string{"c5.medium"},
 			expectedResult: false,
-			nonCVMsAllowed: true,
 		},
 		"aws graviton sub-family unsupported": {
 			variant:        variant.AWSSEVSNP{},
 			instanceTypes:  []string{"m6g.xlarge", "r6g.2xlarge", "x2gd.xlarge", "g5g.8xlarge"},
 			expectedResult: false,
-			nonCVMsAllowed: true,
 		},
 		"aws combined two valid instances as one string": {
 			variant:        variant.AWSSEVSNP{},
 			instanceTypes:  []string{"c5.xlarge, c5a.2xlarge"},
 			expectedResult: false,
-			nonCVMsAllowed: true,
 		},
 		"aws only CVMs": {
 			variant:        variant.AWSSEVSNP{},
 			instanceTypes:  []string{"c6a.xlarge", "m6a.xlarge", "r6a.xlarge"},
 			expectedResult: true,
 		},
-		"aws CVMs but CVMs disabled": {
-			variant:        variant.AWSSEVSNP{},
-			instanceTypes:  []string{"m6a.xlarge", "c6a.xlarge", "r6a.xlarge"},
-			nonCVMsAllowed: true,
-			expectedResult: true,
-		},
-		"aws nitroTPM VMs with CVMs enabled": {
-			variant:        variant.AWSSEVSNP{},
+		"aws nitroTPM VMs": {
+			variant:        variant.AWSNitroTPM{},
 			instanceTypes:  []string{"c5.xlarge", "c5a.2xlarge", "c5a.16xlarge", "u-12tb1.112xlarge"},
-			expectedResult: false,
-		},
-		"aws nitroTPM VMs with CVMs disabled": {
-			variant:        variant.AWSSEVSNP{},
-			instanceTypes:  []string{"c5.xlarge", "c5a.2xlarge", "c5a.16xlarge", "u-12tb1.112xlarge"},
-			nonCVMsAllowed: true,
 			expectedResult: true,
 		},
 	}
@@ -825,7 +783,7 @@ func TestValidInstanceTypeForProvider(t *testing.T) {
 			assert := assert.New(t)
 			for _, instanceType := range tc.instanceTypes {
 				assert.Equal(
-					tc.expectedResult, validInstanceTypeForProvider(instanceType, tc.nonCVMsAllowed, tc.variant),
+					tc.expectedResult, validInstanceTypeForProvider(instanceType, tc.variant),
 					instanceType,
 				)
 			}

@@ -929,9 +929,9 @@ func (c *Config) SetCSPNodeGroupDefaults(csp cloudprovider.Provider) {
 	case cloudprovider.Azure:
 		// Check attestation variant, and use different default instance type if we have TDX
 		if c.GetAttestationConfig().GetVariant().Equal(variant.AzureTDX{}) {
-			instanceType = "Standard_DC4as_v5"
-		} else {
 			instanceType = "Standard_DC4es_v5"
+		} else {
+			instanceType = "Standard_DC4as_v5"
 		}
 		stateDiskType = "Premium_LRS"
 	case cloudprovider.GCP:
