@@ -546,6 +546,7 @@ func (c *Config) UpdateMeasurements(newMeasurements measurements.M) {
 func (c *Config) RemoveProviderAndAttestationExcept(provider cloudprovider.Provider) {
 	c.RemoveProviderExcept(provider)
 	c.SetAttestation(variant.GetDefaultAttestation(provider))
+	c.SetCSPNodeGroupDefaults(provider)
 }
 
 // RemoveProviderExcept removes all provider specific configurations, i.e.,
@@ -569,7 +570,6 @@ func (c *Config) RemoveProviderExcept(provider cloudprovider.Provider) {
 	default:
 		c.Provider = currentProviderConfigs
 	}
-	c.SetCSPNodeGroupDefaults(provider)
 }
 
 // SetAttestation sets the attestation config for the given attestation variant and removes all other attestation configs.
