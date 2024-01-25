@@ -138,6 +138,7 @@ This command creates IAM configuration on the Azure region `westus` creating a n
 
 Note that CVMs are currently only supported in a few regions, check [Azure's products available by region](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=virtual-machines&regions=all). These are:
 
+* `germanywestcentral`
 * `westus`
 * `eastus`
 * `northeurope`
@@ -207,6 +208,7 @@ The following describes the configuration fields and how you obtain the required
 
 * **location**: The Azure datacenter location you want to deploy your cluster in, e.g., `westus`. CVMs are currently only supported in a few regions, check [Azure's products available by region](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=virtual-machines&regions=all). These are:
 
+  * `germanywestcentral`
   * `westus`
   * `eastus`
   * `northeurope`

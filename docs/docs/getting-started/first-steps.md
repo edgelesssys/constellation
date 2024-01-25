@@ -56,6 +56,8 @@ If you encounter any problem with the following steps, make sure to use the [lat
     This command creates IAM configuration on the Azure region `westus` creating a new resource group `constellTest` and a new service principal `spTest`. It also updates the configuration file `constellation-conf.yaml` in your current directory with the IAM values filled in.
 
     Note that CVMs are currently only supported in a few regions, check [Azure's products available by region](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=virtual-machines&regions=all). These are:
+
+    * `germanywestcentral`
     * `westus`
     * `eastus`
     * `northeurope`
