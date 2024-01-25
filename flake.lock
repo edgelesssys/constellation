@@ -111,17 +111,17 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1705406532,
-        "narHash": "sha256-3UmCqN+T8paP/sr17hGzLxl4hozGnX8ObHUGjgFsxvM=",
+        "lastModified": 1706196313,
+        "narHash": "sha256-9aAaA1I1Sl/Y9qHtnlU25fRdvMohG9XPFkuUnvIG2Jc=",
         "owner": "edgelesssys",
         "repo": "uplosi",
-        "rev": "629e2bcff551bf3d972a7c21bfea6d881b9d9bc2",
+        "rev": "30aaaf878f31d3564c2757dbe4ed4f6426a7bdfa",
         "type": "github"
       },
       "original": {
         "owner": "edgelesssys",
         "repo": "uplosi",
-        "rev": "629e2bcff551bf3d972a7c21bfea6d881b9d9bc2",
+        "rev": "30aaaf878f31d3564c2757dbe4ed4f6426a7bdfa",
         "type": "github"
       }
     }
