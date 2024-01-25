@@ -1,9 +1,10 @@
+---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: scalinggroups.update.edgeless.systems
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.0
+    controller-gen.kubebuilder.io/version: v0.13.0
+  name: scalinggroups.update.edgeless.systems
 spec:
   group: update.edgeless.systems
   names:
@@ -37,16 +38,16 @@ spec:
                 description: AutoscalerGroupName is name that is expected by the autoscaler.
                 type: string
               autoscaling:
-                description: Autoscaling specifies wether the scaling group should automatically
-                  scale using the cluster-autoscaler.
+                description: Autoscaling specifies wether the scaling group should
+                  automatically scale using the cluster-autoscaler.
                 type: boolean
               groupId:
-                description: GroupID is the CSP specific, canonical identifier of a
-                  scaling group.
+                description: GroupID is the CSP specific, canonical identifier of
+                  a scaling group.
                 type: string
               max:
-                description: Max is the maximum number of autoscaled nodes in the scaling
-                  group (used by cluster-autoscaler).
+                description: Max is the maximum number of autoscaled nodes in the
+                  scaling group (used by cluster-autoscaler).
                 format: int32
                 type: integer
               min:
@@ -55,11 +56,11 @@ spec:
                 format: int32
                 type: integer
               nodeGroupName:
-                description: NodeGroupName is the human friendly name of the node group
-                 as defined in the Constellation configuration.
+                description: NodeGroupName is the human friendly name of the node
+                  group as defined in the Constellation configuration.
                 type: string
               nodeImage:
-                description: NodeImage is the name of the NodeImage resource.
+                description: NodeVersion is the name of the NodeVersion resource.
                 type: string
               role:
                 description: Role is the role of the nodes in the scaling group.
@@ -78,8 +79,8 @@ spec:
                   description: "Condition contains details for one aspect of the current
                     state of this API Resource. --- This struct is intended for direct
                     use as an array at the field path .status.conditions.  For example,
-                    \n type FooStatus struct{ // Represents the observations of a foo's
-                    current state. // Known .status.conditions.type are: \"Available\",
+                    \n type FooStatus struct{ // Represents the observations of a
+                    foo's current state. // Known .status.conditions.type are: \"Available\",
                     \"Progressing\", and \"Degraded\" // +patchMergeKey=type // +patchStrategy=merge
                     // +listType=map // +listMapKey=type Conditions []metav1.Condition
                     `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\"
@@ -93,8 +94,8 @@ spec:
                       format: date-time
                       type: string
                     message:
-                      description: message is a human readable message indicating details
-                        about the transition. This may be an empty string.
+                      description: message is a human readable message indicating
+                        details about the transition. This may be an empty string.
                       maxLength: 32768
                       type: string
                     observedGeneration:
@@ -108,11 +109,11 @@ spec:
                       type: integer
                     reason:
                       description: reason contains a programmatic identifier indicating
-                        the reason for the condition's last transition. Producers of
-                        specific condition types may define expected values and meanings
-                        for this field, and whether the values are considered a guaranteed
-                        API. The value should be a CamelCase string. This field may
-                        not be empty.
+                        the reason for the condition's last transition. Producers
+                        of specific condition types may define expected values and
+                        meanings for this field, and whether the values are considered
+                        a guaranteed API. The value should be a CamelCase string.
+                        This field may not be empty.
                       maxLength: 1024
                       minLength: 1
                       pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
@@ -142,8 +143,8 @@ spec:
                   type: object
                 type: array
               imageReference:
-                description: ImageReference is the image currently used for newly created
-                  nodes in this scaling group.
+                description: ImageReference is the image currently used for newly
+                  created nodes in this scaling group.
                 type: string
             required:
             - conditions
@@ -153,9 +154,3 @@ spec:
     storage: true
     subresources:
       status: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []

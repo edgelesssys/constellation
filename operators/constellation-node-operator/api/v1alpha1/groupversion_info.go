@@ -4,6 +4,9 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+//go:generate controller-gen object paths=.
+//go:generate controller-gen crd paths=. output:crd:dir=../../../../internal/constellation/helm/charts/edgeless/operators/charts/constellation-operator/crds
+
 // Package v1alpha1 contains API Schema definitions for the update v1alpha1 API group
 // +kubebuilder:object:generate=true
 // +groupName=update.edgeless.systems

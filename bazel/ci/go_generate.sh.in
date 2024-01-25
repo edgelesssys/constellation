@@ -25,6 +25,8 @@ measurement_generator=$(realpath @@MEASUREMENT_GENERATOR@@)
 stat "${measurement_generator}" >> /dev/null
 yq=$(realpath @@YQ@@)
 stat "${yq}" >> /dev/null
+controller_gen=$(realpath @@CONTROLLER_GEN@@)
+stat "${controller_gen}" >> /dev/null
 
 cd "${BUILD_WORKSPACE_DIRECTORY}"
 
@@ -37,6 +39,7 @@ PATH=$(dirname "${helm}"):${PATH}
 PATH=$(dirname "${hash_generator}"):${PATH}
 PATH=$(dirname "${measurement_generator}"):${PATH}
 PATH=$(dirname "${yq}"):${PATH}
+PATH=$(dirname "${controller_gen}"):${PATH}
 export PATH
 
 submodules=$(${go} list -f '{{.Dir}}' -m)

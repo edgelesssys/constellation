@@ -1,0 +1,14 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: constellation-operator-manager-rolebinding
+  labels:
+  {{- include "chart.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: 'constellation-operator-manager-role'
+subjects:
+- kind: ServiceAccount
+  name: 'constellation-operator-controller-manager'
+  namespace: '{{ .Release.Namespace }}'

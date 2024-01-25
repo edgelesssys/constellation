@@ -337,10 +337,12 @@ sh_template(
         "//internal/attestation/measurements/measurement-generator",
         "//internal/versions/hash-generator",
         "@go_sdk//:bin/go",
+        "@io_k8s_sigs_controller_tools//cmd/controller-gen",
         "@org_golang_x_tools//cmd/stringer",
         "@yq_toolchains//:resolved_toolchain",
     ],
     substitutions = {
+        "@@CONTROLLER_GEN@@": "$(rootpath @io_k8s_sigs_controller_tools//cmd/controller-gen)",
         "@@DOCGEN@@": "$(rootpath :com_github_siderolabs_talos_hack_docgen)",
         "@@GO@@": "$(rootpath @go_sdk//:bin/go)",
         "@@HASH_GENERATOR@@": "$(rootpath //internal/versions/hash-generator:hash-generator)",
