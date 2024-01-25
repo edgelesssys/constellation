@@ -5,6 +5,9 @@ inputs:
   cloudProvider:
     description: "The cloud provider the test runs on."
     required: true
+  attestationVariant:
+    description: "The attestation variant to use."
+    required: true
 
 runs:
   using: "composite"
@@ -81,7 +84,7 @@ runs:
     - name: Patch MAA Policy
       shell: bash
       working-directory: ${{ github.workspace }}/e2e-infra
-      if: inputs.cloudProvider == 'azure'
+      if: inputs.attestationVariant == 'azure-sev-snp'
       run: |
         constellation maa-patch $(terraform output attestation_url | jq -r)
 

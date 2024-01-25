@@ -5,8 +5,8 @@ inputs:
   osImage:
     description: "The OS image used in the cluster."
     required: true
-  cloudProvider:
-    description: "The cloud provider used in the cluster."
+  attestationVariant:
+    description: "The attestation variant used in the cluster."
     required: true
   kubeconfig:
     description: "The kubeconfig file for the cluster."
@@ -67,7 +67,7 @@ runs:
           sleep 5
 
           # TODO(v2.15): Remove workaround since we don't need to support v2.13 anymore
-          if [[ ${{ inputs.cloudProvider }} == "azure" ]] || { [[ ${{ inputs.cloudProvider }} == "aws" ]] && ! constellation version | grep -q "v2.13."; }; then
+          if [[ ${{ inputs.attestationVariant }} == "azure-sev-snp" ]] || { [[ ${{ inputs.attestationVariant }} == "aws-sev-snp" ]] && ! constellation version | grep -q "v2.13."; }; then
             echo "Extracting TCB versions for API update"
             constellation verify --cluster-id "${clusterID}" --node-endpoint localhost:9090 -o json > "snp-report-${node}.json"
           else
@@ -85,13 +85,13 @@ runs:
         aws-region: eu-central-1
 
     - name: Upload extracted TCBs
-      if: github.ref_name == 'main' && (inputs.cloudProvider == 'azure' || inputs.cloudProvider == 'aws')
+      if: github.ref_name == 'main' && (inputs.attestationVariant == 'azure-sev-snp' || inputs.attestationVariant == 'aws-sev-snp')
       shell: bash
       env:
         COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
         COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
       run: |
-        if [[ ${{ inputs.cloudProvider }} == "aws" ]] && constellation version | grep -q "v2.13."; then
+        if [[ ${{ inputs.attestationVariant }} == "aws-sev-snp" ]] && constellation version | grep -q "v2.13."; then
           echo "Skipping TCB upload for AWS on CLI v2.13"
           exit 0
         fi
@@ -101,8 +101,11 @@ runs:
             exit 1
         fi
 
+        attestationVariant=${{ inputs.attestationVariant }}
+        cloudProvider=${attestationVariant%%-*}
+
         for file in "${reports[@]}"; do
           path=$(realpath "${file}")
           cat "${path}"
-          bazel run //internal/api/attestationconfigapi/cli -- upload ${{ inputs.cloudProvider }} snp-report "${path}"
+          bazel run //internal/api/attestationconfigapi/cli -- upload "${cloudProvider}" snp-report "${path}"
         done

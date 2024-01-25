@@ -3,14 +3,16 @@ name: e2e test upgrade
 on:
   workflow_dispatch:
     inputs:
-      cloudProvider:
-        description: "Which cloud provider to use."
+      attestationVariant:
+        description: "Which attestation variant to use."
         type: choice
         options:
-          - "gcp"
-          - "azure"
-          - "aws"
-        default: "azure"
+          - "gcp-sev-es"
+          - "azure-sev-snp"
+          - "azure-tdx"
+          - "aws-sev-snp"
+        default: "azure-sev-snp"
+        required: true
       nodeCount:
         description: "Number of nodes to use in the cluster. Given in format `<control-plane nodes>:<worker nodes>`."
         default: "3:2"
@@ -45,8 +47,8 @@ on:
         type: string
   workflow_call:
     inputs:
-      cloudProvider:
-        description: "Which cloud provider to use."
+      attestationVariant:
+        description: "Which attestation variant to use."
         type: string
         required: true
       nodeCount:
@@ -85,8 +87,8 @@ on:
         required: false
 
 jobs:
-  split-nodeCount:
-    name: Split nodeCount
+  generate-input-parameters:
+    name: Generate input parameters
     runs-on: ubuntu-22.04
     permissions:
       id-token: write
@@ -94,6 +96,7 @@ jobs:
     outputs:
       workerNodes: ${{ steps.split-nodeCount.outputs.workerNodes }}
       controlPlaneNodes: ${{ steps.split-nodeCount.outputs.controlPlaneNodes }}
+      cloudProvider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
     steps:
       - name: Split nodeCount
         id: split-nodeCount
@@ -110,6 +113,15 @@ jobs:
 
           echo "workerNodes=${workerNodes}" | tee -a "$GITHUB_OUTPUT"
           echo "controlPlaneNodes=${controlPlaneNodes}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Split attestationVariant
+        id: split-attestationVariant
+        shell: bash
+        run: |
+          attestationVariant="${{ inputs.attestationVariant }}"
+          cloudProvider="${attestationVariant%%-*}"
+
+          echo "cloudProvider=${cloudProvider}" | tee -a "$GITHUB_OUTPUT"
 
   build-target-cli:
     name: Build upgrade target version CLI
@@ -173,7 +185,7 @@ jobs:
       checks: write
       contents: read
       packages: write
-    needs: [split-nodeCount]
+    needs: [generate-input-parameters]
     outputs:
       kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
     steps:
@@ -200,9 +212,10 @@ jobs:
         id: e2e_test
         uses: ./.github/actions/e2e_test
         with:
-          workerNodesCount: ${{ needs.split-nodeCount.outputs.workerNodes }}
-          controlNodesCount: ${{ needs.split-nodeCount.outputs.controlPlaneNodes }}
-          cloudProvider: ${{ inputs.cloudProvider }}
+          workerNodesCount: ${{ needs.generate-input-parameters.outputs.workerNodes }}
+          controlNodesCount: ${{ needs.generate-input-parameters.outputs.controlPlaneNodes }}
+          cloudProvider: ${{ needs.generate-input-parameters.outputs.cloudProvider }}
+          attestationVariant: ${{ inputs.attestationVariant }}
           osImage: ${{ inputs.fromVersion }}
           isDebugImage: "false"
           cliVersion: ${{ inputs.fromVersion }}
@@ -243,7 +256,7 @@ jobs:
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Upload SA Key
-        if: always() && inputs.cloudProvider == 'gcp'
+        if: always() && needs.generate-input-parameters.outputs.cloudProvider == 'gcp'
         uses: ./.github/actions/artifact_upload
         with:
           name: sa-key
@@ -260,7 +273,7 @@ jobs:
       contents: read
       packages: write
     needs:
-      - split-nodeCount
+      - generate-input-parameters
       - build-target-cli
       - create-cluster
     steps:
@@ -300,13 +313,13 @@ jobs:
           stream: nightly
 
       - name: Login to GCP (IAM service account)
-        if: inputs.cloudProvider == 'gcp'
+        if: needs.generate-input-parameters.outputs.cloudProvider == 'gcp'
         uses: ./.github/actions/login_gcp
         with:
           service_account: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
 
       - name: Login to AWS (IAM role)
-        if: inputs.cloudProvider == 'aws'
+        if: needs.generate-input-parameters.outputs.cloudProvider == 'aws'
         uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a # v4.0.1
         with:
           role-to-assume: arn:aws:iam::795746500882:role/GithubActionsE2EIAM
@@ -315,7 +328,7 @@ jobs:
           role-duration-seconds: 21600
 
       - name: Login to Azure (IAM service principal)
-        if: inputs.cloudProvider == 'azure'
+        if: needs.generate-input-parameters.outputs.cloudProvider == 'azure'
         uses: ./.github/actions/login_azure
         with:
           azure_credentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
@@ -333,7 +346,7 @@ jobs:
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Download SA Key
-        if: inputs.cloudProvider == 'gcp'
+        if: needs.generate-input-parameters.outputs.cloudProvider == 'gcp'
         uses: ./.github/actions/artifact_download
         with:
           name: sa-key
@@ -356,13 +369,13 @@ jobs:
         uses: ./.github/actions/constellation_iam_upgrade
 
       - name: Login to GCP (Cluster service account)
-        if: always() && inputs.cloudProvider == 'gcp'
+        if: always() && needs.generate-input-parameters.outputs.cloudProvider == 'gcp'
         uses: ./.github/actions/login_gcp
         with:
           service_account: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
 
       - name: Login to AWS (Cluster role)
-        if: always() && inputs.cloudProvider == 'aws'
+        if: always() && needs.generate-input-parameters.outputs.cloudProvider == 'aws'
         uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a # v4.0.1
         with:
           role-to-assume: arn:aws:iam::795746500882:role/GithubActionsE2ECluster
@@ -371,7 +384,7 @@ jobs:
           role-duration-seconds: 21600
 
       - name: Login to Azure (Cluster service principal)
-        if: always() && inputs.cloudProvider == 'azure'
+        if: always() && needs.generate-input-parameters.outputs.cloudProvider == 'azure'
         uses: ./.github/actions/login_azure
         with:
           azure_credentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
@@ -382,8 +395,8 @@ jobs:
           IMAGE: ${{ inputs.toImage && inputs.toImage || steps.find-image.outputs.output }}
           KUBERNETES: ${{ inputs.toKubernetes }}
           MICROSERVICES: ${{ inputs.toMicroservices }}
-          WORKERNODES:  ${{ needs.split-nodeCount.outputs.workerNodes }}
-          CONTROLNODES: ${{ needs.split-nodeCount.outputs.controlPlaneNodes }}
+          WORKERNODES:  ${{ needs.generate-input-parameters.outputs.workerNodes }}
+          CONTROLNODES: ${{ needs.generate-input-parameters.outputs.controlPlaneNodes }}
         run: |
           echo "Image target: $IMAGE"
           echo "K8s target: $KUBERNETES"
@@ -427,7 +440,7 @@ jobs:
       contents: read
       packages: write
     if: always()
-    needs: [create-cluster, e2e-upgrade]
+    needs: [generate-input-parameters, create-cluster, e2e-upgrade]
     steps:
       - name: Checkout
         if: inputs.gitRef == 'head'
@@ -496,7 +509,7 @@ jobs:
         with:
           clusterCreation: "cli"
           kubeconfig: ${{ needs.create-cluster.outputs.kubeconfig }}
-          cloudProvider: ${{ inputs.cloudProvider }}
+          cloudProvider: ${{ needs.generate-input-parameters.outputs.cloudProvider }}
           azureClusterDeleteCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
           gcpClusterDeleteServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
 
@@ -504,7 +517,7 @@ jobs:
         if: always()
         uses: ./.github/actions/constellation_iam_destroy
         with:
-          cloudProvider: ${{ inputs.cloudProvider }}
+          cloudProvider: ${{ needs.generate-input-parameters.outputs.cloudProvider }}
           azureCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
           gcpServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
 
@@ -520,4 +533,4 @@ jobs:
         with:
           projectWriteToken: ${{ secrets.PROJECT_WRITE_TOKEN }}
           test: "upgrade"
-          provider: ${{ inputs.cloudProvider }}
+          provider: ${{ needs.generate-input-parameters.outputs.cloudProvider }}

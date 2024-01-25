@@ -46,7 +46,7 @@ jobs:
       max-parallel: 5
       matrix:
         kubernetesVersion: ["1.28"] # should be default
-        provider: ["gcp", "azure", "aws"]
+        attestationVariant: ["gcp-sev-es", "azure-sev-snp", "azure-tdx", "aws-sev-snp"]
         refStream: ["ref/main/stream/debug/?", "ref/release/stream/stable/?"]
         test: ["sonobuoy full"]
     runs-on: ubuntu-22.04
@@ -63,13 +63,23 @@ jobs:
           fetch-depth: 0
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
+      - name: Split attestationVariant
+        id: split-attestationVariant
+        shell: bash
+        run: |
+          attestationVariant="${{ matrix.attestationVariant }}"
+          cloudProvider="${attestationVariant%%-*}"
+
+          echo "cloudProvider=${cloudProvider}" | tee -a "$GITHUB_OUTPUT"
+
       - name: Run E2E test
         id: e2e_test
         uses: ./.github/actions/e2e_test
         with:
           workerNodesCount: "2"
           controlNodesCount: "3"
-          cloudProvider: ${{ matrix.provider }}
+          cloudProvider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
+          attestationVariant: ${{ matrix.attestationVariant }}
           osImage: ${{ matrix.refStream == 'ref/release/stream/stable/?' && needs.find-latest-image.outputs.image-release-stable || needs.find-latest-image.outputs.image-main-debug }}
           isDebugImage: ${{ matrix.refStream == 'ref/main/stream/debug/?' }}
           cliVersion: ${{ matrix.refStream == 'ref/release/stream/stable/?' && needs.find-latest-image.outputs.image-release-stable || '' }}
@@ -99,7 +109,7 @@ jobs:
         with:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
           clusterCreation: "cli"
-          cloudProvider: ${{ matrix.provider }}
+          cloudProvider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
           azureClusterDeleteCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
           gcpClusterDeleteServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
 
@@ -107,7 +117,7 @@ jobs:
         if: always()
         uses: ./.github/actions/constellation_iam_destroy
         with:
-          cloudProvider: ${{ matrix.provider }}
+          cloudProvider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
           azureCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
           gcpServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
 
@@ -123,7 +133,7 @@ jobs:
           refStream: ${{ matrix.refStream }}
           test: ${{ matrix.test }}
           kubernetesVersion: ${{ matrix.kubernetesVersion }}
-          provider: ${{ matrix.provider }}
+          provider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
           clusterCreation: "cli"
 
   e2e-mini:

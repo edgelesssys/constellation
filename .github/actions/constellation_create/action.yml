@@ -11,6 +11,9 @@ inputs:
   cloudProvider:
     description: "Either 'gcp', 'aws' or 'azure'."
     required: true
+  attestationVariant:
+    description: "Attestation variant to use."
+    required: true
   machineType:
     description: "Machine type of VM to spawn."
     required: false
@@ -83,7 +86,7 @@ runs:
       if: inputs.azureSNPEnforcementPolicy != ''
       shell: bash
       run: |
-        if [[ ${{ inputs.cloudProvider }} != 'azure' ]]; then
+        if [[ ${{ inputs.attestationVariant }} != 'azure-sev-snp' ]]; then
           echo "SNP enforcement policy is only supported for Azure"
           exit 1
         fi
@@ -161,24 +164,21 @@ runs:
       if : inputs.clusterCreation != 'self-managed'
       shell: bash
       run: |
-        # TODO(v2.14): Remove workaround for CLIs not supporting apply command
-        cmd='apply --skip-phases=init,attestationconfig,certsans,helm,image,k8s'
-        if constellation --help | grep -q create; then
-          cmd=create
-        fi
-        constellation $cmd -y --debug --tf-log=DEBUG
+        constellation apply --skip-phases=init,attestationconfig,certsans,helm,image,k8s -y --debug --tf-log=DEBUG
 
     - name: Constellation create (self-managed)
       if : inputs.clusterCreation == 'self-managed'
       uses: ./.github/actions/self_managed_create
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
+        attestationVariant: ${{ inputs.attestationVariant }}
 
     - name: Cdbg deploy
       if: inputs.isDebugImage == 'true'
       uses: ./.github/actions/cdbg_deploy
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
+        attestationVariant: ${{ inputs.attestationVariant }}
         test: ${{ inputs.test }}
         azureClusterCreateCredentials: ${{ inputs.azureClusterCreateCredentials }}
         azureIAMCreateCredentials: ${{ inputs.azureIAMCreateCredentials }}

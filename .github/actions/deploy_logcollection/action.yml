@@ -20,6 +20,9 @@ inputs:
   provider:
     description: "The CSP of the cluster."
     required: true
+  attestationVariant:
+    description: "Attestation variant of the cluster."
+    required: false
   isDebugImage:
     description: "Whether the cluster is a debug cluster / uses a debug image."
     required: true
@@ -58,6 +61,7 @@ runs:
          --fields github.ref-stream="${{ inputs.refStream }}" \
          --fields github.kubernetes-version="${{ inputs.kubernetesVersion }}" \
          --fields github.cluster-creation="${{ inputs.clusterCreation }}" \
+         --fields github.attestation-variant="${{ inputs.attestationVariant }}" \
          --fields deployment-type="k8s"
 
     # Make sure that helm is installed

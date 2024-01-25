@@ -7,14 +7,15 @@ on:
         description: "Number of nodes to use in the cluster. Given in format `<control-plane nodes>:<worker nodes>`."
         default: "3:2"
         type: string
-      cloudProvider:
-        description: "Which cloud provider to use."
+      attestationVariant:
+        description: "Which attestation variant to use."
         type: choice
         options:
-          - "gcp"
-          - "azure"
-          - "aws"
-        default: "azure"
+          - "gcp-sev-es"
+          - "azure-sev-snp"
+          - "azure-tdx"
+          - "aws-sev-snp"
+        default: "azure-sev-snp"
         required: true
       runner:
         description: "Architecture of the runner that executes the CLI"
@@ -71,8 +72,8 @@ on:
         description: "Number of nodes to use in the cluster. Given in format `<control-plane nodes>:<worker nodes>`."
         default: "3:2"
         type: string
-      cloudProvider:
-        description: "Which cloud provider to use."
+      attestationVariant:
+        description: "Which attestation variant to use."
         type: string
         required: true
       runner:
@@ -124,8 +125,8 @@ on:
         type: boolean
 
 jobs:
-  split-nodeCount:
-    name: Split nodeCount
+  generate-input-parameters:
+    name: Generate input parameters
     runs-on: ubuntu-22.04
     permissions:
       id-token: write
@@ -133,6 +134,7 @@ jobs:
     outputs:
       workerNodes: ${{ steps.split-nodeCount.outputs.workerNodes }}
       controlPlaneNodes: ${{ steps.split-nodeCount.outputs.controlPlaneNodes }}
+      cloudProvider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
     steps:
       - name: Split nodeCount
         id: split-nodeCount
@@ -149,6 +151,15 @@ jobs:
 
           echo "workerNodes=${workerNodes}" | tee -a "$GITHUB_OUTPUT"
           echo "controlPlaneNodes=${controlPlaneNodes}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Split attestationVariant
+        id: split-attestationVariant
+        shell: bash
+        run: |
+          attestationVariant="${{ inputs.attestationVariant }}"
+          cloudProvider="${attestationVariant%%-*}"
+
+          echo "cloudProvider=${cloudProvider}" | tee -a "$GITHUB_OUTPUT"
 
   find-latest-image:
     name: Select image
@@ -188,7 +199,7 @@ jobs:
       checks: write
       contents: read
       packages: write
-    needs: [find-latest-image, split-nodeCount]
+    needs: [find-latest-image, generate-input-parameters]
     if: always() && !cancelled()
     steps:
       - name: Install basic tools (macOS)
@@ -209,16 +220,17 @@ jobs:
           ref: ${{ inputs.git-ref }}
 
       - name: Set up gcloud CLI (macOS)
-        if: inputs.cloudProvider == 'gcp' && runner.os == 'macOS'
+        if: ${{ needs.generate-input-parameters.outputs.cloudProvider }} == 'gcp' && runner.os == 'macOS'
         uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b # v1.1.1
 
       - name: Run manual E2E test
         id: e2e_test
         uses: ./.github/actions/e2e_test
         with:
-          workerNodesCount: ${{ needs.split-nodeCount.outputs.workerNodes }}
-          controlNodesCount: ${{ needs.split-nodeCount.outputs.controlPlaneNodes }}
-          cloudProvider: ${{ inputs.cloudProvider }}
+          workerNodesCount: ${{ needs.generate-input-parameters.outputs.workerNodes }}
+          controlNodesCount: ${{ needs.generate-input-parameters.outputs.controlPlaneNodes }}
+          cloudProvider: ${{ needs.generate-input-parameters.outputs.cloudProvider }}
+          attestationVariant: ${{ inputs.attestationVariant }}
           machineType: ${{ inputs.machineType }}
           regionZone: ${{ inputs.regionZone }}
           gcpProject: constellation-e2e
@@ -254,7 +266,7 @@ jobs:
         with:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
           clusterCreation: ${{ inputs.clusterCreation }}
-          cloudProvider: ${{ inputs.cloudProvider }}
+          cloudProvider: ${{ needs.generate-input-parameters.outputs.cloudProvider }}
           azureClusterDeleteCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
           gcpClusterDeleteServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
 
@@ -262,6 +274,6 @@ jobs:
         if: always()
         uses: ./.github/actions/constellation_iam_destroy
         with:
-          cloudProvider: ${{ inputs.cloudProvider }}
+          cloudProvider: ${{ needs.generate-input-parameters.outputs.cloudProvider }}
           azureCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
           gcpServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"

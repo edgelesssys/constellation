@@ -5,6 +5,10 @@ inputs:
   cloudProvider:
     description: "Which cloud provider to use."
     required: true
+  # TODO: Create different report depending on the attestation variant
+  attestationVariant:
+    description: "Which attestation variant to use."
+    required: true
   kubeconfig:
     description: "The kubeconfig of the cluster to test."
     required: true

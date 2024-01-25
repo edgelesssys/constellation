@@ -54,66 +54,86 @@ jobs:
           # sonobuoy full test on all k8s versions
           - test: "sonobuoy full"
             refStream: "ref/main/stream/debug/?"
-            provider: "gcp"
+            attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.29"
             clusterCreation: "cli"
           - test: "sonobuoy full"
             refStream: "ref/main/stream/debug/?"
-            provider: "azure"
+            attestationVariant: "azure-sev-snp"
             kubernetes-version: "v1.29"
             clusterCreation: "cli"
           - test: "sonobuoy full"
             refStream: "ref/main/stream/debug/?"
-            provider: "aws"
+            attestationVariant: "azure-tdx"
+            kubernetes-version: "v1.29"
+            clusterCreation: "cli"
+          - test: "sonobuoy full"
+            refStream: "ref/main/stream/debug/?"
+            attestationVariant: "aws-sev-snp"
             kubernetes-version: "v1.29"
             clusterCreation: "cli"
 
           - test: "sonobuoy full"
             refStream: "ref/main/stream/debug/?"
-            provider: "gcp"
+            attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.28"
             clusterCreation: "cli"
           - test: "sonobuoy full"
             refStream: "ref/main/stream/debug/?"
-            provider: "azure"
+            attestationVariant: "azure-sev-snp"
             kubernetes-version: "v1.28"
             clusterCreation: "cli"
           - test: "sonobuoy full"
             refStream: "ref/main/stream/debug/?"
-            provider: "aws"
+            attestationVariant: "azure-tdx"
+            kubernetes-version: "v1.28"
+            clusterCreation: "cli"
+          - test: "sonobuoy full"
+            refStream: "ref/main/stream/debug/?"
+            attestationVariant: "aws-sev-snp"
             kubernetes-version: "v1.28"
             clusterCreation: "cli"
 
           - test: "sonobuoy full"
             refStream: "ref/main/stream/debug/?"
-            provider: "gcp"
+            attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.27"
             clusterCreation: "cli"
           - test: "sonobuoy full"
             refStream: "ref/main/stream/debug/?"
-            provider: "azure"
+            attestationVariant: "azure-sev-snp"
             kubernetes-version: "v1.27"
             clusterCreation: "cli"
           - test: "sonobuoy full"
             refStream: "ref/main/stream/debug/?"
-            provider: "aws"
+            attestationVariant: "azure-tdx"
+            kubernetes-version: "v1.27"
+            clusterCreation: "cli"
+          - test: "sonobuoy full"
+            refStream: "ref/main/stream/debug/?"
+            attestationVariant: "aws-sev-snp"
             kubernetes-version: "v1.27"
             clusterCreation: "cli"
 
           # verify test on latest k8s version
           - test: "verify"
             refStream: "ref/main/stream/debug/?"
-            provider: "gcp"
+            attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.29"
             clusterCreation: "cli"
           - test: "verify"
             refStream: "ref/main/stream/debug/?"
-            provider: "azure"
+            attestationVariant: "azure-sev-snp"
             kubernetes-version: "v1.29"
             azureSNPEnforcementPolicy: "equal" # This run checks for unknown ID Key disgests.
             clusterCreation: "cli"
           - test: "verify"
-            provider: "aws"
+            refStream: "ref/main/stream/debug/?"
+            attestationVariant: "azure-tdx"
+            kubernetes-version: "v1.29"
+            clusterCreation: "cli"
+          - test: "verify"
+            attestationVariant: "aws-sev-snp"
             refStream: "ref/main/stream/debug/?"
             kubernetes-version: "v1.29"
             clusterCreation: "cli"
@@ -121,80 +141,106 @@ jobs:
           # recover test on latest k8s version
           - test: "recover"
             refStream: "ref/main/stream/debug/?"
-            provider: "gcp"
+            attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.29"
             clusterCreation: "cli"
           - test: "recover"
             refStream: "ref/main/stream/debug/?"
-            provider: "azure"
+            attestationVariant: "azure-sev-snp"
             kubernetes-version: "v1.29"
             clusterCreation: "cli"
           - test: "recover"
             refStream: "ref/main/stream/debug/?"
-            provider: "aws"
+            attestationVariant: "azure-tdx"
+            kubernetes-version: "v1.29"
+            clusterCreation: "cli"
+          - test: "recover"
+            refStream: "ref/main/stream/debug/?"
+            attestationVariant: "aws-sev-snp"
             kubernetes-version: "v1.29"
             clusterCreation: "cli"
 
           # lb test on latest k8s version
           - test: "lb"
             refStream: "ref/main/stream/debug/?"
-            provider: "gcp"
+            attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.29"
             clusterCreation: "cli"
           - test: "lb"
             refStream: "ref/main/stream/debug/?"
-            provider: "azure"
+            attestationVariant: "azure-sev-snp"
             kubernetes-version: "v1.29"
             clusterCreation: "cli"
           - test: "lb"
             refStream: "ref/main/stream/debug/?"
-            provider: "aws"
+            attestationVariant: "azure-tdx"
+            kubernetes-version: "v1.29"
+            clusterCreation: "cli"
+          - test: "lb"
+            refStream: "ref/main/stream/debug/?"
+            attestationVariant: "aws-sev-snp"
             kubernetes-version: "v1.29"
             clusterCreation: "cli"
 
           # autoscaling test on latest k8s version
           - test: "autoscaling"
             refStream: "ref/main/stream/debug/?"
-            provider: "gcp"
+            attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.29"
             clusterCreation: "cli"
           - test: "autoscaling"
             refStream: "ref/main/stream/debug/?"
-            provider: "azure"
+            attestationVariant: "azure-sev-snp"
             kubernetes-version: "v1.29"
             clusterCreation: "cli"
           - test: "autoscaling"
             refStream: "ref/main/stream/debug/?"
-            provider: "aws"
+            attestationVariant: "azure-tdx"
+            kubernetes-version: "v1.29"
+            clusterCreation: "cli"
+          - test: "autoscaling"
+            refStream: "ref/main/stream/debug/?"
+            attestationVariant: "aws-sev-snp"
             kubernetes-version: "v1.29"
             clusterCreation: "cli"
 
           # perf-bench test on latest k8s version, not supported on AWS
           - test: "perf-bench"
             refStream: "ref/main/stream/debug/?"
-            provider: "gcp"
+            attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.29"
             clusterCreation: "cli"
           - test: "perf-bench"
             refStream: "ref/main/stream/debug/?"
-            provider: "azure"
+            attestationVariant: "azure-sev-snp"
             kubernetes-version: "v1.29"
             clusterCreation: "cli"
+          # TODO: check what needs to be done for perf-bench on Azure TDX
+          #- test: "perf-bench"
+          #  refStream: "ref/main/stream/debug/?"
+          #  attestationVariant: "azure-tdx"
+          #  kubernetes-version: "v1.29"
+          #  clusterCreation: "cli"
 
           # malicious join test on latest k8s version
           - test: "malicious join"
             refStream: "ref/main/stream/debug/?"
-            provider: "gcp"
+            attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.29"
             clusterCreation: "cli"
           - test: "malicious join"
             refStream: "ref/main/stream/debug/?"
-            provider: "azure"
+            attestationVariant: "azure-sev-snp"
             kubernetes-version: "v1.29"
             clusterCreation: "cli"
           - test: "malicious join"
             refStream: "ref/main/stream/debug/?"
-            provider: "aws"
+            attestationVariant: "azure-tdx"
+            kubernetes-version: "v1.29"
+            clusterCreation: "cli"
+          - test: "malicious join"
+            refStream: "ref/main/stream/debug/?"
+            attestationVariant: "aws-sev-snp"
             kubernetes-version: "v1.29"
             clusterCreation: "cli"
 
@@ -202,40 +248,50 @@ jobs:
           # with Sonobuoy full
           - test: "sonobuoy full"
             refStream: "ref/main/stream/debug/?"
-            provider: "gcp"
+            attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.29"
             clusterCreation: "self-managed"
           - test: "sonobuoy full"
             refStream: "ref/main/stream/debug/?"
-            provider: "azure"
+            attestationVariant: "azure-sev-snp"
             kubernetes-version: "v1.29"
             clusterCreation: "self-managed"
           - test: "sonobuoy full"
-            provider: "aws"
+            refStream: "ref/main/stream/debug/?"
+            attestationVariant: "azure-tdx"
+            kubernetes-version: "v1.29"
+            clusterCreation: "self-managed"
+          - test: "sonobuoy full"
+            attestationVariant: "aws-sev-snp"
             refStream: "ref/main/stream/debug/?"
             kubernetes-version: "v1.29"
             clusterCreation: "self-managed"
 
           - test: "sonobuoy full"
             refStream: "ref/main/stream/debug/?"
-            provider: "gcp"
+            attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.29"
             clusterCreation: "terraform"
           - test: "sonobuoy full"
             refStream: "ref/main/stream/debug/?"
-            provider: "azure"
+            attestationVariant: "azure-sev-snp"
             kubernetes-version: "v1.29"
             clusterCreation: "terraform"
           - test: "sonobuoy full"
             refStream: "ref/main/stream/debug/?"
-            provider: "aws"
+            attestationVariant: "azure-tdx"
+            kubernetes-version: "v1.29"
+            clusterCreation: "terraform"
+          - test: "sonobuoy full"
+            refStream: "ref/main/stream/debug/?"
+            attestationVariant: "aws-sev-snp"
             kubernetes-version: "v1.29"
             clusterCreation: "terraform"
 
           # s3proxy test on latest k8s version
           - test: "s3proxy"
             refStream: "ref/main/stream/debug/?"
-            provider: "gcp"
+            attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.29"
             clusterCreation: "cli"
 
@@ -246,17 +302,22 @@ jobs:
           # verify test on default k8s version
           - test: "verify"
             refStream: "ref/release/stream/stable/?"
-            provider: "gcp"
+            attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.28"
             clusterCreation: "cli"
           - test: "verify"
             refStream: "ref/release/stream/stable/?"
-            provider: "azure"
+            attestationVariant: "azure-sev-snp"
             kubernetes-version: "v1.28"
             clusterCreation: "cli"
           - test: "verify"
             refStream: "ref/release/stream/stable/?"
-            provider: "aws"
+            attestationVariant: "azure-tdx"
+            kubernetes-version: "v1.28"
+            clusterCreation: "cli"
+          - test: "verify"
+            refStream: "ref/release/stream/stable/?"
+            attestationVariant: "aws-sev-snp"
             kubernetes-version: "v1.28"
             clusterCreation: "cli"
 
@@ -274,13 +335,23 @@ jobs:
           fetch-depth: 0
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
+      - name: Split attestationVariant
+        id: split-attestationVariant
+        shell: bash
+        run: |
+          attestationVariant="${{ matrix.attestationVariant }}"
+          cloudProvider="${attestationVariant%%-*}"
+
+          echo "cloudProvider=${cloudProvider}" | tee -a "$GITHUB_OUTPUT"
+
       - name: Run E2E test
         id: e2e_test
         uses: ./.github/actions/e2e_test
         with:
           workerNodesCount: "2"
           controlNodesCount: "3"
-          cloudProvider: ${{ matrix.provider }}
+          cloudProvider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
+          attestationVariant: ${{ matrix.attestationVariant }}
           osImage: ${{ matrix.refStream == 'ref/release/stream/stable/?' && needs.find-latest-image.outputs.image-release-stable || needs.find-latest-image.outputs.image-main-debug }}
           isDebugImage: ${{ matrix.refStream == 'ref/main/stream/debug/?' }}
           cliVersion: ${{ matrix.refStream == 'ref/release/stream/stable/?' && needs.find-latest-image.outputs.image-release-stable || '' }}
@@ -313,7 +384,7 @@ jobs:
         with:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
           clusterCreation: ${{ matrix.clusterCreation }}
-          cloudProvider: ${{ matrix.provider }}
+          cloudProvider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
           azureClusterDeleteCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
           gcpClusterDeleteServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
 
@@ -321,7 +392,7 @@ jobs:
         if: always()
         uses: ./.github/actions/constellation_iam_destroy
         with:
-          cloudProvider: ${{ matrix.provider }}
+          cloudProvider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
           azureCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
           gcpServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
 
@@ -337,7 +408,7 @@ jobs:
           refStream: ${{ matrix.refStream }}
           test: ${{ matrix.test }}
           kubernetesVersion: ${{ matrix.kubernetes-version }}
-          provider: ${{ matrix.provider }}
+          provider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
           clusterCreation: ${{ matrix.clusterCreation }}
 
   e2e-upgrade:
@@ -346,7 +417,7 @@ jobs:
       max-parallel: 1
       matrix:
         fromVersion: ["v2.14.0"]
-        cloudProvider: ["gcp", "azure", "aws"]
+        attestationVariant: ["gcp-sev-es", "azure-sev-snp", "aws-sev-snp"] # TODO(v2.15) Add azure-tdx to test matrix
     name: Run upgrade tests
     secrets: inherit
     permissions:
@@ -357,7 +428,7 @@ jobs:
     uses: ./.github/workflows/e2e-upgrade.yml
     with:
       fromVersion: ${{ matrix.fromVersion }}
-      cloudProvider: ${{ matrix.cloudProvider }}
+      attestationVariant: ${{ matrix.attestationVariant }}
       nodeCount: '3:2'
       scheduled: ${{ github.event_name == 'schedule' }}
 

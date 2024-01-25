@@ -11,6 +11,9 @@ inputs:
   cloudProvider:
     description: "Which cloud provider to use."
     required: true
+  attestationVariant:
+    description: "Which attestation variant to use."
+    required: true
   machineType:
     description: "VM machine type. Make sure it matches selected cloud provider!"
   osImage:
@@ -248,6 +251,7 @@ runs:
       uses: ./.github/actions/constellation_iam_create
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
+        attestationVariant: ${{ inputs.attestationVariant }}
         namePrefix: ${{ steps.create-prefix.outputs.prefix }}
         awsZone: ${{ inputs.regionZone || 'us-east-2c' }}
         azureRegion: ${{ inputs.regionZone || steps.pick-az-region.outputs.region  }}
@@ -281,6 +285,7 @@ runs:
       uses: ./.github/actions/constellation_create
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
+        attestationVariant: ${{ inputs.attestationVariant }}
         workerNodesCount: ${{ inputs.workerNodesCount }}
         controlNodesCount: ${{ inputs.controlNodesCount }}
         machineType: ${{ inputs.machineType }}
@@ -311,6 +316,7 @@ runs:
         opensearchPwd: ${{ inputs.awsOpenSearchPwd }}
         test: ${{ inputs.test }}
         provider: ${{ inputs.cloudProvider }}
+        attestationVariant: ${{ inputs.attestationVariant }}
         isDebugImage: ${{ inputs.isDebugImage }}
         kubernetesVersion: ${{ inputs.kubernetesVersion }}
         refStream: ${{ inputs.refStream }}
@@ -363,6 +369,7 @@ runs:
       uses: ./.github/actions/e2e_benchmark
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
+        attestationVariant: ${{ inputs.attestationVariant }}
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
         awsOpenSearchDomain: ${{ inputs.awsOpenSearchDomain }}
         awsOpenSearchUsers: ${{ inputs.awsOpenSearchUsers }}
@@ -373,7 +380,7 @@ runs:
       if: inputs.test == 'verify'
       uses: ./.github/actions/e2e_verify
       with:
-        cloudProvider: ${{ inputs.cloudProvider }}
+        attestationVariant: ${{ inputs.attestationVariant }}
         osImage: ${{ steps.constellation-create.outputs.osImageUsed }}
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
         cosignPassword: ${{ inputs.cosignPassword }}
@@ -391,6 +398,7 @@ runs:
       uses: ./.github/actions/e2e_malicious_join
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
+        attestationVariant: ${{ inputs.attestationVariant }}
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
         githubToken: ${{ inputs.githubToken }}
 
