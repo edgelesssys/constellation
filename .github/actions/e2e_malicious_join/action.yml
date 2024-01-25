@@ -5,6 +5,9 @@ inputs:
   cloudProvider:
     description: "The cloud provider the test runs on."
     required: true
+  attestationVariant:
+    description: "The attestation variant used in the cluster."
+    required: true
   kubeconfig:
     description: "The kubeconfig file for the cluster."
     required: true
@@ -34,7 +37,7 @@ runs:
           [ \"/malicious-join_bin\", \
           \"--js-endpoint=join-service.kube-system:9090\", \
           \"--csp=${{ inputs.cloudProvider }}\", \
-          \"--variant=default\" ]" stamped_job.yaml
+          \"--variant=${{ inputs.attestationVariant }}\" ]" stamped_job.yaml
 
         kubectl create ns malicious-join
         kubectl apply -n malicious-join -f stamped_job.yaml

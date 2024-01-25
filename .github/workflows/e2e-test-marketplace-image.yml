@@ -7,12 +7,16 @@ on:
         description: "Number of nodes to use in the cluster. Given in format `<control-plane nodes>:<worker nodes>`."
         default: "3:2"
         type: string
-      cloudProvider:
-        description: "Which cloud provider to use."
+      attestationVariant:
+        description: "Which attestation variant to use."
         type: choice
         options:
-          - "azure"
-          - "gcp"
+          - "gcp-sev-es"
+          - "azure-sev-snp"
+          - "azure-tdx"
+        # AWS not yet supported
+        #  - "aws-sev-snp"
+        default: "azure-sev-snp"
         required: true
       runner:
         description: "Architecture of the runner that executes the CLI"
@@ -74,7 +78,7 @@ jobs:
     uses: ./.github/workflows/e2e-test.yml
     with:
       nodeCount: ${{ inputs.nodeCount }}
-      cloudProvider: ${{ inputs.cloudProvider }}
+      attestationVariant: ${{ inputs.attestationVariant }}
       runner: ${{ inputs.runner }}
       test: ${{ inputs.test }}
       kubernetesVersion: ${{ inputs.kubernetesVersion }}

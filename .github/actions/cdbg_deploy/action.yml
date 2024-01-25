@@ -14,6 +14,9 @@ inputs:
   cloudProvider:
     description: "The cloud provider to use."
     required: true
+  attestationVariant:
+    description: "Attestation variant of the cluster."
+    required: false
   kubernetesVersion:
     description: "Kubernetes version to create the cluster from."
     required: true
@@ -98,6 +101,7 @@ runs:
           --info logcollect.github.ref-stream="${{ inputs.refStream }}" \
           --info logcollect.github.kubernetes-version="${{ inputs.kubernetesVersion }}" \
           --info logcollect.github.cluster-creation="${{ inputs.clusterCreation }}" \
+          --info logcollect.github.attestation-variant="${{ inputs.attestationVariant }}" \
           --info logcollect.deployment-type="debugd" \
           --verbosity=-1 \
           --force

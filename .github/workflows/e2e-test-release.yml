@@ -46,130 +46,165 @@ jobs:
 
           # sonobuoy full test on all k8s versions
           - test: "sonobuoy full"
-            provider: "gcp"
+            attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.29"
             runner: "ubuntu-22.04"
             clusterCreation: "cli"
           - test: "sonobuoy full"
-            provider: "azure"
+            attestationVariant: "azure-sev-snp"
             kubernetes-version: "v1.29"
             runner: "ubuntu-22.04"
             clusterCreation: "cli"
           - test: "sonobuoy full"
-            provider: "aws"
+            attestationVariant: "azure-tdx"
+            kubernetes-version: "v1.29"
+            runner: "ubuntu-22.04"
+            clusterCreation: "cli"
+          - test: "sonobuoy full"
+            attestationVariant: "aws-sev-snp"
             kubernetes-version: "v1.29"
             runner: "ubuntu-22.04"
             clusterCreation: "cli"
 
 
           - test: "sonobuoy full"
-            provider: "gcp"
+            attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.28"
             runner: "ubuntu-22.04"
             clusterCreation: "cli"
           - test: "sonobuoy full"
-            provider: "azure"
+            attestationVariant: "azure-sev-snp"
             kubernetes-version: "v1.28"
             runner: "ubuntu-22.04"
             clusterCreation: "cli"
           - test: "sonobuoy full"
-            provider: "aws"
+            attestationVariant: "azure-tdx"
+            kubernetes-version: "v1.28"
+            runner: "ubuntu-22.04"
+            clusterCreation: "cli"
+          - test: "sonobuoy full"
+            attestationVariant: "aws-sev-snp"
             kubernetes-version: "v1.28"
             runner: "ubuntu-22.04"
             clusterCreation: "cli"
 
           - test: "sonobuoy full"
-            provider: "gcp"
+            attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.27"
             runner: "ubuntu-22.04"
             clusterCreation: "cli"
           - test: "sonobuoy full"
-            provider: "azure"
+            attestationVariant: "azure-sev-snp"
             kubernetes-version: "v1.27"
             runner: "ubuntu-22.04"
             clusterCreation: "cli"
           - test: "sonobuoy full"
-            provider: "aws"
+            attestationVariant: "azure-tdx"
+            kubernetes-version: "v1.27"
+            runner: "ubuntu-22.04"
+            clusterCreation: "cli"
+          - test: "sonobuoy full"
+            attestationVariant: "aws-sev-snp"
             kubernetes-version: "v1.27"
             runner: "ubuntu-22.04"
             clusterCreation: "cli"
 
           # verify test on latest k8s version
           - test: "verify"
-            provider: "gcp"
+            attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.29"
             runner: "ubuntu-22.04"
             clusterCreation: "cli"
           - test: "verify"
-            provider: "azure"
+            attestationVariant: "azure-sev-snp"
             kubernetes-version: "v1.29"
             runner: "ubuntu-22.04"
             clusterCreation: "cli"
           - test: "verify"
-            provider: "aws"
+            attestationVariant: "azure-tdx"
+            kubernetes-version: "v1.29"
+            runner: "ubuntu-22.04"
+            clusterCreation: "cli"
+          - test: "verify"
+            attestationVariant: "aws-sev-snp"
             kubernetes-version: "v1.29"
             runner: "ubuntu-22.04"
             clusterCreation: "cli"
 
           # recover test on latest k8s version
           - test: "recover"
-            provider: "gcp"
+            attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.29"
             runner: "ubuntu-22.04"
             clusterCreation: "cli"
           - test: "recover"
-            provider: "azure"
+            attestationVariant: "azure-sev-snp"
             kubernetes-version: "v1.29"
             runner: "ubuntu-22.04"
             clusterCreation: "cli"
           - test: "recover"
-            provider: "aws"
+            attestationVariant: "azure-tdx"
+            kubernetes-version: "v1.29"
+            runner: "ubuntu-22.04"
+            clusterCreation: "cli"
+          - test: "recover"
+            attestationVariant: "aws-sev-snp"
             kubernetes-version: "v1.29"
             runner: "ubuntu-22.04"
             clusterCreation: "cli"
 
           # lb test on latest k8s version
           - test: "lb"
-            provider: "gcp"
+            attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.29"
             runner: "ubuntu-22.04"
             clusterCreation: "cli"
           - test: "lb"
-            provider: "azure"
+            attestationVariant: "azure-sev-snp"
             kubernetes-version: "v1.29"
             runner: "ubuntu-22.04"
             clusterCreation: "cli"
           - test: "lb"
-            provider: "aws"
+            attestationVariant: "azure-tdx"
+            kubernetes-version: "v1.29"
+            runner: "ubuntu-22.04"
+            clusterCreation: "cli"
+          - test: "lb"
+            attestationVariant: "aws-sev-snp"
             kubernetes-version: "v1.29"
             runner: "ubuntu-22.04"
             clusterCreation: "cli"
 
           # autoscaling test on latest k8s version
           - test: "autoscaling"
-            provider: "gcp"
+            attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.29"
             runner: "ubuntu-22.04"
             clusterCreation: "cli"
           - test: "autoscaling"
-            provider: "azure"
+            attestationVariant: "azure-sev-snp"
             kubernetes-version: "v1.29"
             runner: "ubuntu-22.04"
             clusterCreation: "cli"
           - test: "autoscaling"
-            provider: "aws"
+            attestationVariant: "azure-tdx"
+            kubernetes-version: "v1.29"
+            runner: "ubuntu-22.04"
+            clusterCreation: "cli"
+          - test: "autoscaling"
+            attestationVariant: "aws-sev-snp"
             kubernetes-version: "v1.29"
             runner: "ubuntu-22.04"
             clusterCreation: "cli"
 
           # perf-bench test on latest k8s version, not supported on AWS
           - test: "perf-bench"
-            provider: "gcp"
+            attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.29"
             runner: "ubuntu-22.04"
             clusterCreation: "cli"
           - test: "perf-bench"
-            provider: "azure"
+            attestationVariant: "azure-sev-snp"
             kubernetes-version: "v1.29"
             runner: "ubuntu-22.04"
             clusterCreation: "cli"
@@ -177,17 +212,22 @@ jobs:
           # self-managed infra test on latest k8s version
           # runs Sonobuoy full test
           - test: "sonobuoy full"
-            provider: "gcp"
+            attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.29"
             runner: "ubuntu-22.04"
             clusterCreation: "self-managed"
           - test: "sonobuoy full"
-            provider: "azure"
+            attestationVariant: "azure-sev-snp"
             kubernetes-version: "v1.29"
             runner: "ubuntu-22.04"
             clusterCreation: "self-managed"
           - test: "sonobuoy full"
-            provider: "aws"
+            attestationVariant: "azure-tdx"
+            kubernetes-version: "v1.29"
+            runner: "ubuntu-22.04"
+            clusterCreation: "self-managed"
+          - test: "sonobuoy full"
+            attestationVariant: "aws-sev-snp"
             kubernetes-version: "v1.29"
             runner: "ubuntu-22.04"
             clusterCreation: "self-managed"
@@ -195,7 +235,7 @@ jobs:
           # s3proxy test on latest k8s version
           - test: "s3proxy"
             refStream: "ref/main/stream/debug/?"
-            provider: "gcp"
+            attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.29"
             runner: "ubuntu-22.04"
             clusterCreation: "cli"
@@ -206,11 +246,11 @@ jobs:
           # Skipping verify test on MacOS since the runner uses a different version of sed
           # TODO(3u13r): Update verify test to work on MacOS runners
           # - test: "verify"
-          #  provider: "azure"
+          #  attestationVariant: "azure-sev-snp"
           #  kubernetes-version: "v1.29"
           #  runner: "macos-12"
           - test: "recover"
-            provider: "gcp"
+            attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.29"
             runner: "macos-12"
             clusterCreation: "cli"
@@ -232,8 +272,17 @@ jobs:
           fetch-depth: 0
           ref: ${{ inputs.ref || github.head_ref }}
 
+      - name: Split attestationVariant
+        id: split-attestationVariant
+        shell: bash
+        run: |
+          attestationVariant="${{ matrix.attestationVariant }}"
+          cloudProvider="${attestationVariant%%-*}"
+
+          echo "cloudProvider=${cloudProvider}" | tee -a "$GITHUB_OUTPUT"
+
       - name: Set up gcloud CLI (macOS)
-        if: matrix.provider == 'gcp' && runner.os == 'macOS'
+        if: steps.split-attestationVariant.outputs.provider == 'gcp' && runner.os == 'macOS'
         uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b # v1.1.1
 
       - name: Run E2E test
@@ -242,7 +291,8 @@ jobs:
         with:
           workerNodesCount: "2"
           controlNodesCount: "3"
-          cloudProvider: ${{ matrix.provider }}
+          cloudProvider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
+          attestationVariant: ${{ matrix.attestationVariant }}
           cliVersion: ""
           kubernetesVersion: ${{ matrix.kubernetes-version }}
           osImage: ""
@@ -273,7 +323,7 @@ jobs:
         with:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
           clusterCreation: ${{ matrix.clusterCreation }}
-          cloudProvider: ${{ matrix.provider }}
+          cloudProvider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
           azureClusterDeleteCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
           gcpClusterDeleteServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
 
@@ -281,7 +331,7 @@ jobs:
         if: always()
         uses: ./.github/actions/constellation_iam_destroy
         with:
-          cloudProvider: ${{ matrix.provider }}
+          cloudProvider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
           azureCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
           gcpServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
 
@@ -291,7 +341,7 @@ jobs:
       max-parallel: 1
       matrix:
         fromVersion: ["v2.14.0"]
-        cloudProvider: ["gcp", "azure", "aws"]
+        attestationVariant: ["gcp-sev-es", "azure-sev-snp", "aws-sev-snp"] # TODO(v2.15) Add azure-tdx to test matrix
     name: Run upgrade tests
     secrets: inherit
     permissions:
@@ -303,6 +353,6 @@ jobs:
     with:
       fromVersion: ${{ matrix.fromVersion }}
       toImage: ${{ inputs.targetVersion }}
-      cloudProvider: ${{ matrix.cloudProvider }}
+      attestationVariant: ${{ matrix.attestationVariant }}
       nodeCount: '3:2'
       gitRef: ${{ inputs.ref || github.head_ref }}
