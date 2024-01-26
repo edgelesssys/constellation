@@ -220,7 +220,7 @@ jobs:
           ref: ${{ inputs.git-ref }}
 
       - name: Set up gcloud CLI (macOS)
-        if: ${{ needs.generate-input-parameters.outputs.cloudProvider }} == 'gcp' && runner.os == 'macOS'
+        if: needs.generate-input-parameters.outputs.cloudProvider == 'gcp' && runner.os == 'macOS'
         uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b # v1.1.1
 
       - name: Run manual E2E test
