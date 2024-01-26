@@ -136,7 +136,7 @@ constellation iam create azure --region=westus --resourceGroup=constellTest --se
 
 This command creates IAM configuration on the Azure region `westus` creating a new resource group `constellTest` and a new service principal `spTest`.
 
-Note that CVMs are currently only supported in a few regions, check [Azure's products available by region](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=virtual-machines&regions=all). These are:
+CVMs are available in several Azure regions. Constellation OS images are currently replicated to the following:
 
 * `germanywestcentral`
 * `westus`
@@ -144,6 +144,10 @@ Note that CVMs are currently only supported in a few regions, check [Azure's pro
 * `northeurope`
 * `westeurope`
 * `southeastasia`
+
+If you require the OS image to be available in another region, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md&title=Support+new+Azure+image+region:+xx-xxxx-x).
+
+You can find a list of all [regions in Azure's documentation](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=virtual-machines&regions=all).
 
 Paste the output into the corresponding fields of the `constellation-conf.yaml` file.
 
@@ -206,7 +210,9 @@ The following describes the configuration fields and how you obtain the required
 
   You can view your tenant UUID via `az account show` and read the `tenant` field. For more information refer to [Azure's documentation](https://docs.microsoft.com/en-us/azure/azure-portal/get-subscription-tenant-id#find-your-azure-ad-tenant).
 
-* **location**: The Azure datacenter location you want to deploy your cluster in, e.g., `westus`. CVMs are currently only supported in a few regions, check [Azure's products available by region](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=virtual-machines&regions=all). These are:
+* **location**: The Azure datacenter location you want to deploy your cluster in, e.g., `westus`.
+
+  CVMs are available in several Azure regions. Constellation OS images are currently replicated to the following:
 
   * `germanywestcentral`
   * `westus`
@@ -214,6 +220,10 @@ The following describes the configuration fields and how you obtain the required
   * `northeurope`
   * `westeurope`
   * `southeastasia`
+
+  If you require the OS image to be available in another region, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md&title=Support+new+Azure+image+region:+xx-xxxx-x).
+
+  You can find a list of all [regions in Azure's documentation](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=virtual-machines&regions=all).
 
 * **resourceGroup**: [Create a new resource group in Azure](https://learn.microsoft.com/azure/azure-resource-manager/management/manage-resource-groups-portal) for your Constellation cluster. Set this configuration     field to the name of the created resource group.
 
