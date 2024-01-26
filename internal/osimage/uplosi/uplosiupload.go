@@ -208,6 +208,7 @@ func awsParseAMIARN(arn string) (region string, amiID string, retErr error) {
 }
 
 func extendAzureConfig(azureConfig map[string]any, version versionsapi.Version, attestationVariant string, timestamp time.Time) {
+	azureConfig["replicationRegions"] = azureReplicationRegions(attestationVariant)
 	azureConfig["attestationVariant"] = attestationVariant
 	azureConfig["sharedImageGallery"] = azureGalleryName(version, attestationVariant)
 	azureConfig["imageDefinitionName"] = azureImageOffer(version)
@@ -245,6 +246,16 @@ func azureImageOffer(version versionsapi.Version) string {
 		return version.Version()
 	}
 	return version.Ref() + "-" + version.Stream()
+}
+
+func azureReplicationRegions(attestationVariant string) []string {
+	switch attestationVariant {
+	case "azure-tdx":
+		return []string{"northeurope", "westeurope", "centralus", "eastus2"}
+	case "azure-sev-snp":
+		return []string{"northeurope", "westeurope", "germanywestcentral", "eastus", "westus", "southeastasia"}
+	}
+	return nil
 }
 
 func extendGCPConfig(gcpConfig map[string]any, version versionsapi.Version, attestationVariant string) {
