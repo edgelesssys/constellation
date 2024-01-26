@@ -9,7 +9,7 @@
       url = "github:numtide/flake-utils";
     };
     uplosi = {
-      url = "github:edgelesssys/uplosi/629e2bcff551bf3d972a7c21bfea6d881b9d9bc2";
+      url = "github:edgelesssys/uplosi/30aaaf878f31d3564c2757dbe4ed4f6426a7bdfa";
     };
   };
 
