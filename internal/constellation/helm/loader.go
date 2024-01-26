@@ -342,16 +342,16 @@ func (i *chartLoader) loadCiliumValues(cloudprovider.Provider) (map[string]any, 
 		"image": map[string]any{
 			"repository": "ghcr.io/edgelesssys/cilium/cilium",
 			"suffix":     "",
-			"tag":        "v1.15.0-pre.3-edg.1",
-			"digest":     "sha256:008b848a1faf0db3293e014a967003638e27324dabaa2355f7ca4071581b34ec",
+			"tag":        "v1.15.0-pre.3-edg.2",
+			"digest":     "sha256:c21b7fbbb084a128a479d6170e5f89ad2768dfecb4af10ee6a99ffe5d1a11749",
 			"useDigest":  true,
 		},
 		"operator": map[string]any{
 			"image": map[string]any{
 				"repository":    "ghcr.io/edgelesssys/cilium/operator",
 				"suffix":        "",
-				"tag":           "v1.15.0-pre.3-edg.1",
-				"genericDigest": "sha256:340829ed0ec3d2777df9d724e0fb33a348e2292292dc2654121363bbe91019ee",
+				"tag":           "v1.15.0-pre.3-edg.2",
+				"genericDigest": "sha256:4ea9de5cfeb4554b82b509f0de41120a90e35a15e81a04f76c4cb405ddea3e7c",
 				"useDigest":     true,
 			},
 			"podDisruptionBudget": map[string]any{
