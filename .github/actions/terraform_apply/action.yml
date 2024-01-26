@@ -20,6 +20,9 @@ runs:
           "azureSEVSNP")
             attestationVariant="azure-sev-snp"
             ;;
+          "azureTDX")
+            attestationVariant="azure-tdx"
+            ;;
           "gcpSEVES")
             attestationVariant="gcp-sev-es"
             ;;

@@ -63,7 +63,7 @@ resource "constellation_cluster" "azure_example" {
 
 ### Required
 
-- `attestation` (Attributes) Attestation comprises the measurements and SEV-SNP specific parameters. The output of the [constellation_attestation](../data-sources/attestation.md) data source provides sensible defaults. (see [below for nested schema](#nestedatt--attestation))
+- `attestation` (Attributes) Attestation comprises the measurements and CVM specific parameters. The output of the [constellation_attestation](../data-sources/attestation.md) data source provides sensible defaults. (see [below for nested schema](#nestedatt--attestation))
 - `constellation_microservice_version` (String) The version of Constellation's microservices used within the cluster.
 - `csp` (String) CSP (Cloud Service Provider) to use. (e.g. `azure`)
 See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview/clouds) that Constellation supports.
@@ -108,11 +108,13 @@ Required:
   * `aws-sev-snp`
   * `aws-nitro-tpm`
   * `azure-sev-snp`
+  * `azure-tdx`
   * `gcp-sev-es`
 
 Optional:
 
 - `azure_firmware_signer_config` (Attributes) (see [below for nested schema](#nestedatt--attestation--azure_firmware_signer_config))
+- `tdx` (Attributes) (see [below for nested schema](#nestedatt--attestation--tdx))
 
 <a id="nestedatt--attestation--measurements"></a>
 ### Nested Schema for `attestation.measurements`
@@ -131,6 +133,20 @@ Optional:
 - `accepted_key_digests` (List of String)
 - `enforcement_policy` (String)
 - `maa_url` (String)
+
+
+<a id="nestedatt--attestation--tdx"></a>
+### Nested Schema for `attestation.tdx`
+
+Optional:
+
+- `intel_root_key` (String)
+- `mr_seam` (String)
+- `pce_svn` (Number)
+- `qe_svn` (Number)
+- `qe_vendor_id` (String)
+- `tee_tcb_svn` (String)
+- `xfam` (String)
 
 
 
