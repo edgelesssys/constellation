@@ -1,6 +1,11 @@
 name: Pick an Azure region
 description: "Pick an Azure region"
 
+inputs:
+  attestationVariant:
+    description: "Attestation variant to use. Not all regions support all variants."
+    required: true
+
 outputs:
   region:
     description: "One of the supported Azure regions"
@@ -13,12 +18,25 @@ runs:
       id: pick-region
       shell: bash
       run: |
-        possibleRegions=(
+        possibleRegionsSNP=(
           "westus"
           "eastus"
           "northeurope"
           "westeurope"
           "southeastasia"
         )
+        possibleRegionsTDX=(
+          "centralus"
+          "eastus2"
+          "northeurope"
+          "westeurope"
+        )
+
+        if [[ "${{ inputs.attestationVariant }}" == "azure-tdx" ]]; then
+          possibleRegions=("${possibleRegionsTDX[@]}")
+        else
+          possibleRegions=("${possibleRegionsSNP[@]}")
+        fi
+
         region=${possibleRegions[$RANDOM % ${#possibleRegions[@]}]}
         echo "region=$region" | tee -a "$GITHUB_OUTPUT"

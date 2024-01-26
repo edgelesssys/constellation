@@ -245,6 +245,8 @@ runs:
     - name: Pick a random Azure region
       id: pick-az-region
       uses: ./.github/actions/pick_azure_region
+      with:
+        attestationVariant: ${{ inputs.attestationVariant }}
 
     - name: Create IAM configuration
       id: constellation-iam-create
