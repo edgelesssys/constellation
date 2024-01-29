@@ -494,7 +494,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        attestationVariant: ["gcp-sev-es", "azure-tdx", "aws-sev-snp"]
+        attestationVariant: ["gcp-sev-es", "azure-sev-snp", "azure-tdx", "aws-sev-snp"]
     permissions:
       id-token: write
       contents: read
