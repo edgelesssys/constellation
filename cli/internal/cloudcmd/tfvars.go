@@ -64,14 +64,6 @@ func TerraformIAMUpgradeVars(conf *config.Config, fileHandler file.Handler) (ter
 		if err := terraform.VariablesFromBytes(oldVarBytes, &oldVars); err != nil {
 			return nil, fmt.Errorf("parsing existing IAM workspace: %w", err)
 		}
-
-		// Migration from the "region" to the "location" field na.
-		// TODO(msanft): Remove after v2.14.0 is released.
-		if oldVars.Region != nil && *oldVars.Region != "" && oldVars.Location == "" {
-			oldVars.Location = *oldVars.Region
-			oldVars.Region = nil
-		}
-
 		vars = azureTerraformIAMVars(conf, oldVars)
 	case cloudprovider.GCP:
 		var oldVars terraform.GCPIAMVariables
