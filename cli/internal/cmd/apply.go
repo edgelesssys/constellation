@@ -812,7 +812,7 @@ func (wl warnLogger) Info(msg string, args ...any) {
 
 // Warn prints a formatted warning from the validator.
 func (wl warnLogger) Warn(msg string, args ...any) {
-  wl.cmd.PrintErrf("Warning: %s %s\n", msg, fmt.Sprint(args...))
+	wl.cmd.PrintErrf("Warning: %s %s\n", msg, fmt.Sprint(args...))
 }
 
 type warnLog interface {
