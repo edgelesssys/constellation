@@ -57,7 +57,7 @@ Further we try to adhere to the following guidelines:
   You should write
 
   ```Go
-  log.With(slog.String("address", addr), slog.Int("port", port)).Info("Starting server")
+  log..Info("Starting server", "addr", addr, "port", port)
   ```
 
 * Use log levels to configure how detailed the logs of you application should be.
