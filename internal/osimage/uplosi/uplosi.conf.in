@@ -3,7 +3,7 @@ name = "constellation"
 
 [base.aws]
 region = "eu-central-1"
-replicationRegions = ["eu-west-1", "eu-west-3", "us-east-2", "ap-south-1"]
+replicationRegions = ["eu-west-1", "eu-west-3", "us-east-1", "us-east-2", "ap-south-1"]
 bucket = "constellation-images"
 publish = true
 
