@@ -22,7 +22,7 @@ inputs:
     required: false
   clusterCreation:
     description: "How the infrastructure for the e2e test was created. One of [cli, self-managed, terraform]."
-    default: "false"
+    required: false
 
 runs:
   using: "composite"
@@ -61,14 +61,40 @@ runs:
 
         # Query with filters for this workflow run
         # TODO(msanft): Add Self-managed param once logcollection is fixed.
+
+        if [[ -n "${{ inputs.provider }}" ]]
+        then
+          providerQry="(query:(match_phrase:(cloud.provider:${{ inputs.provider }}))),"
+        fi
+        if [[ -n "${{ inputs.refStream }}" ]]
+        then
+          refStreamQry="(query:(match_phrase:(metadata.github.ref-stream:${{ inputs.refStream }}))),"
+        fi
+        if [[ -n "${{ inputs.kubernetesVersion }}" ]]
+        then
+          kubernetesVersionQry="(query:(match_phrase:(metadata.github.kubernetes-version:${{ inputs.kubernetesVersion }}))),"
+        fi
+        if [[ -n "${{ inputs.attestationVariant }}" ]]
+        then
+          attestationVariantQry="(query:(match_phrase:(metadata.github.attestation-variant:${{ inputs.attestationVariant }}))),"
+        fi
+        if [[ -n "${{ inputs.clusterCreation }}" ]]
+        then
+          clusterCreationQry="(query:(match_phrase:(metadata.github.cluster-creation:${{ inputs.clusterCreation }}))),"
+        fi
+        if [[ -n "${{ steps.encode-uri-component.outputs.string }}" ]]
+        then
+          testQry="(query:(match_phrase:(metadata.github.e2e-test-payload:'${{ steps.encode-uri-component.outputs.string }}'))),"
+        fi
+
         q=$(echo "(filters:!(
-            (query:(match_phrase:(cloud.provider:'${{ inputs.provider }}'))),
-            (query:(match_phrase:(metadata.github.run-id:'${{ github.run_id }}'))),
-            (query:(match_phrase:(metadata.github.ref-stream:'${{ inputs.refStream }}'))),
-            (query:(match_phrase:(metadata.github.kubernetes-version:'${{ inputs.kubernetesVersion }}'))),
-            (query:(match_phrase:(metadata.github.attestation-variant:'${{ inputs.attestationVariant }}'))),
-            (query:(match_phrase:(metadata.github.cluster-creation:'${{ inputs.clusterCreation }}'))),
-            (query:(match_phrase:(metadata.github.e2e-test-payload:'${{ steps.encode-uri-component.outputs.string }}')))
+            ${providerQry}
+            ${refStreamQry}
+            ${kubernetesVersionQry}
+            ${attestationVariantQry}
+            ${clusterCreationQry}
+            ${testQry}
+            (query:(match_phrase:(metadata.github.run-id:${{ github.run_id }})))
           ))" | tr -d "\t\n ")
 
         # URL construction
