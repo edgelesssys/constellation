@@ -25,7 +25,6 @@ package logger
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"runtime"
 	"testing"
@@ -70,28 +69,10 @@ func GetClientStreamInterceptor(l *slog.Logger) grpc.DialOption {
 
 func middlewareLogger(l *slog.Logger) logging.Logger {
 	return logging.LoggerFunc(func(ctx context.Context, lvl logging.Level, msg string, fields ...any) {
-		f := make([]slog.Attr, 0, len(fields)/2)
-
-		for i := 0; i < len(fields); i += 2 {
-			key := fields[i]
-			value := fields[i+1]
-
-			switch v := value.(type) {
-			case string:
-				f = append(f, slog.String(key.(string), v))
-			case int:
-				f = append(f, slog.Int(key.(string), v))
-			case bool:
-				f = append(f, slog.Bool(key.(string), v))
-			default:
-				f = append(f, slog.Any(key.(string), v))
-			}
-		}
-
-		var pcs [1]uintptr
+	  var pcs [1]uintptr
 		runtime.Callers(2, pcs[:]) // skip [Callers, LoggerFunc]
-		level := slog.LevelDebug
 
+		level := slog.LevelDebug
 		switch lvl {
 		case logging.LevelDebug:
 			break
@@ -105,7 +86,8 @@ func middlewareLogger(l *slog.Logger) logging.Logger {
       level = slog.LevelError
 		}
 
-		r := slog.NewRecord(time.Now(), level, fmt.Sprintf(msg, f), pcs[0])
+		r := slog.NewRecord(time.Now(), level, msg, pcs[0])
+    r.Add(fields...)
 		_ = l.Handler().Handle(context.Background(), r)
 	})
 }
