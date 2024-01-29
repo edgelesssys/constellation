@@ -120,7 +120,10 @@ func (a actionFactory) appendNewAction(
 		} else {
 			// This may break for external chart dependencies if we decide to upgrade more than one minor version at a time.
 			if err := newVersion.IsUpgradeTo(currentVersion); err != nil {
-				return fmt.Errorf("invalid upgrade for %s: %w", release.releaseName, err)
+				// Allow bigger Cilium version jumps.
+				if !(errors.Is(err, compatibility.ErrMinorDrift) && (release.releaseName == "cilium" || release.releaseName == "cert-manager")) {
+					return fmt.Errorf("invalid upgrade for %s: %w", release.releaseName, err)
+				}
 			}
 		}
 	}
