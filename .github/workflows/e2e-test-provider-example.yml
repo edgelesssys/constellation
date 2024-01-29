@@ -6,14 +6,6 @@ on:
       ref:
         type: string
         description: "Git ref to checkout"
-      cloudProvider:
-        description: "Which cloud provider to use."
-        type: choice
-        options:
-          - "aws"
-          - "azure"
-          - "gcp"
-        required: true
       regionZone:
         description: "Region or zone to create the cluster in. Leave empty for default region/zone."
         type: string
@@ -31,15 +23,21 @@ on:
         description: Kubernetes version to target for the upgrade, empty for no upgrade.
         type: string
         required: false
+      attestationVariant:
+        description: "Attestation variant to use."
+        type: choice
+        options:
+          - "aws-sev-snp"
+          - "azure-sev-snp"
+          - "azure-tdx"
+          - "gcp-sev-es"
+        default: "azure-sev-snp"
+        required: true
   workflow_call:
     inputs:
       ref:
         type: string
         description: "Git ref to checkout"
-      cloudProvider:
-        description: "Which cloud provider to use."
-        type: string
-        required: true
       regionZone:
         description: "Which zone to use."
         type: string
@@ -57,6 +55,10 @@ on:
         description: Kubernetes version to target for the upgrade, empty for target's default version.
         type: string
         required: false
+      attestationVariant:
+        description: "Attestation variant to use."
+        type: string
+        required: true
 
 jobs:
   provider-example-test:
@@ -102,6 +104,15 @@ jobs:
           run_id=${{ github.run_id }}
           last_three="${run_id: -3}"
           echo "prefix=e2e-${last_three}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Determine cloudprovider from attestation variant
+        id: determine
+        shell: bash
+        run: |
+          attestationVariant="${{ inputs.attestationVariant }}"
+          cloudProvider="${attestationVariant%%-*}"
+
+          echo "cloudProvider=${cloudProvider}" | tee -a "$GITHUB_OUTPUT"
 
       - name: Log in to the Container registry
         uses: ./.github/actions/container_registry_login
@@ -155,7 +166,7 @@ jobs:
           rm -rf "${terraform_provider_dir}"
 
       - name: Login to AWS (IAM + Cluster role)
-        if: inputs.cloudProvider == 'aws'
+        if: steps.determine.outputs.cloudProvider == 'aws'
         uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 # v2.2.0
         with:
           role-to-assume: arn:aws:iam::795746500882:role/GithubActionsE2ETerraform
@@ -164,16 +175,26 @@ jobs:
           role-duration-seconds: 21600
 
       - name: Login to Azure (IAM + Cluster service principal)
-        if: inputs.cloudProvider == 'azure'
+        if: steps.determine.outputs.cloudProvider == 'azure'
         uses: ./.github/actions/login_azure
         with:
           azure_credentials: ${{ secrets.AZURE_E2E_TF_CREDENTIALS }}
 
       - name: Login to GCP (IAM + Cluster service account)
-        if: inputs.cloudProvider == 'gcp'
+        if: steps.determine.outputs.cloudProvider == 'gcp'
         uses: ./.github/actions/login_gcp
         with:
           service_account: "terraform-e2e@constellation-e2e.iam.gserviceaccount.com"
+
+      - name: Set Kubernetes version
+        id: kubernetes
+        run: |
+          # take the middle (2nd) supported Kubernetes version (default)
+          if [[ "${{ inputs.providerVersion }}" != "" ]]; then
+            echo "VERSION=$(../release/constellation config kubernetes-versions | awk 'NR==3{print $1}')" | tee -a "$GITHUB_OUTPUT"
+          else
+            echo "VERSION=$(../build/constellation config kubernetes-versions | awk 'NR==3{print $1}')" | tee -a "$GITHUB_OUTPUT"
+          fi
 
       - name: Common CSP Terraform overrides
         working-directory: ${{ github.workspace }}
@@ -189,11 +210,11 @@ jobs:
           version=${prefixed_version#v} # remove v prefix
 
           if [[ "${{ inputs.providerVersion }}" == "" ]]; then
-            iam_src="../terraform-module/iam/${{ inputs.cloudProvider }}"
-            infra_src="../terraform-module/${{ inputs.cloudProvider }}"
+            iam_src="../terraform-module/iam/${{ steps.determine.outputs.cloudProvider }}"
+            infra_src="../terraform-module/${{ steps.determine.outputs.cloudProvider }}"
           else
-            iam_src="https://github.com/edgelesssys/constellation/releases/download/${{ inputs.providerVersion }}/terraform-module.zip//terraform-module/iam/${{ inputs.cloudProvider }}"
-            infra_src="https://github.com/edgelesssys/constellation/releases/download/${{ inputs.providerVersion }}/terraform-module.zip//terraform-module/${{ inputs.cloudProvider }}"
+            iam_src="https://github.com/edgelesssys/constellation/releases/download/${{ inputs.providerVersion }}/terraform-module.zip//terraform-module/iam/${{ steps.determine.outputs.cloudProvider }}"
+            infra_src="https://github.com/edgelesssys/constellation/releases/download/${{ inputs.providerVersion }}/terraform-module.zip//terraform-module/${{ steps.determine.outputs.cloudProvider }}"
           fi
 
           # by default use latest nightly image for devbuilds and release image otherwise
@@ -211,12 +232,7 @@ jobs:
             fi
           fi
 
-          # take the middle (2nd) supported Kubernetes version (default)
-          if [[ "${{ inputs.providerVersion }}" != "" ]]; then
-            kubernetes_version="$(../release/constellation config kubernetes-versions | awk 'NR==3{print $1}')"
-          else
-            kubernetes_version="$(../build/constellation config kubernetes-versions | awk 'NR==3{print $1}')"
-          fi
+          kubernetes_version="${{ steps.kubernetes.outputs.version }}"
 
           cat > _override.tf <<EOF
           terraform {
@@ -238,20 +254,21 @@ jobs:
             image_version = "${image_version}"
             microservice_version = "${prefixed_version}"
             kubernetes_version = "${kubernetes_version}"
+            attestation_variant = "${{ inputs.attestationVariant }}"
           }
 
-          module "${{ inputs.cloudProvider }}_iam" {
+          module "${{ steps.determine.outputs.cloudProvider }}_iam" {
             source = "${iam_src}"
           }
 
-          module "${{ inputs.cloudProvider }}_infrastructure" {
+          module "${{ steps.determine.outputs.cloudProvider }}_infrastructure" {
             source = "${infra_src}"
           }
           EOF
           cat _override.tf
 
       - name: Create GCP Terraform overrides
-        if: inputs.cloudProvider == 'gcp'
+        if: steps.determine.outputs.cloudProvider == 'gcp'
         working-directory: ${{ github.workspace }}/cluster
         shell: bash
         run: |
@@ -267,7 +284,7 @@ jobs:
           cat _override.tf
 
       - name: Create AWS Terraform overrides
-        if: inputs.cloudProvider == 'aws'
+        if: steps.determine.outputs.cloudProvider == 'aws'
         working-directory: ${{ github.workspace }}/cluster
         shell: bash
         run: |
@@ -285,7 +302,7 @@ jobs:
         working-directory: ${{ github.workspace }}
         shell: bash
         run: |
-          cp ${{ github.workspace }}/terraform-provider-constellation/examples/full/${{ inputs.cloudProvider }}/main.tf ${{ github.workspace }}/cluster/main.tf
+          cp ${{ github.workspace }}/terraform-provider-constellation/examples/full/${{ steps.determine.outputs.cloudProvider }}/main.tf ${{ github.workspace }}/cluster/main.tf
 
       - name: Apply Terraform Cluster
         id: apply_terraform
@@ -293,7 +310,7 @@ jobs:
         shell: bash
         run: |
           terraform init
-          if [[ "${{ inputs.cloudProvider }}" == "azure" ]]; then
+          if [[ "${{ steps.determine.outputs.cloudProvider }}" == "azure" ]]; then
             terraform apply -target module.azure_iam -auto-approve
             terraform apply -target module.azure_infrastructure -auto-approve
             ../build/constellation maa-patch "$(terraform output -raw maa_url)"
@@ -331,7 +348,7 @@ jobs:
 
           if [[ "${{ inputs.toKubernetes }}" != "" ]]; then
           cat >> _override.tf <<EOF
-          resource "constellation_cluster" "${{ inputs.cloudProvider }}_example" {
+          resource "constellation_cluster" "${{ steps.determine.outputs.cloudProvider }}_example" {
             kubernetes_version = "${{ inputs.toKubernetes }}"
           }
           EOF
@@ -342,7 +359,7 @@ jobs:
 
           # needs to be explicitly set to upgrade
           cat >> _override.tf <<EOF
-          resource "constellation_cluster" "${{ inputs.cloudProvider }}_example" {
+          resource "constellation_cluster" "${{ steps.determine.outputs.cloudProvider }}_example" {
             constellation_microservice_version = "${prefixed_version}"
           }
           EOF
@@ -388,10 +405,10 @@ jobs:
           fi
 
           # cfg must be in same dir as KUBECONFIG
-          ../build/constellation config generate "${{ inputs.cloudProvider }}"
+          ../build/constellation config generate "${{ steps.determine.outputs.cloudProvider }}"
           # make cfg valid with fake data
           # IMPORTANT: zone needs to be correct because it is used to resolve the CSP image ref
-          if [[ "${{ inputs.cloudProvider }}" == "azure" ]]; then
+          if [[ "${{ steps.determine.outputs.cloudProvider }}" == "azure" ]]; then
             location="${{ inputs.regionZone || 'northeurope' }}"
             yq e ".provider.azure.location = \"${location}\"" -i constellation-conf.yaml
 
@@ -400,7 +417,7 @@ jobs:
             yq e '.provider.azure.resourceGroup = "myResourceGroup"' -i constellation-conf.yaml
             yq e '.provider.azure.userAssignedIdentity = "myIdentity"' -i constellation-conf.yaml
           fi
-          if [[ "${{ inputs.cloudProvider }}" == "gcp" ]]; then
+          if [[ "${{ steps.determine.outputs.cloudProvider }}" == "gcp" ]]; then
             zone="${{ inputs.regionZone || 'europe-west3-b' }}"
             region=$(echo "${zone}" | rev | cut -c 2- | rev)
             yq e ".provider.gcp.region = \"${region}\"" -i constellation-conf.yaml
@@ -412,7 +429,7 @@ jobs:
             yq e '.nodeGroups.worker_default.zone = "europe-west3-b"' -i constellation-conf.yaml
             yq e '.provider.gcp.serviceAccountKeyPath = "/path/to/your/service-account-key.json"' -i constellation-conf.yaml
           fi
-          if [[ "${{ inputs.cloudProvider }}" == "aws" ]]; then
+          if [[ "${{ steps.determine.outputs.cloudProvider }}" == "aws" ]]; then
             zone=${{ inputs.regionZone || 'us-east-2c' }}
             region=$(echo "${zone}" | rev | cut -c 2- | rev)
             yq e ".provider.aws.region = \"${region}\"" -i constellation-conf.yaml
@@ -444,4 +461,8 @@ jobs:
         with:
           projectWriteToken: ${{ secrets.PROJECT_WRITE_TOKEN }}
           test: "terraform-provider-example"
-          provider: ${{ inputs.cloudProvider }}
+          refStream: ${{ inputs.ref}}
+          provider: ${{ steps.determine.outputs.cloudProvider }}
+          kubernetesVersion: ${{ steps.kubernetes.outputs.version }}
+          clusterCreation: "terraform"
+          attestationVariant: ${{ inputs.attestationVariant }}
