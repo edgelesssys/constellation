@@ -451,8 +451,7 @@ func (r *ClusterResource) ModifyPlan(ctx context.Context, req resource.ModifyPla
 	if licenseID == "" {
 		resp.Diagnostics.AddWarning("Constellation license not found.",
 			"Using community license.\nFor details, see https://docs.edgeless.systems/constellation/overview/license")
-	}
-	if licenseID == license.CommunityLicense {
+	} else if licenseID == license.CommunityLicense {
 		resp.Diagnostics.AddWarning("Using community license.",
 			"For details, see https://docs.edgeless.systems/constellation/overview/license")
 	}
