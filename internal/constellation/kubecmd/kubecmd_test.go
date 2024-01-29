@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 	"testing"
 	"time"
 
@@ -34,36 +33,15 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	kubeadmv1beta3 "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
 
 func TestUpgradeNodeImage(t *testing.T) {
-	clusterConf := kubeadmv1beta3.ClusterConfiguration{
-		APIServer: kubeadmv1beta3.APIServer{
-			ControlPlaneComponent: kubeadmv1beta3.ControlPlaneComponent{
-				ExtraArgs:    map[string]string{},
-				ExtraVolumes: []kubeadmv1beta3.HostPathMount{},
-			},
-		},
-	}
-
-	clusterConfBytes, err := json.Marshal(clusterConf)
-	require.NoError(t, err)
-	validKubeadmConfig := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: constants.KubeadmConfigMap,
-		},
-		Data: map[string]string{
-			constants.ClusterConfigurationKey: string(clusterConfBytes),
-		},
-	}
 	testCases := map[string]struct {
 		conditions          []metav1.Condition
 		currentImageVersion semver.Semver
 		newImageVersion     semver.Semver
 		badImageVersion     string
 		force               bool
-		customKubeadmConfig *corev1.ConfigMap
 		getCRErr            error
 		wantErr             bool
 		wantUpdate          bool
@@ -188,14 +166,11 @@ func TestUpgradeNodeImage(t *testing.T) {
 			kubectl := &stubKubectl{
 				unstructuredInterface: unstructuredClient,
 				configMaps: map[string]*corev1.ConfigMap{
-					constants.KubeadmConfigMap: validKubeadmConfig,
+					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
 				},
 			}
 			if tc.customClientFn != nil {
 				kubectl.unstructuredInterface = tc.customClientFn(nodeVersion)
-			}
-			if tc.customKubeadmConfig != nil {
-				kubectl.configMaps[constants.KubeadmConfigMap] = tc.customKubeadmConfig
 			}
 
 			upgrader := KubeCmd{
@@ -217,12 +192,6 @@ func TestUpgradeNodeImage(t *testing.T) {
 				return
 			}
 			assert.NoError(err)
-			// If the ConfigMap only exists in the updatedConfigMaps map, the Konnectivity values should have been removed
-			if strings.Contains(kubectl.configMaps[constants.KubeadmConfigMap].Data[constants.ClusterConfigurationKey], "konnectivity-uds") {
-				assert.NotContains(kubectl.updatedConfigMaps[constants.KubeadmConfigMap].Data[constants.ClusterConfigurationKey], "konnectivity-uds")
-				assert.NotContains(kubectl.updatedConfigMaps[constants.KubeadmConfigMap].Data[constants.ClusterConfigurationKey], "egress-config")
-				assert.NotContains(kubectl.updatedConfigMaps[constants.KubeadmConfigMap].Data[constants.ClusterConfigurationKey], "egress-selector-config-file")
-			}
 		})
 	}
 }
