@@ -804,20 +804,20 @@ type warnLogger struct {
 	log debugLog
 }
 
-// Infof messages are reduced to debug messages, since we don't want
+// Info messages are reduced to debug messages, since we don't want
 // the extra info when using the CLI without setting the debug flag.
-func (wl warnLogger) Info(fmtStr string, args ...any) {
-	wl.log.Debug(fmtStr, args...)
+func (wl warnLogger) Info(msg string, args ...any) {
+	wl.log.Debug(msg, args...)
 }
 
-// Warnf prints a formatted warning from the validator.
-func (wl warnLogger) Warn(fmtStr string, args ...any) {
-	wl.cmd.PrintErrf("Warning: %s\n", fmt.Sprintf(fmtStr, args...))
+// Warn prints a formatted warning from the validator.
+func (wl warnLogger) Warn(msg string, args ...any) {
+  wl.cmd.PrintErrf("Warning: %s %s\n", msg, fmt.Sprint(args...))
 }
 
 type warnLog interface {
-	Warn(format string, args ...any)
-	Info(format string, args ...any)
+	Warn(msg string, args ...any)
+	Info(msg string, args ...any)
 }
 
 // applier is used to run the different phases of the apply command.
