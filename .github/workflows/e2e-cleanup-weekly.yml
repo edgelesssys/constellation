@@ -2,7 +2,7 @@ name: e2e weekly cleanup
 
 on:
   schedule:
-    - cron: "0 0 * * 0"
+    - cron: "0 0 * * 0" # At 00:00 every Sunday UTC
 
 jobs:
   cleanup:
