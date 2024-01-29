@@ -1,0 +1,14 @@
+name: e2e weekly cleanup
+
+on:
+  schedule:
+    - cron: "0 0 * * 0"
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/e2e_cleanup_timeframe
+        with:
+          ghToken: ${{ secrets.GITHUB_TOKEN }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT }}
