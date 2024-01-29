@@ -120,11 +120,7 @@ func (a actionFactory) appendNewAction(
 		} else {
 			// This may break for external chart dependencies if we decide to upgrade more than one minor version at a time.
 			if err := newVersion.IsUpgradeTo(currentVersion); err != nil {
-				// TODO(3u13r): Remove when Constellation v2.14 is released.
-				// We need to ignore that we jump from Cilium v1.12 to v1.15-pre. We have verified that this works.
-				if !(errors.Is(err, compatibility.ErrMinorDrift) && (release.releaseName == "cilium" || release.releaseName == "cert-manager")) {
-					return fmt.Errorf("invalid upgrade for %s: %w", release.releaseName, err)
-				}
+				return fmt.Errorf("invalid upgrade for %s: %w", release.releaseName, err)
 			}
 		}
 	}
