@@ -4,6 +4,7 @@ go_test(
     name = "provider-upgrade_test",
     srcs = ["upgrade_test.go"],
     # keep
+    count = 1,
     gotags = ["e2e"],
     tags = ["manual"],
     deps = [
