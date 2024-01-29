@@ -453,3 +453,4 @@ jobs:
           provider: ${{ inputs.cloudProvider }}
           kubernetesVersion: ${{ steps.kubernetes.outputs.version }}
           clusterCreation: "terraform"
+          attestationVariant: ${{ inputs.cloudProvider != 'gcp' && format('{0}-sev-snp', inputs.cloudProvider) || 'gcp-sev-es' }}
