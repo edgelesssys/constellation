@@ -708,5 +708,5 @@ func httpGet(ctx context.Context, url string) ([]byte, error) {
 }
 
 type debugLog interface {
-	Debug(format string, args ...any)
+	Debug(msg string, args ...any)
 }

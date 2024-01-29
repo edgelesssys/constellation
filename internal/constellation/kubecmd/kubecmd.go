@@ -502,5 +502,5 @@ type kubectlInterface interface {
 }
 
 type debugLog interface {
-	Debug(format string, args ...any)
+	Debug(msg string, args ...any)
 }
