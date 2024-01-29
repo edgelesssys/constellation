@@ -22,7 +22,7 @@ inputs:
     required: false
   clusterCreation:
     description: "How the infrastructure for the e2e test was created. One of [cli, self-managed, terraform]."
-    default: "false"
+    required: false
 
 runs:
   using: "composite"
@@ -59,15 +59,24 @@ runs:
         # Default window: last 7 days
         g='(time:(from:now-7d,to:now))'
 
-        # Query with filters for this workflow run
-        # TODO(msanft): Add Self-managed param once logcollection is fixed.
+        # Query construction
+        # Omit empty fields since OpenSearch will otherwise only display results where the field is empty
+        queryGen() {
+          key=$1
+          val=$2
+          if [[ -n "${val}" ]];  then
+            printf "(query:(match_phrase:(%s:'%s')))," "${key}" "${val}"
+          fi
+        }
+
         q=$(echo "(filters:!(
-            (query:(match_phrase:(cloud.provider:${{ inputs.provider }}))),
-            (query:(match_phrase:(metadata.github.run-id:${{ github.run_id }}))),
-            (query:(match_phrase:(metadata.github.ref-stream:${{ inputs.refStream }}))),
-            (query:(match_phrase:(metadata.github.kubernetes-version:${{ inputs.kubernetesVersion }}))),
-            (query:(match_phrase:(metadata.github.attestation-variant:${{ inputs.attestationVariant }}))),
-            (query:(match_phrase:(metadata.github.e2e-test-payload:'${{ steps.encode-uri-component.outputs.string }}')))
+          $(queryGen cloud.provider "${{ inputs.provider }}")
+          $(queryGen metadata.github.ref-stream "${{ inputs.refStream }}")
+          $(queryGen metadata.github.kubernetes-version "${{ inputs.kubernetesVersion }}")
+          $(queryGen metadata.github.attestation-variant "${{ inputs.attestationVariant }}")
+          $(queryGen metadata.github.cluster-creation "${{ inputs.clusterCreation }}")
+          $(queryGen metadata.github.e2e-test-payload "${{ steps.encode-uri-component.outputs.string }}")
+          (query:(match_phrase:(metadata.github.run-id:${run_id})))
           ))" | tr -d "\t\n ")
 
         # URL construction
