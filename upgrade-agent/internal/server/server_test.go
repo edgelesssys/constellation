@@ -62,12 +62,7 @@ func TestPrepareUpdate(t *testing.T) {
 	slimUpdateRequest := &upgradeproto.ExecuteUpdateRequest{
 		WantedKubernetesVersion: "v1.1.1",
 	}
-	oldStyleUpdateRequest := &upgradeproto.ExecuteUpdateRequest{
-		WantedKubernetesVersion: "v1.1.1",
-		KubeadmUrl:              "http://example.com/kubeadm",
-		KubeadmHash:             "sha256:foo",
-	}
-	newStyleUpdateRequest := &upgradeproto.ExecuteUpdateRequest{
+	updateRequest := &upgradeproto.ExecuteUpdateRequest{
 		WantedKubernetesVersion: "v1.1.1",
 		KubernetesComponents: []*components.Component{
 			{
@@ -79,8 +74,6 @@ func TestPrepareUpdate(t *testing.T) {
 	}
 	combinedStyleUpdateRequest := &upgradeproto.ExecuteUpdateRequest{
 		WantedKubernetesVersion: "v1.1.1",
-		KubeadmUrl:              "http://example.com/kubeadm",
-		KubeadmHash:             "sha256:foo",
 		KubernetesComponents: []*components.Component{
 			{
 				Url:         "data:application/octet-stream,foo",
@@ -104,16 +97,16 @@ func TestPrepareUpdate(t *testing.T) {
 		},
 		"install error": {
 			installer:     stubOsInstaller{InstallErr: fmt.Errorf("install error")},
-			updateRequest: oldStyleUpdateRequest,
+			updateRequest: updateRequest,
 			wantErr:       true,
 		},
 		"new style works": {
 			installer:     stubOsInstaller{},
-			updateRequest: newStyleUpdateRequest,
+			updateRequest: updateRequest,
 		},
 		"new style install error": {
 			installer:     stubOsInstaller{InstallErr: fmt.Errorf("install error")},
-			updateRequest: newStyleUpdateRequest,
+			updateRequest: updateRequest,
 			wantErr:       true,
 		},
 		"combined style works": {

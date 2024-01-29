@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -102,11 +101,6 @@ func (k *KubeCmd) UpgradeNodeImage(ctx context.Context, imageVersion semver.Semv
 		return fmt.Errorf("skipping image upgrade: %w", err)
 	case err != nil:
 		return fmt.Errorf("updating image version: %w", err)
-	}
-
-	// TODO(3u13r): remove `reconcileKubeadmConfigMap` after v2.14.0 has been released.
-	if err := k.reconcileKubeadmConfigMap(ctx); err != nil {
-		return fmt.Errorf("reconciling kubeadm config: %w", err)
 	}
 
 	k.log.Debugf("Updating local copy of nodeVersion image version from %s to %s", nodeVersion.Spec.ImageVersion, imageVersion.String())
@@ -381,44 +375,6 @@ func (k *KubeCmd) applyNodeVersion(ctx context.Context, nodeVersion updatev1alph
 	})
 
 	return updatedNodeVersion, err
-}
-
-func (k *KubeCmd) reconcileKubeadmConfigMap(ctx context.Context) error {
-	clusterConfiguration, kubeadmConfig, err := k.getClusterConfiguration(ctx)
-	if err != nil {
-		return fmt.Errorf("getting ClusterConfig: %w", err)
-	}
-
-	for i, v := range clusterConfiguration.APIServer.ExtraVolumes {
-		if v.Name == "konnectivity-uds" {
-			clusterConfiguration.APIServer.ExtraVolumes = slices.Delete(clusterConfiguration.APIServer.ExtraVolumes, i, i+1)
-		}
-	}
-	for i, v := range clusterConfiguration.APIServer.ExtraVolumes {
-		if v.Name == "egress-config" {
-			clusterConfiguration.APIServer.ExtraVolumes = slices.Delete(clusterConfiguration.APIServer.ExtraVolumes, i, i+1)
-		}
-	}
-	delete(clusterConfiguration.APIServer.ExtraArgs, "egress-selector-config-file")
-
-	newConfigYAML, err := yaml.Marshal(clusterConfiguration)
-	if err != nil {
-		return fmt.Errorf("marshaling ClusterConfiguration: %w", err)
-	}
-
-	if kubeadmConfig.Data[constants.ClusterConfigurationKey] == string(newConfigYAML) {
-		k.log.Debugf("No changes to kubeadm config required")
-		return nil
-	}
-
-	kubeadmConfig.Data[constants.ClusterConfigurationKey] = string(newConfigYAML)
-	k.log.Debugf("Triggering kubeadm config update now")
-	if _, err = k.kubectl.UpdateConfigMap(ctx, kubeadmConfig); err != nil {
-		return fmt.Errorf("setting new kubeadm config: %w", err)
-	}
-
-	k.log.Debugf("Successfully reconciled the cluster's kubeadm config")
-	return nil
 }
 
 // isValidImageUpdate checks if the new image version is a valid upgrade, and there is no upgrade already running.
