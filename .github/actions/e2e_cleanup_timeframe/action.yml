@@ -1,0 +1,26 @@
+name: E2E cleanup over timeframe
+description: Clean up old terraform resources of E2E tests
+
+inputs:
+  ghToken:
+    description:  'The github token that is used with the github CLI.'
+    required: true
+  encryptionSecret:
+    description: 'The secret to use for decrypting the artifacts.'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install unzip
+      uses: ./.github/actions/setup_bazel_nix
+      with:
+        nixTools: |
+          unzip
+    - name: Run cleanup
+      run: ./.github/actions/e2e_cleanup_timeframe/e2e-cleanup.sh ${{ inputs.encryptionSecret }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.ghToken }}
+
+
