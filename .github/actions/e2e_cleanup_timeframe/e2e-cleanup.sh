@@ -34,7 +34,7 @@ artifact_pwd=$1
 shopt -s nullglob
 
 start_date=$(date "+%Y-%m-%d")
-end_date=$(date --date "-10 day" "+%Y-%m-%d")
+end_date=$(date --date "-7 day" "+%Y-%m-%d")
 dates_to_clean=()
 
 while [[ "$end_date" != "$start_date" ]]; do
