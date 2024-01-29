@@ -102,7 +102,7 @@ func middlewareLogger(l *slog.Logger) logging.Logger {
 		case logging.LevelError:
 			level = slog.LevelError
 		default:
-			panic(fmt.Sprintf("unknown level %v", lvl))
+      level = slog.LevelError
 		}
 
 		r := slog.NewRecord(time.Now(), level, fmt.Sprintf(msg, f), pcs[0])
