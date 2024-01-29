@@ -44,22 +44,8 @@ func (c *Client) Upgrade(ctx context.Context, kubernetesComponents components.Co
 	}
 	defer conn.Close()
 
-	// While we're transitioning between version 2.13 and 2.14, we need to
-	// expect an upgrade-agent that does not yet understand the
-	// KubernetesComponents proto field. Therefore, we pass the kubeadm
-	// component twice: once via KubeadmUrl/KubeadmHash, once as part of the
-	// kubernetesComponents argument.
-	kubeadm, err := kubernetesComponents.GetKubeadmComponent()
-	if err != nil {
-		return fmt.Errorf("expected a kubeadm Component: %w", err)
-	}
 	protoClient := upgradeproto.NewUpdateClient(conn)
 	_, err = protoClient.ExecuteUpdate(ctx, &upgradeproto.ExecuteUpdateRequest{
-		// TODO(burgerdev): remove these fields after releasing 2.14.
-		// %< ---------------------------------
-		KubeadmUrl:  kubeadm.Url,
-		KubeadmHash: kubeadm.Hash,
-		// %< ---------------------------------
 		WantedKubernetesVersion: WantedKubernetesVersion,
 		KubernetesComponents:    kubernetesComponents,
 	})
