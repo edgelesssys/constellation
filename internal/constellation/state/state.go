@@ -76,9 +76,6 @@ type State struct {
 	// description: |
 	//   Schema version of this state file.
 	Version string `yaml:"version"`
-
-	// TODO(msanft): Add link to self-managed infrastructure docs once existing.
-
 	// description: |
 	//   State of the cluster's cloud resources. These values are retrieved during
 	//   cluster creation. In the case of self-managed infrastructure, the marked
