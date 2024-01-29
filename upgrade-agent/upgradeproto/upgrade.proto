@@ -11,8 +11,8 @@ service Update {
 }
 
 message ExecuteUpdateRequest {
-  string kubeadm_url = 1;
-  string kubeadm_hash = 2;
+  reserved 1;
+  reserved 2;
   string wanted_kubernetes_version = 3;
 
   repeated components.Component kubernetes_components = 4;

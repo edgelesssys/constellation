@@ -131,20 +131,8 @@ func prepareUpdate(ctx context.Context, installer osInstaller, updateRequest *up
 	if err != nil {
 		return err
 	}
-
-	var cs components.Components
-	if len(updateRequest.KubeadmUrl) > 0 {
-		cs = append(cs, &components.Component{
-			Url:         updateRequest.KubeadmUrl,
-			Hash:        updateRequest.KubeadmHash,
-			InstallPath: constants.KubeadmPath,
-			Extract:     false,
-		})
-	}
-	cs = append(cs, updateRequest.KubernetesComponents...)
-
 	// Download & install the Kubernetes components.
-	for _, c := range cs {
+	for _, c := range updateRequest.KubernetesComponents {
 		if err := installer.Install(ctx, c); err != nil {
 			return fmt.Errorf("installing Kubernetes component %q: %w", c.Url, err)
 		}
