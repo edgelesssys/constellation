@@ -59,9 +59,8 @@ runs:
         # Default window: last 7 days
         g='(time:(from:now-7d,to:now))'
 
-        # Query with filters for this workflow run
-        # TODO(msanft): Add Self-managed param once logcollection is fixed.
-
+        # Query construction
+        # Omit empty fields since OpenSearch will otherwise only display results where the field is empty
         if [[ -n "${{ inputs.provider }}" ]]
         then
           providerQry="(query:(match_phrase:(cloud.provider:${{ inputs.provider }}))),"
@@ -87,6 +86,7 @@ runs:
           testQry="(query:(match_phrase:(metadata.github.e2e-test-payload:'${{ steps.encode-uri-component.outputs.string }}'))),"
         fi
 
+        # Query with filters for this workflow run
         q=$(echo "(filters:!(
             ${providerQry}
             ${refStreamQry}
