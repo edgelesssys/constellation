@@ -31,6 +31,15 @@ on:
         description: Kubernetes version to target for the upgrade, empty for no upgrade.
         type: string
         required: false
+      attestationVariant:
+        description: "Attestation variant to use."
+        type: choice
+        options:
+          - "aws-sev-snp"
+          - "azure-sev-snp"
+          - "azure-tdx"
+          - "gcp-sev-es"
+        required: true
   workflow_call:
     inputs:
       ref:
@@ -57,6 +66,10 @@ on:
         description: Kubernetes version to target for the upgrade, empty for target's default version.
         type: string
         required: false
+      attestationVariant:
+        description: "Attestation variant to use."
+        type: string
+        required: true
 
 jobs:
   provider-example-test:
@@ -243,6 +256,7 @@ jobs:
             image_version = "${image_version}"
             microservice_version = "${prefixed_version}"
             kubernetes_version = "${kubernetes_version}"
+            attestation_variant = "${{ inputs.attestationVariant }}"
           }
 
           module "${{ inputs.cloudProvider }}_iam" {
@@ -453,4 +467,4 @@ jobs:
           provider: ${{ inputs.cloudProvider }}
           kubernetesVersion: ${{ steps.kubernetes.outputs.version }}
           clusterCreation: "terraform"
-          attestationVariant: ${{ inputs.cloudProvider != 'gcp' && format('{0}-sev-snp', inputs.cloudProvider) || 'gcp-sev-es' }}
+          attestationVariant: ${{ inputs.attestationVariant }}

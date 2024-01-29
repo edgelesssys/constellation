@@ -494,7 +494,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cloudProvider: ["gcp", "azure", "aws"]
+        include:
+          - cloudProvider: "gcp"
+            attestationVariant: "gcp-sev-es"
+          - cloudProvider: "azure"
+            attestationVariant: "azure-sev-snp"
+          - cloudProvider: "aws"
+            attestationVariant: "aws-sev-snp"
     permissions:
       id-token: write
       contents: read
@@ -503,3 +509,4 @@ jobs:
     uses: ./.github/workflows/e2e-test-provider-example.yml
     with:
       cloudProvider: ${{ matrix.cloudProvider }}
+      attestationVariant: ${{ matrix.attestationVariant }}
