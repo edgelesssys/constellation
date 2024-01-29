@@ -62,11 +62,11 @@ runs:
         # Query with filters for this workflow run
         # TODO(msanft): Add Self-managed param once logcollection is fixed.
         q=$(echo "(filters:!(
-            (query:(match_phrase:(cloud.provider:${{ inputs.provider }}))),
-            (query:(match_phrase:(metadata.github.run-id:${{ github.run_id }}))),
-            (query:(match_phrase:(metadata.github.ref-stream:${{ inputs.refStream }}))),
-            (query:(match_phrase:(metadata.github.kubernetes-version:${{ inputs.kubernetesVersion }}))),
-            (query:(match_phrase:(metadata.github.attestation-variant:${{ inputs.attestationVariant }}))),
+            (query:(match_phrase:(cloud.provider:'${{ inputs.provider }}'))),
+            (query:(match_phrase:(metadata.github.run-id:'${{ github.run_id }}'))),
+            (query:(match_phrase:(metadata.github.ref-stream:'${{ inputs.refStream }}'))),
+            (query:(match_phrase:(metadata.github.kubernetes-version:'${{ inputs.kubernetesVersion }}'))),
+            (query:(match_phrase:(metadata.github.attestation-variant:'${{ inputs.attestationVariant }}'))),
             (query:(match_phrase:(metadata.github.e2e-test-payload:'${{ steps.encode-uri-component.outputs.string }}')))
           ))" | tr -d "\t\n ")
 
