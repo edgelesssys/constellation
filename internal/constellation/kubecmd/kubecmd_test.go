@@ -57,38 +57,6 @@ func TestUpgradeNodeImage(t *testing.T) {
 			constants.ClusterConfigurationKey: string(clusterConfBytes),
 		},
 	}
-
-	clusterConfWithKonnectivity := kubeadmv1beta3.ClusterConfiguration{
-		APIServer: kubeadmv1beta3.APIServer{
-			ControlPlaneComponent: kubeadmv1beta3.ControlPlaneComponent{
-				ExtraArgs: map[string]string{
-					"egress-selector-config-file": "/etc/kubernetes/egress-selector-config-file.yaml",
-				},
-				ExtraVolumes: []kubeadmv1beta3.HostPathMount{
-					{
-						Name:     "egress-config",
-						HostPath: "/etc/kubernetes/egress-selector-config-file.yaml",
-					},
-					{
-						Name:     "konnectivity-uds",
-						HostPath: "/some/path/to/konnectivity-uds",
-					},
-				},
-			},
-		},
-	}
-
-	clusterConfBytesWithKonnectivity, err := json.Marshal(clusterConfWithKonnectivity)
-	require.NoError(t, err)
-	validKubeadmConfigWithKonnectivity := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: constants.KubeadmConfigMap,
-		},
-		Data: map[string]string{
-			constants.ClusterConfigurationKey: string(clusterConfBytesWithKonnectivity),
-		},
-	}
-
 	testCases := map[string]struct {
 		conditions          []metav1.Condition
 		currentImageVersion semver.Semver
@@ -102,12 +70,6 @@ func TestUpgradeNodeImage(t *testing.T) {
 		assertCorrectError  func(t *testing.T, err error) bool
 		customClientFn      func(nodeVersion updatev1alpha1.NodeVersion) unstructuredInterface
 	}{
-		"success with konnectivity migration": {
-			currentImageVersion: semver.NewFromInt(1, 2, 2, ""),
-			newImageVersion:     semver.NewFromInt(1, 2, 3, ""),
-			customKubeadmConfig: validKubeadmConfigWithKonnectivity,
-			wantUpdate:          true,
-		},
 		"success": {
 			currentImageVersion: semver.NewFromInt(1, 2, 2, ""),
 			newImageVersion:     semver.NewFromInt(1, 2, 3, ""),
