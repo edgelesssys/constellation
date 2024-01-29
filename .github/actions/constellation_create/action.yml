@@ -282,7 +282,7 @@ runs:
       with:
         name: terraform-state-${{ inputs.artifactNameSuffix }}
         path: >
-          constellation-terraform
-          constellation-iam-terraform
+          constellation-terraform/!(.terraform|plan.zip)
+          constellation-iam-terraform/!(.terraform)
         encryptionSecret: ${{ inputs.encryptionSecret }}
 
