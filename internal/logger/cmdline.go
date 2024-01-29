@@ -11,18 +11,18 @@ import (
 )
 
 // CmdLineVerbosityDescription explains numeric log levels.
-const CmdLineVerbosityDescription = "log verbosity in slog logging levels. Use -1 for debug information, 0 for info, 1 for warn, 2 for error"
+const CmdLineVerbosityDescription = "log verbosity in slog logging levels. Use -4 for debug information, 0 for info, 4 for warn, 8 for error"
 
 // VerbosityFromInt converts a verbosity level from an integer to a slog.Level.
 func VerbosityFromInt(verbosity int) slog.Level {
 	switch {
-	case verbosity <= -1:
+	case verbosity <= -4:
 		return slog.LevelDebug
 	case verbosity == 0:
 		return slog.LevelInfo
-	case verbosity == 1:
+	case verbosity == 4:
 		return slog.LevelWarn
-	case verbosity >= 2:
+	case verbosity >= 8:
 		return slog.LevelError
 	default:
 		return slog.LevelInfo
