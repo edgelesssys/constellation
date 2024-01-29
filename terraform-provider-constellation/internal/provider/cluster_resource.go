@@ -450,7 +450,7 @@ func (r *ClusterResource) ModifyPlan(ctx context.Context, req resource.ModifyPla
 	licenseID := plannedState.LicenseID.ValueString()
 	if licenseID == "" {
 		resp.Diagnostics.AddWarning("Constellation license ID not set.",
-			"Will use community license.")
+			"Continuing with community license.")
 	}
 	if licenseID == license.CommunityLicense {
 		resp.Diagnostics.AddWarning("Using community license.",
