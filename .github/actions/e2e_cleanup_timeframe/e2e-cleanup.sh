@@ -62,10 +62,10 @@ for artifact in ./terraform-state-*.zip; do
   mkdir ${artifact%.*}
 
   unzip "$artifact"
-  unzip artifact.zip -d ${artifact%.*} -P "$artifact_pwd"
+  unzip -d ${artifact%.*} -P "$artifact_pwd" archive.zip
 
   rm "$artifact"
-  rm artifact.zip
+  rm archive.zip
 done
 
 echo "[*] deleting resources"
