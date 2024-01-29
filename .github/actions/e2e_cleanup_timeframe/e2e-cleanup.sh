@@ -11,14 +11,14 @@ function download_tfstate_artifact {
 
 function delete_resources {
   cd $1/constellation-terraform
-  terraform destroy -auto-approve &>/dev/null
+  terraform destroy -auto-approve
   cd ../../
   echo delete $1
 }
 
 function delete_iam_config {
   cd $1/constellation-iam-terraform
-  terraform destroy -auto-approve &>/dev/null
+  terraform destroy -auto-approve
   cd ../../
   echo delete iam $1
 }
