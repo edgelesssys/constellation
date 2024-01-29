@@ -175,6 +175,16 @@ jobs:
         with:
           service_account: "terraform-e2e@constellation-e2e.iam.gserviceaccount.com"
 
+      - name: Set Kubernetes version
+        id: kubernetes
+        run: |
+          # take the middle (2nd) supported Kubernetes version (default)
+          if [[ "${{ inputs.providerVersion }}" != "" ]]; then
+            echo "VERSION=$(../release/constellation config kubernetes-versions | awk 'NR==3{print $1}')" | tee -a "$GITHUB_OUTPUT"
+          else
+            echo "VERSION=$(../build/constellation config kubernetes-versions | awk 'NR==3{print $1}')" | tee -a "$GITHUB_OUTPUT"
+          fi
+
       - name: Common CSP Terraform overrides
         working-directory: ${{ github.workspace }}
         shell: bash
@@ -211,12 +221,7 @@ jobs:
             fi
           fi
 
-          # take the middle (2nd) supported Kubernetes version (default)
-          if [[ "${{ inputs.providerVersion }}" != "" ]]; then
-            kubernetes_version="$(../release/constellation config kubernetes-versions | awk 'NR==3{print $1}')"
-          else
-            kubernetes_version="$(../build/constellation config kubernetes-versions | awk 'NR==3{print $1}')"
-          fi
+          kubernetes_version="${{ steps.kubernetes.outputs.version }}"
 
           cat > _override.tf <<EOF
           terraform {
@@ -444,4 +449,7 @@ jobs:
         with:
           projectWriteToken: ${{ secrets.PROJECT_WRITE_TOKEN }}
           test: "terraform-provider-example"
+          refStream: ${{ inputs.ref}}
           provider: ${{ inputs.cloudProvider }}
+          kubernetesVersion: ${{ steps.kubernetes.outputs.version }}
+          clusterCreation: "terraform"
