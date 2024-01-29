@@ -134,6 +134,7 @@ jobs:
           test: ${{ matrix.test }}
           kubernetesVersion: ${{ matrix.kubernetesVersion }}
           provider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
+          attestationVariant: ${{ matrix.attestationVariant }}
           clusterCreation: "cli"
 
   e2e-mini:
@@ -177,5 +178,6 @@ jobs:
         uses: ./.github/actions/notify_e2e_failure
         with:
           projectWriteToken: ${{ secrets.PROJECT_WRITE_TOKEN }}
+          attestationVariant: "qemu-vtpm"
           test: "MiniConstellation"
           provider: "QEMU"

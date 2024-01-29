@@ -76,15 +76,10 @@ jobs:
         with:
           azure_credentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
 
-      - name: Create cluster
+      - name: Apply config
         shell: pwsh
         run: |
-          .\constellation.exe create --debug -y
-
-      - name: Initialize cluster
-        shell: pwsh
-        run: |
-          .\constellation.exe apply --debug
+          .\constellation.exe apply --debug -y
 
       - name: Liveness probe
         shell: pwsh
@@ -176,3 +171,4 @@ jobs:
           projectWriteToken: ${{ secrets.PROJECT_WRITE_TOKEN }}
           test: Windows E2E Test
           provider: Azure
+          attestationVariant: "azure-sev-snp"

@@ -534,3 +534,4 @@ jobs:
           projectWriteToken: ${{ secrets.PROJECT_WRITE_TOKEN }}
           test: "upgrade"
           provider: ${{ needs.generate-input-parameters.outputs.cloudProvider }}
+          attestationVariant: ${{ inputs.attestationVariant }}

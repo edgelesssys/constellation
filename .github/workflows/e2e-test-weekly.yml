@@ -409,6 +409,7 @@ jobs:
           test: ${{ matrix.test }}
           kubernetesVersion: ${{ matrix.kubernetes-version }}
           provider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
+          attestationVariant: ${{ matrix.attestationVariant }}
           clusterCreation: ${{ matrix.clusterCreation }}
 
   e2e-upgrade:
@@ -475,6 +476,7 @@ jobs:
           projectWriteToken: ${{ secrets.PROJECT_WRITE_TOKEN }}
           test: "MiniConstellation"
           provider: "QEMU"
+          attestationVariant: "qemu-vtpm"
 
   e2e-windows:
     name: Run Windows E2E test
