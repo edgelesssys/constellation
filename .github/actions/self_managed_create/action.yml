@@ -61,7 +61,7 @@ runs:
         elif [[ "${{ inputs.cloudProvider }}" == 'azure' ]]; then
           echo "location = \"$(yq '.provider.azure.location' constellation-conf.yaml)\"" >> terraform.tfvars
           echo "create_maa = $(yq '.attestation | has("azureSEVSNP")' constellation-conf.yaml)" >> terraform.tfvars
-          echo "confidential_vm = $(yq '.attestation | has("azureSEVSNP")' constellation-conf.yaml)" >> terraform.tfvars
+          echo "confidential_vm = $(yq '.attestation | has("azureTrustedLaunch") | not' constellation-conf.yaml)" >> terraform.tfvars
           echo "secure_boot = $(yq '.provider.azure.secureBoot' constellation-conf.yaml)" >> terraform.tfvars
           echo "resource_group = \"$(yq '.provider.azure.resourceGroup' constellation-conf.yaml)\"" >> terraform.tfvars
           echo "user_assigned_identity = \"$(yq '.provider.azure.userAssignedIdentity' constellation-conf.yaml)\"" >> terraform.tfvars
