@@ -1,8 +1,9 @@
+# keep-sorted start
 .golangci.yml @katexochen
 /3rdparty/gcp-guest-agent @malt3
+/bazel @malt3
 /bazel/ci @katexochen
 /bazel/container @katexochen
-/bazel @malt3
 /bazel/sh @katexochen
 /bootstrapper @3u13r
 /cli/internal/cloudcmd @daniel-weisse
@@ -16,8 +17,8 @@
 /e2e @3u13r
 /hack/azure-snp-report-verify @derpsteb
 /hack/bazel-deps-mirror @malt3
-/hack/clidocgen @thomasten
 /hack/cli-k8s-compatibility @derpsteb
+/hack/clidocgen @thomasten
 /hack/fetch-broken-e2e @katexochen
 /hack/gocoverage @katexochen
 /hack/oci-pin @malt3
@@ -33,14 +34,15 @@
 /internal/cloud @3u13r
 /internal/compatibility @derpsteb
 /internal/config @derpsteb
+/internal/constellation/featureset @malt3
+/internal/constellation/helm @derpsteb
 /internal/constellation/kubecmd @daniel-weisse
+/internal/constellation/state @elchead
 /internal/containerimage @malt3
 /internal/crypto @thomasten
 /internal/cryptsetup @daniel-weisse
-/internal/constellation/featureset @malt3
 /internal/file @daniel-weisse
 /internal/grpc @thomasten
-/internal/constellation/helm @derpsteb
 /internal/imagefetcher @malt3
 /internal/installer @3u13r
 /internal/kms @daniel-weisse
@@ -52,7 +54,6 @@
 /internal/retry @katexochen
 /internal/semver @derpsteb
 /internal/sigstore @elchead
-/internal/constellation/state @elchead
 /internal/staticupload @malt3
 /internal/versions @3u13r
 /joinservice @daniel-weisse
@@ -60,7 +61,8 @@
 /measurement-reader @daniel-weisse
 /operators @malt3
 /rpm @malt3
+/terraform-provider-constellation @msanft @elchead
 /tools @malt3
 /upgrade-agent @3u13r
 /verify @daniel-weisse
-/terraform-provider-constellation @msanft @elchead
+# keep-sorted end
