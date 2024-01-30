@@ -76,7 +76,7 @@ runs:
           $(queryGen metadata.github.attestation-variant "${{ inputs.attestationVariant }}")
           $(queryGen metadata.github.cluster-creation "${{ inputs.clusterCreation }}")
           $(queryGen metadata.github.e2e-test-payload "${{ steps.encode-uri-component.outputs.string }}")
-          (query:(match_phrase:(metadata.github.run-id:${run_id})))
+          (query:(match_phrase:(metadata.github.run-id:${{ github.run_id }})))
           ))" | tr -d "\t\n ")
 
         # URL construction
@@ -105,6 +105,7 @@ runs:
         fields: |
           workflow: ${{ github.workflow }}
           kubernetesVersion: ${{ inputs.kubernetesVersion }}
+          cloudProvider: ${{ inputs.provider }}
           attestationVariant: ${{ inputs.attestationVariant }}
           clusterCreation: ${{ inputs.clusterCreation }}
           test: ${{ inputs.test }}
