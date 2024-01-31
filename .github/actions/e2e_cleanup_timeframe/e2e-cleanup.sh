@@ -43,7 +43,7 @@ end_date=$(date --date "-7 day" "+%Y-%m-%d")
 dates_to_clean=()
 
 # get all dates of the last week
-while [[ "$end_date" != "$start_date" ]]; do
+while [[ $end_date != "$start_date" ]]; do
   dates_to_clean+=($end_date)
   end_date=$(date --date "$end_date +1 day" "+%Y-%m-%d")
 done
