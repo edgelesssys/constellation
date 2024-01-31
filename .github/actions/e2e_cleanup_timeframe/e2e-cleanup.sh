@@ -8,22 +8,22 @@ function get_e2e_test_ids_on_date {
 
 # download_tfstate_artifact downloads all artifacts matching the pattern terraform-state-* from a given workflow ID.
 function download_tfstate_artifact {
-  gh run download "$1" -p "terraform-state-*" -R edgelesssys/constellation &>/dev/null
+  gh run download "$1" -p "terraform-state-*" -R edgelesssys/constellation > /dev/null
 }
 
 # delete_resources runs terraform destroy on the constellation-terraform subfolder of a given folder.
 function delete_resources {
   cd $1/constellation-terraform
-  terraform init # first, install plugins
-  terraform destroy -auto-approve
+  terraform init > /dev/null # first, install plugins
+  terraform destroy -auto-approve > /dev/null
   cd ../../
 }
 
 # delete_iam_config runs terraform destroy on the constellation-iam-terraform subfolder of a given folder.
 function delete_iam_config {
   cd $1/constellation-iam-terraform
-  terraform init # first, install plugins
-  terraform destroy -auto-approve
+  terraform init > /dev/null # first, install plugins
+  terraform destroy -auto-approve > /dev/null
   cd ../../
 }
 
@@ -62,17 +62,11 @@ for id in ${database_ids[*]}; do
 done
 
 echo "[*] extracting artifacts"
-for artifact in ./terraform-state-*.zip; do
-  echo "    extracting $artifact"
-
-  mkdir ${artifact%.*}
+for directory in ./terraform-state-*; do
+  echo "    extracting $directory"
 
   # extract and decrypt the artifact
-  unzip "$artifact"
-  unzip -d ${artifact%.*} -P "$artifact_pwd" archive.zip
-
-  rm "$artifact"
-  rm archive.zip
+  unzip -d ${directory} -P "$artifact_pwd" $directory/archive.zip > /dev/null
 done
 
 echo "[*] deleting resources"
