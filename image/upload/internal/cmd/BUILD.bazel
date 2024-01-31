@@ -21,6 +21,7 @@ go_library(
         "//internal/attestation/measurements",
         "//internal/cloud/cloudprovider",
         "//internal/constants",
+        "//internal/logger",
         "//internal/osimage",
         "//internal/osimage/archive",
         "//internal/osimage/imageinfo",

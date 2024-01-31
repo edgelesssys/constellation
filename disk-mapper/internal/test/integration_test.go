@@ -23,11 +23,11 @@ import (
 	"github.com/bazelbuild/rules_go/go/runfiles"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/diskencryption"
 	ccryptsetup "github.com/edgelesssys/constellation/v2/internal/cryptsetup"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	cryptsetup "github.com/martinjungblut/go-cryptsetup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 )
 
 const (

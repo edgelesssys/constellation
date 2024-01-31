@@ -48,7 +48,7 @@ func main() {
 	// logLevel.Set(flags.logLevel)
 
 	logger := logger.NewJSONLogger(logger.VerbosityFromInt(flags.logLevel))
-   
+
 	if flags.forwardMultipartReqs {
 		logger.Warn("configured to forward multipart uploads, this may leak data to AWS")
 	}

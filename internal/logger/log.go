@@ -96,13 +96,13 @@ func middlewareLogger(l *slog.Logger) logging.Logger {
 // NewTextLogger creates a new slog.Logger that writes text formatted log messages
 // to os.Stderr.
 func NewTextLogger(level slog.Level) *slog.Logger {
-  return slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{AddSource: true, Level: level}))
+	return slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{AddSource: true, Level: level}))
 }
 
 // NewJSONLogger creates a new slog.Logger that writes JSON formatted log messages
 // to os.Stderr.
 func NewJSONLogger(level slog.Level) *slog.Logger {
-  return slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{AddSource: true, Level: level}))
+	return slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{AddSource: true, Level: level}))
 }
 
 // NewTest creates a new slog.Logger that writes to a testing.T.

@@ -84,6 +84,7 @@ go_library(
         "//internal/kms/uri",
         # keep
         "//internal/license",
+        "//internal/logger",
         "//internal/maa",
         "//internal/retry",
         "//internal/semver",

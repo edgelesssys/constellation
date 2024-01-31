@@ -25,6 +25,7 @@ go_library(
         "//internal/cloud/cloudprovider",
         "//internal/constants",
         "//internal/file",
+        "//internal/logger",
         "//internal/staticupload",
         "//internal/verify",
         "@com_github_aws_aws_sdk_go//aws",

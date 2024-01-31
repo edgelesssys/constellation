@@ -15,6 +15,7 @@ go_library(
     deps = [
         "//hack/qemu-metadata-api/server",
         "//hack/qemu-metadata-api/virtwrapper",
+        "//internal/logger",
         "@org_libvirt_go_libvirt//:libvirt",
     ],
 )

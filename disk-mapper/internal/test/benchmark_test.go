@@ -16,8 +16,8 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/diskencryption"
-	"github.com/martinjungblut/go-cryptsetup"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/martinjungblut/go-cryptsetup"
 )
 
 func BenchmarkMapper(b *testing.B) {

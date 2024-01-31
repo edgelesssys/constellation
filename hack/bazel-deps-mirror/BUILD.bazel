@@ -15,6 +15,7 @@ go_library(
         "//hack/bazel-deps-mirror/internal/issues",
         "//hack/bazel-deps-mirror/internal/mirror",
         "//hack/bazel-deps-mirror/internal/rules",
+        "//internal/logger",
         "@com_github_bazelbuild_buildtools//build",
         "@com_github_spf13_cobra//:cobra",
     ],
