@@ -276,12 +276,21 @@ runs:
           !(terraform).log
         encryptionSecret: ${{ inputs.encryptionSecret }}
 
+    - name: Get terraform state paths
+      if: always()
+      shell: bash
+      run: |
+        shopt -s extglob
+
+        paths=constellation*-terraform/!(plan.zip|.terraform)
+        echo "TF_PATHS=$paths" >> $GITHUB_ENV
+
     - name: Upload terraform state
       if: always()
       uses: ./.github/actions/artifact_upload
       with:
         name: terraform-state-${{ inputs.artifactNameSuffix }}
         path: >
-          constellation*-terraform/!(.terraform|plan.zip)
+          ${{ env.TF_PATHS }}
         encryptionSecret: ${{ inputs.encryptionSecret }}
 
