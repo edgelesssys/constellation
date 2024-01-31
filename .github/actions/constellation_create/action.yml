@@ -275,3 +275,21 @@ runs:
         path: >
           !(terraform).log
         encryptionSecret: ${{ inputs.encryptionSecret }}
+
+    - name: Prepare terraform state folders
+      if: always()
+      shell: bash
+      run: |
+        rm constellation-terraform/plan.zip
+        rm -rf constellation-terraform/.terraform constellation-iam-terraform/.terraform
+
+    - name: Upload terraform state
+      if: always()
+      uses: ./.github/actions/artifact_upload
+      with:
+        name: terraform-state-${{ inputs.artifactNameSuffix }}
+        path: >
+          constellation-terraform
+          constellation-iam-terraform
+        encryptionSecret: ${{ inputs.encryptionSecret }}
+
