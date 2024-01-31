@@ -63,9 +63,9 @@ func TestAccAttestationSource(t *testing.T) {
 						csp = "azure"
 						attestation_variant = "azure-tdx"
 						image = {
-							version = "v2.15.0
-							reference = "v2.15.0
-							short_path = "v2.15.0
+							version = "v2.15.0"
+							reference = "v2.15.0"
+							short_path = "v2.15.0"
 						}
 						insecure = true
 					}
