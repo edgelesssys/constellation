@@ -1241,19 +1241,19 @@ type tfContextLogger struct {
 }
 
 // Debug takes a format string and arguments as an input and logs
-// them using tflog.Debug
+// them using tflog.Debug.
 func (l *tfContextLogger) Debug(format string, args ...any) {
 	tflog.Debug(l.ctx, fmt.Sprintf(format, args...))
 }
 
 // Info takes a format string and arguments as an input and logs
-// them using tflog.Info
+// them using tflog.Info.
 func (l *tfContextLogger) Info(format string, args ...any) {
 	tflog.Info(l.ctx, fmt.Sprintf(format, args...))
 }
 
 // Warn takes a format string and arguments as an input and logs
-// them using tflog.Warn
+// them using tflog.Warn.
 func (l *tfContextLogger) Warn(format string, args ...any) {
 	tflog.Warn(l.ctx, fmt.Sprintf(format, args...))
 }
