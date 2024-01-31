@@ -1,28 +1,31 @@
 #!/bin/env bash
 
+# get_e2e_test_ids_on_date gets all workflow IDs of workflows that contain "e2e" on a specific date.
 function get_e2e_test_ids_on_date {
   ids="$(gh run list --created "$1" --json createdAt,workflowName,databaseId --jq '.[] | select(.workflowName | contains("e2e")) | .databaseId' -R edgelesssys/constellation)"
   echo $ids
 }
 
+# download_tfstate_artifact downloads all artifacts matching the pattern terraform-state-* from a given workflow ID.
 function download_tfstate_artifact {
   gh run download "$1" -p "terraform-state-*" -R edgelesssys/constellation &>/dev/null
 }
 
+# delete_resources runs terraform destroy on the constellation-terraform subfolder of a given folder.
 function delete_resources {
   cd $1/constellation-terraform
   terraform destroy -auto-approve
   cd ../../
-  echo delete $1
 }
 
+# delete_iam_config runs terraform destroy on the constellation-iam-terraform subfolder of a given folder.
 function delete_iam_config {
   cd $1/constellation-iam-terraform
   terraform destroy -auto-approve
   cd ../../
-  echo delete iam $1
 }
 
+# check if the password for artifact decryption was given
 if [[ -z $1 ]]; then
   echo "No password for artifact decryption provided!"
   echo "Usage: ./e2e-cleanup.sh <ARTIFACT_DECRYPT_PASSWD>"
@@ -37,6 +40,7 @@ start_date=$(date "+%Y-%m-%d")
 end_date=$(date --date "-7 day" "+%Y-%m-%d")
 dates_to_clean=()
 
+# get all dates of the last week
 while [[ "$end_date" != "$start_date" ]]; do
   dates_to_clean+=($end_date)
   end_date=$(date --date "$end_date +1 day" "+%Y-%m-%d")
@@ -61,6 +65,7 @@ for artifact in ./terraform-state-*.zip; do
 
   mkdir ${artifact%.*}
 
+  # extract and decrypt the artifact
   unzip "$artifact"
   unzip -d ${artifact%.*} -P "$artifact_pwd" archive.zip
 
