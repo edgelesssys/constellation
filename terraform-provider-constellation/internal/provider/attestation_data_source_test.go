@@ -54,7 +54,6 @@ func TestAccAttestationSource(t *testing.T) {
 			},
 		},
 		"azure tdx success": {
-			// TODO(v2.15): Use regular image tag instead of pseudo version
 			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
@@ -64,9 +63,9 @@ func TestAccAttestationSource(t *testing.T) {
 						csp = "azure"
 						attestation_variant = "azure-tdx"
 						image = {
-							version = "ref/main/stream/debug/v2.15.0-pre.0.20240124172919-4431ac3233bd"
-							reference = "ref/main/stream/debug/v2.15.0-pre.0.20240124172919-4431ac3233bd"
-							short_path = "ref/main/stream/debug/v2.15.0-pre.0.20240124172919-4431ac3233bd"
+							version = "v2.15.0
+							reference = "v2.15.0
+							short_path = "v2.15.0
 						}
 						insecure = true
 					}
