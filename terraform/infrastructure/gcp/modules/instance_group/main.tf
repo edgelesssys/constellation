@@ -2,7 +2,7 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "4.83.0"
+      version = "5.13.0"
     }
 
     random = {
@@ -107,7 +107,6 @@ resource "google_compute_instance_template" "template" {
 }
 
 resource "google_compute_instance_group_manager" "instance_group_manager" {
-  provider           = google-beta
   name               = local.name
   description        = "Instance group manager for Constellation"
   base_instance_name = local.name
