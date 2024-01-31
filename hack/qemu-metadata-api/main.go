@@ -15,6 +15,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api/server"
 	"github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api/virtwrapper"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"libvirt.org/go/libvirt"
 )
 
@@ -25,7 +26,7 @@ func main() {
 	initSecretHash := flag.String("initsecrethash", "", "brcypt hash of the init secret")
 	flag.Parse()
 
-	log := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	log := logger.NewJSONLogger(slog.LevelInfo)
 
 	conn, err := libvirt.NewConnect(*libvirtURI)
 	if err != nil {

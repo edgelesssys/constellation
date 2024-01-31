@@ -16,7 +16,6 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
-	"os"
 
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/s3proxy/internal/router"
@@ -48,8 +47,8 @@ func main() {
 	// logger := slog.New(handler)
 	// logLevel.Set(flags.logLevel)
 
-	logger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: logger.VerbosityFromInt(flags.logLevel)}))
-
+	logger := logger.NewJSONLogger(logger.VerbosityFromInt(flags.logLevel))
+   
 	if flags.forwardMultipartReqs {
 		logger.Warn("configured to forward multipart uploads, this may leak data to AWS")
 	}

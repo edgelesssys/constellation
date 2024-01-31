@@ -13,7 +13,6 @@ import (
 	"io"
 	"log"
 	"log/slog"
-	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -28,6 +27,7 @@ import (
 	"github.com/aws/smithy-go"
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	gaxv2 "github.com/googleapis/gax-go/v2"
 	"github.com/spf13/cobra"
 )
@@ -74,7 +74,7 @@ func runRemove(cmd *cobra.Command, _ []string) (retErr error) {
 	if err != nil {
 		return err
 	}
-	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: flags.logLevel}))
+	log := logger.NewTextLogger(flags.logLevel)
 	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
 
 	log.Debug("Validating flags")

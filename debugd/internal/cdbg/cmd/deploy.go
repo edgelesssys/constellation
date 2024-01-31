@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-	"os"
 	"path/filepath"
 	"strconv"
 	"sync"
@@ -62,7 +61,7 @@ func runDeploy(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logger.VerbosityFromInt(verbosity)}))
+	log := logger.NewTextLogger(logger.VerbosityFromInt(verbosity))
 	force, err := cmd.Flags().GetBool("force")
 	if err != nil {
 		return fmt.Errorf("getting force flag: %w", err)

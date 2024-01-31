@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 )
 
 const (
@@ -103,7 +104,7 @@ func TestMapper(t *testing.T) {
 	require.NoError(setup(1), "failed to setup test disk")
 	defer func() { require.NoError(teardown(), "failed to delete test disk") }()
 
-	mapper, free, err := diskencryption.New(devicePath, slog.New(slog.NewTextHandler(os.Stderr, nil)))
+	mapper, free, err := diskencryption.New(devicePath, logger.NewTextLogger(slog.LevelInfo))
 	require.NoError(err, "failed to initialize crypt device")
 	defer free()
 

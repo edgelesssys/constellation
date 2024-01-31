@@ -20,11 +20,12 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/joinservice/joinproto"
 )
 
 func main() {
-	log := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	log := logger.NewJSONLogger(slog.LevelDebug)
 
 	jsEndpoint := flag.String("js-endpoint", "", "Join service endpoint to use.")
 	csp := flag.String("csp", "", "Cloud service provider to use.")

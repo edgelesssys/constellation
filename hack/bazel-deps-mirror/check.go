@@ -11,12 +11,12 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
 
 	"github.com/edgelesssys/constellation/v2/hack/bazel-deps-mirror/internal/bazelfiles"
 	"github.com/edgelesssys/constellation/v2/hack/bazel-deps-mirror/internal/issues"
 	"github.com/edgelesssys/constellation/v2/hack/bazel-deps-mirror/internal/mirror"
 	"github.com/edgelesssys/constellation/v2/hack/bazel-deps-mirror/internal/rules"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -39,7 +39,7 @@ func runCheck(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: flags.logLevel}))
+	log := logger.NewTextLogger(flags.logLevel)
 	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
 
 	filesHelper, err := bazelfiles.New()

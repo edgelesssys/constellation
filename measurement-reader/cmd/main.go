@@ -13,13 +13,14 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/measurement-reader/internal/sorted"
 	"github.com/edgelesssys/constellation/v2/measurement-reader/internal/tdx"
 	"github.com/edgelesssys/constellation/v2/measurement-reader/internal/tpm"
 )
 
 func main() {
-	log := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	log := logger.NewJSONLogger(slog.LevelInfo)
 	variantString := os.Getenv(constants.AttestationVariant)
 	attestationVariant, err := variant.FromString(variantString)
 	if err != nil {

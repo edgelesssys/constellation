@@ -16,6 +16,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 )
 
@@ -26,7 +27,7 @@ var (
 )
 
 func main() {
-	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	log := logger.NewTextLogger(slog.LevelDebug)
 	ctx := context.Background()
 
 	flag.Parse()

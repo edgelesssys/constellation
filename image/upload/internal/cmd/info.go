@@ -9,11 +9,11 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"os"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	infoupload "github.com/edgelesssys/constellation/v2/internal/osimage/imageinfo"
 	"github.com/spf13/cobra"
 )
@@ -49,7 +49,7 @@ func runInfo(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: flags.logLevel}))
+	log := logger.NewTextLogger(flags.logLevel)
 	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
 	info, err := readInfoArgs(args)
 	if err != nil {

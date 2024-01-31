@@ -17,6 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
 	"github.com/edgelesssys/constellation/v2/internal/verify"
 	"github.com/spf13/afero"
@@ -60,7 +61,7 @@ func envCheck(_ *cobra.Command, _ []string) error {
 
 func runUpload(cmd *cobra.Command, args []string) (retErr error) {
 	ctx := cmd.Context()
-	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})).WithGroup("attestationconfigapi")
+	log := logger.NewTextLogger(slog.LevelDebug).WithGroup("attestationconfigapi")
 
 	uploadCfg, err := newConfig(cmd, ([3]string)(args[:3]))
 	if err != nil {

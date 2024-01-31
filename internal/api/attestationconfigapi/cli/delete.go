@@ -9,12 +9,12 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
 	"path"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
 	"github.com/spf13/cobra"
 )
@@ -46,7 +46,7 @@ func newDeleteCmd() *cobra.Command {
 }
 
 func runDelete(cmd *cobra.Command, args []string) (retErr error) {
-	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})).WithGroup("attestationconfigapi")
+	log := logger.NewTextLogger(slog.LevelDebug).WithGroup("attestationconfigapi")
 
 	deleteCfg, err := newDeleteConfig(cmd, ([3]string)(args[:3]))
 	if err != nil {
@@ -89,7 +89,7 @@ func runRecursiveDelete(cmd *cobra.Command, args []string) (retErr error) {
 		return fmt.Errorf("creating delete config: %w", err)
 	}
 
-	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})).WithGroup("attestationconfigapi")
+	log := logger.NewTextLogger(slog.LevelDebug).WithGroup("attestationconfigapi")
 	client, closeFn, err := staticupload.New(cmd.Context(), staticupload.Config{
 		Bucket:         deleteCfg.bucket,
 		Region:         deleteCfg.region,

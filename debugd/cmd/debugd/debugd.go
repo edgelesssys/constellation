@@ -46,7 +46,7 @@ func main() {
 	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 	flag.Parse()
 
-	log := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: logger.VerbosityFromInt(*verbosity)}))
+	log := logger.NewJSONLogger(logger.VerbosityFromInt(*verbosity))
 	fs := afero.NewOsFs()
 	streamer := streamer.New(fs)
 	filetransferer := filetransfer.New(log.WithGroup("filetransfer"), streamer, filetransfer.DontShowProgress)

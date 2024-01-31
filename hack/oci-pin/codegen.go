@@ -15,6 +15,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/hack/oci-pin/internal/extract"
 	"github.com/edgelesssys/constellation/v2/hack/oci-pin/internal/inject"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -43,7 +44,7 @@ func runCodegen(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: flags.logLevel}))
+	log := logger.NewTextLogger(flags.logLevel)
 	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
 
 	registry, prefix, name, tag, err := splitRepoTag(flags.imageRepoTag)

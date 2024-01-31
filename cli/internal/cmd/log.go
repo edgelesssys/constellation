@@ -8,8 +8,8 @@ package cmd
 
 import (
 	"log/slog"
-	"os"
 
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -27,5 +27,5 @@ func newCLILogger(cmd *cobra.Command) (debugLog, error) {
 		logLvl = slog.LevelDebug
 	}
 
-	return slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logLvl})), nil
+	return logger.NewTextLogger(logLvl), nil
 }

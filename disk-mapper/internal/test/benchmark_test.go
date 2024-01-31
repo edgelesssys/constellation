@@ -17,6 +17,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/diskencryption"
 	"github.com/martinjungblut/go-cryptsetup"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 )
 
 func BenchmarkMapper(b *testing.B) {
@@ -39,7 +40,7 @@ func BenchmarkMapper(b *testing.B) {
 	}
 
 	passphrase := "benchmark"
-	mapper, free, err := diskencryption.New(testPath, slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo})))
+	mapper, free, err := diskencryption.New(testPath, logger.NewTextLogger(slog.LevelInfo))
 	if err != nil {
 		b.Fatal("Failed to create mapper:", err)
 	}

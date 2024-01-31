@@ -12,6 +12,7 @@ import (
 	"os"
 
 	"github.com/edgelesssys/constellation/v2/hack/oci-pin/internal/sums"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -34,7 +35,7 @@ func runMerge(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: flags.logLevel}))
+	log := logger.NewTextLogger(flags.logLevel)
 	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
 
 	log.Debug(fmt.Sprintf("Merging sum file from %q into %q.", flags.inputs, flags.output))
