@@ -340,8 +340,8 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        fromVersion: ["v2.14.0"]
-        attestationVariant: ["gcp-sev-es", "azure-sev-snp", "aws-sev-snp"] # TODO(v2.15) Add azure-tdx to test matrix
+        fromVersion: ["v2.15.0"]
+        attestationVariant: ["gcp-sev-es", "azure-sev-snp", "azure-tdx", "aws-sev-snp"]
     name: Run upgrade tests
     secrets: inherit
     permissions:

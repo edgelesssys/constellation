@@ -66,8 +66,7 @@ runs:
           forwarderPID=$!
           sleep 5
 
-          # TODO(v2.15): Remove workaround since we don't need to support v2.13 anymore
-          if [[ ${{ inputs.attestationVariant }} == "azure-sev-snp" ]] || { [[ ${{ inputs.attestationVariant }} == "aws-sev-snp" ]] && ! constellation version | grep -q "v2.13."; }; then
+          if [[ ${{ inputs.attestationVariant }} == "azure-sev-snp" ]] || [[ ${{ inputs.attestationVariant }} == "aws-sev-snp" ]]; then
             echo "Extracting TCB versions for API update"
             constellation verify --cluster-id "${clusterID}" --node-endpoint localhost:9090 -o json > "snp-report-${node}.json"
           else
