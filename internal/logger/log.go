@@ -107,7 +107,7 @@ func NewJSONLogger(level slog.Level) *slog.Logger {
 
 // NewTest creates a new slog.Logger that writes to a testing.T.
 func NewTest(t *testing.T) *slog.Logger {
-	return slog.New(slog.NewTextHandler(testWriter{t: t}, nil))
+	return slog.New(slog.NewTextHandler(testWriter{t: t}, &slog.HandlerOptions{AddSource: true}))
 }
 
 // TestWriter is a writer to a testing.T used in tests for logging with slog.
