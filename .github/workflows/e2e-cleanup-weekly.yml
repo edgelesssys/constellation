@@ -7,6 +7,8 @@ on:
 jobs:
   cleanup:
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
     steps:
       - uses: ./.github/actions/e2e_cleanup_timeframe
         with:
