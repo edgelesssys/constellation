@@ -30,6 +30,15 @@ Further we try to adhere to the following guidelines:
 
 * Do not log potentially sensitive information, e.g. variables that contain keys, secrets or otherwise protected information.
 
+* Create a text or JSON logger using the helper functions in the `logger` package. These create a `slog.Logger` with useful defaults.
+
+  Example:
+
+  ```Go
+  log := logger.NewTextLogger(slog.LevelDebug)
+  log.Debug("A debug message")
+  ```
+
 * Start log messages in uppercase and end without a punctuation mark. Exclamation, question marks, or ellipsis may be used where appropriate.
 
   Example:
@@ -57,7 +66,7 @@ Further we try to adhere to the following guidelines:
   You should write
 
   ```Go
-  log..Info("Starting server", "addr", addr, "port", port)
+  log.Info("Starting server", "addr", addr, "port", port)
   ```
 
 * Use log levels to configure how detailed the logs of you application should be.
