@@ -14,6 +14,7 @@ function download_tfstate_artifact {
 # delete_resources runs terraform destroy on the constellation-terraform subfolder of a given folder.
 function delete_resources {
   cd $1/constellation-terraform
+  terraform init # first, install plugins
   terraform destroy -auto-approve
   cd ../../
 }
@@ -21,6 +22,7 @@ function delete_resources {
 # delete_iam_config runs terraform destroy on the constellation-iam-terraform subfolder of a given folder.
 function delete_iam_config {
   cd $1/constellation-iam-terraform
+  terraform init # first, install plugins
   terraform destroy -auto-approve
   cd ../../
 }
