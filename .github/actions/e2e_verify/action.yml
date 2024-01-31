@@ -66,8 +66,12 @@ runs:
           forwarderPID=$!
           sleep 5
 
-          echo "Extracting TCB versions for API update"
-          constellation verify --cluster-id "${clusterID}" --node-endpoint localhost:9090 -o json > "snp-report-${node}.json"
+          if [[ ${{ inputs.attestationVariant }} == "azure-sev-snp" ]] || { [[ ${{ inputs.attestationVariant }} == "aws-sev-snp" ]]; then
+            echo "Extracting TCB versions for API update"
+            constellation verify --cluster-id "${clusterID}" --node-endpoint localhost:9090 -o json > "snp-report-${node}.json"
+          else
+            constellation verify --cluster-id "${clusterID}" --node-endpoint localhost:9090
+          fi
 
           kill $forwarderPID
         done
