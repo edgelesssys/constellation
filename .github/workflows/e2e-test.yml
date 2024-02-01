@@ -114,7 +114,7 @@ on:
         type: boolean
         default: false
       clusterCreation:
-        description: "How to create infrastructure for the e2e test. One of [cli, self-managed, terraform]."
+        description: "How to create infrastructure for the e2e test. One of [cli, terraform]."
         type: string
         default: "cli"
       marketplaceImageVersion:

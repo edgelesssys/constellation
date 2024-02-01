@@ -54,7 +54,7 @@ inputs:
     description: "Whether to use an internal load balancer for the control plane"
     required: false
   clusterCreation:
-    description: "How to create infrastructure for the e2e test. One of [cli, self-managed, terraform]."
+    description: "How to create infrastructure for the e2e test. One of [cli, terraform]."
     default: "cli"
   marketplaceImageVersion:
     description: "Marketplace OS image version. Used instead of osImage."
@@ -161,17 +161,9 @@ runs:
         sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts' || true
 
     - name: Constellation create (CLI)
-      if : inputs.clusterCreation != 'self-managed'
       shell: bash
       run: |
         constellation apply --skip-phases=init,attestationconfig,certsans,helm,image,k8s -y --debug --tf-log=DEBUG
-
-    - name: Constellation create (self-managed)
-      if : inputs.clusterCreation == 'self-managed'
-      uses: ./.github/actions/self_managed_create
-      with:
-        cloudProvider: ${{ inputs.cloudProvider }}
-        attestationVariant: ${{ inputs.attestationVariant }}
 
     - name: Cdbg deploy
       if: inputs.isDebugImage == 'true'

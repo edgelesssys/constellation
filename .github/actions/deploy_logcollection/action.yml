@@ -33,7 +33,7 @@ inputs:
     description: "Kubernetes version of the cluster"
     required: false
   clusterCreation:
-    description: "How the infrastructure for the e2e test was created. One of [cli, self-managed, terraform]."
+    description: "How the infrastructure for the e2e test was created. One of [cli, terraform]."
     default: "cli"
 
 runs:
