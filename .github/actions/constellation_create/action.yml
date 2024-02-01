@@ -221,7 +221,9 @@ runs:
             sleep 30
         done
         if [[ $JOINWAIT -gt $JOINTIMEOUT ]]; then
-            echo "Timed out waiting for nodes to join"
+            kubectl get nodes -o wide
+            echo "::error::Timed out waiting for nodes to join"
+            echo "::endgroup::"
             exit 1
         fi
         echo "$(kubectl get nodes -o json | jq '.items | length')/"${NODES_COUNT}" nodes have joined"
