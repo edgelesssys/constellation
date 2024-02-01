@@ -197,7 +197,7 @@ func (s *Server) IssueRejoinTicket(ctx context.Context, req *joinproto.IssueRejo
 
 // getK8sComponentsConfigMapName reads the k8s components config map name from a VolumeMount that is backed by the k8s-version ConfigMap.
 func (s *Server) getK8sComponentsConfigMapName(ctx context.Context) (string, error) {
-	k8sComponentsRef, err := s.kubeClient.GetK8sComponentsRefFromNodeVersionCRD(ctx, "constellation-version")
+	k8sComponentsRef, err := s.kubeClient.GetK8sComponentsRefFromNodeVersionCRD(ctx, constants.NodeVersionResourceName)
 	if err != nil {
 		return "", fmt.Errorf("could not get k8s components config map name: %w", err)
 	}

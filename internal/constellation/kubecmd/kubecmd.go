@@ -303,7 +303,7 @@ func (k *KubeCmd) getConstellationVersion(ctx context.Context) (updatev1alpha1.N
 		Group:    "update.edgeless.systems",
 		Version:  "v1alpha1",
 		Resource: "nodeversions",
-	}, "constellation-version")
+	}, constants.NodeVersionResourceName)
 	if err != nil {
 		return updatev1alpha1.NodeVersion{}, err
 	}
