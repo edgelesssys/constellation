@@ -48,7 +48,7 @@ jobs:
         kubernetesVersion: ["1.28"] # should be default
         attestationVariant: ["gcp-sev-es", "azure-sev-snp", "azure-tdx", "aws-sev-snp"]
         refStream: ["ref/main/stream/debug/?", "ref/release/stream/stable/?"]
-        test: ["sonobuoy full"]
+        test: ["sonobuoy quick"]
     runs-on: ubuntu-22.04
     permissions:
       id-token: write
