@@ -240,6 +240,28 @@ jobs:
             runner: "ubuntu-22.04"
             clusterCreation: "cli"
 
+          # malicious join test on latest k8s version
+          - test: "malicious join"
+            refStream: "ref/main/stream/debug/?"
+            attestationVariant: "gcp-sev-es"
+            kubernetes-version: "v1.29"
+            clusterCreation: "cli"
+          - test: "malicious join"
+            refStream: "ref/main/stream/debug/?"
+            attestationVariant: "azure-sev-snp"
+            kubernetes-version: "v1.29"
+            clusterCreation: "cli"
+          - test: "malicious join"
+            refStream: "ref/main/stream/debug/?"
+            attestationVariant: "azure-tdx"
+            kubernetes-version: "v1.29"
+            clusterCreation: "cli"
+          - test: "malicious join"
+            refStream: "ref/main/stream/debug/?"
+            attestationVariant: "aws-sev-snp"
+            kubernetes-version: "v1.29"
+            clusterCreation: "cli"
+
           #
           # Tests on macOS runner
           #
