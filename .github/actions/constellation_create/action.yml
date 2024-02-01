@@ -280,8 +280,11 @@ runs:
       if: always()
       shell: bash
       run: |
-        rm constellation-terraform/plan.zip
-        rm -rf constellation-terraform/.terraform constellation-iam-terraform/.terraform
+        mkdir to-zip
+        cp -r constellation-terraform to-zip
+        cp -r constellation-iam-terraform to-zip
+        rm to-zip/constellation-terraform/plan.zip
+        rm -rf to-zip/constellation-terraform/.terraform to-zip/constellation-iam-terraform/.terraform
 
     - name: Upload terraform state
       if: always()
@@ -289,7 +292,6 @@ runs:
       with:
         name: terraform-state-${{ inputs.artifactNameSuffix }}
         path: >
-          constellation-terraform
-          constellation-iam-terraform
+          to-zip/constellation-terraform
+          to-zip/constellation-iam-terraform
         encryptionSecret: ${{ inputs.encryptionSecret }}
-
