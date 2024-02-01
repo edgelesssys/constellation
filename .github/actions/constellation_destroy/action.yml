@@ -6,7 +6,7 @@ inputs:
     description: "The kubeconfig for the cluster."
     required: true
   clusterCreation:
-    description: "How the infrastructure for the e2e test was created. One of [cli, self-managed, terraform]."
+    description: "How the infrastructure for the e2e test was created. One of [cli, terraform]."
     default: "cli"
   gcpClusterDeleteServiceAccount:
     description: "Service account with permissions to delete a Constellation cluster on GCP."
@@ -72,18 +72,7 @@ runs:
         azure_credentials: ${{ inputs.azureClusterDeleteCredentials }}
 
     - name: Constellation terminate
-      if: inputs.clusterCreation != 'self-managed'
       shell: bash
       run: |
         constellation terminate --yes --tf-log=DEBUG
 
-    - name: Constellation terminate (self-managed)
-      if: inputs.clusterCreation == 'self-managed'
-      shell: bash
-      working-directory: ${{ github.workspace }}/e2e-infra
-      run: |
-        terraform init
-        terraform destroy -auto-approve
-
-        rm -f ${{ github.workspace }}/constellation-state.yaml
-        rm -f ${{ github.workspace }}/constellation-admin.conf

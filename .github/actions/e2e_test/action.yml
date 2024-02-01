@@ -77,7 +77,7 @@ inputs:
   internalLoadBalancer:
     description: "Enable internal load balancer for the cluster."
   clusterCreation:
-    description: "How to create infrastructure for the e2e test. One of [cli, self-managed, terraform]."
+    description: "How to create infrastructure for the e2e test. One of [cli,, terraform]."
     default: "cli"
   s3AccessKey:
     description: "Access key for s3proxy"

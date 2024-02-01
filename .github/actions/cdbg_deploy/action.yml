@@ -24,7 +24,7 @@ inputs:
     description: "The refStream of the image the test runs on."
     required: true
   clusterCreation:
-    description: "How the infrastructure for the e2e test was created. One of [cli, self-managed, terraform]."
+    description: "How the infrastructure for the e2e test was created. One of [cli, terraform]."
     default: "cli"
 
 runs:

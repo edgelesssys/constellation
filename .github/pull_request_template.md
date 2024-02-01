@@ -26,6 +26,7 @@ Feel free to edit, complete or extend this list while the PR is open.
 ### Checklist
 <!-- Remove items that do not apply. For completed items, change [ ] to [x], or check after submitting. -->
 <!-- more information in dev-docs/workflows/pull-request.md -->
+- [ ] Run the E2E tests that are relevant to this PR's changes
 - [ ] Update [docs](https://github.com/edgelesssys/constellation/tree/main/docs)
 - [ ] Add labels (e.g., for changelog category)
 - [ ] Is PR title adequate for changelog?
