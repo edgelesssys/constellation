@@ -14,8 +14,7 @@ on:
           - "gcp-sev-es"
           - "azure-sev-snp"
           - "azure-tdx"
-        # AWS not yet supported
-        #  - "aws-sev-snp"
+          - "aws-sev-snp"
         default: "azure-sev-snp"
         required: true
       runner:
