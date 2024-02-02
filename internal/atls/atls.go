@@ -200,6 +200,7 @@ func processCertificate(rawCerts [][]byte, _ [][]*x509.Certificate) (*x509.Certi
 
 // verifyEmbeddedReport verifies an aTLS certificate by validating the attestation document embedded in the TLS certificate.
 func verifyEmbeddedReport(validators []Validator, cert *x509.Certificate, hash, nonce []byte) error {
+	var exts []string
 	for _, ex := range cert.Extensions {
 		for _, validator := range validators {
 			if ex.Id.Equal(validator.OID()) {
@@ -216,9 +217,10 @@ func verifyEmbeddedReport(validators []Validator, cert *x509.Certificate, hash, 
 				return nil
 			}
 		}
+		exts = append(exts, ex.Id.String())
 	}
 
-	return errors.New("certificate does not contain attestation document")
+	return fmt.Errorf("certificate does not contain compatible attestation documents: got extension OIDs %#v", exts)
 }
 
 func hashPublicKey(pub any) ([]byte, error) {

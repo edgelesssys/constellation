@@ -524,8 +524,7 @@ jobs:
       - name: Notify about failure
         if: |
           always() &&
-          needs.create-cluster.result != 'success' &&
-          needs.e2e-upgrade.result != 'success' &&
+          ( needs.create-cluster.result != 'success' || needs.e2e-upgrade.result != 'success' ) &&
           github.ref == 'refs/heads/main' &&
           inputs.scheduled
         continue-on-error: true
