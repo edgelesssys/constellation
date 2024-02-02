@@ -129,7 +129,7 @@ type AWSConfig struct {
 	//   AWS data center zone name in defined region. See: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones
 	Zone string `yaml:"zone" validate:"required,aws_zone"`
 	// description: |
-	//   Name of the IAM profile to use for the control-plane nodes.
+	//   Name of the IAM ref/main/stream/nightly/v2.14.0-pre.0.20231201093533-432c4294c53profile to use for the control-plane nodes.
 	IAMProfileControlPlane string `yaml:"iamProfileControlPlane" validate:"required"`
 	// description: |
 	//   Name of the IAM profile to use for the worker nodes.
@@ -137,6 +137,9 @@ type AWSConfig struct {
 	// description: |
 	//   Deploy Persistent Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage
 	DeployCSIDriver *bool `yaml:"deployCSIDriver" validate:"required"`
+	// description: |
+	//   Use the specified AWS Marketplace image offering.
+	UseMarketplaceImage *bool `yaml:"useMarketplaceImage" validate:"omitempty"`
 }
 
 // AzureConfig are Azure specific configuration values used by the CLI.
@@ -339,6 +342,7 @@ func Default() *Config {
 				IAMProfileControlPlane: "",
 				IAMProfileWorkerNodes:  "",
 				DeployCSIDriver:        toPtr(true),
+				UseMarketplaceImage:    toPtr(false),
 			},
 			Azure: &AzureConfig{
 				SubscriptionID:       "",
@@ -715,7 +719,8 @@ func (c *Config) DeployYawolLoadBalancer() bool {
 // UseMarketplaceImage returns whether a marketplace image should be used.
 func (c *Config) UseMarketplaceImage() bool {
 	return (c.Provider.Azure != nil && c.Provider.Azure.UseMarketplaceImage != nil && *c.Provider.Azure.UseMarketplaceImage) ||
-		(c.Provider.GCP != nil && c.Provider.GCP.UseMarketplaceImage != nil && *c.Provider.GCP.UseMarketplaceImage)
+		(c.Provider.GCP != nil && c.Provider.GCP.UseMarketplaceImage != nil && *c.Provider.GCP.UseMarketplaceImage) ||
+		(c.Provider.AWS != nil && c.Provider.AWS.UseMarketplaceImage != nil && *c.Provider.AWS.UseMarketplaceImage)
 }
 
 // Validate checks the config values and returns validation errors.

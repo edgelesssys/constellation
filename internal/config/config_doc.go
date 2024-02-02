@@ -143,7 +143,7 @@ func init() {
 			FieldName: "aws",
 		},
 	}
-	AWSConfigDoc.Fields = make([]encoder.Doc, 5)
+	AWSConfigDoc.Fields = make([]encoder.Doc, 6)
 	AWSConfigDoc.Fields[0].Name = "region"
 	AWSConfigDoc.Fields[0].Type = "string"
 	AWSConfigDoc.Fields[0].Note = ""
@@ -157,8 +157,8 @@ func init() {
 	AWSConfigDoc.Fields[2].Name = "iamProfileControlPlane"
 	AWSConfigDoc.Fields[2].Type = "string"
 	AWSConfigDoc.Fields[2].Note = ""
-	AWSConfigDoc.Fields[2].Description = "Name of the IAM profile to use for the control-plane nodes."
-	AWSConfigDoc.Fields[2].Comments[encoder.LineComment] = "Name of the IAM profile to use for the control-plane nodes."
+	AWSConfigDoc.Fields[2].Description = "Name of the IAM ref/main/stream/nightly/v2.14.0-pre.0.20231201093533-432c4294c53profile to use for the control-plane nodes."
+	AWSConfigDoc.Fields[2].Comments[encoder.LineComment] = "Name of the IAM ref/main/stream/nightly/v2.14.0-pre.0.20231201093533-432c4294c53profile to use for the control-plane nodes."
 	AWSConfigDoc.Fields[3].Name = "iamProfileWorkerNodes"
 	AWSConfigDoc.Fields[3].Type = "string"
 	AWSConfigDoc.Fields[3].Note = ""
@@ -169,6 +169,11 @@ func init() {
 	AWSConfigDoc.Fields[4].Note = ""
 	AWSConfigDoc.Fields[4].Description = "Deploy Persistent Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage"
 	AWSConfigDoc.Fields[4].Comments[encoder.LineComment] = "Deploy Persistent Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage"
+	AWSConfigDoc.Fields[5].Name = "useMarketplaceImage"
+	AWSConfigDoc.Fields[5].Type = "bool"
+	AWSConfigDoc.Fields[5].Note = ""
+	AWSConfigDoc.Fields[5].Description = "Use the specified AWS Marketplace image offering."
+	AWSConfigDoc.Fields[5].Comments[encoder.LineComment] = "Use the specified AWS Marketplace image offering."
 
 	AzureConfigDoc.Type = "AzureConfig"
 	AzureConfigDoc.Comments[encoder.LineComment] = "AzureConfig are Azure specific configuration values used by the CLI."

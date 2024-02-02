@@ -91,6 +91,7 @@ func awsTerraformVars(conf *config.Config, imageRef string) *terraform.AWSCluste
 			DiskType:        group.StateDiskType,
 		}
 	}
+
 	return &terraform.AWSClusterVariables{
 		Name:                   conf.Name,
 		NodeGroups:             nodeGroups,
