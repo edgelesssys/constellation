@@ -87,8 +87,8 @@ func (d *ImageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 			},
 			"csp": newCSPAttributeSchema(),
 			"marketplace_image": schema.BoolAttribute{
-				Description:         "Whether a marketplace image should be used. Currently only supported for Azure and GCP.",
-				MarkdownDescription: "Whether a marketplace image should be used. Currently only supported for Azure and GCP.",
+				Description:         "Whether a marketplace image should be used.",
+				MarkdownDescription: "Whether a marketplace image should be used.",
 				Optional:            true,
 			},
 			"region": schema.StringAttribute{
@@ -125,14 +125,6 @@ func (d *ImageDataSource) ValidateConfig(ctx context.Context, req datasource.Val
 		resp.Diagnostics.AddAttributeWarning(
 			path.Root("region"),
 			"Region should only be set for AWS", "When another CSP than AWS is used, setting 'region' has no effect.",
-		)
-	}
-
-	// Marketplace image is only supported for Azure and GCP
-	if data.CSP.Equal(types.StringValue("aws")) && !data.MarketplaceImage.IsNull() {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("marketplace_image"),
-			"Marketplace images are currently only supported on Azure and GCP", "When another CSP than Azure or GCP is used, marketplace images are unavailable.",
 		)
 	}
 
