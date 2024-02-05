@@ -420,7 +420,7 @@ jobs:
           fi
 
           # cfg must be in same dir as KUBECONFIG
-          ${{ github.workspace }}/build/constellation config generate "${{ steps.determine.outputs.cloudProvider }}"
+          ${{ github.workspace }}/build/constellation config generate "${{ steps.determine.outputs.cloudProvider }}" --attestation ${{ inputs.attestationVariant}}
           # make cfg valid with fake data
           # IMPORTANT: zone needs to be correct because it is used to resolve the CSP image ref
           if [[ "${{ steps.determine.outputs.cloudProvider }}" == "azure" ]]; then
