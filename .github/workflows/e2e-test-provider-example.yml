@@ -143,8 +143,8 @@ jobs:
         id: build
         shell: bash
         run: |
-          mkdir build
-          cd build
+          mkdir -p ${{ github.workspace }}/build
+          cd ${{ github.workspace }}/build
           bazel run //:devbuild --cli_edition=enterprise
 
           bazel build //bazel/settings:tag
@@ -189,12 +189,15 @@ jobs:
       - name: Set Kubernetes version
         id: kubernetes
         run: |
+          set -e
+
           # take the middle (2nd) supported Kubernetes version (default)
           if [[ "${{ inputs.providerVersion }}" != "" ]]; then
-            echo "VERSION=$(../release/constellation config kubernetes-versions | awk 'NR==3{print $1}')" | tee -a "$GITHUB_OUTPUT"
+            cli_output=$(${{ github.workspace }}/release/constellation config kubernetes-versions)
           else
-            echo "VERSION=$(../build/constellation config kubernetes-versions | awk 'NR==3{print $1}')" | tee -a "$GITHUB_OUTPUT"
+            cli_output=$(${{ github.workspace }}/build/constellation config kubernetes-versions)
           fi
+          echo "version=$(echo "${cli_output}" | awk 'NR==3{print $1}')" | tee -a "${GITHUB_OUTPUT}"
 
       - name: Common CSP Terraform overrides
         working-directory: ${{ github.workspace }}
