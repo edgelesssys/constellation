@@ -8,7 +8,7 @@ package measure
 
 import (
 	"bytes"
-	"crypto/sha256"
+	"crypto"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/image/measured-boot/fixtures"
@@ -19,7 +19,7 @@ func TestPeSectionReader(t *testing.T) {
 	assert := assert.New(t)
 
 	peReader := bytes.NewReader(fixtures.UKI())
-	digest, err := Authentihash(peReader, sha256.New())
+	digest, err := Authentihash(peReader, crypto.SHA256)
 	assert.NoError(err)
 	assert.Equal(
 		[]byte{

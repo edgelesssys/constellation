@@ -8,6 +8,7 @@ package main
 
 import (
 	"bytes"
+	"crypto"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -93,7 +94,7 @@ func measurePE(fs afero.Fs, peFile string) ([]byte, error) {
 	}
 	defer f.Close()
 
-	return measure.Authentihash(f, sha256.New())
+	return measure.Authentihash(f, crypto.SHA256)
 }
 
 func precalculatePCR4(simulator *measure.Simulator, fs afero.Fs, ukiFile string) error {
@@ -111,7 +112,7 @@ func precalculatePCR4(simulator *measure.Simulator, fs afero.Fs, ukiFile string)
 	if err != nil {
 		return fmt.Errorf("uki does not contain linux kernel image: %v", err)
 	}
-	linuxMeasurement, err := measure.Authentihash(linuxSectionReader, sha256.New())
+	linuxMeasurement, err := measure.Authentihash(linuxSectionReader, crypto.SHA256)
 	if err != nil {
 		return fmt.Errorf("failed to measure linux kernel image: %v", err)
 	}

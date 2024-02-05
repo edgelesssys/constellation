@@ -14,7 +14,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//image/measured-boot/pesection",
-        "@com_github_foxboron_go_uefi//efi/pecoff",
+        "@com_github_foxboron_go_uefi//authenticode",
         "@org_golang_x_text//encoding/unicode",
     ],
 )
