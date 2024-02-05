@@ -129,7 +129,7 @@ type AWSConfig struct {
 	//   AWS data center zone name in defined region. See: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones
 	Zone string `yaml:"zone" validate:"required,aws_zone"`
 	// description: |
-	//   Name of the IAM ref/main/stream/nightly/v2.14.0-pre.0.20231201093533-432c4294c53profile to use for the control-plane nodes.
+	//   Name of the IAM profile to use for the control-plane nodes.
 	IAMProfileControlPlane string `yaml:"iamProfileControlPlane" validate:"required"`
 	// description: |
 	//   Name of the IAM profile to use for the worker nodes.
