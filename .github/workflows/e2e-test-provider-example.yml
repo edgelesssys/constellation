@@ -143,8 +143,8 @@ jobs:
         id: build
         shell: bash
         run: |
-          mkdir build
-          cd build
+          mkdir -p ${{ github.workspace }}/build
+          cd ${{ github.workspace }}/build
           bazel run //:devbuild --cli_edition=enterprise
 
           bazel build //bazel/settings:tag
@@ -189,19 +189,22 @@ jobs:
       - name: Set Kubernetes version
         id: kubernetes
         run: |
+          set -e
+
           # take the middle (2nd) supported Kubernetes version (default)
           if [[ "${{ inputs.providerVersion }}" != "" ]]; then
-            echo "VERSION=$(../release/constellation config kubernetes-versions | awk 'NR==3{print $1}')" | tee -a "$GITHUB_OUTPUT"
+            cli_output=$(${{ github.workspace }}/release/constellation config kubernetes-versions)
           else
-            echo "VERSION=$(../build/constellation config kubernetes-versions | awk 'NR==3{print $1}')" | tee -a "$GITHUB_OUTPUT"
+            cli_output=$(${{ github.workspace }}/build/constellation config kubernetes-versions)
           fi
+          echo "version=$(echo "${cli_output}" | awk 'NR==3{print $1}')" | tee -a "${GITHUB_OUTPUT}"
 
       - name: Common CSP Terraform overrides
         working-directory: ${{ github.workspace }}
         shell: bash
         run: |
-          mkdir cluster
-          cd cluster
+          mkdir -p ${{ github.workspace }}/cluster
+          cd ${{ github.workspace }}/cluster
           if [[ "${{ inputs.providerVersion }}" == "" ]]; then
             prefixed_version=${{ steps.build.outputs.build_version }}
           else
@@ -210,8 +213,8 @@ jobs:
           version=${prefixed_version#v} # remove v prefix
 
           if [[ "${{ inputs.providerVersion }}" == "" ]]; then
-            iam_src="../terraform-module/iam/${{ steps.determine.outputs.cloudProvider }}"
-            infra_src="../terraform-module/${{ steps.determine.outputs.cloudProvider }}"
+            iam_src="${{ github.workspace }}/terraform-module/iam/${{ steps.determine.outputs.cloudProvider }}"
+            infra_src="${{ github.workspace }}/terraform-module/${{ steps.determine.outputs.cloudProvider }}"
           else
             iam_src="https://github.com/edgelesssys/constellation/releases/download/${{ inputs.providerVersion }}/terraform-module.zip//terraform-module/iam/${{ steps.determine.outputs.cloudProvider }}"
             infra_src="https://github.com/edgelesssys/constellation/releases/download/${{ inputs.providerVersion }}/terraform-module.zip//terraform-module/${{ steps.determine.outputs.cloudProvider }}"
@@ -310,10 +313,10 @@ jobs:
         shell: bash
         run: |
           terraform init
-          if [[ "${{ steps.determine.outputs.cloudProvider }}" == "azure" ]]; then
+          if [[ "${{ inputs.attestationVariant }}" == "azure-sev-snp" ]]; then
             terraform apply -target module.azure_iam -auto-approve
             terraform apply -target module.azure_infrastructure -auto-approve
-            ../build/constellation maa-patch "$(terraform output -raw maa_url)"
+            ${{ github.workspace }}/build/constellation maa-patch "$(terraform output -raw maa_url)"
             terraform apply -target constellation_cluster.azure_example -auto-approve
           else
             terraform apply -auto-approve
@@ -405,7 +408,7 @@ jobs:
           fi
 
           # cfg must be in same dir as KUBECONFIG
-          ../build/constellation config generate "${{ steps.determine.outputs.cloudProvider }}"
+          ${{ github.workspace }}/build/constellation config generate "${{ steps.determine.outputs.cloudProvider }}"
           # make cfg valid with fake data
           # IMPORTANT: zone needs to be correct because it is used to resolve the CSP image ref
           if [[ "${{ steps.determine.outputs.cloudProvider }}" == "azure" ]]; then
