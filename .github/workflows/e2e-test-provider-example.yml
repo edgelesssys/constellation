@@ -301,6 +301,18 @@ jobs:
           EOF
           cat _override.tf
 
+      - name: Create Azure TDX Terraform overrides
+        if: inputs.attestationVariant == 'azure-tdx'
+        working-directory: ${{ github.workspace }}/cluster
+        shell: bash
+        run: |
+          cat >> _override.tf <<EOF
+          locals {
+            instance_type = "Standard_DC4es_v5"
+          }
+          EOF
+          cat _override.tf
+
       - name: Copy example Terraform file
         working-directory: ${{ github.workspace }}
         shell: bash

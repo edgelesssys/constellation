@@ -23,6 +23,7 @@ locals {
   project_id           = "constellation-331613"
   control_plane_count  = 3
   worker_count         = 2
+  instance_type        = "n2d-standard-4"
 
   master_secret      = random_bytes.master_secret.hex
   master_secret_salt = random_bytes.master_secret_salt.hex
@@ -57,7 +58,7 @@ module "gcp_infrastructure" {
   node_groups = {
     control_plane_default = {
       role          = "control-plane"
-      instance_type = "n2d-standard-4"
+      instance_type = local.instance_type
       disk_size     = 30
       disk_type     = "pd-ssd"
       initial_count = local.control_plane_count
@@ -65,7 +66,7 @@ module "gcp_infrastructure" {
     },
     worker_default = {
       role          = "worker"
-      instance_type = "n2d-standard-4"
+      instance_type = local.instance_type
       disk_size     = 30
       disk_type     = "pd-ssd"
       initial_count = local.worker_count

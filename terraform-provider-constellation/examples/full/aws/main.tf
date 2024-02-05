@@ -22,6 +22,7 @@ locals {
   zone                 = "us-east-2c"
   control_plane_count  = 3
   worker_count         = 2
+  instance_type        = "m6a.xlarge"
 
   master_secret      = random_bytes.master_secret.hex
   master_secret_salt = random_bytes.master_secret_salt.hex
@@ -54,7 +55,7 @@ module "aws_infrastructure" {
   node_groups = {
     control_plane_default = {
       role          = "control-plane"
-      instance_type = "m6a.xlarge"
+      instance_type = local.instance_type
       disk_size     = 30
       disk_type     = "gp3"
       initial_count = local.control_plane_count
@@ -62,7 +63,7 @@ module "aws_infrastructure" {
     },
     worker_default = {
       role          = "worker"
-      instance_type = "m6a.xlarge"
+      instance_type = local.instance_type
       disk_size     = 30
       disk_type     = "gp3"
       initial_count = local.worker_count
