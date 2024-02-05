@@ -19,7 +19,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubewaiter"
-	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/logging"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/tdx"
@@ -62,7 +61,6 @@ func main() {
 	bindPort := strconv.Itoa(constants.BootstrapperPort)
 	var clusterInitJoiner clusterInitJoiner
 	var metadataAPI metadataAPI
-	var cloudLogger logging.CloudLogger
 	var openDevice vtpm.TPMOpenFunc
 	var fs afero.Fs
 
@@ -83,11 +81,6 @@ func main() {
 		}
 		metadataAPI = metadata
 
-		cloudLogger, err = awscloud.NewLogger(ctx)
-		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to set up cloud logger")
-		}
-
 		clusterInitJoiner = kubernetes.New(
 			"aws", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.NewUninitialized(),
 			metadata, &kubewaiter.CloudKubeAPIWaiter{},
@@ -102,11 +95,6 @@ func main() {
 		}
 		defer metadata.Close()
 
-		cloudLogger, err = gcpcloud.NewLogger(ctx, "constellation-boot-log")
-		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to set up cloud logger")
-		}
-
 		metadataAPI = metadata
 		clusterInitJoiner = kubernetes.New(
 			"gcp", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.NewUninitialized(),
@@ -120,10 +108,7 @@ func main() {
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to create Azure metadata client")
 		}
-		cloudLogger, err = azurecloud.NewLogger(ctx)
-		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to set up cloud logger")
-		}
+
 		if err := metadata.PrepareControlPlaneNode(ctx, log); err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to prepare Azure control plane node")
 		}
@@ -138,7 +123,6 @@ func main() {
 		fs = afero.NewOsFs()
 
 	case cloudprovider.QEMU:
-		cloudLogger = qemucloud.NewLogger()
 		metadata := qemucloud.New()
 		clusterInitJoiner = kubernetes.New(
 			"qemu", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.NewUninitialized(),
@@ -158,7 +142,6 @@ func main() {
 		}
 		fs = afero.NewOsFs()
 	case cloudprovider.OpenStack:
-		cloudLogger = &logging.NopLogger{}
 		metadata, err := openstackcloud.New(ctx)
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to create OpenStack metadata client")
@@ -173,7 +156,6 @@ func main() {
 	default:
 		clusterInitJoiner = &clusterFake{}
 		metadataAPI = &providerMetadataFake{}
-		cloudLogger = &logging.NopLogger{}
 		var simulatedTPMCloser io.Closer
 		openDevice, simulatedTPMCloser = simulator.NewSimulatedTPMOpenFunc()
 		defer simulatedTPMCloser.Close()
@@ -182,5 +164,5 @@ func main() {
 
 	fileHandler := file.NewHandler(fs)
 
-	run(issuer, openDevice, fileHandler, clusterInitJoiner, metadataAPI, bindIP, bindPort, log, cloudLogger)
+	run(issuer, openDevice, fileHandler, clusterInitJoiner, metadataAPI, bindIP, bindPort, log)
 }

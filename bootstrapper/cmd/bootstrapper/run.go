@@ -14,7 +14,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/diskencryption"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/initserver"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/joinclient"
-	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/logging"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/nodelock"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/initialize"
@@ -29,20 +28,15 @@ import (
 func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handler,
 	kube clusterInitJoiner, metadata metadataAPI,
 	bindIP, bindPort string, log *logger.Logger,
-	cloudLogger logging.CloudLogger,
 ) {
-	defer cloudLogger.Close()
 
 	log.With(zap.String("version", constants.BinaryVersion().String())).Infof("Starting bootstrapper")
-	cloudLogger.Disclose("bootstrapper started running...")
 
 	uuid, err := getDiskUUID()
 	if err != nil {
 		log.With(zap.Error(err)).Errorf("Failed to get disk UUID")
-		cloudLogger.Disclose("Failed to get disk UUID")
 	} else {
 		log.Infof("Disk UUID: %s", uuid)
-		cloudLogger.Disclose("Disk UUID: " + uuid)
 	}
 
 	nodeBootstrapped, err := initialize.IsNodeBootstrapped(openDevice)
@@ -77,7 +71,6 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 	}
 
 	log.Infof("bootstrapper done")
-	cloudLogger.Disclose("bootstrapper done")
 }
 
 func getDiskUUID() (string, error) {
