@@ -29,7 +29,6 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 	kube clusterInitJoiner, metadata metadataAPI,
 	bindIP, bindPort string, log *logger.Logger,
 ) {
-
 	log.With(zap.String("version", constants.BinaryVersion().String())).Infof("Starting bootstrapper")
 
 	uuid, err := getDiskUUID()

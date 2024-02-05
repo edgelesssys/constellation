@@ -20,7 +20,6 @@ go_library(
         "//bootstrapper/internal/kubernetes",
         "//bootstrapper/internal/kubernetes/k8sapi",
         "//bootstrapper/internal/kubernetes/kubewaiter",
-        "//bootstrapper/internal/logging",
         "//bootstrapper/internal/nodelock",
         "//internal/atls",
         "//internal/attestation/choose",

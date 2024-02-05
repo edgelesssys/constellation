@@ -3,10 +3,7 @@ load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "aws",
-    srcs = [
-        "aws.go",
-        "logger.go",
-    ],
+    srcs = ["aws.go"],
     importpath = "github.com/edgelesssys/constellation/v2/internal/cloud/aws",
     visibility = ["//:__subpackages__"],
     deps = [
@@ -17,24 +14,18 @@ go_library(
         "@com_github_aws_aws_sdk_go_v2//aws",
         "@com_github_aws_aws_sdk_go_v2_config//:config",
         "@com_github_aws_aws_sdk_go_v2_feature_ec2_imds//:imds",
-        "@com_github_aws_aws_sdk_go_v2_service_cloudwatchlogs//:cloudwatchlogs",
-        "@com_github_aws_aws_sdk_go_v2_service_cloudwatchlogs//types",
         "@com_github_aws_aws_sdk_go_v2_service_ec2//:ec2",
         "@com_github_aws_aws_sdk_go_v2_service_ec2//types",
         "@com_github_aws_aws_sdk_go_v2_service_elasticloadbalancingv2//:elasticloadbalancingv2",
         "@com_github_aws_aws_sdk_go_v2_service_elasticloadbalancingv2//types",
         "@com_github_aws_aws_sdk_go_v2_service_resourcegroupstaggingapi//:resourcegroupstaggingapi",
         "@com_github_aws_aws_sdk_go_v2_service_resourcegroupstaggingapi//types",
-        "@io_k8s_utils//clock",
     ],
 )
 
 go_test(
     name = "aws_test",
-    srcs = [
-        "aws_test.go",
-        "logger_test.go",
-    ],
+    srcs = ["aws_test.go"],
     embed = [":aws"],
     deps = [
         "//internal/cloud",
@@ -42,8 +33,6 @@ go_test(
         "//internal/role",
         "@com_github_aws_aws_sdk_go_v2//aws",
         "@com_github_aws_aws_sdk_go_v2_feature_ec2_imds//:imds",
-        "@com_github_aws_aws_sdk_go_v2_service_cloudwatchlogs//:cloudwatchlogs",
-        "@com_github_aws_aws_sdk_go_v2_service_cloudwatchlogs//types",
         "@com_github_aws_aws_sdk_go_v2_service_ec2//:ec2",
         "@com_github_aws_aws_sdk_go_v2_service_ec2//types",
         "@com_github_aws_aws_sdk_go_v2_service_elasticloadbalancingv2//:elasticloadbalancingv2",
@@ -51,8 +40,5 @@ go_test(
         "@com_github_aws_aws_sdk_go_v2_service_resourcegroupstaggingapi//:resourcegroupstaggingapi",
         "@com_github_aws_aws_sdk_go_v2_service_resourcegroupstaggingapi//types",
         "@com_github_stretchr_testify//assert",
-        "@com_github_stretchr_testify//require",
-        "@io_k8s_utils//clock/testing",
-        "@org_uber_go_goleak//:goleak",
     ],
 )
