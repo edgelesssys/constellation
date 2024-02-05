@@ -10,7 +10,6 @@ import (
 	"context"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/applicationinsights/armapplicationinsights"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v5"
 )
@@ -73,10 +72,4 @@ type scaleSetsAPI interface {
 type loadBalancerAPI interface {
 	NewListPager(resourceGroupName string, options *armnetwork.LoadBalancersClientListOptions,
 	) *runtime.Pager[armnetwork.LoadBalancersClientListResponse]
-}
-
-type applicationInsightsAPI interface {
-	NewListByResourceGroupPager(resourceGroupName string,
-		options *armapplicationinsights.ComponentsClientListByResourceGroupOptions,
-	) *runtime.Pager[armapplicationinsights.ComponentsClientListByResourceGroupResponse]
 }

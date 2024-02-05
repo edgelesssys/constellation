@@ -36,10 +36,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/role"
 )
 
-const (
-	tagName = "Name"
-)
-
 type resourceAPI interface {
 	GetResources(context.Context, *resourcegroupstaggingapi.GetResourcesInput, ...func(*resourcegroupstaggingapi.Options)) (*resourcegroupstaggingapi.GetResourcesOutput, error)
 }
