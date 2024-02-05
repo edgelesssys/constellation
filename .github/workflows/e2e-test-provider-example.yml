@@ -313,7 +313,7 @@ jobs:
         shell: bash
         run: |
           terraform init
-          if [[ "${{ steps.determine.outputs.cloudProvider }}" == "azure" ]]; then
+          if [[ "${{ inputs.attestationVariant }}" == "azure-sev-snp" ]]; then
             terraform apply -target module.azure_iam -auto-approve
             terraform apply -target module.azure_infrastructure -auto-approve
             ${{ github.workspace }}/build/constellation maa-patch "$(terraform output -raw maa_url)"
