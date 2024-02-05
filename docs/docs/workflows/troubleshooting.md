@@ -95,49 +95,14 @@ check if the encountered [issue is known](https://github.com/edgelesssys/constel
 
 ## Diagnosing issues
 
-### Cloud logging
+### Boot Logs
 
-To provide information during early stages of a node's boot process, Constellation logs messages to the log systems of the cloud providers. Since these offerings **aren't** confidential, only generic information without any sensitive values is stored. This provides administrators with a high-level understanding of the current state of a node.
+To get started on diagnosing issues with Constellation, it often is helpful to collect logs from nodes, pods or other resources in the cluster. Most logs are available through Kubernetes' standard
+[logging interfaces](https://kubernetes.io/docs/concepts/cluster-administration/logging/).
 
-You can view this information in the following places:
+To debug issues occuring at boot time of the nodes, one can use the serial console interface of the CSP.
 
-<tabs groupId="csp">
-<tabItem value="azure" label="Azure">
-
-1. In your Azure subscription find the Constellation resource group.
-2. Inside the resource group find the Application Insights resource called `constellation-insights-*`.
-3. On the left-hand side go to `Logs`, which is located in the section `Monitoring`.
-    - Close the Queries page if it pops up.
-5. In the query text field type in `traces`, and click `Run`.
-
-To **find the disk UUIDs** use the following query: `traces | where message contains "Disk UUID"`
-
-</tabItem>
-<tabItem value="gcp" label="GCP">
-
-1. Select the project that hosts Constellation.
-2. Go to the `Compute Engine` service.
-3. On the right-hand side of a VM entry select `More Actions` (a stacked ellipsis)
-    - Select `View logs`
-
-To **find the disk UUIDs** use the following query: `resource.type="gce_instance" text_payload=~"Disk UUID:.*\n" logName=~".*/constellation-boot-log"`
-
-:::info
-
-Constellation uses the default bucket to store logs. Its [default retention period is 30 days](https://cloud.google.com/logging/quotas#logs_retention_periods).
-
-:::
-
-</tabItem>
-<tabItem value="aws" label="AWS">
-
-1. Open [AWS CloudWatch](https://console.aws.amazon.com/cloudwatch/home)
-2. Select [Log Groups](https://console.aws.amazon.com/cloudwatch/home#logsV2:log-groups)
-3. Select the log group that matches the name of your cluster.
-4. Select the log stream for control or worker type nodes.
-
-</tabItem>
-</tabs>
+Apart from that, Constellation also offers further [observability integrations](../architecture/observability.md).
 
 ### Node shell access
 
