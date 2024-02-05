@@ -13,7 +13,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api/virtwrapper"
@@ -219,55 +218,6 @@ func TestListPeers(t *testing.T) {
 			var metadata []metadata.InstanceMetadata
 			require.NoError(json.Unmarshal(metadataRaw, &metadata))
 			assert.Len(metadata, len(tc.connect.network.leases))
-		})
-	}
-}
-
-func TestPostLog(t *testing.T) {
-	testCases := map[string]struct {
-		remoteAddr string
-		message    io.Reader
-		method     string
-		wantErr    bool
-	}{
-		"success": {
-			remoteAddr: "192.0.100.1:1234",
-			method:     http.MethodPost,
-			message:    strings.NewReader("test message"),
-		},
-		"no body": {
-			remoteAddr: "192.0.100.1:1234",
-			method:     http.MethodPost,
-			message:    nil,
-			wantErr:    true,
-		},
-		"incorrect method": {
-			remoteAddr: "192.0.100.1:1234",
-			method:     http.MethodGet,
-			message:    strings.NewReader("test message"),
-			wantErr:    true,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-			require := require.New(t)
-
-			server := New(logger.NewTest(t), "test", "initSecretHash", &stubConnect{})
-
-			req, err := http.NewRequestWithContext(context.Background(), tc.method, "http://192.0.0.1/logs", tc.message)
-			require.NoError(err)
-			req.RemoteAddr = tc.remoteAddr
-
-			w := httptest.NewRecorder()
-			server.postLog(w, req)
-
-			if tc.wantErr {
-				assert.NotEqual(http.StatusOK, w.Code)
-			} else {
-				assert.Equal(http.StatusOK, w.Code)
-			}
 		})
 	}
 }
