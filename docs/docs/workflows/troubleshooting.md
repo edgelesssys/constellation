@@ -100,7 +100,7 @@ check if the encountered [issue is known](https://github.com/edgelesssys/constel
 To get started on diagnosing issues with Constellation, it often is helpful to collect logs from nodes, pods or other resources in the cluster. Most logs are available through Kubernetes' standard
 [logging interfaces](https://kubernetes.io/docs/concepts/cluster-administration/logging/).
 
-To debug issues occurring at boot time of the nodes, one can use the serial console interface of the CSP.
+To debug issues occurring at boot time of the nodes, you can use the serial console interface of the CSP.
 
 Apart from that, Constellation also offers further [observability integrations](../architecture/observability.md).
 
