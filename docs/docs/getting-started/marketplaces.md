@@ -7,7 +7,7 @@ This document explains how to run Constellation with the dynamically billed clou
 <tabs groupId="csp">
 <tabItem value="aws" label="AWS">
 
-On AWS, to use Constellation's marketplace images, ensure that you are subscribed to the [marketplace offering](https://aws.amazon.com/marketplace/pp/prodview-2mbn65nv57oys) through the web portal.
+To use Constellation's marketplace images, ensure that you are subscribed to the [marketplace offering](https://aws.amazon.com/marketplace/pp/prodview-2mbn65nv57oys) through the web portal.
 
 Then, enable the use of marketplace images in your Constellation `constellation-conf.yaml` [config file](../workflows/config.md):
 
