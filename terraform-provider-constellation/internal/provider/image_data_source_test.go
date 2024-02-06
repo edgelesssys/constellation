@@ -72,6 +72,24 @@ func TestAccImageDataSource(t *testing.T) {
 				},
 			},
 		},
+		"aws marketplace success": {
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			PreCheck:                 bazelPreCheck,
+			Steps: []resource.TestStep{
+				{
+					Config: testingConfig + `
+					data "constellation_image" "test" {
+						version       = "v2.13.0"
+						attestation_variant = "aws-sev-snp"
+						csp                 = "aws"
+						marketplace_image   = true
+						region              = "eu-west-1"
+					}
+				`,
+					Check: resource.TestCheckResourceAttr("data.constellation_image.test", "image.reference", "resolve:ssm:/aws/service/marketplace/prod-77ylkenlkgufs/v2.13.0"), // should be immutable,
+				},
+			},
+		},
 		"azure success": {
 			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 			PreCheck:                 bazelPreCheck,
@@ -168,6 +186,23 @@ func TestAccImageDataSource(t *testing.T) {
 					}
 				`,
 					ExpectError: regexp.MustCompile(".*Invalid Version.*"),
+				},
+			},
+		},
+		"gcp marketplace success": {
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			PreCheck:                 bazelPreCheck,
+			Steps: []resource.TestStep{
+				{
+					Config: testingConfig + `
+					data "constellation_image" "test" {
+						version       = "v2.13.0"
+						attestation_variant = "gcp-sev-es"
+						csp                 = "gcp"
+						marketplace_image   = true
+					}
+				`,
+					Check: resource.TestCheckResourceAttr("data.constellation_image.test", "image.reference", "projects/mpi-edgeless-systems-public/global/images/v2-13-0-gcp-sev-es-stable"), // should be immutable,
 				},
 			},
 		},

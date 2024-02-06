@@ -143,7 +143,7 @@ func init() {
 			FieldName: "aws",
 		},
 	}
-	AWSConfigDoc.Fields = make([]encoder.Doc, 5)
+	AWSConfigDoc.Fields = make([]encoder.Doc, 6)
 	AWSConfigDoc.Fields[0].Name = "region"
 	AWSConfigDoc.Fields[0].Type = "string"
 	AWSConfigDoc.Fields[0].Note = ""
@@ -169,6 +169,11 @@ func init() {
 	AWSConfigDoc.Fields[4].Note = ""
 	AWSConfigDoc.Fields[4].Description = "Deploy Persistent Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage"
 	AWSConfigDoc.Fields[4].Comments[encoder.LineComment] = "Deploy Persistent Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage"
+	AWSConfigDoc.Fields[5].Name = "useMarketplaceImage"
+	AWSConfigDoc.Fields[5].Type = "bool"
+	AWSConfigDoc.Fields[5].Note = ""
+	AWSConfigDoc.Fields[5].Description = "Use the specified AWS Marketplace image offering."
+	AWSConfigDoc.Fields[5].Comments[encoder.LineComment] = "Use the specified AWS Marketplace image offering."
 
 	AzureConfigDoc.Type = "AzureConfig"
 	AzureConfigDoc.Comments[encoder.LineComment] = "AzureConfig are Azure specific configuration values used by the CLI."

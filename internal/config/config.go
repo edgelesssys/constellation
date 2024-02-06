@@ -137,6 +137,9 @@ type AWSConfig struct {
 	// description: |
 	//   Deploy Persistent Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage
 	DeployCSIDriver *bool `yaml:"deployCSIDriver" validate:"required"`
+	// description: |
+	//   Use the specified AWS Marketplace image offering.
+	UseMarketplaceImage *bool `yaml:"useMarketplaceImage" validate:"omitempty"`
 }
 
 // AzureConfig are Azure specific configuration values used by the CLI.
@@ -339,6 +342,7 @@ func Default() *Config {
 				IAMProfileControlPlane: "",
 				IAMProfileWorkerNodes:  "",
 				DeployCSIDriver:        toPtr(true),
+				UseMarketplaceImage:    toPtr(false),
 			},
 			Azure: &AzureConfig{
 				SubscriptionID:       "",
@@ -715,7 +719,8 @@ func (c *Config) DeployYawolLoadBalancer() bool {
 // UseMarketplaceImage returns whether a marketplace image should be used.
 func (c *Config) UseMarketplaceImage() bool {
 	return (c.Provider.Azure != nil && c.Provider.Azure.UseMarketplaceImage != nil && *c.Provider.Azure.UseMarketplaceImage) ||
-		(c.Provider.GCP != nil && c.Provider.GCP.UseMarketplaceImage != nil && *c.Provider.GCP.UseMarketplaceImage)
+		(c.Provider.GCP != nil && c.Provider.GCP.UseMarketplaceImage != nil && *c.Provider.GCP.UseMarketplaceImage) ||
+		(c.Provider.AWS != nil && c.Provider.AWS.UseMarketplaceImage != nil && *c.Provider.AWS.UseMarketplaceImage)
 }
 
 // Validate checks the config values and returns validation errors.

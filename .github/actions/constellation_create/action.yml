@@ -109,6 +109,13 @@ runs:
         yq eval -i "(.image) = \"${imageInput}\"" constellation-conf.yaml
         echo "image=${imageInput}" | tee -a "$GITHUB_OUTPUT"
 
+    - name: Set marketplace image flag (AWS)
+      if: inputs.marketplaceImageVersion != '' && inputs.cloudProvider == 'aws'
+      shell: bash
+      run: |
+        yq eval -i "(.provider.aws.useMarketplaceImage) = true" constellation-conf.yaml
+        yq eval -i "(.image) = \"${{ inputs.marketplaceImageVersion }}\"" constellation-conf.yaml
+
     - name: Set marketplace image flag (Azure)
       if: inputs.marketplaceImageVersion != '' && inputs.cloudProvider == 'azure'
       shell: bash
