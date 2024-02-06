@@ -4,7 +4,8 @@ Constellation is available through the Marketplaces of AWS, Azure, and GCP. This
 
 This document explains how to run Constellation with the dynamically billed cloud marketplace images.
 
-## AWS
+<tabs groupId="csp">
+<tabItem value="aws" label="AWS">
 
 On AWS, to use Constellation's marketplace images, ensure that you are subscribed to the [marketplace offering](https://aws.amazon.com/marketplace/pp/prodview-2mbn65nv57oys) through the web portal.
 
@@ -14,11 +15,8 @@ Then, enable the use of marketplace images in your Constellation `constellation-
 yq eval -i ".provider.aws.useMarketplaceImage = true" constellation-conf.yaml
 ```
 
-Ensure that the cluster uses an official release image version (i.e., `.image=vX.Y.Z` in the `constellation-conf.yaml` file).
-
-From there, you can proceed with the [cluster creation](../workflows/create.md) as usual.
-
-## Azure
+</tabItem>
+<tabItem value="azure" label="Azure">
 
 On Azure, Constellation has a private marketplace plan. Please [contact us](https://www.edgeless.systems/enterprise-support/) to gain access.
 
@@ -34,11 +32,8 @@ Then, enable the use of marketplace images in your Constellation `constellation-
 yq eval -i ".provider.azure.useMarketplaceImage = true" constellation-conf.yaml
 ```
 
-Ensure that the cluster uses an official release image version (i.e., `.image=vX.Y.Z` in the `constellation-conf.yaml` file).
-
-From there, you can proceed with the [cluster creation](../workflows/create.md) as usual.
-
-## GCP
+</tabItem>
+<tabItem value="gcp" label="GCP">
 
 On GCP, to use a marketplace image, ensure that the account is entitled to use marketplace images by Edgeless Systems by accepting the terms through the [web portal](https://console.cloud.google.com/marketplace/vm/config/edgeless-systems-public/constellation).
 
@@ -47,6 +42,9 @@ Then, enable the use of marketplace images in your Constellation `constellation-
 ```bash
 yq eval -i ".provider.gcp.useMarketplaceImage = true" constellation-conf.yaml
 ```
+
+</tabItem>
+</tabs>
 
 Ensure that the cluster uses an official release image version (i.e., `.image=vX.Y.Z` in the `constellation-conf.yaml` file).
 
