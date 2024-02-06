@@ -6,7 +6,6 @@ go_library(
     srcs = [
         "gcp.go",
         "interface.go",
-        "logger.go",
         "wrappers.go",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/cloud/gcp",
@@ -20,7 +19,6 @@ go_library(
         "@com_google_cloud_go_compute//apiv1",
         "@com_google_cloud_go_compute//apiv1/computepb",
         "@com_google_cloud_go_compute_metadata//:metadata",
-        "@com_google_cloud_go_logging//:logging",
         "@org_golang_google_api//iterator",
         "@org_golang_google_protobuf//proto",
     ],

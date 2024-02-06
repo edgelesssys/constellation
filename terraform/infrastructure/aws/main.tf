@@ -162,12 +162,6 @@ resource "aws_security_group" "security_group" {
 
 }
 
-resource "aws_cloudwatch_log_group" "log_group" {
-  name              = local.name
-  retention_in_days = 30
-  tags              = local.tags
-}
-
 module "load_balancer_targets" {
   for_each             = { for port in local.load_balancer_ports : port.name => port }
   source               = "./modules/load_balancer_target"

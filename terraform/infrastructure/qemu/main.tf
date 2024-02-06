@@ -30,6 +30,7 @@ resource "random_password" "init_secret" {
   special          = true
   override_special = "_%@"
 }
+
 resource "docker_image" "qemu_metadata" {
   name         = var.metadata_api_image
   keep_locally = true

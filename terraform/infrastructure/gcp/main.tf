@@ -91,7 +91,6 @@ resource "google_compute_subnetwork" "vpc_subnetwork" {
   ]
 }
 
-
 resource "google_compute_subnetwork" "proxy_subnet" {
   count         = var.internal_load_balancer ? 1 : 0
   name          = "${local.name}-proxy"
@@ -139,7 +138,6 @@ resource "google_compute_firewall" "firewall_external" {
       var.internal_load_balancer ? [22] : [],
     ])
   }
-
 }
 
 resource "google_compute_firewall" "firewall_internal_nodes" {
@@ -165,7 +163,6 @@ resource "google_compute_firewall" "firewall_internal_pods" {
   allow { protocol = "udp" }
   allow { protocol = "icmp" }
 }
-
 
 module "instance_group" {
   source              = "./modules/instance_group"

@@ -2,10 +2,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "qemu",
-    srcs = [
-        "logger.go",
-        "qemu.go",
-    ],
+    srcs = ["qemu.go"],
     importpath = "github.com/edgelesssys/constellation/v2/internal/cloud/qemu",
     visibility = ["//:__subpackages__"],
     deps = [
