@@ -77,14 +77,6 @@ resource "azurerm_attestation_provider" "attestation_provider" {
   }
 }
 
-resource "azurerm_application_insights" "insights" {
-  name                = local.name
-  location            = var.location
-  resource_group_name = var.resource_group
-  application_type    = "other"
-  tags                = local.tags
-}
-
 resource "azurerm_public_ip" "loadbalancer_ip" {
   count               = var.internal_load_balancer ? 0 : 1
   name                = "${local.name}-lb"

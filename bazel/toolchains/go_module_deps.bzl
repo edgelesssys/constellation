@@ -344,14 +344,6 @@ def go_dependencies():
         version = "v1.32.6",
     )
     go_repository(
-        name = "com_github_aws_aws_sdk_go_v2_service_cloudwatchlogs",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs",
-        sum = "h1:9apthAVGtCrw6LkswOcRpa1fMWur+7cGqO0yR65qsZM=",
-        version = "v1.30.2",
-    )
-    go_repository(
         name = "com_github_aws_aws_sdk_go_v2_service_ec2",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
@@ -510,14 +502,6 @@ def go_dependencies():
         importpath = "github.com/Azure/azure-sdk-for-go/sdk/keyvault/internal",
         sum = "h1:FbH3BbSb4bvGluTesZZ+ttN/MDsnMmQP36OSnDuSXqw=",
         version = "v0.7.1",
-    )
-    go_repository(
-        name = "com_github_azure_azure_sdk_for_go_sdk_resourcemanager_applicationinsights_armapplicationinsights",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/applicationinsights/armapplicationinsights",
-        sum = "h1:hBrFatNIiVAwDb5GzMLjpkQ6l2/waFSvBWMBWZRH8WI=",
-        version = "v1.1.1",
     )
     go_repository(
         name = "com_github_azure_azure_sdk_for_go_sdk_resourcemanager_compute_armcompute_v5",
@@ -3652,14 +3636,6 @@ def go_dependencies():
         version = "v0.5.0",
     )
     go_repository(
-        name = "com_github_microsoft_applicationinsights_go",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/microsoft/ApplicationInsights-Go",
-        sum = "h1:G4+H9WNs6ygSCe6sUyxRc2U81TI5Es90b2t/MwX5KqY=",
-        version = "v0.4.4",
-    )
-    go_repository(
         name = "com_github_microsoft_go_winio",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
@@ -3994,14 +3970,6 @@ def go_dependencies():
         importpath = "github.com/OneOfOne/xxhash",
         sum = "h1:31czK/TI9sNkxIKfaUfGlU47BAxQ0ztGgd9vPyqimf8=",
         version = "v1.2.8",
-    )
-    go_repository(
-        name = "com_github_onsi_ginkgo",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/onsi/ginkgo",
-        sum = "h1:VkHVNpR4iVnU8XQR6DBm8BqYjN7CRzw+xKUbVVbbW9w=",
-        version = "v1.8.0",
     )
     go_repository(
         name = "com_github_onsi_ginkgo_v2",
@@ -4818,14 +4786,6 @@ def go_dependencies():
         importpath = "github.com/tchap/go-patricia/v2",
         sum = "h1:6rQp39lgIYZ+MHmdEq4xzuk1t7OdC35z/xm0BGhTkes=",
         version = "v2.3.1",
-    )
-    go_repository(
-        name = "com_github_tedsuo_ifrit",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/tedsuo/ifrit",
-        sum = "h1:LUUe4cdABGrIJAhl1P1ZpWY76AwukVszFdwkVFVLwIk=",
-        version = "v0.0.0-20180802180643-bea94bb476cc",
     )
     go_repository(
         name = "com_github_theupdateframework_go_tuf",
@@ -7007,14 +6967,6 @@ def go_dependencies():
         importpath = "bitbucket.org/creachadair/shell",
         sum = "h1:Z96pB6DkSb7F3Y3BBnJeOZH2gazyMTWlvecSD4vDqfk=",
         version = "v0.0.7",
-    )
-    go_repository(
-        name = "org_cloudfoundry_code_clock",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "code.cloudfoundry.org/clock",
-        sum = "h1:5eeuG0BHx1+DHeT3AP+ISKZ2ht1UjGhm581ljqYpVeQ=",
-        version = "v0.0.0-20180518195852-02e53af36e6c",
     )
     go_repository(
         name = "org_golang_google_api",

@@ -9,7 +9,6 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -44,7 +43,6 @@ func (s *Server) ListenAndServe(port string) error {
 	mux := http.NewServeMux()
 	mux.Handle("/self", http.HandlerFunc(s.listSelf))
 	mux.Handle("/peers", http.HandlerFunc(s.listPeers))
-	mux.Handle("/log", http.HandlerFunc(s.postLog))
 	mux.Handle("/endpoint", http.HandlerFunc(s.getEndpoint))
 	mux.Handle("/initsecrethash", http.HandlerFunc(s.initSecretHash))
 
@@ -171,33 +169,6 @@ func (s *Server) getEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	log.Errorf("Failed to find control-plane peer in active leases")
 	http.Error(w, "No matching peer found", http.StatusNotFound)
-}
-
-// postLog writes implements cloud-logging for QEMU instances.
-func (s *Server) postLog(w http.ResponseWriter, r *http.Request) {
-	log := s.log.With(zap.String("peer", r.RemoteAddr))
-	if r.Method != http.MethodPost {
-		log.With(zap.String("method", r.Method)).Errorf("Invalid method for /log")
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	log.Infof("Serving POST request for /log")
-
-	if r.Body == nil {
-		log.Errorf("Request body is empty")
-		http.Error(w, "Request body is empty", http.StatusBadRequest)
-		return
-	}
-
-	msg, err := io.ReadAll(r.Body)
-	if err != nil {
-		log.With(zap.Error(err)).Errorf("Failed to read request body")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	log.With(zap.String("message", string(msg))).Infof("Cloud-logging entry")
 }
 
 // listAll returns a list of all active peers.
