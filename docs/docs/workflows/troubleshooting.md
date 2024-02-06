@@ -95,7 +95,7 @@ check if the encountered [issue is known](https://github.com/edgelesssys/constel
 
 ## Diagnosing issues
 
-### Boot Logs
+### Logs
 
 To get started on diagnosing issues with Constellation, it often is helpful to collect logs from nodes, pods or other resources in the cluster. Most logs are available through Kubernetes' standard
 [logging interfaces](https://kubernetes.io/docs/concepts/cluster-administration/logging/).
