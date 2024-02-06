@@ -1,6 +1,6 @@
 # Using Constellation via Cloud Marketplaces
 
-Constellation is available through the Marketplaces of AWS, Azure and GCP. This allows you to create self-managed Constellation clusters that are billed on a pay-per-use basis (hourly, per vCPU) with your CSP account. You can still get direct support by Edgeless Systems. For more information, please [contact us](https://www.edgeless.systems/enterprise-support/).
+Constellation is available through the Marketplaces of AWS, Azure, and GCP. This allows you to create self-managed Constellation clusters that are billed on a pay-per-use basis (hourly, per vCPU) with your CSP account. You can still get direct support by Edgeless Systems. For more information, please [contact us](https://www.edgeless.systems/enterprise-support/).
 
 This document explains how to run Constellation with the dynamically billed cloud marketplace images.
 
