@@ -18,7 +18,7 @@ yq eval -i ".provider.aws.useMarketplaceImage = true" constellation-conf.yaml
 </tabItem>
 <tabItem value="azure" label="Azure">
 
-On Azure, Constellation has a private marketplace plan. Please [contact us](https://www.edgeless.systems/enterprise-support/) to gain access.
+Constellation has a private marketplace plan. Please [contact us](https://www.edgeless.systems/enterprise-support/) to gain access.
 
 To use a marketplace image, you need to accept the marketplace image's terms once for your subscription with the [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/vm/image/terms?view=azure-cli-latest):
 
