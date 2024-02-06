@@ -19,7 +19,6 @@ go_library(
         "//internal/role",
         "@com_github_azure_azure_sdk_for_go_sdk_azcore//runtime",
         "@com_github_azure_azure_sdk_for_go_sdk_azidentity//:azidentity",
-        "@com_github_azure_azure_sdk_for_go_sdk_resourcemanager_applicationinsights_armapplicationinsights//:armapplicationinsights",
         "@com_github_azure_azure_sdk_for_go_sdk_resourcemanager_compute_armcompute_v5//:armcompute",
         "@com_github_azure_azure_sdk_for_go_sdk_resourcemanager_network_armnetwork_v5//:armnetwork",
         "@io_k8s_kubernetes//pkg/util/iptables",
