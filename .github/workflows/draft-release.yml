@@ -227,7 +227,7 @@ jobs:
         uses: ./.github/actions/download_release_binaries
 
       - name: Download CLI SBOM
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
           name: constellation.spdx.sbom
 
@@ -340,12 +340,12 @@ jobs:
         uses: ./.github/actions/download_release_binaries
 
       - name: Download CLI SBOM
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
           name: constellation.spdx.sbom
 
       - name: Download provenance
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
           name: ${{ needs.provenance.outputs.provenance-name }}
 
@@ -418,17 +418,17 @@ jobs:
         uses: ./.github/actions/download_release_binaries
 
       - name: Download CLI SBOM
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
           name: constellation.spdx.sbom
 
       - name: Download Constellation CLI SBOM's signature
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
           name: constellation.spdx.sbom.sig
 
       - name: Download Constellation provenance
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
           name: ${{ needs.provenance.outputs.provenance-name }}
 

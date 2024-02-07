@@ -60,13 +60,13 @@ jobs:
         run: shasum -a 256 "${binary}" | tee "${binary}.sha256"
 
       - name: Upload binary artifact
-        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         with:
           name: "binaries-${{ matrix.target }}-${{ matrix.runner }}"
           path: "${{ env.binary }}"
 
       - name: Upload hash artifact
-        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         with:
           name: "sha256sums-${{ matrix.target }}-${{ matrix.runner }}"
           path: "${{ env.binary }}.sha256"
@@ -116,13 +116,13 @@ jobs:
         run: shasum -a 256 "${binary}" | tee "${binary}.sha256"
 
       - name: Upload binary artifact
-        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         with:
           name: "osimages-${{ matrix.target }}-${{ matrix.runner }}"
           path: "${{ env.binary }}"
 
       - name: Upload hash artifact
-        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         with:
           name: "sha256sums-${{ matrix.target }}-${{ matrix.runner }}"
           path: "${{ env.binary }}.sha256"
