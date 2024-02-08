@@ -63,6 +63,14 @@ nixpkgs_flake_package(
     package = "uplosi",
 )
 
+nixpkgs_flake_package(
+    name = "vpn_oci_image",
+    build_file_content = """exports_files(["layer.tar"])""",
+    nix_flake_file = "//:flake.nix",
+    nix_flake_lock_file = "//:flake.lock",
+    package = "vpn",
+)
+
 nixpkgs_package(
     name = "diffutils",
     repository = "@nixpkgs",

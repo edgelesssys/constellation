@@ -18,37 +18,22 @@ spec:
       containers:
       - name: strongswan
         image: {{ .Values.image | quote }}
-        command: ["sh", "-x", "/entrypoint.sh"]
+        command: ["/bin/strongswan.sh"]
         securityContext:
           capabilities:
             add: ["NET_ADMIN"]
         volumeMounts:
-        - name: files
-          mountPath: "/entrypoint.sh"
-          subPath: "entrypoint.sh"
-          readOnly: true
-        - name: files
-          mountPath: "/etc/strongswan.d/charon-logging.conf"
-          subPath: "charon-logging.conf"
-          readOnly: true
         - name: config
           mountPath: "/etc/swanctl/swanctl.conf"
           subPath: "swanctl.conf"
           readOnly: true
       - name: cilium-setup
         image: {{ .Values.image | quote }}
-        command: ["sh", "/scripts/sidecar.sh"]
+        command: ["/bin/sidecar.sh"]
         env: {{- include "..commonEnv" . | nindent 10 }}
         securityContext:
           privileged: true
-        volumeMounts:
-        - name: files
-          mountPath: "/scripts"
-          readOnly: true
       volumes:
-      - name: files
-        configMap:
-          name: {{ include "..fullname" . }}-strongswan
       - name: config
         secret:
           secretName: {{ include "..fullname" . }}-strongswan

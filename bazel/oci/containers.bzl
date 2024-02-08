@@ -63,6 +63,14 @@ def containers():
             "repotag_file": "//bazel/release:s3proxy_tag.txt",
             "used_by": ["config"],
         },
+        {
+            "identifier": "vpn",
+            "image_name": "vpn",
+            "name": "vpn",
+            "oci": "//nix/container/vpn",
+            "repotag_file": "//bazel/release:vpn_tag.txt",
+            "used_by": ["config"],
+        },
     ]
 
 def helm_containers():

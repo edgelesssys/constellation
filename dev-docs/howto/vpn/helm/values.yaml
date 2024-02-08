@@ -15,5 +15,4 @@ ipsec:
   # Address of the peer's gateway router.
   peer: ""
 
-# required tools:  sh    nsenter    ip       pidof  jq kubectl    charon
-image: "nixery.dev/shell/util-linux/iproute2/procps/jq/kubernetes/strongswan"
+image: "ghcr.io/edgelesssys/constellation/vpn@sha256:34e28ced172d04dfdadaadbefb1a53b5857cb24fb24e275fbbc537f3639a789e"
