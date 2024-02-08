@@ -20,3 +20,4 @@ jobs:
         with:
           ghToken: ${{ secrets.GITHUB_TOKEN }}
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          azure_credentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
