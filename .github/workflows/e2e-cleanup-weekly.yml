@@ -13,7 +13,11 @@ jobs:
     permissions:
       actions: read
     steps:
-      - uses: ./.github/actions/e2e_cleanup_timeframe
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Cleanup
+        uses: ./.github/actions/e2e_cleanup_timeframe
         with:
           ghToken: ${{ secrets.GITHUB_TOKEN }}
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT }}
