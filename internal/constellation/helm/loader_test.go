@@ -27,6 +27,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/openstack"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constellation/state"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
@@ -56,6 +57,18 @@ func fakeServiceAccURI(provider cloudprovider.Provider) string {
 			Location:            "Location",
 			PreferredAuthMethod: azureshared.AuthMethodUserAssignedIdentity,
 			UamiResourceID:      "uid",
+		}
+		return creds.ToCloudServiceAccountURI()
+	case cloudprovider.OpenStack:
+		creds := openstack.AccountKey{
+			AuthURL:           "authURL",
+			Username:          "username",
+			Password:          "password",
+			ProjectID:         "projectID",
+			ProjectName:       "projectName",
+			UserDomainName:    "userDomainName",
+			ProjectDomainName: "projectDomainName",
+			RegionName:        "regionName",
 		}
 		return creds.ToCloudServiceAccountURI()
 	default:

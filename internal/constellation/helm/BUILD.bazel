@@ -505,6 +505,7 @@ go_test(
         "//internal/cloud/azureshared",
         "//internal/cloud/cloudprovider",
         "//internal/cloud/gcpshared",
+        "//internal/cloud/openstack",
         "//internal/compatibility",
         "//internal/config",
         "//internal/constellation/state",
