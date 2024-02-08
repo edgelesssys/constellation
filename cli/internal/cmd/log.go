@@ -7,25 +7,25 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
+	"log/slog"
+
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap/zapcore"
 )
 
 type debugLog interface {
-	Debugf(format string, args ...any)
-	Sync()
+	Debug(msg string, args ...any)
 }
 
 func newCLILogger(cmd *cobra.Command) (debugLog, error) {
-	logLvl := zapcore.InfoLevel
+	logLvl := slog.LevelInfo
 	debugLog, err := cmd.Flags().GetBool("debug")
 	if err != nil {
 		return nil, err
 	}
 	if debugLog {
-		logLvl = zapcore.DebugLevel
+		logLvl = slog.LevelDebug
 	}
 
-	return logger.New(logger.PlainLog, logLvl), nil
+	return logger.NewTextLogger(logLvl), nil
 }

@@ -9,6 +9,8 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
+	"log/slog"
 
 	"github.com/bazelbuild/buildtools/build"
 	"github.com/edgelesssys/constellation/v2/hack/bazel-deps-mirror/internal/bazelfiles"
@@ -17,7 +19,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/hack/bazel-deps-mirror/internal/rules"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap/zapcore"
 )
 
 func newUpgradeCmd() *cobra.Command {
@@ -38,15 +39,15 @@ func runUpgrade(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	log := logger.New(logger.PlainLog, flags.logLevel)
-	log.Debugf("Parsed flags: %+v", flags)
+	log := logger.NewTextLogger(flags.logLevel)
+	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
 
 	fileHelper, err := bazelfiles.New()
 	if err != nil {
 		return err
 	}
 
-	log.Debugf("Searching for Bazel files in the current WORKSPACE and all subdirectories...")
+	log.Debug("Searching for Bazel files in the current WORKSPACE and all subdirectories...")
 	bazelFiles, err := fileHelper.FindFiles()
 	if err != nil {
 		return err
@@ -55,10 +56,10 @@ func runUpgrade(cmd *cobra.Command, _ []string) error {
 	var mirrorUpload mirrorUploader
 	switch {
 	case flags.unauthenticated:
-		log.Warnf("Upgrading rules without authentication for AWS S3. If artifacts are not yet mirrored, this will fail.")
+		log.Warn("Upgrading rules without authentication for AWS S3. If artifacts are not yet mirrored, this will fail.")
 		mirrorUpload = mirror.NewUnauthenticated(flags.mirrorBaseURL, flags.dryRun, log)
 	default:
-		log.Debugf("Upgrading rules with authentication for AWS S3.")
+		log.Debug("Upgrading rules with authentication for AWS S3.")
 		mirrorUpload, err = mirror.New(cmd.Context(), flags.region, flags.bucket, flags.mirrorBaseURL, flags.dryRun, log)
 		if err != nil {
 			return err
@@ -76,29 +77,29 @@ func runUpgrade(cmd *cobra.Command, _ []string) error {
 		}
 	}
 	if len(issues) > 0 {
-		log.Warnf("Found %d issues in rules", len(issues))
+		log.Warn(fmt.Sprintf("Found %d issues in rules", len(issues)))
 		issues.Report(cmd.OutOrStdout())
 		return errors.New("found issues in rules")
 	}
 
-	log.Infof("No issues found")
+	log.Info("No issues found")
 	return nil
 }
 
-func upgradeBazelFile(ctx context.Context, fileHelper *bazelfiles.Helper, mirrorUpload mirrorUploader, bazelFile bazelfiles.BazelFile, dryRun bool, log *logger.Logger) (iss issues.ByFile, err error) {
+func upgradeBazelFile(ctx context.Context, fileHelper *bazelfiles.Helper, mirrorUpload mirrorUploader, bazelFile bazelfiles.BazelFile, dryRun bool, log *slog.Logger) (iss issues.ByFile, err error) {
 	iss = issues.NewByFile()
 	var changed bool // true if any rule in this file was changed
-	log.Infof("Checking file: %s", bazelFile.RelPath)
+	log.Info(fmt.Sprintf("Checking file: %s", bazelFile.RelPath))
 	buildfile, err := fileHelper.LoadFile(bazelFile)
 	if err != nil {
 		return iss, err
 	}
 	found := rules.Rules(buildfile, rules.SupportedRules)
 	if len(found) == 0 {
-		log.Debugf("No rules found in file: %s", bazelFile.RelPath)
+		log.Debug(fmt.Sprintf("No rules found in file: %s", bazelFile.RelPath))
 		return iss, nil
 	}
-	log.Debugf("Found %d rules in file: %s", len(found), bazelFile.RelPath)
+	log.Debug(fmt.Sprintf("Found %d rules in file: %s", len(found), bazelFile.RelPath))
 	for _, rule := range found {
 		changedRule, ruleIssues := upgradeRule(ctx, mirrorUpload, rule, log)
 		if len(ruleIssues) > 0 {
@@ -108,11 +109,11 @@ func upgradeBazelFile(ctx context.Context, fileHelper *bazelfiles.Helper, mirror
 	}
 
 	if len(iss) > 0 {
-		log.Warnf("File %s has issues. Not saving!", bazelFile.RelPath)
+		log.Warn(fmt.Sprintf("File %s has issues. Not saving!", bazelFile.RelPath))
 		return iss, nil
 	}
 	if !changed {
-		log.Debugf("No changes to file: %s", bazelFile.RelPath)
+		log.Debug(fmt.Sprintf("No changes to file: %s", bazelFile.RelPath))
 		return iss, nil
 	}
 	if dryRun {
@@ -120,10 +121,10 @@ func upgradeBazelFile(ctx context.Context, fileHelper *bazelfiles.Helper, mirror
 		if err != nil {
 			return iss, err
 		}
-		log.Infof("Dry run: would save updated file %s with diff:\n%s", bazelFile.RelPath, diff)
+		log.Info(fmt.Sprintf("Dry run: would save updated file %s with diff:\n%s", bazelFile.RelPath, diff))
 		return iss, nil
 	}
-	log.Infof("Saving updated file: %s", bazelFile.RelPath)
+	log.Info(fmt.Sprintf("Saving updated file: %s", bazelFile.RelPath))
 	if err := fileHelper.WriteFile(bazelFile, buildfile); err != nil {
 		return iss, err
 	}
@@ -131,12 +132,12 @@ func upgradeBazelFile(ctx context.Context, fileHelper *bazelfiles.Helper, mirror
 	return iss, nil
 }
 
-func upgradeRule(ctx context.Context, mirrorUpload mirrorUploader, rule *build.Rule, log *logger.Logger) (changed bool, iss []error) {
-	log.Debugf("Upgrading rule: %s", rule.Name())
+func upgradeRule(ctx context.Context, mirrorUpload mirrorUploader, rule *build.Rule, log *slog.Logger) (changed bool, iss []error) {
+	log.Debug(fmt.Sprintf("Upgrading rule: %s", rule.Name()))
 
 	upstreamURLs, err := rules.UpstreamURLs(rule)
 	if errors.Is(err, rules.ErrNoUpstreamURL) {
-		log.Debugf("Rule has no upstream URL. Skipping.")
+		log.Debug("Rule has no upstream URL. Skipping.")
 		return false, nil
 	} else if err != nil {
 		iss = append(iss, err)
@@ -152,7 +153,7 @@ func upgradeRule(ctx context.Context, mirrorUpload mirrorUploader, rule *build.R
 
 	existingHash, err := rules.GetHash(rule)
 	if err == nil && learnedHash == existingHash {
-		log.Debugf("Rule already upgraded. Skipping.")
+		log.Debug("Rule already upgraded. Skipping.")
 		return false, nil
 	}
 
@@ -177,7 +178,7 @@ type upgradeFlags struct {
 	region          string
 	bucket          string
 	mirrorBaseURL   string
-	logLevel        zapcore.Level
+	logLevel        slog.Level
 }
 
 func parseUpgradeFlags(cmd *cobra.Command) (upgradeFlags, error) {
@@ -193,9 +194,9 @@ func parseUpgradeFlags(cmd *cobra.Command) (upgradeFlags, error) {
 	if err != nil {
 		return upgradeFlags{}, err
 	}
-	logLevel := zapcore.InfoLevel
+	logLevel := slog.LevelInfo
 	if verbose {
-		logLevel = zapcore.DebugLevel
+		logLevel = slog.LevelDebug
 	}
 	region, err := cmd.Flags().GetString("region")
 	if err != nil {

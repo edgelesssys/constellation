@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/url"
 	"time"
 
@@ -21,7 +22,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
 )
 
@@ -32,11 +32,11 @@ type Uploader struct {
 	// bucket is the name of the S3 bucket to use.
 	bucket string
 
-	log *logger.Logger
+	log *slog.Logger
 }
 
 // New creates a new Uploader.
-func New(ctx context.Context, region, bucket, distributionID string, log *logger.Logger) (*Uploader, CloseFunc, error) {
+func New(ctx context.Context, region, bucket, distributionID string, log *slog.Logger) (*Uploader, CloseFunc, error) {
 	staticUploadClient, staticUploadClientClose, err := staticupload.New(ctx, staticupload.Config{
 		Region:                       region,
 		Bucket:                       bucket,
@@ -92,7 +92,7 @@ func (a *Uploader) Upload(ctx context.Context, rawMeasurement, signature io.Read
 	if err != nil {
 		return "", "", err
 	}
-	a.log.Debugf("Archiving image measurements to s3://%v/%v and s3://%v/%v", a.bucket, key, a.bucket, sigKey)
+	a.log.Debug(fmt.Sprintf("Archiving image measurements to s3://%v/%v and s3://%v/%v", a.bucket, key, a.bucket, sigKey))
 	if _, err = a.uploadClient.Upload(ctx, &s3.PutObjectInput{
 		Bucket:            &a.bucket,
 		Key:               &key,

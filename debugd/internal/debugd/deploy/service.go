@@ -9,15 +9,14 @@ package deploy
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
 
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
-	"go.uber.org/zap"
 )
 
 const (
@@ -60,14 +59,14 @@ type SystemdUnit struct {
 
 // ServiceManager receives ServiceManagerRequests and units via channels and performs the requests / creates the unit files.
 type ServiceManager struct {
-	log                      *logger.Logger
+	log                      *slog.Logger
 	dbus                     dbusClient
 	fs                       afero.Fs
 	systemdUnitFilewriteLock sync.Mutex
 }
 
 // NewServiceManager creates a new ServiceManager.
-func NewServiceManager(log *logger.Logger) *ServiceManager {
+func NewServiceManager(log *slog.Logger) *ServiceManager {
 	fs := afero.NewOsFs()
 	return &ServiceManager{
 		log:                      log,
@@ -102,7 +101,7 @@ type dbusConn interface {
 
 // SystemdAction will perform a systemd action on a service unit (start, stop, restart, reload).
 func (s *ServiceManager) SystemdAction(ctx context.Context, request ServiceManagerRequest) error {
-	log := s.log.With(zap.String("unit", request.Unit), zap.String("action", request.Action.String()))
+	log := s.log.With(slog.String("unit", request.Unit), slog.String("action", request.Action.String()))
 	conn, err := s.dbus.NewSystemConnectionContext(ctx)
 	if err != nil {
 		return fmt.Errorf("establishing systemd connection: %w", err)
@@ -127,7 +126,7 @@ func (s *ServiceManager) SystemdAction(ctx context.Context, request ServiceManag
 	}
 
 	if request.Action == Reload {
-		log.Infof("daemon-reload succeeded")
+		log.Info("daemon-reload succeeded")
 		return nil
 	}
 	// Wait for the action to finish and then check if it was
@@ -136,7 +135,7 @@ func (s *ServiceManager) SystemdAction(ctx context.Context, request ServiceManag
 
 	switch result {
 	case "done":
-		log.Infof("%s on systemd unit %s succeeded", request.Action, request.Unit)
+		log.Info(fmt.Sprintf("%s on systemd unit %s succeeded", request.Action, request.Unit))
 		return nil
 
 	default:
@@ -146,8 +145,8 @@ func (s *ServiceManager) SystemdAction(ctx context.Context, request ServiceManag
 
 // WriteSystemdUnitFile will write a systemd unit to disk.
 func (s *ServiceManager) WriteSystemdUnitFile(ctx context.Context, unit SystemdUnit) error {
-	log := s.log.With(zap.String("unitFile", fmt.Sprintf("%s/%s", systemdUnitFolder, unit.Name)))
-	log.Infof("Writing systemd unit file")
+	log := s.log.With(slog.String("unitFile", fmt.Sprintf("%s/%s", systemdUnitFolder, unit.Name)))
+	log.Info("Writing systemd unit file")
 	s.systemdUnitFilewriteLock.Lock()
 	defer s.systemdUnitFilewriteLock.Unlock()
 	if err := afero.WriteFile(s.fs, fmt.Sprintf("%s/%s", systemdUnitFolder, unit.Name), []byte(unit.Contents), 0o644); err != nil {
@@ -158,14 +157,14 @@ func (s *ServiceManager) WriteSystemdUnitFile(ctx context.Context, unit SystemdU
 		return fmt.Errorf("performing systemd daemon-reload: %w", err)
 	}
 
-	log.Infof("Wrote systemd unit file and performed daemon-reload")
+	log.Info("Wrote systemd unit file and performed daemon-reload")
 	return nil
 }
 
 // OverrideServiceUnitExecStart will override the ExecStart of a systemd unit.
 func (s *ServiceManager) OverrideServiceUnitExecStart(ctx context.Context, unitName, execStart string) error {
-	log := s.log.With(zap.String("unitFile", fmt.Sprintf("%s/%s", systemdUnitFolder, unitName)))
-	log.Infof("Overriding systemd unit file execStart")
+	log := s.log.With(slog.String("unitFile", fmt.Sprintf("%s/%s", systemdUnitFolder, unitName)))
+	log.Info("Overriding systemd unit file execStart")
 	if !systemdUnitNameRegexp.MatchString(unitName) {
 		return fmt.Errorf("unit name %q is invalid", unitName)
 	}
@@ -187,13 +186,13 @@ func (s *ServiceManager) OverrideServiceUnitExecStart(ctx context.Context, unitN
 		// do not return early here
 		// the "daemon-reload" command may return an unrelated error
 		// and there is no way to know if the override was successful
-		log.Warnf("Failed to perform systemd daemon-reload: %v", err)
+		log.Warn(fmt.Sprintf("Failed to perform systemd daemon-reload: %v", err))
 	}
 	if err := s.SystemdAction(ctx, ServiceManagerRequest{Unit: unitName + ".service", Action: Restart}); err != nil {
-		log.Warnf("Failed to perform unit restart: %v", err)
+		log.Warn(fmt.Sprintf("Failed to perform unit restart: %v", err))
 		return fmt.Errorf("performing systemd unit restart: %w", err)
 	}
 
-	log.Infof("Overrode systemd unit file execStart, performed daemon-reload and restarted unit %v", unitName)
+	log.Info(fmt.Sprintf("Overrode systemd unit file execStart, performed daemon-reload and restarted unit %v", unitName))
 	return nil
 }

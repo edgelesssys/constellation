@@ -12,6 +12,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -22,7 +23,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/info"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 )
 
@@ -36,60 +36,60 @@ const (
 //
 // This requires podman to be installed.
 func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprovider.Provider,
-	metadata providerMetadata, logger *logger.Logger,
+	metadata providerMetadata, logger *slog.Logger,
 ) func(*info.Map) {
 	return func(infoMap *info.Map) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 
-			logger.Infof("Start trigger running")
+			logger.Info("Start trigger running")
 
 			if err := ctx.Err(); err != nil {
-				logger.With("err", err).Errorf("Start trigger canceled")
+				logger.With("err", err).Error("Start trigger canceled")
 				return
 			}
 
-			logger.Infof("Get flags from infos")
+			logger.Info("Get flags from infos")
 			_, ok, err := infoMap.Get("logcollect")
 			if err != nil {
-				logger.Errorf("Getting infos: %v", err)
+				logger.Error(fmt.Sprintf("Getting infos: %v", err))
 				return
 			}
 			if !ok {
-				logger.Infof("Flag 'logcollect' not set")
+				logger.Info("Flag 'logcollect' not set")
 				return
 			}
 
 			cerdsGetter, err := newCloudCredentialGetter(ctx, provider, infoMap)
 			if err != nil {
-				logger.Errorf("Creating cloud credential getter: %v", err)
+				logger.Error(fmt.Sprintf("Creating cloud credential getter: %v", err))
 				return
 			}
 
-			logger.Infof("Getting credentials")
+			logger.Info("Getting credentials")
 			creds, err := cerdsGetter.GetOpensearchCredentials(ctx)
 			if err != nil {
-				logger.Errorf("Getting opensearch credentials: %v", err)
+				logger.Error(fmt.Sprintf("Getting opensearch credentials: %v", err))
 				return
 			}
 
-			logger.Infof("Getting logstash pipeline template from image %s", versions.LogstashImage)
+			logger.Info(fmt.Sprintf("Getting logstash pipeline template from image %s", versions.LogstashImage))
 			tmpl, err := getTemplate(ctx, logger, versions.LogstashImage, "/run/logstash/templates/pipeline.conf", "/run/logstash")
 			if err != nil {
-				logger.Errorf("Getting logstash pipeline template: %v", err)
+				logger.Error(fmt.Sprintf("Getting logstash pipeline template: %v", err))
 				return
 			}
 
 			infoMapM, err := infoMap.GetCopy()
 			if err != nil {
-				logger.Errorf("Getting copy of map from info: %v", err)
+				logger.Error(fmt.Sprintf("Getting copy of map from info: %v", err))
 				return
 			}
 			infoMapM = filterInfoMap(infoMapM)
 			setCloudMetadata(ctx, infoMapM, provider, metadata)
 
-			logger.Infof("Writing logstash pipeline")
+			logger.Info("Writing logstash pipeline")
 			pipelineConf := logstashConfInput{
 				Port:        5044,
 				Host:        openSearchHost,
@@ -97,14 +97,14 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 				Credentials: creds,
 			}
 			if err := writeTemplate("/run/logstash/pipeline/pipeline.conf", tmpl, pipelineConf); err != nil {
-				logger.Errorf("Writing logstash config: %v", err)
+				logger.Error(fmt.Sprintf("Writing logstash config: %v", err))
 				return
 			}
 
-			logger.Infof("Getting filebeat config template from image %s", versions.FilebeatImage)
+			logger.Info(fmt.Sprintf("Getting filebeat config template from image %s", versions.FilebeatImage))
 			tmpl, err = getTemplate(ctx, logger, versions.FilebeatImage, "/run/filebeat/templates/filebeat.yml", "/run/filebeat")
 			if err != nil {
-				logger.Errorf("Getting filebeat config template: %v", err)
+				logger.Error(fmt.Sprintf("Getting filebeat config template: %v", err))
 				return
 			}
 			filebeatConf := filebeatConfInput{
@@ -112,26 +112,26 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 				AddCloudMetadata: true,
 			}
 			if err := writeTemplate("/run/filebeat/filebeat.yml", tmpl, filebeatConf); err != nil {
-				logger.Errorf("Writing filebeat pipeline: %v", err)
+				logger.Error(fmt.Sprintf("Writing filebeat pipeline: %v", err))
 				return
 			}
 
-			logger.Infof("Starting log collection pod")
+			logger.Info("Starting log collection pod")
 			if err := startPod(ctx, logger); err != nil {
-				logger.Errorf("Starting log collection: %v", err)
+				logger.Error(fmt.Sprintf("Starting log collection: %v", err))
 			}
 		}()
 	}
 }
 
-func getTemplate(ctx context.Context, logger *logger.Logger, image, templateDir, destDir string) (*template.Template, error) {
+func getTemplate(ctx context.Context, logger *slog.Logger, image, templateDir, destDir string) (*template.Template, error) {
 	createContainerArgs := []string{
 		"create",
 		"--name=template",
 		image,
 	}
 	createContainerCmd := exec.CommandContext(ctx, "podman", createContainerArgs...)
-	logger.Infof("Creating template container")
+	logger.Info("Creating template container")
 	if out, err := createContainerCmd.CombinedOutput(); err != nil {
 		return nil, fmt.Errorf("creating template container: %w\n%s", err, out)
 	}
@@ -146,7 +146,7 @@ func getTemplate(ctx context.Context, logger *logger.Logger, image, templateDir,
 		destDir,
 	}
 	copyFromCmd := exec.CommandContext(ctx, "podman", copyFromArgs...)
-	logger.Infof("Copying templates")
+	logger.Info("Copying templates")
 	if out, err := copyFromCmd.CombinedOutput(); err != nil {
 		return nil, fmt.Errorf("copying templates: %w\n%s", err, out)
 	}
@@ -156,7 +156,7 @@ func getTemplate(ctx context.Context, logger *logger.Logger, image, templateDir,
 		"template",
 	}
 	removeContainerCmd := exec.CommandContext(ctx, "podman", removeContainerArgs...)
-	logger.Infof("Removing template container")
+	logger.Info("Removing template container")
 	if out, err := removeContainerCmd.CombinedOutput(); err != nil {
 		return nil, fmt.Errorf("removing template container: %w\n%s", err, out)
 	}
@@ -169,7 +169,7 @@ func getTemplate(ctx context.Context, logger *logger.Logger, image, templateDir,
 	return tmpl, nil
 }
 
-func startPod(ctx context.Context, logger *logger.Logger) error {
+func startPod(ctx context.Context, logger *slog.Logger) error {
 	// create a shared pod for filebeat, metricbeat and logstash
 	createPodArgs := []string{
 		"pod",
@@ -177,13 +177,13 @@ func startPod(ctx context.Context, logger *logger.Logger) error {
 		"logcollection",
 	}
 	createPodCmd := exec.CommandContext(ctx, "podman", createPodArgs...)
-	logger.Infof("Create pod command: %v", createPodCmd.String())
+	logger.Info(fmt.Sprintf("Create pod command: %v", createPodCmd.String()))
 	if out, err := createPodCmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to create pod: %w; output: %s", err, out)
 	}
 
 	// start logstash container
-	logstashLog := newCmdLogger(logger.Named("logstash"))
+	logstashLog := newCmdLogger(logger.WithGroup("logstash"))
 	runLogstashArgs := []string{
 		"run",
 		"--rm",
@@ -194,7 +194,7 @@ func startPod(ctx context.Context, logger *logger.Logger) error {
 		versions.LogstashImage,
 	}
 	runLogstashCmd := exec.CommandContext(ctx, "podman", runLogstashArgs...)
-	logger.Infof("Run logstash command: %v", runLogstashCmd.String())
+	logger.Info(fmt.Sprintf("Run logstash command: %v", runLogstashCmd.String()))
 	runLogstashCmd.Stdout = logstashLog
 	runLogstashCmd.Stderr = logstashLog
 	if err := runLogstashCmd.Start(); err != nil {
@@ -202,7 +202,7 @@ func startPod(ctx context.Context, logger *logger.Logger) error {
 	}
 
 	// start filebeat container
-	filebeatLog := newCmdLogger(logger.Named("filebeat"))
+	filebeatLog := newCmdLogger(logger.WithGroup("filebeat"))
 	runFilebeatArgs := []string{
 		"run",
 		"--rm",
@@ -219,7 +219,7 @@ func startPod(ctx context.Context, logger *logger.Logger) error {
 		versions.FilebeatImage,
 	}
 	runFilebeatCmd := exec.CommandContext(ctx, "podman", runFilebeatArgs...)
-	logger.Infof("Run filebeat command: %v", runFilebeatCmd.String())
+	logger.Info(fmt.Sprintf("Run filebeat command: %v", runFilebeatCmd.String()))
 	runFilebeatCmd.Stdout = filebeatLog
 	runFilebeatCmd.Stderr = filebeatLog
 	if err := runFilebeatCmd.Start(); err != nil {
@@ -295,16 +295,16 @@ func setCloudMetadata(ctx context.Context, m map[string]string, provider cloudpr
 	}
 }
 
-func newCmdLogger(logger *logger.Logger) io.Writer {
+func newCmdLogger(logger *slog.Logger) io.Writer {
 	return &cmdLogger{logger: logger}
 }
 
 type cmdLogger struct {
-	logger *logger.Logger
+	logger *slog.Logger
 }
 
 func (c *cmdLogger) Write(p []byte) (n int, err error) {
-	c.logger.Infof("%s", p)
+	c.logger.Info(string(p))
 	return len(p), nil
 }
 

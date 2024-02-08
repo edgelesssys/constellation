@@ -29,13 +29,13 @@ import (
 // On success, it writes the Kubernetes admin config file to disk.
 // Therefore it is skipped if the Kubernetes admin config file already exists.
 func (a *applyCmd) runInit(cmd *cobra.Command, conf *config.Config, stateFile *state.State) (*bytes.Buffer, error) {
-	a.log.Debugf("Creating aTLS Validator for %s", conf.GetAttestationConfig().GetVariant())
+	a.log.Debug(fmt.Sprintf("Creating aTLS Validator for %s", conf.GetAttestationConfig().GetVariant()))
 	validator, err := choose.Validator(conf.GetAttestationConfig(), a.wLog)
 	if err != nil {
 		return nil, fmt.Errorf("creating validator: %w", err)
 	}
 
-	a.log.Debugf("Running init RPC")
+	a.log.Debug("Running init RPC")
 	masterSecret, err := a.generateAndPersistMasterSecret(cmd.OutOrStdout())
 	if err != nil {
 		return nil, fmt.Errorf("generating master secret: %w", err)
@@ -74,9 +74,9 @@ func (a *applyCmd) runInit(cmd *cobra.Command, conf *config.Config, stateFile *s
 		}
 		return nil, err
 	}
-	a.log.Debugf("Initialization request successful")
+	a.log.Debug("Initialization request successful")
 
-	a.log.Debugf("Buffering init success message")
+	a.log.Debug("Buffering init success message")
 	bufferedOutput := &bytes.Buffer{}
 	if err := a.writeInitOutput(stateFile, resp, a.flags.mergeConfigs, bufferedOutput, measurementSalt); err != nil {
 		return nil, err
@@ -121,7 +121,7 @@ func (a *applyCmd) writeInitOutput(
 	if err := a.fileHandler.Write(constants.AdminConfFilename, initResp.Kubeconfig, file.OptNone); err != nil {
 		return fmt.Errorf("writing kubeconfig: %w", err)
 	}
-	a.log.Debugf("Kubeconfig written to %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename))
+	a.log.Debug(fmt.Sprintf("Kubeconfig written to %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename)))
 
 	if mergeConfig {
 		if err := a.merger.mergeConfigs(constants.AdminConfFilename, a.fileHandler); err != nil {
@@ -136,7 +136,7 @@ func (a *applyCmd) writeInitOutput(
 		return fmt.Errorf("writing Constellation state file: %w", err)
 	}
 
-	a.log.Debugf("Constellation state file written to %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename))
+	a.log.Debug(fmt.Sprintf("Constellation state file written to %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename)))
 
 	if !mergeConfig {
 		fmt.Fprintln(wr, "You can now connect to your cluster by executing:")

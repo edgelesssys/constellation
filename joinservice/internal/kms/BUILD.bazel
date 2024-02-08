@@ -7,11 +7,9 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/joinservice/internal/kms",
     visibility = ["//joinservice:__subpackages__"],
     deps = [
-        "//internal/logger",
         "//keyservice/keyserviceproto",
         "@org_golang_google_grpc//:go_default_library",
         "@org_golang_google_grpc//credentials/insecure",
-        "@org_uber_go_zap//:zap",
     ],
 )
 

@@ -13,8 +13,6 @@ go_library(
         "//measurement-reader/internal/sorted",
         "//measurement-reader/internal/tdx",
         "//measurement-reader/internal/tpm",
-        "@org_uber_go_zap//:zap",
-        "@org_uber_go_zap//zapcore",
     ],
 )
 

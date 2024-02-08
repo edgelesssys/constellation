@@ -10,11 +10,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap/zapcore"
 )
 
 func newLatestCmd() *cobra.Command {
@@ -38,15 +38,15 @@ func runLatest(cmd *cobra.Command, _ []string) (retErr error) {
 	if err != nil {
 		return err
 	}
-	log := logger.New(logger.PlainLog, flags.logLevel)
-	log.Debugf("Parsed flags: %+v", flags)
+	log := logger.NewTextLogger(flags.logLevel)
+	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
 
-	log.Debugf("Validating flags")
+	log.Debug("Validating flags")
 	if err := flags.validate(); err != nil {
 		return err
 	}
 
-	log.Debugf("Creating versions API client")
+	log.Debug("Creating versions API client")
 	client, clientClose, err := versionsapi.NewReadOnlyClient(cmd.Context(), flags.region, flags.bucket, flags.distributionID, log)
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
@@ -58,7 +58,7 @@ func runLatest(cmd *cobra.Command, _ []string) (retErr error) {
 		}
 	}()
 
-	log.Debugf("Requesting latest version")
+	log.Debug("Requesting latest version")
 	latest := versionsapi.Latest{
 		Ref:    flags.ref,
 		Stream: flags.stream,
@@ -89,7 +89,7 @@ type latestFlags struct {
 	region         string
 	bucket         string
 	distributionID string
-	logLevel       zapcore.Level
+	logLevel       slog.Level
 }
 
 func (l *latestFlags) validate() error {
@@ -133,9 +133,9 @@ func parseLatestFlags(cmd *cobra.Command) (latestFlags, error) {
 	if err != nil {
 		return latestFlags{}, err
 	}
-	logLevel := zapcore.InfoLevel
+	logLevel := slog.LevelInfo
 	if verbose {
-		logLevel = zapcore.DebugLevel
+		logLevel = slog.LevelDebug
 	}
 
 	return latestFlags{

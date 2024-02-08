@@ -13,12 +13,12 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/s3proxy/internal/router"
-	"go.uber.org/zap"
 )
 
 const (
@@ -43,14 +43,14 @@ func main() {
 	// logLevel can be made a public variable so logging level can be changed dynamically.
 	// TODO (derpsteb): enable once we are on go 1.21.
 	// logLevel := new(slog.LevelVar)
-	// handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})
+	// handler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel})
 	// logger := slog.New(handler)
 	// logLevel.Set(flags.logLevel)
 
-	logger := logger.New(logger.JSONLog, logger.VerbosityFromInt(flags.logLevel))
+	logger := logger.NewJSONLogger(logger.VerbosityFromInt(flags.logLevel))
 
 	if flags.forwardMultipartReqs {
-		logger.Warnf("configured to forward multipart uploads, this may leak data to AWS")
+		logger.Warn("configured to forward multipart uploads, this may leak data to AWS")
 	}
 
 	if err := runServer(flags, logger); err != nil {
@@ -58,8 +58,8 @@ func main() {
 	}
 }
 
-func runServer(flags cmdFlags, log *logger.Logger) error {
-	log.With(zap.String("ip", flags.ip), zap.Int("port", defaultPort), zap.String("region", flags.region)).Infof("listening")
+func runServer(flags cmdFlags, log *slog.Logger) error {
+	log.With(slog.String("ip", flags.ip), slog.Int("port", defaultPort), slog.String("region", flags.region)).Info("listening")
 
 	router, err := router.New(flags.region, flags.kmsEndpoint, flags.forwardMultipartReqs, log)
 	if err != nil {
@@ -90,7 +90,7 @@ func runServer(flags cmdFlags, log *logger.Logger) error {
 		return server.ListenAndServeTLS("", "")
 	}
 
-	log.Warnf("TLS is disabled")
+	log.Warn("TLS is disabled")
 	return server.ListenAndServe()
 }
 

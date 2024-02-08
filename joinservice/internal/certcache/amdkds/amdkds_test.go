@@ -7,6 +7,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 package amdkds
 
 import (
+	"fmt"
+	"log/slog"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -63,12 +65,12 @@ func TestCertChain(t *testing.T) {
 }
 
 type stubGetter struct {
-	log *logger.Logger
+	log *slog.Logger
 	ret []byte
 	err error
 }
 
 func (s *stubGetter) Get(url string) ([]byte, error) {
-	s.log.Debugf("Request to %s", url)
+	s.log.Debug(fmt.Sprintf("Request to %s", url))
 	return s.ret, s.err
 }

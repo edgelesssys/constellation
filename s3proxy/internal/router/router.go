@@ -27,13 +27,13 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/s3proxy/internal/kms"
 	"github.com/edgelesssys/constellation/v2/s3proxy/internal/s3"
 )
@@ -57,11 +57,11 @@ type Router struct {
 	// s3proxy does not implement those yet.
 	// Setting forwardMultipartReqs to true will forward those requests to the S3 API, otherwise we block them (secure defaults).
 	forwardMultipartReqs bool
-	log                  *logger.Logger
+	log                  *slog.Logger
 }
 
 // New creates a new Router.
-func New(region, endpoint string, forwardMultipartReqs bool, log *logger.Logger) (Router, error) {
+func New(region, endpoint string, forwardMultipartReqs bool, log *slog.Logger) (Router, error) {
 	kms := kms.New(log, endpoint)
 
 	// Get the key encryption key that encrypts all DEKs.

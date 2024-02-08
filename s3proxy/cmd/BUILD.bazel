@@ -10,7 +10,6 @@ go_library(
     deps = [
         "//internal/logger",
         "//s3proxy/internal/router",
-        "@org_uber_go_zap//:zap",
     ],
 )
 

@@ -21,57 +21,67 @@ It is also recommended to use golangci-lint (and [gofumpt](https://github.com/mv
 
 ## Logging
 
-We use a [custom subset](/internal/logger/) of [zap](https://pkg.go.dev/go.uber.org/zap) to provide logging for Constellation’s services and components.
+We use [slog](https://pkg.go.dev/log/slog) for logging.
 Usage instructions can be found in the package documentation.
 
-Certain components may further specify a subset of the logger for their use. For example, the CLI has a debug-only logger, restricting the use of the logger to only `Debugf()`.
+Certain components may further specify a subset of the logger for their use. For example, the CLI has a debug-only logger, restricting the use of the logger to only `Debug()`.
 
 Further we try to adhere to the following guidelines:
 
 * Do not log potentially sensitive information, e.g. variables that contain keys, secrets or otherwise protected information.
+
+* Create a text or JSON logger using the helper functions in the `logger` package. These create a `slog.Logger` with useful defaults.
+
+  Example:
+
+  ```Go
+  log := logger.NewTextLogger(slog.LevelDebug)
+  log.Debug("A debug message")
+  ```
 
 * Start log messages in uppercase and end without a punctuation mark. Exclamation, question marks, or ellipsis may be used where appropriate.
 
   Example:
 
   ```Go
-  log.Infof("This is a log message")
-  log.Infof("Waiting to do something...")
+  log.Info("This is a log message")
+  log.Info("Waiting to do something...")
   log.Error("A critical error occurred!")
   ```
 
-* Use the `With()` method to add structured context to your log messages. The context tags should be easily searchable to allow for easy log filtering. Try to keep consistent tag naming!
+* Use additional arguments to add structured context to your log messages. The context tags should be easily searchable to allow for easy log filtering. Try to keep consistent tag naming!
 
   Example:
 
   ```Go
-  log.With(zap.Error(someError), zap.String("ip", "192.0.2.1")).Errorf("Connecting to IP failed")
+  log.Error("Connecting to IP failed", "error", someError, "ip", "192.0.2.1")
   ```
 
-* Log messages may use format strings to produce human readable messages. However, the information should also be present as structured context fields if it might be valuable for debugging purposes.
-
-  Example:
+* Log messages may use format strings to produce human readable messages. However, the information should also be present as structured context fields if it might be valuable for debugging purposes. So, instead of writing
 
   ```Go
-  log.Infof("Starting server on %s:%s", addr, port)
+  log.Info(fmt.Sprintf("Starting server on %s:%s", addr, port))
   ```
 
-* Usage of the `Fatalf()` method should be constrained to the main package of an application only!
+  You should write
+
+  ```Go
+  log.Info("Starting server", "addr", addr, "port", port)
+  ```
 
 * Use log levels to configure how detailed the logs of you application should be.
 
-  * `Debugf()` for log low level and detailed information. This may include variable dumps, but should not disclose sensitive information, e.g. keys or secret tokens.
-  * `Infof()` for general information.
-  * `Warnf()` for information that may indicate unwanted behavior, but is not an application error. Commonly used by retry loops.
-  * `Errorf()` to log information about any errors that occurred.
-  * `Fatalf()` to log information about any errors that occurred and then exit the program. Should only be used in the main package of an application.
+  * `Debug()` for log low level and detailed information. This may include variable dumps, but should not disclose sensitive information, e.g. keys or secret tokens.
+  * `Info()` for general information.
+  * `Warn()` for information that may indicate unwanted behavior, but is not an application error. Commonly used by retry loops.
+  * `Error()` to log information about any errors that occurred.
 
-* Loggers passed to subpackages of an application may use the `Named()` method for better understanding of where a message originated.
+* Loggers passed to subpackages of an application may use the `WithGroup()` method for better understanding of where a message originated.
 
   Example:
 
   ```Go
-  grpcServer, err := server.New(log.Named("server"))
+  grpcServer, err := server.New(log.WithGroup("server"))
   ```
 
 ## Nested Go modules

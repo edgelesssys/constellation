@@ -9,7 +9,9 @@ package archive
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"log/slog"
 	"net/url"
 	"time"
 
@@ -18,7 +20,6 @@ import (
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
 )
 
@@ -29,11 +30,11 @@ type Archivist struct {
 	// bucket is the name of the S3 bucket to use.
 	bucket string
 
-	log *logger.Logger
+	log *slog.Logger
 }
 
 // New creates a new Archivist.
-func New(ctx context.Context, region, bucket, distributionID string, log *logger.Logger) (*Archivist, CloseFunc, error) {
+func New(ctx context.Context, region, bucket, distributionID string, log *slog.Logger) (*Archivist, CloseFunc, error) {
 	staticUploadClient, staticUploadClientClose, err := staticupload.New(ctx, staticupload.Config{
 		Region:                       region,
 		Bucket:                       bucket,
@@ -73,7 +74,7 @@ func (a *Archivist) Archive(ctx context.Context, version versionsapi.Version, cs
 	if err != nil {
 		return "", err
 	}
-	a.log.Debugf("Archiving OS image %s %s %v to s3://%v/%v", csp, attestationVariant, version.ShortPath(), a.bucket, key)
+	a.log.Debug(fmt.Sprintf("Archiving OS image %s %s %v to s3://%v/%v", csp, attestationVariant, version.ShortPath(), a.bucket, key))
 	_, err = a.uploadClient.Upload(ctx, &s3.PutObjectInput{
 		Bucket:            &a.bucket,
 		Key:               &key,

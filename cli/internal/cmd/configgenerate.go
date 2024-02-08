@@ -77,7 +77,6 @@ func runConfigGenerate(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
 	}
-	defer log.Sync()
 
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	provider := cloudprovider.FromString(args[0])
@@ -86,13 +85,13 @@ func runConfigGenerate(cmd *cobra.Command, args []string) error {
 	if err := cg.flags.parse(cmd.Flags()); err != nil {
 		return fmt.Errorf("parsing flags: %w", err)
 	}
-	log.Debugf("Parsed flags as %+v", cg.flags)
+	log.Debug(fmt.Sprintf("Parsed flags as %+v", cg.flags))
 
 	return cg.configGenerate(cmd, fileHandler, provider, args[0])
 }
 
 func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file.Handler, provider cloudprovider.Provider, rawProvider string) error {
-	cg.log.Debugf("Using cloud provider %s", provider.String())
+	cg.log.Debug(fmt.Sprintf("Using cloud provider %s", provider.String()))
 
 	// Config creation
 	conf, err := createConfigWithAttestationVariant(provider, rawProvider, cg.flags.attestationVariant)
@@ -100,7 +99,7 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 		return fmt.Errorf("creating config: %w", err)
 	}
 	conf.KubernetesVersion = cg.flags.k8sVersion
-	cg.log.Debugf("Writing YAML data to configuration file")
+	cg.log.Debug("Writing YAML data to configuration file")
 	if err := fileHandler.WriteYAML(constants.ConfigFilename, conf, file.OptMkdirAll); err != nil {
 		return fmt.Errorf("writing config file: %w", err)
 	}

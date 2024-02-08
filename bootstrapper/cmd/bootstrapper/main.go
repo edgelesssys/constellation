@@ -9,12 +9,13 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"strconv"
 
 	"github.com/spf13/afero"
-	"go.uber.org/zap"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
@@ -45,13 +46,12 @@ func main() {
 	gRPCDebug := flag.Bool("debug", false, "Enable gRPC debug logging")
 	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 	flag.Parse()
-	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity)).Named("bootstrapper")
-	defer log.Sync()
+	log := logger.NewJSONLogger(logger.VerbosityFromInt(*verbosity)).WithGroup("bootstrapper")
 
 	if *gRPCDebug {
-		log.Named("gRPC").ReplaceGRPCLogger()
+		logger.ReplaceGRPCLogger(log.WithGroup("gRPC"))
 	} else {
-		log.Named("gRPC").WithIncreasedLevel(zap.WarnLevel).ReplaceGRPCLogger()
+		logger.ReplaceGRPCLogger(slog.New(logger.NewLevelHandler(slog.LevelWarn, log.Handler())).WithGroup("gRPC"))
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -66,18 +66,21 @@ func main() {
 
 	attestVariant, err := variant.FromString(os.Getenv(constants.AttestationVariant))
 	if err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to parse attestation variant")
+		log.With(slog.Any("error", err)).Error("Failed to parse attestation variant")
+		os.Exit(1)
 	}
 	issuer, err := choose.Issuer(attestVariant, log)
 	if err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to select issuer")
+		log.With(slog.Any("error", err)).Error("Failed to select issuer")
+		os.Exit(1)
 	}
 
 	switch cloudprovider.FromString(os.Getenv(constellationCSP)) {
 	case cloudprovider.AWS:
 		metadata, err := awscloud.New(ctx)
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to set up AWS metadata API")
+			log.With(slog.Any("error", err)).Error("Failed to set up AWS metadata API")
+			os.Exit(1)
 		}
 		metadataAPI = metadata
 
@@ -91,7 +94,8 @@ func main() {
 	case cloudprovider.GCP:
 		metadata, err := gcpcloud.New(ctx)
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to create GCP metadata client")
+			log.With(slog.Any("error", err)).Error("Failed to create GCP metadata client")
+			os.Exit(1)
 		}
 		defer metadata.Close()
 
@@ -106,11 +110,13 @@ func main() {
 	case cloudprovider.Azure:
 		metadata, err := azurecloud.New(ctx)
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to create Azure metadata client")
+			log.With(slog.Any("error", err)).Error("Failed to create Azure metadata client")
+			os.Exit(1)
 		}
 
 		if err := metadata.PrepareControlPlaneNode(ctx, log); err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to prepare Azure control plane node")
+			log.With(slog.Any("error", err)).Error("Failed to prepare Azure control plane node")
+			os.Exit(1)
 		}
 
 		metadataAPI = metadata
@@ -138,13 +144,14 @@ func main() {
 				return tdx.Open()
 			}
 		default:
-			log.Fatalf("Unsupported attestation variant: %s", attestVariant)
+			log.Error(fmt.Sprintf("Unsupported attestation variant: %s", attestVariant))
 		}
 		fs = afero.NewOsFs()
 	case cloudprovider.OpenStack:
 		metadata, err := openstackcloud.New(ctx)
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to create OpenStack metadata client")
+			log.With(slog.Any("error", err)).Error("Failed to create OpenStack metadata client")
+			os.Exit(1)
 		}
 		clusterInitJoiner = kubernetes.New(
 			"openstack", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.NewUninitialized(),

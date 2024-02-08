@@ -52,8 +52,8 @@ func runMeasurementsUpload(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	log := logger.New(logger.PlainLog, flags.logLevel)
-	log.Debugf("Parsed flags: %+v", flags)
+	log := logger.NewTextLogger(flags.logLevel)
+	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
 
 	uploadC, uploadCClose, err := measurementsuploader.New(cmd.Context(), flags.region, flags.bucket, flags.distributionID, log)
 	if err != nil {
@@ -61,7 +61,7 @@ func runMeasurementsUpload(cmd *cobra.Command, _ []string) error {
 	}
 	defer func() {
 		if err := uploadCClose(cmd.Context()); err != nil {
-			log.Errorf("closing upload client: %v", err)
+			log.Error("closing upload client: %v", err)
 		}
 	}()
 
@@ -80,6 +80,6 @@ func runMeasurementsUpload(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("uploading image info: %w", err)
 	}
-	log.Infof("Uploaded image measurements to %s (and signature to %s)", measurementsURL, signatureURL)
+	log.Info(fmt.Sprintf("Uploaded image measurements to %s (and signature to %s)", measurementsURL, signatureURL))
 	return nil
 }

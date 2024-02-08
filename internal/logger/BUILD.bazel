@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "cmdline.go",
         "grpclogger.go",
+        "levelhandler.go",
         "log.go",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/logger",
@@ -13,8 +14,5 @@ go_library(
         "@com_github_grpc_ecosystem_go_grpc_middleware_v2//interceptors/logging",
         "@org_golang_google_grpc//:go_default_library",
         "@org_golang_google_grpc//grpclog",
-        "@org_uber_go_zap//:zap",
-        "@org_uber_go_zap//zapcore",
-        "@org_uber_go_zap//zaptest",
     ],
 )

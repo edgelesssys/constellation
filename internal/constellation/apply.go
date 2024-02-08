@@ -51,7 +51,7 @@ type licenseChecker interface {
 }
 
 type debugLog interface {
-	Debugf(format string, args ...any)
+	Debug(msg string, args ...any)
 }
 
 // NewApplier creates a new Applier.
@@ -87,7 +87,7 @@ func (a *Applier) SetKubeConfig(kubeConfig []byte) error {
 // CheckLicense checks the given Constellation license with the license server
 // and returns the allowed quota for the license.
 func (a *Applier) CheckLicense(ctx context.Context, csp cloudprovider.Provider, initRequest bool, licenseID string) (int, error) {
-	a.log.Debugf("Contacting license server for license '%s'", licenseID)
+	a.log.Debug(fmt.Sprintf("Contacting license server for license '%s'", licenseID))
 
 	var action license.Action
 	if initRequest {
@@ -103,14 +103,14 @@ func (a *Applier) CheckLicense(ctx context.Context, csp cloudprovider.Provider, 
 	if err != nil {
 		return 0, fmt.Errorf("checking license: %w", err)
 	}
-	a.log.Debugf("Got response from license server for license '%s'", licenseID)
+	a.log.Debug(fmt.Sprintf("Got response from license server for license '%s'", licenseID))
 
 	return quota, nil
 }
 
 // GenerateMasterSecret generates a new master secret.
 func (a *Applier) GenerateMasterSecret() (uri.MasterSecret, error) {
-	a.log.Debugf("Generating master secret")
+	a.log.Debug("Generating master secret")
 	key, err := crypto.GenerateRandomBytes(crypto.MasterSecretLengthDefault)
 	if err != nil {
 		return uri.MasterSecret{}, err
@@ -123,17 +123,17 @@ func (a *Applier) GenerateMasterSecret() (uri.MasterSecret, error) {
 		Key:  key,
 		Salt: salt,
 	}
-	a.log.Debugf("Generated master secret key and salt values")
+	a.log.Debug("Generated master secret key and salt values")
 	return secret, nil
 }
 
 // GenerateMeasurementSalt generates a new measurement salt.
 func (a *Applier) GenerateMeasurementSalt() ([]byte, error) {
-	a.log.Debugf("Generating measurement salt")
+	a.log.Debug("Generating measurement salt")
 	measurementSalt, err := crypto.GenerateRandomBytes(crypto.RNGLengthDefault)
 	if err != nil {
 		return nil, fmt.Errorf("generating measurement salt: %w", err)
 	}
-	a.log.Debugf("Generated measurement salt")
+	a.log.Debug("Generated measurement salt")
 	return measurementSalt, nil
 }

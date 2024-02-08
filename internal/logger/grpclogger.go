@@ -7,71 +7,92 @@ SPDX-License-Identifier: AGPL-3.0-only
 package logger
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
+	"os"
+	"runtime"
+	"time"
 
-	"go.uber.org/zap"
 	"google.golang.org/grpc/grpclog"
 )
 
-func replaceGRPCLogger(log *zap.Logger) {
+func replaceGRPCLogger(log *slog.Logger) {
 	gl := &grpcLogger{
-		logger:    log.With(zap.String("system", "grpc"), zap.Bool("grpc_log", true)).WithOptions(zap.AddCallerSkip(2)),
+		logger:    log.With(slog.String("system", "grpc"), slog.Bool("grpc_log", true)),
 		verbosity: 0,
 	}
 	grpclog.SetLoggerV2(gl)
 }
 
+func (l *grpcLogger) log(level slog.Level, args ...interface{}) {
+	var pcs [1]uintptr
+	runtime.Callers(3, pcs[:])
+	r := slog.NewRecord(time.Now(), level, fmt.Sprint(args...), pcs[0])
+	_ = l.logger.Handler().Handle(context.Background(), r)
+}
+
+func (l *grpcLogger) logf(level slog.Level, format string, args ...interface{}) {
+	var pcs [1]uintptr
+	runtime.Callers(3, pcs[:])
+	r := slog.NewRecord(time.Now(), level, fmt.Sprintf(format, args...), pcs[0])
+	_ = l.logger.Handler().Handle(context.Background(), r)
+}
+
 type grpcLogger struct {
-	logger    *zap.Logger
+	logger    *slog.Logger
 	verbosity int
 }
 
 func (l *grpcLogger) Info(args ...interface{}) {
-	l.logger.Info(fmt.Sprint(args...))
+	l.log(slog.LevelInfo, args...)
 }
 
 func (l *grpcLogger) Infoln(args ...interface{}) {
-	l.logger.Info(fmt.Sprint(args...))
+	l.log(slog.LevelInfo, args...)
 }
 
 func (l *grpcLogger) Infof(format string, args ...interface{}) {
-	l.logger.Info(fmt.Sprintf(format, args...))
+	l.logf(slog.LevelInfo, format, args...)
 }
 
 func (l *grpcLogger) Warning(args ...interface{}) {
-	l.logger.Warn(fmt.Sprint(args...))
+	l.log(slog.LevelWarn, args...)
 }
 
 func (l *grpcLogger) Warningln(args ...interface{}) {
-	l.logger.Warn(fmt.Sprint(args...))
+	l.log(slog.LevelWarn, args...)
 }
 
 func (l *grpcLogger) Warningf(format string, args ...interface{}) {
-	l.logger.Warn(fmt.Sprintf(format, args...))
+	l.logf(slog.LevelWarn, format, args...)
 }
 
 func (l *grpcLogger) Error(args ...interface{}) {
-	l.logger.Error(fmt.Sprint(args...))
+	l.log(slog.LevelError, args...)
 }
 
 func (l *grpcLogger) Errorln(args ...interface{}) {
-	l.logger.Error(fmt.Sprint(args...))
+	l.log(slog.LevelError, args...)
 }
 
 func (l *grpcLogger) Errorf(format string, args ...interface{}) {
-	l.logger.Error(fmt.Sprintf(format, args...))
+	l.logf(slog.LevelError, format, args...)
 }
 
 func (l *grpcLogger) Fatal(args ...interface{}) {
-	l.logger.Fatal(fmt.Sprint(args...))
+	l.log(slog.LevelError, args...)
+	os.Exit(1)
 }
 
 func (l *grpcLogger) Fatalln(args ...interface{}) {
-	l.logger.Fatal(fmt.Sprint(args...))
+	l.log(slog.LevelError, args...)
+	os.Exit(1)
 }
 
 func (l *grpcLogger) Fatalf(format string, args ...interface{}) {
-	l.logger.Fatal(fmt.Sprintf(format, args...))
+	l.logf(slog.LevelError, format, args...)
+	os.Exit(1)
 }
 
 func (l *grpcLogger) V(level int) bool {

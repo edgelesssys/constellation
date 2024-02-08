@@ -50,7 +50,6 @@ func runUp(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
 	}
-	defer log.Sync()
 
 	m := &miniUpCmd{
 		log:           log,
@@ -152,7 +151,7 @@ func (m *miniUpCmd) prepareConfig(cmd *cobra.Command) (*config.Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("mini default config is invalid: %v", err)
 	}
-	m.log.Debugf("Prepared configuration")
+	m.log.Debug("Prepared configuration")
 
 	return config, m.fileHandler.WriteYAML(constants.ConfigFilename, config, file.OptOverwrite)
 }

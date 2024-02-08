@@ -10,12 +10,14 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
+	"log/slog"
+	"os"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
-	"go.uber.org/zap/zapcore"
 )
 
 var (
@@ -25,18 +27,21 @@ var (
 )
 
 func main() {
-	log := logger.New(logger.PlainLog, zapcore.DebugLevel)
+	log := logger.NewTextLogger(slog.LevelDebug)
 	ctx := context.Background()
 
 	flag.Parse()
 	if *refFlag == "" {
-		log.Fatalf("ref must be set")
+		log.Error("ref must be set")
+		os.Exit(1)
 	}
 	if *streamFlag == "" {
-		log.Fatalf("stream must be set")
+		log.Error("stream must be set")
+		os.Exit(1)
 	}
 	if *versionFlag == "" {
-		log.Fatalf("version must be set")
+		log.Error("version must be set")
+		os.Exit(1)
 	}
 
 	cliInfo := versionsapi.CLIInfo{
@@ -52,15 +57,18 @@ func main() {
 
 	c, cclose, err := versionsapi.NewClient(ctx, "eu-central-1", "cdn-constellation-backend", constants.CDNDefaultDistributionID, false, log)
 	if err != nil {
-		log.Fatalf("creating s3 client: %w", err)
+		log.Error(fmt.Sprintf("creating s3 client: %s", err))
+		os.Exit(1)
 	}
 	defer func() {
 		if err := cclose(ctx); err != nil {
-			log.Fatalf("invalidating cache: %w", err)
+			log.Error(fmt.Sprintf("invalidating cache: %s", err))
+			os.Exit(1)
 		}
 	}()
 
 	if err := c.UpdateCLIInfo(ctx, cliInfo); err != nil {
-		log.Fatalf("updating cli info: %w", err)
+		log.Error(fmt.Sprintf("updating cli info: %s", err))
+		os.Exit(1)
 	}
 }

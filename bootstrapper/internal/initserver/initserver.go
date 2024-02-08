@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"strings"
 	"sync"
@@ -43,7 +44,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/nodestate"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
-	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -68,7 +68,7 @@ type Server struct {
 
 	kmsURI string
 
-	log *logger.Logger
+	log *slog.Logger
 
 	journaldCollector journaldCollection
 
@@ -76,8 +76,8 @@ type Server struct {
 }
 
 // New creates a new initialization server.
-func New(ctx context.Context, lock locker, kube ClusterInitializer, issuer atls.Issuer, fh file.Handler, metadata MetadataAPI, log *logger.Logger) (*Server, error) {
-	log = log.Named("initServer")
+func New(ctx context.Context, lock locker, kube ClusterInitializer, issuer atls.Issuer, fh file.Handler, metadata MetadataAPI, log *slog.Logger) (*Server, error) {
+	log = log.WithGroup("initServer")
 
 	initSecretHash, err := metadata.InitSecretHash(ctx)
 	if err != nil {
@@ -106,7 +106,7 @@ func New(ctx context.Context, lock locker, kube ClusterInitializer, issuer atls.
 	grpcServer := grpc.NewServer(
 		grpc.Creds(atlscredentials.New(issuer, nil)),
 		grpc.KeepaliveParams(keepalive.ServerParameters{Time: 15 * time.Second}),
-		log.Named("gRPC").GetServerUnaryInterceptor(),
+		logger.GetServerUnaryInterceptor(log.WithGroup("gRPC")),
 	)
 	initproto.RegisterAPIServer(grpcServer, server)
 
@@ -122,7 +122,7 @@ func (s *Server) Serve(ip, port string, cleaner cleaner) error {
 		return fmt.Errorf("failed to listen: %w", err)
 	}
 
-	s.log.Infof("Starting")
+	s.log.Info("Starting")
 	return s.grpcServer.Serve(lis)
 }
 
@@ -132,8 +132,8 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 	s.shutdownLock.RLock()
 	defer s.shutdownLock.RUnlock()
 
-	log := s.log.With(zap.String("peer", grpclog.PeerAddrFromContext(stream.Context())))
-	log.Infof("Init called")
+	log := s.log.With(slog.String("peer", grpclog.PeerAddrFromContext(stream.Context())))
+	log.Info("Init called")
 
 	s.kmsURI = req.KmsUri
 
@@ -174,7 +174,7 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 		// init does not make sense, so we just stop.
 		//
 		// The server stops itself after the current call is done.
-		log.Warnf("Node is already in a join process")
+		log.Warn("Node is already in a join process")
 
 		err = status.Error(codes.FailedPrecondition, "node is already being activated")
 
@@ -228,7 +228,7 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 		return err
 	}
 
-	log.Infof("Init succeeded")
+	log.Info("Init succeeded")
 
 	successMessage := &initproto.InitResponse_InitSuccess{
 		InitSuccess: &initproto.InitSuccessResponse{
@@ -287,14 +287,14 @@ func (s *Server) sendLogsWithMessage(stream initproto.API_InitServer, message er
 
 // Stop stops the initialization server gracefully.
 func (s *Server) Stop() {
-	s.log.Infof("Stopping")
+	s.log.Info("Stopping")
 
 	// Make sure to only stop the server if no Init calls are running
 	s.shutdownLock.Lock()
 	defer s.shutdownLock.Unlock()
 	s.grpcServer.GracefulStop()
 
-	s.log.Infof("Stopped")
+	s.log.Info("Stopped")
 }
 
 func (s *Server) setupDisk(ctx context.Context, cloudKms kms.CloudKMS) error {
@@ -342,7 +342,7 @@ type ClusterInitializer interface {
 		kubernetesComponents components.Components,
 		apiServerCertSANs []string,
 		serviceCIDR string,
-		log *logger.Logger,
+		log *slog.Logger,
 	) ([]byte, error)
 }
 

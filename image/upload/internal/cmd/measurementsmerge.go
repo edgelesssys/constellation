@@ -44,8 +44,8 @@ func runMergeMeasurements(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	log := logger.New(logger.PlainLog, flags.logLevel)
-	log.Debugf("Parsed flags: %+v", flags)
+	log := logger.NewTextLogger(flags.logLevel)
+	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
 
 	mergedMeasurements, err := readMeasurementsArgs(args)
 	if err != nil {
@@ -65,7 +65,7 @@ func runMergeMeasurements(cmd *cobra.Command, args []string) error {
 	if err := json.NewEncoder(out).Encode(mergedMeasurements); err != nil {
 		return fmt.Errorf("merging measurements: writing output file: %w", err)
 	}
-	log.Infof("Merged image measurements")
+	log.Info("Merged image measurements")
 	return nil
 }
 

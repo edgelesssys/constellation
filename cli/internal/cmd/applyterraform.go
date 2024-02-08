@@ -23,7 +23,7 @@ import (
 
 // runTerraformApply checks if changes to Terraform are required and applies them.
 func (a *applyCmd) runTerraformApply(cmd *cobra.Command, conf *config.Config, stateFile *state.State, upgradeDir string) error {
-	a.log.Debugf("Checking if Terraform migrations are required")
+	a.log.Debug("Checking if Terraform migrations are required")
 	terraformClient, removeClient, err := a.newInfraApplier(cmd.Context())
 	if err != nil {
 		return fmt.Errorf("creating Terraform client: %w", err)
@@ -39,18 +39,18 @@ func (a *applyCmd) runTerraformApply(cmd *cobra.Command, conf *config.Config, st
 	if changesRequired, err := a.planTerraformChanges(cmd, conf, terraformClient); err != nil {
 		return fmt.Errorf("planning Terraform migrations: %w", err)
 	} else if !changesRequired {
-		a.log.Debugf("No changes to infrastructure required, skipping Terraform migrations")
+		a.log.Debug("No changes to infrastructure required, skipping Terraform migrations")
 		return nil
 	}
 
-	a.log.Debugf("Apply new Terraform resources for infrastructure changes")
+	a.log.Debug("Apply new Terraform resources for infrastructure changes")
 	newInfraState, err := a.applyTerraformChanges(cmd, conf, terraformClient, upgradeDir, isNewCluster)
 	if err != nil {
 		return err
 	}
 
 	// Merge the original state with the new infrastructure values
-	a.log.Debugf("Updating state file with new infrastructure state")
+	a.log.Debug("Updating state file with new infrastructure state")
 	if _, err := stateFile.Merge(
 		// temporary state with new infrastructure values
 		state.New().SetInfrastructure(newInfraState),
@@ -68,7 +68,7 @@ func (a *applyCmd) runTerraformApply(cmd *cobra.Command, conf *config.Config, st
 // planTerraformChanges checks if any changes to the Terraform state are required.
 // If no state exists, this function will return true and the caller should create a new state.
 func (a *applyCmd) planTerraformChanges(cmd *cobra.Command, conf *config.Config, terraformClient cloudApplier) (bool, error) {
-	a.log.Debugf("Planning Terraform changes")
+	a.log.Debug("Planning Terraform changes")
 
 	// Check if there are any Terraform changes to apply
 
@@ -76,7 +76,7 @@ func (a *applyCmd) planTerraformChanges(cmd *cobra.Command, conf *config.Config,
 	//
 	// var manualMigrations []terraform.StateMigration
 	// for _, migration := range manualMigrations {
-	// 	  u.log.Debugf("Adding manual Terraform migration: %s", migration.DisplayName)
+	// 	  u.log.Debug(fmt.Sprintf("Adding manual Terraform migration: %s", migration.DisplayName))
 	// 	  u.infraApplier.AddManualStateMigration(migration)
 	// }
 
@@ -146,7 +146,7 @@ func (a *applyCmd) applyTerraformChangesWithMessage(
 			return state.Infrastructure{}, errors.New(abortErrorMsg)
 		}
 	}
-	a.log.Debugf("Applying Terraform changes")
+	a.log.Debug("Applying Terraform changes")
 
 	a.spinner.Start(progressMsg, false)
 	infraState, err := terraformClient.Apply(cmd.Context(), csp, attestation, rollbackBehavior)
@@ -186,7 +186,7 @@ func printCreateInfo(out io.Writer, conf *config.Config, log debugLog) error {
 		}
 	}
 	if len(otherGroupNames) > 0 {
-		log.Debugf("Creating %d additional node groups: %v", len(otherGroupNames), otherGroupNames)
+		log.Debug(fmt.Sprintf("Creating %d additional node groups: %v", len(otherGroupNames), otherGroupNames))
 	}
 
 	fmt.Fprintf(out, "The following Constellation cluster will be created:\n")

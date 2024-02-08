@@ -58,8 +58,8 @@ func runUplosi(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	log := logger.New(logger.PlainLog, flags.logLevel)
-	log.Debugf("Parsed flags: %+v", flags)
+	log := logger.NewTextLogger(flags.logLevel)
+	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
 
 	archiveC, archiveCClose, err := archive.New(cmd.Context(), flags.region, flags.bucket, flags.distributionID, log)
 	if err != nil {
@@ -67,7 +67,7 @@ func runUplosi(cmd *cobra.Command, _ []string) error {
 	}
 	defer func() {
 		if err := archiveCClose(cmd.Context()); err != nil {
-			log.Errorf("closing archive client: %v", err)
+			log.Error(fmt.Sprintf("closing archive client: %v", err))
 		}
 	}()
 

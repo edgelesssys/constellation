@@ -10,7 +10,6 @@ go_library(
         "//internal/constants",
         "//internal/logger",
         "//internal/versions",
-        "@org_uber_go_zap//zapcore",
     ],
 )
 

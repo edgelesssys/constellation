@@ -13,12 +13,12 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	kubeconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
 
@@ -29,12 +29,12 @@ const (
 
 // KubernetesCA handles signing of certificates using the Kubernetes root CA.
 type KubernetesCA struct {
-	log  *logger.Logger
+	log  *slog.Logger
 	file file.Handler
 }
 
 // New creates a new KubernetesCA.
-func New(log *logger.Logger, fileHandler file.Handler) *KubernetesCA {
+func New(log *slog.Logger, fileHandler file.Handler) *KubernetesCA {
 	return &KubernetesCA{
 		log:  log,
 		file: fileHandler,
@@ -56,7 +56,7 @@ func (c KubernetesCA) GetNodeNameFromCSR(csr []byte) (string, error) {
 
 // GetCertificate creates a certificate for a node and signs it using the Kubernetes root CA.
 func (c KubernetesCA) GetCertificate(csr []byte) (cert []byte, err error) {
-	c.log.Debugf("Loading Kubernetes CA certificate")
+	c.log.Debug("Loading Kubernetes CA certificate")
 	parentCertRaw, err := c.file.Read(caCertFilename)
 	if err != nil {
 		return nil, err
@@ -66,7 +66,7 @@ func (c KubernetesCA) GetCertificate(csr []byte) (cert []byte, err error) {
 		return nil, err
 	}
 
-	c.log.Debugf("Loading Kubernetes CA private key")
+	c.log.Debug("Loading Kubernetes CA private key")
 	parentKeyRaw, err := c.file.Read(caKeyFilename)
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func (c KubernetesCA) GetCertificate(csr []byte) (cert []byte, err error) {
 		return nil, err
 	}
 
-	c.log.Infof("Creating kubelet certificate")
+	c.log.Info("Creating kubelet certificate")
 	if len(certRequest.Subject.Organization) != 1 {
 		return nil, errors.New("certificate request must have exactly one organization")
 	}

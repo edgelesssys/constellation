@@ -93,7 +93,7 @@ func (k *KubeCmd) UpgradeNodeImage(ctx context.Context, imageVersion semver.Semv
 		return err
 	}
 
-	k.log.Debugf("Checking if image upgrade is valid")
+	k.log.Debug("Checking if image upgrade is valid")
 	var upgradeErr *compatibility.InvalidUpgradeError
 	err = k.isValidImageUpgrade(nodeVersion, imageVersion.String(), force)
 	switch {
@@ -103,7 +103,7 @@ func (k *KubeCmd) UpgradeNodeImage(ctx context.Context, imageVersion semver.Semv
 		return fmt.Errorf("updating image version: %w", err)
 	}
 
-	k.log.Debugf("Updating local copy of nodeVersion image version from %s to %s", nodeVersion.Spec.ImageVersion, imageVersion.String())
+	k.log.Debug(fmt.Sprintf("Updating local copy of nodeVersion image version from %s to %s", nodeVersion.Spec.ImageVersion, imageVersion.String()))
 	nodeVersion.Spec.ImageReference = imageReference
 	nodeVersion.Spec.ImageVersion = imageVersion.String()
 
@@ -214,20 +214,20 @@ func (k *KubeCmd) ApplyJoinConfig(ctx context.Context, newAttestConfig config.At
 			return fmt.Errorf("getting %s ConfigMap: %w", constants.JoinConfigMap, err)
 		}
 
-		k.log.Debugf("ConfigMap %q does not exist in namespace %q, creating it now", constants.JoinConfigMap, constants.ConstellationNamespace)
+		k.log.Debug(fmt.Sprintf("ConfigMap %q does not exist in namespace %q, creating it now", constants.JoinConfigMap, constants.ConstellationNamespace))
 		if err := retryAction(ctx, k.retryInterval, maxRetryAttempts, func(ctx context.Context) error {
 			return k.kubectl.CreateConfigMap(ctx, joinConfigMap(newConfigJSON, measurementSalt))
 		}, k.log); err != nil {
 			return fmt.Errorf("creating join-config ConfigMap: %w", err)
 		}
-		k.log.Debugf("Created %q ConfigMap in namespace %q", constants.JoinConfigMap, constants.ConstellationNamespace)
+		k.log.Debug(fmt.Sprintf("Created %q ConfigMap in namespace %q", constants.JoinConfigMap, constants.ConstellationNamespace))
 		return nil
 	}
 
 	// create backup of previous config
 	joinConfig.Data[constants.AttestationConfigFilename+"_backup"] = joinConfig.Data[constants.AttestationConfigFilename]
 	joinConfig.Data[constants.AttestationConfigFilename] = string(newConfigJSON)
-	k.log.Debugf("Triggering attestation config update now")
+	k.log.Debug("Triggering attestation config update now")
 	if err := retryAction(ctx, k.retryInterval, maxRetryAttempts, func(ctx context.Context) error {
 		_, err = k.kubectl.UpdateConfigMap(ctx, joinConfig)
 		return err
@@ -263,10 +263,10 @@ func (k *KubeCmd) ExtendClusterConfigCertSANs(ctx context.Context, alternativeNa
 	}
 
 	if len(missingSANs) == 0 {
-		k.log.Debugf("No new SANs to add to the cluster's apiserver SAN field")
+		k.log.Debug("No new SANs to add to the cluster's apiserver SAN field")
 		return nil
 	}
-	k.log.Debugf("Extending the cluster's apiserver SAN field with the following SANs: %s\n", strings.Join(missingSANs, ", "))
+	k.log.Debug(fmt.Sprintf("Extending the cluster's apiserver SAN field with the following SANs: %s\n", strings.Join(missingSANs, ", ")))
 
 	clusterConfiguration.APIServer.CertSANs = append(clusterConfiguration.APIServer.CertSANs, missingSANs...)
 	sort.Strings(clusterConfiguration.APIServer.CertSANs)
@@ -277,12 +277,12 @@ func (k *KubeCmd) ExtendClusterConfigCertSANs(ctx context.Context, alternativeNa
 	}
 
 	kubeadmConfig.Data[constants.ClusterConfigurationKey] = string(newConfigYAML)
-	k.log.Debugf("Triggering kubeadm config update now")
+	k.log.Debug("Triggering kubeadm config update now")
 	if _, err = k.kubectl.UpdateConfigMap(ctx, kubeadmConfig); err != nil {
 		return fmt.Errorf("setting new kubeadm config: %w", err)
 	}
 
-	k.log.Debugf("Successfully extended the cluster's apiserver SAN field")
+	k.log.Debug("Successfully extended the cluster's apiserver SAN field")
 	return nil
 }
 
@@ -345,7 +345,7 @@ func (k *KubeCmd) applyComponentsCM(ctx context.Context, components *corev1.Conf
 }
 
 func (k *KubeCmd) applyNodeVersion(ctx context.Context, nodeVersion updatev1alpha1.NodeVersion) (updatev1alpha1.NodeVersion, error) {
-	k.log.Debugf("Triggering NodeVersion upgrade now")
+	k.log.Debug("Triggering NodeVersion upgrade now")
 	var updatedNodeVersion updatev1alpha1.NodeVersion
 	err := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
 		newNode, err := k.getConstellationVersion(ctx)
@@ -409,7 +409,7 @@ func (k *KubeCmd) prepareUpdateK8s(nodeVersion *updatev1alpha1.NodeVersion, newC
 		}
 	}
 
-	k.log.Debugf("Updating local copy of nodeVersion Kubernetes version from %s to %s", nodeVersion.Spec.KubernetesClusterVersion, newClusterVersion)
+	k.log.Debug(fmt.Sprintf("Updating local copy of nodeVersion Kubernetes version from %s to %s", nodeVersion.Spec.KubernetesClusterVersion, newClusterVersion))
 	nodeVersion.Spec.KubernetesComponentsReference = configMap.ObjectMeta.Name
 	nodeVersion.Spec.KubernetesClusterVersion = newClusterVersion
 
@@ -461,7 +461,7 @@ func retryGetJoinConfig(ctx context.Context, kubectl kubectlInterface, retryInte
 			return false
 		}
 		retries++
-		log.Debugf("Getting join-config ConfigMap failed (attempt %d/%d): %s", retries, maxRetryAttempts, err)
+		log.Debug(fmt.Sprintf("Getting join-config ConfigMap failed (attempt %d/%d): %s", retries, maxRetryAttempts, err))
 		return retries < maxRetryAttempts
 	}
 
@@ -483,7 +483,7 @@ func retryAction(ctx context.Context, retryInterval time.Duration, maxRetries in
 	ctr := 0
 	retrier := conretry.NewIntervalRetrier(&kubeDoer{action: action}, retryInterval, func(err error) bool {
 		ctr++
-		log.Debugf("Action failed (attempt %d/%d): %s", ctr, maxRetries, err)
+		log.Debug(fmt.Sprintf("Action failed (attempt %d/%d): %s", ctr, maxRetries, err))
 		return ctr < maxRetries
 	})
 	return retrier.Do(ctx)
@@ -502,5 +502,5 @@ type kubectlInterface interface {
 }
 
 type debugLog interface {
-	Debugf(format string, args ...any)
+	Debug(msg string, args ...any)
 }

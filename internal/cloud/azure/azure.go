@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"path"
 	"strconv"
 
@@ -29,9 +30,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
-	"go.uber.org/zap"
 	"k8s.io/kubernetes/pkg/util/iptables"
 	"k8s.io/utils/exec"
 )
@@ -455,7 +454,7 @@ func (c *Cloud) getLoadBalancerDNSName(ctx context.Context) (string, error) {
 //
 // OpenShift also uses the same mechanism to redirect traffic to the API server:
 // https://github.com/openshift/machine-config-operator/blob/e453bd20bac0e48afa74e9a27665abaf454d93cd/templates/master/00-master/azure/files/opt-libexec-openshift-azure-routes-sh.yaml
-func (c *Cloud) PrepareControlPlaneNode(ctx context.Context, log *logger.Logger) error {
+func (c *Cloud) PrepareControlPlaneNode(ctx context.Context, log *slog.Logger) error {
 	selfMetadata, err := c.Self(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get self metadata: %w", err)
@@ -463,7 +462,7 @@ func (c *Cloud) PrepareControlPlaneNode(ctx context.Context, log *logger.Logger)
 
 	// skipping iptables setup for worker nodes
 	if selfMetadata.Role != role.ControlPlane {
-		log.Infof("not a control plane node, skipping iptables setup")
+		log.Info("not a control plane node, skipping iptables setup")
 		return nil
 	}
 
@@ -471,11 +470,11 @@ func (c *Cloud) PrepareControlPlaneNode(ctx context.Context, log *logger.Logger)
 	// for public LB architectures
 	loadbalancerIP, err := c.getLoadBalancerPrivateIP(ctx)
 	if err != nil {
-		log.With(zap.Error(err)).Warnf("skipping iptables setup, failed to get load balancer private IP")
+		log.With(slog.Any("error", err)).Warn("skipping iptables setup, failed to get load balancer private IP")
 		return nil
 	}
 
-	log.Infof("Setting up iptables for control plane node with load balancer IP %s", loadbalancerIP)
+	log.Info(fmt.Sprintf("Setting up iptables for control plane node with load balancer IP %s", loadbalancerIP))
 
 	iptablesExec := iptables.New(exec.New(), iptables.ProtocolIPv4)
 	if err != nil {

@@ -32,12 +32,12 @@ func (m *miniUpCmd) checkSystemRequirements(out io.Writer) error {
 		return fmt.Errorf("creation of a QEMU based Constellation is not supported for %s/%s, a linux/amd64 platform is required", runtime.GOOS, runtime.GOARCH)
 	}
 
-	m.log.Debugf("Checked arch and os")
+	m.log.Debug("Checked arch and os")
 	// check if /dev/kvm exists
 	if _, err := os.Stat("/dev/kvm"); err != nil {
 		return fmt.Errorf("unable to access KVM device: %w", err)
 	}
-	m.log.Debugf("Checked that /dev/kvm exists")
+	m.log.Debug("Checked that /dev/kvm exists")
 	// check CPU cores
 	if runtime.NumCPU() < 4 {
 		return fmt.Errorf("insufficient CPU cores: %d, at least 4 cores are required by MiniConstellation", runtime.NumCPU())
@@ -45,7 +45,7 @@ func (m *miniUpCmd) checkSystemRequirements(out io.Writer) error {
 	if runtime.NumCPU() < 6 {
 		fmt.Fprintf(out, "WARNING: Only %d CPU cores available. This may cause performance issues.\n", runtime.NumCPU())
 	}
-	m.log.Debugf("Checked CPU cores - there are %d", runtime.NumCPU())
+	m.log.Debug(fmt.Sprintf("Checked CPU cores - there are %d", runtime.NumCPU()))
 
 	// check memory
 	f, err := os.Open("/proc/meminfo")
@@ -63,7 +63,7 @@ func (m *miniUpCmd) checkSystemRequirements(out io.Writer) error {
 			}
 		}
 	}
-	m.log.Debugf("Scanned for available memory")
+	m.log.Debug("Scanned for available memory")
 	memGB := memKB / 1024 / 1024
 	if memGB < 4 {
 		return fmt.Errorf("insufficient memory: %dGB, at least 4GB of memory are required by MiniConstellation", memGB)
@@ -71,7 +71,7 @@ func (m *miniUpCmd) checkSystemRequirements(out io.Writer) error {
 	if memGB < 6 {
 		fmt.Fprintln(out, "WARNING: Less than 6GB of memory available. This may cause performance issues.")
 	}
-	m.log.Debugf("Checked available memory, you have %dGB available", memGB)
+	m.log.Debug(fmt.Sprintf("Checked available memory, you have %dGB available", memGB))
 
 	var stat unix.Statfs_t
 	if err := unix.Statfs(".", &stat); err != nil {
@@ -81,7 +81,7 @@ func (m *miniUpCmd) checkSystemRequirements(out io.Writer) error {
 	if freeSpaceGB < 20 {
 		return fmt.Errorf("insufficient disk space: %dGB, at least 20GB of disk space are required by MiniConstellation", freeSpaceGB)
 	}
-	m.log.Debugf("Checked for free space available, you have %dGB available", freeSpaceGB)
+	m.log.Debug(fmt.Sprintf("Checked for free space available, you have %dGB available", freeSpaceGB))
 
 	return nil
 }

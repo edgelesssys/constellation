@@ -9,7 +9,6 @@ package grpclog
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"testing"
 
@@ -88,8 +87,8 @@ type spyLog struct {
 	msgs []string
 }
 
-func (f *spyLog) Debugf(format string, args ...any) {
-	f.msgs = append(f.msgs, fmt.Sprintf(format, args...))
+func (f *spyLog) Debug(msg string, _ ...any) {
+	f.msgs = append(f.msgs, msg)
 }
 
 type stubConn struct {

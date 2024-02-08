@@ -10,12 +10,12 @@ package main
 
 import (
 	"flag"
+	"log/slog"
+	"os"
 
 	"github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api/server"
 	"github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api/virtwrapper"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"libvirt.org/go/libvirt"
 )
 
@@ -26,16 +26,18 @@ func main() {
 	initSecretHash := flag.String("initsecrethash", "", "brcypt hash of the init secret")
 	flag.Parse()
 
-	log := logger.New(logger.JSONLog, zapcore.InfoLevel)
+	log := logger.NewJSONLogger(slog.LevelInfo)
 
 	conn, err := libvirt.NewConnect(*libvirtURI)
 	if err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to connect to libvirt")
+		log.With(slog.Any("error", err)).Error("Failed to connect to libvirt")
+		os.Exit(1)
 	}
 	defer conn.Close()
 
 	serv := server.New(log, *targetNetwork, *initSecretHash, &virtwrapper.Connect{Conn: conn})
 	if err := serv.ListenAndServe(*bindPort); err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to serve")
+		log.With(slog.Any("error", err)).Error("Failed to serve")
+		os.Exit(1)
 	}
 }

@@ -9,27 +9,26 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api/virtwrapper"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
-	"go.uber.org/zap"
 )
 
 // Server that provides QEMU metadata.
 type Server struct {
-	log               *logger.Logger
+	log               *slog.Logger
 	virt              virConnect
 	network           string
 	initSecretHashVal []byte
 }
 
 // New creates a new Server.
-func New(log *logger.Logger, network, initSecretHash string, conn virConnect) *Server {
+func New(log *slog.Logger, network, initSecretHash string, conn virConnect) *Server {
 	return &Server{
 		log:               log,
 		virt:              conn,
@@ -55,25 +54,25 @@ func (s *Server) ListenAndServe(port string) error {
 		return err
 	}
 
-	s.log.Infof("Starting QEMU metadata API on %s", lis.Addr())
+	s.log.Info(fmt.Sprintf("Starting QEMU metadata API on %s", lis.Addr()))
 	return server.Serve(lis)
 }
 
 // listSelf returns peer information about the instance issuing the request.
 func (s *Server) listSelf(w http.ResponseWriter, r *http.Request) {
-	log := s.log.With(zap.String("peer", r.RemoteAddr))
-	log.Infof("Serving GET request for /self")
+	log := s.log.With(slog.String("peer", r.RemoteAddr))
+	log.Info("Serving GET request for /self")
 
 	remoteIP, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Failed to parse remote address")
+		log.With(slog.Any("error", err)).Error("Failed to parse remote address")
 		http.Error(w, fmt.Sprintf("Failed to parse remote address: %s\n", err), http.StatusInternalServerError)
 		return
 	}
 
 	peers, err := s.listAll()
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Failed to list peer metadata")
+		log.With(slog.Any("error", err)).Error("Failed to list peer metadata")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -85,23 +84,23 @@ func (s *Server) listSelf(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			log.Infof("Request successful")
+			log.Info("Request successful")
 			return
 		}
 	}
 
-	log.Errorf("Failed to find peer in active leases")
+	log.Error("Failed to find peer in active leases")
 	http.Error(w, "No matching peer found", http.StatusNotFound)
 }
 
 // listPeers returns a list of all active peers.
 func (s *Server) listPeers(w http.ResponseWriter, r *http.Request) {
-	log := s.log.With(zap.String("peer", r.RemoteAddr))
-	log.Infof("Serving GET request for /peers")
+	log := s.log.With(slog.String("peer", r.RemoteAddr))
+	log.Info("Serving GET request for /peers")
 
 	peers, err := s.listAll()
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Failed to list peer metadata")
+		log.With(slog.Any("error", err)).Error("Failed to list peer metadata")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -111,38 +110,38 @@ func (s *Server) listPeers(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	log.Infof("Request successful")
+	log.Info("Request successful")
 }
 
 // initSecretHash returns the hash of the init secret.
 func (s *Server) initSecretHash(w http.ResponseWriter, r *http.Request) {
-	log := s.log.With(zap.String("initSecretHash", r.RemoteAddr))
+	log := s.log.With(slog.String("initSecretHash", r.RemoteAddr))
 	if r.Method != http.MethodGet {
-		log.With(zap.String("method", r.Method)).Errorf("Invalid method for /initSecretHash")
+		log.With(slog.String("method", r.Method)).Error("Invalid method for /initSecretHash")
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	log.Infof("Serving GET request for /initsecrethash")
+	log.Info("Serving GET request for /initsecrethash")
 
 	w.Header().Set("Content-Type", "text/plain")
 	_, err := w.Write(s.initSecretHashVal)
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Failed to write init secret hash")
+		log.With(slog.Any("error", err)).Error("Failed to write init secret hash")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	log.Infof("Request successful")
+	log.Info("Request successful")
 }
 
 // getEndpoint returns the IP address of the first control-plane instance.
 // This allows us to fake a load balancer for QEMU instances.
 func (s *Server) getEndpoint(w http.ResponseWriter, r *http.Request) {
-	log := s.log.With(zap.String("peer", r.RemoteAddr))
-	log.Infof("Serving GET request for /endpoint")
+	log := s.log.With(slog.String("peer", r.RemoteAddr))
+	log.Info("Serving GET request for /endpoint")
 
 	net, err := s.virt.LookupNetworkByName(s.network)
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Failed to lookup network")
+		log.With(slog.Any("error", err)).Error("Failed to lookup network")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -150,7 +149,7 @@ func (s *Server) getEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	leases, err := net.GetDHCPLeases()
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Failed to get DHCP leases")
+		log.With(slog.Any("error", err)).Error("Failed to get DHCP leases")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
@@ -162,12 +161,12 @@ func (s *Server) getEndpoint(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			log.Infof("Request successful")
+			log.Info("Request successful")
 			return
 		}
 	}
 
-	log.Errorf("Failed to find control-plane peer in active leases")
+	log.Error("Failed to find control-plane peer in active leases")
 	http.Error(w, "No matching peer found", http.StatusNotFound)
 }
 

@@ -7,7 +7,6 @@ go_library(
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/api/versionsapi",
-        "//internal/logger",
         "//internal/osimage",
     ],
 )

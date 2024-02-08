@@ -45,18 +45,18 @@ const (
 
 // Logger is a logger used to print warnings and infos during attestation validation.
 type Logger interface {
-	Infof(format string, args ...any)
-	Warnf(format string, args ...any)
+	Info(msg string, args ...any)
+	Warn(msg string, args ...any)
 }
 
 // NOPLogger is a no-op implementation of [Logger].
 type NOPLogger struct{}
 
-// Infof is a no-op.
-func (NOPLogger) Infof(string, ...interface{}) {}
+// Info is a no-op.
+func (NOPLogger) Info(string, ...interface{}) {}
 
-// Warnf is a no-op.
-func (NOPLogger) Warnf(string, ...interface{}) {}
+// Warn is a no-op.
+func (NOPLogger) Warn(string, ...interface{}) {}
 
 // DeriveClusterID derives the cluster ID from a salt and secret value.
 func DeriveClusterID(secret, salt []byte) ([]byte, error) {

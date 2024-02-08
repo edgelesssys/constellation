@@ -10,13 +10,13 @@ package integration
 
 import (
 	"fmt"
+	"log/slog"
 	"math"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/diskencryption"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/martinjungblut/go-cryptsetup"
-	"go.uber.org/zap/zapcore"
 )
 
 func BenchmarkMapper(b *testing.B) {
@@ -39,7 +39,7 @@ func BenchmarkMapper(b *testing.B) {
 	}
 
 	passphrase := "benchmark"
-	mapper, free, err := diskencryption.New(testPath, logger.New(logger.PlainLog, zapcore.InfoLevel))
+	mapper, free, err := diskencryption.New(testPath, logger.NewTextLogger(slog.LevelInfo))
 	if err != nil {
 		b.Fatal("Failed to create mapper:", err)
 	}

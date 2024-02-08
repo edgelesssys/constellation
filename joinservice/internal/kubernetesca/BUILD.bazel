@@ -9,7 +9,6 @@ go_library(
     deps = [
         "//internal/crypto",
         "//internal/file",
-        "//internal/logger",
         "@io_k8s_kubernetes//cmd/kubeadm/app/constants",
     ],
 )

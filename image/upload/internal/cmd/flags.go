@@ -8,20 +8,20 @@ package cmd
 
 import (
 	"errors"
+	"log/slog"
 	"path/filepath"
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap/zapcore"
 )
 
 type s3Flags struct {
 	region         string
 	bucket         string
 	distributionID string
-	logLevel       zapcore.Level
+	logLevel       slog.Level
 }
 
 func parseS3Flags(cmd *cobra.Command) (s3Flags, error) {
@@ -41,9 +41,9 @@ func parseS3Flags(cmd *cobra.Command) (s3Flags, error) {
 	if err != nil {
 		return s3Flags{}, err
 	}
-	logLevel := zapcore.InfoLevel
+	logLevel := slog.LevelInfo
 	if verbose {
-		logLevel = zapcore.DebugLevel
+		logLevel = slog.LevelDebug
 	}
 
 	return s3Flags{
@@ -84,7 +84,7 @@ func parseUploadMeasurementsFlags(cmd *cobra.Command) (measurementsFlags, error)
 
 type mergeMeasurementsFlags struct {
 	out      string
-	logLevel zapcore.Level
+	logLevel slog.Level
 }
 
 func parseMergeMeasurementsFlags(cmd *cobra.Command) (mergeMeasurementsFlags, error) {
@@ -96,9 +96,9 @@ func parseMergeMeasurementsFlags(cmd *cobra.Command) (mergeMeasurementsFlags, er
 	if err != nil {
 		return mergeMeasurementsFlags{}, err
 	}
-	logLevel := zapcore.InfoLevel
+	logLevel := slog.LevelInfo
 	if verbose {
-		logLevel = zapcore.DebugLevel
+		logLevel = slog.LevelDebug
 	}
 
 	return mergeMeasurementsFlags{
@@ -112,7 +112,7 @@ type envelopeMeasurementsFlags struct {
 	csp                cloudprovider.Provider
 	attestationVariant string
 	in, out            string
-	logLevel           zapcore.Level
+	logLevel           slog.Level
 }
 
 func parseEnvelopeMeasurementsFlags(cmd *cobra.Command) (envelopeMeasurementsFlags, error) {
@@ -148,9 +148,9 @@ func parseEnvelopeMeasurementsFlags(cmd *cobra.Command) (envelopeMeasurementsFla
 	if err != nil {
 		return envelopeMeasurementsFlags{}, err
 	}
-	logLevel := zapcore.InfoLevel
+	logLevel := slog.LevelInfo
 	if verbose {
-		logLevel = zapcore.DebugLevel
+		logLevel = slog.LevelDebug
 	}
 
 	return envelopeMeasurementsFlags{
@@ -176,7 +176,7 @@ type uplosiFlags struct {
 	bucket         string
 	distributionID string
 
-	logLevel zapcore.Level
+	logLevel slog.Level
 }
 
 func parseUplosiFlags(cmd *cobra.Command) (uplosiFlags, error) {
@@ -271,9 +271,9 @@ func parseUplosiFlags(cmd *cobra.Command) (uplosiFlags, error) {
 	if err != nil {
 		return uplosiFlags{}, err
 	}
-	logLevel := zapcore.InfoLevel
+	logLevel := slog.LevelInfo
 	if verbose {
-		logLevel = zapcore.DebugLevel
+		logLevel = slog.LevelDebug
 	}
 
 	return uplosiFlags{

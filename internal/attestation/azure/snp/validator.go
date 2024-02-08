@@ -212,18 +212,18 @@ func (v *Validator) checkIDKeyDigest(ctx context.Context, report *spb.Attestatio
 	// the MAA if necessary.
 	switch v.config.FirmwareSignerConfig.EnforcementPolicy {
 	case idkeydigest.MAAFallback:
-		v.log.Infof(
+		v.log.Info(fmt.Sprintf(
 			"Configured idkeydigests %x don't contain reported idkeydigest %x, falling back to MAA validation",
 			v.config.FirmwareSignerConfig.AcceptedKeyDigests,
 			report.Report.IdKeyDigest,
-		)
+		))
 		return v.maa.validateToken(ctx, v.config.FirmwareSignerConfig.MAAURL, maaToken, extraData)
 	case idkeydigest.WarnOnly:
-		v.log.Warnf(
+		v.log.Warn(fmt.Sprintf(
 			"Configured idkeydigests %x don't contain reported idkeydigest %x",
 			v.config.FirmwareSignerConfig.AcceptedKeyDigests,
 			report.Report.IdKeyDigest,
-		)
+		))
 	default:
 		return fmt.Errorf(
 			"configured idkeydigests %x don't contain reported idkeydigest %x",
@@ -240,10 +240,10 @@ func (v *Validator) checkIDKeyDigest(ctx context.Context, report *spb.Attestatio
 type nopAttestationLogger struct{}
 
 // Infof is a no-op.
-func (nopAttestationLogger) Infof(string, ...interface{}) {}
+func (nopAttestationLogger) Info(string, ...interface{}) {}
 
 // Warnf is a no-op.
-func (nopAttestationLogger) Warnf(string, ...interface{}) {}
+func (nopAttestationLogger) Warn(string, ...interface{}) {}
 
 type maaValidator interface {
 	validateToken(ctx context.Context, maaURL string, token string, extraData []byte) error

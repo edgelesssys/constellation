@@ -10,12 +10,12 @@ package kubeadm
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"path/filepath"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
@@ -35,13 +35,13 @@ import (
 // Kubeadm manages joining of new nodes.
 type Kubeadm struct {
 	apiServerEndpoint string
-	log               *logger.Logger
+	log               *slog.Logger
 	client            clientset.Interface
 	file              file.Handler
 }
 
 // New creates a new Kubeadm instance.
-func New(apiServerEndpoint string, log *logger.Logger) (*Kubeadm, error) {
+func New(apiServerEndpoint string, log *slog.Logger) (*Kubeadm, error) {
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get in-cluster config: %w", err)
@@ -62,7 +62,7 @@ func New(apiServerEndpoint string, log *logger.Logger) (*Kubeadm, error) {
 
 // GetJoinToken creates a new bootstrap (join) token, which a node can use to join the cluster.
 func (k *Kubeadm) GetJoinToken(ttl time.Duration) (*kubeadm.BootstrapTokenDiscovery, error) {
-	k.log.Infof("Generating new random bootstrap token")
+	k.log.Info("Generating new random bootstrap token")
 	rawToken, err := bootstraputil.GenerateBootstrapToken()
 	if err != nil {
 		return nil, fmt.Errorf("couldn't generate random token: %w", err)
@@ -80,13 +80,13 @@ func (k *Kubeadm) GetJoinToken(ttl time.Duration) (*kubeadm.BootstrapTokenDiscov
 	}
 
 	// create the token in Kubernetes
-	k.log.Infof("Creating bootstrap token in Kubernetes")
+	k.log.Info("Creating bootstrap token in Kubernetes")
 	if err := tokenphase.CreateNewTokens(k.client, []bootstraptoken.BootstrapToken{token}); err != nil {
 		return nil, fmt.Errorf("creating bootstrap token: %w", err)
 	}
 
 	// parse Kubernetes CA certs
-	k.log.Infof("Preparing join token for new node")
+	k.log.Info("Preparing join token for new node")
 	rawConfig, err := k.file.Read(constants.ControlPlaneAdminConfFilename)
 	if err != nil {
 		return nil, fmt.Errorf("loading kubeconfig file: %w", err)
@@ -108,7 +108,7 @@ func (k *Kubeadm) GetJoinToken(ttl time.Duration) (*kubeadm.BootstrapTokenDiscov
 		publicKeyPins = append(publicKeyPins, pubkeypin.Hash(caCert))
 	}
 
-	k.log.Infof("Join token creation successful")
+	k.log.Info("Join token creation successful")
 	return &kubeadm.BootstrapTokenDiscovery{
 		Token:             tokenStr.String(),
 		APIServerEndpoint: k.apiServerEndpoint,
@@ -118,7 +118,7 @@ func (k *Kubeadm) GetJoinToken(ttl time.Duration) (*kubeadm.BootstrapTokenDiscov
 
 // GetControlPlaneCertificatesAndKeys loads the Kubernetes CA certificates and keys.
 func (k *Kubeadm) GetControlPlaneCertificatesAndKeys() (map[string][]byte, error) {
-	k.log.Infof("Loading control plane certificates and keys")
+	k.log.Info("Loading control plane certificates and keys")
 	controlPlaneFiles := make(map[string][]byte)
 
 	filenames := []string{

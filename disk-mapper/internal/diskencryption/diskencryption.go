@@ -15,22 +15,21 @@ package diskencryption
 
 import (
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/cryptsetup"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"go.uber.org/zap"
 )
 
 // DiskEncryption handles actions for formatting and mapping crypt devices.
 type DiskEncryption struct {
 	device     cryptDevice
 	devicePath string
-	log        *logger.Logger
+	log        *slog.Logger
 }
 
 // New creates a new crypt device for the device at path.
-func New(path string, log *logger.Logger) (*DiskEncryption, func(), error) {
+func New(path string, log *slog.Logger) (*DiskEncryption, func(), error) {
 	device := cryptsetup.New()
 	_, err := device.Init(path)
 	if err != nil {
@@ -101,7 +100,7 @@ func (d *DiskEncryption) UnmapDisk(target string) error {
 func (d *DiskEncryption) Wipe(blockWipeSize int) error {
 	logProgress := func(size, offset uint64) {
 		prog := (float64(offset) / float64(size)) * 100
-		d.log.With(zap.String("progress", fmt.Sprintf("%.2f%%", prog))).Infof("Wiping disk")
+		d.log.With(slog.String("progress", fmt.Sprintf("%.2f%%", prog))).Info("Wiping disk")
 	}
 
 	start := time.Now()
@@ -109,7 +108,7 @@ func (d *DiskEncryption) Wipe(blockWipeSize int) error {
 	if err := d.device.Wipe("integrity", blockWipeSize, 0, logProgress, 30*time.Second); err != nil {
 		return fmt.Errorf("wiping disk: %w", err)
 	}
-	d.log.With(zap.Duration("duration", time.Since(start))).Infof("Wiping disk successful")
+	d.log.With(slog.Duration("duration", time.Since(start))).Info("Wiping disk successful")
 
 	return nil
 }

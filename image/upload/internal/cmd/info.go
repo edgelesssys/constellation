@@ -49,8 +49,8 @@ func runInfo(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	log := logger.New(logger.PlainLog, flags.logLevel)
-	log.Debugf("Parsed flags: %+v", flags)
+	log := logger.NewTextLogger(flags.logLevel)
+	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
 	info, err := readInfoArgs(args)
 	if err != nil {
 		return err
@@ -62,7 +62,7 @@ func runInfo(cmd *cobra.Command, args []string) error {
 	}
 	defer func() {
 		if err := uploadCClose(cmd.Context()); err != nil {
-			log.Errorf("closing upload client: %v", err)
+			log.Error(fmt.Sprintf("closing upload client: %v", err))
 		}
 	}()
 
@@ -70,7 +70,7 @@ func runInfo(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("uploading image info: %w", err)
 	}
-	log.Infof("Uploaded image info to %s", url)
+	log.Info(fmt.Sprintf("Uploaded image info to %s", url))
 	return nil
 }
 

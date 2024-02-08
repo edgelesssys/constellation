@@ -18,7 +18,6 @@ go_library(
         "//internal/logger",
         "@com_github_bazelbuild_buildtools//build",
         "@com_github_spf13_cobra//:cobra",
-        "@org_uber_go_zap//zapcore",
     ],
 )
 

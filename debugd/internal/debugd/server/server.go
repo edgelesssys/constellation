@@ -10,7 +10,9 @@ package server
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net"
+	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -21,13 +23,12 @@ import (
 	pb "github.com/edgelesssys/constellation/v2/debugd/service"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 )
 
 type debugdServer struct {
-	log            *logger.Logger
+	log            *slog.Logger
 	serviceManager serviceManager
 	transfer       fileTransferer
 	info           *info.Map
@@ -36,7 +37,7 @@ type debugdServer struct {
 }
 
 // New creates a new debugdServer according to the gRPC spec.
-func New(log *logger.Logger, serviceManager serviceManager, transfer fileTransferer, infos *info.Map) pb.DebugdServer {
+func New(log *slog.Logger, serviceManager serviceManager, transfer fileTransferer, infos *info.Map) pb.DebugdServer {
 	return &debugdServer{
 		log:            log,
 		serviceManager: serviceManager,
@@ -47,25 +48,25 @@ func New(log *logger.Logger, serviceManager serviceManager, transfer fileTransfe
 
 // SetInfo sets the info of the debugd instance.
 func (s *debugdServer) SetInfo(_ context.Context, req *pb.SetInfoRequest) (*pb.SetInfoResponse, error) {
-	s.log.Infof("Received SetInfo request")
+	s.log.Info("Received SetInfo request")
 
 	if len(req.Info) == 0 {
-		s.log.Infof("Info is empty")
+		s.log.Info("Info is empty")
 	}
 
 	setProtoErr := s.info.SetProto(req.Info)
 	if errors.Is(setProtoErr, info.ErrInfoAlreadySet) {
-		s.log.Warnf("Setting info failed (already set)")
+		s.log.Warn("Setting info failed (already set)")
 		return &pb.SetInfoResponse{
 			Status: pb.SetInfoStatus_SET_INFO_ALREADY_SET,
 		}, nil
 	}
 
 	if setProtoErr != nil {
-		s.log.With(zap.Error(setProtoErr)).Errorf("Setting info failed")
+		s.log.With(slog.Any("error", setProtoErr)).Error("Setting info failed")
 		return nil, setProtoErr
 	}
-	s.log.Infof("Info set")
+	s.log.Info("Info set")
 
 	return &pb.SetInfoResponse{
 		Status: pb.SetInfoStatus_SET_INFO_SUCCESS,
@@ -74,7 +75,7 @@ func (s *debugdServer) SetInfo(_ context.Context, req *pb.SetInfoRequest) (*pb.S
 
 // GetInfo returns the info of the debugd instance.
 func (s *debugdServer) GetInfo(_ context.Context, _ *pb.GetInfoRequest) (*pb.GetInfoResponse, error) {
-	s.log.Infof("Received GetInfo request")
+	s.log.Info("Received GetInfo request")
 
 	info, err := s.info.GetProto()
 	if err != nil {
@@ -86,23 +87,23 @@ func (s *debugdServer) GetInfo(_ context.Context, _ *pb.GetInfoRequest) (*pb.Get
 
 // UploadFiles receives a stream of files (each consisting of a header and a stream of chunks) and writes them to the filesystem.
 func (s *debugdServer) UploadFiles(stream pb.Debugd_UploadFilesServer) error {
-	s.log.Infof("Received UploadFiles request")
+	s.log.Info("Received UploadFiles request")
 	err := s.transfer.RecvFiles(stream)
 	switch {
 	case err == nil:
-		s.log.Infof("Uploading files succeeded")
+		s.log.Info("Uploading files succeeded")
 	case errors.Is(err, filetransfer.ErrReceiveRunning):
-		s.log.Warnf("Upload already in progress")
+		s.log.Warn("Upload already in progress")
 		return stream.SendAndClose(&pb.UploadFilesResponse{
 			Status: pb.UploadFilesStatus_UPLOAD_FILES_ALREADY_STARTED,
 		})
 	case errors.Is(err, filetransfer.ErrReceiveFinished):
-		s.log.Warnf("Upload already finished")
+		s.log.Warn("Upload already finished")
 		return stream.SendAndClose(&pb.UploadFilesResponse{
 			Status: pb.UploadFilesStatus_UPLOAD_FILES_ALREADY_FINISHED,
 		})
 	default:
-		s.log.With(zap.Error(err)).Errorf("Uploading files failed")
+		s.log.With(slog.Any("error", err)).Error("Uploading files failed")
 		return stream.SendAndClose(&pb.UploadFilesResponse{
 			Status: pb.UploadFilesStatus_UPLOAD_FILES_UPLOAD_FAILED,
 		})
@@ -120,7 +121,7 @@ func (s *debugdServer) UploadFiles(stream pb.Debugd_UploadFilesServer) error {
 	}
 
 	if overrideUnitErr != nil {
-		s.log.With(zap.Error(overrideUnitErr)).Errorf("Overriding service units failed")
+		s.log.With(slog.Any("error", overrideUnitErr)).Error("Overriding service units failed")
 		return stream.SendAndClose(&pb.UploadFilesResponse{
 			Status: pb.UploadFilesStatus_UPLOAD_FILES_START_FAILED,
 		})
@@ -132,13 +133,13 @@ func (s *debugdServer) UploadFiles(stream pb.Debugd_UploadFilesServer) error {
 
 // DownloadFiles streams the previously received files to other instances.
 func (s *debugdServer) DownloadFiles(_ *pb.DownloadFilesRequest, stream pb.Debugd_DownloadFilesServer) error {
-	s.log.Infof("Sending files to other instance")
+	s.log.Info("Sending files to other instance")
 	return s.transfer.SendFiles(stream)
 }
 
 // UploadSystemServiceUnits receives systemd service units, writes them to a service file and schedules a daemon-reload.
 func (s *debugdServer) UploadSystemServiceUnits(ctx context.Context, in *pb.UploadSystemdServiceUnitsRequest) (*pb.UploadSystemdServiceUnitsResponse, error) {
-	s.log.Infof("Uploading systemd service units")
+	s.log.Info("Uploading systemd service units")
 	for _, unit := range in.Units {
 		if err := s.serviceManager.WriteSystemdUnitFile(ctx, deploy.SystemdUnit{Name: unit.Name, Contents: unit.Contents}); err != nil {
 			return &pb.UploadSystemdServiceUnitsResponse{Status: pb.UploadSystemdServiceUnitsStatus_UPLOAD_SYSTEMD_SERVICE_UNITS_FAILURE}, nil
@@ -149,25 +150,26 @@ func (s *debugdServer) UploadSystemServiceUnits(ctx context.Context, in *pb.Uplo
 }
 
 // Start will start the gRPC server as goroutine.
-func Start(log *logger.Logger, wg *sync.WaitGroup, serv pb.DebugdServer) {
+func Start(log *slog.Logger, wg *sync.WaitGroup, serv pb.DebugdServer) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 
-		grpcLog := log.Named("gRPC")
-		grpcLog.WithIncreasedLevel(zap.WarnLevel).ReplaceGRPCLogger()
+		grpcLog := log.WithGroup("gRPC")
+		logger.ReplaceGRPCLogger(slog.New(logger.NewLevelHandler(slog.LevelWarn, grpcLog.Handler())))
 
 		grpcServer := grpc.NewServer(
-			grpcLog.GetServerStreamInterceptor(),
-			grpcLog.GetServerUnaryInterceptor(),
+			logger.GetServerStreamInterceptor(grpcLog),
+			logger.GetServerUnaryInterceptor(grpcLog),
 			grpc.KeepaliveParams(keepalive.ServerParameters{Time: 15 * time.Second}),
 		)
 		pb.RegisterDebugdServer(grpcServer, serv)
 		lis, err := net.Listen("tcp", net.JoinHostPort("0.0.0.0", strconv.Itoa(constants.DebugdPort)))
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Listening failed")
+			log.With(slog.Any("error", err)).Error("Listening failed")
+			os.Exit(1)
 		}
-		log.Infof("gRPC server is waiting for connections")
+		log.Info("gRPC server is waiting for connections")
 		grpcServer.Serve(lis)
 	}()
 }

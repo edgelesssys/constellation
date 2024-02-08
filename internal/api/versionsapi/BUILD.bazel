@@ -20,7 +20,6 @@ go_library(
         "//internal/api/client",
         "//internal/api/fetcher",
         "//internal/constants",
-        "//internal/logger",
         "@org_golang_x_mod//semver",
     ],
 )

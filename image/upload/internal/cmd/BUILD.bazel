@@ -29,6 +29,5 @@ go_library(
         "//internal/osimage/nop",
         "//internal/osimage/uplosi",
         "@com_github_spf13_cobra//:cobra",
-        "@org_uber_go_zap//zapcore",
     ],
 )

@@ -7,7 +7,6 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/s3proxy/internal/kms",
     visibility = ["//s3proxy:__subpackages__"],
     deps = [
-        "//internal/logger",
         "//keyservice/keyserviceproto",
         "@org_golang_google_grpc//:go_default_library",
         "@org_golang_google_grpc//credentials/insecure",

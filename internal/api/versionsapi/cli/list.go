@@ -11,9 +11,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/spf13/cobra"
-	"go.uber.org/zap/zapcore"
 	"golang.org/x/mod/semver"
 
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
@@ -43,15 +43,15 @@ func runList(cmd *cobra.Command, _ []string) (retErr error) {
 	if err != nil {
 		return err
 	}
-	log := logger.New(logger.PlainLog, flags.logLevel)
-	log.Debugf("Parsed flags: %+v", flags)
+	log := logger.NewTextLogger(flags.logLevel)
+	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
 
-	log.Debugf("Validating flags")
+	log.Debug("Validating flags")
 	if err := flags.validate(); err != nil {
 		return err
 	}
 
-	log.Debugf("Creating versions API client")
+	log.Debug("Creating versions API client")
 	client, clientClose, err := versionsapi.NewReadOnlyClient(cmd.Context(), flags.region, flags.bucket, flags.distributionID, log)
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
@@ -67,29 +67,29 @@ func runList(cmd *cobra.Command, _ []string) (retErr error) {
 	if flags.minorVersion != "" {
 		minorVersions = []string{flags.minorVersion}
 	} else {
-		log.Debugf("Getting minor versions")
+		log.Debug("Getting minor versions")
 		minorVersions, err = listMinorVersions(cmd.Context(), client, flags.ref, flags.stream)
 		var errNotFound *apiclient.NotFoundError
 		if err != nil && errors.As(err, &errNotFound) {
-			log.Infof("No minor versions found for ref %q and stream %q.", flags.ref, flags.stream)
+			log.Info(fmt.Sprintf("No minor versions found for ref %q and stream %q.", flags.ref, flags.stream))
 			return nil
 		} else if err != nil {
 			return err
 		}
 	}
 
-	log.Debugf("Getting patch versions")
+	log.Debug("Getting patch versions")
 	patchVersions, err := listPatchVersions(cmd.Context(), client, flags.ref, flags.stream, minorVersions)
 	var errNotFound *apiclient.NotFoundError
 	if err != nil && errors.As(err, &errNotFound) {
-		log.Infof("No patch versions found for ref %q, stream %q and minor versions %v.", flags.ref, flags.stream, minorVersions)
+		log.Info(fmt.Sprintf("No patch versions found for ref %q, stream %q and minor versions %v.", flags.ref, flags.stream, minorVersions))
 		return nil
 	} else if err != nil {
 		return err
 	}
 
 	if flags.json {
-		log.Debugf("Printing versions as JSON")
+		log.Debug("Printing versions as JSON")
 		var vers []string
 		for _, v := range patchVersions {
 			vers = append(vers, v.Version())
@@ -102,7 +102,7 @@ func runList(cmd *cobra.Command, _ []string) (retErr error) {
 		return nil
 	}
 
-	log.Debugf("Printing versions")
+	log.Debug("Printing versions")
 	for _, v := range patchVersions {
 		fmt.Println(v.ShortPath())
 	}
@@ -158,7 +158,7 @@ type listFlags struct {
 	bucket         string
 	distributionID string
 	json           bool
-	logLevel       zapcore.Level
+	logLevel       slog.Level
 }
 
 func (l *listFlags) validate() error {
@@ -211,9 +211,9 @@ func parseListFlags(cmd *cobra.Command) (listFlags, error) {
 	if err != nil {
 		return listFlags{}, err
 	}
-	logLevel := zapcore.InfoLevel
+	logLevel := slog.LevelInfo
 	if verbose {
-		logLevel = zapcore.DebugLevel
+		logLevel = slog.LevelDebug
 	}
 
 	return listFlags{

@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -103,7 +104,7 @@ func TestMapper(t *testing.T) {
 	require.NoError(setup(1), "failed to setup test disk")
 	defer func() { require.NoError(teardown(), "failed to delete test disk") }()
 
-	mapper, free, err := diskencryption.New(devicePath, logger.NewTest(t))
+	mapper, free, err := diskencryption.New(devicePath, logger.NewTextLogger(slog.LevelInfo))
 	require.NoError(err, "failed to initialize crypt device")
 	defer free()
 

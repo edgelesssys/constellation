@@ -25,7 +25,7 @@ func servicesVersion(t *testing.T) (semver.Semver, error) {
 	settings := cli.New()
 	settings.KubeConfig = "constellation-admin.conf"
 	actionConfig := &action.Configuration{}
-	if err := actionConfig.Init(settings.RESTClientGetter(), constants.HelmNamespace, "secret", log.Infof); err != nil {
+	if err := actionConfig.Init(settings.RESTClientGetter(), constants.HelmNamespace, "secret", log.Info); err != nil {
 		return semver.Semver{}, fmt.Errorf("initializing config: %w", err)
 	}
 

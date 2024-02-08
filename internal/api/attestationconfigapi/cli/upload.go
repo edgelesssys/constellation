@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"time"
 
@@ -21,7 +22,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/verify"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 )
 
 func newUploadCmd() *cobra.Command {
@@ -61,7 +61,7 @@ func envCheck(_ *cobra.Command, _ []string) error {
 
 func runUpload(cmd *cobra.Command, args []string) (retErr error) {
 	ctx := cmd.Context()
-	log := logger.New(logger.PlainLog, zap.DebugLevel).Named("attestationconfigapi")
+	log := logger.NewTextLogger(slog.LevelDebug).WithGroup("attestationconfigapi")
 
 	uploadCfg, err := newConfig(cmd, ([3]string)(args[:3]))
 	if err != nil {
@@ -110,25 +110,25 @@ func uploadReport(ctx context.Context,
 	client *attestationconfigapi.Client,
 	cfg uploadConfig,
 	fs file.Handler,
-	log *logger.Logger,
+	log *slog.Logger,
 ) error {
 	if cfg.kind != snpReport {
 		return fmt.Errorf("kind %s not supported", cfg.kind)
 	}
 
-	log.Infof("Reading SNP report from file: %s", cfg.path)
+	log.Info(fmt.Sprintf("Reading SNP report from file: %s", cfg.path))
 	var report verify.Report
 	if err := fs.ReadJSON(cfg.path, &report); err != nil {
 		return fmt.Errorf("reading snp report: %w", err)
 	}
 
 	inputVersion := convertTCBVersionToSNPVersion(report.SNPReport.LaunchTCB)
-	log.Infof("Input report: %+v", inputVersion)
+	log.Info(fmt.Sprintf("Input report: %+v", inputVersion))
 
 	latestAPIVersionAPI, err := attestationconfigapi.NewFetcherWithCustomCDNAndCosignKey(cfg.url, cfg.cosignPublicKey).FetchSEVSNPVersionLatest(ctx, attestation)
 	if err != nil {
 		if errors.Is(err, attestationconfigapi.ErrNoVersionsFound) {
-			log.Infof("No versions found in API, but assuming that we are uploading the first version.")
+			log.Info("No versions found in API, but assuming that we are uploading the first version.")
 		} else {
 			return fmt.Errorf("fetching latest version: %w", err)
 		}
@@ -137,7 +137,7 @@ func uploadReport(ctx context.Context,
 	latestAPIVersion := latestAPIVersionAPI.SEVSNPVersion
 	if err := client.UploadSEVSNPVersionLatest(ctx, attestation, inputVersion, latestAPIVersion, cfg.uploadDate, cfg.force); err != nil {
 		if errors.Is(err, attestationconfigapi.ErrNoNewerVersion) {
-			log.Infof("Input version: %+v is not newer than latest API version: %+v", inputVersion, latestAPIVersion)
+			log.Info(fmt.Sprintf("Input version: %+v is not newer than latest API version: %+v", inputVersion, latestAPIVersion))
 			return nil
 		}
 		return fmt.Errorf("updating latest version: %w", err)

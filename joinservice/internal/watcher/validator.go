@@ -11,6 +11,7 @@ import (
 	"crypto/x509"
 	"encoding/asn1"
 	"fmt"
+	"log/slog"
 	"path/filepath"
 	"sync"
 
@@ -20,12 +21,11 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 )
 
 // Updatable implements an updatable atls.Validator.
 type Updatable struct {
-	log         *logger.Logger
+	log         *slog.Logger
 	mux         sync.Mutex
 	fileHandler file.Handler
 	variant     variant.Variant
@@ -34,7 +34,7 @@ type Updatable struct {
 }
 
 // NewValidator initializes a new updatable validator and performs an initial update (aka. initialization).
-func NewValidator(log *logger.Logger, variant variant.Variant, fileHandler file.Handler, cachedCerts cachedCerts) (*Updatable, error) {
+func NewValidator(log *slog.Logger, variant variant.Variant, fileHandler file.Handler, cachedCerts cachedCerts) (*Updatable, error) {
 	u := &Updatable{
 		log:         log,
 		fileHandler: fileHandler,
@@ -69,7 +69,7 @@ func (u *Updatable) Update() error {
 	u.mux.Lock()
 	defer u.mux.Unlock()
 
-	u.log.Infof("Updating expected measurements")
+	u.log.Info("Updating expected measurements")
 
 	data, err := u.fileHandler.Read(filepath.Join(constants.ServiceBasePath, constants.AttestationConfigFilename))
 	if err != nil {
@@ -79,7 +79,7 @@ func (u *Updatable) Update() error {
 	if err != nil {
 		return fmt.Errorf("unmarshaling config: %w", err)
 	}
-	u.log.Debugf("New expected measurements: %+v", cfg.GetMeasurements())
+	u.log.Debug(fmt.Sprintf("New expected measurements: %+v", cfg.GetMeasurements()))
 
 	cfgWithCerts, err := u.configWithCerts(cfg)
 	if err != nil {

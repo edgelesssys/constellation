@@ -5,223 +5,118 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 
 /*
-Package logger provides logging functionality for Constellation services.
-It is a thin wrapper around the zap package, providing a consistent interface for logging.
-Use this package to implement logging for your Constellation services.
+Package logger provides helper functions that can be used in combination with slog to increase functionality or make
+working with slog easier.
 
-# Usage
+1. Logging in unit tests
 
-1. Create a logger using New().
+To log in unit tests you can create a new slog logger that uses logger.testWriter as its writer. This can be constructed
+by creating a logger like this: `logger.NewTest(t)`.
 
-2. Defer the Sync() method to ensure that all log entries are flushed.
+2. Creating a new logger with an increased log level based on another logger
 
-3. Use the Debugf(), Infof(), Warnf(), Errorf(), and Fatalf() methods depending on the level of logging you need.
+You can create a new logger with a new log level by creating a new slog.Logger with the LevelHandler in this package
+and passing the handler of the other logger. As an example, if you have a slog.Logger named `log` you can create a
+new logger with an increased log level (here slog.LevelWarn) like this:
 
-4. Use the Named() method to create a named child logger.
-
-5. Use the With() method to create a child logger with structured context.
-This can also be used to add context to a single log message:
-
-	logger.With(zap.String("key", "value")).Infof("log message")
-
-# Log Levels
-
-Use [Logger.Debugf] to log low level and detailed information that is useful for debugging.
-
-Use [Logger.Infof] to log general information. This method is correct for most logging purposes.
-
-Use [Logger.Warnf] to log information that may indicate unwanted behavior, but is not an error.
-
-Use [Logger.Errorf] to log information about any errors that occurred.
-
-Use [Logger.Fatalf] to log information about any errors that occurred and then exit the program.
+	slog.New(logger.NewLevelHandler(slog.LevelWarn, log.Handler()))
 */
 package logger
 
 import (
 	"context"
-	"fmt"
+	"log/slog"
 	"os"
+	"runtime"
 	"testing"
+	"time"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest"
 	"google.golang.org/grpc"
 )
 
-// LogType indicates the output encoding of the log.
-type LogType int
-
-const (
-	// JSONLog encodes logs in JSON format.
-	JSONLog LogType = iota
-	// PlainLog encodes logs as human readable text.
-	PlainLog
-)
-
-// Logger is a wrapper for zap logger.
-// The purpose is to provide a simple interface for logging with sensible defaults.
-type Logger struct {
-	logger *zap.SugaredLogger
-}
-
-// New creates a new Logger.
-// Set name to an empty string to create an unnamed logger.
-func New(logType LogType, logLevel zapcore.Level) *Logger {
-	encoderCfg := zap.NewProductionEncoderConfig()
-	encoderCfg.StacktraceKey = zapcore.OmitKey
-	encoderCfg.EncodeLevel = zapcore.CapitalLevelEncoder
-	encoderCfg.EncodeTime = zapcore.RFC3339TimeEncoder
-
-	var encoder zapcore.Encoder
-	if logType == PlainLog {
-		encoder = zapcore.NewConsoleEncoder(encoderCfg)
-	} else {
-		encoder = zapcore.NewJSONEncoder(encoderCfg)
-	}
-
-	logCore := zapcore.NewCore(encoder, zapcore.Lock(os.Stderr), zap.NewAtomicLevelAt(logLevel))
-
-	logger := zap.New(
-		logCore,
-		zap.AddCaller(),      // add the file and line number of the logging call
-		zap.AddCallerSkip(1), // skip the first caller so that we don't only see this package as the caller
-	)
-
-	return &Logger{logger: logger.Sugar()}
-}
-
-// NewTest creates a logger for unit / integration tests.
-func NewTest(t *testing.T) *Logger {
-	return &Logger{
-		logger: zaptest.NewLogger(t).Sugar().Named(fmt.Sprintf("%q", t.Name())),
-	}
-}
-
-// Debugf logs a message at Debug level.
-// Debug logs are typically voluminous, and contain detailed information on the flow of execution.
-func (l *Logger) Debugf(format string, args ...any) {
-	l.logger.Debugf(format, args...)
-}
-
-// Infof logs a message at Info level.
-// This is the default logging priority and should be used for all normal messages.
-func (l *Logger) Infof(format string, args ...any) {
-	l.logger.Infof(format, args...)
-}
-
-// Warnf logs a message at Warn level.
-// Warn logs are more important than Info, but they don't need human review or necessarily indicate an error.
-func (l *Logger) Warnf(format string, args ...any) {
-	l.logger.Warnf(format, args...)
-}
-
-// Errorf logs a message at Error level.
-// Error logs are high priority and indicate something has gone wrong.
-func (l *Logger) Errorf(format string, args ...any) {
-	l.logger.Errorf(format, args...)
-}
-
-// Fatalf logs the message and then calls os.Exit(1).
-// Use this to exit your program when a fatal error occurs.
-func (l *Logger) Fatalf(format string, args ...any) {
-	l.logger.Fatalf(format, args...)
-}
-
-// Sync flushes any buffered log entries.
-// Applications should take care to call Sync before exiting.
-func (l *Logger) Sync() {
-	_ = l.logger.Sync()
-}
-
-// WithIncreasedLevel returns a logger with increased logging level.
-func (l *Logger) WithIncreasedLevel(level zapcore.Level) *Logger {
-	return &Logger{logger: l.getZapLogger().WithOptions(zap.IncreaseLevel(level)).Sugar()}
-}
-
-// With returns a logger with structured context.
-func (l *Logger) With(fields ...any) *Logger {
-	return &Logger{logger: l.logger.With(fields...)}
-}
-
-// Named returns a named logger.
-func (l *Logger) Named(name string) *Logger {
-	return &Logger{logger: l.logger.Named(name)}
-}
-
 // ReplaceGRPCLogger replaces grpc's internal logger with the given logger.
-func (l *Logger) ReplaceGRPCLogger() {
-	replaceGRPCLogger(l.getZapLogger())
+func ReplaceGRPCLogger(l *slog.Logger) {
+	replaceGRPCLogger(l)
 }
 
 // GetServerUnaryInterceptor returns a gRPC server option for intercepting unary gRPC logs.
-func (l *Logger) GetServerUnaryInterceptor() grpc.ServerOption {
+func GetServerUnaryInterceptor(l *slog.Logger) grpc.ServerOption {
 	return grpc.UnaryInterceptor(
-		logging.UnaryServerInterceptor(l.middlewareLogger()),
+		logging.UnaryServerInterceptor(middlewareLogger(l)),
 	)
 }
 
 // GetServerStreamInterceptor returns a gRPC server option for intercepting streaming gRPC logs.
-func (l *Logger) GetServerStreamInterceptor() grpc.ServerOption {
+func GetServerStreamInterceptor(l *slog.Logger) grpc.ServerOption {
 	return grpc.StreamInterceptor(
-		logging.StreamServerInterceptor(l.middlewareLogger()),
+		logging.StreamServerInterceptor(middlewareLogger(l)),
 	)
 }
 
 // GetClientUnaryInterceptor returns a gRPC client option for intercepting unary gRPC logs.
-func (l *Logger) GetClientUnaryInterceptor() grpc.DialOption {
+func GetClientUnaryInterceptor(l *slog.Logger) grpc.DialOption {
 	return grpc.WithUnaryInterceptor(
-		logging.UnaryClientInterceptor(l.middlewareLogger()),
+		logging.UnaryClientInterceptor(middlewareLogger(l)),
 	)
 }
 
 // GetClientStreamInterceptor returns a gRPC client option for intercepting stream gRPC logs.
-func (l *Logger) GetClientStreamInterceptor() grpc.DialOption {
+func GetClientStreamInterceptor(l *slog.Logger) grpc.DialOption {
 	return grpc.WithStreamInterceptor(
-		logging.StreamClientInterceptor(l.middlewareLogger()),
+		logging.StreamClientInterceptor(middlewareLogger(l)),
 	)
 }
 
-// getZapLogger returns the underlying zap logger.
-func (l *Logger) getZapLogger() *zap.Logger {
-	return l.logger.Desugar()
-}
-
-func (l *Logger) middlewareLogger() logging.Logger {
+func middlewareLogger(l *slog.Logger) logging.Logger {
 	return logging.LoggerFunc(func(ctx context.Context, lvl logging.Level, msg string, fields ...any) {
-		f := make([]zap.Field, 0, len(fields)/2)
+		var pcs [1]uintptr
+		runtime.Callers(2, pcs[:]) // skip [Callers, LoggerFunc]
 
-		for i := 0; i < len(fields); i += 2 {
-			key := fields[i]
-			value := fields[i+1]
-
-			switch v := value.(type) {
-			case string:
-				f = append(f, zap.String(key.(string), v))
-			case int:
-				f = append(f, zap.Int(key.(string), v))
-			case bool:
-				f = append(f, zap.Bool(key.(string), v))
-			default:
-				f = append(f, zap.Any(key.(string), v))
-			}
-		}
-
-		logger := l.getZapLogger().WithOptions(zap.AddCallerSkip(1)).With(f...)
-
+		level := slog.LevelDebug
 		switch lvl {
 		case logging.LevelDebug:
-			logger.Debug(msg)
+			break
 		case logging.LevelInfo:
-			logger.Info(msg)
+			level = slog.LevelInfo
 		case logging.LevelWarn:
-			logger.Warn(msg)
+			level = slog.LevelWarn
 		case logging.LevelError:
-			logger.Error(msg)
+			level = slog.LevelError
 		default:
-			panic(fmt.Sprintf("unknown level %v", lvl))
+			level = slog.LevelError
 		}
+
+		r := slog.NewRecord(time.Now(), level, msg, pcs[0])
+		r.Add(fields...)
+		_ = l.Handler().Handle(context.Background(), r)
 	})
+}
+
+// NewTextLogger creates a new slog.Logger that writes text formatted log messages
+// to os.Stderr.
+func NewTextLogger(level slog.Level) *slog.Logger {
+	return slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{AddSource: true, Level: level}))
+}
+
+// NewJSONLogger creates a new slog.Logger that writes JSON formatted log messages
+// to os.Stderr.
+func NewJSONLogger(level slog.Level) *slog.Logger {
+	return slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{AddSource: true, Level: level}))
+}
+
+// NewTest creates a new slog.Logger that writes to a testing.T.
+func NewTest(t *testing.T) *slog.Logger {
+	return slog.New(slog.NewTextHandler(testWriter{t: t}, &slog.HandlerOptions{AddSource: true}))
+}
+
+// TestWriter is a writer to a testing.T used in tests for logging with slog.
+type testWriter struct {
+	t *testing.T
+}
+
+func (t testWriter) Write(p []byte) (int, error) {
+	t.t.Helper()
+	t.t.Log(string(p))
+	return len(p), nil
 }

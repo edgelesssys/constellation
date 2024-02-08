@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"path/filepath"
 	"strconv"
@@ -60,7 +61,7 @@ func runDeploy(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	log := logger.New(logger.PlainLog, logger.VerbosityFromInt(verbosity))
+	log := logger.NewTextLogger(logger.VerbosityFromInt(verbosity))
 	force, err := cmd.Flags().GetBool("force")
 	if err != nil {
 		return fmt.Errorf("getting force flag: %w", err)
@@ -83,7 +84,7 @@ func runDeploy(cmd *cobra.Command, _ []string) error {
 
 func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *config.Config,
 	transfer fileTransferer,
-	log *logger.Logger,
+	log *slog.Logger,
 ) error {
 	binDir, err := cmd.Flags().GetString("bindir")
 	if err != nil {
@@ -99,13 +100,13 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 	}
 
 	if constellationConfig.IsReleaseImage() {
-		log.Infof("WARNING: Constellation image does not look like a debug image. Are you using a debug image?")
+		log.Info("WARNING: Constellation image does not look like a debug image. Are you using a debug image?")
 	}
 
 	if !constellationConfig.IsDebugCluster() {
-		log.Infof("WARNING: The Constellation config has debugCluster set to false.")
-		log.Infof("cdbg will likely not work unless you manually adjust the firewall / load balancing rules.")
-		log.Infof("If you create the cluster with a debug image, you should also set debugCluster to true.")
+		log.Info("WARNING: The Constellation config has debugCluster set to false.")
+		log.Info("cdbg will likely not work unless you manually adjust the firewall / load balancing rules.")
+		log.Info("If you create the cluster with a debug image, you should also set debugCluster to true.")
 	}
 
 	ips, err := cmd.Flags().GetStringSlice("ips")
@@ -171,14 +172,14 @@ type deployOnEndpointInput struct {
 	files          []filetransfer.FileStat
 	infos          map[string]string
 	transfer       fileTransferer
-	log            *logger.Logger
+	log            *slog.Logger
 }
 
 // deployOnEndpoint deploys a custom built bootstrapper binary to a debugd endpoint.
 func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 	ctx, cancel := context.WithTimeout(ctx, deployEndpointTimeout)
 	defer cancel()
-	in.log.Infof("Deploying on %v", in.debugdEndpoint)
+	in.log.Info(fmt.Sprintf("Deploying on %v", in.debugdEndpoint))
 
 	client, closeAndWaitFn, err := newDebugdClient(ctx, in.debugdEndpoint, in.log)
 	if err != nil {
@@ -201,13 +202,13 @@ func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 type closeAndWait func()
 
 // newDebugdClient creates a new gRPC client for the debugd service and logs the connection state changes.
-func newDebugdClient(ctx context.Context, ip string, log *logger.Logger) (pb.DebugdClient, closeAndWait, error) {
+func newDebugdClient(ctx context.Context, ip string, log *slog.Logger) (pb.DebugdClient, closeAndWait, error) {
 	conn, err := grpc.DialContext(
 		ctx,
 		net.JoinHostPort(ip, strconv.Itoa(constants.DebugdPort)),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		log.GetClientUnaryInterceptor(),
-		log.GetClientStreamInterceptor(),
+		logger.GetClientUnaryInterceptor(log),
+		logger.GetClientStreamInterceptor(log),
 	)
 	if err != nil {
 		return nil, nil, fmt.Errorf("connecting to other instance via gRPC: %w", err)
@@ -221,8 +222,8 @@ func newDebugdClient(ctx context.Context, ip string, log *logger.Logger) (pb.Deb
 	return pb.NewDebugdClient(conn), closeAndWait, nil
 }
 
-func setInfo(ctx context.Context, log *logger.Logger, client pb.DebugdClient, infos map[string]string) error {
-	log.Infof("Setting info with length %d", len(infos))
+func setInfo(ctx context.Context, log *slog.Logger, client pb.DebugdClient, infos map[string]string) error {
+	log.Info(fmt.Sprintf("Setting info with length %d", len(infos)))
 
 	var infosPb []*pb.Info
 	for key, value := range infos {
@@ -238,17 +239,17 @@ func setInfo(ctx context.Context, log *logger.Logger, client pb.DebugdClient, in
 
 	switch status.Status {
 	case pb.SetInfoStatus_SET_INFO_SUCCESS:
-		log.Infof("Info set")
+		log.Info("Info set")
 	case pb.SetInfoStatus_SET_INFO_ALREADY_SET:
-		log.Infof("Info already set")
+		log.Info("Info already set")
 	default:
-		log.Warnf("Unknown status %v", status.Status)
+		log.Warn(fmt.Sprintf("Unknown status %v", status.Status))
 	}
 	return nil
 }
 
 func uploadFiles(ctx context.Context, client pb.DebugdClient, in deployOnEndpointInput) error {
-	in.log.Infof("Uploading files")
+	in.log.Info("Uploading files")
 
 	stream, err := client.UploadFiles(ctx, grpc.WaitForReady(true))
 	if err != nil {
@@ -266,9 +267,9 @@ func uploadFiles(ctx context.Context, client pb.DebugdClient, in deployOnEndpoin
 	}
 	switch uploadResponse.Status {
 	case pb.UploadFilesStatus_UPLOAD_FILES_SUCCESS:
-		in.log.Infof("Upload successful")
+		in.log.Info("Upload successful")
 	case pb.UploadFilesStatus_UPLOAD_FILES_ALREADY_FINISHED:
-		in.log.Infof("Files already uploaded")
+		in.log.Info("Files already uploaded")
 	case pb.UploadFilesStatus_UPLOAD_FILES_UPLOAD_FAILED:
 		return fmt.Errorf("uploading files to %v failed: %v", in.debugdEndpoint, uploadResponse)
 	case pb.UploadFilesStatus_UPLOAD_FILES_ALREADY_STARTED:

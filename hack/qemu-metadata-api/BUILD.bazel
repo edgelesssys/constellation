@@ -17,8 +17,6 @@ go_library(
         "//hack/qemu-metadata-api/virtwrapper",
         "//internal/logger",
         "@org_libvirt_go_libvirt//:libvirt",
-        "@org_uber_go_zap//:zap",
-        "@org_uber_go_zap//zapcore",
     ],
 )
 

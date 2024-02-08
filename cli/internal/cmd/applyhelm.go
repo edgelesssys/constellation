@@ -25,7 +25,7 @@ import (
 // runHelmApply handles installing or upgrading helm charts for the cluster.
 func (a *applyCmd) runHelmApply(cmd *cobra.Command, conf *config.Config, stateFile *state.State, upgradeDir string,
 ) error {
-	a.log.Debugf("Installing or upgrading Helm charts")
+	a.log.Debug("Installing or upgrading Helm charts")
 	var masterSecret uri.MasterSecret
 	if err := a.fileHandler.ReadJSON(constants.MasterSecretFilename, &masterSecret); err != nil {
 		return fmt.Errorf("reading master secret: %w", err)
@@ -44,13 +44,13 @@ func (a *applyCmd) runHelmApply(cmd *cobra.Command, conf *config.Config, stateFi
 		AllowDestructive:    helm.DenyDestructive,
 	}
 
-	a.log.Debugf("Getting service account URI")
+	a.log.Debug("Getting service account URI")
 	serviceAccURI, err := cloudcmd.GetMarshaledServiceAccountURI(conf, a.fileHandler)
 	if err != nil {
 		return err
 	}
 
-	a.log.Debugf("Preparing Helm charts")
+	a.log.Debug("Preparing Helm charts")
 	executor, includesUpgrades, err := a.applier.PrepareHelmCharts(options, stateFile, serviceAccURI, masterSecret, conf.Provider.OpenStack)
 	if errors.Is(err, helm.ErrConfirmationMissing) {
 		if !a.flags.yes {
@@ -75,12 +75,12 @@ func (a *applyCmd) runHelmApply(cmd *cobra.Command, conf *config.Config, stateFi
 		cmd.PrintErrln(err)
 	}
 
-	a.log.Debugf("Backing up Helm charts")
+	a.log.Debug("Backing up Helm charts")
 	if err := a.backupHelmCharts(cmd.Context(), executor, includesUpgrades, upgradeDir); err != nil {
 		return err
 	}
 
-	a.log.Debugf("Applying Helm charts")
+	a.log.Debug("Applying Helm charts")
 	if !a.flags.skipPhases.contains(skipInitPhase) {
 		a.spinner.Start("Installing Kubernetes components ", false)
 	} else {
@@ -108,10 +108,10 @@ func (a *applyCmd) backupHelmCharts(
 	if err := executor.SaveCharts(chartDir, a.fileHandler); err != nil {
 		return fmt.Errorf("saving Helm charts to disk: %w", err)
 	}
-	a.log.Debugf("Helm charts saved to %s", a.flags.pathPrefixer.PrefixPrintablePath(chartDir))
+	a.log.Debug(fmt.Sprintf("Helm charts saved to %s", a.flags.pathPrefixer.PrefixPrintablePath(chartDir)))
 
 	if includesUpgrades {
-		a.log.Debugf("Creating backup of CRDs and CRs")
+		a.log.Debug("Creating backup of CRDs and CRs")
 		crds, err := a.applier.BackupCRDs(ctx, a.fileHandler, upgradeDir)
 		if err != nil {
 			return fmt.Errorf("creating CRD backup: %w", err)

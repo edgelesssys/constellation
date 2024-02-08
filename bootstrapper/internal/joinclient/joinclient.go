@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"path/filepath"
 	"strconv"
@@ -33,13 +34,11 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/nodestate"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"github.com/edgelesssys/constellation/v2/joinservice/joinproto"
 	"github.com/spf13/afero"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 	kubeconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
@@ -73,7 +72,7 @@ type JoinClient struct {
 	cleaner     cleaner
 	metadataAPI MetadataAPI
 
-	log *logger.Logger
+	log *slog.Logger
 
 	mux      sync.Mutex
 	stopC    chan struct{}
@@ -81,7 +80,7 @@ type JoinClient struct {
 }
 
 // New creates a new JoinClient.
-func New(lock locker, dial grpcDialer, joiner ClusterJoiner, meta MetadataAPI, log *logger.Logger) *JoinClient {
+func New(lock locker, dial grpcDialer, joiner ClusterJoiner, meta MetadataAPI, log *slog.Logger) *JoinClient {
 	return &JoinClient{
 		nodeLock:    lock,
 		disk:        diskencryption.New(),
@@ -93,7 +92,7 @@ func New(lock locker, dial grpcDialer, joiner ClusterJoiner, meta MetadataAPI, l
 		dialer:      dial,
 		joiner:      joiner,
 		metadataAPI: meta,
-		log:         log.Named("join-client"),
+		log:         log.WithGroup("join-client"),
 	}
 }
 
@@ -110,7 +109,7 @@ func (c *JoinClient) Start(cleaner cleaner) {
 		return
 	}
 
-	c.log.Infof("Starting")
+	c.log.Info("Starting")
 	c.stopC = make(chan struct{}, 1)
 	c.stopDone = make(chan struct{}, 1)
 	c.cleaner = cleaner
@@ -119,11 +118,11 @@ func (c *JoinClient) Start(cleaner cleaner) {
 	go func() {
 		defer ticker.Stop()
 		defer func() { c.stopDone <- struct{}{} }()
-		defer c.log.Infof("Client stopped")
+		defer c.log.Info("Client stopped")
 
 		diskUUID, err := c.getDiskUUID()
 		if err != nil {
-			c.log.With(zap.Error(err)).Errorf("Failed to get disk UUID")
+			c.log.With(slog.Any("error", err)).Error("Failed to get disk UUID")
 			return
 		}
 		c.diskUUID = diskUUID
@@ -131,12 +130,12 @@ func (c *JoinClient) Start(cleaner cleaner) {
 		for {
 			err := c.getNodeMetadata()
 			if err == nil {
-				c.log.With(zap.String("role", c.role.String()), zap.String("name", c.nodeName)).Infof("Received own instance metadata")
+				c.log.With(slog.String("role", c.role.String()), slog.String("name", c.nodeName)).Info("Received own instance metadata")
 				break
 			}
-			c.log.With(zap.Error(err)).Errorf("Failed to retrieve instance metadata")
+			c.log.With(slog.Any("error", err)).Error("Failed to retrieve instance metadata")
 
-			c.log.With(zap.Duration("interval", c.interval)).Infof("Sleeping")
+			c.log.With(slog.Duration("interval", c.interval)).Info("Sleeping")
 			select {
 			case <-c.stopC:
 				return
@@ -147,15 +146,15 @@ func (c *JoinClient) Start(cleaner cleaner) {
 		for {
 			err := c.tryJoinWithAvailableServices()
 			if err == nil {
-				c.log.Infof("Joined successfully. Client is shutting down")
+				c.log.Info("Joined successfully. Client is shutting down")
 				return
 			} else if isUnrecoverable(err) {
-				c.log.With(zap.Error(err)).Errorf("Unrecoverable error occurred")
+				c.log.With(slog.Any("error", err)).Error("Unrecoverable error occurred")
 				return
 			}
-			c.log.With(zap.Error(err)).Warnf("Join failed for all available endpoints")
+			c.log.With(slog.Any("error", err)).Warn("Join failed for all available endpoints")
 
-			c.log.With(zap.Duration("interval", c.interval)).Infof("Sleeping")
+			c.log.With(slog.Duration("interval", c.interval)).Info("Sleeping")
 			select {
 			case <-c.stopC:
 				return
@@ -174,7 +173,7 @@ func (c *JoinClient) Stop() {
 		return
 	}
 
-	c.log.Infof("Stopping")
+	c.log.Info("Stopping")
 
 	c.stopC <- struct{}{}
 	<-c.stopDone
@@ -182,7 +181,7 @@ func (c *JoinClient) Stop() {
 	c.stopC = nil
 	c.stopDone = nil
 
-	c.log.Infof("Stopped")
+	c.log.Info("Stopped")
 }
 
 func (c *JoinClient) tryJoinWithAvailableServices() error {
@@ -231,7 +230,7 @@ func (c *JoinClient) join(serviceEndpoint string) error {
 
 	conn, err := c.dialer.Dial(ctx, serviceEndpoint)
 	if err != nil {
-		c.log.With(zap.String("endpoint", serviceEndpoint), zap.Error(err)).Errorf("Join service unreachable")
+		c.log.With(slog.String("endpoint", serviceEndpoint), slog.Any("error", err)).Error("Join service unreachable")
 		return fmt.Errorf("dialing join service endpoint: %w", err)
 	}
 	defer conn.Close()
@@ -244,7 +243,7 @@ func (c *JoinClient) join(serviceEndpoint string) error {
 	}
 	ticket, err := protoClient.IssueJoinTicket(ctx, req)
 	if err != nil {
-		c.log.With(zap.String("endpoint", serviceEndpoint), zap.Error(err)).Errorf("Issuing join ticket failed")
+		c.log.With(slog.String("endpoint", serviceEndpoint), slog.Any("error", err)).Error("Issuing join ticket failed")
 		return fmt.Errorf("issuing join ticket: %w", err)
 	}
 
@@ -269,7 +268,7 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 
 	nodeLockAcquired, err := c.nodeLock.TryLockOnce(clusterID)
 	if err != nil {
-		c.log.With(zap.Error(err)).Errorf("Acquiring node lock failed")
+		c.log.With(slog.Any("error", err)).Error("Acquiring node lock failed")
 		return fmt.Errorf("acquiring node lock: %w", err)
 	}
 	if !nodeLockAcquired {
@@ -322,12 +321,12 @@ func (c *JoinClient) getNodeMetadata() error {
 	ctx, cancel := c.timeoutCtx()
 	defer cancel()
 
-	c.log.Debugf("Requesting node metadata from metadata API")
+	c.log.Debug("Requesting node metadata from metadata API")
 	inst, err := c.metadataAPI.Self(ctx)
 	if err != nil {
 		return err
 	}
-	c.log.With(zap.Any("instance", inst)).Debugf("Received node metadata")
+	c.log.With(slog.Any("instance", inst)).Debug("Received node metadata")
 
 	if inst.Name == "" {
 		return errors.New("got instance metadata with empty name")
@@ -371,7 +370,7 @@ func (c *JoinClient) getDiskUUID() (string, error) {
 func (c *JoinClient) getControlPlaneIPs(ctx context.Context) ([]string, error) {
 	instances, err := c.metadataAPI.List(ctx)
 	if err != nil {
-		c.log.With(zap.Error(err)).Errorf("Failed to list instances from metadata API")
+		c.log.With(slog.Any("error", err)).Error("Failed to list instances from metadata API")
 		return nil, fmt.Errorf("listing instances from metadata API: %w", err)
 	}
 
@@ -382,7 +381,7 @@ func (c *JoinClient) getControlPlaneIPs(ctx context.Context) ([]string, error) {
 		}
 	}
 
-	c.log.With(zap.Strings("IPs", ips)).Infof("Received control plane endpoints")
+	c.log.With(slog.Any("IPs", ips)).Info("Received control plane endpoints")
 	return ips, nil
 }
 
@@ -423,7 +422,7 @@ type ClusterJoiner interface {
 		args *kubeadm.BootstrapTokenDiscovery,
 		peerRole role.Role,
 		k8sComponents components.Components,
-		log *logger.Logger,
+		log *slog.Logger,
 	) error
 }
 

@@ -13,7 +13,6 @@ go_library(
         "//internal/constants",
         "//internal/logger",
         "//verify/server",
-        "@org_uber_go_zap//:zap",
     ],
 )
 
