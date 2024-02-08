@@ -110,11 +110,13 @@ func main() {
 	case cloudprovider.Azure:
 		metadata, err := azurecloud.New(ctx)
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to create Azure metadata client")
+			log.With(slog.Any("error", err)).Error("Failed to create Azure metadata client")
+      os.Exit(1)
 		}
 
 		if err := metadata.PrepareControlPlaneNode(ctx, log); err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to prepare Azure control plane node")
+			log.With(slog.Any("error", err)).Error("Failed to prepare Azure control plane node")
+      os.Exit(1)
 		}
 
 		metadataAPI = metadata
@@ -142,13 +144,14 @@ func main() {
 				return tdx.Open()
 			}
 		default:
-			log.Fatalf("Unsupported attestation variant: %s", attestVariant)
+			log.Error(fmt.Sprintf("Unsupported attestation variant: %s", attestVariant))
 		}
 		fs = afero.NewOsFs()
 	case cloudprovider.OpenStack:
 		metadata, err := openstackcloud.New(ctx)
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to create OpenStack metadata client")
+			log.With(slog.Any("error", err)).Error("Failed to create OpenStack metadata client")
+      os.Exit(1);
 		}
 		clusterInitJoiner = kubernetes.New(
 			"openstack", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.NewUninitialized(),

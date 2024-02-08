@@ -24,21 +24,19 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"go.uber.org/zap"
 )
 
 func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handler,
 	kube clusterInitJoiner, metadata metadataAPI,
-	bindIP, bindPort string, log *logger.Logger,
+	bindIP, bindPort string, log *slog.Logger,
 ) {
-	log.With(zap.String("version", constants.BinaryVersion().String())).Infof("Starting bootstrapper")
+	log.With(slog.String("version", constants.BinaryVersion().String())).Info("Starting bootstrapper")
 
 	uuid, err := getDiskUUID()
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Failed to get disk UUID")
+		log.With(slog.Any("error", err)).Error("Failed to get disk UUID")
 	} else {
-		log.Infof("Disk UUID: %s", uuid)
+		log.Info(fmt.Sprintf("Disk UUID: %s", uuid))
 	}
 
 	nodeBootstrapped, err := initialize.IsNodeBootstrapped(openDevice)
@@ -76,7 +74,7 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 		os.Exit(1)
 	}
 
-	log.Infof("bootstrapper done")
+	log.Info("bootstrapper done")
 }
 
 func getDiskUUID() (string, error) {

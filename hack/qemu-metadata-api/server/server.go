@@ -9,7 +9,6 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log/slog"
 	"net"
 	"net/http"
