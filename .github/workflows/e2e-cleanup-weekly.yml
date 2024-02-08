@@ -20,4 +20,4 @@ jobs:
         uses: ./.github/actions/e2e_cleanup_timeframe
         with:
           ghToken: ${{ secrets.GITHUB_TOKEN }}
-          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
