@@ -18,9 +18,10 @@ runs:
         nixTools: |
           unzip
     - name: Run cleanup
-      run: ./.github/actions/e2e_cleanup_timeframe/e2e-cleanup.sh '${{ inputs.encryptionSecret }}'
+      run: ./.github/actions/e2e_cleanup_timeframe/e2e-cleanup.sh
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.ghToken }}
+        ENCRYPTION_SECRET: ${{ inputs.encryptionSecret }}
 
 

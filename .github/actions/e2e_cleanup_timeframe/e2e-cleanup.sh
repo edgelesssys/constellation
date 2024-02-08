@@ -28,13 +28,11 @@ function delete_iam_config {
 }
 
 # check if the password for artifact decryption was given
-if [[ -z $1 ]]; then
-  echo "No password for artifact decryption provided!"
-  echo "Usage: ./e2e-cleanup.sh <ARTIFACT_DECRYPT_PASSWD>"
-  exit 1
+if [[ -z $ENCRYPTION_SECRET ]]; then
+  echo "ENCRYPTION_SECRET is not set. Please set an environment variable with that secret."
 fi
 
-artifact_pwd=$1
+artifact_pwd=$ENCRYPTION_SECRET
 
 shopt -s nullglob
 
