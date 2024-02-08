@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
-	"os"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/diskencryption"
