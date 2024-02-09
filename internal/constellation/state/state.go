@@ -132,6 +132,9 @@ type Infrastructure struct {
 	// description: |
 	//   Values specific to a Constellation cluster running on GCP.
 	GCP *GCP `yaml:"gcp,omitempty"`
+	// description: |
+	//   Values specific to a Constellation cluster running on OpenStack.
+	OpenStack *OpenStack `yaml:"openstack,omitempty"`
 }
 
 // GCP describes the infra state related to GCP.
@@ -166,6 +169,13 @@ type Azure struct {
 	//   in the cluster's attestation report if the enforcement policy is set accordingly.
 	//   Can be left empty otherwise.
 	AttestationURL string `yaml:"attestationURL"`
+}
+
+// OpenStack describes the infra state related to OpenStack.
+type OpenStack struct {
+	// description: |
+	//   ID of the network
+	NetworkID string `yaml:"networkID"`
 }
 
 // New creates a new cluster state (file).

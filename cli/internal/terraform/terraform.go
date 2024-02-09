@@ -340,6 +340,18 @@ func (c *Client) ShowInfrastructure(ctx context.Context, provider cloudprovider.
 			LoadBalancerName:         loadBalancerName,
 			AttestationURL:           attestationURL,
 		}
+	case cloudprovider.OpenStack:
+		networkIDOutput, ok := tfState.Values.Outputs["network_id"]
+		if !ok {
+			return state.Infrastructure{}, errors.New("no network_id output found")
+		}
+		networkID, ok := networkIDOutput.Value.(string)
+		if !ok {
+			return state.Infrastructure{}, errors.New("invalid type in network_id output: not a string")
+		}
+		res.OpenStack = &state.OpenStack{
+			NetworkID: networkID,
+		}
 	}
 	return res, nil
 }

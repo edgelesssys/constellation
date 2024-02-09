@@ -125,6 +125,8 @@ func extraConstellationServicesValues(
 				"yawolFloatingID":  openStackCfg.FloatingIPPoolID,
 				"yawolFlavorID":    openStackCfg.YawolFlavorID,
 				"yawolImageID":     openStackCfg.YawolImageID,
+				"yawolNetworkID":   output.OpenStack.NetworkID,
+				"yawolAPIHost":     fmt.Sprintf("https://%s:%d", output.InClusterEndpoint, constants.KubernetesPort),
 			}
 		}
 	case cloudprovider.GCP:
