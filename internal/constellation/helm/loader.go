@@ -148,7 +148,7 @@ func (i *chartLoader) loadReleases(conformanceMode, deployCSIDriver bool, helmWa
 	}
 	conServicesRelease.values = mergeMaps(conServicesRelease.values, svcVals)
 
-	releases := releaseApplyOrder{ciliumRelease, conServicesRelease, certManagerRelease}
+	releases := releaseApplyOrder{ciliumRelease, certManagerRelease, operatorRelease, conServicesRelease}
 	if deployCSIDriver {
 		csiRelease, err := i.loadRelease(csiInfo, helmWaitMode)
 		if err != nil {
@@ -168,7 +168,6 @@ func (i *chartLoader) loadReleases(conformanceMode, deployCSIDriver bool, helmWa
 		}
 		releases = append(releases, awsRelease)
 	}
-	releases = append(releases, operatorRelease)
 
 	return releases, nil
 }
