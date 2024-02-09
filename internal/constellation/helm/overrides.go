@@ -97,8 +97,22 @@ func extraConstellationServicesValues(
 	}
 	switch csp {
 	case cloudprovider.OpenStack:
+		creds, err := openstack.AccountKeyFromURI(serviceAccURI)
+		if err != nil {
+			return nil, err
+		}
+		credsIni := creds.CloudINI().FullConfiguration()
 		if openStackCfg == nil {
 			return nil, fmt.Errorf("no OpenStack config")
+		}
+		extraVals["ccm"] = map[string]any{
+			"OpenStack": map[string]any{
+				"secretData": credsIni,
+			},
+		}
+		yawolIni := creds.CloudINI().YawolConfiguration()
+		extraVals["yawol-config"] = map[string]any{
+			"secretData": yawolIni,
 		}
 		extraVals["openstack"] = map[string]any{
 			"deployYawolLoadBalancer": openStackCfg.DeployYawolLoadBalancer != nil && *openStackCfg.DeployYawolLoadBalancer,
