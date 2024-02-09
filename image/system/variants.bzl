@@ -73,7 +73,6 @@ csp_settings = {
         },
     },
     "openstack": {
-        "autologin": True,
         "kernel_command_line": "console=tty0 console=ttyS0",
         "kernel_command_line_dict": {
             "console": "tty0",
