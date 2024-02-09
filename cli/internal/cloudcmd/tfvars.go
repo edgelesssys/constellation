@@ -234,9 +234,6 @@ func gcpTerraformIAMVars(conf *config.Config, oldVars terraform.GCPIAMVariables)
 // openStackTerraformVars provides variables required to execute the Terraform scripts.
 // It should be the only place to declare the OpenStack variables.
 func openStackTerraformVars(conf *config.Config, imageRef string) (*terraform.OpenStackClusterVariables, error) {
-	if os.Getenv("CONSTELLATION_OPENSTACK_DEV") != "1" {
-		return nil, errors.New("Constellation must be fine-tuned to your OpenStack deployment. Please create an issue or contact Edgeless Systems at https://edgeless.systems/contact/")
-	}
 	if _, hasOSAuthURL := os.LookupEnv("OS_AUTH_URL"); !hasOSAuthURL && conf.Provider.OpenStack.Cloud == "" {
 		return nil, errors.New(
 			"neither environment variable OS_AUTH_URL nor cloud name for \"clouds.yaml\" is set. OpenStack authentication requires a set of " +

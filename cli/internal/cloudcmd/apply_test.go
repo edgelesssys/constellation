@@ -27,7 +27,6 @@ import (
 )
 
 func TestApplier(t *testing.T) {
-	t.Setenv("CONSTELLATION_OPENSTACK_DEV", "1")
 	failOnNonAMD64 := (runtime.GOARCH != "amd64") || (runtime.GOOS != "linux")
 	ip := "192.0.2.1"
 	configWithProvider := func(provider cloudprovider.Provider) *config.Config {
