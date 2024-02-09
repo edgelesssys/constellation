@@ -447,7 +447,7 @@ func TestValidateInputs(t *testing.T) {
 				flags:       tc.flags,
 			}
 
-			conf, state, err := a.validateInputs(cmd, &stubAttestationFetcher{})
+			conf, state, err := a.validateInputs(cmd, &stubAttestationFetcher{}, file.NewHandler(afero.NewMemMapFs()))
 			if tc.wantErr {
 				assert.Error(err)
 				return
