@@ -35,3 +35,10 @@ output "ip_cidr_node" {
   value       = local.cidr_vpc_subnet_nodes
   description = "CIDR block of the node network."
 }
+
+# OpenStack-specific outputs
+
+output "network_id" {
+  value       = openstack_networking_network_v2.vpc_network.id
+  description = "The OpenStack network id the cluster is deployed in."
+}

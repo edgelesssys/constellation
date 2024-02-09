@@ -16,6 +16,7 @@ var (
 	InfrastructureDoc encoder.Doc
 	GCPDoc            encoder.Doc
 	AzureDoc          encoder.Doc
+	OpenStackDoc      encoder.Doc
 )
 
 func init() {
@@ -74,7 +75,7 @@ func init() {
 			FieldName: "infrastructure",
 		},
 	}
-	InfrastructureDoc.Fields = make([]encoder.Doc, 9)
+	InfrastructureDoc.Fields = make([]encoder.Doc, 10)
 	InfrastructureDoc.Fields[0].Name = "uid"
 	InfrastructureDoc.Fields[0].Type = "string"
 	InfrastructureDoc.Fields[0].Note = ""
@@ -120,6 +121,11 @@ func init() {
 	InfrastructureDoc.Fields[8].Note = ""
 	InfrastructureDoc.Fields[8].Description = "Values specific to a Constellation cluster running on GCP."
 	InfrastructureDoc.Fields[8].Comments[encoder.LineComment] = "Values specific to a Constellation cluster running on GCP."
+	InfrastructureDoc.Fields[9].Name = "openstack"
+	InfrastructureDoc.Fields[9].Type = "OpenStack"
+	InfrastructureDoc.Fields[9].Note = ""
+	InfrastructureDoc.Fields[9].Description = "Values specific to a Constellation cluster running on OpenStack."
+	InfrastructureDoc.Fields[9].Comments[encoder.LineComment] = "Values specific to a Constellation cluster running on OpenStack."
 
 	GCPDoc.Type = "GCP"
 	GCPDoc.Comments[encoder.LineComment] = "GCP describes the infra state related to GCP."
@@ -182,6 +188,22 @@ func init() {
 	AzureDoc.Fields[5].Note = ""
 	AzureDoc.Fields[5].Description = "MAA endpoint that can be used as a fallback for veryifying the ID key digests\nin the cluster's attestation report if the enforcement policy is set accordingly.\nCan be left empty otherwise."
 	AzureDoc.Fields[5].Comments[encoder.LineComment] = "MAA endpoint that can be used as a fallback for veryifying the ID key digests"
+
+	OpenStackDoc.Type = "OpenStack"
+	OpenStackDoc.Comments[encoder.LineComment] = "OpenStack describes the infra state related to OpenStack."
+	OpenStackDoc.Description = "OpenStack describes the infra state related to OpenStack."
+	OpenStackDoc.AppearsIn = []encoder.Appearance{
+		{
+			TypeName:  "Infrastructure",
+			FieldName: "openstack",
+		},
+	}
+	OpenStackDoc.Fields = make([]encoder.Doc, 1)
+	OpenStackDoc.Fields[0].Name = "networkID"
+	OpenStackDoc.Fields[0].Type = "string"
+	OpenStackDoc.Fields[0].Note = ""
+	OpenStackDoc.Fields[0].Description = "ID of the network"
+	OpenStackDoc.Fields[0].Comments[encoder.LineComment] = "ID of the network"
 }
 
 func (_ State) Doc() *encoder.Doc {
@@ -204,6 +226,10 @@ func (_ Azure) Doc() *encoder.Doc {
 	return &AzureDoc
 }
 
+func (_ OpenStack) Doc() *encoder.Doc {
+	return &OpenStackDoc
+}
+
 // GetConfigurationDoc returns documentation for the file ./state_doc.go.
 func GetConfigurationDoc() *encoder.FileDoc {
 	return &encoder.FileDoc{
@@ -215,6 +241,7 @@ func GetConfigurationDoc() *encoder.FileDoc {
 			&InfrastructureDoc,
 			&GCPDoc,
 			&AzureDoc,
+			&OpenStackDoc,
 		},
 	}
 }
