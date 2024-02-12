@@ -174,7 +174,7 @@ jobs:
       - name: Upload CLI binary
         uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         with:
-          name: constellation
+          name: constellation-upgrade-${{ inputs.attestationVariant }}
           path: build/constellation
 
   create-cluster:
@@ -336,7 +336,7 @@ jobs:
       - name: Download CLI
         uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
-          name: constellation
+          name: constellation-upgrade-${{ inputs.attestationVariant }}
           path: build
 
       - name: Download Working Directory (Pre-test)
@@ -459,7 +459,7 @@ jobs:
       - name: Download CLI
         uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
-          name: constellation
+          name: constellation-upgrade-${{ inputs.attestationVariant }}
           path: build
 
       - name: Download Working Directory (Pre-test)
