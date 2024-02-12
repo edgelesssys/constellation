@@ -307,16 +307,6 @@ func (c *Cloud) getLoadBalancerHost(ctx context.Context) (string, error) {
 	return "", errors.New("no load balancer endpoint found")
 }
 
-// GetNetworkIDs returns the IDs of the networks the current instance is part of.
-// This method is OpenStack specific.
-func (c *Cloud) GetNetworkIDs(ctx context.Context) ([]string, error) {
-	networkIDs, err := c.imds.networkIDs(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("retrieving network IDs: %w", err)
-	}
-	return networkIDs, nil
-}
-
 func (c *Cloud) getSubnetCIDR(uidTag string) (netip.Prefix, error) {
 	listSubnetsOpts := subnets.ListOpts{Tags: uidTag}
 	subnetsPage, err := c.api.ListSubnets(listSubnetsOpts).AllPages()

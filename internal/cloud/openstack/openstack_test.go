@@ -654,46 +654,6 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 	}
 }
 
-func TestGetNetworkIDs(t *testing.T) {
-	someErr := fmt.Errorf("failed")
-
-	testCases := map[string]struct {
-		imds    imdsAPI
-		want    []string
-		wantErr bool
-	}{
-		"success": {
-			imds: &stubIMDSClient{
-				networkIDsResult: []string{"id1", "id2"},
-			},
-			want: []string{"id1", "id2"},
-		},
-		"fail to get network IDs": {
-			imds: &stubIMDSClient{
-				networkIDsErr: someErr,
-			},
-			wantErr: true,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-
-			c := &Cloud{imds: tc.imds}
-
-			got, err := c.GetNetworkIDs(context.Background())
-
-			if tc.wantErr {
-				assert.Error(err)
-			} else {
-				assert.NoError(err)
-				assert.Equal(tc.want, got)
-			}
-		})
-	}
-}
-
 // newSubnetPager returns a subnet pager as we would get from a ListSubnets.
 func newSubnetPager(nets []subnets.Subnet, err error) stubPager {
 	return stubPager{
