@@ -2,7 +2,7 @@ terraform {
   required_providers {
     openstack = {
       source  = "terraform-provider-openstack/openstack"
-      version = "1.52.1"
+      version = "1.54.1"
     }
 
     random = {
@@ -101,62 +101,110 @@ resource "openstack_networking_router_interface_v2" "vpc_router_interface" {
   subnet_id = openstack_networking_subnet_v2.vpc_subnetwork.id
 }
 
-resource "openstack_compute_secgroup_v2" "vpc_secgroup" {
+resource "openstack_networking_secgroup_v2" "vpc_secgroup" {
   name        = local.name
   description = "Constellation VPC security group"
-
-  rule {
-    from_port   = -1
-    to_port     = -1
-    ip_protocol = "icmp"
-    self        = true
-  }
-
-  rule {
-    from_port   = 1
-    to_port     = 65535
-    ip_protocol = "udp"
-    cidr        = local.cidr_vpc_subnet_nodes
-  }
-
-  rule {
-    from_port   = 1
-    to_port     = 65535
-    ip_protocol = "tcp"
-    cidr        = local.cidr_vpc_subnet_nodes
-  }
-
-  rule {
-    from_port   = local.ports_node_range_start
-    to_port     = local.ports_node_range_end
-    ip_protocol = "tcp"
-    cidr        = "0.0.0.0/0"
-  }
-
-  rule {
-    from_port   = local.ports_node_range_start
-    to_port     = local.ports_node_range_end
-    ip_protocol = "udp"
-    cidr        = "0.0.0.0/0"
-  }
-
-  dynamic "rule" {
-    for_each = flatten([
-      local.ports_kubernetes,
-      local.ports_bootstrapper,
-      local.ports_konnectivity,
-      local.ports_verify,
-      local.ports_recovery,
-      var.debug ? [local.ports_debugd] : [],
-    ])
-    content {
-      from_port   = rule.value
-      to_port     = rule.value
-      ip_protocol = "tcp"
-      cidr        = "0.0.0.0/0"
-    }
-  }
 }
+
+resource "openstack_networking_secgroup_rule_v2" "icmp_in" {
+  description       = "icmp ingress"
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "icmp"
+  port_range_min    = 0
+  port_range_max    = 0
+  security_group_id = openstack_networking_secgroup_v2.vpc_secgroup.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "icmp_out" {
+  description       = "icmp egress"
+  direction         = "egress"
+  ethertype         = "IPv4"
+  protocol          = "icmp"
+  port_range_min    = 0
+  port_range_max    = 0
+  security_group_id = openstack_networking_secgroup_v2.vpc_secgroup.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "tcp_out" {
+  description       = "tcp egress"
+  direction         = "egress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = 0
+  port_range_max    = 0
+  security_group_id = openstack_networking_secgroup_v2.vpc_secgroup.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "udp_out" {
+  description       = "udp egress"
+  direction         = "egress"
+  ethertype         = "IPv4"
+  protocol          = "udp"
+  port_range_min    = 0
+  port_range_max    = 0
+  security_group_id = openstack_networking_secgroup_v2.vpc_secgroup.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "tcp_between_nodes" {
+  description       = "tcp between nodes"
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = 0
+  port_range_max    = 0
+  remote_ip_prefix  = local.cidr_vpc_subnet_nodes
+  security_group_id = openstack_networking_secgroup_v2.vpc_secgroup.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "udp_between_nodes" {
+  description       = "udp between nodes"
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "udp"
+  port_range_min    = 0
+  port_range_max    = 0
+  remote_ip_prefix  = local.cidr_vpc_subnet_nodes
+  security_group_id = openstack_networking_secgroup_v2.vpc_secgroup.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "nodeport_tcp" {
+  description       = "nodeport tcp"
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = local.ports_node_range_start
+  port_range_max    = local.ports_node_range_end
+  security_group_id = openstack_networking_secgroup_v2.vpc_secgroup.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "nodeport_udp" {
+  description       = "nodeport udp"
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "udp"
+  port_range_min    = local.ports_node_range_start
+  port_range_max    = local.ports_node_range_end
+  security_group_id = openstack_networking_secgroup_v2.vpc_secgroup.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "tcp_port_forward" {
+  for_each = toset(flatten([
+    local.ports_kubernetes,
+    local.ports_bootstrapper,
+    local.ports_konnectivity,
+    local.ports_verify,
+    local.ports_recovery,
+    var.debug ? [local.ports_debugd] : [],
+  ]))
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = each.value
+  port_range_max    = each.value
+  security_group_id = openstack_networking_secgroup_v2.vpc_secgroup.id
+}
+
 
 module "instance_group" {
   source                     = "./modules/instance_group"
@@ -170,7 +218,7 @@ module "instance_group" {
   availability_zone          = each.value.zone
   image_id                   = openstack_images_image_v2.image_id.image_id
   flavor_id                  = each.value.flavor_id
-  security_groups            = [openstack_compute_secgroup_v2.vpc_secgroup.id]
+  security_groups            = [openstack_networking_secgroup_v2.vpc_secgroup.id]
   tags                       = local.tags
   uid                        = local.uid
   network_id                 = openstack_networking_network_v2.vpc_network.id
