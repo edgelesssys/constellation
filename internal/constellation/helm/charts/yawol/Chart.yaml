@@ -1,0 +1,10 @@
+apiVersion: v2
+name: yawol
+description: A chart to deploy the yawol loadbalancer
+type: application
+version: 0.0.0
+dependencies:
+  - name: yawol-config
+    version: 0.0.0
+  - name: yawol-controller
+    version: 0.0.0
