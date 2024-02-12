@@ -83,20 +83,6 @@ jobs:
           ref: main
           stream: nightly
 
-      - name: Upload Terraform module
-        uses: ./.github/actions/upload_terraform_module
-
-      - name: Download Terraform module
-        uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
-        with:
-          name: terraform-module
-
-      - name: Unzip Terraform module
-        shell: bash
-        run: |
-          unzip terraform-module.zip -d ${{ github.workspace }}
-          rm terraform-module.zip
-
       - name: Create resource prefix
         id: create-prefix
         shell: bash
@@ -213,8 +199,8 @@ jobs:
           version=${prefixed_version#v} # remove v prefix
 
           if [[ "${{ inputs.providerVersion }}" == "" ]]; then
-            iam_src="${{ github.workspace }}/terraform-module/iam/${{ steps.determine.outputs.cloudProvider }}"
-            infra_src="${{ github.workspace }}/terraform-module/${{ steps.determine.outputs.cloudProvider }}"
+            iam_src="${{ github.workspace }}/terraform/infrastructure/iam/${{ steps.determine.outputs.cloudProvider }}"
+            infra_src="${{ github.workspace }}/terraform/infrastructure/${{ steps.determine.outputs.cloudProvider }}"
           else
             iam_src="https://github.com/edgelesssys/constellation/releases/download/${{ inputs.providerVersion }}/terraform-module.zip//terraform-module/iam/${{ steps.determine.outputs.cloudProvider }}"
             infra_src="https://github.com/edgelesssys/constellation/releases/download/${{ inputs.providerVersion }}/terraform-module.zip//terraform-module/${{ steps.determine.outputs.cloudProvider }}"
