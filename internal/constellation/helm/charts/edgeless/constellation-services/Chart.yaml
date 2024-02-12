@@ -49,13 +49,3 @@ dependencies:
     version: 0.0.0
     tags:
       - GCP
-  - name: yawol-config
-    version: 0.0.0
-    condition: openstack.deployYawolLoadBalancer
-    tags:
-      - OpenStack
-  - name: yawol-controller
-    version: 0.0.0
-    condition: openstack.deployYawolLoadBalancer
-    tags:
-      - OpenStack

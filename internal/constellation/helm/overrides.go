@@ -110,25 +110,6 @@ func extraConstellationServicesValues(
 				"secretData": credsIni,
 			},
 		}
-		yawolIni := creds.CloudINI().YawolConfiguration()
-		extraVals["yawol-config"] = map[string]any{
-			"secretData": yawolIni,
-		}
-		extraVals["openstack"] = map[string]any{
-			"deployYawolLoadBalancer": openStackCfg.DeployYawolLoadBalancer != nil && *openStackCfg.DeployYawolLoadBalancer,
-		}
-		if openStackCfg.DeployYawolLoadBalancer != nil && *openStackCfg.DeployYawolLoadBalancer {
-			extraVals["yawol-controller"] = map[string]any{
-				"yawolOSSecretName": "yawolkey",
-				// has to be larger than ~30s to account for slow OpenStack API calls.
-				"openstackTimeout": "1m",
-				"yawolFloatingID":  openStackCfg.FloatingIPPoolID,
-				"yawolFlavorID":    openStackCfg.YawolFlavorID,
-				"yawolImageID":     openStackCfg.YawolImageID,
-				"yawolNetworkID":   output.OpenStack.NetworkID,
-				"yawolAPIHost":     fmt.Sprintf("https://%s:%d", output.InClusterEndpoint, constants.KubernetesPort),
-			}
-		}
 	case cloudprovider.GCP:
 		serviceAccountKey, err := gcpshared.ServiceAccountKeyFromURI(serviceAccURI)
 		if err != nil {
@@ -161,6 +142,35 @@ func extraConstellationServicesValues(
 			"Azure": map[string]any{
 				"azureConfig": string(ccmConfig),
 			},
+		}
+	}
+
+	return extraVals, nil
+}
+
+// extraYawolValues extends the given values map by some values depending on user input.
+// Values set inside this function are only applied during init, not during upgrade.
+func extraYawolValues(serviceAccURI string, output state.Infrastructure, openStackCfg *config.OpenStackConfig) (map[string]any, error) {
+	extraVals := map[string]any{}
+
+	creds, err := openstack.AccountKeyFromURI(serviceAccURI)
+	if err != nil {
+		return nil, err
+	}
+	yawolIni := creds.CloudINI().YawolConfiguration()
+	extraVals["yawol-config"] = map[string]any{
+		"secretData": yawolIni,
+	}
+	if openStackCfg.DeployYawolLoadBalancer != nil && *openStackCfg.DeployYawolLoadBalancer {
+		extraVals["yawol-controller"] = map[string]any{
+			"yawolOSSecretName": "yawolkey",
+			// has to be larger than ~30s to account for slow OpenStack API calls.
+			"openstackTimeout": "1m",
+			"yawolFloatingID":  openStackCfg.FloatingIPPoolID,
+			"yawolFlavorID":    openStackCfg.YawolFlavorID,
+			"yawolImageID":     openStackCfg.YawolImageID,
+			"yawolNetworkID":   output.OpenStack.NetworkID,
+			"yawolAPIHost":     fmt.Sprintf("https://%s:%d", output.InClusterEndpoint, constants.KubernetesPort),
 		}
 	}
 

@@ -55,6 +55,7 @@ var (
 	constellationOperatorsInfo = chartInfo{releaseName: "constellation-operators", chartName: "constellation-operators", path: "charts/edgeless/operators"}
 	constellationServicesInfo  = chartInfo{releaseName: "constellation-services", chartName: "constellation-services", path: "charts/edgeless/constellation-services"}
 	csiInfo                    = chartInfo{releaseName: "constellation-csi", chartName: "constellation-csi", path: "charts/edgeless/csi"}
+	yawolLBControllerInfo      = chartInfo{releaseName: "yawol", chartName: "yawol", path: "charts/yawol"}
 )
 
 // chartLoader loads embedded helm charts.
@@ -148,7 +149,7 @@ func (i *chartLoader) loadReleases(conformanceMode, deployCSIDriver bool, helmWa
 	}
 	conServicesRelease.values = mergeMaps(conServicesRelease.values, svcVals)
 
-	releases := releaseApplyOrder{ciliumRelease, conServicesRelease, certManagerRelease}
+	releases := releaseApplyOrder{ciliumRelease, conServicesRelease, certManagerRelease, operatorRelease}
 	if deployCSIDriver {
 		csiRelease, err := i.loadRelease(csiInfo, helmWaitMode)
 		if err != nil {
@@ -168,7 +169,19 @@ func (i *chartLoader) loadReleases(conformanceMode, deployCSIDriver bool, helmWa
 		}
 		releases = append(releases, awsRelease)
 	}
-	releases = append(releases, operatorRelease)
+	if i.csp == cloudprovider.OpenStack && openStackCfg.DeployYawolLoadBalancer != nil && *openStackCfg.DeployYawolLoadBalancer {
+		yawolRelease, err := i.loadRelease(yawolLBControllerInfo, helmWaitMode)
+		if err != nil {
+			return nil, fmt.Errorf("loading yawol chart: %w", err)
+		}
+
+		yawolVals, err := extraYawolValues(serviceAccURI, i.stateFile.Infrastructure, openStackCfg)
+		if err != nil {
+			return nil, fmt.Errorf("extending yawol chart values: %w", err)
+		}
+		yawolRelease.values = mergeMaps(yawolRelease.values, yawolVals)
+		releases = append(releases, yawolRelease)
+	}
 
 	return releases, nil
 }
