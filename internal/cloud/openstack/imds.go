@@ -22,21 +22,18 @@ import (
 // documentation of OpenStack Metadata Service: https://docs.openstack.org/nova/rocky/user/metadata-service.html
 
 const (
-	imdsMetaDataURL    = "http://169.254.169.254/openstack/2018-08-27/meta_data.json"
-	imdsNetworkDataURL = "http://169.254.169.254/openstack/2018-08-27/network_data.json"
-	ec2ImdsBaseURL     = "http://169.254.169.254/1.0/meta-data"
-	maxCacheAge        = 12 * time.Hour
+	imdsMetaDataURL = "http://169.254.169.254/openstack/2018-08-27/meta_data.json"
+	ec2ImdsBaseURL  = "http://169.254.169.254/1.0/meta-data"
+	maxCacheAge     = 12 * time.Hour
 )
 
 type imdsClient struct {
 	client httpClient
 
-	vpcIPCache       string
-	vpcIPCacheTime   time.Time
-	networkCache     networkResponse
-	networkCacheTime time.Time
-	cache            metadataResponse
-	cacheTime        time.Time
+	vpcIPCache     string
+	vpcIPCacheTime time.Time
+	cache          metadataResponse
+	cacheTime      time.Time
 }
 
 // providerID returns the provider ID of the instance the function is called from.
@@ -226,30 +223,6 @@ func (c *imdsClient) vpcIP(ctx context.Context) (string, error) {
 	return c.vpcIPCache, nil
 }
 
-func (c *imdsClient) networkIDs(ctx context.Context) ([]string, error) {
-	if c.timeForUpdate(c.networkCacheTime) || len(c.networkCache.Networks) == 0 {
-		resp, err := httpGet(ctx, c.client, imdsNetworkDataURL)
-		if err != nil {
-			return nil, err
-		}
-		var networkResp networkResponse
-		if err := json.Unmarshal(resp, &networkResp); err != nil {
-			return nil, err
-		}
-		c.networkCache = networkResp
-		c.networkCacheTime = time.Now()
-	}
-
-	var networkIDs []string
-	for _, network := range c.networkCache.Networks {
-		if network.NetworkID == "" {
-			continue
-		}
-		networkIDs = append(networkIDs, network.NetworkID)
-	}
-	return networkIDs, nil
-}
-
 func httpGet(ctx context.Context, c httpClient, url string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
@@ -279,16 +252,6 @@ type metadataTags struct {
 	UserDomainName string `json:"openstack-user-domain-name,omitempty"`
 	Username       string `json:"openstack-username,omitempty"`
 	Password       string `json:"openstack-password,omitempty"`
-}
-
-// networkResponse contains networkResponse with only the required values.
-type networkResponse struct {
-	Networks []metadataNetwork `json:"networks,omitempty"`
-}
-
-type metadataNetwork struct {
-	ID        string `json:"id,omitempty"`
-	NetworkID string `json:"network_id,omitempty"`
 }
 
 type httpClient interface {

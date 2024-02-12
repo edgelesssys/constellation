@@ -30,8 +30,6 @@ type stubIMDSClient struct {
 	roleErr              error
 	vpcIPResult          string
 	vpcIPErr             error
-	networkIDsResult     []string
-	networkIDsErr        error
 }
 
 func (c *stubIMDSClient) providerID(_ context.Context) (string, error) {
@@ -60,10 +58,6 @@ func (c *stubIMDSClient) role(_ context.Context) (role.Role, error) {
 
 func (c *stubIMDSClient) vpcIP(_ context.Context) (string, error) {
 	return c.vpcIPResult, c.vpcIPErr
-}
-
-func (c *stubIMDSClient) networkIDs(_ context.Context) ([]string, error) {
-	return c.networkIDsResult, c.networkIDsErr
 }
 
 type stubServersClient struct {
