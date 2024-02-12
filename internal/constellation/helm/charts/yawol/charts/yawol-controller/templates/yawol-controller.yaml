@@ -100,6 +100,9 @@ spec:
         args:
           - -leader-elect
           - -enable-loadbalancermachine-controller
+          {{- if .Values.yawolletRequeueTime }}
+          - -yawollet-requeue-time={{ .Values.yawolletRequeueTime }}
+          {{- end }}
           {{- if .Values.openstackTimeout }}
           - -openstack-timeout={{ .Values.openstackTimeout }}
           {{- end }}

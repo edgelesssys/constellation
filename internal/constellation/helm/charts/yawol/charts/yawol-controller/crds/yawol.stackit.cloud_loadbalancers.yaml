@@ -3,8 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.11.3
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.13.0
   name: loadbalancers.yawol.stackit.cloud
 spec:
   group: yawol.stackit.cloud
@@ -232,6 +231,11 @@ spec:
                       enabled:
                         description: Enabled defines if log forward is enabled
                         type: boolean
+                      labels:
+                        additionalProperties:
+                          type: string
+                        description: Labels define extra labels for loki.
+                        type: object
                       lokiUrl:
                         description: 'LokiUrl defines the loki push url (Example:
                           http://example.com:3100/loki/api/v1/push).'
@@ -275,11 +279,19 @@ spec:
                   description: ServicePort contains information on service's port.
                   properties:
                     appProtocol:
-                      description: The application protocol for this port. This field
-                        follows standard Kubernetes label syntax. Un-prefixed names
-                        are reserved for IANA standard service names (as per RFC-6335
-                        and https://www.iana.org/assignments/service-names). Non-standard
-                        protocols should use prefixed names such as mycompany.com/my-custom-protocol.
+                      description: "The application protocol for this port. This is
+                        used as a hint for implementations to offer richer behavior
+                        for protocols that they understand. This field follows standard
+                        Kubernetes label syntax. Valid values are either: \n * Un-prefixed
+                        protocol names - reserved for IANA standard service names
+                        (as per RFC-6335 and https://www.iana.org/assignments/service-names).
+                        \n * Kubernetes-defined prefixed names: * 'kubernetes.io/h2c'
+                        - HTTP/2 over cleartext as described in https://www.rfc-editor.org/rfc/rfc7540
+                        * 'kubernetes.io/ws'  - WebSocket over cleartext as described
+                        in https://www.rfc-editor.org/rfc/rfc6455 * 'kubernetes.io/wss'
+                        - WebSocket over TLS as described in https://www.rfc-editor.org/rfc/rfc6455
+                        \n * Other protocols should use implementation-defined prefixed
+                        names such as mycompany.com/my-custom-protocol."
                       type: string
                     name:
                       description: The name of this port within the service. This

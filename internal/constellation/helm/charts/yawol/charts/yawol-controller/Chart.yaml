@@ -1,7 +1,7 @@
 apiVersion: v1
+appVersion: v0.20.0
 description: Helm chart for yawol-controller
 name: yawol-controller
 sources:
-  - https://github.com/stackitcloud/yawol
-version: 0.14.0
-appVersion: v0.14.0
+- https://github.com/stackitcloud/yawol
+version: 0.20.0
