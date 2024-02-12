@@ -909,7 +909,7 @@ func (c *Config) WithOpenStackProviderDefaults(openStackProvider string) *Config
 		c.Provider.OpenStack.ProjectDomainName = "portal_mvp"
 		c.Provider.OpenStack.RegionName = "RegionOne"
 		c.Provider.OpenStack.DeployYawolLoadBalancer = toPtr(true)
-		c.Provider.OpenStack.YawolImageID = "43d9bede-1e7a-4ca7-82c5-0a5c72388619"
+		c.Provider.OpenStack.YawolImageID = "bcd6c13e-75d1-4c3f-bf0f-8f83580cc1be"
 		c.Provider.OpenStack.YawolFlavorID = "3b11b27e-6c73-470d-b595-1d85b95a8cdf"
 		c.Provider.OpenStack.DeployCSIDriver = toPtr(true)
 		c.Provider.OpenStack.DirectDownload = toPtr(true)

@@ -33,7 +33,12 @@ kind: Service
 metadata:
   name: yawol-cloud-controller
   namespace: {{ .Release.Namespace }}
+  annotations:
+    {{- toYaml .Values.yawolCloudController.service.annotations | nindent 4 }}
   labels:
+    {{- with .Values.yawolCloudController.service.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
     app: kubernetes
     role: yawol-cloud-controller
 spec:
@@ -118,7 +123,12 @@ kind: Service
 metadata:
   name: yawol-controller
   namespace: {{ .Release.Namespace }}
+  annotations:
+    {{- toYaml .Values.yawolController.service.annotations | nindent 4 }}
   labels:
+    {{- with .Values.yawolController.service.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
     app: kubernetes
     role: yawol-controller
 spec:

@@ -4,6 +4,7 @@ podLabels: {}
 featureGates: {}
 proxy: {}
 namespace: kube-system
+
 vpa:
   enabled: false
   yawolCloudController:
@@ -15,6 +16,9 @@ yawolCloudController:
   enabled: true
   gardenerMonitoringEnabled: false
   clusterRoleEnabled: true
+  service:
+    annotations: {}
+    labels: {}
   image:
     repository: ghcr.io/stackitcloud/yawol/yawol-cloud-controller
     # -- Allows you to override the yawol version in this chart. Use at your own risk.
@@ -24,6 +28,9 @@ yawolController:
   gardenerMonitoringEnabled: false
   errorBackoffBaseDelay: 5ms
   errorBackoffMaxDelay: 1000s
+  service:
+    annotations: {}
+    labels: {}
   image:
     repository: ghcr.io/stackitcloud/yawol/yawol-controller
     # -- Allows you to override the yawol version in this chart. Use at your own risk.
@@ -61,6 +68,7 @@ resources:
 
 #yawolClassName: debug
 #openstackTimeout: 20s
+#yawolletRequeueTime: 60
 
 # the name of the Kubernetes secret that contains the .openrc file contents
 # with the correct permissions to connect to the OpenStack API
