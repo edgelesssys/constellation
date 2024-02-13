@@ -223,7 +223,8 @@ func runApply(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	fileHandler := file.NewHandler(afero.NewOsFs())
+  fileHandler := file.NewHandler(afero.NewOsFs())
+  logger := debugFileLogger{fileHandler: file.NewHandler(afero.NewOsFs()), log: log}
 
 	newDialer := func(validator atls.Validator) *dialer.Dialer {
 		return dialer.New(nil, validator, &net.Dialer{})
@@ -248,7 +249,7 @@ func runApply(cmd *cobra.Command, _ []string) error {
 	apply := &applyCmd{
 		fileHandler:     fileHandler,
 		flags:           flags,
-		log:             log,
+		log:             logger,
 		wLog:            &warnLogger{cmd: cmd, log: log},
 		spinner:         spinner,
 		merger:          &kubeconfigMerger{log: log},
@@ -860,8 +861,13 @@ type imageFetcher interface {
 	) (string, error)
 }
 
-func logDebug(logger debugLog, filehandler file.Handler, msg string) {
-	logger.Debug(msg)
+type debugFileLogger struct {
+  fileHandler file.Handler
+  log debugLog
+}
 
-	_ = filehandler.Write(constants.InitDebugLogFile, []byte(msg+"\n"), file.OptAppend)
+func (l debugFileLogger) Debug(msg string, args ...any) {
+	l.log.Debug(msg)
+
+	_ = l.fileHandler.Write(constants.InitDebugLogFile, []byte(msg+"\n"), file.OptAppend)
 }
