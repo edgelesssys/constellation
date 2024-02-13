@@ -263,7 +263,7 @@ func TestUpgradeApply(t *testing.T) {
 				},
 				imageFetcher: &stubImageFetcher{fetchReferenceErr: tc.fetchImageErr},
 			}
-			err := upgrader.apply(cmd, stubAttestationFetcher{}, "test")
+			err := upgrader.apply(cmd, stubAttestationFetcher{}, "test", file.NewHandler(afero.NewMemMapFs()))
 			if tc.wantErr {
 				assert.Error(err)
 				return

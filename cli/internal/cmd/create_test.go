@@ -237,7 +237,7 @@ func TestCreate(t *testing.T) {
 				applier: &stubConstellApplier{},
 			}
 
-			err := a.apply(cmd, stubAttestationFetcher{}, "create")
+			err := a.apply(cmd, stubAttestationFetcher{}, "create", fileHandler)
 
 			if tc.wantErr {
 				assert.Error(err)

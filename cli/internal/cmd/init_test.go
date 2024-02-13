@@ -247,7 +247,7 @@ func TestInitialize(t *testing.T) {
 				},
 			}
 
-			err := i.apply(cmd, stubAttestationFetcher{}, "test")
+			err := i.apply(cmd, stubAttestationFetcher{}, "test", fileHandler)
 
 			if tc.wantErr {
 				assert.Error(err)

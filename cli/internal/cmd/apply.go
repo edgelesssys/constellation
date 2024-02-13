@@ -261,7 +261,7 @@ func runApply(cmd *cobra.Command, _ []string) error {
 	defer cancel()
 	cmd.SetContext(ctx)
 
-	return apply.apply(cmd, attestationconfigapi.NewFetcher(), upgradeDir)
+	return apply.apply(cmd, attestationconfigapi.NewFetcher(), upgradeDir, fileHandler)
 }
 
 type applyCmd struct {
@@ -349,11 +349,8 @@ The control flow is as follows:
 	                        └────────────────────┘
 */
 func (a *applyCmd) apply(
-	cmd *cobra.Command, configFetcher attestationconfigapi.Fetcher, upgradeDir string,
+	cmd *cobra.Command, configFetcher attestationconfigapi.Fetcher, upgradeDir string, debugFileHandler file.Handler,
 ) error {
-  // Create debug log file and handler
-  debugFileHandler := file.NewHandler(afero.NewOsFs())
-
 	// Validate inputs
 	conf, stateFile, err := a.validateInputs(cmd, configFetcher, debugFileHandler)
 	if err != nil {
