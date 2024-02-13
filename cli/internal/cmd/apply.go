@@ -863,5 +863,5 @@ type imageFetcher interface {
 func logDebug(logger debugLog, filehandler file.Handler, msg string) {
 	logger.Debug(msg)
 
-  _ = filehandler.Write(constants.InitDebugLogFile, []byte(msg+"\n"), file.OptAppend)
+	_ = filehandler.Write(constants.InitDebugLogFile, []byte(msg+"\n"), file.OptAppend)
 }
