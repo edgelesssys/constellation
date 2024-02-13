@@ -588,7 +588,8 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 // applyJoinConfig creates or updates the cluster's join config.
 // If the config already exists, and is different from the new config, the user is asked to confirm the upgrade.
 func (a *applyCmd) applyJoinConfig(cmd *cobra.Command, newConfig config.AttestationCfg, measurementSalt []byte,
-debugFileHandler file.Handler) error {
+	debugFileHandler file.Handler,
+) error {
 	clusterAttestationConfig, err := a.applier.GetClusterAttestationConfig(cmd.Context(), newConfig.GetVariant())
 	if err != nil {
 		logDebug(a.log, debugFileHandler, fmt.Sprintf("Getting cluster attestation config failed: %s", err))
@@ -860,7 +861,7 @@ type imageFetcher interface {
 }
 
 func logDebug(logger debugLog, filehandler file.Handler, msg string) {
-  logger.Debug(msg)
+	logger.Debug(msg)
 
-  filehandler.Write(constants.InitDebugLogFile, []byte(msg + "\n"), file.OptAppend)
+	filehandler.Write(constants.InitDebugLogFile, []byte(msg+"\n"), file.OptAppend)
 }
