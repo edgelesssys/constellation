@@ -8,7 +8,7 @@ csi:
   attacher:
     image:
       repository: registry.k8s.io/sig-storage/csi-attacher
-      tag: v4.2.0
+      tag: v4.4.2@sha256:11b955fe4da278aa0e8ca9d6fd70758f2aec4b0c1e23168c665ca345260f1882
       pullPolicy: IfNotPresent
     resources: {}
     extraArgs: {}
@@ -16,28 +16,28 @@ csi:
     topology: "true"
     image:
       repository: registry.k8s.io/sig-storage/csi-provisioner
-      tag: v3.4.1
+      tag: v3.6.2@sha256:49b94f975603d85a1820b72b1188e5b351d122011b3e5351f98c49d72719aa78
       pullPolicy: IfNotPresent
     resources: {}
     extraArgs: {}
   snapshotter:
     image:
       repository: registry.k8s.io/sig-storage/csi-snapshotter
-      tag: v6.2.1
+      tag: v6.3.2@sha256:4c5a1b57e685b2631909b958487f65af7746361346fcd82a8635bea3ef14509d
       pullPolicy: IfNotPresent
     resources: {}
     extraArgs: {}
   resizer:
     image:
       repository: registry.k8s.io/sig-storage/csi-resizer
-      tag: v1.7.0
+      tag: v1.9.2@sha256:e998f22243869416f9860fc6a1fb07d4202eac8846defc1b85ebd015c1207605
       pullPolicy: IfNotPresent
     resources: {}
     extraArgs: {}
   livenessprobe:
     image:
       repository: registry.k8s.io/sig-storage/livenessprobe
-      tag: v2.9.0
+      tag: v2.11.0@sha256:82adbebdf5d5a1f40f246aef8ddbee7f89dea190652aefe83336008e69f9a89f
       pullPolicy: IfNotPresent
     failureThreshold: 5
     initialDelaySeconds: 10
@@ -48,7 +48,7 @@ csi:
   nodeDriverRegistrar:
     image:
       repository: registry.k8s.io/sig-storage/csi-node-driver-registrar
-      tag: v2.6.2
+      tag: v2.9.2@sha256:a18e989a93722e43885120e90bc1d0da0740fcbf44bc10403572b368b9800606
       pullPolicy: IfNotPresent
     resources: {}
     extraArgs: {}
@@ -56,17 +56,31 @@ csi:
     image:
       repository: ghcr.io/edgelesssys/constellation/cinder-csi-plugin
       pullPolicy: IfNotPresent
-      tag: # defaults to .Chart.AppVersion
+      # CSI driver version is independent of Constellation releases
+      tag: v1.0.1@sha256:65b59c9b64701f92c59d05f80d5b2bae0a2bc281e74b1f0db0fa3802081fd298
     volumeMounts:
       - name: cloud-config
         mountPath: /etc/kubernetes
         readOnly: true
     nodePlugin:
+      dnsPolicy: ClusterFirstWithHostNet
+      podSecurityContext: {}
+      securityContext: {}
+        # capabilities:
+        #   drop:
+        #   - ALL
+        # seccompProfile:
+        #   type: RuntimeDefault
       affinity: {}
       nodeSelector: {}
       tolerations:
         - operator: Exists
       kubeletDir: /var/lib/kubelet
+      # Allow for specifying internal IP addresses for multiple hostnames
+      # hostAliases:
+      #   - ip: "10.0.0.1"
+      #     hostnames:
+      #     - "keystone.hostname.com"
     controllerPlugin:
       replicas: 1
       strategy:
@@ -80,10 +94,36 @@ csi:
           # maxSurge is the maximum number of pods that can be
           # created over the desired number of pods.
           maxSurge: 1
+      podSecurityContext: {}
+        # runAsNonRoot: true
+        # runAsUser: 65532
+        # runAsGroup: 65532
+        # fsGroup: 65532
+        # fsGroupChangePolicy: OnRootMismatch
+      securityContext: {}
+        # capabilities:
+        #   drop:
+        #   - ALL
+        # seccompProfile:
+        #   type: RuntimeDefault
+        # readOnlyRootFilesystem: true
       affinity: {}
       nodeSelector: {}
       tolerations: []
+      # Allow for specifying internal IP addresses for multiple hostnames
+      # hostAliases:
+      #   - ip: "10.0.0.1"
+      #     hostnames:
+      #     - "keystone.hostname.com"
     resources: {}
+    # Enable built-in http server through the http-endpoint flag
+    httpEndpoint:
+      enabled: false
+      port: 8080
+    # Create Prometheus Operator PodMonitor. Requires http server above.
+    # See https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#monitoring.coreos.com/v1.PodMonitor
+    podMonitor:
+      enabled: false
     extraArgs: {}
   kms:
     keyServiceName: "key-service"
@@ -95,6 +135,12 @@ csi:
 # for description of individual verbosity levels.
 logVerbosityLevel: 2
 
+# the secret should contain the openstack credentials
+# there are several options to inject the credentials:
+# 1) from kubernetes secret that doesn't exist: set "enabled" and "create" to true, this will create a secret from the values written to "data" down below
+# 2) from kubernetes secret that already exists: set "enabled" to true and "create" to false
+# 3) from host system path /etc/cloud/cloud.conf: set "enabled" to false and "hostMount" to true
+# 4) via agent-injector (e.g. hashicorp vault): set "enabled" and "hostMount" to false, you have to provide credentials on your own by injecting credentials into the pod
 secret:
   enabled: true
   create: false
@@ -118,3 +164,6 @@ priorityClassName: ""
 
 imagePullSecrets: []
 # - name: my-imagepull-secret
+
+# add annotations to all pods
+commonAnnotations: {}

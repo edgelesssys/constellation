@@ -1,0 +1,22 @@
+{{- if .Values.csi.plugin.podMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  labels:
+    {{- include "cinder-csi.controllerplugin.labels" . | nindent 4 }}
+  name: {{ include "cinder-csi.name" . }}-controllerplugin
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    {{- with .Values.commonAnnotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  podMetricsEndpoints:
+  - interval: 30s
+    port: http
+    scheme: http
+  jobLabel: component
+  selector:
+    matchLabels:
+      {{- include "cinder-csi.controllerplugin.matchLabels" . | nindent 6 }}
+{{- end }}
