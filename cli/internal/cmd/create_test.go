@@ -296,7 +296,7 @@ func TestCheckDirClean(t *testing.T) {
 				require.NoError(fh.Write(f, []byte{1, 2, 3}, file.OptNone))
 			}
 			a := &applyCmd{log: logger.NewTest(t), fileHandler: fh}
-			err := a.checkInitFilesClean()
+			err := a.checkInitFilesClean(file.NewHandler(afero.NewMemMapFs()))
 
 			if tc.wantErr {
 				assert.Error(err)
