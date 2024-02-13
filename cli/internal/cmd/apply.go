@@ -396,7 +396,7 @@ func (a *applyCmd) apply(
 
 	// Apply Attestation Config
 	if !a.flags.skipPhases.contains(skipAttestationConfigPhase) {
-		logDebug(a.log, debugFileHandler, "Applying new attestation config to cluster")
+		a.log.Debug("Applying new attestation config to cluster")
 		if err := a.applyJoinConfig(cmd, conf.GetAttestationConfig(), stateFile.ClusterValues.MeasurementSalt, debugFileHandler); err != nil {
 			return fmt.Errorf("applying attestation config: %w", err)
 		}
@@ -443,7 +443,7 @@ func (a *applyCmd) apply(
 
 func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationconfigapi.Fetcher, debugFileHandler file.Handler) (*config.Config, *state.State, error) {
 	// Read user's config and state file
-	logDebug(a.log, debugFileHandler, fmt.Sprintf("Reading config from %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename)))
+	a.log.Debug(fmt.Sprintf("Reading config from %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename)))
 	conf, err := config.New(a.fileHandler, constants.ConfigFilename, configFetcher, a.flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
@@ -453,7 +453,7 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 		return nil, nil, err
 	}
 
-	logDebug(a.log, debugFileHandler, fmt.Sprintf("Reading state file from %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename)))
+	a.log.Debug(fmt.Sprintf("Reading state file from %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename)))
 	stateFile, err := state.CreateOrRead(a.fileHandler, constants.StateFilename)
 	if err != nil {
 		return nil, nil, err
@@ -464,7 +464,7 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 	// We don't run "hard" verification of skip-phases flags and state file here,
 	// a user may still end up skipping phases that could result in errors later on.
 	// However, we perform basic steps, like ensuring init phase is not skipped if
-	logDebug(a.log, debugFileHandler, "Validating state file")
+	a.log.Debug("Validating state file")
 	preCreateValidateErr := stateFile.Validate(state.PreCreate, conf.GetAttestationConfig().GetVariant())
 	preInitValidateErr := stateFile.Validate(state.PreInit, conf.GetAttestationConfig().GetVariant())
 	postInitValidateErr := stateFile.Validate(state.PostInit, conf.GetAttestationConfig().GetVariant())
@@ -473,7 +473,7 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 	// in which case the workspace has to be clean
 	if preCreateValidateErr == nil {
 		// We can't skip the infrastructure phase if no infrastructure has been defined
-		logDebug(a.log, debugFileHandler, "State file is in pre-create state, checking workspace")
+		a.log.Debug("State file is in pre-create state, checking workspace")
 		if a.flags.skipPhases.contains(skipInfrastructurePhase) {
 			return nil, nil, preInitValidateErr
 		}
@@ -482,7 +482,7 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 			return nil, nil, err
 		}
 
-		logDebug(a.log, debugFileHandler, "No Terraform state found in current working directory. Preparing to create a new cluster.")
+		a.log.Debug("No Terraform state found in current working directory. Preparing to create a new cluster.")
 		printCreateWarnings(cmd.ErrOrStderr(), conf)
 	}
 
@@ -491,7 +491,7 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 	// If so, we need to run the init RPC
 	if preInitValidateErr == nil || (preCreateValidateErr == nil && !a.flags.skipPhases.contains(skipInitPhase)) {
 		// We can't skip the init phase if the init RPC hasn't been run yet
-		logDebug(a.log, debugFileHandler, "State file is in pre-init state, checking workspace")
+		a.log.Debug("State file is in pre-init state, checking workspace")
 		if a.flags.skipPhases.contains(skipInitPhase) {
 			return nil, nil, postInitValidateErr
 		}
@@ -507,7 +507,7 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 	// If the state file is in a post-init state,
 	// we need to make sure specific files exist in the workspace
 	if postInitValidateErr == nil {
-		logDebug(a.log, debugFileHandler, "State file is in post-init state, checking workspace")
+		a.log.Debug("State file is in post-init state, checking workspace")
 		if err := a.checkPostInitFilesExist(); err != nil {
 			return nil, nil, err
 		}
@@ -522,16 +522,16 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 	// If we need to run the init RPC, the version has to be valid
 	// Otherwise, we are able to use an outdated version, meaning we skip the K8s upgrade
 	// We skip version validation if the user explicitly skips the Kubernetes phase
-	logDebug(a.log, debugFileHandler, fmt.Sprintf("Validating Kubernetes version %s", conf.KubernetesVersion))
+	a.log.Debug(fmt.Sprintf("Validating Kubernetes version %s", conf.KubernetesVersion))
 	validVersion, err := versions.NewValidK8sVersion(string(conf.KubernetesVersion), true)
 	if err != nil {
-		logDebug(a.log, debugFileHandler, fmt.Sprintf("Kubernetes version not valid: %s", err))
+		a.log.Debug(fmt.Sprintf("Kubernetes version not valid: %s", err))
 		if !a.flags.skipPhases.contains(skipInitPhase) {
 			return nil, nil, err
 		}
 
 		if !a.flags.skipPhases.contains(skipK8sPhase) {
-			logDebug(a.log, debugFileHandler, "Checking if user wants to continue anyway")
+			a.log.Debug("Checking if user wants to continue anyway")
 			if !a.flags.yes {
 				confirmed, err := askToConfirm(cmd,
 					fmt.Sprintf(
@@ -548,7 +548,7 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 			}
 
 			a.flags.skipPhases.add(skipK8sPhase)
-			logDebug(a.log, debugFileHandler, "Outdated Kubernetes version accepted, Kubernetes upgrade will be skipped")
+			a.log.Debug("Outdated Kubernetes version accepted, Kubernetes upgrade will be skipped")
 		}
 
 		validVersionString, err := versions.ResolveK8sPatchVersion(xsemver.MajorMinor(string(conf.KubernetesVersion)))
@@ -564,7 +564,7 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 		cmd.PrintErrf("Warning: Constellation with Kubernetes %s is still in preview. Use only for evaluation purposes.\n", validVersion)
 	}
 	conf.KubernetesVersion = validVersion
-	logDebug(a.log, debugFileHandler, fmt.Sprintf("Target Kubernetes version set to %s", conf.KubernetesVersion))
+	a.log.Debug(fmt.Sprintf("Target Kubernetes version set to %s", conf.KubernetesVersion))
 
 	// Validate microservice version (helm versions) in the user's config matches the version of the CLI
 	// This makes sure we catch potential errors early, not just after we already ran Terraform migrations or the init RPC
@@ -593,9 +593,9 @@ func (a *applyCmd) applyJoinConfig(cmd *cobra.Command, newConfig config.Attestat
 ) error {
 	clusterAttestationConfig, err := a.applier.GetClusterAttestationConfig(cmd.Context(), newConfig.GetVariant())
 	if err != nil {
-		logDebug(a.log, debugFileHandler, fmt.Sprintf("Getting cluster attestation config failed: %s", err))
+		a.log.Debug(fmt.Sprintf("Getting cluster attestation config failed: %s", err))
 		if k8serrors.IsNotFound(err) {
-			logDebug(a.log, debugFileHandler, "Creating new join config")
+			a.log.Debug("Creating new join config")
 			return a.applier.ApplyJoinConfig(cmd.Context(), newConfig, measurementSalt)
 		}
 		return fmt.Errorf("getting cluster attestation config: %w", err)
@@ -607,7 +607,7 @@ func (a *applyCmd) applyJoinConfig(cmd *cobra.Command, newConfig config.Attestat
 		return fmt.Errorf("comparing attestation configs: %w", err)
 	}
 	if equal {
-		logDebug(a.log, debugFileHandler, "Current attestation config is equal to the new config, nothing to do")
+		a.log.Debug("Current attestation config is equal to the new config, nothing to do")
 		return nil
 	}
 
@@ -686,7 +686,7 @@ func (a *applyCmd) checkCreateFilesClean(debugFileHandler file.Handler) error {
 	if err := a.checkInitFilesClean(debugFileHandler); err != nil {
 		return err
 	}
-	logDebug(a.log, debugFileHandler, "Checking Terraform state")
+	a.log.Debug("Checking Terraform state")
 	if _, err := a.fileHandler.Stat(constants.TerraformWorkingDir); err == nil {
 		return fmt.Errorf(
 			"terraform state %q already exists in working directory, run 'constellation terminate' before creating a new cluster",
@@ -701,7 +701,7 @@ func (a *applyCmd) checkCreateFilesClean(debugFileHandler file.Handler) error {
 
 // checkInitFilesClean ensures that the workspace is clean before running the init RPC.
 func (a *applyCmd) checkInitFilesClean(debugFileHandler file.Handler) error {
-	logDebug(a.log, debugFileHandler, "Checking admin configuration file")
+	a.log.Debug("Checking admin configuration file")
 	if _, err := a.fileHandler.Stat(constants.AdminConfFilename); err == nil {
 		return fmt.Errorf(
 			"file %q already exists in working directory, run 'constellation terminate' before creating a new cluster",
@@ -710,7 +710,7 @@ func (a *applyCmd) checkInitFilesClean(debugFileHandler file.Handler) error {
 	} else if !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("checking for %q: %w", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename), err)
 	}
-	logDebug(a.log, debugFileHandler, "Checking master secrets file")
+	a.log.Debug("Checking master secrets file")
 	if _, err := a.fileHandler.Stat(constants.MasterSecretFilename); err == nil {
 		return fmt.Errorf(
 			"file %q already exists in working directory. Constellation won't overwrite previous master secrets. Move it somewhere or delete it before creating a new cluster",
