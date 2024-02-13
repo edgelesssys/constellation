@@ -5,6 +5,10 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "cinder-csi.nodeplugin.labels" . | nindent 4 }}
+  annotations:
+    {{- with .Values.commonAnnotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 spec:
   selector:
     matchLabels:
@@ -13,12 +17,18 @@ spec:
     metadata:
       labels:
         {{- include "cinder-csi.nodeplugin.labels" . | nindent 8 }}
+      annotations:
+        {{- with .Values.commonAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
       serviceAccount: csi-cinder-node-sa
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
       containers:
         - name: node-driver-registrar
+          securityContext:
+            {{- toYaml .Values.csi.plugin.nodePlugin.securityContext | nindent 12 }}
           image: "{{ .Values.csi.nodeDriverRegistrar.image.repository }}:{{ .Values.csi.nodeDriverRegistrar.image.tag }}"
           imagePullPolicy: {{ .Values.csi.nodeDriverRegistrar.image.pullPolicy }}
           args:
@@ -46,6 +56,8 @@ spec:
               mountPath: /registration
           resources: {{ toYaml .Values.csi.nodeDriverRegistrar.resources | nindent 12 }}
         - name: liveness-probe
+          securityContext:
+            {{- toYaml .Values.csi.plugin.nodePlugin.securityContext | nindent 12 }}
           image: "{{ .Values.csi.livenessprobe.image.repository }}:{{ .Values.csi.livenessprobe.image.tag }}"
           imagePullPolicy: {{ .Values.csi.livenessprobe.image.pullPolicy }}
           args:
@@ -110,6 +122,14 @@ spec:
               mountPath: /etc/kubernetes/{{ .Values.secret.filename }}
               readOnly: true
               subPath: {{ .Values.secret.filename }}
+            # Edgeless specific mounts for cryptsetup
+            - name: sys
+              mountPath: /sys
+            - name: cryptsetup
+              mountPath: /run/cryptsetup
+          {{- with .Values.csi.plugin.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           resources: {{ toYaml .Values.csi.plugin.resources | nindent 12 }}
       volumes:
         - name: socket-dir
@@ -124,6 +144,14 @@ spec:
           hostPath:
             path: {{ .Values.csi.plugin.nodePlugin.kubeletDir }}
             type: Directory
+        - name: sys
+          hostPath:
+            path: /sys
+            type: Directory
+        - name: cryptsetup
+          hostPath:
+            path: /run/cryptsetup
+            type: Directory
         # - name: pods-cloud-data
         #   hostPath:
         #     path: /var/lib/cloud/data
@@ -132,18 +160,26 @@ spec:
           hostPath:
             path: /dev
             type: Directory
-        - name: cloud-config
         {{- if .Values.secret.enabled }}
+        - name: cloud-config
           secret:
             secretName: {{ .Values.secret.name }}
-        {{- else }}
+        {{- else if .Values.secret.hostMount }}
+        - name: cloud-config
           hostPath:
             path: /etc/kubernetes
+        {{- end }}
+        {{- with .Values.csi.plugin.volumes }}
+          {{- toYaml . | nindent 8 }}
         {{- end }}
       affinity: {{ toYaml .Values.csi.plugin.nodePlugin.affinity | nindent 8 }}
       nodeSelector: {{ toYaml .Values.csi.plugin.nodePlugin.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.csi.plugin.nodePlugin.tolerations | nindent 8 }}
       imagePullSecrets: {{ toYaml .Values.imagePullSecrets | nindent 8 }}
+      {{- with .Values.csi.plugin.nodePlugin.hostAliases }}
+      hostAliases:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
     {{- if .Values.priorityClassName }}
       priorityClassName: {{ .Values.priorityClassName }}
     {{- end }}

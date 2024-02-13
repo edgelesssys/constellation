@@ -77,6 +77,6 @@ download_chart "https://github.com/edgelesssys/constellation-azuredisk-csi-drive
 download_chart "https://github.com/edgelesssys/constellation-gcp-compute-persistent-disk-csi-driver" "v1.3.0" "charts" "gcp-compute-persistent-disk-csi-driver"
 
 ## OpenStack CSI Driver (cinder)
-download_chart "https://github.com/edgelesssys/constellation-cloud-provider-openstack" "v1.0.0" "charts/cinder-csi-plugin" "openstack-cinder-csi"
+download_chart "https://github.com/edgelesssys/constellation-cloud-provider-openstack" "v1.0.1" "charts/cinder-csi-plugin" "openstack-cinder-csi"
 
 echo # final newline
