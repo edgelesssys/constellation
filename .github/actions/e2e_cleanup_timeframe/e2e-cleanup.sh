@@ -73,6 +73,8 @@ for directory in ./terraform-state-*; do
   delete_resources "$directory"
   echo "    deleting IAM configuration in $directory"
   delete_iam_config "$directory"
+  echo "    deleting directory $directory"
+  rm -rf "$directory"
 done
 
 exit 0
