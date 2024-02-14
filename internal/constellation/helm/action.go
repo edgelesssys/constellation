@@ -37,7 +37,7 @@ type applyAction interface {
 func newActionConfig(kubeConfig []byte, logger debugLog) (*action.Configuration, error) {
 	actionConfig := &action.Configuration{}
 	if err := actionConfig.Init(&clientGetter{kubeConfig: kubeConfig}, constants.HelmNamespace,
-		"secret", logger.Debug); err != nil {
+		"secret", helmLog(logger)); err != nil {
 		return nil, err
 	}
 	return actionConfig, nil
@@ -221,4 +221,10 @@ func (c *clientGetter) ToRESTMapper() (meta.RESTMapper, error) {
 // ToRawKubeConfigLoader implements the genericclioptions.RESTClientGetter interface.
 func (c *clientGetter) ToRawKubeConfigLoader() clientcmd.ClientConfig {
 	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(&clientcmd.ClientConfigLoadingRules{}, &clientcmd.ConfigOverrides{})
+}
+
+func helmLog(log debugLog) action.DebugLog {
+	return func(format string, v ...interface{}) {
+		log.Debug(fmt.Sprintf(format, v...))
+	}
 }
