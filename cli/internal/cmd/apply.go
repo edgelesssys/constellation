@@ -224,7 +224,7 @@ func runApply(cmd *cobra.Command, _ []string) error {
 	}
 
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	logger := debugFileLogger{fileHandler: file.NewHandler(afero.NewOsFs()), log: log}
+	logger := debugFileLogger{fileHandler: fileHandler, log: log}
 
 	newDialer := func(validator atls.Validator) *dialer.Dialer {
 		return dialer.New(nil, validator, &net.Dialer{})
