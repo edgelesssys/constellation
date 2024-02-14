@@ -20,9 +20,8 @@ yawolCloudController:
     annotations: {}
     labels: {}
   image:
-    repository: ghcr.io/stackitcloud/yawol/yawol-cloud-controller
-    # -- Allows you to override the yawol version in this chart. Use at your own risk.
-    tag: ""
+    repository: ghcr.io/malt3/yawol/yawol-cloud-controller
+    tag: "yawol-controller-0.20.0-4-g6212876@sha256:ad83538fadc5d367700f75fc71c67697338307fdd81214dfc99b4cf425b8cb30"
 
 yawolController:
   gardenerMonitoringEnabled: false
@@ -32,9 +31,8 @@ yawolController:
     annotations: {}
     labels: {}
   image:
-    repository: ghcr.io/stackitcloud/yawol/yawol-controller
-    # -- Allows you to override the yawol version in this chart. Use at your own risk.
-    tag: ""
+    repository: ghcr.io/malt3/yawol/yawol-controller
+    tag: "yawol-controller-0.20.0-4-g6212876@sha256:290250a851de2cf4cb6eab2d40b36724c8321b7c3c36da80fd3e2333ed6808d0"
 
 resources:
   yawolCloudController:
@@ -85,6 +83,12 @@ yawolFloatingID:
 #
 # Placed in LoadBalancer.spec.infrastructure.networkID
 yawolNetworkID:
+
+# OpenStack subnetwork ID in which the Load Balancer is placed.
+# If not set, the subnetwork is chosen automatically.
+#
+# Placed in LoadBalancer.spec.infrastructure.subnetworkID
+yawolSubnetworkID:
 
 # default value for flavor that yawol Load Balancer instances should use
 # can be overridden by annotation

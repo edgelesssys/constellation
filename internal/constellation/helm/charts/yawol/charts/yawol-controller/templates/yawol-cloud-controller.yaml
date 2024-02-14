@@ -61,6 +61,10 @@ spec:
         - name: NETWORK_ID
           value: {{ .Values.yawolNetworkID }}
         {{- end }}
+        {{- if .Values.yawolSubnetworkID }}
+        - name: SUBNETWORK_ID
+          value: {{ .Values.yawolSubnetworkID }}
+        {{- end }}
         {{- if .Values.yawolFlavorID }}
         - name: FLAVOR_ID
           value: {{ .Values.yawolFlavorID }}
