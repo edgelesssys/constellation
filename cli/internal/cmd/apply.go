@@ -223,8 +223,8 @@ func runApply(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-  fileHandler := file.NewHandler(afero.NewOsFs())
-  logger := debugFileLogger{fileHandler: file.NewHandler(afero.NewOsFs()), log: log}
+	fileHandler := file.NewHandler(afero.NewOsFs())
+	logger := debugFileLogger{fileHandler: file.NewHandler(afero.NewOsFs()), log: log}
 
 	newDialer := func(validator atls.Validator) *dialer.Dialer {
 		return dialer.New(nil, validator, &net.Dialer{})
@@ -350,7 +350,7 @@ The control flow is as follows:
 	                        └────────────────────┘
 */
 func (a *applyCmd) apply(
-	cmd *cobra.Command, configFetcher attestationconfigapi.Fetcher, upgradeDir string, 
+	cmd *cobra.Command, configFetcher attestationconfigapi.Fetcher, upgradeDir string,
 ) error {
 	// Validate inputs
 	conf, stateFile, err := a.validateInputs(cmd, configFetcher)
@@ -861,8 +861,8 @@ type imageFetcher interface {
 }
 
 type debugFileLogger struct {
-  fileHandler file.Handler
-  log debugLog
+	fileHandler file.Handler
+	log         debugLog
 }
 
 func (l debugFileLogger) Debug(msg string, args ...any) {
