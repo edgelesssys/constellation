@@ -165,12 +165,13 @@ func extraYawolValues(serviceAccURI string, output state.Infrastructure, openSta
 		extraVals["yawol-controller"] = map[string]any{
 			"yawolOSSecretName": "yawolkey",
 			// has to be larger than ~30s to account for slow OpenStack API calls.
-			"openstackTimeout": "1m",
-			"yawolFloatingID":  openStackCfg.FloatingIPPoolID,
-			"yawolFlavorID":    openStackCfg.YawolFlavorID,
-			"yawolImageID":     openStackCfg.YawolImageID,
-			"yawolNetworkID":   output.OpenStack.NetworkID,
-			"yawolAPIHost":     fmt.Sprintf("https://%s:%d", output.InClusterEndpoint, constants.KubernetesPort),
+			"openstackTimeout":  "1m",
+			"yawolFloatingID":   openStackCfg.FloatingIPPoolID,
+			"yawolFlavorID":     openStackCfg.YawolFlavorID,
+			"yawolImageID":      openStackCfg.YawolImageID,
+			"yawolNetworkID":    output.OpenStack.NetworkID,
+			"yawolSubnetworkID": output.OpenStack.SubnetID,
+			"yawolAPIHost":      fmt.Sprintf("https://%s:%d", output.InClusterEndpoint, constants.KubernetesPort),
 		}
 	}
 
