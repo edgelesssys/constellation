@@ -237,7 +237,7 @@ func TestCreate(t *testing.T) {
 				applier: &stubConstellApplier{},
 			}
 
-			err := a.apply(cmd, stubAttestationFetcher{}, "create", fileHandler)
+			err := a.apply(cmd, stubAttestationFetcher{}, "create")
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -296,7 +296,7 @@ func TestCheckDirClean(t *testing.T) {
 				require.NoError(fh.Write(f, []byte{1, 2, 3}, file.OptNone))
 			}
 			a := &applyCmd{log: logger.NewTest(t), fileHandler: fh}
-			err := a.checkInitFilesClean(file.NewHandler(afero.NewMemMapFs()))
+			err := a.checkInitFilesClean()
 
 			if tc.wantErr {
 				assert.Error(err)

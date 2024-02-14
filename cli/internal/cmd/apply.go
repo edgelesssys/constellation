@@ -262,7 +262,7 @@ func runApply(cmd *cobra.Command, _ []string) error {
 	defer cancel()
 	cmd.SetContext(ctx)
 
-	return apply.apply(cmd, attestationconfigapi.NewFetcher(), upgradeDir, fileHandler)
+	return apply.apply(cmd, attestationconfigapi.NewFetcher(), upgradeDir)
 }
 
 type applyCmd struct {
@@ -350,10 +350,10 @@ The control flow is as follows:
 	                        └────────────────────┘
 */
 func (a *applyCmd) apply(
-	cmd *cobra.Command, configFetcher attestationconfigapi.Fetcher, upgradeDir string, debugFileHandler file.Handler,
+	cmd *cobra.Command, configFetcher attestationconfigapi.Fetcher, upgradeDir string, 
 ) error {
 	// Validate inputs
-	conf, stateFile, err := a.validateInputs(cmd, configFetcher, debugFileHandler)
+	conf, stateFile, err := a.validateInputs(cmd, configFetcher)
 	if err != nil {
 		return err
 	}
@@ -397,7 +397,7 @@ func (a *applyCmd) apply(
 	// Apply Attestation Config
 	if !a.flags.skipPhases.contains(skipAttestationConfigPhase) {
 		a.log.Debug("Applying new attestation config to cluster")
-		if err := a.applyJoinConfig(cmd, conf.GetAttestationConfig(), stateFile.ClusterValues.MeasurementSalt, debugFileHandler); err != nil {
+		if err := a.applyJoinConfig(cmd, conf.GetAttestationConfig(), stateFile.ClusterValues.MeasurementSalt); err != nil {
 			return fmt.Errorf("applying attestation config: %w", err)
 		}
 	}
@@ -441,7 +441,7 @@ func (a *applyCmd) apply(
 	return nil
 }
 
-func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationconfigapi.Fetcher, debugFileHandler file.Handler) (*config.Config, *state.State, error) {
+func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationconfigapi.Fetcher) (*config.Config, *state.State, error) {
 	// Read user's config and state file
 	a.log.Debug(fmt.Sprintf("Reading config from %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename)))
 	conf, err := config.New(a.fileHandler, constants.ConfigFilename, configFetcher, a.flags.force)
@@ -478,7 +478,7 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 			return nil, nil, preInitValidateErr
 		}
 
-		if err := a.checkCreateFilesClean(debugFileHandler); err != nil {
+		if err := a.checkCreateFilesClean(); err != nil {
 			return nil, nil, err
 		}
 
@@ -496,7 +496,7 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 			return nil, nil, postInitValidateErr
 		}
 
-		if err := a.checkInitFilesClean(debugFileHandler); err != nil {
+		if err := a.checkInitFilesClean(); err != nil {
 			return nil, nil, err
 		}
 
@@ -589,7 +589,6 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 // applyJoinConfig creates or updates the cluster's join config.
 // If the config already exists, and is different from the new config, the user is asked to confirm the upgrade.
 func (a *applyCmd) applyJoinConfig(cmd *cobra.Command, newConfig config.AttestationCfg, measurementSalt []byte,
-	debugFileHandler file.Handler,
 ) error {
 	clusterAttestationConfig, err := a.applier.GetClusterAttestationConfig(cmd.Context(), newConfig.GetVariant())
 	if err != nil {
@@ -682,8 +681,8 @@ func (a *applyCmd) runK8sVersionUpgrade(cmd *cobra.Command, conf *config.Config)
 }
 
 // checkCreateFilesClean ensures that the workspace is clean before creating a new cluster.
-func (a *applyCmd) checkCreateFilesClean(debugFileHandler file.Handler) error {
-	if err := a.checkInitFilesClean(debugFileHandler); err != nil {
+func (a *applyCmd) checkCreateFilesClean() error {
+	if err := a.checkInitFilesClean(); err != nil {
 		return err
 	}
 	a.log.Debug("Checking Terraform state")
@@ -700,7 +699,7 @@ func (a *applyCmd) checkCreateFilesClean(debugFileHandler file.Handler) error {
 }
 
 // checkInitFilesClean ensures that the workspace is clean before running the init RPC.
-func (a *applyCmd) checkInitFilesClean(debugFileHandler file.Handler) error {
+func (a *applyCmd) checkInitFilesClean() error {
 	a.log.Debug("Checking admin configuration file")
 	if _, err := a.fileHandler.Stat(constants.AdminConfFilename); err == nil {
 		return fmt.Errorf(
