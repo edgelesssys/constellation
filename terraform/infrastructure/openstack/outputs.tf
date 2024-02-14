@@ -42,3 +42,8 @@ output "network_id" {
   value       = openstack_networking_network_v2.vpc_network.id
   description = "The OpenStack network id the cluster is deployed in."
 }
+
+output "lb_subnetwork_id" {
+  value       = openstack_networking_subnet_v2.lb_subnetwork.id
+  description = "The OpenStack subnetwork id lbs are deployed in."
+}

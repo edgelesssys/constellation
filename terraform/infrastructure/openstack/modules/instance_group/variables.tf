@@ -67,6 +67,11 @@ variable "network_id" {
   description = "Network ID to attach each node to."
 }
 
+variable "subnet_id" {
+  type        = string
+  description = "Subnetwork ID to attach each node to."
+}
+
 variable "init_secret_hash" {
   type        = string
   description = "Hash of the init secret."
