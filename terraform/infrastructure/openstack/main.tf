@@ -33,6 +33,7 @@ locals {
   ports_recovery         = "9999"
   ports_debugd           = "4000"
   cidr_vpc_subnet_nodes  = "192.168.178.0/24"
+  cidr_vpc_subnet_lbs    = "192.168.177.0/24"
   tags                   = ["constellation-uid-${local.uid}"]
   identity_service = [
     for entry in data.openstack_identity_auth_scope_v3.scope.service_catalog :
@@ -78,6 +79,19 @@ resource "openstack_networking_subnet_v2" "vpc_subnetwork" {
   tags = local.tags
 }
 
+resource "openstack_networking_subnet_v2" "lb_subnetwork" {
+  name        = "${var.name}-${local.uid}-lb"
+  description = "Constellation LB subnetwork"
+  network_id  = openstack_networking_network_v2.vpc_network.id
+  cidr        = local.cidr_vpc_subnet_lbs
+  dns_nameservers = [
+    "1.1.1.1",
+    "8.8.8.8",
+    "9.9.9.9",
+  ]
+  tags = local.tags
+}
+
 resource "openstack_networking_router_v2" "vpc_router" {
   name                = local.name
   external_network_id = data.openstack_networking_network_v2.floating_ip_pool.network_id
@@ -86,6 +100,11 @@ resource "openstack_networking_router_v2" "vpc_router" {
 resource "openstack_networking_router_interface_v2" "vpc_router_interface" {
   router_id = openstack_networking_router_v2.vpc_router.id
   subnet_id = openstack_networking_subnet_v2.vpc_subnetwork.id
+}
+
+resource "openstack_networking_router_interface_v2" "lbs_router_interface_lbs" {
+  router_id = openstack_networking_router_v2.vpc_router.id
+  subnet_id = openstack_networking_subnet_v2.lb_subnetwork.id
 }
 
 resource "openstack_networking_secgroup_v2" "vpc_secgroup" {
@@ -209,6 +228,7 @@ module "instance_group" {
   tags                       = local.tags
   uid                        = local.uid
   network_id                 = openstack_networking_network_v2.vpc_network.id
+  subnet_id                  = openstack_networking_subnet_v2.vpc_subnetwork.id
   init_secret_hash           = local.init_secret_hash
   identity_internal_url      = local.identity_internal_url
   openstack_username         = var.openstack_username
@@ -223,9 +243,9 @@ resource "openstack_networking_floatingip_v2" "public_ip" {
 }
 
 
-resource "openstack_compute_floatingip_associate_v2" "public_ip_associate" {
+resource "openstack_networking_floatingip_associate_v2" "public_ip_associate" {
   floating_ip = openstack_networking_floatingip_v2.public_ip.address
-  instance_id = module.instance_group["control_plane_default"].instance_ids.0
+  port_id     = module.instance_group["control_plane_default"].port_ids.0
   depends_on = [
     openstack_networking_router_v2.vpc_router,
     openstack_networking_router_interface_v2.vpc_router_interface,

@@ -7,3 +7,8 @@ output "instance_ids" {
   value       = openstack_compute_instance_v2.instance_group_member.*.id
   description = "IDs of the instances."
 }
+
+output "port_ids" {
+  value       = openstack_networking_port_v2.port.*.id
+  description = "IDs of ports of the instances."
+}

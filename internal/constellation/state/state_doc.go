@@ -198,12 +198,17 @@ func init() {
 			FieldName: "openstack",
 		},
 	}
-	OpenStackDoc.Fields = make([]encoder.Doc, 1)
+	OpenStackDoc.Fields = make([]encoder.Doc, 2)
 	OpenStackDoc.Fields[0].Name = "networkID"
 	OpenStackDoc.Fields[0].Type = "string"
 	OpenStackDoc.Fields[0].Note = ""
 	OpenStackDoc.Fields[0].Description = "ID of the network"
 	OpenStackDoc.Fields[0].Comments[encoder.LineComment] = "ID of the network"
+	OpenStackDoc.Fields[1].Name = "subnetID"
+	OpenStackDoc.Fields[1].Type = "string"
+	OpenStackDoc.Fields[1].Note = ""
+	OpenStackDoc.Fields[1].Description = "ID of the subnet"
+	OpenStackDoc.Fields[1].Comments[encoder.LineComment] = "ID of the subnet"
 }
 
 func (_ State) Doc() *encoder.Doc {

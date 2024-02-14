@@ -349,8 +349,18 @@ func (c *Client) ShowInfrastructure(ctx context.Context, provider cloudprovider.
 		if !ok {
 			return state.Infrastructure{}, errors.New("invalid type in network_id output: not a string")
 		}
+		lbSubnetworkIDOutput, ok := tfState.Values.Outputs["lb_subnetwork_id"]
+		if !ok {
+			return state.Infrastructure{}, errors.New("no lb_subnetwork_id output found")
+		}
+		lbSubnetworkID, ok := lbSubnetworkIDOutput.Value.(string)
+		if !ok {
+			return state.Infrastructure{}, errors.New("invalid type in lb_subnetwork_id output: not a string")
+		}
+
 		res.OpenStack = &state.OpenStack{
 			NetworkID: networkID,
+			SubnetID:  lbSubnetworkID,
 		}
 	}
 	return res, nil

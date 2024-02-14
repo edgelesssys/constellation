@@ -17,6 +17,19 @@ resource "random_id" "uid" {
   byte_length = 4
 }
 
+resource "openstack_networking_port_v2" "port" {
+  name           = "${local.name}-${count.index}"
+  count          = var.initial_count
+  admin_state_up = "true"
+
+  network_id = var.network_id
+  fixed_ip {
+    subnet_id = var.subnet_id
+  }
+
+  security_group_ids = var.security_groups
+}
+
 # TODO(malt3): get this API enabled in the test environment
 # resource "openstack_compute_servergroup_v2" "instance_group" {
 #   name = local.name
@@ -24,18 +37,17 @@ resource "random_id" "uid" {
 # }
 
 resource "openstack_compute_instance_v2" "instance_group_member" {
-  name            = "${local.name}-${count.index}"
-  count           = var.initial_count
-  image_id        = var.image_id
-  flavor_id       = var.flavor_id
-  security_groups = var.security_groups
-  tags            = local.tags
+  name      = "${local.name}-${count.index}"
+  count     = var.initial_count
+  image_id  = var.image_id
+  flavor_id = var.flavor_id
+  tags      = local.tags
   # TODO(malt3): get this API enabled in the test environment
   # scheduler_hints {
   #   group = openstack_compute_servergroup_v2.instance_group.id
   # }
   network {
-    uuid = var.network_id
+    port = openstack_networking_port_v2.port[count.index].id
   }
   block_device {
     uuid                  = var.image_id

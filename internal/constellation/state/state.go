@@ -176,6 +176,9 @@ type OpenStack struct {
 	// description: |
 	//   ID of the network
 	NetworkID string `yaml:"networkID"`
+	// description: |
+	//   ID of the subnet
+	SubnetID string `yaml:"subnetID"`
 }
 
 // New creates a new cluster state (file).
