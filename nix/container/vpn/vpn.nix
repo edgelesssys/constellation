@@ -67,7 +67,6 @@ stdenv.mkDerivation {
 
   buildInputs = with pkgs; [ gnutar jq ];
 
-  # unpackPhase = "true";
 
   installPhase = ''
     mkdir -p "$out/tmp"
