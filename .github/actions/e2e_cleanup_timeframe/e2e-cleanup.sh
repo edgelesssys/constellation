@@ -67,6 +67,11 @@ for directory in ./terraform-state-*; do
   unzip -d "${directory}" -P "$artifact_pwd" "$directory/archive.zip" > /dev/null
 done
 
+# create terraform caching directory
+mkdir "$HOME/tf_plugin_cache"
+export TF_PLUGIN_CACHE_DIR="$HOME/tf_plugin_cache"
+echo "[*] created terraform cache directory $TF_PLUGIN_CACHE_DIR"
+
 echo "[*] deleting resources"
 for directory in ./terraform-state-*; do
   echo "    deleting resources in $directory"
