@@ -40,7 +40,7 @@ const (
 	DefaultControlPlaneGroupName = "control_plane_default"
 	// DefaultWorkerGroupName is the name of the default worker node group.
 	DefaultWorkerGroupName = "worker_default"
-	// InitDebugLogFile is the name of the debug log file for constellation init/constellation apply
+	// InitDebugLogFile is the name of the debug log file for constellation init/constellation apply.
 	InitDebugLogFile = "constellation-debug.log"
 
 	//
