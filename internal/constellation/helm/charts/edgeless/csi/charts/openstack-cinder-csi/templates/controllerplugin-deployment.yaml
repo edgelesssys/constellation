@@ -195,10 +195,6 @@ spec:
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
-            - name: cloud-config
-              mountPath: /etc/kubernetes/{{ .Values.secret.filename }}
-              readOnly: true
-              subPath: {{ .Values.secret.filename }}
           {{- with .Values.csi.plugin.volumeMounts }}
             {{- toYaml . | nindent 12 }}
           {{- end }}

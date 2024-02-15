@@ -57,7 +57,7 @@ csi:
       repository: ghcr.io/edgelesssys/constellation/cinder-csi-plugin
       pullPolicy: IfNotPresent
       # CSI driver version is independent of Constellation releases
-      tag: v1.0.1@sha256:65b59c9b64701f92c59d05f80d5b2bae0a2bc281e74b1f0db0fa3802081fd298
+      tag: v1.0.2@sha256:d0b9872378ef5cad9ca5442651df85cf6a4a3a50044018c3541b53f3b7b7480e
     volumeMounts:
       - name: cloud-config
         mountPath: /etc/kubernetes

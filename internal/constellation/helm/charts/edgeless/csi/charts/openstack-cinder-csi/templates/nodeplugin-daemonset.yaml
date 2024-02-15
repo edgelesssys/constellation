@@ -118,10 +118,6 @@ spec:
             - name: pods-probe-dir
               mountPath: /dev
               mountPropagation: "HostToContainer"
-            - name: cloud-config
-              mountPath: /etc/kubernetes/{{ .Values.secret.filename }}
-              readOnly: true
-              subPath: {{ .Values.secret.filename }}
             # Edgeless specific mounts for cryptsetup
             - name: sys
               mountPath: /sys
