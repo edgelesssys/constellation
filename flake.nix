@@ -57,6 +57,8 @@
 
       openssl-static = pkgsUnstable.openssl.override { static = true; };
 
+      bazel_7 = callPackage ./nix/packages/bazel.nix { pkgs = pkgsUnstable; nixpkgs = nixpkgsUnstable; };
+
     in
     {
       packages.mkosi = mkosiDev;
@@ -75,13 +77,13 @@
 
       packages.awscli2 = pkgsUnstable.awscli2;
 
-      packages.bazel_7 = pkgsUnstable.bazel_7;
+      packages.bazel_7 = bazel_7;
 
       packages.createrepo_c = pkgsUnstable.createrepo_c;
 
       packages.dnf5 = pkgsUnstable.dnf5;
 
-      devShells.default = import ./nix/shells/default.nix { pkgs = pkgsUnstable; };
+      devShells.default = callPackage ./nix/shells/default.nix { inherit bazel_7; };
 
       formatter = nixpkgsUnstable.legacyPackages.${system}.nixpkgs-fmt;
     });
