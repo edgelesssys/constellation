@@ -20,13 +20,5 @@ spec:
       containers:
       - name: operator
         image: {{ .Values.image | quote }}
-        command: ["sh", "/scripts/entrypoint.sh"]
+        command: ["/bin/operator.sh"]
         env: {{- include "..commonEnv" . | nindent 10 }}
-        volumeMounts:
-        - name: scripts
-          mountPath: "/scripts"
-          readOnly: true
-      volumes:
-      - name: scripts
-        configMap:
-          name: {{ include "..fullname" . }}-operator

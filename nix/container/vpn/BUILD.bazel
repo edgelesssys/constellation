@@ -1,0 +1,11 @@
+load("@rules_oci//oci:defs.bzl", "oci_image")
+
+oci_image(
+    name = "vpn",
+    base = "@distroless_static_linux_amd64",
+    entrypoint = ["/bin/sh"],
+    tars = [
+        "@vpn_oci_image//:layer.tar",
+    ],
+    visibility = ["//visibility:public"],
+)
