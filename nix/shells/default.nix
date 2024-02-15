@@ -1,6 +1,6 @@
-{ pkgs, ... }:
-pkgs.mkShell {
-  nativeBuildInputs = with pkgs; [
+{ mkShell, git, bazel_7 }:
+mkShell {
+  nativeBuildInputs = [
     bazel_7
     git
   ];
