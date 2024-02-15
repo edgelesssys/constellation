@@ -9,18 +9,23 @@ package openstack
 import (
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
+	"github.com/gophercloud/gophercloud/openstack/networking/v2/networks"
 	"github.com/gophercloud/gophercloud/openstack/networking/v2/subnets"
 )
 
 type apiClient struct {
-	servers *gophercloud.ServiceClient
-	subnets *gophercloud.ServiceClient
+	servers  *gophercloud.ServiceClient
+	networks *gophercloud.ServiceClient
 }
 
 func (c *apiClient) ListServers(opts servers.ListOptsBuilder) pagerAPI {
 	return servers.List(c.servers, opts)
 }
 
+func (c *apiClient) ListNetworks(opts networks.ListOptsBuilder) pagerAPI {
+	return networks.List(c.networks, opts)
+}
+
 func (c *apiClient) ListSubnets(opts subnets.ListOpts) pagerAPI {
-	return subnets.List(c.subnets, opts)
+	return subnets.List(c.networks, opts)
 }

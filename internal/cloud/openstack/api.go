@@ -11,6 +11,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
+	"github.com/gophercloud/gophercloud/openstack/networking/v2/networks"
 	"github.com/gophercloud/gophercloud/openstack/networking/v2/subnets"
 	"github.com/gophercloud/gophercloud/pagination"
 )
@@ -27,6 +28,7 @@ type imdsAPI interface {
 
 type serversAPI interface {
 	ListServers(opts servers.ListOptsBuilder) pagerAPI
+	ListNetworks(opts networks.ListOptsBuilder) pagerAPI
 	ListSubnets(opts subnets.ListOpts) pagerAPI
 }
 
