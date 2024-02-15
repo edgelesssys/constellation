@@ -11,6 +11,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
+	"github.com/gophercloud/gophercloud/openstack/networking/v2/networks"
 	"github.com/gophercloud/gophercloud/openstack/networking/v2/subnets"
 	"github.com/gophercloud/gophercloud/pagination"
 )
@@ -62,11 +63,16 @@ func (c *stubIMDSClient) vpcIP(_ context.Context) (string, error) {
 
 type stubServersClient struct {
 	serversPager stubPager
+	netsPager    stubPager
 	subnetsPager stubPager
 }
 
 func (c *stubServersClient) ListServers(_ servers.ListOptsBuilder) pagerAPI {
 	return &c.serversPager
+}
+
+func (c *stubServersClient) ListNetworks(_ networks.ListOptsBuilder) pagerAPI {
+	return &c.netsPager
 }
 
 func (c *stubServersClient) ListSubnets(_ subnets.ListOpts) pagerAPI {

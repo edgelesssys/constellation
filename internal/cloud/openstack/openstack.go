@@ -19,6 +19,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
+	"github.com/gophercloud/gophercloud/openstack/networking/v2/networks"
 	"github.com/gophercloud/gophercloud/openstack/networking/v2/subnets"
 	"github.com/gophercloud/utils/openstack/clientconfig"
 )
@@ -71,17 +72,17 @@ func New(ctx context.Context) (*Cloud, error) {
 	}
 	serversClient.Microversion = microversion
 
-	subnetsClient, err := clientconfig.NewServiceClient("network", clientOpts)
+	networksClient, err := clientconfig.NewServiceClient("network", clientOpts)
 	if err != nil {
 		return nil, fmt.Errorf("creating network client: %w", err)
 	}
-	subnetsClient.Microversion = microversion
+	networksClient.Microversion = microversion
 
 	return &Cloud{
 		imds: imds,
 		api: &apiClient{
-			servers: serversClient,
-			subnets: subnetsClient,
+			servers:  serversClient,
+			networks: networksClient,
 		},
 	}, nil
 }
@@ -308,22 +309,43 @@ func (c *Cloud) getLoadBalancerHost(ctx context.Context) (string, error) {
 }
 
 func (c *Cloud) getSubnetCIDR(uidTag string) (netip.Prefix, error) {
+	listNetworksOpts := networks.ListOpts{Tags: uidTag}
+	networksPage, err := c.api.ListNetworks(listNetworksOpts).AllPages()
+	if err != nil {
+		return netip.Prefix{}, fmt.Errorf("listing networks: %w", err)
+	}
+	nets, err := networks.ExtractNetworks(networksPage)
+	if err != nil {
+		return netip.Prefix{}, fmt.Errorf("extracting networks: %w", err)
+	}
+	if len(nets) != 1 {
+		return netip.Prefix{}, fmt.Errorf("expected exactly one network, got %d", len(nets))
+	}
+
 	listSubnetsOpts := subnets.ListOpts{Tags: uidTag}
 	subnetsPage, err := c.api.ListSubnets(listSubnetsOpts).AllPages()
 	if err != nil {
 		return netip.Prefix{}, fmt.Errorf("listing subnets: %w", err)
 	}
 
-	nets, err := subnets.ExtractSubnets(subnetsPage)
+	snets, err := subnets.ExtractSubnets(subnetsPage)
 	if err != nil {
 		return netip.Prefix{}, fmt.Errorf("extracting subnets: %w", err)
 	}
 
-	if len(nets) != 1 {
-		return netip.Prefix{}, fmt.Errorf("expected exactly one subnet, got %d", len(nets))
+	if len(snets) < 1 {
+		return netip.Prefix{}, fmt.Errorf("expected at least one subnet, got %d", len(snets))
 	}
 
-	cidr, err := netip.ParsePrefix(nets[0].CIDR)
+	var rawCIDR string
+	for _, n := range snets {
+		if n.Name == nets[0].Name {
+			rawCIDR = n.CIDR
+			break
+		}
+	}
+
+	cidr, err := netip.ParsePrefix(rawCIDR)
 	if err != nil {
 		return netip.Prefix{}, fmt.Errorf("parsing subnet CIDR: %w", err)
 	}
