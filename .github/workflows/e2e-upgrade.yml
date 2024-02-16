@@ -245,7 +245,7 @@ jobs:
         if: always()
         uses: ./.github/actions/artifact_upload
         with:
-          name: constellation-pre-test
+          name: constellation-pre-test-${{ inputs.attestationVariant }}
           path: >
             ${{ steps.e2e_test.outputs.kubeconfig }}
             constellation-terraform
@@ -259,7 +259,7 @@ jobs:
         if: always() && needs.generate-input-parameters.outputs.cloudProvider == 'gcp'
         uses: ./.github/actions/artifact_upload
         with:
-          name: sa-key
+          name: sa-key-${{ inputs.attestationVariant }}
           path: >
             gcpServiceAccountKey.json
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
@@ -342,14 +342,14 @@ jobs:
       - name: Download Working Directory (Pre-test)
         uses: ./.github/actions/artifact_download
         with:
-          name: constellation-pre-test
+          name: constellation-pre-test-${{ inputs.attestationVariant }}
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Download SA Key
         if: needs.generate-input-parameters.outputs.cloudProvider == 'gcp'
         uses: ./.github/actions/artifact_download
         with:
-          name: sa-key
+          name: sa-key-${{ inputs.attestationVariant }}
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Make Constellation executable and add to PATH
@@ -421,7 +421,7 @@ jobs:
         if: always()
         uses: ./.github/actions/artifact_upload
         with:
-          name: constellation-post-test
+          name: constellation-post-test-${{ inputs.attestationVariant }}
           path: |
             ${{ needs.create-cluster.outputs.kubeconfig }}
             constellation-terraform
@@ -466,14 +466,14 @@ jobs:
         if: always() && needs.e2e-upgrade.result != 'success'
         uses: ./.github/actions/artifact_download
         with:
-          name: constellation-pre-test
+          name: constellation-pre-test-${{ inputs.attestationVariant }}
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Download Working Directory (Post-test)
         if: always() && needs.e2e-upgrade.result == 'success'
         uses: ./.github/actions/artifact_download
         with:
-          name: constellation-post-test
+          name: constellation-post-test-${{ inputs.attestationVariant }}
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Make Constellation executable and add to PATH
