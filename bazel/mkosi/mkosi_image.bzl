@@ -1,6 +1,5 @@
 """ Bazel rule for building mkosi images. """
 
-load("@aspect_bazel_lib//lib:paths.bzl", "relative_file")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
 def _mkosi_image_impl(ctx):
@@ -9,7 +8,6 @@ def _mkosi_image_impl(ctx):
     outputs = []
     tools = []
     workdir = ctx.file.mkosi_conf.dirname
-    config_rel = lambda target: relative_file(target, ctx.file.mkosi_conf.path)
     env = {}
     args.add("-C", workdir)
     if ctx.attr.distribution:
@@ -19,24 +17,24 @@ def _mkosi_image_impl(ctx):
     if ctx.attr.output:
         args.add("--output", ctx.attr.output)
     args.add_all(ctx.attr.packages, before_each = "--package")
-    for package_file in ctx.files.package_files:
-        args.add("--package", config_rel(package_file.path))
+    for package_dir in ctx.files.package_directories:
+        args.add("--package-directory", package_dir.path)
     if len(ctx.files.local_mirror) > 0:
-        env["LOCAL_MIRROR"] = config_rel(ctx.files.local_mirror[0].dirname)
+        env["LOCAL_MIRROR"] = ctx.files.local_mirror[0].dirname
     for tree in ctx.files.base_trees:
-        args.add("--base-tree", config_rel(tree.path))
+        args.add("--base-tree", tree.path)
     for tree in ctx.files.skeleton_trees:
-        args.add("--skeleton-tree", config_rel(tree.path))
+        args.add("--skeleton-tree", tree.path)
     for tree in ctx.files.package_manager_trees:
-        args.add("--package-manager_tree", config_rel(tree.path))
+        args.add("--package-manager-tree", tree.path)
     for tree in ctx.files.extra_trees:
-        args.add("--extra-tree", config_rel(tree.path))
+        args.add("--extra-tree", tree.path)
     for initrd in ctx.files.initrds:
         inputs.append(initrd)
-        args.add("--initrd", config_rel(initrd.path))
+        args.add("--initrd", initrd.path)
     inputs.extend(ctx.files.mkosi_conf)
     inputs.extend(ctx.files.srcs[:])
-    inputs.extend(ctx.files.package_files[:])
+    inputs.extend(ctx.files.package_directories[:])
     inputs.extend(ctx.files.base_trees[:])
     inputs.extend(ctx.files.skeleton_trees[:])
     inputs.extend(ctx.files.package_manager_trees[:])
@@ -59,9 +57,9 @@ def _mkosi_image_impl(ctx):
             if output.is_directory and out_dir.path.startswith(output.path + "/"):
                 fail("output directory {} is nested within output directory {}; outputs cannot be nested within each other!".format(out_dir.path, output.path))
         outputs.append(out_dir)
-        args.add("--output-dir", config_rel(out_dir.path))
+        args.add("--output-dir", out_dir.path)
     else:
-        args.add("--output-dir", config_rel(paths.join(ctx.bin_dir.path, ctx.label.package)))
+        args.add("--output-dir", paths.join(ctx.bin_dir.path, ctx.label.package))
     args.add_all(ctx.attr.extra_args)
     for key, value in ctx.attr.env.items():
         args.add("--environment", "{}={}".format(key, value))
@@ -126,7 +124,7 @@ mkosi_image = rule(
         "out_dir": attr.string(),
         "output": attr.string(),
         "outs": attr.output_list(),
-        "package_files": attr.label_list(allow_files = True),
+        "package_directories": attr.label_list(allow_files = True),
         "package_manager_trees": attr.label_list(allow_files = True),
         "packages": attr.string_list(),
         "seed": attr.string(),

@@ -4,7 +4,24 @@ shopt -s inherit_errexit
 
 export PATH=/run/wrappers/bin:/run/current-system/sw/bin:/bin:/usr/bin:/usr/local/bin
 VERSION_ARG=""
-args=("$@")
+args=()
+
+while [[ $# -gt 0 ]]; do
+  key="$1"
+  case $key in
+  --*-tree | --initrd | --package-directory | --output-dir)
+    # absolutize any file paths
+    shift # past the key and to the value
+    value="$1"
+    args+=("${key}" "$(realpath "${value}")")
+    shift # past the value
+    ;;
+  *)
+    args+=("$1")
+    shift
+    ;;
+  esac
+done
 
 if [[ -n ${VERSION_FILE+x} ]]; then
   VERSION_ARG="--environment=IMAGE_VERSION=$(cat "${VERSION_FILE}")"
@@ -14,14 +31,12 @@ fi
 if [[ -n ${LOCAL_MIRROR+x} ]]; then
   LOCAL_MIRROR=$(realpath "${LOCAL_MIRROR}")
   reposdir=$(mktemp -d)
-  cat > "${reposdir}/mkosi.repo" << EOF
-[local-mirror]
-name=local-mirror
-baseurl=file://${LOCAL_MIRROR}
-enabled=1
-gpgcheck=0
-EOF
+  # putting an empty repo file under /etc/yum.repos.d/mkosi.repo
+  # will make mkosi use only package directories
+  # and not try to fetch packages from the network
+  touch "${reposdir}/mkosi.repo"
   args+=("--package-manager-tree=${reposdir}:/etc/yum.repos.d")
+  args+=("--package-directory" "${LOCAL_MIRROR}")
 fi
 
 exec @@MKOSI@@ "${args[@]}" build
