@@ -3,7 +3,6 @@
 /3rdparty/gcp-guest-agent @malt3
 /bazel @malt3
 /bazel/ci @katexochen
-/bazel/container @katexochen
 /bazel/sh @katexochen
 /bootstrapper @3u13r
 /cli/internal/cloudcmd @daniel-weisse
