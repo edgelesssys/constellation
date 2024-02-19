@@ -53,11 +53,11 @@ func (c *Client) CreateCertChainCache(ctx context.Context) (*CachedCerts, error)
 	case variant.AWSSEVSNP{}:
 		reportSigner = abi.VlekReportSigner
 	default:
-		c.log.Debug(fmt.Sprintf("No certificate chain caching possible for attestation variant %s", c.attVariant))
+		c.log.Debug(fmt.Sprintf("No certificate chain caching possible for attestation variant %q", c.attVariant))
 		return nil, nil
 	}
 
-	c.log.Debug(fmt.Sprintf("Creating %s certificate chain cache", c.attVariant))
+	c.log.Debug(fmt.Sprintf("Creating %q certificate chain cache", c.attVariant))
 	ask, ark, err := c.createCertChainCache(ctx, reportSigner)
 	if err != nil {
 		return nil, fmt.Errorf("creating %s certificate chain cache: %w", c.attVariant, err)
