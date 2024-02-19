@@ -82,7 +82,7 @@ func (c *kubeconfigMerger) mergeConfigs(configPath string, fileHandler file.Hand
 
 	// Set the current context to the cluster we just created
 	cfg.CurrentContext = constellConfig.CurrentContext
-	c.log.Debug(fmt.Sprintf("Set current context to %s", cfg.CurrentContext))
+	c.log.Debug(fmt.Sprintf("Set current context to %q", cfg.CurrentContext))
 
 	json, err := runtime.Encode(clientcodec.Codec, cfg)
 	if err != nil {
@@ -97,7 +97,7 @@ func (c *kubeconfigMerger) mergeConfigs(configPath string, fileHandler file.Hand
 	if err := fileHandler.Write(clientcmd.RecommendedHomeFile, mergedKubeconfig, file.OptOverwrite); err != nil {
 		return fmt.Errorf("writing merged kubeconfig to file: %w", err)
 	}
-	c.log.Debug(fmt.Sprintf("Merged kubeconfig into default config file: %s", clientcmd.RecommendedHomeFile))
+	c.log.Debug(fmt.Sprintf("Merged kubeconfig into default config file: %q", clientcmd.RecommendedHomeFile))
 	return nil
 }
 
