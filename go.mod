@@ -126,12 +126,12 @@ require (
 	go.etcd.io/etcd/client/pkg/v3 v3.5.10
 	go.etcd.io/etcd/client/v3 v3.5.10
 	go.uber.org/goleak v1.3.0
-	golang.org/x/crypto v0.17.0
+	golang.org/x/crypto v0.19.0
 	golang.org/x/exp v0.0.0-20231219180239-dc181d75b848
-	golang.org/x/mod v0.14.0
-	golang.org/x/sys v0.15.0
+	golang.org/x/mod v0.15.0
+	golang.org/x/sys v0.17.0
 	golang.org/x/text v0.14.0
-	golang.org/x/tools v0.16.1
+	golang.org/x/tools v0.18.0
 	google.golang.org/api v0.148.0
 	google.golang.org/grpc v1.60.0
 	google.golang.org/protobuf v1.31.0
@@ -335,6 +335,7 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sassoftware/relic v7.2.1+incompatible // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.6.0 // indirect
+	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/cast v1.5.1 // indirect
@@ -360,10 +361,10 @@ require (
 	go.starlark.net v0.0.0-20230525235612-a134d8f9ddca // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
-	golang.org/x/net v0.19.0 // indirect
+	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/oauth2 v0.13.0 // indirect
-	golang.org/x/sync v0.5.0 // indirect
-	golang.org/x/term v0.15.0 // indirect
+	golang.org/x/sync v0.6.0 // indirect
+	golang.org/x/term v0.17.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
