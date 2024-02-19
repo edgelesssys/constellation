@@ -111,6 +111,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/regclient/regclient v0.5.5
 	github.com/rogpeppe/go-internal v1.11.0
+	github.com/samber/slog-multi v1.0.2
 	github.com/schollz/progressbar/v3 v3.13.1
 	github.com/siderolabs/talos/pkg/machinery v1.4.6
 	github.com/sigstore/rekor v1.2.2
@@ -151,6 +152,8 @@ require (
 	libvirt.org/go/libvirt v1.9008.0
 	sigs.k8s.io/yaml v1.4.0
 )
+
+require github.com/samber/lo v1.38.1 // indirect
 
 require (
 	cloud.google.com/go v0.110.8 // indirect

@@ -97,6 +97,7 @@ go_library(
         "@com_github_google_uuid//:uuid",
         "@com_github_mattn_go_isatty//:go-isatty",
         "@com_github_rogpeppe_go_internal//diff",
+        "@com_github_samber_slog_multi//:slog-multi",
         "@com_github_siderolabs_talos_pkg_machinery//config/encoder",
         "@com_github_spf13_afero//:afero",
         "@com_github_spf13_cobra//:cobra",
