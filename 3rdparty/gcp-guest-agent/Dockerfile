@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y \
     git
 
 # Install Go
-ARG GO_VER=1.21.6
+ARG GO_VER=1.22.0
 RUN wget -q https://go.dev/dl/go${GO_VER}.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go${GO_VER}.linux-amd64.tar.gz && \
     rm go${GO_VER}.linux-amd64.tar.gz
