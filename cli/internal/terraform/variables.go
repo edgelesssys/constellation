@@ -282,10 +282,8 @@ type OpenStackClusterVariables struct {
 	Cloud *string `hcl:"cloud" cty:"cloud"`
 	// FloatingIPPoolID is the ID of the OpenStack floating IP pool to use for public IPs.
 	FloatingIPPoolID string `hcl:"floating_ip_pool_id" cty:"floating_ip_pool_id"`
-	// ImageURL is the URL of the OpenStack image to use.
-	ImageURL string `hcl:"image_id" cty:"image_id"`
-	// DirectDownload decides whether to download the image directly from the URL to OpenStack or to upload it from the local machine.
-	DirectDownload bool `hcl:"direct_download" cty:"direct_download"`
+	// ImageID is the ID of the OpenStack image to use.
+	ImageID string `hcl:"image_id" cty:"image_id"`
 	// OpenstackUserDomainName is the OpenStack user domain name to use.
 	OpenstackUserDomainName string `hcl:"openstack_user_domain_name" cty:"openstack_user_domain_name"`
 	// OpenstackUsername is the OpenStack user name to use.

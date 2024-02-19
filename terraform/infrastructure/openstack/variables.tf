@@ -25,7 +25,7 @@ variable "node_groups" {
 
 variable "image_id" {
   type        = string
-  description = "OS image URL for the cluster's nodes."
+  description = "OS image ID for the cluster's nodes."
 }
 
 variable "debug" {
@@ -46,11 +46,6 @@ variable "cloud" {
   type        = string
   default     = null
   description = "Cloud to use within the OpenStack \"clouds.yaml\" file. Optional. If not set, environment variables are used."
-}
-
-variable "direct_download" {
-  type        = bool
-  description = "Download OS image directly from source URL to OpenStack. Otherwise, the image is downloaded to the local machine and uploads to OpenStack."
 }
 
 variable "floating_ip_pool_id" {

@@ -228,9 +228,6 @@ type OpenStackConfig struct {
 	//   Password to use inside the cluster. You can instead use the environment variable "CONSTELL_OS_PASSWORD".
 	Password string `yaml:"password"`
 	// description: |
-	//   If enabled, downloads OS image directly from source URL to OpenStack. Otherwise, downloads image to local machine and uploads to OpenStack.
-	DirectDownload *bool `yaml:"directDownload" validate:"required"`
-	// description: |
 	//   Deploy Yawol loadbalancer. For details see: https://github.com/stackitcloud/yawol
 	DeployYawolLoadBalancer *bool `yaml:"deployYawolLoadBalancer" validate:"required"`
 	// description: |
@@ -363,7 +360,6 @@ func Default() *Config {
 				UseMarketplaceImage:   toPtr(false),
 			},
 			OpenStack: &OpenStackConfig{
-				DirectDownload:          toPtr(true),
 				DeployYawolLoadBalancer: toPtr(true),
 				DeployCSIDriver:         toPtr(true),
 			},
@@ -912,7 +908,6 @@ func (c *Config) WithOpenStackProviderDefaults(openStackProvider string) *Config
 		c.Provider.OpenStack.YawolImageID = "bcd6c13e-75d1-4c3f-bf0f-8f83580cc1be"
 		c.Provider.OpenStack.YawolFlavorID = "3b11b27e-6c73-470d-b595-1d85b95a8cdf"
 		c.Provider.OpenStack.DeployCSIDriver = toPtr(true)
-		c.Provider.OpenStack.DirectDownload = toPtr(true)
 		for groupName, group := range c.NodeGroups {
 			group.InstanceType = "2715eabe-3ffc-4c36-b02a-efa8c141a96a"
 			group.StateDiskType = "storage_premium_perf6"

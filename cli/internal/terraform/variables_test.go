@@ -255,8 +255,7 @@ func TestOpenStackClusterVariables(t *testing.T) {
 		Name:                    "cluster-name",
 		Cloud:                   toPtr("my-cloud"),
 		FloatingIPPoolID:        "fip-pool-0123456789abcdef",
-		ImageURL:                "https://example.com/image.raw",
-		DirectDownload:          true,
+		ImageID:                 "8e10b92d-8f7a-458c-91c6-59b42f82ef81",
 		OpenstackUserDomainName: "my-user-domain",
 		OpenstackUsername:       "my-username",
 		OpenstackPassword:       "my-password",
@@ -288,8 +287,7 @@ node_groups = {
 }
 cloud                      = "my-cloud"
 floating_ip_pool_id        = "fip-pool-0123456789abcdef"
-image_id                  = "https://example.com/image.raw"
-direct_download            = true
+image_id                   = "8e10b92d-8f7a-458c-91c6-59b42f82ef81"
 openstack_user_domain_name = "my-user-domain"
 openstack_username         = "my-username"
 openstack_password         = "my-password"
