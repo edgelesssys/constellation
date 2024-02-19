@@ -131,7 +131,7 @@ func (c *Client) DeletePath(ctx context.Context, path string) error {
 		Bucket: &c.bucket,
 		Prefix: &path,
 	}
-	c.Logger.Debug(fmt.Sprintf("Listing objects in %s", path))
+	c.Logger.Debug(fmt.Sprintf("Listing objects in %q", path))
 	objs := []s3types.Object{}
 	out := &s3.ListObjectsV2Output{IsTruncated: ptr(true)}
 	for out.IsTruncated != nil && *out.IsTruncated {
@@ -142,7 +142,7 @@ func (c *Client) DeletePath(ctx context.Context, path string) error {
 		}
 		objs = append(objs, out.Contents...)
 	}
-	c.Logger.Debug(fmt.Sprintf("Found %d objects in %s", len(objs), path))
+	c.Logger.Debug(fmt.Sprintf("Found %d objects in %q", len(objs), path))
 
 	if len(objs) == 0 {
 		c.Logger.Warn(fmt.Sprintf("Path %s is already empty", path))
@@ -167,7 +167,7 @@ func (c *Client) DeletePath(ctx context.Context, path string) error {
 			Objects: objIDs,
 		},
 	}
-	c.Logger.Debug(fmt.Sprintf("Deleting %d objects in %s", len(objs), path))
+	c.Logger.Debug(fmt.Sprintf("Deleting %d objects in %q", len(objs), path))
 	if _, err := c.s3Client.DeleteObjects(ctx, deleteIn); err != nil {
 		return fmt.Errorf("deleting objects in %s: %w", path, err)
 	}
@@ -197,7 +197,7 @@ func Fetch[T APIObject](ctx context.Context, c *Client, obj T) (T, error) {
 		Key:    ptr(obj.JSONPath()),
 	}
 
-	c.Logger.Debug(fmt.Sprintf("Fetching %T from s3: %s", obj, obj.JSONPath()))
+	c.Logger.Debug(fmt.Sprintf("Fetching %T from s3: %q", obj, obj.JSONPath()))
 	out, err := c.s3Client.GetObject(ctx, in)
 	var noSuchkey *s3types.NoSuchKey
 	if errors.As(err, &noSuchkey) {
@@ -243,7 +243,7 @@ func Update(ctx context.Context, c *Client, obj APIObject) error {
 
 	c.dirtyPaths = append(c.dirtyPaths, "/"+obj.JSONPath())
 
-	c.Logger.Debug(fmt.Sprintf("Uploading %T to s3: %v", obj, obj.JSONPath()))
+	c.Logger.Debug(fmt.Sprintf("Uploading %T to s3: %q", obj, obj.JSONPath()))
 	if _, err := c.Upload(ctx, in); err != nil {
 		return fmt.Errorf("uploading %T: %w", obj, err)
 	}
@@ -306,7 +306,7 @@ func Delete(ctx context.Context, c *Client, obj APIObject) error {
 		Key:    ptr(obj.JSONPath()),
 	}
 
-	c.Logger.Debug(fmt.Sprintf("Deleting %T from s3: %s", obj, obj.JSONPath()))
+	c.Logger.Debug(fmt.Sprintf("Deleting %T from s3: %q", obj, obj.JSONPath()))
 	if _, err := c.DeleteObject(ctx, in); err != nil {
 		return fmt.Errorf("deleting s3 object at %s: %w", obj.JSONPath(), err)
 	}
