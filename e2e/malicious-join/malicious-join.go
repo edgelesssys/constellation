@@ -155,13 +155,13 @@ type maliciousJoiner struct {
 
 // join issues a join request to the join service endpoint.
 func (j *maliciousJoiner) join(ctx context.Context) (*joinproto.IssueJoinTicketResponse, error) {
-	j.logger.Debug(fmt.Sprintf("Dialing join service endpoint %s", j.endpoint))
+	j.logger.Debug(fmt.Sprintf("Dialing join service endpoint %q", j.endpoint))
 	conn, err := j.dialer.Dial(ctx, j.endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("dialing join service endpoint: %w", err)
 	}
 	defer conn.Close()
-	j.logger.Debug(fmt.Sprintf("Successfully dialed join service endpoint %s", j.endpoint))
+	j.logger.Debug(fmt.Sprintf("Successfully dialed join service endpoint %q", j.endpoint))
 
 	protoClient := joinproto.NewAPIClient(conn)
 
@@ -172,7 +172,21 @@ func (j *maliciousJoiner) join(ctx context.Context) (*joinproto.IssueJoinTicketR
 		IsControlPlane:     false,
 	}
 	res, err := protoClient.IssueJoinTicket(ctx, req)
-	j.logger.Debug(fmt.Sprintf("Got join ticket response: %+v", res))
+	j.logger.Debug(fmt.Sprintf(
+`Got join ticket response:
+  ApiServerEndpoint: %q
+  ControlPlaneFiles: %+v
+  DiscoveryTokenCaCertHash: %q
+  KubeletCert: %v
+  KubernetesComponents: %+v
+  KubernetesVersion: %q
+  MeasurementSalt: %v
+  MeasurementSecret: %v
+  StateDiskKey: %v
+  Token: %q`,
+  res.ApiServerEndpoint, res.ControlPlaneFiles, res.DiscoveryTokenCaCertHash, 
+  res.KubeletCert, res.KubernetesComponents, res.KubernetesVersion,
+  res.MeasurementSalt, res.MeasurementSecret, res.StateDiskKey, res.Token))
 	if err != nil {
 		return nil, fmt.Errorf("issuing join ticket: %w", err)
 	}
