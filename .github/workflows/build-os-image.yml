@@ -162,6 +162,11 @@ jobs:
         with:
           service_account: "image-uploader@constellation-images.iam.gserviceaccount.com"
 
+      - name: Login to OpenStack
+        uses: ./.github/actions/login_openstack
+        with:
+          clouds_yaml: ${{ secrets.STACKIT_IMAGE_UPLOAD_CLOUDS_YAML }}
+
       - name: Build and upload
         id: build
         shell: bash
