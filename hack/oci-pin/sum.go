@@ -42,14 +42,20 @@ func runSum(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	log := logger.NewTextLogger(flags.logLevel)
-	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
+	log.Debug(fmt.Sprintf(
+`Parsed flags:
+  image-repo-tag: %q
+  verbose: %q
+  oci-path: %q
+  output: %q`,
+flags.imageRepoTag, flags.logLevel, flags.ociPath, flags.output))
 
 	registry, prefix, name, tag, err := splitRepoTag(flags.imageRepoTag)
 	if err != nil {
 		return fmt.Errorf("splitting repo tag: %w", err)
 	}
 
-	log.Debug(fmt.Sprintf("Generating sum file for OCI image %s.", name))
+	log.Debug(fmt.Sprintf("Generating sum file for OCI image %q.", name))
 
 	ociIndexPath := filepath.Join(flags.ociPath, "index.json")
 	index, err := os.Open(ociIndexPath)
@@ -75,7 +81,7 @@ func runSum(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("extracting OCI image digest: %w", err)
 	}
 
-	log.Debug(fmt.Sprintf("OCI image digest: %s", digest))
+	log.Debug(fmt.Sprintf("OCI image digest: %q", digest))
 
 	refs := []sums.PinnedImageReference{
 		{
