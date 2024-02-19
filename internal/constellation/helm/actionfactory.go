@@ -90,15 +90,15 @@ func (a actionFactory) appendNewAction(
 			)
 		}
 
-		a.log.Debug(fmt.Sprintf("release %s not found, adding to new releases...", release.releaseName))
+		a.log.Debug(fmt.Sprintf("release %q not found, adding to new releases...", release.releaseName))
 		*actions = append(*actions, a.newInstall(release, timeout))
 		return nil
 	}
 	if err != nil {
 		return fmt.Errorf("getting version for %s: %w", release.releaseName, err)
 	}
-	a.log.Debug(fmt.Sprintf("Current %s version: %s", release.releaseName, currentVersion))
-	a.log.Debug(fmt.Sprintf("New %s version: %s", release.releaseName, newVersion))
+	a.log.Debug(fmt.Sprintf("Current %q version: %q", release.releaseName, currentVersion))
+	a.log.Debug(fmt.Sprintf("New %q version: %q", release.releaseName, newVersion))
 
 	if !force {
 		// For charts we package ourselves, the version is equal to the CLI version (charts are embedded in the binary).
@@ -132,7 +132,7 @@ func (a actionFactory) appendNewAction(
 		release.releaseName == certManagerInfo.releaseName {
 		return ErrConfirmationMissing
 	}
-	a.log.Debug(fmt.Sprintf("Upgrading %s from %s to %s", release.releaseName, currentVersion, newVersion))
+	a.log.Debug(fmt.Sprintf("Upgrading %q from %q to %q", release.releaseName, currentVersion, newVersion))
 	*actions = append(*actions, a.newUpgrade(release, timeout))
 	return nil
 }
@@ -165,7 +165,7 @@ func (a actionFactory) updateCRDs(ctx context.Context, chart *chart.Chart) error
 	for _, dep := range chart.Dependencies() {
 		for _, crdFile := range dep.Files {
 			if strings.HasPrefix(crdFile.Name, "crds/") {
-				a.log.Debug(fmt.Sprintf("Updating crd: %s", crdFile.Name))
+				a.log.Debug(fmt.Sprintf("Updating crd: %q", crdFile.Name))
 				err := a.kubeClient.ApplyCRD(ctx, crdFile.Data)
 				if err != nil {
 					return err
