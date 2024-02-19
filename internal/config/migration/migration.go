@@ -389,7 +389,6 @@ func V3ToV4(path string, fileHandler file.Handler) error {
 			RegionName:              cfgV3.Provider.OpenStack.RegionName,
 			Username:                cfgV3.Provider.OpenStack.Username,
 			Password:                cfgV3.Provider.OpenStack.Password,
-			DirectDownload:          cfgV3.Provider.OpenStack.DirectDownload,
 			DeployYawolLoadBalancer: cfgV3.Provider.OpenStack.DeployYawolLoadBalancer,
 			YawolImageID:            cfgV3.Provider.OpenStack.YawolImageID,
 			YawolFlavorID:           cfgV3.Provider.OpenStack.YawolFlavorID,

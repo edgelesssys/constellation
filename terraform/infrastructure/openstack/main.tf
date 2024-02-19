@@ -55,19 +55,6 @@ resource "random_password" "init_secret" {
   override_special = "_%@"
 }
 
-resource "openstack_images_image_v2" "image_id" {
-  name             = local.name
-  image_source_url = var.image_id
-  web_download     = var.direct_download
-  container_format = "bare"
-  disk_format      = "raw"
-  visibility       = "private"
-  properties = {
-    hw_firmware_type = "uefi"
-    os_type          = "linux"
-  }
-}
-
 data "openstack_networking_network_v2" "floating_ip_pool" {
   network_id = var.floating_ip_pool_id
 }
@@ -216,7 +203,7 @@ module "instance_group" {
   disk_size                  = each.value.state_disk_size
   state_disk_type            = each.value.state_disk_type
   availability_zone          = each.value.zone
-  image_id                   = openstack_images_image_v2.image_id.image_id
+  image_id                   = var.image_id
   flavor_id                  = each.value.flavor_id
   security_groups            = [openstack_networking_secgroup_v2.vpc_secgroup.id]
   tags                       = local.tags
