@@ -16,6 +16,6 @@ def containter_image_deps():
     )
     oci_pull(
         name = "libvirtd_base",
-        digest = "sha256:231c09d1574fddb6a681b787d0d40edfd08dae15411dfe6ebab38a7fa57bf1b5",
+        digest = "sha256:033a9ff81e5273a29e61fa5b780427c31f2a5317545b238128626a10e41599dc",
         image = "ghcr.io/edgelesssys/constellation/libvirtd-base",
     )
