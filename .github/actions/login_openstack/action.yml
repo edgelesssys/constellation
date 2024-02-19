@@ -1,0 +1,16 @@
+name: OpenStack login
+description: "Login to OpenStack"
+inputs:
+  clouds_yaml:
+    description: "Credentials authorized to create Constellation on OpenStack."
+    required: true
+runs:
+  using: "composite"
+  steps:
+   - name: Login to OpenStack
+     env:
+       CLOUDS_YAML: ${{ inputs.clouds_yaml }}
+     shell: bash
+     run: |
+        mkdir -p ~/.config/openstack
+        echo "${CLOUDS_YAML}" > ~/.config/openstack/clouds.yaml
