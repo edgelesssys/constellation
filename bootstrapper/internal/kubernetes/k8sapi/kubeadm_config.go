@@ -122,6 +122,9 @@ func (c *KubdeadmConfiguration) InitConfiguration(externalCloudProvider bool, cl
 					"profiling": "false",
 				},
 			},
+			FeatureGates: map[string]bool{
+				"EtcdLearnerMode": true,
+			},
 		},
 		// warning: this config is applied to every node in the cluster!
 		KubeletConfiguration: kubeletconf.KubeletConfiguration{
