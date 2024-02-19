@@ -19,3 +19,8 @@ publisher = "edgelesssys"
 project = "constellation-images"
 location = "europe-west3"
 bucket = "constellation-os-images"
+
+[base.openstack]
+cloud = "stackit"
+visibility = "private"
+properties = { "hw_firmware_type" = "uefi", "os_type" = "linux" }
