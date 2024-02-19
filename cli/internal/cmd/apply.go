@@ -868,5 +868,5 @@ type debugFileLogger struct {
 func (l debugFileLogger) Debug(msg string, args ...any) {
 	l.log.Debug(msg, args...)
 
-	_ = l.fileHandler.Write(constants.InitDebugLogFile, []byte(msg+"\n"), file.OptAppend)
+	_ = l.fileHandler.Write(constants.CLIDebugLogFile, []byte(msg+"\n"), file.OptAppend)
 }
