@@ -10,6 +10,8 @@
     };
     uplosi = {
       url = "github:edgelesssys/uplosi";
+      inputs.nixpkgs.follows = "nixpkgsUnstable";
+      inputs.flake-utils.follows = "flake-utils";
     };
   };
 

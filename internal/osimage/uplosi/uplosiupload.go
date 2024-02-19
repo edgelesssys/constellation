@@ -82,12 +82,14 @@ func prepareUplosiConfig(req *osimage.UploadRequest) ([]byte, error) {
 	awsConfig := baseConfig["aws"].(map[string]any)
 	azureConfig := baseConfig["azure"].(map[string]any)
 	gcpConfig := baseConfig["gcp"].(map[string]any)
+	openstackConfig := baseConfig["openstack"].(map[string]any)
 
 	baseConfig["imageVersion"] = imageVersionStr
 	baseConfig["provider"] = strings.ToLower(req.Provider.String())
 	extendAWSConfig(awsConfig, req.Version, req.AttestationVariant, req.Timestamp)
 	extendAzureConfig(azureConfig, req.Version, req.AttestationVariant, req.Timestamp)
 	extendGCPConfig(gcpConfig, req.Version, req.AttestationVariant)
+	extendOpenStackConfig(openstackConfig, req.Version, req.AttestationVariant)
 
 	buf := new(bytes.Buffer)
 	if err := toml.NewEncoder(buf).Encode(config); err != nil {
@@ -262,6 +264,10 @@ func extendGCPConfig(gcpConfig map[string]any, version versionsapi.Version, atte
 	gcpConfig["imageFamily"] = gcpImageFamily(version)
 	gcpConfig["imageName"] = gcpImageName(version, attestationVariant)
 	gcpConfig["blobName"] = gcpImageName(version, attestationVariant) + ".tar.gz"
+}
+
+func extendOpenStackConfig(openstackConfig map[string]any, version versionsapi.Version, attestationVariant string) {
+	openstackConfig["imageName"] = fmt.Sprintf("constellation-%s-%s-%s", version.Stream(), version.Version(), attestationVariant)
 }
 
 func gcpImageFamily(version versionsapi.Version) string {

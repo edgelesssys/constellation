@@ -73,7 +73,7 @@ func runUplosi(cmd *cobra.Command, _ []string) error {
 
 	var uploadC uploader
 	switch flags.provider {
-	case cloudprovider.AWS, cloudprovider.Azure, cloudprovider.GCP:
+	case cloudprovider.AWS, cloudprovider.Azure, cloudprovider.GCP, cloudprovider.OpenStack:
 		uploadC = uplosiupload.New(flags.uplosiPath, log)
 	default:
 		uploadC = nopupload.New(log)
