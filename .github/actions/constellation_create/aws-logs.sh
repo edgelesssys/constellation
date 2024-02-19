@@ -25,20 +25,20 @@ workerInstances=$(
     yq eval '.Reservations[].Instances[].InstanceId' -
 )
 
-echo "Fetching logs from control planes"
+for flag in "" "--latest"; do
+  echo "Fetching ${flag} logs from control planes"
+  for instance in ${controlInstances}; do
+    printf "Fetching for %s\n" "${instance}"
+    aws ec2 get-console-output "${flag}" --region "${1}" --instance-id "${instance}" |
+      jq -r .'Output' |
+      tail -n +2 > "control-plane-${instance}${flag}.log"
+  done
 
-for instance in ${controlInstances}; do
-  printf "Fetching for %s\n" "${instance}"
-  aws ec2 get-console-output --region "${1}" --instance-id "${instance}" |
-    jq -r .'Output' |
-    tail -n +2 > control-plane-"${instance}".log
-done
-
-echo "Fetching logs from worker nodes"
-
-for instance in ${workerInstances}; do
-  printf "Fetching for %s\n" "${instance}"
-  aws ec2 get-console-output --region "${1}" --instance-id "${instance}" |
-    jq -r .'Output' |
-    tail -n +2 > worker-"${instance}".log
+  echo "Fetching ${flag} logs from worker nodes"
+  for instance in ${workerInstances}; do
+    printf "Fetching for %s\n" "${instance}"
+    aws ec2 get-console-output "${flag}" --region "${1}" --instance-id "${instance}" |
+      jq -r .'Output' |
+      tail -n +2 > "worker-${instance}${flag}.log"
+  done
 done
