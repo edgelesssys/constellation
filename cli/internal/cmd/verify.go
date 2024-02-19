@@ -128,7 +128,17 @@ func runVerify(cmd *cobra.Command, _ []string) error {
 	if err := v.flags.parse(cmd.Flags()); err != nil {
 		return err
 	}
-	v.log.Debug(fmt.Sprintf("Using flags: %+v", v.flags))
+	v.log.Debug(fmt.Sprintf(
+`Using flags:
+  cluster-id: %q
+  debug: %t
+  node-endpoint: %q
+  force: %t
+  output: %q
+  owner-id: %q
+  tf-log: %q`,
+v.flags.clusterID, v.flags.debug, v.flags.endpoint, v.flags.force,
+v.flags.output, v.flags.ownerID, v.flags.tfLogLevel))
 	fetcher := attestationconfigapi.NewFetcher()
 	return v.verify(cmd, verifyClient, formatterFactory, fetcher)
 }
@@ -175,7 +185,7 @@ func (c *verifyCmd) verify(cmd *cobra.Command, verifyClient verifyClient, factor
 		return fmt.Errorf("updating expected PCRs: %w", err)
 	}
 
-	c.log.Debug(fmt.Sprintf("Creating aTLS Validator for %s", conf.GetAttestationConfig().GetVariant()))
+	c.log.Debug(fmt.Sprintf("Creating aTLS Validator for %q", conf.GetAttestationConfig().GetVariant()))
 	validator, err := choose.Validator(attConfig, warnLogger{cmd: cmd, log: c.log})
 	if err != nil {
 		return fmt.Errorf("creating aTLS validator: %w", err)
