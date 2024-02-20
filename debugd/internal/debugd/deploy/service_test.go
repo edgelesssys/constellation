@@ -218,7 +218,7 @@ func TestOverrideServiceUnitExecStart(t *testing.T) {
 			},
 			unitName:         "test",
 			execStart:        "/run/state/bin/test",
-			wantFileContents: "[Service]\nExecStart=\nExecStart=/run/state/bin/test\n",
+			wantFileContents: "[Service]\nExecStart=\nExecStart=/run/state/bin/test $CONSTELLATION_DEBUG_FLAGS\n",
 			wantActionCalls: []dbusConnActionInput{
 				{name: "test.service", mode: "replace"},
 			},
@@ -264,7 +264,7 @@ func TestOverrideServiceUnitExecStart(t *testing.T) {
 			},
 			unitName:         "test",
 			execStart:        "/run/state/bin/test",
-			wantFileContents: "[Service]\nExecStart=\nExecStart=/run/state/bin/test\n",
+			wantFileContents: "[Service]\nExecStart=\nExecStart=/run/state/bin/test $CONSTELLATION_DEBUG_FLAGS\n",
 			wantActionCalls: []dbusConnActionInput{
 				{name: "test.service", mode: "replace"},
 			},
