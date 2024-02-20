@@ -128,6 +128,20 @@ func (c *imdsClient) role(ctx context.Context) (role.Role, error) {
 	return role.FromString(c.cache.Tags.Role), nil
 }
 
+func (c *imdsClient) loadBalancerEndpoint(ctx context.Context) (string, error) {
+	if c.timeForUpdate(c.cacheTime) || c.cache.Tags.LoadBalancerEndpoint == "" {
+		if err := c.update(ctx); err != nil {
+			return "", err
+		}
+	}
+
+	if c.cache.Tags.LoadBalancerEndpoint == "" {
+		return "", errors.New("unable to get load balancer endpoint")
+	}
+
+	return c.cache.Tags.LoadBalancerEndpoint, nil
+}
+
 func (c *imdsClient) authURL(ctx context.Context) (string, error) {
 	if c.timeForUpdate(c.cacheTime) || c.cache.Tags.AuthURL == "" {
 		if err := c.update(ctx); err != nil {
@@ -245,13 +259,14 @@ type metadataResponse struct {
 }
 
 type metadataTags struct {
-	InitSecretHash string `json:"constellation-init-secret-hash,omitempty"`
-	Role           string `json:"constellation-role,omitempty"`
-	UID            string `json:"constellation-uid,omitempty"`
-	AuthURL        string `json:"openstack-auth-url,omitempty"`
-	UserDomainName string `json:"openstack-user-domain-name,omitempty"`
-	Username       string `json:"openstack-username,omitempty"`
-	Password       string `json:"openstack-password,omitempty"`
+	InitSecretHash       string `json:"constellation-init-secret-hash,omitempty"`
+	Role                 string `json:"constellation-role,omitempty"`
+	UID                  string `json:"constellation-uid,omitempty"`
+	AuthURL              string `json:"openstack-auth-url,omitempty"`
+	UserDomainName       string `json:"openstack-user-domain-name,omitempty"`
+	Username             string `json:"openstack-username,omitempty"`
+	Password             string `json:"openstack-password,omitempty"`
+	LoadBalancerEndpoint string `json:"openstack-load-balancer-endpoint,omitempty"`
 }
 
 type httpClient interface {

@@ -465,203 +465,18 @@ func TestInitSecretHash(t *testing.T) {
 }
 
 func TestGetLoadBalancerEndpoint(t *testing.T) {
-	// newTestAddrs returns a set of raw server addresses as we would get from
-	// a ListServers call and as expected by the parseSeverAddresses function.
-	// The hardcoded addresses don't match what we are looking for. A valid
-	// address can be injected. You can pass a second valid address to test
-	// that the first valid one is chosen.
-	newTestAddrs := func(floatingIP1, floatingIP2 string, fixedIP1 string) map[string]any {
-		return map[string]any{
-			"network1": []any{
-				map[string]any{
-					"addr":                    "192.0.2.2",
-					"version":                 4,
-					"OS-EXT-IPS:type":         "floating",
-					"OS-EXT-IPS-MAC:mac_addr": "fa:16:3e:0c:0c:0c",
-				},
-			},
-			"network2": []any{
-				map[string]any{
-					"addr":                    fixedIP1,
-					"version":                 4,
-					"OS-EXT-IPS:type":         "fixed",
-					"OS-EXT-IPS-MAC:mac_addr": "fa:16:3e:0c:0c:0c",
-				},
-				map[string]any{
-					"addr":                    "2001:db8:3333:4444:5555:6666:7777:8888",
-					"version":                 6,
-					"OS-EXT-IPS:type":         "floating",
-					"OS-EXT-IPS-MAC:mac_addr": "fa:16:3e:0c:0c:0c",
-				},
-				map[string]any{
-					"addr":                    floatingIP1,
-					"version":                 4,
-					"OS-EXT-IPS:type":         "floating",
-					"OS-EXT-IPS-MAC:mac_addr": "fa:16:3e:0c:0c:0c",
-				},
-				map[string]any{
-					"addr":                    floatingIP2,
-					"version":                 4,
-					"OS-EXT-IPS:type":         "floating",
-					"OS-EXT-IPS-MAC:mac_addr": "fa:16:3e:0c:0c:0c",
-				},
-			},
-		}
-	}
-
 	testCases := map[string]struct {
-		imds     *stubIMDSClient
-		api      *stubServersClient
-		wantHost string
-		wantErr  bool
+		imds    *stubIMDSClient
+		want    string
+		wantErr bool
 	}{
 		"error returned from IMDS client": {
-			imds:    &stubIMDSClient{uidErr: errors.New("failed")},
+			imds:    &stubIMDSClient{loadBalancerEndpointErr: errors.New("failed")},
 			wantErr: true,
 		},
-		"error returned from getSubnetCIDR": {
-			imds: &stubIMDSClient{},
-			api: &stubServersClient{
-				netsPager:    newNetPager([]networks.Network{{Name: "mynet"}}, nil),
-				subnetsPager: newSubnetPager(nil, errors.New("failed")),
-			},
-			wantErr: true,
-		},
-		"error returned from getServers": {
-			imds: &stubIMDSClient{},
-			api: &stubServersClient{
-				netsPager:    newNetPager([]networks.Network{{Name: "mynet"}}, nil),
-				subnetsPager: newSubnetPager([]subnets.Subnet{{Name: "mynet", CIDR: "192.0.2.0/24"}}, nil),
-				serversPager: newSeverPager(nil, errors.New("failed")),
-			},
-			wantErr: true,
-		},
-		"sever with empty name skipped": {
-			imds: &stubIMDSClient{},
-			api: &stubServersClient{
-				netsPager:    newNetPager([]networks.Network{{Name: "mynet"}}, nil),
-				subnetsPager: newSubnetPager([]subnets.Subnet{{Name: "mynet", CIDR: "192.0.2.0/24"}}, nil),
-				serversPager: newSeverPager([]servers.Server{
-					{
-						ID:        "id1",
-						Tags:      &[]string{"constellation-role-control-plane", "constellation-uid-7777"},
-						Addresses: newTestAddrs("198.51.100.0", "", "192.0.2.1"),
-					},
-				}, nil),
-			},
-			wantErr: true,
-		},
-		"server with empty ID skipped": {
-			imds: &stubIMDSClient{},
-			api: &stubServersClient{
-				netsPager:    newNetPager([]networks.Network{{Name: "mynet"}}, nil),
-				subnetsPager: newSubnetPager([]subnets.Subnet{{Name: "mynet", CIDR: "192.0.2.0/24"}}, nil),
-				serversPager: newSeverPager([]servers.Server{
-					{
-						Name:      "name1",
-						Tags:      &[]string{"constellation-role-control-plane", "constellation-uid-7777"},
-						Addresses: newTestAddrs("198.51.100.0", "", "192.0.2.1"),
-					},
-				}, nil),
-			},
-			wantErr: true,
-		},
-		"sever with nil tags skipped": {
-			imds: &stubIMDSClient{},
-			api: &stubServersClient{
-				netsPager:    newNetPager([]networks.Network{{Name: "mynet"}}, nil),
-				subnetsPager: newSubnetPager([]subnets.Subnet{{Name: "mynet", CIDR: "192.0.2.0/24"}}, nil),
-				serversPager: newSeverPager([]servers.Server{
-					{
-						Name:      "name1",
-						ID:        "id1",
-						Addresses: newTestAddrs("198.51.100.0", "", "192.0.2.1"),
-					},
-				}, nil),
-			},
-			wantErr: true,
-		},
-		"server has invalid address": {
-			imds: &stubIMDSClient{},
-			api: &stubServersClient{
-				netsPager:    newNetPager([]networks.Network{{Name: "mynet"}}, nil),
-				subnetsPager: newSubnetPager([]subnets.Subnet{{Name: "mynet", CIDR: "192.0.2.0/24"}}, nil),
-				serversPager: newSeverPager([]servers.Server{
-					{
-						Name:      "name1",
-						ID:        "id1",
-						Tags:      &[]string{"constellation-role-control-plane", "constellation-uid-7777"},
-						Addresses: newTestAddrs("", "", "invalidIP"),
-					},
-				}, nil),
-			},
-			wantErr: true,
-		},
-		"server without parseable addresses skipped": {
-			imds: &stubIMDSClient{},
-			api: &stubServersClient{
-				netsPager:    newNetPager([]networks.Network{{Name: "mynet"}}, nil),
-				subnetsPager: newSubnetPager([]subnets.Subnet{{Name: "mynet", CIDR: "192.0.2.0/24"}}, nil),
-				serversPager: newSeverPager([]servers.Server{
-					{
-						Name: "name1",
-						ID:   "id1",
-						Tags: &[]string{"constellation-role-control-plane", "constellation-uid-7777"},
-						Addresses: map[string]any{
-							"somekey": "invalid",
-						},
-					},
-				}, nil),
-			},
-			wantErr: true,
-		},
-		"invalid endpoint returned from server addresses": {
-			imds: &stubIMDSClient{},
-			api: &stubServersClient{
-				netsPager:    newNetPager([]networks.Network{{Name: "mynet"}}, nil),
-				subnetsPager: newSubnetPager([]subnets.Subnet{{Name: "mynet", CIDR: "192.0.2.0/24"}}, nil),
-				serversPager: newSeverPager([]servers.Server{
-					{
-						Name:      "name1",
-						ID:        "id1",
-						Tags:      &[]string{"constellation-role-control-plane", "constellation-uid-7777"},
-						Addresses: newTestAddrs("invalidIP", "", "192.0.2.1"),
-					},
-				}, nil),
-			},
-			wantErr: true,
-		},
-		"valid endpoint returned from server addresses not in subnet CIDR": {
-			imds: &stubIMDSClient{},
-			api: &stubServersClient{
-				netsPager:    newNetPager([]networks.Network{{Name: "mynet"}}, nil),
-				subnetsPager: newSubnetPager([]subnets.Subnet{{Name: "mynet", CIDR: "192.0.2.0/24"}}, nil),
-				serversPager: newSeverPager([]servers.Server{
-					{
-						Name:      "name1",
-						ID:        "id1",
-						Tags:      &[]string{"constellation-role-control-plane", "constellation-uid-7777"},
-						Addresses: newTestAddrs("198.51.100.0", "", "192.0.2.1"),
-					},
-				}, nil),
-			},
-			wantHost: "198.51.100.0",
-		},
-		"first valid endpoint returned from server addresses not in subnet CIDR": {
-			imds: &stubIMDSClient{},
-			api: &stubServersClient{
-				netsPager:    newNetPager([]networks.Network{{Name: "mynet"}}, nil),
-				subnetsPager: newSubnetPager([]subnets.Subnet{{Name: "mynet", CIDR: "192.0.2.0/24"}}, nil),
-				serversPager: newSeverPager([]servers.Server{
-					{
-						Name:      "name1",
-						ID:        "id1",
-						Tags:      &[]string{"constellation-role-control-plane", "constellation-uid-7777"},
-						Addresses: newTestAddrs("198.51.100.0", "198.51.100.1", "192.0.2.1"),
-					},
-				}, nil),
-			},
-			wantHost: "198.51.100.0",
+		"UID returned from IMDS client": {
+			imds: &stubIMDSClient{loadBalancerEndpointResult: "some.endpoint"},
+			want: "some.endpoint",
 		},
 	}
 
@@ -669,19 +484,15 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			c := &Cloud{
-				imds: tc.imds,
-				api:  tc.api,
-			}
+			c := &Cloud{imds: tc.imds}
 
-			gotHost, gotPort, err := c.GetLoadBalancerEndpoint(context.Background())
+			got, _, err := c.GetLoadBalancerEndpoint(context.Background())
 
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
-				assert.Equal(tc.wantHost, gotHost)
-				assert.Equal("6443", gotPort)
+				assert.Equal(tc.want, got)
 			}
 		})
 	}

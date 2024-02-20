@@ -207,8 +207,12 @@ type OpenStackConfig struct {
 	// AuthURL is the OpenStack Identity endpoint to use inside the cluster.
 	AuthURL string `yaml:"authURL" validate:"required"`
 	// description: |
-	//   ProjectID is the ID of the project where a user resides.
+	//   ProjectID is the ID of the OpenStack project where a user resides.
 	ProjectID string `yaml:"projectID" validate:"required"`
+	// description: |
+	//   STACKITProjectID is the ID of the STACKIT project where a user resides.
+	//   Only used if cloud is "stackit".
+	STACKITProjectID string `yaml:"stackitProjectID"`
 	// description: |
 	//   ProjectName is the name of the project where a user resides.
 	ProjectName string `yaml:"projectName" validate:"required"`
