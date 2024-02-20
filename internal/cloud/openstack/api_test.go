@@ -17,20 +17,22 @@ import (
 )
 
 type stubIMDSClient struct {
-	providerIDResult     string
-	providerIDErr        error
-	nameResult           string
-	nameErr              error
-	projectIDResult      string
-	projectIDErr         error
-	uidResult            string
-	uidErr               error
-	initSecretHashResult string
-	initSecretHashErr    error
-	roleResult           role.Role
-	roleErr              error
-	vpcIPResult          string
-	vpcIPErr             error
+	providerIDResult           string
+	providerIDErr              error
+	nameResult                 string
+	nameErr                    error
+	projectIDResult            string
+	projectIDErr               error
+	uidResult                  string
+	uidErr                     error
+	initSecretHashResult       string
+	initSecretHashErr          error
+	roleResult                 role.Role
+	roleErr                    error
+	vpcIPResult                string
+	vpcIPErr                   error
+	loadBalancerEndpointResult string
+	loadBalancerEndpointErr    error
 }
 
 func (c *stubIMDSClient) providerID(_ context.Context) (string, error) {
@@ -59,6 +61,10 @@ func (c *stubIMDSClient) role(_ context.Context) (role.Role, error) {
 
 func (c *stubIMDSClient) vpcIP(_ context.Context) (string, error) {
 	return c.vpcIPResult, c.vpcIPErr
+}
+
+func (c *stubIMDSClient) loadBalancerEndpoint(_ context.Context) (string, error) {
+	return c.loadBalancerEndpointResult, c.loadBalancerEndpointErr
 }
 
 type stubServersClient struct {

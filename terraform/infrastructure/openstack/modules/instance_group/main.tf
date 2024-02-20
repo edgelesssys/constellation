@@ -65,13 +65,14 @@ resource "openstack_compute_instance_v2" "instance_group_member" {
     delete_on_termination = true
   }
   metadata = {
-    constellation-role             = var.role
-    constellation-uid              = var.uid
-    constellation-init-secret-hash = var.init_secret_hash
-    openstack-auth-url             = var.identity_internal_url
-    openstack-username             = var.openstack_username
-    openstack-password             = var.openstack_password
-    openstack-user-domain-name     = var.openstack_user_domain_name
+    constellation-role               = var.role
+    constellation-uid                = var.uid
+    constellation-init-secret-hash   = var.init_secret_hash
+    openstack-auth-url               = var.identity_internal_url
+    openstack-username               = var.openstack_username
+    openstack-password               = var.openstack_password
+    openstack-user-domain-name       = var.openstack_user_domain_name
+    openstack-load-balancer-endpoint = var.openstack_load_balancer_endpoint
   }
   availability_zone_hints = var.availability_zone
 }

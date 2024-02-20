@@ -25,6 +25,33 @@ provider "registry.terraform.io/hashicorp/random" {
   ]
 }
 
+provider "registry.terraform.io/stackitcloud/stackit" {
+  version     = "0.12.0"
+  constraints = "0.12.0"
+  hashes = [
+    "h1:08k0ihJixjWGyzNF0wdMiOckr+4qfBi50yj4tTLsbMM=",
+    "h1:8wtUYCXZke9uJiWp3Y7/tRy84UM0TjOzrzhb6BAX5vo=",
+    "h1:EwUqtQ7b/ShFcNvBMiemsbrvqBwFfkIRtnEIeIisKSA=",
+    "h1:lPXt86IQA6bHnX6o6xIaOUHqbAs6WHAehwtS1kK3wcg=",
+    "h1:t+pHh9fQCS+4Rq9STVs+npH3DOe7qp1L0rJfbMjAdjM=",
+    "zh:0dde99e7b343fa01f8eefc378171fb8621bedb20f59157d6cc8e3d46c738105f",
+    "zh:13ff6111adb804e3e7a33a0e8e341e494a84a81115b144c950ea9864ce12efdb",
+    "zh:2b13aff4a4879b833e27d215102c98809fe78d9a1fb33d09ec352760d21fa7c3",
+    "zh:6562b6ca55bebd7e425fba60ba5683a3cb00d49d50883e37f418b5be8d52d992",
+    "zh:6ce745a9a2fac88fd7b219dca1d70882e3c1b573e2d27a49de0a04b76ceabdf0",
+    "zh:70dd57f2e59596f697aaeab377423a041a57e066d1ad8bbfc0ace9cfaf6e9e0d",
+    "zh:7bb24a57ef0d802c62d23249078d86a0daeba29b7508d46bb8d104c5b820f35b",
+    "zh:93b57ec66d0f18ef616416f9d39a5a5b45dde604145b66e5184f00840db7a981",
+    "zh:9646f12a59a3eab161040eee68093b4c55864c865d544fa83d0e56bfbc59c174",
+    "zh:c23b3433b81eb99e314239add0df206a5388ef79884e924537bf09d4374815a8",
+    "zh:d2ef1946a5d559a72dac15a38a78f8d2d09bcd13068d9fe1debe7ae82e9c527d",
+    "zh:d63299ca4bf158573706a0c313dbee0aa79c7b910d85a0a748ba77620f533a5d",
+    "zh:e796aec8e1c64c7142d1b2877794ff8cb6fc5699292dfea102f2f229375626a2",
+    "zh:eb4003be226dc810004cd6a50d98f872d61bb49f2891a2966247a245c9d7cc1c",
+    "zh:f62e5390fca4d920c3db329276e1780ae57cc20aa666ee549dcf452d4f839ba5",
+  ]
+}
+
 provider "registry.terraform.io/terraform-provider-openstack/openstack" {
   version     = "1.54.1"
   constraints = "1.54.1"

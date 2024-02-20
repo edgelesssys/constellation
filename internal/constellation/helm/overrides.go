@@ -44,7 +44,9 @@ func extraCiliumValues(provider cloudprovider.Provider, conformanceMode bool, ou
 	}
 
 	strictMode := map[string]any{}
-	if provider != cloudprovider.QEMU {
+	// TODO(@3u13r): Once we are able to the subnet of the load balancer VMs
+	// on StackIT, we can remove the OpenStack exception here.
+	if provider != cloudprovider.QEMU && provider != cloudprovider.OpenStack {
 		strictMode = map[string]any{
 			"nodeCIDRList": []string{output.IPCidrNode},
 		}

@@ -75,6 +75,8 @@ go_library(
         "infrastructure/aws/modules/jump_host/output.tf",
         "infrastructure/aws/modules/load_balancer_target/output.tf",
         "infrastructure/aws/modules/public_private_subnet/output.tf",
+        "infrastructure/openstack/modules/stackit_loadbalancer/main.tf",
+        "infrastructure/openstack/modules/stackit_loadbalancer/variables.tf",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/terraform",
     visibility = ["//visibility:public"],
