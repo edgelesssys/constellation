@@ -41,6 +41,14 @@ If you encounter any problem with the following steps, make sure to use the [lat
 
     </tabItem>
 
+    <tabItem value="stackit" label="STACKIT">
+
+    ```bash
+    constellation config generate stackit
+    ```
+
+    </tabItem>
+
     </tabs>
 
 2. Create your [IAM configuration](../workflows/config.md#creating-an-iam-configuration).
@@ -108,6 +116,19 @@ If you encounter any problem with the following steps, make sure to use the [lat
     If you require the OS image to be available in another region, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md&title=Support+new+AWS+image+region:+xx-xxxx-x).
 
     You can find a list of all [regions in AWS's documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
+
+    </tabItem>
+
+    <tabItem value="stackit" label="STACKIT">
+
+    To use Constellation on STACKIT, the cluster will use the User Access Token (UAT) that's generated [during the install step](./install.md).
+    After creating the accounts, fill in the STACKIT details in `constellation-conf.yaml` under `provider.openstack`:
+
+    - `projectID`: OpenStack project id (can be found in `clouds.yaml` or `openrc` file of UAT)
+    - `projectName`: OpenStack project name (can be found in `clouds.yaml` or `openrc` file of UAT)
+    - `stackitProjectID`: STACKIT project id (can be found after login on <https://portal.stackit.cloud>)
+    - `username`: username of the UAT
+    - `password`: password of the UAT
 
     </tabItem>
     </tabs>

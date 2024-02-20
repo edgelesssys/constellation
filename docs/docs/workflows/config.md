@@ -36,6 +36,13 @@ constellation config generate aws
 ```
 
 </tabItem>
+<tabItem value="stackit" label="STACKIT">
+
+```bash
+constellation config generate stackit
+```
+
+</tabItem>
 </tabs>
 
 This creates the file `constellation-conf.yaml` in the current directory.
@@ -64,6 +71,16 @@ If you are using the default attestation variant `awsSEVSNP`, you can use the in
 Please mind the region restrictions mentioned in the [Getting started](../getting-started/first-steps.md#create-a-cluster) section.
 
 If you are using the attestation variant `awsNitroTPM`, you can choose any of the [nitroTPM-enabled instance types](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enable-nitrotpm-prerequisites.html).
+
+The Constellation CLI can also print the supported instance types with: `constellation config instance-types`.
+
+</tabItem>
+<tabItem value="stackit" label="STACKIT">
+
+By default, Constellation uses `m1a.8d-sev` VMs (8 vCPUs, 64 GB RAM) to create your cluster.
+Optionally, you can switch to a different VM type by modifying `instanceType` in the configuration file.
+
+You can choose any of the SEV-enabled instance types. You can find a list of all supported instance types in the [STACKIT documentation](https://docs.stackit.cloud/stackit/en/virtual-machine-flavors-75137231.html).
 
 The Constellation CLI can also print the supported instance types with: `constellation config instance-types`.
 
@@ -109,11 +126,13 @@ This configuration creates an additional node group `high_cpu` with a larger ins
 
 You can use the field `zone` to specify what availability zone nodes of the group are placed in.
 On Azure, this field is empty by default and nodes are automatically spread across availability zones.
+STACKIT currently only offers SEV-enabled CPUs in the `eu01-1` zone.
 Consult the documentation of your cloud provider for more information:
 
 * [AWS](https://aws.amazon.com/about-aws/global-infrastructure/regions_az/)
 * [Azure](https://azure.microsoft.com/en-us/explore/global-infrastructure/availability-zones)
 * [GCP](https://cloud.google.com/compute/docs/regions-zones)
+* [STACKIT](https://docs.stackit.cloud/stackit/en/regions-and-availability-zones-75137212.html)
 
 ## Choosing a Kubernetes version
 
@@ -190,6 +209,11 @@ If you require the OS image to be available in another region, [let us know](htt
 You can find a list of all [regions in AWS's documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
 
 Paste the output into the corresponding fields of the `constellation-conf.yaml` file.
+
+</tabItem>
+<tabItem value="stackit" label="STACKIT">
+
+STACKIT requires manual creation and configuration of service accounts. Look at the [first steps](../getting-started/first-steps.md) for more information.
 
 </tabItem>
 </tabs>
@@ -297,6 +321,11 @@ The following describes the configuration fields and how you obtain the required
 
 </tabItem>
 
+<tabItem value="stackit" label="STACKIT">
+
+STACKIT requires manual creation and configuration of service accounts. Look at the [first steps](../getting-started/first-steps.md) for more information.
+
+</tabItem>
 </tabs>
 </details>
 

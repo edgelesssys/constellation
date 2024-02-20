@@ -1,6 +1,6 @@
 # Using Constellation via Cloud Marketplaces
 
-Constellation is available through the Marketplaces of AWS, Azure, and GCP. This allows you to create self-managed Constellation clusters that are billed on a pay-per-use basis (hourly, per vCPU) with your CSP account. You can still get direct support by Edgeless Systems. For more information, please [contact us](https://www.edgeless.systems/enterprise-support/).
+Constellation is available through the Marketplaces of AWS, Azure, GCP, and STACKIT. This allows you to create self-managed Constellation clusters that are billed on a pay-per-use basis (hourly, per vCPU) with your CSP account. You can still get direct support by Edgeless Systems. For more information, please [contact us](https://www.edgeless.systems/enterprise-support/).
 
 This document explains how to run Constellation with the dynamically billed cloud marketplace images.
 
@@ -42,6 +42,11 @@ Then, enable the use of marketplace images in your Constellation `constellation-
 ```bash
 yq eval -i ".provider.gcp.useMarketplaceImage = true" constellation-conf.yaml
 ```
+
+</tabItem>
+<tabItem value="stackit" label="STACKIT">
+
+On STACKIT, the selected Constellation image is always a marketplace image. You can find more information on the STACKIT portal.
 
 </tabItem>
 </tabs>
