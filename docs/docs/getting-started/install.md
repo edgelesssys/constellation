@@ -9,7 +9,7 @@ Make sure the following requirements are met:
 * Your machine is running Linux or macOS
 * You have admin rights on your machine
 * [kubectl](https://kubernetes.io/docs/tasks/tools/) is installed
-* Your CSP is Microsoft Azure, Google Cloud Platform (GCP), or Amazon Web Services (AWS)
+* Your CSP is Microsoft Azure, Google Cloud Platform (GCP), Amazon Web Services (AWS), or STACKIT
 
 ## Install the Constellation CLI
 
@@ -292,6 +292,14 @@ The built-in `PowerUserAccess` policy is a superset of these permissions.
 Follow Amazon's guide on [understanding](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html) and [managing policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html).
 
 </tabItem>
+<tabItem value="stackit" label="STACKIT">
+
+Constellation on STACKIT requires a User Access Token (UAT) for the OpenStack API and a STACKIT service account.
+The UAT already has all required permissions by default.
+The STACKIT service account needs the `editor` role to create STACKIT LoadBalancers.
+Look at the [STACKIT documentation](https://docs.stackit.cloud/stackit/en/getting-started-in-service-accounts-134415831.html) on how to create the service account and assign the role.
+
+</tabItem>
 </tabs>
 
 ### Authentication
@@ -359,6 +367,34 @@ aws configure
 ```
 
 Options and first steps are described in the [AWS CLI documentation](https://docs.aws.amazon.com/cli/index.html).
+
+</tabItem>
+<tabItem value="stackit" label="STACKIT">
+
+You need to authenticate with the infrastructure API (OpenStack) and create a service account (STACKIT API).
+
+1. [Follow the STACKIT documentation](https://docs.stackit.cloud/stackit/en/step-1-generating-of-user-access-token-11763726.html) for obtaining a User Access Token (UAT) to use the infrastructure API
+2. Create a configuration file under `~/.config/openstack/clouds.yaml` with the credentials from the User Access Token
+    ```yaml
+    clouds:
+        stackit:
+            auth:
+                auth_url: https://keystone.api.iaas.eu01.stackit.cloud/v3
+                username: REPLACE_WITH_UAT_USERNAME
+                password: REPLACE_WITH_UAT_PASSWORD
+                project_id: REPLACE_WITH_STACKIT_PROJECT_ID
+                project_name: REPLACE_WITH_STACKIT_PROJECT_NAME
+                user_domain_name: portal_mvp
+                project_domain_name: portal_mvp
+            region_name: RegionOne
+            identity_api_version: 3
+    ```
+3. [Follow the STACKIT documentation](https://docs.stackit.cloud/stackit/en/getting-started-in-service-accounts-134415831.html) for creating a service account and an access token
+4. Assign the `editor` role to the service account by [following the documentation](https://docs.stackit.cloud/stackit/en/getting-started-in-service-accounts-134415831.html)
+5. Create a configuration file under `~/.stackit/credentials.json`
+    ```json
+    {"STACKIT_SERVICE_ACCOUNT_TOKEN":"REPLACE_WITH_TOKEN"}
+    ```
 
 </tabItem>
 

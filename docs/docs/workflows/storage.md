@@ -9,11 +9,11 @@ Cloud service providers (CSPs) offer their own CSI-based solutions for cloud sto
 ## Confidential storage
 
 Most cloud storage solutions support encryption, such as [GCE Persistent Disks (PD)](https://cloud.google.com/kubernetes-engine/docs/how-to/using-cmek).
-Constellation supports the available CSI-based storage options for Kubernetes engines in AWS, Azure, and GCP.
+Constellation supports the available CSI-based storage options for Kubernetes engines in AWS, Azure, GCP, and STACKIT.
 However, their encryption takes place in the storage backend and is managed by the CSP.
 Thus, using the default CSI drivers for these storage types means trusting the CSP with your persistent data.
 
-To address this, Constellation provides CSI drivers for AWS EBS, Azure Disk, and GCE PD, offering [encryption on the node level](../architecture/keys.md#storage-encryption). They enable transparent encryption for persistent volumes without needing to trust the cloud backend. Plaintext data never leaves the confidential VM context, offering you confidential storage.
+To address this, Constellation provides CSI drivers for AWS EBS, Azure Disk, GCE PD, and OpenStack Cinder, offering [encryption on the node level](../architecture/keys.md#storage-encryption). They enable transparent encryption for persistent volumes without needing to trust the cloud backend. Plaintext data never leaves the confidential VM context, offering you confidential storage.
 
 For more details see [encrypted persistent storage](../architecture/encrypted-storage.md).
 
@@ -42,6 +42,13 @@ Follow the instructions on how to [install the Constellation CSI driver](#instal
 **Constellation CSI driver for AWS Elastic Block Store**
 Mount [Elastic Block Store](https://aws.amazon.com/ebs/) storage volumes into your Constellation cluster.
 Follow the instructions on how to [install the Constellation CSI driver](#installation) or check out the [repository](https://github.com/edgelesssys/constellation-aws-ebs-csi-driver) for more information.
+
+</tabItem>
+<tabItem value="stackit" label="STACKIT">
+
+**Constellation CSI driver for STACKIT / OpenStack Cinder**
+Mount [Cinder](https://docs.openstack.org/cinder/latest/) block storage volumes into your Constellation cluster.
+Follow the instructions on how to [install the Constellation CSI driver](#installation) or check out the [repository](https://github.com/edgelesssys/constellation-cloud-provider-openstack) for more information.
 
 </tabItem>
 </tabs>
@@ -122,6 +129,35 @@ AWS comes with two storage classes by default.
   * Encryption of all data written to disk
 * `integrity-encrypted-rwo`
   * Uses [SSDs of `gp3` type](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volume-types.html)
+  * ext-4 filesystem
+  * Encryption of all data written to disk
+  * Integrity protection of data written to disk
+
+For more information on encryption algorithms and key sizes, refer to [cryptographic algorithms](../architecture/encrypted-storage.md#cryptographic-algorithms).
+
+:::info
+
+The default storage class is set to `encrypted-rwo` for performance reasons.
+If you want integrity-protected storage, set the `storageClassName` parameter of your persistent volume claim to `integrity-encrypted-rwo`.
+
+Alternatively, you can create your own storage class with integrity protection enabled by adding `csi.storage.k8s.io/fstype: ext4-integrity` to the class `parameters`.
+Or use another filesystem by specifying another file system type with the suffix `-integrity`, e.g., `csi.storage.k8s.io/fstype: xfs-integrity`.
+
+Note that volume expansion isn't supported for integrity-protected disks.
+
+:::
+
+</tabItem>
+<tabItem value="stackit" label="STACKIT">
+
+STACKIT comes with two storage classes by default.
+
+* `encrypted-rwo`
+  * Uses [disks of `storage_premium_perf1` type](https://docs.stackit.cloud/stackit/en/service-plans-blockstorage-75137974.html)
+  * ext-4 filesystem
+  * Encryption of all data written to disk
+* `integrity-encrypted-rwo`
+  * Uses [disks of `storage_premium_perf1` type](https://docs.stackit.cloud/stackit/en/service-plans-blockstorage-75137974.html)
   * ext-4 filesystem
   * Encryption of all data written to disk
   * Integrity protection of data written to disk
