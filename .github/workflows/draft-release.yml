@@ -227,7 +227,7 @@ jobs:
         uses: ./.github/actions/download_release_binaries
 
       - name: Download CLI SBOM
-        uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
+        uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe # v4.1.2
         with:
           name: constellation.spdx.sbom
 
@@ -261,7 +261,7 @@ jobs:
           ref: ${{ inputs.ref || github.head_ref }}
 
       - name: Install Cosign
-        uses: sigstore/cosign-installer@c85d0e205a72a294fe064f618a87dbac13084086 # v2.8.1
+        uses: sigstore/cosign-installer@e1523de7571e31dbe865fd2e80c5c7c23ae71eb4 # v3.4.0
 
       - name: Download Syft & Grype
         uses: ./.github/actions/install_syft_grype
@@ -340,12 +340,12 @@ jobs:
         uses: ./.github/actions/download_release_binaries
 
       - name: Download CLI SBOM
-        uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
+        uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe # v4.1.2
         with:
           name: constellation.spdx.sbom
 
       - name: Download provenance
-        uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
+        uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe # v4.1.2
         with:
           name: ${{ needs.provenance.outputs.provenance-name }}
 
@@ -418,17 +418,17 @@ jobs:
         uses: ./.github/actions/download_release_binaries
 
       - name: Download CLI SBOM
-        uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
+        uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe # v4.1.2
         with:
           name: constellation.spdx.sbom
 
       - name: Download Constellation CLI SBOM's signature
-        uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
+        uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe # v4.1.2
         with:
           name: constellation.spdx.sbom.sig
 
       - name: Download Constellation provenance
-        uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
+        uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe # v4.1.2
         with:
           name: ${{ needs.provenance.outputs.provenance-name }}
 

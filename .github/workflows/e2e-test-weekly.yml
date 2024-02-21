@@ -385,7 +385,7 @@ jobs:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
       - name: Azure login OIDC
-        uses: azure/login@92a5484dfaf04ca78a94597f4f19fea633851fa2 # v1.4.7
+        uses: azure/login@cb79c773a3cfa27f31f25eb3f677781210c9ce3d # v1.6.1
         with:
           client-id: ${{ secrets.AZURE_E2E_MINI_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}

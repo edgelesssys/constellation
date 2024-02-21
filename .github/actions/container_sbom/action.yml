@@ -19,7 +19,7 @@ runs:
   steps:
     - name: Install Cosign
       if: inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != ''
-      uses: sigstore/cosign-installer@c85d0e205a72a294fe064f618a87dbac13084086 # v2.8.1
+      uses: sigstore/cosign-installer@e1523de7571e31dbe865fd2e80c5c7c23ae71eb4 # v3.4.0
 
     - name: Download Syft & Grype
       uses: ./.github/actions/install_syft_grype

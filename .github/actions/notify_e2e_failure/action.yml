@@ -37,7 +37,7 @@ runs:
       run: echo "CURRENT_DATE=$(date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_ENV
 
     - name: Encode URI component
-      uses: Ablestor/encode-uri-component-action@v1.1
+      uses: Ablestor/encode-uri-component-action@790ea01bcf2d5ca4d0dbe8c15351a87b47f22f61 # v1.3
       id: encode-uri-component
       with:
         string: ${{ inputs.test }}
