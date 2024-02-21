@@ -11,10 +11,10 @@ def envtest_deps():
         strip_prefix = "kubebuilder/bin",
         type = "tar.gz",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/e1913674bacaa70c067e15649237e1f67d891ba53f367c0a50786b4a274ee047",
-            "https://kubebuilder-tools.storage.googleapis.com/kubebuilder-tools-1.27.1-darwin-amd64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/b62112fc83e503b35eab4fa5f8f5f648fcc4781ec319e6844644b4502eb8e2f1",
+            "https://kubebuilder-tools.storage.googleapis.com/kubebuilder-tools-1.29.1-darwin-amd64.tar.gz",
         ],
-        sha256 = "e1913674bacaa70c067e15649237e1f67d891ba53f367c0a50786b4a274ee047",
+        sha256 = "b62112fc83e503b35eab4fa5f8f5f648fcc4781ec319e6844644b4502eb8e2f1",
         build_file_content = """exports_files(["etcd", "kubectl", "kube-apiserver"], visibility = ["//visibility:public"])""",
     )
     http_archive(
@@ -22,10 +22,10 @@ def envtest_deps():
         strip_prefix = "kubebuilder/bin",
         type = "tar.gz",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/0422632a2bbb0d4d14d7d8b0f05497a4d041c11d770a07b7a55c44bcc5e8ce66",
-            "https://kubebuilder-tools.storage.googleapis.com/kubebuilder-tools-1.27.1-darwin-arm64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/61b0eea4a7095cf0c318bd35f8c16b8f5107c5af65a710abf5a95f9ed29fd593",
+            "https://kubebuilder-tools.storage.googleapis.com/kubebuilder-tools-1.29.1-darwin-arm64.tar.gz",
         ],
-        sha256 = "0422632a2bbb0d4d14d7d8b0f05497a4d041c11d770a07b7a55c44bcc5e8ce66",
+        sha256 = "61b0eea4a7095cf0c318bd35f8c16b8f5107c5af65a710abf5a95f9ed29fd593",
         build_file_content = """exports_files(["etcd", "kubectl", "kube-apiserver"], visibility = ["//visibility:public"])""",
     )
     http_archive(
@@ -33,10 +33,10 @@ def envtest_deps():
         strip_prefix = "kubebuilder/bin",
         type = "tar.gz",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/f9699df7b021f71a1ab55329b36b48a798e6ae3a44d2132255fc7e46c6790d4d",
-            "https://kubebuilder-tools.storage.googleapis.com/kubebuilder-tools-1.27.1-linux-amd64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/e37c2cda216692e699ce40ac2067dac8d773654f4afb20a90b92e6aafbe1593c",
+            "https://kubebuilder-tools.storage.googleapis.com/kubebuilder-tools-1.29.1-linux-amd64.tar.gz",
         ],
-        sha256 = "f9699df7b021f71a1ab55329b36b48a798e6ae3a44d2132255fc7e46c6790d4d",
+        sha256 = "e37c2cda216692e699ce40ac2067dac8d773654f4afb20a90b92e6aafbe1593c",
         build_file_content = """exports_files(["etcd", "kubectl", "kube-apiserver"], visibility = ["//visibility:public"])""",
     )
     http_archive(
@@ -44,9 +44,9 @@ def envtest_deps():
         strip_prefix = "kubebuilder/bin",
         type = "tar.gz",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/9d2803e8ca85c465b33c12b06d0b2eba3ddb64b53a468628f741e50b462c46ad",
-            "https://kubebuilder-tools.storage.googleapis.com/kubebuilder-tools-1.27.1-linux-arm64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/956783315fde4371e775b1c7f115c996494b8603b3bf75cb528b0df9b6536382",
+            "https://kubebuilder-tools.storage.googleapis.com/kubebuilder-tools-1.29.1-linux-arm64.tar.gz",
         ],
-        sha256 = "9d2803e8ca85c465b33c12b06d0b2eba3ddb64b53a468628f741e50b462c46ad",
+        sha256 = "956783315fde4371e775b1c7f115c996494b8603b3bf75cb528b0df9b6536382",
         build_file_content = """exports_files(["etcd", "kubectl", "kube-apiserver"], visibility = ["//visibility:public"])""",
     )
