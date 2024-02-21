@@ -104,7 +104,7 @@ func TestTerminate(t *testing.T) {
 		},
 		"missing id file does not error": {
 			stateFile: state.New(),
-			setupFs: func(require *require.Assertions, stateFile *state.State) afero.Fs {
+			setupFs: func(require *require.Assertions, _ *state.State) afero.Fs {
 				fs := afero.NewMemMapFs()
 				fileHandler := file.NewHandler(fs)
 				require.NoError(fileHandler.Write(constants.AdminConfFilename, []byte{1, 2}, file.OptNone))

@@ -254,7 +254,7 @@ func TestUpgradeApply(t *testing.T) {
 				log:         logger.NewTest(t),
 				spinner:     &nopSpinner{},
 				merger:      &stubMerger{},
-				newInfraApplier: func(ctx context.Context) (cloudApplier, func(), error) {
+				newInfraApplier: func(_ context.Context) (cloudApplier, func(), error) {
 					return tc.terraformUpgrader, func() {}, nil
 				},
 				applier: &stubConstellApplier{

@@ -104,7 +104,7 @@ func TestGetAttestationCert(t *testing.T) {
 		wantValidateErr bool
 	}{
 		"success": {
-			crlServer: func(req *http.Request) *http.Response {
+			crlServer: func(_ *http.Request) *http.Response {
 				return &http.Response{
 					StatusCode: http.StatusOK,
 					Body:       io.NopCloser(bytes.NewReader(intermediateCert.Raw)),
@@ -136,14 +136,14 @@ func TestGetAttestationCert(t *testing.T) {
 			},
 		},
 		"intermediate cert cannot be fetched": {
-			crlServer: func(req *http.Request) *http.Response {
+			crlServer: func(_ *http.Request) *http.Response {
 				return &http.Response{StatusCode: http.StatusNotFound}
 			},
 			getAkCert:    defaultAkCertFunc,
 			wantIssueErr: true,
 		},
 		"intermediate cert is not signed by root cert": {
-			crlServer: func(req *http.Request) *http.Response {
+			crlServer: func(_ *http.Request) *http.Response {
 				return &http.Response{
 					StatusCode: http.StatusOK,
 					Body:       io.NopCloser(bytes.NewReader(rootCert.Raw)),
@@ -153,7 +153,7 @@ func TestGetAttestationCert(t *testing.T) {
 			wantValidateErr: true,
 		},
 		"ak does not match ak cert public key": {
-			crlServer: func(req *http.Request) *http.Response {
+			crlServer: func(_ *http.Request) *http.Response {
 				return &http.Response{
 					StatusCode: http.StatusOK,
 					Body:       io.NopCloser(bytes.NewReader(intermediateCert.Raw)),

@@ -196,7 +196,7 @@ func TestNoValidProviderAttestationCombination(t *testing.T) {
 		{cloudprovider.OpenStack, variant.AWSNitroTPM{}},
 	}
 	for _, test := range tests {
-		t.Run("", func(t *testing.T) {
+		t.Run("", func(_ *testing.T) {
 			_, err := createConfigWithAttestationVariant(test.provider, "", test.attestation)
 			assert.Error(err)
 		})

@@ -69,7 +69,7 @@ func GetClientStreamInterceptor(l *slog.Logger) grpc.DialOption {
 }
 
 func middlewareLogger(l *slog.Logger) logging.Logger {
-	return logging.LoggerFunc(func(ctx context.Context, lvl logging.Level, msg string, fields ...any) {
+	return logging.LoggerFunc(func(_ context.Context, lvl logging.Level, msg string, fields ...any) {
 		var pcs [1]uintptr
 		runtime.Callers(2, pcs[:]) // skip [Callers, LoggerFunc]
 

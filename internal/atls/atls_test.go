@@ -142,7 +142,7 @@ func TestTLSConfig(t *testing.T) {
 			serverConfig, err := CreateAttestationServerTLSConfig(tc.serverIssuer, tc.serverValidators)
 			require.NoError(err)
 
-			server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				_, _ = io.WriteString(w, "hello")
 			}))
 			server.TLS = serverConfig
@@ -196,7 +196,7 @@ func TestClientConnectionConcurrency(t *testing.T) {
 		serverCfg, err := CreateAttestationServerTLSConfig(NewFakeIssuer(variant.Dummy{}), NewFakeValidators(variant.Dummy{}))
 		require.NoError(err)
 
-		server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			_, _ = io.WriteString(w, "hello")
 		}))
 		server.TLS = serverCfg
@@ -270,7 +270,7 @@ func TestServerConnectionConcurrency(t *testing.T) {
 	require.NoError(err)
 
 	for i := 0; i < serverCount; i++ {
-		server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			_, _ = io.WriteString(w, "hello")
 		}))
 		server.TLS = serverCfg

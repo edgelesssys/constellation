@@ -96,7 +96,7 @@ func getATLSConfigForClientFunc(issuer Issuer, validators []Validator) (func(*tl
 	}
 
 	// this function will be called once for every client
-	return func(chi *tls.ClientHelloInfo) (*tls.Config, error) {
+	return func(_ *tls.ClientHelloInfo) (*tls.Config, error) {
 		// generate nonce for this connection
 		serverNonce, err := crypto.GenerateRandomBytes(crypto.RNGLengthDefault)
 		if err != nil {

@@ -165,7 +165,7 @@ func TestNotEmptySlice(t *testing.T) {
 }
 
 func TestAll(t *testing.T) {
-	c := func(i int, s string) *Constraint {
+	c := func(_ int, s string) *Constraint {
 		return Equal(s, "abc")
 	}
 	testCases := map[string]struct {

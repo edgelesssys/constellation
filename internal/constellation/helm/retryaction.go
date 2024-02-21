@@ -28,7 +28,7 @@ type retrieableApplier interface {
 // retryApply retries the given retriable action.
 func retryApply(ctx context.Context, action retrieableApplier, retryInterval time.Duration, log debugLog) error {
 	var retries int
-	retriable := func(err error) bool {
+	retriable := func(_ error) bool {
 		// abort after maximumRetryAttempts tries.
 		if retries >= maximumRetryAttempts {
 			return false

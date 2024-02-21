@@ -15,7 +15,7 @@ import (
 )
 
 func isCloudProvider(arg int) cobra.PositionalArgs {
-	return func(cmd *cobra.Command, args []string) error {
+	return func(_ *cobra.Command, args []string) error {
 		if provider := cloudprovider.FromString(args[arg]); provider == cloudprovider.Unknown {
 			return fmt.Errorf("argument %s isn't a valid cloud provider", args[arg])
 		}
@@ -24,7 +24,7 @@ func isCloudProvider(arg int) cobra.PositionalArgs {
 }
 
 func isValidKind(arg int) cobra.PositionalArgs {
-	return func(cmd *cobra.Command, args []string) error {
+	return func(_ *cobra.Command, args []string) error {
 		if kind := kindFromString(args[arg]); kind == unknown {
 			return fmt.Errorf("argument %s isn't a valid kind", args[arg])
 		}

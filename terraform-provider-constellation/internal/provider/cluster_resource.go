@@ -428,7 +428,7 @@ func (r *ClusterResource) Configure(_ context.Context, req resource.ConfigureReq
 		return dialer.New(nil, validator, &net.Dialer{})
 	}
 
-	r.newApplier = func(ctx context.Context, validator atls.Validator) *constellation.Applier {
+	r.newApplier = func(ctx context.Context, _ atls.Validator) *constellation.Applier {
 		return constellation.NewApplier(&tfContextLogger{ctx: ctx}, &nopSpinner{}, constellation.ApplyContextTerraform, newDialer)
 	}
 }
