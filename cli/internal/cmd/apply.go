@@ -13,7 +13,9 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log/slog"
 	"net"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -38,6 +40,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
+	"github.com/samber/slog-multi"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -224,6 +227,10 @@ func runApply(cmd *cobra.Command, _ []string) error {
 	}
 
 	fileHandler := file.NewHandler(afero.NewOsFs())
+	logger, err := newDebugFileLogger(cmd, fileHandler)
+	if err != nil {
+		return err
+	}
 
 	newDialer := func(validator atls.Validator) *dialer.Dialer {
 		return dialer.New(nil, validator, &net.Dialer{})
@@ -248,7 +255,7 @@ func runApply(cmd *cobra.Command, _ []string) error {
 	apply := &applyCmd{
 		fileHandler:     fileHandler,
 		flags:           flags,
-		log:             log,
+		log:             logger,
 		wLog:            &warnLogger{cmd: cmd, log: log},
 		spinner:         spinner,
 		merger:          &kubeconfigMerger{log: log},
@@ -857,4 +864,35 @@ type imageFetcher interface {
 		provider cloudprovider.Provider, attestationVariant variant.Variant,
 		image, region string, useMarketplaceImage bool,
 	) (string, error)
+}
+
+func newDebugFileLogger(cmd *cobra.Command, fileHandler file.Handler) (debugLog, error) {
+	logLvl := slog.LevelInfo
+	debugLog, err := cmd.Flags().GetBool("debug")
+	if err != nil {
+		return nil, err
+	}
+	if debugLog {
+		logLvl = slog.LevelDebug
+	}
+
+	fileWriter := &fileWriter{
+		fileHandler: fileHandler,
+	}
+	return slog.New(
+		slogmulti.Fanout(
+			slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{AddSource: true, Level: logLvl}),           // first handler: stderr at log level
+			slog.NewJSONHandler(fileWriter, &slog.HandlerOptions{AddSource: true, Level: slog.LevelDebug}), // second handler: debug JSON log to file
+		),
+	), nil
+}
+
+type fileWriter struct {
+	fileHandler file.Handler
+}
+
+// Write satisfies the io.Writer interface by writing a message to file.
+func (l *fileWriter) Write(msg []byte) (int, error) {
+	err := l.fileHandler.Write(constants.CLIDebugLogFile, msg, file.OptAppend)
+	return len(msg), err
 }

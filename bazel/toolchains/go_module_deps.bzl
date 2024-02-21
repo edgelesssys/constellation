@@ -4436,6 +4436,22 @@ def go_dependencies():
         version = "v1.0.0",
     )
     go_repository(
+        name = "com_github_samber_lo",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/samber/lo",
+        sum = "h1:j2XEAqXKb09Am4ebOg31SpvzUTTs6EN3VfgeLUhPdXM=",
+        version = "v1.38.1",
+    )
+    go_repository(
+        name = "com_github_samber_slog_multi",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/samber/slog-multi",
+        sum = "h1:6BVH9uHGAsiGkbbtQgAOQJMpKgV8unMrHhhJaw+X1EQ=",
+        version = "v1.0.2",
+    )
+    go_repository(
         name = "com_github_sassoftware_relic",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
