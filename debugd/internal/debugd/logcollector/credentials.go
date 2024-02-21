@@ -17,7 +17,7 @@ import (
 	gcpsecretmanager "cloud.google.com/go/secretmanager/apiv1"
 	gcpsecretmanagerpb "cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/Azure/azure-sdk-for-go/sdk/keyvault/azsecrets"
+	"github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	awssecretmanager "github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/info"
