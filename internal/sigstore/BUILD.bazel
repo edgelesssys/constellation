@@ -12,6 +12,7 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/internal/sigstore",
     visibility = ["//:__subpackages__"],
     deps = [
+        "@com_github_secure_systems_lab_go_securesystemslib//encrypted",
         "@com_github_sigstore_rekor//pkg/client",
         "@com_github_sigstore_rekor//pkg/generated/client",
         "@com_github_sigstore_rekor//pkg/generated/client/entries",
@@ -21,7 +22,6 @@ go_library(
         "@com_github_sigstore_rekor//pkg/verify",
         "@com_github_sigstore_sigstore//pkg/cryptoutils",
         "@com_github_sigstore_sigstore//pkg/signature",
-        "@com_github_theupdateframework_go_tuf//encrypted",
     ],
 )
 
