@@ -67,7 +67,7 @@ func TestParseIDFile(t *testing.T) {
 
 func TestIAMCreateAWS(t *testing.T) {
 	defaultFs := createFSWithConfig(*createConfig(cloudprovider.AWS))
-	readOnlyFs := func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs {
+	readOnlyFs := func(_ *require.Assertions, _ cloudprovider.Provider, _ []string, _ []string) afero.Fs {
 		fs := afero.NewReadOnlyFs(afero.NewMemMapFs())
 		return fs
 	}
@@ -257,7 +257,7 @@ func TestIAMCreateAWS(t *testing.T) {
 
 func TestIAMCreateAzure(t *testing.T) {
 	defaultFs := createFSWithConfig(*createConfig(cloudprovider.Azure))
-	readOnlyFs := func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs {
+	readOnlyFs := func(_ *require.Assertions, _ cloudprovider.Provider, _ []string, _ []string) afero.Fs {
 		fs := afero.NewReadOnlyFs(afero.NewMemMapFs())
 		return fs
 	}
@@ -434,7 +434,7 @@ func TestIAMCreateAzure(t *testing.T) {
 
 func TestIAMCreateGCP(t *testing.T) {
 	defaultFs := createFSWithConfig(*createConfig(cloudprovider.GCP))
-	readOnlyFs := func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs {
+	readOnlyFs := func(_ *require.Assertions, _ cloudprovider.Provider, _ []string, _ []string) afero.Fs {
 		fs := afero.NewReadOnlyFs(afero.NewMemMapFs())
 		return fs
 	}
@@ -684,7 +684,7 @@ func TestValidateConfigWithFlagCompatibility(t *testing.T) {
 }
 
 func createFSWithConfig(cfg config.Config) func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs {
-	return func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs {
+	return func(require *require.Assertions, _ cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs {
 		fs := afero.NewMemMapFs()
 		fileHandler := file.NewHandler(fs)
 		for _, f := range existingConfigFiles {

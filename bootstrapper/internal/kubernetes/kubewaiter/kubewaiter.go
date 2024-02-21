@@ -29,7 +29,7 @@ type CloudKubeAPIWaiter struct{}
 // Wait waits for the Kubernetes API to be available.
 // Note that the kubernetesClient must have the kubeconfig already set.
 func (w *CloudKubeAPIWaiter) Wait(ctx context.Context, kubernetesClient KubernetesClient) error {
-	funcAlwaysRetriable := func(err error) bool { return true }
+	funcAlwaysRetriable := func(_ error) bool { return true }
 
 	doer := &kubeDoer{kubeClient: kubernetesClient}
 	retrier := retry.NewIntervalRetrier(doer, 5*time.Second, funcAlwaysRetriable)

@@ -438,12 +438,12 @@ func TestGenerateMasterSecret(t *testing.T) {
 			wantErr: true,
 		},
 		"file does not exist": {
-			createFileFunc: func(handler file.Handler) error { return nil },
+			createFileFunc: func(_ file.Handler) error { return nil },
 			fs:             afero.NewMemMapFs,
 			wantErr:        false,
 		},
 		"file not writeable": {
-			createFileFunc: func(handler file.Handler) error { return nil },
+			createFileFunc: func(_ file.Handler) error { return nil },
 			fs:             func() afero.Fs { return afero.NewReadOnlyFs(afero.NewMemMapFs()) },
 			wantErr:        true,
 		},

@@ -185,7 +185,7 @@ func TestIMDSClient(t *testing.T) {
 			wantTags:            defaultWantTags,
 		},
 		"invalid imds response detected": {
-			server: newHTTPBufconnServer(func(writer http.ResponseWriter, request *http.Request) {
+			server: newHTTPBufconnServer(func(writer http.ResponseWriter, _ *http.Request) {
 				fmt.Fprintln(writer, "invalid-result")
 			}),
 			wantProviderIDErr:    true,

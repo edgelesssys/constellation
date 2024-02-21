@@ -23,7 +23,7 @@ func NewMaaPatchCmd() *cobra.Command {
 		Long:  "Patch the MAA's attestation policy.",
 		Args: cobra.MatchAll(
 			cobra.ExactArgs(1),
-			func(cmd *cobra.Command, args []string) error {
+			func(_ *cobra.Command, args []string) error {
 				if _, err := url.Parse(args[0]); err != nil {
 					return fmt.Errorf("argument %s is not a valid URL: %w", args[0], err)
 				}

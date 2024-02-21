@@ -147,7 +147,7 @@ func TestRecover(t *testing.T) {
 }
 
 func newStubKMS(setupErr, getDEKErr error) kmsFactory {
-	return func(ctx context.Context, storageURI string, kmsURI string) (kms.CloudKMS, error) {
+	return func(_ context.Context, _ string, _ string) (kms.CloudKMS, error) {
 		if setupErr != nil {
 			return nil, setupErr
 		}

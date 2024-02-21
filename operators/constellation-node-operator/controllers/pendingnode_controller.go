@@ -165,7 +165,7 @@ func (r *PendingNodeReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // joining, leaving, node becoming ready or node receiving a provider id.
 func nodeStateChangePredicate() predicate.Predicate {
 	return predicate.Funcs{
-		CreateFunc: func(e event.CreateEvent) bool {
+		CreateFunc: func(_ event.CreateEvent) bool {
 			return true
 		},
 		UpdateFunc: func(e event.UpdateEvent) bool {
@@ -181,10 +181,10 @@ func nodeStateChangePredicate() predicate.Predicate {
 			receivedProviderID := len(oldNode.Spec.ProviderID) == 0 && len(newNode.Spec.ProviderID) != 0
 			return becameReady || receivedProviderID
 		},
-		DeleteFunc: func(e event.DeleteEvent) bool {
+		DeleteFunc: func(_ event.DeleteEvent) bool {
 			return true
 		},
-		GenericFunc: func(e event.GenericEvent) bool {
+		GenericFunc: func(_ event.GenericEvent) bool {
 			return false
 		},
 	}

@@ -852,7 +852,7 @@ func TestCleanupWorkspace(t *testing.T) {
 		},
 		"no error if files do not exist": {
 			provider:  cloudprovider.QEMU,
-			prepareFS: func(f file.Handler) error { return nil },
+			prepareFS: func(_ file.Handler) error { return nil },
 		},
 	}
 

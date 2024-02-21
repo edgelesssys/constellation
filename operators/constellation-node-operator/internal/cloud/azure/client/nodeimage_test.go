@@ -252,7 +252,7 @@ func TestCreateNode(t *testing.T) {
 					getErr:    tc.getSKUCapacityErr,
 					updateErr: tc.updateScaleSetErr,
 				},
-				capacityPollerGenerator: func(resourceGroup, scaleSet string, wantedCapacity int64) capacityPoller {
+				capacityPollerGenerator: func(_, _ string, _ int64) capacityPoller {
 					return poller
 				},
 			}

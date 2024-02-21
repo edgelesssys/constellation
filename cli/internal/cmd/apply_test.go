@@ -238,7 +238,7 @@ func TestSkipPhases(t *testing.T) {
 }
 
 func TestValidateInputs(t *testing.T) {
-	defaultConfig := func(csp cloudprovider.Provider) func(require *require.Assertions, fh file.Handler) {
+	defaultConfig := func(csp cloudprovider.Provider) func(require *require.Assertions, _ file.Handler) {
 		return func(require *require.Assertions, fh file.Handler) {
 			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), csp)
 
@@ -261,7 +261,7 @@ func TestValidateInputs(t *testing.T) {
 			require.NoError(fh.WriteYAML(constants.ConfigFilename, cfg))
 		}
 	}
-	preInitState := func(csp cloudprovider.Provider) func(require *require.Assertions, fh file.Handler) {
+	preInitState := func(csp cloudprovider.Provider) func(_ *require.Assertions, _ file.Handler) {
 		return func(require *require.Assertions, fh file.Handler) {
 			stateFile := defaultStateFile(csp)
 			stateFile.ClusterValues = state.ClusterValues{}
@@ -332,7 +332,7 @@ func TestValidateInputs(t *testing.T) {
 			wantPhases:         newPhases(skipInitPhase, skipImagePhase), // No image upgrades on QEMU
 		},
 		"no config file errors": {
-			createConfig:       func(require *require.Assertions, fh file.Handler) {},
+			createConfig:       func(_ *require.Assertions, _ file.Handler) {},
 			createState:        postInitState(cloudprovider.GCP),
 			createMasterSecret: defaultMasterSecret,
 			createAdminConfig:  defaultAdminConfig,
@@ -344,7 +344,7 @@ func TestValidateInputs(t *testing.T) {
 			createConfig:       defaultConfig(cloudprovider.GCP),
 			createState:        preInitState(cloudprovider.GCP),
 			createMasterSecret: defaultMasterSecret,
-			createAdminConfig:  func(require *require.Assertions, fh file.Handler) {},
+			createAdminConfig:  func(_ *require.Assertions, _ file.Handler) {},
 			createTfState:      defaultTfState,
 			flags:              applyFlags{},
 			wantErr:            true,
@@ -352,8 +352,8 @@ func TestValidateInputs(t *testing.T) {
 		"[init] no admin config file, no master secret": {
 			createConfig:       defaultConfig(cloudprovider.GCP),
 			createState:        preInitState(cloudprovider.GCP),
-			createMasterSecret: func(require *require.Assertions, fh file.Handler) {},
-			createAdminConfig:  func(require *require.Assertions, fh file.Handler) {},
+			createMasterSecret: func(_ *require.Assertions, _ file.Handler) {},
+			createAdminConfig:  func(_ *require.Assertions, _ file.Handler) {},
 			createTfState:      defaultTfState,
 			flags:              applyFlags{},
 			wantPhases:         newPhases(skipImagePhase, skipK8sPhase),
@@ -363,16 +363,16 @@ func TestValidateInputs(t *testing.T) {
 			createState:        preInitState(cloudprovider.GCP),
 			createMasterSecret: defaultMasterSecret,
 			createAdminConfig:  defaultAdminConfig,
-			createTfState:      func(require *require.Assertions, fh file.Handler) {},
+			createTfState:      func(_ *require.Assertions, _ file.Handler) {},
 			flags:              applyFlags{},
 			wantErr:            true,
 		},
 		"[create] only config, skip everything but infrastructure": {
 			createConfig:       defaultConfig(cloudprovider.GCP),
-			createState:        func(require *require.Assertions, fh file.Handler) {},
-			createMasterSecret: func(require *require.Assertions, fh file.Handler) {},
-			createAdminConfig:  func(require *require.Assertions, fh file.Handler) {},
-			createTfState:      func(require *require.Assertions, fh file.Handler) {},
+			createState:        func(_ *require.Assertions, _ file.Handler) {},
+			createMasterSecret: func(_ *require.Assertions, _ file.Handler) {},
+			createAdminConfig:  func(_ *require.Assertions, _ file.Handler) {},
+			createTfState:      func(_ *require.Assertions, _ file.Handler) {},
 			flags: applyFlags{
 				skipPhases: newPhases(skipInitPhase, skipAttestationConfigPhase, skipCertSANsPhase, skipHelmPhase, skipK8sPhase, skipImagePhase),
 			},
@@ -380,19 +380,19 @@ func TestValidateInputs(t *testing.T) {
 		},
 		"[create + init] only config file": {
 			createConfig:       defaultConfig(cloudprovider.GCP),
-			createState:        func(require *require.Assertions, fh file.Handler) {},
-			createMasterSecret: func(require *require.Assertions, fh file.Handler) {},
-			createAdminConfig:  func(require *require.Assertions, fh file.Handler) {},
-			createTfState:      func(require *require.Assertions, fh file.Handler) {},
+			createState:        func(_ *require.Assertions, _ file.Handler) {},
+			createMasterSecret: func(_ *require.Assertions, _ file.Handler) {},
+			createAdminConfig:  func(_ *require.Assertions, _ file.Handler) {},
+			createTfState:      func(_ *require.Assertions, _ file.Handler) {},
 			flags:              applyFlags{},
 			wantPhases:         newPhases(skipImagePhase, skipK8sPhase),
 		},
 		"[init] self-managed: config and state file exist, skip-phases=infrastructure": {
 			createConfig:       defaultConfig(cloudprovider.GCP),
 			createState:        preInitState(cloudprovider.GCP),
-			createMasterSecret: func(require *require.Assertions, fh file.Handler) {},
-			createAdminConfig:  func(require *require.Assertions, fh file.Handler) {},
-			createTfState:      func(require *require.Assertions, fh file.Handler) {},
+			createMasterSecret: func(_ *require.Assertions, _ file.Handler) {},
+			createAdminConfig:  func(_ *require.Assertions, _ file.Handler) {},
+			createTfState:      func(_ *require.Assertions, _ file.Handler) {},
 			flags: applyFlags{
 				skipPhases: newPhases(skipInfrastructurePhase),
 			},
@@ -414,7 +414,7 @@ func TestValidateInputs(t *testing.T) {
 			createTfState:      defaultTfState,
 			stdin:              "y\n",
 			wantPhases:         newPhases(skipInitPhase, skipK8sPhase),
-			assert: func(require *require.Assertions, assert *assert.Assertions, conf *config.Config, stateFile *state.State) {
+			assert: func(_ *require.Assertions, assert *assert.Assertions, conf *config.Config, _ *state.State) {
 				assert.NotEmpty(conf.KubernetesVersion)
 				_, err := versions.NewValidK8sVersion(string(conf.KubernetesVersion), true)
 				assert.NoError(err)

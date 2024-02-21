@@ -54,7 +54,7 @@ func TestTFPlan(t *testing.T) {
 			wantBackup: true,
 		},
 		"workspace is empty": {
-			prepareFs: func(require *require.Assertions) file.Handler {
+			prepareFs: func(_ *require.Assertions) file.Handler {
 				return file.NewHandler(afero.NewMemMapFs())
 			},
 			tf: &stubUpgradePlanner{},

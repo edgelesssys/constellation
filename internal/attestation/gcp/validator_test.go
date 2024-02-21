@@ -176,7 +176,7 @@ type fakeInstanceClient struct {
 }
 
 func prepareFakeClient(ident *computepb.ShieldedInstanceIdentity, newErr, getIdentErr error) func(ctx context.Context, opts ...option.ClientOption) (gcpRestClient, error) {
-	return func(ctx context.Context, opts ...option.ClientOption) (gcpRestClient, error) {
+	return func(_ context.Context, _ ...option.ClientOption) (gcpRestClient, error) {
 		return &fakeInstanceClient{
 			getIdentErr: getIdentErr,
 			ident:       ident,

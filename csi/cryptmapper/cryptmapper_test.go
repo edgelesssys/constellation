@@ -81,7 +81,7 @@ func TestOpenCryptDevice(t *testing.T) {
 			volumeID: "volume0",
 			mapper:   &stubCryptDevice{},
 			kms:      &fakeKMS{},
-			diskInfo: func(disk string) (string, error) { return "", nil },
+			diskInfo: func(_ string) (string, error) { return "", nil },
 			wantErr:  false,
 		},
 		"success with error on Load": {
@@ -89,7 +89,7 @@ func TestOpenCryptDevice(t *testing.T) {
 			volumeID: "volume0",
 			mapper:   &stubCryptDevice{loadErr: assert.AnError},
 			kms:      &fakeKMS{},
-			diskInfo: func(disk string) (string, error) { return "", nil },
+			diskInfo: func(_ string) (string, error) { return "", nil },
 			wantErr:  false,
 		},
 		"success with integrity": {
@@ -98,7 +98,7 @@ func TestOpenCryptDevice(t *testing.T) {
 			integrity: true,
 			mapper:    &stubCryptDevice{loadErr: assert.AnError},
 			kms:       &fakeKMS{},
-			diskInfo:  func(disk string) (string, error) { return "", nil },
+			diskInfo:  func(_ string) (string, error) { return "", nil },
 			wantErr:   false,
 		},
 		"error on Init": {
@@ -106,7 +106,7 @@ func TestOpenCryptDevice(t *testing.T) {
 			volumeID: "volume0",
 			mapper:   &stubCryptDevice{initErr: assert.AnError},
 			kms:      &fakeKMS{},
-			diskInfo: func(disk string) (string, error) { return "", nil },
+			diskInfo: func(_ string) (string, error) { return "", nil },
 			wantErr:  true,
 		},
 		"error on Format": {
@@ -114,7 +114,7 @@ func TestOpenCryptDevice(t *testing.T) {
 			volumeID: "volume0",
 			mapper:   &stubCryptDevice{loadErr: assert.AnError, formatErr: assert.AnError},
 			kms:      &fakeKMS{},
-			diskInfo: func(disk string) (string, error) { return "", nil },
+			diskInfo: func(_ string) (string, error) { return "", nil },
 			wantErr:  true,
 		},
 		"error on Activate": {
@@ -122,7 +122,7 @@ func TestOpenCryptDevice(t *testing.T) {
 			volumeID: "volume0",
 			mapper:   &stubCryptDevice{activatePassErr: assert.AnError},
 			kms:      &fakeKMS{},
-			diskInfo: func(disk string) (string, error) { return "", nil },
+			diskInfo: func(_ string) (string, error) { return "", nil },
 			wantErr:  true,
 		},
 		"error on diskInfo": {
@@ -130,7 +130,7 @@ func TestOpenCryptDevice(t *testing.T) {
 			volumeID: "volume0",
 			mapper:   &stubCryptDevice{loadErr: assert.AnError},
 			kms:      &fakeKMS{},
-			diskInfo: func(disk string) (string, error) { return "", assert.AnError },
+			diskInfo: func(_ string) (string, error) { return "", assert.AnError },
 			wantErr:  true,
 		},
 		"disk is already formatted": {
@@ -138,7 +138,7 @@ func TestOpenCryptDevice(t *testing.T) {
 			volumeID: "volume0",
 			mapper:   &stubCryptDevice{loadErr: assert.AnError},
 			kms:      &fakeKMS{},
-			diskInfo: func(disk string) (string, error) { return "ext4", nil },
+			diskInfo: func(_ string) (string, error) { return "ext4", nil },
 			wantErr:  true,
 		},
 		"error with integrity on wipe": {
@@ -147,7 +147,7 @@ func TestOpenCryptDevice(t *testing.T) {
 			integrity: true,
 			mapper:    &stubCryptDevice{loadErr: assert.AnError, wipeErr: assert.AnError},
 			kms:       &fakeKMS{},
-			diskInfo:  func(disk string) (string, error) { return "", nil },
+			diskInfo:  func(_ string) (string, error) { return "", nil },
 			wantErr:   true,
 		},
 		"error on adding keyslot": {
@@ -155,7 +155,7 @@ func TestOpenCryptDevice(t *testing.T) {
 			volumeID: "volume0",
 			mapper:   &stubCryptDevice{loadErr: assert.AnError, keySlotAddErr: assert.AnError},
 			kms:      &fakeKMS{},
-			diskInfo: func(disk string) (string, error) { return "", nil },
+			diskInfo: func(_ string) (string, error) { return "", nil },
 			wantErr:  true,
 		},
 		"incorrect key length": {
@@ -163,7 +163,7 @@ func TestOpenCryptDevice(t *testing.T) {
 			volumeID: "volume0",
 			mapper:   &stubCryptDevice{},
 			kms:      &fakeKMS{presetKey: []byte{0x1, 0x2, 0x3}},
-			diskInfo: func(disk string) (string, error) { return "", nil },
+			diskInfo: func(_ string) (string, error) { return "", nil },
 			wantErr:  true,
 		},
 		"incorrect key length with error on Load": {
@@ -171,7 +171,7 @@ func TestOpenCryptDevice(t *testing.T) {
 			volumeID: "volume0",
 			mapper:   &stubCryptDevice{loadErr: assert.AnError},
 			kms:      &fakeKMS{presetKey: []byte{0x1, 0x2, 0x3}},
-			diskInfo: func(disk string) (string, error) { return "", nil },
+			diskInfo: func(_ string) (string, error) { return "", nil },
 			wantErr:  true,
 		},
 		"getKey fails": {
@@ -179,7 +179,7 @@ func TestOpenCryptDevice(t *testing.T) {
 			volumeID: "volume0",
 			mapper:   &stubCryptDevice{},
 			kms:      &fakeKMS{getDEKErr: assert.AnError},
-			diskInfo: func(disk string) (string, error) { return "", nil },
+			diskInfo: func(_ string) (string, error) { return "", nil },
 			wantErr:  true,
 		},
 		"getKey fails with error on Load": {
@@ -187,7 +187,7 @@ func TestOpenCryptDevice(t *testing.T) {
 			volumeID: "volume0",
 			mapper:   &stubCryptDevice{loadErr: assert.AnError},
 			kms:      &fakeKMS{getDEKErr: assert.AnError},
-			diskInfo: func(disk string) (string, error) { return "", nil },
+			diskInfo: func(_ string) (string, error) { return "", nil },
 			wantErr:  true,
 		},
 	}

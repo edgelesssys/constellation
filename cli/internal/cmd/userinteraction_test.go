@@ -23,7 +23,7 @@ func TestAskToConfirm(t *testing.T) {
 	cmd := &cobra.Command{
 		Use:  "test",
 		Args: cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			ok, err := askToConfirm(cmd, "777")
 			if err != nil {
 				return err

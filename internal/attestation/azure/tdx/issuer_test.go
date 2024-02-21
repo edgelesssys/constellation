@@ -91,7 +91,7 @@ func TestIMDSGetQuote(t *testing.T) {
 		wantErr bool
 	}{
 		"success": {
-			client: newTestClient(func(req *http.Request) *http.Response {
+			client: newTestClient(func(_ *http.Request) *http.Response {
 				quote := quoteResponse{
 					Quote: "test",
 				}
@@ -106,7 +106,7 @@ func TestIMDSGetQuote(t *testing.T) {
 			wantErr: false,
 		},
 		"bad status code": {
-			client: newTestClient(func(req *http.Request) *http.Response {
+			client: newTestClient(func(_ *http.Request) *http.Response {
 				return &http.Response{
 					StatusCode: http.StatusInternalServerError,
 					Body:       io.NopCloser(bytes.NewBufferString("")),
@@ -116,7 +116,7 @@ func TestIMDSGetQuote(t *testing.T) {
 			wantErr: true,
 		},
 		"bad json": {
-			client: newTestClient(func(req *http.Request) *http.Response {
+			client: newTestClient(func(_ *http.Request) *http.Response {
 				return &http.Response{
 					StatusCode: http.StatusOK,
 					Body:       io.NopCloser(bytes.NewBufferString("")),

@@ -66,7 +66,7 @@ func TestATLSCredentials(t *testing.T) {
 		go func() {
 			var err error
 			defer func() { errChan <- err }()
-			conn, err := grpc.DialContext(context.Background(), "", grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+			conn, err := grpc.DialContext(context.Background(), "", grpc.WithContextDialer(func(_ context.Context, _ string) (net.Conn, error) {
 				return lis.Dial()
 			}), grpc.WithTransportCredentials(clientCreds))
 			require.NoError(err)

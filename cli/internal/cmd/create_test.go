@@ -122,7 +122,7 @@ func TestCreate(t *testing.T) {
 			wantErr:  true,
 		},
 		"config does not exist": {
-			setupFs: func(a *require.Assertions, p cloudprovider.Provider) afero.Fs { return afero.NewMemMapFs() },
+			setupFs: func(_ *require.Assertions, _ cloudprovider.Provider) afero.Fs { return afero.NewMemMapFs() },
 			creator: &stubCloudCreator{
 				state:            infraState,
 				planDiff:         true,

@@ -57,7 +57,7 @@ func TestNewValidator(t *testing.T) {
 	}
 
 	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
+		t.Run(name, func(_ *testing.T) {
 			validator := NewValidator(tc.cfg, tc.logger)
 			require.NotNil(validator)
 			require.NotNil(validator.log)

@@ -308,7 +308,7 @@ func TestFailIssuer(t *testing.T) {
 		"fail getAttestationKey": {
 			issuer: NewIssuer(
 				newSimTPMWithEventLog,
-				func(tpm io.ReadWriter) (*tpmclient.Key, error) {
+				func(_ io.ReadWriter) (*tpmclient.Key, error) {
 					return nil, errors.New("failure")
 				},
 				fakeGetInstanceInfo,
@@ -320,7 +320,7 @@ func TestFailIssuer(t *testing.T) {
 		"fail Attest": {
 			issuer: NewIssuer(
 				newSimTPMWithEventLog,
-				func(tpm io.ReadWriter) (*tpmclient.Key, error) {
+				func(_ io.ReadWriter) (*tpmclient.Key, error) {
 					return &tpmclient.Key{}, nil
 				},
 				fakeGetInstanceInfo,

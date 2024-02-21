@@ -138,7 +138,7 @@ func TestUpdate(t *testing.T) {
 	// create tls config and start the server
 	serverConfig, err := atls.CreateAttestationServerTLSConfig(nil, []atls.Validator{validator})
 	require.NoError(err)
-	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = io.WriteString(w, "hello")
 	}))
 	server.TLS = serverConfig

@@ -55,7 +55,7 @@ func (w *NodeJoinWatcher) SetupWithManager(mgr ctrl.Manager) error {
 		Named("node-join-watcher").
 		Watches(
 			client.Object(&corev1.Node{}),
-			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []ctrl.Request {
+			handler.EnqueueRequestsFromMapFunc(func(_ context.Context, obj client.Object) []ctrl.Request {
 				return []ctrl.Request{{
 					NamespacedName: types.NamespacedName{Name: obj.GetName()},
 				}}
@@ -70,7 +70,7 @@ func nodeJoinLeavePredicate() predicate.Predicate {
 	return predicate.Funcs{
 		// CreateFunc is not specified => never filter out create events
 		// DeleteFunc is not specified => never filter out delete events
-		UpdateFunc:  func(e event.UpdateEvent) bool { return false },
-		GenericFunc: func(e event.GenericEvent) bool { return false },
+		UpdateFunc:  func(_ event.UpdateEvent) bool { return false },
+		GenericFunc: func(_ event.GenericEvent) bool { return false },
 	}
 }
