@@ -17,8 +17,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/secure-systems-lab/go-securesystemslib/encrypted"
 	"github.com/sigstore/sigstore/pkg/signature"
-	"github.com/theupdateframework/go-tuf/encrypted"
 )
 
 const (
