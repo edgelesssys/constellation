@@ -298,7 +298,7 @@ jobs:
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
 
       - name: Login to AWS
-        uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a # v4.0.1
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
         with:
           role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIRead
           aws-region: eu-central-1
@@ -320,7 +320,7 @@ jobs:
 
       - name: Login to AWS (IAM role)
         if: needs.generate-input-parameters.outputs.cloudProvider == 'aws'
-        uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a # v4.0.1
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
         with:
           role-to-assume: arn:aws:iam::795746500882:role/GithubActionsE2EIAM
           aws-region: eu-central-1
@@ -334,7 +334,7 @@ jobs:
           azure_credentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
 
       - name: Download CLI
-        uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
+        uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe # v4.1.2
         with:
           name: constellation-upgrade-${{ inputs.attestationVariant }}
           path: build
@@ -376,7 +376,7 @@ jobs:
 
       - name: Login to AWS (Cluster role)
         if: always() && needs.generate-input-parameters.outputs.cloudProvider == 'aws'
-        uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a # v4.0.1
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
         with:
           role-to-assume: arn:aws:iam::795746500882:role/GithubActionsE2ECluster
           aws-region: eu-central-1
@@ -457,7 +457,7 @@ jobs:
           ref: ${{ inputs.gitRef }}
 
       - name: Download CLI
-        uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
+        uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe # v4.1.2
         with:
           name: constellation-upgrade-${{ inputs.attestationVariant }}
           path: build

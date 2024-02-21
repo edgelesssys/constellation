@@ -40,7 +40,7 @@ jobs:
 
       - name: Create pull request
         id: create-pull-request
-        uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38 # v5.0.2
+        uses: peter-evans/create-pull-request@b1ddad2c994a25fbc81a28b3ec0e368bb2021c50 # v6.0.0
         with:
           path: terraform-provider-constellation
           branch: "feat/docs/update"
@@ -58,7 +58,7 @@ jobs:
           delete-branch: true
 
       - name: Merge pull request
-        uses: peter-evans/enable-pull-request-automerge@v3
+        uses: peter-evans/enable-pull-request-automerge@a660677d5469627102a1c1e11409dd063606628d # v3.0.0
         with:
           pull-request-number: ${{ steps.create-pull-request.outputs.pull-request-number }}
           merge-method: squash

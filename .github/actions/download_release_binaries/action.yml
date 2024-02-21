@@ -5,51 +5,51 @@ runs:
   using: "composite"
   steps:
     - name: Download CLI binaries darwin-amd64
-      uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
+      uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe # v4.1.2
       with:
         name: constellation-darwin-amd64
 
     - name: Download CLI binaries darwin-arm64
-      uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
+      uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe # v4.1.2
       with:
         name: constellation-darwin-arm64
 
     - name: Download CLI binaries linux-amd64
-      uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
+      uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe # v4.1.2
       with:
         name: constellation-linux-amd64
 
     - name: Download CLI binaries linux-arm64
-      uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
+      uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe # v4.1.2
       with:
         name: constellation-linux-arm64
 
     - name: Download CLI binaries windows-amd64
-      uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
+      uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe # v4.1.2
       with:
         name: constellation-windows-amd64
 
     - name: Download Terraform module
-      uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
+      uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe # v4.1.2
       with:
         name: terraform-module
 
     - name: Download Terraform provider binary darwin-amd64
-      uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
+      uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe # v4.1.2
       with:
         name: terraform-provider-constellation-darwin-amd64
 
     - name: Download Terraform provider binary darwin-arm64
-      uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
+      uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe # v4.1.2
       with:
         name: terraform-provider-constellation-darwin-arm64
 
     - name: Download Terraform provider binary linux-amd64
-      uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
+      uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe # v4.1.2
       with:
         name: terraform-provider-constellation-linux-amd64
 
     - name: Download Terraform provider binary linux-arm64
-      uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
+      uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe # v4.1.2
       with:
         name: terraform-provider-constellation-linux-arm64
