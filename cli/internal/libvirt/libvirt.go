@@ -55,7 +55,7 @@ func (r *Runner) Start(ctx context.Context, name, imageName string) error {
 	// check for an existing container
 	if containerName, err := r.file.Read(r.nameFile); err == nil {
 		// check if a container with the same name already exists
-		containers, err := docker.ContainerList(ctx, types.ContainerListOptions{
+		containers, err := docker.ContainerList(ctx, container.ListOptions{
 			Filters: filters.NewArgs(
 				filters.KeyValuePair{
 					Key:   "name",
@@ -86,7 +86,7 @@ func (r *Runner) Start(ctx context.Context, name, imageName string) error {
 			}
 			// container exists but is not running, remove it
 			// so we can start a new one
-			if err := docker.ContainerRemove(ctx, containers[0].ID, types.ContainerRemoveOptions{Force: true}); err != nil {
+			if err := docker.ContainerRemove(ctx, containers[0].ID, container.RemoveOptions{Force: true}); err != nil {
 				return err
 			}
 		}
@@ -140,14 +140,14 @@ func (r *Runner) startNewContainer(ctx context.Context, docker *docker.Client, c
 	); err != nil {
 		return fmt.Errorf("failed to create container: %w", err)
 	}
-	if err := docker.ContainerStart(ctx, containerName, types.ContainerStartOptions{}); err != nil {
-		_ = docker.ContainerRemove(ctx, containerName, types.ContainerRemoveOptions{Force: true})
+	if err := docker.ContainerStart(ctx, containerName, container.StartOptions{}); err != nil {
+		_ = docker.ContainerRemove(ctx, containerName, container.RemoveOptions{Force: true})
 		return fmt.Errorf("failed to start container: %w", err)
 	}
 
 	// write the name of the container to a file so we can remove it later
 	if err := r.file.Write(r.nameFile, []byte(containerName)); err != nil {
-		_ = docker.ContainerRemove(ctx, containerName, types.ContainerRemoveOptions{Force: true})
+		_ = docker.ContainerRemove(ctx, containerName, container.RemoveOptions{Force: true})
 		return err
 	}
 
@@ -169,7 +169,7 @@ func (r *Runner) Stop(ctx context.Context) error {
 		return err
 	}
 	defer docker.Close()
-	if err := docker.ContainerRemove(ctx, string(name), types.ContainerRemoveOptions{Force: true}); err != nil {
+	if err := docker.ContainerRemove(ctx, string(name), container.RemoveOptions{Force: true}); err != nil {
 		return err
 	}
 
