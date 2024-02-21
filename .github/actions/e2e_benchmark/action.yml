@@ -146,7 +146,7 @@ runs:
       with:
         path: >
           benchmarks/constellation-${{ inputs.cloudProvider }}.json
-        name: "benchmarks"
+        name: "benchmarks-${{ inputs.attestationVariant }}"
         encryptionSecret: ${{ inputs.encryptionSecret }}
 
     - name: Assume AWS role to retrieve and update benchmarks in S3
