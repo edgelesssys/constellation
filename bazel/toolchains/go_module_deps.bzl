@@ -496,14 +496,6 @@ def go_dependencies():
         version = "v0.10.0",
     )
     go_repository(
-        name = "com_github_azure_azure_sdk_for_go_sdk_keyvault_azsecrets",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/Azure/azure-sdk-for-go/sdk/keyvault/azsecrets",
-        sum = "h1:xnO4sFyG8UH2fElBkcqLTOZsAajvKfnSlgBBW8dXYjw=",
-        version = "v0.12.0",
-    )
-    go_repository(
         name = "com_github_azure_azure_sdk_for_go_sdk_keyvault_internal",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
@@ -558,6 +550,14 @@ def go_dependencies():
         importpath = "github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azkeys",
         sum = "h1:MyVTgWR8qd/Jw1Le0NZebGBUCLbtak3bJ3z1OlqZBpw=",
         version = "v1.0.1",
+    )
+    go_repository(
+        name = "com_github_azure_azure_sdk_for_go_sdk_security_keyvault_azsecrets",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets",
+        sum = "h1:h4Zxgmi9oyZL2l8jeg1iRTqPloHktywWcu0nlJmo1tA=",
+        version = "v1.1.0",
     )
     go_repository(
         name = "com_github_azure_azure_sdk_for_go_sdk_security_keyvault_internal",

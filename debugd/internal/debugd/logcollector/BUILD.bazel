@@ -18,7 +18,7 @@ go_library(
         "@com_github_aws_aws_sdk_go_v2_config//:config",
         "@com_github_aws_aws_sdk_go_v2_service_secretsmanager//:secretsmanager",
         "@com_github_azure_azure_sdk_for_go_sdk_azidentity//:azidentity",
-        "@com_github_azure_azure_sdk_for_go_sdk_keyvault_azsecrets//:azsecrets",
+        "@com_github_azure_azure_sdk_for_go_sdk_security_keyvault_azsecrets//:azsecrets",
         "@com_github_googleapis_gax_go_v2//:gax-go",
         "@com_google_cloud_go_secretmanager//apiv1",
         "@com_google_cloud_go_secretmanager//apiv1/secretmanagerpb",
@@ -31,7 +31,7 @@ go_test(
     embed = [":logcollector"],
     deps = [
         "@com_github_aws_aws_sdk_go_v2_service_secretsmanager//:secretsmanager",
-        "@com_github_azure_azure_sdk_for_go_sdk_keyvault_azsecrets//:azsecrets",
+        "@com_github_azure_azure_sdk_for_go_sdk_security_keyvault_azsecrets//:azsecrets",
         "@com_github_googleapis_gax_go_v2//:gax-go",
         "@com_github_stretchr_testify//assert",
         "@com_google_cloud_go_secretmanager//apiv1/secretmanagerpb",

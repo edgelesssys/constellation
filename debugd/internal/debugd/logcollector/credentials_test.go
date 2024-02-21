@@ -13,7 +13,7 @@ import (
 	"testing"
 
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
-	"github.com/Azure/azure-sdk-for-go/sdk/keyvault/azsecrets"
+	"github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets"
 	awssecretmanager "github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/googleapis/gax-go/v2"
 	"github.com/stretchr/testify/assert"
@@ -103,7 +103,7 @@ func TestGetOpensearchCredentialsAzure(t *testing.T) {
 		"azure success": {
 			azureAPI: stubAzureSecretsAPI{
 				getSecretResp: azsecrets.GetSecretResponse{
-					SecretBundle: azsecrets.SecretBundle{
+					Secret: azsecrets.Secret{
 						Value: ptr("test-password"),
 					},
 				},
