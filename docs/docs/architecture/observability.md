@@ -33,11 +33,7 @@ The payload is an actual message emitted from your system along with a metadata 
 
 ### System logs
 
-Constellation uses cloud logging for events occurring during the early stages of a node's boot process.
-These logs include [Bootstrapper](./microservices.md#bootstrapper) events and [state disk UUIDs](../architecture/images.md#state-disk).
-You can access the cloud logging [directly via the cloud provider endpoints](../workflows/troubleshooting.md#cloud-logging).
-
-More detailed system-level logs are accessible via `/var/log` and [journald](https://www.freedesktop.org/software/systemd/man/systemd-journald.service.html) on the nodes directly.
+Detailed system-level logs are accessible via `/var/log` and [journald](https://www.freedesktop.org/software/systemd/man/systemd-journald.service.html) on the nodes directly.
 They can be collected from there, for example, via [Filebeat and Logstash](https://www.elastic.co/guide/en/beats/filebeat/current/logstash-output.html), which are tools of the [Elastic Stack](https://www.elastic.co/de/elastic-stack/).
 
 In case of an error during the initialization, the CLI automatically collects the [Bootstrapper](./microservices.md#bootstrapper) logs and returns these as a file for [troubleshooting](../workflows/troubleshooting.md). Here is an example of such an event:
