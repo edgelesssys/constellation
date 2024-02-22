@@ -8,7 +8,6 @@ package openstack
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/netip"
@@ -234,78 +233,11 @@ func (c *Cloud) InitSecretHash(ctx context.Context) ([]byte, error) {
 // a control plane node.
 // TODO(malt3): Rewrite to use real load balancer once it is available.
 func (c *Cloud) GetLoadBalancerEndpoint(ctx context.Context) (host, port string, err error) {
-	host, err = c.getLoadBalancerHost(ctx)
+	host, err = c.imds.loadBalancerEndpoint(ctx)
 	if err != nil {
-		return "", "", fmt.Errorf("getting load balancer host: %w", err)
+		return "", "", fmt.Errorf("getting load balancer endpoint: %w", err)
 	}
 	return host, strconv.FormatInt(constants.KubernetesPort, 10), nil
-}
-
-func (c *Cloud) getLoadBalancerHost(ctx context.Context) (string, error) {
-	uid, err := c.imds.uid(ctx)
-	if err != nil {
-		return "", fmt.Errorf("getting uid: %w", err)
-	}
-
-	uidTag := fmt.Sprintf("constellation-uid-%s", uid)
-
-	subnet, err := c.getSubnetCIDR(uidTag)
-	if err != nil {
-		return "", err
-	}
-
-	srvs, err := c.getServers(uidTag)
-	if err != nil {
-		return "", err
-	}
-
-	for _, s := range srvs {
-		if s.Name == "" {
-			continue
-		}
-		if s.ID == "" {
-			continue
-		}
-		if s.Tags == nil {
-			continue
-		}
-
-		subnetAddrs, err := parseSeverAddresses(s.Addresses)
-		if err != nil {
-			return "", fmt.Errorf("parsing server %q addresses: %w", s.Name, err)
-		}
-
-		// In a best effort approach, we take the first fixed IPv4 address that is outside the subnet
-		// belonging to our cluster and assume it is the "load balancer" floating ip.
-		for _, serverSubnet := range subnetAddrs {
-			for _, addr := range serverSubnet.Addresses {
-				if addr.Type != floatingIP {
-					continue
-				}
-
-				if addr.IPVersion != ipV4 {
-					continue
-				}
-
-				if addr.IP == "" {
-					continue
-				}
-
-				parsedAddr, err := netip.ParseAddr(addr.IP)
-				if err != nil {
-					continue
-				}
-
-				if subnet.Contains(parsedAddr) {
-					continue
-				}
-
-				return addr.IP, nil
-			}
-		}
-	}
-
-	return "", errors.New("no load balancer endpoint found")
 }
 
 func (c *Cloud) getSubnetCIDR(uidTag string) (netip.Prefix, error) {

@@ -67,3 +67,10 @@ variable "openstack_password" {
   type        = string
   description = "OpenStack password."
 }
+
+# STACKIT-specific variables
+
+variable "stackit_project_id" {
+  type        = string
+  description = "STACKIT project ID."
+}

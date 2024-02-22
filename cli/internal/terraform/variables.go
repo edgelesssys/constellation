@@ -280,6 +280,8 @@ type OpenStackClusterVariables struct {
 	NodeGroups map[string]OpenStackNodeGroup `hcl:"node_groups" cty:"node_groups"`
 	// Cloud is the (optional) name of the OpenStack cloud to use when reading the "clouds.yaml" configuration file. If empty, environment variables are used.
 	Cloud *string `hcl:"cloud" cty:"cloud"`
+	// (STACKIT only) STACKITProjectID is the ID of the STACKIT project to use.
+	STACKITProjectID string `hcl:"stackit_project_id" cty:"stackit_project_id"`
 	// FloatingIPPoolID is the ID of the OpenStack floating IP pool to use for public IPs.
 	FloatingIPPoolID string `hcl:"floating_ip_pool_id" cty:"floating_ip_pool_id"`
 	// ImageID is the ID of the OpenStack image to use.

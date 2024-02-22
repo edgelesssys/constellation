@@ -260,6 +260,7 @@ func TestOpenStackClusterVariables(t *testing.T) {
 		OpenstackUsername:       "my-username",
 		OpenstackPassword:       "my-password",
 		Debug:                   true,
+		STACKITProjectID:        "my-stackit-project-id",
 		NodeGroups: map[string]OpenStackNodeGroup{
 			constants.ControlPlaneDefault: {
 				Role:            "control-plane",
@@ -286,6 +287,7 @@ node_groups = {
   }
 }
 cloud                      = "my-cloud"
+stackit_project_id         = "my-stackit-project-id"
 floating_ip_pool_id        = "fip-pool-0123456789abcdef"
 image_id                   = "8e10b92d-8f7a-458c-91c6-59b42f82ef81"
 openstack_user_domain_name = "my-user-domain"

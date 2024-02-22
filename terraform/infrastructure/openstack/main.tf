@@ -5,6 +5,11 @@ terraform {
       version = "1.54.1"
     }
 
+    stackit = {
+      source  = "stackitcloud/stackit"
+      version = "0.12.0"
+    }
+
     random = {
       source  = "hashicorp/random"
       version = "3.6.0"
@@ -16,6 +21,11 @@ provider "openstack" {
   cloud = var.cloud
 }
 
+provider "stackit" {
+  region = "eu01"
+}
+
+
 data "openstack_identity_auth_scope_v3" "scope" {
   name = "scope"
 }
@@ -26,15 +36,17 @@ locals {
   init_secret_hash       = random_password.init_secret.bcrypt_hash
   ports_node_range_start = "30000"
   ports_node_range_end   = "32767"
-  ports_kubernetes       = "6443"
-  ports_bootstrapper     = "9000"
-  ports_konnectivity     = "8132"
-  ports_verify           = "30081"
-  ports_recovery         = "9999"
-  ports_debugd           = "4000"
-  cidr_vpc_subnet_nodes  = "192.168.178.0/24"
-  cidr_vpc_subnet_lbs    = "192.168.177.0/24"
-  tags                   = ["constellation-uid-${local.uid}"]
+  control_plane_named_ports = flatten([
+    { name = "kubernetes", port = "6443", health_check = "HTTPS" },
+    { name = "bootstrapper", port = "9000", health_check = "TCP" },
+    { name = "verify", port = "30081", health_check = "TCP" },
+    { name = "recovery", port = "9999", health_check = "TCP" },
+    { name = "join", port = "30090", health_check = "TCP" },
+    var.debug ? [{ name = "debugd", port = "4000", health_check = "TCP" }] : [],
+  ])
+  cidr_vpc_subnet_nodes = "192.168.178.0/24"
+  cidr_vpc_subnet_lbs   = "192.168.177.0/24"
+  tags                  = ["constellation-uid-${local.uid}"]
   identity_service = [
     for entry in data.openstack_identity_auth_scope_v3.scope.service_catalog :
     entry if entry.type == "identity"
@@ -194,46 +206,40 @@ resource "openstack_networking_secgroup_rule_v2" "nodeport_udp" {
   security_group_id = openstack_networking_secgroup_v2.vpc_secgroup.id
 }
 
-resource "openstack_networking_secgroup_rule_v2" "tcp_port_forward" {
-  for_each = toset(flatten([
-    local.ports_kubernetes,
-    local.ports_bootstrapper,
-    local.ports_konnectivity,
-    local.ports_verify,
-    local.ports_recovery,
-    var.debug ? [local.ports_debugd] : [],
-  ]))
+resource "openstack_networking_secgroup_rule_v2" "tcp_ingress" {
+  for_each          = { for item in local.control_plane_named_ports : item.name => item }
   direction         = "ingress"
   ethertype         = "IPv4"
   protocol          = "tcp"
-  port_range_min    = each.value
-  port_range_max    = each.value
+  port_range_min    = each.value.port
+  port_range_max    = each.value.port
   security_group_id = openstack_networking_secgroup_v2.vpc_secgroup.id
 }
 
 
 module "instance_group" {
-  source                     = "./modules/instance_group"
-  for_each                   = var.node_groups
-  base_name                  = local.name
-  node_group_name            = each.key
-  role                       = each.value.role
-  initial_count              = each.value.initial_count
-  disk_size                  = each.value.state_disk_size
-  state_disk_type            = each.value.state_disk_type
-  availability_zone          = each.value.zone
-  image_id                   = var.image_id
-  flavor_id                  = each.value.flavor_id
-  security_groups            = [openstack_networking_secgroup_v2.vpc_secgroup.id]
-  tags                       = local.tags
-  uid                        = local.uid
-  network_id                 = openstack_networking_network_v2.vpc_network.id
-  subnet_id                  = openstack_networking_subnet_v2.vpc_subnetwork.id
-  init_secret_hash           = local.init_secret_hash
-  identity_internal_url      = local.identity_internal_url
-  openstack_username         = var.openstack_username
-  openstack_password         = var.openstack_password
-  openstack_user_domain_name = var.openstack_user_domain_name
+  source                           = "./modules/instance_group"
+  for_each                         = var.node_groups
+  base_name                        = local.name
+  node_group_name                  = each.key
+  role                             = each.value.role
+  initial_count                    = each.value.initial_count
+  disk_size                        = each.value.state_disk_size
+  state_disk_type                  = each.value.state_disk_type
+  availability_zone                = each.value.zone
+  image_id                         = var.image_id
+  flavor_id                        = each.value.flavor_id
+  security_groups                  = [openstack_networking_secgroup_v2.vpc_secgroup.id]
+  tags                             = local.tags
+  uid                              = local.uid
+  network_id                       = openstack_networking_network_v2.vpc_network.id
+  subnet_id                        = openstack_networking_subnet_v2.vpc_subnetwork.id
+  init_secret_hash                 = local.init_secret_hash
+  identity_internal_url            = local.identity_internal_url
+  openstack_username               = var.openstack_username
+  openstack_password               = var.openstack_password
+  openstack_user_domain_name       = var.openstack_user_domain_name
+  openstack_load_balancer_endpoint = openstack_networking_floatingip_v2.public_ip.address
 }
 
 resource "openstack_networking_floatingip_v2" "public_ip" {
@@ -242,8 +248,8 @@ resource "openstack_networking_floatingip_v2" "public_ip" {
   tags        = local.tags
 }
 
-
 resource "openstack_networking_floatingip_associate_v2" "public_ip_associate" {
+  count       = var.cloud == "stackit" ? 0 : 1
   floating_ip = openstack_networking_floatingip_v2.public_ip.address
   port_id     = module.instance_group["control_plane_default"].port_ids.0
   depends_on = [
@@ -251,6 +257,20 @@ resource "openstack_networking_floatingip_associate_v2" "public_ip_associate" {
     openstack_networking_router_interface_v2.vpc_router_interface,
   ]
 }
+
+module "stackit_loadbalancer" {
+  count              = var.cloud == "stackit" ? 1 : 0
+  source             = "./modules/stackit_loadbalancer"
+  name               = local.name
+  stackit_project_id = var.stackit_project_id
+  member_ips         = module.instance_group["control_plane_default"].ips
+  network_id         = openstack_networking_network_v2.vpc_network.id
+  external_address   = openstack_networking_floatingip_v2.public_ip.address
+  ports = {
+    for port in local.control_plane_named_ports : port.name => port.port
+  }
+}
+
 
 moved {
   from = module.instance_group_control_plane
