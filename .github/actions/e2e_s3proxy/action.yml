@@ -66,6 +66,6 @@ runs:
         KUBECONFIG: ${{ inputs.kubeconfig }}
         ACCESS_KEY: ${{ inputs.s3AccessKey }}
         SECRET_KEY: ${{ inputs.s3SecretKey }}
-        IMAGE: "ghcr.io/edgelesssys/mint:v1.99.0@sha256:96a059733087ec0bcf2c808406a626da2ffefe8e7c7cac786907b1b35b892234" # renovate:mint-fork
+        IMAGE: "ghcr.io/edgelesssys/mint:v2.0.0@sha256:cf82f029ca77fd4ade4fb36f19945f44e58b1d03c1acb930d95ae7ec75a25c22" # renovate:mint-fork
       run: |
         ./s3proxy/e2e/deploy.sh "$IMAGE"
