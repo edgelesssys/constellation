@@ -13,7 +13,7 @@ The first step to recovery is identifying when a cluster becomes unhealthy.
 Usually, this can be first observed when the Kubernetes API server becomes unresponsive.
 
 You can check the health status of the nodes via the cloud service provider (CSP).
-Constellation provides logging information on the boot process and status via [cloud logging](troubleshooting.md#cloud-logging).
+Constellation provides logging information on the boot process and status via serial console output.
 In the following, you'll find detailed descriptions for identifying clusters stuck in recovery for each CSP.
 
 <tabs groupId="csp">
