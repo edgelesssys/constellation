@@ -78,7 +78,7 @@ Learn more: ["Getting started with Constellation" videos series](https://www.you
 
 We're running public instances of popular software on Constellation:
 
-* Rocket.Chat: <https://rocket.edgeless.systems/> ([blog post](https://www.edgeless.systems/resource-library/confidential-rocketchat/))
+* Rocket.Chat: <https://rocket.edgeless.systems/> ([blog post](https://www.edgeless.systems/resource-library/rocket-chat))
 * GitLab: <https://gitlab.edgeless.systems/> ([blog post](https://www.edgeless.systems/resource-library/confidential-gitlab/))
 
 These instances run on CVMs in Azure and Constellation keeps them end-to-end confidential.
