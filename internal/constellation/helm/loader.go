@@ -151,7 +151,7 @@ func (i *chartLoader) loadReleases(conformanceMode, deployCSIDriver bool, helmWa
 
 	releases := releaseApplyOrder{ciliumRelease, conServicesRelease, certManagerRelease, operatorRelease}
 	if deployCSIDriver {
-		csiRelease, err := i.loadRelease(csiInfo, helmWaitMode)
+		csiRelease, err := i.loadRelease(csiInfo, WaitModeNone)
 		if err != nil {
 			return nil, fmt.Errorf("loading snapshot CRDs: %w", err)
 		}
@@ -163,14 +163,14 @@ func (i *chartLoader) loadReleases(conformanceMode, deployCSIDriver bool, helmWa
 		releases = append(releases, csiRelease)
 	}
 	if i.csp == cloudprovider.AWS {
-		awsRelease, err := i.loadRelease(awsLBControllerInfo, helmWaitMode)
+		awsRelease, err := i.loadRelease(awsLBControllerInfo, WaitModeNone)
 		if err != nil {
 			return nil, fmt.Errorf("loading aws-services: %w", err)
 		}
 		releases = append(releases, awsRelease)
 	}
 	if i.csp == cloudprovider.OpenStack && openStackCfg.DeployYawolLoadBalancer != nil && *openStackCfg.DeployYawolLoadBalancer {
-		yawolRelease, err := i.loadRelease(yawolLBControllerInfo, helmWaitMode)
+		yawolRelease, err := i.loadRelease(yawolLBControllerInfo, WaitModeNone)
 		if err != nil {
 			return nil, fmt.Errorf("loading yawol chart: %w", err)
 		}
