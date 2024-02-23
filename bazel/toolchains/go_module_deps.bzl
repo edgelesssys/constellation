@@ -7153,8 +7153,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "helm.sh/helm/v3",
-        sum = "h1:4AwRLx+wfzlPtvrsbDmWP5PUokGmf9/nAmEdk21vae8=",
-        version = "v3.14.1",
+        sum = "h1:V71fv+NGZv0icBlr+in1MJXuUIHCiPG1hW9gEBISTIA=",
+        version = "v3.14.2",
     )
     go_repository(
         name = "sm_step_go_crypto",
