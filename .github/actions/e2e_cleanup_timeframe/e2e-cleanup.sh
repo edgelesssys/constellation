@@ -2,28 +2,28 @@
 
 # get_e2e_test_ids_on_date gets all workflow IDs of workflows that contain "e2e" on a specific date.
 function get_e2e_test_ids_on_date {
-  ids="$(gh run list --created "$1" --status failure --json createdAt,workflowName,databaseId --jq '.[] | select(.workflowName | contains("e2e")) | .databaseId' -L1000 -R edgelesssys/constellation)"
+  ids="$(gh run list --created "$1" --status failure --json createdAt,workflowName,databaseId --jq '.[] | select(.workflowName | contains("e2e")) | .databaseId' -L1000 -R edgelesssys/constellation || exit 1)"
   echo "$ids"
 }
 
 # download_tfstate_artifact downloads all artifacts matching the pattern terraform-state-* from a given workflow ID.
 function download_tfstate_artifact {
-  gh run download "$1" -p "terraform-state-*" -R edgelesssys/constellation > /dev/null
+  gh run download "$1" -p "terraform-state-*" -R edgelesssys/constellation > /dev/null || exit 1
 }
 
 # delete_resources runs terraform destroy on the constellation-terraform subfolder of a given folder.
 function delete_resources {
   cd "$1/constellation-terraform" || exit 1
-  terraform init > /dev/null # first, install plugins
-  terraform destroy -auto-approve > /dev/null
+  terraform init > /dev/null || exit 1 # first, install plugins
+  terraform destroy -auto-approve > /dev/null || exit 1
   cd ../../ || exit 1
 }
 
 # delete_iam_config runs terraform destroy on the constellation-iam-terraform subfolder of a given folder.
 function delete_iam_config {
   cd "$1/constellation-iam-terraform" || exit 1
-  terraform init > /dev/null # first, install plugins
-  terraform destroy -auto-approve > /dev/null
+  terraform init > /dev/null || exit 1 # first, install plugins
+  terraform destroy -auto-approve > /dev/null || exit 1
   cd ../../ || exit 1
 }
 
