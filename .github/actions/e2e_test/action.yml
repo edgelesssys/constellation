@@ -377,6 +377,7 @@ runs:
         awsOpenSearchUsers: ${{ inputs.awsOpenSearchUsers }}
         awsOpenSearchPwd: ${{ inputs.awsOpenSearchPwd }}
         encryptionSecret: ${{ inputs.encryptionSecret }}
+        artifactNameSuffix: ${{ steps.create-prefix.outputs.prefix }}
 
     - name: Run constellation verify test
       if: inputs.test == 'verify'
