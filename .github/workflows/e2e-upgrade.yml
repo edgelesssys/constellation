@@ -496,7 +496,7 @@ jobs:
         if: always()
         uses: ./.github/actions/artifact_upload
         with:
-          name: upgrade-logs
+          name: upgrade-logs-${{ inputs.attestationVariant }}
           path: >
             node-operator.logs
             node-maintenance-operator.logs

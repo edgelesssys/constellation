@@ -21,6 +21,9 @@ inputs:
   awsOpenSearchPwd:
     description: "AWS OpenSearch Password to upload the results."
     required: false
+  artifactNameSuffix:
+    description: "Suffix for artifact naming."
+    required: true
   encryptionSecret:
     description: 'The secret to use for encrypting the artifact.'
     required: true
@@ -103,7 +106,7 @@ runs:
       uses: ./.github/actions/artifact_upload
       with:
         path: "out/fio-constellation-${{ inputs.cloudProvider }}.json"
-        name: "fio-constellation-${{ inputs.cloudProvider }}.json"
+        name: "fio-constellation-${{ inputs.artifactNameSuffix }}.json"
         encryptionSecret: ${{ inputs.encryptionSecret }}
 
     - name: Run knb benchmark
@@ -125,7 +128,7 @@ runs:
       uses: ./.github/actions/artifact_upload
       with:
         path: "out/knb-constellation-${{ inputs.cloudProvider }}.json"
-        name: "knb-constellation-${{ inputs.cloudProvider }}.json"
+        name: "knb-constellation-${{ inputs.artifactNameSuffix }}.json"
         encryptionSecret: ${{ inputs.encryptionSecret }}
 
     - name: Parse results, create diagrams and post the progression summary
@@ -146,7 +149,7 @@ runs:
       with:
         path: >
           benchmarks/constellation-${{ inputs.cloudProvider }}.json
-        name: "benchmarks-${{ inputs.attestationVariant }}"
+        name: "benchmarks-${{ inputs.artifactNameSuffix }}"
         encryptionSecret: ${{ inputs.encryptionSecret }}
 
     - name: Assume AWS role to retrieve and update benchmarks in S3
