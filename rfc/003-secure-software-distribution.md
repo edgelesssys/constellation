@@ -69,7 +69,7 @@ This keypair could also be backed-up onto USB stick / SD card.
 # COSIGN_PRIVATE_KEY=
 # COSIGN_PUBLIC_KEY=
 go build constellation
-COSIGN_EXPERIMENTAL=1 cosign sign-blob --key env://COSIGN_PRIVATE_KEY constellation > constellation.sig
+COSIGN_EXPERIMENTAL=1 cosign sign-blob --yes --key env://COSIGN_PRIVATE_KEY constellation > constellation.sig
 # We provide: cosign.pub, constellation.sig, constellation
 echo "$COSIGN_PUBLIC_KEY" > cosign.pub
 cosign verify-blob --key cosign.pub --signature constellation.sig constellation
@@ -130,7 +130,7 @@ measurements:
 # Set these beforehand!
 # COSIGN_PASSWORD=
 # COSIGN_PRIVATE_KEY=
-COSIGN_EXPERIMENTAL=1 cosign sign-blob --key cosign.key measurements.yaml > measurements.yaml.sig
+COSIGN_EXPERIMENTAL=1 cosign sign-blob --yes --key cosign.key measurements.yaml > measurements.yaml.sig
 ```
 
 ```mermaid

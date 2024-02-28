@@ -287,7 +287,7 @@ jobs:
       - name: Build signed SBOM
         run: |
           syft build/constellation-linux-amd64 --catalogers go-module --file constellation.spdx.sbom -o spdx-json
-          cosign sign-blob --key env://COSIGN_PRIVATE_KEY constellation.spdx.sbom > constellation.spdx.sbom.sig
+          cosign sign-blob --yes --key env://COSIGN_PRIVATE_KEY constellation.spdx.sbom > constellation.spdx.sbom.sig
           grype constellation.spdx.sbom --fail-on high --only-fixed --add-cpes-if-none
         env:
           COSIGN_EXPERIMENTAL: 1
