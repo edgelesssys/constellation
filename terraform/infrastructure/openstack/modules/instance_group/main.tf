@@ -8,9 +8,10 @@ terraform {
 }
 
 locals {
-  tags      = distinct(sort(concat(var.tags, ["constellation-role-${var.role}"], ["constellation-node-group-${var.node_group_name}"])))
-  group_uid = random_id.uid.hex
-  name      = "${var.base_name}-${var.role}-${local.group_uid}"
+  tags              = distinct(sort(concat(var.tags, ["constellation-role-${var.role}"], ["constellation-node-group-${var.node_group_name}"])))
+  group_uid         = random_id.uid.hex
+  name              = "${var.base_name}-${var.role}-${local.group_uid}"
+  flavor_id_is_uuid = length(var.flavor_id) == 36 && length(regexall("^[[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}$", var.flavor_id)) == 1
 }
 
 resource "random_id" "uid" {
@@ -36,11 +37,16 @@ resource "openstack_networking_port_v2" "port" {
 #   policies = ["soft-anti-affinity"]
 # }
 
+data "openstack_compute_flavor_v2" "flavor" {
+  flavor_id = local.flavor_id_is_uuid ? var.flavor_id : null
+  name      = local.flavor_id_is_uuid ? null : var.flavor_id
+}
+
 resource "openstack_compute_instance_v2" "instance_group_member" {
   name      = "${local.name}-${count.index}"
   count     = var.initial_count
   image_id  = var.image_id
-  flavor_id = var.flavor_id
+  flavor_id = data.openstack_compute_flavor_v2.flavor.id
   tags      = local.tags
   # TODO(malt3): get this API enabled in the test environment
   # scheduler_hints {

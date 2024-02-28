@@ -913,7 +913,7 @@ func (c *Config) WithOpenStackProviderDefaults(openStackProvider string) *Config
 		c.Provider.OpenStack.YawolFlavorID = "3b11b27e-6c73-470d-b595-1d85b95a8cdf"
 		c.Provider.OpenStack.DeployCSIDriver = toPtr(true)
 		for groupName, group := range c.NodeGroups {
-			group.InstanceType = "2715eabe-3ffc-4c36-b02a-efa8c141a96a"
+			group.InstanceType = "m1a.4cd"
 			group.StateDiskType = "storage_premium_perf6"
 			c.NodeGroups[groupName] = group
 		}
