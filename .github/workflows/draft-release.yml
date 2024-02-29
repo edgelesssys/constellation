@@ -345,7 +345,9 @@ jobs:
           name: constellation.spdx.sbom
 
       - name: Download provenance
-        uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe # v4.1.2
+        # Need to use the same major version as slsa-github-generator to find uploaded artifacts
+        # https://github.com/slsa-framework/slsa-github-generator/issues/3068
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: ${{ needs.provenance.outputs.provenance-name }}
 
@@ -428,7 +430,9 @@ jobs:
           name: constellation.spdx.sbom.sig
 
       - name: Download Constellation provenance
-        uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe # v4.1.2
+        # Need to use the same major version as slsa-github-generator to find uploaded artifacts
+        # https://github.com/slsa-framework/slsa-github-generator/issues/3068
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: ${{ needs.provenance.outputs.provenance-name }}
 
