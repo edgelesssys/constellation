@@ -104,7 +104,7 @@ runs:
       run: |
         echo "$COSIGN_PUBLIC_KEY" > cosign.pub
         # Enabling experimental mode also publishes signature to Rekor
-        COSIGN_EXPERIMENTAL=1 cosign sign-blob --key env://COSIGN_PRIVATE_KEY "${OUTPUT_PATH}" > "${OUTPUT_PATH}.sig"
+        COSIGN_EXPERIMENTAL=1 cosign sign-blob --yes --key env://COSIGN_PRIVATE_KEY "${OUTPUT_PATH}" > "${OUTPUT_PATH}.sig"
         # Verify - As documentation & check
         # Local Signature (input: artifact, key, signature)
         cosign verify-blob --key cosign.pub --signature "${OUTPUT_PATH}.sig" "${OUTPUT_PATH}"
