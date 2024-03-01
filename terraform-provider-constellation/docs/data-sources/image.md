@@ -49,6 +49,10 @@ The Constellation OS image must be [replicated to the region](https://docs.edgel
 <a id="nestedatt--image"></a>
 ### Nested Schema for `image`
 
+Optional:
+
+- `marketplace_image` (Boolean) Whether a marketplace image should be used.
+
 Read-Only:
 
 - `reference` (String) CSP-specific unique reference to the image. The format differs per CSP.

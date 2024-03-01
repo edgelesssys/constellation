@@ -720,7 +720,8 @@ func (c *Config) DeployYawolLoadBalancer() bool {
 func (c *Config) UseMarketplaceImage() bool {
 	return (c.Provider.Azure != nil && c.Provider.Azure.UseMarketplaceImage != nil && *c.Provider.Azure.UseMarketplaceImage) ||
 		(c.Provider.GCP != nil && c.Provider.GCP.UseMarketplaceImage != nil && *c.Provider.GCP.UseMarketplaceImage) ||
-		(c.Provider.AWS != nil && c.Provider.AWS.UseMarketplaceImage != nil && *c.Provider.AWS.UseMarketplaceImage)
+		(c.Provider.AWS != nil && c.Provider.AWS.UseMarketplaceImage != nil && *c.Provider.AWS.UseMarketplaceImage) ||
+		(c.Provider.OpenStack != nil && c.Provider.OpenStack.Cloud == "stackit")
 }
 
 // Validate checks the config values and returns validation errors.

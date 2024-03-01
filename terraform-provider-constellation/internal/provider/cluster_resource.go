@@ -447,26 +447,29 @@ func (r *ClusterResource) ModifyPlan(ctx context.Context, req resource.ModifyPla
 		return
 	}
 
-	licenseID := plannedState.LicenseID.ValueString()
-	if licenseID == "" {
-		resp.Diagnostics.AddWarning("Constellation license ID not set.",
-			"Continuing with community license.")
-	}
-	if licenseID == license.CommunityLicense {
-		resp.Diagnostics.AddWarning("Using community license.",
-			"For details, see https://docs.edgeless.systems/constellation/overview/license")
-	}
-
 	// Validate during plan. Must be done in ModifyPlan to read provider data.
 	// See https://developer.hashicorp.com/terraform/plugin/framework/resources/configure#define-resource-configure-method.
 	_, diags := r.getMicroserviceVersion(&plannedState)
 	resp.Diagnostics.Append(diags...)
 
-	_, _, diags = r.getImageVersion(ctx, &plannedState)
+	var image imageAttribute
+	image, _, diags = r.getImageVersion(ctx, &plannedState)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	licenseID := plannedState.LicenseID.ValueString()
+	switch {
+	case image.MarketplaceImage != nil && *image.MarketplaceImage:
+		// Marketplace images do not require a license.
+	case licenseID == "":
+		resp.Diagnostics.AddWarning("Constellation license ID not set.",
+			"Continuing with community license.")
+	case licenseID == license.CommunityLicense:
+		resp.Diagnostics.AddWarning("Using community license.",
+			"For details, see https://docs.edgeless.systems/constellation/overview/license")
 	}
 
 	// Checks running on updates to the resource. (i.e. state and plan != nil)
@@ -759,9 +762,13 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 
 	// parse license ID
 	licenseID := data.LicenseID.ValueString()
-	if licenseID == "" {
+	switch {
+	case image.MarketplaceImage != nil && *image.MarketplaceImage:
+		licenseID = license.MarketplaceLicense
+	case licenseID == "":
 		licenseID = license.CommunityLicense
 	}
+
 	// license ID can be base64-encoded
 	licenseIDFromB64, err := base64.StdEncoding.DecodeString(licenseID)
 	if err == nil {

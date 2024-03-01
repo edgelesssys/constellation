@@ -40,7 +40,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
-	"github.com/samber/slog-multi"
+	slogmulti "github.com/samber/slog-multi"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -365,7 +365,7 @@ func (a *applyCmd) apply(
 	}
 
 	// Check license
-	a.checkLicenseFile(cmd, conf.GetProvider())
+	a.checkLicenseFile(cmd, conf.GetProvider(), conf.UseMarketplaceImage())
 
 	// Now start actually running the apply command
 
