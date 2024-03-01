@@ -17,4 +17,4 @@ import (
 // with the license server. If no license file is present or if errors
 // occur during the check, the user is informed and the community license
 // is used. It is a no-op in the open source version of Constellation.
-func (a *applyCmd) checkLicenseFile(*cobra.Command, cloudprovider.Provider) {}
+func (a *applyCmd) checkLicenseFile(*cobra.Command, cloudprovider.Provider, bool) {}

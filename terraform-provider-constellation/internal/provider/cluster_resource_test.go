@@ -97,9 +97,10 @@ func TestViolatedImageConstraint(t *testing.T) {
 			}
 
 			input, diags := basetypes.NewObjectValueFrom(context.Background(), map[string]attr.Type{
-				"version":    basetypes.StringType{},
-				"reference":  basetypes.StringType{},
-				"short_path": basetypes.StringType{},
+				"version":           basetypes.StringType{},
+				"reference":         basetypes.StringType{},
+				"short_path":        basetypes.StringType{},
+				"marketplace_image": basetypes.BoolType{},
 			}, img)
 			require.Equal(t, 0, diags.ErrorsCount())
 			_, _, diags2 := sut.getImageVersion(context.Background(), &ClusterResourceModel{

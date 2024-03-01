@@ -229,13 +229,19 @@ func newImageAttributeSchema(t attributeType) schema.Attribute {
 				Computed: !isInput,
 				Required: isInput,
 			},
+			"marketplace_image": schema.BoolAttribute{
+				Description:         "Whether a marketplace image should be used.",
+				MarkdownDescription: "Whether a marketplace image should be used.",
+				Optional:            true,
+			},
 		},
 	}
 }
 
 // imageAttribute is the image attribute's data model.
 type imageAttribute struct {
-	Reference string `tfsdk:"reference"`
-	Version   string `tfsdk:"version"`
-	ShortPath string `tfsdk:"short_path"`
+	Reference        string `tfsdk:"reference"`
+	Version          string `tfsdk:"version"`
+	ShortPath        string `tfsdk:"short_path"`
+	MarketplaceImage *bool  `tfsdk:"marketplace_image"`
 }

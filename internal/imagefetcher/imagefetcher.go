@@ -131,6 +131,9 @@ func buildMarketplaceImage(payload marketplaceImagePayload) (string, error) {
 	case cloudprovider.AWS:
 		// For AWS, we use the AMI alias, which just needs the version and infers the rest transparently.
 		return fmt.Sprintf("resolve:ssm:/aws/service/marketplace/prod-77ylkenlkgufs/%s", payload.imgInfo.Version), nil
+	case cloudprovider.OpenStack:
+		// For OpenStack / STACKIT, we use the image reference directly.
+		return getReferenceFromImageInfo(payload.provider, payload.attestationVariant.String(), payload.imgInfo, payload.filters...)
 	default:
 		return "", fmt.Errorf("marketplace images are not supported for csp %s", payload.provider.String())
 	}
