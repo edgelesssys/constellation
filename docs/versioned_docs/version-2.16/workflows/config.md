@@ -77,17 +77,17 @@ The Constellation CLI can also print the supported instance types with: `constel
 </tabItem>
 <tabItem value="stackit" label="STACKIT">
 
-By default, Constellation uses `m1a.4cd` VMs (4 vCPUs, 32 GB RAM) to create your cluster.
+By default, Constellation uses `m1a.4cd` VMs (4 vCPUs, 30 GB RAM) to create your cluster.
 Optionally, you can switch to a different VM type by modifying `instanceType` in the configuration file.
 
 The following instance types are known to be supported:
 
 | name     | vCPUs | GB RAM |
 |----------|-------|--------|
-| m1a.4cd  | 4     | 32     |
-| m1a.8cd  | 8     | 64     |
+| m1a.4cd  | 4     | 30     |
+| m1a.8cd  | 8     | 60     |
 | m1a.16cd | 16    | 120    |
-| m1a.30cd | 30    | 238    |
+| m1a.30cd | 30    | 230    |
 
 You can choose any of the SEV-enabled instance types. You can find a list of all supported instance types in the [STACKIT documentation](https://docs.stackit.cloud/stackit/en/virtual-machine-flavors-75137231.html).
 
