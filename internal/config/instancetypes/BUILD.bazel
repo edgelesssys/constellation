@@ -6,6 +6,7 @@ go_library(
         "aws.go",
         "azure.go",
         "gcp.go",
+        "stackit.go",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/config/instancetypes",
     visibility = ["//:__subpackages__"],
