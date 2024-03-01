@@ -140,7 +140,7 @@ func TestConfigGenerateDefaultProviderSpecific(t *testing.T) {
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 			cmd := newConfigGenerateCmd()
 
-			wantConf := config.Default().WithOpenStackProviderDefaults(tc.rawProvider)
+			wantConf := config.Default().WithOpenStackProviderDefaults(cloudprovider.OpenStack, tc.rawProvider)
 			wantConf.RemoveProviderAndAttestationExcept(tc.provider)
 
 			cg := &configGenerateCmd{
