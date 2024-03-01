@@ -16,7 +16,7 @@ function delete_resources {
   cd "$1/constellation-terraform" || exit 1
   terraform init > /dev/null || exit 1 # first, install plugins
   terraform state pull > terraform.tfstate || exit 1 # update the local state with the remote state to only have resources in the state that have to be cleaned up.
-  terraform destroy -auto-approve > /dev/null || exit 1
+  terraform destroy -auto-approve || exit 1
   cd ../../ || exit 1
 }
 
@@ -25,7 +25,7 @@ function delete_iam_config {
   cd "$1/constellation-iam-terraform" || exit 1
   terraform init > /dev/null || exit 1 # first, install plugins
   terraform state pull > terraform.tfstate || exit 1 # update the local state with the remote state to only have resources in the state that have to be cleaned up.
-  terraform destroy -auto-approve > /dev/null || exit 1
+  terraform destroy -auto-approve || exit 1
   cd ../../ || exit 1
 }
 
