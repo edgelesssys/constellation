@@ -278,3 +278,14 @@ jobs:
           cloudProvider: ${{ needs.generate-input-parameters.outputs.cloudProvider }}
           azureCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
           gcpServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
+
+      - name: Update tfstate
+        if: always()
+        uses: ./.github/actions/artifact_upload
+        with:
+          name: terraform-state-${{ steps.e2e_test.outputs.namePrefix }}
+          path: >
+            to-zip/constellation-terraform
+            to-zip/constellation-iam-terraform
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          overwrite: true
