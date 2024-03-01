@@ -22,18 +22,22 @@ import (
 // with the license server. If no license file is present or if errors
 // occur during the check, the user is informed and the community license
 // is used. It is a no-op in the open source version of Constellation.
-func (a *applyCmd) checkLicenseFile(cmd *cobra.Command, csp cloudprovider.Provider) {
+func (a *applyCmd) checkLicenseFile(cmd *cobra.Command, csp cloudprovider.Provider, useMarketplaceImage bool) {
 	var licenseID string
 	a.log.Debug("Running license check")
 
 	readBytes, err := a.fileHandler.Read(constants.LicenseFilename)
-	if errors.Is(err, fs.ErrNotExist) {
-		cmd.Printf("Using community license.\n")
+	switch {
+	case useMarketplaceImage:
+		cmd.Println("Using marketplace image billing.")
+		licenseID = license.MarketplaceLicense
+	case errors.Is(err, fs.ErrNotExist):
+		cmd.Println("Using community license.")
 		licenseID = license.CommunityLicense
-	} else if err != nil {
+	case err != nil:
 		cmd.Printf("Error: %v\nContinuing with community license.\n", err)
 		licenseID = license.CommunityLicense
-	} else {
+	default:
 		cmd.Printf("Constellation license found!\n")
 		licenseID, err = license.FromBytes(readBytes)
 		if err != nil {
@@ -43,9 +47,11 @@ func (a *applyCmd) checkLicenseFile(cmd *cobra.Command, csp cloudprovider.Provid
 	}
 
 	quota, err := a.applier.CheckLicense(cmd.Context(), csp, !a.flags.skipPhases.contains(skipInitPhase), licenseID)
-	if err != nil {
+	if err != nil && !useMarketplaceImage {
 		cmd.Printf("Unable to contact license server.\n")
 		cmd.Printf("Please keep your vCPU quota in mind.\n")
+	} else if licenseID == license.MarketplaceLicense {
+		// Do nothing. Billing is handled by the marketplace.
 	} else if licenseID == license.CommunityLicense {
 		cmd.Printf("For details, see https://docs.edgeless.systems/constellation/overview/license\n")
 	} else {

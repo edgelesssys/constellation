@@ -162,6 +162,10 @@ Required:
 - `$SEMANTIC_VERSION` is the semantic version of the image, e.g. `vX.Y.Z` or `vX.Y.Z-pre...`.
 - `version` (String) Semantic version of the image.
 
+Optional:
+
+- `marketplace_image` (Boolean) Whether a marketplace image should be used.
+
 
 <a id="nestedatt--network_config"></a>
 ### Nested Schema for `network_config`
