@@ -38,6 +38,8 @@ Azure Trusted Launch instance types:
 %v
 GCP instance types:
 %v
+STACKIT instance types:
+%v
 `,
 		formatInstanceTypes(instancetypes.AWSSNPSupportedInstanceFamilies),
 		formatInstanceTypes(instancetypes.AWSSupportedInstanceFamilies),
@@ -45,6 +47,7 @@ GCP instance types:
 		formatInstanceTypes(instancetypes.AzureSNPInstanceTypes),
 		formatInstanceTypes(instancetypes.AzureTrustedLaunchInstanceTypes),
 		formatInstanceTypes(instancetypes.GCPInstanceTypes),
+		formatInstanceTypes(instancetypes.STACKITInstanceTypes),
 	)
 }
 
