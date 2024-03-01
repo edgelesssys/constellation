@@ -128,7 +128,7 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 
 // createConfigWithAttestationVariant creates a config file for the given provider.
 func createConfigWithAttestationVariant(provider cloudprovider.Provider, rawProvider string, attestationVariant variant.Variant) (*config.Config, error) {
-	conf := config.Default().WithOpenStackProviderDefaults(rawProvider)
+	conf := config.Default().WithOpenStackProviderDefaults(provider, rawProvider)
 	conf.RemoveProviderExcept(provider)
 
 	// set a lower default for QEMU's state disk

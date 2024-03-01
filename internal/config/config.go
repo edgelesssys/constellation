@@ -900,7 +900,11 @@ func (c *Config) Validate(force bool) error {
 
 // WithOpenStackProviderDefaults fills the default values for the specific OpenStack provider.
 // If the provider is not supported or not an OpenStack provider, the config is returned unchanged.
-func (c *Config) WithOpenStackProviderDefaults(openStackProvider string) *Config {
+func (c *Config) WithOpenStackProviderDefaults(csp cloudprovider.Provider, openStackProvider string) *Config {
+	if csp != cloudprovider.OpenStack {
+		return c
+	}
+	c.Attestation.QEMUVTPM = &QEMUVTPM{Measurements: measurements.DefaultsFor(cloudprovider.OpenStack, variant.QEMUVTPM{})}
 	switch openStackProvider {
 	case "stackit":
 		c.Provider.OpenStack.Cloud = "stackit"
