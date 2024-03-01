@@ -15,7 +15,7 @@ function download_tfstate_artifact {
 function delete_resources {
   cd "$1/constellation-terraform" || exit 1
   terraform init > /dev/null || exit 1 # first, install plugins
-  terraform state pull > terraform.tfstate || exit 1 # update the local state with the remote state to only have resources over that have to be cleaned up.
+  terraform state pull > terraform.tfstate || exit 1 # update the local state with the remote state to only have resources in the state that have to be cleaned up.
   terraform destroy -auto-approve > /dev/null || exit 1
   cd ../../ || exit 1
 }
@@ -24,7 +24,7 @@ function delete_resources {
 function delete_iam_config {
   cd "$1/constellation-iam-terraform" || exit 1
   terraform init > /dev/null || exit 1 # first, install plugins
-  terraform state pull > terraform.tfstate || exit 1 # update the local state with the remote state to only have resources over that have to be cleaned up.
+  terraform state pull > terraform.tfstate || exit 1 # update the local state with the remote state to only have resources in the state that have to be cleaned up.
   terraform destroy -auto-approve > /dev/null || exit 1
   cd ../../ || exit 1
 }
@@ -66,7 +66,7 @@ for directory in ./terraform-state-*; do
   echo "    extracting $directory"
 
   # extract and decrypt the artifact
-  unzip -d "${directory}" -P "$artifact_pwd" "$directory/archive.zip" > /dev/null
+  unzip -d "${directory}" -P "$artifact_pwd" "$directory/archive.zip" > /dev/null || exit 1
 done
 
 # create terraform caching directory
