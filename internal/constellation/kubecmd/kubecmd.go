@@ -103,7 +103,7 @@ func (k *KubeCmd) UpgradeNodeImage(ctx context.Context, imageVersion semver.Semv
 		return fmt.Errorf("updating image version: %w", err)
 	}
 
-	k.log.Debug(fmt.Sprintf("Updating local copy of nodeVersion image version from %s to %s", nodeVersion.Spec.ImageVersion, imageVersion.String()))
+	k.log.Debug(fmt.Sprintf("Updating local copy of nodeVersion image version from %q to %q", nodeVersion.Spec.ImageVersion, imageVersion.String()))
 	nodeVersion.Spec.ImageReference = imageReference
 	nodeVersion.Spec.ImageVersion = imageVersion.String()
 
@@ -266,7 +266,7 @@ func (k *KubeCmd) ExtendClusterConfigCertSANs(ctx context.Context, alternativeNa
 		k.log.Debug("No new SANs to add to the cluster's apiserver SAN field")
 		return nil
 	}
-	k.log.Debug(fmt.Sprintf("Extending the cluster's apiserver SAN field with the following SANs: %s\n", strings.Join(missingSANs, ", ")))
+	k.log.Debug(fmt.Sprintf("Extending the cluster's apiserver SAN field with the following SANs: %q\n", strings.Join(missingSANs, ", ")))
 
 	clusterConfiguration.APIServer.CertSANs = append(clusterConfiguration.APIServer.CertSANs, missingSANs...)
 	sort.Strings(clusterConfiguration.APIServer.CertSANs)
@@ -409,7 +409,7 @@ func (k *KubeCmd) prepareUpdateK8s(nodeVersion *updatev1alpha1.NodeVersion, newC
 		}
 	}
 
-	k.log.Debug(fmt.Sprintf("Updating local copy of nodeVersion Kubernetes version from %s to %s", nodeVersion.Spec.KubernetesClusterVersion, newClusterVersion))
+	k.log.Debug(fmt.Sprintf("Updating local copy of nodeVersion Kubernetes version from %q to %q", nodeVersion.Spec.KubernetesClusterVersion, newClusterVersion))
 	nodeVersion.Spec.KubernetesComponentsReference = configMap.ObjectMeta.Name
 	nodeVersion.Spec.KubernetesClusterVersion = newClusterVersion
 
@@ -461,7 +461,7 @@ func retryGetJoinConfig(ctx context.Context, kubectl kubectlInterface, retryInte
 			return false
 		}
 		retries++
-		log.Debug(fmt.Sprintf("Getting join-config ConfigMap failed (attempt %d/%d): %s", retries, maxRetryAttempts, err))
+		log.Debug(fmt.Sprintf("Getting join-config ConfigMap failed (attempt %d/%d): %q", retries, maxRetryAttempts, err))
 		return retries < maxRetryAttempts
 	}
 
@@ -483,7 +483,7 @@ func retryAction(ctx context.Context, retryInterval time.Duration, maxRetries in
 	ctr := 0
 	retrier := conretry.NewIntervalRetrier(&kubeDoer{action: action}, retryInterval, func(err error) bool {
 		ctr++
-		log.Debug(fmt.Sprintf("Action failed (attempt %d/%d): %s", ctr, maxRetries, err))
+		log.Debug(fmt.Sprintf("Action failed (attempt %d/%d): %q", ctr, maxRetries, err))
 		return ctr < maxRetries
 	})
 	return retrier.Do(ctx)
