@@ -44,8 +44,8 @@ module "azure_iam" {
   // replace $VERSION with the Constellation version you want to use, e.g., v2.14.0
   source                 = "https://github.com/edgelesssys/constellation/releases/download/$VERSION/terraform-module.zip//terraform-module/iam/azure"
   location               = local.location
-  service_principal_name = "${local.name}-test-sp"
-  resource_group_name    = "${local.name}-test-rg"
+  service_principal_name = "${local.name}-sp"
+  resource_group_name    = "${local.name}-rg"
 }
 
 module "azure_infrastructure" {
