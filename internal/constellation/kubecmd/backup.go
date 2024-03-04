@@ -39,7 +39,7 @@ func (k *KubeCmd) BackupCRDs(ctx context.Context, fileHandler file.Handler, upgr
 	for i := range crds {
 		path := filepath.Join(crdBackupFolder, crds[i].Name+".yaml")
 
-		k.log.Debug(fmt.Sprintf("Creating CRD backup: %s", path))
+		k.log.Debug(fmt.Sprintf("Creating CRD backup: %q", path))
 
 		// We have to manually set kind/apiversion because of a long-standing limitation of the API:
 		// https://github.com/kubernetes/kubernetes/issues/3030#issuecomment-67543738
@@ -64,7 +64,7 @@ func (k *KubeCmd) BackupCRDs(ctx context.Context, fileHandler file.Handler, upgr
 func (k *KubeCmd) BackupCRs(ctx context.Context, fileHandler file.Handler, crds []apiextensionsv1.CustomResourceDefinition, upgradeDir string) error {
 	k.log.Debug("Starting CR backup")
 	for _, crd := range crds {
-		k.log.Debug(fmt.Sprintf("Creating backup for resource type: %s", crd.Name))
+		k.log.Debug(fmt.Sprintf("Creating backup for resource type: %q", crd.Name))
 
 		// Iterate over all versions of the CRD
 		// TODO(daniel-weisse): Consider iterating over crd.Status.StoredVersions instead
