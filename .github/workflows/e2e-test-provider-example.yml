@@ -121,9 +121,10 @@ jobs:
         shell: bash
         run: |
           uuid=$(uuidgen | tr "[:upper:]" "[:lower:]")
-          uuid=${uuid%%-*}
-          echo "uuid=${uuid}" | tee -a $GITHUB_OUTPUT
-          echo "prefix=e2e-${{ github.run_id }}-${{ github.run_attempt }}-${uuid}" | tee -a $GITHUB_OUTPUT
+          uuid="${uuid%%-*}"
+          uuid="${uuid: -3}" # Final resource name must be no longer than 10 characters on AWS
+          echo "uuid=${uuid}" | tee -a "${GITHUB_OUTPUT}"
+          echo "prefix=e2e-${uuid}" | tee -a "${GITHUB_OUTPUT}"
 
       - name: Build Constellation provider and CLI # CLI is needed for the upgrade assert and container push is needed for the microservice upgrade
         working-directory: ${{ github.workspace }}
