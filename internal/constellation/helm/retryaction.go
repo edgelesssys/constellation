@@ -49,7 +49,7 @@ func retryApply(ctx context.Context, action retrieableApplier, retryInterval tim
 		return fmt.Errorf("helm install: %w", err)
 	}
 	retryLoopFinishDuration := time.Since(retryLoopStartTime)
-	log.Debug(fmt.Sprintf("Helm chart %q installation finished after %s", action.ReleaseName(), retryLoopFinishDuration))
+	log.Debug(fmt.Sprintf("Helm chart %q installation finished after %q", action.ReleaseName(), retryLoopFinishDuration))
 	return nil
 }
 
@@ -61,9 +61,9 @@ type applyDoer struct {
 
 // Do tries to apply the action.
 func (i applyDoer) Do(ctx context.Context) error {
-	i.log.Debug(fmt.Sprintf("Trying to apply Helm chart %s", i.applier.ReleaseName()))
+	i.log.Debug(fmt.Sprintf("Trying to apply Helm chart %q", i.applier.ReleaseName()))
 	if err := i.applier.apply(ctx); err != nil {
-		i.log.Debug(fmt.Sprintf("Helm chart installation %s failed: %v", i.applier.ReleaseName(), err))
+		i.log.Debug(fmt.Sprintf("Helm chart installation %q failed: %v", i.applier.ReleaseName(), err))
 		return err
 	}
 
