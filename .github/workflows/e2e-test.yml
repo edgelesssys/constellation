@@ -283,7 +283,7 @@ jobs:
         if: always()
         shell: bash
         run: |
-          mkdir to-zip
+          rm -r to-zip/*
           cp -r constellation-terraform to-zip
           cp -r constellation-iam-terraform to-zip
           rm to-zip/constellation-terraform/plan.zip
