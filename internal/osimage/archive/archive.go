@@ -74,7 +74,7 @@ func (a *Archivist) Archive(ctx context.Context, version versionsapi.Version, cs
 	if err != nil {
 		return "", err
 	}
-	a.log.Debug(fmt.Sprintf("Archiving OS image %s %s %v to s3://%v/%v", csp, attestationVariant, version.ShortPath(), a.bucket, key))
+	a.log.Debug(fmt.Sprintf("Archiving OS image %q to s3://%v/%v", fmt.Sprintf("%s %s %v", csp, attestationVariant, version.ShortPath()), a.bucket, key))
 	_, err = a.uploadClient.Upload(ctx, &s3.PutObjectInput{
 		Bucket:            &a.bucket,
 		Key:               &key,
