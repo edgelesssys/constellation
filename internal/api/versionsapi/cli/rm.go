@@ -554,7 +554,7 @@ func (g *gcpClient) deleteImage(ctx context.Context, imageURI string, dryrun boo
 	}
 
 	if dryrun {
-		log.Debug(fmt.Sprintf("DryRun: delete image request: %v", req))
+		log.Debug(fmt.Sprintf("DryRun: delete image request: %q", req.String()))
 		return nil
 	}
 
