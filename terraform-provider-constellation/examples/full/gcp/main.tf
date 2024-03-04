@@ -46,7 +46,7 @@ module "gcp_iam" {
   // replace $VERSION with the Constellation version you want to use, e.g., v2.14.0
   source             = "https://github.com/edgelesssys/constellation/releases/download/$VERSION/terraform-module.zip//terraform-module/iam/gcp"
   project_id         = local.project_id
-  service_account_id = "${local.name}-test-sa"
+  service_account_id = "${local.name}-sa"
   zone               = local.zone
   region             = local.region
 }

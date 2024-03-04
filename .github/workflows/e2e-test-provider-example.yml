@@ -83,14 +83,6 @@ jobs:
           ref: main
           stream: nightly
 
-      - name: Create resource prefix
-        id: create-prefix
-        shell: bash
-        run: |
-          run_id=${{ github.run_id }}
-          last_three="${run_id: -3}"
-          echo "prefix=e2e-${last_three}" | tee -a "$GITHUB_OUTPUT"
-
       - name: Determine cloudprovider from attestation variant
         id: determine
         shell: bash
@@ -123,6 +115,16 @@ jobs:
           useCache: "true"
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
           nixTools: terraform
+
+      - name: Create prefix
+        id: create-prefix
+        shell: bash
+        run: |
+          uuid=$(uuidgen | tr "[:upper:]" "[:lower:]")
+          uuid="${uuid%%-*}"
+          uuid="${uuid: -3}" # Final resource name must be no longer than 10 characters on AWS
+          echo "uuid=${uuid}" | tee -a "${GITHUB_OUTPUT}"
+          echo "prefix=e2e-${uuid}" | tee -a "${GITHUB_OUTPUT}"
 
       - name: Build Constellation provider and CLI # CLI is needed for the upgrade assert and container push is needed for the microservice upgrade
         working-directory: ${{ github.workspace }}
