@@ -45,7 +45,10 @@ func runMergeMeasurements(cmd *cobra.Command, args []string) error {
 	}
 
 	log := logger.NewTextLogger(flags.logLevel)
-  log.Debug(fmt.Sprintf("Parsed flags:\n\tout: %q\n\tverbose: %q", flags.out, flags.logLevel))
+  log.Debug(fmt.Sprintf(
+`Parsed flags:
+  out: %q
+  verbose: %q`, flags.out, flags.logLevel))
 
 	mergedMeasurements, err := readMeasurementsArgs(args)
 	if err != nil {
