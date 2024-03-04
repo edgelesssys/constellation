@@ -53,7 +53,16 @@ func runMeasurementsUpload(cmd *cobra.Command, _ []string) error {
 	}
 
 	log := logger.NewTextLogger(flags.logLevel)
-	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
+	log.Debug(fmt.Sprintf(
+`Parsed flags:
+  measurements: %q
+  signature: %q
+  region: %q
+  bucket: %q
+  distribution-id: %q
+  verbose: %q
+`, flags.measurementsPath, flags.signaturePath, flags.region, 
+flags.bucket, flags.distributionID, flags.logLevel))
 
 	uploadC, uploadCClose, err := measurementsuploader.New(cmd.Context(), flags.region, flags.bucket, flags.distributionID, log)
 	if err != nil {
