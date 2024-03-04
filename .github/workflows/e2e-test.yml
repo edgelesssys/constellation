@@ -282,11 +282,14 @@ jobs:
         if: always()
         shell: bash
         run: |
-          rm -r to-zip/*
-          cp -r constellation-terraform to-zip
+          rm -rf to-zip/*
+          if [ -d constellation-terraform ]
+            cp -r constellation-terraform to-zip
+            rm to-zip/constellation-terraform/plan.zip
+            rm -rf to-zip/constellation-terraform/.terraform
+          fi
           cp -r constellation-iam-terraform to-zip
-          rm to-zip/constellation-terraform/plan.zip
-          rm -rf to-zip/constellation-terraform/.terraform to-zip/constellation-iam-terraform/.terraform
+          rm -rf to-zip/constellation-iam-terraform/.terraform
 
       - name: Update tfstate
         if: always()
