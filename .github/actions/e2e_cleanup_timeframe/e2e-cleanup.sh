@@ -13,7 +13,7 @@ function download_tfstate_artifact {
 
 # delete_resources runs terraform destroy on the constellation-terraform subfolder of a given folder.
 function delete_resources {
-  if [ -d "$1/constellation-terraform" ]
+  if [ -d "$1/constellation-terraform" ]; then
     cd "$1/constellation-terraform" || exit 1
     terraform init > /dev/null || exit 1 # first, install plugins
     terraform destroy -auto-approve || exit 1

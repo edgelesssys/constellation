@@ -283,7 +283,7 @@ jobs:
         shell: bash
         run: |
           rm -rf to-zip/*
-          if [ -d constellation-terraform ]
+          if [ -d constellation-terraform ]; then
             cp -r constellation-terraform to-zip
             rm to-zip/constellation-terraform/plan.zip
             rm -rf to-zip/constellation-terraform/.terraform
