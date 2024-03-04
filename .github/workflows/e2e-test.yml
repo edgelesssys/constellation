@@ -288,8 +288,10 @@ jobs:
             rm to-zip/constellation-terraform/plan.zip
             rm -rf to-zip/constellation-terraform/.terraform
           fi
-          cp -r constellation-iam-terraform to-zip
-          rm -rf to-zip/constellation-iam-terraform/.terraform
+          if [ -d constellation-iam-terraform ]; then
+            cp -r constellation-iam-terraform to-zip
+            rm -rf to-zip/constellation-iam-terraform/.terraform
+          fi
 
       - name: Update tfstate
         if: always()
