@@ -649,7 +649,7 @@ func (a *azureClient) deleteImage(ctx context.Context, image string, dryrun bool
 	}
 
 	if dryrun {
-		log.Debug(fmt.Sprintf("DryRun: delete image %v", azImage))
+		log.Debug(fmt.Sprintf("DryRun: delete image with gallery %q, image definition %q, resource group %q and version %q", azImage.gallery, azImage.imageDefinition, azImage.resourceGroup, azImage.version))
 		return nil
 	}
 
