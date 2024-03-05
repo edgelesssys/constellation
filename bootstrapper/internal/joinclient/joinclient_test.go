@@ -248,7 +248,7 @@ func TestClient(t *testing.T) {
 			go joinServer.Serve(listener)
 			defer joinServer.GracefulStop()
 
-			client.Start(stubCleaner{})
+			go client.Start(stubCleaner{})
 
 			for _, a := range tc.apiAnswers {
 				switch a := a.(type) {
@@ -279,78 +279,6 @@ func TestClient(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestClientConcurrentStartStop(t *testing.T) {
-	netDialer := testdialer.NewBufconnDialer()
-	dialer := dialer.New(nil, nil, netDialer)
-	client := &JoinClient{
-		nodeLock:    newFakeLock(),
-		timeout:     30 * time.Second,
-		interval:    30 * time.Second,
-		dialer:      dialer,
-		disk:        &stubDisk{},
-		joiner:      &stubClusterJoiner{},
-		fileHandler: file.NewHandler(afero.NewMemMapFs()),
-		metadataAPI: &stubRepeaterMetadataAPI{},
-		clock:       testclock.NewFakeClock(time.Now()),
-		log:         logger.NewTest(t),
-	}
-
-	wg := sync.WaitGroup{}
-
-	start := func() {
-		defer wg.Done()
-		client.Start(stubCleaner{})
-	}
-
-	stop := func() {
-		defer wg.Done()
-		client.Stop()
-	}
-
-	wg.Add(10)
-	go stop()
-	go start()
-	go start()
-	go stop()
-	go stop()
-	go start()
-	go start()
-	go stop()
-	go stop()
-	go start()
-	wg.Wait()
-
-	client.Stop()
-}
-
-func TestIsUnrecoverable(t *testing.T) {
-	assert := assert.New(t)
-
-	some := errors.New("failed")
-	unrec := unrecoverableError{some}
-	assert.True(isUnrecoverable(unrec))
-	assert.False(isUnrecoverable(some))
-}
-
-type stubRepeaterMetadataAPI struct {
-	selfInstance  metadata.InstanceMetadata
-	selfErr       error
-	listInstances []metadata.InstanceMetadata
-	listErr       error
-}
-
-func (s *stubRepeaterMetadataAPI) Self(_ context.Context) (metadata.InstanceMetadata, error) {
-	return s.selfInstance, s.selfErr
-}
-
-func (s *stubRepeaterMetadataAPI) List(_ context.Context) ([]metadata.InstanceMetadata, error) {
-	return s.listInstances, s.listErr
-}
-
-func (s *stubRepeaterMetadataAPI) GetLoadBalancerEndpoint(_ context.Context) (string, string, error) {
-	return "", "", nil
 }
 
 type stubMetadataAPI struct {
