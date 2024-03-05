@@ -150,6 +150,7 @@ func (c *JoinClient) Start(cleaner cleaner) {
 				return
 			} else if isUnrecoverable(err) {
 				c.log.With(slog.Any("error", err)).Error("Unrecoverable error occurred")
+				// TODO(burgerdev): this should eventually lead to a full node reset
 				return
 			}
 			c.log.With(slog.Any("error", err)).Warn("Join failed for all available endpoints")
@@ -310,7 +311,15 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 		CACertHashes:      []string{ticket.DiscoveryTokenCaCertHash},
 	}
 
-	if err := c.joiner.JoinCluster(ctx, btd, c.role, ticket.KubernetesComponents, c.log); err != nil {
+	// We currently cannot recover from any failure in this function. Joining the k8s cluster
+	// sometimes fails transiently, and we don't want to brick the node because of that.
+	for i := 0; i < 3; i++ {
+		err = c.joiner.JoinCluster(ctx, btd, c.role, ticket.KubernetesComponents, c.log)
+		if err != nil {
+			c.log.Error("failed to join k8s cluster", "role", c.role, "attempt", i, "error", err)
+		}
+	}
+	if err != nil {
 		return fmt.Errorf("joining Kubernetes cluster: %w", err)
 	}
 
