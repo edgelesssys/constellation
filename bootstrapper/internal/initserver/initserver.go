@@ -65,6 +65,7 @@ type Server struct {
 	shutdownLock sync.RWMutex
 
 	initSecretHash []byte
+	initFailure    error
 
 	kmsURI string
 
@@ -123,11 +124,19 @@ func (s *Server) Serve(ip, port string, cleaner cleaner) error {
 	}
 
 	s.log.Info("Starting")
-	return s.grpcServer.Serve(lis)
+	err = s.grpcServer.Serve(lis)
+
+	// If Init failed, we mark the disk for reset, so the node can restart the process
+	// In this case we don't care about any potential errors from the grpc server
+	if s.initFailure != nil {
+		return errors.Join(s.initFailure, s.markDiskForReset())
+	}
+
+	return err
 }
 
 // Init initializes the cluster.
-func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServer) (err error) {
+func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServer) (retErr error) {
 	// Acquire lock to prevent shutdown while Init is still running
 	s.shutdownLock.RLock()
 	defer s.shutdownLock.RUnlock()
@@ -188,6 +197,9 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 	// since we are bootstrapping a new one.
 	// Any errors following this call will result in a failed node that may not join any cluster.
 	s.cleaner.Clean()
+	defer func() {
+		s.initFailure = retErr
+	}()
 
 	if err := s.setupDisk(stream.Context(), cloudKms); err != nil {
 		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "setting up disk: %s", err)); e != nil {
@@ -318,6 +330,15 @@ func (s *Server) setupDisk(ctx context.Context, cloudKms kms.CloudKMS) error {
 	return s.disk.UpdatePassphrase(string(diskKey))
 }
 
+func (s *Server) markDiskForReset() error {
+	free, err := s.disk.Open()
+	if err != nil {
+		return fmt.Errorf("opening disk: %w", err)
+	}
+	defer free()
+	return s.disk.MarkDiskForReset()
+}
+
 func deriveMeasurementValues(ctx context.Context, measurementSalt []byte, cloudKms kms.CloudKMS) (clusterID []byte, err error) {
 	secret, err := cloudKms.GetDEK(ctx, crypto.DEKPrefix+crypto.MeasurementSecretKeyID, crypto.DerivedKeyLengthDefault)
 	if err != nil {
@@ -353,6 +374,7 @@ type encryptedDisk interface {
 	UUID() (string, error)
 	// UpdatePassphrase switches the initial random passphrase of the encrypted disk to a permanent passphrase.
 	UpdatePassphrase(passphrase string) error
+	MarkDiskForReset() error
 }
 
 type serveStopper interface {

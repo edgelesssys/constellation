@@ -381,6 +381,10 @@ func (d *fakeDisk) UpdatePassphrase(passphrase string) error {
 	return nil
 }
 
+func (d *fakeDisk) MarkDiskForReset() error {
+	return nil
+}
+
 type stubDisk struct {
 	openErr                error
 	uuid                   string
@@ -400,6 +404,10 @@ func (d *stubDisk) UUID() (string, error) {
 func (d *stubDisk) UpdatePassphrase(string) error {
 	d.updatePassphraseCalled = true
 	return d.updatePassphraseErr
+}
+
+func (d *stubDisk) MarkDiskForReset() error {
+	return nil
 }
 
 type stubClusterInitializer struct {
