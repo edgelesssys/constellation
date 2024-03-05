@@ -118,7 +118,7 @@ func (c *JoinClient) Start(cleaner cleaner) error {
 	diskUUID, err := c.getDiskUUID()
 	if err != nil {
 		c.log.With(slog.Any("error", err)).Error("Failed to get disk UUID")
-		return err
+		return err // unrecoverable error, but disk wasn't initialized yet
 	}
 	c.diskUUID = diskUUID
 
@@ -159,7 +159,7 @@ func (c *JoinClient) Start(cleaner cleaner) error {
 
 	if err := c.startNodeAndJoin(ticket, kubeletKey); err != nil {
 		c.log.With(slog.Any("error", err)).Error("Failed to start node and join cluster") // unrecoverable error
-		return err
+		return errors.Join(err, c.markDiskForReset())
 	}
 
 	return nil
@@ -269,7 +269,8 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 		// There is already a cluster initialization in progress on
 		// this node, so there is no need to also join the cluster,
 		// as the initializing node is automatically part of the cluster.
-		return errors.New("node is already being initialized")
+		c.log.Info("Node is already being initialized. Aborting join process.")
+		return nil
 	}
 
 	c.cleaner.Clean()
@@ -306,7 +307,7 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 
 	// We currently cannot recover from any failure in this function. Joining the k8s cluster
 	// sometimes fails transiently, and we don't want to brick the node because of that.
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		err = c.joiner.JoinCluster(ctx, btd, c.role, ticket.KubernetesComponents, c.log)
 		if err != nil {
 			c.log.Error("failed to join k8s cluster", "role", c.role, "attempt", i, "error", err)
@@ -367,6 +368,15 @@ func (c *JoinClient) getDiskUUID() (string, error) {
 	}
 	defer free()
 	return c.disk.UUID()
+}
+
+func (c *JoinClient) markDiskForReset() error {
+	free, err := c.disk.Open()
+	if err != nil {
+		return fmt.Errorf("opening disk: %w", err)
+	}
+	defer free()
+	return c.disk.MarkDiskForReset()
 }
 
 func (c *JoinClient) getControlPlaneIPs(ctx context.Context) ([]string, error) {
@@ -438,6 +448,7 @@ type encryptedDisk interface {
 	UUID() (string, error)
 	// UpdatePassphrase switches the initial random passphrase of the encrypted disk to a permanent passphrase.
 	UpdatePassphrase(passphrase string) error
+	MarkDiskForReset() error
 }
 
 type cleaner interface {

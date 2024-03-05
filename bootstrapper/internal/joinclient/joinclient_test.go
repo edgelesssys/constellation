@@ -379,6 +379,10 @@ func (d *stubDisk) UpdatePassphrase(string) error {
 	return d.updatePassphraseErr
 }
 
+func (d *stubDisk) MarkDiskForReset() error {
+	return nil
+}
+
 type stubCleaner struct{}
 
 func (c stubCleaner) Clean() {}
