@@ -11,8 +11,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-	"os"
 	"sync"
+	"syscall"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/clean"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/diskencryption"
@@ -43,13 +43,13 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 	nodeBootstrapped, err := initialize.IsNodeBootstrapped(openDevice)
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to check if node was previously bootstrapped")
-		os.Exit(1)
+		reboot()
 	}
 
 	if nodeBootstrapped {
 		if err := kube.StartKubelet(); err != nil {
 			log.With(slog.Any("error", err)).Error("Failed to restart kubelet")
-			os.Exit(1)
+			reboot()
 		}
 		return
 	}
@@ -58,7 +58,7 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 	initServer, err := initserver.New(context.Background(), nodeLock, kube, issuer, fileHandler, metadata, log)
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to create init server")
-		os.Exit(1)
+		reboot()
 	}
 
 	dialer := dialer.New(issuer, nil, &net.Dialer{})
@@ -75,7 +75,7 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 		defer wg.Done()
 		if err := joinClient.Start(cleaner); err != nil {
 			log.With(slog.Any("error", err)).Error("Failed to join cluster")
-			os.Exit(1)
+			reboot()
 		}
 	}()
 
@@ -84,7 +84,7 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 		defer wg.Done()
 		if err := initServer.Serve(bindIP, bindPort, cleaner); err != nil {
 			log.With(slog.Any("error", err)).Error("Failed to serve init server")
-			os.Exit(1)
+			reboot()
 		}
 	}()
 	wg.Wait()
@@ -100,6 +100,12 @@ func getDiskUUID() (string, error) {
 	}
 	defer free()
 	return disk.UUID()
+}
+
+// reboot the system.
+// We call this instead of os.Exit() since failures in the bootstrapper usually require a node reset.
+func reboot() {
+	_ = syscall.Reboot(syscall.LINUX_REBOOT_CMD_RESTART)
 }
 
 type clusterInitJoiner interface {
