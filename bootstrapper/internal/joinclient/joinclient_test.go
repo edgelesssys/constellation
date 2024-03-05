@@ -62,6 +62,7 @@ func TestClient(t *testing.T) {
 		apiAnswers    []any
 		wantLock      bool
 		wantJoin      bool
+		wantNumJoins  int
 	}{
 		"on worker: metadata self: errors occur": {
 			role: role.Worker,
@@ -168,11 +169,25 @@ func TestClient(t *testing.T) {
 				listAnswer{instances: peers},
 				issueJoinTicketAnswer{},
 			},
-			clusterJoiner: &stubClusterJoiner{joinClusterErr: someErr},
+			clusterJoiner: &stubClusterJoiner{numBadCalls: -1, joinClusterErr: someErr},
 			nodeLock:      newFakeLock(),
 			disk:          &stubDisk{},
 			wantJoin:      true,
 			wantLock:      true,
+		},
+		"on control plane: joinCluster fails transiently": {
+			role: role.ControlPlane,
+			apiAnswers: []any{
+				selfAnswer{instance: controlSelf},
+				listAnswer{instances: peers},
+				issueJoinTicketAnswer{},
+			},
+			clusterJoiner: &stubClusterJoiner{numBadCalls: 1, joinClusterErr: someErr},
+			nodeLock:      newFakeLock(),
+			disk:          &stubDisk{},
+			wantJoin:      true,
+			wantLock:      true,
+			wantNumJoins:  2,
 		},
 		"on control plane: node already locked": {
 			role: role.ControlPlane,
@@ -250,9 +265,12 @@ func TestClient(t *testing.T) {
 			client.Stop()
 
 			if tc.wantJoin {
-				assert.True(tc.clusterJoiner.joinClusterCalled)
+				assert.Greater(tc.clusterJoiner.joinClusterCalled, 0)
 			} else {
-				assert.False(tc.clusterJoiner.joinClusterCalled)
+				assert.Equal(0, tc.clusterJoiner.joinClusterCalled)
+			}
+			if tc.wantNumJoins > 0 {
+				assert.GreaterOrEqual(tc.clusterJoiner.joinClusterCalled, tc.wantNumJoins)
 			}
 			if tc.wantLock {
 				assert.False(client.nodeLock.TryLockOnce(nil)) // lock should be locked
@@ -398,12 +416,17 @@ type issueJoinTicketAnswer struct {
 }
 
 type stubClusterJoiner struct {
-	joinClusterCalled bool
+	joinClusterCalled int
+	numBadCalls       int
 	joinClusterErr    error
 }
 
 func (j *stubClusterJoiner) JoinCluster(context.Context, *kubeadm.BootstrapTokenDiscovery, role.Role, components.Components, *slog.Logger) error {
-	j.joinClusterCalled = true
+	j.joinClusterCalled++
+	if j.numBadCalls == 0 {
+		return nil
+	}
+	j.numBadCalls--
 	return j.joinClusterErr
 }
 
