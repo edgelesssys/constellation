@@ -255,6 +255,15 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 	ctx, cancel := context.WithTimeout(context.Background(), c.joinTimeout)
 	defer cancel()
 
+	// [REMOVE THIS BLOCK] TEST @daniel-weisse
+	if true {
+		c.log.Error("Simulating fatal node failure...")
+		c.log.Error("Returning error from startNodeAndJoin in 1 Minute...")
+		time.Sleep(1 * time.Minute)
+		return errors.New("simulated fatal node failure")
+	}
+	// [REMOVE THIS BLOCK] TEST @daniel-weisse
+
 	clusterID, err := attestation.DeriveClusterID(ticket.MeasurementSecret, ticket.MeasurementSalt)
 	if err != nil {
 		return err
