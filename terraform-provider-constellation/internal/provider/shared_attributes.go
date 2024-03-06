@@ -31,11 +31,12 @@ func newAttestationVariantAttributeSchema(t attributeType) schema.Attribute {
 			"  * `aws-nitro-tpm`\n" +
 			"  * `azure-sev-snp`\n" +
 			"  * `azure-tdx`\n" +
-			"  * `gcp-sev-es`\n",
+			"  * `gcp-sev-es`\n" +
+			"  * `qemu-vtpm`\n",
 		Required: isInput,
 		Computed: !isInput,
 		Validators: []validator.String{
-			stringvalidator.OneOf("aws-sev-snp", "aws-nitro-tpm", "azure-sev-snp", "azure-tdx", "gcp-sev-es"),
+			stringvalidator.OneOf("aws-sev-snp", "aws-nitro-tpm", "azure-sev-snp", "azure-tdx", "gcp-sev-es", "qemu-vtpm"),
 		},
 	}
 }
@@ -47,7 +48,7 @@ func newCSPAttributeSchema() schema.Attribute {
 			"See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview/clouds) that Constellation supports.",
 		Required: true,
 		Validators: []validator.String{
-			stringvalidator.OneOf("aws", "azure", "gcp"),
+			stringvalidator.OneOf("aws", "azure", "gcp", "openstack", "stackit"),
 		},
 	}
 }

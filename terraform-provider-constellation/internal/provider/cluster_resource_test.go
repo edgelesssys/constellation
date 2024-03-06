@@ -489,6 +489,68 @@ func TestAccClusterResource(t *testing.T) {
 				},
 			},
 		},
+		"stackit config missing": {
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion(providerVersion),
+			PreCheck:                 bazelPreCheck,
+			Steps: []resource.TestStep{
+				{
+					Config: fullClusterTestingConfig(t, "openstack") + fmt.Sprintf(`
+					resource "constellation_cluster" "test" {
+						csp                     = "stackit"
+						name                    = "constell"
+						uid                     = "test"
+						image                   = data.constellation_image.bar.image
+						attestation             = data.constellation_attestation.foo.attestation
+						init_secret             = "deadbeef"
+						master_secret           = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+						master_secret_salt      = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+						measurement_salt        = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+						out_of_cluster_endpoint = "192.0.2.1"
+						in_cluster_endpoint     = "192.0.2.1"
+						network_config = {
+						  ip_cidr_node    = "0.0.0.0/24"
+						  ip_cidr_service = "0.0.0.0/24"
+						  ip_cidr_pod    = "0.0.0.0/24"
+						}
+						kubernetes_version = "%s"
+						constellation_microservice_version = "%s"
+					  }
+				`, versions.Default, providerVersion),
+					ExpectError: regexp.MustCompile(".*When csp is set to 'openstack' or 'stackit', the 'openstack' configuration\nmust be set.*"),
+				},
+			},
+		},
+		"openstack config missing": {
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithVersion(providerVersion),
+			PreCheck:                 bazelPreCheck,
+			Steps: []resource.TestStep{
+				{
+					Config: fullClusterTestingConfig(t, "openstack") + fmt.Sprintf(`
+					resource "constellation_cluster" "test" {
+						csp                     = "openstack"
+						name                    = "constell"
+						uid                     = "test"
+						image                   = data.constellation_image.bar.image
+						attestation             = data.constellation_attestation.foo.attestation
+						init_secret             = "deadbeef"
+						master_secret           = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+						master_secret_salt      = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+						measurement_salt        = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+						out_of_cluster_endpoint = "192.0.2.1"
+						in_cluster_endpoint     = "192.0.2.1"
+						network_config = {
+						  ip_cidr_node    = "0.0.0.0/24"
+						  ip_cidr_service = "0.0.0.0/24"
+						  ip_cidr_pod    = "0.0.0.0/24"
+						}
+						kubernetes_version = "%s"
+						constellation_microservice_version = "%s"
+					  }
+				`, versions.Default, providerVersion),
+					ExpectError: regexp.MustCompile(".*When csp is set to 'openstack' or 'stackit', the 'openstack' configuration\nmust be set.*"),
+				},
+			},
+		},
 	}
 
 	for name, tc := range testCases {
@@ -545,6 +607,19 @@ func fullClusterTestingConfig(t *testing.T, csp string) string {
 		data "constellation_attestation" "foo" {
 			csp                 = "gcp"
 			attestation_variant = "gcp-sev-es"
+			image               = data.constellation_image.bar.image
+		}`, image)
+	case "openstack":
+		return providerConfig + fmt.Sprintf(`
+		data "constellation_image" "bar" {
+			version             = "%s"
+			attestation_variant = "qemu-vtpm"
+			csp                 = "openstack"
+		}
+
+		data "constellation_attestation" "foo" {
+			csp                 = "openstack"
+			attestation_variant = "qemu-vtpm"
 			image               = data.constellation_image.bar.image
 		}`, image)
 	default:

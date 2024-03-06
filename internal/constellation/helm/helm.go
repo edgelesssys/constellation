@@ -35,7 +35,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/constellation/state"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -91,13 +90,14 @@ type Options struct {
 	MicroserviceVersion semver.Semver
 	HelmWaitMode        WaitMode
 	ApplyTimeout        time.Duration
+	OpenStackValues     *OpenStackValues
 }
 
 // PrepareApply loads the charts and returns the executor to apply them.
 func (h Client) PrepareApply(
-	flags Options, stateFile *state.State, serviceAccURI string, masterSecret uri.MasterSecret, openStackCfg *config.OpenStackConfig,
+	flags Options, stateFile *state.State, serviceAccURI string, masterSecret uri.MasterSecret,
 ) (Applier, bool, error) {
-	releases, err := h.loadReleases(flags.CSP, flags.AttestationVariant, flags.K8sVersion, masterSecret, stateFile, flags, serviceAccURI, openStackCfg)
+	releases, err := h.loadReleases(flags.CSP, flags.AttestationVariant, flags.K8sVersion, masterSecret, stateFile, flags, serviceAccURI)
 	if err != nil {
 		return nil, false, fmt.Errorf("loading Helm releases: %w", err)
 	}
@@ -111,11 +111,11 @@ func (h Client) PrepareApply(
 
 func (h Client) loadReleases(
 	csp cloudprovider.Provider, attestationVariant variant.Variant, k8sVersion versions.ValidK8sVersion, secret uri.MasterSecret,
-	stateFile *state.State, flags Options, serviceAccURI string, openStackCfg *config.OpenStackConfig,
+	stateFile *state.State, flags Options, serviceAccURI string,
 ) ([]release, error) {
 	helmLoader := newLoader(csp, attestationVariant, k8sVersion, stateFile, h.cliVersion)
 	h.log.Debug("Created new Helm loader")
-	return helmLoader.loadReleases(flags.Conformance, flags.DeployCSIDriver, flags.HelmWaitMode, secret, serviceAccURI, openStackCfg)
+	return helmLoader.loadReleases(flags.Conformance, flags.DeployCSIDriver, flags.HelmWaitMode, secret, serviceAccURI, flags.OpenStackValues)
 }
 
 // Applier runs the Helm actions.

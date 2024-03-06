@@ -26,6 +26,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	openstackshared "github.com/edgelesssys/constellation/v2/internal/cloud/openstack"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/openstack/clouds"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -33,6 +35,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constellation/helm"
 	"github.com/edgelesssys/constellation/v2/internal/constellation/kubecmd"
 	"github.com/edgelesssys/constellation/v2/internal/constellation/state"
+	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/license"
@@ -50,6 +53,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/spf13/afero"
 )
 
 var (
@@ -96,6 +100,7 @@ type ClusterResourceModel struct {
 	Attestation          types.Object `tfsdk:"attestation"`
 	GCP                  types.Object `tfsdk:"gcp"`
 	Azure                types.Object `tfsdk:"azure"`
+	OpenStack            types.Object `tfsdk:"openstack"`
 
 	OwnerID    types.String `tfsdk:"owner_id"`
 	ClusterID  types.String `tfsdk:"cluster_id"`
@@ -127,6 +132,17 @@ type azureAttribute struct {
 	SubscriptionID           string `tfsdk:"subscription_id"`
 	NetworkSecurityGroupName string `tfsdk:"network_security_group_name"`
 	LoadBalancerName         string `tfsdk:"load_balancer_name"`
+}
+
+type openStackAttribute struct {
+	Cloud                   string `tfsdk:"cloud"`
+	CloudsYAMLPath          string `tfsdk:"clouds_yaml_path"`
+	FloatingIPPoolID        string `tfsdk:"floating_ip_pool_id"`
+	DeployYawolLoadBalancer bool   `tfsdk:"deploy_yawol_load_balancer"`
+	YawolImageID            string `tfsdk:"yawol_image_id"`
+	YawolFlavorID           string `tfsdk:"yawol_flavor_id"`
+	NetworkID               string `tfsdk:"network_id"`
+	SubnetID                string `tfsdk:"subnet_id"`
 }
 
 // extraMicroservicesAttribute is the extra microservices attribute's data model.
@@ -333,6 +349,53 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 					},
 				},
 			},
+			"openstack": schema.SingleNestedAttribute{
+				MarkdownDescription: "OpenStack-specific configuration.",
+				Description:         "OpenStack-specific configuration.",
+				Optional:            true,
+				Attributes: map[string]schema.Attribute{
+					"cloud": schema.StringAttribute{
+						MarkdownDescription: "Name of the cloud in the clouds.yaml file.",
+						Description:         "Name of the cloud in the clouds.yaml file.",
+						Required:            true,
+					},
+					"clouds_yaml_path": schema.StringAttribute{
+						MarkdownDescription: "Path to the clouds.yaml file.",
+						Description:         "Path to the clouds.yaml file.",
+						Optional:            true,
+					},
+					"floating_ip_pool_id": schema.StringAttribute{
+						MarkdownDescription: "Floating IP pool to use for the VMs.",
+						Description:         "Floating IP pool to use for the VMs.",
+						Required:            true,
+					},
+					"deploy_yawol_load_balancer": schema.BoolAttribute{
+						MarkdownDescription: "Whether to deploy a YAWOL load balancer.",
+						Description:         "Whether to deploy a YAWOL load balancer.",
+						Optional:            true,
+					},
+					"yawol_image_id": schema.StringAttribute{
+						MarkdownDescription: "OpenStack OS image used by the yawollet.",
+						Description:         "OpenStack OS image used by the yawollet.",
+						Optional:            true,
+					},
+					"yawol_flavor_id": schema.StringAttribute{
+						MarkdownDescription: "OpenStack flavor used by the yawollet.",
+						Description:         "OpenStack flavor used by the yawollet.",
+						Optional:            true,
+					},
+					"network_id": schema.StringAttribute{
+						MarkdownDescription: "OpenStack network ID to use for the VMs.",
+						Description:         "OpenStack network ID to use for the VMs.",
+						Required:            true,
+					},
+					"subnet_id": schema.StringAttribute{
+						MarkdownDescription: "OpenStack subnet ID to use for the VMs.",
+						Description:         "OpenStack subnet ID to use for the VMs.",
+						Required:            true,
+					},
+				},
+			},
 
 			// Computed (output) attributes
 			"owner_id": schema.StringAttribute{
@@ -404,6 +467,26 @@ func (r *ClusterResource) ValidateConfig(ctx context.Context, req resource.Valid
 		resp.Diagnostics.AddAttributeWarning(
 			path.Root("gcp"),
 			"GCP configuration not allowed", "When csp is not set to 'gcp', setting the 'gcp' configuration has no effect.",
+		)
+	}
+
+	// OpenStack Config is required for OpenStack
+	if (strings.EqualFold(data.CSP.ValueString(), cloudprovider.OpenStack.String()) ||
+		strings.EqualFold(data.CSP.ValueString(), "stackit")) &&
+		data.OpenStack.IsNull() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("openstack"),
+			"OpenStack configuration missing", "When csp is set to 'openstack' or 'stackit', the 'openstack' configuration must be set.",
+		)
+	}
+
+	// OpenStack Config should not be set for other CSPs
+	if !strings.EqualFold(data.CSP.ValueString(), cloudprovider.OpenStack.String()) &&
+		!strings.EqualFold(data.CSP.ValueString(), "stackit") &&
+		!data.OpenStack.IsNull() {
+		resp.Diagnostics.AddAttributeWarning(
+			path.Root("openstack"),
+			"OpenStack configuration not allowed", "When csp is not set to 'openstack' or 'stackit', setting the 'openstack' configuration has no effect.",
 		)
 	}
 }
@@ -779,6 +862,7 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 	serviceAccPayload := constellation.ServiceAccountPayload{}
 	var gcpConfig gcpAttribute
 	var azureConfig azureAttribute
+	var openStackConfig openStackAttribute
 	switch csp {
 	case cloudprovider.GCP:
 		convertDiags = data.GCP.As(ctx, &gcpConfig, basetypes.ObjectAsOptions{})
@@ -815,6 +899,33 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 			PreferredAuthMethod: azureshared.AuthMethodUserAssignedIdentity,
 			UamiResourceID:      azureConfig.UamiResourceID,
 		}
+	case cloudprovider.OpenStack:
+		convertDiags = data.OpenStack.As(ctx, &openStackConfig, basetypes.ObjectAsOptions{})
+		diags.Append(convertDiags...)
+		if diags.HasError() {
+			return diags
+		}
+		cloudsYAML, err := clouds.ReadCloudsYAML(file.NewHandler(afero.NewOsFs()), openStackConfig.CloudsYAMLPath)
+		if err != nil {
+			diags.AddError("Reading clouds.yaml", err.Error())
+			return diags
+		}
+		cloud, ok := cloudsYAML.Clouds[openStackConfig.Cloud]
+		if !ok {
+			diags.AddError("Reading clouds.yaml", fmt.Sprintf("Cloud %s not found in clouds.yaml", openStackConfig.Cloud))
+			return diags
+		}
+		serviceAccPayload.OpenStack = openstackshared.AccountKey{
+			AuthURL:           cloud.AuthInfo.AuthURL,
+			Username:          cloud.AuthInfo.Username,
+			Password:          cloud.AuthInfo.Password,
+			ProjectID:         cloud.AuthInfo.ProjectID,
+			ProjectName:       cloud.AuthInfo.ProjectName,
+			UserDomainName:    cloud.AuthInfo.UserDomainName,
+			ProjectDomainName: cloud.AuthInfo.ProjectDomainName,
+			RegionName:        cloud.RegionName,
+		}
+
 	}
 	serviceAccURI, err := constellation.MarshalServiceAccountURI(csp, serviceAccPayload)
 	if err != nil {
@@ -860,6 +971,11 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 		stateFile.Infrastructure.GCP = &state.GCP{
 			ProjectID: gcpConfig.ProjectID,
 			IPCidrPod: networkCfg.IPCidrPod.ValueString(),
+		}
+	case cloudprovider.OpenStack:
+		stateFile.Infrastructure.OpenStack = &state.OpenStack{
+			NetworkID: openStackConfig.NetworkID,
+			SubnetID:  openStackConfig.SubnetID,
 		}
 	}
 
@@ -936,6 +1052,14 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 		DeployCSIDriver:     microserviceCfg.CSIDriver,
 		masterSecret:        secrets.masterSecret,
 		serviceAccURI:       serviceAccURI,
+	}
+	if csp == cloudprovider.OpenStack {
+		payload.openStackHelmValues = &helm.OpenStackValues{
+			DeployYawolLoadBalancer: openStackConfig.DeployYawolLoadBalancer,
+			FloatingIPPoolID:        openStackConfig.FloatingIPPoolID,
+			YawolImageID:            openStackConfig.YawolImageID,
+			YawolFlavorID:           openStackConfig.YawolFlavorID,
+		}
 	}
 	helmDiags := r.applyHelmCharts(ctx, applier, payload, stateFile)
 	diags.Append(helmDiags...)
@@ -1063,6 +1187,7 @@ type applyHelmChartsPayload struct {
 	DeployCSIDriver     bool                     // Whether to deploy the CSI driver.
 	masterSecret        uri.MasterSecret         // master secret of the cluster.
 	serviceAccURI       string                   // URI of the service account used within the cluster.
+	openStackHelmValues *helm.OpenStackValues    // OpenStack-specific Helm values.
 }
 
 // applyHelmCharts applies the Helm charts to the cluster.
@@ -1083,10 +1208,11 @@ func (r *ClusterResource) applyHelmCharts(ctx context.Context, applier *constell
 		// Allow destructive changes to the cluster.
 		// The user has previously been warned about this when planning a microservice version change.
 		AllowDestructive: helm.AllowDestructive,
+		OpenStackValues:  payload.openStackHelmValues,
 	}
 
 	executor, _, err := applier.PrepareHelmCharts(options, state,
-		payload.serviceAccURI, payload.masterSecret, nil)
+		payload.serviceAccURI, payload.masterSecret)
 	var upgradeErr *compatibility.InvalidUpgradeError
 	if err != nil {
 		if !errors.As(err, &upgradeErr) {

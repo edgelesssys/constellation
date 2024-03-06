@@ -43,6 +43,18 @@ func (a *applyCmd) runHelmApply(cmd *cobra.Command, conf *config.Config, stateFi
 		ApplyTimeout:        a.flags.helmTimeout,
 		AllowDestructive:    helm.DenyDestructive,
 	}
+	if conf.Provider.OpenStack != nil {
+		var deployYawolLoadBalancer bool
+		if conf.Provider.OpenStack.DeployYawolLoadBalancer != nil {
+			deployYawolLoadBalancer = *conf.Provider.OpenStack.DeployYawolLoadBalancer
+		}
+		options.OpenStackValues = &helm.OpenStackValues{
+			DeployYawolLoadBalancer: deployYawolLoadBalancer,
+			FloatingIPPoolID:        conf.Provider.OpenStack.FloatingIPPoolID,
+			YawolFlavorID:           conf.Provider.OpenStack.YawolFlavorID,
+			YawolImageID:            conf.Provider.OpenStack.YawolImageID,
+		}
+	}
 
 	a.log.Debug("Getting service account URI")
 	serviceAccURI, err := cloudcmd.GetMarshaledServiceAccountURI(conf, a.fileHandler)
@@ -51,7 +63,7 @@ func (a *applyCmd) runHelmApply(cmd *cobra.Command, conf *config.Config, stateFi
 	}
 
 	a.log.Debug("Preparing Helm charts")
-	executor, includesUpgrades, err := a.applier.PrepareHelmCharts(options, stateFile, serviceAccURI, masterSecret, conf.Provider.OpenStack)
+	executor, includesUpgrades, err := a.applier.PrepareHelmCharts(options, stateFile, serviceAccURI, masterSecret)
 	if errors.Is(err, helm.ErrConfirmationMissing) {
 		if !a.flags.yes {
 			cmd.PrintErrln("WARNING: Upgrading cert-manager will destroy all custom resources you have manually created that are based on the current version of cert-manager.")
@@ -65,7 +77,7 @@ func (a *applyCmd) runHelmApply(cmd *cobra.Command, conf *config.Config, stateFi
 			}
 		}
 		options.AllowDestructive = helm.AllowDestructive
-		executor, includesUpgrades, err = a.applier.PrepareHelmCharts(options, stateFile, serviceAccURI, masterSecret, conf.Provider.OpenStack)
+		executor, includesUpgrades, err = a.applier.PrepareHelmCharts(options, stateFile, serviceAccURI, masterSecret)
 	}
 	var upgradeErr *compatibility.InvalidUpgradeError
 	if err != nil {

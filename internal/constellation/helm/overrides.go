@@ -18,7 +18,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/openstack"
-	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/constellation/state"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
@@ -83,7 +82,7 @@ func extraCiliumValues(provider cloudprovider.Provider, conformanceMode bool, ou
 // Values set inside this function are only applied during init, not during upgrade.
 func extraConstellationServicesValues(
 	csp cloudprovider.Provider, attestationVariant variant.Variant, masterSecret uri.MasterSecret, serviceAccURI string,
-	output state.Infrastructure, openStackCfg *config.OpenStackConfig,
+	output state.Infrastructure, openStackCfg *OpenStackValues,
 ) (map[string]any, error) {
 	extraVals := map[string]any{}
 	extraVals["join-service"] = map[string]any{
@@ -152,7 +151,7 @@ func extraConstellationServicesValues(
 
 // extraYawolValues extends the given values map by some values depending on user input.
 // Values set inside this function are only applied during init, not during upgrade.
-func extraYawolValues(serviceAccURI string, output state.Infrastructure, openStackCfg *config.OpenStackConfig) (map[string]any, error) {
+func extraYawolValues(serviceAccURI string, output state.Infrastructure, openStackCfg *OpenStackValues) (map[string]any, error) {
 	extraVals := map[string]any{}
 
 	creds, err := openstack.AccountKeyFromURI(serviceAccURI)
@@ -163,7 +162,7 @@ func extraYawolValues(serviceAccURI string, output state.Infrastructure, openSta
 	extraVals["yawol-config"] = map[string]any{
 		"secretData": yawolIni,
 	}
-	if openStackCfg.DeployYawolLoadBalancer != nil && *openStackCfg.DeployYawolLoadBalancer {
+	if openStackCfg != nil && openStackCfg.DeployYawolLoadBalancer {
 		extraVals["yawol-controller"] = map[string]any{
 			"yawolOSSecretName": "yawolkey",
 			// has to be larger than ~30s to account for slow OpenStack API calls.

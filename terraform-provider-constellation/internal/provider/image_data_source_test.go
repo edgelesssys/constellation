@@ -141,6 +141,38 @@ func TestAccImageDataSource(t *testing.T) {
 				},
 			},
 		},
+		"stackit success": {
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			PreCheck:                 bazelPreCheck,
+			Steps: []resource.TestStep{
+				{
+					Config: testingConfig + `
+					data "constellation_image" "test" {
+						version       = "v2.16.0"
+						attestation_variant = "qemu-vtpm"
+						csp                 = "stackit"
+					}
+				`,
+					Check: resource.TestCheckResourceAttr("data.constellation_image.test", "image.reference", "8ffc1740-1e41-4281-b872-f8088ffd7692"), // should be immutable,
+				},
+			},
+		},
+		"openstack success": {
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			PreCheck:                 bazelPreCheck,
+			Steps: []resource.TestStep{
+				{
+					Config: testingConfig + `
+					data "constellation_image" "test" {
+						version       = "v2.16.0"
+						attestation_variant = "qemu-vtpm"
+						csp                 = "openstack"
+					}
+				`,
+					Check: resource.TestCheckResourceAttr("data.constellation_image.test", "image.reference", "8ffc1740-1e41-4281-b872-f8088ffd7692"), // should be immutable,
+				},
+			},
+		},
 		"unknown attestation variant": {
 			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 			PreCheck:                 bazelPreCheck,

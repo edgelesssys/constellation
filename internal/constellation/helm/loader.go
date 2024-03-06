@@ -21,7 +21,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/constellation/helm/imageversion"
 	"github.com/edgelesssys/constellation/v2/internal/constellation/state"
@@ -115,9 +114,17 @@ func newLoader(csp cloudprovider.Provider, attestationVariant variant.Variant, k
 // that the new release is installed after the existing one to avoid name conflicts.
 type releaseApplyOrder []release
 
+// OpenStackValues are helm values for OpenStack.
+type OpenStackValues struct {
+	DeployYawolLoadBalancer bool
+	FloatingIPPoolID        string
+	YawolFlavorID           string
+	YawolImageID            string
+}
+
 // loadReleases loads the embedded helm charts and returns them as a HelmReleases object.
 func (i *chartLoader) loadReleases(conformanceMode, deployCSIDriver bool, helmWaitMode WaitMode, masterSecret uri.MasterSecret,
-	serviceAccURI string, openStackCfg *config.OpenStackConfig,
+	serviceAccURI string, openStackValues *OpenStackValues,
 ) (releaseApplyOrder, error) {
 	ciliumRelease, err := i.loadRelease(ciliumInfo, helmWaitMode)
 	if err != nil {
@@ -143,7 +150,7 @@ func (i *chartLoader) loadReleases(conformanceMode, deployCSIDriver bool, helmWa
 	}
 
 	svcVals, err := extraConstellationServicesValues(i.csp, i.attestationVariant, masterSecret,
-		serviceAccURI, i.stateFile.Infrastructure, openStackCfg)
+		serviceAccURI, i.stateFile.Infrastructure, openStackValues)
 	if err != nil {
 		return nil, fmt.Errorf("extending constellation-services values: %w", err)
 	}
@@ -169,13 +176,13 @@ func (i *chartLoader) loadReleases(conformanceMode, deployCSIDriver bool, helmWa
 		}
 		releases = append(releases, awsRelease)
 	}
-	if i.csp == cloudprovider.OpenStack && openStackCfg.DeployYawolLoadBalancer != nil && *openStackCfg.DeployYawolLoadBalancer {
+	if i.csp == cloudprovider.OpenStack && openStackValues != nil && openStackValues.DeployYawolLoadBalancer {
 		yawolRelease, err := i.loadRelease(yawolLBControllerInfo, WaitModeNone)
 		if err != nil {
 			return nil, fmt.Errorf("loading yawol chart: %w", err)
 		}
 
-		yawolVals, err := extraYawolValues(serviceAccURI, i.stateFile.Infrastructure, openStackCfg)
+		yawolVals, err := extraYawolValues(serviceAccURI, i.stateFile.Infrastructure, openStackValues)
 		if err != nil {
 			return nil, fmt.Errorf("extending yawol chart values: %w", err)
 		}

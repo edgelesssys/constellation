@@ -554,7 +554,7 @@ func (s *stubConstellApplier) Init(context.Context, atls.Validator, *state.State
 
 type helmApplier interface {
 	PrepareHelmCharts(
-		flags helm.Options, stateFile *state.State, serviceAccURI string, masterSecret uri.MasterSecret, openStackCfg *config.OpenStackConfig,
+		flags helm.Options, stateFile *state.State, serviceAccURI string, masterSecret uri.MasterSecret,
 	) (
 		helm.Applier, bool, error)
 }

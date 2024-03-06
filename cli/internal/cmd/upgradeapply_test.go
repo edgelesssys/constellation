@@ -376,9 +376,9 @@ type mockApplier struct {
 }
 
 func (m *mockApplier) PrepareHelmCharts(
-	helmOpts helm.Options, stateFile *state.State, str string, masterSecret uri.MasterSecret, openStackCfg *config.OpenStackConfig,
+	helmOpts helm.Options, stateFile *state.State, str string, masterSecret uri.MasterSecret,
 ) (helm.Applier, bool, error) {
-	args := m.Called(helmOpts, stateFile, helmOpts, str, masterSecret, openStackCfg)
+	args := m.Called(helmOpts, stateFile, helmOpts, str, masterSecret)
 	return args.Get(0).(helm.Applier), args.Bool(1), args.Error(2)
 }
 
