@@ -33,8 +33,8 @@ func TestLogStateChanges(t *testing.T) {
 			},
 			assert: func(t *testing.T, lg *spyLog, isReadyCallbackCalled bool) {
 				require.Len(t, lg.msgs, 3)
-				assert.Equal(t, "Connection state started as CONNECTING", lg.msgs[0])
-				assert.Equal(t, "Connection state changed to CONNECTING", lg.msgs[1])
+				assert.Equal(t, "Connection state started as \"CONNECTING\"", lg.msgs[0])
+				assert.Equal(t, "Connection state changed to \"CONNECTING\"", lg.msgs[1])
 				assert.Equal(t, "Connection ready", lg.msgs[2])
 				assert.True(t, isReadyCallbackCalled)
 			},
@@ -49,7 +49,7 @@ func TestLogStateChanges(t *testing.T) {
 			},
 			assert: func(t *testing.T, lg *spyLog, isReadyCallbackCalled bool) {
 				require.Len(t, lg.msgs, 2)
-				assert.Equal(t, "Connection state started as READY", lg.msgs[0])
+				assert.Equal(t, "Connection state started as \"READY\"", lg.msgs[0])
 				assert.Equal(t, "Connection ready", lg.msgs[1])
 				assert.True(t, isReadyCallbackCalled)
 			},
@@ -64,8 +64,8 @@ func TestLogStateChanges(t *testing.T) {
 			},
 			assert: func(t *testing.T, lg *spyLog, isReadyCallbackCalled bool) {
 				require.Len(t, lg.msgs, 2)
-				assert.Equal(t, "Connection state started as CONNECTING", lg.msgs[0])
-				assert.Equal(t, "Connection state ended with CONNECTING", lg.msgs[1])
+				assert.Equal(t, "Connection state started as \"CONNECTING\"", lg.msgs[0])
+				assert.Equal(t, "Connection state ended with \"CONNECTING\"", lg.msgs[1])
 				assert.False(t, isReadyCallbackCalled)
 			},
 		},

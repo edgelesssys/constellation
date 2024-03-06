@@ -45,7 +45,7 @@ func runSum(cmd *cobra.Command, _ []string) error {
 	log.Debug(fmt.Sprintf(
 `Parsed flags:
   image-repo-tag: %q
-  oci-path: %q`
+  oci-path: %q`,
 flags.imageRepoTag, flags.ociPath))
 
 	registry, prefix, name, tag, err := splitRepoTag(flags.imageRepoTag)
