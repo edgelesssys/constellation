@@ -209,6 +209,12 @@ func gcpTerraformVars(conf *config.Config, imageRef string) *terraform.GCPCluste
 			DiskType:        group.StateDiskType,
 		}
 	}
+
+	ccTech := "SEV"
+	if conf.GetAttestationConfig().GetVariant().Equal(variant.GCPSEVSNP{}) {
+		ccTech = "SEV_SNP"
+	}
+
 	return &terraform.GCPClusterVariables{
 		Name:                 conf.Name,
 		NodeGroups:           nodeGroups,
@@ -219,6 +225,7 @@ func gcpTerraformVars(conf *config.Config, imageRef string) *terraform.GCPCluste
 		Debug:                conf.IsDebugCluster(),
 		CustomEndpoint:       conf.CustomEndpoint,
 		InternalLoadBalancer: conf.InternalLoadBalancer,
+		CCTechnology:         ccTech,
 	}
 }
 

@@ -33,7 +33,12 @@ resource "google_compute_instance_template" "template" {
 
   confidential_instance_config {
     enable_confidential_compute = true
+    confidential_instance_type  = var.cc_technology
   }
+
+  # If SEV-SNP is used, we have to explicitly select a Milan processor, as per
+  # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_instance_template#confidential_instance_type
+  min_cpu_platform = var.cc_technology == "SEV_SNP" ? "AMD Milan" : null
 
   disk {
     disk_size_gb = 10
