@@ -34,6 +34,7 @@ function delete_iam_config {
 # check if the password for artifact decryption was given
 if [[ -z $ENCRYPTION_SECRET ]]; then
   echo "ENCRYPTION_SECRET is not set. Please set an environment variable with that secret."
+  exit 1
 fi
 
 artifact_pwd=$ENCRYPTION_SECRET
@@ -54,13 +55,19 @@ echo "[*] retrieving run IDs for cleanup"
 database_ids=()
 for d in "${dates_to_clean[@]}"; do
   echo "    retrieving run IDs from $d"
-  database_ids+=($(get_e2e_test_ids_on_date "$d"))
+  mapfile -td " " tmp < <(get_e2e_test_ids_on_date "$d")
+  database_ids+="${tmp[@]}"
 done
+
+# cleanup database_ids
+mapfile -t database_ids <<<"$database_ids"
 
 echo "[*] downloading terraform state artifacts"
 for id in "${database_ids[@]}"; do
-  echo "    downloading from workflow $id"
-  download_tfstate_artifact "$id"
+  if [[ -n "$id" ]]; then
+    echo "    downloading from workflow $id"
+    download_tfstate_artifact "$id"
+  fi
 done
 
 echo "[*] extracting artifacts"
