@@ -44,6 +44,7 @@ const (
 	awsNitroTPM        = "aws-nitro-tpm"
 	awsSEVSNP          = "aws-sev-snp"
 	gcpSEVES           = "gcp-sev-es"
+	gcpSEVSNP          = "gcp-sev-snp"
 	azureTDX           = "azure-tdx"
 	azureSEVSNP        = "azure-sev-snp"
 	azureTrustedLaunch = "azure-trustedlaunch"
@@ -54,7 +55,7 @@ const (
 var providerAttestationMapping = map[cloudprovider.Provider][]Variant{
 	cloudprovider.AWS:       {AWSSEVSNP{}, AWSNitroTPM{}},
 	cloudprovider.Azure:     {AzureSEVSNP{}, AzureTDX{}, AzureTrustedLaunch{}},
-	cloudprovider.GCP:       {GCPSEVES{}},
+	cloudprovider.GCP:       {GCPSEVES{}, GCPSEVSNP{}},
 	cloudprovider.QEMU:      {QEMUVTPM{}},
 	cloudprovider.OpenStack: {QEMUVTPM{}},
 }
@@ -110,6 +111,8 @@ func FromString(oid string) (Variant, error) {
 		return AWSNitroTPM{}, nil
 	case gcpSEVES:
 		return GCPSEVES{}, nil
+	case gcpSEVSNP:
+		return GCPSEVSNP{}, nil
 	case azureSEVSNP:
 		return AzureSEVSNP{}, nil
 	case azureTrustedLaunch:
@@ -207,6 +210,24 @@ func (GCPSEVES) String() string {
 // Equal returns true if the other variant is also GCPSEVES.
 func (GCPSEVES) Equal(other Getter) bool {
 	return other.OID().Equal(GCPSEVES{}.OID())
+}
+
+// GCPSEVSNP holds the GCP SEV-SNP OID.
+type GCPSEVSNP struct{}
+
+// OID returns the struct's object identifier.
+func (GCPSEVSNP) OID() asn1.ObjectIdentifier {
+	return asn1.ObjectIdentifier{1, 3, 9900, 3, 2}
+}
+
+// String returns the string representation of the OID.
+func (GCPSEVSNP) String() string {
+	return gcpSEVSNP
+}
+
+// Equal returns true if the other variant is also GCPSEVSNP.
+func (GCPSEVSNP) Equal(other Getter) bool {
+	return other.OID().Equal(GCPSEVSNP{}.OID())
 }
 
 // AzureTDX holds the OID for Azure TDX CVMs.
