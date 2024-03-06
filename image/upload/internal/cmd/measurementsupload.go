@@ -60,9 +60,8 @@ func runMeasurementsUpload(cmd *cobra.Command, _ []string) error {
   region: %q
   bucket: %q
   distribution-id: %q
-  verbose: %q
 `, flags.measurementsPath, flags.signaturePath, flags.region, 
-flags.bucket, flags.distributionID, flags.logLevel))
+flags.bucket, flags.distributionID))
 
 	uploadC, uploadCClose, err := measurementsuploader.New(cmd.Context(), flags.region, flags.bucket, flags.distributionID, log)
 	if err != nil {
