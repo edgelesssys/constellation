@@ -12,9 +12,11 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"log/syslog"
 	"net"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/diskencryption"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/recoveryserver"
@@ -48,6 +50,21 @@ const (
 )
 
 func main() {
+	runErr := run()
+	if runErr == nil {
+		return
+	}
+	syslogWriter, err := syslog.New(syslog.LOG_EMERG|syslog.LOG_KERN, "disk-mapper")
+	if err != nil {
+		os.Exit(1)
+	}
+	_ = syslogWriter.Err(runErr.Error())
+	_ = syslogWriter.Emerg("disk-mapper has failed. In most cases, this is due to a misconfiguration or transient error with the infrastructure.")
+	time.Sleep(time.Minute) // sleep to allow the message to be written to syslog and seen by the user
+	os.Exit(1)
+}
+
+func run() error {
 	csp := flag.String("csp", "", "Cloud Service Provider the image is running on")
 	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 
@@ -60,12 +77,12 @@ func main() {
 	attestVariant, err := variant.FromString(os.Getenv(constants.AttestationVariant))
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to parse attestation variant")
-		os.Exit(1)
+		return err
 	}
 	issuer, err := choose.Issuer(attestVariant, log)
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to select issuer")
-		os.Exit(1)
+		return err
 	}
 
 	// set up metadata API
@@ -78,36 +95,36 @@ func main() {
 		diskPath, err = filepath.EvalSymlinks(awsStateDiskPath)
 		if err != nil {
 			log.With(slog.Any("error", err)).Error("Unable to resolve Azure state disk path")
-			os.Exit(1)
+			return err
 		}
 		metadataClient, err = awscloud.New(context.Background())
 		if err != nil {
 			log.With(slog.Any("error", err)).Error("Failed to set up AWS metadata client")
-			os.Exit(1)
+			return err
 		}
 
 	case cloudprovider.Azure:
 		diskPath, err = filepath.EvalSymlinks(azureStateDiskPath)
 		if err != nil {
 			log.With(slog.Any("error", err)).Error("Unable to resolve Azure state disk path")
-			os.Exit(1)
+			return err
 		}
 		metadataClient, err = azurecloud.New(context.Background())
 		if err != nil {
 			log.With(slog.Any("error", err)).Error("Failed to set up Azure metadata client")
-			os.Exit(1)
+			return err
 		}
 
 	case cloudprovider.GCP:
 		diskPath, err = filepath.EvalSymlinks(gcpStateDiskPath)
 		if err != nil {
 			log.With(slog.Any("error", err)).Error("Unable to resolve GCP state disk path")
-			os.Exit(1)
+			return err
 		}
 		gcpMeta, err := gcpcloud.New(context.Background())
 		if err != nil {
 			log.With(slog.Any("error", err)).Error(("Failed to create GCP metadata client"))
-			os.Exit(1)
+			return err
 		}
 		defer gcpMeta.Close()
 		metadataClient = gcpMeta
@@ -117,7 +134,7 @@ func main() {
 		metadataClient, err = openstack.New(context.Background())
 		if err != nil {
 			log.With(slog.Any("error", err)).Error(("Failed to create OpenStack metadata client"))
-			os.Exit(1)
+			return err
 		}
 
 	case cloudprovider.QEMU:
@@ -126,14 +143,14 @@ func main() {
 
 	default:
 		log.Error(fmt.Sprintf("CSP %s is not supported by Constellation", *csp))
-		os.Exit(1)
+		return err
 	}
 
 	// initialize device mapper
 	mapper, free, err := diskencryption.New(diskPath, log)
 	if err != nil {
 		log.With(slog.Any("error", err)).Error(("Failed to initialize device mapper"))
-		os.Exit(1)
+		return err
 	}
 	defer free()
 
@@ -156,7 +173,7 @@ func main() {
 
 	if err := setupManger.LogDevices(); err != nil {
 		log.With(slog.Any("error", err)).Error(("Failed to log devices"))
-		os.Exit(1)
+		return err
 	}
 
 	// prepare the state disk
@@ -166,7 +183,7 @@ func main() {
 		self, err = metadataClient.Self(context.Background())
 		if err != nil {
 			log.With(slog.Any("error", err)).Error(("Failed to get self metadata"))
-			os.Exit(1)
+			return err
 		}
 		rejoinClient := rejoinclient.New(
 			dialer.New(issuer, nil, &net.Dialer{}),
@@ -189,6 +206,7 @@ func main() {
 	}
 	if err != nil {
 		log.With(slog.Any("error", err)).Error(("Failed to prepare state disk"))
-		os.Exit(1)
+		return err
 	}
+	return nil
 }
