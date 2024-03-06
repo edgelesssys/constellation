@@ -44,12 +44,7 @@ func runUpgrade(cmd *cobra.Command, _ []string) error {
 `Parsed flags:
   unauthenticated: %t
   dry-run: %t
-  bucket: %q
-  verbose: %q
-  mirror-base-url: %q
-  region: %q
-`, flags.unauthenticated, flags.dryRun, flags.bucket,
-flags.logLevel, flags.mirrorBaseURL, flags.region))
+`, flags.unauthenticated, flags.dryRun))
 
 	fileHelper, err := bazelfiles.New()
 	if err != nil {

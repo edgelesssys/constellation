@@ -104,7 +104,12 @@ func runConfigFetchMeasurements(cmd *cobra.Command, _ []string) error {
 	if err := cfm.flags.parse(cmd.Flags()); err != nil {
 		return fmt.Errorf("parsing flags: %w", err)
 	}
-	cfm.log.Debug(fmt.Sprintf("Using flags %+v", cfm.flags))
+  cfm.log.Debug(fmt.Sprintf(
+`Using flags:
+  insecure: %t
+  measurements-url: %q
+  signature-url: %q
+`, cfm.flags.insecure, cfm.flags.measurementsURL, cfm.flags.signatureURL))
 
 	fetcher := attestationconfigapi.NewFetcherWithClient(http.DefaultClient, constants.CDNRepositoryURL)
 	return cfm.configFetchMeasurements(cmd, fileHandler, fetcher)

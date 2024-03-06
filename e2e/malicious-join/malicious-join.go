@@ -175,18 +175,8 @@ func (j *maliciousJoiner) join(ctx context.Context) (*joinproto.IssueJoinTicketR
 	j.logger.Debug(fmt.Sprintf(
 `Got join ticket response:
   ApiServerEndpoint: %q
-  ControlPlaneFiles: %+v
-  DiscoveryTokenCaCertHash: %q
-  KubeletCert: %v
-  KubernetesComponents: %+v
   KubernetesVersion: %q
-  MeasurementSalt: %v
-  MeasurementSecret: %v
-  StateDiskKey: %v
-  Token: %q`,
-  res.ApiServerEndpoint, res.ControlPlaneFiles, res.DiscoveryTokenCaCertHash, 
-  res.KubeletCert, res.KubernetesComponents, res.KubernetesVersion,
-  res.MeasurementSalt, res.MeasurementSecret, res.StateDiskKey, res.Token))
+`, res.ApiServerEndpoint, res.KubernetesVersion))
 	if err != nil {
 		return nil, fmt.Errorf("issuing join ticket: %w", err)
 	}

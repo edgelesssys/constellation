@@ -92,13 +92,10 @@ func (a *Applier) Init(
 	// Perform the RPC
   a.log.Debug(fmt.Sprintf(
 `Making initialization call, doer has the following parameters:
-connectedOnce: %t
-endpoint: %q
-req.KmsUri: %q
-req.MeasurementSalt: %v
-req.StorageUri: %q
-`, doer.connectedOnce, doer.endpoint, doer.req.KmsUri, 
-doer.req.MeasurementSalt, doer.req.StorageUri))
+  endpoint: %q
+  req.KmsUri: %q
+  req.StorageUri: %q
+`, doer.endpoint, doer.req.KmsUri, doer.req.StorageUri))
 	a.spinner.Start("Connecting ", false)
 	retrier := retry.NewIntervalRetrier(doer, 30*time.Second, serviceIsUnavailable)
 	if err := retrier.Do(ctx); err != nil {
