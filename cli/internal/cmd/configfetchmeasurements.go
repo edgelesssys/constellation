@@ -164,7 +164,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	if err := fileHandler.WriteYAML(constants.ConfigFilename, conf, file.OptOverwrite); err != nil {
 		return err
 	}
-	cfm.log.Debug(fmt.Sprintf("Configuration written to %s", cfm.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename)))
+	cfm.log.Debug(fmt.Sprintf("Configuration written to %q", cfm.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename)))
 	cmd.Print("Successfully fetched measurements and updated Configuration\n")
 	return nil
 }
