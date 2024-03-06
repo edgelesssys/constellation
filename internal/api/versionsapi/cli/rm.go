@@ -85,14 +85,13 @@ func runRemove(cmd *cobra.Command, _ []string) (retErr error) {
   distribution-id: %q
   dryrun: %t
   gcp-project: %q
-  verbose: %q
   ref: %q
   region: %q
   stream: %q
   version: %q
   version-path: %q`,
 flags.all, flags.azLocation, flags.azResourceGroup, flags.azSubscription,
-flags.bucket, flags.distributionID, flags.dryrun, flags.gcpProject, flags.logLevel,
+flags.bucket, flags.distributionID, flags.dryrun, flags.gcpProject, 
 flags.ref, flags.region, flags.stream, flags.version, flags.versionPath))
 
 	log.Debug("Validating flags")

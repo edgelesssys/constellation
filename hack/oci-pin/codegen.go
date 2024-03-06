@@ -49,12 +49,9 @@ func runCodegen(cmd *cobra.Command, _ []string) error {
 `Parsed flags:
   identifier: %q
   repoimage-tag-file: %q
-  verbose: %q
   oci-path: %q
-  output: %q
   package: %q`,
-flags.identifier, flags.imageRepoTag, flags.logLevel, flags.ociPath,
-flags.output, flags.pkg))
+flags.identifier, flags.imageRepoTag, flags.ociPath, flags.pkg))
 
 	registry, prefix, name, tag, err := splitRepoTag(flags.imageRepoTag)
 	if err != nil {

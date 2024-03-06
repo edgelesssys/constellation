@@ -54,7 +54,13 @@ func runEnvelopeMeasurements(cmd *cobra.Command, _ []string) error {
 	}
 
 	log := logger.NewTextLogger(flags.logLevel)
-	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
+	log.Debug(fmt.Sprintf(
+`Parsed flags:
+  version: %q
+  csp: %q
+  attestation-variant: %q
+  in: %q
+`, flags.version.Version(), flags.csp, flags.attestationVariant, flags.in))
 
 	f, err := os.Open(flags.in)
 	if err != nil {

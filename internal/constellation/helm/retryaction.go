@@ -63,7 +63,7 @@ type applyDoer struct {
 func (i applyDoer) Do(ctx context.Context) error {
 	i.log.Debug(fmt.Sprintf("Trying to apply Helm chart %q", i.applier.ReleaseName()))
 	if err := i.applier.apply(ctx); err != nil {
-		i.log.Debug(fmt.Sprintf("Helm chart installation %q failed: %v", i.applier.ReleaseName(), err))
+		i.log.Debug(fmt.Sprintf("Helm chart installation %q failed: %q", i.applier.ReleaseName(), err))
 		return err
 	}
 

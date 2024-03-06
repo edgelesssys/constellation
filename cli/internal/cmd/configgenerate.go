@@ -89,11 +89,7 @@ func runConfigGenerate(cmd *cobra.Command, args []string) error {
 `Parsed flags:
   kubernetes: %q
   attestation: %q
-  debug: %t
-  force: %t
-  tf-log-level: %q
-`, cg.flags.k8sVersion, cg.flags.attestationVariant,
-cg.flags.debug, cg.flags.force, cg.flags.tfLogLevel))
+`, cg.flags.k8sVersion, cg.flags.attestationVariant))
 
 	return cg.configGenerate(cmd, fileHandler, provider, args[0])
 }

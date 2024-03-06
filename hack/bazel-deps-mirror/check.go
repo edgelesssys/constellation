@@ -44,12 +44,7 @@ func runCheck(cmd *cobra.Command, _ []string) error {
 `Parsed flags:
   mirror: %t
   mirror-unauthenticated: %t
-  bucket: %q
-  verbose: %q
-  mirror-base-url: %q
-  region: %q
-`, flags.mirror, flags.mirrorUnauthenticated, flags.bucket,
-flags.logLevel, flags.mirrorBaseURL, flags.region))
+`, flags.mirror, flags.mirrorUnauthenticated))
 
 	filesHelper, err := bazelfiles.New()
 	if err != nil {

@@ -131,14 +131,9 @@ func runVerify(cmd *cobra.Command, _ []string) error {
 	v.log.Debug(fmt.Sprintf(
 `Using flags:
   cluster-id: %q
-  debug: %t
   node-endpoint: %q
-  force: %t
-  output: %q
-  owner-id: %q
-  tf-log: %q`,
-v.flags.clusterID, v.flags.debug, v.flags.endpoint, v.flags.force,
-v.flags.output, v.flags.ownerID, v.flags.tfLogLevel))
+  owner-id: %q`,
+v.flags.clusterID, v.flags.endpoint, v.flags.ownerID))
 	fetcher := attestationconfigapi.NewFetcher()
 	return v.verify(cmd, verifyClient, formatterFactory, fetcher)
 }

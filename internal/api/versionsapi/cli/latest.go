@@ -44,12 +44,7 @@ func runLatest(cmd *cobra.Command, _ []string) (retErr error) {
   ref: %q
   stream: %q
   json: %t
-  bucket: %q
-  distribution-id: %q
-  verbose: %q
-  region: %q
-`, flags.ref, flags.stream, flags.json, flags.bucket,
-flags.distributionID, flags.logLevel, flags.region))
+`, flags.ref, flags.stream, flags.json))
 
 	log.Debug("Validating flags")
 	if err := flags.validate(); err != nil {

@@ -88,9 +88,8 @@ func runRecover(cmd *cobra.Command, _ []string) error {
 `Using flags:
   debug: %t
   endpoint: %q
-  force: %t
-  tf-log: %q`,
-r.flags.debug, r.flags.endpoint, r.flags.force, r.flags.tfLogLevel))
+  force: %t`,
+r.flags.debug, r.flags.endpoint, r.flags.force))
 	return r.recover(cmd, fileHandler, 5*time.Second, &recoverDoer{log: r.log}, newDialer)
 }
 
