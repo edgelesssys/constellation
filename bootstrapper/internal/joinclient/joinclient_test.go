@@ -8,7 +8,6 @@ package joinclient
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"net"
 	"strconv"
@@ -40,7 +39,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestClient(t *testing.T) {
-	someErr := errors.New("failed")
 	lockedLock := newFakeLock()
 	aqcuiredLock, lockErr := lockedLock.TryLockOnce(nil)
 	require.True(t, aqcuiredLock)
@@ -67,9 +65,9 @@ func TestClient(t *testing.T) {
 		"on worker: metadata self: errors occur": {
 			role: role.Worker,
 			apiAnswers: []any{
-				selfAnswer{err: someErr},
-				selfAnswer{err: someErr},
-				selfAnswer{err: someErr},
+				selfAnswer{err: assert.AnError},
+				selfAnswer{err: assert.AnError},
+				selfAnswer{err: assert.AnError},
 				selfAnswer{instance: workerSelf},
 				listAnswer{instances: peers},
 				issueJoinTicketAnswer{},
@@ -100,9 +98,9 @@ func TestClient(t *testing.T) {
 			role: role.Worker,
 			apiAnswers: []any{
 				selfAnswer{instance: workerSelf},
-				listAnswer{err: someErr},
-				listAnswer{err: someErr},
-				listAnswer{err: someErr},
+				listAnswer{err: assert.AnError},
+				listAnswer{err: assert.AnError},
+				listAnswer{err: assert.AnError},
 				listAnswer{instances: peers},
 				issueJoinTicketAnswer{},
 			},
@@ -133,9 +131,9 @@ func TestClient(t *testing.T) {
 			apiAnswers: []any{
 				selfAnswer{instance: workerSelf},
 				listAnswer{instances: peers},
-				issueJoinTicketAnswer{err: someErr},
+				issueJoinTicketAnswer{err: assert.AnError},
 				listAnswer{instances: peers},
-				issueJoinTicketAnswer{err: someErr},
+				issueJoinTicketAnswer{err: assert.AnError},
 				listAnswer{instances: peers},
 				issueJoinTicketAnswer{},
 			},
@@ -150,9 +148,9 @@ func TestClient(t *testing.T) {
 			apiAnswers: []any{
 				selfAnswer{instance: controlSelf},
 				listAnswer{instances: peers},
-				issueJoinTicketAnswer{err: someErr},
+				issueJoinTicketAnswer{err: assert.AnError},
 				listAnswer{instances: peers},
-				issueJoinTicketAnswer{err: someErr},
+				issueJoinTicketAnswer{err: assert.AnError},
 				listAnswer{instances: peers},
 				issueJoinTicketAnswer{},
 			},
@@ -169,7 +167,7 @@ func TestClient(t *testing.T) {
 				listAnswer{instances: peers},
 				issueJoinTicketAnswer{},
 			},
-			clusterJoiner: &stubClusterJoiner{numBadCalls: -1, joinClusterErr: someErr},
+			clusterJoiner: &stubClusterJoiner{numBadCalls: -1, joinClusterErr: assert.AnError},
 			nodeLock:      newFakeLock(),
 			disk:          &stubDisk{},
 			wantJoin:      true,
@@ -182,7 +180,7 @@ func TestClient(t *testing.T) {
 				listAnswer{instances: peers},
 				issueJoinTicketAnswer{},
 			},
-			clusterJoiner: &stubClusterJoiner{numBadCalls: 1, joinClusterErr: someErr},
+			clusterJoiner: &stubClusterJoiner{numBadCalls: 1, joinClusterErr: assert.AnError},
 			nodeLock:      newFakeLock(),
 			disk:          &stubDisk{},
 			wantJoin:      true,
@@ -205,13 +203,13 @@ func TestClient(t *testing.T) {
 			role:          role.ControlPlane,
 			clusterJoiner: &stubClusterJoiner{},
 			nodeLock:      newFakeLock(),
-			disk:          &stubDisk{openErr: someErr},
+			disk:          &stubDisk{openErr: assert.AnError},
 		},
 		"on control plane: disk uuid fails": {
 			role:          role.ControlPlane,
 			clusterJoiner: &stubClusterJoiner{},
 			nodeLock:      newFakeLock(),
-			disk:          &stubDisk{uuidErr: someErr},
+			disk:          &stubDisk{uuidErr: assert.AnError},
 		},
 	}
 
@@ -237,6 +235,9 @@ func TestClient(t *testing.T) {
 				metadataAPI: metadataAPI,
 				clock:       clock,
 				log:         logger.NewTest(t),
+
+				stopC:    make(chan struct{}, 1),
+				stopDone: make(chan struct{}, 1),
 			}
 
 			serverCreds := atlscredentials.New(nil, nil)
@@ -248,7 +249,7 @@ func TestClient(t *testing.T) {
 			go joinServer.Serve(listener)
 			defer joinServer.GracefulStop()
 
-			go client.Start(stubCleaner{})
+			go func() { _ = client.Start(stubCleaner{}) }()
 
 			for _, a := range tc.apiAnswers {
 				switch a := a.(type) {

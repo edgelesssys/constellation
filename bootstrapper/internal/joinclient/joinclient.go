@@ -25,7 +25,6 @@ import (
 	"net"
 	"path/filepath"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/certificate"
@@ -69,12 +68,10 @@ type JoinClient struct {
 
 	dialer      grpcDialer
 	joiner      ClusterJoiner
-	cleaner     cleaner
 	metadataAPI MetadataAPI
 
 	log *slog.Logger
 
-	mux      sync.Mutex
 	stopC    chan struct{}
 	stopDone chan struct{}
 }
@@ -93,6 +90,9 @@ func New(lock locker, dial grpcDialer, joiner ClusterJoiner, meta MetadataAPI, l
 		joiner:      joiner,
 		metadataAPI: meta,
 		log:         log.WithGroup("join-client"),
+
+		stopC:    make(chan struct{}, 1),
+		stopDone: make(chan struct{}, 1),
 	}
 }
 
@@ -100,15 +100,6 @@ func New(lock locker, dial grpcDialer, joiner ClusterJoiner, meta MetadataAPI, l
 // the cluster with the role it receives from the metadata API.
 // After receiving the needed information, the node will join the cluster.
 func (c *JoinClient) Start(cleaner cleaner) error {
-	// Locked set up section
-	// We need to make sure this is not executed synchronously with Stop
-	c.mux.Lock()
-	c.stopC = make(chan struct{}, 1)
-	c.stopDone = make(chan struct{}, 1)
-	c.cleaner = cleaner
-	c.mux.Unlock()
-	// End of locked set up section
-
 	c.log.Info("Starting")
 	ticker := c.clock.NewTicker(c.interval)
 	defer ticker.Stop()
@@ -157,7 +148,7 @@ func (c *JoinClient) Start(cleaner cleaner) error {
 		}
 	}
 
-	if err := c.startNodeAndJoin(ticket, kubeletKey); err != nil {
+	if err := c.startNodeAndJoin(ticket, kubeletKey, cleaner); err != nil {
 		c.log.With(slog.Any("error", err)).Error("Failed to start node and join cluster") // unrecoverable error
 		return errors.Join(err, c.markDiskForReset())
 	}
@@ -167,20 +158,13 @@ func (c *JoinClient) Start(cleaner cleaner) error {
 
 // Stop stops the client and blocks until the client's routine is stopped.
 func (c *JoinClient) Stop() {
-	c.mux.Lock()
-	defer c.mux.Unlock()
-
-	if c.stopC == nil { // daemon not running
-		return
-	}
-
 	c.log.Info("Stopping")
 
 	c.stopC <- struct{}{}
 	<-c.stopDone
 
-	c.stopC = nil
-	c.stopDone = nil
+	c.stopC = make(chan struct{}, 1)
+	c.stopDone = make(chan struct{}, 1)
 
 	c.log.Info("Stopped")
 }
@@ -251,18 +235,9 @@ func (c *JoinClient) requestJoinTicket(serviceEndpoint string) (ticket *joinprot
 	return ticket, kubeletKey, err
 }
 
-func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse, kubeletKey []byte) error {
+func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse, kubeletKey []byte, cleaner cleaner) error {
 	ctx, cancel := context.WithTimeout(context.Background(), c.joinTimeout)
 	defer cancel()
-
-	// [REMOVE THIS BLOCK] TEST @daniel-weisse
-	if true {
-		c.log.Error("Simulating fatal node failure...")
-		c.log.Error("Returning error from startNodeAndJoin in 1 Minute...")
-		time.Sleep(1 * time.Minute)
-		return errors.New("simulated fatal node failure")
-	}
-	// [REMOVE THIS BLOCK] TEST @daniel-weisse
 
 	clusterID, err := attestation.DeriveClusterID(ticket.MeasurementSecret, ticket.MeasurementSalt)
 	if err != nil {
@@ -282,7 +257,7 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 		return nil
 	}
 
-	c.cleaner.Clean()
+	cleaner.Clean()
 
 	if err := c.updateDiskPassphrase(string(ticket.StateDiskKey)); err != nil {
 		return fmt.Errorf("updating disk passphrase: %w", err)
