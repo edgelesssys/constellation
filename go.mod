@@ -134,7 +134,7 @@ require (
 	golang.org/x/tools v0.18.0
 	google.golang.org/api v0.165.0
 	google.golang.org/grpc v1.61.1
-	google.golang.org/protobuf v1.32.0
+	google.golang.org/protobuf v1.33.0
 	gopkg.in/yaml.v3 v3.0.1
 	helm.sh/helm v2.17.0+incompatible
 	helm.sh/helm/v3 v3.14.2
