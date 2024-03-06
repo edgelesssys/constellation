@@ -844,7 +844,7 @@ type applier interface {
 	// methods required to install/upgrade Helm charts
 
 	PrepareHelmCharts(
-		flags helm.Options, state *state.State, serviceAccURI string, masterSecret uri.MasterSecret, openStackCfg *config.OpenStackConfig,
+		flags helm.Options, state *state.State, serviceAccURI string, masterSecret uri.MasterSecret,
 	) (helm.Applier, bool, error)
 
 	// methods to interact with Kubernetes

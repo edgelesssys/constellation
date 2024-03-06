@@ -86,6 +86,7 @@ See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview
 - `gcp` (Attributes) GCP-specific configuration. (see [below for nested schema](#nestedatt--gcp))
 - `in_cluster_endpoint` (String) The endpoint of the cluster. When not set, the out-of-cluster endpoint is used.
 - `license_id` (String) Constellation license ID. When not set, the community license is used.
+- `openstack` (Attributes) OpenStack-specific configuration. (see [below for nested schema](#nestedatt--openstack))
 
 ### Read-Only
 
@@ -110,6 +111,7 @@ Required:
   * `azure-sev-snp`
   * `azure-tdx`
   * `gcp-sev-es`
+  * `qemu-vtpm`
 
 Optional:
 
@@ -210,6 +212,24 @@ Required:
 
 - `project_id` (String) ID of the GCP project the cluster resides in.
 - `service_account_key` (String) Base64-encoded private key JSON object of the service account used within the cluster.
+
+
+<a id="nestedatt--openstack"></a>
+### Nested Schema for `openstack`
+
+Required:
+
+- `cloud` (String) Name of the cloud in the clouds.yaml file.
+- `floating_ip_pool_id` (String) Floating IP pool to use for the VMs.
+- `network_id` (String) OpenStack network ID to use for the VMs.
+- `subnet_id` (String) OpenStack subnet ID to use for the VMs.
+
+Optional:
+
+- `clouds_yaml_path` (String) Path to the clouds.yaml file.
+- `deploy_yawol_load_balancer` (Boolean) Whether to deploy a YAWOL load balancer.
+- `yawol_flavor_id` (String) OpenStack flavor used by the yawollet.
+- `yawol_image_id` (String) OpenStack OS image used by the yawollet.
 
 ## Import
 

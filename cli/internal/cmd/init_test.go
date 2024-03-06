@@ -279,7 +279,7 @@ type stubHelmApplier struct {
 }
 
 func (s stubHelmApplier) PrepareHelmCharts(
-	_ helm.Options, _ *state.State, _ string, _ uri.MasterSecret, _ *config.OpenStackConfig,
+	_ helm.Options, _ *state.State, _ string, _ uri.MasterSecret,
 ) (helm.Applier, bool, error) {
 	return stubRunner{}, false, s.err
 }

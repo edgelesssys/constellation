@@ -122,6 +122,10 @@ func convertFromTfAttestationCfg(tfAttestation attestationAttribute, attestation
 		attestationConfig = &config.GCPSEVES{
 			Measurements: c11nMeasurements,
 		}
+	case variant.QEMUVTPM{}:
+		attestationConfig = &config.QEMUVTPM{
+			Measurements: c11nMeasurements,
+		}
 	default:
 		return nil, fmt.Errorf("unknown attestation variant: %s", attestationVariant)
 	}
@@ -177,7 +181,7 @@ func convertToTfAttestation(attVar variant.Variant, snpVersions attestationconfi
 			XFAM:       hex.EncodeToString(tdxCfg.XFAM),
 		}
 		tfAttestation.TDX = tfTdxCfg
-	case variant.GCPSEVES{}:
+	case variant.GCPSEVES{}, variant.QEMUVTPM{}:
 		// no additional fields
 	default:
 		return tfAttestation, fmt.Errorf("unknown attestation variant: %s", attVar)
