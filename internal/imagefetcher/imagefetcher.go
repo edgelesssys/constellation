@@ -111,7 +111,7 @@ func buildMarketplaceImage(payload marketplaceImagePayload) (string, error) {
 		return "", fmt.Errorf("parsing image version: %w", err)
 	}
 
-	if sv.Prerelease() != "" {
+	if sv.Prerelease() != "" && payload.provider != cloudprovider.OpenStack {
 		return "", fmt.Errorf("marketplace images are not supported for prerelease versions")
 	}
 
