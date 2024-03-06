@@ -110,6 +110,58 @@ func TestAccAttestationSource(t *testing.T) {
 				},
 			},
 		},
+		"STACKIT qemu-vtpm success": {
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			PreCheck:                 bazelPreCheck,
+			Steps: []resource.TestStep{
+				{
+					Config: testingConfig + `
+					data "constellation_attestation" "test" {
+						csp = "stackit"
+						attestation_variant = "qemu-vtpm"
+						image = {
+							version = "v2.13.0"
+							reference = "v2.13.0"
+							short_path = "v2.13.0"
+						}
+					}
+					`,
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.variant", "qemu-vtpm"),
+						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.bootloader_version", "0"), // since this is not supported on STACKIT, we expect 0
+
+						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.measurements.15.expected", "0000000000000000000000000000000000000000000000000000000000000000"),
+						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.measurements.15.warn_only", "false"),
+					),
+				},
+			},
+		},
+		"openstack qemu-vtpm success": {
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			PreCheck:                 bazelPreCheck,
+			Steps: []resource.TestStep{
+				{
+					Config: testingConfig + `
+					data "constellation_attestation" "test" {
+						csp = "openstack"
+						attestation_variant = "qemu-vtpm"
+						image = {
+							version = "v2.13.0"
+							reference = "v2.13.0"
+							short_path = "v2.13.0"
+						}
+					}
+					`,
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.variant", "qemu-vtpm"),
+						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.bootloader_version", "0"), // since this is not supported on OpenStack, we expect 0
+
+						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.measurements.15.expected", "0000000000000000000000000000000000000000000000000000000000000000"),
+						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.measurements.15.warn_only", "false"),
+					),
+				},
+			},
+		},
 	}
 
 	for name, tc := range testCases {

@@ -252,9 +252,10 @@ func (d *ImageDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 
 	// Save data into Terraform state
 	diags := resp.State.SetAttribute(ctx, path.Root("image"), imageAttribute{
-		Reference: imageRef,
-		Version:   imageSemver,
-		ShortPath: apiCompatibleVer.ShortPath(),
+		Reference:        imageRef,
+		Version:          imageSemver,
+		ShortPath:        apiCompatibleVer.ShortPath(),
+		MarketplaceImage: data.MarketplaceImage.ValueBoolPointer(),
 	})
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {

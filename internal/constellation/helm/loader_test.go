@@ -175,6 +175,19 @@ func TestConstellationServices(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
+			var openstackValues *OpenStackValues
+			if tc.config.Provider.OpenStack != nil {
+				var deploy bool
+				if tc.config.Provider.OpenStack.DeployYawolLoadBalancer != nil {
+					deploy = *tc.config.Provider.OpenStack.DeployYawolLoadBalancer
+				}
+				openstackValues = &OpenStackValues{
+					DeployYawolLoadBalancer: deploy,
+					FloatingIPPoolID:        tc.config.Provider.OpenStack.FloatingIPPoolID,
+					YawolFlavorID:           tc.config.Provider.OpenStack.YawolFlavorID,
+					YawolImageID:            tc.config.Provider.OpenStack.YawolImageID,
+				}
+			}
 
 			chartLoader := chartLoader{
 				csp:                      tc.config.GetProvider(),
@@ -199,7 +212,7 @@ func TestConstellationServices(t *testing.T) {
 					UID:   "uid",
 					Azure: &state.Azure{},
 					GCP:   &state.GCP{},
-				}, tc.config.Provider.OpenStack)
+				}, openstackValues)
 			require.NoError(err)
 			values = mergeMaps(values, extraVals)
 
