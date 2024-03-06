@@ -211,7 +211,7 @@ func (c *imdsClient) update(ctx context.Context) error {
 	}
 	var metadataResp metadataResponse
 	if err := json.Unmarshal(resp, &metadataResp); err != nil {
-		return err
+		return fmt.Errorf("unmarshalling IMDS metadata response %q: %w", string(resp), err)
 	}
 	c.cache = metadataResp
 	c.cacheTime = time.Now()
@@ -244,7 +244,10 @@ func httpGet(ctx context.Context, c httpClient, url string) ([]byte, error) {
 	}
 	resp, err := c.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("querying the OpenStack IMDS api failed for %q: %w", url, err)
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("IMDS api might be broken for this server. Recreate the cluster if this issue persists. Querying the OpenStack IMDS api failed for %q with error code %d", url, resp.StatusCode)
 	}
 	defer resp.Body.Close()
 	return io.ReadAll(resp.Body)

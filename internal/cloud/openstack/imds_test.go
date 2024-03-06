@@ -43,30 +43,30 @@ func TestProviderID(t *testing.T) {
 				wantCall:   false,
 			},
 			"from http": {
-				newClient:  newStubHTTPClientJSONFunc(mResp1, nil),
+				newClient:  newStubHTTPClientJSONFunc(mResp1, 200, nil),
 				wantResult: expect1,
 				wantCall:   true,
 			},
 			"cache outdated": {
 				cache:      mResp1,
 				cacheTime:  time.Now().AddDate(0, 0, -1),
-				newClient:  newStubHTTPClientJSONFunc(mResp2, nil),
+				newClient:  newStubHTTPClientJSONFunc(mResp2, 200, nil),
 				wantResult: expect2,
 				wantCall:   true,
 			},
 			"cache empty": {
 				cacheTime:  time.Now(),
-				newClient:  newStubHTTPClientJSONFunc(mResp1, nil),
+				newClient:  newStubHTTPClientJSONFunc(mResp1, 200, nil),
 				wantResult: expect1,
 				wantCall:   true,
 			},
 			"http error": {
-				newClient: newStubHTTPClientJSONFunc(metadataResponse{}, someErr),
+				newClient: newStubHTTPClientJSONFunc(metadataResponse{}, 200, someErr),
 				wantCall:  true,
 				wantErr:   true,
 			},
 			"http empty response": {
-				newClient: newStubHTTPClientJSONFunc(metadataResponse{}, nil),
+				newClient: newStubHTTPClientJSONFunc(metadataResponse{}, 200, nil),
 				wantCall:  true,
 				wantErr:   true,
 			},
@@ -207,30 +207,35 @@ func TestRole(t *testing.T) {
 			wantCall:   false,
 		},
 		"from http": {
-			newClient:  newStubHTTPClientJSONFunc(mResp1, nil),
+			newClient:  newStubHTTPClientJSONFunc(mResp1, 200, nil),
 			wantResult: expect1,
 			wantCall:   true,
 		},
 		"cache outdated": {
 			cache:      mResp1,
 			cacheTime:  time.Now().AddDate(0, 0, -1),
-			newClient:  newStubHTTPClientJSONFunc(mResp2, nil),
+			newClient:  newStubHTTPClientJSONFunc(mResp2, 200, nil),
 			wantResult: expect2,
 			wantCall:   true,
 		},
 		"cache empty": {
 			cacheTime:  time.Now(),
-			newClient:  newStubHTTPClientJSONFunc(mResp1, nil),
+			newClient:  newStubHTTPClientJSONFunc(mResp1, 200, nil),
 			wantResult: expect1,
 			wantCall:   true,
 		},
 		"http error": {
-			newClient: newStubHTTPClientJSONFunc(metadataResponse{}, someErr),
+			newClient: newStubHTTPClientJSONFunc(metadataResponse{}, 200, someErr),
+			wantCall:  true,
+			wantErr:   true,
+		},
+		"http status code 500": {
+			newClient: newStubHTTPClientJSONFunc(metadataResponse{}, 500, nil),
 			wantCall:  true,
 			wantErr:   true,
 		},
 		"http empty response": {
-			newClient: newStubHTTPClientJSONFunc(metadataResponse{}, nil),
+			newClient: newStubHTTPClientJSONFunc(metadataResponse{}, 200, nil),
 			wantCall:  true,
 			wantErr:   true,
 		},
@@ -369,14 +374,16 @@ type httpClientJSONCreateFunc func(r *require.Assertions) *stubHTTPClientJSON
 type stubHTTPClientJSON struct {
 	require  *require.Assertions
 	response metadataResponse
+	code     int
 	err      error
 	called   bool
 }
 
-func newStubHTTPClientJSONFunc(response metadataResponse, err error) httpClientJSONCreateFunc {
+func newStubHTTPClientJSONFunc(response metadataResponse, statusCode int, err error) httpClientJSONCreateFunc {
 	return func(r *require.Assertions) *stubHTTPClientJSON {
 		return &stubHTTPClientJSON{
 			response: response,
+			code:     statusCode,
 			err:      err,
 			require:  r,
 		}
@@ -387,16 +394,26 @@ func (c *stubHTTPClientJSON) Do(_ *http.Request) (*http.Response, error) {
 	c.called = true
 	body, err := json.Marshal(c.response)
 	c.require.NoError(err)
-	return &http.Response{Body: io.NopCloser(bytes.NewReader(body))}, c.err
+	code := 200
+	if c.code != 0 {
+		code = c.code
+	}
+	return &http.Response{StatusCode: code, Status: http.StatusText(code), Body: io.NopCloser(bytes.NewReader(body))}, c.err
 }
 
 type stubHTTPClient struct {
 	response string
+	code     int
 	err      error
 	called   bool
 }
 
 func (c *stubHTTPClient) Do(_ *http.Request) (*http.Response, error) {
 	c.called = true
-	return &http.Response{Body: io.NopCloser(strings.NewReader(c.response))}, c.err
+	code := 200
+	if c.code != 0 {
+		code = c.code
+	}
+
+	return &http.Response{StatusCode: code, Status: http.StatusText(code), Body: io.NopCloser(strings.NewReader(c.response))}, c.err
 }
