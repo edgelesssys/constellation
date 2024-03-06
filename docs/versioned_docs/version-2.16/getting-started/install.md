@@ -6,7 +6,7 @@ Constellation runs entirely in your cloud environment and can be controlled via 
 
 Make sure the following requirements are met:
 
-* Your machine is running Linux or macOS
+* Your machine is running Linux, macOS, or Windows
 * You have admin rights on your machine
 * [kubectl](https://kubernetes.io/docs/tasks/tools/) is installed
 * Your CSP is Microsoft Azure, Google Cloud Platform (GCP), Amazon Web Services (AWS), or STACKIT
@@ -91,6 +91,29 @@ curl -LO https://github.com/edgelesssys/constellation/releases/latest/download/c
 ```bash
 sudo install constellation-darwin-amd64 /usr/local/bin/constellation
 ```
+
+</tabItem>
+
+<tabItem value="windows-amd64" label="Windows (amd64)">
+
+1. Download the CLI:
+
+```bash
+Invoke-WebRequest -OutFile ./constellation.exe -Uri 'https://github.com/edgelesssys/constellation/releases/latest/download/constellation-windows-amd64.exe'
+```
+
+2. [Verify the signature](../workflows/verify-cli.md) (optional)
+
+3. Install the CLI under `C:\Program Files\Constellation\bin\constellation.exe`
+
+3. Add the CLI to your PATH:
+
+    1. Open `Advanced system settings` by searching for the App in the Windows search
+    2. Go to the `Advanced` tab
+    3. Click `Environment Variables…`
+    4. Click variable called `Path` and click `Edit…`
+    5. Click `New`
+    6. Enter the path to the folder containing the binary you want on your PATH: `C:\Program Files\Constellation\bin`
 
 </tabItem>
 </tabs>
