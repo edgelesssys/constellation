@@ -78,6 +78,17 @@ This example shows how to set up a Constellation cluster with the reference IAM 
 
   Optionally, you can prefix the `terraform apply` command with `TF_LOG=INFO` to collect [Terraform logs](https://developer.hashicorp.com/terraform/internals/debugging) while applying the configuration. This may provide helpful output in debugging scenarios.
   </tabItem>
+  <tabItem value="stackit" label="STACKIT">
+  Initialize the providers and apply the configuration.
+
+  ```bash
+  terraform init
+  terraform apply
+  ```
+
+  Optionally, you can prefix the `terraform apply` command with `TF_LOG=INFO` to collect [Terraform logs](https://developer.hashicorp.com/terraform/internals/debugging) while applying the configuration. This may provide helpful output in debugging scenarios.
+  </tabItem>
+
   </tabs>
 4. Connect to the cluster.
 
