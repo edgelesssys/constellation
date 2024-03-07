@@ -150,7 +150,8 @@ func (c *JoinClient) Start(cleaner cleaner) error {
 
 	if err := c.startNodeAndJoin(ticket, kubeletKey, cleaner); err != nil {
 		c.log.With(slog.Any("error", err)).Error("Failed to start node and join cluster") // unrecoverable error
-		return errors.Join(err, c.markDiskForReset())
+		resetErr := c.markDiskForReset()
+		return errors.Join(err, resetErr)
 	}
 
 	return nil
@@ -293,9 +294,10 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 	// sometimes fails transiently, and we don't want to brick the node because of that.
 	for i := range 3 {
 		err = c.joiner.JoinCluster(ctx, btd, c.role, ticket.KubernetesComponents, c.log)
-		if err != nil {
-			c.log.Error("failed to join k8s cluster", "role", c.role, "attempt", i, "error", err)
+		if err == nil {
+			break
 		}
+		c.log.Error("failed to join k8s cluster", "role", c.role, "attempt", i, "error", err)
 	}
 	if err != nil {
 		return fmt.Errorf("joining Kubernetes cluster: %w", err)

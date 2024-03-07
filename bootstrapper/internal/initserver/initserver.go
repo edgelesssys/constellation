@@ -129,7 +129,9 @@ func (s *Server) Serve(ip, port string, cleaner cleaner) error {
 	// If Init failed, we mark the disk for reset, so the node can restart the process
 	// In this case we don't care about any potential errors from the grpc server
 	if s.initFailure != nil {
-		return errors.Join(s.initFailure, s.markDiskForReset())
+		s.log.Error("Fatal error during Init request", "error", s.initFailure)
+		resetErr := s.markDiskForReset()
+		return errors.Join(s.initFailure, resetErr)
 	}
 
 	return err

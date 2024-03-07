@@ -13,6 +13,7 @@ import (
 	"net"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/clean"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/diskencryption"
@@ -74,7 +75,8 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 	go func() {
 		defer wg.Done()
 		if err := joinClient.Start(cleaner); err != nil {
-			log.With(slog.Any("error", err)).Error("Failed to join cluster")
+			log.With(slog.Any("error", err)).Error("Failed to join cluster. Rebooting...")
+			time.Sleep(20 * time.Second) // ensure log message is written
 			reboot()
 		}
 	}()
@@ -83,7 +85,8 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 	go func() {
 		defer wg.Done()
 		if err := initServer.Serve(bindIP, bindPort, cleaner); err != nil {
-			log.With(slog.Any("error", err)).Error("Failed to serve init server")
+			log.With(slog.Any("error", err)).Error("Failed to serve init server. Rebooting...")
+			time.Sleep(20 * time.Second) // ensure log message is written
 			reboot()
 		}
 	}()
