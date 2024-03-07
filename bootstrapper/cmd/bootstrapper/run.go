@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"log/syslog"
 	"net"
 	"sync"
 	"syscall"
@@ -44,13 +45,13 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 	nodeBootstrapped, err := initialize.IsNodeBootstrapped(openDevice)
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to check if node was previously bootstrapped")
-		reboot()
+		reboot(fmt.Errorf("checking if node was previously bootstrapped: %w", err))
 	}
 
 	if nodeBootstrapped {
 		if err := kube.StartKubelet(); err != nil {
 			log.With(slog.Any("error", err)).Error("Failed to restart kubelet")
-			reboot()
+			reboot(fmt.Errorf("restarting kubelet: %w", err))
 		}
 		return
 	}
@@ -59,7 +60,7 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 	initServer, err := initserver.New(context.Background(), nodeLock, kube, issuer, fileHandler, metadata, log)
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to create init server")
-		reboot()
+		reboot(fmt.Errorf("creating init server: %w", err))
 	}
 
 	dialer := dialer.New(issuer, nil, &net.Dialer{})
@@ -75,9 +76,8 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 	go func() {
 		defer wg.Done()
 		if err := joinClient.Start(cleaner); err != nil {
-			log.With(slog.Any("error", err)).Error("Failed to join cluster. Rebooting...")
-			time.Sleep(20 * time.Second) // ensure log message is written
-			reboot()
+			log.With(slog.Any("error", err)).Error("Failed to join cluster")
+			reboot(fmt.Errorf("joining cluster: %w", err))
 		}
 	}()
 
@@ -85,9 +85,8 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 	go func() {
 		defer wg.Done()
 		if err := initServer.Serve(bindIP, bindPort, cleaner); err != nil {
-			log.With(slog.Any("error", err)).Error("Failed to serve init server. Rebooting...")
-			time.Sleep(20 * time.Second) // ensure log message is written
-			reboot()
+			log.With(slog.Any("error", err)).Error("Failed to serve init server")
+			reboot(fmt.Errorf("serving init server: %w", err))
 		}
 	}()
 	wg.Wait()
@@ -105,9 +104,17 @@ func getDiskUUID() (string, error) {
 	return disk.UUID()
 }
 
-// reboot the system.
+// reboot writes an error message to the system log and reboots the system.
 // We call this instead of os.Exit() since failures in the bootstrapper usually require a node reset.
-func reboot() {
+func reboot(e error) {
+	syslogWriter, err := syslog.New(syslog.LOG_EMERG|syslog.LOG_KERN, "bootstrapper")
+	if err != nil {
+		_ = syscall.Reboot(syscall.LINUX_REBOOT_CMD_RESTART)
+	}
+	_ = syslogWriter.Err(e.Error())
+	_ = syslogWriter.Emerg("bootstrapper has encountered a non recoverable error. Rebooting...")
+	time.Sleep(time.Minute) // sleep to allow the message to be written to syslog and seen by the user
+
 	_ = syscall.Reboot(syscall.LINUX_REBOOT_CMD_RESTART)
 }
 
