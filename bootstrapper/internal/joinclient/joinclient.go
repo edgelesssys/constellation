@@ -164,9 +164,6 @@ func (c *JoinClient) Stop() {
 	c.stopC <- struct{}{}
 	<-c.stopDone
 
-	c.stopC = make(chan struct{}, 1)
-	c.stopDone = make(chan struct{}, 1)
-
 	c.log.Info("Stopped")
 }
 
