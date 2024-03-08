@@ -135,7 +135,7 @@ This configuration creates an additional node group `high_cpu` with a larger ins
 
 You can use the field `zone` to specify what availability zone nodes of the group are placed in.
 On Azure, this field is empty by default and nodes are automatically spread across availability zones.
-STACKIT currently only offers SEV-enabled CPUs in the `eu01-1` zone.
+STACKIT currently offers SEV-enabled CPUs in the `eu01-1`, `eu01-2` and `eu01-3` zones.
 Consult the documentation of your cloud provider for more information:
 
 * [AWS](https://aws.amazon.com/about-aws/global-infrastructure/regions_az/)
