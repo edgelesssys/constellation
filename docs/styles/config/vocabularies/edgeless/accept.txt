@@ -63,6 +63,7 @@ rollout
 SBOM
 sigstore
 SSD
+STACKIT
 superset
 Syft
 systemd
