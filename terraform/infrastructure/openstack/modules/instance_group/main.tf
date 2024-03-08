@@ -45,7 +45,6 @@ data "openstack_compute_flavor_v2" "flavor" {
 resource "openstack_compute_instance_v2" "instance_group_member" {
   name      = "${local.name}-${count.index}"
   count     = var.initial_count
-  image_id  = var.image_id
   flavor_id = data.openstack_compute_flavor_v2.flavor.id
   tags      = local.tags
   # TODO(malt3): get this API enabled in the test environment
@@ -84,4 +83,7 @@ resource "openstack_compute_instance_v2" "instance_group_member" {
     openstack-load-balancer-endpoint = var.openstack_load_balancer_endpoint
   })
   availability_zone_hints = length(var.availability_zone) > 0 ? var.availability_zone : null
+  lifecycle {
+    ignore_changes = [block_device] # block device contains current image, which can be updated from inside the cluster
+  }
 }
