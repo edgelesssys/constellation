@@ -23,6 +23,7 @@ import (
 
 const (
 	imdsMetaDataURL = "http://169.254.169.254/openstack/2018-08-27/meta_data.json"
+	imdsUserDataURL = "http://169.254.169.254/openstack/2018-08-27/user_data"
 	ec2ImdsBaseURL  = "http://169.254.169.254/1.0/meta-data"
 	maxCacheAge     = 12 * time.Hour
 )
@@ -33,6 +34,7 @@ type imdsClient struct {
 	vpcIPCache     string
 	vpcIPCacheTime time.Time
 	cache          metadataResponse
+	userDataCache  userDataResponse
 	cacheTime      time.Time
 }
 
@@ -129,73 +131,73 @@ func (c *imdsClient) role(ctx context.Context) (role.Role, error) {
 }
 
 func (c *imdsClient) loadBalancerEndpoint(ctx context.Context) (string, error) {
-	if c.timeForUpdate(c.cacheTime) || c.cache.Tags.LoadBalancerEndpoint == "" {
+	if c.timeForUpdate(c.cacheTime) || c.userDataCache.LoadBalancerEndpoint == "" {
 		if err := c.update(ctx); err != nil {
 			return "", err
 		}
 	}
 
-	if c.cache.Tags.LoadBalancerEndpoint == "" {
+	if c.userDataCache.LoadBalancerEndpoint == "" {
 		return "", errors.New("unable to get load balancer endpoint")
 	}
 
-	return c.cache.Tags.LoadBalancerEndpoint, nil
+	return c.userDataCache.LoadBalancerEndpoint, nil
 }
 
 func (c *imdsClient) authURL(ctx context.Context) (string, error) {
-	if c.timeForUpdate(c.cacheTime) || c.cache.Tags.AuthURL == "" {
+	if c.timeForUpdate(c.cacheTime) || c.userDataCache.AuthURL == "" {
 		if err := c.update(ctx); err != nil {
 			return "", err
 		}
 	}
 
-	if c.cache.Tags.AuthURL == "" {
+	if c.userDataCache.AuthURL == "" {
 		return "", errors.New("unable to get auth url")
 	}
 
-	return c.cache.Tags.AuthURL, nil
+	return c.userDataCache.AuthURL, nil
 }
 
 func (c *imdsClient) userDomainName(ctx context.Context) (string, error) {
-	if c.timeForUpdate(c.cacheTime) || c.cache.Tags.UserDomainName == "" {
+	if c.timeForUpdate(c.cacheTime) || c.userDataCache.UserDomainName == "" {
 		if err := c.update(ctx); err != nil {
 			return "", err
 		}
 	}
 
-	if c.cache.Tags.UserDomainName == "" {
+	if c.userDataCache.UserDomainName == "" {
 		return "", errors.New("unable to get user domain name")
 	}
 
-	return c.cache.Tags.UserDomainName, nil
+	return c.userDataCache.UserDomainName, nil
 }
 
 func (c *imdsClient) username(ctx context.Context) (string, error) {
-	if c.timeForUpdate(c.cacheTime) || c.cache.Tags.Username == "" {
+	if c.timeForUpdate(c.cacheTime) || c.userDataCache.Username == "" {
 		if err := c.update(ctx); err != nil {
 			return "", err
 		}
 	}
 
-	if c.cache.Tags.Username == "" {
+	if c.userDataCache.Username == "" {
 		return "", errors.New("unable to get token name")
 	}
 
-	return c.cache.Tags.Username, nil
+	return c.userDataCache.Username, nil
 }
 
 func (c *imdsClient) password(ctx context.Context) (string, error) {
-	if c.timeForUpdate(c.cacheTime) || c.cache.Tags.Password == "" {
+	if c.timeForUpdate(c.cacheTime) || c.userDataCache.Password == "" {
 		if err := c.update(ctx); err != nil {
 			return "", err
 		}
 	}
 
-	if c.cache.Tags.Password == "" {
+	if c.userDataCache.Password == "" {
 		return "", errors.New("unable to get token password")
 	}
 
-	return c.cache.Tags.Password, nil
+	return c.userDataCache.Password, nil
 }
 
 // timeForUpdate checks whether an update is needed due to cache age.
@@ -203,18 +205,41 @@ func (c *imdsClient) timeForUpdate(t time.Time) bool {
 	return time.Since(t) > maxCacheAge
 }
 
-// update updates instance metadata from the azure imds API.
 func (c *imdsClient) update(ctx context.Context) error {
+	if err := c.updateInstanceMetadata(ctx); err != nil {
+		return fmt.Errorf("updating instance metadata: %w", err)
+	}
+	if err := c.updateUserData(ctx); err != nil {
+		return fmt.Errorf("updating user data: %w", err)
+	}
+	c.cacheTime = time.Now()
+	return nil
+}
+
+// update updates instance metadata from the azure imds API.
+func (c *imdsClient) updateInstanceMetadata(ctx context.Context) error {
 	resp, err := httpGet(ctx, c.client, imdsMetaDataURL)
 	if err != nil {
 		return err
 	}
 	var metadataResp metadataResponse
 	if err := json.Unmarshal(resp, &metadataResp); err != nil {
-		return fmt.Errorf("unmarshalling IMDS metadata response %q: %w", string(resp), err)
+		return fmt.Errorf("unmarshalling IMDS metadata response %q: %w", resp, err)
 	}
 	c.cache = metadataResp
-	c.cacheTime = time.Now()
+	return nil
+}
+
+func (c *imdsClient) updateUserData(ctx context.Context) error {
+	resp, err := httpGet(ctx, c.client, imdsUserDataURL)
+	if err != nil {
+		return err
+	}
+	var userdataResp userDataResponse
+	if err := json.Unmarshal(resp, &userdataResp); err != nil {
+		return fmt.Errorf("unmarshalling IMDS user_data response %q: %w", resp, err)
+	}
+	c.userDataCache = userdataResp
 	return nil
 }
 
@@ -262,9 +287,12 @@ type metadataResponse struct {
 }
 
 type metadataTags struct {
-	InitSecretHash       string `json:"constellation-init-secret-hash,omitempty"`
-	Role                 string `json:"constellation-role,omitempty"`
-	UID                  string `json:"constellation-uid,omitempty"`
+	InitSecretHash string `json:"constellation-init-secret-hash,omitempty"`
+	Role           string `json:"constellation-role,omitempty"`
+	UID            string `json:"constellation-uid,omitempty"`
+}
+
+type userDataResponse struct {
 	AuthURL              string `json:"openstack-auth-url,omitempty"`
 	UserDomainName       string `json:"openstack-user-domain-name,omitempty"`
 	Username             string `json:"openstack-username,omitempty"`
