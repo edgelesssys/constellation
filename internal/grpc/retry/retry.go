@@ -16,9 +16,10 @@ import (
 )
 
 const (
-	authEOFErr       = `connection error: desc = "transport: authentication handshake failed: EOF"`
-	authReadTCPErr   = `connection error: desc = "transport: authentication handshake failed: read tcp`
-	authHandshakeErr = `connection error: desc = "transport: authentication handshake failed`
+	authEOFErr                       = `connection error: desc = "transport: authentication handshake failed: EOF"`
+	authReadTCPErr                   = `connection error: desc = "transport: authentication handshake failed: read tcp`
+	authHandshakeErr                 = `connection error: desc = "transport: authentication handshake failed`
+	authHandshakeDeadlineExceededErr = `connection error: desc = "transport: authentication handshake failed: context deadline exceeded`
 )
 
 // grpcErr is the error type that is returned by the grpc client.
@@ -57,6 +58,11 @@ func ServiceIsUnavailable(err error) bool {
 		return true
 	}
 
+	// retry if the handshake deadline was exceeded
+	if strings.HasPrefix(statusErr.Message(), authHandshakeDeadlineExceededErr) {
+		return true
+	}
+
 	return !strings.HasPrefix(statusErr.Message(), authHandshakeErr)
 }
 
@@ -74,6 +80,11 @@ func LoadbalancerIsNotReady(err error) bool {
 
 	if statusErr.Code() != codes.Unavailable {
 		return false
+	}
+
+	// retry if the handshake deadline was exceeded
+	if strings.HasPrefix(statusErr.Message(), authHandshakeDeadlineExceededErr) {
+		return true
 	}
 
 	// retry if GCP proxy LB isn't fully available yet
