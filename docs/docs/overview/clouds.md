@@ -14,13 +14,13 @@ For Constellation, the ideal environment provides the following:
 
 The following table summarizes the state of features for different infrastructures as of June 2023.
 
-| **Feature**                       | **Azure** | **GCP** | **AWS** | **OpenStack (Yoga)** |
-|-----------------------------------|-----------|---------|---------|----------------------|
-| **1. Custom images**              | Yes       | Yes     | Yes     | Yes                  |
-| **2. SEV-SNP or TDX**             | Yes       | Yes     | Yes     | Depends on kernel/HV |
-| **3. Raw guest attestation**      | Yes       | Yes     | Yes     | Depends on kernel/HV |
-| **4. Reviewable firmware**        | No        | No      | Yes     | Depends on kernel/HV |
-| **5. Confidential measured boot** | Yes       | No      | No      | Depends on kernel/HV |
+| **Feature**                       | **Azure** | **GCP** | **AWS** |  **STACKIT** | **OpenStack (Yoga)** |
+|-----------------------------------|-----------|---------|---------|--------------|----------------------|
+| **1. Custom images**              | Yes       | Yes     | Yes     | Yes          | Yes                  |
+| **2. SEV-SNP or TDX**             | Yes       | Yes     | Yes     | No           | Depends on kernel/HV |
+| **3. Raw guest attestation**      | Yes       | Yes     | Yes     | No           | Depends on kernel/HV |
+| **4. Reviewable firmware**        | No        | No      | Yes     | No           | Depends on kernel/HV |
+| **5. Confidential measured boot** | Yes       | No      | No      | No           | Depends on kernel/HV |
 
 ## Microsoft Azure
 
@@ -52,6 +52,10 @@ Regarding (3), AWS provides direct access to remote-attestation statements.
 However, regarding (5), attestation is partially based on the [NitroTPM](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nitrotpm.html) for [measured boot](../architecture/attestation.md#measured-boot), which is a vTPM managed by the Nitro hypervisor.
 Hence, the hypervisor is currently part of Constellation's TCB.
 Regarding (4), the [firmware is open source](https://github.com/aws/uefi) and can be reproducibly built.
+
+## STACKIT
+
+STACKIT supports AMD SEV-ES.
 
 ## OpenStack
 

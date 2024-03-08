@@ -276,6 +276,12 @@ You may customize certain parameters for verification of the attestation stateme
   If it's not specified, the CLI fetches it from the AMD key distribution server.
 
 </tabItem>
+<tabItem value="stackit" label="STACKIT">
+
+On STACKIT, AMD SEV-ES is used to provide runtime encryption to the VMs.
+A TPM attestation report is used to establish trust in the VM.
+
+</tabItem>
 </tabs>
 
 ## Cluster attestation
