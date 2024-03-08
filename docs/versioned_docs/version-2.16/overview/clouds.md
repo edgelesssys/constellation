@@ -55,7 +55,7 @@ Regarding (4), the [firmware is open source](https://github.com/aws/uefi) and ca
 
 ## STACKIT
 
-STACKIT supports AMD SEV-ES.
+[STACKIT Compute Engine](https://www.stackit.de/en/product/stackit-compute-engine/) supports AMD SEV-ES. A vTPM is used for measured boot, which is a vTPM managed by STACKIT's hypervisor. Hence, the hypervisor is currently part of Constellation's TCB.
 
 ## OpenStack
 

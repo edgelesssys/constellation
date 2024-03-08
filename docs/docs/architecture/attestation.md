@@ -251,13 +251,15 @@ You may customize certain parameters for verification of the attestation stateme
 </tabItem>
 <tabItem value="gcp" label="GCP">
 
+On GCP, AMD SEV-ES is used to provide runtime encryption to the VMs.
+The hypervisor-based vTPM is used to establish trust in the VM via [runtime measurements](#runtime-measurements).
 There is no additional configuration available for GCP.
 
 </tabItem>
 <tabItem value="aws" label="AWS">
 
 On AWS, AMD SEV-SNP is used to provide runtime encryption to the VMs.
-An SEV-SNP attestation report is used to establish trust in the VM and it's vTPM.
+An SEV-SNP attestation report is used to establish trust in the VM.
 You may customize certain parameters for verification of the attestation statement using the Constellation config file.
 
 * TCB versions
@@ -279,7 +281,8 @@ You may customize certain parameters for verification of the attestation stateme
 <tabItem value="stackit" label="STACKIT">
 
 On STACKIT, AMD SEV-ES is used to provide runtime encryption to the VMs.
-A TPM attestation report is used to establish trust in the VM.
+The hypervisor-based vTPM is used to establish trust in the VM via [runtime measurements](#runtime-measurements).
+There is no additional configuration available for STACKIT.
 
 </tabItem>
 </tabs>
