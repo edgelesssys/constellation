@@ -43,6 +43,10 @@ func TestServiceIsUnavailable(t *testing.T) {
 			err:             status.Error(codes.Unavailable, `connection error: desc = "transport: authentication handshake failed: read tcp error"`),
 			wantUnavailable: true,
 		},
+		"handshake deadline exceeded error": {
+			err:             status.Error(codes.Unavailable, `connection error: desc = "transport: authentication handshake failed: context deadline exceeded"`),
+			wantUnavailable: true,
+		},
 		"wrapped error": {
 			err:             fmt.Errorf("some wrapping: %w", status.Error(codes.Unavailable, "error")),
 			wantUnavailable: true,
@@ -80,6 +84,10 @@ func TestLoadbalancerIsNotReady(t *testing.T) {
 		},
 		"handshake read tcp error": {
 			err:          status.Error(codes.Unavailable, `connection error: desc = "transport: authentication handshake failed: read tcp error"`),
+			wantNotReady: true,
+		},
+		"handshake deadline exceeded error": {
+			err:          status.Error(codes.Unavailable, `connection error: desc = "transport: authentication handshake failed: context deadline exceeded"`),
 			wantNotReady: true,
 		},
 		"normal unavailable error": {
