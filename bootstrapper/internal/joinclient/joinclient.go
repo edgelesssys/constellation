@@ -431,6 +431,7 @@ type encryptedDisk interface {
 	UUID() (string, error)
 	// UpdatePassphrase switches the initial random passphrase of the encrypted disk to a permanent passphrase.
 	UpdatePassphrase(passphrase string) error
+	// MarkDiskForReset marks the state disk as not initialized so it may be wiped (reset) on reboot.
 	MarkDiskForReset() error
 }
 

@@ -60,7 +60,7 @@ func (c *DiskEncryption) UpdatePassphrase(passphrase string) error {
 	return c.device.SetConstellationStateDiskToken(cryptsetup.SetDiskInitialized)
 }
 
-// MarkDiskForReset marks the state disk as not initialized.
+// MarkDiskForReset marks the state disk as not initialized so it may be wiped (reset) on reboot.
 func (c *DiskEncryption) MarkDiskForReset() error {
 	return c.device.SetConstellationStateDiskToken(cryptsetup.SetDiskNotInitialized)
 }
