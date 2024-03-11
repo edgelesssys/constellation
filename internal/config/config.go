@@ -198,39 +198,21 @@ type OpenStackConfig struct {
 	//   OpenStack cloud name to select from "clouds.yaml". Only required if config file for OpenStack is used. Fallback authentication uses environment variables. For details see: https://docs.openstack.org/openstacksdk/latest/user/config/configuration.html.
 	Cloud string `yaml:"cloud"`
 	// description: |
+	//   Path to OpenStack "clouds.yaml" file. Only required if automatic detection fails.
+	CloudsYAMLPath string `yaml:"cloudsYAMLPath"`
+	// description: |
 	//   Availability zone to place the VMs in. For details see: https://docs.openstack.org/nova/latest/admin/availability-zones.html
 	AvailabilityZone string `yaml:"availabilityZone" validate:"required"`
 	// description: |
 	//   Floating IP pool to use for the VMs. For details see: https://docs.openstack.org/ocata/user-guide/cli-manage-ip-addresses.html
 	FloatingIPPoolID string `yaml:"floatingIPPoolID" validate:"required"`
 	// description: |
-	// AuthURL is the OpenStack Identity endpoint to use inside the cluster.
-	AuthURL string `yaml:"authURL" validate:"required"`
-	// description: |
-	//   ProjectID is the ID of the OpenStack project where a user resides.
-	ProjectID string `yaml:"projectID" validate:"required"`
-	// description: |
 	//   STACKITProjectID is the ID of the STACKIT project where a user resides.
 	//   Only used if cloud is "stackit".
 	STACKITProjectID string `yaml:"stackitProjectID"`
 	// description: |
-	//   ProjectName is the name of the project where a user resides.
-	ProjectName string `yaml:"projectName" validate:"required"`
-	// description: |
-	//   UserDomainName is the name of the domain where a user resides.
-	UserDomainName string `yaml:"userDomainName" validate:"required"`
-	// description: |
-	//   ProjectDomainName is the name of the domain where a project resides.
-	ProjectDomainName string `yaml:"projectDomainName" validate:"required"`
-	// description: |
 	// RegionName is the name of the region to use inside the cluster.
 	RegionName string `yaml:"regionName" validate:"required"`
-	// description: |
-	//   Username to use inside the cluster.
-	Username string `yaml:"username" validate:"required"`
-	// description: |
-	//   Password to use inside the cluster. You can instead use the environment variable "CONSTELL_OS_PASSWORD".
-	Password string `yaml:"password"`
 	// description: |
 	//   Deploy Yawol loadbalancer. For details see: https://github.com/stackitcloud/yawol
 	DeployYawolLoadBalancer *bool `yaml:"deployYawolLoadBalancer" validate:"required"`
@@ -494,11 +476,6 @@ func New(fileHandler file.Handler, name string, fetcher attestationconfigapi.Fet
 	clientSecretValue := os.Getenv(constants.EnvVarAzureClientSecretValue)
 	if clientSecretValue != "" && c.Provider.Azure != nil {
 		fmt.Fprintf(os.Stderr, "WARNING: the environment variable %s is no longer used %s", constants.EnvVarAzureClientSecretValue, appRegistrationErrStr)
-	}
-
-	openstackPassword := os.Getenv(constants.EnvVarOpenStackPassword)
-	if openstackPassword != "" && c.Provider.OpenStack != nil {
-		c.Provider.OpenStack.Password = openstackPassword
 	}
 
 	return c, c.Validate(force)
@@ -909,9 +886,6 @@ func (c *Config) WithOpenStackProviderDefaults(csp cloudprovider.Provider, openS
 	case "stackit":
 		c.Provider.OpenStack.Cloud = "stackit"
 		c.Provider.OpenStack.FloatingIPPoolID = "970ace5c-458f-484a-a660-0903bcfd91ad"
-		c.Provider.OpenStack.AuthURL = "https://keystone.api.iaas.eu01.stackit.cloud/v3"
-		c.Provider.OpenStack.UserDomainName = "portal_mvp"
-		c.Provider.OpenStack.ProjectDomainName = "portal_mvp"
 		c.Provider.OpenStack.RegionName = "RegionOne"
 		c.Provider.OpenStack.DeployYawolLoadBalancer = toPtr(true)
 		c.Provider.OpenStack.YawolImageID = "bcd6c13e-75d1-4c3f-bf0f-8f83580cc1be"

@@ -176,18 +176,23 @@ func (i *chartLoader) loadReleases(conformanceMode, deployCSIDriver bool, helmWa
 		}
 		releases = append(releases, awsRelease)
 	}
-	if i.csp == cloudprovider.OpenStack && openStackValues != nil && openStackValues.DeployYawolLoadBalancer {
-		yawolRelease, err := i.loadRelease(yawolLBControllerInfo, WaitModeNone)
-		if err != nil {
-			return nil, fmt.Errorf("loading yawol chart: %w", err)
+	if i.csp == cloudprovider.OpenStack {
+		if openStackValues == nil {
+			return nil, errors.New("provider is OpenStack but OpenStack config is missing")
 		}
+		if openStackValues.DeployYawolLoadBalancer {
+			yawolRelease, err := i.loadRelease(yawolLBControllerInfo, WaitModeNone)
+			if err != nil {
+				return nil, fmt.Errorf("loading yawol chart: %w", err)
+			}
 
-		yawolVals, err := extraYawolValues(serviceAccURI, i.stateFile.Infrastructure, openStackValues)
-		if err != nil {
-			return nil, fmt.Errorf("extending yawol chart values: %w", err)
+			yawolVals, err := extraYawolValues(serviceAccURI, i.stateFile.Infrastructure, openStackValues)
+			if err != nil {
+				return nil, fmt.Errorf("extending yawol chart values: %w", err)
+			}
+			yawolRelease.values = mergeMaps(yawolRelease.values, yawolVals)
+			releases = append(releases, yawolRelease)
 		}
-		yawolRelease.values = mergeMaps(yawolRelease.values, yawolVals)
-		releases = append(releases, yawolRelease)
 	}
 
 	return releases, nil

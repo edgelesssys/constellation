@@ -1,0 +1,15 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "clouds",
+    srcs = [
+        "clouds.go",
+        "read.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/cloud/openstack/clouds",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/file",
+        "@com_github_mitchellh_go_homedir//:go-homedir",
+    ],
+)

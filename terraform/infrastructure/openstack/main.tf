@@ -56,6 +56,9 @@ locals {
     endpoint if(endpoint.interface == "public")
   ][0]
   identity_internal_url = local.identity_endpoint.url
+  cloudsyaml_path       = length(var.openstack_clouds_yaml_path) > 0 ? var.openstack_clouds_yaml_path : "~/.config/openstack/clouds.yaml"
+  cloudsyaml            = yamldecode(file(pathexpand(local.cloudsyaml_path)))
+  cloudyaml             = local.cloudsyaml.clouds[var.cloud]
 }
 
 resource "random_id" "uid" {
@@ -236,9 +239,9 @@ module "instance_group" {
   subnet_id                        = openstack_networking_subnet_v2.vpc_subnetwork.id
   init_secret_hash                 = local.init_secret_hash
   identity_internal_url            = local.identity_internal_url
-  openstack_username               = var.openstack_username
-  openstack_password               = var.openstack_password
-  openstack_user_domain_name       = var.openstack_user_domain_name
+  openstack_username               = local.cloudyaml["auth"]["username"]
+  openstack_password               = local.cloudyaml["auth"]["password"]
+  openstack_user_domain_name       = local.cloudyaml["auth"]["user_domain_name"]
   openstack_load_balancer_endpoint = openstack_networking_floatingip_v2.public_ip.address
 }
 

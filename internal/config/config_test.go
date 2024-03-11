@@ -328,7 +328,7 @@ func TestFromFile(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	const defaultErrCount = 38 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
+	const defaultErrCount = 32 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
 	const azErrCount = 7
 	const awsErrCount = 8
 	const gcpErrCount = 8

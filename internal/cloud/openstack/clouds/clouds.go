@@ -188,21 +188,21 @@ func (r *Region) UnmarshalYAML(unmarshal func(interface{}) error) error {
 type AuthType string
 
 const (
-	// AuthPassword defines an unknown version of the password
+	// AuthPassword defines an unknown version of the password.
 	AuthPassword AuthType = "password"
-	// AuthToken defined an unknown version of the token
+	// AuthToken defined an unknown version of the token.
 	AuthToken AuthType = "token"
 
-	// AuthV2Password defines version 2 of the password
+	// AuthV2Password defines version 2 of the password.
 	AuthV2Password AuthType = "v2password"
-	// AuthV2Token defines version 2 of the token
+	// AuthV2Token defines version 2 of the token.
 	AuthV2Token AuthType = "v2token"
 
-	// AuthV3Password defines version 3 of the password
+	// AuthV3Password defines version 3 of the password.
 	AuthV3Password AuthType = "v3password"
-	// AuthV3Token defines version 3 of the token
+	// AuthV3Token defines version 3 of the token.
 	AuthV3Token AuthType = "v3token"
 
-	// AuthV3ApplicationCredential defines version 3 of the application credential
+	// AuthV3ApplicationCredential defines version 3 of the application credential.
 	AuthV3ApplicationCredential AuthType = "v3applicationcredential"
 )

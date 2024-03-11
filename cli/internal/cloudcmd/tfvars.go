@@ -257,11 +257,9 @@ func openStackTerraformVars(conf *config.Config, imageRef string) (*terraform.Op
 	return &terraform.OpenStackClusterVariables{
 		Name:                    conf.Name,
 		Cloud:                   toPtr(conf.Provider.OpenStack.Cloud),
+		OpenStackCloudsYAMLPath: conf.Provider.OpenStack.CloudsYAMLPath,
 		FloatingIPPoolID:        conf.Provider.OpenStack.FloatingIPPoolID,
 		ImageID:                 imageRef,
-		OpenstackUserDomainName: conf.Provider.OpenStack.UserDomainName,
-		OpenstackUsername:       conf.Provider.OpenStack.Username,
-		OpenstackPassword:       conf.Provider.OpenStack.Password,
 		Debug:                   conf.IsDebugCluster(),
 		NodeGroups:              nodeGroups,
 		CustomEndpoint:          conf.CustomEndpoint,
