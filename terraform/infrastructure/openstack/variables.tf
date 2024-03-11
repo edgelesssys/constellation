@@ -48,24 +48,15 @@ variable "cloud" {
   description = "Cloud to use within the OpenStack \"clouds.yaml\" file. Optional. If not set, environment variables are used."
 }
 
+variable "openstack_clouds_yaml_path" {
+  type        = string
+  default     = "~/.config/openstack/clouds.yaml"
+  description = "Path to OpenStack clouds.yaml file"
+}
+
 variable "floating_ip_pool_id" {
   type        = string
   description = "Pool (network name) to use for floating IPs."
-}
-
-variable "openstack_user_domain_name" {
-  type        = string
-  description = "OpenStack user domain name."
-}
-
-variable "openstack_username" {
-  type        = string
-  description = "OpenStack user name."
-}
-
-variable "openstack_password" {
-  type        = string
-  description = "OpenStack password."
 }
 
 # STACKIT-specific variables

@@ -278,20 +278,16 @@ type OpenStackClusterVariables struct {
 	Name string `hcl:"name" cty:"name"`
 	// NodeGroups is a map of node groups to create.
 	NodeGroups map[string]OpenStackNodeGroup `hcl:"node_groups" cty:"node_groups"`
-	// Cloud is the (optional) name of the OpenStack cloud to use when reading the "clouds.yaml" configuration file. If empty, environment variables are used.
+	// Cloud is the name of the OpenStack cloud to use when reading the "clouds.yaml" configuration file. If empty, environment variables are used.
 	Cloud *string `hcl:"cloud" cty:"cloud"`
+	// OpenStackCloudsYAMLPath is the path to the OpenStack clouds.yaml file
+	OpenStackCloudsYAMLPath string `hcl:"openstack_clouds_yaml_path" cty:"openstack_clouds_yaml_path"`
 	// (STACKIT only) STACKITProjectID is the ID of the STACKIT project to use.
 	STACKITProjectID string `hcl:"stackit_project_id" cty:"stackit_project_id"`
 	// FloatingIPPoolID is the ID of the OpenStack floating IP pool to use for public IPs.
 	FloatingIPPoolID string `hcl:"floating_ip_pool_id" cty:"floating_ip_pool_id"`
 	// ImageID is the ID of the OpenStack image to use.
 	ImageID string `hcl:"image_id" cty:"image_id"`
-	// OpenstackUserDomainName is the OpenStack user domain name to use.
-	OpenstackUserDomainName string `hcl:"openstack_user_domain_name" cty:"openstack_user_domain_name"`
-	// OpenstackUsername is the OpenStack user name to use.
-	OpenstackUsername string `hcl:"openstack_username" cty:"openstack_username"`
-	// OpenstackPassword is the OpenStack password to use.
-	OpenstackPassword string `hcl:"openstack_password" cty:"openstack_password"`
 	// Debug is true if debug mode is enabled.
 	Debug bool `hcl:"debug" cty:"debug"`
 	// CustomEndpoint is the (optional) custom dns hostname for the kubernetes api server.

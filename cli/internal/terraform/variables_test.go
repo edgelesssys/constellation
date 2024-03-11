@@ -254,11 +254,9 @@ func TestOpenStackClusterVariables(t *testing.T) {
 	vars := OpenStackClusterVariables{
 		Name:                    "cluster-name",
 		Cloud:                   toPtr("my-cloud"),
+		OpenStackCloudsYAMLPath: "~/.config/openstack/clouds.yaml",
 		FloatingIPPoolID:        "fip-pool-0123456789abcdef",
 		ImageID:                 "8e10b92d-8f7a-458c-91c6-59b42f82ef81",
-		OpenstackUserDomainName: "my-user-domain",
-		OpenstackUsername:       "my-username",
-		OpenstackPassword:       "my-password",
 		Debug:                   true,
 		STACKITProjectID:        "my-stackit-project-id",
 		NodeGroups: map[string]OpenStackNodeGroup{
@@ -287,12 +285,10 @@ node_groups = {
   }
 }
 cloud                      = "my-cloud"
+openstack_clouds_yaml_path = "~/.config/openstack/clouds.yaml"
 stackit_project_id         = "my-stackit-project-id"
 floating_ip_pool_id        = "fip-pool-0123456789abcdef"
 image_id                   = "8e10b92d-8f7a-458c-91c6-59b42f82ef81"
-openstack_user_domain_name = "my-user-domain"
-openstack_username         = "my-username"
-openstack_password         = "my-password"
 debug                      = true
 custom_endpoint            = "example.com"
 internal_load_balancer     = false

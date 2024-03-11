@@ -13,6 +13,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/openstack"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/openstack/clouds"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constellation"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -38,15 +39,23 @@ func GetMarshaledServiceAccountURI(config *config.Config, fileHandler file.Handl
 		}
 
 	case cloudprovider.OpenStack:
+		cloudsYAML, err := clouds.ReadCloudsYAML(fileHandler, config.Provider.OpenStack.CloudsYAMLPath)
+		if err != nil {
+			return "", fmt.Errorf("reading clouds.yaml: %w", err)
+		}
+		cloud, ok := cloudsYAML.Clouds[config.Provider.OpenStack.Cloud]
+		if !ok {
+			return "", fmt.Errorf("cloud %q not found in clouds.yaml", config.Provider.OpenStack.Cloud)
+		}
 		payload.OpenStack = openstack.AccountKey{
-			AuthURL:           config.Provider.OpenStack.AuthURL,
-			Username:          config.Provider.OpenStack.Username,
-			Password:          config.Provider.OpenStack.Password,
-			ProjectID:         config.Provider.OpenStack.ProjectID,
-			ProjectName:       config.Provider.OpenStack.ProjectName,
-			UserDomainName:    config.Provider.OpenStack.UserDomainName,
-			ProjectDomainName: config.Provider.OpenStack.ProjectDomainName,
-			RegionName:        config.Provider.OpenStack.RegionName,
+			AuthURL:           cloud.AuthInfo.AuthURL,
+			Username:          cloud.AuthInfo.Username,
+			Password:          cloud.AuthInfo.Password,
+			ProjectID:         cloud.AuthInfo.ProjectID,
+			ProjectName:       cloud.AuthInfo.ProjectName,
+			UserDomainName:    cloud.AuthInfo.UserDomainName,
+			ProjectDomainName: cloud.AuthInfo.ProjectDomainName,
+			RegionName:        cloud.RegionName,
 		}
 
 	}
