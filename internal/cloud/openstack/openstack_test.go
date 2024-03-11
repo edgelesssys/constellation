@@ -86,7 +86,7 @@ func TestSelf(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			c := &Cloud{imds: tc.imds}
+			c := &MetadataClient{imds: tc.imds}
 
 			got, err := c.Self(context.Background())
 
@@ -382,7 +382,7 @@ func TestList(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			c := &Cloud{imds: tc.imds, api: tc.api}
+			c := &MetadataClient{imds: tc.imds, api: tc.api}
 
 			got, err := c.List(context.Background())
 
@@ -416,7 +416,7 @@ func TestUID(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			c := &Cloud{imds: tc.imds}
+			c := &MetadataClient{imds: tc.imds}
 
 			got, err := c.UID(context.Background())
 
@@ -450,7 +450,7 @@ func TestInitSecretHash(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			c := &Cloud{imds: tc.imds}
+			c := &MetadataClient{imds: tc.imds}
 
 			got, err := c.InitSecretHash(context.Background())
 
@@ -484,7 +484,7 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			c := &Cloud{imds: tc.imds}
+			c := &MetadataClient{imds: tc.imds}
 
 			got, _, err := c.GetLoadBalancerEndpoint(context.Background())
 
