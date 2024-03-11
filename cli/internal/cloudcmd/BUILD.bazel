@@ -25,6 +25,7 @@ go_library(
         "//internal/cloud/cloudprovider",
         "//internal/cloud/gcpshared",
         "//internal/cloud/openstack",
+        "//internal/cloud/openstack/clouds",
         "//internal/config",
         "//internal/constants",
         "//internal/constellation",

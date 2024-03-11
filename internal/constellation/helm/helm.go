@@ -97,7 +97,7 @@ type Options struct {
 func (h Client) PrepareApply(
 	flags Options, stateFile *state.State, serviceAccURI string, masterSecret uri.MasterSecret,
 ) (Applier, bool, error) {
-	releases, err := h.loadReleases(flags.CSP, flags.AttestationVariant, flags.K8sVersion, masterSecret, stateFile, flags, serviceAccURI)
+	releases, err := h.loadReleases(masterSecret, stateFile, flags, serviceAccURI)
 	if err != nil {
 		return nil, false, fmt.Errorf("loading Helm releases: %w", err)
 	}
@@ -110,10 +110,9 @@ func (h Client) PrepareApply(
 }
 
 func (h Client) loadReleases(
-	csp cloudprovider.Provider, attestationVariant variant.Variant, k8sVersion versions.ValidK8sVersion, secret uri.MasterSecret,
-	stateFile *state.State, flags Options, serviceAccURI string,
+	secret uri.MasterSecret, stateFile *state.State, flags Options, serviceAccURI string,
 ) ([]release, error) {
-	helmLoader := newLoader(csp, attestationVariant, k8sVersion, stateFile, h.cliVersion)
+	helmLoader := newLoader(flags.CSP, flags.AttestationVariant, flags.K8sVersion, stateFile, h.cliVersion)
 	h.log.Debug("Created new Helm loader")
 	return helmLoader.loadReleases(flags.Conformance, flags.DeployCSIDriver, flags.HelmWaitMode, secret, serviceAccURI, flags.OpenStackValues)
 }
