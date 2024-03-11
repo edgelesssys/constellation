@@ -218,6 +218,38 @@ The latter means that the value can be generated offline and compared to the one
 | 16&ndash;23 | Unused                                                           | -                                      | -                           |
 
 </tabItem>
+<tabItem value="stackit" label="STACKIT">
+
+Constellation uses a hypervisor-based vTPM for runtime measurements.
+
+The vTPM adheres to the [TPM 2.0](https://trustedcomputinggroup.org/resource/tpm-library-specification/) specification.
+The VMs are attested by obtaining signed PCR values over the VM's boot configuration from the TPM and comparing them to a known, good state (measured boot).
+
+The following table lists all PCR values of the vTPM and the measured components.
+It also lists what components of the boot chain did the measurements and if the value is reproducible and verifiable.
+The latter means that the value can be generated offline and compared to the one in the vTPM.
+
+| PCR         | Components                                                       | Measured by                            | Reproducible and verifiable |
+| ----------- | ---------------------------------------------------------------- | -------------------------------------- | --------------------------- |
+| 0           | Firmware                                                         | STACKIT                                | No                          |
+| 1           | Firmware                                                         | STACKIT                                | No                          |
+| 2           | Firmware                                                         | STACKIT                                | No                          |
+| 3           | Firmware                                                         | STACKIT                                | No                          |
+| 4           | Constellation Bootloader, Kernel, initramfs, Kernel command line | STACKIT, Constellation Bootloader      | Yes                         |
+| 5           | Firmware                                                         | STACKIT                                | No                          |
+| 6           | Firmware                                                         | STACKIT                                | No                          |
+| 7           | Secure Boot Policy                                               | STACKIT, Constellation Bootloader      | No                          |
+| 8           | -                                                                | -                                      | -                           |
+| 9           | initramfs, Kernel command line                                   | Linux Kernel                           | Yes                         |
+| 10          | User space                                                       | Linux IMA                              | No[^1]                      |
+| 11          | Unified Kernel Image components                                  | Constellation Bootloader               | Yes                         |
+| 12          | Reserved                                                         | (User space, Constellation Bootloader) | Yes                         |
+| 13          | Reserved                                                         | (Constellation Bootloader)             | Yes                         |
+| 14          | Secure Boot State                                                | Constellation Bootloader               | No                          |
+| 15          | ClusterID                                                        | Constellation Bootstrapper             | Yes                         |
+| 16&ndash;23 | Unused                                                           | -                                      | -                           |
+
+</tabItem>
 </tabs>
 
 ### CVM verification
