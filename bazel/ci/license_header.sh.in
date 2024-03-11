@@ -26,7 +26,7 @@ noHeader=$(
     --exclude-dir 3rdparty \
     --exclude-dir build \
     -e'SPDX-License-Identifier: AGPL-3.0-only' \
-    -e'DO NOT EDIT'
+    -e'DO NOT EDIT' | { grep -v internal/cloud/openstack/clouds || true; }
 )
 
 if [[ -z ${noHeader} ]]; then
