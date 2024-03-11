@@ -28,14 +28,14 @@ const (
 	microversion  = "2.42"
 )
 
-// Cloud is the metadata client for OpenStack.
-type Cloud struct {
+// MetadataClient is the metadata client for OpenStack.
+type MetadataClient struct {
 	api  serversAPI
 	imds imdsAPI
 }
 
 // New creates a new OpenStack metadata client.
-func New(ctx context.Context) (*Cloud, error) {
+func New(ctx context.Context) (*MetadataClient, error) {
 	imds := &imdsClient{client: &http.Client{}}
 
 	authURL, err := imds.authURL(ctx)
@@ -77,7 +77,7 @@ func New(ctx context.Context) (*Cloud, error) {
 	}
 	networksClient.Microversion = microversion
 
-	return &Cloud{
+	return &MetadataClient{
 		imds: imds,
 		api: &apiClient{
 			servers:  serversClient,
@@ -87,7 +87,7 @@ func New(ctx context.Context) (*Cloud, error) {
 }
 
 // Self returns the metadata of the current instance.
-func (c *Cloud) Self(ctx context.Context) (metadata.InstanceMetadata, error) {
+func (c *MetadataClient) Self(ctx context.Context) (metadata.InstanceMetadata, error) {
 	name, err := c.imds.name(ctx)
 	if err != nil {
 		return metadata.InstanceMetadata{}, fmt.Errorf("getting name: %w", err)
@@ -114,7 +114,7 @@ func (c *Cloud) Self(ctx context.Context) (metadata.InstanceMetadata, error) {
 }
 
 // List returns the metadata of all instances belonging to the same Constellation cluster.
-func (c *Cloud) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
+func (c *MetadataClient) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
 	uid, err := c.imds.uid(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("getting uid: %w", err)
@@ -211,7 +211,7 @@ func (c *Cloud) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
 }
 
 // UID retrieves the UID of the constellation.
-func (c *Cloud) UID(ctx context.Context) (string, error) {
+func (c *MetadataClient) UID(ctx context.Context) (string, error) {
 	uid, err := c.imds.uid(ctx)
 	if err != nil {
 		return "", fmt.Errorf("retrieving instance UID: %w", err)
@@ -220,7 +220,7 @@ func (c *Cloud) UID(ctx context.Context) (string, error) {
 }
 
 // InitSecretHash retrieves the InitSecretHash of the current instance.
-func (c *Cloud) InitSecretHash(ctx context.Context) ([]byte, error) {
+func (c *MetadataClient) InitSecretHash(ctx context.Context) ([]byte, error) {
 	initSecretHash, err := c.imds.initSecretHash(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving init secret hash: %w", err)
@@ -232,7 +232,7 @@ func (c *Cloud) InitSecretHash(ctx context.Context) ([]byte, error) {
 // For OpenStack, the load balancer is a floating ip attached to
 // a control plane node.
 // TODO(malt3): Rewrite to use real load balancer once it is available.
-func (c *Cloud) GetLoadBalancerEndpoint(ctx context.Context) (host, port string, err error) {
+func (c *MetadataClient) GetLoadBalancerEndpoint(ctx context.Context) (host, port string, err error) {
 	host, err = c.imds.loadBalancerEndpoint(ctx)
 	if err != nil {
 		return "", "", fmt.Errorf("getting load balancer endpoint: %w", err)
@@ -240,7 +240,7 @@ func (c *Cloud) GetLoadBalancerEndpoint(ctx context.Context) (host, port string,
 	return host, strconv.FormatInt(constants.KubernetesPort, 10), nil
 }
 
-func (c *Cloud) getSubnetCIDR(uidTag string) (netip.Prefix, error) {
+func (c *MetadataClient) getSubnetCIDR(uidTag string) (netip.Prefix, error) {
 	listNetworksOpts := networks.ListOpts{Tags: uidTag}
 	networksPage, err := c.api.ListNetworks(listNetworksOpts).AllPages()
 	if err != nil {
@@ -285,7 +285,7 @@ func (c *Cloud) getSubnetCIDR(uidTag string) (netip.Prefix, error) {
 	return cidr, nil
 }
 
-func (c *Cloud) getServers(uidTag string) ([]servers.Server, error) {
+func (c *MetadataClient) getServers(uidTag string) ([]servers.Server, error) {
 	listServersOpts := servers.ListOpts{Tags: uidTag}
 	serversPage, err := c.api.ListServers(listServersOpts).AllPages()
 	if err != nil {
