@@ -397,7 +397,7 @@ Options and first steps are described in the [AWS CLI documentation](https://doc
 You need to authenticate with the infrastructure API (OpenStack) and create a service account (STACKIT API).
 
 1. [Follow the STACKIT documentation](https://docs.stackit.cloud/stackit/en/step-1-generating-of-user-access-token-11763726.html) for obtaining a User Access Token (UAT) to use the infrastructure API
-2. Create a configuration file under `~/.config/openstack/clouds.yaml` with the credentials from the User Access Token
+2. Create a configuration file under `~/.config/openstack/clouds.yaml` (`%AppData%\openstack\clouds.yaml` on Windows) with the credentials from the User Access Token
     ```yaml
     clouds:
         stackit:
@@ -414,7 +414,7 @@ You need to authenticate with the infrastructure API (OpenStack) and create a se
     ```
 3. [Follow the STACKIT documentation](https://docs.stackit.cloud/stackit/en/getting-started-in-service-accounts-134415831.html) for creating a service account and an access token
 4. Assign the `editor` role to the service account by [following the documentation](https://docs.stackit.cloud/stackit/en/getting-started-in-service-accounts-134415831.html)
-5. Create a configuration file under `~/.stackit/credentials.json`
+5. Create a configuration file under `~/.stackit/credentials.json` (`%USERPROFILE%\.stackit\credentials.json` on Windows)
     ```json
     {"STACKIT_SERVICE_ACCOUNT_TOKEN":"REPLACE_WITH_TOKEN"}
     ```
