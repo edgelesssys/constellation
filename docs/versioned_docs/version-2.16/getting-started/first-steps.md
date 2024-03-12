@@ -124,11 +124,7 @@ If you encounter any problem with the following steps, make sure to use the [lat
     To use Constellation on STACKIT, the cluster will use the User Access Token (UAT) that's generated [during the install step](./install.md).
     After creating the accounts, fill in the STACKIT details in `constellation-conf.yaml` under `provider.openstack`:
 
-    - `projectID`: OpenStack project id (can be found in `clouds.yaml` or `openrc` file of UAT)
-    - `projectName`: OpenStack project name (can be found in `clouds.yaml` or `openrc` file of UAT)
     - `stackitProjectID`: STACKIT project id (can be found after login on <https://portal.stackit.cloud>)
-    - `username`: username of the UAT
-    - `password`: password of the UAT
 
     </tabItem>
     </tabs>
