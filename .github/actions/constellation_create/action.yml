@@ -217,31 +217,9 @@ runs:
       env:
         KUBECONFIG: "${{ steps.get-kubeconfig.outputs.KUBECONFIG }}"
         JOINTIMEOUT: "1200" # 20 minutes timeout for all nodes to join
-      run: |
-        echo "::group::Wait for nodes"
-        NODES_COUNT=$((${{ inputs.controlNodesCount }} + ${{ inputs.workerNodesCount }}))
-        JOINWAIT=0
-        until [[ "$(kubectl get nodes -o json | jq '.items | length')" == "${NODES_COUNT}" ]] || [[ $JOINWAIT -gt $JOINTIMEOUT ]];
-        do
-            echo "$(kubectl get nodes -o json | jq '.items | length')/"${NODES_COUNT}" nodes have joined.. waiting.."
-            JOINWAIT=$((JOINWAIT+30))
-            sleep 30
-        done
-        if [[ $JOINWAIT -gt $JOINTIMEOUT ]]; then
-            kubectl get nodes -o wide
-            echo "::error::Timed out waiting for nodes to join"
-            echo "::endgroup::"
-            exit 1
-        fi
-        echo "$(kubectl get nodes -o json | jq '.items | length')/"${NODES_COUNT}" nodes have joined"
-        if ! kubectl wait --for=condition=ready --all nodes --timeout=20m; then
-          kubectl get pods -n kube-system
-          kubectl get events -n kube-system
-          echo "::error::kubectl wait timed out before all nodes became ready"
-          echo "::endgroup::"
-          exit 1
-        fi
-        echo "::endgroup::"
+        CONTROL_NODES_COUNT: "${{ inputs.controlNodesCount }}"
+        WORKER_NODES_COUNT: "${{ inputs.workerNodesCount }}"
+      run: ./.github/actions/constellation_create/wait-for-nodes.sh
 
     - name: Download boot logs
       if: always()
