@@ -37,7 +37,7 @@ const (
 
 var diskPath = flag.String("disk", "", "Path to the disk to use for the benchmark")
 
-var toolsEnvs []string = []string{"DD", "RM"}
+var toolsEnvs = []string{"DD", "RM"}
 
 // addToolsToPATH is used to update the PATH to contain necessary tool binaries for
 // coreutils.

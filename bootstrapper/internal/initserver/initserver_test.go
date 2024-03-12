@@ -67,7 +67,10 @@ func TestNew(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			server, err := New(context.TODO(), newFakeLock(), &stubClusterInitializer{}, atls.NewFakeIssuer(variant.Dummy{}), fh, &tc.metadata, logger.NewTest(t))
+			server, err := New(
+				context.TODO(), newFakeLock(), &stubClusterInitializer{}, atls.NewFakeIssuer(variant.Dummy{}),
+				&stubDisk{}, fh, &tc.metadata, logger.NewTest(t),
+			)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -381,6 +384,10 @@ func (d *fakeDisk) UpdatePassphrase(passphrase string) error {
 	return nil
 }
 
+func (d *fakeDisk) MarkDiskForReset() error {
+	return nil
+}
+
 type stubDisk struct {
 	openErr                error
 	uuid                   string
@@ -400,6 +407,10 @@ func (d *stubDisk) UUID() (string, error) {
 func (d *stubDisk) UpdatePassphrase(string) error {
 	d.updatePassphraseCalled = true
 	return d.updatePassphraseErr
+}
+
+func (d *stubDisk) MarkDiskForReset() error {
+	return nil
 }
 
 type stubClusterInitializer struct {

@@ -31,7 +31,7 @@ const (
 	deviceName string = "testDeviceName"
 )
 
-var toolsEnvs []string = []string{"CP", "DD", "RM", "FSCK_EXT4", "MKFS_EXT4", "BLKID", "FSCK", "MOUNT", "UMOUNT"}
+var toolsEnvs = []string{"CP", "DD", "RM", "FSCK_EXT4", "MKFS_EXT4", "BLKID", "FSCK", "MOUNT", "UMOUNT"}
 
 // addToolsToPATH is used to update the PATH to contain necessary tool binaries for
 // coreutils, util-linux and ext4.

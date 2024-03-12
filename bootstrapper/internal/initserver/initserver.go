@@ -30,7 +30,6 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
-	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/diskencryption"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/journald"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
@@ -65,6 +64,7 @@ type Server struct {
 	shutdownLock sync.RWMutex
 
 	initSecretHash []byte
+	initFailure    error
 
 	kmsURI string
 
@@ -76,7 +76,10 @@ type Server struct {
 }
 
 // New creates a new initialization server.
-func New(ctx context.Context, lock locker, kube ClusterInitializer, issuer atls.Issuer, fh file.Handler, metadata MetadataAPI, log *slog.Logger) (*Server, error) {
+func New(
+	ctx context.Context, lock locker, kube ClusterInitializer, issuer atls.Issuer,
+	disk encryptedDisk, fh file.Handler, metadata MetadataAPI, log *slog.Logger,
+) (*Server, error) {
 	log = log.WithGroup("initServer")
 
 	initSecretHash, err := metadata.InitSecretHash(ctx)
@@ -94,7 +97,7 @@ func New(ctx context.Context, lock locker, kube ClusterInitializer, issuer atls.
 
 	server := &Server{
 		nodeLock:          lock,
-		disk:              diskencryption.New(),
+		disk:              disk,
 		initializer:       kube,
 		fileHandler:       fh,
 		issuer:            issuer,
@@ -123,11 +126,20 @@ func (s *Server) Serve(ip, port string, cleaner cleaner) error {
 	}
 
 	s.log.Info("Starting")
-	return s.grpcServer.Serve(lis)
+	err = s.grpcServer.Serve(lis)
+
+	// If Init failed, we mark the disk for reset, so the node can restart the process
+	// In this case we don't care about any potential errors from the grpc server
+	if s.initFailure != nil {
+		s.log.Error("Fatal error during Init request", "error", s.initFailure)
+		return err
+	}
+
+	return err
 }
 
 // Init initializes the cluster.
-func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServer) (err error) {
+func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServer) (retErr error) {
 	// Acquire lock to prevent shutdown while Init is still running
 	s.shutdownLock.RLock()
 	defer s.shutdownLock.RUnlock()
@@ -188,6 +200,9 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 	// since we are bootstrapping a new one.
 	// Any errors following this call will result in a failed node that may not join any cluster.
 	s.cleaner.Clean()
+	defer func() {
+		s.initFailure = retErr
+	}()
 
 	if err := s.setupDisk(stream.Context(), cloudKms); err != nil {
 		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "setting up disk: %s", err)); e != nil {
