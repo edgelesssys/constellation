@@ -35,7 +35,8 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 ) {
 	log.With(slog.String("version", constants.BinaryVersion().String())).Info("Starting bootstrapper")
 
-	uuid, err := getDiskUUID()
+	disk := diskencryption.New()
+	uuid, err := getDiskUUID(disk)
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to get disk UUID")
 	} else {
@@ -57,14 +58,14 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 	}
 
 	nodeLock := nodelock.New(openDevice)
-	initServer, err := initserver.New(context.Background(), nodeLock, kube, issuer, fileHandler, metadata, log)
+	initServer, err := initserver.New(context.Background(), nodeLock, kube, issuer, disk, fileHandler, metadata, log)
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to create init server")
 		reboot(fmt.Errorf("creating init server: %w", err))
 	}
 
 	dialer := dialer.New(issuer, nil, &net.Dialer{})
-	joinClient := joinclient.New(nodeLock, dialer, kube, metadata, log)
+	joinClient := joinclient.New(nodeLock, dialer, kube, metadata, disk, log)
 
 	cleaner := clean.New().With(initServer).With(joinClient)
 	go cleaner.Start()
@@ -77,6 +78,7 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 		defer wg.Done()
 		if err := joinClient.Start(cleaner); err != nil {
 			log.With(slog.Any("error", err)).Error("Failed to join cluster")
+			markDiskForReset(disk)
 			reboot(fmt.Errorf("joining cluster: %w", err))
 		}
 	}()
@@ -86,6 +88,7 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 		defer wg.Done()
 		if err := initServer.Serve(bindIP, bindPort, cleaner); err != nil {
 			log.With(slog.Any("error", err)).Error("Failed to serve init server")
+			markDiskForReset(disk)
 			reboot(fmt.Errorf("serving init server: %w", err))
 		}
 	}()
@@ -94,14 +97,29 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 	log.Info("bootstrapper done")
 }
 
-func getDiskUUID() (string, error) {
-	disk := diskencryption.New()
+func getDiskUUID(disk *diskencryption.DiskEncryption) (string, error) {
 	free, err := disk.Open()
 	if err != nil {
 		return "", err
 	}
 	defer free()
 	return disk.UUID()
+}
+
+// markDiskForReset sets a token in the cryptsetup header of the disk to indicate the disk should be reset on next boot.
+// This is used to reset all state of a node in case the bootstrapper encountered a non recoverable error
+// after the node successfully retrieved a join ticket from the JoinService.
+// As setting this token is safe as long as we are certain we don't need the data on the disk anymore, we call this
+// unconditionally when either the JoinClient or the InitServer encounter an error.
+// We don't call it before that, as the node may be restarting after a previous, successful bootstrapping,
+// and now encountered a transient error on rejoining the cluster. Wiping the disk now would delete existing data.
+func markDiskForReset(disk *diskencryption.DiskEncryption) {
+	free, err := disk.Open()
+	if err != nil {
+		return
+	}
+	defer free()
+	_ = disk.MarkDiskForReset()
 }
 
 // reboot writes an error message to the system log and reboots the system.

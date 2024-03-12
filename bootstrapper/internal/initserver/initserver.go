@@ -30,7 +30,6 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
-	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/diskencryption"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/journald"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
@@ -77,7 +76,10 @@ type Server struct {
 }
 
 // New creates a new initialization server.
-func New(ctx context.Context, lock locker, kube ClusterInitializer, issuer atls.Issuer, fh file.Handler, metadata MetadataAPI, log *slog.Logger) (*Server, error) {
+func New(
+	ctx context.Context, lock locker, kube ClusterInitializer, issuer atls.Issuer,
+	disk encryptedDisk, fh file.Handler, metadata MetadataAPI, log *slog.Logger,
+) (*Server, error) {
 	log = log.WithGroup("initServer")
 
 	initSecretHash, err := metadata.InitSecretHash(ctx)
@@ -95,7 +97,7 @@ func New(ctx context.Context, lock locker, kube ClusterInitializer, issuer atls.
 
 	server := &Server{
 		nodeLock:          lock,
-		disk:              diskencryption.New(),
+		disk:              disk,
 		initializer:       kube,
 		fileHandler:       fh,
 		issuer:            issuer,
@@ -130,8 +132,7 @@ func (s *Server) Serve(ip, port string, cleaner cleaner) error {
 	// In this case we don't care about any potential errors from the grpc server
 	if s.initFailure != nil {
 		s.log.Error("Fatal error during Init request", "error", s.initFailure)
-		resetErr := s.markDiskForReset()
-		return errors.Join(s.initFailure, resetErr)
+		return err
 	}
 
 	return err
@@ -332,15 +333,6 @@ func (s *Server) setupDisk(ctx context.Context, cloudKms kms.CloudKMS) error {
 	return s.disk.UpdatePassphrase(string(diskKey))
 }
 
-func (s *Server) markDiskForReset() error {
-	free, err := s.disk.Open()
-	if err != nil {
-		return fmt.Errorf("opening disk: %w", err)
-	}
-	defer free()
-	return s.disk.MarkDiskForReset()
-}
-
 func deriveMeasurementValues(ctx context.Context, measurementSalt []byte, cloudKms kms.CloudKMS) (clusterID []byte, err error) {
 	secret, err := cloudKms.GetDEK(ctx, crypto.DEKPrefix+crypto.MeasurementSecretKeyID, crypto.DerivedKeyLengthDefault)
 	if err != nil {
@@ -376,8 +368,6 @@ type encryptedDisk interface {
 	UUID() (string, error)
 	// UpdatePassphrase switches the initial random passphrase of the encrypted disk to a permanent passphrase.
 	UpdatePassphrase(passphrase string) error
-	// MarkDiskForReset marks the state disk as not initialized so it may be wiped (reset) on reboot.
-	MarkDiskForReset() error
 }
 
 type serveStopper interface {

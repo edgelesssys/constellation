@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/certificate"
-	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/diskencryption"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -77,10 +76,10 @@ type JoinClient struct {
 }
 
 // New creates a new JoinClient.
-func New(lock locker, dial grpcDialer, joiner ClusterJoiner, meta MetadataAPI, log *slog.Logger) *JoinClient {
+func New(lock locker, dial grpcDialer, joiner ClusterJoiner, meta MetadataAPI, disk encryptedDisk, log *slog.Logger) *JoinClient {
 	return &JoinClient{
 		nodeLock:    lock,
-		disk:        diskencryption.New(),
+		disk:        disk,
 		fileHandler: file.NewHandler(afero.NewOsFs()),
 		timeout:     timeout,
 		joinTimeout: joinTimeout,
@@ -109,7 +108,7 @@ func (c *JoinClient) Start(cleaner cleaner) error {
 	diskUUID, err := c.getDiskUUID()
 	if err != nil {
 		c.log.With(slog.Any("error", err)).Error("Failed to get disk UUID")
-		return err // unrecoverable error, but disk wasn't initialized yet
+		return err
 	}
 	c.diskUUID = diskUUID
 
@@ -149,9 +148,8 @@ func (c *JoinClient) Start(cleaner cleaner) error {
 	}
 
 	if err := c.startNodeAndJoin(ticket, kubeletKey, cleaner); err != nil {
-		c.log.With(slog.Any("error", err)).Error("Failed to start node and join cluster") // unrecoverable error
-		resetErr := c.markDiskForReset()
-		return errors.Join(err, resetErr)
+		c.log.With(slog.Any("error", err)).Error("Failed to start node and join cluster")
+		return err
 	}
 
 	return nil
@@ -353,15 +351,6 @@ func (c *JoinClient) getDiskUUID() (string, error) {
 	return c.disk.UUID()
 }
 
-func (c *JoinClient) markDiskForReset() error {
-	free, err := c.disk.Open()
-	if err != nil {
-		return fmt.Errorf("opening disk: %w", err)
-	}
-	defer free()
-	return c.disk.MarkDiskForReset()
-}
-
 func (c *JoinClient) getControlPlaneIPs(ctx context.Context) ([]string, error) {
 	instances, err := c.metadataAPI.List(ctx)
 	if err != nil {
@@ -431,8 +420,6 @@ type encryptedDisk interface {
 	UUID() (string, error)
 	// UpdatePassphrase switches the initial random passphrase of the encrypted disk to a permanent passphrase.
 	UpdatePassphrase(passphrase string) error
-	// MarkDiskForReset marks the state disk as not initialized so it may be wiped (reset) on reboot.
-	MarkDiskForReset() error
 }
 
 type cleaner interface {
