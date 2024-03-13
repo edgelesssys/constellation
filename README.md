@@ -33,7 +33,7 @@ Encrypting your K8s is good for:
 
 ### 🔒 Everything always encrypted
 
-* Runtime encryption: All nodes run inside AMD SEV-based Confidential VMs (CVMs). Support for Intel TDX is already available for Azure and more CSPs will be added in the future.
+* Runtime encryption: All nodes run inside Confidential VMs (CVMs) based on AMD SEV or Intel TDX.
 * Transparent encryption of network: All [pod-to-pod traffic is automatically encrypted][network-encryption]
 * Transparent encryption of storage: All writes to persistent storage are automatically encrypted.
   This includes [nodes' state disks][storage-encryption], [persistent volumes via CSI][csi], and [S3 object storage][s3proxy].
