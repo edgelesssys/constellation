@@ -139,6 +139,9 @@ func (a actionFactory) appendNewAction(
 
 func (a actionFactory) newInstall(release release, timeout time.Duration) *installAction {
 	action := &installAction{helmAction: newHelmInstallAction(a.cfg, release, timeout), release: release, log: a.log}
+	if action.IsAtomic() {
+		action.uninstallAction = newHelmUninstallAction(a.cfg, timeout)
+	}
 	return action
 }
 
