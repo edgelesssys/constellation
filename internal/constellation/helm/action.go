@@ -8,8 +8,10 @@ package helm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -52,6 +54,12 @@ func newHelmInstallAction(config *action.Configuration, release release, timeout
 	return action
 }
 
+func newHelmUninstallAction(config *action.Configuration, timeout time.Duration) *action.Uninstall {
+	action := action.NewUninstall(config)
+	action.Timeout = timeout
+	return action
+}
+
 func setWaitMode(a *action.Install, waitMode WaitMode) {
 	switch waitMode {
 	case WaitModeNone:
@@ -70,11 +78,12 @@ func setWaitMode(a *action.Install, waitMode WaitMode) {
 
 // installAction is an action that installs a helm chart.
 type installAction struct {
-	preInstall  func(context.Context) error
-	release     release
-	helmAction  *action.Install
-	postInstall func(context.Context) error
-	log         debugLog
+	preInstall      func(context.Context) error
+	release         release
+	helmAction      *action.Install
+	uninstallAction *action.Uninstall
+	postInstall     func(context.Context) error
+	log             debugLog
 }
 
 // Apply installs the chart.
@@ -103,6 +112,11 @@ func (a *installAction) SaveChart(chartsDir string, fileHandler file.Handler) er
 
 func (a *installAction) apply(ctx context.Context) error {
 	_, err := a.helmAction.RunWithContext(ctx, a.release.chart, a.release.values)
+	if isUninstallError(err) && a.uninstallAction != nil {
+		a.log.Debug("cleaning up manually after failed atomic Helm install", "error", err, "release", a.release.releaseName)
+		_, uninstallErr := a.uninstallAction.Run(a.release.releaseName)
+		err = errors.Join(err, uninstallErr)
+	}
 	return err
 }
 
@@ -227,4 +241,9 @@ func helmLog(log debugLog) action.DebugLog {
 	return func(format string, v ...interface{}) {
 		log.Debug(fmt.Sprintf(format, v...))
 	}
+}
+
+func isUninstallError(err error) bool {
+	return err != nil && (strings.Contains(err.Error(), "an error occurred while uninstalling the release") ||
+		strings.Contains(err.Error(), "cannot re-use a name that is still in use"))
 }
