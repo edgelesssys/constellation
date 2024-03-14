@@ -15,6 +15,13 @@ Before you can create your cluster, you need to configure the identity and acces
 You can generate a configuration file for your CSP by using the following CLI command:
 
 <tabs groupId="csp">
+<tabItem value="aws" label="AWS">
+
+```bash
+constellation config generate aws
+```
+
+</tabItem>
 <tabItem value="azure" label="Azure">
 
 ```bash
@@ -26,13 +33,6 @@ constellation config generate azure
 
 ```bash
 constellation config generate gcp
-```
-
-</tabItem>
-<tabItem value="aws" label="AWS">
-
-```bash
-constellation config generate aws
 ```
 
 </tabItem>
@@ -51,18 +51,6 @@ This creates the file `constellation-conf.yaml` in the current directory.
 
 Constellation supports the following VM types:
 <tabs groupId="csp">
-<tabItem value="azure" label="Azure">
-
-By default, Constellation uses `Standard_DC4as_v5` CVMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying `instanceType` in the configuration file. For CVMs, any VM type with a minimum of 4 vCPUs from the [DCasv5 & DCadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/dcasv5-dcadsv5-series) or [ECasv5 & ECadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/ecasv5-ecadsv5-series) families is supported.
-
-You can also run `constellation config instance-types` to get the list of all supported options.
-
-</tabItem>
-<tabItem value="gcp" label="GCP">
-
-By default, Constellation uses `n2d-standard-4` VMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying `instanceType` in the configuration file. Supported are all machines with a minimum of 4 vCPUs from the [C2D](https://cloud.google.com/compute/docs/compute-optimized-machines#c2d_machine_types) or [N2D](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) family. You can run  `constellation config instance-types` to get the list of all supported options.
-
-</tabItem>
 <tabItem value="aws" label="AWS">
 
 By default, Constellation uses `m6a.xlarge` VMs (4 vCPUs, 16 GB RAM) to create your cluster.
@@ -73,6 +61,18 @@ Please mind the region restrictions mentioned in the [Getting started](../gettin
 If you are using the attestation variant `awsNitroTPM`, you can choose any of the [nitroTPM-enabled instance types](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enable-nitrotpm-prerequisites.html).
 
 The Constellation CLI can also print the supported instance types with: `constellation config instance-types`.
+
+</tabItem>
+<tabItem value="azure" label="Azure">
+
+By default, Constellation uses `Standard_DC4as_v5` CVMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying `instanceType` in the configuration file. For CVMs, any VM type with a minimum of 4 vCPUs from the [DCasv5 & DCadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/dcasv5-dcadsv5-series) or [ECasv5 & ECadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/ecasv5-ecadsv5-series) families is supported.
+
+You can also run `constellation config instance-types` to get the list of all supported options.
+
+</tabItem>
+<tabItem value="gcp" label="GCP">
+
+By default, Constellation uses `n2d-standard-4` VMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying `instanceType` in the configuration file. Supported are all machines with a minimum of 4 vCPUs from the [C2D](https://cloud.google.com/compute/docs/compute-optimized-machines#c2d_machine_types) or [N2D](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) family. You can run  `constellation config instance-types` to get the list of all supported options.
 
 </tabItem>
 <tabItem value="stackit" label="STACKIT">
@@ -154,6 +154,31 @@ You can create an IAM configuration for your cluster automatically using the `co
 If you already have a Constellation configuration file, you can add the `--update-config` flag to the command. This writes the needed IAM fields into your configuration. Furthermore, the flag updates the zone/region of the configuration if it hasn't been set yet.
 
 <tabs groupId="csp">
+<tabItem value="aws" label="AWS">
+
+You must be authenticated with the [AWS CLI](https://aws.amazon.com/en/cli/) in the shell session with a user that has the [required permissions for IAM creation](../getting-started/install.md#set-up-cloud-credentials).
+
+```bash
+constellation iam create aws --zone=us-east-2a --prefix=constellTest
+```
+
+This command creates IAM configuration for the AWS zone `us-east-2a` using the prefix `constellTest` for all named resources being created.
+
+Constellation OS images are currently replicated to the following regions:
+
+* `eu-central-1`
+* `eu-west-1`
+* `eu-west-3`
+* `us-east-2`
+* `ap-south-1`
+
+If you require the OS image to be available in another region, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md&title=Support+new+AWS+image+region:+xx-xxxx-x).
+
+You can find a list of all [regions in AWS's documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
+
+Paste the output into the corresponding fields of the `constellation-conf.yaml` file.
+
+</tabItem>
 <tabItem value="azure" label="Azure">
 
 You must be authenticated with the [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) in the shell session with a user that has the [required permissions for IAM creation](../getting-started/install.md#set-up-cloud-credentials).
@@ -195,31 +220,6 @@ Note that only regions offering CVMs of the `C2D` or `N2D` series are supported.
 Paste the output into the corresponding fields of the `constellation-conf.yaml` file.
 
 </tabItem>
-<tabItem value="aws" label="AWS">
-
-You must be authenticated with the [AWS CLI](https://aws.amazon.com/en/cli/) in the shell session with a user that has the [required permissions for IAM creation](../getting-started/install.md#set-up-cloud-credentials).
-
-```bash
-constellation iam create aws --zone=us-east-2a --prefix=constellTest
-```
-
-This command creates IAM configuration for the AWS zone `us-east-2a` using the prefix `constellTest` for all named resources being created.
-
-Constellation OS images are currently replicated to the following regions:
-
-* `eu-central-1`
-* `eu-west-1`
-* `eu-west-3`
-* `us-east-2`
-* `ap-south-1`
-
-If you require the OS image to be available in another region, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md&title=Support+new+AWS+image+region:+xx-xxxx-x).
-
-You can find a list of all [regions in AWS's documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
-
-Paste the output into the corresponding fields of the `constellation-conf.yaml` file.
-
-</tabItem>
 <tabItem value="stackit" label="STACKIT">
 
 STACKIT requires manual creation and configuration of service accounts. Look at the [first steps](../getting-started/first-steps.md) for more information.
@@ -233,6 +233,38 @@ STACKIT requires manual creation and configuration of service accounts. Look at 
 The following describes the configuration fields and how you obtain the required information or create the required resources.
 
 <tabs groupId="csp">
+<tabItem value="aws" label="AWS">
+
+* **region**: The name of your chosen AWS data center region, e.g., `us-east-2`.
+
+  Constellation OS images are currently replicated to the following regions:
+  * `eu-central-1`
+  * `eu-west-1`
+  * `eu-west-3`
+  * `us-east-2`
+  * `ap-south-1`
+
+  If you require the OS image to be available in another region, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md&title=Support+new+AWS+image+region:+xx-xxxx-x).
+
+  You can find a list of all [regions in AWS's documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
+
+* **zone**: The name of your chosen AWS data center availability zone, e.g., `us-east-2a`.
+
+  Learn more about [availability zones in AWS's documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones).
+
+* **iamProfileControlPlane**: The name of an IAM instance profile attached to all control-plane nodes.
+
+  You can create the resource with [Terraform](https://www.terraform.io/). For that, use the [provided Terraform script](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam) to generate the necessary profile. The profile name will be provided as Terraform output value: `control_plane_instance_profile_name`.
+
+  Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [main.tf](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam/main.tf) in the resource `aws_iam_policy.control_plane_policy`.
+
+* **iamProfileWorkerNodes**: The name of an IAM instance profile attached to all worker nodes.
+
+  You can create the resource with [Terraform](https://www.terraform.io/). For that, use the [provided Terraform script](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam) to generate the necessary profile. The profile name will be provided as Terraform output value: `worker_nodes_instance_profile_name`.
+
+  Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [main.tf](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam/main.tf) in the resource `aws_iam_policy.worker_node_policy`.
+
+</tabItem>
 <tabItem value="azure" label="Azure">
 
 * **subscription**: The UUID of your Azure subscription, e.g., `8b8bd01f-efd9-4113-9bd1-c82137c32da7`.
@@ -270,7 +302,6 @@ The following describes the configuration fields and how you obtain the required
   For more information about managed identities refer to [Azure's documentation](https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/how-manage-user-assigned-managed-identities).
 
 </tabItem>
-
 <tabItem value="gcp" label="GCP">
 
 * **project**: The ID of your GCP project, e.g., `constellation-129857`.
@@ -296,40 +327,6 @@ The following describes the configuration fields and how you obtain the required
   Afterward, create and download a new JSON key for this service account. Place the downloaded file in your Constellation workspace, and set the config parameter to the filename, e.g., `constellation-129857-15343dba46cb.json`.
 
 </tabItem>
-
-<tabItem value="aws" label="AWS">
-
-* **region**: The name of your chosen AWS data center region, e.g., `us-east-2`.
-
-  Constellation OS images are currently replicated to the following regions:
-  * `eu-central-1`
-  * `eu-west-1`
-  * `eu-west-3`
-  * `us-east-2`
-  * `ap-south-1`
-
-  If you require the OS image to be available in another region, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md&title=Support+new+AWS+image+region:+xx-xxxx-x).
-
-  You can find a list of all [regions in AWS's documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
-
-* **zone**: The name of your chosen AWS data center availability zone, e.g., `us-east-2a`.
-
-  Learn more about [availability zones in AWS's documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones).
-
-* **iamProfileControlPlane**: The name of an IAM instance profile attached to all control-plane nodes.
-
-  You can create the resource with [Terraform](https://www.terraform.io/). For that, use the [provided Terraform script](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam) to generate the necessary profile. The profile name will be provided as Terraform output value: `control_plane_instance_profile_name`.
-
-  Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [main.tf](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam/main.tf) in the resource `aws_iam_policy.control_plane_policy`.
-
-* **iamProfileWorkerNodes**: The name of an IAM instance profile attached to all worker nodes.
-
-  You can create the resource with [Terraform](https://www.terraform.io/). For that, use the [provided Terraform script](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam) to generate the necessary profile. The profile name will be provided as Terraform output value: `worker_nodes_instance_profile_name`.
-
-  Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [main.tf](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam/main.tf) in the resource `aws_iam_policy.worker_node_policy`.
-
-</tabItem>
-
 <tabItem value="stackit" label="STACKIT">
 
 STACKIT requires manual creation and configuration of service accounts. Look at the [first steps](../getting-started/first-steps.md) for more information.

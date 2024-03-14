@@ -16,23 +16,6 @@ If you encounter any problem with the following steps, make sure to use the [lat
 1. Create the [configuration file](../workflows/config.md) and state file for your cloud provider.
 
     <tabs groupId="csp">
-
-    <tabItem value="azure" label="Azure">
-
-    ```bash
-    constellation config generate azure
-    ```
-
-    </tabItem>
-
-    <tabItem value="gcp" label="GCP">
-
-    ```bash
-    constellation config generate gcp
-    ```
-
-    </tabItem>
-
     <tabItem value="aws" label="AWS">
 
     ```bash
@@ -40,7 +23,20 @@ If you encounter any problem with the following steps, make sure to use the [lat
     ```
 
     </tabItem>
+    <tabItem value="azure" label="Azure">
 
+    ```bash
+    constellation config generate azure
+    ```
+
+    </tabItem>
+    <tabItem value="gcp" label="GCP">
+
+    ```bash
+    constellation config generate gcp
+    ```
+
+    </tabItem>
     <tabItem value="stackit" label="STACKIT">
 
     ```bash
@@ -48,48 +44,11 @@ If you encounter any problem with the following steps, make sure to use the [lat
     ```
 
     </tabItem>
-
     </tabs>
 
 2. Create your [IAM configuration](../workflows/config.md#creating-an-iam-configuration).
 
     <tabs groupId="csp">
-
-    <tabItem value="azure" label="Azure">
-
-    ```bash
-    constellation iam create azure --region=westus --resourceGroup=constellTest --servicePrincipal=spTest --update-config
-    ```
-
-    This command creates IAM configuration on the Azure region `westus` creating a new resource group `constellTest` and a new service principal `spTest`. It also updates the configuration file `constellation-conf.yaml` in your current directory with the IAM values filled in.
-
-    CVMs are available in several Azure regions. Constellation OS images are currently replicated to the following:
-
-    * `germanywestcentral`
-    * `westus`
-    * `eastus`
-    * `northeurope`
-    * `westeurope`
-    * `southeastasia`
-
-    If you require the OS image to be available in another region, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md&title=Support+new+Azure+image+region:+xx-xxxx-x).
-
-    You can find a list of all [regions in Azure's documentation](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=virtual-machines&regions=all).
-
-    </tabItem>
-
-    <tabItem value="gcp" label="GCP">
-
-    ```bash
-    constellation iam create gcp --projectID=yourproject-12345 --zone=europe-west2-a --serviceAccountID=constell-test --update-config
-    ```
-
-    This command creates IAM configuration in the GCP project `yourproject-12345` on the GCP zone `europe-west2-a` creating a new service account `constell-test`. It also updates the configuration file `constellation-conf.yaml` in your current directory with the IAM values filled in.
-
-    Note that only regions offering CVMs of the `C2D` or `N2D` series are supported. You can find a [list of all regions in Google's documentation](https://cloud.google.com/compute/docs/regions-zones#available), which you can filter by machine type `C2D` or `N2D`.
-
-    </tabItem>
-
     <tabItem value="aws" label="AWS">
 
     ```bash
@@ -118,7 +77,39 @@ If you encounter any problem with the following steps, make sure to use the [lat
     You can find a list of all [regions in AWS's documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
 
     </tabItem>
+    <tabItem value="azure" label="Azure">
 
+    ```bash
+    constellation iam create azure --region=westus --resourceGroup=constellTest --servicePrincipal=spTest --update-config
+    ```
+
+    This command creates IAM configuration on the Azure region `westus` creating a new resource group `constellTest` and a new service principal `spTest`. It also updates the configuration file `constellation-conf.yaml` in your current directory with the IAM values filled in.
+
+    CVMs are available in several Azure regions. Constellation OS images are currently replicated to the following:
+
+    * `germanywestcentral`
+    * `westus`
+    * `eastus`
+    * `northeurope`
+    * `westeurope`
+    * `southeastasia`
+
+    If you require the OS image to be available in another region, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md&title=Support+new+Azure+image+region:+xx-xxxx-x).
+
+    You can find a list of all [regions in Azure's documentation](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=virtual-machines&regions=all).
+
+    </tabItem>
+    <tabItem value="gcp" label="GCP">
+
+    ```bash
+    constellation iam create gcp --projectID=yourproject-12345 --zone=europe-west2-a --serviceAccountID=constell-test --update-config
+    ```
+
+    This command creates IAM configuration in the GCP project `yourproject-12345` on the GCP zone `europe-west2-a` creating a new service account `constell-test`. It also updates the configuration file `constellation-conf.yaml` in your current directory with the IAM values filled in.
+
+    Note that only regions offering CVMs of the `C2D` or `N2D` series are supported. You can find a [list of all regions in Google's documentation](https://cloud.google.com/compute/docs/regions-zones#available), which you can filter by machine type `C2D` or `N2D`.
+
+    </tabItem>
     <tabItem value="stackit" label="STACKIT">
 
     To use Constellation on STACKIT, the cluster will use the User Access Token (UAT) that's generated [during the install step](./install.md).

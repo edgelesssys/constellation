@@ -17,6 +17,37 @@ Constellation provides logging information on the boot process and status via se
 In the following, you'll find detailed descriptions for identifying clusters stuck in recovery for each CSP.
 
 <tabs groupId="csp">
+<tabItem value="aws" label="AWS">
+
+First, open the AWS console to view all Auto Scaling Groups (ASGs) in the region of your cluster. Select the ASG of the control plane `<cluster-name>-<UID>-control-plane` and check that enough members are in a *Running* state.
+
+Second, check the boot logs of these *Instances*. In the ASG's *Instance management* view, select each desired instance. In the upper right corner, select **Action > Monitor and troubleshoot > Get system log**.
+
+In the serial console output, search for `Waiting for decryption key`.
+Similar output to the following means your node was restarted and needs to decrypt the [state disk](../architecture/images.md#state-disk):
+
+```json
+{"level":"INFO","ts":"2022-09-08T10:21:53Z","caller":"cmd/main.go:55","msg":"Starting disk-mapper","version":"2.0.0","cloudProvider":"gcp"}
+{"level":"INFO","ts":"2022-09-08T10:21:53Z","logger":"setupManager","caller":"setup/setup.go:72","msg":"Preparing existing state disk"}
+{"level":"INFO","ts":"2022-09-08T10:21:53Z","logger":"rejoinClient","caller":"rejoinclient/client.go:65","msg":"Starting RejoinClient"}
+{"level":"INFO","ts":"2022-09-08T10:21:53Z","logger":"recoveryServer","caller":"recoveryserver/server.go:59","msg":"Starting RecoveryServer"}
+```
+
+The node will then try to connect to the [*JoinService*](../architecture/microservices.md#joinservice) and obtain the decryption key.
+If this fails due to an unhealthy control plane, you will see log messages similar to the following:
+
+```json
+{"level":"INFO","ts":"2022-09-08T10:21:53Z","logger":"rejoinClient","caller":"rejoinclient/client.go:77","msg":"Received list with JoinService endpoints","endpoints":["192.168.178.4:30090","192.168.178.2:30090"]}
+{"level":"INFO","ts":"2022-09-08T10:21:53Z","logger":"rejoinClient","caller":"rejoinclient/client.go:96","msg":"Requesting rejoin ticket","endpoint":"192.168.178.4:30090"}
+{"level":"WARN","ts":"2022-09-08T10:21:53Z","logger":"rejoinClient","caller":"rejoinclient/client.go:101","msg":"Failed to rejoin on endpoint","error":"rpc error: code = Unavailable desc = connection error: desc = \"transport: Error while dialing dial tcp 192.168.178.4:30090: connect: connection refused\"","endpoint":"192.168.178.4:30090"}
+{"level":"INFO","ts":"2022-09-08T10:21:53Z","logger":"rejoinClient","caller":"rejoinclient/client.go:96","msg":"Requesting rejoin ticket","endpoint":"192.168.178.2:30090"}
+{"level":"WARN","ts":"2022-09-08T10:22:13Z","logger":"rejoinClient","caller":"rejoinclient/client.go:101","msg":"Failed to rejoin on endpoint","error":"rpc error: code = Unavailable desc = connection error: desc = \"transport: Error while dialing dial tcp 192.168.178.2:30090: i/o timeout\"","endpoint":"192.168.178.2:30090"}
+{"level":"ERROR","ts":"2022-09-08T10:22:13Z","logger":"rejoinClient","caller":"rejoinclient/client.go:110","msg":"Failed to rejoin on all endpoints"}
+```
+
+This means that you have to recover the node manually.
+
+</tabItem>
 <tabItem value="azure" label="Azure">
 
 In the Azure portal, find the cluster's resource group.
@@ -62,37 +93,6 @@ Go to **VM Instances** and open the details of the desired instance.
 Check the serial console output of that instance by opening the **Logs** > **Serial port 1 (console)** page:
 
 ![GCP portal serial console link](../_media/recovery-gcp-serial-console-link.png)
-
-In the serial console output, search for `Waiting for decryption key`.
-Similar output to the following means your node was restarted and needs to decrypt the [state disk](../architecture/images.md#state-disk):
-
-```json
-{"level":"INFO","ts":"2022-09-08T10:21:53Z","caller":"cmd/main.go:55","msg":"Starting disk-mapper","version":"2.0.0","cloudProvider":"gcp"}
-{"level":"INFO","ts":"2022-09-08T10:21:53Z","logger":"setupManager","caller":"setup/setup.go:72","msg":"Preparing existing state disk"}
-{"level":"INFO","ts":"2022-09-08T10:21:53Z","logger":"rejoinClient","caller":"rejoinclient/client.go:65","msg":"Starting RejoinClient"}
-{"level":"INFO","ts":"2022-09-08T10:21:53Z","logger":"recoveryServer","caller":"recoveryserver/server.go:59","msg":"Starting RecoveryServer"}
-```
-
-The node will then try to connect to the [*JoinService*](../architecture/microservices.md#joinservice) and obtain the decryption key.
-If this fails due to an unhealthy control plane, you will see log messages similar to the following:
-
-```json
-{"level":"INFO","ts":"2022-09-08T10:21:53Z","logger":"rejoinClient","caller":"rejoinclient/client.go:77","msg":"Received list with JoinService endpoints","endpoints":["192.168.178.4:30090","192.168.178.2:30090"]}
-{"level":"INFO","ts":"2022-09-08T10:21:53Z","logger":"rejoinClient","caller":"rejoinclient/client.go:96","msg":"Requesting rejoin ticket","endpoint":"192.168.178.4:30090"}
-{"level":"WARN","ts":"2022-09-08T10:21:53Z","logger":"rejoinClient","caller":"rejoinclient/client.go:101","msg":"Failed to rejoin on endpoint","error":"rpc error: code = Unavailable desc = connection error: desc = \"transport: Error while dialing dial tcp 192.168.178.4:30090: connect: connection refused\"","endpoint":"192.168.178.4:30090"}
-{"level":"INFO","ts":"2022-09-08T10:21:53Z","logger":"rejoinClient","caller":"rejoinclient/client.go:96","msg":"Requesting rejoin ticket","endpoint":"192.168.178.2:30090"}
-{"level":"WARN","ts":"2022-09-08T10:22:13Z","logger":"rejoinClient","caller":"rejoinclient/client.go:101","msg":"Failed to rejoin on endpoint","error":"rpc error: code = Unavailable desc = connection error: desc = \"transport: Error while dialing dial tcp 192.168.178.2:30090: i/o timeout\"","endpoint":"192.168.178.2:30090"}
-{"level":"ERROR","ts":"2022-09-08T10:22:13Z","logger":"rejoinClient","caller":"rejoinclient/client.go:110","msg":"Failed to rejoin on all endpoints"}
-```
-
-This means that you have to recover the node manually.
-
-</tabItem>
-<tabItem value="aws" label="AWS">
-
-First, open the AWS console to view all Auto Scaling Groups (ASGs) in the region of your cluster. Select the ASG of the control plane `<cluster-name>-<UID>-control-plane` and check that enough members are in a *Running* state.
-
-Second, check the boot logs of these *Instances*. In the ASG's *Instance management* view, select each desired instance. In the upper right corner, select **Action > Monitor and troubleshoot > Get system log**.
 
 In the serial console output, search for `Waiting for decryption key`.
 Similar output to the following means your node was restarted and needs to decrypt the [state disk](../architecture/images.md#state-disk):

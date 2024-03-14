@@ -22,6 +22,13 @@ For more details see [encrypted persistent storage](../architecture/encrypted-st
 Constellation supports the following drivers, which offer node-level encryption and optional integrity protection.
 
 <tabs groupId="csp">
+<tabItem value="aws" label="AWS">
+
+**Constellation CSI driver for AWS Elastic Block Store**
+Mount [Elastic Block Store](https://aws.amazon.com/ebs/) storage volumes into your Constellation cluster.
+Follow the instructions on how to [install the Constellation CSI driver](#installation) or check out the [repository](https://github.com/edgelesssys/constellation-aws-ebs-csi-driver) for more information.
+
+</tabItem>
 <tabItem value="azure" label="Azure">
 
 **Constellation CSI driver for Azure Disk**:
@@ -35,13 +42,6 @@ Since Azure Disks are mounted as `ReadWriteOnce`, they're only available to a si
 **Constellation CSI driver for GCP Persistent Disk**:
 Mount [Persistent Disk](https://cloud.google.com/persistent-disk) block storage into your Constellation cluster.
 Follow the instructions on how to [install the Constellation CSI driver](#installation) or check out the [repository](https://github.com/edgelesssys/constellation-gcp-compute-persistent-disk-csi-driver) for more information.
-
-</tabItem>
-<tabItem value="aws" label="AWS">
-
-**Constellation CSI driver for AWS Elastic Block Store**
-Mount [Elastic Block Store](https://aws.amazon.com/ebs/) storage volumes into your Constellation cluster.
-Follow the instructions on how to [install the Constellation CSI driver](#installation) or check out the [repository](https://github.com/edgelesssys/constellation-aws-ebs-csi-driver) for more information.
 
 </tabItem>
 <tabItem value="stackit" label="STACKIT">
@@ -61,6 +61,35 @@ The Constellation CLI automatically installs Constellation's CSI driver for the 
 If you don't need a CSI driver or wish to deploy your own, you can disable the automatic installation by setting `deployCSIDriver` to `false` in your Constellation config file.
 
 <tabs groupId="csp">
+<tabItem value="aws" label="AWS">
+
+AWS comes with two storage classes by default.
+
+* `encrypted-rwo`
+  * Uses [SSDs of `gp3` type](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volume-types.html)
+  * ext-4 filesystem
+  * Encryption of all data written to disk
+* `integrity-encrypted-rwo`
+  * Uses [SSDs of `gp3` type](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volume-types.html)
+  * ext-4 filesystem
+  * Encryption of all data written to disk
+  * Integrity protection of data written to disk
+
+For more information on encryption algorithms and key sizes, refer to [cryptographic algorithms](../architecture/encrypted-storage.md#cryptographic-algorithms).
+
+:::info
+
+The default storage class is set to `encrypted-rwo` for performance reasons.
+If you want integrity-protected storage, set the `storageClassName` parameter of your persistent volume claim to `integrity-encrypted-rwo`.
+
+Alternatively, you can create your own storage class with integrity protection enabled by adding `csi.storage.k8s.io/fstype: ext4-integrity` to the class `parameters`.
+Or use another filesystem by specifying another file system type with the suffix `-integrity`, e.g., `csi.storage.k8s.io/fstype: xfs-integrity`.
+
+Note that volume expansion isn't supported for integrity-protected disks.
+
+:::
+
+</tabItem>
 <tabItem value="azure" label="Azure">
 
 Azure comes with two storage classes by default.
@@ -100,35 +129,6 @@ GCP comes with two storage classes by default.
   * Encryption of all data written to disk
 * `integrity-encrypted-rwo`
   * Uses [performance (SSD) persistent disks](https://cloud.google.com/compute/docs/disks#pdspecs)
-  * ext-4 filesystem
-  * Encryption of all data written to disk
-  * Integrity protection of data written to disk
-
-For more information on encryption algorithms and key sizes, refer to [cryptographic algorithms](../architecture/encrypted-storage.md#cryptographic-algorithms).
-
-:::info
-
-The default storage class is set to `encrypted-rwo` for performance reasons.
-If you want integrity-protected storage, set the `storageClassName` parameter of your persistent volume claim to `integrity-encrypted-rwo`.
-
-Alternatively, you can create your own storage class with integrity protection enabled by adding `csi.storage.k8s.io/fstype: ext4-integrity` to the class `parameters`.
-Or use another filesystem by specifying another file system type with the suffix `-integrity`, e.g., `csi.storage.k8s.io/fstype: xfs-integrity`.
-
-Note that volume expansion isn't supported for integrity-protected disks.
-
-:::
-
-</tabItem>
-<tabItem value="aws" label="AWS">
-
-AWS comes with two storage classes by default.
-
-* `encrypted-rwo`
-  * Uses [SSDs of `gp3` type](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volume-types.html)
-  * ext-4 filesystem
-  * Encryption of all data written to disk
-* `integrity-encrypted-rwo`
-  * Uses [SSDs of `gp3` type](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volume-types.html)
   * ext-4 filesystem
   * Encryption of all data written to disk
   * Integrity protection of data written to disk
