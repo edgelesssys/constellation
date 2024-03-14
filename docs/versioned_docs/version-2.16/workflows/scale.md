@@ -113,7 +113,7 @@ To increase the number of control-plane nodes, follow these steps:
 </tabItem>
 <tabItem value="stackit" label="STACKIT">
 
-Dynamic cluster scaling is not yet supported for STACKIT.
+Dynamic cluster scaling isn't yet supported for STACKIT.
 Support will be introduced in one of the upcoming releases.
 
 </tabItem>
