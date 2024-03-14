@@ -76,7 +76,7 @@ Alternatively, you can manually scale your cluster up or down:
 </tabItem>
 <tabItem value="stackit" label="STACKIT">
 
-Dynamic cluster scaling is not yet supported for STACKIT.
+Dynamic cluster scaling isn't yet supported for STACKIT.
 Support will be introduced in one of the upcoming releases.
 
 </tabItem>
