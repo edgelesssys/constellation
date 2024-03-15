@@ -9,7 +9,7 @@ Make sure the following requirements are met:
 * Your machine is running Linux, macOS, or Windows
 * You have admin rights on your machine
 * [kubectl](https://kubernetes.io/docs/tasks/tools/) is installed
-* Your CSP is Microsoft Azure, Google Cloud Platform (GCP), Amazon Web Services (AWS), or STACKIT
+* Your CSP is Amazon Web Services (AWS), Microsoft Azure, Google Cloud Platform (GCP), or STACKIT
 
 ## Install the Constellation CLI
 
@@ -398,6 +398,7 @@ You need to authenticate with the infrastructure API (OpenStack) and create a se
 
 1. [Follow the STACKIT documentation](https://docs.stackit.cloud/stackit/en/step-1-generating-of-user-access-token-11763726.html) for obtaining a User Access Token (UAT) to use the infrastructure API
 2. Create a configuration file under `~/.config/openstack/clouds.yaml` (`%AppData%\openstack\clouds.yaml` on Windows) with the credentials from the User Access Token
+
     ```yaml
     clouds:
         stackit:
@@ -412,9 +413,11 @@ You need to authenticate with the infrastructure API (OpenStack) and create a se
             region_name: RegionOne
             identity_api_version: 3
     ```
+
 3. [Follow the STACKIT documentation](https://docs.stackit.cloud/stackit/en/getting-started-in-service-accounts-134415831.html) for creating a service account and an access token
 4. Assign the `editor` role to the service account by [following the documentation](https://docs.stackit.cloud/stackit/en/getting-started-in-service-accounts-134415831.html)
 5. Create a configuration file under `~/.stackit/credentials.json` (`%USERPROFILE%\.stackit\credentials.json` on Windows)
+
     ```json
     {"STACKIT_SERVICE_ACCOUNT_TOKEN":"REPLACE_WITH_TOKEN"}
     ```

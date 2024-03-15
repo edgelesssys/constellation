@@ -101,7 +101,7 @@ Initially, it will support the following KMSs:
 * [Azure Key Vault](https://azure.microsoft.com/en-us/services/key-vault/#product-overview)
 * [KMIP-compatible KMS](https://www.oasis-open.org/committees/tc_home.php?wg_abbrev=kmip)
 
-Storing the keys in Cloud KMS of AWS, GCP, or Azure binds the key usage to the particular cloud identity access management (IAM).
+Storing the keys in Cloud KMS of AWS, Azure, or GCP binds the key usage to the particular cloud identity access management (IAM).
 In the future, Constellation will support remote attestation-based access policies for Cloud KMS once available.
 Note that using a Cloud KMS limits the isolation and protection to the guarantees of the particular offering.
 

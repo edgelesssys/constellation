@@ -35,7 +35,7 @@ Thus, the Azure closed-source firmware becomes part of Constellation's trusted c
 
 ## Google Cloud Platform (GCP)
 
-The [CVMs Generally Available in GCP](https://cloud.google.com/compute/confidential-vm/docs/create-confidential-vm-instance) are based on AMD SEV but don't have SNP features enabled.
+The [CVMs Generally Available in GCP](https://cloud.google.com/confidential-computing/confidential-vm/docs/confidential-vm-overview#amd_sev) are based on AMD SEV but don't have SNP features enabled.
 CVMs with SEV-SNP enabled are currently in [private preview](https://cloud.google.com/blog/products/identity-security/rsa-snp-vm-more-confidential). Regarding (3), with their SEV-SNP offering Google provides direct access to remote-attestation statements.
 However, regarding (4), the CVMs still include closed-source firmware.
 

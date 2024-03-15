@@ -28,19 +28,18 @@ With its [CVM offering](https://docs.microsoft.com/en-us/azure/confidential-comp
 
 ## Google Cloud Platform (GCP)
 
-The [CVMs Generally Available in GCP](https://cloud.google.com/compute/confidential-vm/docs/create-confidential-vm-instance) are based on AMD SEV but don't have SNP features enabled.
+The [CVMs Generally Available in GCP](https://cloud.google.com/confidential-computing/confidential-vm/docs/confidential-vm-overview#amd_sev) are based on AMD SEV but don't have SNP features enabled.
 CVMs with SEV-SNP enabled are currently in [private preview](https://cloud.google.com/blog/products/identity-security/rsa-snp-vm-more-confidential). Regarding (3), with their SEV-SNP offering Google provides direct access to remote-attestation statements.
 However, regarding (4), the CVMs still include closed-source firmware.
 
 Intel and Google have [collaborated](https://cloud.google.com/blog/products/identity-security/rsa-google-intel-confidential-computing-more-secure) to enhance the security of TDX, and have recently [revealed](https://venturebeat.com/security/intel-launches-confidential-computing-solution-for-virtual-machines/) their plans to make TDX compatible with Google Cloud.
 
 ## Amazon Web Services (AWS)
+
 Amazon EC2 [supports AMD SEV-SNP](https://aws.amazon.com/de/about-aws/whats-new/2023/04/amazon-ec2-amd-sev-snp/). Regarding (3), AWS provides direct access to remote-attestation statements.
 However, attestation is partially based on the [NitroTPM](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nitrotpm.html) for [measured boot](../architecture/attestation.md#measured-boot), which is a vTPM managed by the Nitro hypervisor. Hence, the hypervisor is currently part of Constellation's TCB.
 
 \* Regarding (4), the CVMs include initial firmware inside the CVM based on [OVMF](https://github.com/tianocore/tianocore.github.io/wiki/OVMF). Once this firmware will be reproducible and therefore verifiable, (4) switches from *No* to *Yes*.
-
-
 
 ## OpenStack
 

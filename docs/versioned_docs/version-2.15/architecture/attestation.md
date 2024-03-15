@@ -305,7 +305,7 @@ A user can [verify](../workflows/verify-cluster.md) this statement and compare t
 So far, this page described how an entire Constellation cluster can be verified using hardware attestation capabilities and runtime measurements.
 The last missing link is how the ground truth in the form of runtime measurements can be securely distributed to the verifying party.
 
-The build process of Constellation images also creates the ground truth runtime measurements. <!-- soon: The builds of Constellation images are reproducible and the measurements of an image can be recalculated and verified by everyone. -->
+The build process of Constellation images also creates the ground truth runtime measurements. The builds of Constellation images are reproducible and the measurements of an image can be recalculated and verified by everyone.
 With every release, Edgeless Systems publishes signed runtime measurements.
 
 The CLI executable is also signed by Edgeless Systems.

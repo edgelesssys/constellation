@@ -28,7 +28,7 @@ With its [CVM offering](https://docs.microsoft.com/en-us/azure/confidential-comp
 
 ## Google Cloud Platform (GCP)
 
-The [CVMs available in GCP](https://cloud.google.com/compute/confidential-vm/docs/create-confidential-vm-instance) are based on AMD SEV but don't have SNP features enabled. This impacts attestation capabilities. Currently, GCP doesn't offer CVM-based attestation at all. Instead, GCP provides attestation statements based on its regular [vTPM](https://cloud.google.com/blog/products/identity-security/virtual-trusted-platform-module-for-shielded-vms-security-in-plaintext), which is managed by the hypervisor. On GCP, the hypervisor is thus currently part of Constellation's TCB.
+The [CVMs available in GCP](https://cloud.google.com/confidential-computing/confidential-vm/docs/confidential-vm-overview#amd_sev) are based on AMD SEV but don't have SNP features enabled. This impacts attestation capabilities. Currently, GCP doesn't offer CVM-based attestation at all. Instead, GCP provides attestation statements based on its regular [vTPM](https://cloud.google.com/blog/products/identity-security/virtual-trusted-platform-module-for-shielded-vms-security-in-plaintext), which is managed by the hypervisor. On GCP, the hypervisor is thus currently part of Constellation's TCB.
 
 ## Amazon Web Services (AWS)
 

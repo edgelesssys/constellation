@@ -58,7 +58,7 @@ Encrypting your K8s is good for:
 <a href="https://landscape.cncf.io/?selected=constellation"><img src="https://raw.githubusercontent.com/cncf/artwork/1c1a10d9cc7de24235e07c8831923874331ef233/projects/kubernetes/certified-kubernetes/versionless/color/certified-kubernetes-color.svg" align="right" width="100px"></a>
 
 * Constellation is a [CNCF-certified][certified] Kubernetes. It's aligned to Kubernetes' [version support policy][k8s-version-support] and will likely work with your existing workloads and tools.
-* Support for Azure, GCP, and AWS.
+* Support for AWS, Azure, GCP, and STACKIT.
 * Support for local installations with [MiniConstellation][first-steps-local].
 * Support for [Terraform][terraform-provider]
 
@@ -120,7 +120,6 @@ The Constellation source code is licensed under the [GNU Affero General Public L
 [cla-assistant]: https://cla-assistant.io/edgelesssys/constellation
 [cluster-attestation]: https://docs.edgeless.systems/constellation/architecture/attestation#cluster-attestation
 [confidential-kubernetes]: https://docs.edgeless.systems/constellation/overview/confidential-kubernetes
-[discord]: https://discord.gg/rH8QTH56JN
 [enterprise-support]: https://www.edgeless.systems/products/constellation/
 [first-steps]: https://docs.edgeless.systems/constellation/getting-started/first-steps
 [first-steps-local]: https://docs.edgeless.systems/constellation/getting-started/first-steps-local
