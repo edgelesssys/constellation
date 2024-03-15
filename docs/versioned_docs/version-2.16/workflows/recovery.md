@@ -123,7 +123,7 @@ This means that you have to recover the node manually.
 
 First, open the STACKIT portal to view all servers in your project. Select individual control plane nodes `<cluster-name>-<UID>-control-plane-<UID>-<index>` and check that enough members are in a *Running* state.
 
-Second, check the boot logs of these *Servers*. Click on a server name and select **Overview**. Find the **Machine Setup** section and click on **Web console** > **Open console**.
+Second, check the boot logs of these servers. Click on a server name and select **Overview**. Find the **Machine Setup** section and click on **Web console** > **Open console**.
 
 In the serial console output, search for `Waiting for decryption key`.
 Similar output to the following means your node was restarted and needs to decrypt the [state disk](../architecture/images.md#state-disk):
