@@ -52,6 +52,13 @@ kubectl -n kube-system get nodes
 Alternatively, you can manually scale your cluster up or down:
 
 <tabs groupId="csp">
+<tabItem value="aws" label="AWS">
+
+1. Go to Auto Scaling Groups and select the worker ASG to scale up.
+2. Click **Edit**
+3. Set the new (increased) **Desired capacity** and **Update**.
+
+</tabItem>
 <tabItem value="azure" label="Azure">
 
 1. Find your Constellation resource group.
@@ -67,11 +74,10 @@ Alternatively, you can manually scale your cluster up or down:
 3. Set the new **number of instances** and **save**.
 
 </tabItem>
-<tabItem value="aws" label="AWS">
+<tabItem value="stackit" label="STACKIT">
 
-1. Go to Auto Scaling Groups and select the worker ASG to scale up.
-2. Click **Edit**
-3. Set the new (increased) **Desired capacity** and **Update**.
+Dynamic cluster scaling isn't yet supported for STACKIT.
+Support will be introduced in one of the upcoming releases.
 
 </tabItem>
 </tabs>
@@ -83,7 +89,13 @@ Control-plane nodes can **only be scaled manually and only scaled up**!
 To increase the number of control-plane nodes, follow these steps:
 
 <tabs groupId="csp">
+<tabItem value="aws" label="AWS">
 
+1. Go to Auto Scaling Groups and select the control-plane ASG to scale up.
+2. Click **Edit**
+3. Set the new (increased) **Desired capacity** and **Update**.
+
+</tabItem>
 <tabItem value="azure" label="Azure">
 
 1. Find your Constellation resource group.
@@ -99,11 +111,10 @@ To increase the number of control-plane nodes, follow these steps:
 3. Set the new (increased) **number of instances** and **save**.
 
 </tabItem>
-<tabItem value="aws" label="AWS">
+<tabItem value="stackit" label="STACKIT">
 
-1. Go to Auto Scaling Groups and select the control-plane ASG to scale up.
-2. Click **Edit**
-3. Set the new (increased) **Desired capacity** and **Update**.
+Dynamic cluster scaling isn't yet supported for STACKIT.
+Support will be introduced in one of the upcoming releases.
 
 </tabItem>
 </tabs>

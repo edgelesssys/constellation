@@ -122,6 +122,38 @@ Enforcing non-reproducible measurements controlled by the cloud provider means t
 By default, Constellation only enforces measurements that are stable values produced by the infrastructure or by Constellation directly.
 
 <tabs groupId="csp">
+<tabItem value="aws" label="AWS">
+
+Constellation uses the [vTPM](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nitrotpm.html) (NitroTPM) feature of the [AWS Nitro System](http://aws.amazon.com/ec2/nitro/) on AWS for runtime measurements.
+
+The vTPM adheres to the [TPM 2.0](https://trustedcomputinggroup.org/resource/tpm-library-specification/) specification.
+The VMs are attested by obtaining signed PCR values over the VM's boot configuration from the TPM and comparing them to a known, good state (measured boot).
+
+The following table lists all PCR values of the vTPM and the measured components.
+It also lists what components of the boot chain did the measurements and if the value is reproducible and verifiable.
+The latter means that the value can be generated offline and compared to the one in the vTPM.
+
+| PCR         | Components                                                       | Measured by                            | Reproducible and verifiable |
+| ----------- | ---------------------------------------------------------------- | -------------------------------------- | --------------------------- |
+| 0           | Firmware                                                         | AWS                                    | No                          |
+| 1           | Firmware                                                         | AWS                                    | No                          |
+| 2           | Firmware                                                         | AWS                                    | No                          |
+| 3           | Firmware                                                         | AWS                                    | No                          |
+| 4           | Constellation Bootloader, Kernel, initramfs, Kernel command line | AWS, Constellation Bootloader          | Yes                         |
+| 5           | Firmware                                                         | AWS                                    | No                          |
+| 6           | Firmware                                                         | AWS                                    | No                          |
+| 7           | Secure Boot Policy                                               | AWS, Constellation Bootloader          | No                          |
+| 8           | -                                                                | -                                      | -                           |
+| 9           | initramfs, Kernel command line                                   | Linux Kernel                           | Yes                         |
+| 10          | User space                                                       | Linux IMA                              | No[^1]                      |
+| 11          | Unified Kernel Image components                                  | Constellation Bootloader               | Yes                         |
+| 12          | Reserved                                                         | (User space, Constellation Bootloader) | Yes                         |
+| 13          | Reserved                                                         | (Constellation Bootloader)             | Yes                         |
+| 14          | Secure Boot State                                                | Constellation Bootloader               | No                          |
+| 15          | ClusterID                                                        | Constellation Bootstrapper             | Yes                         |
+| 16&ndash;23 | Unused                                                           | -                                      | -                           |
+
+</tabItem>
 <tabItem value="azure" label="Azure">
 
 Constellation uses the [vTPM](https://docs.microsoft.com/en-us/azure/virtual-machines/trusted-launch#vtpm) feature of Azure CVMs for runtime measurements.
@@ -186,38 +218,6 @@ The latter means that the value can be generated offline and compared to the one
 | 16&ndash;23 | Unused                                                           | -                                      | -                           |
 
 </tabItem>
-<tabItem value="aws" label="AWS">
-
-Constellation uses the [vTPM](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nitrotpm.html) (NitroTPM) feature of the [AWS Nitro System](http://aws.amazon.com/ec2/nitro/) on AWS for runtime measurements.
-
-The vTPM adheres to the [TPM 2.0](https://trustedcomputinggroup.org/resource/tpm-library-specification/) specification.
-The VMs are attested by obtaining signed PCR values over the VM's boot configuration from the TPM and comparing them to a known, good state (measured boot).
-
-The following table lists all PCR values of the vTPM and the measured components.
-It also lists what components of the boot chain did the measurements and if the value is reproducible and verifiable.
-The latter means that the value can be generated offline and compared to the one in the vTPM.
-
-| PCR         | Components                                                       | Measured by                            | Reproducible and verifiable |
-| ----------- | ---------------------------------------------------------------- | -------------------------------------- | --------------------------- |
-| 0           | Firmware                                                         | AWS                                    | No                          |
-| 1           | Firmware                                                         | AWS                                    | No                          |
-| 2           | Firmware                                                         | AWS                                    | No                          |
-| 3           | Firmware                                                         | AWS                                    | No                          |
-| 4           | Constellation Bootloader, Kernel, initramfs, Kernel command line | AWS, Constellation Bootloader          | Yes                         |
-| 5           | Firmware                                                         | AWS                                    | No                          |
-| 6           | Firmware                                                         | AWS                                    | No                          |
-| 7           | Secure Boot Policy                                               | AWS, Constellation Bootloader          | No                          |
-| 8           | -                                                                | -                                      | -                           |
-| 9           | initramfs, Kernel command line                                   | Linux Kernel                           | Yes                         |
-| 10          | User space                                                       | Linux IMA                              | No[^1]                      |
-| 11          | Unified Kernel Image components                                  | Constellation Bootloader               | Yes                         |
-| 12          | Reserved                                                         | (User space, Constellation Bootloader) | Yes                         |
-| 13          | Reserved                                                         | (Constellation Bootloader)             | Yes                         |
-| 14          | Secure Boot State                                                | Constellation Bootloader               | No                          |
-| 15          | ClusterID                                                        | Constellation Bootstrapper             | Yes                         |
-| 16&ndash;23 | Unused                                                           | -                                      | -                           |
-
-</tabItem>
 <tabItem value="stackit" label="STACKIT">
 
 Constellation uses a hypervisor-based vTPM for runtime measurements.
@@ -258,6 +258,28 @@ To verify the integrity of the received attestation statement, a chain of trust 
 For verification of the CVM technology, Constellation may expose additional options in its config file.
 
 <tabs groupId="csp">
+<tabItem value="aws" label="AWS">
+
+On AWS, AMD SEV-SNP is used to provide runtime encryption to the VMs.
+An SEV-SNP attestation report is used to establish trust in the VM.
+You may customize certain parameters for verification of the attestation statement using the Constellation config file.
+
+* TCB versions
+
+  You can set the minimum version numbers of components in the SEV-SNP TCB.
+  Use the latest versions to enforce that only machines with the most recent firmware updates are allowed to join the cluster.
+  Alternatively, you can set a lower minimum version to allow slightly out-of-date machines to still be able to join the cluster.
+
+* AMD Root Key Certificate
+
+  This certificate is the root of trust for verifying the SEV-SNP certificate chain.
+
+* AMD Signing Key Certificate
+
+  This is the intermediate certificate for verifying the SEV-SNP report's signature.
+  If it's not specified, the CLI fetches it from the AMD key distribution server.
+
+</tabItem>
 <tabItem value="azure" label="Azure SEV-SNP">
 
 On Azure, AMD SEV-SNP is used to provide runtime encryption to the VMs.
@@ -286,28 +308,6 @@ You may customize certain parameters for verification of the attestation stateme
 On GCP, AMD SEV-ES is used to provide runtime encryption to the VMs.
 The hypervisor-based vTPM is used to establish trust in the VM via [runtime measurements](#runtime-measurements).
 There is no additional configuration available for GCP.
-
-</tabItem>
-<tabItem value="aws" label="AWS">
-
-On AWS, AMD SEV-SNP is used to provide runtime encryption to the VMs.
-An SEV-SNP attestation report is used to establish trust in the VM.
-You may customize certain parameters for verification of the attestation statement using the Constellation config file.
-
-* TCB versions
-
-  You can set the minimum version numbers of components in the SEV-SNP TCB.
-  Use the latest versions to enforce that only machines with the most recent firmware updates are allowed to join the cluster.
-  Alternatively, you can set a lower minimum version to allow slightly out-of-date machines to still be able to join the cluster.
-
-* AMD Root Key Certificate
-
-  This certificate is the root of trust for verifying the SEV-SNP certificate chain.
-
-* AMD Signing Key Certificate
-
-  This is the intermediate certificate for verifying the SEV-SNP report's signature.
-  If it's not specified, the CLI fetches it from the AMD key distribution server.
 
 </tabItem>
 <tabItem value="stackit" label="STACKIT">

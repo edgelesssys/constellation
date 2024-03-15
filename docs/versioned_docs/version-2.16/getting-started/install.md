@@ -133,6 +133,57 @@ If you don't have a cloud subscription, you can also set up a [local Constellati
 ### Required permissions
 
 <tabs groupId="csp">
+<tabItem value="aws" label="AWS">
+
+To set up a Constellation cluster, you need to perform two tasks that require permissions: create the infrastructure and create roles for cluster nodes. Both of these actions can be performed by different users, e.g., an administrator to create roles and a DevOps engineer to create the infrastructure.
+
+To [create the IAM configuration](../workflows/config.md#creating-an-iam-configuration) for Constellation, you need the following permissions:
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:DescribeAccountAttributes",
+                "iam:AddRoleToInstanceProfile",
+                "iam:AttachRolePolicy",
+                "iam:CreateInstanceProfile",
+                "iam:CreatePolicy",
+                "iam:CreateRole",
+                "iam:DeleteInstanceProfile",
+                "iam:DeletePolicy",
+                "iam:DeletePolicyVersion",
+                "iam:DeleteRole",
+                "iam:DetachRolePolicy",
+                "iam:GetInstanceProfile",
+                "iam:GetPolicy",
+                "iam:GetPolicyVersion",
+                "iam:GetRole",
+                "iam:ListAttachedRolePolicies",
+                "iam:ListInstanceProfilesForRole",
+                "iam:ListPolicyVersions",
+                "iam:ListRolePolicies",
+                "iam:PassRole",
+                "iam:RemoveRoleFromInstanceProfile",
+                "sts:GetCallerIdentity"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
+
+The built-in `AdministratorAccess` policy is a superset of these permissions.
+
+To [create a Constellation cluster](../workflows/create.md), see the permissions of [main.tf](https://github.com/edgelesssys/constellation/blob/main/terraform/infrastructure/iam/aws/main.tf).
+
+The built-in `PowerUserAccess` policy is a superset of these permissions.
+
+Follow Amazon's guide on [understanding](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html) and [managing policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html).
+
+</tabItem>
 <tabItem value="azure" label="Azure">
 
 The following [resource providers need to be registered](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/resource-providers-and-types#register-resource-provider) in your subscription:
@@ -264,57 +315,6 @@ Together, the built-in roles `roles/editor`, `roles/compute.instanceAdmin` and `
 Follow Google's guide on [understanding](https://cloud.google.com/iam/docs/understanding-roles) and [assigning roles](https://cloud.google.com/iam/docs/granting-changing-revoking-access).
 
 </tabItem>
-<tabItem value="aws" label="AWS">
-
-To set up a Constellation cluster, you need to perform two tasks that require permissions: create the infrastructure and create roles for cluster nodes. Both of these actions can be performed by different users, e.g., an administrator to create roles and a DevOps engineer to create the infrastructure.
-
-To [create the IAM configuration](../workflows/config.md#creating-an-iam-configuration) for Constellation, you need the following permissions:
-
-```json
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "ec2:DescribeAccountAttributes",
-                "iam:AddRoleToInstanceProfile",
-                "iam:AttachRolePolicy",
-                "iam:CreateInstanceProfile",
-                "iam:CreatePolicy",
-                "iam:CreateRole",
-                "iam:DeleteInstanceProfile",
-                "iam:DeletePolicy",
-                "iam:DeletePolicyVersion",
-                "iam:DeleteRole",
-                "iam:DetachRolePolicy",
-                "iam:GetInstanceProfile",
-                "iam:GetPolicy",
-                "iam:GetPolicyVersion",
-                "iam:GetRole",
-                "iam:ListAttachedRolePolicies",
-                "iam:ListInstanceProfilesForRole",
-                "iam:ListPolicyVersions",
-                "iam:ListRolePolicies",
-                "iam:PassRole",
-                "iam:RemoveRoleFromInstanceProfile",
-                "sts:GetCallerIdentity"
-            ],
-            "Resource": "*"
-        }
-    ]
-}
-```
-
-The built-in `AdministratorAccess` policy is a superset of these permissions.
-
-To [create a Constellation cluster](../workflows/create.md), see the permissions of [main.tf](https://github.com/edgelesssys/constellation/blob/main/terraform/infrastructure/iam/aws/main.tf).
-
-The built-in `PowerUserAccess` policy is a superset of these permissions.
-
-Follow Amazon's guide on [understanding](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html) and [managing policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html).
-
-</tabItem>
 <tabItem value="stackit" label="STACKIT">
 
 Constellation on STACKIT requires a User Access Token (UAT) for the OpenStack API and a STACKIT service account.
@@ -334,6 +334,23 @@ The steps for a *testing* environment are simpler. However, they may expose secr
 :::
 
 <tabs groupId="csp">
+<tabItem value="aws" label="AWS">
+
+**Testing**
+
+You can use the [AWS CloudShell](https://console.aws.amazon.com/cloudshell/home). Make sure you are [authorized to use it](https://docs.aws.amazon.com/cloudshell/latest/userguide/sec-auth-with-identities.html).
+
+**Production**
+
+Use the latest version of the [AWS CLI](https://aws.amazon.com/cli/) on a trusted machine:
+
+```bash
+aws configure
+```
+
+Options and first steps are described in the [AWS CLI documentation](https://docs.aws.amazon.com/cli/index.html).
+
+</tabItem>
 <tabItem value="azure" label="Azure">
 
 **Testing**
@@ -373,23 +390,6 @@ Use one of the following options on a trusted machine:
 * Set up a service account and pass the credentials manually
 
     Follow [Google's guide](https://cloud.google.com/docs/authentication/production#manually) for setting up your credentials.
-
-</tabItem>
-<tabItem value="aws" label="AWS">
-
-**Testing**
-
-You can use the [AWS CloudShell](https://console.aws.amazon.com/cloudshell/home). Make sure you are [authorized to use it](https://docs.aws.amazon.com/cloudshell/latest/userguide/sec-auth-with-identities.html).
-
-**Production**
-
-Use the latest version of the [AWS CLI](https://aws.amazon.com/cli/) on a trusted machine:
-
-```bash
-aws configure
-```
-
-Options and first steps are described in the [AWS CLI documentation](https://docs.aws.amazon.com/cli/index.html).
 
 </tabItem>
 <tabItem value="stackit" label="STACKIT">
