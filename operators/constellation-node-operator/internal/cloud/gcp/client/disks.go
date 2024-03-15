@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	diskSourceRegex = regexp.MustCompile(`^https://www.googleapis.com/compute/v1/projects/([^/]+)/zones/([^/]+)/disks/([^/]+)$`)
-	computeAPIBase  = regexp.MustCompile(`^https://www.googleapis.com/compute/v1/(.+)$`)
+	diskSourceRegex = regexp.MustCompile(`^https://www\.googleapis\.com/compute/v1/projects/([^/]+)/zones/([^/]+)/disks/([^/]+)$`)
+	computeAPIBase  = regexp.MustCompile(`^https://www\.googleapis\.com/compute/v1/(.+)$`)
 )
 
 // diskSourceToDiskReq converts a disk source URI to a disk request.

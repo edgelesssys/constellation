@@ -36,6 +36,10 @@ func TestDiskSourceToDiskReq(t *testing.T) {
 			diskSource: "invalid://www.googleapis.com/compute/v1/projects/project/zones/zone/disks/disk",
 			wantErr:    true,
 		},
+		"url dots in regex are escaped": {
+			diskSource: "https://wwwAgoogleapisAcom/compute/v1/projects/project/zones/zone/disks/disk",
+			wantErr:    true,
+		},
 	}
 
 	for name, tc := range testCases {
@@ -66,6 +70,10 @@ func TestURINormalize(t *testing.T) {
 		"normalized": {
 			imageURI:       "projects/project/global/images/image",
 			wantNormalized: "projects/project/global/images/image",
+		},
+		"url dots in regex are escaped": {
+			imageURI:       "https://wwwAgoogleapisAcom/compute/v1/projects/project/global/images/image",
+			wantNormalized: "https://wwwAgoogleapisAcom/compute/v1/projects/project/global/images/image",
 		},
 	}
 
