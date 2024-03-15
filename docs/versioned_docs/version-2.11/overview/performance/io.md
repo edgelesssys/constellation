@@ -58,7 +58,7 @@ The following infrastructure configurations was used:
 This section gives a thorough analysis of the network performance of Constellation, specifically focusing on measuring TCP and UDP bandwidth.
 The benchmark measured the bandwidth of pod-to-pod and pod-to-service connections between two different nodes using [`iperf`](https://iperf.fr/).
 
-GKE and Constellation on GCP had a maximum network bandwidth of [10 Gbps](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machineshttps://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines).
+GKE and Constellation on GCP had a maximum network bandwidth of [10 Gbps](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines).
 AKS with `Standard_D4as_v5` machines a maximum network bandwidth of [12.5 Gbps](https://learn.microsoft.com/en-us/azure/virtual-machines/dasv5-dadsv5-series#dasv5-series).
 The Confidential VM equivalent `Standard_DC4as_v5` currently  has a network bandwidth of [1.25 Gbps](https://learn.microsoft.com/en-us/azure/virtual-machines/dcasv5-dcadsv5-series#dcasv5-series-products).
 Therefore, to make the test comparable, both AKS and Constellation on Azure were running with `Standard_DC4as_v5` machines and 1.25 Gbps bandwidth.

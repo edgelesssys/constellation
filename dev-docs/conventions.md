@@ -14,10 +14,10 @@ This project also aims to follow the [Go Proverbs](https://go-proverbs.github.io
 ## Linting
 
 This projects uses [golangci-lint](https://golangci-lint.run/) for linting.
-You can [install golangci-lint](https://golangci-lint.run/usage/install/#linux-and-windows) locally,
+You can [install golangci-lint](https://golangci-lint.run/welcome/install/#local-installation) locally,
 but there is also a CI action to ensure compliance.
 
-It is also recommended to use golangci-lint (and [gofumpt](https://github.com/mvdan/gofumpt) as formatter) in your IDE, by adding the recommended VS Code Settings or by [configuring it yourself](https://golangci-lint.run/usage/integrations/#editor-integration)
+It is also recommended to use golangci-lint (and [gofumpt](https://github.com/mvdan/gofumpt) as formatter) in your IDE, by adding the recommended VS Code Settings or by [configuring it yourself](https://golangci-lint.run/welcome/integrations/)
 
 ## Logging
 

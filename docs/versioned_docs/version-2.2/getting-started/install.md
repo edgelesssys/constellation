@@ -11,7 +11,7 @@ Make sure the following requirements are met:
 - Your machine is running Linux or macOS
 - You have admin rights on your machine
 - [kubectl](https://kubernetes.io/docs/tasks/tools/) is installed
-- Your CSP is Microsoft Azure, Google Cloud Platform (GCP), or Amazon Web Services (AWS)
+- Your CSP is Amazon Web Services (AWS), Microsoft Azure, or Google Cloud Platform (GCP)
 
 ## Install the Constellation CLI
 
@@ -52,7 +52,6 @@ curl -LO https://github.com/edgelesssys/constellation/releases/latest/download/c
 sudo install constellation-linux-arm64 /usr/local/bin/constellation
 ```
 
-
 </tabItem>
 
 <tabItem value="darwin-arm64" label="macOS (Apple Silicon)">
@@ -70,8 +69,6 @@ curl -LO https://github.com/edgelesssys/constellation/releases/latest/download/c
 ```bash
 sudo install constellation-darwin-arm64 /usr/local/bin/constellation
 ```
-
-
 
 </tabItem>
 
@@ -342,7 +339,6 @@ aws configure
 Options and first steps are described in the [AWS CLI documentation](https://docs.aws.amazon.com/cli/index.html).
 
 </tabItem>
-
 
 </tabs>
 

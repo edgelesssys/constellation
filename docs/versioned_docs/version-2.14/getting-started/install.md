@@ -9,7 +9,7 @@ Make sure the following requirements are met:
 * Your machine is running Linux or macOS
 * You have admin rights on your machine
 * [kubectl](https://kubernetes.io/docs/tasks/tools/) is installed
-* Your CSP is Microsoft Azure, Google Cloud Platform (GCP), or Amazon Web Services (AWS)
+* Your CSP is Amazon Web Services (AWS), Microsoft Azure, or Google Cloud Platform (GCP)
 
 ## Install the Constellation CLI
 
