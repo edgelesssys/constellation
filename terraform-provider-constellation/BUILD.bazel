@@ -6,6 +6,7 @@ go_binary(
     name = "tf_provider",
     out = "terraform-provider-constellation",  # for complying with Terraform provider naming convention
     embed = [":terraform-provider-constellation_lib"],
+    gotags = ["enterprise"],
     pure = "on",
     visibility = ["//visibility:public"],
 )
