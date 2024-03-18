@@ -40,8 +40,15 @@ runs:
       if: inputs.cloudProvider == 'azure'
       shell: bash
       run: |
-        UAMI=$(yq eval ".provider.azure.userAssignedIdentity | upcase" constellation-conf.yaml)
-        PRINCIPAL_ID=$(az identity list | yq ".[] | select(.id | test(\"(?i)$UAMI\"; \"g\")) | .principalId")
+        UAMI=$(yq eval ".provider.azure.userAssignedIdentity" constellation-conf.yaml)
+        PRINCIPAL_ID=$(az identity show --ids "$UAMI" | yq ".principalId")
+        if [ -z "$PRINCIPAL_ID" ]; then
+          echo "::error::PRINCIPAL_ID for \"$UAMI\" not found"
+          echo "::group::Available identities"
+          az identity list | yq ".[].id"
+          echo "::endgroup::"
+          exit 1
+        fi
         az role assignment create --role "Key Vault Secrets User" \
           --assignee "$PRINCIPAL_ID" \
           --scope /subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/e2e-test-creds/providers/Microsoft.KeyVault/vaults/opensearch-creds
