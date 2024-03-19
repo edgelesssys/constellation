@@ -34,6 +34,14 @@ runs:
         # Scrap namespaces that contain PVCs
         for namespace in `kubectl get namespace --no-headers=true -o custom-columns=":metadata.name"`; do
           if [[ `kubectl get pvc -n $namespace --no-headers=true -o custom-columns=":metadata.name" | wc -l` -gt 0 ]]; then
+            if [[ "${namespace}" == "default" ]]; then
+              kubectl delete all --all --namespace "default" --wait
+              continue
+            fi
+            if [[ "${namespace}" == "kube-system" ]]; then
+              kubectl delete pvc --all --namespace "kube-system" --wait
+              continue
+            fi
             kubectl delete namespace $namespace --wait
           fi
         done
