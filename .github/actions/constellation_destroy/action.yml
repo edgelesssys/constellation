@@ -24,6 +24,7 @@ runs:
     - name: Delete persistent volumes
       if: inputs.kubeconfig != ''
       shell: bash
+      continue-on-error: true
       env:
         KUBECONFIG: ${{ inputs.kubeconfig }}
         PV_DELETION_TIMEOUT: "120" # 2 minutes timeout for pv deletion
