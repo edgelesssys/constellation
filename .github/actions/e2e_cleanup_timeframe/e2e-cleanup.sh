@@ -60,11 +60,11 @@ for d in "${dates_to_clean[@]}"; do
 done
 
 # cleanup database_ids
-mapfile -t database_ids <<<"$database_ids"
+mapfile -t database_ids <<< "$database_ids"
 
 echo "[*] downloading terraform state artifacts"
 for id in "${database_ids[@]}"; do
-  if [[ -n "$id" ]]; then
+  if [[ -n $id ]]; then
     echo "    downloading from workflow $id"
     download_tfstate_artifact "$id"
   fi
