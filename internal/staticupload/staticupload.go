@@ -219,7 +219,7 @@ func (c *Client) waitForInvalidations(ctx context.Context) error {
 	}
 
 	waiter := cloudfront.NewInvalidationCompletedWaiter(c.cdnClient)
-	c.logger.Debug(fmt.Sprintf("Waiting for invalidations %q in distribution %q", c.invalidationIDs, c.distributionID))
+	c.logger.Debug(fmt.Sprintf("Waiting for invalidations %v in distribution %q", c.invalidationIDs, c.distributionID))
 	for _, invalidationID := range c.invalidationIDs {
 		waitIn := &cloudfront.GetInvalidationInput{
 			DistributionId: &c.distributionID,
