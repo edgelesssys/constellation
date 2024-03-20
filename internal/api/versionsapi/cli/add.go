@@ -54,7 +54,7 @@ func runAdd(cmd *cobra.Command, _ []string) (retErr error) {
 	}
 	log := logger.NewTextLogger(flags.logLevel)
 	log.Debug(fmt.Sprintf(
-`Parsed flags:
+		`Parsed flags:
   dryrun: %t
   kind: %q
   latest: %t
@@ -62,8 +62,8 @@ func runAdd(cmd *cobra.Command, _ []string) (retErr error) {
   release: %t
   stream: %q
   version: %q`,
-flags.dryRun, flags.kind, flags.latest, flags.ref,
-flags.release, flags.stream, flags.version))
+		flags.dryRun, flags.kind, flags.latest, flags.ref,
+		flags.release, flags.stream, flags.version))
 
 	log.Debug("Validating flags")
 	if err := flags.validate(log); err != nil {

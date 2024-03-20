@@ -173,7 +173,7 @@ func (j *maliciousJoiner) join(ctx context.Context) (*joinproto.IssueJoinTicketR
 	}
 	res, err := protoClient.IssueJoinTicket(ctx, req)
 	j.logger.Debug(fmt.Sprintf(
-`Got join ticket response:
+		`Got join ticket response:
   ApiServerEndpoint: %q
   KubernetesVersion: %q
 `, res.ApiServerEndpoint, res.KubernetesVersion))

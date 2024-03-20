@@ -90,8 +90,8 @@ func (a *Applier) Init(
 	}
 
 	// Perform the RPC
-  a.log.Debug(fmt.Sprintf(
-`Making initialization call, doer has the following parameters:
+	a.log.Debug(fmt.Sprintf(
+		`Making initialization call, doer has the following parameters:
   endpoint: %q
   req.KmsUri: %q
   req.StorageUri: %q

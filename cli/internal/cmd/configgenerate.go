@@ -85,8 +85,8 @@ func runConfigGenerate(cmd *cobra.Command, args []string) error {
 	if err := cg.flags.parse(cmd.Flags()); err != nil {
 		return fmt.Errorf("parsing flags: %w", err)
 	}
-  log.Debug(fmt.Sprintf(
-`Parsed flags:
+	log.Debug(fmt.Sprintf(
+		`Parsed flags:
   kubernetes: %q
   attestation: %q
 `, cg.flags.k8sVersion, cg.flags.attestationVariant))

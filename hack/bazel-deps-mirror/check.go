@@ -41,7 +41,7 @@ func runCheck(cmd *cobra.Command, _ []string) error {
 	}
 	log := logger.NewTextLogger(flags.logLevel)
 	log.Debug(fmt.Sprintf(
-`Parsed flags:
+		`Parsed flags:
   mirror: %t
   mirror-unauthenticated: %t
 `, flags.mirror, flags.mirrorUnauthenticated))
