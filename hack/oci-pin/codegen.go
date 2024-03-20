@@ -46,12 +46,12 @@ func runCodegen(cmd *cobra.Command, _ []string) error {
 	}
 	log := logger.NewTextLogger(flags.logLevel)
 	log.Debug(fmt.Sprintf(
-`Parsed flags:
+		`Parsed flags:
   identifier: %q
   repoimage-tag-file: %q
   oci-path: %q
   package: %q`,
-flags.identifier, flags.imageRepoTag, flags.ociPath, flags.pkg))
+		flags.identifier, flags.imageRepoTag, flags.ociPath, flags.pkg))
 
 	registry, prefix, name, tag, err := splitRepoTag(flags.imageRepoTag)
 	if err != nil {

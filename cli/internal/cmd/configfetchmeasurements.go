@@ -8,12 +8,12 @@ package cmd
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"time"
-	"encoding/hex"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
@@ -105,8 +105,8 @@ func runConfigFetchMeasurements(cmd *cobra.Command, _ []string) error {
 	if err := cfm.flags.parse(cmd.Flags()); err != nil {
 		return fmt.Errorf("parsing flags: %w", err)
 	}
-  cfm.log.Debug(fmt.Sprintf(
-`Using flags:
+	cfm.log.Debug(fmt.Sprintf(
+		`Using flags:
   insecure: %t
   measurements-url: %q
   signature-url: %q
@@ -158,7 +158,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 			return fmt.Errorf("fetching and verifying measurements: %w", err)
 		}
 	}
-	measurementsToPrint := "";
+	measurementsToPrint := ""
 	for i, measurement := range fetchedMeasurements {
 		measurementsToPrint += fmt.Sprintf("\t%d: 0x%s\n", i, hex.EncodeToString(measurement.Expected))
 	}

@@ -60,7 +60,7 @@ func runUplosi(cmd *cobra.Command, _ []string) error {
 	}
 	log := logger.NewTextLogger(flags.logLevel)
 	log.Debug(fmt.Sprintf(
-`Parsed flags:
+		`Parsed flags:
   raw-image: %q
   attestation-variant: %q
   csp: %q
@@ -69,7 +69,7 @@ func runUplosi(cmd *cobra.Command, _ []string) error {
   bucket: %q
   distribution-id: %q
 `, flags.rawImage, flags.attestationVariant, flags.provider, flags.version.Version(), flags.region,
-flags.bucket, flags.distributionID))
+		flags.bucket, flags.distributionID))
 
 	archiveC, archiveCClose, err := archive.New(cmd.Context(), flags.region, flags.bucket, flags.distributionID, log)
 	if err != nil {

@@ -40,7 +40,7 @@ func runLatest(cmd *cobra.Command, _ []string) (retErr error) {
 	}
 	log := logger.NewTextLogger(flags.logLevel)
 	log.Debug(fmt.Sprintf(
-`Parsed flags:
+		`Parsed flags:
   ref: %q
   stream: %q
   json: %t

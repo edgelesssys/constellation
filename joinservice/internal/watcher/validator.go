@@ -10,11 +10,11 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/asn1"
+	"encoding/hex"
 	"fmt"
 	"log/slog"
 	"path/filepath"
 	"sync"
-	"encoding/hex"
 
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"

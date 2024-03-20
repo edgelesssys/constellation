@@ -41,10 +41,10 @@ func runFix(cmd *cobra.Command, _ []string) error {
 	}
 	log := logger.NewTextLogger(flags.logLevel)
 	log.Debug(fmt.Sprintf(
-`Parsed flags:
+		`Parsed flags:
   unauthenticated: %t
   dry-run: %t`,
-  flags.unauthenticated, flags.dryRun))
+		flags.unauthenticated, flags.dryRun))
 
 	fileHelper, err := bazelfiles.New()
 	if err != nil {
