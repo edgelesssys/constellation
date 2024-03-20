@@ -14,6 +14,7 @@ import (
 	"log/slog"
 	"path/filepath"
 	"sync"
+	"encoding/hex"
 
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
@@ -79,7 +80,11 @@ func (u *Updatable) Update() error {
 	if err != nil {
 		return fmt.Errorf("unmarshaling config: %w", err)
 	}
-	u.log.Debug(fmt.Sprintf("New expected measurements: %+v", cfg.GetMeasurements()))
+	measurementsToPrint := ""
+	for i, measurement := range cfg.GetMeasurements() {
+		measurementsToPrint += fmt.Sprintf("\t%d: 0x%s\n", i, hex.EncodeToString(measurement.Expected))
+	}
+	u.log.Debug(fmt.Sprintf("New expected measurements: 0x%s", measurementsToPrint))
 
 	cfgWithCerts, err := u.configWithCerts(cfg)
 	if err != nil {
