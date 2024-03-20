@@ -211,7 +211,12 @@ func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, log
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
-			return fmt.Errorf("kubeadm join failed (code %v) with: %s (full err: %s)", exitErr.ExitCode(), out, err)
+			err = fmt.Errorf("kubeadm join failed: %w. Logs:\n%s", err, out)
+			resetOut, resetErr := exec.CommandContext(context.TODO(), constants.KubeadmPath, "reset", "-v=5", "-f").CombinedOutput()
+			if resetErr != nil {
+				resetErr = fmt.Errorf("kubeadm reset failed: %w. Logs:\n%s", resetErr, resetOut)
+			}
+			return errors.Join(err, resetErr)
 		}
 		return fmt.Errorf("kubeadm join: %w", err)
 	}
