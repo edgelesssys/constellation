@@ -84,7 +84,7 @@ func (u *Updatable) Update() error {
 	for i, measurement := range cfg.GetMeasurements() {
 		measurementsToPrint += fmt.Sprintf("\t%d: 0x%s\n", i, hex.EncodeToString(measurement.Expected))
 	}
-	u.log.Debug(fmt.Sprintf("New expected measurements: 0x%s", measurementsToPrint))
+	u.log.Debug(fmt.Sprintf("New expected measurements:\n%s", measurementsToPrint))
 
 	cfgWithCerts, err := u.configWithCerts(cfg)
 	if err != nil {
