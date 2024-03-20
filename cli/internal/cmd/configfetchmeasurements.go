@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+	"encoding/hex"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
@@ -157,7 +158,11 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 			return fmt.Errorf("fetching and verifying measurements: %w", err)
 		}
 	}
-	cfm.log.Debug(fmt.Sprintf("Measurements: %#v\n", fetchedMeasurements))
+	measurementsToPrint := "";
+	for i, measurement := range fetchedMeasurements {
+		measurementsToPrint += fmt.Sprintf("\t%d: 0x%s\n", i, hex.EncodeToString(measurement.Expected))
+	}
+	cfm.log.Debug(fmt.Sprintf("Measurements:\n%s", measurementsToPrint))
 
 	cfm.log.Debug("Updating measurements in configuration")
 	conf.UpdateMeasurements(fetchedMeasurements)
