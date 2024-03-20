@@ -78,7 +78,7 @@ func (a *Uploader) Upload(ctx context.Context, imageInfo versionsapi.ImageInfo) 
 	if err != nil {
 		return "", err
 	}
-	a.log.Debug(fmt.Sprintf("Archiving image info to s3://%v/%v", a.bucket, key))
+	a.log.Debug(fmt.Sprintf("Archiving image info to s3://%s/%s", a.bucket, key))
 	buf := &bytes.Buffer{}
 	if err := json.NewEncoder(buf).Encode(imageInfo); err != nil {
 		return "", err
