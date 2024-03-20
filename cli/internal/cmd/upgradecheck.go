@@ -8,6 +8,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -364,7 +365,15 @@ func (v *versionCollector) newMeasurements(ctx context.Context, csp cloudprovide
 		}
 		upgrades[shortPath] = measurements
 	}
-	v.log.Debug(fmt.Sprintf("Compatible image measurements are %v", upgrades))
+	compatibleMeasurements := ""
+	for path, measurements := range upgrades {
+		compatibleMeasurement := ""
+		for i, measurement := range measurements {
+			compatibleMeasurement += fmt.Sprintf("\t\t%d: 0x%s\n", i, hex.EncodeToString(measurement.Expected))
+		}
+		compatibleMeasurements += fmt.Sprintf("\t%q:\n%s", path, compatibleMeasurement)
+	}
+	v.log.Debug(fmt.Sprintf("Compatible image measurements are:\n%s", compatibleMeasurements))
 
 	return upgrades, nil
 }
