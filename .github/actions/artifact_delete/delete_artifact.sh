@@ -22,16 +22,16 @@ function delete_artifact_by_id {
     "/repos/edgelesssys/constellation/actions/artifacts/$1" || exit 1
 }
 
-workflow_id=$1
-artifact_name=$2
+workflow_id="$1"
+artifact_name="$2"
 
-if [[ -n workflow_id ]]; then
+if [[ -z workflow_id ]]; then
   echo "[X] No workflow id provided."
   echo "Usage: delete_artifact.sh <WORKFLOW_ID> <ARTIFACT_NAME>"
   exit 1
 fi
 
-if [[ -n artifact_name ]]; then
+if [[ -z artifact_name ]]; then
   echo "[X] No artifact name provided."
   echo "Usage: delete_artifact.sh <WORKFLOW_ID> <ARTIFACT_NAME>"
   exit 1
