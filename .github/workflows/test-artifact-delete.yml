@@ -1,6 +1,7 @@
 name: Test artifact delete action
 
 on:
+  push:
   workflow_dispatch:
 
 jobs:
