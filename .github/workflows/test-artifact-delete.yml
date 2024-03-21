@@ -27,3 +27,5 @@ jobs:
         with:
           name: test
           workflowID: ${{ github.run_id }}
+        env:
+          GH_TOKEN: ${{ github.token }}
