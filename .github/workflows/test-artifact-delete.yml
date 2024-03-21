@@ -26,4 +26,4 @@ jobs:
         uses: ./.github/actions/artifact_delete
         with:
           name: test
-          workflowID: ${{ gitub.run_id }}
+          workflowID: ${{ github.run_id }}
