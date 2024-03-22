@@ -90,7 +90,7 @@ inputs:
     description: "Set the force-flag on apply to ignore version mismatches."
     required: false
   encryptionSecret:
-    description: 'The secret to use for decrypting the artifact.'
+    description: "The secret to use for decrypting the artifact."
     required: true
 
 outputs:
@@ -169,8 +169,10 @@ runs:
         echo "$(pwd)" >> $GITHUB_PATH
         export PATH="$PATH:$(pwd)"
         constellation version
-        # Do not spam license server from pipeline
-        sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts'
+
+    - name: Disable license check
+      shell: bash
+      run: sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts'
 
     - name: Build Terraform provider binary
       if: inputs.clusterCreation == 'terraform' && inputs.cliVersion == ''
