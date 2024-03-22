@@ -395,7 +395,7 @@ jobs:
           IMAGE: ${{ inputs.toImage && inputs.toImage || steps.find-image.outputs.output }}
           KUBERNETES: ${{ inputs.toKubernetes }}
           MICROSERVICES: ${{ inputs.toMicroservices }}
-          WORKERNODES:  ${{ needs.generate-input-parameters.outputs.workerNodes }}
+          WORKERNODES: ${{ needs.generate-input-parameters.outputs.workerNodes }}
           CONTROLNODES: ${{ needs.generate-input-parameters.outputs.controlPlaneNodes }}
         run: |
           echo "Image target: $IMAGE"
@@ -409,6 +409,7 @@ jobs:
             KUBERNETES_FLAG="--target-kubernetes=$KUBERNETES"
           fi
 
+          sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts'
           bazel run //e2e/internal/upgrade:upgrade_test -- --want-worker "$WORKERNODES" --want-control "$CONTROLNODES" --target-image "$IMAGE" "$KUBERNETES_FLAG" "$MICROSERVICES_FLAG"
 
       - name: Remove Terraform plugin cache

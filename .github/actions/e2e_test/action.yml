@@ -170,10 +170,6 @@ runs:
         export PATH="$PATH:$(pwd)"
         constellation version
 
-    - name: Disable license check
-      shell: bash
-      run: sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts'
-
     - name: Build Terraform provider binary
       if: inputs.clusterCreation == 'terraform' && inputs.cliVersion == ''
       uses: ./.github/actions/build_tf_provider

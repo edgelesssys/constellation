@@ -312,6 +312,7 @@ jobs:
         working-directory: ${{ github.workspace }}/cluster
         shell: bash
         run: |
+          sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts'
           terraform init
           if [[ "${{ inputs.attestationVariant }}" == "azure-sev-snp" ]]; then
             terraform apply -target module.azure_iam -auto-approve
@@ -392,7 +393,7 @@ jobs:
           IMAGE: ${{ inputs.toImage && inputs.toImage || steps.find-latest-image.outputs.image }}
           KUBERNETES: ${{ inputs.toKubernetes }}
           MICROSERVICES: ${{ steps.build.outputs.build_version }}
-          WORKERNODES:  1
+          WORKERNODES: 1
           CONTROLNODES: 1
         run: |
           terraform output -raw kubeconfig > constellation-admin.conf
@@ -446,7 +447,7 @@ jobs:
           KUBECONFIG=${{ github.workspace }}/cluster/constellation-admin.conf bazel run //e2e/provider-upgrade:provider-upgrade_test -- --want-worker "$WORKERNODES" --want-control "$CONTROLNODES" --cli "${{ github.workspace }}/build/constellation" "$IMAGE_FLAG" "$KUBERNETES_FLAG" "$MICROSERVICES_FLAG"
 
       - name: Destroy Terraform Cluster
-      # outcome is part of the steps context (https://docs.github.com/en/actions/learn-github-actions/contexts#steps-context)
+        # outcome is part of the steps context (https://docs.github.com/en/actions/learn-github-actions/contexts#steps-context)
         if: always() && steps.apply_terraform.outcome != 'skipped'
         working-directory: ${{ github.workspace }}/cluster
         shell: bash
