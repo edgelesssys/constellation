@@ -10,11 +10,6 @@ on:
       - "internal/api/**"
       - ".github/workflows/e2e-attestationconfigapi.yml"
       - "go.mod"
-  pull_request:
-    paths:
-      - "internal/api/**"
-      - ".github/workflows/e2e-attestationconfigapi.yml"
-      - "go.mod"
 
 jobs:
   e2e-api:
