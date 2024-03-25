@@ -71,6 +71,6 @@ type stubGetter struct {
 }
 
 func (s *stubGetter) Get(url string) ([]byte, error) {
-	s.log.Debug(fmt.Sprintf("Request to %s", url))
+	s.log.Debug(fmt.Sprintf("Request to %q", url))
 	return s.ret, s.err
 }

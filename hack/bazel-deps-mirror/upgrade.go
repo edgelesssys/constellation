@@ -40,7 +40,7 @@ func runUpgrade(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	log := logger.NewTextLogger(flags.logLevel)
-	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
+	log.Debug("Using flags", "unauthenticated", flags.unauthenticated, "dryRun", flags.dryRun)
 
 	fileHelper, err := bazelfiles.New()
 	if err != nil {
@@ -96,10 +96,10 @@ func upgradeBazelFile(ctx context.Context, fileHelper *bazelfiles.Helper, mirror
 	}
 	found := rules.Rules(buildfile, rules.SupportedRules)
 	if len(found) == 0 {
-		log.Debug(fmt.Sprintf("No rules found in file: %s", bazelFile.RelPath))
+		log.Debug(fmt.Sprintf("No rules found in file: %q", bazelFile.RelPath))
 		return iss, nil
 	}
-	log.Debug(fmt.Sprintf("Found %d rules in file: %s", len(found), bazelFile.RelPath))
+	log.Debug(fmt.Sprintf("Found %d rules in file: %q", len(found), bazelFile.RelPath))
 	for _, rule := range found {
 		changedRule, ruleIssues := upgradeRule(ctx, mirrorUpload, rule, log)
 		if len(ruleIssues) > 0 {
@@ -113,7 +113,7 @@ func upgradeBazelFile(ctx context.Context, fileHelper *bazelfiles.Helper, mirror
 		return iss, nil
 	}
 	if !changed {
-		log.Debug(fmt.Sprintf("No changes to file: %s", bazelFile.RelPath))
+		log.Debug(fmt.Sprintf("No changes to file: %q", bazelFile.RelPath))
 		return iss, nil
 	}
 	if dryRun {
@@ -133,7 +133,7 @@ func upgradeBazelFile(ctx context.Context, fileHelper *bazelfiles.Helper, mirror
 }
 
 func upgradeRule(ctx context.Context, mirrorUpload mirrorUploader, rule *build.Rule, log *slog.Logger) (changed bool, iss []error) {
-	log.Debug(fmt.Sprintf("Upgrading rule: %s", rule.Name()))
+	log.Debug(fmt.Sprintf("Upgrading rule: %q", rule.Name()))
 
 	upstreamURLs, err := rules.UpstreamURLs(rule)
 	if errors.Is(err, rules.ErrNoUpstreamURL) {

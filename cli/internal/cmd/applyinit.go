@@ -29,7 +29,7 @@ import (
 // On success, it writes the Kubernetes admin config file to disk.
 // Therefore it is skipped if the Kubernetes admin config file already exists.
 func (a *applyCmd) runInit(cmd *cobra.Command, conf *config.Config, stateFile *state.State) (*bytes.Buffer, error) {
-	a.log.Debug(fmt.Sprintf("Creating aTLS Validator for %s", conf.GetAttestationConfig().GetVariant()))
+	a.log.Debug(fmt.Sprintf("Creating aTLS Validator for %q", conf.GetAttestationConfig().GetVariant()))
 	validator, err := choose.Validator(conf.GetAttestationConfig(), a.wLog)
 	if err != nil {
 		return nil, fmt.Errorf("creating validator: %w", err)
@@ -121,7 +121,7 @@ func (a *applyCmd) writeInitOutput(
 	if err := a.fileHandler.Write(constants.AdminConfFilename, initResp.Kubeconfig, file.OptNone); err != nil {
 		return fmt.Errorf("writing kubeconfig: %w", err)
 	}
-	a.log.Debug(fmt.Sprintf("Kubeconfig written to %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename)))
+	a.log.Debug(fmt.Sprintf("Kubeconfig written to %q", a.flags.pathPrefixer.PrefixPrintablePath(constants.AdminConfFilename)))
 
 	if mergeConfig {
 		if err := a.merger.mergeConfigs(constants.AdminConfFilename, a.fileHandler); err != nil {
@@ -136,7 +136,7 @@ func (a *applyCmd) writeInitOutput(
 		return fmt.Errorf("writing Constellation state file: %w", err)
 	}
 
-	a.log.Debug(fmt.Sprintf("Constellation state file written to %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename)))
+	a.log.Debug(fmt.Sprintf("Constellation state file written to %q", a.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename)))
 
 	if !mergeConfig {
 		fmt.Fprintln(wr, "You can now connect to your cluster by executing:")

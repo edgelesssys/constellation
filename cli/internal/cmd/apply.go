@@ -449,7 +449,7 @@ func (a *applyCmd) apply(
 
 func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationconfigapi.Fetcher) (*config.Config, *state.State, error) {
 	// Read user's config and state file
-	a.log.Debug(fmt.Sprintf("Reading config from %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename)))
+	a.log.Debug(fmt.Sprintf("Reading config from %q", a.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename)))
 	conf, err := config.New(a.fileHandler, constants.ConfigFilename, configFetcher, a.flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
@@ -459,7 +459,7 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 		return nil, nil, err
 	}
 
-	a.log.Debug(fmt.Sprintf("Reading state file from %s", a.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename)))
+	a.log.Debug(fmt.Sprintf("Reading state file from %q", a.flags.pathPrefixer.PrefixPrintablePath(constants.StateFilename)))
 	stateFile, err := state.CreateOrRead(a.fileHandler, constants.StateFilename)
 	if err != nil {
 		return nil, nil, err
@@ -528,10 +528,10 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 	// If we need to run the init RPC, the version has to be valid
 	// Otherwise, we are able to use an outdated version, meaning we skip the K8s upgrade
 	// We skip version validation if the user explicitly skips the Kubernetes phase
-	a.log.Debug(fmt.Sprintf("Validating Kubernetes version %s", conf.KubernetesVersion))
+	a.log.Debug(fmt.Sprintf("Validating Kubernetes version %q", conf.KubernetesVersion))
 	validVersion, err := versions.NewValidK8sVersion(string(conf.KubernetesVersion), true)
 	if err != nil {
-		a.log.Debug(fmt.Sprintf("Kubernetes version not valid: %s", err))
+		a.log.Debug(fmt.Sprintf("Kubernetes version not valid: %q", err))
 		if !a.flags.skipPhases.contains(skipInitPhase) {
 			return nil, nil, err
 		}
@@ -570,7 +570,7 @@ func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationc
 		cmd.PrintErrf("Warning: Constellation with Kubernetes %s is still in preview. Use only for evaluation purposes.\n", validVersion)
 	}
 	conf.KubernetesVersion = validVersion
-	a.log.Debug(fmt.Sprintf("Target Kubernetes version set to %s", conf.KubernetesVersion))
+	a.log.Debug(fmt.Sprintf("Target Kubernetes version set to %q", conf.KubernetesVersion))
 
 	// Validate microservice version (helm versions) in the user's config matches the version of the CLI
 	// This makes sure we catch potential errors early, not just after we already ran Terraform migrations or the init RPC
@@ -598,7 +598,7 @@ func (a *applyCmd) applyJoinConfig(cmd *cobra.Command, newConfig config.Attestat
 ) error {
 	clusterAttestationConfig, err := a.applier.GetClusterAttestationConfig(cmd.Context(), newConfig.GetVariant())
 	if err != nil {
-		a.log.Debug(fmt.Sprintf("Getting cluster attestation config failed: %s", err))
+		a.log.Debug(fmt.Sprintf("Getting cluster attestation config failed: %q", err))
 		if k8serrors.IsNotFound(err) {
 			a.log.Debug("Creating new join config")
 			return a.applier.ApplyJoinConfig(cmd.Context(), newConfig, measurementSalt)

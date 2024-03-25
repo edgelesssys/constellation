@@ -28,6 +28,6 @@ func New(log *slog.Logger) *Uploader {
 
 // Upload pretends to upload images to a csp.
 func (u *Uploader) Upload(_ context.Context, req *osimage.UploadRequest) ([]versionsapi.ImageInfoEntry, error) {
-	u.log.Debug(fmt.Sprintf("Skipping image upload of %s since this CSP does not require images to be uploaded in advance.", req.Version.ShortPath()))
+	u.log.Debug(fmt.Sprintf("Skipping image upload of %q since this CSP does not require images to be uploaded in advance.", req.Version.ShortPath()))
 	return nil, nil
 }

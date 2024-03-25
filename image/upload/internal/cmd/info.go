@@ -50,7 +50,7 @@ func runInfo(cmd *cobra.Command, args []string) error {
 	}
 
 	log := logger.NewTextLogger(flags.logLevel)
-	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
+	log.Debug("Using flags", "region", flags.region, "bucket", flags.bucket, "distributionID", flags.distributionID)
 	info, err := readInfoArgs(args)
 	if err != nil {
 		return err
