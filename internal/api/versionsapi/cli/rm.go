@@ -75,24 +75,9 @@ func runRemove(cmd *cobra.Command, _ []string) (retErr error) {
 		return err
 	}
 	log := logger.NewTextLogger(flags.logLevel)
-	log.Debug(fmt.Sprintf(
-		`Parsed flags:
-  all: %t
-  az-location: %q
-  az-resource-group: %q
-  az-subscription: %q
-  bucket: %q
-  distribution-id: %q
-  dryrun: %t
-  gcp-project: %q
-  ref: %q
-  region: %q
-  stream: %q
-  version: %q
-  version-path: %q`,
-		flags.all, flags.azLocation, flags.azResourceGroup, flags.azSubscription,
-		flags.bucket, flags.distributionID, flags.dryrun, flags.gcpProject,
-		flags.ref, flags.region, flags.stream, flags.version, flags.versionPath))
+	log.Debug("Using flags", "all", flags.all, "azLocation", flags.azLocation, "azResourceGroup", flags.azResourceGroup, "azSubscription", flags.azSubscription,
+		"bucket", flags.bucket, "distributionID", flags.distributionID, "dryrun", flags.dryrun, "gcpProject", flags.gcpProject, "ref", flags.ref,
+		"region", flags.region, "stream", flags.stream, "version", flags.version, "versionPath", flags.versionPath)
 
 	log.Debug("Validating flags")
 	if err := flags.validate(); err != nil {
