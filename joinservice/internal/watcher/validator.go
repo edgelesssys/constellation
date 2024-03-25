@@ -10,7 +10,6 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/asn1"
-	"encoding/hex"
 	"fmt"
 	"log/slog"
 	"path/filepath"
@@ -80,11 +79,7 @@ func (u *Updatable) Update() error {
 	if err != nil {
 		return fmt.Errorf("unmarshaling config: %w", err)
 	}
-	measurementsToPrint := ""
-	for i, measurement := range cfg.GetMeasurements() {
-		measurementsToPrint += fmt.Sprintf("\t%d: 0x%s\n", i, hex.EncodeToString(measurement.Expected))
-	}
-	u.log.Debug(fmt.Sprintf("New expected measurements:\n%s", measurementsToPrint))
+	u.log.Debug(fmt.Sprintf("New expected measurements:\n%s", cfg.GetMeasurements().String()))
 
 	cfgWithCerts, err := u.configWithCerts(cfg)
 	if err != nil {
