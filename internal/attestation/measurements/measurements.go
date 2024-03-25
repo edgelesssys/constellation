@@ -330,6 +330,15 @@ func (m *M) UnmarshalYAML(unmarshal func(any) error) error {
 	return nil
 }
 
+// String returns a string represantation of the measurements.
+func (m M) String() string {
+	returnString := ""
+	for i, measurement := range m {
+		returnString += fmt.Sprintf("%d: 0x%s\n", i, hex.EncodeToString(measurement.Expected))
+	}
+	return returnString
+}
+
 func (m *M) fromImageMeasurementsV2(
 	measurements ImageMeasurementsV2, wantVersion versionsapi.Version,
 	csp cloudprovider.Provider, attestationVariant variant.Variant,
