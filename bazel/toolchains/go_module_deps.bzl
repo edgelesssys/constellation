@@ -1355,8 +1355,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/docker/docker",
-        sum = "h1:D5fy/lYmY7bvZa0XTZ5/UJPljor41F+vdyJG5luQLfQ=",
-        version = "v25.0.3+incompatible",
+        sum = "h1:UmQydMduGkrD5nQde1mecF/YnSbTOaPeFIeP5C4W+DE=",
+        version = "v25.0.5+incompatible",
     )
     go_repository(
         name = "com_github_docker_docker_credential_helpers",
