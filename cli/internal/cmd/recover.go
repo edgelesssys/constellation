@@ -84,12 +84,7 @@ func runRecover(cmd *cobra.Command, _ []string) error {
 	if err := r.flags.parse(cmd.Flags()); err != nil {
 		return err
 	}
-	r.log.Debug(fmt.Sprintf(
-		`Using flags:
-  debug: %t
-  endpoint: %q
-  force: %t`,
-		r.flags.debug, r.flags.endpoint, r.flags.force))
+	r.log.Debug("Using flags", "debug", r.flags.debug, "endpoint", r.flags.endpoint, "force", r.flags.force)
 	return r.recover(cmd, fileHandler, 5*time.Second, &recoverDoer{log: r.log}, newDialer)
 }
 

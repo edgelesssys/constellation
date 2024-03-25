@@ -59,18 +59,8 @@ func runUplosi(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	log := logger.NewTextLogger(flags.logLevel)
-	log.Debug(fmt.Sprintf(
-		`Parsed flags:
-  raw-image: %q
-  attestation-variant: %q
-  csp: %q
-  version: %q
-  region: %q
-  bucket: %q
-  distribution-id: %q
-`, flags.rawImage, flags.attestationVariant, flags.provider, flags.version.Version(), flags.region,
-		flags.bucket, flags.distributionID))
-
+	log.Debug("Using flags", "raw-image", flags.rawImage, "attestation-variant", flags.attestationVariant, "csp", flags.provider, "ref", flags.version.Ref(), "stream", flags.version.Stream(),
+	"version", flags.version.Version(), "region", flags.region, "bucket", flags.bucket, "distribution-id", flags.distributionID, "out", flags.out, "uplosi-path", flags.uplosiPath)
 	archiveC, archiveCClose, err := archive.New(cmd.Context(), flags.region, flags.bucket, flags.distributionID, log)
 	if err != nil {
 		return err

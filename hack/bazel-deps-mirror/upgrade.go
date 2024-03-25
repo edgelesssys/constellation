@@ -40,11 +40,7 @@ func runUpgrade(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	log := logger.NewTextLogger(flags.logLevel)
-	log.Debug(fmt.Sprintf(
-		`Parsed flags:
-  unauthenticated: %t
-  dry-run: %t
-`, flags.unauthenticated, flags.dryRun))
+	log.Debug("Using flags", "unauthenticated", flags.unauthenticated, "dryRun", flags.dryRun)
 
 	fileHelper, err := bazelfiles.New()
 	if err != nil {
