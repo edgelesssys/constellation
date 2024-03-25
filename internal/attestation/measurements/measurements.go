@@ -330,7 +330,7 @@ func (m *M) UnmarshalYAML(unmarshal func(any) error) error {
 	return nil
 }
 
-// String returns a string represantation of the measurements.
+// String returns a string representation of the measurements.
 func (m M) String() string {
 	returnString := ""
 	for i, measurement := range m {
