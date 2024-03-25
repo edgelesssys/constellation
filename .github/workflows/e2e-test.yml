@@ -290,7 +290,7 @@ jobs:
             echo "DELETE_TF_STATE=false" >> "$GITHUB_ENV"
           fi
 
-      - name: Delete tfstate artifact
+      - name: Delete tfstate artifact if necessary
         if: env.DELETE_TF_STATE == 'true'
         uses: ./.github/actions/artifact_delete
         with:
