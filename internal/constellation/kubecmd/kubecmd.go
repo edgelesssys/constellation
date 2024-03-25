@@ -266,7 +266,7 @@ func (k *KubeCmd) ExtendClusterConfigCertSANs(ctx context.Context, alternativeNa
 		k.log.Debug("No new SANs to add to the cluster's apiserver SAN field")
 		return nil
 	}
-	k.log.Debug(fmt.Sprintf("Extending the cluster's apiserver SAN field with the following SANs: %q\n", strings.Join(missingSANs, ", ")))
+	k.log.Debug(fmt.Sprintf("Extending the cluster's apiserver SAN field with the following SANs: %q", strings.Join(missingSANs, ", ")))
 
 	clusterConfiguration.APIServer.CertSANs = append(clusterConfiguration.APIServer.CertSANs, missingSANs...)
 	sort.Strings(clusterConfiguration.APIServer.CertSANs)
