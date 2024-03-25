@@ -1,5 +1,3 @@
-#!/bin/env bash
-
 # get_e2e_test_ids_on_date gets all workflow IDs of workflows that contain "e2e" on a specific date.
 function get_e2e_test_ids_on_date {
   ids="$(gh run list --created "$1" --status failure --json createdAt,workflowName,databaseId --jq '.[] | select(.workflowName | contains("e2e") and (contains("MiniConstellation") | not)) | .databaseId' -L1000 -R edgelesssys/constellation || exit 1)"
@@ -56,15 +54,16 @@ database_ids=()
 for d in "${dates_to_clean[@]}"; do
   echo "    retrieving run IDs from $d"
   mapfile -td " " tmp < <(get_e2e_test_ids_on_date "$d")
-  database_ids+="${tmp[@]}"
+  database_ids+=("${tmp[*]}")
 done
 
 # cleanup database_ids
-mapfile -t database_ids <<< "$database_ids"
+mapfile -t database_ids < <(echo "${database_ids[@]}")
+mapfile -td " " database_ids < <(echo "${database_ids[@]}")
 
 echo "[*] downloading terraform state artifacts"
 for id in "${database_ids[@]}"; do
-  if [[ -n $id ]]; then
+  if [[ "$id" = *[^[:space:]]* ]]; then
     echo "    downloading from workflow $id"
     download_tfstate_artifact "$id"
   fi
