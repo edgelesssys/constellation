@@ -1,0 +1,17 @@
+name: Delete artifact
+description: Delete an artifact by name
+
+inputs:
+  name:
+    description: 'The name of the artifact.'
+    required: true
+  workflowID:
+    description: 'The ID of the workflow.'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Delete artifact
+      shell: bash
+      run: ./.github/actions/artifact_delete/delete_artifact.sh ${{ inputs.workflowID }} ${{ inputs.name }}
