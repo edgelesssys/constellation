@@ -1,3 +1,9 @@
+/*
+Copyright (c) Edgeless Systems GmbH
+
+SPDX-License-Identifier: AGPL-3.0-only
+*/
+
 package gcp
 
 import (
@@ -10,6 +16,8 @@ import (
 
 	compute "cloud.google.com/go/compute/apiv1"
 	"cloud.google.com/go/compute/apiv1/computepb"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/snp"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/googleapis/gax-go/v2"
@@ -39,6 +47,7 @@ type GCPRESTClient interface {
 // TrustedKeyGetter returns a function that queries the GCE API for a shieldedVM's public signing key.
 // This key can be used to verify attestation statements issued by the VM.
 func TrustedKeyGetter(
+	attestationVariant variant.Variant,
 	newRESTClient func(ctx context.Context, opts ...option.ClientOption) (GCPRESTClient, error),
 ) (func(ctx context.Context, attDoc vtpm.AttestationDocument, _ []byte) (crypto.PublicKey, error), error) {
 	return func(ctx context.Context, attDoc vtpm.AttestationDocument, _ []byte) (crypto.PublicKey, error) {
@@ -48,15 +57,30 @@ func TrustedKeyGetter(
 		}
 		defer client.Close()
 
-		var instanceInfo attest.GCEInstanceInfo
-		if err := json.Unmarshal(attDoc.InstanceInfo, &instanceInfo); err != nil {
-			return nil, err
+		var gceInstanceInfo attest.GCEInstanceInfo
+		switch attestationVariant {
+		case variant.GCPSEVES{}:
+			if err := json.Unmarshal(attDoc.InstanceInfo, &gceInstanceInfo); err != nil {
+				return nil, err
+			}
+		case variant.GCPSEVSNP{}:
+			var instanceInfo snp.InstanceInfo
+			if err := json.Unmarshal(attDoc.InstanceInfo, &instanceInfo); err != nil {
+				return nil, err
+			}
+			gceInstanceInfo = attest.GCEInstanceInfo{
+				InstanceName: instanceInfo.GCP.InstanceName,
+				ProjectId:    instanceInfo.GCP.ProjectId,
+				Zone:         instanceInfo.GCP.Zone,
+			}
+		default:
+			return nil, fmt.Errorf("unsupported attestation variant: %v", attestationVariant)
 		}
 
 		instance, err := client.GetShieldedInstanceIdentity(ctx, &computepb.GetShieldedInstanceIdentityInstanceRequest{
-			Instance: instanceInfo.GetInstanceName(),
-			Project:  instanceInfo.GetProjectId(),
-			Zone:     instanceInfo.GetZone(),
+			Instance: gceInstanceInfo.GetInstanceName(),
+			Project:  gceInstanceInfo.GetProjectId(),
+			Zone:     gceInstanceInfo.GetZone(),
 		})
 		if err != nil {
 			return nil, fmt.Errorf("retrieving VM identity: %w", err)

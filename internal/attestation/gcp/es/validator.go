@@ -27,7 +27,7 @@ type Validator struct {
 
 // NewValidator initializes a new GCP validator with the provided PCR values specified in the config.
 func NewValidator(cfg *config.GCPSEVES, log attestation.Logger) (*Validator, error) {
-	getTrustedKey, err := gcp.TrustedKeyGetter(gcp.NewRESTClient)
+	getTrustedKey, err := gcp.TrustedKeyGetter(variant.GCPSEVES{}, gcp.NewRESTClient)
 	if err != nil {
 		return nil, fmt.Errorf("create trusted key getter: %v", err)
 	}

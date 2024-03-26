@@ -15,6 +15,7 @@ import (
 
 	"cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/googleapis/gax-go/v2"
@@ -149,7 +150,7 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 
 			attDoc := vtpm.AttestationDocument{InstanceInfo: tc.instanceInfo}
 
-			getTrustedKey, err := gcp.TrustedKeyGetter(tc.getClient)
+			getTrustedKey, err := gcp.TrustedKeyGetter(variant.GCPSEVES{}, tc.getClient)
 			require.NoError(t, err)
 
 			out, err := getTrustedKey(context.Background(), attDoc, nil)

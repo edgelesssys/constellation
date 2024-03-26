@@ -16,6 +16,7 @@ import (
 	"io"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
@@ -24,6 +25,7 @@ import (
 	sevclient "github.com/google/go-sev-guest/client"
 	"github.com/google/go-tpm-tools/client"
 	tpmclient "github.com/google/go-tpm-tools/client"
+	"github.com/google/go-tpm-tools/proto/attest"
 )
 
 // Issuer issues SEV-SNP attestations.
@@ -81,17 +83,52 @@ func getInstanceInfo(_ context.Context, tpm io.ReadWriteCloser, _ []byte) ([]byt
 		return nil, fmt.Errorf("getting extended report: %w", err)
 	}
 
-	vlek, err := pemEncodedVCEK(certs)
+	vcek, err := pemEncodedVCEK(certs)
 	if err != nil {
 		return nil, fmt.Errorf("parsing vlek: %w", err)
 	}
 
-	raw, err := json.Marshal(snp.InstanceInfo{AttestationReport: report, ReportSigner: vlek})
+	gceInstanceInfo, err := gceInstanceInfo()
+	if err != nil {
+		return nil, fmt.Errorf("getting GCE instance info: %w", err)
+	}
+
+	raw, err := json.Marshal(snp.InstanceInfo{
+		AttestationReport: report,
+		ReportSigner:      vcek,
+		GCP:               gceInstanceInfo,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("marshalling instance info: %w", err)
 	}
 
 	return raw, nil
+}
+
+// gceInstanceInfo returns the instance info for a GCE instance from the metadata API.
+func gceInstanceInfo() (*attest.GCEInstanceInfo, error) {
+	c := gcp.MetadataClient{}
+
+	instanceName, err := c.InstanceName()
+	if err != nil {
+		return nil, fmt.Errorf("getting instance name: %w", err)
+	}
+
+	projectID, err := c.ProjectID()
+	if err != nil {
+		return nil, fmt.Errorf("getting project ID: %w", err)
+	}
+
+	zone, err := c.Zone()
+	if err != nil {
+		return nil, fmt.Errorf("getting zone: %w", err)
+	}
+
+	return &attest.GCEInstanceInfo{
+		InstanceName: instanceName,
+		ProjectId:  projectID,
+		Zone:       zone,
+	}, nil
 }
 
 // pemEncodedVCEK takes a marshalled SNP certificate table and returns the PEM-encoded VCEK certificate.
