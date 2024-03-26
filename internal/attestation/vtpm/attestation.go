@@ -9,6 +9,7 @@ package vtpm
 import (
 	"context"
 	"crypto"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -125,15 +126,21 @@ func (i *Issuer) Issue(ctx context.Context, userData []byte, nonce []byte) (res 
 
 	// Create an attestation using the loaded key
 	extraData := attestation.MakeExtraData(userData, nonce)
-	tpmAttestation, err := aK.Attest(tpmClient.AttestOpts{Nonce: extraData})
-	if err != nil {
-		return nil, fmt.Errorf("creating attestation: %w", err)
-	}
 
 	// Fetch instance info of the VM
 	instanceInfo, err := i.getInstanceInfo(ctx, tpm, extraData)
 	if err != nil {
 		return nil, fmt.Errorf("fetching instance info: %w", err)
+	}
+
+	tpmNonce, err := makeTpmNonce(instanceInfo, extraData)
+	if err != nil {
+		return nil, fmt.Errorf("creating TPM nonce: %w", err)
+	}
+
+	tpmAttestation, err := aK.Attest(tpmClient.AttestOpts{Nonce: tpmNonce})
+	if err != nil {
+		return nil, fmt.Errorf("creating attestation: %w", err)
 	}
 
 	attDoc := AttestationDocument{
@@ -208,11 +215,16 @@ func (v *Validator) Validate(ctx context.Context, attDocRaw []byte, nonce []byte
 		return nil, fmt.Errorf("validating attestation public key: %w", err)
 	}
 
+	tpmNonce, err := makeTpmNonce(attDoc.InstanceInfo, extraData)
+	if err != nil {
+		return nil, fmt.Errorf("creating TPM nonce: %w", err)
+	}
+
 	// Verify the TPM attestation
 	state, err := tpmServer.VerifyAttestation(
 		attDoc.Attestation,
 		tpmServer.VerifyOpts{
-			Nonce:      extraData,
+			Nonce:      tpmNonce,
 			TrustedAKs: []crypto.PublicKey{aKP},
 			AllowSHA1:  false,
 		},
@@ -286,4 +298,22 @@ func GetSelectedMeasurements(open TPMOpenFunc, selection tpm2.PCRSelection) (mea
 	}
 
 	return m, nil
+}
+
+// tpmNonce is the data included (via the nonce field) in the TPM attestation.
+type tpmNonce struct {
+	// ExtraData is the data used in the TEE attestation, containing handshake data and a nobnce.
+	ExtraData []byte
+	// TEEReportHash is the SHA256 hash of the TEE report (i.e. the instance info).
+	TEEReportHash []byte
+}
+
+// makeTpmNonce creates a nonce for the TPM attestation and returns it in its marshaled form.
+func makeTpmNonce(instanceInfo []byte, extraData []byte) ([]byte, error) {
+	reportHash := sha256.Sum256(instanceInfo)
+
+	return json.Marshal(tpmNonce{
+		ExtraData:     extraData,
+		TEEReportHash: reportHash[:],
+	})
 }
