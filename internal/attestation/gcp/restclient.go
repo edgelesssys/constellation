@@ -12,59 +12,66 @@ import (
 	"cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/google/go-tpm-tools/proto/attest"
-	"github.com/googleapis/gax-go"
+	"github.com/googleapis/gax-go/v2"
 	"google.golang.org/api/option"
 )
 
-type gcpRestClient interface {
-	GetShieldedInstanceIdentity(ctx context.Context, req *computepb.GetShieldedInstanceIdentityInstanceRequest, opts ...gax.CallOption) (*computepb.ShieldedInstanceIdentity, error)
-	Close() error
-}
-
-type instanceClient struct {
+// RESTClient is a client for the GCE API.
+type RESTClient struct {
 	*compute.InstancesClient
 }
 
-func newInstanceClient(ctx context.Context, opts ...option.ClientOption) (gcpRestClient, error) {
+// NewRESTClient creates a new RESTClient.
+func NewRESTClient(ctx context.Context, opts ...option.ClientOption) (GCPRESTClient, error) {
 	c, err := compute.NewInstancesRESTClient(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}
-	return &instanceClient{c}, nil
+	return &RESTClient{c}, nil
 }
 
-// trustedKeyFromGCEAPI queries the GCE API for a shieldedVM's public signing key.
+// GCPRESTClient is the interface a GCP REST client must implement.
+type GCPRESTClient interface {
+	GetShieldedInstanceIdentity(ctx context.Context, req *computepb.GetShieldedInstanceIdentityInstanceRequest, opts ...gax.CallOption) (*computepb.ShieldedInstanceIdentity, error)
+	Close() error
+}
+
+// TrustedKeyGetter returns a function that queries the GCE API for a shieldedVM's public signing key.
 // This key can be used to verify attestation statements issued by the VM.
-func (v *Validator) trustedKeyFromGCEAPI(ctx context.Context, attDoc vtpm.AttestationDocument, _ []byte) (crypto.PublicKey, error) {
-	client, err := v.restClient(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("creating GCE client: %w", err)
-	}
-	defer client.Close()
+func TrustedKeyGetter(
+	newRESTClient func(ctx context.Context, opts ...option.ClientOption) (GCPRESTClient, error),
+) (func(ctx context.Context, attDoc vtpm.AttestationDocument, _ []byte) (crypto.PublicKey, error), error) {
+	return func(ctx context.Context, attDoc vtpm.AttestationDocument, _ []byte) (crypto.PublicKey, error) {
+		client, err := newRESTClient(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("creating GCE client: %w", err)
+		}
+		defer client.Close()
 
-	var instanceInfo attest.GCEInstanceInfo
-	if err := json.Unmarshal(attDoc.InstanceInfo, &instanceInfo); err != nil {
-		return nil, err
-	}
+		var instanceInfo attest.GCEInstanceInfo
+		if err := json.Unmarshal(attDoc.InstanceInfo, &instanceInfo); err != nil {
+			return nil, err
+		}
 
-	instance, err := client.GetShieldedInstanceIdentity(ctx, &computepb.GetShieldedInstanceIdentityInstanceRequest{
-		Instance: instanceInfo.GetInstanceName(),
-		Project:  instanceInfo.GetProjectId(),
-		Zone:     instanceInfo.GetZone(),
-	})
-	if err != nil {
-		return nil, fmt.Errorf("retrieving VM identity: %w", err)
-	}
+		instance, err := client.GetShieldedInstanceIdentity(ctx, &computepb.GetShieldedInstanceIdentityInstanceRequest{
+			Instance: instanceInfo.GetInstanceName(),
+			Project:  instanceInfo.GetProjectId(),
+			Zone:     instanceInfo.GetZone(),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("retrieving VM identity: %w", err)
+		}
 
-	if instance.SigningKey == nil || instance.SigningKey.EkPub == nil {
-		return nil, fmt.Errorf("received no signing key from GCP API")
-	}
+		if instance.SigningKey == nil || instance.SigningKey.EkPub == nil {
+			return nil, fmt.Errorf("received no signing key from GCP API")
+		}
 
-	// Parse the signing key return by GetShieldedInstanceIdentity
-	block, _ := pem.Decode([]byte(*instance.SigningKey.EkPub))
-	if block == nil || block.Type != "PUBLIC KEY" {
-		return nil, fmt.Errorf("failed to decode PEM block containing public key")
-	}
+		// Parse the signing key return by GetShieldedInstanceIdentity
+		block, _ := pem.Decode([]byte(*instance.SigningKey.EkPub))
+		if block == nil || block.Type != "PUBLIC KEY" {
+			return nil, fmt.Errorf("failed to decode PEM block containing public key")
+		}
 
-	return x509.ParsePKIXPublicKey(block.Bytes)
+		return x509.ParsePKIXPublicKey(block.Bytes)
+	}, nil
 }

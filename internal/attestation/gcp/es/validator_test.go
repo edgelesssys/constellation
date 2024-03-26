@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"cloud.google.com/go/compute/apiv1/computepb"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/googleapis/gax-go/v2"
@@ -87,7 +88,7 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 
 	testCases := map[string]struct {
 		instanceInfo []byte
-		getClient    func(ctx context.Context, opts ...option.ClientOption) (gcpRestClient, error)
+		getClient    func(ctx context.Context, opts ...option.ClientOption) (gcp.GCPRESTClient, error)
 		wantErr      bool
 	}{
 		"success": {
@@ -146,12 +147,12 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			v := &Validator{
-				restClient: tc.getClient,
-			}
 			attDoc := vtpm.AttestationDocument{InstanceInfo: tc.instanceInfo}
 
-			out, err := v.trustedKeyFromGCEAPI(context.Background(), attDoc, nil)
+			getTrustedKey, err := gcp.TrustedKeyGetter(tc.getClient)
+			require.NoError(t, err)
+
+			out, err := getTrustedKey(context.Background(), attDoc, nil)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -175,8 +176,8 @@ type fakeInstanceClient struct {
 	ident       *computepb.ShieldedInstanceIdentity
 }
 
-func prepareFakeClient(ident *computepb.ShieldedInstanceIdentity, newErr, getIdentErr error) func(ctx context.Context, opts ...option.ClientOption) (gcpRestClient, error) {
-	return func(_ context.Context, _ ...option.ClientOption) (gcpRestClient, error) {
+func prepareFakeClient(ident *computepb.ShieldedInstanceIdentity, newErr, getIdentErr error) func(ctx context.Context, opts ...option.ClientOption) (gcp.GCPRESTClient, error) {
+	return func(_ context.Context, _ ...option.ClientOption) (gcp.GCPRESTClient, error) {
 		return &fakeInstanceClient{
 			getIdentErr: getIdentErr,
 			ident:       ident,
