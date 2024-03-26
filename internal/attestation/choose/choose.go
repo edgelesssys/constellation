@@ -16,7 +16,7 @@ import (
 	azuresnp "github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
 	azuretdx "github.com/edgelesssys/constellation/v2/internal/attestation/azure/tdx"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/trustedlaunch"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp/es"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/tdx"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -37,7 +37,7 @@ func Issuer(attestationVariant variant.Variant, log attestation.Logger) (atls.Is
 	case variant.AzureTDX{}:
 		return azuretdx.NewIssuer(log), nil
 	case variant.GCPSEVES{}:
-		return gcp.NewIssuer(log), nil
+		return es.NewIssuer(log), nil
 	case variant.QEMUVTPM{}:
 		return qemu.NewIssuer(log), nil
 	case variant.QEMUTDX{}:
@@ -63,7 +63,7 @@ func Validator(cfg config.AttestationCfg, log attestation.Logger) (atls.Validato
 	case *config.AzureTDX:
 		return azuretdx.NewValidator(cfg, log), nil
 	case *config.GCPSEVES:
-		return gcp.NewValidator(cfg, log), nil
+		return es.NewValidator(cfg, log)
 	case *config.QEMUVTPM:
 		return qemu.NewValidator(cfg, log), nil
 	case *config.QEMUTDX:
