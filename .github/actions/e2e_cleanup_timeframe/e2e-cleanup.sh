@@ -63,7 +63,7 @@ mapfile -td " " database_ids < <(echo "${database_ids[@]}")
 
 echo "[*] downloading terraform state artifacts"
 for id in "${database_ids[@]}"; do
-  if [[ "$id" = *[^[:space:]]* ]]; then
+  if [[ $id == *[^[:space:]]* ]]; then
     echo "    downloading from workflow $id"
     download_tfstate_artifact "$id"
   fi
