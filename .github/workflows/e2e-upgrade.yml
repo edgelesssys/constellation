@@ -505,7 +505,7 @@ jobs:
             constellation-version.yaml
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
-      - name: Prepare terraform state
+      - name: Prepare terraform state artifact upload
         if: always()
         shell: bash
         run: |
