@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # get_e2e_test_ids_on_date gets all workflow IDs of workflows that contain "e2e" on a specific date.
 function get_e2e_test_ids_on_date {
   ids="$(gh run list --created "$1" --status failure --json createdAt,workflowName,databaseId --jq '.[] | select(.workflowName | contains("e2e") and (contains("MiniConstellation") | not)) | .databaseId' -L1000 -R edgelesssys/constellation || exit 1)"
