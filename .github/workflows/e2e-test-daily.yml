@@ -56,6 +56,7 @@ jobs:
       checks: write
       contents: read
       packages: write
+      actions: write
     needs: [find-latest-image]
     steps:
       - name: Check out repository
@@ -122,20 +123,43 @@ jobs:
           azureCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
           gcpServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
 
+      - name: Check if tfstate should be deleted
+        if: always()
+        shell: bash
+        run: |
+          if [ ! -d constellation-terraform ] && [ ! -d constellation-iam-terraform ]; then
+            echo "DELETE_TF_STATE=true" >> "$GITHUB_ENV"     
+          else
+            echo "DELETE_TF_STATE=false" >> "$GITHUB_ENV"
+          fi
+
+      - name: Delete tfstate artifact if necessary
+        if: env.DELETE_TF_STATE == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        uses: ./.github/actions/artifact_delete
+        with:
+          name: terraform-state-${{ steps.e2e_test.outputs.namePrefix }}
+          workflowID: ${{ github.run_id }}
+
       - name: Prepare terraform state folders
         if: always()
         shell: bash
         run: |
           rm -rf to-zip/*
+          to_upload=""
           if [ -d constellation-terraform ]; then
             cp -r constellation-terraform to-zip
             rm to-zip/constellation-terraform/plan.zip
             rm -rf to-zip/constellation-terraform/.terraform
+            to_upload+="to-zip/constellation-terraform"
           fi
           if [ -d constellation-iam-terraform ]; then
             cp -r constellation-iam-terraform to-zip
             rm -rf to-zip/constellation-iam-terraform/.terraform
+            to_upload+=" to-zip/constellation-iam-terraform"
           fi
+          echo "TO_UPLOAD=$to_upload" >> "$GITHUB_ENV"
 
       - name: Update tfstate
         if: always()
@@ -143,8 +167,7 @@ jobs:
         with:
           name: terraform-state-${{ steps.e2e_test.outputs.namePrefix }}
           path: >
-            to-zip/constellation-terraform
-            to-zip/constellation-iam-terraform
+            ${{ env.TO_UPLOAD }}
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
           overwrite: true
 
