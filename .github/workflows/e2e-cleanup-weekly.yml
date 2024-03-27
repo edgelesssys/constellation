@@ -1,0 +1,24 @@
+name: e2e weekly cleanup
+
+on:
+  schedule:
+    - cron: "0 0 * * 0" # At 00:00 every Sunday UTC
+  workflow_dispatch:
+    
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Cleanup
+        uses: ./.github/actions/e2e_cleanup_timeframe
+        with:
+          ghToken: ${{ secrets.GITHUB_TOKEN }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          azure_credentials: ${{ secrets.AZURE_E2E_DESTROY_CREDENTIALS }}

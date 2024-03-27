@@ -1,0 +1,46 @@
+name: E2E cleanup over timeframe
+description: Clean up old terraform resources of E2E tests
+
+inputs:
+  ghToken:
+    description:  'The github token that is used with the github CLI.'
+    required: true
+  encryptionSecret:
+    description: 'The secret to use for decrypting the artifacts.'
+    required: true
+  azure_credentials:
+    description: "Credentials authorized to create Constellation on Azure."
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Authenticate AWS
+      uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a # v4.0.1
+      with:
+        role-to-assume: arn:aws:iam::795746500882:role/GithubActionsE2EDestroy
+        aws-region: eu-central-1
+
+    - name: Authenticate Azure
+      uses: ./.github/actions/login_azure
+      with:
+        azure_credentials: ${{ inputs.azure_credentials }}
+
+    - name: Authenticate GCP
+      uses: ./.github/actions/login_gcp
+      with:
+        service_account: "destroy-e2e@constellation-e2e.iam.gserviceaccount.com"
+
+    - name: Install unzip
+      uses: ./.github/actions/setup_bazel_nix
+      with:
+        nixTools: |
+          unzip
+    - name: Run cleanup
+      run: ./.github/actions/e2e_cleanup_timeframe/e2e-cleanup.sh
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.ghToken }}
+        ENCRYPTION_SECRET: ${{ inputs.encryptionSecret }}
+
+

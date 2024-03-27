@@ -14,6 +14,10 @@ inputs:
   encryptionSecret:
     description: 'The secret to use for encrypting the files.'
     required: true
+  overwrite:
+    description: 'Overwrite an artifact with the same name.'
+    default: false
+    required: false
 
 runs:
   using: "composite"
@@ -69,3 +73,4 @@ runs:
         path: ${{ steps.tempdir.outputs.directory }}/archive.zip
         retention-days: ${{ inputs.retention-days }}
         if-no-files-found: ignore
+        overwrite: ${{ inputs.overwrite }}
