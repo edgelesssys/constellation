@@ -45,6 +45,8 @@ fi
 
 echo "Done waiting."
 
+echo '127.0.0.1 license.confidential.cloud' | sudo tee /etc/hosts > /dev/null
+
 ./constellation mini up --debug
 
 export KUBECONFIG="${PWD}/constellation-admin.conf"
