@@ -441,6 +441,7 @@ jobs:
       checks: write
       contents: read
       packages: write
+      actions: write
     if: always()
     needs: [generate-input-parameters, create-cluster, e2e-upgrade]
     steps:

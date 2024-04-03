@@ -457,6 +457,7 @@ jobs:
       checks: write
       contents: read
       packages: write
+      actions: write
     uses: ./.github/workflows/e2e-upgrade.yml
     with:
       fromVersion: ${{ matrix.fromVersion }}
