@@ -1,0 +1,1 @@
+exports_files(["go_tls_max_handshake_size.patch"])
