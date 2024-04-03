@@ -390,7 +390,7 @@ jobs:
           fi
 
       - name: Delete tfstate artifact if necessary
-        if: env.DELETE_TF_STATE == 'true'
+        if: always() && env.DELETE_TF_STATE == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         uses: ./.github/actions/artifact_delete
