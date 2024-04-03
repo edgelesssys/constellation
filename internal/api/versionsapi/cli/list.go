@@ -44,7 +44,8 @@ func runList(cmd *cobra.Command, _ []string) (retErr error) {
 		return err
 	}
 	log := logger.NewTextLogger(flags.logLevel)
-	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
+	log.Debug("Using flags", "bucket", flags.bucket, "distributionID", flags.distributionID, "json", flags.json, "minorVersion", flags.minorVersion,
+		"ref", flags.ref, "region", flags.region, "stream", flags.stream)
 
 	log.Debug("Validating flags")
 	if err := flags.validate(); err != nil {

@@ -75,7 +75,9 @@ func runRemove(cmd *cobra.Command, _ []string) (retErr error) {
 		return err
 	}
 	log := logger.NewTextLogger(flags.logLevel)
-	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
+	log.Debug("Using flags", "all", flags.all, "azLocation", flags.azLocation, "azResourceGroup", flags.azResourceGroup, "azSubscription", flags.azSubscription,
+		"bucket", flags.bucket, "distributionID", flags.distributionID, "dryrun", flags.dryrun, "gcpProject", flags.gcpProject, "ref", flags.ref,
+		"region", flags.region, "stream", flags.stream, "version", flags.version, "versionPath", flags.versionPath)
 
 	log.Debug("Validating flags")
 	if err := flags.validate(); err != nil {
@@ -138,12 +140,12 @@ func runRemove(cmd *cobra.Command, _ []string) (retErr error) {
 func deleteSingleVersion(ctx context.Context, clients rmImageClients, ver versionsapi.Version, dryrun bool, log *slog.Logger) error {
 	var retErr error
 
-	log.Debug(fmt.Sprintf("Deleting images for %s", ver.Version()))
+	log.Debug(fmt.Sprintf("Deleting images for %q", ver.Version()))
 	if err := deleteImage(ctx, clients, ver, dryrun, log); err != nil {
 		retErr = errors.Join(retErr, fmt.Errorf("deleting images: %w", err))
 	}
 
-	log.Debug(fmt.Sprintf("Deleting version %s from versions API", ver.Version()))
+	log.Debug(fmt.Sprintf("Deleting version %q from versions API", ver.Version()))
 	if err := clients.version.DeleteVersion(ctx, ver); err != nil {
 		retErr = errors.Join(retErr, fmt.Errorf("deleting version from versions API: %w", err))
 	}
@@ -159,7 +161,7 @@ func deleteRef(ctx context.Context, clients rmImageClients, ref string, dryrun b
 		minorVersions, err := listMinorVersions(ctx, clients.version, ref, stream)
 		var notFoundErr *apiclient.NotFoundError
 		if errors.As(err, &notFoundErr) {
-			log.Debug(fmt.Sprintf("No minor versions found for stream %s", stream))
+			log.Debug(fmt.Sprintf("No minor versions found for stream %q", stream))
 			continue
 		} else if err != nil {
 			return fmt.Errorf("listing minor versions for stream %s: %w", stream, err)
@@ -167,7 +169,7 @@ func deleteRef(ctx context.Context, clients rmImageClients, ref string, dryrun b
 
 		patchVersions, err := listPatchVersions(ctx, clients.version, ref, stream, minorVersions)
 		if errors.As(err, &notFoundErr) {
-			log.Debug(fmt.Sprintf("No patch versions found for stream %s", stream))
+			log.Debug(fmt.Sprintf("No patch versions found for stream %q", stream))
 			continue
 		} else if err != nil {
 			return fmt.Errorf("listing patch versions for stream %s: %w", stream, err)
@@ -406,7 +408,7 @@ func (a *awsClient) deleteImage(ctx context.Context, ami string, region string, 
 		return err
 	}
 	a.ec2 = ec2.NewFromConfig(cfg)
-	log.Debug(fmt.Sprintf("Deleting resources in AWS region %s", region))
+	log.Debug(fmt.Sprintf("Deleting resources in AWS region %q", region))
 
 	snapshotID, err := a.getSnapshotID(ctx, ami, log)
 	if err != nil {
@@ -427,7 +429,7 @@ func (a *awsClient) deleteImage(ctx context.Context, ami string, region string, 
 }
 
 func (a *awsClient) deregisterImage(ctx context.Context, ami string, dryrun bool, log *slog.Logger) error {
-	log.Debug(fmt.Sprintf("Deregistering image %s", ami))
+	log.Debug(fmt.Sprintf("Deregistering image %q", ami))
 
 	deregisterReq := ec2.DeregisterImageInput{
 		ImageId: &ami,
@@ -446,7 +448,7 @@ func (a *awsClient) deregisterImage(ctx context.Context, ami string, dryrun bool
 }
 
 func (a *awsClient) getSnapshotID(ctx context.Context, ami string, log *slog.Logger) (string, error) {
-	log.Debug(fmt.Sprintf("Describing image %s", ami))
+	log.Debug(fmt.Sprintf("Describing image %q", ami))
 
 	req := ec2.DescribeImagesInput{
 		ImageIds: []string{ami},
@@ -482,7 +484,7 @@ func (a *awsClient) getSnapshotID(ctx context.Context, ami string, log *slog.Log
 }
 
 func (a *awsClient) deleteSnapshot(ctx context.Context, snapshotID string, dryrun bool, log *slog.Logger) error {
-	log.Debug(fmt.Sprintf("Deleting AWS snapshot %s", snapshotID))
+	log.Debug(fmt.Sprintf("Deleting AWS snapshot %q", snapshotID))
 
 	req := ec2.DeleteSnapshotInput{
 		SnapshotId: &snapshotID,
@@ -536,11 +538,11 @@ func (g *gcpClient) deleteImage(ctx context.Context, imageURI string, dryrun boo
 	}
 
 	if dryrun {
-		log.Debug(fmt.Sprintf("DryRun: delete image request: %v", req))
+		log.Debug(fmt.Sprintf("DryRun: delete image request: %q", req.String()))
 		return nil
 	}
 
-	log.Debug(fmt.Sprintf("Deleting image %s", image))
+	log.Debug(fmt.Sprintf("Deleting image %q", image))
 	op, err := g.compute.Delete(ctx, req)
 	if err != nil && strings.Contains(err.Error(), "404") {
 		log.Warn(fmt.Sprintf("GCP image %s not found", image))
@@ -631,7 +633,7 @@ func (a *azureClient) deleteImage(ctx context.Context, image string, dryrun bool
 	}
 
 	if dryrun {
-		log.Debug(fmt.Sprintf("DryRun: delete image %v", azImage))
+		log.Debug(fmt.Sprintf("DryRun: delete image: gallery: %q, image definition: %q, resource group: %q, version: %q", azImage.gallery, azImage.imageDefinition, azImage.resourceGroup, azImage.version))
 		return nil
 	}
 
@@ -663,7 +665,7 @@ func (a *azureClient) deleteImage(ctx context.Context, image string, dryrun bool
 
 	time.Sleep(15 * time.Second) // Azure needs time understand that there is no version left...
 
-	log.Debug(fmt.Sprintf("Deleting image definition %s", azImage.imageDefinition))
+	log.Debug(fmt.Sprintf("Deleting image definition %q", azImage.imageDefinition))
 	op, err := a.image.BeginDelete(ctx, azImage.resourceGroup, azImage.gallery, azImage.imageDefinition, nil)
 	if err != nil {
 		return fmt.Errorf("deleting image definition %s: %w", azImage.imageDefinition, err)
@@ -687,7 +689,7 @@ type azImage struct {
 func (a *azureClient) parseImage(ctx context.Context, image string, log *slog.Logger) (azImage, error) {
 	if m := azImageRegex.FindStringSubmatch(image); len(m) == 5 {
 		log.Debug(fmt.Sprintf(
-			"Image matches local image format, resource group: %s, gallery: %s, image definition: %s, version: %s",
+			"Image matches local image format, resource group: %q, gallery: %q, image definition: %q, version: %q",
 			m[1], m[2], m[3], m[4],
 		))
 		return azImage{
@@ -708,7 +710,7 @@ func (a *azureClient) parseImage(ctx context.Context, image string, log *slog.Lo
 	version := m[3]
 
 	log.Debug(fmt.Sprintf(
-		"Image matches community image format, gallery public name: %s, image definition: %s, version: %s",
+		"Image matches community image format, gallery public name: %q, image definition: %q, version: %q",
 		galleryPublicName, imageDefinition, version,
 	))
 
@@ -725,15 +727,15 @@ func (a *azureClient) parseImage(ctx context.Context, image string, log *slog.Lo
 				continue
 			}
 			if v.Properties.SharingProfile == nil {
-				log.Debug(fmt.Sprintf("Skipping gallery %s with nil sharing profile", *v.Name))
+				log.Debug(fmt.Sprintf("Skipping gallery %q with nil sharing profile", *v.Name))
 				continue
 			}
 			if v.Properties.SharingProfile.CommunityGalleryInfo == nil {
-				log.Debug(fmt.Sprintf("Skipping gallery %s with nil community gallery info", *v.Name))
+				log.Debug(fmt.Sprintf("Skipping gallery %q with nil community gallery info", *v.Name))
 				continue
 			}
 			if v.Properties.SharingProfile.CommunityGalleryInfo.PublicNames == nil {
-				log.Debug(fmt.Sprintf("Skipping gallery %s with nil public names", *v.Name))
+				log.Debug(fmt.Sprintf("Skipping gallery %q with nil public names", *v.Name))
 				continue
 			}
 			for _, publicName := range v.Properties.SharingProfile.CommunityGalleryInfo.PublicNames {

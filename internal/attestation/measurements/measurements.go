@@ -26,6 +26,7 @@ import (
 	"net/url"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -328,6 +329,15 @@ func (m *M) UnmarshalYAML(unmarshal func(any) error) error {
 
 	*m = newM
 	return nil
+}
+
+// String returns a string representation of the measurements.
+func (m M) String() string {
+	var returnString string
+	for i, measurement := range m {
+		returnString = strings.Join([]string{returnString, fmt.Sprintf("%d: 0x%s", i, hex.EncodeToString(measurement.Expected))}, ",")
+	}
+	return returnString
 }
 
 func (m *M) fromImageMeasurementsV2(

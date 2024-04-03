@@ -53,7 +53,8 @@ func runAdd(cmd *cobra.Command, _ []string) (retErr error) {
 		return err
 	}
 	log := logger.NewTextLogger(flags.logLevel)
-	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
+	log.Debug("Using flags", "dryRun", flags.dryRun, "kind", flags.kind, "latest", flags.latest, "ref", flags.ref,
+		"release", flags.release, "stream", flags.stream, "version", flags.version)
 
 	log.Debug("Validating flags")
 	if err := flags.validate(log); err != nil {
@@ -117,7 +118,7 @@ func ensureVersion(ctx context.Context, client *versionsapi.Client, kind version
 	} else if err != nil {
 		return fmt.Errorf("failed to list minor versions: %w", err)
 	}
-	log.Debug(fmt.Sprintf("%s version list: %v", gran.String(), verList))
+	log.Debug(fmt.Sprintf("%q version list: %v", gran.String(), verList.Versions))
 
 	insertGran := gran + 1
 	insertVersion := ver.WithGranularity(insertGran)
@@ -129,7 +130,7 @@ func ensureVersion(ctx context.Context, client *versionsapi.Client, kind version
 	log.Info(fmt.Sprintf("Inserting %s version %q into list", insertGran.String(), insertVersion))
 
 	verList.Versions = append(verList.Versions, insertVersion)
-	log.Debug(fmt.Sprintf("New %s version list: %v", gran.String(), verList))
+	log.Debug(fmt.Sprintf("New %q version list: %v", gran.String(), verList.Versions))
 
 	if err := client.UpdateVersionList(ctx, verList); err != nil {
 		return fmt.Errorf("failed to add %s version: %w", gran.String(), err)
