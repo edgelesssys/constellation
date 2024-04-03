@@ -40,11 +40,7 @@ func runCheck(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	log := logger.NewTextLogger(flags.logLevel)
-	log.Debug(fmt.Sprintf(
-		`Parsed flags:
-  mirror: %t
-  mirror-unauthenticated: %t
-`, flags.mirror, flags.mirrorUnauthenticated))
+	log.Debug("Using flags", "mirror", flags.mirror, "mirrorUnauthenticated", flags.mirrorUnauthenticated)
 
 	filesHelper, err := bazelfiles.New()
 	if err != nil {
