@@ -189,6 +189,7 @@ jobs:
     needs: [generate-input-parameters]
     outputs:
       kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
+      e2e-name-prefix: ${{ steps.e2e_test.outputs.namePrefix }}
     steps:
       - name: Checkout
         if: inputs.gitRef == 'head'
@@ -517,16 +518,6 @@ jobs:
           cp -r constellation-iam-terraform to-zip
           rm -rf to-zip/constellation-iam-terraform/.terraform
 
-      - name: Upload terraform state
-        if: always()
-        uses: ./.github/actions/artifact_upload
-        with:
-          name: terraform-state-${{ github.run_id }}
-          path: >
-            to-zip/constellation-terraform
-            to-zip/constellation-iam-terraform
-          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
-
       - name: Always terminate cluster
         if: always()
         uses: ./.github/actions/constellation_destroy
@@ -561,7 +552,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         uses: ./.github/actions/artifact_delete
         with:
-          name: terraform-state-${{ github.run_id }}
+          name: terraform-state-${{ needs.e2e-upgrade.outputs.e2e-name-prefix }}
           workflowID: ${{ github.run_id }}
 
       - name: Prepare terraform state folders
@@ -587,7 +578,7 @@ jobs:
         if: always()
         uses: ./.github/actions/artifact_upload
         with:
-          name: terraform-state-${{ github.run_id }}
+          name: terraform-state-${{ needs.e2e-upgrade.outputs.e2e-name-prefix }}
           path: >
             ${{ env.TO_UPLOAD }}
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
