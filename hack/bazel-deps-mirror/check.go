@@ -40,7 +40,7 @@ func runCheck(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	log := logger.NewTextLogger(flags.logLevel)
-	log.Debug(fmt.Sprintf("Parsed flags: %+v", flags))
+	log.Debug("Using flags", "mirror", flags.mirror, "mirrorUnauthenticated", flags.mirrorUnauthenticated)
 
 	filesHelper, err := bazelfiles.New()
 	if err != nil {
@@ -89,7 +89,7 @@ func runCheck(cmd *cobra.Command, _ []string) error {
 }
 
 func checkBazelFile(ctx context.Context, fileHelper *bazelfiles.Helper, mirrorCheck mirrorChecker, bazelFile bazelfiles.BazelFile, log *slog.Logger) (issByFile issues.ByFile, err error) {
-	log.Debug(fmt.Sprintf("Checking file: %s", bazelFile.RelPath))
+	log.Debug(fmt.Sprintf("Checking file: %q", bazelFile.RelPath))
 	issByFile = issues.NewByFile()
 	buildfile, err := fileHelper.LoadFile(bazelFile)
 	if err != nil {
@@ -97,12 +97,12 @@ func checkBazelFile(ctx context.Context, fileHelper *bazelfiles.Helper, mirrorCh
 	}
 	found := rules.Rules(buildfile, rules.SupportedRules)
 	if len(found) == 0 {
-		log.Debug(fmt.Sprintf("No rules found in file: %s", bazelFile.RelPath))
+		log.Debug(fmt.Sprintf("No rules found in file: %q", bazelFile.RelPath))
 		return issByFile, nil
 	}
-	log.Debug(fmt.Sprintf("Found %d rules in file: %s", len(found), bazelFile.RelPath))
+	log.Debug(fmt.Sprintf("Found %d rules in file: %q", len(found), bazelFile.RelPath))
 	for _, rule := range found {
-		log.Debug(fmt.Sprintf("Checking rule: %s", rule.Name()))
+		log.Debug(fmt.Sprintf("Checking rule: %q", rule.Name()))
 		// check if the rule is a valid pinned dependency rule (has all required attributes)
 		if issues := rules.ValidatePinned(rule); len(issues) > 0 {
 			issByFile.Add(rule.Name(), issues...)

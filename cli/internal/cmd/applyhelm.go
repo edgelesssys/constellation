@@ -120,7 +120,7 @@ func (a *applyCmd) backupHelmCharts(
 	if err := executor.SaveCharts(chartDir, a.fileHandler); err != nil {
 		return fmt.Errorf("saving Helm charts to disk: %w", err)
 	}
-	a.log.Debug(fmt.Sprintf("Helm charts saved to %s", a.flags.pathPrefixer.PrefixPrintablePath(chartDir)))
+	a.log.Debug(fmt.Sprintf("Helm charts saved to %q", a.flags.pathPrefixer.PrefixPrintablePath(chartDir)))
 
 	if includesUpgrades {
 		a.log.Debug("Creating backup of CRDs and CRs")

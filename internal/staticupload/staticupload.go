@@ -134,7 +134,7 @@ func (c *Client) Flush(ctx context.Context) error {
 	c.mux.Lock()
 	defer c.mux.Unlock()
 
-	c.logger.Debug(fmt.Sprintf("Invalidating keys: %s", c.dirtyKeys))
+	c.logger.Debug(fmt.Sprintf("Invalidating keys: %q", c.dirtyKeys))
 	if len(c.dirtyKeys) == 0 {
 		return nil
 	}
@@ -219,7 +219,7 @@ func (c *Client) waitForInvalidations(ctx context.Context) error {
 	}
 
 	waiter := cloudfront.NewInvalidationCompletedWaiter(c.cdnClient)
-	c.logger.Debug(fmt.Sprintf("Waiting for invalidations %s in distribution %s", c.invalidationIDs, c.distributionID))
+	c.logger.Debug(fmt.Sprintf("Waiting for invalidations %v in distribution %q", c.invalidationIDs, c.distributionID))
 	for _, invalidationID := range c.invalidationIDs {
 		waitIn := &cloudfront.GetInvalidationInput{
 			DistributionId: &c.distributionID,

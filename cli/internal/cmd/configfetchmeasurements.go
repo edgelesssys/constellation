@@ -104,7 +104,7 @@ func runConfigFetchMeasurements(cmd *cobra.Command, _ []string) error {
 	if err := cfm.flags.parse(cmd.Flags()); err != nil {
 		return fmt.Errorf("parsing flags: %w", err)
 	}
-	cfm.log.Debug(fmt.Sprintf("Using flags %+v", cfm.flags))
+	cfm.log.Debug("Using flags", "insecure", cfm.flags.insecure, "measurementsURL", cfm.flags.measurementsURL, "signatureURL", cfm.flags.signatureURL)
 
 	fetcher := attestationconfigapi.NewFetcherWithClient(http.DefaultClient, constants.CDNRepositoryURL)
 	return cfm.configFetchMeasurements(cmd, fileHandler, fetcher)
@@ -152,14 +152,14 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 			return fmt.Errorf("fetching and verifying measurements: %w", err)
 		}
 	}
-	cfm.log.Debug(fmt.Sprintf("Measurements: %#v\n", fetchedMeasurements))
+	cfm.log.Debug(fmt.Sprintf("Measurements: %s", fetchedMeasurements.String()))
 
 	cfm.log.Debug("Updating measurements in configuration")
 	conf.UpdateMeasurements(fetchedMeasurements)
 	if err := fileHandler.WriteYAML(constants.ConfigFilename, conf, file.OptOverwrite); err != nil {
 		return err
 	}
-	cfm.log.Debug(fmt.Sprintf("Configuration written to %s", cfm.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename)))
+	cfm.log.Debug(fmt.Sprintf("Configuration written to %q", cfm.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename)))
 	cmd.Print("Successfully fetched measurements and updated Configuration\n")
 	return nil
 }

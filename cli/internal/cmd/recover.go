@@ -84,7 +84,7 @@ func runRecover(cmd *cobra.Command, _ []string) error {
 	if err := r.flags.parse(cmd.Flags()); err != nil {
 		return err
 	}
-	r.log.Debug(fmt.Sprintf("Using flags: %+v", r.flags))
+	r.log.Debug("Using flags", "debug", r.flags.debug, "endpoint", r.flags.endpoint, "force", r.flags.force)
 	return r.recover(cmd, fileHandler, 5*time.Second, &recoverDoer{log: r.log}, newDialer)
 }
 
@@ -93,7 +93,7 @@ func (r *recoverCmd) recover(
 	doer recoverDoerInterface, newDialer func(validator atls.Validator) *dialer.Dialer,
 ) error {
 	var masterSecret uri.MasterSecret
-	r.log.Debug(fmt.Sprintf("Loading master secret file from %s", r.flags.pathPrefixer.PrefixPrintablePath(constants.MasterSecretFilename)))
+	r.log.Debug(fmt.Sprintf("Loading master secret file from %q", r.flags.pathPrefixer.PrefixPrintablePath(constants.MasterSecretFilename)))
 	if err := fileHandler.ReadJSON(constants.MasterSecretFilename, &masterSecret); err != nil {
 		return err
 	}
@@ -108,7 +108,7 @@ func (r *recoverCmd) recover(
 		return err
 	}
 
-	r.log.Debug(fmt.Sprintf("Got provider %s", conf.GetProvider()))
+	r.log.Debug(fmt.Sprintf("Got provider %q", conf.GetProvider()))
 	if conf.GetProvider() == cloudprovider.Azure {
 		interval = 20 * time.Second // Azure LB takes a while to remove unhealthy instances
 	}
@@ -129,14 +129,14 @@ func (r *recoverCmd) recover(
 		conf.UpdateMAAURL(stateFile.Infrastructure.Azure.AttestationURL)
 	}
 
-	r.log.Debug(fmt.Sprintf("Creating aTLS Validator for %s", conf.GetAttestationConfig().GetVariant()))
+	r.log.Debug(fmt.Sprintf("Creating aTLS Validator for %q", conf.GetAttestationConfig().GetVariant()))
 	validator, err := choose.Validator(conf.GetAttestationConfig(), warnLogger{cmd: cmd, log: r.log})
 	if err != nil {
 		return fmt.Errorf("creating new validator: %w", err)
 	}
 	r.log.Debug("Created a new validator")
 	doer.setDialer(newDialer(validator), endpoint)
-	r.log.Debug(fmt.Sprintf("Set dialer for endpoint %s", endpoint))
+	r.log.Debug(fmt.Sprintf("Set dialer for endpoint %q", endpoint))
 	doer.setURIs(masterSecret.EncodeToURI(), uri.NoStoreURI)
 	r.log.Debug("Set secrets")
 	if err := r.recoverCall(cmd.Context(), cmd.OutOrStdout(), interval, doer); err != nil {
@@ -166,7 +166,7 @@ func (r *recoverCmd) recoverCall(ctx context.Context, out io.Writer, interval ti
 				})
 			}
 
-			r.log.Debug(fmt.Sprintf("Encountered error (retriable: %t): %s", retry, err))
+			r.log.Debug(fmt.Sprintf("Encountered error (retriable: %t): %q", retry, err))
 			return retry
 		}
 

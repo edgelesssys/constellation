@@ -216,7 +216,7 @@ type Certificate struct {
 func newCertificates(certTypeName string, cert []byte, log debugLog) (certs []Certificate, err error) {
 	newlinesTrimmed := strings.TrimSpace(string(cert))
 
-	log.Debug(fmt.Sprintf("Decoding PEM certificate: %s", certTypeName))
+	log.Debug(fmt.Sprintf("Decoding PEM certificate: %q", certTypeName))
 	i := 1
 	var rest []byte
 	var block *pem.Block

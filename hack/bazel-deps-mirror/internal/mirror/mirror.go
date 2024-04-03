@@ -95,10 +95,10 @@ func (m *Maintainer) Mirror(ctx context.Context, hash string, urls []string) err
 	}
 
 	for _, url := range urls {
-		m.log.Debug(fmt.Sprintf("Mirroring file with hash %v from %q", hash, url))
+		m.log.Debug(fmt.Sprintf("Mirroring file with hash %q from %q", hash, url))
 		body, err := m.downloadFromUpstream(ctx, url)
 		if err != nil {
-			m.log.Debug(fmt.Sprintf("Failed to download file from %q: %v", url, err))
+			m.log.Debug(fmt.Sprintf("Failed to download file from %q: %q", url, err))
 			continue
 		}
 		defer body.Close()
@@ -129,13 +129,13 @@ func (m *Maintainer) Learn(ctx context.Context, urls []string) (string, error) {
 		m.log.Debug(fmt.Sprintf("Learning new hash from %q", url))
 		body, err := m.downloadFromUpstream(ctx, url)
 		if err != nil {
-			m.log.Debug(fmt.Sprintf("Failed to download file from %q: %v", url, err))
+			m.log.Debug(fmt.Sprintf("Failed to download file from %q: %q", url, err))
 			continue
 		}
 		defer body.Close()
 		streamedHash := sha256.New()
 		if _, err := io.Copy(streamedHash, body); err != nil {
-			m.log.Debug(fmt.Sprintf("Failed to stream file from %q: %v", url, err))
+			m.log.Debug(fmt.Sprintf("Failed to stream file from %q: %q", url, err))
 		}
 		learnedHash := hex.EncodeToString(streamedHash.Sum(nil))
 		m.log.Debug(fmt.Sprintf("File successfully downloaded from %q with %q", url, learnedHash))
@@ -146,7 +146,7 @@ func (m *Maintainer) Learn(ctx context.Context, urls []string) (string, error) {
 
 // Check checks if a file is present and has the correct hash in the CAS mirror.
 func (m *Maintainer) Check(ctx context.Context, expectedHash string) error {
-	m.log.Debug(fmt.Sprintf("Checking consistency of object with hash %v", expectedHash))
+	m.log.Debug(fmt.Sprintf("Checking consistency of object with hash %q", expectedHash))
 	if m.unauthenticated {
 		return m.checkUnauthenticated(ctx, expectedHash)
 	}
@@ -157,7 +157,7 @@ func (m *Maintainer) Check(ctx context.Context, expectedHash string) error {
 // It uses the authenticated CAS s3 endpoint to download the file metadata.
 func (m *Maintainer) checkAuthenticated(ctx context.Context, expectedHash string) error {
 	key := path.Join(keyBase, expectedHash)
-	m.log.Debug(fmt.Sprintf("Check: s3 getObjectAttributes {Bucket: %v, Key: %v}", m.bucket, key))
+	m.log.Debug(fmt.Sprintf("Check: s3 getObjectAttributes {Bucket: %q, Key: %q}", m.bucket, key))
 	attributes, err := m.objectStorageClient.GetObjectAttributes(ctx, &s3.GetObjectAttributesInput{
 		Bucket:           &m.bucket,
 		Key:              &key,
@@ -174,7 +174,7 @@ func (m *Maintainer) checkAuthenticated(ctx context.Context, expectedHash string
 		// checksums are not guaranteed to be present
 		// and if present, they are only meaningful for single part objects
 		// fallback if checksum cannot be verified from attributes
-		m.log.Debug(fmt.Sprintf("S3 object attributes cannot be used to verify key %v. Falling back to download.", key))
+		m.log.Debug(fmt.Sprintf("S3 object attributes cannot be used to verify key %q. Falling back to download.", key))
 		return m.checkUnauthenticated(ctx, expectedHash)
 	}
 
@@ -192,7 +192,7 @@ func (m *Maintainer) checkUnauthenticated(ctx context.Context, expectedHash stri
 	if err != nil {
 		return err
 	}
-	m.log.Debug(fmt.Sprintf("Check: http get {Url: %v}", pubURL))
+	m.log.Debug(fmt.Sprintf("Check: http get {Url: %q}", pubURL))
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, pubURL, http.NoBody)
 	if err != nil {
 		return err
@@ -221,10 +221,10 @@ func (m *Maintainer) put(ctx context.Context, hash string, data io.Reader) error
 
 	key := path.Join(keyBase, hash)
 	if m.dryRun {
-		m.log.Debug(fmt.Sprintf("DryRun: s3 put object {Bucket: %v, Key: %v}", m.bucket, key))
+		m.log.Debug(fmt.Sprintf("DryRun: s3 put object {Bucket: %q, Key: %q}", m.bucket, key))
 		return nil
 	}
-	m.log.Debug(fmt.Sprintf("Uploading object with hash %v to s3://%v/%v", hash, m.bucket, key))
+	m.log.Debug(fmt.Sprintf("Uploading object with hash %q to \"s3://%s/%s\"", hash, m.bucket, key))
 	_, err := m.uploadClient.Upload(ctx, &s3.PutObjectInput{
 		Bucket:            &m.bucket,
 		Key:               &key,
