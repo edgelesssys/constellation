@@ -152,7 +152,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 			return fmt.Errorf("fetching and verifying measurements: %w", err)
 		}
 	}
-	cfm.log.Debug(fmt.Sprintf("Measurements:\n%s", fetchedMeasurements.String()))
+	cfm.log.Debug(fmt.Sprintf("Measurements: %s", fetchedMeasurements.String()))
 
 	cfm.log.Debug("Updating measurements in configuration")
 	conf.UpdateMeasurements(fetchedMeasurements)
