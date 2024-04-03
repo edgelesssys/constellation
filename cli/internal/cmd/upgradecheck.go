@@ -365,7 +365,7 @@ func (v *versionCollector) newMeasurements(ctx context.Context, csp cloudprovide
 		upgrades[shortPath] = measurements
 		v.log.Debug("Compatible image measurement found", shortPath, measurements.String())
 	}
-	
+
 	return upgrades, nil
 }
 
