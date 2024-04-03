@@ -363,14 +363,9 @@ func (v *versionCollector) newMeasurements(ctx context.Context, csp cloudprovide
 			continue
 		}
 		upgrades[shortPath] = measurements
+		v.log.Debug("Compatible image measurement found", shortPath, measurements.String())
 	}
-	compatibleMeasurements := ""
-	for path, measurements := range upgrades {
-		compatibleMeasurement := measurements.String()
-		compatibleMeasurements += fmt.Sprintf("\t%q:\n%s", path, compatibleMeasurement)
-	}
-	v.log.Debug(fmt.Sprintf("Compatible image measurements are:\n%s", compatibleMeasurements))
-
+	
 	return upgrades, nil
 }
 
