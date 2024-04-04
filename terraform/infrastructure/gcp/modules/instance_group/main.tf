@@ -2,7 +2,12 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "5.17.0"
+      version = "5.23.0"
+    }
+
+    google-beta = {
+      source  = "hashicorp/google-beta"
+      version = "5.23.0"
     }
 
     random = {
@@ -23,6 +28,10 @@ resource "random_id" "uid" {
 }
 
 resource "google_compute_instance_template" "template" {
+  # Beta provider is necessary to set confidential instance types.
+  # TODO(msanft): Remove beta provider once confidential instance type setting is in GA.
+  provider = google-beta
+
   name         = local.name
   machine_type = var.instance_type
   tags         = ["constellation-${var.uid}"] // Note that this is also applied as a label
@@ -33,7 +42,12 @@ resource "google_compute_instance_template" "template" {
 
   confidential_instance_config {
     enable_confidential_compute = true
+    confidential_instance_type  = var.cc_technology
   }
+
+  # If SEV-SNP is used, we have to explicitly select a Milan processor, as per
+  # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_instance_template#confidential_instance_type
+  min_cpu_platform = var.cc_technology == "SEV_SNP" ? "AMD Milan" : null
 
   disk {
     disk_size_gb = 10
