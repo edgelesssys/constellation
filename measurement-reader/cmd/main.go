@@ -30,7 +30,7 @@ func main() {
 
 	var m []sorted.Measurement
 	switch attestationVariant {
-	case variant.AWSNitroTPM{}, variant.AWSSEVSNP{}, variant.AzureSEVSNP{}, variant.AzureTrustedLaunch{}, variant.GCPSEVES{}, variant.QEMUVTPM{}:
+	case variant.AWSNitroTPM{}, variant.AWSSEVSNP{}, variant.AzureSEVSNP{}, variant.AzureTrustedLaunch{}, variant.GCPSEVES{}, variant.GCPSEVSNP{}, variant.QEMUVTPM{}:
 		m, err = tpm.Measurements()
 		if err != nil {
 			log.With(slog.Any("error", err)).Error("Failed to read TPM measurements")
