@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package gcp
+package es
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -66,7 +67,7 @@ func TestGetGCEInstanceInfo(t *testing.T) {
 			require := require.New(t)
 			var tpm io.ReadWriteCloser
 
-			out, err := getGCEInstanceInfo(tc.client)(context.Background(), tpm, nil)
+			out, err := gcp.GCEInstanceInfo(tc.client)(context.Background(), tpm, nil)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
@@ -90,14 +91,14 @@ type fakeMetadataClient struct {
 	zoneErr            error
 }
 
-func (c fakeMetadataClient) projectID() (string, error) {
+func (c fakeMetadataClient) ProjectID() (string, error) {
 	return c.projectIDString, c.projecIDErr
 }
 
-func (c fakeMetadataClient) instanceName() (string, error) {
+func (c fakeMetadataClient) InstanceName() (string, error) {
 	return c.instanceNameString, c.instanceNameErr
 }
 
-func (c fakeMetadataClient) zone() (string, error) {
+func (c fakeMetadataClient) Zone() (string, error) {
 	return c.zoneString, c.zoneErr
 }

@@ -1,0 +1,43 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "es",
+    srcs = [
+        "es.go",
+        "issuer.go",
+        "validator.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/gcp/es",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/attestation",
+        "//internal/attestation/gcp",
+        "//internal/attestation/variant",
+        "//internal/attestation/vtpm",
+        "//internal/config",
+        "@com_github_google_go_tpm_tools//client",
+        "@com_github_google_go_tpm_tools//proto/attest",
+    ],
+)
+
+go_test(
+    name = "es_test",
+    srcs = [
+        "issuer_test.go",
+        "validator_test.go",
+    ],
+    embed = [":es"],
+    deps = [
+        "//internal/attestation/gcp",
+        "//internal/attestation/variant",
+        "//internal/attestation/vtpm",
+        "@com_github_google_go_tpm_tools//proto/attest",
+        "@com_github_googleapis_gax_go_v2//:gax-go",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@com_google_cloud_go_compute//apiv1/computepb",
+        "@org_golang_google_api//option",
+        "@org_golang_google_protobuf//proto",
+    ],
+)
