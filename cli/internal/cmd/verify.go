@@ -467,8 +467,7 @@ func updateInitMeasurements(config config.AttestationCfg, ownerID, clusterID str
 	switch config.GetVariant() {
 	case variant.AWSNitroTPM{}, variant.AWSSEVSNP{},
 		variant.AzureTrustedLaunch{}, variant.AzureSEVSNP{}, variant.AzureTDX{}, // AzureTDX also uses a vTPM for measurements
-		variant.GCPSEVES{},
-		variant.QEMUVTPM{}:
+		variant.GCPSEVES{}, variant.GCPSEVSNP{}, variant.QEMUVTPM{}:
 		if err := updateMeasurementTPM(m, uint32(measurements.PCRIndexOwnerID), ownerID); err != nil {
 			return err
 		}
