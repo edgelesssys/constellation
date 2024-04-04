@@ -10,6 +10,7 @@ go_library(
         "azure.go",
         "config.go",
         "config_doc.go",
+        "gcp.go",
         # keep
         "image_enterprise.go",
         # keep
