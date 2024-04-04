@@ -84,7 +84,7 @@ func TestAccAttestationSource(t *testing.T) {
 				},
 			},
 		},
-		"gcp sev-snp succcess": {
+		"gcp sev-es succcess": {
 			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
@@ -110,6 +110,33 @@ func TestAccAttestationSource(t *testing.T) {
 				},
 			},
 		},
+		// TODO(msanft): Enable once v2.17.0 is available
+		// "gcp sev-snp succcess": {
+		// 	ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		// 	PreCheck:                 bazelPreCheck,
+		// 	Steps: []resource.TestStep{
+		// 		{
+		// 			Config: testingConfig + `
+		// 			data "constellation_attestation" "test" {
+		// 				csp = "gcp"
+		// 				attestation_variant = "gcp-sev-snp"
+		// 				image = {
+		// 					version = "v2.17.0"
+		// 					reference = "v2.17.0"
+		// 					short_path = "v2.17.0"
+		// 				}
+		// 			}
+		// 			`,
+		// 			Check: resource.ComposeAggregateTestCheckFunc(
+		// 				resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.variant", "gcp-sev-es"),
+		// 				resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.bootloader_version", "0"), // since this is not supported on GCP, we expect 0
+
+		// 				resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.measurements.1.expected", "745f2fb4235e4647aa0ad5ace781cd929eb68c28870e7dd5d1a1535854325e56"),
+		// 				resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.measurements.1.warn_only", "true"),
+		// 			),
+		// 		},
+		// 	},
+		// },
 		"STACKIT qemu-vtpm success": {
 			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 			PreCheck:                 bazelPreCheck,
