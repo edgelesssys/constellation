@@ -122,6 +122,10 @@ func convertFromTfAttestationCfg(tfAttestation attestationAttribute, attestation
 		attestationConfig = &config.GCPSEVES{
 			Measurements: c11nMeasurements,
 		}
+	case variant.GCPSEVSNP{}:
+		attestationConfig = &config.GCPSEVSNP{
+			Measurements: c11nMeasurements,
+		}
 	case variant.QEMUVTPM{}:
 		attestationConfig = &config.QEMUVTPM{
 			Measurements: c11nMeasurements,
@@ -145,6 +149,13 @@ func convertToTfAttestation(attVar variant.Variant, snpVersions attestationconfi
 	switch attVar {
 	case variant.AWSSEVSNP{}:
 		certStr, err := certAsString(config.DefaultForAWSSEVSNP().AMDRootKey)
+		if err != nil {
+			return tfAttestation, err
+		}
+		tfAttestation.AMDRootKey = certStr
+
+	case variant.GCPSEVSNP{}:
+		certStr, err := certAsString(config.DefaultForGCPSEVSNP().AMDRootKey)
 		if err != nil {
 			return tfAttestation, err
 		}
