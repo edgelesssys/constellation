@@ -20,6 +20,7 @@ import (
 	"github.com/google/go-sev-guest/kds"
 	spb "github.com/google/go-sev-guest/proto/sevsnp"
 	"github.com/google/go-sev-guest/verify/trust"
+	"github.com/google/go-tpm-tools/proto/attest"
 )
 
 // Product returns the SEV product info currently supported by Constellation's SNP attestation.
@@ -39,6 +40,7 @@ type InstanceInfo struct {
 	// AttestationReport is the attestation report from the vTPM (NVRAM) of the CVM.
 	AttestationReport []byte
 	Azure             *AzureInstanceInfo
+	GCP               *attest.GCEInstanceInfo
 }
 
 // AzureInstanceInfo contains Azure specific information related to SNP attestation.

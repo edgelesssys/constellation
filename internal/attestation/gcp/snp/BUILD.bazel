@@ -1,0 +1,56 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "snp",
+    srcs = [
+        "issuer.go",
+        "snp.go",
+        "validator.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/gcp/snp",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/attestation",
+        "//internal/attestation/gcp",
+        "//internal/attestation/snp",
+        "//internal/attestation/variant",
+        "//internal/attestation/vtpm",
+        "//internal/config",
+        "@com_github_google_go_sev_guest//abi",
+        "@com_github_google_go_sev_guest//client",
+        "@com_github_google_go_sev_guest//kds",
+        "@com_github_google_go_sev_guest//proto/sevsnp",
+        "@com_github_google_go_sev_guest//validate",
+        "@com_github_google_go_sev_guest//verify",
+        "@com_github_google_go_sev_guest//verify/trust",
+        "@com_github_google_go_tpm//legacy/tpm2",
+        "@com_github_google_go_tpm_tools//client",
+        "@com_github_google_go_tpm_tools//proto/attest",
+    ],
+)
+
+go_test(
+    name = "snp_test",
+    srcs = [
+        "issuer_test.go",
+        "validator_test.go",
+    ],
+    embed = [":snp"],
+    deps = [
+        "//internal/attestation",
+        "//internal/attestation/aws/snp/testdata",
+        "//internal/attestation/simulator",
+        "//internal/attestation/snp",
+        "//internal/attestation/vtpm",
+        "//internal/config",
+        "//internal/logger",
+        "@com_github_google_go_sev_guest//abi",
+        "@com_github_google_go_sev_guest//proto/sevsnp",
+        "@com_github_google_go_sev_guest//verify",
+        "@com_github_google_go_tpm_tools//client",
+        "@com_github_google_go_tpm_tools//proto/attest",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)
