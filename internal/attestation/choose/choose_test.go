@@ -40,6 +40,9 @@ func TestIssuer(t *testing.T) {
 		"gcp-sev-es": {
 			variant: variant.GCPSEVES{},
 		},
+		"gcp-sev-snp": {
+			variant: variant.GCPSEVSNP{},
+		},
 		"qemu-vtpm": {
 			variant: variant.QEMUVTPM{},
 		},
@@ -88,6 +91,9 @@ func TestValidator(t *testing.T) {
 		},
 		"gcp-sev-es": {
 			cfg: &config.GCPSEVES{},
+		},
+		"gcp-sev-snp": {
+			cfg: &config.GCPSEVSNP{},
 		},
 		"qemu-vtpm": {
 			cfg: &config.QEMUVTPM{},
