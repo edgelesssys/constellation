@@ -99,3 +99,12 @@ variable "custom_endpoint" {
   type        = string
   description = "Custom endpoint to use for the Kubernetes API server. If not set, the default endpoint will be used."
 }
+
+variable "cc_technology" {
+  type        = string
+  description = "The confidential computing technology to use for the nodes. One of `SEV`, `SEV_SNP`."
+  validation {
+    condition     = contains(["SEV", "SEV_SNP"], var.cc_technology)
+    error_message = "The confidential computing technology has to be 'SEV' or 'SEV_SNP'."
+  }
+}
