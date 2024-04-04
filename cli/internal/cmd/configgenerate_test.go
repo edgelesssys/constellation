@@ -236,6 +236,11 @@ func TestValidProviderAttestationCombination(t *testing.T) {
 			config.AttestationConfig{GCPSEVES: defaultAttestation.GCPSEVES},
 		},
 		{
+			cloudprovider.GCP,
+			variant.GCPSEVSNP{},
+			config.AttestationConfig{GCPSEVSNP: defaultAttestation.GCPSEVSNP},
+		},
+		{
 			cloudprovider.QEMU,
 			variant.QEMUVTPM{},
 			config.AttestationConfig{QEMUVTPM: defaultAttestation.QEMUVTPM},
@@ -285,6 +290,10 @@ func TestParseAttestationFlag(t *testing.T) {
 		"GCPSEVES": {
 			attestationFlag: "gcp-sev-es",
 			wantVariant:     variant.GCPSEVES{},
+		},
+		"GCPSEVSNP": {
+			attestationFlag: "gcp-sev-snp",
+			wantVariant:     variant.GCPSEVSNP{},
 		},
 		"QEMUVTPM": {
 			attestationFlag: "qemu-vtpm",
