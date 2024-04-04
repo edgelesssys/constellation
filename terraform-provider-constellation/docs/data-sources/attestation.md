@@ -33,6 +33,7 @@ data "constellation_attestation" "test" {
   * `azure-sev-snp`
   * `azure-tdx`
   * `gcp-sev-es`
+  * `gcp-sev-snp`
   * `qemu-vtpm`
 - `csp` (String) CSP (Cloud Service Provider) to use. (e.g. `azure`)
 See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview/clouds) that Constellation supports.
@@ -83,6 +84,7 @@ Read-Only:
   * `azure-sev-snp`
   * `azure-tdx`
   * `gcp-sev-es`
+  * `gcp-sev-snp`
   * `qemu-vtpm`
 
 <a id="nestedatt--attestation--azure_firmware_signer_config"></a>
