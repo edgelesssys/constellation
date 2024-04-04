@@ -52,6 +52,8 @@ func UnmarshalAttestationConfig(data []byte, attestVariant variant.Variant) (Att
 		return unmarshalTypedConfig[*AzureTDX](data)
 	case variant.GCPSEVES{}:
 		return unmarshalTypedConfig[*GCPSEVES](data)
+	case variant.GCPSEVSNP{}:
+		return unmarshalTypedConfig[*GCPSEVSNP](data)
 	case variant.QEMUVTPM{}:
 		return unmarshalTypedConfig[*QEMUVTPM](data)
 	case variant.QEMUTDX{}:

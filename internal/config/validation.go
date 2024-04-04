@@ -202,6 +202,9 @@ func validateAttestation(sl validator.StructLevel) {
 	if attestation.GCPSEVES != nil {
 		attestationCount++
 	}
+	if attestation.GCPSEVSNP != nil {
+		attestationCount++
+	}
 	if attestation.QEMUVTPM != nil {
 		attestationCount++
 	}
@@ -363,6 +366,9 @@ func (c *Config) translateMoreThanOneAttestationError(ut ut.Translator, fe valid
 	}
 	if c.Attestation.GCPSEVES != nil {
 		definedAttestations = append(definedAttestations, "GCPSEVES")
+	}
+	if c.Attestation.GCPSEVSNP != nil {
+		definedAttestations = append(definedAttestations, "GCPSEVSNP")
 	}
 	if c.Attestation.QEMUVTPM != nil {
 		definedAttestations = append(definedAttestations, "QEMUVTPM")
@@ -536,7 +542,7 @@ func validInstanceTypeForProvider(insType string, attestation variant.Variant) b
 				return true
 			}
 		}
-	case variant.GCPSEVES{}:
+	case variant.GCPSEVES{}, variant.GCPSEVSNP{}:
 		for _, instanceType := range instancetypes.GCPInstanceTypes {
 			if insType == instanceType {
 				return true
