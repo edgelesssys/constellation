@@ -125,7 +125,7 @@ func TestAccImageDataSource(t *testing.T) {
 				},
 			},
 		},
-		"gcp success": {
+		"gcp sev-es success": {
 			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 			PreCheck:                 bazelPreCheck,
 			Steps: []resource.TestStep{
@@ -141,6 +141,23 @@ func TestAccImageDataSource(t *testing.T) {
 				},
 			},
 		},
+		// TODO(msanft): Enable once v2.17.0 is available
+		// 	"gcp sev-snp success": {
+		// 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		// 		PreCheck:                 bazelPreCheck,
+		// 		Steps: []resource.TestStep{
+		// 			{
+		// 				Config: testingConfig + `
+		// 				data "constellation_image" "test" {
+		// 					version       = "v2.17.0"
+		// 					attestation_variant = "gcp-sev-snp"
+		// 					csp                 = "gcp"
+		// 				}
+		// 			`,
+		// 				Check: resource.TestCheckResourceAttr("data.constellation_image.test", "image.reference", "projects/constellation-images/global/images/v2-13-0-gcp-sev-es-stable"), // should be immutable,
+		// 			},
+		// 		},
+		// 	},
 		"stackit success": {
 			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 			PreCheck:                 bazelPreCheck,

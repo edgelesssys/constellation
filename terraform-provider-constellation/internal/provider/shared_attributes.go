@@ -32,11 +32,12 @@ func newAttestationVariantAttributeSchema(t attributeType) schema.Attribute {
 			"  * `azure-sev-snp`\n" +
 			"  * `azure-tdx`\n" +
 			"  * `gcp-sev-es`\n" +
+			"  * `gcp-sev-snp`\n" +
 			"  * `qemu-vtpm`\n",
 		Required: isInput,
 		Computed: !isInput,
 		Validators: []validator.String{
-			stringvalidator.OneOf("aws-sev-snp", "aws-nitro-tpm", "azure-sev-snp", "azure-tdx", "gcp-sev-es", "qemu-vtpm"),
+			stringvalidator.OneOf("aws-sev-snp", "aws-nitro-tpm", "azure-sev-snp", "azure-tdx", "gcp-sev-es", "gcp-sev-snp", "qemu-vtpm"),
 		},
 	}
 }
