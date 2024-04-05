@@ -5,7 +5,7 @@ What works on which cloud? Currently, Confidential VMs (CVMs) are available in v
 For Constellation, the ideal environment provides the following:
 
 1. Ability to run arbitrary software and images inside CVMs
-2. CVMs based on AMD SEV-SNP (available in EPYC CPUs since the Milan generation) or Intel TDX (available in Xeon CPUs since the Sapphire Rapid generation)
+2. CVMs based on AMD SEV-SNP (available in EPYC CPUs since the Milan generation) or Intel TDX (available in Xeon CPUs since the Sapphire Rapids generation)
 3. Ability for CVM guests to obtain raw hardware attestation statements
 4. Reviewable, open-source firmware inside CVMs
 5. Capability of the firmware to attest the integrity of the code it passes control to, e.g., with an embedded virtual TPM (vTPM)
