@@ -24,6 +24,7 @@ locals {
   control_plane_count  = 3
   worker_count         = 2
   instance_type        = "n2d-standard-4"
+  cc_technology        = "SEV"
 
   master_secret      = random_bytes.master_secret.hex
   master_secret_salt = random_bytes.master_secret_salt.hex
@@ -79,6 +80,7 @@ module "gcp_infrastructure" {
   region                 = local.region
   project                = local.project_id
   internal_load_balancer = false
+  cc_technology          = local.cc_technology
 }
 
 data "constellation_attestation" "foo" {
