@@ -12,16 +12,12 @@ import (
 	"crypto"
 	"crypto/x509"
 	"encoding/hex"
-	"encoding/pem"
-	"errors"
 	"fmt"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/google/go-sev-guest/proto/sevsnp"
-	"github.com/google/go-sev-guest/verify"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,7 +27,7 @@ func TestGetTrustedKey(t *testing.T) {
 	validator := func(ek []byte) *Validator {
 		return &Validator{
 			reportValidator: stubGCPValidator{},
-			gceKeyGetter: func(ctx context.Context, attDoc vtpm.AttestationDocument, _ []byte) (crypto.PublicKey, error) {
+			gceKeyGetter: func(_ context.Context, _ vtpm.AttestationDocument, _ []byte) (crypto.PublicKey, error) {
 				return ek, nil
 			},
 		}
@@ -120,40 +116,8 @@ func loadKeyFromHex(key string) (crypto.PublicKey, error) {
 	return x509.ParsePKIXPublicKey(decoded)
 }
 
-// loadCachedCertChain loads a valid ARK and ASK from the testdata folder.
-func loadCerts(pemData []byte) ([]*x509.Certificate, error) {
-	var certs []*x509.Certificate
-
-	for len(pemData) > 0 {
-		var block *pem.Block
-		block, pemData = pem.Decode(pemData)
-		if block == nil {
-			break
-		}
-
-		cert, err := x509.ParseCertificate(block.Bytes)
-		if err != nil {
-			return nil, err
-		}
-
-		certs = append(certs, cert)
-	}
-
-	if len(certs) == 0 {
-		return nil, errors.New("no valid certificates found")
-	}
-
-	return certs, nil
-}
-
 type stubGCPValidator struct{}
 
 func (stubGCPValidator) validate(_ vtpm.AttestationDocument, _ *x509.Certificate, _ *x509.Certificate, _ [64]byte, _ *config.GCPSEVSNP, _ attestation.Logger) error {
-	return nil
-}
-
-type stubReportVerifier struct{}
-
-func (stubReportVerifier) SnpAttestation(_ *sevsnp.Attestation, _ *verify.Options) error {
 	return nil
 }
