@@ -37,6 +37,11 @@ go_test(
         "validator_test.go",
     ],
     embed = [":snp"],
+    # keep
+    gotags = select({
+        "//bazel/settings:tpm_simulator_enabled": [],
+        "//conditions:default": ["disable_tpm_simulator"],
+    }),
     deps = [
         "//internal/attestation",
         "//internal/attestation/aws/snp/testdata",
