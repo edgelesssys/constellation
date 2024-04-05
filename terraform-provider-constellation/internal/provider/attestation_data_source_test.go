@@ -128,7 +128,7 @@ func TestAccAttestationSource(t *testing.T) {
 		// 			}
 		// 			`,
 		// 			Check: resource.ComposeAggregateTestCheckFunc(
-		// 				resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.variant", "gcp-sev-es"),
+		// 				resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.variant", "gcp-sev-snp"),
 		// 				resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.bootloader_version", "0"), // since this is not supported on GCP, we expect 0
 
 		// 				resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.measurements.1.expected", "745f2fb4235e4647aa0ad5ace781cd929eb68c28870e7dd5d1a1535854325e56"),
