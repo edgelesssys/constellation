@@ -266,11 +266,21 @@ jobs:
         run: |
           region=$(echo ${{ inputs.regionZone || 'europe-west3-b' }} | rev | cut -c 3- | rev)
 
+          case "${{ inputs.attestationVariant }}" in
+            "gcp-sev-snp")
+              cc_tech="SEV_SNP"
+              ;;
+            *)
+              cc_tech="SEV"
+              ;;
+          esac
+
           cat >> _override.tf <<EOF
           locals {
             project_id         = "constellation-e2e"
             region = "${region}"
             zone = "${{ inputs.regionZone || 'europe-west3-b' }}"
+            cc_technology = "${cc_tech}"
           }
           EOF
           cat _override.tf
