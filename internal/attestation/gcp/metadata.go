@@ -50,17 +50,20 @@ type gcpMetadataClient interface {
 	Zone() (string, error)
 }
 
-// a MetadataClient fetches metadata from the GCE Metadata API.
+// A MetadataClient fetches metadata from the GCE Metadata API.
 type MetadataClient struct{}
 
+// ProjectID returns the project ID of the GCE instance.
 func (c MetadataClient) ProjectID() (string, error) {
 	return metadata.ProjectID()
 }
 
+// InstanceName returns the instance name of the GCE instance.
 func (c MetadataClient) InstanceName() (string, error) {
 	return metadata.InstanceName()
 }
 
+// Zone returns the zone the GCE instance is located in.
 func (c MetadataClient) Zone() (string, error) {
 	return metadata.Zone()
 }

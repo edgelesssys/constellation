@@ -89,7 +89,7 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 
 	testCases := map[string]struct {
 		instanceInfo []byte
-		getClient    func(ctx context.Context, opts ...option.ClientOption) (gcp.GCPRESTClient, error)
+		getClient    func(ctx context.Context, opts ...option.ClientOption) (gcp.CVMRestClient, error)
 		wantErr      bool
 	}{
 		"success": {
@@ -177,8 +177,8 @@ type fakeInstanceClient struct {
 	ident       *computepb.ShieldedInstanceIdentity
 }
 
-func prepareFakeClient(ident *computepb.ShieldedInstanceIdentity, newErr, getIdentErr error) func(ctx context.Context, opts ...option.ClientOption) (gcp.GCPRESTClient, error) {
-	return func(_ context.Context, _ ...option.ClientOption) (gcp.GCPRESTClient, error) {
+func prepareFakeClient(ident *computepb.ShieldedInstanceIdentity, newErr, getIdentErr error) func(ctx context.Context, opts ...option.ClientOption) (gcp.CVMRestClient, error) {
+	return func(_ context.Context, _ ...option.ClientOption) (gcp.CVMRestClient, error) {
 		return &fakeInstanceClient{
 			getIdentErr: getIdentErr,
 			ident:       ident,

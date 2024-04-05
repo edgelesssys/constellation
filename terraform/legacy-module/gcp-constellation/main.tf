@@ -41,6 +41,7 @@ module "gcp" {
   zone            = var.zone
   debug           = var.debug
   custom_endpoint = var.custom_endpoint
+  cc_technology   = var.cc_technology
 }
 
 module "constellation" {
