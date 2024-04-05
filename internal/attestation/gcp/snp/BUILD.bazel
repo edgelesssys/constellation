@@ -43,8 +43,6 @@ go_test(
         "//internal/attestation",
         "//internal/attestation/vtpm",
         "//internal/config",
-        "@com_github_google_go_sev_guest//proto/sevsnp",
-        "@com_github_google_go_sev_guest//verify",
         "@com_github_google_go_tpm_tools//proto/attest",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
