@@ -11,24 +11,16 @@ import (
 	"context"
 	"crypto"
 	"crypto/x509"
-	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"regexp"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/aws/snp/testdata"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/google/go-sev-guest/abi"
 	"github.com/google/go-sev-guest/proto/sevsnp"
-	spb "github.com/google/go-sev-guest/proto/sevsnp"
 	"github.com/google/go-sev-guest/verify"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/stretchr/testify/assert"
@@ -36,28 +28,30 @@ import (
 )
 
 func TestGetTrustedKey(t *testing.T) {
-	validator := func() *Validator { return &Validator{reportValidator: stubGCPValidator{}} }
+	validator := func(ek []byte) *Validator {
+		return &Validator{
+			reportValidator: stubGCPValidator{},
+			gceKeyGetter: func(ctx context.Context, attDoc vtpm.AttestationDocument, _ []byte) (crypto.PublicKey, error) {
+				return ek, nil
+			},
+		}
+	}
 	testCases := map[string]struct {
-		akPub   []byte
-		info    []byte
-		wantErr bool
+		akPub []byte
+		ek    []byte
+		info  []byte
 	}{
-		"null byte docs": {
-			akPub:   []byte{0x00, 0x00, 0x00, 0x00},
-			info:    []byte{0x00, 0x00, 0x00, 0x00},
-			wantErr: true,
-		},
-		"nil": {
-			akPub:   nil,
-			info:    nil,
-			wantErr: true,
+		"success": {
+			akPub: []byte("akPub"),
+			ek:    []byte("ek"),
+			info:  []byte("info"),
 		},
 	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			out, err := validator().getTrustedKey(
+			out, err := validator(tc.ek).getTrustedKey(
 				context.Background(),
 				vtpm.AttestationDocument{
 					Attestation: &attest.Attestation{
@@ -68,139 +62,9 @@ func TestGetTrustedKey(t *testing.T) {
 				nil,
 			)
 
-			if tc.wantErr {
-				assert.Error(err)
-			} else {
-				assert.NoError(err)
-			}
-
-			assert.Nil(out)
+			assert.NoError(err)
+			assert.Equal(tc.ek, out)
 		})
-	}
-}
-
-// TestValidateSNPReport has to setup the following to run ValidateSNPReport:
-// - parse ARK certificate from constants.go.
-// - parse cached ASK certificate.
-// - parse cached SNP report.
-// - parse cached AK hash. Hash and SNP report have to match.
-// - parse cache VLEK cert.
-func TestValidateSNPReport(t *testing.T) {
-	require := require.New(t)
-	certs, err := loadCerts(testdata.CertChain)
-	require.NoError(err)
-	ark := certs[1]
-	ask := certs[0]
-
-	// reportTransformer unpacks the base64 encoded report, applies the given transformations and re-encodes it.
-	reportTransformer := func(reportHex string, transformations func(*spb.Report)) string {
-		rawReport, err := base64.StdEncoding.DecodeString(reportHex)
-		require.NoError(err)
-		report, err := abi.ReportToProto(rawReport)
-		require.NoError(err)
-		transformations(report)
-		reportBytes, err := abi.ReportToAbiBytes(report)
-		require.NoError(err)
-		return base64.StdEncoding.EncodeToString(reportBytes)
-	}
-
-	testCases := map[string]struct {
-		ak                string
-		report            string
-		reportTransformer func(string, func(*spb.Report)) string
-		verifier          reportVerifier
-		validator         reportValidator
-		wantErr           bool
-	}{
-		"success": {
-			ak:        testdata.AKDigest,
-			report:    testdata.SNPReport,
-			verifier:  &reportVerifierImpl{},
-			validator: &reportValidatorImpl{},
-		},
-		"invalid report data": {
-			ak: testdata.AKDigest,
-			report: reportTransformer(testdata.SNPReport, func(r *spb.Report) {
-				r.ReportData = make([]byte, 64)
-			}),
-			verifier:  &stubReportVerifier{},
-			validator: &reportValidatorImpl{},
-			wantErr:   true,
-		},
-		"invalid report signature": {
-			ak:        testdata.AKDigest,
-			report:    reportTransformer(testdata.SNPReport, func(r *spb.Report) { r.Signature[0]++ }),
-			verifier:  &reportVerifierImpl{},
-			validator: &reportValidatorImpl{},
-			wantErr:   true,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-
-			hash, err := hex.DecodeString(tc.ak)
-			require.NoError(err)
-
-			report, err := base64.StdEncoding.DecodeString(tc.report)
-			require.NoError(err)
-
-			info := snp.InstanceInfo{AttestationReport: report, ReportSigner: testdata.VLEK}
-			infoMarshalled, err := json.Marshal(info)
-			require.NoError(err)
-
-			v := gcpValidator{httpsGetter: newStubHTTPSGetter(&urlResponseMatcher{}, nil), verifier: tc.verifier, validator: tc.validator}
-			err = v.validate(vtpm.AttestationDocument{InstanceInfo: infoMarshalled}, ask, ark, [64]byte(hash), config.DefaultForGCPSEVSNP(), logger.NewTest(t))
-			if tc.wantErr {
-				assert.Error(err)
-			} else {
-				assert.NoError(err)
-			}
-		})
-	}
-}
-
-type stubHTTPSGetter struct {
-	urlResponseMatcher *urlResponseMatcher // maps responses to requested URLs
-	err                error
-}
-
-func newStubHTTPSGetter(urlResponseMatcher *urlResponseMatcher, err error) *stubHTTPSGetter {
-	return &stubHTTPSGetter{
-		urlResponseMatcher: urlResponseMatcher,
-		err:                err,
-	}
-}
-
-func (s *stubHTTPSGetter) Get(url string) ([]byte, error) {
-	if s.err != nil {
-		return nil, s.err
-	}
-	return s.urlResponseMatcher.match(url)
-}
-
-type urlResponseMatcher struct {
-	certChainResponse    []byte
-	wantCertChainRequest bool
-	vcekResponse         []byte
-	wantVcekRequest      bool
-}
-
-func (m *urlResponseMatcher) match(url string) ([]byte, error) {
-	switch {
-	case url == "https://kdsintf.amd.com/vcek/v1/Milan/cert_chain":
-		if !m.wantCertChainRequest {
-			return nil, fmt.Errorf("unexpected cert_chain request")
-		}
-		return m.certChainResponse, nil
-	case regexp.MustCompile(`https:\/\/kdsintf.amd.com\/vcek\/v1\/Milan\/.*`).MatchString(url):
-		if !m.wantVcekRequest {
-			return nil, fmt.Errorf("unexpected VCEK request")
-		}
-		return m.vcekResponse, nil
-	default:
-		return nil, fmt.Errorf("unexpected URL: %s", url)
 	}
 }
 

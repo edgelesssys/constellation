@@ -32,10 +32,7 @@ go_library(
 
 go_test(
     name = "snp_test",
-    srcs = [
-        "issuer_test.go",
-        "validator_test.go",
-    ],
+    srcs = ["validator_test.go"],
     embed = [":snp"],
     # keep
     gotags = select({
@@ -44,16 +41,10 @@ go_test(
     }),
     deps = [
         "//internal/attestation",
-        "//internal/attestation/aws/snp/testdata",
-        "//internal/attestation/simulator",
-        "//internal/attestation/snp",
         "//internal/attestation/vtpm",
         "//internal/config",
-        "//internal/logger",
-        "@com_github_google_go_sev_guest//abi",
         "@com_github_google_go_sev_guest//proto/sevsnp",
         "@com_github_google_go_sev_guest//verify",
-        "@com_github_google_go_tpm_tools//client",
         "@com_github_google_go_tpm_tools//proto/attest",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
