@@ -79,7 +79,7 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 }
 
 // validateCVM validates the SEV-SNP attestation document.
-func (v *Validator) validateCVM(attDoc vtpm.AttestationDocument, state *attest.MachineState) error {
+func (v *Validator) validateCVM(attDoc vtpm.AttestationDocument, _ *attest.MachineState) error {
 	pubArea, err := tpm2.DecodePublic(attDoc.Attestation.AkPub)
 	if err != nil {
 		return fmt.Errorf("decoding public area: %w", err)

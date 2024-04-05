@@ -30,7 +30,7 @@ type RESTClient struct {
 }
 
 // NewRESTClient creates a new RESTClient.
-func NewRESTClient(ctx context.Context, opts ...option.ClientOption) (GCPRESTClient, error) {
+func NewRESTClient(ctx context.Context, opts ...option.ClientOption) (CVMRestClient, error) {
 	c, err := compute.NewInstancesRESTClient(ctx, opts...)
 	if err != nil {
 		return nil, err
@@ -38,8 +38,8 @@ func NewRESTClient(ctx context.Context, opts ...option.ClientOption) (GCPRESTCli
 	return &RESTClient{c}, nil
 }
 
-// GCPRESTClient is the interface a GCP REST client must implement.
-type GCPRESTClient interface {
+// CVMRestClient is the interface a GCP REST client for a CVM must implement.
+type CVMRestClient interface {
 	GetShieldedInstanceIdentity(ctx context.Context, req *computepb.GetShieldedInstanceIdentityInstanceRequest, opts ...gax.CallOption) (*computepb.ShieldedInstanceIdentity, error)
 	Close() error
 }
@@ -48,7 +48,7 @@ type GCPRESTClient interface {
 // This key can be used to verify attestation statements issued by the VM.
 func TrustedKeyGetter(
 	attestationVariant variant.Variant,
-	newRESTClient func(ctx context.Context, opts ...option.ClientOption) (GCPRESTClient, error),
+	newRESTClient func(ctx context.Context, opts ...option.ClientOption) (CVMRestClient, error),
 ) (func(ctx context.Context, attDoc vtpm.AttestationDocument, _ []byte) (crypto.PublicKey, error), error) {
 	return func(ctx context.Context, attDoc vtpm.AttestationDocument, _ []byte) (crypto.PublicKey, error) {
 		client, err := newRESTClient(ctx)
