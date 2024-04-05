@@ -1,0 +1,6 @@
+[cuda-fedora37-x86_64]
+name=cuda-fedora37-x86_64
+baseurl=https://developer.download.nvidia.com/compute/cuda/repos/fedora37/x86_64
+enabled=1
+gpgcheck=1
+gpgkey=https://developer.download.nvidia.com/compute/cuda/repos/fedora37/x86_64/D42D0685.pub
