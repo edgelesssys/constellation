@@ -31,7 +31,7 @@ Problems arise when the default images do not satisfy our dependency needs (as t
 To solve this issue we have three options:
 
 1. Build our own base images independent from or inspired by distroless
-2. Fork distroless, edit underlying [bazel dependencies](https://github.com/GoogleContainerTools/distroless/blob/main/debian_archives.bzl), build the image
+2. Fork [distroless](https://github.com/GoogleContainerTools/distroless), edit underlying Bazel dependencies, build the image
 3. Use `apko` to build minimal Alpine images. These images can be configured via `apko` and a declarative `*.yaml` config file.
 
 Option `1.`: Results in a similar maintenance work as using `buildah`.
