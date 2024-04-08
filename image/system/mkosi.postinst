@@ -20,6 +20,9 @@ echo "IMAGE_VERSION=\"${IMAGE_VERSION}\"" >> "${BUILDROOT}/etc/os-release"
 # enable debugd
 ln -s /usr/lib/systemd/system/debugd.service "${BUILDROOT}/etc/systemd/system/multi-user.target.wants/debugd.service"
 
+# enable nvidia-persistenced
+ln -s /usr/lib/systemd/system/nvidia-persistenced.service "${BUILDROOT}/etc/systemd/system/multi-user.target.wants/nvidia-persistenced.service"
+
 # ensure google_nvme_id is executable
 chmod o+x "${BUILDROOT}/usr/lib/udev/google_nvme_id"
 chmod g+x "${BUILDROOT}/usr/lib/udev/google_nvme_id"

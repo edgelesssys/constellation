@@ -5,4 +5,5 @@ enable configure-constel-csp.service
 enable dbus.service
 enable dbus-broker.service
 enable dbus-daemon.service
+enable nvidia-persistenced.service
 disable auditd.service
