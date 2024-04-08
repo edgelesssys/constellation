@@ -30,6 +30,7 @@ copy_to_directory(
 extra_trees = {
     "lts": [
         "//image:nvidia_kernel_modules",
+        "//image:nvidia_gsp_firmware",
     ],
     "mainline": [],
 }
