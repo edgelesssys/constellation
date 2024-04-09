@@ -96,28 +96,23 @@ jobs:
 
               $nodesOutput = & kubectl get nodes --kubeconfig "$PWD\constellation-admin.conf"
 
-              if (-not $?) {
-                  Write-Host "Execution of command 'kubectl' failed with exit code: $LASTEXITCODE"
-                  if ($retryCount -lt $maxRetries) {
-                      Write-Host "Retrying in $retryIntervalSeconds seconds..."
-                      Start-Sleep -Seconds $retryIntervalSeconds
-                  }
-                  continue
-              }
+              if ($?) {
+                  $lines = $nodesOutput -split "`r?`n" | Select-Object -Skip 1
 
-              $lines = $nodesOutput -split "`r?`n" | Select-Object -Skip 1
+                  if ($lines.count -eq 4) {
+                      $allNodesReady = $true
 
-              $allNodesReady = $true
+                      foreach ($line in $lines) {
+                          $columns = $line -split '\s+' | Where-Object { $_ -ne '' }
 
-              foreach ($line in $lines) {
-                  $columns = $line -split '\s+' | Where-Object { $_ -ne '' }
+                          $nodeName = $columns[0]
+                          $status = $columns[1]
 
-                  $nodeName = $columns[0]
-                  $status = $columns[1]
-
-                  if ($status -ne "Ready") {
-                      Write-Host "Node $nodeName is not ready!"
-                      $allNodesReady = $false
+                          if ($status -ne "Ready") {
+                              Write-Host "Node $nodeName is not ready!"
+                              $allNodesReady = $false
+                          }
+                      }
                   }
               }
 
