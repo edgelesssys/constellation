@@ -122,6 +122,11 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 		return nil, fmt.Errorf("parsing ASK certificate: %w", err)
 	}
 
+	ark, err := x509.ParseCertificate(att.CertificateChain.ArkCert)
+	if err != nil {
+		return nil, fmt.Errorf("parsing ARK certificate: %w", err)
+	}
+
 	verifyOpts := &verify.Options{
 		TrustedRoots: map[string][]*trust.AMDRootCerts{
 			"Genoa": {
@@ -129,7 +134,7 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 					Product: "Genoa",
 					ProductCerts: &trust.ProductCerts{
 						Ask: ask,
-						Ark: trustedArk,
+						Ark: ark,
 					},
 				},
 			},
