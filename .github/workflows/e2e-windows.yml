@@ -98,8 +98,10 @@ jobs:
 
               if (-not $?) {
                   Write-Host "Execution of command 'kubectl' failed with exit code: $LASTEXITCODE"
-                  Write-Host "Retrying in $retryIntervalSeconds seconds..."
-                  Start-Sleep -Seconds $retryIntervalSeconds
+                  if ($retryCount -lt $maxRetries) {
+                      Write-Host "Retrying in $retryIntervalSeconds seconds..."
+                      Start-Sleep -Seconds $retryIntervalSeconds
+                  }
                   continue
               }
 
@@ -119,7 +121,7 @@ jobs:
                   }
               }
 
-              if (-not $allNodesReady) {
+              if (-not $allNodesReady -and $retryCount -lt $maxRetries) {
                   Write-Host "Retrying in $retryIntervalSeconds seconds..."
                   Start-Sleep -Seconds $retryIntervalSeconds
               }
