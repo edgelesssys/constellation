@@ -9,38 +9,34 @@ def kernel_rpms():
     http_file(
         name = "kernel_lts",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/b4a8e5217cb62241631d1a7357979face1ad455a08cd4ca8f59c2252a90047f6",
-            "https://cdn.confidential.cloud/constellation/kernel/6.1.79-100.constellation/kernel-6.1.79-100.constellation.fc38.x86_64.rpm",
+            "https://cdn.confidential.cloud/constellation/kernel/6.2.0-100.constellation/kernel-6.2.0-100.constellation.fc38.x86_64.rpm",
         ],
         downloaded_file_path = "kernel-lts.rpm",
-        sha256 = "b4a8e5217cb62241631d1a7357979face1ad455a08cd4ca8f59c2252a90047f6",
+        sha256 = "2fa13500cb4f6cf0b921941876579f65fbcefc897eb6ef0ae509ce6053e634ec",
     )
     http_file(
         name = "kernel_core_lts",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/03e9ae8508cf1cd964216eed858c69d55629d8d27a44965857e408defcfe4785",
-            "https://cdn.confidential.cloud/constellation/kernel/6.1.79-100.constellation/kernel-core-6.1.79-100.constellation.fc38.x86_64.rpm",
+            "https://cdn.confidential.cloud/constellation/kernel/6.2.0-100.constellation/kernel-core-6.2.0-100.constellation.fc38.x86_64.rpm",
         ],
         downloaded_file_path = "kernel-core-lts.rpm",
-        sha256 = "03e9ae8508cf1cd964216eed858c69d55629d8d27a44965857e408defcfe4785",
+        sha256 = "bc48e9927df6e9f0f7b174fe916765e0a39ae817207a5fc84c53b7b35a3a2e42",
     )
     http_file(
         name = "kernel_modules_lts",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/c306c13f17024915682304e4f05ca21dd9533a34921684520135bc7e69e3d327",
-            "https://cdn.confidential.cloud/constellation/kernel/6.1.79-100.constellation/kernel-modules-6.1.79-100.constellation.fc38.x86_64.rpm",
+            "https://cdn.confidential.cloud/constellation/kernel/6.2.0-100.constellation/kernel-modules-6.2.0-100.constellation.fc38.x86_64.rpm",
         ],
         downloaded_file_path = "kernel-modules-lts.rpm",
-        sha256 = "c306c13f17024915682304e4f05ca21dd9533a34921684520135bc7e69e3d327",
+        sha256 = "c957c404b16cd09b70badd4e5bd9252e2bf5bde2d41b4e329b1b635a6b4e97e0",
     )
     http_file(
         name = "kernel_modules_core_lts",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/2183a23562e1d69a64e799baf1cf64ae34c4058f24993e3fe7645e3e363e899a",
-            "https://cdn.confidential.cloud/constellation/kernel/6.1.79-100.constellation/kernel-modules-core-6.1.79-100.constellation.fc38.x86_64.rpm",
+            "https://cdn.confidential.cloud/constellation/kernel/6.2.0-100.constellation/kernel-modules-core-6.2.0-100.constellation.fc38.x86_64.rpm",
         ],
         downloaded_file_path = "kernel-modules-core-lts.rpm",
-        sha256 = "2183a23562e1d69a64e799baf1cf64ae34c4058f24993e3fe7645e3e363e899a",
+        sha256 = "c8819019b1bfb75a888b4339bb5f3e0e5d8939fe6685419c2253f81ddb2f5a88",
     )
 
     # mainline kernel
