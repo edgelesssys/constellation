@@ -96,6 +96,13 @@ jobs:
 
               $nodesOutput = & kubectl get nodes --kubeconfig "$PWD\constellation-admin.conf"
 
+              if (-not $?) {
+                  Write-Host "Execution of command 'kubectl' failed with exit code: $LASTEXITCODE"
+                  Write-Host "Retrying in $retryIntervalSeconds seconds..."
+                  Start-Sleep -Seconds $retryIntervalSeconds
+                  continue
+              }
+
               $lines = $nodesOutput -split "`r?`n" | Select-Object -Skip 1
 
               $allNodesReady = $true
