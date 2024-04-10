@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 
 /*
-# GCP SEV-SNP Attestation
+# GCP SEV-SNP attestation
 
 Google offers [confidential VMs], utilizing AMD SEV-SNP to provide memory encryption.
 
@@ -36,9 +36,7 @@ public key provided by Google's API corresponding to the project ID, zone, insta
     Without a certificate signing the authenticity of any endorsement keys we have no way of establishing a chain of trust.
     Instead, we have to rely on Google's API to provide us with the public key of the vTPM's endorsement key.
 
-[GCP Confidential VMs]: https://cloud.google.com/compute/confidential-vm/docs/about-cvm
-[GCP Virtual Trusted Platform Module (vTPM)]: https://cloud.google.com/security/shielded-cloud/shielded-vm#vtpm
-[GCP Monitoring docs]: https://cloud.google.com/compute/confidential-vm/docs/monitoring
-[AMD SEV-SNP whitepaper]: https://www.amd.com/system/files/TechDocs/SEV-SNP-strengthening-vm-isolation-with-integrity-protection-and-more.pdf#page=7
+[confidential VMs]: https://cloud.google.com/compute/confidential-vm/docs/about-cvm
+[virtual Trusted Platform Module (vTPM)]: https://cloud.google.com/security/shielded-cloud/shielded-vm#vtpm
 */
 package snp
