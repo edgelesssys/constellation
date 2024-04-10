@@ -68,8 +68,10 @@ jobs:
       - name: Create IAM configuration
         shell: pwsh
         run: |
+          $uid = Get-Random -Minimum 1000 -Maximum 9999
+          $rgName = "e2e-windows-${{ github.run_id }}-${{ github.run_attempt }}-$uid"
           .\constellation.exe config generate azure
-          .\constellation.exe iam create azure --region=westus --resourceGroup=e2eWindoewsRG --servicePrincipal=e2eWindoewsSP --update-config --debug -y
+          .\constellation.exe iam create azure --region=westus --resourceGroup=e2eWindoewsRG --servicePrincipal=$rgName --update-config --debug -y
 
       - name: Login to Azure (Cluster service principal)
         uses: ./.github/actions/login_azure
