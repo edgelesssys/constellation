@@ -54,8 +54,50 @@ index 256a79542..3f3fc714b 100644
  home: https://cilium.io/
 -version: 1.15.0-pre.3
 -appVersion: 1.15.0-pre.3
-+version: 1.15.0-pre.3-edg.2
-+appVersion: 1.15.0-pre.3-edg.2
++version: 1.15.0-pre.3-edg.3
++appVersion: 1.15.0-pre.3-edg.3
  kubeVersion: ">= 1.16.0-0"
  icon: https://cdn.jsdelivr.net/gh/cilium/cilium@main/Documentation/images/logo-solo.svg
  description: eBPF-based Networking, Security, and Observability
+diff --git a/install/kubernetes/cilium/templates/cilium-agent/daemonset.yaml b/install/kubernetes/cilium/templates/cilium-agent/daemonset.yaml
+index f6b493cb7..50b80267a 100644
+--- a/install/kubernetes/cilium/templates/cilium-agent/daemonset.yaml
++++ b/install/kubernetes/cilium/templates/cilium-agent/daemonset.yaml
+@@ -715,6 +715,37 @@ spec:
+           - name: cni-path
+             mountPath: /host/opt/cni/bin
+       {{- end }} # .Values.cni.install
++      - name: firewall-pods
++        image: ghcr.io/edgelesssys/cilium/cilium:v1.15.0-pre.3-edg.2@sha256:c21b7fbbb084a128a479d6170e5f89ad2768dfecb4af10ee6a99ffe5d1a11749
++        imagePullPolicy: IfNotPresent
++        command:
++        - /bin/bash
++        - -exc
++        - |
++          pref=32
++          interface=$(ip route | awk '/^default/ { print $5 }')
++          tc qdisc add dev "${interface}" clsact || true
++          tc filter del dev "${interface}" ingress pref "${pref}" 2>/dev/null || true
++          handle=0
++          for cidr in ${POD_CIDRS}; do
++            handle=$((handle + 1))
++            tc filter replace dev "${interface}" ingress pref "${pref}" handle "${handle}" protocol ip flower dst_ip "${cidr}" action drop
++          done
++        env:
++        - name: POD_CIDRS
++          valueFrom:
++            configMapKeyRef:
++              key: encryption-strict-mode-pod-cidrs
++              name: cilium-config
++              optional: true
++        resources:
++          requests:
++            cpu: 100m
++            memory: 20Mi
++        securityContext:
++          capabilities:
++            add:
++            - NET_ADMIN
+       restartPolicy: Always
+       priorityClassName: {{ include "cilium.priorityClass" (list $ .Values.priorityClassName "system-node-critical") }}
+       serviceAccount: {{ .Values.serviceAccounts.cilium.name | quote }}

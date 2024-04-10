@@ -359,7 +359,7 @@ func (i *chartLoader) cspTags() map[string]any {
 
 func (i *chartLoader) loadCiliumValues(cloudprovider.Provider) (map[string]any, error) {
 	sharedConfig := map[string]any{
-		"extraArgs": []string{"--node-encryption-opt-out-labels=invalid.label"},
+		"extraArgs": []string{"--node-encryption-opt-out-labels=invalid.label", "--bpf-filter-priority=128"},
 		"endpointRoutes": map[string]any{
 			"enabled": true,
 		},
@@ -412,6 +412,7 @@ func (i *chartLoader) loadCiliumValues(cloudprovider.Provider) (map[string]any, 
 		"kubeProxyReplacement":                "strict",
 		"enableCiliumEndpointSlice":           true,
 		"kubeProxyReplacementHealthzBindAddr": "0.0.0.0:10256",
+		"cleanBpfState":                       true,
 	}
 	cspOverrideConfigs := map[string]map[string]any{
 		cloudprovider.AWS.String():   {},
