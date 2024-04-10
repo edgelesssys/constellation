@@ -95,8 +95,11 @@ jobs:
               Write-Host "Retry ${retryCount}: Checking node status..."
 
               $nodesOutput = & kubectl get nodes --kubeconfig "$PWD\constellation-admin.conf"
+              $status = $?
 
-              if ($?) {
+              $nodesOutput
+
+              if ($status) {
                   $lines = $nodesOutput -split "`r?`n" | Select-Object -Skip 1
 
                   if ($lines.count -eq 4) {
