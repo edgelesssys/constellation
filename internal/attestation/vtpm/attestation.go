@@ -125,7 +125,6 @@ func (i *Issuer) Issue(ctx context.Context, userData []byte, nonce []byte) (res 
 	}
 	defer aK.Close()
 
-	// Create an attestation using the loaded key
 	extraData := attestation.MakeExtraData(userData, nonce)
 
 	// Fetch instance info of the VM
@@ -136,6 +135,7 @@ func (i *Issuer) Issue(ctx context.Context, userData []byte, nonce []byte) (res 
 
 	tpmNonce := makeTpmNonce(instanceInfo, extraData)
 
+	// Create an attestation using the loaded key
 	tpmAttestation, err := aK.Attest(tpmClient.AttestOpts{Nonce: tpmNonce[:]})
 	if err != nil {
 		return nil, fmt.Errorf("creating attestation: %w", err)

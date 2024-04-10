@@ -49,7 +49,7 @@ type Validator struct {
 func NewValidator(cfg *config.GCPSEVSNP, log attestation.Logger) (*Validator, error) {
 	getGCEKey, err := gcp.TrustedKeyGetter(variant.GCPSEVSNP{}, gcp.NewRESTClient)
 	if err != nil {
-		return nil, fmt.Errorf("create trusted key getter: %v", err)
+		return nil, fmt.Errorf("creating trusted key getter: %w", err)
 	}
 
 	v := &Validator{

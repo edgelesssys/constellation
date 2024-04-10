@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 
 /*
-# GCP SEV-ES Attestation
+# GCP SEV-ES attestation
 
 Google offers [confidential VMs], utilizing AMD SEV-ES to provide memory encryption.
 

@@ -164,6 +164,7 @@ runs:
       shell: bash
       run: |
         echo "Creating cluster using config:"
+        cat constellation-conf.yaml
         sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts' || true
 
     - name: Constellation create (CLI)

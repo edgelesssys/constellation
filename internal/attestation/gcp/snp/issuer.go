@@ -85,7 +85,7 @@ func getInstanceInfo(_ context.Context, tpm io.ReadWriteCloser, _ []byte) ([]byt
 
 	vcek, err := pemEncodedVCEK(certs)
 	if err != nil {
-		return nil, fmt.Errorf("parsing vlek: %w", err)
+		return nil, fmt.Errorf("parsing vcek: %w", err)
 	}
 
 	gceInstanceInfo, err := gceInstanceInfo()
@@ -145,7 +145,7 @@ func pemEncodedVCEK(certs []byte) ([]byte, error) {
 		return nil, fmt.Errorf("getting VCEK certificate: %w", err)
 	}
 
-	// An optional check for certificate well-formedness. vlekRaw == cert.Raw.
+	// An optional check for certificate well-formedness. vcekRaw == cert.Raw.
 	cert, err := x509.ParseCertificate(vcekRaw)
 	if err != nil {
 		return nil, fmt.Errorf("parsing certificate: %w", err)
