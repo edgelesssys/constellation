@@ -59,6 +59,7 @@ jobs:
         run: |
           Move-Item -Path .\cli_enterprise_windows_amd64 -Destination .\constellation.exe
           .\constellation.exe version
+          Add-Content -Path $env:windir\System32\drivers\etc\hosts -Value "`n127.0.0.1`tlicense.confidential.cloud" -Force
 
       - name: Login to Azure (IAM service principal)
         uses: ./.github/actions/login_azure
