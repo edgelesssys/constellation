@@ -8,7 +8,6 @@ package snp
 
 import (
 	"context"
-	"crypto/sha512"
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
@@ -59,18 +58,12 @@ func getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
 // getInstanceInfo generates an extended SNP report, i.e. the report and any loaded certificates.
 // Report generation is triggered by sending ioctl syscalls to the SNP guest device, the AMD PSP generates the report.
 // The returned bytes will be written into the attestation document.
-func getInstanceInfo(_ context.Context, tpm io.ReadWriteCloser, _ []byte) ([]byte, error) {
-	tpmAk, err := client.GceAttestationKeyRSA(tpm)
-	if err != nil {
-		return nil, fmt.Errorf("creating RSA Endorsement key: %w", err)
+func getInstanceInfo(_ context.Context, tpm io.ReadWriteCloser, extraData []byte) ([]byte, error) {
+	if len(extraData) > 64 {
+		return nil, fmt.Errorf("extra data too long: %d, should be 64 bytes at most", len(extraData))
 	}
-
-	encoded, err := x509.MarshalPKIXPublicKey(tpmAk.PublicKey())
-	if err != nil {
-		return nil, fmt.Errorf("marshalling public key: %w", err)
-	}
-
-	akDigest := sha512.Sum512(encoded)
+	truncatedExtraData := make([]byte, 64)
+	copy(truncatedExtraData, extraData)
 
 	device, err := sevclient.OpenDevice()
 	if err != nil {
@@ -78,7 +71,7 @@ func getInstanceInfo(_ context.Context, tpm io.ReadWriteCloser, _ []byte) ([]byt
 	}
 	defer device.Close()
 
-	report, certs, err := sevclient.GetRawExtendedReportAtVmpl(device, akDigest, 0)
+	report, certs, err := sevclient.GetRawExtendedReportAtVmpl(device, [64]byte(truncatedExtraData), 0)
 	if err != nil {
 		return nil, fmt.Errorf("getting extended report: %w", err)
 	}
