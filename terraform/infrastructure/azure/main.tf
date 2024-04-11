@@ -75,6 +75,8 @@ resource "azurerm_attestation_provider" "attestation_provider" {
     # Related issue: https://github.com/hashicorp/terraform-provider-azurerm/issues/21998
     ignore_changes = [open_enclave_policy_base64, sgx_enclave_policy_base64, tpm_policy_base64, sev_snp_policy_base64]
   }
+
+  tags = var.additional_tags
 }
 
 resource "azurerm_public_ip" "loadbalancer_ip" {
@@ -85,7 +87,7 @@ resource "azurerm_public_ip" "loadbalancer_ip" {
   location            = var.location
   allocation_method   = "Static"
   sku                 = "Standard"
-  tags                = local.tags
+  tags                = merge(local.tags, var.additional_tags)
 
   lifecycle {
     ignore_changes = [name]
@@ -103,6 +105,7 @@ data "azurerm_public_ip" "loadbalancer_ip" {
   name                = "${local.name}-lb"
   resource_group_name = var.resource_group
   depends_on          = [azurerm_public_ip.loadbalancer_ip]
+  tags = var.additional_tags
 }
 
 resource "azurerm_public_ip" "nat_gateway_ip" {
@@ -111,7 +114,7 @@ resource "azurerm_public_ip" "nat_gateway_ip" {
   location            = var.location
   allocation_method   = "Static"
   sku                 = "Standard"
-  tags                = local.tags
+  tags                = merge(local.tags, var.additional_tags)
 }
 
 resource "azurerm_nat_gateway" "gateway" {
@@ -120,16 +123,19 @@ resource "azurerm_nat_gateway" "gateway" {
   resource_group_name     = var.resource_group
   sku_name                = "Standard"
   idle_timeout_in_minutes = 10
+  tags = var.additional_tags
 }
 
 resource "azurerm_subnet_nat_gateway_association" "example" {
   nat_gateway_id = azurerm_nat_gateway.gateway.id
   subnet_id      = azurerm_subnet.node_subnet.id
+  tags = var.additional_tags
 }
 
 resource "azurerm_nat_gateway_public_ip_association" "example" {
   nat_gateway_id       = azurerm_nat_gateway.gateway.id
   public_ip_address_id = azurerm_public_ip.nat_gateway_ip.id
+  tags = var.additional_tags
 }
 
 resource "azurerm_lb" "loadbalancer" {
@@ -137,7 +143,7 @@ resource "azurerm_lb" "loadbalancer" {
   location            = var.location
   resource_group_name = var.resource_group
   sku                 = "Standard"
-  tags                = local.tags
+  tags                = merge(local.tags, var.additional_tags)
 
   dynamic "frontend_ip_configuration" {
     for_each = var.internal_load_balancer ? [] : [1]
@@ -164,6 +170,7 @@ module "loadbalancer_backend_control_plane" {
   loadbalancer_id                = azurerm_lb.loadbalancer.id
   frontend_ip_configuration_name = azurerm_lb.loadbalancer.frontend_ip_configuration[0].name
   ports                          = local.ports
+  tags = var.additional_tags
 }
 
 module "loadbalancer_backend_worker" {
@@ -173,11 +180,13 @@ module "loadbalancer_backend_worker" {
   loadbalancer_id                = azurerm_lb.loadbalancer.id
   frontend_ip_configuration_name = azurerm_lb.loadbalancer.frontend_ip_configuration[0].name
   ports                          = []
+  tags = var.additional_tags
 }
 
 resource "azurerm_lb_backend_address_pool" "all" {
   loadbalancer_id = azurerm_lb.loadbalancer.id
   name            = "${var.name}-all"
+  tags = var.additional_tags
 }
 
 resource "azurerm_virtual_network" "network" {
@@ -185,7 +194,7 @@ resource "azurerm_virtual_network" "network" {
   resource_group_name = var.resource_group
   location            = var.location
   address_space       = ["10.0.0.0/8"]
-  tags                = local.tags
+  tags                = merge(local.tags, var.additional_tags)
 }
 
 resource "azurerm_subnet" "loadbalancer_subnet" {
@@ -194,6 +203,7 @@ resource "azurerm_subnet" "loadbalancer_subnet" {
   resource_group_name  = var.resource_group
   virtual_network_name = azurerm_virtual_network.network.name
   address_prefixes     = ["10.10.0.0/16"]
+  tags = var.additional_tags
 }
 
 resource "azurerm_subnet" "node_subnet" {
@@ -201,13 +211,14 @@ resource "azurerm_subnet" "node_subnet" {
   resource_group_name  = var.resource_group
   virtual_network_name = azurerm_virtual_network.network.name
   address_prefixes     = [local.cidr_vpc_subnet_nodes]
+  tags = var.additional_tags
 }
 
 resource "azurerm_network_security_group" "security_group" {
   name                = local.name
   location            = var.location
   resource_group_name = var.resource_group
-  tags                = local.tags
+  tags                = merge(local.tags, var.additional_tags)
 
   dynamic "security_rule" {
     for_each = concat(
@@ -237,6 +248,7 @@ module "scale_set_group" {
   zones           = each.value.zones
   tags = merge(
     local.tags,
+    var.additional_tags,
     { constellation-init-secret-hash = local.init_secret_hash },
     { constellation-maa-url = var.create_maa ? azurerm_attestation_provider.attestation_provider[0].attestation_uri : "" },
   )
@@ -272,6 +284,7 @@ module "jump_host" {
   subnet_id      = azurerm_subnet.loadbalancer_subnet[0].id
   ports          = [for port in local.ports : port.port]
   lb_internal_ip = azurerm_lb.loadbalancer.frontend_ip_configuration[0].private_ip_address
+  tags = var.additional_tags
 }
 
 data "azurerm_subscription" "current" {

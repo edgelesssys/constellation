@@ -27,3 +27,8 @@ variable "location" {
   description = "Location to deploy the jump host into."
   type        = string
 }
+
+variable "tags" {
+  description = "Tags of the jump host."
+  type = map
+}

@@ -10,6 +10,7 @@ terraform {
 resource "azurerm_lb_backend_address_pool" "backend_pool" {
   loadbalancer_id = var.loadbalancer_id
   name            = var.name
+  tags = var.tags
 }
 
 resource "azurerm_lb_probe" "health_probes" {
@@ -21,6 +22,7 @@ resource "azurerm_lb_probe" "health_probes" {
   protocol            = each.value.health_check_protocol
   request_path        = each.value.path
   interval_in_seconds = 5
+  tags = var.tags
 }
 
 resource "azurerm_lb_rule" "rules" {
@@ -35,4 +37,5 @@ resource "azurerm_lb_rule" "rules" {
   backend_address_pool_ids       = [azurerm_lb_backend_address_pool.backend_pool.id]
   probe_id                       = each.value.id
   disable_outbound_snat          = true
+  tags = var.tags
 }
