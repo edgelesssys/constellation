@@ -517,6 +517,7 @@ jobs:
       checks: write
       contents: read
       packages: write
+      checks: write
     secrets: inherit
     uses: ./.github/workflows/e2e-windows.yml
     with:
