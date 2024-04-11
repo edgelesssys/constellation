@@ -16,6 +16,9 @@ import (
 // Provider is cloud provider used by the CLI.
 type Provider uint32
 
+// Tags is the type that holds additional tags for cloud resources.
+type Tags map[string]string
+
 const (
 	// Unknown is default value for Provider.
 	Unknown Provider = iota

@@ -37,6 +37,7 @@ func newConfigGenerateCmd() *cobra.Command {
 	}
 	cmd.Flags().StringP("kubernetes", "k", semver.MajorMinor(string(config.Default().KubernetesVersion)), "Kubernetes version to use in format MAJOR.MINOR")
 	cmd.Flags().StringP("attestation", "a", "", fmt.Sprintf("attestation variant to use %s. If not specified, the default for the cloud provider is used", printFormattedSlice(variant.GetAvailableAttestationVariants())))
+	cmd.Flags().StringP("tags", "t", "", "Additional tags for created resources.")
 
 	return cmd
 }
@@ -45,6 +46,7 @@ type generateFlags struct {
 	rootFlags
 	k8sVersion         versions.ValidK8sVersion
 	attestationVariant variant.Variant
+	tags cloudprovider.Tags
 }
 
 func (f *generateFlags) parse(flags *pflag.FlagSet) error {
@@ -63,6 +65,12 @@ func (f *generateFlags) parse(flags *pflag.FlagSet) error {
 		return err
 	}
 	f.attestationVariant = variant
+
+	tags, err := parseTagsFlags(flags)
+	if err != nil {
+		return err
+	}
+	f.tags = tags
 
 	return nil
 }
@@ -220,4 +228,25 @@ func parseAttestationFlag(flags *pflag.FlagSet) (variant.Variant, error) {
 	}
 
 	return attestationVariant, nil
+}
+
+func parseTagsFlags(flags *pflag.FlagSet) (cloudprovider.Tags, error) {
+	tagsString, err := flags.GetString("tags")
+	if err != nil {
+		return nil, fmt.Errorf("getting tags flag: %w", err)
+	}
+	tagsString = strings.ReplaceAll(tagsString, " ", "")
+	tagsStringSplit := strings.Split(tagsString, ",")
+
+	tags := make(cloudprovider.Tags)
+	for _, tag := range tagsStringSplit {
+		tagSplit := strings.Split(tag, "=")
+		if len(tagSplit) != 2 {
+			return nil, fmt.Errorf("wrong format of tags")
+		}
+
+		tags[tagSplit[0]] = tagSplit[1]
+	}
+
+	return tags, nil
 }
