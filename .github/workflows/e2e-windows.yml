@@ -72,6 +72,7 @@ jobs:
         shell: pwsh
         run: |
           .\constellation.exe version
+          Add-Content -Path $env:windir\System32\drivers\etc\hosts -Value "`n127.0.0.1`tlicense.confidential.cloud" -Force
 
       - name: Login to Azure (IAM service principal)
         uses: ./.github/actions/login_azure
@@ -82,9 +83,9 @@ jobs:
         shell: pwsh
         run: |
           $uid = Get-Random -Minimum 1000 -Maximum 9999
-          $rgName = "e2e-windows-${{ github.run_id }}-${{ github.run_attempt }}-$uid"
+          $rgName = "e2e-win-${{ github.run_id }}-${{ github.run_attempt }}-$uid"
           .\constellation.exe config generate azure
-          .\constellation.exe iam create azure --region=westus --resourceGroup=e2eWindoewsRG --servicePrincipal=$rgName --update-config --debug -y
+          .\constellation.exe iam create azure --region=westus --resourceGroup=$rgName-rg --servicePrincipal=$rgName-sp --update-config --debug -y
 
       - name: Login to Azure (Cluster service principal)
         uses: ./.github/actions/login_azure
