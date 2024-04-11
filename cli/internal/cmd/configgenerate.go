@@ -237,6 +237,12 @@ func parseTagsFlags(flags *pflag.FlagSet) (cloudprovider.Tags, error) {
 		return nil, fmt.Errorf("getting tags flag: %w", err)
 	}
 	tagsString = strings.ReplaceAll(tagsString, " ", "")
+
+	// no tags given
+	if tagsString == "" {
+		return nil, nil
+	}
+
 	tagsStringSplit := strings.Split(tagsString, ",")
 
 	tags := make(cloudprovider.Tags)
