@@ -107,6 +107,7 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 		return fmt.Errorf("creating config: %w", err)
 	}
 	conf.KubernetesVersion = cg.flags.k8sVersion
+	conf.Tags = cg.flags.tags
 	cg.log.Debug("Writing YAML data to configuration file")
 	if err := fileHandler.WriteYAML(constants.ConfigFilename, conf, file.OptMkdirAll); err != nil {
 		return fmt.Errorf("writing config file: %w", err)

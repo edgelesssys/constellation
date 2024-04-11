@@ -73,6 +73,9 @@ type Config struct {
 	// description: |
 	//   Microservice version to be installed into the cluster. Defaults to the version of the CLI.
 	MicroserviceVersion semver.Semver `yaml:"microserviceVersion" validate:"required"`
+	// description : |
+	//	 Custom tags to be applied to created cloud resources.
+	Tags cloudprovider.Tags `yaml:"tags" validate:"omitempty"`
 	// description: |
 	//   DON'T USE IN PRODUCTION: enable debug mode and use debug images.
 	DebugCluster *bool `yaml:"debugCluster" validate:"required"`
