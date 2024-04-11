@@ -198,7 +198,7 @@ func TestHelmApply(t *testing.T) {
 			if tc.clusterCertManagerVersion != nil {
 				certManagerVersion = *tc.clusterCertManagerVersion
 			}
-			helmListVersion(lister, "cilium", "v1.15.0-pre.3-edg.2")
+			helmListVersion(lister, "cilium", "v1.15.0-pre.3-edg.3")
 			helmListVersion(lister, "cert-manager", certManagerVersion)
 			helmListVersion(lister, "constellation-services", tc.clusterMicroServiceVersion)
 			helmListVersion(lister, "constellation-operators", tc.clusterMicroServiceVersion)
