@@ -552,7 +552,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         uses: ./.github/actions/artifact_delete
         with:
-          name: terraform-state-${{ needs.e2e-upgrade.outputs.e2e-name-prefix }}
+          name: terraform-state-${{ needs.create-cluster.outputs.e2e-name-prefix }}
           workflowID: ${{ github.run_id }}
 
       - name: Prepare terraform state folders
@@ -578,7 +578,7 @@ jobs:
         if: always()
         uses: ./.github/actions/artifact_upload
         with:
-          name: terraform-state-${{ needs.e2e-upgrade.outputs.e2e-name-prefix }}
+          name: terraform-state-${{ needs.create-cluster.outputs.e2e-name-prefix }}
           path: >
             ${{ env.TO_UPLOAD }}
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
