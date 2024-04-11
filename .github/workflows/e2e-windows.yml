@@ -14,6 +14,11 @@ jobs:
   build-cli:
     name: Build Windows CLI
     runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+      checks: write
+      contents: read
+      packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -26,17 +31,26 @@ jobs:
           useCache: "true"
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
 
+      - name: Log in to the Container registry
+        uses: ./.github/actions/container_registry_login
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build CLI
         uses: ./.github/actions/build_cli
         with:
           targetOS: "windows"
           targetArch: "amd64"
           enterpriseCLI: true
+          outputPath: "build/constellation"
+          push: true
 
       - name: Upload CLI artifact
         uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         with:
-          path: "bazel-bin/cli/cli_enterprise_windows_amd64"
+          path: build/constellation.exe
           name: "constell-exe"
 
   e2e-test:
@@ -57,7 +71,6 @@ jobs:
       - name: Check CLI version
         shell: pwsh
         run: |
-          Move-Item -Path .\cli_enterprise_windows_amd64 -Destination .\constellation.exe
           .\constellation.exe version
 
       - name: Login to Azure (IAM service principal)
@@ -68,8 +81,10 @@ jobs:
       - name: Create IAM configuration
         shell: pwsh
         run: |
+          $uid = Get-Random -Minimum 1000 -Maximum 9999
+          $rgName = "e2e-windows-${{ github.run_id }}-${{ github.run_attempt }}-$uid"
           .\constellation.exe config generate azure
-          .\constellation.exe iam create azure --region=westus --resourceGroup=e2eWindoewsRG --servicePrincipal=e2eWindoewsSP --update-config --debug -y
+          .\constellation.exe iam create azure --region=westus --resourceGroup=e2eWindoewsRG --servicePrincipal=$rgName --update-config --debug -y
 
       - name: Login to Azure (Cluster service principal)
         uses: ./.github/actions/login_azure
@@ -95,8 +110,11 @@ jobs:
               Write-Host "Retry ${retryCount}: Checking node status..."
 
               $nodesOutput = & kubectl get nodes --kubeconfig "$PWD\constellation-admin.conf"
+              $status = $?
 
-              if ($?) {
+              $nodesOutput
+
+              if ($status) {
                   $lines = $nodesOutput -split "`r?`n" | Select-Object -Skip 1
 
                   if ($lines.count -eq 4) {
