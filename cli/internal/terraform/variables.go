@@ -70,6 +70,8 @@ type AWSClusterVariables struct {
 	CustomEndpoint string `hcl:"custom_endpoint" cty:"custom_endpoint"`
 	// InternalLoadBalancer is true if an internal load balancer should be created.
 	InternalLoadBalancer bool `hcl:"internal_load_balancer" cty:"internal_load_balancer"`
+	// AdditionalTags describes (optional) additional tags that should be applied to created resources.
+	AdditionalTags cloudprovider.Tags
 }
 
 // GetCreateMAA gets the CreateMAA variable.

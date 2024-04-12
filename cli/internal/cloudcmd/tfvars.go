@@ -104,6 +104,7 @@ func awsTerraformVars(conf *config.Config, imageRef string) *terraform.AWSCluste
 		EnableSNP:              conf.GetAttestationConfig().GetVariant().Equal(variant.AWSSEVSNP{}),
 		CustomEndpoint:         conf.CustomEndpoint,
 		InternalLoadBalancer:   conf.InternalLoadBalancer,
+		AdditionalTags: conf.Tags,
 	}
 }
 
