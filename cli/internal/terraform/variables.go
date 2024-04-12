@@ -9,6 +9,7 @@ package terraform
 import (
 	"fmt"
 
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
@@ -214,6 +215,8 @@ type AzureClusterVariables struct {
 	InternalLoadBalancer bool `hcl:"internal_load_balancer" cty:"internal_load_balancer"`
 	// MarketplaceImage is the (optional) Azure Marketplace image to use.
 	MarketplaceImage *AzureMarketplaceImageVariables `hcl:"marketplace_image" cty:"marketplace_image"`
+	// AdditionalTags are (optional) additional tags that get applied to created resources.
+	AdditionalTags cloudprovider.Tags `hcl:"additional_tags" cty:"additional_tags"`
 }
 
 // GetCreateMAA gets the CreateMAA variable.

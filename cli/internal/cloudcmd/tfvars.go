@@ -158,6 +158,7 @@ func azureTerraformVars(conf *config.Config, imageRef string) (*terraform.AzureC
 		CustomEndpoint:       conf.CustomEndpoint,
 		InternalLoadBalancer: conf.InternalLoadBalancer,
 		MarketplaceImage:     nil,
+		AdditionalTags: conf.Tags,
 	}
 
 	if conf.UseMarketplaceImage() {
