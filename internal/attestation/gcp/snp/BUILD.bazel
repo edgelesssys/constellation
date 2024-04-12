@@ -24,7 +24,6 @@ go_library(
         "@com_github_google_go_sev_guest//validate",
         "@com_github_google_go_sev_guest//verify",
         "@com_github_google_go_sev_guest//verify/trust",
-        "@com_github_google_go_tpm//legacy/tpm2",
         "@com_github_google_go_tpm_tools//client",
         "@com_github_google_go_tpm_tools//proto/attest",
     ],
@@ -45,6 +44,5 @@ go_test(
         "//internal/config",
         "@com_github_google_go_tpm_tools//proto/attest",
         "@com_github_stretchr_testify//assert",
-        "@com_github_stretchr_testify//require",
     ],
 )
