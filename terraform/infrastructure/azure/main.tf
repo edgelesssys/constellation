@@ -105,7 +105,6 @@ data "azurerm_public_ip" "loadbalancer_ip" {
   name                = "${local.name}-lb"
   resource_group_name = var.resource_group
   depends_on          = [azurerm_public_ip.loadbalancer_ip]
-  tags = var.additional_tags
 }
 
 resource "azurerm_public_ip" "nat_gateway_ip" {
@@ -129,13 +128,11 @@ resource "azurerm_nat_gateway" "gateway" {
 resource "azurerm_subnet_nat_gateway_association" "example" {
   nat_gateway_id = azurerm_nat_gateway.gateway.id
   subnet_id      = azurerm_subnet.node_subnet.id
-  tags = var.additional_tags
 }
 
 resource "azurerm_nat_gateway_public_ip_association" "example" {
   nat_gateway_id       = azurerm_nat_gateway.gateway.id
   public_ip_address_id = azurerm_public_ip.nat_gateway_ip.id
-  tags = var.additional_tags
 }
 
 resource "azurerm_lb" "loadbalancer" {
@@ -170,7 +167,6 @@ module "loadbalancer_backend_control_plane" {
   loadbalancer_id                = azurerm_lb.loadbalancer.id
   frontend_ip_configuration_name = azurerm_lb.loadbalancer.frontend_ip_configuration[0].name
   ports                          = local.ports
-  tags = var.additional_tags
 }
 
 module "loadbalancer_backend_worker" {
@@ -180,13 +176,11 @@ module "loadbalancer_backend_worker" {
   loadbalancer_id                = azurerm_lb.loadbalancer.id
   frontend_ip_configuration_name = azurerm_lb.loadbalancer.frontend_ip_configuration[0].name
   ports                          = []
-  tags = var.additional_tags
 }
 
 resource "azurerm_lb_backend_address_pool" "all" {
   loadbalancer_id = azurerm_lb.loadbalancer.id
   name            = "${var.name}-all"
-  tags = var.additional_tags
 }
 
 resource "azurerm_virtual_network" "network" {
@@ -203,7 +197,6 @@ resource "azurerm_subnet" "loadbalancer_subnet" {
   resource_group_name  = var.resource_group
   virtual_network_name = azurerm_virtual_network.network.name
   address_prefixes     = ["10.10.0.0/16"]
-  tags = var.additional_tags
 }
 
 resource "azurerm_subnet" "node_subnet" {
@@ -211,7 +204,6 @@ resource "azurerm_subnet" "node_subnet" {
   resource_group_name  = var.resource_group
   virtual_network_name = azurerm_virtual_network.network.name
   address_prefixes     = [local.cidr_vpc_subnet_nodes]
-  tags = var.additional_tags
 }
 
 resource "azurerm_network_security_group" "security_group" {
