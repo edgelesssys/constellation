@@ -140,7 +140,7 @@ type GCPClusterVariables struct {
 	// CCTechnology is the confidential computing technology to use on the VMs. (`SEV` or `SEV_SNP`)
 	CCTechnology string `hcl:"cc_technology" cty:"cc_technology"`
 	// AdditionalLables are (optional) additional labels that should be applied to created resources.
-	AdditionalLabels cloudprovider.Tags
+	AdditionalLabels cloudprovider.Tags `hcl:"additional_labels" cty:"additional_labels"`
 }
 
 // GetCreateMAA gets the CreateMAA variable.
