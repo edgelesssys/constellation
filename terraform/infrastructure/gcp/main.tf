@@ -202,7 +202,6 @@ resource "google_compute_address" "loadbalancer_ip_internal" {
 resource "google_compute_global_address" "loadbalancer_ip" {
   count = var.internal_load_balancer ? 0 : 1
   name  = local.name
-  labels = var.additional_labels
 }
 
 module "loadbalancer_public" {
