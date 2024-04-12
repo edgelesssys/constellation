@@ -205,11 +205,11 @@ func (a *gcpValidator) validate(attestation vtpm.AttestationDocument, ask *x509.
 func getVerifyOpts(att *sevsnp.Attestation) (*verify.Options, error) {
 	ask, err := x509.ParseCertificate(att.CertificateChain.AskCert)
 	if err != nil {
-		return &verify.Options{}, fmt.Errorf("parsing ASK certificate: %w", err)
+		return nil, fmt.Errorf("parsing ASK certificate: %w", err)
 	}
 	ark, err := x509.ParseCertificate(att.CertificateChain.ArkCert)
 	if err != nil {
-		return &verify.Options{}, fmt.Errorf("parsing ARK certificate: %w", err)
+		return nil, fmt.Errorf("parsing ARK certificate: %w", err)
 	}
 
 	verifyOpts := &verify.Options{

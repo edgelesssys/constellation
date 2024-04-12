@@ -58,7 +58,7 @@ func getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
 // getInstanceInfo generates an extended SNP report, i.e. the report and any loaded certificates.
 // Report generation is triggered by sending ioctl syscalls to the SNP guest device, the AMD PSP generates the report.
 // The returned bytes will be written into the attestation document.
-func getInstanceInfo(_ context.Context, tpm io.ReadWriteCloser, extraData []byte) ([]byte, error) {
+func getInstanceInfo(_ context.Context, _ io.ReadWriteCloser, extraData []byte) ([]byte, error) {
 	if len(extraData) > 64 {
 		return nil, fmt.Errorf("extra data too long: %d, should be 64 bytes at most", len(extraData))
 	}
@@ -76,7 +76,7 @@ func getInstanceInfo(_ context.Context, tpm io.ReadWriteCloser, extraData []byte
 		return nil, fmt.Errorf("getting extended report: %w", err)
 	}
 
-	vcek, err := pemEncodedVCEK(certs)
+	vcek, certChain, err := parseSNPCertTable(certs)
 	if err != nil {
 		return nil, fmt.Errorf("parsing vcek: %w", err)
 	}
@@ -89,6 +89,7 @@ func getInstanceInfo(_ context.Context, tpm io.ReadWriteCloser, extraData []byte
 	raw, err := json.Marshal(snp.InstanceInfo{
 		AttestationReport: report,
 		ReportSigner:      vcek,
+		CertChain:         certChain,
 		GCP:               gceInstanceInfo,
 	})
 	if err != nil {
@@ -124,30 +125,44 @@ func gceInstanceInfo() (*attest.GCEInstanceInfo, error) {
 	}, nil
 }
 
-// pemEncodedVCEK takes a marshalled SNP certificate table and returns the PEM-encoded VCEK certificate.
+// parseSNPCertTable takes a marshalled SNP certificate table and returns the PEM-encoded VCEK certificate and,
+// if present, the ASK of the SNP certificate chain.
 // AMD documentation on certificate tables can be found in section 4.1.8.1, revision 2.03 "SEV-ES Guest-Hypervisor Communication Block Standardization".
 // https://www.amd.com/content/dam/amd/en/documents/epyc-technical-docs/specifications/56421.pdf
-func pemEncodedVCEK(certs []byte) ([]byte, error) {
+func parseSNPCertTable(certs []byte) (vcekPEM []byte, certChain []byte, err error) {
 	certTable := abi.CertTable{}
 	if err := certTable.Unmarshal(certs); err != nil {
-		return nil, fmt.Errorf("unmarshalling SNP certificate table: %w", err)
+		return nil, nil, fmt.Errorf("unmarshalling SNP certificate table: %w", err)
 	}
 
 	vcekRaw, err := certTable.GetByGUIDString(abi.VcekGUID)
 	if err != nil {
-		return nil, fmt.Errorf("getting VCEK certificate: %w", err)
+		return nil, nil, fmt.Errorf("getting VCEK certificate: %w", err)
 	}
 
 	// An optional check for certificate well-formedness. vcekRaw == cert.Raw.
-	cert, err := x509.ParseCertificate(vcekRaw)
+	vcek, err := x509.ParseCertificate(vcekRaw)
 	if err != nil {
-		return nil, fmt.Errorf("parsing certificate: %w", err)
+		return nil, nil, fmt.Errorf("parsing certificate: %w", err)
 	}
 
-	certPEM := pem.EncodeToMemory(&pem.Block{
+	vcekPEM = pem.EncodeToMemory(&pem.Block{
 		Type:  "CERTIFICATE",
-		Bytes: cert.Raw,
+		Bytes: vcek.Raw,
 	})
 
-	return certPEM, nil
+	var askPEM []byte
+	if askRaw, err := certTable.GetByGUIDString(abi.AskGUID); err == nil {
+		ask, err := x509.ParseCertificate(askRaw)
+		if err != nil {
+			return nil, nil, fmt.Errorf("parsing ASK certificate: %w", err)
+		}
+
+		askPEM = pem.EncodeToMemory(&pem.Block{
+			Type:  "CERTIFICATE",
+			Bytes: ask.Raw,
+		})
+	}
+
+	return vcekPEM, askPEM, nil
 }
