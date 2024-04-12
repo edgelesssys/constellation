@@ -9,7 +9,6 @@ package snp
 import (
 	"context"
 	"crypto"
-	"crypto/sha512"
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
@@ -27,7 +26,6 @@ import (
 	"github.com/google/go-sev-guest/verify"
 	"github.com/google/go-sev-guest/verify/trust"
 	"github.com/google/go-tpm-tools/proto/attest"
-	"github.com/google/go-tpm/legacy/tpm2"
 )
 
 // Validator for GCP SEV-SNP / TPM attestation.
@@ -62,53 +60,30 @@ func NewValidator(cfg *config.GCPSEVSNP, log attestation.Logger) (*Validator, er
 	v.Validator = vtpm.NewValidator(
 		cfg.Measurements,
 		v.getTrustedKey,
-		v.validateCVM,
+		func(_ vtpm.AttestationDocument, _ *attest.MachineState) error { return nil },
 		log,
 	)
 	return v, nil
 }
 
 // getTrustedKey returns TPM endorsement key provided through the GCE metadata API.
-func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDocument, _ []byte) (crypto.PublicKey, error) {
+func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDocument, extraData []byte) (crypto.PublicKey, error) {
 	ekPub, err := v.gceKeyGetter(ctx, attDoc, nil)
 	if err != nil {
 		return nil, fmt.Errorf("getting TPM endorsement key: %w", err)
 	}
 
+	if len(extraData) > 64 {
+		return nil, fmt.Errorf("extra data too long: %d, should be 64 bytes at most", len(extraData))
+	}
+	extraData64 := make([]byte, 64)
+	copy(extraData64, extraData)
+
+	if err := v.reportValidator.validate(attDoc, (*x509.Certificate)(&v.cfg.AMDSigningKey), (*x509.Certificate)(&v.cfg.AMDRootKey), [64]byte(extraData64), v.cfg, v.log); err != nil {
+		return nil, fmt.Errorf("validating SNP report: %w", err)
+	}
+
 	return ekPub, nil
-}
-
-// validateCVM validates the SEV-SNP attestation document.
-func (v *Validator) validateCVM(attDoc vtpm.AttestationDocument, _ *attest.MachineState) error {
-	pubArea, err := tpm2.DecodePublic(attDoc.Attestation.AkPub)
-	if err != nil {
-		return fmt.Errorf("decoding public area: %w", err)
-	}
-
-	pubKey, err := pubArea.Key()
-	if err != nil {
-		return fmt.Errorf("getting public key: %w", err)
-	}
-
-	akDigest, err := sha512sum(pubKey)
-	if err != nil {
-		return fmt.Errorf("calculating hash of attestation key: %w", err)
-	}
-
-	if err := v.reportValidator.validate(attDoc, (*x509.Certificate)(&v.cfg.AMDSigningKey), (*x509.Certificate)(&v.cfg.AMDRootKey), akDigest, v.cfg, v.log); err != nil {
-		return fmt.Errorf("validating SNP report: %w", err)
-	}
-	return nil
-}
-
-// sha512sum PEM-encodes a public key and calculates the SHA512 hash of the encoded key.
-func sha512sum(key crypto.PublicKey) ([64]byte, error) {
-	pub, err := x509.MarshalPKIXPublicKey(key)
-	if err != nil {
-		return [64]byte{}, fmt.Errorf("marshalling public key: %w", err)
-	}
-
-	return sha512.Sum512(pub), nil
 }
 
 // snpReportValidator validates a given SNP report.
@@ -146,7 +121,7 @@ func (r *reportVerifierImpl) SnpAttestation(att *sevsnp.Attestation, opts *verif
 // validate the report by checking if it has a valid VCEK signature.
 // The certificate chain ARK -> ASK -> VCEK is also validated.
 // Checks that the report's userData matches the connection's userData.
-func (a *gcpValidator) validate(attestation vtpm.AttestationDocument, ask *x509.Certificate, ark *x509.Certificate, akDigest [64]byte, config *config.GCPSEVSNP, log attestation.Logger) error {
+func (a *gcpValidator) validate(attestation vtpm.AttestationDocument, ask *x509.Certificate, ark *x509.Certificate, reportData [64]byte, config *config.GCPSEVSNP, log attestation.Logger) error {
 	var info snp.InstanceInfo
 	if err := json.Unmarshal(attestation.InstanceInfo, &info); err != nil {
 		return fmt.Errorf("unmarshalling instance info: %w", err)
@@ -170,7 +145,7 @@ func (a *gcpValidator) validate(attestation vtpm.AttestationDocument, ask *x509.
 
 	validateOpts := &validate.Options{
 		// Check that the attestation key's digest is included in the report.
-		ReportData: akDigest[:],
+		ReportData: reportData[:],
 		GuestPolicy: abi.SnpPolicy{
 			Debug: false, // Debug means the VM can be decrypted by the host for debugging purposes and thus is not allowed.
 			SMT:   true,  // Allow Simultaneous Multi-Threading (SMT). Normally, we would want to disable SMT
@@ -205,11 +180,11 @@ func (a *gcpValidator) validate(attestation vtpm.AttestationDocument, ask *x509.
 func getVerifyOpts(att *sevsnp.Attestation) (*verify.Options, error) {
 	ask, err := x509.ParseCertificate(att.CertificateChain.AskCert)
 	if err != nil {
-		return &verify.Options{}, fmt.Errorf("parsing ASK certificate: %w", err)
+		return nil, fmt.Errorf("parsing ASK certificate: %w", err)
 	}
 	ark, err := x509.ParseCertificate(att.CertificateChain.ArkCert)
 	if err != nil {
-		return &verify.Options{}, fmt.Errorf("parsing ARK certificate: %w", err)
+		return nil, fmt.Errorf("parsing ARK certificate: %w", err)
 	}
 
 	verifyOpts := &verify.Options{
