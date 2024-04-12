@@ -96,7 +96,7 @@ func (a *InstanceInfo) addReportSigner(att *spb.Attestation, report *spb.Report,
 
 // AttestationWithCerts returns a formatted version of the attestation report and its certificates from the instanceInfo.
 // Certificates are retrieved in the following precedence:
-// 1. ASK from issuer. On Azure: THIM. One AWS: not prefilled. On GCP: prefilled.
+// 1. ASK from issuer. On Azure: THIM. One AWS: not prefilled. (Go to option 2) On GCP: prefilled.
 // 2. ASK or ARK from fallbackCerts.
 // 3. ASK or ARK from AMD KDS.
 func (a *InstanceInfo) AttestationWithCerts(getter trust.HTTPSGetter,
