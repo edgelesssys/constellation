@@ -227,6 +227,7 @@ func gcpTerraformVars(conf *config.Config, imageRef string) *terraform.GCPCluste
 		CustomEndpoint:       conf.CustomEndpoint,
 		InternalLoadBalancer: conf.InternalLoadBalancer,
 		CCTechnology:         ccTech,
+		AdditionalLabels: conf.Tags,
 	}
 }
 
@@ -245,9 +246,9 @@ func openStackTerraformVars(conf *config.Config, imageRef string) (*terraform.Op
 	if _, hasOSAuthURL := os.LookupEnv("OS_AUTH_URL"); !hasOSAuthURL && conf.Provider.OpenStack.Cloud == "" {
 		return nil, errors.New(
 			"neither environment variable OS_AUTH_URL nor cloud name for \"clouds.yaml\" is set. OpenStack authentication requires a set of " +
-				"OS_* environment variables that are typically sourced into the current shell with an openrc file " +
-				"or a cloud name for \"clouds.yaml\". " +
-				"See https://docs.openstack.org/openstacksdk/latest/user/config/configuration.html for more information",
+			"OS_* environment variables that are typically sourced into the current shell with an openrc file " +
+			"or a cloud name for \"clouds.yaml\". " +
+			"See https://docs.openstack.org/openstacksdk/latest/user/config/configuration.html for more information",
 		)
 	}
 
