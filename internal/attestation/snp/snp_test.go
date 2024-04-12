@@ -149,12 +149,24 @@ func TestAttestationWithCerts(t *testing.T) {
 		wantErr       bool
 	}{
 		"success": {
+			report:        defaultReport,
+			idkeydigest:   "57e229e0ffe5fa92d0faddff6cae0e61c926fc9ef9afd20a8b8cfcf7129db9338cbe5bf3f6987733a2bf65d06dc38fc1",
+			reportSigner:  testdata.AzureThimVCEK,
+			certChain:     testdata.CertChain,
+			fallbackCerts: CertificateChain{ark: testdataArk},
+			expectedArk:   testdataArk,
+			expectedAsk:   testdataAsk,
+			getter:        newStubHTTPSGetter(&urlResponseMatcher{}, nil),
+		},
+		"ark only in pre-fetched cert-chain": {
 			report:       defaultReport,
 			idkeydigest:  "57e229e0ffe5fa92d0faddff6cae0e61c926fc9ef9afd20a8b8cfcf7129db9338cbe5bf3f6987733a2bf65d06dc38fc1",
 			reportSigner: testdata.AzureThimVCEK,
 			certChain:    testdata.CertChain,
 			expectedArk:  testdataArk,
 			expectedAsk:  testdataAsk,
+			getter:       newStubHTTPSGetter(nil, assert.AnError),
+			wantErr:      true,
 		},
 		"vlek success": {
 			report:       vlekReport,
@@ -173,9 +185,10 @@ func TestAttestationWithCerts(t *testing.T) {
 			),
 		},
 		"retrieve vcek": {
-			report:      defaultReport,
-			idkeydigest: "57e229e0ffe5fa92d0faddff6cae0e61c926fc9ef9afd20a8b8cfcf7129db9338cbe5bf3f6987733a2bf65d06dc38fc1",
-			certChain:   testdata.CertChain,
+			report:        defaultReport,
+			idkeydigest:   "57e229e0ffe5fa92d0faddff6cae0e61c926fc9ef9afd20a8b8cfcf7129db9338cbe5bf3f6987733a2bf65d06dc38fc1",
+			certChain:     testdata.CertChain,
+			fallbackCerts: CertificateChain{ark: testdataArk},
 			getter: newStubHTTPSGetter(
 				&urlResponseMatcher{
 					vcekResponse:    testdata.AmdKdsVCEK,
@@ -205,25 +218,9 @@ func TestAttestationWithCerts(t *testing.T) {
 			idkeydigest:   "57e229e0ffe5fa92d0faddff6cae0e61c926fc9ef9afd20a8b8cfcf7129db9338cbe5bf3f6987733a2bf65d06dc38fc1",
 			reportSigner:  testdata.AzureThimVCEK,
 			fallbackCerts: NewCertificateChain(exampleCert, exampleCert),
-			getter: newStubHTTPSGetter(
-				&urlResponseMatcher{},
-				nil,
-			),
-			expectedArk: exampleCert,
-			expectedAsk: exampleCert,
-		},
-		"use certchain with fallback certs": {
-			report:        defaultReport,
-			idkeydigest:   "57e229e0ffe5fa92d0faddff6cae0e61c926fc9ef9afd20a8b8cfcf7129db9338cbe5bf3f6987733a2bf65d06dc38fc1",
-			certChain:     testdata.CertChain,
-			reportSigner:  testdata.AzureThimVCEK,
-			fallbackCerts: NewCertificateChain(&x509.Certificate{}, &x509.Certificate{}),
-			getter: newStubHTTPSGetter(
-				&urlResponseMatcher{},
-				nil,
-			),
-			expectedArk: testdataArk,
-			expectedAsk: testdataAsk,
+			getter:        newStubHTTPSGetter(&urlResponseMatcher{}, nil),
+			expectedArk:   exampleCert,
+			expectedAsk:   exampleCert,
 		},
 		"retrieve vcek and certchain": {
 			report:      defaultReport,
@@ -242,10 +239,12 @@ func TestAttestationWithCerts(t *testing.T) {
 		},
 		"report too short": {
 			report:  defaultReport[:len(defaultReport)-100],
+			getter:  newStubHTTPSGetter(nil, assert.AnError),
 			wantErr: true,
 		},
 		"corrupted report": {
 			report:  defaultReport[10 : len(defaultReport)-10],
+			getter:  newStubHTTPSGetter(nil, assert.AnError),
 			wantErr: true,
 		},
 		"certificate fetch error": {
