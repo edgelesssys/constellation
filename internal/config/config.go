@@ -476,6 +476,12 @@ func New(fileHandler file.Handler, name string, fetcher attestationconfigapi.Fet
 		}
 	}
 
+	if gcp := c.Attestation.GCPSEVSNP; gcp != nil {
+		if err := gcp.FetchAndSetLatestVersionNumbers(context.Background(), fetcher); err != nil {
+			return c, err
+		}
+	}
+
 	// Read secrets from env-vars.
 	clientSecretValue := os.Getenv(constants.EnvVarAzureClientSecretValue)
 	if clientSecretValue != "" && c.Provider.Azure != nil {

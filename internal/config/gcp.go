@@ -73,39 +73,35 @@ func (c *GCPSEVSNP) getToMarshallLatestWithResolvedVersions() AttestationCfg {
 }
 
 // FetchAndSetLatestVersionNumbers fetches the latest version numbers from the configapi and sets them.
-func (c *GCPSEVSNP) FetchAndSetLatestVersionNumbers(_ context.Context, _ attestationconfigapi.Fetcher) error {
-	panic("not implemented")
+func (c *GCPSEVSNP) FetchAndSetLatestVersionNumbers(ctx context.Context, fetcher attestationconfigapi.Fetcher) error {
+	// Only talk to the API if at least one version number is set to latest.
+	if !(c.BootloaderVersion.WantLatest || c.TEEVersion.WantLatest || c.SNPVersion.WantLatest || c.MicrocodeVersion.WantLatest) {
+		return nil
+	}
 
-	// TODO(msanft): Implement with https://dev.azure.com/Edgeless/Edgeless/_workitems/edit/4024
-
-	// // Only talk to the API if at least one version number is set to latest.
-	// if !(c.BootloaderVersion.WantLatest || c.TEEVersion.WantLatest || c.SNPVersion.WantLatest || c.MicrocodeVersion.WantLatest) {
-	// 	return nil
-	// }
-
-	// versions, err := fetcher.FetchSEVSNPVersionLatest(ctx, variant.GCPSEVSNP{})
-	// if err != nil {
-	// 	return fmt.Errorf("fetching latest TCB versions from configapi: %w", err)
-	// }
-	// // set number and keep isLatest flag
-	// c.mergeWithLatestVersion(versions.SEVSNPVersion)
-	// return nil
+	versions, err := fetcher.FetchSEVSNPVersionLatest(ctx, variant.GCPSEVSNP{})
+	if err != nil {
+		return fmt.Errorf("fetching latest TCB versions from configapi: %w", err)
+	}
+	// set number and keep isLatest flag
+	c.mergeWithLatestVersion(versions.SEVSNPVersion)
+	return nil
 }
 
-// func (c *GCPSEVSNP) mergeWithLatestVersion(latest attestationconfigapi.SEVSNPVersion) {
-// 	if c.BootloaderVersion.WantLatest {
-// 		c.BootloaderVersion.Value = latest.Bootloader
-// 	}
-// 	if c.TEEVersion.WantLatest {
-// 		c.TEEVersion.Value = latest.TEE
-// 	}
-// 	if c.SNPVersion.WantLatest {
-// 		c.SNPVersion.Value = latest.SNP
-// 	}
-// 	if c.MicrocodeVersion.WantLatest {
-// 		c.MicrocodeVersion.Value = latest.Microcode
-// 	}
-// }
+func (c *GCPSEVSNP) mergeWithLatestVersion(latest attestationconfigapi.SEVSNPVersion) {
+	if c.BootloaderVersion.WantLatest {
+		c.BootloaderVersion.Value = latest.Bootloader
+	}
+	if c.TEEVersion.WantLatest {
+		c.TEEVersion.Value = latest.TEE
+	}
+	if c.SNPVersion.WantLatest {
+		c.SNPVersion.Value = latest.SNP
+	}
+	if c.MicrocodeVersion.WantLatest {
+		c.MicrocodeVersion.Value = latest.Microcode
+	}
+}
 
 // GetVariant returns gcp-sev-es as the variant.
 func (GCPSEVES) GetVariant() variant.Variant {

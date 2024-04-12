@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 
 /*
-The reporter contains the logic to determine a latest version for Azure SEVSNP based on cached version values observed on CVM instances.
+The reporter contains the logic to determine a latest version for SEVSNP based on cached version values observed on CVM instances.
 Some code in this file (e.g. listing cached files) does not rely on dedicated API objects and instead uses the AWS SDK directly,
 for no other reason than original development speed.
 */
@@ -79,11 +79,11 @@ func (c Client) UploadSEVSNPVersionLatest(ctx context.Context, attestation varia
 	if err := c.uploadSEVSNPVersion(ctx, attestation, minVersion, t); err != nil {
 		return fmt.Errorf("uploading version: %w", err)
 	}
-	c.s3Client.Logger.Info(fmt.Sprintf("Successfully uploaded new Azure SEV-SNP version: %+v", minVersion))
+	c.s3Client.Logger.Info(fmt.Sprintf("Successfully uploaded new SEV-SNP version: %+v", minVersion))
 	return nil
 }
 
-// cacheSEVSNPVersion uploads the latest observed version numbers of the Azure SEVSNP. This version is used to later report the latest version numbers to the API.
+// cacheSEVSNPVersion uploads the latest observed version numbers of the SEVSNP. This version is used to later report the latest version numbers to the API.
 func (c Client) cacheSEVSNPVersion(ctx context.Context, attestation variant.Variant, version SEVSNPVersion, date time.Time) error {
 	dateStr := date.Format(VersionFormat) + ".json"
 	res := putCmd{

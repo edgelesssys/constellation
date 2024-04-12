@@ -15,7 +15,7 @@ information contained in the objects. Especially the paths used for the API are 
 in these helper methods.
 
 Regarding the decision to implement new types over using the existing types from internal/config:
-AttesationCfg objects for AttestationCfg API need to hold some version information (for sorting, recognizing latest).
+AttestationCfg objects for AttestationCfg API need to hold some version information (for sorting, recognizing latest).
 Thus, existing config types (AWSNitroTPM, AzureSEVSNP, ...) can not be extended to implement apiObject interface.
 Instead, we need a separate type that wraps _all_ attestation types. In the codebase this is done using the AttestationCfg interface.
 The new type AttestationCfgGet needs to be located inside internal/config in order to implement UnmarshalJSON.

@@ -62,8 +62,8 @@ func getInstanceInfo(_ context.Context, _ io.ReadWriteCloser, extraData []byte) 
 	if len(extraData) > 64 {
 		return nil, fmt.Errorf("extra data too long: %d, should be 64 bytes at most", len(extraData))
 	}
-	truncatedExtraData := make([]byte, 64)
-	copy(truncatedExtraData, extraData)
+	extraData64 := make([]byte, 64)
+	copy(extraData64, extraData)
 
 	device, err := sevclient.OpenDevice()
 	if err != nil {
@@ -71,7 +71,7 @@ func getInstanceInfo(_ context.Context, _ io.ReadWriteCloser, extraData []byte) 
 	}
 	defer device.Close()
 
-	report, certs, err := sevclient.GetRawExtendedReportAtVmpl(device, [64]byte(truncatedExtraData), 0)
+	report, certs, err := sevclient.GetRawExtendedReportAtVmpl(device, [64]byte(extraData64), 0)
 	if err != nil {
 		return nil, fmt.Errorf("getting extended report: %w", err)
 	}
