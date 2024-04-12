@@ -1,5 +1,4 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
-load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "snp",
@@ -26,23 +25,5 @@ go_library(
         "@com_github_google_go_sev_guest//verify/trust",
         "@com_github_google_go_tpm_tools//client",
         "@com_github_google_go_tpm_tools//proto/attest",
-    ],
-)
-
-go_test(
-    name = "snp_test",
-    srcs = ["validator_test.go"],
-    embed = [":snp"],
-    # keep
-    gotags = select({
-        "//bazel/settings:tpm_simulator_enabled": [],
-        "//conditions:default": ["disable_tpm_simulator"],
-    }),
-    deps = [
-        "//internal/attestation",
-        "//internal/attestation/vtpm",
-        "//internal/config",
-        "@com_github_google_go_tpm_tools//proto/attest",
-        "@com_github_stretchr_testify//assert",
     ],
 )
