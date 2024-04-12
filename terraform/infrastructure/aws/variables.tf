@@ -79,3 +79,8 @@ variable "enable_snp" {
   default     = true
   description = "Enable AMD SEV SNP. Setting this to true sets the cpu-option AmdSevSnp to enable."
 }
+
+variable "additional_tags" {
+  type = map
+  description = "Additional tags that should be applied to created resources."
+}

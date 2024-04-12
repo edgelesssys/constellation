@@ -27,3 +27,8 @@ variable "security_groups" {
   type        = list(string)
   description = "List of IDs of the security groups for an instance."
 }
+
+variable "additional_tags" {
+  type = map
+  description = "Additional tags for the jump host."
+}
