@@ -174,8 +174,10 @@ func TestUpgradeNodeImage(t *testing.T) {
 			}
 
 			upgrader := KubeCmd{
-				kubectl: kubectl,
-				log:     logger.NewTest(t),
+				kubectl:       kubectl,
+				retryInterval: time.Millisecond,
+				maxRetries:    5,
+				log:           logger.NewTest(t),
 			}
 
 			err = upgrader.UpgradeNodeImage(context.Background(), tc.newImageVersion, fmt.Sprintf("/path/to/image:%s", tc.newImageVersion.String()), tc.force)
@@ -285,8 +287,10 @@ func TestUpgradeKubernetesVersion(t *testing.T) {
 			}
 
 			upgrader := KubeCmd{
-				kubectl: kubectl,
-				log:     logger.NewTest(t),
+				kubectl:       kubectl,
+				retryInterval: time.Millisecond,
+				maxRetries:    5,
+				log:           logger.NewTest(t),
 			}
 
 			err = upgrader.UpgradeKubernetesVersion(context.Background(), tc.newKubernetesVersion, tc.force)
@@ -341,7 +345,9 @@ func TestIsValidImageUpgrade(t *testing.T) {
 			assert := assert.New(t)
 
 			upgrader := &KubeCmd{
-				log: logger.NewTest(t),
+				retryInterval: time.Millisecond,
+				maxRetries:    5,
+				log:           logger.NewTest(t),
 			}
 
 			nodeVersion := updatev1alpha1.NodeVersion{
@@ -392,7 +398,9 @@ func TestUpdateK8s(t *testing.T) {
 			assert := assert.New(t)
 
 			upgrader := &KubeCmd{
-				log: logger.NewTest(t),
+				retryInterval: time.Millisecond,
+				maxRetries:    5,
+				log:           logger.NewTest(t),
 			}
 
 			nodeVersion := updatev1alpha1.NodeVersion{
@@ -589,6 +597,7 @@ func TestApplyJoinConfig(t *testing.T) {
 				kubectl:       tc.kubectl,
 				log:           logger.NewTest(t),
 				retryInterval: time.Millisecond,
+				maxRetries:    5,
 			}
 
 			err := cmd.ApplyJoinConfig(context.Background(), tc.newAttestationCfg, []byte{0x11})
