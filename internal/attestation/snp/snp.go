@@ -26,7 +26,7 @@ import (
 func Product() *spb.SevProduct {
 	// sevProduct is the product info of the SEV platform as reported through CPUID[EAX=1].
 	// It may become necessary in the future to differentiate among CSP vendors.
-	return &spb.SevProduct{Name: spb.SevProduct_SEV_PRODUCT_MILAN, Stepping: 0} // Milan-B0
+	return &spb.SevProduct{Name: spb.SevProduct_SEV_PRODUCT_GENOA, Stepping: 0} // Milan-B0
 }
 
 // InstanceInfo contains the necessary information to establish trust in a SNP CVM.
@@ -209,9 +209,9 @@ func (a *InstanceInfo) ParseCertChain() (ask, ark *x509.Certificate, retErr erro
 		// https://www.amd.com/content/dam/amd/en/documents/epyc-technical-docs/specifications/57230.pdf
 		// Table 6 and 7
 		switch cert.Subject.CommonName {
-		case "SEV-Milan", "SEV-VLEK-Milan":
+		case "SEV-Genoa", "SEV-Milan", "SEV-VLEK-Milan":
 			ask = cert
-		case "ARK-Milan":
+		case "ARK-Genoa", "ARK-Milan":
 			ark = cert
 		default:
 			retErr = fmt.Errorf("parse certificate %d: unexpected subject CN %s", i, cert.Subject.CommonName)

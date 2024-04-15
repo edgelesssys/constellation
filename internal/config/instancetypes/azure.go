@@ -43,6 +43,7 @@ var AzureSNPInstanceTypes = []string{
 	"Standard_EC48ads_v5",
 	"Standard_EC64ads_v5",
 	"Standard_EC96ads_v5",
+	"Standard_NCC40ads_H100_v5",
 }
 
 // AzureTDXInstanceTypes are valid Azure TDX instance types.

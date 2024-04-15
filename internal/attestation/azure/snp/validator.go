@@ -124,9 +124,9 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 
 	verifyOpts := &verify.Options{
 		TrustedRoots: map[string][]*trust.AMDRootCerts{
-			"Milan": {
+			"Genoa": {
 				{
-					Product: "Milan",
+					Product: "Genoa",
 					ProductCerts: &trust.ProductCerts{
 						Ask: ask,
 						Ark: trustedArk,
