@@ -68,19 +68,19 @@ func NewValidator(cfg *config.GCPSEVSNP, log attestation.Logger) (*Validator, er
 
 // getTrustedKey returns TPM endorsement key provided through the GCE metadata API.
 func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDocument, extraData []byte) (crypto.PublicKey, error) {
-	ekPub, err := v.gceKeyGetter(ctx, attDoc, nil)
-	if err != nil {
-		return nil, fmt.Errorf("getting TPM endorsement key: %w", err)
-	}
-
 	if len(extraData) > 64 {
 		return nil, fmt.Errorf("extra data too long: %d, should be 64 bytes at most", len(extraData))
 	}
-	extraData64 := make([]byte, 64)
-	copy(extraData64, extraData)
+	var extraData64 [64]byte
+	copy(extraData64[:], extraData)
 
 	if err := v.reportValidator.validate(attDoc, (*x509.Certificate)(&v.cfg.AMDSigningKey), (*x509.Certificate)(&v.cfg.AMDRootKey), [64]byte(extraData64), v.cfg, v.log); err != nil {
 		return nil, fmt.Errorf("validating SNP report: %w", err)
+	}
+
+	ekPub, err := v.gceKeyGetter(ctx, attDoc, nil)
+	if err != nil {
+		return nil, fmt.Errorf("getting TPM endorsement key: %w", err)
 	}
 
 	return ekPub, nil

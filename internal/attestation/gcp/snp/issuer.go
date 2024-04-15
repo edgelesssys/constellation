@@ -62,8 +62,8 @@ func getInstanceInfo(_ context.Context, _ io.ReadWriteCloser, extraData []byte) 
 	if len(extraData) > 64 {
 		return nil, fmt.Errorf("extra data too long: %d, should be 64 bytes at most", len(extraData))
 	}
-	extraData64 := make([]byte, 64)
-	copy(extraData64, extraData)
+	var extraData64 [64]byte
+	copy(extraData64[:], extraData)
 
 	device, err := sevclient.OpenDevice()
 	if err != nil {

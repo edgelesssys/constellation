@@ -137,7 +137,7 @@ func (a *InstanceInfo) AttestationWithCerts(getter trust.HTTPSGetter,
 		logger.Info("Using cached ASK certificate")
 		att.CertificateChain.AskCert = fallbackCerts.ask.Raw
 	}
-	if att.CertificateChain.ArkCert == nil && fallbackCerts.ark != nil {
+	if fallbackCerts.ark != nil {
 		logger.Info("Using cached ARK certificate")
 		att.CertificateChain.ArkCert = fallbackCerts.ark.Raw
 	}
