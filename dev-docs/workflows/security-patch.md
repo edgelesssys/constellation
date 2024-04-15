@@ -12,7 +12,7 @@ This document describes how to patch vulnerabilities in Constellation.
 ## Vulnerability Report
 
 Someone found a vulnerability in Constellation.
-If they followed [SECURITY.md](/SECURITY.md), a Github Security Advisory might already exist.
+If they followed [SECURITY.md](/SECURITY.md), a Github Security Advisory (GHSA) might already exist.
 Otherwise, now is the time to [create a draft](https://github.com/edgelesssys/constellation/security/advisories/new).
 Make sure that the GHSA includes a problem statement that gives sufficient context and add domain experts as collaborators.
 
@@ -26,6 +26,10 @@ If the vulnerability has already been disclosed publicly, the GHSA should also b
 Add an ETA for a patch release and proceed with [disclosure steps](#disclosing-the-ghsa).
 
 ## Fix
+
+The first step towards fixing the vulnerability is to assess the amount of work required.
+Use this estimate to propose a target release date and inform the product manager about impact and timeline.
+The product manager will notify customers of the upcoming patch release.
 
 Sometimes a fix can be developed quickly for `main`, but correctly backporting it takes more time.
 It may also happen that a proposed fix needs substantial work before merging.
@@ -55,4 +59,4 @@ The following steps need to be performed by a repository admin.
 1. Check that the severity setting is accurate.
 1. Credit external collaborators, e.g. by @-mention.
 1. Hit the `Publish Advisory` button.
-1. Tell Constellation users about the advisory (TODO: how?)
+1. Notify the product manager to share patch and advisory with customers.
