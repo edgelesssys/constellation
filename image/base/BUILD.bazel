@@ -26,6 +26,14 @@ copy_to_directory(
     replace_prefixes = {"file": ""},
 )
 
+# TODO(malt3): only install nvidia kernel modules for specific nvidia image
+extra_trees = {
+    "lts": [
+        "//image:nvidia_kernel_modules",
+    ],
+    "mainline": [],
+}
+
 [
     mkosi_image(
         name = "base_" + kernel_variant,
@@ -47,7 +55,7 @@ copy_to_directory(
         extra_trees = [
             "//image:sysroot_tar",
             "//image:cryptsetup_closure",
-        ],
+        ] + extra_trees[kernel_variant],
         local_mirror = ["@mkosi_rpms//:repo"],
         mkosi_conf = "mkosi.conf",
         output = kernel_variant,

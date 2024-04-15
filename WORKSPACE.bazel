@@ -331,9 +331,11 @@ load("//bazel/toolchains:k8s.bzl", "k8s_deps")
 k8s_deps()
 
 # kernel rpms
-load("//bazel/toolchains:linux_kernel.bzl", "kernel_rpms")
+load("//bazel/toolchains:linux_kernel.bzl", "kernel_rpms", "nvidia_kos")
 
 kernel_rpms()
+
+nvidia_kos()
 
 # mkosi rpms
 load("//bazel/rpm:package_manifest.bzl", "rpm_repository")

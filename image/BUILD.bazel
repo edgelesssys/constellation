@@ -27,3 +27,26 @@ copy_file(
     allow_symlink = True,
     visibility = ["//visibility:public"],
 )
+
+pkg_tar(
+    name = "nvidia_kernel_modules",
+    srcs = [
+        "@nvidia_drm_ko//file",
+        "@nvidia_ko//file",
+        "@nvidia_modeset_ko//file",
+        "@nvidia_peermem_ko//file",
+        "@nvidia_uvm_ko//file",
+    ],
+    package_dir = "lib/modules/6.2.0-100.constellation.fc38.x86_64/kernel/nvidia",
+    visibility = ["//visibility:public"],
+)
+
+pkg_tar(
+    name = "nvidia_gsp_firmware",
+    srcs = [
+        "@gsp_ga10x//file",
+        "@gsp_tu10x//file",
+    ],
+    package_dir = "usr/lib/firmware/nvidia/535.129.03",
+    visibility = ["//visibility:public"],
+)
