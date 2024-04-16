@@ -65,7 +65,7 @@ func (e *applyError) Error() string {
 type KubeCmd struct {
 	kubectl       kubectlInterface
 	retryInterval time.Duration
-	maxRetries    int
+	maxAttempts   int
 	log           debugLog
 }
 
@@ -79,7 +79,7 @@ func New(kubeConfig []byte, log debugLog) (*KubeCmd, error) {
 	return &KubeCmd{
 		kubectl:       client,
 		retryInterval: time.Second * 5,
-		maxRetries:    20,
+		maxAttempts:   20,
 		log:           log,
 	}, nil
 }
@@ -440,8 +440,8 @@ func (k *KubeCmd) retryGetJoinConfig(ctx context.Context) (*corev1.ConfigMap, er
 			return false
 		}
 		ctr++
-		k.log.Debug("Getting join-config ConfigMap failed", "attempt", ctr, "maxRetries", k.maxRetries, "error", err)
-		return ctr < k.maxRetries
+		k.log.Debug("Getting join-config ConfigMap failed", "attempt", ctr, "maxAttempts", k.maxAttempts, "error", err)
+		return ctr < k.maxAttempts
 	}
 
 	var joinConfig *corev1.ConfigMap
@@ -462,8 +462,8 @@ func (k *KubeCmd) retryAction(ctx context.Context, action func(ctx context.Conte
 	ctr := 0
 	retrier := conretry.NewIntervalRetrier(&kubeDoer{action: action}, k.retryInterval, func(err error) bool {
 		ctr++
-		k.log.Debug("Action failed", "attempt", ctr, "maxRetries", k.maxRetries, "error", err)
-		return ctr < k.maxRetries
+		k.log.Debug("Action failed", "attempt", ctr, "maxAttempts", k.maxAttempts, "error", err)
+		return ctr < k.maxAttempts
 	})
 	return retrier.Do(ctx)
 }

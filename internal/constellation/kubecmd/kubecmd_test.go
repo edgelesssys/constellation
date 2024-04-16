@@ -176,7 +176,7 @@ func TestUpgradeNodeImage(t *testing.T) {
 			upgrader := KubeCmd{
 				kubectl:       kubectl,
 				retryInterval: time.Millisecond,
-				maxRetries:    5,
+				maxAttempts:   5,
 				log:           logger.NewTest(t),
 			}
 
@@ -289,7 +289,7 @@ func TestUpgradeKubernetesVersion(t *testing.T) {
 			upgrader := KubeCmd{
 				kubectl:       kubectl,
 				retryInterval: time.Millisecond,
-				maxRetries:    5,
+				maxAttempts:   5,
 				log:           logger.NewTest(t),
 			}
 
@@ -346,7 +346,7 @@ func TestIsValidImageUpgrade(t *testing.T) {
 
 			upgrader := &KubeCmd{
 				retryInterval: time.Millisecond,
-				maxRetries:    5,
+				maxAttempts:   5,
 				log:           logger.NewTest(t),
 			}
 
@@ -399,7 +399,7 @@ func TestUpdateK8s(t *testing.T) {
 
 			upgrader := &KubeCmd{
 				retryInterval: time.Millisecond,
-				maxRetries:    5,
+				maxAttempts:   5,
 				log:           logger.NewTest(t),
 			}
 
@@ -597,7 +597,7 @@ func TestApplyJoinConfig(t *testing.T) {
 				kubectl:       tc.kubectl,
 				log:           logger.NewTest(t),
 				retryInterval: time.Millisecond,
-				maxRetries:    5,
+				maxAttempts:   5,
 			}
 
 			err := cmd.ApplyJoinConfig(context.Background(), tc.newAttestationCfg, []byte{0x11})
@@ -621,7 +621,7 @@ func TestApplyJoinConfig(t *testing.T) {
 }
 
 func TestRetryAction(t *testing.T) {
-	maxRetries := 3
+	maxAttempts := 3
 
 	testCases := map[string]struct {
 		failures int
@@ -633,12 +633,12 @@ func TestRetryAction(t *testing.T) {
 		"fail once": {
 			failures: 1,
 		},
-		"fail equal to maxRetries": {
-			failures: maxRetries,
+		"fail equal to maxAttempts": {
+			failures: maxAttempts,
 			wantErr:  true,
 		},
-		"fail more than maxRetries": {
-			failures: maxRetries + 5,
+		"fail more than maxAttempts": {
+			failures: maxAttempts + 5,
 			wantErr:  true,
 		},
 	}
@@ -647,7 +647,7 @@ func TestRetryAction(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			k := &KubeCmd{
 				retryInterval: time.Millisecond,
-				maxRetries:    maxRetries,
+				maxAttempts:   maxAttempts,
 				log:           logger.NewTest(t),
 			}
 
@@ -667,7 +667,7 @@ func TestRetryAction(t *testing.T) {
 			err := k.retryAction(context.Background(), action)
 			if tc.wantErr {
 				assert.Error(err)
-				assert.Equal(min(tc.failures, maxRetries), failureCtr)
+				assert.Equal(min(tc.failures, maxAttempts), failureCtr)
 				return
 			}
 			assert.NoError(err)
