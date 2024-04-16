@@ -278,6 +278,9 @@ type AttestationConfig struct {
 	//   GCP SEV-ES attestation.
 	GCPSEVES *GCPSEVES `yaml:"gcpSEVES,omitempty" validate:"omitempty,dive"`
 	// description: |
+	// 	 GCP SEV-SNP attestation.
+	GCPSEVSNP *GCPSEVSNP `yaml:"gcpSEVSNP,omitempty" validate:"omitempty,dive"`
+	// description: |
 	//   QEMU tdx attestation.
 	QEMUTDX *QEMUTDX `yaml:"qemuTDX,omitempty" validate:"omitempty,dive"`
 	// description: |
@@ -390,6 +393,7 @@ func Default() *Config {
 			AzureTDX:           DefaultForAzureTDX(),
 			AzureTrustedLaunch: &AzureTrustedLaunch{Measurements: measurements.DefaultsFor(cloudprovider.Azure, variant.AzureTrustedLaunch{})},
 			GCPSEVES:           &GCPSEVES{Measurements: measurements.DefaultsFor(cloudprovider.GCP, variant.GCPSEVES{})},
+			GCPSEVSNP:          DefaultForGCPSEVSNP(),
 			QEMUVTPM:           &QEMUVTPM{Measurements: measurements.DefaultsFor(cloudprovider.QEMU, variant.QEMUVTPM{})},
 		},
 	}
@@ -472,6 +476,12 @@ func New(fileHandler file.Handler, name string, fetcher attestationconfigapi.Fet
 		}
 	}
 
+	if gcp := c.Attestation.GCPSEVSNP; gcp != nil {
+		if err := gcp.FetchAndSetLatestVersionNumbers(context.Background(), fetcher); err != nil {
+			return c, err
+		}
+	}
+
 	// Read secrets from env-vars.
 	clientSecretValue := os.Getenv(constants.EnvVarAzureClientSecretValue)
 	if clientSecretValue != "" && c.Provider.Azure != nil {
@@ -517,6 +527,9 @@ func (c *Config) UpdateMeasurements(newMeasurements measurements.M) {
 	}
 	if c.Attestation.GCPSEVES != nil {
 		c.Attestation.GCPSEVES.Measurements.CopyFrom(newMeasurements)
+	}
+	if c.Attestation.GCPSEVSNP != nil {
+		c.Attestation.GCPSEVSNP.Measurements.CopyFrom(newMeasurements)
 	}
 	if c.Attestation.QEMUVTPM != nil {
 		c.Attestation.QEMUVTPM.Measurements.CopyFrom(newMeasurements)
@@ -570,6 +583,8 @@ func (c *Config) SetAttestation(attestation variant.Variant) {
 		c.Attestation = AttestationConfig{AzureTrustedLaunch: currentAttestationConfigs.AzureTrustedLaunch}
 	case variant.GCPSEVES:
 		c.Attestation = AttestationConfig{GCPSEVES: currentAttestationConfigs.GCPSEVES}
+	case variant.GCPSEVSNP:
+		c.Attestation = AttestationConfig{GCPSEVSNP: currentAttestationConfigs.GCPSEVSNP}
 	case variant.QEMUVTPM:
 		c.Attestation = AttestationConfig{QEMUVTPM: currentAttestationConfigs.QEMUVTPM}
 	}
@@ -636,6 +651,9 @@ func (c *Config) GetAttestationConfig() AttestationCfg {
 	}
 	if c.Attestation.GCPSEVES != nil {
 		return c.Attestation.GCPSEVES
+	}
+	if c.Attestation.GCPSEVSNP != nil {
+		return c.Attestation.GCPSEVSNP
 	}
 	if c.Attestation.QEMUVTPM != nil {
 		return c.Attestation.QEMUVTPM
@@ -964,28 +982,29 @@ type GCPSEVES struct {
 	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
 }
 
-// GetVariant returns gcp-sev-es as the variant.
-func (GCPSEVES) GetVariant() variant.Variant {
-	return variant.GCPSEVES{}
-}
-
-// GetMeasurements returns the measurements used for attestation.
-func (c GCPSEVES) GetMeasurements() measurements.M {
-	return c.Measurements
-}
-
-// SetMeasurements updates a config's measurements using the given measurements.
-func (c *GCPSEVES) SetMeasurements(m measurements.M) {
-	c.Measurements = m
-}
-
-// EqualTo returns true if the config is equal to the given config.
-func (c GCPSEVES) EqualTo(other AttestationCfg) (bool, error) {
-	otherCfg, ok := other.(*GCPSEVES)
-	if !ok {
-		return false, fmt.Errorf("cannot compare %T with %T", c, other)
-	}
-	return c.Measurements.EqualTo(otherCfg.Measurements), nil
+// GCPSEVSNP is the configuration for GCP SEV-SNP attestation.
+type GCPSEVSNP struct {
+	// description: |
+	//   Expected TPM measurements.
+	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
+	// description: |
+	//   Lowest acceptable bootloader version.
+	BootloaderVersion AttestationVersion `json:"bootloaderVersion" yaml:"bootloaderVersion"`
+	// description: |
+	//   Lowest acceptable TEE version.
+	TEEVersion AttestationVersion `json:"teeVersion" yaml:"teeVersion"`
+	// description: |
+	//   Lowest acceptable SEV-SNP version.
+	SNPVersion AttestationVersion `json:"snpVersion" yaml:"snpVersion"`
+	// description: |
+	//   Lowest acceptable microcode version.
+	MicrocodeVersion AttestationVersion `json:"microcodeVersion" yaml:"microcodeVersion"`
+	// description: |
+	//   AMD Root Key certificate used to verify the SEV-SNP certificate chain.
+	AMDRootKey Certificate `json:"amdRootKey" yaml:"amdRootKey"`
+	// description: |
+	//   AMD Signing Key certificate used to verify the SEV-SNP VCEK / VLEK certificate.
+	AMDSigningKey Certificate `json:"amdSigningKey,omitempty" yaml:"amdSigningKey,omitempty"`
 }
 
 // QEMUVTPM is the configuration for QEMU vTPM attestation.

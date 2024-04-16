@@ -26,6 +26,9 @@ function variant() {
   elif [[ $1 == "azure" ]]; then
     echo "azure-sev-snp"
     return 0
+  elif [[ $1 == "gcp" ]]; then
+    echo "gcp-sev-snp"
+    return 0
   else
     echo "Unknown CSP: $1"
     exit 1

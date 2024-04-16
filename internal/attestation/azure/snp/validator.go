@@ -116,25 +116,11 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 		return nil, fmt.Errorf("parsing attestation report: %w", err)
 	}
 
-	// ASK, as cached in joinservice or reported from THIM / KDS.
-	ask, err := x509.ParseCertificate(att.CertificateChain.AskCert)
+	verifyOpts, err := getVerifyOpts(att)
 	if err != nil {
-		return nil, fmt.Errorf("parsing ASK certificate: %w", err)
+		return nil, fmt.Errorf("getting verify options: %w", err)
 	}
 
-	verifyOpts := &verify.Options{
-		TrustedRoots: map[string][]*trust.AMDRootCerts{
-			"Milan": {
-				{
-					Product: "Milan",
-					ProductCerts: &trust.ProductCerts{
-						Ask: ask,
-						Ark: trustedArk,
-					},
-				},
-			},
-		},
-	}
 	if err := v.attestationVerifier.SNPAttestation(att, verifyOpts); err != nil {
 		return nil, fmt.Errorf("verifying SNP attestation: %w", err)
 	}
@@ -251,4 +237,32 @@ type maaValidator interface {
 
 type hclAkValidator interface {
 	Validate(runtimeDataRaw []byte, reportData []byte, rsaParameters *tpm2.RSAParams) error
+}
+
+func getVerifyOpts(att *spb.Attestation) (*verify.Options, error) {
+	// ASK, as cached in joinservice or reported from THIM / KDS.
+	ask, err := x509.ParseCertificate(att.CertificateChain.AskCert)
+	if err != nil {
+		return nil, fmt.Errorf("parsing ASK certificate: %w", err)
+	}
+	ark, err := x509.ParseCertificate(att.CertificateChain.ArkCert)
+	if err != nil {
+		return nil, fmt.Errorf("parsing ARK certificate: %w", err)
+	}
+
+	verifyOpts := &verify.Options{
+		TrustedRoots: map[string][]*trust.AMDRootCerts{
+			"Milan": {
+				{
+					Product: "Milan",
+					ProductCerts: &trust.ProductCerts{
+						Ask: ask,
+						Ark: ark,
+					},
+				},
+			},
+		},
+	}
+
+	return verifyOpts, nil
 }

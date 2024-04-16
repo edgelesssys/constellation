@@ -7,10 +7,11 @@ on:
         description: "Which attestation variant to use."
         type: choice
         options:
-          - "gcp-sev-es"
+          - "aws-sev-snp"
           - "azure-sev-snp"
           - "azure-tdx"
-          - "aws-sev-snp"
+          - "gcp-sev-es"
+          - "gcp-sev-snp"
         default: "azure-sev-snp"
         required: true
       nodeCount:

@@ -9,12 +9,12 @@ package snp
 import (
 	"context"
 	"crypto"
-	"crypto/sha512"
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
@@ -26,85 +26,74 @@ import (
 	"github.com/google/go-sev-guest/verify"
 	"github.com/google/go-sev-guest/verify/trust"
 	"github.com/google/go-tpm-tools/proto/attest"
-	"github.com/google/go-tpm/legacy/tpm2"
 )
 
-// Validator for AWS TPM attestation.
+// Validator for GCP SEV-SNP / TPM attestation.
 type Validator struct {
-	// Embed variant to identify the Validator using varaint.OID().
-	variant.AWSSEVSNP
-	// Embed validator to implement Validate method for aTLS handshake.
+	variant.GCPSEVSNP
 	*vtpm.Validator
-	// cfg contains version numbers required for the SNP report validation.
-	cfg *config.AWSSEVSNP
-	// reportValidator validates a SNP report. reportValidator is required for testing.
+	cfg *config.GCPSEVSNP
+
+	// reportValidator validates a SNP report and is required for testing.
 	reportValidator snpReportValidator
-	// log is used for logging.
+
+	// gceKeyGetter gets the public key of the EK from the GCE metadata API.
+	gceKeyGetter func(ctx context.Context, attDoc vtpm.AttestationDocument, _ []byte) (crypto.PublicKey, error)
+
 	log attestation.Logger
 }
 
-// NewValidator create a new Validator structure and returns it.
-func NewValidator(cfg *config.AWSSEVSNP, log attestation.Logger) *Validator {
+// NewValidator creates a new Validator.
+func NewValidator(cfg *config.GCPSEVSNP, log attestation.Logger) (*Validator, error) {
+	getGCEKey, err := gcp.TrustedKeyGetter(variant.GCPSEVSNP{}, gcp.NewRESTClient)
+	if err != nil {
+		return nil, fmt.Errorf("creating trusted key getter: %w", err)
+	}
+
 	v := &Validator{
 		cfg:             cfg,
-		reportValidator: &awsValidator{httpsGetter: trust.DefaultHTTPSGetter(), verifier: &reportVerifierImpl{}, validator: &reportValidatorImpl{}},
+		reportValidator: &gcpValidator{httpsGetter: trust.DefaultHTTPSGetter(), verifier: &reportVerifierImpl{}, validator: &reportValidatorImpl{}},
+		gceKeyGetter:    getGCEKey,
 		log:             log,
 	}
 
 	v.Validator = vtpm.NewValidator(
 		cfg.Measurements,
 		v.getTrustedKey,
-		func(vtpm.AttestationDocument, *attest.MachineState) error { return nil },
+		func(_ vtpm.AttestationDocument, _ *attest.MachineState) error { return nil },
 		log,
 	)
-	return v
+	return v, nil
 }
 
-// getTrustedKeys return the public area of the provided attestation key (AK).
-// Ideally, the AK should be bound to the TPM via an endorsement key, but currently AWS does not provide one.
-// The AK's digest is written to the SNP report's userdata field during report generation.
-// The AK is trusted if the report can be verified and the AK's digest matches the digest of the AK in attDoc.
-func (v *Validator) getTrustedKey(_ context.Context, attDoc vtpm.AttestationDocument, _ []byte) (crypto.PublicKey, error) {
-	pubArea, err := tpm2.DecodePublic(attDoc.Attestation.AkPub)
-	if err != nil {
-		return nil, newDecodeError(err)
+// getTrustedKey returns TPM endorsement key provided through the GCE metadata API.
+func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDocument, extraData []byte) (crypto.PublicKey, error) {
+	if len(extraData) > 64 {
+		return nil, fmt.Errorf("extra data too long: %d, should be 64 bytes at most", len(extraData))
 	}
+	var extraData64 [64]byte
+	copy(extraData64[:], extraData)
 
-	pubKey, err := pubArea.Key()
-	if err != nil {
-		return nil, fmt.Errorf("getting public key: %w", err)
-	}
-
-	akDigest, err := sha512sum(pubKey)
-	if err != nil {
-		return nil, fmt.Errorf("calculating hash of attestation key: %w", err)
-	}
-
-	if err := v.reportValidator.validate(attDoc, (*x509.Certificate)(&v.cfg.AMDSigningKey), (*x509.Certificate)(&v.cfg.AMDRootKey), akDigest, v.cfg, v.log); err != nil {
+	if err := v.reportValidator.validate(attDoc, (*x509.Certificate)(&v.cfg.AMDSigningKey), (*x509.Certificate)(&v.cfg.AMDRootKey), extraData64, v.cfg, v.log); err != nil {
 		return nil, fmt.Errorf("validating SNP report: %w", err)
 	}
 
-	return pubArea.Key()
-}
-
-// sha512sum PEM-encodes a public key and calculates the SHA512 hash of the encoded key.
-func sha512sum(key crypto.PublicKey) ([64]byte, error) {
-	pub, err := x509.MarshalPKIXPublicKey(key)
+	ekPub, err := v.gceKeyGetter(ctx, attDoc, nil)
 	if err != nil {
-		return [64]byte{}, fmt.Errorf("marshalling public key: %w", err)
+		return nil, fmt.Errorf("getting TPM endorsement key: %w", err)
 	}
 
-	return sha512.Sum512(pub), nil
+	return ekPub, nil
 }
 
 // snpReportValidator validates a given SNP report.
 type snpReportValidator interface {
-	validate(attestation vtpm.AttestationDocument, ask *x509.Certificate, ark *x509.Certificate, ak [64]byte, config *config.AWSSEVSNP, log attestation.Logger) error
+	validate(attestation vtpm.AttestationDocument, ask *x509.Certificate, ark *x509.Certificate, ak [64]byte, config *config.GCPSEVSNP, log attestation.Logger) error
 }
 
-// awsValidator implements the validation for AWS SNP attestation.
+// gcpValidator implements the validation for GCP SEV-SNP attestation.
 // The properties exist for unittesting.
-type awsValidator struct {
+type gcpValidator struct {
 	verifier    reportVerifier
 	validator   reportValidator
 	httpsGetter trust.HTTPSGetter
@@ -129,38 +118,38 @@ func (r *reportVerifierImpl) SnpAttestation(att *sevsnp.Attestation, opts *verif
 	return verify.SnpAttestation(att, opts)
 }
 
-// validate the report by checking if it has a valid VLEK signature.
-// The certificate chain ARK -> ASK -> VLEK is also validated.
+// validate the report by checking if it has a valid VCEK signature.
+// The certificate chain ARK -> ASK -> VCEK is also validated.
 // Checks that the report's userData matches the connection's userData.
-func (a *awsValidator) validate(attestation vtpm.AttestationDocument, ask *x509.Certificate, ark *x509.Certificate, akDigest [64]byte, config *config.AWSSEVSNP, log attestation.Logger) error {
+func (a *gcpValidator) validate(attestation vtpm.AttestationDocument, ask *x509.Certificate, ark *x509.Certificate, reportData [64]byte, config *config.GCPSEVSNP, log attestation.Logger) error {
 	var info snp.InstanceInfo
 	if err := json.Unmarshal(attestation.InstanceInfo, &info); err != nil {
-		return newValidationError(fmt.Errorf("unmarshalling instance info: %w", err))
+		return fmt.Errorf("unmarshalling instance info: %w", err)
 	}
 
 	certchain := snp.NewCertificateChain(ask, ark)
 
 	att, err := info.AttestationWithCerts(a.httpsGetter, certchain, log)
 	if err != nil {
-		return newValidationError(fmt.Errorf("getting attestation with certs: %w", err))
+		return fmt.Errorf("getting attestation with certs: %w", err)
 	}
 
 	verifyOpts, err := getVerifyOpts(att)
 	if err != nil {
-		return newValidationError(fmt.Errorf("getting verify options: %w", err))
+		return fmt.Errorf("getting verify options: %w", err)
 	}
 
 	if err := a.verifier.SnpAttestation(att, verifyOpts); err != nil {
-		return newValidationError(fmt.Errorf("verifying SNP attestation: %w", err))
+		return fmt.Errorf("verifying SNP attestation: %w", err)
 	}
 
 	validateOpts := &validate.Options{
 		// Check that the attestation key's digest is included in the report.
-		ReportData: akDigest[:],
+		ReportData: reportData[:],
 		GuestPolicy: abi.SnpPolicy{
 			Debug: false, // Debug means the VM can be decrypted by the host for debugging purposes and thus is not allowed.
 			SMT:   true,  // Allow Simultaneous Multi-Threading (SMT). Normally, we would want to disable SMT
-			// but AWS machines are currently facing issues if it's disabled.
+			// but GCP machines are currently facing issues if it's disabled
 		},
 		VMPL: new(int), // Checks that Virtual Machine Privilege Level (VMPL) is 0.
 		// This checks that the reported LaunchTCB version is equal or greater than the minimum specified in the config.
@@ -182,7 +171,7 @@ func (a *awsValidator) validate(attestation vtpm.AttestationDocument, ask *x509.
 	// Some constraints are implicitly checked by validate.SnpAttestation:
 	// - the report is not expired
 	if err := a.validator.SnpAttestation(att, validateOpts); err != nil {
-		return newValidationError(fmt.Errorf("validating SNP attestation: %w", err))
+		return fmt.Errorf("validating SNP attestation: %w", err)
 	}
 
 	return nil
@@ -205,9 +194,8 @@ func getVerifyOpts(att *sevsnp.Attestation) (*verify.Options, error) {
 				{
 					Product: "Milan",
 					ProductCerts: &trust.ProductCerts{
-						// When using a VLEK signer, the intermediate certificate has to be stored in Asvk instead of Ask.
-						Asvk: ask,
-						Ark:  ark,
+						Ask: ask,
+						Ark: ark,
 					},
 				},
 			},

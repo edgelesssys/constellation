@@ -41,6 +41,9 @@ func TestUnmarshalAttestationConfig(t *testing.T) {
 		"GCPSEVES": {
 			cfg: &GCPSEVES{Measurements: measurements.DefaultsFor(cloudprovider.GCP, variant.GCPSEVES{})},
 		},
+		"GCPSEVSNP": {
+			cfg: DefaultForGCPSEVSNP(),
+		},
 		"QEMUVTPM": {
 			cfg: &QEMUVTPM{Measurements: measurements.DefaultsFor(cloudprovider.QEMU, variant.QEMUVTPM{})},
 		},

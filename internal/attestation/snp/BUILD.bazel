@@ -8,11 +8,11 @@ go_library(
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/attestation",
-        "//internal/constants",
         "@com_github_google_go_sev_guest//abi",
         "@com_github_google_go_sev_guest//kds",
         "@com_github_google_go_sev_guest//proto/sevsnp",
         "@com_github_google_go_sev_guest//verify/trust",
+        "@com_github_google_go_tpm_tools//proto/attest",
     ],
 )
 

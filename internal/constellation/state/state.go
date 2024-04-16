@@ -383,7 +383,7 @@ func (s *State) preInitConstraints(attestation variant.Variant) func() []*valida
 					),
 				)
 			}
-		case variant.GCPSEVES{}:
+		case variant.GCPSEVES{}, variant.GCPSEVSNP{}:
 			// GCP values need to be valid after infrastructure creation.
 			constraints = append(constraints,
 				// Azure values need to be nil or empty.
@@ -514,7 +514,7 @@ func (s *State) postInitConstraints(attestation variant.Variant) func() []*valid
 					),
 				)
 			}
-		case variant.GCPSEVES{}:
+		case variant.GCPSEVES{}, variant.GCPSEVSNP{}:
 			constraints = append(constraints,
 				// Azure values need to be nil or empty.
 				validation.Or(

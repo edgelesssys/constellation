@@ -84,9 +84,9 @@ func main() {
 			log.Println("Found", variant)
 			returnStmtCtr++
 			// retrieve and validate measurements for the given CSP and image
-			measuremnts := mustGetMeasurements(ctx, rekor, provider, variant, defaultImage)
+			measurements := mustGetMeasurements(ctx, rekor, provider, variant, defaultImage)
 			// replace the return statement with a composite literal containing the validated measurements
-			clause.Values[0] = measurementsCompositeLiteral(measuremnts)
+			clause.Values[0] = measurementsCompositeLiteral(measurements)
 		}
 		return true
 	}, nil,
@@ -267,6 +267,8 @@ func attestationVariantFromGoIdentifier(identifier string) (variant.Variant, err
 		return variant.AWSNitroTPM{}, nil
 	case "GCPSEVES":
 		return variant.GCPSEVES{}, nil
+	case "GCPSEVSNP":
+		return variant.GCPSEVSNP{}, nil
 	case "AzureSEVSNP":
 		return variant.AzureSEVSNP{}, nil
 	case "AzureTDX":

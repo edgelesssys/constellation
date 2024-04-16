@@ -122,6 +122,7 @@ func TestGCPClusterVariables(t *testing.T) {
 			},
 		},
 		CustomEndpoint: "example.com",
+		CCTechnology:   "SEV_SNP",
 	}
 
 	// test that the variables are correctly rendered
@@ -151,6 +152,7 @@ node_groups = {
 }
 custom_endpoint        = "example.com"
 internal_load_balancer = false
+cc_technology          = "SEV_SNP"
 `
 	got := vars.String()
 	assert.Equal(t, strings.Fields(want), strings.Fields(got)) // to ignore whitespace differences

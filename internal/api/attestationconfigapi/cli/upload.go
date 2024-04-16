@@ -26,7 +26,7 @@ import (
 
 func newUploadCmd() *cobra.Command {
 	uploadCmd := &cobra.Command{
-		Use:   "upload {azure|aws} {snp-report|guest-firmware} <path>",
+		Use:   "upload {aws|azure|gcp} {snp-report|guest-firmware} <path>",
 		Short: "Upload an object to the attestationconfig API",
 
 		Long: fmt.Sprintf("Upload a new object to the attestationconfig API. For snp-reports the new object is added to a cache folder first."+
@@ -92,17 +92,19 @@ func runUpload(cmd *cobra.Command, args []string) (retErr error) {
 		return fmt.Errorf("creating client: %w", err)
 	}
 
-	var attesation variant.Variant
+	var attestation variant.Variant
 	switch uploadCfg.provider {
 	case cloudprovider.AWS:
-		attesation = variant.AWSSEVSNP{}
+		attestation = variant.AWSSEVSNP{}
 	case cloudprovider.Azure:
-		attesation = variant.AzureSEVSNP{}
+		attestation = variant.AzureSEVSNP{}
+	case cloudprovider.GCP:
+		attestation = variant.GCPSEVSNP{}
 	default:
 		return fmt.Errorf("unsupported cloud provider: %s", uploadCfg.provider)
 	}
 
-	return uploadReport(ctx, attesation, client, uploadCfg, file.NewHandler(afero.NewOsFs()), log)
+	return uploadReport(ctx, attestation, client, uploadCfg, file.NewHandler(afero.NewOsFs()), log)
 }
 
 func uploadReport(ctx context.Context,

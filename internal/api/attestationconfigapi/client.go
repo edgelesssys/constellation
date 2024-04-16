@@ -48,7 +48,7 @@ func NewClient(ctx context.Context, cfg staticupload.Config, cosignPwd, privateK
 	return repo, clientClose, nil
 }
 
-// uploadSEVSNPVersion uploads the latest version numbers of the Azure SEVSNP. Then version name is the UTC timestamp of the date. The /list entry stores the version name + .json suffix.
+// uploadSEVSNPVersion uploads the latest version numbers of the SEVSNP. Then version name is the UTC timestamp of the date. The /list entry stores the version name + .json suffix.
 func (a Client) uploadSEVSNPVersion(ctx context.Context, attestation variant.Variant, version SEVSNPVersion, date time.Time) error {
 	versions, err := a.List(ctx, attestation)
 	if err != nil {
@@ -75,7 +75,9 @@ func (a Client) DeleteSEVSNPVersion(ctx context.Context, attestation variant.Var
 
 // List returns the list of versions for the given attestation variant.
 func (a Client) List(ctx context.Context, attestation variant.Variant) (SEVSNPVersionList, error) {
-	if !attestation.Equal(variant.AzureSEVSNP{}) && !attestation.Equal(variant.AWSSEVSNP{}) {
+	if !attestation.Equal(variant.AzureSEVSNP{}) &&
+		!attestation.Equal(variant.AWSSEVSNP{}) &&
+		!attestation.Equal(variant.GCPSEVSNP{}) {
 		return SEVSNPVersionList{}, fmt.Errorf("unsupported attestation variant: %s", attestation)
 	}
 

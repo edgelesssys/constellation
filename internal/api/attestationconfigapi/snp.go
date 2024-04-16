@@ -19,15 +19,15 @@ import (
 // AttestationURLPath is the URL path to the attestation versions.
 const AttestationURLPath = "constellation/v1/attestation"
 
-// SEVSNPVersion tracks the latest version of each component of the Azure SEVSNP.
+// SEVSNPVersion tracks the latest version of each component of the SEVSNP.
 type SEVSNPVersion struct {
-	// Bootloader is the latest version of the Azure SEVSNP bootloader.
+	// Bootloader is the latest version of the SEVSNP bootloader.
 	Bootloader uint8 `json:"bootloader"`
-	// TEE is the latest version of the Azure SEVSNP TEE.
+	// TEE is the latest version of the SEVSNP TEE.
 	TEE uint8 `json:"tee"`
-	// SNP is the latest version of the Azure SEVSNP SNP.
+	// SNP is the latest version of the SEVSNP SNP.
 	SNP uint8 `json:"snp"`
-	// Microcode is the latest version of the Azure SEVSNP microcode.
+	// Microcode is the latest version of the SEVSNP microcode.
 	Microcode uint8 `json:"microcode"`
 }
 

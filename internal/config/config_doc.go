@@ -23,6 +23,7 @@ var (
 	UnsupportedAppRegistrationErrorDoc encoder.Doc
 	SNPFirmwareSignerConfigDoc         encoder.Doc
 	GCPSEVESDoc                        encoder.Doc
+	GCPSEVSNPDoc                       encoder.Doc
 	QEMUVTPMDoc                        encoder.Doc
 	QEMUTDXDoc                         encoder.Doc
 	AWSSEVSNPDoc                       encoder.Doc
@@ -388,7 +389,7 @@ func init() {
 			FieldName: "attestation",
 		},
 	}
-	AttestationConfigDoc.Fields = make([]encoder.Doc, 8)
+	AttestationConfigDoc.Fields = make([]encoder.Doc, 9)
 	AttestationConfigDoc.Fields[0].Name = "awsSEVSNP"
 	AttestationConfigDoc.Fields[0].Type = "AWSSEVSNP"
 	AttestationConfigDoc.Fields[0].Note = ""
@@ -419,16 +420,21 @@ func init() {
 	AttestationConfigDoc.Fields[5].Note = ""
 	AttestationConfigDoc.Fields[5].Description = "GCP SEV-ES attestation."
 	AttestationConfigDoc.Fields[5].Comments[encoder.LineComment] = "GCP SEV-ES attestation."
-	AttestationConfigDoc.Fields[6].Name = "qemuTDX"
-	AttestationConfigDoc.Fields[6].Type = "QEMUTDX"
+	AttestationConfigDoc.Fields[6].Name = "gcpSEVSNP"
+	AttestationConfigDoc.Fields[6].Type = "GCPSEVSNP"
 	AttestationConfigDoc.Fields[6].Note = ""
-	AttestationConfigDoc.Fields[6].Description = "QEMU tdx attestation."
-	AttestationConfigDoc.Fields[6].Comments[encoder.LineComment] = "QEMU tdx attestation."
-	AttestationConfigDoc.Fields[7].Name = "qemuVTPM"
-	AttestationConfigDoc.Fields[7].Type = "QEMUVTPM"
+	AttestationConfigDoc.Fields[6].Description = "description: |\n GCP SEV-SNP attestation.\n"
+	AttestationConfigDoc.Fields[6].Comments[encoder.LineComment] = "description: |"
+	AttestationConfigDoc.Fields[7].Name = "qemuTDX"
+	AttestationConfigDoc.Fields[7].Type = "QEMUTDX"
 	AttestationConfigDoc.Fields[7].Note = ""
-	AttestationConfigDoc.Fields[7].Description = "QEMU vTPM attestation."
-	AttestationConfigDoc.Fields[7].Comments[encoder.LineComment] = "QEMU vTPM attestation."
+	AttestationConfigDoc.Fields[7].Description = "QEMU tdx attestation."
+	AttestationConfigDoc.Fields[7].Comments[encoder.LineComment] = "QEMU tdx attestation."
+	AttestationConfigDoc.Fields[8].Name = "qemuVTPM"
+	AttestationConfigDoc.Fields[8].Type = "QEMUVTPM"
+	AttestationConfigDoc.Fields[8].Note = ""
+	AttestationConfigDoc.Fields[8].Description = "QEMU vTPM attestation."
+	AttestationConfigDoc.Fields[8].Comments[encoder.LineComment] = "QEMU vTPM attestation."
 
 	NodeGroupDoc.Type = "NodeGroup"
 	NodeGroupDoc.Comments[encoder.LineComment] = "NodeGroup defines a group of nodes with the same role and configuration."
@@ -517,6 +523,52 @@ func init() {
 	GCPSEVESDoc.Fields[0].Note = ""
 	GCPSEVESDoc.Fields[0].Description = "Expected TPM measurements."
 	GCPSEVESDoc.Fields[0].Comments[encoder.LineComment] = "Expected TPM measurements."
+
+	GCPSEVSNPDoc.Type = "GCPSEVSNP"
+	GCPSEVSNPDoc.Comments[encoder.LineComment] = "GCPSEVSNP is the configuration for GCP SEV-SNP attestation."
+	GCPSEVSNPDoc.Description = "GCPSEVSNP is the configuration for GCP SEV-SNP attestation."
+	GCPSEVSNPDoc.AppearsIn = []encoder.Appearance{
+		{
+			TypeName:  "AttestationConfig",
+			FieldName: "gcpSEVSNP",
+		},
+	}
+	GCPSEVSNPDoc.Fields = make([]encoder.Doc, 7)
+	GCPSEVSNPDoc.Fields[0].Name = "measurements"
+	GCPSEVSNPDoc.Fields[0].Type = "M"
+	GCPSEVSNPDoc.Fields[0].Note = ""
+	GCPSEVSNPDoc.Fields[0].Description = "Expected TPM measurements."
+	GCPSEVSNPDoc.Fields[0].Comments[encoder.LineComment] = "Expected TPM measurements."
+	GCPSEVSNPDoc.Fields[1].Name = "bootloaderVersion"
+	GCPSEVSNPDoc.Fields[1].Type = "AttestationVersion"
+	GCPSEVSNPDoc.Fields[1].Note = ""
+	GCPSEVSNPDoc.Fields[1].Description = "Lowest acceptable bootloader version."
+	GCPSEVSNPDoc.Fields[1].Comments[encoder.LineComment] = "Lowest acceptable bootloader version."
+	GCPSEVSNPDoc.Fields[2].Name = "teeVersion"
+	GCPSEVSNPDoc.Fields[2].Type = "AttestationVersion"
+	GCPSEVSNPDoc.Fields[2].Note = ""
+	GCPSEVSNPDoc.Fields[2].Description = "Lowest acceptable TEE version."
+	GCPSEVSNPDoc.Fields[2].Comments[encoder.LineComment] = "Lowest acceptable TEE version."
+	GCPSEVSNPDoc.Fields[3].Name = "snpVersion"
+	GCPSEVSNPDoc.Fields[3].Type = "AttestationVersion"
+	GCPSEVSNPDoc.Fields[3].Note = ""
+	GCPSEVSNPDoc.Fields[3].Description = "Lowest acceptable SEV-SNP version."
+	GCPSEVSNPDoc.Fields[3].Comments[encoder.LineComment] = "Lowest acceptable SEV-SNP version."
+	GCPSEVSNPDoc.Fields[4].Name = "microcodeVersion"
+	GCPSEVSNPDoc.Fields[4].Type = "AttestationVersion"
+	GCPSEVSNPDoc.Fields[4].Note = ""
+	GCPSEVSNPDoc.Fields[4].Description = "Lowest acceptable microcode version."
+	GCPSEVSNPDoc.Fields[4].Comments[encoder.LineComment] = "Lowest acceptable microcode version."
+	GCPSEVSNPDoc.Fields[5].Name = "amdRootKey"
+	GCPSEVSNPDoc.Fields[5].Type = "Certificate"
+	GCPSEVSNPDoc.Fields[5].Note = ""
+	GCPSEVSNPDoc.Fields[5].Description = "AMD Root Key certificate used to verify the SEV-SNP certificate chain."
+	GCPSEVSNPDoc.Fields[5].Comments[encoder.LineComment] = "AMD Root Key certificate used to verify the SEV-SNP certificate chain."
+	GCPSEVSNPDoc.Fields[6].Name = "amdSigningKey"
+	GCPSEVSNPDoc.Fields[6].Type = "Certificate"
+	GCPSEVSNPDoc.Fields[6].Note = ""
+	GCPSEVSNPDoc.Fields[6].Description = "AMD Signing Key certificate used to verify the SEV-SNP VCEK / VLEK certificate."
+	GCPSEVSNPDoc.Fields[6].Comments[encoder.LineComment] = "AMD Signing Key certificate used to verify the SEV-SNP VCEK / VLEK certificate."
 
 	QEMUVTPMDoc.Type = "QEMUVTPM"
 	QEMUVTPMDoc.Comments[encoder.LineComment] = "QEMUVTPM is the configuration for QEMU vTPM attestation."
@@ -779,6 +831,10 @@ func (_ GCPSEVES) Doc() *encoder.Doc {
 	return &GCPSEVESDoc
 }
 
+func (_ GCPSEVSNP) Doc() *encoder.Doc {
+	return &GCPSEVSNPDoc
+}
+
 func (_ QEMUVTPM) Doc() *encoder.Doc {
 	return &QEMUVTPMDoc
 }
@@ -825,6 +881,7 @@ func GetConfigurationDoc() *encoder.FileDoc {
 			&UnsupportedAppRegistrationErrorDoc,
 			&SNPFirmwareSignerConfigDoc,
 			&GCPSEVESDoc,
+			&GCPSEVSNPDoc,
 			&QEMUVTPMDoc,
 			&QEMUTDXDoc,
 			&AWSSEVSNPDoc,

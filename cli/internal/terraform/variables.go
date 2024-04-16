@@ -136,6 +136,8 @@ type GCPClusterVariables struct {
 	CustomEndpoint string `hcl:"custom_endpoint" cty:"custom_endpoint"`
 	// InternalLoadBalancer is true if an internal load balancer should be created.
 	InternalLoadBalancer bool `hcl:"internal_load_balancer" cty:"internal_load_balancer"`
+	// CCTechnology is the confidential computing technology to use on the VMs. (`SEV` or `SEV_SNP`)
+	CCTechnology string `hcl:"cc_technology" cty:"cc_technology"`
 }
 
 // GetCreateMAA gets the CreateMAA variable.

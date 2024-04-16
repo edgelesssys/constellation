@@ -84,7 +84,7 @@ runs:
         aws-region: eu-central-1
 
     - name: Upload extracted TCBs
-      if: github.ref_name == 'main' && (inputs.attestationVariant == 'azure-sev-snp' || inputs.attestationVariant == 'aws-sev-snp')
+      if: github.ref_name == 'main' && (inputs.attestationVariant == 'azure-sev-snp' || inputs.attestationVariant == 'aws-sev-snp' || inputs.attestationVariant == 'gcp-sev-snp')
       shell: bash
       env:
         COSIGN_PASSWORD: ${{ inputs.cosignPassword }}

@@ -111,6 +111,7 @@ Required:
   * `azure-sev-snp`
   * `azure-tdx`
   * `gcp-sev-es`
+  * `gcp-sev-snp`
   * `qemu-vtpm`
 
 Optional:

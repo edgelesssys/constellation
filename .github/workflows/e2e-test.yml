@@ -12,6 +12,7 @@ on:
         type: choice
         options:
           - "gcp-sev-es"
+          - "gcp-sev-snp"
           - "azure-sev-snp"
           - "azure-tdx"
           - "aws-sev-snp"

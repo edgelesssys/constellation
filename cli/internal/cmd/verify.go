@@ -107,8 +107,11 @@ func runVerify(cmd *cobra.Command, _ []string) error {
 		log:    log,
 	}
 	formatterFactory := func(output string, attestation variant.Variant, log debugLog) (attestationDocFormatter, error) {
-		if output == "json" && (!attestation.Equal(variant.AzureSEVSNP{}) && !attestation.Equal(variant.AWSSEVSNP{})) {
-			return nil, errors.New("json output is only supported for Azure SEV-SNP and AWS SEV-SNP")
+		if output == "json" &&
+			(!attestation.Equal(variant.AzureSEVSNP{}) &&
+				!attestation.Equal(variant.AWSSEVSNP{}) &&
+				!attestation.Equal(variant.GCPSEVSNP{})) {
+			return nil, errors.New("json output is only supported for SEV-SNP")
 		}
 		switch output {
 		case "json":
@@ -467,7 +470,7 @@ func updateInitMeasurements(config config.AttestationCfg, ownerID, clusterID str
 	switch config.GetVariant() {
 	case variant.AWSNitroTPM{}, variant.AWSSEVSNP{},
 		variant.AzureTrustedLaunch{}, variant.AzureSEVSNP{}, variant.AzureTDX{}, // AzureTDX also uses a vTPM for measurements
-		variant.GCPSEVES{},
+		variant.GCPSEVES{}, variant.GCPSEVSNP{},
 		variant.QEMUVTPM{}:
 		if err := updateMeasurementTPM(m, uint32(measurements.PCRIndexOwnerID), ownerID); err != nil {
 			return err

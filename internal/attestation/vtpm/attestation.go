@@ -9,10 +9,12 @@ package vtpm
 import (
 	"context"
 	"crypto"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 
 	"github.com/google/go-sev-guest/proto/sevsnp"
 	tpmClient "github.com/google/go-tpm-tools/client"
@@ -123,17 +125,20 @@ func (i *Issuer) Issue(ctx context.Context, userData []byte, nonce []byte) (res 
 	}
 	defer aK.Close()
 
-	// Create an attestation using the loaded key
 	extraData := attestation.MakeExtraData(userData, nonce)
-	tpmAttestation, err := aK.Attest(tpmClient.AttestOpts{Nonce: extraData})
-	if err != nil {
-		return nil, fmt.Errorf("creating attestation: %w", err)
-	}
 
 	// Fetch instance info of the VM
 	instanceInfo, err := i.getInstanceInfo(ctx, tpm, extraData)
 	if err != nil {
 		return nil, fmt.Errorf("fetching instance info: %w", err)
+	}
+
+	tpmNonce := makeTpmNonce(instanceInfo, extraData)
+
+	// Create an attestation using the loaded key
+	tpmAttestation, err := aK.Attest(tpmClient.AttestOpts{Nonce: tpmNonce[:]})
+	if err != nil {
+		return nil, fmt.Errorf("creating attestation: %w", err)
 	}
 
 	attDoc := AttestationDocument{
@@ -208,11 +213,13 @@ func (v *Validator) Validate(ctx context.Context, attDocRaw []byte, nonce []byte
 		return nil, fmt.Errorf("validating attestation public key: %w", err)
 	}
 
+	tpmNonce := makeTpmNonce(attDoc.InstanceInfo, extraData)
+
 	// Verify the TPM attestation
 	state, err := tpmServer.VerifyAttestation(
 		attDoc.Attestation,
 		tpmServer.VerifyOpts{
-			Nonce:      extraData,
+			Nonce:      tpmNonce[:],
 			TrustedAKs: []crypto.PublicKey{aKP},
 			AllowSHA1:  false,
 		},
@@ -286,4 +293,10 @@ func GetSelectedMeasurements(open TPMOpenFunc, selection tpm2.PCRSelection) (mea
 	}
 
 	return m, nil
+}
+
+// makeTpmNonce creates a nonce for the TPM attestation and returns it in its marshaled form.
+func makeTpmNonce(instanceInfo []byte, extraData []byte) [32]byte {
+	// Finding: GCP nonces cannot be larger than 32 bytes.
+	return sha256.Sum256(slices.Concat(instanceInfo, extraData))
 }
