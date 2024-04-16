@@ -74,7 +74,7 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 	var extraData64 [64]byte
 	copy(extraData64[:], extraData)
 
-	if err := v.reportValidator.validate(attDoc, (*x509.Certificate)(&v.cfg.AMDSigningKey), (*x509.Certificate)(&v.cfg.AMDRootKey), [64]byte(extraData64), v.cfg, v.log); err != nil {
+	if err := v.reportValidator.validate(attDoc, (*x509.Certificate)(&v.cfg.AMDSigningKey), (*x509.Certificate)(&v.cfg.AMDRootKey), extraData64, v.cfg, v.log); err != nil {
 		return nil, fmt.Errorf("validating SNP report: %w", err)
 	}
 

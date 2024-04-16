@@ -71,7 +71,7 @@ func getInstanceInfo(_ context.Context, _ io.ReadWriteCloser, extraData []byte) 
 	}
 	defer device.Close()
 
-	report, certs, err := sevclient.GetRawExtendedReportAtVmpl(device, [64]byte(extraData64), 0)
+	report, certs, err := sevclient.GetRawExtendedReportAtVmpl(device, extraData64, 0)
 	if err != nil {
 		return nil, fmt.Errorf("getting extended report: %w", err)
 	}
