@@ -174,8 +174,10 @@ func TestUpgradeNodeImage(t *testing.T) {
 			}
 
 			upgrader := KubeCmd{
-				kubectl: kubectl,
-				log:     logger.NewTest(t),
+				kubectl:       kubectl,
+				retryInterval: time.Millisecond,
+				maxAttempts:   5,
+				log:           logger.NewTest(t),
 			}
 
 			err = upgrader.UpgradeNodeImage(context.Background(), tc.newImageVersion, fmt.Sprintf("/path/to/image:%s", tc.newImageVersion.String()), tc.force)
@@ -285,8 +287,10 @@ func TestUpgradeKubernetesVersion(t *testing.T) {
 			}
 
 			upgrader := KubeCmd{
-				kubectl: kubectl,
-				log:     logger.NewTest(t),
+				kubectl:       kubectl,
+				retryInterval: time.Millisecond,
+				maxAttempts:   5,
+				log:           logger.NewTest(t),
 			}
 
 			err = upgrader.UpgradeKubernetesVersion(context.Background(), tc.newKubernetesVersion, tc.force)
@@ -341,7 +345,9 @@ func TestIsValidImageUpgrade(t *testing.T) {
 			assert := assert.New(t)
 
 			upgrader := &KubeCmd{
-				log: logger.NewTest(t),
+				retryInterval: time.Millisecond,
+				maxAttempts:   5,
+				log:           logger.NewTest(t),
 			}
 
 			nodeVersion := updatev1alpha1.NodeVersion{
@@ -392,7 +398,9 @@ func TestUpdateK8s(t *testing.T) {
 			assert := assert.New(t)
 
 			upgrader := &KubeCmd{
-				log: logger.NewTest(t),
+				retryInterval: time.Millisecond,
+				maxAttempts:   5,
+				log:           logger.NewTest(t),
 			}
 
 			nodeVersion := updatev1alpha1.NodeVersion{
@@ -589,6 +597,7 @@ func TestApplyJoinConfig(t *testing.T) {
 				kubectl:       tc.kubectl,
 				log:           logger.NewTest(t),
 				retryInterval: time.Millisecond,
+				maxAttempts:   5,
 			}
 
 			err := cmd.ApplyJoinConfig(context.Background(), tc.newAttestationCfg, []byte{0x11})
@@ -607,6 +616,62 @@ func TestApplyJoinConfig(t *testing.T) {
 			}
 			require.True(ok)
 			assert.Equal(mustMarshal(tc.newAttestationCfg), cfg.Data[constants.AttestationConfigFilename])
+		})
+	}
+}
+
+func TestRetryAction(t *testing.T) {
+	maxAttempts := 3
+
+	testCases := map[string]struct {
+		failures int
+		wantErr  bool
+	}{
+		"no failures": {
+			failures: 0,
+		},
+		"fail once": {
+			failures: 1,
+		},
+		"fail equal to maxAttempts": {
+			failures: maxAttempts,
+			wantErr:  true,
+		},
+		"fail more than maxAttempts": {
+			failures: maxAttempts + 5,
+			wantErr:  true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			k := &KubeCmd{
+				retryInterval: time.Millisecond,
+				maxAttempts:   maxAttempts,
+				log:           logger.NewTest(t),
+			}
+
+			errs := map[int]error{}
+			for idx := range tc.failures {
+				errs[idx] = assert.AnError
+			}
+
+			assert := assert.New(t)
+
+			failureCtr := 0
+			action := func(context.Context) error {
+				defer func() { failureCtr++ }()
+				return errs[failureCtr]
+			}
+
+			err := k.retryAction(context.Background(), action)
+			if tc.wantErr {
+				assert.Error(err)
+				assert.Equal(min(tc.failures, maxAttempts), failureCtr)
+				return
+			}
+			assert.NoError(err)
+			assert.Equal(tc.failures, failureCtr-1)
 		})
 	}
 }
