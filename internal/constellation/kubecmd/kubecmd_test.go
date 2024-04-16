@@ -620,6 +620,62 @@ func TestApplyJoinConfig(t *testing.T) {
 	}
 }
 
+func TestRetryAction(t *testing.T) {
+	maxRetries := 3
+
+	testCases := map[string]struct {
+		failures int
+		wantErr  bool
+	}{
+		"no failures": {
+			failures: 0,
+		},
+		"fail once": {
+			failures: 1,
+		},
+		"fail equal to maxRetries": {
+			failures: maxRetries,
+			wantErr:  true,
+		},
+		"fail more than maxRetries": {
+			failures: maxRetries + 5,
+			wantErr:  true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			k := &KubeCmd{
+				retryInterval: time.Millisecond,
+				maxRetries:    maxRetries,
+				log:           logger.NewTest(t),
+			}
+
+			errs := map[int]error{}
+			for idx := range tc.failures {
+				errs[idx] = assert.AnError
+			}
+
+			assert := assert.New(t)
+
+			failureCtr := 0
+			action := func(context.Context) error {
+				defer func() { failureCtr++ }()
+				return errs[failureCtr]
+			}
+
+			err := k.retryAction(context.Background(), action)
+			if tc.wantErr {
+				assert.Error(err)
+				assert.Equal(min(tc.failures, maxRetries), failureCtr)
+				return
+			}
+			assert.NoError(err)
+			assert.Equal(tc.failures, failureCtr-1)
+		})
+	}
+}
+
 type fakeUnstructuredClient struct {
 	mock.Mock
 }
