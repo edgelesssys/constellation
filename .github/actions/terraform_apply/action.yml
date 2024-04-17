@@ -26,9 +26,10 @@ runs:
           "gcpSEVES")
             attestationVariant="gcp-sev-es"
             ;;
-          "gcpSEVSNP")
-            attestationVariant="gcp-sev-snp"
-            ;;
+          # TODO(msanft): Enable once stable GCP SEV-SNP images exist.
+          # "gcpSEVSNP")
+          #  attestationVariant="gcp-sev-snp"
+          #  ;;
           *)
             echo "Unknown attestation variant: $(yq '.attestation | keys | .[0]' constellation-conf.yaml)"
             exit 1
