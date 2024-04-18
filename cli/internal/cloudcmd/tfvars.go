@@ -283,7 +283,7 @@ func openStackTerraformVars(conf *config.Config, imageRef string) (*terraform.Op
 		CustomEndpoint:          conf.CustomEndpoint,
 		InternalLoadBalancer:    conf.InternalLoadBalancer,
 		STACKITProjectID:        conf.Provider.OpenStack.STACKITProjectID,
-		AdditionalTags: tags,
+		AdditionalTags:          tags,
 	}, nil
 }
 

@@ -302,8 +302,8 @@ type OpenStackClusterVariables struct {
 	// CustomEndpoint is the (optional) custom dns hostname for the kubernetes api server.
 	CustomEndpoint string `hcl:"custom_endpoint" cty:"custom_endpoint"`
 	// InternalLoadBalancer is true if an internal load balancer should be created.
-	InternalLoadBalancer bool `hcl:"internal_load_balancer" cty:"internal_load_balancer"`
-	AdditionalTags []string `hcl:"additional_tags" cty:"additional_tags"`
+	InternalLoadBalancer bool     `hcl:"internal_load_balancer" cty:"internal_load_balancer"`
+	AdditionalTags       []string `hcl:"additional_tags" cty:"additional_tags"`
 }
 
 // GetCreateMAA gets the CreateMAA variable.

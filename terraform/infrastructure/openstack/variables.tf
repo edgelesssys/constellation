@@ -60,7 +60,7 @@ variable "floating_ip_pool_id" {
 }
 
 variable "additional_tags" {
-  type = list
+  type        = list(any)
   description = "Additional tags that should be applied to created resources."
 }
 
