@@ -325,6 +325,7 @@ func Default() *Config {
 		KubernetesVersion:   versions.Default,
 		DebugCluster:        toPtr(false),
 		ServiceCIDR:         "10.96.0.0/12",
+		Tags: cloudprovider.Tags{},
 		Provider: ProviderConfig{
 			AWS: &AWSConfig{
 				Region:                 "",
