@@ -196,7 +196,7 @@ resource "google_compute_address" "loadbalancer_ip_internal" {
   subnetwork   = google_compute_subnetwork.ilb_subnet[0].id
   purpose      = "SHARED_LOADBALANCER_VIP"
   address_type = "INTERNAL"
-  labels = var.additional_labels
+  labels       = var.additional_labels
 }
 
 resource "google_compute_global_address" "loadbalancer_ip" {

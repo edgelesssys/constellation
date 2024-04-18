@@ -81,6 +81,6 @@ variable "enable_snp" {
 }
 
 variable "additional_tags" {
-  type = map
+  type        = map(any)
   description = "Additional tags that should be applied to created resources."
 }

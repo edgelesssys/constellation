@@ -122,7 +122,7 @@ resource "azurerm_nat_gateway" "gateway" {
   resource_group_name     = var.resource_group
   sku_name                = "Standard"
   idle_timeout_in_minutes = 10
-  tags = var.additional_tags
+  tags                    = var.additional_tags
 }
 
 resource "azurerm_subnet_nat_gateway_association" "example" {
@@ -276,7 +276,7 @@ module "jump_host" {
   subnet_id      = azurerm_subnet.loadbalancer_subnet[0].id
   ports          = [for port in local.ports : port.port]
   lb_internal_ip = azurerm_lb.loadbalancer.frontend_ip_configuration[0].private_ip_address
-  tags = var.additional_tags
+  tags           = var.additional_tags
 }
 
 data "azurerm_subscription" "current" {

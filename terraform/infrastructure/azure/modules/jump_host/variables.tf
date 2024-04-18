@@ -30,5 +30,5 @@ variable "location" {
 
 variable "tags" {
   description = "Tags of the jump host."
-  type = map
+  type        = map(any)
 }

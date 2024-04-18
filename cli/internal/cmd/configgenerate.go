@@ -46,7 +46,7 @@ type generateFlags struct {
 	rootFlags
 	k8sVersion         versions.ValidK8sVersion
 	attestationVariant variant.Variant
-	tags cloudprovider.Tags
+	tags               cloudprovider.Tags
 }
 
 func (f *generateFlags) parse(flags *pflag.FlagSet) error {

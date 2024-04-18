@@ -29,6 +29,6 @@ variable "security_groups" {
 }
 
 variable "additional_tags" {
-  type = map
+  type        = map(any)
   description = "Additional tags for the jump host."
 }

@@ -71,6 +71,6 @@ variable "cc_technology" {
 }
 
 variable "additional_labels" {
-  type = map
+  type        = map(any)
   description = "Additional labels that should be given to created recources."
 }

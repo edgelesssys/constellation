@@ -3,7 +3,7 @@ resource "azurerm_linux_virtual_machine" "jump_host" {
   resource_group_name = var.resource_group
   location            = var.location
   size                = "Standard_D2as_v5"
-  tags = var.tags
+  tags                = var.tags
 
   network_interface_ids = [
     azurerm_network_interface.jump_host.id,
@@ -64,7 +64,7 @@ resource "azurerm_network_interface" "jump_host" {
   name                = "${var.base_name}-jump-host"
   resource_group_name = var.resource_group
   location            = var.location
-  tags = var.tags
+  tags                = var.tags
 
   ip_configuration {
     name                          = "public"
@@ -79,7 +79,7 @@ resource "azurerm_public_ip" "jump_host" {
   resource_group_name = var.resource_group
   location            = var.location
   allocation_method   = "Dynamic"
-  tags = var.tags
+  tags                = var.tags
 }
 
 resource "tls_private_key" "ssh_key" {
