@@ -264,6 +264,14 @@ func openStackTerraformVars(conf *config.Config, imageRef string) (*terraform.Op
 			StateDiskType:   group.StateDiskType,
 		}
 	}
+
+	// since openstack does not support tags in the form of key = value, the tags will be converted
+	// to an array of "key=value" strings
+	tags := []string{}
+	for key, value := range conf.Tags {
+		tags = append(tags, fmt.Sprintf("%s=%s", key, value))
+	}
+
 	return &terraform.OpenStackClusterVariables{
 		Name:                    conf.Name,
 		Cloud:                   toPtr(conf.Provider.OpenStack.Cloud),
@@ -275,6 +283,7 @@ func openStackTerraformVars(conf *config.Config, imageRef string) (*terraform.Op
 		CustomEndpoint:          conf.CustomEndpoint,
 		InternalLoadBalancer:    conf.InternalLoadBalancer,
 		STACKITProjectID:        conf.Provider.OpenStack.STACKITProjectID,
+		AdditionalTags: tags,
 	}, nil
 }
 
