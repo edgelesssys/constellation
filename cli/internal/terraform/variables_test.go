@@ -76,6 +76,7 @@ node_groups = {
 }
 custom_endpoint        = "example.com"
 internal_load_balancer = false
+additional_tags        = null
 `
 	got := vars.String()
 	assert.Equal(t, strings.Fields(want), strings.Fields(got)) // to ignore whitespace differences
