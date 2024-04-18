@@ -7,6 +7,7 @@ function get_artifact_id {
   artifact_id="$(gh api \
     -H "Accept: application/vnd.github+json" \
     -H "X-GitHub-Api-Version: 2022-11-28" \
+    --paginate \
     "/repos/edgelesssys/constellation/actions/runs/$1/artifacts" --jq ".artifacts |= map(select(.name==\"$2\")) | .artifacts[0].id" || exit 1)"
   echo "$artifact_id"
 }
