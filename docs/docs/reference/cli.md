@@ -81,6 +81,7 @@ constellation config generate {aws|azure|gcp|openstack|qemu|stackit} [flags]
   -a, --attestation string   attestation variant to use {aws-sev-snp|aws-nitro-tpm|azure-sev-snp|azure-tdx|azure-trustedlaunch|gcp-sev-es|gcp-sev-snp|qemu-vtpm}. If not specified, the default for the cloud provider is used
   -h, --help                 help for generate
   -k, --kubernetes string    Kubernetes version to use in format MAJOR.MINOR (default "v1.28")
+  -t, --tags string          Additional tags for created resources.
 ```
 
 ### Options inherited from parent commands
