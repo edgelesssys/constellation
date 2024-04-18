@@ -154,6 +154,7 @@ node_groups = {
 custom_endpoint        = "example.com"
 internal_load_balancer = false
 cc_technology          = "SEV_SNP"
+additional_labels        = null
 `
 	got := vars.String()
 	assert.Equal(t, strings.Fields(want), strings.Fields(got)) // to ignore whitespace differences
@@ -232,6 +233,7 @@ marketplace_image = {
   publisher = "edgelesssys"
   version   = "2.13.0"
 }
+additional_tags = null
 `
 	got := vars.String()
 	assert.Equal(t, strings.Fields(want), strings.Fields(got)) // to ignore whitespace differences
