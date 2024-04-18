@@ -297,6 +297,7 @@ image_id                   = "8e10b92d-8f7a-458c-91c6-59b42f82ef81"
 debug                      = true
 custom_endpoint            = "example.com"
 internal_load_balancer     = false
+additional_tags            = null
 `
 	got := vars.String()
 	assert.Equal(t, strings.Fields(want), strings.Fields(got)) // to ignore whitespace differences
