@@ -126,8 +126,7 @@ runs:
       shell: bash
       run: |
         if [[ "${{ inputs.cosignPassword }}" == '' || "${{ inputs.cosignPrivateKey }}" == '' ]]; then
-          echo "::error::e2e test verify requires cosignPassword and cosignPrivateKey to be set."
-          exit 1
+          echo "::error::e2e test verify requires cosignPassword and cosignPrivateKey to be set." exit 1
         fi
 
     - name: Determine build target
@@ -258,6 +257,7 @@ runs:
         gcpProjectID: ${{ inputs.gcpProject }}
         gcpZone: ${{ inputs.regionZone || 'europe-west3-b' }}
         kubernetesVersion: ${{ inputs.kubernetesVersion }}
+        additionalTags: "run-name=${{ steps.create-prefix.outputs.prefix }}"
 
     - name: Login to GCP (Cluster service account)
       if: inputs.cloudProvider == 'gcp'
