@@ -32,16 +32,16 @@ module "fetch_image" {
 
 
 module "gcp" {
-  source          = "../../infrastructure/gcp"
-  project         = var.project
-  image_id        = module.fetch_image.image
-  name            = var.name
-  node_groups     = var.node_groups
-  region          = local.region
-  zone            = var.zone
-  debug           = var.debug
-  custom_endpoint = var.custom_endpoint
-  cc_technology   = var.cc_technology
+  source            = "../../infrastructure/gcp"
+  project           = var.project
+  image_id          = module.fetch_image.image
+  name              = var.name
+  node_groups       = var.node_groups
+  region            = local.region
+  zone              = var.zone
+  debug             = var.debug
+  custom_endpoint   = var.custom_endpoint
+  cc_technology     = var.cc_technology
   additional_labels = var.additional_labels
 }
 
