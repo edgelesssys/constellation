@@ -79,3 +79,8 @@ variable "cc_technology" {
     error_message = "The confidential computing technology has to be 'SEV' or 'SEV_SNP'."
   }
 }
+
+variable "additional_labels" {
+  type        = map(any)
+  description = "Additional labels that should be given to created recources."
+}

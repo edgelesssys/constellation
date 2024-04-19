@@ -40,6 +40,7 @@ module "aws" {
   debug                                   = var.debug
   enable_snp                              = var.enable_snp
   custom_endpoint                         = var.custom_endpoint
+  additional_tags                         = var.additional_tags
 }
 
 module "constellation" {

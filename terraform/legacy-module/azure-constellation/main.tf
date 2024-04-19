@@ -34,6 +34,7 @@ module "azure" {
   debug                  = var.debug
   resource_group         = module.azure_iam.base_resource_group
   create_maa             = var.create_maa
+  additional_tags        = var.additional_tags
 }
 
 module "constellation" {

@@ -42,6 +42,7 @@ module "gcp" {
   debug           = var.debug
   custom_endpoint = var.custom_endpoint
   cc_technology   = var.cc_technology
+  additional_labels = var.additional_labels
 }
 
 module "constellation" {

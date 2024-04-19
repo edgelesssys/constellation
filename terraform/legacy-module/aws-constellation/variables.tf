@@ -70,3 +70,8 @@ variable "name_prefix" {
   type        = string
   description = "Prefix for all resources."
 }
+
+variable "additional_tags" {
+  type        = map(any)
+  description = "Additional tags that should be applied to created resources."
+}
