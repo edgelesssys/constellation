@@ -67,9 +67,6 @@ type Config struct {
 	// description: |
 	//   Name of the cluster.
 	Name string `yaml:"name" validate:"valid_name,required"`
-	// description : |
-	//	 Custom tags to be applied to created cloud resources.
-	Tags cloudprovider.Tags `yaml:"tags" validate:"omitempty"`
 	// description: |
 	//   Kubernetes version to be installed into the cluster.
 	KubernetesVersion versions.ValidK8sVersion `yaml:"kubernetesVersion" validate:"required,supported_k8s_version"`
@@ -91,6 +88,9 @@ type Config struct {
 	// description: |
 	//   The Kubernetes Service CIDR to be used for the cluster. This value will only be used during the first initialization of the Constellation.
 	ServiceCIDR string `yaml:"serviceCIDR" validate:"omitempty,cidrv4"`
+	// description: |
+	//   Additional tags that are applied to created resources.
+	Tags cloudprovider.Tags `yaml:"tags" validate:"omitempty"`
 	// description: |
 	//   Supported cloud providers and their specific configurations.
 	Provider ProviderConfig `yaml:"provider" validate:"dive"`
