@@ -195,3 +195,26 @@ jobs:
           test: Windows E2E Test
           provider: Azure
           attestationVariant: "azure-sev-snp"
+
+  upload-tfstate:
+    name: Upload terraform state if it exists
+    runs-on: ubuntu-22.04
+    needs: e2e-test
+    if: always()
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
+      - name: Upload tfstate
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        uses: ./.github/actions/update_tfstate
+        with:
+          name: terraform-state-${{ github.run_id }} 
+          runID: ${{ github.run_id }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          skipDeletion: true
+
