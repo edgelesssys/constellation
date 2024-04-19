@@ -216,5 +216,5 @@ jobs:
           name: terraform-state-${{ github.run_id }} 
           runID: ${{ github.run_id }}
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
-          skipDeletion: true
+          skipDeletion: "true"
 
