@@ -46,7 +46,7 @@ locals {
   ])
   cidr_vpc_subnet_nodes = "192.168.178.0/24"
   cidr_vpc_subnet_lbs   = "192.168.177.0/24"
-  tags                  = ["constellation-uid-${local.uid}"]
+  tags                  = concat(["constellation-uid-${local.uid}"], var.additional_tags)
   identity_service = [
     for entry in data.openstack_identity_auth_scope_v3.scope.service_catalog :
     entry if entry.type == "identity"

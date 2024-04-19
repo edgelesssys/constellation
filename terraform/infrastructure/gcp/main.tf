@@ -183,7 +183,7 @@ module "instance_group" {
   kube_env            = local.kube_env
   debug               = var.debug
   named_ports         = each.value.role == "control-plane" ? local.control_plane_named_ports : []
-  labels              = local.labels
+  labels              = merge(var.additional_labels, local.labels)
   init_secret_hash    = local.init_secret_hash
   custom_endpoint     = var.custom_endpoint
   cc_technology       = var.cc_technology
@@ -196,6 +196,7 @@ resource "google_compute_address" "loadbalancer_ip_internal" {
   subnetwork   = google_compute_subnetwork.ilb_subnet[0].id
   purpose      = "SHARED_LOADBALANCER_VIP"
   address_type = "INTERNAL"
+  labels       = var.additional_labels
 }
 
 resource "google_compute_global_address" "loadbalancer_ip" {
@@ -213,7 +214,7 @@ module "loadbalancer_public" {
   health_check            = each.value.health_check
   backend_instance_groups = local.control_plane_instance_groups
   ip_address              = google_compute_global_address.loadbalancer_ip[0].self_link
-  frontend_labels         = merge(local.labels, { constellation-use = each.value.name })
+  frontend_labels         = merge(local.labels, var.additional_labels, { constellation-use = each.value.name })
 }
 
 module "loadbalancer_internal" {
@@ -225,7 +226,7 @@ module "loadbalancer_internal" {
   health_check           = each.value.health_check
   backend_instance_group = local.control_plane_instance_groups[0]
   ip_address             = google_compute_address.loadbalancer_ip_internal[0].self_link
-  frontend_labels        = merge(local.labels, { constellation-use = each.value.name })
+  frontend_labels        = merge(local.labels, var.additional_labels, { constellation-use = each.value.name })
 
   region         = var.region
   network        = google_compute_network.vpc_network.id
@@ -238,7 +239,7 @@ module "jump_host" {
   base_name      = local.name
   zone           = var.zone
   subnetwork     = google_compute_subnetwork.vpc_subnetwork.id
-  labels         = local.labels
+  labels         = merge(local.labels, var.additional_labels)
   lb_internal_ip = google_compute_address.loadbalancer_ip_internal[0].address
   ports          = [for port in local.control_plane_named_ports : port.port]
 }

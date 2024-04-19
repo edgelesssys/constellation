@@ -89,6 +89,9 @@ type Config struct {
 	//   The Kubernetes Service CIDR to be used for the cluster. This value will only be used during the first initialization of the Constellation.
 	ServiceCIDR string `yaml:"serviceCIDR" validate:"omitempty,cidrv4"`
 	// description: |
+	//   Additional tags that are applied to created resources.
+	Tags cloudprovider.Tags `yaml:"tags" validate:"omitempty"`
+	// description: |
 	//   Supported cloud providers and their specific configurations.
 	Provider ProviderConfig `yaml:"provider" validate:"dive"`
 	// description: |
@@ -322,6 +325,7 @@ func Default() *Config {
 		KubernetesVersion:   versions.Default,
 		DebugCluster:        toPtr(false),
 		ServiceCIDR:         "10.96.0.0/12",
+		Tags:                cloudprovider.Tags{},
 		Provider: ProviderConfig{
 			AWS: &AWSConfig{
 				Region:                 "",

@@ -9,6 +9,7 @@ package terraform
 import (
 	"fmt"
 
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
@@ -69,6 +70,8 @@ type AWSClusterVariables struct {
 	CustomEndpoint string `hcl:"custom_endpoint" cty:"custom_endpoint"`
 	// InternalLoadBalancer is true if an internal load balancer should be created.
 	InternalLoadBalancer bool `hcl:"internal_load_balancer" cty:"internal_load_balancer"`
+	// AdditionalTags describes (optional) additional tags that should be applied to created resources.
+	AdditionalTags cloudprovider.Tags `hcl:"additional_tags" cty:"additional_tags"`
 }
 
 // GetCreateMAA gets the CreateMAA variable.
@@ -138,6 +141,8 @@ type GCPClusterVariables struct {
 	InternalLoadBalancer bool `hcl:"internal_load_balancer" cty:"internal_load_balancer"`
 	// CCTechnology is the confidential computing technology to use on the VMs. (`SEV` or `SEV_SNP`)
 	CCTechnology string `hcl:"cc_technology" cty:"cc_technology"`
+	// AdditionalLables are (optional) additional labels that should be applied to created resources.
+	AdditionalLabels cloudprovider.Tags `hcl:"additional_labels" cty:"additional_labels"`
 }
 
 // GetCreateMAA gets the CreateMAA variable.
@@ -214,6 +219,8 @@ type AzureClusterVariables struct {
 	InternalLoadBalancer bool `hcl:"internal_load_balancer" cty:"internal_load_balancer"`
 	// MarketplaceImage is the (optional) Azure Marketplace image to use.
 	MarketplaceImage *AzureMarketplaceImageVariables `hcl:"marketplace_image" cty:"marketplace_image"`
+	// AdditionalTags are (optional) additional tags that get applied to created resources.
+	AdditionalTags cloudprovider.Tags `hcl:"additional_tags" cty:"additional_tags"`
 }
 
 // GetCreateMAA gets the CreateMAA variable.
@@ -295,7 +302,8 @@ type OpenStackClusterVariables struct {
 	// CustomEndpoint is the (optional) custom dns hostname for the kubernetes api server.
 	CustomEndpoint string `hcl:"custom_endpoint" cty:"custom_endpoint"`
 	// InternalLoadBalancer is true if an internal load balancer should be created.
-	InternalLoadBalancer bool `hcl:"internal_load_balancer" cty:"internal_load_balancer"`
+	InternalLoadBalancer bool     `hcl:"internal_load_balancer" cty:"internal_load_balancer"`
+	AdditionalTags       []string `hcl:"additional_tags" cty:"additional_tags"`
 }
 
 // GetCreateMAA gets the CreateMAA variable.

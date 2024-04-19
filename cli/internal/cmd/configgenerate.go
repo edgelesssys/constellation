@@ -37,6 +37,7 @@ func newConfigGenerateCmd() *cobra.Command {
 	}
 	cmd.Flags().StringP("kubernetes", "k", semver.MajorMinor(string(config.Default().KubernetesVersion)), "Kubernetes version to use in format MAJOR.MINOR")
 	cmd.Flags().StringP("attestation", "a", "", fmt.Sprintf("attestation variant to use %s. If not specified, the default for the cloud provider is used", printFormattedSlice(variant.GetAvailableAttestationVariants())))
+	cmd.Flags().StringSliceP("tags", "t", nil, "additional tags for created resources given a list of key=value")
 
 	return cmd
 }
@@ -45,6 +46,7 @@ type generateFlags struct {
 	rootFlags
 	k8sVersion         versions.ValidK8sVersion
 	attestationVariant variant.Variant
+	tags               cloudprovider.Tags
 }
 
 func (f *generateFlags) parse(flags *pflag.FlagSet) error {
@@ -63,6 +65,12 @@ func (f *generateFlags) parse(flags *pflag.FlagSet) error {
 		return err
 	}
 	f.attestationVariant = variant
+
+	tags, err := parseTagsFlags(flags)
+	if err != nil {
+		return err
+	}
+	f.tags = tags
 
 	return nil
 }
@@ -99,6 +107,7 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 		return fmt.Errorf("creating config: %w", err)
 	}
 	conf.KubernetesVersion = cg.flags.k8sVersion
+	conf.Tags = cg.flags.tags
 	cg.log.Debug("Writing YAML data to configuration file")
 	if err := fileHandler.WriteYAML(constants.ConfigFilename, conf, file.OptMkdirAll); err != nil {
 		return fmt.Errorf("writing config file: %w", err)
@@ -220,4 +229,28 @@ func parseAttestationFlag(flags *pflag.FlagSet) (variant.Variant, error) {
 	}
 
 	return attestationVariant, nil
+}
+
+func parseTagsFlags(flags *pflag.FlagSet) (cloudprovider.Tags, error) {
+	tagsSlice, err := flags.GetStringSlice("tags")
+	if err != nil {
+		return nil, fmt.Errorf("getting tags flag: %w", err)
+	}
+
+	// no tags given
+	if tagsSlice == nil {
+		return nil, nil
+	}
+
+	tags := make(cloudprovider.Tags)
+	for _, tag := range tagsSlice {
+		tagSplit := strings.Split(tag, "=")
+		if len(tagSplit) != 2 {
+			return nil, fmt.Errorf("wrong format of tags: expected \"key=value\", got %q", tag)
+		}
+
+		tags[tagSplit[0]] = tagSplit[1]
+	}
+
+	return tags, nil
 }

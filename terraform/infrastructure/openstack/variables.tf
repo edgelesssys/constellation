@@ -59,6 +59,11 @@ variable "floating_ip_pool_id" {
   description = "Pool (network name) to use for floating IPs."
 }
 
+variable "additional_tags" {
+  type        = list(any)
+  description = "Additional tags that should be applied to created resources."
+}
+
 # STACKIT-specific variables
 
 variable "stackit_project_id" {
