@@ -1136,7 +1136,7 @@ type AzureTDX struct {
 	QEVendorID encoding.HexBytes `json:"qeVendorID" yaml:"qeVendorID"`
 	// description: |
 	//   Expected 48 byte hex-encoded MR_SEAM value.
-	MRSeam encoding.HexBytes `json:"mrSeam" yaml:"mrSeam"`
+	MRSeam encoding.HexBytes `json:"mrSeam,omitempty" yaml:"mrSeam,omitempty"`
 	// description: |
 	//   Expected 8 byte hex-encoded XFAM field.
 	XFAM encoding.HexBytes `json:"xfam" yaml:"xfam"`
