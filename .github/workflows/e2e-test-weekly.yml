@@ -464,6 +464,7 @@ jobs:
     name: Run Windows E2E test
     permissions:
       id-token: write
+      checks: write
       contents: read
       packages: write
     secrets: inherit
