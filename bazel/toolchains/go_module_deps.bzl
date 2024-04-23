@@ -2051,8 +2051,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/golang/protobuf",
-        sum = "h1:KhyjKVUg7Usr/dYsdSqoFveMYd5ko72D+zANwlG1mmg=",
-        version = "v1.5.3",
+        sum = "h1:i7eJL8qZTpSEXOPTxNKhASYpMn+8e5Q6AdndVa1dWek=",
+        version = "v1.5.4",
     )
     go_repository(
         name = "com_github_golang_snappy",
@@ -6570,8 +6570,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "k8s.io/kubernetes",
-        sum = "h1:DOLN7g8+nnAYBi8JHoW0+/MCrZKDPIqAxzLCXDXd0cg=",
-        version = "v1.29.0",
+        sum = "h1:n4VCbX9cUhxHI+zw+m2iZlzT73/mrEJBHIMeauh9g4U=",
+        version = "v1.29.4",
     )
     go_repository(
         name = "io_k8s_legacy_cloud_providers",
