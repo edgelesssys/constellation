@@ -126,7 +126,7 @@ runs:
       shell: bash
       run: |
         if [[ "${{ inputs.cosignPassword }}" == '' || "${{ inputs.cosignPrivateKey }}" == '' ]]; then
-          echo "::error::e2e test verify requires cosignPassword and cosignPrivateKey to be set." 
+          echo "::error::e2e test verify requires cosignPassword and cosignPrivateKey to be set."
           exit 1
         fi
 
