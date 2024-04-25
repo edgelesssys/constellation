@@ -145,7 +145,7 @@ require (
 	k8s.io/client-go v0.29.0
 	k8s.io/cluster-bootstrap v0.29.0
 	k8s.io/kubelet v0.29.0
-	k8s.io/kubernetes v1.29.0
+	k8s.io/kubernetes v1.29.4
 	k8s.io/mount-utils v0.29.0
 	k8s.io/utils v0.0.0-20240102154912-e7106e64919e
 	libvirt.org/go/libvirt v1.10000.0
@@ -245,7 +245,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/certificate-transparency-go v1.1.7 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
