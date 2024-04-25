@@ -63,8 +63,6 @@ done
 mapfile -t database_ids < <(echo "${database_ids[@]}")
 mapfile -td " " database_ids < <(echo "${database_ids[@]}")
 
-database_ids=("8750778451")
-
 echo "[*] downloading terraform state artifacts"
 for id in "${database_ids[@]}"; do
   if [[ $id == *[^[:space:]]* ]]; then
