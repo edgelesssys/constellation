@@ -258,6 +258,7 @@ runs:
         gcpProjectID: ${{ inputs.gcpProject }}
         gcpZone: ${{ inputs.regionZone || 'europe-west3-b' }}
         kubernetesVersion: ${{ inputs.kubernetesVersion }}
+        additionalTags: "workflow=${{ github.workflow }}"
 
     - name: Login to GCP (Cluster service account)
       if: inputs.cloudProvider == 'gcp'
