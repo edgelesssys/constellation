@@ -84,7 +84,7 @@ jobs:
         run: |
           $uid = Get-Random -Minimum 1000 -Maximum 9999
           $rgName = "e2e-win-${{ github.run_id }}-${{ github.run_attempt }}-$uid"
-          .\constellation.exe config generate azure -t "run-name=$rgName"
+          .\constellation.exe config generate azure -t "workflow=${{ github.workflow }}"
           .\constellation.exe iam create azure --region=westus --resourceGroup=$rgName-rg --servicePrincipal=$rgName-sp --update-config --debug -y
 
       - name: Login to Azure (Cluster service principal)
