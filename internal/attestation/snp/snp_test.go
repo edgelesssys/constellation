@@ -9,6 +9,7 @@ package snp
 import (
 	"crypto/x509"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -34,15 +35,12 @@ func TestParseCertChain(t *testing.T) {
 		wantAsk   bool
 		wantArk   bool
 		wantErr   bool
+		errTarget error
 	}{
 		"success": {
 			certChain: defaultCertChain,
 			wantAsk:   true,
 			wantArk:   true,
-		},
-		"empty cert chain": {
-			certChain: []byte{},
-			wantErr:   true,
 		},
 		"more than two certificates": {
 			certChain: append(defaultCertChain, defaultCertChain...),
@@ -51,6 +49,11 @@ func TestParseCertChain(t *testing.T) {
 		"invalid certificate": {
 			certChain: []byte("invalid"),
 			wantErr:   true,
+		},
+		"empty cert chain": {
+			certChain: []byte{},
+			wantErr:   true,
+			errTarget: errNoPemBlocks,
 		},
 		"ark missing": {
 			certChain: []byte(askOnly),
@@ -73,6 +76,9 @@ func TestParseCertChain(t *testing.T) {
 			ask, ark, err := instanceInfo.ParseCertChain()
 			if tc.wantErr {
 				assert.Error(err)
+				if tc.errTarget != nil {
+					assert.True(errors.Is(err, tc.errTarget))
+				}
 			} else {
 				assert.NoError(err)
 				assert.Equal(tc.wantAsk, ask != nil)
