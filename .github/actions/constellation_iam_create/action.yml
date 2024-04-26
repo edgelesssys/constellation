@@ -53,7 +53,7 @@ runs:
         fi
 
         echo "flag=--update-config" | tee -a "$GITHUB_OUTPUT"
-        constellation config generate ${{ inputs.cloudProvider }} ${kubernetesFlag} --attestation ${{ inputs.attestationVariant }} --tags ${{ inputs.additionalTags }}
+        constellation config generate ${{ inputs.cloudProvider }} ${kubernetesFlag} --attestation ${{ inputs.attestationVariant }} --tags "${{ inputs.additionalTags }}"
 
     - name: Constellation iam create aws
       shell: bash
