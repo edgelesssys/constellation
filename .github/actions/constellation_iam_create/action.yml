@@ -52,8 +52,14 @@ runs:
           kubernetesFlag="--kubernetes=${{ inputs.kubernetesVersion }}"
         fi
 
+        # TODO(v2.17): Remove this fallback and always use --tags flag
+        tagsFlag=""
+        if constellation config generate --help | grep -q -- --tags; then
+          tagsFlag="--tags=\"${{ inputs.additionalTags }}\""
+        fi
+
         echo "flag=--update-config" | tee -a "$GITHUB_OUTPUT"
-        constellation config generate ${{ inputs.cloudProvider }} ${kubernetesFlag} --attestation ${{ inputs.attestationVariant }} --tags "${{ inputs.additionalTags }}"
+        constellation config generate ${{ inputs.cloudProvider }} ${kubernetesFlag} --attestation ${{ inputs.attestationVariant }} ${tagsFlag}
 
     - name: Constellation iam create aws
       shell: bash
