@@ -48,9 +48,10 @@ locals {
   // example: given "name-1234567890.region.elb.amazonaws.com" it will return "*.region.elb.amazonaws.com"
   wildcard_lb_dns_name = replace(aws_lb.front_end.dns_name, "/^[^.]*\\./", "*.")
 
-  tags = {
-    constellation-uid = local.uid,
-  }
+  tags = merge(
+    var.additional_tags,
+    { constellation-uid = local.uid }
+  )
 
   in_cluster_endpoint     = aws_lb.front_end.dns_name
   out_of_cluster_endpoint = var.internal_load_balancer && var.debug ? module.jump_host[0].ip : local.in_cluster_endpoint
@@ -68,7 +69,7 @@ resource "random_password" "init_secret" {
 
 resource "aws_vpc" "vpc" {
   cidr_block = "192.168.0.0/16"
-  tags       = merge(local.tags, var.additional_tags, { Name = "${local.name}-vpc" })
+  tags       = merge(local.tags, { Name = "${local.name}-vpc" })
 }
 
 module "public_private_subnet" {
@@ -79,7 +80,7 @@ module "public_private_subnet" {
   cidr_vpc_subnet_internet = "192.168.0.0/20"
   zone                     = var.zone
   zones                    = local.zones
-  tags                     = merge(local.tags, var.additional_tags)
+  tags                     = local.tags
 }
 
 resource "aws_eip" "lb" {
@@ -89,14 +90,14 @@ resource "aws_eip" "lb" {
   # control-plane.
   for_each = var.internal_load_balancer ? [] : toset([var.zone])
   domain   = "vpc"
-  tags     = merge(local.tags, var.additional_tags, { "constellation-ip-endpoint" = each.key == var.zone ? "legacy-primary-zone" : "additional-zone" })
+  tags     = merge(local.tags, { "constellation-ip-endpoint" = each.key == var.zone ? "legacy-primary-zone" : "additional-zone" })
 }
 
 resource "aws_lb" "front_end" {
   name               = "${local.name}-loadbalancer"
   internal           = var.internal_load_balancer
   load_balancer_type = "network"
-  tags               = merge(local.tags, var.additional_tags)
+  tags               = local.tags
   security_groups    = [aws_security_group.security_group.id]
 
   dynamic "subnet_mapping" {
@@ -123,7 +124,7 @@ resource "aws_security_group" "security_group" {
   name        = local.name
   vpc_id      = aws_vpc.vpc.id
   description = "Security group for ${local.name}"
-  tags        = merge(local.tags, var.additional_tags)
+  tags        = local.tags
 
   egress {
     from_port   = 0
@@ -171,7 +172,7 @@ module "load_balancer_targets" {
   healthcheck_path     = each.value.name == "kubernetes" ? "/readyz" : ""
   vpc_id               = aws_vpc.vpc.id
   lb_arn               = aws_lb.front_end.arn
-  tags                 = merge(local.tags, var.additional_tags)
+  tags                 = local.tags
 }
 
 module "instance_group" {
@@ -194,7 +195,6 @@ module "instance_group" {
   enable_snp           = var.enable_snp
   tags = merge(
     local.tags,
-    var.additional_tags,
     { Name = "${local.name}-${each.value.role}" },
     { constellation-role = each.value.role },
     { constellation-node-group = each.key },
@@ -213,5 +213,5 @@ module "jump_host" {
   ports                = [for port in local.load_balancer_ports : port.port]
   security_groups      = [aws_security_group.security_group.id]
   iam_instance_profile = var.iam_instance_profile_name_worker_nodes
-  additional_tags      = var.additional_tags
+  additional_tags      = local.tags
 }

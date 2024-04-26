@@ -33,9 +33,10 @@ locals {
   uid              = random_id.uid.hex
   name             = "${var.name}-${local.uid}"
   init_secret_hash = random_password.init_secret.bcrypt_hash
-  labels = {
-    constellation-uid = local.uid,
-  }
+  labels = merge(
+    var.additional_labels,
+    { constellation-uid = local.uid }
+  )
   ports_node_range      = "30000-32767"
   cidr_vpc_subnet_nodes = "192.168.178.0/24"
   cidr_vpc_subnet_pods  = "10.10.0.0/16"
@@ -183,7 +184,7 @@ module "instance_group" {
   kube_env            = local.kube_env
   debug               = var.debug
   named_ports         = each.value.role == "control-plane" ? local.control_plane_named_ports : []
-  labels              = merge(var.additional_labels, local.labels)
+  labels              = local.labels
   init_secret_hash    = local.init_secret_hash
   custom_endpoint     = var.custom_endpoint
   cc_technology       = var.cc_technology
@@ -196,7 +197,7 @@ resource "google_compute_address" "loadbalancer_ip_internal" {
   subnetwork   = google_compute_subnetwork.ilb_subnet[0].id
   purpose      = "SHARED_LOADBALANCER_VIP"
   address_type = "INTERNAL"
-  labels       = var.additional_labels
+  labels       = local.labels
 }
 
 resource "google_compute_global_address" "loadbalancer_ip" {
@@ -214,7 +215,7 @@ module "loadbalancer_public" {
   health_check            = each.value.health_check
   backend_instance_groups = local.control_plane_instance_groups
   ip_address              = google_compute_global_address.loadbalancer_ip[0].self_link
-  frontend_labels         = merge(local.labels, var.additional_labels, { constellation-use = each.value.name })
+  frontend_labels         = merge(local.labels, { constellation-use = each.value.name })
 }
 
 module "loadbalancer_internal" {
@@ -226,7 +227,7 @@ module "loadbalancer_internal" {
   health_check           = each.value.health_check
   backend_instance_group = local.control_plane_instance_groups[0]
   ip_address             = google_compute_address.loadbalancer_ip_internal[0].self_link
-  frontend_labels        = merge(local.labels, var.additional_labels, { constellation-use = each.value.name })
+  frontend_labels        = merge(local.labels, { constellation-use = each.value.name })
 
   region         = var.region
   network        = google_compute_network.vpc_network.id
@@ -239,7 +240,7 @@ module "jump_host" {
   base_name      = local.name
   zone           = var.zone
   subnetwork     = google_compute_subnetwork.vpc_subnetwork.id
-  labels         = merge(local.labels, var.additional_labels)
+  labels         = local.labels
   lb_internal_ip = google_compute_address.loadbalancer_ip_internal[0].address
   ports          = [for port in local.control_plane_named_ports : port.port]
 }
