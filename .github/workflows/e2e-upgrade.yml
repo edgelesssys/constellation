@@ -189,6 +189,7 @@ jobs:
     needs: [generate-input-parameters]
     outputs:
       kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
+      e2e-name-prefix: ${{ steps.e2e_test.outputs.namePrefix }}
     steps:
       - name: Checkout
         if: inputs.gitRef == 'head'
@@ -441,6 +442,7 @@ jobs:
       checks: write
       contents: read
       packages: write
+      actions: write
     if: always()
     needs: [generate-input-parameters, create-cluster, e2e-upgrade]
     steps:
@@ -505,6 +507,17 @@ jobs:
             constellation-version.yaml
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
+      - name: Prepare terraform state artifact upload
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p to-zip
+          cp -r constellation-terraform to-zip
+          rm to-zip/constellation-terraform/plan.zip
+          rm -rf to-zip/constellation-terraform/.terraform
+          cp -r constellation-iam-terraform to-zip
+          rm -rf to-zip/constellation-iam-terraform/.terraform
+
       - name: Always terminate cluster
         if: always()
         uses: ./.github/actions/constellation_destroy
@@ -522,6 +535,16 @@ jobs:
           cloudProvider: ${{ needs.generate-input-parameters.outputs.cloudProvider }}
           azureCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
           gcpServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
+
+      - name: Update tfstate
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        uses: ./.github/actions/update_tfstate
+        with:
+          name: terraform-state-${{ needs.create-cluster.outputs.e2e-name-prefix }} 
+          runID: ${{ github.run_id }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Notify about failure
         if: |

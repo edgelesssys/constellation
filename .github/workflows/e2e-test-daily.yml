@@ -56,6 +56,7 @@ jobs:
       checks: write
       contents: read
       packages: write
+      actions: write
     needs: [find-latest-image]
     steps:
       - name: Check out repository
@@ -121,6 +122,16 @@ jobs:
           cloudProvider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
           azureCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
           gcpServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
+
+      - name: Update tfstate
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        uses: ./.github/actions/update_tfstate
+        with:
+          name: terraform-state-${{ steps.e2e_test.outputs.namePrefix }} 
+          runID: ${{ github.run_id }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
       - name: Notify about failure
         if: |

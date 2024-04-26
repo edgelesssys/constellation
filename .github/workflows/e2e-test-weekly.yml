@@ -309,6 +309,7 @@ jobs:
       checks: write
       contents: read
       packages: write
+      actions: write
     needs: [find-latest-image]
     steps:
       - name: Check out repository
@@ -378,6 +379,16 @@ jobs:
           azureCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
           gcpServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
 
+      - name: Update tfstate
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        uses: ./.github/actions/update_tfstate
+        with:
+          name: terraform-state-${{ steps.e2e_test.outputs.namePrefix }} 
+          runID: ${{ github.run_id }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+
       - name: Notify about failure
         if: |
           failure() &&
@@ -408,6 +419,7 @@ jobs:
       checks: write
       contents: read
       packages: write
+      actions: write
     uses: ./.github/workflows/e2e-upgrade.yml
     with:
       fromVersion: ${{ matrix.fromVersion }}
@@ -464,9 +476,9 @@ jobs:
     name: Run Windows E2E test
     permissions:
       id-token: write
-      checks: write
       contents: read
       packages: write
+      checks: write
     secrets: inherit
     uses: ./.github/workflows/e2e-windows.yml
     with:
