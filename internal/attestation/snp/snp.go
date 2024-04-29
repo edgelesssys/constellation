@@ -12,6 +12,7 @@ import (
 	"bytes"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
@@ -21,6 +22,8 @@ import (
 	"github.com/google/go-sev-guest/verify/trust"
 	"github.com/google/go-tpm-tools/proto/attest"
 )
+
+var errNoPemBlocks = errors.New("no PEM blocks found")
 
 // Product returns the SEV product info currently supported by Constellation's SNP attestation.
 func Product() *spb.SevProduct {
@@ -124,7 +127,7 @@ func (a *InstanceInfo) AttestationWithCerts(getter trust.HTTPSGetter,
 	// If a certificate chain was pre-fetched by the Issuer, parse it and format it.
 	// Make sure to only use the ask, since using an ark from the Issuer would invalidate security guarantees.
 	ask, _, err := a.ParseCertChain()
-	if err != nil {
+	if err != nil && !errors.Is(err, errNoPemBlocks) {
 		logger.Warn(fmt.Sprintf("Error parsing certificate chain: %v", err))
 	}
 	if ask != nil {
@@ -222,7 +225,7 @@ func (a *InstanceInfo) ParseCertChain() (ask, ark *x509.Certificate, retErr erro
 
 	switch {
 	case i == 1:
-		retErr = fmt.Errorf("no PEM blocks found")
+		retErr = errNoPemBlocks
 	case len(rest) != 0:
 		retErr = fmt.Errorf("remaining PEM block is not a valid certificate: %s", rest)
 	}
