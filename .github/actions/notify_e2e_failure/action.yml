@@ -36,12 +36,6 @@ runs:
       shell: bash
       run: echo "CURRENT_DATE=$(date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_ENV
 
-    - name: Encode URI component
-      uses: Ablestor/encode-uri-component-action@790ea01bcf2d5ca4d0dbe8c15351a87b47f22f61 # v1.3
-      id: encode-uri-component
-      with:
-        string: ${{ inputs.test }}
-
     - name: Create body template
       id: body-template
       shell: bash
@@ -69,13 +63,15 @@ runs:
           fi
         }
 
+        e2eTestPayload=$(echo "${{ inputs.test }}" | jq -R -r @uri)
+
         q=$(echo "(filters:!(
           $(queryGen cloud.provider "${{ inputs.provider }}")
           $(queryGen metadata.github.ref-stream "${{ inputs.refStream }}")
           $(queryGen metadata.github.kubernetes-version "${{ inputs.kubernetesVersion }}")
           $(queryGen metadata.github.attestation-variant "${{ inputs.attestationVariant }}")
           $(queryGen metadata.github.cluster-creation "${{ inputs.clusterCreation }}")
-          $(queryGen metadata.github.e2e-test-payload "${{ steps.encode-uri-component.outputs.string }}")
+          $(queryGen metadata.github.e2e-test-payload "${e2eTestPayload}")
           (query:(match_phrase:(metadata.github.run-id:${{ github.run_id }})))
           ))" | tr -d "\t\n ")
 
