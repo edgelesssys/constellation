@@ -330,7 +330,7 @@ runs:
       if: (inputs.test == 'nop') || (inputs.test == 'upgrade')
       shell: bash
       run: |
-        echo "::warning::This test has a nop payload. It doesn't run any tests."
+        echo "This test has a nop payload. It doesn't run any tests."
         echo "Sleeping for 30 seconds to allow logs to propagate to the log collection service."
         sleep 30
 
