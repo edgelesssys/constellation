@@ -10,6 +10,6 @@ runs:
     # As described at:
     # https://github.com/Azure/login#configure-deployment-credentials
     - name: Login to Azure
-      uses: azure/login@cb79c773a3cfa27f31f25eb3f677781210c9ce3d # v1.6.1
+      uses: azure/login@6b2456866fc08b011acb422a92a4aa20e2c4de32 # v2.1.0
       with:
         creds: ${{ inputs.azure_credentials }}
