@@ -78,15 +78,15 @@ The idea is that Constellation nodes should have verifiable integrity from the C
 The solution is a verifiable boot chain and an integrity-protected runtime environment.
 
 Constellation uses measured boot within CVMs, measuring each component in the boot process before executing it.
-Outside of CC, it's usually implemented via TPMs.
+Outside of CC, this is usually implemented via TPMs.
 CVM technologies differ in how they implement runtime measurements, but the general concepts are similar to those of a TPM.
 For simplicity, TPM terminology like *PCR* is used in the following.
 
-When a Constellation node image boots inside a CVM, it uses measured boot for all stages and components of the boot chain.
+When a Constellation node image boots inside a CVM, measured boot is used for all stages and components of the boot chain.
 This process goes up to the root filesystem.
-The root filesystem is mounted read-only with integrity protection, guaranteeing forward integrity.
+The root filesystem is mounted read-only with integrity protection.
 For the details on the image and boot stages see the [image architecture](../architecture/images.md) documentation.
-Any changes to the image will inevitably also change the measured boot's PCR values.
+Any changes to the image will inevitably also change the corresponding PCR values.
 To create a node attestation statement, the Constellation image obtains a CVM attestation statement from the hardware.
 This includes the runtime measurements and thereby binds the measured boot results to the CVM hardware measurement.
 
@@ -341,31 +341,49 @@ When an initialized node tries to join another cluster, its measurements inevita
 The [*VerificationService*](microservices.md#verificationservice) provides an endpoint for obtaining its hardware-based remote attestation statement, which includes the runtime measurements.
 A user can [verify](../workflows/verify-cluster.md) this statement and compare the measurements against the configured ground truth and, thus, verify the identity and integrity of all Constellation components and the cluster configuration. Subsequently, the user knows that the entire cluster is in the expected state and is trustworthy.
 
-## Chain of trust
+## Putting it all together
+In this section, we put the aforementioned concepts together and illustrate how trust into a Constellation cluster is established and maintained.
 
-So far, this page described how an entire Constellation cluster can be verified using hardware attestation capabilities and runtime measurements.
-The last missing link is how the ground truth in the form of runtime measurements can be securely distributed to the verifying party.
+### CLI and node images
 
-The build process of Constellation images also creates the ground truth runtime measurements. The builds of Constellation images are reproducible and the measurements of an image can be recalculated and verified by everyone.
-With every release, Edgeless Systems publishes signed runtime measurements.
+It all starts with the CLI executable. The CLI is signed by Edgeless Systems. To ensure non-repudiability for CLI releases, Edgeless Systems publishes corresponding signatures to the public ledger of the [sigstore project](https://www.sigstore.dev/). There's a [step-by-step guide](../workflows/verify-cli.md) on how to verify CLI signatures based on sigstore.
 
-The CLI executable is also signed by Edgeless Systems.
-You can [verify its signature](../workflows/verify-cli.md).
+The CLI contains the latest runtime measurements of the Constellation node image for all supported cloud platforms. In case a different version of the node image is to be used, the corresponding runtime measurements can be fetched using the CLI's [fetch-measurements command](reference/cli#constellation-config-fetch-measurements). This command downloads the runtime measurements and the corresponding signature from cdn.confidential.cloud. See for example the following files corresponding to node image v2.16.3:
+* [Measurements](https://cdn.confidential.cloud/constellation/v2/ref/-/stream/stable/v2.16.3/image/measurements.json)
+* [Signature](https://cdn.confidential.cloud/constellation/v2/ref/-/stream/stable/v2.16.3/image/measurements.json.sig)
 
-The CLI contains the public key required to verify signed runtime measurements from Edgeless Systems.
-When a cluster is [created](../workflows/create.md) or [upgraded](../workflows/upgrade.md), the CLI automatically verifies the measurements for the selected image.
+The CLI contains the long-term public key of Edgeless Systems to verify the signature of downloaded runtime measurements.
 
-Thus, there's a chain of trust based on cryptographic signatures, which goes from CLI to runtime measurements to images. This is illustrated in the following diagram.
+### Cluster creation
+
+When a cluster is [created](../workflows/create.md), the CLI automatically verifies the runtime measurements of the *first node* (also known as "bootstrapper") using remote attestation. Based on this, the CLI and the first node set up a temporary TLS connection. This [aTLS](#attested-tls-atls) connection is used for three things:
+1. The CLI sends the runtime measurements for the applicable node image to the first node.
+2. The first node sends the [master secret](../architecture/keys.md#master-secret) of the to-be-created cluster to the CLI. The master secret is generated by the first node. 
+3. The first node sends a [kubeconfig file](https://www.redhat.com/sysadmin/kubeconfig) with Kubernetes credentials to the CLI.
+
+After this, the aTLS connection is closed. All subsequent interactions between the CLI and the cluster go via the [Kubernetes API](https://kubernetes.io/docs/concepts/overview/kubernetes-api/) server running inside the cluster. The CLI (and other tools like kubectl) use the credentials referenced by the kubeconfig file to authenticate themselves towards the Kubernetes API server and to establish a TLS connection.
+
+The first node bootstraps the Kubernetes cluster and provisions the cluster's JoinService with the runtime measurements received from the CLI. The JoinService verifies the runtime measurements of all subsequent nodes that join the cluster accordingly.
+
+### Chain of trust
+
+In summary, there's a chain of trust based on cryptographic signatures that goes from the user to the cluster via the CLI. This is illustrated in the following diagram.
 
 ```mermaid
 flowchart LR
-  A[Edgeless]-- "signs (cosign)" -->B[CLI]
-  C[User]-- "verifies (cosign)" -->B[CLI]
-  B[CLI]-- "contains" -->D["Public Key"]
-  A[Edgeless]-- "signs" -->E["Runtime measurements"]
-  D["Public key"]-- "verifies" -->E["Runtime measurements"]
-  E["Runtime measurements"]-- "verify" -->F["Constellation cluster"]
+  A[User]-- "verifies" -->B[CLI]
+  B[CLI]-- "verifies" -->C([Runtime measurements])
+  D[Edgeless Systems]-- "signs" -->B[CLI]
+  D[Edgeless Systems]-- "signs" -->C([Runtime measurements])
+  B[CLI]-- "verifies (remote attestation)" -->E[First node]
+  E[First node]-- "verifies (remote attestation)" -->F[Other nodes]
+  C([Runtime measurements]) -.-> E[First node]
+  C([Runtime measurements]) -.-> F[Other nodes]
 ```
+
+### Upgrades
+
+Whenever a cluster is [upgraded](../workflows/upgrade.md) to a new version of the node image, the CLI sends the corresponding runtime measurements via the Kubernetes API server. The new runtime measurements are stored in etcd within the cluster and replace any previous runtime measurements. The new runtime measurements are then used automatically by the JoinServer for the verification of new nodes. 
 
 ## References
 
