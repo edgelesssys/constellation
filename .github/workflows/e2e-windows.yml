@@ -177,6 +177,7 @@ jobs:
         shell: pwsh
         run: |
           az group delete --name ${{ steps.iam-create.outputs.rgName }}-rg --yes
+          az group delete --name ${{ steps.iam-create.outputs.rgName }}-rg-identity --yes
           az group delete --name ${{ steps.iam-create.outputs.rgName }}-sp --yes
 
   notify-failure:
