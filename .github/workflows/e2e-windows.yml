@@ -176,8 +176,8 @@ jobs:
         if: ${{ (failure() && (steps.terminate-cluster.conclusion == 'failure' || steps.delete-iam.conclusion == 'failure')) || cancelled() }} # run on a cleanup failure or if cancelled
         shell: pwsh
         run: |
-          az rg delete --name ${{ steps.iam-create.outputs.rgName }}-rg --yes
-          az rg delete --name ${{ steps.iam-create.outputs.rgName }}-sp --yes
+          az group delete --name ${{ steps.iam-create.outputs.rgName }}-rg --yes
+          az group delete --name ${{ steps.iam-create.outputs.rgName }}-sp --yes
 
   notify-failure:
     name: Notify about failure
