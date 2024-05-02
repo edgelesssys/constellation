@@ -156,7 +156,8 @@ jobs:
         if: always()
         shell: pwsh
         run: |
-          .\constellation.exe terminate --debug -y
+          # .\constellation.exe terminate --debug -y
+          exit 1
 
       - name: Login to Azure (IAM service principal)
         if: always()
