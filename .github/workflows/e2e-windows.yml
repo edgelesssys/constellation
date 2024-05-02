@@ -156,8 +156,7 @@ jobs:
         if: always()
         shell: pwsh
         run: |
-          # .\constellation.exe terminate --debug -y
-          exit 1
+          .\constellation.exe terminate --debug -y
 
       - name: Login to Azure (IAM service principal)
         if: always()
@@ -170,7 +169,8 @@ jobs:
         if: always()
         shell: pwsh
         run: |
-          .\constellation.exe iam destroy --debug -y
+          # .\constellation.exe iam destroy --debug -y
+          exit 1
 
       - name: Clean up after failure
         if: ${{ (failure() && (steps.terminate-cluster.conclusion == 'failure' || steps.delete-iam.conclusion == 'failure')) || cancelled() }} # run on a cleanup failure or if cancelled
