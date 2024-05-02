@@ -242,3 +242,20 @@ resource "aws_iam_role_policy_attachment" "csi_driver_policy_control_plane" {
   role       = aws_iam_role.control_plane_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
 }
+
+// This policy is required by the AWS load balancer controller and can be found at
+// https://github.com/kubernetes-sigs/aws-load-balancer-controller/blob/b44633a/docs/install/iam_policy.json.
+resource "aws_iam_policy" "lb_policy" {
+  name   = "${var.name_prefix}_lb_policy"
+  policy = file("alb_policy.json")
+}
+
+resource "aws_iam_role_policy_attachment" "attach_lb_policy_worker" {
+  role       = aws_iam_role.worker_node_role.name
+  policy_arn = aws_iam_policy.lb_policy.arn
+}
+
+resource "aws_iam_role_policy_attachment" "attach_lb_policy_control_plane" {
+  role       = aws_iam_role.control_plane_role.name
+  policy_arn = aws_iam_policy.lb_policy.arn
+}
