@@ -66,12 +66,16 @@ runs:
           forwarderPID=$!
           sleep 5
 
-          if [[ ${{ inputs.attestationVariant }} == "azure-sev-snp" ]] || [[ ${{ inputs.attestationVariant }} == "aws-sev-snp" ]]; then
-            echo "Extracting TCB versions for API update"
-            constellation verify --cluster-id "${clusterID}" --node-endpoint localhost:9090 -o json > "snp-report-${node}.json"
-          else
-            constellation verify --cluster-id "${clusterID}" --node-endpoint localhost:9090
-          fi
+          case "${{ inputs.attestationVariant }}"
+          in
+            "azure-sev-snp"|"aws-sev-snp"|"gcp-sev-snp")
+              echo "Extracting TCB versions for API update"
+              constellation verify --cluster-id "${clusterID}" --node-endpoint localhost:9090 -o json > "snp-report-${node}.json"
+              ;;
+            *)
+              constellation verify --cluster-id "${clusterID}" --node-endpoint localhost:9090
+              ;;
+          esac
 
           kill $forwarderPID
         done
@@ -90,11 +94,6 @@ runs:
         COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
         COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
       run: |
-        if [[ ${{ inputs.attestationVariant }} == "aws-sev-snp" ]] && constellation version | grep -q "v2.13."; then
-          echo "Skipping TCB upload for AWS on CLI v2.13"
-          exit 0
-        fi
-
         reports=(snp-report-*.json)
         if [ -z ${#reports[@]} ]; then
             exit 1
