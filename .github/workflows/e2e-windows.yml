@@ -172,7 +172,8 @@ jobs:
           .\constellation.exe iam destroy --debug -y
 
       - name: Clean up after failure
-        if: ${{ (failure() && (steps.terminate-cluster.conclusion == 'failure' || steps.delete-iam.conclusion == 'failure')) || cancelled() }} # run on a cleanup failure or if cancelled
+        # run on a cleanup failure or if cancelled
+        if: (failure() && (steps.terminate-cluster.conclusion == 'failure' || steps.delete-iam.conclusion == 'failure')) || cancelled()
         shell: pwsh
         run: |
           az group delete --name ${{ steps.iam-create.outputs.rgName }}-rg --yes
