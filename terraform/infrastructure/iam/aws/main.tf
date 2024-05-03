@@ -247,7 +247,7 @@ resource "aws_iam_role_policy_attachment" "csi_driver_policy_control_plane" {
 // https://github.com/kubernetes-sigs/aws-load-balancer-controller/blob/b44633a/docs/install/iam_policy.json.
 resource "aws_iam_policy" "lb_policy" {
   name   = "${var.name_prefix}_lb_policy"
-  policy = file("alb_policy.json")
+  policy = file("${path.module}/alb_policy.json")
 }
 
 resource "aws_iam_role_policy_attachment" "attach_lb_policy_worker" {
