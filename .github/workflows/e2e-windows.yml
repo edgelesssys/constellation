@@ -80,10 +80,12 @@ jobs:
           azure_credentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
 
       - name: Create IAM configuration
+        id: iam-create
         shell: pwsh
         run: |
           $uid = Get-Random -Minimum 1000 -Maximum 9999
           $rgName = "e2e-win-${{ github.run_id }}-${{ github.run_attempt }}-$uid"
+          "rgName=$($rgName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           .\constellation.exe config generate azure -t "workflow=${{ github.run_id }}"
           .\constellation.exe iam create azure --region=westus --resourceGroup=$rgName-rg --servicePrincipal=$rgName-sp --update-config --debug -y
 
@@ -150,6 +152,7 @@ jobs:
           }
 
       - name: Terminate cluster
+        id: terminate-cluster
         if: always()
         shell: pwsh
         run: |
@@ -162,10 +165,19 @@ jobs:
           azure_credentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
 
       - name: Delete IAM configuration
+        id: delete-iam
         if: always()
         shell: pwsh
         run: |
           .\constellation.exe iam destroy --debug -y
+
+      - name: Clean up after failure
+        # run on a cleanup failure or if cancelled
+        if: (failure() && (steps.terminate-cluster.conclusion == 'failure' || steps.delete-iam.conclusion == 'failure')) || cancelled()
+        shell: pwsh
+        run: |
+          az group delete --name ${{ steps.iam-create.outputs.rgName }}-rg --yes
+          az group delete --name ${{ steps.iam-create.outputs.rgName }}-rg-identity --yes
 
   notify-failure:
     name: Notify about failure
@@ -195,26 +207,4 @@ jobs:
           test: Windows E2E Test
           provider: Azure
           attestationVariant: "azure-sev-snp"
-
-  upload-tfstate:
-    name: Upload terraform state if it exists
-    runs-on: ubuntu-22.04
-    needs: e2e-test
-    if: always()
-    steps:
-      - name: Checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-        with:
-          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
-
-      - name: Upload tfstate
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-        uses: ./.github/actions/update_tfstate
-        with:
-          name: terraform-state-${{ github.run_id }} 
-          runID: ${{ github.run_id }}
-          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
-          skipDeletion: "true"
 
