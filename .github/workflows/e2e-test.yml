@@ -286,6 +286,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         uses: ./.github/actions/update_tfstate
         with:
-          name: terraform-state-${{ steps.e2e_test.outputs.namePrefix }} 
+          name: terraform-state-${{ steps.e2e_test.outputs.namePrefix }}
           runID: ${{ github.run_id }}
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
