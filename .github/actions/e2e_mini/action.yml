@@ -38,9 +38,17 @@ runs:
 
     - name: MiniConstellation E2E
       shell: bash
+      id: e2e-test
       env:
         ARM_CLIENT_ID: ${{ inputs.azureClientID }}
         ARM_SUBSCRIPTION_ID: ${{ inputs.azureSubscriptionID }}
         ARM_TENANT_ID: ${{ inputs.azureTenantID }}
       run: |
         bazel run --test_timeout=14400 //e2e/miniconstellation:push_remote_test
+
+    - name: Clean up after failure
+      shell: bash
+      # clean up if e2e test failed or if the run was cancelled
+      if: (failure() && steps.e2e-test.conclusion == 'failure') || cancelled()
+      run: |
+        terraform destroy -auto-approve
