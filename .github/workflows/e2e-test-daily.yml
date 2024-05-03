@@ -46,10 +46,15 @@ jobs:
       max-parallel: 5
       matrix:
         kubernetesVersion: ["1.28"] # should be default
-        # TODO(msanft): Enable GCP SEV-SNP once stable GCP SEV-SNP images exist.
-        attestationVariant: ["gcp-sev-es", "azure-sev-snp", "azure-tdx", "aws-sev-snp"]
+        attestationVariant: ["gcp-sev-es", "gcp-sev-snp", "azure-sev-snp", "azure-tdx", "aws-sev-snp"]
         refStream: ["ref/main/stream/debug/?", "ref/release/stream/stable/?"]
         test: ["sonobuoy quick"]
+        exclude:
+          # TODO(v2.18 msanft): Remove exclude rule for GCP SEV-SNP stable once images exist.
+          - kubernetesVersion: "1.28"
+            attestationVariant: "gcp-sev-snp"
+            refStream: "ref/release/stream/stable/?"
+            test: "sonobuoy quick"
     runs-on: ubuntu-22.04
     permissions:
       id-token: write
@@ -129,7 +134,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         uses: ./.github/actions/update_tfstate
         with:
-          name: terraform-state-${{ steps.e2e_test.outputs.namePrefix }} 
+          name: terraform-state-${{ steps.e2e_test.outputs.namePrefix }}
           runID: ${{ github.run_id }}
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
