@@ -27,7 +27,8 @@ resource "aws_instance" "jump_host" {
   vpc_security_group_ids = var.security_groups
 
   tags = merge(var.additional_tags, {
-    "Name" = "${var.base_name}-jump-host"
+    "Name"               = "${var.base_name}-jump-host",
+    "constellation-role" = "jump-host",
   })
 
   user_data = <<EOF
