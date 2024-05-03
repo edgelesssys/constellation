@@ -3,7 +3,8 @@
 clean_up() {
   echo "::group::Terminate"
 
-  terraform destroy -auto-approve
+  # terraform destroy -auto-approve
+  exit 1
 
   echo "::endgroup::"
 }
