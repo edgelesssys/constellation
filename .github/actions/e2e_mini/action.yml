@@ -52,4 +52,5 @@ runs:
       if: (failure() && steps.e2e-test.conclusion == 'failure') || cancelled()
       run: |
         cd e2e/miniconstellation
+        terraform init
         terraform destroy -auto-approve
