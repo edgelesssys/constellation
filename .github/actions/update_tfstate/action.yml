@@ -2,7 +2,7 @@ name: Update TFState
 description: "Update the terraform state artifact."
 
 inputs:
-  name: 
+  name:
     description: "The name of the artifact that contains the tfstate."
     required: true
   runID:
@@ -20,17 +20,17 @@ runs:
   using: "composite"
   steps:
     - name: Check if tfstate should be deleted
-      if: always() && ${{ inputs.skipDeletion }} == "false"
+      if: always() && inputs.skipDeletion == 'false'
       shell: bash
       run: |
-        if [ ! -d constellation-terraform ] && [ ! -d constellation-iam-terraform ]; then
-        echo "DELETE_TF_STATE=true" >> "$GITHUB_ENV"     
+        if [[ ! -d constellation-terraform ]] && [[ ! -d constellation-iam-terraform ]]; then
+          echo "DELETE_TF_STATE=true" >> "$GITHUB_ENV"
         else
-        echo "DELETE_TF_STATE=false" >> "$GITHUB_ENV"
+          echo "DELETE_TF_STATE=false" >> "$GITHUB_ENV"
         fi
 
     - name: Delete tfstate artifact if necessary
-      if: always() && env.DELETE_TF_STATE == 'true' && ${{ inputs.skipDeletion }} == "false"
+      if: always() && env.DELETE_TF_STATE == 'true' && inputs.skipDeletion == 'false'
       uses: ./.github/actions/artifact_delete
       with:
         name: ${{ inputs.name }}
@@ -41,22 +41,24 @@ runs:
       shell: bash
       run: |
         rm -rf to-zip/*
+        mkdir -p to-zip
+
         to_upload=""
-        if [ -d constellation-terraform ]; then
-        cp -r constellation-terraform to-zip
-        rm to-zip/constellation-terraform/plan.zip
-        rm -rf to-zip/constellation-terraform/.terraform
-        to_upload+="to-zip/constellation-terraform"
+        if [[ -d constellation-terraform ]]; then
+          cp -r constellation-terraform to-zip
+          rm -f to-zip/constellation-terraform/plan.zip
+          rm -rf to-zip/constellation-terraform/.terraform
+          to_upload+="to-zip/constellation-terraform"
         fi
-        if [ -d constellation-iam-terraform ]; then
-        cp -r constellation-iam-terraform to-zip
-        rm -rf to-zip/constellation-iam-terraform/.terraform
-        to_upload+=" to-zip/constellation-iam-terraform"
+        if [[ -d constellation-iam-terraform ]]; then
+          cp -r constellation-iam-terraform to-zip
+          rm -rf to-zip/constellation-iam-terraform/.terraform
+          to_upload+=" to-zip/constellation-iam-terraform"
         fi
         echo "TO_UPLOAD=$to_upload" >> "$GITHUB_ENV"
 
     - name: Update tfstate
-      if: always()
+      if: always() && env.TO_UPLOAD != ''
       uses: ./.github/actions/artifact_upload
       with:
         name: ${{ inputs.name }}
@@ -64,5 +66,3 @@ runs:
           ${{ env.TO_UPLOAD }}
         encryptionSecret: ${{ inputs.encryptionSecret }}
         overwrite: true
-
-
