@@ -240,7 +240,7 @@ module "jump_host" {
   base_name      = local.name
   zone           = var.zone
   subnetwork     = google_compute_subnetwork.vpc_subnetwork.id
-  labels         = local.labels
+  labels         = var.additional_labels
   lb_internal_ip = google_compute_address.loadbalancer_ip_internal[0].address
   ports          = [for port in local.control_plane_named_ports : port.port]
 }

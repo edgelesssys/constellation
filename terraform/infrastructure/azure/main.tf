@@ -276,7 +276,7 @@ module "jump_host" {
   subnet_id      = azurerm_subnet.loadbalancer_subnet[0].id
   ports          = [for port in local.ports : port.port]
   lb_internal_ip = azurerm_lb.loadbalancer.frontend_ip_configuration[0].private_ip_address
-  tags           = local.tags
+  tags           = var.additional_tags
 }
 
 data "azurerm_subscription" "current" {
