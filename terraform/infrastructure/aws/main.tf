@@ -213,5 +213,5 @@ module "jump_host" {
   ports                = [for port in local.load_balancer_ports : port.port]
   security_groups      = [aws_security_group.security_group.id]
   iam_instance_profile = var.iam_instance_profile_name_worker_nodes
-  additional_tags      = local.tags
+  additional_tags      = var.additional_tags
 }
