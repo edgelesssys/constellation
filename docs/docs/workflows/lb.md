@@ -24,5 +24,5 @@ If a service can be exposed on a `NodePort`, the target type `instance` can be u
 See [Application load balancing on Amazon EKS](https://docs.aws.amazon.com/eks/latest/userguide/alb-ingress.html) for more information.
 
 :::caution
-Ingress handlers backed by AWS ALBs reside outside the Constellation cluster, so they should not be handling sensitive traffic.
+Ingress handlers backed by AWS ALBs reside outside the Constellation cluster, so they shouldn't be handling sensitive traffic!
 :::
