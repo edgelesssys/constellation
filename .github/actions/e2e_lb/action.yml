@@ -6,7 +6,7 @@ inputs:
     description: "The kubeconfig of the cluster to test."
     required: true
   cloudProvider:
-    description: TODO
+    description: "The CSP this test runs on. Some tests exercise functionality not supported everywhere."
     required: false
 
 runs:
@@ -21,7 +21,9 @@ runs:
       run: |
         kubectl apply -f ns.yml
         kubectl apply -f lb.yml
-    - name: Add AWS Ingress
+        bazel run //e2e/internal/lb:lb_test
+
+    - name: Test AWS Ingress
       if: inputs.cloudProvider == 'aws'
       shell: bash
       env:
@@ -38,12 +40,7 @@ runs:
         echo "::error::Ingress did not become ready in the alloted time."
         kubectl describe ing -n lb-test
         exit 1
-    - name: Run test
-      shell: bash
-      env:
-        KUBECONFIG: ${{ inputs.kubeconfig }}
-      run: |
-        bazel run //e2e/internal/lb:lb_test
+
     - name: Delete deployment
       if: always()
       shell: bash
