@@ -23,4 +23,4 @@ runs:
     - name: Cleanup Terraform module dir
       shell: bash
       run: |
-        rm -r terraform-module terraform-module.zip
+        rm -f terraform-module terraform-module.zip
