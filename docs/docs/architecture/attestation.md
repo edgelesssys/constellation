@@ -348,7 +348,7 @@ In this section, we put the aforementioned concepts together and illustrate how 
 
 It all starts with the CLI executable. The CLI is signed by Edgeless Systems. To ensure non-repudiability for CLI releases, Edgeless Systems publishes corresponding signatures to the public ledger of the [sigstore project](https://www.sigstore.dev/). There's a [step-by-step guide](../workflows/verify-cli.md) on how to verify CLI signatures based on sigstore.
 
-The CLI contains the latest runtime measurements of the Constellation node image for all supported cloud platforms. In case a different version of the node image is to be used, the corresponding runtime measurements can be fetched using the CLI's [fetch-measurements command](reference/cli#constellation-config-fetch-measurements). This command downloads the runtime measurements and the corresponding signature from cdn.confidential.cloud. See for example the following files corresponding to node image v2.16.3:
+The CLI contains the latest runtime measurements of the Constellation node image for all supported cloud platforms. In case a different version of the node image is to be used, the corresponding runtime measurements can be fetched using the CLI's [fetch-measurements command](../reference/cli.md#constellation-config-fetch-measurements). This command downloads the runtime measurements and the corresponding signature from cdn.confidential.cloud. See for example the following files corresponding to node image v2.16.3:
 * [Measurements](https://cdn.confidential.cloud/constellation/v2/ref/-/stream/stable/v2.16.3/image/measurements.json)
 * [Signature](https://cdn.confidential.cloud/constellation/v2/ref/-/stream/stable/v2.16.3/image/measurements.json.sig)
 
