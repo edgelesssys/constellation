@@ -20,7 +20,7 @@ runs:
       uses: ./.github/actions/setup_bazel_nix
       with:
         nixTools: |
-          unzip
+          _7zz
 
     - name: Create temporary directory
       id: tempdir
@@ -37,4 +37,4 @@ runs:
       shell: bash
       run: |
         mkdir -p ${{ inputs.path }}
-        unzip -P '${{ inputs.encryptionSecret }}' -qq -d ${{ inputs.path }} ${{ steps.tempdir.outputs.directory }}/archive.zip
+        7zz x -p'${{ inputs.encryptionSecret }}' -t7z -o"${{ inputs.path }}" ${{ steps.tempdir.outputs.directory }}/archive.zip
