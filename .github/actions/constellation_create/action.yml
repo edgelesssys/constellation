@@ -262,7 +262,7 @@ runs:
         mkdir to-zip
         cp -r constellation-terraform to-zip
         cp -r constellation-iam-terraform to-zip
-        rm to-zip/constellation-terraform/plan.zip
+        rm -f to-zip/constellation-terraform/plan.zip
         rm -rf to-zip/constellation-terraform/.terraform to-zip/constellation-iam-terraform/.terraform
 
     - name: Upload terraform state
