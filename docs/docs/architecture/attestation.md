@@ -383,7 +383,7 @@ flowchart LR
 
 ### Upgrades
 
-Whenever a cluster is [upgraded](../workflows/upgrade.md) to a new version of the node image, the CLI sends the corresponding runtime measurements via the Kubernetes API server. The new runtime measurements are stored in etcd within the cluster and replace any previous runtime measurements. The new runtime measurements are then used automatically by the JoinServer for the verification of new nodes. 
+Whenever a cluster is [upgraded](../workflows/upgrade.md) to a new version of the node image, the CLI sends the corresponding runtime measurements via the Kubernetes API server. The new runtime measurements are stored in etcd within the cluster and replace any previous runtime measurements. The new runtime measurements are then used automatically by the JoinService for the verification of new nodes. 
 
 ## References
 
