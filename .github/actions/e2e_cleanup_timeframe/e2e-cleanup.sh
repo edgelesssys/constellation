@@ -76,7 +76,7 @@ for directory in ./terraform-state-*; do
   echo "    extracting $directory"
 
   # extract and decrypt the artifact
-  unzip -d "${directory}" -P "$artifact_pwd" "$directory/archive.zip" > /dev/null || exit 1
+  7zz x -t7z -p"${artifact_pwd}" -o"${directory}" "${directory}/archive.7z" > /dev/null || exit 1
 done
 
 # create terraform caching directory
