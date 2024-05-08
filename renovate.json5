@@ -42,40 +42,20 @@
       "prPriority": -30,
     },
     {
-      "matchDepPatterns": ["^k8s.io", "^sigs.k8s.io"],
-      "groupName": "K8s dependencies",
-    },
-    {
-      "matchDepPatterns": ["^go.etcd.io/etcd"],
-      "groupName": "etcd dependencies",
-    },
-    {
-      "matchDepPatterns": ["^github.com/hashicorp/go-kms-wrapping"],
-      "groupName": "github.com/hashicorp/go-kms-wrapping",
-    },
-    {
-      "matchDepPatterns": ["^github.com/aws/aws-sdk-go-v2"],
-      "groupName": "AWS SDK",
-      "prPriority": -10,
-    },
-    {
-      "matchDepPatterns": [
-        "^github.com/Azure/",
-        "^github.com/AzureAD/microsoft-authentication-library-for-go",
+      // Group update of direct Go dependencies.
+      "groupName": "Go dependencies",
+      "matchManagers": ["gomod"],
+      "matchDepTypes": ["require"],
+      "matchUpdateTypes": [
+        "bump",
+        "digest",
+        "lockFileMaintenance",
+        "minor",
+        "patch",
+        "pin",
+        "pinDigest",
+        "rollback",
       ],
-      "groupName": "Azure SDK",
-    },
-    {
-      "matchDepPatterns": ["^cloud.google.com/go"],
-      "groupName": "Google SDK",
-    },
-    {
-      "matchDepPatterns": ["^google.golang.org/genproto"],
-      "prPriority": -10,
-    },
-    {
-      "matchDepPatterns": ["^libvirt.org/go"],
-      "groupName": "libvirt.org/go",
     },
     {
       "matchManagers": ["bazelisk", "bazel", "bazel-module"],
@@ -84,7 +64,7 @@
     },
     {
       "matchDatasources": ["golang-version"],
-      "allowedVersions": "1.19",
+      "allowedVersions": "1.22",
     },
     {
       "matchManagers": ["pip_requirements"],
