@@ -170,7 +170,7 @@ load("@io_bazel_rules_go//go:deps.bzl", "go_download_sdk", "go_register_toolchai
 go_download_sdk(
     name = "go_sdk",
     patches = ["//3rdparty/bazel/org_golang:go_tls_max_handshake_size.patch"],
-    version = "1.22.2",
+    version = "1.22.3",
 )
 
 go_rules_dependencies()
