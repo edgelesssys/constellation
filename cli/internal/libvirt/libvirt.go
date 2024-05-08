@@ -17,9 +17,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/image"
 	docker "github.com/docker/docker/client"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
@@ -101,7 +101,7 @@ func (r *Runner) Start(ctx context.Context, name, imageName string) error {
 func (r *Runner) startNewContainer(ctx context.Context, docker *docker.Client, containerName, imageName string) error {
 	// check if image exists locally, if not pull it
 	// this allows us to use a custom image without having to push it to a registry
-	images, err := docker.ImageList(ctx, types.ImageListOptions{
+	images, err := docker.ImageList(ctx, image.ListOptions{
 		Filters: filters.NewArgs(
 			filters.KeyValuePair{
 				Key:   "reference",
@@ -113,7 +113,7 @@ func (r *Runner) startNewContainer(ctx context.Context, docker *docker.Client, c
 		return err
 	}
 	if len(images) == 0 {
-		reader, err := docker.ImagePull(ctx, imageName, types.ImagePullOptions{})
+		reader, err := docker.ImagePull(ctx, imageName, image.PullOptions{})
 		if err != nil {
 			return fmt.Errorf("failed to pull image %q: %w", imageName, err)
 		}
