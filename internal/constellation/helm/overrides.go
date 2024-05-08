@@ -33,14 +33,6 @@ import (
 // Also, the charts are not rendered correctly without all of these values.
 func extraCiliumValues(provider cloudprovider.Provider, conformanceMode bool, output state.Infrastructure) map[string]any {
 	extraVals := map[string]any{}
-	if conformanceMode {
-		extraVals["kubeProxyReplacementHealthzBindAddr"] = ""
-		extraVals["kubeProxyReplacement"] = "partial"
-		extraVals["sessionAffinity"] = true
-		extraVals["cni"] = map[string]any{
-			"chainingMode": "portmap",
-		}
-	}
 
 	strictMode := map[string]any{}
 	// TODO(@3u13r): Once we are able to set the subnet of the load balancer VMs
@@ -73,6 +65,28 @@ func extraCiliumValues(provider cloudprovider.Provider, conformanceMode bool, ou
 		"config": map[string]any{
 			"nonMasqueradeCIDRs": masqCIDRs,
 		},
+	}
+
+	// When --conformance is set, we try to mitigate https://github.com/cilium/cilium/issues/9207
+	// Users are discouraged of ever using this mode, except if they truly
+	// require protocol differentiation to work and cannot mitigate that any other way.
+	// Since there should always be workarounds, we only support this mode to
+	// pass the K8s conformance tests. It is not supported to switch to or from
+	// this mode after Constellation has been initialized.
+	// This only works for the K8s conformance tests up to K8s 1.28.
+	if conformanceMode {
+		extraVals["kubeProxyReplacementHealthzBindAddr"] = ""
+		extraVals["kubeProxyReplacement"] = "false"
+		extraVals["sessionAffinity"] = true
+		extraVals["cni"] = map[string]any{
+			"chainingMode": "portmap",
+		}
+		extraVals["ipMasqAgent"] = map[string]any{
+			"enabled": false,
+		}
+		extraVals["bpf"] = map[string]any{
+			"masquerade": false,
+		}
 	}
 
 	return extraVals
