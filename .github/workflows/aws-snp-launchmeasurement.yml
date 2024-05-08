@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
     - name: Checkout repository
-      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
       with:
         ref: ${{ github.head_ref }}
         path: constellation
@@ -27,7 +27,7 @@ jobs:
 
     - name: Download Firmware release
       id: download-firmware
-      uses: robinraju/release-downloader@368754b9c6f47c345fcfbf42bcb577c2f0f5f395 # v1.9
+      uses: robinraju/release-downloader@c39a3b234af58f0cf85888573d361fb6fa281534 # v1.10
       with:
         repository: aws/uefi
         latest: true
@@ -50,7 +50,7 @@ jobs:
         echo "ovmfPath=${ovmfPath}" | tee -a "$GITHUB_OUTPUT"
         popd || exit 1
 
-    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+    - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
       with:
         repository: virtee/sev-snp-measure-go.git
         ref: e42b6f8991ed5a671d5d1e02a6b61f6373f9f8d8

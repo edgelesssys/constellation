@@ -16,12 +16,12 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
       - name: Vale
-        uses: errata-ai/vale-action@3f7188c866bcb3259339a09f517d7c4a8838303c # tag=reviewdog
+        uses: errata-ai/vale-action@38bf078c328061f59879b347ca344a718a736018 # tag=reviewdog
         with:
           files: docs/docs
           fail_on_error: true

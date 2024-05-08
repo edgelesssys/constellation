@@ -31,7 +31,7 @@ jobs:
     steps:
       - name: Checkout
         id: checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
         with:
           # Don't trigger in forks, use head on pull requests, use default otherwise.
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || github.event.pull_request.head.sha || '' }}
