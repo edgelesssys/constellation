@@ -42,44 +42,44 @@
       "prPriority": -30,
     },
     {
-      "matchPackagePatterns": ["^k8s.io", "^sigs.k8s.io"],
+      "matchDepPatterns": ["^k8s.io", "^sigs.k8s.io"],
       "groupName": "K8s dependencies",
     },
     {
-      "matchPackagePatterns": ["^go.etcd.io/etcd"],
+      "matchDepPatterns": ["^go.etcd.io/etcd"],
       "groupName": "etcd dependencies",
     },
     {
-      "matchPackagePatterns": ["^github.com/hashicorp/go-kms-wrapping"],
+      "matchDepPatterns": ["^github.com/hashicorp/go-kms-wrapping"],
       "groupName": "github.com/hashicorp/go-kms-wrapping",
     },
     {
-      "matchPackagePatterns": ["^github.com/aws/aws-sdk-go-v2"],
+      "matchDepPatterns": ["^github.com/aws/aws-sdk-go-v2"],
       "groupName": "AWS SDK",
       "prPriority": -10,
     },
     {
-      "matchPackagePatterns": [
+      "matchDepPatterns": [
         "^github.com/Azure/",
         "^github.com/AzureAD/microsoft-authentication-library-for-go",
       ],
       "groupName": "Azure SDK",
     },
     {
-      "matchPackagePatterns": ["^cloud.google.com/go"],
+      "matchDepPatterns": ["^cloud.google.com/go"],
       "groupName": "Google SDK",
     },
     {
-      "matchPackagePatterns": ["^google.golang.org/genproto"],
+      "matchDepPatterns": ["^google.golang.org/genproto"],
       "prPriority": -10,
     },
     {
-      "matchPackagePatterns": ["^libvirt.org/go"],
+      "matchDepPatterns": ["^libvirt.org/go"],
       "groupName": "libvirt.org/go",
     },
     {
       "matchManagers": ["bazelisk", "bazel", "bazel-module"],
-      "matchPackageNames": ["bazel", "io_bazel_rules_go", "bazel_gazelle"],
+      "matchDepNames": ["bazel", "io_bazel_rules_go", "bazel_gazelle"],
       "groupName": "bazel (core)",
     },
     {
@@ -105,14 +105,14 @@
       ],
     },
     {
-      "matchPackageNames": ["kubernetes/kubernetes"],
+      "matchDepNames": ["kubernetes/kubernetes"],
       // example match: v1.2.3 (1.2 -> compatibility, 3 -> patch)
       "versioning": "regex:^(?<compatibility>v?\\d+\\.\\d+\\.)(?<patch>\\d+)$",
       "groupName": "Kubernetes versions",
       "prPriority": 15,
     },
     {
-      "matchPackageNames": [
+      "matchDepNames": [
         "registry.k8s.io/provider-aws/cloud-controller-manager",
       ],
       // example match: v1.2.3 (1.2 -> compatibility, 3 -> patch)
@@ -121,7 +121,7 @@
       "prPriority": 15,
     },
     {
-      "matchPackageNames": [
+      "matchDepNames": [
         "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager",
         "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager",
       ],
@@ -131,7 +131,7 @@
       "prPriority": 15,
     },
     {
-      "matchPackageNames": [
+      "matchDepNames": [
         "docker.io/k8scloudprovider/openstack-cloud-controller-manager",
       ],
       // example match: v1.2.3 (1.2 -> compatibility, 3 -> patch)
@@ -140,14 +140,14 @@
       "prPriority": 15,
     },
     {
-      "matchPackageNames": ["registry.k8s.io/autoscaling/cluster-autoscaler"],
+      "matchDepNames": ["registry.k8s.io/autoscaling/cluster-autoscaler"],
       // example match: v1.2.3 (1.2 -> compatibility, 3 -> patch)
       "versioning": "regex:^(?<compatibility>v?\\d+\\.\\d+\\.)(?<patch>\\d+)$",
       "groupName": "K8s constrained GCP versions",
       "prPriority": 15,
     },
     {
-      "matchPackageNames": ["ghcr.io/edgelesssys/cloud-provider-gcp"],
+      "matchDepNames": ["ghcr.io/edgelesssys/cloud-provider-gcp"],
       // example match: v1.2.3 (1. -> compatibility, 2 -> minor, 3 -> patch)
       "versioning": "regex:^(?<compatibility>v\\d+\\.)(?<minor>\\d+)\\.(?<patch>\\d+)$",
       "groupName": "cloud-provider-gcp (K8s version constrained)",
@@ -166,7 +166,7 @@
       "prPriority": 20,
     },
     {
-      "matchPackageNames": [
+      "matchDepNames": [
         "registry.k8s.io/kas-network-proxy/proxy-agent",
         "registry.k8s.io/kas-network-proxy/proxy-server",
       ],
@@ -175,7 +175,7 @@
       "prPriority": 15,
     },
     {
-      "matchPackageNames": ["^k8s.io/client-go"],
+      "matchDepNames": ["^k8s.io/client-go"],
       "matchUpdateTypes": ["major"],
       "enabled": false,
     },
@@ -185,11 +185,11 @@
     },
     {
       "matchManagers": ["github-actions"],
-      "matchPackageNames": ["slsa-framework/slsa-github-generator"],
+      "matchDepNames": ["slsa-framework/slsa-github-generator"],
       "pinDigests": false,
     },
     {
-      "matchPackagePatterns": ["_(darwin|linux)_(arm64|amd64)$"],
+      "matchDepPatterns": ["_(darwin|linux)_(arm64|amd64)$"],
       "additionalBranchPrefix": "{{packageName}}-",
       "groupName": "{{packageName}}",
     },
