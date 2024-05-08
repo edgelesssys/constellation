@@ -1,5 +1,5 @@
 name: Update TFState
-description: "Update the terraform state artifact."
+description: "Update the terraform state artifact. We use this to either delete an artifact if the e2e test was cleaned up successfully or to update the artifact with the latest terraform state."
 
 inputs:
   name:
@@ -11,33 +11,29 @@ inputs:
   encryptionSecret:
     description: "The encryption secret for the artifacts."
     required: true
-  skipDeletion:
-    description: "Don't try to delete the artifact before updating. You should only use this if you know that no artifact exists."
-    default: "false"
-    required: false
 
 runs:
   using: "composite"
   steps:
-    - name: Check if tfstate should be deleted
-      if: always() && inputs.skipDeletion == 'false'
+    - name: Check if uploaded tfstate can be deleted
+      if: always()
       shell: bash
       run: |
-        if [[ -d constellation-terraform ]] || [[ -d constellation-iam-terraform ]]; then
+        if [[ ! -d constellation-terraform ]] && [[ ! -d constellation-iam-terraform ]]; then
           echo "DELETE_TF_STATE=true" >> "$GITHUB_ENV"
         else
           echo "DELETE_TF_STATE=false" >> "$GITHUB_ENV"
         fi
 
     - name: Delete tfstate artifact if necessary
-      if: always() && env.DELETE_TF_STATE == 'true' && inputs.skipDeletion == 'false'
+      if: always() && env.DELETE_TF_STATE == 'true'
       uses: ./.github/actions/artifact_delete
       with:
         name: ${{ inputs.name }}
         workflowID: ${{ inputs.runID }}
 
-    - name: Prepare terraform state folders
-      if: always()
+    - name: Prepare left over terraform state folders
+      if: always() && env.DELETE_TF_STATE == 'false'
       shell: bash
       run: |
         rm -rf to-zip/*

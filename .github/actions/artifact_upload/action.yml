@@ -22,13 +22,51 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Install zip
+    - name: Install 7zip
       uses: ./.github/actions/setup_bazel_nix
       with:
         nixTools: |
-          zip
+          _7zz
 
     - name: Create temporary directory
       id: tempdir
       shell: bash
       run: echo "directory=$(mktemp -d)" >> "$GITHUB_OUTPUT"
+
+    - name: Create archive
+      shell: bash
+      run: |
+        shopt -s extglob
+        paths="${{ inputs.path }}"
+        paths=${paths%$'\n'} # Remove trailing newline
+        # Check if any file matches the given pattern(s).
+        something_exists=false
+        for pattern in ${paths}
+        do
+          if compgen -G "${pattern}" > /dev/null; then
+            something_exists=true
+          fi
+        done
+        # Create an archive if files exist.
+        # Don't create an archive file if no files are found
+        # and warn.
+        if ! ${something_exists}
+        then
+          echo "::warning:: No files/directories found with the provided path(s): ${paths}. No artifact will be uploaded."
+          exit 0
+        fi
+        for target in ${paths}
+        do
+          pushd "$(dirname "${target}")" || exit 1
+          7zz a -p'${{ inputs.encryptionSecret }}' -t7z -ms=on -mhe=on "${{ steps.tempdir.outputs.directory }}/archive.7z" "$(basename "${target}")"
+          popd || exit 1
+        done
+
+    - name: Upload archive as artifact
+      uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ steps.tempdir.outputs.directory }}/archive.7z
+        retention-days: ${{ inputs.retention-days }}
+        if-no-files-found: ignore
+        overwrite: ${{ inputs.overwrite }}
