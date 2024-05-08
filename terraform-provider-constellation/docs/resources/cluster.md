@@ -69,7 +69,7 @@ resource "constellation_cluster" "azure_example" {
 See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview/clouds) that Constellation supports.
 - `image` (Attributes) Constellation OS Image to use on the nodes. (see [below for nested schema](#nestedatt--image))
 - `init_secret` (String) Secret used for initialization of the cluster.
-- `kubernetes_version` (String) The Kubernetes version to use for the cluster. The supported versions are [v1.27.9 v1.28.5 v1.29.0].
+- `kubernetes_version` (String) The Kubernetes version to use for the cluster. The supported versions are [v1.27.13 v1.28.9 v1.29.4].
 - `master_secret` (String) Hex-encoded 32-byte master secret for the cluster.
 - `master_secret_salt` (String) Hex-encoded 32-byte master secret salt for the cluster.
 - `measurement_salt` (String) Hex-encoded 32-byte measurement salt for the cluster.
