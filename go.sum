@@ -167,8 +167,8 @@ github.com/aws/aws-sdk-go-v2/service/sts v1.28.6 h1:cwIxeBttqPN3qkaAjcEcsh8NYr8n
 github.com/aws/aws-sdk-go-v2/service/sts v1.28.6/go.mod h1:FZf1/nKNEkHdGGJP/cI2MoIMquumuRK6ol3QQJNDxmw=
 github.com/aws/smithy-go v1.20.2 h1:tbp628ireGtzcHDDmLT/6ADHidqnwgF57XOXZe6tp4Q=
 github.com/aws/smithy-go v1.20.2/go.mod h1:krry+ya/rV9RDcV/Q16kpu6ypI4K2czasz0NC3qS14E=
-github.com/bazelbuild/buildtools v0.0.0-20240422193413-1429e15ae755 h1:hqhMmuZiSNwCWVHqnpr4DZfIeZ2/aJF7fs207eg7HZo=
-github.com/bazelbuild/buildtools v0.0.0-20240422193413-1429e15ae755/go.mod h1:689QdV3hBP7Vo9dJMmzhoYIyo/9iMhEmHkJcnaPRCbo=
+github.com/bazelbuild/buildtools v0.0.0-20230317132445-9c3c1fc0106e h1:XmPu4mXICgdGnC5dXGjUGbwUD/kUmS0l5Aop3LaevBM=
+github.com/bazelbuild/buildtools v0.0.0-20230317132445-9c3c1fc0106e/go.mod h1:689QdV3hBP7Vo9dJMmzhoYIyo/9iMhEmHkJcnaPRCbo=
 github.com/bazelbuild/rules_go v0.47.1 h1:9s9FA2l8IAxCbwV97E1WLu5ai21muLNrjZRV0+agTRs=
 github.com/bazelbuild/rules_go v0.47.1/go.mod h1:Dhcz716Kqg1RHNWos+N6MlXNkjNP2EwZQ0LukRKJfMs=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=

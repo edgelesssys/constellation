@@ -660,8 +660,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/bazelbuild/buildtools",
-        sum = "h1:hqhMmuZiSNwCWVHqnpr4DZfIeZ2/aJF7fs207eg7HZo=",
-        version = "v0.0.0-20240422193413-1429e15ae755",
+        sum = "h1:XmPu4mXICgdGnC5dXGjUGbwUD/kUmS0l5Aop3LaevBM=",
+        version = "v0.0.0-20230317132445-9c3c1fc0106e",
     )
     go_repository(
         name = "com_github_bazelbuild_rules_go",

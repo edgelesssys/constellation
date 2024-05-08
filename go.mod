@@ -1,8 +1,6 @@
 module github.com/edgelesssys/constellation/v2
 
-go 1.22.2
-
-toolchain go1.22.3
+go 1.22.3
 
 replace (
 	k8s.io/api v0.0.0 => k8s.io/api v0.29.0
@@ -71,7 +69,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.53.1
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.28.6
 	github.com/aws/smithy-go v1.20.2
-	github.com/bazelbuild/buildtools v0.0.0-20240422193413-1429e15ae755
+	github.com/bazelbuild/buildtools v0.0.0-20230317132445-9c3c1fc0106e
 	github.com/bazelbuild/rules_go v0.47.1
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/docker/docker v26.1.1+incompatible
