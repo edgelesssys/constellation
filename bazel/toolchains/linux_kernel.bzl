@@ -47,36 +47,36 @@ def kernel_rpms():
     http_file(
         name = "kernel_mainline",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/303506771939b324c32c2d7df4ce2a8ca08af4fe0fec77712084bdd3c1481bc9",
-            "https://kojipkgs.fedoraproject.org/packages/kernel/6.7.6/100.fc38/x86_64/kernel-6.7.6-100.fc38.x86_64.rpm",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/199d3aa46ed1325bb37e163a7f649a4f4dc739421389b7e9d9697af25c589a92",
+            "https://kojipkgs.fedoraproject.org/packages/kernel/6.8.9/100.fc38/x86_64/kernel-6.8.9-100.fc38.x86_64.rpm",
         ],
         downloaded_file_path = "kernel-mainline.rpm",
-        sha256 = "303506771939b324c32c2d7df4ce2a8ca08af4fe0fec77712084bdd3c1481bc9",
+        sha256 = "199d3aa46ed1325bb37e163a7f649a4f4dc739421389b7e9d9697af25c589a92",
     )
     http_file(
         name = "kernel_core_mainline",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/f51347ddeca348494fe20a898b455f84e1e7c4cda6832fb5dc2d092b94ddc039",
-            "https://kojipkgs.fedoraproject.org/packages/kernel/6.7.6/100.fc38/x86_64/kernel-core-6.7.6-100.fc38.x86_64.rpm",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/aa58f8a6850e67b3e8e93240e0d62a56cee55ddb7a14df6346e9c26ce6fb2bce",
+            "https://kojipkgs.fedoraproject.org/packages/kernel/6.8.9/100.fc38/x86_64/kernel-core-6.8.9-100.fc38.x86_64.rpm",
         ],
         downloaded_file_path = "kernel-core-mainline.rpm",
-        sha256 = "f51347ddeca348494fe20a898b455f84e1e7c4cda6832fb5dc2d092b94ddc039",
+        sha256 = "aa58f8a6850e67b3e8e93240e0d62a56cee55ddb7a14df6346e9c26ce6fb2bce",
     )
     http_file(
         name = "kernel_modules_mainline",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/4a0c65aac2628fc24e460f68eb2b1a9b8d749f319d10962257dcfeee7cadb09c",
-            "https://kojipkgs.fedoraproject.org/packages/kernel/6.7.6/100.fc38/x86_64/kernel-modules-6.7.6-100.fc38.x86_64.rpm",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/46ca357ee96f17a37664563b308ee9bee7b21b9b639f3389774e953a9b34ce81",
+            "https://kojipkgs.fedoraproject.org/packages/kernel/6.8.9/100.fc38/x86_64/kernel-modules-6.8.9-100.fc38.x86_64.rpm",
         ],
         downloaded_file_path = "kernel-modules-mainline.rpm",
-        sha256 = "4a0c65aac2628fc24e460f68eb2b1a9b8d749f319d10962257dcfeee7cadb09c",
+        sha256 = "46ca357ee96f17a37664563b308ee9bee7b21b9b639f3389774e953a9b34ce81",
     )
     http_file(
         name = "kernel_modules_core_mainline",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/127a1b895ba6a7842e8503770ccc3b412fca195a9f750bb3f94788c2384ab577",
-            "https://kojipkgs.fedoraproject.org/packages/kernel/6.7.6/100.fc38/x86_64/kernel-modules-core-6.7.6-100.fc38.x86_64.rpm",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/ee983f7784fc5801378d675a4d41a57cafc6525147b601c49a04cea60ac81d79",
+            "https://kojipkgs.fedoraproject.org/packages/kernel/6.8.9/100.fc38/x86_64/kernel-modules-core-6.8.9-100.fc38.x86_64.rpm",
         ],
         downloaded_file_path = "kernel-modules-core-mainline.rpm",
-        sha256 = "127a1b895ba6a7842e8503770ccc3b412fca195a9f750bb3f94788c2384ab577",
+        sha256 = "ee983f7784fc5801378d675a4d41a57cafc6525147b601c49a04cea60ac81d79",
     )
