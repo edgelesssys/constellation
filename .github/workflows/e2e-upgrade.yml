@@ -149,9 +149,6 @@ jobs:
 
       - name: Setup Bazel & Nix
         uses: ./.github/actions/setup_bazel_nix
-        with:
-          useCache: "true"
-          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
 
       - name: Log in to the Container registry
         uses: ./.github/actions/container_registry_login
@@ -206,9 +203,6 @@ jobs:
           ref: ${{ inputs.gitRef }}
 
       - uses: ./.github/actions/setup_bazel_nix
-        with:
-          useCache: "true"
-          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
 
       - name: Create cluster with 'fromVersion' CLI.
         id: e2e_test
@@ -226,7 +220,6 @@ jobs:
           gcpClusterCreateServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
           gcpIAMCreateServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
           test: "upgrade"
-          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
           azureClusterCreateCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
           azureIAMCreateCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
           registry: ghcr.io
@@ -295,9 +288,6 @@ jobs:
 
       - name: Setup Bazel & Nix
         uses: ./.github/actions/setup_bazel_nix
-        with:
-          useCache: "true"
-          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
 
       - name: Login to AWS
         uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2

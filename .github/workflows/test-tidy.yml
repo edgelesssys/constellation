@@ -34,7 +34,6 @@ jobs:
         with:
           useCache: "rbe"
           rbePlatform: "ubuntu-22.04"
-          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
 
       - name: Assume AWS role to upload Bazel dependencies to S3
         if: startsWith(github.head_ref, 'renovate/')

@@ -11,9 +11,6 @@ inputs:
   s3SecretKey:
     description: "Secret key for s3proxy"
     required: true
-  buildBuddyApiKey:
-    description: "BuildBuddy API key"
-    required: true
   githubToken:
     description: "GitHub token"
     required: true
@@ -23,9 +20,6 @@ runs:
   steps:
     - name: Setup bazel
       uses: ./.github/actions/setup_bazel_nix
-      with:
-        useCache: "true"
-        buildBuddyApiKey: ${{ inputs.buildBuddyApiKey }}
 
     - name: Get pseudoversion
       id: pseudoversion

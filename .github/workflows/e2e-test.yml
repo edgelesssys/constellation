@@ -246,7 +246,6 @@ jobs:
           osImage: ${{ needs.find-latest-image.outputs.image }}
           cliVersion: ${{ inputs.cliVersion }}
           isDebugImage: ${{ needs.find-latest-image.outputs.isDebugImage }}
-          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
           azureClusterCreateCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
           azureIAMCreateCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
           registry: ghcr.io

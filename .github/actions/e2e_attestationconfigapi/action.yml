@@ -5,9 +5,6 @@ inputs:
   csp:
     description: "Cloud provider to run tests against"
     default: "azure"
-  buildBuddyApiKey:
-    description: "BuildBuddy API key for caching Bazel artifacts"
-    required: true
   cosignPrivateKey:
     description: "Cosign private key"
     required: true
@@ -20,9 +17,6 @@ runs:
   steps:
     - name: Setup bazel
       uses: ./.github/actions/setup_bazel_nix
-      with:
-        useCache: "true"
-        buildBuddyApiKey: ${{ inputs.buildBuddyApiKey }}
 
     - name: Login to AWS
       uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2

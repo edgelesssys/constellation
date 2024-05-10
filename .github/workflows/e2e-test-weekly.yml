@@ -347,7 +347,6 @@ jobs:
           gcpClusterCreateServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
           gcpIAMCreateServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
           test: ${{ matrix.test }}
-          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
           azureClusterCreateCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
           azureIAMCreateCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
           registry: ghcr.io
@@ -455,7 +454,6 @@ jobs:
           azureClientID: ${{ secrets.AZURE_E2E_MINI_CLIENT_ID }}
           azureSubscriptionID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           azureTenantID: ${{ secrets.AZURE_TENANT_ID }}
-          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
           registry: ghcr.io
           githubToken: ${{ secrets.GITHUB_TOKEN }}
 

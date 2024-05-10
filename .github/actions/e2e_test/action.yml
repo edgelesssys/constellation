@@ -57,8 +57,6 @@ inputs:
     required: true
   sonobuoyTestSuiteCmd:
     description: "The sonobuoy test suite to run."
-  buildBuddyApiKey:
-    description: "BuildBuddy API key for caching Bazel artifacts"
   registry:
     description: "Container registry to use"
     required: true
@@ -139,9 +137,6 @@ runs:
 
     - name: Setup bazel
       uses: ./.github/actions/setup_bazel_nix
-      with:
-        useCache: ${{ inputs.buildBuddyApiKey != '' }}
-        buildBuddyApiKey: ${{ inputs.buildBuddyApiKey }}
 
     - name: Log in to the Container registry
       uses: ./.github/actions/container_registry_login
@@ -412,5 +407,4 @@ runs:
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
         s3AccessKey: ${{ inputs.s3AccessKey }}
         s3SecretKey: ${{ inputs.s3SecretKey }}
-        buildBuddyApiKey: ${{ inputs.buildBuddyApiKey }}
         githubToken: ${{ inputs.githubToken }}
