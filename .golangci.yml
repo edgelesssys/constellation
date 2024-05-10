@@ -4,11 +4,11 @@ run:
     - integration
     - e2e
   modules-download-mode: readonly
-  skip-dirs:
-    - 3rdparty/node-maintenance-operator
 
 output:
-  format: tab
+  formats:
+    - format: tab
+      path: stdout
   sort-results: true
 
 linters:
@@ -38,6 +38,8 @@ linters:
 issues:
   max-issues-per-linter: 0
   max-same-issues: 20
+  exclude-dirs:
+    - 3rdparty/node-maintenance-operator
   include:
     - EXC0012
     - EXC0014
