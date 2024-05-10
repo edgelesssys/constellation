@@ -657,11 +657,13 @@ def go_dependencies():
     )
     go_repository(
         name = "com_github_bazelbuild_buildtools",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
+        # keep
+        build_file_generation = "off",
+        # keep
+        build_file_proto_mode = "default",
         importpath = "github.com/bazelbuild/buildtools",
-        sum = "h1:XmPu4mXICgdGnC5dXGjUGbwUD/kUmS0l5Aop3LaevBM=",
-        version = "v0.0.0-20230317132445-9c3c1fc0106e",
+        sum = "h1:NJPpHVYOUbpKTXp1DU4dL1Ubk8p7wdxfign2lb7QhAM=",
+        version = "v0.0.0-20240417164354-2bc4b5ebbaaf",
     )
     go_repository(
         name = "com_github_bazelbuild_rules_go",
