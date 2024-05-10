@@ -34,7 +34,6 @@ jobs:
       - name: Run Attestationconfig API E2E
         uses: ./.github/actions/e2e_attestationconfigapi
         with:
-          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
           cosignPrivateKey: ${{ secrets.COSIGN_DEV_PRIVATE_KEY }}
           cosignPassword: ${{ secrets.COSIGN_DEV_PASSWORD }}
           csp: ${{ matrix.csp }}

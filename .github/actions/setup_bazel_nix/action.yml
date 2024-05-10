@@ -3,12 +3,9 @@ description: Setup Bazel and Nix for CI builds and tests
 
 inputs:
   useCache:
-    description: "Cache Bazel artifacts. Use 'true' to enable with rw, 'readonly' to download, 'rbe' to enable with remote execution, 'log' to disable cache but upload logs, and 'false' to disable."
+    description: "Cache Bazel artifacts. Use 'rbe' to enable with remote execution, and 'false' to disable."
     default: "false"
     required: true
-  buildBuddyApiKey:
-    description: "BuildBuddy API key for caching Bazel artifacts"
-    required: false
   rbePlatform:
     description: "RBE platform to use. If empty, RBE will not be used."
     required: false
@@ -25,12 +22,8 @@ runs:
       shell: bash
       run: |
         echo "::group::Check inputs"
-        if [[ "${{ inputs.useCache }}" != "true" && "${{ inputs.useCache }}" != "readonly" && "${{ inputs.useCache }}" != "rbe" && "${{ inputs.useCache }}" != "logs" && "${{ inputs.useCache }}" != "false" ]]; then
-          echo "Invalid value for 'useCache' input: '${{ inputs.useCache }}'. Must be 'true', 'readonly', or 'false'."
-          exit 1
-        fi
-        if [[ "${{ inputs.useCache }}" == "true" || "${{ inputs.useCache }}" == "readonly" || "${{ inputs.useCache }}" == "logs" ]] && [[ -z "${{ inputs.buildBuddyApiKey }}" ]]; then
-          echo "BuildBuddy API key is required when cache is enabled."
+        if [[ "${{ inputs.useCache }}" != "rbe" && "${{ inputs.useCache }}" != "false" ]]; then
+          echo "Invalid value for 'useCache' input: '${{ inputs.useCache }}'. Must be 'rbe', or 'false'."
           exit 1
         fi
         if [[ "${{ inputs.useCache }}" == "rbe" && -z "${{ inputs.rbePlatform }}" ]]; then
@@ -182,57 +175,6 @@ runs:
         EOF
         echo "::endgroup::"
 
-    - name: Configure Bazel (rw)
-      if: inputs.useCache == 'true' || inputs.useCache == 'readonly'
-      shell: bash
-      env:
-        BUILDBUDDY_ORG_API_KEY: ${{ inputs.buildBuddyApiKey }}
-        WORKSPACE: ${{ github.workspace }}
-      run: |
-        echo "::group::Configure Bazel"
-        cat <<EOF >> "${WORKSPACE}/.bazeloverwriterc"
-        common --bes_results_url=https://app.buildbuddy.io/invocation/
-        common --bes_backend=grpcs://remote.buildbuddy.io
-        common --remote_cache=grpcs://remote.buildbuddy.io
-        common --remote_header=x-buildbuddy-api-key=${BUILDBUDDY_ORG_API_KEY}
-        cquery --bes_results_url=
-        cquery --bes_backend=
-        cquery --remote_cache=
-        query --bes_results_url=
-        query --bes_backend=
-        query --remote_cache=
-        EOF
-        echo "::endgroup::"
-
-    - name: Configure Bazel (readonly)
-      if: inputs.useCache == 'readonly'
-      shell: bash
-      env:
-        WORKSPACE: ${{ github.workspace }}
-      run: |
-        echo "::group::Configure Bazel (readonly)"
-        echo "common --remote_upload_local_results=false" >> "${WORKSPACE}/.bazeloverwriterc"
-        echo "::endgroup::"
-
-    - name: Configure Bazel (logs)
-      if: inputs.useCache == 'logs'
-      shell: bash
-      env:
-        BUILDBUDDY_ORG_API_KEY: ${{ inputs.buildBuddyApiKey }}
-        WORKSPACE: ${{ github.workspace }}
-      run: |
-        echo "::group::Configure Bazel"
-        cat <<EOF >> "${WORKSPACE}/.bazeloverwriterc"
-        common --bes_results_url=https://app.buildbuddy.io/invocation/
-        common --bes_backend=grpcs://remote.buildbuddy.io
-        common --remote_header=x-buildbuddy-api-key=${BUILDBUDDY_ORG_API_KEY}
-        cquery --bes_results_url=
-        cquery --bes_backend=
-        query --bes_results_url=
-        query --bes_backend=
-        EOF
-        echo "::endgroup::"
-
     - name: Configure Bazel (rbe)
       if: inputs.useCache == 'rbe'
       shell: bash
@@ -245,24 +187,6 @@ runs:
         common --config=${RBE_CONFIG}
         common --repository_cache=/repository_cache
         common --repo_env=GOPROXY=http://goproxy:3000
-        EOF
-        echo "::endgroup::"
-    - name: Configure Bazel (rbe logs)
-      if: inputs.useCache == 'rbe' && inputs.buildBuddyApiKey != ''
-      shell: bash
-      env:
-        BUILDBUDDY_ORG_API_KEY: ${{ inputs.buildBuddyApiKey }}
-        WORKSPACE: ${{ github.workspace }}
-      run: |
-        echo "::group::Configure Bazel"
-        cat <<EOF >> "${WORKSPACE}/.bazeloverwriterc"
-        common --bes_results_url=https://app.buildbuddy.io/invocation/
-        common --bes_backend=grpcs://remote.buildbuddy.io
-        common --remote_header=x-buildbuddy-api-key=${BUILDBUDDY_ORG_API_KEY}
-        cquery --bes_results_url=
-        cquery --bes_backend=
-        query --bes_results_url=
-        query --bes_backend=
         EOF
         echo "::endgroup::"
 

@@ -11,9 +11,6 @@ inputs:
   azureTenantID:
     description: "Azure tenant to use for login with OIDC"
     required: true
-  buildBuddyApiKey:
-    description: "BuildBuddy API key for caching Bazel artifacts"
-    required: true
   registry:
     description: "Container registry to use"
     required: true
@@ -31,9 +28,6 @@ runs:
 
     - name: Setup bazel
       uses: ./.github/actions/setup_bazel_nix
-      with:
-        useCache: "true"
-        buildBuddyApiKey: ${{ inputs.buildBuddyApiKey }}
 
     - name: Log in to the Container registry
       uses: ./.github/actions/container_registry_login

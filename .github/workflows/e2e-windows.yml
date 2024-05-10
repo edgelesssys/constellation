@@ -27,9 +27,6 @@ jobs:
 
       - name: Setup bazel
         uses: ./.github/actions/setup_bazel_nix
-        with:
-          useCache: "true"
-          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
 
       - name: Log in to the Container registry
         uses: ./.github/actions/container_registry_login
@@ -195,9 +192,6 @@ jobs:
 
       - name: Setup bazel
         uses: ./.github/actions/setup_bazel_nix
-        with:
-          useCache: "true"
-          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
 
       - name: Notify about failure
         continue-on-error: true
@@ -207,4 +201,3 @@ jobs:
           test: Windows E2E Test
           provider: Azure
           attestationVariant: "azure-sev-snp"
-

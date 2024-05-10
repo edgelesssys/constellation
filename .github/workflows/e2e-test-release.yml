@@ -349,7 +349,6 @@ jobs:
           gcpClusterCreateServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
           gcpIAMCreateServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
           test: ${{ matrix.test }}
-          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
           azureClusterCreateCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
           azureIAMCreateCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
           registry: ghcr.io
@@ -385,7 +384,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         uses: ./.github/actions/update_tfstate
         with:
-          name: terraform-state-${{ steps.e2e_test.outputs.namePrefix }} 
+          name: terraform-state-${{ steps.e2e_test.outputs.namePrefix }}
           runID: ${{ github.run_id }}
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 

@@ -40,7 +40,6 @@ jobs:
         with:
           useCache: "rbe"
           rbePlatform: "ubuntu-22.04"
-          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
 
       - name: Install AWS cli
         run: |
