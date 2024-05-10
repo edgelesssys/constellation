@@ -5,6 +5,9 @@ inputs:
   kubeconfig:
     description: "The kubeconfig of the cluster to test."
     required: true
+  cloudProvider:
+    description: "The CSP this test runs on. Some tests exercise functionality not supported everywhere."
+    required: false
 
 runs:
   using: "composite"
@@ -20,6 +23,24 @@ runs:
         kubectl apply -f lb.yml
         bazel run //e2e/internal/lb:lb_test
 
+    - name: Test AWS Ingress
+      if: inputs.cloudProvider == 'aws'
+      shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+      working-directory: ./.github/actions/e2e_lb
+      run: |
+        kubectl apply -f aws-ingress.yml
+        kubectl wait -n lb-test ing/whoami --for=jsonpath='{.status.loadBalancer.ingress}' --timeout=5m
+        host=$(kubectl get -n lb-test ingress whoami -o=jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+        for i in $(seq 30); do
+          curl --silent --fail --connect-timeout 5 --output /dev/null http://$host && exit 0
+          sleep 10
+        done
+        echo "::error::Ingress did not become ready in the alloted time."
+        kubectl describe ing -n lb-test
+        exit 1
+
     - name: Delete deployment
       if: always()
       shell: bash
@@ -28,4 +49,5 @@ runs:
       working-directory: ./.github/actions/e2e_lb
       run: |
         kubectl delete -f lb.yml
+        kubectl delete --ignore-not-found -f aws-ingress.yml
         kubectl delete -f ns.yml --timeout=5m
