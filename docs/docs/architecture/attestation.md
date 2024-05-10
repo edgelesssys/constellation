@@ -362,7 +362,7 @@ When a cluster is [created](../workflows/create.md), the CLI automatically verif
 
 After this, the aTLS connection is closed and the first node bootstraps the Kubernetes cluster. All subsequent interactions between the CLI and the cluster go via the [Kubernetes API](https://kubernetes.io/docs/concepts/overview/kubernetes-api/) server running inside the cluster. The CLI (and other tools like kubectl) use the credentials referenced by the kubeconfig file to authenticate themselves towards the Kubernetes API server and to establish a mTLS connection.
 
-The CLI connects to the Kubernetes API to write the the runtime measurements for the applicable node image to etcd. The JoinService uses these runtime measurements to verify all nodes that join the cluster subsequently.
+The CLI connects to the Kubernetes API to write the runtime measurements for the applicable node image to etcd. The JoinService uses these runtime measurements to verify all nodes that join the cluster subsequently.
 
 ### Chain of trust
 
