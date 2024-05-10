@@ -46,11 +46,17 @@ runs:
       run: |
         bazel run --test_timeout=14400 //e2e/miniconstellation:push_remote_test
 
+    - name: Log in to azure
+      # only log in if e2e test failed or if the run was cancelled
+      if: (failure() && steps.e2e-test.conclusion == 'failure') || cancelled()
+      uses: ./.github/actions/login_azure
+      with:
+        azure_credentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
+
     - name: Clean up after failure
       shell: bash
       # clean up if e2e test failed or if the run was cancelled
       if: (failure() && steps.e2e-test.conclusion == 'failure') || cancelled()
       run: |
         cd e2e/miniconstellation
-        terraform init
-        terraform destroy -auto-approve
+        echo $(terraform output -raw rg_name) | xargs az group delete -y --resource-group
