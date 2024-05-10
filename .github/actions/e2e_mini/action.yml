@@ -48,6 +48,8 @@ runs:
         ARM_TENANT_ID: ${{ inputs.azureTenantID }}
       run: |
         bazel run --test_timeout=14400 //e2e/miniconstellation:push_remote_test
+        # TODO: Replace and test with BUILD_WORKING_DIRECTORY
+        echo "bazel-workspace-dir=$BUILD_WORKSPACE_DIRECTORY" >> $GITHUB_OUTPUT
 
     - name: Log in to azure
       # only log in if e2e test failed or if the run was cancelled
@@ -61,7 +63,7 @@ runs:
       # clean up if e2e test failed or if the run was cancelled
       if: (failure() && steps.e2e-test.conclusion == 'failure') || cancelled()
       run: |
-        cd e2e/miniconstellation
+        cd ${{ steps.e2e-test.outputs.bazel-workspace-dir }}/e2e/miniconstellation
         terraform init
         rg_name=$(terraform output -raw rg_name)
         echo "[*] Deleting resource group $rg_name"
