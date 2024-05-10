@@ -11,6 +11,9 @@ inputs:
   azureTenantID:
     description: "Azure tenant to use for login with OIDC"
     required: true
+  azureIAMCredentials:
+    description: "Azure IAM credentials used for cleaning up resources"
+    required: true
   registry:
     description: "Container registry to use"
     required: true
@@ -51,7 +54,7 @@ runs:
       if: (failure() && steps.e2e-test.conclusion == 'failure') || cancelled()
       uses: ./.github/actions/login_azure
       with:
-        azure_credentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
+        azure_credentials: ${{ inputs.azureIAMCredentials }}
 
     - name: Clean up after failure
       shell: bash
