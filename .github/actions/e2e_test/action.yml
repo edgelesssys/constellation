@@ -365,6 +365,7 @@ runs:
       uses: ./.github/actions/e2e_lb
       with:
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
+        cloudProvider: ${{ inputs.cloudProvider }}
 
     - name: Run Performance Benchmark
       if: inputs.test == 'perf-bench'
