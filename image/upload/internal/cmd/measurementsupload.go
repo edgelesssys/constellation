@@ -61,7 +61,7 @@ func runMeasurementsUpload(cmd *cobra.Command, _ []string) error {
 	}
 	defer func() {
 		if err := uploadCClose(cmd.Context()); err != nil {
-			log.Error("closing upload client: %v", err)
+			log.Error("closing upload client", "error", err)
 		}
 	}()
 

@@ -31,7 +31,7 @@ import (
 
 // Validator for AWS TPM attestation.
 type Validator struct {
-	// Embed variant to identify the Validator using varaint.OID().
+	// Embed variant to identify the Validator using variant.OID().
 	variant.AWSSEVSNP
 	// Embed validator to implement Validate method for aTLS handshake.
 	*vtpm.Validator
