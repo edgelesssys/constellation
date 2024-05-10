@@ -19,33 +19,33 @@ def _shellcheck_deps():
     http_archive(
         name = "com_github_koalaman_shellcheck_linux_amd64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/700324c6dd0ebea0117591c6cc9d7350d9c7c5c287acbad7630fa17b1d4d9e2f",
-            "https://github.com/koalaman/shellcheck/releases/download/v0.9.0/shellcheck-v0.9.0.linux.x86_64.tar.xz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/6c881ab0698e4e6ea235245f22832860544f17ba386442fe7e9d629f8cbedf87",
+            "https://github.com/koalaman/shellcheck/releases/download/v0.10.0/shellcheck-v0.10.0.linux.x86_64.tar.xz",
         ],
-        sha256 = "700324c6dd0ebea0117591c6cc9d7350d9c7c5c287acbad7630fa17b1d4d9e2f",
-        strip_prefix = "shellcheck-v0.9.0",
+        sha256 = "6c881ab0698e4e6ea235245f22832860544f17ba386442fe7e9d629f8cbedf87",
+        strip_prefix = "shellcheck-v0.10.0",
         build_file_content = """exports_files(["shellcheck"], visibility = ["//visibility:public"])""",
         type = "tar.xz",
     )
     http_archive(
         name = "com_github_koalaman_shellcheck_linux_arm64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/179c579ef3481317d130adebede74a34dbbc2df961a70916dd4039ebf0735fae",
-            "https://github.com/koalaman/shellcheck/releases/download/v0.9.0/shellcheck-v0.9.0.linux.aarch64.tar.xz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/324a7e89de8fa2aed0d0c28f3dab59cf84c6d74264022c00c22af665ed1a09bb",
+            "https://github.com/koalaman/shellcheck/releases/download/v0.10.0/shellcheck-v0.10.0.linux.aarch64.tar.xz",
         ],
-        sha256 = "179c579ef3481317d130adebede74a34dbbc2df961a70916dd4039ebf0735fae",
-        strip_prefix = "shellcheck-v0.9.0",
+        sha256 = "324a7e89de8fa2aed0d0c28f3dab59cf84c6d74264022c00c22af665ed1a09bb",
+        strip_prefix = "shellcheck-v0.10.0",
         build_file_content = """exports_files(["shellcheck"], visibility = ["//visibility:public"])""",
         type = "tar.xz",
     )
     http_archive(
         name = "com_github_koalaman_shellcheck_darwin_amd64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/7d3730694707605d6e60cec4efcb79a0632d61babc035aa16cda1b897536acf5",
-            "https://github.com/koalaman/shellcheck/releases/download/v0.9.0/shellcheck-v0.9.0.darwin.x86_64.tar.xz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/ef27684f23279d112d8ad84e0823642e43f838993bbb8c0963db9b58a90464c2",
+            "https://github.com/koalaman/shellcheck/releases/download/v0.10.0/shellcheck-v0.10.0.darwin.x86_64.tar.xz",
         ],
-        sha256 = "7d3730694707605d6e60cec4efcb79a0632d61babc035aa16cda1b897536acf5",
-        strip_prefix = "shellcheck-v0.9.0",
+        sha256 = "ef27684f23279d112d8ad84e0823642e43f838993bbb8c0963db9b58a90464c2",
+        strip_prefix = "shellcheck-v0.10.0",
         build_file_content = """exports_files(["shellcheck"], visibility = ["//visibility:public"])""",
         type = "tar.xz",
     )
@@ -97,41 +97,41 @@ def _actionlint_deps():
         name = "com_github_rhysd_actionlint_linux_amd64",
         build_file_content = """exports_files(["actionlint"], visibility = ["//visibility:public"])""",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/f0294c342af98fad4ff917bc32032f28e1b55f76aedf291886ec10bbed7c12e1",
-            "https://github.com/rhysd/actionlint/releases/download/v1.6.26/actionlint_1.6.26_linux_amd64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/8aae9148f61952d11a97651852fdc7dffd2b762ed3cdd28b3c2232ae5f55d4db",
+            "https://github.com/rhysd/actionlint/releases/download/v1.7.0/actionlint_1.7.0_linux_amd64.tar.gz",
         ],
         type = "tar.gz",
-        sha256 = "f0294c342af98fad4ff917bc32032f28e1b55f76aedf291886ec10bbed7c12e1",
+        sha256 = "8aae9148f61952d11a97651852fdc7dffd2b762ed3cdd28b3c2232ae5f55d4db",
     )
     http_archive(
         name = "com_github_rhysd_actionlint_linux_arm64",
         build_file_content = """exports_files(["actionlint"], visibility = ["//visibility:public"])""",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/a1056d85d614af4f6e5517ed2911dab2621b8e97c368c8b265328f9c22801648",
-            "https://github.com/rhysd/actionlint/releases/download/v1.6.26/actionlint_1.6.26_linux_arm64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/8181452246e7e6310b988f83762fc982e03f27eeb53dd4ad33fa4a5f4276b383",
+            "https://github.com/rhysd/actionlint/releases/download/v1.7.0/actionlint_1.7.0_linux_arm64.tar.gz",
         ],
         type = "tar.gz",
-        sha256 = "a1056d85d614af4f6e5517ed2911dab2621b8e97c368c8b265328f9c22801648",
+        sha256 = "8181452246e7e6310b988f83762fc982e03f27eeb53dd4ad33fa4a5f4276b383",
     )
     http_archive(
         name = "com_github_rhysd_actionlint_darwin_amd64",
         build_file_content = """exports_files(["actionlint"], visibility = ["//visibility:public"])""",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/bfa890e77a8508603c785af09a30bbab3a3255d291d8d27efc3f20ac8e303a8e",
-            "https://github.com/rhysd/actionlint/releases/download/v1.6.26/actionlint_1.6.26_darwin_amd64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/138aff674f31bd218030d4b00b3024bf0c721b75a7ec8e90b743763f81e3128e",
+            "https://github.com/rhysd/actionlint/releases/download/v1.7.0/actionlint_1.7.0_darwin_amd64.tar.gz",
         ],
         type = "tar.gz",
-        sha256 = "bfa890e77a8508603c785af09a30bbab3a3255d291d8d27efc3f20ac8e303a8e",
+        sha256 = "138aff674f31bd218030d4b00b3024bf0c721b75a7ec8e90b743763f81e3128e",
     )
     http_archive(
         name = "com_github_rhysd_actionlint_darwin_arm64",
         build_file_content = """exports_files(["actionlint"], visibility = ["//visibility:public"])""",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/5e131ab7de7ad051e1923b80d167aaa414734e97c720698c48778250e1dd2590",
-            "https://github.com/rhysd/actionlint/releases/download/v1.6.26/actionlint_1.6.26_darwin_arm64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/806e73fbafe54b7324d9478798534c5195fb71ea171633d9035b3fca237addd3",
+            "https://github.com/rhysd/actionlint/releases/download/v1.7.0/actionlint_1.7.0_darwin_arm64.tar.gz",
         ],
         type = "tar.gz",
-        sha256 = "5e131ab7de7ad051e1923b80d167aaa414734e97c720698c48778250e1dd2590",
+        sha256 = "806e73fbafe54b7324d9478798534c5195fb71ea171633d9035b3fca237addd3",
     )
 
 def _gofumpt_deps():
@@ -181,41 +181,41 @@ def _tfsec_deps():
         name = "com_github_aquasecurity_tfsec_linux_amd64",
         build_file_content = """exports_files(["tfsec"], visibility = ["//visibility:public"])""",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/21201f1615de0b4c143eba2da0f988bab3f68184646090b30ece1fdb501396ca",
-            "https://github.com/aquasecurity/tfsec/releases/download/v1.28.5/tfsec_1.28.5_linux_amd64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/8cbd8d64cbd1f25b38f33fa04db602466dade79e99c99dc9da053b5962d34014",
+            "https://github.com/aquasecurity/tfsec/releases/download/v1.28.6/tfsec_1.28.6_linux_amd64.tar.gz",
         ],
         type = "tar.gz",
-        sha256 = "21201f1615de0b4c143eba2da0f988bab3f68184646090b30ece1fdb501396ca",
+        sha256 = "8cbd8d64cbd1f25b38f33fa04db602466dade79e99c99dc9da053b5962d34014",
     )
     http_archive(
         name = "com_github_aquasecurity_tfsec_linux_arm64",
         build_file_content = """exports_files(["tfsec"], visibility = ["//visibility:public"])""",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/a587a9cd879240074551067114b8f63d2249aab70cabf8f8d6884e2b67cfddad",
-            "https://github.com/aquasecurity/tfsec/releases/download/v1.28.5/tfsec_1.28.5_linux_arm64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/4bc7b0f0592be4fa384cff52af5b1cdd2066ba7a06001bea98690340851c0bce",
+            "https://github.com/aquasecurity/tfsec/releases/download/v1.28.6/tfsec_1.28.6_linux_arm64.tar.gz",
         ],
         type = "tar.gz",
-        sha256 = "a587a9cd879240074551067114b8f63d2249aab70cabf8f8d6884e2b67cfddad",
+        sha256 = "4bc7b0f0592be4fa384cff52af5b1cdd2066ba7a06001bea98690340851c0bce",
     )
     http_archive(
         name = "com_github_aquasecurity_tfsec_darwin_amd64",
         build_file_content = """exports_files(["tfsec"], visibility = ["//visibility:public"])""",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/4ad9a313d84aa11893672c7779a99f85a6acaab26c5a05ccc432db08bc4c0a37",
-            "https://github.com/aquasecurity/tfsec/releases/download/v1.28.5/tfsec_1.28.5_darwin_amd64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/3b31e954819faa7d6151b999548cefb782f2f4dc64b355c8747e44d4b0b2faca",
+            "https://github.com/aquasecurity/tfsec/releases/download/v1.28.6/tfsec_1.28.6_darwin_amd64.tar.gz",
         ],
         type = "tar.gz",
-        sha256 = "4ad9a313d84aa11893672c7779a99f85a6acaab26c5a05ccc432db08bc4c0a37",
+        sha256 = "3b31e954819faa7d6151b999548cefb782f2f4dc64b355c8747e44d4b0b2faca",
     )
     http_archive(
         name = "com_github_aquasecurity_tfsec_darwin_arm64",
         build_file_content = """exports_files(["tfsec"], visibility = ["//visibility:public"])""",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/50117ac409bb3c1101453d74f48a639c7ab7ac2f40b023eb7004d84048913888",
-            "https://github.com/aquasecurity/tfsec/releases/download/v1.28.5/tfsec_1.28.5_darwin_arm64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/aa132b7e0e69e16f1c9320257841751e52c42d9791b7f900de72cf0b06ffe74c",
+            "https://github.com/aquasecurity/tfsec/releases/download/v1.28.6/tfsec_1.28.6_darwin_arm64.tar.gz",
         ],
         type = "tar.gz",
-        sha256 = "50117ac409bb3c1101453d74f48a639c7ab7ac2f40b023eb7004d84048913888",
+        sha256 = "aa132b7e0e69e16f1c9320257841751e52c42d9791b7f900de72cf0b06ffe74c",
     )
 
 def _golangci_lint_deps():
@@ -223,45 +223,45 @@ def _golangci_lint_deps():
         name = "com_github_golangci_golangci_lint_linux_amd64",
         build_file = "//bazel/toolchains:BUILD.golangci.bazel",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/e1c313fb5fc85a33890fdee5dbb1777d1f5829c84d655a47a55688f3aad5e501",
-            "https://github.com/golangci/golangci-lint/releases/download/v1.56.2/golangci-lint-1.56.2-linux-amd64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/2e7c1b2af70ecb7ce18da79a3951db7046dcb709566c018fb93c61e8733b2239",
+            "https://github.com/golangci/golangci-lint/releases/download/v1.58.1/golangci-lint-1.58.1-linux-amd64.tar.gz",
         ],
-        strip_prefix = "golangci-lint-1.56.2-linux-amd64",
+        strip_prefix = "golangci-lint-1.58.1-linux-amd64",
         type = "tar.gz",
-        sha256 = "e1c313fb5fc85a33890fdee5dbb1777d1f5829c84d655a47a55688f3aad5e501",
+        sha256 = "2e7c1b2af70ecb7ce18da79a3951db7046dcb709566c018fb93c61e8733b2239",
     )
     http_archive(
         name = "com_github_golangci_golangci_lint_linux_arm64",
         build_file = "//bazel/toolchains:BUILD.golangci.bazel",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/0041594fde41ce43b75e65476a050fe9057881d8b5bccd472f18357e2ead3e04",
-            "https://github.com/golangci/golangci-lint/releases/download/v1.56.2/golangci-lint-1.56.2-linux-arm64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/e78f55156ef7f8bd4a746aa695c6bd299dc0aa71b91ec066680d2c59e443708b",
+            "https://github.com/golangci/golangci-lint/releases/download/v1.58.1/golangci-lint-1.58.1-linux-arm64.tar.gz",
         ],
-        strip_prefix = "golangci-lint-1.56.2-linux-arm64",
+        strip_prefix = "golangci-lint-1.58.1-linux-arm64",
         type = "tar.gz",
-        sha256 = "0041594fde41ce43b75e65476a050fe9057881d8b5bccd472f18357e2ead3e04",
+        sha256 = "e78f55156ef7f8bd4a746aa695c6bd299dc0aa71b91ec066680d2c59e443708b",
     )
     http_archive(
         name = "com_github_golangci_golangci_lint_darwin_amd64",
         build_file = "//bazel/toolchains:BUILD.golangci.bazel",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/15c4d19a2c85a04f67779047dbb9467ba176c71fff762a0d514a21bb75e4b42c",
-            "https://github.com/golangci/golangci-lint/releases/download/v1.56.2/golangci-lint-1.56.2-darwin-amd64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/79f587134955808e245aa78a734bc28f6e03fc42efb3e91d2a705930909fe0c0",
+            "https://github.com/golangci/golangci-lint/releases/download/v1.58.1/golangci-lint-1.58.1-darwin-amd64.tar.gz",
         ],
-        strip_prefix = "golangci-lint-1.56.2-darwin-amd64",
+        strip_prefix = "golangci-lint-1.58.1-darwin-amd64",
         type = "tar.gz",
-        sha256 = "15c4d19a2c85a04f67779047dbb9467ba176c71fff762a0d514a21bb75e4b42c",
+        sha256 = "79f587134955808e245aa78a734bc28f6e03fc42efb3e91d2a705930909fe0c0",
     )
     http_archive(
         name = "com_github_golangci_golangci_lint_darwin_arm64",
         build_file = "//bazel/toolchains:BUILD.golangci.bazel",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/5f9ecda712c7ae08fbf872336fae3db866720e5865903d4c53903184b2a2c2dc",
-            "https://github.com/golangci/golangci-lint/releases/download/v1.56.2/golangci-lint-1.56.2-darwin-arm64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/bd59615a2fdf8e8ff544ba79e15c53f81a538bd68cccf52f4802b65e0216199d",
+            "https://github.com/golangci/golangci-lint/releases/download/v1.58.1/golangci-lint-1.58.1-darwin-arm64.tar.gz",
         ],
-        strip_prefix = "golangci-lint-1.56.2-darwin-arm64",
+        strip_prefix = "golangci-lint-1.58.1-darwin-arm64",
         type = "tar.gz",
-        sha256 = "5f9ecda712c7ae08fbf872336fae3db866720e5865903d4c53903184b2a2c2dc",
+        sha256 = "bd59615a2fdf8e8ff544ba79e15c53f81a538bd68cccf52f4802b65e0216199d",
     )
 
 def _buf_deps():
@@ -270,44 +270,44 @@ def _buf_deps():
         strip_prefix = "buf/bin",
         build_file_content = """exports_files(["buf"], visibility = ["//visibility:public"])""",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/1033f26361e6fc30ffcfab9d4e4274ffd4af88d9c97de63d2e1721c4a07c1380",
-            "https://github.com/bufbuild/buf/releases/download/v1.29.0/buf-Linux-x86_64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/8a94dce37ce72c89c82e6c4baf77797a2a4a2eef3b02a7f39b40ef7fb0f39f94",
+            "https://github.com/bufbuild/buf/releases/download/v1.31.0/buf-Linux-x86_64.tar.gz",
         ],
         type = "tar.gz",
-        sha256 = "1033f26361e6fc30ffcfab9d4e4274ffd4af88d9c97de63d2e1721c4a07c1380",
+        sha256 = "8a94dce37ce72c89c82e6c4baf77797a2a4a2eef3b02a7f39b40ef7fb0f39f94",
     )
     http_archive(
         name = "com_github_bufbuild_buf_linux_arm64",
         strip_prefix = "buf/bin",
         build_file_content = """exports_files(["buf"], visibility = ["//visibility:public"])""",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/a725e0ab1c6b1e97b31f9d1d946f8b1d56586a96715fae4a7ecc88b6cf601cea",
-            "https://github.com/bufbuild/buf/releases/download/v1.29.0/buf-Linux-aarch64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/ed435fe40a8b719354f746261cf9dbfcbfa4165fdb600e2f324ad8f6fe488dd2",
+            "https://github.com/bufbuild/buf/releases/download/v1.31.0/buf-Linux-aarch64.tar.gz",
         ],
         type = "tar.gz",
-        sha256 = "a725e0ab1c6b1e97b31f9d1d946f8b1d56586a96715fae4a7ecc88b6cf601cea",
+        sha256 = "ed435fe40a8b719354f746261cf9dbfcbfa4165fdb600e2f324ad8f6fe488dd2",
     )
     http_archive(
         name = "com_github_bufbuild_buf_darwin_amd64",
         strip_prefix = "buf/bin",
         build_file_content = """exports_files(["buf"], visibility = ["//visibility:public"])""",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/7ec6c2fd8f7e5e2ddba1e9ebff51eb9b0d6b67b85e105138dd064057c7b32db8",
-            "https://github.com/bufbuild/buf/releases/download/v1.29.0/buf-Darwin-x86_64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/a88b4ccf6aee4f7d525917bf4636253faa7c13b8f45c4c732a7fea55441ef835",
+            "https://github.com/bufbuild/buf/releases/download/v1.31.0/buf-Darwin-x86_64.tar.gz",
         ],
         type = "tar.gz",
-        sha256 = "7ec6c2fd8f7e5e2ddba1e9ebff51eb9b0d6b67b85e105138dd064057c7b32db8",
+        sha256 = "a88b4ccf6aee4f7d525917bf4636253faa7c13b8f45c4c732a7fea55441ef835",
     )
     http_archive(
         name = "com_github_bufbuild_buf_darwin_arm64",
         strip_prefix = "buf/bin",
         build_file_content = """exports_files(["buf"], visibility = ["//visibility:public"])""",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/b97225a3b3f18bdabb36e83d9aba2e6419ead0c6ca0894d10a95517be5fd302f",
-            "https://github.com/bufbuild/buf/releases/download/v1.29.0/buf-Darwin-arm64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/7519df87d3f681d5348f00e96215543edc55c62d821527056b5d8201d8982f28",
+            "https://github.com/bufbuild/buf/releases/download/v1.31.0/buf-Darwin-arm64.tar.gz",
         ],
         type = "tar.gz",
-        sha256 = "b97225a3b3f18bdabb36e83d9aba2e6419ead0c6ca0894d10a95517be5fd302f",
+        sha256 = "7519df87d3f681d5348f00e96215543edc55c62d821527056b5d8201d8982f28",
     )
 
 def _talos_docgen_deps():
@@ -351,46 +351,46 @@ def _talos_docgen_deps():
 def _helm_deps():
     http_archive(
         name = "com_github_helm_helm_linux_amd64",
-        sha256 = "f43e1c3387de24547506ab05d24e5309c0ce0b228c23bd8aa64e9ec4b8206651",
+        sha256 = "a5844ef2c38ef6ddf3b5a8f7d91e7e0e8ebc39a38bb3fc8013d629c1ef29c259",
         strip_prefix = "linux-amd64",
         build_file_content = """exports_files(["helm"], visibility = ["//visibility:public"])""",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/f43e1c3387de24547506ab05d24e5309c0ce0b228c23bd8aa64e9ec4b8206651",
-            "https://get.helm.sh/helm-v3.14.0-linux-amd64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/a5844ef2c38ef6ddf3b5a8f7d91e7e0e8ebc39a38bb3fc8013d629c1ef29c259",
+            "https://get.helm.sh/helm-v3.14.4-linux-amd64.tar.gz",
         ],
         type = "tar.gz",
     )
     http_archive(
         name = "com_github_helm_helm_linux_arm64",
-        sha256 = "b29e61674731b15f6ad3d1a3118a99d3cc2ab25a911aad1b8ac8c72d5a9d2952",
+        sha256 = "113ccc53b7c57c2aba0cd0aa560b5500841b18b5210d78641acfddc53dac8ab2",
         strip_prefix = "linux-arm64",
         build_file_content = """exports_files(["helm"], visibility = ["//visibility:public"])""",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/b29e61674731b15f6ad3d1a3118a99d3cc2ab25a911aad1b8ac8c72d5a9d2952",
-            "https://get.helm.sh/helm-v3.14.0-linux-arm64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/113ccc53b7c57c2aba0cd0aa560b5500841b18b5210d78641acfddc53dac8ab2",
+            "https://get.helm.sh/helm-v3.14.4-linux-arm64.tar.gz",
         ],
         type = "tar.gz",
     )
     http_archive(
         name = "com_github_helm_helm_darwin_amd64",
-        sha256 = "804586896496f7b3da97f56089ea00f220e075e969b6fdf6c0b7b9cdc22de120",
+        sha256 = "73434aeac36ad068ce2e5582b8851a286dc628eae16494a26e2ad0b24a7199f9",
         strip_prefix = "darwin-amd64",
         build_file_content = """exports_files(["helm"], visibility = ["//visibility:public"])""",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/804586896496f7b3da97f56089ea00f220e075e969b6fdf6c0b7b9cdc22de120",
-            "https://get.helm.sh/helm-v3.14.0-darwin-amd64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/73434aeac36ad068ce2e5582b8851a286dc628eae16494a26e2ad0b24a7199f9",
+            "https://get.helm.sh/helm-v3.14.4-darwin-amd64.tar.gz",
         ],
         type = "tar.gz",
     )
     http_archive(
         name = "com_github_helm_helm_darwin_arm64",
-        sha256 = "c2f36f3289a01c7c93ca11f84d740a170e0af1d2d0280bd523a409a62b8dfa1d",
+        sha256 = "61e9c5455f06b2ad0a1280975bf65892e707adc19d766b0cf4e9006e3b7b4b6c",
         strip_prefix = "darwin-arm64",
         build_file_content = """exports_files(["helm"], visibility = ["//visibility:public"])""",
         type = "tar.gz",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/c2f36f3289a01c7c93ca11f84d740a170e0af1d2d0280bd523a409a62b8dfa1d",
-            "https://get.helm.sh/helm-v3.14.0-darwin-arm64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/61e9c5455f06b2ad0a1280975bf65892e707adc19d766b0cf4e9006e3b7b4b6c",
+            "https://get.helm.sh/helm-v3.14.4-darwin-arm64.tar.gz",
         ],
     )
 
@@ -398,40 +398,40 @@ def _ghh_deps():
     http_archive(
         name = "com_github_katexochen_ghh_linux_amd64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/e53411fba3e3445bd08d4d7ce0ee9e526e9fcb12045616c80b9eb1cc342f0c90",
-            "https://github.com/katexochen/ghh/releases/download/v0.3.3/ghh_0.3.3_linux_amd64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/32f8a4110d88d80e163212a89a3538a13326494840ac97183d1b20bcc9eac7ba",
+            "https://github.com/katexochen/ghh/releases/download/v0.3.5/ghh_0.3.5_linux_amd64.tar.gz",
         ],
         type = "tar.gz",
         build_file_content = """exports_files(["ghh"], visibility = ["//visibility:public"])""",
-        sha256 = "e53411fba3e3445bd08d4d7ce0ee9e526e9fcb12045616c80b9eb1cc342f0c90",
+        sha256 = "32f8a4110d88d80e163212a89a3538a13326494840ac97183d1b20bcc9eac7ba",
     )
     http_archive(
         name = "com_github_katexochen_ghh_linux_arm64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/96e8c073fca7b8b56490359b3df0386fac9138224699c71b33c14abc2373452b",
-            "https://github.com/katexochen/ghh/releases/download/v0.3.3/ghh_0.3.3_linux_arm64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/b43ef1dd2f851eed7c69c87f4f73dd923bd1170cefbde247933d5b398a3319d1",
+            "https://github.com/katexochen/ghh/releases/download/v0.3.5/ghh_0.3.5_linux_arm64.tar.gz",
         ],
         type = "tar.gz",
         build_file_content = """exports_files(["ghh"], visibility = ["//visibility:public"])""",
-        sha256 = "96e8c073fca7b8b56490359b3df0386fac9138224699c71b33c14abc2373452b",
+        sha256 = "b43ef1dd2f851eed7c69c87f4f73dd923bd1170cefbde247933d5b398a3319d1",
     )
     http_archive(
         name = "com_github_katexochen_ghh_darwin_amd64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/0fbffabe8f80c640403ef9b03348bd34e1f7de1321b0da48a36ae0403fabd09a",
-            "https://github.com/katexochen/ghh/releases/download/v0.3.3/ghh_0.3.3_darwin_amd64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/7db9ebb62faf2a31f56e7a8994a971adddec98b3238880ae58b01eb549b8bba3",
+            "https://github.com/katexochen/ghh/releases/download/v0.3.5/ghh_0.3.5_darwin_amd64.tar.gz",
         ],
         type = "tar.gz",
         build_file_content = """exports_files(["ghh"], visibility = ["//visibility:public"])""",
-        sha256 = "0fbffabe8f80c640403ef9b03348bd34e1f7de1321b0da48a36ae0403fabd09a",
+        sha256 = "7db9ebb62faf2a31f56e7a8994a971adddec98b3238880ae58b01eb549b8bba3",
     )
     http_archive(
         name = "com_github_katexochen_ghh_darwin_arm64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/32457fadf46c1b3e15c1caeadd176e8ff67152de744c83e7afaeb308bd514193",
-            "https://github.com/katexochen/ghh/releases/download/v0.3.3/ghh_0.3.3_darwin_arm64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/78a2c8b321893736a2b5de59898794a72b878db9329157f348489c73d4592c6f",
+            "https://github.com/katexochen/ghh/releases/download/v0.3.5/ghh_0.3.5_darwin_arm64.tar.gz",
         ],
         type = "tar.gz",
         build_file_content = """exports_files(["ghh"], visibility = ["//visibility:public"])""",
-        sha256 = "32457fadf46c1b3e15c1caeadd176e8ff67152de744c83e7afaeb308bd514193",
+        sha256 = "78a2c8b321893736a2b5de59898794a72b878db9329157f348489c73d4592c6f",
     )
