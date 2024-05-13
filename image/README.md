@@ -131,3 +131,14 @@ We track the latest longterm release, use sources directly from [kernel.org](htt
 srpm spec file.
 
 After building a Kernel rpm, we upload it to our CDN and use it in our image builds.
+
+## Upgrading to a new Fedora release
+
+- Search for the old Fedora releasever in the `image/` directory and replace every occurence (outside of lockfiles) with the new releasever
+- Search for Fedora container images in Dockerfiles and upgrade the releasever
+- Regenerate the package lockfile: `bazel run //image/mirror:update_packages`
+- Build test images locally:
+  - `bazel query //image/system:all` (pick an image name from the output)
+  - `bazel build //image/system:IMAGE_NAME_HERE` (replace with an actual image name)
+- Let CI build new images and run e2e tests
+- Upgrade kernel spec under [edgelesssys/constellation-kernel](https://github.com/edgelesssys/constellation-kernel) to use new releasever
