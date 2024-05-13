@@ -15,11 +15,11 @@ import (
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/google/go-sev-guest/abi"
 	"github.com/google/go-sev-guest/kds"
 	spb "github.com/google/go-sev-guest/proto/sevsnp"
 	"github.com/google/go-sev-guest/verify/trust"
+	"github.com/google/go-tpm-tools/proto/attest"
 )
 
 // Product returns the SEV product info currently supported by Constellation's SNP attestation.
@@ -39,6 +39,7 @@ type InstanceInfo struct {
 	// AttestationReport is the attestation report from the vTPM (NVRAM) of the CVM.
 	AttestationReport []byte
 	Azure             *AzureInstanceInfo
+	GCP               *attest.GCEInstanceInfo
 }
 
 // AzureInstanceInfo contains Azure specific information related to SNP attestation.
@@ -95,7 +96,7 @@ func (a *InstanceInfo) addReportSigner(att *spb.Attestation, report *spb.Report,
 
 // AttestationWithCerts returns a formatted version of the attestation report and its certificates from the instanceInfo.
 // Certificates are retrieved in the following precedence:
-// 1. ASK or ARK from issuer. On Azure: THIM. One AWS: not prefilled.
+// 1. ASK from issuer. On Azure: THIM. One AWS: not prefilled. (Go to option 2) On GCP: prefilled.
 // 2. ASK or ARK from fallbackCerts.
 // 3. ASK or ARK from AMD KDS.
 func (a *InstanceInfo) AttestationWithCerts(getter trust.HTTPSGetter,
@@ -120,18 +121,15 @@ func (a *InstanceInfo) AttestationWithCerts(getter trust.HTTPSGetter,
 		return nil, fmt.Errorf("adding report signer: %w", err)
 	}
 
-	// If the certificate chain from THIM is present, parse it and format it.
-	ask, ark, err := a.ParseCertChain()
+	// If a certificate chain was pre-fetched by the Issuer, parse it and format it.
+	// Make sure to only use the ask, since using an ark from the Issuer would invalidate security guarantees.
+	ask, _, err := a.ParseCertChain()
 	if err != nil {
 		logger.Warn(fmt.Sprintf("Error parsing certificate chain: %v", err))
 	}
 	if ask != nil {
-		logger.Info("Using ASK certificate from Azure THIM")
+		logger.Info("Using ASK certificate from pre-fetched certificate chain")
 		att.CertificateChain.AskCert = ask.Raw
-	}
-	if ark != nil {
-		logger.Info("Using ARK certificate from Azure THIM")
-		att.CertificateChain.ArkCert = ark.Raw
 	}
 
 	// If a cached ASK or an ARK from the Constellation config is present, use it.
@@ -139,11 +137,12 @@ func (a *InstanceInfo) AttestationWithCerts(getter trust.HTTPSGetter,
 		logger.Info("Using cached ASK certificate")
 		att.CertificateChain.AskCert = fallbackCerts.ask.Raw
 	}
-	if att.CertificateChain.ArkCert == nil && fallbackCerts.ark != nil {
-		logger.Info(fmt.Sprintf("Using ARK certificate from %s", constants.ConfigFilename))
+	if fallbackCerts.ark != nil {
+		logger.Info("Using cached ARK certificate")
 		att.CertificateChain.ArkCert = fallbackCerts.ark.Raw
 	}
-	// Otherwise, retrieve it from AMD KDS.
+
+	// Otherwise, retrieve missing certificates from AMD KDS.
 	if att.CertificateChain.AskCert == nil || att.CertificateChain.ArkCert == nil {
 		logger.Info(fmt.Sprintf(
 			"Certificate chain not fully present (ARK present: %t, ASK present: %t), falling back to retrieving it from AMD KDS",
