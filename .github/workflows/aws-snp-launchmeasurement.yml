@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
     - name: Checkout repository
-      uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
+      uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
       with:
         ref: ${{ github.head_ref }}
         path: constellation
@@ -50,7 +50,7 @@ jobs:
         echo "ovmfPath=${ovmfPath}" | tee -a "$GITHUB_OUTPUT"
         popd || exit 1
 
-    - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
+    - uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
       with:
         repository: virtee/sev-snp-measure-go.git
         ref: e42b6f8991ed5a671d5d1e02a6b61f6373f9f8d8
