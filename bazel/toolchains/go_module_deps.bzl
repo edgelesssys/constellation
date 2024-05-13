@@ -2214,9 +2214,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/google/go-tpm",
-        replace = "github.com/thomasten/go-tpm",
-        sum = "h1:840nUyrM9df2aLuzWuIkYx/DrUbX4KQZO6B9LD45aWo=",
-        version = "v0.0.0-20230629092004-f43f8e2a59eb",
+        sum = "h1:gfGQAIxsEEAuYuFvjCGpDnTwisMJOz+rUfJMkk4yTmc=",
+        version = "v0.9.1-0.20240510201744-5c2f0887e003",
     )
     go_repository(
         name = "com_github_google_go_tpm_tools",
