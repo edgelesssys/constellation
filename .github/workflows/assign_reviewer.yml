@@ -8,9 +8,9 @@ permissions:
   pull-requests: write
 
 jobs:
-  specific_review_requested:
+  assign_reviewer:
     runs-on: ubuntu-latest
-    if: ${{ github.event.label.name == 'dependencies'}}
+    if: github.event.label.name == 'dependencies' && github.event.pull_request.user.login == 'app/renovate'
     steps:
     - uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
     - name: Pick assignee
