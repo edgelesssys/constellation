@@ -402,7 +402,7 @@ jobs:
           fi
 
           sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts'
-          bazel run //e2e/internal/upgrade:upgrade_test -- --want-worker "$WORKERNODES" --want-control "$CONTROLNODES" --target-image "$IMAGE" "$KUBERNETES_FLAG" "$MICROSERVICES_FLAG"
+          bazel run --test_timeout=14400 //e2e/internal/upgrade:upgrade_test -- --want-worker "$WORKERNODES" --want-control "$CONTROLNODES" --target-image "$IMAGE" "$KUBERNETES_FLAG" "$MICROSERVICES_FLAG"
 
       - name: Remove Terraform plugin cache
         if: always()
