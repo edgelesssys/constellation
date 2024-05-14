@@ -10,5 +10,5 @@ package config
 
 const (
 	// defaultImage is the default image to use.
-	defaultImage = "v2.16.3"
+	defaultImage = "v2.16.4"
 )
