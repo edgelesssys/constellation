@@ -43,7 +43,7 @@ replace (
 require (
 	cloud.google.com/go/compute v1.26.0
 	cloud.google.com/go/compute/metadata v0.3.0
-	cloud.google.com/go/kms v1.15.9
+	cloud.google.com/go/kms v1.16.0
 	cloud.google.com/go/secretmanager v1.13.0
 	cloud.google.com/go/storage v1.40.0
 	dario.cat/mergo v1.0.0
@@ -55,25 +55,25 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets v1.1.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.3.2
 	github.com/BurntSushi/toml v1.3.2
-	github.com/aws/aws-sdk-go v1.52.4
+	github.com/aws/aws-sdk-go v1.53.0
 	github.com/aws/aws-sdk-go-v2 v1.26.1
-	github.com/aws/aws-sdk-go-v2/config v1.27.11
-	github.com/aws/aws-sdk-go-v2/credentials v1.17.11
+	github.com/aws/aws-sdk-go-v2/config v1.27.13
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.13
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.1
-	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.16.15
-	github.com/aws/aws-sdk-go-v2/service/autoscaling v1.40.5
-	github.com/aws/aws-sdk-go-v2/service/cloudfront v1.36.0
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.160.0
-	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2 v1.30.5
-	github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi v1.21.4
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.53.1
-	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.28.6
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.16.17
+	github.com/aws/aws-sdk-go-v2/service/autoscaling v1.40.6
+	github.com/aws/aws-sdk-go-v2/service/cloudfront v1.36.1
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.161.1
+	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2 v1.30.6
+	github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi v1.21.5
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.53.2
+	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.28.7
 	github.com/aws/smithy-go v1.20.2
-	github.com/bazelbuild/buildtools v0.0.0-20240417164354-2bc4b5ebbaaf
+	github.com/bazelbuild/buildtools v0.0.0-20240422193413-1429e15ae755
 	github.com/bazelbuild/rules_go v0.47.1
 	github.com/coreos/go-systemd/v22 v22.5.0
-	github.com/docker/docker v26.1.1+incompatible
-	github.com/edgelesssys/go-azguestattestation v0.0.0-20230707101700-a683be600fcf
+	github.com/docker/docker v26.1.2+incompatible
+	github.com/edgelesssys/go-azguestattestation v0.0.0-20240513062303-05f8770a633d
 	github.com/edgelesssys/go-tdx-qpl v0.0.0-20240123150912-dcad3c41ec5f
 	github.com/foxboron/go-uefi v0.0.0-20240128152106-48be911532c2
 	github.com/fsnotify/fsnotify v1.7.0
@@ -81,9 +81,9 @@ require (
 	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.20.0
 	github.com/golang-jwt/jwt/v5 v5.2.1
-	github.com/google/go-sev-guest v0.9.3
+	github.com/google/go-sev-guest v0.11.1
 	github.com/google/go-tdx-guest v0.3.1
-	github.com/google/go-tpm v0.9.0
+	github.com/google/go-tpm v0.9.1-0.20240510201744-5c2f0887e003
 	github.com/google/go-tpm-tools v0.4.4
 	github.com/google/uuid v1.6.0
 	github.com/googleapis/gax-go/v2 v2.12.4
@@ -123,7 +123,7 @@ require (
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.9.0
-	github.com/tink-crypto/tink-go/v2 v2.0.0
+	github.com/tink-crypto/tink-go/v2 v2.1.0
 	github.com/vincent-petithory/dataurl v1.0.0
 	go.etcd.io/etcd/api/v3 v3.5.13
 	go.etcd.io/etcd/client/pkg/v3 v3.5.13
@@ -135,7 +135,7 @@ require (
 	golang.org/x/sys v0.20.0
 	golang.org/x/text v0.15.0
 	golang.org/x/tools v0.21.0
-	google.golang.org/api v0.178.0
+	google.golang.org/api v0.180.0
 	google.golang.org/grpc v1.63.2
 	google.golang.org/protobuf v1.34.1
 	gopkg.in/yaml.v3 v3.0.1
@@ -146,10 +146,10 @@ require (
 	k8s.io/apimachinery v0.30.0
 	k8s.io/apiserver v0.30.0
 	k8s.io/client-go v0.30.0
-	k8s.io/cluster-bootstrap v0.29.0
-	k8s.io/kubelet v0.29.0
-	k8s.io/kubernetes v1.29.4
-	k8s.io/mount-utils v0.29.0
+	k8s.io/cluster-bootstrap v0.30.0
+	k8s.io/kubelet v0.30.0
+	k8s.io/kubernetes v1.30.0
+	k8s.io/mount-utils v0.30.0
 	k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0
 	libvirt.org/go/libvirt v1.10003.0
 	sigs.k8s.io/controller-runtime v0.18.2
@@ -158,9 +158,10 @@ require (
 
 require (
 	cloud.google.com/go v0.112.2 // indirect
-	cloud.google.com/go/auth v0.3.0 // indirect
+	cloud.google.com/go/auth v0.4.1 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect
-	cloud.google.com/go/iam v1.1.7 // indirect
+	cloud.google.com/go/iam v1.1.8 // indirect
+	cloud.google.com/go/longrunning v0.5.7 // indirect
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.6.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/keyvault/azkeys v0.10.0 // indirect
@@ -196,9 +197,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.3.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.17.5 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.20.5 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.23.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.28.6 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.20.6 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.24.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.28.7 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
@@ -252,9 +253,9 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/btree v1.1.2 // indirect
-	github.com/google/certificate-transparency-go v1.1.6 // indirect
+	github.com/google/certificate-transparency-go v1.1.8 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
-	github.com/google/go-attestation v0.5.0 // indirect
+	github.com/google/go-attestation v0.5.1 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/go-configfs-tsm v0.2.2 // indirect
 	github.com/google/go-containerregistry v0.19.0 // indirect
@@ -265,7 +266,7 @@ require (
 	github.com/google/s2a-go v0.1.7 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
-	github.com/gorilla/mux v1.8.0 // indirect
+	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/gosuri/uitable v0.0.4 // indirect
 	github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7 // indirect
@@ -372,7 +373,7 @@ require (
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto v0.0.0-20240401170217-c3f982113cda // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240429193739-8cf5692501f6 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20240506185236-b8a5c65736ae // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240429193739-8cf5692501f6 // indirect
 	gopkg.in/go-jose/go-jose.v2 v2.6.3 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
