@@ -181,7 +181,7 @@ jobs:
           yq eval -i ".version = \"$WITHOUT_V\"" s3proxy/deploy/s3proxy/Chart.yaml
           yq eval -i ".image = \"ghcr.io/edgelesssys/constellation/s3proxy:$VERSION\"" s3proxy/deploy/s3proxy/values.yaml
 
-          git add s3proxy/deploy/s3proxy/Chart.yaml
+          git add s3proxy/deploy/s3proxy/Chart.yaml s3proxy/deploy/s3proxy/values.yaml
 
       - name: Commit
         run: |
