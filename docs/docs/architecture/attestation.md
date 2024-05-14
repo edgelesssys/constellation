@@ -342,7 +342,7 @@ The [*VerificationService*](microservices.md#verificationservice) provides an en
 A user can [verify](../workflows/verify-cluster.md) this statement and compare the measurements against the configured ground truth and, thus, verify the identity and integrity of all Constellation components and the cluster configuration. Subsequently, the user knows that the entire cluster is in the expected state and is trustworthy.
 
 ## Putting it all together
-In this section, we put the aforementioned concepts together and illustrate how trust into a Constellation cluster is established and maintained.
+This section puts the aforementioned concepts together and illustrate how trust into a Constellation cluster is established and maintained.
 
 ### CLI and node images
 
