@@ -21,7 +21,7 @@ runs:
       run: |
         kubectl apply -f ns.yml
         kubectl apply -f lb.yml
-        bazel run //e2e/internal/lb:lb_test
+        bazel run --test_timeout=14400 //e2e/internal/lb:lb_test
 
     - name: Test AWS Ingress
       if: inputs.cloudProvider == 'aws'

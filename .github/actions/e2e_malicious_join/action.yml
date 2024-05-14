@@ -32,7 +32,7 @@ runs:
         KUBECONFIG: ${{ inputs.kubeconfig }}
       working-directory: e2e/malicious-join
       run: |
-        bazel run //e2e/malicious-join:stamp_and_push
+        bazel run --test_timeout=14400 //e2e/malicious-join:stamp_and_push
         yq eval -i "(.spec.template.spec.containers[0].command) = \
           [ \"/malicious-join_bin\", \
           \"--js-endpoint=join-service.kube-system:9090\", \

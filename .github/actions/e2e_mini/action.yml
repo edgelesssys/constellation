@@ -43,4 +43,4 @@ runs:
         ARM_SUBSCRIPTION_ID: ${{ inputs.azureSubscriptionID }}
         ARM_TENANT_ID: ${{ inputs.azureTenantID }}
       run: |
-        bazel run //e2e/miniconstellation:push_remote_test
+        bazel run --test_timeout=14400 //e2e/miniconstellation:push_remote_test

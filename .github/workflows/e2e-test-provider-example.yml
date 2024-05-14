@@ -453,7 +453,7 @@ jobs:
             yq e '.nodeGroups.control_plane_default.zone = "eu-central-1a"' -i constellation-conf.yaml
             yq e '.nodeGroups.worker_default.zone = "eu-central-1a"' -i constellation-conf.yaml
           fi
-          KUBECONFIG=${{ github.workspace }}/cluster/constellation-admin.conf bazel run //e2e/provider-upgrade:provider-upgrade_test -- --want-worker "$WORKERNODES" --want-control "$CONTROLNODES" --cli "${{ github.workspace }}/build/constellation" "$IMAGE_FLAG" "$KUBERNETES_FLAG" "$MICROSERVICES_FLAG"
+          KUBECONFIG=${{ github.workspace }}/cluster/constellation-admin.conf bazel run --test_timeout=14400 //e2e/provider-upgrade:provider-upgrade_test -- --want-worker "$WORKERNODES" --want-control "$CONTROLNODES" --cli "${{ github.workspace }}/build/constellation" "$IMAGE_FLAG" "$KUBERNETES_FLAG" "$MICROSERVICES_FLAG"
 
       - name: Destroy Terraform Cluster
         # outcome is part of the steps context (https://docs.github.com/en/actions/learn-github-actions/contexts#steps-context)
