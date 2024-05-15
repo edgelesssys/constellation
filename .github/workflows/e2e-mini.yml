@@ -34,7 +34,7 @@ jobs:
           ref: ${{ inputs.ref || github.event.workflow_run.head_branch || github.head_ref }}
 
       - name: Azure login OIDC
-        uses: azure/login@cb79c773a3cfa27f31f25eb3f677781210c9ce3d # v1.6.1
+        uses: azure/login@6b2456866fc08b011acb422a92a4aa20e2c4de32 # v2.1.0
         with:
           client-id: ${{ secrets.AZURE_E2E_MINI_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
