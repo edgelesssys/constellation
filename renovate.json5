@@ -58,6 +58,21 @@
       ],
     },
     {
+      // Group update of Terraform dependencies.
+      "groupName": "Terraform dependencies",
+      "matchManagers": ["terraform"],
+      "matchUpdateTypes": [
+        "bump",
+        "digest",
+        "lockFileMaintenance",
+        "minor",
+        "patch",
+        "pin",
+        "pinDigest",
+        "rollback",
+      ],
+    },
+    {
       "matchManagers": ["bazelisk", "bazel", "bazel-module"],
       "matchDepNames": ["bazel", "io_bazel_rules_go", "bazel_gazelle"],
       "groupName": "bazel (core)",
