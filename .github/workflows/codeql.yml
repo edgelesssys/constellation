@@ -44,7 +44,7 @@ jobs:
           cache: false
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@4f0ceda83afa9bc55df7b6c611b81435fa53d987 # v2.25.4
+        uses: github/codeql-action/init@b7cec7526559c32f1616476ff32d17ba4c59b2d6 # v3.25.5
         with:
           languages: ${{ matrix.language }}
 
@@ -63,6 +63,6 @@ jobs:
           echo "::endgroup::"
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@4f0ceda83afa9bc55df7b6c611b81435fa53d987 # v2.25.4
+        uses: github/codeql-action/analyze@b7cec7526559c32f1616476ff32d17ba4c59b2d6 # v3.25.5
         with:
           category: "/language:${{ matrix.language }}"
