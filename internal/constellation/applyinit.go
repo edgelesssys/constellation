@@ -90,7 +90,7 @@ func (a *Applier) Init(
 	}
 
 	// Perform the RPC
-	a.log.Debug("Initialization call", "endpoint", doer.endpoint, "kmsURI", doer.req.KmsUri, "storageURI", doer.req.StorageUri)
+	a.log.Debug("Initialization call", "endpoint", doer.endpoint)
 	a.spinner.Start("Connecting ", false)
 	retrier := retry.NewIntervalRetrier(doer, 30*time.Second, serviceIsUnavailable)
 	if err := retrier.Do(ctx); err != nil {
