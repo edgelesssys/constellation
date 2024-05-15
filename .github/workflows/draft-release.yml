@@ -316,7 +316,7 @@ jobs:
       - provenance-subjects
     # This must not be pinned to digest. See:
     # https://github.com/slsa-framework/slsa-github-generator#referencing-slsa-builders-and-generators
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.10.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
     with:
       base64-subjects: "${{ needs.provenance-subjects.outputs.provenance-subjects }}"
 
@@ -345,8 +345,6 @@ jobs:
           name: constellation.spdx.sbom
 
       - name: Download provenance
-        # Need to use the same major version as slsa-github-generator to find uploaded artifacts
-        # https://github.com/slsa-framework/slsa-github-generator/issues/3068
         uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
         with:
           name: ${{ needs.provenance.outputs.provenance-name }}
@@ -430,8 +428,6 @@ jobs:
           name: constellation.spdx.sbom.sig
 
       - name: Download Constellation provenance
-        # Need to use the same major version as slsa-github-generator to find uploaded artifacts
-        # https://github.com/slsa-framework/slsa-github-generator/issues/3068
         uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
         with:
           name: ${{ needs.provenance.outputs.provenance-name }}
