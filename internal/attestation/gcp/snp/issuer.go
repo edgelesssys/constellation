@@ -21,7 +21,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 
 	"github.com/google/go-sev-guest/abi"
-	sevclient "github.com/google/go-sev-guest/client"
 	"github.com/google/go-tpm-tools/client"
 	tpmclient "github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm-tools/proto/attest"
@@ -65,13 +64,7 @@ func getInstanceInfo(_ context.Context, _ io.ReadWriteCloser, extraData []byte) 
 	var extraData64 [64]byte
 	copy(extraData64[:], extraData)
 
-	device, err := sevclient.OpenDevice()
-	if err != nil {
-		return nil, fmt.Errorf("opening sev device: %w", err)
-	}
-	defer device.Close()
-
-	report, certs, err := sevclient.GetRawExtendedReportAtVmpl(device, extraData64, 0)
+	report, certs, err := snp.GetExtendedReport(extraData64)
 	if err != nil {
 		return nil, fmt.Errorf("getting extended report: %w", err)
 	}

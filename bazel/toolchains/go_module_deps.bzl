@@ -2197,9 +2197,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/google/go-sev-guest",
-        replace = "github.com/google/go-sev-guest",
-        sum = "h1:6o4Z/vQqNUH+cEagfx1Ez5ElK70iZulEXZwmLnRo44I=",
-        version = "v0.0.0-20230928233922-2dcbba0a4b9d",
+        sum = "h1:gnww4U8fHV5DCPz4gykr1s8SEX1fFNcxCBy+vvXN24k=",
+        version = "v0.11.1",
     )
     go_repository(
         name = "com_github_google_go_tdx_guest",
