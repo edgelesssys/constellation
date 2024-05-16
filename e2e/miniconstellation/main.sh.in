@@ -4,7 +4,6 @@ clean_up() {
   echo "::group::Terminate"
 
   # terraform destroy -auto-approve
-  popd
   exit 1
 
   echo "::endgroup::"
@@ -25,18 +24,13 @@ cd e2e/miniconstellation
 
 echo "::group::Terraform"
 
-if [[ -z "$TF_DIR" ]]; then
-  TF_DIR="."
-fi
-
-cp -n -r * "$TF_DIR"
-
-pushd "$TF_DIR"
-
 terraform init
 terraform apply -auto-approve
 terraform output -raw ssh_private_key > id_rsa
 chmod 600 id_rsa
+
+rg_name=$(terraform output -raw rg_name)
+echo "rgname=$rg_name" >> $GITHUB_OUTPUT
 
 azure_vm_ip=$(terraform output -raw public_ip)
 
