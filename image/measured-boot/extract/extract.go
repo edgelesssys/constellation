@@ -90,9 +90,8 @@ var ukiSections = []string{
 	".initrd",
 	".splash",
 	".dtb",
-	// uanme and sbat will be added in systemd-stub >= 254
-	// ".uname",
-	// ".sbat",
+	".uname",
+	".sbat",
 	".pcrsig",
 	".pcrkey",
 }
