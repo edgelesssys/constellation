@@ -4,6 +4,7 @@ clean_up() {
   echo "::group::Terminate"
 
   # terraform destroy -auto-approve
+  popd
   exit 1
 
   echo "::endgroup::"
@@ -23,6 +24,14 @@ registerExitHandler clean_up
 cd e2e/miniconstellation
 
 echo "::group::Terraform"
+
+if [[ -z "$TF_DIR" ]]; then
+  TF_DIR="."
+fi
+
+cp -n -r * "$TF_DIR"
+
+pushd "$TF_DIR"
 
 terraform init
 terraform apply -auto-approve
