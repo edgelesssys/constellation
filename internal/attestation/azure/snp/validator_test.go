@@ -368,7 +368,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			),
 			wantErr: true,
 			assertion: func(assert *assert.Assertions, err error) {
-				assert.ErrorContains(err, "could not interpret VCEK DER bytes: x509: malformed certificate")
+				assert.ErrorContains(err, "x509: malformed certificate")
 			},
 		},
 		"invalid certchain fall back to embedded": {
