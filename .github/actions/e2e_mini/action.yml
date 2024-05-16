@@ -48,8 +48,7 @@ runs:
         ARM_TENANT_ID: ${{ inputs.azureTenantID }}
       run: |
         bazel run --test_timeout=14400 //e2e/miniconstellation:push_remote_test
-        # TODO: Replace and test with BUILD_WORKING_DIRECTORY
-        echo "bazel-workspace-dir=$BUILD_WORKSPACE_DIRECTORY" >> $GITHUB_OUTPUT
+        echo "bazel-workspace-dir=$BUILD_WORKING_DIRECTORY" >> $GITHUB_OUTPUT
 
     - name: Log in to azure
       # only log in if e2e test failed or if the run was cancelled
