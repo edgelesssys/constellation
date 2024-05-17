@@ -11,7 +11,7 @@ output "ssh_private_key" {
 }
 
 output "rg_name" {
-  value = "e2e-mini-${random_string.suffix.result}"
-  sensitive = false
+  value      = "e2e-mini-${random_string.suffix.result}"
+  sensitive  = false
   depends_on = [random_string.suffix]
 }
