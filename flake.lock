@@ -66,16 +66,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1714468720,
-        "narHash": "sha256-i/RVCoeQLeOaPaEtJS/l+42CVohMucA6cBBt0mdJ4uE=",
+        "lastModified": 1715940197,
+        "narHash": "sha256-1YpxN5R3lEQnOUg94B2B/Ah2WDABUQTZ6kpyQMPt/xI=",
         "owner": "edgelesssys",
         "repo": "uplosi",
-        "rev": "7c881351a2f7c664d04c4e235562e5b427b167f2",
+        "rev": "f612dd315b55f2828c0c844895e5be892e99553e",
         "type": "github"
       },
       "original": {
         "owner": "edgelesssys",
         "repo": "uplosi",
+        "rev": "f612dd315b55f2828c0c844895e5be892e99553e",
         "type": "github"
       }
     }
