@@ -7,7 +7,10 @@ go_library(
         "virtwrapper_cgo.go",
         "virtwrapper_cross.go",
     ],
-    importpath = "github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api/virtwrapper",
+    importpath = "github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api/dhcp/virtwrapper",
     visibility = ["//visibility:public"],
-    deps = ["@org_libvirt_go_libvirt//:libvirt"],
+    deps = [
+        "//hack/qemu-metadata-api/dhcp",
+        "@org_libvirt_go_libvirt//:libvirt",
+    ],
 )
