@@ -153,11 +153,7 @@ func (k *KubeWrapper) InitCluster(
 	}
 
 	k.log.Info("Prioritizing etcd I/O")
-	err = k.etcdIOPrioritizer.PrioritizeIO()
-	if errors.Is(err, etcdio.ErrNoEtcdProcess) {
-		k.log.Warn("Skipping etcd I/O prioritization as etcd process is not running. " +
-			"This is expected if this node is a non-control-plane node.")
-	} else if err != nil {
+	if err := k.etcdIOPrioritizer.PrioritizeIO(); err != nil {
 		return nil, fmt.Errorf("prioritizing etcd I/O: %w", err)
 	}
 

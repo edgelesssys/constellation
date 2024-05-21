@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/etcdio"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubewaiter"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
@@ -181,6 +182,14 @@ func TestInitCluster(t *testing.T) {
 			k8sVersion:        "1.19",
 			wantErr:           true,
 		},
+		"etcd prioritizer fails on error": {
+			clusterUtil:       stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
+			kubeAPIWaiter:     stubKubeAPIWaiter{},
+			etcdIOPrioritizer: stubEtcdIOPrioritizer{assert.AnError},
+			providerMetadata:  &stubProviderMetadata{},
+			k8sVersion:        versions.Default,
+			wantErr:           true,
+		},
 	}
 
 	for name, tc := range testCases {
@@ -189,14 +198,15 @@ func TestInitCluster(t *testing.T) {
 			require := require.New(t)
 
 			kube := KubeWrapper{
-				cloudProvider:    "aws", // provide a valid cloud provider for cilium installation
-				clusterUtil:      &tc.clusterUtil,
-				providerMetadata: tc.providerMetadata,
-				kubeAPIWaiter:    &tc.kubeAPIWaiter,
-				configProvider:   &stubConfigProvider{initConfig: k8sapi.KubeadmInitYAML{}},
-				client:           &tc.kubectl,
-				getIPAddr:        func() (string, error) { return privateIP, nil },
-				log:              logger.NewTest(t),
+				cloudProvider:     "aws", // provide a valid cloud provider for cilium installation
+				clusterUtil:       &tc.clusterUtil,
+				providerMetadata:  tc.providerMetadata,
+				kubeAPIWaiter:     &tc.kubeAPIWaiter,
+				configProvider:    &stubConfigProvider{initConfig: k8sapi.KubeadmInitYAML{}},
+				client:            &tc.kubectl,
+				getIPAddr:         func() (string, error) { return privateIP, nil },
+				etcdIOPrioritizer: &tc.etcdIOPrioritizer,
+				log:               logger.NewTest(t),
 			}
 
 			_, err := kube.InitCluster(
@@ -374,6 +384,27 @@ func TestJoinCluster(t *testing.T) {
 			role:              role.Worker,
 			wantErr:           true,
 		},
+		"etcd prioritizer doesn't fail on worker": {
+			clusterUtil:       stubClusterUtil{},
+			etcdIOPrioritizer: stubEtcdIOPrioritizer{etcdio.ErrNoEtcdProcess},
+			providerMetadata: &stubProviderMetadata{
+				selfResp: metadata.InstanceMetadata{
+					ProviderID: "provider-id",
+					Name:       "metadata-name",
+					VPCIP:      "192.0.2.1",
+				},
+			},
+			role: role.Worker,
+			wantConfig: kubeadm.JoinConfiguration{
+				Discovery: kubeadm.Discovery{
+					BootstrapToken: joinCommand,
+				},
+				NodeRegistration: kubeadm.NodeRegistrationOptions{
+					Name:             "metadata-name",
+					KubeletExtraArgs: map[string]string{"node-ip": "192.0.2.1"},
+				},
+			},
+		},
 	}
 
 	for name, tc := range testCases {
@@ -382,11 +413,12 @@ func TestJoinCluster(t *testing.T) {
 			require := require.New(t)
 
 			kube := KubeWrapper{
-				clusterUtil:      &tc.clusterUtil,
-				providerMetadata: tc.providerMetadata,
-				configProvider:   &stubConfigProvider{},
-				getIPAddr:        func() (string, error) { return privateIP, nil },
-				log:              logger.NewTest(t),
+				clusterUtil:       &tc.clusterUtil,
+				providerMetadata:  tc.providerMetadata,
+				configProvider:    &stubConfigProvider{},
+				getIPAddr:         func() (string, error) { return privateIP, nil },
+				etcdIOPrioritizer: &tc.etcdIOPrioritizer,
+				log:               logger.NewTest(t),
 			}
 
 			err := kube.JoinCluster(context.Background(), joinCommand, tc.role, tc.k8sComponents)
