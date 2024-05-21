@@ -8,7 +8,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//keyservice/keyserviceproto",
-        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//:grpc",
         "@org_golang_google_grpc//credentials/insecure",
     ],
 )
@@ -20,7 +20,7 @@ go_test(
     deps = [
         "//keyservice/keyserviceproto",
         "@com_github_stretchr_testify//assert",
-        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//:grpc",
         "@org_golang_google_grpc//test/bufconn",
         "@org_uber_go_goleak//:goleak",
     ],

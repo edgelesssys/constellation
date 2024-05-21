@@ -4,9 +4,9 @@
          "plain.go",
      ],
      cgo = True,
-+    cdeps = [
-+        "@//nix/cc:cryptsetup",
-+    ],
++    cdeps = select({
++        "@io_bazel_rules_go//go/platform:linux_amd64": ["@@cryptsetup_x86_64-linux//:cryptsetup"],
++    }),
      importpath = "github.com/martinjungblut/go-cryptsetup",
      visibility = ["//visibility:public"],
  )

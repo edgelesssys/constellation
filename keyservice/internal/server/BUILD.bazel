@@ -12,7 +12,7 @@ go_library(
         "//internal/kms/kms",
         "//internal/logger",
         "//keyservice/keyserviceproto",
-        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//:grpc",
         "@org_golang_google_grpc//codes",
         "@org_golang_google_grpc//status",
     ],

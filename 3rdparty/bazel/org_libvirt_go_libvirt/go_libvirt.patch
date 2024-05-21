@@ -5,7 +5,7 @@
          "typedparams.go",
      ],
 +    cdeps = [
-+        "@//nix/cc:libvirt",
++        "@@libvirt_x86_64-linux//:libvirt",
 +    ],
      cgo = True,
      importpath = "libvirt.org/go/libvirt",
