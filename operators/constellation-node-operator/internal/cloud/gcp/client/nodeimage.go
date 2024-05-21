@@ -140,10 +140,15 @@ func (c *Client) DeleteNode(ctx context.Context, providerID string) error {
 		Zone:                 instanceGroupZone,
 		InstanceGroupManagersDeleteInstancesRequestResource: &computepb.InstanceGroupManagersDeleteInstancesRequest{
 			Instances: []string{instanceID},
+			SkipInstancesOnValidationError: toPtr(true),
 		},
 	})
 	if err != nil {
 		return fmt.Errorf("deleting instance %q from instance group manager %q: %w", instanceID, scalingGroupID, err)
 	}
 	return op.Wait(ctx)
+}
+
+func toPtr[T any](v T) *T {
+	return &v
 }
