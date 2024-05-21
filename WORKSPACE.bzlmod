@@ -246,19 +246,6 @@ register_toolchains(
     "@zig_sdk//toolchain:windows_amd64",
 )
 
-# Aspect Bazel Lib
-load("//bazel/toolchains:aspect_bazel_lib.bzl", "aspect_bazel_lib")
-
-aspect_bazel_lib()
-
-load("@aspect_bazel_lib//lib:repositories.bzl", "aspect_bazel_lib_dependencies", "aspect_bazel_lib_register_toolchains", "register_coreutils_toolchains", "register_yq_toolchains")
-
-aspect_bazel_lib_dependencies()
-
-aspect_bazel_lib_register_toolchains()
-
-register_coreutils_toolchains()
-
 # OCI rules
 load("//bazel/toolchains:oci_deps.bzl", "oci_deps")
 
@@ -278,8 +265,6 @@ oci_register_toolchains(
 load("//bazel/toolchains:container_images.bzl", "containter_image_deps")
 
 containter_image_deps()
-
-register_yq_toolchains()
 
 # Multirun
 load("//bazel/toolchains:multirun_deps.bzl", "multirun_deps")
