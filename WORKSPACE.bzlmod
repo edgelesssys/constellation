@@ -255,15 +255,6 @@ register_toolchains(
     "@zig_sdk//toolchain:windows_amd64",
 )
 
-# Packaging rules (tar)
-load("//bazel/toolchains:pkg_deps.bzl", "pkg_deps")
-
-pkg_deps()
-
-load("@rules_pkg//:deps.bzl", "rules_pkg_dependencies")
-
-rules_pkg_dependencies()
-
 # Aspect Bazel Lib
 load("//bazel/toolchains:aspect_bazel_lib.bzl", "aspect_bazel_lib")
 
