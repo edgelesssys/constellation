@@ -1,6 +1,6 @@
 load("@bazel_gazelle//:def.bzl", "gazelle")
+load("@buildifier_prebuilt//:rules.bzl", "buildifier", "buildifier_test")
 load("@com_github_ash2k_bazel_tools//multirun:def.bzl", "command", "multirun")
-load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier", "buildifier_test")
 load("//bazel/ci:proto_targets.bzl", "proto_targets")
 load("//bazel/sh:def.bzl", "noop_warn", "repo_command", "sh_template")
 

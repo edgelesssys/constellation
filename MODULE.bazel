@@ -6,3 +6,5 @@ bazel_dep(name = "hermetic_cc_toolchain", version = "3.1.0")
 bazel_dep(name = "rules_cc", version = "0.0.9")
 bazel_dep(name = "rules_pkg", version = "0.10.1")
 bazel_dep(name = "rules_python", version = "0.32.2")
+
+bazel_dep(name = "buildifier_prebuilt", version = "6.4.0", dev_dependency = True)

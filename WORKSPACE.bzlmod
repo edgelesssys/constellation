@@ -177,11 +177,6 @@ rules_proto_dependencies()
 
 rules_proto_toolchains()
 
-# Buildifier
-load("//bazel/toolchains:buildifier_deps.bzl", "buildifier_deps")
-
-buildifier_deps()
-
 # C / C++ toolchains
 
 load("@hermetic_cc_toolchain//toolchain:defs.bzl", zig_toolchains = "toolchains")
