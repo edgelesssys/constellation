@@ -11,6 +11,7 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes",
     visibility = ["//bootstrapper:__subpackages__"],
     deps = [
+        "//bootstrapper/internal/etcdio",
         "//bootstrapper/internal/kubernetes/k8sapi",
         "//bootstrapper/internal/kubernetes/kubewaiter",
         "//internal/cloud/cloudprovider",

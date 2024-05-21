@@ -42,17 +42,19 @@ func TestInitCluster(t *testing.T) {
 	aliasIPRange := "192.0.2.0/24"
 
 	testCases := map[string]struct {
-		clusterUtil      stubClusterUtil
-		kubectl          stubKubectl
-		kubeAPIWaiter    stubKubeAPIWaiter
-		providerMetadata ProviderMetadata
-		wantConfig       k8sapi.KubeadmInitYAML
-		wantErr          bool
-		k8sVersion       versions.ValidK8sVersion
+		clusterUtil       stubClusterUtil
+		kubectl           stubKubectl
+		kubeAPIWaiter     stubKubeAPIWaiter
+		providerMetadata  ProviderMetadata
+		wantConfig        k8sapi.KubeadmInitYAML
+		etcdIOPrioritizer stubEtcdIOPrioritizer
+		wantErr           bool
+		k8sVersion        versions.ValidK8sVersion
 	}{
 		"kubeadm init works with metadata and loadbalancer": {
-			clusterUtil:   stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
-			kubeAPIWaiter: stubKubeAPIWaiter{},
+			clusterUtil:       stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
+			kubeAPIWaiter:     stubKubeAPIWaiter{},
+			etcdIOPrioritizer: stubEtcdIOPrioritizer{},
 			providerMetadata: &stubProviderMetadata{
 				selfResp: metadata.InstanceMetadata{
 					Name:          nodeName,
@@ -85,8 +87,9 @@ func TestInitCluster(t *testing.T) {
 			k8sVersion: versions.Default,
 		},
 		"kubeadm init fails when annotating itself": {
-			clusterUtil:   stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
-			kubeAPIWaiter: stubKubeAPIWaiter{},
+			clusterUtil:       stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
+			kubeAPIWaiter:     stubKubeAPIWaiter{},
+			etcdIOPrioritizer: stubEtcdIOPrioritizer{},
 			providerMetadata: &stubProviderMetadata{
 				selfResp: metadata.InstanceMetadata{
 					Name:          nodeName,
@@ -102,8 +105,9 @@ func TestInitCluster(t *testing.T) {
 			k8sVersion: versions.Default,
 		},
 		"kubeadm init fails when retrieving metadata self": {
-			clusterUtil:   stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
-			kubeAPIWaiter: stubKubeAPIWaiter{},
+			clusterUtil:       stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
+			kubeAPIWaiter:     stubKubeAPIWaiter{},
+			etcdIOPrioritizer: stubEtcdIOPrioritizer{},
 			providerMetadata: &stubProviderMetadata{
 				selfErr: assert.AnError,
 			},
@@ -111,7 +115,8 @@ func TestInitCluster(t *testing.T) {
 			k8sVersion: versions.Default,
 		},
 		"kubeadm init fails when retrieving metadata loadbalancer ip": {
-			clusterUtil: stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
+			clusterUtil:       stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
+			etcdIOPrioritizer: stubEtcdIOPrioritizer{},
 			providerMetadata: &stubProviderMetadata{
 				getLoadBalancerEndpointErr: assert.AnError,
 			},
@@ -123,51 +128,58 @@ func TestInitCluster(t *testing.T) {
 				initClusterErr: assert.AnError,
 				kubeconfig:     []byte("someKubeconfig"),
 			},
-			kubeAPIWaiter:    stubKubeAPIWaiter{},
-			providerMetadata: &stubProviderMetadata{},
-			wantErr:          true,
-			k8sVersion:       versions.Default,
+			kubeAPIWaiter:     stubKubeAPIWaiter{},
+			etcdIOPrioritizer: stubEtcdIOPrioritizer{},
+			providerMetadata:  &stubProviderMetadata{},
+			wantErr:           true,
+			k8sVersion:        versions.Default,
 		},
 		"kubeadm init fails when deploying cilium": {
-			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
-			providerMetadata: &stubProviderMetadata{},
-			wantErr:          true,
-			k8sVersion:       versions.Default,
+			clusterUtil:       stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
+			etcdIOPrioritizer: stubEtcdIOPrioritizer{},
+			providerMetadata:  &stubProviderMetadata{},
+			wantErr:           true,
+			k8sVersion:        versions.Default,
 		},
 		"kubeadm init fails when setting up constellation-services chart": {
-			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
-			kubeAPIWaiter:    stubKubeAPIWaiter{},
-			providerMetadata: &stubProviderMetadata{},
-			wantErr:          true,
-			k8sVersion:       versions.Default,
+			clusterUtil:       stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
+			kubeAPIWaiter:     stubKubeAPIWaiter{},
+			etcdIOPrioritizer: stubEtcdIOPrioritizer{},
+			providerMetadata:  &stubProviderMetadata{},
+			wantErr:           true,
+			k8sVersion:        versions.Default,
 		},
 		"kubeadm init fails when reading kubeconfig": {
-			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
-			kubeAPIWaiter:    stubKubeAPIWaiter{},
-			providerMetadata: &stubProviderMetadata{},
-			wantErr:          true,
-			k8sVersion:       versions.Default,
+			clusterUtil:       stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
+			kubeAPIWaiter:     stubKubeAPIWaiter{},
+			etcdIOPrioritizer: stubEtcdIOPrioritizer{},
+			providerMetadata:  &stubProviderMetadata{},
+			wantErr:           true,
+			k8sVersion:        versions.Default,
 		},
 		"kubeadm init fails when setting up verification service": {
-			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
-			kubeAPIWaiter:    stubKubeAPIWaiter{},
-			providerMetadata: &stubProviderMetadata{},
-			wantErr:          true,
-			k8sVersion:       versions.Default,
+			clusterUtil:       stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
+			kubeAPIWaiter:     stubKubeAPIWaiter{},
+			etcdIOPrioritizer: stubEtcdIOPrioritizer{},
+			providerMetadata:  &stubProviderMetadata{},
+			wantErr:           true,
+			k8sVersion:        versions.Default,
 		},
 		"kubeadm init fails when waiting for kubeAPI server": {
-			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
-			kubeAPIWaiter:    stubKubeAPIWaiter{waitErr: assert.AnError},
-			providerMetadata: &stubProviderMetadata{},
-			k8sVersion:       versions.Default,
-			wantErr:          true,
+			clusterUtil:       stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
+			kubeAPIWaiter:     stubKubeAPIWaiter{waitErr: assert.AnError},
+			etcdIOPrioritizer: stubEtcdIOPrioritizer{},
+			providerMetadata:  &stubProviderMetadata{},
+			k8sVersion:        versions.Default,
+			wantErr:           true,
 		},
 		"unsupported k8sVersion fails cluster creation": {
-			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
-			kubeAPIWaiter:    stubKubeAPIWaiter{},
-			providerMetadata: &stubProviderMetadata{},
-			k8sVersion:       "1.19",
-			wantErr:          true,
+			clusterUtil:       stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
+			kubeAPIWaiter:     stubKubeAPIWaiter{},
+			etcdIOPrioritizer: stubEtcdIOPrioritizer{},
+			providerMetadata:  &stubProviderMetadata{},
+			k8sVersion:        "1.19",
+			wantErr:           true,
 		},
 	}
 
@@ -184,11 +196,12 @@ func TestInitCluster(t *testing.T) {
 				configProvider:   &stubConfigProvider{initConfig: k8sapi.KubeadmInitYAML{}},
 				client:           &tc.kubectl,
 				getIPAddr:        func() (string, error) { return privateIP, nil },
+				log:              logger.NewTest(t),
 			}
 
 			_, err := kube.InitCluster(
 				context.Background(), string(tc.k8sVersion), "kubernetes",
-				false, nil, nil, "", logger.NewTest(t),
+				false, nil, nil, "",
 			)
 
 			if tc.wantErr {
@@ -224,15 +237,17 @@ func TestJoinCluster(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		clusterUtil      stubClusterUtil
-		providerMetadata ProviderMetadata
-		wantConfig       kubeadm.JoinConfiguration
-		role             role.Role
-		k8sComponents    components.Components
-		wantErr          bool
+		clusterUtil       stubClusterUtil
+		providerMetadata  ProviderMetadata
+		wantConfig        kubeadm.JoinConfiguration
+		role              role.Role
+		k8sComponents     components.Components
+		etcdIOPrioritizer stubEtcdIOPrioritizer
+		wantErr           bool
 	}{
 		"kubeadm join worker works with metadata and remote Kubernetes Components": {
-			clusterUtil: stubClusterUtil{},
+			clusterUtil:       stubClusterUtil{},
+			etcdIOPrioritizer: stubEtcdIOPrioritizer{},
 			providerMetadata: &stubProviderMetadata{
 				selfResp: metadata.InstanceMetadata{
 					ProviderID: "provider-id",
@@ -253,7 +268,8 @@ func TestJoinCluster(t *testing.T) {
 			},
 		},
 		"kubeadm join worker works with metadata and local Kubernetes components": {
-			clusterUtil: stubClusterUtil{},
+			clusterUtil:       stubClusterUtil{},
+			etcdIOPrioritizer: stubEtcdIOPrioritizer{},
 			providerMetadata: &stubProviderMetadata{
 				selfResp: metadata.InstanceMetadata{
 					ProviderID: "provider-id",
@@ -273,7 +289,8 @@ func TestJoinCluster(t *testing.T) {
 			},
 		},
 		"kubeadm join worker works with metadata and cloud controller manager": {
-			clusterUtil: stubClusterUtil{},
+			clusterUtil:       stubClusterUtil{},
+			etcdIOPrioritizer: stubEtcdIOPrioritizer{},
 			providerMetadata: &stubProviderMetadata{
 				selfResp: metadata.InstanceMetadata{
 					ProviderID: "provider-id",
@@ -293,7 +310,8 @@ func TestJoinCluster(t *testing.T) {
 			},
 		},
 		"kubeadm join control-plane node works with metadata": {
-			clusterUtil: stubClusterUtil{},
+			clusterUtil:       stubClusterUtil{},
+			etcdIOPrioritizer: stubEtcdIOPrioritizer{},
 			providerMetadata: &stubProviderMetadata{
 				selfResp: metadata.InstanceMetadata{
 					ProviderID: "provider-id",
@@ -320,7 +338,8 @@ func TestJoinCluster(t *testing.T) {
 			},
 		},
 		"kubeadm join worker fails when installing remote Kubernetes components": {
-			clusterUtil: stubClusterUtil{installComponentsErr: errors.New("error")},
+			clusterUtil:       stubClusterUtil{installComponentsErr: errors.New("error")},
+			etcdIOPrioritizer: stubEtcdIOPrioritizer{},
 			providerMetadata: &stubProviderMetadata{
 				selfResp: metadata.InstanceMetadata{
 					ProviderID: "provider-id",
@@ -333,7 +352,8 @@ func TestJoinCluster(t *testing.T) {
 			wantErr:       true,
 		},
 		"kubeadm join worker fails when retrieving self metadata": {
-			clusterUtil: stubClusterUtil{},
+			clusterUtil:       stubClusterUtil{},
+			etcdIOPrioritizer: stubEtcdIOPrioritizer{},
 			providerMetadata: &stubProviderMetadata{
 				selfErr: assert.AnError,
 			},
@@ -341,10 +361,18 @@ func TestJoinCluster(t *testing.T) {
 			wantErr: true,
 		},
 		"kubeadm join worker fails when applying the join config": {
-			clusterUtil:      stubClusterUtil{joinClusterErr: assert.AnError},
-			providerMetadata: &stubProviderMetadata{},
-			role:             role.Worker,
-			wantErr:          true,
+			clusterUtil:       stubClusterUtil{joinClusterErr: assert.AnError},
+			etcdIOPrioritizer: stubEtcdIOPrioritizer{},
+			providerMetadata:  &stubProviderMetadata{},
+			role:              role.Worker,
+			wantErr:           true,
+		},
+		"etcd prioritizer error fails": {
+			clusterUtil:       stubClusterUtil{},
+			etcdIOPrioritizer: stubEtcdIOPrioritizer{assert.AnError},
+			providerMetadata:  &stubProviderMetadata{},
+			role:              role.Worker,
+			wantErr:           true,
 		},
 	}
 
@@ -358,9 +386,10 @@ func TestJoinCluster(t *testing.T) {
 				providerMetadata: tc.providerMetadata,
 				configProvider:   &stubConfigProvider{},
 				getIPAddr:        func() (string, error) { return privateIP, nil },
+				log:              logger.NewTest(t),
 			}
 
-			err := kube.JoinCluster(context.Background(), joinCommand, tc.role, tc.k8sComponents, logger.NewTest(t))
+			err := kube.JoinCluster(context.Background(), joinCommand, tc.role, tc.k8sComponents)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -544,4 +573,12 @@ type stubKubeAPIWaiter struct {
 
 func (s *stubKubeAPIWaiter) Wait(_ context.Context, _ kubewaiter.KubernetesClient) error {
 	return s.waitErr
+}
+
+type stubEtcdIOPrioritizer struct {
+	prioritizeErr error
+}
+
+func (s *stubEtcdIOPrioritizer) PrioritizeIO() error {
+	return s.prioritizeErr
 }
