@@ -139,7 +139,7 @@ func (c *Client) DeleteNode(ctx context.Context, providerID string) error {
 		Project:              instanceGroupProject,
 		Zone:                 instanceGroupZone,
 		InstanceGroupManagersDeleteInstancesRequestResource: &computepb.InstanceGroupManagersDeleteInstancesRequest{
-			Instances: []string{instanceID},
+			Instances:                      []string{instanceID},
 			SkipInstancesOnValidationError: toPtr(true),
 		},
 	})
