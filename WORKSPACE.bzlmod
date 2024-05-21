@@ -202,10 +202,6 @@ buildifier_deps()
 
 # C / C++ toolchains
 
-load("//bazel/toolchains:hermetic_cc_deps.bzl", "hermetic_cc_deps")
-
-hermetic_cc_deps()
-
 load("@hermetic_cc_toolchain//toolchain:defs.bzl", zig_toolchains = "toolchains")
 
 # If needed, we can specify a specific version of the Zig toolchain to use.
