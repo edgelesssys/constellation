@@ -5,10 +5,6 @@ workspace(name = "constellation")
 # Please extend this list as you find more.
 # - rules_nixpkgs: https://github.com/tweag/rules_nixpkgs/issues/181
 
-load("//bazel/toolchains:skylib_deps.bzl", "skylib_deps")
-
-skylib_deps()
-
 load("//bazel/toolchains:cc_deps.bzl", "rules_cc_deps")
 
 rules_cc_deps()
