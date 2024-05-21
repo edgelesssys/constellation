@@ -132,15 +132,6 @@ register_mkosi(
     name = "mkosi_nix_toolchain",
 )
 
-# Python toolchain
-load("//bazel/toolchains:python_deps.bzl", "python_deps")
-
-python_deps()
-
-load("@rules_python//python:repositories.bzl", "py_repositories")
-
-py_repositories()
-
 nixpkgs_python_configure(
     fail_not_supported = False,
     python3_attribute_path = "python311",
