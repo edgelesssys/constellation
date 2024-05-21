@@ -2,9 +2,205 @@ module(name = "constellation")
 
 bazel_dep(name = "aspect_bazel_lib", version = "2.7.3")
 bazel_dep(name = "bazel_skylib", version = "1.6.1")
+bazel_dep(name = "gazelle", version = "0.36.0")
 bazel_dep(name = "hermetic_cc_toolchain", version = "3.1.0")
 bazel_dep(name = "rules_cc", version = "0.0.9")
+bazel_dep(name = "rules_go", version = "0.47.1", repo_name = "io_bazel_rules_go")
 bazel_dep(name = "rules_pkg", version = "0.10.1")
 bazel_dep(name = "rules_python", version = "0.32.2")
 
 bazel_dep(name = "buildifier_prebuilt", version = "6.4.0", dev_dependency = True)
+
+# replace gazelle with a pre-release version
+# until go.work support is released
+git_override(
+    module_name = "gazelle",
+    commit = "75eade4e202fa42b23a42fd3d17216e7d31efd1a",
+    remote = "https://github.com/bazelbuild/bazel-gazelle",
+)
+
+# replace go with a pre-release version
+# move timeout handling back to bzltestutil
+# remove after https://github.com/bazelbuild/rules_go/pull/3939 is merged
+git_override(
+    module_name = "rules_go",
+    commit = "cc911bfec4f52d93d1c47cc92a3bc03ec8f9cb33",
+    remote = "https://github.com/bazelbuild/rules_go",
+)
+
+go_sdk = use_extension("@io_bazel_rules_go//go:extensions.bzl", "go_sdk")
+go_sdk.download(
+    name = "go_sdk",
+    patches = ["//3rdparty/bazel/org_golang:go_tls_max_handshake_size.patch"],
+    version = "1.22.3",
+)
+
+# the use_repo rule needs to list all top-level go dependencies
+# update automatically using `bazel mod tidy`.
+go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
+go_deps.from_file(go_work = "//:go.work")
+use_repo(
+    go_deps,
+    "cat_dario_mergo",
+    "com_github_aws_aws_sdk_go",
+    "com_github_aws_aws_sdk_go_v2",
+    "com_github_aws_aws_sdk_go_v2_config",
+    "com_github_aws_aws_sdk_go_v2_credentials",
+    "com_github_aws_aws_sdk_go_v2_feature_ec2_imds",
+    "com_github_aws_aws_sdk_go_v2_feature_s3_manager",
+    "com_github_aws_aws_sdk_go_v2_service_autoscaling",
+    "com_github_aws_aws_sdk_go_v2_service_cloudfront",
+    "com_github_aws_aws_sdk_go_v2_service_ec2",
+    "com_github_aws_aws_sdk_go_v2_service_elasticloadbalancingv2",
+    "com_github_aws_aws_sdk_go_v2_service_resourcegroupstaggingapi",
+    "com_github_aws_aws_sdk_go_v2_service_s3",
+    "com_github_aws_aws_sdk_go_v2_service_secretsmanager",
+    "com_github_aws_smithy_go",
+    "com_github_azure_azure_sdk_for_go",
+    "com_github_azure_azure_sdk_for_go_sdk_azcore",
+    "com_github_azure_azure_sdk_for_go_sdk_azidentity",
+    "com_github_azure_azure_sdk_for_go_sdk_resourcemanager_compute_armcompute_v5",
+    "com_github_azure_azure_sdk_for_go_sdk_resourcemanager_network_armnetwork_v5",
+    "com_github_azure_azure_sdk_for_go_sdk_security_keyvault_azsecrets",
+    "com_github_azure_azure_sdk_for_go_sdk_storage_azblob",
+    "com_github_bazelbuild_buildtools",
+    "com_github_burntsushi_toml",
+    "com_github_coreos_go_systemd_v22",
+    "com_github_docker_docker",
+    "com_github_edgelesssys_go_azguestattestation",
+    "com_github_edgelesssys_go_tdx_qpl",
+    "com_github_foxboron_go_uefi",
+    "com_github_fsnotify_fsnotify",
+    "com_github_go_playground_locales",
+    "com_github_go_playground_universal_translator",
+    "com_github_go_playground_validator_v10",
+    "com_github_golang_jwt_jwt_v5",
+    "com_github_google_go_licenses",
+    "com_github_google_go_sev_guest",
+    "com_github_google_go_tdx_guest",
+    "com_github_google_go_tpm",
+    "com_github_google_go_tpm_tools",
+    "com_github_google_keep_sorted",
+    "com_github_google_uuid",
+    "com_github_googleapis_gax_go_v2",
+    "com_github_gophercloud_gophercloud",
+    "com_github_gophercloud_utils",
+    "com_github_grpc_ecosystem_go_grpc_middleware_v2",
+    "com_github_hashicorp_go_kms_wrapping_v2",
+    "com_github_hashicorp_go_kms_wrapping_wrappers_awskms_v2",
+    "com_github_hashicorp_go_kms_wrapping_wrappers_azurekeyvault_v2",
+    "com_github_hashicorp_go_kms_wrapping_wrappers_gcpckms_v2",
+    "com_github_hashicorp_go_version",
+    "com_github_hashicorp_hc_install",
+    "com_github_hashicorp_hcl_v2",
+    "com_github_hashicorp_terraform_exec",
+    "com_github_hashicorp_terraform_json",
+    "com_github_hashicorp_terraform_plugin_framework",
+    "com_github_hashicorp_terraform_plugin_framework_validators",
+    "com_github_hashicorp_terraform_plugin_go",
+    "com_github_hashicorp_terraform_plugin_log",
+    "com_github_hashicorp_terraform_plugin_testing",
+    "com_github_hexops_gotextdiff",
+    "com_github_katexochen_sh_v3",
+    "com_github_martinjungblut_go_cryptsetup",
+    "com_github_mattn_go_isatty",
+    "com_github_mitchellh_go_homedir",
+    "com_github_onsi_ginkgo_v2",
+    "com_github_onsi_gomega",
+    "com_github_pkg_errors",
+    "com_github_regclient_regclient",
+    "com_github_rogpeppe_go_internal",
+    "com_github_samber_slog_multi",
+    "com_github_schollz_progressbar_v3",
+    "com_github_secure_systems_lab_go_securesystemslib",
+    "com_github_siderolabs_talos_pkg_machinery",
+    "com_github_sigstore_rekor",
+    "com_github_sigstore_sigstore",
+    "com_github_spf13_afero",
+    "com_github_spf13_cobra",
+    "com_github_spf13_pflag",
+    "com_github_stretchr_testify",
+    "com_github_tink_crypto_tink_go_v2",
+    "com_github_vincent_petithory_dataurl",
+    "com_google_cloud_go_compute",
+    "com_google_cloud_go_compute_metadata",
+    "com_google_cloud_go_kms",
+    "com_google_cloud_go_secretmanager",
+    "com_google_cloud_go_storage",
+    "in_gopkg_yaml_v3",
+    "io_etcd_go_etcd_api_v3",
+    "io_etcd_go_etcd_client_pkg_v3",
+    "io_etcd_go_etcd_client_v3",
+    "io_k8s_api",
+    "io_k8s_apiextensions_apiserver",
+    "io_k8s_apimachinery",
+    "io_k8s_apiserver",
+    "io_k8s_client_go",
+    "io_k8s_cluster_bootstrap",
+    "io_k8s_kubelet",
+    "io_k8s_kubernetes",
+    "io_k8s_mount_utils",
+    "io_k8s_sigs_controller_runtime",
+    "io_k8s_sigs_yaml",
+    "io_k8s_utils",
+    "org_golang_google_api",
+    "org_golang_google_grpc",
+    "org_golang_google_protobuf",
+    "org_golang_x_crypto",
+    "org_golang_x_exp",
+    "org_golang_x_mod",
+    "org_golang_x_sys",
+    "org_golang_x_text",
+    "org_golang_x_tools",
+    "org_golang_x_vuln",
+    "org_libvirt_go_libvirt",
+    "org_uber_go_goleak",
+    "sh_helm_helm",
+    "sh_helm_helm_v3",
+)
+
+go_deps_with_disabled_proto_generation = [
+    "go.etcd.io/etcd/api/v3",
+    "k8s.io/apiserver",
+    "github.com/hashicorp/go-plugin",
+]
+
+[
+    go_deps.gazelle_override(
+        directives = [
+            "gazelle:go_generate_proto false",
+        ],
+        path = path,
+    )
+    for path in go_deps_with_disabled_proto_generation
+]
+
+go_deps.module_override(
+    patches = [
+        "//3rdparty/bazel/com_github_martinjungblut_go_cryptsetup:com_github_martinjungblut_go_cryptsetup.patch",
+    ],
+    path = "github.com/martinjungblut/go-cryptsetup",
+)
+go_deps.module_override(
+    patches = [
+        "//3rdparty/bazel/org_libvirt_go_libvirt:go_libvirt.patch",
+    ],
+    path = "libvirt.org/go/libvirt",
+)
+go_deps.module_override(
+    patches = [
+        "//3rdparty/bazel/com_github_cloudflare_circl:math_fp448_BUILD_bazel.patch",
+        "//3rdparty/bazel/com_github_cloudflare_circl:math_fp25519_BUILD_bazel.patch",
+        "//3rdparty/bazel/com_github_cloudflare_circl:dh_x448_BUILD_bazel.patch",
+        "//3rdparty/bazel/com_github_cloudflare_circl:dh_x25519_BUILD_bazel.patch",
+    ],
+    path = "github.com/cloudflare/circl",
+)
+go_deps.module_override(
+    patches = [
+        "//3rdparty/bazel/com_github_google_go_tpm_tools:com_github_google_go_tpm_tools.patch",
+        "//3rdparty/bazel/com_github_google_go_tpm_tools:ms_tpm_20_ref.patch",
+        "//3rdparty/bazel/com_github_google_go_tpm_tools:include.patch",
+    ],
+    path = "github.com/google/go-tpm-tools",
+)
