@@ -8,10 +8,7 @@ go_library(
         "internal_cross.go",
     ],
     cgo = True,
-    cdeps = select({
-        "@//bazel/settings:tpm_simulator_enabled": ["//simulator/ms-tpm-20-ref:ms_tpm_20_ref"],
-        "//conditions:default": ["@//3rdparty/bazel/com_github_google_go_tpm_tools/placeholder:ms_tpm_20_ref_disabled"],
-    }),
+    cdeps = ["//simulator/ms-tpm-20-ref:ms_tpm_20_ref"],
     copts = [
         "-fno-sanitize=all",  # relax sanitizer checks for this test-only dependency
     ],

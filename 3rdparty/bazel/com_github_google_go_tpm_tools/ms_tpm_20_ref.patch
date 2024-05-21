@@ -1,6 +1,6 @@
 --- simulator/ms-tpm-20-ref/BUILD.bazel
 +++ simulator/ms-tpm-20-ref/BUILD.bazel
-@@ -0,0 +1,512 @@
+@@ -0,0 +1,516 @@
 +cc_library(
 +    name = "ms_tpm_20_ref",
 +    visibility = ["//visibility:public"],
@@ -229,10 +229,14 @@
 +    ],
 +    deps = [
 +        ":ms_tpm_20_ref_google_samples",
-+        "@//nix/cc:org_openssl",
-+    ],
++    ] + select({
++        "@io_bazel_rules_go//go/platform:darwin_arm64": ["@@org_openssl_aarch64-darwin//:org_openssl"],
++        "@io_bazel_rules_go//go/platform:darwin_amd64": ["@@org_openssl_x86_64-darwin//:org_openssl"],
++        "@io_bazel_rules_go//go/platform:linux_arm64": ["@@org_openssl_aarch64-linux//:org_openssl"],
++        "@io_bazel_rules_go//go/platform:linux_amd64": ["@@org_openssl_x86_64-linux//:org_openssl"],
++    }),
 +    target_compatible_with = [
-+        "@platforms//os:linux",
++        "@@platforms//os:linux",
 +    ],
 +)
 +
