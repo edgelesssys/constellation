@@ -263,13 +263,15 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 		return fmt.Errorf("joining cluster: %v; %w ", string(joinConfigYAML), err)
 	}
 
-	k.log.Info("Prioritizing etcd I/O")
-	err = k.etcdIOPrioritizer.PrioritizeIO()
-	if errors.Is(err, etcdio.ErrNoEtcdProcess) {
-		k.log.Warn("Skipping etcd I/O prioritization as etcd process is not running. " +
-			"This is expected if this node is a non-control-plane node.")
-	} else if err != nil {
-		return fmt.Errorf("prioritizing etcd I/O: %w", err)
+	// If on control plane (and thus with etcd), try to prioritize etcd I/O.
+	if peerRole == role.ControlPlane {
+		k.log.Info("Prioritizing etcd I/O")
+		err = k.etcdIOPrioritizer.PrioritizeIO()
+		if errors.Is(err, etcdio.ErrNoEtcdProcess) {
+			k.log.Warn("No etcd process found, skipping I/O prioritization. Is this a single-node cluster?")
+		} else if err != nil {
+			return fmt.Errorf("prioritizing etcd I/O: %w", err)
+		}
 	}
 
 	return nil
