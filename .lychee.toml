@@ -33,6 +33,10 @@ exclude = [
     '^https://portal\.azure\.com/',
     # The Wireguard website sproadically returns 500.
     '^https://www\.wireguard\.com/',
+    # venturebeat detects our link checker
+    '^https://venturebeat\.com/',
+    # dev-docs reference the internal wiki
+    '^https://github\.com/edgelesssys/wiki',
 ]
 
 # Exclude these filesystem paths from getting checked.
