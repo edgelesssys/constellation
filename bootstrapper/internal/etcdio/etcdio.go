@@ -8,12 +8,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 package etcdio
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"path"
 	"strconv"
+	"time"
 
 	"golang.org/x/sys/unix"
 )
@@ -50,8 +52,40 @@ func NewClient(log *slog.Logger) *Client {
 	return &Client{log: log}
 }
 
-// PrioritizeIO tries to find the etcd process on the node and prioritizes its I/O.
+// PrioritizeIO tries to prioritize the I/O of the etcd process.
+// Since it might be possible that the process just started (if this method is called
+// right after the kubelet started), it retries to do its work each second
+// until it succeeds or the timeout of 10 seconds is reached.
 func (c *Client) PrioritizeIO() error {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+	timeout, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	for {
+		c.log.Info("Prioritizing etcd I/O")
+		err := c.setIOPriority()
+		if err == nil {
+			// Success, return directly
+			return nil
+		} else if errors.Is(err, ErrNoEtcdProcess) {
+			c.log.Info("No etcd process found, retrying")
+		} else {
+			c.log.Warn("Prioritizing etcd I/O failed", "error", err)
+			return fmt.Errorf("prioritizing etcd I/O: %w", err)
+		}
+
+		select {
+		case <-ticker.C:
+		case <-timeout.Done():
+			c.log.Warn("Timed out waiting for etcd to start")
+			return nil
+		}
+	}
+}
+
+// setIOPriority tries to find the etcd process on the node and prioritizes its I/O.
+func (c *Client) setIOPriority() error {
 	// find etcd process(es)
 	pid, err := c.findEtcdProcess()
 	if err != nil {

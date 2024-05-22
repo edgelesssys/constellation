@@ -329,7 +329,6 @@ func (k *KubeWrapper) StartKubelet() error {
 		return fmt.Errorf("starting kubelet: %w", err)
 	}
 
-	k.log.Info("Prioritizing etcd I/O")
 	if err := k.etcdIOPrioritizer.PrioritizeIO(); err != nil {
 		k.log.Warn("Prioritizing etcd I/O failed", "error", err)
 	}
