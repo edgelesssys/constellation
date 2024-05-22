@@ -9,7 +9,6 @@ package kubernetes
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"net"
@@ -154,7 +153,7 @@ func (k *KubeWrapper) InitCluster(
 
 	k.log.Info("Prioritizing etcd I/O")
 	if err := k.etcdIOPrioritizer.PrioritizeIO(); err != nil {
-		return nil, fmt.Errorf("prioritizing etcd I/O: %w", err)
+		k.log.Warn("Prioritizing etcd I/O failed", "error", err)
 	}
 
 	err = k.client.Initialize(kubeConfig)
@@ -266,11 +265,8 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 	// If on control plane (and thus with etcd), try to prioritize etcd I/O.
 	if peerRole == role.ControlPlane {
 		k.log.Info("Prioritizing etcd I/O")
-		err = k.etcdIOPrioritizer.PrioritizeIO()
-		if errors.Is(err, etcdio.ErrNoEtcdProcess) {
-			k.log.Warn("No etcd process found, skipping I/O prioritization. Is this a single-node cluster?")
-		} else if err != nil {
-			return fmt.Errorf("prioritizing etcd I/O: %w", err)
+		if err := k.etcdIOPrioritizer.PrioritizeIO(); err != nil {
+			k.log.Warn("Prioritizing etcd I/O failed", "error", err)
 		}
 	}
 
@@ -334,12 +330,8 @@ func (k *KubeWrapper) StartKubelet() error {
 	}
 
 	k.log.Info("Prioritizing etcd I/O")
-	err := k.etcdIOPrioritizer.PrioritizeIO()
-	if errors.Is(err, etcdio.ErrNoEtcdProcess) {
-		k.log.Warn("Skipping etcd I/O prioritization as etcd process is not running. " +
-			"This is expected if this node is a non-control-plane node.")
-	} else if err != nil {
-		return fmt.Errorf("prioritizing etcd I/O: %w", err)
+	if err := k.etcdIOPrioritizer.PrioritizeIO(); err != nil {
+		k.log.Warn("Prioritizing etcd I/O failed", "error", err)
 	}
 
 	return nil

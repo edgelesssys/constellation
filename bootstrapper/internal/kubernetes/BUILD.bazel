@@ -31,7 +31,6 @@ go_test(
     srcs = ["kubernetes_test.go"],
     embed = [":kubernetes"],
     deps = [
-        "//bootstrapper/internal/etcdio",
         "//bootstrapper/internal/kubernetes/k8sapi",
         "//bootstrapper/internal/kubernetes/kubewaiter",
         "//internal/cloud/metadata",

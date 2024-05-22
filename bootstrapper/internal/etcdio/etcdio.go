@@ -19,7 +19,9 @@ import (
 )
 
 var (
-	ErrNoEtcdProcess         = errors.New("no etcd process found on node")
+	// ErrNoEtcdProcess is returned when no etcd process is found on the node.
+	ErrNoEtcdProcess = errors.New("no etcd process found on node")
+	// ErrMultipleEtcdProcesses is returned when multiple etcd processes are found on the node.
 	ErrMultipleEtcdProcesses = errors.New("multiple etcd processes found on node")
 )
 
@@ -38,18 +40,18 @@ const (
 	targetPrio  = 0 // Highest priority within the class
 )
 
-// EtcdIOClient is a client for managing etcd I/O.
-type EtcdIOClient struct {
+// Client is a client for managing etcd I/O.
+type Client struct {
 	log *slog.Logger
 }
 
 // NewClient creates a new etcd I/O management client.
-func NewClient(log *slog.Logger) *EtcdIOClient {
-	return &EtcdIOClient{log: log}
+func NewClient(log *slog.Logger) *Client {
+	return &Client{log: log}
 }
 
 // PrioritizeIO tries to find the etcd process on the node and prioritizes its I/O.
-func (c *EtcdIOClient) PrioritizeIO() error {
+func (c *Client) PrioritizeIO() error {
 	// find etcd process(es)
 	pid, err := c.findEtcdProcess()
 	if err != nil {
@@ -70,7 +72,7 @@ func (c *EtcdIOClient) PrioritizeIO() error {
 }
 
 // findEtcdProcess tries to find the etcd process on the node.
-func (c *EtcdIOClient) findEtcdProcess() (int, error) {
+func (c *Client) findEtcdProcess() (int, error) {
 	procDir, err := os.Open("/proc")
 	if err != nil {
 		return 0, fmt.Errorf("opening /proc: %w", err)

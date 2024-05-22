@@ -14,7 +14,6 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/etcdio"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubewaiter"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
@@ -182,13 +181,40 @@ func TestInitCluster(t *testing.T) {
 			k8sVersion:        "1.19",
 			wantErr:           true,
 		},
-		"etcd prioritizer fails on error": {
+		"etcd prioritizer doesn't fail on error": {
 			clusterUtil:       stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
 			kubeAPIWaiter:     stubKubeAPIWaiter{},
 			etcdIOPrioritizer: stubEtcdIOPrioritizer{assert.AnError},
-			providerMetadata:  &stubProviderMetadata{},
-			k8sVersion:        versions.Default,
-			wantErr:           true,
+			providerMetadata: &stubProviderMetadata{
+				selfResp: metadata.InstanceMetadata{
+					Name:          nodeName,
+					ProviderID:    providerID,
+					VPCIP:         privateIP,
+					AliasIPRanges: []string{aliasIPRange},
+				},
+				getLoadBalancerHostResp: loadbalancerIP,
+				getLoadBalancerPortResp: strconv.Itoa(constants.KubernetesPort),
+			},
+			wantConfig: k8sapi.KubeadmInitYAML{
+				InitConfiguration: kubeadm.InitConfiguration{
+					NodeRegistration: kubeadm.NodeRegistrationOptions{
+						KubeletExtraArgs: map[string]string{
+							"node-ip":     privateIP,
+							"provider-id": providerID,
+						},
+						Name: nodeName,
+					},
+				},
+				ClusterConfiguration: kubeadm.ClusterConfiguration{
+					ClusterName:          "kubernetes",
+					ControlPlaneEndpoint: loadbalancerIP,
+					APIServer: kubeadm.APIServer{
+						CertSANs: []string{privateIP},
+					},
+				},
+			},
+			wantErr:    false,
+			k8sVersion: versions.Default,
 		},
 	}
 
@@ -377,16 +403,9 @@ func TestJoinCluster(t *testing.T) {
 			role:              role.Worker,
 			wantErr:           true,
 		},
-		"etcd prioritizer error fails": {
+		"etcd prioritizer error doesn't fail": {
 			clusterUtil:       stubClusterUtil{},
 			etcdIOPrioritizer: stubEtcdIOPrioritizer{assert.AnError},
-			providerMetadata:  &stubProviderMetadata{},
-			role:              role.Worker,
-			wantErr:           true,
-		},
-		"etcd prioritizer doesn't fail on worker": {
-			clusterUtil:       stubClusterUtil{},
-			etcdIOPrioritizer: stubEtcdIOPrioritizer{etcdio.ErrNoEtcdProcess},
 			providerMetadata: &stubProviderMetadata{
 				selfResp: metadata.InstanceMetadata{
 					ProviderID: "provider-id",
@@ -394,7 +413,8 @@ func TestJoinCluster(t *testing.T) {
 					VPCIP:      "192.0.2.1",
 				},
 			},
-			role: role.Worker,
+			k8sComponents: k8sComponents,
+			role:          role.Worker,
 			wantConfig: kubeadm.JoinConfiguration{
 				Discovery: kubeadm.Discovery{
 					BootstrapToken: joinCommand,
