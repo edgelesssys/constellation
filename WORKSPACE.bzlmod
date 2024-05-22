@@ -142,17 +142,6 @@ nixpkgs_python_configure(
 
 # gazelle:repo gazelle
 
-# proto toolchain
-load("//bazel/toolchains:proto_deps.bzl", "proto_deps")
-
-proto_deps()
-
-load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_proto_toolchains")
-
-rules_proto_dependencies()
-
-rules_proto_toolchains()
-
 # C / C++ toolchains
 
 load("@hermetic_cc_toolchain//toolchain:defs.bzl", zig_toolchains = "toolchains")
