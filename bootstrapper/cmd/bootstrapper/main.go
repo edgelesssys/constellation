@@ -86,7 +86,7 @@ func main() {
 
 		clusterInitJoiner = kubernetes.New(
 			"aws", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.NewUninitialized(),
-			metadata, &kubewaiter.CloudKubeAPIWaiter{},
+			metadata, &kubewaiter.CloudKubeAPIWaiter{}, log,
 		)
 		openDevice = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
@@ -102,7 +102,7 @@ func main() {
 		metadataAPI = metadata
 		clusterInitJoiner = kubernetes.New(
 			"gcp", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.NewUninitialized(),
-			metadata, &kubewaiter.CloudKubeAPIWaiter{},
+			metadata, &kubewaiter.CloudKubeAPIWaiter{}, log,
 		)
 		openDevice = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
@@ -122,7 +122,7 @@ func main() {
 		metadataAPI = metadata
 		clusterInitJoiner = kubernetes.New(
 			"azure", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.NewUninitialized(),
-			metadata, &kubewaiter.CloudKubeAPIWaiter{},
+			metadata, &kubewaiter.CloudKubeAPIWaiter{}, log,
 		)
 
 		openDevice = vtpm.OpenVTPM
@@ -132,7 +132,7 @@ func main() {
 		metadata := qemucloud.New()
 		clusterInitJoiner = kubernetes.New(
 			"qemu", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.NewUninitialized(),
-			metadata, &kubewaiter.CloudKubeAPIWaiter{},
+			metadata, &kubewaiter.CloudKubeAPIWaiter{}, log,
 		)
 		metadataAPI = metadata
 
@@ -155,7 +155,7 @@ func main() {
 		}
 		clusterInitJoiner = kubernetes.New(
 			"openstack", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.NewUninitialized(),
-			metadata, &kubewaiter.CloudKubeAPIWaiter{},
+			metadata, &kubewaiter.CloudKubeAPIWaiter{}, log,
 		)
 		metadataAPI = metadata
 		openDevice = vtpm.OpenVTPM

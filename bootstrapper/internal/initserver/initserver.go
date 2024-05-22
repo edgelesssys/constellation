@@ -234,7 +234,6 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 		req.KubernetesComponents,
 		req.ApiserverCertSans,
 		req.ServiceCidr,
-		s.log,
 	)
 	if err != nil {
 		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "initializing cluster: %s", err)); e != nil {
@@ -357,7 +356,6 @@ type ClusterInitializer interface {
 		kubernetesComponents components.Components,
 		apiServerCertSANs []string,
 		serviceCIDR string,
-		log *slog.Logger,
 	) ([]byte, error)
 }
 
