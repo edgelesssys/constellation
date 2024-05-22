@@ -51,7 +51,9 @@ jobs:
 
       - name: Run Bazel tidy
         shell: bash
-        run: bazel run //:tidy
+        run: |
+          bazel run //:tidy
+          bazel mod deps --lockfile_mode=update
 
       - name: Check if untidy
         id: untidy
