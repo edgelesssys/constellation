@@ -2,6 +2,9 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
+def _resource_set(_os, _num_inputs):
+    return {"cpu": 4, "memory": 4096}
+
 def _mkosi_image_impl(ctx):
     args = ctx.actions.args()
     inputs = []
@@ -99,6 +102,7 @@ def _mkosi_image_impl(ctx):
         execution_requirements = {"no-remote": "1", "no-sandbox": "1"},
         progress_message = "Building mkosi image " + ctx.label.name,
         env = env,
+        resource_set = _resource_set,
     )
     return DefaultInfo(files = depset(outputs), runfiles = ctx.runfiles(outputs))
 
