@@ -42,7 +42,7 @@ type kubeAPIWaiter interface {
 }
 
 type etcdIOPrioritizer interface {
-	PrioritizeIO() error
+	PrioritizeIO()
 }
 
 // KubeWrapper implements Cluster interface.
@@ -152,9 +152,7 @@ func (k *KubeWrapper) InitCluster(
 	}
 
 	k.log.Info("Prioritizing etcd I/O")
-	if err := k.etcdIOPrioritizer.PrioritizeIO(); err != nil {
-		k.log.Warn("Prioritizing etcd I/O failed", "error", err)
-	}
+	k.etcdIOPrioritizer.PrioritizeIO()
 
 	err = k.client.Initialize(kubeConfig)
 	if err != nil {
@@ -265,9 +263,7 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 	// If on control plane (and thus with etcd), try to prioritize etcd I/O.
 	if peerRole == role.ControlPlane {
 		k.log.Info("Prioritizing etcd I/O")
-		if err := k.etcdIOPrioritizer.PrioritizeIO(); err != nil {
-			k.log.Warn("Prioritizing etcd I/O failed", "error", err)
-		}
+		k.etcdIOPrioritizer.PrioritizeIO()
 	}
 
 	return nil
@@ -329,9 +325,7 @@ func (k *KubeWrapper) StartKubelet() error {
 		return fmt.Errorf("starting kubelet: %w", err)
 	}
 
-	if err := k.etcdIOPrioritizer.PrioritizeIO(); err != nil {
-		k.log.Warn("Prioritizing etcd I/O failed", "error", err)
-	}
+	k.etcdIOPrioritizer.PrioritizeIO()
 
 	return nil
 }

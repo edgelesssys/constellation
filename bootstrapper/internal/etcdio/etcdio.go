@@ -56,7 +56,7 @@ func NewClient(log *slog.Logger) *Client {
 // Since it might be possible that the process just started (if this method is called
 // right after the kubelet started), it retries to do its work each second
 // until it succeeds or the timeout of 10 seconds is reached.
-func (c *Client) PrioritizeIO() error {
+func (c *Client) PrioritizeIO() {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 	timeout, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -67,19 +67,19 @@ func (c *Client) PrioritizeIO() error {
 		err := c.setIOPriority()
 		if err == nil {
 			// Success, return directly
-			return nil
+			return
 		} else if errors.Is(err, ErrNoEtcdProcess) {
 			c.log.Info("No etcd process found, retrying")
 		} else {
 			c.log.Warn("Prioritizing etcd I/O failed", "error", err)
-			return fmt.Errorf("prioritizing etcd I/O: %w", err)
+			return
 		}
 
 		select {
 		case <-ticker.C:
 		case <-timeout.Done():
 			c.log.Warn("Timed out waiting for etcd to start")
-			return nil
+			return
 		}
 	}
 }

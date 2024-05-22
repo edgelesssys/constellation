@@ -181,41 +181,6 @@ func TestInitCluster(t *testing.T) {
 			k8sVersion:        "1.19",
 			wantErr:           true,
 		},
-		"etcd prioritizer doesn't fail on error": {
-			clusterUtil:       stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
-			kubeAPIWaiter:     stubKubeAPIWaiter{},
-			etcdIOPrioritizer: stubEtcdIOPrioritizer{assert.AnError},
-			providerMetadata: &stubProviderMetadata{
-				selfResp: metadata.InstanceMetadata{
-					Name:          nodeName,
-					ProviderID:    providerID,
-					VPCIP:         privateIP,
-					AliasIPRanges: []string{aliasIPRange},
-				},
-				getLoadBalancerHostResp: loadbalancerIP,
-				getLoadBalancerPortResp: strconv.Itoa(constants.KubernetesPort),
-			},
-			wantConfig: k8sapi.KubeadmInitYAML{
-				InitConfiguration: kubeadm.InitConfiguration{
-					NodeRegistration: kubeadm.NodeRegistrationOptions{
-						KubeletExtraArgs: map[string]string{
-							"node-ip":     privateIP,
-							"provider-id": providerID,
-						},
-						Name: nodeName,
-					},
-				},
-				ClusterConfiguration: kubeadm.ClusterConfiguration{
-					ClusterName:          "kubernetes",
-					ControlPlaneEndpoint: loadbalancerIP,
-					APIServer: kubeadm.APIServer{
-						CertSANs: []string{privateIP},
-					},
-				},
-			},
-			wantErr:    false,
-			k8sVersion: versions.Default,
-		},
 	}
 
 	for name, tc := range testCases {
@@ -402,28 +367,6 @@ func TestJoinCluster(t *testing.T) {
 			providerMetadata:  &stubProviderMetadata{},
 			role:              role.Worker,
 			wantErr:           true,
-		},
-		"etcd prioritizer error doesn't fail": {
-			clusterUtil:       stubClusterUtil{},
-			etcdIOPrioritizer: stubEtcdIOPrioritizer{assert.AnError},
-			providerMetadata: &stubProviderMetadata{
-				selfResp: metadata.InstanceMetadata{
-					ProviderID: "provider-id",
-					Name:       "metadata-name",
-					VPCIP:      "192.0.2.1",
-				},
-			},
-			k8sComponents: k8sComponents,
-			role:          role.Worker,
-			wantConfig: kubeadm.JoinConfiguration{
-				Discovery: kubeadm.Discovery{
-					BootstrapToken: joinCommand,
-				},
-				NodeRegistration: kubeadm.NodeRegistrationOptions{
-					Name:             "metadata-name",
-					KubeletExtraArgs: map[string]string{"node-ip": "192.0.2.1"},
-				},
-			},
 		},
 	}
 
@@ -627,10 +570,6 @@ func (s *stubKubeAPIWaiter) Wait(_ context.Context, _ kubewaiter.KubernetesClien
 	return s.waitErr
 }
 
-type stubEtcdIOPrioritizer struct {
-	prioritizeErr error
-}
+type stubEtcdIOPrioritizer struct{}
 
-func (s *stubEtcdIOPrioritizer) PrioritizeIO() error {
-	return s.prioritizeErr
-}
+func (s *stubEtcdIOPrioritizer) PrioritizeIO() {}
