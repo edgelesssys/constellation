@@ -4,7 +4,7 @@
 
 ## Steps
 
-Replace "1.xx.x" with the new version in [WORKSPACE.bazel](/WORKSPACE.bazel):
+Replace "1.xx.x" with the new version in [WORKSPACE.bzlmod](/WORKSPACE.bzlmod):
 
 ```starlark
 load("@io_bazel_rules_go//go:deps.bzl", "go_download_sdk", "go_register_toolchains", "go_rules_dependencies")

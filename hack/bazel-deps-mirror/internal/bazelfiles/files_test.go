@@ -42,22 +42,22 @@ func TestFindFiles(t *testing.T) {
 				},
 			},
 		},
-		"only WORKSPACE.bazel file": {
-			files: []string{"WORKSPACE.bazel"},
+		"only WORKSPACE.bzlmod file": {
+			files: []string{"WORKSPACE.bzlmod"},
 			wantFiles: []BazelFile{
 				{
-					RelPath: "WORKSPACE.bazel",
-					AbsPath: "/WORKSPACE.bazel",
+					RelPath: "WORKSPACE.bzlmod",
+					AbsPath: "/WORKSPACE.bzlmod",
 					Type:    BazelFileTypeWorkspace,
 				},
 			},
 		},
-		"both WORKSPACE and WORKSPACE.bazel files": {
-			files: []string{"WORKSPACE", "WORKSPACE.bazel"},
+		"both WORKSPACE and WORKSPACE.bzlmod files": {
+			files: []string{"WORKSPACE", "WORKSPACE.bzlmod"},
 			wantFiles: []BazelFile{
 				{
-					RelPath: "WORKSPACE.bazel",
-					AbsPath: "/WORKSPACE.bazel",
+					RelPath: "WORKSPACE.bzlmod",
+					AbsPath: "/WORKSPACE.bzlmod",
 					Type:    BazelFileTypeWorkspace,
 				},
 			},
@@ -67,11 +67,11 @@ func TestFindFiles(t *testing.T) {
 			wantErr: true,
 		},
 		"all kinds": {
-			files: []string{"WORKSPACE", "WORKSPACE.bazel", "foo.bzl", "bar.bzl", "unused.txt", "folder/baz.bzl"},
+			files: []string{"WORKSPACE", "WORKSPACE.bzlmod", "foo.bzl", "bar.bzl", "unused.txt", "folder/baz.bzl"},
 			wantFiles: []BazelFile{
 				{
-					RelPath: "WORKSPACE.bazel",
-					AbsPath: "/WORKSPACE.bazel",
+					RelPath: "WORKSPACE.bzlmod",
+					AbsPath: "/WORKSPACE.bzlmod",
 					Type:    BazelFileTypeWorkspace,
 				},
 				{
@@ -216,15 +216,15 @@ func TestDiff(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 	fs := afero.NewMemMapFs()
-	err := afero.WriteFile(fs, "WORKSPACE.bazel", []byte(""), 0o644)
+	err := afero.WriteFile(fs, "WORKSPACE.bzlmod", []byte(""), 0o644)
 	require.NoError(err)
 	helper := Helper{
 		fs:            fs,
 		workspaceRoot: "/",
 	}
 	fileRef := BazelFile{
-		RelPath: "WORKSPACE.bazel",
-		AbsPath: "/WORKSPACE.bazel",
+		RelPath: "WORKSPACE.bzlmod",
+		AbsPath: "/WORKSPACE.bzlmod",
 		Type:    BazelFileTypeWorkspace,
 	}
 	bf, err := helper.LoadFile(fileRef)
@@ -247,10 +247,10 @@ func TestDiff(t *testing.T) {
 	)
 	diff, err = helper.Diff(fileRef, bf)
 	require.NoError(err)
-	assert.Equal("--- a/WORKSPACE.bazel\n+++ b/WORKSPACE.bazel\n@@ -1 +1 @@\n+workspace(name = \"foo\")\n", diff)
+	assert.Equal("--- a/WORKSPACE.bzlmod\n+++ b/WORKSPACE.bzlmod\n@@ -1 +1 @@\n+workspace(name = \"foo\")\n", diff)
 	err = helper.WriteFile(fileRef, bf)
 	require.NoError(err)
-	contents, err := afero.ReadFile(fs, "WORKSPACE.bazel")
+	contents, err := afero.ReadFile(fs, "WORKSPACE.bzlmod")
 	assert.NoError(err)
 	assert.Equal("workspace(name = \"foo\")\n", string(contents))
 	diff, err = helper.Diff(fileRef, bf)

@@ -1,1 +1,1 @@
-"""This folder contains toolchain dependencies for the project. They are loaded by `WORKSPACE.bazel`."""
+"""This folder contains toolchain dependencies for the project. They are loaded by `WORKSPACE.bzlmod`."""

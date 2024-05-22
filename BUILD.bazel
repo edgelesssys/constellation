@@ -1,5 +1,5 @@
 exports_files([
-    "WORKSPACE.bazel",
+    "WORKSPACE.bzlmod",
 ])
 
 alias(

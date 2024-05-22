@@ -54,7 +54,7 @@ buildifier_test(
     no_sandbox = True,
     tags = ["no-remote-exec"],
     verbose = True,
-    workspace = "//:WORKSPACE.bazel",
+    workspace = "//:WORKSPACE.bzlmod",
 )
 
 buildifier(

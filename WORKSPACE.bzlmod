@@ -1,5 +1,10 @@
 workspace(name = "constellation")
 
+# Sadly, some Bazel rules we depend on have no support for bzlmod yet
+# Here is an (incomplete) list of rules known to not support bzlmod.
+# Please extend this list as you find more.
+# - rules_nixpkgs: https://github.com/tweag/rules_nixpkgs/issues/181
+
 load("//bazel/toolchains:skylib_deps.bzl", "skylib_deps")
 
 skylib_deps()
@@ -179,7 +184,7 @@ go_register_toolchains()
 
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 
-gazelle_dependencies(go_repository_default_config = "//:WORKSPACE.bazel")
+gazelle_dependencies(go_repository_default_config = "//:WORKSPACE.bzlmod")
 
 # gazelle:repo bazel_gazelle
 
