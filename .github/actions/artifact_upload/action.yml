@@ -47,6 +47,7 @@ runs:
             something_exists=true
           fi
         done
+
         # Create an archive if files exist.
         # Don't create an archive file if no files are found
         # and warn.
@@ -55,11 +56,15 @@ runs:
           echo "::warning:: No files/directories found with the provided path(s): ${paths}. No artifact will be uploaded."
           exit 0
         fi
+
         for target in ${paths}
         do
-          pushd "$(dirname "${target}")" || exit 1
-          7zz a -p'${{ inputs.encryptionSecret }}' -bso0 -bsp0 -t7z -ms=on -mhe=on "${{ steps.tempdir.outputs.directory }}/archive.7z" "$(basename "${target}")"
-          popd || exit 1
+          if [[ -f "${target}" ]]
+          then
+            pushd "$(dirname "${target}")" || exit 1
+            7zz a -p'${{ inputs.encryptionSecret }}' -bso0 -bsp0 -t7z -ms=on -mhe=on "${{ steps.tempdir.outputs.directory }}/archive.7z" "$(basename "${target}")"
+            popd || exit 1
+          fi
         done
 
     - name: Upload archive as artifact
