@@ -58,7 +58,7 @@ runs:
         for target in ${paths}
         do
           pushd "$(dirname "${target}")" || exit 1
-          7zz a -p'${{ inputs.encryptionSecret }}' -t7z -ms=on -mhe=on "${{ steps.tempdir.outputs.directory }}/archive.7z" "$(basename "${target}")"
+          7zz a -p'${{ inputs.encryptionSecret }}' -bso0 -bsp0 -t7z -ms=on -mhe=on "${{ steps.tempdir.outputs.directory }}/archive.7z" "$(basename "${target}")"
           popd || exit 1
         done
 

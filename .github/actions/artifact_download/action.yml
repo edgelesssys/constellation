@@ -37,4 +37,4 @@ runs:
       shell: bash
       run: |
         mkdir -p ${{ inputs.path }}
-        7zz x -p'${{ inputs.encryptionSecret }}' -t7z -o"${{ inputs.path }}" ${{ steps.tempdir.outputs.directory }}/archive.7z
+        7zz x -p'${{ inputs.encryptionSecret }}' -bso0 -bsp0 -t7z -o"${{ inputs.path }}" ${{ steps.tempdir.outputs.directory }}/archive.7z
