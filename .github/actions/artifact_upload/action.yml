@@ -59,7 +59,7 @@ runs:
 
         for target in ${paths}
         do
-          if [[ -f "${target}" ]]
+          if compgen -G "${target}" > /dev/null
           then
             pushd "$(dirname "${target}")" || exit 1
             7zz a -p'${{ inputs.encryptionSecret }}' -bso0 -bsp0 -t7z -ms=on -mhe=on "${{ steps.tempdir.outputs.directory }}/archive.7z" "$(basename "${target}")"
