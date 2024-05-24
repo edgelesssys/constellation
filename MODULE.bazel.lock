@@ -1,6 +1,6 @@
 {
   "lockFileVersion": 6,
-  "moduleFileHash": "f5aabeaa86601f89a9e222914be7b7bef4cef74d7352d4d82650140637278493",
+  "moduleFileHash": "1434155b8f89da6ec56086071a305bf426ed01c58cfd80be5a47044b524ab9a2",
   "flags": {
     "cmdRegistries": [
       "https://bcr.bazel.build/"
@@ -30,7 +30,7 @@
           "usingModule": "<root>",
           "location": {
             "file": "@@//:MODULE.bazel",
-            "line": 32,
+            "line": 23,
             "column": 23
           },
           "imports": {},
@@ -48,7 +48,7 @@
               "devDependency": false,
               "location": {
                 "file": "@@//:MODULE.bazel",
-                "line": 33,
+                "line": 24,
                 "column": 16
               }
             }
@@ -62,7 +62,7 @@
           "usingModule": "<root>",
           "location": {
             "file": "@@//:MODULE.bazel",
-            "line": 41,
+            "line": 32,
             "column": 24
           },
           "imports": {
@@ -193,7 +193,7 @@
               "devDependency": false,
               "location": {
                 "file": "@@//:MODULE.bazel",
-                "line": 42,
+                "line": 33,
                 "column": 18
               }
             },
@@ -208,7 +208,7 @@
               "devDependency": false,
               "location": {
                 "file": "@@//:MODULE.bazel",
-                "line": 170,
+                "line": 161,
                 "column": 29
               }
             },
@@ -223,7 +223,7 @@
               "devDependency": false,
               "location": {
                 "file": "@@//:MODULE.bazel",
-                "line": 170,
+                "line": 161,
                 "column": 29
               }
             },
@@ -238,7 +238,7 @@
               "devDependency": false,
               "location": {
                 "file": "@@//:MODULE.bazel",
-                "line": 170,
+                "line": 161,
                 "column": 29
               }
             },
@@ -253,7 +253,7 @@
               "devDependency": false,
               "location": {
                 "file": "@@//:MODULE.bazel",
-                "line": 179,
+                "line": 170,
                 "column": 24
               }
             },
@@ -268,7 +268,7 @@
               "devDependency": false,
               "location": {
                 "file": "@@//:MODULE.bazel",
-                "line": 185,
+                "line": 176,
                 "column": 24
               }
             },
@@ -286,7 +286,7 @@
               "devDependency": false,
               "location": {
                 "file": "@@//:MODULE.bazel",
-                "line": 191,
+                "line": 182,
                 "column": 24
               }
             },
@@ -303,7 +303,7 @@
               "devDependency": false,
               "location": {
                 "file": "@@//:MODULE.bazel",
-                "line": 200,
+                "line": 191,
                 "column": 24
               }
             }
@@ -318,7 +318,7 @@
         "gazelle": "gazelle@_",
         "hermetic_cc_toolchain": "hermetic_cc_toolchain@3.1.0",
         "rules_cc": "rules_cc@0.0.9",
-        "io_bazel_rules_go": "rules_go@_",
+        "io_bazel_rules_go": "rules_go@0.48.0",
         "rules_pkg": "rules_pkg@0.10.1",
         "rules_proto": "rules_proto@6.0.0",
         "rules_python": "rules_python@0.32.2",
@@ -620,7 +620,7 @@
         "bazel_features": "bazel_features@1.9.1",
         "bazel_skylib": "bazel_skylib@1.6.1",
         "com_google_protobuf": "protobuf@21.7",
-        "io_bazel_rules_go": "rules_go@_",
+        "io_bazel_rules_go": "rules_go@0.48.0",
         "rules_proto": "rules_proto@6.0.0",
         "bazel_tools": "bazel_tools@_",
         "local_config_platform": "local_config_platform@_"
@@ -731,10 +731,10 @@
         }
       }
     },
-    "rules_go@_": {
+    "rules_go@0.48.0": {
       "name": "rules_go",
-      "version": "0.47.1",
-      "key": "rules_go@_",
+      "version": "0.48.0",
+      "key": "rules_go@0.48.0",
       "repoName": "io_bazel_rules_go",
       "executionPlatformsToRegister": [],
       "toolchainsToRegister": [
@@ -744,9 +744,9 @@
         {
           "extensionBzlFile": "@io_bazel_rules_go//go:extensions.bzl",
           "extensionName": "go_sdk",
-          "usingModule": "rules_go@_",
+          "usingModule": "rules_go@0.48.0",
           "location": {
-            "file": "@@rules_go~//:MODULE.bazel",
+            "file": "https://bcr.bazel.build/modules/rules_go/0.48.0/MODULE.bazel",
             "line": 16,
             "column": 23
           },
@@ -764,7 +764,7 @@
               },
               "devDependency": false,
               "location": {
-                "file": "@@rules_go~//:MODULE.bazel",
+                "file": "https://bcr.bazel.build/modules/rules_go/0.48.0/MODULE.bazel",
                 "line": 17,
                 "column": 16
               }
@@ -776,9 +776,9 @@
         {
           "extensionBzlFile": "@gazelle//:extensions.bzl",
           "extensionName": "go_deps",
-          "usingModule": "rules_go@_",
+          "usingModule": "rules_go@0.48.0",
           "location": {
-            "file": "@@rules_go~//:MODULE.bazel",
+            "file": "https://bcr.bazel.build/modules/rules_go/0.48.0/MODULE.bazel",
             "line": 32,
             "column": 24
           },
@@ -803,7 +803,7 @@
               },
               "devDependency": false,
               "location": {
-                "file": "@@rules_go~//:MODULE.bazel",
+                "file": "https://bcr.bazel.build/modules/rules_go/0.48.0/MODULE.bazel",
                 "line": 33,
                 "column": 18
               }
@@ -822,6 +822,19 @@
         "gazelle": "gazelle@_",
         "bazel_tools": "bazel_tools@_",
         "local_config_platform": "local_config_platform@_"
+      },
+      "repoSpec": {
+        "bzlFile": "@@bazel_tools//tools/build_defs/repo:http.bzl",
+        "ruleClassName": "http_archive",
+        "attributes": {
+          "urls": [
+            "https://github.com/bazelbuild/rules_go/releases/download/v0.48.0/rules_go-v0.48.0.zip"
+          ],
+          "integrity": "sha256-M6zErg9wUC20uJPJ/B3Xqb+ZjCPn/yxFF3QdQEmpdvg=",
+          "strip_prefix": "",
+          "remote_patches": {},
+          "remote_patch_strip": 0
+        }
       }
     },
     "rules_pkg@0.10.1": {

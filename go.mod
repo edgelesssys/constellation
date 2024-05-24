@@ -68,7 +68,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.28.7
 	github.com/aws/smithy-go v1.20.2
 	github.com/bazelbuild/buildtools v0.0.0-20240422193413-1429e15ae755
-	github.com/bazelbuild/rules_go v0.47.1
+	github.com/bazelbuild/rules_go v0.48.0
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/docker/docker v26.1.2+incompatible
 	github.com/edgelesssys/go-azguestattestation v0.0.0-20240513062303-05f8770a633d
