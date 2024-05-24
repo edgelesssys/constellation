@@ -34,6 +34,7 @@ replace (
 )
 
 replace (
+	github.com/google/go-attestation v0.5.1 => github.com/3u13r/go-attestation v0.0.0-20240521164316-50a3b28885a3
 	github.com/martinjungblut/go-cryptsetup => github.com/daniel-weisse/go-cryptsetup v0.0.0-20230705150314-d8c07bd1723c
 	github.com/tink-crypto/tink-go/v2 v2.0.0 => github.com/derpsteb/tink-go/v2 v2.0.0-20231002051717-a808e454eed6
 )
