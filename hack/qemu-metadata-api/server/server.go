@@ -14,7 +14,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api/virtwrapper"
+	"github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api/dhcp"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 )
@@ -22,16 +22,16 @@ import (
 // Server that provides QEMU metadata.
 type Server struct {
 	log               *slog.Logger
-	virt              virConnect
+	dhcpLeaseGetter   LeaseGetter
 	network           string
 	initSecretHashVal []byte
 }
 
 // New creates a new Server.
-func New(log *slog.Logger, network, initSecretHash string, conn virConnect) *Server {
+func New(log *slog.Logger, network, initSecretHash string, getter LeaseGetter) *Server {
 	return &Server{
 		log:               log,
-		virt:              conn,
+		dhcpLeaseGetter:   getter,
 		network:           network,
 		initSecretHashVal: []byte(initSecretHash),
 	}
@@ -139,15 +139,7 @@ func (s *Server) getEndpoint(w http.ResponseWriter, r *http.Request) {
 	log := s.log.With(slog.String("peer", r.RemoteAddr))
 	log.Info("Serving GET request for /endpoint")
 
-	net, err := s.virt.LookupNetworkByName(s.network)
-	if err != nil {
-		log.With(slog.Any("error", err)).Error("Failed to lookup network")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer net.Free()
-
-	leases, err := net.GetDHCPLeases()
+	leases, err := s.dhcpLeaseGetter.GetDHCPLeases()
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to get DHCP leases")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -172,13 +164,7 @@ func (s *Server) getEndpoint(w http.ResponseWriter, r *http.Request) {
 
 // listAll returns a list of all active peers.
 func (s *Server) listAll() ([]metadata.InstanceMetadata, error) {
-	net, err := s.virt.LookupNetworkByName(s.network)
-	if err != nil {
-		return nil, err
-	}
-	defer net.Free()
-
-	leases, err := net.GetDHCPLeases()
+	leases, err := s.dhcpLeaseGetter.GetDHCPLeases()
 	if err != nil {
 		return nil, err
 	}
@@ -201,6 +187,7 @@ func (s *Server) listAll() ([]metadata.InstanceMetadata, error) {
 	return peers, nil
 }
 
-type virConnect interface {
-	LookupNetworkByName(name string) (*virtwrapper.Network, error)
+// LeaseGetter is an interface for getting DHCP leases.
+type LeaseGetter interface {
+	GetDHCPLeases() ([]dhcp.NetworkDHCPLease, error)
 }
