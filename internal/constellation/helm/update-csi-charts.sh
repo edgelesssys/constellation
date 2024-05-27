@@ -68,7 +68,7 @@ download_chart() {
 }
 
 ## AWS CSI Driver
-download_chart "https://github.com/edgelesssys/constellation-aws-ebs-csi-driver" "v1.1.1" "charts/aws-ebs-csi-driver" "aws-csi-driver"
+download_chart "https://github.com/edgelesssys/constellation-aws-ebs-csi-driver" "v1.2.0" "charts/aws-ebs-csi-driver" "aws-csi-driver"
 
 ## Azure CSI Driver
 download_chart "https://github.com/edgelesssys/constellation-azuredisk-csi-driver" "v1.3.0" "charts/edgeless" "azuredisk-csi-driver"

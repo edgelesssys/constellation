@@ -9,7 +9,7 @@ dependencies:
   - name: snapshot-crds
     version: 6.2.2
   - name: aws-csi-driver
-    version: 1.1.0
+    version: 1.2.0
     tags:
       - AWS
   - name: azuredisk-csi-driver
