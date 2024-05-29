@@ -94,18 +94,18 @@ class BenchmarkComparer:
             raise ValueError('Failed reading benchmark file: {e}'.format(e=e))
 
         try:
-            name = bench_curr['provider']
+            name = bench_curr['attestationVariant']
         except KeyError:
             raise ValueError(
-                'Current benchmark record file does not contain provider.')
+                'Current benchmark record file does not contain attestationVariant.')
         try:
-            prev_name = bench_prev['provider']
+            prev_name = bench_prev['attestationVariant']
         except KeyError:
             raise ValueError(
-                'Previous benchmark record file does not contain provider.')
+                'Previous benchmark record file does not contain attestationVariant.')
         if name != prev_name:
             raise ValueError(
-                'Cloud providers of previous and current benchmark data do not match.')
+                'Cloud attestationVariants of previous and current benchmark data do not match.')
 
         if 'fio' not in bench_prev.keys() or 'fio' not in bench_curr.keys():
             raise ValueError('Benchmarks do not both contain fio records.')
