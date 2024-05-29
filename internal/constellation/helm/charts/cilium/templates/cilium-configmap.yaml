@@ -14,6 +14,7 @@
 {{- $azureUsePrimaryAddress := "true" -}}
 {{- $defaultK8sClientQPS := 5 -}}
 {{- $defaultK8sClientBurst := 10 -}}
+{{- $defaultDNSProxyEnableTransparentMode := "false" -}}
 
 {{- /* Default values when 1.8 was initially deployed */ -}}
 {{- if semverCompare ">=1.8" (default "1.8" .Values.upgradeCompatibility) -}}
@@ -48,6 +49,7 @@
       {{- $azureUsePrimaryAddress = "false" -}}
   {{- end }}
   {{- $defaultKubeProxyReplacement = "disabled" -}}
+  {{- $defaultDNSProxyEnableTransparentMode = "true" -}}
 {{- end -}}
 
 {{- /* Default values when 1.14 was initially deployed */ -}}
@@ -364,6 +366,11 @@ data:
   enable-host-legacy-routing: "true"
 {{- end }}
 
+{{- if .Values.bpf.nodeMapMax }}
+  # node-map-max specifies the maximum number of entries for the node map.
+  bpf-node-map-max: {{ .Values.bpf.nodeMapMax | quote }}
+{{- end }}
+
 {{- if .Values.bpf.authMapMax }}
   # bpf-auth-map-max specifies the maximum number of entries in the auth map
   bpf-auth-map-max: {{ .Values.bpf.authMapMax | quote }}
@@ -448,9 +455,15 @@ data:
   #   - vxlan (default)
   #   - geneve
 {{- if .Values.gke.enabled }}
+  {{- if ne (.Values.routingMode | default "native") "native" }}
+    {{- fail (printf "RoutingMode must be set to native when gke.enabled=true" )}}
+  {{- end }}
   routing-mode: "native"
   enable-endpoint-routes: "true"
 {{- else if .Values.aksbyocni.enabled }}
+  {{- if ne (.Values.routingMode | default "tunnel") "tunnel" }}
+    {{- fail (printf "RoutingMode must be set to tunnel when aksbyocni.enabled=true" )}}
+  {{- end }}
   routing-mode: "tunnel"
   tunnel-protocol: "vxlan"
 {{- else if .Values.routingMode }}
@@ -1153,6 +1166,13 @@ data:
 {{- end }}
 
 {{- if .Values.dnsProxy }}
+  {{- if hasKey .Values.dnsProxy "enableTransparentMode" }}
+  # explicit setting gets precedence
+  dnsproxy-enable-transparent-mode: {{ .Values.dnsProxy.enableTransparentMode | quote }}
+  {{- else if eq $cniChainingMode "none" }}
+  # default DNS proxy to transparent mode in non-chaining modes
+  dnsproxy-enable-transparent-mode: {{ $defaultDNSProxyEnableTransparentMode | quote }}
+  {{- end }}
   {{- if .Values.dnsProxy.dnsRejectResponseCode }}
   tofqdns-dns-reject-response-code: {{ .Values.dnsProxy.dnsRejectResponseCode | quote }}
   {{- end }}
@@ -1206,9 +1226,12 @@ data:
   mesh-auth-spiffe-trust-domain: {{ .Values.authentication.mutual.spire.trustDomain | quote }}
 {{- end }}
 
+  proxy-xff-num-trusted-hops-ingress: {{ .Values.envoy.xffNumTrustedHopsL7PolicyIngress | quote }}
+  proxy-xff-num-trusted-hops-egress: {{ .Values.envoy.xffNumTrustedHopsL7PolicyEgress | quote }}
   proxy-connect-timeout: {{ .Values.envoy.connectTimeoutSeconds | quote }}
   proxy-max-requests-per-connection: {{ .Values.envoy.maxRequestsPerConnection | quote }}
   proxy-max-connection-duration-seconds: {{ .Values.envoy.maxConnectionDurationSeconds | quote }}
+  proxy-idle-timeout-seconds: {{ .Values.envoy.idleTimeoutDurationSeconds | quote }}
 
   external-envoy-proxy: {{ .Values.envoy.enabled | quote }}
 

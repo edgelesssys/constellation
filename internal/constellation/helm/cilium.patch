@@ -6,11 +6,11 @@ index 256a79542..3f3fc714b 100644
  name: cilium
  displayName: Cilium
  home: https://cilium.io/
--version: 1.15.0-pre.3
--appVersion: 1.15.0-pre.3
-+version: 1.15.0-pre.3-edg.3
-+appVersion: 1.15.0-pre.3-edg.3
+-version: 1.15.5
+-appVersion: 1.15.5
++version: 1.15.5-edg.1
++appVersion: 1.15.5-edg.1
  kubeVersion: ">= 1.16.0-0"
- icon: https://cdn.jsdelivr.net/gh/cilium/cilium@main/Documentation/images/logo-solo.svg
+ icon: https://cdn.jsdelivr.net/gh/cilium/cilium@v1.15/Documentation/images/logo-solo.svg
  description: eBPF-based Networking, Security, and Observability
  
