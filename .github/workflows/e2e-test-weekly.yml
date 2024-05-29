@@ -241,7 +241,7 @@ jobs:
             kubernetes-version: "v1.29"
             clusterCreation: "cli"
 
-          # perf-bench test on latest k8s version, not supported on AWS
+          # perf-bench test on latest k8s version
           - test: "perf-bench"
             refStream: "ref/main/stream/debug/?"
             attestationVariant: "gcp-sev-es"
@@ -261,6 +261,11 @@ jobs:
           - test: "perf-bench"
             refStream: "ref/main/stream/debug/?"
             attestationVariant: "azure-tdx"
+            kubernetes-version: "v1.29"
+            clusterCreation: "cli"
+          - test: "perf-bench"
+            refStream: "ref/main/stream/debug/?"
+            attestationVariant: "aws-sev-snp"
             kubernetes-version: "v1.29"
             clusterCreation: "cli"
 

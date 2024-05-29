@@ -231,7 +231,7 @@ jobs:
             runner: "ubuntu-22.04"
             clusterCreation: "cli"
 
-          # perf-bench test on latest k8s version, not supported on AWS
+          # perf-bench test on latest k8s version
           - test: "perf-bench"
             attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.29"
@@ -250,6 +250,11 @@ jobs:
             clusterCreation: "cli"
           - test: "perf-bench"
             attestationVariant: "azure-tdx"
+            kubernetes-version: "v1.29"
+            runner: "ubuntu-22.04"
+            clusterCreation: "cli"
+          - test: "perf-bench"
+            attestationVariant: "aws-sev-snp"
             kubernetes-version: "v1.29"
             runner: "ubuntu-22.04"
             clusterCreation: "cli"

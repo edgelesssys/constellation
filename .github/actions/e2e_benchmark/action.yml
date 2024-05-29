@@ -94,6 +94,22 @@ runs:
         EOF
         fi
 
+        if [[ "${{ inputs.cloudProvider }}" == "aws" ]]
+        then
+        cat <<EOF | kubectl apply -f -
+        apiVersion: storage.k8s.io/v1
+        kind: StorageClass
+        metadata:
+          name: fio-benchmark
+        parameters:
+          type: gp3
+        provisioner: aws.csi.confidential.cloud
+        allowVolumeExpansion: true
+        reclaimPolicy: Delete
+        volumeBindingMode: Immediate
+        EOF
+        fi
+
         mkdir -p out
         kubestr fio -e "out/fio-constellation-${{ inputs.attestationVariant }}.json" -o json -s fio-benchmark -z 400Gi -f .github/actions/e2e_benchmark/fio.ini
 
