@@ -21,7 +21,7 @@ git clone \
   --no-checkout \
   --sparse \
   --depth 1 \
-  -b v1.15.0-pre.3-edg.3 \
+  -b burgerdev/rebase-v1.15.0 \
   https://github.com/edgelesssys/cilium.git
 cd cilium
 

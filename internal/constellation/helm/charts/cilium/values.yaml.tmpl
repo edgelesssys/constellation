@@ -233,6 +233,9 @@ resources: {}
   #   cpu: 100m
   #   memory: 512Mi
 
+# -- resources & limits for the agent init containers
+initResources: {}
+
 securityContext:
   # -- User to run the pod with
   # runAsUser: 0
@@ -1293,6 +1296,12 @@ hubble:
       rollingUpdate:
         maxUnavailable: 1
 
+    # -- Additional hubble-relay volumes.
+    extraVolumes: []
+
+    # -- Additional hubble-relay volumeMounts.
+    extraVolumeMounts: []
+
     # -- hubble-relay pod security context
     podSecurityContext:
       fsGroup: 65532
@@ -2195,12 +2204,16 @@ envoy:
   # Ref: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ~
 
+  # -- Configure Cilium Envoy Prometheus options.
+  # Note that some of these apply to either cilium-agent or cilium-envoy.
   prometheus:
     # -- Enable prometheus metrics for cilium-envoy
     enabled: true
     serviceMonitor:
       # -- Enable service monitors.
       # This requires the prometheus CRDs to be available (see https://github.com/prometheus-operator/prometheus-operator/blob/main/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml)
+      # Note that this setting applies to both cilium-envoy _and_ cilium-agent
+      # with Envoy enabled.
       enabled: false
       # -- Labels to add to ServiceMonitor cilium-envoy
       labels: {}
@@ -2212,18 +2225,21 @@ envoy:
       # service monitors configured.
       # namespace: ""
       # -- Relabeling configs for the ServiceMonitor cilium-envoy
+      # or for cilium-agent with Envoy configured.
       relabelings:
         - sourceLabels:
             - __meta_kubernetes_pod_node_name
           targetLabel: node
           replacement: ${1}
       # -- Metrics relabeling configs for the ServiceMonitor cilium-envoy
+      # or for cilium-agent with Envoy configured.
       metricRelabelings: ~
     # -- Serve prometheus metrics for cilium-envoy on the configured port
     port: "9964"
 
 # -- Enable use of the remote node identity.
 # ref: https://docs.cilium.io/en/v1.7/install/upgrade/#configmap-remote-node-identity
+# Deprecated without replacement in 1.15. To be removed in 1.16.
 remoteNodeIdentity: true
 
 # -- Enable resource quotas for priority classes used in the cluster.
@@ -3307,6 +3323,8 @@ dnsProxy:
   proxyPort: 0
   # -- The maximum time the DNS proxy holds an allowed DNS response before sending it along. Responses are sent as soon as the datapath is updated with the new IP information.
   proxyResponseMaxDelay: 100ms
+  # -- DNS proxy operation mode (true/false, or unset to use version dependent defaults)
+  # enableTransparentMode: true
 
 # -- SCTP Configuration Values
 sctp:
@@ -3346,6 +3364,8 @@ authentication:
         enabled: true
         # -- SPIRE namespace to install into
         namespace: cilium-spire
+        # -- SPIRE namespace already exists. Set to true if Helm should not create, manage, and import the SPIRE namespace.
+        existingNamespace: false
         # -- init container image of SPIRE agent and server
         initImage:
           override: ~
@@ -3375,8 +3395,21 @@ authentication:
           # -- SPIRE Workload Attestor kubelet verification.
           skipKubeletVerification: true
           # -- SPIRE agent tolerations configuration
+          # By default it follows the same tolerations as the agent itself
+          # to allow the Cilium agent on this node to connect to SPIRE.
           # ref: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
-          tolerations: []
+          tolerations:
+          - key: node.kubernetes.io/not-ready
+            effect: NoSchedule
+          - key: node-role.kubernetes.io/master
+            effect: NoSchedule
+          - key: node-role.kubernetes.io/control-plane
+            effect: NoSchedule
+          - key: node.cloudprovider.kubernetes.io/uninitialized
+            effect: NoSchedule
+            value: "true"
+          - key: CriticalAddonsOnly
+            operator: "Exists"
           # -- SPIRE agent affinity configuration
           affinity: {}
           # -- SPIRE agent nodeSelector configuration
