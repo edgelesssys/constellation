@@ -258,12 +258,11 @@ jobs:
             attestationVariant: "azure-sev-snp"
             kubernetes-version: "v1.29"
             clusterCreation: "cli"
-          # TODO: check what needs to be done for perf-bench on Azure TDX
-          #- test: "perf-bench"
-          #  refStream: "ref/main/stream/debug/?"
-          #  attestationVariant: "azure-tdx"
-          #  kubernetes-version: "v1.29"
-          #  clusterCreation: "cli"
+          - test: "perf-bench"
+            refStream: "ref/main/stream/debug/?"
+            attestationVariant: "azure-tdx"
+            kubernetes-version: "v1.29"
+            clusterCreation: "cli"
 
           # s3proxy test on latest k8s version
           - test: "s3proxy"

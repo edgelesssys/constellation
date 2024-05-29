@@ -248,6 +248,11 @@ jobs:
             kubernetes-version: "v1.29"
             runner: "ubuntu-22.04"
             clusterCreation: "cli"
+          - test: "perf-bench"
+            attestationVariant: "azure-tdx"
+            kubernetes-version: "v1.29"
+            runner: "ubuntu-22.04"
+            clusterCreation: "cli"
 
           # s3proxy test on latest k8s version
           - test: "s3proxy"
