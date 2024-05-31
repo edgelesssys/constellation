@@ -181,6 +181,7 @@ jobs:
           azureClientID: ${{ secrets.AZURE_E2E_MINI_CLIENT_ID }}
           azureSubscriptionID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           azureTenantID: ${{ secrets.AZURE_TENANT_ID }}
+          azureIAMCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
           registry: ghcr.io
           githubToken: ${{ secrets.GITHUB_TOKEN }}
 
