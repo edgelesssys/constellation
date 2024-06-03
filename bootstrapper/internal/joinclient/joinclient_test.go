@@ -8,7 +8,6 @@ package joinclient
 
 import (
 	"context"
-	"log/slog"
 	"net"
 	"strconv"
 	"sync"
@@ -350,7 +349,7 @@ type stubClusterJoiner struct {
 	joinClusterErr    error
 }
 
-func (j *stubClusterJoiner) JoinCluster(context.Context, *kubeadm.BootstrapTokenDiscovery, role.Role, components.Components, *slog.Logger) error {
+func (j *stubClusterJoiner) JoinCluster(context.Context, *kubeadm.BootstrapTokenDiscovery, role.Role, components.Components) error {
 	j.joinClusterCalled++
 	if j.numBadCalls == 0 {
 		return nil

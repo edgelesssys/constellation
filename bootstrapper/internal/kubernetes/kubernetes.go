@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/etcdio"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubewaiter"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -40,37 +41,48 @@ type kubeAPIWaiter interface {
 	Wait(ctx context.Context, kubernetesClient kubewaiter.KubernetesClient) error
 }
 
+type etcdIOPrioritizer interface {
+	PrioritizeIO()
+}
+
 // KubeWrapper implements Cluster interface.
 type KubeWrapper struct {
-	cloudProvider    string
-	clusterUtil      clusterUtil
-	kubeAPIWaiter    kubeAPIWaiter
-	configProvider   configurationProvider
-	client           k8sapi.Client
-	providerMetadata ProviderMetadata
-	getIPAddr        func() (string, error)
+	cloudProvider     string
+	clusterUtil       clusterUtil
+	kubeAPIWaiter     kubeAPIWaiter
+	configProvider    configurationProvider
+	client            k8sapi.Client
+	providerMetadata  ProviderMetadata
+	etcdIOPrioritizer etcdIOPrioritizer
+	getIPAddr         func() (string, error)
+
+	log *slog.Logger
 }
 
 // New creates a new KubeWrapper with real values.
 func New(cloudProvider string, clusterUtil clusterUtil, configProvider configurationProvider, client k8sapi.Client,
-	providerMetadata ProviderMetadata, kubeAPIWaiter kubeAPIWaiter,
+	providerMetadata ProviderMetadata, kubeAPIWaiter kubeAPIWaiter, log *slog.Logger,
 ) *KubeWrapper {
+	etcdIOPrioritizer := etcdio.NewClient(log)
+
 	return &KubeWrapper{
-		cloudProvider:    cloudProvider,
-		clusterUtil:      clusterUtil,
-		kubeAPIWaiter:    kubeAPIWaiter,
-		configProvider:   configProvider,
-		client:           client,
-		providerMetadata: providerMetadata,
-		getIPAddr:        getIPAddr,
+		cloudProvider:     cloudProvider,
+		clusterUtil:       clusterUtil,
+		kubeAPIWaiter:     kubeAPIWaiter,
+		configProvider:    configProvider,
+		client:            client,
+		providerMetadata:  providerMetadata,
+		getIPAddr:         getIPAddr,
+		log:               log,
+		etcdIOPrioritizer: etcdIOPrioritizer,
 	}
 }
 
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
-	ctx context.Context, versionString, clusterName string, conformanceMode bool, kubernetesComponents components.Components, apiServerCertSANs []string, serviceCIDR string, log *slog.Logger,
+	ctx context.Context, versionString, clusterName string, conformanceMode bool, kubernetesComponents components.Components, apiServerCertSANs []string, serviceCIDR string,
 ) ([]byte, error) {
-	log.With(slog.String("version", versionString)).Info("Installing Kubernetes components")
+	k.log.With(slog.String("version", versionString)).Info("Installing Kubernetes components")
 	if err := k.clusterUtil.InstallComponents(ctx, kubernetesComponents); err != nil {
 		return nil, err
 	}
@@ -78,7 +90,7 @@ func (k *KubeWrapper) InitCluster(
 	var validIPs []net.IP
 
 	// Step 1: retrieve cloud metadata for Kubernetes configuration
-	log.Info("Retrieving node metadata")
+	k.log.Info("Retrieving node metadata")
 	instance, err := k.providerMetadata.Self(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving own instance metadata: %w", err)
@@ -106,7 +118,7 @@ func (k *KubeWrapper) InitCluster(
 	certSANs := []string{nodeIP}
 	certSANs = append(certSANs, apiServerCertSANs...)
 
-	log.With(
+	k.log.With(
 		slog.String("nodeName", nodeName),
 		slog.String("providerID", instance.ProviderID),
 		slog.String("nodeIP", nodeIP),
@@ -132,11 +144,15 @@ func (k *KubeWrapper) InitCluster(
 	if err != nil {
 		return nil, fmt.Errorf("encoding kubeadm init configuration as YAML: %w", err)
 	}
-	log.Info("Initializing Kubernetes cluster")
-	kubeConfig, err := k.clusterUtil.InitCluster(ctx, initConfigYAML, nodeName, clusterName, validIPs, conformanceMode, log)
+
+	k.log.Info("Initializing Kubernetes cluster")
+	kubeConfig, err := k.clusterUtil.InitCluster(ctx, initConfigYAML, nodeName, clusterName, validIPs, conformanceMode, k.log)
 	if err != nil {
 		return nil, fmt.Errorf("kubeadm init: %w", err)
 	}
+
+	k.log.Info("Prioritizing etcd I/O")
+	k.etcdIOPrioritizer.PrioritizeIO()
 
 	err = k.client.Initialize(kubeConfig)
 	if err != nil {
@@ -177,22 +193,23 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("annotating node with Kubernetes components hash: %w", err)
 	}
 
-	log.Info("Setting up internal-config ConfigMap")
+	k.log.Info("Setting up internal-config ConfigMap")
 	if err := k.setupInternalConfigMap(ctx); err != nil {
 		return nil, fmt.Errorf("failed to setup internal ConfigMap: %w", err)
 	}
+
 	return kubeConfig, nil
 }
 
 // JoinCluster joins existing Kubernetes cluster.
-func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTokenDiscovery, peerRole role.Role, k8sComponents components.Components, log *slog.Logger) error {
-	log.With("k8sComponents", k8sComponents).Info("Installing provided kubernetes components")
+func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTokenDiscovery, peerRole role.Role, k8sComponents components.Components) error {
+	k.log.With("k8sComponents", k8sComponents).Info("Installing provided kubernetes components")
 	if err := k.clusterUtil.InstallComponents(ctx, k8sComponents); err != nil {
 		return fmt.Errorf("installing kubernetes components: %w", err)
 	}
 
 	// Step 1: retrieve cloud metadata for Kubernetes configuration
-	log.Info("Retrieving node metadata")
+	k.log.Info("Retrieving node metadata")
 	instance, err := k.providerMetadata.Self(ctx)
 	if err != nil {
 		return fmt.Errorf("retrieving own instance metadata: %w", err)
@@ -212,7 +229,7 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 	// override join endpoint to go over lb
 	args.APIServerEndpoint = net.JoinHostPort(loadBalancerHost, loadBalancerPort)
 
-	log.With(
+	k.log.With(
 		slog.String("nodeName", nodeName),
 		slog.String("providerID", providerID),
 		slog.String("nodeIP", nodeInternalIP),
@@ -237,9 +254,16 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 	if err != nil {
 		return fmt.Errorf("encoding kubeadm join configuration as YAML: %w", err)
 	}
-	log.With(slog.String("apiServerEndpoint", args.APIServerEndpoint)).Info("Joining Kubernetes cluster")
-	if err := k.clusterUtil.JoinCluster(ctx, joinConfigYAML, log); err != nil {
+
+	k.log.With(slog.String("apiServerEndpoint", args.APIServerEndpoint)).Info("Joining Kubernetes cluster")
+	if err := k.clusterUtil.JoinCluster(ctx, joinConfigYAML, k.log); err != nil {
 		return fmt.Errorf("joining cluster: %v; %w ", string(joinConfigYAML), err)
+	}
+
+	// If on control plane (and thus with etcd), try to prioritize etcd I/O.
+	if peerRole == role.ControlPlane {
+		k.log.Info("Prioritizing etcd I/O")
+		k.etcdIOPrioritizer.PrioritizeIO()
 	}
 
 	return nil
@@ -300,6 +324,8 @@ func (k *KubeWrapper) StartKubelet() error {
 	if err := k.clusterUtil.StartKubelet(); err != nil {
 		return fmt.Errorf("starting kubelet: %w", err)
 	}
+
+	k.etcdIOPrioritizer.PrioritizeIO()
 
 	return nil
 }

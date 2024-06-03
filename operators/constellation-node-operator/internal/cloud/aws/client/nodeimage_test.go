@@ -8,6 +8,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/service/autoscaling"
@@ -381,6 +382,10 @@ func TestDeleteNode(t *testing.T) {
 			providerID:           "aws:///us-east-2a/i-00000000000000000",
 			terminateInstanceErr: assert.AnError,
 			wantErr:              true,
+		},
+		"deleting node succeeds when the instance does not exist": {
+			providerID:           "aws:///us-east-2a/i-00000000000000000",
+			terminateInstanceErr: fmt.Errorf("Instance Id not found - No managed instance found for instance ID: i-00000000000000000"),
 		},
 	}
 	for name, tc := range testCases {

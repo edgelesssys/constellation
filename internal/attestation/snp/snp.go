@@ -17,6 +17,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/google/go-sev-guest/abi"
+	"github.com/google/go-sev-guest/client"
 	"github.com/google/go-sev-guest/kds"
 	spb "github.com/google/go-sev-guest/proto/sevsnp"
 	"github.com/google/go-sev-guest/verify/trust"
@@ -30,6 +31,26 @@ func Product() *spb.SevProduct {
 	// sevProduct is the product info of the SEV platform as reported through CPUID[EAX=1].
 	// It may become necessary in the future to differentiate among CSP vendors.
 	return &spb.SevProduct{Name: spb.SevProduct_SEV_PRODUCT_MILAN, Stepping: 0} // Milan-B0
+}
+
+// GetExtendedReport retrieves the extended SNP report from the CVM.
+func GetExtendedReport(reportData [64]byte) (report, certChain []byte, err error) {
+	qp, err := client.GetLeveledQuoteProvider()
+	if err != nil {
+		return nil, nil, fmt.Errorf("getting quote provider: %w", err)
+	}
+	quote, err := qp.GetRawQuoteAtLevel(reportData, 0)
+	if err != nil {
+		return nil, nil, fmt.Errorf("getting extended report: %w", err)
+	}
+
+	// Parse the report and certificate chain from the quote.
+	report = quote
+	if len(quote) > abi.ReportSize {
+		report = quote[:abi.ReportSize]
+		certChain = quote[abi.ReportSize:]
+	}
+	return report, certChain, nil
 }
 
 // InstanceInfo contains the necessary information to establish trust in a SNP CVM.
@@ -110,7 +131,7 @@ func (a *InstanceInfo) AttestationWithCerts(getter trust.HTTPSGetter,
 		return nil, fmt.Errorf("converting report to proto: %w", err)
 	}
 
-	productName := kds.ProductString(Product())
+	productName := kds.ProductLine(Product())
 
 	att := &spb.Attestation{
 		Report:           report,

@@ -11,6 +11,9 @@ inputs:
   azureTenantID:
     description: "Azure tenant to use for login with OIDC"
     required: true
+  azureIAMCredentials:
+    description: "Azure IAM credentials used for cleaning up resources"
+    required: true
   registry:
     description: "Container registry to use"
     required: true
@@ -38,9 +41,26 @@ runs:
 
     - name: MiniConstellation E2E
       shell: bash
+      id: e2e-test
       env:
         ARM_CLIENT_ID: ${{ inputs.azureClientID }}
         ARM_SUBSCRIPTION_ID: ${{ inputs.azureSubscriptionID }}
         ARM_TENANT_ID: ${{ inputs.azureTenantID }}
       run: |
         bazel run --test_timeout=14400 //e2e/miniconstellation:push_remote_test
+
+    - name: Log in to azure
+      # only log in if e2e test failed or if the run was cancelled
+      if: (failure() && steps.e2e-test.conclusion == 'failure') || cancelled()
+      uses: ./.github/actions/login_azure
+      with:
+        azure_credentials: ${{ inputs.azureIAMCredentials }}
+
+    - name: Clean up after failure
+      shell: bash
+      # clean up if e2e test failed or if the run was cancelled
+      if: (failure() && steps.e2e-test.conclusion == 'failure') || cancelled()
+      run: |
+        rg_name=${{ steps.e2e-test.outputs.rgname }}
+        echo "[*] Deleting resource group $rg_name"
+        az group delete -y --resource-group "$rg_name"

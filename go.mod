@@ -34,7 +34,6 @@ replace (
 )
 
 replace (
-	github.com/google/go-sev-guest => github.com/google/go-sev-guest v0.0.0-20230928233922-2dcbba0a4b9d
 	github.com/martinjungblut/go-cryptsetup => github.com/daniel-weisse/go-cryptsetup v0.0.0-20230705150314-d8c07bd1723c
 	github.com/tink-crypto/tink-go/v2 v2.0.0 => github.com/derpsteb/tink-go/v2 v2.0.0-20231002051717-a808e454eed6
 )
@@ -69,7 +68,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.28.7
 	github.com/aws/smithy-go v1.20.2
 	github.com/bazelbuild/buildtools v0.0.0-20240422193413-1429e15ae755
-	github.com/bazelbuild/rules_go v0.47.1
+	github.com/bazelbuild/rules_go v0.48.0
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/docker/docker v26.1.2+incompatible
 	github.com/edgelesssys/go-azguestattestation v0.0.0-20240513062303-05f8770a633d

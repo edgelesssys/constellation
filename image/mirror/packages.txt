@@ -19,6 +19,7 @@ mokutil
 nano
 nano-default-editor
 nvme-cli
+passt-selinux
 passwd
 podman
 sbsigntools

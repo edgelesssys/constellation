@@ -74,7 +74,7 @@
     },
     {
       "matchManagers": ["bazelisk", "bazel", "bazel-module"],
-      "matchDepNames": ["bazel", "io_bazel_rules_go", "bazel_gazelle"],
+      "matchDepNames": ["bazel", "io_bazel_rules_go", "bazel_gazelle", "rules_go", "gazelle"],
       "groupName": "bazel (core)",
     },
     {

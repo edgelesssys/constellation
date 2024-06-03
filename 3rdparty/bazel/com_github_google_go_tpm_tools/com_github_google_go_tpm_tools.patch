@@ -1,6 +1,6 @@
 --- simulator/internal/BUILD.bazel
 +++ simulator/internal/BUILD.bazel
-@@ -4,83 +4,17 @@
+@@ -4,83 +4,14 @@
      name = "internal",
      srcs = [
          "doc.go",
@@ -17,10 +17,8 @@
 -            "-L/usr/local/opt/openssl/lib",
 -        ],
 -        "//conditions:default": [],
-+    cdeps =  select({
-+        "@//bazel/settings:tpm_simulator_enabled": ["//simulator/ms-tpm-20-ref:ms_tpm_20_ref"],
-+        "//conditions:default": ["@//3rdparty/bazel/com_github_google_go_tpm_tools/placeholder:ms_tpm_20_ref_disabled"],
-     }),
+-    }),
++    cdeps = ["//simulator/ms-tpm-20-ref:ms_tpm_20_ref"],
      copts = [
 -        "-DALG_SHA512=ALG_YES",
 -        "-DCERTIFYX509_DEBUG=NO",

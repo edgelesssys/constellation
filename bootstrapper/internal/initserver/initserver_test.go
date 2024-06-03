@@ -11,7 +11,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"log/slog"
 	"net"
 	"strings"
 	"sync"
@@ -420,7 +419,7 @@ type stubClusterInitializer struct {
 
 func (i *stubClusterInitializer) InitCluster(
 	context.Context, string, string,
-	bool, components.Components, []string, string, *slog.Logger,
+	bool, components.Components, []string, string,
 ) ([]byte, error) {
 	return i.initClusterKubeconfig, i.initClusterErr
 }

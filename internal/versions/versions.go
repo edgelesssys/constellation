@@ -173,11 +173,11 @@ const (
 	// NodeMaintenanceOperatorImage is the image for the node maintenance operator.
 	NodeMaintenanceOperatorImage = "quay.io/medik8s/node-maintenance-operator:v0.15.0@sha256:8cb8dad93283268282c30e75c68f4bd76b28def4b68b563d2f9db9c74225d634" // renovate:container
 	// LogstashImage is the container image of logstash, used for log collection by debugd.
-	LogstashImage = "ghcr.io/edgelesssys/constellation/logstash-debugd:v2.15.0-pre.0.20231220180720-ced03202a944@sha256:54e0beb2fad83509c1d79c866652bdd94125ce5a4c9947be8c63cd74a2079e70" // renovate:container
+	LogstashImage = "ghcr.io/edgelesssys/constellation/logstash-debugd:v2.17.0-pre.0.20240513104207-d76c9ac82de7@sha256:e7d77bea381354c58fd9783eb9e2b846b14ea846d531eb3c54d5dd89917908c4" // renovate:container
 	// FilebeatImage is the container image of filebeat, used for log collection by debugd.
-	FilebeatImage = "ghcr.io/edgelesssys/constellation/filebeat-debugd:v2.15.0-pre.0.20231220180720-ced03202a944@sha256:1a57ad12dd0d1a7514f2360f37108925e103e7d0e5b8f24b12e8f266b78d570e" // renovate:container
+	FilebeatImage = "ghcr.io/edgelesssys/constellation/filebeat-debugd:v2.17.0-pre.0.20240513104207-d76c9ac82de7@sha256:6567d682385c06b49f6d56fdf3f20d5c24809bbfced15b816f4717bf837fc776" // renovate:container
 	// MetricbeatImage is the container image of filebeat, used for log collection by debugd.
-	MetricbeatImage = "ghcr.io/edgelesssys/constellation/metricbeat-debugd:v2.15.0-pre.0.20231220180720-ced03202a944@sha256:60bdd7cd868841385da230d4eab4600235b22fe1b3e0e865dda3f9720534ea7e" // renovate:container
+	MetricbeatImage = "ghcr.io/edgelesssys/constellation/metricbeat-debugd:v2.17.0-pre.0.20240513104207-d76c9ac82de7@sha256:d16fe0371fbb383ca3cfa70d4d10ea5124fd87054bfac189ce5458ba350bb25d" // renovate:container
 
 	// currently supported versions.
 	//nolint:revive

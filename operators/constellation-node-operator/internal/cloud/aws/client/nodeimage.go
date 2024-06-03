@@ -9,6 +9,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/autoscaling"
@@ -207,7 +208,7 @@ func (c *Client) DeleteNode(ctx context.Context, providerID string) error {
 			ShouldDecrementDesiredCapacity: toPtr(true),
 		},
 	)
-	if err != nil {
+	if err != nil && !isInstanceNotFoundError(err) {
 		return fmt.Errorf("failed to terminate instance: %w", err)
 	}
 
@@ -216,4 +217,11 @@ func (c *Client) DeleteNode(ctx context.Context, providerID string) error {
 
 func toPtr[T any](v T) *T {
 	return &v
+}
+
+func isInstanceNotFoundError(err error) bool {
+	if err == nil {
+		return false
+	}
+	return strings.Contains(err.Error(), "Instance Id not found")
 }

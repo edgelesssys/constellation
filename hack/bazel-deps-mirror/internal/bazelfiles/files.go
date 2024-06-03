@@ -53,12 +53,12 @@ func (h *Helper) FindFiles() ([]BazelFile, error) {
 	return append(bzlFiles, workspaceFile), nil
 }
 
-// findWorkspaceFile returns the path to the Bazel WORKSPACE.bazel file (or WORKSPACE if the former doesn't exist).
+// findWorkspaceFile returns the path to the Bazel WORKSPACE.bzlmod file (or WORKSPACE if the former doesn't exist).
 func (h *Helper) findWorkspaceFile() (BazelFile, error) {
-	if _, err := h.fs.Stat("WORKSPACE.bazel"); err == nil {
+	if _, err := h.fs.Stat("WORKSPACE.bzlmod"); err == nil {
 		return BazelFile{
-			RelPath: "WORKSPACE.bazel",
-			AbsPath: filepath.Join(h.workspaceRoot, "WORKSPACE.bazel"),
+			RelPath: "WORKSPACE.bzlmod",
+			AbsPath: filepath.Join(h.workspaceRoot, "WORKSPACE.bzlmod"),
 			Type:    BazelFileTypeWorkspace,
 		}, nil
 	}
@@ -151,7 +151,7 @@ type BazelFileType int
 
 const (
 	BazelFileTypeBzl       = iota // BazelFileTypeBzl is a .bzl file
-	BazelFileTypeWorkspace        // BazelFileTypeWorkspace is a WORKSPACE or WORKSPACE.bazel file
+	BazelFileTypeWorkspace        // BazelFileTypeWorkspace is a WORKSPACE or WORKSPACE.bzlmod file
 )
 
 // LookupEnv can be the real os.LookupEnv or a mock for testing.

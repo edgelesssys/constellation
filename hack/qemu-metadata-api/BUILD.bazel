@@ -13,8 +13,9 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api",
     visibility = ["//visibility:private"],
     deps = [
+        "//hack/qemu-metadata-api/dhcp/dnsmasq",
+        "//hack/qemu-metadata-api/dhcp/virtwrapper",
         "//hack/qemu-metadata-api/server",
-        "//hack/qemu-metadata-api/virtwrapper",
         "//internal/logger",
         "@org_libvirt_go_libvirt//:libvirt",
     ],

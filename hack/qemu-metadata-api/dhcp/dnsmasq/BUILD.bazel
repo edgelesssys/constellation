@@ -1,0 +1,24 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "dnsmasq",
+    srcs = ["dnsmasq.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api/dhcp/dnsmasq",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//hack/qemu-metadata-api/dhcp",
+        "@com_github_spf13_afero//:afero",
+    ],
+)
+
+go_test(
+    name = "dnsmasq_test",
+    srcs = ["dnsmasq_test.go"],
+    embed = [":dnsmasq"],
+    deps = [
+        "@com_github_spf13_afero//:afero",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

@@ -16,113 +16,28 @@ bazel query //image/system/...
 You can either build a group of images (all images for a cloud provider, a stream, ...) or a single image by selecting a target.
 
 ```sh
-bazel build //image/system:openstack_qemu-vtpm_debug
+bazel build //image/system:azure_azure-sev-snp_stable
 ```
 
 The location of the destination folder can be queried like this:
 
 ```sh
-bazel cquery --output=files //image/system:openstack_qemu-vtpm_debug
+bazel cquery --output=files //image/system:azure_azure-sev-snp_stable
 ```
 
-## Upload to CSP
+## Build and Upload
 
-Warning! Never set `--version` to a value that is already used for a release image.
-
-<details>
-<summary>AWS</summary>
-
-- Install `aws` cli (see [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html))
-- Login to AWS (see [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html))
-- Choose secure boot PKI public keys (one of `pki_dev`, `pki_test`, `pki_prod`)
-  - `pki_dev` can be used for local image builds
-  - `pki_test` is used by the CI for non-release images
-  - `pki_prod` is used for release images
+Similarly, you can also build and upload images to the respective CSP within a single step with the `upload_*` targets.
 
 ```sh
-# Warning! Never set `--version` to a value that is already used for a release image.
-# Instead, use a `ref` that corresponds to your branch name.
-bazel run //image/upload -- image aws --verbose --raw-image path/to/constellation.raw --attestation-variant ""  --version ref/foo/stream/nightly/v2.7.0-pre-asdf
+bazel run //image/system:upload_aws_aws-sev-snp_console -- --ref deps-image-fedora-40 --upload-measurements
 ```
 
-</details>
+The `--ref` should be the branch you're building images on. It should **not contain slashes**. Slashes should be replaced with dashes to
+not break the filesystem structure of the image storages.
 
-<details>
-<summary>GCP</summary>
-
-- Install `gcloud` and `gsutil` (see [here](https://cloud.google.com/sdk/docs/install))
-- Login to GCP (see [here](https://cloud.google.com/sdk/docs/authorizing))
-- Choose secure boot PKI public keys (one of `pki_dev`, `pki_test`, `pki_prod`)
-  - `pki_dev` can be used for local image builds
-  - `pki_test` is used by the CI for non-release images
-  - `pki_prod` is used for release images
-
-```sh
-export GCP_RAW_IMAGE_PATH=$(realpath path/to/constellation.raw)
-export GCP_IMAGE_PATH=path/to/image.tar.gz
-upload/pack.sh gcp ${GCP_RAW_IMAGE_PATH} ${GCP_IMAGE_PATH}
-# Warning! Never set `--version` to a value that is already used for a release image.
-# Instead, use a `ref` that corresponds to your branch name.
-bazel run //image/upload -- image gcp --verbose --raw-image "${GCP_IMAGE_PATH}" --attestation-variant "sev-es"  --version ref/foo/stream/nightly/v2.7.0-pre-asdf
-```
-
-</details>
-
-<details>
-<summary>Azure</summary>
-
-Note:
-
-> For testing purposes, it is a lot simpler to disable Secure Boot for the uploaded image!
-> Disabling Secure Boot allows you to skip the VMGS creation steps above.
-
-- Install `az` and `azcopy` (see [here](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli))
-- Login to Azure (see [here](https://docs.microsoft.com/en-us/cli/azure/authenticate-azure-cli))
-- Optional (if Secure Boot should be enabled) [Prepare virtual machine guest state (VMGS) with customized NVRAM or use existing VMGS blob](#azure-secure-boot)
-
-```sh
-export AZURE_RAW_IMAGE_PATH=path/to/constellation.raw
-export AZURE_IMAGE_PATH=path/to/image.vhd
-upload/pack.sh azure "${AZURE_RAW_IMAGE_PATH}" "${AZURE_IMAGE_PATH}"
-# Warning! Never set `--version` to a value that is already used for a release image.
-# Instead, use a `ref` that corresponds to your branch name.
-bazel run //image/upload -- image azure --verbose --raw-image "${AZURE_IMAGE_PATH}" --attestation-variant "cvm"  --version ref/foo/stream/nightly/v2.7.0-pre-asdf
-```
-
-</details>
-
-<details>
-<summary>OpenStack</summary>
-
-Note:
-
-> OpenStack is not one a global cloud provider, but rather a software that can be installed on-premises.
-> This means we do not upload the image to a cloud provider, but to our CDN.
-
-- Install `aws` cli (see [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html))
-- Login to AWS (see [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html))
-
-```sh
-# Warning! Never set `--version` to a value that is already used for a release image.
-# Instead, use a `ref` that corresponds to your branch name.
-bazel run //image/upload -- image openstack --verbose --raw-image path/to/constellation.raw --attestation-variant "sev"  --version ref/foo/stream/nightly/v2.7.0-pre-asdf
-```
-
-</details>
-
-<details>
-<summary>QEMU</summary>
-
-- Install `aws` cli (see [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html))
-- Login to AWS (see [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html))
-
-```sh
-# Warning! Never set `--version` to a value that is already used for a release image.
-# Instead, use a `ref` that corresponds to your branch name.
-bazel run //image/upload -- image qemu --verbose --raw-image path/to/constellation.raw --attestation-variant "default"  --version ref/foo/stream/nightly/v2.7.0-pre-asdf
-```
-
-</details>
+Optionally, the `--upload-measurements` option can be used to specify that measurements for the image should be uploaded, and `--fake-sign` specifies
+that a debugging signing key should be used to sign the measurements, which is done for debug images.
 
 ## Kernel
 
@@ -131,3 +46,14 @@ We track the latest longterm release, use sources directly from [kernel.org](htt
 srpm spec file.
 
 After building a Kernel rpm, we upload it to our CDN and use it in our image builds.
+
+## Upgrading to a new Fedora release
+
+- Search for the old Fedora releasever in the `image/` directory and replace every occurence (outside of lockfiles) with the new releasever
+- Search for Fedora container images in Dockerfiles and upgrade the releasever
+- Regenerate the package lockfile: `bazel run //image/mirror:update_packages`
+- Build test images locally:
+  - `bazel query //image/system:all` (pick an image name from the output)
+  - `bazel build //image/system:IMAGE_NAME_HERE` (replace with an actual image name)
+- Let CI build new images and run e2e tests
+- Upgrade kernel spec under [edgelesssys/constellation-kernel](https://github.com/edgelesssys/constellation-kernel) to use new releasever

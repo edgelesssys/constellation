@@ -288,7 +288,7 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 	// We currently cannot recover from any failure in this function. Joining the k8s cluster
 	// sometimes fails transiently, and we don't want to brick the node because of that.
 	for i := range 3 {
-		err = c.joiner.JoinCluster(ctx, btd, c.role, ticket.KubernetesComponents, c.log)
+		err = c.joiner.JoinCluster(ctx, btd, c.role, ticket.KubernetesComponents)
 		if err == nil {
 			break
 		}
@@ -399,7 +399,6 @@ type ClusterJoiner interface {
 		args *kubeadm.BootstrapTokenDiscovery,
 		peerRole role.Role,
 		k8sComponents components.Components,
-		log *slog.Logger,
 	) error
 }
 

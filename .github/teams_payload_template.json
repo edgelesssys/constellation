@@ -58,14 +58,6 @@
                                 "id": "a9a34611-9a38-4c00-a8a2-f87d94c2bf7d",
                                 "name": "Otto Bittner"
                             }
-                        },
-                        {
-                            "type": "mention",
-                            "text": "<at>malt3</at>",
-                            "mentioned": {
-                                "id": "3012fe21-cff7-499d-88cf-48cf12f2e90c",
-                                "name": "Malte Poll"
-                            }
                         }
                     ]
                 },

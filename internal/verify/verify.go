@@ -131,7 +131,7 @@ func getCertChain(cfg config.AttestationCfg) ([]byte, error) {
 	}
 
 	if awsCfg.AMDSigningKey.Equal(config.Certificate{}) {
-		certs, err := trust.GetProductChain(kds.ProductString(snp.Product()), abi.VlekReportSigner, trust.DefaultHTTPSGetter())
+		certs, err := trust.GetProductChain(kds.ProductLine(snp.Product()), abi.VlekReportSigner, trust.DefaultHTTPSGetter())
 		if err != nil {
 			return nil, fmt.Errorf("getting product certificate chain: %w", err)
 		}

@@ -28,6 +28,9 @@ terraform apply -auto-approve
 terraform output -raw ssh_private_key > id_rsa
 chmod 600 id_rsa
 
+rg_name=$(terraform output -raw rg_name)
+echo "rgname=$rg_name" >> "${GITHUB_OUTPUT:-/dev/null}"
+
 azure_vm_ip=$(terraform output -raw public_ip)
 
 echo "::endgroup::"

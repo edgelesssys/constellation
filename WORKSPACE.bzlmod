@@ -1,13 +1,5 @@
 workspace(name = "constellation")
 
-load("//bazel/toolchains:skylib_deps.bzl", "skylib_deps")
-
-skylib_deps()
-
-load("//bazel/toolchains:cc_deps.bzl", "rules_cc_deps")
-
-rules_cc_deps()
-
 # nixpkgs deps
 load("//bazel/toolchains:nixpkgs_deps.bzl", "nixpkgs_deps")
 
@@ -140,15 +132,6 @@ register_mkosi(
     name = "mkosi_nix_toolchain",
 )
 
-# Python toolchain
-load("//bazel/toolchains:python_deps.bzl", "python_deps")
-
-python_deps()
-
-load("@rules_python//python:repositories.bzl", "py_repositories")
-
-py_repositories()
-
 nixpkgs_python_configure(
     fail_not_supported = False,
     python3_attribute_path = "python311",
@@ -156,54 +139,10 @@ nixpkgs_python_configure(
 )
 
 # Go toolchain
-load("//bazel/toolchains:go_rules_deps.bzl", "go_deps")
 
-go_deps()
-
-load("//bazel/toolchains:go_module_deps.bzl", "go_dependencies")
-
-# gazelle:repository_macro bazel/toolchains/go_module_deps.bzl%go_dependencies
-go_dependencies()
-
-load("@io_bazel_rules_go//go:deps.bzl", "go_download_sdk", "go_register_toolchains", "go_rules_dependencies")
-
-go_download_sdk(
-    name = "go_sdk",
-    patches = ["//3rdparty/bazel/org_golang:go_tls_max_handshake_size.patch"],
-    version = "1.22.3",
-)
-
-go_rules_dependencies()
-
-go_register_toolchains()
-
-load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
-
-gazelle_dependencies(go_repository_default_config = "//:WORKSPACE.bazel")
-
-# gazelle:repo bazel_gazelle
-
-# proto toolchain
-load("//bazel/toolchains:proto_deps.bzl", "proto_deps")
-
-proto_deps()
-
-load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_proto_toolchains")
-
-rules_proto_dependencies()
-
-rules_proto_toolchains()
-
-# Buildifier
-load("//bazel/toolchains:buildifier_deps.bzl", "buildifier_deps")
-
-buildifier_deps()
+# gazelle:repo gazelle
 
 # C / C++ toolchains
-
-load("//bazel/toolchains:hermetic_cc_deps.bzl", "hermetic_cc_deps")
-
-hermetic_cc_deps()
 
 load("@hermetic_cc_toolchain//toolchain:defs.bzl", zig_toolchains = "toolchains")
 
@@ -267,28 +206,6 @@ register_toolchains(
     "@zig_sdk//toolchain:windows_amd64",
 )
 
-# Packaging rules (tar)
-load("//bazel/toolchains:pkg_deps.bzl", "pkg_deps")
-
-pkg_deps()
-
-load("@rules_pkg//:deps.bzl", "rules_pkg_dependencies")
-
-rules_pkg_dependencies()
-
-# Aspect Bazel Lib
-load("//bazel/toolchains:aspect_bazel_lib.bzl", "aspect_bazel_lib")
-
-aspect_bazel_lib()
-
-load("@aspect_bazel_lib//lib:repositories.bzl", "aspect_bazel_lib_dependencies", "aspect_bazel_lib_register_toolchains", "register_coreutils_toolchains", "register_yq_toolchains")
-
-aspect_bazel_lib_dependencies()
-
-aspect_bazel_lib_register_toolchains()
-
-register_coreutils_toolchains()
-
 # OCI rules
 load("//bazel/toolchains:oci_deps.bzl", "oci_deps")
 
@@ -308,8 +225,6 @@ oci_register_toolchains(
 load("//bazel/toolchains:container_images.bzl", "containter_image_deps")
 
 containter_image_deps()
-
-register_yq_toolchains()
 
 # Multirun
 load("//bazel/toolchains:multirun_deps.bzl", "multirun_deps")

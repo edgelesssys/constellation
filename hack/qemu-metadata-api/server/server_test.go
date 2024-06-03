@@ -9,13 +9,12 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api/virtwrapper"
+	"github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api/dhcp"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/stretchr/testify/assert"
@@ -23,15 +22,13 @@ import (
 )
 
 func TestListAll(t *testing.T) {
-	someErr := errors.New("error")
-
 	testCases := map[string]struct {
-		wantErr bool
-		connect *stubConnect
+		wantErr         bool
+		stubLeaseGetter *stubLeaseGetter
 	}{
 		"success": {
-			connect: &stubConnect{
-				network: newStubNetwork([]virtwrapper.NetworkDHCPLease{
+			stubLeaseGetter: &stubLeaseGetter{
+				leases: []dhcp.NetworkDHCPLease{
 					{
 						IPaddr:   "192.0.100.1",
 						Hostname: "control-plane-0",
@@ -44,20 +41,12 @@ func TestListAll(t *testing.T) {
 						IPaddr:   "192.0.200.1",
 						Hostname: "worker-0",
 					},
-				}, nil),
+				},
 			},
-		},
-		"LookupNetworkByName error": {
-			connect: &stubConnect{
-				getNetworkErr: someErr,
-			},
-			wantErr: true,
 		},
 		"GetDHCPLeases error": {
-			connect: &stubConnect{
-				network: stubNetwork{
-					getLeaseErr: someErr,
-				},
+			stubLeaseGetter: &stubLeaseGetter{
+				getErr: assert.AnError,
 			},
 			wantErr: true,
 		},
@@ -67,7 +56,7 @@ func TestListAll(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			server := New(logger.NewTest(t), "test", "initSecretHash", tc.connect)
+			server := New(logger.NewTest(t), "test", "initSecretHash", tc.stubLeaseGetter)
 
 			res, err := server.listAll()
 
@@ -76,58 +65,56 @@ func TestListAll(t *testing.T) {
 				return
 			}
 			assert.NoError(err)
-			assert.Len(tc.connect.network.leases, len(res))
+			assert.Len(tc.stubLeaseGetter.leases, len(res))
 		})
 	}
 }
 
 func TestListSelf(t *testing.T) {
-	someErr := errors.New("error")
-
 	testCases := map[string]struct {
-		remoteAddr string
-		connect    *stubConnect
-		wantErr    bool
+		remoteAddr      string
+		stubLeaseGetter *stubLeaseGetter
+		wantErr         bool
 	}{
 		"success": {
 			remoteAddr: "192.0.100.1:1234",
-			connect: &stubConnect{
-				network: newStubNetwork([]virtwrapper.NetworkDHCPLease{
+			stubLeaseGetter: &stubLeaseGetter{
+				leases: []dhcp.NetworkDHCPLease{
 					{
 						IPaddr:   "192.0.100.1",
 						Hostname: "control-plane-0",
 					},
-				}, nil),
+				},
 			},
 		},
 		"listAll error": {
 			remoteAddr: "192.0.100.1:1234",
-			connect: &stubConnect{
-				getNetworkErr: someErr,
+			stubLeaseGetter: &stubLeaseGetter{
+				getErr: assert.AnError,
 			},
 			wantErr: true,
 		},
 		"remoteAddr error": {
 			remoteAddr: "",
-			connect: &stubConnect{
-				network: newStubNetwork([]virtwrapper.NetworkDHCPLease{
+			stubLeaseGetter: &stubLeaseGetter{
+				leases: []dhcp.NetworkDHCPLease{
 					{
 						IPaddr:   "192.0.100.1",
 						Hostname: "control-plane-0",
 					},
-				}, nil),
+				},
 			},
 			wantErr: true,
 		},
 		"peer not found": {
 			remoteAddr: "192.0.200.1:1234",
-			connect: &stubConnect{
-				network: newStubNetwork([]virtwrapper.NetworkDHCPLease{
+			stubLeaseGetter: &stubLeaseGetter{
+				leases: []dhcp.NetworkDHCPLease{
 					{
 						IPaddr:   "192.0.100.1",
 						Hostname: "control-plane-0",
 					},
-				}, nil),
+				},
 			},
 			wantErr: true,
 		},
@@ -138,7 +125,7 @@ func TestListSelf(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			server := New(logger.NewTest(t), "test", "initSecretHash", tc.connect)
+			server := New(logger.NewTest(t), "test", "initSecretHash", tc.stubLeaseGetter)
 
 			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://192.0.0.1/self", nil)
 			require.NoError(err)
@@ -157,22 +144,22 @@ func TestListSelf(t *testing.T) {
 
 			var metadata metadata.InstanceMetadata
 			require.NoError(json.Unmarshal(metadataRaw, &metadata))
-			assert.Equal(tc.connect.network.leases[0].Hostname, metadata.Name)
-			assert.Equal(tc.connect.network.leases[0].IPaddr, metadata.VPCIP)
+			assert.Equal(tc.stubLeaseGetter.leases[0].Hostname, metadata.Name)
+			assert.Equal(tc.stubLeaseGetter.leases[0].IPaddr, metadata.VPCIP)
 		})
 	}
 }
 
 func TestListPeers(t *testing.T) {
 	testCases := map[string]struct {
-		remoteAddr string
-		connect    *stubConnect
-		wantErr    bool
+		remoteAddr        string
+		stubNetworkGetter *stubLeaseGetter
+		wantErr           bool
 	}{
 		"success": {
 			remoteAddr: "192.0.100.1:1234",
-			connect: &stubConnect{
-				network: newStubNetwork([]virtwrapper.NetworkDHCPLease{
+			stubNetworkGetter: &stubLeaseGetter{
+				leases: []dhcp.NetworkDHCPLease{
 					{
 						IPaddr:   "192.0.100.1",
 						Hostname: "control-plane-0",
@@ -181,13 +168,13 @@ func TestListPeers(t *testing.T) {
 						IPaddr:   "192.0.200.1",
 						Hostname: "worker-0",
 					},
-				}, nil),
+				},
 			},
 		},
 		"listAll error": {
 			remoteAddr: "192.0.100.1:1234",
-			connect: &stubConnect{
-				getNetworkErr: errors.New("error"),
+			stubNetworkGetter: &stubLeaseGetter{
+				getErr: assert.AnError,
 			},
 			wantErr: true,
 		},
@@ -198,7 +185,7 @@ func TestListPeers(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			server := New(logger.NewTest(t), "test", "initSecretHash", tc.connect)
+			server := New(logger.NewTest(t), "test", "initSecretHash", tc.stubNetworkGetter)
 
 			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://192.0.0.1/peers", nil)
 			require.NoError(err)
@@ -217,22 +204,23 @@ func TestListPeers(t *testing.T) {
 
 			var metadata []metadata.InstanceMetadata
 			require.NoError(json.Unmarshal(metadataRaw, &metadata))
-			assert.Len(metadata, len(tc.connect.network.leases))
+			assert.Len(metadata, len(tc.stubNetworkGetter.leases))
 		})
 	}
 }
 
 func TestInitSecretHash(t *testing.T) {
-	defaultConnect := &stubConnect{
-		network: newStubNetwork([]virtwrapper.NetworkDHCPLease{
+	defaultConnect := &stubLeaseGetter{
+		leases: []dhcp.NetworkDHCPLease{
 			{
 				IPaddr:   "192.0.100.1",
 				Hostname: "control-plane-0",
 			},
-		}, nil),
+		},
 	}
+
 	testCases := map[string]struct {
-		connect  *stubConnect
+		connect  *stubLeaseGetter
 		method   string
 		wantHash string
 		wantErr  bool
@@ -272,11 +260,11 @@ func TestInitSecretHash(t *testing.T) {
 	}
 }
 
-type stubConnect struct {
-	network       stubNetwork
-	getNetworkErr error
+type stubLeaseGetter struct {
+	leases []dhcp.NetworkDHCPLease
+	getErr error
 }
 
-func (c stubConnect) LookupNetworkByName(_ string) (*virtwrapper.Network, error) {
-	return &virtwrapper.Network{Net: c.network}, c.getNetworkErr
+func (c stubLeaseGetter) GetDHCPLeases() ([]dhcp.NetworkDHCPLease, error) {
+	return c.leases, c.getErr
 }

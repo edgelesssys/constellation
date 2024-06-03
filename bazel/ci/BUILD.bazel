@@ -1,6 +1,7 @@
-load("@bazel_gazelle//:def.bzl", "gazelle")
-load("@com_github_ash2k_bazel_tools//multirun:def.bzl", "command", "multirun")
-load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier", "buildifier_test")
+load("@buildifier_prebuilt//:rules.bzl", "buildifier", "buildifier_test")
+load("@com_github_ash2k_bazel_tools//multirun:def.bzl", "multirun")
+load("@gazelle//:def.bzl", "gazelle")
+load("@io_bazel_rules_go//go/private/rules:go_bin_for_host.bzl", "go_bin_for_host")
 load("//bazel/ci:proto_targets.bzl", "proto_targets")
 load("//bazel/sh:def.bzl", "noop_warn", "repo_command", "sh_template")
 
@@ -8,18 +9,6 @@ required_tags = [
     "e2e",
     "integration",
 ]
-
-# TODO(malt3): Remove this once we have a better solution for
-# gazelle not respecting the default go env.
-command(
-    name = "cmd_gazelle_update_repos",
-    command = ":gazelle_update_repos",
-    environment = {
-        "GOPROXY": "https://proxy.golang.org,direct",
-        "GOSUMDB": "sum.golang.org",
-        "GOTOOLCHAIN": "local",
-    },
-)
 
 gazelle(
     name = "gazelle_generate",
@@ -33,18 +22,6 @@ gazelle(
     mode = "diff",
 )
 
-gazelle(
-    name = "gazelle_update_repos",
-    args = [
-        "-from_file=go.work",
-        "-to_macro=bazel/toolchains/go_module_deps.bzl%go_dependencies",
-        "-build_file_proto_mode=disable_global",
-        "-build_file_generation=on",
-        "-prune",
-    ],
-    command = "update-repos",
-)
-
 buildifier_test(
     name = "buildifier_check",
     timeout = "short",
@@ -54,7 +31,7 @@ buildifier_test(
     no_sandbox = True,
     tags = ["no-remote-exec"],
     verbose = True,
-    workspace = "//:WORKSPACE.bazel",
+    workspace = "//:WORKSPACE.bzlmod",
 )
 
 buildifier(
@@ -80,10 +57,10 @@ sh_template(
 sh_template(
     name = "go_mod_tidy",
     data = [
-        "@go_sdk//:bin/go",
+        "@io_bazel_rules_go//go",
     ],
     substitutions = {
-        "@@GO@@": "$(rootpath @go_sdk//:bin/go)",
+        "@@GO@@": "$(rootpath @io_bazel_rules_go//go)",
     },
     template = "go_tidy.sh.in",
 )
@@ -257,10 +234,10 @@ sh_template(
     name = "golangci_lint",
     data = [
         ":com_github_golangci_golangci_lint",
-        "@go_sdk//:bin/go",
+        "@io_bazel_rules_go//go",
     ],
     substitutions = {
-        "@@GO@@": "$(rootpath @go_sdk//:bin/go)",
+        "@@GO@@": "$(rootpath @io_bazel_rules_go//go)",
         "@@GOLANGCI-LINT@@": "$(rootpath :com_github_golangci_golangci_lint)",
     },
     template = "golangci_lint.sh.in",
@@ -291,10 +268,10 @@ sh_template(
     name = "golicenses_check",
     data = [
         "@com_github_google_go_licenses//:go-licenses",
-        "@go_sdk//:bin/go",
+        "@io_bazel_rules_go//go",
     ],
     substitutions = {
-        "@@GO@@": "$(rootpath @go_sdk//:bin/go)",
+        "@@GO@@": "$(rootpath @io_bazel_rules_go//go)",
         "@@GO_LICENSES@@": "$(rootpath @com_github_google_go_licenses//:go-licenses)",
     },
     template = "golicenses.sh.in",
@@ -310,11 +287,11 @@ sh_template(
 sh_template(
     name = "govulncheck",
     data = [
-        "@go_sdk//:bin/go",
+        "@io_bazel_rules_go//go",
         "@org_golang_x_vuln//cmd/govulncheck",
     ],
     substitutions = {
-        "@@GO@@": "$(rootpath @go_sdk//:bin/go)",
+        "@@GO@@": "$(rootpath @io_bazel_rules_go//go)",
         "@@GOVULNCHECK@@": "$(rootpath @org_golang_x_vuln//cmd/govulncheck:govulncheck)",
     },
     template = "govulncheck.sh.in",
@@ -347,13 +324,13 @@ sh_template(
         ":com_github_siderolabs_talos_hack_docgen",
         "//internal/attestation/measurements/measurement-generator",
         "//internal/versions/hash-generator",
-        "@go_sdk//:bin/go",
+        "@io_bazel_rules_go//go",
         "@org_golang_x_tools//cmd/stringer",
         "@yq_toolchains//:resolved_toolchain",
     ],
     substitutions = {
         "@@DOCGEN@@": "$(rootpath :com_github_siderolabs_talos_hack_docgen)",
-        "@@GO@@": "$(rootpath @go_sdk//:bin/go)",
+        "@@GO@@": "$(rootpath @io_bazel_rules_go//go)",
         "@@HASH_GENERATOR@@": "$(rootpath //internal/versions/hash-generator:hash-generator)",
         "@@HELM@@": "$(rootpath :com_github_helm_helm)",
         "@@MEASUREMENT_GENERATOR@@": "$(rootpath //internal/attestation/measurements/measurement-generator:measurement-generator)",
@@ -499,14 +476,19 @@ sh_template(
     template = "unused_gh_actions.sh.in",
 )
 
+go_bin_for_host(
+    name = "go_bin_for_host",
+    visibility = ["//visibility:private"],
+)
+
 sh_template(
     name = "gocoverage_diff",
     data = [
+        ":go_bin_for_host",
         "//hack/gocoverage",
-        "@go_sdk//:bin/go",
     ],
     substitutions = {
-        "@@GO@@": "$(rootpath @go_sdk//:bin/go)",
+        "@@GO@@": "$(rootpath :go_bin_for_host)",
         "@@GOCOVERAGE@@": "$(rootpath //hack/gocoverage:gocoverage)",
     },
     template = "gocoverage_diff.sh.in",
@@ -518,7 +500,6 @@ multirun(
         ":shfmt",
         ":gofumpt",
         ":go_mod_tidy",
-        ":cmd_gazelle_update_repos",
         ":gazelle_generate",
         ":buildifier_fix",
         ":terraform_fmt",
