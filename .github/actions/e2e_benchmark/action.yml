@@ -127,7 +127,7 @@ runs:
         KUBECONFIG: ${{ inputs.kubeconfig }}
         TERM: xterm-256color
       run: |
-        workers="$(kubectl get nodes -o name | grep worker)"
+        workers="$(kubectl get nodes -o name -l '!node-role.kubernetes.io/control-plane')"
         echo -e "Found workers:\n$workers"
         server="$(echo "$workers" | tail +1 | head -1 | cut -d '/' -f2)"
         echo "Server: $server"
