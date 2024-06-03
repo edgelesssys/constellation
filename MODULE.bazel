@@ -16,7 +16,7 @@ bazel_dep(name = "buildifier_prebuilt", version = "6.4.0", dev_dependency = True
 # until go.work support is released
 git_override(
     module_name = "gazelle",
-    commit = "75eade4e202fa42b23a42fd3d17216e7d31efd1a",
+    commit = "7d10bf7befce477f518056cfc502939000bea3fa",
     remote = "https://github.com/bazelbuild/bazel-gazelle",
 )
 
