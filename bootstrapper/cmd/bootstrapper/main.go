@@ -43,22 +43,14 @@ const (
 )
 
 func main() {
-	debug := flag.Bool("debug", false, "Enable debug logging")
-	gRPCDebug := flag.Bool("grpc-debug", false, "Enable gRPC debug logging")
 	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 	flag.Parse()
 	log := logger.NewJSONLogger(logger.VerbosityFromInt(*verbosity)).WithGroup("bootstrapper")
-
-	level := slog.LevelWarn
-	if *debug {
-		level = slog.LevelDebug
-	}
-
-	if *gRPCDebug {
-		logger.ReplaceGRPCLogger(log.WithGroup("gRPC"))
-	} else {
-		logger.ReplaceGRPCLogger(slog.New(logger.NewLevelHandler(level, log.Handler())).WithGroup("gRPC"))
-	}
+	logger.ReplaceGRPCLogger(
+		slog.New(
+			logger.NewLevelHandler(logger.VerbosityFromInt(*verbosity), log.Handler()),
+		).WithGroup("gRPC"),
+	)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

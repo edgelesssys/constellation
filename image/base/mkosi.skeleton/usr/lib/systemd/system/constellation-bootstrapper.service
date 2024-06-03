@@ -10,7 +10,7 @@ RemainAfterExit=yes
 Restart=on-failure
 EnvironmentFile=/run/constellation.env
 Environment=PATH=/run/state/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
-ExecStart=/usr/bin/bootstrapper $CONSTELLATION_DEBUG_FLAGS
+ExecStart=/usr/bin/bootstrapper
 
 [Install]
 WantedBy=multi-user.target
