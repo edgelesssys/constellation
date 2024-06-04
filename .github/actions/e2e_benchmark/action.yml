@@ -215,6 +215,6 @@ runs:
 
     - name: Update benchmark records in S3
       if: github.ref_name == 'main'
-      shell: bas
+      shell: bash
       run: |
-        aws s3 cp benchmarks/constellation-${attestationVariant}.json ${S3_PATH}/constellation-${attestationVariant}.json
+        aws s3 cp benchmarks/constellation-${{ inputs.attestationVariant }}.json ${S3_PATH}/constellation-${{ inputs.attestationVariant }}.json
