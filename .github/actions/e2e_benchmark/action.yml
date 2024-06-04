@@ -180,9 +180,9 @@ runs:
     - name: Get previous benchmark records from S3
       shell: bash
       run: |
-        aws s3 cp ${S3_PATH}/constellation-${{ inputs.attestationVariant }}.json ./ --no-progress || true # ignore if the file doesn't exist
-        if [[ -f constellation-${{ inputs.attestationVariant }}.json ]]; then
-          mv constellation-${{ inputs.attestationVariant }}.json benchmarks/constellation-${{ inputs.attestationVariant }}-previous.json
+        if aws s3 cp "${S3_PATH}/constellation-${{ inputs.attestationVariant }}.json" ./ --no-progress
+        then
+          mv "constellation-${{ inputs.attestationVariant }}.json" "benchmarks/constellation-${{ inputs.attestationVariant }}-previous.json"
         else
             echo "::warning::Couldn't retrieve previous benchmark records from s3"
         fi
