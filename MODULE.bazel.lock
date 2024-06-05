@@ -1,6 +1,6 @@
 {
   "lockFileVersion": 6,
-  "moduleFileHash": "b92386d1cc50b1a882bf3f0701bbff7fa7fb0116f653fe2773066016cb07ca71",
+  "moduleFileHash": "69841d218742190dc3a3ae4ccb22541216c1297d9657a24ec500b256a5d2b63a",
   "flags": {
     "cmdRegistries": [
       "https://bcr.bazel.build/"
@@ -43,7 +43,7 @@
                 "patches": [
                   "//3rdparty/bazel/org_golang:go_tls_max_handshake_size.patch"
                 ],
-                "version": "1.22.3"
+                "version": "1.22.4"
               },
               "devDependency": false,
               "location": {
