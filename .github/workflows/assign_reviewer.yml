@@ -2,7 +2,13 @@ name: Assign Reviewer
 
 on:
   pull_request:
-    types: ["labeled"]
+    types:
+      - opened
+      - reopened
+      - edited
+      - synchronize
+      - review_request_removed
+      - labeled
 
 permissions:
   pull-requests: write
@@ -10,7 +16,7 @@ permissions:
 jobs:
   assign_reviewer:
     runs-on: ubuntu-latest
-    if: github.event.label.name == 'dependencies' && github.event.pull_request.user.login == 'app/renovate'
+    if: contains(github.event.pull_request.labels.*.name, 'dependencies') && toJson(github.event.pull_request.requested_reviewers) == '[]' &&  github.event.pull_request.user.login == 'renovate[bot]'
     steps:
     - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
     - name: Pick assignee
