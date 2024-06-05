@@ -65,6 +65,7 @@ jobs:
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
         with:
           ref: ${{ github.head_ref }}
+          token: ${{ secrets.CI_COMMIT_PUSH_PR }}
 
       - name: Setup Go environment
         uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
@@ -111,6 +112,7 @@ jobs:
             It updates the hardcoded measurements and the image version (for QEMU/MiniConstellation).
           commit-message: "image: update measurements and image version"
           committer: edgelessci <edgelessci@users.noreply.github.com>
+          author: edgelessci <edgelessci@users.noreply.github.com>
           labels: no changelog
           # We need to push changes using a token, otherwise triggers like on:push and on:pull_request won't work.
           token: ${{ !github.event.pull_request.head.repo.fork && secrets.CI_COMMIT_PUSH_PR || '' }}

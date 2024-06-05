@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+        with:
+          token: ${{ secrets.CI_COMMIT_PUSH_PR }}
 
       - name: Assume AWS role to upload Bazel dependencies to S3
         uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
@@ -49,6 +51,7 @@ jobs:
             It updates the locked rpm packages that form the Constellation OS images.
           commit-message: "image: update locked rpms"
           committer: edgelessci <edgelessci@users.noreply.github.com>
+          author: edgelessci <edgelessci@users.noreply.github.com>
           labels: dependencies
           # We need to push changes using a token, otherwise triggers like on:push and on:pull_request won't work.
           token: ${{ !github.event.pull_request.head.repo.fork && secrets.CI_COMMIT_PUSH_PR || '' }}
