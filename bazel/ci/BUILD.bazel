@@ -57,10 +57,10 @@ sh_template(
 sh_template(
     name = "go_mod_tidy",
     data = [
-        "@io_bazel_rules_go//go",
+        ":go_bin_for_host",
     ],
     substitutions = {
-        "@@GO@@": "$(rootpath @io_bazel_rules_go//go)",
+        "@@GO@@": "$(rootpath :go_bin_for_host)",
     },
     template = "go_tidy.sh.in",
 )
@@ -234,10 +234,10 @@ sh_template(
     name = "golangci_lint",
     data = [
         ":com_github_golangci_golangci_lint",
-        "@io_bazel_rules_go//go",
+        ":go_bin_for_host",
     ],
     substitutions = {
-        "@@GO@@": "$(rootpath @io_bazel_rules_go//go)",
+        "@@GO@@": "$(rootpath :go_bin_for_host)",
         "@@GOLANGCI-LINT@@": "$(rootpath :com_github_golangci_golangci_lint)",
     },
     template = "golangci_lint.sh.in",
@@ -267,11 +267,11 @@ sh_template(
 sh_template(
     name = "golicenses_check",
     data = [
+        ":go_bin_for_host",
         "@com_github_google_go_licenses//:go-licenses",
-        "@io_bazel_rules_go//go",
     ],
     substitutions = {
-        "@@GO@@": "$(rootpath @io_bazel_rules_go//go)",
+        "@@GO@@": "$(rootpath :go_bin_for_host)",
         "@@GO_LICENSES@@": "$(rootpath @com_github_google_go_licenses//:go-licenses)",
     },
     template = "golicenses.sh.in",
@@ -287,11 +287,11 @@ sh_template(
 sh_template(
     name = "govulncheck",
     data = [
-        "@io_bazel_rules_go//go",
+        ":go_bin_for_host",
         "@org_golang_x_vuln//cmd/govulncheck",
     ],
     substitutions = {
-        "@@GO@@": "$(rootpath @io_bazel_rules_go//go)",
+        "@@GO@@": "$(rootpath :go_bin_for_host)",
         "@@GOVULNCHECK@@": "$(rootpath @org_golang_x_vuln//cmd/govulncheck:govulncheck)",
     },
     template = "govulncheck.sh.in",
@@ -322,15 +322,15 @@ sh_template(
     data = [
         ":com_github_helm_helm",
         ":com_github_siderolabs_talos_hack_docgen",
+        ":go_bin_for_host",
         "//internal/attestation/measurements/measurement-generator",
         "//internal/versions/hash-generator",
-        "@io_bazel_rules_go//go",
         "@org_golang_x_tools//cmd/stringer",
         "@yq_toolchains//:resolved_toolchain",
     ],
     substitutions = {
         "@@DOCGEN@@": "$(rootpath :com_github_siderolabs_talos_hack_docgen)",
-        "@@GO@@": "$(rootpath @io_bazel_rules_go//go)",
+        "@@GO@@": "$(rootpath :go_bin_for_host)",
         "@@HASH_GENERATOR@@": "$(rootpath //internal/versions/hash-generator:hash-generator)",
         "@@HELM@@": "$(rootpath :com_github_helm_helm)",
         "@@MEASUREMENT_GENERATOR@@": "$(rootpath //internal/attestation/measurements/measurement-generator:measurement-generator)",
