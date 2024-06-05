@@ -716,7 +716,7 @@ spec:
             mountPath: /host/opt/cni/bin
       {{- end }} # .Values.cni.install
       - name: firewall-pods
-        image: ghcr.io/edgelesssys/cilium/cilium:v1.15.0-pre.3-edg.2@sha256:c21b7fbbb084a128a479d6170e5f89ad2768dfecb4af10ee6a99ffe5d1a11749
+        image: {{ include "cilium.image" .Values.image | quote }}
         imagePullPolicy: IfNotPresent
         command:
         - /bin/bash
