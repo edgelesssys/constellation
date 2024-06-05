@@ -27,16 +27,11 @@ PATH=$(dirname "${go}"):${PATH}
 check() {
   err=0
 
-  echo "Scanning Go vulnerability DB for knwon vulnerabilities in modules:"
+  echo "Scanning Go vulnerability DB for known vulnerabilities in modules:"
   for mod in ${submodules}; do
     echo "  ${mod}"
     echo -n "  "
-    CGO_ENABLED=0 ${govulncheck} -C "${mod}" "./..." |
-      tail -n 2 | # Providing some nice output...
-      tr '\n' ' ' |
-      sed s/" your code and"// &&
-      printf "\n" ||
-      err=$?
+    CGO_ENABLED=0 ${govulncheck} -C "${mod}" "./..." || err=$?
   done
 
   exit "${err}"
