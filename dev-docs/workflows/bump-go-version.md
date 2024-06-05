@@ -4,7 +4,7 @@
 
 ## Steps
 
-Replace "1.xx.x" with the new version in [MODULE.bazel](/MODULE.bazel):
+Replace `"1.xx.x"` with the new version in [MODULE.bazel](/MODULE.bazel):
 
 ```starlark
 go_sdk = use_extension("@io_bazel_rules_go//go:extensions.bzl", "go_sdk")
@@ -15,4 +15,23 @@ go_sdk.download(
               ~~~~~~~~
 )
 
+```
+
+Replace `go-version: "1.xx.x"` with the new version in all GitHub actions and workflows.
+You can use the following command to find replace all instances of `go-version: "1.xx.x"` in the `.github` directory:
+
+```bash
+OLD_VERSION="1.xx.x"
+NEW_VERSION="1.xx.y"
+find .github -type f -exec sed -i "s/go-version: \"${OLD_VERSION}\"/go-version: \"${NEW_VERSION}\"/g" {} \;
+```
+
+Or manually:
+
+```yaml
+- name: Setup Go environment
+  uses: actions/setup-go@v5
+  with:
+  go-version: "1.xx.x" <--- Replace this one
+              ~~~~~~~~
 ```
