@@ -172,7 +172,7 @@ func (s *ServiceManager) OverrideServiceUnitExecStart(ctx context.Context, unitN
 	if strings.Contains(execStart, "\n") || strings.Contains(execStart, "\r") {
 		return fmt.Errorf("execStart must not contain newlines")
 	}
-	overrideUnitContents := fmt.Sprintf("[Service]\nExecStart=\nExecStart=%s $CONSTELLATION_DEBUG_FLAGS\n", execStart)
+	overrideUnitContents := fmt.Sprintf("[Service]\nExecStart=\nExecStart=%s\n", execStart)
 	s.systemdUnitFilewriteLock.Lock()
 	defer s.systemdUnitFilewriteLock.Unlock()
 	path := filepath.Join(systemdUnitFolder, unitName+".service.d", "override.conf")
