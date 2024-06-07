@@ -59,11 +59,8 @@ func (p AzurePolicyPatcher) Patch(ctx context.Context, attestationURL string) er
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("updating attestation policy: unexpected status code: %s\nread response body: %w", resp.Status, err)
-		}
-		return fmt.Errorf("updating attestation policy: unexpected status code: %s\nresponse body: %s", resp.Status, string(body))
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("updating attestation policy: unexpected status code: %s: %s", resp.Status, string(body))
 	}
 
 	return nil
