@@ -274,6 +274,8 @@ func uploadFiles(ctx context.Context, client pb.DebugdClient, in deployOnEndpoin
 		return fmt.Errorf("uploading files to %v failed: %v", in.debugdEndpoint, uploadResponse)
 	case pb.UploadFilesStatus_UPLOAD_FILES_ALREADY_STARTED:
 		return fmt.Errorf("upload already started on %v", in.debugdEndpoint)
+	case pb.UploadFilesStatus_UPLOAD_FILES_START_FAILED:
+		return fmt.Errorf("overriding service units failed on %v: %v", in.debugdEndpoint, uploadResponse.Status)
 	default:
 		return fmt.Errorf("unknown upload status %v", uploadResponse.Status)
 	}
