@@ -58,6 +58,7 @@ message Chunk {
 
 message UploadFilesResponse {
   UploadFilesStatus status = 1;
+  string error = 2;
 }
 
 enum UploadFilesStatus {
