@@ -56,7 +56,7 @@ management tooling of your choice. You need to keep the essential functionality 
 
 :::info
 
-  On Azure, if the enforcement policy is set to `MAAFallback` in `constellation-config.yaml`, a manual update to the MAA provider's policy is necessary.
+  On Azure, a manual update to the MAA provider's policy is necessary.
   You can apply the update with the following command after creating the infrastructure, with `<URL>` being the URL of the MAA provider (i.e., `$(terraform output attestation_url | jq -r)`, when using the minimal Terraform configuration).
 
   ```bash

@@ -127,7 +127,7 @@ To [create the IAM configuration](../workflows/config.md#creating-an-iam-configu
 The built-in `Owner` role is a superset of these permissions.
 
 To [create a Constellation cluster](../workflows/create.md#the-create-step), you need the following permissions:
-* `Microsoft.Attestation/attestationProviders/*` \[2]
+* `Microsoft.Attestation/attestationProviders/*`
 * `Microsoft.Compute/virtualMachineScaleSets/*`
 * `Microsoft.Insights/components/*`
 * `Microsoft.ManagedIdentity/userAssignedIdentities/*`
@@ -144,8 +144,6 @@ The built-in `Contributor` role is a superset of these permissions.
 Follow Microsoft's guide on [understanding](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-definitions) and [assigning roles](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments).
 
 1: You can omit `*/register/Action` if the resource providers mentioned above are already registered and the `ARM_SKIP_PROVIDER_REGISTRATION` environment variable is set to `true` when creating the IAM configuration.
-
-2: You can omit `Microsoft.Attestation/attestationProviders/*` and the registration of `Microsoft.Attestation` if `EnforceIDKeyDigest` isn't set to `MAAFallback` in the [config file](../workflows/config.md#configure-your-cluster).
 
 </tabItem>
 <tabItem value="gcp" label="GCP">
