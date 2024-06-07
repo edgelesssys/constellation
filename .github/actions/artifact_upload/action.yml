@@ -36,6 +36,7 @@ runs:
     - name: Create archive
       shell: bash
       run: |
+        set -euo pipefail
         shopt -s extglob
         paths="${{ inputs.path }}"
         paths=${paths%$'\n'} # Remove trailing newline
@@ -61,9 +62,9 @@ runs:
         do
           if compgen -G "${target}" > /dev/null
           then
-            pushd "$(dirname "${target}")" || exit 1
+            pushd "$(dirname "${target}")"
             7zz a -p'${{ inputs.encryptionSecret }}' -bso0 -bsp0 -t7z -ms=on -mhe=on "${{ steps.tempdir.outputs.directory }}/archive.7z" "$(basename "${target}")"
-            popd || exit 1
+            popd
           fi
         done
 
