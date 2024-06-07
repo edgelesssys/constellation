@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/attestation/attestation"
@@ -55,10 +56,14 @@ func (p AzurePolicyPatcher) Patch(ctx context.Context, attestationURL string) er
 	if err != nil {
 		return fmt.Errorf("sending request: %w", err)
 	}
-	resp.Body.Close()
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("updating attestation policy: unexpected status code: %s", resp.Status)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("updating attestation policy: unexpected status code: %s\nread response body: %w", resp.Status, err)
+		}
+		return fmt.Errorf("updating attestation policy: unexpected status code: %s\nresponse body: %s", resp.Status, string(body))
 	}
 
 	return nil
