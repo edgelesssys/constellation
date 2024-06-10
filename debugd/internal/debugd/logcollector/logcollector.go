@@ -200,6 +200,10 @@ func startPod(ctx context.Context, logger *slog.Logger) error {
 	if err := runLogstashCmd.Start(); err != nil {
 		return fmt.Errorf("failed to start logstash: %w", err)
 	}
+	if out, err := exec.CommandContext(ctx, "podman", "wait", "logstash", "--condition=running", "--interval=15s").CombinedOutput(); err != nil {
+		logger.Error("Logstash container failed to reach healthy status", "err", err, "output", out)
+		return fmt.Errorf("waiting for logstash container to reach healthy status: %w; output: %s", err, out)
+	}
 
 	// start filebeat container
 	filebeatLog := newCmdLogger(logger.WithGroup("filebeat"))
@@ -224,6 +228,10 @@ func startPod(ctx context.Context, logger *slog.Logger) error {
 	runFilebeatCmd.Stderr = filebeatLog
 	if err := runFilebeatCmd.Start(); err != nil {
 		return fmt.Errorf("failed to run filebeat: %w", err)
+	}
+	if out, err := exec.CommandContext(ctx, "podman", "wait", "filebeat", "--condition=running", "--interval=15s").CombinedOutput(); err != nil {
+		logger.Error("Filebeat container failed to reach healthy status", "err", err, "output", out)
+		return fmt.Errorf("waiting for filebeat container to reach healthy status: %w; output: %s", err, out)
 	}
 
 	return nil
