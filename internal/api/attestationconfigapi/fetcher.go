@@ -24,9 +24,7 @@ var ErrNoVersionsFound = errors.New("no versions found")
 
 // Fetcher fetches config API resources without authentication.
 type Fetcher interface {
-	FetchSEVSNPVersion(ctx context.Context, version SEVSNPVersionAPI) (SEVSNPVersionAPI, error)
-	FetchSEVSNPVersionList(ctx context.Context, list SEVSNPVersionList) (SEVSNPVersionList, error)
-	FetchSEVSNPVersionLatest(ctx context.Context, attestation variant.Variant) (SEVSNPVersionAPI, error)
+	FetchLatestVersion(ctx context.Context, attestation variant.Variant) (SEVSNPVersionAPI, error)
 }
 
 // fetcher fetches AttestationCfg API resources without authentication.
@@ -65,8 +63,26 @@ func newFetcherWithClientAndVerifier(client apifetcher.HTTPClient, cosignVerifie
 	return &fetcher{HTTPClient: client, verifier: cosignVerifier, cdnURL: url}
 }
 
-// FetchSEVSNPVersionList fetches the version list information from the config API.
-func (f *fetcher) FetchSEVSNPVersionList(ctx context.Context, list SEVSNPVersionList) (SEVSNPVersionList, error) {
+// FetchLatestVersion returns the latest versions of the given type.
+func (f *fetcher) FetchLatestVersion(ctx context.Context, attesation variant.Variant) (res SEVSNPVersionAPI, err error) {
+	list, err := f.fetchVersionList(ctx, SEVSNPVersionList{Variant: attesation})
+	if err != nil {
+		return res, ErrNoVersionsFound
+	}
+
+	getVersionRequest := SEVSNPVersionAPI{
+		Version: list.List[0], // latest version is first in list
+		Variant: attesation,
+	}
+	res, err = f.fetchVersion(ctx, getVersionRequest)
+	if err != nil {
+		return res, err
+	}
+	return
+}
+
+// fetchVersionList fetches the version list information from the config API.
+func (f *fetcher) fetchVersionList(ctx context.Context, list SEVSNPVersionList) (SEVSNPVersionList, error) {
 	// TODO(derpsteb): Replace with FetchAndVerify once we move to v2 of the config API.
 	fetchedList, err := apifetcher.Fetch(ctx, f.HTTPClient, f.cdnURL, list)
 	if err != nil {
@@ -79,8 +95,8 @@ func (f *fetcher) FetchSEVSNPVersionList(ctx context.Context, list SEVSNPVersion
 	return fetchedList, nil
 }
 
-// FetchSEVSNPVersion fetches the version information from the config API.
-func (f *fetcher) FetchSEVSNPVersion(ctx context.Context, version SEVSNPVersionAPI) (SEVSNPVersionAPI, error) {
+// fetchVersion fetches the version information from the config API.
+func (f *fetcher) fetchVersion(ctx context.Context, version SEVSNPVersionAPI) (SEVSNPVersionAPI, error) {
 	fetchedVersion, err := apifetcher.FetchAndVerify(ctx, f.HTTPClient, f.cdnURL, version, f.verifier)
 	if err != nil {
 		return fetchedVersion, fmt.Errorf("fetching version %s: %w", version.Version, err)
@@ -90,22 +106,4 @@ func (f *fetcher) FetchSEVSNPVersion(ctx context.Context, version SEVSNPVersionA
 	fetchedVersion.Variant = version.Variant
 
 	return fetchedVersion, nil
-}
-
-// FetchSEVSNPVersionLatest returns the latest versions of the given type.
-func (f *fetcher) FetchSEVSNPVersionLatest(ctx context.Context, attesation variant.Variant) (res SEVSNPVersionAPI, err error) {
-	list, err := f.FetchSEVSNPVersionList(ctx, SEVSNPVersionList{Variant: attesation})
-	if err != nil {
-		return res, ErrNoVersionsFound
-	}
-
-	getVersionRequest := SEVSNPVersionAPI{
-		Version: list.List[0], // latest version is first in list
-		Variant: attesation,
-	}
-	res, err = f.FetchSEVSNPVersion(ctx, getVersionRequest)
-	if err != nil {
-		return res, err
-	}
-	return
 }

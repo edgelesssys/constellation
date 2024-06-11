@@ -61,7 +61,7 @@ func TestFetchLatestSEVSNPVersion(t *testing.T) {
 				},
 			}
 			fetcher := newFetcherWithClientAndVerifier(client, dummyVerifier{}, constants.CDNRepositoryURL)
-			res, err := fetcher.FetchSEVSNPVersionLatest(context.Background(), tc.attestation)
+			res, err := fetcher.FetchLatestVersion(context.Background(), tc.attestation)
 			assert := assert.New(t)
 			if tc.wantErr {
 				assert.Error(err)

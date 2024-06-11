@@ -179,6 +179,6 @@ func (s *stubConfigFetcher) FetchSEVSNPVersionList(context.Context, attestationc
 	panic("not implemented")
 }
 
-func (s *stubConfigFetcher) FetchSEVSNPVersionLatest(context.Context, variant.Variant) (attestationconfigapi.SEVSNPVersionAPI, error) {
+func (s *stubConfigFetcher) FetchLatestVersion(context.Context, variant.Variant) (attestationconfigapi.SEVSNPVersionAPI, error) {
 	return attestationconfigapi.SEVSNPVersionAPI{}, s.fetchLatestErr
 }

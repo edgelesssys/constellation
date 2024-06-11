@@ -1061,7 +1061,7 @@ func (f stubAttestationFetcher) FetchSEVSNPVersion(_ context.Context, _ attestat
 	}, nil
 }
 
-func (f stubAttestationFetcher) FetchSEVSNPVersionLatest(_ context.Context, _ variant.Variant) (attestationconfigapi.SEVSNPVersionAPI, error) {
+func (f stubAttestationFetcher) FetchLatestVersion(_ context.Context, _ variant.Variant) (attestationconfigapi.SEVSNPVersionAPI, error) {
 	return attestationconfigapi.SEVSNPVersionAPI{
 		SEVSNPVersion: testCfg,
 	}, nil
