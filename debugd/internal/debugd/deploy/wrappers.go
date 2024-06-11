@@ -58,6 +58,9 @@ func (j *journalctlWrapper) readJournal(unit string) string {
 }
 
 /*
+// Preferably, we would use the systemd journal API directly.
+// However, this requires linking against systemd libraries, so we go with the easier journalctl command for now.
+
 type sdJournalWrapper struct{}
 
 // readJournal reads the journal for a specific unit.
