@@ -80,7 +80,7 @@ func (c *AzureSEVSNP) FetchAndSetLatestVersionNumbers(ctx context.Context, fetch
 		return nil
 	}
 
-	versions, err := fetcher.FetchSEVSNPVersionLatest(ctx, variant.AzureSEVSNP{})
+	versions, err := fetcher.FetchLatestVersion(ctx, variant.AzureSEVSNP{})
 	if err != nil {
 		return fmt.Errorf("fetching latest TCB versions from configapi: %w", err)
 	}

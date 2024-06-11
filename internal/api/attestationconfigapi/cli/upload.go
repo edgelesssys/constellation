@@ -125,7 +125,7 @@ func uploadReport(ctx context.Context,
 	inputVersion := convertTCBVersionToSNPVersion(report.SNPReport.LaunchTCB)
 	log.Info(fmt.Sprintf("Input report: %+v", inputVersion))
 
-	latestAPIVersionAPI, err := attestationconfigapi.NewFetcherWithCustomCDNAndCosignKey(cfg.url, cfg.cosignPublicKey).FetchSEVSNPVersionLatest(ctx, attestation)
+	latestAPIVersionAPI, err := attestationconfigapi.NewFetcherWithCustomCDNAndCosignKey(cfg.url, cfg.cosignPublicKey).FetchLatestVersion(ctx, attestation)
 	if err != nil {
 		if errors.Is(err, attestationconfigapi.ErrNoVersionsFound) {
 			log.Info("No versions found in API, but assuming that we are uploading the first version.")

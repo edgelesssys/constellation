@@ -79,7 +79,7 @@ func (c *GCPSEVSNP) FetchAndSetLatestVersionNumbers(ctx context.Context, fetcher
 		return nil
 	}
 
-	versions, err := fetcher.FetchSEVSNPVersionLatest(ctx, variant.GCPSEVSNP{})
+	versions, err := fetcher.FetchLatestVersion(ctx, variant.GCPSEVSNP{})
 	if err != nil {
 		return fmt.Errorf("fetching latest TCB versions from configapi: %w", err)
 	}
