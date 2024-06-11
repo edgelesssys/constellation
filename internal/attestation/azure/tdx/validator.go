@@ -93,11 +93,10 @@ func (v *Validator) validateQuote(tdxQuote *tdx.QuoteV4) error {
 	roots.AddCert((*x509.Certificate)(&v.cfg.IntelRootKey))
 
 	if err := verify.TdxQuote(tdxQuote, &verify.Options{
-		// TODO: Re-enable CRL checking once issues on Azure's side are resolved.
-		// CheckRevocations: true,
-		// GetCollateral:    true,
-		TrustedRoots: roots,
-		Getter:       v.getter,
+		CheckRevocations: true,
+		GetCollateral:    true,
+		TrustedRoots:     roots,
+		Getter:           v.getter,
 	}); err != nil {
 		return err
 	}
