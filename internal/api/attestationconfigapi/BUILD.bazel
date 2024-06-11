@@ -5,31 +5,23 @@ go_library(
     name = "attestationconfigapi",
     srcs = [
         "attestationconfigapi.go",
-        "client.go",
         "fetcher.go",
-        "reporter.go",
         "snp.go",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi",
     visibility = ["//:__subpackages__"],
     deps = [
-        "//internal/api/client",
         "//internal/api/fetcher",
         "//internal/attestation/variant",
         "//internal/constants",
         "//internal/sigstore",
-        "//internal/staticupload",
-        "@com_github_aws_aws_sdk_go//aws",
-        "@com_github_aws_aws_sdk_go_v2_service_s3//:s3",
     ],
 )
 
 go_test(
     name = "attestationconfigapi_test",
     srcs = [
-        "client_test.go",
         "fetcher_test.go",
-        "reporter_test.go",
         "snp_test.go",
     ],
     embed = [":attestationconfigapi"],

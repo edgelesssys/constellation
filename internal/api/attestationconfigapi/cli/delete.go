@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi/cli/client"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -62,7 +63,7 @@ func runDelete(cmd *cobra.Command, args []string) (retErr error) {
 		Region:         deleteCfg.region,
 		DistributionID: deleteCfg.distribution,
 	}
-	client, clientClose, err := attestationconfigapi.NewClient(cmd.Context(), cfg,
+	client, clientClose, err := client.New(cmd.Context(), cfg,
 		[]byte(cosignPwd), []byte(privateKey), false, 1, log)
 	if err != nil {
 		return fmt.Errorf("create attestation client: %w", err)
@@ -170,7 +171,7 @@ func newDeleteConfig(cmd *cobra.Command, args [3]string) (deleteConfig, error) {
 	}, nil
 }
 
-func deleteEntry(ctx context.Context, attvar variant.Variant, client *attestationconfigapi.Client, cfg deleteConfig) error {
+func deleteEntry(ctx context.Context, attvar variant.Variant, client *client.Client, cfg deleteConfig) error {
 	if cfg.kind != snpReport {
 		return fmt.Errorf("kind %s not supported", cfg.kind)
 	}

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi/cli/client"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -68,18 +69,15 @@ func runUpload(cmd *cobra.Command, args []string) (retErr error) {
 		return fmt.Errorf("parsing cli flags: %w", err)
 	}
 
-	client, clientClose, err := attestationconfigapi.NewClient(
-		ctx,
+	client, clientClose, err := client.New(ctx,
 		staticupload.Config{
 			Bucket:         uploadCfg.bucket,
 			Region:         uploadCfg.region,
 			DistributionID: uploadCfg.distribution,
 		},
-		[]byte(cosignPwd),
-		[]byte(privateKey),
-		false,
-		uploadCfg.cacheWindowSize,
-		log)
+		[]byte(cosignPwd), []byte(privateKey),
+		false, uploadCfg.cacheWindowSize, log,
+	)
 
 	defer func() {
 		err := clientClose(cmd.Context())
@@ -109,7 +107,7 @@ func runUpload(cmd *cobra.Command, args []string) (retErr error) {
 
 func uploadReport(ctx context.Context,
 	attestation variant.Variant,
-	client *attestationconfigapi.Client,
+	apiClient *client.Client,
 	cfg uploadConfig,
 	fs file.Handler,
 	log *slog.Logger,
@@ -137,8 +135,8 @@ func uploadReport(ctx context.Context,
 	}
 
 	latestAPIVersion := latestAPIVersionAPI.SEVSNPVersion
-	if err := client.UploadSEVSNPVersionLatest(ctx, attestation, inputVersion, latestAPIVersion, cfg.uploadDate, cfg.force); err != nil {
-		if errors.Is(err, attestationconfigapi.ErrNoNewerVersion) {
+	if err := apiClient.UploadSEVSNPVersionLatest(ctx, attestation, inputVersion, latestAPIVersion, cfg.uploadDate, cfg.force); err != nil {
+		if errors.Is(err, client.ErrNoNewerVersion) {
 			log.Info(fmt.Sprintf("Input version: %+v is not newer than latest API version: %+v", inputVersion, latestAPIVersion))
 			return nil
 		}
@@ -178,7 +176,7 @@ func newConfig(cmd *cobra.Command, args [3]string) (uploadConfig, error) {
 	}
 	uploadDate := time.Now()
 	if dateStr != "" {
-		uploadDate, err = time.Parse(attestationconfigapi.VersionFormat, dateStr)
+		uploadDate, err = time.Parse(client.VersionFormat, dateStr)
 		if err != nil {
 			return uploadConfig{}, fmt.Errorf("parsing date: %w", err)
 		}

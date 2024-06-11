@@ -19,6 +19,7 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//internal/api/attestationconfigapi",
+        "//internal/api/attestationconfigapi/cli/client",
         "//internal/attestation/variant",
         "//internal/cloud/cloudprovider",
         "//internal/constants",
