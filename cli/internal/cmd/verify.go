@@ -21,10 +21,9 @@ import (
 	"strconv"
 	"strings"
 
-	tpmProto "github.com/google/go-tpm-tools/proto/tpm"
-
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
+	azuretdx "github.com/edgelesssys/constellation/v2/internal/attestation/azure/tdx"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/snp"
@@ -38,6 +37,10 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/verify"
 	"github.com/edgelesssys/constellation/v2/verify/verifyproto"
+
+	"github.com/google/go-tdx-guest/abi"
+	"github.com/google/go-tdx-guest/proto/tdx"
+	tpmProto "github.com/google/go-tpm-tools/proto/tpm"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -189,8 +192,9 @@ func (c *verifyCmd) verify(cmd *cobra.Command, verifyClient verifyClient, config
 	case "json":
 		if !(attConfig.GetVariant().Equal(variant.AzureSEVSNP{}) ||
 			attConfig.GetVariant().Equal(variant.AWSSEVSNP{}) ||
-			attConfig.GetVariant().Equal(variant.GCPSEVSNP{})) {
-			return errors.New("json output is only supported for SEV-SNP")
+			attConfig.GetVariant().Equal(variant.GCPSEVSNP{}) ||
+			attConfig.GetVariant().Equal(variant.AzureTDX{})) {
+			return errors.New("json output is only supported for SEV-SNP and TDX variants")
 		}
 
 		attDocOutput, err = formatJSON(cmd.Context(), rawAttestationDoc, attConfig, c.log)
@@ -247,13 +251,24 @@ func (c *verifyCmd) validateEndpointFlag(cmd *cobra.Command, stateFile *state.St
 // formatJSON returns the json formatted attestation doc.
 func formatJSON(ctx context.Context, docString string, attestationCfg config.AttestationCfg, log debugLog,
 ) (string, error) {
-	var doc attestationDoc
+	var doc vtpm.AttestationDocument
 	if err := json.Unmarshal([]byte(docString), &doc); err != nil {
 		return "", fmt.Errorf("unmarshalling attestation document: %w", err)
 	}
 
+	if (attestationCfg.GetVariant().Equal(variant.AWSSEVSNP{}) ||
+		attestationCfg.GetVariant().Equal(variant.AzureSEVSNP{}) ||
+		attestationCfg.GetVariant().Equal(variant.GCPSEVSNP{})) {
+		return snpFormatJSON(ctx, doc.InstanceInfo, attestationCfg, log)
+	}
+
+	return tdxFormatJSON(doc.InstanceInfo, attestationCfg)
+}
+
+func snpFormatJSON(ctx context.Context, instanceInfoRaw []byte, attestationCfg config.AttestationCfg, log debugLog,
+) (string, error) {
 	var instanceInfo snp.InstanceInfo
-	if err := json.Unmarshal(doc.InstanceInfo, &instanceInfo); err != nil {
+	if err := json.Unmarshal(instanceInfoRaw, &instanceInfo); err != nil {
 		return "", fmt.Errorf("unmarshalling instance info: %w", err)
 	}
 	report, err := verify.NewReport(ctx, instanceInfo, attestationCfg, log)
@@ -262,8 +277,31 @@ func formatJSON(ctx context.Context, docString string, attestationCfg config.Att
 	}
 
 	jsonBytes, err := json.Marshal(report)
-
 	return string(jsonBytes), err
+}
+
+func tdxFormatJSON(instanceInfoRaw []byte, attestationCfg config.AttestationCfg) (string, error) {
+	var rawQuote []byte
+
+	if attestationCfg.GetVariant().Equal(variant.AzureTDX{}) {
+		var instanceInfo azuretdx.InstanceInfo
+		if err := json.Unmarshal(instanceInfoRaw, &instanceInfo); err != nil {
+			return "", fmt.Errorf("unmarshalling instance info: %w", err)
+		}
+		rawQuote = instanceInfo.AttestationReport
+	}
+
+	tdxQuote, err := abi.QuoteToProto(rawQuote)
+	if err != nil {
+		return "", fmt.Errorf("converting quote to proto: %w", err)
+	}
+	quote, ok := tdxQuote.(*tdx.QuoteV4)
+	if !ok {
+		return "", fmt.Errorf("unexpected quote type: %T", tdxQuote)
+	}
+
+	quoteJSON, err := json.Marshal(quote)
+	return string(quoteJSON), err
 }
 
 // format returns the formatted attestation doc.
@@ -272,7 +310,7 @@ func formatDefault(ctx context.Context, docString string, attestationCfg config.
 	b := &strings.Builder{}
 	b.WriteString("Attestation Document:\n")
 
-	var doc attestationDoc
+	var doc vtpm.AttestationDocument
 	if err := json.Unmarshal([]byte(docString), &doc); err != nil {
 		return "", fmt.Errorf("unmarshal attestation document: %w", err)
 	}
@@ -328,18 +366,6 @@ func parseQuotes(b *strings.Builder, quotes []*tpmProto.Quote, expectedPCRs meas
 		writeIndentfln(b, 3, "Actual:\t\t%x", actualPCR)
 	}
 	return nil
-}
-
-// attestationDoc is the attestation document returned by the verifier.
-type attestationDoc struct {
-	Attestation struct {
-		AkPub          string            `json:"ak_pub"`
-		Quotes         []*tpmProto.Quote `json:"quotes"`
-		EventLog       string            `json:"event_log"`
-		TeeAttestation interface{}       `json:"TeeAttestation"`
-	} `json:"Attestation"`
-	InstanceInfo []byte `json:"InstanceInfo"`
-	UserData     []byte `json:"UserData"`
 }
 
 type constellationVerifier struct {

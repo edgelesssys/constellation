@@ -58,7 +58,7 @@ func NewValidator(cfg *config.AzureTDX, log attestation.Logger) *Validator {
 }
 
 func (v *Validator) getTrustedTPMKey(_ context.Context, attDoc vtpm.AttestationDocument, _ []byte) (crypto.PublicKey, error) {
-	var instanceInfo instanceInfo
+	var instanceInfo InstanceInfo
 	if err := json.Unmarshal(attDoc.InstanceInfo, &instanceInfo); err != nil {
 		return nil, err
 	}
