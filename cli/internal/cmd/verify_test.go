@@ -47,7 +47,6 @@ func TestVerify(t *testing.T) {
 	testCases := map[string]struct {
 		provider           cloudprovider.Provider
 		protoClient        *stubVerifyClient
-		formatter          *stubAttDocFormatter
 		nodeEndpointFlag   string
 		clusterIDFlag      string
 		stateFile          *state.State
@@ -62,7 +61,6 @@ func TestVerify(t *testing.T) {
 			protoClient:      &stubVerifyClient{},
 			stateFile:        defaultStateFile(cloudprovider.GCP),
 			wantEndpoint:     "192.0.2.1:1234",
-			formatter:        &stubAttDocFormatter{},
 		},
 		"azure": {
 			provider:         cloudprovider.Azure,
@@ -71,7 +69,6 @@ func TestVerify(t *testing.T) {
 			protoClient:      &stubVerifyClient{},
 			stateFile:        defaultStateFile(cloudprovider.Azure),
 			wantEndpoint:     "192.0.2.1:1234",
-			formatter:        &stubAttDocFormatter{},
 		},
 		"default port": {
 			provider:         cloudprovider.GCP,
@@ -80,7 +77,6 @@ func TestVerify(t *testing.T) {
 			protoClient:      &stubVerifyClient{},
 			stateFile:        defaultStateFile(cloudprovider.GCP),
 			wantEndpoint:     "192.0.2.1:" + strconv.Itoa(constants.VerifyServiceNodePortGRPC),
-			formatter:        &stubAttDocFormatter{},
 		},
 		"endpoint not set": {
 			provider:      cloudprovider.GCP,
@@ -91,8 +87,7 @@ func TestVerify(t *testing.T) {
 				s.Infrastructure.ClusterEndpoint = ""
 				return s
 			}(),
-			formatter: &stubAttDocFormatter{},
-			wantErr:   true,
+			wantErr: true,
 		},
 		"endpoint from state file": {
 			provider:      cloudprovider.GCP,
@@ -104,7 +99,6 @@ func TestVerify(t *testing.T) {
 				return s
 			}(),
 			wantEndpoint: "192.0.2.1:" + strconv.Itoa(constants.VerifyServiceNodePortGRPC),
-			formatter:    &stubAttDocFormatter{},
 		},
 		"override endpoint from details file": {
 			provider:         cloudprovider.GCP,
@@ -117,7 +111,6 @@ func TestVerify(t *testing.T) {
 				return s
 			}(),
 			wantEndpoint: "192.0.2.2:1234",
-			formatter:    &stubAttDocFormatter{},
 		},
 		"invalid endpoint": {
 			provider:         cloudprovider.GCP,
@@ -125,7 +118,6 @@ func TestVerify(t *testing.T) {
 			clusterIDFlag:    zeroBase64,
 			protoClient:      &stubVerifyClient{},
 			stateFile:        defaultStateFile(cloudprovider.GCP),
-			formatter:        &stubAttDocFormatter{},
 			wantErr:          true,
 		},
 		"neither owner id nor cluster id set": {
@@ -137,7 +129,6 @@ func TestVerify(t *testing.T) {
 				s.ClusterValues.ClusterID = ""
 				return s
 			}(),
-			formatter:   &stubAttDocFormatter{},
 			protoClient: &stubVerifyClient{},
 			wantErr:     true,
 		},
@@ -151,14 +142,12 @@ func TestVerify(t *testing.T) {
 				return s
 			}(),
 			wantEndpoint: "192.0.2.1:1234",
-			formatter:    &stubAttDocFormatter{},
 		},
 		"config file not existing": {
 			provider:           cloudprovider.GCP,
 			clusterIDFlag:      zeroBase64,
 			nodeEndpointFlag:   "192.0.2.1:1234",
 			stateFile:          defaultStateFile(cloudprovider.GCP),
-			formatter:          &stubAttDocFormatter{},
 			skipConfigCreation: true,
 			wantErr:            true,
 		},
@@ -168,7 +157,6 @@ func TestVerify(t *testing.T) {
 			clusterIDFlag:    zeroBase64,
 			protoClient:      &stubVerifyClient{verifyErr: rpcStatus.Error(codes.Internal, "failed")},
 			stateFile:        defaultStateFile(cloudprovider.Azure),
-			formatter:        &stubAttDocFormatter{},
 			wantErr:          true,
 		},
 		"error protoClient GetState not rpc": {
@@ -177,17 +165,6 @@ func TestVerify(t *testing.T) {
 			clusterIDFlag:    zeroBase64,
 			protoClient:      &stubVerifyClient{verifyErr: someErr},
 			stateFile:        defaultStateFile(cloudprovider.Azure),
-			formatter:        &stubAttDocFormatter{},
-			wantErr:          true,
-		},
-		"format error": {
-			provider:         cloudprovider.Azure,
-			nodeEndpointFlag: "192.0.2.1:1234",
-			clusterIDFlag:    zeroBase64,
-			protoClient:      &stubVerifyClient{},
-			stateFile:        defaultStateFile(cloudprovider.Azure),
-			wantEndpoint:     "192.0.2.1:1234",
-			formatter:        &stubAttDocFormatter{formatErr: someErr},
 			wantErr:          true,
 		},
 	}
@@ -214,12 +191,10 @@ func TestVerify(t *testing.T) {
 				flags: verifyFlags{
 					clusterID: tc.clusterIDFlag,
 					endpoint:  tc.nodeEndpointFlag,
+					output:    "raw",
 				},
 			}
-			formatterFac := func(_ string, _ variant.Variant, _ debugLog) (attestationDocFormatter, error) {
-				return tc.formatter, nil
-			}
-			err := v.verify(cmd, tc.protoClient, formatterFac, stubAttestationFetcher{})
+			err := v.verify(cmd, tc.protoClient, stubAttestationFetcher{})
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
@@ -231,36 +206,20 @@ func TestVerify(t *testing.T) {
 	}
 }
 
-type stubAttDocFormatter struct {
-	formatErr error
-}
-
-func (f *stubAttDocFormatter) format(_ context.Context, _ string, _ bool, _ config.AttestationCfg) (string, error) {
-	return "", f.formatErr
-}
-
-func TestFormat(t *testing.T) {
-	formatter := func() *defaultAttestationDocFormatter {
-		return &defaultAttestationDocFormatter{
-			log: logger.NewTest(t),
-		}
-	}
-
+func TestFormatDefault(t *testing.T) {
 	testCases := map[string]struct {
-		formatter *defaultAttestationDocFormatter
-		doc       string
-		wantErr   bool
+		doc     string
+		wantErr bool
 	}{
 		"invalid doc": {
-			formatter: formatter(),
-			doc:       "invalid",
-			wantErr:   true,
+			doc:     "invalid",
+			wantErr: true,
 		},
 	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			_, err := tc.formatter.format(context.Background(), tc.doc, false, nil)
+			_, err := formatDefault(context.Background(), tc.doc, nil, logger.NewTest(t))
 			if tc.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -502,9 +461,8 @@ func TestParseQuotes(t *testing.T) {
 			assert := assert.New(t)
 
 			b := &strings.Builder{}
-			parser := &defaultAttestationDocFormatter{}
 
-			err := parser.parseQuotes(b, tc.quotes, tc.expectedPCRs)
+			err := parseQuotes(b, tc.quotes, tc.expectedPCRs)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

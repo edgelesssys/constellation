@@ -157,7 +157,7 @@ func getCertChain(cfg config.AttestationCfg) ([]byte, error) {
 	return certChain, nil
 }
 
-// FormatString builds a string representation of a report that is inteded for console output.
+// FormatString builds a string representation of a report that is intended for console output.
 func (r *Report) FormatString(b *strings.Builder) (string, error) {
 	if len(r.ReportSigner) != 1 {
 		return "", fmt.Errorf("expected exactly one report signing certificate, found %d", len(r.ReportSigner))
