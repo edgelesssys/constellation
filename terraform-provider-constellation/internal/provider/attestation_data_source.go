@@ -162,7 +162,7 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 
 	insecureFetch := data.Insecure.ValueBool()
 
-	snpVersions := attestationconfigapi.SEVSNPVersionAPI{}
+	snpVersions := attestationconfigapi.VersionAPIEntry{}
 	if attestationVariant.Equal(variant.AzureSEVSNP{}) ||
 		attestationVariant.Equal(variant.AWSSEVSNP{}) ||
 		attestationVariant.Equal(variant.GCPSEVSNP{}) {

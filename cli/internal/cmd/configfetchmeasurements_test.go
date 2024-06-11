@@ -204,18 +204,8 @@ func (f stubVerifyFetcher) FetchAndVerifyMeasurements(_ context.Context, _ strin
 
 type stubAttestationFetcher struct{}
 
-func (f stubAttestationFetcher) FetchSEVSNPVersionList(_ context.Context, _ attestationconfigapi.SEVSNPVersionList) (attestationconfigapi.SEVSNPVersionList, error) {
-	return attestationconfigapi.SEVSNPVersionList{}, nil
-}
-
-func (f stubAttestationFetcher) FetchSEVSNPVersion(_ context.Context, _ attestationconfigapi.SEVSNPVersionAPI) (attestationconfigapi.SEVSNPVersionAPI, error) {
-	return attestationconfigapi.SEVSNPVersionAPI{
-		SEVSNPVersion: testCfg,
-	}, nil
-}
-
-func (f stubAttestationFetcher) FetchLatestVersion(_ context.Context, _ variant.Variant) (attestationconfigapi.SEVSNPVersionAPI, error) {
-	return attestationconfigapi.SEVSNPVersionAPI{
+func (f stubAttestationFetcher) FetchLatestVersion(_ context.Context, _ variant.Variant) (attestationconfigapi.VersionAPIEntry, error) {
+	return attestationconfigapi.VersionAPIEntry{
 		SEVSNPVersion: testCfg,
 	}, nil
 }

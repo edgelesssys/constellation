@@ -137,7 +137,7 @@ func convertFromTfAttestationCfg(tfAttestation attestationAttribute, attestation
 }
 
 // convertToTfAttestationCfg converts the constellation attestation config to the related terraform structs.
-func convertToTfAttestation(attVar variant.Variant, snpVersions attestationconfigapi.SEVSNPVersionAPI) (tfAttestation attestationAttribute, err error) {
+func convertToTfAttestation(attVar variant.Variant, snpVersions attestationconfigapi.VersionAPIEntry) (tfAttestation attestationAttribute, err error) {
 	tfAttestation = attestationAttribute{
 		Variant:           attVar.String(),
 		BootloaderVersion: snpVersions.Bootloader,
