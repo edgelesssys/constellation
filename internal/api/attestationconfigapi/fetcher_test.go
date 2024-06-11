@@ -22,82 +22,106 @@ import (
 )
 
 func TestFetchLatestSEVSNPVersion(t *testing.T) {
+	latestVersionSNP := VersionAPIEntry{
+		SEVSNPVersion: SEVSNPVersion{
+			Microcode:  93,
+			TEE:        0,
+			SNP:        6,
+			Bootloader: 2,
+		},
+	}
+	olderVersionSNP := VersionAPIEntry{
+		SEVSNPVersion: SEVSNPVersion{
+			Microcode:  1,
+			TEE:        0,
+			SNP:        1,
+			Bootloader: 1,
+		},
+	}
+	latestVersionTDX := VersionAPIEntry{
+		TDXVersion: TDXVersion{
+			QESVN:      2,
+			PCESVN:     3,
+			TEETCBSVN:  [16]byte{4},
+			QEVendorID: [16]byte{5},
+			XFAM:       [8]byte{6},
+		},
+	}
+	olderVersionTDX := VersionAPIEntry{
+		TDXVersion: TDXVersion{
+			QESVN:      1,
+			PCESVN:     2,
+			TEETCBSVN:  [16]byte{3},
+			QEVendorID: [16]byte{4},
+			XFAM:       [8]byte{5},
+		},
+	}
+
 	latestStr := "2023-06-11-14-09.json"
 	olderStr := "2019-01-01-01-01.json"
-	testcases := map[string]struct {
+	testCases := map[string]struct {
 		fetcherVersions []string
 		timeAtTest      time.Time
 		wantErr         bool
 		attestation     variant.Variant
-		expectedVersion func() SEVSNPVersionAPI
-		olderVersion    func() SEVSNPVersionAPI
-		latestVersion   func() SEVSNPVersionAPI
+		expectedVersion VersionAPIEntry
+		olderVersion    VersionAPIEntry
+		latestVersion   VersionAPIEntry
 	}{
-		"get latest version azure": {
+		"get latest version azure-sev-snp": {
 			fetcherVersions: []string{latestStr, olderStr},
 			attestation:     variant.AzureSEVSNP{},
-			expectedVersion: func() SEVSNPVersionAPI { tmp := latestVersion; tmp.Variant = variant.AzureSEVSNP{}; return tmp },
-			olderVersion:    func() SEVSNPVersionAPI { tmp := olderVersion; tmp.Variant = variant.AzureSEVSNP{}; return tmp },
-			latestVersion:   func() SEVSNPVersionAPI { tmp := latestVersion; tmp.Variant = variant.AzureSEVSNP{}; return tmp },
+			expectedVersion: func() VersionAPIEntry { tmp := latestVersionSNP; tmp.Variant = variant.AzureSEVSNP{}; return tmp }(),
+			olderVersion:    func() VersionAPIEntry { tmp := olderVersionSNP; tmp.Variant = variant.AzureSEVSNP{}; return tmp }(),
+			latestVersion:   func() VersionAPIEntry { tmp := latestVersionSNP; tmp.Variant = variant.AzureSEVSNP{}; return tmp }(),
 		},
-		"get latest version aws": {
+		"get latest version aws-sev-snp": {
 			fetcherVersions: []string{latestStr, olderStr},
 			attestation:     variant.AWSSEVSNP{},
-			expectedVersion: func() SEVSNPVersionAPI { tmp := latestVersion; tmp.Variant = variant.AWSSEVSNP{}; return tmp },
-			olderVersion:    func() SEVSNPVersionAPI { tmp := olderVersion; tmp.Variant = variant.AWSSEVSNP{}; return tmp },
-			latestVersion:   func() SEVSNPVersionAPI { tmp := latestVersion; tmp.Variant = variant.AWSSEVSNP{}; return tmp },
+			expectedVersion: func() VersionAPIEntry { tmp := latestVersionSNP; tmp.Variant = variant.AWSSEVSNP{}; return tmp }(),
+			olderVersion:    func() VersionAPIEntry { tmp := olderVersionSNP; tmp.Variant = variant.AWSSEVSNP{}; return tmp }(),
+			latestVersion:   func() VersionAPIEntry { tmp := latestVersionSNP; tmp.Variant = variant.AWSSEVSNP{}; return tmp }(),
+		},
+		"get latest version azure-tdx": {
+			fetcherVersions: []string{latestStr, olderStr},
+			attestation:     variant.AzureTDX{},
+			expectedVersion: func() VersionAPIEntry { tmp := latestVersionTDX; tmp.Variant = variant.AzureTDX{}; return tmp }(),
+			olderVersion:    func() VersionAPIEntry { tmp := olderVersionTDX; tmp.Variant = variant.AzureTDX{}; return tmp }(),
+			latestVersion:   func() VersionAPIEntry { tmp := latestVersionTDX; tmp.Variant = variant.AzureTDX{}; return tmp }(),
 		},
 	}
-	for name, tc := range testcases {
+	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			client := &http.Client{
 				Transport: &fakeConfigAPIHandler{
 					attestation:   tc.attestation,
 					versions:      tc.fetcherVersions,
 					latestDate:    latestStr,
-					latestVersion: tc.latestVersion(),
+					latestVersion: tc.latestVersion,
 					olderDate:     olderStr,
-					olderVersion:  tc.olderVersion(),
+					olderVersion:  tc.olderVersion,
 				},
 			}
-			fetcher := newFetcherWithClientAndVerifier(client, dummyVerifier{}, constants.CDNRepositoryURL)
+			fetcher := newFetcherWithClientAndVerifier(client, stubVerifier{}, constants.CDNRepositoryURL)
 			res, err := fetcher.FetchLatestVersion(context.Background(), tc.attestation)
 			assert := assert.New(t)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
-				assert.Equal(tc.expectedVersion(), res)
+				assert.Equal(tc.expectedVersion, res)
 			}
 		})
 	}
-}
-
-var latestVersion = SEVSNPVersionAPI{
-	SEVSNPVersion: SEVSNPVersion{
-		Microcode:  93,
-		TEE:        0,
-		SNP:        6,
-		Bootloader: 2,
-	},
-}
-
-var olderVersion = SEVSNPVersionAPI{
-	SEVSNPVersion: SEVSNPVersion{
-		Microcode:  1,
-		TEE:        0,
-		SNP:        1,
-		Bootloader: 1,
-	},
 }
 
 type fakeConfigAPIHandler struct {
 	attestation   variant.Variant
 	versions      []string
 	latestDate    string
-	latestVersion SEVSNPVersionAPI
+	latestVersion VersionAPIEntry
 	olderDate     string
-	olderVersion  SEVSNPVersionAPI
+	olderVersion  VersionAPIEntry
 }
 
 // RoundTrip resolves the request and returns a dummy response.
@@ -148,8 +172,8 @@ func (f *fakeConfigAPIHandler) RoundTrip(req *http.Request) (*http.Response, err
 	return nil, errors.New("no endpoint found")
 }
 
-type dummyVerifier struct{}
+type stubVerifier struct{}
 
-func (s dummyVerifier) VerifySignature(_, _ []byte) error {
+func (s stubVerifier) VerifySignature(_, _ []byte) error {
 	return nil
 }

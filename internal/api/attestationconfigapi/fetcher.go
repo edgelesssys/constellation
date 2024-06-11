@@ -8,7 +8,6 @@ package attestationconfigapi
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	apifetcher "github.com/edgelesssys/constellation/v2/internal/api/fetcher"
@@ -19,12 +18,9 @@ import (
 
 const cosignPublicKey = constants.CosignPublicKeyReleases
 
-// ErrNoVersionsFound is returned if no versions are found.
-var ErrNoVersionsFound = errors.New("no versions found")
-
 // Fetcher fetches config API resources without authentication.
 type Fetcher interface {
-	FetchLatestVersion(ctx context.Context, attestation variant.Variant) (SEVSNPVersionAPI, error)
+	FetchLatestVersion(ctx context.Context, attestation variant.Variant) (VersionAPIEntry, error)
 }
 
 // fetcher fetches AttestationCfg API resources without authentication.
@@ -64,46 +60,43 @@ func newFetcherWithClientAndVerifier(client apifetcher.HTTPClient, cosignVerifie
 }
 
 // FetchLatestVersion returns the latest versions of the given type.
-func (f *fetcher) FetchLatestVersion(ctx context.Context, attesation variant.Variant) (res SEVSNPVersionAPI, err error) {
-	list, err := f.fetchVersionList(ctx, SEVSNPVersionList{Variant: attesation})
+func (f *fetcher) FetchLatestVersion(ctx context.Context, variant variant.Variant) (VersionAPIEntry, error) {
+	list, err := f.fetchVersionList(ctx, variant)
 	if err != nil {
-		return res, ErrNoVersionsFound
+		return VersionAPIEntry{}, err
 	}
 
-	getVersionRequest := SEVSNPVersionAPI{
-		Version: list.List[0], // latest version is first in list
-		Variant: attesation,
-	}
-	res, err = f.fetchVersion(ctx, getVersionRequest)
-	if err != nil {
-		return res, err
-	}
-	return
+	// latest version is first in list
+	return f.fetchVersion(ctx, list.List[0], variant)
 }
 
 // fetchVersionList fetches the version list information from the config API.
-func (f *fetcher) fetchVersionList(ctx context.Context, list SEVSNPVersionList) (SEVSNPVersionList, error) {
-	// TODO(derpsteb): Replace with FetchAndVerify once we move to v2 of the config API.
-	fetchedList, err := apifetcher.Fetch(ctx, f.HTTPClient, f.cdnURL, list)
+func (f *fetcher) fetchVersionList(ctx context.Context, variant variant.Variant) (VersionList, error) {
+	// TODO(derpsteb): Replace with FetchAndVerify once we move to v2 of the config API and the list is saved as (.json) file.
+	fetchedList, err := apifetcher.Fetch(ctx, f.HTTPClient, f.cdnURL, VersionList{Variant: variant})
 	if err != nil {
-		return list, fmt.Errorf("fetching version list: %w", err)
+		return VersionList{}, fmt.Errorf("fetching version list: %w", err)
 	}
 
-	// Need to set this explicitly as the variant is not part of the marshalled JSON.
-	fetchedList.Variant = list.Variant
+	// Set the attestation variant of the list as it is not part of the marshalled JSON retrieved by Fetch
+	fetchedList.Variant = variant
 
 	return fetchedList, nil
 }
 
 // fetchVersion fetches the version information from the config API.
-func (f *fetcher) fetchVersion(ctx context.Context, version SEVSNPVersionAPI) (SEVSNPVersionAPI, error) {
-	fetchedVersion, err := apifetcher.FetchAndVerify(ctx, f.HTTPClient, f.cdnURL, version, f.verifier)
+func (f *fetcher) fetchVersion(ctx context.Context, version string, variant variant.Variant) (VersionAPIEntry, error) {
+	obj := VersionAPIEntry{
+		Version: version,
+		Variant: variant,
+	}
+	fetchedVersion, err := apifetcher.FetchAndVerify(ctx, f.HTTPClient, f.cdnURL, obj, f.verifier)
 	if err != nil {
-		return fetchedVersion, fmt.Errorf("fetching version %s: %w", version.Version, err)
+		return VersionAPIEntry{}, fmt.Errorf("fetching version %q: %w", version, err)
 	}
 
-	// Need to set this explicitly as the variant is not part of the marshalled JSON.
-	fetchedVersion.Variant = version.Variant
+	// Set the attestation variant of the list as it is not part of the marshalled JSON retrieved by FetchAndVerify
+	fetchedVersion.Variant = variant
 
 	return fetchedVersion, nil
 }

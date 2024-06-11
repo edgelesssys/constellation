@@ -14,23 +14,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSEVSNPVersionListMarshalUnmarshalJSON(t *testing.T) {
+func TestVersionListMarshalUnmarshalJSON(t *testing.T) {
 	tests := map[string]struct {
-		input    SEVSNPVersionList
-		output   SEVSNPVersionList
+		input    VersionList
+		output   VersionList
 		wantDiff bool
 	}{
 		"success": {
-			input:  SEVSNPVersionList{List: []string{"v1", "v2"}},
-			output: SEVSNPVersionList{List: []string{"v1", "v2"}},
+			input:  VersionList{List: []string{"v1", "v2"}},
+			output: VersionList{List: []string{"v1", "v2"}},
 		},
 		"variant is lost": {
-			input:  SEVSNPVersionList{List: []string{"v1", "v2"}, Variant: variant.AzureSEVSNP{}},
-			output: SEVSNPVersionList{List: []string{"v1", "v2"}},
+			input:  VersionList{List: []string{"v1", "v2"}, Variant: variant.AzureSEVSNP{}},
+			output: VersionList{List: []string{"v1", "v2"}},
 		},
 		"wrong order": {
-			input:    SEVSNPVersionList{List: []string{"v1", "v2"}},
-			output:   SEVSNPVersionList{List: []string{"v2", "v1"}},
+			input:    VersionList{List: []string{"v1", "v2"}},
+			output:   VersionList{List: []string{"v2", "v1"}},
 			wantDiff: true,
 		},
 	}
@@ -40,7 +40,7 @@ func TestSEVSNPVersionListMarshalUnmarshalJSON(t *testing.T) {
 			inputRaw, err := tc.input.MarshalJSON()
 			require.NoError(t, err)
 
-			var actual SEVSNPVersionList
+			var actual VersionList
 			err = actual.UnmarshalJSON(inputRaw)
 			require.NoError(t, err)
 
@@ -53,7 +53,7 @@ func TestSEVSNPVersionListMarshalUnmarshalJSON(t *testing.T) {
 	}
 }
 
-func TestSEVSNPVersionListAddVersion(t *testing.T) {
+func TestVersionListAddVersion(t *testing.T) {
 	tests := map[string]struct {
 		versions []string
 		new      string
@@ -68,7 +68,7 @@ func TestSEVSNPVersionListAddVersion(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			v := SEVSNPVersionList{List: tc.versions}
+			v := VersionList{List: tc.versions}
 			v.AddVersion(tc.new)
 
 			assert.Equal(t, tc.expected, v.List)

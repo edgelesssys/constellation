@@ -15,6 +15,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi/cli/client"
+	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -127,7 +128,8 @@ func uploadReport(ctx context.Context,
 
 	latestAPIVersionAPI, err := attestationconfigapi.NewFetcherWithCustomCDNAndCosignKey(cfg.url, cfg.cosignPublicKey).FetchLatestVersion(ctx, attestation)
 	if err != nil {
-		if errors.Is(err, attestationconfigapi.ErrNoVersionsFound) {
+		var notFoundErr *fetcher.NotFoundError
+		if errors.As(err, &notFoundErr) {
 			log.Info("No versions found in API, but assuming that we are uploading the first version.")
 		} else {
 			return fmt.Errorf("fetching latest version: %w", err)
