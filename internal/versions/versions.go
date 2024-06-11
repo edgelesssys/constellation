@@ -248,7 +248,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 			},
 		},
 		// CloudControllerManagerImageAWS is the CCM image used on AWS.
-		CloudControllerManagerImageAWS: "registry.k8s.io/provider-aws/cloud-controller-manager:v1.27.6@sha256:1891fb7f0cef58a657854ce553fcbda1a98b7a7418a17688055ca014f6451f2b", // renovate:container
+		CloudControllerManagerImageAWS: "registry.k8s.io/provider-aws/cloud-controller-manager:v1.27.7@sha256:a7e1a6f6b4debdf60b17e5ffafe786446495e0e2301665be612f3d6366173bfd", // renovate:container
 		// CloudControllerManagerImageAzure is the CCM image used on Azure.
 		// Check for newer versions at https://github.com/kubernetes-sigs/cloud-provider-azure/blob/master/README.md.
 		CloudControllerManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.27.17@sha256:fc2eb36fbf5ba8e854da02574ce434a7a02669180fdb6dba4c068a072985ac47", // renovate:container
@@ -315,7 +315,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 			},
 		},
 		// CloudControllerManagerImageAWS is the CCM image used on AWS.
-		CloudControllerManagerImageAWS: "registry.k8s.io/provider-aws/cloud-controller-manager:v1.28.5@sha256:ac0579afacbf2db0e9b2dda6c777c3f27ce877c17dc29db623998ab09858ac0e", // renovate:container
+		CloudControllerManagerImageAWS: "registry.k8s.io/provider-aws/cloud-controller-manager:v1.28.6@sha256:bb42961c336c2dbc736c1354b01208523962b4f4be4ebd582f697391766d510e", // renovate:container
 		// CloudControllerManagerImageAzure is the CCM image used on Azure.
 		// Check for newer versions at https://github.com/kubernetes-sigs/cloud-provider-azure/blob/master/README.md.
 		CloudControllerManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.27.17@sha256:fc2eb36fbf5ba8e854da02574ce434a7a02669180fdb6dba4c068a072985ac47", // renovate:container
@@ -382,7 +382,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 			},
 		},
 		// CloudControllerManagerImageAWS is the CCM image used on AWS.
-		CloudControllerManagerImageAWS: "registry.k8s.io/provider-aws/cloud-controller-manager:v1.29.2@sha256:db37f9ad7cb64d2248fee5354e5d2d9311bea5f188bdf24ffc3380a4c00066c9", // renovate:container
+		CloudControllerManagerImageAWS: "registry.k8s.io/provider-aws/cloud-controller-manager:v1.29.3@sha256:26a61ab55d8be6365348b78c3cf691276a7b078c58dd789729704fb56bcaac8c", // renovate:container
 		// CloudControllerManagerImageAzure is the CCM image used on Azure.
 		// Check for newer versions at https://github.com/kubernetes-sigs/cloud-provider-azure/blob/master/README.md.
 		CloudControllerManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.28.9@sha256:7abf813ad41b8f1ed91f50bfefb6f285b367664c57758af0b5a623b65f55b34b", // renovate:container
