@@ -3,7 +3,12 @@ Copyright (c) Edgeless Systems GmbH
 
 SPDX-License-Identifier: AGPL-3.0-only
 */
-package attestationconfigapi
+
+/*
+package client contains code to manage CVM versions in Constellation's CDN API.
+It is used to upload and delete "latest" versions for AMD SEV-SNP and Intel TDX.
+*/
+package client
 
 import (
 	"context"
@@ -12,6 +17,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
@@ -31,8 +37,8 @@ type Client struct {
 	cacheWindowSize int
 }
 
-// NewClient returns a new Client.
-func NewClient(ctx context.Context, cfg staticupload.Config, cosignPwd, privateKey []byte, dryRun bool, versionWindowSize int, log *slog.Logger) (*Client, apiclient.CloseFunc, error) {
+// New returns a new Client.
+func New(ctx context.Context, cfg staticupload.Config, cosignPwd, privateKey []byte, dryRun bool, versionWindowSize int, log *slog.Logger) (*Client, apiclient.CloseFunc, error) {
 	s3Client, clientClose, err := apiclient.NewClient(ctx, cfg.Region, cfg.Bucket, cfg.DistributionID, dryRun, log)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create s3 storage: %w", err)
@@ -49,7 +55,7 @@ func NewClient(ctx context.Context, cfg staticupload.Config, cosignPwd, privateK
 }
 
 // uploadSEVSNPVersion uploads the latest version numbers of the SEVSNP. Then version name is the UTC timestamp of the date. The /list entry stores the version name + .json suffix.
-func (a Client) uploadSEVSNPVersion(ctx context.Context, attestation variant.Variant, version SEVSNPVersion, date time.Time) error {
+func (a Client) uploadSEVSNPVersion(ctx context.Context, attestation variant.Variant, version attestationconfigapi.SEVSNPVersion, date time.Time) error {
 	versions, err := a.List(ctx, attestation)
 	if err != nil {
 		return fmt.Errorf("fetch version list: %w", err)
@@ -74,32 +80,32 @@ func (a Client) DeleteSEVSNPVersion(ctx context.Context, attestation variant.Var
 }
 
 // List returns the list of versions for the given attestation variant.
-func (a Client) List(ctx context.Context, attestation variant.Variant) (SEVSNPVersionList, error) {
+func (a Client) List(ctx context.Context, attestation variant.Variant) (attestationconfigapi.SEVSNPVersionList, error) {
 	if !attestation.Equal(variant.AzureSEVSNP{}) &&
 		!attestation.Equal(variant.AWSSEVSNP{}) &&
 		!attestation.Equal(variant.GCPSEVSNP{}) {
-		return SEVSNPVersionList{}, fmt.Errorf("unsupported attestation variant: %s", attestation)
+		return attestationconfigapi.SEVSNPVersionList{}, fmt.Errorf("unsupported attestation variant: %s", attestation)
 	}
 
-	versions, err := apiclient.Fetch(ctx, a.s3Client, SEVSNPVersionList{variant: attestation})
+	versions, err := apiclient.Fetch(ctx, a.s3Client, attestationconfigapi.SEVSNPVersionList{Variant: attestation})
 	if err != nil {
 		var notFoundErr *apiclient.NotFoundError
 		if errors.As(err, &notFoundErr) {
-			return SEVSNPVersionList{variant: attestation}, nil
+			return attestationconfigapi.SEVSNPVersionList{Variant: attestation}, nil
 		}
-		return SEVSNPVersionList{}, err
+		return attestationconfigapi.SEVSNPVersionList{}, err
 	}
 
-	versions.variant = attestation
+	versions.Variant = attestation
 
 	return versions, nil
 }
 
-func (a Client) deleteSEVSNPVersion(versions SEVSNPVersionList, versionStr string) (ops []crudCmd, err error) {
+func (a Client) deleteSEVSNPVersion(versions attestationconfigapi.SEVSNPVersionList, versionStr string) (ops []crudCmd, err error) {
 	versionStr = versionStr + ".json"
 	ops = append(ops, deleteCmd{
-		apiObject: SEVSNPVersionAPI{
-			Variant: versions.variant,
+		apiObject: attestationconfigapi.SEVSNPVersionAPI{
+			Variant: versions.Variant,
 			Version: versionStr,
 		},
 	})
@@ -115,8 +121,8 @@ func (a Client) deleteSEVSNPVersion(versions SEVSNPVersionList, versionStr strin
 	return ops, nil
 }
 
-func (a Client) constructUploadCmd(attestation variant.Variant, version SEVSNPVersion, versionNames SEVSNPVersionList, date time.Time) []crudCmd {
-	if !attestation.Equal(versionNames.variant) {
+func (a Client) constructUploadCmd(attestation variant.Variant, version attestationconfigapi.SEVSNPVersion, versionNames attestationconfigapi.SEVSNPVersionList, date time.Time) []crudCmd {
+	if !attestation.Equal(versionNames.Variant) {
 		return nil
 	}
 
@@ -124,11 +130,11 @@ func (a Client) constructUploadCmd(attestation variant.Variant, version SEVSNPVe
 	var res []crudCmd
 
 	res = append(res, putCmd{
-		apiObject: SEVSNPVersionAPI{Version: dateStr, Variant: attestation, SEVSNPVersion: version},
+		apiObject: attestationconfigapi.SEVSNPVersionAPI{Version: dateStr, Variant: attestation, SEVSNPVersion: version},
 		signer:    a.signer,
 	})
 
-	versionNames.addVersion(dateStr)
+	versionNames.AddVersion(dateStr)
 
 	res = append(res, putCmd{
 		apiObject: versionNames,
@@ -138,19 +144,19 @@ func (a Client) constructUploadCmd(attestation variant.Variant, version SEVSNPVe
 	return res
 }
 
-func removeVersion(list SEVSNPVersionList, versionStr string) (removedVersions SEVSNPVersionList, err error) {
-	versions := list.List()
+func removeVersion(list attestationconfigapi.SEVSNPVersionList, versionStr string) (removedVersions attestationconfigapi.SEVSNPVersionList, err error) {
+	versions := list.List
 	for i, v := range versions {
 		if v == versionStr {
 			if i == len(versions)-1 {
-				removedVersions = SEVSNPVersionList{list: versions[:i], variant: list.variant}
+				removedVersions = attestationconfigapi.SEVSNPVersionList{List: versions[:i], Variant: list.Variant}
 			} else {
-				removedVersions = SEVSNPVersionList{list: append(versions[:i], versions[i+1:]...), variant: list.variant}
+				removedVersions = attestationconfigapi.SEVSNPVersionList{List: append(versions[:i], versions[i+1:]...), Variant: list.Variant}
 			}
 			return removedVersions, nil
 		}
 	}
-	return SEVSNPVersionList{}, fmt.Errorf("version %s not found in list %v", versionStr, versions)
+	return attestationconfigapi.SEVSNPVersionList{}, fmt.Errorf("version %s not found in list %v", versionStr, versions)
 }
 
 type crudCmd interface {

@@ -4,12 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-/*
-The reporter contains the logic to determine a latest version for SEVSNP based on cached version values observed on CVM instances.
-Some code in this file (e.g. listing cached files) does not rely on dedicated API objects and instead uses the AWS SDK directly,
-for no other reason than original development speed.
-*/
-package attestationconfigapi
+package client
 
 import (
 	"context"
@@ -23,6 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go/aws"
 
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/api/client"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 )
@@ -34,7 +30,7 @@ const cachedVersionsSubDir = "cached-versions"
 var ErrNoNewerVersion = errors.New("input version is not newer than latest API version")
 
 func reportVersionDir(attestation variant.Variant) string {
-	return path.Join(AttestationURLPath, attestation.String(), cachedVersionsSubDir)
+	return path.Join(attestationconfigapi.AttestationURLPath, attestation.String(), cachedVersionsSubDir)
 }
 
 // UploadSEVSNPVersionLatest saves the given version to the cache, determines the smallest
@@ -42,7 +38,7 @@ func reportVersionDir(attestation variant.Variant) string {
 // the latest version in the API if there is an update.
 // force can be used to bypass the validation logic against the cached versions.
 func (c Client) UploadSEVSNPVersionLatest(ctx context.Context, attestation variant.Variant, inputVersion,
-	latestAPIVersion SEVSNPVersion, now time.Time, force bool,
+	latestAPIVersion attestationconfigapi.SEVSNPVersion, now time.Time, force bool,
 ) error {
 	if err := c.cacheSEVSNPVersion(ctx, attestation, inputVersion, now); err != nil {
 		return fmt.Errorf("reporting version: %w", err)
@@ -84,7 +80,7 @@ func (c Client) UploadSEVSNPVersionLatest(ctx context.Context, attestation varia
 }
 
 // cacheSEVSNPVersion uploads the latest observed version numbers of the SEVSNP. This version is used to later report the latest version numbers to the API.
-func (c Client) cacheSEVSNPVersion(ctx context.Context, attestation variant.Variant, version SEVSNPVersion, date time.Time) error {
+func (c Client) cacheSEVSNPVersion(ctx context.Context, attestation variant.Variant, version attestationconfigapi.SEVSNPVersion, date time.Time) error {
 	dateStr := date.Format(VersionFormat) + ".json"
 	res := putCmd{
 		apiObject: reportedSEVSNPVersionAPI{Version: dateStr, variant: attestation, SEVSNPVersion: version},
@@ -112,8 +108,8 @@ func (c Client) listCachedVersions(ctx context.Context, attestation variant.Vari
 }
 
 // findMinVersion finds the minimal version of the given version dates among the latest values in the version window size.
-func (c Client) findMinVersion(ctx context.Context, attesation variant.Variant, versionDates []string) (SEVSNPVersion, string, error) {
-	var minimalVersion *SEVSNPVersion
+func (c Client) findMinVersion(ctx context.Context, attesation variant.Variant, versionDates []string) (attestationconfigapi.SEVSNPVersion, string, error) {
+	var minimalVersion *attestationconfigapi.SEVSNPVersion
 	var minimalDate string
 	sort.Sort(sort.Reverse(sort.StringSlice(versionDates))) // sort in reverse order to slice the latest versions
 	versionDates = versionDates[:c.cacheWindowSize]
@@ -121,7 +117,7 @@ func (c Client) findMinVersion(ctx context.Context, attesation variant.Variant, 
 	for _, date := range versionDates {
 		obj, err := client.Fetch(ctx, c.s3Client, reportedSEVSNPVersionAPI{Version: date + ".json", variant: attesation})
 		if err != nil {
-			return SEVSNPVersion{}, "", fmt.Errorf("get object: %w", err)
+			return attestationconfigapi.SEVSNPVersion{}, "", fmt.Errorf("get object: %w", err)
 		}
 		// Need to set this explicitly as the variant is not part of the marshalled JSON.
 		obj.variant = attesation
@@ -144,7 +140,7 @@ func (c Client) findMinVersion(ctx context.Context, attesation variant.Variant, 
 }
 
 // isInputNewerThanOtherVersion compares all version fields and returns true if any input field is newer.
-func isInputNewerThanOtherVersion(input, other SEVSNPVersion) (bool, error) {
+func isInputNewerThanOtherVersion(input, other attestationconfigapi.SEVSNPVersion) (bool, error) {
 	if input == other {
 		return false, nil
 	}
@@ -167,7 +163,7 @@ func isInputNewerThanOtherVersion(input, other SEVSNPVersion) (bool, error) {
 type reportedSEVSNPVersionAPI struct {
 	Version string          `json:"-"`
 	variant variant.Variant `json:"-"`
-	SEVSNPVersion
+	attestationconfigapi.SEVSNPVersion
 }
 
 // JSONPath returns the path to the JSON file for the request to the config api.

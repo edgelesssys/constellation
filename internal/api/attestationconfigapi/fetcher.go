@@ -74,7 +74,7 @@ func (f *fetcher) FetchSEVSNPVersionList(ctx context.Context, list SEVSNPVersion
 	}
 
 	// Need to set this explicitly as the variant is not part of the marshalled JSON.
-	fetchedList.variant = list.variant
+	fetchedList.Variant = list.Variant
 
 	return fetchedList, nil
 }
@@ -94,13 +94,13 @@ func (f *fetcher) FetchSEVSNPVersion(ctx context.Context, version SEVSNPVersionA
 
 // FetchSEVSNPVersionLatest returns the latest versions of the given type.
 func (f *fetcher) FetchSEVSNPVersionLatest(ctx context.Context, attesation variant.Variant) (res SEVSNPVersionAPI, err error) {
-	list, err := f.FetchSEVSNPVersionList(ctx, SEVSNPVersionList{variant: attesation})
+	list, err := f.FetchSEVSNPVersionList(ctx, SEVSNPVersionList{Variant: attesation})
 	if err != nil {
 		return res, ErrNoVersionsFound
 	}
 
 	getVersionRequest := SEVSNPVersionAPI{
-		Version: list.List()[0], // latest version is first in list
+		Version: list.List[0], // latest version is first in list
 		Variant: attesation,
 	}
 	res, err = f.FetchSEVSNPVersion(ctx, getVersionRequest)

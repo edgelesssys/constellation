@@ -39,13 +39,14 @@ const (
 	// unknown is the default objectKind and does nothing.
 	unknown       objectKind = "unknown-kind"
 	snpReport     objectKind = "snp-report"
+	tdxReport     objectKind = "tdx-report"
 	guestFirmware objectKind = "guest-firmware"
 )
 
 func kindFromString(s string) objectKind {
 	lower := strings.ToLower(s)
 	switch objectKind(lower) {
-	case snpReport, guestFirmware:
+	case snpReport, guestFirmware, tdxReport:
 		return objectKind(lower)
 	default:
 		return unknown

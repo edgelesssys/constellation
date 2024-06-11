@@ -21,16 +21,16 @@ func TestSEVSNPVersionListMarshalUnmarshalJSON(t *testing.T) {
 		wantDiff bool
 	}{
 		"success": {
-			input:  SEVSNPVersionList{list: []string{"v1", "v2"}},
-			output: SEVSNPVersionList{list: []string{"v1", "v2"}},
+			input:  SEVSNPVersionList{List: []string{"v1", "v2"}},
+			output: SEVSNPVersionList{List: []string{"v1", "v2"}},
 		},
 		"variant is lost": {
-			input:  SEVSNPVersionList{list: []string{"v1", "v2"}, variant: variant.AzureSEVSNP{}},
-			output: SEVSNPVersionList{list: []string{"v1", "v2"}},
+			input:  SEVSNPVersionList{List: []string{"v1", "v2"}, Variant: variant.AzureSEVSNP{}},
+			output: SEVSNPVersionList{List: []string{"v1", "v2"}},
 		},
 		"wrong order": {
-			input:    SEVSNPVersionList{list: []string{"v1", "v2"}},
-			output:   SEVSNPVersionList{list: []string{"v2", "v1"}},
+			input:    SEVSNPVersionList{List: []string{"v1", "v2"}},
+			output:   SEVSNPVersionList{List: []string{"v2", "v1"}},
 			wantDiff: true,
 		},
 	}
@@ -68,10 +68,10 @@ func TestSEVSNPVersionListAddVersion(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			v := SEVSNPVersionList{list: tc.versions}
-			v.addVersion(tc.new)
+			v := SEVSNPVersionList{List: tc.versions}
+			v.AddVersion(tc.new)
 
-			assert.Equal(t, tc.expected, v.list)
+			assert.Equal(t, tc.expected, v.List)
 		})
 	}
 }

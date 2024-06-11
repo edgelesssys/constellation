@@ -64,26 +64,23 @@ func (i SEVSNPVersionAPI) Validate() error {
 // Once we switch to v2 of the API we could embed the variant in the object and remove some code from fetcher & client.
 // That would remove the possibility of some fetcher/client code forgetting to set the variant.
 type SEVSNPVersionList struct {
-	variant variant.Variant
-	list    []string
+	Variant variant.Variant
+	List    []string
 }
 
 // MarshalJSON marshals the i's list property to JSON.
 func (i SEVSNPVersionList) MarshalJSON() ([]byte, error) {
-	return json.Marshal(i.list)
+	return json.Marshal(i.List)
 }
 
 // UnmarshalJSON unmarshals a list of strings into i's list property.
 func (i *SEVSNPVersionList) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, &i.list)
+	return json.Unmarshal(data, &i.List)
 }
-
-// List returns i's list property.
-func (i SEVSNPVersionList) List() []string { return i.list }
 
 // JSONPath returns the path to the JSON file for the request to the config api.
 func (i SEVSNPVersionList) JSONPath() string {
-	return path.Join(AttestationURLPath, i.variant.String(), "list")
+	return path.Join(AttestationURLPath, i.Variant.String(), "list")
 }
 
 // ValidateRequest is a NoOp as there is no input.
@@ -93,20 +90,20 @@ func (i SEVSNPVersionList) ValidateRequest() error {
 
 // SortReverse sorts the list of versions in reverse order.
 func (i *SEVSNPVersionList) SortReverse() {
-	sort.Sort(sort.Reverse(sort.StringSlice(i.list)))
+	sort.Sort(sort.Reverse(sort.StringSlice(i.List)))
 }
 
-// addVersion adds new to i's list and sorts the element in descending order.
-func (i *SEVSNPVersionList) addVersion(new string) {
-	i.list = append(i.list, new)
-	i.list = variant.RemoveDuplicate(i.list)
+// AddVersion adds new to i's list and sorts the element in descending order.
+func (i *SEVSNPVersionList) AddVersion(new string) {
+	i.List = append(i.List, new)
+	i.List = variant.RemoveDuplicate(i.List)
 
 	i.SortReverse()
 }
 
 // Validate validates the response.
 func (i SEVSNPVersionList) Validate() error {
-	if len(i.list) < 1 {
+	if len(i.List) < 1 {
 		return fmt.Errorf("no versions found in /list")
 	}
 	return nil
