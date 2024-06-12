@@ -9,47 +9,49 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"math"
-	"strconv"
 	"strings"
+
+	"github.com/edgelesssys/constellation/v2/internal/encoding"
 )
 
-const placeholderVersionValue = 0
+type versionValue interface {
+	encoding.HexBytes | uint8 | uint16
+}
+
+func placeholderVersionValue[T versionValue]() T {
+	var placeholder T
+	return placeholder
+}
 
 // NewLatestPlaceholderVersion returns the latest version with a placeholder version value.
-func NewLatestPlaceholderVersion() AttestationVersion {
-	return AttestationVersion{
-		Value:      placeholderVersionValue,
+func NewLatestPlaceholderVersion[T versionValue]() AttestationVersion[T] {
+	return AttestationVersion[T]{
+		Value:      placeholderVersionValue[T](),
 		WantLatest: true,
 	}
 }
 
-// AttestationVersion is a type that represents a version of a SNP.
-type AttestationVersion struct {
-	Value      uint8
+// AttestationVersion holds version information.
+type AttestationVersion[T versionValue] struct {
+	Value      T
 	WantLatest bool
 }
 
-// MarshalYAML implements a custom marshaller to resolve "latest" values.
-func (v AttestationVersion) MarshalYAML() (any, error) {
+// MarshalYAML implements a custom marshaller to write "latest" as the type's value, if set.
+func (v AttestationVersion[T]) MarshalYAML() (any, error) {
 	if v.WantLatest {
 		return "latest", nil
 	}
 	return v.Value, nil
 }
 
-// UnmarshalYAML implements a custom unmarshaller to resolve "atest" values.
-func (v *AttestationVersion) UnmarshalYAML(unmarshal func(any) error) error {
-	var rawUnmarshal string
-	if err := unmarshal(&rawUnmarshal); err != nil {
-		return fmt.Errorf("raw unmarshal: %w", err)
-	}
-
-	return v.parseRawUnmarshal(rawUnmarshal)
+// UnmarshalYAML implements a custom unmarshaller to resolve "latest" values.
+func (v *AttestationVersion[T]) UnmarshalYAML(unmarshal func(any) error) error {
+	return v.unmarshal(unmarshal)
 }
 
-// MarshalJSON implements a custom marshaller to resolve "latest" values.
-func (v AttestationVersion) MarshalJSON() ([]byte, error) {
+// MarshalJSON implements a custom marshaller to write "latest" as the type's value, if set.
+func (v AttestationVersion[T]) MarshalJSON() ([]byte, error) {
 	if v.WantLatest {
 		return json.Marshal("latest")
 	}
@@ -57,39 +59,31 @@ func (v AttestationVersion) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON implements a custom unmarshaller to resolve "latest" values.
-func (v *AttestationVersion) UnmarshalJSON(data []byte) (err error) {
-	// JSON has two distinct ways to represent numbers and strings.
-	// This means we cannot simply unmarshal to string, like with YAML.
-	// Unmarshalling to `any` causes Go to unmarshal numbers to float64.
-	// Therefore, try to unmarshal to string, and then to int, instead of using type assertions.
-	var unmarshalString string
-	if err := json.Unmarshal(data, &unmarshalString); err != nil {
-		var unmarshalInt int64
-		if err := json.Unmarshal(data, &unmarshalInt); err != nil {
-			return fmt.Errorf("unable to unmarshal to string or int: %w", err)
-		}
-		unmarshalString = strconv.FormatInt(unmarshalInt, 10)
-	}
-
-	return v.parseRawUnmarshal(unmarshalString)
+func (v *AttestationVersion[T]) UnmarshalJSON(data []byte) (err error) {
+	return v.unmarshal(func(a any) error {
+		return json.Unmarshal(data, a)
+	})
 }
 
-func (v *AttestationVersion) parseRawUnmarshal(str string) error {
-	if strings.HasPrefix(str, "0") && len(str) != 1 {
-		return fmt.Errorf("no format with prefixed 0 (octal, hexadecimal) allowed: %s", str)
+// unmarshal takes care of unmarshalling the value from YAML or JSON.
+func (v *AttestationVersion[T]) unmarshal(unmarshal func(any) error) error {
+	// Start by trying to unmarshal to the distinct type
+	var distinctType T
+	if err := unmarshal(&distinctType); err == nil {
+		v.Value = distinctType
+		return nil
 	}
-	if strings.ToLower(str) == "latest" {
+
+	var unmarshalString string
+	if err := unmarshal(&unmarshalString); err != nil {
+		return fmt.Errorf("failed unmarshalling to %T or string: %w", distinctType, err)
+	}
+
+	if strings.ToLower(unmarshalString) == "latest" {
 		v.WantLatest = true
-		v.Value = placeholderVersionValue
-	} else {
-		ui, err := strconv.ParseUint(str, 10, 8)
-		if err != nil {
-			return fmt.Errorf("invalid version value: %s", str)
-		}
-		if ui > math.MaxUint8 {
-			return fmt.Errorf("integer value is out ouf uint8 range: %d", ui)
-		}
-		v.Value = uint8(ui)
+		v.Value = placeholderVersionValue[T]()
+		return nil
 	}
-	return nil
+
+	return fmt.Errorf("failed unmarshalling to %T or string: invalid value: %s", distinctType, unmarshalString)
 }

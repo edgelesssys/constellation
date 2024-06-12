@@ -28,10 +28,10 @@ var (
 func DefaultForAzureSEVSNP() *AzureSEVSNP {
 	return &AzureSEVSNP{
 		Measurements:      measurements.DefaultsFor(cloudprovider.Azure, variant.AzureSEVSNP{}),
-		BootloaderVersion: NewLatestPlaceholderVersion(),
-		TEEVersion:        NewLatestPlaceholderVersion(),
-		SNPVersion:        NewLatestPlaceholderVersion(),
-		MicrocodeVersion:  NewLatestPlaceholderVersion(),
+		BootloaderVersion: NewLatestPlaceholderVersion[uint8](),
+		TEEVersion:        NewLatestPlaceholderVersion[uint8](),
+		SNPVersion:        NewLatestPlaceholderVersion[uint8](),
+		MicrocodeVersion:  NewLatestPlaceholderVersion[uint8](),
 		FirmwareSignerConfig: SNPFirmwareSignerConfig{
 			AcceptedKeyDigests: idkeydigest.DefaultList(),
 			EnforcementPolicy:  idkeydigest.MAAFallback,
@@ -142,14 +142,14 @@ func DefaultForAzureTDX() *AzureTDX {
 	return &AzureTDX{
 		Measurements: measurements.DefaultsFor(cloudprovider.Azure, variant.AzureTDX{}),
 		// TODO(AB#3798): Enable latest versioning for Azure TDX
-		QESVN:      0,
-		PCESVN:     0,
-		TEETCBSVN:  encoding.HexBytes{0x02, 0x01, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-		QEVendorID: encoding.HexBytes{0x93, 0x9a, 0x72, 0x33, 0xf7, 0x9c, 0x4c, 0xa9, 0x94, 0x0a, 0x0d, 0xb3, 0x95, 0x7f, 0x06, 0x07},
+		QESVN:      NewLatestPlaceholderVersion[uint16](),
+		PCESVN:     NewLatestPlaceholderVersion[uint16](),
+		TEETCBSVN:  NewLatestPlaceholderVersion[encoding.HexBytes](),
+		QEVendorID: NewLatestPlaceholderVersion[encoding.HexBytes](),
 		// Don't set a default for MRSEAM as it effectively prevents upgrading the SEAM module
 		// Quote verification still makes sure the module comes from Intel (through MRSIGNERSEAM), and is not of a lower version than expected
 		// MRSeam:  nil,
-		XFAM: encoding.HexBytes{0xe7, 0x18, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00},
+		XFAM: NewLatestPlaceholderVersion[encoding.HexBytes](),
 
 		IntelRootKey: mustParsePEM(tdxRootPEM),
 	}
@@ -179,9 +179,43 @@ func (c AzureTDX) EqualTo(other AttestationCfg) (bool, error) {
 	return c.Measurements.EqualTo(otherCfg.Measurements), nil
 }
 
+// FetchAndSetLatestVersionNumbers fetches the latest version numbers from the configapi and sets them.
+func (c *AzureTDX) FetchAndSetLatestVersionNumbers(ctx context.Context, fetcher attestationconfigapi.Fetcher) error {
+	// Only talk to the API if at least one version number is set to latest.
+	if !(c.PCESVN.WantLatest || c.QESVN.WantLatest || c.TEETCBSVN.WantLatest || c.QEVendorID.WantLatest || c.XFAM.WantLatest) {
+		return nil
+	}
+
+	versions, err := fetcher.FetchLatestVersion(ctx, variant.AzureTDX{})
+	if err != nil {
+		return fmt.Errorf("fetching latest TCB versions from configapi: %w", err)
+	}
+
+	// set values and keep WantLatest flag
+	if c.PCESVN.WantLatest {
+		c.PCESVN.Value = versions.PCESVN
+	}
+	if c.QESVN.WantLatest {
+		c.QESVN.Value = versions.QESVN
+	}
+	if c.TEETCBSVN.WantLatest {
+		c.TEETCBSVN.Value = versions.TEETCBSVN[:]
+	}
+	if c.QEVendorID.WantLatest {
+		c.QEVendorID.Value = versions.QEVendorID[:]
+	}
+	if c.XFAM.WantLatest {
+		c.XFAM.Value = versions.XFAM[:]
+	}
+	return nil
+}
+
 func (c *AzureTDX) getToMarshallLatestWithResolvedVersions() AttestationCfg {
 	cp := *c
-	// TODO: We probably want to support "latest" pseudo versioning for Azure TDX
-	// But we should decide on which claims can be reliably used for attestation first
+	cp.PCESVN.WantLatest = false
+	cp.QESVN.WantLatest = false
+	cp.TEETCBSVN.WantLatest = false
+	cp.QEVendorID.WantLatest = false
+	cp.XFAM.WantLatest = false
 	return &cp
 }

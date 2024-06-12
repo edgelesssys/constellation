@@ -103,14 +103,14 @@ func (v *Validator) validateQuote(tdxQuote *tdx.QuoteV4) error {
 
 	if err := validate.TdxQuote(tdxQuote, &validate.Options{
 		HeaderOptions: validate.HeaderOptions{
-			MinimumQeSvn:  v.cfg.QESVN,
-			MinimumPceSvn: v.cfg.PCESVN,
-			QeVendorID:    v.cfg.QEVendorID,
+			MinimumQeSvn:  v.cfg.QESVN.Value,
+			MinimumPceSvn: v.cfg.PCESVN.Value,
+			QeVendorID:    v.cfg.QEVendorID.Value,
 		},
 		TdQuoteBodyOptions: validate.TdQuoteBodyOptions{
-			MinimumTeeTcbSvn: v.cfg.TEETCBSVN,
+			MinimumTeeTcbSvn: v.cfg.TEETCBSVN.Value,
 			MrSeam:           v.cfg.MRSeam,
-			Xfam:             v.cfg.XFAM,
+			Xfam:             v.cfg.XFAM.Value,
 		},
 	}); err != nil {
 		return err

@@ -20,6 +20,7 @@ go_library(
     deps = [
         "//internal/api/attestationconfigapi",
         "//internal/api/attestationconfigapi/cli/client",
+        "//internal/api/fetcher",
         "//internal/attestation/variant",
         "//internal/cloud/cloudprovider",
         "//internal/constants",
