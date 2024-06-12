@@ -190,13 +190,6 @@ func (c *verifyCmd) verify(cmd *cobra.Command, verifyClient verifyClient, config
 	var attDocOutput string
 	switch c.flags.output {
 	case "json":
-		if !(attConfig.GetVariant().Equal(variant.AzureSEVSNP{}) ||
-			attConfig.GetVariant().Equal(variant.AWSSEVSNP{}) ||
-			attConfig.GetVariant().Equal(variant.GCPSEVSNP{}) ||
-			attConfig.GetVariant().Equal(variant.AzureTDX{})) {
-			return errors.New("json output is only supported for SEV-SNP and TDX variants")
-		}
-
 		attDocOutput, err = formatJSON(cmd.Context(), rawAttestationDoc, attConfig, c.log)
 	case "raw":
 		attDocOutput = fmt.Sprintf("Attestation Document:\n%s\n", rawAttestationDoc)
@@ -256,13 +249,14 @@ func formatJSON(ctx context.Context, docString string, attestationCfg config.Att
 		return "", fmt.Errorf("unmarshalling attestation document: %w", err)
 	}
 
-	if (attestationCfg.GetVariant().Equal(variant.AWSSEVSNP{}) ||
-		attestationCfg.GetVariant().Equal(variant.AzureSEVSNP{}) ||
-		attestationCfg.GetVariant().Equal(variant.GCPSEVSNP{})) {
+	switch attestationCfg.GetVariant() {
+	case variant.AWSSEVSNP{}, variant.AzureSEVSNP{}, variant.GCPSEVSNP{}:
 		return snpFormatJSON(ctx, doc.InstanceInfo, attestationCfg, log)
+	case variant.AzureTDX{}:
+		return tdxFormatJSON(doc.InstanceInfo, attestationCfg)
+	default:
+		return "", fmt.Errorf("json output is not supported for variant %s", attestationCfg.GetVariant())
 	}
-
-	return tdxFormatJSON(doc.InstanceInfo, attestationCfg)
 }
 
 func snpFormatJSON(ctx context.Context, instanceInfoRaw []byte, attestationCfg config.AttestationCfg, log debugLog,
