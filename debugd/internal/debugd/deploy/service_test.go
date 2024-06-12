@@ -104,6 +104,7 @@ func TestSystemdAction(t *testing.T) {
 			manager := ServiceManager{
 				log:                      logger.NewTest(t),
 				dbus:                     &tc.dbus,
+				journal:                  &stubJournalReader{},
 				fs:                       fs,
 				systemdUnitFilewriteLock: sync.Mutex{},
 			}
@@ -183,6 +184,7 @@ func TestWriteSystemdUnitFile(t *testing.T) {
 			manager := ServiceManager{
 				log:                      logger.NewTest(t),
 				dbus:                     &tc.dbus,
+				journal:                  &stubJournalReader{},
 				fs:                       fs,
 				systemdUnitFilewriteLock: sync.Mutex{},
 			}
@@ -296,6 +298,7 @@ func TestOverrideServiceUnitExecStart(t *testing.T) {
 			manager := ServiceManager{
 				log:                      logger.NewTest(t),
 				dbus:                     &tc.dbus,
+				journal:                  &stubJournalReader{},
 				fs:                       fs,
 				systemdUnitFilewriteLock: sync.Mutex{},
 			}
@@ -367,3 +370,9 @@ func (c *fakeDbusConn) ReloadContext(_ context.Context) error {
 }
 
 func (c *fakeDbusConn) Close() {}
+
+type stubJournalReader struct{}
+
+func (s *stubJournalReader) readJournal(_ string) string {
+	return ""
+}

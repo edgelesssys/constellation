@@ -61,6 +61,7 @@ type SystemdUnit struct {
 type ServiceManager struct {
 	log                      *slog.Logger
 	dbus                     dbusClient
+	journal                  journalReader
 	fs                       afero.Fs
 	systemdUnitFilewriteLock sync.Mutex
 }
@@ -71,6 +72,7 @@ func NewServiceManager(log *slog.Logger) *ServiceManager {
 	return &ServiceManager{
 		log:                      log,
 		dbus:                     &dbusWrapper{},
+		journal:                  &journalctlWrapper{},
 		fs:                       fs,
 		systemdUnitFilewriteLock: sync.Mutex{},
 	}
@@ -97,6 +99,11 @@ type dbusConn interface {
 	ReloadContext(ctx context.Context) error
 	// Close closes the connection.
 	Close()
+}
+
+type journalReader interface {
+	// ReadJournal reads the journal for a specific unit.
+	readJournal(unit string) string
 }
 
 // SystemdAction will perform a systemd action on a service unit (start, stop, restart, reload).
@@ -139,7 +146,8 @@ func (s *ServiceManager) SystemdAction(ctx context.Context, request ServiceManag
 		return nil
 
 	default:
-		return fmt.Errorf("performing action %q on systemd unit %q failed: expected %q but received %q", request.Action.String(), request.Unit, "done", result)
+		serviceJournal := s.journal.readJournal(request.Unit)
+		return fmt.Errorf("performing action %q on systemd unit %q failed: expected %q but received %q. systemd unit journal entries: %s", request.Action.String(), request.Unit, "done", result, serviceJournal)
 	}
 }
 
