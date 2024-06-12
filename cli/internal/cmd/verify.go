@@ -21,10 +21,9 @@ import (
 	"strconv"
 	"strings"
 
-	tpmProto "github.com/google/go-tpm-tools/proto/tpm"
-
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
+	azuretdx "github.com/edgelesssys/constellation/v2/internal/attestation/azure/tdx"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/snp"
@@ -38,6 +37,10 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/verify"
 	"github.com/edgelesssys/constellation/v2/verify/verifyproto"
+
+	"github.com/google/go-tdx-guest/abi"
+	"github.com/google/go-tdx-guest/proto/tdx"
+	tpmProto "github.com/google/go-tpm-tools/proto/tpm"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -106,24 +109,7 @@ func runVerify(cmd *cobra.Command, _ []string) error {
 		dialer: dialer.New(nil, nil, &net.Dialer{}),
 		log:    log,
 	}
-	formatterFactory := func(output string, attestation variant.Variant, log debugLog) (attestationDocFormatter, error) {
-		if output == "json" &&
-			(!attestation.Equal(variant.AzureSEVSNP{}) &&
-				!attestation.Equal(variant.AWSSEVSNP{}) &&
-				!attestation.Equal(variant.GCPSEVSNP{})) {
-			return nil, errors.New("json output is only supported for SEV-SNP")
-		}
-		switch output {
-		case "json":
-			return &jsonAttestationDocFormatter{log}, nil
-		case "raw":
-			return &rawAttestationDocFormatter{log}, nil
-		case "":
-			return &defaultAttestationDocFormatter{log}, nil
-		default:
-			return nil, fmt.Errorf("invalid output value for formatter: %s", output)
-		}
-	}
+
 	v := &verifyCmd{
 		fileHandler: fileHandler,
 		log:         log,
@@ -132,13 +118,12 @@ func runVerify(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	v.log.Debug("Using flags", "clusterID", v.flags.clusterID, "endpoint", v.flags.endpoint, "ownerID", v.flags.ownerID)
+
 	fetcher := attestationconfigapi.NewFetcher()
-	return v.verify(cmd, verifyClient, formatterFactory, fetcher)
+	return v.verify(cmd, verifyClient, fetcher)
 }
 
-type formatterFactory func(output string, attestation variant.Variant, log debugLog) (attestationDocFormatter, error)
-
-func (c *verifyCmd) verify(cmd *cobra.Command, verifyClient verifyClient, factory formatterFactory, configFetcher attestationconfigapi.Fetcher) error {
+func (c *verifyCmd) verify(cmd *cobra.Command, verifyClient verifyClient, configFetcher attestationconfigapi.Fetcher) error {
 	c.log.Debug(fmt.Sprintf("Loading configuration file from %q", c.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename)))
 	conf, err := config.New(c.fileHandler, constants.ConfigFilename, configFetcher, c.flags.force)
 	var configValidationErr *config.ValidationError
@@ -202,20 +187,21 @@ func (c *verifyCmd) verify(cmd *cobra.Command, verifyClient verifyClient, factor
 		return fmt.Errorf("verifying: %w", err)
 	}
 
-	// certificates are only available for Azure SEV-SNP and AWS SEV-SNP
-	formatter, err := factory(c.flags.output, conf.GetAttestationConfig().GetVariant(), c.log)
-	if err != nil {
-		return fmt.Errorf("creating formatter: %w", err)
+	var attDocOutput string
+	switch c.flags.output {
+	case "json":
+		attDocOutput, err = formatJSON(cmd.Context(), rawAttestationDoc, attConfig, c.log)
+	case "raw":
+		attDocOutput = fmt.Sprintf("Attestation Document:\n%s\n", rawAttestationDoc)
+	case "":
+		attDocOutput, err = formatDefault(cmd.Context(), rawAttestationDoc, attConfig, c.log)
+	default:
+		return fmt.Errorf("invalid output value for formatter: %s", c.flags.output)
 	}
-	attDocOutput, err := formatter.format(
-		cmd.Context(),
-		rawAttestationDoc,
-		(!attConfig.GetVariant().Equal(variant.AzureSEVSNP{}) && !attConfig.GetVariant().Equal(variant.AWSSEVSNP{})),
-		attConfig,
-	)
 	if err != nil {
 		return fmt.Errorf("printing attestation document: %w", err)
 	}
+
 	cmd.Println(attDocOutput)
 	cmd.PrintErrln("Verification OK")
 
@@ -255,82 +241,92 @@ func (c *verifyCmd) validateEndpointFlag(cmd *cobra.Command, stateFile *state.St
 	return endpoint, nil
 }
 
-// an attestationDocFormatter formats the attestation document.
-type attestationDocFormatter interface {
-	// format returns the raw or formatted attestation doc depending on the rawOutput argument.
-	format(ctx context.Context, docString string, PCRsOnly bool, attestationCfg config.AttestationCfg) (string, error)
-}
-
-type jsonAttestationDocFormatter struct {
-	log debugLog
-}
-
-// format returns the json formatted attestation doc.
-func (f *jsonAttestationDocFormatter) format(ctx context.Context, docString string, _ bool,
-	attestationCfg config.AttestationCfg,
+// formatJSON returns the json formatted attestation doc.
+func formatJSON(ctx context.Context, docString string, attestationCfg config.AttestationCfg, log debugLog,
 ) (string, error) {
-	var doc attestationDoc
+	var doc vtpm.AttestationDocument
 	if err := json.Unmarshal([]byte(docString), &doc); err != nil {
-		return "", fmt.Errorf("unmarshal attestation document: %w", err)
+		return "", fmt.Errorf("unmarshalling attestation document: %w", err)
 	}
 
-	instanceInfo, err := extractInstanceInfo(doc)
-	if err != nil {
+	switch attestationCfg.GetVariant() {
+	case variant.AWSSEVSNP{}, variant.AzureSEVSNP{}, variant.GCPSEVSNP{}:
+		return snpFormatJSON(ctx, doc.InstanceInfo, attestationCfg, log)
+	case variant.AzureTDX{}:
+		return tdxFormatJSON(doc.InstanceInfo, attestationCfg)
+	default:
+		return "", fmt.Errorf("json output is not supported for variant %s", attestationCfg.GetVariant())
+	}
+}
+
+func snpFormatJSON(ctx context.Context, instanceInfoRaw []byte, attestationCfg config.AttestationCfg, log debugLog,
+) (string, error) {
+	var instanceInfo snp.InstanceInfo
+	if err := json.Unmarshal(instanceInfoRaw, &instanceInfo); err != nil {
 		return "", fmt.Errorf("unmarshalling instance info: %w", err)
 	}
-	report, err := verify.NewReport(ctx, instanceInfo, attestationCfg, f.log)
+	report, err := verify.NewReport(ctx, instanceInfo, attestationCfg, log)
 	if err != nil {
 		return "", fmt.Errorf("parsing SNP report: %w", err)
 	}
 
 	jsonBytes, err := json.Marshal(report)
-
 	return string(jsonBytes), err
 }
 
-type rawAttestationDocFormatter struct {
-	log debugLog
-}
+func tdxFormatJSON(instanceInfoRaw []byte, attestationCfg config.AttestationCfg) (string, error) {
+	var rawQuote []byte
 
-// format returns the raw attestation doc.
-func (f *rawAttestationDocFormatter) format(_ context.Context, docString string, _ bool,
-	_ config.AttestationCfg,
-) (string, error) {
-	b := &strings.Builder{}
-	b.WriteString("Attestation Document:\n")
-	b.WriteString(fmt.Sprintf("%s\n", docString))
-	return b.String(), nil
-}
+	if attestationCfg.GetVariant().Equal(variant.AzureTDX{}) {
+		var instanceInfo azuretdx.InstanceInfo
+		if err := json.Unmarshal(instanceInfoRaw, &instanceInfo); err != nil {
+			return "", fmt.Errorf("unmarshalling instance info: %w", err)
+		}
+		rawQuote = instanceInfo.AttestationReport
+	}
 
-type defaultAttestationDocFormatter struct {
-	log debugLog
+	tdxQuote, err := abi.QuoteToProto(rawQuote)
+	if err != nil {
+		return "", fmt.Errorf("converting quote to proto: %w", err)
+	}
+	quote, ok := tdxQuote.(*tdx.QuoteV4)
+	if !ok {
+		return "", fmt.Errorf("unexpected quote type: %T", tdxQuote)
+	}
+
+	quoteJSON, err := json.Marshal(quote)
+	return string(quoteJSON), err
 }
 
 // format returns the formatted attestation doc.
-func (f *defaultAttestationDocFormatter) format(ctx context.Context, docString string, PCRsOnly bool,
-	attestationCfg config.AttestationCfg,
+func formatDefault(ctx context.Context, docString string, attestationCfg config.AttestationCfg, log debugLog,
 ) (string, error) {
 	b := &strings.Builder{}
 	b.WriteString("Attestation Document:\n")
 
-	var doc attestationDoc
+	var doc vtpm.AttestationDocument
 	if err := json.Unmarshal([]byte(docString), &doc); err != nil {
 		return "", fmt.Errorf("unmarshal attestation document: %w", err)
 	}
 
-	if err := f.parseQuotes(b, doc.Attestation.Quotes, attestationCfg.GetMeasurements()); err != nil {
+	if err := parseQuotes(b, doc.Attestation.Quotes, attestationCfg.GetMeasurements()); err != nil {
 		return "", fmt.Errorf("parse quote: %w", err)
 	}
-	if PCRsOnly {
+
+	// If we have a non SNP variant, print only the PCRs
+	if !(attestationCfg.GetVariant().Equal(variant.AzureSEVSNP{}) ||
+		attestationCfg.GetVariant().Equal(variant.AWSSEVSNP{}) ||
+		attestationCfg.GetVariant().Equal(variant.GCPSEVSNP{})) {
 		return b.String(), nil
 	}
 
-	instanceInfo, err := extractInstanceInfo(doc)
-	if err != nil {
+	// SNP reports contain extra information that we can print
+	var instanceInfo snp.InstanceInfo
+	if err := json.Unmarshal(doc.InstanceInfo, &instanceInfo); err != nil {
 		return "", fmt.Errorf("unmarshalling instance info: %w", err)
 	}
 
-	report, err := verify.NewReport(ctx, instanceInfo, attestationCfg, f.log)
+	report, err := verify.NewReport(ctx, instanceInfo, attestationCfg, log)
 	if err != nil {
 		return "", fmt.Errorf("parsing SNP report: %w", err)
 	}
@@ -339,7 +335,7 @@ func (f *defaultAttestationDocFormatter) format(ctx context.Context, docString s
 }
 
 // parseQuotes parses the base64-encoded quotes and writes their details to the output builder.
-func (f *defaultAttestationDocFormatter) parseQuotes(b *strings.Builder, quotes []*tpmProto.Quote, expectedPCRs measurements.M) error {
+func parseQuotes(b *strings.Builder, quotes []*tpmProto.Quote, expectedPCRs measurements.M) error {
 	writeIndentfln(b, 1, "Quote:")
 
 	var pcrNumbers []uint32
@@ -364,18 +360,6 @@ func (f *defaultAttestationDocFormatter) parseQuotes(b *strings.Builder, quotes 
 		writeIndentfln(b, 3, "Actual:\t\t%x", actualPCR)
 	}
 	return nil
-}
-
-// attestationDoc is the attestation document returned by the verifier.
-type attestationDoc struct {
-	Attestation struct {
-		AkPub          string            `json:"ak_pub"`
-		Quotes         []*tpmProto.Quote `json:"quotes"`
-		EventLog       string            `json:"event_log"`
-		TeeAttestation interface{}       `json:"TeeAttestation"`
-	} `json:"Attestation"`
-	InstanceInfo string `json:"InstanceInfo"`
-	UserData     string `json:"UserData"`
 }
 
 type constellationVerifier struct {
@@ -430,19 +414,6 @@ func writeIndentfln(b *strings.Builder, indentLvl int, format string, args ...an
 		b.WriteByte('\t')
 	}
 	b.WriteString(fmt.Sprintf(format+"\n", args...))
-}
-
-func extractInstanceInfo(doc attestationDoc) (snp.InstanceInfo, error) {
-	instanceInfoString, err := base64.StdEncoding.DecodeString(doc.InstanceInfo)
-	if err != nil {
-		return snp.InstanceInfo{}, fmt.Errorf("decode instance info: %w", err)
-	}
-
-	var instanceInfo snp.InstanceInfo
-	if err := json.Unmarshal(instanceInfoString, &instanceInfo); err != nil {
-		return snp.InstanceInfo{}, fmt.Errorf("unmarshal instance info: %w", err)
-	}
-	return instanceInfo, nil
 }
 
 func addPortIfMissing(endpoint string, defaultPort int) (string, error) {

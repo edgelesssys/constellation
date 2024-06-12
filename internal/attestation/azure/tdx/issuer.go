@@ -90,7 +90,7 @@ func (i *Issuer) getInstanceInfo(ctx context.Context, tpm io.ReadWriteCloser, _ 
 		return nil, fmt.Errorf("getting quote: %w", err)
 	}
 
-	instanceInfo := instanceInfo{
+	instanceInfo := InstanceInfo{
 		AttestationReport: quote,
 		RuntimeData:       runtimeData,
 	}

@@ -19,7 +19,8 @@ More specifically:
 */
 package tdx
 
-type instanceInfo struct {
+// InstanceInfo wraps the TDX report with additional Azure specific runtime data.
+type InstanceInfo struct {
 	AttestationReport []byte
 	RuntimeData       []byte
 }
