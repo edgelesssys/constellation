@@ -162,17 +162,18 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 
 	insecureFetch := data.Insecure.ValueBool()
 
-	snpVersions := attestationconfigapi.VersionAPIEntry{}
-	if attestationVariant.Equal(variant.AzureSEVSNP{}) ||
-		attestationVariant.Equal(variant.AWSSEVSNP{}) ||
+	latestVersions := attestationconfigapi.VersionAPIEntry{}
+	if attestationVariant.Equal(variant.AWSSEVSNP{}) ||
+		attestationVariant.Equal(variant.AzureSEVSNP{}) ||
+		attestationVariant.Equal(variant.AzureTDX{}) ||
 		attestationVariant.Equal(variant.GCPSEVSNP{}) {
-		snpVersions, err = d.fetcher.FetchLatestVersion(ctx, attestationVariant)
+		latestVersions, err = d.fetcher.FetchLatestVersion(ctx, attestationVariant)
 		if err != nil {
 			resp.Diagnostics.AddError("Fetching SNP Version numbers", err.Error())
 			return
 		}
 	}
-	tfAttestation, err := convertToTfAttestation(attestationVariant, snpVersions)
+	tfAttestation, err := convertToTfAttestation(attestationVariant, latestVersions)
 	if err != nil {
 		resp.Diagnostics.AddError("Converting attestation", err.Error())
 	}

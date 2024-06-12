@@ -70,10 +70,10 @@ func TestGetAttestationConfigMarshalsNumericalVersion(t *testing.T) {
 	var mp map[string]interface{}
 	require.NoError(yaml.Unmarshal(bt, &mp))
 	assert := assert.New(t)
-	assert.Equal(placeholderVersionValue, mp["microcodeVersion"])
-	assert.Equal(placeholderVersionValue, mp["teeVersion"])
-	assert.Equal(placeholderVersionValue, mp["snpVersion"])
-	assert.Equal(placeholderVersionValue, mp["bootloaderVersion"])
+	assert.EqualValues(placeholderVersionValue[uint8](), mp["microcodeVersion"])
+	assert.EqualValues(placeholderVersionValue[uint8](), mp["teeVersion"])
+	assert.EqualValues(placeholderVersionValue[uint8](), mp["snpVersion"])
+	assert.EqualValues(placeholderVersionValue[uint8](), mp["bootloaderVersion"])
 }
 
 func TestNew(t *testing.T) {
@@ -99,19 +99,19 @@ func TestNew(t *testing.T) {
 			wantResult: func() *Config {
 				conf := Default()
 				modifyConfigForAzureToPassValidate(conf)
-				conf.Attestation.AzureSEVSNP.MicrocodeVersion = AttestationVersion{
+				conf.Attestation.AzureSEVSNP.MicrocodeVersion = AttestationVersion[uint8]{
 					Value:      testCfg.Microcode,
 					WantLatest: true,
 				}
-				conf.Attestation.AzureSEVSNP.TEEVersion = AttestationVersion{
+				conf.Attestation.AzureSEVSNP.TEEVersion = AttestationVersion[uint8]{
 					Value:      2,
 					WantLatest: false,
 				}
-				conf.Attestation.AzureSEVSNP.BootloaderVersion = AttestationVersion{
+				conf.Attestation.AzureSEVSNP.BootloaderVersion = AttestationVersion[uint8]{
 					Value:      1,
 					WantLatest: false,
 				}
-				conf.Attestation.AzureSEVSNP.SNPVersion = AttestationVersion{
+				conf.Attestation.AzureSEVSNP.SNPVersion = AttestationVersion[uint8]{
 					Value:      testCfg.SNP,
 					WantLatest: true,
 				}

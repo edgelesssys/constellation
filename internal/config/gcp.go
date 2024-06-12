@@ -22,10 +22,10 @@ var _ svnResolveMarshaller = &GCPSEVSNP{}
 func DefaultForGCPSEVSNP() *GCPSEVSNP {
 	return &GCPSEVSNP{
 		Measurements:      measurements.DefaultsFor(cloudprovider.GCP, variant.GCPSEVSNP{}),
-		BootloaderVersion: NewLatestPlaceholderVersion(),
-		TEEVersion:        NewLatestPlaceholderVersion(),
-		SNPVersion:        NewLatestPlaceholderVersion(),
-		MicrocodeVersion:  NewLatestPlaceholderVersion(),
+		BootloaderVersion: NewLatestPlaceholderVersion[uint8](),
+		TEEVersion:        NewLatestPlaceholderVersion[uint8](),
+		SNPVersion:        NewLatestPlaceholderVersion[uint8](),
+		MicrocodeVersion:  NewLatestPlaceholderVersion[uint8](),
 		AMDRootKey:        mustParsePEM(arkPEM),
 	}
 }

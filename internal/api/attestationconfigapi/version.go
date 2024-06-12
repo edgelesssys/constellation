@@ -22,27 +22,27 @@ const AttestationURLPath = "constellation/v1/attestation"
 // SEVSNPVersion tracks the latest version of each component for SEV-SNP.
 type SEVSNPVersion struct {
 	// Bootloader is the latest version of the SEV-SNP bootloader.
-	Bootloader uint8 `json:"bootloader,omitempty"`
+	Bootloader uint8 `json:"bootloader"`
 	// TEE is the latest version of the SEV-SNP TEE.
-	TEE uint8 `json:"tee,omitempty"`
+	TEE uint8 `json:"tee"`
 	// SNP is the latest version of the SEV-SNP SNP.
-	SNP uint8 `json:"snp,omitempty"`
+	SNP uint8 `json:"snp"`
 	// Microcode is the latest version of the SEV-SNP microcode.
-	Microcode uint8 `json:"microcode,omitempty"`
+	Microcode uint8 `json:"microcode"`
 }
 
 // TDXVersion tracks the latest version of each component for TDX.
 type TDXVersion struct {
 	// QESVN is the latest QE security version number.
-	QESVN uint16 `json:"qeSVN,omitempty"`
+	QESVN uint16 `json:"qeSVN"`
 	// PCESVN is the latest PCE security version number.
-	PCESVN uint16 `json:"pceSVN,omitempty"`
+	PCESVN uint16 `json:"pceSVN"`
 	// TEETCBSVN are the latest component-wise security version numbers for the TEE.
-	TEETCBSVN [16]byte `json:"teeTCBSVN,omitempty"`
+	TEETCBSVN [16]byte `json:"teeTCBSVN"`
 	// QEVendorID is the latest QE vendor ID.
-	QEVendorID [16]byte `json:"qeVendorID,omitempty"`
+	QEVendorID [16]byte `json:"qeVendorID"`
 	// XFAM is the latest XFAM field.
-	XFAM [8]byte `json:"xfam,omitempty"`
+	XFAM [8]byte `json:"xfam"`
 }
 
 // VersionAPIEntry is the request to get the version information of the specific version in the config api.

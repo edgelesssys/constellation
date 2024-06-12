@@ -63,6 +63,7 @@ go_test(
         "//internal/cloud/cloudprovider",
         "//internal/config/instancetypes",
         "//internal/constants",
+        "//internal/encoding",
         "//internal/file",
         "//internal/semver",
         "//internal/versions",
