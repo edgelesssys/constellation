@@ -19,39 +19,67 @@ configapi_cli=$(realpath @@CONFIGAPI_CLI@@)
 stat "${configapi_cli}" >> /dev/null
 configapi_cli="${configapi_cli} --testing"
 ###### script body ######
-function variant() {
-  if [[ $1 == "aws" ]]; then
-    echo "aws-sev-snp"
-    return 0
-  elif [[ $1 == "azure" ]]; then
-    echo "azure-sev-snp"
-    return 0
-  elif [[ $1 == "gcp" ]]; then
-    echo "gcp-sev-snp"
-    return 0
-  else
-    echo "Unknown CSP: $1"
-    exit 1
-  fi
-}
-
-csp=$1
-readonly csp
-attestationType=$(variant "$csp")
+attestationVariant=$1
+readonly attestationVariant
 
 readonly region="eu-west-1"
 readonly bucket="resource-api-testing"
 
 tmpdir=$(mktemp -d)
 readonly tmpdir
-registerExitHandler "rm -rf $tmpdir"
+registerExitHandler "rm -rf ${tmpdir}"
 
 # empty the bucket version state
-${configapi_cli} delete recursive "$csp" --region "$region" --bucket "$bucket"
+${configapi_cli} delete recursive "${attestationVariant}" --region "${region}" --bucket "${bucket}"
 
-# the high version numbers ensure that it's newer than the current latest value
-readonly current_report_path="$tmpdir/currentSnpReport.json"
-cat << EOF > "$current_report_path"
+readonly current_report_path="${tmpdir}/attestationReportCurrent.json"
+readonly report_path="${tmpdir}/attestationReport.json"
+readonly older_report_path="${tmpdir}/attestationReportOld.json"
+
+if [[ ${attestationVariant} == *-tdx ]]; then
+  cat << EOF > "${current_report_path}"
+{
+  "header": {
+    "qe_svn": "AAA=",
+    "pce_svn": "AAA=",
+    "qe_vendor_id": "KioqKioqKioqKioqKioqKg=="
+  },
+  "td_quote_body": {
+    "tee_tcb_svn": "AAAAAAAAAAAAAAAAAAAAAA==",
+    "xfam": "AAAAAAAAAAA="
+  }
+}
+EOF
+  # the high version numbers ensure that it's newer than the current latest value
+  cat << EOF > "${report_path}"
+{
+  "header": {
+    "qe_svn": "//8=",
+    "pce_svn": "//8=",
+    "qe_vendor_id": "KioqKioqKioqKioqKioqKg=="
+  },
+  "td_quote_body": {
+    "tee_tcb_svn": "/////////////////////w==",
+    "xfam": "AQIDBAUGBwg="
+  }
+}
+EOF
+  # has an older version
+  cat << EOF > "${older_report_path}"
+{
+  "header": {
+    "qe_svn": "//8=",
+    "pce_svn": "/v8=",
+    "qe_vendor_id": "KioqKioqKioqKioqKioqKg=="
+  },
+  "td_quote_body": {
+    "tee_tcb_svn": "/////////////////////g==",
+    "xfam": "AQIDBAUGBwg="
+  }
+}
+EOF
+elif [[ ${attestationVariant} == *-sev-snp ]]; then
+  cat << EOF > "${current_report_path}"
 {
   "snp_report": {
     "reported_tcb": {
@@ -75,90 +103,105 @@ cat << EOF > "$current_report_path"
   }
 }
 EOF
+  # the high version numbers ensure that it's newer than the current latest value
+  cat << EOF > "${report_path}"
+{
+  "snp_report": {
+    "reported_tcb": {
+      "bootloader": 255,
+      "tee": 255,
+      "snp": 255,
+      "microcode": 255
+    },
+    "committed_tcb": {
+      "bootloader": 255,
+      "tee": 255,
+      "snp": 255,
+      "microcode": 255
+    },
+    "launch_tcb": {
+      "bootloader": 255,
+      "tee": 255,
+      "snp": 255,
+      "microcode": 255
+    }
+  }
+}
+EOF
+  # has an older version
+  cat << EOF > "${older_report_path}"
+{
+  "snp_report": {
+    "reported_tcb": {
+      "bootloader": 255,
+      "tee": 255,
+      "snp": 255,
+      "microcode": 254
+    },
+    "committed_tcb": {
+      "bootloader": 255,
+      "tee": 255,
+      "snp": 255,
+      "microcode": 254
+    },
+    "launch_tcb": {
+      "bootloader": 255,
+      "tee": 255,
+      "snp": 255,
+      "microcode": 254
+    }
+  }
+}
+EOF
+else
+  echo "Unknown attestation variant: ${attestationVariant}"
+  exit 1
+fi
+
 # upload a fake latest version for the fetcher
-${configapi_cli} upload "$csp" snp-report "$current_report_path" --force --upload-date "2000-01-01-01-01" --region "$region" --bucket "$bucket"
-
-# the high version numbers ensure that it's newer than the current latest value
-readonly report_path="$tmpdir/snpReport.json"
-cat << EOF > "$report_path"
-{
-  "snp_report": {
-    "reported_tcb": {
-      "bootloader": 255,
-      "tee": 255,
-      "snp": 255,
-      "microcode": 255
-    },
-    "committed_tcb": {
-      "bootloader": 255,
-      "tee": 255,
-      "snp": 255,
-      "microcode": 255
-    },
-    "launch_tcb": {
-      "bootloader": 255,
-      "tee": 255,
-      "snp": 255,
-      "microcode": 255
-    }
-  }
-}
-EOF
-
-# has an older version
-readonly older_report_path="$tmpdir/snpReportOld.json"
-cat << EOF > "$older_report_path"
-{
-  "snp_report": {
-    "reported_tcb": {
-      "bootloader": 255,
-      "tee": 255,
-      "snp": 255,
-      "microcode": 254
-    },
-    "committed_tcb": {
-      "bootloader": 255,
-      "tee": 255,
-      "snp": 255,
-      "microcode": 254
-    },
-    "launch_tcb": {
-      "bootloader": 255,
-      "tee": 255,
-      "snp": 255,
-      "microcode": 254
-    }
-  }
-}
-EOF
+${configapi_cli} upload "${attestationVariant}" attestation-report "${current_report_path}" --force --upload-date "2000-01-01-01-01" --region "${region}" --bucket "${bucket}"
 
 # report 3 versions with different dates to fill the reporter cache
 readonly date_oldest="2023-02-01-03-04"
-${configapi_cli} upload "$csp" snp-report "$older_report_path" --upload-date "$date_oldest" --region "$region" --bucket "$bucket" --cache-window-size 3
+${configapi_cli} upload "${attestationVariant}" attestation-report "${older_report_path}" --upload-date "${date_oldest}" --region "${region}" --bucket "${bucket}" --cache-window-size 3
 readonly date_older="2023-02-02-03-04"
-${configapi_cli} upload "$csp" snp-report "$older_report_path" --upload-date "$date_older" --region "$region" --bucket "$bucket" --cache-window-size 3
+${configapi_cli} upload "${attestationVariant}" attestation-report "${older_report_path}" --upload-date "${date_older}" --region "${region}" --bucket "${bucket}" --cache-window-size 3
 readonly date="2023-02-03-03-04"
-${configapi_cli} upload "$csp" snp-report "$report_path" --upload-date "$date" --region "$region" --bucket "$bucket" --cache-window-size 3
+${configapi_cli} upload "${attestationVariant}" attestation-report "${report_path}" --upload-date "${date}" --region "${region}" --bucket "${bucket}" --cache-window-size 3
 
 # expect that $date_oldest is served as latest version
-basepath="constellation/v1/attestation/${attestationType}"
+basepath="constellation/v1/attestation/${attestationVariant}"
 baseurl="https://d33dzgxuwsgbpw.cloudfront.net/${basepath}"
-if ! curl -fsSL "${baseurl}"/${date_oldest}.json > version.json; then
+if ! curl -fsSL "${baseurl}/${date_oldest}.json" > version.json; then
   echo "Checking for uploaded version file ${basepath}/${date_oldest}.json: request returned ${?}"
   exit 1
 fi
-# check that version values are equal to expected
-if ! cmp -s <(echo -n '{"bootloader":255,"tee":255,"snp":255,"microcode":254}') version.json; then
-  echo "The version content:"
-  cat version.json
-  echo " is not equal to the expected version content:"
-  echo '{"bootloader":255,"tee":255,"snp":255,"microcode":254}'
-  exit 1
+
+if [[ ${attestationVariant} == *-tdx ]]; then
+  # check that version values are equal to expected
+  if ! cmp -s <(echo -n '{"qeSVN":65535,"pceSVN":65534,"teeTCBSVN":[255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,254],"qeVendorID":[42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42],"xfam":[1,2,3,4,5,6,7,8]}') version.json; then
+    echo "The version content:"
+    cat version.json
+    echo " is not equal to the expected version content:"
+    echo '{"qeSVN":65535,"pceSVN":65534,"teeTCBSVN":[255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,254],"qeVendorID":[42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42],"xfam":[1,2,3,4,5,6,7,8]}'
+    exit 1
+  fi
+elif [[ ${attestationVariant} == *-sev-snp ]]; then
+  # check that version values are equal to expected
+  if ! cmp -s <(echo -n '{"bootloader":255,"tee":255,"snp":255,"microcode":254}') version.json; then
+    echo "The version content:"
+    cat version.json
+    echo " is not equal to the expected version content:"
+    echo '{"bootloader":255,"tee":255,"snp":255,"microcode":254}'
+    exit 1
+  fi
 fi
-if ! curl -fsSL "${baseurl}"/${date_oldest}.json.sig > /dev/null; then
+
+if ! curl -fsSL "${baseurl}/${date_oldest}.json.sig" > /dev/null; then
   echo "Checking for uploaded version signature file ${basepath}/${date_oldest}.json.sig: request returned ${?}"
   exit 1
 fi
+
 # check list endpoint
 if ! curl -fsSL "${baseurl}"/list > list.json; then
   echo "Checking for uploaded list file ${basepath}/list: request returned ${?}"
@@ -174,28 +217,28 @@ if ! cmp -s <(echo -n '["2023-02-01-03-04.json","2000-01-01-01-01.json"]') list.
 fi
 
 # check that the other versions are not uploaded
-http_code=$(curl -sSL -w '%{http_code}\n' -o /dev/null "${baseurl}"/${date_older}.json)
-if [[ $http_code -ne 404 ]]; then
+http_code=$(curl -sSL -w '%{http_code}\n' -o /dev/null "${baseurl}/${date_older}.json")
+if [[ ${http_code} -ne 404 ]]; then
   echo "Expected HTTP code 404 for: ${basepath}/${date_older}.json, but got ${http_code}"
   exit 1
 fi
-http_code=$(curl -sSL -w '%{http_code}\n' -o /dev/null "${baseurl}"/${date}.json.sig)
-if [[ $http_code -ne 404 ]]; then
+http_code=$(curl -sSL -w '%{http_code}\n' -o /dev/null "${baseurl}/${date}.json.sig")
+if [[ ${http_code} -ne 404 ]]; then
   echo "Expected HTTP code 404 for: ${basepath}/${date}.json, but got ${http_code}"
   exit 1
 fi
 
-${configapi_cli} delete "$csp" snp-report "$date_oldest" --region "$region" --bucket "$bucket"
+${configapi_cli} delete "${attestationVariant}" attestation-report "${date_oldest}" --region "${region}" --bucket "${bucket}"
 
 # Omit -f to check for 404. We want to check that a file was deleted, therefore we expect the query to fail.
-http_code=$(curl -sSL -w '%{http_code}\n' -o /dev/null "${baseurl}"/${date_oldest}.json)
-if [[ $http_code -ne 404 ]]; then
+http_code=$(curl -sSL -w '%{http_code}\n' -o /dev/null "${baseurl}/${date_oldest}.json")
+if [[ ${http_code} -ne 404 ]]; then
   echo "Expected HTTP code 404 for: ${basepath}/${date_oldest}.json, but got ${http_code}"
   exit 1
 fi
 # Omit -f to check for 404. We want to check that a file was deleted, therefore we expect the query to fail.
-http_code=$(curl -sSL -w '%{http_code}\n' -o /dev/null "${baseurl}"/${date_oldest}.json.sig)
-if [[ $http_code -ne 404 ]]; then
+http_code=$(curl -sSL -w '%{http_code}\n' -o /dev/null "${baseurl}/${date_oldest}.json.sig")
+if [[ ${http_code} -ne 404 ]]; then
   echo "Expected HTTP code 404 for: ${basepath}/${date_oldest}.json, but got ${http_code}"
   exit 1
 fi

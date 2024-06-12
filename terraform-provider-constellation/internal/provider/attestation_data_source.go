@@ -162,7 +162,7 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 
 	insecureFetch := data.Insecure.ValueBool()
 
-	latestVersions := attestationconfigapi.VersionAPIEntry{}
+	latestVersions := attestationconfigapi.Entry{}
 	if attestationVariant.Equal(variant.AWSSEVSNP{}) ||
 		attestationVariant.Equal(variant.AzureSEVSNP{}) ||
 		attestationVariant.Equal(variant.AzureTDX{}) ||

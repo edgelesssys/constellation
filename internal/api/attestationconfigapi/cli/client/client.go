@@ -15,8 +15,11 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"time"
+	"path"
+	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -35,6 +38,8 @@ type Client struct {
 	bucketID        string
 	signer          sigstore.Signer
 	cacheWindowSize int
+
+	log *slog.Logger
 }
 
 // New returns a new Client.
@@ -50,50 +55,34 @@ func New(ctx context.Context, cfg staticupload.Config, cosignPwd, privateKey []b
 		signer:          sigstore.NewSigner(cosignPwd, privateKey),
 		bucketID:        cfg.Bucket,
 		cacheWindowSize: versionWindowSize,
+		log:             log,
 	}
 	return repo, clientClose, nil
 }
 
-// uploadSEVSNPVersion uploads the latest version numbers of the SEVSNP. Then version name is the UTC timestamp of the date. The /list entry stores the version name + .json suffix.
-func (a Client) uploadSEVSNPVersion(ctx context.Context, attestation variant.Variant, version attestationconfigapi.SEVSNPVersion, date time.Time) error {
-	versions, err := a.List(ctx, attestation)
-	if err != nil {
-		return fmt.Errorf("fetch version list: %w", err)
-	}
-	ops := a.constructUploadCmd(attestation, version, versions, date)
-
-	return executeAllCmds(ctx, a.s3Client, ops)
-}
-
-// DeleteSEVSNPVersion deletes the given version (without .json suffix) from the API.
-func (a Client) DeleteSEVSNPVersion(ctx context.Context, attestation variant.Variant, versionStr string) error {
-	versions, err := a.List(ctx, attestation)
+// DeleteVersion deletes the given version (without .json suffix) from the API.
+func (c Client) DeleteVersion(ctx context.Context, attestation variant.Variant, versionStr string) error {
+	versions, err := c.List(ctx, attestation)
 	if err != nil {
 		return fmt.Errorf("fetch version list: %w", err)
 	}
 
-	ops, err := a.deleteSEVSNPVersion(versions, versionStr)
+	ops, err := c.deleteVersion(versions, versionStr)
 	if err != nil {
 		return err
 	}
-	return executeAllCmds(ctx, a.s3Client, ops)
+	return executeAllCmds(ctx, c.s3Client, ops)
 }
 
 // List returns the list of versions for the given attestation variant.
-func (a Client) List(ctx context.Context, attestation variant.Variant) (attestationconfigapi.VersionList, error) {
-	if !attestation.Equal(variant.AzureSEVSNP{}) &&
-		!attestation.Equal(variant.AWSSEVSNP{}) &&
-		!attestation.Equal(variant.GCPSEVSNP{}) {
-		return attestationconfigapi.VersionList{}, fmt.Errorf("unsupported attestation variant: %s", attestation)
-	}
-
-	versions, err := apiclient.Fetch(ctx, a.s3Client, attestationconfigapi.VersionList{Variant: attestation})
+func (c Client) List(ctx context.Context, attestation variant.Variant) (attestationconfigapi.List, error) {
+	versions, err := apiclient.Fetch(ctx, c.s3Client, attestationconfigapi.List{Variant: attestation})
 	if err != nil {
 		var notFoundErr *apiclient.NotFoundError
 		if errors.As(err, &notFoundErr) {
-			return attestationconfigapi.VersionList{Variant: attestation}, nil
+			return attestationconfigapi.List{Variant: attestation}, nil
 		}
-		return attestationconfigapi.VersionList{}, err
+		return attestationconfigapi.List{}, err
 	}
 
 	versions.Variant = attestation
@@ -101,10 +90,10 @@ func (a Client) List(ctx context.Context, attestation variant.Variant) (attestat
 	return versions, nil
 }
 
-func (a Client) deleteSEVSNPVersion(versions attestationconfigapi.VersionList, versionStr string) (ops []crudCmd, err error) {
+func (c Client) deleteVersion(versions attestationconfigapi.List, versionStr string) (ops []crudCmd, err error) {
 	versionStr = versionStr + ".json"
 	ops = append(ops, deleteCmd{
-		apiObject: attestationconfigapi.VersionAPIEntry{
+		apiObject: attestationconfigapi.Entry{
 			Variant: versions.Variant,
 			Version: versionStr,
 		},
@@ -116,47 +105,46 @@ func (a Client) deleteSEVSNPVersion(versions attestationconfigapi.VersionList, v
 	}
 	ops = append(ops, putCmd{
 		apiObject: removedVersions,
-		signer:    a.signer,
+		signer:    c.signer,
 	})
 	return ops, nil
 }
 
-func (a Client) constructUploadCmd(attestation variant.Variant, version attestationconfigapi.SEVSNPVersion, versionNames attestationconfigapi.VersionList, date time.Time) []crudCmd {
-	if !attestation.Equal(versionNames.Variant) {
-		return nil
+func (c Client) listCachedVersions(ctx context.Context, attestation variant.Variant) ([]string, error) {
+	list, err := c.s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
+		Bucket: aws.String(c.bucketID),
+		Prefix: aws.String(reportVersionDir(attestation)),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list objects: %w", err)
 	}
 
-	dateStr := date.Format(VersionFormat) + ".json"
-	var res []crudCmd
+	var dates []string
+	for _, obj := range list.Contents {
+		fileName := path.Base(*obj.Key)
 
-	res = append(res, putCmd{
-		apiObject: attestationconfigapi.VersionAPIEntry{Version: dateStr, Variant: attestation, SEVSNPVersion: version},
-		signer:    a.signer,
-	})
-
-	versionNames.AddVersion(dateStr)
-
-	res = append(res, putCmd{
-		apiObject: versionNames,
-		signer:    a.signer,
-	})
-
-	return res
+		// The cache contains signature and json files
+		// We only want the json files
+		if date, ok := strings.CutSuffix(fileName, ".json"); ok {
+			dates = append(dates, date)
+		}
+	}
+	return dates, nil
 }
 
-func removeVersion(list attestationconfigapi.VersionList, versionStr string) (removedVersions attestationconfigapi.VersionList, err error) {
+func removeVersion(list attestationconfigapi.List, versionStr string) (removedVersions attestationconfigapi.List, err error) {
 	versions := list.List
 	for i, v := range versions {
 		if v == versionStr {
 			if i == len(versions)-1 {
-				removedVersions = attestationconfigapi.VersionList{List: versions[:i], Variant: list.Variant}
+				removedVersions = attestationconfigapi.List{List: versions[:i], Variant: list.Variant}
 			} else {
-				removedVersions = attestationconfigapi.VersionList{List: append(versions[:i], versions[i+1:]...), Variant: list.Variant}
+				removedVersions = attestationconfigapi.List{List: append(versions[:i], versions[i+1:]...), Variant: list.Variant}
 			}
 			return removedVersions, nil
 		}
 	}
-	return attestationconfigapi.VersionList{}, fmt.Errorf("version %s not found in list %v", versionStr, versions)
+	return attestationconfigapi.List{}, fmt.Errorf("version %s not found in list %v", versionStr, versions)
 }
 
 type crudCmd interface {

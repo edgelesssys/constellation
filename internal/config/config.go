@@ -1165,7 +1165,7 @@ type AzureTDX struct {
 	//   Expected 48 byte hex-encoded MR_SEAM value.
 	MRSeam encoding.HexBytes `json:"mrSeam,omitempty" yaml:"mrSeam,omitempty"`
 	// description: |
-	//   Expected 8 byte hex-encoded XFAM field.
+	//   Expected 8 byte hex-encoded eXtended Features Available Mask (XFAM) field. Defaults to the latest available XFAM on Azure VMs. Unset to disable validation.
 	XFAM AttestationVersion[encoding.HexBytes] `json:"xfam" yaml:"xfam"`
 	// description: |
 	//   Intel Root Key certificate used to verify the TDX certificate chain.

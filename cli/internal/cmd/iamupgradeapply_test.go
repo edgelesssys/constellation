@@ -171,6 +171,6 @@ type stubConfigFetcher struct {
 	fetchLatestErr error
 }
 
-func (s *stubConfigFetcher) FetchLatestVersion(context.Context, variant.Variant) (attestationconfigapi.VersionAPIEntry, error) {
-	return attestationconfigapi.VersionAPIEntry{}, s.fetchLatestErr
+func (s *stubConfigFetcher) FetchLatestVersion(context.Context, variant.Variant) (attestationconfigapi.Entry, error) {
+	return attestationconfigapi.Entry{}, s.fetchLatestErr
 }

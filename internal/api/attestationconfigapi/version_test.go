@@ -16,21 +16,21 @@ import (
 
 func TestVersionListMarshalUnmarshalJSON(t *testing.T) {
 	tests := map[string]struct {
-		input    VersionList
-		output   VersionList
+		input    List
+		output   List
 		wantDiff bool
 	}{
 		"success": {
-			input:  VersionList{List: []string{"v1", "v2"}},
-			output: VersionList{List: []string{"v1", "v2"}},
+			input:  List{List: []string{"v1", "v2"}},
+			output: List{List: []string{"v1", "v2"}},
 		},
 		"variant is lost": {
-			input:  VersionList{List: []string{"v1", "v2"}, Variant: variant.AzureSEVSNP{}},
-			output: VersionList{List: []string{"v1", "v2"}},
+			input:  List{List: []string{"v1", "v2"}, Variant: variant.AzureSEVSNP{}},
+			output: List{List: []string{"v1", "v2"}},
 		},
 		"wrong order": {
-			input:    VersionList{List: []string{"v1", "v2"}},
-			output:   VersionList{List: []string{"v2", "v1"}},
+			input:    List{List: []string{"v1", "v2"}},
+			output:   List{List: []string{"v2", "v1"}},
 			wantDiff: true,
 		},
 	}
@@ -40,7 +40,7 @@ func TestVersionListMarshalUnmarshalJSON(t *testing.T) {
 			inputRaw, err := tc.input.MarshalJSON()
 			require.NoError(t, err)
 
-			var actual VersionList
+			var actual List
 			err = actual.UnmarshalJSON(inputRaw)
 			require.NoError(t, err)
 
@@ -68,7 +68,7 @@ func TestVersionListAddVersion(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			v := VersionList{List: tc.versions}
+			v := List{List: tc.versions}
 			v.AddVersion(tc.new)
 
 			assert.Equal(t, tc.expected, v.List)

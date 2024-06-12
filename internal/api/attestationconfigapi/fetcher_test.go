@@ -22,7 +22,7 @@ import (
 )
 
 func TestFetchLatestSEVSNPVersion(t *testing.T) {
-	latestVersionSNP := VersionAPIEntry{
+	latestVersionSNP := Entry{
 		SEVSNPVersion: SEVSNPVersion{
 			Microcode:  93,
 			TEE:        0,
@@ -30,7 +30,7 @@ func TestFetchLatestSEVSNPVersion(t *testing.T) {
 			Bootloader: 2,
 		},
 	}
-	olderVersionSNP := VersionAPIEntry{
+	olderVersionSNP := Entry{
 		SEVSNPVersion: SEVSNPVersion{
 			Microcode:  1,
 			TEE:        0,
@@ -38,7 +38,7 @@ func TestFetchLatestSEVSNPVersion(t *testing.T) {
 			Bootloader: 1,
 		},
 	}
-	latestVersionTDX := VersionAPIEntry{
+	latestVersionTDX := Entry{
 		TDXVersion: TDXVersion{
 			QESVN:      2,
 			PCESVN:     3,
@@ -47,7 +47,7 @@ func TestFetchLatestSEVSNPVersion(t *testing.T) {
 			XFAM:       [8]byte{6},
 		},
 	}
-	olderVersionTDX := VersionAPIEntry{
+	olderVersionTDX := Entry{
 		TDXVersion: TDXVersion{
 			QESVN:      1,
 			PCESVN:     2,
@@ -64,30 +64,30 @@ func TestFetchLatestSEVSNPVersion(t *testing.T) {
 		timeAtTest      time.Time
 		wantErr         bool
 		attestation     variant.Variant
-		expectedVersion VersionAPIEntry
-		olderVersion    VersionAPIEntry
-		latestVersion   VersionAPIEntry
+		expectedVersion Entry
+		olderVersion    Entry
+		latestVersion   Entry
 	}{
 		"get latest version azure-sev-snp": {
 			fetcherVersions: []string{latestStr, olderStr},
 			attestation:     variant.AzureSEVSNP{},
-			expectedVersion: func() VersionAPIEntry { tmp := latestVersionSNP; tmp.Variant = variant.AzureSEVSNP{}; return tmp }(),
-			olderVersion:    func() VersionAPIEntry { tmp := olderVersionSNP; tmp.Variant = variant.AzureSEVSNP{}; return tmp }(),
-			latestVersion:   func() VersionAPIEntry { tmp := latestVersionSNP; tmp.Variant = variant.AzureSEVSNP{}; return tmp }(),
+			expectedVersion: func() Entry { tmp := latestVersionSNP; tmp.Variant = variant.AzureSEVSNP{}; return tmp }(),
+			olderVersion:    func() Entry { tmp := olderVersionSNP; tmp.Variant = variant.AzureSEVSNP{}; return tmp }(),
+			latestVersion:   func() Entry { tmp := latestVersionSNP; tmp.Variant = variant.AzureSEVSNP{}; return tmp }(),
 		},
 		"get latest version aws-sev-snp": {
 			fetcherVersions: []string{latestStr, olderStr},
 			attestation:     variant.AWSSEVSNP{},
-			expectedVersion: func() VersionAPIEntry { tmp := latestVersionSNP; tmp.Variant = variant.AWSSEVSNP{}; return tmp }(),
-			olderVersion:    func() VersionAPIEntry { tmp := olderVersionSNP; tmp.Variant = variant.AWSSEVSNP{}; return tmp }(),
-			latestVersion:   func() VersionAPIEntry { tmp := latestVersionSNP; tmp.Variant = variant.AWSSEVSNP{}; return tmp }(),
+			expectedVersion: func() Entry { tmp := latestVersionSNP; tmp.Variant = variant.AWSSEVSNP{}; return tmp }(),
+			olderVersion:    func() Entry { tmp := olderVersionSNP; tmp.Variant = variant.AWSSEVSNP{}; return tmp }(),
+			latestVersion:   func() Entry { tmp := latestVersionSNP; tmp.Variant = variant.AWSSEVSNP{}; return tmp }(),
 		},
 		"get latest version azure-tdx": {
 			fetcherVersions: []string{latestStr, olderStr},
 			attestation:     variant.AzureTDX{},
-			expectedVersion: func() VersionAPIEntry { tmp := latestVersionTDX; tmp.Variant = variant.AzureTDX{}; return tmp }(),
-			olderVersion:    func() VersionAPIEntry { tmp := olderVersionTDX; tmp.Variant = variant.AzureTDX{}; return tmp }(),
-			latestVersion:   func() VersionAPIEntry { tmp := latestVersionTDX; tmp.Variant = variant.AzureTDX{}; return tmp }(),
+			expectedVersion: func() Entry { tmp := latestVersionTDX; tmp.Variant = variant.AzureTDX{}; return tmp }(),
+			olderVersion:    func() Entry { tmp := olderVersionTDX; tmp.Variant = variant.AzureTDX{}; return tmp }(),
+			latestVersion:   func() Entry { tmp := latestVersionTDX; tmp.Variant = variant.AzureTDX{}; return tmp }(),
 		},
 	}
 	for name, tc := range testCases {
@@ -119,14 +119,15 @@ type fakeConfigAPIHandler struct {
 	attestation   variant.Variant
 	versions      []string
 	latestDate    string
-	latestVersion VersionAPIEntry
+	latestVersion Entry
 	olderDate     string
-	olderVersion  VersionAPIEntry
+	olderVersion  Entry
 }
 
 // RoundTrip resolves the request and returns a dummy response.
 func (f *fakeConfigAPIHandler) RoundTrip(req *http.Request) (*http.Response, error) {
-	if req.URL.Path == fmt.Sprintf("/constellation/v1/attestation/%s/list", f.attestation.String()) {
+	switch req.URL.Path {
+	case fmt.Sprintf("/constellation/v1/attestation/%s/list", f.attestation.String()):
 		res := &http.Response{}
 		bt, err := json.Marshal(f.versions)
 		if err != nil {
@@ -137,7 +138,14 @@ func (f *fakeConfigAPIHandler) RoundTrip(req *http.Request) (*http.Response, err
 		res.Header.Set("Content-Type", "application/json")
 		res.StatusCode = http.StatusOK
 		return res, nil
-	} else if req.URL.Path == fmt.Sprintf("/constellation/v1/attestation/%s/%s", f.attestation.String(), f.latestDate) {
+
+	case fmt.Sprintf("/constellation/v1/attestation/%s/list.sig", f.attestation.String()):
+		res := &http.Response{}
+		res.Body = io.NopCloser(bytes.NewReader([]byte("null")))
+		res.StatusCode = http.StatusOK
+		return res, nil
+
+	case fmt.Sprintf("/constellation/v1/attestation/%s/%s", f.attestation.String(), f.latestDate):
 		res := &http.Response{}
 		bt, err := json.Marshal(f.latestVersion)
 		if err != nil {
@@ -147,7 +155,7 @@ func (f *fakeConfigAPIHandler) RoundTrip(req *http.Request) (*http.Response, err
 		res.StatusCode = http.StatusOK
 		return res, nil
 
-	} else if req.URL.Path == fmt.Sprintf("/constellation/v1/attestation/%s/%s", f.attestation.String(), f.olderDate) {
+	case fmt.Sprintf("/constellation/v1/attestation/%s/%s", f.attestation.String(), f.olderDate):
 		res := &http.Response{}
 		bt, err := json.Marshal(f.olderVersion)
 		if err != nil {
@@ -156,13 +164,14 @@ func (f *fakeConfigAPIHandler) RoundTrip(req *http.Request) (*http.Response, err
 		res.Body = io.NopCloser(bytes.NewReader(bt))
 		res.StatusCode = http.StatusOK
 		return res, nil
-	} else if req.URL.Path == fmt.Sprintf("/constellation/v1/attestation/%s/%s.sig", f.attestation.String(), f.latestDate) {
+
+	case fmt.Sprintf("/constellation/v1/attestation/%s/%s.sig", f.attestation.String(), f.latestDate):
 		res := &http.Response{}
 		res.Body = io.NopCloser(bytes.NewReader([]byte("null")))
 		res.StatusCode = http.StatusOK
 		return res, nil
 
-	} else if req.URL.Path == fmt.Sprintf("/constellation/v1/attestation/%s/%s.sig", f.attestation.String(), f.olderDate) {
+	case fmt.Sprintf("/constellation/v1/attestation/%s/%s.sig", f.attestation.String(), f.olderDate):
 		res := &http.Response{}
 		res.Body = io.NopCloser(bytes.NewReader([]byte("null")))
 		res.StatusCode = http.StatusOK
