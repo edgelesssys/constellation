@@ -15,9 +15,9 @@ jobs:
   e2e-api:
     strategy:
       fail-fast: false
-      max-parallel: 1
+      max-parallel: 2
       matrix:
-        csp: ["azure", "aws", "gcp"]
+        attestationVariant: ["azure-sev-snp", "azure-tdx", "aws-sev-snp", "gcp-sev-snp"]
     runs-on: ubuntu-22.04
     permissions:
       id-token: write
@@ -36,4 +36,4 @@ jobs:
         with:
           cosignPrivateKey: ${{ secrets.COSIGN_DEV_PRIVATE_KEY }}
           cosignPassword: ${{ secrets.COSIGN_DEV_PASSWORD }}
-          csp: ${{ matrix.csp }}
+          attestationVariant: ${{ matrix.attestationVariant }}

@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestIsInputNewerThanLatestAPI(t *testing.T) {
+func TestIsInputNewerThanOtherSEVSNPVersion(t *testing.T) {
 	newTestCfg := func() attestationconfigapi.SEVSNPVersion {
 		return attestationconfigapi.SEVSNPVersion{
 			Microcode:  93,
@@ -25,7 +25,6 @@ func TestIsInputNewerThanLatestAPI(t *testing.T) {
 		latest attestationconfigapi.SEVSNPVersion
 		input  attestationconfigapi.SEVSNPVersion
 		expect bool
-		errMsg string
 	}{
 		"input is older than latest": {
 			input: func(c attestationconfigapi.SEVSNPVersion) attestationconfigapi.SEVSNPVersion {
@@ -34,7 +33,6 @@ func TestIsInputNewerThanLatestAPI(t *testing.T) {
 			}(newTestCfg()),
 			latest: newTestCfg(),
 			expect: false,
-			errMsg: "input Microcode version: 92 is older than latest API version: 93",
 		},
 		"input has greater and smaller version field than latest": {
 			input: func(c attestationconfigapi.SEVSNPVersion) attestationconfigapi.SEVSNPVersion {
@@ -44,7 +42,6 @@ func TestIsInputNewerThanLatestAPI(t *testing.T) {
 			}(newTestCfg()),
 			latest: newTestCfg(),
 			expect: false,
-			errMsg: "input Bootloader version: 1 is older than latest API version: 2",
 		},
 		"input is newer than latest": {
 			input: func(c attestationconfigapi.SEVSNPVersion) attestationconfigapi.SEVSNPVersion {
@@ -62,14 +59,80 @@ func TestIsInputNewerThanLatestAPI(t *testing.T) {
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			isNewer, err := isInputNewerThanOtherVersion(tc.input, tc.latest)
-			assert := assert.New(t)
-			if tc.errMsg != "" {
-				assert.EqualError(err, tc.errMsg)
-			} else {
-				assert.NoError(err)
-				assert.Equal(tc.expect, isNewer)
-			}
+			isNewer := isInputNewerThanOtherSEVSNPVersion(tc.input, tc.latest)
+			assert.Equal(t, tc.expect, isNewer)
+		})
+	}
+}
+
+func TestIsInputNewerThanOtherTDXVersion(t *testing.T) {
+	newTestVersion := func() attestationconfigapi.TDXVersion {
+		return attestationconfigapi.TDXVersion{
+			QESVN:      1,
+			PCESVN:     2,
+			TEETCBSVN:  [16]byte{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2},
+			QEVendorID: [16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+			XFAM:       [8]byte{0, 1, 2, 3, 4, 5, 6, 7},
+		}
+	}
+
+	testCases := map[string]struct {
+		latest attestationconfigapi.TDXVersion
+		input  attestationconfigapi.TDXVersion
+		expect bool
+	}{
+		"input is older than latest": {
+			input: func(c attestationconfigapi.TDXVersion) attestationconfigapi.TDXVersion {
+				c.QESVN--
+				return c
+			}(newTestVersion()),
+			latest: newTestVersion(),
+			expect: false,
+		},
+		"input has greater and smaller version field than latest": {
+			input: func(c attestationconfigapi.TDXVersion) attestationconfigapi.TDXVersion {
+				c.QESVN++
+				c.PCESVN--
+				return c
+			}(newTestVersion()),
+			latest: newTestVersion(),
+			expect: false,
+		},
+		"input is newer than latest": {
+			input: func(c attestationconfigapi.TDXVersion) attestationconfigapi.TDXVersion {
+				c.QESVN++
+				return c
+			}(newTestVersion()),
+			latest: newTestVersion(),
+			expect: true,
+		},
+		"input is equal to latest": {
+			input:  newTestVersion(),
+			latest: newTestVersion(),
+			expect: false,
+		},
+		"tee tcb svn is newer": {
+			input: func(c attestationconfigapi.TDXVersion) attestationconfigapi.TDXVersion {
+				c.TEETCBSVN[4]++
+				return c
+			}(newTestVersion()),
+			latest: newTestVersion(),
+			expect: true,
+		},
+		"xfam is different": {
+			input: func(c attestationconfigapi.TDXVersion) attestationconfigapi.TDXVersion {
+				c.XFAM[3]++
+				return c
+			}(newTestVersion()),
+			latest: newTestVersion(),
+			expect: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			isNewer := isInputNewerThanOtherTDXVersion(tc.input, tc.latest)
+			assert.Equal(t, tc.expect, isNewer)
 		})
 	}
 }

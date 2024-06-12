@@ -10,16 +10,22 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/spf13/cobra"
 )
 
-func isCloudProvider(arg int) cobra.PositionalArgs {
+func isAttestationVariant(arg int) cobra.PositionalArgs {
 	return func(_ *cobra.Command, args []string) error {
-		if provider := cloudprovider.FromString(args[arg]); provider == cloudprovider.Unknown {
-			return fmt.Errorf("argument %s isn't a valid cloud provider", args[arg])
+		attestationVariant, err := variant.FromString(args[arg])
+		if err != nil {
+			return fmt.Errorf("argument %s isn't a valid attestation variant", args[arg])
 		}
-		return nil
+		switch attestationVariant {
+		case variant.AWSSEVSNP{}, variant.AzureSEVSNP{}, variant.AzureTDX{}, variant.GCPSEVSNP{}:
+			return nil
+		default:
+			return fmt.Errorf("argument %s isn't a supported attestation variant", args[arg])
+		}
 	}
 }
 
@@ -37,16 +43,15 @@ type objectKind string
 
 const (
 	// unknown is the default objectKind and does nothing.
-	unknown       objectKind = "unknown-kind"
-	snpReport     objectKind = "snp-report"
-	tdxReport     objectKind = "tdx-report"
-	guestFirmware objectKind = "guest-firmware"
+	unknown           objectKind = "unknown-kind"
+	attestationReport objectKind = "attestation-report"
+	guestFirmware     objectKind = "guest-firmware"
 )
 
 func kindFromString(s string) objectKind {
 	lower := strings.ToLower(s)
 	switch objectKind(lower) {
-	case snpReport, guestFirmware, tdxReport:
+	case attestationReport, guestFirmware:
 		return objectKind(lower)
 	default:
 		return unknown

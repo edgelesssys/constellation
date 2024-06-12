@@ -7,60 +7,28 @@ package client
 
 import (
 	"testing"
-	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestUploadAzureSEVSNP(t *testing.T) {
-	sut := Client{
-		bucketID: "bucket",
-		signer:   fakeSigner{},
-	}
-	version := attestationconfigapi.SEVSNPVersion{}
-	date := time.Date(2023, 1, 1, 1, 1, 1, 1, time.UTC)
-	ops := sut.constructUploadCmd(variant.AzureSEVSNP{}, version, attestationconfigapi.VersionList{List: []string{"2021-01-01-01-01.json", "2019-01-01-01-01.json"}, Variant: variant.AzureSEVSNP{}}, date)
-	dateStr := "2023-01-01-01-01.json"
-	assert := assert.New(t)
-	assert.Contains(ops, putCmd{
-		apiObject: attestationconfigapi.VersionAPIEntry{
-			Variant:       variant.AzureSEVSNP{},
-			Version:       dateStr,
-			SEVSNPVersion: version,
-		},
-		signer: fakeSigner{},
-	})
-	assert.Contains(ops, putCmd{
-		apiObject: attestationconfigapi.VersionList{Variant: variant.AzureSEVSNP{}, List: []string{"2023-01-01-01-01.json", "2021-01-01-01-01.json", "2019-01-01-01-01.json"}},
-		signer:    fakeSigner{},
-	})
-}
 
 func TestDeleteAzureSEVSNPVersions(t *testing.T) {
 	sut := Client{
 		bucketID: "bucket",
 	}
-	versions := attestationconfigapi.VersionList{List: []string{"2023-01-01.json", "2021-01-01.json", "2019-01-01.json"}}
+	versions := attestationconfigapi.List{List: []string{"2023-01-01.json", "2021-01-01.json", "2019-01-01.json"}}
 
-	ops, err := sut.deleteSEVSNPVersion(versions, "2021-01-01")
+	ops, err := sut.deleteVersion(versions, "2021-01-01")
 
 	assert := assert.New(t)
 	assert.NoError(err)
 	assert.Contains(ops, deleteCmd{
-		apiObject: attestationconfigapi.VersionAPIEntry{
+		apiObject: attestationconfigapi.Entry{
 			Version: "2021-01-01.json",
 		},
 	})
 
 	assert.Contains(ops, putCmd{
-		apiObject: attestationconfigapi.VersionList{List: []string{"2023-01-01.json", "2019-01-01.json"}},
+		apiObject: attestationconfigapi.List{List: []string{"2023-01-01.json", "2019-01-01.json"}},
 	})
-}
-
-type fakeSigner struct{}
-
-func (fakeSigner) Sign(_ []byte) ([]byte, error) {
-	return []byte("signature"), nil
 }

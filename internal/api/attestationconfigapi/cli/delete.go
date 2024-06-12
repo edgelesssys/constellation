@@ -18,7 +18,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi/cli/client"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
 	"github.com/spf13/cobra"
@@ -27,21 +26,21 @@ import (
 // newDeleteCmd creates the delete command.
 func newDeleteCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "delete {aws|azure|gcp} {snp-report|guest-firmware} <version>",
+		Use:     "delete {aws-sev-snp|azure-sev-snp|azure-tdx|gcp-sev-snp} {attestation-report|guest-firmware} <version>",
 		Short:   "Delete an object from the attestationconfig API",
 		Long:    "Delete a specific object version from the config api. <version> is the name of the object to delete (without .json suffix)",
-		Example: "COSIGN_PASSWORD=$CPW COSIGN_PRIVATE_KEY=$CKEY cli delete azure snp-report 1.0.0",
-		Args:    cobra.MatchAll(cobra.ExactArgs(3), isCloudProvider(0), isValidKind(1)),
+		Example: "COSIGN_PASSWORD=$CPW COSIGN_PRIVATE_KEY=$CKEY cli delete azure-sev-snp attestation-report 1.0.0",
+		Args:    cobra.MatchAll(cobra.ExactArgs(3), isAttestationVariant(0), isValidKind(1)),
 		PreRunE: envCheck,
 		RunE:    runDelete,
 	}
 
 	recursivelyCmd := &cobra.Command{
-		Use:     "recursive {aws|azure|gcp}",
+		Use:     "recursive {aws-sev-snp|azure-sev-snp|azure-tdx|gcp-sev-snp}",
 		Short:   "delete all objects from the API path constellation/v1/attestation/<csp>",
 		Long:    "Delete all objects from the API path constellation/v1/attestation/<csp>",
-		Example: "COSIGN_PASSWORD=$CPW COSIGN_PRIVATE_KEY=$CKEY cli delete recursive azure",
-		Args:    cobra.MatchAll(cobra.ExactArgs(1), isCloudProvider(0)),
+		Example: "COSIGN_PASSWORD=$CPW COSIGN_PRIVATE_KEY=$CKEY cli delete recursive azure-sev-snp",
+		Args:    cobra.MatchAll(cobra.ExactArgs(1), isAttestationVariant(0)),
 		RunE:    runRecursiveDelete,
 	}
 
@@ -75,16 +74,7 @@ func runDelete(cmd *cobra.Command, args []string) (retErr error) {
 		}
 	}()
 
-	switch deleteCfg.provider {
-	case cloudprovider.AWS:
-		return deleteEntry(cmd.Context(), variant.AWSSEVSNP{}, client, deleteCfg)
-	case cloudprovider.Azure:
-		return deleteEntry(cmd.Context(), variant.AzureSEVSNP{}, client, deleteCfg)
-	case cloudprovider.GCP:
-		return deleteEntry(cmd.Context(), variant.GCPSEVSNP{}, client, deleteCfg)
-	default:
-		return fmt.Errorf("unsupported cloud provider: %s", deleteCfg.provider)
-	}
+	return deleteEntry(cmd.Context(), client, deleteCfg)
 }
 
 func runRecursiveDelete(cmd *cobra.Command, args []string) (retErr error) {
@@ -112,23 +102,13 @@ func runRecursiveDelete(cmd *cobra.Command, args []string) (retErr error) {
 		}
 	}()
 
-	var deletePath string
-	switch deleteCfg.provider {
-	case cloudprovider.AWS:
-		deletePath = path.Join(attestationconfigapi.AttestationURLPath, variant.AWSSEVSNP{}.String())
-	case cloudprovider.Azure:
-		deletePath = path.Join(attestationconfigapi.AttestationURLPath, variant.AzureSEVSNP{}.String())
-	case cloudprovider.GCP:
-		deletePath = path.Join(attestationconfigapi.AttestationURLPath, variant.GCPSEVSNP{}.String())
-	default:
-		return fmt.Errorf("unsupported cloud provider: %s", deleteCfg.provider)
-	}
+	deletePath := path.Join(attestationconfigapi.AttestationURLPath, deleteCfg.variant.String())
 
 	return deleteEntryRecursive(cmd.Context(), deletePath, client, deleteCfg)
 }
 
 type deleteConfig struct {
-	provider        cloudprovider.Provider
+	variant         variant.Variant
 	kind            objectKind
 	version         string
 	region          string
@@ -155,12 +135,15 @@ func newDeleteConfig(cmd *cobra.Command, args [3]string) (deleteConfig, error) {
 	}
 	apiCfg := getAPIEnvironment(testing)
 
-	provider := cloudprovider.FromString(args[0])
+	variant, err := variant.FromString(args[0])
+	if err != nil {
+		return deleteConfig{}, fmt.Errorf("invalid attestation variant: %q: %w", args[0], err)
+	}
 	kind := kindFromString(args[1])
 	version := args[2]
 
 	return deleteConfig{
-		provider:        provider,
+		variant:         variant,
 		kind:            kind,
 		version:         version,
 		region:          region,
@@ -171,12 +154,12 @@ func newDeleteConfig(cmd *cobra.Command, args [3]string) (deleteConfig, error) {
 	}, nil
 }
 
-func deleteEntry(ctx context.Context, attvar variant.Variant, client *client.Client, cfg deleteConfig) error {
-	if cfg.kind != snpReport {
+func deleteEntry(ctx context.Context, client *client.Client, cfg deleteConfig) error {
+	if cfg.kind != attestationReport {
 		return fmt.Errorf("kind %s not supported", cfg.kind)
 	}
 
-	return client.DeleteSEVSNPVersion(ctx, attvar, cfg.version)
+	return client.DeleteVersion(ctx, cfg.variant, cfg.version)
 }
 
 func deleteEntryRecursive(ctx context.Context, path string, client *staticupload.Client, cfg deleteConfig) error {

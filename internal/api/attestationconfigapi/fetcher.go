@@ -20,7 +20,7 @@ const cosignPublicKey = constants.CosignPublicKeyReleases
 
 // Fetcher fetches config API resources without authentication.
 type Fetcher interface {
-	FetchLatestVersion(ctx context.Context, attestation variant.Variant) (VersionAPIEntry, error)
+	FetchLatestVersion(ctx context.Context, attestation variant.Variant) (Entry, error)
 }
 
 // fetcher fetches AttestationCfg API resources without authentication.
@@ -60,10 +60,10 @@ func newFetcherWithClientAndVerifier(client apifetcher.HTTPClient, cosignVerifie
 }
 
 // FetchLatestVersion returns the latest versions of the given type.
-func (f *fetcher) FetchLatestVersion(ctx context.Context, variant variant.Variant) (VersionAPIEntry, error) {
+func (f *fetcher) FetchLatestVersion(ctx context.Context, variant variant.Variant) (Entry, error) {
 	list, err := f.fetchVersionList(ctx, variant)
 	if err != nil {
-		return VersionAPIEntry{}, err
+		return Entry{}, err
 	}
 
 	// latest version is first in list
@@ -71,11 +71,10 @@ func (f *fetcher) FetchLatestVersion(ctx context.Context, variant variant.Varian
 }
 
 // fetchVersionList fetches the version list information from the config API.
-func (f *fetcher) fetchVersionList(ctx context.Context, variant variant.Variant) (VersionList, error) {
-	// TODO(derpsteb): Replace with FetchAndVerify once we move to v2 of the config API and the list is saved as (.json) file.
-	fetchedList, err := apifetcher.Fetch(ctx, f.HTTPClient, f.cdnURL, VersionList{Variant: variant})
+func (f *fetcher) fetchVersionList(ctx context.Context, variant variant.Variant) (List, error) {
+	fetchedList, err := apifetcher.FetchAndVerify(ctx, f.HTTPClient, f.cdnURL, List{Variant: variant}, f.verifier)
 	if err != nil {
-		return VersionList{}, fmt.Errorf("fetching version list: %w", err)
+		return List{}, fmt.Errorf("fetching version list: %w", err)
 	}
 
 	// Set the attestation variant of the list as it is not part of the marshalled JSON retrieved by Fetch
@@ -85,14 +84,14 @@ func (f *fetcher) fetchVersionList(ctx context.Context, variant variant.Variant)
 }
 
 // fetchVersion fetches the version information from the config API.
-func (f *fetcher) fetchVersion(ctx context.Context, version string, variant variant.Variant) (VersionAPIEntry, error) {
-	obj := VersionAPIEntry{
+func (f *fetcher) fetchVersion(ctx context.Context, version string, variant variant.Variant) (Entry, error) {
+	obj := Entry{
 		Version: version,
 		Variant: variant,
 	}
 	fetchedVersion, err := apifetcher.FetchAndVerify(ctx, f.HTTPClient, f.cdnURL, obj, f.verifier)
 	if err != nil {
-		return VersionAPIEntry{}, fmt.Errorf("fetching version %q: %w", version, err)
+		return Entry{}, fmt.Errorf("fetching version %q: %w", version, err)
 	}
 
 	// Set the attestation variant of the list as it is not part of the marshalled JSON retrieved by FetchAndVerify

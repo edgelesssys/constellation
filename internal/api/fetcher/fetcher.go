@@ -20,12 +20,10 @@ package fetcher
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 )
@@ -145,7 +143,7 @@ type apiObject interface {
 // signature manages the signature of a object saved at location 'Signed'.
 type signature struct {
 	// Signed is the object that is signed.
-	Signed string `json:"-"`
+	Signed string `json:"signed"`
 	// Signature is the signature of `Signed`.
 	Signature []byte `json:"signature"`
 }
@@ -155,12 +153,8 @@ func (s signature) JSONPath() string {
 	return s.Signed + ".sig"
 }
 
-// ValidateRequest validates the request.
+// ValidateRequest is a no-op.
 func (s signature) ValidateRequest() error {
-	if !strings.HasSuffix(s.Signed, ".json") {
-		return errors.New("signed object missing .json suffix")
-	}
-
 	return nil
 }
 

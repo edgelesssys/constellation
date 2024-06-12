@@ -45,12 +45,12 @@ type TDXVersion struct {
 	XFAM [8]byte `json:"xfam"`
 }
 
-// VersionAPIEntry is the request to get the version information of the specific version in the config api.
+// Entry is the request to get the version information of the specific version in the config api.
 //
 // TODO: Because variant is not part of the marshalled JSON, fetcher and client methods need to fill the variant property.
 // In API v2 we should embed the variant in the object and remove some code from fetcher & client.
 // That would remove the possibility of some fetcher/client code forgetting to set the variant.
-type VersionAPIEntry struct {
+type Entry struct {
 	Version string          `json:"-"`
 	Variant variant.Variant `json:"-"`
 	SEVSNPVersion
@@ -58,12 +58,12 @@ type VersionAPIEntry struct {
 }
 
 // JSONPath returns the path to the JSON file for the request to the config api.
-func (i VersionAPIEntry) JSONPath() string {
+func (i Entry) JSONPath() string {
 	return path.Join(AttestationURLPath, i.Variant.String(), i.Version)
 }
 
 // ValidateRequest validates the request.
-func (i VersionAPIEntry) ValidateRequest() error {
+func (i Entry) ValidateRequest() error {
 	if !strings.HasSuffix(i.Version, ".json") {
 		return fmt.Errorf("version has no .json suffix")
 	}
@@ -71,47 +71,47 @@ func (i VersionAPIEntry) ValidateRequest() error {
 }
 
 // Validate is a No-Op at the moment.
-func (i VersionAPIEntry) Validate() error {
+func (i Entry) Validate() error {
 	return nil
 }
 
-// VersionList is the request to retrieve of all versions in the API for one attestation variant.
+// List is the request to retrieve of all versions in the API for one attestation variant.
 //
 // TODO: Because variant is not part of the marshalled JSON, fetcher and client methods need to fill the variant property.
 // In API v2 we should embed the variant in the object and remove some code from fetcher & client.
 // That would remove the possibility of some fetcher/client code forgetting to set the variant.
-type VersionList struct {
+type List struct {
 	Variant variant.Variant
 	List    []string
 }
 
 // MarshalJSON marshals the i's list property to JSON.
-func (i VersionList) MarshalJSON() ([]byte, error) {
+func (i List) MarshalJSON() ([]byte, error) {
 	return json.Marshal(i.List)
 }
 
 // UnmarshalJSON unmarshals a list of strings into i's list property.
-func (i *VersionList) UnmarshalJSON(data []byte) error {
+func (i *List) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &i.List)
 }
 
 // JSONPath returns the path to the JSON file for the request to the config api.
-func (i VersionList) JSONPath() string {
+func (i List) JSONPath() string {
 	return path.Join(AttestationURLPath, i.Variant.String(), "list")
 }
 
 // ValidateRequest is a NoOp as there is no input.
-func (i VersionList) ValidateRequest() error {
+func (i List) ValidateRequest() error {
 	return nil
 }
 
 // SortReverse sorts the list of versions in reverse order.
-func (i *VersionList) SortReverse() {
+func (i *List) SortReverse() {
 	sort.Sort(sort.Reverse(sort.StringSlice(i.List)))
 }
 
 // AddVersion adds new to i's list and sorts the element in descending order.
-func (i *VersionList) AddVersion(new string) {
+func (i *List) AddVersion(new string) {
 	i.List = append(i.List, new)
 	i.List = variant.RemoveDuplicate(i.List)
 
@@ -119,7 +119,7 @@ func (i *VersionList) AddVersion(new string) {
 }
 
 // Validate validates the response.
-func (i VersionList) Validate() error {
+func (i List) Validate() error {
 	if len(i.List) < 1 {
 		return fmt.Errorf("no versions found in /list")
 	}

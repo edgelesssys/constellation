@@ -204,8 +204,8 @@ func (f stubVerifyFetcher) FetchAndVerifyMeasurements(_ context.Context, _ strin
 
 type stubAttestationFetcher struct{}
 
-func (f stubAttestationFetcher) FetchLatestVersion(_ context.Context, _ variant.Variant) (attestationconfigapi.VersionAPIEntry, error) {
-	return attestationconfigapi.VersionAPIEntry{
+func (f stubAttestationFetcher) FetchLatestVersion(_ context.Context, _ variant.Variant) (attestationconfigapi.Entry, error) {
+	return attestationconfigapi.Entry{
 		SEVSNPVersion: testCfg,
 	}, nil
 }

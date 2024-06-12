@@ -29,7 +29,6 @@ go_test(
     embed = [":client"],
     deps = [
         "//internal/api/attestationconfigapi",
-        "//internal/attestation/variant",
         "@com_github_stretchr_testify//assert",
     ],
 )
