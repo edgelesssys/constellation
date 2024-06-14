@@ -112,4 +112,8 @@ runs:
           --info logcollect.deployment-type="debugd" \
           --verbosity=-1 \
           --force
+          if [[ $? -ne 0 ]]; then
+            echo "::error::cdbg deploy failed"
+            exit 1
+          fi
         echo "::endgroup::"
