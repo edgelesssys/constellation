@@ -208,18 +208,20 @@ func TestVerify(t *testing.T) {
 
 func TestFormatDefault(t *testing.T) {
 	testCases := map[string]struct {
-		doc     string
+		doc     []byte
+		attCfg  config.AttestationCfg
 		wantErr bool
 	}{
 		"invalid doc": {
-			doc:     "invalid",
+			doc:     []byte("invalid"),
+			attCfg:  &config.AzureSEVSNP{},
 			wantErr: true,
 		},
 	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			_, err := formatDefault(context.Background(), tc.doc, nil, logger.NewTest(t))
+			_, err := formatDefault(context.Background(), tc.doc, tc.attCfg, logger.NewTest(t))
 			if tc.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -313,9 +315,9 @@ type stubVerifyClient struct {
 	endpoint  string
 }
 
-func (c *stubVerifyClient) Verify(_ context.Context, endpoint string, _ *verifyproto.GetAttestationRequest, _ atls.Validator) (string, error) {
+func (c *stubVerifyClient) Verify(_ context.Context, endpoint string, _ *verifyproto.GetAttestationRequest, _ atls.Validator) ([]byte, error) {
 	c.endpoint = endpoint
-	return "", c.verifyErr
+	return nil, c.verifyErr
 }
 
 type stubVerifyAPI struct {

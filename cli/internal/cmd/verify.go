@@ -38,8 +38,10 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/verify"
 	"github.com/edgelesssys/constellation/v2/verify/verifyproto"
 
+	"github.com/google/go-sev-guest/proto/sevsnp"
 	"github.com/google/go-tdx-guest/abi"
 	"github.com/google/go-tdx-guest/proto/tdx"
+	"github.com/google/go-tpm-tools/proto/attest"
 	tpmProto "github.com/google/go-tpm-tools/proto/tpm"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -191,15 +193,21 @@ func (c *verifyCmd) verify(cmd *cobra.Command, verifyClient verifyClient, config
 	switch c.flags.output {
 	case "json":
 		attDocOutput, err = formatJSON(cmd.Context(), rawAttestationDoc, attConfig, c.log)
+		if err != nil {
+			return fmt.Errorf("printing attestation document: %w", err)
+		}
+
 	case "raw":
 		attDocOutput = fmt.Sprintf("Attestation Document:\n%s\n", rawAttestationDoc)
+
 	case "":
 		attDocOutput, err = formatDefault(cmd.Context(), rawAttestationDoc, attConfig, c.log)
+		if err != nil {
+			return fmt.Errorf("printing attestation document: %w", err)
+		}
+
 	default:
 		return fmt.Errorf("invalid output value for formatter: %s", c.flags.output)
-	}
-	if err != nil {
-		return fmt.Errorf("printing attestation document: %w", err)
 	}
 
 	cmd.Println(attDocOutput)
@@ -242,10 +250,10 @@ func (c *verifyCmd) validateEndpointFlag(cmd *cobra.Command, stateFile *state.St
 }
 
 // formatJSON returns the json formatted attestation doc.
-func formatJSON(ctx context.Context, docString string, attestationCfg config.AttestationCfg, log debugLog,
+func formatJSON(ctx context.Context, docString []byte, attestationCfg config.AttestationCfg, log debugLog,
 ) (string, error) {
-	var doc vtpm.AttestationDocument
-	if err := json.Unmarshal([]byte(docString), &doc); err != nil {
+	doc, err := unmarshalAttDoc(docString, attestationCfg.GetVariant())
+	if err != nil {
 		return "", fmt.Errorf("unmarshalling attestation document: %w", err)
 	}
 
@@ -299,14 +307,14 @@ func tdxFormatJSON(instanceInfoRaw []byte, attestationCfg config.AttestationCfg)
 }
 
 // format returns the formatted attestation doc.
-func formatDefault(ctx context.Context, docString string, attestationCfg config.AttestationCfg, log debugLog,
+func formatDefault(ctx context.Context, docString []byte, attestationCfg config.AttestationCfg, log debugLog,
 ) (string, error) {
 	b := &strings.Builder{}
 	b.WriteString("Attestation Document:\n")
 
-	var doc vtpm.AttestationDocument
-	if err := json.Unmarshal([]byte(docString), &doc); err != nil {
-		return "", fmt.Errorf("unmarshal attestation document: %w", err)
+	doc, err := unmarshalAttDoc(docString, attestationCfg.GetVariant())
+	if err != nil {
+		return "", fmt.Errorf("unmarshalling attestation document: %w", err)
 	}
 
 	if err := parseQuotes(b, doc.Attestation.Quotes, attestationCfg.GetMeasurements()); err != nil {
@@ -370,11 +378,11 @@ type constellationVerifier struct {
 // Verify retrieves an attestation statement from the Constellation and verifies it using the validator.
 func (v *constellationVerifier) Verify(
 	ctx context.Context, endpoint string, req *verifyproto.GetAttestationRequest, validator atls.Validator,
-) (string, error) {
+) ([]byte, error) {
 	v.log.Debug(fmt.Sprintf("Dialing endpoint: %q", endpoint))
 	conn, err := v.dialer.DialInsecure(ctx, endpoint)
 	if err != nil {
-		return "", fmt.Errorf("dialing init server: %w", err)
+		return nil, fmt.Errorf("dialing init server: %w", err)
 	}
 	defer conn.Close()
 
@@ -383,24 +391,24 @@ func (v *constellationVerifier) Verify(
 	v.log.Debug("Sending attestation request")
 	resp, err := client.GetAttestation(ctx, req)
 	if err != nil {
-		return "", fmt.Errorf("getting attestation: %w", err)
+		return nil, fmt.Errorf("getting attestation: %w", err)
 	}
 
 	v.log.Debug("Verifying attestation")
 	signedData, err := validator.Validate(ctx, resp.Attestation, req.Nonce)
 	if err != nil {
-		return "", fmt.Errorf("validating attestation: %w", err)
+		return nil, fmt.Errorf("validating attestation: %w", err)
 	}
 
 	if !bytes.Equal(signedData, []byte(constants.ConstellationVerifyServiceUserData)) {
-		return "", errors.New("signed data in attestation does not match expected user data")
+		return nil, errors.New("signed data in attestation does not match expected user data")
 	}
 
-	return string(resp.Attestation), nil
+	return resp.Attestation, nil
 }
 
 type verifyClient interface {
-	Verify(ctx context.Context, endpoint string, req *verifyproto.GetAttestationRequest, validator atls.Validator) (string, error)
+	Verify(ctx context.Context, endpoint string, req *verifyproto.GetAttestationRequest, validator atls.Validator) ([]byte, error)
 }
 
 type grpcInsecureDialer interface {
@@ -514,4 +522,27 @@ func decodeMeasurement(encoded string) ([]byte, error) {
 		}
 	}
 	return decoded, nil
+}
+
+func unmarshalAttDoc(attDocJSON []byte, attestationVariant variant.Variant) (vtpm.AttestationDocument, error) {
+	attDoc := vtpm.AttestationDocument{
+		Attestation: &attest.Attestation{},
+	}
+
+	// Explicitly initialize this struct, as TeeAttestation
+	// is a "oneof" protobuf field, which needs an explicit
+	// type to be set to be unmarshaled correctly.
+	switch attestationVariant {
+	case variant.AzureTDX{}:
+		attDoc.Attestation.TeeAttestation = &attest.Attestation_TdxAttestation{
+			TdxAttestation: &tdx.QuoteV4{},
+		}
+	default:
+		attDoc.Attestation.TeeAttestation = &attest.Attestation_SevSnpAttestation{
+			SevSnpAttestation: &sevsnp.Attestation{},
+		}
+	}
+
+	err := json.Unmarshal(attDocJSON, &attDoc)
+	return attDoc, err
 }
