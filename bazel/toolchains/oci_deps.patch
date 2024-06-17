@@ -1,0 +1,60 @@
+diff --git a/oci/private/image.bzl b/oci/private/image.bzl
+index f73e6ed..c102595 100644
+--- a/oci/private/image.bzl
++++ b/oci/private/image.bzl
+@@ -171,15 +171,6 @@ def _oci_image_impl(ctx):
+ 
+     action_env = {}
+ 
+-    # Windows: Don't convert arguments like --entrypoint=/some/bin to --entrypoint=C:/msys64/some/bin
+-    if ctx.target_platform_has_constraint(ctx.attr._windows_constraint[platform_common.ConstraintValueInfo]):
+-        # See https://www.msys2.org/wiki/Porting/:
+-        # > Setting MSYS2_ARG_CONV_EXCL=* prevents any path transformation.
+-        action_env["MSYS2_ARG_CONV_EXCL"] = "*"
+-
+-        # This one is for Windows Git MSys
+-        action_env["MSYS_NO_PATHCONV"] = "1"
+-
+     ctx.actions.run(
+         inputs = inputs,
+         arguments = [args],
+diff --git a/oci/private/util.bzl b/oci/private/util.bzl
+index 1b40d6b..4d43819 100644
+--- a/oci/private/util.bzl
++++ b/oci/private/util.bzl
+@@ -141,34 +141,7 @@ def _maybe_wrap_launcher_for_windows(ctx, bash_launcher):
+     - make sure the bash_launcher is in the inputs to the action
+     - @bazel_tools//tools/sh:toolchain_type should appear in the rules toolchains
+     """
+-    if not ctx.target_platform_has_constraint(ctx.attr._windows_constraint[platform_common.ConstraintValueInfo]):
+-        return bash_launcher
+-
+-    win_launcher = ctx.actions.declare_file("wrap_%s.bat" % ctx.label.name)
+-    ctx.actions.write(
+-        output = win_launcher,
+-        content = r"""@echo off
+-SETLOCAL ENABLEEXTENSIONS
+-SETLOCAL ENABLEDELAYEDEXPANSION
+-for %%a in ("{bash_bin}") do set "bash_bin_dir=%%~dpa"
+-set PATH=%bash_bin_dir%;%PATH%
+-set "parent_dir=%~dp0"
+-set "parent_dir=!parent_dir:\=/!"
+-set args=%*
+-rem Escape \ and * in args before passing it with double quote
+-if defined args (
+-  set args=!args:\=\\\\!
+-  set args=!args:"=\"!
+-)
+-"{bash_bin}" -c "%parent_dir%{launcher} !args!"
+-""".format(
+-            bash_bin = ctx.toolchains["@bazel_tools//tools/sh:toolchain_type"].path,
+-            launcher = paths.relativize(bash_launcher.path, win_launcher.dirname),
+-        ),
+-        is_executable = True,
+-    )
+-
+-    return win_launcher
++    return bash_launcher
+ 
+ def _file_exists(rctx, path):
+     result = rctx.execute(["stat", path])
