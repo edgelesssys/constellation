@@ -1,28 +1,28 @@
 image:
   csiProvisioner:
     repo: registry.k8s.io/sig-storage/csi-provisioner
-    tag: v3.4.0@sha256:e468dddcd275163a042ab297b2d8c2aca50d5e148d2d22f3b6ba119e2f31fa79
+    tag: v3.6.3@sha256:10624570c0aceb03f55f1eb07147b0c537e4676869cca2e9bd4bab113f810ac4
     pullPolicy: IfNotPresent
   csiAttacher:
     repo: registry.k8s.io/sig-storage/csi-attacher
-    tag: v4.2.0@sha256:34cf9b32736c6624fc9787fb149ea6e0fbeb45415707ac2f6440ac960f1116e6
+    tag: v4.4.3@sha256:d7325367ab72b2d469a5091d87b4fc01142d2d13d1a28b2defbbe3e6fdbc4611
     pullPolicy: IfNotPresent
   csiResizer:
     repo: registry.k8s.io/sig-storage/csi-resizer
-    tag: v1.7.0@sha256:3a7bdf5d105783d05d0962fa06ca53032b01694556e633f27366201c2881e01d
+    tag: v1.9.3@sha256:3c116f543f0590aeff3299c8bb0683f250817d11a77d9e9071b15a0bffdabcd9
     pullPolicy: IfNotPresent
   csiSnapshotter:
     repo: registry.k8s.io/sig-storage/csi-snapshotter
-    tag: v6.1.0@sha256:291334908ddf71a4661fd7f6d9d97274de8a5378a2b6fdfeb2ce73414a34f82f
+    tag: v6.3.3@sha256:f1bd6ee18c4021c1c94f29edfab89b49b6a4d1b800936c19dbef2d75f8202f2d
     pullPolicy: IfNotPresent
   csiNodeRegistrar:
     repo: registry.k8s.io/sig-storage/csi-node-driver-registrar
-    tag: v2.7.0@sha256:4a4cae5118c4404e35d66059346b7fa0835d7e6319ff45ed73f4bba335cf5183
+    tag: v2.9.3@sha256:0f64602ea791246712b51df334bbd701a0f31df9950a4cb9c28c059f367baa9e
     pullPolicy: IfNotPresent
   gcepdDriver:
     repo: ghcr.io/edgelesssys/constellation/gcp-csi-driver
     # CSI driver version is independent of Constellation releases
-    tag: v1.3.0@sha256:0ecb68f348ed6c287075db00f9c5ea731e7e2db9f2f7511b65391fb6856fe11a
+    tag: v1.4.0@sha256:53d608aa03dd07059bc04e1f8c64e2feb6fceff50fb0cbe276d31a8652a19bac
     pullPolicy: IfNotPresent
 
 csiController:
