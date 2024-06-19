@@ -1,3 +1,6 @@
+# Snapshot validating webhook configuration
+# Adapted from https://github.com/kubernetes-csi/external-snapshotter/tree/v8.0.1/deploy/kubernetes/webhook-example
+# to use cert-manager for serving certificates
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
@@ -10,7 +13,7 @@ webhooks:
   - apiGroups:   ["snapshot.storage.k8s.io"]
     apiVersions: ["v1"]
     operations:  ["CREATE", "UPDATE"]
-    resources:   ["volumesnapshots", "volumesnapshotcontents", "volumesnapshotclasses"]
+    resources:   ["volumesnapshotclasses"]
     scope:       "*"
   clientConfig:
     service:
