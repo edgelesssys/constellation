@@ -26,7 +26,7 @@ jobs:
       WORKING_BRANCH: ${{ env.WORKING_BRANCH }}
     steps:
       - name: Checkout
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           fetch-depth: 0 # fetch all history
 
@@ -49,7 +49,7 @@ jobs:
       latest: ${{ steps.input-passthrough.outputs.latest }}${{ steps.check-last-release.outputs.latest }}
     steps:
       - name: Checkout
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
       - name: Override latest
         if: github.event.inputs.latest == 'true'
@@ -123,7 +123,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
       - name: Remove temporary branch
         run: git push origin --delete "${{needs.complete-release-branch-transaction.outputs.WORKING_BRANCH}}"
@@ -137,7 +137,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
       - uses: ./.github/actions/setup_bazel_nix
 
