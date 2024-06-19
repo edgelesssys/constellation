@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     if: contains(github.event.pull_request.labels.*.name, 'dependencies') && toJson(github.event.pull_request.requested_reviewers) == '[]' &&  github.event.pull_request.user.login == 'renovate[bot]'
     steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
     - name: Pick assignee
       id: pick-assignee
       uses: ./.github/actions/pick_assignee

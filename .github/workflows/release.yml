@@ -33,7 +33,7 @@ jobs:
       RELEASE_BRANCH: ${{ steps.version-info.outputs.RELEASE_BRANCH }}
       WORKING_BRANCH: ${{ steps.version-info.outputs.WORKING_BRANCH }}
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
       - name: Working branch
         run: echo "WORKING_BRANCH=$(git branch --show-current)" | tee -a "$GITHUB_ENV"
@@ -85,7 +85,7 @@ jobs:
       MAJOR_MINOR: ${{ needs.verify-inputs.outputs.MAJOR_MINOR }}
       BRANCH: docs/${{ needs.verify-inputs.outputs.MAJOR_MINOR }}
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           ref: main
 
@@ -96,7 +96,7 @@ jobs:
           npm run docusaurus docs:version "${MAJOR_MINOR}"
 
       - name: Create docs pull request
-        uses: peter-evans/create-pull-request@6d6857d36972b65feb161a90e484f2984215f83e # v6.0.5
+        uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c # v6.1.0
         with:
           branch: ${{ env.BRANCH }}
           base: main
@@ -123,7 +123,7 @@ jobs:
       WORKING_BRANCH: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
     steps:
       - name: Checkout
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
 
@@ -161,7 +161,7 @@ jobs:
       WITHOUT_V: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
     steps:
       - name: Checkout
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
 
@@ -226,7 +226,7 @@ jobs:
       WITHOUT_V: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
     steps:
       - name: Checkout
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
 
