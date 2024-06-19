@@ -98,10 +98,11 @@ jobs:
             exit 0
           fi
 
+          # Use quadruple backticks to escape triple backticks in diff'ed files.
           cat << EOF >> "${GITHUB_STEP_SUMMARY}"
-          \`\`\`diff
+          \`\`\`\`diff
           ${diff}
-          \`\`\`
+          \`\`\`\`
           EOF
 
           if [[ "${{ steps.untidy.outputs.untidy }}" == "true" ]] &&
