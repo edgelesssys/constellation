@@ -257,8 +257,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		// Check for newer versions at https://github.com/kubernetes-sigs/cloud-provider-azure/blob/master/README.md.
 		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.28.9@sha256:65285c13cc3eced1005a1c6c5f727570d781ac25f421a9e5cf169de8d7e1d6a9", // renovate:container
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
-		// Check for newer versions with `crane ls  registry.k8s.io/cloud-provider-gcp/cloud-controller-manager`.
-		CloudControllerManagerImageGCP: "registry.k8s.io/cloud-provider-gcp/cloud-controller-manager:v28.2.1@sha256:3c0a8ed7156af8c4a6ab559b98d45882d7447409ccd7bd13b746006bf21e4cfd", // renovate:container
+		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v28.10.0@sha256:f3b6fa7faea27b4a303c91b3bc7ee192b050e21e27579e9f3da90ae4ba38e626", // renovate:container
 		// CloudControllerManagerImageOpenStack is the CCM image used on OpenStack.
 		CloudControllerManagerImageOpenStack: "docker.io/k8scloudprovider/openstack-cloud-controller-manager:v1.26.4@sha256:05e846fb13481b6dbe4a1e50491feb219e8f5101af6cf662a086115735624db0", // renovate:container
 		// External service image. Depends on k8s version.
@@ -325,8 +324,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		// Check for newer versions at https://github.com/kubernetes-sigs/cloud-provider-azure/blob/master/README.md.
 		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.29.7@sha256:79f1ebd0f462713dd20b9630ae177ab1b1dc14f0faae7c8fd4837e8d494d11b9", // renovate:container
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
-		// Check for newer versions with `crane ls  registry.k8s.io/cloud-provider-gcp/cloud-controller-manager`.
-		CloudControllerManagerImageGCP: "registry.k8s.io/cloud-provider-gcp/cloud-controller-manager:v29.0.0@sha256:3793143eb04733c31afc61b624d15a9fd1cbad440fee00419e05b8e0977c60eb", // renovate:container
+		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v29.5.0@sha256:4b17e16f9b5dfa20c9ff62cb382c3f754b70ed36be7f85cc3f46213dae21ec91", // renovate:container
 		// CloudControllerManagerImageOpenStack is the CCM image used on OpenStack.
 		CloudControllerManagerImageOpenStack: "docker.io/k8scloudprovider/openstack-cloud-controller-manager:v1.26.4@sha256:05e846fb13481b6dbe4a1e50491feb219e8f5101af6cf662a086115735624db0", // renovate:container
 		// External service image. Depends on k8s version.
@@ -393,8 +391,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		// Check for newer versions at https://github.com/kubernetes-sigs/cloud-provider-azure/blob/master/README.md.
 		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.30.3@sha256:7605738917b4f9c55dba985073724de359d97f02688f62e65b4173491b2697ce", // renovate:container
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
-		// Check for newer versions with `crane ls  registry.k8s.io/cloud-provider-gcp/cloud-controller-manager`.
-		CloudControllerManagerImageGCP: "registry.k8s.io/cloud-provider-gcp/cloud-controller-manager:v30.0.0@sha256:c1404d7de0a07e24ff6aa78fa6b12b079fba4ed1a380426f16bd5529a3bf0701", // renovate:container
+		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v30.0.0@sha256:529382b3a16cee9d61d4cfd9b8ba74fff51856ae8cbaf1825c075112229284d9", // renovate:container
 		// CloudControllerManagerImageOpenStack is the CCM image used on OpenStack.
 		CloudControllerManagerImageOpenStack: "docker.io/k8scloudprovider/openstack-cloud-controller-manager:v1.26.4@sha256:05e846fb13481b6dbe4a1e50491feb219e8f5101af6cf662a086115735624db0", // renovate:container
 		// External service image. Depends on k8s version.
@@ -409,7 +406,7 @@ type KubernetesVersion struct {
 	KubernetesComponents                 components.Components
 	CloudControllerManagerImageAWS       string // k8s version dependency.
 	CloudControllerManagerImageAzure     string // k8s version dependency.
-	CloudControllerManagerImageGCP       string // k8s minor used as major version for this image. Release process sketchy: https://github.com/kubernetes/cloud-provider-gcp/issues/289.
+	CloudControllerManagerImageGCP       string // Published by .github/workflows/build-ccm-gcp.yml because of https://github.com/kubernetes/cloud-provider-gcp/issues/289.
 	CloudControllerManagerImageOpenStack string // k8s version dependency.
 	CloudNodeManagerImageAzure           string // k8s version dependency. Same version as Azure's CCM image above.
 	ClusterAutoscalerImage               string // Matches k8s versioning scheme.
