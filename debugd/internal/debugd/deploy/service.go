@@ -91,6 +91,8 @@ type dbusConn interface {
 	// StopUnitContext is similar to StartUnitContext, but stops the specified unit
 	// rather than starting it.
 	StopUnitContext(ctx context.Context, name string, mode string, ch chan<- string) (int, error)
+	// ResetFailedUnitContext resets the "failed" state of a unit.
+	ResetFailedUnitContext(ctx context.Context, name string) error
 	// RestartUnitContext restarts a service. If a service is restarted that isn't
 	// running it will be started.
 	RestartUnitContext(ctx context.Context, name string, mode string, ch chan<- string) (int, error)
@@ -122,6 +124,9 @@ func (s *ServiceManager) SystemdAction(ctx context.Context, request ServiceManag
 	case Stop:
 		_, err = conn.StopUnitContext(ctx, request.Unit, "replace", resultChan)
 	case Restart:
+		if err = conn.ResetFailedUnitContext(ctx, request.Unit); err != nil {
+			s.log.Error("Failed to reset unit failed state", "error", err.Error(), "unit", request.Unit)
+		}
 		_, err = conn.RestartUnitContext(ctx, request.Unit, "replace", resultChan)
 	case Reload:
 		err = conn.ReloadContext(ctx)

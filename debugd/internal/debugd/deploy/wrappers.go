@@ -38,6 +38,10 @@ func (c *dbusConnWrapper) StopUnitContext(ctx context.Context, name string, mode
 	return c.conn.StopUnitContext(ctx, name, mode, ch)
 }
 
+func (c *dbusConnWrapper) ResetFailedUnitContext(ctx context.Context, name string) error {
+	return c.conn.ResetFailedUnitContext(ctx, name)
+}
+
 func (c *dbusConnWrapper) RestartUnitContext(ctx context.Context, name string, mode string, ch chan<- string) (int, error) {
 	return c.conn.RestartUnitContext(ctx, name, mode, ch)
 }

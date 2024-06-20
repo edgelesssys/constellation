@@ -356,6 +356,10 @@ func (c *fakeDbusConn) StopUnitContext(_ context.Context, name string, mode stri
 	return c.jobID, c.actionErr
 }
 
+func (c *fakeDbusConn) ResetFailedUnitContext(_ context.Context, _ string) error {
+	return nil
+}
+
 func (c *fakeDbusConn) RestartUnitContext(_ context.Context, name string, mode string, ch chan<- string) (int, error) {
 	c.inputs = append(c.inputs, dbusConnActionInput{name: name, mode: mode})
 	ch <- c.result
