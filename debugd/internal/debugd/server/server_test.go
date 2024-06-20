@@ -371,8 +371,8 @@ type netDialer interface {
 	DialContext(_ context.Context, network, address string) (net.Conn, error)
 }
 
-func dial(ctx context.Context, dialer netDialer, target string) (*grpc.ClientConn, error) {
-	return grpc.DialContext(ctx, target,
+func dial(dialer netDialer, target string) (*grpc.ClientConn, error) {
+	return grpc.NewClient(target,
 		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
 			return dialer.DialContext(ctx, "tcp", addr)
 		}),
@@ -414,7 +414,7 @@ func setupServerWithConn(endpoint string, serv *debugdServer) (*grpc.Server, *gr
 	lis := dialer.GetListener(endpoint)
 	go grpcServ.Serve(lis)
 
-	conn, err := dial(context.Background(), dialer, endpoint)
+	conn, err := dial(dialer, endpoint)
 	if err != nil {
 		return nil, nil, err
 	}

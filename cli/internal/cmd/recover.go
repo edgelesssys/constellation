@@ -217,7 +217,7 @@ type recoverDoer struct {
 
 // Do performs the recover streaming rpc.
 func (d *recoverDoer) Do(ctx context.Context) (retErr error) {
-	conn, err := d.dialer.Dial(ctx, d.endpoint)
+	conn, err := d.dialer.Dial(d.endpoint)
 	if err != nil {
 		return fmt.Errorf("dialing recovery server: %w", err)
 	}

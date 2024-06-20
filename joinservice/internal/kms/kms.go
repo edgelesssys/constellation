@@ -39,7 +39,7 @@ func (c Client) GetDataKey(ctx context.Context, keyID string, length int) ([]byt
 	// the KMS does not use aTLS since traffic is only routed through the Constellation cluster
 	// cluster internal connections are considered trustworthy
 	log.Info(fmt.Sprintf("Connecting to KMS at %s", c.endpoint))
-	conn, err := grpc.DialContext(ctx, c.endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(c.endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}

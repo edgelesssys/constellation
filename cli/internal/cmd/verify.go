@@ -380,7 +380,7 @@ func (v *constellationVerifier) Verify(
 	ctx context.Context, endpoint string, req *verifyproto.GetAttestationRequest, validator atls.Validator,
 ) ([]byte, error) {
 	v.log.Debug(fmt.Sprintf("Dialing endpoint: %q", endpoint))
-	conn, err := v.dialer.DialInsecure(ctx, endpoint)
+	conn, err := v.dialer.DialInsecure(endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("dialing init server: %w", err)
 	}
@@ -412,7 +412,7 @@ type verifyClient interface {
 }
 
 type grpcInsecureDialer interface {
-	DialInsecure(ctx context.Context, endpoint string) (conn *grpc.ClientConn, err error)
+	DialInsecure(endpoint string) (conn *grpc.ClientConn, err error)
 }
 
 // writeIndentfln writes a formatted string to the builder with the given indentation level

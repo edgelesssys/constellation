@@ -33,7 +33,7 @@ func NewClient() *Client {
 
 // Upgrade upgrades the Constellation node to the given Kubernetes version.
 func (c *Client) Upgrade(ctx context.Context, kubernetesComponents components.Components, WantedKubernetesVersion string) error {
-	conn, err := grpc.DialContext(ctx, mainconstants.UpgradeAgentMountPath, grpc.WithTransportCredentials(insecure.NewCredentials()),
+	conn, err := grpc.NewClient(mainconstants.UpgradeAgentMountPath, grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithContextDialer(
 			func(ctx context.Context, addr string) (net.Conn, error) {
 				return c.dialer.DialContext(ctx, "unix", addr)

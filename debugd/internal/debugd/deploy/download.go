@@ -53,7 +53,7 @@ func (d *Download) DownloadInfo(ctx context.Context, ip string) error {
 	log := d.log.With(slog.String("ip", ip))
 	serverAddr := net.JoinHostPort(ip, strconv.Itoa(constants.DebugdPort))
 
-	client, closer, err := d.newClient(ctx, serverAddr, log)
+	client, closer, err := d.newClient(serverAddr, log)
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func (d *Download) DownloadDeployment(ctx context.Context, ip string) error {
 	log := d.log.With(slog.String("ip", ip))
 	serverAddr := net.JoinHostPort(ip, strconv.Itoa(constants.DebugdPort))
 
-	client, closer, err := d.newClient(ctx, serverAddr, log)
+	client, closer, err := d.newClient(serverAddr, log)
 	if err != nil {
 		return err
 	}
@@ -117,17 +117,17 @@ func (d *Download) DownloadDeployment(ctx context.Context, ip string) error {
 	return nil
 }
 
-func (d *Download) newClient(ctx context.Context, serverAddr string, log *slog.Logger) (pb.DebugdClient, io.Closer, error) {
+func (d *Download) newClient(serverAddr string, log *slog.Logger) (pb.DebugdClient, io.Closer, error) {
 	log.Info("Connecting to server")
-	conn, err := d.dial(ctx, serverAddr)
+	conn, err := d.dial(serverAddr)
 	if err != nil {
 		return nil, nil, fmt.Errorf("connecting to other instance via gRPC: %w", err)
 	}
 	return pb.NewDebugdClient(conn), conn, nil
 }
 
-func (d *Download) dial(ctx context.Context, target string) (*grpc.ClientConn, error) {
-	return grpc.DialContext(ctx, target,
+func (d *Download) dial(target string) (*grpc.ClientConn, error) {
+	return grpc.NewClient(target,
 		d.grpcWithDialer(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
