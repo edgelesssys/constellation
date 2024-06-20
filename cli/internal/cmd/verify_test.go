@@ -167,6 +167,18 @@ func TestVerify(t *testing.T) {
 			stateFile:        defaultStateFile(cloudprovider.Azure),
 			wantErr:          true,
 		},
+		"state file is not required if flags are given": {
+			provider:         cloudprovider.Azure,
+			nodeEndpointFlag: "192.0.2.1:1234",
+			clusterIDFlag:    zeroBase64,
+			protoClient:      &stubVerifyClient{},
+			wantEndpoint:     "192.0.2.1:1234",
+		},
+		"no state file and no flags": {
+			provider:    cloudprovider.Azure,
+			protoClient: &stubVerifyClient{},
+			wantErr:     true,
+		},
 	}
 
 	for name, tc := range testCases {
@@ -183,7 +195,9 @@ func TestVerify(t *testing.T) {
 				cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), tc.provider)
 				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, cfg))
 			}
-			require.NoError(tc.stateFile.WriteToFile(fileHandler, constants.StateFilename))
+			if tc.stateFile != nil {
+				require.NoError(tc.stateFile.WriteToFile(fileHandler, constants.StateFilename))
+			}
 
 			v := &verifyCmd{
 				fileHandler: fileHandler,

@@ -138,10 +138,7 @@ func (c *verifyCmd) verify(cmd *cobra.Command, verifyClient verifyClient, config
 
 	stateFile, err := state.ReadFromFile(c.fileHandler, constants.StateFilename)
 	if err != nil {
-		return fmt.Errorf("reading state file: %w", err)
-	}
-	if err := stateFile.Validate(state.PostInit, conf.GetAttestationConfig().GetVariant()); err != nil {
-		return fmt.Errorf("validating state file: %w", err)
+		stateFile = state.New() // A state file is only required if the user has not provided IP or ID flags
 	}
 
 	ownerID, clusterID, err := c.validateIDFlags(cmd, stateFile)
