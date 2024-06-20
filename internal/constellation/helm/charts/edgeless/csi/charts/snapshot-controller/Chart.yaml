@@ -1,6 +1,9 @@
 apiVersion: v2
 name: snapshot-controller
-description: A chart to deploy the CSI snapshot controller and webhook
+description: |
+  A chart to deploy the CSI snapshot controller and webhook
+  Snapshot controller source: https://github.com/kubernetes-csi/external-snapshotter/tree/v8.0.1/deploy/kubernetes/snapshot-controller
+  Snapshot validating webhook source: https://github.com/kubernetes-csi/external-snapshotter/tree/v8.0.1/deploy/kubernetes/webhook-example
 type: application
-version: 6.2.2
-appVersion: "6.2.2"
+version: 8.0.1
+appVersion: "8.0.1"
