@@ -5,7 +5,7 @@ bazel_dep(name = "bazel_skylib", version = "1.6.1")
 bazel_dep(name = "gazelle", version = "0.36.0")
 bazel_dep(name = "hermetic_cc_toolchain", version = "3.1.0")
 bazel_dep(name = "rules_cc", version = "0.0.9")
-bazel_dep(name = "rules_go", version = "0.48.0", repo_name = "io_bazel_rules_go")
+bazel_dep(name = "rules_go", version = "0.48.1", repo_name = "io_bazel_rules_go")
 bazel_dep(name = "rules_pkg", version = "0.10.1")
 bazel_dep(name = "rules_proto", version = "6.0.0.bcr.1")
 bazel_dep(name = "rules_python", version = "0.32.2")
@@ -16,7 +16,7 @@ bazel_dep(name = "buildifier_prebuilt", version = "6.4.0", dev_dependency = True
 # until go.work support is released
 git_override(
     module_name = "gazelle",
-    commit = "7d10bf7befce477f518056cfc502939000bea3fa",
+    commit = "476a9447de621f3d6ab0154cc5683b989c79f9c1",
     remote = "https://github.com/bazelbuild/bazel-gazelle",
 )
 
