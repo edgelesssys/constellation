@@ -91,6 +91,11 @@ runs:
       shell: bash
       run: |
         echo "::group::cdbg deploy"
+        on_error() {
+          echo "::error::cdbg deploy failed"
+        }
+        trap on_error ERR
+        
         chmod +x $GITHUB_WORKSPACE/build/cdbg
         cdbg deploy \
           --bootstrapper "${{ github.workspace }}/build/bootstrapper" \
@@ -112,8 +117,4 @@ runs:
           --info logcollect.deployment-type="debugd" \
           --verbosity=-1 \
           --force
-          if [[ $? -ne 0 ]]; then
-            echo "::error::cdbg deploy failed"
-            exit 1
-          fi
         echo "::endgroup::"
