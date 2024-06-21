@@ -541,16 +541,34 @@ multirun(
 )
 
 multirun(
-    name = "generate",
+    name = "generate_files",
     commands = [
         ":terraform_gen",
         "//3rdparty/bazel/com_github_medik8s_node_maintainance_operator:pull_files",
         ":go_generate",
         ":proto_generate",
-        ":cli_docgen",
-        ":terraform_docgen",
-        ":version_info_gen",
     ],
     jobs = 0,  # execute concurrently
+    visibility = ["//visibility:public"],
+)
+
+multirun(
+    name = "generate_docs",
+    commands = [
+        ":cli_docgen",
+        ":terraform_docgen",
+    ],
+    jobs = 0,  # execute concurrently
+    visibility = ["//visibility:public"],
+)
+
+multirun(
+    name = "generate",
+    commands = [
+        ":generate_files",
+        ":generate_docs",
+        ":version_info_gen",
+    ],
+    jobs = 1,  # execute sequentially
     visibility = ["//visibility:public"],
 )
