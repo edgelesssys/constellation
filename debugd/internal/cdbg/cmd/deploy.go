@@ -203,8 +203,7 @@ type closeAndWait func()
 
 // newDebugdClient creates a new gRPC client for the debugd service and logs the connection state changes.
 func newDebugdClient(ctx context.Context, ip string, log *slog.Logger) (pb.DebugdClient, closeAndWait, error) {
-	conn, err := grpc.DialContext(
-		ctx,
+	conn, err := grpc.NewClient(
 		net.JoinHostPort(ip, strconv.Itoa(constants.DebugdPort)),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		logger.GetClientUnaryInterceptor(log),

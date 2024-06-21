@@ -123,7 +123,7 @@ func TestRecover(t *testing.T) {
 				diskKey, measurementSecret, serveErr = server.Serve(serveCtx, listener, serverUUID)
 			}()
 
-			conn, err := dialer.New(nil, nil, netDialer).Dial(ctx, "192.0.2.1:1234")
+			conn, err := dialer.New(nil, nil, netDialer).Dial("192.0.2.1:1234")
 			require.NoError(err)
 			defer conn.Close()
 

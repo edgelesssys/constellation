@@ -28,42 +28,42 @@ func TestMain(m *testing.M) {
 func TestDial(t *testing.T) {
 	testCases := map[string]struct {
 		tls     bool
-		dialFn  func(dialer *Dialer, ctx context.Context, target string) (*grpc.ClientConn, error)
+		dialFn  func(dialer *Dialer, target string) (*grpc.ClientConn, error)
 		wantErr bool
 	}{
 		"Dial with tls on server works": {
 			tls: true,
-			dialFn: func(dialer *Dialer, ctx context.Context, target string) (*grpc.ClientConn, error) {
-				return dialer.Dial(ctx, target)
+			dialFn: func(dialer *Dialer, target string) (*grpc.ClientConn, error) {
+				return dialer.Dial(target)
 			},
 		},
 		"Dial without tls on server fails": {
-			dialFn: func(dialer *Dialer, ctx context.Context, target string) (*grpc.ClientConn, error) {
-				return dialer.Dial(ctx, target)
+			dialFn: func(dialer *Dialer, target string) (*grpc.ClientConn, error) {
+				return dialer.Dial(target)
 			},
 			wantErr: true,
 		},
 		"DialNoVerify with tls on server works": {
 			tls: true,
-			dialFn: func(dialer *Dialer, ctx context.Context, target string) (*grpc.ClientConn, error) {
-				return dialer.DialNoVerify(ctx, target)
+			dialFn: func(dialer *Dialer, target string) (*grpc.ClientConn, error) {
+				return dialer.DialNoVerify(target)
 			},
 		},
 		"DialNoVerify without tls on server fails": {
-			dialFn: func(dialer *Dialer, ctx context.Context, target string) (*grpc.ClientConn, error) {
-				return dialer.DialNoVerify(ctx, target)
+			dialFn: func(dialer *Dialer, target string) (*grpc.ClientConn, error) {
+				return dialer.DialNoVerify(target)
 			},
 			wantErr: true,
 		},
 		"DialInsecure without tls on server works": {
-			dialFn: func(dialer *Dialer, ctx context.Context, target string) (*grpc.ClientConn, error) {
-				return dialer.DialInsecure(ctx, target)
+			dialFn: func(dialer *Dialer, target string) (*grpc.ClientConn, error) {
+				return dialer.DialInsecure(target)
 			},
 		},
 		"DialInsecure with tls on server fails": {
 			tls: true,
-			dialFn: func(dialer *Dialer, ctx context.Context, target string) (*grpc.ClientConn, error) {
-				return dialer.DialInsecure(ctx, target)
+			dialFn: func(dialer *Dialer, target string) (*grpc.ClientConn, error) {
+				return dialer.DialInsecure(target)
 			},
 			wantErr: true,
 		},
@@ -81,7 +81,7 @@ func TestDial(t *testing.T) {
 			grpc_testing.RegisterTestServiceServer(server, api)
 			go server.Serve(netDialer.GetListener("192.0.2.1:1234"))
 			defer server.Stop()
-			conn, err := tc.dialFn(dialer, context.Background(), "192.0.2.1:1234")
+			conn, err := tc.dialFn(dialer, "192.0.2.1:1234")
 			require.NoError(err)
 			defer conn.Close()
 

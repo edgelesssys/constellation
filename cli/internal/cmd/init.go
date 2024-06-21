@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -106,5 +105,5 @@ func (c *kubeconfigMerger) kubeconfigEnvVar() string {
 }
 
 type grpcDialer interface {
-	Dial(ctx context.Context, target string) (*grpc.ClientConn, error)
+	Dial(target string) (*grpc.ClientConn, error)
 }

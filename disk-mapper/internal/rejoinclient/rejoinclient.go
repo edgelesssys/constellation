@@ -123,7 +123,7 @@ func (c *RejoinClient) requestRejoinTicket(endpoint string) (*joinproto.IssueRej
 	ctx, cancel := c.timeoutCtx()
 	defer cancel()
 
-	conn, err := c.dialer.Dial(ctx, endpoint)
+	conn, err := c.dialer.Dial(endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +185,7 @@ func (c *RejoinClient) timeoutCtx() (context.Context, context.CancelFunc) {
 }
 
 type grpcDialer interface {
-	Dial(ctx context.Context, target string) (*grpc.ClientConn, error)
+	Dial(target string) (*grpc.ClientConn, error)
 }
 
 type metadataAPI interface {

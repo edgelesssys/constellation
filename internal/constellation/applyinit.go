@@ -42,7 +42,7 @@ type InitPayload struct {
 
 // GrpcDialer dials a gRPC server.
 type GrpcDialer interface {
-	Dial(ctx context.Context, target string) (*grpc.ClientConn, error)
+	Dial(target string) (*grpc.ClientConn, error)
 }
 
 // Init performs the init RPC.
@@ -173,7 +173,7 @@ func (d *initDoer) Do(ctx context.Context) error {
 		}
 	}
 
-	conn, err := d.dialer.Dial(ctx, d.endpoint)
+	conn, err := d.dialer.Dial(d.endpoint)
 	if err != nil {
 		d.log.Debug(fmt.Sprintf("Dialing init server failed: %q. Retrying...", err))
 		return fmt.Errorf("dialing init server: %w", err)

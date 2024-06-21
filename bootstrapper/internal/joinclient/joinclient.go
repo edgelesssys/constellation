@@ -209,7 +209,7 @@ func (c *JoinClient) requestJoinTicket(serviceEndpoint string) (ticket *joinprot
 		return nil, nil, err
 	}
 
-	conn, err := c.dialer.Dial(ctx, serviceEndpoint)
+	conn, err := c.dialer.Dial(serviceEndpoint)
 	if err != nil {
 		c.log.With(slog.String("endpoint", serviceEndpoint), slog.Any("error", err)).Error("Join service unreachable")
 		return nil, nil, fmt.Errorf("dialing join service endpoint: %w", err)
@@ -388,7 +388,7 @@ func (c *JoinClient) timeoutCtx() (context.Context, context.CancelFunc) {
 }
 
 type grpcDialer interface {
-	Dial(ctx context.Context, target string) (*grpc.ClientConn, error)
+	Dial(target string) (*grpc.ClientConn, error)
 }
 
 // ClusterJoiner has the ability to join a new node to an existing cluster.
