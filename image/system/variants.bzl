@@ -50,7 +50,7 @@ CSPS = [
     "qemu",
 ]
 
-base_cmdline = "selinux=1 enforcing=0 audit=0"
+base_cmdline = "selinux=0 enforcing=0 audit=0"
 
 csp_settings = {
     "aws": {
