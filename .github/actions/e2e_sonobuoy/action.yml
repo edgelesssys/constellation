@@ -64,7 +64,7 @@ runs:
 
     - name: Publish test results
       if: (!env.ACT) && contains(inputs.sonobuoyTestSuiteCmd, '--plugin e2e')
-      uses: mikepenz/action-junit-report@ac30be7acb0a361e5492575ab42e47fcadec4928 # v4.2.2
+      uses: mikepenz/action-junit-report@db71d41eb79864e25ab0337e395c352e84523afe # v4.3.1
       with:
         report_paths: "**/junit_01.xml"
         fail_on_failure: true
