@@ -137,6 +137,15 @@ func (k *KubernetesUtil) InitCluster(
 	}
 
 	// Create static pods directory for all nodes (the Kubelets on the worker nodes also expect the path to exist)
+	if _, err := os.Stat("/etc/kubernetes/manifests"); err == nil {
+		// If the node rebooted after the static pod directory was created,
+		// the existing directory needs to be removed before we can
+		// try to init the cluster again.
+		log.Info("Removing existing static Pod directory /etc/kubernetes/manifests")
+		if err := os.RemoveAll("/etc/kubernetes/manifests"); err != nil {
+			return nil, fmt.Errorf("removing static pods directory: %w", err)
+		}
+	}
 	log.Info("Creating static Pod directory /etc/kubernetes/manifests")
 	if err := os.MkdirAll("/etc/kubernetes/manifests", os.ModePerm); err != nil {
 		return nil, fmt.Errorf("creating static pods directory: %w", err)
@@ -200,6 +209,15 @@ func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, log
 	}
 
 	// Create static pods directory for all nodes (the Kubelets on the worker nodes also expect the path to exist)
+	if _, err := os.Stat("/etc/kubernetes/manifests"); err == nil {
+		// If the node rebooted after the static pod directory was created, for example
+		// if a failure during an upgrade occurred, the existing directory needs to be
+		// removed before we can try to join the cluster again.
+		log.Info("Removing existing static Pod directory /etc/kubernetes/manifests")
+		if err := os.RemoveAll("/etc/kubernetes/manifests"); err != nil {
+			return fmt.Errorf("removing static pods directory: %w", err)
+		}
+	}
 	log.Info("Creating static Pod directory /etc/kubernetes/manifests")
 	if err := os.MkdirAll("/etc/kubernetes/manifests", os.ModePerm); err != nil {
 		return fmt.Errorf("creating static pods directory: %w", err)
