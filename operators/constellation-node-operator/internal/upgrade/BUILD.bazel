@@ -1,4 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "upgrade",
@@ -11,5 +12,17 @@ go_library(
         "//upgrade-agent/upgradeproto",
         "@org_golang_google_grpc//:grpc",
         "@org_golang_google_grpc//credentials/insecure",
+    ],
+)
+
+go_test(
+    name = "upgrade_test",
+    srcs = ["upgrade_test.go"],
+    embed = [":upgrade"],
+    deps = [
+        "//internal/versions/components",
+        "//upgrade-agent/upgradeproto",
+        "@com_github_stretchr_testify//require",
+        "@org_golang_google_grpc//:grpc",
     ],
 )

@@ -21,24 +21,25 @@ import (
 
 // Client is a client for the upgrade agent.
 type Client struct {
+	addr   string
 	dialer Dialer
 }
 
-// NewClient creates a new upgrade agent client.
+// NewClient creates a new upgrade agent client connecting to the default upgrade-agent Unix socket.
 func NewClient() *Client {
+	return newClientWithAddress(mainconstants.UpgradeAgentMountPath)
+}
+
+func newClientWithAddress(addr string) *Client {
 	return &Client{
+		addr:   "unix:" + addr,
 		dialer: &net.Dialer{},
 	}
 }
 
 // Upgrade upgrades the Constellation node to the given Kubernetes version.
 func (c *Client) Upgrade(ctx context.Context, kubernetesComponents components.Components, WantedKubernetesVersion string) error {
-	conn, err := grpc.NewClient(mainconstants.UpgradeAgentMountPath, grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithContextDialer(
-			func(ctx context.Context, addr string) (net.Conn, error) {
-				return c.dialer.DialContext(ctx, "unix", addr)
-			},
-		))
+	conn, err := grpc.NewClient(c.addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return fmt.Errorf("failed to dial: %w", err)
 	}
