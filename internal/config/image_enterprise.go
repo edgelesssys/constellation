@@ -10,5 +10,5 @@ package config
 
 const (
 	// defaultImage is the default image to use.
-	defaultImage = "ref/main/stream/nightly/v2.17.0-pre.0.20240620134933-c01f7350427b"
+	defaultImage = "ref/burgerdev-podman/stream/nightly/v2.17.0-pre.0.20240626114915-35fb857f8f4b"
 )
