@@ -40,6 +40,24 @@ Or alternatively, for `terminate`:
 ARM_SKIP_PROVIDER_REGISTRATION=true constellation terminate
 ```
 
+### Azure: Can't update attestation policy
+
+On Azure, you may receive the following error when running `apply` from within an Azure environment, e.g., an Azure VM:
+
+```shell-session
+An error occurred: patching policies: updating attestation policy: unexpected status code: 403 Forbidden
+```
+
+The problem occurs because the Azure SDK we use internally attempts to [authenticate towards the Azure API with the managed identity of your current environment instead of the Azure CLI token](https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/azidentity#DefaultAzureCredential).
+
+We decided not to deviate from this behavior and comply with the ordering of credentials.
+
+A solution is to add the [required permissions](../getting-started/install.md#required-permissions) to the managed identity of your environment. For example, the managed identity of your Azure VM, instead of the account that you've authenticated with in the Azure CLI.
+
+If your setup requires a change in the ordering of credentials, please open an issue and explain your desired behavior.
+
+
+
 ### Nodes fail to join with error `untrusted measurement value`
 
 This error indicates that a node's [attestation statement](../architecture/attestation.md) contains measurements that don't match the trusted values expected by the [JoinService](../architecture/microservices.md#joinservice).
