@@ -26,10 +26,10 @@ replace (
 )
 
 require (
-	cloud.google.com/go/compute v1.27.0
+	cloud.google.com/go/compute v1.27.1
 	cloud.google.com/go/compute/metadata v0.3.0
-	cloud.google.com/go/kms v1.18.0
-	cloud.google.com/go/secretmanager v1.13.1
+	cloud.google.com/go/kms v1.18.1
+	cloud.google.com/go/secretmanager v1.13.2
 	cloud.google.com/go/storage v1.42.0
 	dario.cat/mergo v1.0.0
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
@@ -40,21 +40,21 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets v1.1.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.3.2
 	github.com/BurntSushi/toml v1.4.0
-	github.com/aws/aws-sdk-go v1.54.8
+	github.com/aws/aws-sdk-go v1.54.9
 	github.com/aws/aws-sdk-go-v2 v1.30.0
-	github.com/aws/aws-sdk-go-v2/config v1.27.21
-	github.com/aws/aws-sdk-go-v2/credentials v1.17.21
+	github.com/aws/aws-sdk-go-v2/config v1.27.22
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.22
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.8
-	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.17.1
-	github.com/aws/aws-sdk-go-v2/service/autoscaling v1.42.0
-	github.com/aws/aws-sdk-go-v2/service/cloudfront v1.37.1
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.166.0
-	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2 v1.32.1
-	github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi v1.22.1
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.56.1
-	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.31.1
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.17.2
+	github.com/aws/aws-sdk-go-v2/service/autoscaling v1.43.0
+	github.com/aws/aws-sdk-go-v2/service/cloudfront v1.38.0
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.167.0
+	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2 v1.33.0
+	github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi v1.23.0
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.57.0
+	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.32.0
 	github.com/aws/smithy-go v1.20.2
-	github.com/bazelbuild/buildtools v0.0.0-20240606140350-80f1f6802857
+	github.com/bazelbuild/buildtools v0.0.0-20240626162158-92a716d768c0
 	github.com/bazelbuild/rules_go v0.48.1
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/docker/docker v26.1.4+incompatible
@@ -103,7 +103,7 @@ require (
 	github.com/secure-systems-lab/go-securesystemslib v0.8.0
 	github.com/siderolabs/talos/pkg/machinery v1.7.5
 	github.com/sigstore/rekor v1.3.6
-	github.com/sigstore/sigstore v1.8.5
+	github.com/sigstore/sigstore v1.8.6
 	github.com/spf13/afero v1.11.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
@@ -182,9 +182,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.3.14 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.14 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.17.12 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.21.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.25.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.29.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.22.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.26.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.30.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
@@ -284,7 +284,7 @@ require (
 	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
 	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
-	github.com/letsencrypt/boulder v0.0.0-20240613153800-a69ba997609e // indirect
+	github.com/letsencrypt/boulder v0.0.0-20240620165639-de9c06129bec // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -359,7 +359,7 @@ require (
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto v0.0.0-20240617180043-68d350f18fd4 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240610135401-a8a62080eff3 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20240617180043-68d350f18fd4 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240617180043-68d350f18fd4 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
