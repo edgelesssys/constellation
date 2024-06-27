@@ -52,7 +52,7 @@ The problem occurs because the Azure SDK we use internally attempts to [authenti
 
 We decided not to deviate from this behavior and comply with the ordering of credentials.
 
-A solution is to add the [required permissions](../getting-started/install.md#required-permissions) to the managed identity of your environment, the managed identity of your Azure VM, for example, instead of the account that you've authenticated with the Azure CLI.
+A solution is to add the [required permissions](../getting-started/install.md#required-permissions) to the managed identity of your environment. For example, the managed identity of your Azure VM, instead of the account that you've authenticated with in the Azure CLI.
 
 If your setup requires a change in the ordering of credentials, please open an issue and explain your desired behavior.
 
