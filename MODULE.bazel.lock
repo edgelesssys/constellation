@@ -1860,7 +1860,7 @@
     },
     "@@rules_python~//python/extensions:pip.bzl%pip": {
       "os:linux,arch:amd64": {
-        "bzlTransitiveDigest": "K94lJ8XIBKrx5CVtVocGmJYIC6vW5wsPi7tQvtQqmaU=",
+        "bzlTransitiveDigest": "Qobw0mqix3Lyru/l40RZpc1OSUFNKKDU1svu1wF6aWQ=",
         "usagesDigest": "GjGeoW3Y1ie+feloBPcuU2ovSDtUFE43ddOvIqLCEtk=",
         "recordedFileInputs": {
           "@@rules_python~//tools/publish/requirements.txt": "8ced1e640eab3ee44298590e5ad88cd612f5bf96245af1981709f7a8884a982b"
