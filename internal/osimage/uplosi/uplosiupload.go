@@ -255,7 +255,7 @@ func azureReplicationRegions(attestationVariant string) []string {
 	case "azure-tdx":
 		return []string{"northeurope", "westeurope", "centralus", "eastus2"}
 	case "azure-sev-snp":
-		return []string{"northeurope", "westeurope", "germanywestcentral", "eastus", "westus", "southeastasia"}
+		return []string{"northeurope", "westeurope", "germanywestcentral", "eastus", "eastus2", "westus", "southeastasia"}
 	}
 	return nil
 }
