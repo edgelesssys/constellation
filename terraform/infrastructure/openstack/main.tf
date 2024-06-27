@@ -7,12 +7,12 @@ terraform {
 
     stackit = {
       source  = "stackitcloud/stackit"
-      version = "0.17.0"
+      version = "0.19.0"
     }
 
     random = {
       source  = "hashicorp/random"
-      version = "3.6.0"
+      version = "3.6.2"
     }
   }
 }
