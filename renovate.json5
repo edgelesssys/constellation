@@ -89,6 +89,7 @@
       "matchManagers": ["github-actions"],
       "groupName": "GitHub action dependencies",
       "matchUpdateTypes": [
+        "major",
         "minor",
         "patch",
         "pin",
