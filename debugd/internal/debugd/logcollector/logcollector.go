@@ -11,7 +11,6 @@ package logcollector
 import (
 	"context"
 	"fmt"
-	"io"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -183,7 +182,6 @@ func startPod(ctx context.Context, logger *slog.Logger) error {
 	}
 
 	// start logstash container
-	logstashLog := newCmdLogger(logger.WithGroup("logstash"))
 	runLogstashArgs := []string{
 		"run",
 		"-d",
@@ -196,8 +194,6 @@ func startPod(ctx context.Context, logger *slog.Logger) error {
 	}
 	runLogstashCmd := podman(ctx, runLogstashArgs...)
 	logger.Info(fmt.Sprintf("Run logstash command: %v", runLogstashCmd.String()))
-	runLogstashCmd.Stdout = logstashLog
-	runLogstashCmd.Stderr = logstashLog
 	if out, err := runLogstashCmd.CombinedOutput(); err != nil {
 		logger.Error("Could not start logstash container", "err", err, "output", out)
 		return fmt.Errorf("failed to start logstash: %w", err)
@@ -208,7 +204,6 @@ func startPod(ctx context.Context, logger *slog.Logger) error {
 	}
 
 	// start filebeat container
-	filebeatLog := newCmdLogger(logger.WithGroup("filebeat"))
 	runFilebeatArgs := []string{
 		"run",
 		"-d",
@@ -227,8 +222,6 @@ func startPod(ctx context.Context, logger *slog.Logger) error {
 	}
 	runFilebeatCmd := podman(ctx, runFilebeatArgs...)
 	logger.Info(fmt.Sprintf("Run filebeat command: %v", runFilebeatCmd.String()))
-	runFilebeatCmd.Stdout = filebeatLog
-	runFilebeatCmd.Stderr = filebeatLog
 	if out, err := runFilebeatCmd.CombinedOutput(); err != nil {
 		logger.Error("Could not start filebeat container", "err", err, "output", out)
 		return fmt.Errorf("failed to run filebeat: %w", err)
@@ -305,19 +298,6 @@ func setCloudMetadata(ctx context.Context, m map[string]string, provider cloudpr
 	} else {
 		m["uid"] = uid
 	}
-}
-
-func newCmdLogger(logger *slog.Logger) io.Writer {
-	return &cmdLogger{logger: logger}
-}
-
-type cmdLogger struct {
-	logger *slog.Logger
-}
-
-func (c *cmdLogger) Write(p []byte) (n int, err error) {
-	c.logger.Info(string(p))
-	return len(p), nil
 }
 
 func podman(ctx context.Context, args ...string) *exec.Cmd {
