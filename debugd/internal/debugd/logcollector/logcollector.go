@@ -186,7 +186,8 @@ func startPod(ctx context.Context, logger *slog.Logger) error {
 	logstashLog := newCmdLogger(logger.WithGroup("logstash"))
 	runLogstashArgs := []string{
 		"run",
-		"--rm",
+		"-d",
+		"--restart=unless-stopped",
 		"--name=logstash",
 		"--pod=logcollection",
 		"--log-driver=journald",
@@ -197,7 +198,8 @@ func startPod(ctx context.Context, logger *slog.Logger) error {
 	logger.Info(fmt.Sprintf("Run logstash command: %v", runLogstashCmd.String()))
 	runLogstashCmd.Stdout = logstashLog
 	runLogstashCmd.Stderr = logstashLog
-	if err := runLogstashCmd.Start(); err != nil {
+	if out, err := runLogstashCmd.CombinedOutput(); err != nil {
+		logger.Error("Could not start logstash container", "err", err, "output", out)
 		return fmt.Errorf("failed to start logstash: %w", err)
 	}
 	if out, err := podman(ctx, "wait", "logstash", "--condition=running", "--interval=15s").CombinedOutput(); err != nil {
@@ -209,7 +211,8 @@ func startPod(ctx context.Context, logger *slog.Logger) error {
 	filebeatLog := newCmdLogger(logger.WithGroup("filebeat"))
 	runFilebeatArgs := []string{
 		"run",
-		"--rm",
+		"-d",
+		"--restart=unless-stopped",
 		"--name=filebeat",
 		"--pod=logcollection",
 		"--privileged",
@@ -226,7 +229,8 @@ func startPod(ctx context.Context, logger *slog.Logger) error {
 	logger.Info(fmt.Sprintf("Run filebeat command: %v", runFilebeatCmd.String()))
 	runFilebeatCmd.Stdout = filebeatLog
 	runFilebeatCmd.Stderr = filebeatLog
-	if err := runFilebeatCmd.Start(); err != nil {
+	if out, err := runFilebeatCmd.CombinedOutput(); err != nil {
+		logger.Error("Could not start filebeat container", "err", err, "output", out)
 		return fmt.Errorf("failed to run filebeat: %w", err)
 	}
 	if out, err := podman(ctx, "wait", "filebeat", "--condition=running", "--interval=15s").CombinedOutput(); err != nil {
