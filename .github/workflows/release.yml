@@ -278,6 +278,7 @@ jobs:
       packages: write
       id-token: write
       contents: read
+      actions: write
     secrets: inherit
     with:
       ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
