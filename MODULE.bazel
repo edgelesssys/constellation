@@ -139,7 +139,6 @@ use_repo(
     "org_golang_x_vuln",
     "org_libvirt_go_libvirt",
     "org_uber_go_goleak",
-    "sh_helm_helm",
     "sh_helm_helm_v3",
 )
 
