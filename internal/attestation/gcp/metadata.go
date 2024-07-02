@@ -55,15 +55,15 @@ type MetadataClient struct{}
 
 // ProjectID returns the project ID of the GCE instance.
 func (c MetadataClient) ProjectID() (string, error) {
-	return metadata.ProjectID()
+	return metadata.ProjectIDWithContext(context.Background())
 }
 
 // InstanceName returns the instance name of the GCE instance.
 func (c MetadataClient) InstanceName() (string, error) {
-	return metadata.InstanceName()
+	return metadata.InstanceNameWithContext(context.Background())
 }
 
 // Zone returns the zone the GCE instance is located in.
 func (c MetadataClient) Zone() (string, error) {
-	return metadata.Zone()
+	return metadata.ZoneWithContext(context.Background())
 }
