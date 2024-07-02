@@ -10,17 +10,15 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"log/syslog"
 	"net"
 	"sync"
-	"syscall"
-	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/clean"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/diskencryption"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/initserver"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/joinclient"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/nodelock"
+	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/reboot"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/initialize"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
@@ -46,13 +44,13 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 	nodeBootstrapped, err := initialize.IsNodeBootstrapped(openDevice)
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to check if node was previously bootstrapped")
-		reboot(fmt.Errorf("checking if node was previously bootstrapped: %w", err))
+		reboot.Reboot(fmt.Errorf("checking if node was previously bootstrapped: %w", err))
 	}
 
 	if nodeBootstrapped {
 		if err := kube.StartKubelet(); err != nil {
 			log.With(slog.Any("error", err)).Error("Failed to restart kubelet")
-			reboot(fmt.Errorf("restarting kubelet: %w", err))
+			reboot.Reboot(fmt.Errorf("restarting kubelet: %w", err))
 		}
 		return
 	}
@@ -61,7 +59,7 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 	initServer, err := initserver.New(context.Background(), nodeLock, kube, issuer, disk, fileHandler, metadata, log)
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to create init server")
-		reboot(fmt.Errorf("creating init server: %w", err))
+		reboot.Reboot(fmt.Errorf("creating init server: %w", err))
 	}
 
 	dialer := dialer.New(issuer, nil, &net.Dialer{})
@@ -79,7 +77,7 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 		if err := joinClient.Start(cleaner); err != nil {
 			log.With(slog.Any("error", err)).Error("Failed to join cluster")
 			markDiskForReset(disk)
-			reboot(fmt.Errorf("joining cluster: %w", err))
+			reboot.Reboot(fmt.Errorf("joining cluster: %w", err))
 		}
 	}()
 
@@ -89,7 +87,7 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 		if err := initServer.Serve(bindIP, bindPort, cleaner); err != nil {
 			log.With(slog.Any("error", err)).Error("Failed to serve init server")
 			markDiskForReset(disk)
-			reboot(fmt.Errorf("serving init server: %w", err))
+			reboot.Reboot(fmt.Errorf("serving init server: %w", err))
 		}
 	}()
 	wg.Wait()
@@ -120,20 +118,6 @@ func markDiskForReset(disk *diskencryption.DiskEncryption) {
 	}
 	defer free()
 	_ = disk.MarkDiskForReset()
-}
-
-// reboot writes an error message to the system log and reboots the system.
-// We call this instead of os.Exit() since failures in the bootstrapper usually require a node reset.
-func reboot(e error) {
-	syslogWriter, err := syslog.New(syslog.LOG_EMERG|syslog.LOG_KERN, "bootstrapper")
-	if err != nil {
-		_ = syscall.Reboot(syscall.LINUX_REBOOT_CMD_RESTART)
-	}
-	_ = syslogWriter.Err(e.Error())
-	_ = syslogWriter.Emerg("bootstrapper has encountered a non recoverable error. Rebooting...")
-	time.Sleep(time.Minute) // sleep to allow the message to be written to syslog and seen by the user
-
-	_ = syscall.Reboot(syscall.LINUX_REBOOT_CMD_RESTART)
 }
 
 type clusterInitJoiner interface {
