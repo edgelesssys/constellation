@@ -16,8 +16,6 @@ import (
 	"path"
 	"strconv"
 	"time"
-
-	"golang.org/x/sys/unix"
 )
 
 var (
@@ -97,7 +95,7 @@ func (c *Client) setIOPriority() error {
 	prioVal := ((targetClass & ioPrioClassMask) << ioPrioClassShift) | (targetPrio & ioPrioPrioMask)
 
 	// see https://man7.org/linux/man-pages/man2/ioprio_set.2.html
-	ret, _, errno := unix.Syscall(unix.SYS_IOPRIO_SET, ioPrioWhoProcess, uintptr(pid), uintptr(prioVal))
+	ret, _, errno := setioprio(ioPrioWhoProcess, uintptr(pid), uintptr(prioVal))
 	if ret != 0 {
 		return fmt.Errorf("setting I/O priority for etcd: %w", errno)
 	}
