@@ -8,5 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 package reboot
 
-// Reboot is a no-op on non-Linux platforms.
-func Reboot(_ error) {}
+// Reboot is not implemented on non-Linux platforms.
+func Reboot(_ error) {
+	panic("reboot not implemented on non-Linux platforms")
+}
