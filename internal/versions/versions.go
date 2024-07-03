@@ -169,7 +169,7 @@ const (
 
 	// GcpGuestImage image for GCP guest agent.
 	// Check for new versions at https://github.com/GoogleCloudPlatform/guest-agent/releases and update in /.github/workflows/build-gcp-guest-agent.yml.
-	GcpGuestImage = "ghcr.io/edgelesssys/gcp-guest-agent:v20240611.1.0@sha256:e751fda68957a70c8494999115aba2ccbc1e2f31d85986b7e133cbe02187da23" // renovate:container
+	GcpGuestImage = "ghcr.io/edgelesssys/gcp-guest-agent:v20240701.0.0@sha256:30986eeea5ae55dc98bd9b1c6d5252821effea5b27708c14dc414f6ee926c7d7" // renovate:container
 	// NodeMaintenanceOperatorImage is the image for the node maintenance operator.
 	NodeMaintenanceOperatorImage = "quay.io/medik8s/node-maintenance-operator:v0.15.0@sha256:8cb8dad93283268282c30e75c68f4bd76b28def4b68b563d2f9db9c74225d634" // renovate:container
 	// LogstashImage is the container image of logstash, used for log collection by debugd.
