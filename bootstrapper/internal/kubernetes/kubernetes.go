@@ -165,10 +165,6 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("waiting for Kubernetes API to be available: %w", err)
 	}
 
-	if err := k.client.EnforceCoreDNSSpread(ctx); err != nil {
-		return nil, fmt.Errorf("configuring CoreDNS deployment: %w", err)
-	}
-
 	// Setup the K8s components ConfigMap.
 	k8sComponentsConfigMap, err := k.setupK8sComponentsConfigMap(ctx, kubernetesComponents, versionString)
 	if err != nil {
