@@ -91,6 +91,7 @@ type Options struct {
 	HelmWaitMode        WaitMode
 	ApplyTimeout        time.Duration
 	OpenStackValues     *OpenStackValues
+	ServiceCIDR         string
 }
 
 // PrepareApply loads the charts and returns the executor to apply them.
@@ -114,7 +115,8 @@ func (h Client) loadReleases(
 ) ([]release, error) {
 	helmLoader := newLoader(flags.CSP, flags.AttestationVariant, flags.K8sVersion, stateFile, h.cliVersion)
 	h.log.Debug("Created new Helm loader")
-	return helmLoader.loadReleases(flags.Conformance, flags.DeployCSIDriver, flags.HelmWaitMode, secret, serviceAccURI, flags.OpenStackValues)
+	// TODO(burgerdev): pass down the entire flags struct
+	return helmLoader.loadReleases(flags.Conformance, flags.DeployCSIDriver, flags.HelmWaitMode, secret, serviceAccURI, flags.OpenStackValues, flags.ServiceCIDR)
 }
 
 // Applier runs the Helm actions.
