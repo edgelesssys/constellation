@@ -47,6 +47,8 @@ jobs:
               ;;
           esac
 
+      - uses: ./.github/actions/setup_bazel_nix
+
       - name: List versions
         id: list
         uses: ./.github/actions/versionsapi

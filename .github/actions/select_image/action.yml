@@ -43,6 +43,10 @@ runs:
         echo "ref=$(echo $REFSTREAM | cut -d/ -f2)" | tee -a "$GITHUB_OUTPUT"
         echo "stream=$(echo $REFSTREAM | cut -d/ -f4)" | tee -a "$GITHUB_OUTPUT"
 
+    - name: Setup Bazel & Nix
+      if: steps.input-is-preset.outputs.result == 'true'
+      uses: ./.github/actions/setup_bazel_nix
+
     - name: Find latest image
       if: steps.input-is-preset.outputs.result == 'true'
       id: find-latest-image
