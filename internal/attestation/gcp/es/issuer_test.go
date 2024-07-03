@@ -91,14 +91,14 @@ type fakeMetadataClient struct {
 	zoneErr            error
 }
 
-func (c fakeMetadataClient) ProjectID() (string, error) {
+func (c fakeMetadataClient) ProjectID(_ context.Context) (string, error) {
 	return c.projectIDString, c.projecIDErr
 }
 
-func (c fakeMetadataClient) InstanceName() (string, error) {
+func (c fakeMetadataClient) InstanceName(_ context.Context) (string, error) {
 	return c.instanceNameString, c.instanceNameErr
 }
 
-func (c fakeMetadataClient) Zone() (string, error) {
+func (c fakeMetadataClient) Zone(_ context.Context) (string, error) {
 	return c.zoneString, c.zoneErr
 }

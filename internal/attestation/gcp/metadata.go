@@ -21,17 +21,17 @@ func GCEInstanceInfo(client gcpMetadataClient) func(context.Context, io.ReadWrit
 	// Ideally we would want to use the endorsement public key certificate
 	// However, this is not available on GCE instances
 	// Workaround: Provide ShieldedVM instance info
-	// The attestating party can request the VMs signing key using Google's API
-	return func(context.Context, io.ReadWriteCloser, []byte) ([]byte, error) {
-		projectID, err := client.ProjectID()
+	// The attesting party can request the VMs signing key using Google's API
+	return func(ctx context.Context, _ io.ReadWriteCloser, _ []byte) ([]byte, error) {
+		projectID, err := client.ProjectID(ctx)
 		if err != nil {
 			return nil, errors.New("unable to fetch projectID")
 		}
-		zone, err := client.Zone()
+		zone, err := client.Zone(ctx)
 		if err != nil {
 			return nil, errors.New("unable to fetch zone")
 		}
-		instanceName, err := client.InstanceName()
+		instanceName, err := client.InstanceName(ctx)
 		if err != nil {
 			return nil, errors.New("unable to fetch instance name")
 		}
@@ -45,25 +45,25 @@ func GCEInstanceInfo(client gcpMetadataClient) func(context.Context, io.ReadWrit
 }
 
 type gcpMetadataClient interface {
-	ProjectID() (string, error)
-	InstanceName() (string, error)
-	Zone() (string, error)
+	ProjectID(context.Context) (string, error)
+	InstanceName(context.Context) (string, error)
+	Zone(context.Context) (string, error)
 }
 
 // A MetadataClient fetches metadata from the GCE Metadata API.
 type MetadataClient struct{}
 
 // ProjectID returns the project ID of the GCE instance.
-func (c MetadataClient) ProjectID() (string, error) {
-	return metadata.ProjectIDWithContext(context.Background())
+func (c MetadataClient) ProjectID(ctx context.Context) (string, error) {
+	return metadata.ProjectIDWithContext(ctx)
 }
 
 // InstanceName returns the instance name of the GCE instance.
-func (c MetadataClient) InstanceName() (string, error) {
-	return metadata.InstanceNameWithContext(context.Background())
+func (c MetadataClient) InstanceName(ctx context.Context) (string, error) {
+	return metadata.InstanceNameWithContext(ctx)
 }
 
 // Zone returns the zone the GCE instance is located in.
-func (c MetadataClient) Zone() (string, error) {
-	return metadata.ZoneWithContext(context.Background())
+func (c MetadataClient) Zone(ctx context.Context) (string, error) {
+	return metadata.ZoneWithContext(ctx)
 }
