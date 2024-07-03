@@ -375,6 +375,10 @@ type mockApplier struct {
 	mock.Mock
 }
 
+func (m *mockApplier) AnnotateCoreDNSResources(_ context.Context) error {
+	return nil
+}
+
 func (m *mockApplier) PrepareHelmCharts(
 	helmOpts helm.Options, stateFile *state.State, str string, masterSecret uri.MasterSecret,
 ) (helm.Applier, bool, error) {
