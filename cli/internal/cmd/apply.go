@@ -422,6 +422,9 @@ func (a *applyCmd) apply(
 
 	// Apply Helm Charts
 	if !a.flags.skipPhases.contains(skipHelmPhase) {
+		if err := a.applier.AnnotateCoreDNSResources(cmd.Context()); err != nil {
+			return fmt.Errorf("annotating CoreDNS: %w", err)
+		}
 		if err := a.runHelmApply(cmd, conf, stateFile, upgradeDir); err != nil {
 			return err
 		}
@@ -843,6 +846,7 @@ type applier interface {
 
 	// methods required to install/upgrade Helm charts
 
+	AnnotateCoreDNSResources(context.Context) error
 	PrepareHelmCharts(
 		flags helm.Options, state *state.State, serviceAccURI string, masterSecret uri.MasterSecret,
 	) (helm.Applier, bool, error)

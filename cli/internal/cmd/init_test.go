@@ -278,6 +278,10 @@ type stubHelmApplier struct {
 	err error
 }
 
+func (s stubHelmApplier) AnnotateCoreDNSResources(_ context.Context) error {
+	return nil
+}
+
 func (s stubHelmApplier) PrepareHelmCharts(
 	_ helm.Options, _ *state.State, _ string, _ uri.MasterSecret,
 ) (helm.Applier, bool, error) {

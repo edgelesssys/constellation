@@ -1211,6 +1211,11 @@ func (r *ClusterResource) applyHelmCharts(ctx context.Context, applier *constell
 		OpenStackValues:  payload.openStackHelmValues,
 	}
 
+	if err := applier.AnnotateCoreDNSResources(ctx); err != nil {
+		diags.AddError("Annotating CoreDNS resources", err.Error())
+		return diags
+	}
+
 	executor, _, err := applier.PrepareHelmCharts(options, state,
 		payload.serviceAccURI, payload.masterSecret)
 	var upgradeErr *compatibility.InvalidUpgradeError
