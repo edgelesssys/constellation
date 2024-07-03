@@ -24,6 +24,8 @@ You can use the following command to find replace all instances of `go-version: 
 OLD_VERSION="1.xx.x"
 NEW_VERSION="1.xx.y"
 find .github -type f -exec sed -i "s/go-version: \"${OLD_VERSION}\"/go-version: \"${NEW_VERSION}\"/g" {} \;
+sed -i "s/go ${OLD_VERSION}/go ${NEW_VERSION}/g" go.mod
+sed -i "s/${OLD_VERSION}/${NEW_VERSION}/g" go.work
 ```
 
 Or manually:
