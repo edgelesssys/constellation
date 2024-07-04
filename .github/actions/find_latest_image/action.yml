@@ -43,6 +43,8 @@ runs:
         role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIRead
         aws-region: eu-central-1
 
+    - uses: ./.github/actions/setup_bazel_nix
+
     - name: Find latest image
       id: find-latest-image
       if: inputs.imageVersion == ''

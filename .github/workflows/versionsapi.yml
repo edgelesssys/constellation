@@ -180,6 +180,8 @@ jobs:
         with:
           service_account: "image-deleter@constellation-images.iam.gserviceaccount.com"
 
+      - uses: ./.github/actions/setup_bazel_nix
+
       - name: Execute versionsapi CLI
         id: run
         uses: ./.github/actions/versionsapi
