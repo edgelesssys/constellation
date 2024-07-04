@@ -352,7 +352,7 @@ runs:
       if: inputs.test == 'sonobuoy conformance'
       uses: ./.github/actions/e2e_sonobuoy
       with:
-        sonobuoyTestSuiteCmd: "--mode certified-conformance"
+        sonobuoyTestSuiteCmd: "--plugin e2e --mode certified-conformance"
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
         artifactNameSuffix: ${{ steps.create-prefix.outputs.prefix }}
         encryptionSecret: ${{ inputs.encryptionSecret }}
