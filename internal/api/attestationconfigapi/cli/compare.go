@@ -1,3 +1,8 @@
+/*
+Copyright (c) Edgeless Systems GmbH
+
+SPDX-License-Identifier: AGPL-3.0-only
+*/
 package main
 
 import (
@@ -20,7 +25,7 @@ func newCompareCmd() *cobra.Command {
 		Short:   "Compare two or more attestation reports and return the lowest version",
 		Long:    "Compare two or more attestation reports and return the lowest version.",
 		Example: "cli compare azure-sev-snp report1.json report2.json",
-		Args:    cobra.MatchAll(cobra.MinimumNArgs(3), isAttestationVariant(0)),
+		Args:    cobra.MatchAll(cobra.MinimumNArgs(3), arg0isAttestationVariant()),
 		RunE:    runCompare,
 	}
 

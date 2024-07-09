@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package main
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -14,17 +15,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func isAttestationVariant(arg int) cobra.PositionalArgs {
+func arg0isAttestationVariant() cobra.PositionalArgs {
 	return func(_ *cobra.Command, args []string) error {
-		attestationVariant, err := variant.FromString(args[arg])
+		attestationVariant, err := variant.FromString(args[0])
 		if err != nil {
-			return fmt.Errorf("argument %s isn't a valid attestation variant", args[arg])
+			return errors.New("argument 0 isn't a valid attestation variant")
 		}
 		switch attestationVariant {
 		case variant.AWSSEVSNP{}, variant.AzureSEVSNP{}, variant.AzureTDX{}, variant.GCPSEVSNP{}:
 			return nil
 		default:
-			return fmt.Errorf("argument %s isn't a supported attestation variant", args[arg])
+			return errors.New("argument 0 isn't a supported attestation variant")
 		}
 	}
 }

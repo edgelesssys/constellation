@@ -30,7 +30,7 @@ func newDeleteCmd() *cobra.Command {
 		Short:   "Delete an object from the attestationconfig API",
 		Long:    "Delete a specific object version from the config api. <version> is the name of the object to delete (without .json suffix)",
 		Example: "COSIGN_PASSWORD=$CPW COSIGN_PRIVATE_KEY=$CKEY cli delete azure-sev-snp attestation-report 1.0.0",
-		Args:    cobra.MatchAll(cobra.ExactArgs(3), isAttestationVariant(0), isValidKind(1)),
+		Args:    cobra.MatchAll(cobra.ExactArgs(3), arg0isAttestationVariant(), isValidKind(1)),
 		PreRunE: envCheck,
 		RunE:    runDelete,
 	}
@@ -40,7 +40,7 @@ func newDeleteCmd() *cobra.Command {
 		Short:   "delete all objects from the API path constellation/v1/attestation/<csp>",
 		Long:    "Delete all objects from the API path constellation/v1/attestation/<csp>",
 		Example: "COSIGN_PASSWORD=$CPW COSIGN_PRIVATE_KEY=$CKEY cli delete recursive azure-sev-snp",
-		Args:    cobra.MatchAll(cobra.ExactArgs(1), isAttestationVariant(0)),
+		Args:    cobra.MatchAll(cobra.ExactArgs(1), arg0isAttestationVariant()),
 		RunE:    runRecursiveDelete,
 	}
 

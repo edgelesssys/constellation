@@ -41,7 +41,7 @@ func newUploadCmd() *cobra.Command {
 		),
 		Example: "COSIGN_PASSWORD=$CPW COSIGN_PRIVATE_KEY=$CKEY cli upload azure-sev-snp attestation-report /some/path/report.json",
 
-		Args:    cobra.MatchAll(cobra.ExactArgs(3), isAttestationVariant(0), isValidKind(1)),
+		Args:    cobra.MatchAll(cobra.ExactArgs(3), arg0isAttestationVariant(), isValidKind(1)),
 		PreRunE: envCheck,
 		RunE:    runUpload,
 	}
