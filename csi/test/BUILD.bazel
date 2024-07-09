@@ -28,6 +28,8 @@ go_test(
         "RM": "$(rlocationpath @coreutils//:bin/rm)",
         "UMOUNT": "$(rlocationpath @util-linux//:bin/umount)",
     },
+    # This test frequently runs into https://github.com/martinjungblut/go-cryptsetup/issues/13.
+    flaky = 1,
     # keep
     tags = [
         "integration",
