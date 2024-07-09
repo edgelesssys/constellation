@@ -7,7 +7,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 package provider
 
 import (
-	"regexp"
+	"errors"
+	"strconv"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -18,17 +19,26 @@ func TestAccAttestationSource(t *testing.T) {
 	bazelPreCheck := func() { bazelSetTerraformBinaryPath(t) }
 
 	assertNonZeroValue := func(attr string) resource.TestCheckFunc {
-		return resource.TestMatchResourceAttr(
+		return resource.TestCheckResourceAttrWith(
 			"data.constellation_attestation.test",
 			attr,
-			regexp.MustCompile(`^[1-9]\d*$`),
+			func(value string) error {
+				parsedValue, err := strconv.ParseUint(value, 10, 8)
+				if err == nil && parsedValue == 0 {
+					return errors.New("expected non-zero value")
+				}
+				return err
+			},
 		)
 	}
-	assertAnyDigitValue := func(attr string) resource.TestCheckFunc {
-		return resource.TestMatchResourceAttr(
+	assertUint8Value := func(attr string) resource.TestCheckFunc {
+		return resource.TestCheckResourceAttrWith(
 			"data.constellation_attestation.test",
 			attr,
-			regexp.MustCompile(`.*\d.*`),
+			func(value string) error {
+				_, err := strconv.ParseUint(value, 10, 8)
+				return err
+			},
 		)
 	}
 
@@ -55,7 +65,7 @@ func TestAccAttestationSource(t *testing.T) {
 						assertNonZeroValue("attestation.bootloader_version"),
 						assertNonZeroValue("attestation.microcode_version"),
 						assertNonZeroValue("attestation.snp_version"),
-						assertAnyDigitValue("attestation.tee_version"), // the valid value is 0 at the moment
+						assertUint8Value("attestation.tee_version"), // the valid value is 0 at the moment
 						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.azure_firmware_signer_config.accepted_key_digests.0", "0356215882a825279a85b300b0b742931d113bf7e32dde2e50ffde7ec743ca491ecdd7f336dc28a6e0b2bb57af7a44a3"),
 						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.azure_firmware_signer_config.enforcement_policy", "MAAFallback"),
 
@@ -145,7 +155,7 @@ func TestAccAttestationSource(t *testing.T) {
 						assertNonZeroValue("attestation.bootloader_version"),
 						assertNonZeroValue("attestation.microcode_version"),
 						assertNonZeroValue("attestation.snp_version"),
-						assertAnyDigitValue("attestation.tee_version"), // the valid value is 0 at the moment
+						assertUint8Value("attestation.tee_version"), // the valid value is 0 at the moment
 						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.measurements.1.expected", "3695dcc55e3aa34027c27793c85c723c697d708c42d1f73bd6fa4f26608a5b24"),
 						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.measurements.1.warn_only", "true"),
 					),
