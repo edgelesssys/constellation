@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"slices"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi/cli/client"
@@ -27,6 +28,8 @@ func newCompareCmd() *cobra.Command {
 }
 
 func runCompare(cmd *cobra.Command, args []string) error {
+	cmd.SetOut(os.Stdout)
+
 	variant, err := variant.FromString(args[0])
 	if err != nil {
 		return fmt.Errorf("parsing variant: %w", err)
