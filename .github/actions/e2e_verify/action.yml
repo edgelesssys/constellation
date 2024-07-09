@@ -96,7 +96,7 @@ runs:
       run: |
         reports=attestation-report-*.json
 
-        report=$(bazel run //internal/api/attestationconfigapi/cli -- compare ${{ inputs.attestationVariant }} ${report})
+        report=$(bazel run //internal/api/attestationconfigapi/cli -- compare ${{ inputs.attestationVariant }} ${reports})
 
         path=$(realpath "${report}")
         cat "${path}"
