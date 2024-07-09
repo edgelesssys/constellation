@@ -31,6 +31,25 @@ func reportVersionDir(attestation variant.Variant) string {
 	return path.Join(attestationconfigapi.AttestationURLPath, attestation.String(), cachedVersionsSubDir)
 }
 
+// IsInputNewerThanOtherVersion compares the input version with the other version and returns true if the input version is newer.
+// This function panics if the input versions are not TDX or SEV-SNP versions.
+func IsInputNewerThanOtherVersion(variant variant.Variant, inputVersion, otherVersion any) bool {
+	var result bool
+	actionForVariant(variant,
+		func() {
+			input := inputVersion.(attestationconfigapi.TDXVersion)
+			other := otherVersion.(attestationconfigapi.TDXVersion)
+			result = isInputNewerThanOtherTDXVersion(input, other)
+		},
+		func() {
+			input := inputVersion.(attestationconfigapi.SEVSNPVersion)
+			other := otherVersion.(attestationconfigapi.SEVSNPVersion)
+			result = isInputNewerThanOtherSEVSNPVersion(input, other)
+		},
+	)
+	return result
+}
+
 // UploadLatestVersion saves the given version to the cache, determines the smallest
 // TCB version in the cache among the last cacheWindowSize versions and updates
 // the latest version in the API if there is an update.
@@ -90,7 +109,7 @@ func (c Client) UploadLatestVersion(
 	}
 	c.log.Info(fmt.Sprintf("Found minimal version: %+v with date: %s", minVersion, minDate))
 
-	if !isInputNewerThanOtherVersion(attestationVariant, minVersion, latestVersionInAPI) {
+	if !IsInputNewerThanOtherVersion(attestationVariant, minVersion, latestVersionInAPI) {
 		c.log.Info(fmt.Sprintf("Input version: %+v is not newer than latest API version: %+v. Skipping list update", minVersion, latestVersionInAPI))
 		return ErrNoNewerVersion
 	}
@@ -200,7 +219,7 @@ func findMinimalVersion[T attestationconfigapi.TDXVersion | attestationconfigapi
 
 		// If the current minimal version has newer versions than the one we just fetched,
 		// update the minimal version to the older version.
-		if isInputNewerThanOtherVersion(variant, *minimalVersion, obj.getVersion()) {
+		if IsInputNewerThanOtherVersion(variant, *minimalVersion, obj.getVersion()) {
 			v := obj.getVersion().(T)
 			minimalVersion = &v
 			minimalDate = date
@@ -208,23 +227,6 @@ func findMinimalVersion[T attestationconfigapi.TDXVersion | attestationconfigapi
 	}
 
 	return *minimalVersion, minimalDate, nil
-}
-
-func isInputNewerThanOtherVersion(variant variant.Variant, inputVersion, otherVersion any) bool {
-	var result bool
-	actionForVariant(variant,
-		func() {
-			input := inputVersion.(attestationconfigapi.TDXVersion)
-			other := otherVersion.(attestationconfigapi.TDXVersion)
-			result = isInputNewerThanOtherTDXVersion(input, other)
-		},
-		func() {
-			input := inputVersion.(attestationconfigapi.SEVSNPVersion)
-			other := otherVersion.(attestationconfigapi.SEVSNPVersion)
-			result = isInputNewerThanOtherSEVSNPVersion(input, other)
-		},
-	)
-	return result
 }
 
 type apiVersionObject struct {
