@@ -30,10 +30,17 @@ reconcile_sip_verification() {
   fi
 }
 
+optional_mtu() {
+  if [ -n "${VPN_MTU}" ]; then
+    printf "mtu %s" "${VPN_MTU}"
+  fi
+}
+
 # Set up the route from the node network namespace to the VPN pod.
 reconcile_route() {
   for cidr in ${VPN_PEER_CIDRS}; do
-    nsenter -t 1 -n ip route replace "${cidr}" via "$(myip)"
+    # shellcheck disable=SC2046 # Word splitting is intentional here.
+    nsenter -t 1 -n ip route replace "${cidr}" via "$(myip)" $(optional_mtu)
   done
 }
 
