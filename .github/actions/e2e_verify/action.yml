@@ -94,13 +94,11 @@ runs:
         COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
         COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
       run: |
-        reports=(attestation-report-*.json)
-        if [ -z ${#reports[@]} ]; then
-            exit 1
-        fi
+        reports=attestation-report-*.json
 
-        for file in "${reports[@]}"; do
-          path=$(realpath "${file}")
-          cat "${path}"
-          bazel run //internal/api/attestationconfigapi/cli -- upload ${{ inputs.attestationVariant }} attestation-report "${path}"
-        done
+        report=$(bazel run //internal/api/attestationconfigapi/cli -- compare ${{ inputs.attestationVariant }} ${report})
+
+        path=$(realpath "${report}")
+        cat "${path}"
+
+        bazel run //internal/api/attestationconfigapi/cli -- upload ${{ inputs.attestationVariant }} attestation-report "${path}"

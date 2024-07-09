@@ -120,24 +120,20 @@ func uploadReport(
 		latestVersion = latestVersionInAPI.SEVSNPVersion
 
 		log.Info(fmt.Sprintf("Reading SNP report from file: %s", cfg.path))
-		var report verify.Report
-		if err := fs.ReadJSON(cfg.path, &report); err != nil {
-			return fmt.Errorf("reading snp report: %w", err)
+		newVersion, err = readSNPReport(cfg.path, fs)
+		if err != nil {
+			return err
 		}
-
-		newVersion = convertTCBVersionToSNPVersion(report.SNPReport.LaunchTCB)
 		log.Info(fmt.Sprintf("Input SNP report: %+v", newVersion))
 
 	case variant.AzureTDX{}:
 		latestVersion = latestVersionInAPI.TDXVersion
 
 		log.Info(fmt.Sprintf("Reading TDX report from file: %s", cfg.path))
-		var report *tdx.QuoteV4
-		if err := fs.ReadJSON(cfg.path, &report); err != nil {
-			return fmt.Errorf("reading tdx report: %w", err)
+		newVersion, err = readTDXReport(cfg.path, fs)
+		if err != nil {
+			return err
 		}
-
-		newVersion = convertQuoteToTDXVersion(report)
 		log.Info(fmt.Sprintf("Input TDX report: %+v", newVersion))
 
 	default:
