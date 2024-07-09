@@ -10,6 +10,7 @@ go_binary(
 go_library(
     name = "cli_lib",
     srcs = [
+        "compare.go",
         "delete.go",
         "main.go",
         "upload.go",
