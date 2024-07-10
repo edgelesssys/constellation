@@ -29,7 +29,7 @@ import (
 
 func newUploadCmd() *cobra.Command {
 	uploadCmd := &cobra.Command{
-		Use:   "upload {aws-sev-snp|azure-sev-snp|azure-tdx|gcp-sev-snp} {attestation-report|guest-firmware} <path>",
+		Use:   "upload VARIANT KIND FILE",
 		Short: "Upload an object to the attestationconfig API",
 
 		Long: fmt.Sprintf("Upload a new object to the attestationconfig API. For snp-reports the new object is added to a cache folder first.\n"+
@@ -41,7 +41,7 @@ func newUploadCmd() *cobra.Command {
 		),
 		Example: "COSIGN_PASSWORD=$CPW COSIGN_PRIVATE_KEY=$CKEY cli upload azure-sev-snp attestation-report /some/path/report.json",
 
-		Args:    cobra.MatchAll(cobra.ExactArgs(3), isAttestationVariant(0), isValidKind(1)),
+		Args:    cobra.MatchAll(cobra.ExactArgs(3), arg0isAttestationVariant(), isValidKind(1)),
 		PreRunE: envCheck,
 		RunE:    runUpload,
 	}
@@ -120,24 +120,20 @@ func uploadReport(
 		latestVersion = latestVersionInAPI.SEVSNPVersion
 
 		log.Info(fmt.Sprintf("Reading SNP report from file: %s", cfg.path))
-		var report verify.Report
-		if err := fs.ReadJSON(cfg.path, &report); err != nil {
-			return fmt.Errorf("reading snp report: %w", err)
+		newVersion, err = readSNPReport(cfg.path, fs)
+		if err != nil {
+			return err
 		}
-
-		newVersion = convertTCBVersionToSNPVersion(report.SNPReport.LaunchTCB)
 		log.Info(fmt.Sprintf("Input SNP report: %+v", newVersion))
 
 	case variant.AzureTDX{}:
 		latestVersion = latestVersionInAPI.TDXVersion
 
 		log.Info(fmt.Sprintf("Reading TDX report from file: %s", cfg.path))
-		var report *tdx.QuoteV4
-		if err := fs.ReadJSON(cfg.path, &report); err != nil {
-			return fmt.Errorf("reading tdx report: %w", err)
+		newVersion, err = readTDXReport(cfg.path, fs)
+		if err != nil {
+			return err
 		}
-
-		newVersion = convertQuoteToTDXVersion(report)
 		log.Info(fmt.Sprintf("Input TDX report: %+v", newVersion))
 
 	default:
