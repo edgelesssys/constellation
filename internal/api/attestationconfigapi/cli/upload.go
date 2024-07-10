@@ -29,7 +29,7 @@ import (
 
 func newUploadCmd() *cobra.Command {
 	uploadCmd := &cobra.Command{
-		Use:   "upload {aws-sev-snp|azure-sev-snp|azure-tdx|gcp-sev-snp} {attestation-report|guest-firmware} <path>",
+		Use:   "upload VARIANT KIND FILE",
 		Short: "Upload an object to the attestationconfig API",
 
 		Long: fmt.Sprintf("Upload a new object to the attestationconfig API. For snp-reports the new object is added to a cache folder first.\n"+

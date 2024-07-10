@@ -33,7 +33,7 @@ func arg0isAttestationVariant() cobra.PositionalArgs {
 func isValidKind(arg int) cobra.PositionalArgs {
 	return func(_ *cobra.Command, args []string) error {
 		if kind := kindFromString(args[arg]); kind == unknown {
-			return fmt.Errorf("argument %s isn't a valid kind", args[arg])
+			return fmt.Errorf("argument %s isn't a valid kind: must be one of [%q, %q]", args[arg], attestationReport, guestFirmware)
 		}
 		return nil
 	}

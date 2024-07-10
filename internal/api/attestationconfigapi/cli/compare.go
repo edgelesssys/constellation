@@ -21,9 +21,9 @@ import (
 
 func newCompareCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "compare {aws-sev-snp|azure-sev-snp|azure-tdx|gcp-sev-snp} [FILE] [FILE] ...",
-		Short:   "Compare two or more attestation reports and return the lowest version",
-		Long:    "Compare two or more attestation reports and return the lowest version.",
+		Use:     "compare VARIANT FILE FILE [FILE...]",
+		Short:   "Returns the minimum version of all given attestation reports.",
+		Long:    "Compare two or more attestation reports and return the report with the minimum version of all given attestation reports.",
 		Example: "cli compare azure-sev-snp report1.json report2.json",
 		Args:    cobra.MatchAll(cobra.MinimumNArgs(3), arg0isAttestationVariant()),
 		RunE:    runCompare,

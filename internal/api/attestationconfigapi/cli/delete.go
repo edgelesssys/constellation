@@ -26,7 +26,7 @@ import (
 // newDeleteCmd creates the delete command.
 func newDeleteCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "delete {aws-sev-snp|azure-sev-snp|azure-tdx|gcp-sev-snp} {attestation-report|guest-firmware} <version>",
+		Use:     "delete VARIANT KIND <version>",
 		Short:   "Delete an object from the attestationconfig API",
 		Long:    "Delete a specific object version from the config api. <version> is the name of the object to delete (without .json suffix)",
 		Example: "COSIGN_PASSWORD=$CPW COSIGN_PRIVATE_KEY=$CKEY cli delete azure-sev-snp attestation-report 1.0.0",
