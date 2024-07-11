@@ -51,7 +51,7 @@ Encrypting your K8s is good for:
 
 * High availability with multi-master architecture and stacked etcd topology
 * Dynamic cluster autoscaling with verification and secure bootstrapping of new nodes
-* Competitive performance ([see K-Bench comparison with AKS and GKE][performance])
+* Competitive [performance]
 
 ### 🧩 Easy to use and integrate
 
