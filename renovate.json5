@@ -71,6 +71,7 @@
         "pinDigest",
         "rollback",
       ],
+      "excludeDepNames": ["stackit"],
     },
     {
       "matchManagers": ["bazelisk", "bazel", "bazel-module"],
