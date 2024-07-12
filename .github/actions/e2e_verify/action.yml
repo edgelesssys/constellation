@@ -96,7 +96,14 @@ runs:
       run: |
         reports=attestation-report-*.json
 
-        report=$(bazel run //internal/api/attestationconfigapi/cli -- compare ${{ inputs.attestationVariant }} ${reports})
+        # bazel run changes the working directory
+        # convert the relative paths to absolute paths to avoid issues
+        absolute_reports=""
+        for report in ${reports}; do
+          absolute_reports="${absolute_reports} $(realpath "${report}")"
+        done
+
+        report=$(bazel run //internal/api/attestationconfigapi/cli -- compare ${{ inputs.attestationVariant }} ${absolute_reports})
 
         path=$(realpath "${report}")
         cat "${path}"

@@ -66,13 +66,13 @@ func compareVersions(attestationVariant variant.Variant, files []string, fs file
 	lowestVersion := files[0]
 	lowestReport, err := readReport(files[0], fs)
 	if err != nil {
-		return "", fmt.Errorf("reading tdx report: %w", err)
+		return "", fmt.Errorf("reading report: %w", err)
 	}
 
 	for _, file := range files[1:] {
 		report, err := readReport(file, fs)
 		if err != nil {
-			return "", fmt.Errorf("reading tdx report: %w", err)
+			return "", fmt.Errorf("reading report: %w", err)
 		}
 
 		if client.IsInputNewerThanOtherVersion(attestationVariant, lowestReport, report) {
