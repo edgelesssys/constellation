@@ -86,7 +86,6 @@ func extraCiliumValues(provider cloudprovider.Provider, conformanceMode bool, ou
 	// Since there should always be workarounds, we only support this mode to
 	// pass the K8s conformance tests. It is not supported to switch to or from
 	// this mode after Constellation has been initialized.
-	// This only works for the K8s conformance tests up to K8s 1.28.
 	if conformanceMode {
 		extraVals["kubeProxyReplacementHealthzBindAddr"] = ""
 		extraVals["kubeProxyReplacement"] = "false"
@@ -99,6 +98,9 @@ func extraCiliumValues(provider cloudprovider.Provider, conformanceMode bool, ou
 		}
 		extraVals["bpf"] = map[string]any{
 			"masquerade": false,
+		}
+		extraVals["k8s"] = map[string]any{
+			"serviceProxyName": "cilium",
 		}
 	}
 
