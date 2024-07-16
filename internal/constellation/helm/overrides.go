@@ -243,7 +243,7 @@ func getCCMConfig(azureState state.Azure, serviceAccURI string) ([]byte, error) 
 		ResourceGroup:               azureState.ResourceGroup,
 		LoadBalancerSku:             "standard",
 		SecurityGroupName:           azureState.NetworkSecurityGroupName,
-		LoadBalancerName:            azureState.LoadBalancerName,
+		LoadBalancerName:            "kubernetes-lb",
 		UseInstanceMetadata:         true,
 		VMType:                      "vmss",
 		Location:                    creds.Location,

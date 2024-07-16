@@ -37,7 +37,6 @@ locals {
     { name = "kubernetes", port = "6443", health_check_protocol = "Https", path = "/readyz", priority = 100 },
     { name = "bootstrapper", port = "9000", health_check_protocol = "Tcp", path = null, priority = 101 },
     { name = "verify", port = "30081", health_check_protocol = "Tcp", path = null, priority = 102 },
-    { name = "konnectivity", port = "8132", health_check_protocol = "Tcp", path = null, priority = 103 },
     { name = "recovery", port = "9999", health_check_protocol = "Tcp", path = null, priority = 104 },
     { name = "join", port = "30090", health_check_protocol = "Tcp", path = null, priority = 105 },
     var.debug ? [{ name = "debugd", port = "4000", health_check_protocol = "Tcp", path = null, priority = 106 }] : [],
@@ -223,10 +222,13 @@ resource "azurerm_network_security_group" "security_group" {
   tags                = local.tags
 
   dynamic "security_rule" {
-    for_each = concat(
-      local.ports,
-      [{ name = "nodeports", port = local.ports_node_range, priority = 200 }]
-    )
+    # we keep this rule for one last release since the azurerm provider does not 
+    # support moving security rules that are inlined (like this) to the external resource one.
+    # Even worse, just defining the azurerm_network_security_group without the 
+    # "security_rule" block will NOT remove all the rules but do nothing.
+    # TODO(@3u13r): remove the "security_rule" block in the next release after this code has landed.
+    # So either after 2.19 or after 2.18.X if cherry-picked release.
+    for_each = [{ name = "konnectivity", priority = 1000, port = 8132 }]
     content {
       name                       = security_rule.value.name
       priority                   = security_rule.value.priority
@@ -239,6 +241,28 @@ resource "azurerm_network_security_group" "security_group" {
       destination_address_prefix = "*"
     }
   }
+}
+
+resource "azurerm_network_security_rule" "nsg_rule" {
+  for_each = {
+    for o in concat(
+      local.ports,
+      [{ name = "nodeports", port = local.ports_node_range, priority = 200 }]
+    )
+    : o.name => o
+  }
+
+  name                        = each.value.name
+  priority                    = each.value.priority
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_range      = each.value.port
+  source_address_prefix       = "*"
+  destination_address_prefix  = "*"
+  resource_group_name         = var.resource_group
+  network_security_group_name = azurerm_network_security_group.security_group.name
 }
 
 module "scale_set_group" {
