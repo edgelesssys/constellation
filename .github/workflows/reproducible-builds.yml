@@ -57,13 +57,13 @@ jobs:
         run: shasum -a 256 "${binary}" | tee "${binary}.sha256"
 
       - name: Upload binary artifact
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
         with:
           name: "binaries-${{ matrix.target }}-${{ matrix.runner }}"
           path: "${{ env.binary }}"
 
       - name: Upload hash artifact
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
         with:
           name: "sha256sums-${{ matrix.target }}-${{ matrix.runner }}"
           path: "${{ env.binary }}.sha256"
@@ -110,13 +110,13 @@ jobs:
         run: shasum -a 256 "${binary}" | tee "${binary}.sha256"
 
       - name: Upload binary artifact
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
         with:
           name: "osimages-${{ matrix.target }}-${{ matrix.runner }}"
           path: "${{ env.binary }}"
 
       - name: Upload hash artifact
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
         with:
           name: "sha256sums-${{ matrix.target }}-${{ matrix.runner }}"
           path: "${{ env.binary }}.sha256"
@@ -139,7 +139,7 @@ jobs:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
       - name: Download binaries
-        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           pattern: "binaries-${{ matrix.target }}-*"
           merge-multiple: true
@@ -173,7 +173,7 @@ jobs:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
       - name: Download os images
-        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           pattern: "osimages-${{ matrix.target }}-*"
           merge-multiple: true

@@ -92,7 +92,7 @@ jobs:
           cosignPassword: ${{ inputs.key == 'release' && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
 
       - name: Upload CLI as artifact (unix)
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
         if : ${{ matrix.os != 'windows' }}
         with:
           name: constellation-${{ matrix.os }}-${{ matrix.arch }}
@@ -101,7 +101,7 @@ jobs:
             build/constellation-${{ matrix.os }}-${{ matrix.arch }}.sig
 
       - name: Upload CLI as artifact (windows)
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
         if : ${{ matrix.os == 'windows' }}
         with:
           name: constellation-${{ matrix.os }}-${{ matrix.arch }}
@@ -149,7 +149,7 @@ jobs:
           targetArch: ${{ matrix.arch }}
 
       - name: Upload Terraform Provider Binary as artifact (unix)
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
         if : ${{ matrix.os != 'windows' }}
         with:
           name: terraform-provider-constellation-${{ matrix.os }}-${{ matrix.arch }}
@@ -157,7 +157,7 @@ jobs:
             build/terraform-provider-constellation-${{ matrix.os }}-${{ matrix.arch }}
 
       - name: Upload Terraform Provider Binary as artifact (windows)
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
         if : ${{ matrix.os == 'windows' }}
         with:
           name: terraform-provider-constellation-${{ matrix.os }}-${{ matrix.arch }}
@@ -227,7 +227,7 @@ jobs:
         uses: ./.github/actions/download_release_binaries
 
       - name: Download CLI SBOM
-        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           name: constellation.spdx.sbom
 
@@ -296,13 +296,13 @@ jobs:
           COSIGN_PASSWORD: ${{ inputs.key == 'release' && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
 
       - name: Upload Constellation CLI SBOM
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
         with:
           name: constellation.spdx.sbom
           path: constellation.spdx.sbom
 
       - name: Upload Constellation CLI SBOM's signature
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
         with:
           name: constellation.spdx.sbom.sig
           path: constellation.spdx.sbom.sig
@@ -340,12 +340,12 @@ jobs:
         uses: ./.github/actions/download_release_binaries
 
       - name: Download CLI SBOM
-        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           name: constellation.spdx.sbom
 
       - name: Download provenance
-        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           name: ${{ needs.provenance.outputs.provenance-name }}
 
@@ -418,17 +418,17 @@ jobs:
         uses: ./.github/actions/download_release_binaries
 
       - name: Download CLI SBOM
-        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           name: constellation.spdx.sbom
 
       - name: Download Constellation CLI SBOM's signature
-        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           name: constellation.spdx.sbom.sig
 
       - name: Download Constellation provenance
-        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           name: ${{ needs.provenance.outputs.provenance-name }}
 
@@ -472,7 +472,7 @@ jobs:
       - name: Create release with artifacts
         id: create-release
         # GitHub endorsed release project. See: https://github.com/actions/create-release
-        uses: softprops/action-gh-release@a74c6b72af54cfa997e81df42d94703d6313a2d0 # v2.0.6
+        uses: softprops/action-gh-release@fb2d03176f42a1f0dd433ca263f314051d3edd44 # v2.0.7
         with:
           draft: true
           generate_release_notes: true
@@ -487,7 +487,7 @@ jobs:
             terraform-module.zip
 
       - name: Create Terraform provider release with artifcats
-        uses: softprops/action-gh-release@a74c6b72af54cfa997e81df42d94703d6313a2d0 # v2.0.6
+        uses: softprops/action-gh-release@fb2d03176f42a1f0dd433ca263f314051d3edd44 # v2.0.7
         with:
           draft: true
           generate_release_notes: false
