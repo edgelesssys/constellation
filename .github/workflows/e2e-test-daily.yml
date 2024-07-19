@@ -49,12 +49,6 @@ jobs:
         attestationVariant: ["gcp-sev-es", "gcp-sev-snp", "azure-sev-snp", "azure-tdx", "aws-sev-snp"]
         refStream: ["ref/main/stream/debug/?", "ref/release/stream/stable/?"]
         test: ["sonobuoy quick"]
-        exclude:
-          # TODO(v2.18 msanft): Remove exclude rule for GCP SEV-SNP stable once images exist.
-          - kubernetesVersion: "1.28"
-            attestationVariant: "gcp-sev-snp"
-            refStream: "ref/release/stream/stable/?"
-            test: "sonobuoy quick"
     runs-on: ubuntu-22.04
     permissions:
       id-token: write

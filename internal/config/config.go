@@ -281,7 +281,7 @@ type AttestationConfig struct {
 	//   GCP SEV-ES attestation.
 	GCPSEVES *GCPSEVES `yaml:"gcpSEVES,omitempty" validate:"omitempty"`
 	// description: |
-	// 	 GCP SEV-SNP attestation.
+	//   GCP SEV-SNP attestation.
 	GCPSEVSNP *GCPSEVSNP `yaml:"gcpSEVSNP,omitempty" validate:"omitempty"`
 	// description: |
 	//   QEMU tdx attestation.

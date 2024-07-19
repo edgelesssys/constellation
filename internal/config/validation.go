@@ -250,7 +250,7 @@ func translateNoAttestationError(ut ut.Translator, fe validator.FieldError) stri
 }
 
 func registerNoAttestationError(ut ut.Translator) error {
-	return ut.Add("no_attestation", "{0}: No attestation has been defined (requires either awsSEVSNP, awsNitroTPM, azureSEVSNP, azureTDX, azureTrustedLaunch, gcpSEVES, or qemuVTPM)", true)
+	return ut.Add("no_attestation", "{0}: No attestation has been defined (requires either awsSEVSNP, awsNitroTPM, azureSEVSNP, azureTDX, azureTrustedLaunch, gcpSEVES, gcpSEVSNP, or qemuVTPM)", true)
 }
 
 func translateNoDefaultControlPlaneGroupError(ut ut.Translator, fe validator.FieldError) string {

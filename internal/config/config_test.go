@@ -466,7 +466,7 @@ func TestValidate(t *testing.T) {
 				gcp.ServiceAccountKeyPath = "test-key-path"
 				cnf.Provider = ProviderConfig{}
 				cnf.Provider.GCP = gcp
-				cnf.Attestation.GCPSEVES.Measurements = measurements.M{
+				cnf.Attestation.GCPSEVSNP.Measurements = measurements.M{
 					0: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength),
 				}
 				cnf.NodeGroups = map[string]NodeGroup{
@@ -624,11 +624,11 @@ func TestConfig_UpdateMeasurements(t *testing.T) {
 	{ // GCP
 		conf := Default()
 		conf.RemoveProviderAndAttestationExcept(cloudprovider.GCP)
-		for k := range conf.Attestation.GCPSEVES.Measurements {
-			delete(conf.Attestation.GCPSEVES.Measurements, k)
+		for k := range conf.Attestation.GCPSEVSNP.Measurements {
+			delete(conf.Attestation.GCPSEVSNP.Measurements, k)
 		}
 		conf.UpdateMeasurements(newMeasurements)
-		assert.Equal(newMeasurements, conf.Attestation.GCPSEVES.Measurements)
+		assert.Equal(newMeasurements, conf.Attestation.GCPSEVSNP.Measurements)
 	}
 	{ // QEMU
 		conf := Default()

@@ -17,7 +17,7 @@ locals {
   kubernetes_version   = "vX.Y.Z"
   microservice_version = "vX.Y.Z"
   csp                  = "gcp"
-  attestation_variant  = "gcp-sev-es"
+  attestation_variant  = "gcp-sev-snp"
   region               = "europe-west3"
   zone                 = "europe-west3-b"
   project_id           = "constellation-331613"
