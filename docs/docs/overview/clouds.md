@@ -25,29 +25,28 @@ The following table summarizes the state of features for different infrastructur
 ## Microsoft Azure
 
 With its [CVM offering](https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview), Azure provides the best foundations for Constellation.
-Regarding (3), Azure provides direct access to remote-attestation statements.
+Regarding (3), Azure provides direct access to attestation statements.
 The firmware runs in an isolated domain inside the CVM and exposes a vTPM (5), but it's closed source (4).
 On SEV-SNP, Azure uses VM Privilege Level (VMPL) isolation for the separation of firmware and the rest of the VM; on TDX, they use TD partitioning.
 This firmware is signed by Azure.
-The signature is reflected in the remote-attestation statements of CVMs.
+The signature is reflected in the attestation statements of CVMs.
 Thus, the Azure closed-source firmware becomes part of Constellation's trusted computing base (TCB).
 
 ## Google Cloud Platform (GCP)
 
-The [CVMs Generally Available in GCP](https://cloud.google.com/confidential-computing/confidential-vm/docs/confidential-vm-overview#amd_sev) are based on AMD SEV but don't have SNP features enabled.
-CVMs with [SEV-SNP enabled are in public preview](https://cloud.google.com/confidential-computing/confidential-vm/docs/confidential-vm-overview#amd_sev-snp). Regarding (3), with their SEV-SNP offering Google provides direct access to remote-attestation statements.
+The [CVMs Generally Available in GCP](https://cloud.google.com/confidential-computing/confidential-vm/docs/confidential-vm-overview#technologies) are based on AMD SEV-ES or SEV-SNP.
+Regarding (3), with their SEV-SNP offering Google provides direct access to attestation statements.
 However, regarding (5), attestation is partially based on the [Shielded VM vTPM](https://cloud.google.com/compute/shielded-vm/docs/shielded-vm#vtpm) for [measured boot](../architecture/attestation.md#measured-boot), which is a vTPM managed by Google's hypervisor.
 Hence, the hypervisor is currently part of Constellation's TCB.
 Regarding (4), the CVMs still include closed-source firmware.
 
-In the past, Intel and Google have [collaborated](https://cloud.google.com/blog/products/identity-security/rsa-google-intel-confidential-computing-more-secure) to enhance the security of TDX.
-Recently, Google has announced a [private preview for TDX](https://cloud.google.com/blog/products/identity-security/confidential-vms-on-intel-cpus-your-datas-new-intelligent-defense?hl=en).
-With TDX on Google, Constellation has a similar TCB and attestation flow as with the current SEV-SNP offering.
+[TDX on Google](https://cloud.google.com/blog/products/identity-security/confidential-vms-on-intel-cpus-your-datas-new-intelligent-defense) is in public preview.
+With it, Constellation would have a similar TCB and attestation flow as with the current SEV-SNP offering.
 
 ## Amazon Web Services (AWS)
 
 Amazon EC2 [supports AMD SEV-SNP](https://aws.amazon.com/de/about-aws/whats-new/2023/04/amazon-ec2-amd-sev-snp/).
-Regarding (3), AWS provides direct access to remote-attestation statements.
+Regarding (3), AWS provides direct access to attestation statements.
 However, regarding (5), attestation is partially based on the [NitroTPM](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nitrotpm.html) for [measured boot](../architecture/attestation.md#measured-boot), which is a vTPM managed by the Nitro hypervisor.
 Hence, the hypervisor is currently part of Constellation's TCB.
 Regarding (4), the [firmware is open source](https://github.com/aws/uefi) and can be reproducibly built.

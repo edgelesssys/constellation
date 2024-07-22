@@ -110,8 +110,8 @@ Required:
   * `aws-nitro-tpm`
   * `azure-sev-snp`
   * `azure-tdx`
-  * `gcp-sev-es`
   * `gcp-sev-snp`
+  * `gcp-sev-es`
   * `qemu-vtpm`
 
 Optional:
