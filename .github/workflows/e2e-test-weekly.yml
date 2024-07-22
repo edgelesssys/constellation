@@ -413,7 +413,7 @@ jobs:
       max-parallel: 1
       matrix:
         fromVersion: ["v2.17.0"]
-        attestationVariant: ["gcp-sev-es", "azure-sev-snp", "azure-tdx", "aws-sev-snp"]
+        attestationVariant: ["gcp-sev-snp", "azure-sev-snp", "azure-tdx", "aws-sev-snp"]
     name: Run upgrade tests
     secrets: inherit
     permissions:
@@ -491,7 +491,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        attestationVariant: ["gcp-sev-es", "azure-sev-snp", "azure-tdx", "aws-sev-snp"]
+        attestationVariant: ["gcp-sev-snp", "azure-sev-snp", "azure-tdx", "aws-sev-snp"]
     permissions:
       id-token: write
       contents: read
