@@ -59,6 +59,13 @@ locals {
   cloudsyaml_path       = length(var.openstack_clouds_yaml_path) > 0 ? var.openstack_clouds_yaml_path : "~/.config/openstack/clouds.yaml"
   cloudsyaml            = yamldecode(file(pathexpand(local.cloudsyaml_path)))
   cloudyaml             = local.cloudsyaml.clouds[var.cloud]
+  revision              = 1
+}
+
+# A way to force replacement of resources if the provider does not want to replace them
+# see: https://developer.hashicorp.com/terraform/language/resources/terraform-data#example-usage-data-for-replace_triggered_by
+resource "terraform_data" "replacement" {
+  input = local.revision
 }
 
 resource "random_id" "uid" {
