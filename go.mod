@@ -132,7 +132,7 @@ require (
 	k8s.io/client-go v0.30.2
 	k8s.io/cluster-bootstrap v0.30.2
 	k8s.io/kubelet v0.30.2
-	k8s.io/kubernetes v1.30.2
+	k8s.io/kubernetes v1.30.3
 	k8s.io/mount-utils v0.30.2
 	k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0
 	libvirt.org/go/libvirt v1.10003.0
