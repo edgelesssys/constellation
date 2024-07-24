@@ -26,7 +26,7 @@ on:
           - "macos-12"
         default: "ubuntu-22.04"
       test:
-        description: "The test to run."
+        description: "The test to run. The conformance test is only supported for clusterCreation=cli."
         type: choice
         options:
           - "sonobuoy quick"
@@ -83,7 +83,7 @@ on:
         type: string
         required: true
       test:
-        description: "The test to run."
+        description: "The test to run. The conformance test is only supported for clusterCreation=cli."
         type: string
         required: true
       kubernetesVersion:
