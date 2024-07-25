@@ -243,27 +243,27 @@ jobs:
 
           # perf-bench test on latest k8s version
           - test: "perf-bench"
-            refStream: "ref/main/stream/debug/?"
+            refStream: "ref/main/stream/nightly/?"
             attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.30"
             clusterCreation: "cli"
           - test: "perf-bench"
-            refStream: "ref/main/stream/debug/?"
+            refStream: "ref/main/stream/nightly/?"
             attestationVariant: "gcp-sev-snp"
             kubernetes-version: "v1.30"
             clusterCreation: "cli"
           - test: "perf-bench"
-            refStream: "ref/main/stream/debug/?"
+            refStream: "ref/main/stream/nightly/?"
             attestationVariant: "azure-sev-snp"
             kubernetes-version: "v1.30"
             clusterCreation: "cli"
           - test: "perf-bench"
-            refStream: "ref/main/stream/debug/?"
+            refStream: "ref/main/stream/nightly/?"
             attestationVariant: "azure-tdx"
             kubernetes-version: "v1.30"
             clusterCreation: "cli"
           - test: "perf-bench"
-            refStream: "ref/main/stream/debug/?"
+            refStream: "ref/main/stream/nightly/?"
             attestationVariant: "aws-sev-snp"
             kubernetes-version: "v1.30"
             clusterCreation: "cli"
@@ -338,7 +338,7 @@ jobs:
           controlNodesCount: "3"
           cloudProvider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
           attestationVariant: ${{ matrix.attestationVariant }}
-          osImage: ${{ matrix.refStream == 'ref/release/stream/stable/?' && needs.find-latest-image.outputs.image-release-stable || needs.find-latest-image.outputs.image-main-debug }}
+          osImage: ${{ matrix.refStream == 'ref/release/stream/stable/?' && needs.find-latest-image.outputs.image-release-stable || matrix.refStream == 'ref/main/stream/nightly/?' && needs.find-latest-image.outputs.image-main-nightly || needs.find-latest-image.outputs.image-main-debug }}
           isDebugImage: ${{ matrix.refStream == 'ref/main/stream/debug/?' }}
           cliVersion: ${{ matrix.refStream == 'ref/release/stream/stable/?' && needs.find-latest-image.outputs.image-release-stable || '' }}
           kubernetesVersion: ${{ matrix.kubernetes-version }}
