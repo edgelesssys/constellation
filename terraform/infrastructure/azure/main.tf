@@ -33,7 +33,6 @@ locals {
     { name = "kubernetes", port = "6443", health_check_protocol = "Https", path = "/readyz", priority = 100 },
     { name = "bootstrapper", port = "9000", health_check_protocol = "Tcp", path = null, priority = 101 },
     { name = "verify", port = "30081", health_check_protocol = "Tcp", path = null, priority = 102 },
-    { name = "konnectivity", port = "8132", health_check_protocol = "Tcp", path = null, priority = 103 },
     { name = "recovery", port = "9999", health_check_protocol = "Tcp", path = null, priority = 104 },
     { name = "join", port = "30090", health_check_protocol = "Tcp", path = null, priority = 105 },
     var.debug ? [{ name = "debugd", port = "4000", health_check_protocol = "Tcp", path = null, priority = 106 }] : [],
@@ -49,6 +48,13 @@ locals {
 
   in_cluster_endpoint     = var.internal_load_balancer ? azurerm_lb.loadbalancer.frontend_ip_configuration[0].private_ip_address : azurerm_public_ip.loadbalancer_ip[0].ip_address
   out_of_cluster_endpoint = var.debug && var.internal_load_balancer ? module.jump_host[0].ip : local.in_cluster_endpoint
+  revision                = 1
+}
+
+# A way to force replacement of resources if the provider does not want to replace them
+# see: https://developer.hashicorp.com/terraform/language/resources/terraform-data#example-usage-data-for-replace_triggered_by
+resource "terraform_data" "replacement" {
+  input = local.revision
 }
 
 resource "random_id" "uid" {
@@ -214,10 +220,13 @@ resource "azurerm_network_security_group" "security_group" {
   tags                = local.tags
 
   dynamic "security_rule" {
-    for_each = concat(
-      local.ports,
-      [{ name = "nodeports", port = local.ports_node_range, priority = 200 }]
-    )
+    # we keep this rule for one last release since the azurerm provider does not 
+    # support moving security rules that are inlined (like this) to the external resource one.
+    # Even worse, just defining the azurerm_network_security_group without the 
+    # "security_rule" block will NOT remove all the rules but do nothing.
+    # TODO(@3u13r): remove the "security_rule" block in the next release after this code has landed.
+    # So either after 2.18 or after 2.17.X if cerry-picked release.
+    for_each = [{ name = "konnectivity", priority = 1000, port = 8132 }]
     content {
       name                       = security_rule.value.name
       priority                   = security_rule.value.priority
@@ -230,6 +239,28 @@ resource "azurerm_network_security_group" "security_group" {
       destination_address_prefix = "*"
     }
   }
+}
+
+resource "azurerm_network_security_rule" "nsg_rule" {
+  for_each = {
+    for o in concat(
+      local.ports,
+      [{ name = "nodeports", port = local.ports_node_range, priority = 200 }]
+    )
+    : o.name => o
+  }
+
+  name                        = each.value.name
+  priority                    = each.value.priority
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_range      = each.value.port
+  source_address_prefix       = "*"
+  destination_address_prefix  = "*"
+  resource_group_name         = var.resource_group
+  network_security_group_name = azurerm_network_security_group.security_group.name
 }
 
 module "scale_set_group" {
@@ -257,14 +288,8 @@ module "scale_set_group" {
   image_id                  = var.image_id
   network_security_group_id = azurerm_network_security_group.security_group.id
   subnet_id                 = azurerm_subnet.node_subnet.id
-  backend_address_pool_ids = each.value.role == "control-plane" ? [
-    azurerm_lb_backend_address_pool.all.id,
-    module.loadbalancer_backend_control_plane.backendpool_id
-    ] : [
-    azurerm_lb_backend_address_pool.all.id,
-    module.loadbalancer_backend_worker.backendpool_id
-  ]
-  marketplace_image = var.marketplace_image
+  backend_address_pool_ids  = each.value.role == "control-plane" ? [module.loadbalancer_backend_control_plane.backendpool_id] : []
+  marketplace_image         = var.marketplace_image
 }
 
 module "jump_host" {

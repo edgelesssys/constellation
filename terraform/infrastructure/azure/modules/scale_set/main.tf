@@ -119,6 +119,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
       instances,              # required. autoscaling modifies the instance count externally
       source_image_id,        # required. update procedure modifies the image id externally
       source_image_reference, # required. update procedure modifies the image reference externally
+      network_interface[0].ip_configuration[0].load_balancer_backend_address_pool_ids
     ]
   }
 }

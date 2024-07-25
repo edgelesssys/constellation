@@ -59,6 +59,11 @@ locals {
   cloudsyaml_path       = length(var.openstack_clouds_yaml_path) > 0 ? var.openstack_clouds_yaml_path : "~/.config/openstack/clouds.yaml"
   cloudsyaml            = yamldecode(file(pathexpand(local.cloudsyaml_path)))
   cloudyaml             = local.cloudsyaml.clouds[var.cloud]
+  revision              = 1
+}
+
+resource "terraform_data" "replacement" {
+  input = local.revision
 }
 
 resource "random_id" "uid" {
