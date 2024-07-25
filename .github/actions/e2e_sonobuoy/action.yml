@@ -48,6 +48,12 @@ runs:
         sonobuoy results *_sonobuoy_*.tar.gz
         sonobuoy results *_sonobuoy_*.tar.gz --mode detailed | jq 'select(.status!="passed")' | jq 'select(.status!="skipped")' || true
 
+    - name: Cleanup sonobuoy deployment
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+      shell: bash
+      run: sonobuoy delete --wait
+
     - name: Upload test results
       if: always() && !env.ACT
       uses: ./.github/actions/artifact_upload

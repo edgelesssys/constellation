@@ -192,6 +192,13 @@ runs:
       run: |
         echo "flag=--force" | tee -a $GITHUB_OUTPUT
 
+    - name: Set conformance flag
+      id: set-conformance-flag
+      if: inputs.test == 'sonobuoy conformance'
+      shell: bash
+      run: |
+        echo "flag=--conformance" | tee -a $GITHUB_OUTPUT
+
     - name: Constellation apply (Terraform)
       id: constellation-apply-terraform
       if: inputs.clusterCreation == 'terraform'
@@ -204,7 +211,7 @@ runs:
       if: inputs.clusterCreation != 'terraform'
       shell: bash
       run: |
-        constellation apply --skip-phases=infrastructure --debug ${{ steps.set-force-flag.outputs.flag }}
+        constellation apply --skip-phases=infrastructure --debug ${{ steps.set-force-flag.outputs.flag }} ${{ steps.set-conformance-flag.outputs.flag }}
 
     - name: Get kubeconfig
       id: get-kubeconfig

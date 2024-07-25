@@ -78,6 +78,13 @@ jobs:
             kubernetes-version: "v1.30"
             clusterCreation: "cli"
 
+          # Sonobuoy conformance test
+          - test: "sonobuoy conformance"
+            refStream: "ref/main/stream/debug/?"
+            attestationVariant: "gcp-sev-snp"
+            kubernetes-version: "v1.30"
+            clusterCreation: "cli"
+
           # Sonobuoy quick test on all but the latest k8s versions
           - test: "sonobuoy quick"
             refStream: "ref/main/stream/debug/?"
