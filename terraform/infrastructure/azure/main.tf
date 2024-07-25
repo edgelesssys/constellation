@@ -170,6 +170,8 @@ module "loadbalancer_backend_control_plane" {
   ports                          = local.ports
 }
 
+# We cannot delete them right away since we first need to to delete the dependency from the VMSS to this backend pool.
+# TODO(@3u13r): Remove this resource after v2.18.0 has been released.
 module "loadbalancer_backend_worker" {
   source = "./modules/load_balancer_backend"
 
@@ -179,10 +181,13 @@ module "loadbalancer_backend_worker" {
   ports                          = []
 }
 
+# We cannot delete them right away since we first need to to delete the dependency from the VMSS to this backend pool.
+# TODO(@3u13r): Remove this resource after v2.18.0 has been released.
 resource "azurerm_lb_backend_address_pool" "all" {
   loadbalancer_id = azurerm_lb.loadbalancer.id
   name            = "${var.name}-all"
 }
+
 
 resource "azurerm_virtual_network" "network" {
   name                = local.name
@@ -257,14 +262,14 @@ module "scale_set_group" {
   image_id                  = var.image_id
   network_security_group_id = azurerm_network_security_group.security_group.id
   subnet_id                 = azurerm_subnet.node_subnet.id
-  backend_address_pool_ids = each.value.role == "control-plane" ? [
-    azurerm_lb_backend_address_pool.all.id,
-    module.loadbalancer_backend_control_plane.backendpool_id
-    ] : [
-    azurerm_lb_backend_address_pool.all.id,
-    module.loadbalancer_backend_worker.backendpool_id
-  ]
-  marketplace_image = var.marketplace_image
+  backend_address_pool_ids  = each.value.role == "control-plane" ? [module.loadbalancer_backend_control_plane.backendpool_id] : []
+  marketplace_image         = var.marketplace_image
+
+  # We still depend on the backends, since we are not sure if the VMs inside the VMSS have been
+  # "updated" to the new version (note: this is the update in Azure which "refreshes" the NICs and not 
+  # our Constellation update). 
+  # TODO(@3u13r): Remove this dependency after v2.18.0 has been released.
+  depends_on = [module.loadbalancer_backend_worker, azurerm_lb_backend_address_pool.all]
 }
 
 module "jump_host" {
