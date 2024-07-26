@@ -159,9 +159,8 @@ jobs:
         id: fetch-reference
         shell: bash
         run: |
-          # TODO(msanft): Implement marketplace images for GCP SEV-SNP
           aws s3 cp s3://cdn-constellation-backend/constellation/v2/ref/-/stream/stable/${{ steps.fetch-version.outputs.output }}/image/info.json .
-          FULL_REF=$(yq e -r -oy '.list.[] | select(.attestationVariant == "gcp-sev-es") | .reference' info.json)
+          FULL_REF=$(yq e -r -oy '.list.[] | select(.attestationVariant == "gcp-sev-snp") | .reference' info.json)
           IMAGE_NAME=$(echo "${FULL_REF}" | cut -d / -f 5)
           echo "reference=$IMAGE_NAME" | tee -a "$GITHUB_OUTPUT"
 
