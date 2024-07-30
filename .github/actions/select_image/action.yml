@@ -3,15 +3,15 @@ description: Resolve string presets and shortpaths to shortpaths only
 
 inputs:
   osImage:
-    description: "Shortpath or main-debug or release-stable"
+    description: "Shortpath, main-debug, main-nightly, or release-stable"
     required: true
 
 outputs:
   osImage:
-    description: "Shortpath of for input string, original input if that was already a shortpath"
+    description: "Shortpath of input string, original input if that was already a shortpath"
     value: ${{ steps.set-output.outputs.osImage }}
   isDebugImage:
-    description: "Input represents a debug image or not"
+    description: "Input is a debug image or not"
     value: ${{ steps.set-output.outputs.isDebugImage }}
 
 runs:
@@ -27,7 +27,7 @@ runs:
       id: input-is-preset
       shell: bash
       run: |
-        if [[ "${{ inputs.osImage }}" == "ref/main/stream/debug/?" || "${{ inputs.osImage }}" == "ref/release/stream/stable/?" ]]; then
+        if [[ "${{ inputs.osImage }}" == "ref/main/stream/debug/?" || "${{ inputs.osImage }}" == "ref/main/stream/nightly/?" || "${{ inputs.osImage }}" == "ref/release/stream/stable/?" ]]; then
           echo "result=true" | tee -a "$GITHUB_OUTPUT"
         else
           echo "result=false" | tee -a "$GITHUB_OUTPUT"
