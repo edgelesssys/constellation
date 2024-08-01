@@ -87,7 +87,7 @@
         "!bazel_gazelle",
         "!rules_go",
         "!gazelle",
-      ]
+      ],
       "groupName": "bazel (plugins)",
     },
     {
@@ -98,7 +98,7 @@
         "!bazel_gazelle",
         "!rules_go",
         "!gazelle",
-      ]
+      ],
       "groupName": "bazel (modules)",
     },
     {
