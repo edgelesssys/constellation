@@ -27,7 +27,7 @@ go_library(
         "@com_github_azure_azure_sdk_for_go_sdk_azcore//runtime",
         "@com_github_azure_azure_sdk_for_go_sdk_azcore//to",
         "@com_github_azure_azure_sdk_for_go_sdk_azidentity//:azidentity",
-        "@com_github_azure_azure_sdk_for_go_sdk_resourcemanager_compute_armcompute_v5//:armcompute",
+        "@com_github_azure_azure_sdk_for_go_sdk_resourcemanager_compute_armcompute_v6//:armcompute",
         "@com_github_spf13_afero//:afero",
     ],
 )
@@ -53,7 +53,7 @@ go_test(
         "@com_github_azure_azure_sdk_for_go_sdk_azcore//:azcore",
         "@com_github_azure_azure_sdk_for_go_sdk_azcore//runtime",
         "@com_github_azure_azure_sdk_for_go_sdk_azcore//to",
-        "@com_github_azure_azure_sdk_for_go_sdk_resourcemanager_compute_armcompute_v5//:armcompute",
+        "@com_github_azure_azure_sdk_for_go_sdk_resourcemanager_compute_armcompute_v6//:armcompute",
         "@com_github_spf13_afero//:afero",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",

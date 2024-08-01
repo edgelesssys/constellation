@@ -20,7 +20,7 @@ go_library(
         "//internal/role",
         "@com_github_azure_azure_sdk_for_go_sdk_azcore//runtime",
         "@com_github_azure_azure_sdk_for_go_sdk_azidentity//:azidentity",
-        "@com_github_azure_azure_sdk_for_go_sdk_resourcemanager_compute_armcompute_v5//:armcompute",
+        "@com_github_azure_azure_sdk_for_go_sdk_resourcemanager_compute_armcompute_v6//:armcompute",
         "@com_github_azure_azure_sdk_for_go_sdk_resourcemanager_network_armnetwork_v5//:armnetwork",
     ] + select({
         "@io_bazel_rules_go//go/platform:android": [
@@ -48,7 +48,7 @@ go_test(
         "//internal/role",
         "@com_github_azure_azure_sdk_for_go_sdk_azcore//runtime",
         "@com_github_azure_azure_sdk_for_go_sdk_azcore//to",
-        "@com_github_azure_azure_sdk_for_go_sdk_resourcemanager_compute_armcompute_v5//:armcompute",
+        "@com_github_azure_azure_sdk_for_go_sdk_resourcemanager_compute_armcompute_v6//:armcompute",
         "@com_github_azure_azure_sdk_for_go_sdk_resourcemanager_network_armnetwork_v5//:armnetwork",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
