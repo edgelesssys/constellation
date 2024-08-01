@@ -21,7 +21,7 @@ go_library(
         "@com_github_aws_smithy_go//:smithy-go",
         "@com_github_azure_azure_sdk_for_go_sdk_azcore//runtime",
         "@com_github_azure_azure_sdk_for_go_sdk_azidentity//:azidentity",
-        "@com_github_azure_azure_sdk_for_go_sdk_resourcemanager_compute_armcompute_v5//:armcompute",
+        "@com_github_azure_azure_sdk_for_go_sdk_resourcemanager_compute_armcompute_v6//:armcompute",
         "@com_github_googleapis_gax_go_v2//:gax-go",
         "@com_github_spf13_cobra//:cobra",
         "@com_google_cloud_go_compute//apiv1",
