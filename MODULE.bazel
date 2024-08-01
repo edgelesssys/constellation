@@ -44,7 +44,7 @@ use_repo(
     "com_github_azure_azure_sdk_for_go_sdk_azcore",
     "com_github_azure_azure_sdk_for_go_sdk_azidentity",
     "com_github_azure_azure_sdk_for_go_sdk_resourcemanager_compute_armcompute_v6",
-    "com_github_azure_azure_sdk_for_go_sdk_resourcemanager_network_armnetwork_v5",
+    "com_github_azure_azure_sdk_for_go_sdk_resourcemanager_network_armnetwork_v6",
     "com_github_azure_azure_sdk_for_go_sdk_security_keyvault_azsecrets",
     "com_github_azure_azure_sdk_for_go_sdk_storage_azblob",
     "com_github_bazelbuild_buildtools",
