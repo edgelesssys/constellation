@@ -80,6 +80,28 @@
       "groupName": "bazel (core)",
     },
     {
+      "matchManagers": ["bazel"],
+      "matchDepNames": [
+        "!bazel",
+        "!io_bazel_rules_go",
+        "!bazel_gazelle",
+        "!rules_go",
+        "!gazelle",
+      ]
+      "groupName": "bazel (plugins)",
+    },
+    {
+      "matchManagers": ["bazel-module"],
+      "matchDepNames": [
+        "!bazel",
+        "!io_bazel_rules_go",
+        "!bazel_gazelle",
+        "!rules_go",
+        "!gazelle",
+      ]
+      "groupName": "bazel (modules)",
+    },
+    {
       "matchDatasources": ["golang-version"],
       "allowedVersions": "1.22",
     },
