@@ -224,9 +224,9 @@ def _golangci_lint_deps():
         build_file = "//bazel/toolchains:BUILD.golangci.bazel",
         urls = [
             "https://cdn.confidential.cloud/constellation/cas/sha256/2e7c1b2af70ecb7ce18da79a3951db7046dcb709566c018fb93c61e8733b2239",
-            "https://github.com/golangci/golangci-lint/releases/download/v1.58.1/golangci-lint-1.58.1-linux-amd64.tar.gz",
+            "https://github.com/golangci/golangci-lint/releases/download/v1.59.1/golangci-lint-1.59.1-linux-amd64.tar.gz",
         ],
-        strip_prefix = "golangci-lint-1.58.1-linux-amd64",
+        strip_prefix = "golangci-lint-1.59.1-linux-amd64",
         type = "tar.gz",
         sha256 = "2e7c1b2af70ecb7ce18da79a3951db7046dcb709566c018fb93c61e8733b2239",
     )
@@ -235,9 +235,9 @@ def _golangci_lint_deps():
         build_file = "//bazel/toolchains:BUILD.golangci.bazel",
         urls = [
             "https://cdn.confidential.cloud/constellation/cas/sha256/e78f55156ef7f8bd4a746aa695c6bd299dc0aa71b91ec066680d2c59e443708b",
-            "https://github.com/golangci/golangci-lint/releases/download/v1.58.1/golangci-lint-1.58.1-linux-arm64.tar.gz",
+            "https://github.com/golangci/golangci-lint/releases/download/v1.59.1/golangci-lint-1.59.1-linux-arm64.tar.gz",
         ],
-        strip_prefix = "golangci-lint-1.58.1-linux-arm64",
+        strip_prefix = "golangci-lint-1.59.1-linux-arm64",
         type = "tar.gz",
         sha256 = "e78f55156ef7f8bd4a746aa695c6bd299dc0aa71b91ec066680d2c59e443708b",
     )
@@ -246,9 +246,9 @@ def _golangci_lint_deps():
         build_file = "//bazel/toolchains:BUILD.golangci.bazel",
         urls = [
             "https://cdn.confidential.cloud/constellation/cas/sha256/79f587134955808e245aa78a734bc28f6e03fc42efb3e91d2a705930909fe0c0",
-            "https://github.com/golangci/golangci-lint/releases/download/v1.58.1/golangci-lint-1.58.1-darwin-amd64.tar.gz",
+            "https://github.com/golangci/golangci-lint/releases/download/v1.59.1/golangci-lint-1.59.1-darwin-amd64.tar.gz",
         ],
-        strip_prefix = "golangci-lint-1.58.1-darwin-amd64",
+        strip_prefix = "golangci-lint-1.59.1-darwin-amd64",
         type = "tar.gz",
         sha256 = "79f587134955808e245aa78a734bc28f6e03fc42efb3e91d2a705930909fe0c0",
     )
@@ -257,9 +257,9 @@ def _golangci_lint_deps():
         build_file = "//bazel/toolchains:BUILD.golangci.bazel",
         urls = [
             "https://cdn.confidential.cloud/constellation/cas/sha256/bd59615a2fdf8e8ff544ba79e15c53f81a538bd68cccf52f4802b65e0216199d",
-            "https://github.com/golangci/golangci-lint/releases/download/v1.58.1/golangci-lint-1.58.1-darwin-arm64.tar.gz",
+            "https://github.com/golangci/golangci-lint/releases/download/v1.59.1/golangci-lint-1.59.1-darwin-arm64.tar.gz",
         ],
-        strip_prefix = "golangci-lint-1.58.1-darwin-arm64",
+        strip_prefix = "golangci-lint-1.59.1-darwin-arm64",
         type = "tar.gz",
         sha256 = "bd59615a2fdf8e8ff544ba79e15c53f81a538bd68cccf52f4802b65e0216199d",
     )
