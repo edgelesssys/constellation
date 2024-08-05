@@ -7,7 +7,7 @@ require (
 	github.com/google/keep-sorted v0.4.0
 	github.com/katexochen/sh/v3 v3.8.0
 	golang.org/x/tools v0.23.0
-	golang.org/x/vuln v1.1.2
+	golang.org/x/vuln v1.1.3
 )
 
 require (
