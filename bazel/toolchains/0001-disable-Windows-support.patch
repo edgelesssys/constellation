@@ -1,0 +1,75 @@
+From d10473f4ac89c23dcd8ea02488b28a649f4a9735 Mon Sep 17 00:00:00 2001
+From: Markus Rudy <webmaster@burgerdev.de>
+Date: Tue, 6 Aug 2024 11:33:29 +0200
+Subject: [PATCH] disable Windows support
+
+It's broken and we don't need it, see
+https://github.com/bazel-contrib/rules_oci/issues/420.
+---
+ oci/private/image.bzl |  9 ---------
+ oci/private/util.bzl  | 29 +----------------------------
+ 2 files changed, 1 insertion(+), 37 deletions(-)
+
+diff --git a/oci/private/image.bzl b/oci/private/image.bzl
+index e8a6ca5..434947c 100644
+--- a/oci/private/image.bzl
++++ b/oci/private/image.bzl
+@@ -226,15 +226,6 @@ def _oci_image_impl(ctx):
+ 
+     action_env = {}
+ 
+-    # Windows: Don't convert arguments like --entrypoint=/some/bin to --entrypoint=C:/msys64/some/bin
+-    if ctx.target_platform_has_constraint(ctx.attr._windows_constraint[platform_common.ConstraintValueInfo]):
+-        # See https://www.msys2.org/wiki/Porting/:
+-        # > Setting MSYS2_ARG_CONV_EXCL=* prevents any path transformation.
+-        action_env["MSYS2_ARG_CONV_EXCL"] = "*"
+-
+-        # This one is for Windows Git MSys
+-        action_env["MSYS_NO_PATHCONV"] = "1"
+-
+     ctx.actions.run(
+         inputs = depset(inputs, transitive = transitive_inputs),
+         arguments = [args],
+diff --git a/oci/private/util.bzl b/oci/private/util.bzl
+index 7c2a2c2..479ca7d 100644
+--- a/oci/private/util.bzl
++++ b/oci/private/util.bzl
+@@ -141,34 +141,7 @@ def _maybe_wrap_launcher_for_windows(ctx, bash_launcher):
+     - make sure the bash_launcher is in the inputs to the action
+     - @bazel_tools//tools/sh:toolchain_type should appear in the rules toolchains
+     """
+-    if not ctx.target_platform_has_constraint(ctx.attr._windows_constraint[platform_common.ConstraintValueInfo]):
+-        return bash_launcher
+-
+-    win_launcher = ctx.actions.declare_file("wrap_%s.bat" % ctx.label.name)
+-    ctx.actions.write(
+-        output = win_launcher,
+-        content = r"""@echo off
+-SETLOCAL ENABLEEXTENSIONS
+-SETLOCAL ENABLEDELAYEDEXPANSION
+-for %%a in ("{bash_bin}") do set "bash_bin_dir=%%~dpa"
+-set PATH=%bash_bin_dir%;%PATH%
+-set "parent_dir=%~dp0"
+-set "parent_dir=!parent_dir:\=/!"
+-set args=%*
+-rem Escape \ and * in args before passing it with double quote
+-if defined args (
+-  set args=!args:\=\\\\!
+-  set args=!args:"=\"!
+-)
+-"{bash_bin}" -c "%parent_dir%{launcher} !args!"
+-""".format(
+-            bash_bin = ctx.toolchains["@bazel_tools//tools/sh:toolchain_type"].path,
+-            launcher = paths.relativize(bash_launcher.path, win_launcher.dirname),
+-        ),
+-        is_executable = True,
+-    )
+-
+-    return win_launcher
++    return bash_launcher
+ 
+ def _file_exists(rctx, path):
+     result = rctx.execute(["stat", path])
+-- 
+2.46.0
+

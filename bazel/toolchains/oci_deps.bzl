@@ -7,11 +7,13 @@ def oci_deps():
     # Remove this override once https://github.com/bazel-contrib/rules_oci/issues/420 is fixed.
     http_archive(
         name = "rules_oci",
-        strip_prefix = "rules_oci-c622bf79d269473d3d9bc33510e16cfd9a1142bc",
+        strip_prefix = "rules_oci-2.0.0-beta1",
         type = "tar.gz",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/dca0cfa2a8eb4ab79c231617964fc821f6d1a3bb9d996358975a5ceee5b8d25f",
-            "https://github.com/bazel-contrib/rules_oci/archive/c622bf79d269473d3d9bc33510e16cfd9a1142bc.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/f70f07f9d0d6c275d7ec7d3c7f236d9b552ba3205e8f37df9c1125031cf967cc",
+            "https://github.com/bazel-contrib/rules_oci/releases/download/v2.0.0-beta1/rules_oci-v2.0.0-beta1.tar.gz",
         ],
-        sha256 = "dca0cfa2a8eb4ab79c231617964fc821f6d1a3bb9d996358975a5ceee5b8d25f",
+        sha256 = "f70f07f9d0d6c275d7ec7d3c7f236d9b552ba3205e8f37df9c1125031cf967cc",
+        patches = ["//bazel/toolchains:0001-disable-Windows-support.patch"],
+        patch_args = ["-p1"],
     )
