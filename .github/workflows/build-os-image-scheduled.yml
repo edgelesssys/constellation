@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "0 21 * * 2" # At 21:00 on Tuesday.
-    - cron: "10 21 * * 2" # At 21:10 on Tuesday.
     - cron: "20 21 * * 2" # At 21:20 on Tuesday.
+    - cron: "40 21 * * 2" # At 21:40 on Tuesday.
     - cron: "0 21 * * 4" # At 21:00 on Thursday.
-    - cron: "10 21 * * 4" # At 21:10 on Thursday.
     - cron: "20 21 * * 4" # At 21:20 on Thursday.
+    - cron: "40 21 * * 4" # At 21:40 on Thursday.
 
 jobs:
   stream:
@@ -28,10 +28,10 @@ jobs:
             "0 21 * * 4" | "0 21 * * 2")
               echo "stream=debug" | tee -a "$GITHUB_OUTPUT"
               ;;
-            "10 21 * * 4" | "10 21 * * 2")
+            "20 21 * * 4" | "20 21 * * 2")
               echo "stream=console" | tee -a "$GITHUB_OUTPUT"
               ;;
-            "20 21 * * 4" | "20 21 * * 2")
+            "40 21 * * 4" | "40 21 * * 2")
               echo "stream=nightly" | tee -a "$GITHUB_OUTPUT"
               ;;
             *)
@@ -54,11 +54,8 @@ jobs:
 
   update-code:
     # On nightly stream only.
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      github.event.schedule == '20 21 * * 4' ||
-      github.event.schedule == '20 21 * * 2'
-    needs: build-image
+    if: needs.stream.outputs.stream == 'nightly'
+    needs: ["build-image", "stream"]
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
