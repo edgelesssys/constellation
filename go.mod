@@ -57,7 +57,7 @@ require (
 	github.com/bazelbuild/buildtools v0.0.0-20240804201302-37932ddd7230
 	github.com/bazelbuild/rules_go v0.49.0
 	github.com/coreos/go-systemd/v22 v22.5.0
-	github.com/docker/docker v26.1.5+incompatible
+	github.com/docker/docker v27.1.1+incompatible
 	github.com/edgelesssys/go-azguestattestation v0.0.0-20240513062303-05f8770a633d
 	github.com/edgelesssys/go-tdx-qpl v0.0.0-20240123150912-dcad3c41ec5f
 	github.com/foxboron/go-uefi v0.0.0-20240805124652-e2076f0e58ca
