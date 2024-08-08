@@ -90,6 +90,6 @@ type stubPager struct {
 	allPagesErr error
 }
 
-func (p *stubPager) AllPages() (pagination.Page, error) {
+func (p *stubPager) AllPages(_ context.Context) (pagination.Page, error) {
 	return p.page, p.allPagesErr
 }

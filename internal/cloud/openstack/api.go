@@ -34,5 +34,5 @@ type serversAPI interface {
 }
 
 type pagerAPI interface {
-	AllPages() (pagination.Page, error)
+	AllPages(context.Context) (pagination.Page, error)
 }

@@ -20,7 +20,7 @@ import (
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/subnets"
-	"github.com/gophercloud/utils/openstack/clientconfig"
+	"github.com/gophercloud/utils/v2/openstack/clientconfig"
 )
 
 const (
@@ -65,13 +65,13 @@ func New(ctx context.Context) (*MetadataClient, error) {
 		},
 	}
 
-	serversClient, err := clientconfig.NewServiceClient("compute", clientOpts)
+	serversClient, err := clientconfig.NewServiceClient(ctx, "compute", clientOpts)
 	if err != nil {
 		return nil, fmt.Errorf("creating compute client: %w", err)
 	}
 	serversClient.Microversion = microversion
 
-	networksClient, err := clientconfig.NewServiceClient("network", clientOpts)
+	networksClient, err := clientconfig.NewServiceClient(ctx, "network", clientOpts)
 	if err != nil {
 		return nil, fmt.Errorf("creating network client: %w", err)
 	}
@@ -122,12 +122,12 @@ func (c *MetadataClient) List(ctx context.Context) ([]metadata.InstanceMetadata,
 
 	uidTag := fmt.Sprintf("constellation-uid-%s", uid)
 
-	subnet, err := c.getSubnetCIDR(uidTag)
+	subnet, err := c.getSubnetCIDR(ctx, uidTag)
 	if err != nil {
 		return nil, err
 	}
 
-	srvs, err := c.getServers(uidTag)
+	srvs, err := c.getServers(ctx, uidTag)
 	if err != nil {
 		return nil, err
 	}
@@ -240,9 +240,9 @@ func (c *MetadataClient) GetLoadBalancerEndpoint(ctx context.Context) (host, por
 	return host, strconv.FormatInt(constants.KubernetesPort, 10), nil
 }
 
-func (c *MetadataClient) getSubnetCIDR(uidTag string) (netip.Prefix, error) {
+func (c *MetadataClient) getSubnetCIDR(ctx context.Context, uidTag string) (netip.Prefix, error) {
 	listNetworksOpts := networks.ListOpts{Tags: uidTag}
-	networksPage, err := c.api.ListNetworks(listNetworksOpts).AllPages()
+	networksPage, err := c.api.ListNetworks(listNetworksOpts).AllPages(ctx)
 	if err != nil {
 		return netip.Prefix{}, fmt.Errorf("listing networks: %w", err)
 	}
@@ -255,7 +255,7 @@ func (c *MetadataClient) getSubnetCIDR(uidTag string) (netip.Prefix, error) {
 	}
 
 	listSubnetsOpts := subnets.ListOpts{Tags: uidTag}
-	subnetsPage, err := c.api.ListSubnets(listSubnetsOpts).AllPages()
+	subnetsPage, err := c.api.ListSubnets(listSubnetsOpts).AllPages(ctx)
 	if err != nil {
 		return netip.Prefix{}, fmt.Errorf("listing subnets: %w", err)
 	}
@@ -285,9 +285,9 @@ func (c *MetadataClient) getSubnetCIDR(uidTag string) (netip.Prefix, error) {
 	return cidr, nil
 }
 
-func (c *MetadataClient) getServers(uidTag string) ([]servers.Server, error) {
+func (c *MetadataClient) getServers(ctx context.Context, uidTag string) ([]servers.Server, error) {
 	listServersOpts := servers.ListOpts{Tags: uidTag}
-	serversPage, err := c.api.ListServers(listServersOpts).AllPages()
+	serversPage, err := c.api.ListServers(listServersOpts).AllPages(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("listing servers: %w", err)
 	}
