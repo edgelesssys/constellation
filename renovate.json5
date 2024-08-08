@@ -185,6 +185,7 @@
       "ignoreUnstable": false,
       "groupName": "Constellation containers",
       "prPriority": 20,
+      "schedule": ["before 8am on thursday"],
     },
     {
       "matchDepNames": [
