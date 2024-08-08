@@ -182,7 +182,7 @@ def _tfsec_deps():
         build_file_content = """exports_files(["tfsec"], visibility = ["//visibility:public"])""",
         urls = [
             "https://cdn.confidential.cloud/constellation/cas/sha256/8cbd8d64cbd1f25b38f33fa04db602466dade79e99c99dc9da053b5962d34014",
-            "https://github.com/aquasecurity/tfsec/releases/download/v1.28.6/tfsec_1.28.6_linux_amd64.tar.gz",
+            "https://github.com/aquasecurity/tfsec/releases/download/v1.28.10/tfsec_1.28.10_linux_amd64.tar.gz",
         ],
         type = "tar.gz",
         sha256 = "8cbd8d64cbd1f25b38f33fa04db602466dade79e99c99dc9da053b5962d34014",
@@ -192,7 +192,7 @@ def _tfsec_deps():
         build_file_content = """exports_files(["tfsec"], visibility = ["//visibility:public"])""",
         urls = [
             "https://cdn.confidential.cloud/constellation/cas/sha256/4bc7b0f0592be4fa384cff52af5b1cdd2066ba7a06001bea98690340851c0bce",
-            "https://github.com/aquasecurity/tfsec/releases/download/v1.28.6/tfsec_1.28.6_linux_arm64.tar.gz",
+            "https://github.com/aquasecurity/tfsec/releases/download/v1.28.10/tfsec_1.28.10_linux_arm64.tar.gz",
         ],
         type = "tar.gz",
         sha256 = "4bc7b0f0592be4fa384cff52af5b1cdd2066ba7a06001bea98690340851c0bce",
@@ -202,7 +202,7 @@ def _tfsec_deps():
         build_file_content = """exports_files(["tfsec"], visibility = ["//visibility:public"])""",
         urls = [
             "https://cdn.confidential.cloud/constellation/cas/sha256/3b31e954819faa7d6151b999548cefb782f2f4dc64b355c8747e44d4b0b2faca",
-            "https://github.com/aquasecurity/tfsec/releases/download/v1.28.6/tfsec_1.28.6_darwin_amd64.tar.gz",
+            "https://github.com/aquasecurity/tfsec/releases/download/v1.28.10/tfsec_1.28.10_darwin_amd64.tar.gz",
         ],
         type = "tar.gz",
         sha256 = "3b31e954819faa7d6151b999548cefb782f2f4dc64b355c8747e44d4b0b2faca",
@@ -212,7 +212,7 @@ def _tfsec_deps():
         build_file_content = """exports_files(["tfsec"], visibility = ["//visibility:public"])""",
         urls = [
             "https://cdn.confidential.cloud/constellation/cas/sha256/aa132b7e0e69e16f1c9320257841751e52c42d9791b7f900de72cf0b06ffe74c",
-            "https://github.com/aquasecurity/tfsec/releases/download/v1.28.6/tfsec_1.28.6_darwin_arm64.tar.gz",
+            "https://github.com/aquasecurity/tfsec/releases/download/v1.28.10/tfsec_1.28.10_darwin_arm64.tar.gz",
         ],
         type = "tar.gz",
         sha256 = "aa132b7e0e69e16f1c9320257841751e52c42d9791b7f900de72cf0b06ffe74c",
