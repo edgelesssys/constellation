@@ -72,8 +72,6 @@
         "pinDigest",
         "rollback",
       ],
-      // stackit is excluded from the group so that we can ignore v0.24.1: https://github.com/stackitcloud/terraform-provider-stackit/issues/464.
-      "excludeDepNames": ["stackit"],
       "schedule": ["before 8am on wednesday"],
     },
     {
