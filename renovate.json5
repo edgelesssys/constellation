@@ -56,6 +56,7 @@
         "pinDigest",
         "rollback",
       ],
+      "schedule": ["before 8am on monday"],
     },
     {
       // Group update of Terraform dependencies.
@@ -71,8 +72,7 @@
         "pinDigest",
         "rollback",
       ],
-      // stackit is excluded from the group so that we can ignore v0.24.1: https://github.com/stackitcloud/terraform-provider-stackit/issues/464.
-      "excludeDepNames": ["stackit"],
+      "schedule": ["before 8am on wednesday"],
     },
     {
       "matchManagers": ["bazelisk", "bazel", "bazel-module"],
@@ -123,6 +123,7 @@
         "rollback",
         "bump",
       ],
+      "schedule": ["before 8am on tuesday"],
     },
     {
       "matchDepNames": ["kubernetes/kubernetes"],
@@ -184,6 +185,7 @@
       "ignoreUnstable": false,
       "groupName": "Constellation containers",
       "prPriority": 20,
+      "schedule": ["before 8am on thursday"],
     },
     {
       "matchDepNames": [
