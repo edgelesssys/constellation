@@ -53,6 +53,9 @@
           zstd # zstd
           xz # xz
 
+          # newuidmap, newgidmap
+          su
+
           # utils
           gnused # sed
           gnugrep # grep
