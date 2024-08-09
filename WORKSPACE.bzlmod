@@ -165,14 +165,15 @@ zig_toolchains()
 
 nixpkgs_cc_configure(
     name = "nixpkgs_cc_toolchain",
+    cc_std = "c++14",
     # TODO(malt3): Use clang once cc-wrapper path reset bug is fixed upstream.
     # attribute_path = "clang_11",
     repository = "@nixpkgs",
-    cc_std = "c++14",
 )
 
 nixpkgs_cc_configure(
     name = "nixpkgs_cc_aarch64_darwin_x86_64_linux",
+    cc_std = "c++14",
     cross_cpu = "k8",
     exec_constraints = [
         "@platforms//os:osx",
@@ -191,7 +192,6 @@ nixpkgs_cc_configure(
         "@platforms//os:linux",
         "@rules_nixpkgs_core//constraints:support_nix",
     ],
-    cc_std = "c++14",
 )
 
 register_toolchains(
