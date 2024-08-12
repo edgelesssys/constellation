@@ -4,6 +4,9 @@ Ensure you have Nix installed. This is a requirement for the following steps.
 Consult the [developer docs](/dev-docs/workflows/build-develop-deploy.md) for more info.
 At the very least, `nix` should be in your PATH.
 
+Building the image also requires `newuidmap` and `newgidmap` to be present in the PATH. On Debian and Ubuntu, these can be sourced through
+the `uidmap` package.
+
 ## Build
 
 You can build any image using Bazel.
