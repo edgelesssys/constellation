@@ -12,7 +12,7 @@ For Constellation, the ideal environment provides the following:
 
 (1) is a functional must-have. (2)--(5) are required for remote attestation that fully keeps the infrastructure/cloud out. Constellation can work without them or with approximations, but won't protect against certain privileged attackers anymore.
 
-The following table summarizes the state of features for different infrastructures as of June 2023.
+The following table summarizes the state of features for different infrastructures.
 
 | **Feature**                       | **Azure** | **GCP** | **AWS** |  **STACKIT** | **OpenStack (Yoga)** |
 |-----------------------------------|-----------|---------|---------|--------------|----------------------|
