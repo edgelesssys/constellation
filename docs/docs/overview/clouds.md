@@ -14,13 +14,13 @@ For Constellation, the ideal environment provides the following:
 
 The following table summarizes the state of features for different infrastructures.
 
-| **Feature**                       | **Azure** | **GCP** | **AWS** |  **STACKIT** | **OpenStack (Yoga)** |
-|-----------------------------------|-----------|---------|---------|--------------|----------------------|
-| **1. Custom images**              | Yes       | Yes     | Yes     | Yes          | Yes                  |
-| **2. SEV-SNP or TDX**             | Yes       | Yes     | Yes     | No           | Depends on kernel/HV |
-| **3. Raw guest attestation**      | Yes       | Yes     | Yes     | No           | Depends on kernel/HV |
-| **4. Reviewable firmware**        | No        | No      | Yes     | No           | Depends on kernel/HV |
-| **5. Confidential measured boot** | Yes       | No      | No      | No           | Depends on kernel/HV |
+| **Feature**                       | **AWS** | **Azure** | **GCP** |  **STACKIT** | **OpenStack (Yoga)** |
+|-----------------------------------|---------|-----------|---------|--------------|----------------------|
+| **1. Custom images**              | Yes     | Yes       | Yes     | Yes          | Yes                  |
+| **2. SEV-SNP or TDX**             | Yes     | Yes       | Yes     | No           | Depends on kernel/HV |
+| **3. Raw guest attestation**      | Yes     | Yes       | Yes     | No           | Depends on kernel/HV |
+| **4. Reviewable firmware**        | Yes     | No        | No      | No           | Depends on kernel/HV |
+| **5. Confidential measured boot** | No      | Yes       | No      | No           | Depends on kernel/HV |
 
 ## Microsoft Azure
 
