@@ -22,6 +22,14 @@ The following table summarizes the state of features for different infrastructur
 | **4. Reviewable firmware**        | Yes     | No        | No      | No           | Depends on kernel/HV |
 | **5. Confidential measured boot** | No      | Yes       | No      | No           | Depends on kernel/HV |
 
+## Amazon Web Services (AWS)
+
+Amazon EC2 [supports AMD SEV-SNP](https://aws.amazon.com/de/about-aws/whats-new/2023/04/amazon-ec2-amd-sev-snp/).
+Regarding (3), AWS provides direct access to attestation statements.
+However, regarding (5), attestation is partially based on the [NitroTPM](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nitrotpm.html) for [measured boot](../architecture/attestation.md#measured-boot), which is a vTPM managed by the Nitro hypervisor.
+Hence, the hypervisor is currently part of Constellation's TCB.
+Regarding (4), the [firmware is open source](https://github.com/aws/uefi) and can be reproducibly built.
+
 ## Microsoft Azure
 
 With its [CVM offering](https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview), Azure provides the best foundations for Constellation.
@@ -42,14 +50,6 @@ Regarding (4), the CVMs still include closed-source firmware.
 
 [TDX on Google](https://cloud.google.com/blog/products/identity-security/confidential-vms-on-intel-cpus-your-datas-new-intelligent-defense) is in public preview.
 With it, Constellation would have a similar TCB and attestation flow as with the current SEV-SNP offering.
-
-## Amazon Web Services (AWS)
-
-Amazon EC2 [supports AMD SEV-SNP](https://aws.amazon.com/de/about-aws/whats-new/2023/04/amazon-ec2-amd-sev-snp/).
-Regarding (3), AWS provides direct access to attestation statements.
-However, regarding (5), attestation is partially based on the [NitroTPM](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nitrotpm.html) for [measured boot](../architecture/attestation.md#measured-boot), which is a vTPM managed by the Nitro hypervisor.
-Hence, the hypervisor is currently part of Constellation's TCB.
-Regarding (4), the [firmware is open source](https://github.com/aws/uefi) and can be reproducibly built.
 
 ## STACKIT
 
