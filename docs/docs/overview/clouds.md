@@ -14,13 +14,21 @@ For Constellation, the ideal environment provides the following:
 
 The following table summarizes the state of features for different infrastructures.
 
-| **Feature**                       | **Azure** | **GCP** | **AWS** |  **STACKIT** | **OpenStack (Yoga)** |
-|-----------------------------------|-----------|---------|---------|--------------|----------------------|
-| **1. Custom images**              | Yes       | Yes     | Yes     | Yes          | Yes                  |
-| **2. SEV-SNP or TDX**             | Yes       | Yes     | Yes     | No           | Depends on kernel/HV |
-| **3. Raw guest attestation**      | Yes       | Yes     | Yes     | No           | Depends on kernel/HV |
-| **4. Reviewable firmware**        | No        | No      | Yes     | No           | Depends on kernel/HV |
-| **5. Confidential measured boot** | Yes       | No      | No      | No           | Depends on kernel/HV |
+| **Feature**                       | **AWS** | **Azure** | **GCP** |  **STACKIT** | **OpenStack (Yoga)** |
+|-----------------------------------|---------|-----------|---------|--------------|----------------------|
+| **1. Custom images**              | Yes     | Yes       | Yes     | Yes          | Yes                  |
+| **2. SEV-SNP or TDX**             | Yes     | Yes       | Yes     | No           | Depends on kernel/HV |
+| **3. Raw guest attestation**      | Yes     | Yes       | Yes     | No           | Depends on kernel/HV |
+| **4. Reviewable firmware**        | Yes     | No        | No      | No           | Depends on kernel/HV |
+| **5. Confidential measured boot** | No      | Yes       | No      | No           | Depends on kernel/HV |
+
+## Amazon Web Services (AWS)
+
+Amazon EC2 [supports AMD SEV-SNP](https://aws.amazon.com/de/about-aws/whats-new/2023/04/amazon-ec2-amd-sev-snp/).
+Regarding (3), AWS provides direct access to attestation statements.
+However, regarding (5), attestation is partially based on the [NitroTPM](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nitrotpm.html) for [measured boot](../architecture/attestation.md#measured-boot), which is a vTPM managed by the Nitro hypervisor.
+Hence, the hypervisor is currently part of Constellation's TCB.
+Regarding (4), the [firmware is open source](https://github.com/aws/uefi) and can be reproducibly built.
 
 ## Microsoft Azure
 
@@ -42,14 +50,6 @@ Regarding (4), the CVMs still include closed-source firmware.
 
 [TDX on Google](https://cloud.google.com/blog/products/identity-security/confidential-vms-on-intel-cpus-your-datas-new-intelligent-defense) is in public preview.
 With it, Constellation would have a similar TCB and attestation flow as with the current SEV-SNP offering.
-
-## Amazon Web Services (AWS)
-
-Amazon EC2 [supports AMD SEV-SNP](https://aws.amazon.com/de/about-aws/whats-new/2023/04/amazon-ec2-amd-sev-snp/).
-Regarding (3), AWS provides direct access to attestation statements.
-However, regarding (5), attestation is partially based on the [NitroTPM](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nitrotpm.html) for [measured boot](../architecture/attestation.md#measured-boot), which is a vTPM managed by the Nitro hypervisor.
-Hence, the hypervisor is currently part of Constellation's TCB.
-Regarding (4), the [firmware is open source](https://github.com/aws/uefi) and can be reproducibly built.
 
 ## STACKIT
 
