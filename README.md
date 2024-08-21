@@ -1,4 +1,4 @@
-![Constellation](docs/static/img/GitHub Banner_Constellation animated.svg)
+![Constellation](docs/static/img/BannerConstellationanimated.svg)
 
 # Always Encrypted Kubernetes
 
