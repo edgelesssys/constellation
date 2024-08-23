@@ -4,7 +4,7 @@
 This recording presents the essence of this page. It's recommended to read it in full for the motivation and all details.
 :::
 
-<asciinemaWidget src="/constellation/assets/configure-cluster.cast" rows="20" cols="112" idleTimeLimit="3" preload="true" theme="edgeless" />
+<AsciinemaWidget src="/constellation/assets/configure-cluster.cast" rows="20" cols="112" idleTimeLimit="3" preload="true" theme="edgeless" />
 
 ---
 
@@ -86,7 +86,6 @@ By default, Constellation creates the node groups `control_plane_default` and `w
 If you require additional control-plane or worker groups with different instance types, zone placements, or disk sizes, you can add additional node groups to the `constellation-conf.yml` file.
 Each node group can be scaled individually.
 
-
 Consider the following example for AWS:
 
 ```yaml
@@ -120,9 +119,9 @@ You can use the field `zone` to specify what availability zone nodes of the grou
 On Azure, this field is empty by default and nodes are automatically spread across availability zones.
 Consult the documentation of your cloud provider for more information:
 
-- [AWS](https://aws.amazon.com/about-aws/global-infrastructure/regions_az/)
-- [Azure](https://azure.microsoft.com/en-us/explore/global-infrastructure/availability-zones)
-- [GCP](https://cloud.google.com/compute/docs/regions-zones)
+* [AWS](https://aws.amazon.com/about-aws/global-infrastructure/regions_az/)
+* [Azure](https://azure.microsoft.com/en-us/explore/global-infrastructure/availability-zones)
+* [GCP](https://cloud.google.com/compute/docs/regions-zones)
 
 ## Choosing a Kubernetes version
 
