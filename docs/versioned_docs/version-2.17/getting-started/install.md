@@ -22,8 +22,8 @@ If you prefer to use Terraform, you can alternatively use the [Terraform provide
 The CLI executable is available at [GitHub](https://github.com/edgelesssys/constellation/releases).
 Install it with the following commands:
 
-<tabs>
-<tabItem value="linux-amd64" label="Linux (amd64)">
+<Tabs>
+<TabItem value="linux-amd64" label="Linux (amd64)">
 
 1. Download the CLI:
 
@@ -39,8 +39,8 @@ curl -LO https://github.com/edgelesssys/constellation/releases/latest/download/c
 sudo install constellation-linux-amd64 /usr/local/bin/constellation
 ```
 
-</tabItem>
-<tabItem value="linux-arm64" label="Linux (arm64)">
+</TabItem>
+<TabItem value="linux-arm64" label="Linux (arm64)">
 
 1. Download the CLI:
 
@@ -56,9 +56,9 @@ curl -LO https://github.com/edgelesssys/constellation/releases/latest/download/c
 sudo install constellation-linux-arm64 /usr/local/bin/constellation
 ```
 
-</tabItem>
+</TabItem>
 
-<tabItem value="darwin-arm64" label="macOS (Apple Silicon)">
+<TabItem value="darwin-arm64" label="macOS (Apple Silicon)">
 
 1. Download the CLI:
 
@@ -74,9 +74,9 @@ curl -LO https://github.com/edgelesssys/constellation/releases/latest/download/c
 sudo install constellation-darwin-arm64 /usr/local/bin/constellation
 ```
 
-</tabItem>
+</TabItem>
 
-<tabItem value="darwin-amd64" label="macOS (Intel)">
+<TabItem value="darwin-amd64" label="macOS (Intel)">
 
 1. Download the CLI:
 
@@ -92,9 +92,9 @@ curl -LO https://github.com/edgelesssys/constellation/releases/latest/download/c
 sudo install constellation-darwin-amd64 /usr/local/bin/constellation
 ```
 
-</tabItem>
+</TabItem>
 
-<tabItem value="windows-amd64" label="Windows (amd64)">
+<TabItem value="windows-amd64" label="Windows (amd64)">
 
 1. Download the CLI:
 
@@ -115,8 +115,8 @@ Invoke-WebRequest -OutFile ./constellation.exe -Uri 'https://github.com/edgeless
     5. Click `New`
     6. Enter the path to the folder containing the binary you want on your PATH: `C:\Program Files\Constellation\bin`
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 :::tip
 The CLI supports autocompletion for various shells. To set it up, run `constellation completion` and follow the given steps.
@@ -132,8 +132,8 @@ If you don't have a cloud subscription, you can also set up a [local Constellati
 
 ### Required permissions
 
-<tabs groupId="csp">
-<tabItem value="aws" label="AWS">
+<Tabs groupId="csp">
+<TabItem value="aws" label="AWS">
 
 To set up a Constellation cluster, you need to perform two tasks that require permissions: create the infrastructure and create roles for cluster nodes. Both of these actions can be performed by different users, e.g., an administrator to create roles and a DevOps engineer to create the infrastructure.
 
@@ -183,8 +183,8 @@ The built-in `PowerUserAccess` policy is a superset of these permissions.
 
 Follow Amazon's guide on [understanding](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html) and [managing policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html).
 
-</tabItem>
-<tabItem value="azure" label="Azure">
+</TabItem>
+<TabItem value="azure" label="Azure">
 
 The following [resource providers need to be registered](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/resource-providers-and-types#register-resource-provider) in your subscription:
 
@@ -226,8 +226,8 @@ Follow Microsoft's guide on [understanding](https://learn.microsoft.com/en-us/az
 
 1: You can omit `*/register/Action` if the resource providers mentioned above are already registered and the `ARM_SKIP_PROVIDER_REGISTRATION` environment variable is set to `true` when creating the IAM configuration.
 
-</tabItem>
-<tabItem value="gcp" label="GCP">
+</TabItem>
+<TabItem value="gcp" label="GCP">
 
 Create a new project for Constellation or use an existing one.
 Enable the [Compute Engine API](https://console.cloud.google.com/apis/library/compute.googleapis.com) on it.
@@ -312,16 +312,16 @@ Together, the built-in roles `roles/editor`, `roles/compute.instanceAdmin` and `
 
 Follow Google's guide on [understanding](https://cloud.google.com/iam/docs/understanding-roles) and [assigning roles](https://cloud.google.com/iam/docs/granting-changing-revoking-access).
 
-</tabItem>
-<tabItem value="stackit" label="STACKIT">
+</TabItem>
+<TabItem value="stackit" label="STACKIT">
 
 Constellation on STACKIT requires a User Access Token (UAT) for the OpenStack API and a STACKIT service account.
 The UAT already has all required permissions by default.
 The STACKIT service account needs the `editor` role to create STACKIT LoadBalancers.
 Look at the [STACKIT documentation](https://docs.stackit.cloud/stackit/en/getting-started-in-service-accounts-134415831.html) on how to create the service account and assign the role.
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 ### Authentication
 
@@ -331,8 +331,8 @@ You need to authenticate with your CSP. The following lists the required steps f
 The steps for a *testing* environment are simpler. However, they may expose secrets to the CSP. If in doubt, follow the *production* steps.
 :::
 
-<tabs groupId="csp">
-<tabItem value="aws" label="AWS">
+<Tabs groupId="csp">
+<TabItem value="aws" label="AWS">
 
 **Testing**
 
@@ -348,8 +348,8 @@ aws configure
 
 Options and first steps are described in the [AWS CLI documentation](https://docs.aws.amazon.com/cli/index.html).
 
-</tabItem>
-<tabItem value="azure" label="Azure">
+</TabItem>
+<TabItem value="azure" label="Azure">
 
 **Testing**
 
@@ -365,8 +365,8 @@ az login
 
 Other options are described in Azure's [authentication guide](https://docs.microsoft.com/en-us/cli/azure/authenticate-azure-cli).
 
-</tabItem>
-<tabItem value="gcp" label="GCP">
+</TabItem>
+<TabItem value="gcp" label="GCP">
 
 **Testing**
 
@@ -389,8 +389,8 @@ Use one of the following options on a trusted machine:
 
     Follow [Google's guide](https://cloud.google.com/docs/authentication/production#manually) for setting up your credentials.
 
-</tabItem>
-<tabItem value="stackit" label="STACKIT">
+</TabItem>
+<TabItem value="stackit" label="STACKIT">
 
 You need to authenticate with the infrastructure API (OpenStack) and create a service account (STACKIT API).
 
@@ -420,9 +420,9 @@ You need to authenticate with the infrastructure API (OpenStack) and create a se
     {"STACKIT_SERVICE_ACCOUNT_TOKEN":"REPLACE_WITH_TOKEN"}
     ```
 
-</tabItem>
+</TabItem>
 
-</tabs>
+</Tabs>
 
 ## Next steps
 

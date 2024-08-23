@@ -121,8 +121,8 @@ Constellation allows to specify in the config which measurements should be enfor
 Enforcing non-reproducible measurements controlled by the cloud provider means that changes in these values require manual updates to the cluster's config.
 By default, Constellation only enforces measurements that are stable values produced by the infrastructure or by Constellation directly.
 
-<tabs groupId="csp">
-<tabItem value="aws" label="AWS">
+<Tabs groupId="csp">
+<TabItem value="aws" label="AWS">
 
 Constellation uses the [vTPM](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nitrotpm.html) (NitroTPM) feature of the [AWS Nitro System](http://aws.amazon.com/ec2/nitro/) on AWS for runtime measurements.
 
@@ -153,8 +153,8 @@ The latter means that the value can be generated offline and compared to the one
 | 15          | ClusterID                                                        | Constellation Bootstrapper             | Yes                         |
 | 16&ndash;23 | Unused                                                           | -                                      | -                           |
 
-</tabItem>
-<tabItem value="azure" label="Azure">
+</TabItem>
+<TabItem value="azure" label="Azure">
 
 Constellation uses the [vTPM](https://docs.microsoft.com/en-us/azure/virtual-machines/trusted-launch#vtpm) feature of Azure CVMs for runtime measurements.
 This vTPM adheres to the [TPM 2.0](https://trustedcomputinggroup.org/resource/tpm-library-specification/) specification.
@@ -184,8 +184,8 @@ The latter means that the value can be generated offline and compared to the one
 | 15          | ClusterID                                                        | Constellation Bootstrapper             | Yes                         |
 | 16&ndash;23 | Unused                                                           | -                                      | -                           |
 
-</tabItem>
-<tabItem value="gcp" label="GCP">
+</TabItem>
+<TabItem value="gcp" label="GCP">
 
 Constellation uses the [vTPM](https://cloud.google.com/compute/confidential-vm/docs/about-cvm) feature of CVMs on GCP for runtime measurements.
 Note that this vTPM doesn't run inside the hardware-protected CVM context, but is emulated by the hypervisor.
@@ -217,8 +217,8 @@ The latter means that the value can be generated offline and compared to the one
 | 15          | ClusterID                                                        | Constellation Bootstrapper             | Yes                         |
 | 16&ndash;23 | Unused                                                           | -                                      | -                           |
 
-</tabItem>
-<tabItem value="stackit" label="STACKIT">
+</TabItem>
+<TabItem value="stackit" label="STACKIT">
 
 Constellation uses a hypervisor-based vTPM for runtime measurements.
 
@@ -249,16 +249,16 @@ The latter means that the value can be generated offline and compared to the one
 | 15          | ClusterID                                                        | Constellation Bootstrapper             | Yes                         |
 | 16&ndash;23 | Unused                                                           | -                                      | -                           |
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 ### CVM verification
 
 To verify the integrity of the received attestation statement, a chain of trust from the CVM technology to the interface providing the statement has to be established.
 For verification of the CVM technology, Constellation may expose additional options in its config file.
 
-<tabs groupId="csp">
-<tabItem value="aws" label="AWS">
+<Tabs groupId="csp">
+<TabItem value="aws" label="AWS">
 
 On AWS, AMD SEV-SNP is used to provide runtime encryption to the VMs.
 An SEV-SNP attestation report is used to establish trust in the VM.
@@ -279,8 +279,8 @@ You may customize certain parameters for verification of the attestation stateme
   This is the intermediate certificate for verifying the SEV-SNP report's signature.
   If it's not specified, the CLI fetches it from the AMD key distribution server.
 
-</tabItem>
-<tabItem value="azure" label="Azure SEV-SNP">
+</TabItem>
+<TabItem value="azure" label="Azure SEV-SNP">
 
 On Azure, AMD SEV-SNP is used to provide runtime encryption to the VMs.
 An SEV-SNP attestation report is used to establish trust in the vTPM running inside the VM.
@@ -302,22 +302,22 @@ You may customize certain parameters for verification of the attestation stateme
   More explicitly, it controls the verification of the `IDKeyDigest` value in the SEV-SNP attestation report.
   You can provide a list of accepted key digests and specify a policy on how this list is compared against the reported `IDKeyDigest`.
 
-</tabItem>
-<tabItem value="gcp" label="GCP">
+</TabItem>
+<TabItem value="gcp" label="GCP">
 
 On GCP, AMD SEV-ES is used to provide runtime encryption to the VMs.
 The hypervisor-based vTPM is used to establish trust in the VM via [runtime measurements](#runtime-measurements).
 There is no additional configuration available for GCP.
 
-</tabItem>
-<tabItem value="stackit" label="STACKIT">
+</TabItem>
+<TabItem value="stackit" label="STACKIT">
 
 On STACKIT, AMD SEV-ES is used to provide runtime encryption to the VMs.
 The hypervisor-based vTPM is used to establish trust in the VM via [runtime measurements](#runtime-measurements).
 There is no additional configuration available for STACKIT.
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 ## Cluster attestation
 

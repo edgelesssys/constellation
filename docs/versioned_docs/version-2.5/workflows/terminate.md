@@ -8,8 +8,8 @@ All ephemeral storage and state of your cluster will be lost. Make sure any data
 
 :::
 
-<tabs groupId="provider">
-<tabItem value="cli" label="CLI">
+<Tabs groupId="provider">
+<TabItem value="cli" label="CLI">
 Terminate the cluster by running:
 
 ```bash
@@ -32,8 +32,8 @@ resources manually. Just run the `terminate` command again afterward to continue
 
 :::
 
-</tabItem>
-<tabItem value="terraform" label="Terraform">
+</TabItem>
+<TabItem value="terraform" label="Terraform">
 Terminate the cluster by running:
 
 ```bash
@@ -48,5 +48,5 @@ rm constellation-id.json constellation-admin.conf
 
 Only the `constellation-mastersecret.json` and the configuration file remain.
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>

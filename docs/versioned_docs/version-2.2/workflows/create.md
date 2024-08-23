@@ -19,29 +19,29 @@ This step creates the necessary resources for your cluster in your cloud environ
 
 Generate a configuration file for your cloud service provider (CSP):
 
-<tabs groupId="csp">
-<tabItem value="azure" label="Azure">
+<Tabs groupId="csp">
+<TabItem value="azure" label="Azure">
 
 ```bash
 constellation config generate azure
 ```
 
-</tabItem>
-<tabItem value="gcp" label="GCP">
+</TabItem>
+<TabItem value="gcp" label="GCP">
 
 ```bash
 constellation config generate gcp
 ```
 
-</tabItem>
-<tabItem value="aws" label="AWS">
+</TabItem>
+<TabItem value="aws" label="AWS">
 
 ```bash
 constellation config generate aws
 ```
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 This creates the file `constellation-conf.yaml` in the current directory. [Fill in your CSP-specific information](../getting-started/first-steps.md#create-a-cluster) before you continue.
 

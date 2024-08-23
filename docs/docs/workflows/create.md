@@ -27,8 +27,8 @@ If you don't have a cloud subscription, you can also set up a [local Constellati
 
 Before you create the cluster, make sure to have a [valid configuration file](./config.md).
 
-<tabs groupId="usage">
-<tabItem value="cli" label="CLI">
+<Tabs groupId="usage">
+<TabItem value="cli" label="CLI">
 
 ```bash
 constellation apply
@@ -36,8 +36,8 @@ constellation apply
 
 `apply` stores the state of your cluster's cloud resources in a [`constellation-terraform`](../architecture/orchestration.md#cluster-creation-process) directory in your workspace.
 
-</tabItem>
-<tabItem value="self-managed" label="Self-managed">
+</TabItem>
+<TabItem value="self-managed" label="Self-managed">
 
 Self-managed infrastructure allows for more flexibility in the setup, by separating the infrastructure setup from the Constellation cluster management.
 This provides flexibility in DevOps and can meet potential regulatory requirements.
@@ -77,8 +77,8 @@ With the required cloud resources set up, continue with initializing your cluste
 constellation apply --skip-phases=infrastructure
 ```
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 Finally, configure `kubectl` for your cluster:
 

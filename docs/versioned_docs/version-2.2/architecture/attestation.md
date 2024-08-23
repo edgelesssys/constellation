@@ -121,8 +121,8 @@ Constellation allows to specify in the config which measurements should be enfor
 Enforcing non-reproducible measurements controlled by the cloud provider means that changes in these values require manual updates to the cluster's config.
 By default, Constellation only enforces measurements that are stable values produced by the infrastructure or by Constellation directly.
 
-<tabs groupId="csp">
-<tabItem value="azure" label="Azure">
+<Tabs groupId="csp">
+<TabItem value="azure" label="Azure">
 
 Constellation uses the [vTPM](https://docs.microsoft.com/en-us/azure/virtual-machines/trusted-launch#vtpm) feature of Azure CVMs for runtime measurements.
 This vTPM adheres to the [TPM 2.0](https://trustedcomputinggroup.org/resource/tpm-library-specification/) specification.
@@ -152,8 +152,8 @@ The latter means that the value can be generated offline and compared to the one
 | 15          | ClusterID                                                        | Constellation Bootstrapper      | Yes                         |
 | 16&ndash;23 | Unused                                                           | -                               | -                           |
 
-</tabItem>
-<tabItem value="gcp" label="GCP">
+</TabItem>
+<TabItem value="gcp" label="GCP">
 
 Constellation uses the [vTPM](https://cloud.google.com/compute/confidential-vm/docs/about-cvm) feature of CVMs on GCP for runtime measurements.
 Note that this vTPM doesn't run inside the hardware-protected CVM context, but is emulated by the hypervisor.
@@ -185,8 +185,8 @@ The latter means that the value can be generated offline and compared to the one
 | 15          | ClusterID                                                        | Constellation Bootstrapper    | Yes                         |
 | 16&ndash;23 | Unused                                                           | -                             | -                           |
 
-</tabItem>
-<tabItem value="aws" label="AWS">
+</TabItem>
+<TabItem value="aws" label="AWS">
 
 Constellation uses the [vTPM](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nitrotpm.html) (NitroTPM) feature of the [AWS Nitro System](http://aws.amazon.com/ec2/nitro/) on AWS for runtime measurements.
 
@@ -217,8 +217,8 @@ The latter means that the value can be generated offline and compared to the one
 | 15          | ClusterID                                                        | Constellation Bootstrapper    | Yes                         |
 | 16&ndash;23 | Unused                                                           | -                             | -                           |
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 ## Cluster attestation
 

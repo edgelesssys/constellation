@@ -26,8 +26,8 @@ Before you create the cluster, make sure to have a [valid configuration file](./
 
 ### Create
 
-<tabs groupId="usage">
-<tabItem value="cli" label="CLI">
+<Tabs groupId="usage">
+<TabItem value="cli" label="CLI">
 
 ```bash
 constellation create
@@ -35,8 +35,8 @@ constellation create
 
 *create* stores your cluster's state in a [`constellation-terraform`](../architecture/orchestration.md#cluster-creation-process) directory in your workspace.
 
-</tabItem>
-<tabItem value="self-managed" label="Self-managed">
+</TabItem>
+<TabItem value="self-managed" label="Self-managed">
 
 Self-managed infrastructure allows for more flexibility in the setup, by separating the infrastructure setup from the Constellation cluster management.
 This provides flexibility in DevOps and can meet potential regulatory requirements.
@@ -72,8 +72,8 @@ Fill these outputs into the corresponding fields of the `Infrastructure` block i
 
 Continue with [initializing your cluster](#the-apply-step).
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 ## The *apply* step
 
