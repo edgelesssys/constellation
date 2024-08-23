@@ -13,7 +13,7 @@ If you encounter any problem with the following steps, make sure to use the [lat
 
 ## Create a cluster
 
-1. Create the [configuration file](../workflows/config.md) and state file for your cloud provider. If you are following the steps of this guide, there is no need to edit the file. 
+1. Create the [configuration file](../workflows/config.md) and state file for your cloud provider. If you are following the steps of this guide, there is no need to edit the file.
 
     <tabs groupId="csp">
     <tabItem value="aws" label="AWS">
@@ -115,7 +115,7 @@ If you encounter any problem with the following steps, make sure to use the [lat
     To use Constellation on STACKIT, the cluster will use the User Access Token (UAT) that's generated [during the install step](./install.md).
     After creating the accounts, fill in the STACKIT details in `constellation-conf.yaml` under `provider.openstack`:
 
-    - `stackitProjectID`: STACKIT project id (can be found after login on <https://portal.stackit.cloud>)
+    * `stackitProjectID`: STACKIT project id (can be found after login on the [STACKIT portal](https://portal.stackit.cloud))
 
     </tabItem>
     </tabs>
