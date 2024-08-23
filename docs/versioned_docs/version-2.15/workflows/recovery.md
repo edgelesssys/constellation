@@ -16,8 +16,8 @@ You can check the health status of the nodes via the cloud service provider (CSP
 Constellation provides logging information on the boot process and status via serial console output.
 In the following, you'll find detailed descriptions for identifying clusters stuck in recovery for each CSP.
 
-<tabs groupId="csp">
-<tabItem value="azure" label="Azure">
+<Tabs groupId="csp">
+<TabItem value="azure" label="Azure">
 
 In the Azure portal, find the cluster's resource group.
 Inside the resource group, open the control plane *Virtual machine scale set* `constellation-scale-set-controlplanes-<suffix>`.
@@ -51,8 +51,8 @@ If this fails due to an unhealthy control plane, you will see log messages simil
 
 This means that you have to recover the node manually.
 
-</tabItem>
-<tabItem value="gcp" label="GCP">
+</TabItem>
+<TabItem value="gcp" label="GCP">
 
 First, check that the control plane *Instance Group* has enough members in a *Ready* state.
 In the GCP Console, go to **Instance Groups** and check the group for the cluster's control plane `<cluster-name>-control-plane-<suffix>`.
@@ -87,8 +87,8 @@ If this fails due to an unhealthy control plane, you will see log messages simil
 
 This means that you have to recover the node manually.
 
-</tabItem>
-<tabItem value="aws" label="AWS">
+</TabItem>
+<TabItem value="aws" label="AWS">
 
 First, open the AWS console to view all Auto Scaling Groups (ASGs) in the region of your cluster. Select the ASG of the control plane `<cluster-name>-<UID>-control-plane` and check that enough members are in a *Running* state.
 
@@ -118,8 +118,8 @@ If this fails due to an unhealthy control plane, you will see log messages simil
 
 This means that you have to recover the node manually.
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 ## Recover a cluster
 

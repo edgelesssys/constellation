@@ -18,8 +18,8 @@ Make sure the following requirements are met:
 The CLI executable is available at [GitHub](https://github.com/edgelesssys/constellation/releases).
 Install it with the following commands:
 
-<tabs>
-<tabItem value="linux-amd64" label="Linux (amd64)">
+<Tabs>
+<TabItem value="linux-amd64" label="Linux (amd64)">
 
 1. Download the CLI:
 
@@ -35,8 +35,8 @@ curl -LO https://github.com/edgelesssys/constellation/releases/latest/download/c
 sudo install constellation-linux-amd64 /usr/local/bin/constellation
 ```
 
-</tabItem>
-<tabItem value="linux-arm64" label="Linux (arm64)">
+</TabItem>
+<TabItem value="linux-arm64" label="Linux (arm64)">
 
 1. Download the CLI:
 
@@ -52,10 +52,9 @@ curl -LO https://github.com/edgelesssys/constellation/releases/latest/download/c
 sudo install constellation-linux-arm64 /usr/local/bin/constellation
 ```
 
+</TabItem>
 
-</tabItem>
-
-<tabItem value="darwin-arm64" label="macOS (Apple Silicon)">
+<TabItem value="darwin-arm64" label="macOS (Apple Silicon)">
 
 1. Download the CLI:
 
@@ -71,11 +70,9 @@ curl -LO https://github.com/edgelesssys/constellation/releases/latest/download/c
 sudo install constellation-darwin-arm64 /usr/local/bin/constellation
 ```
 
+</TabItem>
 
-
-</tabItem>
-
-<tabItem value="darwin-amd64" label="macOS (Intel)">
+<TabItem value="darwin-amd64" label="macOS (Intel)">
 
 1. Download the CLI:
 
@@ -91,8 +88,8 @@ curl -LO https://github.com/edgelesssys/constellation/releases/latest/download/c
 sudo install constellation-darwin-amd64 /usr/local/bin/constellation
 ```
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 :::tip
 The CLI supports autocompletion for various shells. To set it up, run `constellation completion` and follow the given steps.
@@ -108,8 +105,8 @@ If you don't have a cloud subscription, you can try [MiniConstellation](first-st
 
 ### Required permissions
 
-<tabs groupId="csp">
-<tabItem value="azure" label="Azure">
+<Tabs groupId="csp">
+<TabItem value="azure" label="Azure">
 
 You need the following permissions for your user account:
 
@@ -119,8 +116,8 @@ You need the following permissions for your user account:
 If you don't have these permissions with scope *subscription*, ask your administrator to [create the service account and a resource group for your Constellation cluster](first-steps.md).
 Your user account needs the `Contributor` permission scoped to this resource group.
 
-</tabItem>
-<tabItem value="gcp" label="GCP">
+</TabItem>
+<TabItem value="gcp" label="GCP">
 
 Create a new project for Constellation or use an existing one.
 Enable the [Compute Engine API](https://console.cloud.google.com/apis/library/compute.googleapis.com) on it.
@@ -132,8 +129,8 @@ You need the following permissions on this project:
 
 Follow Google's guide on [understanding](https://cloud.google.com/iam/docs/understanding-roles) and [assigning roles](https://cloud.google.com/iam/docs/granting-changing-revoking-access).
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 ### Authentication
 
@@ -143,8 +140,8 @@ You need to authenticate with your CSP. The following lists the required steps f
 The steps for a *testing* environment are simpler. However, they may expose secrets to the CSP. If in doubt, follow the *production* steps.
 :::
 
-<tabs groupId="csp">
-<tabItem value="azure" label="Azure">
+<Tabs groupId="csp">
+<TabItem value="azure" label="Azure">
 
 **Testing**
 
@@ -160,8 +157,8 @@ az login
 
 Other options are described in Azure's [authentication guide](https://docs.microsoft.com/en-us/cli/azure/authenticate-azure-cli).
 
-</tabItem>
-<tabItem value="gcp" label="GCP">
+</TabItem>
+<TabItem value="gcp" label="GCP">
 
 **Testing**
 
@@ -184,8 +181,8 @@ Use one of the following options on a trusted machine:
 
     Follow [Google's guide](https://cloud.google.com/docs/authentication/production#manually) for setting up your credentials.
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 ## Next steps
 

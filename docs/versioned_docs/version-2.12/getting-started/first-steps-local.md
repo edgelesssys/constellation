@@ -45,8 +45,8 @@ sudo iptables -P FORWARD ACCEPT
 
 ## Create a cluster
 
-<tabs groupId="csp">
-<tabItem value="mini" label="MiniConstellation">
+<Tabs groupId="csp">
+<TabItem value="mini" label="MiniConstellation">
 
 <!-- vale off -->
 With the `constellation mini` command, you can deploy and test Constellation locally. This mode is called MiniConstellation. Conceptually, MiniConstellation is similar to [MicroK8s](https://microk8s.io/), [K3s](https://k3s.io/), and [minikube](https://minikube.sigs.k8s.io/docs/).
@@ -74,8 +74,8 @@ constellation mini up
 This will configure your current directory as the [workspace](../architecture/orchestration.md#workspaces) for this cluster.
 All `constellation` commands concerning this cluster need to be issued from this directory.
 
-</tabItem>
-<tabItem value="qemu" label="QEMU">
+</TabItem>
+<TabItem value="qemu" label="QEMU">
 
 With the QEMU provider, you can create a local Constellation cluster as if it were in the cloud. The provider uses [QEMU](https://www.qemu.org/) to create multiple VMs for the cluster nodes, which interact with each other.
 
@@ -151,8 +151,8 @@ attaching persistent storage, or autoscaling aren't available.
   export KUBECONFIG="$PWD/constellation-admin.conf"
   ```
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 ## Connect to the cluster
 
@@ -205,8 +205,8 @@ worker-0          Ready    <none>          32s     v1.24.6
 
 ## Terminate your cluster
 
-<tabs groupId="csp">
-<tabItem value="mini" label="MiniConstellation">
+<Tabs groupId="csp">
+<TabItem value="mini" label="MiniConstellation">
 
 Once you are done, you can clean up the created resources using the following command:
 
@@ -217,8 +217,8 @@ constellation mini down
 This will destroy your cluster and clean up your workspace.
 The VM image and cluster configuration file (`constellation-conf.yaml`) will be kept and may be reused to create new clusters.
 
-</tabItem>
-<tabItem value="qemu" label="QEMU">
+</TabItem>
+<TabItem value="qemu" label="QEMU">
 
 Once you are done, you can clean up the created resources using the following command:
 
@@ -246,8 +246,8 @@ Your Constellation cluster was terminated successfully.
 This will destroy your cluster and clean up your workspace.
 The VM image and cluster configuration file (`constellation-conf.yaml`) will be kept and may be reused to create new clusters.
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 ## Troubleshooting
 

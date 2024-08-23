@@ -21,8 +21,9 @@ This example shows how to set up a Constellation cluster with the reference IAM 
 
 2. Use one of the [example configurations for using the Constellation Terraform provider](https://github.com/edgelesssys/constellation/tree/main/terraform-provider-constellation/examples/full) or create a `main.tf` file and fill it with the resources you want to create. The [Constellation Terraform provider documentation](https://registry.terraform.io/providers/edgelesssys/constellation/latest) offers thorough documentation on the resources and their attributes.
 3. Initialize and apply the Terraform configuration.
-  <tabs groupId="csp">
-  <tabItem value="aws" label="AWS">
+  <Tabs groupId="csp">
+
+  <TabItem value="aws" label="AWS">
   Initialize the providers and apply the configuration.
 
   ```bash
@@ -31,8 +32,8 @@ This example shows how to set up a Constellation cluster with the reference IAM 
   ```
 
   Optionally, you can prefix the `terraform apply` command with `TF_LOG=INFO` to collect [Terraform logs](https://developer.hashicorp.com/terraform/internals/debugging) while applying the configuration. This may provide helpful output in debugging scenarios.
-  </tabItem>
-  <tabItem value="azure" label="Azure">
+  </TabItem>
+  <TabItem value="azure" label="Azure">
   When creating a cluster on Azure, you need to manually patch the policy of the MAA provider before creating the Constellation cluster, as this feature isn't available in Azure's Terraform provider yet. The Constellation CLI provides a utility for patching, but you
   can also do it manually.
 
@@ -66,8 +67,8 @@ This example shows how to set up a Constellation cluster with the reference IAM 
   };
   ```
 
-  </tabItem>
-  <tabItem value="gcp" label="GCP">
+  </TabItem>
+  <TabItem value="gcp" label="GCP">
   Initialize the providers and apply the configuration.
 
   ```bash
@@ -76,8 +77,8 @@ This example shows how to set up a Constellation cluster with the reference IAM 
   ```
 
   Optionally, you can prefix the `terraform apply` command with `TF_LOG=INFO` to collect [Terraform logs](https://developer.hashicorp.com/terraform/internals/debugging) while applying the configuration. This may provide helpful output in debugging scenarios.
-  </tabItem>
-  <tabItem value="stackit" label="STACKIT">
+  </TabItem>
+  <TabItem value="stackit" label="STACKIT">
   Initialize the providers and apply the configuration.
 
   ```bash
@@ -86,9 +87,9 @@ This example shows how to set up a Constellation cluster with the reference IAM 
   ```
 
   Optionally, you can prefix the `terraform apply` command with `TF_LOG=INFO` to collect [Terraform logs](https://developer.hashicorp.com/terraform/internals/debugging) while applying the configuration. This may provide helpful output in debugging scenarios.
-  </tabItem>
+  </TabItem>
 
-  </tabs>
+  </Tabs>
 4. Connect to the cluster.
 
   ```bash
