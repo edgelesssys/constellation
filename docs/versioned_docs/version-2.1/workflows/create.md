@@ -57,7 +57,7 @@ constellation create --control-plane-nodes 1 --worker-nodes 2
 
 For details on the flags, consult the command help via `constellation create -h`.
 
-*create* stores your cluster's configuration to a file named [`constellation-state.json`](../architecture/orchestration.md#installation-process) in your current directory.
+*create* stores your cluster's configuration to a file named [`constellation-state.json`](../architecture/orchestration.md#cluster-creation-process) in your current directory.
 
 ## The *init* step
 
