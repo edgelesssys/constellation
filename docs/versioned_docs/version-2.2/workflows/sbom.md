@@ -15,7 +15,7 @@ JmEe5iSLvG1SyQSAew7WdMKF6o9t8e2TFuCkzlOhhlws2OHWbiFZnFWCFw==
 -----END PUBLIC KEY-----
 ```
 
-The public key is also available for download at <https://edgeless.systems/es.pub> and in the Twitter profile [@EdgelessSystems](https://twitter.com/EdgelessSystems).
+The public key is also available for download at [https://edgeless.systems/es.pub](https://edgeless.systems/es.pub) and in the Twitter profile [@EdgelessSystems](https://twitter.com/EdgelessSystems).
 
 Make sure the key is available in a file named `cosign.pub` to execute the following examples.
 :::
