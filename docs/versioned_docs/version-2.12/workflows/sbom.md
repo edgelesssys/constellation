@@ -1,6 +1,6 @@
 # Consume software bill of materials (SBOMs)
 
-<asciinemaWidget src="/constellation/assets/check-sbom.cast" rows="20" cols="112" idleTimeLimit="3" preload="true" theme="edgeless" />
+<AsciinemaWidget src="/constellation/assets/check-sbom.cast" rows="20" cols="112" idleTimeLimit="3" preload="true" theme="edgeless" />
 
 ---
 
