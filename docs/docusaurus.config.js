@@ -13,6 +13,7 @@ async function createConfig() {
     baseUrl: '/constellation/',
     onBrokenLinks: 'throw',
     onBrokenMarkdownLinks: 'throw',
+    onBrokenAnchors: 'throw',
     favicon: 'img/favicon.ico',
 
     // GitHub pages deployment config.
