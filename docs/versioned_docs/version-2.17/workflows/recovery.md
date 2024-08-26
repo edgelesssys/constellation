@@ -162,7 +162,7 @@ Recovering a cluster requires the following parameters:
 A cluster can be recovered like this:
 
 ```bash
-$ constellation recover --master-secret constellation-mastersecret.json
+$ constellation recover
 Pushed recovery key.
 Pushed recovery key.
 Pushed recovery key.
