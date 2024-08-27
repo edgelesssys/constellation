@@ -46,6 +46,12 @@ variable "internal_load_balancer" {
 
 # Azure-specific variables
 
+variable "subscription_id" {
+  type        = string
+  description = "Azure subscription ID. This can also be sourced from the ARM_SUBSCRIPTION_ID environment variable: https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs#subscription_id"
+  default     = ""
+}
+
 variable "location" {
   type        = string
   description = "Azure location to deploy the cluster in."

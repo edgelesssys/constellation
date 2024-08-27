@@ -17,6 +17,10 @@ provider "azurerm" {
       prevent_deletion_if_contains_resources = false
     }
   }
+  subscription_id = var.subscription_id
+  # This enables all resource providers.
+  # In the future, we might want to use `resource_providers_to_register` to registers just the ones we need.
+  resource_provider_registrations = "all"
 }
 
 locals {
@@ -266,8 +270,8 @@ module "scale_set_group" {
   marketplace_image         = var.marketplace_image
 
   # We still depend on the backends, since we are not sure if the VMs inside the VMSS have been
-  # "updated" to the new version (note: this is the update in Azure which "refreshes" the NICs and not 
-  # our Constellation update). 
+  # "updated" to the new version (note: this is the update in Azure which "refreshes" the NICs and not
+  # our Constellation update).
   # TODO(@3u13r): Remove this dependency after v2.18.0 has been released.
   depends_on = [module.loadbalancer_backend_worker, azurerm_lb_backend_address_pool.all]
 }

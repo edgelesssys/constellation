@@ -22,6 +22,7 @@ locals {
   control_plane_count  = 3
   worker_count         = 2
   instance_type        = "Standard_DC4as_v5"
+  subscription_id      = "00000000-0000-0000-0000-000000000000"
 
   master_secret      = random_bytes.master_secret.hex
   master_secret_salt = random_bytes.master_secret_salt.hex
@@ -43,6 +44,7 @@ resource "random_bytes" "measurement_salt" {
 module "azure_iam" {
   // replace $VERSION with the Constellation version you want to use, e.g., v2.14.0
   source                 = "https://github.com/edgelesssys/constellation/releases/download/$VERSION/terraform-module.zip//terraform-module/iam/azure"
+  subscription_id        = local.subscription_id
   location               = local.location
   service_principal_name = "${local.name}-sp"
   resource_group_name    = "${local.name}-rg"
@@ -51,6 +53,7 @@ module "azure_iam" {
 module "azure_infrastructure" {
   // replace $VERSION with the Constellation version you want to use, e.g., v2.14.0
   source                 = "https://github.com/edgelesssys/constellation/releases/download/$VERSION/terraform-module.zip//terraform-module/azure"
+  subscription_id        = local.subscription_id
   name                   = local.name
   user_assigned_identity = module.azure_iam.uami_id
   node_groups = {

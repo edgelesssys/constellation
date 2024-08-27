@@ -27,6 +27,9 @@ inputs:
   #
   # Azure specific inputs
   #
+  azureSubscriptionID:
+    description: "Azure subscription ID to deploy Constellation in."
+    required: true
   azureRegion:
     description: "Azure region to deploy Constellation in."
     required: false
@@ -77,6 +80,7 @@ runs:
       if: inputs.cloudProvider == 'azure'
       run: |
         constellation iam create azure \
+          --subscriptionID="${{ inputs.azureSubscriptionID }}" \
           --region="${{ inputs.azureRegion }}" \
           --resourceGroup="${{ inputs.namePrefix }}-rg" \
           --servicePrincipal="${{ inputs.namePrefix }}-sp" \

@@ -180,7 +180,8 @@ service_account_id = "my-service-account"
 
 func TestAzureClusterVariables(t *testing.T) {
 	vars := AzureClusterVariables{
-		Name: "cluster-name",
+		SubscriptionID: "01234567-cdef-0123-4567-89abcdef0123",
+		Name:           "cluster-name",
 		NodeGroups: map[string]AzureNodeGroup{
 			constants.ControlPlaneDefault: {
 				Role:         "ControlPlane",
@@ -207,7 +208,8 @@ func TestAzureClusterVariables(t *testing.T) {
 	}
 
 	// test that the variables are correctly rendered
-	want := `name                   = "cluster-name"
+	want := `subscription_id        = "01234567-cdef-0123-4567-89abcdef0123"
+name                   = "cluster-name"
 image_id               = "image-0123456789abcdef"
 create_maa             = true
 debug                  = true
@@ -241,13 +243,15 @@ additional_tags = null
 
 func TestAzureIAMVariables(t *testing.T) {
 	vars := AzureIAMVariables{
+		SubscriptionID:   "01234567-cdef-0123-4567-89abcdef0123",
 		Location:         "eu-central-1",
 		ServicePrincipal: "my-service-principal",
 		ResourceGroup:    "my-resource-group",
 	}
 
 	// test that the variables are correctly rendered
-	want := `location                 = "eu-central-1"
+	want := `subscription_id       = "01234567-cdef-0123-4567-89abcdef0123"
+location               = "eu-central-1"
 service_principal_name = "my-service-principal"
 resource_group_name    = "my-resource-group"
 `

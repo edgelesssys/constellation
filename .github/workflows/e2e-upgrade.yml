@@ -220,6 +220,7 @@ jobs:
           gcpClusterCreateServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
           gcpIAMCreateServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
           test: "upgrade"
+          azureSubscriptionID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           azureClusterCreateCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
           azureIAMCreateCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
           registry: ghcr.io

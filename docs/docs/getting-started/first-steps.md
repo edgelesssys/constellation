@@ -80,7 +80,7 @@ If you encounter any problem with the following steps, make sure to use the [lat
     <TabItem value="azure" label="Azure">
 
     ```bash
-    constellation iam create azure --region=westus --resourceGroup=constellTest --servicePrincipal=spTest --update-config
+    constellation iam create azure --subscriptionID 00000000-0000-0000-0000-000000000000 --region=westus --resourceGroup=constellTest --servicePrincipal=spTest --update-config
     ```
 
     This command creates IAM configuration on the Azure region `westus` creating a new resource group `constellTest` and a new service principal `spTest`. It also updates the configuration file `constellation-conf.yaml` in your current directory with the IAM values filled in.

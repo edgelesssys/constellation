@@ -184,7 +184,7 @@ Paste the output into the corresponding fields of the `constellation-conf.yaml` 
 You must be authenticated with the [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) in the shell session with a user that has the [required permissions for IAM creation](../getting-started/install.md#set-up-cloud-credentials).
 
 ```bash
-constellation iam create azure --region=westus --resourceGroup=constellTest --servicePrincipal=spTest
+constellation iam create azure --subscriptionID 00000000-0000-0000-0000-000000000000 --region=westus --resourceGroup=constellTest --servicePrincipal=spTest
 ```
 
 This command creates IAM configuration on the Azure region `westus` creating a new resource group `constellTest` and a new service principal `spTest`.

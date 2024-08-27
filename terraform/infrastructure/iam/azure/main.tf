@@ -18,6 +18,10 @@ provider "azurerm" {
       prevent_deletion_if_contains_resources = false
     }
   }
+  subscription_id = var.subscription_id
+  # This enables all resource providers.
+  # In the future, we might want to use `resource_providers_to_register` to registers just the ones we need.
+  resource_provider_registrations = "all"
 }
 
 # Configure Azure active directory provider
