@@ -54,7 +54,7 @@ func New(log *slog.Logger, fileHandler file.Handler) (*Server, error) {
 	}
 
 	grpcServer := grpc.NewServer(
-		logger.GetServerUnaryInterceptor(log.WithGroup("gRPC")),
+		logger.GetServerUnaryInterceptor(logger.GRPCLogger(log)),
 	)
 	upgradeproto.RegisterUpdateServer(grpcServer, server)
 

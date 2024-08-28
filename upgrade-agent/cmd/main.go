@@ -26,11 +26,7 @@ func main() {
 	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 	flag.Parse()
 	log := logger.NewJSONLogger(logger.VerbosityFromInt(*verbosity)).WithGroup("upgrade-agent")
-	logger.ReplaceGRPCLogger(
-		slog.New(
-			logger.NewLevelHandler(logger.VerbosityFromInt(*verbosity), log.Handler()),
-		).WithGroup("gRPC"),
-	)
+	logger.ReplaceGRPCLogger(logger.GRPCLogger(log))
 
 	handler := file.NewHandler(afero.NewOsFs())
 	server, err := server.New(log, handler)

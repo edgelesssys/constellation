@@ -109,7 +109,7 @@ func New(
 	grpcServer := grpc.NewServer(
 		grpc.Creds(atlscredentials.New(issuer, nil)),
 		grpc.KeepaliveParams(keepalive.ServerParameters{Time: 15 * time.Second}),
-		logger.GetServerUnaryInterceptor(log.WithGroup("gRPC")),
+		logger.GetServerUnaryInterceptor(logger.GRPCLogger(log)),
 	)
 	initproto.RegisterAPIServer(grpcServer, server)
 
