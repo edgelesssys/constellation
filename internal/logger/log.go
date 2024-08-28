@@ -37,7 +37,7 @@ import (
 
 // GRPCLogger returns a logger at warn level for gRPC logging.
 func GRPCLogger(l *slog.Logger) *slog.Logger {
-	return slog.New(NewLevelHandler(slog.LevelWarn, l.Handler())).WithGroup("gRPC")
+	return slog.New(newLevelHandler(slog.LevelWarn, l.Handler())).WithGroup("gRPC")
 }
 
 // ReplaceGRPCLogger replaces grpc's internal logger with the given logger.
