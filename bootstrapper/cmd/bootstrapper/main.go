@@ -46,11 +46,7 @@ func main() {
 	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 	flag.Parse()
 	log := logger.NewJSONLogger(logger.VerbosityFromInt(*verbosity)).WithGroup("bootstrapper")
-	logger.ReplaceGRPCLogger(
-		slog.New(
-			logger.NewLevelHandler(logger.VerbosityFromInt(*verbosity), log.Handler()),
-		).WithGroup("gRPC"),
-	)
+	logger.ReplaceGRPCLogger(logger.GRPCLogger(log))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

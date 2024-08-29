@@ -58,10 +58,11 @@ func New(
 
 // Run starts the gRPC server on the given port, using the provided tlsConfig.
 func (s *Server) Run(creds credentials.TransportCredentials, port string) error {
-	logger.ReplaceGRPCLogger(slog.New(logger.NewLevelHandler(slog.LevelWarn, s.log.Handler())).WithGroup("gRPC"))
+	grpcLog := logger.GRPCLogger(s.log)
+	logger.ReplaceGRPCLogger(grpcLog)
 	grpcServer := grpc.NewServer(
 		grpc.Creds(creds),
-		logger.GetServerUnaryInterceptor(s.log.WithGroup("gRPC")),
+		logger.GetServerUnaryInterceptor(grpcLog),
 	)
 
 	joinproto.RegisterAPIServer(grpcServer, s)

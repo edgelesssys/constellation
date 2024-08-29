@@ -59,7 +59,7 @@ func New(issuer atls.Issuer, factory kmsFactory, log *slog.Logger) *RecoveryServ
 
 	grpcServer := grpc.NewServer(
 		grpc.Creds(atlscredentials.New(issuer, nil)),
-		logger.GetServerStreamInterceptor(log.WithGroup("gRPC")),
+		logger.GetServerStreamInterceptor(logger.GRPCLogger(log)),
 	)
 	recoverproto.RegisterAPIServer(grpcServer, server)
 

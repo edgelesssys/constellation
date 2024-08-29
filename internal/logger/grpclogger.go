@@ -19,24 +19,28 @@ import (
 
 func replaceGRPCLogger(log *slog.Logger) {
 	gl := &grpcLogger{
-		logger:    log.With(slog.String("system", "grpc"), slog.Bool("grpc_log", true)),
+		logger:    log,
 		verbosity: 0,
 	}
 	grpclog.SetLoggerV2(gl)
 }
 
 func (l *grpcLogger) log(level slog.Level, args ...interface{}) {
-	var pcs [1]uintptr
-	runtime.Callers(3, pcs[:])
-	r := slog.NewRecord(time.Now(), level, fmt.Sprint(args...), pcs[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+	if l.logger.Enabled(context.Background(), level) {
+		var pcs [1]uintptr
+		runtime.Callers(3, pcs[:])
+		r := slog.NewRecord(time.Now(), level, fmt.Sprint(args...), pcs[0])
+		_ = l.logger.Handler().Handle(context.Background(), r)
+	}
 }
 
 func (l *grpcLogger) logf(level slog.Level, format string, args ...interface{}) {
-	var pcs [1]uintptr
-	runtime.Callers(3, pcs[:])
-	r := slog.NewRecord(time.Now(), level, fmt.Sprintf(format, args...), pcs[0])
-	_ = l.logger.Handler().Handle(context.Background(), r)
+	if l.logger.Enabled(context.Background(), level) {
+		var pcs [1]uintptr
+		runtime.Callers(3, pcs[:])
+		r := slog.NewRecord(time.Now(), level, fmt.Sprintf(format, args...), pcs[0])
+		_ = l.logger.Handler().Handle(context.Background(), r)
+	}
 }
 
 type grpcLogger struct {
