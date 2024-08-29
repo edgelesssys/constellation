@@ -98,8 +98,9 @@ func (d *AttestationDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 			"attestation_variant": newAttestationVariantAttributeSchema(attributeInput),
 			"image":               newImageAttributeSchema(attributeInput),
 			"maa_url": schema.StringAttribute{
-				MarkdownDescription: "For Azure only, the URL of the Microsoft Azure Attestation service",
-				Optional:            true,
+				MarkdownDescription: `For Azure only, the URL of the Microsoft Azure Attestation service. The MAA's policy needs to be patched manually to work with Constellation OS images.
+See the [Constellation documentation](https://docs.edgeless.systems/constellation/workflows/terraform-provider#quick-setup) for more information.`,
+				Optional: true,
 			},
 			"insecure": schema.BoolAttribute{
 				MarkdownDescription: "DON'T USE IN PRODUCTION Skip the signature verification when fetching measurements for the image.",
@@ -125,6 +126,15 @@ func (d *AttestationDataSource) ValidateConfig(ctx context.Context, req datasour
 		)
 		return
 	}
+
+	if !data.MaaURL.IsNull() {
+		resp.Diagnostics.AddAttributeWarning(
+			path.Root("maa_url"),
+			"Ensure that the MAA's policy is patched", "When MAA is used, please ensure the MAA's policy is patche properly for use within Constellation. See https://docs.edgeless.systems/constellation/workflows/terraform-provider#quick-setup for more information.",
+		)
+		return
+	}
+
 	if data.AttestationVariant.Equal(types.StringValue("azure-sev-snp")) && data.MaaURL.IsNull() {
 		tflog.Info(ctx, "MAA URL not set, MAA fallback will be unavailable")
 	}
