@@ -80,6 +80,8 @@ data "constellation_attestation" "foo" {
   csp                 = local.csp
   attestation_variant = local.attestation_variant
   image               = data.constellation_image.bar.image
+  # Needs to be patched manually, see:
+  # https://docs.edgeless.systems/constellation/workflows/terraform-provider#quick-setup
   maa_url             = module.azure_infrastructure.attestation_url
 }
 
