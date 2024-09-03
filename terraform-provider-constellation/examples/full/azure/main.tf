@@ -82,7 +82,7 @@ data "constellation_attestation" "foo" {
   image               = data.constellation_image.bar.image
   # Needs to be patched manually, see:
   # https://docs.edgeless.systems/constellation/workflows/terraform-provider#quick-setup
-  maa_url             = module.azure_infrastructure.attestation_url
+  maa_url = module.azure_infrastructure.attestation_url
 }
 
 data "constellation_image" "bar" {
