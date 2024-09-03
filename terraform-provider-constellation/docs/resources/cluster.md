@@ -90,8 +90,12 @@ See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview
 
 ### Read-Only
 
+- `client_certificate` (String) The client certificate of the cluster.
+- `client_key` (String, Sensitive) The client key of the cluster.
+- `cluster_ca_certificate` (String) The cluster CA certificate of the cluster.
 - `cluster_id` (String) The cluster ID of the cluster.
-- `kubeconfig` (String, Sensitive) The kubeconfig of the cluster.
+- `host` (String) The host of the cluster.
+- `kubeconfig` (String, Sensitive) The kubeconfig (file) of the cluster.
 - `owner_id` (String) The owner ID of the cluster.
 
 <a id="nestedatt--attestation"></a>
