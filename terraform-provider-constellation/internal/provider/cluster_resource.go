@@ -54,6 +54,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/spf13/afero"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 var (
@@ -102,9 +103,13 @@ type ClusterResourceModel struct {
 	Azure                types.Object `tfsdk:"azure"`
 	OpenStack            types.Object `tfsdk:"openstack"`
 
-	OwnerID    types.String `tfsdk:"owner_id"`
-	ClusterID  types.String `tfsdk:"cluster_id"`
-	KubeConfig types.String `tfsdk:"kubeconfig"`
+	OwnerID              types.String `tfsdk:"owner_id"`
+	ClusterID            types.String `tfsdk:"cluster_id"`
+	KubeConfig           types.String `tfsdk:"kubeconfig"`
+	Host                 types.String `tfsdk:"host"`
+	ClientCertificate    types.String `tfsdk:"client_certificate"`
+	ClientKey            types.String `tfsdk:"client_key"`
+	ClusterCACertificate types.String `tfsdk:"cluster_ca_certificate"`
 }
 
 // networkConfigAttribute is the network config attribute's data model.
@@ -417,10 +422,47 @@ func (r *ClusterResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				},
 			},
 			"kubeconfig": schema.StringAttribute{
-				MarkdownDescription: "The kubeconfig of the cluster.",
-				Description:         "The kubeconfig of the cluster.",
+				MarkdownDescription: "The kubeconfig (file) of the cluster.",
+				Description:         "The kubeconfig (file) of the cluster.",
 				Computed:            true,
 				Sensitive:           true,
+				PlanModifiers: []planmodifier.String{
+					// We know that this value will never change after creation, so we can use the state value for upgrades.
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"host": schema.StringAttribute{
+				MarkdownDescription: "The host of the cluster.",
+				Description:         "The host of the cluster.",
+				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					// We know that this value will never change after creation, so we can use the state value for upgrades.
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"client_certificate": schema.StringAttribute{
+				MarkdownDescription: "The client certificate of the cluster.",
+				Description:         "The client certificate of the cluster.",
+				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					// We know that this value will never change after creation, so we can use the state value for upgrades.
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"client_key": schema.StringAttribute{
+				MarkdownDescription: "The client key of the cluster.",
+				Description:         "The client key of the cluster.",
+				Computed:            true,
+				Sensitive:           true,
+				PlanModifiers: []planmodifier.String{
+					// We know that this value will never change after creation, so we can use the state value for upgrades.
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"cluster_ca_certificate": schema.StringAttribute{
+				MarkdownDescription: "The cluster CA certificate of the cluster.",
+				Description:         "The cluster CA certificate of the cluster.",
+				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					// We know that this value will never change after creation, so we can use the state value for upgrades.
 					stringplanmodifier.UseStateForUnknown(),
@@ -1171,7 +1213,45 @@ func (r *ClusterResource) runInitRPC(ctx context.Context, applier *constellation
 	}
 
 	// Save data from init response into the Terraform state
+
+	// Save the raw kubeconfig file.
 	data.KubeConfig = types.StringValue(string(initOutput.Kubeconfig))
+
+	// Unmarshal the kubeconfig to get the fine-grained values.
+	kubeconfig, err := clientcmd.Load(initOutput.Kubeconfig)
+	if err != nil {
+		diags.AddError("Unmarshalling kubeconfig", err.Error())
+		return diags
+	}
+
+	clusterContext, ok := kubeconfig.Contexts[kubeconfig.CurrentContext]
+	if !ok {
+		diags.AddError("Getting cluster context",
+			fmt.Sprintf("Context %s not found in kubeconfig", kubeconfig.CurrentContext))
+		return diags
+	}
+
+	cluster, ok := kubeconfig.Clusters[clusterContext.Cluster]
+	if !ok {
+		diags.AddError("Getting cluster",
+			fmt.Sprintf("Cluster %s not found in kubeconfig", clusterContext.Cluster))
+		return diags
+	}
+
+	data.Host = types.StringValue(cluster.Server)
+	data.ClusterCACertificate = types.StringValue(string(cluster.CertificateAuthorityData))
+
+	authInfo, ok := kubeconfig.AuthInfos[clusterContext.AuthInfo]
+	if !ok {
+		diags.AddError("Getting auth info",
+			fmt.Sprintf("Auth info %s not found in kubeconfig", clusterContext.AuthInfo))
+		return diags
+	}
+
+	data.ClientCertificate = types.StringValue(string(authInfo.ClientCertificateData))
+	data.ClientKey = types.StringValue(string(authInfo.ClientKeyData))
+
+	// Save other values from the init response.
 	data.ClusterID = types.StringValue(initOutput.ClusterID)
 	data.OwnerID = types.StringValue(initOutput.OwnerID)
 
