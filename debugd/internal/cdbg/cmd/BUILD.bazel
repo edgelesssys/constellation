@@ -14,7 +14,7 @@ go_library(
         "//debugd/internal/filetransfer",
         "//debugd/internal/filetransfer/streamer",
         "//debugd/service",
-        "//internal/api/attestationconfigapi",
+        "//api/attestationconfigapi",
         "//internal/config",
         "//internal/constants",
         "//internal/file",
