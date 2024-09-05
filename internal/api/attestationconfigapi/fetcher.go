@@ -20,7 +20,7 @@ const cosignPublicKey = constants.CosignPublicKeyReleases
 
 // Fetcher fetches config API resources without authentication.
 type Fetcher interface {
-	FetchLatestVersion(ctx context.Context, attestation variant.Variant) (Entry, error)
+	FetchLatestVersion(ctx context.Context, attestation fmt.Stringer) (Entry, error)
 }
 
 // fetcher fetches AttestationCfg API resources without authentication.
@@ -60,7 +60,7 @@ func newFetcherWithClientAndVerifier(client apifetcher.HTTPClient, cosignVerifie
 }
 
 // FetchLatestVersion returns the latest versions of the given type.
-func (f *fetcher) FetchLatestVersion(ctx context.Context, variant variant.Variant) (Entry, error) {
+func (f *fetcher) FetchLatestVersion(ctx context.Context, variant fmt.Stringer) (Entry, error) {
 	list, err := f.fetchVersionList(ctx, variant)
 	if err != nil {
 		return Entry{}, err
@@ -71,23 +71,31 @@ func (f *fetcher) FetchLatestVersion(ctx context.Context, variant variant.Varian
 }
 
 // fetchVersionList fetches the version list information from the config API.
-func (f *fetcher) fetchVersionList(ctx context.Context, variant variant.Variant) (List, error) {
-	fetchedList, err := apifetcher.FetchAndVerify(ctx, f.HTTPClient, f.cdnURL, List{Variant: variant}, f.verifier)
+func (f *fetcher) fetchVersionList(ctx context.Context, attestationVariant fmt.Stringer) (List, error) {
+	parsedVariant, err := variant.FromString(attestationVariant.String())
+	if err != nil {
+		return List{}, fmt.Errorf("parsing variant: %w", err)
+	}
+	fetchedList, err := apifetcher.FetchAndVerify(ctx, f.HTTPClient, f.cdnURL, List{Variant: parsedVariant}, f.verifier)
 	if err != nil {
 		return List{}, fmt.Errorf("fetching version list: %w", err)
 	}
 
 	// Set the attestation variant of the list as it is not part of the marshalled JSON retrieved by Fetch
-	fetchedList.Variant = variant
+	fetchedList.Variant = parsedVariant
 
 	return fetchedList, nil
 }
 
 // fetchVersion fetches the version information from the config API.
-func (f *fetcher) fetchVersion(ctx context.Context, version string, variant variant.Variant) (Entry, error) {
+func (f *fetcher) fetchVersion(ctx context.Context, version string, attestationVariant fmt.Stringer) (Entry, error) {
+	parsedVariant, err := variant.FromString(attestationVariant.String())
+	if err != nil {
+		return Entry{}, fmt.Errorf("parsing variant: %w", err)
+	}
 	obj := Entry{
 		Version: version,
-		Variant: variant,
+		Variant: parsedVariant,
 	}
 	fetchedVersion, err := apifetcher.FetchAndVerify(ctx, f.HTTPClient, f.cdnURL, obj, f.verifier)
 	if err != nil {
@@ -95,7 +103,7 @@ func (f *fetcher) fetchVersion(ctx context.Context, version string, variant vari
 	}
 
 	// Set the attestation variant of the list as it is not part of the marshalled JSON retrieved by FetchAndVerify
-	fetchedVersion.Variant = variant
+	fetchedVersion.Variant = parsedVariant
 
 	return fetchedVersion, nil
 }

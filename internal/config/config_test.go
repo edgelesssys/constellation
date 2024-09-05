@@ -9,6 +9,7 @@ package config
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -1051,7 +1052,7 @@ func getConfigAsMap(conf *Config, t *testing.T) (res configMap) {
 
 type stubAttestationFetcher struct{}
 
-func (f stubAttestationFetcher) FetchLatestVersion(_ context.Context, _ variant.Variant) (attestationconfigapi.Entry, error) {
+func (f stubAttestationFetcher) FetchLatestVersion(_ context.Context, _ fmt.Stringer) (attestationconfigapi.Entry, error) {
 	return attestationconfigapi.Entry{
 		SEVSNPVersion: testCfg,
 	}, nil
