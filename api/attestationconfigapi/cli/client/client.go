@@ -20,7 +20,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"

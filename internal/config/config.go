@@ -33,7 +33,7 @@ import (
 	en_translations "github.com/go-playground/validator/v10/translations/en"
 	"gopkg.in/yaml.v3"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"

@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/api/client"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 )

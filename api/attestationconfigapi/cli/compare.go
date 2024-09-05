@@ -10,7 +10,7 @@ import (
 	"os"
 	"slices"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi/cli/client"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi/cli/client"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/verify"

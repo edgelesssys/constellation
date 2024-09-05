@@ -8,7 +8,7 @@ package client
 import (
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
 	"github.com/stretchr/testify/assert"
 )
 

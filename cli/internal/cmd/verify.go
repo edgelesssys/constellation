@@ -21,7 +21,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	azuretdx "github.com/edgelesssys/constellation/v2/internal/attestation/azure/tdx"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
