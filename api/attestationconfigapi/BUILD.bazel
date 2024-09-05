@@ -8,7 +8,7 @@ go_library(
         "fetcher.go",
         "version.go",
     ],
-    importpath = "github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi",
+    importpath = "github.com/edgelesssys/constellation/v2/api/attestationconfigapi",
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/api/fetcher",

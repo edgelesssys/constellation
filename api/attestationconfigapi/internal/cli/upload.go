@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi/cli/client"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi/internal/cli/client"
 	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/file"

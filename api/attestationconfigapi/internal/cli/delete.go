@@ -16,7 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi/cli/client"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi/internal/cli/client"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
