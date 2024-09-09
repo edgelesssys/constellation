@@ -21,76 +21,98 @@
   };
 
   outputs =
-    { self
-    , nixpkgsUnstable
-    , nixpkgsBazel
-    , flake-utils
-    , uplosi
-    }:
-    flake-utils.lib.eachDefaultSystem (system:
-    let
-      pkgsUnstable = import nixpkgsUnstable { inherit system; };
-
-      bazelPkgsUnstable = import nixpkgsBazel { inherit system; };
-
-      callPackage = pkgsUnstable.callPackage;
-
-      mkosiDev = (pkgsUnstable.mkosi.overrideAttrs (oldAttrs: rec {
-        propagatedBuildInputs = oldAttrs.propagatedBuildInputs ++ (with pkgsUnstable;  [
-          # package management
-          dnf5
-          rpm
-          createrepo_c
-
-          # filesystem tools
-          squashfsTools # mksquashfs
-          dosfstools # mkfs.vfat
-          mtools # mcopy
-          cryptsetup # dm-verity
-          util-linux # flock
-          kmod # depmod
-          cpio # cpio
-          zstd # zstd
-          xz # xz
-
-          # utils
-          gnused # sed
-          gnugrep # grep
-        ]);
-      }));
-
-      uplosiDev = uplosi.outputs.packages."${system}".uplosi;
-
-      openssl-static = pkgsUnstable.openssl.override { static = true; };
-
-      bazel_7 = bazelPkgsUnstable.callPackage ./nix/packages/bazel.nix { pkgs = bazelPkgsUnstable; nixpkgs = nixpkgsBazel; };
-
-    in
     {
-      packages.mkosi = mkosiDev;
+      self,
+      nixpkgsUnstable,
+      nixpkgsBazel,
+      flake-utils,
+      uplosi,
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
+      let
+        pkgsUnstable = import nixpkgsUnstable { inherit system; };
 
-      packages.uplosi = uplosiDev;
+        bazelPkgsUnstable = import nixpkgsBazel { inherit system; };
 
-      packages.openssl = callPackage ./nix/cc/openssl.nix { pkgs = pkgsUnstable; };
+        callPackage = pkgsUnstable.callPackage;
 
-      packages.cryptsetup = callPackage ./nix/cc/cryptsetup.nix { pkgs = pkgsUnstable; pkgsLinux = import nixpkgsUnstable { system = "x86_64-linux"; }; };
+        mkosiDev = (
+          pkgsUnstable.mkosi.overrideAttrs (oldAttrs: rec {
+            propagatedBuildInputs =
+              oldAttrs.propagatedBuildInputs
+              ++ (with pkgsUnstable; [
+                # package management
+                dnf5
+                rpm
+                createrepo_c
 
-      packages.libvirt = callPackage ./nix/cc/libvirt.nix { pkgs = pkgsUnstable; pkgsLinux = import nixpkgsUnstable { system = "x86_64-linux"; }; };
+                # filesystem tools
+                squashfsTools # mksquashfs
+                dosfstools # mkfs.vfat
+                mtools # mcopy
+                cryptsetup # dm-verity
+                util-linux # flock
+                kmod # depmod
+                cpio # cpio
+                zstd # zstd
+                xz # xz
 
-      packages.libvirtd_base = callPackage ./nix/container/libvirtd_base.nix { pkgs = pkgsUnstable; pkgsLinux = import nixpkgsUnstable { system = "x86_64-linux"; }; };
+                # utils
+                gnused # sed
+                gnugrep # grep
+              ]);
+          })
+        );
 
-      packages.vpn = callPackage ./nix/container/vpn/vpn.nix { pkgs = pkgsUnstable; pkgsLinux = import nixpkgsUnstable { system = "x86_64-linux"; }; };
+        uplosiDev = uplosi.outputs.packages."${system}".uplosi;
 
-      packages.awscli2 = pkgsUnstable.awscli2;
+        openssl-static = pkgsUnstable.openssl.override { static = true; };
 
-      packages.bazel_7 = bazel_7;
+        bazel_7 = bazelPkgsUnstable.callPackage ./nix/packages/bazel.nix {
+          pkgs = bazelPkgsUnstable;
+          nixpkgs = nixpkgsBazel;
+        };
 
-      packages.createrepo_c = pkgsUnstable.createrepo_c;
+      in
+      {
+        packages.mkosi = mkosiDev;
 
-      packages.dnf5 = pkgsUnstable.dnf5;
+        packages.uplosi = uplosiDev;
 
-      devShells.default = callPackage ./nix/shells/default.nix { inherit bazel_7; };
+        packages.openssl = callPackage ./nix/cc/openssl.nix { pkgs = pkgsUnstable; };
 
-      formatter = nixpkgsUnstable.legacyPackages.${system}.nixpkgs-fmt;
-    });
+        packages.cryptsetup = callPackage ./nix/cc/cryptsetup.nix {
+          pkgs = pkgsUnstable;
+          pkgsLinux = import nixpkgsUnstable { system = "x86_64-linux"; };
+        };
+
+        packages.libvirt = callPackage ./nix/cc/libvirt.nix {
+          pkgs = pkgsUnstable;
+          pkgsLinux = import nixpkgsUnstable { system = "x86_64-linux"; };
+        };
+
+        packages.libvirtd_base = callPackage ./nix/container/libvirtd_base.nix {
+          pkgs = pkgsUnstable;
+          pkgsLinux = import nixpkgsUnstable { system = "x86_64-linux"; };
+        };
+
+        packages.vpn = callPackage ./nix/container/vpn/vpn.nix {
+          pkgs = pkgsUnstable;
+          pkgsLinux = import nixpkgsUnstable { system = "x86_64-linux"; };
+        };
+
+        packages.awscli2 = pkgsUnstable.awscli2;
+
+        packages.bazel_7 = bazel_7;
+
+        packages.createrepo_c = pkgsUnstable.createrepo_c;
+
+        packages.dnf5 = pkgsUnstable.dnf5;
+
+        devShells.default = callPackage ./nix/shells/default.nix { inherit bazel_7; };
+
+        formatter = nixpkgsUnstable.legacyPackages.${system}.nixpkgs-fmt;
+      }
+    );
 }
