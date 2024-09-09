@@ -15,3 +15,19 @@ cp "${BUILDROOT}/usr/share/constellation/packagemanifest" "${OUTPUTDIR}/"
 
 # copy rpmdb to outputs
 cp "${BUILDROOT}"/var/lib/rpm/{rpmdb.sqlite-wal,rpmdb.sqlite-shm,rpmdb.sqlite,.rpm.lock} "${OUTPUTDIR}/"
+
+# FIXME(msanft):
+# Hack to satisfy Bazel's [output expectations](./BUILD.bazel).
+# 2 Bazel packages can't share the same output paths, as it seems, and the
+# files being copied around here aren't large, so copying them around doesn't
+# hurt.
+cp "${OUTPUTDIR}/packagemanifest" "${OUTPUTDIR}/lts-packagemanifest"
+cp "${OUTPUTDIR}/.rpm.lock" "${OUTPUTDIR}/lts-.rpm.lock"
+cp "${OUTPUTDIR}/rpmdb.sqlite" "${OUTPUTDIR}/lts-rpmdb.sqlite"
+cp "${OUTPUTDIR}/rpmdb.sqlite-shm" "${OUTPUTDIR}/lts-rpmdb.sqlite-shm"
+cp "${OUTPUTDIR}/rpmdb.sqlite-wal" "${OUTPUTDIR}/lts-rpmdb.sqlite-wal"
+cp "${OUTPUTDIR}/packagemanifest" "${OUTPUTDIR}/mainline-packagemanifest"
+cp "${OUTPUTDIR}/.rpm.lock" "${OUTPUTDIR}/mainline-.rpm.lock"
+cp "${OUTPUTDIR}/rpmdb.sqlite" "${OUTPUTDIR}/mainline-rpmdb.sqlite"
+cp "${OUTPUTDIR}/rpmdb.sqlite-shm" "${OUTPUTDIR}/mainline-rpmdb.sqlite-shm"
+cp "${OUTPUTDIR}/rpmdb.sqlite-wal" "${OUTPUTDIR}/mainline-rpmdb.sqlite-wal"

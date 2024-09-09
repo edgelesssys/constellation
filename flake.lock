@@ -36,11 +36,11 @@
     },
     "nixpkgsUnstable": {
       "locked": {
-        "lastModified": 1725194671,
-        "narHash": "sha256-tLGCFEFTB5TaOKkpfw3iYT9dnk4awTP/q4w+ROpMfuw=",
+        "lastModified": 1725816686,
+        "narHash": "sha256-0Kq2MkQ/sQX1rhWJ/ySBBQlBJBUK8mPMDcuDhhdBkSU=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "b833ff01a0d694b910daca6e2ff4a3f26dee478c",
+        "rev": "add0443ee587a0c44f22793b8c8649a0dbc3bb00",
         "type": "github"
       },
       "original": {
@@ -83,11 +83,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1718003967,
-        "narHash": "sha256-PJbw9L8NgRKYkKqc1Pywv1glSyT+iE1D79GuF7ec4tc=",
+        "lastModified": 1725522308,
+        "narHash": "sha256-AtsFZ92WkVkH8fd0Xa0D6/PR84/dtOH6gpM4mtn32Hk=",
         "owner": "edgelesssys",
         "repo": "uplosi",
-        "rev": "b7edeef9b9eb1226998c86ffc8fbf9eacce94549",
+        "rev": "c8a482de299b5442f558d7381f0cbf898e0de0e1",
         "type": "github"
       },
       "original": {
