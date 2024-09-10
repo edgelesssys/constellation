@@ -324,7 +324,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		// Check for newer versions at https://github.com/kubernetes-sigs/cloud-provider-azure/blob/master/README.md.
 		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.29.9@sha256:175d52f1d48d1b947823974166bcdd403c0644c5bca6f7275a3087d29fe8f36d", // renovate:container
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
-		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v29.5.0@sha256:4b17e16f9b5dfa20c9ff62cb382c3f754b70ed36be7f85cc3f46213dae21ec91", // renovate:container
+		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v29.5.1@sha256:ebbc6f5755725b6c2c81ca1d1580e2feba83572c41608b739c50f85b2e5de936", // renovate:container
 		// CloudControllerManagerImageOpenStack is the CCM image used on OpenStack.
 		CloudControllerManagerImageOpenStack: "docker.io/k8scloudprovider/openstack-cloud-controller-manager:v1.26.4@sha256:05e846fb13481b6dbe4a1e50491feb219e8f5101af6cf662a086115735624db0", // renovate:container
 		// External service image. Depends on k8s version.
@@ -391,7 +391,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		// Check for newer versions at https://github.com/kubernetes-sigs/cloud-provider-azure/blob/master/README.md.
 		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.30.5@sha256:16203c47820604328950e7b7bbf6fd103aec51e1c13c2a3689546e0ba6119b2c", // renovate:container
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
-		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v30.0.0@sha256:529382b3a16cee9d61d4cfd9b8ba74fff51856ae8cbaf1825c075112229284d9", // renovate:container
+		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v30.1.0@sha256:64d2d5d4d2b5fb426c307c64ada9a61b64e797b56d9768363f145f2bd957998f", // renovate:container
 		// CloudControllerManagerImageOpenStack is the CCM image used on OpenStack.
 		CloudControllerManagerImageOpenStack: "docker.io/k8scloudprovider/openstack-cloud-controller-manager:v1.26.4@sha256:05e846fb13481b6dbe4a1e50491feb219e8f5101af6cf662a086115735624db0", // renovate:container
 		// External service image. Depends on k8s version.
