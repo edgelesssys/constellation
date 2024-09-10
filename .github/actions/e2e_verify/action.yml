@@ -103,9 +103,9 @@ runs:
           absolute_reports="${absolute_reports} $(realpath "${report}")"
         done
 
-        report=$(bazel run //internal/api/attestationconfigapi/cli -- compare ${{ inputs.attestationVariant }} ${absolute_reports})
+        report=$(bazel run //api/attestationconfigapi/internal/cli -- compare ${{ inputs.attestationVariant }} ${absolute_reports})
 
         path=$(realpath "${report}")
         cat "${path}"
 
-        bazel run //internal/api/attestationconfigapi/cli -- upload ${{ inputs.attestationVariant }} attestation-report "${path}"
+        bazel run //api/attestationconfigapi/internal/cli -- upload ${{ inputs.attestationVariant }} attestation-report "${path}"
