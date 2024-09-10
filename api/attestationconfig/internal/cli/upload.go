@@ -14,8 +14,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi/internal/cli/client"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfig"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfig/internal/cli/client"
 	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -64,7 +64,7 @@ func envCheck(_ *cobra.Command, _ []string) error {
 
 func runUpload(cmd *cobra.Command, args []string) (retErr error) {
 	ctx := cmd.Context()
-	log := logger.NewTextLogger(slog.LevelDebug).WithGroup("attestationconfigapi")
+	log := logger.NewTextLogger(slog.LevelDebug).WithGroup("attestationconfig")
 
 	uploadCfg, err := newConfig(cmd, ([3]string)(args[:3]))
 	if err != nil {
@@ -103,7 +103,7 @@ func uploadReport(
 		return fmt.Errorf("kind %s not supported", cfg.kind)
 	}
 
-	apiFetcher := attestationconfigapi.NewFetcherWithCustomCDNAndCosignKey(cfg.url, cfg.cosignPublicKey)
+	apiFetcher := attestationconfig.NewFetcherWithCustomCDNAndCosignKey(cfg.url, cfg.cosignPublicKey)
 	latestVersionInAPI, err := apiFetcher.FetchLatestVersion(ctx, cfg.variant)
 	if err != nil {
 		var notFoundErr *fetcher.NotFoundError
@@ -149,8 +149,8 @@ func uploadReport(
 	return nil
 }
 
-func convertTCBVersionToSNPVersion(tcb verify.TCBVersion) attestationconfigapi.SEVSNPVersion {
-	return attestationconfigapi.SEVSNPVersion{
+func convertTCBVersionToSNPVersion(tcb verify.TCBVersion) attestationconfig.SEVSNPVersion {
+	return attestationconfig.SEVSNPVersion{
 		Bootloader: tcb.Bootloader,
 		TEE:        tcb.TEE,
 		SNP:        tcb.SNP,
@@ -158,8 +158,8 @@ func convertTCBVersionToSNPVersion(tcb verify.TCBVersion) attestationconfigapi.S
 	}
 }
 
-func convertQuoteToTDXVersion(quote *tdx.QuoteV4) attestationconfigapi.TDXVersion {
-	return attestationconfigapi.TDXVersion{
+func convertQuoteToTDXVersion(quote *tdx.QuoteV4) attestationconfig.TDXVersion {
+	return attestationconfig.TDXVersion{
 		QESVN:      binary.LittleEndian.Uint16(quote.Header.QeSvn),
 		PCESVN:     binary.LittleEndian.Uint16(quote.Header.PceSvn),
 		QEVendorID: [16]byte(quote.Header.QeVendorId),

@@ -21,7 +21,7 @@ import (
 	"go.uber.org/goleak"
 	"gopkg.in/yaml.v3"
 
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfig"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -1051,13 +1051,13 @@ func getConfigAsMap(conf *Config, t *testing.T) (res configMap) {
 
 type stubAttestationFetcher struct{}
 
-func (f stubAttestationFetcher) FetchLatestVersion(_ context.Context, _ attestationconfigapi.Variant) (attestationconfigapi.Entry, error) {
-	return attestationconfigapi.Entry{
+func (f stubAttestationFetcher) FetchLatestVersion(_ context.Context, _ attestationconfig.Variant) (attestationconfig.Entry, error) {
+	return attestationconfig.Entry{
 		SEVSNPVersion: testCfg,
 	}, nil
 }
 
-var testCfg = attestationconfigapi.SEVSNPVersion{
+var testCfg = attestationconfig.SEVSNPVersion{
 	Microcode:  93,
 	TEE:        0,
 	SNP:        6,

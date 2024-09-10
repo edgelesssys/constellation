@@ -20,7 +20,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfig"
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
@@ -75,14 +75,14 @@ func (c Client) DeleteVersion(ctx context.Context, attestation variant.Variant, 
 }
 
 // List returns the list of versions for the given attestation variant.
-func (c Client) List(ctx context.Context, attestation variant.Variant) (attestationconfigapi.List, error) {
-	versions, err := apiclient.Fetch(ctx, c.s3Client, attestationconfigapi.List{Variant: attestation})
+func (c Client) List(ctx context.Context, attestation variant.Variant) (attestationconfig.List, error) {
+	versions, err := apiclient.Fetch(ctx, c.s3Client, attestationconfig.List{Variant: attestation})
 	if err != nil {
 		var notFoundErr *apiclient.NotFoundError
 		if errors.As(err, &notFoundErr) {
-			return attestationconfigapi.List{Variant: attestation}, nil
+			return attestationconfig.List{Variant: attestation}, nil
 		}
-		return attestationconfigapi.List{}, err
+		return attestationconfig.List{}, err
 	}
 
 	versions.Variant = attestation
@@ -90,10 +90,10 @@ func (c Client) List(ctx context.Context, attestation variant.Variant) (attestat
 	return versions, nil
 }
 
-func (c Client) deleteVersion(versions attestationconfigapi.List, versionStr string) (ops []crudCmd, err error) {
+func (c Client) deleteVersion(versions attestationconfig.List, versionStr string) (ops []crudCmd, err error) {
 	versionStr = versionStr + ".json"
 	ops = append(ops, deleteCmd{
-		apiObject: attestationconfigapi.Entry{
+		apiObject: attestationconfig.Entry{
 			Variant: versions.Variant,
 			Version: versionStr,
 		},
@@ -132,19 +132,19 @@ func (c Client) listCachedVersions(ctx context.Context, attestation variant.Vari
 	return dates, nil
 }
 
-func removeVersion(list attestationconfigapi.List, versionStr string) (removedVersions attestationconfigapi.List, err error) {
+func removeVersion(list attestationconfig.List, versionStr string) (removedVersions attestationconfig.List, err error) {
 	versions := list.List
 	for i, v := range versions {
 		if v == versionStr {
 			if i == len(versions)-1 {
-				removedVersions = attestationconfigapi.List{List: versions[:i], Variant: list.Variant}
+				removedVersions = attestationconfig.List{List: versions[:i], Variant: list.Variant}
 			} else {
-				removedVersions = attestationconfigapi.List{List: append(versions[:i], versions[i+1:]...), Variant: list.Variant}
+				removedVersions = attestationconfig.List{List: append(versions[:i], versions[i+1:]...), Variant: list.Variant}
 			}
 			return removedVersions, nil
 		}
 	}
-	return attestationconfigapi.List{}, fmt.Errorf("version %s not found in list %v", versionStr, versions)
+	return attestationconfig.List{}, fmt.Errorf("version %s not found in list %v", versionStr, versions)
 }
 
 type crudCmd interface {

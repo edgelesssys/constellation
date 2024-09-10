@@ -12,7 +12,7 @@ import (
 	"io"
 	"path/filepath"
 
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfig"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -68,7 +68,7 @@ func (f *iamUpgradeApplyFlags) parse(flags *pflag.FlagSet) error {
 type iamUpgradeApplyCmd struct {
 	fileHandler   file.Handler
 	log           debugLog
-	configFetcher attestationconfigapi.Fetcher
+	configFetcher attestationconfig.Fetcher
 	flags         iamUpgradeApplyFlags
 }
 
@@ -76,7 +76,7 @@ func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	upgradeID := generateUpgradeID(upgradeCmdKindIAM)
 	upgradeDir := filepath.Join(constants.UpgradeDir, upgradeID)
-	configFetcher := attestationconfigapi.NewFetcher()
+	configFetcher := attestationconfig.NewFetcher()
 	iamMigrateCmd, err := cloudcmd.NewIAMUpgrader(
 		cmd.Context(),
 		constants.TerraformIAMWorkingDir,

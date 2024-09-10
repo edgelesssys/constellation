@@ -7,13 +7,13 @@ package client
 import (
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfig"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestIsInputNewerThanOtherSEVSNPVersion(t *testing.T) {
-	newTestCfg := func() attestationconfigapi.SEVSNPVersion {
-		return attestationconfigapi.SEVSNPVersion{
+	newTestCfg := func() attestationconfig.SEVSNPVersion {
+		return attestationconfig.SEVSNPVersion{
 			Microcode:  93,
 			TEE:        0,
 			SNP:        6,
@@ -22,12 +22,12 @@ func TestIsInputNewerThanOtherSEVSNPVersion(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		latest attestationconfigapi.SEVSNPVersion
-		input  attestationconfigapi.SEVSNPVersion
+		latest attestationconfig.SEVSNPVersion
+		input  attestationconfig.SEVSNPVersion
 		expect bool
 	}{
 		"input is older than latest": {
-			input: func(c attestationconfigapi.SEVSNPVersion) attestationconfigapi.SEVSNPVersion {
+			input: func(c attestationconfig.SEVSNPVersion) attestationconfig.SEVSNPVersion {
 				c.Microcode--
 				return c
 			}(newTestCfg()),
@@ -35,7 +35,7 @@ func TestIsInputNewerThanOtherSEVSNPVersion(t *testing.T) {
 			expect: false,
 		},
 		"input has greater and smaller version field than latest": {
-			input: func(c attestationconfigapi.SEVSNPVersion) attestationconfigapi.SEVSNPVersion {
+			input: func(c attestationconfig.SEVSNPVersion) attestationconfig.SEVSNPVersion {
 				c.Microcode++
 				c.Bootloader--
 				return c
@@ -44,7 +44,7 @@ func TestIsInputNewerThanOtherSEVSNPVersion(t *testing.T) {
 			expect: false,
 		},
 		"input is newer than latest": {
-			input: func(c attestationconfigapi.SEVSNPVersion) attestationconfigapi.SEVSNPVersion {
+			input: func(c attestationconfig.SEVSNPVersion) attestationconfig.SEVSNPVersion {
 				c.TEE++
 				return c
 			}(newTestCfg()),
@@ -66,8 +66,8 @@ func TestIsInputNewerThanOtherSEVSNPVersion(t *testing.T) {
 }
 
 func TestIsInputNewerThanOtherTDXVersion(t *testing.T) {
-	newTestVersion := func() attestationconfigapi.TDXVersion {
-		return attestationconfigapi.TDXVersion{
+	newTestVersion := func() attestationconfig.TDXVersion {
+		return attestationconfig.TDXVersion{
 			QESVN:      1,
 			PCESVN:     2,
 			TEETCBSVN:  [16]byte{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2},
@@ -77,12 +77,12 @@ func TestIsInputNewerThanOtherTDXVersion(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		latest attestationconfigapi.TDXVersion
-		input  attestationconfigapi.TDXVersion
+		latest attestationconfig.TDXVersion
+		input  attestationconfig.TDXVersion
 		expect bool
 	}{
 		"input is older than latest": {
-			input: func(c attestationconfigapi.TDXVersion) attestationconfigapi.TDXVersion {
+			input: func(c attestationconfig.TDXVersion) attestationconfig.TDXVersion {
 				c.QESVN--
 				return c
 			}(newTestVersion()),
@@ -90,7 +90,7 @@ func TestIsInputNewerThanOtherTDXVersion(t *testing.T) {
 			expect: false,
 		},
 		"input has greater and smaller version field than latest": {
-			input: func(c attestationconfigapi.TDXVersion) attestationconfigapi.TDXVersion {
+			input: func(c attestationconfig.TDXVersion) attestationconfig.TDXVersion {
 				c.QESVN++
 				c.PCESVN--
 				return c
@@ -99,7 +99,7 @@ func TestIsInputNewerThanOtherTDXVersion(t *testing.T) {
 			expect: false,
 		},
 		"input is newer than latest": {
-			input: func(c attestationconfigapi.TDXVersion) attestationconfigapi.TDXVersion {
+			input: func(c attestationconfig.TDXVersion) attestationconfig.TDXVersion {
 				c.QESVN++
 				return c
 			}(newTestVersion()),
@@ -112,7 +112,7 @@ func TestIsInputNewerThanOtherTDXVersion(t *testing.T) {
 			expect: false,
 		},
 		"tee tcb svn is newer": {
-			input: func(c attestationconfigapi.TDXVersion) attestationconfigapi.TDXVersion {
+			input: func(c attestationconfig.TDXVersion) attestationconfig.TDXVersion {
 				c.TEETCBSVN[4]++
 				return c
 			}(newTestVersion()),
@@ -120,7 +120,7 @@ func TestIsInputNewerThanOtherTDXVersion(t *testing.T) {
 			expect: true,
 		},
 		"xfam is different": {
-			input: func(c attestationconfigapi.TDXVersion) attestationconfigapi.TDXVersion {
+			input: func(c attestationconfig.TDXVersion) attestationconfig.TDXVersion {
 				c.XFAM[3]++
 				return c
 			}(newTestVersion()),

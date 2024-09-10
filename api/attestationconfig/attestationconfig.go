@@ -20,4 +20,4 @@ Thus, existing config types (AWSNitroTPM, AzureSEVSNP, ...) can not be extended 
 Instead, we need a separate type that wraps _all_ attestation types. In the codebase this is done using the AttestationCfg interface.
 The new type AttestationCfgGet needs to be located inside internal/config in order to implement UnmarshalJSON.
 */
-package attestationconfigapi
+package attestationconfig

@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfig"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
@@ -268,7 +268,7 @@ func runApply(cmd *cobra.Command, _ []string) error {
 	defer cancel()
 	cmd.SetContext(ctx)
 
-	return apply.apply(cmd, attestationconfigapi.NewFetcher(), upgradeDir)
+	return apply.apply(cmd, attestationconfig.NewFetcher(), upgradeDir)
 }
 
 type applyCmd struct {
@@ -356,7 +356,7 @@ The control flow is as follows:
 	                        └────────────────────┘
 */
 func (a *applyCmd) apply(
-	cmd *cobra.Command, configFetcher attestationconfigapi.Fetcher, upgradeDir string,
+	cmd *cobra.Command, configFetcher attestationconfig.Fetcher, upgradeDir string,
 ) error {
 	// Validate inputs
 	conf, stateFile, err := a.validateInputs(cmd, configFetcher)
@@ -450,7 +450,7 @@ func (a *applyCmd) apply(
 	return nil
 }
 
-func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationconfigapi.Fetcher) (*config.Config, *state.State, error) {
+func (a *applyCmd) validateInputs(cmd *cobra.Command, configFetcher attestationconfig.Fetcher) (*config.Config, *state.State, error) {
 	// Read user's config and state file
 	a.log.Debug(fmt.Sprintf("Reading config from %q", a.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename)))
 	conf, err := config.New(a.fileHandler, constants.ConfigFilename, configFetcher, a.flags.force)

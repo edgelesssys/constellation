@@ -19,7 +19,7 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfig"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -39,7 +39,7 @@ func main() {
 	ctx := context.Background()
 
 	fh := file.NewHandler(afero.NewOsFs())
-	attFetcher := attestationconfigapi.NewFetcher()
+	attFetcher := attestationconfig.NewFetcher()
 	conf, err := config.New(fh, filepath.Join(cwd, constants.ConfigFilename), attFetcher, true)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {

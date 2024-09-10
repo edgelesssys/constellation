@@ -21,7 +21,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfig"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	azuretdx "github.com/edgelesssys/constellation/v2/internal/attestation/azure/tdx"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
@@ -121,11 +121,11 @@ func runVerify(cmd *cobra.Command, _ []string) error {
 	}
 	v.log.Debug("Using flags", "clusterID", v.flags.clusterID, "endpoint", v.flags.endpoint, "ownerID", v.flags.ownerID)
 
-	fetcher := attestationconfigapi.NewFetcher()
+	fetcher := attestationconfig.NewFetcher()
 	return v.verify(cmd, verifyClient, fetcher)
 }
 
-func (c *verifyCmd) verify(cmd *cobra.Command, verifyClient verifyClient, configFetcher attestationconfigapi.Fetcher) error {
+func (c *verifyCmd) verify(cmd *cobra.Command, verifyClient verifyClient, configFetcher attestationconfig.Fetcher) error {
 	c.log.Debug(fmt.Sprintf("Loading configuration file from %q", c.flags.pathPrefixer.PrefixPrintablePath(constants.ConfigFilename)))
 	conf, err := config.New(c.fileHandler, constants.ConfigFilename, configFetcher, c.flags.force)
 	var configValidationErr *config.ValidationError

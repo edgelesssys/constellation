@@ -15,8 +15,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi/internal/cli/client"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfig"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfig/internal/cli/client"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
@@ -50,7 +50,7 @@ func newDeleteCmd() *cobra.Command {
 }
 
 func runDelete(cmd *cobra.Command, args []string) (retErr error) {
-	log := logger.NewTextLogger(slog.LevelDebug).WithGroup("attestationconfigapi")
+	log := logger.NewTextLogger(slog.LevelDebug).WithGroup("attestationconfig")
 
 	deleteCfg, err := newDeleteConfig(cmd, ([3]string)(args[:3]))
 	if err != nil {
@@ -86,7 +86,7 @@ func runRecursiveDelete(cmd *cobra.Command, args []string) (retErr error) {
 		return fmt.Errorf("creating delete config: %w", err)
 	}
 
-	log := logger.NewTextLogger(slog.LevelDebug).WithGroup("attestationconfigapi")
+	log := logger.NewTextLogger(slog.LevelDebug).WithGroup("attestationconfig")
 	client, closeFn, err := staticupload.New(cmd.Context(), staticupload.Config{
 		Bucket:         deleteCfg.bucket,
 		Region:         deleteCfg.region,
@@ -102,7 +102,7 @@ func runRecursiveDelete(cmd *cobra.Command, args []string) (retErr error) {
 		}
 	}()
 
-	deletePath := path.Join(attestationconfigapi.AttestationURLPath, deleteCfg.variant.String())
+	deletePath := path.Join(attestationconfig.AttestationURLPath, deleteCfg.variant.String())
 
 	return deleteEntryRecursive(cmd.Context(), deletePath, client, deleteCfg)
 }

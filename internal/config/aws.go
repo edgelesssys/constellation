@@ -10,7 +10,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfig"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -73,7 +73,7 @@ func (c *AWSSEVSNP) getToMarshallLatestWithResolvedVersions() AttestationCfg {
 }
 
 // FetchAndSetLatestVersionNumbers fetches the latest version numbers from the configapi and sets them.
-func (c *AWSSEVSNP) FetchAndSetLatestVersionNumbers(ctx context.Context, fetcher attestationconfigapi.Fetcher) error {
+func (c *AWSSEVSNP) FetchAndSetLatestVersionNumbers(ctx context.Context, fetcher attestationconfig.Fetcher) error {
 	// Only talk to the API if at least one version number is set to latest.
 	if !(c.BootloaderVersion.WantLatest || c.TEEVersion.WantLatest || c.SNPVersion.WantLatest || c.MicrocodeVersion.WantLatest) {
 		return nil
@@ -88,7 +88,7 @@ func (c *AWSSEVSNP) FetchAndSetLatestVersionNumbers(ctx context.Context, fetcher
 	return nil
 }
 
-func (c *AWSSEVSNP) mergeWithLatestVersion(latest attestationconfigapi.SEVSNPVersion) {
+func (c *AWSSEVSNP) mergeWithLatestVersion(latest attestationconfig.SEVSNPVersion) {
 	if c.BootloaderVersion.WantLatest {
 		c.BootloaderVersion.Value = latest.Bootloader
 	}

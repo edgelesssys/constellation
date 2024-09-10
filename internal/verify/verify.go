@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 Package verify provides the types for the verify report in JSON format.
 
 The package provides an interface for constellation verify and
-the attestationconfigapi upload tool through JSON serialization.
+the attestationconfig upload tool through JSON serialization.
 It exposes a CSP-agnostic interface for printing Reports that may include CSP-specific information.
 */
 package verify

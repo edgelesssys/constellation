@@ -17,7 +17,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfig"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/logcollector"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/filetransfer"
@@ -71,7 +71,7 @@ func runDeploy(cmd *cobra.Command, _ []string) error {
 	fileHandler := file.NewHandler(fs)
 	streamer := streamer.New(fs)
 	transfer := filetransfer.New(log, streamer, filetransfer.ShowProgress)
-	constellationConfig, err := config.New(fileHandler, constants.ConfigFilename, attestationconfigapi.NewFetcher(), force)
+	constellationConfig, err := config.New(fileHandler, constants.ConfigFilename, attestationconfig.NewFetcher(), force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())

@@ -14,7 +14,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfig"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -106,12 +106,12 @@ func runConfigFetchMeasurements(cmd *cobra.Command, _ []string) error {
 	}
 	cfm.log.Debug("Using flags", "insecure", cfm.flags.insecure, "measurementsURL", cfm.flags.measurementsURL, "signatureURL", cfm.flags.signatureURL)
 
-	fetcher := attestationconfigapi.NewFetcherWithClient(http.DefaultClient, constants.CDNRepositoryURL)
+	fetcher := attestationconfig.NewFetcherWithClient(http.DefaultClient, constants.CDNRepositoryURL)
 	return cfm.configFetchMeasurements(cmd, fileHandler, fetcher)
 }
 
 func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
-	cmd *cobra.Command, fileHandler file.Handler, fetcher attestationconfigapi.Fetcher,
+	cmd *cobra.Command, fileHandler file.Handler, fetcher attestationconfig.Fetcher,
 ) error {
 	if !cfm.canFetchMeasurements {
 		cmd.PrintErrln("Fetching measurements is not supported in the OSS build of the Constellation CLI. Consult the documentation for instructions on where to download the enterprise version.")

@@ -10,7 +10,7 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/e2e/internal/upgrade",
     visibility = ["//e2e:__subpackages__"],
     deps = [
-        "//api/attestationconfigapi",
+        "//api/attestationconfig",
         "//internal/config",
         "//internal/constants",
         "//internal/file",

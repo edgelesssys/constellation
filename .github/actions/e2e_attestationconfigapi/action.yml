@@ -30,4 +30,4 @@ runs:
         COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
         COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
       run: |
-        bazel run //api/attestationconfigapi/internal/cli:cli_e2e_test -- ${{ inputs.attestationVariant }}
+        bazel run //api/attestationconfig/internal/cli:cli_e2e_test -- ${{ inputs.attestationVariant }}

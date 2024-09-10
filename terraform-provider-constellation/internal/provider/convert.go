@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfig"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -138,7 +138,7 @@ func convertFromTfAttestationCfg(tfAttestation attestationAttribute, attestation
 }
 
 // convertToTfAttestationCfg converts the constellation attestation config to the related terraform structs.
-func convertToTfAttestation(attVar variant.Variant, latestVersions attestationconfigapi.Entry) (tfAttestation attestationAttribute, err error) {
+func convertToTfAttestation(attVar variant.Variant, latestVersions attestationconfig.Entry) (tfAttestation attestationAttribute, err error) {
 	tfAttestation = attestationAttribute{
 		Variant: attVar.String(),
 	}

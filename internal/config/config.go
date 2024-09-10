@@ -33,7 +33,7 @@ import (
 	en_translations "github.com/go-playground/validator/v10/translations/en"
 	"gopkg.in/yaml.v3"
 
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfig"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
@@ -461,7 +461,7 @@ func (e *UnsupportedAppRegistrationError) Error() string {
 // 2. For "latest" version values of the attestation variants fetch the version numbers.
 // 3. Read secrets from environment variables.
 // 4. Validate config. If `--force` is set the version validation will be disabled and any version combination is allowed.
-func New(fileHandler file.Handler, name string, fetcher attestationconfigapi.Fetcher, force bool) (*Config, error) {
+func New(fileHandler file.Handler, name string, fetcher attestationconfig.Fetcher, force bool) (*Config, error) {
 	// Read config file
 	c, err := fromFile(fileHandler, name)
 	if err != nil {

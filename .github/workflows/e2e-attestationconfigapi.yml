@@ -8,8 +8,8 @@ on:
       - "release/**"
     paths:
       - "internal/api/**"
-      - "api/attestationconfigapi/**"
-      - ".github/workflows/e2e-attestationconfigapi.yml"
+      - "api/attestationconfig/**"
+      - ".github/workflows/e2e-attestationconfig.yml"
       - "go.mod"
 
 jobs:
@@ -33,7 +33,7 @@ jobs:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || github.event.pull_request.head.sha || '' }}
 
       - name: Run Attestationconfig API E2E
-        uses: ./.github/actions/e2e_attestationconfigapi
+        uses: ./.github/actions/e2e_attestationconfig
         with:
           cosignPrivateKey: ${{ secrets.COSIGN_DEV_PRIVATE_KEY }}
           cosignPassword: ${{ secrets.COSIGN_DEV_PASSWORD }}

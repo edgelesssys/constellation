@@ -75,7 +75,7 @@ ok  	github.com/edgelesssys/constellation/v2/disk-mapper/internal/systemd	(cache
 ?   	github.com/edgelesssys/constellation/v2/image/upload	[no test files]
 ?   	github.com/edgelesssys/constellation/v2/image/upload/internal/cmd	[no test files]
 ?   	github.com/edgelesssys/constellation/v2/internal/api/client	[no test files]
-ok  	github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi	(cached)	coverage: 59.2% of statements
+ok  	github.com/edgelesssys/constellation/v2/internal/api/attestationconfig	(cached)	coverage: 59.2% of statements
 ?   	github.com/edgelesssys/constellation/v2/internal/api/fetcher	[no test files]
 ?   	github.com/edgelesssys/constellation/v2/internal/api/versionsapi/cli	[no test files]
 ok  	github.com/edgelesssys/constellation/v2/internal/api/versionsapi	(cached)	coverage: 69.8% of statements

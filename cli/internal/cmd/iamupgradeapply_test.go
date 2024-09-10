@@ -12,7 +12,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfig"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -170,6 +170,6 @@ type stubConfigFetcher struct {
 	fetchLatestErr error
 }
 
-func (s *stubConfigFetcher) FetchLatestVersion(context.Context, attestationconfigapi.Variant) (attestationconfigapi.Entry, error) {
-	return attestationconfigapi.Entry{}, s.fetchLatestErr
+func (s *stubConfigFetcher) FetchLatestVersion(context.Context, attestationconfig.Variant) (attestationconfig.Entry, error) {
+	return attestationconfig.Entry{}, s.fetchLatestErr
 }

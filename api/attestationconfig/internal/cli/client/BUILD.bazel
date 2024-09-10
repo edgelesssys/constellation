@@ -7,10 +7,10 @@ go_library(
         "client.go",
         "reporter.go",
     ],
-    importpath = "github.com/edgelesssys/constellation/v2/api/attestationconfigapi/internal/cli/client",
+    importpath = "github.com/edgelesssys/constellation/v2/api/attestationconfig/internal/cli/client",
     visibility = ["//:__subpackages__"],
     deps = [
-        "//api/attestationconfigapi",
+        "//api/attestationconfig",
         "//internal/api/client",
         "//internal/attestation/variant",
         "//internal/sigstore",
@@ -28,7 +28,7 @@ go_test(
     ],
     embed = [":client"],
     deps = [
-        "//api/attestationconfigapi",
+        "//api/attestationconfig",
         "@com_github_stretchr_testify//assert",
     ],
 )

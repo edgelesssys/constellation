@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfig"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/recoverproto"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
@@ -67,7 +67,7 @@ func (f *recoverFlags) parse(flags *pflag.FlagSet) error {
 
 type recoverCmd struct {
 	log           debugLog
-	configFetcher attestationconfigapi.Fetcher
+	configFetcher attestationconfig.Fetcher
 	flags         recoverFlags
 }
 
@@ -80,7 +80,7 @@ func runRecover(cmd *cobra.Command, _ []string) error {
 	newDialer := func(validator atls.Validator) *dialer.Dialer {
 		return dialer.New(nil, validator, &net.Dialer{})
 	}
-	r := &recoverCmd{log: log, configFetcher: attestationconfigapi.NewFetcher()}
+	r := &recoverCmd{log: log, configFetcher: attestationconfig.NewFetcher()}
 	if err := r.flags.parse(cmd.Flags()); err != nil {
 		return err
 	}

@@ -7,7 +7,7 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/hack/image-fetch",
     visibility = ["//visibility:private"],
     deps = [
-        "//api/attestationconfigapi",
+        "//api/attestationconfig",
         "//internal/cloud/cloudprovider",
         "//internal/config",
         "//internal/constants",

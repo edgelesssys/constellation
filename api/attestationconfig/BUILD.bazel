@@ -2,13 +2,13 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
-    name = "attestationconfigapi",
+    name = "attestationconfig",
     srcs = [
-        "attestationconfigapi.go",
+        "attestationconfig.go",
         "fetcher.go",
         "version.go",
     ],
-    importpath = "github.com/edgelesssys/constellation/v2/api/attestationconfigapi",
+    importpath = "github.com/edgelesssys/constellation/v2/api/attestationconfig",
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/api/fetcher",
@@ -19,12 +19,12 @@ go_library(
 )
 
 go_test(
-    name = "attestationconfigapi_test",
+    name = "attestationconfig_test",
     srcs = [
         "fetcher_test.go",
         "version_test.go",
     ],
-    embed = [":attestationconfigapi"],
+    embed = [":attestationconfig"],
     deps = [
         "//internal/attestation/variant",
         "//internal/constants",

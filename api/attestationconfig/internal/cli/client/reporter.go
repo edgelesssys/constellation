@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfig"
 	"github.com/edgelesssys/constellation/v2/internal/api/client"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 )
@@ -28,7 +28,7 @@ const cachedVersionsSubDir = "cached-versions"
 var ErrNoNewerVersion = errors.New("input version is not newer than latest API version")
 
 func reportVersionDir(attestation variant.Variant) string {
-	return path.Join(attestationconfigapi.AttestationURLPath, attestation.String(), cachedVersionsSubDir)
+	return path.Join(attestationconfig.AttestationURLPath, attestation.String(), cachedVersionsSubDir)
 }
 
 // IsInputNewerThanOtherVersion compares the input version with the other version and returns true if the input version is newer.
@@ -37,13 +37,13 @@ func IsInputNewerThanOtherVersion(variant variant.Variant, inputVersion, otherVe
 	var result bool
 	actionForVariant(variant,
 		func() {
-			input := inputVersion.(attestationconfigapi.TDXVersion)
-			other := otherVersion.(attestationconfigapi.TDXVersion)
+			input := inputVersion.(attestationconfig.TDXVersion)
+			other := otherVersion.(attestationconfig.TDXVersion)
 			result = isInputNewerThanOtherTDXVersion(input, other)
 		},
 		func() {
-			input := inputVersion.(attestationconfigapi.SEVSNPVersion)
-			other := otherVersion.(attestationconfigapi.SEVSNPVersion)
+			input := inputVersion.(attestationconfig.SEVSNPVersion)
+			other := otherVersion.(attestationconfig.SEVSNPVersion)
 			result = isInputNewerThanOtherSEVSNPVersion(input, other)
 		},
 	)
@@ -64,18 +64,18 @@ func (c Client) UploadLatestVersion(
 	var err error
 	actionForVariant(attestationVariant,
 		func() {
-			if _, ok := inputVersion.(attestationconfigapi.TDXVersion); !ok {
+			if _, ok := inputVersion.(attestationconfig.TDXVersion); !ok {
 				err = fmt.Errorf("input version %q is not a TDX version", inputVersion)
 			}
-			if _, ok := latestVersionInAPI.(attestationconfigapi.TDXVersion); !ok {
+			if _, ok := latestVersionInAPI.(attestationconfig.TDXVersion); !ok {
 				err = fmt.Errorf("latest API version %q is not a TDX version", latestVersionInAPI)
 			}
 		},
 		func() {
-			if _, ok := inputVersion.(attestationconfigapi.SEVSNPVersion); !ok {
+			if _, ok := inputVersion.(attestationconfig.SEVSNPVersion); !ok {
 				err = fmt.Errorf("input version %q is not a SNP version", inputVersion)
 			}
-			if _, ok := latestVersionInAPI.(attestationconfigapi.SEVSNPVersion); !ok {
+			if _, ok := latestVersionInAPI.(attestationconfig.SEVSNPVersion); !ok {
 				err = fmt.Errorf("latest API version %q is not a SNP version", latestVersionInAPI)
 			}
 		},
@@ -181,19 +181,19 @@ func (c Client) findMinVersion(
 	actionForVariant(attestationVariant,
 		func() {
 			getMinimalVersion = func() (any, string, error) {
-				return findMinimalVersion[attestationconfigapi.TDXVersion](ctx, attestationVariant, versionDates, c.s3Client, c.cacheWindowSize)
+				return findMinimalVersion[attestationconfig.TDXVersion](ctx, attestationVariant, versionDates, c.s3Client, c.cacheWindowSize)
 			}
 		},
 		func() {
 			getMinimalVersion = func() (any, string, error) {
-				return findMinimalVersion[attestationconfigapi.SEVSNPVersion](ctx, attestationVariant, versionDates, c.s3Client, c.cacheWindowSize)
+				return findMinimalVersion[attestationconfig.SEVSNPVersion](ctx, attestationVariant, versionDates, c.s3Client, c.cacheWindowSize)
 			}
 		},
 	)
 	return getMinimalVersion()
 }
 
-func findMinimalVersion[T attestationconfigapi.TDXVersion | attestationconfigapi.SEVSNPVersion](
+func findMinimalVersion[T attestationconfig.TDXVersion | attestationconfig.SEVSNPVersion](
 	ctx context.Context, variant variant.Variant, versionDates []string,
 	s3Client *client.Client, cacheWindowSize int,
 ) (T, string, error) {
@@ -233,8 +233,8 @@ type apiVersionObject struct {
 	version string          `json:"-"`
 	variant variant.Variant `json:"-"`
 	cached  bool            `json:"-"`
-	snp     attestationconfigapi.SEVSNPVersion
-	tdx     attestationconfigapi.TDXVersion
+	snp     attestationconfig.SEVSNPVersion
+	tdx     attestationconfig.TDXVersion
 }
 
 func (a apiVersionObject) MarshalJSON() ([]byte, error) {
@@ -266,7 +266,7 @@ func (a apiVersionObject) JSONPath() string {
 	if a.cached {
 		return path.Join(reportVersionDir(a.variant), a.version)
 	}
-	return path.Join(attestationconfigapi.AttestationURLPath, a.variant.String(), a.version)
+	return path.Join(attestationconfig.AttestationURLPath, a.variant.String(), a.version)
 }
 
 // ValidateRequest validates the request.
@@ -300,10 +300,10 @@ func (a apiVersionObject) getVersion() any {
 func (a *apiVersionObject) setVersion(version any) {
 	actionForVariant(a.variant,
 		func() {
-			a.tdx = version.(attestationconfigapi.TDXVersion)
+			a.tdx = version.(attestationconfig.TDXVersion)
 		},
 		func() {
-			a.snp = version.(attestationconfigapi.SEVSNPVersion)
+			a.snp = version.(attestationconfig.SEVSNPVersion)
 		},
 	)
 }
@@ -324,7 +324,7 @@ func actionForVariant(
 }
 
 // isInputNewerThanOtherSEVSNPVersion compares all version fields and returns false if any input field is older, or the versions are equal.
-func isInputNewerThanOtherSEVSNPVersion(input, other attestationconfigapi.SEVSNPVersion) bool {
+func isInputNewerThanOtherSEVSNPVersion(input, other attestationconfig.SEVSNPVersion) bool {
 	if input == other {
 		return false
 	}
@@ -344,7 +344,7 @@ func isInputNewerThanOtherSEVSNPVersion(input, other attestationconfigapi.SEVSNP
 }
 
 // isInputNewerThanOtherSEVSNPVersion compares all version fields and returns false if any input field is older, or the versions are equal.
-func isInputNewerThanOtherTDXVersion(input, other attestationconfigapi.TDXVersion) bool {
+func isInputNewerThanOtherTDXVersion(input, other attestationconfig.TDXVersion) bool {
 	if input == other {
 		return false
 	}

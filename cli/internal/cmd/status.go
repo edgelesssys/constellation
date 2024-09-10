@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfig"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -59,7 +59,7 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 		return helmClient.Versions()
 	}
 
-	fetcher := attestationconfigapi.NewFetcher()
+	fetcher := attestationconfig.NewFetcher()
 	kubeClient, err := kubecmd.New(kubeConfig, log)
 	if err != nil {
 		return fmt.Errorf("setting up kubernetes client: %w", err)
@@ -81,7 +81,7 @@ type statusCmd struct {
 // status queries the cluster for the relevant status information and returns the output string.
 func (s *statusCmd) status(
 	cmd *cobra.Command, getHelmVersions func() (fmt.Stringer, error),
-	kubeClient kubeCmd, fetcher attestationconfigapi.Fetcher,
+	kubeClient kubeCmd, fetcher attestationconfig.Fetcher,
 ) error {
 	conf, err := config.New(s.fileHandler, constants.ConfigFilename, fetcher, s.flags.force)
 	var configValidationErr *config.ValidationError

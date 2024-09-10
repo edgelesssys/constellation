@@ -36,7 +36,7 @@ import (
 	"time"
 
 	"github.com/bazelbuild/rules_go/go/runfiles"
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfig"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -248,7 +248,7 @@ func workingDir(workspace string) (string, error) {
 // WriteUpgradeConfig writes the target versions to the config file.
 func WriteUpgradeConfig(require *require.Assertions, image string, kubernetes string, microservices string, configPath string) VersionContainer {
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	attestationFetcher := attestationconfigapi.NewFetcher()
+	attestationFetcher := attestationconfig.NewFetcher()
 	cfg, err := config.New(fileHandler, configPath, attestationFetcher, true)
 	var cfgErr *config.ValidationError
 	var longMsg string

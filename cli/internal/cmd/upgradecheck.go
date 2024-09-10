@@ -16,7 +16,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfig"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
@@ -155,7 +155,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 		log:              log,
 	}
 
-	return up.upgradeCheck(cmd, attestationconfigapi.NewFetcher())
+	return up.upgradeCheck(cmd, attestationconfig.NewFetcher())
 }
 
 type upgradeCheckCmd struct {
@@ -169,7 +169,7 @@ type upgradeCheckCmd struct {
 }
 
 // upgradePlan plans an upgrade of a Constellation cluster.
-func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fetcher attestationconfigapi.Fetcher) error {
+func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fetcher attestationconfig.Fetcher) error {
 	conf, err := config.New(u.fileHandler, constants.ConfigFilename, fetcher, u.flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {

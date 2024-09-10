@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfig"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -41,7 +41,7 @@ func NewAttestationDataSource() datasource.DataSource {
 // AttestationDataSource defines the data source implementation.
 type AttestationDataSource struct {
 	client  *http.Client
-	fetcher attestationconfigapi.Fetcher
+	fetcher attestationconfig.Fetcher
 	rekor   *sigstore.Rekor
 	version string
 }
@@ -73,7 +73,7 @@ func (d *AttestationDataSource) Configure(_ context.Context, req datasource.Conf
 	d.version = providerData.Version.String()
 
 	d.client = http.DefaultClient
-	d.fetcher = attestationconfigapi.NewFetcher()
+	d.fetcher = attestationconfig.NewFetcher()
 	rekor, err := sigstore.NewRekor()
 	if err != nil {
 		resp.Diagnostics.AddError("constructing rekor client", err.Error())
@@ -172,7 +172,7 @@ func (d *AttestationDataSource) Read(ctx context.Context, req datasource.ReadReq
 
 	insecureFetch := data.Insecure.ValueBool()
 
-	latestVersions := attestationconfigapi.Entry{}
+	latestVersions := attestationconfig.Entry{}
 	if attestationVariant.Equal(variant.AWSSEVSNP{}) ||
 		attestationVariant.Equal(variant.AzureSEVSNP{}) ||
 		attestationVariant.Equal(variant.AzureTDX{}) ||

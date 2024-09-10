@@ -12,7 +12,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/api/attestationconfig"
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -40,7 +40,7 @@ func newMiniUpCmd() *cobra.Command {
 
 type miniUpCmd struct {
 	log           debugLog
-	configFetcher attestationconfigapi.Fetcher
+	configFetcher attestationconfig.Fetcher
 	fileHandler   file.Handler
 	flags         rootFlags
 }
@@ -53,7 +53,7 @@ func runUp(cmd *cobra.Command, _ []string) error {
 
 	m := &miniUpCmd{
 		log:           log,
-		configFetcher: attestationconfigapi.NewFetcher(),
+		configFetcher: attestationconfig.NewFetcher(),
 		fileHandler:   file.NewHandler(afero.NewOsFs()),
 	}
 	if err := m.flags.parse(cmd.Flags()); err != nil {

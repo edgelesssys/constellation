@@ -9,7 +9,7 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/debugd/internal/cdbg/cmd",
     visibility = ["//debugd:__subpackages__"],
     deps = [
-        "//api/attestationconfigapi",
+        "//api/attestationconfig",
         "//debugd/internal/debugd",
         "//debugd/internal/debugd/logcollector",
         "//debugd/internal/filetransfer",
