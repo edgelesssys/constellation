@@ -38,23 +38,6 @@ type MetadataClient struct {
 func New(ctx context.Context) (*MetadataClient, error) {
 	imds := &imdsClient{client: &http.Client{}}
 
-	authURL, err := imds.authURL(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("getting auth URL: %w", err)
-	}
-	username, err := imds.username(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("getting token name: %w", err)
-	}
-	password, err := imds.password(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("getting token password: %w", err)
-	}
-	userDomainName, err := imds.userDomainName(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("getting user domain name: %w", err)
-	}
-
 	clientOpts := &clientconfig.ClientOpts{
 		AuthType: clientconfig.AuthV3Password,
 		AuthInfo: &clientconfig.AuthInfo{
