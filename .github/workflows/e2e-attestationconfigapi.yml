@@ -8,6 +8,7 @@ on:
       - "release/**"
     paths:
       - "internal/api/**"
+      - "api/attestationconfigapi/**"
       - ".github/workflows/e2e-attestationconfigapi.yml"
       - "go.mod"
 
