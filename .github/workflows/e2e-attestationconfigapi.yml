@@ -3,11 +3,12 @@ name: e2e test attestationconfig API
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
-      - "release/**"
+    #branches:
+    #  - main
+    #  - "release/**"
     paths:
       - "internal/api/**"
+      - "api/attestationconfigapi/**"
       - ".github/workflows/e2e-attestationconfigapi.yml"
       - "go.mod"
 
