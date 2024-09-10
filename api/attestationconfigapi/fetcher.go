@@ -20,20 +20,12 @@ const cosignPublicKey = constants.CosignPublicKeyReleases
 
 var (
 	// AzureSEVSNP is the Azure SEV-SNP variant.
-	AzureSEVSNP Variant = attestationVariant{variant: variant.AzureSEVSNP{}}
+	AzureSEVSNP Variant = variant.AzureSEVSNP{}
 	// AWSSEVSNP is the AWS SEV-SNP variant.
-	AWSSEVSNP Variant = attestationVariant{variant: variant.AWSSEVSNP{}}
+	AWSSEVSNP Variant = variant.AWSSEVSNP{}
 	// GCPSEVSNP is the GCP SEV-SNP variant.
-	GCPSEVSNP Variant = attestationVariant{variant: variant.GCPSEVSNP{}}
+	GCPSEVSNP Variant = variant.GCPSEVSNP{}
 )
-
-type attestationVariant struct {
-	variant Variant
-}
-
-func (v attestationVariant) String() string {
-	return v.variant.String()
-}
 
 // Variant is a cloud provider specific attestation variant.
 type Variant interface {
