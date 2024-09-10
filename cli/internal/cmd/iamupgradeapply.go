@@ -12,9 +12,9 @@ import (
 	"io"
 	"path/filepath"
 
+	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"

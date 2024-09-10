@@ -154,12 +154,12 @@ go_test(
     ],
     embed = [":cmd"],
     deps = [
+        "//api/attestationconfigapi",
         "//bootstrapper/initproto",
         "//cli/internal/cloudcmd",
         "//cli/internal/cmd/pathprefix",
         "//cli/internal/terraform",
         "//disk-mapper/recoverproto",
-        "//api/attestationconfigapi",
         "//internal/api/versionsapi",
         "//internal/atls",
         "//internal/attestation/measurements",

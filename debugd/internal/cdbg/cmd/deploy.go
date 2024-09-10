@@ -17,12 +17,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/logcollector"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/filetransfer"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/filetransfer/streamer"
 	pb "github.com/edgelesssys/constellation/v2/debugd/service"
-	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"

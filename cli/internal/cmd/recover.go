@@ -15,8 +15,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/disk-mapper/recoverproto"
 	"github.com/edgelesssys/constellation/v2/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/disk-mapper/recoverproto"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
