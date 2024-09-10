@@ -18,9 +18,31 @@ import (
 
 const cosignPublicKey = constants.CosignPublicKeyReleases
 
+var (
+	// AzureSEVSNP is the Azure SEV-SNP variant.
+	AzureSEVSNP Variant = attestationVariant{variant: variant.AzureSEVSNP{}}
+	// AWSSEVSNP is the AWS SEV-SNP variant.
+	AWSSEVSNP Variant = attestationVariant{variant: variant.AWSSEVSNP{}}
+	// GCPSEVSNP is the GCP SEV-SNP variant.
+	GCPSEVSNP Variant = attestationVariant{variant: variant.GCPSEVSNP{}}
+)
+
+type attestationVariant struct {
+	variant Variant
+}
+
+func (v attestationVariant) String() string {
+	return v.variant.String()
+}
+
+// Variant is a cloud provider specific attestation variant.
+type Variant interface {
+	String() string
+}
+
 // Fetcher fetches config API resources without authentication.
 type Fetcher interface {
-	FetchLatestVersion(ctx context.Context, attestation fmt.Stringer) (Entry, error)
+	FetchLatestVersion(ctx context.Context, attestation Variant) (Entry, error)
 }
 
 // fetcher fetches AttestationCfg API resources without authentication.
@@ -60,7 +82,7 @@ func newFetcherWithClientAndVerifier(client apifetcher.HTTPClient, cosignVerifie
 }
 
 // FetchLatestVersion returns the latest versions of the given type.
-func (f *fetcher) FetchLatestVersion(ctx context.Context, variant fmt.Stringer) (Entry, error) {
+func (f *fetcher) FetchLatestVersion(ctx context.Context, variant Variant) (Entry, error) {
 	list, err := f.fetchVersionList(ctx, variant)
 	if err != nil {
 		return Entry{}, err
@@ -71,7 +93,7 @@ func (f *fetcher) FetchLatestVersion(ctx context.Context, variant fmt.Stringer) 
 }
 
 // fetchVersionList fetches the version list information from the config API.
-func (f *fetcher) fetchVersionList(ctx context.Context, attestationVariant fmt.Stringer) (List, error) {
+func (f *fetcher) fetchVersionList(ctx context.Context, attestationVariant Variant) (List, error) {
 	parsedVariant, err := variant.FromString(attestationVariant.String())
 	if err != nil {
 		return List{}, fmt.Errorf("parsing variant: %w", err)
@@ -88,7 +110,7 @@ func (f *fetcher) fetchVersionList(ctx context.Context, attestationVariant fmt.S
 }
 
 // fetchVersion fetches the version information from the config API.
-func (f *fetcher) fetchVersion(ctx context.Context, version string, attestationVariant fmt.Stringer) (Entry, error) {
+func (f *fetcher) fetchVersion(ctx context.Context, version string, attestationVariant Variant) (Entry, error) {
 	parsedVariant, err := variant.FromString(attestationVariant.String())
 	if err != nil {
 		return Entry{}, fmt.Errorf("parsing variant: %w", err)

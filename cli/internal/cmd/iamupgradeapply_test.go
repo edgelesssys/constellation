@@ -7,7 +7,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"path/filepath"
 	"strings"
@@ -171,6 +170,6 @@ type stubConfigFetcher struct {
 	fetchLatestErr error
 }
 
-func (s *stubConfigFetcher) FetchLatestVersion(context.Context, fmt.Stringer) (attestationconfigapi.Entry, error) {
+func (s *stubConfigFetcher) FetchLatestVersion(context.Context, attestationconfigapi.Variant) (attestationconfigapi.Entry, error) {
 	return attestationconfigapi.Entry{}, s.fetchLatestErr
 }

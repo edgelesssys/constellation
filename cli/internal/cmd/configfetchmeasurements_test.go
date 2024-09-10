@@ -8,7 +8,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/url"
 	"testing"
@@ -205,7 +204,7 @@ func (f stubVerifyFetcher) FetchAndVerifyMeasurements(_ context.Context, _ strin
 
 type stubAttestationFetcher struct{}
 
-func (f stubAttestationFetcher) FetchLatestVersion(_ context.Context, _ fmt.Stringer) (attestationconfigapi.Entry, error) {
+func (f stubAttestationFetcher) FetchLatestVersion(_ context.Context, _ attestationconfigapi.Variant) (attestationconfigapi.Entry, error) {
 	return attestationconfigapi.Entry{
 		SEVSNPVersion: testCfg,
 	}, nil
