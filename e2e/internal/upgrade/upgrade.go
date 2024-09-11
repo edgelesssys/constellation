@@ -142,7 +142,6 @@ func testNodesEventuallyHaveVersion(t *testing.T, k *kubernetes.Clientset, targe
 					if key == "constellation.edgeless.systems/node-image" {
 						if !strings.EqualFold(value, targetVersions.ImageRef) {
 							log.Printf("\t%s: Image %s, want %s\n", node.Name, value, targetVersions.ImageRef)
-							fmt.Printf("\tP: %s: Image %s, want %s\n", node.Name, value, targetVersions.ImageRef)
 							allUpdated = false
 						}
 					}
