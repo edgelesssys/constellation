@@ -379,7 +379,7 @@ func (m *mockApplier) AnnotateCoreDNSResources(_ context.Context) error {
 	return nil
 }
 
-func (s *mockApplier) CleanupCoreDNSResources(_ context.Context) error {
+func (m *mockApplier) CleanupCoreDNSResources(_ context.Context) error {
 	return nil
 }
 
