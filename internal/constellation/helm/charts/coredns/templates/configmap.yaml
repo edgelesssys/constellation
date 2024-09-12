@@ -1,9 +1,4 @@
-
 apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: coredns
-  namespace: kube-system
 data:
   Corefile: |
     .:53 {
@@ -26,3 +21,8 @@ data:
         reload
         loadbalance
     }
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: edg-coredns
+  namespace: kube-system
