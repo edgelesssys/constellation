@@ -70,8 +70,6 @@ def _mkosi_image_impl(ctx):
         args.add("--kernel-command-line", ctx.attr.kernel_command_line)
     for key, value in ctx.attr.kernel_command_line_dict.items():
         args.add("--kernel-command-line", "{}={}".format(key, value))
-    if ctx.attr.autologin:
-        args.add("--autologin", "yes")
 
     info = ctx.toolchains["@constellation//bazel/mkosi:toolchain_type"].mkosi
     if not info.valid:
@@ -110,7 +108,6 @@ mkosi_image = rule(
     implementation = _mkosi_image_impl,
     attrs = {
         "architecture": attr.string(),
-        "autologin": attr.bool(),
         "base_trees": attr.label_list(allow_files = True),
         "distribution": attr.string(),
         "env": attr.string_dict(),

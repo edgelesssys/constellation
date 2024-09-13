@@ -1,6 +1,6 @@
 load("//bazel/mkosi:mkosi_image.bzl", "mkosi_image")
 load("//bazel/osimage:upload_os_images.bzl", "upload_os_images")
-load(":variants.bzl", "CSPS", "STREAMS", "VARIANTS", "autologin", "base_image", "constellation_packages", "images_for_csp", "images_for_csp_and_stream", "images_for_stream", "kernel_command_line", "kernel_command_line_dict")
+load(":variants.bzl", "CSPS", "STREAMS", "VARIANTS", "base_image", "constellation_packages", "images_for_csp", "images_for_csp_and_stream", "images_for_stream", "kernel_command_line", "kernel_command_line_dict")
 
 [
     mkosi_image(
@@ -10,11 +10,6 @@ load(":variants.bzl", "CSPS", "STREAMS", "VARIANTS", "autologin", "base_image", 
         ] + glob([
             "mkosi.repart/**",
         ]),
-        autologin = autologin(
-            variant["csp"],
-            variant["attestation_variant"],
-            stream,
-        ),
         base_trees = [
             base_image(
                 variant["csp"],
