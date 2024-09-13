@@ -86,6 +86,7 @@ csp_settings = {
         },
     },
     "qemu": {
+        "kernel_command_line": "constellation.console",  # All qemu images have console enabled independent of stream
         "kernel_command_line_dict": {
             "console": "ttyS0",
             "constel.csp": "qemu",
@@ -135,6 +136,7 @@ attestation_variant_settings = {
 
 stream_settings = {
     "console": {
+        "kernel_command_line": "constellation.console",
     },
     "debug": {
         "kernel_command_line": "constellation.debug",

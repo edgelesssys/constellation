@@ -2,6 +2,7 @@ enable systemd-timesyncd.service
 enable systemd-networkd.service
 enable systemd-networkd-wait-online.service
 enable configure-constel-csp.service
+enable serial-getty@tty0.service
 enable dbus.service
 enable dbus-broker.service
 enable dbus-daemon.service
