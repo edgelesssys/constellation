@@ -554,6 +554,7 @@ func (s *stubConstellApplier) Init(context.Context, atls.Validator, *state.State
 
 type helmApplier interface {
 	AnnotateCoreDNSResources(context.Context) error
+	CleanupCoreDNSResources(ctx context.Context) error
 	PrepareHelmCharts(
 		flags helm.Options, stateFile *state.State, serviceAccURI string, masterSecret uri.MasterSecret,
 	) (
