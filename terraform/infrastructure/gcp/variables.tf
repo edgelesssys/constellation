@@ -32,6 +32,12 @@ variable "debug" {
   description = "DO NOT USE IN PRODUCTION. Enable debug mode. This opens up a debugd port that can be used to deploy a custom bootstrapper."
 }
 
+variable "console_access" {
+  type        = bool
+  default     = false
+  description = "Enable serial console access to OS images that expose a serial console. This will be shadowed by `debug` (i.e. if `debug` is enabled, console access will be enabled)."
+}
+
 variable "custom_endpoint" {
   type        = string
   default     = ""

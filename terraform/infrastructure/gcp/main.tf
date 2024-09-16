@@ -183,6 +183,7 @@ module "instance_group" {
   alias_ip_range_name = google_compute_subnetwork.vpc_subnetwork.secondary_ip_range[0].range_name
   kube_env            = local.kube_env
   debug               = var.debug
+  console_access      = var.console_access
   named_ports         = each.value.role == "control-plane" ? local.control_plane_named_ports : []
   labels              = local.labels
   init_secret_hash    = local.init_secret_hash

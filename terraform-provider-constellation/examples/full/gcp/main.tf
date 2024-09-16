@@ -76,6 +76,7 @@ module "gcp_infrastructure" {
   }
   image_id               = data.constellation_image.bar.image.reference
   debug                  = false
+  console_access         = false
   zone                   = local.zone
   region                 = local.region
   project                = local.project_id
