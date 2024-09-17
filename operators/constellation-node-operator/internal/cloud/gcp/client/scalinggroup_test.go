@@ -16,6 +16,7 @@ import (
 	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/cloud/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	computeREST "google.golang.org/api/compute/v1"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -23,7 +24,7 @@ func TestGetScalingGroupImage(t *testing.T) {
 	testCases := map[string]struct {
 		scalingGroupID                 string
 		instanceGroupManagerTemplateID *string
-		instanceTemplate               *computepb.InstanceTemplate
+		instanceTemplate               *computeREST.InstanceTemplate
 		getInstanceGroupManagerErr     error
 		getInstanceTemplateErr         error
 		wantImage                      string
@@ -32,12 +33,12 @@ func TestGetScalingGroupImage(t *testing.T) {
 		"getting image works": {
 			scalingGroupID:                 "projects/project/zones/zone/instanceGroupManagers/instance-group",
 			instanceGroupManagerTemplateID: proto.String("projects/project/global/instanceTemplates/instance-template"),
-			instanceTemplate: &computepb.InstanceTemplate{
-				Properties: &computepb.InstanceProperties{
-					Disks: []*computepb.AttachedDisk{
+			instanceTemplate: &computeREST.InstanceTemplate{
+				Properties: &computeREST.InstanceProperties{
+					Disks: []*computeREST.AttachedDisk{
 						{
-							InitializeParams: &computepb.AttachedDiskInitializeParams{
-								SourceImage: proto.String("https://www.googleapis.com/compute/v1/projects/project/global/images/image"),
+							InitializeParams: &computeREST.AttachedDiskInitializeParams{
+								SourceImage: "https://www.googleapis.com/compute/v1/projects/project/global/images/image",
 							},
 						},
 					},
@@ -72,8 +73,8 @@ func TestGetScalingGroupImage(t *testing.T) {
 		"instance template has no disks": {
 			scalingGroupID:                 "projects/project/zones/zone/instanceGroupManagers/instance-group",
 			instanceGroupManagerTemplateID: proto.String("projects/project/global/instanceTemplates/instance-template"),
-			instanceTemplate: &computepb.InstanceTemplate{
-				Properties: &computepb.InstanceProperties{},
+			instanceTemplate: &computeREST.InstanceTemplate{
+				Properties: &computeREST.InstanceProperties{},
 			},
 			wantErr: true,
 		},
@@ -112,7 +113,7 @@ func TestSetScalingGroupImage(t *testing.T) {
 		scalingGroupID                 string
 		imageURI                       string
 		instanceGroupManagerTemplateID *string
-		instanceTemplate               *computepb.InstanceTemplate
+		instanceTemplate               *computeREST.InstanceTemplate
 		getInstanceGroupManagerErr     error
 		getInstanceTemplateErr         error
 		setInstanceTemplateErr         error
@@ -123,13 +124,13 @@ func TestSetScalingGroupImage(t *testing.T) {
 			scalingGroupID:                 "projects/project/zones/zone/instanceGroupManagers/instance-group",
 			imageURI:                       "projects/project/global/images/image-2",
 			instanceGroupManagerTemplateID: proto.String("projects/project/global/instanceTemplates/instance-template"),
-			instanceTemplate: &computepb.InstanceTemplate{
-				Name: proto.String("instance-template"),
-				Properties: &computepb.InstanceProperties{
-					Disks: []*computepb.AttachedDisk{
+			instanceTemplate: &computeREST.InstanceTemplate{
+				Name: "instance-template",
+				Properties: &computeREST.InstanceProperties{
+					Disks: []*computeREST.AttachedDisk{
 						{
-							InitializeParams: &computepb.AttachedDiskInitializeParams{
-								SourceImage: proto.String("https://www.googleapis.com/compute/v1/projects/project/global/images/image-1"),
+							InitializeParams: &computeREST.AttachedDiskInitializeParams{
+								SourceImage: "https://www.googleapis.com/compute/v1/projects/project/global/images/image-1",
 							},
 						},
 					},
@@ -140,13 +141,13 @@ func TestSetScalingGroupImage(t *testing.T) {
 			scalingGroupID:                 "projects/project/zones/zone/instanceGroupManagers/instance-group",
 			imageURI:                       "projects/project/global/images/image",
 			instanceGroupManagerTemplateID: proto.String("projects/project/global/instanceTemplates/instance-template"),
-			instanceTemplate: &computepb.InstanceTemplate{
-				Name: proto.String("instance-template"),
-				Properties: &computepb.InstanceProperties{
-					Disks: []*computepb.AttachedDisk{
+			instanceTemplate: &computeREST.InstanceTemplate{
+				Name: "instance-template",
+				Properties: &computeREST.InstanceProperties{
+					Disks: []*computeREST.AttachedDisk{
 						{
-							InitializeParams: &computepb.AttachedDiskInitializeParams{
-								SourceImage: proto.String("https://www.googleapis.com/compute/v1/projects/project/global/images/image"),
+							InitializeParams: &computeREST.AttachedDiskInitializeParams{
+								SourceImage: "https://www.googleapis.com/compute/v1/projects/project/global/images/image",
 							},
 						},
 					},
@@ -182,8 +183,8 @@ func TestSetScalingGroupImage(t *testing.T) {
 		"instance template has no disks": {
 			scalingGroupID:                 "projects/project/zones/zone/instanceGroupManagers/instance-group",
 			instanceGroupManagerTemplateID: proto.String("projects/project/global/instanceTemplates/instance-template"),
-			instanceTemplate: &computepb.InstanceTemplate{
-				Properties: &computepb.InstanceProperties{},
+			instanceTemplate: &computeREST.InstanceTemplate{
+				Properties: &computeREST.InstanceProperties{},
 			},
 			wantErr: true,
 		},
@@ -191,12 +192,12 @@ func TestSetScalingGroupImage(t *testing.T) {
 			scalingGroupID:                 "projects/project/zones/zone/instanceGroupManagers/instance-group",
 			imageURI:                       "projects/project/global/images/image-2",
 			instanceGroupManagerTemplateID: proto.String("projects/project/global/instanceTemplates/instance-template"),
-			instanceTemplate: &computepb.InstanceTemplate{
-				Properties: &computepb.InstanceProperties{
-					Disks: []*computepb.AttachedDisk{
+			instanceTemplate: &computeREST.InstanceTemplate{
+				Properties: &computeREST.InstanceProperties{
+					Disks: []*computeREST.AttachedDisk{
 						{
-							InitializeParams: &computepb.AttachedDiskInitializeParams{
-								SourceImage: proto.String("https://www.googleapis.com/compute/v1/projects/project/global/images/image-1"),
+							InitializeParams: &computeREST.AttachedDiskInitializeParams{
+								SourceImage: "https://www.googleapis.com/compute/v1/projects/project/global/images/image-1",
 							},
 						},
 					},
@@ -208,13 +209,13 @@ func TestSetScalingGroupImage(t *testing.T) {
 			scalingGroupID:                 "projects/project/zones/zone/instanceGroupManagers/instance-group",
 			imageURI:                       "projects/project/global/images/image-2",
 			instanceGroupManagerTemplateID: proto.String("projects/project/global/instanceTemplates/instance-template"),
-			instanceTemplate: &computepb.InstanceTemplate{
-				Name: proto.String("instance-template-999999999999999999999"),
-				Properties: &computepb.InstanceProperties{
-					Disks: []*computepb.AttachedDisk{
+			instanceTemplate: &computeREST.InstanceTemplate{
+				Name: "instance-template-999999999999999999999",
+				Properties: &computeREST.InstanceProperties{
+					Disks: []*computeREST.AttachedDisk{
 						{
-							InitializeParams: &computepb.AttachedDiskInitializeParams{
-								SourceImage: proto.String("https://www.googleapis.com/compute/v1/projects/project/global/images/image-1"),
+							InitializeParams: &computeREST.AttachedDiskInitializeParams{
+								SourceImage: "https://www.googleapis.com/compute/v1/projects/project/global/images/image-1",
 							},
 						},
 					},
@@ -226,13 +227,13 @@ func TestSetScalingGroupImage(t *testing.T) {
 			scalingGroupID:                 "projects/project/zones/zone/instanceGroupManagers/instance-group",
 			imageURI:                       "projects/project/global/images/image-2",
 			instanceGroupManagerTemplateID: proto.String("projects/project/global/instanceTemplates/instance-template"),
-			instanceTemplate: &computepb.InstanceTemplate{
-				Name: proto.String("instance-template"),
-				Properties: &computepb.InstanceProperties{
-					Disks: []*computepb.AttachedDisk{
+			instanceTemplate: &computeREST.InstanceTemplate{
+				Name: "instance-template",
+				Properties: &computeREST.InstanceProperties{
+					Disks: []*computeREST.AttachedDisk{
 						{
-							InitializeParams: &computepb.AttachedDiskInitializeParams{
-								SourceImage: proto.String("https://www.googleapis.com/compute/v1/projects/project/global/images/image-1"),
+							InitializeParams: &computeREST.AttachedDiskInitializeParams{
+								SourceImage: "https://www.googleapis.com/compute/v1/projects/project/global/images/image-1",
 							},
 						},
 					},
@@ -245,13 +246,13 @@ func TestSetScalingGroupImage(t *testing.T) {
 			scalingGroupID:                 "projects/project/zones/zone/instanceGroupManagers/instance-group",
 			imageURI:                       "projects/project/global/images/image-2",
 			instanceGroupManagerTemplateID: proto.String("projects/project/global/instanceTemplates/instance-template"),
-			instanceTemplate: &computepb.InstanceTemplate{
-				Name: proto.String("instance-template"),
-				Properties: &computepb.InstanceProperties{
-					Disks: []*computepb.AttachedDisk{
+			instanceTemplate: &computeREST.InstanceTemplate{
+				Name: "instance-template",
+				Properties: &computeREST.InstanceProperties{
+					Disks: []*computeREST.AttachedDisk{
 						{
-							InitializeParams: &computepb.AttachedDiskInitializeParams{
-								SourceImage: proto.String("https://www.googleapis.com/compute/v1/projects/project/global/images/image-1"),
+							InitializeParams: &computeREST.AttachedDiskInitializeParams{
+								SourceImage: "https://www.googleapis.com/compute/v1/projects/project/global/images/image-1",
 							},
 						},
 					},
@@ -445,8 +446,8 @@ func TestListScalingGroups(t *testing.T) {
 					},
 				},
 				instanceTemplateAPI: &stubInstanceTemplateAPI{
-					template: &computepb.InstanceTemplate{
-						Properties: &computepb.InstanceProperties{
+					template: &computeREST.InstanceTemplate{
+						Properties: &computeREST.InstanceProperties{
 							Labels: tc.templateLabels,
 						},
 					},

@@ -12,6 +12,7 @@ import (
 	compute "cloud.google.com/go/compute/apiv1"
 	"cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/googleapis/gax-go/v2"
+	computeREST "google.golang.org/api/compute/v1"
 	"google.golang.org/api/iterator"
 	"google.golang.org/protobuf/proto"
 )
@@ -47,7 +48,7 @@ func (a stubInstanceAPI) Get(_ context.Context, _ *computepb.GetInstanceRequest,
 }
 
 type stubInstanceTemplateAPI struct {
-	template  *computepb.InstanceTemplate
+	template  *computeREST.InstanceTemplate
 	getErr    error
 	deleteErr error
 	insertErr error
@@ -57,30 +58,16 @@ func (a stubInstanceTemplateAPI) Close() error {
 	return nil
 }
 
-func (a stubInstanceTemplateAPI) Get(_ context.Context, _ *computepb.GetInstanceTemplateRequest,
-	_ ...gax.CallOption,
-) (*computepb.InstanceTemplate, error) {
+func (a stubInstanceTemplateAPI) Get(_, _ string) (*computeREST.InstanceTemplate, error) {
 	return a.template, a.getErr
 }
 
-func (a stubInstanceTemplateAPI) Delete(_ context.Context, _ *computepb.DeleteInstanceTemplateRequest,
-	_ ...gax.CallOption,
-) (Operation, error) {
-	return &stubOperation{
-		&computepb.Operation{
-			Name: proto.String("name"),
-		},
-	}, a.deleteErr
+func (a stubInstanceTemplateAPI) Delete(_, _ string) (*computeREST.Operation, error) {
+	return &computeREST.Operation{}, a.deleteErr
 }
 
-func (a stubInstanceTemplateAPI) Insert(_ context.Context, _ *computepb.InsertInstanceTemplateRequest,
-	_ ...gax.CallOption,
-) (Operation, error) {
-	return &stubOperation{
-		&computepb.Operation{
-			Name: proto.String("name"),
-		},
-	}, a.insertErr
+func (a stubInstanceTemplateAPI) Insert(_ string, _ *computeREST.InstanceTemplate) (*computeREST.Operation, error) {
+	return &computeREST.Operation{}, a.insertErr
 }
 
 type stubInstanceGroupManagersAPI struct {
