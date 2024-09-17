@@ -37,7 +37,7 @@ You don't need to verify the Constellation node images. This is done automatical
 This guide assumes Linux on an amd64 processor. The exact steps for other platforms differ slightly.
 :::
 
-First, [install the Cosign CLI](https://docs.sigstore.dev/system_config/installation). Next, [download](https://github.com/edgelesssys/constellation/releases) and verify the signature that accompanies your CLI executable, for example:
+First, [install the Cosign CLI](https://docs.sigstore.dev/cosign/system_config/installation/). Next, [download](https://github.com/edgelesssys/constellation/releases) and verify the signature that accompanies your CLI executable, for example:
 
 ```shell-session
 $ cosign verify-blob --key https://edgeless.systems/es.pub --signature constellation-linux-amd64.sig constellation-linux-amd64
