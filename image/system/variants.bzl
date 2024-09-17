@@ -86,7 +86,7 @@ csp_settings = {
         },
     },
     "qemu": {
-        "autologin": True,
+        "kernel_command_line": "constellation.console",  # All qemu images have console enabled independent of stream
         "kernel_command_line_dict": {
             "console": "ttyS0",
             "constel.csp": "qemu",
@@ -136,10 +136,9 @@ attestation_variant_settings = {
 
 stream_settings = {
     "console": {
-        "autologin": True,
+        "kernel_command_line": "constellation.console",
     },
     "debug": {
-        "autologin": True,
         "kernel_command_line": "constellation.debug",
     },
     "nightly": {},
@@ -180,26 +179,6 @@ def constellation_packages(stream):
         "//upgrade-agent/cmd:upgrade-agent-package",
         "//bootstrapper/cmd/bootstrapper:bootstrapper-package",
     ] + base_packages
-
-def autologin(csp, attestation_variant, stream):
-    """Generates a boolean indicating whether autologin should be enabled for the given csp, attestation_variant and stream.
-
-    Args:
-      csp: The cloud service provider to use.
-      attestation_variant: The attestation variant to use.
-      stream: The stream to use.
-
-    Returns:
-        A boolean indicating whether autologin should be enabled.
-    """
-    out = None
-    for settings in from_settings(csp, attestation_variant, stream):
-        if not "autologin" in settings:
-            continue
-        if out != None and out != settings["autologin"]:
-            fail("Inconsistent autologin settings")
-        out = settings["autologin"]
-    return out
 
 def kernel_command_line(csp, attestation_variant, stream):
     cmdline = base_cmdline
