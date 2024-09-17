@@ -70,7 +70,7 @@ resource "google_compute_instance_template" "template" {
   metadata = {
     kube-env                       = var.kube_env
     constellation-init-secret-hash = var.init_secret_hash
-    serial-port-enable             = var.debug ? "TRUE" : "FALSE"
+    serial-port-enable             = "TRUE"
   }
 
   network_interface {

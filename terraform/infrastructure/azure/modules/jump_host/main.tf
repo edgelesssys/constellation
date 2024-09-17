@@ -29,7 +29,7 @@ resource "azurerm_linux_virtual_machine" "jump_host" {
   }
 
   boot_diagnostics {
-
+    storage_account_uri = null
   }
 
   user_data = base64encode(<<EOF
