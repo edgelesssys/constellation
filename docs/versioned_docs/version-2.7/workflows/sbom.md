@@ -40,7 +40,7 @@ cosign verify-blob --key cosign.pub --signature constellation.spdx.sbom.sig cons
 
 ### Container Images
 
-SBOMs for container images are [attached to the image using Cosign](https://docs.sigstore.dev/signing/other_types#sboms-software-bill-of-materials) and uploaded to the same registry.
+SBOMs for container images are [attached to the image using Cosign](https://docs.sigstore.dev/cosign/signing/other_types/#sboms-software-bill-of-materials) and uploaded to the same registry.
 
 As a consumer, use cosign to download and verify the SBOM:
 
