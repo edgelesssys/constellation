@@ -57,7 +57,9 @@ resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
     identity_ids = [var.user_assigned_identity]
   }
 
-  boot_diagnostics {}
+  boot_diagnostics {
+    storage_account_uri = null
+  }
 
   dynamic "os_disk" {
     for_each = var.confidential_vm ? [1] : [] # if confidential_vm is true
