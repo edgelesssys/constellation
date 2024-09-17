@@ -2,7 +2,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "3.111.0"
+      version = "4.1.0"
     }
     random = {
       source  = "hashicorp/random"
@@ -45,6 +45,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
   provision_vm_agent              = false
   vtpm_enabled                    = true
   disable_password_authentication = false
+  extension_operations_enabled    = false
   upgrade_mode                    = "Manual"
   secure_boot_enabled             = var.secure_boot
   # specify the image id only if a non-marketplace image is used

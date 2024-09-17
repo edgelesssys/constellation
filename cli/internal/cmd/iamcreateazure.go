@@ -6,7 +6,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"os"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -26,6 +28,7 @@ func newIAMCreateAzureCmd() *cobra.Command {
 		RunE:  runIAMCreateAzure,
 	}
 
+	cmd.Flags().String("subscriptionID", "", "subscription ID of the Azure account. Required if the 'ARM_SUBSCRIPTION_ID' environment variable is not set")
 	cmd.Flags().String("resourceGroup", "", "name prefix of the two resource groups your cluster / IAM resources will be created in (required)")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "resourceGroup"))
 	cmd.Flags().String("region", "", "region the resources will be created in, e.g., westus (required)")
@@ -45,6 +48,7 @@ func runIAMCreateAzure(cmd *cobra.Command, _ []string) error {
 
 // azureIAMCreateFlags contains the parsed flags of the iam create azure command.
 type azureIAMCreateFlags struct {
+	subscriptionID   string
 	region           string
 	resourceGroup    string
 	servicePrincipal string
@@ -52,6 +56,14 @@ type azureIAMCreateFlags struct {
 
 func (f *azureIAMCreateFlags) parse(flags *pflag.FlagSet) error {
 	var err error
+	f.subscriptionID, err = flags.GetString("subscriptionID")
+	if err != nil {
+		return fmt.Errorf("getting 'subscriptionID' flag: %w", err)
+	}
+	if f.subscriptionID == "" && os.Getenv("ARM_SUBSCRIPTION_ID") == "" {
+		return errors.New("either flag 'subscriptionID' or environment variable 'ARM_SUBSCRIPTION_ID' must be set")
+	}
+
 	f.region, err = flags.GetString("region")
 	if err != nil {
 		return fmt.Errorf("getting 'region' flag: %w", err)
@@ -75,6 +87,7 @@ type azureIAMCreator struct {
 func (c *azureIAMCreator) getIAMConfigOptions() *cloudcmd.IAMConfigOptions {
 	return &cloudcmd.IAMConfigOptions{
 		Azure: cloudcmd.AzureIAMConfig{
+			SubscriptionID:   c.flags.subscriptionID,
 			Location:         c.flags.region,
 			ResourceGroup:    c.flags.resourceGroup,
 			ServicePrincipal: c.flags.servicePrincipal,
@@ -83,6 +96,7 @@ func (c *azureIAMCreator) getIAMConfigOptions() *cloudcmd.IAMConfigOptions {
 }
 
 func (c *azureIAMCreator) printConfirmValues(cmd *cobra.Command) {
+	cmd.Printf("Subscription ID:\t%s\n", c.flags.subscriptionID)
 	cmd.Printf("Region:\t\t\t%s\n", c.flags.region)
 	cmd.Printf("Resource Group:\t\t%s\n", c.flags.resourceGroup)
 	cmd.Printf("Service Principal:\t%s\n\n", c.flags.servicePrincipal)

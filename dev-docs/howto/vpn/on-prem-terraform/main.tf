@@ -2,7 +2,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "3.111.0"
+      version = "4.1.0"
     }
     random = {
       source  = "hashicorp/random"
@@ -13,6 +13,10 @@ terraform {
 
 provider "azurerm" {
   features {}
+  subscription_id = var.subscription_id
+  # This enables all resource providers.
+  # In the future, we might want to use `resource_providers_to_register` to registers just the ones we need.
+  resource_provider_registrations = "all"
 }
 
 locals {
@@ -103,7 +107,7 @@ resource "azurerm_route_table" "route_table" {
   name                          = "vpn-routes"
   location                      = azurerm_resource_group.rg.location
   resource_group_name           = azurerm_resource_group.rg.name
-  disable_bgp_route_propagation = false
+  bgp_route_propagation_enabled = false
 
   dynamic "route" {
     for_each = var.remote_ts

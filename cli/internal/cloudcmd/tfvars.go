@@ -147,6 +147,7 @@ func azureTerraformVars(conf *config.Config, imageRef string) (*terraform.AzureC
 		}
 	}
 	vars := &terraform.AzureClusterVariables{
+		SubscriptionID:       conf.Provider.Azure.SubscriptionID,
 		Name:                 conf.Name,
 		NodeGroups:           nodeGroups,
 		Location:             conf.Provider.Azure.Location,
@@ -191,6 +192,7 @@ func azureTerraformVars(conf *config.Config, imageRef string) (*terraform.AzureC
 
 func azureTerraformIAMVars(conf *config.Config, oldVars terraform.AzureIAMVariables) *terraform.AzureIAMVariables {
 	return &terraform.AzureIAMVariables{
+		SubscriptionID:   conf.Provider.Azure.SubscriptionID,
 		Location:         conf.Provider.Azure.Location,
 		ServicePrincipal: oldVars.ServicePrincipal,
 		ResourceGroup:    conf.Provider.Azure.ResourceGroup,

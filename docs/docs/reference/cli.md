@@ -655,6 +655,7 @@ constellation iam create azure [flags]
       --region string             region the resources will be created in, e.g., westus (required)
       --resourceGroup string      name prefix of the two resource groups your cluster / IAM resources will be created in (required)
       --servicePrincipal string   name of the service principal that will be created (required)
+      --subscriptionID string     subscription ID of the Azure account. Required if the 'ARM_SUBSCRIPTION_ID' environment variable is not set
 ```
 
 ### Options inherited from parent commands

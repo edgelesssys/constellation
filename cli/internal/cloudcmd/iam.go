@@ -95,6 +95,7 @@ type GCPIAMConfig struct {
 
 // AzureIAMConfig holds the necessary values for Azure IAM configuration.
 type AzureIAMConfig struct {
+	SubscriptionID   string
 	Location         string
 	ServicePrincipal string
 	ResourceGroup    string
@@ -167,6 +168,7 @@ func (c *IAMCreator) createAzure(ctx context.Context, cl tfIAMClient, opts *IAMC
 	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl}, opts.TFLogLevel)
 
 	vars := terraform.AzureIAMVariables{
+		SubscriptionID:   opts.Azure.SubscriptionID,
 		Location:         opts.Azure.Location,
 		ResourceGroup:    opts.Azure.ResourceGroup,
 		ServicePrincipal: opts.Azure.ServicePrincipal,
