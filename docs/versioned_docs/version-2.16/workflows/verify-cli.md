@@ -8,7 +8,7 @@ This recording presents the essence of this page. It's recommended to read it in
 
 ---
 
-Edgeless Systems uses [sigstore](https://www.sigstore.dev/) and [SLSA](https://slsa.dev) to ensure supply-chain security for the Constellation CLI and node images ("artifacts"). sigstore consists of three components: [Cosign](https://docs.sigstore.dev/signing/quickstart), [Rekor](https://docs.sigstore.dev/logging/overview), and Fulcio. Edgeless Systems uses Cosign to sign artifacts. All signatures are uploaded to the public Rekor transparency log, which resides at `https://rekor.sigstore.dev`.
+Edgeless Systems uses [sigstore](https://www.sigstore.dev/) and [SLSA](https://slsa.dev) to ensure supply-chain security for the Constellation CLI and node images ("artifacts"). sigstore consists of three components: [Cosign](https://docs.sigstore.dev/cosign/signing/overview/), [Rekor](https://docs.sigstore.dev/logging/overview), and Fulcio. Edgeless Systems uses Cosign to sign artifacts. All signatures are uploaded to the public Rekor transparency log, which resides at `https://rekor.sigstore.dev`.
 
 :::note
 The public key for Edgeless Systems' long-term code-signing key is:
