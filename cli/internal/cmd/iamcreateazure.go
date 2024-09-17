@@ -28,8 +28,7 @@ func newIAMCreateAzureCmd() *cobra.Command {
 		RunE:  runIAMCreateAzure,
 	}
 
-	cmd.Flags().String("subscriptionID", "", "subscription ID of the Azure account (required)")
-	must(cobra.MarkFlagRequired(cmd.Flags(), "subscriptionID"))
+	cmd.Flags().String("subscriptionID", "", "subscription ID of the Azure account. Required if the 'ARM_SUBSCRIPTION_ID' environment variable is not set")
 	cmd.Flags().String("resourceGroup", "", "name prefix of the two resource groups your cluster / IAM resources will be created in (required)")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "resourceGroup"))
 	cmd.Flags().String("region", "", "region the resources will be created in, e.g., westus (required)")
