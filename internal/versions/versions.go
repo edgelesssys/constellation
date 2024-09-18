@@ -181,11 +181,11 @@ const (
 
 	// currently supported versions.
 	//nolint:revive
-	V1_28 ValidK8sVersion = "v1.28.13" // renovate:kubernetes-release
+	V1_28 ValidK8sVersion = "v1.28.14" // renovate:kubernetes-release
 	//nolint:revive
-	V1_29 ValidK8sVersion = "v1.29.8" // renovate:kubernetes-release
+	V1_29 ValidK8sVersion = "v1.29.9" // renovate:kubernetes-release
 	//nolint:revive
-	V1_30 ValidK8sVersion = "v1.30.4" // renovate:kubernetes-release
+	V1_30 ValidK8sVersion = "v1.30.5" // renovate:kubernetes-release
 
 	// Default k8s version deployed by Constellation.
 	Default ValidK8sVersion = V1_29
@@ -198,7 +198,7 @@ const (
 // VersionConfigs holds download URLs for all required kubernetes components for every supported version.
 var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 	V1_28: {
-		ClusterVersion: "v1.28.13", // renovate:kubernetes-release
+		ClusterVersion: "v1.28.14", // renovate:kubernetes-release
 		KubernetesComponents: components.Components{
 			{
 				Url:         "https://github.com/containernetworking/plugins/releases/download/v1.4.0/cni-plugins-linux-amd64-v1.4.0.tgz", // renovate:cni-plugins-release
@@ -213,19 +213,19 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 				Extract:     true,
 			},
 			{
-				Url:         "https://storage.googleapis.com/kubernetes-release/release/v1.28.13/bin/linux/amd64/kubelet", // renovate:kubernetes-release
+				Url:         "https://storage.googleapis.com/kubernetes-release/release/v1.28.14/bin/linux/amd64/kubelet", // renovate:kubernetes-release
 				Hash:        "sha256:9b9cc3a19551ade6f3d98ad3acf0a2b65a27ef575bd089f115f8bb80791f3900",
 				InstallPath: constants.KubeletPath,
 				Extract:     false,
 			},
 			{
-				Url:         "https://storage.googleapis.com/kubernetes-release/release/v1.28.13/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
+				Url:         "https://storage.googleapis.com/kubernetes-release/release/v1.28.14/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
 				Hash:        "sha256:f23e9586811312998bc5e8847f6df52fc04809aed8c2c2fd750f2c42b3f87192",
 				InstallPath: constants.KubeadmPath,
 				Extract:     false,
 			},
 			{
-				Url:         "https://storage.googleapis.com/kubernetes-release/release/v1.28.13/bin/linux/amd64/kubectl", // renovate:kubernetes-release
+				Url:         "https://storage.googleapis.com/kubernetes-release/release/v1.28.14/bin/linux/amd64/kubectl", // renovate:kubernetes-release
 				Hash:        "sha256:d7d363dd5a4c95444329bc5239b8718ebe84a043052958b2f15ee2feef9a28c6",
 				InstallPath: constants.KubectlPath,
 				Extract:     false,
@@ -265,7 +265,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.28.6@sha256:acfc7fe7543f4cf2fcf8156145925bee76eb6c602bb0b8e155456c6818fe8335", // renovate:container
 	},
 	V1_29: {
-		ClusterVersion: "v1.29.8", // renovate:kubernetes-release
+		ClusterVersion: "v1.29.9", // renovate:kubernetes-release
 		KubernetesComponents: components.Components{
 			{
 				Url:         "https://github.com/containernetworking/plugins/releases/download/v1.4.0/cni-plugins-linux-amd64-v1.4.0.tgz", // renovate:cni-plugins-release
@@ -280,19 +280,19 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 				Extract:     true,
 			},
 			{
-				Url:         "https://storage.googleapis.com/kubernetes-release/release/v1.29.8/bin/linux/amd64/kubelet", // renovate:kubernetes-release
+				Url:         "https://storage.googleapis.com/kubernetes-release/release/v1.29.9/bin/linux/amd64/kubelet", // renovate:kubernetes-release
 				Hash:        "sha256:df6e130928403af8b4f49f1197e26f2873a147cd0e23aa6597a26c982c652ae0",
 				InstallPath: constants.KubeletPath,
 				Extract:     false,
 			},
 			{
-				Url:         "https://storage.googleapis.com/kubernetes-release/release/v1.29.8/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
+				Url:         "https://storage.googleapis.com/kubernetes-release/release/v1.29.9/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
 				Hash:        "sha256:fe054355e0ae8dc35d868a3d3bc408ccdff0969c20bf7a231ae9b71484e41be3",
 				InstallPath: constants.KubeadmPath,
 				Extract:     false,
 			},
 			{
-				Url:         "https://storage.googleapis.com/kubernetes-release/release/v1.29.8/bin/linux/amd64/kubectl", // renovate:kubernetes-release
+				Url:         "https://storage.googleapis.com/kubernetes-release/release/v1.29.9/bin/linux/amd64/kubectl", // renovate:kubernetes-release
 				Hash:        "sha256:038454e0d79748aab41668f44ca6e4ac8affd1895a94f592b9739a0ae2a5f06a",
 				InstallPath: constants.KubectlPath,
 				Extract:     false,
@@ -332,7 +332,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.29.4@sha256:786728c85787a58c6376b47d2e22cc04db3ecfdd73a52b5b9be20fd869abce2f", // renovate:container
 	},
 	V1_30: {
-		ClusterVersion: "v1.30.4", // renovate:kubernetes-release
+		ClusterVersion: "v1.30.5", // renovate:kubernetes-release
 		KubernetesComponents: components.Components{
 			{
 				Url:         "https://github.com/containernetworking/plugins/releases/download/v1.4.0/cni-plugins-linux-amd64-v1.4.0.tgz", // renovate:cni-plugins-release
@@ -347,19 +347,19 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 				Extract:     true,
 			},
 			{
-				Url:         "https://storage.googleapis.com/kubernetes-release/release/v1.30.4/bin/linux/amd64/kubelet", // renovate:kubernetes-release
+				Url:         "https://storage.googleapis.com/kubernetes-release/release/v1.30.5/bin/linux/amd64/kubelet", // renovate:kubernetes-release
 				Hash:        "sha256:0c02c0f997b3e9769eae7ca051856054411fca947b3d5409d991ce1964dd0e69",
 				InstallPath: constants.KubeletPath,
 				Extract:     false,
 			},
 			{
-				Url:         "https://storage.googleapis.com/kubernetes-release/release/v1.30.4/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
+				Url:         "https://storage.googleapis.com/kubernetes-release/release/v1.30.5/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
 				Hash:        "sha256:6c6053fb8b31030ef7fffe146eb29489f7bf53d7a5ca10e0b10c907bf4b7e281",
 				InstallPath: constants.KubeadmPath,
 				Extract:     false,
 			},
 			{
-				Url:         "https://storage.googleapis.com/kubernetes-release/release/v1.30.4/bin/linux/amd64/kubectl", // renovate:kubernetes-release
+				Url:         "https://storage.googleapis.com/kubernetes-release/release/v1.30.5/bin/linux/amd64/kubectl", // renovate:kubernetes-release
 				Hash:        "sha256:2ffd023712bbc1a9390dbd8c0c15201c165a69d394787ef03eda3eccb4b9ac06",
 				InstallPath: constants.KubectlPath,
 				Extract:     false,
