@@ -104,6 +104,6 @@ spec:
           items:
           - key: Corefile
             path: Corefile
-          name: edg-coredns
+          name: coredns
         name: config-volume
 status: {}
