@@ -12,26 +12,27 @@ import (
 	compute "cloud.google.com/go/compute/apiv1"
 	"cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/googleapis/gax-go/v2"
+	computeREST "google.golang.org/api/compute/v1"
 )
 
 type instanceTemplateClient struct {
-	*compute.InstanceTemplatesClient
+	*computeREST.InstanceTemplatesService
 }
 
 func (c *instanceTemplateClient) Close() error {
-	return c.InstanceTemplatesClient.Close()
+	return nil // no-op
 }
 
-func (c *instanceTemplateClient) Delete(ctx context.Context, req *computepb.DeleteInstanceTemplateRequest,
-	opts ...gax.CallOption,
-) (Operation, error) {
-	return c.InstanceTemplatesClient.Delete(ctx, req, opts...)
+func (c *instanceTemplateClient) Get(project, template string) (*computeREST.InstanceTemplate, error) {
+	return c.InstanceTemplatesService.Get(project, template).Do()
 }
 
-func (c *instanceTemplateClient) Insert(ctx context.Context, req *computepb.InsertInstanceTemplateRequest,
-	opts ...gax.CallOption,
-) (Operation, error) {
-	return c.InstanceTemplatesClient.Insert(ctx, req, opts...)
+func (c *instanceTemplateClient) Delete(project, template string) (*computeREST.Operation, error) {
+	return c.InstanceTemplatesService.Delete(project, template).Do()
+}
+
+func (c *instanceTemplateClient) Insert(projectID string, template *computeREST.InstanceTemplate) (*computeREST.Operation, error) {
+	return c.InstanceTemplatesService.Insert(projectID, template).Do()
 }
 
 type instanceGroupManagersClient struct {
