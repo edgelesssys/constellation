@@ -188,6 +188,65 @@ func (k *Kubectl) PatchFirstNodePodCIDR(ctx context.Context, firstNodePodCIDR st
 	return err
 }
 
+// EnforceCoreDNSSpread adds a pod anti-affinity to the CoreDNS deployment to ensure that
+// CoreDNS pods are spread across nodes.
+func (k *Kubectl) EnforceCoreDNSSpread(ctx context.Context) error {
+	// allow CoreDNS Pods to run on uninitialized nodes, which is required by cloud-controller-manager
+	tolerationSeconds := int64(10)
+	tolerations := []corev1.Toleration{
+		{
+			Key:    "node.cloudprovider.kubernetes.io/uninitialized",
+			Value:  "true",
+			Effect: corev1.TaintEffectNoSchedule,
+		},
+		{
+			Key:               "node.kubernetes.io/unreachable",
+			Operator:          corev1.TolerationOpExists,
+			Effect:            corev1.TaintEffectNoExecute,
+			TolerationSeconds: &tolerationSeconds,
+		},
+	}
+
+	deployments := k.AppsV1().Deployments("kube-system")
+	// retry resource update if an error occurs
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		result, err := deployments.Get(ctx, "coredns", metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to get Deployment to add toleration: %w", err)
+		}
+
+		result.Spec.Template.Spec.Tolerations = append(result.Spec.Template.Spec.Tolerations, tolerations...)
+
+		if result.Spec.Template.Spec.Affinity == nil {
+			result.Spec.Template.Spec.Affinity = &corev1.Affinity{}
+		}
+		if result.Spec.Template.Spec.Affinity.PodAntiAffinity == nil {
+			result.Spec.Template.Spec.Affinity.PodAntiAffinity = &corev1.PodAntiAffinity{}
+		}
+		result.Spec.Template.Spec.Affinity.PodAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution = []corev1.WeightedPodAffinityTerm{}
+		if result.Spec.Template.Spec.Affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution == nil {
+			result.Spec.Template.Spec.Affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution = []corev1.PodAffinityTerm{}
+		}
+
+		result.Spec.Template.Spec.Affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution = append(result.Spec.Template.Spec.Affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution,
+			corev1.PodAffinityTerm{
+				LabelSelector: &metav1.LabelSelector{
+					MatchExpressions: []metav1.LabelSelectorRequirement{
+						{
+							Key:      "k8s-app",
+							Operator: metav1.LabelSelectorOpIn,
+							Values:   []string{"kube-dns"},
+						},
+					},
+				},
+				TopologyKey: "kubernetes.io/hostname",
+			})
+
+		_, err = deployments.Update(ctx, result, metav1.UpdateOptions{})
+		return err
+	})
+}
+
 // AddNodeSelectorsToDeployment adds [K8s selectors] to the deployment, identified
 // by name and namespace.
 //
