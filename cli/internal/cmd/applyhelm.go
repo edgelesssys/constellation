@@ -42,7 +42,6 @@ func (a *applyCmd) runHelmApply(cmd *cobra.Command, conf *config.Config, stateFi
 		HelmWaitMode:        a.flags.helmWaitMode,
 		ApplyTimeout:        a.flags.helmTimeout,
 		AllowDestructive:    helm.DenyDestructive,
-		ServiceCIDR:         conf.ServiceCIDR,
 	}
 	if conf.Provider.OpenStack != nil {
 		var deployYawolLoadBalancer bool

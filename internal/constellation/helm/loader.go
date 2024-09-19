@@ -31,7 +31,6 @@ import (
 
 // Run `go generate` to download (and patch) upstream helm charts.
 //go:generate ./generateCilium.sh
-//go:generate go run ./corednsgen/
 //go:generate ./update-csi-charts.sh
 //go:generate ./generateCertManager.sh
 //go:generate ./update-aws-load-balancer-chart.sh
@@ -47,7 +46,6 @@ type chartInfo struct {
 
 var (
 	// Charts we fetch from an upstream with real versions.
-	coreDNSInfo         = chartInfo{releaseName: "coredns", chartName: "coredns", path: "charts/coredns"}
 	ciliumInfo          = chartInfo{releaseName: "cilium", chartName: "cilium", path: "charts/cilium"}
 	certManagerInfo     = chartInfo{releaseName: "cert-manager", chartName: "cert-manager", path: "charts/cert-manager"}
 	awsLBControllerInfo = chartInfo{releaseName: "aws-load-balancer-controller", chartName: "aws-load-balancer-controller", path: "charts/aws-load-balancer-controller"}
@@ -126,7 +124,7 @@ type OpenStackValues struct {
 
 // loadReleases loads the embedded helm charts and returns them as a HelmReleases object.
 func (i *chartLoader) loadReleases(conformanceMode, deployCSIDriver bool, helmWaitMode WaitMode, masterSecret uri.MasterSecret,
-	serviceAccURI string, openStackValues *OpenStackValues, serviceCIDR string,
+	serviceAccURI string, openStackValues *OpenStackValues,
 ) (releaseApplyOrder, error) {
 	ciliumRelease, err := i.loadRelease(ciliumInfo, helmWaitMode)
 	if err != nil {
@@ -134,16 +132,6 @@ func (i *chartLoader) loadReleases(conformanceMode, deployCSIDriver bool, helmWa
 	}
 	ciliumVals := extraCiliumValues(i.csp, conformanceMode, i.stateFile.Infrastructure)
 	ciliumRelease.values = mergeMaps(ciliumRelease.values, ciliumVals)
-
-	coreDNSRelease, err := i.loadRelease(coreDNSInfo, helmWaitMode)
-	if err != nil {
-		return nil, fmt.Errorf("loading coredns: %w", err)
-	}
-	coreDNSVals, err := extraCoreDNSValues(serviceCIDR)
-	if err != nil {
-		return nil, fmt.Errorf("loading coredns values: %w", err)
-	}
-	coreDNSRelease.values = mergeMaps(coreDNSRelease.values, coreDNSVals)
 
 	certManagerRelease, err := i.loadRelease(certManagerInfo, helmWaitMode)
 	if err != nil {
@@ -168,7 +156,7 @@ func (i *chartLoader) loadReleases(conformanceMode, deployCSIDriver bool, helmWa
 	}
 	conServicesRelease.values = mergeMaps(conServicesRelease.values, svcVals)
 
-	releases := releaseApplyOrder{ciliumRelease, coreDNSRelease, conServicesRelease, certManagerRelease, operatorRelease}
+	releases := releaseApplyOrder{ciliumRelease, conServicesRelease, certManagerRelease, operatorRelease}
 	if deployCSIDriver {
 		csiRelease, err := i.loadRelease(csiInfo, WaitModeNone)
 		if err != nil {
@@ -236,8 +224,6 @@ func (i *chartLoader) loadRelease(info chartInfo, helmWaitMode WaitMode) (releas
 		values = i.loadAWSLBControllerValues()
 	case csiInfo.releaseName:
 		values = i.loadCSIValues()
-	default:
-		values = map[string]any{}
 	}
 
 	// Charts we package ourselves have version 0.0.0.

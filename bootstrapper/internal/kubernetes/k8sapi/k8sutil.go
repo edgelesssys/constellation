@@ -48,6 +48,7 @@ type Client interface {
 	AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string, namespace string) error
 	ListAllNamespaces(ctx context.Context) (*corev1.NamespaceList, error)
 	AnnotateNode(ctx context.Context, nodeName, annotationKey, annotationValue string) error
+	EnforceCoreDNSSpread(ctx context.Context) error
 	PatchFirstNodePodCIDR(ctx context.Context, firstNodePodCIDR string) error
 }
 
@@ -149,7 +150,7 @@ func (k *KubernetesUtil) InitCluster(
 
 	// initialize the cluster
 	log.Info("Initializing the cluster using kubeadm init")
-	skipPhases := "--skip-phases=preflight,certs,addon/coredns"
+	skipPhases := "--skip-phases=preflight,certs"
 	if !conformanceMode {
 		skipPhases += ",addon/kube-proxy"
 	}

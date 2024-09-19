@@ -1311,11 +1311,6 @@ func (r *ClusterResource) applyHelmCharts(ctx context.Context, applier *constell
 		diags.AddError("Applying Helm charts", err.Error())
 		return diags
 	}
-
-	if err := applier.CleanupCoreDNSResources(ctx); err != nil {
-		diags.AddError("Cleaning up CoreDNS resources", err.Error())
-		return diags
-	}
 	return diags
 }
 
