@@ -16,12 +16,6 @@ jobs:
         ref: ${{ github.head_ref }}
         path: constellation
 
-    - name: Install necessary tools
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y python3 python3-pip
-        sudo python3 -m pip install --user --require-hashes -r constellation/.github/workflows/aws-snp-launchmeasurements-requirements.txt
-
     - name: Install Nix
       uses: cachix/install-nix-action@ba0dd844c9180cbf77aa72a116d6fbc515d0e87b # v27
 
