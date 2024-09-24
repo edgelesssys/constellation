@@ -54,6 +54,10 @@ func New(ctx context.Context) (*MetadataClient, error) {
 	if err != nil {
 		return nil, fmt.Errorf("getting user domain name: %w", err)
 	}
+	regionName, err := imds.regionName(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting region name: %w", err)
+	}
 
 	clientOpts := &clientconfig.ClientOpts{
 		AuthType: clientconfig.AuthV3Password,
@@ -63,6 +67,7 @@ func New(ctx context.Context) (*MetadataClient, error) {
 			Username:       username,
 			Password:       password,
 		},
+		RegionName: regionName,
 	}
 
 	serversClient, err := clientconfig.NewServiceClient(ctx, "compute", clientOpts)

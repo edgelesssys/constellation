@@ -172,6 +172,20 @@ func (c *imdsClient) userDomainName(ctx context.Context) (string, error) {
 	return c.userDataCache.UserDomainName, nil
 }
 
+func (c *imdsClient) regionName(ctx context.Context) (string, error) {
+	if c.timeForUpdate(c.cacheTime) || c.userDataCache.RegionName == "" {
+		if err := c.update(ctx); err != nil {
+			return "", err
+		}
+	}
+
+	if c.userDataCache.RegionName == "" {
+		return "", errors.New("unable to get user domain name")
+	}
+
+	return c.userDataCache.RegionName, nil
+}
+
 func (c *imdsClient) username(ctx context.Context) (string, error) {
 	if c.timeForUpdate(c.cacheTime) || c.userDataCache.Username == "" {
 		if err := c.update(ctx); err != nil {
@@ -295,6 +309,7 @@ type metadataTags struct {
 type userDataResponse struct {
 	AuthURL              string `json:"openstack-auth-url,omitempty"`
 	UserDomainName       string `json:"openstack-user-domain-name,omitempty"`
+	RegionName           string `json:"openstack-region-name,omitempty"`
 	Username             string `json:"openstack-username,omitempty"`
 	Password             string `json:"openstack-password,omitempty"`
 	LoadBalancerEndpoint string `json:"openstack-load-balancer-endpoint,omitempty"`

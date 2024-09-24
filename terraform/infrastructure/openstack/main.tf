@@ -242,6 +242,7 @@ module "instance_group" {
   openstack_username               = local.cloudyaml["auth"]["username"]
   openstack_password               = local.cloudyaml["auth"]["password"]
   openstack_user_domain_name       = local.cloudyaml["auth"]["user_domain_name"]
+  openstack_region_name            = local.cloudyaml["region_name"]
   openstack_load_balancer_endpoint = openstack_networking_floatingip_v2.public_ip.address
 }
 
