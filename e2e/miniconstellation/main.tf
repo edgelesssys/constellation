@@ -42,7 +42,7 @@ data "cloudinit_config" "cloud_init" {
 
 resource "azurerm_resource_group" "main" {
   name     = var.resource_name
-  location = "North Europe"
+  location = "West Europe"
 }
 
 resource "azurerm_virtual_network" "main" {
