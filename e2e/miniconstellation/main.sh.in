@@ -23,13 +23,15 @@ cd e2e/miniconstellation
 
 echo "::group::Terraform"
 
+random_string=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 6)
+rg_name="e2e-mini-${random_string}"
+echo "rgname=${rg_name}" >> "${GITHUB_OUTPUT:-/dev/null}"
+echo "resource_name = \"${rg_name}\"" > terraform.tfvars
+
 terraform init
 terraform apply -auto-approve
 terraform output -raw ssh_private_key > id_rsa
 chmod 600 id_rsa
-
-rg_name=$(terraform output -raw rg_name)
-echo "rgname=$rg_name" >> "${GITHUB_OUTPUT:-/dev/null}"
 
 azure_vm_ip=$(terraform output -raw public_ip)
 

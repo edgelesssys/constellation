@@ -4,10 +4,6 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "4.1.0"
     }
-    random = {
-      source  = "hashicorp/random"
-      version = "3.6.2"
-    }
     tls = {
       source  = "hashicorp/tls"
       version = "4.0.5"
@@ -29,11 +25,6 @@ provider "azurerm" {
 
 provider "tls" {}
 
-resource "random_string" "suffix" {
-  length  = 6
-  special = false
-}
-
 resource "tls_private_key" "ssh_key" {
   algorithm = "RSA"
   rsa_bits  = 2048
@@ -50,26 +41,26 @@ data "cloudinit_config" "cloud_init" {
 }
 
 resource "azurerm_resource_group" "main" {
-  name     = "e2e-mini-${random_string.suffix.result}"
+  name     = var.resource_name
   location = "North Europe"
 }
 
 resource "azurerm_virtual_network" "main" {
-  name                = "e2e-mini-${random_string.suffix.result}"
+  name                = var.resource_name
   address_space       = ["10.0.0.0/16"]
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
 }
 
 resource "azurerm_subnet" "main" {
-  name                 = "e2e-mini-${random_string.suffix.result}"
+  name                 = var.resource_name
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = ["10.0.2.0/24"]
 }
 
 resource "azurerm_public_ip" "main" {
-  name                = "e2e-mini-${random_string.suffix.result}"
+  name                = var.resource_name
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
   allocation_method   = "Static"
@@ -77,7 +68,7 @@ resource "azurerm_public_ip" "main" {
 }
 
 resource "azurerm_network_interface" "main" {
-  name                = "e2e-mini-${random_string.suffix.result}"
+  name                = var.resource_name
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
 
@@ -90,7 +81,7 @@ resource "azurerm_network_interface" "main" {
 }
 
 resource "azurerm_network_security_group" "ssh" {
-  name                = "e2e-mini-${random_string.suffix.result}"
+  name                = var.resource_name
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
 
@@ -113,7 +104,7 @@ resource "azurerm_subnet_network_security_group_association" "ssh" {
 }
 
 resource "azurerm_linux_virtual_machine" "main" {
-  name                = "e2e-mini-${random_string.suffix.result}"
+  name                = var.resource_name
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
 
