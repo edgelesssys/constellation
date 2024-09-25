@@ -61,6 +61,5 @@ runs:
       # clean up if e2e test failed or if the run was cancelled
       if: (failure() && steps.e2e-test.conclusion == 'failure') || cancelled()
       run: |
-        rg_name=${{ steps.e2e-test.outputs.rgname }}
-        echo "[*] Deleting resource group $rg_name"
-        az group delete -y --resource-group "$rg_name"
+        echo "[*] Deleting resource group ${{ steps.e2e-test.outputs.rgname }}"
+        az group delete -y --resource-group "${{ steps.e2e-test.outputs.rgname }}"
