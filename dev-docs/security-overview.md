@@ -59,7 +59,10 @@ The CLI automatically selects one of the nodes as *first node*. The CLI automati
 2. The CLI generates the  [master secret](../architecture/keys.md#master-secret) of the to-be-created cluster and sends it to the first node.
 3. The first node generates a [kubeconfig file](https://www.redhat.com/sysadmin/kubeconfig) and sends it to the CLI. The kubeconfig file contains Kubernetes credentials for the CLI and the Kubernetes cluster's public key, among others.
 
-After this, the aTLS connection is closed and the node is marked as "initialized" by extending. This marker is irrevocably reflected in the node's remote attestation. This mechanism prevents a node from (accidentally or maliciously) joining different clusters. 
+After this, the aTLS connection is closed and the Bootstrapper marks the node irrevocably as "initialized". This mechanism prevents a node from accidentally or maliciously joining different clusters. On all supported CVM platforms this is currently implemented by *extending* one of the respective TPM's registers with the unique ID of the cluster (`clusterID`). More information can be found in the [Constellation documentation].
+
+For [launch digest-based attestation](#remote-attestation-of-nodes) on future CVM platforms, an alternative would be to extend `clusterID` to the so called RTMR registers of Intel TDX. TDX provides four RTMRs, which are automatically included in the `auxiliary data` part of a remote-attestation statement. For AMD SEV-SNP, a different solution exists.
+
 
 ## Kubernetes bootstrapping on the first node
 
