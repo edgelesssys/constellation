@@ -98,4 +98,8 @@ In Constellation, a virtual private network (VPN) exists between all nodes of a 
 
 ## Cluster upgrade
 
-Whenever a cluster is [upgraded](https://docs.edgeless.systems/constellation/workflows/upgrade) to a new version of the node image, the CLI sends the corresponding measurements via the Kubernetes API server. The new measurements are stored in etcd within the cluster and replace any previous measurements. The new measurements are then used automatically by the JoinServer for the verification of new nodes. 
+Whenever a cluster is [upgraded](https://docs.edgeless.systems/constellation/workflows/upgrade) to a new version of the node image, the CLI sends the corresponding measurements XXX config XXX via the Kubernetes API server. The new measurements XXX config XXX are stored in etcd within the cluster and replace any previous measurements XXX config XXX. The new measurements are then used automatically by the JoinServer for the verification of new nodes. 
+
+XXX: The command automatically triggers the restarting of nodes.
+
+Upgrading a node image potentially also upgrades
