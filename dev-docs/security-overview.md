@@ -18,44 +18,50 @@ There are three core services: KeyService, JoinService, and VerificationService.
 The CLI executable is signed by Edgeless Systems.
 To ensure non-repudiability for CLI releases, Edgeless Systems publishes corresponding signatures to the public ledger of the [Sigstore project](https://www.sigstore.dev/).
 There's a [step-by-step guide](https://docs.edgeless.systems/constellation/workflows/verify-cli) on how to verify CLI signatures based on Sigstore.
+
 The CLI contains the [measurements](https://github.com/edgelesssys/constellation/blob/edc0c7068ef4527efeaf584a2a35e0f51f58c426/internal/attestation/measurements/measurements_enterprise.go#L21) of the latest Constellation node image for all supported cloud platforms.
 The CLI writes these measurements as part of the *attestation config* to a cluster's config file with the ["config generate" command](https://docs.edgeless.systems/constellation/workflows/config).
 Note that Constellation currently uses 16 TPM-based runtime measurements for each cloud platform.
 The purpose and source of the measurements are described in the [next section](#remote-attestation-of-nodes).
 In addition to the measurements, the attestation config contains expected patch levels for the CPU microcode and the X.509 certificate of the CPU vendor's remote attestation infrastructure.
 An example of an attestation config is given [below](#attestation-config).
+
 In case a different version of the node image is to be used, the corresponding measurements can be fetched using the CLI's ["config fetch-measurements" command](reference/cli#constellation-config-fetch-measurements).
 This command downloads the measurements and the corresponding signature from Edgeless Systems from https://cdn.confidential.cloud.
 See for example the following files corresponding to node image v2.16.3:
 * [Measurements](https://cdn.confidential.cloud/constellation/v2/ref/-/stream/stable/v2.16.3/image/measurements.json)
 * [Signature](https://cdn.confidential.cloud/constellation/v2/ref/-/stream/stable/v2.16.3/image/measurements.json.sig)
+
 In addition to the attestation config, the CLI contains the following data in hardcoded form:
 * The [long-term public key of Edgeless Systems](https://github.com/edgelesssys/constellation/blob/edc0c7068ef4527efeaf584a2a35e0f51f58c426/internal/constants/constants.go#L264) to verify the signature of downloaded measurements.
 * The [hashes of the expected Kubernetes binaries](https://github.com/edgelesssys/constellation/blob/edc0c7068ef4527efeaf584a2a35e0f51f58c426/internal/versions/versions.go#L199).
 * The [Helm charts used for the installation of services](https://github.com/edgelesssys/constellation/tree/main/internal/constellation/helm/charts), which include hashes of the respective containers.
 Note that the Helm charts and the hashes are [generated at build time](https://github.com/edgelesssys/constellation/blob/main/internal/constellation/helm/imageversion/imageversion.go).
 A future version of the CLI will provide a command to print the Helm charts.
+
 ## Cluster creation
+
 When a cluster is [created](https://docs.edgeless.systems/constellation/workflows/create), the CLI interacts with the API of the respective infrastructure provider, for example Azure, and launches CVMs with the applicable node image.
 These CVMs are called *nodes*.
 On each node, the Bootstrapper is launched.
+
 The CLI automatically selects one of the nodes as *first node*.
 The CLI automatically verifies the first node's remote-attestation statement using the attestation config.
 Details on remote attestation are given in the [next section](#remote-attestation-of-nodes).
+
 Based on the remote-attestation statement, the CLI and the Bootstrapper running on the first node set up a temporary TLS connection between them.
 We refer to this type of connection as "attested TLS" (aTLS).
 This connection is mainly used for three things (see the the [interface definition](https://github.com/edgelesssys/constellation/blob/main/bootstrapper/initproto/init.proto) for a comprehensive list of exchanged data):
-1.
-The CLI sends the hashes of the expected Kubernetes binaries to the first node.
-2.
-The CLI generates the [master secret](../architecture/keys.md#master-secret) of the to-be-created cluster and sends it to the first node.
-3.
-The first node generates a [kubeconfig file](https://www.redhat.com/sysadmin/kubeconfig) and sends it to the CLI.
+1. The CLI sends the hashes of the expected Kubernetes binaries to the first node.
+2. The CLI generates the [master secret](../architecture/keys.md#master-secret) of the to-be-created cluster and sends it to the first node.
+3. The first node generates a [kubeconfig file](https://www.redhat.com/sysadmin/kubeconfig) and sends it to the CLI.
 The kubeconfig file contains Kubernetes credentials for the CLI and the Kubernetes cluster's public key, among others.
+
 After this, the aTLS connection is closed and the Bootstrapper marks the node irrevocably as "initialized".
 This mechanism prevents a node from accidentally or maliciously joining different clusters.
 On all supported CVM platforms this is currently implemented by *extending* TPM register 15 with the unique ID of the cluster (`clusterID`).
 More information can be found in the [Constellation documentation](https://docs.edgeless.systems/constellation/architecture/keys#cluster-identity).
+
 For [launch digest-based attestation](#remote-attestation-of-nodes) on future CVM platforms, an alternative would be to extend `clusterID` to the so called RTMR registers of Intel TDX.
 TDX provides four RTMRs, which are automatically included in the `auxiliary data` part of a remote-attestation statement.
 For AMD SEV-SNP, a different solution exists.
@@ -90,6 +96,7 @@ In this case, the launch digest is the only measurement that's required to verif
 
 However, currently, all supported CVM platforms (AWS, Azure, and GCP) inject custom firmware into CVMs.
 Thus, in practice, Constellation relies on conventional [measured boot](https://docs.edgeless.systems/constellation/architecture/images#measured-boot) to reflect the identity and integrity of nodes.
+
 In measured boot, in general, the software components involved in the boot process of a system are "measured" into the 16 registers of a Trusted Platform Module (TPM).
 The values of these registers are also called "runtime measurements".
 All supported CVM platforms provide TPMs to CVMs.
