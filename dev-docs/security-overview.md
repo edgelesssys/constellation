@@ -1,4 +1,4 @@
-# Constellation - Security Overview
+# Constellation - Security Protocols Overview
 
 The security of Constellation is based on a set of protocols. The protocols are outlined in the following. The following diagram sketches the basic trust relationships between the entities in a Constellation cluster.
 
