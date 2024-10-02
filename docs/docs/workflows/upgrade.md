@@ -1,6 +1,6 @@
 # Upgrade your cluster
 
-Constellation provides an easy way to upgrade all components of your cluster, without disrupting it's availability.
+Constellation provides an easy way to upgrade all components of your cluster, without disrupting its availability.
 Specifically, you can upgrade the Kubernetes version, the nodes' image, and the Constellation microservices.
 You configure the desired versions in your local Constellation configuration and trigger upgrades with the `apply` command.
 To learn about available versions you use the `upgrade check` command.
