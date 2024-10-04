@@ -29,6 +29,8 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+const configMapName = "edg-coredns"
+
 var chartDir = flag.String("charts", "./charts", "target directory to create charts in")
 
 func main() {
@@ -44,9 +46,9 @@ func main() {
 	writeTemplate(kubedns.CoreDNSServiceAccount, "serviceaccount.yaml")
 	writeTemplate(kubedns.CoreDNSClusterRole, "clusterrole.yaml")
 	writeTemplate(kubedns.CoreDNSClusterRoleBinding, "clusterrolebinding.yaml")
-	writeTemplate(kubedns.CoreDNSConfigMap, "configmap.yaml")
 	writeTemplate(kubedns.CoreDNSService, "service.yaml")
 
+	writeFileRelativeToChartDir(patchedConfigMap(), "templates", "configmap.yaml")
 	writeFileRelativeToChartDir(patchedDeployment(), "templates", "deployment.yaml")
 }
 
@@ -92,7 +94,25 @@ func valuesYAML() []byte {
 	return data
 }
 
-// patchedDeployment extracts the CoreDNS deployment from kubeadm and adds necessary tolerations.
+// patchedConfigMap renames the CoreDNS ConfigMap such that kubeadm does not find it.
+//
+// See https://github.com/kubernetes/kubeadm/issues/2846#issuecomment-1899942683.
+func patchedConfigMap() []byte {
+	var cm corev1.ConfigMap
+	if err := yaml.Unmarshal(parseTemplate(kubedns.CoreDNSConfigMap), &cm); err != nil {
+		log.Fatalf("Could not parse configmap: %v", err)
+	}
+
+	cm.Name = configMapName
+
+	out, err := yaml.Marshal(cm)
+	if err != nil {
+		log.Fatalf("Could not marshal patched deployment: %v", err)
+	}
+	return out
+}
+
+// patchedDeployment extracts the CoreDNS Deployment from kubeadm, adds necessary tolerations and updates the ConfigMap reference.
 func patchedDeployment() []byte {
 	var d appsv1.Deployment
 	if err := yaml.Unmarshal(parseTemplate(kubedns.CoreDNSDeployment), &d); err != nil {
@@ -104,6 +124,14 @@ func patchedDeployment() []byte {
 		{Key: "node.kubernetes.io/unreachable", Operator: corev1.TolerationOpExists, Effect: corev1.TaintEffectNoExecute, TolerationSeconds: toPtr(int64(10))},
 	}
 	d.Spec.Template.Spec.Tolerations = append(d.Spec.Template.Spec.Tolerations, tolerations...)
+
+	for i, vol := range d.Spec.Template.Spec.Volumes {
+		if vol.ConfigMap != nil {
+			vol.ConfigMap.Name = configMapName
+		}
+		d.Spec.Template.Spec.Volumes[i] = vol
+	}
+
 	out, err := yaml.Marshal(d)
 	if err != nil {
 		log.Fatalf("Could not marshal patched deployment: %v", err)

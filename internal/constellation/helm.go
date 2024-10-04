@@ -60,6 +60,21 @@ func (a *Applier) AnnotateCoreDNSResources(ctx context.Context) error {
 	return nil
 }
 
+// CleanupCoreDNSResources removes CoreDNS resources that are not managed by Helm.
+//
+// This is only required when CoreDNS was installed by kubeadm directly.
+// TODO(burgerdev): remove after v2.19 is released.
+func (a *Applier) CleanupCoreDNSResources(ctx context.Context) error {
+	err := a.dynamicClient.
+		Resource(schema.GroupVersionResource{Group: "", Version: "v1", Resource: "configmaps"}).
+		Namespace("kube-system").
+		Delete(ctx, "coredns", v1.DeleteOptions{})
+	if !k8serrors.IsNotFound(err) {
+		return err
+	}
+	return nil
+}
+
 // PrepareHelmCharts loads Helm charts for Constellation and returns an executor to apply them.
 func (a *Applier) PrepareHelmCharts(
 	flags helm.Options, state *state.State, serviceAccURI string, masterSecret uri.MasterSecret,
