@@ -57,8 +57,7 @@ csp_settings = {
         "kernel_command_line_dict": {
             "console": "ttyS0",
             "constel.csp": "aws",
-            "idle": "poll",
-            "mitigations": "auto",
+            "mitigations": "auto,nosmt",
         },
     },
     "azure": {
