@@ -252,11 +252,7 @@ resource "azurerm_network_security_group" "security_group" {
 
 resource "azurerm_network_security_rule" "nsg_rule" {
   for_each = {
-    for o in concat(
-      local.ports,
-      [{ name = "nodeports", port = local.ports_node_range, priority = 200 }]
-    )
-    : o.name => o
+    for o in local.ports : o.name => o
   }
 
   name                        = each.value.name
@@ -299,12 +295,6 @@ module "scale_set_group" {
   subnet_id                 = azurerm_subnet.node_subnet.id
   backend_address_pool_ids  = each.value.role == "control-plane" ? [module.loadbalancer_backend_control_plane.backendpool_id] : []
   marketplace_image         = var.marketplace_image
-
-  # We still depend on the backends, since we are not sure if the VMs inside the VMSS have been
-  # "updated" to the new version (note: this is the update in Azure which "refreshes" the NICs and not
-  # our Constellation update).
-  # TODO(@3u13r): Remove this dependency after v2.18.0 has been released.
-  depends_on = [module.loadbalancer_backend_worker, azurerm_lb_backend_address_pool.all]
 }
 
 module "jump_host" {
