@@ -428,6 +428,9 @@ func (a *applyCmd) apply(
 		if err := a.runHelmApply(cmd, conf, stateFile, upgradeDir); err != nil {
 			return err
 		}
+		if err := a.applier.CleanupCoreDNSResources(cmd.Context()); err != nil {
+			return fmt.Errorf("cleaning up CoreDNS: %w", err)
+		}
 	}
 
 	// Upgrade node image
@@ -847,6 +850,7 @@ type applier interface {
 	// methods required to install/upgrade Helm charts
 
 	AnnotateCoreDNSResources(context.Context) error
+	CleanupCoreDNSResources(context.Context) error
 	PrepareHelmCharts(
 		flags helm.Options, state *state.State, serviceAccURI string, masterSecret uri.MasterSecret,
 	) (helm.Applier, bool, error)
