@@ -20,7 +20,7 @@ Follow the steps in our [libvirt readme](../../nix/container/README.md) if you w
 
 ### Install required packages
 
-[General reference](https://ubuntu.com/server/docs/virtualization-libvirt)
+[General reference](https://documentation.ubuntu.com/server/how-to/virtualisation/libvirt/)
 
 ```shell-session
 sudo apt install qemu-kvm libvirt-daemon-system xsltproc
