@@ -24,7 +24,7 @@ Here are some examples for test suites you might want to run. Values for `sonobu
 * `--mode certified-conformance`
   * For K8s conformance certification test suite
 
-Check [Sonobuoy docs](https://sonobuoy.io/docs/latest/e2eplugin/) for more examples.
+Check [Sonobuoy docs](https://sonobuoy.io/docs/v0.57.1/e2eplugin/) for more examples.
 
 When using `--mode` be aware that `--e2e-focus` and `e2e-skip` will be overwritten. [Check in the source code](https://github.com/vmware-tanzu/sonobuoy/blob/e709787426316423a4821927b1749d5bcc90cb8c/cmd/sonobuoy/app/modes.go#L130) what the different modes do.
 
