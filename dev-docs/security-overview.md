@@ -26,7 +26,7 @@ The purpose and source of the measurements are described in the [next section](#
 In addition to the measurements, the attestation config contains expected patch levels for the CPU microcode and the X.509 certificate of the CPU vendor's remote attestation infrastructure.
 An example of an attestation config is given [below](#attestation-config).
 
-In case a different version of the node image is to be used, the corresponding measurements can be fetched using the CLI's ["config fetch-measurements" command](reference/cli#constellation-config-fetch-measurements).
+In case a different version of the node image is to be used, the corresponding measurements can be fetched using the CLI's ["config fetch-measurements" command](https://docs.edgeless.systems/constellation/reference/cli#constellation-config-fetch-measurements).
 This command downloads the measurements and the corresponding signature from Edgeless Systems from https://cdn.confidential.cloud.
 See for example the following files corresponding to node image v2.16.3:
 * [Measurements](https://cdn.confidential.cloud/constellation/v2/ref/-/stream/stable/v2.16.3/image/measurements.json)
@@ -53,7 +53,7 @@ Based on the remote-attestation statement, the CLI and the Bootstrapper running 
 We refer to this type of connection as "attested TLS" (aTLS).
 This connection is mainly used for three things (see the the [interface definition](https://github.com/edgelesssys/constellation/blob/main/bootstrapper/initproto/init.proto) for a comprehensive list of exchanged data):
 1. The CLI sends the hashes of the expected Kubernetes binaries to the first node.
-2. The CLI generates the [master secret](../architecture/keys.md#master-secret) of the to-be-created cluster and sends it to the first node.
+2. The CLI generates the [master secret](https://docs.edgeless.systems/constellation/architecture/keys#master-secret) of the to-be-created cluster and sends it to the first node.
 3. The first node generates a [kubeconfig file](https://www.redhat.com/sysadmin/kubeconfig) and sends it to the CLI.
 The kubeconfig file contains Kubernetes credentials for the CLI and the Kubernetes cluster's public key, among others.
 
@@ -132,7 +132,7 @@ The CLI uses this connection for two essential operations at the Kubernetes leve
 1. It executes the [hardcoded Helm charts](#cli-root-of-trust), which, most notably, install the three core services KeyService, JoinService, and VerificationService, the [constellation-node-operator](https://github.com/edgelesssys/constellation/tree/main/operators/constellation-node-operator), and a small number of standard services like Cilium and cert-manager.
 
 The latter causes the first node to download, verify, and run the containers defined in the Helm charts.
-The containers that are specific to  Constellation are hosted at https://ghcr.io/edgelesssys.
+The containers that are specific to  Constellation are hosted at `ghcr.io/edgelesssys`.
 
 After this, the Constellation cluster is operational on the first node.
 
