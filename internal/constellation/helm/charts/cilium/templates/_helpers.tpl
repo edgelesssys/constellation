@@ -43,62 +43,7 @@ where:
 {{- if $priorityClass }}
   {{- $priorityClass }}
 {{- else if and $root.Values.enableCriticalPriorityClass $criticalPriorityClass -}}
-  {{- if and (eq $root.Release.Namespace "kube-system") (semverCompare ">=1.10-0" $root.Capabilities.KubeVersion.Version) -}}
-    {{- $criticalPriorityClass }}
-  {{- else if semverCompare ">=1.17-0" $root.Capabilities.KubeVersion.Version -}}
-    {{- $criticalPriorityClass }}
-  {{- end -}}
-{{- end -}}
-{{- end -}}
-
-{{/*
-Return the appropriate apiVersion for ingress.
-*/}}
-{{- define "ingress.apiVersion" -}}
-{{- if semverCompare ">=1.16-0, <1.19-0" .Capabilities.KubeVersion.Version -}}
-{{- print "networking.k8s.io/v1beta1" -}}
-{{- else if semverCompare "^1.19-0" .Capabilities.KubeVersion.Version -}}
-{{- print "networking.k8s.io/v1" -}}
-{{- end -}}
-{{- end -}}
-
-{{/*
-Return the appropriate backend for Hubble UI ingress.
-*/}}
-{{- define "ingress.paths" -}}
-{{ if semverCompare ">=1.4-0, <1.19-0" .Capabilities.KubeVersion.Version -}}
-backend:
-  serviceName: hubble-ui
-  servicePort: http
-{{- else if semverCompare "^1.19-0" .Capabilities.KubeVersion.Version -}}
-pathType: Prefix
-backend:
-  service:
-    name: hubble-ui
-    port:
-      name: http
-{{- end -}}
-{{- end -}}
-
-{{/*
-Return the appropriate apiVersion for cronjob.
-*/}}
-{{- define "cronjob.apiVersion" -}}
-{{- if semverCompare ">=1.21-0" .Capabilities.KubeVersion.Version -}}
-{{- print "batch/v1" -}}
-{{- else -}}
-{{- print "batch/v1beta1" -}}
-{{- end -}}
-{{- end -}}
-
-{{/*
-Return the appropriate apiVersion for podDisruptionBudget.
-*/}}
-{{- define "podDisruptionBudget.apiVersion" -}}
-{{- if semverCompare ">=1.21-0" .Capabilities.KubeVersion.Version -}}
-{{- print "policy/v1" -}}
-{{- else -}}
-{{- print "policy/v1beta1" -}}
+  {{- $criticalPriorityClass }}
 {{- end -}}
 {{- end -}}
 
