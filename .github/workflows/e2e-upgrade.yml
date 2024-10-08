@@ -22,6 +22,10 @@ on:
         description: CLI version to create a new cluster with. This has to be a released version, e.g., 'v2.1.3'.
         type: string
         required: true
+      fromKubernetes:
+        description: Kubernetes version for the origin cluster, empty for origin target's default version.
+        type: string
+        required: false
       gitRef:
         description: Ref to build upgrading CLI on, empty for HEAD.
         type: string
@@ -32,11 +36,11 @@ on:
         type: string
         required: false
       toKubernetes:
-        description: Kubernetes version to target for the upgrade, empty for target's default version.
+        description: Kubernetes version to target for the upgrade, empty for upgrade target's default version.
         type: string
         required: false
       toMicroservices:
-        description: Microservice version to target for the upgrade, empty for target's default version.
+        description: Microservice version to target for the upgrade, empty for upgrade target's default version.
         type: string
         required: false
       simulatedTargetVersion:
@@ -60,6 +64,10 @@ on:
         description: CLI version to create a new cluster with. This has to be a released version, e.g., 'v2.1.3'.
         type: string
         required: true
+      fromKubernetes:
+        description: Kubernetes version for the origin cluster, empty for origin target's default version.
+        type: string
+        required: false
       gitRef:
         description: Ref to build upgrading CLI on.
         type: string
@@ -215,6 +223,7 @@ jobs:
           osImage: ${{ inputs.fromVersion }}
           isDebugImage: "false"
           cliVersion: ${{ inputs.fromVersion }}
+          kubernetesVersion: ${{ inputs.fromKubernetes }}
           regionZone: ${{ inputs.regionZone }}
           gcpProject: constellation-e2e
           gcpClusterCreateServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
