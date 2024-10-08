@@ -42,9 +42,11 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	k8sjson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/client-go/util/retry"
-	kubeadmv1beta3 "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
-	"sigs.k8s.io/yaml"
+	"k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
+	kubeadmscheme "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/scheme"
+	kubeadmv1beta4 "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta4"
 )
 
 // ErrInProgress signals that an upgrade is in progress inside the cluster.
@@ -234,9 +236,23 @@ func (k *KubeCmd) ApplyJoinConfig(ctx context.Context, newAttestConfig config.At
 // ExtendClusterConfigCertSANs extends the ClusterConfig stored under "kube-system/kubeadm-config" with the given SANs.
 // Empty strings are ignored, existing SANs are preserved.
 func (k *KubeCmd) ExtendClusterConfigCertSANs(ctx context.Context, alternativeNames []string) error {
-	clusterConfiguration, kubeadmConfig, err := k.getClusterConfiguration(ctx)
-	if err != nil {
-		return fmt.Errorf("getting ClusterConfig: %w", err)
+	var kubeadmConfig *corev1.ConfigMap
+	if err := k.retryAction(ctx, func(ctx context.Context) error {
+		var err error
+		kubeadmConfig, err = k.kubectl.GetConfigMap(ctx, constants.ConstellationNamespace, constants.KubeadmConfigMap)
+		return err
+	}); err != nil {
+		return fmt.Errorf("retrieving current kubeadm-config: %w", err)
+	}
+
+	clusterConfigData, ok := kubeadmConfig.Data[constants.ClusterConfigurationKey]
+	if !ok {
+		return errors.New("ClusterConfiguration missing from kubeadm-config")
+	}
+
+	var clusterConfiguration kubeadm.ClusterConfiguration
+	if err := runtime.DecodeInto(kubeadmscheme.Codecs.UniversalDecoder(), []byte(clusterConfigData), &clusterConfiguration); err != nil {
+		return fmt.Errorf("decoding cluster configuration data: %w", err)
 	}
 
 	existingSANs := make(map[string]struct{})
@@ -264,7 +280,10 @@ func (k *KubeCmd) ExtendClusterConfigCertSANs(ctx context.Context, alternativeNa
 	clusterConfiguration.APIServer.CertSANs = append(clusterConfiguration.APIServer.CertSANs, missingSANs...)
 	sort.Strings(clusterConfiguration.APIServer.CertSANs)
 
-	newConfigYAML, err := yaml.Marshal(clusterConfiguration)
+	opt := k8sjson.SerializerOptions{Yaml: true}
+	serializer := k8sjson.NewSerializerWithOptions(k8sjson.DefaultMetaFactory, kubeadmscheme.Scheme, kubeadmscheme.Scheme, opt)
+	encoder := kubeadmscheme.Codecs.EncoderForVersion(serializer, kubeadmv1beta4.SchemeGroupVersion)
+	newConfigYAML, err := runtime.Encode(encoder, &clusterConfiguration)
 	if err != nil {
 		return fmt.Errorf("marshaling ClusterConfiguration: %w", err)
 	}
@@ -314,31 +333,6 @@ func (k *KubeCmd) getConstellationVersion(ctx context.Context) (updatev1alpha1.N
 	}
 
 	return nodeVersion, nil
-}
-
-// getClusterConfiguration fetches the kubeadm-config configmap from the cluster, extracts the config
-// and returns both the full configmap and the ClusterConfiguration.
-func (k *KubeCmd) getClusterConfiguration(ctx context.Context) (kubeadmv1beta3.ClusterConfiguration, *corev1.ConfigMap, error) {
-	var existingConf *corev1.ConfigMap
-	if err := k.retryAction(ctx, func(ctx context.Context) error {
-		var err error
-		existingConf, err = k.kubectl.GetConfigMap(ctx, constants.ConstellationNamespace, constants.KubeadmConfigMap)
-		return err
-	}); err != nil {
-		return kubeadmv1beta3.ClusterConfiguration{}, nil, fmt.Errorf("retrieving current kubeadm-config: %w", err)
-	}
-
-	clusterConf, ok := existingConf.Data[constants.ClusterConfigurationKey]
-	if !ok {
-		return kubeadmv1beta3.ClusterConfiguration{}, nil, errors.New("ClusterConfiguration missing from kubeadm-config")
-	}
-
-	var existingClusterConfig kubeadmv1beta3.ClusterConfiguration
-	if err := yaml.Unmarshal([]byte(clusterConf), &existingClusterConfig); err != nil {
-		return kubeadmv1beta3.ClusterConfiguration{}, nil, fmt.Errorf("unmarshaling ClusterConfiguration: %w", err)
-	}
-
-	return existingClusterConfig, existingConf, nil
 }
 
 // applyComponentsCM applies the k8s components ConfigMap to the cluster.
