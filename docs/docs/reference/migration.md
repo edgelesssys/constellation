@@ -8,11 +8,11 @@ Use [`constellation config migrate`](./cli.md#constellation-config-migrate) to a
 
 ### Azure
 
-* To allow seamless upgrades on Azure when Kubernetes services of type `LoadBalancer` are deployed, we changed the target
- load balancer in which the `cloud-controller-maanger` create the load balancing rules. Instead of using the load balancer we
- create and maintain in the CLI's Terraform code, the `cloud-controller-mananger` now creates its own load balancer in Azure.
- If inside your Constellation there are services of type `LoadBalancer`, please remove them before the upgrade and re-apply them
- afterwards. 
+* To allow seamless upgrades on Azure when Kubernetes services of type `LoadBalancer` are deployed, the target  
+ load balancer in which the `cloud-controller-maanger` created the load balancing rules was changed. Instead of using the load balancer, 
+ created and maintained by the CLI's Terraform code, the `cloud-controller-mananger` now creates its own load balancer in Azure.  
+ If inside your Constellation there are services of type `LoadBalancer`, please remove them before the upgrade and re-apply them  
+ afterward. 
 
 
 ## Migrating from Azure's service principal authentication to managed identity authentication (during the upgrade to Constellation v2.8.0)
