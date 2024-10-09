@@ -19,7 +19,11 @@ jobs:
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
-
+      # Work around https://github.com/errata-ai/vale-action/issues/128.
+      - run: |
+          venv="$HOME/.local/share/venv"
+          python3 -m venv "$venv"
+          echo "$venv/bin" >> "$GITHUB_PATH"
       - name: Vale
         uses: errata-ai/vale-action@91ac403e8d26f5aa1b3feaa86ca63065936a85b6 # tag=reviewdog
         with:
