@@ -19,7 +19,7 @@ concurrency:
 jobs:
   verify-inputs:
     name: Verify inputs
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       FULL_VERSION: ${{ inputs.version }}
     outputs:
@@ -74,7 +74,7 @@ jobs:
 
   docs:
     name: Create docs release (from main)
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: inputs.kind == 'minor'
     needs: verify-inputs
     permissions:
@@ -96,7 +96,7 @@ jobs:
           npm run docusaurus docs:version "${MAJOR_MINOR}"
 
       - name: Create docs pull request
-        uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c # v6.1.0
+        uses: peter-evans/create-pull-request@5e914681df9dc83aa4e4905692ca88beb2f9e91f # v7.0.5
         with:
           branch: ${{ env.BRANCH }}
           base: main
@@ -114,7 +114,7 @@ jobs:
 
   check-working-branch:
     name: Check temporary working branch
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: verify-inputs
     permissions:
       contents: write
@@ -152,7 +152,7 @@ jobs:
   update-versions:
     name: Update container image versions
     needs: [verify-inputs, check-working-branch]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
       packages: read
@@ -220,7 +220,7 @@ jobs:
     needs: [verify-inputs, os-image]
     permissions:
       contents: write
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       VERSION: ${{ inputs.version }}
       WITHOUT_V: ${{ needs.verify-inputs.outputs.WITHOUT_V }}

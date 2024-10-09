@@ -17,7 +17,7 @@ on:
 jobs:
   codeql:
     name: CodeQL
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       # Force CodeQL to run the extraction on the files compiled by our custom
       # build command, as opposed to letting the autobuilder figure it out.

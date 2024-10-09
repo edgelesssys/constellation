@@ -12,7 +12,7 @@ jobs:
       matrix:
         refStream: ["ref/main/stream/nightly/?","ref/main/stream/debug/?", "ref/release/stream/stable/?"]
     name: Find latest image
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions:
       id-token: write
       contents: read
@@ -313,7 +313,7 @@ jobs:
             kubernetes-version: "v1.29"
             clusterCreation: "cli"
 
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions:
       id-token: write
       checks: write
@@ -439,7 +439,7 @@ jobs:
 
   e2e-mini:
     name: Run miniconstellation E2E test
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     environment: e2e
     permissions:
       id-token: write

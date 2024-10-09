@@ -15,7 +15,7 @@ on:
 
 jobs:
   complete-release-branch-transaction:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions:
       id-token: write
       contents: write
@@ -44,7 +44,7 @@ jobs:
           git push origin "${WORKING_BRANCH}":"${RELEASE_BRANCH}"
 
   update:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       latest: ${{ steps.input-passthrough.outputs.latest }}${{ steps.check-last-release.outputs.latest }}
     steps:
@@ -117,7 +117,7 @@ jobs:
         add-image-version-to-versionsapi,
         add-cli-version-to-versionsapi,
       ]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions:
       id-token: write
       contents: write
@@ -131,7 +131,7 @@ jobs:
   mirror-gcp-mpi:
     name: "Mirror GCP Marketplace Image"
     needs: [add-image-version-to-versionsapi]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions:
       id-token: write
       contents: read

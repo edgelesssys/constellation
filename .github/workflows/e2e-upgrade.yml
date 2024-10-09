@@ -90,7 +90,7 @@ on:
 jobs:
   generate-input-parameters:
     name: Generate input parameters
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions:
       id-token: write
       contents: read
@@ -126,7 +126,7 @@ jobs:
 
   build-target-cli:
     name: Build upgrade target version CLI
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions:
       id-token: write
       checks: write
@@ -177,7 +177,7 @@ jobs:
 
   create-cluster:
     name: Create upgrade origin version cluster
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions:
       id-token: write
       checks: write
@@ -262,7 +262,7 @@ jobs:
 
   e2e-upgrade:
     name: Run upgrade test
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions:
       id-token: write
       checks: write
@@ -427,7 +427,7 @@ jobs:
 
   clean-up:
     name: Clean up resources
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions:
       id-token: write
       checks: write
