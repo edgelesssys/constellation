@@ -50,7 +50,7 @@ on:
 
 jobs:
   build-cli:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -110,7 +110,7 @@ jobs:
             build/constellation-${{ matrix.os }}-${{ matrix.arch }}.exe.sig
 
   build-terraform-provider:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -165,7 +165,7 @@ jobs:
             build/terraform-provider-constellation-${{ matrix.os }}-${{ matrix.arch }}.exe
 
   upload-terraform-module:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         id: checkout
@@ -177,7 +177,7 @@ jobs:
         uses: ./.github/actions/upload_terraform_module
 
   push-containers:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: inputs.pushContainers
     permissions:
       actions: read
@@ -208,7 +208,7 @@ jobs:
         run: bazel run //bazel/release:push
 
   provenance-subjects:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs:
       - build-cli
       - signed-sbom
@@ -252,7 +252,7 @@ jobs:
           echo provenance-subjects="${HASHESB64}" >> "$GITHUB_OUTPUT"
 
   signed-sbom:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         id: checkout
@@ -321,7 +321,7 @@ jobs:
       base64-subjects: "${{ needs.provenance-subjects.outputs.provenance-subjects }}"
 
   provenance-verify:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       SLSA_VERIFIER_VERSION: "2.5.1"
     needs:
@@ -395,7 +395,7 @@ jobs:
   release:
     permissions:
       contents: write
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs:
       - build-cli
       - provenance

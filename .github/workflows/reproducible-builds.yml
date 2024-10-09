@@ -132,7 +132,7 @@ jobs:
             - "cli_enterprise_linux_amd64"
             - "cli_enterprise_linux_arm64"
             - "cli_enterprise_windows_amd64"
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
@@ -166,7 +166,7 @@ jobs:
               - "aws_aws-nitro-tpm_console"
               - "qemu_qemu-vtpm_debug"
               - "gcp_gcp-sev-snp_nightly"
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:

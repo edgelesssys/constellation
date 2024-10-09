@@ -13,7 +13,7 @@ on:
 jobs:
   build-cli:
     name: Build Windows CLI
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions:
       id-token: write
       checks: write
@@ -178,7 +178,7 @@ jobs:
 
   notify-failure:
     name: Notify about failure
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: e2e-test
     if: |
       failure() &&

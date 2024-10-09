@@ -20,7 +20,7 @@ on:
 
 jobs:
   e2e-mini:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     environment: e2e
     permissions:
       id-token: write

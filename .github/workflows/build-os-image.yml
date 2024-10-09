@@ -47,7 +47,7 @@ on:
 jobs:
   build-settings:
     name: "Determine build settings"
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       ref: ${{ steps.ref.outputs.ref }}
       stream: ${{ steps.stream.outputs.stream }}
