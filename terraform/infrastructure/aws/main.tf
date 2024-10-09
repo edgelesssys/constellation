@@ -55,6 +55,13 @@ locals {
 
   in_cluster_endpoint     = aws_lb.front_end.dns_name
   out_of_cluster_endpoint = var.internal_load_balancer && var.debug ? module.jump_host[0].ip : local.in_cluster_endpoint
+  revision                = 1
+}
+
+# A way to force replacement of resources if the provider does not want to replace them
+# see: https://developer.hashicorp.com/terraform/language/resources/terraform-data#example-usage-data-for-replace_triggered_by
+resource "terraform_data" "replacement" {
+  input = local.revision
 }
 
 resource "random_id" "uid" {
