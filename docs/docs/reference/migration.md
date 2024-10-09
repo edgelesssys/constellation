@@ -9,9 +9,9 @@ Use [`constellation config migrate`](./cli.md#constellation-config-migrate) to a
 ### Azure
 
 * To allow seamless upgrades on Azure when Kubernetes services of type `LoadBalancer` are deployed, the target  
- load balancer in which the `cloud-controller-maanger` created the load balancing rules was changed. Instead of using the load balancer, 
- created and maintained by the CLI's Terraform code, the `cloud-controller-mananger` now creates its own load balancer in Azure.  
- If inside your Constellation there are services of type `LoadBalancer`, please remove them before the upgrade and re-apply them  
+ load balancer in which the `cloud-controller-manager` creates load balancing rules was changed. Instead of using the load balancer
+ created and maintained by the CLI's Terraform code, the `cloud-controller-manager` now creates its own load balancer in Azure.
+ If your Constellation has services of type `LoadBalancer`, please remove them before the upgrade and re-apply them
  afterward. 
 
 
