@@ -15,6 +15,7 @@ import (
 	"log/syslog"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -131,6 +132,7 @@ func run() error {
 
 	case cloudprovider.OpenStack:
 		diskPath = openstackStateDiskPath
+		debug(log)
 		metadataClient, err = openstack.New(context.Background())
 		if err != nil {
 			log.With(slog.Any("error", err)).Error(("Failed to create OpenStack metadata client"))
@@ -209,4 +211,21 @@ func run() error {
 		return err
 	}
 	return nil
+}
+
+func debug(log *slog.Logger) {
+	execLogged(log, "ip", "link", "show")
+	execLogged(log, "ip", "route", "show")
+	execLogged(log, "networkctl")
+}
+
+func execLogged(log *slog.Logger, bin string, args ...string) {
+	cmd := exec.Command(bin, args...)
+
+	out, err := cmd.CombinedOutput()
+	level := slog.LevelInfo
+	if err != nil {
+		level = slog.LevelError
+	}
+	log.Log(context.TODO(), level, "running debug command", "cmd", bin, "args", args, "error", err, "output", out)
 }
