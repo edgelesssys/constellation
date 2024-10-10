@@ -34,7 +34,7 @@
 /internal/compatibility @derpsteb
 /internal/config @derpsteb
 /internal/constellation/featureset @thomasten
-/internal/constellation/helm @derpsteb
+/internal/constellation/helm @burgerdev
 /internal/constellation/kubecmd @daniel-weisse
 /internal/constellation/state @elchead
 /internal/containerimage @burgerdev
