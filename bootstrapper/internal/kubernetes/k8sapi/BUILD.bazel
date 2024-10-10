@@ -28,6 +28,7 @@ go_library(
         "@io_k8s_kubelet//config/v1beta1",
         "@io_k8s_kubernetes//cmd/kubeadm/app/apis/kubeadm/v1beta3",
         "@io_k8s_kubernetes//cmd/kubeadm/app/constants",
+        "@org_golang_x_mod//semver",
     ],
 )
 
