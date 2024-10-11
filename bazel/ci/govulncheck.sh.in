@@ -25,8 +25,8 @@ submodules=$(${go} list -f '{{.Dir}}' -m)
 PATH=$(dirname "${go}"):${PATH}
 
 check_module() {
-    CGO_ENABLED=0 ${govulncheck} -C "$1" -format json "./..." |
-      jq -sr '
+  CGO_ENABLED=0 ${govulncheck} -C "$1" -format json "./..." |
+    jq -sr '
         (map(select(.osv) | {"key": .osv.id, "value": .osv.summary}) | from_entries) as $osvs | 
         map(select( .finding and .finding.osv != "GO-2024-3166" ) | .finding | select( .trace[-1].module | startswith("github.com/edgelesssys/") )) |
         group_by(.osv) | 
