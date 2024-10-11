@@ -1,6 +1,6 @@
 module(name = "constellation")
 
-bazel_dep(name = "aspect_bazel_lib", version = "2.9.0")
+bazel_dep(name = "aspect_bazel_lib", version = "2.9.1")
 
 bazel_lib = use_extension("@aspect_bazel_lib//lib:extensions.bzl", "toolchains")
 bazel_lib.yq()
@@ -9,12 +9,12 @@ use_repo(bazel_lib, "yq_toolchains")
 
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "gazelle", version = "0.39.1")
-bazel_dep(name = "hermetic_cc_toolchain", version = "3.1.0")
-bazel_dep(name = "rules_cc", version = "0.0.10")
+bazel_dep(name = "hermetic_cc_toolchain", version = "3.1.1")
+bazel_dep(name = "rules_cc", version = "0.0.13")
 bazel_dep(name = "rules_go", version = "0.50.1", repo_name = "io_bazel_rules_go")
 bazel_dep(name = "rules_pkg", version = "0.10.1")
 bazel_dep(name = "rules_proto", version = "6.0.2")
-bazel_dep(name = "rules_python", version = "0.35.0")
+bazel_dep(name = "rules_python", version = "0.36.0")
 
 bazel_dep(name = "buildifier_prebuilt", version = "6.4.0", dev_dependency = True)
 
