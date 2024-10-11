@@ -288,11 +288,13 @@ sh_template(
     name = "govulncheck",
     data = [
         ":go_bin_for_host",
+        "@jq_toolchains//:resolved_toolchain",
         "@org_golang_x_vuln//cmd/govulncheck",
     ],
     substitutions = {
         "@@GO@@": "$(rootpath :go_bin_for_host)",
         "@@GOVULNCHECK@@": "$(rootpath @org_golang_x_vuln//cmd/govulncheck:govulncheck)",
+        "@@JQ@@": "$(rootpath @jq_toolchains//:resolved_toolchain)",
     },
     template = "govulncheck.sh.in",
 )
