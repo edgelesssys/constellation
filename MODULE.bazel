@@ -4,6 +4,7 @@ bazel_dep(name = "aspect_bazel_lib", version = "2.9.0")
 
 bazel_lib = use_extension("@aspect_bazel_lib//lib:extensions.bzl", "toolchains")
 bazel_lib.yq()
+use_repo(bazel_lib, "jq_toolchains")
 use_repo(bazel_lib, "yq_toolchains")
 
 bazel_dep(name = "bazel_skylib", version = "1.7.1")

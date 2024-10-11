@@ -15,6 +15,8 @@ go=$(realpath @@GO@@)
 stat "${go}" >> /dev/null
 govulncheck=$(realpath @@GOVULNCHECK@@)
 stat "${govulncheck}" >> /dev/null
+jq=$(realpath @@JQ@@)
+stat "${jq}" >> /dev/null
 
 cd "${BUILD_WORKSPACE_DIRECTORY}"
 
@@ -25,8 +27,9 @@ submodules=$(${go} list -f '{{.Dir}}' -m)
 PATH=$(dirname "${go}"):${PATH}
 
 check_module() {
+  # shellcheck disable=SC2016 # The $ sign in the single quoted string is correct.
   CGO_ENABLED=0 ${govulncheck} -C "$1" -format json "./..." |
-    jq -sr '
+    "${jq}" -sr '
         (map(select(.osv) | {"key": .osv.id, "value": .osv.summary}) | from_entries) as $osvs | 
         map(select( .finding and .finding.osv != "GO-2024-3166" ) | .finding | select( .trace[-1].module | startswith("github.com/edgelesssys/") )) |
         group_by(.osv) | 
