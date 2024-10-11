@@ -41,7 +41,6 @@ on:
         required: true
       kubernetesVersion:
         description: "Kubernetes version to create the cluster from."
-        default: "1.28"
         required: true
       releaseVersion:
         description: "Version of a released provider to download. Leave empty to build the provider from the checked out ref."
