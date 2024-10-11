@@ -73,7 +73,13 @@ go_library(
         "@io_bazel_rules_go//go/platform:openbsd": [
             "-fstack-protector-all",
         ],
+        "@io_bazel_rules_go//go/platform:osx": [
+            "-fstack-protector-all",
+        ],
         "@io_bazel_rules_go//go/platform:plan9": [
+            "-fstack-protector-all",
+        ],
+        "@io_bazel_rules_go//go/platform:qnx": [
             "-fstack-protector-all",
         ],
         "@io_bazel_rules_go//go/platform:solaris": [
