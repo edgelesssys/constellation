@@ -111,6 +111,7 @@ use_repo(
     "com_github_stretchr_testify",
     "com_github_tink_crypto_tink_go_v2",
     "com_github_vincent_petithory_dataurl",
+    "com_github_vishvananda_netlink",
     "com_google_cloud_go_compute",
     "com_google_cloud_go_compute_metadata",
     "com_google_cloud_go_kms",

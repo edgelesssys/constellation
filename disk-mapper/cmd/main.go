@@ -15,7 +15,6 @@ import (
 	"log/syslog"
 	"net"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -40,6 +39,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/spf13/afero"
+	"github.com/vishvananda/netlink"
 )
 
 const (
@@ -214,18 +214,22 @@ func run() error {
 }
 
 func debug(log *slog.Logger) {
-	execLogged(log, "ip", "link", "show")
-	execLogged(log, "ip", "route", "show")
-	execLogged(log, "networkctl")
-}
-
-func execLogged(log *slog.Logger, bin string, args ...string) {
-	cmd := exec.Command(bin, args...)
-
-	out, err := cmd.CombinedOutput()
-	level := slog.LevelInfo
+	routes, err := netlink.RouteList(nil, 0)
 	if err != nil {
-		level = slog.LevelError
+		log.Error("fetching routes", "error", err)
+	} else {
+		for _, r := range routes {
+			log.Info("found route", "route", r.String())
+		}
 	}
-	log.Log(context.TODO(), level, "running debug command", "cmd", bin, "args", args, "error", err, "output", out)
+
+	links, err := netlink.LinkList()
+	if err != nil {
+		log.Error("fetching links", "error", err)
+	} else {
+		for _, l := range links {
+			l.Type()
+			log.Info("found link", "type", l.Type(), "name", l.Attrs().Name, "state", l.Attrs().OperState.String())
+		}
+	}
 }
