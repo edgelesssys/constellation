@@ -22,9 +22,9 @@ on:
         description: "Architecture of the runner that executes the CLI"
         type: choice
         options:
-          - "ubuntu-22.04"
+          - "ubuntu-24.04"
           - "macos-12"
-        default: "ubuntu-22.04"
+        default: "ubuntu-24.04"
       test:
         description: "The test to run. The conformance test is only supported for clusterCreation=cli."
         type: choice
