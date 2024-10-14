@@ -31,11 +31,13 @@ runs:
       with:
         service_account: "destroy-e2e@constellation-e2e.iam.gserviceaccount.com"
 
-    - name: Install 7zip
+    - name: Install tools
       uses: ./.github/actions/setup_bazel_nix
       with:
         nixTools: |
           _7zz
+          terraform
+
     - name: Run cleanup
       run: ./.github/actions/e2e_cleanup_timeframe/e2e-cleanup.sh
       shell: bash
