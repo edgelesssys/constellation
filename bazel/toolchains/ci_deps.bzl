@@ -139,7 +139,7 @@ def _gofumpt_deps():
         name = "com_github_mvdan_gofumpt_linux_amd64",
         urls = [
             "https://cdn.confidential.cloud/constellation/cas/sha256/bdb57c353e2bbc43d2b097bb7289a6e65ef2526787f89316b4b452a9e5086be4",
-            "https://github.com/mvdan/gofumpt/releases/download/v0.6.0/gofumpt_v0.6.0_linux_amd64",
+            "https://github.com/mvdan/gofumpt/releases/download/v0.7.0/gofumpt_v0.7.0_linux_amd64",
         ],
         executable = True,
         downloaded_file_path = "gofumpt",
@@ -149,7 +149,7 @@ def _gofumpt_deps():
         name = "com_github_mvdan_gofumpt_linux_arm64",
         urls = [
             "https://cdn.confidential.cloud/constellation/cas/sha256/10ff2643b7b4b9425bda7f0ca2d4e54d85b09024fbfd9c21dbfd55017b907965",
-            "https://github.com/mvdan/gofumpt/releases/download/v0.6.0/gofumpt_v0.6.0_linux_arm64",
+            "https://github.com/mvdan/gofumpt/releases/download/v0.7.0/gofumpt_v0.7.0_linux_arm64",
         ],
         executable = True,
         downloaded_file_path = "gofumpt",
@@ -159,7 +159,7 @@ def _gofumpt_deps():
         name = "com_github_mvdan_gofumpt_darwin_amd64",
         urls = [
             "https://cdn.confidential.cloud/constellation/cas/sha256/59e6047b3fa2fb65b60cf7f8be9b77cf6b31b428a9a24042ce29e85140868036",
-            "https://github.com/mvdan/gofumpt/releases/download/v0.6.0/gofumpt_v0.6.0_darwin_amd64",
+            "https://github.com/mvdan/gofumpt/releases/download/v0.7.0/gofumpt_v0.7.0_darwin_amd64",
         ],
         executable = True,
         downloaded_file_path = "gofumpt",
@@ -169,7 +169,7 @@ def _gofumpt_deps():
         name = "com_github_mvdan_gofumpt_darwin_arm64",
         urls = [
             "https://cdn.confidential.cloud/constellation/cas/sha256/725f7a922bf3f88bed6818a4553e80554cc5cdb67a72236a01707325aa2dbb7b",
-            "https://github.com/mvdan/gofumpt/releases/download/v0.6.0/gofumpt_v0.6.0_darwin_arm64",
+            "https://github.com/mvdan/gofumpt/releases/download/v0.7.0/gofumpt_v0.7.0_darwin_arm64",
         ],
         executable = True,
         downloaded_file_path = "gofumpt",
