@@ -138,42 +138,42 @@ def _gofumpt_deps():
     http_file(
         name = "com_github_mvdan_gofumpt_linux_amd64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/bdb57c353e2bbc43d2b097bb7289a6e65ef2526787f89316b4b452a9e5086be4",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/6ff459c1dcae3b0b00844c1a5a4a5b0f547237d8a4f3624aaea8d424aeef24c6",
             "https://github.com/mvdan/gofumpt/releases/download/v0.7.0/gofumpt_v0.7.0_linux_amd64",
         ],
         executable = True,
         downloaded_file_path = "gofumpt",
-        sha256 = "bdb57c353e2bbc43d2b097bb7289a6e65ef2526787f89316b4b452a9e5086be4",
+        sha256 = "6ff459c1dcae3b0b00844c1a5a4a5b0f547237d8a4f3624aaea8d424aeef24c6",
     )
     http_file(
         name = "com_github_mvdan_gofumpt_linux_arm64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/10ff2643b7b4b9425bda7f0ca2d4e54d85b09024fbfd9c21dbfd55017b907965",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/00c18c88ef50437629626ba20d677f4648684cb280952814cdd887677d42cbd3",
             "https://github.com/mvdan/gofumpt/releases/download/v0.7.0/gofumpt_v0.7.0_linux_arm64",
         ],
         executable = True,
         downloaded_file_path = "gofumpt",
-        sha256 = "10ff2643b7b4b9425bda7f0ca2d4e54d85b09024fbfd9c21dbfd55017b907965",
+        sha256 = "00c18c88ef50437629626ba20d677f4648684cb280952814cdd887677d42cbd3",
     )
     http_file(
         name = "com_github_mvdan_gofumpt_darwin_amd64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/59e6047b3fa2fb65b60cf7f8be9b77cf6b31b428a9a24042ce29e85140868036",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/b7d05e092da45c5ec96344ab635b1d6547c3e27c840ba39bc76989934efd7ce3",
             "https://github.com/mvdan/gofumpt/releases/download/v0.7.0/gofumpt_v0.7.0_darwin_amd64",
         ],
         executable = True,
         downloaded_file_path = "gofumpt",
-        sha256 = "59e6047b3fa2fb65b60cf7f8be9b77cf6b31b428a9a24042ce29e85140868036",
+        sha256 = "b7d05e092da45c5ec96344ab635b1d6547c3e27c840ba39bc76989934efd7ce3",
     )
     http_file(
         name = "com_github_mvdan_gofumpt_darwin_arm64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/725f7a922bf3f88bed6818a4553e80554cc5cdb67a72236a01707325aa2dbb7b",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/08f23114760a090b090706d92b8c52b9875b9eb352d76c77aa354d6aa20b045a",
             "https://github.com/mvdan/gofumpt/releases/download/v0.7.0/gofumpt_v0.7.0_darwin_arm64",
         ],
         executable = True,
         downloaded_file_path = "gofumpt",
-        sha256 = "725f7a922bf3f88bed6818a4553e80554cc5cdb67a72236a01707325aa2dbb7b",
+        sha256 = "08f23114760a090b090706d92b8c52b9875b9eb352d76c77aa354d6aa20b045a",
     )
 
 def _tfsec_deps():
