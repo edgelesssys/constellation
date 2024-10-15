@@ -193,3 +193,10 @@ go_deps.module_override(
     ],
     path = "github.com/google/go-tpm-tools",
 )
+
+# TODO(msanft):
+# Remove once https://github.com/cncf/xds/issues/104 is resolved
+go_deps.gazelle_override(
+    build_file_generation = "on",
+    path = "github.com/cncf/xds/go",
+)
