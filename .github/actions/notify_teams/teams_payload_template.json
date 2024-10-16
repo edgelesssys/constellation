@@ -1,5 +1,5 @@
 {
-    "type": "message",
+    "type": "AdaptiveCard",
     "attachments": [
         {
             "contentType": "application/vnd.microsoft.card.adaptive",
@@ -57,6 +57,14 @@
                             "mentioned": {
                                 "id": "a9a34611-9a38-4c00-a8a2-f87d94c2bf7d",
                                 "name": "Otto Bittner"
+                            }
+                        },
+                        {
+                            "type": "mention",
+                            "text": "<at>burgerdev</at>",
+                            "mentioned": {
+                                "id": "c9efc581-58ca-4da6-93ce-79f69f89deeb",
+                                "name": "Markus Rudy"
                             }
                         }
                     ]
