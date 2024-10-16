@@ -205,7 +205,7 @@ func (c *Config) applyDefaults() {
 		c.PollingFrequency = defaultPollingFrequency
 	}
 	if c.RateLimiter == nil {
-		c.RateLimiter = workqueue.DefaultControllerRateLimiter()
+		c.RateLimiter = workqueue.DefaultTypedControllerRateLimiter[any]()
 	}
 }
 
