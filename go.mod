@@ -23,6 +23,7 @@ replace (
 	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.30.5
 	k8s.io/pod-security-admission => k8s.io/pod-security-admission v0.31.1
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.31.1
+	k8s.io/cri-client => k8s.io/cri-client v0.31.1
 )
 
 require (

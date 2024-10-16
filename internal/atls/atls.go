@@ -42,7 +42,6 @@ func CreateAttestationServerTLSConfig(issuer Issuer, validators []Validator) (*t
 
 	return &tls.Config{
 		GetConfigForClient: getConfigForClient,
-		NextProtos:         []string{"h2"},
 	}, nil
 }
 
