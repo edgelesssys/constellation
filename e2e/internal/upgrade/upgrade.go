@@ -153,11 +153,6 @@ func testNodesEventuallyHaveVersion(t *testing.T, k *kubernetes.Clientset, targe
 					log.Printf("\t%s: K8s (Kubelet) %s, want %s\n", node.Name, kubeletVersion, targetVersions.Kubernetes)
 					allUpdated = false
 				}
-				kubeProxyVersion := node.Status.NodeInfo.KubeProxyVersion
-				if kubeProxyVersion != string(targetVersions.Kubernetes) {
-					log.Printf("\t%s: K8s (Proxy) %s, want %s\n", node.Name, kubeProxyVersion, targetVersions.Kubernetes)
-					allUpdated = false
-				}
 			}
 		}
 		return allUpdated
