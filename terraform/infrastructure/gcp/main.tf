@@ -2,12 +2,7 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "5.37.0"
-    }
-
-    google-beta = {
-      source  = "hashicorp/google-beta"
-      version = "5.37.0"
+      version = "6.7.0"
     }
 
     random = {
@@ -18,12 +13,6 @@ terraform {
 }
 
 provider "google" {
-  project = var.project
-  region  = var.region
-  zone    = var.zone
-}
-
-provider "google-beta" {
   project = var.project
   region  = var.region
   zone    = var.zone
@@ -91,12 +80,10 @@ resource "google_compute_subnetwork" "vpc_subnetwork" {
   description   = "Constellation VPC subnetwork"
   network       = google_compute_network.vpc_network.id
   ip_cidr_range = local.cidr_vpc_subnet_nodes
-  secondary_ip_range = [
-    {
-      range_name    = local.name,
-      ip_cidr_range = local.cidr_vpc_subnet_pods,
-    }
-  ]
+  secondary_ip_range {
+    range_name    = local.name
+    ip_cidr_range = local.cidr_vpc_subnet_pods
+  }
 }
 
 resource "google_compute_subnetwork" "proxy_subnet" {
