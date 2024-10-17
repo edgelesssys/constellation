@@ -23,7 +23,7 @@ on:
         type: choice
         options:
           - "ubuntu-24.04"
-          - "macos-12"
+          - "macos-14"
         default: "ubuntu-24.04"
       test:
         description: "The test to run."
