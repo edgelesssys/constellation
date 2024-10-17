@@ -2,12 +2,7 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "5.37.0"
-    }
-
-    google-beta = {
-      source  = "hashicorp/google-beta"
-      version = "5.37.0"
+      version = "6.7.0"
     }
 
     random = {
@@ -28,10 +23,6 @@ resource "random_id" "uid" {
 }
 
 resource "google_compute_instance_template" "template" {
-  # Beta provider is necessary to set confidential instance types.
-  # TODO(msanft): Remove beta provider once confidential instance type setting is in GA.
-  provider = google-beta
-
   name         = local.name
   machine_type = var.instance_type
   tags         = ["constellation-${var.uid}"] // Note that this is also applied as a label
