@@ -172,10 +172,10 @@ func (j *maliciousJoiner) join(ctx context.Context) (*joinproto.IssueJoinTicketR
 		IsControlPlane:     false,
 	}
 	res, err := protoClient.IssueJoinTicket(ctx, req)
-	j.logger.Debug("Got join ticket response", "apiServerEndpoint", res.ApiServerEndpoint, "kubernetesVersion", res.KubernetesVersion)
 	if err != nil {
 		return nil, fmt.Errorf("issuing join ticket: %w", err)
 	}
+	j.logger.Debug("Got join ticket response", "apiServerEndpoint", res.ApiServerEndpoint, "kubernetesVersion", res.KubernetesVersion)
 
 	return res, nil
 }
