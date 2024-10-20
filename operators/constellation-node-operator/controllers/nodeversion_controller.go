@@ -38,8 +38,6 @@ import (
 )
 
 const (
-	// nodeOverprovisionLimit is the maximum number of extra nodes created during the update procedure at any point in time.
-	nodeOverprovisionLimit = 1
 	// nodeJoinTimeout is the time limit pending nodes have to join the cluster before being terminated.
 	nodeJoinTimeout = time.Minute * 30
 	// nodeLeaveTimeout is the time limit pending nodes have to leave the cluster and being terminated.
@@ -161,9 +159,14 @@ func (r *NodeVersionReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	// - being created (joining)
 	// - being destroyed (leaving)
 	// - heirs to outdated nodes
-	extraNodes := len(groups.Heirs) + len(groups.AwaitingAnnotation) + len(pendingNodeList.Items)
+	extraNodes := uint32(len(groups.Heirs) + len(groups.AwaitingAnnotation) + len(pendingNodeList.Items))
 	// newNodesBudget is the maximum number of new nodes that can be created in this Reconcile call.
-	var newNodesBudget int
+	var newNodesBudget uint32
+	nodeOverprovisionLimit := uint32(1)
+	// Use user definable value if it makes sense
+	if desiredNodeVersion.Spec.MaxNodeBudget > 0 {
+		nodeOverprovisionLimit = desiredNodeVersion.Spec.MaxNodeBudget
+	}
 	if extraNodes < nodeOverprovisionLimit {
 		newNodesBudget = nodeOverprovisionLimit - extraNodes
 	}
@@ -743,7 +746,7 @@ func (r *NodeVersionReconciler) tryUpdateStatus(ctx context.Context, name types.
 }
 
 // nodeVersionStatus generates the NodeVersion.Status field given node groups and the budget for new nodes.
-func nodeVersionStatus(scheme *runtime.Scheme, groups nodeGroups, pendingNodes []updatev1alpha1.PendingNode, invalidNodes []corev1.Node, newNodesBudget int) updatev1alpha1.NodeVersionStatus {
+func nodeVersionStatus(scheme *runtime.Scheme, groups nodeGroups, pendingNodes []updatev1alpha1.PendingNode, invalidNodes []corev1.Node, newNodesBudget uint32) updatev1alpha1.NodeVersionStatus {
 	var status updatev1alpha1.NodeVersionStatus
 	outdatedCondition := metav1.Condition{
 		Type: updatev1alpha1.ConditionOutdated,
@@ -821,7 +824,7 @@ func nodeVersionStatus(scheme *runtime.Scheme, groups nodeGroups, pendingNodes [
 		}
 		status.Pending = append(status.Pending, *pendingRef)
 	}
-	status.Budget = uint32(newNodesBudget)
+	status.Budget = newNodesBudget
 	return status
 }
 
@@ -941,5 +944,5 @@ type newNodeConfig struct {
 	outdatedNodes      []corev1.Node
 	pendingNodes       []updatev1alpha1.PendingNode
 	scalingGroupByID   map[string]updatev1alpha1.ScalingGroup
-	newNodesBudget     int
+	newNodesBudget     uint32
 }

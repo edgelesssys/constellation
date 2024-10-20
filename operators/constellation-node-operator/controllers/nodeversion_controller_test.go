@@ -332,7 +332,7 @@ func TestCreateNewNodes(t *testing.T) {
 		outdatedNodes    []corev1.Node
 		pendingNodes     []updatev1alpha1.PendingNode
 		scalingGroupByID map[string]updatev1alpha1.ScalingGroup
-		budget           int
+		budget           uint32
 		wantCreateCalls  []string
 	}{
 		"no outdated nodes": {
