@@ -39,6 +39,13 @@ var _ = Describe("JoiningNode controller", func() {
 		duration = time.Second * 2
 		interval = time.Millisecond * 250
 	)
+
+	AfterEach(func() {
+		Eventually(func() error {
+			return resetEnv()
+		}, 30*time.Second, 1*time.Second).Should(Succeed())
+	})
+
 	Context("When changing a joining node resource spec", func() {
 		It("Should annotate the corresponding node when creating the CRD first", func() {
 			By("creating a joining node resource")
