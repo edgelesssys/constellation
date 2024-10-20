@@ -9,6 +9,7 @@ package controllers
 import (
 	"context"
 	"errors"
+	"strconv"
 	"sync"
 	"testing"
 
@@ -21,6 +22,7 @@ import (
 
 	mainconstants "github.com/edgelesssys/constellation/v2/internal/constants"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/api/v1alpha1"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/constants"
 )
 
 func TestAnnotateNodes(t *testing.T) {
@@ -332,7 +334,7 @@ func TestCreateNewNodes(t *testing.T) {
 		outdatedNodes    []corev1.Node
 		pendingNodes     []updatev1alpha1.PendingNode
 		scalingGroupByID map[string]updatev1alpha1.ScalingGroup
-		budget           int
+		budget           uint32
 		wantCreateCalls  []string
 	}{
 		"no outdated nodes": {
@@ -560,6 +562,51 @@ func TestCreateNewNodes(t *testing.T) {
 			budget:          2,
 			wantCreateCalls: []string{"scaling-group"},
 		},
+		"outdated nodes still contain control plane nodes": {
+			outdatedNodes: []corev1.Node{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "control-plane-node",
+						Annotations: map[string]string{
+							scalingGroupAnnotation: "control-plane-scaling-group",
+						},
+						Labels: map[string]string{
+							constants.ControlPlaneRoleLabel: "",
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node",
+						Annotations: map[string]string{
+							scalingGroupAnnotation: "scaling-group",
+						},
+					},
+				},
+			},
+			scalingGroupByID: map[string]updatev1alpha1.ScalingGroup{
+				"scaling-group": {
+					Spec: updatev1alpha1.ScalingGroupSpec{
+						GroupID: "scaling-group",
+						Role:    updatev1alpha1.WorkerRole,
+					},
+					Status: updatev1alpha1.ScalingGroupStatus{
+						ImageReference: "image",
+					},
+				},
+				"control-plane-scaling-group": {
+					Spec: updatev1alpha1.ScalingGroupSpec{
+						GroupID: "control-plane-scaling-group",
+						Role:    updatev1alpha1.ControlPlaneRole,
+					},
+					Status: updatev1alpha1.ScalingGroupStatus{
+						ImageReference: "image",
+					},
+				},
+			},
+			budget:          2,
+			wantCreateCalls: []string{"control-plane-scaling-group"},
+		},
 		"scaling group does not exist": {
 			outdatedNodes: []corev1.Node{
 				{
@@ -592,7 +639,10 @@ func TestCreateNewNodes(t *testing.T) {
 				},
 				Scheme: getScheme(t),
 			}
-			newNodeConfig := newNodeConfig{desiredNodeImage, tc.outdatedNodes, tc.pendingNodes, tc.scalingGroupByID, tc.budget}
+			groups := nodeGroups{
+				Outdated: tc.outdatedNodes,
+			}
+			newNodeConfig := newNodeConfig{desiredNodeImage, groups, tc.pendingNodes, tc.scalingGroupByID, tc.budget}
 			err := reconciler.createNewNodes(context.Background(), newNodeConfig)
 			require.NoError(err)
 			assert.Equal(tc.wantCreateCalls, reconciler.nodeReplacer.(*stubNodeReplacerWriter).createCalls)
@@ -752,16 +802,22 @@ func TestGroupNodes(t *testing.T) {
 	assert.Equal(wantNodeGroups, groups)
 }
 
+// stubNode contains all information usually associated with a node freshly
+// created by the cloud provider.
+type stubNode struct {
+	name       string
+	providerID string
+}
+
 type stubNodeReplacer struct {
 	sync.RWMutex
-	nodeImages        map[string]string
-	scalingGroups     map[string]string
-	createNodeName    string
-	createProviderID  string
-	nodeImageErr      error
-	scalingGroupIDErr error
-	createErr         error
-	deleteErr         error
+	nodeImages                  map[string]string
+	scalingGroups               map[string]string
+	createNodesByScalingGroupID map[string][]stubNode
+	nodeImageErr                error
+	scalingGroupIDErr           error
+	createErr                   error
+	deleteErr                   error
 }
 
 func (r *stubNodeReplacer) GetNodeImage(_ context.Context, providerID string) (string, error) {
@@ -776,10 +832,25 @@ func (r *stubNodeReplacer) GetScalingGroupID(_ context.Context, providerID strin
 	return r.scalingGroups[providerID], r.scalingGroupIDErr
 }
 
-func (r *stubNodeReplacer) CreateNode(_ context.Context, _ string) (nodeName, providerID string, err error) {
+// CreateNode stubs the cloud provider API call to create a node.
+func (r *stubNodeReplacer) CreateNode(_ context.Context, scalingGroupID string) (nodeName, providerID string, err error) {
 	r.RLock()
 	defer r.RUnlock()
-	return r.createNodeName, r.createProviderID, r.createErr
+	nodes, ok := r.createNodesByScalingGroupID[scalingGroupID]
+	if !ok {
+		panic("unexpected call to CreateNode with scaling group ID " + scalingGroupID + ", existing scaling group IDs: " + strconv.Itoa(len(r.createNodesByScalingGroupID)))
+	}
+	if len(nodes) == 0 {
+		panic("unexpected call to CreateNode with scaling group ID " + scalingGroupID + ", no nodes left")
+	}
+
+	nodeName = nodes[0].name
+	providerID = nodes[0].providerID
+	err = r.createErr
+
+	r.createNodesByScalingGroupID[scalingGroupID] = nodes[1:]
+
+	return
 }
 
 func (r *stubNodeReplacer) DeleteNode(_ context.Context, _ string) error {
@@ -808,12 +879,14 @@ func (r *stubNodeReplacer) setScalingGroupID(providerID, scalingGroupID string) 
 	r.scalingGroups[providerID] = scalingGroupID
 }
 
-func (r *stubNodeReplacer) setCreatedNode(nodeName, providerID string, err error) {
+func (r *stubNodeReplacer) addCreatedNode(scalingGroupID, nodeName, providerID string, _ error) {
 	r.Lock()
 	defer r.Unlock()
-	r.createNodeName = nodeName
-	r.createProviderID = providerID
-	r.createErr = err
+	if r.createNodesByScalingGroupID == nil {
+		r.createNodesByScalingGroupID = make(map[string][]stubNode)
+	}
+	r.createNodesByScalingGroupID[scalingGroupID] = append(r.createNodesByScalingGroupID[scalingGroupID], stubNode{nodeName, providerID})
+	r.createErr = nil
 }
 
 func (r *stubNodeReplacer) reset() {
@@ -821,8 +894,7 @@ func (r *stubNodeReplacer) reset() {
 	defer r.Unlock()
 	r.nodeImages = nil
 	r.scalingGroups = nil
-	r.createNodeName = ""
-	r.createProviderID = ""
+	r.createNodesByScalingGroupID = nil
 	r.createErr = nil
 	r.deleteErr = nil
 }
@@ -890,4 +962,12 @@ func (*unimplementedNodeReplacer) CreateNode(_ context.Context, _ string) (nodeN
 
 func (*unimplementedNodeReplacer) DeleteNode(_ context.Context, _ string) error {
 	panic("unimplemented")
+}
+
+type stubEtcdRemover struct {
+	deleteErr error
+}
+
+func (r *stubEtcdRemover) RemoveEtcdMemberFromCluster(_ context.Context, _ string) error {
+	return r.deleteErr
 }

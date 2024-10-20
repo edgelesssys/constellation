@@ -3,8 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.0
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.16.4
   name: pendingnodes.update.edgeless.systems
 spec:
   group: update.edgeless.systems
@@ -21,14 +20,19 @@ spec:
         description: PendingNode is the Schema for the pendingnodes API.
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -36,10 +40,11 @@ spec:
             description: PendingNodeSpec defines the desired state of PendingNode.
             properties:
               deadline:
-                description: Deadline is the deadline for reaching the goal state.
-                  Joining nodes will be terminated if the deadline is exceeded. Leaving
-                  nodes will remain as unschedulable to prevent data loss. If not
-                  specified, the node may remain in the pending state indefinitely.
+                description: |-
+                  Deadline is the deadline for reaching the goal state.
+                  Joining nodes will be terminated if the deadline is exceeded.
+                  Leaving nodes will remain as unschedulable to prevent data loss.
+                  If not specified, the node may remain in the pending state indefinitely.
                 format: date-time
                 type: string
               goal:

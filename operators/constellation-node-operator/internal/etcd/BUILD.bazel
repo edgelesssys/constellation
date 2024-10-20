@@ -19,6 +19,7 @@ go_test(
     srcs = ["etcd_test.go"],
     embed = [":etcd"],
     deps = [
+        "//operators/constellation-node-operator/internal/constants",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
         "@io_etcd_go_etcd_api_v3//etcdserverpb",
