@@ -123,6 +123,7 @@ var _ = BeforeSuite(func() {
 	err = (&NodeVersionReconciler{
 		kubernetesServerVersionGetter: fakes.k8sVerGetter,
 		nodeReplacer:                  fakes.nodeReplacer,
+		etcdRemover:                   fakes.etcdRemover,
 		Client:                        k8sManager.GetClient(),
 		Scheme:                        k8sManager.GetScheme(),
 	}).SetupWithManager(k8sManager)
@@ -147,6 +148,7 @@ type fakeCollection struct {
 	nodeStateGetter     *stubNodeStateGetter
 	nodeReplacer        *stubNodeReplacer
 	k8sVerGetter        *stubKubernetesServerVersionGetter
+	etcdRemover         *stubEtcdRemover
 	clock               *testclock.FakeClock
 }
 
@@ -162,6 +164,7 @@ func newFakes() fakeCollection {
 		nodeStateGetter:     &stubNodeStateGetter{},
 		nodeReplacer:        &stubNodeReplacer{},
 		k8sVerGetter:        &stubKubernetesServerVersionGetter{},
+		etcdRemover:         &stubEtcdRemover{},
 		clock:               testclock.NewFakeClock(time.Now()),
 	}
 }

@@ -891,3 +891,11 @@ func (*unimplementedNodeReplacer) CreateNode(_ context.Context, _ string) (nodeN
 func (*unimplementedNodeReplacer) DeleteNode(_ context.Context, _ string) error {
 	panic("unimplemented")
 }
+
+type stubEtcdRemover struct {
+	deleteErr error
+}
+
+func (r *stubEtcdRemover) RemoveEtcdMemberFromCluster(_ context.Context, _ string) error {
+	return r.deleteErr
+}
