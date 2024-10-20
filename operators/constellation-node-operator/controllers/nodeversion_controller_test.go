@@ -560,6 +560,51 @@ func TestCreateNewNodes(t *testing.T) {
 			budget:          2,
 			wantCreateCalls: []string{"scaling-group"},
 		},
+		"outdated nodes still contain control plane nodes": {
+			outdatedNodes: []corev1.Node{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "control-plane-node",
+						Annotations: map[string]string{
+							scalingGroupAnnotation: "control-plane-scaling-group",
+						},
+						Labels: map[string]string{
+							constants.ControlPlaneRoleLabel: "",
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node",
+						Annotations: map[string]string{
+							scalingGroupAnnotation: "scaling-group",
+						},
+					},
+				},
+			},
+			scalingGroupByID: map[string]updatev1alpha1.ScalingGroup{
+				"scaling-group": {
+					Spec: updatev1alpha1.ScalingGroupSpec{
+						GroupID: "scaling-group",
+						Role:    updatev1alpha1.WorkerRole,
+					},
+					Status: updatev1alpha1.ScalingGroupStatus{
+						ImageReference: "image",
+					},
+				},
+				"control-plane-scaling-group": {
+					Spec: updatev1alpha1.ScalingGroupSpec{
+						GroupID: "control-plane-scaling-group",
+						Role:    updatev1alpha1.ControlPlaneRole,
+					},
+					Status: updatev1alpha1.ScalingGroupStatus{
+						ImageReference: "image",
+					},
+				},
+			},
+			budget:          2,
+			wantCreateCalls: []string{"control-plane-scaling-group"},
+		},
 		"scaling group does not exist": {
 			outdatedNodes: []corev1.Node{
 				{
@@ -592,7 +637,10 @@ func TestCreateNewNodes(t *testing.T) {
 				},
 				Scheme: getScheme(t),
 			}
-			newNodeConfig := newNodeConfig{desiredNodeImage, tc.outdatedNodes, tc.pendingNodes, tc.scalingGroupByID, tc.budget}
+			groups := nodeGroups{
+				Outdated: tc.outdatedNodes,
+			}
+			newNodeConfig := newNodeConfig{desiredNodeImage, groups, tc.pendingNodes, tc.scalingGroupByID, tc.budget}
 			err := reconciler.createNewNodes(context.Background(), newNodeConfig)
 			require.NoError(err)
 			assert.Equal(tc.wantCreateCalls, reconciler.nodeReplacer.(*stubNodeReplacerWriter).createCalls)
