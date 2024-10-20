@@ -281,6 +281,9 @@ func TestUpgradeKubernetesVersion(t *testing.T) {
 			}
 			kubectl := &stubKubectl{
 				unstructuredInterface: unstructuredClient,
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.KubeadmConfigMap: {Data: map[string]string{"ClusterConfiguration": kubeadmClusterConfigurationV1Beta4}},
+				},
 			}
 			if tc.customClientFn != nil {
 				kubectl.unstructuredInterface = tc.customClientFn(nodeVersion)
