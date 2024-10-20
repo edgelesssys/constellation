@@ -231,15 +231,20 @@ func TestReachedGoal(t *testing.T) {
 
 type stubNodeStateGetter struct {
 	sync.RWMutex
-	nodeState     updatev1alpha1.CSPNodeState
+	nodeStates    map[string]updatev1alpha1.CSPNodeState
 	nodeStateErr  error
 	deleteNodeErr error
 }
 
-func (g *stubNodeStateGetter) GetNodeState(_ context.Context, _ string) (updatev1alpha1.CSPNodeState, error) {
+func (g *stubNodeStateGetter) GetNodeState(_ context.Context, providerID string) (updatev1alpha1.CSPNodeState, error) {
 	g.RLock()
 	defer g.RUnlock()
-	return g.nodeState, g.nodeStateErr
+
+	if _, ok := g.nodeStates[providerID]; !ok {
+		panic("unexpected call to GetNodeState")
+	}
+
+	return g.nodeStates[providerID], g.nodeStateErr
 }
 
 func (g *stubNodeStateGetter) DeleteNode(_ context.Context, _ string) error {
@@ -250,8 +255,19 @@ func (g *stubNodeStateGetter) DeleteNode(_ context.Context, _ string) error {
 
 // thread safe methods to update the stub while in use
 
-func (g *stubNodeStateGetter) setNodeState(nodeState updatev1alpha1.CSPNodeState) {
+func (g *stubNodeStateGetter) setNodeState(providerID string, nodeState updatev1alpha1.CSPNodeState) {
 	g.Lock()
 	defer g.Unlock()
-	g.nodeState = nodeState
+	if g.nodeStates == nil {
+		g.nodeStates = make(map[string]updatev1alpha1.CSPNodeState)
+	}
+	g.nodeStates[providerID] = nodeState
+}
+
+func (g *stubNodeStateGetter) reset() {
+	g.Lock()
+	defer g.Unlock()
+	g.nodeStates = nil
+	g.nodeStateErr = nil
+	g.deleteNodeErr = nil
 }

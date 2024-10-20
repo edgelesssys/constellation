@@ -64,7 +64,7 @@ var _ = Describe("PendingNode controller", func() {
 	Context("When creating pending node with goal join", func() {
 		It("Should terminate the node after failing to join by the deadline", func() {
 			By("setting the CSP node state to creating")
-			fakes.nodeStateGetter.setNodeState(updatev1alpha1.NodeStateCreating)
+			fakes.nodeStateGetter.setNodeState(pendingNodeName, updatev1alpha1.NodeStateCreating)
 
 			By("creating a pending node resource")
 			ctx := context.Background()
@@ -77,7 +77,7 @@ var _ = Describe("PendingNode controller", func() {
 					Name: pendingNodeName,
 				},
 				Spec: updatev1alpha1.PendingNodeSpec{
-					ProviderID:     "provider-id",
+					ProviderID:     pendingNodeName,
 					ScalingGroupID: "scaling-group-id",
 					NodeName:       "test-node",
 					Goal:           updatev1alpha1.NodeGoalJoin,
@@ -120,7 +120,7 @@ var _ = Describe("PendingNode controller", func() {
 			}, timeout, interval).Should(Equal(updatev1alpha1.NodeGoalLeave))
 
 			By("setting the CSP node state to terminated")
-			fakes.nodeStateGetter.setNodeState(updatev1alpha1.NodeStateTerminated)
+			fakes.nodeStateGetter.setNodeState(pendingNodeName, updatev1alpha1.NodeStateTerminated)
 			// trigger reconciliation before regular check interval to speed up test by changing the spec
 			Eventually(func() error {
 				if err := k8sClient.Get(ctx, pendingNodeLookupKey, pendingNode); err != nil {
@@ -138,7 +138,7 @@ var _ = Describe("PendingNode controller", func() {
 
 		It("Should should detect successful node join", func() {
 			By("setting the CSP node state to creating")
-			fakes.nodeStateGetter.setNodeState(updatev1alpha1.NodeStateCreating)
+			fakes.nodeStateGetter.setNodeState(pendingNodeName, updatev1alpha1.NodeStateCreating)
 
 			By("creating a pending node resource")
 			ctx := context.Background()
@@ -151,7 +151,7 @@ var _ = Describe("PendingNode controller", func() {
 					Name: pendingNodeName,
 				},
 				Spec: updatev1alpha1.PendingNodeSpec{
-					ProviderID:     "provider-id",
+					ProviderID:     pendingNodeName,
 					ScalingGroupID: "scaling-group-id",
 					NodeName:       "test-node",
 					Goal:           updatev1alpha1.NodeGoalJoin,
@@ -178,7 +178,7 @@ var _ = Describe("PendingNode controller", func() {
 			}, timeout, interval).Should(Equal(updatev1alpha1.NodeStateCreating))
 
 			By("setting the CSP node state to ready")
-			fakes.nodeStateGetter.setNodeState(updatev1alpha1.NodeStateReady)
+			fakes.nodeStateGetter.setNodeState(pendingNodeName, updatev1alpha1.NodeStateReady)
 
 			By("creating a new node resource with the same node name and provider ID")
 			node := &corev1.Node{
@@ -190,7 +190,7 @@ var _ = Describe("PendingNode controller", func() {
 					Name: "test-node",
 				},
 				Spec: corev1.NodeSpec{
-					ProviderID: "provider-id",
+					ProviderID: pendingNodeName,
 				},
 			}
 			Expect(k8sClient.Create(ctx, node)).Should(Succeed())
