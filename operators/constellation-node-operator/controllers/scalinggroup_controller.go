@@ -10,6 +10,7 @@ import (
 	"context"
 	"strings"
 
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -92,8 +93,10 @@ func (r *ScalingGroupReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 	meta.SetStatusCondition(&desiredScalingGroup.Status.Conditions, outdatedCondition)
 	if err := r.Status().Update(ctx, &desiredScalingGroup); err != nil {
-		logr.Error(err, "Unable to update AutoscalingStrategy status")
-		return ctrl.Result{}, err
+		if !k8sErrors.IsConflict(err) {
+			logr.Error(err, "Unable to update Scaling Group status")
+		}
+		return ctrl.Result{Requeue: true}, err
 	}
 
 	if !imagesMatch {
