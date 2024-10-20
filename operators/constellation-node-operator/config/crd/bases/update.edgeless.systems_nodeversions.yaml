@@ -54,6 +54,11 @@ spec:
                 description: KubernetesComponentsReference is a reference to the ConfigMap
                   containing the Kubernetes components to use for all nodes.
                 type: string
+              maxNodeBudget:
+                description: MaxNodeBudget is the maximum number of nodes that can
+                  be created simultaneously.
+                format: int32
+                type: integer
             type: object
           status:
             description: NodeVersionStatus defines the observed state of NodeVersion.
