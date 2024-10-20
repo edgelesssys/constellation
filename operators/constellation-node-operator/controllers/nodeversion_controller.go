@@ -136,9 +136,9 @@ func (r *NodeVersionReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		logr.Error(err, "Unable to list scaling groups")
 		return ctrl.Result{}, err
 	}
-	scalingGroupByID := make(map[string]updatev1alpha1.ScalingGroup, len(scalingGroupList.Items))
+	scalingGroupByID := make(scalingGroupByID, len(scalingGroupList.Items))
 	for _, scalingGroup := range scalingGroupList.Items {
-		scalingGroupByID[strings.ToLower(scalingGroup.Spec.GroupID)] = scalingGroup
+		scalingGroupByID.put(scalingGroup)
 	}
 	annotatedNodes, invalidNodes := r.annotateNodes(ctx, nodeList.Items)
 	groups := groupNodes(annotatedNodes, pendingNodeList.Items, desiredNodeVersion.Spec.ImageReference, desiredNodeVersion.Spec.KubernetesComponentsReference)
@@ -217,7 +217,7 @@ func (r *NodeVersionReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{Requeue: shouldRequeue}, nil
 	}
 
-	newNodeConfig := newNodeConfig{desiredNodeVersion, groups.Outdated, pendingNodeList.Items, scalingGroupByID, newNodesBudget}
+	newNodeConfig := newNodeConfig{desiredNodeVersion, groups, pendingNodeList.Items, scalingGroupByID, newNodesBudget}
 	if err := r.createNewNodes(ctx, newNodeConfig); err != nil {
 		logr.Error(err, "Creating new nodes")
 		return ctrl.Result{Requeue: shouldRequeue}, nil
@@ -613,12 +613,21 @@ func (r *NodeVersionReconciler) deleteNode(ctx context.Context, controller metav
 
 // createNewNodes creates new nodes using up to date images as replacement for outdated nodes.
 func (r *NodeVersionReconciler) createNewNodes(ctx context.Context, config newNodeConfig) error {
+	hasOutdatedControlPlanes := func() bool {
+		for _, entry := range append(config.groups.Outdated, config.groups.Donors...) {
+			if nodeutil.IsControlPlaneNode(&entry) {
+				return true
+			}
+		}
+		return false
+	}()
+
 	logr := log.FromContext(ctx)
-	if config.newNodesBudget < 1 || len(config.outdatedNodes) == 0 {
+	if config.newNodesBudget < 1 || len(config.groups.Outdated) == 0 {
 		return nil
 	}
 	outdatedNodesPerScalingGroup := make(map[string]int)
-	for _, node := range config.outdatedNodes {
+	for _, node := range config.groups.Outdated {
 		// skip outdated nodes that got assigned an heir in this Reconcile call
 		if len(node.Annotations[heirAnnotation]) != 0 {
 			continue
@@ -640,17 +649,22 @@ func (r *NodeVersionReconciler) createNewNodes(ctx context.Context, config newNo
 			requiredNodesPerScalingGroup[scalingGroupID] = outdatedNodesPerScalingGroup[scalingGroupID] - pendingJoiningNodesPerScalingGroup[scalingGroupID]
 		}
 	}
-	for scalingGroupID := range requiredNodesPerScalingGroup {
-		scalingGroup, ok := config.scalingGroupByID[scalingGroupID]
+	for _, scalingGroupID := range config.scalingGroupByID.getScalingGroupIDsSorted() {
+		scalingGroup, ok := config.scalingGroupByID.get(scalingGroupID)
 		if !ok {
 			logr.Info("Scaling group does not have matching resource", "scalingGroup", scalingGroupID, "scalingGroups", config.scalingGroupByID)
+			continue
+		}
+		if requiredNodesPerScalingGroup[scalingGroupID] == 0 {
+			logr.Info("No new nodes needed for scaling group", "scalingGroup", scalingGroupID)
 			continue
 		}
 		if !strings.EqualFold(scalingGroup.Status.ImageReference, config.desiredNodeVersion.Spec.ImageReference) {
 			logr.Info("Scaling group does not use latest image", "scalingGroup", scalingGroupID, "usedImage", scalingGroup.Status.ImageReference, "wantedImage", config.desiredNodeVersion.Spec.ImageReference)
 			continue
 		}
-		if requiredNodesPerScalingGroup[scalingGroupID] == 0 {
+		if hasOutdatedControlPlanes && scalingGroup.Spec.Role != updatev1alpha1.ControlPlaneRole {
+			logr.Info("There are still outdated control plane nodes which must be replaced first before this worker scaling group is upgraded", "scalingGroup", scalingGroupID)
 			continue
 		}
 		for {
@@ -679,10 +693,16 @@ func (r *NodeVersionReconciler) createNewNodes(ctx context.Context, config newNo
 			if err := ctrl.SetControllerReference(&config.desiredNodeVersion, pendingNode, r.Scheme); err != nil {
 				return err
 			}
+			// Note that while we call Create here, it is not certain that the next reconciler iteration
+			// will see the pending node. This is because of delays in the kubeAPI.
+			// Currently, we don't explicitly wait until we can Get the resource.
+			// We can never be certain that other calls to Get will also see the resource,
+			// therefore it's just a tradeoff of the probability that we create more nodes than
+			// the specified budget.
 			if err := r.Create(ctx, pendingNode); err != nil {
 				return err
 			}
-			logr.Info("Created new node", "createdNode", nodeName, "scalingGroup", scalingGroupID)
+			logr.Info("Created new node", "createdNode", nodeName, "scalingGroup", scalingGroupID, "requiredNodes", requiredNodesPerScalingGroup[scalingGroupID])
 			requiredNodesPerScalingGroup[scalingGroupID]--
 			config.newNodesBudget--
 		}
@@ -939,10 +959,35 @@ type kubernetesServerVersionGetter interface {
 	ServerVersion() (*version.Info, error)
 }
 
+type scalingGroupByID map[string]updatev1alpha1.ScalingGroup
+
+// getScalingGroupIDsSorted returns the group IDs of all scaling groups with
+// scaling groups with the role "control-plane" first.
+func (s scalingGroupByID) getScalingGroupIDsSorted() []string {
+	var controlPlaneGroupIDs, otherGroupIDs []string
+	for id := range s {
+		if s[id].Spec.Role == updatev1alpha1.ControlPlaneRole {
+			controlPlaneGroupIDs = append(controlPlaneGroupIDs, id)
+		} else {
+			otherGroupIDs = append(otherGroupIDs, id)
+		}
+	}
+	return append(controlPlaneGroupIDs, otherGroupIDs...)
+}
+
+func (s scalingGroupByID) put(scalingGroup updatev1alpha1.ScalingGroup) {
+	s[strings.ToLower(scalingGroup.Spec.GroupID)] = scalingGroup
+}
+
+func (s scalingGroupByID) get(scalingGroupID string) (scalingGroup updatev1alpha1.ScalingGroup, ok bool) {
+	scalingGroup, ok = s[strings.ToLower(scalingGroupID)]
+	return
+}
+
 type newNodeConfig struct {
 	desiredNodeVersion updatev1alpha1.NodeVersion
-	outdatedNodes      []corev1.Node
+	groups             nodeGroups
 	pendingNodes       []updatev1alpha1.PendingNode
-	scalingGroupByID   map[string]updatev1alpha1.ScalingGroup
+	scalingGroupByID   scalingGroupByID
 	newNodesBudget     uint32
 }
