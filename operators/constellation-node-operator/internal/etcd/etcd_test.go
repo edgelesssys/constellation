@@ -11,6 +11,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/constants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	pb "go.etcd.io/etcd/api/v3/etcdserverpb"
@@ -124,7 +125,7 @@ func TestGetInitialEndpoints(t *testing.T) {
 			nodes: []corev1.Node{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Labels: map[string]string{"node-role.kubernetes.io/control-plane": ""},
+						Labels: map[string]string{constants.ControlPlaneRoleLabel: ""},
 					},
 					Status: corev1.NodeStatus{Addresses: []corev1.NodeAddress{{
 						Type:    corev1.NodeInternalIP,

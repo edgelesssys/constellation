@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/api/v1alpha1"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/constants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -69,7 +70,7 @@ func TestIsControlPlaneNode(t *testing.T) {
 		"node with control-plane role label": {
 			node: corev1.Node{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{controlPlaneRoleLabel: ""},
+					Labels: map[string]string{constants.ControlPlaneRoleLabel: ""},
 				},
 			},
 			wantControlPlane: true,

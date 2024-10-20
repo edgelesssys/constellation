@@ -18,6 +18,7 @@ go_test(
     srcs = ["controlplane_test.go"],
     embed = [":controlplane"],
     deps = [
+        "//operators/constellation-node-operator/internal/constants",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
         "@io_k8s_api//core/v1:core",
