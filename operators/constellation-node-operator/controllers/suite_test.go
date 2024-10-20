@@ -154,7 +154,7 @@ type fakeCollection struct {
 
 func (c *fakeCollection) reset() {
 	c.scalingGroupUpdater.reset()
-	c.nodeStateGetter.setNodeState("")
+	c.nodeStateGetter.reset()
 	c.nodeReplacer.reset()
 }
 

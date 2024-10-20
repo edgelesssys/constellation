@@ -27,6 +27,7 @@ import (
 	nodemaintenancev1beta1 "github.com/edgelesssys/constellation/v2/3rdparty/node-maintenance-operator/api/v1beta1"
 	mainconstants "github.com/edgelesssys/constellation/v2/internal/constants"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/api/v1alpha1"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/constants"
 )
 
 var _ = Describe("NodeVersion controller", func() {
@@ -38,10 +39,15 @@ var _ = Describe("NodeVersion controller", func() {
 
 	// Define utility constants for object names and testing timeouts/durations and intervals.
 	const (
-		nodeVersionResourceName = "nodeversion"
-		firstNodeName           = "node-1"
-		secondNodeName          = "node-2"
-		scalingGroupID          = "scaling-group"
+		nodeVersionResourceName    = "nodeversion"
+		firstWorkerNodeName        = "worker-node-1"
+		secondWorkerNodeName       = "worker-node-2"
+		thirdWorkerNodeName        = "worker-node-3"
+		firstControlPlaneNodeName  = "control-plane-node-1"
+		secondControlPlaneNodeName = "control-plane-node-2"
+		thirdControlPlaneNodeName  = "control-plane-node-3"
+		scalingGroupIDWorker       = "scaling-group-worker"
+		scalingGroupIDControlPlane = "scaling-group-control-plane"
 
 		timeout  = time.Second * 20
 		duration = time.Second * 2
@@ -52,17 +58,17 @@ var _ = Describe("NodeVersion controller", func() {
 		KubernetesComponentsReference: "ref-1",
 	}
 
-	firstNodeLookupKey := types.NamespacedName{Name: firstNodeName}
-	secondNodeLookupKey := types.NamespacedName{Name: secondNodeName}
+	firstNodeLookupKeyWorker := types.NamespacedName{Name: firstWorkerNodeName}
+	secondNodeLookupKeyWorker := types.NamespacedName{Name: secondWorkerNodeName}
+	firstNodeLookupKeyControlPlane := types.NamespacedName{Name: firstControlPlaneNodeName}
+	secondNodeLookupKeyControlPlane := types.NamespacedName{Name: secondControlPlaneNodeName}
 	nodeVersionLookupKey := types.NamespacedName{Name: nodeVersionResourceName}
-	scalingGroupLookupKey := types.NamespacedName{Name: scalingGroupID}
-	joiningPendingNodeLookupKey := types.NamespacedName{Name: secondNodeName}
-	nodeMaintenanceLookupKey := types.NamespacedName{Name: firstNodeName}
+	scalingGroupLookupKeyWorker := types.NamespacedName{Name: scalingGroupIDWorker}
+	scalingGroupLookupKeyControlPlane := types.NamespacedName{Name: scalingGroupIDControlPlane}
 
 	Context("When updating the cluster-wide node version", func() {
-		testNodeVersionUpdate := func(newNodeVersionSpec updatev1alpha1.NodeVersionSpec) {
+		testNodeVersionUpdate := func(newNodeVersionSpec updatev1alpha1.NodeVersionSpec, workersFirst bool) {
 			By("creating a node version resource specifying the first node version")
-			Expect(fakes.scalingGroupUpdater.SetScalingGroupImage(ctx, scalingGroupID, firstVersionSpec.ImageReference)).Should(Succeed())
 			nodeVersion := &updatev1alpha1.NodeVersion{
 				TypeMeta: metav1.TypeMeta{
 					APIVersion: "update.edgeless.systems/v1alpha1",
@@ -75,16 +81,48 @@ var _ = Describe("NodeVersion controller", func() {
 			}
 			Expect(k8sClient.Create(ctx, nodeVersion)).Should(Succeed())
 
-			By("creating a node resource using the first node image")
-			fakes.nodeReplacer.setNodeImage(firstNodeName, firstVersionSpec.ImageReference)
-			fakes.nodeReplacer.setScalingGroupID(firstNodeName, scalingGroupID)
-			firstNode := &corev1.Node{
+			By("creating a control plane node resource using the first node image")
+			fakes.nodeReplacer.setNodeImage(firstControlPlaneNodeName, firstVersionSpec.ImageReference)
+			fakes.nodeReplacer.setScalingGroupID(firstControlPlaneNodeName, scalingGroupIDControlPlane)
+			firstControlPlaneNode := &corev1.Node{
 				TypeMeta: metav1.TypeMeta{
 					APIVersion: "v1",
 					Kind:       "Node",
 				},
 				ObjectMeta: metav1.ObjectMeta{
-					Name: firstNodeName,
+					Name: firstControlPlaneNodeName,
+					Labels: map[string]string{
+						"custom-node-label":             "custom-node-label-value",
+						constants.ControlPlaneRoleLabel: "",
+					},
+					Annotations: map[string]string{
+						mainconstants.NodeKubernetesComponentsAnnotationKey: firstVersionSpec.KubernetesComponentsReference,
+					},
+				},
+				Spec: corev1.NodeSpec{
+					ProviderID: firstControlPlaneNodeName,
+				},
+				Status: corev1.NodeStatus{
+					Addresses: []corev1.NodeAddress{
+						{
+							Type:    corev1.NodeInternalIP,
+							Address: "192.0.2.1",
+						},
+					},
+				},
+			}
+			Expect(k8sClient.Create(ctx, firstControlPlaneNode)).Should(Succeed())
+
+			By("creating a worker node resource using the first node image")
+			fakes.nodeReplacer.setNodeImage(firstWorkerNodeName, firstVersionSpec.ImageReference)
+			fakes.nodeReplacer.setScalingGroupID(firstWorkerNodeName, scalingGroupIDWorker)
+			firstWorkerNode := &corev1.Node{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: "v1",
+					Kind:       "Node",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: firstWorkerNodeName,
 					Labels: map[string]string{
 						"custom-node-label": "custom-node-label-value",
 					},
@@ -93,24 +131,40 @@ var _ = Describe("NodeVersion controller", func() {
 					},
 				},
 				Spec: corev1.NodeSpec{
-					ProviderID: firstNodeName,
+					ProviderID: firstWorkerNodeName,
 				},
 			}
-			Expect(k8sClient.Create(ctx, firstNode)).Should(Succeed())
+			Expect(k8sClient.Create(ctx, firstWorkerNode)).Should(Succeed())
 
-			By("creating a scaling group resource using the first node image")
-			Expect(fakes.scalingGroupUpdater.SetScalingGroupImage(ctx, scalingGroupID, firstVersionSpec.ImageReference)).Should(Succeed())
-			scalingGroup := &updatev1alpha1.ScalingGroup{
+			By("creating worker scaling group resource using the first node image")
+			Expect(fakes.scalingGroupUpdater.SetScalingGroupImage(ctx, scalingGroupIDWorker, firstVersionSpec.ImageReference)).Should(Succeed())
+			scalingGroupWorker := &updatev1alpha1.ScalingGroup{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: scalingGroupID,
+					Name: scalingGroupIDWorker,
 				},
 				Spec: updatev1alpha1.ScalingGroupSpec{
 					NodeVersion: nodeVersionResourceName,
-					GroupID:     scalingGroupID,
+					GroupID:     scalingGroupIDWorker,
 					Autoscaling: true,
+					Role:        updatev1alpha1.WorkerRole,
 				},
 			}
-			Expect(k8sClient.Create(ctx, scalingGroup)).Should(Succeed())
+			Expect(k8sClient.Create(ctx, scalingGroupWorker)).Should(Succeed())
+
+			By("creating control plane scaling group resource using the first node image")
+			Expect(fakes.scalingGroupUpdater.SetScalingGroupImage(ctx, scalingGroupIDControlPlane, firstVersionSpec.ImageReference)).Should(Succeed())
+			scalingGroupControlPlane := &updatev1alpha1.ScalingGroup{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: scalingGroupIDControlPlane,
+				},
+				Spec: updatev1alpha1.ScalingGroupSpec{
+					NodeVersion: nodeVersionResourceName,
+					GroupID:     scalingGroupIDControlPlane,
+					Autoscaling: true,
+					Role:        updatev1alpha1.ControlPlaneRole,
+				},
+			}
+			Expect(k8sClient.Create(ctx, scalingGroupControlPlane)).Should(Succeed())
 
 			By("creating a cluster-autoscaler deployment")
 			ctx := context.Background()
@@ -167,11 +221,20 @@ var _ = Describe("NodeVersion controller", func() {
 					return 0
 				}
 				return len(nodeVersion.Status.UpToDate)
-			}, timeout, interval).Should(Equal(1))
+			}, timeout, interval).Should(Equal(2))
 
 			By("updating the node version")
-			fakes.nodeStateGetter.setNodeState(updatev1alpha1.NodeStateReady)
-			fakes.nodeReplacer.setCreatedNode(secondNodeName, secondNodeName, nil)
+			fakes.nodeReplacer.addCreatedNode(scalingGroupIDControlPlane, secondControlPlaneNodeName, secondControlPlaneNodeName, nil)
+			fakes.nodeReplacer.addCreatedNode(scalingGroupIDWorker, secondWorkerNodeName, secondWorkerNodeName, nil)
+			fakes.nodeStateGetter.setNodeState(secondControlPlaneNodeName, updatev1alpha1.NodeStateReady)
+			fakes.nodeStateGetter.setNodeState(secondWorkerNodeName, updatev1alpha1.NodeStateReady)
+			// When the pending node CR that the nodeversion loop creates is not detected on the second iteration e.g., because of delay in the KubeAPI
+			// it creates a second node via the cloud provider api. This is fine because the pending node/mint node is not matched if it's not needed
+			// and the nodeversion loop will clean up the mint node.
+			fakes.nodeStateGetter.setNodeState(thirdControlPlaneNodeName, updatev1alpha1.NodeStateCreating)
+			fakes.nodeStateGetter.setNodeState(thirdWorkerNodeName, updatev1alpha1.NodeStateCreating)
+			fakes.nodeReplacer.addCreatedNode(scalingGroupIDControlPlane, thirdControlPlaneNodeName, thirdControlPlaneNodeName, nil)
+			fakes.nodeReplacer.addCreatedNode(scalingGroupIDWorker, thirdWorkerNodeName, thirdWorkerNodeName, nil)
 			// Eventually the node version with the new NodeVersion spec.
 			Eventually(func() error {
 				if err := k8sClient.Get(ctx, nodeVersionLookupKey, nodeVersion); err != nil {
@@ -181,172 +244,216 @@ var _ = Describe("NodeVersion controller", func() {
 				return k8sClient.Update(ctx, nodeVersion)
 			}, timeout, interval).Should(Succeed())
 
-			By("checking that there is an outdated node in the status")
+			By("checking that there are 2 outdated node in the status")
 			Eventually(func() int {
 				if err := k8sClient.Get(ctx, nodeVersionLookupKey, nodeVersion); err != nil {
 					return 0
 				}
 				return len(nodeVersion.Status.Outdated)
-			}, timeout, interval).Should(Equal(1), "outdated nodes should be 1")
+			}, timeout, interval).Should(Equal(2), "outdated nodes should be 2")
 
-			By("checking that the scaling group is up to date")
+			By("checking that the control plane scaling group is up to date")
 			Eventually(func() string {
-				if err := k8sClient.Get(ctx, scalingGroupLookupKey, scalingGroup); err != nil {
+				if err := k8sClient.Get(ctx, scalingGroupLookupKeyControlPlane, scalingGroupControlPlane); err != nil {
 					return ""
 				}
-				return scalingGroup.Status.ImageReference
+				return scalingGroupControlPlane.Status.ImageReference
 			}, timeout, interval).Should(Equal(newNodeVersionSpec.ImageReference))
 
-			By("checking that a pending node is created")
-			pendingNode := &updatev1alpha1.PendingNode{}
-			Eventually(func() error {
-				return k8sClient.Get(ctx, joiningPendingNodeLookupKey, pendingNode)
-			}, timeout, interval).Should(Succeed())
-			Eventually(func() updatev1alpha1.CSPNodeState {
-				_ = k8sClient.Get(ctx, joiningPendingNodeLookupKey, pendingNode)
-				return pendingNode.Status.CSPNodeState
-			}, timeout, interval).Should(Equal(updatev1alpha1.NodeStateReady))
-			Eventually(func() int {
-				if err := k8sClient.Get(ctx, nodeVersionLookupKey, nodeVersion); err != nil {
-					return 0
+			By("checking that the worker scaling group is up to date")
+			Eventually(func() string {
+				if err := k8sClient.Get(ctx, scalingGroupLookupKeyWorker, scalingGroupWorker); err != nil {
+					return ""
 				}
-				return len(nodeVersion.Status.Pending)
-			}, timeout, interval).Should(Equal(1))
+				return scalingGroupWorker.Status.ImageReference
+			}, timeout, interval).Should(Equal(newNodeVersionSpec.ImageReference))
 
-			By("creating a new node resource using the image from the new node version")
-			fakes.nodeReplacer.setNodeImage(secondNodeName, newNodeVersionSpec.ImageReference)
-			fakes.nodeReplacer.setScalingGroupID(secondNodeName, scalingGroupID)
-			secondNode := &corev1.Node{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: "v1",
-					Kind:       "Node",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: secondNodeName,
-				},
-				Spec: corev1.NodeSpec{
-					ProviderID: secondNodeName,
-				},
-			}
-			Expect(k8sClient.Create(ctx, secondNode)).Should(Succeed())
-
-			By("marking the new node as AwaitingAnnotation")
-			Eventually(func() int {
-				err := k8sClient.Get(ctx, nodeVersionLookupKey, nodeVersion)
-				if err != nil {
-					return 0
-				}
-				return len(nodeVersion.Status.AwaitingAnnotation)
-			}, timeout, interval).Should(Equal(1))
-			// add a JoiningNode CR for the new node
-			joiningNode := &updatev1alpha1.JoiningNode{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: "update.edgeless.systems/v1alpha1",
-					Kind:       "JoiningNode",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: secondNodeName,
-				},
-				Spec: updatev1alpha1.JoiningNodeSpec{
-					Name:                secondNodeName,
-					ComponentsReference: newNodeVersionSpec.KubernetesComponentsReference,
-				},
-			}
-			Expect(k8sClient.Create(ctx, joiningNode)).Should(Succeed())
-			Eventually(func() int {
-				err := k8sClient.Get(ctx, nodeVersionLookupKey, nodeVersion)
-				if err != nil {
-					return 1
-				}
-				return len(nodeVersion.Status.AwaitingAnnotation)
-			}, timeout, interval).Should(Equal(0))
-
-			By("checking that the new node is properly annotated")
-			Eventually(func() error {
-				if err := k8sClient.Get(ctx, secondNodeLookupKey, secondNode); err != nil {
-					return err
-				}
-				// check nodeImageAnnotation annotation
-				if _, ok := secondNode.Annotations[nodeImageAnnotation]; !ok {
-					return fmt.Errorf("node %s is missing %s annotation", secondNode.Name, nodeImageAnnotation)
-				}
-				// check mainconstants.NodeKubernetesComponentsAnnotationKey annotation
-				if _, ok := secondNode.Annotations[mainconstants.NodeKubernetesComponentsAnnotationKey]; !ok {
-					return fmt.Errorf("node %s is missing %s annotation", secondNode.Name, mainconstants.NodeKubernetesComponentsAnnotationKey)
-				}
-				return nil
-			}, timeout, interval).Should(Succeed())
-
-			By("checking that the nodes are paired as donor and heir")
-			Eventually(func() map[string]string {
-				if err := k8sClient.Get(ctx, firstNodeLookupKey, firstNode); err != nil {
+			replaceNodeTest := func(firstNodeLookupKey, secondNodeLookupKey types.NamespacedName, firstNodeName, secondNodeName, scalingGroupID string, firstNode *corev1.Node, expectPendingNode bool) *corev1.Node {
+				By("checking that the pending node is created")
+				pendingNode := &updatev1alpha1.PendingNode{}
+				// If we try to upgrade the worker nodes first, we expect here that the worker node is not created
+				if !expectPendingNode {
+					Consistently(func() bool {
+						if err := k8sClient.Get(ctx, secondNodeLookupKey, pendingNode); err != nil {
+							return false
+						}
+						return true
+					}, duration, interval).Should(BeFalse())
 					return nil
 				}
-				return firstNode.Annotations
-			}, timeout, interval).Should(HaveKeyWithValue(heirAnnotation, secondNodeName))
-			Eventually(func() map[string]string {
-				if err := k8sClient.Get(ctx, secondNodeLookupKey, secondNode); err != nil {
-					return nil
-				}
-				return secondNode.Annotations
-			}, timeout, interval).Should(HaveKeyWithValue(donorAnnotation, firstNodeName))
+				Eventually(func() bool {
+					if err := k8sClient.Get(ctx, secondNodeLookupKey, pendingNode); err != nil {
+						return false
+					}
+					return true
+				}, timeout, interval).Should(BeTrue())
 
-			Eventually(func() error {
-				if err := k8sClient.Get(ctx, nodeVersionLookupKey, nodeVersion); err != nil {
-					return err
-				}
-				if len(nodeVersion.Status.Donors) != 1 {
-					return fmt.Errorf("node version %s has %d donors, expected 1", nodeVersion.Name, len(nodeVersion.Status.Donors))
-				}
-				if len(nodeVersion.Status.Heirs) != 1 {
-					return fmt.Errorf("node version %s has %d heirs, expected 1", nodeVersion.Name, len(nodeVersion.Status.Heirs))
-				}
-				return nil
-			}, timeout, interval).Should(Succeed())
-			Expect(k8sClient.Get(ctx, joiningPendingNodeLookupKey, pendingNode)).Should(Not(Succeed()))
+				Eventually(func() updatev1alpha1.CSPNodeState {
+					_ = k8sClient.Get(ctx, secondNodeLookupKey, pendingNode)
+					return pendingNode.Status.CSPNodeState
+				}, timeout, interval).Should(Equal(updatev1alpha1.NodeStateReady))
+				Eventually(func() bool {
+					if err := k8sClient.Get(ctx, nodeVersionLookupKey, nodeVersion); err != nil {
+						return false
+					}
+					return len(nodeVersion.Status.Pending) >= 1
+				}, timeout, interval).Should(BeTrue())
 
-			By("checking that node labels are copied to the heir")
-			Eventually(func() map[string]string {
-				if err := k8sClient.Get(ctx, firstNodeLookupKey, firstNode); err != nil {
-					return nil
+				By("creating a new node resource using the image from the new node version")
+				fakes.nodeReplacer.setNodeImage(secondNodeName, newNodeVersionSpec.ImageReference)
+				fakes.nodeReplacer.setScalingGroupID(secondNodeName, scalingGroupID)
+				var labels map[string]string
+				if _, ok := firstNode.Labels[constants.ControlPlaneRoleLabel]; ok {
+					labels = map[string]string{
+						constants.ControlPlaneRoleLabel: "",
+					}
 				}
-				return firstNode.Labels
-			}, timeout, interval).Should(HaveKeyWithValue("custom-node-label", "custom-node-label-value"))
-
-			By("marking the new node as ready")
-			Eventually(func() error {
-				if err := k8sClient.Get(ctx, secondNodeLookupKey, secondNode); err != nil {
-					return err
-				}
-				secondNode.Status.Conditions = []corev1.NodeCondition{
-					{
-						Type:   corev1.NodeReady,
-						Status: corev1.ConditionTrue,
+				secondNode := &corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   secondNodeName,
+						Labels: labels,
+					},
+					Spec: corev1.NodeSpec{
+						ProviderID: secondNodeName,
 					},
 				}
-				return k8sClient.Status().Update(ctx, secondNode)
-			}, timeout, interval).Should(Succeed())
+				Expect(k8sClient.Create(ctx, secondNode)).Should(Succeed())
 
-			By("waiting for a NodeMaintenance resource to be created")
-			nodeMaintenance := &nodemaintenancev1beta1.NodeMaintenance{}
-			Eventually(func() error {
-				return k8sClient.Get(ctx, nodeMaintenanceLookupKey, nodeMaintenance)
-			}, timeout, interval).Should(Succeed())
-
-			By("marking the NodeMaintenance as successful")
-			fakes.nodeStateGetter.setNodeState(updatev1alpha1.NodeStateTerminated)
-			Eventually(func() error {
-				if err := k8sClient.Get(ctx, nodeMaintenanceLookupKey, nodeMaintenance); err != nil {
-					return err
+				By("marking the new node as AwaitingAnnotation")
+				Eventually(func() int {
+					err := k8sClient.Get(ctx, nodeVersionLookupKey, nodeVersion)
+					if err != nil {
+						return 0
+					}
+					return len(nodeVersion.Status.AwaitingAnnotation)
+				}, timeout, interval).Should(Equal(1))
+				// add a JoiningNode CR for the new node
+				joiningNode := &updatev1alpha1.JoiningNode{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "update.edgeless.systems/v1alpha1",
+						Kind:       "JoiningNode",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: secondNodeName,
+					},
+					Spec: updatev1alpha1.JoiningNodeSpec{
+						Name:                secondNodeName,
+						ComponentsReference: newNodeVersionSpec.KubernetesComponentsReference,
+					},
 				}
-				nodeMaintenance.Status.Phase = nodemaintenancev1beta1.MaintenanceSucceeded
-				return k8sClient.Status().Update(ctx, nodeMaintenance)
-			}, timeout, interval).Should(Succeed())
+				Expect(k8sClient.Create(ctx, joiningNode)).Should(Succeed())
+				Eventually(func() int {
+					err := k8sClient.Get(ctx, nodeVersionLookupKey, nodeVersion)
+					if err != nil {
+						return 1
+					}
+					return len(nodeVersion.Status.AwaitingAnnotation)
+				}, timeout, interval).Should(Equal(0))
 
-			By("checking that the outdated node is removed")
-			Eventually(func() error {
-				return k8sClient.Get(ctx, firstNodeLookupKey, firstNode)
-			}, timeout, interval).Should(Not(Succeed()))
+				By("checking that the new node is properly annotated")
+				Eventually(func() error {
+					if err := k8sClient.Get(ctx, secondNodeLookupKey, secondNode); err != nil {
+						return err
+					}
+					// check nodeImageAnnotation annotation
+					if _, ok := secondNode.Annotations[nodeImageAnnotation]; !ok {
+						return fmt.Errorf("node %s is missing %s annotation", secondNode.Name, nodeImageAnnotation)
+					}
+					// check mainconstants.NodeKubernetesComponentsAnnotationKey annotation
+					if _, ok := secondNode.Annotations[mainconstants.NodeKubernetesComponentsAnnotationKey]; !ok {
+						return fmt.Errorf("node %s is missing %s annotation", secondNode.Name, mainconstants.NodeKubernetesComponentsAnnotationKey)
+					}
+					return nil
+				}, timeout, interval).Should(Succeed())
+
+				By("checking that the nodes are paired as donor and heir")
+				Eventually(func() map[string]string {
+					if err := k8sClient.Get(ctx, firstNodeLookupKey, firstNode); err != nil {
+						return nil
+					}
+					return firstNode.Annotations
+				}, timeout, interval).Should(HaveKeyWithValue(heirAnnotation, secondNodeName))
+				Eventually(func() map[string]string {
+					if err := k8sClient.Get(ctx, secondNodeLookupKey, secondNode); err != nil {
+						return nil
+					}
+					return secondNode.Annotations
+				}, timeout, interval).Should(HaveKeyWithValue(donorAnnotation, firstNodeName))
+
+				Eventually(func() error {
+					if err := k8sClient.Get(ctx, nodeVersionLookupKey, nodeVersion); err != nil {
+						return err
+					}
+					if len(nodeVersion.Status.Donors) != 1 {
+						return fmt.Errorf("node version %s has %d donors, expected 1", nodeVersion.Name, len(nodeVersion.Status.Donors))
+					}
+					if len(nodeVersion.Status.Heirs) != 1 {
+						return fmt.Errorf("node version %s has %d heirs, expected 1", nodeVersion.Name, len(nodeVersion.Status.Heirs))
+					}
+					return nil
+				}, timeout, interval).Should(Succeed())
+				Expect(k8sClient.Get(ctx, secondNodeLookupKey, pendingNode)).Should(Not(Succeed()))
+
+				By("checking that node labels are copied to the heir")
+				Eventually(func() map[string]string {
+					if err := k8sClient.Get(ctx, firstNodeLookupKey, firstNode); err != nil {
+						return nil
+					}
+					return firstNode.Labels
+				}, timeout, interval).Should(HaveKeyWithValue("custom-node-label", "custom-node-label-value"))
+
+				By("marking the new node as ready")
+				Eventually(func() error {
+					if err := k8sClient.Get(ctx, secondNodeLookupKey, secondNode); err != nil {
+						return err
+					}
+					secondNode.Status.Conditions = []corev1.NodeCondition{
+						{
+							Type:   corev1.NodeReady,
+							Status: corev1.ConditionTrue,
+						},
+					}
+					return k8sClient.Status().Update(ctx, secondNode)
+				}, timeout, interval).Should(Succeed())
+
+				By("waiting for a NodeMaintenance resource to be created")
+				nodeMaintenance := &nodemaintenancev1beta1.NodeMaintenance{}
+				Eventually(func() error {
+					return k8sClient.Get(ctx, firstNodeLookupKey, nodeMaintenance)
+				}, timeout, interval).Should(Succeed())
+
+				By("marking the NodeMaintenance as successful")
+				fakes.nodeStateGetter.setNodeState(firstNodeName, updatev1alpha1.NodeStateTerminated)
+				Eventually(func() error {
+					if err := k8sClient.Get(ctx, firstNodeLookupKey, nodeMaintenance); err != nil {
+						return err
+					}
+					nodeMaintenance.Status.Phase = nodemaintenancev1beta1.MaintenanceSucceeded
+					return k8sClient.Status().Update(ctx, nodeMaintenance)
+				}, timeout, interval).Should(Succeed())
+
+				By("checking that the outdated node is removed")
+				Eventually(func() error {
+					return k8sClient.Get(ctx, firstNodeLookupKey, firstNode)
+				}, timeout, interval).Should(Not(Succeed()))
+
+				return secondNode
+			}
+
+			var createdControlPlane *corev1.Node
+			var createdWorkerNode *corev1.Node
+			if workersFirst {
+				_ = replaceNodeTest(firstNodeLookupKeyWorker, secondNodeLookupKeyWorker, firstWorkerNodeName, secondWorkerNodeName, scalingGroupIDWorker, firstWorkerNode, false)
+				createdControlPlane = replaceNodeTest(firstNodeLookupKeyControlPlane, secondNodeLookupKeyControlPlane, firstControlPlaneNodeName, secondControlPlaneNodeName, scalingGroupIDControlPlane, firstControlPlaneNode, true)
+				createdWorkerNode = replaceNodeTest(firstNodeLookupKeyWorker, secondNodeLookupKeyWorker, firstWorkerNodeName, secondWorkerNodeName, scalingGroupIDWorker, firstWorkerNode, true)
+			} else {
+				createdControlPlane = replaceNodeTest(firstNodeLookupKeyControlPlane, secondNodeLookupKeyControlPlane, firstControlPlaneNodeName, secondControlPlaneNodeName, scalingGroupIDControlPlane, firstControlPlaneNode, true)
+				createdWorkerNode = replaceNodeTest(firstNodeLookupKeyWorker, secondNodeLookupKeyWorker, firstWorkerNodeName, secondWorkerNodeName, scalingGroupIDWorker, firstWorkerNode, true)
+			}
 
 			By("checking that all nodes are up-to-date")
 			Eventually(func() int {
@@ -355,29 +462,48 @@ var _ = Describe("NodeVersion controller", func() {
 					return 0
 				}
 				return len(nodeVersion.Status.UpToDate)
-			}, timeout, interval).Should(Equal(1))
+			}, timeout, interval).Should(Equal(2))
 
 			By("cleaning up all resources")
 			Expect(k8sClient.Delete(ctx, nodeVersion)).Should(Succeed())
-			Expect(k8sClient.Delete(ctx, scalingGroup)).Should(Succeed())
+			Expect(k8sClient.Delete(ctx, scalingGroupWorker)).Should(Succeed())
 			Expect(k8sClient.Delete(ctx, autoscalerDeployment)).Should(Succeed())
 			Expect(k8sClient.Delete(ctx, strategy)).Should(Succeed())
-			Expect(k8sClient.Delete(ctx, secondNode)).Should(Succeed())
+			Expect(k8sClient.Delete(ctx, createdControlPlane)).Should(Succeed())
+			Expect(k8sClient.Delete(ctx, createdWorkerNode)).Should(Succeed())
 		}
 		When("Updating the image reference", func() {
 			It("Should update every node in the cluster", func() {
-				testNodeVersionUpdate(updatev1alpha1.NodeVersionSpec{
-					ImageReference:                "version-2",
-					KubernetesComponentsReference: "ref-1",
-				})
+				testNodeVersionUpdate(
+					updatev1alpha1.NodeVersionSpec{
+						ImageReference:                "version-2",
+						KubernetesComponentsReference: "ref-1",
+					},
+					false,
+				)
 			})
 		})
 		When("Updating the Kubernetes components reference", func() {
 			It("Should update every node in the cluster", func() {
-				testNodeVersionUpdate(updatev1alpha1.NodeVersionSpec{
-					ImageReference:                "version-1",
-					KubernetesComponentsReference: "ref-2",
-				})
+				testNodeVersionUpdate(
+					updatev1alpha1.NodeVersionSpec{
+						ImageReference:                "version-1",
+						KubernetesComponentsReference: "ref-2",
+					},
+					false,
+				)
+			})
+		})
+		When("Updating the Kubernetes components reference and wanting to upgrade the worker nodes first", func() {
+			It("should fail to update the worker nodes before the control plane nodes", func() {
+				testNodeVersionUpdate(
+					updatev1alpha1.NodeVersionSpec{
+						ImageReference:                "version-1",
+						KubernetesComponentsReference: "ref-2",
+						MaxNodeBudget:                 2,
+					},
+					true,
+				)
 			})
 		})
 	})

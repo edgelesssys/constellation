@@ -9,6 +9,7 @@ package controllers
 import (
 	"context"
 	"errors"
+	"strconv"
 	"sync"
 	"testing"
 
@@ -21,6 +22,7 @@ import (
 
 	mainconstants "github.com/edgelesssys/constellation/v2/internal/constants"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/api/v1alpha1"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/constants"
 )
 
 func TestAnnotateNodes(t *testing.T) {
@@ -800,16 +802,22 @@ func TestGroupNodes(t *testing.T) {
 	assert.Equal(wantNodeGroups, groups)
 }
 
+// stubNode contains all information usually associated with a node freshly
+// created by the cloud provider.
+type stubNode struct {
+	name       string
+	providerID string
+}
+
 type stubNodeReplacer struct {
 	sync.RWMutex
-	nodeImages        map[string]string
-	scalingGroups     map[string]string
-	createNodeName    string
-	createProviderID  string
-	nodeImageErr      error
-	scalingGroupIDErr error
-	createErr         error
-	deleteErr         error
+	nodeImages                  map[string]string
+	scalingGroups               map[string]string
+	createNodesByScalingGroupID map[string][]stubNode
+	nodeImageErr                error
+	scalingGroupIDErr           error
+	createErr                   error
+	deleteErr                   error
 }
 
 func (r *stubNodeReplacer) GetNodeImage(_ context.Context, providerID string) (string, error) {
@@ -824,10 +832,25 @@ func (r *stubNodeReplacer) GetScalingGroupID(_ context.Context, providerID strin
 	return r.scalingGroups[providerID], r.scalingGroupIDErr
 }
 
-func (r *stubNodeReplacer) CreateNode(_ context.Context, _ string) (nodeName, providerID string, err error) {
+// CreateNode stubs the cloud provider API call to create a node.
+func (r *stubNodeReplacer) CreateNode(_ context.Context, scalingGroupID string) (nodeName, providerID string, err error) {
 	r.RLock()
 	defer r.RUnlock()
-	return r.createNodeName, r.createProviderID, r.createErr
+	nodes, ok := r.createNodesByScalingGroupID[scalingGroupID]
+	if !ok {
+		panic("unexpected call to CreateNode with scaling group ID " + scalingGroupID + ", existing scaling group IDs: " + strconv.Itoa(len(r.createNodesByScalingGroupID)))
+	}
+	if len(nodes) == 0 {
+		panic("unexpected call to CreateNode with scaling group ID " + scalingGroupID + ", no nodes left")
+	}
+
+	nodeName = nodes[0].name
+	providerID = nodes[0].providerID
+	err = r.createErr
+
+	r.createNodesByScalingGroupID[scalingGroupID] = nodes[1:]
+
+	return
 }
 
 func (r *stubNodeReplacer) DeleteNode(_ context.Context, _ string) error {
@@ -856,12 +879,14 @@ func (r *stubNodeReplacer) setScalingGroupID(providerID, scalingGroupID string) 
 	r.scalingGroups[providerID] = scalingGroupID
 }
 
-func (r *stubNodeReplacer) setCreatedNode(nodeName, providerID string, err error) {
+func (r *stubNodeReplacer) addCreatedNode(scalingGroupID, nodeName, providerID string, _ error) {
 	r.Lock()
 	defer r.Unlock()
-	r.createNodeName = nodeName
-	r.createProviderID = providerID
-	r.createErr = err
+	if r.createNodesByScalingGroupID == nil {
+		r.createNodesByScalingGroupID = make(map[string][]stubNode)
+	}
+	r.createNodesByScalingGroupID[scalingGroupID] = append(r.createNodesByScalingGroupID[scalingGroupID], stubNode{nodeName, providerID})
+	r.createErr = nil
 }
 
 func (r *stubNodeReplacer) reset() {
@@ -869,8 +894,7 @@ func (r *stubNodeReplacer) reset() {
 	defer r.Unlock()
 	r.nodeImages = nil
 	r.scalingGroups = nil
-	r.createNodeName = ""
-	r.createProviderID = ""
+	r.createNodesByScalingGroupID = nil
 	r.createErr = nil
 	r.deleteErr = nil
 }
