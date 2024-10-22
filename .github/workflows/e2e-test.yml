@@ -138,6 +138,7 @@ jobs:
       workerNodes: ${{ steps.split-nodeCount.outputs.workerNodes }}
       controlPlaneNodes: ${{ steps.split-nodeCount.outputs.controlPlaneNodes }}
       cloudProvider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
+      attestationVariant: ${{ steps.split-attestationVariant.outputs.attestationVariant }}
     steps:
       - name: Split nodeCount
         id: split-nodeCount
@@ -164,9 +165,10 @@ jobs:
 
           # special case for STACKIT, as there's no special attestation variant for it
           if [[ "${cloudProvider}" == "stackit" ]]; then
-            echo "attestationVariant=qemu-vtpm" | tee -a "$GITHUB_OUTPUT"
+            attestationVariant="qemu-vtpm"
           fi
 
+          echo "attestationVariant=${attestationVariant}" | tee -a "$GITHUB_OUTPUT"
           echo "cloudProvider=${cloudProvider}" | tee -a "$GITHUB_OUTPUT"
 
   find-latest-image:
@@ -239,7 +241,7 @@ jobs:
           workerNodesCount: ${{ needs.generate-input-parameters.outputs.workerNodes }}
           controlNodesCount: ${{ needs.generate-input-parameters.outputs.controlPlaneNodes }}
           cloudProvider: ${{ needs.generate-input-parameters.outputs.cloudProvider }}
-          attestationVariant: ${{ inputs.attestationVariant }}
+          attestationVariant: ${{ needs.generate-input-parameters.outputs.attestationVariant }}
           machineType: ${{ inputs.machineType }}
           regionZone: ${{ inputs.regionZone }}
           gcpProject: constellation-e2e
