@@ -93,6 +93,12 @@ inputs:
   encryptionSecret:
     description: "The secret to use for decrypting the artifact."
     required: true
+  openStackCloudsYaml:
+    description: "The contents of ~/.config/openstack/clouds.yaml"
+    required: true
+  stackitUat:
+    description: "The UAT for STACKIT"
+    required: true
 
 outputs:
   kubeconfig:
@@ -233,13 +239,13 @@ runs:
       if: inputs.cloudProvider == 'stackit'
       uses: ./.github/actions/login_openstack
       with:
-        clouds_yaml: ${{ secrets.STACKIT_IMAGE_UPLOAD_CLOUDS_YAML }}
+        clouds_yaml: ${{inputs.openStackCloudsYaml }}
 
     - name: Login to STACKIT
       if: inputs.cloudProvider == 'stackit'
       uses: ./.github/actions/login_stackit
       with:
-        serviceAccountToken: ${{ secrets.STACKIT_SERVICE_ACCOUNT_TOKEN }}
+        serviceAccountToken: ${{ inputs.stackitUat }}
 
     - name: Create prefix
       id: create-prefix

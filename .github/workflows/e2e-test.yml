@@ -268,6 +268,8 @@ jobs:
           marketplaceImageVersion: ${{ inputs.marketplaceImageVersion }}
           force: ${{ inputs.force }}
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          openStackCloudsYaml: ${{ secrets.STACKIT_IMAGE_UPLOAD_CLOUDS_YAML }}
+          stackitUat: ${{ secrets.STACKIT_SERVICE_ACCOUNT_TOKEN }}
 
       - name: Always terminate cluster
         if: always()
