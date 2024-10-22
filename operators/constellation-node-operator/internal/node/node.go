@@ -11,10 +11,9 @@ import (
 	"regexp"
 
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/api/v1alpha1"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/constants"
 	corev1 "k8s.io/api/core/v1"
 )
-
-const controlPlaneRoleLabel = "node-role.kubernetes.io/control-plane"
 
 var reservedHostRegex = regexp.MustCompile(`^(.+\.|)(kubernetes|k8s)\.io(/.*)?$`)
 
@@ -40,7 +39,7 @@ func VPCIP(node *corev1.Node) (string, error) {
 
 // IsControlPlaneNode returns true if the node is a control plane node.
 func IsControlPlaneNode(node *corev1.Node) bool {
-	_, ok := node.Labels[controlPlaneRoleLabel]
+	_, ok := node.Labels[constants.ControlPlaneRoleLabel]
 	return ok
 }
 
