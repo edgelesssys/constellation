@@ -229,6 +229,18 @@ runs:
       with:
         azure_credentials: ${{ inputs.azureIAMCreateCredentials }}
 
+    - name: Login to OpenStack
+      if: inputs.cloudProvider == 'stackit'
+      uses: ./.github/actions/login_openstack
+      with:
+        clouds_yaml: ${{ secrets.STACKIT_IMAGE_UPLOAD_CLOUDS_YAML }}
+
+    - name: Login to STACKIT
+      if: inputs.cloudProvider == 'stackit'
+      uses: ./.github/actions/login_stackit
+      with:
+        serviceAccountToken: ${{ secrets.STACKIT_SERVICE_ACCOUNT_TOKEN }}
+
     - name: Create prefix
       id: create-prefix
       shell: bash
@@ -244,7 +256,7 @@ runs:
       with:
         attestationVariant: ${{ inputs.attestationVariant }}
 
-    - name: Create IAM configuration
+    - name: Create Constellation config and IAM
       id: constellation-iam-create
       uses: ./.github/actions/constellation_iam_create
       with:
