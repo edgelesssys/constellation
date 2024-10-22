@@ -37,7 +37,7 @@ This example shows how to set up a Constellation cluster with the reference IAM 
 
   <Tabs groupId="variant">
   <TabItem value="sevsnp" label="SEV-SNP">
-  When creating a cluster on Azure SEV-SNP, you need to manually patch the policy of the MAA provider before creating the Constellation cluster, as this feature isn't available in Azure's Terraform provider yet. The Constellation CLI provides a utility for patching, but you
+  When creating a cluster with SEV-SNP, you need to manually patch the policy of the MAA provider before creating the Constellation cluster, as this feature isn't available in Azure's Terraform provider yet. The Constellation CLI provides a utility for patching, but you
   can also do it manually.
 
   ```bash
