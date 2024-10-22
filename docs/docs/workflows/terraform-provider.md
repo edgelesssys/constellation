@@ -34,7 +34,10 @@ This example shows how to set up a Constellation cluster with the reference IAM 
   Optionally, you can prefix the `terraform apply` command with `TF_LOG=INFO` to collect [Terraform logs](https://developer.hashicorp.com/terraform/internals/debugging) while applying the configuration. This may provide helpful output in debugging scenarios.
   </TabItem>
   <TabItem value="azure" label="Azure">
-  When creating a cluster on Azure, you need to manually patch the policy of the MAA provider before creating the Constellation cluster, as this feature isn't available in Azure's Terraform provider yet. The Constellation CLI provides a utility for patching, but you
+
+  <Tabs groupId="variant">
+  <TabItem value="sevsnp" label="SEV-SNP">
+  When creating a cluster on Azure SEV-SNP, you need to manually patch the policy of the MAA provider before creating the Constellation cluster, as this feature isn't available in Azure's Terraform provider yet. The Constellation CLI provides a utility for patching, but you
   can also do it manually.
 
   ```bash
@@ -68,6 +71,19 @@ This example shows how to set up a Constellation cluster with the reference IAM 
   ```
 
   </TabItem>
+  <TabItem value="tdx" label="TDX">
+    Initialize the providers and apply the configuration.
+
+  ```bash
+  terraform init
+  terraform apply
+  ```
+
+  Optionally, you can prefix the `terraform apply` command with `TF_LOG=INFO` to collect [Terraform logs](https://developer.hashicorp.com/terraform/internals/debugging) while applying the configuration. This may provide helpful output in debugging scenarios.
+  </TabItem>
+  </Tabs>
+  </TabItem>
+
   <TabItem value="gcp" label="GCP">
   Initialize the providers and apply the configuration.
 
