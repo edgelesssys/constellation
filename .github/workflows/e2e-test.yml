@@ -16,7 +16,6 @@ on:
           - "azure-sev-snp"
           - "azure-tdx"
           - "aws-sev-snp"
-          - "stackit-qemu-vtpm"
         default: "azure-sev-snp"
         required: true
       runner:
@@ -161,11 +160,6 @@ jobs:
         run: |
           attestationVariant="${{ inputs.attestationVariant }}"
           cloudProvider="${attestationVariant%%-*}"
-
-          # special case for STACKIT, as there's no special attestation variant for it
-          if [[ "${cloudProvider}" == "stackit" ]]; then
-            echo "attestationVariant=qemu-vtpm" | tee -a "$GITHUB_OUTPUT"
-          fi
 
           echo "cloudProvider=${cloudProvider}" | tee -a "$GITHUB_OUTPUT"
 
