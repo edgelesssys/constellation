@@ -1,8 +1,9 @@
 # Verify that Constellation builds are reproducible.
 #
-# The build-* jobs' matrix has two dimensions: a list of targets to build and
-# a list of runners to build on. The produced binaries and OS images are
-# expected to be bit-for-bit identical, regardless of the chosen build runner.
+# The build-* jobs' matrix has three dimensions: a list of targets to build, a
+# list of runners to build on and a method of installing dependencies. The
+# produced binaries and OS images are expected to be bit-for-bit identical,
+# without any dependencies on the runtime setup details.
 #
 # The compare-* jobs only have the target dimension. They obtain the built
 # targets from all runners and check that there are no diffs between them.
@@ -24,10 +25,15 @@ jobs:
             - "cli_enterprise_linux_amd64"
             - "cli_enterprise_linux_arm64"
             - "cli_enterprise_windows_amd64"
-          runner: ["ubuntu-22.04", "ubuntu-20.04"]
+          runner:
+            - "ubuntu-22.04"
+            - "ubuntu-20.04"
+          deps:
+            - conventional
+            - eccentric
     env:
         bazel_target: "//cli:${{ matrix.target }}"
-        binary: "${{ matrix.target }}-${{ matrix.runner }}"
+        binary: "${{ matrix.target }}-${{ matrix.runner }}-${{ matrix.deps }}"
     runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout
@@ -35,8 +41,22 @@ jobs:
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
-      - name: Setup bazel
+      - name: Setup dependencies
         uses: ./.github/actions/setup_bazel_nix
+        if: matrix.deps == 'conventional'
+
+      - name: Setup dependencies (eccentric)
+        if: matrix.deps == 'eccentric'
+        run: |
+          version=$(cat .bazelversion)
+          mkdir -p "$HOME/.local/bin"
+          curl -fsSL -o "$HOME/.local/bin/bazel" "https://github.com/bazelbuild/bazel/releases/download/$version/bazel-$version-linux-x86_64"
+          chmod a+x "$HOME/.local/bin/bazel"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+          curl -fsSL -o "$HOME/.local/bin/nix-installer" https://github.com/DeterminateSystems/nix-installer/releases/download/v0.26.3/nix-installer-x86_64-linux # renovate:github-release
+          chmod a+x "$HOME/.local/bin/nix-installer"
+          "$HOME/.local/bin/nix-installer" install --no-confirm
 
       - name: Build
         shell: bash
@@ -59,13 +79,13 @@ jobs:
       - name: Upload binary artifact
         uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
         with:
-          name: "binaries-${{ matrix.target }}-${{ matrix.runner }}"
+          name: "binaries-${{ matrix.target }}-${{ matrix.runner }}-${{ matrix.deps }}"
           path: "${{ env.binary }}"
 
       - name: Upload hash artifact
         uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
         with:
-          name: "sha256sums-${{ matrix.target }}-${{ matrix.runner }}"
+          name: "sha256sums-${{ matrix.target }}-${{ matrix.runner }}-${{ matrix.deps }}"
           path: "${{ env.binary }}.sha256"
 
   build-osimages:
