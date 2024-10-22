@@ -104,8 +104,3 @@ runs:
           --update-config \
           --tf-log=DEBUG \
           --yes
-
-    - name: Set OpenStack ID for STACKIT
-      shell: bash
-      run: |
-        yq eval -i "(.provider.openstack.stackitProjectID) = \"4353b88f06554808bc53e4ad70f530df\"" constellation-conf.yaml
