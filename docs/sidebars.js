@@ -231,17 +231,19 @@ const sidebars = {
       type: "category",
       label: "Architecture",
       link: {
-        type: "generated-index",
+        type: "doc",
+        id: "architecture/intro",
       },
+
       items: [
         {
           type: "doc",
-          label: "Overview",
+          label: "Protocol overview",
           id: "architecture/overview",
         },
         {
           type: "category",
-          label: "Components",
+          label: "Key components",
           items: [
             {
               type: "doc",
@@ -250,19 +252,19 @@ const sidebars = {
             },
             {
               type: "doc",
-              label: "Microservices",
-              id: "architecture/components/microservices",
+              label: "Node images",
+              id: "architecture/components/node-images",
             },
             {
               type: "doc",
-              label: "Cryptographic keys and primitives",
-              id: "architecture/components/node-images",
+              label: "Core Services",
+              id: "architecture/components/microservices",
             },
           ],
         },
         {
           type: "category",
-          label: "Security",
+          label: "Protection mechanisms",
           items: [
             {
               type: "doc",
@@ -277,9 +279,24 @@ const sidebars = {
             {
               type: "doc",
               label: "Encrypted persistant storage",
-              id: "architecture/security/encrypted-persistant",
+              id: "architecture/security/encrypted-storage",
+            },
+            {
+              type: "doc",
+              label: "Cryptographic keys and primitives",
+              id: "architecture/security/keys",
             },
           ],
+        },
+        {
+          type: "doc",
+          label: "Observability",
+          id: "architecture/observability",
+        },
+        {
+          type: "doc",
+          label: "Versions and support",
+          id: "architecture/versions",
         },
         {
           type: "category",
@@ -317,7 +334,7 @@ const sidebars = {
             },
             {
               type: "doc",
-              label: "Keys and cryptographic primitives",
+              label: "Key management and cryptographic primitives",
               id: "architecture/old/keys",
             },
             {

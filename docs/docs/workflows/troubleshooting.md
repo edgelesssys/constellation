@@ -56,12 +56,10 @@ A solution is to add the [required permissions](../getting-started/install.md#re
 
 If your setup requires a change in the ordering of credentials, please open an issue and explain your desired behavior.
 
-
-
 ### Nodes fail to join with error `untrusted measurement value`
 
-This error indicates that a node's [attestation statement](../architecture/attestation.md) contains measurements that don't match the trusted values expected by the [JoinService](../architecture/microservices.md#joinservice).
-This may for example happen if the cloud provider updates the VM's firmware such that it influences the [runtime measurements](../architecture/attestation.md#runtime-measurements) in an unforeseen way.
+This error indicates that a node's [attestation statement](../architecture/security/attestation.md) contains measurements that don't match the trusted values expected by the [JoinService](../architecture/components/microservices.md#joinservice).
+This may for example happen if the cloud provider updates the VM's firmware such that it influences the [runtime measurements](../architecture/security/attestation.md#runtime-measurements) in an unforeseen way.
 A failed upgrade due to an erroneous attestation config can also cause this error.
 You can change the expected measurements to resolve the failure.
 
@@ -128,24 +126,24 @@ Debugging via a shell on a node is [directly supported by Kubernetes](https://ku
 
 1. Figure out which node to connect to:
 
-    ```bash
-    kubectl get nodes
-    # or to see more information, such as IPs:
-    kubectl get nodes -o wide
-    ```
+   ```bash
+   kubectl get nodes
+   # or to see more information, such as IPs:
+   kubectl get nodes -o wide
+   ```
 
 2. Connect to the node:
 
-    ```bash
-    kubectl debug node/constell-worker-xksa0-000000 -it --image=busybox
-    ```
+   ```bash
+   kubectl debug node/constell-worker-xksa0-000000 -it --image=busybox
+   ```
 
-    You will be presented with a prompt.
+   You will be presented with a prompt.
 
-    The nodes file system is mounted at `/host`.
+   The nodes file system is mounted at `/host`.
 
 3. Once finished, clean up the debug pod:
 
-    ```bash
-    kubectl delete pod node-debugger-constell-worker-xksa0-000000-bjthj
-    ```
+   ```bash
+   kubectl delete pod node-debugger-constell-worker-xksa0-000000-bjthj
+   ```

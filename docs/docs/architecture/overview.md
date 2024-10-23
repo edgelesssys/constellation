@@ -9,10 +9,10 @@ The following diagram sketches the basic trust relationships between the entitie
 
 Abstractly, the Constellation software comprises three core components:
 
-1. The command-line interface (CLI) executable, which is run by the cluster administrator on their local machine.
-2. The node images, which are run inside Confidential VMs (CVMs).
+1. The **command-line interface (CLI)** executable, which is run by the cluster administrator on their local machine.
+2. The **node images**, which are run inside Confidential VMs (CVMs).
    Among other, each node image contains a Linux kernel and a user mode program called Bootstrapper.
-3. The Constellation service containers, which are run on Kubernetes.
+3. The **Constellation service containers**, which are run on Kubernetes.
    There are three core services: KeyService, JoinService, and VerificationService.
 
 ## CLI: root of trust
