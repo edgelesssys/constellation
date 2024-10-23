@@ -26,8 +26,8 @@ jobs:
             - "cli_enterprise_linux_arm64"
             - "cli_enterprise_windows_amd64"
           runner:
+            - "ubuntu-24.04"
             - "ubuntu-22.04"
-            - "ubuntu-20.04"
           deps:
             - conventional
             - eccentric
@@ -97,12 +97,24 @@ jobs:
             - "aws_aws-nitro-tpm_console"
             - "qemu_qemu-vtpm_debug"
             - "gcp_gcp-sev-snp_nightly"
-          runner: ["ubuntu-22.04", "ubuntu-20.04"]
+          runner: ["ubuntu-24.04", "ubuntu-22.04"]
     env:
         bazel_target: "//image/system:${{ matrix.target }}"
         binary: "osimage-${{ matrix.target }}-${{ matrix.runner }}"
     runs-on: ${{ matrix.runner }}
     steps:
+      - name: Remove security hardening features
+        if: matrix.runner == 'ubuntu-24.04'
+        shell: bash
+        run: |
+          # Taken from https://github.com/systemd/mkosi/blob/fcacc94b9f72d9b6b1f03779b0c6e07209ceb54b/action.yaml#L42-L57.
+          sudo sysctl --ignore --write kernel.apparmor_restrict_unprivileged_unconfined=0
+          sudo sysctl --ignore --write kernel.apparmor_restrict_unprivileged_userns=0
+          # This command fails with a non-zero error code even though it unloads the apparmor profiles.
+          # https://gitlab.com/apparmor/apparmor/-/issues/403
+          sudo aa-teardown || true
+          sudo apt-get remove -y apparmor
+
       - name: Checkout
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
