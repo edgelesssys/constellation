@@ -19,196 +19,196 @@ const sidebars = {
   // But you can create a sidebar manually
   docs: [
     {
-      type: 'doc',
-      label: 'Introduction',
-      id: 'intro'
+      type: "doc",
+      label: "Introduction",
+      id: "intro",
     },
     {
-      type: 'category',
-      label: 'Basics',
+      type: "category",
+      label: "Basics",
       link: {
-        type: 'generated-index',
+        type: "generated-index",
       },
       items: [
         {
-          type: 'doc',
-          label: 'Confidential Kubernetes',
-          id: 'overview/confidential-kubernetes',
+          type: "doc",
+          label: "Confidential Kubernetes",
+          id: "overview/confidential-kubernetes",
         },
         {
-          type: 'doc',
-          label: 'Security benefits',
-          id: 'overview/security-benefits',
+          type: "doc",
+          label: "Security benefits",
+          id: "overview/security-benefits",
         },
         {
-          type: 'doc',
-          label: 'Product features',
-          id: 'overview/product',
+          type: "doc",
+          label: "Product features",
+          id: "overview/product",
         },
         {
-          type: 'doc',
-          label: 'Feature status of clouds',
-          id: 'overview/clouds',
+          type: "doc",
+          label: "Feature status of clouds",
+          id: "overview/clouds",
         },
         {
-          type: 'category',
-          label: 'Performance',
-          link: { type: 'doc', id: 'overview/performance/performance' },
+          type: "category",
+          label: "Performance",
+          link: { type: "doc", id: "overview/performance/performance" },
           items: [
             {
-              type: 'doc',
-              label: 'Compute benchmarks',
-              id: 'overview/performance/compute',
+              type: "doc",
+              label: "Compute benchmarks",
+              id: "overview/performance/compute",
             },
             {
-              type: 'doc',
-              label: 'I/O benchmarks',
-              id: 'overview/performance/io',
+              type: "doc",
+              label: "I/O benchmarks",
+              id: "overview/performance/io",
             },
             {
-              type: 'doc',
-              label: 'Application benchmarks',
-              id: 'overview/performance/application',
+              type: "doc",
+              label: "Application benchmarks",
+              id: "overview/performance/application",
             },
-          ]
+          ],
         },
         {
-          type: 'doc',
-          label: 'License',
-          id: 'overview/license',
-        },
-      ]
-    },
-    {
-      type: 'category',
-      label: 'Getting started',
-      link: {
-        type: 'generated-index',
-      },
-      items: [
-        {
-          type: 'doc',
-          label: 'Installation',
-          id: 'getting-started/install',
-        },
-        {
-          type: 'doc',
-          label: 'First steps (cloud)',
-          id: 'getting-started/first-steps',
-        },
-        {
-          type: 'doc',
-          label: 'First steps (local)',
-          id: 'getting-started/first-steps-local',
-        },
-        {
-          type: 'doc',
-          label: 'Cloud Marketplaces',
-          id: 'getting-started/marketplaces',
-        },
-        {
-          type: 'category',
-          label: 'Examples',
-          link: {
-            type: 'doc',
-            id: 'getting-started/examples',
-          },
-          items: [
-            {
-              type: 'doc',
-              label: 'Emojivoto',
-              id: 'getting-started/examples/emojivoto'
-            },
-            {
-              type: 'doc',
-              label: 'Online Boutique',
-              id: 'getting-started/examples/online-boutique'
-            },
-            {
-              type: 'doc',
-              label: 'Horizontal Pod Autoscaling',
-              id: 'getting-started/examples/horizontal-scaling'
-            },
-            {
-              type: 'doc',
-              label: 'Filestash with s3proxy',
-              id: 'getting-started/examples/filestash-s3proxy'
-            },
-          ]
+          type: "doc",
+          label: "License",
+          id: "overview/license",
         },
       ],
     },
     {
-      type: 'category',
-      label: 'Workflows',
+      type: "category",
+      label: "Getting started",
       link: {
-        type: 'generated-index',
+        type: "generated-index",
       },
       items: [
         {
-          type: 'doc',
-          label: 'Verify the CLI',
-          id: 'workflows/verify-cli',
+          type: "doc",
+          label: "Installation",
+          id: "getting-started/install",
         },
         {
-          type: 'doc',
-          label: 'Configure your cluster',
-          id: 'workflows/config',
+          type: "doc",
+          label: "First steps (cloud)",
+          id: "getting-started/first-steps",
         },
         {
-          type: 'doc',
-          label: 'Create your cluster',
-          id: 'workflows/create',
+          type: "doc",
+          label: "First steps (local)",
+          id: "getting-started/first-steps-local",
         },
         {
-          type: 'doc',
-          label: 'Scale your cluster',
-          id: 'workflows/scale',
+          type: "doc",
+          label: "Cloud Marketplaces",
+          id: "getting-started/marketplaces",
         },
         {
-          type: 'doc',
-          label: 'Upgrade your cluster',
-          id: 'workflows/upgrade',
+          type: "category",
+          label: "Examples",
+          link: {
+            type: "doc",
+            id: "getting-started/examples",
+          },
+          items: [
+            {
+              type: "doc",
+              label: "Emojivoto",
+              id: "getting-started/examples/emojivoto",
+            },
+            {
+              type: "doc",
+              label: "Online Boutique",
+              id: "getting-started/examples/online-boutique",
+            },
+            {
+              type: "doc",
+              label: "Horizontal Pod Autoscaling",
+              id: "getting-started/examples/horizontal-scaling",
+            },
+            {
+              type: "doc",
+              label: "Filestash with s3proxy",
+              id: "getting-started/examples/filestash-s3proxy",
+            },
+          ],
+        },
+      ],
+    },
+    {
+      type: "category",
+      label: "Workflows",
+      link: {
+        type: "generated-index",
+      },
+      items: [
+        {
+          type: "doc",
+          label: "Verify the CLI",
+          id: "workflows/verify-cli",
         },
         {
-          type: 'doc',
-          label: 'Expose a service',
-          id: 'workflows/lb',
+          type: "doc",
+          label: "Configure your cluster",
+          id: "workflows/config",
         },
         {
-          type: 'doc',
-          label: 'Install cert-manager',
-          id: 'workflows/cert-manager',
+          type: "doc",
+          label: "Create your cluster",
+          id: "workflows/create",
         },
         {
-          type: 'doc',
-          label: 'Install s3proxy',
-          id: 'workflows/s3proxy',
+          type: "doc",
+          label: "Scale your cluster",
+          id: "workflows/scale",
         },
         {
-          type: 'doc',
-          label: 'Terminate your cluster',
-          id: 'workflows/terminate',
+          type: "doc",
+          label: "Upgrade your cluster",
+          id: "workflows/upgrade",
         },
         {
-          type: 'doc',
-          label: 'Recover your cluster',
-          id: 'workflows/recovery',
+          type: "doc",
+          label: "Expose a service",
+          id: "workflows/lb",
         },
         {
-          type: 'doc',
-          label: 'Verify your cluster',
-          id: 'workflows/verify-cluster',
+          type: "doc",
+          label: "Install cert-manager",
+          id: "workflows/cert-manager",
         },
         {
-          type: 'doc',
-          label: 'Use persistent storage',
-          id: 'workflows/storage',
+          type: "doc",
+          label: "Install s3proxy",
+          id: "workflows/s3proxy",
         },
         {
-          type: 'doc',
-          label: 'Use the Terraform provider',
-          id: 'workflows/terraform-provider',
+          type: "doc",
+          label: "Terminate your cluster",
+          id: "workflows/terminate",
+        },
+        {
+          type: "doc",
+          label: "Recover your cluster",
+          id: "workflows/recovery",
+        },
+        {
+          type: "doc",
+          label: "Verify your cluster",
+          id: "workflows/verify-cluster",
+        },
+        {
+          type: "doc",
+          label: "Use persistent storage",
+          id: "workflows/storage",
+        },
+        {
+          type: "doc",
+          label: "Use the Terraform provider",
+          id: "workflows/terraform-provider",
         },
         // {
         //   type: 'doc',
@@ -216,102 +216,155 @@ const sidebars = {
         //   id: 'workflows/trusted-launch',
         // },
         {
-          type: 'doc',
-          label: 'Consume SBOMs',
-          id: 'workflows/sbom',
+          type: "doc",
+          label: "Consume SBOMs",
+          id: "workflows/sbom",
         },
         {
-          type: 'doc',
-          label: 'Troubleshooting',
-          id: 'workflows/troubleshooting',
-        },
-      ],
-    },
-    {
-      type: 'category',
-      label: 'Architecture',
-      link: {
-        type: 'generated-index',
-      },
-      items: [
-        {
-          type: 'doc',
-          label: 'Overview',
-          id: 'architecture/overview',
-        },
-        {
-          type: 'doc',
-          label: 'Cluster orchestration',
-          id: 'architecture/orchestration',
-        },
-        {
-          type: 'doc',
-          label: 'Versions and support',
-          id: 'architecture/versions',
-        },
-        {
-          type: 'doc',
-          label: 'Microservices',
-          id: 'architecture/microservices',
-        },
-        {
-          type: 'doc',
-          label: 'Attestation',
-          id: 'architecture/attestation',
-        },
-        {
-          type: 'doc',
-          label: 'Images',
-          id: 'architecture/images',
-        },
-        {
-          type: 'doc',
-          label: 'Keys and cryptographic primitives',
-          id: 'architecture/keys',
-        },
-        {
-          type: 'doc',
-          label: 'Encrypted persistent storage',
-          id: 'architecture/encrypted-storage',
-        },
-        {
-          type: 'doc',
-          label: 'Networking',
-          id: 'architecture/networking',
-        },
-        {
-          type: 'doc',
-          label: 'Observability',
-          id: 'architecture/observability',
+          type: "doc",
+          label: "Troubleshooting",
+          id: "workflows/troubleshooting",
         },
       ],
     },
     {
-      type: 'category',
-      label: 'Reference',
+      type: "category",
+      label: "Architecture",
       link: {
-        type: 'generated-index',
+        type: "generated-index",
       },
       items: [
         {
-          type: 'doc',
-          label: 'CLI',
-          id: 'reference/cli',
+          type: "doc",
+          label: "Overview",
+          id: "architecture/overview",
         },
         {
-          type: 'doc',
-          label: 'Configuration migrations',
-          id: 'reference/migration',
+          type: "category",
+          label: "Components",
+          items: [
+            {
+              type: "doc",
+              label: "CLI",
+              id: "architecture/components/cli",
+            },
+            {
+              type: "doc",
+              label: "Microservices",
+              id: "architecture/components/microservices",
+            },
+            {
+              type: "doc",
+              label: "Cryptographic keys and primitives",
+              id: "architecture/components/node-images",
+            },
+          ],
         },
         {
-          type: 'doc',
-          label: 'Terraform usage',
-          id: 'reference/terraform',
+          type: "category",
+          label: "Security",
+          items: [
+            {
+              type: "doc",
+              label: "Attestation",
+              id: "architecture/security/attestation",
+            },
+            {
+              type: "doc",
+              label: "Encrypted networking",
+              id: "architecture/security/encrypted-networking",
+            },
+            {
+              type: "doc",
+              label: "Encrypted persistant storage",
+              id: "architecture/security/encrypted-persistant",
+            },
+          ],
         },
         {
-          type: 'doc',
-          label: 'SLSA adoption',
-          id: 'reference/slsa',
+          type: "category",
+          label: "Depricated",
+          items: [
+            {
+              type: "doc",
+              label: "Key concepts",
+              id: "architecture/old/key-concepts",
+            },
+            {
+              type: "doc",
+              label: "Cluster orchestration",
+              id: "architecture/old/orchestration",
+            },
+            {
+              type: "doc",
+              label: "Versions and support",
+              id: "architecture/old/versions",
+            },
+            {
+              type: "doc",
+              label: "Microservices",
+              id: "architecture/old/microservices",
+            },
+            {
+              type: "doc",
+              label: "Attestation",
+              id: "architecture/old/attestation",
+            },
+            {
+              type: "doc",
+              label: "Images",
+              id: "architecture/old/images",
+            },
+            {
+              type: "doc",
+              label: "Keys and cryptographic primitives",
+              id: "architecture/old/keys",
+            },
+            {
+              type: "doc",
+              label: "Encrypted persistent storage",
+              id: "architecture/old/encrypted-storage",
+            },
+            {
+              type: "doc",
+              label: "Networking",
+              id: "architecture/old/networking",
+            },
+            {
+              type: "doc",
+              label: "Observability",
+              id: "architecture/old/observability",
+            },
+          ],
+        },
+      ],
+    },
+    {
+      type: "category",
+      label: "Reference",
+      link: {
+        type: "generated-index",
+      },
+      items: [
+        {
+          type: "doc",
+          label: "CLI",
+          id: "reference/cli",
+        },
+        {
+          type: "doc",
+          label: "Configuration migrations",
+          id: "reference/migration",
+        },
+        {
+          type: "doc",
+          label: "Terraform usage",
+          id: "reference/terraform",
+        },
+        {
+          type: "doc",
+          label: "SLSA adoption",
+          id: "reference/slsa",
         },
       ],
     },

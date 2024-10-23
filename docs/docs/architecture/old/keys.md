@@ -12,7 +12,7 @@ For details on the implementations and cryptographic soundness, refer to the har
 
 ## Master secret
 
-The master secret is the cryptographic material used for deriving the [*clusterID*](#cluster-identity) and the *key encryption key (KEK)* for [storage encryption](#storage-encryption).
+The master secret is the cryptographic material used for deriving the [_clusterID_](#cluster-identity) and the _key encryption key (KEK)_ for [storage encryption](#storage-encryption).
 It's generated during the bootstrapping of a Constellation cluster.
 It can either be managed by [Constellation](#constellation-managed-key-management) or an [external key management system](#user-managed-key-management).
 In case of [recovery](#recovery-and-migration), the master secret allows to decrypt the state and recover a Constellation cluster.
@@ -27,10 +27,10 @@ On node boot, they're determined using the CVM's attestation mechanism and [meas
 
 The **clusterID** represents the identity of a single initialized Constellation cluster.
 It's derived from the master secret and a cryptographically random salt and unique for every Constellation cluster.
-The [Bootstrapper](microservices.md#bootstrapper) measures the *clusterID* into its own PCR before executing any code not measured as part of the *base measurements*.
+The [Bootstrapper](microservices.md#bootstrapper) measures the _clusterID_ into its own PCR before executing any code not measured as part of the _base measurements_.
 See [Node attestation](attestation.md#node-attestation) for details.
 
-The remote attestation statement of a Constellation cluster combines the *base measurements* and the *clusterID* for a verifiable, unspoofable, unique identity.
+The remote attestation statement of a Constellation cluster combines the _base measurements_ and the _clusterID_ for a verifiable, unspoofable, unique identity.
 
 ## Network encryption
 
@@ -50,16 +50,16 @@ Constellation supports transparent encryption of persistent storage.
 The Linux kernel's device mapper-based encryption features are used to encrypt the data on the block storage level.
 Currently, the following primitives are used for block storage encryption:
 
-* [dm-crypt](https://www.kernel.org/doc/html/latest/admin-guide/device-mapper/dm-crypt.html)
-* [dm-integrity](https://www.kernel.org/doc/html/latest/admin-guide/device-mapper/dm-integrity.html)
+- [dm-crypt](https://www.kernel.org/doc/html/latest/admin-guide/device-mapper/dm-crypt.html)
+- [dm-integrity](https://www.kernel.org/doc/html/latest/admin-guide/device-mapper/dm-integrity.html)
 
 Adding primitives for integrity protection in the CVM attacker model are under active development and will be available in a future version of Constellation.
 See [encrypted storage](encrypted-storage.md) for more details.
 
 As a cluster administrator, when creating a cluster, you can use the Constellation [installation program](orchestration.md) to select one of the following methods for key management:
 
-* Constellation-managed key management
-* User-managed key management
+- Constellation-managed key management
+- User-managed key management
 
 ### Constellation-managed key management
 
@@ -68,7 +68,7 @@ As a cluster administrator, when creating a cluster, you can use the Constellati
 During the creation of a Constellation cluster, the cluster's master secret is used to derive a KEK.
 This means creating two clusters with the same master secret will yield the same KEK.
 Any data encryption key (DEK) is derived from the KEK via HKDF.
-Note that the master secret is recommended to be unique for every cluster and shouldn't be reused (except in case of [recovering](../workflows/recovery.md) a cluster).
+Note that the master secret is recommended to be unique for every cluster and shouldn't be reused (except in case of [recovering](../../workflows/recovery.md) a cluster).
 
 #### State and storage
 
@@ -87,7 +87,7 @@ The etcd storage is backed by the encrypted and integrity protected [state disk]
 #### Recovery
 
 Constellation clusters can be recovered in the event of a disaster, even when all node machines have been stopped and need to be rebooted.
-For details on the process see the [recovery workflow](../workflows/recovery.md).
+For details on the process see the [recovery workflow](../../workflows/recovery.md).
 
 ### User-managed key management
 
@@ -100,10 +100,10 @@ This follows the common scheme of "bring your own key" (BYOK).
 Constellation will support several KMSs for managing the storage and access of your KEK.
 Initially, it will support the following KMSs:
 
-* [AWS KMS](https://aws.amazon.com/kms/)
-* [GCP KMS](https://cloud.google.com/security-key-management)
-* [Azure Key Vault](https://azure.microsoft.com/en-us/services/key-vault/#product-overview)
-* [KMIP-compatible KMS](https://www.oasis-open.org/committees/tc_home.php?wg_abbrev=kmip)
+- [AWS KMS](https://aws.amazon.com/kms/)
+- [GCP KMS](https://cloud.google.com/security-key-management)
+- [Azure Key Vault](https://azure.microsoft.com/en-us/services/key-vault/#product-overview)
+- [KMIP-compatible KMS](https://www.oasis-open.org/committees/tc_home.php?wg_abbrev=kmip)
 
 Storing the keys in Cloud KMS of AWS, Azure, or GCP binds the key usage to the particular cloud identity access management (IAM).
 In the future, Constellation will support remote attestation-based access policies for Cloud KMS once available.
@@ -117,9 +117,9 @@ DEKs are generated to encrypt your data before storing it on persistent storage.
 After being encrypted by the KEK, the DEKs are stored on dedicated cloud storage for persistence.
 Currently, Constellation supports the following cloud storage options:
 
-* [AWS S3](https://aws.amazon.com/s3/)
-* [GCP Cloud Storage](https://cloud.google.com/storage)
-* [Azure Blob Storage](https://azure.microsoft.com/en-us/services/storage/blobs/#overview)
+- [AWS S3](https://aws.amazon.com/s3/)
+- [GCP Cloud Storage](https://cloud.google.com/storage)
+- [Azure Blob Storage](https://azure.microsoft.com/en-us/services/storage/blobs/#overview)
 
 The DEKs are only present in plaintext form in the encrypted main memory of the CVMs.
 Similarly, the cryptographic operations for encrypting data before writing it to persistent storage are performed in the context of the CVMs.

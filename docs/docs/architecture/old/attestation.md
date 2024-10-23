@@ -1,5 +1,7 @@
 # Attestation
-[comment]: hello 
+
+[comment]: hello
+
 This page explains Constellation's attestation process and highlights the cornerstones of its trust model.
 
 ## Terms
@@ -9,12 +11,12 @@ The following lists terms and concepts that help to understand the attestation c
 ### Trusted Platform Module (TPM)
 
 A TPM chip is a dedicated tamper-resistant crypto-processor.
-It can securely store artifacts such as passwords, certificates, encryption keys, or *runtime measurements* (more on this below).
-When a TPM is implemented in software, it's typically called a *virtual* TPM (vTPM).
+It can securely store artifacts such as passwords, certificates, encryption keys, or _runtime measurements_ (more on this below).
+When a TPM is implemented in software, it's typically called a _virtual_ TPM (vTPM).
 
 ### Runtime measurement
 
-A runtime measurement is a cryptographic hash of the memory pages of a so called *runtime component*. Runtime components of interest typically include a system's bootloader or OS kernel.
+A runtime measurement is a cryptographic hash of the memory pages of a so called _runtime component_. Runtime components of interest typically include a system's bootloader or OS kernel.
 
 ### Platform Configuration Register (PCR)
 
@@ -66,9 +68,9 @@ The protocol can be used by clients to verify a server certificate, by a server 
 The challenge for Constellation is to lift a CVM's attestation statement to the Kubernetes software layer and make it end-to-end verifiable.
 From there, Constellation needs to expand the attestation from a single CVM to the entire cluster.
 
-The [*JoinService*](microservices.md#joinservice) and [*VerificationService*](microservices.md#verificationservice) are where all runs together.
-Internally, the *JoinService* uses remote attestation to securely join CVM nodes to the cluster.
-Externally, the *VerificationService* provides an attestation statement for the cluster's CVMs and configuration.
+The [_JoinService_](microservices.md#joinservice) and [_VerificationService_](microservices.md#verificationservice) are where all runs together.
+Internally, the _JoinService_ uses remote attestation to securely join CVM nodes to the cluster.
+Externally, the _VerificationService_ provides an attestation statement for the cluster's CVMs and configuration.
 
 The following explains the details of both steps.
 
@@ -80,23 +82,23 @@ The solution is a verifiable boot chain and an integrity-protected runtime envir
 Constellation uses measured boot within CVMs, measuring each component in the boot process before executing it.
 Outside of CC, this is usually implemented via TPMs.
 CVM technologies differ in how they implement runtime measurements, but the general concepts are similar to those of a TPM.
-For simplicity, TPM terminology like *PCR* is used in the following.
+For simplicity, TPM terminology like _PCR_ is used in the following.
 
 When a Constellation node image boots inside a CVM, measured boot is used for all stages and components of the boot chain.
 This process goes up to the root filesystem.
 The root filesystem is mounted read-only with integrity protection.
-For the details on the image and boot stages see the [image architecture](../architecture/images.md) documentation.
+For the details on the image and boot stages see the [image architecture](images.md) documentation.
 Any changes to the image will inevitably also change the corresponding PCR values.
 To create a node attestation statement, the Constellation image obtains a CVM attestation statement from the hardware.
 This includes the runtime measurements and thereby binds the measured boot results to the CVM hardware measurement.
 
-In addition to the image measurements, Constellation extends a PCR during the [initialization phase](../workflows/create.md) that irrevocably marks the node as initialized.
-The measurement is created using the [*clusterID*](../architecture/keys.md#cluster-identity), tying all future attestation statements to this ID.
+In addition to the image measurements, Constellation extends a PCR during the [initialization phase](../../workflows/create.md) that irrevocably marks the node as initialized.
+The measurement is created using the [_clusterID_](keys.md#cluster-identity), tying all future attestation statements to this ID.
 Thereby, an attestation statement is unique for every cluster and a node can be identified unambiguously as being initialized.
 
 To verify an attestation, the hardware's signature and a statement are verified first to establish trust in the contained runtime measurements.
 If successful, the measurements are verified against the trusted values of the particular Constellation release version.
-Finally, the measurement of the *clusterID* can be compared by calculating it with the [master secret](keys.md#master-secret).
+Finally, the measurement of the _clusterID_ can be compared by calculating it with the [master secret](keys.md#master-secret).
 
 ### Runtime measurements
 
@@ -106,16 +108,16 @@ The following gives a detailed description of the available measurements in the 
 
 The runtime measurements consist of two types of values:
 
-* **Measurements produced by the cloud infrastructure and firmware of the CVM**:
-These are measurements of closed-source firmware and other values controlled by the cloud provider.
-While not being reproducible for the user, some of them can be compared against previously observed values.
-Others may change frequently and aren't suitable for verification.
-The [signed image measurements](#chain-of-trust) include measurements that are known, previously observed values.
+- **Measurements produced by the cloud infrastructure and firmware of the CVM**:
+  These are measurements of closed-source firmware and other values controlled by the cloud provider.
+  While not being reproducible for the user, some of them can be compared against previously observed values.
+  Others may change frequently and aren't suitable for verification.
+  The [signed image measurements](#chain-of-trust) include measurements that are known, previously observed values.
 
-* **Measurements produced by the Constellation bootloader and boot chain**:
-The Constellation Bootloader takes over from the CVM firmware and [measures the rest of the boot chain](images.md).
-The Constellation [Bootstrapper](microservices.md#bootstrapper) is the first user mode component that runs in a Constellation image.
-It extends PCR registers with the [IDs](keys.md#cluster-identity) of the cluster marking a node as initialized.
+- **Measurements produced by the Constellation bootloader and boot chain**:
+  The Constellation Bootloader takes over from the CVM firmware and [measures the rest of the boot chain](images.md).
+  The Constellation [Bootstrapper](microservices.md#bootstrapper) is the first user mode component that runs in a Constellation image.
+  It extends PCR registers with the [IDs](keys.md#cluster-identity) of the cluster marking a node as initialized.
 
 Constellation allows to specify in the config which measurements should be enforced during the attestation process.
 Enforcing non-reproducible measurements controlled by the cloud provider means that changes in these values require manual updates to the cluster's config.
@@ -264,17 +266,17 @@ On AWS, AMD SEV-SNP is used to provide runtime encryption to the VMs.
 An SEV-SNP attestation report is used to establish trust in the VM.
 You may customize certain parameters for verification of the attestation statement using the Constellation config file.
 
-* TCB versions
+- TCB versions
 
   You can set the minimum version numbers of components in the SEV-SNP TCB.
   Use the latest versions to enforce that only machines with the most recent firmware updates are allowed to join the cluster.
   Alternatively, you can set a lower minimum version to allow slightly out-of-date machines to still be able to join the cluster.
 
-* AMD Root Key Certificate
+- AMD Root Key Certificate
 
   This certificate is the root of trust for verifying the SEV-SNP certificate chain.
 
-* AMD Signing Key Certificate
+- AMD Signing Key Certificate
 
   This is the intermediate certificate for verifying the SEV-SNP report's signature.
   If it's not specified, the CLI fetches it from the AMD key distribution server.
@@ -286,17 +288,17 @@ On Azure, AMD SEV-SNP is used to provide runtime encryption to the VMs.
 An SEV-SNP attestation report is used to establish trust in the vTPM running inside the VM.
 You may customize certain parameters for verification of the attestation statement using the Constellation config file.
 
-* TCB versions
+- TCB versions
 
   You can set the minimum version numbers of components in the SEV-SNP TCB.
   Use the latest versions to enforce that only machines with the most recent firmware updates are allowed to join the cluster.
   Alternatively, you can set a lower minimum version to allow slightly out-of-date machines to still be able to join the cluster.
 
-* AMD Root Key Certificate
+- AMD Root Key Certificate
 
   This certificate is the root of trust for verifying the SEV-SNP certificate chain.
 
-* Firmware Signer
+- Firmware Signer
 
   This config option allows you to specify how the firmware signer should be verified.
   More explicitly, it controls the verification of the `IDKeyDigest` value in the SEV-SNP attestation report.
@@ -309,17 +311,17 @@ On GCP, AMD SEV-SNP is used to provide runtime encryption to the VMs.
 An SEV-SNP attestation report is used to establish trust in the VM.
 You may customize certain parameters for verification of the attestation statement using the Constellation config file.
 
-* TCB versions
+- TCB versions
 
   You can set the minimum version numbers of components in the SEV-SNP TCB.
   Use the latest versions to enforce that only machines with the most recent firmware updates are allowed to join the cluster.
   Alternatively, you can set a lower minimum version to allow slightly out-of-date machines to still be able to join the cluster.
 
-* AMD Root Key Certificate
+- AMD Root Key Certificate
 
   This certificate is the root of trust for verifying the SEV-SNP certificate chain.
 
-* AMD Signing Key Certificate
+- AMD Signing Key Certificate
 
   This is the intermediate certificate for verifying the SEV-SNP report's signature.
   If it's not specified, the CLI fetches it from the AMD key distribution server.
@@ -336,25 +338,25 @@ There is no additional configuration available for STACKIT.
 
 ## Cluster attestation
 
-Cluster-facing, Constellation's [*JoinService*](microservices.md#joinservice) verifies each node joining the cluster given the configured ground truth runtime measurements.
-User-facing, the [*VerificationService*](microservices.md#verificationservice) provides an interface to verify a node using remote attestation.
-By verifying the first node during the [initialization](microservices.md#bootstrapper) and configuring the ground truth measurements that are subsequently enforced by the *JoinService*, the whole cluster is verified in a transitive way.
+Cluster-facing, Constellation's [_JoinService_](microservices.md#joinservice) verifies each node joining the cluster given the configured ground truth runtime measurements.
+User-facing, the [_VerificationService_](microservices.md#verificationservice) provides an interface to verify a node using remote attestation.
+By verifying the first node during the [initialization](microservices.md#bootstrapper) and configuring the ground truth measurements that are subsequently enforced by the _JoinService_, the whole cluster is verified in a transitive way.
 
 ### Cluster-facing attestation
 
-The *JoinService* is provided with the runtime measurements of the whitelisted Constellation image version as the ground truth.
-During the initialization and the cluster bootstrapping, each node connects to the *JoinService* using [aTLS](#attested-tls-atls).
+The _JoinService_ is provided with the runtime measurements of the whitelisted Constellation image version as the ground truth.
+During the initialization and the cluster bootstrapping, each node connects to the _JoinService_ using [aTLS](#attested-tls-atls).
 During the handshake, the node transmits an attestation statement including its runtime measurements.
-The *JoinService* verifies that statement and compares the measurements against the ground truth.
+The _JoinService_ verifies that statement and compares the measurements against the ground truth.
 For details of the initialization process check the [microservice descriptions](microservices.md).
 
-After the initialization, every node updates its runtime measurements with the *clusterID* value, marking it irreversibly as initialized.
+After the initialization, every node updates its runtime measurements with the _clusterID_ value, marking it irreversibly as initialized.
 When an initialized node tries to join another cluster, its measurements inevitably mismatch the measurements of an uninitialized node and it will be declined.
 
 ### User-facing attestation
 
-The [*VerificationService*](microservices.md#verificationservice) provides an endpoint for obtaining its hardware-based remote attestation statement, which includes the runtime measurements.
-A user can [verify](../workflows/verify-cluster.md) this statement and compare the measurements against the configured ground truth and, thus, verify the identity and integrity of all Constellation components and the cluster configuration. Subsequently, the user knows that the entire cluster is in the expected state and is trustworthy.
+The [_VerificationService_](microservices.md#verificationservice) provides an endpoint for obtaining its hardware-based remote attestation statement, which includes the runtime measurements.
+A user can [verify](../../workflows/verify-cluster.md) this statement and compare the measurements against the configured ground truth and, thus, verify the identity and integrity of all Constellation components and the cluster configuration. Subsequently, the user knows that the entire cluster is in the expected state and is trustworthy.
 
 ## Putting it all together
 
@@ -362,20 +364,20 @@ This section puts the aforementioned concepts together and illustrate how trust 
 
 ### CLI and node images
 
-It all starts with the CLI executable. The CLI is signed by Edgeless Systems. To ensure non-repudiability for CLI releases, Edgeless Systems publishes corresponding signatures to the public ledger of the [sigstore project](https://www.sigstore.dev/). There's a [step-by-step guide](../workflows/verify-cli.md) on how to verify CLI signatures based on sigstore.
+It all starts with the CLI executable. The CLI is signed by Edgeless Systems. To ensure non-repudiability for CLI releases, Edgeless Systems publishes corresponding signatures to the public ledger of the [sigstore project](https://www.sigstore.dev/). There's a [step-by-step guide](../../workflows/verify-cli.md) on how to verify CLI signatures based on sigstore.
 
-The CLI contains the latest runtime measurements of the Constellation node image for all supported cloud platforms. In case a different version of the node image is to be used, the corresponding runtime measurements can be fetched using the CLI's [fetch-measurements command](../reference/cli.md#constellation-config-fetch-measurements). This command downloads the runtime measurements and the corresponding signature from cdn.confidential.cloud. See for example the following files corresponding to node image v2.16.3:
+The CLI contains the latest runtime measurements of the Constellation node image for all supported cloud platforms. In case a different version of the node image is to be used, the corresponding runtime measurements can be fetched using the CLI's [fetch-measurements command](../../reference/cli.md#constellation-config-fetch-measurements). This command downloads the runtime measurements and the corresponding signature from cdn.confidential.cloud. See for example the following files corresponding to node image v2.16.3:
 
-* [Measurements](https://cdn.confidential.cloud/constellation/v2/ref/-/stream/stable/v2.16.3/image/measurements.json)
-* [Signature](https://cdn.confidential.cloud/constellation/v2/ref/-/stream/stable/v2.16.3/image/measurements.json.sig)
+- [Measurements](https://cdn.confidential.cloud/constellation/v2/ref/-/stream/stable/v2.16.3/image/measurements.json)
+- [Signature](https://cdn.confidential.cloud/constellation/v2/ref/-/stream/stable/v2.16.3/image/measurements.json.sig)
 
 The CLI contains the long-term public key of Edgeless Systems to verify the signature of downloaded runtime measurements.
 
 ### Cluster creation
 
-When a cluster is [created](../workflows/create.md), the CLI automatically verifies the runtime measurements of the *first node* using remote attestation. Based on this, the CLI and the first node set up a temporary TLS connection. This [aTLS](#attested-tls-atls) connection is used for two things:
+When a cluster is [created](../../workflows/create.md), the CLI automatically verifies the runtime measurements of the _first node_ using remote attestation. Based on this, the CLI and the first node set up a temporary TLS connection. This [aTLS](#attested-tls-atls) connection is used for two things:
 
-1. The CLI sends the [master secret](../architecture/keys.md#master-secret) of the to-be-created cluster to the CLI. The master secret is generated by the first node.
+1. The CLI sends the [master secret](keys.md#master-secret) of the to-be-created cluster to the CLI. The master secret is generated by the first node.
 2. The first node sends a [kubeconfig file](https://www.redhat.com/sysadmin/kubeconfig) with Kubernetes credentials to the CLI.
 
 After this, the aTLS connection is closed and the first node bootstraps the Kubernetes cluster. All subsequent interactions between the CLI and the cluster go via the [Kubernetes API](https://kubernetes.io/docs/concepts/overview/kubernetes-api/) server running inside the cluster. The CLI (and other tools like kubectl) use the credentials referenced by the kubeconfig file to authenticate themselves towards the Kubernetes API server and to establish a mTLS connection.
@@ -400,10 +402,11 @@ flowchart LR
 
 ### Upgrades
 
-Whenever a cluster is [upgraded](../workflows/upgrade.md) to a new version of the node image, the CLI sends the corresponding runtime measurements via the Kubernetes API server. The new runtime measurements are stored in etcd within the cluster and replace any previous runtime measurements. The new runtime measurements are then used automatically by the JoinService for the verification of new nodes.
+Whenever a cluster is [upgraded](../../workflows/upgrade.md) to a new version of the node image, the CLI sends the corresponding runtime measurements via the Kubernetes API server. The new runtime measurements are stored in etcd within the cluster and replace any previous runtime measurements. The new runtime measurements are then used automatically by the JoinService for the verification of new nodes.
 
 ## References
 
-[^1]: Linux IMA produces runtime measurements of user-space binaries.
-However, these measurements aren't deterministic and thus, PCR\[10] can't be compared to a constant value.
-Instead, a policy engine must be used to verify the TPM event log against a policy.
+[^1]:
+    Linux IMA produces runtime measurements of user-space binaries.
+    However, these measurements aren't deterministic and thus, PCR\[10] can't be compared to a constant value.
+    Instead, a policy engine must be used to verify the TPM event log against a policy.

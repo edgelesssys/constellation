@@ -5,7 +5,7 @@ In the context of Kubernetes, this is sufficient for the confidentiality and int
 Consider a front-end web server, for example, that keeps all connection information cached in main memory.
 No sensitive data is ever written to an insecure medium.
 However, many real-world applications need some form of state or data-lake service that's connected to a persistent storage device and requires encryption at rest.
-As described in [Use persistent storage](../workflows/storage.md), cloud service providers (CSPs) use the container storage interface (CSI) to make their storage solutions available to Kubernetes workloads.
+As described in [Use persistent storage](../../workflows/storage.md), cloud service providers (CSPs) use the container storage interface (CSI) to make their storage solutions available to Kubernetes workloads.
 These CSI storage solutions often support some sort of encryption.
 For example, Google Cloud [encrypts data at rest by default](https://cloud.google.com/security/encryption/default-encryption), without any action required by the customer.
 
@@ -28,7 +28,7 @@ All cryptographic operations happen inside the trusted environment of the confid
 
 Note that for integrity-protected disks, [volume expansion](https://kubernetes.io/blog/2018/07/12/resizing-persistent-volumes-using-kubernetes/) isn't supported.
 
-By default the driver uses data encryption keys (DEKs) issued by the Constellation [*KeyService*](microservices.md#keyservice).
+By default the driver uses data encryption keys (DEKs) issued by the Constellation [_KeyService_](microservices.md#keyservice).
 The DEKs are in turn derived from the Constellation's key encryption key (KEK), which is directly derived from the [master secret](keys.md#master-secret).
 This is the recommended mode of operation, and also requires the least amount of setup by the cluster administrator.
 
@@ -59,4 +59,4 @@ The tag size is 32 Bytes.
 ## Encrypted S3 object storage
 
 Constellation comes with a service that you can use to transparently retrofit client-side encryption to existing applications that use S3 (AWS or compatible) for storage.
-To learn more, check out the [s3proxy documentation](../workflows/s3proxy.md).
+To learn more, check out the [s3proxy documentation](../../workflows/s3proxy.md).
