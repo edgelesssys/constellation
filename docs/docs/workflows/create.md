@@ -19,7 +19,7 @@ The most significant ones are:
 You can use the `--skip-phases` flag to skip specific phases of the process.
 For example, if you created the infrastructure manually, you can skip the cloud resource creation phase.
 
-See the [architecture](../architecture/orchestration.md) section for details on the inner workings of this process.
+See the [architecture](../architecture/components/cli.md) section for details on the inner workings of this process.
 
 :::tip
 If you don't have a cloud subscription, you can also set up a [local Constellation cluster using virtualization](../getting-started/first-steps-local.md) for testing.
@@ -34,7 +34,7 @@ Before you create the cluster, make sure to have a [valid configuration file](./
 constellation apply
 ```
 
-`apply` stores the state of your cluster's cloud resources in a [`constellation-terraform`](../architecture/orchestration.md#cluster-creation-process) directory in your workspace.
+`apply` stores the state of your cluster's cloud resources in a [`constellation-terraform`](../architecture/components/cli.md#cluster-creation-process) directory in your workspace.
 
 </TabItem>
 <TabItem value="self-managed" label="Self-managed">
@@ -45,7 +45,7 @@ It's recommended to use Terraform for infrastructure management, but you can use
 
 :::info
 
-  When using Terraform, you can use the [Constellation Terraform provider](./terraform-provider.md) to manage the entire Constellation cluster lifecycle.
+When using Terraform, you can use the [Constellation Terraform provider](./terraform-provider.md) to manage the entire Constellation cluster lifecycle.
 
 :::
 
@@ -56,12 +56,12 @@ management tooling of your choice. You need to keep the essential functionality 
 
 :::info
 
-  On Azure, a manual update to the MAA provider's policy is necessary.
-  You can apply the update with the following command after creating the infrastructure, with `<URL>` being the URL of the MAA provider (i.e., `$(terraform output attestation_url | jq -r)`, when using the minimal Terraform configuration).
+On Azure, a manual update to the MAA provider's policy is necessary.
+You can apply the update with the following command after creating the infrastructure, with `<URL>` being the URL of the MAA provider (i.e., `$(terraform output attestation_url | jq -r)`, when using the minimal Terraform configuration).
 
-  ```bash
-  constellation maa-patch <URL>
-  ```
+```bash
+constellation maa-patch <URL>
+```
 
 :::
 

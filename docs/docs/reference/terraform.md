@@ -15,10 +15,10 @@ The subdirectories are created on the first Constellation CLI action that uses T
 
 Currently, these subdirectories are:
 
-* `constellation-terraform` - Terraform state files for the resources of the Constellation cluster
-* `constellation-iam-terraform` - Terraform state files for IAM configuration
+- `constellation-terraform` - Terraform state files for the resources of the Constellation cluster
+- `constellation-iam-terraform` - Terraform state files for IAM configuration
 
-As with all commands, commands that work with these files (e.g., `apply`, `terminate`, `iam`) have to be executed from the root of the cluster's [workspace directory](../architecture/orchestration.md#workspaces). You usually don't need and shouldn't manipulate or delete the subdirectories manually.
+As with all commands, commands that work with these files (e.g., `apply`, `terminate`, `iam`) have to be executed from the root of the cluster's [workspace directory](../architecture/components/cli.md#workspaces). You usually don't need and shouldn't manipulate or delete the subdirectories manually.
 
 ## Interacting with Terraform manually
 
@@ -27,11 +27,12 @@ Manual interaction with Terraform state created by Constellation (i.e., via the 
 ## Terraform debugging
 
 To debug Terraform issues, the Constellation CLI offers the `tf-log` flag. You can set it to any of [Terraform's log levels](https://developer.hashicorp.com/terraform/internals/debugging):
-* `JSON` (JSON-formatted logs at `TRACE` level)
-* `TRACE`
-* `DEBUG`
-* `INFO`
-* `WARN`
-* `ERROR`
+
+- `JSON` (JSON-formatted logs at `TRACE` level)
+- `TRACE`
+- `DEBUG`
+- `INFO`
+- `WARN`
+- `ERROR`
 
 The log output is written to the `terraform.log` file in the workspace directory. The output is appended to the file on each run.

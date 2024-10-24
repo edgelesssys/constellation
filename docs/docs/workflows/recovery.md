@@ -2,10 +2,10 @@
 
 Recovery of a Constellation cluster means getting it back into a healthy state after too many concurrent node failures in the control plane.
 Reasons for an unhealthy cluster can vary from a power outage, or planned reboot, to migration of nodes and regions.
-Recovery events are rare, because Constellation is built for high availability and automatically and securely replaces failed nodes. When a node is replaced, Constellation's control plane first verifies the new node before it sends the node the cryptographic keys required to decrypt its [state disk](../architecture/images.md#state-disk).
+Recovery events are rare, because Constellation is built for high availability and automatically and securely replaces failed nodes. When a node is replaced, Constellation's control plane first verifies the new node before it sends the node the cryptographic keys required to decrypt its [state disk](../architecture/components/node-images.md#state-disk).
 
 Constellation provides a recovery mechanism for cases where the control plane has failed and is unable to replace nodes.
-The `constellation recover` command securely connects to all nodes in need of recovery using [attested TLS](../architecture/attestation.md#attested-tls-atls) and provides them with the keys to decrypt their state disks and continue booting.
+The `constellation recover` command securely connects to all nodes in need of recovery using [attested TLS](../architecture/security/attestation.md#attested-tls-atls) and provides them with the keys to decrypt their state disks and continue booting.
 
 ## Identify unhealthy clusters
 
@@ -19,12 +19,12 @@ In the following, you'll find detailed descriptions for identifying clusters stu
 <Tabs groupId="csp">
 <TabItem value="aws" label="AWS">
 
-First, open the AWS console to view all Auto Scaling Groups (ASGs) in the region of your cluster. Select the ASG of the control plane `<cluster-name>-<UID>-control-plane` and check that enough members are in a *Running* state.
+First, open the AWS console to view all Auto Scaling Groups (ASGs) in the region of your cluster. Select the ASG of the control plane `<cluster-name>-<UID>-control-plane` and check that enough members are in a _Running_ state.
 
-Second, check the boot logs of these *Instances*. In the ASG's *Instance management* view, select each desired instance. In the upper right corner, select **Action > Monitor and troubleshoot > Get system log**.
+Second, check the boot logs of these _Instances_. In the ASG's _Instance management_ view, select each desired instance. In the upper right corner, select **Action > Monitor and troubleshoot > Get system log**.
 
 In the serial console output, search for `Waiting for decryption key`.
-Similar output to the following means your node was restarted and needs to decrypt the [state disk](../architecture/images.md#state-disk):
+Similar output to the following means your node was restarted and needs to decrypt the [state disk](../architecture/components/node-images.md#state-disk):
 
 ```json
 {"level":"INFO","ts":"2022-09-08T10:21:53Z","caller":"cmd/main.go:55","msg":"Starting disk-mapper","version":"2.0.0","cloudProvider":"gcp"}
@@ -33,7 +33,7 @@ Similar output to the following means your node was restarted and needs to decry
 {"level":"INFO","ts":"2022-09-08T10:21:53Z","logger":"recoveryServer","caller":"recoveryserver/server.go:59","msg":"Starting RecoveryServer"}
 ```
 
-The node will then try to connect to the [*JoinService*](../architecture/microservices.md#joinservice) and obtain the decryption key.
+The node will then try to connect to the [_JoinService_](../architecture/components/microservices.md#joinservice) and obtain the decryption key.
 If this fails due to an unhealthy control plane, you will see log messages similar to the following:
 
 ```json
@@ -51,15 +51,15 @@ This means that you have to recover the node manually.
 <TabItem value="azure" label="Azure">
 
 In the Azure portal, find the cluster's resource group.
-Inside the resource group, open the control plane *Virtual machine scale set* `constellation-scale-set-controlplanes-<suffix>`.
-On the left, go to **Settings** > **Instances** and check that enough members are in a *Running* state.
+Inside the resource group, open the control plane _Virtual machine scale set_ `constellation-scale-set-controlplanes-<suffix>`.
+On the left, go to **Settings** > **Instances** and check that enough members are in a _Running_ state.
 
-Second, check the boot logs of these *Instances*.
-In the scale set's *Instances* view, open the details page of the desired instance.
+Second, check the boot logs of these _Instances_.
+In the scale set's _Instances_ view, open the details page of the desired instance.
 On the left, go to **Support + troubleshooting** > **Serial console**.
 
 In the serial console output, search for `Waiting for decryption key`.
-Similar output to the following means your node was restarted and needs to decrypt the [state disk](../architecture/images.md#state-disk):
+Similar output to the following means your node was restarted and needs to decrypt the [state disk](../architecture/components/node-images.md#state-disk):
 
 ```json
 {"level":"INFO","ts":"2022-09-08T09:56:41Z","caller":"cmd/main.go:55","msg":"Starting disk-mapper","version":"2.0.0","cloudProvider":"azure"}
@@ -68,7 +68,7 @@ Similar output to the following means your node was restarted and needs to decry
 {"level":"INFO","ts":"2022-09-08T09:56:43Z","logger":"rejoinClient","caller":"rejoinclient/client.go:65","msg":"Starting RejoinClient"}
 ```
 
-The node will then try to connect to the [*JoinService*](../architecture/microservices.md#joinservice) and obtain the decryption key.
+The node will then try to connect to the [_JoinService_](../architecture/components/microservices.md#joinservice) and obtain the decryption key.
 If this fails due to an unhealthy control plane, you will see log messages similar to the following:
 
 ```json
@@ -85,17 +85,17 @@ This means that you have to recover the node manually.
 </TabItem>
 <TabItem value="gcp" label="GCP">
 
-First, check that the control plane *Instance Group* has enough members in a *Ready* state.
+First, check that the control plane _Instance Group_ has enough members in a _Ready_ state.
 In the GCP Console, go to **Instance Groups** and check the group for the cluster's control plane `<cluster-name>-control-plane-<suffix>`.
 
-Second, check the status of the *VM Instances*.
+Second, check the status of the _VM Instances_.
 Go to **VM Instances** and open the details of the desired instance.
 Check the serial console output of that instance by opening the **Logs** > **Serial port 1 (console)** page:
 
 ![GCP portal serial console link](../_media/recovery-gcp-serial-console-link.png)
 
 In the serial console output, search for `Waiting for decryption key`.
-Similar output to the following means your node was restarted and needs to decrypt the [state disk](../architecture/images.md#state-disk):
+Similar output to the following means your node was restarted and needs to decrypt the [state disk](../architecture/components/node-images.md#state-disk):
 
 ```json
 {"level":"INFO","ts":"2022-09-08T10:21:53Z","caller":"cmd/main.go:55","msg":"Starting disk-mapper","version":"2.0.0","cloudProvider":"gcp"}
@@ -104,7 +104,7 @@ Similar output to the following means your node was restarted and needs to decry
 {"level":"INFO","ts":"2022-09-08T10:21:53Z","logger":"recoveryServer","caller":"recoveryserver/server.go:59","msg":"Starting RecoveryServer"}
 ```
 
-The node will then try to connect to the [*JoinService*](../architecture/microservices.md#joinservice) and obtain the decryption key.
+The node will then try to connect to the [_JoinService_](../architecture/components/microservices.md#joinservice) and obtain the decryption key.
 If this fails due to an unhealthy control plane, you will see log messages similar to the following:
 
 ```json
@@ -121,12 +121,12 @@ This means that you have to recover the node manually.
 </TabItem>
 <TabItem value="stackit" label="STACKIT">
 
-First, open the STACKIT portal to view all servers in your project. Select individual control plane nodes `<cluster-name>-<UID>-control-plane-<UID>-<index>` and check that enough members are in a *Running* state.
+First, open the STACKIT portal to view all servers in your project. Select individual control plane nodes `<cluster-name>-<UID>-control-plane-<UID>-<index>` and check that enough members are in a _Running_ state.
 
 Second, check the boot logs of these servers. Click on a server name and select **Overview**. Find the **Machine Setup** section and click on **Web console** > **Open console**.
 
 In the serial console output, search for `Waiting for decryption key`.
-Similar output to the following means your node was restarted and needs to decrypt the [state disk](../architecture/images.md#state-disk):
+Similar output to the following means your node was restarted and needs to decrypt the [state disk](../architecture/components/node-images.md#state-disk):
 
 ```json
 {"level":"INFO","ts":"2022-09-08T10:21:53Z","caller":"cmd/main.go:55","msg":"Starting disk-mapper","version":"2.0.0","cloudProvider":"gcp"}
@@ -135,7 +135,7 @@ Similar output to the following means your node was restarted and needs to decry
 {"level":"INFO","ts":"2022-09-08T10:21:53Z","logger":"recoveryServer","caller":"recoveryserver/server.go:59","msg":"Starting RecoveryServer"}
 ```
 
-The node will then try to connect to the [*JoinService*](../architecture/microservices.md#joinservice) and obtain the decryption key.
+The node will then try to connect to the [_JoinService_](../architecture/components/microservices.md#joinservice) and obtain the decryption key.
 If this fails due to an unhealthy control plane, you will see log messages similar to the following:
 
 ```json
@@ -156,8 +156,8 @@ This means that you have to recover the node manually.
 
 Recovering a cluster requires the following parameters:
 
-* The `constellation-state.yaml` file in your working directory or the cluster's endpoint
-* The master secret of the cluster
+- The `constellation-state.yaml` file in your working directory or the cluster's endpoint
+- The master secret of the cluster
 
 A cluster can be recovered like this:
 

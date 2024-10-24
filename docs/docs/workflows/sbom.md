@@ -4,7 +4,7 @@
 
 ---
 
-Constellation builds produce a [software bill of materials (SBOM)](https://www.ntia.gov/SBOM) for each generated [artifact](../architecture/microservices.md).
+Constellation builds produce a [software bill of materials (SBOM)](https://www.ntia.gov/SBOM) for each generated [artifact](../architecture/components/microservices.md).
 You can use SBOMs to make informed decisions about dependencies and vulnerabilities in a given application. Enterprises rely on SBOMs to maintain an inventory of used applications, which allows them to take data-driven approaches to managing risks related to vulnerabilities.
 
 SBOMs for Constellation are generated using [Syft](https://github.com/anchore/syft), signed using [Cosign](https://github.com/sigstore/cosign), and stored with the produced artifact.

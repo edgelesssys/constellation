@@ -6,7 +6,7 @@ Constellation's source code is available on [GitHub](https://github.com/edgeless
 
 ## Binaries
 
-Edgeless Systems provides ready-to-use and [signed](../architecture/attestation.md#chain-of-trust) binaries of Constellation. This includes the CLI and the [node images](../architecture/images.md).
+Edgeless Systems provides ready-to-use and [signed](../architecture/security/attestation.md#chain-of-trust) binaries of Constellation. This includes the CLI and the [node images](../architecture/components/node-images.md).
 
 These binaries may be used free of charge within the bounds of Constellation's [**Community License**](#community-license). An [**Enterprise License**](#enterprise-license) can be purchased from Edgeless Systems.
 
@@ -26,7 +26,7 @@ You are free to use the Constellation binaries provided by Edgeless Systems to c
 
 Enterprise Licenses don't have the above limitations and come with support and additional features. Find out more at the [product website](https://www.edgeless.systems/products/constellation/).
 
-Once you have received your Enterprise License file, place it in your [Constellation workspace](../architecture/orchestration.md#workspaces) in a file named `constellation.license`.
+Once you have received your Enterprise License file, place it in your [Constellation workspace](../architecture/components/cli.md#workspaces) in a file named `constellation.license`.
 
 ## CSP Marketplaces
 

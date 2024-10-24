@@ -14,19 +14,19 @@ For Constellation, the ideal environment provides the following:
 
 The following table summarizes the state of features for different infrastructures.
 
-| **Feature**                       | **AWS** | **Azure** | **GCP** |  **STACKIT** | **OpenStack (Yoga)** |
-|-----------------------------------|---------|-----------|---------|--------------|----------------------|
-| **1. Custom images**              | Yes     | Yes       | Yes     | Yes          | Yes                  |
-| **2. SEV-SNP or TDX**             | Yes     | Yes       | Yes     | No           | Depends on kernel/HV |
-| **3. Raw guest attestation**      | Yes     | Yes       | Yes     | No           | Depends on kernel/HV |
-| **4. Reviewable firmware**        | Yes     | No        | No      | No           | Depends on kernel/HV |
-| **5. Confidential measured boot** | No      | Yes       | No      | No           | Depends on kernel/HV |
+| **Feature**                       | **AWS** | **Azure** | **GCP** | **STACKIT** | **OpenStack (Yoga)** |
+| --------------------------------- | ------- | --------- | ------- | ----------- | -------------------- |
+| **1. Custom images**              | Yes     | Yes       | Yes     | Yes         | Yes                  |
+| **2. SEV-SNP or TDX**             | Yes     | Yes       | Yes     | No          | Depends on kernel/HV |
+| **3. Raw guest attestation**      | Yes     | Yes       | Yes     | No          | Depends on kernel/HV |
+| **4. Reviewable firmware**        | Yes     | No        | No      | No          | Depends on kernel/HV |
+| **5. Confidential measured boot** | No      | Yes       | No      | No          | Depends on kernel/HV |
 
 ## Amazon Web Services (AWS)
 
 Amazon EC2 [supports AMD SEV-SNP](https://aws.amazon.com/de/about-aws/whats-new/2023/04/amazon-ec2-amd-sev-snp/).
 Regarding (3), AWS provides direct access to attestation statements.
-However, regarding (5), attestation is partially based on the [NitroTPM](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nitrotpm.html) for [measured boot](../architecture/attestation.md#measured-boot), which is a vTPM managed by the Nitro hypervisor.
+However, regarding (5), attestation is partially based on the [NitroTPM](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nitrotpm.html) for [measured boot](../architecture/security/attestation.md#measured-boot), which is a vTPM managed by the Nitro hypervisor.
 Hence, the hypervisor is currently part of Constellation's TCB.
 Regarding (4), the [firmware is open source](https://github.com/aws/uefi) and can be reproducibly built.
 
@@ -44,7 +44,7 @@ Thus, the Azure closed-source firmware becomes part of Constellation's trusted c
 
 The [CVMs Generally Available in GCP](https://cloud.google.com/confidential-computing/confidential-vm/docs/confidential-vm-overview#technologies) are based on AMD SEV-ES or SEV-SNP.
 Regarding (3), with their SEV-SNP offering Google provides direct access to attestation statements.
-However, regarding (5), attestation is partially based on the [Shielded VM vTPM](https://cloud.google.com/compute/shielded-vm/docs/shielded-vm#vtpm) for [measured boot](../architecture/attestation.md#measured-boot), which is a vTPM managed by Google's hypervisor.
+However, regarding (5), attestation is partially based on the [Shielded VM vTPM](https://cloud.google.com/compute/shielded-vm/docs/shielded-vm#vtpm) for [measured boot](../architecture/security/attestation.md#measured-boot), which is a vTPM managed by Google's hypervisor.
 Hence, the hypervisor is currently part of Constellation's TCB.
 Regarding (4), the CVMs still include closed-source firmware.
 
@@ -57,7 +57,7 @@ With it, Constellation would have a similar TCB and attestation flow as with the
 
 ## OpenStack
 
-OpenStack is an open-source cloud and infrastructure management software. It's used by many smaller CSPs and datacenters. In the latest *Yoga* version, OpenStack has basic support for CVMs. However, much depends on the employed kernel and hypervisor. Features (2)--(4) are likely to be a *Yes* with Linux kernel version 6.2. Thus, going forward, OpenStack on corresponding AMD or Intel hardware will be a viable underpinning for Constellation.
+OpenStack is an open-source cloud and infrastructure management software. It's used by many smaller CSPs and datacenters. In the latest _Yoga_ version, OpenStack has basic support for CVMs. However, much depends on the employed kernel and hypervisor. Features (2)--(4) are likely to be a _Yes_ with Linux kernel version 6.2. Thus, going forward, OpenStack on corresponding AMD or Intel hardware will be a viable underpinning for Constellation.
 
 ## Conclusion
 

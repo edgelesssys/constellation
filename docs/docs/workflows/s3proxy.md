@@ -7,9 +7,10 @@ With s3proxy, you can use S3 for storage in a confidential way without having to
 ## Limitations
 
 Currently, s3proxy has the following limitations:
+
 - Only `PutObject` and `GetObject` requests are encrypted/decrypted by s3proxy.
-By default, s3proxy will block requests that may expose unencrypted data to S3 (e.g. UploadPart).
-The `allow-multipart` flag disables request blocking for evaluation purposes.
+  By default, s3proxy will block requests that may expose unencrypted data to S3 (e.g. UploadPart).
+  The `allow-multipart` flag disables request blocking for evaluation purposes.
 - Using the [Range](https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html#API_GetObject_RequestSyntax) header on `GetObject` is currently not supported and will result in an error.
 
 These limitations will be removed with future iterations of s3proxy.
@@ -18,6 +19,7 @@ If you want to use s3proxy but these limitations stop you from doing so, conside
 ## Deployment
 
 You can add the s3proxy to your Constellation cluster as follows:
+
 1. Add the Edgeless Systems chart repository:
    ```bash
    helm repo add edgeless https://helm.edgeless.systems/stable
@@ -31,16 +33,15 @@ You can add the s3proxy to your Constellation cluster as follows:
 
 If you want to run a demo application, check out the [Filestash with s3proxy](../getting-started/examples/filestash-s3proxy.md) example.
 
-
 ## Technical details
 
 ### Encryption
 
 s3proxy relies on Google's [Tink Cryptographic Library](https://developers.google.com/tink) to implement cryptographic operations securely.
-The used cryptographic primitives are [NIST SP 800 38f](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-38F.pdf) for key wrapping and [AES](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard)-[GCM](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Galois/counter_(GCM)) with 256 bit keys for data encryption.
+The used cryptographic primitives are [NIST SP 800 38f](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-38F.pdf) for key wrapping and [AES](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard)-[GCM](<https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Galois/counter_(GCM)>) with 256 bit keys for data encryption.
 
 s3proxy uses [envelope encryption](https://cloud.google.com/kms/docs/envelope-encryption) to encrypt objects.
-This means s3proxy uses a key encryption key (KEK) issued by the [KeyService](../architecture/microservices.md#keyservice) to encrypt data encryption keys (DEKs).
+This means s3proxy uses a key encryption key (KEK) issued by the [KeyService](../architecture/components/microservices.md#keyservice) to encrypt data encryption keys (DEKs).
 Each S3 object is encrypted with its own DEK.
 The encrypted DEK is then saved as metadata of the encrypted object.
 This enables key rotation of the KEK without re-encrypting the data in S3.

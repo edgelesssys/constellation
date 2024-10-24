@@ -3,7 +3,18 @@
 The security of Constellation is based on a set of protocols.
 The protocols are outlined in the following.
 The following diagram sketches the basic trust relationships between the entities in a Constellation cluster.
-![chain of trust](chain-of-trust.jpg)
+
+```mermaid
+flowchart LR
+  A[User]-- "verifies" -->B[CLI]
+  B[CLI]-- "verifies" -->C([Runtime measurements])
+  D[Edgeless Systems]-- "signs" -->B[CLI]
+  D[Edgeless Systems]-- "signs" -->C([Runtime measurements])
+  B[CLI]-- "verifies (remote attestation)" -->E[First node]
+  E[First node]-- "verifies (remote attestation)" -->F[Other nodes]
+  C([Runtime measurements]) -.-> E[First node]
+  C([Runtime measurements]) -.-> F[Other nodes]
+```
 
 ## Software components
 

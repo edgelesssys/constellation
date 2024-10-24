@@ -13,9 +13,9 @@ Constellation supports the available CSI-based storage options for Kubernetes en
 However, their encryption takes place in the storage backend and is managed by the CSP.
 Thus, using the default CSI drivers for these storage types means trusting the CSP with your persistent data.
 
-To address this, Constellation provides CSI drivers for AWS EBS, Azure Disk, GCE PD, and OpenStack Cinder, offering [encryption on the node level](../architecture/keys.md#storage-encryption). They enable transparent encryption for persistent volumes without needing to trust the cloud backend. Plaintext data never leaves the confidential VM context, offering you confidential storage.
+To address this, Constellation provides CSI drivers for AWS EBS, Azure Disk, GCE PD, and OpenStack Cinder, offering [encryption on the node level](../architecture/security/keys.md#storage-encryption). They enable transparent encryption for persistent volumes without needing to trust the cloud backend. Plaintext data never leaves the confidential VM context, offering you confidential storage.
 
-For more details see [encrypted persistent storage](../architecture/encrypted-storage.md).
+For more details see [encrypted persistent storage](../architecture/security/encrypted-storage.md).
 
 ## CSI drivers
 
@@ -65,17 +65,17 @@ If you don't need a CSI driver or wish to deploy your own, you can disable the a
 
 AWS comes with two storage classes by default.
 
-* `encrypted-rwo`
-  * Uses [SSDs of `gp3` type](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volume-types.html)
-  * ext-4 filesystem
-  * Encryption of all data written to disk
-* `integrity-encrypted-rwo`
-  * Uses [SSDs of `gp3` type](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volume-types.html)
-  * ext-4 filesystem
-  * Encryption of all data written to disk
-  * Integrity protection of data written to disk
+- `encrypted-rwo`
+  - Uses [SSDs of `gp3` type](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volume-types.html)
+  - ext-4 filesystem
+  - Encryption of all data written to disk
+- `integrity-encrypted-rwo`
+  - Uses [SSDs of `gp3` type](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volume-types.html)
+  - ext-4 filesystem
+  - Encryption of all data written to disk
+  - Integrity protection of data written to disk
 
-For more information on encryption algorithms and key sizes, refer to [cryptographic algorithms](../architecture/encrypted-storage.md#cryptographic-algorithms).
+For more information on encryption algorithms and key sizes, refer to [cryptographic algorithms](../architecture/security/encrypted-storage.md#cryptographic-algorithms).
 
 :::info
 
@@ -94,17 +94,17 @@ Note that volume expansion isn't supported for integrity-protected disks.
 
 Azure comes with two storage classes by default.
 
-* `encrypted-rwo`
-  * Uses [Standard SSDs](https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types#standard-ssds)
-  * ext-4 filesystem
-  * Encryption of all data written to disk
-* `integrity-encrypted-rwo`
-  * Uses [Premium SSDs](https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types#premium-ssds)
-  * ext-4 filesystem
-  * Encryption of all data written to disk
-  * Integrity protection of data written to disk
+- `encrypted-rwo`
+  - Uses [Standard SSDs](https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types#standard-ssds)
+  - ext-4 filesystem
+  - Encryption of all data written to disk
+- `integrity-encrypted-rwo`
+  - Uses [Premium SSDs](https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types#premium-ssds)
+  - ext-4 filesystem
+  - Encryption of all data written to disk
+  - Integrity protection of data written to disk
 
-For more information on encryption algorithms and key sizes, refer to [cryptographic algorithms](../architecture/encrypted-storage.md#cryptographic-algorithms).
+For more information on encryption algorithms and key sizes, refer to [cryptographic algorithms](../architecture/security/encrypted-storage.md#cryptographic-algorithms).
 
 :::info
 
@@ -123,17 +123,17 @@ Note that volume expansion isn't supported for integrity-protected disks.
 
 GCP comes with two storage classes by default.
 
-* `encrypted-rwo`
-  * Uses [standard persistent disks](https://cloud.google.com/compute/docs/disks#pdspecs)
-  * ext-4 filesystem
-  * Encryption of all data written to disk
-* `integrity-encrypted-rwo`
-  * Uses [performance (SSD) persistent disks](https://cloud.google.com/compute/docs/disks#pdspecs)
-  * ext-4 filesystem
-  * Encryption of all data written to disk
-  * Integrity protection of data written to disk
+- `encrypted-rwo`
+  - Uses [standard persistent disks](https://cloud.google.com/compute/docs/disks#pdspecs)
+  - ext-4 filesystem
+  - Encryption of all data written to disk
+- `integrity-encrypted-rwo`
+  - Uses [performance (SSD) persistent disks](https://cloud.google.com/compute/docs/disks#pdspecs)
+  - ext-4 filesystem
+  - Encryption of all data written to disk
+  - Integrity protection of data written to disk
 
-For more information on encryption algorithms and key sizes, refer to [cryptographic algorithms](../architecture/encrypted-storage.md#cryptographic-algorithms).
+For more information on encryption algorithms and key sizes, refer to [cryptographic algorithms](../architecture/security/encrypted-storage.md#cryptographic-algorithms).
 
 :::info
 
@@ -152,17 +152,17 @@ Note that volume expansion isn't supported for integrity-protected disks.
 
 STACKIT comes with two storage classes by default.
 
-* `encrypted-rwo`
-  * Uses [disks of `storage_premium_perf1` type](https://docs.stackit.cloud/stackit/en/service-plans-blockstorage-75137974.html)
-  * ext-4 filesystem
-  * Encryption of all data written to disk
-* `integrity-encrypted-rwo`
-  * Uses [disks of `storage_premium_perf1` type](https://docs.stackit.cloud/stackit/en/service-plans-blockstorage-75137974.html)
-  * ext-4 filesystem
-  * Encryption of all data written to disk
-  * Integrity protection of data written to disk
+- `encrypted-rwo`
+  - Uses [disks of `storage_premium_perf1` type](https://docs.stackit.cloud/stackit/en/service-plans-blockstorage-75137974.html)
+  - ext-4 filesystem
+  - Encryption of all data written to disk
+- `integrity-encrypted-rwo`
+  - Uses [disks of `storage_premium_perf1` type](https://docs.stackit.cloud/stackit/en/service-plans-blockstorage-75137974.html)
+  - ext-4 filesystem
+  - Encryption of all data written to disk
+  - Integrity protection of data written to disk
 
-For more information on encryption algorithms and key sizes, refer to [cryptographic algorithms](../architecture/encrypted-storage.md#cryptographic-algorithms).
+For more information on encryption algorithms and key sizes, refer to [cryptographic algorithms](../architecture/security/encrypted-storage.md#cryptographic-algorithms).
 
 :::info
 
@@ -181,54 +181,54 @@ Note that volume expansion isn't supported for integrity-protected disks.
 
 1. Create a [persistent volume](https://kubernetes.io/docs/concepts/storage/persistent-volumes/)
 
-    A [persistent volume claim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) is a request for storage with certain properties.
-    It can refer to a storage class.
-    The following creates a persistent volume claim, requesting 20 GB of storage via the `encrypted-rwo` storage class:
+   A [persistent volume claim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) is a request for storage with certain properties.
+   It can refer to a storage class.
+   The following creates a persistent volume claim, requesting 20 GB of storage via the `encrypted-rwo` storage class:
 
-    ```bash
-    cat <<EOF | kubectl apply -f -
-    kind: PersistentVolumeClaim
-    apiVersion: v1
-    metadata:
-      name: pvc-example
-      namespace: default
-    spec:
-      accessModes:
-      - ReadWriteOnce
-      storageClassName: encrypted-rwo
-      resources:
-        requests:
-          storage: 20Gi
-    EOF
-    ```
+   ```bash
+   cat <<EOF | kubectl apply -f -
+   kind: PersistentVolumeClaim
+   apiVersion: v1
+   metadata:
+     name: pvc-example
+     namespace: default
+   spec:
+     accessModes:
+     - ReadWriteOnce
+     storageClassName: encrypted-rwo
+     resources:
+       requests:
+         storage: 20Gi
+   EOF
+   ```
 
 2. Create a Pod with persistent storage
 
-    You can assign a persistent volume claim to an application in need of persistent storage.
-    The mounted volume will persist restarts.
-    The following creates a pod that uses the previously created persistent volume claim:
+   You can assign a persistent volume claim to an application in need of persistent storage.
+   The mounted volume will persist restarts.
+   The following creates a pod that uses the previously created persistent volume claim:
 
-    ```bash
-    cat <<EOF | kubectl apply -f -
-    apiVersion: v1
-    kind: Pod
-    metadata:
-      name: web-server
-      namespace: default
-    spec:
-      containers:
-      - name: web-server
-        image: nginx
-        volumeMounts:
-        - mountPath: /var/lib/www/html
-          name: mypvc
-      volumes:
-      - name: mypvc
-        persistentVolumeClaim:
-          claimName: pvc-example
-          readOnly: false
-    EOF
-    ```
+   ```bash
+   cat <<EOF | kubectl apply -f -
+   apiVersion: v1
+   kind: Pod
+   metadata:
+     name: web-server
+     namespace: default
+   spec:
+     containers:
+     - name: web-server
+       image: nginx
+       volumeMounts:
+       - mountPath: /var/lib/www/html
+         name: mypvc
+     volumes:
+     - name: mypvc
+       persistentVolumeClaim:
+         claimName: pvc-example
+         readOnly: false
+   EOF
+   ```
 
 ### Change the default storage class
 

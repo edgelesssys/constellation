@@ -1,6 +1,6 @@
 # Architecture
 
-This section of the documentation provides a comprehensive overview of Constellation's inner workings. It explains the chain of trust between the different components and how they ensure robust protection for your workloads. The main chapters include:
+This section of the documentation provides a comprehensive overview of Constellation's inner workings. It explains the chain of trust between the different components and how they ensure robust protection of your workloads. The main chapters include:
 
 - [**Protocol overview**](./overview.md): The best **starting point** for exploring the architecture documentation. This chapter provides an overview of Constellation's architecture and explains the underlying security protocol used to achieve confidentiality.
 - [**Key components**](./components/cli.md): This chapter outlines Constellation's key components, their main purposes, and how users interact with them.

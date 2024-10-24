@@ -3,8 +3,8 @@
 A local cluster lets you deploy and test Constellation without a cloud subscription.
 You have two options:
 
-* Use MiniConstellation to automatically deploy a two-node cluster.
-* For more fine-grained control, create the cluster using the QEMU provider.
+- Use MiniConstellation to automatically deploy a two-node cluster.
+- For more fine-grained control, create the cluster using the QEMU provider.
 
 Both options use virtualization to create a local cluster with control-plane nodes and worker nodes. They **don't** require hardware with Confidential VM (CVM) support. For attestation, they currently use a software-based vTPM provided by KVM/QEMU.
 
@@ -13,17 +13,17 @@ You can use a VM, but it needs nested virtualization.
 
 ## Prerequisites
 
-* Machine requirements:
-  * An x86-64 CPU with at least 4 cores (6 cores are recommended)
-  * At least 4 GB RAM (6 GB are recommended)
-  * 20 GB of free disk space
-  * Hardware virtualization enabled in the BIOS/UEFI (often referred to as Intel VT-x or AMD-V/SVM) / nested-virtualization support when using a VM
-* Software requirements:
-  * Linux OS with [KVM kernel module](https://www.linux-kvm.org/page/Main_Page)
-    * Recommended: Ubuntu 22.04 LTS
-  * [Docker](https://docs.docker.com/engine/install/)
-  * [xsltproc](https://gitlab.gnome.org/GNOME/libxslt/-/wikis/home)
-  * (Optional) [virsh](https://www.libvirt.org/manpages/virsh.html) to observe and access your nodes
+- Machine requirements:
+  - An x86-64 CPU with at least 4 cores (6 cores are recommended)
+  - At least 4 GB RAM (6 GB are recommended)
+  - 20 GB of free disk space
+  - Hardware virtualization enabled in the BIOS/UEFI (often referred to as Intel VT-x or AMD-V/SVM) / nested-virtualization support when using a VM
+- Software requirements:
+  - Linux OS with [KVM kernel module](https://www.linux-kvm.org/page/Main_Page)
+    - Recommended: Ubuntu 22.04 LTS
+  - [Docker](https://docs.docker.com/engine/install/)
+  - [xsltproc](https://gitlab.gnome.org/GNOME/libxslt/-/wikis/home)
+  - (Optional) [virsh](https://www.libvirt.org/manpages/virsh.html) to observe and access your nodes
 
 ### Software installation on Ubuntu
 
@@ -49,7 +49,9 @@ sudo iptables -P FORWARD ACCEPT
 <TabItem value="mini" label="MiniConstellation">
 
 <!-- vale off -->
+
 With the `constellation mini` command, you can deploy and test Constellation locally. This mode is called MiniConstellation. Conceptually, MiniConstellation is similar to [MicroK8s](https://microk8s.io/), [K3s](https://k3s.io/), and [minikube](https://minikube.sigs.k8s.io/docs/).
+
 <!-- vale on -->
 
 :::caution
@@ -71,7 +73,7 @@ The following creates your MiniConstellation cluster (may take up to 10 minutes 
 constellation mini up
 ```
 
-This will configure your current directory as the [workspace](../architecture/orchestration.md#workspaces) for this cluster.
+This will configure your current directory as the [workspace](../architecture/components/cli.md#workspaces) for this cluster.
 All `constellation` commands concerning this cluster need to be issued from this directory.
 
 </TabItem>
@@ -94,56 +96,56 @@ attaching persistent storage, or autoscaling aren't available.
 
 1. To set up your local cluster, you need to create a configuration file for Constellation first.
 
-  ```bash
-  constellation config generate qemu
-  ```
+```bash
+constellation config generate qemu
+```
 
-  This creates a [configuration file](../workflows/config.md) for QEMU called `constellation-conf.yaml`. After that, your current folder also becomes your [workspace](../architecture/orchestration.md#workspaces). All `constellation` commands for your cluster need to be executed from this directory.
+This creates a [configuration file](../workflows/config.md) for QEMU called `constellation-conf.yaml`. After that, your current folder also becomes your [workspace](../architecture/components/cli.md#workspaces). All `constellation` commands for your cluster need to be executed from this directory.
 
 2. Now you can create your cluster and its nodes. `constellation apply` uses the options set in `constellation-conf.yaml`.
 
-  ```bash
-  constellation apply -y
-  ```
+```bash
+constellation apply -y
+```
 
-  The Output should look like the following:
+The Output should look like the following:
 
-  ```shell-session
-  $ constellation apply -y
-  Checking for infrastructure changes
-  The following Constellation cluster will be created:
-    3 control-plane nodes of type 2-vCPUs will be created.
-    1 worker node of type 2-vCPUs will be created.
-  Creating
-  Cloud infrastructure created successfully.
-  Your Constellation master secret was successfully written to ./constellation-mastersecret.json
-  Connecting
-  Initializing cluster
-  Installing Kubernetes components
-  Your Constellation cluster was successfully initialized.
+```shell-session
+$ constellation apply -y
+Checking for infrastructure changes
+The following Constellation cluster will be created:
+  3 control-plane nodes of type 2-vCPUs will be created.
+  1 worker node of type 2-vCPUs will be created.
+Creating
+Cloud infrastructure created successfully.
+Your Constellation master secret was successfully written to ./constellation-mastersecret.json
+Connecting
+Initializing cluster
+Installing Kubernetes components
+Your Constellation cluster was successfully initialized.
 
-  Constellation cluster identifier  g6iMP5wRU1b7mpOz2WEISlIYSfdAhB0oNaOg6XEwKFY=
-  Kubernetes configuration          constellation-admin.conf
+Constellation cluster identifier  g6iMP5wRU1b7mpOz2WEISlIYSfdAhB0oNaOg6XEwKFY=
+Kubernetes configuration          constellation-admin.conf
 
-  You can now connect to your cluster by executing:
-          export KUBECONFIG="$PWD/constellation-admin.conf"
-  ```
+You can now connect to your cluster by executing:
+        export KUBECONFIG="$PWD/constellation-admin.conf"
+```
 
-  The cluster's identifier will be different in your output.
-  Keep `constellation-mastersecret.json` somewhere safe.
-  This will allow you to [recover your cluster](../workflows/recovery.md) in case of a disaster.
+The cluster's identifier will be different in your output.
+Keep `constellation-mastersecret.json` somewhere safe.
+This will allow you to [recover your cluster](../workflows/recovery.md) in case of a disaster.
 
-  :::info
+:::info
 
-  Depending on your setup, `constellation apply` may take 10+ minutes to complete.
+Depending on your setup, `constellation apply` may take 10+ minutes to complete.
 
-  :::
+:::
 
 3. Configure kubectl
 
-  ```bash
-  export KUBECONFIG="$PWD/constellation-admin.conf"
-  ```
+```bash
+export KUBECONFIG="$PWD/constellation-admin.conf"
+```
 
 </TabItem>
 </Tabs>
@@ -158,7 +160,7 @@ NAME              STATUS   ROLES           AGE   VERSION
 control-plane-0   Ready    control-plane   66s   v1.24.6
 ```
 
-Additional nodes will request to join the cluster shortly. Before each additional node is allowed to join the cluster, its state is verified using remote attestation by the [JoinService](../architecture/microservices.md#joinservice).
+Additional nodes will request to join the cluster shortly. Before each additional node is allowed to join the cluster, its state is verified using remote attestation by the [JoinService](../architecture/components/microservices.md#joinservice).
 If verification passes successfully, the new node receives keys and certificates to join the cluster.
 
 You can follow this process by viewing the logs of the JoinService:
@@ -184,18 +186,18 @@ worker-0          Ready    <none>          32s     v1.24.6
 
 1. Deploy the [emojivoto app](https://github.com/BuoyantIO/emojivoto)
 
-  ```bash
-  kubectl apply -k github.com/BuoyantIO/emojivoto/kustomize/deployment
-  ```
+```bash
+kubectl apply -k github.com/BuoyantIO/emojivoto/kustomize/deployment
+```
 
 2. Expose the frontend service locally
 
-  ```bash
-  kubectl wait --for=condition=available --timeout=60s -n emojivoto --all deployments
-  kubectl -n emojivoto port-forward svc/web-svc 8080:80 &
-  curl http://localhost:8080
-  kill %1
-  ```
+```bash
+kubectl wait --for=condition=available --timeout=60s -n emojivoto --all deployments
+kubectl -n emojivoto port-forward svc/web-svc 8080:80 &
+curl http://localhost:8080
+kill %1
+```
 
 ## Terminate your cluster
 

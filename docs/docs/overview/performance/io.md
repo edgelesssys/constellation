@@ -60,7 +60,7 @@ The benchmark measured the bandwidth of pod-to-pod and pod-to-service connection
 
 GKE and Constellation on GCP had a maximum network bandwidth of [10 Gbps](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines).
 AKS with `Standard_D4as_v5` machines a maximum network bandwidth of [12.5 Gbps](https://learn.microsoft.com/en-us/azure/virtual-machines/dasv5-dadsv5-series#dasv5-series).
-The Confidential VM equivalent `Standard_DC4as_v5` currently  has a network bandwidth of [1.25 Gbps](https://learn.microsoft.com/en-us/azure/virtual-machines/dcasv5-dcadsv5-series#dcasv5-series-products).
+The Confidential VM equivalent `Standard_DC4as_v5` currently has a network bandwidth of [1.25 Gbps](https://learn.microsoft.com/en-us/azure/virtual-machines/dcasv5-dcadsv5-series#dcasv5-series-products).
 Therefore, to make the test comparable, both AKS and Constellation on Azure were running with `Standard_DC4as_v5` machines and 1.25 Gbps bandwidth.
 
 Constellation on Azure and AKS used an MTU of 1500.
@@ -68,7 +68,7 @@ Constellation on GCP used an MTU of 8896. GKE used an MTU of 1450.
 
 The difference in network bandwidth can largely be attributed to two factors.
 
-- Constellation's [network encryption](../../architecture/networking.md) via Cilium and WireGuard, which protects data in-transit.
+- Constellation's [network encryption](../../architecture/security/encrypted-networking.md) via Cilium and WireGuard, which protects data in-transit.
 - [AMD SEV using SWIOTLB bounce buffers](https://lore.kernel.org/all/20200204193500.GA15564@ashkalra_ubuntu_server/T/) for all DMA including network I/O.
 
 #### Pod-to-Pod
@@ -125,7 +125,7 @@ Similarly, when comparing Constellation on Azure with AKS using CVMs, Constellat
 
 Azure and GCP offer persistent storage for their Kubernetes services AKS and GKE via the Container Storage Interface (CSI). CSI storage in Kubernetes is available via `PersistentVolumes` (PV) and consumed via `PersistentVolumeClaims` (PVC).
 Upon requesting persistent storage through a PVC, GKE and AKS will provision a PV as defined by a default [storage class](https://kubernetes.io/docs/concepts/storage/storage-classes/).
-Constellation provides persistent storage on Azure and GCP [that's encrypted on the CSI layer](../../architecture/encrypted-storage.md).
+Constellation provides persistent storage on Azure and GCP [that's encrypted on the CSI layer](../../architecture/security/encrypted-storage.md).
 Similarly, upon a PVC request, Constellation will provision a PV via a default storage class.
 
 For Constellation on Azure and AKS, the benchmark ran with Azure Disk storage [Standard SSD](https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types#standard-ssds) of 400 GiB size.
