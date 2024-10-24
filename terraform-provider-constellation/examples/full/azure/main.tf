@@ -21,7 +21,7 @@ locals {
   location             = "northeurope"
   control_plane_count  = 3
   worker_count         = 2
-  instance_type        = "Standard_DC4as_v5" // needs to be changed for azure-tdx
+  instance_type        = "Standard_DC4as_v5" // Adjust if using TDX
   subscription_id      = "00000000-0000-0000-0000-000000000000"
 
   master_secret      = random_bytes.master_secret.hex
