@@ -211,10 +211,6 @@ func (f *applyFlags) parse(flags *pflag.FlagSet) error {
 
 // runApply sets up the apply command and runs it.
 func runApply(cmd *cobra.Command, _ []string) error {
-	log, err := newCLILogger(cmd)
-	if err != nil {
-		return fmt.Errorf("creating logger: %w", err)
-	}
 	spinner, err := newSpinnerOrStderr(cmd)
 	if err != nil {
 		return err
@@ -227,7 +223,7 @@ func runApply(cmd *cobra.Command, _ []string) error {
 	}
 
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	logger, err := newDebugFileLogger(cmd, fileHandler)
+	debugLogger, err := newDebugFileLogger(cmd, fileHandler)
 	if err != nil {
 		return err
 	}
@@ -250,15 +246,15 @@ func runApply(cmd *cobra.Command, _ []string) error {
 		)
 	}
 
-	applier := constellation.NewApplier(log, spinner, constellation.ApplyContextCLI, newDialer)
+	applier := constellation.NewApplier(debugLogger, spinner, constellation.ApplyContextCLI, newDialer)
 
 	apply := &applyCmd{
 		fileHandler:     fileHandler,
 		flags:           flags,
-		log:             logger,
-		wLog:            &warnLogger{cmd: cmd, log: log},
+		log:             debugLogger,
+		wLog:            &warnLogger{cmd: cmd, log: debugLogger},
 		spinner:         spinner,
-		merger:          &kubeconfigMerger{log: log},
+		merger:          &kubeconfigMerger{log: debugLogger},
 		newInfraApplier: newInfraApplier,
 		imageFetcher:    imagefetcher.New(),
 		applier:         applier,
@@ -826,6 +822,7 @@ func (wl warnLogger) Info(msg string, args ...any) {
 // Warn prints a formatted warning from the validator.
 func (wl warnLogger) Warn(msg string, args ...any) {
 	wl.cmd.PrintErrf("Warning: %s %s\n", msg, fmt.Sprint(args...))
+	wl.log.Debug(msg, args...)
 }
 
 type warnLog interface {
