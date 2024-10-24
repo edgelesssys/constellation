@@ -227,7 +227,7 @@ func runApply(cmd *cobra.Command, _ []string) error {
 	}
 
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	logger, err := newDebugFileLogger(cmd, fileHandler)
+	debugLogger, err := newDebugFileLogger(cmd, fileHandler)
 	if err != nil {
 		return err
 	}
@@ -250,12 +250,12 @@ func runApply(cmd *cobra.Command, _ []string) error {
 		)
 	}
 
-	applier := constellation.NewApplier(log, spinner, constellation.ApplyContextCLI, newDialer)
+	applier := constellation.NewApplier(debugLogger, spinner, constellation.ApplyContextCLI, newDialer)
 
 	apply := &applyCmd{
 		fileHandler:     fileHandler,
 		flags:           flags,
-		log:             logger,
+		log:             debugLogger,
 		wLog:            &warnLogger{cmd: cmd, log: log},
 		spinner:         spinner,
 		merger:          &kubeconfigMerger{log: log},
