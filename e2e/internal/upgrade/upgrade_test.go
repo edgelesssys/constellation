@@ -81,7 +81,7 @@ func TestUpgrade(t *testing.T) {
 	log.Println(string(data))
 
 	log.Println("Checking upgrade.")
-	runUpgradeCheck(require, cli, *targetKubernetes)
+	runUpgradeCheck(require, cli, *targetKubernetes, *targetMicroservices)
 
 	log.Println("Triggering upgrade.")
 	runUpgradeApply(require, cli)
@@ -170,7 +170,7 @@ func testNodesEventuallyAvailable(t *testing.T, k *kubernetes.Clientset, wantCon
 
 // runUpgradeCheck executes 'upgrade check' and does basic checks on the output.
 // We can not check images upgrades because we might use unpublished images. CLI uses public CDN to check for available images.
-func runUpgradeCheck(require *require.Assertions, cli, targetKubernetes string) {
+func runUpgradeCheck(require *require.Assertions, cli, targetKubernetes string, targetMicroservices string) {
 	cmd := exec.CommandContext(context.Background(), cli, "upgrade", "check", "--debug")
 	stdout, stderr, err := runCommandWithSeparateOutputs(cmd)
 	require.NoError(err, "Stdout: %s\nStderr: %s", string(stdout), string(stderr))
@@ -186,9 +186,12 @@ func runUpgradeCheck(require *require.Assertions, cli, targetKubernetes string) 
 		log.Printf("false. targetKubernetes: %s\n", targetKubernetes)
 		require.Contains(string(stdout), targetKubernetes, fmt.Sprintf("Expected Kubernetes version %s in output.", targetKubernetes))
 	}
+	if targetMicroservices == "" {
+		targetMicroservices = constants.BinaryVersion().String() // assume that the CLI is not a simulated patch upgrade, such that the version is the same as the CLI version.
+	}
 
 	require.Contains(string(stdout), "Services:")
-	require.Contains(string(stdout), fmt.Sprintf("--> %s", constants.BinaryVersion().String()))
+	require.Contains(string(stdout), fmt.Sprintf("--> %s", targetMicroservices))
 
 	log.Println(string(stdout))
 }

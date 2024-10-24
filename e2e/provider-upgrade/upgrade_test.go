@@ -25,7 +25,7 @@ import (
 var (
 	targetImage         = flag.String("target-image", "", "Image (shortversion) to upgrade to.")
 	targetKubernetes    = flag.String("target-kubernetes", "", "Kubernetes version (MAJOR.MINOR.PATCH) to upgrade to. Defaults to default version of target CLI.")
-	targetMicroservices = flag.String("target-microservices", "", "Microservice version (MAJOR.MINOR.PATCH) to upgrade to. Defaults to default version of target CLI.")
+	targetMicroservices = flag.String("target-microservices", "", "Microservice version (MAJOR.MINOR.PATCH) to upgrade to. Defaults to the pre version of the next release. You must set this value when simulating a patch upgrade.")
 	// When executing the test as a bazel target the CLI path is supplied through an env variable that bazel sets.
 	// When executing via `go test` extra care should be taken that the supplied CLI is built on the same commit as this test.
 	// When executing the test as a bazel target the workspace path is supplied through an env variable that bazel sets.
