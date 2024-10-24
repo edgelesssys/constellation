@@ -222,6 +222,11 @@ const sidebars = {
         },
         {
           type: 'doc',
+          label: 'Reproduce release artifacts',
+          id: 'workflows/reproducible-builds',
+        },
+        {
+          type: 'doc',
           label: 'Troubleshooting',
           id: 'workflows/troubleshooting',
         },

@@ -246,12 +246,12 @@
       "datasourceTemplate": "github-releases",
     },
     {
-      "fileMatch": ["(^|\\/)versions.go$"],
+      "fileMatch": ["(^|\\/)versions.go$", "[.]github\\/(actions|workflows)\\/.*[.]ya?ml"],
       "matchStrings": [
         // Match github releases.
         // example match:' "https://github.com/foo/bar/releases/download/v1.2.3/foo.bin" // renovate:github-release'
         // (foo/bar -> depName, v1.2.3 -> currentValue)
-        " \"https:\\/\\/github\\.com\\/(?<depName>[^\\/\\s\"]+\\/[^\\/\\s\"]+)\\/releases\\/download\\/(?<currentValue>[^\\/\\s\"]+)\\/[^\"]+\"[^\\n]+\\/\\/ renovate:github-release",
+        "https:\\/\\/github\\.com\\/(?<depName>[^\\/\\s\"]+\\/[^\\/\\s\"]+)\\/releases\\/download\\/(?<currentValue>[^\\/\\s\"]+).*renovate:github-release",
       ],
       "datasourceTemplate": "github-releases",
     },
