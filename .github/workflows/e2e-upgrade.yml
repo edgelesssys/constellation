@@ -40,7 +40,7 @@ on:
         type: string
         required: false
       toMicroservices:
-        description: Microservice version to target for the upgrade, empty for upgrade target's default version. When simulating a patch upgrade, you must set this value because the default will not be the simulated version.
+        description: Microservice version to target for the upgrade, empty for upgrade target's default version.
         type: string
         required: false
       simulatedTargetVersion:
