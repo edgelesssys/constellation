@@ -45,7 +45,7 @@ Otherwise, it waits for an initialization request to create a new Kubernetes clu
 The _JoinService_ runs as [DaemonSet](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/) on each control-plane node.
 New nodes (at cluster start, or later through autoscaling) send a request to the service over [attested TLS (aTLS)](../old/attestation.md#attested-tls-atls).
 The _JoinService_ verifies the new node's certificate and attestation statement.
-If attestation is successful, the new node is supplied with an encryption key from the [_KeyService_](microservices.md#keyservice) for its state disk, and a Kubernetes bootstrap token.
+If attestation is successful, the new node is supplied with an encryption key from the [_KeyService_](microservices.md#keyservice) for its state disk, and a [Kubernetes bootstrap token](https://kubernetes.io/docs/reference/access-authn-authz/bootstrap-tokens/).
 
 ```mermaid
 sequenceDiagram
@@ -61,12 +61,12 @@ sequenceDiagram
 
 ## VerificationService
 
-The _VerificationService_ runs as DaemonSet on each node.
-It provides user-facing functionality for remote attestation during the cluster's lifetime via an endpoint for [verifying the cluster](../old/attestation.md#cluster-attestation).
-Read more about the hardware-based [attestation feature](../old/attestation.md) of Constellation and how to [verify](../../workflows/verify-cluster.md) a cluster on the client side.
+The _VerificationService_ runs as [DaemonSet](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/) on each node.
+It provides user-facing functionality for remote attestation during the cluster's lifetime via an endpoint for [verifying the cluster](../security/attestation.md#cluster-attestation).
+Read more about the hardware-based [attestation feature](../security/attestation.md) of Constellation and how to [verify](../../workflows/verify-cluster.md) a cluster on the client side.
 
 ## KeyService
 
-The _KeyService_ runs as DaemonSet on each control-plane node.
-It implements the key management for the [storage encryption keys](../old/keys.md#storage-encryption) in Constellation. These keys are used for the [state disk](../old/images.md#state-disk) of each node and the [transparently encrypted storage](../old/encrypted-storage.md) for Kubernetes.
-Depending on wether the [constellation-managed](../old/keys.md#constellation-managed-key-management) or [user-managed](../old/keys.md#user-managed-key-management) mode is used, the _KeyService_ holds the key encryption key (KEK) directly or calls an external key management service (KMS) for key derivation respectively.
+The _KeyService_ runs as [DaemonSet](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/) on each control-plane node.
+It implements the key management for the [storage encryption keys](../security/keys.md#storage-encryption) in Constellation. These keys are used for the [state disk](../components/node-images.md#state-disk) of each node and the [transparently encrypted storage](../security/encrypted-storage.md) for Kubernetes.
+Depending on wether the [constellation-managed](../security/keys.md#constellation-managed-key-management) or [user-managed](../security/keys.md#user-managed-key-management) mode is used, the _KeyService_ holds the key encryption key (KEK) directly or calls an external key management service (KMS) for key derivation respectively.

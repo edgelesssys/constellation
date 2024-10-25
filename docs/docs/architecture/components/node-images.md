@@ -43,9 +43,9 @@ In addition to the read-only root filesystem, each Constellation node has a disk
 This disk is mounted readable and writable by the initramfs and contains data that should persist across reboots.
 Such data can contain sensitive information and, therefore, must be stored securely.
 To that end, the state disk is protected by authenticated encryption.
-See the section on [keys and encryption](../old/keys.md#storage-encryption) for more information on the cryptographic primitives in use.
+See the section on [keys and encryption](../security/keys.md#storage-encryption) for more information on the cryptographic primitives in use.
 
 ## Kubernetes components
 
-During initialization, the [_Bootstrapper_](../old/microservices.md#bootstrapper) downloads and verifies the [Kubernetes components](https://kubernetes.io/docs/concepts/overview/components/) as configured by the user.
+During initialization, the [_Bootstrapper_](../components/microservices.md#bootstrapper) downloads and verifies the [Kubernetes components](https://kubernetes.io/docs/concepts/overview/components/) as configured by the user.
 They're stored on the state partition and can be updated once new releases need to be installed.

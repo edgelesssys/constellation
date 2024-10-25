@@ -2,10 +2,9 @@
 
 The command-line interface (CLI) is one of the key components of Constellation and is used for **orchestrating constellation clusters**. It is run by the cloud administrator on a local machine and is used to **create, manage, and update confidential clusters** directly from the command line.
 
-You can use the CLI to create a cluster on the supported cloud platforms.
-The CLI provisions the resources in your cloud environment and initiates the initialization of your cluster.
-It uses a set of parameters and an optional configuration file to manage your cluster installation.
-The CLI is also used for updating your cluster.
+You can use the CLI to create a cluster on the [supported cloud platforms](../../overview/product.md). It provisions the necessary resources in your cloud environment and initiates the cluster setup.
+
+The CLI uses a set of parameters and an optional configuration file to manage your cluster installation. You can also use the CLI to update your cluster.
 
 ## Workspaces
 
@@ -35,16 +34,16 @@ Altogether, the following files are generated during the creation of a Constella
 
 After the initialization of your cluster, the CLI will provide you with a Kubernetes `kubeconfig` file.
 This file grants you access to your Kubernetes cluster and configures the [kubectl](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/) tool.
-In addition, the cluster's [identifier](../old/orchestration.md#post-installation-configuration) is returned and stored in the state file.
+In addition, the cluster's [identifier](../components/cli.md#post-installation-configuration) is returned and stored in the state file.
 
 ### Creation flow
 
 1. The CLI `apply` command first creates the confidential VM (CVM) resources in your cloud environment and configures the network
 2. Each CVM boots the Constellation node image and measures every component in the boot chain
-3. The first microservice launched in each node is the [_Bootstrapper_](../old/microservices.md#bootstrapper)
+3. The first microservice launched in each node is the [_Bootstrapper_](../components/microservices.md#bootstrapper)
 4. The _Bootstrapper_ waits until it either receives an initialization request or discovers an initialized cluster
-5. The CLI then connects to the _Bootstrapper_ of a selected node, sends the configuration, and initiates the initialization of the cluster
-6. The _Bootstrapper_ of **that** node [initializes the Kubernetes cluster](../old/microservices.md#bootstrapper) and deploys the other Constellation [microservices](microservices.md) including the [_JoinService_](microservices.md#joinservice)
+5. The CLI then connects to the _Bootstrapper_ of a selected node — which we also refer to as _first node_, sends the configuration, and initiates the initialization of the cluster
+6. The _Bootstrapper_ of the first node [initializes the Kubernetes cluster](../components/microservices.md#bootstrapper) and deploys the other Constellation [microservices](microservices.md) including the [_JoinService_](microservices.md#joinservice)
 7. Subsequently, the _Bootstrappers_ of the other nodes discover the initialized cluster and send join requests to the _JoinService_
 8. As part of the join request each node includes an attestation statement of its boot measurements as authentication
 9. The _JoinService_ verifies the attestation statements and joins the nodes to the Kubernetes cluster
@@ -52,23 +51,23 @@ In addition, the cluster's [identifier](../old/orchestration.md#post-installatio
 
 ## Post-installation configuration
 
-Post-installation the CLI provides a configuration for [accessing the cluster using the Kubernetes API](https://kubernetes.io/docs/tasks/administer-cluster/access-cluster-api/).
-The `kubeconfig` file provides the credentials and configuration for connecting and authenticating to the API server.
-Once configured, orchestrate the Kubernetes cluster via `kubectl`.
+After installation, the CLI provides a configuration for [accessing the cluster using the Kubernetes API](https://kubernetes.io/docs/tasks/administer-cluster/access-cluster-api/).
+
+The `kubeconfig` file contains the credentials and configuration needed for connecting and authenticating to the API server. Once configured, you can orchestrate the Kubernetes cluster via `kubectl`.
 
 After the initialization, the CLI will present you with a couple of tokens:
 
-- The [_master secret_](../old/keys.md#master-secret) (stored in the `constellation-mastersecret.json` file by default)
-- The [_clusterID_](../old/keys.md#cluster-identity) of your cluster in Base64 encoding
+- The [_master secret_](../security/keys.md#master-secret) (stored in the `constellation-mastersecret.json` file by default)
+- The [_clusterID_](../security/keys.md#cluster-identity) of your cluster in Base64 encoding
 
-You can read more about these values and their meaning in the guide on [cluster identity](../old/keys.md#cluster-identity).
+You can read more about these values and their meaning in the guide on [cluster identity](../security/keys.md#cluster-identity).
 
 The _master secret_ must be kept secret and can be used to [recover your cluster](../../workflows/recovery.md).
-Instead of managing this secret manually, you can [use your key management solution of choice](../old/keys.md#user-managed-key-management) with Constellation.
+Instead of managing this secret manually, you can [use your key management solution of choice](../security/keys.md#user-managed-key-management) with Constellation.
 
 The _clusterID_ uniquely identifies a cluster and can be used to [verify your cluster](../../workflows/verify-cluster.md).
 
-## Upgrades
+## Constellation Upgrades
 
 Constellation images and microservices may need to be upgraded to new versions during the lifetime of a cluster.
 Constellation implements a rolling update mechanism ensuring no downtime of the control or data plane.
@@ -78,8 +77,8 @@ For step-by-step instructions on how to do this, refer to [Upgrade your cluster]
 ### Attestation of upgrades
 
 With every new image, corresponding measurements are released.
-During an update procedure, the CLI provides new measurements to the [JoinService](../old/microservices.md#joinservice) securely.
-New measurements for an updated image are automatically pulled and verified by the CLI following the [supply chain security concept](../old/attestation.md#chain-of-trust) of Constellation.
-The [attestation section](../old/attestation.md#cluster-facing-attestation) describes in detail how these measurements are then used by the JoinService for the attestation of nodes.
+During an update procedure, the CLI provides new measurements to the [JoinService](../components/microservices.md#joinservice) securely.
+New measurements for an updated image are automatically pulled and verified by the CLI following the [supply chain security concept](../security/attestation.md#chain-of-trust) of Constellation.
+The [attestation section](../security/attestation.md#cluster-facing-attestation) describes in detail how these measurements are then used by the JoinService for the attestation of nodes.
 
 <!-- soon: As the [builds of the Constellation images are reproducible](attestation.md#chain-of-trust), the updated measurements are auditable by the customer. -->

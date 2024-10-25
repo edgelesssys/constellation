@@ -257,7 +257,7 @@ const sidebars = {
             },
             {
               type: "doc",
-              label: "Core Services",
+              label: "Core services",
               id: "architecture/components/microservices",
             },
           ],
