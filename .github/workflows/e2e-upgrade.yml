@@ -132,57 +132,6 @@ jobs:
 
           echo "cloudProvider=${cloudProvider}" | tee -a "$GITHUB_OUTPUT"
 
-  build-target-cli:
-    name: Build upgrade target version CLI
-    runs-on: ubuntu-24.04
-    permissions:
-      id-token: write
-      checks: write
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout
-        if: inputs.gitRef == 'head'
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-        with:
-          fetch-depth: 0
-          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
-
-      - name: Checkout ref
-        if: inputs.gitRef != 'head'
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-        with:
-          fetch-depth: 0
-          ref: ${{ inputs.gitRef }}
-
-      - name: Setup Bazel & Nix
-        uses: ./.github/actions/setup_bazel_nix
-
-      - name: Log in to the Container registry
-        uses: ./.github/actions/container_registry_login
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Simulate patch upgrade
-        if: inputs.simulatedTargetVersion != ''
-        run: |
-          echo ${{ inputs.simulatedTargetVersion }} > version.txt
-
-      - name: Build CLI
-        uses: ./.github/actions/build_cli
-        with:
-          enterpriseCLI: true
-          outputPath: "build/constellation"
-          push: true
-
-      - name: Upload CLI binary
-        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
-        with:
-          name: constellation-upgrade-${{ inputs.attestationVariant }}
-          path: build/constellation
-
   create-cluster:
     name: Create upgrade origin version cluster
     runs-on: ubuntu-24.04
@@ -279,7 +228,6 @@ jobs:
       packages: write
     needs:
       - generate-input-parameters
-      - build-target-cli
       - create-cluster
     steps:
       - name: Checkout
@@ -298,6 +246,32 @@ jobs:
 
       - name: Setup Bazel & Nix
         uses: ./.github/actions/setup_bazel_nix
+
+      - name: Log in to the Container registry
+        uses: ./.github/actions/container_registry_login
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # applying the version manipulation here so that the upgrade test tool is also on the simulated target version
+      - name: Simulate patch upgrade
+        if: inputs.simulatedTargetVersion != ''
+        run: |
+          echo ${{ inputs.simulatedTargetVersion }} > version.txt
+
+      - name: Build CLI
+        uses: ./.github/actions/build_cli
+        with:
+          enterpriseCLI: true
+          outputPath: "build/constellation"
+          push: true
+
+      - name: Upload CLI binary # is needed for the cleanup step
+        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
+        with:
+          name: constellation-upgrade-${{ inputs.attestationVariant }}
+          path: build/constellation
 
       - name: Login to AWS
         uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
@@ -335,11 +309,6 @@ jobs:
         with:
           azure_credentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
 
-      - name: Download CLI
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
-        with:
-          name: constellation-upgrade-${{ inputs.attestationVariant }}
-          path: build
 
       - name: Download Working Directory (Pre-test)
         uses: ./.github/actions/artifact_download
