@@ -182,7 +182,8 @@ func runCommandWithSeparateOutputs(cmd *exec.Cmd) (stdout, stderr []byte, err er
 		return
 	}
 
-	continuouslyPrintOutput := func(r io.Reader, prefix string) {
+	continuouslyPrintOutput := func(r io.Reader, prefix string, wg *sync.WaitGroup) {
+		defer wg.Done()
 		scanner := bufio.NewScanner(r)
 		for scanner.Scan() {
 			output := scanner.Text()
@@ -196,12 +197,15 @@ func runCommandWithSeparateOutputs(cmd *exec.Cmd) (stdout, stderr []byte, err er
 		}
 	}
 
-	go continuouslyPrintOutput(stdoutIn, "stdout")
-	go continuouslyPrintOutput(stderrIn, "stderr")
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
+	go continuouslyPrintOutput(stdoutIn, "stdout", wg)
+	go continuouslyPrintOutput(stderrIn, "stderr", wg)
 
 	if err = cmd.Wait(); err != nil {
 		err = fmt.Errorf("wait for command to finish: %w", err)
 	}
+	wg.Wait()
 
 	return stdout, stderr, err
 }
