@@ -479,7 +479,7 @@ jobs:
 
       - name: Notify about failure
         if: |
-          failure() &&
+          (failure() || cancelled()) &&
           github.ref == 'refs/heads/main' &&
           github.event_name == 'schedule'
         continue-on-error: true
