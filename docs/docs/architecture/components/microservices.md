@@ -43,7 +43,7 @@ Otherwise, it waits for an initialization request to create a new Kubernetes clu
 ## JoinService
 
 The _JoinService_ runs as [DaemonSet](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/) on each control-plane node.
-New nodes (at cluster start, or later through autoscaling) send a request to the service over [attested TLS (aTLS)](../old/attestation.md#attested-tls-atls).
+New nodes (at cluster start, or later through autoscaling) send a request to the service over [attested TLS (aTLS)](../security/attestation.md#attested-tls-atls).
 The _JoinService_ verifies the new node's certificate and attestation statement.
 If attestation is successful, the new node is supplied with an encryption key from the [_KeyService_](microservices.md#keyservice) for its state disk, and a [Kubernetes bootstrap token](https://kubernetes.io/docs/reference/access-authn-authz/bootstrap-tokens/).
 

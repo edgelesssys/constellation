@@ -32,6 +32,12 @@ The CLI executable is signed by Edgeless Systems.
 To ensure non-repudiability for CLI releases, Edgeless Systems publishes corresponding signatures to the public ledger of the [Sigstore project](https://www.sigstore.dev/).
 There's a [step-by-step guide](https://docs.edgeless.systems/constellation/workflows/verify-cli) on how to verify CLI signatures based on Sigstore.
 
+:::note
+
+If you're not familiar with terms like _attestation_, _measurements_, or _Trusted Computing Platform (TPM)_, we recommend reading our [attestation](./security/attestation.md) section first.
+
+:::
+
 The CLI contains the [measurements](https://github.com/edgelesssys/constellation/blob/edc0c7068ef4527efeaf584a2a35e0f51f58c426/internal/attestation/measurements/measurements_enterprise.go#L21) of the latest Constellation node image for all supported cloud platforms.
 The CLI writes these measurements as part of the _attestation config_ to a cluster's config file with the ["config generate" command](https://docs.edgeless.systems/constellation/workflows/config).
 Note that Constellation currently uses 16 TPM-based runtime measurements for each cloud platform.
@@ -76,7 +82,7 @@ This connection is mainly used for three things (see the the [interface definiti
 After this, the aTLS connection is closed and the Bootstrapper marks the node irrevocably as "initialized".
 This mechanism prevents a node from accidentally or maliciously joining different clusters.
 On all supported CVM platforms this is currently implemented by _extending_ TPM register 15 with the unique ID of the cluster (`clusterID`).
-More information can be found in the [Constellation documentation](https://docs.edgeless.systems/constellation/architecture/keys#cluster-identity).
+More information can be found in our [section about cluster identity](./security/keys.md#cluster-identity).
 
 For [launch digest-based attestation](#remote-attestation-of-nodes) on future CVM platforms, an alternative would be to extend `clusterID` to the so called RTMR registers of Intel TDX.
 TDX provides four RTMRs, which are automatically included in the `auxiliary data` part of a remote-attestation statement.
@@ -111,7 +117,7 @@ In this case, the launch digest is the only measurement that's required to verif
 ### Measured Boot as fallback
 
 However, currently, all supported CVM platforms (AWS, Azure, and GCP) inject custom firmware into CVMs.
-Thus, in practice, Constellation relies on conventional [measured boot](https://docs.edgeless.systems/constellation/architecture/images#measured-boot) to reflect the identity and integrity of nodes.
+Thus, in practice, Constellation relies on conventional [measured boot](./components/node-images#measured-boot) to reflect the identity and integrity of nodes.
 
 In measured boot, in general, the software components involved in the boot process of a system are "measured" into the 16 registers of a Trusted Platform Module (TPM).
 The values of these registers are also called "runtime measurements".
@@ -119,13 +125,13 @@ All supported CVM platforms provide TPMs to CVMs.
 Constellation nodes use these to measure their boot process.
 They include the 16 runtime measurements as `auxiliary data` in `R`.
 On each CVM platform, runtime measurements are taken differently.
-Details on this are given in the [Constellation documentation](https://docs.edgeless.systems/constellation/architecture/attestation#runtime-measurements).
+Details on this are given in the [section about attestation](./security/attestation#runtime-measurements).
 
 With measured boot, Constellation only checks the 16 runtime measurements during the verification of a node's remote-attestation statement.
 The launch digest is not considered, because it only covers the firmware injected by the CVM platform and may change whenever the CVM platform is updated.
 Currently, on AWS and GCP the TPM implementation resides outside the CVM.
 On Azure, the TPM implementation is part of the injected firmware and resides inside the CVM.
-More information can be found in the [Constellation documentation](https://docs.edgeless.systems/constellation/overview/clouds).
+More information can be found in the our [section about the feature status of clouds](../overview/clouds.md).
 
 ## Kubernetes bootstrapping on the first node
 
@@ -158,7 +164,7 @@ Additional nodes can now join the cluster - either as control-plane nodes or as 
 For both, the process for joining the cluster is identical.
 First, the Bootstrapper running on a _new node_ contacts the JoinService of the existing cluster.
 The JoinService verifies the remote-attestation statement of the new node using the attestation config stored in etcd.
-On success, an aTLS connection between the two is created, which is used mainly for the following (see the the [interface definition](https://github.com/edgelesssys/constellation/blob/main/joinservice/joinproto/join.proto) for a comprehensive list of exchanged data):
+On success, an aTLS connection between the two is created, which is used mainly for the following (see the [interface definition](https://github.com/edgelesssys/constellation/blob/main/joinservice/joinproto/join.proto) for a comprehensive list of exchanged data):
 
 1. The new node sends a certificate signing request (CSR) for its _node certificate_ to the JoinService.
 1. The JoinService issues a corresponding certificate with a lifetime of one year and sends it to the new node.
