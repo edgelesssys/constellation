@@ -3,51 +3,80 @@
 This document describes breaking changes and migrations between Constellation releases.
 Use [`constellation config migrate`](./cli.md#constellation-config-migrate) to automatically update an old config file to a new format.
 
+## Migrations to v2.19.1
+
+### Azure
+
+* During the upgrade, security rules are migrated and the old ones are recommended to be cleaned up manually by the user. This step is recommended but not strictly required. The below script shows how to programatically delete the old rules through the Azure CLI:
+
+```bash
+#!/bin/bash
+name="<insert>"  # the name provided in the config
+id="<insert>"    # the cluster id
+
+rules=(
+  "kubernetes"
+  "bootstrapper"
+  "verify"
+  "recovery"
+  "join"
+  "debugd"
+  "konnectivity"
+)
+
+for rule in "${rules[@]}"; do
+  echo "Deleting rule: $rule"
+  az network nsg rule delete \
+    --resource-group "$name-rg" \
+    --nsg-name "$name-$id" \
+    --name "$rule"
+done
+
+echo "All specified rules have been deleted."
+```
 
 ## Migrations to v2.19.0
 
 ### Azure
 
-* To allow seamless upgrades on Azure when Kubernetes services of type `LoadBalancer` are deployed, the target  
+* To allow seamless upgrades on Azure when Kubernetes services of type `LoadBalancer` are deployed, the target
  load balancer in which the `cloud-controller-manager` creates load balancing rules was changed. Instead of using the load balancer
  created and maintained by the CLI's Terraform code, the `cloud-controller-manager` now creates its own load balancer in Azure.
  If your Constellation has services of type `LoadBalancer`, please remove them before the upgrade and re-apply them
- afterward. 
-
+ afterward.
 
 ## Migrating from Azure's service principal authentication to managed identity authentication (during the upgrade to Constellation v2.8.0)
 
-- The `provider.azure.appClientID` and `provider.azure.appClientSecret` fields are no longer supported and should be removed.
-- To keep using an existing UAMI, add the `Owner` permission with the scope of your `resourceGroup`.
-- Otherwise, simply [create new Constellation IAM credentials](../workflows/config.md#creating-an-iam-configuration) and use the created UAMI.
-- To migrate the authentication for an existing cluster on Azure to an UAMI with the necessary permissions:
+* The `provider.azure.appClientID` and `provider.azure.appClientSecret` fields are no longer supported and should be removed.
+* To keep using an existing UAMI, add the `Owner` permission with the scope of your `resourceGroup`.
+* Otherwise, simply [create new Constellation IAM credentials](../workflows/config.md#creating-an-iam-configuration) and use the created UAMI.
+* To migrate the authentication for an existing cluster on Azure to an UAMI with the necessary permissions:
   1. Remove the `aadClientId` and `aadClientSecret` from the azureconfig secret.
   2. Set `useManagedIdentityExtension` to `true`  and use the `userAssignedIdentity` from the Constellation config for the value of `userAssignedIdentityID`.
   3. Restart the CSI driver, cloud controller manager, cluster autoscaler, and Constellation operator pods.
 
-
 ## Migrating from CLI versions before 2.10
 
-- AWS cluster upgrades require additional IAM permissions for the newly introduced `aws-load-balancer-controller`. Please upgrade your IAM roles using `iam upgrade apply`. This will show necessary changes and apply them, if desired.
-- The global `nodeGroups` field was added.
-- The fields `instanceType`, `stateDiskSizeGB`, and `stateDiskType` for each cloud provider are now part of the configuration of individual node groups.
-- The `constellation create` command no longer uses the flags `--control-plane-count` and `--worker-count`. Instead, the initial node count is configured per node group in the `nodeGroups` field.
+* AWS cluster upgrades require additional IAM permissions for the newly introduced `aws-load-balancer-controller`. Please upgrade your IAM roles using `iam upgrade apply`. This will show necessary changes and apply them, if desired.
+* The global `nodeGroups` field was added.
+* The fields `instanceType`, `stateDiskSizeGB`, and `stateDiskType` for each cloud provider are now part of the configuration of individual node groups.
+* The `constellation create` command no longer uses the flags `--control-plane-count` and `--worker-count`. Instead, the initial node count is configured per node group in the `nodeGroups` field.
 
 ## Migrating from CLI versions before 2.9
 
-- The `provider.azure.appClientID` and `provider.azure.clientSecretValue` fields were removed to enforce migration to managed identity authentication
+* The `provider.azure.appClientID` and `provider.azure.clientSecretValue` fields were removed to enforce migration to managed identity authentication
 
 ## Migrating from CLI versions before 2.8
 
-- The `measurements` field for each cloud service provider was replaced with a global `attestation` field.
-- The `confidentialVM`, `idKeyDigest`, and `enforceIdKeyDigest` fields for the Azure cloud service provider were removed in favor of using the global `attestation` field.
-- The optional global field `attestationVariant` was replaced by the now required `attestation` field.
+* The `measurements` field for each cloud service provider was replaced with a global `attestation` field.
+* The `confidentialVM`, `idKeyDigest`, and `enforceIdKeyDigest` fields for the Azure cloud service provider were removed in favor of using the global `attestation` field.
+* The optional global field `attestationVariant` was replaced by the now required `attestation` field.
 
 ## Migrating from CLI versions before 2.3
 
-- The `sshUsers` field was deprecated in v2.2 and has been removed from the configuration in v2.3.
+* The `sshUsers` field was deprecated in v2.2 and has been removed from the configuration in v2.3.
   As an alternative for SSH, check the workflow section [Connect to nodes](../workflows/troubleshooting.md#node-shell-access).
-- The `image` field for each cloud service provider has been replaced with a global `image` field. Use the following mapping to migrate your configuration:
+* The `image` field for each cloud service provider has been replaced with a global `image` field. Use the following mapping to migrate your configuration:
     <details>
     <summary>Show all</summary>
 
@@ -77,10 +106,11 @@ Use [`constellation config migrate`](./cli.md#constellation-config-migrate) to a
     | GCP   | `projects/constellation-images/global/images/constellation-v2-2-0`                                                                                                                    | `v2.2.0`  |
     | GCP   | `projects/constellation-images/global/images/constellation-v2-1-0`                                                                                                                    | `v2.1.0`  |
     | GCP   | `projects/constellation-images/global/images/constellation-v2-0-0`                                                                                                                    | `v2.0.0`  |
+
     </details>
-- The `enforcedMeasurements` field has been removed and merged with the `measurements` field.
-  - To migrate your config containing a new image (`v2.3` or greater), remove the old `measurements` and `enforcedMeasurements` entries from your config and run `constellation fetch-measurements`
-  - To migrate your config containing an image older than `v2.3`, remove the `enforcedMeasurements` entry and replace the entries in `measurements` as shown in the example below:
+* The `enforcedMeasurements` field has been removed and merged with the `measurements` field.
+  * To migrate your config containing a new image (`v2.3` or greater), remove the old `measurements` and `enforcedMeasurements` entries from your config and run `constellation fetch-measurements`
+  * To migrate your config containing an image older than `v2.3`, remove the `enforcedMeasurements` entry and replace the entries in `measurements` as shown in the example below:
 
     ```diff
     measurements:
