@@ -7,7 +7,7 @@ Use [`constellation config migrate`](./cli.md#constellation-config-migrate) to a
 
 ### Azure
 
-* During the upgrade, security rules are migrated and the old ones are recommended to be cleaned up manually by the user. This step is recommended but not strictly required. The below script shows how to programatically delete the old rules through the Azure CLI:
+* During the upgrade, security rules are migrated and the old ones need to be cleaned up manually by the user. The below script shows how to delete them through the Azure CLI:
 
 ```bash
 #!/bin/bash
