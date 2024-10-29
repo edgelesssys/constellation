@@ -550,15 +550,16 @@ func validInstanceTypeForProvider(insType string, attestation variant.Variant, p
 		}
 	case variant.QEMUVTPM{}, variant.QEMUTDX{}:
 		// only allow confidential instances on stackit cloud using QEMU vTPM
-		if cloud := provider.OpenStack.Cloud; strings.ToLower(cloud) == "stackit" {
-			for _, instanceType := range instancetypes.STACKITInstanceTypes {
-				if insType == instanceType {
-					return true
+		if provider.OpenStack != nil {
+			if cloud := provider.OpenStack.Cloud; strings.ToLower(cloud) == "stackit" {
+				for _, instanceType := range instancetypes.STACKITInstanceTypes {
+					if insType == instanceType {
+						return true
+					}
 				}
+				return false
 			}
-			return false
 		}
-
 		return true
 	}
 	return false

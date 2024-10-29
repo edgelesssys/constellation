@@ -826,6 +826,23 @@ func TestValidInstanceTypeForProvider(t *testing.T) {
 			expectedResult: false,
 			providerConfig: ProviderConfig{OpenStack: &OpenStackConfig{Cloud: "stackit"}},
 		},
+		"openstack cloud named test": {
+			variant: variant.QEMUVTPM{},
+			instanceTypes: []string{
+				"foo.bar",
+				"foo.bar1",
+			},
+			expectedResult: true,
+			providerConfig: ProviderConfig{OpenStack: &OpenStackConfig{Cloud: "test"}},
+		},
+		"Qemutdx valid instance type": {
+			variant: variant.QEMUTDX{},
+			instanceTypes: []string{
+				"foo.bar",
+			},
+			expectedResult: true,
+			providerConfig: ProviderConfig{QEMU: &QEMUConfig{}},
+		},
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
