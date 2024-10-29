@@ -1,6 +1,6 @@
 module(name = "constellation")
 
-bazel_dep(name = "aspect_bazel_lib", version = "2.9.2")
+bazel_dep(name = "aspect_bazel_lib", version = "2.9.3")
 
 bazel_lib = use_extension("@aspect_bazel_lib//lib:extensions.bzl", "toolchains")
 bazel_lib.yq()
