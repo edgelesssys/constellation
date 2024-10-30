@@ -4,5 +4,5 @@ set -euxo pipefail
 # Disable password age for Constellation sysusers.
 tmp=$(mktemp)
 cp -a "${BUILDROOT}/etc/shadow-" "${tmp}"
-mkosi-chroot chage -d "20014" etcd
+mkosi-chroot chage -d "" etcd
 cp -a "${tmp}" "${BUILDROOT}/etc/shadow-"
