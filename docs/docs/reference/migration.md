@@ -10,9 +10,10 @@ Use [`constellation config migrate`](./cli.md#constellation-config-migrate) to a
 * During the upgrade, security rules are migrated and the old ones need to be cleaned up manually by the user. The below script shows how to delete them through the Azure CLI:
 
 ```bash
-#!/bin/bash
+#!/usr/bin/env bash
 name="<insert>"  # the name provided in the config
-id="<insert>"    # the cluster id
+uid="<insert>"    # the cluster id can be retrieved via `yq '.infrastructure.uid' constellation-state.yaml`
+resource_group="<insert>" # the RG can be retrieved via `yq '.provider.azure.resourceGroup' constellation-conf.yaml`
 
 rules=(
   "kubernetes"
@@ -24,11 +25,11 @@ rules=(
   "konnectivity"
 )
 
-for rule in "${rules[@]}"; do
-  echo "Deleting rule: $rule"
+  echo "Deleting rule: ${rule}"
   az network nsg rule delete \
-    --resource-group "$name-rg" \
-    --nsg-name "$name-$id" \
+    --resource-group "${resource_group}" \
+    --nsg-name "${name}-${uid}" \
+    --name "${rule}"
     --name "$rule"
 done
 
