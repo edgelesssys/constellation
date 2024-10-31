@@ -25,6 +25,7 @@ rules=(
   "konnectivity"
 )
 
+for rule in "${rules[@]}"; do
   echo "Deleting rule: ${rule}"
   az network nsg rule delete \
     --resource-group "${resource_group}" \
