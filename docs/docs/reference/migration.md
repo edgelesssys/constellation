@@ -31,7 +31,6 @@ for rule in "${rules[@]}"; do
     --resource-group "${resource_group}" \
     --nsg-name "${name}-${uid}" \
     --name "${rule}"
-    --name "$rule"
 done
 
 echo "All specified rules have been deleted."
