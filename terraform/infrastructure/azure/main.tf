@@ -227,36 +227,15 @@ resource "azurerm_network_security_group" "security_group" {
   location            = var.location
   resource_group_name = var.resource_group
   tags                = local.tags
-
-  dynamic "security_rule" {
-    # we keep this rule for one last release since the azurerm provider does not 
-    # support moving security rules that are inlined (like this) to the external resource one.
-    # Even worse, just defining the azurerm_network_security_group without the 
-    # "security_rule" block will NOT remove all the rules but do nothing.
-    # TODO(@3u13r): remove the "security_rule" block in the next release after this code has landed.
-    # So either after 2.19 or after 2.18.X if cherry-picked release.
-    for_each = [{ name = "konnectivity", priority = 1000, port = 8132 }]
-    content {
-      name                       = security_rule.value.name
-      priority                   = security_rule.value.priority
-      direction                  = "Inbound"
-      access                     = "Allow"
-      protocol                   = "Tcp"
-      source_port_range          = "*"
-      destination_port_range     = security_rule.value.port
-      source_address_prefix      = "*"
-      destination_address_prefix = "*"
-    }
-  }
 }
 
 resource "azurerm_network_security_rule" "nsg_rule" {
   for_each = {
     for o in local.ports : o.name => o
   }
-
-  name                        = each.value.name
-  priority                    = each.value.priority
+  # TODO(elchead): v2.20.0: remove name suffix and priority offset. Might need to add create_before_destroy to the NSG rule.
+  name                        = "${each.value.name}-new"
+  priority                    = each.value.priority + 10 # offset to not overlap with old rules
   direction                   = "Inbound"
   access                      = "Allow"
   protocol                    = "Tcp"
