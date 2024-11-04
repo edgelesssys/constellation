@@ -23,6 +23,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/e2e/internal/kubectl"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	coreV1 "k8s.io/api/core/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -81,7 +82,8 @@ func TestUpgrade(t *testing.T) {
 	log.Println(string(data))
 
 	log.Println("Checking upgrade.")
-	runUpgradeCheck(require, cli, *targetKubernetes)
+	assert := assert.New(t) // use assert because this part is more brittle and should not fail the entire test
+	runUpgradeCheck(assert, cli, *targetKubernetes)
 
 	log.Println("Triggering upgrade.")
 	runUpgradeApply(require, cli)
@@ -170,25 +172,25 @@ func testNodesEventuallyAvailable(t *testing.T, k *kubernetes.Clientset, wantCon
 
 // runUpgradeCheck executes 'upgrade check' and does basic checks on the output.
 // We can not check images upgrades because we might use unpublished images. CLI uses public CDN to check for available images.
-func runUpgradeCheck(require *require.Assertions, cli, targetKubernetes string) {
+func runUpgradeCheck(assert *assert.Assertions, cli, targetKubernetes string) {
 	cmd := exec.CommandContext(context.Background(), cli, "upgrade", "check", "--debug")
 	stdout, stderr, err := runCommandWithSeparateOutputs(cmd)
-	require.NoError(err, "Stdout: %s\nStderr: %s", string(stdout), string(stderr))
+	assert.NoError(err, "Stdout: %s\nStderr: %s", string(stdout), string(stderr))
 
-	require.Contains(string(stdout), "The following updates are available with this CLI:")
-	require.Contains(string(stdout), "Kubernetes:")
+	assert.Contains(string(stdout), "The following updates are available with this CLI:")
+	assert.Contains(string(stdout), "Kubernetes:")
 	log.Printf("targetKubernetes: %s\n", targetKubernetes)
 
 	if targetKubernetes == "" {
 		log.Printf("true\n")
-		require.True(containsAny(string(stdout), versions.SupportedK8sVersions()))
+		assert.True(containsAny(string(stdout), versions.SupportedK8sVersions()))
 	} else {
 		log.Printf("false. targetKubernetes: %s\n", targetKubernetes)
-		require.Contains(string(stdout), targetKubernetes, fmt.Sprintf("Expected Kubernetes version %s in output.", targetKubernetes))
+		assert.Contains(string(stdout), targetKubernetes, fmt.Sprintf("Expected Kubernetes version %s in output.", targetKubernetes))
 	}
 
-	require.Contains(string(stdout), "Services:")
-	require.Contains(string(stdout), fmt.Sprintf("--> %s", constants.BinaryVersion().String()))
+	assert.Contains(string(stdout), "Services:")
+	assert.Contains(string(stdout), fmt.Sprintf("--> %s", constants.BinaryVersion().String()))
 
 	log.Println(string(stdout))
 }

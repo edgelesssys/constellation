@@ -297,10 +297,10 @@ func getCLIPath(cliPathFlag string) (string, error) {
 	pathCLI := os.Getenv("PATH_CLI")
 	var relCLIPath string
 	switch {
-	case pathCLI != "":
-		relCLIPath = pathCLI
 	case cliPathFlag != "":
 		relCLIPath = cliPathFlag
+	case pathCLI != "":
+		relCLIPath = pathCLI
 	default:
 		return "", errors.New("neither 'PATH_CLI' nor 'cli' flag set")
 	}
