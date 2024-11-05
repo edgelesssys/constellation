@@ -395,7 +395,11 @@ Use one of the following options on a trusted machine:
 You need to authenticate with the infrastructure API (OpenStack) and create a service account (STACKIT API).
 
 1. [Follow the STACKIT documentation](https://docs.stackit.cloud/stackit/en/step-1-generating-of-user-access-token-11763726.html) for obtaining a User Access Token (UAT) to use the infrastructure API
-2. Create a configuration file under `~/.config/openstack/clouds.yaml` (`%AppData%\openstack\clouds.yaml` on Windows) with the credentials from the User Access Token
+2. Create a configuration file with the credentials from the User Access Token under:
+    * Linux: `~/.config/openstack/clouds.yaml`
+    * Mac OS: `/Users/<user>/Library/Application Support/openstack/clouds.yaml` or `/etc/openstack/clouds.yaml`
+    * Windows: `%AppData%\openstack\clouds.yaml`
+
 
     ```yaml
     clouds:
@@ -411,6 +415,12 @@ You need to authenticate with the infrastructure API (OpenStack) and create a se
             region_name: RegionOne
             identity_api_version: 3
     ```
+
+:::caution
+
+`project_id` refers to the ID of your STACKIT project. The STACKIT portal also shows the OpenStack ID that's associated with your project in some places. Make sure you insert the STACKIT project ID in the `clouds.yaml` file. It's of the format "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX".
+
+:::
 
 3. [Follow the STACKIT documentation](https://docs.stackit.cloud/stackit/en/getting-started-in-service-accounts-134415831.html) for creating a service account and an access token
 4. Assign the `editor` role to the service account by [following the documentation](https://docs.stackit.cloud/stackit/en/getting-started-in-service-accounts-134415831.html)
