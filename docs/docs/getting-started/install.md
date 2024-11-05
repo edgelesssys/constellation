@@ -397,7 +397,7 @@ You need to authenticate with the infrastructure API (OpenStack) and create a se
 1. [Follow the STACKIT documentation](https://docs.stackit.cloud/stackit/en/step-1-generating-of-user-access-token-11763726.html) for obtaining a User Access Token (UAT) to use the infrastructure API
 2. Create a configuration file with the credentials from the User Access Token under:
     * Linux: `~/.config/openstack/clouds.yaml`
-    * Mac OS: `/Users/<user>/Library/Application Support/openstack/clouds.yaml` or `/etc/openstack/clouds.yaml`
+    * macOS: `/Users/<user>/Library/Application Support/openstack/clouds.yaml` or `/etc/openstack/clouds.yaml`
     * Windows: `%AppData%\openstack\clouds.yaml`
 
 
