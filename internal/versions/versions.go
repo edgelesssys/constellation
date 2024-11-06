@@ -181,11 +181,11 @@ const (
 
 	// currently supported versions.
 	//nolint:revive
-	V1_28 ValidK8sVersion = "v1.28.14" // renovate:kubernetes-release
+	V1_28 ValidK8sVersion = "v1.28.15" // renovate:kubernetes-release
 	//nolint:revive
-	V1_29 ValidK8sVersion = "v1.29.9" // renovate:kubernetes-release
+	V1_29 ValidK8sVersion = "v1.29.10" // renovate:kubernetes-release
 	//nolint:revive
-	V1_30 ValidK8sVersion = "v1.30.5" // renovate:kubernetes-release
+	V1_30 ValidK8sVersion = "v1.30.6" // renovate:kubernetes-release
 
 	// Default k8s version deployed by Constellation.
 	Default ValidK8sVersion = V1_29
@@ -198,7 +198,7 @@ const (
 // VersionConfigs holds download URLs for all required kubernetes components for every supported version.
 var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 	V1_28: {
-		ClusterVersion: "v1.28.14", // renovate:kubernetes-release
+		ClusterVersion: "v1.28.15", // renovate:kubernetes-release
 		KubernetesComponents: components.Components{
 			{
 				Url:         "https://github.com/containernetworking/plugins/releases/download/v1.6.0/cni-plugins-linux-amd64-v1.6.0.tgz", // renovate:cni-plugins-release
@@ -265,7 +265,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.28.6@sha256:acfc7fe7543f4cf2fcf8156145925bee76eb6c602bb0b8e155456c6818fe8335", // renovate:container
 	},
 	V1_29: {
-		ClusterVersion: "v1.29.9", // renovate:kubernetes-release
+		ClusterVersion: "v1.29.10", // renovate:kubernetes-release
 		KubernetesComponents: components.Components{
 			{
 				Url:         "https://github.com/containernetworking/plugins/releases/download/v1.6.0/cni-plugins-linux-amd64-v1.6.0.tgz", // renovate:cni-plugins-release
@@ -332,7 +332,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.29.4@sha256:786728c85787a58c6376b47d2e22cc04db3ecfdd73a52b5b9be20fd869abce2f", // renovate:container
 	},
 	V1_30: {
-		ClusterVersion: "v1.30.5", // renovate:kubernetes-release
+		ClusterVersion: "v1.30.6", // renovate:kubernetes-release
 		KubernetesComponents: components.Components{
 			{
 				Url:         "https://github.com/containernetworking/plugins/releases/download/v1.6.0/cni-plugins-linux-amd64-v1.6.0.tgz", // renovate:cni-plugins-release
