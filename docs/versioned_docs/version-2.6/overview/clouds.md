@@ -24,7 +24,7 @@ The following table summarizes the state of features for different infrastructur
 
 With its [CVM offering](https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview), Azure provides the best foundations for Constellation. Regarding (3), Azure provides direct access to remote-attestation statements. However, regarding (4), the standard CVMs still include closed-source firmware running in VM Privilege Level (VMPL) 0. This firmware is signed by Azure. The signature is reflected in the remote-attestation statements of CVMs. Thus, the Azure closed-source firmware becomes part of Constellation's trusted computing base (TCB).
 
-\* Recently, Azure [announced](https://techcommunity.microsoft.com/t5/azure-confidential-computing/azure-confidential-vms-using-sev-snp-dcasv5-ecasv5-are-now/ba-p/3573747) the *limited preview* of CVMs with customizable firmware. With this CVM type, (4) switches from *No* to *Yes*. Constellation will support customizable firmware on Azure in the future.
+\* Recently, Azure [announced](https://techcommunity.microsoft.com/blog/windowsosplatform/openhcl-the-new-open-source-paravisor/4273172) the open source paravisor OpenHCL. It is the foundation for fully open source and verifiable CVM firmware. Once, Azure provides their CVM firmware with reproducible builds based on OpenHCL, (4) switches from *No* to *Yes*. Constellation will support OpenHCL based firmware on Azure in the future.
 
 ## Google Cloud Platform (GCP)
 
