@@ -19,7 +19,7 @@ The following table summarizes the state of features for different infrastructur
 | **1. Custom images**              | Yes       | Yes     | Yes     | Yes                  |
 | **2. SEV-SNP or TDX**             | Yes       | Yes     | Yes     | Depends on kernel/HV |
 | **3. Raw guest attestation**      | Yes       | Yes     | Yes     | Depends on kernel/HV |
-| **4. Reviewable firmware**        | No        | No      | Yes     | Depends on kernel/HV |
+| **4. Reviewable firmware**        | No*       | No      | Yes     | Depends on kernel/HV |
 | **5. Confidential measured boot** | Yes       | No      | No      | Depends on kernel/HV |
 
 ## Microsoft Azure
@@ -31,6 +31,8 @@ On SEV-SNP, Azure uses VM Privilege Level (VMPL) isolation for the separation of
 This firmware is signed by Azure.
 The signature is reflected in the remote-attestation statements of CVMs.
 Thus, the Azure closed-source firmware becomes part of Constellation's trusted computing base (TCB).
+
+\* Recently, [Azure announced the open source paravisor OpenHCL](https://techcommunity.microsoft.com/blog/windowsosplatform/openhcl-the-new-open-source-paravisor/4273172). It's the foundation for fully open source and verifiable CVM firmware. Once Azure provides their CVM firmware with reproducible builds based on OpenHCL, (4) switches from *No* to *Yes*. Constellation will support OpenHCL based firmware on Azure in the future.
 
 ## Google Cloud Platform (GCP)
 
