@@ -19,4 +19,6 @@ const (
 	PlaceholderControlPlaneScalingGroupName = "control-planes-id"
 	// PlaceholderWorkerScalingGroupName name of the worker scaling group used if upgrades are not yet supported.
 	PlaceholderWorkerScalingGroupName = "workers-id"
+	// ControlPlaneRoleLabel label used to identify control plane nodes.
+	ControlPlaneRoleLabel = "node-role.kubernetes.io/control-plane"
 )

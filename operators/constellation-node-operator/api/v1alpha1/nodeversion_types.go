@@ -21,6 +21,8 @@ type NodeVersionSpec struct {
 	KubernetesComponentsReference string `json:"kubernetesComponentsReference,omitempty"`
 	// KubernetesClusterVersion is the advertised Kubernetes version of the cluster.
 	KubernetesClusterVersion string `json:"kubernetesClusterVersion,omitempty"`
+	// MaxNodeBudget is the maximum number of nodes that can be created simultaneously.
+	MaxNodeBudget uint32 `json:"maxNodeBudget,omitempty"`
 }
 
 // NodeVersionStatus defines the observed state of NodeVersion.
