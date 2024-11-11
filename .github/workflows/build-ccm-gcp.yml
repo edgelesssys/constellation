@@ -36,7 +36,7 @@ jobs:
 
       - name: Install Crane
         run: |
-          go install github.com/google/go-containerregistry/cmd/crane@latest
+          go install github.com/google/go-containerregistry/cmd/crane@c195f151efe3369874c72662cd69ad43ee485128 # v0.20.2
 
       - name: Find versions
         id: find-versions
