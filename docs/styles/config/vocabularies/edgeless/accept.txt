@@ -53,6 +53,7 @@ Mbps
 MicroK8s
 namespace
 Nginx
+paravisor
 PCR
 plaintext
 proxied
