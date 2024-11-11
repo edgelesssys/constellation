@@ -23,9 +23,9 @@ With the above, Constellation wraps an entire cluster into one coherent and veri
 
 ![Confidential Kubernetes](../_media/concept-constellation.svg)
 
-## Contrast: Managed Kubernetes with CVMs
+## Comparison: Managed Kubernetes with CVMs
 
-In contrast, managed Kubernetes with CVMs, as it's for example offered in [AKS](https://azure.microsoft.com/en-us/services/kubernetes-service/) and [GKE](https://cloud.google.com/kubernetes-engine), only provides runtime encryption for certain worker nodes. Here, each worker node is a separate (and typically unverified) confidential context. This only provides limited security benefits as it only prevents direct access to a worker node's memory. The large majority of potential attacks through the infrastructure remain unaffected. This includes attacks through the control plane, access to external key management, and the corruption of worker node images. This leaves many problems unsolved. For instance, *Node A* has no means to verify if *Node B* is "good" and if it's OK to share data with it. Consequently, this approach leaves a large attack surface, as is depicted in the following.
+In comparison, managed Kubernetes with CVMs, as it's for example offered in [AKS](https://azure.microsoft.com/en-us/services/kubernetes-service/) and [GKE](https://cloud.google.com/kubernetes-engine), only provides runtime encryption for certain worker nodes. Here, each worker node is a separate (and typically unverified) confidential context. This only provides limited security benefits as it only prevents direct access to a worker node's memory. The large majority of potential attacks through the infrastructure remain unaffected. This includes attacks through the control plane, access to external key management, and the corruption of worker node images. This leaves many problems unsolved. For instance, *Node A* has no means to verify if *Node B* is "good" and if it's OK to share data with it. Consequently, this approach leaves a large attack surface, as is depicted in the following.
 
 ![Concept: Managed Kubernetes plus CVMs](../_media/concept-managed.svg)
 
