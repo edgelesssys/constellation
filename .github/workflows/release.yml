@@ -92,7 +92,7 @@ jobs:
       - name: Create docs release
         working-directory: docs
         run: |
-          npm install
+          npm ci
           npm run docusaurus docs:version "${MAJOR_MINOR}"
 
       - name: Create docs pull request
