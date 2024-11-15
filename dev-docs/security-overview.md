@@ -79,11 +79,15 @@ Abstractly, a remote-attestation statement `R` from a CVM looks as follows:
 R = Sig-CPU(<launch digest>, <auxiliary data>, <payload>)
 ```
 
-The `payload` is controlled by the software running inside the CVM.
+The field `payload` is controlled by the software running inside the CVM.
 In the case of a Constellation node, the `payload` is always the public key of the respective Bootstrapper running inside the CVM.
 Thus, `R` can be seen as a certificate for that public key issued by the CPU.
 Based on this, nodes establish attested TLS (aTLS) connections.
 aTLS is used during [cluster creation](#cluster-creation) and when [growing a cluster](#cluster-growth).
+
+The field `auxiliary data` is populated automatically by the CVM platform and, among others, includes information like CPU firmware versions. 
+
+Note that this description of `R` is highly abstract.
 
 ### Measurements
 
@@ -101,7 +105,7 @@ In measured boot, in general, the software components involved in the boot proce
 The values of these registers are also called "runtime measurements".
 All supported CVM platforms provide TPMs to CVMs.
 Constellation nodes use these to measure their boot process.
-They include the 16 runtime measurements as `auxiliary data` in `R`.
+They include the 16 runtime measurements as part of `payload` in `R`. Thus, abstractly, `payload` here has the following format: `payload = <PCRs> | <bootstrapper public key>`.
 On each CVM platform, runtime measurements are taken differently.
 Details on this are given in the [Constellation documentation](https://docs.edgeless.systems/constellation/architecture/attestation#runtime-measurements).
 
