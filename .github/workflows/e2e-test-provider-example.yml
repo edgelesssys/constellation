@@ -353,7 +353,7 @@ jobs:
         shell: bash
         run: |
           terraform init
-          terraform destroy -auto-approve
+          terraform destroy -auto-approve -lock=false
 
       - name: Add Provider to local Terraform registry # needed if release version was used before
         if: inputs.providerVersion != ''
@@ -475,7 +475,7 @@ jobs:
         shell: bash
         run: |
           terraform init
-          terraform destroy -auto-approve
+          terraform destroy -auto-approve -lock=false
 
       - name: Notify about failure
         if: |
