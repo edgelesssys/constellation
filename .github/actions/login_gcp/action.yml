@@ -22,7 +22,7 @@ runs:
     - name: Authorize GCP access
       uses: google-github-actions/auth@71fee32a0bb7e97b4d33d548e7d957010649d8fa # v2.1.3
       with:
-        workload_identity_provider: projects/796962942582/locations/global/workloadIdentityPools/constellation-ci-pool/providers/constellation-ci-provider
+        workload_identity_provider: projects/1052692473304/locations/global/workloadIdentityPools/constellation-ci-pool/providers/constellation-ci-provider
         service_account: ${{ inputs.service_account }}
 
     # Even if preinstalled in Github Actions runner image, this setup does some magic authentication required for gsutil.
