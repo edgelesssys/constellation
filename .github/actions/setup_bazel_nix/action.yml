@@ -114,6 +114,8 @@ runs:
     - name: Install nix
       if: steps.check_inputs.outputs.nixPreinstalled == 'false'
       uses: cachix/install-nix-action@08dcb3a5e62fa31e2da3d490afc4176ef55ecd72 # v30
+      with:
+        install_url: "https://releases.nixos.org/nix/nix-2.25.2/install"
 
     - name: Set $USER if not set
       shell: bash
