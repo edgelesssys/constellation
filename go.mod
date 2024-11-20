@@ -5,6 +5,9 @@ go 1.23.2
 // TODO(daniel-weisse): revert after merging https://github.com/martinjungblut/go-cryptsetup/pull/16.
 replace github.com/martinjungblut/go-cryptsetup => github.com/daniel-weisse/go-cryptsetup v0.0.0-20230705150314-d8c07bd1723c
 
+// TODO(daniel-weisse): revert after merging https://github.com/google/go-sev-guest/pull/141
+replace github.com/google/go-sev-guest => github.com/daniel-weisse/go-sev-guest v0.0.0-20241119094629-5e3e5f5cbfed
+
 // Kubernetes replace directives are required because we depend on k8s.io/kubernetes/cmd/kubeadm
 // k8s discourages usage of k8s.io/kubernetes as a dependency, but no external staging repositories for kubeadm exist.
 // Our code does not actually depend on these packages, but `go mod download` breaks without this replace directive.
@@ -326,7 +329,6 @@ require (
 	github.com/opencontainers/runc v1.1.13 // indirect
 	github.com/opencontainers/runtime-spec v1.2.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
-	github.com/pborman/uuid v1.2.1 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
