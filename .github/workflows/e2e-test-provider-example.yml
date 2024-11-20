@@ -407,7 +407,7 @@ jobs:
         shell: bash
         run: |
           terraform init --upgrade
-          timeout 4h terraform apply -auto-approve
+          timeout 1h terraform apply -auto-approve
 
       - name: Assert upgrade successful
         working-directory: ${{ github.workspace }}/cluster
