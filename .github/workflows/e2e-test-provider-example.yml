@@ -337,12 +337,12 @@ jobs:
           sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts'
           terraform init
           if [[ "${{ inputs.attestationVariant }}" == "azure-sev-snp" ]]; then
-            terraform apply -target module.azure_iam -auto-approve
-            terraform apply -target module.azure_infrastructure -auto-approve
+            timeout 1h terraform apply -target module.azure_iam -auto-approve
+            timeout 1h terraform apply -target module.azure_infrastructure -auto-approve
             ${{ github.workspace }}/build/constellation maa-patch "$(terraform output -raw maa_url)"
-            terraform apply -target constellation_cluster.azure_example -auto-approve
+            timeout 1h terraform apply -target constellation_cluster.azure_example -auto-approve
           else
-            terraform apply -auto-approve
+            timeout 1h terraform apply -auto-approve
           fi
 
       - name: Cleanup Terraform Cluster on failure
@@ -353,7 +353,7 @@ jobs:
         shell: bash
         run: |
           terraform init
-          terraform destroy -auto-approve
+          terraform destroy -auto-approve -lock=false
 
       - name: Add Provider to local Terraform registry # needed if release version was used before
         if: inputs.providerVersion != ''
@@ -407,7 +407,7 @@ jobs:
         shell: bash
         run: |
           terraform init --upgrade
-          terraform apply -auto-approve
+          timeout 1h terraform apply -auto-approve
 
       - name: Assert upgrade successful
         working-directory: ${{ github.workspace }}/cluster
@@ -475,7 +475,7 @@ jobs:
         shell: bash
         run: |
           terraform init
-          terraform destroy -auto-approve
+          terraform destroy -auto-approve -lock=false
 
       - name: Notify about failure
         if: |
