@@ -258,8 +258,6 @@ github.com/cyphar/filepath-securejoin v0.3.1 h1:1V7cHiaW+C+39wEfpH6XlLBQo3j/PciW
 github.com/cyphar/filepath-securejoin v0.3.1/go.mod h1:F7i41x/9cBF7lzCrVsYs9fuzwRZm4NQsGTBdpp6mETc=
 github.com/daniel-weisse/go-cryptsetup v0.0.0-20230705150314-d8c07bd1723c h1:ToajP6trZoiqlZ3Z4uoG1P02/wtqSw1AcowOXOYjATk=
 github.com/daniel-weisse/go-cryptsetup v0.0.0-20230705150314-d8c07bd1723c/go.mod h1:gZoZ0+POlM1ge/VUxWpMmZVNPzzMJ7l436CgkQ5+qzU=
-github.com/daniel-weisse/go-sev-guest v0.0.0-20241119094629-5e3e5f5cbfed h1:GU69wqX8D/EvBYvL+cubkdCrilWioZIrNzINP0t2gaY=
-github.com/daniel-weisse/go-sev-guest v0.0.0-20241119094629-5e3e5f5cbfed/go.mod h1:8+UOtSaqVIZjJJ9DDmgRko3J/kNc6jI5KLHxoeao7cA=
 github.com/danieljoos/wincred v1.2.0 h1:ozqKHaLK0W/ii4KVbbvluM91W2H3Sh0BncbUNPS7jLE=
 github.com/danieljoos/wincred v1.2.0/go.mod h1:FzQLLMKBFdvu+osBrnFODiv32YGwCfx0SkRa/eYHgec=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -454,6 +452,8 @@ github.com/google/go-configfs-tsm v0.2.2 h1:YnJ9rXIOj5BYD7/0DNnzs8AOp7UcvjfTvt21
 github.com/google/go-configfs-tsm v0.2.2/go.mod h1:EL1GTDFMb5PZQWDviGfZV9n87WeGTR/JUg13RfwkgRo=
 github.com/google/go-containerregistry v0.20.2 h1:B1wPJ1SN/S7pB+ZAimcciVD+r+yV/l/DSArMxlbwseo=
 github.com/google/go-containerregistry v0.20.2/go.mod h1:z38EKdKh4h7IP2gSfUUqEvalZBqs6AoLeWfUy34nQC8=
+github.com/google/go-sev-guest v0.11.2-0.20241122022416-97a55186df28 h1:dFOaRoS7lz9+t6aJeWjyBsuIMSZFQEmxGEoTW54sxP0=
+github.com/google/go-sev-guest v0.11.2-0.20241122022416-97a55186df28/go.mod h1:SK9vW+uyfuzYdVN0m8BShL3OQCtXZe/JPF7ZkpD3760=
 github.com/google/go-tdx-guest v0.3.1 h1:gl0KvjdsD4RrJzyLefDOvFOUH3NAJri/3qvaL5m83Iw=
 github.com/google/go-tdx-guest v0.3.1/go.mod h1:/rc3d7rnPykOPuY8U9saMyEps0PZDThLk/RygXm04nE=
 github.com/google/go-tpm v0.9.1 h1:0pGc4X//bAlmZzMKf8iz6IsDo1nYTbYJ6FZN/rg4zdM=

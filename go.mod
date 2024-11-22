@@ -5,9 +5,6 @@ go 1.23.2
 // TODO(daniel-weisse): revert after merging https://github.com/martinjungblut/go-cryptsetup/pull/16.
 replace github.com/martinjungblut/go-cryptsetup => github.com/daniel-weisse/go-cryptsetup v0.0.0-20230705150314-d8c07bd1723c
 
-// TODO(daniel-weisse): revert after merging https://github.com/google/go-sev-guest/pull/141
-replace github.com/google/go-sev-guest => github.com/daniel-weisse/go-sev-guest v0.0.0-20241119094629-5e3e5f5cbfed
-
 // Kubernetes replace directives are required because we depend on k8s.io/kubernetes/cmd/kubeadm
 // k8s discourages usage of k8s.io/kubernetes as a dependency, but no external staging repositories for kubeadm exist.
 // Our code does not actually depend on these packages, but `go mod download` breaks without this replace directive.
@@ -70,7 +67,7 @@ require (
 	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.22.1
 	github.com/golang-jwt/jwt/v5 v5.2.1
-	github.com/google/go-sev-guest v0.11.1
+	github.com/google/go-sev-guest v0.11.2-0.20241122022416-97a55186df28
 	github.com/google/go-tdx-guest v0.3.1
 	github.com/google/go-tpm v0.9.1
 	github.com/google/go-tpm-tools v0.4.4
