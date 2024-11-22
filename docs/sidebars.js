@@ -264,7 +264,7 @@ const sidebars = {
         },
         {
           type: "category",
-          label: "Protection mechanisms",
+          label: "Security concept",
           items: [
             {
               type: "doc",
