@@ -91,21 +91,16 @@ For AMD SEV-SNP, a different solution exists.
 ## Remote attestation of nodes
 
 To identify themselves, nodes use the remote-attestation functionality of the underlying CVM platform.
-Constellation supports Intel TDX and AMD SEV-SNP based platforms.
-Abstractly, Intel TDX and AMD SEV-SNP hash the initial memory contents of the CVMs.
-This hash is also called `launch digest`.
-The launch digest is reflected in each remote-attestation statement that is requested by the software inside the CVM.
-Abstractly, a remote-attestation statement `R` from a CVM looks as follows:
+Constellation supports Intel TDX and AMD SEV-SNP based platforms. Abstractly, a remote-attestation statement `R` from a CVM looks as follows:
 
 ```
 R = Sig-CPU(<launch digest>, <auxiliary data>, <payload>)
 ```
 
-The `payload` is controlled by the software running inside the CVM.
-In the case of a Constellation node, the `payload` is always the public key of the respective Bootstrapper running inside the CVM.
-Thus, `R` can be seen as a certificate for that public key issued by the CPU.
-Based on this, nodes establish attested TLS (aTLS) connections.
-aTLS is used during [cluster creation](#cluster-creation) and when [growing a cluster](#cluster-growth).
+- `payload`: This is controlled by the software running inside the CVM. In the case of a Constellation node, the payload is always the public key of the respective Bootstrapper running inside the CVM. Thus, `R` can be seen as a certificate for that public key issued by the CPU. Based on this, nodes establish attested TLS (aTLS) connections.
+  aTLS is used during [cluster creation](#cluster-creation) and when [growing a cluster](#cluster-growth).
+- `launch digest`: Abstactly, this is the hash of the initial memory contents of a CVM, provided by Intel TDX or AMD SEV-SNP. The initial setup of the CVM includes only third-party code provided by the cloud provider.
+- `auxiliary data`: Includes the digest of the subsequent booting process within the CVM, such as booting the Constellation node image and loading the Bootstrapper. This digest is stored in several of the 16 virtual registers provided by a virtual Trusted Platform Module (vTPM). This mechanism ensures the integrity and identity of a node, as explained in the following sections.
 
 ### Measurements
 

@@ -10,7 +10,7 @@ This section offers a comprehensive overview of Constellation's inner workings. 
   - [Constellation's core services](./components/microservices.md): These services run on the control planes, enabling secure protocols for cluster scaling and performing integrity checks.
   - [Operating system images](./components/node-images.md): Constellation offers optimized OS images for Kubernetes control-plane and worker nodes, tailored for containerized workloads and ready for confidential VMs.
 
-- [**Security concept**](./security/attestation.md): A detailed exploration of the concepts that provide strong protection for your Kubernetes clusters, including:
+- [**Security concepts**](./security/attestation.md): A detailed exploration of the concepts that provide strong protection for your Kubernetes clusters, including:
 
   - [Attestation](./security/attestation.md): Describes the process of verifying that your workloads are operating in a secure and protected state.
   - [Encrypted networking](./security/encrypted-networking.md): Explains how Constellation ensures strong encryption for all cluster traffic.

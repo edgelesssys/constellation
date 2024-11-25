@@ -264,7 +264,7 @@ const sidebars = {
         },
         {
           type: "category",
-          label: "Security concept",
+          label: "Security concepts",
           items: [
             {
               type: "doc",
