@@ -7,7 +7,7 @@ load("@rules_oci//oci:pull.bzl", "oci_pull")
 def containter_image_deps():
     oci_pull(
         name = "distroless_static",
-        digest = "sha256:69830f29ed7545c762777507426a412f97dad3d8d32bae3e74ad3fb6160917ea",
+        digest = "sha256:f4a57e8ffd7ba407bdd0eb315bb54ef1f21a2100a7f032e9102e4da34fe7c196",
         image = "gcr.io/distroless/static",
         platforms = [
             "linux/amd64",
