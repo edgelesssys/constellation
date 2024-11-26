@@ -72,10 +72,9 @@ jobs:
             echo "WORKING_BRANCH=${WORKING_BRANCH}"
           } | tee -a "$GITHUB_OUTPUT"
 
-  docs:
-    name: Create docs release (from main)
+  update-main-branch:
+    name: Update main branch with release changes
     runs-on: ubuntu-24.04
-    if: inputs.kind == 'minor'
     needs: verify-inputs
     permissions:
       contents: write
@@ -89,26 +88,51 @@ jobs:
         with:
           ref: main
 
+      - name: Configure git
+        run: |
+          git config --global user.name "edgelessci"
+          git config --global user.email "edgelessci@users.noreply.github.com"
+
       - name: Create docs release
+        if: inputs.kind == 'minor'
         working-directory: docs
         run: |
           npm ci
           npm run docusaurus docs:version "${MAJOR_MINOR}"
+          git add .
+          git commit -am "docs: release ${MAJOR_MINOR}"
+          # Clean up auxiliary files, so next steps run on a clean tree
+          git clean -fdx :/
+
+      - name: Update version.txt
+        if: inputs.kind == 'minor'
+        run: |
+          pre_release_version="v${{ needs.verify-inputs.outputs.PART_MAJOR }}.$((${{ needs.verify-inputs.outputs.PART_MINOR }} + 1)).0-pre"
+          echo "${pre_release_version}" > version.txt
+          git add version.txt
+          git commit -m "chore: update version.txt to ${pre_release_version}"
+
+      - name: Update CI for new version
+        run: |
+          sed -i 's/fromVersion: \["[^"]*"\]/fromVersion: ["${{ inputs.version }}"]/g' .github/workflows/e2e-test-release.yml
+          sed -i 's/fromVersion: \["[^"]*"\]/fromVersion: ["${{ inputs.version }}"]/g' .github/workflows/e2e-test-weekly.yml
 
       - name: Create docs pull request
         uses: peter-evans/create-pull-request@5e914681df9dc83aa4e4905692ca88beb2f9e91f # v7.0.5
         with:
           branch: ${{ env.BRANCH }}
           base: main
-          title: "docs: add release ${{ env.VERSION }}"
+          title: "Post ${{ env.VERSION }} release updates to main"
           body: |
             :robot: *This is an automated PR.* :robot:
 
             The PR is triggered as part of the automated release process of version ${{ env.VERSION }}.
-            It releases a new version of the documentation.
-          commit-message: "docs: add release ${{ env.VERSION }}"
+          commit-message: "chore: update CI for ${{ env.VERSION }}"
           committer: edgelessci <edgelessci@users.noreply.github.com>
+          author: edgelessci <edgelessci@users.noreply.github.com>
           labels: no changelog
+          assignees: ${{ github.actor }}
+          reviewers: ${{ github.actor }}
           # We need to push changes using a token, otherwise triggers like on:push and on:pull_request won't work.
           token: ${{ !github.event.pull_request.head.repo.fork && secrets.CI_COMMIT_PUSH_PR || '' }}
 

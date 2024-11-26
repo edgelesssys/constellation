@@ -1,0 +1,79 @@
+name: 'Release: on-publish'
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Semantic version tag of the release (vX.Y.Z).'
+        required: true
+
+jobs:
+  post-release-actions:
+    runs-on: ubuntu-24.04
+    permissions:
+      issues: write
+    env:
+      FULL_VERSION: ${{ github.event.release.tag_name }}${{ github.event.inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Mark milestone as complete
+        run: |
+          milestones=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/edgelesssys/constellation/milestones)
+
+          current_milestone=$(echo "${milestones}" | jq -r ".[] | select(.title == \"${FULL_VERSION}\")")
+          echo "current milestone: ${current_milestone}"
+          if [[ -z "${current_milestone}" ]]; then
+            echo "milestone ${FULL_VERSION} does not exist, nothing to do..."
+            exit 0
+          fi
+
+          current_milestone_state=$(echo "${current_milestone}" | jq -r '.state')
+          echo "current milestone state: ${current_milestone_state}"
+          if [[ "${current_milestone_state}" != "open" ]]; then
+            echo "milestone ${FULL_VERSION} is already closed, nothing to do..."
+            exit 0
+          fi
+
+          milestone_number=$(echo "${current_milestone}" | jq -r '.number')
+          echo "milestone number: ${milestone_number}"
+          if [[ -z "${milestone_number}" ]]; then
+            echo "failed parsing milestone number"
+            exit 1
+          fi
+
+          gh api \
+            --method PATCH \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "/repos/edgelesssys/constellation/milestones/${milestone_number}" \
+            -f state=closed
+
+      - name: Create next milestone
+        run: |
+          WITHOUT_V=${FULL_VERSION#v}
+          PART_MAJOR=${WITHOUT_V%%.*}
+          PART_MINOR=${WITHOUT_V#*.}
+          PART_MINOR=${PART_MINOR%%.*}
+          NEXT_MINOR=v${PART_MAJOR}.$((PART_MINOR + 1)).0
+
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/edgelesssys/constellation/milestones |
+            jq -r '.[].title' | \
+            grep -xqF "${NEXT_MINOR}" && exit 0
+
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/edgelesssys/constellation/milestones \
+            -f title="${NEXT_MINOR}" \
+            -f state='open' \
+            -f "due_on=$(date -d '2 months' +'%Y-%m-%dT00:00:00Z')"
