@@ -50,7 +50,7 @@ CSPS = [
     "qemu",
 ]
 
-base_cmdline = "selinux=1 enforcing=0 audit=0"
+base_cmdline = "selinux=1 enforcing=0 audit=0 console=tty1 console=ttyS0"
 
 csp_settings = {
     "aws": {
@@ -62,20 +62,17 @@ csp_settings = {
     },
     "azure": {
         "kernel_command_line_dict": {
-            "console": "ttyS0",
             "constel.csp": "azure",
             "mitigations": "auto,nosmt",
         },
     },
     "gcp": {
         "kernel_command_line_dict": {
-            "console": "ttyS0",
             "constel.csp": "gcp",
             "mitigations": "auto,nosmt",
         },
     },
     "openstack": {
-        "kernel_command_line": "console=tty0 console=ttyS0 console=ttyS1",
         "kernel_command_line_dict": {
             "constel.csp": "openstack",
             "kvm_amd.sev": "1",
@@ -85,9 +82,8 @@ csp_settings = {
         },
     },
     "qemu": {
-        "kernel_command_line": "constellation.console",  # All qemu images have console enabled independent of stream
+        "kernel_command_line": "constel.console",  # All qemu images have console enabled independent of stream
         "kernel_command_line_dict": {
-            "console": "ttyS0",
             "constel.csp": "qemu",
             "mitigations": "auto,nosmt",
         },
@@ -135,10 +131,10 @@ attestation_variant_settings = {
 
 stream_settings = {
     "console": {
-        "kernel_command_line": "constellation.console",
+        "kernel_command_line": "constel.console",
     },
     "debug": {
-        "kernel_command_line": "constellation.debug",
+        "kernel_command_line": "constel.debug",
     },
     "nightly": {},
     "stable": {},
