@@ -173,13 +173,13 @@ func (c *JoinClient) tryJoinWithAvailableServices() (ticket *joinproto.IssueJoin
 
 	endpoint, _, err := c.metadataAPI.GetLoadBalancerEndpoint(ctx)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get load balancer endpoint: %w", err)
+		c.log.Warn("Failed to get load balancer endpoint", "err", err)
 	}
 	endpoints = append(endpoints, endpoint)
 
 	ips, err := c.getControlPlaneIPs(ctx)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get control plane IPs: %w", err)
+		c.log.Warn("Failed to get control plane IPs", "err", err)
 	}
 	endpoints = append(endpoints, ips...)
 
