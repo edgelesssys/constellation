@@ -7,7 +7,7 @@ Currently, Constellation only supports WireGuard as the encryption engine.
 You can read more about the cryptographic soundness of WireGuard [in their white paper](https://www.wireguard.com/papers/wireguard.pdf).
 
 Cilium is actively working on implementing a feature called [`host-to-host`](https://github.com/cilium/cilium/pull/19401) encryption mode for WireGuard.
-With `host-to-host`, all traffic between nodes will be tunneled via WireGuard (host-to-host, host-to-pod, pod-to-host, pod-to-pod).
+With `host-to-host`, all traffic between nodes will be tunneled via WireGuard (node-to-node, node-to-pod, pod-to-node, pod-to-pod).
 Until the `host-to-host` feature is released, Constellation enables `pod-to-pod` encryption.
 This mode encrypts all traffic between Kubernetes pods using WireGuard tunnels.
 

@@ -1,6 +1,6 @@
 # Attestation
 
-Constellation's attestation methods are the cornerstone of establishing trust in a cluster deployment. They are the key to ensuring that clusters always operate in a **protected and trustworthy** state.
+Constellation's attestation methods are the cornerstone of establishing trust in cluster deployments. They are the key to ensuring that clusters always operate in a **protected and trustworthy** state.
 
 ## Key components and concepts
 
@@ -61,16 +61,16 @@ Instead of relying on a certificate authority, aTLS uses this attestation statem
 
 The protocol can be used by clients to verify a server certificate, by a server to verify a client certificate, or for mutual verification (mutual aTLS).
 
-## Overview
+## Attestation in Constellation: from nodes to the entire cluster
 
-The challenge for Constellation is to lift a CVM's attestation statement to the Kubernetes software layer and make it end-to-end verifiable.
-From there, Constellation needs to expand the attestation from a single CVM to the entire cluster.
+One of Constellation's core challenges is extending a CVM's attestation statement to the Kubernetes software layer and ensuring it is verifiable end-to-end. Beyond this, Constellation must scale the attestation from a single CVM to encompass the entire cluster.
 
-The [_JoinService_](../components/microservices.md#joinservice) and [_VerificationService_](../components/microservices.md#verificationservice) are where all runs together.
-Internally, the _JoinService_ uses remote attestation to securely join CVM nodes to the cluster.
-Externally, the _VerificationService_ provides an attestation statement for the cluster's CVMs and configuration.
+The process revolves around two key components: the [_JoinService_](../components/microservices.md#joinservice) and the [_VerificationService_](../components/microservices.md#verificationservice).
 
-The following explains the details of both steps.
+- **JoinService**: Internally, the _JoinService_ uses remote attestation to securely add CVM nodes to the cluster.
+- **VerificationService**: Externally, the _VerificationService_ generates an attestation statement covering both the cluster's CVMs and its configuration.
+
+The following sections provide a detailed explanation of these two steps.
 
 ## Node attestation
 
@@ -115,11 +115,14 @@ The runtime measurements consist of two types of values:
 - **Measurements produced by the Constellation bootloader and boot chain**:
   The Constellation bootloader takes over from the CVM firmware and [measures the rest of the boot chain](../components/node-images.md).
   The Constellation [Bootstrapper](../components/microservices.md#bootstrapper) is the first user mode component that runs in a Constellation image.
-  It extends PCR registers with the [IDs](keys.md#cluster-identity) of the cluster marking a node as initialized.
+
+  Note that the Bootstrapper is included in the root filesystem, with a hash of this filesystem embedded in the kernel command line. By using a minimal filesystem (initramfs) and [dm-verity](https://docs.kernel.org/admin-guide/device-mapper/verity.html), the whole root filesystem's — including the Bootstrapper's — integrity is securely enforced. For more details, see the [Node image](../components/node-images.md#initramfs) section. The kernel, kernel command line, and initramfs are tracked in the PCRs, enabling the Bootstrapper's integrity to be indirectly attested. This is possible because the logic for loading the Bootstrapper and verifying it against a specific hash is itself attested.
+
+  Finally, the Bootstrapper extends the PCR registers with the [cluster IDs](keys.md#cluster-identity), marking a node as initialized.
 
 Constellation allows to specify in the config which measurements should be enforced during the attestation process.
 Enforcing non-reproducible measurements controlled by the cloud provider means that changes in these values require manual updates to the cluster's config.
-By default, Constellation only enforces measurements that are stable values produced by the infrastructure or by Constellation directly.
+By default, Constellation exludes these from its attestation and only enforces measurements that are stable values produced by the infrastructure or by Constellation directly.
 
 <Tabs groupId="csp">
 <TabItem value="aws" label="AWS">
@@ -346,7 +349,7 @@ The _JoinService_ is provided with the runtime measurements of the whitelisted C
 During the initialization and the cluster bootstrapping, each node connects to the _JoinService_ using [aTLS](#attested-tls-atls).
 During the handshake, the node transmits an attestation statement including its runtime measurements.
 The _JoinService_ verifies that statement and compares the measurements against the ground truth.
-For details of the initialization process check the [microservice descriptions](../components/microservices.md).
+For details of the initialization process, check the [Protocol overview](../overview.md#cluster-growth).
 
 After the initialization, every node updates its runtime measurements with the _clusterID_ value, marking it irreversibly as initialized.
 When an initialized node tries to join another cluster, its measurements inevitably mismatch the measurements of an uninitialized node and it will be declined.

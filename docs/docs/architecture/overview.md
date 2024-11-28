@@ -62,7 +62,7 @@ In addition to the attestation config, the CLI contains the following data in ha
 
 ## Cluster creation
 
-When a cluster is [created](https://docs.edgeless.systems/constellation/workflows/create), the CLI interacts with the API of the respective infrastructure provider, for example Azure, and launches CVMs with the applicable node image.
+When a cluster is [created](https://docs.edgeless.systems/constellation/workflows/create) running the `apply` command, the CLI interacts with the API of the respective infrastructure provider, for example Azure, and launches CVMs with the applicable node image.
 These CVMs are called _nodes_.
 On each node, the Bootstrapper is launched.
 
@@ -99,7 +99,7 @@ R = Sig-CPU(<launch digest>, <auxiliary data>, <payload>)
 
 - `payload`: This is controlled by the software running inside the CVM. In the case of a Constellation node, the payload is always the public key of the respective Bootstrapper running inside the CVM. Thus, `R` can be seen as a certificate for that public key issued by the CPU. Based on this, nodes establish attested TLS (aTLS) connections.
   aTLS is used during [cluster creation](#cluster-creation) and when [growing a cluster](#cluster-growth).
-- `launch digest`: Abstactly, this is the hash of the initial memory contents of a CVM, provided by Intel TDX or AMD SEV-SNP. The initial setup of the CVM includes only third-party code provided by the cloud provider.
+- `launch digest`: Abstractly, this refers to the hash of the initial memory contents of a CVM, as measured by Intel TDX or AMD SEV-SNP. The initial setup of the CVM consists solely of third-party code supplied by the cloud provider.
 - `auxiliary data`: Includes the digest of the subsequent booting process within the CVM, such as booting the Constellation node image and loading the Bootstrapper. This digest is stored in several of the 16 virtual registers provided by a virtual Trusted Platform Module (vTPM). This mechanism ensures the integrity and identity of a node, as explained in the following sections.
 
 ### Measurements

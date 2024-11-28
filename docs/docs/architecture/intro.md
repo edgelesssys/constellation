@@ -7,8 +7,8 @@ This section offers a comprehensive overview of Constellation's inner workings. 
 - [**Key components**](./components/cli.md): This chapter outlines Constellation's main components, their roles, and how users interact with them:
 
   - [The CLI](./components/cli.md): A command-line tool to efficiently create and manage your cluster.
-  - [Constellation's core services](./components/microservices.md): These services run on the control planes, enabling secure protocols for cluster scaling and performing integrity checks.
   - [Operating system images](./components/node-images.md): Constellation offers optimized OS images for Kubernetes control-plane and worker nodes, tailored for containerized workloads and ready for confidential VMs.
+  - [Constellation's core services](./components/microservices.md): These services run on the control planes, enabling secure protocols for cluster scaling and performing integrity checks.
 
 - [**Security concepts**](./security/attestation.md): A detailed exploration of the concepts that provide strong protection for your Kubernetes clusters, including:
 

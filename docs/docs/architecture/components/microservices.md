@@ -1,7 +1,7 @@
 # Core services
 
 Constellation takes care of bootstrapping and initializing a confidential Kubernetes cluster.
-During the lifetime of the cluster, it handles day 2 operations such as **key management, remote attestation, and updates**.
+During the lifetime of the cluster, it handles day-2 operations such as **key management, remote attestation, and updates**.
 These features are provided by several microservices:
 
 - The [Bootstrapper](microservices.md#bootstrapper) initializes a Constellation node and bootstraps the cluster
@@ -32,6 +32,8 @@ flowchart LR
     C -- deploys --> F
 ```
 
+An overview of how these services interact with each other when setting up a cluster is provided in the [Protocol overview](../overview.md#cluster-growth). Details about the role of each service are provided below.
+
 ## Bootstrapper
 
 The _Bootstrapper_ is the first microservice launched after booting a Constellation node image.
@@ -43,9 +45,7 @@ Otherwise, it waits for an initialization request to create a new Kubernetes clu
 ## JoinService
 
 The _JoinService_ runs as [DaemonSet](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/) on each control-plane node.
-New nodes (at cluster start, or later through autoscaling) send a request to the service over [attested TLS (aTLS)](../security/attestation.md#attested-tls-atls).
-The _JoinService_ verifies the new node's certificate and attestation statement.
-If attestation is successful, the new node is supplied with an encryption key from the [_KeyService_](microservices.md#keyservice) for its state disk, and a [Kubernetes bootstrap token](https://kubernetes.io/docs/reference/access-authn-authz/bootstrap-tokens/).
+New nodes (either at cluster start or later through autoscaling) send a request to the service over [attested TLS (aTLS)](../security/attestation.md#attested-tls-atls). This connection is established by verifying the attestation statement of the new node, which includes the public key used for the connection. Afterward, the new node communicates with the JoinService as descriped in [Protocol overview](../overview.md#cluster-growth).
 
 ```mermaid
 sequenceDiagram
@@ -53,7 +53,7 @@ sequenceDiagram
     participant JoinService
     New node->>JoinService: aTLS handshake (server side verification)
     JoinService-->>New node: #
-    New node->>+JoinService: IssueJoinTicket(DiskUUID, NodeName, IsControlPlane)
+    New node->>+JoinService: IssueJoinTicket(DiskUUID, CertificateRequest, IsControlPlane)
     JoinService->>+KeyService: GetDataKey(DiskUUID)
     KeyService-->>-JoinService: DiskEncryptionKey
     JoinService-->>-New node: DiskEncryptionKey, KubernetesJoinToken, ...

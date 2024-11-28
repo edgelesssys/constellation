@@ -9,7 +9,7 @@ As described in [Use persistent storage](../../workflows/storage.md), cloud serv
 These CSI storage solutions often support some sort of encryption.
 For example, Google Cloud [encrypts data at rest by default](https://cloud.google.com/security/encryption/default-encryption), without any action required by the customer.
 
-## Cloud provider-managed encryption
+## Cloud provider-managed encryption ❌
 
 CSP-managed storage solutions encrypt the data in the cloud backend before writing it physically to disk.
 In the context of confidential computing and Constellation, the CSP and its managed services aren't trusted.
@@ -20,7 +20,7 @@ Even with "bring your own key" or similar concepts, the CSP performs the encrypt
 In the security model of Constellation, securing persistent storage and thereby data at rest requires that all cryptographic operations are performed inside a trusted execution environment.
 Consequently, using CSP-managed encryption of persistent storage usually isn't an option.
 
-## Constellation-managed encryption
+## Constellation-managed encryption ✅
 
 Constellation provides CSI drivers for storage solutions in all major clouds with built-in encryption support.
 Block storage provisioned by the CSP is [mapped](https://guix.gnu.org/manual/en/html_node/Mapped-Devices.html) using the [dm-crypt](https://www.kernel.org/doc/html/latest/admin-guide/device-mapper/dm-crypt.html), and optionally the [dm-integrity](https://www.kernel.org/doc/html/latest/admin-guide/device-mapper/dm-integrity.html), kernel modules, before it's formatted and accessed by the Kubernetes workloads.
@@ -28,7 +28,7 @@ All cryptographic operations happen inside the trusted environment of the confid
 
 Note that for integrity-protected disks, [volume expansion](https://kubernetes.io/blog/2018/07/12/resizing-persistent-volumes-using-kubernetes/) isn't supported.
 
-By default the driver uses data encryption keys (DEKs) issued by the Constellation [_KeyService_](../components/microservices.md#keyservice).
+By default, the driver uses data encryption keys (DEKs) issued by the Constellation [_KeyService_](../components/microservices.md#keyservice).
 The DEKs are in turn derived from the Constellation's key encryption key (KEK), which is directly derived from the [master secret](keys.md#master-secret).
 This is the recommended mode of operation, and also requires the least amount of setup by the cluster administrator.
 
