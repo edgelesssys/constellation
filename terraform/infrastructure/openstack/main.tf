@@ -44,8 +44,6 @@ locals {
     { name = "join", port = "30090", health_check = "TCP" },
     var.debug ? [{ name = "debugd", port = "4000", health_check = "TCP" }] : [],
   ])
-  cidr_vpc_subnet_nodes = "192.168.178.0/24"
-  cidr_vpc_subnet_lbs   = "192.168.177.0/24"
   tags                  = concat(["constellation-uid-${local.uid}"], var.additional_tags)
   identity_service = [
     for entry in data.openstack_identity_auth_scope_v3.scope.service_catalog :
@@ -82,51 +80,14 @@ data "openstack_networking_network_v2" "floating_ip_pool" {
   network_id = var.floating_ip_pool_id
 }
 
-resource "openstack_networking_network_v2" "vpc_network" {
-  name        = local.name
-  description = "Constellation VPC network"
-  tags        = local.tags
+resource "stackit_network" "vpc_network" {
+  name             = local.name
+  ipv4_nameservers = ["1.1.1.1"]
+  project_id       = var.stackit_project_id
 }
 
-resource "openstack_networking_subnet_v2" "vpc_subnetwork" {
-  name        = local.name
-  description = "Constellation VPC subnetwork"
-  network_id  = openstack_networking_network_v2.vpc_network.id
-  cidr        = local.cidr_vpc_subnet_nodes
-  dns_nameservers = [
-    "1.1.1.1",
-    "8.8.8.8",
-    "9.9.9.9",
-  ]
-  tags = local.tags
-}
-
-resource "openstack_networking_subnet_v2" "lb_subnetwork" {
-  name        = "${var.name}-${local.uid}-lb"
-  description = "Constellation LB subnetwork"
-  network_id  = openstack_networking_network_v2.vpc_network.id
-  cidr        = local.cidr_vpc_subnet_lbs
-  dns_nameservers = [
-    "1.1.1.1",
-    "8.8.8.8",
-    "9.9.9.9",
-  ]
-  tags = local.tags
-}
-
-resource "openstack_networking_router_v2" "vpc_router" {
-  name                = local.name
-  external_network_id = data.openstack_networking_network_v2.floating_ip_pool.network_id
-}
-
-resource "openstack_networking_router_interface_v2" "vpc_router_interface" {
-  router_id = openstack_networking_router_v2.vpc_router.id
-  subnet_id = openstack_networking_subnet_v2.vpc_subnetwork.id
-}
-
-resource "openstack_networking_router_interface_v2" "lbs_router_interface_lbs" {
-  router_id = openstack_networking_router_v2.vpc_router.id
-  subnet_id = openstack_networking_subnet_v2.lb_subnetwork.id
+data "openstack_networking_subnet_v2" "subnet1" {
+  network_id = stackit_network.vpc_network.network_id
 }
 
 resource "openstack_networking_secgroup_v2" "vpc_secgroup" {
@@ -181,7 +142,10 @@ resource "openstack_networking_secgroup_rule_v2" "tcp_between_nodes" {
   protocol          = "tcp"
   port_range_min    = 0
   port_range_max    = 0
-  remote_ip_prefix  = local.cidr_vpc_subnet_nodes
+  # It seems that the STACKIT network does not expose
+  # the CIDRs (or the subnets, even). So we need to resort to an
+  # allow-all rule for now.
+  remote_ip_prefix  = "0.0.0.0/0"
   security_group_id = openstack_networking_secgroup_v2.vpc_secgroup.id
 }
 
@@ -192,7 +156,10 @@ resource "openstack_networking_secgroup_rule_v2" "udp_between_nodes" {
   protocol          = "udp"
   port_range_min    = 0
   port_range_max    = 0
-  remote_ip_prefix  = local.cidr_vpc_subnet_nodes
+  # It seems that the STACKIT network does not expose
+  # the CIDRs (or the subnets, even). So we need to resort to an
+  # allow-all rule for now.
+  remote_ip_prefix  = "0.0.0.0/0"
   security_group_id = openstack_networking_secgroup_v2.vpc_secgroup.id
 }
 
@@ -242,8 +209,8 @@ module "instance_group" {
   security_groups                  = [openstack_networking_secgroup_v2.vpc_secgroup.id]
   tags                             = local.tags
   uid                              = local.uid
-  network_id                       = openstack_networking_network_v2.vpc_network.id
-  subnet_id                        = openstack_networking_subnet_v2.vpc_subnetwork.id
+  network_id                       = stackit_network.vpc_network.network_id
+  subnet_id                        = data.openstack_networking_subnet_v2.subnet1.id
   init_secret_hash                 = local.init_secret_hash
   identity_internal_url            = local.identity_internal_url
   openstack_username               = local.cloudyaml["auth"]["username"]
@@ -263,10 +230,6 @@ resource "openstack_networking_floatingip_associate_v2" "public_ip_associate" {
   count       = var.cloud == "stackit" ? 0 : 1
   floating_ip = openstack_networking_floatingip_v2.public_ip.address
   port_id     = module.instance_group["control_plane_default"].port_ids.0
-  depends_on = [
-    openstack_networking_router_v2.vpc_router,
-    openstack_networking_router_interface_v2.vpc_router_interface,
-  ]
 }
 
 module "stackit_loadbalancer" {
@@ -275,7 +238,7 @@ module "stackit_loadbalancer" {
   name               = local.name
   stackit_project_id = var.stackit_project_id
   member_ips         = module.instance_group["control_plane_default"].ips
-  network_id         = openstack_networking_network_v2.vpc_network.id
+  network_id         = stackit_network.vpc_network.network_id
   external_address   = openstack_networking_floatingip_v2.public_ip.address
   ports = {
     for port in local.control_plane_named_ports : port.name => port.port

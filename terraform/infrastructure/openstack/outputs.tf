@@ -32,18 +32,18 @@ output "name" {
 }
 
 output "ip_cidr_node" {
-  value       = local.cidr_vpc_subnet_nodes
+  value       = stackit_network.vpc_network.prefixes[0]
   description = "CIDR block of the node network."
 }
 
 # OpenStack-specific outputs
 
 output "network_id" {
-  value       = openstack_networking_network_v2.vpc_network.id
+  value       = stackit_network.vpc_network.network_id
   description = "The OpenStack network id the cluster is deployed in."
 }
 
 output "lb_subnetwork_id" {
-  value       = openstack_networking_subnet_v2.lb_subnetwork.id
+  value       = data.openstack_networking_subnet_v2.subnet1.id
   description = "The OpenStack subnetwork id lbs are deployed in."
 }

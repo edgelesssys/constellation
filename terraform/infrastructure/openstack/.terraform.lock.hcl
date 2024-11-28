@@ -29,20 +29,11 @@ provider "registry.terraform.io/stackitcloud/stackit" {
   version     = "0.35.0"
   constraints = "0.35.0"
   hashes = [
-    "h1:Cc+HFJYbY2X9KsgMvLhikdjz/bN671/osUkXFT+H1AI=",
     "h1:GnJ+gbhhJ+ZdH5L5QS4eMi638nafDqxcRsrZQLJPHnU=",
     "h1:V/ayYinMV9pGGLg7OBPeG0XONnSkmDbWDH3deWtTmM0=",
     "h1:Ws8n3pe5/cStjDF6VnRdax9ledzUja2nUNPYTEzdEAs=",
     "h1:XwLQ50fsxJ5MGUlJEs7dWIdErbrGgEExSqj22BHwykM=",
-    "h1:ZIays0MW9HD++OUktDQlrBhADXsseUhXI9LNXiV7R0I=",
-    "h1:a544QqVZaDj2QjSddFynSKjdlbw+cXw+wImF4XbKPW4=",
-    "h1:kQ7j2jRkEai4Id5BRXnky2ZcytrLP8JMrkVL0vsZJnE=",
-    "h1:s1s8GBkKD0buf48bKMcj0bQG3cR5Xfyt1MMRik46sTs=",
-    "h1:srQRAu7VfVWcKaeypDJg4Bvo2AxzZO/cwefxIt+Uduw=",
     "h1:tKEqWCG0wcOiYHaWgsqAqF4LOKHU5lahM4t9zpMsBR8=",
-    "h1:ulAmt5tk9bBD0HjN4c8Cy4Aai7gEbbo6K38Duly7jyE=",
-    "h1:wPPCGyWv6rjaZ7dcMXNsAK6x+AjVlWClHVC1ctt4lLY=",
-    "h1:zJozfYwxty/4meQ65hh6fHMqeT2LA7xTvOX3yGB2HPs=",
     "zh:0c5ff45f9d8785cf39189908c70ce989423b823f468d5664794aa1352838560f",
     "zh:0dde99e7b343fa01f8eefc378171fb8621bedb20f59157d6cc8e3d46c738105f",
     "zh:51c0fee775b63d96a6a95e4022960628d8b5257b744deb8705fc90d8763ebf42",
