@@ -25,6 +25,12 @@ go_sdk.download(
     version = "1.23.2",
 )
 
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.toolchain(
+    ignore_root_user_error = True,
+    python_version = "3.11",
+)
+
 # the use_repo rule needs to list all top-level go dependencies
 # update automatically using `bazel mod tidy`.
 go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
