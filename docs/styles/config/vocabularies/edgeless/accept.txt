@@ -11,6 +11,7 @@ backend
 Bazel
 bootloader
 Bootstrapper
+CLI
 cloud
 config
 CPU
@@ -52,6 +53,7 @@ Mbps
 MicroK8s
 namespace
 Nginx
+paravisor
 PCR
 plaintext
 proxied

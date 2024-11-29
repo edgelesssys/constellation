@@ -9,7 +9,7 @@ go_library(
     deps = [
         "//internal/atls",
         "//internal/grpc/atlscredentials",
-        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//:grpc",
         "@org_golang_google_grpc//credentials/insecure",
     ],
 )
@@ -25,7 +25,7 @@ go_test(
         "//internal/grpc/testdialer",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
-        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//:grpc",
         "@org_golang_google_grpc//interop/grpc_testing",
         "@org_uber_go_goleak//:goleak",
     ],

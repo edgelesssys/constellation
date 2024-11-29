@@ -68,9 +68,9 @@ runs:
 
           case "${{ inputs.attestationVariant }}"
           in
-            "azure-sev-snp"|"aws-sev-snp"|"gcp-sev-snp")
+            "azure-sev-snp"|"azure-tdx"|"aws-sev-snp"|"gcp-sev-snp")
               echo "Extracting TCB versions for API update"
-              constellation verify --cluster-id "${clusterID}" --node-endpoint localhost:9090 -o json > "snp-report-${node}.json"
+              constellation verify --cluster-id "${clusterID}" --node-endpoint localhost:9090 -o json > "attestation-report-${node}.json"
               ;;
             *)
               constellation verify --cluster-id "${clusterID}" --node-endpoint localhost:9090
@@ -88,22 +88,24 @@ runs:
         aws-region: eu-central-1
 
     - name: Upload extracted TCBs
-      if: github.ref_name == 'main' && (inputs.attestationVariant == 'azure-sev-snp' || inputs.attestationVariant == 'aws-sev-snp' || inputs.attestationVariant == 'gcp-sev-snp')
+      if: github.ref_name == 'main' && (inputs.attestationVariant == 'azure-sev-snp' || inputs.attestationVariant == 'azure-tdx' || inputs.attestationVariant == 'aws-sev-snp' || inputs.attestationVariant == 'gcp-sev-snp')
       shell: bash
       env:
         COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
         COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
       run: |
-        reports=(snp-report-*.json)
-        if [ -z ${#reports[@]} ]; then
-            exit 1
-        fi
+        reports=attestation-report-*.json
 
-        attestationVariant=${{ inputs.attestationVariant }}
-        cloudProvider=${attestationVariant%%-*}
-
-        for file in "${reports[@]}"; do
-          path=$(realpath "${file}")
-          cat "${path}"
-          bazel run //internal/api/attestationconfigapi/cli -- upload "${cloudProvider}" snp-report "${path}"
+        # bazel run changes the working directory
+        # convert the relative paths to absolute paths to avoid issues
+        absolute_reports=""
+        for report in ${reports}; do
+          absolute_reports="${absolute_reports} $(realpath "${report}")"
         done
+
+        report=$(bazel run //internal/api/attestationconfigapi/cli -- compare ${{ inputs.attestationVariant }} ${absolute_reports})
+
+        path=$(realpath "${report}")
+        cat "${path}"
+
+        bazel run //internal/api/attestationconfigapi/cli -- upload ${{ inputs.attestationVariant }} attestation-report "${path}"

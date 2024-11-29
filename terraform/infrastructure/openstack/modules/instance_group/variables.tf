@@ -97,6 +97,11 @@ variable "openstack_password" {
   description = "OpenStack password."
 }
 
+variable "openstack_region_name" {
+  type        = string
+  description = "OpenStack region name."
+}
+
 variable "openstack_load_balancer_endpoint" {
   type        = string
   description = "OpenStack load balancer endpoint."

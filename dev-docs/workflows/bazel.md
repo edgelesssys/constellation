@@ -3,6 +3,13 @@
 Bazel is the primary build system for this project. It is used to build all Go code and will be used to build all artifacts in the future.
 Still, we aim to keep the codebase compatible with `go build` and `go test` as well.
 Whenever Go code is changed, you will have to run `bazel run //:tidy` to regenerate the Bazel build files for Go code.
+Additionally, you need to update `MODULE.bazel`, together with `MODULE.bazel.lock`:
+
+```
+# if the steps below fail, try to recreate the lockfile from scratch by deleting it
+bazel mod deps --lockfile_mode=update
+bazel mod tidy
+```
 
 ## Bazel commands
 

@@ -1,15 +1,14 @@
-kubernetesClusterDomain: cluster.local
 snapshotController:
   replicas: 2
   snapshotController:
     image:
       repository: registry.k8s.io/sig-storage/snapshot-controller
-      tag: v6.2.2@sha256:fb95b65bb88f319f0f7d5397c401a654164f11a191f466b4026fa36085c7141b
+      tag: v8.1.0@sha256:a8a6749641849a6d7e560d26647e88dbd605a75cbff1823568ab90287ea29038
     imagePullPolicy: IfNotPresent
 snapshotWebhook:
   replicas: 1
   webhook:
     image:
       repository: registry.k8s.io/sig-storage/snapshot-validation-webhook
-      tag: v6.2.2@sha256:b5be1e04b7c43352f83e135bd772de05437f8f3a20cb9437875d1a0d4f127440
+      tag: v8.1.0@sha256:35fa940f062222dfa3257e0c74837a22c35976be899bab6103b433bab0e03a81
     imagePullPolicy: IfNotPresent

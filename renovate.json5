@@ -56,6 +56,7 @@
         "pinDigest",
         "rollback",
       ],
+      "schedule": ["before 8am on monday"],
     },
     {
       // Group update of Terraform dependencies.
@@ -71,15 +72,38 @@
         "pinDigest",
         "rollback",
       ],
+      "schedule": ["before 8am on wednesday"],
     },
     {
       "matchManagers": ["bazelisk", "bazel", "bazel-module"],
-      "matchDepNames": ["bazel", "io_bazel_rules_go", "bazel_gazelle"],
+      "matchDepNames": ["bazel", "io_bazel_rules_go", "bazel_gazelle", "rules_go", "gazelle"],
       "groupName": "bazel (core)",
     },
     {
+      "matchManagers": ["bazel"],
+      "matchDepNames": [
+        "!bazel",
+        "!io_bazel_rules_go",
+        "!bazel_gazelle",
+        "!rules_go",
+        "!gazelle",
+      ],
+      "groupName": "bazel (plugins)",
+    },
+    {
+      "matchManagers": ["bazel-module"],
+      "matchDepNames": [
+        "!bazel",
+        "!io_bazel_rules_go",
+        "!bazel_gazelle",
+        "!rules_go",
+        "!gazelle",
+      ],
+      "groupName": "bazel (modules)",
+    },
+    {
       "matchDatasources": ["golang-version"],
-      "allowedVersions": "1.22",
+      "allowedVersions": "1.23",
     },
     {
       "matchManagers": ["pip_requirements"],
@@ -89,6 +113,7 @@
       "matchManagers": ["github-actions"],
       "groupName": "GitHub action dependencies",
       "matchUpdateTypes": [
+        "major",
         "minor",
         "patch",
         "pin",
@@ -98,6 +123,7 @@
         "rollback",
         "bump",
       ],
+      "schedule": ["before 8am on tuesday"],
     },
     {
       "matchDepNames": ["kubernetes/kubernetes"],
@@ -159,6 +185,7 @@
       "ignoreUnstable": false,
       "groupName": "Constellation containers",
       "prPriority": 20,
+      "schedule": ["before 8am on thursday"],
     },
     {
       "matchDepNames": [
@@ -219,12 +246,12 @@
       "datasourceTemplate": "github-releases",
     },
     {
-      "fileMatch": ["(^|\\/)versions.go$"],
+      "fileMatch": ["(^|\\/)versions.go$", "[.]github\\/(actions|workflows)\\/.*[.]ya?ml"],
       "matchStrings": [
         // Match github releases.
         // example match:' "https://github.com/foo/bar/releases/download/v1.2.3/foo.bin" // renovate:github-release'
         // (foo/bar -> depName, v1.2.3 -> currentValue)
-        " \"https:\\/\\/github\\.com\\/(?<depName>[^\\/\\s\"]+\\/[^\\/\\s\"]+)\\/releases\\/download\\/(?<currentValue>[^\\/\\s\"]+)\\/[^\"]+\"[^\\n]+\\/\\/ renovate:github-release",
+        "https:\\/\\/github\\.com\\/(?<depName>[^\\/\\s\"]+\\/[^\\/\\s\"]+)\\/releases\\/download\\/(?<currentValue>[^\\/\\s\"]+).*renovate:github-release",
       ],
       "datasourceTemplate": "github-releases",
     },

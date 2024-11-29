@@ -74,7 +74,11 @@ spec:
           args:
             - --csi-address=/csi/csi.sock
             - --probe-timeout=3s
+{{- if eq .Values.linux.hostNetwork true }}
+            - --http-endpoint=localhost:{{ .Values.node.livenessProbe.healthPort }}
+{{- else }}
             - --health-port={{ .Values.node.livenessProbe.healthPort }}
+{{- end }}
             - --v=2
           resources: {{- toYaml .Values.linux.resources.livenessProbe | nindent 12 }}
         - name: node-driver-registrar
@@ -131,15 +135,22 @@ spec:
             - "--get-nodeid-from-imds={{ .Values.node.getNodeIDFromIMDS }}"
             - "--enable-otel-tracing={{ .Values.linux.otelTracing.enabled }}"
             - "--kms-addr={{ .Values.global.keyServiceName }}.{{ .Values.global.keyServiceNamespace | default .Release.Namespace }}:{{ .Values.global.keyServicePort }}"
+{{- if ne .Values.linux.hostNetwork true }}
           ports:
             - containerPort: {{ .Values.node.livenessProbe.healthPort }}
               name: healthz
               protocol: TCP
+{{- end }}
           livenessProbe:
             failureThreshold: 5
             httpGet:
               path: /healthz
+{{- if eq .Values.linux.hostNetwork true }}
+              host: localhost
+              port: {{ .Values.node.livenessProbe.healthPort }}
+{{- else }}
               port: healthz
+{{- end }}
             initialDelaySeconds: 30
             timeoutSeconds: 10
             periodSeconds: 30

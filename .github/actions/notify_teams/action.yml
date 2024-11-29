@@ -25,7 +25,7 @@ runs:
       continue-on-error: true
       shell: bash
       run: |
-        cp .github/teams_payload_template.json teams_payload.json
+        cp .github/actions/notify_teams/teams_payload_template.json teams_payload.json
 
         # Add workflow name to the notification
         yq -oj -iP '.attachments[0].content.body[0].columns[1].items[0].text = "${{ inputs.title }}"' teams_payload.json

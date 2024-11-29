@@ -50,33 +50,29 @@ CSPS = [
     "qemu",
 ]
 
-base_cmdline = "selinux=1 enforcing=0 audit=0"
+base_cmdline = "selinux=1 enforcing=0 audit=0 console=tty1 console=ttyS0"
 
 csp_settings = {
     "aws": {
         "kernel_command_line_dict": {
             "console": "ttyS0",
             "constel.csp": "aws",
-            "idle": "poll",
-            "mitigations": "auto",
+            "mitigations": "auto,nosmt",
         },
     },
     "azure": {
         "kernel_command_line_dict": {
-            "console": "ttyS0",
             "constel.csp": "azure",
             "mitigations": "auto,nosmt",
         },
     },
     "gcp": {
         "kernel_command_line_dict": {
-            "console": "ttyS0",
             "constel.csp": "gcp",
             "mitigations": "auto,nosmt",
         },
     },
     "openstack": {
-        "kernel_command_line": "console=tty0 console=ttyS0 console=ttyS1",
         "kernel_command_line_dict": {
             "constel.csp": "openstack",
             "kvm_amd.sev": "1",
@@ -86,9 +82,8 @@ csp_settings = {
         },
     },
     "qemu": {
-        "autologin": True,
+        "kernel_command_line": "constel.console",  # All qemu images have console enabled independent of stream
         "kernel_command_line_dict": {
-            "console": "ttyS0",
             "constel.csp": "qemu",
             "mitigations": "auto,nosmt",
         },
@@ -136,11 +131,10 @@ attestation_variant_settings = {
 
 stream_settings = {
     "console": {
-        "autologin": True,
+        "kernel_command_line": "constel.console",
     },
     "debug": {
-        "autologin": True,
-        "kernel_command_line": "constellation.debug",
+        "kernel_command_line": "constel.debug",
     },
     "nightly": {},
     "stable": {},
@@ -180,26 +174,6 @@ def constellation_packages(stream):
         "//upgrade-agent/cmd:upgrade-agent-package",
         "//bootstrapper/cmd/bootstrapper:bootstrapper-package",
     ] + base_packages
-
-def autologin(csp, attestation_variant, stream):
-    """Generates a boolean indicating whether autologin should be enabled for the given csp, attestation_variant and stream.
-
-    Args:
-      csp: The cloud service provider to use.
-      attestation_variant: The attestation variant to use.
-      stream: The stream to use.
-
-    Returns:
-        A boolean indicating whether autologin should be enabled.
-    """
-    out = None
-    for settings in from_settings(csp, attestation_variant, stream):
-        if not "autologin" in settings:
-            continue
-        if out != None and out != settings["autologin"]:
-            fail("Inconsistent autologin settings")
-        out = settings["autologin"]
-    return out
 
 def kernel_command_line(csp, attestation_variant, stream):
     cmdline = base_cmdline

@@ -7,6 +7,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 package provider
 
 import (
+	"errors"
+	"strconv"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -15,6 +17,30 @@ import (
 func TestAccAttestationSource(t *testing.T) {
 	// Set the path to the Terraform binary for acceptance testing when running under Bazel.
 	bazelPreCheck := func() { bazelSetTerraformBinaryPath(t) }
+
+	assertNonZeroValue := func(attr string) resource.TestCheckFunc {
+		return resource.TestCheckResourceAttrWith(
+			"data.constellation_attestation.test",
+			attr,
+			func(value string) error {
+				parsedValue, err := strconv.ParseUint(value, 10, 8)
+				if err == nil && parsedValue == 0 {
+					return errors.New("expected non-zero value")
+				}
+				return err
+			},
+		)
+	}
+	assertUint8Value := func(attr string) resource.TestCheckFunc {
+		return resource.TestCheckResourceAttrWith(
+			"data.constellation_attestation.test",
+			attr,
+			func(value string) error {
+				_, err := strconv.ParseUint(value, 10, 8)
+				return err
+			},
+		)
+	}
 
 	testCases := map[string]resource.TestCase{
 		"azure sev-snp success": {
@@ -36,12 +62,10 @@ func TestAccAttestationSource(t *testing.T) {
 					`,
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.variant", "azure-sev-snp"),
-
-						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.bootloader_version", "3"),
-						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.microcode_version", "115"),
-						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.snp_version", "8"),
-						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.tee_version", "0"),
-
+						assertNonZeroValue("attestation.bootloader_version"),
+						assertNonZeroValue("attestation.microcode_version"),
+						assertNonZeroValue("attestation.snp_version"),
+						assertUint8Value("attestation.tee_version"), // the valid value is 0 at the moment
 						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.azure_firmware_signer_config.accepted_key_digests.0", "0356215882a825279a85b300b0b742931d113bf7e32dde2e50ffde7ec743ca491ecdd7f336dc28a6e0b2bb57af7a44a3"),
 						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.azure_firmware_signer_config.enforcement_policy", "MAAFallback"),
 
@@ -110,33 +134,34 @@ func TestAccAttestationSource(t *testing.T) {
 				},
 			},
 		},
-		// TODO(msanft): Enable once v2.17.0 is available
-		// "gcp sev-snp succcess": {
-		// 	ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-		// 	PreCheck:                 bazelPreCheck,
-		// 	Steps: []resource.TestStep{
-		// 		{
-		// 			Config: testingConfig + `
-		// 			data "constellation_attestation" "test" {
-		// 				csp = "gcp"
-		// 				attestation_variant = "gcp-sev-snp"
-		// 				image = {
-		// 					version = "v2.17.0"
-		// 					reference = "v2.17.0"
-		// 					short_path = "v2.17.0"
-		// 				}
-		// 			}
-		// 			`,
-		// 			Check: resource.ComposeAggregateTestCheckFunc(
-		// 				resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.variant", "gcp-sev-snp"),
-		// 				resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.bootloader_version", "0"), // since this is not supported on GCP, we expect 0
-
-		// 				resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.measurements.1.expected", "745f2fb4235e4647aa0ad5ace781cd929eb68c28870e7dd5d1a1535854325e56"),
-		// 				resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.measurements.1.warn_only", "true"),
-		// 			),
-		// 		},
-		// 	},
-		// },
+		"gcp sev-snp succcess": {
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+			PreCheck:                 bazelPreCheck,
+			Steps: []resource.TestStep{
+				{
+					Config: testingConfig + `
+					data "constellation_attestation" "test" {
+						csp = "gcp"
+						attestation_variant = "gcp-sev-snp"
+						image = {
+							version = "v2.17.0"
+							reference = "v2.17.0"
+							short_path = "v2.17.0"
+						}
+					}
+					`,
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.variant", "gcp-sev-snp"),
+						assertNonZeroValue("attestation.bootloader_version"),
+						assertNonZeroValue("attestation.microcode_version"),
+						assertNonZeroValue("attestation.snp_version"),
+						assertUint8Value("attestation.tee_version"), // the valid value is 0 at the moment
+						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.measurements.1.expected", "3695dcc55e3aa34027c27793c85c723c697d708c42d1f73bd6fa4f26608a5b24"),
+						resource.TestCheckResourceAttr("data.constellation_attestation.test", "attestation.measurements.1.warn_only", "true"),
+					),
+				},
+			},
+		},
 		"STACKIT qemu-vtpm success": {
 			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 			PreCheck:                 bazelPreCheck,

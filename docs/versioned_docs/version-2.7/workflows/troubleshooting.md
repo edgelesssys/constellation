@@ -75,8 +75,8 @@ To provide information during early stages of a node's boot process, Constellati
 
 You can view this information in the following places:
 
-<tabs groupId="csp">
-<tabItem value="azure" label="Azure">
+<Tabs groupId="csp">
+<TabItem value="azure" label="Azure">
 
 1. In your Azure subscription find the Constellation resource group.
 2. Inside the resource group find the Application Insights resource called `constellation-insights-*`.
@@ -86,8 +86,8 @@ You can view this information in the following places:
 
 To **find the disk UUIDs** use the following query: `traces | where message contains "Disk UUID"`
 
-</tabItem>
-<tabItem value="gcp" label="GCP">
+</TabItem>
+<TabItem value="gcp" label="GCP">
 
 1. Select the project that hosts Constellation.
 2. Go to the `Compute Engine` service.
@@ -102,16 +102,16 @@ Constellation uses the default bucket to store logs. Its [default retention peri
 
 :::
 
-</tabItem>
-<tabItem value="aws" label="AWS">
+</TabItem>
+<TabItem value="aws" label="AWS">
 
 1. Open [AWS CloudWatch](https://console.aws.amazon.com/cloudwatch/home)
 2. Select [Log Groups](https://console.aws.amazon.com/cloudwatch/home#logsV2:log-groups)
 3. Select the log group that matches the name of your cluster.
 4. Select the log stream for control or worker type nodes.
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 ### Node shell access
 

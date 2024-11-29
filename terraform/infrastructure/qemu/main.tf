@@ -2,7 +2,7 @@ terraform {
   required_providers {
     libvirt = {
       source  = "dmacvicar/libvirt"
-      version = "0.7.1"
+      version = "0.7.6"
     }
     docker = {
       source  = "kreuzwerker/docker"
@@ -23,6 +23,13 @@ locals {
   cidr_vpc_subnet_nodes          = "10.42.0.0/22"
   cidr_vpc_subnet_control_planes = "10.42.1.0/24"
   cidr_vpc_subnet_worker         = "10.42.2.0/24"
+  revision                       = 1
+}
+
+# A way to force replacement of resources if the provider does not want to replace them
+# see: https://developer.hashicorp.com/terraform/language/resources/terraform-data#example-usage-data-for-replace_triggered_by
+resource "terraform_data" "replacement" {
+  input = local.revision
 }
 
 resource "random_password" "init_secret" {

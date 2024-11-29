@@ -17,7 +17,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
           # No token available for forks, so we can't push changes
@@ -51,7 +51,9 @@ jobs:
 
       - name: Run Bazel tidy
         shell: bash
-        run: bazel run //:tidy
+        run: |
+          bazel run //:tidy
+          bazel mod deps --lockfile_mode=update
 
       - name: Check if untidy
         id: untidy
@@ -96,10 +98,11 @@ jobs:
             exit 0
           fi
 
+          # Use quadruple backticks to escape triple backticks in diff'ed files.
           cat << EOF >> "${GITHUB_STEP_SUMMARY}"
-          \`\`\`diff
+          \`\`\`\`diff
           ${diff}
-          \`\`\`
+          \`\`\`\`
           EOF
 
           if [[ "${{ steps.untidy.outputs.untidy }}" == "true" ]] &&

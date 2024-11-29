@@ -2,9 +2,9 @@ name: E2E Attestationconfig API Test
 description: "Test the attestationconfig CLI is functional."
 
 inputs:
-  csp:
-    description: "Cloud provider to run tests against"
-    default: "azure"
+  attestationVariant:
+    description: "attestation variant to run tests against"
+    default: "azure-sev-snp"
   cosignPrivateKey:
     description: "Cosign private key"
     required: true
@@ -30,4 +30,4 @@ runs:
         COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
         COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
       run: |
-        bazel run //internal/api/attestationconfigapi/cli:cli_e2e_test -- ${{ inputs.csp }}
+        bazel run //internal/api/attestationconfigapi/cli:cli_e2e_test -- ${{ inputs.attestationVariant }}

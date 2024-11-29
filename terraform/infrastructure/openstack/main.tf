@@ -7,12 +7,12 @@ terraform {
 
     stackit = {
       source  = "stackitcloud/stackit"
-      version = "0.17.0"
+      version = "0.33.2"
     }
 
     random = {
       source  = "hashicorp/random"
-      version = "3.6.0"
+      version = "3.6.2"
     }
   }
 }
@@ -59,6 +59,13 @@ locals {
   cloudsyaml_path       = length(var.openstack_clouds_yaml_path) > 0 ? var.openstack_clouds_yaml_path : "~/.config/openstack/clouds.yaml"
   cloudsyaml            = yamldecode(file(pathexpand(local.cloudsyaml_path)))
   cloudyaml             = local.cloudsyaml.clouds[var.cloud]
+  revision              = 1
+}
+
+# A way to force replacement of resources if the provider does not want to replace them
+# see: https://developer.hashicorp.com/terraform/language/resources/terraform-data#example-usage-data-for-replace_triggered_by
+resource "terraform_data" "replacement" {
+  input = local.revision
 }
 
 resource "random_id" "uid" {
@@ -242,6 +249,7 @@ module "instance_group" {
   openstack_username               = local.cloudyaml["auth"]["username"]
   openstack_password               = local.cloudyaml["auth"]["password"]
   openstack_user_domain_name       = local.cloudyaml["auth"]["user_domain_name"]
+  openstack_region_name            = local.cloudyaml["region_name"]
   openstack_load_balancer_endpoint = openstack_networking_floatingip_v2.public_ip.address
 }
 

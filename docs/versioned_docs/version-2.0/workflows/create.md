@@ -15,22 +15,22 @@ This step creates the necessary resources for your cluster in your cloud environ
 
 Generate a configuration file for your cloud service provider (CSP):
 
-<tabs groupId="csp">
-<tabItem value="azure" label="Azure">
+<Tabs groupId="csp">
+<TabItem value="azure" label="Azure">
 
 ```bash
 constellation config generate azure
 ```
 
-</tabItem>
-<tabItem value="gcp" label="GCP">
+</TabItem>
+<TabItem value="gcp" label="GCP">
 
 ```bash
 constellation config generate gcp
 ```
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 This creates the file `constellation-conf.yaml` in the current directory. [Fill in your CSP-specific information](../getting-started/first-steps.md#create-a-cluster) before you continue.
 
@@ -53,7 +53,7 @@ constellation create --control-plane-nodes 1 --worker-nodes 2
 
 For details on the flags, consult the command help via `constellation create -h`.
 
-*create* stores your cluster's configuration to a file named [`constellation-state.json`](../architecture/orchestration.md#installation-process) in your current directory.
+*create* stores your cluster's configuration to a file named [`constellation-state.json`](../architecture/orchestration.md#cluster-creation-process) in your current directory.
 
 ## The *init* step
 

@@ -8,7 +8,7 @@ During edits you can preview your changes using the [`docusaurus`](https://docus
 
 ```sh
 # requires node >=16.14
-npm install
+npm ci # Install pinned dependencies
 npm run build
 npm run serve
 ```

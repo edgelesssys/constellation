@@ -27,6 +27,9 @@ inputs:
   #
   # Azure specific inputs
   #
+  azureSubscriptionID:
+    description: "Azure subscription ID to deploy Constellation in."
+    required: true
   azureRegion:
     description: "Azure region to deploy Constellation in."
     required: false
@@ -76,13 +79,19 @@ runs:
       shell: bash
       if: inputs.cloudProvider == 'azure'
       run: |
+        extraFlags=""
+
+        if [[ $(constellation iam create azure --help | grep -c -- --subscriptionID) -ne 0 ]]; then
+          extraFlags="--subscriptionID=${{ inputs.azureSubscriptionID }}"
+        fi
+
         constellation iam create azure \
           --region="${{ inputs.azureRegion }}" \
           --resourceGroup="${{ inputs.namePrefix }}-rg" \
           --servicePrincipal="${{ inputs.namePrefix }}-sp" \
           --update-config \
           --tf-log=DEBUG \
-          --yes
+          --yes ${extraFlags}
 
     - name: Constellation iam create gcp
       shell: bash

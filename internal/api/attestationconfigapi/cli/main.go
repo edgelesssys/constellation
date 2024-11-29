@@ -27,8 +27,11 @@ const (
 	distributionID      = constants.CDNDefaultDistributionID
 	envCosignPwd        = "COSIGN_PASSWORD"
 	envCosignPrivateKey = "COSIGN_PRIVATE_KEY"
-	// versionWindowSize defines the number of versions to be considered for the latest version. Each week 5 versions are uploaded for each node of the verify cluster.
-	versionWindowSize = 15
+	// versionWindowSize defines the number of versions to be considered for the latest version.
+	// Through our weekly e2e tests, each week 2 versions are uploaded:
+	// One from a stable release, and one from a debug image.
+	// A window size of 6 ensures we update only after a version has been "stable" for 3 weeks.
+	versionWindowSize = 6
 )
 
 var (
@@ -56,6 +59,7 @@ func newRootCmd() *cobra.Command {
 
 	rootCmd.AddCommand(newUploadCmd())
 	rootCmd.AddCommand(newDeleteCmd())
+	rootCmd.AddCommand(newCompareCmd())
 
 	return rootCmd
 }

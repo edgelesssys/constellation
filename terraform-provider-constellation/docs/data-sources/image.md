@@ -31,8 +31,8 @@ data "constellation_image" "example" {
   * `aws-nitro-tpm`
   * `azure-sev-snp`
   * `azure-tdx`
-  * `gcp-sev-es`
   * `gcp-sev-snp`
+  * `gcp-sev-es`
   * `qemu-vtpm`
 - `csp` (String) CSP (Cloud Service Provider) to use. (e.g. `azure`)
 See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview/clouds) that Constellation supports.

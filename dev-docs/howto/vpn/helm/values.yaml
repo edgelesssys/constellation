@@ -8,6 +8,10 @@ serviceCIDR: "10.96.0.0/12"
 # on-prem IP ranges to expose to Constellation. Must contain at least one CIDR.
 peerCIDRs: []
 
+# MTU to set on the VPN route. Leave empty if path MTU discovery is supported end-to-end.
+# See also https://docs.strongswan.org/docs/5.9/howtos/forwarding.html#_mtumss_issues.
+mtu: 1300
+
 # IPSec configuration
 ipsec:
   # pre-shared key used for authentication
@@ -15,4 +19,4 @@ ipsec:
   # Address of the peer's gateway router.
   peer: ""
 
-image: "ghcr.io/edgelesssys/constellation/vpn@sha256:34e28ced172d04dfdadaadbefb1a53b5857cb24fb24e275fbbc537f3639a789e"
+image: "ghcr.io/edgelesssys/constellation/vpn@sha256:88b6a0265052cb0a68d20d9b20e0d42ef15e7a80e5f71201ecf32e004de2356e"

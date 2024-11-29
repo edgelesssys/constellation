@@ -4,7 +4,7 @@
 This recording presents the essence of this page. It's recommended to read it in full for the motivation and all details.
 :::
 
-<asciinemaWidget src="/constellation/assets/create-cluster.cast" rows="20" cols="112" idleTimeLimit="3" preload="true" theme="edgeless" />
+<AsciinemaWidget src="/constellation/assets/create-cluster.cast" rows="20" cols="112" idleTimeLimit="3" preload="true" theme="edgeless" />
 
 ---
 
@@ -27,8 +27,8 @@ If you don't have a cloud subscription, you can also set up a [local Constellati
 
 Before you create the cluster, make sure to have a [valid configuration file](./config.md).
 
-<tabs groupId="usage">
-<tabItem value="cli" label="CLI">
+<Tabs groupId="usage">
+<TabItem value="cli" label="CLI">
 
 ```bash
 constellation apply
@@ -36,8 +36,8 @@ constellation apply
 
 `apply` stores the state of your cluster's cloud resources in a [`constellation-terraform`](../architecture/orchestration.md#cluster-creation-process) directory in your workspace.
 
-</tabItem>
-<tabItem value="self-managed" label="Self-managed">
+</TabItem>
+<TabItem value="self-managed" label="Self-managed">
 
 Self-managed infrastructure allows for more flexibility in the setup, by separating the infrastructure setup from the Constellation cluster management.
 This provides flexibility in DevOps and can meet potential regulatory requirements.
@@ -56,7 +56,7 @@ management tooling of your choice. You need to keep the essential functionality 
 
 :::info
 
-  On Azure, if the enforcement policy is set to `MAAFallback` in `constellation-config.yaml`, a manual update to the MAA provider's policy is necessary.
+  On Azure, a manual update to the MAA provider's policy is necessary.
   You can apply the update with the following command after creating the infrastructure, with `<URL>` being the URL of the MAA provider (i.e., `$(terraform output attestation_url | jq -r)`, when using the minimal Terraform configuration).
 
   ```bash
@@ -77,8 +77,8 @@ With the required cloud resources set up, continue with initializing your cluste
 constellation apply --skip-phases=infrastructure
 ```
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 Finally, configure `kubectl` for your cluster:
 

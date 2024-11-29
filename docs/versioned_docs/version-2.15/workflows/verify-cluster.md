@@ -88,6 +88,7 @@ The `verify` command also allows you to verify any Constellation deployment that
 
 * The IP address of a running Constellation cluster's [VerificationService](../architecture/microservices.md#verificationservice). The `VerificationService` is exposed via a `NodePort` service using the external IP address of your cluster. Run `kubectl get nodes -o wide` and look for `EXTERNAL-IP`.
 * The cluster's *clusterID*. See [cluster identity](../architecture/keys.md#cluster-identity) for more details.
+* A `constellation-conf.yaml` file with the expected measurements of the cluster in your working directory.
 
 For example:
 

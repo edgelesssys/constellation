@@ -82,4 +82,4 @@ for major in "${allMajorVersions[@]}"; do
 done
 
 # Print one elem per line | quote elems | create array | remove empty elems and print compact.
-printf '%s' "${versionsToBuild[@]}" | jq -R | jq -s | jq -c 'map(select(length > 0))'
+printf '%s\n' "${versionsToBuild[@]}" | jq -R | jq -s | jq -c 'map(select(length > 0))'

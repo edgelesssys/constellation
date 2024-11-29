@@ -12,7 +12,7 @@ The [`devbuild` target](./build-develop-deploy.md), will create a `terraform` di
 with the provider binary and some utility files in the dedicated local Terraform registry directory.
 
 ```bash
-bazel run //:devbuild'
+bazel run //:devbuild
 ```
 
 > [!IMPORTANT] when making changes on the provider without a commit, subsequent applies will fail due to the changed binary hash. To solve this, in your Terraform directory run:

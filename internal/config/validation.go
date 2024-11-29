@@ -250,7 +250,7 @@ func translateNoAttestationError(ut ut.Translator, fe validator.FieldError) stri
 }
 
 func registerNoAttestationError(ut ut.Translator) error {
-	return ut.Add("no_attestation", "{0}: No attestation has been defined (requires either awsSEVSNP, awsNitroTPM, azureSEVSNP, azureTDX, azureTrustedLaunch, gcpSEVES, or qemuVTPM)", true)
+	return ut.Add("no_attestation", "{0}: No attestation has been defined (requires either awsSEVSNP, awsNitroTPM, azureSEVSNP, azureTDX, azureTrustedLaunch, gcpSEVES, gcpSEVSNP, or qemuVTPM)", true)
 }
 
 func translateNoDefaultControlPlaneGroupError(ut ut.Translator, fe validator.FieldError) string {
@@ -520,7 +520,7 @@ func (c *Config) translateMoreThanOneProviderError(ut ut.Translator, fe validato
 	return t
 }
 
-func validInstanceTypeForProvider(insType string, attestation variant.Variant) bool {
+func validInstanceTypeForProvider(insType string, attestation variant.Variant, provider ProviderConfig) bool {
 	switch attestation {
 	case variant.AWSSEVSNP{}, variant.AWSNitroTPM{}:
 		return isSupportedAWSInstanceType(insType, attestation.Equal(variant.AWSNitroTPM{}))
@@ -549,6 +549,17 @@ func validInstanceTypeForProvider(insType string, attestation variant.Variant) b
 			}
 		}
 	case variant.QEMUVTPM{}, variant.QEMUTDX{}:
+		// only allow confidential instances on stackit cloud using QEMU vTPM
+		if provider.OpenStack != nil {
+			if cloud := provider.OpenStack.Cloud; strings.ToLower(cloud) == "stackit" {
+				for _, instanceType := range instancetypes.STACKITInstanceTypes {
+					if insType == instanceType {
+						return true
+					}
+				}
+				return false
+			}
+		}
 		return true
 	}
 	return false
@@ -789,7 +800,7 @@ func (c *Config) validateNodeGroupZoneField(fl validator.FieldLevel) bool {
 }
 
 func (c *Config) validateInstanceType(fl validator.FieldLevel) bool {
-	return validInstanceTypeForProvider(fl.Field().String(), c.GetAttestationConfig().GetVariant())
+	return validInstanceTypeForProvider(fl.Field().String(), c.GetAttestationConfig().GetVariant(), c.Provider)
 }
 
 func (c *Config) validateStateDiskTypeField(fl validator.FieldLevel) bool {

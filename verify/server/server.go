@@ -56,9 +56,10 @@ func (s *Server) Run(httpListener, grpcListener net.Listener) error {
 	var wg sync.WaitGroup
 	var once sync.Once
 
-	logger.ReplaceGRPCLogger(slog.New(logger.NewLevelHandler(slog.LevelWarn, s.log.Handler()).WithGroup("grpc")))
+	grpcLog := logger.GRPCLogger(s.log)
+	logger.ReplaceGRPCLogger(grpcLog)
 	grpcServer := grpc.NewServer(
-		logger.GetServerUnaryInterceptor(s.log.WithGroup("gRPC")),
+		logger.GetServerUnaryInterceptor(grpcLog),
 		grpc.KeepaliveParams(keepalive.ServerParameters{Time: 15 * time.Second}),
 	)
 	verifyproto.RegisterAPIServer(grpcServer, s)

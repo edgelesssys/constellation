@@ -94,7 +94,7 @@ func TestLoadReleases(t *testing.T) {
 	helmReleases, err := chartLoader.loadReleases(
 		true, false, WaitModeAtomic,
 		uri.MasterSecret{Key: []byte("secret"), Salt: []byte("masterSalt")},
-		fakeServiceAccURI(cloudprovider.GCP), nil,
+		fakeServiceAccURI(cloudprovider.GCP), nil, "172.16.128.0/17",
 	)
 	require.NoError(err)
 	for _, release := range helmReleases {
@@ -256,6 +256,55 @@ func TestConstellationServices(t *testing.T) {
 			require.NoError(err)
 
 			compareMaps(expectedData, result, assert, require, t)
+		})
+	}
+}
+
+func TestExtraCoreDNSValues(t *testing.T) {
+	testCases := map[string]struct {
+		cidr      string
+		wantIP    string
+		wantUnset bool
+		wantErr   bool
+	}{
+		"default": {
+			cidr:   "10.96.0.0/12",
+			wantIP: "10.96.0.10",
+		},
+		"custom": {
+			cidr:   "172.16.128.0/17",
+			wantIP: "172.16.128.10",
+		},
+		"too small": {
+			cidr:    "172.16.0.0/30",
+			wantErr: true,
+		},
+		"bad ip": {
+			cidr:    "cluster.local",
+			wantErr: true,
+		},
+		"v6": {
+			cidr:   "fd12:3456:789a:100::/56",
+			wantIP: "fd12:3456:789a:100::a",
+		},
+		"no ip": {
+			wantUnset: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			values, err := extraCoreDNSValues(tc.cidr)
+			if tc.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			ip, ok := values["clusterIP"]
+			if tc.wantUnset {
+				assert.False(t, ok)
+				return
+			}
+			assert.Equal(t, tc.wantIP, ip)
 		})
 	}
 }

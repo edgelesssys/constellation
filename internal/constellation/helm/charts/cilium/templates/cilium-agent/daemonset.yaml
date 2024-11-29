@@ -53,6 +53,7 @@ spec:
         cilium.io/cilium-configmap-checksum: {{ include (print $.Template.BasePath "/cilium-configmap.yaml") . | sha256sum | quote }}
         {{- end }}
         {{- if not .Values.securityContext.privileged }}
+        {{- if semverCompare "<1.30.0" (printf "%d.%d.0" (semver .Capabilities.KubeVersion.Version).Major (semver .Capabilities.KubeVersion.Version).Minor) }}
         # Set app AppArmor's profile to "unconfined". The value of this annotation
         # can be modified as long users know which profiles they have available
         # in AppArmor.
@@ -61,6 +62,7 @@ spec:
         {{- if .Values.cgroup.autoMount.enabled }}
         container.apparmor.security.beta.kubernetes.io/mount-cgroup: "unconfined"
         container.apparmor.security.beta.kubernetes.io/apply-sysctl-overwrites: "unconfined"
+        {{- end }}
         {{- end }}
         {{- end }}
         {{- with .Values.podAnnotations }}
@@ -80,6 +82,11 @@ spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- /* K8s version lower than 1.30.0 don't support the "appArmorProfile" field, */}}
+      {{- /* thus we have to remove it. */}}
+      {{- if semverCompare "<1.30.0" (printf "%d.%d.0" (semver .Capabilities.KubeVersion.Version).Major (semver .Capabilities.KubeVersion.Version).Minor) }}
+        {{- $_ := unset .Values.podSecurityContext "appArmorProfile" }}
       {{- end }}
       {{- with .Values.podSecurityContext }}
       securityContext:
@@ -115,7 +122,6 @@ spec:
         {{- with .Values.extraArgs }}
         {{- toYaml . | trim | nindent 8 }}
         {{- end }}
-        {{- if semverCompare ">=1.20-0" .Capabilities.KubeVersion.Version }}
         startupProbe:
           httpGet:
             host: {{ .Values.ipv4.enabled | ternary "127.0.0.1" "::1" | quote }}
@@ -129,7 +135,6 @@ spec:
           periodSeconds: {{ .Values.startupProbe.periodSeconds }}
           successThreshold: 1
           initialDelaySeconds: 5
-        {{- end }}
         livenessProbe:
           {{- if or .Values.keepDeprecatedProbes $defaultKeepDeprecatedProbes }}
           exec:
@@ -146,14 +151,6 @@ spec:
             httpHeaders:
             - name: "brief"
               value: "true"
-          {{- end }}
-          {{- if semverCompare "<1.20-0" .Capabilities.KubeVersion.Version }}
-          # The initial delay for the liveness probe is intentionally large to
-          # avoid an endless kill & restart cycle if in the event that the initial
-          # bootstrapping takes longer than expected.
-          # Starting from Kubernetes 1.20, we are using startupProbe instead
-          # of this field.
-          initialDelaySeconds: 120
           {{- end }}
           periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
           successThreshold: 1
@@ -175,9 +172,6 @@ spec:
             httpHeaders:
             - name: "brief"
               value: "true"
-          {{- end }}
-          {{- if semverCompare "<1.20-0" .Capabilities.KubeVersion.Version }}
-          initialDelaySeconds: 5
           {{- end }}
           periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
           successThreshold: 1
@@ -201,6 +195,7 @@ spec:
           valueFrom:
             resourceFieldRef:
               resource: limits.memory
+              divisor: '1'
         {{- if .Values.k8sServiceHost }}
         - name: KUBERNETES_SERVICE_HOST
           value: {{ .Values.k8sServiceHost | quote }}
@@ -405,6 +400,9 @@ spec:
         volumeMounts:
         - name: cilium-run
           mountPath: /var/run/cilium
+        {{- with .Values.extraVolumeMounts }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
         {{- with .Values.monitor.resources }}
         resources:
           {{- toYaml . | trim | nindent 10 }}
@@ -428,6 +426,9 @@ spec:
         {{- end }}
         {{- if (not (kindIs "invalid" .Values.daemon.blockedConfigOverrides)) }}
         - "--deny-config-keys={{.Values.daemon.blockedConfigOverrides}}"
+        {{- end }}
+        {{- if .Values.kubeConfigPath }}
+        - "--k8s-kubeconfig-path={{ .Values.kubeConfigPath }}"
         {{- end }}
         env:
         - name: K8S_NODE_NAME
@@ -454,6 +455,14 @@ spec:
         volumeMounts:
         - name: tmp
           mountPath: /tmp
+        {{- if .Values.kubeConfigPath }}
+        - name: kube-config
+          mountPath: {{ .Values.kubeConfigPath }}
+          readOnly: true
+        {{- end }}
+        {{- with .Values.extraVolumeMounts }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
         terminationMessagePolicy: FallbackToLogsOnError
       {{- if .Values.cgroup.autoMount.enabled }}
       # Required to mount cgroup2 filesystem on the underlying Kubernetes node.
@@ -504,9 +513,15 @@ spec:
             drop:
               - ALL
           {{- end}}
+      {{- end }}
+      {{- if .Values.sysctlfix.enabled }}
       - name: apply-sysctl-overwrites
         image: {{ include "cilium.image" .Values.image | quote }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
+        {{- with .Values.initResources }}
+        resources:
+          {{- toYaml . | trim | nindent 10 }}
+        {{- end }}
         env:
         - name: BIN_PATH
           value: {{ .Values.cni.binPath }}
@@ -552,6 +567,10 @@ spec:
       - name: mount-bpf-fs
         image: {{ include "cilium.image" .Values.image | quote }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
+        {{- with .Values.initResources }}
+        resources:
+          {{- toYaml . | trim | nindent 10 }}
+        {{- end }}
         args:
         - 'mount | grep "/sys/fs/bpf type bpf" || mount -t bpf bpf /sys/fs/bpf'
         command:
@@ -573,6 +592,10 @@ spec:
       - name: wait-for-node-init
         image: {{ include "cilium.image" .Values.image | quote }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
+        {{- with .Values.initResources }}
+        resources:
+          {{- toYaml . | trim | nindent 10 }}
+        {{- end }}
         command:
         - sh
         - -c
@@ -650,14 +673,21 @@ spec:
           mountPropagation: HostToContainer
         - name: cilium-run
           mountPath: /var/run/cilium
-        {{- with .Values.nodeinit.resources }}
+        {{- with .Values.extraVolumeMounts }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- with .Values.initResources }}
         resources:
           {{- toYaml . | trim | nindent 10 }}
         {{- end }}
-      {{- if and .Values.waitForKubeProxy (and (ne $kubeProxyReplacement "strict") (ne $kubeProxyReplacement "true"))  }}
+      {{- if and .Values.waitForKubeProxy (and (ne (toString $kubeProxyReplacement) "strict") (ne (toString $kubeProxyReplacement) "true"))  }}
       - name: wait-for-kube-proxy
         image: {{ include "cilium.image" .Values.image | quote }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
+        {{- with .Values.initResources }}
+        resources:
+          {{- toYaml . | trim | nindent 10 }}
+        {{- end }}
         securityContext:
           privileged: true
         command:
@@ -716,20 +746,21 @@ spec:
             mountPath: /host/opt/cni/bin
       {{- end }} # .Values.cni.install
       - name: firewall-pods
-        image: ghcr.io/edgelesssys/cilium/cilium:v1.15.0-pre.3-edg.2@sha256:c21b7fbbb084a128a479d6170e5f89ad2768dfecb4af10ee6a99ffe5d1a11749
+        image: {{ include "cilium.image" .Values.image | quote }}
         imagePullPolicy: IfNotPresent
         command:
         - /bin/bash
         - -exc
         - |
           pref=32
-          interface=$(ip route | awk '/^default/ { print $5 }')
-          tc qdisc add dev "${interface}" clsact || true
-          tc filter del dev "${interface}" ingress pref "${pref}" 2>/dev/null || true
-          handle=0
-          for cidr in ${POD_CIDRS}; do
-            handle=$((handle + 1))
-            tc filter replace dev "${interface}" ingress pref "${pref}" handle "${handle}" protocol ip flower dst_ip "${cidr}" action drop
+          for interface in $(ip route | awk '/^default/ { print $5 }'); do
+            tc qdisc add dev "${interface}" clsact || true
+            tc filter del dev "${interface}" ingress pref "${pref}" 2>/dev/null || true
+            handle=0
+            for cidr in ${POD_CIDRS}; do
+              handle=$((handle + 1))
+              tc filter replace dev "${interface}" ingress pref "${pref}" handle "${handle}" protocol ip flower dst_ip "${cidr}" action drop
+            done
           done
         env:
         - name: POD_CIDRS
@@ -748,7 +779,6 @@ spec:
             - NET_ADMIN
       restartPolicy: Always
       priorityClassName: {{ include "cilium.priorityClass" (list $ .Values.priorityClassName "system-node-critical") }}
-      serviceAccount: {{ .Values.serviceAccounts.cilium.name | quote }}
       serviceAccountName: {{ .Values.serviceAccounts.cilium.name | quote }}
       automountServiceAccountToken: {{ .Values.serviceAccounts.cilium.automount }}
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
@@ -798,8 +828,8 @@ spec:
           path: /sys/fs/bpf
           type: DirectoryOrCreate
       {{- end }}
-      {{- if .Values.cgroup.autoMount.enabled }}
-      # To mount cgroup2 filesystem on the host
+      {{- if or .Values.cgroup.autoMount.enabled .Values.sysctlfix.enabled }}
+      # To mount cgroup2 filesystem on the host or apply sysctlfix
       - name: hostproc
         hostPath:
           path: /proc

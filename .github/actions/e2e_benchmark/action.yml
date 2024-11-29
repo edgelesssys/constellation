@@ -5,7 +5,6 @@ inputs:
   cloudProvider:
     description: "Which cloud provider to use."
     required: true
-  # TODO: Create different report depending on the attestation variant
   attestationVariant:
     description: "Which attestation variant to use."
     required: true
@@ -33,7 +32,7 @@ runs:
 
   steps:
     - name: Setup python
-      uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5.1.0
+      uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
       with:
         python-version: "3.10"
 
@@ -49,25 +48,25 @@ runs:
         install kubestr /usr/local/bin
 
     - name: Checkout k8s-bench-suite
-      uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       with:
         fetch-depth: 0
         repository: "edgelesssys/k8s-bench-suite"
         ref: 67c64c854841165b778979375444da1c02e02210
         path: k8s-bench-suite
 
-
-    - name: Run FIO benchmark without caching in Azure
-      if: inputs.cloudProvider == 'azure'
+    - name: Run FIO benchmark
       shell: bash
       env:
         KUBECONFIG: ${{ inputs.kubeconfig }}
       run: |
+        if [[ "${{ inputs.cloudProvider }}" == "azure" ]]
+        then
         cat <<EOF | kubectl apply -f -
         apiVersion: storage.k8s.io/v1
         kind: StorageClass
         metadata:
-          name: encrypted-rwo-no-cache
+          name: fio-benchmark
         allowVolumeExpansion: true
         allowedTopologies: []
         mountOptions: []
@@ -78,34 +77,47 @@ runs:
         reclaimPolicy: Delete
         volumeBindingMode: Immediate
         EOF
-        mkdir -p out
-        kubestr fio -e "out/fio-constellation-${{ inputs.cloudProvider }}.json" -o json -s encrypted-rwo-no-cache -z 400Gi -f .github/actions/e2e_benchmark/fio.ini
+        fi
 
-    - name: Run FIO benchmark
-      if: inputs.cloudProvider == 'gcp'
-      shell: bash
-      env:
-        KUBECONFIG: ${{ inputs.kubeconfig }}
-      run: |
+        if [[ "${{ inputs.cloudProvider }}" == "gcp" ]]
+        then
         cat <<EOF | kubectl apply -f -
         apiVersion: storage.k8s.io/v1
         kind: StorageClass
         metadata:
-          name: encrypted-balanced-rwo
+          name: fio-benchmark
         provisioner: gcp.csi.confidential.cloud
         volumeBindingMode: Immediate
         allowVolumeExpansion: true
         parameters:
           type: pd-balanced
         EOF
+        fi
+
+        if [[ "${{ inputs.cloudProvider }}" == "aws" ]]
+        then
+        cat <<EOF | kubectl apply -f -
+        apiVersion: storage.k8s.io/v1
+        kind: StorageClass
+        metadata:
+          name: fio-benchmark
+        parameters:
+          type: gp3
+        provisioner: aws.csi.confidential.cloud
+        allowVolumeExpansion: true
+        reclaimPolicy: Delete
+        volumeBindingMode: Immediate
+        EOF
+        fi
+
         mkdir -p out
-        kubestr fio -e "out/fio-constellation-${{ inputs.cloudProvider }}.json" -o json -s encrypted-balanced-rwo -z 400Gi -f .github/actions/e2e_benchmark/fio.ini
+        kubestr fio -e "out/fio-constellation-${{ inputs.attestationVariant }}.json" -o json -s fio-benchmark -z 400Gi -f .github/actions/e2e_benchmark/fio.ini
 
     - name: Upload raw FIO benchmark results
       if: (!env.ACT)
       uses: ./.github/actions/artifact_upload
       with:
-        path: "out/fio-constellation-${{ inputs.cloudProvider }}.json"
+        path: "out/fio-constellation-${{ inputs.attestationVariant }}.json"
         name: "fio-constellation-${{ inputs.artifactNameSuffix }}.json"
         encryptionSecret: ${{ inputs.encryptionSecret }}
 
@@ -115,19 +127,19 @@ runs:
         KUBECONFIG: ${{ inputs.kubeconfig }}
         TERM: xterm-256color
       run: |
-        workers="$(kubectl get nodes -o name | grep worker)"
+        workers="$(kubectl get nodes -o name -l '!node-role.kubernetes.io/control-plane')"
         echo -e "Found workers:\n$workers"
         server="$(echo "$workers" | tail +1 | head -1 | cut -d '/' -f2)"
         echo "Server: $server"
         client="$(echo "$workers" | tail +2 | head -1 | cut -d '/' -f2)"
         echo "Client: $client"
-        k8s-bench-suite/knb -f "out/knb-constellation-${{ inputs.cloudProvider }}.json" -o json --server-node "$server" --client-node "$client"
+        k8s-bench-suite/knb -f "out/knb-constellation-${{ inputs.attestationVariant }}.json" -o json --server-node "$server" --client-node "$client"
 
     - name: Upload raw knb benchmark results
       if: (!env.ACT)
       uses: ./.github/actions/artifact_upload
       with:
-        path: "out/knb-constellation-${{ inputs.cloudProvider }}.json"
+        path: "out/knb-constellation-${{ inputs.attestationVariant }}.json"
         name: "knb-constellation-${{ inputs.artifactNameSuffix }}.json"
         encryptionSecret: ${{ inputs.encryptionSecret }}
 
@@ -139,6 +151,7 @@ runs:
         # Working directory containing the previous results as JSON and to contain the graphs
         BDIR: benchmarks
         CSP: ${{ inputs.cloudProvider }}
+        ATTESTATION_VARIANT: ${{ inputs.attestationVariant }}
       run: |
         mkdir -p benchmarks
         python .github/actions/e2e_benchmark/evaluate/parse.py
@@ -148,7 +161,7 @@ runs:
       uses: ./.github/actions/artifact_upload
       with:
         path: >
-          benchmarks/constellation-${{ inputs.cloudProvider }}.json
+          benchmarks/constellation-${{ inputs.attestationVariant }}.json
         name: "benchmarks-${{ inputs.artifactNameSuffix }}"
         encryptionSecret: ${{ inputs.encryptionSecret }}
 
@@ -166,12 +179,10 @@ runs:
 
     - name: Get previous benchmark records from S3
       shell: bash
-      env:
-        CSP: ${{ inputs.cloudProvider }}
       run: |
-        aws s3 cp --recursive ${S3_PATH} ./ --no-progress
-        if [[ -f constellation-${CSP}.json ]]; then
-          mv constellation-${CSP}.json benchmarks/constellation-${CSP}-previous.json
+        if aws s3 cp "${S3_PATH}/constellation-${{ inputs.attestationVariant }}.json" ./ --no-progress
+        then
+          mv "constellation-${{ inputs.attestationVariant }}.json" "benchmarks/constellation-${{ inputs.attestationVariant }}-previous.json"
         else
             echo "::warning::Couldn't retrieve previous benchmark records from s3"
         fi
@@ -180,15 +191,15 @@ runs:
       shell: bash
       env:
         # Paths to benchmark results as JSON of the previous run and the current run
-        PREV_BENCH: benchmarks/constellation-${{ inputs.cloudProvider }}-previous.json
-        CURR_BENCH: benchmarks/constellation-${{ inputs.cloudProvider }}.json
+        PREV_BENCH: benchmarks/constellation-${{ inputs.attestationVariant }}-previous.json
+        CURR_BENCH: benchmarks/constellation-${{ inputs.attestationVariant }}.json
       run: |
         if [[ -f "$PREV_BENCH" ]]; then
           # Fails if the results are outside the threshold range
           python .github/actions/e2e_benchmark/evaluate/compare.py >> $GITHUB_STEP_SUMMARY
         fi
 
-    - name: Upload benchmark results to opensearch
+    - name: Upload benchmark results to OpenSearch
       if: (!env.ACT)
       shell: bash
       env:
@@ -198,14 +209,12 @@ runs:
       run: |
         curl -XPOST \
             -u "${OPENSEARCH_USER}:${OPENSEARCH_PWD}" \
-            "${OPENSEARCH_DOMAIN}/benchmarks-${{ inputs.cloudProvider }}-$(date '+%Y')"/_doc \
-            --data-binary @benchmarks/constellation-${{ inputs.cloudProvider }}.json \
+            "${OPENSEARCH_DOMAIN}/benchmarks-${{ inputs.attestationVariant }}-$(date '+%Y')"/_doc \
+            --data-binary @benchmarks/constellation-${{ inputs.attestationVariant }}.json \
             -H 'Content-Type: application/json'
 
     - name: Update benchmark records in S3
       if: github.ref_name == 'main'
       shell: bash
-      env:
-        CSP: ${{ inputs.cloudProvider }}
       run: |
-        aws s3 cp benchmarks/constellation-${CSP}.json ${S3_PATH}/constellation-${CSP}.json
+        aws s3 cp benchmarks/constellation-${{ inputs.attestationVariant }}.json ${S3_PATH}/constellation-${{ inputs.attestationVariant }}.json

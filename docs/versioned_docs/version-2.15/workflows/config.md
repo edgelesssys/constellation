@@ -4,7 +4,7 @@
 This recording presents the essence of this page. It's recommended to read it in full for the motivation and all details.
 :::
 
-<asciinemaWidget src="/constellation/assets/configure-cluster.cast" rows="20" cols="112" idleTimeLimit="3" preload="true" theme="edgeless" />
+<AsciinemaWidget src="/constellation/assets/configure-cluster.cast" rows="20" cols="112" idleTimeLimit="3" preload="true" theme="edgeless" />
 
 ---
 
@@ -14,49 +14,49 @@ Before you can create your cluster, you need to configure the identity and acces
 
 You can generate a configuration file for your CSP by using the following CLI command:
 
-<tabs groupId="csp">
-<tabItem value="azure" label="Azure">
+<Tabs groupId="csp">
+<TabItem value="azure" label="Azure">
 
 ```bash
 constellation config generate azure
 ```
 
-</tabItem>
-<tabItem value="gcp" label="GCP">
+</TabItem>
+<TabItem value="gcp" label="GCP">
 
 ```bash
 constellation config generate gcp
 ```
 
-</tabItem>
-<tabItem value="aws" label="AWS">
+</TabItem>
+<TabItem value="aws" label="AWS">
 
 ```bash
 constellation config generate aws
 ```
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 This creates the file `constellation-conf.yaml` in the current directory.
 
 ## Choosing a VM type
 
 Constellation supports the following VM types:
-<tabs groupId="csp">
-<tabItem value="azure" label="Azure">
+<Tabs groupId="csp">
+<TabItem value="azure" label="Azure">
 
 By default, Constellation uses `Standard_DC4as_v5` CVMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying `instanceType` in the configuration file. For CVMs, any VM type with a minimum of 4 vCPUs from the [DCasv5 & DCadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/dcasv5-dcadsv5-series) or [ECasv5 & ECadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/ecasv5-ecadsv5-series) families is supported.
 
 You can also run `constellation config instance-types` to get the list of all supported options.
 
-</tabItem>
-<tabItem value="gcp" label="GCP">
+</TabItem>
+<TabItem value="gcp" label="GCP">
 
 By default, Constellation uses `n2d-standard-4` VMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying `instanceType` in the configuration file. Supported are all machines with a minimum of 4 vCPUs from the [C2D](https://cloud.google.com/compute/docs/compute-optimized-machines#c2d_machine_types) or [N2D](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) family. You can run  `constellation config instance-types` to get the list of all supported options.
 
-</tabItem>
-<tabItem value="aws" label="AWS">
+</TabItem>
+<TabItem value="aws" label="AWS">
 
 By default, Constellation uses `m6a.xlarge` VMs (4 vCPUs, 16 GB RAM) to create your cluster.
 Optionally, you can switch to a different VM type by modifying `instanceType` in the configuration file.
@@ -67,8 +67,8 @@ If you are using the attestation variant `awsNitroTPM`, you can choose any of th
 
 The Constellation CLI can also print the supported instance types with: `constellation config instance-types`.
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 Fill the desired VM type into the `instanceType` fields in the `constellation-conf.yml` file.
 
@@ -125,8 +125,8 @@ See also Constellation's [Kubernetes support policy](../architecture/versions.md
 You can create an IAM configuration for your cluster automatically using the `constellation iam create` command.
 If you already have a Constellation configuration file, you can add the `--update-config` flag to the command. This writes the needed IAM fields into your configuration. Furthermore, the flag updates the zone/region of the configuration if it hasn't been set yet.
 
-<tabs groupId="csp">
-<tabItem value="azure" label="Azure">
+<Tabs groupId="csp">
+<TabItem value="azure" label="Azure">
 
 You must be authenticated with the [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) in the shell session with a user that has the [required permissions for IAM creation](../getting-started/install.md#set-up-cloud-credentials).
 
@@ -151,8 +151,8 @@ You can find a list of all [regions in Azure's documentation](https://azure.micr
 
 Paste the output into the corresponding fields of the `constellation-conf.yaml` file.
 
-</tabItem>
-<tabItem value="gcp" label="GCP">
+</TabItem>
+<TabItem value="gcp" label="GCP">
 
 You must be authenticated with the [GCP CLI](https://cloud.google.com/sdk/gcloud) in the shell session with a user that has the [required permissions for IAM creation](../getting-started/install.md#set-up-cloud-credentials).
 
@@ -166,8 +166,8 @@ Note that only regions offering CVMs of the `C2D` or `N2D` series are supported.
 
 Paste the output into the corresponding fields of the `constellation-conf.yaml` file.
 
-</tabItem>
-<tabItem value="aws" label="AWS">
+</TabItem>
+<TabItem value="aws" label="AWS">
 
 You must be authenticated with the [AWS CLI](https://aws.amazon.com/en/cli/) in the shell session with a user that has the [required permissions for IAM creation](../getting-started/install.md#set-up-cloud-credentials).
 
@@ -191,16 +191,16 @@ You can find a list of all [regions in AWS's documentation](https://docs.aws.ama
 
 Paste the output into the corresponding fields of the `constellation-conf.yaml` file.
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 <details>
 <summary>Alternatively, you can manually create the IAM configuration on your CSP.</summary>
 
 The following describes the configuration fields and how you obtain the required information or create the required resources.
 
-<tabs groupId="csp">
-<tabItem value="azure" label="Azure">
+<Tabs groupId="csp">
+<TabItem value="azure" label="Azure">
 
 * **subscription**: The UUID of your Azure subscription, e.g., `8b8bd01f-efd9-4113-9bd1-c82137c32da7`.
 
@@ -236,9 +236,9 @@ The following describes the configuration fields and how you obtain the required
   The user-assigned identity is used by instances of the cluster to access other cloud resources.
   For more information about managed identities refer to [Azure's documentation](https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/how-manage-user-assigned-managed-identities).
 
-</tabItem>
+</TabItem>
 
-<tabItem value="gcp" label="GCP">
+<TabItem value="gcp" label="GCP">
 
 * **project**: The ID of your GCP project, e.g., `constellation-129857`.
 
@@ -262,9 +262,9 @@ The following describes the configuration fields and how you obtain the required
 
   Afterward, create and download a new JSON key for this service account. Place the downloaded file in your Constellation workspace, and set the config parameter to the filename, e.g., `constellation-129857-15343dba46cb.json`.
 
-</tabItem>
+</TabItem>
 
-<tabItem value="aws" label="AWS">
+<TabItem value="aws" label="AWS">
 
 * **region**: The name of your chosen AWS data center region, e.g., `us-east-2`.
 
@@ -295,9 +295,9 @@ The following describes the configuration fields and how you obtain the required
 
   Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [main.tf](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam/main.tf) in the resource `aws_iam_policy.worker_node_policy`.
 
-</tabItem>
+</TabItem>
 
-</tabs>
+</Tabs>
 </details>
 
 Now that you've configured your CSP, you can [create your cluster](./create.md).

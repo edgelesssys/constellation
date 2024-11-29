@@ -1,6 +1,6 @@
 # Consume software bill of materials (SBOMs)
 
-<asciinemaWidget src="/constellation/assets/check-sbom.cast" rows="20" cols="112" idleTimeLimit="3" preload="true" theme="edgeless" />
+<AsciinemaWidget src="/constellation/assets/check-sbom.cast" rows="20" cols="112" idleTimeLimit="3" preload="true" theme="edgeless" />
 
 ---
 
@@ -11,13 +11,15 @@ SBOMs for Constellation are generated using [Syft](https://github.com/anchore/sy
 
 :::note
 The public key for Edgeless Systems' long-term code-signing key is:
+
 ```
 -----BEGIN PUBLIC KEY-----
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEf8F1hpmwE+YCFXzjGtaQcrL6XZVT
 JmEe5iSLvG1SyQSAew7WdMKF6o9t8e2TFuCkzlOhhlws2OHWbiFZnFWCFw==
 -----END PUBLIC KEY-----
 ```
-The public key is also available for download at https://edgeless.systems/es.pub and in the Twitter profile [@EdgelessSystems](https://twitter.com/EdgelessSystems).
+
+The public key is also available for download at [https://edgeless.systems/es.pub](https://edgeless.systems/es.pub) and in the Twitter profile [@EdgelessSystems](https://twitter.com/EdgelessSystems).
 
 Make sure the key is available in a file named `cosign.pub` to execute the following examples.
 :::
@@ -38,7 +40,7 @@ cosign verify-blob --key cosign.pub --signature constellation.spdx.sbom.sig cons
 
 ### Container Images
 
-SBOMs for container images are [attached to the image using Cosign](https://docs.sigstore.dev/signing/other_types#sboms-software-bill-of-materials) and uploaded to the same registry.
+SBOMs for container images are [attached to the image using Cosign](https://docs.sigstore.dev/cosign/signing/other_types/#sboms-software-bill-of-materials) and uploaded to the same registry.
 
 As a consumer, use cosign to download and verify the SBOM:
 

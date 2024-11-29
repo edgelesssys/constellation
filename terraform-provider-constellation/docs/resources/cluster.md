@@ -69,7 +69,7 @@ resource "constellation_cluster" "azure_example" {
 See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview/clouds) that Constellation supports.
 - `image` (Attributes) Constellation OS Image to use on the nodes. (see [below for nested schema](#nestedatt--image))
 - `init_secret` (String) Secret used for initialization of the cluster.
-- `kubernetes_version` (String) The Kubernetes version to use for the cluster. The supported versions are [v1.27.13 v1.28.9 v1.29.4].
+- `kubernetes_version` (String) The Kubernetes version to use for the cluster. The supported versions are [v1.28.14 v1.29.9 v1.30.5].
 - `master_secret` (String) Hex-encoded 32-byte master secret for the cluster.
 - `master_secret_salt` (String) Hex-encoded 32-byte master secret salt for the cluster.
 - `measurement_salt` (String) Hex-encoded 32-byte measurement salt for the cluster.
@@ -90,8 +90,12 @@ See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview
 
 ### Read-Only
 
+- `client_certificate` (String) The client certificate of the cluster.
+- `client_key` (String, Sensitive) The client key of the cluster.
+- `cluster_ca_certificate` (String) The cluster CA certificate of the cluster.
 - `cluster_id` (String) The cluster ID of the cluster.
-- `kubeconfig` (String, Sensitive) The kubeconfig of the cluster.
+- `host` (String) The host of the cluster.
+- `kubeconfig` (String, Sensitive) The kubeconfig (file) of the cluster.
 - `owner_id` (String) The owner ID of the cluster.
 
 <a id="nestedatt--attestation"></a>
@@ -110,8 +114,8 @@ Required:
   * `aws-nitro-tpm`
   * `azure-sev-snp`
   * `azure-tdx`
-  * `gcp-sev-es`
   * `gcp-sev-snp`
+  * `gcp-sev-es`
   * `qemu-vtpm`
 
 Optional:

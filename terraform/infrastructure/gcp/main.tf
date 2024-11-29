@@ -2,28 +2,17 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "5.23.0"
-    }
-
-    google-beta = {
-      source  = "hashicorp/google-beta"
-      version = "5.23.0"
+      version = "6.7.0"
     }
 
     random = {
       source  = "hashicorp/random"
-      version = "3.6.0"
+      version = "3.6.2"
     }
   }
 }
 
 provider "google" {
-  project = var.project
-  region  = var.region
-  zone    = var.zone
-}
-
-provider "google-beta" {
   project = var.project
   region  = var.region
   zone    = var.zone
@@ -60,6 +49,13 @@ locals {
   ]
   in_cluster_endpoint     = var.internal_load_balancer ? google_compute_address.loadbalancer_ip_internal[0].address : google_compute_global_address.loadbalancer_ip[0].address
   out_of_cluster_endpoint = var.debug && var.internal_load_balancer ? module.jump_host[0].ip : local.in_cluster_endpoint
+  revision                = 1
+}
+
+# A way to force replacement of resources if the provider does not want to replace them
+# see: https://developer.hashicorp.com/terraform/language/resources/terraform-data#example-usage-data-for-replace_triggered_by
+resource "terraform_data" "replacement" {
+  input = local.revision
 }
 
 resource "random_id" "uid" {
@@ -84,12 +80,10 @@ resource "google_compute_subnetwork" "vpc_subnetwork" {
   description   = "Constellation VPC subnetwork"
   network       = google_compute_network.vpc_network.id
   ip_cidr_range = local.cidr_vpc_subnet_nodes
-  secondary_ip_range = [
-    {
-      range_name    = local.name,
-      ip_cidr_range = local.cidr_vpc_subnet_pods,
-    }
-  ]
+  secondary_ip_range {
+    range_name    = local.name
+    ip_cidr_range = local.cidr_vpc_subnet_pods
+  }
 }
 
 resource "google_compute_subnetwork" "proxy_subnet" {

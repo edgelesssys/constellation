@@ -42,7 +42,6 @@ Each node creates its own [Curve25519](http://cr.yp.to/ecdh.html) encryption key
 A node uses another node's public key to decrypt and encrypt traffic from and to Cilium-managed endpoints running on that node.
 Connections are always encrypted peer-to-peer using [ChaCha20](http://cr.yp.to/chacha.html) with [Poly1305](http://cr.yp.to/mac.html).
 WireGuard implements [forward secrecy with key rotation every 2 minutes](https://lists.zx2c4.com/pipermail/wireguard/2017-December/002141.html).
-Cilium supports [key rotation](https://docs.cilium.io/en/stable/security/network/encryption-ipsec/#key-rotation) for the long-term node keys via Kubernetes secrets.
 
 ## Storage encryption
 

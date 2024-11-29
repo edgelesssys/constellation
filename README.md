@@ -1,4 +1,4 @@
-![Constellation](docs/static/img/banner.svg)
+![Constellation](docs/static/img/BannerConstellationanimated.svg)
 
 # Always Encrypted Kubernetes
 
@@ -51,7 +51,7 @@ Encrypting your K8s is good for:
 
 * High availability with multi-master architecture and stacked etcd topology
 * Dynamic cluster autoscaling with verification and secure bootstrapping of new nodes
-* Competitive performance ([see K-Bench comparison with AKS and GKE][performance])
+* Competitive [performance]
 
 ### 🧩 Easy to use and integrate
 
@@ -73,15 +73,6 @@ If you're already familiar with Kubernetes, it's easy to get started with Conste
 ![Constellation Shell](docs/static/img/shell-windowframe.svg)
 
 Learn more: ["Getting started with Constellation" videos series](https://www.youtube.com/playlist?list=PLEhAl3D5WVvRYxO_yI7KzmtJ7rJUyQgNu).
-
-## Live demos
-
-We're running public instances of popular software on Constellation:
-
-* Rocket.Chat: <https://rocket.edgeless.systems/> ([blog post](https://www.edgeless.systems/resource-library/rocket-chat))
-* GitLab: <https://gitlab.edgeless.systems/> ([blog post](https://www.edgeless.systems/resource-library/confidential-gitlab/))
-
-These instances run on CVMs in Azure and Constellation keeps them end-to-end confidential.
 
 ## Documentation
 

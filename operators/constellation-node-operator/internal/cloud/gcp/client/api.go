@@ -12,6 +12,7 @@ import (
 	compute "cloud.google.com/go/compute/apiv1"
 	"cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/googleapis/gax-go/v2"
+	computeREST "google.golang.org/api/compute/v1"
 )
 
 type projectAPI interface {
@@ -27,13 +28,9 @@ type instanceAPI interface {
 }
 
 type instanceTemplateAPI interface {
-	Close() error
-	Get(ctx context.Context, req *computepb.GetInstanceTemplateRequest,
-		opts ...gax.CallOption) (*computepb.InstanceTemplate, error)
-	Delete(ctx context.Context, req *computepb.DeleteInstanceTemplateRequest,
-		opts ...gax.CallOption) (Operation, error)
-	Insert(ctx context.Context, req *computepb.InsertInstanceTemplateRequest,
-		opts ...gax.CallOption) (Operation, error)
+	Get(projectID, template string) (*computeREST.InstanceTemplate, error)
+	Delete(projectID, template string) (*computeREST.Operation, error)
+	Insert(projectID string, template *computeREST.InstanceTemplate) (*computeREST.Operation, error)
 }
 
 type instanceGroupManagersAPI interface {

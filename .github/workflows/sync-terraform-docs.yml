@@ -18,14 +18,14 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout constellation repo
-        uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
           fetch-depth: 0
           path: constellation
 
       - name: Checkout terraform-provider-constellation repo
-        uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           repository: edgelesssys/terraform-provider-constellation
           ref: main
@@ -40,7 +40,7 @@ jobs:
 
       - name: Create pull request
         id: create-pull-request
-        uses: peter-evans/create-pull-request@6d6857d36972b65feb161a90e484f2984215f83e # v6.0.5
+        uses: peter-evans/create-pull-request@5e914681df9dc83aa4e4905692ca88beb2f9e91f # v7.0.5
         with:
           path: terraform-provider-constellation
           branch: "feat/docs/update"

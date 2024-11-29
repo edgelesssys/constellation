@@ -2,11 +2,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "3.92.0"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "3.6.0"
+      version = "4.1.0"
     }
     tls = {
       source  = "hashicorp/tls"
@@ -14,7 +10,7 @@ terraform {
     }
     cloudinit = {
       source  = "hashicorp/cloudinit"
-      version = "2.3.3"
+      version = "2.3.4"
     }
   }
 }
@@ -22,14 +18,12 @@ terraform {
 provider "azurerm" {
   use_oidc = true
   features {}
+  # This enables all resource providers.
+  # In the future, we might want to use `resource_providers_to_register` to registers just the ones we need.
+  resource_provider_registrations = "all"
 }
 
 provider "tls" {}
-
-resource "random_string" "suffix" {
-  length  = 6
-  special = false
-}
 
 resource "tls_private_key" "ssh_key" {
   algorithm = "RSA"
@@ -47,26 +41,26 @@ data "cloudinit_config" "cloud_init" {
 }
 
 resource "azurerm_resource_group" "main" {
-  name     = "e2e-mini-${random_string.suffix.result}"
-  location = "North Europe"
+  name     = var.resource_name
+  location = "West Europe"
 }
 
 resource "azurerm_virtual_network" "main" {
-  name                = "e2e-mini-${random_string.suffix.result}"
+  name                = var.resource_name
   address_space       = ["10.0.0.0/16"]
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
 }
 
 resource "azurerm_subnet" "main" {
-  name                 = "e2e-mini-${random_string.suffix.result}"
+  name                 = var.resource_name
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = ["10.0.2.0/24"]
 }
 
 resource "azurerm_public_ip" "main" {
-  name                = "e2e-mini-${random_string.suffix.result}"
+  name                = var.resource_name
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
   allocation_method   = "Static"
@@ -74,7 +68,7 @@ resource "azurerm_public_ip" "main" {
 }
 
 resource "azurerm_network_interface" "main" {
-  name                = "e2e-mini-${random_string.suffix.result}"
+  name                = var.resource_name
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
 
@@ -87,7 +81,7 @@ resource "azurerm_network_interface" "main" {
 }
 
 resource "azurerm_network_security_group" "ssh" {
-  name                = "e2e-mini-${random_string.suffix.result}"
+  name                = var.resource_name
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
 
@@ -110,7 +104,7 @@ resource "azurerm_subnet_network_security_group_association" "ssh" {
 }
 
 resource "azurerm_linux_virtual_machine" "main" {
-  name                = "e2e-mini-${random_string.suffix.result}"
+  name                = var.resource_name
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
 

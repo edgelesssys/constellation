@@ -120,6 +120,7 @@ spec:
             - "-leader-election"
             - "--leader-election-namespace={{ .Release.Namespace }}"
             - "-v=2"
+            - "--timeout=1200s"
           env:
             - name: ADDRESS
               value: /csi/csi.sock
@@ -157,7 +158,11 @@ spec:
           args:
             - --csi-address=/csi/csi.sock
             - --probe-timeout=3s
+{{- if eq .Values.controller.hostNetwork true }}
+            - --http-endpoint=localhost:{{ .Values.controller.livenessProbe.healthPort }}
+{{- else }}
             - --health-port={{ .Values.controller.livenessProbe.healthPort }}
+{{- end }}
             - --v=2
           volumeMounts:
             - name: socket-dir
@@ -197,18 +202,29 @@ spec:
             - "--enable-traffic-manager={{ .Values.controller.enableTrafficManager }}"
             - "--traffic-manager-port={{ .Values.controller.trafficManagerPort }}"
             - "--enable-otel-tracing={{ .Values.controller.otelTracing.enabled }}"
+            - "--check-disk-lun-collision=true"
+            {{- range $value := .Values.controller.extraArgs }}
+            - {{ $value | quote }}
+            {{- end }}
           ports:
-            - containerPort: {{ .Values.controller.livenessProbe.healthPort }}
-              name: healthz
-              protocol: TCP
             - containerPort: {{ .Values.controller.metricsPort }}
               name: metrics
               protocol: TCP
+{{- if ne .Values.controller.hostNetwork true }}
+            - containerPort: {{ .Values.controller.livenessProbe.healthPort }}
+              name: healthz
+              protocol: TCP
+{{- end }}
           livenessProbe:
             failureThreshold: 5
             httpGet:
               path: /healthz
+{{- if eq .Values.controller.hostNetwork true }}
+              host: localhost
+              port: {{ .Values.controller.livenessProbe.healthPort }}
+{{- else }}
               port: healthz
+{{- end }}
             initialDelaySeconds: 30
             timeoutSeconds: 10
             periodSeconds: 30

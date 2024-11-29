@@ -62,6 +62,10 @@ build --remote_local_fallback
 # Docs: https://bazel.build/reference/command-line-reference#flag--grpc_keepalive_time
 build --grpc_keepalive_time=30s
 
+# Use fallbacks in case proxy.golang.org is not reachable.
+# Docs: https://go.dev/ref/mod#goproxy-protocol
+common '--repo_env=GOPROXY=https://proxy.golang.org|https://goproxy.io|direct'
+
 
 ######################################
 # Edgeless specific                  #

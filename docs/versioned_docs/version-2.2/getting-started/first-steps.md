@@ -11,36 +11,36 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
 1. Create the configuration file for your selected cloud provider.
 
-    <tabs groupId="csp">
-    <tabItem value="azure" label="Azure">
+    <Tabs groupId="csp">
+    <TabItem value="azure" label="Azure">
 
     ```bash
     constellation config generate azure
     ```
 
-    </tabItem>
-    <tabItem value="gcp" label="GCP">
+    </TabItem>
+    <TabItem value="gcp" label="GCP">
 
     ```bash
     constellation config generate gcp
     ```
 
-    </tabItem>
-    <tabItem value="aws" label="AWS">
+    </TabItem>
+    <TabItem value="aws" label="AWS">
 
     ```bash
     constellation config generate aws
     ```
 
-    </tabItem>
-    </tabs>
+    </TabItem>
+    </Tabs>
 
     This creates the file `constellation-conf.yaml` in your current working directory.
 
 2. Fill in your cloud provider specific information.
 
-    <tabs groupId="csp">
-    <tabItem value="azure" label="Azure (CLI)">
+    <Tabs groupId="csp">
+    <TabItem value="azure" label="Azure (CLI)">
 
     You need several resources for the cluster. You can use the following `az` script to create them:
 
@@ -71,8 +71,8 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
     Run `constellation config instance-types` to get the list of all supported options.
 
-    </tabItem>
-    <tabItem value="azure-portal" label="Azure (Portal)">
+    </TabItem>
+    <TabItem value="azure-portal" label="Azure (Portal)">
 
     * **subscription**: The UUID of your Azure subscription, e.g., `8b8bd01f-efd9-4113-9bd1-c82137c32da7`.
 
@@ -118,8 +118,8 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
       Run `constellation config instance-types` to get the list of all supported options.
 
-    </tabItem>
-    <tabItem value="gcp" label="GCP (CLI)">
+    </TabItem>
+    <TabItem value="gcp" label="GCP (CLI)">
 
     You need a service account for the cluster. You can use the following `gcloud` script to create it:
 
@@ -142,8 +142,8 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
     By default, Constellation uses `n2d-standard-4` VMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. Supported are all machines from the N2D family with a minimum of 4 vCPUs. Refer to [N2D machine series](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) or run `constellation config instance-types` to get the list of all supported options.
 
-    </tabItem>
-    <tabItem value="gcp-console" label="GCP (Console)">
+    </TabItem>
+    <TabItem value="gcp-console" label="GCP (Console)">
 
     * **project**: The ID of your GCP project, e.g., `constellation-129857`.
 
@@ -171,8 +171,8 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
       Supported are all machines from the N2D family with a minimum of 4 vCPUs. It defaults to `n2d-standard-4` (4 vCPUs, 16 GB RAM), but you can use any other VMs from the same family. Refer to [N2D machine series](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) or run `constellation config instance-types` to get the list of all supported options.
 
-    </tabItem>
-    <tabItem value="aws" label="AWS">
+    </TabItem>
+    <TabItem value="aws" label="AWS">
 
     * **region**: The name of your chosen AWS data center region, e.g., `us-east-2`.
 
@@ -211,8 +211,8 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
       Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [main.tf](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam/main.tf) in the resource `aws_iam_policy.worker_node_policy`.
 
-    </tabItem>
-    </tabs>
+    </TabItem>
+    </Tabs>
 
     :::info
 

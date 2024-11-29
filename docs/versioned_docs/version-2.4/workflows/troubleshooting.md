@@ -5,6 +5,7 @@ This section aids you in finding problems when working with Constellation.
 ## Azure: Resource Providers can't be registered
 
 On Azure, you may receive the following error when running `create` or `terminate` with limited IAM permissions:
+
 ```shell-session
 Error: Error ensuring Resource Providers are registered.
 
@@ -21,11 +22,13 @@ To continue, please ensure that the [required resource providers](../getting-sta
 
 Afterward, set `ARM_SKIP_PROVIDER_REGISTRATION=true` as an environment variable and either run `create` or `terminate` again.
 For example:
+
 ```bash
 ARM_SKIP_PROVIDER_REGISTRATION=true constellation create --control-plane-nodes 1 --worker-nodes 2 -y
 ```
 
 Or alternatively, for `terminate`:
+
 ```bash
 ARM_SKIP_PROVIDER_REGISTRATION=true constellation terminate
 ```
@@ -36,8 +39,8 @@ To provide information during early stages of the node's boot process, Constella
 
 You can view these information in the follow places:
 
-<tabs groupId="csp">
-<tabItem value="azure" label="Azure">
+<Tabs groupId="csp">
+<TabItem value="azure" label="Azure">
 
 1. In your Azure subscription find the Constellation resource group.
 2. Inside the resource group find the Application Insights resource called `constellation-insights-*`.
@@ -47,8 +50,8 @@ You can view these information in the follow places:
 
 To **find the disk UUIDs** use the following query: `traces | where message contains "Disk UUID"`
 
-</tabItem>
-<tabItem value="gcp" label="GCP">
+</TabItem>
+<TabItem value="gcp" label="GCP">
 
 1. Select the project that hosts Constellation.
 2. Go to the `Compute Engine` service.
@@ -63,16 +66,16 @@ Constellation uses the default bucket to store logs. Its [default retention peri
 
 :::
 
-</tabItem>
-<tabItem value="aws" label="AWS">
+</TabItem>
+<TabItem value="aws" label="AWS">
 
 1. Open [AWS CloudWatch](https://console.aws.amazon.com/cloudwatch/home)
 2. Select [Log Groups](https://console.aws.amazon.com/cloudwatch/home#logsV2:log-groups)
 3. Select the log group that matches the name of your cluster.
 4. Select the log stream for control or worker type nodes.
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 ## Connect to nodes
 

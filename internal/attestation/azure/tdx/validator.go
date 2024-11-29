@@ -58,7 +58,7 @@ func NewValidator(cfg *config.AzureTDX, log attestation.Logger) *Validator {
 }
 
 func (v *Validator) getTrustedTPMKey(_ context.Context, attDoc vtpm.AttestationDocument, _ []byte) (crypto.PublicKey, error) {
-	var instanceInfo instanceInfo
+	var instanceInfo InstanceInfo
 	if err := json.Unmarshal(attDoc.InstanceInfo, &instanceInfo); err != nil {
 		return nil, err
 	}
@@ -93,25 +93,24 @@ func (v *Validator) validateQuote(tdxQuote *tdx.QuoteV4) error {
 	roots.AddCert((*x509.Certificate)(&v.cfg.IntelRootKey))
 
 	if err := verify.TdxQuote(tdxQuote, &verify.Options{
-		// TODO: Re-enable CRL checking once issues on Azure's side are resolved.
-		// CheckRevocations: true,
-		// GetCollateral:    true,
-		TrustedRoots: roots,
-		Getter:       v.getter,
+		CheckRevocations: true,
+		GetCollateral:    true,
+		TrustedRoots:     roots,
+		Getter:           v.getter,
 	}); err != nil {
 		return err
 	}
 
 	if err := validate.TdxQuote(tdxQuote, &validate.Options{
 		HeaderOptions: validate.HeaderOptions{
-			MinimumQeSvn:  v.cfg.QESVN,
-			MinimumPceSvn: v.cfg.PCESVN,
-			QeVendorID:    v.cfg.QEVendorID,
+			MinimumQeSvn:  v.cfg.QESVN.Value,
+			MinimumPceSvn: v.cfg.PCESVN.Value,
+			QeVendorID:    v.cfg.QEVendorID.Value,
 		},
 		TdQuoteBodyOptions: validate.TdQuoteBodyOptions{
-			MinimumTeeTcbSvn: v.cfg.TEETCBSVN,
+			MinimumTeeTcbSvn: v.cfg.TEETCBSVN.Value,
 			MrSeam:           v.cfg.MRSeam,
-			Xfam:             v.cfg.XFAM,
+			Xfam:             v.cfg.XFAM.Value,
 		},
 	}); err != nil {
 		return err

@@ -156,7 +156,7 @@ type maliciousJoiner struct {
 // join issues a join request to the join service endpoint.
 func (j *maliciousJoiner) join(ctx context.Context) (*joinproto.IssueJoinTicketResponse, error) {
 	j.logger.Debug(fmt.Sprintf("Dialing join service endpoint %q", j.endpoint))
-	conn, err := j.dialer.Dial(ctx, j.endpoint)
+	conn, err := j.dialer.Dial(j.endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("dialing join service endpoint: %w", err)
 	}
@@ -172,10 +172,10 @@ func (j *maliciousJoiner) join(ctx context.Context) (*joinproto.IssueJoinTicketR
 		IsControlPlane:     false,
 	}
 	res, err := protoClient.IssueJoinTicket(ctx, req)
-	j.logger.Debug("Got join ticket response", "apiServerEndpoint", res.ApiServerEndpoint, "kubernetesVersion", res.KubernetesVersion)
 	if err != nil {
 		return nil, fmt.Errorf("issuing join ticket: %w", err)
 	}
+	j.logger.Debug("Got join ticket response", "apiServerEndpoint", res.ApiServerEndpoint, "kubernetesVersion", res.KubernetesVersion)
 
 	return res, nil
 }

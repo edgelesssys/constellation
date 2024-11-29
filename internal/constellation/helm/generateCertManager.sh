@@ -5,7 +5,7 @@ set -o errtrace
 shopt -s inherit_errexit
 
 echo "Pulling cert-manager Helm chart..."
-version="1.12.6"
+version="1.15.0"
 
 function cleanup {
   rm -rf "charts/cert-manager/README.md" "charts/cert-manager-v${version}.tgz"
@@ -38,7 +38,7 @@ yq eval -i '.cainjector.image.digest = "sha256:'"${v}"'"' charts/cert-manager/va
 v=$(get_sha256_hash "cert-manager-acmesolver")
 yq eval -i '.acmesolver.image.digest = "sha256:'"${v}"'"' charts/cert-manager/values.yaml
 
-v=$(get_sha256_hash "cert-manager-ctl")
+v=$(get_sha256_hash "cert-manager-startupapicheck")
 yq eval -i '.startupapicheck.image.digest = "sha256:'"${v}"'"' charts/cert-manager/values.yaml
 
 echo # final newline

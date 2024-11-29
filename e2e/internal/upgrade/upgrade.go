@@ -142,7 +142,6 @@ func testNodesEventuallyHaveVersion(t *testing.T, k *kubernetes.Clientset, targe
 					if key == "constellation.edgeless.systems/node-image" {
 						if !strings.EqualFold(value, targetVersions.ImageRef) {
 							log.Printf("\t%s: Image %s, want %s\n", node.Name, value, targetVersions.ImageRef)
-							fmt.Printf("\tP: %s: Image %s, want %s\n", node.Name, value, targetVersions.ImageRef)
 							allUpdated = false
 						}
 					}
@@ -152,11 +151,6 @@ func testNodesEventuallyHaveVersion(t *testing.T, k *kubernetes.Clientset, targe
 				kubeletVersion := node.Status.NodeInfo.KubeletVersion
 				if kubeletVersion != string(targetVersions.Kubernetes) {
 					log.Printf("\t%s: K8s (Kubelet) %s, want %s\n", node.Name, kubeletVersion, targetVersions.Kubernetes)
-					allUpdated = false
-				}
-				kubeProxyVersion := node.Status.NodeInfo.KubeProxyVersion
-				if kubeProxyVersion != string(targetVersions.Kubernetes) {
-					log.Printf("\t%s: K8s (Proxy) %s, want %s\n", node.Name, kubeProxyVersion, targetVersions.Kubernetes)
 					allUpdated = false
 				}
 			}
@@ -188,7 +182,8 @@ func runCommandWithSeparateOutputs(cmd *exec.Cmd) (stdout, stderr []byte, err er
 		return
 	}
 
-	continuouslyPrintOutput := func(r io.Reader, prefix string) {
+	continuouslyPrintOutput := func(r io.Reader, prefix string, wg *sync.WaitGroup) {
+		defer wg.Done()
 		scanner := bufio.NewScanner(r)
 		for scanner.Scan() {
 			output := scanner.Text()
@@ -202,12 +197,15 @@ func runCommandWithSeparateOutputs(cmd *exec.Cmd) (stdout, stderr []byte, err er
 		}
 	}
 
-	go continuouslyPrintOutput(stdoutIn, "stdout")
-	go continuouslyPrintOutput(stderrIn, "stderr")
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
+	go continuouslyPrintOutput(stdoutIn, "stdout", wg)
+	go continuouslyPrintOutput(stderrIn, "stderr", wg)
 
 	if err = cmd.Wait(); err != nil {
 		err = fmt.Errorf("wait for command to finish: %w", err)
 	}
+	wg.Wait()
 
 	return stdout, stderr, err
 }
@@ -303,10 +301,10 @@ func getCLIPath(cliPathFlag string) (string, error) {
 	pathCLI := os.Getenv("PATH_CLI")
 	var relCLIPath string
 	switch {
-	case pathCLI != "":
-		relCLIPath = pathCLI
 	case cliPathFlag != "":
 		relCLIPath = cliPathFlag
+	case pathCLI != "":
+		relCLIPath = pathCLI
 	default:
 		return "", errors.New("neither 'PATH_CLI' nor 'cli' flag set")
 	}

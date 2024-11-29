@@ -173,13 +173,13 @@ func (c *JoinClient) tryJoinWithAvailableServices() (ticket *joinproto.IssueJoin
 
 	endpoint, _, err := c.metadataAPI.GetLoadBalancerEndpoint(ctx)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get load balancer endpoint: %w", err)
+		c.log.Warn("Failed to get load balancer endpoint", "err", err)
 	}
 	endpoints = append(endpoints, endpoint)
 
 	ips, err := c.getControlPlaneIPs(ctx)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get control plane IPs: %w", err)
+		c.log.Warn("Failed to get control plane IPs", "err", err)
 	}
 	endpoints = append(endpoints, ips...)
 
@@ -209,7 +209,7 @@ func (c *JoinClient) requestJoinTicket(serviceEndpoint string) (ticket *joinprot
 		return nil, nil, err
 	}
 
-	conn, err := c.dialer.Dial(ctx, serviceEndpoint)
+	conn, err := c.dialer.Dial(serviceEndpoint)
 	if err != nil {
 		c.log.With(slog.String("endpoint", serviceEndpoint), slog.Any("error", err)).Error("Join service unreachable")
 		return nil, nil, fmt.Errorf("dialing join service endpoint: %w", err)
@@ -288,7 +288,7 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 	// We currently cannot recover from any failure in this function. Joining the k8s cluster
 	// sometimes fails transiently, and we don't want to brick the node because of that.
 	for i := range 3 {
-		err = c.joiner.JoinCluster(ctx, btd, c.role, ticket.KubernetesComponents, c.log)
+		err = c.joiner.JoinCluster(ctx, btd, c.role, ticket.KubernetesComponents)
 		if err == nil {
 			break
 		}
@@ -388,7 +388,7 @@ func (c *JoinClient) timeoutCtx() (context.Context, context.CancelFunc) {
 }
 
 type grpcDialer interface {
-	Dial(ctx context.Context, target string) (*grpc.ClientConn, error)
+	Dial(target string) (*grpc.ClientConn, error)
 }
 
 // ClusterJoiner has the ability to join a new node to an existing cluster.
@@ -399,7 +399,6 @@ type ClusterJoiner interface {
 		args *kubeadm.BootstrapTokenDiscovery,
 		peerRole role.Role,
 		k8sComponents components.Components,
-		log *slog.Logger,
 	) error
 }
 

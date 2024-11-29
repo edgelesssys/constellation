@@ -10,7 +10,7 @@ go_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//hack/qemu-metadata-api/virtwrapper",
+        "//hack/qemu-metadata-api/dhcp",
         "//internal/cloud/metadata",
         "//internal/role",
     ],
@@ -18,22 +18,17 @@ go_library(
 
 go_test(
     name = "server_test",
-    srcs = [
-        "server_cgo_test.go",
-        "server_cross_test.go",
-        "server_test.go",
-    ],
+    srcs = ["server_test.go"],
     embed = [":server"],
     # keep
     pure = "on",
     # keep
     race = "off",
     deps = [
-        "//hack/qemu-metadata-api/virtwrapper",
+        "//hack/qemu-metadata-api/dhcp",
         "//internal/cloud/metadata",
         "//internal/logger",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
-        "@org_libvirt_go_libvirt//:libvirt",
     ],
 )

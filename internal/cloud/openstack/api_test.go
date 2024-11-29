@@ -10,10 +10,10 @@ import (
 	"context"
 
 	"github.com/edgelesssys/constellation/v2/internal/role"
-	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
-	"github.com/gophercloud/gophercloud/openstack/networking/v2/networks"
-	"github.com/gophercloud/gophercloud/openstack/networking/v2/subnets"
-	"github.com/gophercloud/gophercloud/pagination"
+	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/subnets"
+	"github.com/gophercloud/gophercloud/v2/pagination"
 )
 
 type stubIMDSClient struct {
@@ -90,6 +90,6 @@ type stubPager struct {
 	allPagesErr error
 }
 
-func (p *stubPager) AllPages() (pagination.Page, error) {
+func (p *stubPager) AllPages(_ context.Context) (pagination.Page, error) {
 	return p.page, p.allPagesErr
 }

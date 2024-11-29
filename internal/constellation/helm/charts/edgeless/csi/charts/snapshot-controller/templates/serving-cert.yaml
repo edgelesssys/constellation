@@ -6,7 +6,7 @@ metadata:
 spec:
   dnsNames:
   - 'snapshot-validation-service.{{ .Release.Namespace }}.svc'
-  - 'snapshot-validation-service.{{ .Release.Namespace }}.svc.{{ .Values.kubernetesClusterDomain }}'
+  - 'snapshot-validation-service.{{ .Release.Namespace }}.svc.cluster.local'
   issuerRef:
     kind: Issuer
     name: snapshot-validation-selfsigned-issuer

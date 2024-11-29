@@ -2,27 +2,27 @@ image:
   baseRepo: mcr.microsoft.com
   azuredisk:
     repository: ghcr.io/edgelesssys/constellation/azure-csi-driver
-    tag: v1.3.0@sha256:1e798f066ef78c293c4c87a31677f8948be4c8709980135969b73a9d7a46ca71
+    tag: v1.4.0@sha256:e41b09d2735cb7410e2bf7abe9ca2166aa5a949d6c6e2ac570773b5d041797f1
     pullPolicy: IfNotPresent
   csiProvisioner:
     repository: /oss/kubernetes-csi/csi-provisioner
-    tag: v3.5.0@sha256:fdf70099aa1538d1c2164976cf6d158ef8b3a5ee63db10bf0085de4ec66f59b4
+    tag: v4.0.0@sha256:beadfb2cfa02f8bbb2efd88261a673023527cf51ebe7894daef82c4d928264a5
     pullPolicy: IfNotPresent
   csiAttacher:
     repository: /oss/kubernetes-csi/csi-attacher
-    tag: v4.3.0@sha256:4306b80bfe8caea3fe53f6d1c15807c745be3072553ff508fc4f61da8f4a0c10
+    tag: v4.5.0@sha256:172a9140780701b2223b7296729fc6cc3be8c86d0cfd2d0452e495f5ea28f51f
     pullPolicy: IfNotPresent
   csiResizer:
     repository: /oss/kubernetes-csi/csi-resizer
-    tag: v1.8.0@sha256:6f0e8c9f3d0bdcf7a5fb5e404276ffac624033099d7687c8080692bcb6d13cd1
+    tag: v1.9.3@sha256:e20dc798f529436d2c861dd66bc7fcfa17623b562a2a65474aab38fb77c9824a
     pullPolicy: IfNotPresent
   livenessProbe:
     repository: /oss/kubernetes-csi/livenessprobe
-    tag: v2.10.0@sha256:3aeac313cffdb7db80b733539427f2533a3f662bf538e7b6434b0f898ceb701b
+    tag: v2.12.0@sha256:c762188c45d1b9bc9144b694b85313d5e49c741935a81d5b94fd7db978a40ae1
     pullPolicy: IfNotPresent
   nodeDriverRegistrar:
     repository: /oss/kubernetes-csi/csi-node-driver-registrar
-    tag: v2.8.0@sha256:af6bf1b5ff310d4dc02cf8276be9b06014318f7ee31238b5fa278febd1a10ca9
+    tag: v2.10.0@sha256:136e3a4a5897f111d1dedd404a5717ee7ff2f215e5fe878abdf4ce00c2292280
     pullPolicy: IfNotPresent
 
 serviceAccount:
@@ -140,11 +140,11 @@ snapshot:
   image:
     csiSnapshotter:
       repository: /oss/kubernetes-csi/csi-snapshotter
-      tag: v6.2.2
+      tag: v6.3.3
       pullPolicy: IfNotPresent
     csiSnapshotController:
       repository: /oss/kubernetes-csi/snapshot-controller
-      tag: v6.2.2
+      tag: v6.3.3
       pullPolicy: IfNotPresent
   snapshotController:
     name: csi-snapshot-controller

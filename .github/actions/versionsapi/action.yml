@@ -52,19 +52,12 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Get versionsapi binary
-      shell: bash
-      # TODO: This should probably be `bazel run`.
-      run: |
-        containerID=$(docker create "ghcr.io/edgelesssys/constellation/versionsapi-ci-cli:latest")
-        docker cp ${containerID}:/versionsapi .
-
     - name: Run versionsapi
       id: run
       shell: bash
       run: |
         out=$(
-          ./versionsapi \
+          bazel run //internal/api/versionsapi/cli:cli -- \
             ${{ inputs.command }} \
             ${{ inputs.ref != '' && format('--ref="{0}"', inputs.ref) || '' }} \
             ${{ inputs.stream != '' && format('--stream="{0}"', inputs.stream) || '' }} \

@@ -7,7 +7,7 @@ load("@rules_oci//oci:pull.bzl", "oci_pull")
 def containter_image_deps():
     oci_pull(
         name = "distroless_static",
-        digest = "sha256:41972110a1c1a5c0b6adb283e8aa092c43c31f7c5d79b8656fbffff2c3e61f05",
+        digest = "sha256:f4a57e8ffd7ba407bdd0eb315bb54ef1f21a2100a7f032e9102e4da34fe7c196",
         image = "gcr.io/distroless/static",
         platforms = [
             "linux/amd64",
@@ -16,6 +16,6 @@ def containter_image_deps():
     )
     oci_pull(
         name = "libvirtd_base",
-        digest = "sha256:b1a65581c445a1da618e33743578c4ea80e6a724659fbad9e6555a6a9f48b37a",
+        digest = "sha256:99dbf3cf69b3f97cb0158bde152c9bc7c2a96458cf462527ee80b75754f572a7",
         image = "ghcr.io/edgelesssys/constellation/libvirtd-base",
     )

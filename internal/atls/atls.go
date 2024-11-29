@@ -70,6 +70,7 @@ func CreateAttestationClientTLSConfig(issuer Issuer, validators []Validator) (*t
 		InsecureSkipVerify:    true,                                           // disable default verification because we use our own verify func
 		ServerName:            base64.StdEncoding.EncodeToString(clientNonce), // abuse ServerName as a channel to transmit the nonce
 		MinVersion:            tls.VersionTLS12,
+		NextProtos:            []string{"http/1.1", "h2"}, // grpc-go requires us to advertise HTTP/2 (h2) over ALPN
 	}, nil
 }
 
@@ -114,6 +115,7 @@ func getATLSConfigForClientFunc(issuer Issuer, validators []Validator) (func(*tl
 			VerifyPeerCertificate: serverConn.verify,
 			GetCertificate:        serverConn.getCertificate,
 			MinVersion:            tls.VersionTLS12,
+			NextProtos:            []string{"http/1.1", "h2"}, // grpc-go requires us to advertise HTTP/2 (h2) over ALPN
 		}
 
 		// enable mutual aTLS if any validators are set

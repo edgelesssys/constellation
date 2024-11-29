@@ -11,7 +11,6 @@ package logcollector
 import (
 	"context"
 	"fmt"
-	"io"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -130,7 +129,7 @@ func getTemplate(ctx context.Context, logger *slog.Logger, image, templateDir, d
 		"--name=template",
 		image,
 	}
-	createContainerCmd := exec.CommandContext(ctx, "podman", createContainerArgs...)
+	createContainerCmd := podman(ctx, createContainerArgs...)
 	logger.Info("Creating template container")
 	if out, err := createContainerCmd.CombinedOutput(); err != nil {
 		return nil, fmt.Errorf("creating template container: %w\n%s", err, out)
@@ -145,7 +144,7 @@ func getTemplate(ctx context.Context, logger *slog.Logger, image, templateDir, d
 		"template:/usr/share/constellogs/templates/",
 		destDir,
 	}
-	copyFromCmd := exec.CommandContext(ctx, "podman", copyFromArgs...)
+	copyFromCmd := podman(ctx, copyFromArgs...)
 	logger.Info("Copying templates")
 	if out, err := copyFromCmd.CombinedOutput(); err != nil {
 		return nil, fmt.Errorf("copying templates: %w\n%s", err, out)
@@ -155,7 +154,7 @@ func getTemplate(ctx context.Context, logger *slog.Logger, image, templateDir, d
 		"rm",
 		"template",
 	}
-	removeContainerCmd := exec.CommandContext(ctx, "podman", removeContainerArgs...)
+	removeContainerCmd := podman(ctx, removeContainerArgs...)
 	logger.Info("Removing template container")
 	if out, err := removeContainerCmd.CombinedOutput(); err != nil {
 		return nil, fmt.Errorf("removing template container: %w\n%s", err, out)
@@ -176,40 +175,43 @@ func startPod(ctx context.Context, logger *slog.Logger) error {
 		"create",
 		"logcollection",
 	}
-	createPodCmd := exec.CommandContext(ctx, "podman", createPodArgs...)
+	createPodCmd := podman(ctx, createPodArgs...)
 	logger.Info(fmt.Sprintf("Create pod command: %v", createPodCmd.String()))
 	if out, err := createPodCmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to create pod: %w; output: %s", err, out)
 	}
 
 	// start logstash container
-	logstashLog := newCmdLogger(logger.WithGroup("logstash"))
 	runLogstashArgs := []string{
 		"run",
-		"--rm",
+		"-d",
+		"--restart=unless-stopped",
 		"--name=logstash",
 		"--pod=logcollection",
-		"--log-driver=none",
+		"--log-driver=journald",
 		"--volume=/run/logstash/pipeline:/usr/share/logstash/pipeline/:ro",
 		versions.LogstashImage,
 	}
-	runLogstashCmd := exec.CommandContext(ctx, "podman", runLogstashArgs...)
+	runLogstashCmd := podman(ctx, runLogstashArgs...)
 	logger.Info(fmt.Sprintf("Run logstash command: %v", runLogstashCmd.String()))
-	runLogstashCmd.Stdout = logstashLog
-	runLogstashCmd.Stderr = logstashLog
-	if err := runLogstashCmd.Start(); err != nil {
+	if out, err := runLogstashCmd.CombinedOutput(); err != nil {
+		logger.Error("Could not start logstash container", "err", err, "output", out)
 		return fmt.Errorf("failed to start logstash: %w", err)
+	}
+	if out, err := podman(ctx, "wait", "logstash", "--condition=running", "--interval=15s").CombinedOutput(); err != nil {
+		logger.Error("Logstash container failed to reach healthy status", "err", err, "output", out)
+		return fmt.Errorf("waiting for logstash container to reach healthy status: %w; output: %s", err, out)
 	}
 
 	// start filebeat container
-	filebeatLog := newCmdLogger(logger.WithGroup("filebeat"))
 	runFilebeatArgs := []string{
 		"run",
-		"--rm",
+		"-d",
+		"--restart=unless-stopped",
 		"--name=filebeat",
 		"--pod=logcollection",
 		"--privileged",
-		"--log-driver=none",
+		"--log-driver=journald",
 		"--volume=/run/log/journal:/run/log/journal:ro",
 		"--volume=/etc/machine-id:/etc/machine-id:ro",
 		"--volume=/run/systemd:/run/systemd:ro",
@@ -218,12 +220,15 @@ func startPod(ctx context.Context, logger *slog.Logger) error {
 		"--volume=/run/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro",
 		versions.FilebeatImage,
 	}
-	runFilebeatCmd := exec.CommandContext(ctx, "podman", runFilebeatArgs...)
+	runFilebeatCmd := podman(ctx, runFilebeatArgs...)
 	logger.Info(fmt.Sprintf("Run filebeat command: %v", runFilebeatCmd.String()))
-	runFilebeatCmd.Stdout = filebeatLog
-	runFilebeatCmd.Stderr = filebeatLog
-	if err := runFilebeatCmd.Start(); err != nil {
+	if out, err := runFilebeatCmd.CombinedOutput(); err != nil {
+		logger.Error("Could not start filebeat container", "err", err, "output", out)
 		return fmt.Errorf("failed to run filebeat: %w", err)
+	}
+	if out, err := podman(ctx, "wait", "filebeat", "--condition=running", "--interval=15s").CombinedOutput(); err != nil {
+		logger.Error("Filebeat container failed to reach healthy status", "err", err, "output", out)
+		return fmt.Errorf("waiting for filebeat container to reach healthy status: %w; output: %s", err, out)
 	}
 
 	return nil
@@ -295,17 +300,9 @@ func setCloudMetadata(ctx context.Context, m map[string]string, provider cloudpr
 	}
 }
 
-func newCmdLogger(logger *slog.Logger) io.Writer {
-	return &cmdLogger{logger: logger}
-}
-
-type cmdLogger struct {
-	logger *slog.Logger
-}
-
-func (c *cmdLogger) Write(p []byte) (n int, err error) {
-	c.logger.Info(string(p))
-	return len(p), nil
+func podman(ctx context.Context, args ...string) *exec.Cmd {
+	args = append([]string{"--runtime=runc"}, args...)
+	return exec.CommandContext(ctx, "podman", args...)
 }
 
 type providerMetadata interface {

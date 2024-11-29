@@ -1,0 +1,131 @@
+{
+    "type": "AdaptiveCard",
+    "attachments": [
+        {
+            "contentType": "application/vnd.microsoft.card.adaptive",
+            "contentUrl": null,
+            "content": {
+                "type": "AdaptiveCard",
+                "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                "version": "1.2",
+                "msteams": {
+                    "width": "Full",
+                    "entities": [
+                        {
+                            "type": "mention",
+                            "text": "<at>elchead</at>",
+                            "mentioned": {
+                                "id": "3931943b-8d4b-4300-ac7e-bbb06c4da27f",
+                                "name": "Adrian Stobbe"
+                            }
+                        },
+                        {
+                            "type": "mention",
+                            "text": "<at>msanft</at>",
+                            "mentioned": {
+                                "id": "1359ea62-4415-423e-b808-9d9acb96def0",
+                                "name": "Moritz Sanft"
+                            }
+                        },
+                        {
+                            "type": "mention",
+                            "text": "<at>3u13r</at>",
+                            "mentioned": {
+                                "id": "26869b29-b0d6-48f8-a9ed-7a6374410a53",
+                                "name": "Leonard Cohnen"
+                            }
+                        },
+                        {
+                            "type": "mention",
+                            "text": "<at>daniel-weisse</at>",
+                            "mentioned": {
+                                "id": "759f3380-526e-4776-a620-cc713dce6177",
+                                "name": "Daniel Weisse"
+                            }
+                        },
+                        {
+                            "type": "mention",
+                            "text": "<at>katexochen</at>",
+                            "mentioned": {
+                                "id": "fcb7b554-33bb-47f7-8f0e-41b66aab4556",
+                                "name": "Paul Meyer"
+                            }
+                        },
+                        {
+                            "type": "mention",
+                            "text": "<at>derpsteb</at>",
+                            "mentioned": {
+                                "id": "a9a34611-9a38-4c00-a8a2-f87d94c2bf7d",
+                                "name": "Otto Bittner"
+                            }
+                        },
+                        {
+                            "type": "mention",
+                            "text": "<at>burgerdev</at>",
+                            "mentioned": {
+                                "id": "c9efc581-58ca-4da6-93ce-79f69f89deeb",
+                                "name": "Markus Rudy"
+                            }
+                        }
+                    ]
+                },
+                "body": [
+                    {
+                        "type": "ColumnSet",
+                        "columns": [
+                            {
+                                "type": "Column",
+                                "width": 1,
+                                "items": [
+                                    {
+                                        "type": "Image",
+                                        "url": "https://miro.medium.com/max/552/1*G7s61tFPaLI9JRxWYpRNLw.png",
+                                        "size": "large",
+                                        "horizontalAlignment": "center"
+                                    }
+                                ],
+                                "horizontalAlignment": "center",
+                                "verticalContentAlignment": "center"
+                            },
+                            {
+                                "type": "Column",
+                                "width": 2,
+                                "items": [
+                                    {
+                                        "type": "TextBlock",
+                                        "text": "Title",
+                                        "wrap": true,
+                                        "fontType": "Default",
+                                        "size": "large",
+                                        "weight": "bolder"
+                                    },
+                                    {
+                                        "type": "TextBlock",
+                                        "text": "Subtitle",
+                                        "wrap": true,
+                                        "size": "large",
+                                        "isSubtle": true,
+                                        "spacing": "Small"
+                                    },
+                                    {
+                                        "type": "FactSet",
+                                        "facts": [],
+                                        "spacing": "small"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "actions": [
+                    {
+                        "type": "Action.OpenUrl",
+                        "title": "GitHub workflow run",
+                        "url": "",
+                        "style": "positive"
+                    }
+                ]
+            }
+        }
+    ]
+}

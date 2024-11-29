@@ -31,7 +31,7 @@ func NewConstellationKMS(endpoint string) *ConstellationKMS {
 
 // GetDEK request a data encryption key derived from the Constellation's master secret.
 func (k *ConstellationKMS) GetDEK(ctx context.Context, dekID string, dekSize int) ([]byte, error) {
-	conn, err := grpc.DialContext(ctx, k.endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(k.endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}

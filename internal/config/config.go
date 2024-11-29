@@ -281,7 +281,7 @@ type AttestationConfig struct {
 	//   GCP SEV-ES attestation.
 	GCPSEVES *GCPSEVES `yaml:"gcpSEVES,omitempty" validate:"omitempty"`
 	// description: |
-	// 	 GCP SEV-SNP attestation.
+	//   GCP SEV-SNP attestation.
 	GCPSEVSNP *GCPSEVSNP `yaml:"gcpSEVSNP,omitempty" validate:"omitempty"`
 	// description: |
 	//   QEMU tdx attestation.
@@ -468,18 +468,22 @@ func New(fileHandler file.Handler, name string, fetcher attestationconfigapi.Fet
 		return nil, err
 	}
 
+	// Replace "latest" placeholders for attestation version numbers with the actual latest version numbers from config API
 	if azure := c.Attestation.AzureSEVSNP; azure != nil {
 		if err := azure.FetchAndSetLatestVersionNumbers(context.Background(), fetcher); err != nil {
 			return c, err
 		}
 	}
-
+	if azure := c.Attestation.AzureTDX; azure != nil {
+		if err := azure.FetchAndSetLatestVersionNumbers(context.Background(), fetcher); err != nil {
+			return c, err
+		}
+	}
 	if aws := c.Attestation.AWSSEVSNP; aws != nil {
 		if err := aws.FetchAndSetLatestVersionNumbers(context.Background(), fetcher); err != nil {
 			return c, err
 		}
 	}
-
 	if gcp := c.Attestation.GCPSEVSNP; gcp != nil {
 		if err := gcp.FetchAndSetLatestVersionNumbers(context.Background(), fetcher); err != nil {
 			return c, err
@@ -993,16 +997,16 @@ type GCPSEVSNP struct {
 	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
 	// description: |
 	//   Lowest acceptable bootloader version.
-	BootloaderVersion AttestationVersion `json:"bootloaderVersion" yaml:"bootloaderVersion"`
+	BootloaderVersion AttestationVersion[uint8] `json:"bootloaderVersion" yaml:"bootloaderVersion"`
 	// description: |
 	//   Lowest acceptable TEE version.
-	TEEVersion AttestationVersion `json:"teeVersion" yaml:"teeVersion"`
+	TEEVersion AttestationVersion[uint8] `json:"teeVersion" yaml:"teeVersion"`
 	// description: |
 	//   Lowest acceptable SEV-SNP version.
-	SNPVersion AttestationVersion `json:"snpVersion" yaml:"snpVersion"`
+	SNPVersion AttestationVersion[uint8] `json:"snpVersion" yaml:"snpVersion"`
 	// description: |
 	//   Lowest acceptable microcode version.
-	MicrocodeVersion AttestationVersion `json:"microcodeVersion" yaml:"microcodeVersion"`
+	MicrocodeVersion AttestationVersion[uint8] `json:"microcodeVersion" yaml:"microcodeVersion"`
 	// description: |
 	//   AMD Root Key certificate used to verify the SEV-SNP certificate chain.
 	AMDRootKey Certificate `json:"amdRootKey" yaml:"amdRootKey"`
@@ -1080,16 +1084,16 @@ type AWSSEVSNP struct {
 	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
 	// description: |
 	//   Lowest acceptable bootloader version.
-	BootloaderVersion AttestationVersion `json:"bootloaderVersion" yaml:"bootloaderVersion"`
+	BootloaderVersion AttestationVersion[uint8] `json:"bootloaderVersion" yaml:"bootloaderVersion"`
 	// description: |
 	//   Lowest acceptable TEE version.
-	TEEVersion AttestationVersion `json:"teeVersion" yaml:"teeVersion"`
+	TEEVersion AttestationVersion[uint8] `json:"teeVersion" yaml:"teeVersion"`
 	// description: |
 	//   Lowest acceptable SEV-SNP version.
-	SNPVersion AttestationVersion `json:"snpVersion" yaml:"snpVersion"`
+	SNPVersion AttestationVersion[uint8] `json:"snpVersion" yaml:"snpVersion"`
 	// description: |
 	//   Lowest acceptable microcode version.
-	MicrocodeVersion AttestationVersion `json:"microcodeVersion" yaml:"microcodeVersion"`
+	MicrocodeVersion AttestationVersion[uint8] `json:"microcodeVersion" yaml:"microcodeVersion"`
 	// description: |
 	//   AMD Root Key certificate used to verify the SEV-SNP certificate chain.
 	AMDRootKey Certificate `json:"amdRootKey" yaml:"amdRootKey"`
@@ -1112,16 +1116,16 @@ type AzureSEVSNP struct {
 	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
 	// description: |
 	//   Lowest acceptable bootloader version.
-	BootloaderVersion AttestationVersion `json:"bootloaderVersion" yaml:"bootloaderVersion"`
+	BootloaderVersion AttestationVersion[uint8] `json:"bootloaderVersion" yaml:"bootloaderVersion"`
 	// description: |
 	//   Lowest acceptable TEE version.
-	TEEVersion AttestationVersion `json:"teeVersion" yaml:"teeVersion"`
+	TEEVersion AttestationVersion[uint8] `json:"teeVersion" yaml:"teeVersion"`
 	// description: |
 	//   Lowest acceptable SEV-SNP version.
-	SNPVersion AttestationVersion `json:"snpVersion" yaml:"snpVersion"`
+	SNPVersion AttestationVersion[uint8] `json:"snpVersion" yaml:"snpVersion"`
 	// description: |
 	//   Lowest acceptable microcode version.
-	MicrocodeVersion AttestationVersion `json:"microcodeVersion" yaml:"microcodeVersion"`
+	MicrocodeVersion AttestationVersion[uint8] `json:"microcodeVersion" yaml:"microcodeVersion"`
 	// description: |
 	//   Configuration for validating the firmware signature.
 	FirmwareSignerConfig SNPFirmwareSignerConfig `json:"firmwareSignerConfig" yaml:"firmwareSignerConfig"`
@@ -1147,22 +1151,22 @@ type AzureTDX struct {
 	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
 	// description: |
 	//   Minimum required QE security version number (SVN).
-	QESVN uint16 `json:"qeSVN" yaml:"qeSVN"`
+	QESVN AttestationVersion[uint16] `json:"qeSVN" yaml:"qeSVN"`
 	// description: |
 	//   Minimum required PCE security version number (SVN).
-	PCESVN uint16 `json:"pceSVN" yaml:"pceSVN"`
+	PCESVN AttestationVersion[uint16] `json:"pceSVN" yaml:"pceSVN"`
 	// description: |
 	//   Component-wise minimum required 16 byte hex-encoded TEE_TCB security version number (SVN).
-	TEETCBSVN encoding.HexBytes `json:"teeTCBSVN" yaml:"teeTCBSVN"`
+	TEETCBSVN AttestationVersion[encoding.HexBytes] `json:"teeTCBSVN" yaml:"teeTCBSVN"`
 	// description: |
 	//   Expected 16 byte hex-encoded QE_VENDOR_ID field.
-	QEVendorID encoding.HexBytes `json:"qeVendorID" yaml:"qeVendorID"`
+	QEVendorID AttestationVersion[encoding.HexBytes] `json:"qeVendorID" yaml:"qeVendorID"`
 	// description: |
 	//   Expected 48 byte hex-encoded MR_SEAM value.
 	MRSeam encoding.HexBytes `json:"mrSeam,omitempty" yaml:"mrSeam,omitempty"`
 	// description: |
-	//   Expected 8 byte hex-encoded XFAM field.
-	XFAM encoding.HexBytes `json:"xfam" yaml:"xfam"`
+	//   Expected 8 byte hex-encoded eXtended Features Available Mask (XFAM) field. Defaults to the latest available XFAM on Azure VMs. Unset to disable validation.
+	XFAM AttestationVersion[encoding.HexBytes] `json:"xfam" yaml:"xfam"`
 	// description: |
 	//   Intel Root Key certificate used to verify the TDX certificate chain.
 	IntelRootKey Certificate `json:"intelRootKey" yaml:"intelRootKey"`

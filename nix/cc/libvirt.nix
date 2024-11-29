@@ -11,7 +11,7 @@ pkgs.symlinkJoin {
   paths = packages;
   buildInputs = packages;
   postBuild = ''
-    tar -cf $out/closure.tar --mtime="@$SOURCE_DATE_EPOCH" --sort=name ${closure}
+    tar -cf $out/closure.tar --mtime="@$SOURCE_DATE_EPOCH" --sort=name --hard-dereference ${closure}
     tar --transform 's+^./+bin/+' -cf $out/bin-linktree.tar --mtime="@$SOURCE_DATE_EPOCH" --sort=name -C $out/bin .
     echo "${rpath}" > $out/rpath
     cp ${cc}/nix-support/dynamic-linker $out/dynamic-linker

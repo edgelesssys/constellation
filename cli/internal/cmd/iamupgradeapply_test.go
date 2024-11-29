@@ -171,14 +171,6 @@ type stubConfigFetcher struct {
 	fetchLatestErr error
 }
 
-func (s *stubConfigFetcher) FetchSEVSNPVersion(context.Context, attestationconfigapi.SEVSNPVersionAPI) (attestationconfigapi.SEVSNPVersionAPI, error) {
-	panic("not implemented")
-}
-
-func (s *stubConfigFetcher) FetchSEVSNPVersionList(context.Context, attestationconfigapi.SEVSNPVersionList) (attestationconfigapi.SEVSNPVersionList, error) {
-	panic("not implemented")
-}
-
-func (s *stubConfigFetcher) FetchSEVSNPVersionLatest(context.Context, variant.Variant) (attestationconfigapi.SEVSNPVersionAPI, error) {
-	return attestationconfigapi.SEVSNPVersionAPI{}, s.fetchLatestErr
+func (s *stubConfigFetcher) FetchLatestVersion(context.Context, variant.Variant) (attestationconfigapi.Entry, error) {
+	return attestationconfigapi.Entry{}, s.fetchLatestErr
 }

@@ -21,6 +21,7 @@ go_library(
         "//bootstrapper/internal/kubernetes/k8sapi",
         "//bootstrapper/internal/kubernetes/kubewaiter",
         "//bootstrapper/internal/nodelock",
+        "//bootstrapper/internal/reboot",
         "//internal/atls",
         "//internal/attestation/choose",
         "//internal/attestation/initialize",

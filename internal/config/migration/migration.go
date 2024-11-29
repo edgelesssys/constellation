@@ -415,19 +415,19 @@ func V3ToV4(path string, fileHandler file.Handler) error {
 	case cfgV3.Attestation.AzureSEVSNP != nil:
 		cfgV4.Attestation.AzureSEVSNP = &config.AzureSEVSNP{
 			Measurements: cfgV3.Attestation.AzureSEVSNP.Measurements,
-			BootloaderVersion: config.AttestationVersion{
+			BootloaderVersion: config.AttestationVersion[uint8]{
 				Value:      cfgV3.Attestation.AzureSEVSNP.BootloaderVersion.Value,
 				WantLatest: cfgV3.Attestation.AzureSEVSNP.BootloaderVersion.WantLatest,
 			},
-			TEEVersion: config.AttestationVersion{
+			TEEVersion: config.AttestationVersion[uint8]{
 				Value:      cfgV3.Attestation.AzureSEVSNP.TEEVersion.Value,
 				WantLatest: cfgV3.Attestation.AzureSEVSNP.TEEVersion.WantLatest,
 			},
-			SNPVersion: config.AttestationVersion{
+			SNPVersion: config.AttestationVersion[uint8]{
 				Value:      cfgV3.Attestation.AzureSEVSNP.SNPVersion.Value,
 				WantLatest: cfgV3.Attestation.AzureSEVSNP.SNPVersion.WantLatest,
 			},
-			MicrocodeVersion: config.AttestationVersion{
+			MicrocodeVersion: config.AttestationVersion[uint8]{
 				Value:      cfgV3.Attestation.AzureSEVSNP.MicrocodeVersion.Value,
 				WantLatest: cfgV3.Attestation.AzureSEVSNP.MicrocodeVersion.WantLatest,
 			},

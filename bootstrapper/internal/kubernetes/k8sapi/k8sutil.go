@@ -48,7 +48,6 @@ type Client interface {
 	AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string, namespace string) error
 	ListAllNamespaces(ctx context.Context) (*corev1.NamespaceList, error)
 	AnnotateNode(ctx context.Context, nodeName, annotationKey, annotationValue string) error
-	EnforceCoreDNSSpread(ctx context.Context) error
 	PatchFirstNodePodCIDR(ctx context.Context, firstNodePodCIDR string) error
 }
 
@@ -137,6 +136,12 @@ func (k *KubernetesUtil) InitCluster(
 	}
 
 	// Create static pods directory for all nodes (the Kubelets on the worker nodes also expect the path to exist)
+	// If the node rebooted after the static pod directory was created,
+	// the existing directory needs to be removed before we can
+	// try to init the cluster again.
+	if err := os.RemoveAll("/etc/kubernetes/manifests"); err != nil {
+		return nil, fmt.Errorf("removing static pods directory: %w", err)
+	}
 	log.Info("Creating static Pod directory /etc/kubernetes/manifests")
 	if err := os.MkdirAll("/etc/kubernetes/manifests", os.ModePerm); err != nil {
 		return nil, fmt.Errorf("creating static pods directory: %w", err)
@@ -144,7 +149,7 @@ func (k *KubernetesUtil) InitCluster(
 
 	// initialize the cluster
 	log.Info("Initializing the cluster using kubeadm init")
-	skipPhases := "--skip-phases=preflight,certs"
+	skipPhases := "--skip-phases=preflight,certs,addon/coredns"
 	if !conformanceMode {
 		skipPhases += ",addon/kube-proxy"
 	}
@@ -200,6 +205,12 @@ func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, log
 	}
 
 	// Create static pods directory for all nodes (the Kubelets on the worker nodes also expect the path to exist)
+	// If the node rebooted after the static pod directory was created, for example
+	// if a failure during an upgrade occurred, the existing directory needs to be
+	// removed before we can try to join the cluster again.
+	if err := os.RemoveAll("/etc/kubernetes/manifests"); err != nil {
+		return fmt.Errorf("removing static pods directory: %w", err)
+	}
 	log.Info("Creating static Pod directory /etc/kubernetes/manifests")
 	if err := os.MkdirAll("/etc/kubernetes/manifests", os.ModePerm); err != nil {
 		return fmt.Errorf("creating static pods directory: %w", err)

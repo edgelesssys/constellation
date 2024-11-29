@@ -21,14 +21,13 @@ git clone \
   --no-checkout \
   --sparse \
   --depth 1 \
-  -b 1.15.0-pre.3 \
-  https://github.com/cilium/cilium.git
+  -b v1.15.8-edg.0 \
+  https://github.com/edgelesssys/cilium.git
 cd cilium
 
 git sparse-checkout add install/kubernetes/cilium
 git checkout
 
-git apply "${calldir}/cilium.patch"
 cp -r install/kubernetes/cilium "${calldir}/charts"
 
 echo # final newline

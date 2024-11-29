@@ -203,8 +203,7 @@ type closeAndWait func()
 
 // newDebugdClient creates a new gRPC client for the debugd service and logs the connection state changes.
 func newDebugdClient(ctx context.Context, ip string, log *slog.Logger) (pb.DebugdClient, closeAndWait, error) {
-	conn, err := grpc.DialContext(
-		ctx,
+	conn, err := grpc.NewClient(
 		net.JoinHostPort(ip, strconv.Itoa(constants.DebugdPort)),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		logger.GetClientUnaryInterceptor(log),
@@ -271,9 +270,11 @@ func uploadFiles(ctx context.Context, client pb.DebugdClient, in deployOnEndpoin
 	case pb.UploadFilesStatus_UPLOAD_FILES_ALREADY_FINISHED:
 		in.log.Info("Files already uploaded")
 	case pb.UploadFilesStatus_UPLOAD_FILES_UPLOAD_FAILED:
-		return fmt.Errorf("uploading files to %v failed: %v", in.debugdEndpoint, uploadResponse)
+		return fmt.Errorf("uploading files to %v failed: %s: %s", in.debugdEndpoint, uploadResponse.Status, uploadResponse.Error)
 	case pb.UploadFilesStatus_UPLOAD_FILES_ALREADY_STARTED:
 		return fmt.Errorf("upload already started on %v", in.debugdEndpoint)
+	case pb.UploadFilesStatus_UPLOAD_FILES_START_FAILED:
+		return fmt.Errorf("overriding service units failed on %v: %s: %s", in.debugdEndpoint, uploadResponse.Status, uploadResponse.Error)
 	default:
 		return fmt.Errorf("unknown upload status %v", uploadResponse.Status)
 	}

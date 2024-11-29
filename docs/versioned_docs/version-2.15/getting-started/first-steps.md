@@ -15,39 +15,39 @@ If you encounter any problem with the following steps, make sure to use the [lat
 
 1. Create the [configuration file](../workflows/config.md) and state file for your cloud provider.
 
-    <tabs groupId="csp">
+    <Tabs groupId="csp">
 
-    <tabItem value="azure" label="Azure">
+    <TabItem value="azure" label="Azure">
 
     ```bash
     constellation config generate azure
     ```
 
-    </tabItem>
+    </TabItem>
 
-    <tabItem value="gcp" label="GCP">
+    <TabItem value="gcp" label="GCP">
 
     ```bash
     constellation config generate gcp
     ```
 
-    </tabItem>
+    </TabItem>
 
-    <tabItem value="aws" label="AWS">
+    <TabItem value="aws" label="AWS">
 
     ```bash
     constellation config generate aws
     ```
 
-    </tabItem>
+    </TabItem>
 
-    </tabs>
+    </Tabs>
 
 2. Create your [IAM configuration](../workflows/config.md#creating-an-iam-configuration).
 
-    <tabs groupId="csp">
+    <Tabs groupId="csp">
 
-    <tabItem value="azure" label="Azure">
+    <TabItem value="azure" label="Azure">
 
     ```bash
     constellation iam create azure --region=westus --resourceGroup=constellTest --servicePrincipal=spTest --update-config
@@ -68,9 +68,9 @@ If you encounter any problem with the following steps, make sure to use the [lat
 
     You can find a list of all [regions in Azure's documentation](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=virtual-machines&regions=all).
 
-    </tabItem>
+    </TabItem>
 
-    <tabItem value="gcp" label="GCP">
+    <TabItem value="gcp" label="GCP">
 
     ```bash
     constellation iam create gcp --projectID=yourproject-12345 --zone=europe-west2-a --serviceAccountID=constell-test --update-config
@@ -80,9 +80,9 @@ If you encounter any problem with the following steps, make sure to use the [lat
 
     Note that only regions offering CVMs of the `C2D` or `N2D` series are supported. You can find a [list of all regions in Google's documentation](https://cloud.google.com/compute/docs/regions-zones#available), which you can filter by machine type `C2D` or `N2D`.
 
-    </tabItem>
+    </TabItem>
 
-    <tabItem value="aws" label="AWS">
+    <TabItem value="aws" label="AWS">
 
     ```bash
     constellation iam create aws --zone=us-east-2a --prefix=constellTest --update-config
@@ -109,8 +109,8 @@ If you encounter any problem with the following steps, make sure to use the [lat
 
     You can find a list of all [regions in AWS's documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
 
-    </tabItem>
-    </tabs>
+    </TabItem>
+    </Tabs>
 
     :::tip
     To learn about all options you have for managing IAM resources and Constellation configuration, see the [Configuration workflow](../workflows/config.md).

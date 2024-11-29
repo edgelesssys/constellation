@@ -2,11 +2,11 @@ terraform {
   required_providers {
     constellation = {
       source  = "edgelesssys/constellation"
-      version = "0.0.0" // replace with the version you want to use
+      version = "2.17.0" // replace with the version you want to use
     }
     random = {
       source  = "hashicorp/random"
-      version = "3.6.0"
+      version = "3.6.2"
     }
   }
 }
@@ -21,7 +21,8 @@ locals {
   location             = "northeurope"
   control_plane_count  = 3
   worker_count         = 2
-  instance_type        = "Standard_DC4as_v5"
+  instance_type        = "Standard_DC4as_v5" // Adjust if using TDX
+  subscription_id      = "00000000-0000-0000-0000-000000000000"
 
   master_secret      = random_bytes.master_secret.hex
   master_secret_salt = random_bytes.master_secret_salt.hex
@@ -43,6 +44,7 @@ resource "random_bytes" "measurement_salt" {
 module "azure_iam" {
   // replace $VERSION with the Constellation version you want to use, e.g., v2.14.0
   source                 = "https://github.com/edgelesssys/constellation/releases/download/$VERSION/terraform-module.zip//terraform-module/iam/azure"
+  subscription_id        = local.subscription_id
   location               = local.location
   service_principal_name = "${local.name}-sp"
   resource_group_name    = "${local.name}-rg"
@@ -51,6 +53,7 @@ module "azure_iam" {
 module "azure_infrastructure" {
   // replace $VERSION with the Constellation version you want to use, e.g., v2.14.0
   source                 = "https://github.com/edgelesssys/constellation/releases/download/$VERSION/terraform-module.zip//terraform-module/azure"
+  subscription_id        = local.subscription_id
   name                   = local.name
   user_assigned_identity = module.azure_iam.uami_id
   node_groups = {
@@ -80,7 +83,9 @@ data "constellation_attestation" "foo" {
   csp                 = local.csp
   attestation_variant = local.attestation_variant
   image               = data.constellation_image.bar.image
-  maa_url             = module.azure_infrastructure.attestation_url
+  # Needs to be patched manually, see:
+  # https://docs.edgeless.systems/constellation/workflows/terraform-provider#quick-setup
+  maa_url = module.azure_infrastructure.attestation_url
 }
 
 data "constellation_image" "bar" {

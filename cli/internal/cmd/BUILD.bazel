@@ -109,8 +109,13 @@ go_library(
         "@io_k8s_client_go//tools/clientcmd",
         "@io_k8s_client_go//tools/clientcmd/api/latest",
         "@io_k8s_sigs_yaml//:yaml",
-        "@org_golang_google_grpc//:go_default_library",
         "@org_golang_x_mod//semver",
+        "@org_golang_google_grpc//:grpc",
+        "@com_github_google_go_tdx_guest//abi",
+        "@com_github_google_go_tdx_guest//proto/tdx",
+        "//internal/attestation/azure/tdx",
+        "@com_github_google_go_sev_guest//proto/sevsnp",
+        "@com_github_google_go_tpm_tools//proto/attest",
     ] + select({
         "@io_bazel_rules_go//go/platform:android_amd64": [
             "@org_golang_x_sys//unix",
@@ -193,7 +198,7 @@ go_test(
         "@io_k8s_apimachinery//pkg/runtime/schema",
         "@io_k8s_client_go//tools/clientcmd",
         "@io_k8s_client_go//tools/clientcmd/api",
-        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//:grpc",
         "@org_golang_google_grpc//codes",
         "@org_golang_google_grpc//status",
         "@org_golang_x_mod//semver",

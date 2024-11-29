@@ -3,7 +3,7 @@ Description=Export Constellation Debug Level to Environment
 
 [Service]
 Type=oneshot
-ExecStart=/bin/bash -c "tr ' ' '\n' < /proc/cmdline | grep -q 'constellation.debug' && echo CONSTELLATION_DEBUG_FLAGS=--debug >> /run/constellation.env"
+ExecStart=/bin/bash -c "tr ' ' '\n' < /proc/cmdline | grep -q 'constel.debug' && echo CONSTELLATION_DEBUG_FLAGS=--debug >> /run/constellation.env"
 RemainAfterExit=yes
 
 [Install]

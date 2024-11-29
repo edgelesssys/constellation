@@ -8,8 +8,8 @@ To provide information during early stages of the node's boot process, Constella
 
 You can view these information in the follow places:
 
-<tabs groupId="csp">
-<tabItem value="azure" label="Azure">
+<Tabs groupId="csp">
+<TabItem value="azure" label="Azure">
 
 1. In your Azure subscription find the Constellation resource group.
 2. Inside the resource group find the Application Insights resource called `constellation-insights-*`.
@@ -19,8 +19,8 @@ You can view these information in the follow places:
 
 To **find the disk UUIDs** use the following query: `traces | where message contains "Disk UUID"`
 
-</tabItem>
-<tabItem value="gcp" label="GCP">
+</TabItem>
+<TabItem value="gcp" label="GCP">
 
 1. Select the project that hosts Constellation.
 2. Go to the `Compute Engine` service.
@@ -35,5 +35,5 @@ Constellation uses the default bucket to store logs. Its [default retention peri
 
 :::
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>

@@ -30,6 +30,7 @@ copy_to_directory(
     mkosi_image(
         name = "base_" + kernel_variant,
         srcs = [
+            "mkosi.finalize",
             "mkosi.postinst",
             "mkosi.prepare",
         ] + glob([

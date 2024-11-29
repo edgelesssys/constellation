@@ -13,7 +13,7 @@ on:
 jobs:
   build-cli:
     name: Build Windows CLI
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions:
       id-token: write
       checks: write
@@ -21,7 +21,7 @@ jobs:
       packages: write
     steps:
       - name: Checkout
-        uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
@@ -45,7 +45,7 @@ jobs:
           push: true
 
       - name: Upload CLI artifact
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           path: build/constellation.exe
           name: "constell-exe"
@@ -56,12 +56,12 @@ jobs:
     needs: build-cli
     steps:
       - name: Checkout
-        uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
       - name: Download CLI artifact
-        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           name: "constell-exe"
 
@@ -84,7 +84,7 @@ jobs:
           $rgName = "e2e-win-${{ github.run_id }}-${{ github.run_attempt }}-$uid"
           "rgName=$($rgName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           .\constellation.exe config generate azure -t "workflow=${{ github.run_id }}"
-          .\constellation.exe iam create azure --region=westus --resourceGroup=$rgName-rg --servicePrincipal=$rgName-sp --update-config --debug -y
+          .\constellation.exe iam create azure --subscriptionID=${{ secrets.AZURE_SUBSCRIPTION_ID }} --region=westus --resourceGroup=$rgName-rg --servicePrincipal=$rgName-sp --update-config --debug -y
 
       - name: Login to Azure (Cluster service principal)
         uses: ./.github/actions/login_azure
@@ -178,7 +178,7 @@ jobs:
 
   notify-failure:
     name: Notify about failure
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: e2e-test
     if: |
       failure() &&
@@ -186,7 +186,7 @@ jobs:
       inputs.scheduled
     steps:
       - name: Checkout
-        uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 

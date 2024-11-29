@@ -61,6 +61,7 @@ type SystemdUnit struct {
 type ServiceManager struct {
 	log                      *slog.Logger
 	dbus                     dbusClient
+	journal                  journalReader
 	fs                       afero.Fs
 	systemdUnitFilewriteLock sync.Mutex
 }
@@ -71,6 +72,7 @@ func NewServiceManager(log *slog.Logger) *ServiceManager {
 	return &ServiceManager{
 		log:                      log,
 		dbus:                     &dbusWrapper{},
+		journal:                  &journalctlWrapper{},
 		fs:                       fs,
 		systemdUnitFilewriteLock: sync.Mutex{},
 	}
@@ -89,6 +91,8 @@ type dbusConn interface {
 	// StopUnitContext is similar to StartUnitContext, but stops the specified unit
 	// rather than starting it.
 	StopUnitContext(ctx context.Context, name string, mode string, ch chan<- string) (int, error)
+	// ResetFailedUnitContext resets the "failed" state of a unit.
+	ResetFailedUnitContext(ctx context.Context, name string) error
 	// RestartUnitContext restarts a service. If a service is restarted that isn't
 	// running it will be started.
 	RestartUnitContext(ctx context.Context, name string, mode string, ch chan<- string) (int, error)
@@ -97,6 +101,11 @@ type dbusConn interface {
 	ReloadContext(ctx context.Context) error
 	// Close closes the connection.
 	Close()
+}
+
+type journalReader interface {
+	// ReadJournal reads the journal for a specific unit.
+	readJournal(unit string) string
 }
 
 // SystemdAction will perform a systemd action on a service unit (start, stop, restart, reload).
@@ -115,6 +124,9 @@ func (s *ServiceManager) SystemdAction(ctx context.Context, request ServiceManag
 	case Stop:
 		_, err = conn.StopUnitContext(ctx, request.Unit, "replace", resultChan)
 	case Restart:
+		if err = conn.ResetFailedUnitContext(ctx, request.Unit); err != nil {
+			s.log.Error("Failed to reset unit failed state", "error", err.Error(), "unit", request.Unit)
+		}
 		_, err = conn.RestartUnitContext(ctx, request.Unit, "replace", resultChan)
 	case Reload:
 		err = conn.ReloadContext(ctx)
@@ -139,7 +151,8 @@ func (s *ServiceManager) SystemdAction(ctx context.Context, request ServiceManag
 		return nil
 
 	default:
-		return fmt.Errorf("performing action %q on systemd unit %q failed: expected %q but received %q", request.Action.String(), request.Unit, "done", result)
+		serviceJournal := s.journal.readJournal(request.Unit)
+		return fmt.Errorf("performing action %q on systemd unit %q failed: expected %q but received %q. systemd unit journal entries: %s", request.Action.String(), request.Unit, "done", result, serviceJournal)
 	}
 }
 
@@ -172,7 +185,7 @@ func (s *ServiceManager) OverrideServiceUnitExecStart(ctx context.Context, unitN
 	if strings.Contains(execStart, "\n") || strings.Contains(execStart, "\r") {
 		return fmt.Errorf("execStart must not contain newlines")
 	}
-	overrideUnitContents := fmt.Sprintf("[Service]\nExecStart=\nExecStart=%s $CONSTELLATION_DEBUG_FLAGS\n", execStart)
+	overrideUnitContents := fmt.Sprintf("[Service]\nExecStart=\nExecStart=%s\n", execStart)
 	s.systemdUnitFilewriteLock.Lock()
 	defer s.systemdUnitFilewriteLock.Unlock()
 	path := filepath.Join(systemdUnitFolder, unitName+".service.d", "override.conf")

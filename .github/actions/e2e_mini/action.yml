@@ -11,6 +11,9 @@ inputs:
   azureTenantID:
     description: "Azure tenant to use for login with OIDC"
     required: true
+  azureIAMCredentials:
+    description: "Azure IAM credentials used for cleaning up resources"
+    required: true
   registry:
     description: "Container registry to use"
     required: true
@@ -22,7 +25,7 @@ runs:
   using: "composite"
   steps:
     - name: Install terraform
-      uses: hashicorp/setup-terraform@651471c36a6092792c552e8b1bef71e592b462d8 # v3.1.1
+      uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
       with:
         terraform_wrapper: false
 
@@ -38,9 +41,25 @@ runs:
 
     - name: MiniConstellation E2E
       shell: bash
+      id: e2e-test
       env:
         ARM_CLIENT_ID: ${{ inputs.azureClientID }}
         ARM_SUBSCRIPTION_ID: ${{ inputs.azureSubscriptionID }}
         ARM_TENANT_ID: ${{ inputs.azureTenantID }}
       run: |
         bazel run --test_timeout=14400 //e2e/miniconstellation:push_remote_test
+
+    - name: Log in to azure
+      # only log in if e2e test failed or if the run was cancelled
+      if: (failure() && steps.e2e-test.conclusion == 'failure') || cancelled()
+      uses: ./.github/actions/login_azure
+      with:
+        azure_credentials: ${{ inputs.azureIAMCredentials }}
+
+    - name: Clean up after failure
+      shell: bash
+      # clean up if e2e test failed or if the run was cancelled
+      if: (failure() && steps.e2e-test.conclusion == 'failure') || cancelled()
+      run: |
+        echo "[*] Deleting resource group ${{ steps.e2e-test.outputs.rgname }}"
+        az group delete -y --resource-group "${{ steps.e2e-test.outputs.rgname }}"

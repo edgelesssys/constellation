@@ -20,11 +20,10 @@ package fetcher
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 )
@@ -40,45 +39,12 @@ func NewHTTPClient() HTTPClient {
 // Fetch fetches the given apiObject from the public Constellation CDN.
 // Fetch does not require authentication.
 func Fetch[T apiObject](ctx context.Context, c HTTPClient, cdnURL string, obj T) (T, error) {
-	if err := obj.ValidateRequest(); err != nil {
-		return *new(T), fmt.Errorf("validating request for %T: %w", obj, err)
-	}
-
-	urlObj, err := url.Parse(cdnURL)
+	rawObj, err := fetch(ctx, c, cdnURL, obj)
 	if err != nil {
-		return *new(T), fmt.Errorf("parsing CDN root URL: %w", err)
-	}
-	urlObj.Path = obj.JSONPath()
-	url := urlObj.String()
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
-	if err != nil {
-		return *new(T), fmt.Errorf("creating request for %T: %w", obj, err)
+		return *new(T), fmt.Errorf("fetching %T: %w", obj, err)
 	}
 
-	resp, err := c.Do(req)
-	if err != nil {
-		return *new(T), fmt.Errorf("sending request for %T: %w", obj, err)
-	}
-	defer resp.Body.Close()
-	switch resp.StatusCode {
-	case http.StatusOK:
-	case http.StatusNotFound:
-		return *new(T), &NotFoundError{fmt.Errorf("requesting resource at %s returned status code 404", url)}
-	default:
-		return *new(T), fmt.Errorf("unexpected status code %d while requesting resource", resp.StatusCode)
-	}
-
-	var newObj T
-	if err := json.NewDecoder(resp.Body).Decode(&newObj); err != nil {
-		return *new(T), fmt.Errorf("decoding %T: %w", obj, err)
-	}
-
-	if newObj.Validate() != nil {
-		return *new(T), fmt.Errorf("received invalid %T: %w", newObj, newObj.Validate())
-	}
-
-	return newObj, nil
+	return parseObject(rawObj, obj)
 }
 
 // FetchAndVerify fetches the given apiObject, checks if it can fetch an accompanying signature and verifies if the signature matches the found object.
@@ -86,23 +52,68 @@ func Fetch[T apiObject](ctx context.Context, c HTTPClient, cdnURL string, obj T)
 // FetchAndVerify uses a generic to return a new object of type T.
 // Otherwise the caller would have to cast the interface type to a concrete object, which could fail.
 func FetchAndVerify[T apiObject](ctx context.Context, c HTTPClient, cdnURL string, obj T, cosignVerifier sigstore.Verifier) (T, error) {
-	fetchedObj, err := Fetch(ctx, c, cdnURL, obj)
+	rawObj, err := fetch(ctx, c, cdnURL, obj)
 	if err != nil {
-		return fetchedObj, fmt.Errorf("fetching object: %w", err)
+		return *new(T), fmt.Errorf("fetching %T: %w", obj, err)
 	}
-	marshalledObj, err := json.Marshal(fetchedObj)
+	fetchedObj, err := parseObject(rawObj, obj)
 	if err != nil {
-		return fetchedObj, fmt.Errorf("marshalling object: %w", err)
+		return fetchedObj, fmt.Errorf("parsing %T: %w", obj, err)
 	}
+
 	signature, err := Fetch(ctx, c, cdnURL, signature{Signed: obj.JSONPath()})
 	if err != nil {
 		return fetchedObj, fmt.Errorf("fetching signature: %w", err)
 	}
-	err = cosignVerifier.VerifySignature(marshalledObj, signature.Signature)
+	err = cosignVerifier.VerifySignature(rawObj, signature.Signature)
 	if err != nil {
 		return fetchedObj, fmt.Errorf("verifying signature: %w", err)
 	}
 	return fetchedObj, nil
+}
+
+func fetch[T apiObject](ctx context.Context, c HTTPClient, cdnURL string, obj T) ([]byte, error) {
+	if err := obj.ValidateRequest(); err != nil {
+		return nil, fmt.Errorf("validating request for %T: %w", obj, err)
+	}
+
+	urlObj, err := url.Parse(cdnURL)
+	if err != nil {
+		return nil, fmt.Errorf("parsing CDN root URL: %w", err)
+	}
+	urlObj.Path = obj.JSONPath()
+	url := urlObj.String()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	if err != nil {
+		return nil, fmt.Errorf("creating request for %T: %w", obj, err)
+	}
+
+	resp, err := c.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("sending request for %T: %w", obj, err)
+	}
+	defer resp.Body.Close()
+	switch resp.StatusCode {
+	case http.StatusOK:
+	case http.StatusNotFound:
+		return nil, &NotFoundError{fmt.Errorf("requesting resource at %s returned status code 404", url)}
+	default:
+		return nil, fmt.Errorf("unexpected status code %d while requesting resource", resp.StatusCode)
+	}
+
+	return io.ReadAll(resp.Body)
+}
+
+func parseObject[T apiObject](rawObj []byte, obj T) (T, error) {
+	var newObj T
+	if err := json.Unmarshal(rawObj, &newObj); err != nil {
+		return *new(T), fmt.Errorf("decoding %T: %w", obj, err)
+	}
+	if newObj.Validate() != nil {
+		return *new(T), fmt.Errorf("received invalid %T: %w", newObj, newObj.Validate())
+	}
+	return newObj, nil
 }
 
 // NotFoundError is an error that is returned when a resource is not found.
@@ -132,7 +143,7 @@ type apiObject interface {
 // signature manages the signature of a object saved at location 'Signed'.
 type signature struct {
 	// Signed is the object that is signed.
-	Signed string `json:"-"`
+	Signed string `json:"signed"`
 	// Signature is the signature of `Signed`.
 	Signature []byte `json:"signature"`
 }
@@ -142,12 +153,8 @@ func (s signature) JSONPath() string {
 	return s.Signed + ".sig"
 }
 
-// ValidateRequest validates the request.
+// ValidateRequest is a no-op.
 func (s signature) ValidateRequest() error {
-	if !strings.HasSuffix(s.Signed, ".json") {
-		return errors.New("signed object missing .json suffix")
-	}
-
 	return nil
 }
 

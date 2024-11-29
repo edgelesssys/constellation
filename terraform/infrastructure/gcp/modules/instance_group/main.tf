@@ -2,17 +2,12 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "5.23.0"
-    }
-
-    google-beta = {
-      source  = "hashicorp/google-beta"
-      version = "5.23.0"
+      version = "6.7.0"
     }
 
     random = {
       source  = "hashicorp/random"
-      version = "3.6.0"
+      version = "3.6.2"
     }
   }
 }
@@ -28,10 +23,6 @@ resource "random_id" "uid" {
 }
 
 resource "google_compute_instance_template" "template" {
-  # Beta provider is necessary to set confidential instance types.
-  # TODO(msanft): Remove beta provider once confidential instance type setting is in GA.
-  provider = google-beta
-
   name         = local.name
   machine_type = var.instance_type
   tags         = ["constellation-${var.uid}"] // Note that this is also applied as a label
@@ -70,7 +61,7 @@ resource "google_compute_instance_template" "template" {
   metadata = {
     kube-env                       = var.kube_env
     constellation-init-secret-hash = var.init_secret_hash
-    serial-port-enable             = var.debug ? "TRUE" : "FALSE"
+    serial-port-enable             = "TRUE"
   }
 
   network_interface {

@@ -22,10 +22,10 @@ var _ svnResolveMarshaller = &GCPSEVSNP{}
 func DefaultForGCPSEVSNP() *GCPSEVSNP {
 	return &GCPSEVSNP{
 		Measurements:      measurements.DefaultsFor(cloudprovider.GCP, variant.GCPSEVSNP{}),
-		BootloaderVersion: NewLatestPlaceholderVersion(),
-		TEEVersion:        NewLatestPlaceholderVersion(),
-		SNPVersion:        NewLatestPlaceholderVersion(),
-		MicrocodeVersion:  NewLatestPlaceholderVersion(),
+		BootloaderVersion: NewLatestPlaceholderVersion[uint8](),
+		TEEVersion:        NewLatestPlaceholderVersion[uint8](),
+		SNPVersion:        NewLatestPlaceholderVersion[uint8](),
+		MicrocodeVersion:  NewLatestPlaceholderVersion[uint8](),
 		AMDRootKey:        mustParsePEM(arkPEM),
 	}
 }
@@ -79,7 +79,7 @@ func (c *GCPSEVSNP) FetchAndSetLatestVersionNumbers(ctx context.Context, fetcher
 		return nil
 	}
 
-	versions, err := fetcher.FetchSEVSNPVersionLatest(ctx, variant.GCPSEVSNP{})
+	versions, err := fetcher.FetchLatestVersion(ctx, variant.GCPSEVSNP{})
 	if err != nil {
 		return fmt.Errorf("fetching latest TCB versions from configapi: %w", err)
 	}

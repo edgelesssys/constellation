@@ -35,10 +35,12 @@ spec:
         cilium.io/cilium-envoy-configmap-checksum: {{ include (print $.Template.BasePath "/cilium-envoy/configmap.yaml") . | sha256sum | quote }}
         {{- end }}
         {{- if not .Values.envoy.securityContext.privileged }}
+        {{- if semverCompare "<1.30.0" (printf "%d.%d.0" (semver .Capabilities.KubeVersion.Version).Major (semver .Capabilities.KubeVersion.Version).Minor) }}
         # Set app AppArmor's profile to "unconfined". The value of this annotation
         # can be modified as long users know which profiles they have available
         # in AppArmor.
         container.apparmor.security.beta.kubernetes.io/cilium-envoy: "unconfined"
+        {{- end }}
         {{- end }}
         {{- with .Values.envoy.podAnnotations }}
         {{- toYaml . | nindent 8 }}
@@ -55,6 +57,11 @@ spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- /* K8s version lower than 1.30.0 don't support the "appArmorProfile" field, */}}
+      {{- /* thus we have to remove it. */}}
+      {{- if semverCompare "<1.30.0" (printf "%d.%d.0" (semver .Capabilities.KubeVersion.Version).Major (semver .Capabilities.KubeVersion.Version).Minor) }}
+        {{- $_ := unset .Values.envoy.podSecurityContext "appArmorProfile" }}
       {{- end }}
       {{- with .Values.envoy.podSecurityContext }}
       securityContext:
@@ -83,10 +90,9 @@ spec:
         {{- with .Values.envoy.extraArgs }}
         {{- toYaml . | trim | nindent 8 }}
         {{- end }}
-        {{- if semverCompare ">=1.20-0" .Capabilities.KubeVersion.Version }}
         startupProbe:
           httpGet:
-            host: "localhost"
+            host: {{ .Values.ipv4.enabled | ternary "127.0.0.1" "::1" | quote }}
             path: /healthz
             port: {{ .Values.envoy.healthPort }}
             scheme: HTTP
@@ -94,34 +100,22 @@ spec:
           periodSeconds: {{ .Values.envoy.startupProbe.periodSeconds }}
           successThreshold: 1
           initialDelaySeconds: 5
-        {{- end }}
         livenessProbe:
           httpGet:
-            host: "localhost"
+            host: {{ .Values.ipv4.enabled | ternary "127.0.0.1" "::1" | quote }}
             path: /healthz
             port: {{ .Values.envoy.healthPort }}
             scheme: HTTP
-          {{- if semverCompare "<1.20-0" .Capabilities.KubeVersion.Version }}
-          # The initial delay for the liveness probe is intentionally large to
-          # avoid an endless kill & restart cycle if in the event that the initial
-          # bootstrapping takes longer than expected.
-          # Starting from Kubernetes 1.20, we are using startupProbe instead
-          # of this field.
-          initialDelaySeconds: 120
-          {{- end }}
           periodSeconds: {{ .Values.envoy.livenessProbe.periodSeconds }}
           successThreshold: 1
           failureThreshold: {{ .Values.envoy.livenessProbe.failureThreshold }}
           timeoutSeconds: 5
         readinessProbe:
           httpGet:
-            host: "localhost"
+            host: {{ .Values.ipv4.enabled | ternary "127.0.0.1" "::1" | quote }}
             path: /healthz
             port: {{ .Values.envoy.healthPort }}
             scheme: HTTP
-          {{- if semverCompare "<1.20-0" .Capabilities.KubeVersion.Version }}
-          initialDelaySeconds: 5
-          {{- end }}
           periodSeconds: {{ .Values.envoy.readinessProbe.periodSeconds }}
           successThreshold: 1
           failureThreshold: {{ .Values.envoy.readinessProbe.failureThreshold }}
@@ -207,7 +201,6 @@ spec:
       {{- end }}
       restartPolicy: Always
       priorityClassName: {{ include "cilium.priorityClass" (list $ .Values.envoy.priorityClassName "system-node-critical") }}
-      serviceAccount: {{ .Values.serviceAccounts.envoy.name | quote }}
       serviceAccountName: {{ .Values.serviceAccounts.envoy.name | quote }}
       automountServiceAccountToken: {{ .Values.serviceAccounts.envoy.automount }}
       terminationGracePeriodSeconds: {{ .Values.envoy.terminationGracePeriodSeconds }}

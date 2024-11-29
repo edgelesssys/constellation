@@ -15,7 +15,7 @@ runs:
         zip -r terraform-module.zip terraform-module
 
     - name: Upload artifact
-      uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
       with:
         name: terraform-module
         path: terraform-module.zip
@@ -23,4 +23,4 @@ runs:
     - name: Cleanup Terraform module dir
       shell: bash
       run: |
-        rm -f terraform-module terraform-module.zip
+        rm -rf terraform-module terraform-module.zip

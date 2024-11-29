@@ -70,10 +70,10 @@ func TestGetAttestationConfigMarshalsNumericalVersion(t *testing.T) {
 	var mp map[string]interface{}
 	require.NoError(yaml.Unmarshal(bt, &mp))
 	assert := assert.New(t)
-	assert.Equal(placeholderVersionValue, mp["microcodeVersion"])
-	assert.Equal(placeholderVersionValue, mp["teeVersion"])
-	assert.Equal(placeholderVersionValue, mp["snpVersion"])
-	assert.Equal(placeholderVersionValue, mp["bootloaderVersion"])
+	assert.EqualValues(placeholderVersionValue[uint8](), mp["microcodeVersion"])
+	assert.EqualValues(placeholderVersionValue[uint8](), mp["teeVersion"])
+	assert.EqualValues(placeholderVersionValue[uint8](), mp["snpVersion"])
+	assert.EqualValues(placeholderVersionValue[uint8](), mp["bootloaderVersion"])
 }
 
 func TestNew(t *testing.T) {
@@ -99,19 +99,19 @@ func TestNew(t *testing.T) {
 			wantResult: func() *Config {
 				conf := Default()
 				modifyConfigForAzureToPassValidate(conf)
-				conf.Attestation.AzureSEVSNP.MicrocodeVersion = AttestationVersion{
+				conf.Attestation.AzureSEVSNP.MicrocodeVersion = AttestationVersion[uint8]{
 					Value:      testCfg.Microcode,
 					WantLatest: true,
 				}
-				conf.Attestation.AzureSEVSNP.TEEVersion = AttestationVersion{
+				conf.Attestation.AzureSEVSNP.TEEVersion = AttestationVersion[uint8]{
 					Value:      2,
 					WantLatest: false,
 				}
-				conf.Attestation.AzureSEVSNP.BootloaderVersion = AttestationVersion{
+				conf.Attestation.AzureSEVSNP.BootloaderVersion = AttestationVersion[uint8]{
 					Value:      1,
 					WantLatest: false,
 				}
-				conf.Attestation.AzureSEVSNP.SNPVersion = AttestationVersion{
+				conf.Attestation.AzureSEVSNP.SNPVersion = AttestationVersion[uint8]{
 					Value:      testCfg.SNP,
 					WantLatest: true,
 				}
@@ -466,7 +466,7 @@ func TestValidate(t *testing.T) {
 				gcp.ServiceAccountKeyPath = "test-key-path"
 				cnf.Provider = ProviderConfig{}
 				cnf.Provider.GCP = gcp
-				cnf.Attestation.GCPSEVES.Measurements = measurements.M{
+				cnf.Attestation.GCPSEVSNP.Measurements = measurements.M{
 					0: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength),
 				}
 				cnf.NodeGroups = map[string]NodeGroup{
@@ -624,11 +624,11 @@ func TestConfig_UpdateMeasurements(t *testing.T) {
 	{ // GCP
 		conf := Default()
 		conf.RemoveProviderAndAttestationExcept(cloudprovider.GCP)
-		for k := range conf.Attestation.GCPSEVES.Measurements {
-			delete(conf.Attestation.GCPSEVES.Measurements, k)
+		for k := range conf.Attestation.GCPSEVSNP.Measurements {
+			delete(conf.Attestation.GCPSEVSNP.Measurements, k)
 		}
 		conf.UpdateMeasurements(newMeasurements)
-		assert.Equal(newMeasurements, conf.Attestation.GCPSEVES.Measurements)
+		assert.Equal(newMeasurements, conf.Attestation.GCPSEVSNP.Measurements)
 	}
 	{ // QEMU
 		conf := Default()
@@ -688,67 +688,80 @@ func TestValidInstanceTypeForProvider(t *testing.T) {
 	testCases := map[string]struct {
 		variant        variant.Variant
 		instanceTypes  []string
+		providerConfig ProviderConfig
 		expectedResult bool
 	}{
 		"empty all": {
 			variant:        variant.Dummy{},
 			instanceTypes:  []string{},
 			expectedResult: false,
+			providerConfig: ProviderConfig{},
 		},
 		"empty aws": {
 			variant:        variant.AWSSEVSNP{},
 			instanceTypes:  []string{},
 			expectedResult: false,
+			providerConfig: ProviderConfig{},
 		},
 		"empty azure only CVMs": {
 			variant:        variant.AzureSEVSNP{},
 			instanceTypes:  []string{},
 			expectedResult: false,
+			providerConfig: ProviderConfig{},
 		},
 		"empty azure with non-CVMs": {
 			variant:        variant.AzureTrustedLaunch{},
 			instanceTypes:  []string{},
 			expectedResult: false,
+			providerConfig: ProviderConfig{},
 		},
 		"empty gcp": {
 			variant:        variant.GCPSEVES{},
 			instanceTypes:  []string{},
 			expectedResult: false,
+			providerConfig: ProviderConfig{},
 		},
 		"azure only CVMs (SNP)": {
 			variant:        variant.AzureSEVSNP{},
 			instanceTypes:  instancetypes.AzureSNPInstanceTypes,
 			expectedResult: true,
+			providerConfig: ProviderConfig{},
 		},
 		"azure only CVMs (TDX)": {
 			variant:        variant.AzureTDX{},
 			instanceTypes:  instancetypes.AzureTDXInstanceTypes,
 			expectedResult: true,
+			providerConfig: ProviderConfig{},
 		},
 		"azure trusted launch VMs": {
 			variant:        variant.AzureTrustedLaunch{},
 			instanceTypes:  instancetypes.AzureTrustedLaunchInstanceTypes,
 			expectedResult: true,
+			providerConfig: ProviderConfig{},
 		},
 		"gcp": {
 			variant:        variant.GCPSEVES{},
 			instanceTypes:  instancetypes.GCPInstanceTypes,
 			expectedResult: true,
+			providerConfig: ProviderConfig{},
 		},
 		"gcp sev-snp": {
 			variant:        variant.GCPSEVSNP{},
 			instanceTypes:  instancetypes.GCPInstanceTypes,
 			expectedResult: true,
+			providerConfig: ProviderConfig{},
 		},
 		"put gcp when azure is set": {
 			variant:        variant.AzureSEVSNP{},
 			instanceTypes:  instancetypes.GCPInstanceTypes,
 			expectedResult: false,
+			providerConfig: ProviderConfig{},
 		},
 		"put azure when gcp is set": {
 			variant:        variant.GCPSEVES{},
 			instanceTypes:  instancetypes.AzureSNPInstanceTypes,
 			expectedResult: false,
+			providerConfig: ProviderConfig{},
 		},
 		// Testing every possible instance type for AWS is not feasible, so we just test a few based on known supported / unsupported families
 		// Also serves as a test for checkIfInstanceInValidAWSFamilys
@@ -756,31 +769,79 @@ func TestValidInstanceTypeForProvider(t *testing.T) {
 			variant:        variant.AWSSEVSNP{},
 			instanceTypes:  []string{"c5.xlarge", "c5a.2xlarge", "c5a.16xlarge", "u-12tb1.112xlarge"},
 			expectedResult: false, // False because 2 two of the instances are not valid
+			providerConfig: ProviderConfig{},
 		},
 		"aws one valid instance one with too little vCPUs": {
 			variant:        variant.AWSSEVSNP{},
 			instanceTypes:  []string{"c5.medium"},
 			expectedResult: false,
+			providerConfig: ProviderConfig{},
 		},
 		"aws graviton sub-family unsupported": {
 			variant:        variant.AWSSEVSNP{},
 			instanceTypes:  []string{"m6g.xlarge", "r6g.2xlarge", "x2gd.xlarge", "g5g.8xlarge"},
 			expectedResult: false,
+			providerConfig: ProviderConfig{},
 		},
 		"aws combined two valid instances as one string": {
 			variant:        variant.AWSSEVSNP{},
 			instanceTypes:  []string{"c5.xlarge, c5a.2xlarge"},
 			expectedResult: false,
+			providerConfig: ProviderConfig{},
 		},
 		"aws only CVMs": {
 			variant:        variant.AWSSEVSNP{},
 			instanceTypes:  []string{"c6a.xlarge", "m6a.xlarge", "r6a.xlarge"},
 			expectedResult: true,
+			providerConfig: ProviderConfig{},
 		},
 		"aws nitroTPM VMs": {
 			variant:        variant.AWSNitroTPM{},
 			instanceTypes:  []string{"c5.xlarge", "c5a.2xlarge", "c5a.16xlarge", "u-12tb1.112xlarge"},
 			expectedResult: true,
+			providerConfig: ProviderConfig{},
+		},
+		"stackit valid flavors": {
+			variant: variant.QEMUVTPM{},
+			instanceTypes: []string{
+				"m1a.2cd",
+				"m1a.4cd",
+				"m1a.8cd",
+				"m1a.16cd",
+				"m1a.30cd",
+			},
+			expectedResult: true,
+			providerConfig: ProviderConfig{OpenStack: &OpenStackConfig{Cloud: "stackit"}},
+		},
+		"stackit not valid flavors": {
+			variant: variant.QEMUVTPM{},
+			instanceTypes: []string{
+				// removed the c which indicates a confidential flavor
+				"m1a.2d",
+				"m1a.4d",
+				"m1a.8d",
+				"m1a.16d",
+				"m1a.30d",
+			},
+			expectedResult: false,
+			providerConfig: ProviderConfig{OpenStack: &OpenStackConfig{Cloud: "stackit"}},
+		},
+		"openstack cloud named test": {
+			variant: variant.QEMUVTPM{},
+			instanceTypes: []string{
+				"foo.bar",
+				"foo.bar1",
+			},
+			expectedResult: true,
+			providerConfig: ProviderConfig{OpenStack: &OpenStackConfig{Cloud: "test"}},
+		},
+		"Qemutdx valid instance type": {
+			variant: variant.QEMUTDX{},
+			instanceTypes: []string{
+				"foo.bar",
+			},
+			expectedResult: true,
+			providerConfig: ProviderConfig{QEMU: &QEMUConfig{}},
 		},
 	}
 	for name, tc := range testCases {
@@ -788,7 +849,7 @@ func TestValidInstanceTypeForProvider(t *testing.T) {
 			assert := assert.New(t)
 			for _, instanceType := range tc.instanceTypes {
 				assert.Equal(
-					tc.expectedResult, validInstanceTypeForProvider(instanceType, tc.variant),
+					tc.expectedResult, validInstanceTypeForProvider(instanceType, tc.variant, tc.providerConfig),
 					instanceType,
 				)
 			}
@@ -1051,18 +1112,8 @@ func getConfigAsMap(conf *Config, t *testing.T) (res configMap) {
 
 type stubAttestationFetcher struct{}
 
-func (f stubAttestationFetcher) FetchSEVSNPVersionList(_ context.Context, _ attestationconfigapi.SEVSNPVersionList) (attestationconfigapi.SEVSNPVersionList, error) {
-	return attestationconfigapi.SEVSNPVersionList{}, nil
-}
-
-func (f stubAttestationFetcher) FetchSEVSNPVersion(_ context.Context, _ attestationconfigapi.SEVSNPVersionAPI) (attestationconfigapi.SEVSNPVersionAPI, error) {
-	return attestationconfigapi.SEVSNPVersionAPI{
-		SEVSNPVersion: testCfg,
-	}, nil
-}
-
-func (f stubAttestationFetcher) FetchSEVSNPVersionLatest(_ context.Context, _ variant.Variant) (attestationconfigapi.SEVSNPVersionAPI, error) {
-	return attestationconfigapi.SEVSNPVersionAPI{
+func (f stubAttestationFetcher) FetchLatestVersion(_ context.Context, _ variant.Variant) (attestationconfigapi.Entry, error) {
+	return attestationconfigapi.Entry{
 		SEVSNPVersion: testCfg,
 	}, nil
 }

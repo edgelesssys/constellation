@@ -14,7 +14,7 @@ Constellation supports trusted launch VMs with instance types `Standard_D*_v4` a
 
 Azure currently doesn't support [community galleries for trusted launch VMs](https://docs.microsoft.com/en-us/azure/virtual-machines/share-gallery-community). Thus, you need to manually import the Constellation node image into your cloud subscription.
 
-The latest image is available at <https://cdn.confidential.cloud/constellation/images/azure/trusted-launch/v2.2.0/constellation.img>. Simply adjust the version number to download a newer version.
+The latest image is available at `https://cdn.confidential.cloud/constellation/images/azure/trusted-launch/v2.2.0/constellation.img`. Simply adjust the version number to download a newer version.
 
 After you've downloaded the image, create a resource group `constellation-images` in your Azure subscription and import the image.
 You can use a script to do this:
@@ -26,6 +26,7 @@ AZURE_IMAGE_VERSION=2.2.0 AZURE_RESOURCE_GROUP_NAME=constellation-images AZURE_I
 ```
 
 The script creates the following resources:
+
 1. A new image gallery with the default name `constellation-import`
 2. A new image definition with the default name `constellation`
 3. The actual image with the provided version. In this case `2.2.0`

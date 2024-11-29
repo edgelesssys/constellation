@@ -21,7 +21,20 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/constellation/state"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
+	kubeadmconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
+
+func extraCoreDNSValues(serviceCIDR string) (map[string]any, error) {
+	if serviceCIDR == "" {
+		return map[string]any{}, nil
+	}
+	ip, err := kubeadmconstants.GetDNSIP(serviceCIDR)
+	if err != nil {
+		return nil, fmt.Errorf("calculating DNS service IP: %w", err)
+	}
+
+	return map[string]any{"clusterIP": ip.String()}, nil
+}
 
 // TODO(malt3): switch over to DNS name on AWS and Azure
 // soon as every apiserver certificate of every control-plane node
@@ -73,7 +86,6 @@ func extraCiliumValues(provider cloudprovider.Provider, conformanceMode bool, ou
 	// Since there should always be workarounds, we only support this mode to
 	// pass the K8s conformance tests. It is not supported to switch to or from
 	// this mode after Constellation has been initialized.
-	// This only works for the K8s conformance tests up to K8s 1.28.
 	if conformanceMode {
 		extraVals["kubeProxyReplacementHealthzBindAddr"] = ""
 		extraVals["kubeProxyReplacement"] = "false"
@@ -86,6 +98,9 @@ func extraCiliumValues(provider cloudprovider.Provider, conformanceMode bool, ou
 		}
 		extraVals["bpf"] = map[string]any{
 			"masquerade": false,
+		}
+		extraVals["k8s"] = map[string]any{
+			"serviceProxyName": "cilium",
 		}
 	}
 
@@ -228,7 +243,7 @@ func getCCMConfig(azureState state.Azure, serviceAccURI string) ([]byte, error) 
 		ResourceGroup:               azureState.ResourceGroup,
 		LoadBalancerSku:             "standard",
 		SecurityGroupName:           azureState.NetworkSecurityGroupName,
-		LoadBalancerName:            azureState.LoadBalancerName,
+		LoadBalancerName:            "kubernetes-lb",
 		UseInstanceMetadata:         true,
 		VMType:                      "vmss",
 		Location:                    creds.Location,

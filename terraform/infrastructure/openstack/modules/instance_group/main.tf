@@ -80,6 +80,7 @@ resource "openstack_compute_instance_v2" "instance_group_member" {
     openstack-username               = var.openstack_username
     openstack-password               = var.openstack_password
     openstack-user-domain-name       = var.openstack_user_domain_name
+    openstack-region-name            = var.openstack_region_name
     openstack-load-balancer-endpoint = var.openstack_load_balancer_endpoint
   })
   availability_zone_hints = length(var.availability_zone) > 0 ? var.availability_zone : null

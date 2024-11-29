@@ -31,8 +31,8 @@ func newAttestationVariantAttributeSchema(t attributeType) schema.Attribute {
 			"  * `aws-nitro-tpm`\n" +
 			"  * `azure-sev-snp`\n" +
 			"  * `azure-tdx`\n" +
-			"  * `gcp-sev-es`\n" +
 			"  * `gcp-sev-snp`\n" +
+			"  * `gcp-sev-es`\n" +
 			"  * `qemu-vtpm`\n",
 		Required: isInput,
 		Computed: !isInput,

@@ -54,7 +54,7 @@ func New(log *slog.Logger, fileHandler file.Handler) (*Server, error) {
 	}
 
 	grpcServer := grpc.NewServer(
-		logger.GetServerUnaryInterceptor(log.WithGroup("gRPC")),
+		logger.GetServerUnaryInterceptor(logger.GRPCLogger(log)),
 	)
 	upgradeproto.RegisterUpdateServer(grpcServer, server)
 
@@ -111,12 +111,18 @@ func (s *Server) ExecuteUpdate(ctx context.Context, updateRequest *upgradeproto.
 		return nil, status.Errorf(codes.Internal, "unable to install the kubeadm binary: %s", err)
 	}
 
-	upgradeCmd := exec.CommandContext(ctx, "kubeadm", "upgrade", "plan", updateRequest.WantedKubernetesVersion)
+	// CoreDNS addon status is checked even though we did not install it.
+	// TODO(burgerdev): Use kubeadm phases once supported: https://github.com/kubernetes/kubeadm/issues/1318.
+	commonArgs := []string{"--ignore-preflight-errors", "CoreDNSMigration,CoreDNSUnsupportedPlugins", updateRequest.WantedKubernetesVersion}
+	planArgs := append([]string{"upgrade", "plan"}, commonArgs...)
+	applyArgs := append([]string{"upgrade", "apply", "--yes", "--patches", constants.KubeadmPatchDir}, commonArgs...)
+
+	upgradeCmd := exec.CommandContext(ctx, "kubeadm", planArgs...)
 	if out, err := upgradeCmd.CombinedOutput(); err != nil {
 		return nil, status.Errorf(codes.Internal, "unable to execute kubeadm upgrade plan %s: %s: %s", updateRequest.WantedKubernetesVersion, err, string(out))
 	}
 
-	applyCmd := exec.CommandContext(ctx, "kubeadm", "upgrade", "apply", "--yes", "--patches", constants.KubeadmPatchDir, updateRequest.WantedKubernetesVersion)
+	applyCmd := exec.CommandContext(ctx, "kubeadm", applyArgs...)
 	if out, err := applyCmd.CombinedOutput(); err != nil {
 		return nil, status.Errorf(codes.Internal, "unable to execute kubeadm upgrade apply: %s: %s", err, string(out))
 	}

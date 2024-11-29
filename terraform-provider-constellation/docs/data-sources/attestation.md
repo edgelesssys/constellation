@@ -32,8 +32,8 @@ data "constellation_attestation" "test" {
   * `aws-nitro-tpm`
   * `azure-sev-snp`
   * `azure-tdx`
-  * `gcp-sev-es`
   * `gcp-sev-snp`
+  * `gcp-sev-es`
   * `qemu-vtpm`
 - `csp` (String) CSP (Cloud Service Provider) to use. (e.g. `azure`)
 See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview/clouds) that Constellation supports.
@@ -42,7 +42,8 @@ See the [full list of CSPs](https://docs.edgeless.systems/constellation/overview
 ### Optional
 
 - `insecure` (Boolean) DON'T USE IN PRODUCTION Skip the signature verification when fetching measurements for the image.
-- `maa_url` (String) For Azure only, the URL of the Microsoft Azure Attestation service
+- `maa_url` (String) For Azure only, the URL of the Microsoft Azure Attestation service. The MAA's policy needs to be patched manually to work with Constellation OS images.
+See the [Constellation documentation](https://docs.edgeless.systems/constellation/workflows/terraform-provider#quick-setup) for more information.
 
 ### Read-Only
 
@@ -83,8 +84,8 @@ Read-Only:
   * `aws-nitro-tpm`
   * `azure-sev-snp`
   * `azure-tdx`
-  * `gcp-sev-es`
   * `gcp-sev-snp`
+  * `gcp-sev-es`
   * `qemu-vtpm`
 
 <a id="nestedatt--attestation--azure_firmware_signer_config"></a>

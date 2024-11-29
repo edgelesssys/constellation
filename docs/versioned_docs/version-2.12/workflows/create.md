@@ -4,7 +4,7 @@
 This recording presents the essence of this page. It's recommended to read it in full for the motivation and all details.
 :::
 
-<asciinemaWidget src="/constellation/assets/create-cluster.cast" rows="20" cols="112" idleTimeLimit="3" preload="true" theme="edgeless" />
+<AsciinemaWidget src="/constellation/assets/create-cluster.cast" rows="20" cols="112" idleTimeLimit="3" preload="true" theme="edgeless" />
 
 ---
 
@@ -26,8 +26,8 @@ Before you create the cluster, make sure to have a [valid configuration file](./
 
 ### Create
 
-<tabs groupId="provider">
-<tabItem value="cli" label="CLI">
+<Tabs groupId="provider">
+<TabItem value="cli" label="CLI">
 
 ```bash
 constellation create
@@ -35,8 +35,8 @@ constellation create
 
 *create* stores your cluster's state in a [`constellation-terraform`](../architecture/orchestration.md#cluster-creation-process) directory in your workspace.
 
-</tabItem>
-<tabItem value="terraform" label="Terraform">
+</TabItem>
+<TabItem value="terraform" label="Terraform">
 
 Terraform allows for an easier GitOps integration as well as meeting regulatory requirements.
 Since the Constellation CLI also uses Terraform under the hood, you can reuse the same Terraform files.
@@ -77,8 +77,8 @@ yq eval '.infrastructure.initSecret ="$CONSTELL_INIT_SECRET"' --inplace constell
 yq eval '.infrastructure.clusterEndpoint ="$CONSTELL_IP"' --inplace constellation-state.yaml
 ```
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 ## The *init* step
 
@@ -96,6 +96,6 @@ export KUBECONFIG="$PWD/constellation-admin.conf"
 
 🏁 That's it. You've successfully created a Constellation cluster.
 
-
 ### Troubleshooting
+
 In case `init` fails, the CLI collects logs from the bootstrapping instance and stores them inside `constellation-cluster.log`.

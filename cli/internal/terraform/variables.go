@@ -172,7 +172,7 @@ type GCPNodeGroup struct {
 	DiskType     string `hcl:"disk_type" cty:"disk_type"`
 }
 
-// GCPIAMVariables is user configuration for creating the IAM confioguration with Terraform on GCP.
+// GCPIAMVariables is user configuration for creating the IAM configuration with Terraform on GCP.
 type GCPIAMVariables struct {
 	// Project is the ID of the GCP project to use.
 	Project string `hcl:"project_id" cty:"project_id"`
@@ -193,6 +193,8 @@ func (v *GCPIAMVariables) String() string {
 
 // AzureClusterVariables is user configuration for creating a cluster with Terraform on Azure.
 type AzureClusterVariables struct {
+	// SubscriptionID is the Azure subscription ID to use.
+	SubscriptionID string `hcl:"subscription_id" cty:"subscription_id"`
 	// Name of the cluster.
 	Name string `hcl:"name" cty:"name"`
 	// ImageID is the ID of the Azure image to use.
@@ -254,6 +256,8 @@ type AzureNodeGroup struct {
 
 // AzureIAMVariables is user configuration for creating the IAM configuration with Terraform on Microsoft Azure.
 type AzureIAMVariables struct {
+	// SubscriptionID is the Azure subscription ID to use.
+	SubscriptionID string `hcl:"subscription_id,optional" cty:"subscription_id"` // TODO(v2.18): remove optional tag. This is only required for migration from var files that dont have the value yet.
 	// Location is the Azure location to use. (e.g. westus)
 	Location string `hcl:"location" cty:"location"`
 	// ServicePrincipal is the name of the service principal to use.

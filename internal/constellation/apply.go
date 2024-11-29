@@ -18,6 +18,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/license"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 // ApplyContext denotes the context in which the apply command is run.
@@ -44,6 +46,7 @@ type Applier struct {
 	newDialer     func(validator atls.Validator) *dialer.Dialer
 	kubecmdClient kubecmdClient
 	helmClient    helmApplier
+	dynamicClient dynamic.Interface
 }
 
 type licenseChecker interface {
@@ -79,8 +82,17 @@ func (a *Applier) SetKubeConfig(kubeConfig []byte) error {
 	if err != nil {
 		return err
 	}
+	restConfig, err := clientcmd.RESTConfigFromKubeConfig(kubeConfig)
+	if err != nil {
+		return err
+	}
+	dynamicClient, err := dynamic.NewForConfig(restConfig)
+	if err != nil {
+		return err
+	}
 	a.kubecmdClient = kubecmdClient
 	a.helmClient = helmClient
+	a.dynamicClient = dynamicClient
 	return nil
 }
 

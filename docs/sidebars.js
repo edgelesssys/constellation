@@ -57,6 +57,11 @@ const sidebars = {
           items: [
             {
               type: 'doc',
+              label: 'Compute benchmarks',
+              id: 'overview/performance/compute',
+            },
+            {
+              type: 'doc',
               label: 'I/O benchmarks',
               id: 'overview/performance/io',
             },
@@ -214,6 +219,11 @@ const sidebars = {
           type: 'doc',
           label: 'Consume SBOMs',
           id: 'workflows/sbom',
+        },
+        {
+          type: 'doc',
+          label: 'Reproduce release artifacts',
+          id: 'workflows/reproducible-builds',
         },
         {
           type: 'doc',

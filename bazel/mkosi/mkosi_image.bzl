@@ -2,6 +2,9 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
+def _resource_set(_os, _num_inputs):
+    return {"cpu": 4, "memory": 4096}
+
 def _mkosi_image_impl(ctx):
     args = ctx.actions.args()
     inputs = []
@@ -67,8 +70,6 @@ def _mkosi_image_impl(ctx):
         args.add("--kernel-command-line", ctx.attr.kernel_command_line)
     for key, value in ctx.attr.kernel_command_line_dict.items():
         args.add("--kernel-command-line", "{}={}".format(key, value))
-    if ctx.attr.autologin:
-        args.add("--autologin", "yes")
 
     info = ctx.toolchains["@constellation//bazel/mkosi:toolchain_type"].mkosi
     if not info.valid:
@@ -99,6 +100,7 @@ def _mkosi_image_impl(ctx):
         execution_requirements = {"no-remote": "1", "no-sandbox": "1"},
         progress_message = "Building mkosi image " + ctx.label.name,
         env = env,
+        resource_set = _resource_set,
     )
     return DefaultInfo(files = depset(outputs), runfiles = ctx.runfiles(outputs))
 
@@ -106,7 +108,6 @@ mkosi_image = rule(
     implementation = _mkosi_image_impl,
     attrs = {
         "architecture": attr.string(),
-        "autologin": attr.bool(),
         "base_trees": attr.label_list(allow_files = True),
         "distribution": attr.string(),
         "env": attr.string_dict(),

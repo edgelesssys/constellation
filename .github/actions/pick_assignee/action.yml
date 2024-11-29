@@ -15,8 +15,6 @@ runs:
       run: |
         possibleAssignees=(
           "elchead"
-          "malt3"
-          "3u13r"
           "daniel-weisse"
           "msanft"
           "burgerdev"

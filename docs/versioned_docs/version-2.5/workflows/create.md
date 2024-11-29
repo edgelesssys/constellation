@@ -18,8 +18,8 @@ Before you create the cluster, make sure to have a [valid configuration file](./
 
 ### Create
 
-<tabs groupId="provider">
-<tabItem value="cli" label="CLI">
+<Tabs groupId="provider">
+<TabItem value="cli" label="CLI">
 
 Choose the initial size of your cluster.
 The following command creates a cluster with one control-plane and two worker nodes:
@@ -32,8 +32,8 @@ For details on the flags, consult the command help via `constellation create -h`
 
 *create* stores your cluster's state into a [`terraform.tfstate`](../architecture/orchestration.md#cluster-creation-process) file in your workspace.
 
-</tabItem>
-<tabItem value="terraform" label="Terraform">
+</TabItem>
+<TabItem value="terraform" label="Terraform">
 
 Constellation supports managing the infrastructure via Terraform. This allows for an easier GitOps integration as well as meeting regulatory requirements.
 Since the Constellation CLI also uses Terraform under the hood, you can reuse the same Terraform files.
@@ -68,8 +68,8 @@ CONSTELL_CSP=$(cat constellation-conf.yaml | yq ".provider | keys | .[0]")
 jq --null-input --arg cloudprovider "$CONSTELL_CSP" --arg ip "$CONSTELL_IP" --arg initsecret "$CONSTELL_INIT_SECRET" '{"cloudprovider":$cloudprovider,"ip":$ip,"initsecret":$initsecret}' > constellation-id.json
 ```
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 ## The *init* step
 

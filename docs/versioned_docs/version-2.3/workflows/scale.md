@@ -48,23 +48,23 @@ kubectl -n kube-system get nodes
 
 Alternatively, you can manually scale your cluster up or down:
 
-<tabs groupId="csp">
-<tabItem value="azure" label="Azure">
+<Tabs groupId="csp">
+<TabItem value="azure" label="Azure">
 
 1. Find your Constellation resource group.
 2. Select the `scale-set-workers`.
 3. Go to **settings** and **scaling**.
 4. Set the new **instance count** and **save**.
 
-</tabItem>
-<tabItem value="gcp" label="GCP">
+</TabItem>
+<TabItem value="gcp" label="GCP">
 
 1. In Compute Engine go to [Instance Groups](https://console.cloud.google.com/compute/instanceGroups/).
 2. **Edit** the **worker** instance group.
 3. Set the new **number of instances** and **save**.
 
-</tabItem>
-<tabItem value="aws" label="AWS">
+</TabItem>
+<TabItem value="aws" label="AWS">
 
 :::caution
 
@@ -72,8 +72,8 @@ Scaling isn't yet implemented for AWS. If you require this feature, [let us know
 
 :::
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 ## Control-plane node scaling
 
@@ -81,24 +81,24 @@ Control-plane nodes can **only be scaled manually and only scaled up**!
 
 To increase the number of control-plane nodes, follow these steps:
 
-<tabs groupId="csp">
+<Tabs groupId="csp">
 
-<tabItem value="azure" label="Azure">
+<TabItem value="azure" label="Azure">
 
 1. Find your Constellation resource group.
 2. Select the `scale-set-controlplanes`.
 3. Go to **settings** and **scaling**.
 4. Set the new (increased) **instance count** and **save**.
 
-</tabItem>
-<tabItem value="gcp" label="GCP">
+</TabItem>
+<TabItem value="gcp" label="GCP">
 
 1. In Compute Engine go to [Instance Groups](https://console.cloud.google.com/compute/instanceGroups/).
 2. **Edit** the **control-plane** instance group.
 3. Set the new (increased) **number of instances** and **save**.
 
-</tabItem>
-<tabItem value="aws" label="AWS">
+</TabItem>
+<TabItem value="aws" label="AWS">
 
 :::caution
 
@@ -106,7 +106,7 @@ Scaling isn't yet implemented for AWS. If you require this feature, [let us know
 
 :::
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 If you scale down the number of control-planes nodes, the removed nodes won't be able to exit the `etcd` cluster correctly. This will endanger the quorum that's required to run a stable Kubernetes control plane.

@@ -1,12 +1,15 @@
 # Use the Terraform module
+
 You can manage a Constellation cluster through Terraform.
 The module package is available as part of the [GitHub release](https://github.com/edgelesssys/constellation/releases/). It consists of a convenience module for each cloud service provider (`{csp}-constellation`) that combines the IAM (`infrastructure/{csp}/iam`), infrastructure (`infrastructure/{csp}`), and constellation (`constellation-cluster`) modules.
 
 ## Prerequisites
+
 - a Linux / Mac operating system
 - a Terraform installation of version `v1.4.4` or above
 
 ## Quick setup
+
 The convenience module allows setting up a Constellation cluster with a single module. It's easiest to consume the module through a remote source, as shown below.
 This allows to upgrade the cluster to a newer Constellation version by simply updating the module source.
 
@@ -18,6 +21,7 @@ The files are deleted on `terraform destroy`.
 :::
 
 1. Create a directory (workspace) for your Constellation cluster.
+
   ```bash
   mkdir constellation-workspace
   cd constellation-workspace
@@ -25,9 +29,9 @@ The files are deleted on `terraform destroy`.
 
 1. Create a `main.tf` file to call the CSP specific Constellation module.
 
-  <tabs groupId="csp">
+  <Tabs groupId="csp">
 
-  <tabItem value="azure" label="Azure">
+  <TabItem value="azure" label="Azure">
 
   ```
   module "azure-constellation" {
@@ -55,9 +59,9 @@ The files are deleted on `terraform destroy`.
   }
   ```
 
-  </tabItem>
+  </TabItem>
 
-  <tabItem value="aws" label="AWS">
+  <TabItem value="aws" label="AWS">
 
   ```
   module "aws-constellation" {
@@ -86,9 +90,9 @@ The files are deleted on `terraform destroy`.
   }
   ```
 
-  </tabItem>
+  </TabItem>
 
-  <tabItem value="gcp" label="GCP">
+  <TabItem value="gcp" label="GCP">
 
   ```
   module "gcp-constellation" {
@@ -118,25 +122,29 @@ The files are deleted on `terraform destroy`.
   }
   ```
 
-  </tabItem>
-  </tabs>
+  </TabItem>
+  </Tabs>
 
 3. Initialize and apply the module.
+
   ```bash
   terraform init
   terraform apply
   ```
 
 ## Custom setup
+
 If you need to separate IAM and cluster management or need custom infrastructure, you can also call the submodules individually.
 Look at the respective convenience module (`{csp}-constellation`) for how you can structure the module calls.
 The submodules are:
+
 - `constellation-cluster`: manages the Constellation cluster
 - `fetch-image`: translates the Constellation image version to the image ID of the cloud service provider
 - `infrastructure/{csp}`: contains the cluster infrastructure resources
 - `infrastructure/iam/{csp}`: contains the IAM resources used within the cluster
 
 ## Cluster upgrades
+
 :::tip
 For general information on cluster upgrades, see [Upgrade your cluster](./upgrade.md).
 :::
@@ -145,6 +153,7 @@ Using a [remote address as module source](https://developer.hashicorp.com/terraf
 
 1. Update the `<version>` variable inside the `source` field of the module.
 2. Upgrade the Terraform module and provider dependencies and apply the Constellation upgrade.
+
   ```bash
   terraform init -upgrade
   terraform apply

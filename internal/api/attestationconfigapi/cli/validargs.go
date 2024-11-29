@@ -7,26 +7,33 @@ SPDX-License-Identifier: AGPL-3.0-only
 package main
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/spf13/cobra"
 )
 
-func isCloudProvider(arg int) cobra.PositionalArgs {
+func arg0isAttestationVariant() cobra.PositionalArgs {
 	return func(_ *cobra.Command, args []string) error {
-		if provider := cloudprovider.FromString(args[arg]); provider == cloudprovider.Unknown {
-			return fmt.Errorf("argument %s isn't a valid cloud provider", args[arg])
+		attestationVariant, err := variant.FromString(args[0])
+		if err != nil {
+			return errors.New("argument 0 isn't a valid attestation variant")
 		}
-		return nil
+		switch attestationVariant {
+		case variant.AWSSEVSNP{}, variant.AzureSEVSNP{}, variant.AzureTDX{}, variant.GCPSEVSNP{}:
+			return nil
+		default:
+			return errors.New("argument 0 isn't a supported attestation variant")
+		}
 	}
 }
 
 func isValidKind(arg int) cobra.PositionalArgs {
 	return func(_ *cobra.Command, args []string) error {
 		if kind := kindFromString(args[arg]); kind == unknown {
-			return fmt.Errorf("argument %s isn't a valid kind", args[arg])
+			return fmt.Errorf("argument %s isn't a valid kind: must be one of [%q, %q]", args[arg], attestationReport, guestFirmware)
 		}
 		return nil
 	}
@@ -37,15 +44,15 @@ type objectKind string
 
 const (
 	// unknown is the default objectKind and does nothing.
-	unknown       objectKind = "unknown-kind"
-	snpReport     objectKind = "snp-report"
-	guestFirmware objectKind = "guest-firmware"
+	unknown           objectKind = "unknown-kind"
+	attestationReport objectKind = "attestation-report"
+	guestFirmware     objectKind = "guest-firmware"
 )
 
 func kindFromString(s string) objectKind {
 	lower := strings.ToLower(s)
 	switch objectKind(lower) {
-	case snpReport, guestFirmware:
+	case attestationReport, guestFirmware:
 		return objectKind(lower)
 	default:
 		return unknown

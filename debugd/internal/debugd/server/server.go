@@ -106,6 +106,7 @@ func (s *debugdServer) UploadFiles(stream pb.Debugd_UploadFilesServer) error {
 		s.log.With(slog.Any("error", err)).Error("Uploading files failed")
 		return stream.SendAndClose(&pb.UploadFilesResponse{
 			Status: pb.UploadFilesStatus_UPLOAD_FILES_UPLOAD_FAILED,
+			Error:  err.Error(),
 		})
 	}
 
@@ -124,6 +125,7 @@ func (s *debugdServer) UploadFiles(stream pb.Debugd_UploadFilesServer) error {
 		s.log.With(slog.Any("error", overrideUnitErr)).Error("Overriding service units failed")
 		return stream.SendAndClose(&pb.UploadFilesResponse{
 			Status: pb.UploadFilesStatus_UPLOAD_FILES_START_FAILED,
+			Error:  overrideUnitErr.Error(),
 		})
 	}
 	return stream.SendAndClose(&pb.UploadFilesResponse{
@@ -155,8 +157,8 @@ func Start(log *slog.Logger, wg *sync.WaitGroup, serv pb.DebugdServer) {
 	go func() {
 		defer wg.Done()
 
-		grpcLog := log.WithGroup("gRPC")
-		logger.ReplaceGRPCLogger(slog.New(logger.NewLevelHandler(slog.LevelWarn, grpcLog.Handler())))
+		grpcLog := logger.GRPCLogger(log)
+		logger.ReplaceGRPCLogger(grpcLog)
 
 		grpcServer := grpc.NewServer(
 			logger.GetServerStreamInterceptor(grpcLog),

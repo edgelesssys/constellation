@@ -17,6 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/encoding"
 )
 
 // naming schema:
@@ -110,12 +111,12 @@ func convertFromTfAttestationCfg(tfAttestation attestationAttribute, attestation
 
 		attestationConfig = &config.AzureTDX{
 			Measurements: c11nMeasurements,
-			QESVN:        tfAttestation.TDX.QESVN,
-			PCESVN:       tfAttestation.TDX.PCESVN,
-			TEETCBSVN:    teeTCBSVN,
-			QEVendorID:   qeVendorID,
+			QESVN:        newVersion(tfAttestation.TDX.QESVN),
+			PCESVN:       newVersion(tfAttestation.TDX.PCESVN),
+			TEETCBSVN:    newVersion(encoding.HexBytes(teeTCBSVN)),
+			QEVendorID:   newVersion(encoding.HexBytes(qeVendorID)),
 			MRSeam:       mrSeam,
-			XFAM:         xfam,
+			XFAM:         newVersion(encoding.HexBytes(xfam)),
 			IntelRootKey: rootKey,
 		}
 	case variant.GCPSEVES{}:
@@ -137,13 +138,9 @@ func convertFromTfAttestationCfg(tfAttestation attestationAttribute, attestation
 }
 
 // convertToTfAttestationCfg converts the constellation attestation config to the related terraform structs.
-func convertToTfAttestation(attVar variant.Variant, snpVersions attestationconfigapi.SEVSNPVersionAPI) (tfAttestation attestationAttribute, err error) {
+func convertToTfAttestation(attVar variant.Variant, latestVersions attestationconfigapi.Entry) (tfAttestation attestationAttribute, err error) {
 	tfAttestation = attestationAttribute{
-		Variant:           attVar.String(),
-		BootloaderVersion: snpVersions.Bootloader,
-		TEEVersion:        snpVersions.TEE,
-		SNPVersion:        snpVersions.SNP,
-		MicrocodeVersion:  snpVersions.Microcode,
+		Variant: attVar.String(),
 	}
 
 	switch attVar {
@@ -153,6 +150,10 @@ func convertToTfAttestation(attVar variant.Variant, snpVersions attestationconfi
 			return tfAttestation, err
 		}
 		tfAttestation.AMDRootKey = certStr
+		tfAttestation.BootloaderVersion = latestVersions.Bootloader
+		tfAttestation.TEEVersion = latestVersions.TEE
+		tfAttestation.SNPVersion = latestVersions.SNP
+		tfAttestation.MicrocodeVersion = latestVersions.Microcode
 
 	case variant.GCPSEVSNP{}:
 		certStr, err := certAsString(config.DefaultForGCPSEVSNP().AMDRootKey)
@@ -160,6 +161,10 @@ func convertToTfAttestation(attVar variant.Variant, snpVersions attestationconfi
 			return tfAttestation, err
 		}
 		tfAttestation.AMDRootKey = certStr
+		tfAttestation.BootloaderVersion = latestVersions.Bootloader
+		tfAttestation.TEEVersion = latestVersions.TEE
+		tfAttestation.SNPVersion = latestVersions.SNP
+		tfAttestation.MicrocodeVersion = latestVersions.Microcode
 
 	case variant.AzureSEVSNP{}:
 		certStr, err := certAsString(config.DefaultForAzureSEVSNP().AMDRootKey)
@@ -167,6 +172,10 @@ func convertToTfAttestation(attVar variant.Variant, snpVersions attestationconfi
 			return tfAttestation, err
 		}
 		tfAttestation.AMDRootKey = certStr
+		tfAttestation.BootloaderVersion = latestVersions.Bootloader
+		tfAttestation.TEEVersion = latestVersions.TEE
+		tfAttestation.SNPVersion = latestVersions.SNP
+		tfAttestation.MicrocodeVersion = latestVersions.Microcode
 
 		firmwareCfg := config.DefaultForAzureSEVSNP().FirmwareSignerConfig
 		tfFirmwareCfg, err := convertToTfFirmwareCfg(firmwareCfg)
@@ -174,24 +183,19 @@ func convertToTfAttestation(attVar variant.Variant, snpVersions attestationconfi
 			return tfAttestation, err
 		}
 		tfAttestation.AzureSNPFirmwareSignerConfig = tfFirmwareCfg
+
 	case variant.AzureTDX{}:
-		tdxCfg := config.DefaultForAzureTDX()
-		certStr, err := certAsString(tdxCfg.IntelRootKey)
+		certStr, err := certAsString(config.DefaultForAzureTDX().IntelRootKey)
 		if err != nil {
 			return tfAttestation, err
 		}
+		tfAttestation.TDX.IntelRootKey = certStr
+		tfAttestation.TDX.PCESVN = latestVersions.PCESVN
+		tfAttestation.TDX.QESVN = latestVersions.QESVN
+		tfAttestation.TDX.TEETCBSVN = hex.EncodeToString(latestVersions.TEETCBSVN[:])
+		tfAttestation.TDX.QEVendorID = hex.EncodeToString(latestVersions.QEVendorID[:])
+		tfAttestation.TDX.XFAM = hex.EncodeToString(latestVersions.XFAM[:])
 
-		tfTdxCfg := tdxConfigAttribute{
-			IntelRootKey: certStr,
-			// TODO(AB#3798): Load these values dynamically from our attestation API
-			QESVN:      tdxCfg.QESVN,
-			PCESVN:     tdxCfg.PCESVN,
-			TEETCBSVN:  hex.EncodeToString(tdxCfg.TEETCBSVN),
-			QEVendorID: hex.EncodeToString(tdxCfg.QEVendorID),
-			MRSeam:     hex.EncodeToString(tdxCfg.MRSeam),
-			XFAM:       hex.EncodeToString(tdxCfg.XFAM),
-		}
-		tfAttestation.TDX = tfTdxCfg
 	case variant.GCPSEVES{}, variant.QEMUVTPM{}:
 		// no additional fields
 	default:
@@ -251,8 +255,8 @@ func convertToTfMeasurements(m measurements.M) map[string]measurementAttribute {
 	return tfMeasurements
 }
 
-func newVersion(v uint8) config.AttestationVersion {
-	return config.AttestationVersion{
+func newVersion[T uint8 | uint16 | encoding.HexBytes](v T) config.AttestationVersion[T] {
+	return config.AttestationVersion[T]{
 		Value: v,
 	}
 }

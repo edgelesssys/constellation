@@ -8,7 +8,7 @@ RemainAfterExit=yes
 Restart=on-failure
 EnvironmentFile=/run/constellation.env
 Environment=PATH=/run/state/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
-ExecStart=/usr/bin/upgrade-agent $CONSTELLATION_DEBUG_FLAGS
+ExecStart=/usr/bin/upgrade-agent
 
 [Install]
 WantedBy=multi-user.target

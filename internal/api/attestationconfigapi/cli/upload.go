@@ -7,6 +7,7 @@ package main
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -14,31 +15,33 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi/cli/client"
+	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
 	"github.com/edgelesssys/constellation/v2/internal/verify"
+	"github.com/google/go-tdx-guest/proto/tdx"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
 
 func newUploadCmd() *cobra.Command {
 	uploadCmd := &cobra.Command{
-		Use:   "upload {aws|azure|gcp} {snp-report|guest-firmware} <path>",
+		Use:   "upload VARIANT KIND FILE",
 		Short: "Upload an object to the attestationconfig API",
 
-		Long: fmt.Sprintf("Upload a new object to the attestationconfig API. For snp-reports the new object is added to a cache folder first."+
+		Long: fmt.Sprintf("Upload a new object to the attestationconfig API. For snp-reports the new object is added to a cache folder first.\n"+
 			"The CLI then determines the lowest version within the cache-window present in the cache and writes that value to the config api if necessary. "+
-			"For guest-firmware objects the object is added to the API directly. "+
-			"Please authenticate with AWS through your preferred method (e.g. environment variables, CLI)"+
+			"For guest-firmware objects the object is added to the API directly.\n"+
+			"Please authenticate with AWS through your preferred method (e.g. environment variables, CLI) "+
 			"to be able to upload to S3. Set the %s and %s environment variables to authenticate with cosign.",
 			envCosignPrivateKey, envCosignPwd,
 		),
-		Example: "COSIGN_PASSWORD=$CPW COSIGN_PRIVATE_KEY=$CKEY cli upload azure snp-report /some/path/report.json",
+		Example: "COSIGN_PASSWORD=$CPW COSIGN_PRIVATE_KEY=$CKEY cli upload azure-sev-snp attestation-report /some/path/report.json",
 
-		Args:    cobra.MatchAll(cobra.ExactArgs(3), isCloudProvider(0), isValidKind(1)),
+		Args:    cobra.MatchAll(cobra.ExactArgs(3), arg0isAttestationVariant(), isValidKind(1)),
 		PreRunE: envCheck,
 		RunE:    runUpload,
 	}
@@ -68,18 +71,15 @@ func runUpload(cmd *cobra.Command, args []string) (retErr error) {
 		return fmt.Errorf("parsing cli flags: %w", err)
 	}
 
-	client, clientClose, err := attestationconfigapi.NewClient(
-		ctx,
+	client, clientClose, err := client.New(ctx,
 		staticupload.Config{
 			Bucket:         uploadCfg.bucket,
 			Region:         uploadCfg.region,
 			DistributionID: uploadCfg.distribution,
 		},
-		[]byte(cosignPwd),
-		[]byte(privateKey),
-		false,
-		uploadCfg.cacheWindowSize,
-		log)
+		[]byte(cosignPwd), []byte(privateKey),
+		false, uploadCfg.cacheWindowSize, log,
+	)
 
 	defer func() {
 		err := clientClose(cmd.Context())
@@ -92,56 +92,57 @@ func runUpload(cmd *cobra.Command, args []string) (retErr error) {
 		return fmt.Errorf("creating client: %w", err)
 	}
 
-	var attestation variant.Variant
-	switch uploadCfg.provider {
-	case cloudprovider.AWS:
-		attestation = variant.AWSSEVSNP{}
-	case cloudprovider.Azure:
-		attestation = variant.AzureSEVSNP{}
-	case cloudprovider.GCP:
-		attestation = variant.GCPSEVSNP{}
-	default:
-		return fmt.Errorf("unsupported cloud provider: %s", uploadCfg.provider)
-	}
-
-	return uploadReport(ctx, attestation, client, uploadCfg, file.NewHandler(afero.NewOsFs()), log)
+	return uploadReport(ctx, client, uploadCfg, file.NewHandler(afero.NewOsFs()), log)
 }
 
-func uploadReport(ctx context.Context,
-	attestation variant.Variant,
-	client *attestationconfigapi.Client,
-	cfg uploadConfig,
-	fs file.Handler,
-	log *slog.Logger,
+func uploadReport(
+	ctx context.Context, apiClient *client.Client,
+	cfg uploadConfig, fs file.Handler, log *slog.Logger,
 ) error {
-	if cfg.kind != snpReport {
+	if cfg.kind != attestationReport {
 		return fmt.Errorf("kind %s not supported", cfg.kind)
 	}
 
-	log.Info(fmt.Sprintf("Reading SNP report from file: %s", cfg.path))
-	var report verify.Report
-	if err := fs.ReadJSON(cfg.path, &report); err != nil {
-		return fmt.Errorf("reading snp report: %w", err)
-	}
-
-	inputVersion := convertTCBVersionToSNPVersion(report.SNPReport.LaunchTCB)
-	log.Info(fmt.Sprintf("Input report: %+v", inputVersion))
-
-	latestAPIVersionAPI, err := attestationconfigapi.NewFetcherWithCustomCDNAndCosignKey(cfg.url, cfg.cosignPublicKey).FetchSEVSNPVersionLatest(ctx, attestation)
+	apiFetcher := attestationconfigapi.NewFetcherWithCustomCDNAndCosignKey(cfg.url, cfg.cosignPublicKey)
+	latestVersionInAPI, err := apiFetcher.FetchLatestVersion(ctx, cfg.variant)
 	if err != nil {
-		if errors.Is(err, attestationconfigapi.ErrNoVersionsFound) {
+		var notFoundErr *fetcher.NotFoundError
+		if errors.As(err, &notFoundErr) {
 			log.Info("No versions found in API, but assuming that we are uploading the first version.")
 		} else {
 			return fmt.Errorf("fetching latest version: %w", err)
 		}
 	}
 
-	latestAPIVersion := latestAPIVersionAPI.SEVSNPVersion
-	if err := client.UploadSEVSNPVersionLatest(ctx, attestation, inputVersion, latestAPIVersion, cfg.uploadDate, cfg.force); err != nil {
-		if errors.Is(err, attestationconfigapi.ErrNoNewerVersion) {
-			log.Info(fmt.Sprintf("Input version: %+v is not newer than latest API version: %+v", inputVersion, latestAPIVersion))
-			return nil
+	var newVersion, latestVersion any
+	switch cfg.variant {
+	case variant.AWSSEVSNP{}, variant.AzureSEVSNP{}, variant.GCPSEVSNP{}:
+		latestVersion = latestVersionInAPI.SEVSNPVersion
+
+		log.Info(fmt.Sprintf("Reading SNP report from file: %s", cfg.path))
+		newVersion, err = readSNPReport(cfg.path, fs)
+		if err != nil {
+			return err
 		}
+		log.Info(fmt.Sprintf("Input SNP report: %+v", newVersion))
+
+	case variant.AzureTDX{}:
+		latestVersion = latestVersionInAPI.TDXVersion
+
+		log.Info(fmt.Sprintf("Reading TDX report from file: %s", cfg.path))
+		newVersion, err = readTDXReport(cfg.path, fs)
+		if err != nil {
+			return err
+		}
+		log.Info(fmt.Sprintf("Input TDX report: %+v", newVersion))
+
+	default:
+		return fmt.Errorf("variant %s not supported", cfg.variant)
+	}
+
+	if err := apiClient.UploadLatestVersion(
+		ctx, cfg.variant, newVersion, latestVersion, cfg.uploadDate, cfg.force,
+	); err != nil && !errors.Is(err, client.ErrNoNewerVersion) {
 		return fmt.Errorf("updating latest version: %w", err)
 	}
 
@@ -157,8 +158,18 @@ func convertTCBVersionToSNPVersion(tcb verify.TCBVersion) attestationconfigapi.S
 	}
 }
 
+func convertQuoteToTDXVersion(quote *tdx.QuoteV4) attestationconfigapi.TDXVersion {
+	return attestationconfigapi.TDXVersion{
+		QESVN:      binary.LittleEndian.Uint16(quote.Header.QeSvn),
+		PCESVN:     binary.LittleEndian.Uint16(quote.Header.PceSvn),
+		QEVendorID: [16]byte(quote.Header.QeVendorId),
+		XFAM:       [8]byte(quote.TdQuoteBody.Xfam),
+		TEETCBSVN:  [16]byte(quote.TdQuoteBody.TeeTcbSvn),
+	}
+}
+
 type uploadConfig struct {
-	provider        cloudprovider.Provider
+	variant         variant.Variant
 	kind            objectKind
 	path            string
 	uploadDate      time.Time
@@ -178,7 +189,7 @@ func newConfig(cmd *cobra.Command, args [3]string) (uploadConfig, error) {
 	}
 	uploadDate := time.Now()
 	if dateStr != "" {
-		uploadDate, err = time.Parse(attestationconfigapi.VersionFormat, dateStr)
+		uploadDate, err = time.Parse(client.VersionFormat, dateStr)
 		if err != nil {
 			return uploadConfig{}, fmt.Errorf("parsing date: %w", err)
 		}
@@ -210,12 +221,16 @@ func newConfig(cmd *cobra.Command, args [3]string) (uploadConfig, error) {
 		return uploadConfig{}, fmt.Errorf("getting cache window size: %w", err)
 	}
 
-	provider := cloudprovider.FromString(args[0])
+	variant, err := variant.FromString(args[0])
+	if err != nil {
+		return uploadConfig{}, fmt.Errorf("invalid attestation variant: %q: %w", args[0], err)
+	}
+
 	kind := kindFromString(args[1])
 	path := args[2]
 
 	return uploadConfig{
-		provider:        provider,
+		variant:         variant,
 		kind:            kind,
 		path:            path,
 		uploadDate:      uploadDate,

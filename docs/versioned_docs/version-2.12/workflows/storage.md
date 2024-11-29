@@ -21,30 +21,30 @@ For more details see [encrypted persistent storage](../architecture/encrypted-st
 
 Constellation supports the following drivers, which offer node-level encryption and optional integrity protection.
 
-<tabs groupId="csp">
-<tabItem value="azure" label="Azure">
+<Tabs groupId="csp">
+<TabItem value="azure" label="Azure">
 
 **Constellation CSI driver for Azure Disk**:
 Mount Azure [Disk Storage](https://azure.microsoft.com/en-us/services/storage/disks/#overview) into your Constellation cluster.
 See the instructions on how to [install the Constellation CSI driver](#installation) or check out the [repository](https://github.com/edgelesssys/constellation-azuredisk-csi-driver) for more information.
 Since Azure Disks are mounted as `ReadWriteOnce`, they're only available to a single pod.
 
-</tabItem>
-<tabItem value="gcp" label="GCP">
+</TabItem>
+<TabItem value="gcp" label="GCP">
 
 **Constellation CSI driver for GCP Persistent Disk**:
 Mount [Persistent Disk](https://cloud.google.com/persistent-disk) block storage into your Constellation cluster.
 Follow the instructions on how to [install the Constellation CSI driver](#installation) or check out the [repository](https://github.com/edgelesssys/constellation-gcp-compute-persistent-disk-csi-driver) for more information.
 
-</tabItem>
-<tabItem value="aws" label="AWS">
+</TabItem>
+<TabItem value="aws" label="AWS">
 
 **Constellation CSI driver for AWS Elastic Block Store**
 Mount [Elastic Block Store](https://aws.amazon.com/ebs/) storage volumes into your Constellation cluster.
 Follow the instructions on how to [install the Constellation CSI driver](#installation) or check out the [repository](https://github.com/edgelesssys/constellation-aws-ebs-csi-driver) for more information.
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 Note that in case the options above aren't a suitable solution for you, Constellation is compatible with all other CSI-based storage options. For example, you can use [AWS EFS](https://docs.aws.amazon.com/en_en/eks/latest/userguide/efs-csi.html), [Azure Files](https://docs.microsoft.com/en-us/azure/storage/files/storage-files-introduction), or [GCP Filestore](https://cloud.google.com/filestore) with Constellation out of the box. Constellation is just not providing transparent encryption on the node level for these storage types yet.
 
@@ -53,8 +53,8 @@ Note that in case the options above aren't a suitable solution for you, Constell
 The Constellation CLI automatically installs Constellation's CSI driver for the selected CSP in your cluster.
 If you don't need a CSI driver or wish to deploy your own, you can disable the automatic installation by setting `deployCSIDriver` to `false` in your Constellation config file.
 
-<tabs groupId="csp">
-<tabItem value="azure" label="Azure">
+<Tabs groupId="csp">
+<TabItem value="azure" label="Azure">
 
 Azure comes with two storage classes by default.
 
@@ -82,8 +82,8 @@ Note that volume expansion isn't supported for integrity-protected disks.
 
 :::
 
-</tabItem>
-<tabItem value="gcp" label="GCP">
+</TabItem>
+<TabItem value="gcp" label="GCP">
 
 GCP comes with two storage classes by default.
 
@@ -111,8 +111,8 @@ Note that volume expansion isn't supported for integrity-protected disks.
 
 :::
 
-</tabItem>
-<tabItem value="aws" label="AWS">
+</TabItem>
+<TabItem value="aws" label="AWS">
 
 AWS comes with two storage classes by default.
 
@@ -140,8 +140,8 @@ Note that volume expansion isn't supported for integrity-protected disks.
 
 :::
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 1. Create a [persistent volume](https://kubernetes.io/docs/concepts/storage/persistent-volumes/)
 

@@ -2,11 +2,11 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "3.92.0"
+      version = "4.1.0"
     }
     random = {
       source  = "hashicorp/random"
-      version = "3.6.0"
+      version = "3.6.2"
     }
   }
 }
@@ -45,6 +45,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
   provision_vm_agent              = false
   vtpm_enabled                    = true
   disable_password_authentication = false
+  extension_operations_enabled    = false
   upgrade_mode                    = "Manual"
   secure_boot_enabled             = var.secure_boot
   # specify the image id only if a non-marketplace image is used
@@ -56,7 +57,9 @@ resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
     identity_ids = [var.user_assigned_identity]
   }
 
-  boot_diagnostics {}
+  boot_diagnostics {
+    storage_account_uri = null
+  }
 
   dynamic "os_disk" {
     for_each = var.confidential_vm ? [1] : [] # if confidential_vm is true
@@ -119,6 +122,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
       instances,              # required. autoscaling modifies the instance count externally
       source_image_id,        # required. update procedure modifies the image id externally
       source_image_reference, # required. update procedure modifies the image reference externally
+      network_interface[0].ip_configuration[0].load_balancer_backend_address_pool_ids
     ]
   }
 }

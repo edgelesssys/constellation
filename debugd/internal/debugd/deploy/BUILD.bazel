@@ -18,7 +18,7 @@ go_library(
         "//internal/constants",
         "@com_github_coreos_go_systemd_v22//dbus",
         "@com_github_spf13_afero//:afero",
-        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//:grpc",
         "@org_golang_google_grpc//credentials/insecure",
     ],
 )
@@ -39,7 +39,7 @@ go_test(
         "@com_github_spf13_afero//:afero",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
-        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//:grpc",
         "@org_uber_go_goleak//:goleak",
     ],
 )

@@ -2,11 +2,11 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "3.92.0"
+      version = "4.1.0"
     }
     random = {
       source  = "hashicorp/random"
-      version = "3.6.0"
+      version = "3.6.2"
     }
     tls = {
       source  = "hashicorp/tls"
@@ -14,7 +14,7 @@ terraform {
     }
     cloudinit = {
       source  = "hashicorp/cloudinit"
-      version = "2.3.3"
+      version = "2.3.4"
     }
   }
 }
@@ -22,6 +22,9 @@ terraform {
 provider "azurerm" {
   use_oidc = true
   features {}
+  # This enables all resource providers.
+  # In the future, we might want to use `resource_providers_to_register` to registers just the ones we need.
+  resource_provider_registrations = "all"
 }
 
 provider "tls" {}

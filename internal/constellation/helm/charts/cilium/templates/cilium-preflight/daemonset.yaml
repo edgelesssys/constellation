@@ -70,8 +70,13 @@ spec:
               - /tmp/ready
             initialDelaySeconds: 5
             periodSeconds: 5
-          {{- with .Values.preflight.extraEnv }}
           env:
+          - name: K8S_NODE_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: spec.nodeName
+          {{- with .Values.preflight.extraEnv }}
             {{- toYaml . | trim | nindent 12 }}
           {{- end }}
           volumeMounts:
@@ -171,10 +176,13 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       restartPolicy: Always
       priorityClassName: {{ include "cilium.priorityClass" (list $ .Values.preflight.priorityClassName "system-node-critical") }}
-      serviceAccount: {{ .Values.serviceAccounts.preflight.name | quote }}
       serviceAccountName: {{ .Values.serviceAccounts.preflight.name | quote }}
       automountServiceAccountToken: {{ .Values.serviceAccounts.preflight.automount }}
       terminationGracePeriodSeconds: {{ .Values.preflight.terminationGracePeriodSeconds }}
+      {{- with .Values.preflight.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- with .Values.preflight.tolerations }}
       tolerations:
         {{- toYaml . | trim | nindent 8 }}

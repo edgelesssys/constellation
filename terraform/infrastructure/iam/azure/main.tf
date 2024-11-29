@@ -2,11 +2,11 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "3.92.0"
+      version = "4.1.0"
     }
     azuread = {
       source  = "hashicorp/azuread"
-      version = "2.43.0"
+      version = "3.0.2"
     }
   }
 }
@@ -18,6 +18,10 @@ provider "azurerm" {
       prevent_deletion_if_contains_resources = false
     }
   }
+  subscription_id = var.subscription_id
+  # This enables all resource providers.
+  # In the future, we might want to use `resource_providers_to_register` to registers just the ones we need.
+  resource_provider_registrations = "all"
 }
 
 # Configure Azure active directory provider

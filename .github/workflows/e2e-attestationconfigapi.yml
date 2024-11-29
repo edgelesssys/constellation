@@ -17,8 +17,8 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        csp: ["azure", "aws", "gcp"]
-    runs-on: ubuntu-22.04
+        attestationVariant: ["azure-sev-snp", "azure-tdx", "aws-sev-snp", "gcp-sev-snp"]
+    runs-on: ubuntu-24.04
     permissions:
       id-token: write
       contents: read
@@ -26,7 +26,7 @@ jobs:
     steps:
       - name: Checkout
         id: checkout
-        uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           # Don't trigger in forks, use head on pull requests, use default otherwise.
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || github.event.pull_request.head.sha || '' }}
@@ -36,4 +36,4 @@ jobs:
         with:
           cosignPrivateKey: ${{ secrets.COSIGN_DEV_PRIVATE_KEY }}
           cosignPassword: ${{ secrets.COSIGN_DEV_PASSWORD }}
-          csp: ${{ matrix.csp }}
+          attestationVariant: ${{ matrix.attestationVariant }}

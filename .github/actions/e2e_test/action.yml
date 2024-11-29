@@ -46,6 +46,9 @@ inputs:
     description: "AWS OpenSearch User to upload the benchmark results."
   awsOpenSearchPwd:
     description: "AWS OpenSearch Password to upload the benchmark results."
+  azureSubscriptionID:
+    description: "Azure subscription ID to deploy Constellation in."
+    required: true
   azureClusterCreateCredentials:
     description: "Azure credentials authorized to create a Constellation cluster."
     required: true
@@ -53,7 +56,7 @@ inputs:
     description: "Azure credentials authorized to create an IAM configuration."
     required: true
   test:
-    description: "The test to run. Can currently be one of [sonobuoy full, sonobuoy quick, autoscaling, lb, perf-bench, verify, recover, malicious join, nop, upgrade]."
+    description: "The test to run. Can currently be one of [sonobuoy full, sonobuoy quick, sonobuoy conformance, autoscaling, lb, perf-bench, verify, recover, malicious join, nop, upgrade]."
     required: true
   sonobuoyTestSuiteCmd:
     description: "The sonobuoy test suite to run."
@@ -103,7 +106,7 @@ runs:
   using: "composite"
   steps:
     - name: Check input
-      if: (!contains(fromJson('["sonobuoy full", "sonobuoy quick", "autoscaling", "perf-bench", "verify", "lb", "recover", "malicious join", "s3proxy", "nop", "upgrade"]'), inputs.test))
+      if: (!contains(fromJson('["sonobuoy full", "sonobuoy quick", "sonobuoy conformance", "autoscaling", "perf-bench", "verify", "lb", "recover", "malicious join", "s3proxy", "nop", "upgrade"]'), inputs.test))
       shell: bash
       run: |
         echo "::error::Invalid input for test field: ${{ inputs.test }}"
@@ -249,6 +252,7 @@ runs:
         attestationVariant: ${{ inputs.attestationVariant }}
         namePrefix: ${{ steps.create-prefix.outputs.prefix }}
         awsZone: ${{ inputs.regionZone || 'us-east-2c' }}
+        azureSubscriptionID: ${{ inputs.azureSubscriptionID }}
         azureRegion: ${{ inputs.regionZone || steps.pick-az-region.outputs.region  }}
         gcpProjectID: ${{ inputs.gcpProject }}
         gcpZone: ${{ inputs.regionZone || 'europe-west3-b' }}
@@ -344,6 +348,15 @@ runs:
       with:
         # TODO(3u13r): Remove E2E_SKIP once AB#2174 is resolved
         sonobuoyTestSuiteCmd: '--plugin e2e --plugin-env e2e.E2E_FOCUS="\[Conformance\]" --plugin-env e2e.E2E_SKIP="for service with type clusterIP|HostPort validates that there is no conflict between pods with same hostPort but different hostIP and protocol|Services should serve endpoints on same port and different protocols" --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/102cd62a4091f80a795189f64ccc20738f931ef0/cis-benchmarks/kube-bench-plugin.yaml --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/102cd62a4091f80a795189f64ccc20738f931ef0/cis-benchmarks/kube-bench-master-plugin.yaml'
+        kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
+        artifactNameSuffix: ${{ steps.create-prefix.outputs.prefix }}
+        encryptionSecret: ${{ inputs.encryptionSecret }}
+
+    - name: Run sonobuoy conformance
+      if: inputs.test == 'sonobuoy conformance'
+      uses: ./.github/actions/e2e_sonobuoy
+      with:
+        sonobuoyTestSuiteCmd: "--plugin e2e --mode certified-conformance"
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
         artifactNameSuffix: ${{ steps.create-prefix.outputs.prefix }}
         encryptionSecret: ${{ inputs.encryptionSecret }}

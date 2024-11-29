@@ -15,9 +15,9 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"helm.sh/helm/pkg/ignore"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
+	"helm.sh/helm/v3/pkg/ignore"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -31,6 +31,7 @@ import (
 
 // Run `go generate` to download (and patch) upstream helm charts.
 //go:generate ./generateCilium.sh
+//go:generate go run ./corednsgen/
 //go:generate ./update-csi-charts.sh
 //go:generate ./generateCertManager.sh
 //go:generate ./update-aws-load-balancer-chart.sh
@@ -46,6 +47,7 @@ type chartInfo struct {
 
 var (
 	// Charts we fetch from an upstream with real versions.
+	coreDNSInfo         = chartInfo{releaseName: "coredns", chartName: "coredns", path: "charts/coredns"}
 	ciliumInfo          = chartInfo{releaseName: "cilium", chartName: "cilium", path: "charts/cilium"}
 	certManagerInfo     = chartInfo{releaseName: "cert-manager", chartName: "cert-manager", path: "charts/cert-manager"}
 	awsLBControllerInfo = chartInfo{releaseName: "aws-load-balancer-controller", chartName: "aws-load-balancer-controller", path: "charts/aws-load-balancer-controller"}
@@ -124,7 +126,7 @@ type OpenStackValues struct {
 
 // loadReleases loads the embedded helm charts and returns them as a HelmReleases object.
 func (i *chartLoader) loadReleases(conformanceMode, deployCSIDriver bool, helmWaitMode WaitMode, masterSecret uri.MasterSecret,
-	serviceAccURI string, openStackValues *OpenStackValues,
+	serviceAccURI string, openStackValues *OpenStackValues, serviceCIDR string,
 ) (releaseApplyOrder, error) {
 	ciliumRelease, err := i.loadRelease(ciliumInfo, helmWaitMode)
 	if err != nil {
@@ -132,6 +134,16 @@ func (i *chartLoader) loadReleases(conformanceMode, deployCSIDriver bool, helmWa
 	}
 	ciliumVals := extraCiliumValues(i.csp, conformanceMode, i.stateFile.Infrastructure)
 	ciliumRelease.values = mergeMaps(ciliumRelease.values, ciliumVals)
+
+	coreDNSRelease, err := i.loadRelease(coreDNSInfo, helmWaitMode)
+	if err != nil {
+		return nil, fmt.Errorf("loading coredns: %w", err)
+	}
+	coreDNSVals, err := extraCoreDNSValues(serviceCIDR)
+	if err != nil {
+		return nil, fmt.Errorf("loading coredns values: %w", err)
+	}
+	coreDNSRelease.values = mergeMaps(coreDNSRelease.values, coreDNSVals)
 
 	certManagerRelease, err := i.loadRelease(certManagerInfo, helmWaitMode)
 	if err != nil {
@@ -156,7 +168,7 @@ func (i *chartLoader) loadReleases(conformanceMode, deployCSIDriver bool, helmWa
 	}
 	conServicesRelease.values = mergeMaps(conServicesRelease.values, svcVals)
 
-	releases := releaseApplyOrder{ciliumRelease, conServicesRelease, certManagerRelease, operatorRelease}
+	releases := releaseApplyOrder{ciliumRelease, coreDNSRelease, conServicesRelease, certManagerRelease, operatorRelease}
 	if deployCSIDriver {
 		csiRelease, err := i.loadRelease(csiInfo, WaitModeNone)
 		if err != nil {
@@ -224,6 +236,8 @@ func (i *chartLoader) loadRelease(info chartInfo, helmWaitMode WaitMode) (releas
 		values = i.loadAWSLBControllerValues()
 	case csiInfo.releaseName:
 		values = i.loadCSIValues()
+	default:
+		values = map[string]any{}
 	}
 
 	// Charts we package ourselves have version 0.0.0.
@@ -367,16 +381,18 @@ func (i *chartLoader) loadCiliumValues(cloudprovider.Provider) (map[string]any, 
 		"image": map[string]any{
 			"repository": "ghcr.io/edgelesssys/cilium/cilium",
 			"suffix":     "",
-			"tag":        "v1.15.0-pre.3-edg.2",
-			"digest":     "sha256:c21b7fbbb084a128a479d6170e5f89ad2768dfecb4af10ee6a99ffe5d1a11749",
+			"tag":        "v1.15.8-edg.0",
+			"digest":     "sha256:67aedd821a732e9ba3e34d200c389122384b70c05ba9a5ffb6ad813a53f2d4db",
 			"useDigest":  true,
 		},
 		"operator": map[string]any{
 			"image": map[string]any{
-				"repository":    "ghcr.io/edgelesssys/cilium/operator",
-				"suffix":        "",
-				"tag":           "v1.15.0-pre.3-edg.2",
-				"genericDigest": "sha256:4ea9de5cfeb4554b82b509f0de41120a90e35a15e81a04f76c4cb405ddea3e7c",
+				"repository": "ghcr.io/edgelesssys/cilium/operator",
+				"suffix":     "",
+				"tag":        "v1.15.8-edg.0",
+				// Careful: this is the digest of ghcr.io/.../operator-generic!
+				// See magic image manipulation in ./helm/charts/cilium/templates/cilium-operator/_helpers.tpl.
+				"genericDigest": "sha256:dd41e2a65c607ac929d872f10b9d0c3eff88aafa99e7c062e9c240b14943dd2e",
 				"useDigest":     true,
 			},
 			"podDisruptionBudget": map[string]any{

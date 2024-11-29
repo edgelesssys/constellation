@@ -23,6 +23,8 @@ import (
 type Client struct {
 	*apiclient.Client
 	clientClose func(ctx context.Context) error
+
+	log *slog.Logger
 }
 
 // NewClient creates a new client for the versions API.
@@ -31,8 +33,9 @@ func NewClient(ctx context.Context, region, bucket, distributionID string, dryRu
 ) (*Client, CloseFunc, error) {
 	genericClient, genericClientClose, err := apiclient.NewClient(ctx, region, bucket, distributionID, dryRun, log)
 	versionsClient := &Client{
-		genericClient,
-		genericClientClose,
+		Client:      genericClient,
+		clientClose: genericClientClose,
+		log:         log,
 	}
 	versionsClientClose := func(ctx context.Context) error {
 		return versionsClient.Close(ctx)
@@ -50,8 +53,9 @@ func NewReadOnlyClient(ctx context.Context, region, bucket, distributionID strin
 		return nil, nil, err
 	}
 	versionsClient := &Client{
-		genericClient,
-		genericClientClose,
+		Client:      genericClient,
+		clientClose: genericClientClose,
+		log:         log,
 	}
 	versionsClientClose := func(ctx context.Context) error {
 		return versionsClient.Close(ctx)
@@ -131,18 +135,18 @@ func (c *Client) DeleteRef(ctx context.Context, ref string) error {
 func (c *Client) DeleteVersion(ctx context.Context, ver Version) error {
 	var retErr error
 
-	c.Client.Logger.Debug(fmt.Sprintf("Deleting version %q from minor version list", ver.version))
+	c.log.Debug(fmt.Sprintf("Deleting version %q from minor version list", ver.version))
 	possibleNewLatest, err := c.deleteVersionFromMinorVersionList(ctx, ver)
 	if err != nil {
 		retErr = errors.Join(retErr, fmt.Errorf("removing from minor version list: %w", err))
 	}
 
-	c.Client.Logger.Debug(fmt.Sprintf("Checking latest version for %q", ver.version))
+	c.log.Debug(fmt.Sprintf("Checking latest version for %q", ver.version))
 	if err := c.deleteVersionFromLatest(ctx, ver, possibleNewLatest); err != nil {
 		retErr = errors.Join(retErr, fmt.Errorf("updating latest version: %w", err))
 	}
 
-	c.Client.Logger.Debug(fmt.Sprintf("Deleting artifact path %q for %q", ver.ArtifactPath(APIV1), ver.version))
+	c.log.Debug(fmt.Sprintf("Deleting artifact path %q for %q", ver.ArtifactPath(APIV1), ver.version))
 	if err := c.Client.DeletePath(ctx, ver.ArtifactPath(APIV1)); err != nil {
 		retErr = errors.Join(retErr, fmt.Errorf("deleting artifact path: %w", err))
 	}
@@ -159,20 +163,20 @@ func (c *Client) deleteVersionFromMinorVersionList(ctx context.Context, ver Vers
 		Base:        ver.WithGranularity(GranularityMinor),
 		Kind:        VersionKindImage,
 	}
-	c.Client.Logger.Debug(fmt.Sprintf("Fetching minor version list for version %q", ver.version))
+	c.log.Debug(fmt.Sprintf("Fetching minor version list for version %q", ver.version))
 	minorList, err := c.FetchVersionList(ctx, minorList)
 	var notFoundErr *apiclient.NotFoundError
 	if errors.As(err, &notFoundErr) {
-		c.Client.Logger.Warn(fmt.Sprintf("Minor version list for version %s not found", ver.version))
-		c.Client.Logger.Warn("Skipping update of minor version list")
+		c.log.Warn(fmt.Sprintf("Minor version list for version %s not found", ver.version))
+		c.log.Warn("Skipping update of minor version list")
 		return nil, nil
 	} else if err != nil {
 		return nil, fmt.Errorf("fetching minor version list for version %s: %w", ver.version, err)
 	}
 
 	if !minorList.Contains(ver.version) {
-		c.Client.Logger.Warn(fmt.Sprintf("Version %s is not in minor version list %s", ver.version, minorList.JSONPath()))
-		c.Client.Logger.Warn("Skipping update of minor version list")
+		c.log.Warn(fmt.Sprintf("Version %s is not in minor version list %s", ver.version, minorList.JSONPath()))
+		c.log.Warn("Skipping update of minor version list")
 		return nil, nil
 	}
 
@@ -192,20 +196,20 @@ func (c *Client) deleteVersionFromMinorVersionList(ctx context.Context, ver Vers
 			Kind:    VersionKindImage,
 			Version: minorList.Versions[len(minorList.Versions)-1],
 		}
-		c.Client.Logger.Debug(fmt.Sprintf("Possible latest version replacement %q", latest.Version))
+		c.log.Debug(fmt.Sprintf("Possible latest version replacement %q", latest.Version))
 	}
 
 	if c.Client.DryRun {
-		c.Client.Logger.Debug(fmt.Sprintf("DryRun: Updating minor version list %q to %v", minorList.JSONPath(), minorList))
+		c.log.Debug(fmt.Sprintf("DryRun: Updating minor version list %q to %v", minorList.JSONPath(), minorList))
 		return latest, nil
 	}
 
-	c.Client.Logger.Debug(fmt.Sprintf("Updating minor version list %q", minorList.JSONPath()))
+	c.log.Debug(fmt.Sprintf("Updating minor version list %q", minorList.JSONPath()))
 	if err := c.UpdateVersionList(ctx, minorList); err != nil {
 		return latest, fmt.Errorf("updating minor version list %s: %w", minorList.JSONPath(), err)
 	}
 
-	c.Client.Logger.Debug(fmt.Sprintf("Removed version %q from minor version list %q", ver.version, minorList.JSONPath()))
+	c.log.Debug(fmt.Sprintf("Removed version %q from minor version list %q", ver.version, minorList.JSONPath()))
 	return latest, nil
 }
 
@@ -216,33 +220,33 @@ func (c *Client) deleteVersionFromLatest(ctx context.Context, ver Version, possi
 		Stream: ver.stream,
 		Kind:   VersionKindImage,
 	}
-	c.Client.Logger.Debug(fmt.Sprintf("Fetching latest version from %q", latest.JSONPath()))
+	c.log.Debug(fmt.Sprintf("Fetching latest version from %q", latest.JSONPath()))
 	latest, err := c.FetchVersionLatest(ctx, latest)
 	var notFoundErr *apiclient.NotFoundError
 	if errors.As(err, &notFoundErr) {
-		c.Client.Logger.Warn(fmt.Sprintf("Latest version for %s not found", latest.JSONPath()))
+		c.log.Warn(fmt.Sprintf("Latest version for %s not found", latest.JSONPath()))
 		return nil
 	} else if err != nil {
 		return fmt.Errorf("fetching latest version: %w", err)
 	}
 
 	if latest.Version != ver.version {
-		c.Client.Logger.Debug(fmt.Sprintf("Latest version is %q, not the deleted version %q", latest.Version, ver.version))
+		c.log.Debug(fmt.Sprintf("Latest version is %q, not the deleted version %q", latest.Version, ver.version))
 		return nil
 	}
 
 	if possibleNewLatest == nil {
-		c.Client.Logger.Error(fmt.Sprintf("Latest version is %s, but no new latest version was found", latest.Version))
-		c.Client.Logger.Error(fmt.Sprintf("A manual update of latest at %s might be needed", latest.JSONPath()))
+		c.log.Error(fmt.Sprintf("Latest version is %s, but no new latest version was found", latest.Version))
+		c.log.Error(fmt.Sprintf("A manual update of latest at %s might be needed", latest.JSONPath()))
 		return fmt.Errorf("latest version is %s, but no new latest version was found", latest.Version)
 	}
 
 	if c.Client.DryRun {
-		c.Client.Logger.Debug(fmt.Sprintf("Would update latest version from %q to %q", latest.Version, possibleNewLatest.Version))
+		c.log.Debug(fmt.Sprintf("Would update latest version from %q to %q", latest.Version, possibleNewLatest.Version))
 		return nil
 	}
 
-	c.Client.Logger.Info(fmt.Sprintf("Updating latest version from %s to %s", latest.Version, possibleNewLatest.Version))
+	c.log.Info(fmt.Sprintf("Updating latest version from %s to %s", latest.Version, possibleNewLatest.Version))
 	if err := c.UpdateVersionLatest(ctx, *possibleNewLatest); err != nil {
 		return fmt.Errorf("updating latest version: %w", err)
 	}

@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euxo pipefail
+
+# For some reason yet unknown, SourceDateEpoch is not applied correctly to the
+# users added by systemd-sysusers. This has only been observed in our mkosi
+# flake so far, not in an upstream mkosi configuration.
+# TODO(burgerdev): wait for a couple of Nix package upgrades and try again?
+
+# Strategy: unset the "last password change" date without leaving a trace in
+# /etc/shadow-.
+tmp=$(mktemp)
+cp -a "${BUILDROOT}/etc/shadow-" "${tmp}"
+mkosi-chroot chage -d "" etcd
+cp -a "${tmp}" "${BUILDROOT}/etc/shadow-"

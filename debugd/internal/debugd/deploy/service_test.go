@@ -104,6 +104,7 @@ func TestSystemdAction(t *testing.T) {
 			manager := ServiceManager{
 				log:                      logger.NewTest(t),
 				dbus:                     &tc.dbus,
+				journal:                  &stubJournalReader{},
 				fs:                       fs,
 				systemdUnitFilewriteLock: sync.Mutex{},
 			}
@@ -183,6 +184,7 @@ func TestWriteSystemdUnitFile(t *testing.T) {
 			manager := ServiceManager{
 				log:                      logger.NewTest(t),
 				dbus:                     &tc.dbus,
+				journal:                  &stubJournalReader{},
 				fs:                       fs,
 				systemdUnitFilewriteLock: sync.Mutex{},
 			}
@@ -218,7 +220,7 @@ func TestOverrideServiceUnitExecStart(t *testing.T) {
 			},
 			unitName:         "test",
 			execStart:        "/run/state/bin/test",
-			wantFileContents: "[Service]\nExecStart=\nExecStart=/run/state/bin/test $CONSTELLATION_DEBUG_FLAGS\n",
+			wantFileContents: "[Service]\nExecStart=\nExecStart=/run/state/bin/test\n",
 			wantActionCalls: []dbusConnActionInput{
 				{name: "test.service", mode: "replace"},
 			},
@@ -264,7 +266,7 @@ func TestOverrideServiceUnitExecStart(t *testing.T) {
 			},
 			unitName:         "test",
 			execStart:        "/run/state/bin/test",
-			wantFileContents: "[Service]\nExecStart=\nExecStart=/run/state/bin/test $CONSTELLATION_DEBUG_FLAGS\n",
+			wantFileContents: "[Service]\nExecStart=\nExecStart=/run/state/bin/test\n",
 			wantActionCalls: []dbusConnActionInput{
 				{name: "test.service", mode: "replace"},
 			},
@@ -296,6 +298,7 @@ func TestOverrideServiceUnitExecStart(t *testing.T) {
 			manager := ServiceManager{
 				log:                      logger.NewTest(t),
 				dbus:                     &tc.dbus,
+				journal:                  &stubJournalReader{},
 				fs:                       fs,
 				systemdUnitFilewriteLock: sync.Mutex{},
 			}
@@ -353,6 +356,10 @@ func (c *fakeDbusConn) StopUnitContext(_ context.Context, name string, mode stri
 	return c.jobID, c.actionErr
 }
 
+func (c *fakeDbusConn) ResetFailedUnitContext(_ context.Context, _ string) error {
+	return nil
+}
+
 func (c *fakeDbusConn) RestartUnitContext(_ context.Context, name string, mode string, ch chan<- string) (int, error) {
 	c.inputs = append(c.inputs, dbusConnActionInput{name: name, mode: mode})
 	ch <- c.result
@@ -367,3 +374,9 @@ func (c *fakeDbusConn) ReloadContext(_ context.Context) error {
 }
 
 func (c *fakeDbusConn) Close() {}
+
+type stubJournalReader struct{}
+
+func (s *stubJournalReader) readJournal(_ string) string {
+	return ""
+}

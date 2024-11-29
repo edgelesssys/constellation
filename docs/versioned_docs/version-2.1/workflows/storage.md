@@ -21,14 +21,14 @@ For more details see [encrypted persistent storage](../architecture/encrypted-st
 
 Constellation supports the following drivers, which offer node-level encryption and optional integrity protection.
 
-<tabs groupId="csp">
-<tabItem value="azure" label="Azure">
+<Tabs groupId="csp">
+<TabItem value="azure" label="Azure">
 
 **Constellation CSI driver for Azure Disk**:
 Mount Azure [Disk Storage](https://azure.microsoft.com/en-us/services/storage/disks/#overview) into your Constellation cluster. See the instructions on how to [install the Constellation CSI driver](#installation) or check out the [repository](https://github.com/edgelesssys/constellation-azuredisk-csi-driver) for more information. Since Azure Disks are mounted as ReadWriteOnce, they're only available to a single pod.
 
-</tabItem>
-<tabItem value="gcp" label="GCP">
+</TabItem>
+<TabItem value="gcp" label="GCP">
 
 **Constellation CSI driver for GCP Persistent Disk**:
 Mount [Persistent Disk](https://cloud.google.com/persistent-disk) block storage into your Constellation cluster.
@@ -36,8 +36,8 @@ This includes support for [volume snapshots](https://cloud.google.com/kubernetes
 You can use them to bring a volume back to a prior state or provision new volumes.
 Follow the instructions on how to [install the Constellation CSI driver](#installation) or check out the [repository](https://github.com/edgelesssys/constellation-gcp-compute-persistent-disk-csi-driver) for information about the configuration.
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 Note that in case the options above aren't a suitable solution for you, Constellation is compatible with all other CSI-based storage options. For example, you can use [Azure Files](https://docs.microsoft.com/en-us/azure/storage/files/storage-files-introduction) or [GCP Filestore](https://cloud.google.com/filestore) with Constellation out of the box. Constellation is just not providing transparent encryption on the node level for these storage types yet.
 
@@ -45,8 +45,8 @@ Note that in case the options above aren't a suitable solution for you, Constell
 
 The following installation guide gives an overview of how to securely use CSI-based cloud storage for persistent volumes in Constellation.
 
-<tabs groupId="csp">
-<tabItem value="azure" label="Azure">
+<Tabs groupId="csp">
+<TabItem value="azure" label="Azure">
 
 1. Install the driver:
 
@@ -56,8 +56,8 @@ The following installation guide gives an overview of how to securely use CSI-ba
     helm install azuredisk-csi-driver charts/edgeless --namespace kube-system
     ```
 
-</tabItem>
-<tabItem value="gcp" label="GCP">
+</TabItem>
+<TabItem value="gcp" label="GCP">
 
 1. Install the driver:
 
@@ -66,8 +66,8 @@ The following installation guide gives an overview of how to securely use CSI-ba
     helm install gcp-compute-persistent-disk-csi-driver charts/ --namespace kube-system
     ```
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
 
 :::info
 
@@ -138,8 +138,8 @@ The default storage class is responsible for all persistent volume claims that d
 The previous instructions create a storage class with encryption enabled and sets this as the default class.
 In case you wish to change it, follow the steps below:
 
-<tabs groupId="csp">
-<tabItem value="azure" label="Azure">
+<Tabs groupId="csp">
+<TabItem value="azure" label="Azure">
 
   1. List the storage classes in your cluster:
 
@@ -185,8 +185,8 @@ In case you wish to change it, follow the steps below:
       integrity-encrypted-rwo (default)   azuredisk.csi.confidential.cloud   Delete          Immediate           false                  1d
       ```
 
-</tabItem>
-<tabItem value="gcp" label="GCP">
+</TabItem>
+<TabItem value="gcp" label="GCP">
 
   1. List the storage classes in your cluster:
 
@@ -232,5 +232,5 @@ In case you wish to change it, follow the steps below:
       integrity-encrypted-rwo (default)   gcp.csi.confidential.cloud   Delete          Immediate           false                  1d
       ```
 
-</tabItem>
-</tabs>
+</TabItem>
+</Tabs>
