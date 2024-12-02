@@ -79,6 +79,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      actions: write
     env:
       VERSION: ${{ inputs.version }}
       MAJOR_MINOR: ${{ needs.verify-inputs.outputs.MAJOR_MINOR }}
