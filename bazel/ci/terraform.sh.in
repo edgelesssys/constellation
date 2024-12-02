@@ -143,6 +143,7 @@ check() {
     done
     echo "This may take 5-10 min..."
     for module in "${terraformLockModules[@]}"; do
+      echo "Generating lock file for ${module}"
       ${terraform} -chdir="${module}" init > /dev/null
       ${terraform} -chdir="${module}" providers lock -platform=linux_arm64 > /dev/null
       ${terraform} -chdir="${module}" providers lock -platform=linux_amd64 > /dev/null
