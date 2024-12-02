@@ -150,8 +150,10 @@ type BazelFile struct {
 type BazelFileType int
 
 const (
-	BazelFileTypeBzl       = iota // BazelFileTypeBzl is a .bzl file
-	BazelFileTypeWorkspace        // BazelFileTypeWorkspace is a WORKSPACE or WORKSPACE.bzlmod file
+	// BazelFileTypeBzl is a .bzl file.
+	BazelFileTypeBzl = iota
+	// BazelFileTypeWorkspace is a WORKSPACE or WORKSPACE.bzlmod file.
+	BazelFileTypeWorkspace
 )
 
 // LookupEnv can be the real os.LookupEnv or a mock for testing.
