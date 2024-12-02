@@ -17,5 +17,5 @@ The following Kubernetes versions are currently supported:
 <!--AUTO_GENERATED_BY_BAZEL-->
 <!--DO_NOT_EDIT-->
 * v1.28.15
-* v1.29.10
-* v1.30.6
+* v1.29.11
+* v1.30.7

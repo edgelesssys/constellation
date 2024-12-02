@@ -183,9 +183,9 @@ const (
 	//nolint:revive
 	V1_28 ValidK8sVersion = "v1.28.15" // renovate:kubernetes-release
 	//nolint:revive
-	V1_29 ValidK8sVersion = "v1.29.10" // renovate:kubernetes-release
+	V1_29 ValidK8sVersion = "v1.29.11" // renovate:kubernetes-release
 	//nolint:revive
-	V1_30 ValidK8sVersion = "v1.30.6" // renovate:kubernetes-release
+	V1_30 ValidK8sVersion = "v1.30.7" // renovate:kubernetes-release
 
 	// Default k8s version deployed by Constellation.
 	Default ValidK8sVersion = V1_29
@@ -265,7 +265,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.28.7@sha256:77906954da9171425c8c8d3286091818143b6dcf9039abd49b8f33f1502978a1", // renovate:container
 	},
 	V1_29: {
-		ClusterVersion: "v1.29.10", // renovate:kubernetes-release
+		ClusterVersion: "v1.29.11", // renovate:kubernetes-release
 		KubernetesComponents: components.Components{
 			{
 				Url:         "https://github.com/containernetworking/plugins/releases/download/v1.6.0/cni-plugins-linux-amd64-v1.6.0.tgz", // renovate:cni-plugins-release
@@ -298,15 +298,15 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 				Extract:     false,
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtYXBpc2VydmVyOnYxLjI5LjEwQHNoYTI1NjpiNDM2MmMyMjdmYjlhOGUxOTYxZTE3YmM1Y2I1NWUzZmVhNDQxNGRhOTkzNmQ3MTY2M2QyMjNkN2VkYTIzNjY5In1d",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtYXBpc2VydmVyOnYxLjI5LjExQHNoYTI1Njo2NTQ1ZjZmNjJjMWYwZjBhZmZmNTM0YzIyNzZiZDI0MmZmZGFjNTRlNzNiMjJjYzEwMzQzNTIyYzcyYjlmNzcxIn1d",
 				InstallPath: patchFilePath("kube-apiserver"),
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtY29udHJvbGxlci1tYW5hZ2VyOnYxLjI5LjEwQHNoYTI1NjpkNzQ1MjRhNGQ5ZDA3MTUxMGM1YWJiNjQwNGJmNGRhZjI2MDk1MTBkOGQ1ZjA2ODNlMWVmZDgzZDY5MTc2NjQ3In1d",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtY29udHJvbGxlci1tYW5hZ2VyOnYxLjI5LjExQHNoYTI1Njo1OTU1NDgyZDg5NWFhNGE0MTNhNzBhZjUwNjcwNjA1OTIzOGIzNjM3ZmQ3MzA1OTRlNTljOTkwOTU0MjIxZjEzIn1d",
 				InstallPath: patchFilePath("kube-controller-manager"),
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtc2NoZWR1bGVyOnYxLjI5LjEwQHNoYTI1Njo0MWYyZmIwMDVkYTNmYTU1MTJiZmM3ZjI2N2E2ZjA4YWFlYTI3YzlmN2M2ZDlhOTNjN2VlMjg2MDdjMWYyZjc3In1d",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtc2NoZWR1bGVyOnYxLjI5LjExQHNoYTI1NjpmZTA3OGYyNmJmMTQzMDFmNzk0NjhkNzlhNWQyZDQzMWIzNDZhNGFiYjFjYWI0ZTliMWY5YmE4OTE0OTY0MTYxIn1d",
 				InstallPath: patchFilePath("kube-scheduler"),
 			},
 			{
@@ -332,7 +332,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.29.5@sha256:76865740be7c965b35ee1524931bb4abfe4c27b5bfad280e84068cd6653ee7bb", // renovate:container
 	},
 	V1_30: {
-		ClusterVersion: "v1.30.6", // renovate:kubernetes-release
+		ClusterVersion: "v1.30.7", // renovate:kubernetes-release
 		KubernetesComponents: components.Components{
 			{
 				Url:         "https://github.com/containernetworking/plugins/releases/download/v1.6.0/cni-plugins-linux-amd64-v1.6.0.tgz", // renovate:cni-plugins-release
@@ -365,15 +365,15 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 				Extract:     false,
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtYXBpc2VydmVyOnYxLjMwLjZAc2hhMjU2OjNhODIwODk4Mzc5ODMxZWNmZjdjZjRjZTQ5NTRiYjdhNjUwNTk4OGVlZmNlZjE0NmZkMWVlMmY1NmEwMWNkYmIifV0=",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtYXBpc2VydmVyOnYxLjMwLjdAc2hhMjU2OjEzZjRmMGY1ODUwYjM5NzQyMTAxYzY1NmIxYmJkNTA5MGVhY2YyNzA4NGFkODliNDg5ZmM4MjRlZjQ4MmVkOWMifV0=",
 				InstallPath: patchFilePath("kube-apiserver"),
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtY29udHJvbGxlci1tYW5hZ2VyOnYxLjMwLjZAc2hhMjU2OjNhNDEyYzNjZGYzNWQzOWM4ZDM3NzQ4YjQ1N2E0ODZmYWFlN2M1ZjJlZTFkMWJhMjA1OWM3MDliYzU1MzQ2ODYifV0=",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtY29udHJvbGxlci1tYW5hZ2VyOnYxLjMwLjdAc2hhMjU2OjViOGRjMjZjMDViMjczY2UxOThmYmFmNGViMTc5ZjNiNmQ2OTE5YzZlMjExNmQzNmRjN2Y4MjU1NTM3NGM2ODcifV0=",
 				InstallPath: patchFilePath("kube-controller-manager"),
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtc2NoZWR1bGVyOnYxLjMwLjZAc2hhMjU2Ojk0ODM5NWMyODRkODJjOTg1ZjJkYzBkOTliNWI1MWIzY2E4NWViYTk3MDAzYmFiYmM3MzgzNGUwYWI5MWZhNTkifV0=",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtc2NoZWR1bGVyOnYxLjMwLjdAc2hhMjU2OjAwYjE2ZGI5OTExMDFiNzM2MWYyZjE4MDM1ZTFjNjUyNmMwY2U2YzlhOTU2ODUyNDgyNGI0YmNjZGYxYWZiZDYifV0=",
 				InstallPath: patchFilePath("kube-scheduler"),
 			},
 			{
