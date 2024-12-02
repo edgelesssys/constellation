@@ -514,16 +514,14 @@ multirun(
 )
 
 multirun(
-    name = "check",
+    name = "parallel_checks",
     testonly = True,
     commands = [
         ":gazelle_check",
         ":buildifier_check",
-        ":golangci_lint",
         ":terraform_check",
         ":golicenses_check",
         ":license_header_check",
-        ":govulncheck",
         ":deps_mirror_check",
         ":proto_targets_check",
         ":unused_gh_actions",
@@ -538,6 +536,19 @@ multirun(
         ],
     }),
     jobs = 0,  # execute concurrently
+    stop_on_error = False,
+    visibility = ["//visibility:public"],
+)
+
+multirun(
+    name = "check",
+    testonly = True,
+    commands = [
+        ":parallel_checks",
+        ":golangci_lint",
+        ":govulncheck",
+    ],
+    jobs = 1,  # execute sequentially to avoid running into memory issues on our CI runners
     stop_on_error = False,
     visibility = ["//visibility:public"],
 )
