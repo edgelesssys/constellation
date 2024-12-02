@@ -233,8 +233,8 @@ func (h *Handler) CopyFile(src, dst string, opts ...Option) error {
 }
 
 // RenameFile renames a file, overwriting any existing file at the destination.
-func (h *Handler) RenameFile(old, new string) error {
-	return h.fs.Rename(old, new)
+func (h *Handler) RenameFile(a, b string) error {
+	return h.fs.Rename(a, b)
 }
 
 // IsEmpty returns true if the given directory is empty.
