@@ -427,8 +427,11 @@ func TestListScalingGroups(t *testing.T) {
 			templateLabels: map[string]string{
 				"label": "value",
 			},
+			wantErr: true,
 		},
-		"invalid instance group manager": {},
+		"invalid instance group manager": {
+			wantErr: true,
+		},
 	}
 
 	for name, tc := range testCases {
