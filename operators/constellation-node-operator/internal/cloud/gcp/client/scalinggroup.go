@@ -105,6 +105,8 @@ func (c *Client) GetAutoscalingGroupName(scalingGroupID string) (string, error) 
 // ListScalingGroups retrieves a list of scaling groups for the cluster.
 func (c *Client) ListScalingGroups(ctx context.Context, uid string) ([]cspapi.ScalingGroup, error) {
 	results := []cspapi.ScalingGroup{}
+	var retErr error
+
 	iter := c.instanceGroupManagersAPI.AggregatedList(ctx, &computepb.AggregatedListInstanceGroupManagersRequest{
 		Project: c.projectID,
 	})
@@ -129,7 +131,8 @@ func (c *Client) ListScalingGroups(ctx context.Context, uid string) ([]cspapi.Sc
 			}
 			template, err := c.instanceTemplateAPI.Get(c.projectID, templateURI[len(templateURI)-1])
 			if err != nil {
-				return nil, fmt.Errorf("getting instance template: %w", err)
+				retErr = errors.Join(retErr, fmt.Errorf("getting instance template %q: %w", templateURI[len(templateURI)-1], err))
+				continue
 			}
 			if template.Properties == nil || template.Properties.Labels == nil {
 				continue
@@ -140,14 +143,16 @@ func (c *Client) ListScalingGroups(ctx context.Context, uid string) ([]cspapi.Sc
 
 			groupID, err := c.canonicalInstanceGroupID(ctx, *grpManager.SelfLink)
 			if err != nil {
-				return nil, fmt.Errorf("normalizing instance group ID: %w", err)
+				retErr = errors.Join(retErr, fmt.Errorf("getting canonical instance group ID: %w", err))
+				continue
 			}
 
 			role := updatev1alpha1.NodeRoleFromString(template.Properties.Labels["constellation-role"])
 
 			name, err := c.GetScalingGroupName(groupID)
 			if err != nil {
-				return nil, fmt.Errorf("getting scaling group name: %w", err)
+				retErr = errors.Join(retErr, fmt.Errorf("getting scaling group name: %w", err))
+				continue
 			}
 
 			nodeGroupName := template.Properties.Labels["constellation-node-group"]
@@ -164,7 +169,8 @@ func (c *Client) ListScalingGroups(ctx context.Context, uid string) ([]cspapi.Sc
 
 			autoscalerGroupName, err := c.GetAutoscalingGroupName(groupID)
 			if err != nil {
-				return nil, fmt.Errorf("getting autoscaling group name: %w", err)
+				retErr = errors.Join(retErr, fmt.Errorf("getting autoscaling group name: %w", err))
+				continue
 			}
 
 			results = append(results, cspapi.ScalingGroup{
@@ -176,6 +182,11 @@ func (c *Client) ListScalingGroups(ctx context.Context, uid string) ([]cspapi.Sc
 			})
 		}
 	}
+
+	if len(results) == 0 {
+		return nil, errors.Join(errors.New("no scaling groups found"), retErr)
+	}
+
 	return results, nil
 }
 
