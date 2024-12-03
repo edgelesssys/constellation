@@ -19,6 +19,8 @@ mokutil
 nano
 nano-default-editor
 nvme-cli
+openssh
+openssh-server
 passt-selinux
 passwd
 podman
