@@ -298,62 +298,6 @@ const sidebars = {
           label: "Versions and support",
           id: "architecture/versions",
         },
-        {
-          type: "category",
-          label: "Depricated",
-          items: [
-            {
-              type: "doc",
-              label: "Key concepts",
-              id: "architecture/old/key-concepts",
-            },
-            {
-              type: "doc",
-              label: "Cluster orchestration",
-              id: "architecture/old/orchestration",
-            },
-            {
-              type: "doc",
-              label: "Versions and support",
-              id: "architecture/old/versions",
-            },
-            {
-              type: "doc",
-              label: "Microservices",
-              id: "architecture/old/microservices",
-            },
-            {
-              type: "doc",
-              label: "Attestation",
-              id: "architecture/old/attestation",
-            },
-            {
-              type: "doc",
-              label: "Images",
-              id: "architecture/old/images",
-            },
-            {
-              type: "doc",
-              label: "Key management and cryptographic primitives",
-              id: "architecture/old/keys",
-            },
-            {
-              type: "doc",
-              label: "Encrypted persistent storage",
-              id: "architecture/old/encrypted-storage",
-            },
-            {
-              type: "doc",
-              label: "Networking",
-              id: "architecture/old/networking",
-            },
-            {
-              type: "doc",
-              label: "Observability",
-              id: "architecture/old/observability",
-            },
-          ],
-        },
       ],
     },
     {
