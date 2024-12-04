@@ -1,0 +1,23 @@
+name: STACKIT login
+description: "Login to STACKIT"
+inputs:
+  serviceAccountToken:
+    description: "Credentials authorized to create Constellation on STACKIT."
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Login to STACKIT
+      env:
+        UAT: ${{ inputs.serviceAccountToken }}
+      shell: bash
+      run: |
+          mkdir -p ~/.stackit
+          echo "${UAT}" > ~/.stackit/credentials.json
+    - name: Verify Login
+      shell: bash
+      run: |
+        sudo snap install stackit --beta --classic
+        stackit auth activate-service-account
+        stackit config set --project-id '8a694a67-be5a-4d2f-b109-b2128a7c991c'
+        stackit load-balancer list --output-format json

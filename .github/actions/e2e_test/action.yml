@@ -93,6 +93,12 @@ inputs:
   encryptionSecret:
     description: "The secret to use for decrypting the artifact."
     required: true
+  openStackCloudsYaml:
+    description: "The contents of ~/.config/openstack/clouds.yaml"
+    required: true
+  stackitUat:
+    description: "The UAT for STACKIT"
+    required: true
 
 outputs:
   kubeconfig:
@@ -229,6 +235,18 @@ runs:
       with:
         azure_credentials: ${{ inputs.azureIAMCreateCredentials }}
 
+    - name: Login to OpenStack
+      if: inputs.cloudProvider == 'stackit'
+      uses: ./.github/actions/login_openstack
+      with:
+        clouds_yaml: ${{inputs.openStackCloudsYaml }}
+
+    - name: Login to STACKIT
+      if: inputs.cloudProvider == 'stackit'
+      uses: ./.github/actions/login_stackit
+      with:
+        serviceAccountToken: ${{ inputs.stackitUat }}
+
     - name: Create prefix
       id: create-prefix
       shell: bash
@@ -244,7 +262,7 @@ runs:
       with:
         attestationVariant: ${{ inputs.attestationVariant }}
 
-    - name: Create IAM configuration
+    - name: Create Constellation config and IAM
       id: constellation-iam-create
       uses: ./.github/actions/constellation_iam_create
       with:
@@ -256,6 +274,7 @@ runs:
         azureRegion: ${{ inputs.regionZone || steps.pick-az-region.outputs.region  }}
         gcpProjectID: ${{ inputs.gcpProject }}
         gcpZone: ${{ inputs.regionZone || 'europe-west3-b' }}
+        stackitZone: ${{ inputs.regionZone || 'eu01-2' }}
         kubernetesVersion: ${{ inputs.kubernetesVersion }}
         additionalTags: "workflow=${{ github.run_id }}"
 

@@ -170,6 +170,8 @@ runs:
     - name: Constellation create (CLI)
       shell: bash
       run: |
+        stat ~/.stackit/credentials.json
+        stackit load-balancer list --output-format json
         constellation apply --skip-phases=init,attestationconfig,certsans,helm,image,k8s -y --debug --tf-log=DEBUG
 
     - name: Cdbg deploy
@@ -257,9 +259,9 @@ runs:
       continue-on-error: true
       uses: ./.github/actions/artifact_upload
       with:
-        name: serial-logs-${{ inputs.artifactNameSuffix }}
-        path: >
-          !(terraform).log
+        name: debug-logs-${{ inputs.artifactNameSuffix }}
+        path: |
+          *.log
         encryptionSecret: ${{ inputs.encryptionSecret }}
 
     - name: Prepare terraform state folders
