@@ -1,0 +1,10 @@
+[Unit]
+Description=Create a host SSH key
+Before=sshd.service
+
+[Service]
+Type=oneshot
+ExecStart=ssh-keygen -t ecdsa -q -N "" /run/ssh_host_ecdsa_key
+
+[Install]
+WantedBy=multi-user.target
