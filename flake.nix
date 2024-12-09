@@ -5,11 +5,6 @@
     nixpkgsUnstable = {
       url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     };
-    # TODO(msanft): Remove once https://github.com/NixOS/nixpkgs/commit/c429fa2ffa21229eeadbe37c11a47aff35f53ce0
-    # lands in nixpkgs-unstable.
-    nixpkgsBazel = {
-      url = "github:NixOS/nixpkgs/c429fa2ffa21229eeadbe37c11a47aff35f53ce0";
-    };
     flake-utils = {
       url = "github:numtide/flake-utils";
     };
@@ -24,7 +19,6 @@
     {
       self,
       nixpkgsUnstable,
-      nixpkgsBazel,
       flake-utils,
       uplosi,
     }:
@@ -33,12 +27,10 @@
       let
         pkgsUnstable = import nixpkgsUnstable { inherit system; };
 
-        bazelPkgsUnstable = import nixpkgsBazel { inherit system; };
-
         callPackage = pkgsUnstable.callPackage;
 
         mkosiDev = (
-          pkgsUnstable.mkosi.overrideAttrs (oldAttrs: rec {
+          pkgsUnstable.mkosi.overrideAttrs (oldAttrs: {
             propagatedBuildInputs =
               oldAttrs.propagatedBuildInputs
               ++ (with pkgsUnstable; [
@@ -66,14 +58,6 @@
         );
 
         uplosiDev = uplosi.outputs.packages."${system}".uplosi;
-
-        openssl-static = pkgsUnstable.openssl.override { static = true; };
-
-        bazel_7 = bazelPkgsUnstable.callPackage ./nix/packages/bazel.nix {
-          pkgs = bazelPkgsUnstable;
-          nixpkgs = nixpkgsBazel;
-        };
-
       in
       {
         packages.mkosi = mkosiDev;
@@ -104,13 +88,11 @@
 
         packages.awscli2 = pkgsUnstable.awscli2;
 
-        packages.bazel_7 = bazel_7;
-
         packages.createrepo_c = pkgsUnstable.createrepo_c;
 
         packages.dnf5 = pkgsUnstable.dnf5;
 
-        devShells.default = callPackage ./nix/shells/default.nix { inherit bazel_7; };
+        devShells.default = callPackage ./nix/shells/default.nix { };
 
         formatter = nixpkgsUnstable.legacyPackages.${system}.nixpkgs-fmt;
       }
