@@ -13,6 +13,9 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "45 06 * * 1" # Every Monday at 6:45am
+  pull_request:
+    paths:
+      - .github/workflows/reproducible-builds.yml
 
 jobs:
   build-binaries:
