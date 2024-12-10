@@ -70,5 +70,5 @@ go_test(
     env = platform_container_sums_paths | platform_clis_paths,
     # keep
     x_defs = {"runsUnder": "bazel"},
-    deps = ["@io_bazel_rules_go//go/runfiles:go_default_library"],
+    deps = ["@io_bazel_rules_go//go/runfiles"],
 )
