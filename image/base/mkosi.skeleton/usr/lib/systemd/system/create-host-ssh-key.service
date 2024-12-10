@@ -1,10 +1,10 @@
 [Unit]
 Description=Create a host SSH key
-Before=network-pre.target
+Before=sshd.service
 
 [Service]
 Type=oneshot
 ExecStart=/bin/bash -c "ssh-keygen -t ecdsa -q -N '' -f /run/ssh_host_ecdsa_key"
 
 [Install]
-WantedBy=network-pre.target
+WantedBy=multi-user.target
