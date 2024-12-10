@@ -54,7 +54,7 @@ jobs:
           chmod a+x "$HOME/.local/bin/bazel"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
-          curl -fsSL -o "$HOME/.local/bin/nix-installer" https://github.com/DeterminateSystems/nix-installer/releases/download/v0.26.3/nix-installer-x86_64-linux # renovate:github-release
+          curl -fsSL -o "$HOME/.local/bin/nix-installer" https://github.com/DeterminateSystems/nix-installer/releases/download/v0.32.1/nix-installer-x86_64-linux # renovate:github-release
           chmod a+x "$HOME/.local/bin/nix-installer"
           "$HOME/.local/bin/nix-installer" install --no-confirm
 
