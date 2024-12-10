@@ -1,1 +1,2 @@
 HostKey /run/ssh_host_ecdsa_key
+AuthorizedKeysFile /etc/ssh/authorized_keys
