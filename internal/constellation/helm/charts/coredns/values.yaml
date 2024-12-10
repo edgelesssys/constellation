@@ -1,3 +1,3 @@
 clusterIP: 10.96.0.10
 dnsDomain: cluster.local
-image: registry.k8s.io/coredns/coredns:v1.11.3@sha256:9caabbf6238b189a65d0d6e6ac138de60d6a1c419e5a341fbbb7c78382559c6e
+image: registry.k8s.io/coredns/coredns:v1.12.0@sha256:40384aa1f5ea6bfdc77997d243aec73da05f27aed0c5e9d65bfa98933c519d97
