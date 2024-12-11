@@ -8,11 +8,6 @@
     flake-utils = {
       url = "github:numtide/flake-utils";
     };
-    uplosi = {
-      url = "github:edgelesssys/uplosi";
-      inputs.nixpkgs.follows = "nixpkgsUnstable";
-      inputs.flake-utils.follows = "flake-utils";
-    };
   };
 
   outputs =
@@ -20,7 +15,6 @@
       self,
       nixpkgsUnstable,
       flake-utils,
-      uplosi,
     }:
     flake-utils.lib.eachDefaultSystem (
       system:
@@ -56,13 +50,11 @@
               ]);
           })
         );
-
-        uplosiDev = uplosi.outputs.packages."${system}".uplosi;
       in
       {
         packages.mkosi = mkosiDev;
 
-        packages.uplosi = uplosiDev;
+        packages.uplosi = pkgsUnstable.uplosi;
 
         packages.openssl = callPackage ./nix/cc/openssl.nix { pkgs = pkgsUnstable; };
 
