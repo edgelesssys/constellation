@@ -14,7 +14,6 @@ import (
 
 	compute "cloud.google.com/go/compute/apiv1"
 	"github.com/spf13/afero"
-	computeREST "google.golang.org/api/compute/v1"
 )
 
 // Client is a client for the Google Compute Engine.
@@ -49,17 +48,12 @@ func New(ctx context.Context, configPath string) (*Client, error) {
 		return nil, err
 	}
 	closers = append(closers, insAPI)
-
-	// TODO(msanft): Go back to protobuf-based API when it supports setting
-	// a confidential instance type.
-	// See https://github.com/googleapis/google-cloud-go/issues/10873 for the current status.
-	restClient, err := computeREST.NewService(ctx)
+	templAPI, err := compute.NewInstanceTemplatesRESTClient(ctx)
 	if err != nil {
 		_ = closeAll(closers)
 		return nil, err
 	}
-	templAPI := computeREST.NewInstanceTemplatesService(restClient)
-
+	closers = append(closers, templAPI)
 	groupAPI, err := compute.NewInstanceGroupManagersRESTClient(ctx)
 	if err != nil {
 		_ = closeAll(closers)
@@ -87,6 +81,7 @@ func (c *Client) Close() error {
 	closers := []closer{
 		c.projectAPI,
 		c.instanceAPI,
+		c.instanceTemplateAPI,
 		c.instanceGroupManagersAPI,
 		c.diskAPI,
 	}
