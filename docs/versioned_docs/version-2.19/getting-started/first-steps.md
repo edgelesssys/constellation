@@ -117,6 +117,12 @@ If you encounter any problem with the following steps, make sure to use the [lat
 
     * `stackitProjectID`: STACKIT project id (can be found after login on the [STACKIT portal](https://portal.stackit.cloud))
 
+    :::caution
+
+    `stackitProjectID` refers to the ID of your STACKIT project. The STACKIT portal also shows the OpenStack ID that's associated with your project in some places. Make sure you insert the STACKIT project ID in the `constellation-conf.yaml` file. It's of the format `XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX`.
+
+    :::
+
     </TabItem>
     </Tabs>
 

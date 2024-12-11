@@ -408,7 +408,7 @@ You need to authenticate with the infrastructure API (OpenStack) and create a se
                 auth_url: https://keystone.api.iaas.eu01.stackit.cloud/v3
                 username: REPLACE_WITH_UAT_USERNAME
                 password: REPLACE_WITH_UAT_PASSWORD
-                project_id: REPLACE_WITH_STACKIT_PROJECT_ID
+                project_id: REPLACE_WITH_OPENSTACK_PROJECT_ID
                 project_name: REPLACE_WITH_STACKIT_PROJECT_NAME
                 user_domain_name: portal_mvp
                 project_domain_name: portal_mvp
@@ -418,7 +418,7 @@ You need to authenticate with the infrastructure API (OpenStack) and create a se
 
 :::caution
 
-`project_id` refers to the ID of your STACKIT project. The STACKIT portal also shows the OpenStack ID that's associated with your project in some places. Make sure you insert the STACKIT project ID in the `clouds.yaml` file. It's of the format XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX.
+`project_id` refers to the ID of your OpenStack project. The STACKIT portal also shows the STACKIT ID that's associated with your project in some places. Make sure you insert the OpenStack project ID in the `clouds.yaml` file.
 
 :::
 
