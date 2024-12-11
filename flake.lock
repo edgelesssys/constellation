@@ -37,8 +37,7 @@
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
-        "nixpkgsUnstable": "nixpkgsUnstable",
-        "uplosi": "uplosi"
+        "nixpkgsUnstable": "nixpkgsUnstable"
       }
     },
     "systems": {
@@ -53,29 +52,6 @@
       "original": {
         "owner": "nix-systems",
         "repo": "default",
-        "type": "github"
-      }
-    },
-    "uplosi": {
-      "inputs": {
-        "flake-utils": [
-          "flake-utils"
-        ],
-        "nixpkgs": [
-          "nixpkgsUnstable"
-        ]
-      },
-      "locked": {
-        "lastModified": 1733317519,
-        "narHash": "sha256-Q/qCh655Cga1nKs4qMF+2JYLxy+mLvFofKxukoREZ3Q=",
-        "owner": "edgelesssys",
-        "repo": "uplosi",
-        "rev": "137f7b6557087fc198e919b2ef8c167ecbe94f91",
-        "type": "github"
-      },
-      "original": {
-        "owner": "edgelesssys",
-        "repo": "uplosi",
         "type": "github"
       }
     }
