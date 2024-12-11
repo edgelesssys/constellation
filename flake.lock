@@ -66,11 +66,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1733317519,
-        "narHash": "sha256-Q/qCh655Cga1nKs4qMF+2JYLxy+mLvFofKxukoREZ3Q=",
+        "lastModified": 1733922763,
+        "narHash": "sha256-HAmkzgfuZN53potu2LvdWXuAlKh6Ts48lB1UTZqIM/s=",
         "owner": "edgelesssys",
         "repo": "uplosi",
-        "rev": "137f7b6557087fc198e919b2ef8c167ecbe94f91",
+        "rev": "4a2c9136e8c28d6d399a595a59d03c08807715ec",
         "type": "github"
       },
       "original": {
