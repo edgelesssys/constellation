@@ -13,7 +13,7 @@ replace github.com/martinjungblut/go-cryptsetup => github.com/daniel-weisse/go-c
 replace (
 	k8s.io/cloud-provider => k8s.io/cloud-provider v0.31.3
 	k8s.io/controller-manager => k8s.io/controller-manager v0.31.3
-	k8s.io/cri-client => k8s.io/cri-client v0.31.1
+	k8s.io/cri-client => k8s.io/cri-client v0.32.0
 	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.31.3
 	k8s.io/dynamic-resource-allocation => k8s.io/dynamic-resource-allocation v0.31.3
 	k8s.io/endpointslice => k8s.io/endpointslice v0.31.3
