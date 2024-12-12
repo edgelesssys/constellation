@@ -40,6 +40,7 @@ locals {
     { name = "recovery", port = "9999", health_check_protocol = "Tcp", path = null, priority = 104 },
     { name = "join", port = "30090", health_check_protocol = "Tcp", path = null, priority = 105 },
     var.debug ? [{ name = "debugd", port = "4000", health_check_protocol = "Tcp", path = null, priority = 106 }] : [],
+    var.emergency_ssh ? [{ name = "ssh", port = "22", health_check_protocol = "Tcp", path = null, priority = 107 }] : [],
   ])
   // wildcard_lb_dns_name is the DNS name of the load balancer with a wildcard for the name.
   // example: given "name-1234567890.location.cloudapp.azure.com" it will return "*.location.cloudapp.azure.com"
@@ -294,4 +295,23 @@ data "azurerm_subscription" "current" {
 data "azurerm_user_assigned_identity" "uaid" {
   name                = local.uai_name
   resource_group_name = local.uai_resource_group
+}
+
+# emergency ssh configuration files
+resource "local_file" "ssh_config" {
+  filename        = "./ssh_config"
+  file_permission = "0600"
+  content         = <<EOF
+Host proxy
+  HostName ${azurerm_public_ip.loadbalancer_ip[0].fqdn}
+  PreferredAuthentications publickey
+  IdentityFile ./emergency_ssh_key
+  User root
+
+Host 10.*
+  PreferredAuthentications publickey
+  IdentityFile ./emergency_ssh_key
+  User root
+  ProxyJump proxy
+EOF
 }
