@@ -298,15 +298,15 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 				Extract:     false,
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtYXBpc2VydmVyOnYxLjI5LjExQHNoYTI1Njo2NTQ1ZjZmNjJjMWYwZjBhZmZmNTM0YzIyNzZiZDI0MmZmZGFjNTRlNzNiMjJjYzEwMzQzNTIyYzcyYjlmNzcxIn1d",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtYXBpc2VydmVyOnYxLjI5LjEyQHNoYTI1NjoyODA0YjFlN2I5ZTA4ZjNhMzQ2OGY4ZmQyZjY0ODdjNTU5NjhiOTI5M2VlNTFiOWVmYjg2NWIzMjk4YWNmYTI2In1d",
 				InstallPath: patchFilePath("kube-apiserver"),
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtY29udHJvbGxlci1tYW5hZ2VyOnYxLjI5LjExQHNoYTI1Njo1OTU1NDgyZDg5NWFhNGE0MTNhNzBhZjUwNjcwNjA1OTIzOGIzNjM3ZmQ3MzA1OTRlNTljOTkwOTU0MjIxZjEzIn1d",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtY29udHJvbGxlci1tYW5hZ2VyOnYxLjI5LjEyQHNoYTI1NjplMmYyNmEzZjVlZjNmZDAxZjYzMzBjYWI4YjA3OGNmMzAzY2ZiNmQzNjkxMWEyMTBkMDkxNWQ1MzU5MTBlNDEyIn1d",
 				InstallPath: patchFilePath("kube-controller-manager"),
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtc2NoZWR1bGVyOnYxLjI5LjExQHNoYTI1NjpmZTA3OGYyNmJmMTQzMDFmNzk0NjhkNzlhNWQyZDQzMWIzNDZhNGFiYjFjYWI0ZTliMWY5YmE4OTE0OTY0MTYxIn1d",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtc2NoZWR1bGVyOnYxLjI5LjEyQHNoYTI1NjplZDY2ZTIxMDJmNDcwNWQ0NWRlNzUxM2RlY2YzYWM2MTg3OTcwNDk4NDQwOTMyMzc3OWQxOWU5OGI5NzA1NjhjIn1d",
 				InstallPath: patchFilePath("kube-scheduler"),
 			},
 			{
@@ -365,15 +365,15 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 				Extract:     false,
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtYXBpc2VydmVyOnYxLjMwLjdAc2hhMjU2OjEzZjRmMGY1ODUwYjM5NzQyMTAxYzY1NmIxYmJkNTA5MGVhY2YyNzA4NGFkODliNDg5ZmM4MjRlZjQ4MmVkOWMifV0=",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtYXBpc2VydmVyOnYxLjMwLjhAc2hhMjU2OmYwZTFiM2RlMGMyZTk4ZTZjNmFiZDczZWRmOWQzYjhlNGQ0NDQ2MDY1NmNkZTBlYmI5MmUyZDkyMDY5NjFmY2IifV0=",
 				InstallPath: patchFilePath("kube-apiserver"),
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtY29udHJvbGxlci1tYW5hZ2VyOnYxLjMwLjdAc2hhMjU2OjViOGRjMjZjMDViMjczY2UxOThmYmFmNGViMTc5ZjNiNmQ2OTE5YzZlMjExNmQzNmRjN2Y4MjU1NTM3NGM2ODcifV0=",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtY29udHJvbGxlci1tYW5hZ2VyOnYxLjMwLjhAc2hhMjU2OjEyNGY2NmI3ZTg3N2ViNWE4MGE0MDUwMzA1NzI5OWJiNjBlNmE1ZjIxMzA5MDVmNGUzMjkzZGFiZjE5NGMzOTcifV0=",
 				InstallPath: patchFilePath("kube-controller-manager"),
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtc2NoZWR1bGVyOnYxLjMwLjdAc2hhMjU2OjAwYjE2ZGI5OTExMDFiNzM2MWYyZjE4MDM1ZTFjNjUyNmMwY2U2YzlhOTU2ODUyNDgyNGI0YmNjZGYxYWZiZDYifV0=",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtc2NoZWR1bGVyOnYxLjMwLjhAc2hhMjU2OmM4YmRlYWMyNTkwYzk5YzFhNzdlMzM5OTU0MjNkZGI2NjMzZmY5MGE4MmEyYWE0NTU0NDJlMGE4MDc5ZWY4YzcifV0=",
 				InstallPath: patchFilePath("kube-scheduler"),
 			},
 			{
