@@ -40,6 +40,7 @@ locals {
     { name = "recovery", port = "9999", health_check_protocol = "Tcp", path = null, priority = 104 },
     { name = "join", port = "30090", health_check_protocol = "Tcp", path = null, priority = 105 },
     var.debug ? [{ name = "debugd", port = "4000", health_check_protocol = "Tcp", path = null, priority = 106 }] : [],
+    var.emergency_ssh ? [{ name = "ssh", port = "22", health_check_protocol = "Tcp", path = null, priority = 107 }] : [],
   ])
   // wildcard_lb_dns_name is the DNS name of the load balancer with a wildcard for the name.
   // example: given "name-1234567890.location.cloudapp.azure.com" it will return "*.location.cloudapp.azure.com"
@@ -296,89 +297,21 @@ data "azurerm_user_assigned_identity" "uaid" {
   resource_group_name = local.uai_resource_group
 }
 
-############## For emergency ssh access ##############
-resource "azurerm_public_ip" "loadbalancer_ssh_ip" {
-  count               = var.emergency_ssh ? 1 : 0
-  name                = "${local.name}-ssh-lb"
-  domain_name_label   = "${local.name}-ssh"
-  resource_group_name = var.resource_group
-  location            = var.location
-  allocation_method   = "Static"
-  sku                 = "Standard"
-  tags                = local.tags
+# emergency ssh configuration files
+resource "local_file" "ssh_config" {
+  filename        = "./ssh_config"
+  file_permission = "0600"
+  content         = <<EOF
+Host proxy
+  HostName ${azurerm_public_ip.loadbalancer_ip[0].fqdn}
+  PreferredAuthentications publickey
+  IdentityFile ./emergency_ssh_key
+  User root
 
-  lifecycle {
-    ignore_changes = [name]
-  }
-}
-
-// Reads data from the resource of the same name.
-// Used to wait to the actual resource to become ready, before using data from that resource.
-// Property "fqdn" only becomes available on azurerm_public_ip resources once domain_name_label is set.
-// Since we are setting domain_name_label starting with 2.10 we need to migrate
-// resources for clusters created before 2.9. In those cases we need to wait until loadbalancer_ip has
-// been updated before reading from it.
-data "azurerm_public_ip" "loadbalancer_ssh_ip" {
-  count               = var.emergency_ssh ? 1 : 0
-  name                = "${local.name}-ssh-lb"
-  resource_group_name = var.resource_group
-  depends_on          = [azurerm_public_ip.loadbalancer_ssh_ip]
-}
-
-resource "azurerm_lb" "loadbalancer_ssh" {
-  count               = var.emergency_ssh ? 1 : 0
-  name                = "${local.name}-ssh"
-  location            = var.location
-  resource_group_name = var.resource_group
-  sku                 = "Standard"
-  tags                = local.tags
-
-  dynamic "frontend_ip_configuration" {
-    for_each = var.emergency_ssh ? [1] : []
-    content {
-      name                 = "PublicIPAddress"
-      public_ip_address_id = azurerm_public_ip.loadbalancer_ssh_ip[0].id
-    }
-  }
-}
-
-module "loadbalancer_backend_control_plane_ssh" {
-  count  = var.emergency_ssh ? 1 : 0
-  source = "./modules/load_balancer_backend"
-
-  name                           = "${local.name}-control-plane-ssh"
-  loadbalancer_id                = azurerm_lb.loadbalancer_ssh[0].id
-  frontend_ip_configuration_name = azurerm_lb.loadbalancer_ssh[0].frontend_ip_configuration[0].name
-  ports                          = [{ name = "ssh-cp", port = "22", health_check_protocol = "Tcp", path = null, priority = 100 }]
-}
-
-module "loadbalancer_backend_worker_ssh" {
-  count  = var.emergency_ssh ? 1 : 0
-  source = "./modules/load_balancer_backend"
-
-  name                           = "${local.name}-worker-ssh"
-  loadbalancer_id                = azurerm_lb.loadbalancer_ssh[0].id
-  frontend_ip_configuration_name = azurerm_lb.loadbalancer_ssh[0].frontend_ip_configuration[0].name
-  ports                          = []
-}
-
-resource "azurerm_lb_backend_address_pool" "all_ssh" {
-  count           = var.emergency_ssh ? 1 : 0
-  loadbalancer_id = azurerm_lb.loadbalancer_ssh[0].id
-  name            = "${var.name}-all-ssh"
-}
-
-resource "azurerm_network_security_rule" "nsg_rule_ssh" {
-  count                       = var.emergency_ssh ? 1 : 0
-  name                        = "ssh-new"
-  priority                    = 210
-  direction                   = "Inbound"
-  access                      = "Allow"
-  protocol                    = "Tcp"
-  source_port_range           = "*"
-  destination_port_range      = "22"
-  source_address_prefix       = "*"
-  destination_address_prefix  = "*"
-  resource_group_name         = var.resource_group
-  network_security_group_name = azurerm_network_security_group.security_group.name
+Host 10.*
+  PreferredAuthentications publickey
+  IdentityFile ./emergency_ssh_key
+  User root
+  ProxyJump proxy
+EOF
 }
