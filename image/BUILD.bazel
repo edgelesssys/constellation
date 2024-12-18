@@ -1,16 +1,12 @@
 load("@aspect_bazel_lib//lib:copy_file.bzl", "copy_file")
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
-load("@rules_pkg//pkg:mappings.bzl", "pkg_files", "strip_prefix")
-
-filegroup(
-    name = "sysroot_tree",
-    srcs = glob(["sysroot-tree/**"]),
-)
+load("@rules_pkg//pkg:mappings.bzl", "pkg_attributes", "pkg_files", "strip_prefix")
 
 pkg_files(
     name = "sysroot",
-    srcs = [":sysroot_tree"],
-    strip_prefix = strip_prefix.from_pkg() + "sysroot-tree",
+    srcs = glob(["sysroot-tree/**"]),
+    attributes = pkg_attributes(mode = "0555"),
+    strip_prefix = strip_prefix.from_pkg("sysroot-tree"),
     visibility = ["//visibility:public"],
 )
 
