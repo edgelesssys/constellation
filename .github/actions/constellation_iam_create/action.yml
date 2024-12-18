@@ -42,6 +42,15 @@ inputs:
   gcpZone:
     description: "The GCP zone to deploy Constellation in."
     required: false
+  #
+  # STACKIT specific inputs
+  #
+  stackitZone:
+    description: "The STACKIT zone to deploy Constellation in."
+    required: false
+  stackitProjectID:
+    description: "The STACKIT project ID to deploy Constellation in."
+    required: false
 
 runs:
   using: "composite"
@@ -104,3 +113,12 @@ runs:
           --update-config \
           --tf-log=DEBUG \
           --yes
+
+    - name: Set STACKIT-specific configuration
+      shell: bash
+      env:
+        STACKIT_PROJECT_ID: ${{ inputs.stackitProjectID }}
+      run: |
+        yq eval -i "(.provider.openstack.stackitProjectID) = \"${STACKIT_PROJECT_ID}\"" constellation-conf.yaml
+        yq eval -i "(.provider.openstack.availabilityZone) = \"${{ inputs.stackitZone }}\"" constellation-conf.yaml
+        yq eval -i "(.nodeGroups.[].zone) = \"${{ inputs.stackitZone }}\"" constellation-conf.yaml

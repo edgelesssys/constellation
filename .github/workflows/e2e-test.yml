@@ -16,6 +16,7 @@ on:
           - "azure-sev-snp"
           - "azure-tdx"
           - "aws-sev-snp"
+          - "stackit-qemu-vtpm"
         default: "azure-sev-snp"
         required: true
       runner:
@@ -137,6 +138,7 @@ jobs:
       workerNodes: ${{ steps.split-nodeCount.outputs.workerNodes }}
       controlPlaneNodes: ${{ steps.split-nodeCount.outputs.controlPlaneNodes }}
       cloudProvider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
+      attestationVariant: ${{ steps.split-attestationVariant.outputs.attestationVariant }}
     steps:
       - name: Split nodeCount
         id: split-nodeCount
@@ -161,6 +163,12 @@ jobs:
           attestationVariant="${{ inputs.attestationVariant }}"
           cloudProvider="${attestationVariant%%-*}"
 
+          # special case for STACKIT, as there's no special attestation variant for it
+          if [[ "${cloudProvider}" == "stackit" ]]; then
+            attestationVariant="qemu-vtpm"
+          fi
+
+          echo "attestationVariant=${attestationVariant}" | tee -a "$GITHUB_OUTPUT"
           echo "cloudProvider=${cloudProvider}" | tee -a "$GITHUB_OUTPUT"
 
   find-latest-image:
@@ -233,7 +241,7 @@ jobs:
           workerNodesCount: ${{ needs.generate-input-parameters.outputs.workerNodes }}
           controlNodesCount: ${{ needs.generate-input-parameters.outputs.controlPlaneNodes }}
           cloudProvider: ${{ needs.generate-input-parameters.outputs.cloudProvider }}
-          attestationVariant: ${{ inputs.attestationVariant }}
+          attestationVariant: ${{ needs.generate-input-parameters.outputs.attestationVariant }}
           machineType: ${{ inputs.machineType }}
           regionZone: ${{ inputs.regionZone }}
           gcpProject: constellation-e2e
@@ -262,6 +270,9 @@ jobs:
           marketplaceImageVersion: ${{ inputs.marketplaceImageVersion }}
           force: ${{ inputs.force }}
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          openStackCloudsYaml: ${{ secrets.STACKIT_CI_CLOUDS_YAML }}
+          stackitUat: ${{ secrets.STACKIT_CI_UAT }}
+          stackitProjectID: ${{ secrets.STACKIT_CI_PROJECT_ID }}
 
       - name: Always terminate cluster
         if: always()
