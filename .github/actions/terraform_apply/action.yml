@@ -29,6 +29,9 @@ runs:
           "gcpSEVSNP")
             attestationVariant="gcp-sev-snp"
             ;;
+          "qemuVTPM")
+            attestationVariant="qemu-vtpm"
+            ;;
           *)
             echo "Unknown attestation variant: $(yq '.attestation | keys | .[0]' constellation-conf.yaml)"
             exit 1
@@ -105,6 +108,16 @@ runs:
             count = "$(yq '.provider | keys | .[0]' constellation-conf.yaml)" == "gcp" ? 1 : 0
             project_id          = "$(yq '.infrastructure.gcp.projectID' constellation-state.yaml)"
             service_account_key = sensitive("$(cat $(yq '.provider.gcp.serviceAccountKeyPath' constellation-conf.yaml) | base64 -w0)")
+          }
+          openstack = {
+            cloud                      = "stackit"
+            clouds_yaml_path           = "~/.config/openstack/clouds.yaml"
+            floating_ip_pool_id        = "970ace5c-458f-484a-a660-0903bcfd91ad"
+            deploy_yawol_load_balancer = true
+            yawol_image_id             = "bcd6c13e-75d1-4c3f-bf0f-8f83580cc1be"
+            yawol_flavor_id            = "3b11b27e-6c73-470d-b595-1d85b95a8cdf"
+            network_id                 = "$(yq '.infrastructure.networkID' constellation-state.yaml)"
+            subnet_id                  = "$(yq '.infrastructure.subnetID' constellation-state.yaml)"
           }
           network_config = {
             ip_cidr_node    = "$(yq '.infrastructure.ipCidrNode' constellation-state.yaml)"
