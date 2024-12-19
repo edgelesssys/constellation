@@ -1,0 +1,19 @@
+name: Notify STACKIT
+description: "Notify STACKIT about test failure"
+inputs:
+  slackToken:
+    description: "Slack access token."
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Notify STACKIT
+      env:
+        SLACK_TOKEN: ${{ inputs.slackToken }}
+      shell: bash
+      run: |
+          curl -X POST \
+            -H "Authorization: Bearer $SLACK_TOKEN" \
+            -H "Content-type: application/json; charset=utf-8" \
+            -d "{\"channel\":\"C0827BT59SM\",\"text\":\"E2E test failed: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}" \
+            https://slack.com/api/chat.postMessage
