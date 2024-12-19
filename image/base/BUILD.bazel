@@ -1,5 +1,6 @@
 load("@aspect_bazel_lib//lib:copy_to_directory.bzl", "copy_to_directory")
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
+load("@rules_pkg//pkg:mappings.bzl", "pkg_attributes", "pkg_files", "strip_prefix")
 load("//bazel/mkosi:mkosi_image.bzl", "mkosi_image")
 
 copy_to_directory(
@@ -33,9 +34,7 @@ copy_to_directory(
             "mkosi.finalize",
             "mkosi.postinst",
             "mkosi.prepare",
-        ] + glob([
-            "mkosi.skeleton/**",
-        ]),
+        ],
         outs = [
             kernel_variant,
             kernel_variant + ".tar",
@@ -46,6 +45,7 @@ copy_to_directory(
             kernel_variant + "-rpmdb.sqlite-wal",
         ],
         extra_trees = [
+            ":skeleton",
             "//image:sysroot_tar",
             "//image:cryptsetup_closure",
         ],
@@ -85,4 +85,16 @@ pkg_tar(
     },
     tags = ["manual"],
     visibility = ["//visibility:public"],
+)
+
+pkg_files(
+    name = "skeleton_files",
+    srcs = glob(["mkosi.skeleton/**"]),
+    attributes = pkg_attributes(mode = "0555"),
+    strip_prefix = strip_prefix.from_pkg("mkosi.skeleton"),
+)
+
+pkg_tar(
+    name = "skeleton",
+    srcs = [":skeleton_files"],
 )
