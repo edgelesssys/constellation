@@ -1,0 +1,3 @@
+HostKey /run/ssh_host_ecdsa_key
+TrustedUserCAKeys /run/ssh_ca.pub
+PasswordAuthentication no
