@@ -116,6 +116,7 @@ runs:
 
     - name: Set STACKIT-specific configuration
       shell: bash
+      if: inputs.cloudProvider == 'stackit'
       env:
         STACKIT_PROJECT_ID: ${{ inputs.stackitProjectID }}
       run: |
