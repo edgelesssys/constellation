@@ -281,6 +281,9 @@ func TestUpgradeKubernetesVersion(t *testing.T) {
 			}
 			kubectl := &stubKubectl{
 				unstructuredInterface: unstructuredClient,
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.KubeadmConfigMap: {Data: map[string]string{"ClusterConfiguration": kubeadmClusterConfigurationV1Beta4}},
+				},
 			}
 			if tc.customClientFn != nil {
 				kubectl.unstructuredInterface = tc.customClientFn(nodeVersion)
@@ -676,6 +679,50 @@ func TestRetryAction(t *testing.T) {
 	}
 }
 
+func TestExtendClusterConfigCertSANs(t *testing.T) {
+	ctx := context.Background()
+
+	testCases := map[string]struct {
+		clusterConfig string
+	}{
+		"kubeadmv1beta3.ClusterConfiguration": {
+			clusterConfig: kubeadmClusterConfigurationV1Beta3,
+		},
+		"kubeadmv1beta4.ClusterConfiguration": {
+			clusterConfig: kubeadmClusterConfigurationV1Beta4,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			require := require.New(t)
+			assert := assert.New(t)
+			kubectl := &fakeConfigMapClient{
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.KubeadmConfigMap: {Data: map[string]string{"ClusterConfiguration": tc.clusterConfig}},
+				},
+			}
+			cmd := &KubeCmd{
+				kubectl:       kubectl,
+				log:           logger.NewTest(t),
+				retryInterval: time.Millisecond,
+			}
+
+			err := cmd.ExtendClusterConfigCertSANs(ctx, []string{"example.com"})
+			require.NoError(err)
+
+			cm := kubectl.configMaps["kubeadm-config"]
+			require.NotNil(cm)
+			cc := cm.Data["ClusterConfiguration"]
+			require.NotNil(cc)
+			// Verify that SAN was added.
+			assert.Contains(cc, "example.com")
+			// Verify that config was written in v1beta4, regardless of the version read.
+			assert.Contains(cc, "kubeadm.k8s.io/v1beta4")
+		})
+	}
+}
+
 type fakeUnstructuredClient struct {
 	mock.Mock
 }
@@ -835,3 +882,83 @@ func supportedValidK8sVersions() (res []versions.ValidK8sVersion) {
 	}
 	return
 }
+
+var kubeadmClusterConfigurationV1Beta3 = `
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: ClusterConfiguration
+apiServer:
+  certSANs:
+  - 127.0.0.1
+  extraArgs:
+    kubelet-certificate-authority: /etc/kubernetes/pki/ca.crt
+    profiling: "false"
+  extraVolumes:
+  - hostPath: /var/log/kubernetes/audit/
+    mountPath: /var/log/kubernetes/audit/
+    name: audit-log
+    pathType: DirectoryOrCreate
+certificatesDir: /etc/kubernetes/pki
+clusterName: test-55bbf58d
+controlPlaneEndpoint: 34.149.125.227:6443
+controllerManager:
+  extraArgs:
+    cloud-provider: external
+dns:
+  disabled: true
+encryptionAlgorithm: RSA-2048
+etcd:
+  local:
+    dataDir: /var/lib/etcd
+imageRepository: registry.k8s.io
+kubernetesVersion: v1.31.1
+networking:
+  dnsDomain: cluster.local
+  serviceSubnet: 10.96.0.0/12
+proxy:
+  disabled: true
+scheduler:
+  extraArgs:
+    profiling: "false"
+`
+
+var kubeadmClusterConfigurationV1Beta4 = `
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+apiServer:
+  certSANs:
+  - 127.0.0.1
+  extraArgs:
+  - name: kubelet-certificate-authority
+    value: /etc/kubernetes/pki/ca.crt
+  - name: profiling
+    value: "false"
+  extraVolumes:
+  - hostPath: /var/log/kubernetes/audit/
+    mountPath: /var/log/kubernetes/audit/
+    name: audit-log
+    pathType: DirectoryOrCreate
+certificatesDir: /etc/kubernetes/pki
+clusterName: test-55bbf58d
+controlPlaneEndpoint: 34.149.125.227:6443
+controllerManager:
+  extraArgs:
+  - name: cloud-provider
+    value: external
+dns:
+  disabled: true
+encryptionAlgorithm: RSA-2048
+etcd:
+  local:
+    dataDir: /var/lib/etcd
+imageRepository: registry.k8s.io
+kubernetesVersion: v1.31.1
+networking:
+  dnsDomain: cluster.local
+  serviceSubnet: 10.96.0.0/12
+proxy:
+  disabled: true
+scheduler:
+  extraArgs:
+  - name: profiling
+    value: "false"
+`

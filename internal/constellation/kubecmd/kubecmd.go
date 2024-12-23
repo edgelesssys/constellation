@@ -42,9 +42,11 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	k8sjson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/client-go/util/retry"
-	kubeadmv1beta3 "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
-	"sigs.k8s.io/yaml"
+	"k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
+	kubeadmscheme "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/scheme"
+	kubeadmv1beta4 "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta4"
 )
 
 // ErrInProgress signals that an upgrade is in progress inside the cluster.
@@ -127,6 +129,18 @@ func (k *KubeCmd) UpgradeKubernetesVersion(ctx context.Context, kubernetesVersio
 			string(kubernetesVersion),
 			fmt.Errorf("unsupported Kubernetes version, supported versions are %s", strings.Join(versions.SupportedK8sVersions(), ", "))),
 		)
+	}
+
+	// TODO(burgerdev): remove after releasing v2.19
+	// Workaround for https://github.com/kubernetes/kubernetes/issues/127316: force kubelet to
+	// connect to the local API server.
+	if err := k.patchKubeadmConfig(ctx, func(cc *kubeadm.ClusterConfiguration) {
+		if cc.FeatureGates == nil {
+			cc.FeatureGates = map[string]bool{}
+		}
+		cc.FeatureGates["ControlPlaneKubeletLocalMode"] = true
+	}); err != nil {
+		return fmt.Errorf("setting FeatureGate ControlPlaneKubeletLocalMode: %w", err)
 	}
 
 	versionConfig, ok := versions.VersionConfigs[kubernetesVersion]
@@ -234,48 +248,32 @@ func (k *KubeCmd) ApplyJoinConfig(ctx context.Context, newAttestConfig config.At
 // ExtendClusterConfigCertSANs extends the ClusterConfig stored under "kube-system/kubeadm-config" with the given SANs.
 // Empty strings are ignored, existing SANs are preserved.
 func (k *KubeCmd) ExtendClusterConfigCertSANs(ctx context.Context, alternativeNames []string) error {
-	clusterConfiguration, kubeadmConfig, err := k.getClusterConfiguration(ctx)
-	if err != nil {
-		return fmt.Errorf("getting ClusterConfig: %w", err)
-	}
-
-	existingSANs := make(map[string]struct{})
-	for _, existingSAN := range clusterConfiguration.APIServer.CertSANs {
-		existingSANs[existingSAN] = struct{}{}
-	}
-
-	var missingSANs []string
-	for _, san := range alternativeNames {
-		if san == "" {
-			continue // skip empty SANs
+	if err := k.patchKubeadmConfig(ctx, func(clusterConfiguration *kubeadm.ClusterConfiguration) {
+		existingSANs := make(map[string]struct{})
+		for _, existingSAN := range clusterConfiguration.APIServer.CertSANs {
+			existingSANs[existingSAN] = struct{}{}
 		}
-		if _, ok := existingSANs[san]; !ok {
-			missingSANs = append(missingSANs, san)
-			existingSANs[san] = struct{}{} // make sure we don't add the same SAN twice
+
+		var missingSANs []string
+		for _, san := range alternativeNames {
+			if san == "" {
+				continue // skip empty SANs
+			}
+			if _, ok := existingSANs[san]; !ok {
+				missingSANs = append(missingSANs, san)
+				existingSANs[san] = struct{}{} // make sure we don't add the same SAN twice
+			}
 		}
-	}
 
-	if len(missingSANs) == 0 {
-		k.log.Debug("No new SANs to add to the cluster's apiserver SAN field")
-		return nil
-	}
-	k.log.Debug("Extending the cluster's apiserver SAN field", "certSANs", strings.Join(missingSANs, ", "))
+		if len(missingSANs) == 0 {
+			k.log.Debug("No new SANs to add to the cluster's apiserver SAN field")
+		}
+		k.log.Debug("Extending the cluster's apiserver SAN field", "certSANs", strings.Join(missingSANs, ", "))
 
-	clusterConfiguration.APIServer.CertSANs = append(clusterConfiguration.APIServer.CertSANs, missingSANs...)
-	sort.Strings(clusterConfiguration.APIServer.CertSANs)
-
-	newConfigYAML, err := yaml.Marshal(clusterConfiguration)
-	if err != nil {
-		return fmt.Errorf("marshaling ClusterConfiguration: %w", err)
-	}
-
-	kubeadmConfig.Data[constants.ClusterConfigurationKey] = string(newConfigYAML)
-	k.log.Debug("Triggering kubeadm config update now")
-	if err = k.retryAction(ctx, func(ctx context.Context) error {
-		_, err := k.kubectl.UpdateConfigMap(ctx, kubeadmConfig)
-		return err
+		clusterConfiguration.APIServer.CertSANs = append(clusterConfiguration.APIServer.CertSANs, missingSANs...)
+		sort.Strings(clusterConfiguration.APIServer.CertSANs)
 	}); err != nil {
-		return fmt.Errorf("setting new kubeadm config: %w", err)
+		return fmt.Errorf("extending ClusterConfig.CertSANs: %w", err)
 	}
 
 	k.log.Debug("Successfully extended the cluster's apiserver SAN field")
@@ -314,31 +312,6 @@ func (k *KubeCmd) getConstellationVersion(ctx context.Context) (updatev1alpha1.N
 	}
 
 	return nodeVersion, nil
-}
-
-// getClusterConfiguration fetches the kubeadm-config configmap from the cluster, extracts the config
-// and returns both the full configmap and the ClusterConfiguration.
-func (k *KubeCmd) getClusterConfiguration(ctx context.Context) (kubeadmv1beta3.ClusterConfiguration, *corev1.ConfigMap, error) {
-	var existingConf *corev1.ConfigMap
-	if err := k.retryAction(ctx, func(ctx context.Context) error {
-		var err error
-		existingConf, err = k.kubectl.GetConfigMap(ctx, constants.ConstellationNamespace, constants.KubeadmConfigMap)
-		return err
-	}); err != nil {
-		return kubeadmv1beta3.ClusterConfiguration{}, nil, fmt.Errorf("retrieving current kubeadm-config: %w", err)
-	}
-
-	clusterConf, ok := existingConf.Data[constants.ClusterConfigurationKey]
-	if !ok {
-		return kubeadmv1beta3.ClusterConfiguration{}, nil, errors.New("ClusterConfiguration missing from kubeadm-config")
-	}
-
-	var existingClusterConfig kubeadmv1beta3.ClusterConfiguration
-	if err := yaml.Unmarshal([]byte(clusterConf), &existingClusterConfig); err != nil {
-		return kubeadmv1beta3.ClusterConfiguration{}, nil, fmt.Errorf("unmarshaling ClusterConfiguration: %w", err)
-	}
-
-	return existingClusterConfig, existingConf, nil
 }
 
 // applyComponentsCM applies the k8s components ConfigMap to the cluster.
@@ -466,6 +439,51 @@ func (k *KubeCmd) retryAction(ctx context.Context, action func(ctx context.Conte
 		return ctr < k.maxAttempts
 	})
 	return retrier.Do(ctx)
+}
+
+// patchKubeadmConfig fetches and unpacks the kube-system/kubeadm-config ClusterConfiguration entry,
+// runs doPatch on it and uploads the result.
+func (k *KubeCmd) patchKubeadmConfig(ctx context.Context, doPatch func(*kubeadm.ClusterConfiguration)) error {
+	var kubeadmConfig *corev1.ConfigMap
+	if err := k.retryAction(ctx, func(ctx context.Context) error {
+		var err error
+		kubeadmConfig, err = k.kubectl.GetConfigMap(ctx, constants.ConstellationNamespace, constants.KubeadmConfigMap)
+		return err
+	}); err != nil {
+		return fmt.Errorf("retrieving current kubeadm-config: %w", err)
+	}
+
+	clusterConfigData, ok := kubeadmConfig.Data[constants.ClusterConfigurationKey]
+	if !ok {
+		return errors.New("ClusterConfiguration missing from kubeadm-config")
+	}
+
+	var clusterConfiguration kubeadm.ClusterConfiguration
+	if err := runtime.DecodeInto(kubeadmscheme.Codecs.UniversalDecoder(), []byte(clusterConfigData), &clusterConfiguration); err != nil {
+		return fmt.Errorf("decoding cluster configuration data: %w", err)
+	}
+
+	doPatch(&clusterConfiguration)
+
+	opt := k8sjson.SerializerOptions{Yaml: true}
+	serializer := k8sjson.NewSerializerWithOptions(k8sjson.DefaultMetaFactory, kubeadmscheme.Scheme, kubeadmscheme.Scheme, opt)
+	encoder := kubeadmscheme.Codecs.EncoderForVersion(serializer, kubeadmv1beta4.SchemeGroupVersion)
+	newConfigYAML, err := runtime.Encode(encoder, &clusterConfiguration)
+	if err != nil {
+		return fmt.Errorf("marshaling ClusterConfiguration: %w", err)
+	}
+
+	kubeadmConfig.Data[constants.ClusterConfigurationKey] = string(newConfigYAML)
+	k.log.Debug("Triggering kubeadm config update now")
+	if err = k.retryAction(ctx, func(ctx context.Context) error {
+		_, err := k.kubectl.UpdateConfigMap(ctx, kubeadmConfig)
+		return err
+	}); err != nil {
+		return fmt.Errorf("setting new kubeadm config: %w", err)
+	}
+
+	k.log.Debug("Successfully patched the cluster's kubeadm-config")
+	return nil
 }
 
 func checkForApplyError(expected, actual updatev1alpha1.NodeVersion) error {
