@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"reflect"
+	"slices"
 	"strings"
 	"time"
 
@@ -388,6 +389,10 @@ func (r *NodeVersionReconciler) tryStartClusterVersionUpgrade(ctx context.Contex
 func (r *NodeVersionReconciler) pairDonorsAndHeirs(ctx context.Context, controller metav1.Object, outdatedNodes []corev1.Node, mintNodes []mintNode) []replacementPair {
 	logr := log.FromContext(ctx)
 	var pairs []replacementPair
+
+	// Prioritize control-plane nodes, which need to be upgraded first starting with k8s v1.31.0.
+	sortByControlPlanes(outdatedNodes)
+
 	for _, mintNode := range mintNodes {
 		var foundReplacement bool
 		// find outdated node in the same group
@@ -942,4 +947,17 @@ type newNodeConfig struct {
 	pendingNodes       []updatev1alpha1.PendingNode
 	scalingGroupByID   map[string]updatev1alpha1.ScalingGroup
 	newNodesBudget     int
+}
+
+func sortByControlPlanes(nodes []corev1.Node) {
+	slices.SortStableFunc(nodes, func(a, b corev1.Node) int {
+		_, aControlPlane := a.Labels["node-role.kubernetes.io/control-plane"]
+		_, bControlPlane := b.Labels["node-role.kubernetes.io/control-plane"]
+		if aControlPlane == bControlPlane {
+			return 0
+		} else if aControlPlane {
+			return -1
+		}
+		return 1
+	})
 }

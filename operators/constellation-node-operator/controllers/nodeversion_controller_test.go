@@ -9,6 +9,7 @@ package controllers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"testing"
 
@@ -890,4 +891,43 @@ func (*unimplementedNodeReplacer) CreateNode(_ context.Context, _ string) (nodeN
 
 func (*unimplementedNodeReplacer) DeleteNode(_ context.Context, _ string) error {
 	panic("unimplemented")
+}
+
+func TestSortByControlPlane(t *testing.T) {
+	w1 := newNode("w1", false)
+	w2 := newNode("w2", false)
+	cp1 := newNode("cp1", true)
+	cp2 := newNode("cp2", true)
+
+	for i, tc := range []struct {
+		input    []corev1.Node
+		expected []string
+	}{
+		{input: []corev1.Node{w1, w2, cp1, cp2}, expected: []string{"cp1", "cp2", "w1", "w2"}},
+		{input: []corev1.Node{w2, cp1, cp2, w1}, expected: []string{"cp1", "cp2", "w2", "w1"}},
+		{input: []corev1.Node{cp2, w1, cp1, w2}, expected: []string{"cp2", "cp1", "w1", "w2"}},
+		{input: []corev1.Node{cp1, cp2, w1, w2}, expected: []string{"cp1", "cp2", "w1", "w2"}},
+	} {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			sortByControlPlanes(tc.input)
+			var actual []string
+			for _, node := range tc.input {
+				actual = append(actual, node.Name)
+			}
+			assert.Equal(t, tc.expected, actual)
+		})
+	}
+}
+
+func newNode(name string, controlPlane bool) corev1.Node {
+	node := corev1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   name,
+			Labels: make(map[string]string),
+		},
+	}
+	if controlPlane {
+		node.Labels["node-role.kubernetes.io/control-plane"] = ""
+	}
+	return node
 }
