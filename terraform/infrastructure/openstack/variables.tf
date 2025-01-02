@@ -71,3 +71,9 @@ variable "stackit_project_id" {
   type        = string
   description = "STACKIT project ID."
 }
+
+variable "emergency_ssh" {
+  type        = bool
+  default     = false
+  description = "Wether to deploy a load balancer to connect to nodes via ssh."
+}
