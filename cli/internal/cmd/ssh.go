@@ -99,6 +99,8 @@ func runSSH(cmd *cobra.Command, _ []string) error {
 	}
 
 	log.Printf("Signed certificate: %s", string(ssh.MarshalAuthorizedKey(&certificate)))
+	fh.Write("./constellation-terraform/ca_cert.pub", ssh.MarshalAuthorizedKey(&certificate), file.OptOverwrite)
+	log.Printf("You can now connect to a node with 'ssh -i <your private key> -F ./constellation-terraform/ssh_config <private node ip>'")
 
 	return nil
 }
