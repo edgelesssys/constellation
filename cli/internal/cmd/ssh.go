@@ -11,7 +11,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -51,8 +50,13 @@ func NewSSHCmd() *cobra.Command {
 
 func runSSH(cmd *cobra.Command, _ []string) error {
 	fh := file.NewHandler(afero.NewOsFs())
+	debugLogger, err := newDebugFileLogger(cmd, fh)
+	if err != nil {
+		return err
+	}
+
 	var mastersecret secret
-	err := fh.ReadJSON(fmt.Sprintf("%s.json", constants.ConstellationMasterSecretStoreName), &mastersecret)
+	err = fh.ReadJSON(fmt.Sprintf("%s.json", constants.ConstellationMasterSecretStoreName), &mastersecret)
 	if err != nil {
 		return err
 	}
@@ -68,8 +72,7 @@ func runSSH(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	// TODO(miampf): Remove or replace with better logger
-	log.Printf("CA KEY: %s", string(ssh.MarshalAuthorizedKey(ca.PublicKey())))
+	debugLogger.Debug("CA KEY generated", "key", string(ssh.MarshalAuthorizedKey(ca.PublicKey())))
 
 	key_path, err := cmd.Flags().GetString("key")
 	if err != nil {
@@ -98,9 +101,9 @@ func runSSH(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	log.Printf("Signed certificate: %s", string(ssh.MarshalAuthorizedKey(&certificate)))
-	fh.Write("./constellation-terraform/ca_cert.pub", ssh.MarshalAuthorizedKey(&certificate), file.OptOverwrite)
-	log.Printf("You can now connect to a node with 'ssh -i <your private key> -F ./constellation-terraform/ssh_config <private node ip>'")
+	debugLogger.Debug("Signed certificate", "certificate", string(ssh.MarshalAuthorizedKey(&certificate)))
+	fh.Write("./constellation-terraform/ca_cert.pub", ssh.MarshalAuthorizedKey(&certificate), file.OptOverwrite, file.OptMkdirAll)
+	fmt.Println("You can now connect to a node with 'ssh -i <your private key> -F ./constellation-terraform/ssh_config <private node ip>'")
 
 	return nil
 }
