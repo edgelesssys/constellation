@@ -10,6 +10,7 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/sha256"
+	"fmt"
 	"log"
 	"time"
 
@@ -51,7 +52,7 @@ func NewSSHCmd() *cobra.Command {
 func runSSH(cmd *cobra.Command, _ []string) error {
 	fh := file.NewHandler(afero.NewOsFs())
 	var mastersecret secret
-	err := fh.ReadJSON(constants.ConstellationMasterSecretStoreName, mastersecret)
+	err := fh.ReadJSON(fmt.Sprintf("%s.json", constants.ConstellationMasterSecretStoreName), &mastersecret)
 	if err != nil {
 		return err
 	}
@@ -97,7 +98,7 @@ func runSSH(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	log.Printf("Signed key: %s", string(ssh.MarshalAuthorizedKey(&certificate)))
+	log.Printf("Signed certificate: %s", string(ssh.MarshalAuthorizedKey(&certificate)))
 
 	return nil
 }
