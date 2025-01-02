@@ -40,7 +40,7 @@ func NewSSHCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ssh",
 		Short: "Prepare your cluster for emergency ssh access",
-		Long:  "Prepare your cluster for emergency ssh access and derive the necessary key.",
+		Long:  "Prepare your cluster for emergency ssh access and sign a given key pair for authorization.",
 		Args:  cobra.ExactArgs(0),
 		RunE:  runSSH,
 	}
