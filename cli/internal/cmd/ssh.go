@@ -44,7 +44,7 @@ func NewSSHCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(0),
 		RunE:  runSSH,
 	}
-	cmd.Flags().String("key", "", "The path to an existing ssh private key.")
+	cmd.Flags().String("key", "", "The path to an existing ssh public key.")
 	cmd.MarkFlagRequired("key")
 	return cmd
 }
