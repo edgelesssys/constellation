@@ -40,6 +40,7 @@ locals {
     { name = "recovery", port = "9999", health_check = "TCP" },
     { name = "join", port = "30090", health_check = "TCP" },
     var.debug ? [{ name = "debugd", port = "4000", health_check = "TCP" }] : [],
+    var.emergency_ssh ? [{ name = "ssh", port = "22", health_check = "TCP" }] : [],
   ])
   node_groups_by_role = {
     for name, node_group in var.node_groups : node_group.role => name...
