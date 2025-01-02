@@ -48,15 +48,9 @@ func NewSSHCmd() *cobra.Command {
 	return cmd
 }
 
-func runSSH(cmd *cobra.Command, _ []string) error {
-	fh := file.NewHandler(afero.NewOsFs())
-	debugLogger, err := newDebugFileLogger(cmd, fh)
-	if err != nil {
-		return err
-	}
-
+func deriveKey(cmd *cobra.Command, fh file.Handler, debugLogger debugLog) error {
 	var mastersecret secret
-	err = fh.ReadJSON(fmt.Sprintf("%s.json", constants.ConstellationMasterSecretStoreName), &mastersecret)
+	err := fh.ReadJSON(fmt.Sprintf("%s.json", constants.ConstellationMasterSecretStoreName), &mastersecret)
 	if err != nil {
 		return err
 	}
@@ -103,6 +97,21 @@ func runSSH(cmd *cobra.Command, _ []string) error {
 
 	debugLogger.Debug("Signed certificate", "certificate", string(ssh.MarshalAuthorizedKey(&certificate)))
 	fh.Write("./constellation-terraform/ca_cert.pub", ssh.MarshalAuthorizedKey(&certificate), file.OptOverwrite, file.OptMkdirAll)
+
+	return nil
+}
+
+func runSSH(cmd *cobra.Command, _ []string) error {
+	fh := file.NewHandler(afero.NewOsFs())
+	debugLogger, err := newDebugFileLogger(cmd, fh)
+	if err != nil {
+		return err
+	}
+
+	if err := deriveKey(cmd, fh, debugLogger); err != nil {
+		return err
+	}
+
 	fmt.Println("You can now connect to a node with 'ssh -i <your private key> -F ./constellation-terraform/ssh_config <private node ip>'")
 
 	return nil
