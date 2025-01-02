@@ -302,16 +302,13 @@ resource "local_file" "ssh_config" {
   filename        = "./ssh_config"
   file_permission = "0600"
   content         = <<EOF
-Host proxy
-  HostName ${azurerm_public_ip.loadbalancer_ip[0].fqdn}
-  PreferredAuthentications publickey
-  IdentityFile ./emergency_ssh_key
-  User root
+Host ${azurerm_public_ip.loadbalancer_ip[0].fqdn}
+  ProxyJump none
 
-Host 10.*
+Host *
   PreferredAuthentications publickey
   IdentityFile ./emergency_ssh_key
   User root
-  ProxyJump proxy
+  ProxyJump ${azurerm_public_ip.loadbalancer_ip[0].fqdn}
 EOF
 }
