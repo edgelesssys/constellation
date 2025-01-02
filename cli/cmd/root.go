@@ -61,6 +61,7 @@ func NewRootCmd() *cobra.Command {
 	rootCmd.AddCommand(cmd.NewIAMCmd())
 	rootCmd.AddCommand(cmd.NewVersionCmd())
 	rootCmd.AddCommand(cmd.NewInitCmd())
+	rootCmd.AddCommand(cmd.NewSSHCmd())
 	rootCmd.AddCommand(cmd.NewMaaPatchCmd())
 
 	return rootCmd
