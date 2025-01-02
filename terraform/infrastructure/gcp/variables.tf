@@ -75,3 +75,9 @@ variable "additional_labels" {
   default     = {}
   description = "Additional labels that should be given to created recources."
 }
+
+variable "emergency_ssh" {
+  type        = bool
+  default     = false
+  description = "Wether to deploy a load balancer to connect to nodes via ssh."
+}
