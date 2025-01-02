@@ -75,5 +75,5 @@ variable "stackit_project_id" {
 variable "emergency_ssh" {
   type        = bool
   default     = false
-  description = "Wether to deploy a load balancer to connect to nodes via ssh."
+  description = "Wether to expose the SSH port through the public load balancer."
 }
