@@ -75,7 +75,7 @@ We refer to this type of connection as "attested TLS" (aTLS).
 This connection is mainly used for three things (see the the [interface definition](https://github.com/edgelesssys/constellation/blob/main/bootstrapper/initproto/init.proto) for a comprehensive list of exchanged data):
 
 1. The CLI sends the hashes of the expected Kubernetes binaries to the first node.
-2. The CLI generates the [master secret](architecture/old/keys.md#master-secret) of the to-be-created cluster and sends it to the first node.
+2. The CLI generates the [master secret](architecture/security/keys.md#master-secret) of the to-be-created cluster and sends it to the first node.
 3. The first node generates a [kubeconfig file](https://www.redhat.com/sysadmin/kubeconfig) and sends it to the CLI.
    The kubeconfig file contains Kubernetes credentials for the CLI and the Kubernetes cluster's public key, among others.
 
