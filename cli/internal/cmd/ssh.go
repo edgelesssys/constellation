@@ -11,6 +11,8 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"fmt"
+	"os"
+	"os/exec"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -96,7 +98,22 @@ func deriveKey(cmd *cobra.Command, fh file.Handler, debugLogger debugLog) error 
 	}
 
 	debugLogger.Debug("Signed certificate", "certificate", string(ssh.MarshalAuthorizedKey(&certificate)))
-	fh.Write("./constellation-terraform/ca_cert.pub", ssh.MarshalAuthorizedKey(&certificate), file.OptOverwrite, file.OptMkdirAll)
+	fh.Write(fmt.Sprintf("%s/ca_cert.pub", constants.TerraformWorkingDir), ssh.MarshalAuthorizedKey(&certificate), file.OptOverwrite, file.OptMkdirAll)
+
+	return nil
+}
+
+func updateCluster(fh file.Handler, debugLogger debugLog) error {
+	fh.Write(fmt.Sprintf("%s/ssh.auto.tfvars", constants.TerraformWorkingDir), []byte("emergency_ssh = true"), file.OptOverwrite, file.OptMkdirAll)
+
+	spinner := newSpinner(os.Stderr)
+	spinner.Start("Updating cluster", true)
+	defer spinner.Stop()
+	err := exec.Command("terraform", "apply", fmt.Sprintf("-state=%s/terraform.tfstate", constants.TerraformWorkingDir)).Run()
+	if err != nil {
+		return err
+	}
+	debugLogger.Debug("Updated the cluster successfully")
 
 	return nil
 }
@@ -112,7 +129,11 @@ func runSSH(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	fmt.Println("You can now connect to a node with 'ssh -i <your private key> -F ./constellation-terraform/ssh_config <private node ip>'")
+	if err := updateCluster(fh, debugLogger); err != nil {
+		return err
+	}
+
+	fmt.Printf("You can now connect to a node using 'ssh -F %s/ssh_config -i <your private key> <node ip>'.\nYou can obtain the private node IP via the web UI of your CSP.\n", constants.TerraformWorkingDir)
 
 	return nil
 }
