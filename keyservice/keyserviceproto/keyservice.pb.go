@@ -250,9 +250,11 @@ var file_keyservice_keyserviceproto_keyservice_proto_goTypes = []any{
 }
 var file_keyservice_keyserviceproto_keyservice_proto_depIdxs = []int32{
 	0, // 0: kms.API.GetDataKey:input_type -> kms.GetDataKeyRequest
-	1, // 1: kms.API.GetDataKey:output_type -> kms.GetDataKeyResponse
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
+	2, // 1: kms.API.GetCAKey:input_type -> kms.GetCAKeyRequest
+	1, // 2: kms.API.GetDataKey:output_type -> kms.GetDataKeyResponse
+	3, // 3: kms.API.GetCAKey:output_type -> kms.GetCAKeyResponse
+	2, // [2:4] is the sub-list for method output_type
+	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -295,6 +297,7 @@ const _ = grpc.SupportPackageIsVersion6
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type APIClient interface {
 	GetDataKey(ctx context.Context, in *GetDataKeyRequest, opts ...grpc.CallOption) (*GetDataKeyResponse, error)
+	GetCAKey(ctx context.Context, in *GetCAKeyRequest, opts ...grpc.CallOption) (*GetCAKeyResponse, error)
 }
 
 type aPIClient struct {
@@ -314,9 +317,19 @@ func (c *aPIClient) GetDataKey(ctx context.Context, in *GetDataKeyRequest, opts 
 	return out, nil
 }
 
+func (c *aPIClient) GetCAKey(ctx context.Context, in *GetCAKeyRequest, opts ...grpc.CallOption) (*GetCAKeyResponse, error) {
+	out := new(GetCAKeyResponse)
+	err := c.cc.Invoke(ctx, "/kms.API/GetCAKey", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // APIServer is the server API for API service.
 type APIServer interface {
 	GetDataKey(context.Context, *GetDataKeyRequest) (*GetDataKeyResponse, error)
+	GetCAKey(context.Context, *GetCAKeyRequest) (*GetCAKeyResponse, error)
 }
 
 // UnimplementedAPIServer can be embedded to have forward compatible implementations.
@@ -325,6 +338,9 @@ type UnimplementedAPIServer struct {
 
 func (*UnimplementedAPIServer) GetDataKey(context.Context, *GetDataKeyRequest) (*GetDataKeyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDataKey not implemented")
+}
+func (*UnimplementedAPIServer) GetCAKey(context.Context, *GetCAKeyRequest) (*GetCAKeyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCAKey not implemented")
 }
 
 func RegisterAPIServer(s *grpc.Server, srv APIServer) {
@@ -349,6 +365,24 @@ func _API_GetDataKey_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _API_GetCAKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCAKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(APIServer).GetCAKey(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/kms.API/GetCAKey",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(APIServer).GetCAKey(ctx, req.(*GetCAKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _API_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "kms.API",
 	HandlerType: (*APIServer)(nil),
@@ -356,6 +390,10 @@ var _API_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetDataKey",
 			Handler:    _API_GetDataKey_Handler,
+		},
+		{
+			MethodName: "GetCAKey",
+			Handler:    _API_GetCAKey_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
