@@ -9,14 +9,17 @@ option go_package = "github.com/edgelesssys/constellation/v2/joinservice/joinpro
 service API {
   // IssueJoinTicket issues a join ticket for a new node.
   rpc IssueJoinTicket(IssueJoinTicketRequest) returns (IssueJoinTicketResponse);
-  // IssueRejoinTicket issues a join ticket for a node that has previously joined the cluster.
-  rpc IssueRejoinTicket(IssueRejoinTicketRequest) returns (IssueRejoinTicketResponse);
+  // IssueRejoinTicket issues a join ticket for a node that has previously
+  // joined the cluster.
+  rpc IssueRejoinTicket(IssueRejoinTicketRequest)
+      returns (IssueRejoinTicketResponse);
 }
 
 message IssueJoinTicketRequest {
   // disk_uuid is the UUID of a node's state disk.
   string disk_uuid = 1;
-  // certificate_request is a certificate request for the node's kubelet certificate.
+  // certificate_request is a certificate request for the node's kubelet
+  // certificate.
   bytes certificate_request = 2;
   // is_control_plane indicates whether the node is a control-plane node.
   bool is_control_plane = 3;
@@ -35,9 +38,11 @@ message IssueJoinTicketResponse {
   bytes kubelet_cert = 4;
   // api_server_endpoint is the endpoint of Constellation's API server.
   string api_server_endpoint = 5;
-  // token is the Kubernetes Join Token to be used by the node to join the cluster.
+  // token is the Kubernetes Join Token to be used by the node to join the
+  // cluster.
   string token = 6;
-  // discovery_token_ca_cert_hash is a hash of the root certificate authority presented by the Kubernetes control-plane.
+  // discovery_token_ca_cert_hash is a hash of the root certificate authority
+  // presented by the Kubernetes control-plane.
   string discovery_token_ca_cert_hash = 7;
   // control_plane_files is a list of control-plane certificates and keys.
   repeated control_plane_cert_or_key control_plane_files = 8;
@@ -45,6 +50,9 @@ message IssueJoinTicketResponse {
   string kubernetes_version = 9;
   // kubernetes_components is a list of components to install on the node.
   repeated components.Component kubernetes_components = 10;
+  // emergency_ca_key is an ssh ca key that can be used to connect to a node in
+  // case of an emergency.
+  bytes emergency_ca_key = 11;
 }
 
 message control_plane_cert_or_key {
