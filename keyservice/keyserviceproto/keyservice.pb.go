@@ -8,14 +8,15 @@ package keyserviceproto
 
 import (
 	context "context"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
+
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
 )
 
 const (
@@ -121,6 +122,87 @@ func (x *GetDataKeyResponse) GetDataKey() []byte {
 	return nil
 }
 
+type GetCAKeyRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *GetCAKeyRequest) Reset() {
+	*x = GetCAKeyRequest{}
+	mi := &file_keyservice_keyserviceproto_keyservice_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetCAKeyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetCAKeyRequest) ProtoMessage() {}
+
+func (x *GetCAKeyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_keyservice_keyserviceproto_keyservice_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetCAKeyRequest.ProtoReflect.Descriptor instead.
+func (*GetCAKeyRequest) Descriptor() ([]byte, []int) {
+	return file_keyservice_keyserviceproto_keyservice_proto_rawDescGZIP(), []int{2}
+}
+
+type GetCAKeyResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	CaKey []byte `protobuf:"bytes,1,opt,name=ca_key,json=caKey,proto3" json:"ca_key,omitempty"`
+}
+
+func (x *GetCAKeyResponse) Reset() {
+	*x = GetCAKeyResponse{}
+	mi := &file_keyservice_keyserviceproto_keyservice_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetCAKeyResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetCAKeyResponse) ProtoMessage() {}
+
+func (x *GetCAKeyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_keyservice_keyserviceproto_keyservice_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetCAKeyResponse.ProtoReflect.Descriptor instead.
+func (*GetCAKeyResponse) Descriptor() ([]byte, []int) {
+	return file_keyservice_keyserviceproto_keyservice_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *GetCAKeyResponse) GetCaKey() []byte {
+	if x != nil {
+		return x.CaKey
+	}
+	return nil
+}
+
 var File_keyservice_keyserviceproto_keyservice_proto protoreflect.FileDescriptor
 
 var file_keyservice_keyserviceproto_keyservice_proto_rawDesc = string([]byte{
@@ -159,10 +241,12 @@ func file_keyservice_keyserviceproto_keyservice_proto_rawDescGZIP() []byte {
 	return file_keyservice_keyserviceproto_keyservice_proto_rawDescData
 }
 
-var file_keyservice_keyserviceproto_keyservice_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_keyservice_keyserviceproto_keyservice_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_keyservice_keyserviceproto_keyservice_proto_goTypes = []any{
 	(*GetDataKeyRequest)(nil),  // 0: kms.GetDataKeyRequest
 	(*GetDataKeyResponse)(nil), // 1: kms.GetDataKeyResponse
+	(*GetCAKeyRequest)(nil),    // 2: kms.GetCAKeyRequest
+	(*GetCAKeyResponse)(nil),   // 3: kms.GetCAKeyResponse
 }
 var file_keyservice_keyserviceproto_keyservice_proto_depIdxs = []int32{
 	0, // 0: kms.API.GetDataKey:input_type -> kms.GetDataKeyRequest
@@ -185,7 +269,7 @@ func file_keyservice_keyserviceproto_keyservice_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_keyservice_keyserviceproto_keyservice_proto_rawDesc), len(file_keyservice_keyserviceproto_keyservice_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
