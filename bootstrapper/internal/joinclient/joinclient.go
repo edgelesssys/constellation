@@ -270,6 +270,10 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 	if err := c.fileHandler.Write(certificate.KeyFilename, kubeletKey, file.OptMkdirAll); err != nil {
 		return fmt.Errorf("writing kubelet key: %w", err)
 	}
+	// TODO(miampf): Make path a constant
+	if err := c.fileHandler.Write("/run/ssh/ssh_ca.pub", ticket.EmergencyCaKey, file.OptMkdirAll); err != nil {
+		return fmt.Errorf("writing ca key: %w", err)
+	}
 
 	state := nodestate.NodeState{
 		Role:            c.role,
