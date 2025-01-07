@@ -39,6 +39,7 @@ Commands:
     * [apply](#constellation-iam-upgrade-apply): Apply an upgrade to an IAM profile
 * [version](#constellation-version): Display version of this CLI
 * [init](#constellation-init): Initialize the Constellation cluster
+* [ssh](#constellation-ssh): Prepare your cluster for emergency ssh access
 
 ## constellation config
 
@@ -831,6 +832,34 @@ constellation init [flags]
   -h, --help               help for init
       --merge-kubeconfig   merge Constellation kubeconfig file with default kubeconfig file in $HOME/.kube/config
       --skip-helm-wait     install helm charts without waiting for deployments to be ready
+```
+
+### Options inherited from parent commands
+
+```
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
+```
+
+## constellation ssh
+
+Prepare your cluster for emergency ssh access
+
+### Synopsis
+
+Prepare your cluster for emergency ssh access and sign a given key pair for authorization.
+
+```
+constellation ssh [flags]
+```
+
+### Options
+
+```
+  -h, --help         help for ssh
+      --key string   The path to an existing ssh public key.
 ```
 
 ### Options inherited from parent commands
