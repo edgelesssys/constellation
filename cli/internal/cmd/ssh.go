@@ -7,18 +7,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
+	"bytes"
 	"crypto/ed25519"
 	"crypto/rand"
-	"crypto/sha256"
 	"fmt"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/kms/setup"
+	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 
-	"golang.org/x/crypto/hkdf"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -60,8 +62,17 @@ func runSSH(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	hkdf := hkdf.New(sha256.New, mastersecret.Key, mastersecret.Salt, []byte("ssh-ca"))
-	_, priv, err := ed25519.GenerateKey(hkdf)
+	mastersecret_uri := uri.MasterSecret{Key: mastersecret.Key, Salt: mastersecret.Salt}
+	kms, err := setup.KMS(cmd.Context(), uri.NoStoreURI, mastersecret_uri.EncodeToURI())
+	if err != nil {
+		return err
+	}
+	key, err := kms.GetDEK(cmd.Context(), crypto.DEKPrefix, 256)
+	if err != nil {
+		return err
+	}
+
+	_, priv, err := ed25519.GenerateKey(bytes.NewReader(key))
 	if err != nil {
 		return err
 	}
