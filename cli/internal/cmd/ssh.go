@@ -57,6 +57,7 @@ func runSSH(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
+	// NOTE(miampf): Since other KMS aren't fully implemented yet, this commands assumes that the cKMS is used and derives the key accordingly.
 	var mastersecret secret
 	if err = fh.ReadJSON(fmt.Sprintf("%s.json", constants.ConstellationMasterSecretStoreName), &mastersecret); err != nil {
 		return err
