@@ -14,8 +14,12 @@ message GetDataKeyRequest {
   uint32 length = 2;
 }
 
-message GetDataKeyResponse { bytes data_key = 1; }
+message GetDataKeyResponse {
+  bytes data_key = 1;
+}
 
 message GetCAKeyRequest {}
 
-message GetCAKeyResponse { bytes ca_key = 1; }
+message GetCAKeyResponse {
+  bytes ca_key = 1;
+}

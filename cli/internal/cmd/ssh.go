@@ -24,11 +24,6 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-type secret struct {
-	Key  []byte `json:"key,omitempty"`
-	Salt []byte `json:"salt,omitempty"`
-}
-
 var permissions = ssh.Permissions{
 	Extensions: map[string]string{
 		"permit-port-forwarding": "yes",
@@ -58,7 +53,7 @@ func runSSH(cmd *cobra.Command, _ []string) error {
 	}
 
 	// NOTE(miampf): Since other KMS aren't fully implemented yet, this commands assumes that the cKMS is used and derives the key accordingly.
-	var mastersecret secret
+	var mastersecret uri.MasterSecret
 	if err = fh.ReadJSON(fmt.Sprintf("%s.json", constants.ConstellationMasterSecretStoreName), &mastersecret); err != nil {
 		return fmt.Errorf("Failed to read constellation master secret: %s", err)
 	}
