@@ -60,44 +60,44 @@ func runSSH(cmd *cobra.Command, _ []string) error {
 	// NOTE(miampf): Since other KMS aren't fully implemented yet, this commands assumes that the cKMS is used and derives the key accordingly.
 	var mastersecret secret
 	if err = fh.ReadJSON(fmt.Sprintf("%s.json", constants.ConstellationMasterSecretStoreName), &mastersecret); err != nil {
-		return err
+		return fmt.Errorf("Failed to read constellation master secret: %s", err)
 	}
 
 	mastersecret_uri := uri.MasterSecret{Key: mastersecret.Key, Salt: mastersecret.Salt}
 	kms, err := setup.KMS(cmd.Context(), uri.NoStoreURI, mastersecret_uri.EncodeToURI())
 	if err != nil {
-		return err
+		return fmt.Errorf("Failed to set up key management service: %s", err)
 	}
 	key, err := kms.GetDEK(cmd.Context(), crypto.DEKPrefix, 256)
 	if err != nil {
-		return err
+		return fmt.Errorf("Failed to retrieve key from key management service: %s", err)
 	}
 
 	_, priv, err := ed25519.GenerateKey(bytes.NewReader(key))
 	if err != nil {
-		return err
+		return fmt.Errorf("Failed to create signing key from master secret: %s", err)
 	}
 
 	ca, err := ssh.NewSignerFromSigner(priv)
 	if err != nil {
-		return err
+		return fmt.Errorf("Failed to create ssh CA key from master secret: %s", err)
 	}
 
-	debugLogger.Debug("CA KEY generated", "key", string(ssh.MarshalAuthorizedKey(ca.PublicKey())))
+	debugLogger.Debug("SSH CA KEY generated", "key", string(ssh.MarshalAuthorizedKey(ca.PublicKey())))
 
 	key_path, err := cmd.Flags().GetString("key")
 	if err != nil {
-		return err
+		return fmt.Errorf("Failed to retrieve path to public key from 'key' flag: %s", err)
 	}
 
 	key_buf, err := fh.Read(key_path)
 	if err != nil {
-		return err
+		return fmt.Errorf("Failed to read public key %q: %s", key_path, err)
 	}
 
 	pub, _, _, _, err := ssh.ParseAuthorizedKey(key_buf)
 	if err != nil {
-		return err
+		return fmt.Errorf("Failed to parse key %q as public key: %s", key_path, err)
 	}
 
 	certificate := ssh.Certificate{
@@ -109,7 +109,7 @@ func runSSH(cmd *cobra.Command, _ []string) error {
 		Permissions:     permissions,
 	}
 	if err := certificate.SignCert(rand.Reader, ca); err != nil {
-		return err
+		return fmt.Errorf("Failed to sign certificate: %s", err)
 	}
 
 	debugLogger.Debug("Signed certificate", "certificate", string(ssh.MarshalAuthorizedKey(&certificate)))
