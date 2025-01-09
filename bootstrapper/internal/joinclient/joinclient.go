@@ -285,7 +285,7 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 	}
 
 	// TODO(miampf): Make path a constant
-	if err := c.fileHandler.Write("/run/ssh/ssh_ca.pub", ssh.MarshalAuthorizedKey(ca.PublicKey()), file.OptMkdirAll); err != nil {
+	if err := c.fileHandler.Write(constants.SSHCAKeyPath, ssh.MarshalAuthorizedKey(ca.PublicKey()), file.OptMkdirAll); err != nil {
 		return fmt.Errorf("writing ca key: %w", err)
 	}
 
