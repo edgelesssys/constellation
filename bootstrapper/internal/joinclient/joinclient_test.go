@@ -50,6 +50,11 @@ func TestClient(t *testing.T) {
 		{Role: role.ControlPlane, Name: "node-4", VPCIP: "192.0.2.2"},
 		{Role: role.ControlPlane, Name: "node-5", VPCIP: "192.0.2.3"},
 	}
+	caDerivationKey := make([]byte, 256)
+	for i := range caDerivationKey {
+		caDerivationKey[i] = 0x0
+	}
+	respCaKey := &joinproto.IssueJoinTicketResponse{EmergencyCaKey: caDerivationKey}
 
 	testCases := map[string]struct {
 		role          role.Role
@@ -69,7 +74,7 @@ func TestClient(t *testing.T) {
 				selfAnswer{err: assert.AnError},
 				selfAnswer{instance: workerSelf},
 				listAnswer{instances: peers},
-				issueJoinTicketAnswer{},
+				issueJoinTicketAnswer{resp: respCaKey},
 			},
 			clusterJoiner: &stubClusterJoiner{},
 			nodeLock:      newFakeLock(),
@@ -85,7 +90,7 @@ func TestClient(t *testing.T) {
 				selfAnswer{instance: metadata.InstanceMetadata{Name: "node-1"}},
 				selfAnswer{instance: workerSelf},
 				listAnswer{instances: peers},
-				issueJoinTicketAnswer{},
+				issueJoinTicketAnswer{resp: respCaKey},
 			},
 			clusterJoiner: &stubClusterJoiner{},
 			nodeLock:      newFakeLock(),
@@ -101,7 +106,7 @@ func TestClient(t *testing.T) {
 				listAnswer{err: assert.AnError},
 				listAnswer{err: assert.AnError},
 				listAnswer{instances: peers},
-				issueJoinTicketAnswer{},
+				issueJoinTicketAnswer{resp: respCaKey},
 			},
 			clusterJoiner: &stubClusterJoiner{},
 			nodeLock:      newFakeLock(),
@@ -117,7 +122,7 @@ func TestClient(t *testing.T) {
 				listAnswer{},
 				listAnswer{},
 				listAnswer{instances: peers},
-				issueJoinTicketAnswer{},
+				issueJoinTicketAnswer{resp: respCaKey},
 			},
 			clusterJoiner: &stubClusterJoiner{},
 			nodeLock:      newFakeLock(),
@@ -134,12 +139,28 @@ func TestClient(t *testing.T) {
 				listAnswer{instances: peers},
 				issueJoinTicketAnswer{err: assert.AnError},
 				listAnswer{instances: peers},
-				issueJoinTicketAnswer{},
+				issueJoinTicketAnswer{resp: respCaKey},
 			},
 			clusterJoiner: &stubClusterJoiner{},
 			nodeLock:      newFakeLock(),
 			disk:          &stubDisk{},
 			wantJoin:      true,
+			wantLock:      true,
+		},
+		"on worker: no CA derivation key is given": {
+			role: role.Worker,
+			apiAnswers: []any{
+				selfAnswer{instance: workerSelf},
+				listAnswer{instances: peers},
+				issueJoinTicketAnswer{err: assert.AnError},
+				listAnswer{instances: peers},
+				issueJoinTicketAnswer{err: assert.AnError},
+				listAnswer{instances: peers},
+				issueJoinTicketAnswer{},
+			},
+			clusterJoiner: &stubClusterJoiner{},
+			nodeLock:      newFakeLock(),
+			disk:          &stubDisk{},
 			wantLock:      true,
 		},
 		"on control plane: issueJoinTicket errors": {
@@ -151,7 +172,7 @@ func TestClient(t *testing.T) {
 				listAnswer{instances: peers},
 				issueJoinTicketAnswer{err: assert.AnError},
 				listAnswer{instances: peers},
-				issueJoinTicketAnswer{},
+				issueJoinTicketAnswer{resp: respCaKey},
 			},
 			clusterJoiner: &stubClusterJoiner{},
 			nodeLock:      newFakeLock(),
@@ -164,7 +185,7 @@ func TestClient(t *testing.T) {
 			apiAnswers: []any{
 				selfAnswer{instance: controlSelf},
 				listAnswer{instances: peers},
-				issueJoinTicketAnswer{},
+				issueJoinTicketAnswer{resp: respCaKey},
 			},
 			clusterJoiner: &stubClusterJoiner{numBadCalls: -1, joinClusterErr: assert.AnError},
 			nodeLock:      newFakeLock(),
@@ -177,7 +198,7 @@ func TestClient(t *testing.T) {
 			apiAnswers: []any{
 				selfAnswer{instance: controlSelf},
 				listAnswer{instances: peers},
-				issueJoinTicketAnswer{},
+				issueJoinTicketAnswer{resp: respCaKey},
 			},
 			clusterJoiner: &stubClusterJoiner{numBadCalls: 1, joinClusterErr: assert.AnError},
 			nodeLock:      newFakeLock(),
@@ -186,12 +207,24 @@ func TestClient(t *testing.T) {
 			wantLock:      true,
 			wantNumJoins:  2,
 		},
-		"on control plane: node already locked": {
+		"on control plane: no CA derivation key is given": {
 			role: role.ControlPlane,
 			apiAnswers: []any{
 				selfAnswer{instance: controlSelf},
 				listAnswer{instances: peers},
 				issueJoinTicketAnswer{},
+			},
+			clusterJoiner: &stubClusterJoiner{numBadCalls: 1, joinClusterErr: assert.AnError},
+			nodeLock:      newFakeLock(),
+			disk:          &stubDisk{},
+			wantLock:      true,
+		},
+		"on control plane: node already locked": {
+			role: role.ControlPlane,
+			apiAnswers: []any{
+				selfAnswer{instance: controlSelf},
+				listAnswer{instances: peers},
+				issueJoinTicketAnswer{resp: respCaKey},
 			},
 			clusterJoiner: &stubClusterJoiner{},
 			nodeLock:      lockedLock,
