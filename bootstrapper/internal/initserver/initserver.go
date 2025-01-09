@@ -20,6 +20,7 @@ package initserver
 import (
 	"bufio"
 	"context"
+	"crypto/ed25519"
 	"errors"
 	"fmt"
 	"io"
@@ -225,7 +226,7 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 	}
 
 	// Derive the emergency ssh CA key
-	key, err := cloudKms.GetDEK(stream.Context(), crypto.DEKPrefix+constants.SSHCAKeySuffix, 256)
+	key, err := cloudKms.GetDEK(stream.Context(), crypto.DEKPrefix+constants.SSHCAKeySuffix, ed25519.SeedSize)
 	if err != nil {
 		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "retrieving DEK for key derivation: %s", err)); e != nil {
 			err = errors.Join(err, e)

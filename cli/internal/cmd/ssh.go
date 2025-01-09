@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
+	"crypto/ed25519"
 	"crypto/rand"
 	"fmt"
 	"os"
@@ -70,7 +71,7 @@ func runSSH(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("setting up KMS: %s", err)
 	}
-	key, err := kms.GetDEK(cmd.Context(), crypto.DEKPrefix+constants.SSHCAKeySuffix, 256)
+	key, err := kms.GetDEK(cmd.Context(), crypto.DEKPrefix+constants.SSHCAKeySuffix, ed25519.SeedSize)
 	if err != nil {
 		return fmt.Errorf("retrieving key from KMS: %s", err)
 	}

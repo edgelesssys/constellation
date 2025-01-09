@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package crypto
 
 import (
+	"crypto/ed25519"
 	"crypto/x509"
 	"testing"
 
@@ -119,6 +120,39 @@ func TestGenerateRandomBytes(t *testing.T) {
 	n3, err := GenerateRandomBytes(16)
 	require.NoError(err)
 	assert.Len(n3, 16)
+}
+
+func TestGenerateEmergencySSHCAKey(t *testing.T) {
+	nullKey := make([]byte, ed25519.SeedSize)
+	for i := range nullKey {
+		nullKey[i] = 0x0
+	}
+
+	testCases := map[string]struct {
+		key     []byte
+		wantErr bool
+	}{
+		"invalid key": {
+			key:     make([]byte, 0),
+			wantErr: true,
+		},
+		"valid key": {
+			key: nullKey,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			_, err := GenerateEmergencySSHCAKey(tc.key)
+			if tc.wantErr {
+				assert.NotNil(err)
+			} else {
+				assert.Nil(err)
+			}
+		})
+	}
 }
 
 func TestPemToX509Cert(t *testing.T) {
