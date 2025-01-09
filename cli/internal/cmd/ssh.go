@@ -72,7 +72,7 @@ func runSSH(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("Failed to set up key management service: %s", err)
 	}
-	key, err := kms.GetDEK(cmd.Context(), crypto.DEKPrefix, 256)
+	key, err := kms.GetDEK(cmd.Context(), crypto.DEKPrefix+constants.SSHCAKeySuffix, 256)
 	if err != nil {
 		return fmt.Errorf("Failed to retrieve key from key management service: %s", err)
 	}
