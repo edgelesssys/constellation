@@ -7,8 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
-	"bytes"
-	"crypto/ed25519"
 	"crypto/rand"
 	"fmt"
 	"os"
@@ -77,17 +75,12 @@ func runSSH(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("Failed to retrieve key from key management service: %s", err)
 	}
 
-	_, priv, err := ed25519.GenerateKey(bytes.NewReader(key))
+	ca, err := crypto.GenerateEmergencySSHCAKey(key)
 	if err != nil {
-		return fmt.Errorf("Failed to create signing key from master secret: %s", err)
+		return fmt.Errorf("Failed to generate emergency SSH CA key: %s", err)
 	}
 
-	ca, err := ssh.NewSignerFromSigner(priv)
-	if err != nil {
-		return fmt.Errorf("Failed to create ssh CA key from master secret: %s", err)
-	}
-
-	debugLogger.Debug("SSH CA KEY generated", "key", string(ssh.MarshalAuthorizedKey(ca.PublicKey())))
+	debugLogger.Debug("SSH CA KEY generated", "public-key", string(ssh.MarshalAuthorizedKey(ca.PublicKey())))
 
 	key_path, err := cmd.Flags().GetString("key")
 	if err != nil {

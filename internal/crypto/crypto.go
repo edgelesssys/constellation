@@ -9,6 +9,7 @@ package crypto
 
 import (
 	"bytes"
+	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/x509"
@@ -18,6 +19,7 @@ import (
 	"math/big"
 
 	"golang.org/x/crypto/hkdf"
+	"golang.org/x/crypto/ssh"
 )
 
 const (
@@ -60,6 +62,19 @@ func GenerateRandomBytes(length int) ([]byte, error) {
 		return nil, err
 	}
 	return nonce, nil
+}
+
+// GenerateEmergencySSHCAKey creates a CA that is used to sign keys for emergency ssh access.
+func GenerateEmergencySSHCAKey(key []byte) (ssh.Signer, error) {
+	_, priv, err := ed25519.GenerateKey(bytes.NewReader(key))
+	if err != nil {
+		return nil, err
+	}
+	ca, err := ssh.NewSignerFromSigner(priv)
+	if err != nil {
+		return nil, err
+	}
+	return ca, nil
 }
 
 // PemToX509Cert takes a list of PEM-encoded certificates, parses the first one and returns it

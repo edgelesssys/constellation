@@ -19,9 +19,7 @@ package initserver
 
 import (
 	"bufio"
-	"bytes"
 	"context"
-	"crypto/ed25519"
 	"errors"
 	"fmt"
 	"io"
@@ -234,16 +232,9 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 		}
 		return err
 	}
-	_, priv, err := ed25519.GenerateKey(bytes.NewReader(key))
+	ca, err := crypto.GenerateEmergencySSHCAKey(key)
 	if err != nil {
-		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "generating signing key for emergency ssh CA: %s", err)); e != nil {
-			err = errors.Join(err, e)
-		}
-		return err
-	}
-	ca, err := ssh.NewSignerFromSigner(priv)
-	if err != nil {
-		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "signing emergency ssh CA key: %s", err)); e != nil {
+		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "generating emergency SSH CA key: %s", err)); e != nil {
 			err = errors.Join(err, e)
 		}
 		return err

@@ -6,7 +6,10 @@ go_library(
     srcs = ["crypto.go"],
     importpath = "github.com/edgelesssys/constellation/v2/internal/crypto",
     visibility = ["//:__subpackages__"],
-    deps = ["@org_golang_x_crypto//hkdf"],
+    deps = [
+        "@org_golang_x_crypto//hkdf",
+        "@org_golang_x_crypto//ssh",
+    ],
 )
 
 go_test(
