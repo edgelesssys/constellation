@@ -122,87 +122,6 @@ func (x *GetDataKeyResponse) GetDataKey() []byte {
 	return nil
 }
 
-type GetCAKeyRequest struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *GetCAKeyRequest) Reset() {
-	*x = GetCAKeyRequest{}
-	mi := &file_keyservice_keyserviceproto_keyservice_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetCAKeyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetCAKeyRequest) ProtoMessage() {}
-
-func (x *GetCAKeyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_keyservice_keyserviceproto_keyservice_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetCAKeyRequest.ProtoReflect.Descriptor instead.
-func (*GetCAKeyRequest) Descriptor() ([]byte, []int) {
-	return file_keyservice_keyserviceproto_keyservice_proto_rawDescGZIP(), []int{2}
-}
-
-type GetCAKeyResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	CaKey []byte `protobuf:"bytes,1,opt,name=ca_key,json=caKey,proto3" json:"ca_key,omitempty"`
-}
-
-func (x *GetCAKeyResponse) Reset() {
-	*x = GetCAKeyResponse{}
-	mi := &file_keyservice_keyserviceproto_keyservice_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetCAKeyResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetCAKeyResponse) ProtoMessage() {}
-
-func (x *GetCAKeyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_keyservice_keyserviceproto_keyservice_proto_msgTypes[3]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetCAKeyResponse.ProtoReflect.Descriptor instead.
-func (*GetCAKeyResponse) Descriptor() ([]byte, []int) {
-	return file_keyservice_keyserviceproto_keyservice_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *GetCAKeyResponse) GetCaKey() []byte {
-	if x != nil {
-		return x.CaKey
-	}
-	return nil
-}
-
 var File_keyservice_keyserviceproto_keyservice_proto protoreflect.FileDescriptor
 
 var file_keyservice_keyserviceproto_keyservice_proto_rawDesc = string([]byte{
@@ -241,20 +160,16 @@ func file_keyservice_keyserviceproto_keyservice_proto_rawDescGZIP() []byte {
 	return file_keyservice_keyserviceproto_keyservice_proto_rawDescData
 }
 
-var file_keyservice_keyserviceproto_keyservice_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_keyservice_keyserviceproto_keyservice_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_keyservice_keyserviceproto_keyservice_proto_goTypes = []any{
 	(*GetDataKeyRequest)(nil),  // 0: kms.GetDataKeyRequest
 	(*GetDataKeyResponse)(nil), // 1: kms.GetDataKeyResponse
-	(*GetCAKeyRequest)(nil),    // 2: kms.GetCAKeyRequest
-	(*GetCAKeyResponse)(nil),   // 3: kms.GetCAKeyResponse
 }
 var file_keyservice_keyserviceproto_keyservice_proto_depIdxs = []int32{
 	0, // 0: kms.API.GetDataKey:input_type -> kms.GetDataKeyRequest
-	2, // 1: kms.API.GetCAKey:input_type -> kms.GetCAKeyRequest
-	1, // 2: kms.API.GetDataKey:output_type -> kms.GetDataKeyResponse
-	3, // 3: kms.API.GetCAKey:output_type -> kms.GetCAKeyResponse
-	2, // [2:4] is the sub-list for method output_type
-	0, // [0:2] is the sub-list for method input_type
+	1, // 1: kms.API.GetDataKey:output_type -> kms.GetDataKeyResponse
+	1, // [1:2] is the sub-list for method output_type
+	0, // [0:1] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -271,7 +186,7 @@ func file_keyservice_keyserviceproto_keyservice_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_keyservice_keyserviceproto_keyservice_proto_rawDesc), len(file_keyservice_keyserviceproto_keyservice_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
@@ -297,7 +212,6 @@ const _ = grpc.SupportPackageIsVersion6
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type APIClient interface {
 	GetDataKey(ctx context.Context, in *GetDataKeyRequest, opts ...grpc.CallOption) (*GetDataKeyResponse, error)
-	GetCAKey(ctx context.Context, in *GetCAKeyRequest, opts ...grpc.CallOption) (*GetCAKeyResponse, error)
 }
 
 type aPIClient struct {
@@ -317,19 +231,9 @@ func (c *aPIClient) GetDataKey(ctx context.Context, in *GetDataKeyRequest, opts 
 	return out, nil
 }
 
-func (c *aPIClient) GetCAKey(ctx context.Context, in *GetCAKeyRequest, opts ...grpc.CallOption) (*GetCAKeyResponse, error) {
-	out := new(GetCAKeyResponse)
-	err := c.cc.Invoke(ctx, "/kms.API/GetCAKey", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // APIServer is the server API for API service.
 type APIServer interface {
 	GetDataKey(context.Context, *GetDataKeyRequest) (*GetDataKeyResponse, error)
-	GetCAKey(context.Context, *GetCAKeyRequest) (*GetCAKeyResponse, error)
 }
 
 // UnimplementedAPIServer can be embedded to have forward compatible implementations.
@@ -338,9 +242,6 @@ type UnimplementedAPIServer struct {
 
 func (*UnimplementedAPIServer) GetDataKey(context.Context, *GetDataKeyRequest) (*GetDataKeyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDataKey not implemented")
-}
-func (*UnimplementedAPIServer) GetCAKey(context.Context, *GetCAKeyRequest) (*GetCAKeyResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetCAKey not implemented")
 }
 
 func RegisterAPIServer(s *grpc.Server, srv APIServer) {
@@ -365,24 +266,6 @@ func _API_GetDataKey_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
-func _API_GetCAKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetCAKeyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(APIServer).GetCAKey(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/kms.API/GetCAKey",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(APIServer).GetCAKey(ctx, req.(*GetCAKeyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 var _API_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "kms.API",
 	HandlerType: (*APIServer)(nil),
@@ -390,10 +273,6 @@ var _API_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetDataKey",
 			Handler:    _API_GetDataKey_Handler,
-		},
-		{
-			MethodName: "GetCAKey",
-			Handler:    _API_GetCAKey_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
