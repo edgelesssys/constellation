@@ -18,7 +18,9 @@ If the JoinClient finds an existing cluster, it will attempt to join it as eithe
 package joinclient
 
 import (
+	"bytes"
 	"context"
+	"crypto/ed25519"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -37,6 +39,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"github.com/edgelesssys/constellation/v2/joinservice/joinproto"
 	"github.com/spf13/afero"
+	"golang.org/x/crypto/ssh"
 	"google.golang.org/grpc"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 	kubeconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
@@ -270,8 +273,19 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 	if err := c.fileHandler.Write(certificate.KeyFilename, kubeletKey, file.OptMkdirAll); err != nil {
 		return fmt.Errorf("writing kubelet key: %w", err)
 	}
+
+	// derive CA key from emergency key
+	_, priv, err := ed25519.GenerateKey(bytes.NewReader(ticket.EmergencyCaKey))
+	if err != nil {
+		return fmt.Errorf("deriving ed25519 ssh emergency key: %w", err)
+	}
+	ca, err := ssh.NewSignerFromSigner(priv)
+	if err != nil {
+		return fmt.Errorf("creating emergency SSH CA key: %w", err)
+	}
+
 	// TODO(miampf): Make path a constant
-	if err := c.fileHandler.Write("/run/ssh/ssh_ca.pub", ticket.EmergencyCaKey, file.OptMkdirAll); err != nil {
+	if err := c.fileHandler.Write("/run/ssh/ssh_ca.pub", ssh.MarshalAuthorizedKey(ca.PublicKey()), file.OptMkdirAll); err != nil {
 		return fmt.Errorf("writing ca key: %w", err)
 	}
 

@@ -8,9 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package server
 
 import (
-	"bytes"
 	"context"
-	"crypto/ed25519"
 	"fmt"
 	"log/slog"
 	"net"
@@ -20,7 +18,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/keyservice/keyserviceproto"
-	"golang.org/x/crypto/ssh"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -84,28 +81,4 @@ func (s *Server) GetDataKey(ctx context.Context, in *keyserviceproto.GetDataKeyR
 		return nil, status.Errorf(codes.Internal, "%v", err)
 	}
 	return &keyserviceproto.GetDataKeyResponse{DataKey: key}, nil
-}
-
-// GetCAKey returns the CA key.
-func (s *Server) GetCAKey(ctx context.Context, in *keyserviceproto.GetCAKeyRequest) (*keyserviceproto.GetCAKeyResponse, error) {
-	log := s.log.With("peerAddress", grpclog.PeerAddrFromContext(ctx))
-
-	key, err := s.conKMS.GetDEK(ctx, crypto.DEKPrefix, 256)
-	if err != nil {
-		log.With(slog.Any("error", err)).Error("Failed to get key for derivation")
-		return nil, status.Errorf(codes.Internal, "%v", err)
-	}
-
-	_, priv, err := ed25519.GenerateKey(bytes.NewReader(key))
-	if err != nil {
-		log.With(slog.Any("error", err)).Error("Failed to generate ed25519 key")
-		return nil, status.Errorf(codes.Internal, "%v", err)
-	}
-
-	ca, err := ssh.NewSignerFromKey(priv)
-	if err != nil {
-		log.With(slog.Any("error", err)).Error("Failed to generate CA key")
-		return nil, status.Errorf(codes.Internal, "%v", err)
-	}
-	return &keyserviceproto.GetCAKeyResponse{CaKey: ssh.MarshalAuthorizedKey(ca.PublicKey())}, nil
 }

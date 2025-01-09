@@ -100,6 +100,13 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 		return nil, status.Errorf(codes.Internal, "getting key for stateful disk: %s", err)
 	}
 
+	log.Info("Requesting emergency SSH CA derivation key")
+	sshCAKey, err := s.dataKeyGetter.GetDataKey(ctx, constants.SSHCAKeySuffix, 256)
+	if err != nil {
+		log.With(slog.Any("error", err)).Error("Failed to get emergency SSH CA derivation key")
+		return nil, status.Errorf(codes.Internal, "getting emergency SSH CA derivation key: %s", err)
+	}
+
 	log.Info("Creating Kubernetes join token")
 	kubeArgs, err := s.joinTokenGetter.GetJoinToken(constants.KubernetesJoinTokenTTL)
 	if err != nil {
@@ -167,6 +174,7 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 		KubeletCert:              kubeletCert,
 		ControlPlaneFiles:        controlPlaneFiles,
 		KubernetesComponents:     components,
+		EmergencyCaKey:           sshCAKey,
 	}, nil
 }
 
