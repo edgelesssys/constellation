@@ -40,7 +40,7 @@ func NewSSHCmd() *cobra.Command {
 		RunE:  runSSH,
 	}
 	cmd.Flags().String("key", "", "The path to an existing ssh public key.")
-	cmd.MarkFlagRequired("key")
+	must(cmd.MarkFlagRequired("key"))
 	return cmd
 }
 
@@ -53,7 +53,7 @@ func runSSH(cmd *cobra.Command, _ []string) error {
 
 	_, err = fh.Stat(constants.TerraformWorkingDir)
 	if os.IsNotExist(err) {
-		return fmt.Errorf("Directory %q does not exist. Please make sure that you are in your constellation workspace.", constants.TerraformWorkingDir)
+		return fmt.Errorf("directory %q does not exist", constants.TerraformWorkingDir)
 	}
 	if err != nil {
 		return err
@@ -62,39 +62,39 @@ func runSSH(cmd *cobra.Command, _ []string) error {
 	// NOTE(miampf): Since other KMS aren't fully implemented yet, this commands assumes that the cKMS is used and derives the key accordingly.
 	var mastersecret uri.MasterSecret
 	if err = fh.ReadJSON(fmt.Sprintf("%s.json", constants.ConstellationMasterSecretStoreName), &mastersecret); err != nil {
-		return fmt.Errorf("Failed to read constellation master secret: %s", err)
+		return fmt.Errorf("reading master secret: %s", err)
 	}
 
-	mastersecret_uri := uri.MasterSecret{Key: mastersecret.Key, Salt: mastersecret.Salt}
-	kms, err := setup.KMS(cmd.Context(), uri.NoStoreURI, mastersecret_uri.EncodeToURI())
+	mastersecretURI := uri.MasterSecret{Key: mastersecret.Key, Salt: mastersecret.Salt}
+	kms, err := setup.KMS(cmd.Context(), uri.NoStoreURI, mastersecretURI.EncodeToURI())
 	if err != nil {
-		return fmt.Errorf("Failed to set up key management service: %s", err)
+		return fmt.Errorf("setting up KMS: %s", err)
 	}
 	key, err := kms.GetDEK(cmd.Context(), crypto.DEKPrefix+constants.SSHCAKeySuffix, 256)
 	if err != nil {
-		return fmt.Errorf("Failed to retrieve key from key management service: %s", err)
+		return fmt.Errorf("retrieving key from KMS: %s", err)
 	}
 
 	ca, err := crypto.GenerateEmergencySSHCAKey(key)
 	if err != nil {
-		return fmt.Errorf("Failed to generate emergency SSH CA key: %s", err)
+		return fmt.Errorf("generating ssh emergency CA key: %s", err)
 	}
 
 	debugLogger.Debug("SSH CA KEY generated", "public-key", string(ssh.MarshalAuthorizedKey(ca.PublicKey())))
 
-	key_path, err := cmd.Flags().GetString("key")
+	keyPath, err := cmd.Flags().GetString("key")
 	if err != nil {
-		return fmt.Errorf("Failed to retrieve path to public key from 'key' flag: %s", err)
+		return fmt.Errorf("retrieving path to public key from flags: %s", err)
 	}
 
-	key_buf, err := fh.Read(key_path)
+	keyBuffer, err := fh.Read(keyPath)
 	if err != nil {
-		return fmt.Errorf("Failed to read public key %q: %s", key_path, err)
+		return fmt.Errorf("reading public key %q: %s", keyPath, err)
 	}
 
-	pub, _, _, _, err := ssh.ParseAuthorizedKey(key_buf)
+	pub, _, _, _, err := ssh.ParseAuthorizedKey(keyBuffer)
 	if err != nil {
-		return fmt.Errorf("Failed to parse key %q as public key: %s", key_path, err)
+		return fmt.Errorf("parsing public key %q: %s", keyPath, err)
 	}
 
 	certificate := ssh.Certificate{
@@ -106,11 +106,13 @@ func runSSH(cmd *cobra.Command, _ []string) error {
 		Permissions:     permissions,
 	}
 	if err := certificate.SignCert(rand.Reader, ca); err != nil {
-		return fmt.Errorf("Failed to sign certificate: %s", err)
+		return fmt.Errorf("signing certificate: %s", err)
 	}
 
 	debugLogger.Debug("Signed certificate", "certificate", string(ssh.MarshalAuthorizedKey(&certificate)))
-	fh.Write(fmt.Sprintf("%s/ca_cert.pub", constants.TerraformWorkingDir), ssh.MarshalAuthorizedKey(&certificate), file.OptOverwrite)
+	if err := fh.Write(fmt.Sprintf("%s/ca_cert.pub", constants.TerraformWorkingDir), ssh.MarshalAuthorizedKey(&certificate), file.OptOverwrite); err != nil {
+		return fmt.Errorf("writing certificate: %s", err)
+	}
 	fmt.Printf("You can now connect to a node using 'ssh -F %s/ssh_config -i <your private key> <node ip>'.\nYou can obtain the private node IP via the web UI of your CSP.\n", constants.TerraformWorkingDir)
 
 	return nil
