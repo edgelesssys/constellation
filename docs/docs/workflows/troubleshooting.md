@@ -56,8 +56,6 @@ A solution is to add the [required permissions](../getting-started/install.md#re
 
 If your setup requires a change in the ordering of credentials, please open an issue and explain your desired behavior.
 
-
-
 ### Nodes fail to join with error `untrusted measurement value`
 
 This error indicates that a node's [attestation statement](../architecture/attestation.md) contains measurements that don't match the trusted values expected by the [JoinService](../architecture/microservices.md#joinservice).
@@ -128,24 +126,56 @@ Debugging via a shell on a node is [directly supported by Kubernetes](https://ku
 
 1. Figure out which node to connect to:
 
-    ```bash
-    kubectl get nodes
-    # or to see more information, such as IPs:
-    kubectl get nodes -o wide
-    ```
+   ```bash
+   kubectl get nodes
+   # or to see more information, such as IPs:
+   kubectl get nodes -o wide
+   ```
 
 2. Connect to the node:
 
-    ```bash
-    kubectl debug node/constell-worker-xksa0-000000 -it --image=busybox
-    ```
+   ```bash
+   kubectl debug node/constell-worker-xksa0-000000 -it --image=busybox
+   ```
 
-    You will be presented with a prompt.
+   You will be presented with a prompt.
 
-    The nodes file system is mounted at `/host`.
+   The nodes file system is mounted at `/host`.
 
 3. Once finished, clean up the debug pod:
 
-    ```bash
-    kubectl delete pod node-debugger-constell-worker-xksa0-000000-bjthj
-    ```
+   ```bash
+   kubectl delete pod node-debugger-constell-worker-xksa0-000000-bjthj
+   ```
+
+### Emergency SSH access
+
+Emergency SSH access to nodes can be useful to diagnose issues or download important data even in the event that the kubernetes API is not accessible anymore.
+
+1. Enter the `constellation-terraform` directory in your constellation workspace and allow emergency SSH access to the cluster:
+
+   ```bash
+    cd constellation-terraform
+    echo "emergency_ssh = true" >> ./terraform.tfvars
+    terraform apply
+   ```
+
+2. Sign an existing SSH keypair with your master secret:
+
+   ```bash
+   cd ../ # go back to your constellation workspace
+   constellation ssh --key your_public_key.pub
+   ```
+
+   A certificate will be written into the `constellation-terraform` directory.
+
+   The certificate is valid for 24 hours and allows you to access your constellation nodes using
+   [certificate based authentication](https://en.wikibooks.org/wiki/OpenSSH/Cookbook/Certificate-based_Authentication).
+
+3. Finally, you can connect to any constellation node:
+
+   ```bash
+   ssh -F ./constellation-terraform/ssh_config -i your_private_key <PRIVATE_NODE_IP>
+   ```
+
+   You can obtain the private IP via your CSPs web UI.
