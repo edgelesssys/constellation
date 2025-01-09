@@ -11,6 +11,7 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -48,6 +49,14 @@ func NewSSHCmd() *cobra.Command {
 func runSSH(cmd *cobra.Command, _ []string) error {
 	fh := file.NewHandler(afero.NewOsFs())
 	debugLogger, err := newDebugFileLogger(cmd, fh)
+	if err != nil {
+		return err
+	}
+
+	_, err = fh.Stat(constants.TerraformWorkingDir)
+	if os.IsNotExist(err) {
+		return fmt.Errorf("Directory %q does not exist. Please make sure that you are in your constellation workspace.", constants.TerraformWorkingDir)
+	}
 	if err != nil {
 		return err
 	}
@@ -108,7 +117,7 @@ func runSSH(cmd *cobra.Command, _ []string) error {
 	}
 
 	debugLogger.Debug("Signed certificate", "certificate", string(ssh.MarshalAuthorizedKey(&certificate)))
-	fh.Write(fmt.Sprintf("%s/ca_cert.pub", constants.TerraformWorkingDir), ssh.MarshalAuthorizedKey(&certificate), file.OptOverwrite, file.OptMkdirAll)
+	fh.Write(fmt.Sprintf("%s/ca_cert.pub", constants.TerraformWorkingDir), ssh.MarshalAuthorizedKey(&certificate), file.OptOverwrite)
 	fmt.Printf("You can now connect to a node using 'ssh -F %s/ssh_config -i <your private key> <node ip>'.\nYou can obtain the private node IP via the web UI of your CSP.\n", constants.TerraformWorkingDir)
 
 	return nil
