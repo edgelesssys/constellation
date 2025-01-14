@@ -60,3 +60,13 @@ After building a Kernel rpm, we upload it to our CDN and use it in our image bui
   - `bazel build //image/system:IMAGE_NAME_HERE` (replace with an actual image name)
 - Let CI build new images and run e2e tests
 - Upgrade kernel spec under [edgelesssys/constellation-kernel](https://github.com/edgelesssys/constellation-kernel) to use new releasever
+
+## Adding new packages to the image
+
+- Add your package to the corresponding section in `./base/mkosi.conf`
+- Add your package to `./mirror/packages.txt`
+- Update the package mirror:
+  ```sh
+  bazel run //image/mirror:update_packages
+  ```
+- Let CI build new images and run e2e tests
