@@ -235,9 +235,9 @@
       "fileMatch": ["(^|\\/)versions.go$"],
       "matchStrings": [
         // Match kubernetes releases.
-        // example match:'  "https://storage.googleapis.com/kubernetes-release/release/v1.2.3/foo" // renovate:kubernetes-release'
+        // example match:'  "https://dl.k8s.io/v1.2.3/foo" // renovate:kubernetes-release'
         // (v1.2.3 -> currentValue)
-        " \"https:\\/\\/storage\\.googleapis\\.com\\/kubernetes-release\\/release\\/(?<currentValue>[^\\/\\s\"]+)\\/[^\"]+\"[^\\n]+\\/\\/ renovate:kubernetes-release",
+        " \"https:\\/\\/dl\\.k8s\\.io\\/(?<currentValue>[^\\/\\s\"]+)\\/[^\"]+\"[^\\n]+\\/\\/ renovate:kubernetes-release",
         // Match kubernetes releases.
         // example match:' " "v1.2.3" // renovate:kubernetes-release"'
         // (v1.2.3 -> currentValue)
