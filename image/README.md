@@ -63,10 +63,12 @@ After building a Kernel rpm, we upload it to our CDN and use it in our image bui
 
 ## Adding new packages to the image
 
-- Add your package to the corresponding section in `./base/mkosi.conf`
-- Add your package to `./mirror/packages.txt`
+- Find the package (i.e. it's _package name_) on [Koji](https://koji.fedoraproject.org/koji/)
+- Add the package to the corresponding section in `./base/mkosi.conf`
+  - If the package is required to be present in the initrd, add it to `./initrd/mkosi.conf`
+- Add the package to `./mirror/packages.txt`
 - Update the package mirror:
   ```sh
   bazel run //image/mirror:update_packages
   ```
-- Let CI build new images and run e2e tests
+- Build new images (e.g. via CI) and run e2e tests
