@@ -13,8 +13,6 @@ import (
 )
 
 func TestSSH(t *testing.T) {
-	require := require.New(t)
-
 	someSSHPubKey := "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBDA1yYg1PIJNjAGjyuv66r8AJtpfBDFLdp3u9lVwkgbVKv1AzcaeTF/NEw+nhNJOjuCZ61LTPj12LZ8Wy/oSm0A= motte@lolcatghost"
 	someSSHPubKeyPath := "some-key.pub"
 	someMasterSecret := `
@@ -25,6 +23,7 @@ func TestSSH(t *testing.T) {
 	`
 
 	newFsWithDirectory := func() file.Handler {
+		require := require.New(t)
 		fh := file.NewHandler(afero.NewMemMapFs())
 		require.NoError(fh.MkdirAll(constants.TerraformWorkingDir))
 		return fh
@@ -78,12 +77,13 @@ func TestSSH(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
+			require := require.New(t)
 
 			if tc.pubKey != "" {
-				tc.fh.Write(someSSHPubKeyPath, []byte(tc.pubKey))
+				require.NoError(tc.fh.Write(someSSHPubKeyPath, []byte(tc.pubKey)))
 			}
 			if tc.masterSecret != "" {
-				tc.fh.Write(constants.MasterSecretFilename, []byte(tc.masterSecret))
+				require.NoError(tc.fh.Write(constants.MasterSecretFilename, []byte(tc.masterSecret)))
 			}
 
 			err := generateKey(context.Background(), someSSHPubKeyPath, tc.fh, logger.NewTest(t))
