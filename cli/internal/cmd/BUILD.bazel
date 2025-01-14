@@ -145,6 +145,7 @@ go_test(
         "maapatch_test.go",
         "recover_test.go",
         "spinner_test.go",
+        "ssh_test.go",
         "status_test.go",
         "terminate_test.go",
         "upgradeapply_test.go",

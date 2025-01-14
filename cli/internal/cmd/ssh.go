@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
+	"context"
 	"crypto/ed25519"
 	"crypto/rand"
 	"fmt"
@@ -52,7 +53,16 @@ func runSSH(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	_, err = fh.Stat(constants.TerraformWorkingDir)
+	keyPath, err := cmd.Flags().GetString("key")
+	if err != nil {
+		return fmt.Errorf("retrieving path to public key from flags: %s", err)
+	}
+
+	return generateKey(cmd.Context(), keyPath, fh, debugLogger)
+}
+
+func generateKey(ctx context.Context, keyPath string, fh file.Handler, debugLogger debugLog) error {
+	_, err := fh.Stat(constants.TerraformWorkingDir)
 	if os.IsNotExist(err) {
 		return fmt.Errorf("directory %q does not exist", constants.TerraformWorkingDir)
 	}
@@ -67,11 +77,11 @@ func runSSH(cmd *cobra.Command, _ []string) error {
 	}
 
 	mastersecretURI := uri.MasterSecret{Key: mastersecret.Key, Salt: mastersecret.Salt}
-	kms, err := setup.KMS(cmd.Context(), uri.NoStoreURI, mastersecretURI.EncodeToURI())
+	kms, err := setup.KMS(ctx, uri.NoStoreURI, mastersecretURI.EncodeToURI())
 	if err != nil {
 		return fmt.Errorf("setting up KMS: %s", err)
 	}
-	key, err := kms.GetDEK(cmd.Context(), crypto.DEKPrefix+constants.SSHCAKeySuffix, ed25519.SeedSize)
+	key, err := kms.GetDEK(ctx, crypto.DEKPrefix+constants.SSHCAKeySuffix, ed25519.SeedSize)
 	if err != nil {
 		return fmt.Errorf("retrieving key from KMS: %s", err)
 	}
@@ -82,11 +92,6 @@ func runSSH(cmd *cobra.Command, _ []string) error {
 	}
 
 	debugLogger.Debug("SSH CA KEY generated", "public-key", string(ssh.MarshalAuthorizedKey(ca.PublicKey())))
-
-	keyPath, err := cmd.Flags().GetString("key")
-	if err != nil {
-		return fmt.Errorf("retrieving path to public key from flags: %s", err)
-	}
 
 	keyBuffer, err := fh.Read(keyPath)
 	if err != nil {
