@@ -280,19 +280,19 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 				Extract:     true,
 			},
 			{
-				Url:         "https://dl.k8s.io/v1.29.11/bin/linux/amd64/kubelet", // renovate:kubernetes-release
+				Url:         "https://dl.k8s.io/v1.29.12/bin/linux/amd64/kubelet", // renovate:kubernetes-release
 				Hash:        "sha256:1aaa9025cceac0c9a4df295a58aa79d8932a5b13a43c8910412c9ef970c42d21",
 				InstallPath: constants.KubeletPath,
 				Extract:     false,
 			},
 			{
-				Url:         "https://dl.k8s.io/v1.29.11/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
+				Url:         "https://dl.k8s.io/v1.29.12/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
 				Hash:        "sha256:6cf3567bd69a14859fb80fb39a09196dc2de1729ae72566e7e4819c5600e49c6",
 				InstallPath: constants.KubeadmPath,
 				Extract:     false,
 			},
 			{
-				Url:         "https://dl.k8s.io/v1.29.11/bin/linux/amd64/kubectl", // renovate:kubernetes-release
+				Url:         "https://dl.k8s.io/v1.29.12/bin/linux/amd64/kubectl", // renovate:kubernetes-release
 				Hash:        "sha256:14d7ea4ada60ff15ef3b7734a83c4d05cff164d4843b6f4c081a50b86547c17d",
 				InstallPath: constants.KubectlPath,
 				Extract:     false,
@@ -347,19 +347,19 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 				Extract:     true,
 			},
 			{
-				Url:         "https://dl.k8s.io/v1.30.7/bin/linux/amd64/kubelet", // renovate:kubernetes-release
+				Url:         "https://dl.k8s.io/v1.30.8/bin/linux/amd64/kubelet", // renovate:kubernetes-release
 				Hash:        "sha256:4b2fb90661e2b7be8b34b5bd405652590f6351a9f55194430fa16d547a7c9d16",
 				InstallPath: constants.KubeletPath,
 				Extract:     false,
 			},
 			{
-				Url:         "https://dl.k8s.io/v1.30.7/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
+				Url:         "https://dl.k8s.io/v1.30.8/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
 				Hash:        "sha256:3635901a3a6e5b0124547151de700a1dbd4571531327a32edbec43bb155b877b",
 				InstallPath: constants.KubeadmPath,
 				Extract:     false,
 			},
 			{
-				Url:         "https://dl.k8s.io/v1.30.7/bin/linux/amd64/kubectl", // renovate:kubernetes-release
+				Url:         "https://dl.k8s.io/v1.30.8/bin/linux/amd64/kubectl", // renovate:kubernetes-release
 				Hash:        "sha256:3950ec7b81b9aa5a3856dd6155e42e1ad12a2fa8b050502f5a9652050f94a8ee",
 				InstallPath: constants.KubectlPath,
 				Extract:     false,
