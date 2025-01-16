@@ -51,9 +51,6 @@ func TestClient(t *testing.T) {
 		{Role: role.ControlPlane, Name: "node-5", VPCIP: "192.0.2.3"},
 	}
 	caDerivationKey := make([]byte, 256)
-	for i := range caDerivationKey {
-		caDerivationKey[i] = 0x0
-	}
 	respCaKey := &joinproto.IssueJoinTicketResponse{EmergencyCaKey: caDerivationKey}
 
 	testCases := map[string]struct {

@@ -124,20 +124,28 @@ func TestGenerateRandomBytes(t *testing.T) {
 
 func TestGenerateEmergencySSHCAKey(t *testing.T) {
 	nullKey := make([]byte, ed25519.SeedSize)
-	for i := range nullKey {
-		nullKey[i] = 0x0
-	}
 
 	testCases := map[string]struct {
 		key     []byte
 		wantErr bool
 	}{
-		"invalid key": {
+		"key length = 0": {
 			key:     make([]byte, 0),
 			wantErr: true,
 		},
 		"valid key": {
 			key: nullKey,
+		},
+		"nil input": {
+			key:     nil,
+			wantErr: true,
+		},
+		"long key": {
+			key: make([]byte, 256),
+		},
+		"key too short": {
+			key:     make([]byte, ed25519.SeedSize-1),
+			wantErr: true,
 		},
 	}
 

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -10,6 +11,7 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/ssh"
 )
 
 func TestSSH(t *testing.T) {
@@ -54,13 +56,13 @@ func TestSSH(t *testing.T) {
 			pubKey:  someSSHPubKey,
 			wantErr: true,
 		},
-		"malformatted public key": {
+		"malformed public key": {
 			fh:           newFsWithDirectory(),
 			pubKey:       "asdf",
 			masterSecret: someMasterSecret,
 			wantErr:      true,
 		},
-		"malformatted master secret": {
+		"malformed master secret": {
 			fh:           newFsWithDirectory(),
 			masterSecret: "asdf",
 			pubKey:       someSSHPubKey,
@@ -91,6 +93,10 @@ func TestSSH(t *testing.T) {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
+				cert, err := tc.fh.Read(fmt.Sprintf("%s/ca_cert.pub", constants.TerraformWorkingDir))
+				require.NoError(err)
+				_, _, _, _, err = ssh.ParseAuthorizedKey(cert)
+				require.NoError(err)
 			}
 		})
 	}

@@ -205,6 +205,7 @@ go_test(
         "@org_golang_google_grpc//:grpc",
         "@org_golang_google_grpc//codes",
         "@org_golang_google_grpc//status",
+        "@org_golang_x_crypto//ssh",
         "@org_golang_x_mod//semver",
         "@org_uber_go_goleak//:goleak",
     ],
