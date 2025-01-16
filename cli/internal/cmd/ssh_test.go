@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"context"
+	"bytes"
 	"fmt"
 	"testing"
 
@@ -88,7 +88,12 @@ func TestSSH(t *testing.T) {
 				require.NoError(tc.fh.Write(constants.MasterSecretFilename, []byte(tc.masterSecret)))
 			}
 
-			err := generateKey(context.Background(), someSSHPubKeyPath, tc.fh, logger.NewTest(t))
+			cmd := NewSSHCmd()
+			cmd.SetOut(&bytes.Buffer{})
+			cmd.SetErr(&bytes.Buffer{})
+			cmd.SetIn(&bytes.Buffer{})
+
+			err := generateKey(cmd, someSSHPubKeyPath, tc.fh, logger.NewTest(t))
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

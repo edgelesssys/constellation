@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
-	"context"
 	"crypto/ed25519"
 	"crypto/rand"
 	"fmt"
@@ -51,10 +50,10 @@ func runSSH(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("retrieving path to public key from flags: %s", err)
 	}
 
-	return generateKey(cmd.Context(), keyPath, fh, debugLogger)
+	return generateKey(cmd, keyPath, fh, debugLogger)
 }
 
-func generateKey(ctx context.Context, keyPath string, fh file.Handler, debugLogger debugLog) error {
+func generateKey(cmd *cobra.Command, keyPath string, fh file.Handler, debugLogger debugLog) error {
 	_, err := fh.Stat(constants.TerraformWorkingDir)
 	if os.IsNotExist(err) {
 		return fmt.Errorf("directory %q does not exist", constants.TerraformWorkingDir)
@@ -70,11 +69,11 @@ func generateKey(ctx context.Context, keyPath string, fh file.Handler, debugLogg
 	}
 
 	mastersecretURI := uri.MasterSecret{Key: mastersecret.Key, Salt: mastersecret.Salt}
-	kms, err := setup.KMS(ctx, uri.NoStoreURI, mastersecretURI.EncodeToURI())
+	kms, err := setup.KMS(cmd.Context(), uri.NoStoreURI, mastersecretURI.EncodeToURI())
 	if err != nil {
 		return fmt.Errorf("setting up KMS: %s", err)
 	}
-	sshCAKeySeed, err := kms.GetDEK(ctx, crypto.DEKPrefix+constants.SSHCAKeySuffix, ed25519.SeedSize)
+	sshCAKeySeed, err := kms.GetDEK(cmd.Context(), crypto.DEKPrefix+constants.SSHCAKeySuffix, ed25519.SeedSize)
 	if err != nil {
 		return fmt.Errorf("retrieving key from KMS: %s", err)
 	}
@@ -117,7 +116,7 @@ func generateKey(ctx context.Context, keyPath string, fh file.Handler, debugLogg
 	if err := fh.Write(fmt.Sprintf("%s/ca_cert.pub", constants.TerraformWorkingDir), ssh.MarshalAuthorizedKey(&certificate), file.OptOverwrite); err != nil {
 		return fmt.Errorf("writing certificate: %s", err)
 	}
-	fmt.Printf("You can now connect to a node using 'ssh -F %s/ssh_config -i <your private key> <node ip>'.\nYou can obtain the private node IP via the web UI of your CSP.\n", constants.TerraformWorkingDir)
+	cmd.Printf("You can now connect to a node using 'ssh -F %s/ssh_config -i <your private key> <node ip>'.\nYou can obtain the private node IP via the web UI of your CSP.\n", constants.TerraformWorkingDir)
 
 	return nil
 }
