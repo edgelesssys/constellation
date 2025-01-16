@@ -859,7 +859,7 @@ constellation ssh [flags]
 
 ```
   -h, --help         help for ssh
-      --key string   The path to an existing ssh public key.
+      --key string   the path to an existing ssh public key.
 ```
 
 ### Options inherited from parent commands
