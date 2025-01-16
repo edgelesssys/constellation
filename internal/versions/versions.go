@@ -183,9 +183,9 @@ const (
 	//nolint:revive
 	V1_28 ValidK8sVersion = "v1.28.15" // renovate:kubernetes-release
 	//nolint:revive
-	V1_29 ValidK8sVersion = "v1.29.12" // renovate:kubernetes-release
+	V1_29 ValidK8sVersion = "v1.29.13" // renovate:kubernetes-release
 	//nolint:revive
-	V1_30 ValidK8sVersion = "v1.30.8" // renovate:kubernetes-release
+	V1_30 ValidK8sVersion = "v1.30.9" // renovate:kubernetes-release
 
 	// Default k8s version deployed by Constellation.
 	Default ValidK8sVersion = V1_29
@@ -265,7 +265,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.28.7@sha256:77906954da9171425c8c8d3286091818143b6dcf9039abd49b8f33f1502978a1", // renovate:container
 	},
 	V1_29: {
-		ClusterVersion: "v1.29.12", // renovate:kubernetes-release
+		ClusterVersion: "v1.29.13", // renovate:kubernetes-release
 		KubernetesComponents: components.Components{
 			{
 				Url:         "https://github.com/containernetworking/plugins/releases/download/v1.6.0/cni-plugins-linux-amd64-v1.6.0.tgz", // renovate:cni-plugins-release
@@ -280,19 +280,19 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 				Extract:     true,
 			},
 			{
-				Url:         "https://dl.k8s.io/v1.29.12/bin/linux/amd64/kubelet", // renovate:kubernetes-release
+				Url:         "https://dl.k8s.io/v1.29.13/bin/linux/amd64/kubelet", // renovate:kubernetes-release
 				Hash:        "sha256:45475d908f6c44bfbf994fec91a4d5ceebf41d93c9f3867e687b2fa67b57b5b0",
 				InstallPath: constants.KubeletPath,
 				Extract:     false,
 			},
 			{
-				Url:         "https://dl.k8s.io/v1.29.12/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
+				Url:         "https://dl.k8s.io/v1.29.13/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
 				Hash:        "sha256:bce712631bc425726b45930e58b00790c2ab3deec4282f86af353ea907817c46",
 				InstallPath: constants.KubeadmPath,
 				Extract:     false,
 			},
 			{
-				Url:         "https://dl.k8s.io/v1.29.12/bin/linux/amd64/kubectl", // renovate:kubernetes-release
+				Url:         "https://dl.k8s.io/v1.29.13/bin/linux/amd64/kubectl", // renovate:kubernetes-release
 				Hash:        "sha256:35fc028853e6f5299a53f22ab58273ea2d882c0f261ead0a2eed5b844b12dbfb",
 				InstallPath: constants.KubectlPath,
 				Extract:     false,
@@ -332,7 +332,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.29.5@sha256:76865740be7c965b35ee1524931bb4abfe4c27b5bfad280e84068cd6653ee7bb", // renovate:container
 	},
 	V1_30: {
-		ClusterVersion: "v1.30.8", // renovate:kubernetes-release
+		ClusterVersion: "v1.30.9", // renovate:kubernetes-release
 		KubernetesComponents: components.Components{
 			{
 				Url:         "https://github.com/containernetworking/plugins/releases/download/v1.6.0/cni-plugins-linux-amd64-v1.6.0.tgz", // renovate:cni-plugins-release
@@ -347,19 +347,19 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 				Extract:     true,
 			},
 			{
-				Url:         "https://dl.k8s.io/v1.30.8/bin/linux/amd64/kubelet", // renovate:kubernetes-release
+				Url:         "https://dl.k8s.io/v1.30.9/bin/linux/amd64/kubelet", // renovate:kubernetes-release
 				Hash:        "sha256:7b5191dfed6a27faadefebdc4a3b602b9a76adfc58fd04c50307f1377eabc590",
 				InstallPath: constants.KubeletPath,
 				Extract:     false,
 			},
 			{
-				Url:         "https://dl.k8s.io/v1.30.8/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
+				Url:         "https://dl.k8s.io/v1.30.9/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
 				Hash:        "sha256:ffe1a2b6345fae55e059afe7eed90ae9f46f0a755fde5fc17b9113134ab8b79e",
 				InstallPath: constants.KubeadmPath,
 				Extract:     false,
 			},
 			{
-				Url:         "https://dl.k8s.io/v1.30.8/bin/linux/amd64/kubectl", // renovate:kubernetes-release
+				Url:         "https://dl.k8s.io/v1.30.9/bin/linux/amd64/kubectl", // renovate:kubernetes-release
 				Hash:        "sha256:7f39bdcf768ce4b8c1428894c70c49c8b4d2eee52f3606eb02f5f7d10f66d692",
 				InstallPath: constants.KubectlPath,
 				Extract:     false,
