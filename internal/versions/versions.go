@@ -202,7 +202,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		KubernetesComponents: components.Components{
 			{
 				Url:         "https://github.com/containernetworking/plugins/releases/download/v1.6.2/cni-plugins-linux-amd64-v1.6.2.tgz", // renovate:cni-plugins-release
-				Hash:        "sha256:682b49ff8933a997a52107161f1745f8312364b4c7f605ccdf7a77499130d89d",
+				Hash:        "sha256:b8e811578fb66023f90d2e238d80cec3bdfca4b44049af74c374d4fae0f9c090",
 				InstallPath: constants.CniPluginsDir,
 				Extract:     true,
 			},
@@ -269,7 +269,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		KubernetesComponents: components.Components{
 			{
 				Url:         "https://github.com/containernetworking/plugins/releases/download/v1.6.2/cni-plugins-linux-amd64-v1.6.2.tgz", // renovate:cni-plugins-release
-				Hash:        "sha256:682b49ff8933a997a52107161f1745f8312364b4c7f605ccdf7a77499130d89d",
+				Hash:        "sha256:b8e811578fb66023f90d2e238d80cec3bdfca4b44049af74c374d4fae0f9c090",
 				InstallPath: constants.CniPluginsDir,
 				Extract:     true,
 			},
@@ -336,7 +336,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		KubernetesComponents: components.Components{
 			{
 				Url:         "https://github.com/containernetworking/plugins/releases/download/v1.6.2/cni-plugins-linux-amd64-v1.6.2.tgz", // renovate:cni-plugins-release
-				Hash:        "sha256:682b49ff8933a997a52107161f1745f8312364b4c7f605ccdf7a77499130d89d",
+				Hash:        "sha256:b8e811578fb66023f90d2e238d80cec3bdfca4b44049af74c374d4fae0f9c090",
 				InstallPath: constants.CniPluginsDir,
 				Extract:     true,
 			},
