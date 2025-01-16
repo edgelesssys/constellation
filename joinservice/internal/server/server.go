@@ -103,14 +103,14 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 	}
 
 	log.Info("Requesting emergency SSH CA derivation key")
-	ssheCADerivationKey, err := s.dataKeyGetter.GetDataKey(ctx, constants.SSHCAKeySuffix, ed25519.SeedSize)
+	sshCAKeySeed, err := s.dataKeyGetter.GetDataKey(ctx, constants.SSHCAKeySuffix, ed25519.SeedSize)
 	if err != nil {
-		log.With(slog.Any("error", err)).Error("Failed to get emergency SSH CA derivation key")
-		return nil, status.Errorf(codes.Internal, "getting emergency SSH CA derivation key: %s", err)
+		log.With(slog.Any("error", err)).Error("Failed to get seed material to derive SSH CA key")
+		return nil, status.Errorf(codes.Internal, "getting emergency SSH CA seed material: %s", err)
 	}
-	ca, err := crypto.GenerateEmergencySSHCAKey(ssheCADerivationKey)
+	ca, err := crypto.GenerateEmergencySSHCAKey(sshCAKeySeed)
 	if err != nil {
-		log.With(slog.Any("error", err)).Error("Failed to derive ssh CA key from derivation key")
+		log.With(slog.Any("error", err)).Error("Failed to derive ssh CA key from seed material")
 		return nil, status.Errorf(codes.Internal, "generating ssh emergency CA key: %s", err)
 	}
 
@@ -181,7 +181,7 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 		KubeletCert:              kubeletCert,
 		ControlPlaneFiles:        controlPlaneFiles,
 		KubernetesComponents:     components,
-		EmergencyCaKey:           ssh.MarshalAuthorizedKey(ca.PublicKey()),
+		AuthorizedCaPublicKey:    ssh.MarshalAuthorizedKey(ca.PublicKey()),
 	}, nil
 }
 

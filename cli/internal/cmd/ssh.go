@@ -25,13 +25,6 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-var permissions = ssh.Permissions{
-	Extensions: map[string]string{
-		"permit-port-forwarding": "yes",
-		"permit-pty":             "yes",
-	},
-}
-
 // NewSSHCmd returns a new cobra.Command for the ssh command.
 func NewSSHCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -41,7 +34,7 @@ func NewSSHCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(0),
 		RunE:  runSSH,
 	}
-	cmd.Flags().String("key", "", "The path to an existing ssh public key.")
+	cmd.Flags().String("key", "", "the path to an existing ssh public key.")
 	must(cmd.MarkFlagRequired("key"))
 	return cmd
 }
@@ -72,7 +65,7 @@ func generateKey(ctx context.Context, keyPath string, fh file.Handler, debugLogg
 
 	// NOTE(miampf): Since other KMS aren't fully implemented yet, this commands assumes that the cKMS is used and derives the key accordingly.
 	var mastersecret uri.MasterSecret
-	if err = fh.ReadJSON(fmt.Sprintf("%s.json", constants.ConstellationMasterSecretStoreName), &mastersecret); err != nil {
+	if err = fh.ReadJSON(constants.MasterSecretFilename, &mastersecret); err != nil {
 		return fmt.Errorf("reading master secret: %s", err)
 	}
 
@@ -81,12 +74,12 @@ func generateKey(ctx context.Context, keyPath string, fh file.Handler, debugLogg
 	if err != nil {
 		return fmt.Errorf("setting up KMS: %s", err)
 	}
-	key, err := kms.GetDEK(ctx, crypto.DEKPrefix+constants.SSHCAKeySuffix, ed25519.SeedSize)
+	sshCAKeySeed, err := kms.GetDEK(ctx, crypto.DEKPrefix+constants.SSHCAKeySuffix, ed25519.SeedSize)
 	if err != nil {
 		return fmt.Errorf("retrieving key from KMS: %s", err)
 	}
 
-	ca, err := crypto.GenerateEmergencySSHCAKey(key)
+	ca, err := crypto.GenerateEmergencySSHCAKey(sshCAKeySeed)
 	if err != nil {
 		return fmt.Errorf("generating ssh emergency CA key: %s", err)
 	}
@@ -109,7 +102,12 @@ func generateKey(ctx context.Context, keyPath string, fh file.Handler, debugLogg
 		ValidAfter:      uint64(time.Now().Unix()),
 		ValidBefore:     uint64(time.Now().Add(24 * time.Hour).Unix()),
 		ValidPrincipals: []string{"root"},
-		Permissions:     permissions,
+		Permissions: ssh.Permissions{
+			Extensions: map[string]string{
+				"permit-port-forwarding": "yes",
+				"permit-pty":             "yes",
+			},
+		},
 	}
 	if err := certificate.SignCert(rand.Reader, ca); err != nil {
 		return fmt.Errorf("signing certificate: %s", err)

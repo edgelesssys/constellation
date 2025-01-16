@@ -65,8 +65,8 @@ func GenerateRandomBytes(length int) ([]byte, error) {
 }
 
 // GenerateEmergencySSHCAKey creates a CA that is used to sign keys for emergency ssh access.
-func GenerateEmergencySSHCAKey(key []byte) (ssh.Signer, error) {
-	_, priv, err := ed25519.GenerateKey(bytes.NewReader(key))
+func GenerateEmergencySSHCAKey(seed []byte) (ssh.Signer, error) {
+	_, priv, err := ed25519.GenerateKey(bytes.NewReader(seed))
 	if err != nil {
 		return nil, err
 	}

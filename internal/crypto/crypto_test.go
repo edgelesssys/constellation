@@ -155,9 +155,9 @@ func TestGenerateEmergencySSHCAKey(t *testing.T) {
 
 			_, err := GenerateEmergencySSHCAKey(tc.key)
 			if tc.wantErr {
-				assert.NotNil(err)
+				assert.Error(err)
 			} else {
-				assert.Nil(err)
+				assert.NoError(err)
 			}
 		})
 	}

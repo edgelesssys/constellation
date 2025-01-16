@@ -272,7 +272,7 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 	}
 
 	if err := c.fileHandler.Write(constants.SSHCAKeyPath, ticket.EmergencyCaKey, file.OptMkdirAll); err != nil {
-		return fmt.Errorf("writing ca key: %w", err)
+		return fmt.Errorf("writing ssh ca key: %w", err)
 	}
 
 	state := nodestate.NodeState{

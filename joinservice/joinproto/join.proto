@@ -45,8 +45,8 @@ message IssueJoinTicketResponse {
   string kubernetes_version = 9;
   // kubernetes_components is a list of components to install on the node.
   repeated components.Component kubernetes_components = 10;
-  // emergency_ca_key is an ssh ca key that can be used to connect to a node in case of an emergency.
-  bytes emergency_ca_key = 11;
+  // authorized_ca_public_key is an ssh ca key that can be used to connect to a node in case of an emergency.
+  bytes authorized_ca_public_key = 11;
 }
 
 message control_plane_cert_or_key {
