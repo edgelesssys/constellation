@@ -2,7 +2,7 @@ terraform {
   required_providers {
     constellation = {
       source  = "edgelesssys/constellation"
-      version = "2.19.3" // replace with the version you want to use
+      version = "2.20.0" // replace with the version you want to use
     }
     random = {
       source  = "hashicorp/random"
