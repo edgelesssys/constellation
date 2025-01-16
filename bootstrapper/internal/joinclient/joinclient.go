@@ -31,14 +31,12 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/nodestate"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"github.com/edgelesssys/constellation/v2/joinservice/joinproto"
 	"github.com/spf13/afero"
-	"golang.org/x/crypto/ssh"
 	"google.golang.org/grpc"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 	kubeconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
@@ -273,12 +271,7 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 		return fmt.Errorf("writing kubelet key: %w", err)
 	}
 
-	ca, err := crypto.GenerateEmergencySSHCAKey(ticket.EmergencyCaKey)
-	if err != nil {
-		return fmt.Errorf("generating emergency SSH CA key: %s", err)
-	}
-
-	if err := c.fileHandler.Write(constants.SSHCAKeyPath, ssh.MarshalAuthorizedKey(ca.PublicKey()), file.OptMkdirAll); err != nil {
+	if err := c.fileHandler.Write(constants.SSHCAKeyPath, ticket.EmergencyCaKey, file.OptMkdirAll); err != nil {
 		return fmt.Errorf("writing ca key: %w", err)
 	}
 

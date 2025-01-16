@@ -9,6 +9,7 @@ package server
 
 import (
 	"context"
+	"crypto/ed25519"
 	"fmt"
 	"log/slog"
 	"net"
@@ -21,6 +22,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"github.com/edgelesssys/constellation/v2/joinservice/joinproto"
+	"golang.org/x/crypto/ssh"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -101,10 +103,15 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 	}
 
 	log.Info("Requesting emergency SSH CA derivation key")
-	sshCAKey, err := s.dataKeyGetter.GetDataKey(ctx, constants.SSHCAKeySuffix, 256)
+	ssheCADerivationKey, err := s.dataKeyGetter.GetDataKey(ctx, constants.SSHCAKeySuffix, ed25519.SeedSize)
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to get emergency SSH CA derivation key")
 		return nil, status.Errorf(codes.Internal, "getting emergency SSH CA derivation key: %s", err)
+	}
+	ca, err := crypto.GenerateEmergencySSHCAKey(ssheCADerivationKey)
+	if err != nil {
+		log.With(slog.Any("error", err)).Error("Failed to derive ssh CA key from derivation key")
+		return nil, status.Errorf(codes.Internal, "generating ssh emergency CA key: %s", err)
 	}
 
 	log.Info("Creating Kubernetes join token")
@@ -174,7 +181,7 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 		KubeletCert:              kubeletCert,
 		ControlPlaneFiles:        controlPlaneFiles,
 		KubernetesComponents:     components,
-		EmergencyCaKey:           sshCAKey,
+		EmergencyCaKey:           ssh.MarshalAuthorizedKey(ca.PublicKey()),
 	}, nil
 }
 
