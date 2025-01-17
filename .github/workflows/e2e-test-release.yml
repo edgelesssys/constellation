@@ -306,11 +306,11 @@ jobs:
           # - test: "verify"
           #  attestationVariant: "azure-sev-snp"
           #  kubernetes-version: "v1.30"
-          #  runner: "macos-12"
+          #  runner: "macos-latest"
           - test: "recover"
             attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.30"
-            runner: "macos-12"
+            runner: "macos-latest"
             clusterCreation: "cli"
     runs-on: ${{ matrix.runner }}
     permissions:
