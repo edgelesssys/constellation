@@ -167,6 +167,12 @@ jobs:
         with:
           clouds_yaml: ${{ secrets.STACKIT_IMAGE_UPLOAD_CLOUDS_YAML }}
 
+      - name: Allow unrestricted user namespaces
+        shell: bash
+        run: |
+          sudo sysctl --ignore --write kernel.apparmor_restrict_unprivileged_unconfined=0
+          sudo sysctl --ignore --write kernel.apparmor_restrict_unprivileged_userns=0
+          
       - name: Build and upload
         id: build
         shell: bash
