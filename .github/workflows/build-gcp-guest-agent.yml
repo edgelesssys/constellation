@@ -114,7 +114,7 @@ jobs:
       - name: Build and push container image
         if: steps.needs-build.outputs.out == 'true'
         id: build
-        uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355 # v6.10.0
+        uses: docker/build-push-action@67a2d409c0a876cbe6b11854e3e25193efe4e62d # v6.12.0
         with:
           context: ./guest-agent
           file: ./constellation/3rdparty/gcp-guest-agent/Dockerfile
