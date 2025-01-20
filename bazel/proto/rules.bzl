@@ -5,17 +5,14 @@ based on https://github.com/bazelbuild/rules_go/issues/2111#issuecomment-1355927
 """
 
 load("@aspect_bazel_lib//lib:write_source_files.bzl", "write_source_files")
-load("@io_bazel_rules_go//go:def.bzl", "GoLibrary", "go_context")
+load("@io_bazel_rules_go//go:def.bzl", "GoInfo")
 load("@io_bazel_rules_go//proto:compiler.bzl", "GoProtoCompiler")
 
 def _output_go_library_srcs_impl(ctx):
-    go = go_context(ctx)
-
     srcs_of_library = []
     importpath = ""
     for src in ctx.attr.deps:
-        lib = src[GoLibrary]
-        go_src = go.library_to_source(go, ctx.attr, lib, False)
+        lib = src[GoInfo]
         if importpath and lib.importpath != importpath:
             fail(
                 "importpath of all deps must match, got {} and {}",
@@ -23,7 +20,7 @@ def _output_go_library_srcs_impl(ctx):
                 lib.importpath,
             )
         importpath = lib.importpath
-        srcs_of_library.extend(go_src.srcs)
+        srcs_of_library.extend(lib.srcs)
 
     if len(srcs_of_library) != 1:
         fail("expected exactly one src for library, got {}", len(srcs_of_library))
@@ -54,7 +51,7 @@ output_go_library_srcs = rule(
             default = "@io_bazel_rules_go//proto:go_proto",
         ),
         "deps": attr.label_list(
-            providers = [GoLibrary],
+            providers = [GoInfo],
             aspects = [],
         ),
         "out": attr.output(
