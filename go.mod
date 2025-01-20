@@ -2,8 +2,6 @@ module github.com/edgelesssys/constellation/v2
 
 go 1.23.2
 
-replace github.com/google/go-sev-guest => github.com/katexochen/go-sev-guest v0.0.0-20241216075901-ccd51e9e7b6e
-
 // TODO(daniel-weisse): revert after merging https://github.com/martinjungblut/go-cryptsetup/pull/16.
 replace github.com/martinjungblut/go-cryptsetup => github.com/daniel-weisse/go-cryptsetup v0.0.0-20230705150314-d8c07bd1723c
 
@@ -69,7 +67,7 @@ require (
 	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.23.0
 	github.com/golang-jwt/jwt/v5 v5.2.1
-	github.com/google/go-sev-guest v0.11.2-0.20241122204452-64cd695124b1
+	github.com/google/go-sev-guest v0.12.2-0.20250116170741-e5df25990fc0
 	github.com/google/go-tdx-guest v0.3.1
 	github.com/google/go-tpm v0.9.1
 	github.com/google/go-tpm-tools v0.4.4
