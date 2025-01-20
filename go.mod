@@ -1,6 +1,6 @@
 module github.com/edgelesssys/constellation/v2
 
-go 1.23.2
+go 1.23.5
 
 replace github.com/google/go-sev-guest => github.com/katexochen/go-sev-guest v0.0.0-20241216075901-ccd51e9e7b6e
 

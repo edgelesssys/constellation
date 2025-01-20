@@ -17,7 +17,7 @@ go_sdk.download(
 
 ```
 
-Replace `go-version: "1.xx.x"` with the new version in all GitHub actions and workflows.
+Replace `go-version: "1.xx.x"` with the new version in all GitHub actions/workflows, our go.mod files and Containerfiles.
 You can use the following command to find replace all instances of `go-version: "1.xx.x"` in the `.github` directory:
 
 ```bash
@@ -25,7 +25,9 @@ OLD_VERSION="1.xx.x"
 NEW_VERSION="1.xx.y"
 find .github -type f -exec sed -i "s/go-version: \"${OLD_VERSION}\"/go-version: \"${NEW_VERSION}\"/g" {} \;
 sed -i "s/go ${OLD_VERSION}/go ${NEW_VERSION}/g" go.mod
+sed -i "s/go ${OLD_VERSION}/go ${NEW_VERSION}/g" hack/tools/go.mod
 sed -i "s/${OLD_VERSION}/${NEW_VERSION}/g" go.work
+sed -i "s/GO_VER=${OLD_VERSION}/GO_VER=${NEW_VERSION}/g" 3rdparty/gcp-guest-agent/Dockerfile
 ```
 
 Or manually:
