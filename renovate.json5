@@ -10,7 +10,7 @@
   "commitMessagePrefix": "deps:",
   "commitMessageAction": "update",
   "addLabels": ["dependencies"],
-  "postUpdateOptions": ["gomodTidy", "gomodUpdateImportPaths"],
+  "postUpdateOptions": ["gomodTidy", "gomodUpdateImportPaths", "gomodMassage"],
   "prConcurrentLimit": 4,
   "ignorePaths": [
     "internal/constellation/helm/charts/cilium/**",
@@ -46,7 +46,7 @@
       // Group update of direct Go dependencies.
       "groupName": "Go dependencies",
       "matchManagers": ["gomod"],
-      "matchDepTypes": ["require"],
+      "matchDepTypes": ["require", "replace"],
       "matchUpdateTypes": [
         "bump",
         "digest",
