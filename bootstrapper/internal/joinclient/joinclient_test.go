@@ -51,7 +51,7 @@ func TestClient(t *testing.T) {
 		{Role: role.ControlPlane, Name: "node-5", VPCIP: "192.0.2.3"},
 	}
 	caDerivationKey := make([]byte, 256)
-	respCaKey := &joinproto.IssueJoinTicketResponse{EmergencyCaKey: caDerivationKey}
+	respCaKey := &joinproto.IssueJoinTicketResponse{AuthorizedCaPublicKey: caDerivationKey}
 
 	testCases := map[string]struct {
 		role          role.Role
@@ -144,22 +144,6 @@ func TestClient(t *testing.T) {
 			wantJoin:      true,
 			wantLock:      true,
 		},
-		"on worker: no CA derivation key is given": {
-			role: role.Worker,
-			apiAnswers: []any{
-				selfAnswer{instance: workerSelf},
-				listAnswer{instances: peers},
-				issueJoinTicketAnswer{err: assert.AnError},
-				listAnswer{instances: peers},
-				issueJoinTicketAnswer{err: assert.AnError},
-				listAnswer{instances: peers},
-				issueJoinTicketAnswer{},
-			},
-			clusterJoiner: &stubClusterJoiner{},
-			nodeLock:      newFakeLock(),
-			disk:          &stubDisk{},
-			wantLock:      true,
-		},
 		"on control plane: issueJoinTicket errors": {
 			role: role.ControlPlane,
 			apiAnswers: []any{
@@ -203,18 +187,6 @@ func TestClient(t *testing.T) {
 			wantJoin:      true,
 			wantLock:      true,
 			wantNumJoins:  2,
-		},
-		"on control plane: no CA derivation key is given": {
-			role: role.ControlPlane,
-			apiAnswers: []any{
-				selfAnswer{instance: controlSelf},
-				listAnswer{instances: peers},
-				issueJoinTicketAnswer{},
-			},
-			clusterJoiner: &stubClusterJoiner{numBadCalls: 1, joinClusterErr: assert.AnError},
-			nodeLock:      newFakeLock(),
-			disk:          &stubDisk{},
-			wantLock:      true,
 		},
 		"on control plane: node already locked": {
 			role: role.ControlPlane,
