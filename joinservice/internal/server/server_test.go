@@ -8,11 +8,13 @@ package server
 
 import (
 	"context"
+	"crypto/ed25519"
 	"errors"
 	"testing"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"github.com/edgelesssys/constellation/v2/joinservice/joinproto"
@@ -29,6 +31,7 @@ func TestMain(m *testing.M) {
 func TestIssueJoinTicket(t *testing.T) {
 	someErr := errors.New("error")
 	testKey := []byte{0x1, 0x2, 0x3}
+	testCaKey := make([]byte, ed25519.SeedSize)
 	testCert := []byte{0x4, 0x5, 0x6}
 	measurementSecret := []byte{0x7, 0x8, 0x9}
 	uuid := "uuid"
@@ -62,6 +65,7 @@ func TestIssueJoinTicket(t *testing.T) {
 			kms: stubKeyGetter{dataKeys: map[string][]byte{
 				uuid:                                 testKey,
 				attestation.MeasurementSecretContext: measurementSecret,
+				constants.SSHCAKeySuffix:             testCaKey,
 			}},
 			ca:         stubCA{cert: testCert, nodeName: "node"},
 			kubeClient: stubKubeClient{getComponentsVal: clusterComponents, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
@@ -71,6 +75,7 @@ func TestIssueJoinTicket(t *testing.T) {
 			kms: stubKeyGetter{dataKeys: map[string][]byte{
 				uuid:                                 testKey,
 				attestation.MeasurementSecretContext: measurementSecret,
+				constants.SSHCAKeySuffix:             testCaKey,
 			}},
 			ca:         stubCA{cert: testCert, nodeName: "node"},
 			kubeClient: stubKubeClient{getComponentsErr: someErr},
@@ -81,6 +86,7 @@ func TestIssueJoinTicket(t *testing.T) {
 			kms: stubKeyGetter{dataKeys: map[string][]byte{
 				uuid:                                 testKey,
 				attestation.MeasurementSecretContext: measurementSecret,
+				constants.SSHCAKeySuffix:             testCaKey,
 			}},
 			ca:         stubCA{cert: testCert, nodeName: "node", getNameErr: someErr},
 			kubeClient: stubKubeClient{getComponentsVal: clusterComponents, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
@@ -91,6 +97,7 @@ func TestIssueJoinTicket(t *testing.T) {
 			kms: stubKeyGetter{dataKeys: map[string][]byte{
 				uuid:                                 testKey,
 				attestation.MeasurementSecretContext: measurementSecret,
+				constants.SSHCAKeySuffix:             testCaKey,
 			}},
 			ca:         stubCA{cert: testCert, nodeName: "node"},
 			kubeClient: stubKubeClient{getComponentsVal: clusterComponents, addNodeToJoiningNodesErr: someErr, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
@@ -108,6 +115,7 @@ func TestIssueJoinTicket(t *testing.T) {
 			kms: stubKeyGetter{dataKeys: map[string][]byte{
 				uuid:                                 testKey,
 				attestation.MeasurementSecretContext: measurementSecret,
+				constants.SSHCAKeySuffix:             testCaKey,
 			}},
 			ca:         stubCA{cert: testCert, nodeName: "node"},
 			kubeClient: stubKubeClient{getComponentsVal: clusterComponents, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
@@ -118,6 +126,7 @@ func TestIssueJoinTicket(t *testing.T) {
 			kms: stubKeyGetter{dataKeys: map[string][]byte{
 				uuid:                                 testKey,
 				attestation.MeasurementSecretContext: measurementSecret,
+				constants.SSHCAKeySuffix:             testCaKey,
 			}},
 			ca:         stubCA{getCertErr: someErr, nodeName: "node"},
 			kubeClient: stubKubeClient{getComponentsVal: clusterComponents, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
@@ -132,6 +141,7 @@ func TestIssueJoinTicket(t *testing.T) {
 			kms: stubKeyGetter{dataKeys: map[string][]byte{
 				uuid:                                 testKey,
 				attestation.MeasurementSecretContext: measurementSecret,
+				constants.SSHCAKeySuffix:             testCaKey,
 			}},
 			ca:         stubCA{cert: testCert, nodeName: "node"},
 			kubeClient: stubKubeClient{getComponentsVal: clusterComponents, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
@@ -139,6 +149,28 @@ func TestIssueJoinTicket(t *testing.T) {
 		"GetControlPlaneCertificateKey fails": {
 			isControlPlane: true,
 			kubeadm:        stubTokenGetter{token: testJoinToken, certificateKeyErr: someErr},
+			kms: stubKeyGetter{dataKeys: map[string][]byte{
+				uuid:                                 testKey,
+				attestation.MeasurementSecretContext: measurementSecret,
+				constants.SSHCAKeySuffix:             testCaKey,
+			}},
+			ca:         stubCA{cert: testCert, nodeName: "node"},
+			kubeClient: stubKubeClient{getComponentsVal: clusterComponents, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
+			wantErr:    true,
+		},
+		"CA data key to short": {
+			kubeadm: stubTokenGetter{token: testJoinToken},
+			kms: stubKeyGetter{dataKeys: map[string][]byte{
+				uuid:                                 testKey,
+				attestation.MeasurementSecretContext: measurementSecret,
+				constants.SSHCAKeySuffix:             testKey,
+			}},
+			ca:         stubCA{cert: testCert, nodeName: "node"},
+			kubeClient: stubKubeClient{getComponentsVal: clusterComponents, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
+			wantErr:    true,
+		},
+		"CA data key doesn't exist": {
+			kubeadm: stubTokenGetter{token: testJoinToken},
 			kms: stubKeyGetter{dataKeys: map[string][]byte{
 				uuid:                                 testKey,
 				attestation.MeasurementSecretContext: measurementSecret,
