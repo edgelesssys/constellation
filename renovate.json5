@@ -28,7 +28,8 @@
     'operators/constellation-node-operator/config/manager/kustomization.yaml',
   ],
   ignoreDeps: [
-    'github.com/edgelesssys/constellation/v2'
+    'github.com/edgelesssys/constellation/v2',
+    'github.com/daniel-weisse/go-cryptsetup',
   ],
   // Rules for changing renovates behaviour for different packages.
   // The documentation for configuration options can be found here:
