@@ -1,311 +1,396 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended",
-    ":preserveSemverRanges",
-    "helpers:pinGitHubActionDigests",
-    ":separateMajorReleases",
-    ":semanticCommitsDisabled",
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: [
+    'config:recommended',
+    ':preserveSemverRanges',
+    'helpers:pinGitHubActionDigests',
+    ':separateMajorReleases',
+    ':semanticCommitsDisabled',
   ],
-  "commitMessagePrefix": "deps:",
-  "commitMessageAction": "update",
-  "addLabels": ["dependencies"],
-  "postUpdateOptions": ["gomodTidy", "gomodUpdateImportPaths", "gomodMassage"],
-  "prConcurrentLimit": 4,
-  "ignorePaths": [
-    "internal/constellation/helm/charts/cilium/**",
-    "internal/constellation/helm/charts/coredns/**",
-    "internal/constellation/helm/charts/edgeless/csi/charts/aws-csi-driver/**",
-    "internal/constellation/helm/charts/edgeless/csi/charts/azuredisk-csi-driver/**",
-    "internal/constellation/helm/charts/edgeless/csi/charts/gcp-compute-persistent-disk-csi-driver/**",
-    "internal/constellation/helm/charts/edgeless/csi/charts/openstack-cinder-csi/**",
-    "operators/constellation-node-operator/config/manager/kustomization.yaml",
+  commitMessagePrefix: 'deps:',
+  commitMessageAction: 'update',
+  addLabels: [
+    'dependencies'
   ],
-  "ignoreDeps": ["github.com/edgelesssys/constellation/v2"],
+  postUpdateOptions: [
+    'gomodTidy',
+    'gomodUpdateImportPaths',
+    'gomodMassage'
+  ],
+  prConcurrentLimit: 4,
+  ignorePaths: [
+    'internal/constellation/helm/charts/cilium/**',
+    'internal/constellation/helm/charts/coredns/**',
+    'internal/constellation/helm/charts/edgeless/csi/charts/aws-csi-driver/**',
+    'internal/constellation/helm/charts/edgeless/csi/charts/azuredisk-csi-driver/**',
+    'internal/constellation/helm/charts/edgeless/csi/charts/gcp-compute-persistent-disk-csi-driver/**',
+    'internal/constellation/helm/charts/edgeless/csi/charts/openstack-cinder-csi/**',
+    'operators/constellation-node-operator/config/manager/kustomization.yaml',
+  ],
+  ignoreDeps: [
+    'github.com/edgelesssys/constellation/v2'
+  ],
   // Rules for changing renovates behaviour for different packages.
   // The documentation for configuration options can be found here:
   // https://docs.renovatebot.com/configuration-options/
-  "packageRules": [
+  packageRules: [
     {
-      "matchManagers": ["gomod"],
-      "matchDepTypes": ["indirect"],
-      "matchUpdateTypes": [
-        "minor",
-        "patch",
-        "pin",
-        "pinDigest",
-        "digest",
-        "lockFileMaintenance",
-        "rollback",
-        "bump",
+      matchManagers: [
+        'gomod'
       ],
-      "enabled": true,
-      "prPriority": -30,
+      matchDepTypes: [
+        'indirect'
+      ],
+      matchUpdateTypes: [
+        'minor',
+        'patch',
+        'pin',
+        'pinDigest',
+        'digest',
+        'lockFileMaintenance',
+        'rollback',
+        'bump',
+      ],
+      enabled: true,
+      prPriority: -30,
     },
     {
       // Group update of direct Go dependencies.
-      "groupName": "Go dependencies",
-      "matchManagers": ["gomod"],
-      "matchDepTypes": ["require", "replace"],
-      "matchUpdateTypes": [
-        "bump",
-        "digest",
-        "lockFileMaintenance",
-        "minor",
-        "patch",
-        "pin",
-        "pinDigest",
-        "rollback",
+      groupName: 'Go dependencies',
+      matchManagers: [
+        'gomod'
       ],
-      "schedule": ["before 8am on monday"],
+      matchDepTypes: [
+        'require',
+        'replace'
+      ],
+      matchUpdateTypes: [
+        'bump',
+        'digest',
+        'lockFileMaintenance',
+        'minor',
+        'patch',
+        'pin',
+        'pinDigest',
+        'rollback',
+      ],
+      schedule: [
+        'before 8am on monday',
+      ],
     },
     {
       // Group update of Terraform dependencies.
-      "groupName": "Terraform dependencies",
-      "matchManagers": ["terraform"],
-      "matchUpdateTypes": [
-        "bump",
-        "digest",
-        "lockFileMaintenance",
-        "minor",
-        "patch",
-        "pin",
-        "pinDigest",
-        "rollback",
+      groupName: 'Terraform dependencies',
+      matchManagers: [
+        'terraform'
       ],
-      "schedule": ["before 8am on wednesday"],
-    },
-    {
-      "matchManagers": ["bazelisk", "bazel", "bazel-module"],
-      "matchDepNames": ["bazel", "io_bazel_rules_go", "bazel_gazelle", "rules_go", "gazelle"],
-      "groupName": "bazel (core)",
-    },
-    {
-      "matchManagers": ["bazel"],
-      "matchDepNames": [
-        "!bazel",
-        "!io_bazel_rules_go",
-        "!bazel_gazelle",
-        "!rules_go",
-        "!gazelle",
+      matchUpdateTypes: [
+        'bump',
+        'digest',
+        'lockFileMaintenance',
+        'minor',
+        'patch',
+        'pin',
+        'pinDigest',
+        'rollback',
       ],
-      "groupName": "bazel (plugins)",
-    },
-    {
-      "matchManagers": ["bazel-module"],
-      "matchDepNames": [
-        "!bazel",
-        "!io_bazel_rules_go",
-        "!bazel_gazelle",
-        "!rules_go",
-        "!gazelle",
+      schedule: [
+        'before 8am on wednesday',
       ],
-      "groupName": "bazel (modules)",
     },
     {
-      "matchDatasources": ["golang-version"],
-      "allowedVersions": "1.23",
-    },
-    {
-      "matchManagers": ["pip_requirements"],
-      "groupName": "Python dependencies",
-    },
-    {
-      "matchManagers": ["github-actions"],
-      "groupName": "GitHub action dependencies",
-      "matchUpdateTypes": [
-        "major",
-        "minor",
-        "patch",
-        "pin",
-        "pinDigest",
-        "digest",
-        "lockFileMaintenance",
-        "rollback",
-        "bump",
+      matchManagers: [
+        'bazelisk',
+        'bazel',
+        'bazel-module',
       ],
-      "schedule": ["before 8am on tuesday"],
+      matchDepNames: [
+        'bazel',
+        'io_bazel_rules_go',
+        'bazel_gazelle',
+        'rules_go',
+        'gazelle',
+      ],
+      groupName: 'bazel (core)',
     },
     {
-      "matchDepNames": ["kubernetes/kubernetes"],
+      matchManagers: [
+        'bazel',
+      ],
+      matchDepNames: [
+        '!bazel',
+        '!io_bazel_rules_go',
+        '!bazel_gazelle',
+        '!rules_go',
+        '!gazelle',
+      ],
+      groupName: 'bazel (plugins)',
+    },
+    {
+      matchManagers: [
+        'bazel-module'
+      ],
+      matchDepNames: [
+        '!bazel',
+        '!io_bazel_rules_go',
+        '!bazel_gazelle',
+        '!rules_go',
+        '!gazelle',
+      ],
+      groupName: 'bazel (modules)',
+    },
+    {
+      matchDatasources: [
+        'golang-version'
+      ],
+      allowedVersions: '1.23',
+    },
+    {
+      matchManagers: [
+        'pip_requirements'
+      ],
+      groupName: 'Python dependencies',
+    },
+    {
+      matchManagers: [
+        'github-actions'
+      ],
+      groupName: 'GitHub action dependencies',
+      matchUpdateTypes: [
+        'major',
+        'minor',
+        'patch',
+        'pin',
+        'pinDigest',
+        'digest',
+        'lockFileMaintenance',
+        'rollback',
+        'bump',
+      ],
+      schedule: [
+        'before 8am on tuesday'
+      ],
+    },
+    {
+      matchDepNames: [
+        'kubernetes/kubernetes'
+      ],
       // example match: v1.2.3 (1.2 -> compatibility, 3 -> patch)
-      "versioning": "regex:^(?<compatibility>v?\\d+\\.\\d+\\.)(?<patch>\\d+)$",
-      "groupName": "Kubernetes versions",
-      "prPriority": 15,
+      versioning: 'regex:^(?<compatibility>v?\\d+\\.\\d+\\.)(?<patch>\\d+)$',
+      groupName: 'Kubernetes versions',
+      prPriority: 15,
     },
     {
-      "matchDepNames": [
-        "registry.k8s.io/provider-aws/cloud-controller-manager",
+      matchDepNames: [
+        'registry.k8s.io/provider-aws/cloud-controller-manager',
       ],
       // example match: v1.2.3 (1.2 -> compatibility, 3 -> patch)
-      "versioning": "regex:^(?<compatibility>v?\\d+\\.\\d+\\.)(?<patch>\\d+)$",
-      "groupName": "K8s constrained AWS versions",
-      "prPriority": 15,
+      versioning: 'regex:^(?<compatibility>v?\\d+\\.\\d+\\.)(?<patch>\\d+)$',
+      groupName: 'K8s constrained AWS versions',
+      prPriority: 15,
     },
     {
-      "matchDepNames": [
-        "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager",
-        "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager",
+      matchDepNames: [
+        'mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager',
+        'mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager',
       ],
       // example match: v1.2.3 (1.2 -> compatibility, 3 -> patch)
-      "versioning": "regex:^(?<compatibility>v?\\d+\\.\\d+\\.)(?<patch>\\d+)$",
-      "groupName": "K8s constrained Azure versions",
-      "prPriority": 15,
+      versioning: 'regex:^(?<compatibility>v?\\d+\\.\\d+\\.)(?<patch>\\d+)$',
+      groupName: 'K8s constrained Azure versions',
+      prPriority: 15,
     },
     {
-      "matchDepNames": [
-        "docker.io/k8scloudprovider/openstack-cloud-controller-manager",
+      matchDepNames: [
+        'docker.io/k8scloudprovider/openstack-cloud-controller-manager',
       ],
       // example match: v1.2.3 (1.2 -> compatibility, 3 -> patch)
-      "versioning": "regex:^(?<compatibility>v?\\d+\\.\\d+\\.)(?<patch>\\d+)$",
-      "groupName": "K8s constrained OpenStack versions",
-      "prPriority": 15,
+      versioning: 'regex:^(?<compatibility>v?\\d+\\.\\d+\\.)(?<patch>\\d+)$',
+      groupName: 'K8s constrained OpenStack versions',
+      prPriority: 15,
     },
     {
-      "matchDepNames": ["registry.k8s.io/autoscaling/cluster-autoscaler"],
+      matchDepNames: [
+        'registry.k8s.io/autoscaling/cluster-autoscaler'
+      ],
       // example match: v1.2.3 (1.2 -> compatibility, 3 -> patch)
-      "versioning": "regex:^(?<compatibility>v?\\d+\\.\\d+\\.)(?<patch>\\d+)$",
-      "groupName": "K8s constrained GCP versions",
-      "prPriority": 15,
+      versioning: 'regex:^(?<compatibility>v?\\d+\\.\\d+\\.)(?<patch>\\d+)$',
+      groupName: 'K8s constrained GCP versions',
+      prPriority: 15,
     },
     {
-      "matchDepNames": ["ghcr.io/edgelesssys/cloud-provider-gcp"],
+      matchDepNames: [
+        'ghcr.io/edgelesssys/cloud-provider-gcp'
+      ],
       // example match: v1.2.3 (1. -> compatibility, 2 -> minor, 3 -> patch)
-      "versioning": "regex:^(?<compatibility>v\\d+\\.)(?<minor>\\d+)\\.(?<patch>\\d+)$",
-      "groupName": "cloud-provider-gcp (K8s version constrained)",
-      "prPriority": 15,
+      versioning: 'regex:^(?<compatibility>v\\d+\\.)(?<minor>\\d+)\\.(?<patch>\\d+)$',
+      groupName: 'cloud-provider-gcp (K8s version constrained)',
+      prPriority: 15,
     },
     {
-      "matchDepPrefixes": ["ghcr.io/edgelesssys/"],
-      "excludeDepNames": ["ghcr.io/edgelesssys/cloud-provider-gcp"],
-      "versioning": "semver",
+      matchPackageNames: [
+        'ghcr.io/edgelesssys/{/,}**',
+        '!ghcr.io/edgelesssys/cloud-provider-gcp',
+      ],
+      versioning: 'semver',
       // Allow packages of ghcr.io/edgelesssys to update to unstable prereleases.
       // This is necessary because renovate will not update minor versions of
       // containers that are already tagged as a prerelease in the code
       // if this is not set.
-      "ignoreUnstable": false,
-      "groupName": "Constellation containers",
-      "prPriority": 20,
-      "schedule": ["before 8am on thursday"],
-    },
-    {
-      "matchDepNames": [
-        "registry.k8s.io/kas-network-proxy/proxy-agent",
-        "registry.k8s.io/kas-network-proxy/proxy-server",
+      ignoreUnstable: false,
+      groupName: 'Constellation containers',
+      prPriority: 20,
+      schedule: [
+        'before 8am on thursday'
       ],
-      "versioning": "semver",
-      "groupName": "K8s version independent containers",
-      "prPriority": 15,
     },
     {
-      "matchDepNames": ["^k8s.io/client-go"],
-      "matchUpdateTypes": ["major"],
-      "enabled": false,
+      matchDepNames: [
+        'registry.k8s.io/kas-network-proxy/proxy-agent',
+        'registry.k8s.io/kas-network-proxy/proxy-server',
+      ],
+      versioning: 'semver',
+      groupName: 'K8s version independent containers',
+      prPriority: 15,
     },
     {
-      "matchCategories": ["python", "js", "node"],
-      "prPriority": -20,
+      matchDepNames: [
+        '^k8s.io/client-go'
+      ],
+      matchUpdateTypes: [
+        'major'
+      ],
+      enabled: false,
     },
     {
-      "matchManagers": ["github-actions"],
-      "matchDepNames": ["slsa-framework/slsa-github-generator"],
-      "pinDigests": false,
+      matchCategories: [
+        'python',
+        'js',
+        'node'
+      ],
+      prPriority: -20,
     },
     {
-      "matchDepNamePatterns": ["_(darwin|linux)_(arm64|amd64)$"],
-      "additionalBranchPrefix": "{{packageName}}-",
-      "groupName": "{{packageName}}",
+      matchManagers: [
+        'github-actions'
+      ],
+      matchDepNames: [
+        'slsa-framework/slsa-github-generator'
+      ],
+      pinDigests: false,
+    },
+    {
+      additionalBranchPrefix: '{{packageName}}-',
+      groupName: '{{packageName}}',
+      matchDepNames: [
+        '/_(darwin|linux)_(arm64|amd64)$/',
+      ],
     },
   ],
   // Regex Managers allow detection of other versions in files that renovate
   // cannot parse by default. For more information, look at
   // https://docs.renovatebot.com/modules/manager/regex/ .
-  "customManagers": [
+  customManagers: [
     {
-      "customType": "regex",
-      "fileMatch": ["(^|\\/)versions.go$"],
-      "matchStrings": [
+      customType: 'regex',
+      fileMatch: [
+        '(^|\\/)versions.go$'
+      ],
+      matchStrings: [
         // Match all container packages.
         // example match:' "registry.io/owner/foo/bar:v1.2.3@sha256:somehash" // renovate:container'
         // (registry.io/owner/foo/bar -> depName, v1.2.3 -> currentValue, sha256:somehash -> currentDigest)
-        " \"(?<depName>[^\"]*?):(?<currentValue>[^\"]*?)@(?<currentDigest>sha256:[a-f0-9]+)\"[^\\n]+\\/\\/ renovate:container",
+        ' \"(?<depName>[^\"]*?):(?<currentValue>[^\"]*?)@(?<currentDigest>sha256:[a-f0-9]+)\"[^\\n]+\\/\\/ renovate:container',
       ],
-      "datasourceTemplate": "docker",
+      datasourceTemplate: 'docker',
     },
     {
-      "customType": "regex",
-      "fileMatch": ["(^|\\/)versions.go$"],
-      "matchStrings": [
+      customType: 'regex',
+      fileMatch: [
+        '(^|\\/)versions.go$'
+      ],
+      matchStrings: [
         // Match kubernetes releases.
         // example match:'  "https://dl.k8s.io/v1.2.3/foo" // renovate:kubernetes-release'
         // (v1.2.3 -> currentValue)
-        " \"https:\\/\\/dl\\.k8s\\.io\\/(?<currentValue>[^\\/\\s\"]+)\\/[^\"]+\"[^\\n]+\\/\\/ renovate:kubernetes-release",
+        ' \"https:\\/\\/dl\\.k8s\\.io\\/(?<currentValue>[^\\/\\s\"]+)\\/[^\"]+\"[^\\n]+\\/\\/ renovate:kubernetes-release',
         // Match kubernetes releases.
         // example match:' " "v1.2.3" // renovate:kubernetes-release"'
         // (v1.2.3 -> currentValue)
-        " \"(?<currentValue>v\\d+\\.\\d+\\.\\d+)\"[^\\n]+\\/\\/ renovate:kubernetes-release",
+        ' \"(?<currentValue>v\\d+\\.\\d+\\.\\d+)\"[^\\n]+\\/\\/ renovate:kubernetes-release',
       ],
-      "depNameTemplate": "kubernetes/kubernetes",
-      "datasourceTemplate": "github-releases",
+      depNameTemplate: 'kubernetes/kubernetes',
+      datasourceTemplate: 'github-releases',
     },
     {
-      "customType": "regex",
-      "fileMatch": ["(^|\\/)versions.go$", "[.]github\\/(actions|workflows)\\/.*[.]ya?ml"],
-      "matchStrings": [
+      customType: 'regex',
+      fileMatch: [
+        '(^|\\/)versions.go$',
+        '[.]github\\/(actions|workflows)\\/.*[.]ya?ml'
+      ],
+      matchStrings: [
         // Match github releases.
         // example match:' "https://github.com/foo/bar/releases/download/v1.2.3/foo.bin" // renovate:github-release'
         // (foo/bar -> depName, v1.2.3 -> currentValue)
-        "https:\\/\\/github\\.com\\/(?<depName>[^\\/\\s\"]+\\/[^\\/\\s\"]+)\\/releases\\/download\\/(?<currentValue>[^\\/\\s\"]+).*renovate:github-release",
+        'https:\\/\\/github\\.com\\/(?<depName>[^\\/\\s\"]+\\/[^\\/\\s\"]+)\\/releases\\/download\\/(?<currentValue>[^\\/\\s\"]+).*renovate:github-release',
       ],
-      "datasourceTemplate": "github-releases",
+      datasourceTemplate: 'github-releases',
     },
     {
-      "customType": "regex",
-      "fileMatch": ["(^|\\/)versions.go$"],
-      "matchStrings": [
+      customType: 'regex',
+      fileMatch: [
+        '(^|\\/)versions.go$'
+      ],
+      matchStrings: [
         // Match kubernetes cri-tools releases (https://github.com/kubernetes-sigs/cri-tools).
         // example Match:' "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.2.3/foo"'
         // (v1.2.3 -> currentValue)
-        " \"https:\\/\\/github\\.com\\/kubernetes-sigs\\/cri-tools\\/releases\\/download\\/(?<currentValue>[^\\/\\s\"]+)\\/[^\"]+\"",
+        ' \"https:\\/\\/github\\.com\\/kubernetes-sigs\\/cri-tools\\/releases\\/download\\/(?<currentValue>[^\\/\\s\"]+)\\/[^\"]+\"',
       ],
-      "depNameTemplate": "kubernetes-sigs/cri-tools",
-      "datasourceTemplate": "github-releases",
-      "autoReplaceStringTemplate": " \"https://github.com/kubernetes-sigs/cri-tools/releases/download/{{{newValue}}}/crictl-{{{newValue}}}-linux-amd64.tar.gz\"",
+      depNameTemplate: 'kubernetes-sigs/cri-tools',
+      datasourceTemplate: 'github-releases',
+      autoReplaceStringTemplate: ' \"https://github.com/kubernetes-sigs/cri-tools/releases/download/{{{newValue}}}/crictl-{{{newValue}}}-linux-amd64.tar.gz\"',
     },
     {
-      "customType": "regex",
-      "fileMatch": ["versions.go$"],
-      "matchStrings": [
+      customType: 'regex',
+      fileMatch: [
+        'versions.go$'
+      ],
+      matchStrings: [
         // Match containernetworking plugin releases (https://github.com/containernetworking/plugins).
         // example Match:' "https://github.com/containernetworking/plugins/releases/download/v1.2.3/foo"'
         // (v1.2.3 -> currentValue)
-        " \"https:\\/\\/github\\.com\\/containernetworking\\/plugins\\/releases\\/download\\/(?<currentValue>[^\\/\\s\"]+)\\/[^\"]+\"",
+        ' \"https:\\/\\/github\\.com\\/containernetworking\\/plugins\\/releases\\/download\\/(?<currentValue>[^\\/\\s\"]+)\\/[^\"]+\"',
       ],
-      "depNameTemplate": "containernetworking/plugins",
-      "datasourceTemplate": "github-releases",
-      "autoReplaceStringTemplate": " \"https://github.com/containernetworking/plugins/releases/download/{{{newValue}}}/cni-plugins-linux-amd64-{{{newValue}}}.tgz\"",
+      depNameTemplate: 'containernetworking/plugins',
+      datasourceTemplate: 'github-releases',
+      autoReplaceStringTemplate: ' \"https://github.com/containernetworking/plugins/releases/download/{{{newValue}}}/cni-plugins-linux-amd64-{{{newValue}}}.tgz\"',
     },
     {
-      "customType": "regex",
-      "fileMatch": ["\\.yaml$", "\\.yml$"],
-      "matchStrings": [
+      customType: 'regex',
+      fileMatch: [
+        '\\.yaml$',
+        '\\.yml$'
+      ],
+      matchStrings: [
         // Match `go install` commands.
-        // example Match: "go install foo.bar@0000000000000000000000000000000000000000"
+        // example Match: 'go install foo.bar@0000000000000000000000000000000000000000'
         // (foo.bar -> depName, 0000000000000000000000000000000000000000 -> currentValue)
-        "go install (?<depName>[^@]+?)@(?<currentValue>[0-9a-f]{40})",
+        'go install (?<depName>[^@]+?)@(?<currentValue>[0-9a-f]{40})',
       ],
-      "datasourceTemplate": "go",
+      datasourceTemplate: 'go',
     },
     {
-      "customType": "regex",
-      "fileMatch": ["(^|\\/)e2e_s3proxy/action.yml$"],
-      "matchStrings": [
+      customType: 'regex',
+      fileMatch: [
+        '(^|\\/)e2e_s3proxy/action.yml$'
+      ],
+      matchStrings: [
         // Match mint tags (ghcr.io/edgelesssys/mint).
         // example Match:' "ghcr.io/edgelesssys/mint:v1.2.3"'
         // (ghcr.io/edgelesssys/mint -> depName, v1.2.3 -> currentValue)
-        "IMAGE: \"(?<depName>[^\"]*?):(?<currentValue>[^\"]*?)@(?<currentDigest>sha256:[a-f0-9]+)\"[^\\n]+# renovate:mint-fork",
+        'IMAGE: \"(?<depName>[^\"]*?):(?<currentValue>[^\"]*?)@(?<currentDigest>sha256:[a-f0-9]+)\"[^\\n]+# renovate:mint-fork',
       ],
-      "datasourceTemplate": "docker",
+      datasourceTemplate: 'docker',
     },
   ],
 }
