@@ -100,6 +100,8 @@ type IssueJoinTicketResponse struct {
 	KubernetesVersion        string                   `protobuf:"bytes,9,opt,name=kubernetes_version,json=kubernetesVersion,proto3" json:"kubernetes_version,omitempty"`
 	KubernetesComponents     []*components.Component  `protobuf:"bytes,10,rep,name=kubernetes_components,json=kubernetesComponents,proto3" json:"kubernetes_components,omitempty"`
 	AuthorizedCaPublicKey    []byte                   `protobuf:"bytes,11,opt,name=authorized_ca_public_key,json=authorizedCaPublicKey,proto3" json:"authorized_ca_public_key,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *IssueJoinTicketResponse) Reset() {
