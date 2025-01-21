@@ -176,8 +176,8 @@
       "prPriority": 15,
     },
     {
-      "matchPackagePrefixes": ["ghcr.io/edgelesssys/"],
-      "excludePackageNames": ["ghcr.io/edgelesssys/cloud-provider-gcp"],
+      "matchDepPrefixes": ["ghcr.io/edgelesssys/"],
+      "excludeDepNames": ["ghcr.io/edgelesssys/cloud-provider-gcp"],
       "versioning": "semver",
       // Allow packages of ghcr.io/edgelesssys to update to unstable prereleases.
       // This is necessary because renovate will not update minor versions of
@@ -212,7 +212,7 @@
       "pinDigests": false,
     },
     {
-      "matchDepPatterns": ["_(darwin|linux)_(arm64|amd64)$"],
+      "matchDepNamePatterns": ["_(darwin|linux)_(arm64|amd64)$"],
       "additionalBranchPrefix": "{{packageName}}-",
       "groupName": "{{packageName}}",
     },
