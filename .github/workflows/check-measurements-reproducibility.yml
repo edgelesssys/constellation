@@ -1,0 +1,21 @@
+name: Check measurements reproducibility
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+
+jobs:
+  check-reproducibility:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        ref: ${{ github.event.release.tag_name }}
+      - name: Set up bazel
+        uses: ./.github/actions/setup_bazel_nix
+        with:
+          useCache: "false"
+      - name: Build images and produce measurements
+        run: |
+          bazel build //image/system:stable
+          bazel run //image/measured-boot/cmd
