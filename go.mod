@@ -15,8 +15,8 @@ replace (
 	k8s.io/controller-manager => k8s.io/controller-manager v0.32.1
 	k8s.io/cri-client => k8s.io/cri-client v0.32.1
 	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.32.1
-	k8s.io/dynamic-resource-allocation => k8s.io/dynamic-resource-allocation v0.31.3
-	k8s.io/endpointslice => k8s.io/endpointslice v0.31.3
+	k8s.io/dynamic-resource-allocation => k8s.io/dynamic-resource-allocation v0.32.1
+	k8s.io/endpointslice => k8s.io/endpointslice v0.32.1
 	k8s.io/externaljwt => k8s.io/externaljwt v0.32.1
 	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.32.1
 	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.32.1
@@ -37,7 +37,7 @@ require (
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.8.1
-	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v6 v6.2.0
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v6 v6.3.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v6 v6.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets v1.3.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.5.0
@@ -56,7 +56,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.73.2
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.34.13
 	github.com/aws/smithy-go v1.22.1
-	github.com/bazelbuild/buildtools v0.0.0-20240918101019-be1c24cc9a44
+	github.com/bazelbuild/buildtools v0.0.0-20250117124929-3648bec1fd3c
 	github.com/bazelbuild/rules_go v0.52.0
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/docker/docker v27.5.0+incompatible
@@ -137,7 +137,7 @@ require (
 	k8s.io/kubernetes v1.32.1
 	k8s.io/mount-utils v0.32.1
 	k8s.io/utils v0.0.0-20241210054802-24370beab758
-	libvirt.org/go/libvirt v1.10009.1
+	libvirt.org/go/libvirt v1.11001.0
 	sigs.k8s.io/controller-runtime v0.20.0
 	sigs.k8s.io/yaml v1.4.0
 )
