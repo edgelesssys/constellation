@@ -16,8 +16,12 @@ jobs:
         uses: ./.github/actions/setup_bazel_nix
         with:
           useCache: "false"
+      # TODO: get correct path to bazel build artifacts, generate measurements and fetch released measurements, then compare.
       - name: Build images and produce measurements
-        # TODO: get correct path to bazel build artifacts, generate measurements and fetch released measurements, then compare.
         run: |
           bazel build //image/system:stable
           bazel build //image/measured-boot/cmd
+          buildPath="$PWD/bazel-bin/image"
+          cd $(mktemp -d)
+          sudo "$buildPath/measured-boot/cmd/cmd_/cmd" "$buildPath/ssystem/qemu_qemu-vtpm_stable/constellation" ./measurements.json
+          cat ./measurements.json | jq
