@@ -10,7 +10,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        ref: ${{ github.event.release.tag_name }}
+        with:
+          ref: ${{ github.event.release.tag_name }}
       - name: Set up bazel
         uses: ./.github/actions/setup_bazel_nix
         with:
