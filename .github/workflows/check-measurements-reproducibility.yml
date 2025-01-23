@@ -16,6 +16,7 @@ jobs:
         with:
           useCache: "false"
       - name: Build images and produce measurements
+        # TODO: get correct path to bazel build artifacts, generate measurements and fetch released measurements, then compare.
         run: |
           bazel build //image/system:stable
-          bazel run //image/measured-boot/cmd
+          bazel build //image/measured-boot/cmd
