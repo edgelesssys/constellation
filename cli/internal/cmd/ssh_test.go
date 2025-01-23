@@ -99,7 +99,7 @@ func TestSSH(t *testing.T) {
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(&bytes.Buffer{})
 
-			err := generateKey(cmd, someSSHPubKeyPath, tc.fh, logger.NewTest(t))
+			err := writeCertificateForKey(cmd, someSSHPubKeyPath, tc.fh, logger.NewTest(t))
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

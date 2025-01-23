@@ -50,10 +50,10 @@ func runSSH(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("retrieving path to public key from flags: %s", err)
 	}
 
-	return generateKey(cmd, keyPath, fh, debugLogger)
+	return writeCertificateForKey(cmd, keyPath, fh, debugLogger)
 }
 
-func generateKey(cmd *cobra.Command, keyPath string, fh file.Handler, debugLogger debugLog) error {
+func writeCertificateForKey(cmd *cobra.Command, keyPath string, fh file.Handler, debugLogger debugLog) error {
 	_, err := fh.Stat(constants.TerraformWorkingDir)
 	if os.IsNotExist(err) {
 		return fmt.Errorf("directory %q does not exist", constants.TerraformWorkingDir)
