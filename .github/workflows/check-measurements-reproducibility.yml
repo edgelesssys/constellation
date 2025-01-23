@@ -16,6 +16,7 @@ jobs:
         uses: ./.github/actions/setup_bazel_nix
         with:
           useCache: "false"
+          nixTools: systemdUkify
       # TODO: get correct path to bazel build artifacts, generate measurements and fetch released measurements, then compare.
       - name: Build images and produce measurements
         run: |
