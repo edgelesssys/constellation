@@ -16,13 +16,20 @@ jobs:
         uses: ./.github/actions/setup_bazel_nix
         with:
           useCache: "false"
-          nixTools: systemdUkify
-      # TODO: get correct path to bazel build artifacts, generate measurements and fetch released measurements, then compare.
+          nixTools: |
+            systemdUkify
+            jd-diff-patch
       - name: Build images and produce measurements
         run: |
+          # Build required binaries
           bazel build //image/system:stable
           bazel build //image/measured-boot/cmd
           buildPath="$PWD/bazel-bin/image"
+
+          # create measurements
           cd $(mktemp -d)
-          sudo env "PATH=$PATH" "$buildPath/measured-boot/cmd/cmd_/cmd" "$buildPath/system/qemu_qemu-vtpm_stable/constellation" ./measurements.json
-          cat ./measurements.json | jq
+          sudo env "PATH=$PATH" "$buildPath/measured-boot/cmd/cmd_/cmd" "$buildPath/system/qemu_qemu-vtpm_stable/constellation" ./own-measurements.json
+
+          # download release measurements and compare
+          curl -O https://cdn.confidential.cloud/constellation/v2/ref/-/stream/stable/v2.20.0/image/measurements.json
+          jd -set ./own-measurements.json ./measurements.json
