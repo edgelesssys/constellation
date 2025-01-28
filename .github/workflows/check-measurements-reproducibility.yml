@@ -25,11 +25,19 @@ jobs:
           bazel build //image/system:stable
           bazel build //image/measured-boot/cmd
           buildPath="$PWD/bazel-bin/image"
-
-          # create measurements
           cd $(mktemp -d)
-          sudo env "PATH=$PATH" "$buildPath/measured-boot/cmd/cmd_/cmd" "$buildPath/system/qemu_qemu-vtpm_stable/constellation" ./own-measurements.json
 
-          # download release measurements and compare
+          # download release measurements
           curl -O https://cdn.confidential.cloud/constellation/v2/ref/-/stream/stable/v2.20.0/image/measurements.json
-          jd -set ./own-measurements.json ./measurements.json
+
+          # compare all measurements with our own
+          for directory in $buildPath/system/!(mkosi_wrapper.sh); do
+            dirname="$(basename $directory)"
+            csp="$(echo $dirname | cut -d_ -f1)"
+            attestationVariant="$(echo $dirname | cut -d_ -f2)"
+
+            echo "Comparing measurements of CSP $csp with attestation variant $attestationVariant"
+            jq --arg attestation_variant "$attestationVariant" --arg csp "$csp" '.list.[] | select(.attestationVariant == $attestation_variant) | select((.csp | ascii_downcase) == $csp)' measurements.json > their-measurements.json
+            sudo env "PATH=$PATH" "$buildPath/measured-boot/cmd/cmd_/cmd" "$directory/constellation" ./own-measurements.json
+            jd ./their-measurements.json ./own-measurements.json
+          done
