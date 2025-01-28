@@ -24,5 +24,5 @@ jobs:
           bazel build //image/measured-boot/cmd
           buildPath="$PWD/bazel-bin/image"
           cd $(mktemp -d)
-          sudo env "PATH=$PATH" "$buildPath/measured-boot/cmd/cmd_/cmd" "$buildPath/ssystem/qemu_qemu-vtpm_stable/constellation" ./measurements.json
+          sudo env "PATH=$PATH" "$buildPath/measured-boot/cmd/cmd_/cmd" "$buildPath/system/qemu_qemu-vtpm_stable/constellation" ./measurements.json
           cat ./measurements.json | jq
