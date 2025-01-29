@@ -32,7 +32,7 @@ require (
 	cloud.google.com/go/compute/metadata v0.6.0
 	cloud.google.com/go/kms v1.20.5
 	cloud.google.com/go/secretmanager v1.14.3
-	cloud.google.com/go/storage v1.50.0
+	cloud.google.com/go/storage v1.49.0
 	dario.cat/mergo v1.0.1
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.0
