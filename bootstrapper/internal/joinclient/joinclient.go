@@ -271,6 +271,10 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 		return fmt.Errorf("writing kubelet key: %w", err)
 	}
 
+	if err := c.fileHandler.Write(constants.SSHCAKeyPath, ticket.AuthorizedCaPublicKey, file.OptMkdirAll); err != nil {
+		return fmt.Errorf("writing ssh ca key: %w", err)
+	}
+
 	state := nodestate.NodeState{
 		Role:            c.role,
 		MeasurementSalt: ticket.MeasurementSalt,

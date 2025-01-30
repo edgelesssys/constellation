@@ -20,6 +20,7 @@ package initserver
 import (
 	"bufio"
 	"context"
+	"crypto/ed25519"
 	"errors"
 	"fmt"
 	"io"
@@ -33,6 +34,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/journald"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
@@ -44,6 +46,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/crypto/ssh"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"
@@ -217,6 +220,28 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 	}
 	if err := state.ToFile(s.fileHandler); err != nil {
 		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "persisting node state: %s", err)); e != nil {
+			err = errors.Join(err, e)
+		}
+		return err
+	}
+
+	// Derive the emergency ssh CA key
+	key, err := cloudKms.GetDEK(stream.Context(), crypto.DEKPrefix+constants.SSHCAKeySuffix, ed25519.SeedSize)
+	if err != nil {
+		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "retrieving DEK for key derivation: %s", err)); e != nil {
+			err = errors.Join(err, e)
+		}
+		return err
+	}
+	ca, err := crypto.GenerateEmergencySSHCAKey(key)
+	if err != nil {
+		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "generating emergency SSH CA key: %s", err)); e != nil {
+			err = errors.Join(err, e)
+		}
+		return err
+	}
+	if err := s.fileHandler.Write(constants.SSHCAKeyPath, ssh.MarshalAuthorizedKey(ca.PublicKey()), file.OptMkdirAll); err != nil {
+		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "writing ssh CA pubkey: %s", err)); e != nil {
 			err = errors.Join(err, e)
 		}
 		return err

@@ -42,6 +42,10 @@ const (
 	DefaultWorkerGroupName = "worker_default"
 	// CLIDebugLogFile is the name of the debug log file for constellation init/constellation apply.
 	CLIDebugLogFile = "constellation-debug.log"
+	// SSHCAKeySuffix is the suffix used together with the DEKPrefix to derive an SSH CA key for emergency ssh access.
+	SSHCAKeySuffix = "ca_emergency_ssh"
+	// SSHCAKeyPath is the path to the emergency SSH CA key on the node.
+	SSHCAKeyPath = "/run/ssh/ssh_ca.pub"
 
 	//
 	// Ports.
