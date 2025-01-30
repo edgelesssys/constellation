@@ -27,7 +27,7 @@ jobs:
           buildPath="$PWD/bazel-bin/image"
           cd $(mktemp -d)
 
-          # download release measurements
+          echo "Downloading release measurements"
           curl -O https://cdn.confidential.cloud/constellation/v2/ref/-/stream/stable/v2.20.0/image/measurements.json
 
           # compare all measurements with our own
