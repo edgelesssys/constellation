@@ -18,6 +18,7 @@ jobs:
           useCache: "false"
           nixTools: |
             systemdUkify
+            jq
             jd-diff-patch
       - name: Build images and produce measurements
         run: |
