@@ -21,6 +21,9 @@ jobs:
             jd-diff-patch
       - name: Build images and produce measurements
         run: |
+          set -euo pipefail
+          shopt -s extglob
+
           # Build required binaries
           bazel build //image/system:stable
           bazel build //image/measured-boot/cmd
