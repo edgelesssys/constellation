@@ -8,7 +8,7 @@ set -o errtrace
 shopt -s inherit_errexit
 
 echo "Updating AWS Load Balancer Controller Helm chart..."
-branch="v0.0.140" # releases can update the AWS load-balancer-controller chart
+branch="v0.0.190" # releases can update the AWS load-balancer-controller chart
 # Required tools
 if ! command -v git &> /dev/null; then
   echo "git could not be found"
