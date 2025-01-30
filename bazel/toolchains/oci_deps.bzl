@@ -10,11 +10,10 @@ def oci_deps():
         strip_prefix = "rules_oci-2.2.1",
         type = "tar.gz",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/acbf8f40e062f707f8754e914dcb0013803c6e5e3679d3e05b571a9f5c7e0b43",
-            "https://cdn.confidential.cloud/constellation/cas/sha256/f70f07f9d0d6c275d7ec7d3c7f236d9b552ba3205e8f37df9c1125031cf967cc",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/cfea16076ebbec1faea494882ab97d94b1a62d6bcd5aceabad8f95ea0d0a1361",
             "https://github.com/bazel-contrib/rules_oci/releases/download/v2.2.1/rules_oci-v2.2.1.tar.gz",
         ],
-        sha256 = "acbf8f40e062f707f8754e914dcb0013803c6e5e3679d3e05b571a9f5c7e0b43",
+        sha256 = "cfea16076ebbec1faea494882ab97d94b1a62d6bcd5aceabad8f95ea0d0a1361",
         patches = ["//bazel/toolchains:0001-disable-Windows-support.patch"],
         patch_args = ["-p1"],
     )
