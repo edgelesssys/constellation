@@ -83,7 +83,7 @@ func NewNodeVersionReconciler(nodeReplacer nodeReplacer, etcdRemover etcdRemover
 //+kubebuilder:rbac:groups=nodemaintenance.medik8s.io,resources=nodemaintenances,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="",resources=nodes/status,verbs=get
-//+kubebuilder:rbac:groups="",resources=configmaps,verbs=list;get
+//+kubebuilder:rbac:groups="",resources=configmaps,verbs=list;get;watch
 
 // Reconcile replaces outdated nodes with new nodes as specified in the NodeVersion spec.
 func (r *NodeVersionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
