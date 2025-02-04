@@ -232,7 +232,7 @@ jobs:
 
       - name: Set up gcloud CLI (macOS)
         if: needs.generate-input-parameters.outputs.cloudProvider == 'gcp' && runner.os == 'macOS'
-        uses: google-github-actions/setup-gcloud@6189d56e4096ee891640bb02ac264be376592d6a # v2.1.2
+        uses: google-github-actions/setup-gcloud@77e7a554d41e2ee56fc945c52dfd3f33d12def9a # v2.1.4
 
       - name: Run manual E2E test
         id: e2e_test
