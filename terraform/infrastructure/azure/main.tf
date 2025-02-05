@@ -307,7 +307,7 @@ Host ${azurerm_public_ip.loadbalancer_ip[0].fqdn}
 
 Host *
   PreferredAuthentications publickey
-  CertificateFile=ca_cert.pub
+  CertificateFile=constellation-terraform/ca_cert.pub
   User root
   ProxyJump ${azurerm_public_ip.loadbalancer_ip[0].fqdn}
 EOF
