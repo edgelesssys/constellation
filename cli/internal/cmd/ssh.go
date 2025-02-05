@@ -116,7 +116,7 @@ func writeCertificateForKey(cmd *cobra.Command, keyPath string, fh file.Handler,
 	if err := fh.Write(fmt.Sprintf("%s/ca_cert.pub", constants.TerraformWorkingDir), ssh.MarshalAuthorizedKey(&certificate), file.OptOverwrite); err != nil {
 		return fmt.Errorf("writing certificate: %s", err)
 	}
-	cmd.Printf("You can now connect to a node using 'ssh -F %s/ssh_config -i <your private key> <node ip>'.\nYou can obtain the private node IP via the web UI of your CSP.\n", constants.TerraformWorkingDir)
+	cmd.Printf("You can now connect to a node using 'ssh -F %s/ssh_config -i <your private key> <node ip>' in your constellation workspace.\nYou can obtain the private node IP via the web UI of your CSP.\n", constants.TerraformWorkingDir)
 
 	return nil
 }
