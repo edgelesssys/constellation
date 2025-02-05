@@ -42,10 +42,14 @@ jobs:
             attestationVariant="$(echo $dirname | cut -d_ -f2)"
 
             echo "Comparing measurements of CSP $csp with attestation variant $attestationVariant"
+            # This jq filter selects the measurements for the correct CSP and attestation variant
+            # and then removes all `warnOnly: true` and `expected: 000...` measurements.
             jq --arg attestation_variant "$attestationVariant" --arg csp "$csp" \
               '.list.[] | select(.attestationVariant == $attestation_variant) | select((.csp | ascii_downcase) == $csp) | .measurements | walk(if (type=="object" and (.warnOnly or .expected == "0000000000000000000000000000000000000000000000000000000000000000")) then del(.) else . end) | del(..|nulls) | del(.[] .warnOnly)' \
               measurements.json > their-measurements.json
+
             sudo env "PATH=$PATH" "$buildPath/measured-boot/cmd/cmd_/cmd" "$directory/constellation" ./own-measurements.json
+            # Remove all `expected: 000...` measurements like above.
             jq '.measurements | walk(if (type == "object" and .expected == "0000000000000000000000000000000000000000000000000000000000000000") then del(.) else . end) | del(..|nulls)' \
               own-measurements.json | sponge ./own-measurements.json
 
