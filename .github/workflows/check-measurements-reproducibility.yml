@@ -13,12 +13,12 @@ jobs:
   check-reproducibility:
     runs-on: ubuntu-22.04
     env:
-      REF: ${{ github.event_name == 'workflow_dispatch' ? github.event.inputs.releasetag : github.event.release.tag_name }}
+      RELEASETAG: ${{ github.event_name == 'workflow_dispatch' ? github.event.inputs.releasetag : github.event.release.tag_name }}
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          ref: ${{ env.REF }}
+          ref: ${{ env.RELEASETAG }}
       - name: Set up bazel
         uses: ./.github/actions/setup_bazel_nix
         with:
@@ -40,7 +40,7 @@ jobs:
           cd $(mktemp -d)
 
           echo "Downloading release measurements"
-          curl -O https://cdn.confidential.cloud/constellation/v2/ref/-/stream/stable/${{ env.REF }}/image/measurements.json
+          curl -O https://cdn.confidential.cloud/constellation/v2/ref/-/stream/stable/${{ env.RELEASETAG }}/image/measurements.json
 
           # compare all measurements with our own
           for directory in $buildPath/system/!(mkosi_wrapper.sh); do
