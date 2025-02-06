@@ -5,42 +5,26 @@
         "systems": "systems"
       },
       "locked": {
-        "lastModified": 1710146030,
-        "narHash": "sha256-SZ5L6eA7HJ/nmkzGG7/ISclqe6oZdOZTNoesiInkXPQ=",
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
         "owner": "numtide",
         "repo": "flake-utils",
-        "rev": "b1d9ab70662946ef0850d488da1c9019f3a9752a",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
         "type": "github"
       },
       "original": {
         "owner": "numtide",
         "repo": "flake-utils",
-        "type": "github"
-      }
-    },
-    "nixpkgsBazel": {
-      "locked": {
-        "lastModified": 1717414489,
-        "narHash": "sha256-fhvJv8hkJwotkqxhoSQfvh6UfKG+sTYIQ3hchariEDk=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "c429fa2ffa21229eeadbe37c11a47aff35f53ce0",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "c429fa2ffa21229eeadbe37c11a47aff35f53ce0",
         "type": "github"
       }
     },
     "nixpkgsUnstable": {
       "locked": {
-        "lastModified": 1725816686,
-        "narHash": "sha256-0Kq2MkQ/sQX1rhWJ/ySBBQlBJBUK8mPMDcuDhhdBkSU=",
+        "lastModified": 1733376361,
+        "narHash": "sha256-aLJxoTDDSqB+/3orsulE6/qdlX6MzDLIITLZqdgMpqo=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "add0443ee587a0c44f22793b8c8649a0dbc3bb00",
+        "rev": "929116e316068c7318c54eb4d827f7d9756d5e9c",
         "type": "github"
       },
       "original": {
@@ -53,9 +37,7 @@
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
-        "nixpkgsBazel": "nixpkgsBazel",
-        "nixpkgsUnstable": "nixpkgsUnstable",
-        "uplosi": "uplosi"
+        "nixpkgsUnstable": "nixpkgsUnstable"
       }
     },
     "systems": {
@@ -70,29 +52,6 @@
       "original": {
         "owner": "nix-systems",
         "repo": "default",
-        "type": "github"
-      }
-    },
-    "uplosi": {
-      "inputs": {
-        "flake-utils": [
-          "flake-utils"
-        ],
-        "nixpkgs": [
-          "nixpkgsUnstable"
-        ]
-      },
-      "locked": {
-        "lastModified": 1725522308,
-        "narHash": "sha256-AtsFZ92WkVkH8fd0Xa0D6/PR84/dtOH6gpM4mtn32Hk=",
-        "owner": "edgelesssys",
-        "repo": "uplosi",
-        "rev": "c8a482de299b5442f558d7381f0cbf898e0de0e1",
-        "type": "github"
-      },
-      "original": {
-        "owner": "edgelesssys",
-        "repo": "uplosi",
         "type": "github"
       }
     }

@@ -274,7 +274,7 @@ func (s *stubRateLimiter) When(_ any) time.Duration {
 
 func (s *stubRateLimiter) Forget(_ any) {}
 
-func assertBetween(assert *assert.Assertions, min, max, actual int) {
-	assert.GreaterOrEqual(actual, min)
-	assert.LessOrEqual(actual, max)
+func assertBetween(assert *assert.Assertions, minimum, maximum, actual int) {
+	assert.GreaterOrEqual(actual, minimum)
+	assert.LessOrEqual(actual, maximum)
 }

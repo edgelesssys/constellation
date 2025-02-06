@@ -16,7 +16,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/api/v1alpha1"
 	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/internal/cloud/api"
-	computeREST "google.golang.org/api/compute/v1"
 	"google.golang.org/api/iterator"
 )
 
@@ -50,22 +49,29 @@ func (c *Client) SetScalingGroupImage(ctx context.Context, scalingGroupID, image
 	}
 
 	// clone template with desired image
-	if instanceTemplate.Name == "" {
+	if instanceTemplate.Name == nil {
 		return fmt.Errorf("instance template of scaling group %q has no name", scalingGroupID)
 	}
-	instanceTemplate.Properties.Disks[0].InitializeParams.SourceImage = imageURI
-	newTemplateName, err := generateInstanceTemplateName(instanceTemplate.Name)
+	instanceTemplate.Properties.Disks[0].InitializeParams.SourceImage = &imageURI
+	newTemplateName, err := generateInstanceTemplateName(*instanceTemplate.Name)
 	if err != nil {
 		return err
 	}
-	instanceTemplate.Name = newTemplateName
-	if _, err := c.instanceTemplateAPI.Insert(project, instanceTemplate); err != nil {
+	instanceTemplate.Name = &newTemplateName
+	op, err := c.instanceTemplateAPI.Insert(ctx, &computepb.InsertInstanceTemplateRequest{
+		Project:                  project,
+		InstanceTemplateResource: instanceTemplate,
+	})
+	if err != nil {
 		return fmt.Errorf("cloning instance template: %w", err)
+	}
+	if err := op.Wait(ctx); err != nil {
+		return fmt.Errorf("waiting for cloned instance template: %w", err)
 	}
 
 	newTemplateURI := joinInstanceTemplateURI(project, newTemplateName)
 	// update instance group manager to use new template
-	op, err := c.instanceGroupManagersAPI.SetInstanceTemplate(ctx, &computepb.SetInstanceTemplateInstanceGroupManagerRequest{
+	op, err = c.instanceGroupManagersAPI.SetInstanceTemplate(ctx, &computepb.SetInstanceTemplateInstanceGroupManagerRequest{
 		InstanceGroupManager: instanceGroupName,
 		Project:              project,
 		Zone:                 zone,
@@ -105,6 +111,8 @@ func (c *Client) GetAutoscalingGroupName(scalingGroupID string) (string, error) 
 // ListScalingGroups retrieves a list of scaling groups for the cluster.
 func (c *Client) ListScalingGroups(ctx context.Context, uid string) ([]cspapi.ScalingGroup, error) {
 	results := []cspapi.ScalingGroup{}
+	var retErr error
+
 	iter := c.instanceGroupManagersAPI.AggregatedList(ctx, &computepb.AggregatedListInstanceGroupManagersRequest{
 		Project: c.projectID,
 	})
@@ -127,9 +135,13 @@ func (c *Client) ListScalingGroups(ctx context.Context, uid string) ([]cspapi.Sc
 			if len(templateURI) < 1 {
 				continue // invalid template URI
 			}
-			template, err := c.instanceTemplateAPI.Get(c.projectID, templateURI[len(templateURI)-1])
+			template, err := c.instanceTemplateAPI.Get(ctx, &computepb.GetInstanceTemplateRequest{
+				Project:          c.projectID,
+				InstanceTemplate: templateURI[len(templateURI)-1],
+			})
 			if err != nil {
-				return nil, fmt.Errorf("getting instance template: %w", err)
+				retErr = errors.Join(retErr, fmt.Errorf("getting instance template %q: %w", templateURI[len(templateURI)-1], err))
+				continue
 			}
 			if template.Properties == nil || template.Properties.Labels == nil {
 				continue
@@ -140,14 +152,16 @@ func (c *Client) ListScalingGroups(ctx context.Context, uid string) ([]cspapi.Sc
 
 			groupID, err := c.canonicalInstanceGroupID(ctx, *grpManager.SelfLink)
 			if err != nil {
-				return nil, fmt.Errorf("normalizing instance group ID: %w", err)
+				retErr = errors.Join(retErr, fmt.Errorf("getting canonical instance group ID: %w", err))
+				continue
 			}
 
 			role := updatev1alpha1.NodeRoleFromString(template.Properties.Labels["constellation-role"])
 
 			name, err := c.GetScalingGroupName(groupID)
 			if err != nil {
-				return nil, fmt.Errorf("getting scaling group name: %w", err)
+				retErr = errors.Join(retErr, fmt.Errorf("getting scaling group name: %w", err))
+				continue
 			}
 
 			nodeGroupName := template.Properties.Labels["constellation-node-group"]
@@ -164,7 +178,8 @@ func (c *Client) ListScalingGroups(ctx context.Context, uid string) ([]cspapi.Sc
 
 			autoscalerGroupName, err := c.GetAutoscalingGroupName(groupID)
 			if err != nil {
-				return nil, fmt.Errorf("getting autoscaling group name: %w", err)
+				retErr = errors.Join(retErr, fmt.Errorf("getting autoscaling group name: %w", err))
+				continue
 			}
 
 			results = append(results, cspapi.ScalingGroup{
@@ -176,10 +191,15 @@ func (c *Client) ListScalingGroups(ctx context.Context, uid string) ([]cspapi.Sc
 			})
 		}
 	}
+
+	if len(results) == 0 {
+		return nil, errors.Join(errors.New("no scaling groups found"), retErr)
+	}
+
 	return results, nil
 }
 
-func (c *Client) getScalingGroupTemplate(ctx context.Context, scalingGroupID string) (*computeREST.InstanceTemplate, error) {
+func (c *Client) getScalingGroupTemplate(ctx context.Context, scalingGroupID string) (*computepb.InstanceTemplate, error) {
 	project, zone, instanceGroupName, err := splitInstanceGroupID(scalingGroupID)
 	if err != nil {
 		return nil, err
@@ -199,19 +219,22 @@ func (c *Client) getScalingGroupTemplate(ctx context.Context, scalingGroupID str
 	if err != nil {
 		return nil, fmt.Errorf("splitting instance template name: %w", err)
 	}
-	instanceTemplate, err := c.instanceTemplateAPI.Get(instanceTemplateProject, instanceTemplateName)
+	instanceTemplate, err := c.instanceTemplateAPI.Get(ctx, &computepb.GetInstanceTemplateRequest{
+		InstanceTemplate: instanceTemplateName,
+		Project:          instanceTemplateProject,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("getting instance template %q: %w", instanceTemplateName, err)
 	}
 	return instanceTemplate, nil
 }
 
-func instanceTemplateSourceImage(instanceTemplate *computeREST.InstanceTemplate) (string, error) {
+func instanceTemplateSourceImage(instanceTemplate *computepb.InstanceTemplate) (string, error) {
 	if instanceTemplate.Properties == nil ||
 		len(instanceTemplate.Properties.Disks) == 0 ||
 		instanceTemplate.Properties.Disks[0].InitializeParams == nil ||
-		instanceTemplate.Properties.Disks[0].InitializeParams.SourceImage == "" {
+		instanceTemplate.Properties.Disks[0].InitializeParams.SourceImage == nil {
 		return "", errors.New("instance template has no source image")
 	}
-	return uriNormalize(instanceTemplate.Properties.Disks[0].InitializeParams.SourceImage), nil
+	return uriNormalize(*instanceTemplate.Properties.Disks[0].InitializeParams.SourceImage), nil
 }

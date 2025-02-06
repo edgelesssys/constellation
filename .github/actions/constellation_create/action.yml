@@ -257,9 +257,9 @@ runs:
       continue-on-error: true
       uses: ./.github/actions/artifact_upload
       with:
-        name: serial-logs-${{ inputs.artifactNameSuffix }}
-        path: >
-          !(terraform).log
+        name: debug-logs-${{ inputs.artifactNameSuffix }}
+        path: |
+          *.log
         encryptionSecret: ${{ inputs.encryptionSecret }}
 
     - name: Prepare terraform state folders
@@ -268,9 +268,12 @@ runs:
       run: |
         mkdir to-zip
         cp -r constellation-terraform to-zip
-        cp -r constellation-iam-terraform to-zip
+        # constellation-iam-terraform is optional
+        if [ -d constellation-iam-terraform ]; then
+          cp -r constellation-iam-terraform to-zip
+        fi
         rm -f to-zip/constellation-terraform/plan.zip
-        rm -rf to-zip/constellation-terraform/.terraform to-zip/constellation-iam-terraform/.terraform
+        rm -rf to-zip/*/.terraform
 
     - name: Upload terraform state
       if: always()

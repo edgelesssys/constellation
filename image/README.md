@@ -60,3 +60,15 @@ After building a Kernel rpm, we upload it to our CDN and use it in our image bui
   - `bazel build //image/system:IMAGE_NAME_HERE` (replace with an actual image name)
 - Let CI build new images and run e2e tests
 - Upgrade kernel spec under [edgelesssys/constellation-kernel](https://github.com/edgelesssys/constellation-kernel) to use new releasever
+
+## Adding new packages to the image
+
+- Find the package (i.e. it's _package name_) on [Koji](https://koji.fedoraproject.org/koji/)
+- Add the package to the corresponding section in `./base/mkosi.conf`
+  - If the package is required to be present in the initrd, add it to `./initrd/mkosi.conf`
+- Add the package to `./mirror/packages.txt`
+- Update the package mirror:
+  ```sh
+  bazel run //image/mirror:update_packages
+  ```
+- Build new images (e.g. via CI) and run e2e tests

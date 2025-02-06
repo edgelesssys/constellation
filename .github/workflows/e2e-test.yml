@@ -16,6 +16,7 @@ on:
           - "azure-sev-snp"
           - "azure-tdx"
           - "aws-sev-snp"
+          - "stackit-qemu-vtpm"
         default: "azure-sev-snp"
         required: true
       runner:
@@ -23,7 +24,7 @@ on:
         type: choice
         options:
           - "ubuntu-24.04"
-          - "macos-12"
+          - "macos-latest"
         default: "ubuntu-24.04"
       test:
         description: "The test to run. The conformance test is only supported for clusterCreation=cli."
@@ -137,6 +138,7 @@ jobs:
       workerNodes: ${{ steps.split-nodeCount.outputs.workerNodes }}
       controlPlaneNodes: ${{ steps.split-nodeCount.outputs.controlPlaneNodes }}
       cloudProvider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
+      attestationVariant: ${{ steps.split-attestationVariant.outputs.attestationVariant }}
     steps:
       - name: Split nodeCount
         id: split-nodeCount
@@ -161,6 +163,12 @@ jobs:
           attestationVariant="${{ inputs.attestationVariant }}"
           cloudProvider="${attestationVariant%%-*}"
 
+          # special case for STACKIT, as there's no special attestation variant for it
+          if [[ "${cloudProvider}" == "stackit" ]]; then
+            attestationVariant="qemu-vtpm"
+          fi
+
+          echo "attestationVariant=${attestationVariant}" | tee -a "$GITHUB_OUTPUT"
           echo "cloudProvider=${cloudProvider}" | tee -a "$GITHUB_OUTPUT"
 
   find-latest-image:
@@ -175,13 +183,13 @@ jobs:
     steps:
       - name: Checkout head
         if: inputs.git-ref == 'head'
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
       - name: Checkout ref
         if: inputs.git-ref != 'head'
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ inputs.git-ref }}
 
@@ -212,19 +220,19 @@ jobs:
 
       - name: Checkout head
         if: inputs.git-ref == 'head'
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
       - name: Checkout ref
         if: inputs.git-ref != 'head'
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ inputs.git-ref }}
 
       - name: Set up gcloud CLI (macOS)
         if: needs.generate-input-parameters.outputs.cloudProvider == 'gcp' && runner.os == 'macOS'
-        uses: google-github-actions/setup-gcloud@98ddc00a17442e89a24bbf282954a3b65ce6d200 # v2.1.0
+        uses: google-github-actions/setup-gcloud@77e7a554d41e2ee56fc945c52dfd3f33d12def9a # v2.1.4
 
       - name: Run manual E2E test
         id: e2e_test
@@ -233,7 +241,7 @@ jobs:
           workerNodesCount: ${{ needs.generate-input-parameters.outputs.workerNodes }}
           controlNodesCount: ${{ needs.generate-input-parameters.outputs.controlPlaneNodes }}
           cloudProvider: ${{ needs.generate-input-parameters.outputs.cloudProvider }}
-          attestationVariant: ${{ inputs.attestationVariant }}
+          attestationVariant: ${{ needs.generate-input-parameters.outputs.attestationVariant }}
           machineType: ${{ inputs.machineType }}
           regionZone: ${{ inputs.regionZone }}
           gcpProject: constellation-e2e
@@ -262,6 +270,9 @@ jobs:
           marketplaceImageVersion: ${{ inputs.marketplaceImageVersion }}
           force: ${{ inputs.force }}
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          openStackCloudsYaml: ${{ secrets.STACKIT_CI_CLOUDS_YAML }}
+          stackitUat: ${{ secrets.STACKIT_CI_UAT }}
+          stackitProjectID: ${{ secrets.STACKIT_CI_PROJECT_ID }}
 
       - name: Always terminate cluster
         if: always()

@@ -33,7 +33,7 @@ jobs:
       RELEASE_BRANCH: ${{ steps.version-info.outputs.RELEASE_BRANCH }}
       WORKING_BRANCH: ${{ steps.version-info.outputs.WORKING_BRANCH }}
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Working branch
         run: echo "WORKING_BRANCH=$(git branch --show-current)" | tee -a "$GITHUB_ENV"
@@ -72,10 +72,9 @@ jobs:
             echo "WORKING_BRANCH=${WORKING_BRANCH}"
           } | tee -a "$GITHUB_OUTPUT"
 
-  docs:
-    name: Create docs release (from main)
+  update-main-branch:
+    name: Update main branch with release changes
     runs-on: ubuntu-24.04
-    if: inputs.kind == 'minor'
     needs: verify-inputs
     permissions:
       contents: write
@@ -85,30 +84,55 @@ jobs:
       MAJOR_MINOR: ${{ needs.verify-inputs.outputs.MAJOR_MINOR }}
       BRANCH: docs/${{ needs.verify-inputs.outputs.MAJOR_MINOR }}
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: main
 
+      - name: Configure git
+        run: |
+          git config --global user.name "edgelessci"
+          git config --global user.email "edgelessci@users.noreply.github.com"
+
       - name: Create docs release
+        if: inputs.kind == 'minor'
         working-directory: docs
         run: |
-          npm install
+          npm ci
           npm run docusaurus docs:version "${MAJOR_MINOR}"
+          git add .
+          git commit -am "docs: release ${MAJOR_MINOR}"
+          # Clean up auxiliary files, so next steps run on a clean tree
+          git clean -fdx :/
+
+      - name: Update version.txt
+        if: inputs.kind == 'minor'
+        run: |
+          pre_release_version="v${{ needs.verify-inputs.outputs.PART_MAJOR }}.$((${{ needs.verify-inputs.outputs.PART_MINOR }} + 1)).0-pre"
+          echo "${pre_release_version}" > version.txt
+          git add version.txt
+          git commit -m "chore: update version.txt to ${pre_release_version}"
+
+      - name: Update CI for new version
+        run: |
+          sed -i 's/fromVersion: \["[^"]*"\]/fromVersion: ["${{ inputs.version }}"]/g' .github/workflows/e2e-test-release.yml
+          sed -i 's/fromVersion: \["[^"]*"\]/fromVersion: ["${{ inputs.version }}"]/g' .github/workflows/e2e-test-weekly.yml
 
       - name: Create docs pull request
-        uses: peter-evans/create-pull-request@5e914681df9dc83aa4e4905692ca88beb2f9e91f # v7.0.5
+        uses: peter-evans/create-pull-request@67ccf781d68cd99b580ae25a5c18a1cc84ffff1f # v7.0.6
         with:
           branch: ${{ env.BRANCH }}
           base: main
-          title: "docs: add release ${{ env.VERSION }}"
+          title: "Post ${{ env.VERSION }} release updates to main"
           body: |
             :robot: *This is an automated PR.* :robot:
 
             The PR is triggered as part of the automated release process of version ${{ env.VERSION }}.
-            It releases a new version of the documentation.
-          commit-message: "docs: add release ${{ env.VERSION }}"
+          commit-message: "chore: update CI for ${{ env.VERSION }}"
           committer: edgelessci <edgelessci@users.noreply.github.com>
+          author: edgelessci <edgelessci@users.noreply.github.com>
           labels: no changelog
+          assignees: ${{ github.actor }}
+          reviewers: ${{ github.actor }}
           # We need to push changes using a token, otherwise triggers like on:push and on:pull_request won't work.
           token: ${{ !github.event.pull_request.head.repo.fork && secrets.CI_COMMIT_PUSH_PR || '' }}
 
@@ -123,7 +147,7 @@ jobs:
       WORKING_BRANCH: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
     steps:
       - name: Checkout
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
 
@@ -161,7 +185,7 @@ jobs:
       WITHOUT_V: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
     steps:
       - name: Checkout
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
 
@@ -226,14 +250,14 @@ jobs:
       WITHOUT_V: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
     steps:
       - name: Checkout
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
 
       - name: Setup Go environment
-        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
         with:
-          go-version: "1.23.2"
+          go-version: "1.23.5"
           cache: true
 
       - name: Build generateMeasurements tool

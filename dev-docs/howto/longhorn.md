@@ -1,6 +1,6 @@
 # Longhorn on Constellatioin
 
-To build Longhorn compatible images, apply the following changes. Those stem from [their installation guide](https://longhorn.io/docs/1.5.3/deploy/install/#installation-requirements).
+To build Longhorn compatible images, apply the following changes. Those stem from [their installation guide](https://longhorn.io/docs/1.7.2/deploy/install/#installation-requirements).
 
 ```diff
 diff --git a/image/mkosi.conf.d/azure.conf b/image/mkosi.conf.d/azure.conf

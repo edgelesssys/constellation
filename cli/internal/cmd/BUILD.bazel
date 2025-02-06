@@ -37,6 +37,7 @@ go_library(
         "miniup_linux_amd64.go",
         "recover.go",
         "spinner.go",
+        "ssh.go",
         "status.go",
         "terminate.go",
         "upgrade.go",
@@ -116,6 +117,8 @@ go_library(
         "//internal/attestation/azure/tdx",
         "@com_github_google_go_sev_guest//proto/sevsnp",
         "@com_github_google_go_tpm_tools//proto/attest",
+        "@org_golang_x_crypto//ssh",
+        "//internal/kms/setup",
     ] + select({
         "@io_bazel_rules_go//go/platform:android_amd64": [
             "@org_golang_x_sys//unix",
@@ -142,6 +145,7 @@ go_test(
         "maapatch_test.go",
         "recover_test.go",
         "spinner_test.go",
+        "ssh_test.go",
         "status_test.go",
         "terminate_test.go",
         "upgradeapply_test.go",
@@ -201,6 +205,7 @@ go_test(
         "@org_golang_google_grpc//:grpc",
         "@org_golang_google_grpc//codes",
         "@org_golang_google_grpc//status",
+        "@org_golang_x_crypto//ssh",
         "@org_golang_x_mod//semver",
         "@org_uber_go_goleak//:goleak",
     ],

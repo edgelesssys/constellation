@@ -20,11 +20,11 @@ runs:
         echo "GOOGLE_CLOUD_PROJECT=" >> "$GITHUB_ENV"
 
     - name: Authorize GCP access
-      uses: google-github-actions/auth@71fee32a0bb7e97b4d33d548e7d957010649d8fa # v2.1.3
+      uses: google-github-actions/auth@71f986410dfbc7added4569d411d040a91dc6935 # v2.1.8
       with:
-        workload_identity_provider: projects/796962942582/locations/global/workloadIdentityPools/constellation-ci-pool/providers/constellation-ci-provider
+        workload_identity_provider: projects/1052692473304/locations/global/workloadIdentityPools/constellation-ci-pool/providers/constellation-ci-provider
         service_account: ${{ inputs.service_account }}
 
     # Even if preinstalled in Github Actions runner image, this setup does some magic authentication required for gsutil.
     - name: Set up Cloud SDK
-      uses: google-github-actions/setup-gcloud@98ddc00a17442e89a24bbf282954a3b65ce6d200 # v2.1.0
+      uses: google-github-actions/setup-gcloud@77e7a554d41e2ee56fc945c52dfd3f33d12def9a # v2.1.4

@@ -173,13 +173,13 @@ func (c *JoinClient) tryJoinWithAvailableServices() (ticket *joinproto.IssueJoin
 
 	endpoint, _, err := c.metadataAPI.GetLoadBalancerEndpoint(ctx)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get load balancer endpoint: %w", err)
+		c.log.Warn("Failed to get load balancer endpoint", "err", err)
 	}
 	endpoints = append(endpoints, endpoint)
 
 	ips, err := c.getControlPlaneIPs(ctx)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get control plane IPs: %w", err)
+		c.log.Warn("Failed to get control plane IPs", "err", err)
 	}
 	endpoints = append(endpoints, ips...)
 
@@ -269,6 +269,10 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 	}
 	if err := c.fileHandler.Write(certificate.KeyFilename, kubeletKey, file.OptMkdirAll); err != nil {
 		return fmt.Errorf("writing kubelet key: %w", err)
+	}
+
+	if err := c.fileHandler.Write(constants.SSHCAKeyPath, ticket.AuthorizedCaPublicKey, file.OptMkdirAll); err != nil {
+		return fmt.Errorf("writing ssh ca key: %w", err)
 	}
 
 	state := nodestate.NodeState{

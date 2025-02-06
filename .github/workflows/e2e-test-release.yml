@@ -306,11 +306,11 @@ jobs:
           # - test: "verify"
           #  attestationVariant: "azure-sev-snp"
           #  kubernetes-version: "v1.30"
-          #  runner: "macos-12"
+          #  runner: "macos-latest"
           - test: "recover"
             attestationVariant: "gcp-sev-es"
             kubernetes-version: "v1.30"
-            runner: "macos-12"
+            runner: "macos-latest"
             clusterCreation: "cli"
     runs-on: ${{ matrix.runner }}
     permissions:
@@ -326,7 +326,7 @@ jobs:
         run: brew install coreutils kubectl bash
 
       - name: Checkout
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
           ref: ${{ inputs.ref || github.head_ref }}
@@ -342,7 +342,7 @@ jobs:
 
       - name: Set up gcloud CLI (macOS)
         if: steps.split-attestationVariant.outputs.provider == 'gcp' && runner.os == 'macOS'
-        uses: google-github-actions/setup-gcloud@98ddc00a17442e89a24bbf282954a3b65ce6d200 # v2.1.0
+        uses: google-github-actions/setup-gcloud@77e7a554d41e2ee56fc945c52dfd3f33d12def9a # v2.1.4
 
       - name: Run E2E test
         id: e2e_test
@@ -409,7 +409,7 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        fromVersion: ["v2.19.0"]
+        fromVersion: ["v2.20.0"]
         attestationVariant: ["gcp-sev-snp", "azure-sev-snp", "azure-tdx", "aws-sev-snp"]
     name: Run upgrade tests
     secrets: inherit

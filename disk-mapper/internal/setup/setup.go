@@ -76,7 +76,7 @@ func New(log *slog.Logger, csp string, diskPath string, fs afero.Afero,
 
 // PrepareExistingDisk requests and waits for a decryption key to remap the encrypted state disk.
 // Once the disk is mapped, the function taints the node as initialized by updating it's PCRs.
-func (s *Manager) PrepareExistingDisk(recover RecoveryDoer) error {
+func (s *Manager) PrepareExistingDisk(recoverer RecoveryDoer) error {
 	uuid, err := s.mapper.DiskUUID()
 	if err != nil {
 		return err
@@ -84,7 +84,7 @@ func (s *Manager) PrepareExistingDisk(recover RecoveryDoer) error {
 	s.log.With(slog.String("uuid", uuid)).Info("Preparing existing state disk")
 	endpoint := net.JoinHostPort("0.0.0.0", strconv.Itoa(constants.RecoveryPort))
 
-	passphrase, measurementSecret, err := recover.Do(uuid, endpoint)
+	passphrase, measurementSecret, err := recoverer.Do(uuid, endpoint)
 	if err != nil {
 		return fmt.Errorf("failed to perform recovery: %w", err)
 	}

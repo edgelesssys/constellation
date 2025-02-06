@@ -71,7 +71,7 @@ jobs:
     steps:
       - name: Checkout
         id: checkout
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ inputs.ref || github.head_ref }}
 
@@ -154,7 +154,7 @@ jobs:
 
       - name: Login to AWS (IAM + Cluster role)
         if: steps.determine.outputs.cloudProvider == 'aws'
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+        uses: aws-actions/configure-aws-credentials@4fc4975a852c8cd99761e2de1f4ba73402e44dd9 # v4.0.3
         with:
           role-to-assume: arn:aws:iam::795746500882:role/GithubActionsE2ETerraform
           aws-region: eu-central-1
@@ -337,12 +337,12 @@ jobs:
           sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts'
           terraform init
           if [[ "${{ inputs.attestationVariant }}" == "azure-sev-snp" ]]; then
-            terraform apply -target module.azure_iam -auto-approve
-            terraform apply -target module.azure_infrastructure -auto-approve
+            timeout 1h terraform apply -target module.azure_iam -auto-approve
+            timeout 1h terraform apply -target module.azure_infrastructure -auto-approve
             ${{ github.workspace }}/build/constellation maa-patch "$(terraform output -raw maa_url)"
-            terraform apply -target constellation_cluster.azure_example -auto-approve
+            timeout 1h terraform apply -target constellation_cluster.azure_example -auto-approve
           else
-            terraform apply -auto-approve
+            timeout 1h terraform apply -auto-approve
           fi
 
       - name: Cleanup Terraform Cluster on failure
@@ -353,7 +353,7 @@ jobs:
         shell: bash
         run: |
           terraform init
-          terraform destroy -auto-approve
+          terraform destroy -auto-approve -lock=false
 
       - name: Add Provider to local Terraform registry # needed if release version was used before
         if: inputs.providerVersion != ''
@@ -407,7 +407,7 @@ jobs:
         shell: bash
         run: |
           terraform init --upgrade
-          terraform apply -auto-approve
+          timeout 1h terraform apply -auto-approve
 
       - name: Assert upgrade successful
         working-directory: ${{ github.workspace }}/cluster
@@ -475,7 +475,7 @@ jobs:
         shell: bash
         run: |
           terraform init
-          terraform destroy -auto-approve
+          terraform destroy -auto-approve -lock=false
 
       - name: Notify about failure
         if: |

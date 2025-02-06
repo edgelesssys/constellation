@@ -111,8 +111,8 @@ func (i *List) SortReverse() {
 }
 
 // AddVersion adds new to i's list and sorts the element in descending order.
-func (i *List) AddVersion(new string) {
-	i.List = append(i.List, new)
+func (i *List) AddVersion(ver string) {
+	i.List = append(i.List, ver)
 	i.List = variant.RemoveDuplicate(i.List)
 
 	i.SortReverse()

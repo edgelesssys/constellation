@@ -82,7 +82,30 @@ runs:
         KUBECONFIG: ${{ inputs.kubeconfig }}
       run: |
         worker_count=${{ steps.worker_count.outputs.worker_count }}
-        kubectl create -n default deployment nginx --image=nginx --replicas $(( 110 * (worker_count + 1) + 55 ))
+
+        cat <<EOF | kubectl apply -f -
+        kind: Deployment
+        apiVersion: apps/v1
+        metadata:
+          name: nginx
+          namespace: default
+        spec:
+          replicas: $(( 110 * (worker_count + 1) + 55 ))
+          strategy:
+            rollingUpdate:
+              maxUnavailable: 0 # Ensure "kubectl wait" actually waits for all pods to be ready
+          selector:
+            matchLabels:
+              app: nginx
+          template:
+            metadata:
+              labels:
+                app: nginx
+            spec:
+              containers:
+              - name: nginx
+                image: nginx
+        EOF
 
     - name: Wait for autoscaling and check result
       shell: bash

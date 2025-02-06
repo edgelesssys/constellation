@@ -29,7 +29,7 @@ go_test(
             "@com_github_martinjungblut_go_cryptsetup//:go-cryptsetup",
             "@com_github_stretchr_testify//assert",
             "@com_github_stretchr_testify//require",
-            "@io_bazel_rules_go//go/runfiles:go_default_library",
+            "@io_bazel_rules_go//go/runfiles",
             "@org_uber_go_goleak//:goleak",
         ],
         "@io_bazel_rules_go//go/platform:linux": [
@@ -39,7 +39,7 @@ go_test(
             "@com_github_martinjungblut_go_cryptsetup//:go-cryptsetup",
             "@com_github_stretchr_testify//assert",
             "@com_github_stretchr_testify//require",
-            "@io_bazel_rules_go//go/runfiles:go_default_library",
+            "@io_bazel_rules_go//go/runfiles",
             "@org_uber_go_goleak//:goleak",
         ],
         "//conditions:default": [],

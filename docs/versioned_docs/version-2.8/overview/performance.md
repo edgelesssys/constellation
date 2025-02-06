@@ -181,7 +181,7 @@ The following `fio` settings were used:
 - IOPS: 4 KB blocks and 128 iodepth
 - Bandwidth: 1024 KB blocks and 128 iodepth
 
-For more details, see the [`fio` test configuration](../../../../.github/actions/e2e_benchmark/fio.ini).
+For more details, see the [`fio` test configuration](https://github.com/edgelesssys/constellation/blob/main/.github/actions/e2e_benchmark/fio.ini).
 
 The results for IOPS on Azure are as follows:
 

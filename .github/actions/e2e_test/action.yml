@@ -93,6 +93,15 @@ inputs:
   encryptionSecret:
     description: "The secret to use for decrypting the artifact."
     required: true
+  openStackCloudsYaml:
+    description: "The contents of ~/.config/openstack/clouds.yaml"
+    required: false
+  stackitUat:
+    description: "The UAT for STACKIT"
+    required: false
+  stackitProjectID:
+    description: "The STACKIT project ID to deploy Constellation in."
+    required: false
 
 outputs:
   kubeconfig:
@@ -216,7 +225,7 @@ runs:
 
     - name: Login to AWS (IAM role)
       if: inputs.cloudProvider == 'aws'
-      uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+      uses: aws-actions/configure-aws-credentials@4fc4975a852c8cd99761e2de1f4ba73402e44dd9 # v4.0.3
       with:
         role-to-assume: arn:aws:iam::795746500882:role/GithubActionsE2EIAM
         aws-region: eu-central-1
@@ -228,6 +237,18 @@ runs:
       uses: ./.github/actions/login_azure
       with:
         azure_credentials: ${{ inputs.azureIAMCreateCredentials }}
+
+    - name: Login to OpenStack
+      if: inputs.cloudProvider == 'stackit'
+      uses: ./.github/actions/login_openstack
+      with:
+        clouds_yaml: ${{inputs.openStackCloudsYaml }}
+
+    - name: Login to STACKIT
+      if: inputs.cloudProvider == 'stackit'
+      uses: ./.github/actions/login_stackit
+      with:
+        serviceAccountToken: ${{ inputs.stackitUat }}
 
     - name: Create prefix
       id: create-prefix
@@ -244,7 +265,7 @@ runs:
       with:
         attestationVariant: ${{ inputs.attestationVariant }}
 
-    - name: Create IAM configuration
+    - name: Create Constellation config and IAM
       id: constellation-iam-create
       uses: ./.github/actions/constellation_iam_create
       with:
@@ -256,6 +277,8 @@ runs:
         azureRegion: ${{ inputs.regionZone || steps.pick-az-region.outputs.region  }}
         gcpProjectID: ${{ inputs.gcpProject }}
         gcpZone: ${{ inputs.regionZone || 'europe-west3-b' }}
+        stackitZone: ${{ inputs.regionZone || 'eu01-2' }}
+        stackitProjectID: ${{ inputs.stackitProjectID }}
         kubernetesVersion: ${{ inputs.kubernetesVersion }}
         additionalTags: "workflow=${{ github.run_id }}"
 
@@ -267,7 +290,7 @@ runs:
 
     - name: Login to AWS (Cluster role)
       if: inputs.cloudProvider == 'aws'
-      uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+      uses: aws-actions/configure-aws-credentials@4fc4975a852c8cd99761e2de1f4ba73402e44dd9 # v4.0.3
       with:
         role-to-assume: arn:aws:iam::795746500882:role/GithubActionsE2ECluster
         aws-region: eu-central-1

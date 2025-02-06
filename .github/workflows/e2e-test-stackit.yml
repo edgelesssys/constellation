@@ -1,0 +1,153 @@
+name: e2e test STACKIT
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * *" # Every day at midnight.
+
+jobs:
+  find-latest-image:
+    name: Find latest image
+    runs-on: ubuntu-24.04
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      image-release-stable: ${{ steps.relabel-output.outputs.image-release-stable }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
+      - name: Select relevant image
+        id: select-image-action
+        uses: ./.github/actions/select_image
+        with:
+          osImage: "ref/release/stream/stable/?"
+
+      - name: Relabel output
+        id: relabel-output
+        shell: bash
+        run: |
+          ref=$(echo 'ref/release/stream/stable/?' | cut -d/ -f2)
+          stream=$(echo 'ref/release/stream/stable/?' | cut -d/ -f4)
+
+          echo "image-$ref-$stream=${{ steps.select-image-action.outputs.osImage }}" | tee -a "$GITHUB_OUTPUT"
+
+  e2e-stackit:
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        kubernetesVersion: [ "1.28", "1.29", "1.30" ]
+        clusterCreation: [ "cli", "terraform" ]
+        test: [ "sonobuoy quick" ]
+    runs-on: ubuntu-24.04
+    permissions:
+      id-token: write
+      checks: write
+      contents: read
+      packages: write
+      actions: write
+    needs: [find-latest-image]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
+      - name: Setup bazel
+        uses: ./.github/actions/setup_bazel_nix
+        with:
+          nixTools: terraform
+
+      - name: Run E2E test
+        id: e2e_test
+        uses: ./.github/actions/e2e_test
+        with:
+          workerNodesCount: "1"
+          controlNodesCount: "1"
+          cloudProvider: stackit
+          attestationVariant: qemu-vtpm
+          osImage: ${{ needs.find-latest-image.outputs.image-release-stable }}
+          isDebugImage: false
+          cliVersion: ${{ needs.find-latest-image.outputs.image-release-stable || '' }}
+          kubernetesVersion: ${{ matrix.kubernetesVersion }}
+          awsOpenSearchDomain: ${{ secrets.AWS_OPENSEARCH_DOMAIN }}
+          awsOpenSearchUsers: ${{ secrets.AWS_OPENSEARCH_USER }}
+          awsOpenSearchPwd: ${{ secrets.AWS_OPENSEARCH_PWD }}
+          gcpProject: constellation-e2e
+          gcpClusterCreateServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
+          gcpIAMCreateServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
+          test: ${{ matrix.test }}
+          azureSubscriptionID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          azureClusterCreateCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
+          azureIAMCreateCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
+          registry: ghcr.io
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
+          cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          fetchMeasurements: false
+          clusterCreation: ${{ matrix.clusterCreation }}
+          s3AccessKey: ${{ secrets.AWS_ACCESS_KEY_ID_S3PROXY }}
+          s3SecretKey: ${{ secrets.AWS_SECRET_ACCESS_KEY_S3PROXY }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+          openStackCloudsYaml: ${{ secrets.STACKIT_CI_CLOUDS_YAML }}
+          stackitUat: ${{ secrets.STACKIT_CI_UAT }}
+          stackitProjectID: ${{ secrets.STACKIT_CI_PROJECT_ID }}
+
+      - name: Always terminate cluster
+        if: always()
+        uses: ./.github/actions/constellation_destroy
+        with:
+          kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
+          clusterCreation: ${{ matrix.clusterCreation }}
+          cloudProvider: stackit
+          azureClusterDeleteCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
+          gcpClusterDeleteServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
+
+      - name: Always delete IAM configuration
+        if: always()
+        uses: ./.github/actions/constellation_iam_destroy
+        with:
+          cloudProvider: stackit
+          azureCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
+          gcpServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
+
+      - name: Update tfstate
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        uses: ./.github/actions/update_tfstate
+        with:
+          name: terraform-state-${{ steps.e2e_test.outputs.namePrefix }}
+          runID: ${{ github.run_id }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+
+      - name: Notify about failure
+        if: |
+          failure() &&
+          github.ref == 'refs/heads/main' &&
+          github.event_name == 'schedule'
+        continue-on-error: true
+        uses: ./.github/actions/notify_e2e_failure
+        with:
+          projectWriteToken: ${{ secrets.PROJECT_WRITE_TOKEN }}
+          refStream: "ref/release/stream/stable/?"
+          test: ${{ matrix.test }}
+          kubernetesVersion: ${{ matrix.kubernetesVersion }}
+          provider: stackit
+          attestationVariant: qemu-vtpm
+          clusterCreation: ${{ matrix.clusterCreation }}
+
+      - name: Notify STACKIT
+        if: |
+          failure() &&
+          github.ref == 'refs/heads/main' &&
+          github.event_name == 'schedule'
+        continue-on-error: true
+        uses: ./.github/actions/notify_stackit
+        with:
+          slackToken: ${{ secrets.SLACK_TOKEN }}

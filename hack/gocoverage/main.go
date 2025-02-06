@@ -139,25 +139,25 @@ func parseTestLine(line string) (string, packageCoverage, error) {
 	return pkg, coverage, nil
 }
 
-func diff(old, new, touched string) error {
-	oldf, err := os.Open(old)
+func diff(a, b, touched string) error {
+	af, err := os.Open(a)
 	if err != nil {
 		return err
 	}
-	defer oldf.Close()
-	var oldRep, newReport report
-	if err := json.NewDecoder(oldf).Decode(&oldRep); err != nil {
+	defer af.Close()
+	var aReport, bReport report
+	if err := json.NewDecoder(af).Decode(&aReport); err != nil {
 		return err
 	}
-	newf, err := os.Open(new)
+	bf, err := os.Open(b)
 	if err != nil {
 		return err
 	}
-	defer newf.Close()
-	if err := json.NewDecoder(newf).Decode(&newReport); err != nil {
+	defer bf.Close()
+	if err := json.NewDecoder(bf).Decode(&bReport); err != nil {
 		return err
 	}
-	diffs, err := diffCoverage(oldRep, newReport)
+	diffs, err := diffCoverage(aReport, bReport)
 	if err != nil {
 		return err
 	}
@@ -170,17 +170,17 @@ type coverageDiff struct {
 	new *packageCoverage
 }
 
-func diffCoverage(old, new report) (map[string]coverageDiff, error) {
+func diffCoverage(a, b report) (map[string]coverageDiff, error) {
 	allPkgs := make(map[string]struct{})
-	for pkg := range old.Coverage {
+	for pkg := range a.Coverage {
 		allPkgs[pkg] = struct{}{}
 	}
-	for pkg := range new.Coverage {
+	for pkg := range b.Coverage {
 		allPkgs[pkg] = struct{}{}
 	}
 	diffs := make(map[string]coverageDiff)
 	for pkg := range allPkgs {
-		diffs[pkg] = coverageDiff{old: old.Coverage[pkg], new: new.Coverage[pkg]}
+		diffs[pkg] = coverageDiff{old: a.Coverage[pkg], new: b.Coverage[pkg]}
 		if diffs[pkg].old == nil && diffs[pkg].new == nil {
 			return nil, fmt.Errorf("both old and new coverage are nil for pkg %s", pkg)
 		}
