@@ -63,6 +63,8 @@ license_report() {
 
         github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/api) ;;
 
+        github.com/edgelesssys/go-tdx-qpl) ;;
+
         *)
           not_allowed
           ;;
@@ -71,8 +73,6 @@ license_report() {
 
       Unknown)
         case ${pkg} in
-        github.com/edgelesssys/go-tdx-qpl/*) ;;
-
         *)
           not_allowed
           ;;
