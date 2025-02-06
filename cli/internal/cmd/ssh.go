@@ -103,8 +103,8 @@ func writeCertificateForKey(cmd *cobra.Command, keyPath string, fh file.Handler,
 		ValidPrincipals: []string{"root"},
 		Permissions: ssh.Permissions{
 			Extensions: map[string]string{
-				"permit-port-forwarding": "yes",
-				"permit-pty":             "yes",
+				"permit-port-forwarding": "",
+				"permit-pty":             "",
 			},
 		},
 	}
