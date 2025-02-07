@@ -1,6 +1,6 @@
 module github.com/edgelesssys/constellation/v2
 
-go 1.23.5
+go 1.23.6
 
 // TODO(daniel-weisse): revert after merging https://github.com/martinjungblut/go-cryptsetup/pull/16.
 replace github.com/martinjungblut/go-cryptsetup => github.com/daniel-weisse/go-cryptsetup v0.0.0-20230705150314-d8c07bd1723c
