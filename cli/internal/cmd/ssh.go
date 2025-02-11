@@ -10,7 +10,6 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -28,8 +27,8 @@ import (
 func NewSSHCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ssh",
-		Short: "Prepare your cluster for emergency ssh access",
-		Long:  "Prepare your cluster for emergency ssh access and sign a given key pair for authorization.",
+		Short: "Generate a certificate for emergency ssh access",
+		Long:  "Generate a certificate for emergency ssh access to your ssh enabled constellation cluster.",
 		Args:  cobra.ExactArgs(0),
 		RunE:  runSSH,
 	}
@@ -54,18 +53,10 @@ func runSSH(cmd *cobra.Command, _ []string) error {
 }
 
 func writeCertificateForKey(cmd *cobra.Command, keyPath string, fh file.Handler, debugLogger debugLog) error {
-	_, err := fh.Stat(constants.TerraformWorkingDir)
-	if os.IsNotExist(err) {
-		return fmt.Errorf("directory %q does not exist", constants.TerraformWorkingDir)
-	}
-	if err != nil {
-		return err
-	}
-
 	// NOTE(miampf): Since other KMS aren't fully implemented yet, this commands assumes that the cKMS is used and derives the key accordingly.
 	var mastersecret uri.MasterSecret
-	if err = fh.ReadJSON(constants.MasterSecretFilename, &mastersecret); err != nil {
-		return fmt.Errorf("reading master secret: %s", err)
+	if err := fh.ReadJSON(constants.MasterSecretFilename, &mastersecret); err != nil {
+		return fmt.Errorf("reading master secret (does %q exist?): %s", constants.MasterSecretFilename, err)
 	}
 
 	mastersecretURI := uri.MasterSecret{Key: mastersecret.Key, Salt: mastersecret.Salt}
@@ -113,10 +104,10 @@ func writeCertificateForKey(cmd *cobra.Command, keyPath string, fh file.Handler,
 	}
 
 	debugLogger.Debug("Signed certificate", "certificate", string(ssh.MarshalAuthorizedKey(&certificate)))
-	if err := fh.Write(fmt.Sprintf("%s/ca_cert.pub", constants.TerraformWorkingDir), ssh.MarshalAuthorizedKey(&certificate), file.OptOverwrite); err != nil {
+	if err := fh.Write("constellation_cert.pub", ssh.MarshalAuthorizedKey(&certificate), file.OptOverwrite); err != nil {
 		return fmt.Errorf("writing certificate: %s", err)
 	}
-	cmd.Printf("You can now connect to a node using 'ssh -F %s/ssh_config -i <your private key> <node ip>' in your constellation workspace.\nYou can obtain the private node IP via the web UI of your CSP.\n", constants.TerraformWorkingDir)
+	cmd.Printf("You can now connect to a node using the \"constellation_cert.pub\" certificate.\nLook at the documentation for a how to guide:\n\n\thttps://https://docs.edgeless.systems/constellation/workflows/troubleshooting#emergency-ssh-access\n")
 
 	return nil
 }
