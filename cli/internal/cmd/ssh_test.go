@@ -8,7 +8,6 @@ package cmd
 
 import (
 	"bytes"
-	"fmt"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -29,18 +28,6 @@ func TestSSH(t *testing.T) {
 		"salt": "MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAK"
 	}
 	`
-
-	newFsWithDirectory := func() file.Handler {
-		require := require.New(t)
-		fh := file.NewHandler(afero.NewMemMapFs())
-		require.NoError(fh.MkdirAll(constants.TerraformWorkingDir))
-		return fh
-	}
-	newFsNoDirectory := func() file.Handler {
-		fh := file.NewHandler(afero.NewMemMapFs())
-		return fh
-	}
-
 	testCases := map[string]struct {
 		fh           file.Handler
 		pubKey       string
@@ -48,36 +35,30 @@ func TestSSH(t *testing.T) {
 		wantErr      bool
 	}{
 		"everything exists": {
-			fh:           newFsWithDirectory(),
+			fh:           file.NewHandler(afero.NewMemMapFs()),
 			pubKey:       someSSHPubKey,
 			masterSecret: someMasterSecret,
 		},
 		"no public key": {
-			fh:           newFsWithDirectory(),
+			fh:           file.NewHandler(afero.NewMemMapFs()),
 			masterSecret: someMasterSecret,
 			wantErr:      true,
 		},
 		"no master secret": {
-			fh:      newFsWithDirectory(),
+			fh:      file.NewHandler(afero.NewMemMapFs()),
 			pubKey:  someSSHPubKey,
 			wantErr: true,
 		},
 		"malformed public key": {
-			fh:           newFsWithDirectory(),
+			fh:           file.NewHandler(afero.NewMemMapFs()),
 			pubKey:       "asdf",
 			masterSecret: someMasterSecret,
 			wantErr:      true,
 		},
 		"malformed master secret": {
-			fh:           newFsWithDirectory(),
+			fh:           file.NewHandler(afero.NewMemMapFs()),
 			masterSecret: "asdf",
 			pubKey:       someSSHPubKey,
-			wantErr:      true,
-		},
-		"directory does not exist": {
-			fh:           newFsNoDirectory(),
-			pubKey:       someSSHPubKey,
-			masterSecret: someMasterSecret,
 			wantErr:      true,
 		},
 	}
@@ -104,7 +85,7 @@ func TestSSH(t *testing.T) {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
-				cert, err := tc.fh.Read(fmt.Sprintf("%s/ca_cert.pub", constants.TerraformWorkingDir))
+				cert, err := tc.fh.Read("constellation_cert.pub")
 				require.NoError(err)
 				_, _, _, _, err = ssh.ParseAuthorizedKey(cert)
 				require.NoError(err)
