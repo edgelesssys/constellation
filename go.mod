@@ -60,7 +60,7 @@ require (
 	github.com/bazelbuild/rules_go v0.52.0
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/docker/docker v27.5.1+incompatible
-	github.com/edgelesssys/go-azguestattestation v0.0.0-20240513062303-05f8770a633d
+	github.com/edgelesssys/go-azguestattestation v0.0.0-20250212085035-c38c01af80ba
 	github.com/edgelesssys/go-tdx-qpl v0.0.0-20250129202750-607ac61e2377
 	github.com/foxboron/go-uefi v0.0.0-20241219185318-19dc140271bf
 	github.com/fsnotify/fsnotify v1.8.0
