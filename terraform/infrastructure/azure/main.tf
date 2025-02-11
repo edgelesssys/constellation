@@ -296,19 +296,3 @@ data "azurerm_user_assigned_identity" "uaid" {
   name                = local.uai_name
   resource_group_name = local.uai_resource_group
 }
-
-# emergency ssh configuration files
-resource "local_file" "ssh_config" {
-  filename        = "./ssh_config"
-  file_permission = "0600"
-  content         = <<EOF
-Host ${azurerm_public_ip.loadbalancer_ip[0].fqdn}
-  ProxyJump none
-
-Host *
-  PreferredAuthentications publickey
-  CertificateFile=constellation-terraform/ca_cert.pub
-  User root
-  ProxyJump ${azurerm_public_ip.loadbalancer_ip[0].fqdn}
-EOF
-}
