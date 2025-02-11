@@ -150,9 +150,9 @@ Debugging via a shell on a node is [directly supported by Kubernetes](https://ku
 
 ### Emergency SSH access
 
-Emergency SSH access to nodes can be useful to diagnose issues or download important data even in the event that the kubernetes API is not accessible anymore.
+Emergency SSH access to nodes can be useful to diagnose issues or download important data even if the Kubernetes API isn't reachable anymore.
 
-1. Enter the `constellation-terraform` directory in your constellation workspace and allow emergency SSH access to the cluster:
+1. Enter the `constellation-terraform` directory in your constellation workspace and enable emergency SSH access to the cluster:
 
    ```bash
     cd constellation-terraform
@@ -160,16 +160,16 @@ Emergency SSH access to nodes can be useful to diagnose issues or download impor
     terraform apply
    ```
 
-2. Sign an existing SSH keypair with your master secret:
+2. Sign an existing SSH key with your master secret:
 
    ```bash
    cd ../ # go back to your constellation workspace
    constellation ssh --key your_public_key.pub
    ```
 
-   A certificate will be written to `constellation_cert.pub`.
+   A certificate is written to `constellation_cert.pub`.
 
-   The certificate is valid for 24 hours and allows you to access your constellation nodes using
+   The certificate is valid for 24 hours and enables you to access your constellation nodes using
    [certificate based authentication](https://en.wikibooks.org/wiki/OpenSSH/Cookbook/Certificate-based_Authentication).
 
 3. Finally, you can connect to any constellation node using your certificate and your private key.
