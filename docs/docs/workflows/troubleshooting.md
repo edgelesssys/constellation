@@ -167,15 +167,30 @@ Emergency SSH access to nodes can be useful to diagnose issues or download impor
    constellation ssh --key your_public_key.pub
    ```
 
-   A certificate will be written into the `constellation-terraform` directory.
+   A certificate will be written to `constellation_cert.pub`.
 
    The certificate is valid for 24 hours and allows you to access your constellation nodes using
    [certificate based authentication](https://en.wikibooks.org/wiki/OpenSSH/Cookbook/Certificate-based_Authentication).
 
-3. Finally, you can connect to any constellation node:
+3. Finally, you can connect to any constellation node using your certificate and your private key.
 
-   ```bash
-   ssh -F ./constellation-terraform/ssh_config -i your_private_key <PRIVATE_NODE_IP>
+   `ssh -o CertificateFile=constellation_cert.pub -i <your private key> root@<ip of constellation node>`
+
+   Normally, you won't have access to all constellation nodes since they reside in a private network.
+   To access those nodes anyways, you can use your constellation load balancer as a proxy jump host.
+   For this, use something along the following ssh client configuration:
+
+   ```text
+   Host <LB domain name>
+     ProxyJump none
+
+   Host *
+     IdentityFile <your private key>
+     PreferredAuthentications publickey
+     CertificateFile=constellation_cert.pub
+     User root
+     ProxyJump <LB domain name>
    ```
 
-   You can obtain the private IP via your CSPs web UI.
+   Using this config you can connect to a constellation node using `ssh -F <this config> <private node IP>`.
+   You can obtain the private node IP and the domain name of the load balancer using your CSPs web UI.
