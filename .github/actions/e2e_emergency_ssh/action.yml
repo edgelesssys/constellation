@@ -1,0 +1,48 @@
+name: Emergency ssh
+description: "Verify that an emergency ssh connection can be established."
+
+inputs:
+  workspace:
+    description: "The constellation workspace directory."
+    required: true
+  kubeconfig:
+    description: "The kubeconfig file for the cluster."
+    required: true
+  
+runs:
+  using: "composite"
+  steps:
+    - name: Test emergency ssh
+      shell: bash
+      working-directory: e2e/emergency-ssh
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+      run: |
+        # Activate emergency ssh access to the cluster
+        pushd "${{ inputs.workspace }}/constellation-terraform"
+        echo "emergency_ssh = true" >> terraform.tfvars
+        terraform apply -auto-approve
+        lb="$(terraform output -raw loadbalancer_address)"
+        popd
+
+        # write ssh config
+        cat > ssh_config <<EOF
+        Host $lb
+          ProxyJump none
+
+       Host *
+         IdentityFile ./access-key
+         PreferredAuthentications publickey
+         CertificateFile=constellation_cert.pub
+         User root
+         ProxyJump $lb
+        EOF
+
+        # generate and try keypair
+        cp "${{ inputs.workspace }}/constellation-mastersecret.json" .
+        ssh-keygen -t ecdsa -q -N "" -f ./access-key
+        constellation ssh --debug --key ./access-key.pub
+        internalIPs="$(kubectl get nodes -o=jsonpath='{.items[*].status.addresses}' | jq -r '.[] | select(.type == "InternalIP") | .address')"
+        for ip in internalIPs; do
+          ssh -F ssh_config $ip
+        done
