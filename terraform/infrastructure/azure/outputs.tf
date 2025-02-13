@@ -64,6 +64,11 @@ output "loadbalancer_name" {
   description = "Name of the cluster's load balancer."
 }
 
+output "loadbalancer_address" {
+  value       = azurerm_public_ip.loadbalancer_ip[0].fqdn
+  description = "Public loadbalancer address."
+}
+
 output "user_assigned_identity_client_id" {
   value       = data.azurerm_user_assigned_identity.uaid.client_id
   description = "Client ID of the user assigned identity used within the cluster."
