@@ -56,7 +56,7 @@ inputs:
     description: "Azure credentials authorized to create an IAM configuration."
     required: true
   test:
-    description: "The test to run. Can currently be one of [sonobuoy full, sonobuoy quick, sonobuoy conformance, autoscaling, lb, perf-bench, verify, recover, malicious join, nop, upgrade]."
+    description: "The test to run. Can currently be one of [sonobuoy full, sonobuoy quick, sonobuoy conformance, autoscaling, lb, perf-bench, verify, recover, malicious join, nop, upgrade, emergency ssh]."
     required: true
   sonobuoyTestSuiteCmd:
     description: "The sonobuoy test suite to run."
@@ -444,3 +444,7 @@ runs:
         s3AccessKey: ${{ inputs.s3AccessKey }}
         s3SecretKey: ${{ inputs.s3SecretKey }}
         githubToken: ${{ inputs.githubToken }}
+    
+    - name: Run emergency ssh test
+      if: inputs.test == 'emergency ssh'
+      uses: ./.github/actions/e2e_emergency_ssh
