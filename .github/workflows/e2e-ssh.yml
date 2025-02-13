@@ -11,6 +11,7 @@ on:
 
 jobs:
   ssh:
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         attestationVariant: ["gcp-sev-es", "gcp-sev-snp", "azure-sev-snp", "azure-tdx", "aws-sev-snp"]
