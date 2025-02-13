@@ -115,7 +115,7 @@ runs:
   using: "composite"
   steps:
     - name: Check input
-      if: (!contains(fromJson('["sonobuoy full", "sonobuoy quick", "sonobuoy conformance", "autoscaling", "perf-bench", "verify", "lb", "recover", "malicious join", "s3proxy", "nop", "upgrade"]'), inputs.test))
+      if: (!contains(fromJson('["sonobuoy full", "sonobuoy quick", "sonobuoy conformance", "autoscaling", "perf-bench", "verify", "lb", "recover", "malicious join", "s3proxy", "nop", "upgrade", "emergency ssh"]'), inputs.test))
       shell: bash
       run: |
         echo "::error::Invalid input for test field: ${{ inputs.test }}"
