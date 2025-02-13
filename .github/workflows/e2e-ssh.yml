@@ -15,84 +15,85 @@ jobs:
     strategy:
       matrix:
         attestationVariant: ["gcp-sev-es", "gcp-sev-snp", "azure-sev-snp", "azure-tdx", "aws-sev-snp"]
-    - name: Checkout
-        id: checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+    steps:
+      - name: Checkout
+          id: checkout
+          uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-    - name: Get Latest Image
-      id: find-latest-image
-      uses: ./.github/actions/find_latest_image
+      - name: Get Latest Image
+        id: find-latest-image
+        uses: ./.github/actions/find_latest_image
 
-    - name: Split attestationVariant
-        id: split-attestationVariant
-        shell: bash
-        run: |
-          attestationVariant="${{ matrix.attestationVariant }}"
-          cloudProvider="${attestationVariant%%-*}"
+      - name: Split attestationVariant
+          id: split-attestationVariant
+          shell: bash
+          run: |
+            attestationVariant="${{ matrix.attestationVariant }}"
+            cloudProvider="${attestationVariant%%-*}"
 
-          echo "cloudProvider=${cloudProvider}" | tee -a "$GITHUB_OUTPUT"
+            echo "cloudProvider=${cloudProvider}" | tee -a "$GITHUB_OUTPUT"
 
-    - name: test
-      uses: ./.github/actions/e2e_test
-      with:
-        workerNodesCount: "1"
-        controlNodesCount: "1"
-        cloudProvider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
-        attestationVariant: ${{ matrix.attestationVariant }}
-        osImage: ${{ steps.find-latest-image.outputs.image }}
-        isDebugImage: ${{ steps.find-latest-image.outputs.isDebugImage }}
-        gcpProject: constellation-e2e
-        gcpClusterCreateServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
-        gcpIAMCreateServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
-        kubernetesVersion: "v1.28"
-        test: "emergency ssh"
-        azureSubscriptionID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        azureClusterCreateCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
-        azureIAMCreateCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
-        registry: ghcr.io
-        githubToken: ${{ secrets.GITHUB_TOKEN }}
-        encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+      - name: test
+        uses: ./.github/actions/e2e_test
+        with:
+          workerNodesCount: "1"
+          controlNodesCount: "1"
+          cloudProvider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
+          attestationVariant: ${{ matrix.attestationVariant }}
+          osImage: ${{ steps.find-latest-image.outputs.image }}
+          isDebugImage: ${{ steps.find-latest-image.outputs.isDebugImage }}
+          gcpProject: constellation-e2e
+          gcpClusterCreateServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
+          gcpIAMCreateServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
+          kubernetesVersion: "v1.28"
+          test: "emergency ssh"
+          azureSubscriptionID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          azureClusterCreateCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
+          azureIAMCreateCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
+          registry: ghcr.io
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
-    - name: Always terminate cluster
-      if: always()
-      uses: ./.github/actions/constellation_destroy
-      with:
-        kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
-        clusterCreation: "cli"
-        cloudProvider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
-        azureClusterDeleteCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
-        gcpClusterDeleteServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
+      - name: Always terminate cluster
+        if: always()
+        uses: ./.github/actions/constellation_destroy
+        with:
+          kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
+          clusterCreation: "cli"
+          cloudProvider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
+          azureClusterDeleteCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
+          gcpClusterDeleteServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
 
-    - name: Always delete IAM configuration
-      if: always()
-      uses: ./.github/actions/constellation_iam_destroy
-      with:
-        cloudProvider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
-        azureCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
-        gcpServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
+      - name: Always delete IAM configuration
+        if: always()
+        uses: ./.github/actions/constellation_iam_destroy
+        with:
+          cloudProvider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
+          azureCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
+          gcpServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
 
-    - name: Update tfstate
-      if: always()
-      env:
-        GH_TOKEN: ${{ github.token }}
-      uses: ./.github/actions/update_tfstate
-      with:
-        name: terraform-state-${{ steps.e2e_test.outputs.namePrefix }}
-        runID: ${{ github.run_id }}
-        encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
+      - name: Update tfstate
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        uses: ./.github/actions/update_tfstate
+        with:
+          name: terraform-state-${{ steps.e2e_test.outputs.namePrefix }}
+          runID: ${{ github.run_id }}
+          encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
-    - name: Notify about failure
-      if: |
-        failure() &&
-        github.ref == 'refs/heads/main' &&
-        github.event_name == 'schedule'
-      continue-on-error: true
-      uses: ./.github/actions/notify_e2e_failure
-      with:
-        projectWriteToken: ${{ secrets.PROJECT_WRITE_TOKEN }}
-        refStream: ${{ matrix.refStream }}
-        test: ${{ matrix.test }}
-        kubernetesVersion: ${{ matrix.kubernetesVersion }}
-        provider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
-        attestationVariant: ${{ matrix.attestationVariant }}
-        clusterCreation: "cli"
+      - name: Notify about failure
+        if: |
+          failure() &&
+          github.ref == 'refs/heads/main' &&
+          github.event_name == 'schedule'
+        continue-on-error: true
+        uses: ./.github/actions/notify_e2e_failure
+        with:
+          projectWriteToken: ${{ secrets.PROJECT_WRITE_TOKEN }}
+          refStream: ${{ matrix.refStream }}
+          test: ${{ matrix.test }}
+          kubernetesVersion: ${{ matrix.kubernetesVersion }}
+          provider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
+          attestationVariant: ${{ matrix.attestationVariant }}
+          clusterCreation: "cli"
