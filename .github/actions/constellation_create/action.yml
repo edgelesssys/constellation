@@ -73,6 +73,9 @@ outputs:
   osImageUsed:
     description: "The OS image used in the cluster."
     value: ${{ steps.setImage.outputs.image }}
+  workspace:
+    description: "The constellation workspace."
+    value: ${{ steps.setImage.outputs.workspace }}
 
 runs:
   using: "composite"
@@ -108,6 +111,7 @@ runs:
 
         yq eval -i "(.image) = \"${imageInput}\"" constellation-conf.yaml
         echo "image=${imageInput}" | tee -a "$GITHUB_OUTPUT"
+        echo "workspace=$(pwd)" | tee -a "$GITHUB_OUTPUT"
 
     - name: Set marketplace image flag (AWS)
       if: inputs.marketplaceImageVersion != '' && inputs.cloudProvider == 'aws'
