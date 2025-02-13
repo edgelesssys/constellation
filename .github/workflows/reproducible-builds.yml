@@ -51,15 +51,16 @@ jobs:
       - name: Setup dependencies (eccentric)
         if: matrix.deps == 'eccentric'
         run: |
-          version=$(cat .bazelversion)
+          bazelVersion=$(cat .bazelversion)
           mkdir -p "$HOME/.local/bin"
-          curl -fsSL -o "$HOME/.local/bin/bazel" "https://github.com/bazelbuild/bazel/releases/download/$version/bazel-$version-linux-x86_64"
+          curl -fsSL -o "$HOME/.local/bin/bazel" "https://github.com/bazelbuild/bazel/releases/download/$bazelVersion/bazel-$bazelVersion-linux-x86_64"
           chmod a+x "$HOME/.local/bin/bazel"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
           curl -fsSL -o "$HOME/.local/bin/nix-installer" https://github.com/DeterminateSystems/nix-installer/releases/download/v0.38.1/nix-installer-x86_64-linux # renovate:github-release
+          nixVersion=$(cat .nixversion)
           chmod a+x "$HOME/.local/bin/nix-installer"
-          "$HOME/.local/bin/nix-installer" install --no-confirm
+          "$HOME/.local/bin/nix-installer" install --no-confirm --nix-package-url "https://releases.nixos.org/nix/nix-$nixVersion/nix-$nixVersion-x86_64-linux.tar.xz"
 
       - name: Build
         shell: bash
