@@ -1,0 +1,19 @@
+name: e2e test emergency ssh
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - cli/internal/cmd/ssh*.go
+      - terraform/infrastructure/aws/**
+      - terraform/infrastructure/azure/**
+      - terraform/infrastructure/gcp/**
+
+jobs:
+  ssh:
+    strategy:
+      matrix:
+        csp: [aws, azure, gcp]
+    - name: Checkout
+        id: checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
