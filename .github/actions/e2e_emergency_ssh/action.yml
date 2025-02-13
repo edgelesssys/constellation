@@ -30,12 +30,12 @@ runs:
         Host $lb
           ProxyJump none
 
-       Host *
-         IdentityFile ./access-key
-         PreferredAuthentications publickey
-         CertificateFile=constellation_cert.pub
-         User root
-         ProxyJump $lb
+        Host *
+          IdentityFile ./access-key
+          PreferredAuthentications publickey
+          CertificateFile=constellation_cert.pub
+          User root
+          ProxyJump $lb
         EOF
 
         # generate and try keypair
