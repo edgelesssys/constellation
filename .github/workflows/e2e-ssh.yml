@@ -17,21 +17,21 @@ jobs:
         attestationVariant: ["gcp-sev-es", "gcp-sev-snp", "azure-sev-snp", "azure-tdx", "aws-sev-snp"]
     steps:
       - name: Checkout
-          id: checkout
-          uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        id: checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Get Latest Image
         id: find-latest-image
         uses: ./.github/actions/find_latest_image
 
       - name: Split attestationVariant
-          id: split-attestationVariant
-          shell: bash
-          run: |
-            attestationVariant="${{ matrix.attestationVariant }}"
-            cloudProvider="${attestationVariant%%-*}"
+        id: split-attestationVariant
+        shell: bash
+        run: |
+          attestationVariant="${{ matrix.attestationVariant }}"
+          cloudProvider="${attestationVariant%%-*}"
 
-            echo "cloudProvider=${cloudProvider}" | tee -a "$GITHUB_OUTPUT"
+          echo "cloudProvider=${cloudProvider}" | tee -a "$GITHUB_OUTPUT"
 
       - name: test
         uses: ./.github/actions/e2e_test
