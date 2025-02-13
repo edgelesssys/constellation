@@ -456,8 +456,8 @@ github.com/google/go-configfs-tsm v0.2.2 h1:YnJ9rXIOj5BYD7/0DNnzs8AOp7UcvjfTvt21
 github.com/google/go-configfs-tsm v0.2.2/go.mod h1:EL1GTDFMb5PZQWDviGfZV9n87WeGTR/JUg13RfwkgRo=
 github.com/google/go-containerregistry v0.20.2 h1:B1wPJ1SN/S7pB+ZAimcciVD+r+yV/l/DSArMxlbwseo=
 github.com/google/go-containerregistry v0.20.2/go.mod h1:z38EKdKh4h7IP2gSfUUqEvalZBqs6AoLeWfUy34nQC8=
-github.com/google/go-sev-guest v0.11.2-0.20241122204452-64cd695124b1 h1:K33T2ardZgY4LVxPakM85KSip9aag2jTwmOZs4i1dJg=
-github.com/google/go-sev-guest v0.11.2-0.20241122204452-64cd695124b1/go.mod h1:8+UOtSaqVIZjJJ9DDmgRko3J/kNc6jI5KLHxoeao7cA=
+github.com/google/go-sev-guest v0.12.2-0.20250205052930-65042ded71f9 h1:QEzwhdv1S+QD5K8GJnkQKGPng5ftJuwIHAKirFVcbDk=
+github.com/google/go-sev-guest v0.12.2-0.20250205052930-65042ded71f9/go.mod h1:SK9vW+uyfuzYdVN0m8BShL3OQCtXZe/JPF7ZkpD3760=
 github.com/google/go-tdx-guest v0.3.1 h1:gl0KvjdsD4RrJzyLefDOvFOUH3NAJri/3qvaL5m83Iw=
 github.com/google/go-tdx-guest v0.3.1/go.mod h1:/rc3d7rnPykOPuY8U9saMyEps0PZDThLk/RygXm04nE=
 github.com/google/go-tpm v0.9.1 h1:0pGc4X//bAlmZzMKf8iz6IsDo1nYTbYJ6FZN/rg4zdM=
