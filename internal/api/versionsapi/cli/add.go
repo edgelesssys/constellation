@@ -16,7 +16,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/cobra"
-	"golang.org/x/mod/semver"
 )
 
 func newAddCmd() *cobra.Command {
@@ -53,19 +52,8 @@ func runAdd(cmd *cobra.Command, _ []string) (retErr error) {
 		return err
 	}
 	log := logger.NewTextLogger(flags.logLevel)
-	log.Debug("Using flags", "dryRun", flags.dryRun, "kind", flags.kind, "latest", flags.latest, "ref", flags.ref,
-		"release", flags.release, "stream", flags.stream, "version", flags.version)
-
-	log.Debug("Validating flags")
-	if err := flags.validate(log); err != nil {
-		return err
-	}
-
-	log.Debug("Creating version struct")
-	ver, err := versionsapi.NewVersion(flags.ref, flags.stream, flags.version, flags.kind)
-	if err != nil {
-		return fmt.Errorf("creating version: %w", err)
-	}
+	log.Debug("Using flags", "dryRun", flags.dryRun, "kind", flags.version.Kind(), "latest", flags.latest, "ref", flags.version.Ref(),
+		"stream", flags.version.Stream(), "version", flags.version.Version())
 
 	log.Debug("Creating versions API client")
 	client, clientClose, err := versionsapi.NewClient(cmd.Context(), flags.region, flags.bucket, flags.distributionID, flags.dryRun, log)
@@ -80,27 +68,27 @@ func runAdd(cmd *cobra.Command, _ []string) (retErr error) {
 	}()
 
 	log.Info("Adding version")
-	if err := ensureVersion(cmd.Context(), client, flags.kind, ver, versionsapi.GranularityMajor, log); err != nil {
+	if err := ensureVersion(cmd.Context(), client, flags.version, versionsapi.GranularityMajor, log); err != nil {
 		return err
 	}
 
-	if err := ensureVersion(cmd.Context(), client, flags.kind, ver, versionsapi.GranularityMinor, log); err != nil {
+	if err := ensureVersion(cmd.Context(), client, flags.version, versionsapi.GranularityMinor, log); err != nil {
 		return err
 	}
 
 	if flags.latest {
-		if err := updateLatest(cmd.Context(), client, flags.kind, ver, log); err != nil {
+		if err := updateLatest(cmd.Context(), client, flags.version, log); err != nil {
 			return fmt.Errorf("setting latest version: %w", err)
 		}
 	}
 
-	log.Info(fmt.Sprintf("List major->minor URL: %s", ver.ListURL(versionsapi.GranularityMajor)))
-	log.Info(fmt.Sprintf("List minor->patch URL: %s", ver.ListURL(versionsapi.GranularityMinor)))
+	log.Info(fmt.Sprintf("List major->minor URL: %s", flags.version.ListURL(versionsapi.GranularityMajor)))
+	log.Info(fmt.Sprintf("List minor->patch URL: %s", flags.version.ListURL(versionsapi.GranularityMinor)))
 
 	return nil
 }
 
-func ensureVersion(ctx context.Context, client *versionsapi.Client, kind versionsapi.VersionKind, ver versionsapi.Version, gran versionsapi.Granularity,
+func ensureVersion(ctx context.Context, client *versionsapi.Client, ver versionsapi.Version, gran versionsapi.Granularity,
 	log *slog.Logger,
 ) error {
 	verListReq := versionsapi.List{
@@ -108,7 +96,7 @@ func ensureVersion(ctx context.Context, client *versionsapi.Client, kind version
 		Stream:      ver.Stream(),
 		Granularity: gran,
 		Base:        ver.WithGranularity(gran),
-		Kind:        kind,
+		Kind:        ver.Kind(),
 	}
 	verList, err := client.FetchVersionList(ctx, verListReq)
 	var notFoundErr *apiclient.NotFoundError
@@ -140,11 +128,11 @@ func ensureVersion(ctx context.Context, client *versionsapi.Client, kind version
 	return nil
 }
 
-func updateLatest(ctx context.Context, client *versionsapi.Client, kind versionsapi.VersionKind, ver versionsapi.Version, log *slog.Logger) error {
+func updateLatest(ctx context.Context, client *versionsapi.Client, ver versionsapi.Version, log *slog.Logger) error {
 	latest := versionsapi.Latest{
 		Ref:    ver.Ref(),
 		Stream: ver.Stream(),
-		Kind:   kind,
+		Kind:   ver.Kind(),
 	}
 	latest, err := client.FetchVersionLatest(ctx, latest)
 	var notFoundErr *apiclient.NotFoundError
@@ -164,7 +152,7 @@ func updateLatest(ctx context.Context, client *versionsapi.Client, kind versions
 		Ref:     ver.Ref(),
 		Stream:  ver.Stream(),
 		Version: ver.Version(),
-		Kind:    kind,
+		Kind:    ver.Kind(),
 	}
 	if err := client.UpdateVersionLatest(ctx, latest); err != nil {
 		return fmt.Errorf("updating latest version: %w", err)
@@ -174,52 +162,13 @@ func updateLatest(ctx context.Context, client *versionsapi.Client, kind versions
 }
 
 type addFlags struct {
-	version        string
-	stream         string
-	ref            string
-	release        bool
+	version        versionsapi.Version
 	latest         bool
 	dryRun         bool
 	region         string
 	bucket         string
 	distributionID string
-	kind           versionsapi.VersionKind
 	logLevel       slog.Level
-}
-
-func (f *addFlags) validate(log *slog.Logger) error {
-	if !semver.IsValid(f.version) {
-		return fmt.Errorf("version %q is not a valid semantic version", f.version)
-	}
-	if semver.Canonical(f.version) != f.version {
-		return fmt.Errorf("version %q is not a canonical semantic version", f.version)
-	}
-
-	if f.ref == "" && !f.release {
-		return fmt.Errorf("either --ref or --release must be set")
-	}
-
-	if f.kind == versionsapi.VersionKindUnknown {
-		return fmt.Errorf("unknown version kind %q", f.kind)
-	}
-
-	if f.release {
-		log.Debug(fmt.Sprintf("Setting ref to %q, as release flag is set", versionsapi.ReleaseRef))
-		f.ref = versionsapi.ReleaseRef
-	} else {
-		log.Debug("Setting latest to true, as release flag is not set")
-		f.latest = true // always set latest for non-release versions
-	}
-
-	if err := versionsapi.ValidateRef(f.ref); err != nil {
-		return fmt.Errorf("invalid ref %w", err)
-	}
-
-	if err := versionsapi.ValidateStream(f.ref, f.stream); err != nil {
-		return fmt.Errorf("invalid stream %w", err)
-	}
-
-	return nil
 }
 
 func parseAddFlags(cmd *cobra.Command) (addFlags, error) {
@@ -227,7 +176,6 @@ func parseAddFlags(cmd *cobra.Command) (addFlags, error) {
 	if err != nil {
 		return addFlags{}, err
 	}
-	ref = versionsapi.CanonicalizeRef(ref)
 	stream, err := cmd.Flags().GetString("stream")
 	if err != nil {
 		return addFlags{}, err
@@ -274,17 +222,24 @@ func parseAddFlags(cmd *cobra.Command) (addFlags, error) {
 		return addFlags{}, err
 	}
 
+	if release {
+		ref = versionsapi.ReleaseRef
+	} else {
+		latest = true // always set latest for non-release versions
+	}
+
+	ver, err := versionsapi.NewVersion(ref, stream, version, kind)
+	if err != nil {
+		return addFlags{}, fmt.Errorf("creating version: %w", err)
+	}
+
 	return addFlags{
-		version:        version,
-		stream:         stream,
-		ref:            versionsapi.CanonicalizeRef(ref),
-		release:        release,
+		version:        ver,
 		latest:         latest,
 		dryRun:         dryRun,
 		region:         region,
 		bucket:         bucket,
 		distributionID: distributionID,
 		logLevel:       logLevel,
-		kind:           kind,
 	}, nil
 }

@@ -16,6 +16,111 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 )
 
+func TestNewVersion(t *testing.T) {
+	testCases := map[string]struct {
+		ref     string
+		stream  string
+		version string
+		kind    VersionKind
+		wantVer Version
+		wantErr bool
+	}{
+		"stable release image": {
+			ref:     ReleaseRef,
+			stream:  "stable",
+			version: "v9.9.9",
+			kind:    VersionKindImage,
+			wantVer: Version{
+				ref:     ReleaseRef,
+				stream:  "stable",
+				version: "v9.9.9",
+				kind:    VersionKindImage,
+			},
+		},
+		"release debug image": {
+			ref:     ReleaseRef,
+			stream:  "debug",
+			version: "v9.9.9",
+			kind:    VersionKindImage,
+			wantVer: Version{
+				ref:     ReleaseRef,
+				stream:  "debug",
+				version: "v9.9.9",
+				kind:    VersionKindImage,
+			},
+		},
+		"stable release cli": {
+			ref:     ReleaseRef,
+			stream:  "stable",
+			version: "v9.9.9",
+			kind:    VersionKindCLI,
+			wantVer: Version{
+				ref:     ReleaseRef,
+				stream:  "stable",
+				version: "v9.9.9",
+				kind:    VersionKindCLI,
+			},
+		},
+		"release debug cli": {
+			ref:     ReleaseRef,
+			stream:  "debug",
+			version: "v9.9.9",
+			kind:    VersionKindCLI,
+			wantVer: Version{
+				ref:     ReleaseRef,
+				stream:  "debug",
+				version: "v9.9.9",
+				kind:    VersionKindCLI,
+			},
+		},
+		"unknown kind": {
+			ref:     ReleaseRef,
+			stream:  "debug",
+			version: "v9.9.9",
+			kind:    VersionKindUnknown,
+			wantErr: true,
+		},
+		"non-release ref as input": {
+			ref:     "working-branch",
+			stream:  "debug",
+			version: "v9.9.9",
+			kind:    VersionKindImage,
+			wantVer: Version{
+				ref:     "working-branch",
+				stream:  "debug",
+				version: "v9.9.9",
+				kind:    VersionKindImage,
+			},
+		},
+		"non-canonical ref as input": {
+			ref:     "testing-1.23",
+			stream:  "debug",
+			version: "v9.9.9",
+			kind:    VersionKindImage,
+			wantVer: Version{
+				ref:     "testing-1-23",
+				stream:  "debug",
+				version: "v9.9.9",
+				kind:    VersionKindImage,
+			},
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			ver, err := NewVersion(tc.ref, tc.stream, tc.version, tc.kind)
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+			assert.Equal(tc.wantVer, ver)
+		})
+	}
+}
+
 func TestNewVersionFromShortPath(t *testing.T) {
 	testCases := map[string]struct {
 		path    string
@@ -77,6 +182,26 @@ func TestNewVersionFromShortPath(t *testing.T) {
 			path:    "va.b.c",
 			kind:    VersionKindCLI,
 			wantErr: true,
+		},
+		"non-release ref as input": {
+			path: "ref/working-branch/stream/debug/v9.9.9",
+			kind: VersionKindImage,
+			wantVer: Version{
+				ref:     "working-branch",
+				stream:  "debug",
+				version: "v9.9.9",
+				kind:    VersionKindImage,
+			},
+		},
+		"non-canonical ref as input": {
+			path: "ref/testing-1.23/stream/debug/v9.9.9",
+			kind: VersionKindImage,
+			wantVer: Version{
+				ref:     "testing-1-23",
+				stream:  "debug",
+				version: "v9.9.9",
+				kind:    VersionKindImage,
+			},
 		},
 	}
 
