@@ -4,7 +4,7 @@ on:
   schedule:
     - cron: "0 0 * * 0" # At 00:00 every Sunday UTC
   workflow_dispatch:
-    
+
 
 jobs:
   cleanup:
@@ -22,3 +22,5 @@ jobs:
           ghToken: ${{ secrets.GITHUB_TOKEN }}
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
           azure_credentials: ${{ secrets.AZURE_E2E_DESTROY_CREDENTIALS }}
+          openStackCloudsYaml: ${{ secrets.STACKIT_CI_CLOUDS_YAML }}
+          stackitUat: ${{ secrets.STACKIT_CI_UAT }}

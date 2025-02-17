@@ -11,6 +11,12 @@ inputs:
   azure_credentials:
     description: "Credentials authorized to create Constellation on Azure."
     required: true
+  openStackCloudsYaml:
+    description: "The contents of ~/.config/openstack/clouds.yaml"
+    required: false
+  stackitUat:
+    description: "The UAT for STACKIT"
+    required: false
 
 runs:
   using: "composite"
@@ -30,6 +36,16 @@ runs:
       uses: ./.github/actions/login_gcp
       with:
         service_account: "destroy-e2e@constellation-e2e.iam.gserviceaccount.com"
+
+    - name: Login to OpenStack
+      uses: ./.github/actions/login_openstack
+      with:
+        clouds_yaml: ${{ inputs.openStackCloudsYaml }}
+
+    - name: Login to STACKIT
+      uses: ./.github/actions/login_stackit
+      with:
+        serviceAccountToken: ${{ inputs.stackitUat }}
 
     - name: Install tools
       uses: ./.github/actions/setup_bazel_nix
