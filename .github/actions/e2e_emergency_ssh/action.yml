@@ -18,9 +18,11 @@ runs:
         KUBECONFIG: ${{ inputs.kubeconfig }}
       run: |
         # Activate emergency ssh access to the cluster
+        pushd ./constellation-terraform
         echo "emergency_ssh = true" >> terraform.tfvars
         terraform apply -auto-approve
         lb="$(terraform output -raw loadbalancer_address)"
+        popd
 
         # write ssh config
         cat > ssh_config <<EOF
