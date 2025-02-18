@@ -39,16 +39,16 @@ jobs:
           bazel build //image/system:stable
           bazel build //image/measured-boot/cmd
           buildPath="$PWD/bazel-bin/image"
-          cd $(mktemp -d)
+          cd "$(mktemp -d)"
 
           echo "Downloading release measurements"
           curl -O https://cdn.confidential.cloud/constellation/v2/ref/-/stream/stable/${{ github.event.inputs.releasetag }}/image/measurements.json
 
           # compare all measurements with our own
-          for directory in $buildPath/system/!(mkosi_wrapper.sh); do
-            dirname="$(basename $directory)"
-            csp="$(echo $dirname | cut -d_ -f1)"
-            attestationVariant="$(echo $dirname | cut -d_ -f2)"
+          for directory in "$buildPath"/system/!(mkosi_wrapper.sh); do
+            dirname="$(basename "$directory")"
+            csp="$(echo "$dirname" | cut -d_ -f1)"
+            attestationVariant="$(echo "$dirname" | cut -d_ -f2)"
 
             echo "Comparing measurements of CSP $csp with attestation variant $attestationVariant"
             # This jq filter selects the measurements for the correct CSP and attestation variant
@@ -89,9 +89,9 @@ jobs:
               own-measurements.json | sponge ./own-measurements.json
 
             echo "Their measurements:"
-            cat their-measurements.json | ts "  "
+            ts "  " < their-measurements.json
             echo "Own measurements:"
-            cat own-measurements.json | ts "  "
+            ts "  " < own-measurements.json
 
             jd ./their-measurements.json ./own-measurements.json
           done
