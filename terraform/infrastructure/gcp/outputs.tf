@@ -56,3 +56,8 @@ output "ip_cidr_pod" {
   value       = local.cidr_vpc_subnet_pods
   description = "CIDR block of the pod network."
 }
+
+output "loadbalancer_address" {
+  value       = var.internal_load_balancer ? google_compute_address.loadbalancer_ip_internal[0].address : google_compute_global_address.loadbalancer_ip[0].address
+  description = "Public loadbalancer address."
+}
