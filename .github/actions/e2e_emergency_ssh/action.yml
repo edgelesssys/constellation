@@ -40,5 +40,5 @@ runs:
         constellation ssh --debug --key ./access-key.pub
         internalIPs="$(kubectl get nodes -o=jsonpath='{.items[*].status.addresses}' | jq -r '.[] | select(.type == "InternalIP") | .address')"
         for ip in internalIPs; do
-          ssh -F ssh_config $ip
+          ssh -F ssh_config -o BatchMode=yes $ip true
         done
