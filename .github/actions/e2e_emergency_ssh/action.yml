@@ -30,6 +30,8 @@ runs:
           ProxyJump none
 
         Host *
+          StrictHostKeyChecking no
+          UserKnownHostsFile=/dev/null
           IdentityFile ./access-key
           PreferredAuthentications publickey
           CertificateFile=constellation_cert.pub
@@ -37,10 +39,13 @@ runs:
           ProxyJump $lb
         EOF
 
+        cat ssh_config
+
         # generate and try keypair
         ssh-keygen -t ecdsa -q -N "" -f ./access-key
         constellation ssh --debug --key ./access-key.pub
         internalIPs="$(kubectl get nodes -o=jsonpath='{.items[*].status.addresses}' | jq -r '.[] | select(.type == "InternalIP") | .address')"
-        for ip in internalIPs; do
+        for ip in $internalIPs; do
+          echo "Trying connection to $ip over $lb"
           ssh -F ssh_config -o BatchMode=yes $ip true
         done
