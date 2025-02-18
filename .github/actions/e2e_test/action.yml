@@ -149,6 +149,8 @@ runs:
 
     - name: Setup bazel
       uses: ./.github/actions/setup_bazel_nix
+      with:
+        nixTools: terraform
 
     - name: Log in to the Container registry
       uses: ./.github/actions/container_registry_login
