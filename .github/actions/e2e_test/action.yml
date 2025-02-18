@@ -156,6 +156,7 @@ runs:
         registry: ${{ inputs.registry }}
         username: ${{ github.actor }}
         password: ${{ inputs.githubToken }}
+        nixTools: terraform
 
     - name: Build CLI
       if: inputs.cliVersion == ''
