@@ -34,6 +34,7 @@ jobs:
           echo "cloudProvider=${cloudProvider}" | tee -a "$GITHUB_OUTPUT"
 
       - name: test
+        id: e2e_test
         uses: ./.github/actions/e2e_test
         with:
           workerNodesCount: "1"
@@ -78,7 +79,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         uses: ./.github/actions/update_tfstate
         with:
-          name: terraform-state-${{ steps.e2e_test.outputs.namePrefix }}
+          name: terraform-state-${{ matrix.attestationVariant }}
           runID: ${{ github.run_id }}
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
@@ -91,9 +92,8 @@ jobs:
         uses: ./.github/actions/notify_e2e_failure
         with:
           projectWriteToken: ${{ secrets.PROJECT_WRITE_TOKEN }}
-          refStream: ${{ matrix.refStream }}
-          test: ${{ matrix.test }}
-          kubernetesVersion: ${{ matrix.kubernetesVersion }}
+          test: "emergency ssh"
+          kubernetesVersion: "v1.28"
           provider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
           attestationVariant: ${{ matrix.attestationVariant }}
           clusterCreation: "cli"
