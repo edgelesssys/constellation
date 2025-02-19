@@ -45,7 +45,7 @@ func main() {
 	}
 
 	cliInfo := versionsapi.CLIInfo{
-		Ref:        *refFlag,
+		Ref:        versionsapi.CanonicalizeRef(*refFlag),
 		Stream:     *streamFlag,
 		Version:    *versionFlag,
 		Kubernetes: []string{},
