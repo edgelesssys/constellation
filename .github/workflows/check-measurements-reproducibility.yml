@@ -78,6 +78,7 @@ jobs:
               measurements.json > "$attestationVariant"_their-measurements.json
 
             sudo env "PATH=$PATH" "${{ steps.build-images.outputs.buildPath }}/measured-boot/cmd/cmd_/cmd" "$directory/constellation" ./"$attestationVariant"_own-measurements.json
+            jq '.measurements' ./"$attestationVariant"_own-measurements.json | sponge ./"$attestationVariant"_own-measurements.json
           done
 
       - name: Compare measurements
