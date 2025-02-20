@@ -22,6 +22,8 @@ import (
 // UpgradeRequiresIAMMigration returns true if the given cloud provider requires an IAM migration.
 func UpgradeRequiresIAMMigration(provider cloudprovider.Provider) bool {
 	switch provider {
+	case cloudprovider.GCP:
+		return true
 	default:
 		return false
 	}

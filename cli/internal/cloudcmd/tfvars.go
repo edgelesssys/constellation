@@ -240,6 +240,7 @@ func gcpTerraformIAMVars(conf *config.Config, oldVars terraform.GCPIAMVariables)
 		Region:           conf.Provider.GCP.Region,
 		Zone:             conf.Provider.GCP.Zone,
 		ServiceAccountID: oldVars.ServiceAccountID,
+		NamePrefix:       oldVars.NamePrefix,
 	}
 }
 
