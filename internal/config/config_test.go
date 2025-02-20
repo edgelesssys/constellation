@@ -328,10 +328,10 @@ func TestFromFile(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	const defaultErrCount = 33 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
+	const defaultErrCount = 34 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
 	const azErrCount = 7
 	const awsErrCount = 8
-	const gcpErrCount = 8
+	const gcpErrCount = 9
 
 	// TODO(AB#3132,3u13r): refactor config validation tests
 	// Note that the `cnf.Image = ""` is a hack to align `bazel test` with `go test` behavior
@@ -464,6 +464,7 @@ func TestValidate(t *testing.T) {
 				gcp.Project = "test-project"
 				gcp.Zone = "test-zone"
 				gcp.ServiceAccountKeyPath = "test-key-path"
+				gcp.IAMServiceAccountVM = "example@example.com"
 				cnf.Provider = ProviderConfig{}
 				cnf.Provider.GCP = gcp
 				cnf.Attestation.GCPSEVSNP.Measurements = measurements.M{
