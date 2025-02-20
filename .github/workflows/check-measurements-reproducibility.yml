@@ -31,6 +31,7 @@ jobs:
             jd-diff-patch
             moreutils
       - name: Build images
+        id: build-images
         run: |
           set -euo pipefail
           shopt -s extglob
@@ -38,7 +39,7 @@ jobs:
           # Build required binaries
           bazel build //image/system:stable
           bazel build //image/measured-boot/cmd
-          buildPath="$PWD/bazel-bin/image"
+          echo "buildPath=$PWD/bazel-bin/image" | tee -a "$GITHUB_OUTPUT"
           cd "$(mktemp -d)"
 
       - name: Download measurements
@@ -47,7 +48,8 @@ jobs:
       
       - name: Cleanup release measurements and generate our own
         run: |
-          for directory in "$buildPath"/system/!(mkosi_wrapper.sh); do
+          set -euo pipefail
+          for directory in ${{ steps.build-images.outputs.buildPath }}/system/!(mkosi_wrapper.sh); do
             dirname="$(basename "$directory")"
             csp="$(echo "$dirname" | cut -d_ -f1)"
             attestationVariant="$(echo "$dirname" | cut -d_ -f2)"
@@ -74,12 +76,13 @@ jobs:
               ' \
               measurements.json > "$attestationVariant"_their-measurements.json
 
-            sudo env "PATH=$PATH" "$buildPath/measured-boot/cmd/cmd_/cmd" "$directory/constellation" ./"$attestationVariant"_own-measurements.json
+            sudo env "PATH=$PATH" "${{ steps.build-images.outputs.buildPath }}/measured-boot/cmd/cmd_/cmd" "$directory/constellation" ./"$attestationVariant"_own-measurements.json
           done
 
       - name: Compare measurements
         run: |
-          for directory in "$buildPath"/system/!(mkosi_wrapper.sh); do
+          set -euo pipefail
+          for directory in ${{ steps.build-images.outputs.buildPath }}/system/!(mkosi_wrapper.sh); do
             dirname="$(basename "$directory")"
             attestationVariant="$(echo "$dirname" | cut -d_ -f2)"
 
