@@ -99,9 +99,8 @@ jobs:
             ts "  " < "$attestationVariant"_own-measurements.json
 
             # TODO: cache errors and return them later.
-            diff="$(jd ./"$attestationVariant"_their-measurements.json ./"$attestationVariant"_own-measurements.json)"
-            if [[ $? -ne 0 ]]; then
-              errors["$attestationVariant"]="$diff"
+            if ! jd ./"$attestationVariant"_their-measurements.json ./"$attestationVariant"_own-measurements.json; then
+              errors["$attestationVariant"]="$(!!)"
             fi
           done
 
