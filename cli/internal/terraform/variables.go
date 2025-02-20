@@ -182,6 +182,8 @@ type GCPIAMVariables struct {
 	Zone string `hcl:"zone" cty:"zone"`
 	// ServiceAccountID is the ID of the service account to use.
 	ServiceAccountID string `hcl:"service_account_id" cty:"service_account_id"`
+	// IAMServiceAccountVM is the ID of the service account to attach to VMs.
+	IAMServiceAccountVM string `hcl:"service_account_id_vm" cty:"service_account_id_vm"`
 }
 
 // String returns a string representation of the IAM-specific variables, formatted as Terraform variables.

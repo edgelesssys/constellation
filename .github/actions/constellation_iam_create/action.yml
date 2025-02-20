@@ -110,6 +110,7 @@ runs:
           --projectID="${{ inputs.gcpProjectID }}" \
           --zone="${{ inputs.gcpZone }}" \
           --serviceAccountID="${{ inputs.namePrefix }}-sa" \
+          --serviceAccountVMID="${{ inputs.namePrefix }}-vm-sa" \
           --update-config \
           --tf-log=DEBUG \
           --yes

@@ -34,6 +34,9 @@ func newIAMCreateGCPCmd() *cobra.Command {
 	cmd.Flags().String("serviceAccountID", "", "ID for the service account that will be created (required)\n"+
 		"Must be 6 to 30 lowercase letters, digits, or hyphens.")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "serviceAccountID"))
+	cmd.Flags().String("serviceAccountVMID", "", "ID for the VM service account that will be created (required)\n"+
+		"Must be 6 to 30 lowercase letters, digits, or hyphens.")
+	must(cobra.MarkFlagRequired(cmd.Flags(), "serviceAccountVMID"))
 	cmd.Flags().String("projectID", "", "ID of the GCP project the configuration will be created in (required)\n"+
 		"Find it on the welcome screen of your project: https://console.cloud.google.com/welcome")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "projectID"))
@@ -52,10 +55,11 @@ func runIAMCreateGCP(cmd *cobra.Command, _ []string) error {
 // gcpIAMCreateFlags contains the parsed flags of the iam create gcp command.
 type gcpIAMCreateFlags struct {
 	rootFlags
-	serviceAccountID string
-	zone             string
-	region           string
-	projectID        string
+	serviceAccountID   string
+	serviceAccountVMID string
+	zone               string
+	region             string
+	projectID          string
 }
 
 func (f *gcpIAMCreateFlags) parse(flags *pflag.FlagSet) error {
@@ -94,6 +98,14 @@ func (f *gcpIAMCreateFlags) parse(flags *pflag.FlagSet) error {
 	if !gcpIDRegex.MatchString(f.serviceAccountID) {
 		return fmt.Errorf("serviceAccountID %q doesn't match %s", f.serviceAccountID, gcpIDRegex)
 	}
+
+	f.serviceAccountVMID, err = flags.GetString("serviceAccountVMID")
+	if err != nil {
+		return fmt.Errorf("getting 'serviceAccountVMID' flag: %w", err)
+	}
+	if !gcpIDRegex.MatchString(f.serviceAccountVMID) {
+		return fmt.Errorf("serviceAccountVMID %q doesn't match %s", f.serviceAccountVMID, gcpIDRegex)
+	}
 	return nil
 }
 
@@ -105,10 +117,11 @@ type gcpIAMCreator struct {
 func (c *gcpIAMCreator) getIAMConfigOptions() *cloudcmd.IAMConfigOptions {
 	return &cloudcmd.IAMConfigOptions{
 		GCP: cloudcmd.GCPIAMConfig{
-			Zone:             c.flags.zone,
-			Region:           c.flags.region,
-			ProjectID:        c.flags.projectID,
-			ServiceAccountID: c.flags.serviceAccountID,
+			Zone:               c.flags.zone,
+			Region:             c.flags.region,
+			ProjectID:          c.flags.projectID,
+			ServiceAccountID:   c.flags.serviceAccountID,
+			ServiceAccountVMID: c.flags.serviceAccountVMID,
 		},
 	}
 }
@@ -116,6 +129,7 @@ func (c *gcpIAMCreator) getIAMConfigOptions() *cloudcmd.IAMConfigOptions {
 func (c *gcpIAMCreator) printConfirmValues(cmd *cobra.Command) {
 	cmd.Printf("Project ID:\t\t%s\n", c.flags.projectID)
 	cmd.Printf("Service Account ID:\t%s\n", c.flags.serviceAccountID)
+	cmd.Printf("Service Account VM ID:\t%s\n", c.flags.serviceAccountVMID)
 	cmd.Printf("Region:\t\t\t%s\n", c.flags.region)
 	cmd.Printf("Zone:\t\t\t%s\n\n", c.flags.zone)
 }
