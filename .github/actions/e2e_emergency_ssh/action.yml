@@ -30,6 +30,8 @@ runs:
           ProxyJump none
 
         Host *
+          StrictHostKeyChecking no
+          UserKnownHostsFile=/dev/null
           IdentityFile ./access-key
           PreferredAuthentications publickey
           CertificateFile=constellation_cert.pub
