@@ -145,11 +145,12 @@ func (c *gcpIAMCreator) printOutputValues(cmd *cobra.Command, _ cloudcmd.IAMOutp
 	cmd.Printf("serviceAccountKeyPath:\t%s\n\n", c.flags.pathPrefixer.PrefixPrintablePath(constants.GCPServiceAccountKeyFilename))
 }
 
-func (c *gcpIAMCreator) writeOutputValuesToConfig(conf *config.Config, _ cloudcmd.IAMOutput) {
+func (c *gcpIAMCreator) writeOutputValuesToConfig(conf *config.Config, out cloudcmd.IAMOutput) {
 	conf.Provider.GCP.Project = c.flags.projectID
 	conf.Provider.GCP.ServiceAccountKeyPath = constants.GCPServiceAccountKeyFilename // File was created in workspace, so only the filename is needed.
 	conf.Provider.GCP.Region = c.flags.region
 	conf.Provider.GCP.Zone = c.flags.zone
+	conf.Provider.GCP.IAMServiceAccountVM = out.GCPOutput.IAMServiceAccountVM
 	for groupName, group := range conf.NodeGroups {
 		group.Zone = c.flags.zone
 		conf.NodeGroups[groupName] = group
