@@ -102,6 +102,7 @@ runs:
           --tf-log=DEBUG \
           --yes ${extraFlags}
 
+    # TODO(@3u13r): Replace deprecated --serviceAccountID with --prefix
     - name: Constellation iam create gcp
       shell: bash
       if: inputs.cloudProvider == 'gcp'
