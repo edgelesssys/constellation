@@ -34,7 +34,6 @@ jobs:
         id: build-images
         run: |
           set -euo pipefail
-          shopt -s extglob
 
           # Build required binaries
           bazel build //image/system:stable
@@ -49,6 +48,8 @@ jobs:
       - name: Cleanup release measurements and generate our own
         run: |
           set -euo pipefail
+          shopt -s extglob
+
           for directory in ${{ steps.build-images.outputs.buildPath }}/system/!(mkosi_wrapper.sh); do
             dirname="$(basename "$directory")"
             csp="$(echo "$dirname" | cut -d_ -f1)"
@@ -82,6 +83,8 @@ jobs:
       - name: Compare measurements
         run: |
           set -euo pipefail
+          shopt -s extglob
+
           for directory in ${{ steps.build-images.outputs.buildPath }}/system/!(mkosi_wrapper.sh); do
             dirname="$(basename "$directory")"
             attestationVariant="$(echo "$dirname" | cut -d_ -f2)"
