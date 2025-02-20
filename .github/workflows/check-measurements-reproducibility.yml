@@ -104,9 +104,6 @@ jobs:
             fi
           done
 
-          # TEST: inject an error
-          errors["asdf"]="fdsa"
-
           for attestationVariant in "${!errors[@]}"; do
             echo "Failed to reproduce measurements for $attestationVariant:"
             echo "${errors["$attestationVariant"]}" | ts "  "
