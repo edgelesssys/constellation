@@ -161,28 +161,29 @@ resource "google_compute_firewall" "firewall_internal_pods" {
 }
 
 module "instance_group" {
-  source              = "./modules/instance_group"
-  for_each            = var.node_groups
-  base_name           = local.name
-  node_group_name     = each.key
-  role                = each.value.role
-  zone                = each.value.zone
-  uid                 = local.uid
-  instance_type       = each.value.instance_type
-  initial_count       = each.value.initial_count
-  image_id            = var.image_id
-  disk_size           = each.value.disk_size
-  disk_type           = each.value.disk_type
-  network             = google_compute_network.vpc_network.id
-  subnetwork          = google_compute_subnetwork.vpc_subnetwork.id
-  alias_ip_range_name = google_compute_subnetwork.vpc_subnetwork.secondary_ip_range[0].range_name
-  kube_env            = local.kube_env
-  debug               = var.debug
-  named_ports         = each.value.role == "control-plane" ? local.control_plane_named_ports : []
-  labels              = local.labels
-  init_secret_hash    = local.init_secret_hash
-  custom_endpoint     = var.custom_endpoint
-  cc_technology       = var.cc_technology
+  source                 = "./modules/instance_group"
+  for_each               = var.node_groups
+  base_name              = local.name
+  node_group_name        = each.key
+  role                   = each.value.role
+  zone                   = each.value.zone
+  uid                    = local.uid
+  instance_type          = each.value.instance_type
+  initial_count          = each.value.initial_count
+  image_id               = var.image_id
+  disk_size              = each.value.disk_size
+  disk_type              = each.value.disk_type
+  network                = google_compute_network.vpc_network.id
+  subnetwork             = google_compute_subnetwork.vpc_subnetwork.id
+  alias_ip_range_name    = google_compute_subnetwork.vpc_subnetwork.secondary_ip_range[0].range_name
+  kube_env               = local.kube_env
+  debug                  = var.debug
+  named_ports            = each.value.role == "control-plane" ? local.control_plane_named_ports : []
+  labels                 = local.labels
+  init_secret_hash       = local.init_secret_hash
+  custom_endpoint        = var.custom_endpoint
+  cc_technology          = var.cc_technology
+  iam_service_account_vm = var.iam_service_account_vm
 }
 
 resource "google_compute_address" "loadbalancer_ip_internal" {

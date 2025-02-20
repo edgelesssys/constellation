@@ -76,6 +76,11 @@ variable "additional_labels" {
   description = "Additional labels that should be given to created recources."
 }
 
+variable "iam_service_account_vm" {
+  type        = string
+  default     = ""
+  description = "IAM service account used for the VMs"
+}
 variable "emergency_ssh" {
   type        = bool
   default     = false

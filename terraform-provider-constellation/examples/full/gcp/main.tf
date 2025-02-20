@@ -81,6 +81,7 @@ module "gcp_infrastructure" {
   project                = local.project_id
   internal_load_balancer = false
   cc_technology          = local.cc_technology
+  iam_service_account_vm = module.gcp_iam.service_account_mail_vm
 }
 
 data "constellation_attestation" "foo" {

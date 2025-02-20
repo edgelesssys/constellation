@@ -256,6 +256,7 @@ func TestValidateInputs(t *testing.T) {
 					ClientX509CertURL:       "client_cert",
 				}))
 				cfg.Provider.GCP.ServiceAccountKeyPath = "saKey.json"
+				cfg.Provider.GCP.IAMServiceAccountVM = "example@example.com"
 			}
 
 			require.NoError(fh.WriteYAML(constants.ConfigFilename, cfg))

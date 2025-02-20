@@ -231,6 +231,7 @@ func gcpTerraformVars(conf *config.Config, imageRef string) *terraform.GCPCluste
 		InternalLoadBalancer: conf.InternalLoadBalancer,
 		CCTechnology:         ccTech,
 		AdditionalLabels:     conf.Tags,
+		IAMServiceAccountVM:  conf.Provider.GCP.IAMServiceAccountVM,
 	}
 }
 

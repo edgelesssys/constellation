@@ -18,7 +18,7 @@ locals {
   sa_vm_name = var.name_prefix == "" ? "${var.service_account_id}-vm" : "${var.name_prefix}-sa-vm"
 }
 
-resource "google_service_account" "service_account_vm" {
+resource "google_service_account" "vm" {
   account_id   = local.sa_vm_name
   display_name = "Constellation service account for VMs"
   description  = "Service account used by the VMs"
@@ -76,7 +76,7 @@ resource "google_project_iam_member" "iam_service_account_user_role" {
   depends_on = [null_resource.delay]
 }
 
-resource "google_project_iam_custom_role" "iam_custom_role_vm" {
+resource "google_project_iam_custom_role" "vm" {
   # role_id must not contain dashes
   role_id     = replace("${local.sa_vm_name}-role", "-", "_")
   title       = "Constellation IAM role for VMs"
@@ -90,7 +90,7 @@ resource "google_project_iam_custom_role" "iam_custom_role_vm" {
   ]
 }
 
-resource "google_project_iam_binding" "iam_binding_custom_role_vm_to_service_account_vm" {
+resource "google_project_iam_binding" "custom_role_vm_to_service_account_vm" {
   project = var.project_id
   role    = "projects/${var.project_id}/roles/${google_project_iam_custom_role.vm.role_id}"
 
