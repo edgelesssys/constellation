@@ -685,13 +685,13 @@ constellation iam create gcp [flags]
 ### Options
 
 ```
-  -h, --help                      help for gcp
-      --projectID string          ID of the GCP project the configuration will be created in (required)
-                                  Find it on the welcome screen of your project: https://console.cloud.google.com/welcome
-      --serviceAccountID string   ID for the service account that will be created (required)
-                                  Must be 6 to 30 lowercase letters, digits, or hyphens.
-      --zone string               GCP zone the cluster will be deployed in (required)
-                                  Find a list of available zones here: https://cloud.google.com/compute/docs/regions-zones#available
+  -h, --help               help for gcp
+      --prefix string      Prefix for the service account ID and VM ID that will be created (required)
+                           Must be letters, digits, or hyphens.
+      --projectID string   ID of the GCP project the configuration will be created in (required)
+                           Find it on the welcome screen of your project: https://console.cloud.google.com/welcome
+      --zone string        GCP zone the cluster will be deployed in (required)
+                           Find a list of available zones here: https://cloud.google.com/compute/docs/regions-zones#available
 ```
 
 ### Options inherited from parent commands

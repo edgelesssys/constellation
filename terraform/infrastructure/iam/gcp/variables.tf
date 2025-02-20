@@ -5,7 +5,12 @@ variable "project_id" {
 
 variable "service_account_id" {
   type        = string
-  description = "ID for the service account being created. Must match ^[a-z](?:[-a-z0-9]{4,28}[a-z0-9])$."
+  description = "[DEPRECATED use var.name_prefix] ID for the service account being created. Must match ^[a-z](?:[-a-z0-9]{4,28}[a-z0-9])$."
+}
+
+variable "name_prefix" {
+  type        = string
+  description = "Prefix to be used for all resources created by this module."
 }
 
 variable "region" {

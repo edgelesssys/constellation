@@ -91,6 +91,7 @@ type GCPIAMConfig struct {
 	Zone             string
 	ProjectID        string
 	ServiceAccountID string
+	NamePrefix       string
 }
 
 // AzureIAMConfig holds the necessary values for Azure IAM configuration.
@@ -141,6 +142,7 @@ func (c *IAMCreator) createGCP(ctx context.Context, cl tfIAMClient, opts *IAMCon
 
 	vars := terraform.GCPIAMVariables{
 		ServiceAccountID: opts.GCP.ServiceAccountID,
+		NamePrefix:       opts.GCP.NamePrefix,
 		Project:          opts.GCP.ProjectID,
 		Region:           opts.GCP.Region,
 		Zone:             opts.GCP.Zone,
@@ -158,7 +160,8 @@ func (c *IAMCreator) createGCP(ctx context.Context, cl tfIAMClient, opts *IAMCon
 	return IAMOutput{
 		CloudProvider: cloudprovider.GCP,
 		GCPOutput: GCPIAMOutput{
-			ServiceAccountKey: iamOutput.GCP.SaKey,
+			ServiceAccountKey:   iamOutput.GCP.SaKey,
+			IAMServiceAccountVM: iamOutput.GCP.ServiceAccountVMMailAddress,
 		},
 	}, nil
 }
@@ -232,7 +235,8 @@ type IAMOutput struct {
 
 // GCPIAMOutput contains the output information of a GCP IAM configuration.
 type GCPIAMOutput struct {
-	ServiceAccountKey string `json:"serviceAccountID,omitempty"`
+	ServiceAccountKey   string `json:"serviceAccountID,omitempty"`
+	IAMServiceAccountVM string `json:"iamServiceAccountVM,omitempty"`
 }
 
 // AzureIAMOutput contains the output information of a Microsoft Azure IAM configuration.

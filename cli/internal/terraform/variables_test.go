@@ -173,8 +173,26 @@ func TestGCPIAMVariables(t *testing.T) {
 region             = "eu-central-1"
 zone               = "eu-central-1a"
 service_account_id = "my-service-account"
+name_prefix        = ""
 `
 	got := vars.String()
+	assert.Equal(t, strings.Fields(want), strings.Fields(got)) // to ignore whitespace differences
+
+	vars = GCPIAMVariables{
+		Project:    "my-project",
+		Region:     "eu-central-1",
+		Zone:       "eu-central-1a",
+		NamePrefix: "my-prefix",
+	}
+
+	// test that the variables are correctly rendered
+	want = `project_id         = "my-project"
+region             = "eu-central-1"
+zone               = "eu-central-1a"
+service_account_id = ""
+name_prefix        = "my-prefix"
+`
+	got = vars.String()
 	assert.Equal(t, strings.Fields(want), strings.Fields(got)) // to ignore whitespace differences
 }
 
