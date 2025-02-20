@@ -30,7 +30,7 @@ jobs:
             jq
             jd-diff-patch
             moreutils
-      - name: Build images and produce measurements
+      - name: Build images
         run: |
           set -euo pipefail
           shopt -s extglob
@@ -41,10 +41,12 @@ jobs:
           buildPath="$PWD/bazel-bin/image"
           cd "$(mktemp -d)"
 
-          echo "Downloading release measurements"
+      - name: Download measurements
+        run: |
           curl -O https://cdn.confidential.cloud/constellation/v2/ref/-/stream/stable/${{ github.event.inputs.releasetag }}/image/measurements.json
-
-          # compare all measurements with our own
+      
+      - name: Cleanup release measurements and generate our own
+        run: |
           for directory in "$buildPath"/system/!(mkosi_wrapper.sh); do
             dirname="$(basename "$directory")"
             csp="$(echo "$dirname" | cut -d_ -f1)"
@@ -52,7 +54,7 @@ jobs:
 
             echo "Comparing measurements of CSP $csp with attestation variant $attestationVariant"
             # This jq filter selects the measurements for the correct CSP and attestation variant
-            # and then removes all `warnOnly: true` and `expected: 000...` measurements.
+            # and then removes all `warnOnly: true` measurements.
             jq --arg attestation_variant "$attestationVariant" --arg csp "$csp" \
               '
                 .list.[]
@@ -63,35 +65,29 @@ jobs:
                 | .measurements
                 | walk(
                     if (
-                      type=="object" and (
-                        .warnOnly or .expected == "0000000000000000000000000000000000000000000000000000000000000000"
-                      )
+                      type=="object" and .warnOnly
                     )
                     then del(.) else . end
                   )
                 | del(..|nulls)
                 | del(.[] .warnOnly)
               ' \
-              measurements.json > their-measurements.json
+              measurements.json > "$attestationVariant"_their-measurements.json
 
-            sudo env "PATH=$PATH" "$buildPath/measured-boot/cmd/cmd_/cmd" "$directory/constellation" ./own-measurements.json
-            # Remove all `expected: 000...` measurements like above.
-            jq '
-                .measurements
-                | walk(
-                    if (
-                      type == "object" and .expected == "0000000000000000000000000000000000000000000000000000000000000000"
-                    )
-                    then del(.) else . end
-                  )
-                | del(..|nulls)
-              ' \
-              own-measurements.json | sponge ./own-measurements.json
+            sudo env "PATH=$PATH" "$buildPath/measured-boot/cmd/cmd_/cmd" "$directory/constellation" ./"$attestationVariant"_own-measurements.json
+          done
 
-            echo "Their measurements:"
-            ts "  " < their-measurements.json
-            echo "Own measurements:"
-            ts "  " < own-measurements.json
+      - name: Compare measurements
+        run: |
+          for directory in "$buildPath"/system/!(mkosi_wrapper.sh); do
+            dirname="$(basename "$directory")"
+            attestationVariant="$(echo "$dirname" | cut -d_ -f2)"
 
-            jd ./their-measurements.json ./own-measurements.json
+            echo "Their measurements for $attestationVariant:"
+            ts "  " < "$attestationVariant"_their-measurements.json
+            echo "Own measurements for $attestationVariant:"
+            ts "  " < "$attestationVariant"_own-measurements.json
+
+            # TODO: cache errors and return them later.
+            jd ./"$attestationVariant"_their-measurements.json ./"$attestationVariant"_own-measurements.json
           done
