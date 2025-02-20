@@ -22,7 +22,7 @@ import (
 )
 
 // runTerraformApply checks if changes to Terraform are required and applies them.
-func (a *applyCmd) runTerraformApply(cmd *cobra.Command, conf *config.Config, stateFile *state.State, upgradeDir string) error {
+func (a *applyCmd) runTerraformApply(cmd *cobra.Command, conf *config.Config, stateFile *state.State, upgradeDir string, yesFlag bool) error {
 	a.log.Debug("Checking if Terraform migrations are required")
 	terraformClient, removeClient, err := a.newInfraApplier(cmd.Context())
 	if err != nil {
@@ -34,6 +34,20 @@ func (a *applyCmd) runTerraformApply(cmd *cobra.Command, conf *config.Config, st
 	isNewCluster, err := terraformClient.WorkingDirIsEmpty()
 	if err != nil {
 		return fmt.Errorf("checking if Terraform workspace is empty: %w", err)
+	}
+
+	if !isNewCluster && cloudcmd.UpgradeRequiresIAMMigration(conf.GetProvider()) {
+		cmd.Println("WARNING: This upgrade requires an IAM migration. Please make sure you have applied the IAM migration using `iam upgrade apply` before continuing.")
+		if !yesFlag {
+			yes, err := askToConfirm(cmd, "Did you upgrade the IAM resources?")
+			if err != nil {
+				return fmt.Errorf("asking for confirmation: %w", err)
+			}
+			if !yes {
+				cmd.Println("Skipping upgrade.")
+				return nil
+			}
+		}
 	}
 
 	if changesRequired, err := a.planTerraformChanges(cmd, conf, terraformClient); err != nil {
