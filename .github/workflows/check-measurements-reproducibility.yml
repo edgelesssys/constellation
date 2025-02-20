@@ -83,8 +83,11 @@ jobs:
 
       - name: Compare measurements
         run: |
-          set -euo pipefail
+          # no -e since we need to collect errors later
+          set -uo pipefail
           shopt -s extglob
+
+          declare -A errors
 
           for directory in ${{ steps.build-images.outputs.buildPath }}/system/!(mkosi_wrapper.sh); do
             dirname="$(basename "$directory")"
@@ -96,5 +99,20 @@ jobs:
             ts "  " < "$attestationVariant"_own-measurements.json
 
             # TODO: cache errors and return them later.
-            jd ./"$attestationVariant"_their-measurements.json ./"$attestationVariant"_own-measurements.json
+            diff="$(jd ./"$attestationVariant"_their-measurements.json ./"$attestationVariant"_own-measurements.json)"
+            if [[ $? -ne 0 ]]; then
+              errors["$attestationVariant"]="$diff"
+            fi
           done
+
+          # TEST: inject an error
+          errors["asdf"]="fdsa"
+
+          for attestationVariant in "${!errors[@]}"; do
+            echo "Failed to reproduce measurements for $attestationVariant:"
+            echo "${errors["$attestationVariant"]}" | ts "  "
+          done
+
+          if [[ "${#errors[@]}" -ne 0 ]]; then
+            exit 1
+          fi
