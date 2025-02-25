@@ -2,9 +2,6 @@ name: Emergency ssh
 description: "Verify that an emergency ssh connection can be established."
 
 inputs:
-  workspace:
-    description: "The constellation workspace directory."
-    required: true
   kubeconfig:
     description: "The kubeconfig file for the cluster."
     required: true
