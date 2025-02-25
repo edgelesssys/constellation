@@ -47,6 +47,11 @@ output "ip_cidr_node" {
   description = "CIDR block of the node network."
 }
 
+output "loadbalancer_address" {
+  value       = azurerm_public_ip.loadbalancer_ip[0].fqdn
+  description = "Public loadbalancer address."
+}
+
 # Azure-specific outputs
 
 output "attestation_url" {
@@ -62,11 +67,6 @@ output "network_security_group_name" {
 output "loadbalancer_name" {
   value       = azurerm_lb.loadbalancer.name
   description = "Name of the cluster's load balancer."
-}
-
-output "loadbalancer_address" {
-  value       = azurerm_public_ip.loadbalancer_ip[0].fqdn
-  description = "Public loadbalancer address."
 }
 
 output "user_assigned_identity_client_id" {
