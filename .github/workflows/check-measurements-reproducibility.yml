@@ -8,7 +8,7 @@ on:
         required: true
       ref:
         type: string
-        description: The git ref to check out.
+        description: The git ref to check out. You probably want this to be the tag of the release you are testing.
         required: true
   workflow_call:
     inputs:
