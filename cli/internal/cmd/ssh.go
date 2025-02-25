@@ -107,7 +107,7 @@ func writeCertificateForKey(cmd *cobra.Command, keyPath string, fh file.Handler,
 	if err := fh.Write("constellation_cert.pub", ssh.MarshalAuthorizedKey(&certificate), file.OptOverwrite); err != nil {
 		return fmt.Errorf("writing certificate: %s", err)
 	}
-	cmd.Printf("You can now connect to a node using the \"constellation_cert.pub\" certificate.\nLook at the documentation for a how to guide:\n\n\thttps://https://docs.edgeless.systems/constellation/workflows/troubleshooting#emergency-ssh-access\n")
+	cmd.Printf("You can now connect to a node using the \"constellation_cert.pub\" certificate.\nLook at the documentation for a how to guide:\n\n\thttps://docs.edgeless.systems/constellation/workflows/troubleshooting#emergency-ssh-access\n")
 
 	return nil
 }
