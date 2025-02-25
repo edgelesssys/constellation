@@ -92,7 +92,8 @@ jobs:
       - name: Compare measurements
         run: |
           # no -e since we need to collect errors later
-          set -uo pipefail
+          # no -u since it interferes with checking associative arrays
+          set -o pipefail
           shopt -s extglob
 
           declare -A errors
