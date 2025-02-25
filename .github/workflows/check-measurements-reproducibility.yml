@@ -107,9 +107,10 @@ jobs:
             echo "Own measurements for $attestationVariant:"
             ts "  " < "$attestationVariant"_own-measurements.json
 
-            # TODO: cache errors and return them later.
+            # not using $? since shellcheck complained about that, so code duplication seems to be
+            # a better tradeoff
             if ! jd ./"$attestationVariant"_their-measurements.json ./"$attestationVariant"_own-measurements.json; then
-              errors["$attestationVariant"]="$(!!)"
+              errors["$attestationVariant"]="$(jd ./"$attestationVariant"_their-measurements.json ./"$attestationVariant"_own-measurements.json)"
             fi
           done
 
