@@ -452,4 +452,3 @@ runs:
       uses: ./.github/actions/e2e_emergency_ssh
       with:
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
-        workspace: ${{ steps.constellation-create.outputs.workspace }}
