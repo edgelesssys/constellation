@@ -36,6 +36,11 @@ output "ip_cidr_node" {
   description = "CIDR block of the node network."
 }
 
+output "loadbalancer_address" {
+  value       = openstack_networking_floatingip_v2.public_ip.address
+  description = "Public loadbalancer address."
+}
+
 # OpenStack-specific outputs
 
 output "network_id" {
