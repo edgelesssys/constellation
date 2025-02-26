@@ -30,8 +30,11 @@ go_library(
         "@io_k8s_apimachinery//pkg/apis/meta/v1/unstructured",
         "@io_k8s_apimachinery//pkg/runtime",
         "@io_k8s_apimachinery//pkg/runtime/schema",
+        "@io_k8s_apimachinery//pkg/runtime/serializer/json",
         "@io_k8s_client_go//util/retry",
-        "@io_k8s_kubernetes//cmd/kubeadm/app/apis/kubeadm/v1beta3",
+        "@io_k8s_kubernetes//cmd/kubeadm/app/apis/kubeadm",
+        "@io_k8s_kubernetes//cmd/kubeadm/app/apis/kubeadm/scheme",
+        "@io_k8s_kubernetes//cmd/kubeadm/app/apis/kubeadm/v1beta4",
         "@io_k8s_sigs_yaml//:yaml",
     ],
 )
