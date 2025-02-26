@@ -101,16 +101,26 @@ In this case, the launch digest is the only measurement that's required to verif
 However, currently, all supported CVM platforms (AWS, Azure, and GCP) inject custom firmware into CVMs.
 Thus, in practice, Constellation relies on conventional [measured boot](https://docs.edgeless.systems/constellation/architecture/images#measured-boot) to reflect the identity and integrity of nodes.
 
-In measured boot, in general, the software components involved in the boot process of a system are "measured" into the 16 registers of a Trusted Platform Module (TPM).
+In measured boot, in general, the software components involved in the boot process of a system are "measured" into the 16 platform configuration registers (PCRs) of a Trusted Platform Module (TPM).
 The values of these registers are also called "runtime measurements".
-All supported CVM platforms provide TPMs to CVMs.
-Constellation nodes use these to measure their boot process.
-They include the 16 runtime measurements as part of `payload` in `R`. Thus, abstractly, `payload` here has the following format: `payload = <PCRs> | <bootstrapper public key>`.
-On each CVM platform, runtime measurements are taken differently.
-Details on this are given in the [Constellation documentation](https://docs.edgeless.systems/constellation/architecture/attestation#runtime-measurements).
+All supported CVM platforms provide TPMs to CVMs. 
 
-With measured boot, Constellation only checks the 16 runtime measurements during the verification of a node's remote-attestation statement.
-The launch digest is not considered, because it only covers the firmware injected by the CVM platform and may change whenever the CVM platform is updated.
+With measured boot, Constellation relies on TPM-based remote attestation for nodes. 
+TPM-based remote attestation is similar to confidential computing-based remote attestation. Instead of the value `R`, the value `R'` is used.
+
+```
+R' = Sig-TPM(<auxiliary data>, <payload>)
+```
+
+The field `auxiliary data` is populated automatically by the TPM and most notably contains the 16 PCRs. 
+Constellation uses the field `payload` as usual and sets it to the public key of the respective CVM's Bootstrapper. 
+When verifying `R'`, Constellation compares the 16 PCRs to those given in the attestation config.
+
+#### Differences between CVM platforms
+
+Each supported CVM platform populates the 16 PCRs in different ways. Details can be found in the [Constellation documentation](https://docs.edgeless.systems/constellation/architecture/attestation#runtime-measurements).
+Sig-TPM itself is also verified differently for each cloud.
+
 Currently, on AWS and GCP the TPM implementation resides outside the CVM.
 On Azure, the TPM implementation is part of the injected firmware and resides inside the CVM.
 More information can be found in the [Constellation documentation](https://docs.edgeless.systems/constellation/overview/clouds).
