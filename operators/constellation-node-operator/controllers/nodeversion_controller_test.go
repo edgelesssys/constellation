@@ -330,6 +330,7 @@ func TestMatchDonorsAndHeirs(t *testing.T) {
 func TestCreateNewNodes(t *testing.T) {
 	testCases := map[string]struct {
 		outdatedNodes    []corev1.Node
+		donors           []corev1.Node
 		pendingNodes     []updatev1alpha1.PendingNode
 		scalingGroupByID map[string]updatev1alpha1.ScalingGroup
 		budget           int
@@ -573,6 +574,105 @@ func TestCreateNewNodes(t *testing.T) {
 			},
 			budget: 1,
 		},
+		"control plane node upgraded first": {
+			outdatedNodes: []corev1.Node{
+				// CP node
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "control-plane-node",
+						Annotations: map[string]string{
+							scalingGroupAnnotation: "control-plane-scaling-group",
+						},
+						Labels: map[string]string{
+							// Mark this as a CP node as per
+							// https://kubernetes.io/docs/reference/labels-annotations-taints/#node-role-kubernetes-io-control-plane
+							"node-role.kubernetes.io/control-plane": "",
+						},
+					},
+				},
+				// Worker node
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node",
+						Annotations: map[string]string{
+							scalingGroupAnnotation: "scaling-group",
+						},
+					},
+				},
+			},
+			scalingGroupByID: map[string]updatev1alpha1.ScalingGroup{
+				"scaling-group": {
+					Spec: updatev1alpha1.ScalingGroupSpec{
+						GroupID: "scaling-group",
+						Role:    updatev1alpha1.WorkerRole,
+					},
+					Status: updatev1alpha1.ScalingGroupStatus{
+						ImageReference: "image",
+					},
+				},
+				"control-plane-scaling-group": {
+					Spec: updatev1alpha1.ScalingGroupSpec{
+						GroupID: "control-plane-scaling-group",
+						Role:    updatev1alpha1.ControlPlaneRole,
+					},
+					Status: updatev1alpha1.ScalingGroupStatus{
+						ImageReference: "image",
+					},
+				},
+			},
+			budget:          2,
+			wantCreateCalls: []string{"control-plane-scaling-group"},
+		},
+		"worker not upgraded while cp is in donors": {
+			donors: []corev1.Node{
+				// CP node
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "control-plane-node",
+						Annotations: map[string]string{
+							scalingGroupAnnotation: "control-plane-scaling-group",
+						},
+						Labels: map[string]string{
+							// Mark this as a CP node as per
+							// https://kubernetes.io/docs/reference/labels-annotations-taints/#node-role-kubernetes-io-control-plane
+							"node-role.kubernetes.io/control-plane": "",
+						},
+					},
+				},
+			},
+			outdatedNodes: []corev1.Node{
+				// Worker node
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node",
+						Annotations: map[string]string{
+							scalingGroupAnnotation: "scaling-group",
+						},
+					},
+				},
+			},
+			scalingGroupByID: map[string]updatev1alpha1.ScalingGroup{
+				"scaling-group": {
+					Spec: updatev1alpha1.ScalingGroupSpec{
+						GroupID: "scaling-group",
+						Role:    updatev1alpha1.WorkerRole,
+					},
+					Status: updatev1alpha1.ScalingGroupStatus{
+						ImageReference: "image",
+					},
+				},
+				"control-plane-scaling-group": {
+					Spec: updatev1alpha1.ScalingGroupSpec{
+						GroupID: "control-plane-scaling-group",
+						Role:    updatev1alpha1.ControlPlaneRole,
+					},
+					Status: updatev1alpha1.ScalingGroupStatus{
+						ImageReference: "image",
+					},
+				},
+			},
+			budget: 1,
+		},
 	}
 
 	for name, tc := range testCases {
@@ -592,7 +692,7 @@ func TestCreateNewNodes(t *testing.T) {
 				},
 				Scheme: getScheme(t),
 			}
-			newNodeConfig := newNodeConfig{desiredNodeImage, tc.outdatedNodes, tc.pendingNodes, tc.scalingGroupByID, tc.budget}
+			newNodeConfig := newNodeConfig{desiredNodeImage, tc.outdatedNodes, tc.donors, tc.pendingNodes, tc.scalingGroupByID, tc.budget}
 			err := reconciler.createNewNodes(context.Background(), newNodeConfig)
 			require.NoError(err)
 			assert.Equal(tc.wantCreateCalls, reconciler.nodeReplacer.(*stubNodeReplacerWriter).createCalls)
