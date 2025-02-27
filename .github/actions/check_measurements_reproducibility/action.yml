@@ -18,6 +18,7 @@ runs:
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       with:
         ref: ${{ inputs.ref }}
+        path: ./release
 
     - name: Set up bazel
       uses: ./.github/actions/setup_bazel_nix
@@ -36,10 +37,12 @@ runs:
         set -euo pipefail
 
         # Build required binaries
+        pushd release
         bazel build //image/system:stable
         bazel build //image/measured-boot/cmd
         echo "buildPath=$PWD/bazel-bin/image" | tee -a "$GITHUB_OUTPUT"
         cd "$(mktemp -d)"
+        popd
 
     - name: Download measurements
       shell: bash
