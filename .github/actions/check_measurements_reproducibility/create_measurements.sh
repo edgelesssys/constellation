@@ -24,6 +24,5 @@ for directory in "$1"/system/!(mkosi_wrapper.sh); do
   ' \
     measurements.json > "$attestationVariant"_their-measurements.json
 
-  sudo env "PATH=$PATH" "$1/measured-boot/cmd/cmd_/cmd" "$directory/constellation" ./"$attestationVariant"_own-measurements.json
-  jq '.measurements' ./"$attestationVariant"_own-measurements.json | sponge ./"$attestationVariant"_own-measurements.json
+  sudo --preserve-env PATH "$1/measured-boot/cmd/cmd_/cmd" "$directory/constellation" /dev/stdout | jq '.measurements' > ./"$attestationVariant"_own-measurements.json
 done
