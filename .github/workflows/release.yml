@@ -242,7 +242,7 @@ jobs:
   check-measurements-reproducibility:
     name: Check measurements reproducibility
     needs: [verify-inputs, os-image]
-    uses: ./.github/workflows/check-measurements-reproducibility.yml
+    uses: ./.github/actions/check_measurements_reproducibility
     with:
       version: ${{ inputs.version }}
       ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
