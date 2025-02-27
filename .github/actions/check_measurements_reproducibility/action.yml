@@ -1,0 +1,43 @@
+name: Check measurements reproducibility
+description: Check if the measurements of a given release are reproducible.
+
+inputs:
+  version:
+    type: string
+    description: The version of the measurements that are downloaded from the CDN.
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up bazel
+      uses: ./.github/actions/setup_bazel_nix
+      with:
+        useCache: "false"
+        nixTools: |
+          systemdUkify
+          jq
+          jd-diff-patch
+          moreutils
+    - name: Build images
+      id: build-images
+      run: |
+        set -euo pipefail
+
+        # Build required binaries
+        bazel build //image/system:stable
+        bazel build //image/measured-boot/cmd
+        echo "buildPath=$PWD/bazel-bin/image" | tee -a "$GITHUB_OUTPUT"
+        cd "$(mktemp -d)"
+
+    - name: Download measurements
+      run: |
+        curl -O https://cdn.confidential.cloud/constellation/v2/ref/-/stream/stable/${{ github.event.inputs.version }}/image/measurements.json
+    
+    - name: Cleanup release measurements and generate our own
+      run: |
+        ./.github/actions/check_measurements_reproducibility/create_measurements.sh "${{ steps.build-images.outputs.buildPath }}"
+        
+    - name: Compare measurements
+      run: |
+        ./.github/actions/check_measurements_reproducibility/compare_measurements.sh "${{ steps.build-images.outputs.buildPath }}"
