@@ -87,10 +87,11 @@ type IAMConfigOptions struct {
 
 // GCPIAMConfig holds the necessary values for GCP IAM configuration.
 type GCPIAMConfig struct {
-	Region           string
-	Zone             string
-	ProjectID        string
-	ServiceAccountID string
+	Region             string
+	Zone               string
+	ProjectID          string
+	ServiceAccountID   string
+	ServiceAccountVMID string
 }
 
 // AzureIAMConfig holds the necessary values for Azure IAM configuration.
@@ -140,10 +141,11 @@ func (c *IAMCreator) createGCP(ctx context.Context, cl tfIAMClient, opts *IAMCon
 	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl}, opts.TFLogLevel)
 
 	vars := terraform.GCPIAMVariables{
-		ServiceAccountID: opts.GCP.ServiceAccountID,
-		Project:          opts.GCP.ProjectID,
-		Region:           opts.GCP.Region,
-		Zone:             opts.GCP.Zone,
+		IAMServiceAccountVM: opts.GCP.ServiceAccountID,
+		ServiceAccountID:    opts.GCP.ServiceAccountVMID,
+		Project:             opts.GCP.ProjectID,
+		Region:              opts.GCP.Region,
+		Zone:                opts.GCP.Zone,
 	}
 
 	if err := cl.PrepareWorkspace(path.Join(constants.TerraformEmbeddedDir, "iam", strings.ToLower(cloudprovider.GCP.String())), &vars); err != nil {
@@ -158,7 +160,8 @@ func (c *IAMCreator) createGCP(ctx context.Context, cl tfIAMClient, opts *IAMCon
 	return IAMOutput{
 		CloudProvider: cloudprovider.GCP,
 		GCPOutput: GCPIAMOutput{
-			ServiceAccountKey: iamOutput.GCP.SaKey,
+			ServiceAccountKey:   iamOutput.GCP.SaKey,
+			IAMServiceAccountVM: iamOutput.GCP.ServiceAccountVMMailAddress,
 		},
 	}, nil
 }
@@ -232,7 +235,8 @@ type IAMOutput struct {
 
 // GCPIAMOutput contains the output information of a GCP IAM configuration.
 type GCPIAMOutput struct {
-	ServiceAccountKey string `json:"serviceAccountID,omitempty"`
+	ServiceAccountKey   string `json:"serviceAccountID,omitempty"`
+	IAMServiceAccountVM string `json:"iamServiceAccountVM,omitempty"`
 }
 
 // AzureIAMOutput contains the output information of a Microsoft Azure IAM configuration.

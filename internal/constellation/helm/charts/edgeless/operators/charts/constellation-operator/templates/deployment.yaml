@@ -42,6 +42,8 @@ spec:
           value: {{ .Values.csp | quote }}
         - name: constellation-uid
           value: {{ .Values.constellationUID | quote }}
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /var/secrets/google/key.json
         image: {{ .Values.controllerManager.manager.image | quote }}
         livenessProbe:
           httpGet:
@@ -71,6 +73,9 @@ spec:
           readOnly: true
         - mountPath: /etc/gce
           name: gceconf
+          readOnly: true
+        - mountPath: /var/secrets/google
+          name: gcekey
           readOnly: true
         - mountPath: /etc/constellation-upgrade-agent.sock
           name: upgrade-agent-socket
@@ -109,6 +114,10 @@ spec:
           name: gceconf
           optional: true
         name: gceconf
+      - name: gcekey
+        secret:
+          secretName: gcekey
+          optional: true
       - name: upgrade-agent-socket
         hostPath:
           path: /run/constellation-upgrade-agent.sock

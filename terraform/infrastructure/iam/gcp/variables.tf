@@ -8,6 +8,11 @@ variable "service_account_id" {
   description = "ID for the service account being created. Must match ^[a-z](?:[-a-z0-9]{4,28}[a-z0-9])$."
 }
 
+variable "service_account_id_vm" {
+  type        = string
+  description = "ID for the service account being created. Must match ^[a-z](?:[-a-z0-9]{4,28}[a-z0-9])$."
+}
+
 variable "region" {
   type        = string
   description = "GCP region the cluster should reside in. Needs to have the N2D machine type available."

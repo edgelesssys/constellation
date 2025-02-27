@@ -40,12 +40,18 @@ spec:
             - --cloud-provider={{ .Values.csp }}
             - --key-service-endpoint=key-service.{{ .Release.Namespace }}:{{ .Values.global.keyServicePort }}
             - --attestation-variant={{ .Values.attestationVariant }}
+          env:
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /var/secrets/google/key.json
           volumeMounts:
             - mountPath: {{ .Values.global.serviceBasePath | quote }}
               name: config
               readOnly: true
             - mountPath: /etc/kubernetes
               name: kubeadm
+              readOnly: true
+            - mountPath: /var/secrets/google
+              name: gcekey
               readOnly: true
           ports:
             - containerPort: {{ .Values.joinServicePort }}
@@ -54,6 +60,10 @@ spec:
           securityContext:
             privileged: true
       volumes:
+        - name: gcekey
+          secret:
+            secretName: gcekey
+            optional: true
         - name: config
           projected:
             sources:

@@ -452,113 +452,124 @@ func TestIAMCreateGCP(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		setupFs              func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs
-		creator              *stubIAMCreator
-		zoneFlag             string
-		serviceAccountIDFlag string
-		projectIDFlag        string
-		yesFlag              bool
-		updateConfigFlag     bool
-		existingConfigFiles  []string
-		existingDirs         []string
-		stdin                string
-		wantAbort            bool
-		wantErr              bool
+		setupFs                func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs
+		creator                *stubIAMCreator
+		zoneFlag               string
+		serviceAccountIDFlag   string
+		serviceAccountVMIDFlag string
+		projectIDFlag          string
+		yesFlag                bool
+		updateConfigFlag       bool
+		existingConfigFiles    []string
+		existingDirs           []string
+		stdin                  string
+		wantAbort              bool
+		wantErr                bool
 	}{
 		"iam create gcp": {
-			setupFs:              defaultFs,
-			creator:              &stubIAMCreator{id: validIAMIDFile},
-			zoneFlag:             "europe-west1-a",
-			serviceAccountIDFlag: "constell-test",
-			projectIDFlag:        "constell-1234",
-			yesFlag:              true,
+			setupFs:                defaultFs,
+			creator:                &stubIAMCreator{id: validIAMIDFile},
+			zoneFlag:               "europe-west1-a",
+			serviceAccountIDFlag:   "constell-test",
+			serviceAccountVMIDFlag: "constell-test-vm",
+			projectIDFlag:          "constell-1234",
+			yesFlag:                true,
 		},
 		"iam create gcp with existing config": {
-			setupFs:              defaultFs,
-			creator:              &stubIAMCreator{id: validIAMIDFile},
-			zoneFlag:             "europe-west1-a",
-			serviceAccountIDFlag: "constell-test",
-			projectIDFlag:        "constell-1234",
-			yesFlag:              true,
-			existingConfigFiles:  []string{constants.ConfigFilename},
+			setupFs:                defaultFs,
+			creator:                &stubIAMCreator{id: validIAMIDFile},
+			zoneFlag:               "europe-west1-a",
+			serviceAccountIDFlag:   "constell-test",
+			serviceAccountVMIDFlag: "constell-test-vm",
+			projectIDFlag:          "constell-1234",
+			yesFlag:                true,
+			existingConfigFiles:    []string{constants.ConfigFilename},
 		},
 		"iam create gcp --update-config": {
-			setupFs:              defaultFs,
-			creator:              &stubIAMCreator{id: validIAMIDFile},
-			zoneFlag:             "europe-west1-a",
-			serviceAccountIDFlag: "constell-test",
-			projectIDFlag:        "constell-1234",
-			updateConfigFlag:     true,
-			yesFlag:              true,
-			existingConfigFiles:  []string{constants.ConfigFilename},
+			setupFs:                defaultFs,
+			creator:                &stubIAMCreator{id: validIAMIDFile},
+			zoneFlag:               "europe-west1-a",
+			serviceAccountIDFlag:   "constell-test",
+			serviceAccountVMIDFlag: "constell-test-vm",
+			projectIDFlag:          "constell-1234",
+			updateConfigFlag:       true,
+			yesFlag:                true,
+			existingConfigFiles:    []string{constants.ConfigFilename},
 		},
 		"iam create gcp existing terraform dir": {
-			setupFs:              defaultFs,
-			creator:              &stubIAMCreator{id: validIAMIDFile},
-			zoneFlag:             "europe-west1-a",
-			serviceAccountIDFlag: "constell-test",
-			projectIDFlag:        "constell-1234",
+			setupFs:                defaultFs,
+			creator:                &stubIAMCreator{id: validIAMIDFile},
+			zoneFlag:               "europe-west1-a",
+			serviceAccountIDFlag:   "constell-test",
+			serviceAccountVMIDFlag: "constell-test-vm",
+			projectIDFlag:          "constell-1234",
 
 			existingDirs: []string{constants.TerraformIAMWorkingDir},
 			yesFlag:      true,
 			wantErr:      true,
 		},
 		"iam create gcp invalid b64": {
-			setupFs:              defaultFs,
-			creator:              &stubIAMCreator{id: invalidIAMIDFile},
-			zoneFlag:             "europe-west1-a",
-			serviceAccountIDFlag: "constell-test",
-			projectIDFlag:        "constell-1234",
-			yesFlag:              true,
-			wantErr:              true,
+			setupFs:                defaultFs,
+			creator:                &stubIAMCreator{id: invalidIAMIDFile},
+			zoneFlag:               "europe-west1-a",
+			serviceAccountIDFlag:   "constell-test",
+			serviceAccountVMIDFlag: "constell-test-vm",
+			projectIDFlag:          "constell-1234",
+			yesFlag:                true,
+			wantErr:                true,
 		},
 		"interactive": {
-			setupFs:              defaultFs,
-			creator:              &stubIAMCreator{id: validIAMIDFile},
-			zoneFlag:             "europe-west1-a",
-			serviceAccountIDFlag: "constell-test",
-			projectIDFlag:        "constell-1234",
-			stdin:                "yes\n",
+			setupFs:                defaultFs,
+			creator:                &stubIAMCreator{id: validIAMIDFile},
+			zoneFlag:               "europe-west1-a",
+			serviceAccountIDFlag:   "constell-test",
+			serviceAccountVMIDFlag: "constell-test-vm",
+			projectIDFlag:          "constell-1234",
+			stdin:                  "yes\n",
 		},
 		"interactive update config": {
-			setupFs:              defaultFs,
-			creator:              &stubIAMCreator{id: validIAMIDFile},
-			zoneFlag:             "europe-west1-a",
-			serviceAccountIDFlag: "constell-test",
-			projectIDFlag:        "constell-1234",
-			stdin:                "yes\n",
-			updateConfigFlag:     true,
-			existingConfigFiles:  []string{constants.ConfigFilename},
+			setupFs:                defaultFs,
+			creator:                &stubIAMCreator{id: validIAMIDFile},
+			zoneFlag:               "europe-west1-a",
+			serviceAccountIDFlag:   "constell-test",
+			serviceAccountVMIDFlag: "constell-test-vm",
+			projectIDFlag:          "constell-1234",
+			stdin:                  "yes\n",
+			updateConfigFlag:       true,
+			existingConfigFiles:    []string{constants.ConfigFilename},
 		},
 		"interactive abort": {
-			setupFs:              defaultFs,
-			creator:              &stubIAMCreator{id: validIAMIDFile},
-			zoneFlag:             "europe-west1-a",
-			serviceAccountIDFlag: "constell-test",
-			projectIDFlag:        "constell-1234",
-			stdin:                "no\n",
-			wantAbort:            true,
+			setupFs:                defaultFs,
+			creator:                &stubIAMCreator{id: validIAMIDFile},
+			zoneFlag:               "europe-west1-a",
+			serviceAccountIDFlag:   "constell-test",
+			serviceAccountVMIDFlag: "constell-test-vm",
+			projectIDFlag:          "constell-1234",
+			stdin:                  "no\n",
+			wantAbort:              true,
 		},
 		"interactive abort update config": {
-			setupFs:              defaultFs,
-			creator:              &stubIAMCreator{id: validIAMIDFile},
-			zoneFlag:             "europe-west1-a",
-			serviceAccountIDFlag: "constell-test",
-			projectIDFlag:        "constell-1234",
-			stdin:                "no\n",
-			wantAbort:            true,
-			updateConfigFlag:     true,
-			existingConfigFiles:  []string{constants.ConfigFilename},
+			setupFs:                defaultFs,
+			creator:                &stubIAMCreator{id: validIAMIDFile},
+			zoneFlag:               "europe-west1-a",
+			serviceAccountIDFlag:   "constell-test",
+			serviceAccountVMIDFlag: "constell-test-vm",
+			projectIDFlag:          "constell-1234",
+			stdin:                  "no\n",
+			wantAbort:              true,
+			updateConfigFlag:       true,
+			existingConfigFiles:    []string{constants.ConfigFilename},
 		},
 		"unwritable fs": {
-			setupFs:              readOnlyFs,
-			creator:              &stubIAMCreator{id: validIAMIDFile},
-			zoneFlag:             "europe-west1-a",
-			serviceAccountIDFlag: "constell-test",
-			projectIDFlag:        "constell-1234",
-			yesFlag:              true,
-			updateConfigFlag:     true,
-			wantErr:              true,
+			setupFs:                readOnlyFs,
+			creator:                &stubIAMCreator{id: validIAMIDFile},
+			zoneFlag:               "europe-west1-a",
+			serviceAccountIDFlag:   "constell-test",
+			serviceAccountVMIDFlag: "constell-test-vm",
+			projectIDFlag:          "constell-1234",
+			yesFlag:                true,
+			updateConfigFlag:       true,
+			wantErr:                true,
 		},
 	}
 
@@ -588,9 +599,10 @@ func TestIAMCreateGCP(t *testing.T) {
 				},
 				providerCreator: &gcpIAMCreator{
 					flags: gcpIAMCreateFlags{
-						zone:             tc.zoneFlag,
-						serviceAccountID: tc.serviceAccountIDFlag,
-						projectID:        tc.projectIDFlag,
+						zone:               tc.zoneFlag,
+						serviceAccountID:   tc.serviceAccountIDFlag,
+						serviceAccountVMID: tc.serviceAccountVMIDFlag,
+						projectID:          tc.projectIDFlag,
 					},
 				},
 			}
