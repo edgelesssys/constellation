@@ -242,10 +242,12 @@ jobs:
   check-measurements-reproducibility:
     name: Check measurements reproducibility
     needs: [verify-inputs, os-image]
-    uses: ./.github/actions/check_measurements_reproducibility
-    with:
-      version: ${{ inputs.version }}
-      ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
+    steps:
+      - name: Check reproducibility
+        uses: ./.github/actions/check_measurements_reproducibility
+        with:
+          version: ${{ inputs.version }}
+          ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
 
   update-hardcoded-measurements:
     name: Update hardcoded measurements (in the CLI)
