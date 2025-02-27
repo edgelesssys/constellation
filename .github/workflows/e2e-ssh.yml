@@ -52,7 +52,7 @@ jobs:
           gcpProject: constellation-e2e
           gcpClusterCreateServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
           gcpIAMCreateServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
-          kubernetesVersion: "v1.28"
+          kubernetesVersion: "v1.31"
           test: "emergency ssh"
           azureSubscriptionID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           azureClusterCreateCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
