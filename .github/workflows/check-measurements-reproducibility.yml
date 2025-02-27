@@ -108,7 +108,7 @@ jobs:
             ts "  " < "$attestationVariant"_own-measurements.json
 
             diff="$(jd ./"$attestationVariant"_their-measurements.json ./"$attestationVariant"_own-measurements.json)"
-            if [[ ! -z "$diff"]]; then
+            if [[ ! -z "$diff" ]]; then
               errors["$attestationVariant"]="$diff"
             fi
           done
