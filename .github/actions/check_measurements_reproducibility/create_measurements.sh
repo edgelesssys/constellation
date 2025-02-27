@@ -14,16 +14,12 @@ for directory in "$1"/system/!(mkosi_wrapper.sh); do
       .list.[]
       | select(
         .attestationVariant == $attestation_variant
+        and (.csp | ascii_downcase) == $csp
       )
-      | select((.csp | ascii_downcase) == $csp)
       | .measurements
-      | walk(
-      if (
-        type=="object" and .warnOnly
-      )
-      then del(.) else . end
-      )
-      | del(..|nulls)
+      | to_entries
+      | map(select(.value.warnOnly | not))
+      | from_entries
       | del(.[] .warnOnly)
   ' \
     measurements.json > "$attestationVariant"_their-measurements.json
