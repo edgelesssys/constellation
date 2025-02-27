@@ -41,7 +41,7 @@ type Version struct {
 // NewVersion creates a new Version object and validates it.
 func NewVersion(ref, stream, version string, kind VersionKind) (Version, error) {
 	ver := Version{
-		ref:     ref,
+		ref:     CanonicalizeRef(ref),
 		stream:  stream,
 		version: version,
 		kind:    kind,
@@ -62,7 +62,7 @@ func NewVersionFromShortPath(shortPath string, kind VersionKind) (Version, error
 	}
 
 	ver := Version{
-		ref:     ref,
+		ref:     ref, // Canonicalized by parseShortPath.
 		stream:  stream,
 		version: version,
 		kind:    kind,
@@ -331,7 +331,7 @@ func CanonicalizeRef(ref string) string {
 	canRef := notAZ09Regexp.ReplaceAllString(ref, "-")
 
 	if canRef == ReleaseRef {
-		return "" // No ref should be cannonicalized to the release ref.
+		return "" // No ref should be canonicalized to the release ref.
 	}
 
 	return canRef
@@ -401,7 +401,7 @@ func MeasurementURL(version Version) (measurementURL, signatureURL *url.URL, err
 }
 
 var (
-	shortPathRegex        = regexp.MustCompile(`^ref/([a-zA-Z0-9-]+)/stream/([a-zA-Z0-9-]+)/([a-zA-Z0-9.-]+)$`)
+	shortPathRegex        = regexp.MustCompile(`^ref/([^/]+)/stream/([a-zA-Z0-9-]+)/([a-zA-Z0-9.-]+)$`)
 	shortPathReleaseRegex = regexp.MustCompile(`^stream/([a-zA-Z0-9-]+)/([a-zA-Z0-9.-]+)$`)
 )
 
@@ -422,6 +422,7 @@ func parseShortPath(shortPath string) (ref, stream, version string, err error) {
 	if shortPathRegex.MatchString(shortPath) {
 		matches := shortPathRegex.FindStringSubmatch(shortPath)
 		ref := matches[1]
+		ref = CanonicalizeRef(ref)
 		if err := ValidateRef(ref); err != nil {
 			return "", "", "", err
 		}

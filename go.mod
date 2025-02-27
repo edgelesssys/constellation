@@ -1,6 +1,6 @@
 module github.com/edgelesssys/constellation/v2
 
-go 1.23.5
+go 1.23.6
 
 // TODO(daniel-weisse): revert after merging https://github.com/martinjungblut/go-cryptsetup/pull/16.
 replace github.com/martinjungblut/go-cryptsetup => github.com/daniel-weisse/go-cryptsetup v0.0.0-20230705150314-d8c07bd1723c
@@ -60,7 +60,7 @@ require (
 	github.com/bazelbuild/rules_go v0.52.0
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/docker/docker v27.5.1+incompatible
-	github.com/edgelesssys/go-azguestattestation v0.0.0-20240513062303-05f8770a633d
+	github.com/edgelesssys/go-azguestattestation v0.0.0-20250212085035-c38c01af80ba
 	github.com/edgelesssys/go-tdx-qpl v0.0.0-20250129202750-607ac61e2377
 	github.com/foxboron/go-uefi v0.0.0-20241219185318-19dc140271bf
 	github.com/fsnotify/fsnotify v1.8.0
@@ -134,7 +134,7 @@ require (
 	k8s.io/client-go v0.32.1
 	k8s.io/cluster-bootstrap v0.32.1
 	k8s.io/kubelet v0.32.1
-	k8s.io/kubernetes v1.32.1
+	k8s.io/kubernetes v1.32.2
 	k8s.io/mount-utils v0.32.1
 	k8s.io/utils v0.0.0-20241210054802-24370beab758
 	libvirt.org/go/libvirt v1.11001.0

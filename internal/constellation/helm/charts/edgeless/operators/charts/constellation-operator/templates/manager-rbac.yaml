@@ -59,6 +59,10 @@ rules:
   - update.edgeless.systems
   resources:
   - autoscalingstrategies
+  - joiningnodes
+  - nodeversions
+  - pendingnodes
+  - scalinggroups
   verbs:
   - create
   - delete
@@ -71,38 +75,20 @@ rules:
   - update.edgeless.systems
   resources:
   - autoscalingstrategies/finalizers
+  - joiningnodes/finalizers
+  - nodeversions/finalizers
+  - pendingnodes/finalizers
+  - scalinggroups/finalizers
   verbs:
   - update
 - apiGroups:
   - update.edgeless.systems
   resources:
   - autoscalingstrategies/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - update.edgeless.systems
-  resources:
-  - joiningnodes
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - update.edgeless.systems
-  resources:
-  - joiningnodes/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - update.edgeless.systems
-  resources:
   - joiningnodes/status
+  - nodeversions/status
+  - pendingnodes/status
+  - scalinggroups/status
   verbs:
   - get
   - patch
@@ -121,84 +107,6 @@ rules:
   - nodeversion/status
   verbs:
   - get
-- apiGroups:
-  - update.edgeless.systems
-  resources:
-  - nodeversions
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - update.edgeless.systems
-  resources:
-  - nodeversions/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - update.edgeless.systems
-  resources:
-  - nodeversions/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - update.edgeless.systems
-  resources:
-  - pendingnodes
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - update.edgeless.systems
-  resources:
-  - pendingnodes/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - update.edgeless.systems
-  resources:
-  - pendingnodes/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - update.edgeless.systems
-  resources:
-  - scalinggroups
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - update.edgeless.systems
-  resources:
-  - scalinggroups/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - update.edgeless.systems
-  resources:
-  - scalinggroups/status
-  verbs:
-  - get
-  - patch
-  - update
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

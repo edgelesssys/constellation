@@ -214,7 +214,7 @@ func (r *NodeVersionReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{Requeue: shouldRequeue}, nil
 	}
 
-	newNodeConfig := newNodeConfig{desiredNodeVersion, groups.Outdated, pendingNodeList.Items, scalingGroupByID, newNodesBudget}
+	newNodeConfig := newNodeConfig{desiredNodeVersion, groups.Outdated, groups.Donors, pendingNodeList.Items, scalingGroupByID, newNodesBudget}
 	if err := r.createNewNodes(ctx, newNodeConfig); err != nil {
 		logr.Error(err, "Creating new nodes")
 		return ctrl.Result{Requeue: shouldRequeue}, nil
@@ -614,6 +614,15 @@ func (r *NodeVersionReconciler) createNewNodes(ctx context.Context, config newNo
 	if config.newNodesBudget < 1 || len(config.outdatedNodes) == 0 {
 		return nil
 	}
+	// We need to look at both the outdated nodes *and* the nodes that have already
+	// been moved to the donors here because even if a CP node has already been moved to
+	// the donors, we still want to defer worker upgrades until the new CP node is actually joined.
+	hasOutdatedControlPlanes := false
+	for _, entry := range append(config.outdatedNodes, config.donors...) {
+		if nodeutil.IsControlPlaneNode(&entry) {
+			hasOutdatedControlPlanes = true
+		}
+	}
 	outdatedNodesPerScalingGroup := make(map[string]int)
 	for _, node := range config.outdatedNodes {
 		// skip outdated nodes that got assigned an heir in this Reconcile call
@@ -648,6 +657,12 @@ func (r *NodeVersionReconciler) createNewNodes(ctx context.Context, config newNo
 			continue
 		}
 		if requiredNodesPerScalingGroup[scalingGroupID] == 0 {
+			logr.Info("No new nodes needed for scaling group", "scalingGroup", scalingGroupID)
+			continue
+		}
+		// if we are a worker group and still have outdated control planes, we must wait for them to be upgraded.
+		if hasOutdatedControlPlanes && scalingGroup.Spec.Role != updatev1alpha1.ControlPlaneRole {
+			logr.Info("There are still outdated control plane nodes which must be replaced first before this worker scaling group is upgraded", "scalingGroup", scalingGroupID)
 			continue
 		}
 		for {
@@ -679,7 +694,7 @@ func (r *NodeVersionReconciler) createNewNodes(ctx context.Context, config newNo
 			if err := r.Create(ctx, pendingNode); err != nil {
 				return err
 			}
-			logr.Info("Created new node", "createdNode", nodeName, "scalingGroup", scalingGroupID)
+			logr.Info("Created new node", "createdNode", nodeName, "scalingGroup", scalingGroupID, "requiredNodes", requiredNodesPerScalingGroup[scalingGroupID])
 			requiredNodesPerScalingGroup[scalingGroupID]--
 			config.newNodesBudget--
 		}
@@ -939,6 +954,7 @@ type kubernetesServerVersionGetter interface {
 type newNodeConfig struct {
 	desiredNodeVersion updatev1alpha1.NodeVersion
 	outdatedNodes      []corev1.Node
+	donors             []corev1.Node
 	pendingNodes       []updatev1alpha1.PendingNode
 	scalingGroupByID   map[string]updatev1alpha1.ScalingGroup
 	newNodesBudget     int

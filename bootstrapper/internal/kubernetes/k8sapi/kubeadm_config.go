@@ -12,6 +12,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/certificate"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
+	"golang.org/x/mod/semver"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeletconf "k8s.io/kubelet/config/v1beta1"
@@ -38,7 +39,7 @@ func (c *KubdeadmConfiguration) InitConfiguration(externalCloudProvider bool, cl
 		cloudProvider = "external"
 	}
 
-	return KubeadmInitYAML{
+	initConfig := KubeadmInitYAML{
 		InitConfiguration: kubeadm.InitConfiguration{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: kubeadm.SchemeGroupVersion.String(),
@@ -157,6 +158,11 @@ func (c *KubdeadmConfiguration) InitConfiguration(externalCloudProvider bool, cl
 			TLSPrivateKeyFile: certificate.KeyFilename,
 		},
 	}
+
+	if semver.Compare(clusterVersion, "v1.31.0") >= 0 {
+		initConfig.ClusterConfiguration.FeatureGates = map[string]bool{"ControlPlaneKubeletLocalMode": true}
+	}
+	return initConfig
 }
 
 // JoinConfiguration returns a new kubeadm join configuration.
