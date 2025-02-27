@@ -28,8 +28,10 @@ runs:
           jq
           jd-diff-patch
           moreutils
+
     - name: Build images
       id: build-images
+      shell: bash
       run: |
         set -euo pipefail
 
@@ -40,13 +42,16 @@ runs:
         cd "$(mktemp -d)"
 
     - name: Download measurements
+      shell: bash
       run: |
         curl -O https://cdn.confidential.cloud/constellation/v2/ref/-/stream/stable/${{ inputs.version }}/image/measurements.json
     
     - name: Cleanup release measurements and generate our own
+      shell: bash
       run: |
         ./.github/actions/check_measurements_reproducibility/create_measurements.sh "${{ steps.build-images.outputs.buildPath }}"
         
     - name: Compare measurements
+      shell: bash
       run: |
         ./.github/actions/check_measurements_reproducibility/compare_measurements.sh "${{ steps.build-images.outputs.buildPath }}"
