@@ -16,7 +16,7 @@ for directory in "$1"/system/!(mkosi_wrapper.sh); do
   ts "  " < "$attestationVariant"_own-measurements.json
 
   diff="$(jd ./"$attestationVariant"_their-measurements.json ./"$attestationVariant"_own-measurements.json)"
-  if [[ ! -z "$diff" ]]; then
+  if [[ -n $diff ]]; then
     errors["$attestationVariant"]="$diff"
   fi
 done
@@ -26,6 +26,6 @@ for attestationVariant in "${!errors[@]}"; do
   echo "${errors["$attestationVariant"]}" | ts "  "
 done
 
-if [[ "${#errors[@]}" -ne 0 ]]; then
+if [[ ${#errors[@]} -ne 0 ]]; then
   exit 1
 fi
