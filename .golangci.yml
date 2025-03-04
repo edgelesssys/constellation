@@ -31,7 +31,7 @@ linters:
     - misspell
     - noctx
     - revive
-    - tenv
+    - usetesting
     - unconvert
     - unparam
 
