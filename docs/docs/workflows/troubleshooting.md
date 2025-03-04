@@ -56,8 +56,6 @@ A solution is to add the [required permissions](../getting-started/install.md#re
 
 If your setup requires a change in the ordering of credentials, please open an issue and explain your desired behavior.
 
-
-
 ### Nodes fail to join with error `untrusted measurement value`
 
 This error indicates that a node's [attestation statement](../architecture/attestation.md) contains measurements that don't match the trusted values expected by the [JoinService](../architecture/microservices.md#joinservice).
@@ -128,24 +126,71 @@ Debugging via a shell on a node is [directly supported by Kubernetes](https://ku
 
 1. Figure out which node to connect to:
 
-    ```bash
-    kubectl get nodes
-    # or to see more information, such as IPs:
-    kubectl get nodes -o wide
-    ```
+   ```bash
+   kubectl get nodes
+   # or to see more information, such as IPs:
+   kubectl get nodes -o wide
+   ```
 
 2. Connect to the node:
 
-    ```bash
-    kubectl debug node/constell-worker-xksa0-000000 -it --image=busybox
-    ```
+   ```bash
+   kubectl debug node/constell-worker-xksa0-000000 -it --image=busybox
+   ```
 
-    You will be presented with a prompt.
+   You will be presented with a prompt.
 
-    The nodes file system is mounted at `/host`.
+   The nodes file system is mounted at `/host`.
 
 3. Once finished, clean up the debug pod:
 
-    ```bash
-    kubectl delete pod node-debugger-constell-worker-xksa0-000000-bjthj
-    ```
+   ```bash
+   kubectl delete pod node-debugger-constell-worker-xksa0-000000-bjthj
+   ```
+
+### Emergency SSH access
+
+Emergency SSH access to nodes can be useful to diagnose issues or download important data even if the Kubernetes API isn't reachable anymore.
+
+1. Enter the `constellation-terraform` directory in your constellation workspace and enable emergency SSH access to the cluster:
+
+   ```bash
+    cd constellation-terraform
+    echo "emergency_ssh = true" >> ./terraform.tfvars
+    terraform apply
+   ```
+
+2. Sign an existing SSH key with your master secret:
+
+   ```bash
+   cd ../ # go back to your constellation workspace
+   constellation ssh --key your_public_key.pub
+   ```
+
+   A certificate is written to `constellation_cert.pub`.
+
+   The certificate is valid for 24 hours and enables you to access your constellation nodes using
+   [certificate based authentication](https://en.wikibooks.org/wiki/OpenSSH/Cookbook/Certificate-based_Authentication).
+
+3. Finally, you can connect to any constellation node using your certificate and your private key.
+
+   `ssh -o CertificateFile=constellation_cert.pub -i <your private key> root@<ip of constellation node>`
+
+   Normally, you won't have access to all constellation nodes since they reside in a private network.
+   To access those nodes anyways, you can use your constellation load balancer as a proxy jump host.
+   For this, use something along the following ssh client configuration:
+
+   ```text
+   Host <LB domain name>
+     ProxyJump none
+
+   Host *
+     IdentityFile <your private key>
+     PreferredAuthentications publickey
+     CertificateFile=constellation_cert.pub
+     User root
+     ProxyJump <LB domain name>
+   ```
+
+   Using this config you can connect to a constellation node using `ssh -F <this config> <private node IP>`.
+   You can obtain the private node IP and the domain name of the load balancer using your CSPs web UI.
