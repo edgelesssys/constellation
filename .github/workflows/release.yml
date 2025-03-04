@@ -242,6 +242,7 @@ jobs:
   check-measurements-reproducibility:
     name: Check measurements reproducibility
     needs: [verify-inputs, os-image]
+    runs-on: ubuntu-24.04
     steps:
       - name: Check reproducibility
         uses: ./.github/actions/check_measurements_reproducibility
