@@ -75,6 +75,7 @@ runs:
             echo "$RUNNER_ARCH not supported"
             exit 1
         fi
+        echo "nixVersion=$(cat "${{ github.workspace }}/.nixversion")" | tee -a "$GITHUB_OUTPUT"
         echo "::endgroup::"
 
     - name: Install current Bash on macOS
@@ -115,7 +116,7 @@ runs:
       if: steps.check_inputs.outputs.nixPreinstalled == 'false'
       uses: cachix/install-nix-action@08dcb3a5e62fa31e2da3d490afc4176ef55ecd72 # v30
       with:
-        install_url: "https://releases.nixos.org/nix/nix-2.25.2/install"
+        install_url: "https://releases.nixos.org/nix/nix-${{ steps.check_inputs.outputs.nixVersion }}/install"
 
     - name: Set $USER if not set
       shell: bash
