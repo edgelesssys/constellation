@@ -14,6 +14,8 @@ runs:
       env:
         KUBECONFIG: ${{ inputs.kubeconfig }}
       run: |
+        set -euo pipefail
+
         # Activate emergency ssh access to the cluster
         pushd ./constellation-terraform
         echo "emergency_ssh = true" >> terraform.tfvars
@@ -36,7 +38,16 @@ runs:
           ProxyJump $lb
         EOF
 
-        cat ssh_config
+        for i in {1..11}; do
+          if [[ "$i" -eq 11 ]]; then
+            echo "Port 22 never became reachable"
+            exit 1
+          fi
+          printf "Waiting until port 22 is reachable: %d/10\n" "$i"
+          if nc -z -w 10 "$lb"; then
+            break
+          fi
+        done
 
         # generate and try keypair
         ssh-keygen -t ecdsa -q -N "" -f ./access-key
