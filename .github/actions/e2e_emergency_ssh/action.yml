@@ -5,7 +5,7 @@ inputs:
   kubeconfig:
     description: "The kubeconfig file for the cluster."
     required: true
-  
+
 runs:
   using: "composite"
   steps:
@@ -14,6 +14,8 @@ runs:
       env:
         KUBECONFIG: ${{ inputs.kubeconfig }}
       run: |
+        set -euo pipefail
+
         # Activate emergency ssh access to the cluster
         pushd ./constellation-terraform
         echo "emergency_ssh = true" >> terraform.tfvars
@@ -36,7 +38,16 @@ runs:
           ProxyJump $lb
         EOF
 
-        cat ssh_config
+        for i in {1..51}; do
+          if [[ "$i" -eq 51 ]]; then
+            echo "Port 22 never became reachable"
+            exit 1
+          fi
+          printf "Waiting until port 22 is reachable: %d/50\n" "$i"
+          if nc -z -w 25 "$lb" 22; then
+            break
+          fi
+        done
 
         # generate and try keypair
         ssh-keygen -t ecdsa -q -N "" -f ./access-key

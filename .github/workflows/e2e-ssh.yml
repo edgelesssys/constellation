@@ -2,6 +2,17 @@ name: e2e test emergency ssh
 
 on:
   workflow_dispatch:
+    inputs:
+      imageSelector:
+        description: "Full selector of image to download"
+        required: false
+        default: ""
+        type: string
+      isDebug:
+        description: "Image is debug image"
+        required: false
+        default: false
+        type: boolean
   push:
     paths:
       - cli/internal/cmd/ssh*.go
@@ -20,7 +31,14 @@ jobs:
       actions: write
     strategy:
       matrix:
-        attestationVariant: ["gcp-sev-es", "gcp-sev-snp", "azure-sev-snp", "azure-tdx", "aws-sev-snp"]
+        attestationVariant:
+          [
+            "gcp-sev-es",
+            "gcp-sev-snp",
+            "azure-sev-snp",
+            "azure-tdx",
+            "aws-sev-snp",
+          ]
     steps:
       - name: Checkout
         id: checkout
@@ -28,6 +46,7 @@ jobs:
 
       - name: Get Latest Image
         id: find-latest-image
+        if: ${{ github.event.inputs.imageSelector == '' }}
         uses: ./.github/actions/find_latest_image
 
       - name: Split attestationVariant
@@ -47,8 +66,8 @@ jobs:
           controlNodesCount: "1"
           cloudProvider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
           attestationVariant: ${{ matrix.attestationVariant }}
-          osImage: ${{ steps.find-latest-image.outputs.image }}
-          isDebugImage: ${{ steps.find-latest-image.outputs.isDebugImage }}
+          osImage: ${{ github.event.inputs.imageSelector == '' && steps.find-latest-image.outputs.image || github.event.inputs.imageSelector }}
+          isDebugImage: ${{ github.event.inputs.imageSelector == '' && steps.find-latest-image.outputs.isDebugImage || github.event.inputs.isDebug }}
           gcpProject: constellation-e2e
           gcpClusterCreateServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
           gcpIAMCreateServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
@@ -85,7 +104,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         uses: ./.github/actions/update_tfstate
         with:
-          name: terraform-state-${{ matrix.attestationVariant }}
+          name: terraform-state-${{ steps.e2e_test.outputs.namePrefix }}
           runID: ${{ github.run_id }}
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
 
