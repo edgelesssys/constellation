@@ -24,5 +24,5 @@ for directory in "$1"/system/!(mkosi_wrapper.sh); do
   ' \
     measurements.json > "$attestationVariant"_their-measurements.json
 
-  sudo --preserve-env "$1/measured-boot/cmd/cmd_/cmd" "$directory/constellation" /dev/stdout | jq '.measurements' > ./"$attestationVariant"_own-measurements.json
+  bazel run --run_under "sudo --preserve-env" //image/measured-boot/cmd -- "$directory/constellation" /dev/stdout | jq '.measurements' > ./"$attestationVariant"_own-measurements.json
 done

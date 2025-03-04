@@ -39,22 +39,20 @@ runs:
         # Build required binaries
         pushd release
         bazel build //image/system:stable
-        bazel build //image/measured-boot/cmd
         echo "buildPath=$PWD/bazel-bin/image" | tee -a "$GITHUB_OUTPUT"
-        cd "$(mktemp -d)"
         popd
 
     - name: Download measurements
       shell: bash
       run: |
-        curl -O https://cdn.confidential.cloud/constellation/v2/ref/-/stream/stable/${{ inputs.version }}/image/measurements.json
+        curl -fsLO https://cdn.confidential.cloud/constellation/v2/ref/-/stream/stable/${{ inputs.version }}/image/measurements.json
     
     - name: Cleanup release measurements and generate our own
       shell: bash
       run: |
-        ./.github/actions/check_measurements_reproducibility/create_measurements.sh "${{ steps.build-images.outputs.buildPath }}"
+        ${{ github.action_path }}/create_measurements.sh "${{ steps.build-images.outputs.buildPath }}"
         
     - name: Compare measurements
       shell: bash
       run: |
-        ./.github/actions/check_measurements_reproducibility/compare_measurements.sh "${{ steps.build-images.outputs.buildPath }}"
+        ${{ github.action_path }}/compare_measurements.sh "${{ steps.build-images.outputs.buildPath }}"
