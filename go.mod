@@ -71,7 +71,7 @@ require (
 	github.com/google/go-sev-guest v0.13.0
 	github.com/google/go-tdx-guest v0.3.2-0.20241009005452-097ee70d0843
 	github.com/google/go-tpm v0.9.3
-	github.com/google/go-tpm-tools v0.4.5
+	github.com/google/go-tpm-tools v0.4.4
 	github.com/google/uuid v1.6.0
 	github.com/googleapis/gax-go/v2 v2.14.1
 	github.com/gophercloud/gophercloud/v2 v2.6.0
@@ -253,13 +253,11 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/certificate-transparency-go v1.1.8 // indirect
-	github.com/google/gce-tcb-verifier v0.2.3-0.20240905212129-12f728a62786 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/go-attestation v0.5.1 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-configfs-tsm v0.3.3-0.20240919001351-b4b5b84fdcbc // indirect
 	github.com/google/go-containerregistry v0.20.3 // indirect
-	github.com/google/go-eventlog v0.0.2-0.20241003021507-01bb555f7cba // indirect
 	github.com/google/go-tspi v0.3.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/logger v1.1.1 // indirect

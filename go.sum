@@ -417,8 +417,6 @@ github.com/google/btree v1.1.3/go.mod h1:qOPhT0dTNdNzV6Z/lhRX0YXUafgPLFUh+gZMl76
 github.com/google/certificate-transparency-go v1.0.21/go.mod h1:QeJfpSbVSfYc7RgB3gJFj9cbuQMMchQxrWXz8Ruopmg=
 github.com/google/certificate-transparency-go v1.1.8 h1:LGYKkgZF7satzgTak9R4yzfJXEeYVAjV6/EAEJOf1to=
 github.com/google/certificate-transparency-go v1.1.8/go.mod h1:bV/o8r0TBKRf1X//iiiSgWrvII4d7/8OiA+3vG26gI8=
-github.com/google/gce-tcb-verifier v0.2.3-0.20240905212129-12f728a62786 h1:1ijRI0+jsZCl3CqeJG3Cib6w+wYCBlD/rWRo5a+ZME4=
-github.com/google/gce-tcb-verifier v0.2.3-0.20240905212129-12f728a62786/go.mod h1:Jvv9i6JF1t7sDVW09zP2x+9vN3lcujtih2Zb/lVXaLs=
 github.com/google/gnostic-models v0.6.8 h1:yo/ABAfM5IMRsS1VnXjTBvUb61tFIHozhlYvRgGre9I=
 github.com/google/gnostic-models v0.6.8/go.mod h1:5n7qKqH0f5wFt+aWF8CW6pZLLNOfYuF5OpfBSENuI8U=
 github.com/google/go-attestation v0.5.1 h1:jqtOrLk5MNdliTKjPbIPrAaRKJaKW+0LIU2n/brJYms=
@@ -433,16 +431,14 @@ github.com/google/go-configfs-tsm v0.3.3-0.20240919001351-b4b5b84fdcbc h1:SG12DW
 github.com/google/go-configfs-tsm v0.3.3-0.20240919001351-b4b5b84fdcbc/go.mod h1:EL1GTDFMb5PZQWDviGfZV9n87WeGTR/JUg13RfwkgRo=
 github.com/google/go-containerregistry v0.20.3 h1:oNx7IdTI936V8CQRveCjaxOiegWwvM7kqkbXTpyiovI=
 github.com/google/go-containerregistry v0.20.3/go.mod h1:w00pIgBRDVUDFM6bq+Qx8lwNWK+cxgCuX1vd3PIBDNI=
-github.com/google/go-eventlog v0.0.2-0.20241003021507-01bb555f7cba h1:05m5+kgZjxYUZrx3bZfkKHl6wkch+Khao6N21rFHInk=
-github.com/google/go-eventlog v0.0.2-0.20241003021507-01bb555f7cba/go.mod h1:7huE5P8w2NTObSwSJjboHmB7ioBNblkijdzoVa2skfQ=
 github.com/google/go-sev-guest v0.13.0 h1:DJB6ACdykyweMU0HGOp/TQ7cjsnbV2ecbYunu2E0qy0=
 github.com/google/go-sev-guest v0.13.0/go.mod h1:SK9vW+uyfuzYdVN0m8BShL3OQCtXZe/JPF7ZkpD3760=
 github.com/google/go-tdx-guest v0.3.2-0.20241009005452-097ee70d0843 h1:+MoPobRN9HrDhGyn6HnF5NYo4uMBKaiFqAtf/D/OB4A=
 github.com/google/go-tdx-guest v0.3.2-0.20241009005452-097ee70d0843/go.mod h1:g/n8sKITIT9xRivBUbizo34DTsUm2nN2uU3A662h09g=
 github.com/google/go-tpm v0.9.3 h1:+yx0/anQuGzi+ssRqeD6WpXjW2L/V0dItUayO0i9sRc=
 github.com/google/go-tpm v0.9.3/go.mod h1:h9jEsEECg7gtLis0upRBQU+GhYVH6jMjrFxI8u6bVUY=
-github.com/google/go-tpm-tools v0.4.5 h1:3fhthtyMDbIZFR5/0y1hvUoZ1Kf4i1eZ7C73R4Pvd+k=
-github.com/google/go-tpm-tools v0.4.5/go.mod h1:ktjTNq8yZFD6TzdBFefUfen96rF3NpYwpSb2d8bc+Y8=
+github.com/google/go-tpm-tools v0.4.4 h1:oiQfAIkc6xTy9Fl5NKTeTJkBTlXdHsxAofmQyxBKY98=
+github.com/google/go-tpm-tools v0.4.4/go.mod h1:T8jXkp2s+eltnCDIsXR84/MTcVU9Ja7bh3Mit0pa4AY=
 github.com/google/go-tspi v0.3.0 h1:ADtq8RKfP+jrTyIWIZDIYcKOMecRqNJFOew2IT0Inus=
 github.com/google/go-tspi v0.3.0/go.mod h1:xfMGI3G0PhxCdNVcYr1C4C+EizojDg/TXuX5by8CiHI=
 github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
