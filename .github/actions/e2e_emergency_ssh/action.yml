@@ -55,5 +55,5 @@ runs:
         internalIPs="$(kubectl get nodes -o=jsonpath='{.items[*].status.addresses}' | jq -r '.[] | select(.type == "InternalIP") | .address')"
         for ip in $internalIPs; do
           echo "Trying connection to $ip over $lb"
-          ssh -F ssh_config -o BatchMode=yes $ip true
+          ssh -v -F ssh_config -o BatchMode=yes $ip true
         done
