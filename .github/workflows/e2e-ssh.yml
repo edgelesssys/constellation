@@ -46,7 +46,7 @@ jobs:
 
       - name: Get Latest Image
         id: find-latest-image
-        if: ${{ github.event.inputs.imageSelector == "" }}
+        if: ${{ github.event.inputs.imageSelector == '' }}
         uses: ./.github/actions/find_latest_image
 
       - name: Split attestationVariant
