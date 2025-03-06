@@ -43,7 +43,7 @@ runs:
             echo "Port 22 never became reachable"
             exit 1
           fi
-          echo "Waiting until port 22 is reachable: $i/25\n"
+          echo "Waiting until port 22 is reachable: $i/25"
           if nc -z -w 25 "$lb" 22; then
             break
           fi
