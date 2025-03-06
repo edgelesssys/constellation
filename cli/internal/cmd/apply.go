@@ -368,7 +368,7 @@ func (a *applyCmd) apply(
 	// Check current Terraform state, if it exists and infrastructure upgrades are not skipped,
 	// and apply migrations if necessary.
 	if !a.flags.skipPhases.contains(skipInfrastructurePhase) {
-		if err := a.runTerraformApply(cmd, conf, stateFile, upgradeDir); err != nil {
+		if err := a.runTerraformApply(cmd, conf, stateFile, upgradeDir, a.flags.yes); err != nil {
 			return fmt.Errorf("applying Terraform configuration: %w", err)
 		}
 	}
