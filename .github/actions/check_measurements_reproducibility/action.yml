@@ -1,0 +1,58 @@
+name: Check measurements reproducibility
+description: Check if the measurements of a given release are reproducible.
+
+inputs:
+  version:
+    type: string
+    description: The version of the measurements that are downloaded from the CDN.
+    required: true
+  ref:
+    type: string
+    description: The git ref to check out. You probably want this to be the tag of the release you are testing.
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      with:
+        ref: ${{ inputs.ref }}
+        path: ./release
+
+    - name: Set up bazel
+      uses: ./.github/actions/setup_bazel_nix
+      with:
+        useCache: "false"
+        nixTools: |
+          systemdUkify
+          jq
+          jd-diff-patch
+          moreutils
+
+    - name: Build images
+      id: build-images
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        # Build required binaries
+        pushd release
+        bazel build //image/system:stable
+        echo "buildPath=$PWD/bazel-bin/image" | tee -a "$GITHUB_OUTPUT"
+        popd
+
+    - name: Download measurements
+      shell: bash
+      run: |
+        curl -fsLO https://cdn.confidential.cloud/constellation/v2/ref/-/stream/stable/${{ inputs.version }}/image/measurements.json
+    
+    - name: Cleanup release measurements and generate our own
+      shell: bash
+      run: |
+        ${{ github.action_path }}/create_measurements.sh "${{ steps.build-images.outputs.buildPath }}"
+        
+    - name: Compare measurements
+      shell: bash
+      run: |
+        ${{ github.action_path }}/compare_measurements.sh "${{ steps.build-images.outputs.buildPath }}"
