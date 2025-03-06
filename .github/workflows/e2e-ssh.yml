@@ -66,8 +66,8 @@ jobs:
           controlNodesCount: "1"
           cloudProvider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
           attestationVariant: ${{ matrix.attestationVariant }}
-          osImage: ${{ github.event.inputs.imageSelector == "" && steps.find-latest-image.outputs.image || github.event.inputs.imageSelector }}
-          isDebugImage: ${{ github.event.inputs.imageSelector == "" && steps.find-latest-image.outputs.isDebugImage || github.event.inputs.isDebug }}
+          osImage: ${{ github.event.inputs.imageSelector == '' && steps.find-latest-image.outputs.image || github.event.inputs.imageSelector }}
+          isDebugImage: ${{ github.event.inputs.imageSelector == '' && steps.find-latest-image.outputs.isDebugImage || github.event.inputs.isDebug }}
           gcpProject: constellation-e2e
           gcpClusterCreateServiceAccount: "infrastructure-e2e@constellation-e2e.iam.gserviceaccount.com"
           gcpIAMCreateServiceAccount: "iam-e2e@constellation-e2e.iam.gserviceaccount.com"
