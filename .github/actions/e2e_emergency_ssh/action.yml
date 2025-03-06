@@ -43,7 +43,7 @@ runs:
             echo "Port 22 never became reachable"
             exit 1
           fi
-          printf "Waiting until port 22 is reachable: %d/25\n" "$i"
+          echo "Waiting until port 22 is reachable: $i/25\n"
           if nc -z -w 25 "$lb" 22; then
             break
           fi
@@ -54,6 +54,15 @@ runs:
         constellation ssh --debug --key ./access-key.pub
         internalIPs="$(kubectl get nodes -o=jsonpath='{.items[*].status.addresses}' | jq -r '.[] | select(.type == "InternalIP") | .address')"
         for ip in $internalIPs; do
-          echo "Trying connection to $ip over $lb"
-          ssh -v -F ssh_config -o BatchMode=yes $ip true
+          for i in {1..26}; do
+            if [[ "$i" -eq 26 ]]; then
+              echo "Failed to connect to $ip over $lb"
+              exit 1
+            fi
+            echo "Trying connection to $ip over $lb: $i/25"
+            if ssh -v -F ssh_config -o BatchMode=yes $ip true; then
+              echo "Connected to $ip successfully"
+              break
+            fi
+          done
         done
