@@ -30,6 +30,7 @@ jobs:
       packages: write
       actions: write
     strategy:
+      fail-fast: false
       matrix:
         attestationVariant:
           [
@@ -107,18 +108,3 @@ jobs:
           name: terraform-state-${{ steps.e2e_test.outputs.namePrefix }}
           runID: ${{ github.run_id }}
           encryptionSecret: ${{ secrets.ARTIFACT_ENCRYPT_PASSWD }}
-
-      - name: Notify about failure
-        if: |
-          failure() &&
-          github.ref == 'refs/heads/main' &&
-          github.event_name == 'schedule'
-        continue-on-error: true
-        uses: ./.github/actions/notify_e2e_failure
-        with:
-          projectWriteToken: ${{ secrets.PROJECT_WRITE_TOKEN }}
-          test: "emergency ssh"
-          kubernetesVersion: "v1.28"
-          provider: ${{ steps.split-attestationVariant.outputs.cloudProvider }}
-          attestationVariant: ${{ matrix.attestationVariant }}
-          clusterCreation: "cli"

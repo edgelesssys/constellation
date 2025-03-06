@@ -38,12 +38,12 @@ runs:
           ProxyJump $lb
         EOF
 
-        for i in {1..51}; do
-          if [[ "$i" -eq 51 ]]; then
+        for i in {1..26}; do
+          if [[ "$i" -eq 26 ]]; then
             echo "Port 22 never became reachable"
             exit 1
           fi
-          printf "Waiting until port 22 is reachable: %d/50\n" "$i"
+          echo "Waiting until port 22 is reachable: $i/25"
           if nc -z -w 25 "$lb" 22; then
             break
           fi
@@ -54,6 +54,15 @@ runs:
         constellation ssh --debug --key ./access-key.pub
         internalIPs="$(kubectl get nodes -o=jsonpath='{.items[*].status.addresses}' | jq -r '.[] | select(.type == "InternalIP") | .address')"
         for ip in $internalIPs; do
-          echo "Trying connection to $ip over $lb"
-          ssh -F ssh_config -o BatchMode=yes $ip true
+          for i in {1..26}; do
+            if [[ "$i" -eq 26 ]]; then
+              echo "Failed to connect to $ip over $lb"
+              exit 1
+            fi
+            echo "Trying connection to $ip over $lb: $i/25"
+            if ssh -F ssh_config -o BatchMode=yes $ip true; then
+              echo "Connected to $ip successfully"
+              break
+            fi
+          done
         done
