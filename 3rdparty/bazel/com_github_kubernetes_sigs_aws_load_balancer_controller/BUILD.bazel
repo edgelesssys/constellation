@@ -1,0 +1,13 @@
+load("//bazel/sh:def.bzl", "sh_template")
+
+sh_template(
+    name = "pull_files",
+    data = [
+        "@com_github_kubernetes_sigs_aws_load_balancer_controller//:lb_policy",
+    ],
+    substitutions = {
+        "@@POLICY_SRC@@": "$(rootpath @com_github_kubernetes_sigs_aws_load_balancer_controller//:lb_policy)",
+    },
+    template = "pull_files.sh",
+    visibility = ["//visibility:public"],
+)
