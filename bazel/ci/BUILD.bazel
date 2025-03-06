@@ -558,6 +558,7 @@ multirun(
     commands = [
         ":terraform_gen",
         "//3rdparty/bazel/com_github_medik8s_node_maintainance_operator:pull_files",
+        "//3rdparty/bazel/com_github_kubernetes_sigs_aws_load_balancer_controller:pull_files",
         ":go_generate",
         ":proto_generate",
     ],
