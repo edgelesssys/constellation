@@ -45,6 +45,11 @@ output "ip_cidr_node" {
   description = "CIDR block of the node network."
 }
 
+output "loadbalancer_address" {
+  value       = var.internal_load_balancer ? google_compute_address.loadbalancer_ip_internal[0].address : google_compute_global_address.loadbalancer_ip[0].address
+  description = "Public loadbalancer address."
+}
+
 # GCP-specific outputs
 
 output "project" {

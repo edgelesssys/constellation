@@ -45,3 +45,8 @@ output "ip_cidr_node" {
   value       = local.cidr_vpc_subnet_nodes
   description = "CIDR block of the node network."
 }
+
+output "loadbalancer_address" {
+  value       = aws_lb.front_end.dns_name
+  description = "Public loadbalancer address."
+}
