@@ -5,7 +5,7 @@ inputs:
   kubeconfig:
     description: "The kubeconfig file for the cluster."
     required: true
-  
+
 runs:
   using: "composite"
   steps:
@@ -44,7 +44,7 @@ runs:
             exit 1
           fi
           printf "Waiting until port 22 is reachable: %d/10\n" "$i"
-          if nc -z -w 10 "$lb"; then
+          if nc -z -w 10 "$lb" 22; then
             break
           fi
         done
