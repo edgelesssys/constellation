@@ -234,6 +234,10 @@ load("//3rdparty/bazel/com_github_medik8s_node_maintainance_operator:source.bzl"
 
 node_maintainance_operator_deps()
 
+load("//3rdparty/bazel/com_github_kubernetes_sigs_aws_load_balancer_controller:source.bzl", "aws_load_balancer_controller_deps")
+
+aws_load_balancer_controller_deps()
+
 # CI deps
 load("//bazel/toolchains:ci_deps.bzl", "ci_deps")
 
