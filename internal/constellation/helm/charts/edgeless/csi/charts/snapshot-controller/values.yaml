@@ -3,7 +3,7 @@ snapshotController:
   snapshotController:
     image:
       repository: registry.k8s.io/sig-storage/snapshot-controller
-      tag: v8.2.0@sha256:9dade8f2f3ab29e3919c41b343f8d77b12178ac51f25574d7ed2d45a3e3ef69d
+      tag: v8.2.1@sha256:472fa35a89dadb5a715454fad576ec11aa6f2e8378fc09ae26473d139b77c437
     imagePullPolicy: IfNotPresent
 snapshotWebhook:
   replicas: 1
