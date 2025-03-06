@@ -11,10 +11,10 @@
   };
 
   outputs =
-    { self
-    , nixpkgsUnstable
-    , flake-utils
-    ,
+    {
+      self,
+      nixpkgsUnstable,
+      flake-utils,
     }:
     flake-utils.lib.eachDefaultSystem (
       system:
