@@ -38,13 +38,13 @@ runs:
           ProxyJump $lb
         EOF
 
-        for i in {1..11}; do
-          if [[ "$i" -eq 11 ]]; then
+        for i in {1..51}; do
+          if [[ "$i" -eq 51 ]]; then
             echo "Port 22 never became reachable"
             exit 1
           fi
-          printf "Waiting until port 22 is reachable: %d/10\n" "$i"
-          if nc -z -w 10 "$lb" 22; then
+          printf "Waiting until port 22 is reachable: %d/50\n" "$i"
+          if nc -z -w 25 "$lb" 22; then
             break
           fi
         done
