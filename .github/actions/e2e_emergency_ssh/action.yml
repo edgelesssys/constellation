@@ -60,7 +60,7 @@ runs:
               exit 1
             fi
             echo "Trying connection to $ip over $lb: $i/25"
-            if ssh -v -F ssh_config -o BatchMode=yes $ip true; then
+            if ssh -F ssh_config -o BatchMode=yes $ip true; then
               echo "Connected to $ip successfully"
               break
             fi
