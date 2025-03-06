@@ -36,7 +36,13 @@ done
 echo "All specified rules have been deleted."
 ```
 
-## Migrations to v2.19.0
+## Migrating from CLI versions before 2.21.1
+
+### AWS
+
+* AWS clusters that use `LoadBalancer` resources require more IAM permissions. Please upgrade your IAM roles using `constellation iam upgrade apply`. This will show necessary changes and apply them, if desired.
+
+## Migrating from CLI versions before 2.19.0
 
 ### Azure
 
@@ -46,7 +52,7 @@ echo "All specified rules have been deleted."
  If your Constellation has services of type `LoadBalancer`, please remove them before the upgrade and re-apply them
  afterward.
 
-## Migrating from Azure's service principal authentication to managed identity authentication (during the upgrade to Constellation v2.8.0)
+## Migrating from CLI versions before 2.18.0
 
 * The `provider.azure.appClientID` and `provider.azure.appClientSecret` fields are no longer supported and should be removed.
 * To keep using an existing UAMI, add the `Owner` permission with the scope of your `resourceGroup`.
