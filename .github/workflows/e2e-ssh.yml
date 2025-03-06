@@ -30,6 +30,7 @@ jobs:
       packages: write
       actions: write
     strategy:
+      fail-fast: false
       matrix:
         attestationVariant:
           [
