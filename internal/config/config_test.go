@@ -464,6 +464,7 @@ func TestValidate(t *testing.T) {
 				gcp.Project = "test-project"
 				gcp.Zone = "test-zone"
 				gcp.ServiceAccountKeyPath = "test-key-path"
+				gcp.IAMServiceAccountVM = "example@example.com"
 				cnf.Provider = ProviderConfig{}
 				cnf.Provider.GCP = gcp
 				cnf.Attestation.GCPSEVSNP.Measurements = measurements.M{

@@ -120,6 +120,7 @@ func TestPrepareIAM(t *testing.T) {
 		Region:           "europe-west1",
 		Zone:             "europe-west1-a",
 		ServiceAccountID: "const-test-case",
+		NamePrefix:       "test_iam",
 	}
 	azureVars := &AzureIAMVariables{
 		Location:      "westus",
@@ -509,6 +510,9 @@ func TestCreateIAM(t *testing.T) {
 					"service_account_key": {
 						Value: "12345678_abcdefg",
 					},
+					"service_account_mail_vm": {
+						Value: "test_iam_service_account_vm",
+					},
 					"subscription_id": {
 						Value: "test_subscription_id",
 					},
@@ -581,7 +585,7 @@ func TestCreateIAM(t *testing.T) {
 			vars:     gcpVars,
 			tf:       &stubTerraform{showState: newTestState()},
 			fs:       afero.NewMemMapFs(),
-			want:     IAMOutput{GCP: GCPIAMOutput{SaKey: "12345678_abcdefg"}},
+			want:     IAMOutput{GCP: GCPIAMOutput{SaKey: "12345678_abcdefg", ServiceAccountVMMailAddress: "test_iam_service_account_vm"}},
 		},
 		"gcp init fails": {
 			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
@@ -614,7 +618,25 @@ func TestCreateIAM(t *testing.T) {
 			tf: &stubTerraform{
 				showState: &tfjson.State{
 					Values: &tfjson.StateValues{
-						Outputs: map[string]*tfjson.StateOutput{},
+						Outputs: map[string]*tfjson.StateOutput{
+							"service_account_mail_vm": {Value: "test_iam_service_account_vm"},
+						},
+					},
+				},
+			},
+			fs:      afero.NewMemMapFs(),
+			wantErr: true,
+		},
+		"gcp no service_account_mail_vm": {
+			pathBase: path.Join(constants.TerraformEmbeddedDir, "iam"),
+			provider: cloudprovider.GCP,
+			vars:     gcpVars,
+			tf: &stubTerraform{
+				showState: &tfjson.State{
+					Values: &tfjson.StateValues{
+						Outputs: map[string]*tfjson.StateOutput{
+							"service_account_key": {Value: "12345678_abcdefg"},
+						},
 					},
 				},
 			},
@@ -1129,7 +1151,8 @@ func TestShowIAM(t *testing.T) {
 		"GCP success": {
 			tf: &stubTerraform{
 				showState: getTfjsonState(map[string]any{
-					"service_account_key": "key",
+					"service_account_key":     "key",
+					"service_account_mail_vm": "example@example.com",
 				}),
 			},
 			csp: cloudprovider.GCP,
@@ -1137,7 +1160,8 @@ func TestShowIAM(t *testing.T) {
 		"GCP wrong data type": {
 			tf: &stubTerraform{
 				showState: getTfjsonState(map[string]any{
-					"service_account_key": map[string]any{},
+					"service_account_key":     map[string]any{},
+					"service_account_mail_vm": "example@example.com",
 				}),
 			},
 			csp:     cloudprovider.GCP,
@@ -1145,7 +1169,9 @@ func TestShowIAM(t *testing.T) {
 		},
 		"GCP missing key": {
 			tf: &stubTerraform{
-				showState: getTfjsonState(map[string]any{}),
+				showState: getTfjsonState(map[string]any{
+					"service_account_mail_vm": "example@example.com",
+				}),
 			},
 			csp:     cloudprovider.GCP,
 			wantErr: true,
