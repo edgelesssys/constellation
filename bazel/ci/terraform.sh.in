@@ -46,7 +46,6 @@ excludeDirs=(
 excludeLockDirs=(
   "build"
   "terraform-provider-constellation"
-  "terraform/legacy-module"
 )
 
 excludeCheckDirs=(
