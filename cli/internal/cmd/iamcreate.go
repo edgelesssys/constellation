@@ -29,6 +29,9 @@ var (
 	regionRegex = regexp.MustCompile(`^\w+-\w+[0-9]$`)
 	// Source: https://cloud.google.com/resource-manager/reference/rest/v1/projects.
 	gcpIDRegex = regexp.MustCompile(`^[a-z][-a-z0-9]{4,28}[a-z0-9]$`)
+
+	// We currently append 6 characters to the prefix, therefore we remove 6 characters from the gcpIDRegex.
+	gcpPrefixRegex = regexp.MustCompile(`^[a-z][-a-z0-9]{4,22}[a-z0-9]$`)
 )
 
 // newIAMCreateCmd returns a new cobra.Command for the iam create parent command. It needs another verb, and does nothing on its own.
