@@ -71,3 +71,9 @@ variable "stackit_project_id" {
   type        = string
   description = "STACKIT project ID."
 }
+
+variable "emergency_ssh" {
+  type        = bool
+  default     = false
+  description = "Wether to expose the SSH port through the public load balancer."
+}
