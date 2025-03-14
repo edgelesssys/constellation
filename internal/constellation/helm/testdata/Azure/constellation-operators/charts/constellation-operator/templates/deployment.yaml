@@ -37,58 +37,63 @@ spec:
         kubectl.kubernetes.io/default-container: manager
     spec:
       containers:
-      - args:
-        - --health-probe-bind-address=:8081
-        - --metrics-bind-address=:8080
-        - --leader-elect
-        command:
-        - /node-operator
-        env:
-        - name: KUBERNETES_CLUSTER_DOMAIN
-          value: cluster.local
-        - name: CONSTEL_CSP
-          value: Azure
-        - name: constellation-uid
-          value: "42424242424242"
-        image: constellationOperatorImage
-        livenessProbe:
-          httpGet:
-            path: /healthz
-            port: 8081
-          initialDelaySeconds: 15
-          periodSeconds: 20
-        name: manager
-        readinessProbe:
-          httpGet:
-            path: /readyz
-            port: 8081
-          initialDelaySeconds: 5
-          periodSeconds: 10
-        resources:
-          limits:
-            cpu: 500m
-            memory: 128Mi
-          requests:
-            cpu: 10m
-            memory: 64Mi
-        securityContext:
-          allowPrivilegeEscalation: false
-        volumeMounts:
-        - mountPath: /etc/kubernetes/pki/etcd
-          name: etcd-certs
-        - mountPath: /host/usr/lib/os-release
-          name: usr-lib-os-release
-        - mountPath: /etc/os-release
-          name: etc-os-release
-        - mountPath: /etc/azure
-          name: azureconfig
-          readOnly: true
-        - mountPath: /etc/gce
-          name: gceconf
-          readOnly: true
-        - mountPath: /etc/constellation-upgrade-agent.sock
-          name: upgrade-agent-socket
-          readOnly: true
+        - args:
+            - --health-probe-bind-address=:8081
+            - --metrics-bind-address=:8080
+            - --leader-elect
+          command:
+            - /node-operator
+          env:
+            - name: KUBERNETES_CLUSTER_DOMAIN
+              value: cluster.local
+            - name: CONSTEL_CSP
+              value: Azure
+            - name: constellation-uid
+              value: "42424242424242"
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /var/secrets/google/key.json
+          image: constellationOperatorImage
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          name: manager
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            limits:
+              cpu: 500m
+              memory: 128Mi
+            requests:
+              cpu: 10m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+          volumeMounts:
+            - mountPath: /etc/kubernetes/pki/etcd
+              name: etcd-certs
+            - mountPath: /host/usr/lib/os-release
+              name: usr-lib-os-release
+            - mountPath: /etc/os-release
+              name: etc-os-release
+            - mountPath: /etc/azure
+              name: azureconfig
+              readOnly: true
+            - mountPath: /etc/gce
+              name: gceconf
+              readOnly: true
+            - mountPath: /var/secrets/google
+              name: gcekey
+              readOnly: true
+            - mountPath: /etc/constellation-upgrade-agent.sock
+              name: upgrade-agent-socket
+              readOnly: true
       nodeSelector:
         node-role.kubernetes.io/control-plane: ""
       securityContext:
@@ -96,34 +101,38 @@ spec:
       serviceAccountName: constellation-operator-controller-manager
       terminationGracePeriodSeconds: 10
       tolerations:
-      - effect: NoSchedule
-        key: node-role.kubernetes.io/control-plane
-        operator: Exists
-      - effect: NoSchedule
-        key: node-role.kubernetes.io/master
-        operator: Exists
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/control-plane
+          operator: Exists
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+          operator: Exists
       volumes:
-      - hostPath:
-          path: /etc/kubernetes/pki/etcd
-          type: Directory
-        name: etcd-certs
-      - hostPath:
-          path: /usr/lib/os-release
-          type: File
-        name: usr-lib-os-release
-      - hostPath:
-          path: /etc/os-release
-          type: File
-        name: etc-os-release
-      - name: azureconfig
-        secret:
-          optional: true
-          secretName: azureconfig
-      - configMap:
+        - hostPath:
+            path: /etc/kubernetes/pki/etcd
+            type: Directory
+          name: etcd-certs
+        - hostPath:
+            path: /usr/lib/os-release
+            type: File
+          name: usr-lib-os-release
+        - hostPath:
+            path: /etc/os-release
+            type: File
+          name: etc-os-release
+        - name: azureconfig
+          secret:
+            optional: true
+            secretName: azureconfig
+        - configMap:
+            name: gceconf
+            optional: true
           name: gceconf
-          optional: true
-        name: gceconf
-      - name: upgrade-agent-socket
-        hostPath:
-          path: /run/constellation-upgrade-agent.sock
-          type: Socket
+        - name: gcekey
+          secret:
+            secretName: gcekey
+            optional: true
+        - name: upgrade-agent-socket
+          hostPath:
+            path: /run/constellation-upgrade-agent.sock
+            type: Socket
