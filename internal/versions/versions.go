@@ -214,32 +214,32 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 			},
 			{
 				Url:         "https://dl.k8s.io/v1.29.15/bin/linux/amd64/kubelet", // renovate:kubernetes-release
-				Hash:        "sha256:b165ecf4e9a5f4f396d8a8a3563257d552946285d45dac0ccbe8b73435554dc5",
+				Hash:        "sha256:cd0228a5820f98bbb6371344e5d6645f6486d767c30f927a1d0ec8d17eca4da5",
 				InstallPath: constants.KubeletPath,
 				Extract:     false,
 			},
 			{
 				Url:         "https://dl.k8s.io/v1.29.15/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
-				Hash:        "sha256:4f72a1148b786a766cf695ead7cffa41859661286cd4e6e6a49da0838feae840",
+				Hash:        "sha256:d0744fbaa1e67fc65c4a3409f083e01a4ede58181c759b2feeb08b1ef10d6201",
 				InstallPath: constants.KubeadmPath,
 				Extract:     false,
 			},
 			{
 				Url:         "https://dl.k8s.io/v1.29.15/bin/linux/amd64/kubectl", // renovate:kubernetes-release
-				Hash:        "sha256:a4902c8a454a3678d589b51d95d810ec84791c03ed6b5779969df559c9c0357e",
+				Hash:        "sha256:3473e14c7b024a6e5403c6401b273b3faff8e5b1fed022d633815eb3168e4516",
 				InstallPath: constants.KubectlPath,
 				Extract:     false,
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtYXBpc2VydmVyOnYxLjI5LjE0QHNoYTI1NjoxNDMyYjQ1NmIyMTAxNWM5OTc4M2QyYjNhMjAxMDg3M2ZiNjdiZjk0NmM4OWQ0NWU2ZDM1NjQ0OWUwODNkY2ZiIn1d",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtYXBpc2VydmVyOnYxLjI5LjE1QHNoYTI1NjpmZDgyYzc0ZTA3NzNhMTAzOTYwNTU5MDQ3NTMxMjY0MTFiM2E5NTg0Y2M0NTNlMWM3MTUyYzgxMDE4YTkzM2I2In1d",
 				InstallPath: patchFilePath("kube-apiserver"),
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtY29udHJvbGxlci1tYW5hZ2VyOnYxLjI5LjE0QHNoYTI1NjoyM2NjZGI1ZTdlMmMzMTdmNTcyNzY1MmVmN2U2NGVmOTFlYWQzNGEzYzczZGZhOWMzYWIyM2IzYTUwMjhlMjgwIn1d",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtY29udHJvbGxlci1tYW5hZ2VyOnYxLjI5LjE1QHNoYTI1Njo0ZjA1YmUyYzA2NjdkOWY0OTc1YmNjNDNkNWUxMzZiMjQzNjk0NmY4NGM4ZjdkYzJkMmRhMTQzOTJlNzYxYTcxIn1d",
 				InstallPath: patchFilePath("kube-controller-manager"),
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtc2NoZWR1bGVyOnYxLjI5LjE0QHNoYTI1NjpjZjAwNDZiZTNlYjZjNDgzMWI2YjJhMWIzZTI0ZjE4ZTI3Nzc4NjYzODkwMTQ0NDc4ZjExYTgyNjIyYjQ4YzQ4In1d",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtc2NoZWR1bGVyOnYxLjI5LjE1QHNoYTI1NjoyNzYxMDhhNDU0MWE1MTg5NGEwMTA2MzMyMzBmN2I2ZDEwZTkyZTczMDI3NGYyNGJkMjFlODI3ZTY0MjQzZDY2In1d",
 				InstallPath: patchFilePath("kube-scheduler"),
 			},
 			{
@@ -281,32 +281,32 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 			},
 			{
 				Url:         "https://dl.k8s.io/v1.30.11/bin/linux/amd64/kubelet", // renovate:kubernetes-release
-				Hash:        "sha256:0c7aa1db3fa339aa13af0f825d25a76b3c74f785d4fcd49d6a0bc5a96f0971f0",
+				Hash:        "sha256:59177fc92e2b2bb988f7d8d39682ea9e3d9d883273c9c8b51b39502d9b965431",
 				InstallPath: constants.KubeletPath,
 				Extract:     false,
 			},
 			{
 				Url:         "https://dl.k8s.io/v1.30.11/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
-				Hash:        "sha256:177254194194975df68fd69a3647c86260a6c635bee42f516d3cecc047c4bc7c",
+				Hash:        "sha256:06ff7ff15b7fa9af60189fdece5f7c56efa8b637c38b4a498715ca2f04ccfcb2",
 				InstallPath: constants.KubeadmPath,
 				Extract:     false,
 			},
 			{
 				Url:         "https://dl.k8s.io/v1.30.11/bin/linux/amd64/kubectl", // renovate:kubernetes-release
-				Hash:        "sha256:bc74dbeefd4b9d53f03016f6778f3ffc9a72ef4ca7b7c80fd5dc1a41d52dcab7",
+				Hash:        "sha256:228a8b2679f84de9192a1ac5ad527c9ab73b0f76c452ed74f11da812bbcfaa42",
 				InstallPath: constants.KubectlPath,
 				Extract:     false,
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtYXBpc2VydmVyOnYxLjMwLjEwQHNoYTI1Njo2M2IyYjRiNGU5YjVkY2I1YjFiNmNlYzlkNWY1ZjUzODc5MWE0MGNkOGNiMjczZWY1MzBlNmQ2NTM1YWEwYjQzIn1d",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtYXBpc2VydmVyOnYxLjMwLjExQHNoYTI1Njo3N2M1NDM0Njk2NTAzNmFjYzdhYzk1YzMyMDA1OTdlZGUzNmRiOTI0NjE3OTI0OGRkZTIxYzFhM2VjYzFjYWYwIn1d",
 				InstallPath: patchFilePath("kube-apiserver"),
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtY29udHJvbGxlci1tYW5hZ2VyOnYxLjMwLjEwQHNoYTI1Njo5OWIzMzM2MzQzZWE0OGJlMjRmMWU2NDc3NDgyNWU5ZjhkNTE3MGJkMmVkNDgyZmYzMzY1NDhlYjgyNGY1ZjU4In1d",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtY29udHJvbGxlci1tYW5hZ2VyOnYxLjMwLjExQHNoYTI1NjpkODg3NGYzZmI0NTU5MWVjZGFjNjdhMzAzNWM3MzA4MDhmMThiM2FiMTMxNDc0OTVjN2Q3N2ViMTk2MGQ0ZjZmIn1d",
 				InstallPath: patchFilePath("kube-controller-manager"),
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtc2NoZWR1bGVyOnYxLjMwLjEwQHNoYTI1NjpjZjdlYjI1NjE5MmYxZjUxMDkzZmUyNzhjMjA5YTkzNjhmMDY3NWViNjFlZDAxYjE0OGFmNDdkMmYyMWMwMDJkIn1d",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtc2NoZWR1bGVyOnYxLjMwLjExQHNoYTI1NjpjNjk5ZjhjOTdhZTdlYzgxOWM4YmQ4NzhkM2RiMTA0YmE3MmZjNDQwZDgxMGQ5MDMwZTA5Mjg2YjY5NjAxN2I1In1d",
 				InstallPath: patchFilePath("kube-scheduler"),
 			},
 			{
@@ -348,32 +348,32 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 			},
 			{
 				Url:         "https://dl.k8s.io/v1.31.7/bin/linux/amd64/kubelet", // renovate:kubernetes-release
-				Hash:        "sha256:ea50176095dd4650f6b270c79cf6d30deaaeb96ffa7d1eaac6924428cc9d2486",
+				Hash:        "sha256:279e766a1a7c0dce2efae452c9de1e52b169df31c4b75c9d3b7d51f767ae6d42",
 				InstallPath: constants.KubeletPath,
 				Extract:     false,
 			},
 			{
 				Url:         "https://dl.k8s.io/v1.31.7/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
-				Hash:        "sha256:c9d9add6c8cdbeb29d5e1743f23060fc06219b23f561eb9f959b5502fb055611",
+				Hash:        "sha256:be84c87c7b40977edf67fb8ee231abb273b93bbab5bb770af0f3f37c0d7c4b81",
 				InstallPath: constants.KubeadmPath,
 				Extract:     false,
 			},
 			{
 				Url:         "https://dl.k8s.io/v1.31.7/bin/linux/amd64/kubectl", // renovate:kubernetes-release
-				Hash:        "sha256:c46b2f5b0027e919299d1eca073ebf13a4c5c0528dd854fc71a5b93396c9fa9d",
+				Hash:        "sha256:80a3c83f00241cd402bc8688464e5e3eedd52a461ee41d882f19cf04ad6d0379",
 				InstallPath: constants.KubectlPath,
 				Extract:     false,
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtYXBpc2VydmVyOnYxLjMxLjZAc2hhMjU2OmJlMGEyZDgxNTc5M2IwNDA4ZDkyMWE1MGI4Mjc1OWU2NTRjZjFiYmE3MThjYWM0ODA0OTgzOTE5MjY5MDI5MDUifV0=",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtYXBpc2VydmVyOnYxLjMxLjdAc2hhMjU2OjIyYzE5Y2M3MGZlNTgwNmQwYTJjYjI4YTZiNmIzM2ZkMzRlNmY5ZTUwNjE2YmRmNmQ1MzY0OWJjZmFmYmMyNzcifV0=",
 				InstallPath: patchFilePath("kube-apiserver"),
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtY29udHJvbGxlci1tYW5hZ2VyOnYxLjMxLjZAc2hhMjU2OjYzMTY2ZTUzN2E4Mjg1NWFjOWI1NGZmYThiNTEwNDI5ZmU3OTllZDliMDYyYmY2Yjc4OGI3NGUxZDU5OTVkMTIifV0=",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtY29udHJvbGxlci1tYW5hZ2VyOnYxLjMxLjdAc2hhMjU2OjZhYmU3YTBhY2NlY2YyOWRiNmViYWIxOGExMGY4NDQ2NzhmZmVkNjkzZDc5ZTJlNTFhMThhNmYyYjQ1MzBjYmIifV0=",
 				InstallPath: patchFilePath("kube-controller-manager"),
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtc2NoZWR1bGVyOnYxLjMxLjZAc2hhMjU2OjhhNjRhZjMzYzU3MzQ2MzU1ZGMzY2M2ZjkyMjVkYmU3NzFkYTMwZTJmNDI3ZTgwMmNlMjM0MGVjM2I1ZGQ5YjUifV0=",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtc2NoZWR1bGVyOnYxLjMxLjdAc2hhMjU2OmZiODAyNDliY2I3N2VlNzJiMWM5ZmE1YjcwYmMyOGE4M2VkMTA3YzljYTcxOTU3ODQxYWQ5MWRiMzc5OTYzYmYifV0=",
 				InstallPath: patchFilePath("kube-scheduler"),
 			},
 			{
