@@ -106,6 +106,10 @@ func (f *gcpIAMCreateFlags) parse(flags *pflag.FlagSet) error {
 	if err != nil {
 		return fmt.Errorf("getting 'prefix' flag: %w", err)
 	}
+	if f.namePrefix != "" && !gcpPrefixRegex.MatchString(f.namePrefix) {
+		return fmt.Errorf("prefix %q doesn't match %s", f.namePrefix, gcpIDRegex)
+	}
+
 	return nil
 }
 
