@@ -152,7 +152,7 @@ Debugging via a shell on a node is [directly supported by Kubernetes](https://ku
 
 Emergency SSH access to nodes can be useful to diagnose issues or download important data even if the Kubernetes API isn't reachable anymore.
 
-1. Enter the `constellation-terraform` directory in your constellation workspace and enable emergency SSH access to the cluster:
+1. Enter the `constellation-terraform` directory in your Constellation workspace and enable emergency SSH access to the cluster:
 
    ```bash
     cd constellation-terraform
@@ -177,7 +177,7 @@ Emergency SSH access to nodes can be useful to diagnose issues or download impor
    `ssh -o CertificateFile=constellation_cert.pub -i <your private key> root@<ip of constellation node>`
 
    Normally, you won't have access to all constellation nodes since they reside in a private network.
-   To access those nodes anyways, you can use your constellation load balancer as a proxy jump host.
+   To access those nodes anyways, you can use your Constellation load balancer as a proxy jump host.
    For this, use something along the following ssh client configuration:
 
    ```text
@@ -193,4 +193,4 @@ Emergency SSH access to nodes can be useful to diagnose issues or download impor
    ```
 
    Using this config you can connect to a constellation node using `ssh -F <this config> <private node IP>`.
-   You can obtain the private node IP and the domain name of the load balancer using your CSPs web UI.
+   You can obtain the private node IP and the domain name of the load balancer using your CSP's web UI.
