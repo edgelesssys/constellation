@@ -10,12 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        refStream:
-          [
-            "ref/main/stream/nightly/?",
-            "ref/main/stream/debug/?",
-            "ref/release/stream/stable/?",
-          ]
+        refStream: ["ref/main/stream/nightly/?", "ref/main/stream/debug/?", "ref/release/stream/stable/?"]
     name: Find latest image
     runs-on: ubuntu-24.04
     permissions:
@@ -452,8 +447,7 @@ jobs:
       max-parallel: 1
       matrix:
         fromVersion: ["v2.21.1"]
-        attestationVariant:
-          ["gcp-sev-snp", "azure-sev-snp", "azure-tdx", "aws-sev-snp"]
+        attestationVariant: ["gcp-sev-snp", "azure-sev-snp", "azure-tdx", "aws-sev-snp"]
     name: Run upgrade tests
     secrets: inherit
     permissions:
@@ -466,7 +460,7 @@ jobs:
     with:
       fromVersion: ${{ matrix.fromVersion }}
       attestationVariant: ${{ matrix.attestationVariant }}
-      nodeCount: "3:2"
+      nodeCount: '3:2'
       scheduled: ${{ github.event_name == 'schedule' }}
 
   e2e-mini:
@@ -531,8 +525,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        attestationVariant:
-          ["gcp-sev-snp", "azure-sev-snp", "azure-tdx", "aws-sev-snp"]
+        attestationVariant: ["gcp-sev-snp", "azure-sev-snp", "azure-tdx", "aws-sev-snp"]
     permissions:
       id-token: write
       contents: read
