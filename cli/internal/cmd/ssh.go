@@ -27,12 +27,12 @@ import (
 func NewSSHCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ssh",
-		Short: "Generate a certificate for emergency ssh access",
-		Long:  "Generate a certificate for emergency ssh access to your ssh enabled constellation cluster.",
+		Short: "Generate a certificate for emergency SSH access",
+		Long:  "Generate a certificate for emergency SSH access to your SSH-enabled constellation cluster.",
 		Args:  cobra.ExactArgs(0),
 		RunE:  runSSH,
 	}
-	cmd.Flags().String("key", "", "the path to an existing ssh public key")
+	cmd.Flags().String("key", "", "the path to an existing SSH public key")
 	must(cmd.MarkFlagRequired("key"))
 	return cmd
 }
@@ -71,7 +71,7 @@ func writeCertificateForKey(cmd *cobra.Command, keyPath string, fh file.Handler,
 
 	ca, err := crypto.GenerateEmergencySSHCAKey(sshCAKeySeed)
 	if err != nil {
-		return fmt.Errorf("generating ssh emergency CA key: %s", err)
+		return fmt.Errorf("generating SSH emergency CA key: %s", err)
 	}
 
 	debugLogger.Debug("SSH CA KEY generated", "public-key", string(ssh.MarshalAuthorizedKey(ca.PublicKey())))
