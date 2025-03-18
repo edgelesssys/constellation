@@ -56,7 +56,7 @@ func writeCertificateForKey(cmd *cobra.Command, keyPath string, fh file.Handler,
 	// NOTE(miampf): Since other KMS aren't fully implemented yet, this commands assumes that the cKMS is used and derives the key accordingly.
 	var mastersecret uri.MasterSecret
 	if err := fh.ReadJSON(constants.MasterSecretFilename, &mastersecret); err != nil {
-		return fmt.Errorf("reading master secret (does %q exist?): %s", constants.MasterSecretFilename, err)
+		return fmt.Errorf("reading master secret (does %q exist?): %w", constants.MasterSecretFilename, err)
 	}
 
 	mastersecretURI := uri.MasterSecret{Key: mastersecret.Key, Salt: mastersecret.Salt}
@@ -107,7 +107,7 @@ func writeCertificateForKey(cmd *cobra.Command, keyPath string, fh file.Handler,
 	if err := fh.Write("constellation_cert.pub", ssh.MarshalAuthorizedKey(&certificate), file.OptOverwrite); err != nil {
 		return fmt.Errorf("writing certificate: %s", err)
 	}
-	cmd.Printf("You can now connect to a node using the \"constellation_cert.pub\" certificate.\nLook at the documentation for a how to guide:\n\n\thttps://docs.edgeless.systems/constellation/workflows/troubleshooting#emergency-ssh-access\n")
+	cmd.Printf("You can now connect to a node using the \"constellation_cert.pub\" certificate.\nLook at the documentation for a how-to guide:\n\n\thttps://docs.edgeless.systems/constellation/workflows/troubleshooting#emergency-ssh-access\n")
 
 	return nil
 }

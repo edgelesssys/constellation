@@ -1,7 +1,3 @@
----
-status: approved, not implemented
----
-
 # RFC 016: Node Access
 
 ## Background
