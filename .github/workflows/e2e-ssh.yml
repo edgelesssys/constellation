@@ -13,12 +13,6 @@ on:
         required: false
         default: false
         type: boolean
-  push:
-    paths:
-      - cli/internal/cmd/ssh*.go
-      - terraform/infrastructure/aws/**
-      - terraform/infrastructure/azure/**
-      - terraform/infrastructure/gcp/**
 
 jobs:
   ssh:
