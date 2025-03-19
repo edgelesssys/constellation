@@ -241,7 +241,7 @@ func init() {
 			FieldName: "gcp",
 		},
 	}
-	GCPConfigDoc.Fields = make([]encoder.Doc, 6)
+	GCPConfigDoc.Fields = make([]encoder.Doc, 7)
 	GCPConfigDoc.Fields[0].Name = "project"
 	GCPConfigDoc.Fields[0].Type = "string"
 	GCPConfigDoc.Fields[0].Note = ""
@@ -262,16 +262,21 @@ func init() {
 	GCPConfigDoc.Fields[3].Note = ""
 	GCPConfigDoc.Fields[3].Description = "Path of service account key file. For required service account roles, see https://docs.edgeless.systems/constellation/getting-started/install#authorization"
 	GCPConfigDoc.Fields[3].Comments[encoder.LineComment] = "Path of service account key file. For required service account roles, see https://docs.edgeless.systems/constellation/getting-started/install#authorization"
-	GCPConfigDoc.Fields[4].Name = "deployCSIDriver"
-	GCPConfigDoc.Fields[4].Type = "bool"
+	GCPConfigDoc.Fields[4].Name = "IAMServiceAccountVM"
+	GCPConfigDoc.Fields[4].Type = "string"
 	GCPConfigDoc.Fields[4].Note = ""
-	GCPConfigDoc.Fields[4].Description = "Deploy Persistent Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage"
-	GCPConfigDoc.Fields[4].Comments[encoder.LineComment] = "Deploy Persistent Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage"
-	GCPConfigDoc.Fields[5].Name = "useMarketplaceImage"
+	GCPConfigDoc.Fields[4].Description = "GCP service account mail address. This is being attached to the VMs for authorization."
+	GCPConfigDoc.Fields[4].Comments[encoder.LineComment] = "GCP service account mail address. This is being attached to the VMs for authorization."
+	GCPConfigDoc.Fields[5].Name = "deployCSIDriver"
 	GCPConfigDoc.Fields[5].Type = "bool"
 	GCPConfigDoc.Fields[5].Note = ""
-	GCPConfigDoc.Fields[5].Description = "Use the specified GCP Marketplace image offering."
-	GCPConfigDoc.Fields[5].Comments[encoder.LineComment] = "Use the specified GCP Marketplace image offering."
+	GCPConfigDoc.Fields[5].Description = "Deploy Persistent Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage"
+	GCPConfigDoc.Fields[5].Comments[encoder.LineComment] = "Deploy Persistent Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage"
+	GCPConfigDoc.Fields[6].Name = "useMarketplaceImage"
+	GCPConfigDoc.Fields[6].Type = "bool"
+	GCPConfigDoc.Fields[6].Note = ""
+	GCPConfigDoc.Fields[6].Description = "Use the specified GCP Marketplace image offering."
+	GCPConfigDoc.Fields[6].Comments[encoder.LineComment] = "Use the specified GCP Marketplace image offering."
 
 	OpenStackConfigDoc.Type = "OpenStackConfig"
 	OpenStackConfigDoc.Comments[encoder.LineComment] = "OpenStackConfig holds config information for OpenStack based Constellation deployments."

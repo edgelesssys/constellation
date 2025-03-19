@@ -102,7 +102,7 @@ If you encounter any problem with the following steps, make sure to use the [lat
     <TabItem value="gcp" label="GCP">
 
     ```bash
-    constellation iam create gcp --projectID=yourproject-12345 --zone=europe-west2-a --serviceAccountID=constell-test --update-config
+    constellation iam create gcp --projectID=yourproject-12345 --zone=europe-west2-a --prefix=constell-test --update-config
     ```
 
     This command creates IAM configuration in the GCP project `yourproject-12345` on the GCP zone `europe-west2-a` creating a new service account `constell-test`. It also updates the configuration file `constellation-conf.yaml` in your current directory with the IAM values filled in.

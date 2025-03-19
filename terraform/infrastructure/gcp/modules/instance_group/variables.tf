@@ -108,3 +108,9 @@ variable "cc_technology" {
     error_message = "The confidential computing technology has to be 'SEV' or 'SEV_SNP'."
   }
 }
+
+variable "iam_service_account_vm" {
+  type        = string
+  default     = ""
+  description = "IAM service account used for the VMs"
+}
