@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        refStream: ["ref/main/stream/nightly/?","ref/main/stream/debug/?", "ref/release/stream/stable/?"]
+        refStream: ["ref/main/stream/nightly/?", "ref/main/stream/debug/?", "ref/release/stream/stable/?"]
     name: Find latest image
     runs-on: ubuntu-24.04
     permissions:
@@ -50,6 +50,33 @@ jobs:
           #
           # Tests on main-debug refStream
           #
+
+          # Emergency SSH test on latest k8s version
+          - test: "emergency ssh"
+            refStream: "ref/main/stream/debug/?"
+            attestationVariant: "gcp-sev-es"
+            kubernetes-version: "v1.30"
+            clusterCreation: "cli"
+          - test: "emergency ssh"
+            refStream: "ref/main/stream/debug/?"
+            attestationVariant: "gcp-sev-snp"
+            kubernetes-version: "v1.30"
+            clusterCreation: "cli"
+          - test: "emergency ssh"
+            refStream: "ref/main/stream/debug/?"
+            attestationVariant: "azure-sev-snp"
+            kubernetes-version: "v1.30"
+            clusterCreation: "cli"
+          - test: "emergency ssh"
+            refStream: "ref/main/stream/debug/?"
+            attestationVariant: "azure-tdx"
+            kubernetes-version: "v1.30"
+            clusterCreation: "cli"
+          - test: "emergency ssh"
+            refStream: "ref/main/stream/debug/?"
+            attestationVariant: "aws-sev-snp"
+            kubernetes-version: "v1.30"
+            clusterCreation: "cli"
 
           # Sonobuoy full test on latest k8s version
           - test: "sonobuoy full"
@@ -137,7 +164,6 @@ jobs:
             attestationVariant: "aws-sev-snp"
             kubernetes-version: "v1.29"
             clusterCreation: "cli"
-
 
           # verify test on latest k8s version
           - test: "verify"

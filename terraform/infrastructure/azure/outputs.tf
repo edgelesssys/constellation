@@ -47,6 +47,11 @@ output "ip_cidr_node" {
   description = "CIDR block of the node network."
 }
 
+output "loadbalancer_address" {
+  value       = azurerm_public_ip.loadbalancer_ip[0].fqdn
+  description = "Public loadbalancer address."
+}
+
 # Azure-specific outputs
 
 output "attestation_url" {

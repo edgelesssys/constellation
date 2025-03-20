@@ -149,3 +149,52 @@ Debugging via a shell on a node is [directly supported by Kubernetes](https://ku
     ```bash
     kubectl delete pod node-debugger-constell-worker-xksa0-000000-bjthj
     ```
+
+### Emergency SSH access
+
+Emergency SSH access to nodes can be useful to diagnose issues or download important data even if the Kubernetes API isn't reachable anymore.
+
+1. Enter the `constellation-terraform` directory in your Constellation workspace and enable emergency SSH access to the cluster:
+
+   ```bash
+    cd constellation-terraform
+    echo "emergency_ssh = true" >> ./terraform.tfvars
+    terraform apply
+   ```
+
+2. Sign an existing SSH key with your master secret:
+
+   ```bash
+   cd ../ # go back to your Constellation workspace
+   constellation ssh --key your_public_key.pub
+   ```
+
+   A certificate is written to `constellation_cert.pub`.
+
+   The certificate is valid for 24 hours and enables you to access your Constellation nodes using
+   [certificate based authentication](https://en.wikibooks.org/wiki/OpenSSH/Cookbook/Certificate-based_Authentication).
+
+3. Now you can connect to any Constellation node using your certificate and your private key.
+
+   ```bash
+   ssh -o CertificateFile=constellation_cert.pub -i <your private key> root@<ip of constellation node>
+   ```
+
+   Normally, you don't have access to the Constellation nodes since they reside in a private network.
+   To access those nodes anyways, you can use your Constellation load balancer as a proxy jump host.
+   For this, use something along the following SSH client configuration:
+
+   ```text
+   Host <LB domain name>
+     ProxyJump none
+
+   Host *
+     IdentityFile <your private key>
+     PreferredAuthentications publickey
+     CertificateFile=constellation_cert.pub
+     User root
+     ProxyJump <LB domain name>
+   ```
+
+   With this configuration you can connect to a Constellation node using `ssh -F <this config> <private node IP>`.
+   You can obtain the private node IP and the domain name of the load balancer using your CSP's web UI.

@@ -39,7 +39,7 @@ Commands:
     * [apply](#constellation-iam-upgrade-apply): Apply an upgrade to an IAM profile
 * [version](#constellation-version): Display version of this CLI
 * [init](#constellation-init): Initialize the Constellation cluster
-* [ssh](#constellation-ssh): Prepare your cluster for emergency ssh access
+* [ssh](#constellation-ssh): Generate a certificate for emergency SSH access
 
 ## constellation config
 
@@ -845,11 +845,11 @@ constellation init [flags]
 
 ## constellation ssh
 
-Prepare your cluster for emergency ssh access
+Generate a certificate for emergency SSH access
 
 ### Synopsis
 
-Prepare your cluster for emergency ssh access and sign a given key pair for authorization.
+Generate a certificate for emergency SSH access to your SSH-enabled constellation cluster.
 
 ```
 constellation ssh [flags]
@@ -859,7 +859,7 @@ constellation ssh [flags]
 
 ```
   -h, --help         help for ssh
-      --key string   the path to an existing ssh public key
+      --key string   the path to an existing SSH public key
 ```
 
 ### Options inherited from parent commands

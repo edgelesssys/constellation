@@ -40,6 +40,7 @@ on:
           - "recover"
           - "malicious join"
           - "s3proxy"
+          - "emergency ssh"
           - "nop"
         required: true
       kubernetesVersion:
