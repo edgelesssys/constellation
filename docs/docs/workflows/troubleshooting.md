@@ -165,22 +165,24 @@ Emergency SSH access to nodes can be useful to diagnose issues or download impor
 2. Sign an existing SSH key with your master secret:
 
    ```bash
-   cd ../ # go back to your constellation workspace
+   cd ../ # go back to your Constellation workspace
    constellation ssh --key your_public_key.pub
    ```
 
    A certificate is written to `constellation_cert.pub`.
 
-   The certificate is valid for 24 hours and enables you to access your constellation nodes using
+   The certificate is valid for 24 hours and enables you to access your Constellation nodes using
    [certificate based authentication](https://en.wikibooks.org/wiki/OpenSSH/Cookbook/Certificate-based_Authentication).
 
-3. Finally, you can connect to any constellation node using your certificate and your private key.
+3. Now you can connect to any Constellation node using your certificate and your private key.
 
-   `ssh -o CertificateFile=constellation_cert.pub -i <your private key> root@<ip of constellation node>`
+   ```bash
+   ssh -o CertificateFile=constellation_cert.pub -i <your private key> root@<ip of constellation node>
+   ```
 
-   Normally, you won't have access to all constellation nodes since they reside in a private network.
+   Normally, you don't have access to the Constellation nodes since they reside in a private network.
    To access those nodes anyways, you can use your Constellation load balancer as a proxy jump host.
-   For this, use something along the following ssh client configuration:
+   For this, use something along the following SSH client configuration:
 
    ```text
    Host <LB domain name>
@@ -194,5 +196,5 @@ Emergency SSH access to nodes can be useful to diagnose issues or download impor
      ProxyJump <LB domain name>
    ```
 
-   Using this config you can connect to a constellation node using `ssh -F <this config> <private node IP>`.
+   With this configuration you can connect to a Constellation node using `ssh -F <this config> <private node IP>`.
    You can obtain the private node IP and the domain name of the load balancer using your CSP's web UI.
