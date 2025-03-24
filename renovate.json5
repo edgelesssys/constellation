@@ -19,6 +19,7 @@
   ],
   prConcurrentLimit: 4,
   ignorePaths: [
+    'internal/constellation/helm/charts/aws-load-balancer-controller/**',
     'internal/constellation/helm/charts/cilium/**',
     'internal/constellation/helm/charts/coredns/**',
     'internal/constellation/helm/charts/edgeless/csi/charts/aws-csi-driver/**',
