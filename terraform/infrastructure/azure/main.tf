@@ -40,6 +40,7 @@ locals {
     { name = "recovery", port = "9999", health_check_protocol = "Tcp", path = null, priority = 104 },
     { name = "join", port = "30090", health_check_protocol = "Tcp", path = null, priority = 105 },
     var.debug ? [{ name = "debugd", port = "4000", health_check_protocol = "Tcp", path = null, priority = 106 }] : [],
+    var.emergency_ssh ? [{ name = "ssh", port = "22", health_check_protocol = "Tcp", path = null, priority = 107 }] : [],
   ])
   // wildcard_lb_dns_name is the DNS name of the load balancer with a wildcard for the name.
   // example: given "name-1234567890.location.cloudapp.azure.com" it will return "*.location.cloudapp.azure.com"

@@ -43,6 +43,7 @@ locals {
     { name = "recovery", port = "9999", health_check = "TCP" },
     { name = "join", port = "30090", health_check = "TCP" },
     var.debug ? [{ name = "debugd", port = "4000", health_check = "TCP" }] : [],
+    var.emergency_ssh ? [{ name = "ssh", port = "22", health_check = "TCP" }] : [],
   ])
   cidr_vpc_subnet_nodes = "192.168.178.0/24"
   cidr_vpc_subnet_lbs   = "192.168.177.0/24"

@@ -101,3 +101,9 @@ variable "additional_tags" {
   default     = {}
   description = "Additional tags that should be applied to created resources."
 }
+
+variable "emergency_ssh" {
+  type        = bool
+  default     = false
+  description = "Wether to expose the SSH port through the public load balancer."
+}

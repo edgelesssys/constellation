@@ -75,3 +75,9 @@ variable "additional_labels" {
   default     = {}
   description = "Additional labels that should be given to created recources."
 }
+
+variable "emergency_ssh" {
+  type        = bool
+  default     = false
+  description = "Wether to expose the SSH port through the public load balancer."
+}
