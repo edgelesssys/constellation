@@ -1,53 +1,65 @@
+version: "2"
 run:
-  timeout: 10m
   build-tags:
     - integration
     - e2e
   modules-download-mode: readonly
-
 output:
   formats:
-    - format: tab
+    tab:
       path: stdout
-  sort-results: true
-
+      colors: false
 linters:
   enable:
-    # Default linters
-    - errcheck
-    - gosimple
-    - govet
-    - ineffassign
-    - staticcheck
-    - typecheck
-    - unused
-    # Additional linters
     - bodyclose
-    - errname
     - copyloopvar
+    - errname
     - godot
-    - gofmt
-    - gofumpt
     - misspell
     - noctx
     - revive
-    - usetesting
     - unconvert
     - unparam
+    - usetesting
+  settings:
+    errcheck:
+      exclude-functions:
+        - (*go.uber.org/zap.Logger).Sync
+        - (*google.golang.org/grpc.Server).Serve
+  exclusions:
+    generated: lax
+    presets:
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - 3rdparty/node-maintenance-operator
+    rules:
+    # TODO(burgerdev): these exclusions have been added to ease migration to v2 and should eventually be addressed.
+    - linters: ["staticcheck"]
+      text: "QF1008: could remove embedded field"
+    - linters: ["staticcheck"]
+      text: "QF1001: could apply De Morgan's law"
+    - linters: ["staticcheck"]
+      text: "ST1005: error strings should not be capitalized"
+    - linters: ["revive"]
+      text: "package-comments: package comment should be of the form"
+    - linters: ["revive"]
+      text: "package-comments: should have a package comment"
+    - linters: ["staticcheck"]
+      text: "QF1012: Use fmt.Fprintf"
+    - linters: ["staticcheck"]
+      text: "ST1019"
 
+      
 issues:
   max-issues-per-linter: 0
   max-same-issues: 20
-  exclude-dirs:
-    - 3rdparty/node-maintenance-operator
-  include:
-    - EXC0012
-    - EXC0014
-
-linters-settings:
-  errcheck:
-    # List of functions to exclude from checking, where each entry is a single function to exclude.
-    # See https://github.com/kisielk/errcheck#excluding-functions for details.
-    exclude-functions:
-      - (*go.uber.org/zap.Logger).Sync
-      - (*google.golang.org/grpc.Server).Serve
+formatters:
+  enable:
+    - gofmt
+    - gofumpt
+  exclusions:
+    generated: lax
+    paths:
+      - 3rdparty/node-maintenance-operator
