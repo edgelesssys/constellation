@@ -32,7 +32,7 @@ runs:
 
   steps:
     - name: Setup python
-      uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
+      uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5.5.0
       with:
         python-version: "3.10"
 
@@ -166,7 +166,7 @@ runs:
         encryptionSecret: ${{ inputs.encryptionSecret }}
 
     - name: Assume AWS role to retrieve and update benchmarks in S3
-      uses: aws-actions/configure-aws-credentials@4fc4975a852c8cd99761e2de1f4ba73402e44dd9 # v4.0.3
+      uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 # v4.1.0
       with:
         role-to-assume: arn:aws:iam::795746500882:role/GithubActionUpdateBenchmarks
         aws-region: us-east-2
