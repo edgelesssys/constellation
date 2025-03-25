@@ -18,7 +18,7 @@ jobs:
           token: ${{ secrets.CI_COMMIT_PUSH_PR }}
 
       - name: Assume AWS role to upload Bazel dependencies to S3
-        uses: aws-actions/configure-aws-credentials@4fc4975a852c8cd99761e2de1f4ba73402e44dd9 # v4.0.3
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 # v4.1.0
         with:
           role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationMirrorWrite
           aws-region: eu-central-1
@@ -39,7 +39,7 @@ jobs:
           fi
 
       - name: Create pull request
-        uses: peter-evans/create-pull-request@67ccf781d68cd99b580ae25a5c18a1cc84ffff1f # v7.0.6
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
         with:
           branch: "image/automated/update-rpms-${{ github.run_number }}"
           base: main
