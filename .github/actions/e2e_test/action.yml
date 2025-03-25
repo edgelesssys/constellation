@@ -258,6 +258,12 @@ runs:
       run: |
         uuid=$(uuidgen | tr "[:upper:]" "[:lower:]")
         uuid=${uuid%%-*}
+
+        # GCP has a 6 character limit the additional uuid prefix since the full prefix length has a maximum of 24
+        if [[ ${{ inputs.cloudProvider }} == 'gcp' ]]; then
+          uuid=${uuid:0:6}
+        fi
+
         echo "uuid=${uuid}" | tee -a $GITHUB_OUTPUT
         echo "prefix=e2e-${{ github.run_id }}-${{ github.run_attempt }}-${uuid}" | tee -a $GITHUB_OUTPUT
 

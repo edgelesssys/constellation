@@ -122,8 +122,9 @@ func TestGCPClusterVariables(t *testing.T) {
 				DiskType:        "pd-ssd",
 			},
 		},
-		CustomEndpoint: "example.com",
-		CCTechnology:   "SEV_SNP",
+		CustomEndpoint:      "example.com",
+		CCTechnology:        "SEV_SNP",
+		IAMServiceAccountVM: "example@example.com",
 	}
 
 	// test that the variables are correctly rendered
@@ -151,10 +152,11 @@ node_groups = {
     zone          = "eu-central-1b"
   }
 }
-custom_endpoint        = "example.com"
-internal_load_balancer = false
-cc_technology          = "SEV_SNP"
-additional_labels        = null
+custom_endpoint        	= "example.com"
+internal_load_balancer	= false
+cc_technology           = "SEV_SNP"
+iam_service_account_vm	= "example@example.com"
+additional_labels      	= null
 `
 	got := vars.String()
 	assert.Equal(t, strings.Fields(want), strings.Fields(got)) // to ignore whitespace differences
@@ -173,8 +175,26 @@ func TestGCPIAMVariables(t *testing.T) {
 region             = "eu-central-1"
 zone               = "eu-central-1a"
 service_account_id = "my-service-account"
+name_prefix        = ""
 `
 	got := vars.String()
+	assert.Equal(t, strings.Fields(want), strings.Fields(got)) // to ignore whitespace differences
+
+	vars = GCPIAMVariables{
+		Project:    "my-project",
+		Region:     "eu-central-1",
+		Zone:       "eu-central-1a",
+		NamePrefix: "my-prefix",
+	}
+
+	// test that the variables are correctly rendered
+	want = `project_id         = "my-project"
+region             = "eu-central-1"
+zone               = "eu-central-1a"
+service_account_id = ""
+name_prefix        = "my-prefix"
+`
+	got = vars.String()
 	assert.Equal(t, strings.Fields(want), strings.Fields(got)) // to ignore whitespace differences
 }
 

@@ -103,9 +103,18 @@ func (c *Client) ShowIAM(ctx context.Context, provider cloudprovider.Provider) (
 		if !ok {
 			return IAMOutput{}, errors.New("invalid type in service_account_key output: not a string")
 		}
+		IAMServiceAccountVMOutputRaw, ok := tfState.Values.Outputs["service_account_mail_vm"]
+		if !ok {
+			return IAMOutput{}, errors.New("no service_account_mail_vm output found")
+		}
+		IAMServiceAccountVMOutput, ok := IAMServiceAccountVMOutputRaw.Value.(string)
+		if !ok {
+			return IAMOutput{}, errors.New("invalid type in service_account_mail_vm output: not a string")
+		}
 		return IAMOutput{
 			GCP: GCPIAMOutput{
-				SaKey: saKeyOutput,
+				SaKey:                       saKeyOutput,
+				ServiceAccountVMMailAddress: IAMServiceAccountVMOutput,
 			},
 		}, nil
 	case cloudprovider.Azure:
@@ -539,7 +548,8 @@ type IAMOutput struct {
 
 // GCPIAMOutput contains the output information of the Terraform IAM operation on GCP.
 type GCPIAMOutput struct {
-	SaKey string
+	SaKey                       string
+	ServiceAccountVMMailAddress string
 }
 
 // AzureIAMOutput contains the output information of the Terraform IAM operation on Microsoft Azure.

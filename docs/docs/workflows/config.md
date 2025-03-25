@@ -210,7 +210,7 @@ Paste the output into the corresponding fields of the `constellation-conf.yaml` 
 You must be authenticated with the [GCP CLI](https://cloud.google.com/sdk/gcloud) in the shell session with a user that has the [required permissions for IAM creation](../getting-started/install.md#set-up-cloud-credentials).
 
 ```bash
-constellation iam create gcp --projectID=yourproject-12345 --zone=europe-west2-a --serviceAccountID=constell-test
+constellation iam create gcp --projectID=yourproject-12345 --zone=europe-west2-a --prefix=constell-test
 ```
 
 This command creates IAM configuration in the GCP project `yourproject-12345` on the GCP zone `europe-west2-a` creating a new service account `constell-test`.

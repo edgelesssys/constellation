@@ -231,6 +231,7 @@ func gcpTerraformVars(conf *config.Config, imageRef string) *terraform.GCPCluste
 		InternalLoadBalancer: conf.InternalLoadBalancer,
 		CCTechnology:         ccTech,
 		AdditionalLabels:     conf.Tags,
+		IAMServiceAccountVM:  conf.Provider.GCP.IAMServiceAccountVM,
 	}
 }
 
@@ -240,6 +241,7 @@ func gcpTerraformIAMVars(conf *config.Config, oldVars terraform.GCPIAMVariables)
 		Region:           conf.Provider.GCP.Region,
 		Zone:             conf.Provider.GCP.Zone,
 		ServiceAccountID: oldVars.ServiceAccountID,
+		NamePrefix:       oldVars.NamePrefix,
 	}
 }
 

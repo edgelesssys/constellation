@@ -31,12 +31,18 @@ func newIAMCreateGCPCmd() *cobra.Command {
 	cmd.Flags().String("zone", "", "GCP zone the cluster will be deployed in (required)\n"+
 		"Find a list of available zones here: https://cloud.google.com/compute/docs/regions-zones#available")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "zone"))
-	cmd.Flags().String("serviceAccountID", "", "ID for the service account that will be created (required)\n"+
-		"Must be 6 to 30 lowercase letters, digits, or hyphens.")
-	must(cobra.MarkFlagRequired(cmd.Flags(), "serviceAccountID"))
+
+	cmd.Flags().String("serviceAccountID", "", "[Deprecated use \"--prefix\"]ID for the service account that will be created (required)\n"+
+		"Must be 6 to 30 lowercase letters, digits, or hyphens. This flag is mutually exclusive with --prefix.")
+	cmd.Flags().String("prefix", "", "Prefix for the service account ID and VM ID that will be created (required)\n"+
+		"Must be letters, digits, or hyphens.")
+
 	cmd.Flags().String("projectID", "", "ID of the GCP project the configuration will be created in (required)\n"+
 		"Find it on the welcome screen of your project: https://console.cloud.google.com/welcome")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "projectID"))
+
+	cmd.MarkFlagsMutuallyExclusive([]string{"prefix", "serviceAccountID"}...)
+	must(cmd.Flags().MarkDeprecated("serviceAccountID", "use --prefix instead"))
 
 	return cmd
 }
@@ -53,6 +59,7 @@ func runIAMCreateGCP(cmd *cobra.Command, _ []string) error {
 type gcpIAMCreateFlags struct {
 	rootFlags
 	serviceAccountID string
+	namePrefix       string
 	zone             string
 	region           string
 	projectID        string
@@ -91,9 +98,18 @@ func (f *gcpIAMCreateFlags) parse(flags *pflag.FlagSet) error {
 	if err != nil {
 		return fmt.Errorf("getting 'serviceAccountID' flag: %w", err)
 	}
-	if !gcpIDRegex.MatchString(f.serviceAccountID) {
+	if f.serviceAccountID != "" && !gcpIDRegex.MatchString(f.serviceAccountID) {
 		return fmt.Errorf("serviceAccountID %q doesn't match %s", f.serviceAccountID, gcpIDRegex)
 	}
+
+	f.namePrefix, err = flags.GetString("prefix")
+	if err != nil {
+		return fmt.Errorf("getting 'prefix' flag: %w", err)
+	}
+	if f.namePrefix != "" && !gcpPrefixRegex.MatchString(f.namePrefix) {
+		return fmt.Errorf("prefix %q doesn't match %s", f.namePrefix, gcpIDRegex)
+	}
+
 	return nil
 }
 
@@ -109,13 +125,19 @@ func (c *gcpIAMCreator) getIAMConfigOptions() *cloudcmd.IAMConfigOptions {
 			Region:           c.flags.region,
 			ProjectID:        c.flags.projectID,
 			ServiceAccountID: c.flags.serviceAccountID,
+			NamePrefix:       c.flags.namePrefix,
 		},
 	}
 }
 
 func (c *gcpIAMCreator) printConfirmValues(cmd *cobra.Command) {
 	cmd.Printf("Project ID:\t\t%s\n", c.flags.projectID)
-	cmd.Printf("Service Account ID:\t%s\n", c.flags.serviceAccountID)
+	if c.flags.namePrefix != "" {
+		cmd.Printf("Name Prefix:\t\t%s\n", c.flags.namePrefix)
+	}
+	if c.flags.serviceAccountID != "" {
+		cmd.Printf("Service Account ID:\t%s\n", c.flags.serviceAccountID)
+	}
 	cmd.Printf("Region:\t\t\t%s\n", c.flags.region)
 	cmd.Printf("Zone:\t\t\t%s\n\n", c.flags.zone)
 }
@@ -127,11 +149,12 @@ func (c *gcpIAMCreator) printOutputValues(cmd *cobra.Command, _ cloudcmd.IAMOutp
 	cmd.Printf("serviceAccountKeyPath:\t%s\n\n", c.flags.pathPrefixer.PrefixPrintablePath(constants.GCPServiceAccountKeyFilename))
 }
 
-func (c *gcpIAMCreator) writeOutputValuesToConfig(conf *config.Config, _ cloudcmd.IAMOutput) {
+func (c *gcpIAMCreator) writeOutputValuesToConfig(conf *config.Config, out cloudcmd.IAMOutput) {
 	conf.Provider.GCP.Project = c.flags.projectID
 	conf.Provider.GCP.ServiceAccountKeyPath = constants.GCPServiceAccountKeyFilename // File was created in workspace, so only the filename is needed.
 	conf.Provider.GCP.Region = c.flags.region
 	conf.Provider.GCP.Zone = c.flags.zone
+	conf.Provider.GCP.IAMServiceAccountVM = out.GCPOutput.IAMServiceAccountVM
 	for groupName, group := range conf.NodeGroups {
 		group.Zone = c.flags.zone
 		conf.NodeGroups[groupName] = group

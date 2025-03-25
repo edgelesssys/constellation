@@ -234,6 +234,9 @@ Enable the [Compute Engine API](https://console.cloud.google.com/apis/library/co
 
 To [create the IAM configuration](../workflows/config.md#creating-an-iam-configuration) for Constellation, you need the following permissions:
 
+* `iam.roles.create`
+* `iam.roles.delete`
+* `iam.roles.get`
 * `iam.serviceAccountKeys.create`
 * `iam.serviceAccountKeys.delete`
 * `iam.serviceAccountKeys.get`

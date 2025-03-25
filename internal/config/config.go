@@ -188,6 +188,9 @@ type GCPConfig struct {
 	//   Path of service account key file. For required service account roles, see https://docs.edgeless.systems/constellation/getting-started/install#authorization
 	ServiceAccountKeyPath string `yaml:"serviceAccountKeyPath" validate:"required"`
 	// description: |
+	//   GCP service account mail address. This is being attached to the VMs for authorization.
+	IAMServiceAccountVM string `yaml:"IAMServiceAccountVM"`
+	// description: |
 	//   Deploy Persistent Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage
 	DeployCSIDriver *bool `yaml:"deployCSIDriver" validate:"required"`
 	// description: |
@@ -349,6 +352,7 @@ func Default() *Config {
 				Region:                "",
 				Zone:                  "",
 				ServiceAccountKeyPath: "",
+				IAMServiceAccountVM:   "",
 				DeployCSIDriver:       toPtr(true),
 				UseMarketplaceImage:   toPtr(false),
 			},

@@ -141,6 +141,8 @@ type GCPClusterVariables struct {
 	InternalLoadBalancer bool `hcl:"internal_load_balancer" cty:"internal_load_balancer"`
 	// CCTechnology is the confidential computing technology to use on the VMs. (`SEV` or `SEV_SNP`)
 	CCTechnology string `hcl:"cc_technology" cty:"cc_technology"`
+	// IAMServiceAccountControlPlane is the IAM service account mail address to attach to VMs.
+	IAMServiceAccountVM string `hcl:"iam_service_account_vm" cty:"iam_service_account_vm"`
 	// AdditionalLables are (optional) additional labels that should be applied to created resources.
 	AdditionalLabels cloudprovider.Tags `hcl:"additional_labels" cty:"additional_labels"`
 }
@@ -182,6 +184,9 @@ type GCPIAMVariables struct {
 	Zone string `hcl:"zone" cty:"zone"`
 	// ServiceAccountID is the ID of the service account to use.
 	ServiceAccountID string `hcl:"service_account_id" cty:"service_account_id"`
+	// IAMServiceAccountVM is the ID of the service account to attach to VMs.
+	// TODO(@3u13r): Eventually remove this field after v2.22 has been released.
+	NamePrefix string `hcl:"name_prefix,optional" cty:"name_prefix"`
 }
 
 // String returns a string representation of the IAM-specific variables, formatted as Terraform variables.

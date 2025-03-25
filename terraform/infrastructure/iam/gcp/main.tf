@@ -13,8 +13,19 @@ provider "google" {
   zone    = var.zone
 }
 
+locals {
+  sa_name    = var.name_prefix == "" ? var.service_account_id : "${var.name_prefix}-sa"
+  sa_vm_name = var.name_prefix == "" ? "${var.service_account_id}-vm" : "${var.name_prefix}-sa-vm"
+}
+
+resource "google_service_account" "vm" {
+  account_id   = local.sa_vm_name
+  display_name = "Constellation service account for VMs"
+  description  = "Service account used by the VMs"
+}
+
 resource "google_service_account" "service_account" {
-  account_id   = var.service_account_id
+  account_id   = local.sa_name
   display_name = "Constellation service account"
   description  = "Service account used inside Constellation"
 }
@@ -62,6 +73,30 @@ resource "google_project_iam_member" "iam_service_account_user_role" {
   project    = var.project_id
   role       = "roles/iam.serviceAccountUser"
   member     = "serviceAccount:${google_service_account.service_account.email}"
+  depends_on = [null_resource.delay]
+}
+
+resource "google_project_iam_custom_role" "vm" {
+  # role_id must not contain dashes
+  role_id     = replace("${local.sa_vm_name}-role", "-", "_")
+  title       = "Constellation IAM role for VMs"
+  description = "Constellation IAM role for VMs"
+  permissions = [
+    "compute.instances.get",
+    "compute.instances.list",
+    "compute.subnetworks.get",
+    "compute.globalForwardingRules.list",
+    "compute.zones.list",
+  ]
+}
+
+resource "google_project_iam_binding" "custom_role_vm_to_service_account_vm" {
+  project = var.project_id
+  role    = "projects/${var.project_id}/roles/${google_project_iam_custom_role.vm.role_id}"
+
+  members = [
+    "serviceAccount:${google_service_account.vm.email}",
+  ]
   depends_on = [null_resource.delay]
 }
 
