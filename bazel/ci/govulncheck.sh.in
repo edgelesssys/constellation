@@ -27,11 +27,16 @@ submodules=$(${go} list -f '{{.Dir}}' -m)
 PATH=$(dirname "${go}"):${PATH}
 
 check_module() {
+  excluded_osvs=(
+    "GO-2025-3521" # Kubernetes GitRepo Volume Inadvertent Local Repository Access
+    "GO-2025-3547" # Kubernetes kube-apiserver Vulnerable to Race Condition
+  )
+
   # shellcheck disable=SC2016 # The $ sign in the single quoted string is correct.
   CGO_ENABLED=0 ${govulncheck} -C "$1" -format json "./..." |
-    "${jq}" -sr '
+    "${jq}" --argjson excluded "$(printf '"%s"\n' "${excluded_osvs[@]}" | jq -s)" -sr '
         (map(select(.osv) | {"key": .osv.id, "value": .osv.summary}) | from_entries) as $osvs | 
-        map(select( .finding and .finding.osv != "GO-2024-3166" and .finding.osv != "GO-2025-3408" ) | .finding | select( .trace[-1].module | startswith("github.com/edgelesssys/") )) |
+        map(select( .finding and all($excluded[] != .finding.osv; .) ) | .finding | select( .trace[-1].module | startswith("github.com/edgelesssys/") )) |
         group_by(.osv) | 
         map( {"osv": .[0].osv, "summary": $osvs[.[0].osv], "traces": [.[] | [.trace[] | .module]]} ) |
         if length > 0 then halt_error(1) else .[] end'
