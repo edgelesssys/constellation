@@ -3,7 +3,7 @@
 
   inputs = {
     nixpkgsUnstable = {
-      url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+      url = "github:msanft/nixpkgs/msanft/mkosi/25";
     };
     flake-utils = {
       url = "github:numtide/flake-utils";
@@ -24,10 +24,10 @@
         callPackage = pkgsUnstable.callPackage;
 
         mkosiDev = (
-          pkgsUnstable.mkosi.overrideAttrs (oldAttrs: {
-            propagatedBuildInputs =
-              oldAttrs.propagatedBuildInputs
-              ++ (with pkgsUnstable; [
+          pkgsUnstable.mkosi.override {
+            extraDeps = (
+              with pkgsUnstable;
+              [
                 # package management
                 dnf5
                 rpm
@@ -47,8 +47,9 @@
                 # utils
                 gnused # sed
                 gnugrep # grep
-              ]);
-          })
+              ]
+            );
+          }
         );
       in
       {
