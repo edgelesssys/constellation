@@ -3,9 +3,7 @@
 
   inputs = {
     nixpkgsUnstable = {
-      # TODO(msanft): Go back to upstream once the following PR lands:
-      # https://github.com/NixOS/nixpkgs/pull/395114
-      url = "github:msanft/nixpkgs/msanft/mkosi/fix";
+      url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     };
     flake-utils = {
       url = "github:numtide/flake-utils";
