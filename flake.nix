@@ -3,8 +3,7 @@
 
   inputs = {
     nixpkgs = {
-      # TODO: change to unstable before merging
-      url = "github:msanft/nixpkgs/msanft/mkosi/python3";
+      url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     };
     flake-utils = {
       url = "github:numtide/flake-utils";
