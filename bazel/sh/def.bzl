@@ -1,6 +1,8 @@
 """Bazel rules for CI and dev tooling"""
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
+load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
+load("@rules_shell//shell:sh_test.bzl", "sh_test")
 
 def _sh_template_impl(ctx):
     out_file = ctx.actions.declare_file(ctx.label.name + ".bash")
@@ -66,8 +68,7 @@ def sh_template(name, **kwargs):
         template = template,
         toolchains = toolchains,
     )
-
-    native.sh_binary(
+    sh_binary(
         name = name,
         srcs = [script_name],
         data = [script_name] + data,
@@ -95,8 +96,7 @@ def sh_test_template(name, **kwargs):
         substitutions = substitutions,
         template = template,
     )
-
-    native.sh_test(
+    sh_test(
         name = name,
         srcs = [script_name],
         data = [script_name] + data,
