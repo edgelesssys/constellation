@@ -86,15 +86,7 @@ Releases should be performed using [the automated release pipeline](https://gith
 
 1. Publish the [provider release](https://github.com/edgelesssys/terraform-provider-constellation/releases)
 2. Merge the automated post release PR
-3. Write an email to STACKIT to inform them of the new release. For this, you require the name and UUID of the release image. You can find the email address in our internal [wiki](https://github.com/edgelesssys/wiki/blob/master/documentation/constellation/stackit.md):
-
-    ```shell-session
-    export OS_CLOUD=stackit
-    openstack image list | grep constellation
-    # the output should look similar to this, where the first column is the UUID and the second column is the name
-    # | 25edf48d-161f-452b-b420-963c3a80abd8 | constellation-stable-v2.16.4-qemu-vtpm | active |
-    ```
-
+3. Publish the [AWS and Azure marketplace images](./marketplace-publishing.md).
 4. Close fixed "known issues"
 5. Move open issues and PRs from this release's closed milestone to next milestone
 6. Reset `UpgradeRequiresIAMMigration`  in [`iamupgrade.go`](https://github.com/edgelesssys/constellation/blob/a88a731576184e3c5ee8527741c4a0cdaa4e9b24/cli/internal/cloudcmd/iamupgrade.go#L23).
