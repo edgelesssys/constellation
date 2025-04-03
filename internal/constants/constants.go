@@ -46,6 +46,12 @@ const (
 	SSHCAKeySuffix = "ca_emergency_ssh"
 	// SSHCAKeyPath is the path to the emergency SSH CA key on the node.
 	SSHCAKeyPath = "/run/ssh/ssh_ca.pub"
+	// SSHHostKeyPath is the path to the SSH host key of the node.
+	SSHHostKeyPath = "/run/ssh/ssh_host_ecdsa_key"
+	// SSHHostCertificatePath is the path to the SSH host certificate.
+	SSHHostCertificatePath = "/run/ssh/ssh_host_cert.pub"
+	// SSHAdditionalPrincipalsPath stores additional principals (like the public IP of the load balancer) that get added to all host certificates.
+	SSHAdditionalPrincipalsPath = "/run/ssh/principals/additional_principals.txt"
 
 	//
 	// Ports.
