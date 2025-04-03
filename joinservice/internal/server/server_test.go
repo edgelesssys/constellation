@@ -15,9 +15,11 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"github.com/edgelesssys/constellation/v2/joinservice/joinproto"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -52,13 +54,14 @@ func TestIssueJoinTicket(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		isControlPlane                 bool
-		kubeadm                        stubTokenGetter
-		kms                            stubKeyGetter
-		ca                             stubCA
-		kubeClient                     stubKubeClient
-		missingComponentsReferenceFile bool
-		wantErr                        bool
+		isControlPlane                  bool
+		kubeadm                         stubTokenGetter
+		kms                             stubKeyGetter
+		ca                              stubCA
+		kubeClient                      stubKubeClient
+		missingComponentsReferenceFile  bool
+		missingAdditionalPrincipalsFile bool
+		wantErr                         bool
 	}{
 		"worker node": {
 			kubeadm: stubTokenGetter{token: testJoinToken},
@@ -179,6 +182,18 @@ func TestIssueJoinTicket(t *testing.T) {
 			kubeClient: stubKubeClient{getComponentsVal: clusterComponents, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
 			wantErr:    true,
 		},
+		"Additional principals file is missing": {
+			kubeadm: stubTokenGetter{token: testJoinToken},
+			kms: stubKeyGetter{dataKeys: map[string][]byte{
+				uuid:                                 testKey,
+				attestation.MeasurementSecretContext: measurementSecret,
+				constants.SSHCAKeySuffix:             testCaKey,
+			}},
+			ca:                              stubCA{cert: testCert, nodeName: "node"},
+			kubeClient:                      stubKubeClient{getComponentsVal: clusterComponents, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
+			missingAdditionalPrincipalsFile: true,
+			wantErr:                         true,
+		},
 	}
 
 	for name, tc := range testCases {
@@ -188,6 +203,11 @@ func TestIssueJoinTicket(t *testing.T) {
 
 			salt := []byte{0xA, 0xB, 0xC}
 
+			fh := file.NewHandler(afero.NewMemMapFs())
+			if !tc.missingAdditionalPrincipalsFile {
+				require.NoError(fh.Write(constants.SSHAdditionalPrincipalsPath, []byte("*"), file.OptMkdirAll))
+			}
+
 			api := Server{
 				measurementSalt: salt,
 				ca:              tc.ca,
@@ -195,6 +215,7 @@ func TestIssueJoinTicket(t *testing.T) {
 				dataKeyGetter:   tc.kms,
 				kubeClient:      &tc.kubeClient,
 				log:             logger.NewTest(t),
+				fileHandler:     fh,
 			}
 
 			req := &joinproto.IssueJoinTicketRequest{
@@ -260,6 +281,7 @@ func TestIssueRejoinTicker(t *testing.T) {
 				joinTokenGetter: stubTokenGetter{},
 				dataKeyGetter:   tc.keyGetter,
 				log:             logger.NewTest(t),
+				fileHandler:     file.NewHandler(afero.NewMemMapFs()),
 			}
 
 			req := &joinproto.IssueRejoinTicketRequest{

@@ -21,16 +21,19 @@ import (
 	"bufio"
 	"context"
 	"crypto/ed25519"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"net"
+	"os"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
+	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/interfaces"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/journald"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
@@ -242,6 +245,48 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 	}
 	if err := s.fileHandler.Write(constants.SSHCAKeyPath, ssh.MarshalAuthorizedKey(ca.PublicKey()), file.OptMkdirAll); err != nil {
 		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "writing ssh CA pubkey: %s", err)); e != nil {
+			err = errors.Join(err, e)
+		}
+		return err
+	}
+
+	principalList, err := interfaces.GetNetworkInterfaces()
+	if err != nil {
+		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "failed to get network interfaces: %s", err)); e != nil {
+			err = errors.Join(err, e)
+		}
+		return err
+	}
+	hostname, err := os.Hostname()
+	if err != nil {
+		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "failed to get hostname: %s", err)); e != nil {
+			err = errors.Join(err, e)
+		}
+		return err
+	}
+	principalList = append(principalList, hostname)
+	principalList = append(principalList, req.ApiserverCertSans...)
+	hostKey, hostCertificate, err := crypto.GenerateSignedSSHHostKey(principalList, ca)
+	if err != nil {
+		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "generating and signing host SSH key: %s", err)); e != nil {
+			err = errors.Join(err, e)
+		}
+		return err
+	}
+	if err := s.fileHandler.Write(constants.SSHAdditionalPrincipalsPath, []byte(strings.Join(req.ApiserverCertSans, ",")), file.OptMkdirAll); err != nil {
+		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "writing list of public ssh principals: %s", err)); e != nil {
+			err = errors.Join(err, e)
+		}
+		return err
+	}
+	if err := s.fileHandler.Write(constants.SSHHostKeyPath, pem.EncodeToMemory(hostKey), file.OptMkdirAll); err != nil {
+		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "writing ssh host key: %s", err)); e != nil {
+			err = errors.Join(err, e)
+		}
+		return err
+	}
+	if err := s.fileHandler.Write(constants.SSHHostCertificatePath, ssh.MarshalAuthorizedKey(hostCertificate), file.OptMkdirAll); err != nil {
+		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "writing ssh host certificate: %s", err)); e != nil {
 			err = errors.Join(err, e)
 		}
 		return err

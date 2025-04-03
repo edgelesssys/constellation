@@ -8,6 +8,7 @@ go_library(
     visibility = ["//bootstrapper:__subpackages__"],
     deps = [
         "//bootstrapper/internal/certificate",
+        "//bootstrapper/internal/interfaces",
         "//internal/attestation",
         "//internal/cloud/metadata",
         "//internal/constants",

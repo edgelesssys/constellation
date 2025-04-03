@@ -23,11 +23,13 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"os"
 	"path/filepath"
 	"strconv"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/certificate"
+	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/interfaces"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -209,6 +211,18 @@ func (c *JoinClient) requestJoinTicket(serviceEndpoint string) (ticket *joinprot
 		return nil, nil, err
 	}
 
+	principalList, err := interfaces.GetNetworkInterfaces()
+	if err != nil {
+		c.log.With(slog.Any("error", err)).Error("Failed to get network interfaces")
+		return nil, nil, err
+	}
+	hostname, err := os.Hostname()
+	if err != nil {
+		c.log.With(slog.Any("error", err)).Error("Failed to get hostname")
+		return nil, nil, err
+	}
+	principalList = append(principalList, hostname)
+
 	conn, err := c.dialer.Dial(serviceEndpoint)
 	if err != nil {
 		c.log.With(slog.String("endpoint", serviceEndpoint), slog.Any("error", err)).Error("Join service unreachable")
@@ -218,9 +232,10 @@ func (c *JoinClient) requestJoinTicket(serviceEndpoint string) (ticket *joinprot
 
 	protoClient := joinproto.NewAPIClient(conn)
 	req := &joinproto.IssueJoinTicketRequest{
-		DiskUuid:           c.diskUUID,
-		CertificateRequest: certificateRequest,
-		IsControlPlane:     c.role == role.ControlPlane,
+		DiskUuid:                  c.diskUUID,
+		CertificateRequest:        certificateRequest,
+		IsControlPlane:            c.role == role.ControlPlane,
+		HostCertificatePrincipals: principalList,
 	}
 	ticket, err = protoClient.IssueJoinTicket(ctx, req)
 	if err != nil {
@@ -273,6 +288,14 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 
 	if err := c.fileHandler.Write(constants.SSHCAKeyPath, ticket.AuthorizedCaPublicKey, file.OptMkdirAll); err != nil {
 		return fmt.Errorf("writing ssh ca key: %w", err)
+	}
+
+	if err := c.fileHandler.Write(constants.SSHHostKeyPath, ticket.HostKey, file.OptMkdirAll); err != nil {
+		return fmt.Errorf("writing ssh host key: %w", err)
+	}
+
+	if err := c.fileHandler.Write(constants.SSHHostCertificatePath, ticket.HostCertificate, file.OptMkdirAll); err != nil {
+		return fmt.Errorf("writing ssh host certificate: %w", err)
 	}
 
 	state := nodestate.NodeState{
