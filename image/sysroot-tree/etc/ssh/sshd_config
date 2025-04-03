@@ -1,4 +1,5 @@
 HostKey /run/ssh/ssh_host_ecdsa_key
+HostCertificate /run/ssh/ssh_host_cert.pub
 TrustedUserCAKeys /run/ssh/ssh_ca.pub
 PasswordAuthentication no
 ChallengeResponseAuthentication no
