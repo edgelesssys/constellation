@@ -10,14 +10,17 @@ package server
 import (
 	"context"
 	"crypto/ed25519"
+	"encoding/pem"
 	"fmt"
 	"log/slog"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
+	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/grpclog"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
@@ -40,6 +43,7 @@ type Server struct {
 	dataKeyGetter   dataKeyGetter
 	ca              certificateAuthority
 	kubeClient      kubeClient
+	fileHandler     file.Handler
 	joinproto.UnimplementedAPIServer
 }
 
@@ -47,6 +51,7 @@ type Server struct {
 func New(
 	measurementSalt []byte, ca certificateAuthority,
 	joinTokenGetter joinTokenGetter, dataKeyGetter dataKeyGetter, kubeClient kubeClient, log *slog.Logger,
+	fileHandler file.Handler,
 ) (*Server, error) {
 	return &Server{
 		measurementSalt: measurementSalt,
@@ -55,6 +60,7 @@ func New(
 		dataKeyGetter:   dataKeyGetter,
 		ca:              ca,
 		kubeClient:      kubeClient,
+		fileHandler:     fileHandler,
 	}, nil
 }
 
@@ -112,6 +118,21 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to derive ssh CA key from seed material")
 		return nil, status.Errorf(codes.Internal, "generating ssh emergency CA key: %s", err)
+	}
+
+	// FIXME: the file exists on the node but - logically - not on the container
+	principalList := req.HostCertificatePrincipals
+	additionalPrincipals, err := s.fileHandler.Read(constants.SSHAdditionalPrincipalsPath)
+	if err != nil {
+		log.With(slog.Any("error", err)).Error("Failed to read additional principals file")
+		return nil, status.Errorf(codes.Internal, "reading additional principals file: %s", err)
+	}
+	principalList = append(principalList, strings.Split(string(additionalPrincipals), ",")...)
+
+	hostKey, hostCertificate, err := crypto.GenerateSignedSSHHostKey(principalList, ca)
+	if err != nil {
+		log.With(slog.Any("error", err)).Error("Failed to generate and sign SSH host key")
+		return nil, status.Errorf(codes.Internal, "generating and signing SSH host key: %s", err)
 	}
 
 	log.Info("Creating Kubernetes join token")
@@ -182,6 +203,8 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 		ControlPlaneFiles:        controlPlaneFiles,
 		KubernetesComponents:     components,
 		AuthorizedCaPublicKey:    ssh.MarshalAuthorizedKey(ca.PublicKey()),
+		HostKey:                  pem.EncodeToMemory(hostKey),
+		HostCertificate:          ssh.MarshalAuthorizedKey(hostCertificate),
 	}, nil
 }
 
