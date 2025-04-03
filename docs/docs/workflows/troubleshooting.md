@@ -177,7 +177,7 @@ Emergency SSH access to nodes can be useful to diagnose issues or download impor
 3. Now you can connect to any Constellation node using your certificate and your private key.
 
    ```bash
-   ssh -o CertificateFile=constellation_cert.pub -i <your private key> root@<ip of constellation node>
+   ssh -o CertificateFile=constellation_cert.pub -o UserKnownHostsFile=./known_hosts -i <your private key> root@<ip of constellation node>
    ```
 
    Normally, you don't have access to the Constellation nodes since they reside in a private network.
@@ -192,6 +192,7 @@ Emergency SSH access to nodes can be useful to diagnose issues or download impor
      IdentityFile <your private key>
      PreferredAuthentications publickey
      CertificateFile=constellation_cert.pub
+     UserKnownHostsFile=./known_hosts
      User root
      ProxyJump <LB domain name>
    ```

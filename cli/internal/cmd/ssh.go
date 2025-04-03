@@ -74,7 +74,12 @@ func writeCertificateForKey(cmd *cobra.Command, keyPath string, fh file.Handler,
 		return fmt.Errorf("generating SSH emergency CA key: %s", err)
 	}
 
-	debugLogger.Debug("SSH CA KEY generated", "public-key", string(ssh.MarshalAuthorizedKey(ca.PublicKey())))
+	marshalledKey := string(ssh.MarshalAuthorizedKey(ca.PublicKey()))
+	debugLogger.Debug("SSH CA KEY generated", "public-key", marshalledKey)
+	knownHostsContent := fmt.Sprintf("@cert-authority * %s", marshalledKey)
+	if err := fh.Write("./known_hosts", []byte(knownHostsContent), file.OptMkdirAll); err != nil {
+		return fmt.Errorf("reading known hosts file (does \"./known_hosts\" exist?): %w", err)
+	}
 
 	keyBuffer, err := fh.Read(keyPath)
 	if err != nil {
