@@ -219,6 +219,8 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 		ControlPlaneFiles:        controlPlaneFiles,
 		KubernetesComponents:     components,
 		AuthorizedCaPublicKey:    ssh.MarshalAuthorizedKey(ca.PublicKey()),
+		HostKey:                  ssh.MarshalAuthorizedKey(hostKeyPub),
+		HostCertificate:          ssh.MarshalAuthorizedKey(&certificate),
 	}, nil
 }
 
