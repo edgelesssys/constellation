@@ -221,7 +221,7 @@ runs:
         { tools, repository, rev }:
         let
           repoFlake = builtins.getFlake ("github:" + repository + "/" + rev);
-          nixpkgs = repoFlake.inputs.nixpkgsUnstable;
+          nixpkgs = repoFlake.inputs.nixpkgs;
           pkgs = import nixpkgs { system = builtins.currentSystem; };
           toolPkgs = map (p: pkgs.${p}) tools;
         in
