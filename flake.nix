@@ -2,7 +2,7 @@
   description = "Constellation";
 
   inputs = {
-    nixpkgsUnstable = {
+    nixpkgs = {
       url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     };
     flake-utils = {
@@ -13,21 +13,29 @@
   outputs =
     {
       self,
-      nixpkgsUnstable,
+      nixpkgs,
       flake-utils,
     }:
     flake-utils.lib.eachDefaultSystem (
       system:
       let
-        pkgsUnstable = import nixpkgsUnstable { inherit system; };
+        pkgs = import nixpkgs {
+          inherit system;
+          config.allowUnfree = true;
 
-        callPackage = pkgsUnstable.callPackage;
+          overlays = [
+            (_final: prev: (import ./nix/packages { inherit (prev) lib callPackage; }))
+            (_final: prev: { lib = prev.lib // (import ./nix/lib { inherit (prev) lib callPackage; }); })
+          ];
+        };
+
+        callPackage = pkgs.callPackage;
 
         mkosiDev = (
-          pkgsUnstable.mkosi.overrideAttrs (oldAttrs: {
+          pkgs.mkosi.overrideAttrs (oldAttrs: {
             propagatedBuildInputs =
               oldAttrs.propagatedBuildInputs
-              ++ (with pkgsUnstable; [
+              ++ (with pkgs; [
                 # package management
                 dnf5
                 rpm
@@ -52,41 +60,48 @@
         );
       in
       {
+        # Use `legacyPackages` instead of `packages` for the reason explained here:
+        # https://github.com/NixOS/nixpkgs/blob/34def00657d7c45c51b0762eb5f5309689a909a5/flake.nix#L138-L156
+        # Note that it's *not* a legacy attribute.
+        legacyPackages = {
+          generate = pkgs.callPackage ./nix/generate.nix { };
+        } // pkgs;
+
         packages.mkosi = mkosiDev;
 
-        packages.uplosi = pkgsUnstable.uplosi;
+        packages.uplosi = pkgs.uplosi;
 
-        packages.openssl = callPackage ./nix/cc/openssl.nix { pkgs = pkgsUnstable; };
+        packages.openssl = callPackage ./nix/cc/openssl.nix { pkgs = pkgs; };
 
         packages.cryptsetup = callPackage ./nix/cc/cryptsetup.nix {
-          pkgs = pkgsUnstable;
-          pkgsLinux = import nixpkgsUnstable { system = "x86_64-linux"; };
+          pkgs = pkgs;
+          pkgsLinux = import nixpkgs { system = "x86_64-linux"; };
         };
 
         packages.libvirt = callPackage ./nix/cc/libvirt.nix {
-          pkgs = pkgsUnstable;
-          pkgsLinux = import nixpkgsUnstable { system = "x86_64-linux"; };
+          pkgs = pkgs;
+          pkgsLinux = import nixpkgs { system = "x86_64-linux"; };
         };
 
         packages.libvirtd_base = callPackage ./nix/container/libvirtd_base.nix {
-          pkgs = pkgsUnstable;
-          pkgsLinux = import nixpkgsUnstable { system = "x86_64-linux"; };
+          pkgs = pkgs;
+          pkgsLinux = import nixpkgs { system = "x86_64-linux"; };
         };
 
         packages.vpn = callPackage ./nix/container/vpn/vpn.nix {
-          pkgs = pkgsUnstable;
-          pkgsLinux = import nixpkgsUnstable { system = "x86_64-linux"; };
+          pkgs = pkgs;
+          pkgsLinux = import nixpkgs { system = "x86_64-linux"; };
         };
 
-        packages.awscli2 = pkgsUnstable.awscli2;
+        packages.awscli2 = pkgs.awscli2;
 
-        packages.createrepo_c = pkgsUnstable.createrepo_c;
+        packages.createrepo_c = pkgs.createrepo_c;
 
-        packages.dnf5 = pkgsUnstable.dnf5;
+        packages.dnf5 = pkgs.dnf5;
 
         devShells.default = callPackage ./nix/shells/default.nix { };
 
-        formatter = nixpkgsUnstable.legacyPackages.${system}.nixpkgs-fmt;
+        formatter = nixpkgs.legacyPackages.${system}.nixpkgs-fmt;
       }
     );
 }
