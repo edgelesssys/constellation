@@ -19,6 +19,33 @@
     flake-utils.lib.eachDefaultSystem (
       system:
       let
+        overlay = final: prev: {
+          rpm = prev.rpm.overrideAttrs (old: {
+            nativeBuildInputs = old.nativeBuildInputs ++ [ prev.makeWrapper ];
+            postFixup = ''
+              wrapProgram $out/lib/rpm/sysusers.sh \
+                --set PATH ${
+                  prev.lib.makeBinPath (
+                    with prev;
+                    [
+                      coreutils
+                      findutils
+                      su.out
+                      gnugrep
+                    ]
+                  )
+                }
+            '';
+          });
+
+          # dnf5 assumes a TTY with a very small width by default, truncating its output instead of line-wrapping
+          # it. Force it to use more VT columns to avoid this, and make debugging errors easier.
+          dnf5-stub = prev.writeScriptBin "dnf5" ''
+            #!/usr/bin/env bash
+            FORCE_COLUMNS=200 ${final.dnf5}/bin/dnf5 $@
+          '';
+        };
+
         pkgs = import nixpkgs {
           inherit system;
           config.allowUnfree = true;
@@ -26,18 +53,19 @@
           overlays = [
             (_final: prev: (import ./nix/packages { inherit (prev) lib callPackage; }))
             (_final: prev: { lib = prev.lib // (import ./nix/lib { inherit (prev) lib callPackage; }); })
+            overlay
           ];
         };
 
         callPackage = pkgs.callPackage;
 
         mkosiDev = (
-          pkgs.mkosi.overrideAttrs (oldAttrs: {
-            propagatedBuildInputs =
-              oldAttrs.propagatedBuildInputs
-              ++ (with pkgs; [
+          pkgs.mkosi.override {
+            extraDeps = (
+              with pkgs;
+              [
                 # package management
-                dnf5
+                dnf5-stub
                 rpm
                 createrepo_c
 
@@ -55,8 +83,9 @@
                 # utils
                 gnused # sed
                 gnugrep # grep
-              ]);
-          })
+              ]
+            );
+          }
         );
       in
       {
