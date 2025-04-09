@@ -270,44 +270,44 @@ def _buf_deps():
         strip_prefix = "buf/bin",
         build_file_content = """exports_files(["buf"], visibility = ["//visibility:public"])""",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/adecbc5a41cae030cb33a7bf249e854f48aa7432132fa03cf61b8cc5bac27e06",
-            "https://github.com/bufbuild/buf/releases/download/v1.52.0/buf-Linux-x86_64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/ce439b98c0e655ba1821fc529442f677135a9a44206a85cf2081a445bde02554",
+            "https://github.com/bufbuild/buf/releases/download/v1.52.1/buf-Linux-x86_64.tar.gz",
         ],
         type = "tar.gz",
-        sha256 = "adecbc5a41cae030cb33a7bf249e854f48aa7432132fa03cf61b8cc5bac27e06",
+        sha256 = "ce439b98c0e655ba1821fc529442f677135a9a44206a85cf2081a445bde02554",
     )
     http_archive(
         name = "com_github_bufbuild_buf_linux_arm64",
         strip_prefix = "buf/bin",
         build_file_content = """exports_files(["buf"], visibility = ["//visibility:public"])""",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/c570950ab32710506ac793ec63ad07e51ca0d7e82fd41a5d9375179f4d84c45f",
-            "https://github.com/bufbuild/buf/releases/download/v1.52.0/buf-Linux-aarch64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/fb980e62f55a0d705f555124b5b250a6234deae67b3a493b1844fed8cb48f012",
+            "https://github.com/bufbuild/buf/releases/download/v1.52.1/buf-Linux-aarch64.tar.gz",
         ],
         type = "tar.gz",
-        sha256 = "c570950ab32710506ac793ec63ad07e51ca0d7e82fd41a5d9375179f4d84c45f",
+        sha256 = "fb980e62f55a0d705f555124b5b250a6234deae67b3a493b1844fed8cb48f012",
     )
     http_archive(
         name = "com_github_bufbuild_buf_darwin_amd64",
         strip_prefix = "buf/bin",
         build_file_content = """exports_files(["buf"], visibility = ["//visibility:public"])""",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/daae25f1ee3607e5abd2f17665ef30e86f4eb6e9070070920e10ce3c4d212934",
-            "https://github.com/bufbuild/buf/releases/download/v1.52.0/buf-Darwin-x86_64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/ff3aedaa8bf53c3ae53bf863bb6141a23ef9e2ef750016ab217b0466ab3e89be",
+            "https://github.com/bufbuild/buf/releases/download/v1.52.1/buf-Darwin-x86_64.tar.gz",
         ],
         type = "tar.gz",
-        sha256 = "daae25f1ee3607e5abd2f17665ef30e86f4eb6e9070070920e10ce3c4d212934",
+        sha256 = "ff3aedaa8bf53c3ae53bf863bb6141a23ef9e2ef750016ab217b0466ab3e89be",
     )
     http_archive(
         name = "com_github_bufbuild_buf_darwin_arm64",
         strip_prefix = "buf/bin",
         build_file_content = """exports_files(["buf"], visibility = ["//visibility:public"])""",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/493cb379606da7f79c0aee3904124c2543db8daff71e95cd64bdaf5c2ed0bf0e",
-            "https://github.com/bufbuild/buf/releases/download/v1.52.0/buf-Darwin-arm64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/b11d5afda7f58a44a6520b798902b1263aba921b0989cb156ecf2acc8eb1ce31",
+            "https://github.com/bufbuild/buf/releases/download/v1.52.1/buf-Darwin-arm64.tar.gz",
         ],
         type = "tar.gz",
-        sha256 = "493cb379606da7f79c0aee3904124c2543db8daff71e95cd64bdaf5c2ed0bf0e",
+        sha256 = "b11d5afda7f58a44a6520b798902b1263aba921b0989cb156ecf2acc8eb1ce31",
     )
 
 def _talos_docgen_deps():
