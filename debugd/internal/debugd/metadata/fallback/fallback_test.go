@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package fallback
 
 import (
-	"context"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/role"
@@ -23,19 +22,19 @@ func TestDiscoverDebugdIPs(t *testing.T) {
 	assert := assert.New(t)
 
 	fetcher := NewFallbackFetcher()
-	ips, err := fetcher.DiscoverDebugdIPs(context.Background())
+	ips, err := fetcher.DiscoverDebugdIPs(t.Context())
 	assert.NoError(err)
 	assert.Empty(ips)
 
-	rol, err := fetcher.Role(context.Background())
+	rol, err := fetcher.Role(t.Context())
 	assert.NoError(err)
 	assert.Equal(rol, role.Unknown)
 
-	uid, err := fetcher.UID(context.Background())
+	uid, err := fetcher.UID(t.Context())
 	assert.NoError(err)
 	assert.Empty(uid)
 
-	self, err := fetcher.Self(context.Background())
+	self, err := fetcher.Self(t.Context())
 	assert.NoError(err)
 	assert.Empty(self)
 }

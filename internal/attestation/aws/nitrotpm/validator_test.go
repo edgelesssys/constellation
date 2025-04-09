@@ -42,7 +42,7 @@ func TestGeTrustedKey(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 			out, err := getTrustedKey(
-				context.Background(),
+				t.Context(),
 				vtpm.AttestationDocument{
 					Attestation: &attest.Attestation{
 						AkPub: tc.akPub,

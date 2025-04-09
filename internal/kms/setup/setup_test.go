@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package setup
 
 import (
-	"context"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
@@ -26,12 +25,12 @@ func TestMain(m *testing.M) {
 func TestSetUpKMS(t *testing.T) {
 	assert := assert.New(t)
 
-	kms, err := KMS(context.Background(), "storage://unknown", "kms://unknown")
+	kms, err := KMS(t.Context(), "storage://unknown", "kms://unknown")
 	assert.Error(err)
 	assert.Nil(kms)
 
 	masterSecret := uri.MasterSecret{Key: []byte("key"), Salt: []byte("salt")}
-	kms, err = KMS(context.Background(), "storage://no-store", masterSecret.EncodeToURI())
+	kms, err = KMS(t.Context(), "storage://no-store", masterSecret.EncodeToURI())
 	assert.NoError(err)
 	assert.NotNil(kms)
 }

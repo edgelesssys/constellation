@@ -88,7 +88,7 @@ func TestCreateScalingGroupIfNotExists(t *testing.T) {
 				autoscalingGroupName: "autoscaling-group-name",
 				role:                 updatev1alpha1.WorkerRole,
 			}
-			err := createScalingGroupIfNotExists(context.Background(), newScalingGroupConfig)
+			err := createScalingGroupIfNotExists(t.Context(), newScalingGroupConfig)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -184,7 +184,7 @@ func TestPatchNodeGroupName(t *testing.T) {
 				getErr:    tc.getErr,
 				updateErr: tc.updateErr,
 			}
-			gotExists, gotErr := patchNodeGroupName(context.Background(), k8sClient, "resource-name", "node-group-name")
+			gotExists, gotErr := patchNodeGroupName(t.Context(), k8sClient, "resource-name", "node-group-name")
 			if tc.wantErr {
 				assert.Error(gotErr)
 				return

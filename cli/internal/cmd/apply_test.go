@@ -199,7 +199,7 @@ func TestBackupHelmCharts(t *testing.T) {
 				log: logger.NewTest(t),
 			}
 
-			err := a.backupHelmCharts(context.Background(), tc.helmApplier, tc.includesUpgrades, "")
+			err := a.backupHelmCharts(t.Context(), tc.helmApplier, tc.includesUpgrades, "")
 			if tc.wantErr {
 				assert.Error(err)
 				return

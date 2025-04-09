@@ -235,7 +235,7 @@ func TestFormatDefault(t *testing.T) {
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			_, err := formatDefault(context.Background(), tc.doc, tc.attCfg, logger.NewTest(t))
+			_, err := formatDefault(t.Context(), tc.doc, tc.attCfg, logger.NewTest(t))
 			if tc.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -313,7 +313,7 @@ func TestVerifyClient(t *testing.T) {
 				Nonce: tc.nonce,
 			}
 
-			_, err = verifier.Verify(context.Background(), addr, request, atls.NewFakeValidator(variant.Dummy{}))
+			_, err = verifier.Verify(t.Context(), addr, request, atls.NewFakeValidator(variant.Dummy{}))
 
 			if tc.wantErr {
 				assert.Error(err)

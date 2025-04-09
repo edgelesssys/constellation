@@ -72,7 +72,7 @@ func TestUpgrade(t *testing.T) {
 	targetVersions := WriteUpgradeConfig(require, *targetImage, *targetKubernetes, *targetMicroservices, constants.ConfigFilename)
 
 	log.Println("Fetching measurements for new image.")
-	cmd := exec.CommandContext(context.Background(), cli, "config", "fetch-measurements", "--insecure", "--debug")
+	cmd := exec.CommandContext(t.Context(), cli, "config", "fetch-measurements", "--insecure", "--debug")
 	stdout, stderr, err := runCommandWithSeparateOutputs(cmd)
 	require.NoError(err, "Stdout: %s\nStderr: %s", string(stdout), string(stderr))
 	log.Println(string(stdout))
@@ -83,10 +83,10 @@ func TestUpgrade(t *testing.T) {
 
 	log.Println("Checking upgrade.")
 	assert := assert.New(t) // use assert because this part is more brittle and should not fail the entire test
-	runUpgradeCheck(assert, cli, *targetKubernetes)
+	runUpgradeCheck(t.Context(), assert, cli, *targetKubernetes)
 
 	log.Println("Triggering upgrade.")
-	runUpgradeApply(require, cli)
+	runUpgradeApply(t.Context(), require, cli)
 
 	AssertUpgradeSuccessful(t, cli, targetVersions, k, *wantControl, *wantWorker, *timeout)
 }
@@ -96,7 +96,7 @@ func TestUpgrade(t *testing.T) {
 // 2) all pods have good status conditions.
 func testPodsEventuallyReady(t *testing.T, k *kubernetes.Clientset, namespace string) {
 	require.Eventually(t, func() bool {
-		pods, err := k.CoreV1().Pods(namespace).List(context.Background(), metaV1.ListOptions{})
+		pods, err := k.CoreV1().Pods(namespace).List(t.Context(), metaV1.ListOptions{})
 		if err != nil {
 			log.Println(err)
 			return false
@@ -127,7 +127,7 @@ func testPodsEventuallyReady(t *testing.T, k *kubernetes.Clientset, namespace st
 // 2) the expected number of nodes have joined the cluster.
 func testNodesEventuallyAvailable(t *testing.T, k *kubernetes.Clientset, wantControlNodeCount, wantWorkerNodeCount int) {
 	require.Eventually(t, func() bool {
-		nodes, err := k.CoreV1().Nodes().List(context.Background(), metaV1.ListOptions{})
+		nodes, err := k.CoreV1().Nodes().List(t.Context(), metaV1.ListOptions{})
 		if err != nil {
 			log.Println(err)
 			return false
@@ -172,8 +172,8 @@ func testNodesEventuallyAvailable(t *testing.T, k *kubernetes.Clientset, wantCon
 
 // runUpgradeCheck executes 'upgrade check' and does basic checks on the output.
 // We can not check images upgrades because we might use unpublished images. CLI uses public CDN to check for available images.
-func runUpgradeCheck(assert *assert.Assertions, cli, targetKubernetes string) {
-	cmd := exec.CommandContext(context.Background(), cli, "upgrade", "check", "--debug")
+func runUpgradeCheck(ctx context.Context, assert *assert.Assertions, cli, targetKubernetes string) {
+	cmd := exec.CommandContext(ctx, cli, "upgrade", "check", "--debug")
 	stdout, stderr, err := runCommandWithSeparateOutputs(cmd)
 	assert.NoError(err, "Stdout: %s\nStderr: %s", string(stdout), string(stderr))
 
@@ -204,16 +204,16 @@ func containsAny(text string, substrs []string) bool {
 	return false
 }
 
-func runUpgradeApply(require *require.Assertions, cli string) {
+func runUpgradeApply(ctx context.Context, require *require.Assertions, cli string) {
 	tfLogFlag := ""
-	cmd := exec.CommandContext(context.Background(), cli, "--help")
+	cmd := exec.CommandContext(ctx, cli, "--help")
 	stdout, stderr, err := runCommandWithSeparateOutputs(cmd)
 	require.NoError(err, "Stdout: %s\nStderr: %s", string(stdout), string(stderr))
 	if strings.Contains(string(stdout), "--tf-log") {
 		tfLogFlag = "--tf-log=DEBUG"
 	}
 
-	cmd = exec.CommandContext(context.Background(), cli, "apply", "--debug", "--yes", tfLogFlag)
+	cmd = exec.CommandContext(ctx, cli, "apply", "--debug", "--yes", tfLogFlag)
 	stdout, stderr, err = runCommandWithSeparateOutputs(cmd)
 	require.NoError(err, "Stdout: %s\nStderr: %s", string(stdout), string(stderr))
 	require.NoError(containsUnexepectedMsg(string(stdout)))

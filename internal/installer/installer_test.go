@@ -132,7 +132,7 @@ func TestInstall(t *testing.T) {
 				retriable: func(_ error) bool { return false },
 			}
 
-			err := inst.Install(context.Background(), tc.component)
+			err := inst.Install(t.Context(), tc.component)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -340,7 +340,7 @@ func TestRetryDownloadToTempDir(t *testing.T) {
 			}
 
 			// abort retryDownloadToTempDir in some test cases by using the context
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 
 			wg := sync.WaitGroup{}
@@ -429,7 +429,7 @@ func TestDownloadToTempDir(t *testing.T) {
 				fs:      &afero.Afero{Fs: afs},
 				hClient: &hClient,
 			}
-			path, err := inst.downloadToTempDir(context.Background(), "http://server/path")
+			path, err := inst.downloadToTempDir(t.Context(), "http://server/path")
 			if tc.wantErr {
 				assert.Error(err)
 				return

@@ -91,7 +91,7 @@ func TestGetNodeImage(t *testing.T) {
 					describeInstancesErr: tc.describeInstancesErr,
 				},
 			}
-			gotImage, err := client.GetNodeImage(context.Background(), tc.providerID)
+			gotImage, err := client.GetNodeImage(t.Context(), tc.providerID)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -199,7 +199,7 @@ func TestGetScalingGroupID(t *testing.T) {
 					describeInstancesErr: tc.describeInstancesErr,
 				},
 			}
-			gotScalingID, err := client.GetScalingGroupID(context.Background(), tc.providerID)
+			gotScalingID, err := client.GetScalingGroupID(t.Context(), tc.providerID)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -357,7 +357,7 @@ func TestCreateNode(t *testing.T) {
 					setDesiredCapacityErr: tc.setDesiredCapacityErr,
 				},
 			}
-			nodeName, providerID, err := client.CreateNode(context.Background(), tc.providerID)
+			nodeName, providerID, err := client.CreateNode(t.Context(), tc.providerID)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -398,7 +398,7 @@ func TestDeleteNode(t *testing.T) {
 					terminateInstanceErr: tc.terminateInstanceErr,
 				},
 			}
-			err := client.DeleteNode(context.Background(), tc.providerID)
+			err := client.DeleteNode(t.Context(), tc.providerID)
 			if tc.wantErr {
 				assert.Error(err)
 				return

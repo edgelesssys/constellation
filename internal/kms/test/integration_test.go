@@ -64,7 +64,7 @@ func runKMSTest(t *testing.T, kms kms.CloudKMS) {
 
 	dekName := "test-dek"
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*30)
 	defer cancel()
 
 	res, err := kms.GetDEK(ctx, dekName, config.SymmetricKeyLength)
@@ -90,7 +90,7 @@ func runStorageTest(t *testing.T, store kms.Storage) {
 	testData := []byte("Constellation test data")
 	testName := "constellation-test"
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*30)
 	defer cancel()
 
 	err := store.Put(ctx, testName, testData)

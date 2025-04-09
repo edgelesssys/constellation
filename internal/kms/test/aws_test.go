@@ -34,7 +34,7 @@ func TestAwsStorage(t *testing.T) {
 	}
 	require := require.New(t)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*30)
 	defer cancel()
 
 	// create bucket
@@ -105,7 +105,7 @@ func TestAwsKms(t *testing.T) {
 	require := require.New(t)
 
 	store := memfs.New()
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*30)
 	defer cancel()
 
 	cfg := uri.AWSConfig{

@@ -49,17 +49,17 @@ func TestResult(t *testing.T) {
 				pollErr:   tc.pollErr,
 				resultErr: tc.resultErr,
 			})
-			_, firstErr := poller.Result(context.Background())
+			_, firstErr := poller.Result(t.Context())
 			if tc.wantErr {
 				assert.Error(firstErr)
 				// calling Result again should return the same error
-				_, secondErr := poller.Result(context.Background())
+				_, secondErr := poller.Result(t.Context())
 				assert.Equal(firstErr, secondErr)
 				return
 			}
 			assert.NoError(firstErr)
 			// calling Result again should still not return an error
-			_, secondErr := poller.Result(context.Background())
+			_, secondErr := poller.Result(t.Context())
 			assert.NoError(secondErr)
 		})
 	}
@@ -136,7 +136,7 @@ func TestPollUntilDone(t *testing.T) {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				gotResult, gotErr = poller.PollUntilDone(context.Background(), &PollUntilDoneOptions{
+				gotResult, gotErr = poller.PollUntilDone(t.Context(), &PollUntilDoneOptions{
 					MaxBackoff: tc.maxBackoff,
 					Clock:      clock,
 				})

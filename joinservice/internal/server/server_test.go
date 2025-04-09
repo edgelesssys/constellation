@@ -201,7 +201,7 @@ func TestIssueJoinTicket(t *testing.T) {
 				DiskUuid:       "uuid",
 				IsControlPlane: tc.isControlPlane,
 			}
-			resp, err := api.IssueJoinTicket(context.Background(), req)
+			resp, err := api.IssueJoinTicket(t.Context(), req)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -265,7 +265,7 @@ func TestIssueRejoinTicker(t *testing.T) {
 			req := &joinproto.IssueRejoinTicketRequest{
 				DiskUuid: uuid,
 			}
-			resp, err := api.IssueRejoinTicket(context.Background(), req)
+			resp, err := api.IssueRejoinTicket(t.Context(), req)
 			if tc.wantErr {
 				assert.Error(err)
 				return

@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package provider
 
 import (
-	"context"
 	"fmt"
 	"regexp"
 	"testing"
@@ -96,14 +95,14 @@ func TestViolatedImageConstraint(t *testing.T) {
 				Version: tc.version,
 			}
 
-			input, diags := basetypes.NewObjectValueFrom(context.Background(), map[string]attr.Type{
+			input, diags := basetypes.NewObjectValueFrom(t.Context(), map[string]attr.Type{
 				"version":           basetypes.StringType{},
 				"reference":         basetypes.StringType{},
 				"short_path":        basetypes.StringType{},
 				"marketplace_image": basetypes.BoolType{},
 			}, img)
 			require.Equal(t, 0, diags.ErrorsCount())
-			_, _, diags2 := sut.getImageVersion(context.Background(), &ClusterResourceModel{
+			_, _, diags2 := sut.getImageVersion(t.Context(), &ClusterResourceModel{
 				Image: input,
 			})
 			require.Equal(t, tc.expectedErrorCount, diags2.ErrorsCount())

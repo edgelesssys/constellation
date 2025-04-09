@@ -91,7 +91,7 @@ func TestSchedulerStart(t *testing.T) {
 			}
 
 			wg := &sync.WaitGroup{}
-			scheduler.Start(context.Background(), wg)
+			scheduler.Start(t.Context(), wg)
 			wg.Wait()
 
 			assert.Equal(tc.wantDeploymentDownloads, tc.downloader.downloadDeploymentIPs)

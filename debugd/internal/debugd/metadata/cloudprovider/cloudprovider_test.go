@@ -56,7 +56,7 @@ func TestRole(t *testing.T) {
 
 			fetcher := Fetcher{tc.meta}
 
-			role, err := fetcher.Role(context.Background())
+			role, err := fetcher.Role(t.Context())
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -110,7 +110,7 @@ func TestDiscoverDebugIPs(t *testing.T) {
 			fetcher := Fetcher{
 				metaAPI: &tc.meta,
 			}
-			ips, err := fetcher.DiscoverDebugdIPs(context.Background())
+			ips, err := fetcher.DiscoverDebugdIPs(t.Context())
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -149,7 +149,7 @@ func TestDiscoverLoadBalancerIP(t *testing.T) {
 				metaAPI: tc.metaAPI,
 			}
 
-			ip, err := fetcher.DiscoverLoadBalancerIP(context.Background())
+			ip, err := fetcher.DiscoverLoadBalancerIP(t.Context())
 
 			if tc.wantErr {
 				assert.Error(err)

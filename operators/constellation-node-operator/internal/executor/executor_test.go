@@ -29,7 +29,7 @@ func TestStartTriggersImmediateReconciliation(t *testing.T) {
 	}
 	exec := New(ctrl, cfg)
 	// on start, the executor should trigger a reconciliation
-	stopAndWait := exec.Start(context.Background())
+	stopAndWait := exec.Start(t.Context())
 	<-ctrl.waitUntilReconciled // makes sure to wait until reconcile was called
 	ctrl.stop <- struct{}{}
 
@@ -48,10 +48,10 @@ func TestStartMultipleTimesIsCoalesced(t *testing.T) {
 	}
 	exec := New(ctrl, cfg)
 	// start once
-	stopAndWait := exec.Start(context.Background())
+	stopAndWait := exec.Start(t.Context())
 	// start again multiple times
 	for i := 0; i < 10; i++ {
-		_ = exec.Start(context.Background())
+		_ = exec.Start(t.Context())
 	}
 
 	<-ctrl.waitUntilReconciled // makes sure to wait until reconcile was called
@@ -72,7 +72,7 @@ func TestErrorTriggersImmediateReconciliation(t *testing.T) {
 		RateLimiter:      &stubRateLimiter{},   // no rate limiting
 	}
 	exec := New(ctrl, cfg)
-	stopAndWait := exec.Start(context.Background())
+	stopAndWait := exec.Start(t.Context())
 	for i := 0; i < 10; i++ {
 		<-ctrl.waitUntilReconciled // makes sure to wait until reconcile was called
 	}
@@ -96,7 +96,7 @@ func TestErrorTriggersRateLimiting(t *testing.T) {
 		},
 	}
 	exec := New(ctrl, cfg)
-	stopAndWait := exec.Start(context.Background())
+	stopAndWait := exec.Start(t.Context())
 	<-ctrl.waitUntilReconciled // makes sure to wait until reconcile was called once to trigger rate limiting
 	ctrl.stop <- struct{}{}
 
@@ -120,7 +120,7 @@ func TestRequeueAfterResultRequeueInterval(t *testing.T) {
 		},
 	}
 	exec := New(ctrl, cfg)
-	stopAndWait := exec.Start(context.Background())
+	stopAndWait := exec.Start(t.Context())
 	for i := 0; i < 10; i++ {
 		<-ctrl.waitUntilReconciled // makes sure to wait until reconcile was called
 	}
@@ -143,7 +143,7 @@ func TestExternalTrigger(t *testing.T) {
 		},
 	}
 	exec := New(ctrl, cfg)
-	stopAndWait := exec.Start(context.Background())
+	stopAndWait := exec.Start(t.Context())
 	<-ctrl.waitUntilReconciled // initial trigger
 	for i := 0; i < 10; i++ {
 		exec.Trigger()
@@ -167,7 +167,7 @@ func TestSimultaneousExternalTriggers(t *testing.T) {
 		},
 	}
 	exec := New(ctrl, cfg)
-	stopAndWait := exec.Start(context.Background())
+	stopAndWait := exec.Start(t.Context())
 	<-ctrl.waitUntilReconciled // initial trigger
 	for i := 0; i < 100; i++ {
 		exec.Trigger() // extra trigger calls are coalesced
@@ -184,7 +184,7 @@ func TestSimultaneousExternalTriggers(t *testing.T) {
 
 func TestContextCancel(t *testing.T) {
 	assert := assert.New(t)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	ctrl := newStubController(Result{}, nil)
 	cfg := Config{
 		PollingFrequency: time.Hour * 24 * 365, // 1 year. Should be high enough to not trigger the timer in the test.
@@ -219,7 +219,7 @@ func TestRequeueAfterPollingFrequency(t *testing.T) {
 		},
 	}
 	exec := New(ctrl, cfg)
-	stopAndWait := exec.Start(context.Background())
+	stopAndWait := exec.Start(t.Context())
 	for i := 0; i < 10; i++ {
 		<-ctrl.waitUntilReconciled // makes sure to wait until reconcile was called
 	}

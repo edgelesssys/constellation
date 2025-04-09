@@ -38,7 +38,7 @@ func TestCheckLicense(t *testing.T) {
 			require := require.New(t)
 
 			a := &Applier{licenseChecker: tc.licenseChecker, log: logger.NewTest(t)}
-			_, err := a.CheckLicense(context.Background(), cloudprovider.Unknown, true, license.CommunityLicense)
+			_, err := a.CheckLicense(t.Context(), cloudprovider.Unknown, true, license.CommunityLicense)
 			if tc.wantErr {
 				require.Error(err)
 			} else {

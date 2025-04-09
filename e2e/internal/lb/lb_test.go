@@ -12,7 +12,6 @@ package lb
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -70,7 +69,7 @@ func TestLoadBalancer(t *testing.T) {
 
 	t.Log("Change port of service to 8044")
 	svc.Spec.Ports[0].Port = newPort
-	svc, err = k.CoreV1().Services(namespaceName).Update(context.Background(), svc, metaV1.UpdateOptions{})
+	svc, err = k.CoreV1().Services(namespaceName).Update(t.Context(), svc, metaV1.UpdateOptions{})
 	require.NoError(err)
 	assert.Equal(newPort, svc.Spec.Ports[0].Port)
 
@@ -93,7 +92,7 @@ func gatherDebugInfo(t *testing.T, k *kubernetes.Clientset) {
 
 	t.Log("Gathering additional debug information.")
 
-	pods, err := k.CoreV1().Pods(namespaceName).List(context.Background(), metaV1.ListOptions{
+	pods, err := k.CoreV1().Pods(namespaceName).List(t.Context(), metaV1.ListOptions{
 		LabelSelector: "app=whoami",
 	})
 	if err != nil {
@@ -106,7 +105,7 @@ func gatherDebugInfo(t *testing.T, k *kubernetes.Clientset) {
 		req := k.CoreV1().Pods(namespaceName).GetLogs(pod.Name, &coreV1.PodLogOptions{
 			LimitBytes: func() *int64 { i := int64(1024 * 1024); return &i }(),
 		})
-		logs, err := req.Stream(context.Background())
+		logs, err := req.Stream(t.Context())
 		if err != nil {
 			t.Logf("fetching logs: %v", err)
 			return
@@ -155,7 +154,7 @@ func testEventuallyStatusOK(t *testing.T, url string) {
 	require := require.New(t)
 
 	assert.Eventually(func() bool {
-		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, http.NoBody)
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, url, http.NoBody)
 		require.NoError(err)
 
 		resp, err := http.DefaultClient.Do(req)
@@ -183,7 +182,7 @@ func testEventuallyExternalIPAvailable(t *testing.T, k *kubernetes.Clientset) *c
 
 	require.Eventually(t, func() bool {
 		var err error
-		svc, err = k.CoreV1().Services(namespaceName).Get(context.Background(), serviceName, metaV1.GetOptions{})
+		svc, err = k.CoreV1().Services(namespaceName).Get(t.Context(), serviceName, metaV1.GetOptions{})
 		if err != nil {
 			t.Log("Getting service failed: ", err.Error())
 			return false
@@ -212,7 +211,7 @@ func testEndpointAvailable(t *testing.T, url string, allHostnames []string, reqI
 	assert := assert.New(t)
 	require := require.New(t)
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, http.NoBody)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, url, http.NoBody)
 	require.NoError(err)
 
 	resp, err := http.DefaultClient.Do(req)

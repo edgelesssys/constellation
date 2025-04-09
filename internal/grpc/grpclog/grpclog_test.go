@@ -76,7 +76,7 @@ func TestLogStateChanges(t *testing.T) {
 
 			var wg sync.WaitGroup
 			isReadyCallbackCalled := false
-			LogStateChangesUntilReady(context.Background(), tc.conn, logger, &wg, func() { isReadyCallbackCalled = true })
+			LogStateChangesUntilReady(t.Context(), tc.conn, logger, &wg, func() { isReadyCallbackCalled = true })
 			wg.Wait()
 			tc.assert(t, logger, isReadyCallbackCalled)
 		})

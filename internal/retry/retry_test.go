@@ -71,7 +71,7 @@ func TestDo(t *testing.T) {
 				retriable: isRetriable,
 			}
 			retrierResult := make(chan error, 1)
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 
 			go func() { retrierResult <- retrier.Do(ctx) }()

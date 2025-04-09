@@ -123,7 +123,7 @@ func TestAnnotateNodes(t *testing.T) {
 					},
 				},
 			}
-			annotated, invalid := reconciler.annotateNodes(context.Background(), []corev1.Node{tc.node})
+			annotated, invalid := reconciler.annotateNodes(t.Context(), []corev1.Node{tc.node})
 			if tc.wantAnnotated == nil {
 				assert.Len(annotated, 0)
 				assert.Len(invalid, 1)
@@ -226,7 +226,7 @@ func TestPairDonorsAndHeirs(t *testing.T) {
 				},
 			}
 			nodeImage := updatev1alpha1.NodeVersion{}
-			pairs := reconciler.pairDonorsAndHeirs(context.Background(), &nodeImage, []corev1.Node{tc.outdatedNode}, []mintNode{tc.mintNode})
+			pairs := reconciler.pairDonorsAndHeirs(t.Context(), &nodeImage, []corev1.Node{tc.outdatedNode}, []mintNode{tc.mintNode})
 			if tc.wantPair == nil {
 				assert.Len(pairs, 0)
 				return
@@ -315,7 +315,7 @@ func TestMatchDonorsAndHeirs(t *testing.T) {
 					stubReaderClient: *newStubReaderClient(t, []runtime.Object{&tc.donor, &tc.heir}, nil, nil),
 				},
 			}
-			pairs := reconciler.matchDonorsAndHeirs(context.Background(), nil, []corev1.Node{tc.donor}, []corev1.Node{tc.heir})
+			pairs := reconciler.matchDonorsAndHeirs(t.Context(), nil, []corev1.Node{tc.donor}, []corev1.Node{tc.heir})
 			if tc.wantPair == nil {
 				assert.Len(pairs, 0)
 				return
@@ -693,7 +693,7 @@ func TestCreateNewNodes(t *testing.T) {
 				Scheme: getScheme(t),
 			}
 			newNodeConfig := newNodeConfig{desiredNodeImage, tc.outdatedNodes, tc.donors, tc.pendingNodes, tc.scalingGroupByID, tc.budget}
-			err := reconciler.createNewNodes(context.Background(), newNodeConfig)
+			err := reconciler.createNewNodes(t.Context(), newNodeConfig)
 			require.NoError(err)
 			assert.Equal(tc.wantCreateCalls, reconciler.nodeReplacer.(*stubNodeReplacerWriter).createCalls)
 		})

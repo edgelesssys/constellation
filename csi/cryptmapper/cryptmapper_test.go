@@ -202,7 +202,7 @@ func TestOpenCryptDevice(t *testing.T) {
 				getDiskFormat: tc.diskInfo,
 			}
 
-			out, err := mapper.OpenCryptDevice(context.Background(), tc.source, tc.volumeID, tc.integrity)
+			out, err := mapper.OpenCryptDevice(t.Context(), tc.source, tc.volumeID, tc.integrity)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
@@ -223,7 +223,7 @@ func TestOpenCryptDevice(t *testing.T) {
 		kms:           &fakeKMS{},
 		getDiskFormat: getDiskFormat,
 	}
-	_, err := mapper.OpenCryptDevice(context.Background(), "/dev/some-device", "volume01", false)
+	_, err := mapper.OpenCryptDevice(t.Context(), "/dev/some-device", "volume01", false)
 	assert.NoError(t, err)
 }
 
@@ -270,7 +270,7 @@ func TestResizeCryptDevice(t *testing.T) {
 				mapper: testMapper(tc.device),
 			}
 
-			res, err := mapper.ResizeCryptDevice(context.Background(), tc.volumeID)
+			res, err := mapper.ResizeCryptDevice(t.Context(), tc.volumeID)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

@@ -8,7 +8,6 @@ package cloudcmd
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"testing"
 
@@ -46,7 +45,7 @@ func TestRollbackTerraform(t *testing.T) {
 			}
 
 			destroyClusterErrOutput := &bytes.Buffer{}
-			err := rollbacker.rollback(context.Background(), destroyClusterErrOutput, terraform.LogLevelNone)
+			err := rollbacker.rollback(t.Context(), destroyClusterErrOutput, terraform.LogLevelNone)
 			if tc.wantCleanupErr {
 				assert.Error(err)
 				if tc.tfClient.cleanUpWorkspaceErr == nil {
@@ -107,7 +106,7 @@ func TestRollbackQEMU(t *testing.T) {
 
 			destroyClusterErrOutput := &bytes.Buffer{}
 
-			err := rollbacker.rollback(context.Background(), destroyClusterErrOutput, terraform.LogLevelNone)
+			err := rollbacker.rollback(t.Context(), destroyClusterErrOutput, terraform.LogLevelNone)
 			if tc.wantErr {
 				assert.Error(err)
 				if tc.tfClient.cleanUpWorkspaceErr == nil {

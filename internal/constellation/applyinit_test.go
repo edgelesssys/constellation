@@ -214,7 +214,7 @@ func TestInit(t *testing.T) {
 			}
 
 			clusterLogs := &bytes.Buffer{}
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second*4)
+			ctx, cancel := context.WithTimeout(t.Context(), time.Second*4)
 			defer cancel()
 			_, err := a.Init(ctx, nil, tc.state, clusterLogs, InitPayload{
 				MasterSecret:    uri.MasterSecret{},
@@ -280,7 +280,7 @@ func TestAttestation(t *testing.T) {
 	}
 	state := &state.State{Version: state.Version1, Infrastructure: state.Infrastructure{ClusterEndpoint: "192.0.2.4"}}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 	defer cancel()
 

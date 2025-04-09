@@ -32,7 +32,7 @@ func TestGCPKMS(t *testing.T) {
 	require := require.New(t)
 
 	store := memfs.New()
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*30)
 	defer cancel()
 
 	cfg := uri.GCPConfig{
@@ -59,7 +59,7 @@ func TestGcpStorage(t *testing.T) {
 	}
 	require := require.New(t)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*30)
 	defer cancel()
 
 	cfg := uri.GoogleCloudStorageConfig{

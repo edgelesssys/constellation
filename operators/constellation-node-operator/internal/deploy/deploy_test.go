@@ -86,7 +86,7 @@ func TestInitialResources(t *testing.T) {
 				},
 			}
 			scalingGroupGetter := newScalingGroupGetter(tc.items, tc.imageErr, tc.nameErr, tc.listErr)
-			err := InitialResources(context.Background(), k8sClient, &stubImageInfo{}, scalingGroupGetter, "uid")
+			err := InitialResources(t.Context(), k8sClient, &stubImageInfo{}, scalingGroupGetter, "uid")
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -156,7 +156,7 @@ func TestCreateAutoscalingStrategy(t *testing.T) {
 			require := require.New(t)
 
 			k8sClient := &fakeK8sClient{createErr: tc.createErr}
-			err := createAutoscalingStrategy(context.Background(), k8sClient, "stub")
+			err := createAutoscalingStrategy(t.Context(), k8sClient, "stub")
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -246,7 +246,7 @@ func TestCreateNodeVersion(t *testing.T) {
 			if tc.existingNodeVersion != nil {
 				k8sClient.createdObjects = append(k8sClient.createdObjects, tc.existingNodeVersion)
 			}
-			err := createNodeVersion(context.Background(), k8sClient, "image-reference", "image-version")
+			err := createNodeVersion(t.Context(), k8sClient, "image-reference", "image-version")
 			if tc.wantErr {
 				assert.Error(err)
 				return

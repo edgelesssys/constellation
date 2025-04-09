@@ -9,7 +9,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package integration
 
 import (
-	"context"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -39,7 +38,7 @@ func TestQuotaCheckIntegration(t *testing.T) {
 
 			client := license.NewChecker()
 
-			quota, err := client.CheckLicense(context.Background(), cloudprovider.Unknown, "test", tc.license)
+			quota, err := client.CheckLicense(t.Context(), cloudprovider.Unknown, "test", tc.license)
 
 			if tc.wantError {
 				assert.Error(err)

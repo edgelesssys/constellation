@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package client
 
 import (
-	"context"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/service/autoscaling"
@@ -91,7 +90,7 @@ func TestGetScalingGroupImage(t *testing.T) {
 					},
 				},
 			}
-			scalingGroupImage, err := client.GetScalingGroupImage(context.Background(), tc.providerID)
+			scalingGroupImage, err := client.GetScalingGroupImage(t.Context(), tc.providerID)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -216,7 +215,7 @@ func TestSetScalingGroupImage(t *testing.T) {
 					},
 				},
 			}
-			err := client.SetScalingGroupImage(context.Background(), tc.providerID, tc.imageURI)
+			err := client.SetScalingGroupImage(t.Context(), tc.providerID, tc.imageURI)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -319,7 +318,7 @@ func TestListScalingGroups(t *testing.T) {
 					describeAutoScalingGroupsErr: tc.describeAutoScalingGroupsErr,
 				},
 			}
-			gotGroups, err := client.ListScalingGroups(context.Background(), tc.providerID)
+			gotGroups, err := client.ListScalingGroups(t.Context(), tc.providerID)
 			if tc.wantErr {
 				assert.Error(err)
 				return

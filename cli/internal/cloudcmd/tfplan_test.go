@@ -101,7 +101,7 @@ func TestTFPlan(t *testing.T) {
 			fs := tc.prepareFs(require.New(t))
 
 			hasDiff, planErr := plan(
-				context.Background(), tc.tf, fs, io.Discard, terraform.LogLevelDebug,
+				t.Context(), tc.tf, fs, io.Discard, terraform.LogLevelDebug,
 				&terraform.QEMUVariables{},
 				templateDir, existingWorkspace, backupDir,
 			)

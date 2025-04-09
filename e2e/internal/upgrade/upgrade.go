@@ -90,7 +90,7 @@ func testStatusEventuallyWorks(t *testing.T, cli string, timeout time.Duration) 
 		// Show versions set in cluster.
 		// The string after "Cluster status:" in the output might not be updated yet.
 		// This is only updated after the operator finishes one reconcile loop.
-		cmd := exec.CommandContext(context.Background(), cli, "status")
+		cmd := exec.CommandContext(t.Context(), cli, "status")
 		stdout, stderr, err := runCommandWithSeparateOutputs(cmd)
 		if err != nil {
 			log.Printf("Stdout: %s\nStderr: %s", string(stdout), string(stderr))
@@ -121,7 +121,7 @@ func testMicroservicesEventuallyHaveVersion(t *testing.T, wantMicroserviceVersio
 
 func testNodesEventuallyHaveVersion(t *testing.T, k *kubernetes.Clientset, targetVersions VersionContainer, totalNodeCount int, timeout time.Duration) {
 	require.Eventually(t, func() bool {
-		nodes, err := k.CoreV1().Nodes().List(context.Background(), metaV1.ListOptions{})
+		nodes, err := k.CoreV1().Nodes().List(t.Context(), metaV1.ListOptions{})
 		if err != nil {
 			log.Println(err)
 			return false

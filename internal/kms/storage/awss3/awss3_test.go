@@ -80,7 +80,7 @@ func TestAWSS3Get(t *testing.T) {
 				client: tc.client,
 			}
 
-			out, err := store.Get(context.Background(), "test-key")
+			out, err := store.Get(t.Context(), "test-key")
 			if tc.wantErr {
 				assert.Error(err)
 
@@ -122,7 +122,7 @@ func TestAWSS3Put(t *testing.T) {
 
 			testData := []byte{0x1, 0x2, 0x3}
 
-			err := store.Put(context.Background(), "test-key", testData)
+			err := store.Put(t.Context(), "test-key", testData)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
@@ -163,7 +163,7 @@ func TestAWSS3CreateBucket(t *testing.T) {
 				client: tc.client,
 			}
 
-			err := store.createBucket(context.Background(), "test-bucket", "test-region")
+			err := store.createBucket(t.Context(), "test-bucket", "test-region")
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

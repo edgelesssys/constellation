@@ -9,7 +9,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package sigstore
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -43,7 +42,7 @@ func TestRekorSearchByHash(t *testing.T) {
 			rekor, err := NewRekor()
 			require.NoError(err)
 
-			uuids, err := rekor.SearchByHash(context.Background(), tc.hash)
+			uuids, err := rekor.SearchByHash(t.Context(), tc.hash)
 			assert.NoError(err)
 
 			if tc.wantEmpty {
@@ -85,7 +84,7 @@ func TestVerifyEntry(t *testing.T) {
 			rekor, err := NewRekor()
 			require.NoError(err)
 
-			err = rekor.VerifyEntry(context.Background(), tc.uuid, tc.pubKey)
+			err = rekor.VerifyEntry(t.Context(), tc.uuid, tc.pubKey)
 			if tc.wantError {
 				assert.Error(err)
 				return

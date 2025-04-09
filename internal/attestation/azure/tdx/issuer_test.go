@@ -8,7 +8,6 @@ package tdx
 
 import (
 	"bytes"
-	"context"
 	"encoding/binary"
 	"encoding/json"
 	"io"
@@ -135,7 +134,7 @@ func TestIMDSGetQuote(t *testing.T) {
 				client: tc.client,
 			}
 
-			_, err := quoteGetter.getQuote(context.Background(), []byte("test"))
+			_, err := quoteGetter.getQuote(t.Context(), []byte("test"))
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

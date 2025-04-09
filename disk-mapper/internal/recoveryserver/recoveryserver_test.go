@@ -40,7 +40,7 @@ func TestServe(t *testing.T) {
 	server := New(atls.NewFakeIssuer(variant.Dummy{}), newStubKMS(nil, nil), log)
 	dialer := testdialer.NewBufconnDialer()
 	listener := dialer.GetListener("192.0.2.1:1234")
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	var wg sync.WaitGroup
 
 	// Serve method returns when context is canceled
@@ -62,7 +62,7 @@ func TestServe(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		_, _, err := server.Serve(context.Background(), listener, uuid)
+		_, _, err := server.Serve(t.Context(), listener, uuid)
 		assert.NoError(err)
 	}()
 	time.Sleep(100 * time.Millisecond)
@@ -70,7 +70,7 @@ func TestServe(t *testing.T) {
 	wg.Wait()
 
 	// Serve method returns an error when serving is unsuccessful
-	_, _, err := server.Serve(context.Background(), listener, uuid)
+	_, _, err := server.Serve(t.Context(), listener, uuid)
 	assert.Error(err)
 }
 
@@ -104,7 +104,7 @@ func TestRecover(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			ctx := context.Background()
+			ctx := t.Context()
 			serverUUID := "uuid"
 			server := New(atls.NewFakeIssuer(variant.Dummy{}), tc.factory, logger.NewTest(t))
 			netDialer := testdialer.NewBufconnDialer()

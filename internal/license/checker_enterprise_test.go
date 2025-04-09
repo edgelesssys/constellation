@@ -10,7 +10,6 @@ package license
 
 import (
 	"bytes"
-	"context"
 	"io"
 	"net/http"
 	"testing"
@@ -83,7 +82,7 @@ func TestQuotaCheck(t *testing.T) {
 				}),
 			}
 
-			quota, err := client.CheckLicense(context.Background(), cloudprovider.Unknown, Init, tc.license)
+			quota, err := client.CheckLicense(t.Context(), cloudprovider.Unknown, Init, tc.license)
 
 			if tc.wantError {
 				assert.Error(err)

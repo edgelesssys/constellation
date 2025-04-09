@@ -116,7 +116,7 @@ func TestCreateCertChainCache(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			ctx := context.Background()
+			ctx := t.Context()
 
 			c := &Client{
 				attVariant: variant.Dummy{},
@@ -204,7 +204,7 @@ func TestGetCertChainCache(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			ctx := context.Background()
+			ctx := t.Context()
 
 			c := NewClient(logger.NewTest(t), tc.kubeClient, variant.Dummy{})
 

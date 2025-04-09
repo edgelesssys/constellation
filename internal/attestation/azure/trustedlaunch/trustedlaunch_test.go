@@ -8,7 +8,6 @@ package trustedlaunch
 
 import (
 	"bytes"
-	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -192,7 +191,7 @@ func TestGetAttestationCert(t *testing.T) {
 			issuer := NewIssuer(logger.NewTest(t))
 			issuer.hClient = newTestClient(tc.crlServer)
 
-			certs, err := issuer.getAttestationCert(context.Background(), tpm, nil)
+			certs, err := issuer.getAttestationCert(t.Context(), tpm, nil)
 			if tc.wantIssueErr {
 				assert.Error(err)
 				return
@@ -213,7 +212,7 @@ func TestGetAttestationCert(t *testing.T) {
 			roots.AddCert(cert)
 			validator.roots = roots
 
-			key, err := validator.verifyAttestationKey(context.Background(), attDoc, nil)
+			key, err := validator.verifyAttestationKey(t.Context(), attDoc, nil)
 			if tc.wantValidateErr {
 				assert.Error(err)
 				return

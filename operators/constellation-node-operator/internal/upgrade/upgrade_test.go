@@ -40,7 +40,7 @@ func TestGRPCDialer(t *testing.T) {
 	require.Equal(os.ModeSocket, fileInfo.Mode()&os.ModeType)
 
 	upgradeClient := newClientWithAddress(sockAddr)
-	require.NoError(upgradeClient.Upgrade(context.Background(), []*components.Component{}, "v1.29.6"))
+	require.NoError(upgradeClient.Upgrade(t.Context(), []*components.Component{}, "v1.29.6"))
 }
 
 type fakeUpgradeAgent struct {

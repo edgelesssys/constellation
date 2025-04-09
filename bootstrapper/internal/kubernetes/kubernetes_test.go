@@ -201,7 +201,7 @@ func TestInitCluster(t *testing.T) {
 			}
 
 			_, err := kube.InitCluster(
-				context.Background(), string(tc.k8sVersion), "kubernetes",
+				t.Context(), string(tc.k8sVersion), "kubernetes",
 				false, nil, nil, "",
 			)
 
@@ -384,7 +384,7 @@ func TestJoinCluster(t *testing.T) {
 				log:               logger.NewTest(t),
 			}
 
-			err := kube.JoinCluster(context.Background(), joinCommand, tc.role, tc.k8sComponents)
+			err := kube.JoinCluster(t.Context(), joinCommand, tc.role, tc.k8sComponents)
 			if tc.wantErr {
 				assert.Error(err)
 				return

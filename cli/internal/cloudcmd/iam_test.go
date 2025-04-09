@@ -128,7 +128,7 @@ func TestIAMCreator(t *testing.T) {
 				},
 			}
 
-			idFile, err := creator.Create(context.Background(), tc.provider, tc.config)
+			idFile, err := creator.Create(t.Context(), tc.provider, tc.config)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -184,7 +184,7 @@ func TestDestroyIAMConfiguration(t *testing.T) {
 				return tc.tfClient, nil
 			}}
 
-			err := destroyer.DestroyIAMConfiguration(context.Background(), "", terraform.LogLevelNone)
+			err := destroyer.DestroyIAMConfiguration(t.Context(), "", terraform.LogLevelNone)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -278,7 +278,7 @@ func TestGetTfstateServiceAccountKey(t *testing.T) {
 				return tc.cl, nil
 			}}
 
-			saKey, err := destroyer.GetTfStateServiceAccountKey(context.Background(), "")
+			saKey, err := destroyer.GetTfStateServiceAccountKey(t.Context(), "")
 
 			if tc.wantErr {
 				assert.Error(err)
