@@ -8,7 +8,6 @@ package imagefetcher
 
 import (
 	"bytes"
-	"context"
 	"io"
 	"net/http"
 	"os"
@@ -91,7 +90,7 @@ func TestDownloadWithProgress(t *testing.T) {
 				fs:    fs,
 			}
 			var outBuffer bytes.Buffer
-			err := downloader.downloadWithProgress(context.Background(), &outBuffer, false, tc.source, "someVersion.raw")
+			err := downloader.downloadWithProgress(t.Context(), &outBuffer, false, tc.source, "someVersion.raw")
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -167,7 +166,7 @@ func TestDownload(t *testing.T) {
 				fs:    fs,
 			}
 			var outBuffer bytes.Buffer
-			gotDestination, err := downloader.Download(context.Background(), &outBuffer, false, tc.source, "someVersion")
+			gotDestination, err := downloader.Download(t.Context(), &outBuffer, false, tc.source, "someVersion")
 			if tc.wantErr {
 				assert.Error(err)
 				return

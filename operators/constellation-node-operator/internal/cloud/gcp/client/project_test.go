@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package client
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -57,7 +56,7 @@ func TestCanonicalProjectID(t *testing.T) {
 					getErr:  tc.getProjectErr,
 				},
 			}
-			gotID, err := client.canonicalProjectID(context.Background(), tc.projectID)
+			gotID, err := client.canonicalProjectID(t.Context(), tc.projectID)
 			if tc.wantErr {
 				assert.Error(err)
 				return

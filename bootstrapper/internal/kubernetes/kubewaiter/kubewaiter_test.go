@@ -39,7 +39,7 @@ func TestCloudKubeAPIWaiter(t *testing.T) {
 			require := require.New(t)
 
 			waiter := &CloudKubeAPIWaiter{}
-			ctx, cancel := context.WithTimeout(context.Background(), 0)
+			ctx, cancel := context.WithTimeout(t.Context(), 0)
 			defer cancel()
 			err := waiter.Wait(ctx, tc.kubeClient)
 			if tc.wantErr {

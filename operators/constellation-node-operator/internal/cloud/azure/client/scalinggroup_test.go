@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package client
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -103,7 +102,7 @@ func TestGetScalingGroupImage(t *testing.T) {
 					getErr: tc.getScaleSetErr,
 				},
 			}
-			gotImage, err := client.GetScalingGroupImage(context.Background(), tc.scalingGroupID)
+			gotImage, err := client.GetScalingGroupImage(t.Context(), tc.scalingGroupID)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -155,7 +154,7 @@ func TestSetScalingGroupImage(t *testing.T) {
 					resultErr: tc.resultErr,
 				},
 			}
-			err := client.SetScalingGroupImage(context.Background(), tc.scalingGroupID, tc.imageURI)
+			err := client.SetScalingGroupImage(t.Context(), tc.scalingGroupID, tc.imageURI)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -291,7 +290,7 @@ func TestListScalingGroups(t *testing.T) {
 					},
 				},
 			}
-			gotGroups, err := client.ListScalingGroups(context.Background(), "uid")
+			gotGroups, err := client.ListScalingGroups(t.Context(), "uid")
 			if tc.wantErr {
 				assert.Error(err)
 				return

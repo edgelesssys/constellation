@@ -73,7 +73,7 @@ func TestATLSCredentials(t *testing.T) {
 			defer conn.Close()
 
 			client := initproto.NewAPIClient(conn)
-			_, err = client.Init(context.Background(), &initproto.InitRequest{})
+			_, err = client.Init(t.Context(), &initproto.InitRequest{})
 		}()
 	}
 

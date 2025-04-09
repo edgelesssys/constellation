@@ -67,7 +67,7 @@ func TestNew(t *testing.T) {
 			assert := assert.New(t)
 
 			server, err := New(
-				context.TODO(), newFakeLock(), &stubClusterInitializer{}, atls.NewFakeIssuer(variant.Dummy{}),
+				t.Context(), newFakeLock(), &stubClusterInitializer{}, atls.NewFakeIssuer(variant.Dummy{}),
 				&stubDisk{}, fh, &tc.metadata, logger.NewTest(t),
 			)
 			if tc.wantErr {
@@ -352,9 +352,9 @@ func TestSetupDisk(t *testing.T) {
 
 			masterSecret := uri.MasterSecret{Key: tc.masterKey, Salt: tc.salt}
 
-			cloudKms, err := kmssetup.KMS(context.Background(), uri.NoStoreURI, masterSecret.EncodeToURI())
+			cloudKms, err := kmssetup.KMS(t.Context(), uri.NoStoreURI, masterSecret.EncodeToURI())
 			require.NoError(err)
-			assert.NoError(server.setupDisk(context.Background(), cloudKms))
+			assert.NoError(server.setupDisk(t.Context(), cloudKms))
 		})
 	}
 }

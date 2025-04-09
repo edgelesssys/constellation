@@ -153,7 +153,7 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 			getTrustedKey, err := gcp.TrustedKeyGetter(variant.GCPSEVES{}, tc.getClient)
 			require.NoError(t, err)
 
-			out, err := getTrustedKey(context.Background(), attDoc, nil)
+			out, err := getTrustedKey(t.Context(), attDoc, nil)
 
 			if tc.wantErr {
 				assert.Error(err)

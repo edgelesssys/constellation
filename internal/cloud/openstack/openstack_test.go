@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package openstack
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -88,7 +87,7 @@ func TestSelf(t *testing.T) {
 
 			c := &MetadataClient{imds: tc.imds}
 
-			got, err := c.Self(context.Background())
+			got, err := c.Self(t.Context())
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -384,7 +383,7 @@ func TestList(t *testing.T) {
 
 			c := &MetadataClient{imds: tc.imds, api: tc.api}
 
-			got, err := c.List(context.Background())
+			got, err := c.List(t.Context())
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -418,7 +417,7 @@ func TestUID(t *testing.T) {
 
 			c := &MetadataClient{imds: tc.imds}
 
-			got, err := c.UID(context.Background())
+			got, err := c.UID(t.Context())
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -452,7 +451,7 @@ func TestInitSecretHash(t *testing.T) {
 
 			c := &MetadataClient{imds: tc.imds}
 
-			got, err := c.InitSecretHash(context.Background())
+			got, err := c.InitSecretHash(t.Context())
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -486,7 +485,7 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 
 			c := &MetadataClient{imds: tc.imds}
 
-			got, _, err := c.GetLoadBalancerEndpoint(context.Background())
+			got, _, err := c.GetLoadBalancerEndpoint(t.Context())
 
 			if tc.wantErr {
 				assert.Error(err)

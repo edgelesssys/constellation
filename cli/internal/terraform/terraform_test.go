@@ -483,7 +483,7 @@ func TestCreateCluster(t *testing.T) {
 
 			path := path.Join(tc.pathBase, strings.ToLower(tc.provider.String()))
 			require.NoError(c.PrepareWorkspace(path, tc.vars))
-			infraState, err := c.ApplyCluster(context.Background(), tc.provider, LogLevelDebug)
+			infraState, err := c.ApplyCluster(t.Context(), tc.provider, LogLevelDebug)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -799,7 +799,7 @@ func TestCreateIAM(t *testing.T) {
 
 			path := path.Join(tc.pathBase, strings.ToLower(tc.provider.String()))
 			require.NoError(c.PrepareWorkspace(path, tc.vars))
-			IAMoutput, err := c.ApplyIAM(context.Background(), tc.provider, LogLevelDebug)
+			IAMoutput, err := c.ApplyIAM(t.Context(), tc.provider, LogLevelDebug)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -841,7 +841,7 @@ func TestDestroyInstances(t *testing.T) {
 				tf: tc.tf,
 			}
 
-			err := c.Destroy(context.Background(), LogLevelDebug)
+			err := c.Destroy(t.Context(), LogLevelDebug)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -1073,7 +1073,7 @@ func TestPlan(t *testing.T) {
 				workingDir: tc.pathBase,
 			}
 
-			_, err := c.Plan(context.Background(), LogLevelDebug)
+			_, err := c.Plan(t.Context(), LogLevelDebug)
 			if tc.wantErr {
 				require.Error(err)
 			} else {
@@ -1132,7 +1132,7 @@ func TestShowPlan(t *testing.T) {
 				workingDir: tc.pathBase,
 			}
 
-			err := c.ShowPlan(context.Background(), LogLevelDebug, bytes.NewBuffer(nil))
+			err := c.ShowPlan(t.Context(), LogLevelDebug, bytes.NewBuffer(nil))
 			if tc.wantErr {
 				require.Error(err)
 			} else {
@@ -1320,7 +1320,7 @@ func TestShowIAM(t *testing.T) {
 				tf: tc.tf,
 			}
 
-			_, err := c.ShowIAM(context.Background(), tc.csp)
+			_, err := c.ShowIAM(t.Context(), tc.csp)
 			if tc.wantErr {
 				assert.Error(err)
 				return

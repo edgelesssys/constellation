@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package client
 
 import (
-	"context"
 	"errors"
 	"math/rand"
 	"testing"
@@ -101,7 +100,7 @@ func TestGetNodeImage(t *testing.T) {
 					disk:   tc.disk,
 				},
 			}
-			gotImage, err := client.GetNodeImage(context.Background(), tc.providerID)
+			gotImage, err := client.GetNodeImage(t.Context(), tc.providerID)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -162,7 +161,7 @@ func TestGetScalingGroupID(t *testing.T) {
 					instance: &instance,
 				},
 			}
-			gotScalingGroupID, err := client.GetScalingGroupID(context.Background(), tc.providerID)
+			gotScalingGroupID, err := client.GetScalingGroupID(t.Context(), tc.providerID)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -221,7 +220,7 @@ func TestCreateNode(t *testing.T) {
 				},
 				prng: rand.New(rand.NewSource(int64(time.Now().Nanosecond()))),
 			}
-			instanceName, providerID, err := client.CreateNode(context.Background(), tc.scalingGroupID)
+			instanceName, providerID, err := client.CreateNode(t.Context(), tc.scalingGroupID)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -287,7 +286,7 @@ func TestDeleteNode(t *testing.T) {
 					},
 				},
 			}
-			err := client.DeleteNode(context.Background(), tc.providerID)
+			err := client.DeleteNode(t.Context(), tc.providerID)
 			if tc.wantErr {
 				assert.Error(err)
 				return

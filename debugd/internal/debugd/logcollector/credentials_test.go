@@ -67,7 +67,7 @@ func TestGetOpensearchCredentialsGCP(t *testing.T) {
 
 			g := &gcpCloudCredentialGetter{secretsAPI: tc.gcpAPI}
 
-			gotCreds, err := g.GetOpensearchCredentials(context.Background())
+			gotCreds, err := g.GetOpensearchCredentials(t.Context())
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -127,7 +127,7 @@ func TestGetOpensearchCredentialsAzure(t *testing.T) {
 
 			a := &azureCloudCredentialGetter{secretsAPI: tc.azureAPI}
 
-			gotCreds, err := a.GetOpensearchCredentials(context.Background())
+			gotCreds, err := a.GetOpensearchCredentials(t.Context())
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -184,7 +184,7 @@ func TestGetOpensearchCredentialsAWS(t *testing.T) {
 
 			a := &awsCloudCredentialGetter{secretmanager: tc.awsAPI}
 
-			gotCreds, err := a.GetOpensearchCredentials(context.Background())
+			gotCreds, err := a.GetOpensearchCredentials(t.Context())
 
 			if tc.wantErr {
 				assert.Error(err)

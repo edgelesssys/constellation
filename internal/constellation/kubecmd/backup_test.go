@@ -57,7 +57,7 @@ func TestBackupCRDs(t *testing.T) {
 				log:     stubLog{},
 			}
 
-			_, err = client.BackupCRDs(context.Background(), file.NewHandler(memFs), tc.upgradeID)
+			_, err = client.BackupCRDs(t.Context(), file.NewHandler(memFs), tc.upgradeID)
 			if tc.wantError {
 				assert.Error(err)
 				return
@@ -146,7 +146,7 @@ func TestBackupCRs(t *testing.T) {
 				log:     stubLog{},
 			}
 
-			err := client.BackupCRs(context.Background(), file.NewHandler(memFs), []apiextensionsv1.CustomResourceDefinition{tc.crd}, tc.upgradeID)
+			err := client.BackupCRs(t.Context(), file.NewHandler(memFs), []apiextensionsv1.CustomResourceDefinition{tc.crd}, tc.upgradeID)
 			if tc.wantError {
 				assert.Error(err)
 				return

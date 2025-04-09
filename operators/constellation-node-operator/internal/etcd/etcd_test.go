@@ -54,7 +54,7 @@ func TestRemoveEtcdMemberFromCluster(t *testing.T) {
 				},
 				listErr: tc.memberListErr,
 			}}
-			err := client.RemoveEtcdMemberFromCluster(context.Background(), tc.vpcIP)
+			err := client.RemoveEtcdMemberFromCluster(t.Context(), tc.vpcIP)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -98,7 +98,7 @@ func TestGetMemberID(t *testing.T) {
 				members: tc.members,
 				listErr: tc.memberListErr,
 			}}
-			gotMemberID, err := client.getMemberID(context.Background(), "192.0.2.1")
+			gotMemberID, err := client.getMemberID(t.Context(), "192.0.2.1")
 			if tc.wantErr {
 				assert.Error(err)
 				return

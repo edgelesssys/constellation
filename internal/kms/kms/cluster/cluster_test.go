@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cluster
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -29,7 +28,7 @@ func TestClusterKMS(t *testing.T) {
 	require.NoError(err)
 
 	keyLower, err := kms.GetDEK(
-		context.Background(),
+		t.Context(),
 		strings.ToLower(testVector.InfoPrefix+testVector.Info),
 		int(testVector.Length),
 	)
@@ -38,7 +37,7 @@ func TestClusterKMS(t *testing.T) {
 
 	// output of the KMS should be case sensitive
 	keyUpper, err := kms.GetDEK(
-		context.Background(),
+		t.Context(),
 		strings.ToUpper(testVector.InfoPrefix+testVector.Info),
 		int(testVector.Length),
 	)
@@ -105,7 +104,7 @@ func TestVectorsHKDF(t *testing.T) {
 			}
 			require.NoError(err)
 
-			out, err := kms.GetDEK(context.Background(), tc.dekID, int(tc.dekSize))
+			out, err := kms.GetDEK(t.Context(), tc.dekID, int(tc.dekSize))
 			require.NoError(err)
 			assert.Equal(tc.wantKey, out)
 		})

@@ -79,7 +79,7 @@ func TestSetInfo(t *testing.T) {
 			defer conn.Close()
 			client := pb.NewDebugdClient(conn)
 
-			setInfoStatus, err := client.SetInfo(context.Background(), &pb.SetInfoRequest{Info: tc.setInfo})
+			setInfoStatus, err := client.SetInfo(t.Context(), &pb.SetInfoRequest{Info: tc.setInfo})
 			grpcServ.GracefulStop()
 
 			assert.NoError(err)
@@ -137,7 +137,7 @@ func TestGetInfo(t *testing.T) {
 			defer conn.Close()
 			client := pb.NewDebugdClient(conn)
 
-			resp, err := client.GetInfo(context.Background(), &pb.GetInfoRequest{})
+			resp, err := client.GetInfo(t.Context(), &pb.GetInfoRequest{})
 			grpcServ.GracefulStop()
 
 			if tc.wantErr {
@@ -201,7 +201,7 @@ func TestUploadFiles(t *testing.T) {
 			require.NoError(err)
 			defer conn.Close()
 			client := pb.NewDebugdClient(conn)
-			stream, err := client.UploadFiles(context.Background())
+			stream, err := client.UploadFiles(t.Context())
 			require.NoError(err)
 			resp, err := stream.CloseAndRecv()
 
@@ -245,7 +245,7 @@ func TestDownloadFiles(t *testing.T) {
 			require.NoError(err)
 			defer conn.Close()
 			client := pb.NewDebugdClient(conn)
-			stream, err := client.DownloadFiles(context.Background(), tc.request)
+			stream, err := client.DownloadFiles(t.Context(), tc.request)
 			require.NoError(err)
 			_, recvErr := stream.Recv()
 			if tc.wantRecvErr {
@@ -324,7 +324,7 @@ func TestUploadSystemServiceUnits(t *testing.T) {
 			require.NoError(err)
 			defer conn.Close()
 			client := pb.NewDebugdClient(conn)
-			resp, err := client.UploadSystemServiceUnits(context.Background(), tc.request)
+			resp, err := client.UploadSystemServiceUnits(t.Context(), tc.request)
 
 			grpcServ.GracefulStop()
 

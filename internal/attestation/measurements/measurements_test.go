@@ -8,7 +8,6 @@ package measurements
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -458,7 +457,7 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 			require.NoError(err)
 
 			hash, err := m.fetchAndVerify(
-				context.Background(), client, verifier,
+				t.Context(), client, verifier,
 				measurementsURL, signatureURL,
 				tc.imageVersion,
 				tc.csp,

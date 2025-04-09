@@ -8,7 +8,6 @@ package versionsapi
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -192,7 +191,7 @@ func TestFetchVersionList(t *testing.T) {
 
 			fetcher := Fetcher{client, constants.CDNRepositoryURL}
 
-			list, err := fetcher.FetchVersionList(context.Background(), tc.list)
+			list, err := fetcher.FetchVersionList(t.Context(), tc.list)
 
 			if tc.wantErr {
 				assert.Error(err)

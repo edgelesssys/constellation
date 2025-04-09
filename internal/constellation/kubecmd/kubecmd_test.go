@@ -180,7 +180,7 @@ func TestUpgradeNodeImage(t *testing.T) {
 				log:           logger.NewTest(t),
 			}
 
-			err = upgrader.UpgradeNodeImage(context.Background(), tc.newImageVersion, fmt.Sprintf("/path/to/image:%s", tc.newImageVersion.String()), tc.force)
+			err = upgrader.UpgradeNodeImage(t.Context(), tc.newImageVersion, fmt.Sprintf("/path/to/image:%s", tc.newImageVersion.String()), tc.force)
 			// Check upgrades first because if we checked err first, UpgradeImage may error due to other reasons and still trigger an upgrade.
 			if tc.wantUpdate {
 				assert.NotNil(unstructuredClient.updatedObject)
@@ -296,7 +296,7 @@ func TestUpgradeKubernetesVersion(t *testing.T) {
 				log:           logger.NewTest(t),
 			}
 
-			err = upgrader.UpgradeKubernetesVersion(context.Background(), tc.newKubernetesVersion, tc.force)
+			err = upgrader.UpgradeKubernetesVersion(t.Context(), tc.newKubernetesVersion, tc.force)
 			// Check upgrades first because if we checked err first, UpgradeImage may error due to other reasons and still trigger an upgrade.
 			if tc.wantUpdate {
 				assert.NotNil(unstructuredClient.updatedObject)
@@ -603,7 +603,7 @@ func TestApplyJoinConfig(t *testing.T) {
 				maxAttempts:   5,
 			}
 
-			err := cmd.ApplyJoinConfig(context.Background(), tc.newAttestationCfg, []byte{0x11})
+			err := cmd.ApplyJoinConfig(t.Context(), tc.newAttestationCfg, []byte{0x11})
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -667,7 +667,7 @@ func TestRetryAction(t *testing.T) {
 				return errs[failureCtr]
 			}
 
-			err := k.retryAction(context.Background(), action)
+			err := k.retryAction(t.Context(), action)
 			if tc.wantErr {
 				assert.Error(err)
 				assert.Equal(min(tc.failures, maxAttempts), failureCtr)
@@ -680,7 +680,7 @@ func TestRetryAction(t *testing.T) {
 }
 
 func TestExtendClusterConfigCertSANs(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	testCases := map[string]struct {
 		clusterConfig string

@@ -82,7 +82,7 @@ func TestGetSNPAttestation(t *testing.T) {
 
 			data := []byte("data")
 
-			attestationJSON, err := issuer.getInstanceInfo(context.Background(), nil, data)
+			attestationJSON, err := issuer.getInstanceInfo(t.Context(), nil, data)
 			if tc.wantErr {
 				assert.Error(err)
 				return

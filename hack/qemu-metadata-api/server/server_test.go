@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -127,7 +126,7 @@ func TestListSelf(t *testing.T) {
 
 			server := New(logger.NewTest(t), "test", "initSecretHash", tc.stubLeaseGetter)
 
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://192.0.0.1/self", nil)
+			req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://192.0.0.1/self", nil)
 			require.NoError(err)
 			req.RemoteAddr = tc.remoteAddr
 
@@ -187,7 +186,7 @@ func TestListPeers(t *testing.T) {
 
 			server := New(logger.NewTest(t), "test", "initSecretHash", tc.stubNetworkGetter)
 
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://192.0.0.1/peers", nil)
+			req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://192.0.0.1/peers", nil)
 			require.NoError(err)
 			req.RemoteAddr = tc.remoteAddr
 
@@ -243,7 +242,7 @@ func TestInitSecretHash(t *testing.T) {
 
 			server := New(logger.NewTest(t), "test", tc.wantHash, defaultConnect)
 
-			req, err := http.NewRequestWithContext(context.Background(), tc.method, "http://192.0.0.1/initsecrethash", nil)
+			req, err := http.NewRequestWithContext(t.Context(), tc.method, "http://192.0.0.1/initsecrethash", nil)
 			require.NoError(err)
 
 			w := httptest.NewRecorder()

@@ -90,7 +90,7 @@ func TestValidate(t *testing.T) {
 	nonce := []byte{1, 2, 3, 4}
 	challenge := []byte("Constellation")
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	attDocRaw, err := issuer.Issue(ctx, challenge, nonce)
 	require.NoError(err)
@@ -347,7 +347,7 @@ func TestFailIssuer(t *testing.T) {
 
 			tc.issuer.log = logger.NewTest(t)
 
-			_, err := tc.issuer.Issue(context.Background(), tc.userData, tc.nonce)
+			_, err := tc.issuer.Issue(t.Context(), tc.userData, tc.nonce)
 			assert.Error(err)
 		})
 	}

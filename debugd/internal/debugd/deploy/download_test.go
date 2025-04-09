@@ -123,7 +123,7 @@ func TestDownloadDeployment(t *testing.T) {
 				serviceManager: serviceMgr,
 			}
 
-			err := download.DownloadDeployment(context.Background(), ip)
+			err := download.DownloadDeployment(t.Context(), ip)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -194,7 +194,7 @@ func TestDownloadInfo(t *testing.T) {
 				info:   &tc.infoSetter,
 			}
 
-			err := download.DownloadInfo(context.Background(), ip)
+			err := download.DownloadInfo(t.Context(), ip)
 
 			if tc.wantErr {
 				assert.Error(err)

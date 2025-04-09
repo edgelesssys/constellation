@@ -150,7 +150,7 @@ func TestGetInstance(t *testing.T) {
 				scaleSetsVMAPI: tc.scaleSetsVMAPI,
 				netIfacAPI:     tc.networkInterfacesAPI,
 			}
-			instance, err := metadata.getInstance(context.Background(), tc.providerID)
+			instance, err := metadata.getInstance(t.Context(), tc.providerID)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -186,7 +186,7 @@ func TestUID(t *testing.T) {
 			cloud := &Cloud{
 				imds: tc.imdsAPI,
 			}
-			uid, err := cloud.UID(context.Background())
+			uid, err := cloud.UID(t.Context())
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -222,7 +222,7 @@ func TestInitSecretHash(t *testing.T) {
 			cloud := &Cloud{
 				imds: tc.imdsAPI,
 			}
-			initSecretHash, err := cloud.InitSecretHash(context.Background())
+			initSecretHash, err := cloud.InitSecretHash(t.Context())
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -410,7 +410,7 @@ func TestList(t *testing.T) {
 				scaleSetsAPI:   tc.scaleSetsAPI,
 				scaleSetsVMAPI: tc.scaleSetsVMAPI,
 			}
-			instances, err := azureMetadata.List(context.Background())
+			instances, err := azureMetadata.List(t.Context())
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -473,7 +473,7 @@ func TestGetNetworkSecurityGroupName(t *testing.T) {
 			metadata := Cloud{
 				secGroupAPI: tc.securityGroupsAPI,
 			}
-			name, err := metadata.getNetworkSecurityGroupName(context.Background(), "resource-group", "uid")
+			name, err := metadata.getNetworkSecurityGroupName(t.Context(), "resource-group", "uid")
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -547,7 +547,7 @@ func TestGetSubnetworkCIDR(t *testing.T) {
 				imds:       tc.imdsAPI,
 				virtNetAPI: tc.virtualNetworksAPI,
 			}
-			subnetworkCIDR, err := metadata.getSubnetworkCIDR(context.Background())
+			subnetworkCIDR, err := metadata.getSubnetworkCIDR(t.Context())
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -708,7 +708,7 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 				loadBalancerAPI: tc.loadBalancerAPI,
 				pubIPAPI:        tc.publicIPAddressesAPI,
 			}
-			gotHost, gotPort, err := metadata.GetLoadBalancerEndpoint(context.Background())
+			gotHost, gotPort, err := metadata.GetLoadBalancerEndpoint(t.Context())
 			if tc.wantErr {
 				assert.Error(err)
 				return

@@ -71,7 +71,7 @@ func TestStartCancel(t *testing.T) {
 	go rejoinServer.Serve(listener)
 	defer rejoinServer.GracefulStop()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	var wg sync.WaitGroup
 	wg.Add(1)
 
@@ -294,7 +294,7 @@ func TestStart(t *testing.T) {
 
 			client := New(dialer, tc.nodeInfo, meta, logger.NewTest(t))
 
-			passphrase, secret := client.Start(context.Background(), "uuid")
+			passphrase, secret := client.Start(t.Context(), "uuid")
 			assert.Equal(diskKey, passphrase)
 			assert.Equal(measurementSecret, secret)
 		})

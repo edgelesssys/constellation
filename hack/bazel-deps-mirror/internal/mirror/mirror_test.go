@@ -137,7 +137,7 @@ func TestMirror(t *testing.T) {
 				unauthenticated: tc.unauthenticated,
 				log:             logger.NewTest(t),
 			}
-			err := m.Mirror(context.Background(), tc.hash, []string{tc.upstreamURL})
+			err := m.Mirror(t.Context(), tc.hash, []string{tc.upstreamURL})
 			if tc.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -180,7 +180,7 @@ func TestLearn(t *testing.T) {
 				},
 				log: logger.NewTest(t),
 			}
-			gotHash, err := m.Learn(context.Background(), []string{"https://example.com/foo"})
+			gotHash, err := m.Learn(t.Context(), []string{"https://example.com/foo"})
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -274,7 +274,7 @@ func TestCheck(t *testing.T) {
 				},
 				log: logger.NewTest(t),
 			}
-			err := m.Check(context.Background(), tc.hash)
+			err := m.Check(t.Context(), tc.hash)
 			if tc.wantErr {
 				assert.Error(t, err)
 			} else {

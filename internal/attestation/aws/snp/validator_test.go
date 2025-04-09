@@ -8,7 +8,6 @@ package snp
 
 import (
 	"bytes"
-	"context"
 	"crypto"
 	"crypto/x509"
 	"encoding/base64"
@@ -67,7 +66,7 @@ func TestGetTrustedKey(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 			out, err := validator().getTrustedKey(
-				context.Background(),
+				t.Context(),
 				vtpm.AttestationDocument{
 					Attestation: &attest.Attestation{
 						AkPub: tc.akPub,

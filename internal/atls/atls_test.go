@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package atls
 
 import (
-	"context"
 	"encoding/asn1"
 	"errors"
 	"io"
@@ -162,7 +161,7 @@ func TestTLSConfig(t *testing.T) {
 			server.StartTLS()
 			defer server.Close()
 
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL, http.NoBody)
+			req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL, http.NoBody)
 			require.NoError(err)
 			resp, err := client.Do(req)
 			if tc.wantErr {
@@ -221,7 +220,7 @@ func TestClientConnectionConcurrency(t *testing.T) {
 
 	var reqs []*http.Request
 	for _, url := range urls {
-		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, http.NoBody)
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, url, http.NoBody)
 		require.NoError(err)
 		reqs = append(reqs, req)
 	}
@@ -295,7 +294,7 @@ func TestServerConnectionConcurrency(t *testing.T) {
 
 	var reqs []*http.Request
 	for _, url := range urls {
-		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, http.NoBody)
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, url, http.NoBody)
 		require.NoError(err)
 		reqs = append(reqs, req)
 	}

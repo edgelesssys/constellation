@@ -86,7 +86,7 @@ func TestDial(t *testing.T) {
 			defer conn.Close()
 
 			client := grpc_testing.NewTestServiceClient(conn)
-			_, err = client.EmptyCall(context.Background(), &grpc_testing.Empty{})
+			_, err = client.EmptyCall(t.Context(), &grpc_testing.Empty{})
 
 			if tc.wantErr {
 				assert.Error(err)

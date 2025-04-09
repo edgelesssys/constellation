@@ -31,7 +31,7 @@ func TestAzureStorage(t *testing.T) {
 	}
 	require := require.New(t)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*30)
 	defer cancel()
 
 	cfg := uri.AzureBlobConfig{
@@ -59,7 +59,7 @@ func TestAzureKeyKMS(t *testing.T) {
 	require := require.New(t)
 
 	store := memfs.New()
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*30)
 	defer cancel()
 
 	cfg := uri.AzureConfig{
@@ -88,7 +88,7 @@ func TestAzureKeyHSM(t *testing.T) {
 	require := require.New(t)
 
 	store := memfs.New()
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*30)
 	defer cancel()
 
 	cfg := uri.AzureConfig{

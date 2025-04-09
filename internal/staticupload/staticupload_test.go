@@ -108,7 +108,7 @@ func TestUpload(t *testing.T) {
 				cacheInvalidationWaitTimeout: tc.cacheInvalidationWaitTimeout,
 				logger:                       logger.NewTest(t),
 			}
-			_, err := client.Upload(context.Background(), tc.in)
+			_, err := client.Upload(t.Context(), tc.in)
 
 			var invalidationErr *InvalidationError
 			if tc.wantCacheInvalidationErr {
@@ -220,7 +220,7 @@ func TestDeleteObject(t *testing.T) {
 				cacheInvalidationWaitTimeout: tc.cacheInvalidationWaitTimeout,
 				logger:                       logger.NewTest(t),
 			}
-			_, err := client.DeleteObject(context.Background(), newObjectInput(tc.nilInput, tc.nilKey))
+			_, err := client.DeleteObject(t.Context(), newObjectInput(tc.nilInput, tc.nilKey))
 
 			var invalidationErr *InvalidationError
 			if tc.wantCacheInvalidationErr {
@@ -259,7 +259,7 @@ func TestDeleteObject(t *testing.T) {
 				cacheInvalidationWaitTimeout: tc.cacheInvalidationWaitTimeout,
 				logger:                       logger.NewTest(t),
 			}
-			_, err := client.DeleteObjects(context.Background(), newObjectsInput(tc.nilInput, tc.nilKey))
+			_, err := client.DeleteObjects(t.Context(), newObjectsInput(tc.nilInput, tc.nilKey))
 
 			var invalidationErr *InvalidationError
 			if tc.wantCacheInvalidationErr {
@@ -401,7 +401,7 @@ func TestFlush(t *testing.T) {
 				invalidationIDs:              tc.invalidationIDs,
 				logger:                       logger.NewTest(t),
 			}
-			err := client.Flush(context.Background())
+			err := client.Flush(t.Context())
 
 			if tc.wantCacheInvalidationErr {
 				var invalidationErr *InvalidationError
@@ -444,18 +444,18 @@ func TestConcurrency(t *testing.T) {
 
 	upload := func() {
 		defer wg.Done()
-		_, _ = client.Upload(context.Background(), newInput())
+		_, _ = client.Upload(t.Context(), newInput())
 	}
 	deleteObject := func() {
 		defer wg.Done()
-		_, _ = client.DeleteObject(context.Background(), &s3.DeleteObjectInput{
+		_, _ = client.DeleteObject(t.Context(), &s3.DeleteObjectInput{
 			Bucket: ptr("test-bucket"),
 			Key:    ptr("test-key"),
 		})
 	}
 	deleteObjects := func() {
 		defer wg.Done()
-		_, _ = client.DeleteObjects(context.Background(), &s3.DeleteObjectsInput{
+		_, _ = client.DeleteObjects(t.Context(), &s3.DeleteObjectsInput{
 			Bucket: ptr("test-bucket"),
 			Delete: &s3types.Delete{
 				Objects: []s3types.ObjectIdentifier{
@@ -466,7 +466,7 @@ func TestConcurrency(t *testing.T) {
 	}
 	flushClient := func() {
 		defer wg.Done()
-		_ = client.Flush(context.Background())
+		_ = client.Flush(t.Context())
 	}
 
 	for i := 0; i < 100; i++ {

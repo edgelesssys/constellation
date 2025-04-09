@@ -103,7 +103,7 @@ func TestGCPGet(t *testing.T) {
 				bucketName: "test",
 			}
 
-			out, err := client.Get(context.Background(), "test-key")
+			out, err := client.Get(t.Context(), "test-key")
 			if tc.wantErr {
 				assert.Error(err)
 
@@ -160,7 +160,7 @@ func TestGCPPut(t *testing.T) {
 			}
 			testData := []byte{0x1, 0x2, 0x3}
 
-			err := client.Put(context.Background(), "test-key", testData)
+			err := client.Put(t.Context(), "test-key", testData)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
@@ -211,7 +211,7 @@ func TestGCPCreateContainerOrContinue(t *testing.T) {
 				bucketName: "test",
 			}
 
-			err := client.createContainerOrContinue(context.Background(), "project")
+			err := client.createContainerOrContinue(t.Context(), "project")
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

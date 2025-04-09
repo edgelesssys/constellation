@@ -139,7 +139,7 @@ func TestGetCompatibleImageMeasurements(t *testing.T) {
 		}
 	})
 
-	upgrades, err := getCompatibleImageMeasurements(context.Background(), &bytes.Buffer{}, client, &stubCosignVerifier{}, singleUUIDVerifier(), csp, attestationVariant, versionZero, logger.NewTest(t))
+	upgrades, err := getCompatibleImageMeasurements(t.Context(), &bytes.Buffer{}, client, &stubCosignVerifier{}, singleUUIDVerifier(), csp, attestationVariant, versionZero, logger.NewTest(t))
 	assert.NoError(err)
 
 	for _, measurement := range upgrades {
@@ -344,7 +344,7 @@ func TestNewCLIVersions(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			require := require.New(t)
 
-			_, err := tc.verCollector.newCLIVersions(context.Background())
+			_, err := tc.verCollector.newCLIVersions(t.Context())
 			if tc.wantErr {
 				require.Error(err)
 				return
@@ -385,7 +385,7 @@ func TestFilterCompatibleCLIVersions(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			require := require.New(t)
 
-			_, err := tc.verCollector.filterCompatibleCLIVersions(context.Background(), tc.cliPatchVersions, consemver.NewFromInt(1, 24, 5, ""))
+			_, err := tc.verCollector.filterCompatibleCLIVersions(t.Context(), tc.cliPatchVersions, consemver.NewFromInt(1, 24, 5, ""))
 			if tc.wantErr {
 				require.Error(err)
 				return

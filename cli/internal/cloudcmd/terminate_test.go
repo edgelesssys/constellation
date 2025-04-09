@@ -63,7 +63,7 @@ func TestTerminator(t *testing.T) {
 				},
 			}
 
-			err := terminator.Terminate(context.Background(), "", terraform.LogLevelNone)
+			err := terminator.Terminate(t.Context(), "", terraform.LogLevelNone)
 
 			if tc.wantErr {
 				assert.Error(err)

@@ -51,7 +51,7 @@ func TestAzureGet(t *testing.T) {
 				container: "test",
 			}
 
-			out, err := client.Get(context.Background(), "test-key")
+			out, err := client.Get(t.Context(), "test-key")
 			if tc.wantErr {
 				assert.Error(err)
 
@@ -93,7 +93,7 @@ func TestAzurePut(t *testing.T) {
 				container: "test",
 			}
 
-			err := client.Put(context.Background(), "test-key", testData)
+			err := client.Put(t.Context(), "test-key", testData)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -130,7 +130,7 @@ func TestCreateContainerOrContinue(t *testing.T) {
 				container: "test",
 			}
 
-			err := client.createContainerOrContinue(context.Background())
+			err := client.createContainerOrContinue(t.Context())
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

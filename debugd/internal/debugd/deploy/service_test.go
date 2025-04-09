@@ -108,7 +108,7 @@ func TestSystemdAction(t *testing.T) {
 				fs:                       fs,
 				systemdUnitFilewriteLock: sync.Mutex{},
 			}
-			err := manager.SystemdAction(context.Background(), ServiceManagerRequest{
+			err := manager.SystemdAction(t.Context(), ServiceManagerRequest{
 				Unit:   unitName,
 				Action: tc.action,
 			})
@@ -188,7 +188,7 @@ func TestWriteSystemdUnitFile(t *testing.T) {
 				fs:                       fs,
 				systemdUnitFilewriteLock: sync.Mutex{},
 			}
-			err := manager.WriteSystemdUnitFile(context.Background(), tc.unit)
+			err := manager.WriteSystemdUnitFile(t.Context(), tc.unit)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -302,7 +302,7 @@ func TestOverrideServiceUnitExecStart(t *testing.T) {
 				fs:                       fs,
 				systemdUnitFilewriteLock: sync.Mutex{},
 			}
-			err := manager.OverrideServiceUnitExecStart(context.Background(), tc.unitName, tc.execStart)
+			err := manager.OverrideServiceUnitExecStart(t.Context(), tc.unitName, tc.execStart)
 
 			if tc.wantErr {
 				assert.Error(err)

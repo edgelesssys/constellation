@@ -98,7 +98,7 @@ func TestGetNodeImage(t *testing.T) {
 					getErr: tc.getScaleSetVMErr,
 				},
 			}
-			gotImage, err := client.GetNodeImage(context.Background(), tc.providerID)
+			gotImage, err := client.GetNodeImage(t.Context(), tc.providerID)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -131,7 +131,7 @@ func TestGetScalingGroupID(t *testing.T) {
 			require := require.New(t)
 
 			client := Client{}
-			gotScalingGroupID, err := client.GetScalingGroupID(context.Background(), tc.providerID)
+			gotScalingGroupID, err := client.GetScalingGroupID(t.Context(), tc.providerID)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -262,7 +262,7 @@ func TestCreateNode(t *testing.T) {
 			var createErr error
 			go func() {
 				defer wg.Done()
-				gotNodeName, gotProviderID, createErr = client.CreateNode(context.Background(), tc.scalingGroupID)
+				gotNodeName, gotProviderID, createErr = client.CreateNode(t.Context(), tc.scalingGroupID)
 			}()
 
 			// want error before PollUntilDone is called
@@ -319,7 +319,7 @@ func TestDeleteNode(t *testing.T) {
 			client := Client{
 				scaleSetsAPI: &stubScaleSetsAPI{deleteErr: tc.deleteErr},
 			}
-			err := client.DeleteNode(context.Background(), tc.providerID)
+			err := client.DeleteNode(t.Context(), tc.providerID)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -343,25 +343,25 @@ func TestCapacityPollingHandler(t *testing.T) {
 		},
 		wantedCapacity: wantCapacity,
 	}
-	assert.NoError(handler.Poll(context.Background()))
+	assert.NoError(handler.Poll(t.Context()))
 	assert.False(handler.Done())
 	// Calling Result early should error
-	assert.Error(handler.Result(context.Background(), &gotCapacity))
+	assert.Error(handler.Result(t.Context(), &gotCapacity))
 
 	// let scaleSet API error
 	handler.scaleSetsAPI.(*stubScaleSetsAPI).getErr = errors.New("get error")
-	assert.Error(handler.Poll(context.Background()))
+	assert.Error(handler.Poll(t.Context()))
 	handler.scaleSetsAPI.(*stubScaleSetsAPI).getErr = nil
 
 	// let scaleSet API return invalid SKU
 	handler.scaleSetsAPI.(*stubScaleSetsAPI).scaleSet.SKU = nil
-	assert.Error(handler.Poll(context.Background()))
+	assert.Error(handler.Poll(t.Context()))
 
 	// let Poll finish
 	handler.scaleSetsAPI.(*stubScaleSetsAPI).scaleSet.SKU = &armcompute.SKU{Capacity: to.Ptr(wantCapacity)}
-	assert.NoError(handler.Poll(context.Background()))
+	assert.NoError(handler.Poll(t.Context()))
 	assert.True(handler.Done())
-	assert.NoError(handler.Result(context.Background(), &gotCapacity))
+	assert.NoError(handler.Result(t.Context(), &gotCapacity))
 	assert.Equal(wantCapacity, gotCapacity)
 }
 

@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package controllers
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -250,7 +249,7 @@ func TestFindObjectsForScalingGroup(t *testing.T) {
 	}
 	assert := assert.New(t)
 	reconciler := NodeVersionReconciler{}
-	requests := reconciler.findObjectsForScalingGroup(context.TODO(), &scalingGroup)
+	requests := reconciler.findObjectsForScalingGroup(t.Context(), &scalingGroup)
 	assert.ElementsMatch(wantRequests, requests)
 }
 
@@ -284,7 +283,7 @@ func TestFindAllNodeVersions(t *testing.T) {
 			reconciler := NodeVersionReconciler{
 				Client: newStubReaderClient(t, []runtime.Object{tc.nodeVersion}, nil, tc.listNodeVersionsErr),
 			}
-			requests := reconciler.findAllNodeVersions(context.TODO(), nil)
+			requests := reconciler.findAllNodeVersions(t.Context(), nil)
 			assert.ElementsMatch(tc.wantRequests, requests)
 		})
 	}

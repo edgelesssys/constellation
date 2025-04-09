@@ -217,7 +217,7 @@ func TestInitialize(t *testing.T) {
 				require.NoError(fileHandler.WriteJSON(serviceAccPath, tc.serviceAccKey, file.OptNone))
 			}
 
-			ctx := context.Background()
+			ctx := t.Context()
 			ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 			defer cancel()
 			cmd.SetContext(ctx)

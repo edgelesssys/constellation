@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package memfs
 
 import (
-	"context"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
@@ -30,7 +29,7 @@ func TestMemMapStorage(t *testing.T) {
 
 	testDEK1 := []byte("test DEK")
 	testDEK2 := []byte("more test DEK")
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// request unset value
 	_, err := store.Get(ctx, "test:input")

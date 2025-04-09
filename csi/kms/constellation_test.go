@@ -57,7 +57,7 @@ func TestConstellationKMS(t *testing.T) {
 				endpoint: listener.Addr().String(),
 				kms:      tc.kms,
 			}
-			res, err := kms.GetDEK(context.Background(), "data-key", 64)
+			res, err := kms.GetDEK(t.Context(), "data-key", 64)
 
 			if tc.wantErr {
 				assert.Error(err)

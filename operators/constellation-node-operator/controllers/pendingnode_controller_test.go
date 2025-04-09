@@ -137,7 +137,7 @@ func TestFindObjectsForNode(t *testing.T) {
 			reconciler := PendingNodeReconciler{
 				Client: newStubReaderClient(t, []runtime.Object{tc.pendingNode}, nil, tc.listPendingNodesErr),
 			}
-			requests := reconciler.findObjectsForNode(context.TODO(), &corev1.Node{
+			requests := reconciler.findObjectsForNode(t.Context(), &corev1.Node{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "pending-node",
 				},
@@ -218,7 +218,7 @@ func TestReachedGoal(t *testing.T) {
 			reconciler := PendingNodeReconciler{
 				Client: newStubReaderClient(t, []runtime.Object{&tc.pendingNode}, tc.getPendingNodeErr, nil),
 			}
-			reachedGoal, err := reconciler.reachedGoal(context.Background(), tc.pendingNode, tc.nodeState)
+			reachedGoal, err := reconciler.reachedGoal(t.Context(), tc.pendingNode, tc.nodeState)
 			if tc.wantErr {
 				assert.Error(err)
 				return

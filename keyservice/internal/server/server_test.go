@@ -32,23 +32,23 @@ func TestGetDataKey(t *testing.T) {
 	kms := &stubKMS{derivedKey: []byte{0x0, 0x1, 0x2, 0x3, 0x4, 0x5}}
 	api := New(log, kms)
 
-	res, err := api.GetDataKey(context.Background(), &keyserviceproto.GetDataKeyRequest{DataKeyId: "1", Length: 32})
+	res, err := api.GetDataKey(t.Context(), &keyserviceproto.GetDataKeyRequest{DataKeyId: "1", Length: 32})
 	require.NoError(err)
 	assert.Equal(kms.derivedKey, res.DataKey)
 
 	// Test no data key id
-	res, err = api.GetDataKey(context.Background(), &keyserviceproto.GetDataKeyRequest{Length: 32})
+	res, err = api.GetDataKey(t.Context(), &keyserviceproto.GetDataKeyRequest{Length: 32})
 	require.Error(err)
 	assert.Nil(res)
 
 	// Test no / zero key length
-	res, err = api.GetDataKey(context.Background(), &keyserviceproto.GetDataKeyRequest{DataKeyId: "1"})
+	res, err = api.GetDataKey(t.Context(), &keyserviceproto.GetDataKeyRequest{DataKeyId: "1"})
 	require.Error(err)
 	assert.Nil(res)
 
 	// Test derive key error
 	api = New(log, &stubKMS{deriveKeyErr: errors.New("error")})
-	res, err = api.GetDataKey(context.Background(), &keyserviceproto.GetDataKeyRequest{DataKeyId: "1", Length: 32})
+	res, err = api.GetDataKey(t.Context(), &keyserviceproto.GetDataKeyRequest{DataKeyId: "1", Length: 32})
 	assert.Error(err)
 	assert.Nil(res)
 }

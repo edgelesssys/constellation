@@ -214,7 +214,7 @@ func TestIMDSClient(t *testing.T) {
 			}
 			iClient := IMDSClient{client: &hClient}
 
-			ctx := context.Background()
+			ctx := t.Context()
 
 			id, err := iClient.providerID(ctx)
 			if tc.wantProviderIDErr {

@@ -176,7 +176,7 @@ func TestProviderID(t *testing.T) {
 						cacheTime:     tc.cacheTime,
 					}
 
-					result, err := tu.method(imds, context.Background())
+					result, err := tu.method(imds, t.Context())
 
 					if tc.wantErr {
 						assert.Error(err)
@@ -264,7 +264,7 @@ func TestRole(t *testing.T) {
 				cacheTime: tc.cacheTime,
 			}
 
-			result, err := imds.role(context.Background())
+			result, err := imds.role(t.Context())
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -336,7 +336,7 @@ func TestVPCIP(t *testing.T) {
 				vpcIPCacheTime: tc.cacheTime,
 			}
 
-			result, err := imds.vpcIP(context.Background())
+			result, err := imds.vpcIP(t.Context())
 
 			if tc.wantErr {
 				assert.Error(err)

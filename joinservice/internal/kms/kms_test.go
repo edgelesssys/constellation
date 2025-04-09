@@ -60,7 +60,7 @@ func TestGetDataKey(t *testing.T) {
 
 			client.grpc = tc.client
 
-			res, err := client.GetDataKey(context.Background(), "disk-uuid", 32)
+			res, err := client.GetDataKey(t.Context(), "disk-uuid", 32)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

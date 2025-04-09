@@ -108,7 +108,7 @@ func TestGetAttestationGRPC(t *testing.T) {
 				issuer: tc.issuer,
 			}
 
-			resp, err := server.GetAttestation(context.Background(), tc.request)
+			resp, err := server.GetAttestation(t.Context(), tc.request)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
@@ -164,7 +164,7 @@ func TestGetAttestationHTTP(t *testing.T) {
 			httpServer := httptest.NewServer(http.HandlerFunc(server.getAttestationHTTP))
 			defer httpServer.Close()
 
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, httpServer.URL+tc.request, nil)
+			req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, httpServer.URL+tc.request, nil)
 			require.NoError(err)
 			resp, err := http.DefaultClient.Do(req)
 			require.NoError(err)

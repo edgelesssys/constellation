@@ -185,14 +185,14 @@ func TestApplier(t *testing.T) {
 				out:           &bytes.Buffer{},
 			}
 
-			diff, err := applier.Plan(context.Background(), tc.config)
+			diff, err := applier.Plan(t.Context(), tc.config)
 			if err != nil {
 				assert.True(tc.wantErr, "unexpected error: %s", err)
 				return
 			}
 			assert.False(diff)
 
-			idFile, err := applier.Apply(context.Background(), tc.provider, tc.config.GetAttestationConfig().GetVariant(), true)
+			idFile, err := applier.Apply(t.Context(), tc.provider, tc.config.GetAttestationConfig().GetVariant(), true)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -303,7 +303,7 @@ func TestPlan(t *testing.T) {
 			cfg := config.Default()
 			cfg.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
 
-			diff, err := u.Plan(context.Background(), cfg)
+			diff, err := u.Plan(t.Context(), cfg)
 			if tc.wantErr {
 				require.Error(err)
 			} else {
@@ -352,7 +352,7 @@ func TestApply(t *testing.T) {
 				out:             io.Discard,
 			}
 
-			_, err := u.Apply(context.Background(), cloudprovider.QEMU, variant.QEMUVTPM{}, WithoutRollbackOnError)
+			_, err := u.Apply(t.Context(), cloudprovider.QEMU, variant.QEMUVTPM{}, WithoutRollbackOnError)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

@@ -147,7 +147,7 @@ func TestUpdate(t *testing.T) {
 
 	// test connection to server
 	clientOID := variant.Dummy{}
-	resp, err := testConnection(require, server.URL, clientOID)
+	resp, err := testConnection(t.Context(), require, server.URL, clientOID)
 	require.NoError(err)
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
@@ -159,7 +159,7 @@ func TestUpdate(t *testing.T) {
 	require.NoError(validator.Update())
 
 	// client connection should fail now, since the server's validator expects a different OID from the client
-	resp, err = testConnection(require, server.URL, clientOID)
+	resp, err = testConnection(t.Context(), require, server.URL, clientOID)
 	if err == nil {
 		defer resp.Body.Close()
 	}
@@ -230,12 +230,12 @@ func TestUpdateConcurrency(t *testing.T) {
 	wg.Wait()
 }
 
-func testConnection(require *require.Assertions, url string, oid variant.Getter) (*http.Response, error) {
+func testConnection(ctx context.Context, require *require.Assertions, url string, oid variant.Getter) (*http.Response, error) {
 	clientConfig, err := atls.CreateAttestationClientTLSConfig(fakeIssuer{oid}, nil)
 	require.NoError(err)
 	client := http.Client{Transport: &http.Transport{TLSClientConfig: clientConfig}}
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	require.NoError(err)
 	return client.Do(req)
 }

@@ -138,7 +138,7 @@ func TestRecover(t *testing.T) {
 			require := require.New(t)
 
 			cmd := NewRecoverCmd()
-			cmd.SetContext(context.Background())
+			cmd.SetContext(t.Context())
 			out := &bytes.Buffer{}
 			cmd.SetOut(out)
 			cmd.SetErr(out)
@@ -225,7 +225,7 @@ func TestDoRecovery(t *testing.T) {
 				log:      r.log,
 			}
 
-			err := recoverDoer.Do(context.Background())
+			err := recoverDoer.Do(t.Context())
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

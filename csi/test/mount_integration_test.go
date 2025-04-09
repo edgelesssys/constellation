@@ -105,7 +105,7 @@ func TestOpenAndClose(t *testing.T) {
 
 	mapper := cryptmapper.New(&fakeKMS{})
 
-	newPath, err := mapper.OpenCryptDevice(context.Background(), devicePath, deviceName, false)
+	newPath, err := mapper.OpenCryptDevice(t.Context(), devicePath, deviceName, false)
 	require.NoError(err)
 	defer func() {
 		_ = mapper.CloseCryptDevice(deviceName)
@@ -119,14 +119,14 @@ func TestOpenAndClose(t *testing.T) {
 	assert.True(os.IsNotExist(err))
 
 	// Opening the same device should return the same path and not error
-	newPath2, err := mapper.OpenCryptDevice(context.Background(), devicePath, deviceName, false)
+	newPath2, err := mapper.OpenCryptDevice(t.Context(), devicePath, deviceName, false)
 	require.NoError(err)
 	assert.Equal(newPath, newPath2)
 
 	// Resize the device
 	resize(devicePath)
 
-	resizedPath, err := mapper.ResizeCryptDevice(context.Background(), deviceName)
+	resizedPath, err := mapper.ResizeCryptDevice(t.Context(), deviceName)
 	require.NoError(err)
 	assert.Equal("/dev/mapper/"+deviceName, resizedPath)
 
@@ -137,7 +137,7 @@ func TestOpenAndClose(t *testing.T) {
 	assert.True(os.IsNotExist(err))
 
 	// check if we can reopen the device
-	_, err = mapper.OpenCryptDevice(context.Background(), devicePath, deviceName, true)
+	_, err = mapper.OpenCryptDevice(t.Context(), devicePath, deviceName, true)
 	assert.NoError(err)
 	assert.NoError(mapper.CloseCryptDevice(deviceName))
 }
@@ -150,7 +150,7 @@ func TestOpenAndCloseIntegrity(t *testing.T) {
 
 	mapper := cryptmapper.New(&fakeKMS{})
 
-	newPath, err := mapper.OpenCryptDevice(context.Background(), devicePath, deviceName, true)
+	newPath, err := mapper.OpenCryptDevice(t.Context(), devicePath, deviceName, true)
 	require.NoError(err)
 	assert.Equal("/dev/mapper/"+deviceName, newPath)
 
@@ -162,13 +162,13 @@ func TestOpenAndCloseIntegrity(t *testing.T) {
 	assert.NoError(err)
 
 	// Opening the same device should return the same path and not error
-	newPath2, err := mapper.OpenCryptDevice(context.Background(), devicePath, deviceName, true)
+	newPath2, err := mapper.OpenCryptDevice(t.Context(), devicePath, deviceName, true)
 	require.NoError(err)
 	assert.Equal(newPath, newPath2)
 
 	// integrity devices do not support resizing
 	resize(devicePath)
-	_, err = mapper.ResizeCryptDevice(context.Background(), deviceName)
+	_, err = mapper.ResizeCryptDevice(t.Context(), deviceName)
 	assert.Error(err)
 
 	assert.NoError(mapper.CloseCryptDevice(deviceName))
@@ -181,7 +181,7 @@ func TestOpenAndCloseIntegrity(t *testing.T) {
 	assert.True(os.IsNotExist(err))
 
 	// check if we can reopen the device
-	_, err = mapper.OpenCryptDevice(context.Background(), devicePath, deviceName, true)
+	_, err = mapper.OpenCryptDevice(t.Context(), devicePath, deviceName, true)
 	assert.NoError(err)
 	assert.NoError(mapper.CloseCryptDevice(deviceName))
 }
@@ -194,13 +194,13 @@ func TestDeviceCloning(t *testing.T) {
 
 	mapper := cryptmapper.New(&dynamicKMS{})
 
-	_, err := mapper.OpenCryptDevice(context.Background(), devicePath, deviceName, false)
+	_, err := mapper.OpenCryptDevice(t.Context(), devicePath, deviceName, false)
 	assert.NoError(err)
 
 	require.NoError(cp(devicePath, devicePath+"-copy"))
 	defer teardown(devicePath + "-copy")
 
-	_, err = mapper.OpenCryptDevice(context.Background(), devicePath+"-copy", deviceName+"-copy", false)
+	_, err = mapper.OpenCryptDevice(t.Context(), devicePath+"-copy", deviceName+"-copy", false)
 	assert.NoError(err)
 
 	assert.NoError(mapper.CloseCryptDevice(deviceName))
@@ -220,7 +220,7 @@ func TestConcurrency(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 	runTest := func(path, name string) {
-		newPath, err := mapper.OpenCryptDevice(context.Background(), path, name, false)
+		newPath, err := mapper.OpenCryptDevice(t.Context(), path, name, false)
 		assert.NoError(err)
 		defer func() {
 			_ = mapper.CloseCryptDevice(name)

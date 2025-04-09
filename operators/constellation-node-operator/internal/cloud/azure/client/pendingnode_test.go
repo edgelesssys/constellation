@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package client
 
 import (
-	"context"
 	"errors"
 	"net/http"
 	"testing"
@@ -67,7 +66,7 @@ func TestGetNodeState(t *testing.T) {
 					instanceViewErr: tc.getInstanceViewErr,
 				},
 			}
-			gotState, err := client.GetNodeState(context.Background(), tc.providerID)
+			gotState, err := client.GetNodeState(t.Context(), tc.providerID)
 			if tc.wantErr {
 				assert.Error(err)
 				return

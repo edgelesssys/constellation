@@ -125,7 +125,7 @@ func TestPrepareUpdate(t *testing.T) {
 			require := require.New(t)
 			assert := assert.New(t)
 
-			err := prepareUpdate(context.Background(), tc.installer, tc.updateRequest)
+			err := prepareUpdate(t.Context(), tc.installer, tc.updateRequest)
 			if tc.wantErr {
 				assert.Error(err)
 				return
