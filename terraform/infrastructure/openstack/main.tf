@@ -22,7 +22,7 @@ provider "openstack" {
 }
 
 provider "stackit" {
-  region = "eu01"
+  default_region = "eu01"
 }
 
 
