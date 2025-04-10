@@ -52,7 +52,7 @@ jobs:
 
   e2e-test:
     name: E2E Test Windows
-    runs-on: windows-2022
+    runs-on: windows-2025
     needs: build-cli
     steps:
       - name: Checkout
