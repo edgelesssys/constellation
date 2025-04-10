@@ -30,6 +30,12 @@ runs:
           jd-diff-patch
           moreutils
 
+    - name: Allow unrestricted user namespaces
+      shell: bash
+      run: |
+        sudo sysctl --ignore --write kernel.apparmor_restrict_unprivileged_unconfined=0
+        sudo sysctl --ignore --write kernel.apparmor_restrict_unprivileged_userns=0
+
     - name: Build images
       id: build-images
       shell: bash
@@ -46,12 +52,12 @@ runs:
       shell: bash
       run: |
         curl -fsLO https://cdn.confidential.cloud/constellation/v2/ref/-/stream/stable/${{ inputs.version }}/image/measurements.json
-    
+
     - name: Cleanup release measurements and generate our own
       shell: bash
       run: |
         ${{ github.action_path }}/create_measurements.sh "${{ steps.build-images.outputs.buildPath }}"
-        
+
     - name: Compare measurements
       shell: bash
       run: |
