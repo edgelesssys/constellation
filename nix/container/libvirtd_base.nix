@@ -62,12 +62,22 @@ let
   '';
   startScript = pkgsLinux.writeShellApplication {
     name = "start.sh";
-    runtimeInputs = with pkgsLinux; [
+    runtimeInputs = let nixpkgs24_11 = import "${pkgs.fetchFromGitHub {
+      # Pinned release which contains swtpm v0.8.2
+      # Newer versions of NixOS package swtpm v0.10.0 with https://github.com/stefanberger/swtpm/pull/896
+      # This release breaks MiniConstellation since either libvirt, or the Terraform libvirt provider
+      # tries to apply the TPM config twice, resulting in an error during the setup phase
+      owner = "NixOS";
+      repo = "nixpkgs";
+      tag = "24.11";
+      hash = "sha256-CqCX4JG7UiHvkrBTpYC3wcEurvbtTADLbo3Ns2CEoL8=";
+    }}"{system = "x86_64-linux";}; in
+    with pkgsLinux; [
       shadow
       coreutils
       libvirt
       qemu
-      swtpm
+      nixpkgs24_11.swtpm
     ];
     text = ''
       set -euo pipefail
