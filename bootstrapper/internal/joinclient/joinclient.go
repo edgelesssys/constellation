@@ -275,10 +275,12 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 		return fmt.Errorf("writing ssh ca key: %w", err)
 	}
 
+	c.log.Info("Received host key", "key", ticket.HostKey)
 	if err := c.fileHandler.Write(constants.SSHHostKeyPath, ticket.HostKey, file.OptMkdirAll); err != nil {
 		return fmt.Errorf("writing ssh host key: %w", err)
 	}
 
+	c.log.Info("Received host cert", "cert", ticket.HostCertificate)
 	if err := c.fileHandler.Write(constants.SSHHostCertificatePath, ticket.HostCertificate, file.OptMkdirAll); err != nil {
 		return fmt.Errorf("writing ssh host certificate: %w", err)
 	}
