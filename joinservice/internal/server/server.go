@@ -10,7 +10,7 @@ package server
 import (
 	"context"
 	"crypto/ed25519"
-	"crypto/rand"
+	"encoding/pem"
 	"fmt"
 	"log/slog"
 	"net"
@@ -118,38 +118,12 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 
 	p, _ := peer.FromContext(ctx)
 	nodeIP := p.Addr.String()
-	hostKey, _, err := ed25519.GenerateKey(nil)
+	hostKey, hostCertificate, err := crypto.GenerateSignedSSHHostKey(nodeIP, ca)
 	if err != nil {
-		log.With(slog.Any("error", err), slog.String("ip", nodeIP)).Error("Failed to generate host key for node")
-		return nil, status.Errorf(codes.Internal, "generating host key for node: %s", err)
-	}
-	hostKeyPub, err := ssh.NewPublicKey(hostKey)
-	if err != nil {
-		log.With(slog.Any("error", err), slog.String("ip", nodeIP)).Error("Failed to create public host key")
-		return nil, status.Errorf(codes.Internal, "generating public host key for node: %s", err)
-	}
-
-	certificate := ssh.Certificate{
-		CertType:        ssh.HostCert,
-		Nonce:           []byte{},
-		ValidPrincipals: []string{p.Addr.String()},
-		ValidAfter:      uint64(time.Now().Unix()),
-		ValidBefore:     ssh.CertTimeInfinity,
-		Reserved:        []byte{},
-		Key:             hostKeyPub,
-		KeyId:           "host_key",
-		SignatureKey:    ca.PublicKey(),
-		Permissions: ssh.Permissions{
-			CriticalOptions: map[string]string{},
-			Extensions:      map[string]string{},
-		},
-	}
-	if certificate.SignCert(rand.Reader, ca) != nil {
-		log.With(slog.Any("error", err), slog.String("ip", nodeIP)).Error("Failed to sign host key with ssh CA for node")
-		return nil, status.Errorf(codes.Internal, "signing host key for node with CA: %s", err)
+		log.With(slog.Any("error", err)).Error("Failed to generate and sign SSH host key")
+		return nil, status.Errorf(codes.Internal, "generating and signing SSH host key: %s", err)
 	}
 	log.Info("Generated host key and certificate for node", "ip", nodeIP)
-	// TODO: send cert and host key to node for installation
 
 	log.Info("Creating Kubernetes join token")
 	kubeArgs, err := s.joinTokenGetter.GetJoinToken(constants.KubernetesJoinTokenTTL)
@@ -219,8 +193,8 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 		ControlPlaneFiles:        controlPlaneFiles,
 		KubernetesComponents:     components,
 		AuthorizedCaPublicKey:    ssh.MarshalAuthorizedKey(ca.PublicKey()),
-		HostKey:                  ssh.MarshalAuthorizedKey(hostKeyPub),
-		HostCertificate:          ssh.MarshalAuthorizedKey(&certificate),
+		HostKey:                  pem.EncodeToMemory(hostKey),
+		HostCertificate:          ssh.MarshalAuthorizedKey(hostCertificate),
 	}, nil
 }
 
