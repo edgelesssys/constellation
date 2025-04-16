@@ -21,6 +21,7 @@ import (
 	"bufio"
 	"context"
 	"crypto/ed25519"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
@@ -242,6 +243,27 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 	}
 	if err := s.fileHandler.Write(constants.SSHCAKeyPath, ssh.MarshalAuthorizedKey(ca.PublicKey()), file.OptMkdirAll); err != nil {
 		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "writing ssh CA pubkey: %s", err)); e != nil {
+			err = errors.Join(err, e)
+		}
+		return err
+	}
+
+	// TODO: Correct principal, no wildcard
+	hostKey, hostCertificate, err := crypto.GenerateSignedSSHHostKey("*", ca)
+	if err != nil {
+		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "generating and signing host SSH key: %s", err)); e != nil {
+			err = errors.Join(err, e)
+		}
+		return err
+	}
+	if err := s.fileHandler.Write(constants.SSHHostKeyPath, pem.EncodeToMemory(hostKey), file.OptMkdirAll); err != nil {
+		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "writing ssh host key: %s", err)); e != nil {
+			err = errors.Join(err, e)
+		}
+		return err
+	}
+	if err := s.fileHandler.Write(constants.SSHHostCertificatePath, ssh.MarshalAuthorizedKey(hostCertificate), file.OptMkdirAll); err != nil {
+		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "writing ssh host certificate: %s", err)); e != nil {
 			err = errors.Join(err, e)
 		}
 		return err
