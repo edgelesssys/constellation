@@ -92,7 +92,7 @@ func GenerateSignedSSHHostKey(principal string, ca ssh.Signer) (*pem.Block, *ssh
 	if err != nil {
 		return nil, nil, err
 	}
-	pemHostKey := &pem.Block{Type: "OPENSSH PRIVATE KEY", Bytes: hostKeySSH}
+	pemHostKey := &pem.Block{Type: "PRIVATE KEY", Bytes: hostKeySSH}
 
 	certificate := ssh.Certificate{
 		CertType:        ssh.HostCert,
