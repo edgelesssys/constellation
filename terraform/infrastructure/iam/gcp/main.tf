@@ -87,6 +87,7 @@ resource "google_project_iam_custom_role" "vm" {
     "compute.subnetworks.get",
     "compute.globalForwardingRules.list",
     "compute.zones.list",
+    "compute.forwardingRules.list",
   ]
 }
 
