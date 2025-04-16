@@ -108,7 +108,7 @@ func runVerify(cmd *cobra.Command, _ []string) error {
 
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	verifyClient := &constellationVerifier{
-		dialer: dialer.New(nil, nil, &net.Dialer{}),
+		dialer: dialer.New(nil, nil, nil),
 		log:    log,
 	}
 
