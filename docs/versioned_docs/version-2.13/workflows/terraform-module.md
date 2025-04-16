@@ -100,11 +100,11 @@ The files are deleted on `terraform destroy`.
     name    = "constell"
     project = "constell-proj" // replace with your project id
     service_account_id = "constid"
-    zone    = "europe-west2-a"
+    zone    = "europe-west3-a"
     node_groups = {
       control_plane_default = {
         role          = "control-plane"
-        zone          = "europe-west2-a"
+        zone          = "europe-west3-a"
         instance_type = "n2d-standard-4"
         disk_size     = 30
         disk_type     = "pd-ssd"
@@ -112,7 +112,7 @@ The files are deleted on `terraform destroy`.
       },
       worker_default = {
         role          = "worker"
-        zone          = "europe-west2-a"
+        zone          = "europe-west3-a"
         instance_type = "n2d-standard-4"
         disk_size     = 30
         disk_type     = "pd-ssd"
