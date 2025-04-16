@@ -39,10 +39,10 @@ If you encounter any problem with the following steps, make sure to use the [lat
     <TabItem value="gcp" label="GCP">
 
     ```bash
-    constellation iam create gcp --projectID=yourproject-12345 --zone=europe-west2-a --serviceAccountID=constell-test --generate-config
+    constellation iam create gcp --projectID=yourproject-12345 --zone=europe-west3-a --serviceAccountID=constell-test --generate-config
     ```
 
-    This command creates IAM configuration in the GCP project `yourproject-12345` on the GCP zone `europe-west2-a` creating a new service account `constell-test`. It also creates the configuration file `constellation-conf.yaml` in your current directory with the IAM values filled in.
+    This command creates IAM configuration in the GCP project `yourproject-12345` on the GCP zone `europe-west3-a` creating a new service account `constell-test`. It also creates the configuration file `constellation-conf.yaml` in your current directory with the IAM values filled in.
 
     Note that only regions offering CVMs of the `C2D` or `N2D` series are supported. You can find a [list of all regions in Google's documentation](https://cloud.google.com/compute/docs/regions-zones#available), which you can filter by machine type `C2D` or `N2D`.
 

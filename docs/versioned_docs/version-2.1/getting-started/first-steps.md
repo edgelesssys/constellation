@@ -142,11 +142,11 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
       You can find it on the [welcome screen of your GCP project](https://console.cloud.google.com/welcome). For more information refer to [Google's documentation](https://support.google.com/googleapi/answer/7014113).
 
-    * **region**: The GCP region you want to deploy your cluster in, e.g., `us-west1`.
+    * **region**: The GCP region you want to deploy your cluster in, e.g., `us-central1`.
 
       You can find a [list of all regions in Google's documentation](https://cloud.google.com/compute/docs/regions-zones#available).
 
-    * **zone**: The GCP zone you want to deploy your cluster in, e.g., `us-west1-a`.
+    * **zone**: The GCP zone you want to deploy your cluster in, e.g., `us-central1-a`.
 
       You can find a [list of all zones in Google's documentation](https://cloud.google.com/compute/docs/regions-zones#available).
 
