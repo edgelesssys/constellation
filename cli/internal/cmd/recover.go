@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"sync"
 	"time"
 
@@ -78,7 +77,7 @@ func runRecover(cmd *cobra.Command, _ []string) error {
 	}
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	newDialer := func(validator atls.Validator) *dialer.Dialer {
-		return dialer.New(nil, validator, &net.Dialer{})
+		return dialer.New(nil, validator, nil)
 	}
 	r := &recoverCmd{log: log, configFetcher: attestationconfigapi.NewFetcher()}
 	if err := r.flags.parse(cmd.Flags()); err != nil {

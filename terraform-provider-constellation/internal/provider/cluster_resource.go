@@ -15,7 +15,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"net/url"
 	"regexp"
 	"strings"
@@ -550,7 +549,7 @@ func (r *ClusterResource) Configure(_ context.Context, req resource.ConfigureReq
 	}
 
 	newDialer := func(validator atls.Validator) *dialer.Dialer {
-		return dialer.New(nil, validator, &net.Dialer{})
+		return dialer.New(nil, validator, nil)
 	}
 
 	r.newApplier = func(ctx context.Context, _ atls.Validator) *constellation.Applier {

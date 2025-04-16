@@ -14,7 +14,6 @@ import (
 	"io"
 	"io/fs"
 	"log/slog"
-	"net"
 	"os"
 	"path/filepath"
 	"slices"
@@ -229,7 +228,7 @@ func runApply(cmd *cobra.Command, _ []string) error {
 	}
 
 	newDialer := func(validator atls.Validator) *dialer.Dialer {
-		return dialer.New(nil, validator, &net.Dialer{})
+		return dialer.New(nil, validator, nil)
 	}
 
 	upgradeID := generateUpgradeID(upgradeCmdKindApply)
