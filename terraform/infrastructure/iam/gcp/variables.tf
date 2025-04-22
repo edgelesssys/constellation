@@ -5,6 +5,7 @@ variable "project_id" {
 
 variable "service_account_id" {
   type        = string
+  default     = null
   description = "[DEPRECATED use var.name_prefix] ID for the service account being created. Must match ^[a-z](?:[-a-z0-9]{4,28}[a-z0-9])$."
 }
 
