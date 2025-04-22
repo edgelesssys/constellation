@@ -23,7 +23,7 @@ import (
 func UpgradeRequiresIAMMigration(provider cloudprovider.Provider) bool {
 	switch provider {
 	case cloudprovider.GCP:
-		// TODO(@3u13r): remove this case after the v2.22.0 release
+		// TODO(@elchead): remove this case after the v2.23.0 release
 		return true
 	default:
 		return false
