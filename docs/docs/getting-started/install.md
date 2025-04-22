@@ -263,6 +263,11 @@ To [create a Constellation cluster](../workflows/create.md), you need the follow
 * `compute.firewalls.delete`
 * `compute.firewalls.get`
 * `compute.firewalls.update`
+* `compute.forwardingRules.create`
+* `compute.forwardingRules.delete`
+* `compute.forwardingRules.get`
+* `compute.forwardingRules.setLabels`
+* `compute.forwardingRules.list`
 * `compute.globalAddresses.create`
 * `compute.globalAddresses.delete`
 * `compute.globalAddresses.get`
