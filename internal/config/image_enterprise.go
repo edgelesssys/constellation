@@ -10,5 +10,5 @@ package config
 
 const (
 	// defaultImage is the default image to use.
-	defaultImage = "ref/main/stream/nightly/v2.23.0-pre.0.20250422095423-81952fa67d96"
+	defaultImage = "ref/main/stream/nightly/v2.23.0-pre.0.20250423163526-01164025ec3c"
 )
