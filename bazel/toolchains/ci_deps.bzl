@@ -223,45 +223,45 @@ def _golangci_lint_deps():
         name = "com_github_golangci_golangci_lint_linux_amd64",
         build_file = "//bazel/toolchains:BUILD.golangci.bazel",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/8c71aea61ce6ef83f32c23a0067ba5b6b7064043767bcb99ddfdd6678e3c7644",
-            "https://github.com/golangci/golangci-lint/releases/download/v2.1.5/golangci-lint-2.1.5-linux-amd64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/e55e0eb515936c0fbd178bce504798a9bd2f0b191e5e357768b18fd5415ee541",
+            "https://github.com/golangci/golangci-lint/releases/download/v2.1.6/golangci-lint-2.1.6-linux-amd64.tar.gz",
         ],
-        strip_prefix = "golangci-lint-2.1.5-linux-amd64",
+        strip_prefix = "golangci-lint-2.1.6-linux-amd64",
         type = "tar.gz",
-        sha256 = "8c71aea61ce6ef83f32c23a0067ba5b6b7064043767bcb99ddfdd6678e3c7644",
+        sha256 = "e55e0eb515936c0fbd178bce504798a9bd2f0b191e5e357768b18fd5415ee541",
     )
     http_archive(
         name = "com_github_golangci_golangci_lint_linux_arm64",
         build_file = "//bazel/toolchains:BUILD.golangci.bazel",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/76ef18939e16308b01a90d2e28abd5ce888435fa25467c432dc0da9469f998c9",
-            "https://github.com/golangci/golangci-lint/releases/download/v2.1.5/golangci-lint-2.1.5-linux-arm64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/582eb73880f4408d7fb89f12b502d577bd7b0b63d8c681da92bb6b9d934d4363",
+            "https://github.com/golangci/golangci-lint/releases/download/v2.1.6/golangci-lint-2.1.6-linux-arm64.tar.gz",
         ],
-        strip_prefix = "golangci-lint-2.1.5-linux-arm64",
+        strip_prefix = "golangci-lint-2.1.6-linux-arm64",
         type = "tar.gz",
-        sha256 = "76ef18939e16308b01a90d2e28abd5ce888435fa25467c432dc0da9469f998c9",
+        sha256 = "582eb73880f4408d7fb89f12b502d577bd7b0b63d8c681da92bb6b9d934d4363",
     )
     http_archive(
         name = "com_github_golangci_golangci_lint_darwin_amd64",
         build_file = "//bazel/toolchains:BUILD.golangci.bazel",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/b44c77e61f2685a9cb673a1b579486c7839bf2a57feee591eb42812951b9d190",
-            "https://github.com/golangci/golangci-lint/releases/download/v2.1.5/golangci-lint-2.1.5-darwin-amd64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/e091107c4ca7e283902343ba3a09d14fb56b86e071effd461ce9d67193ef580e",
+            "https://github.com/golangci/golangci-lint/releases/download/v2.1.6/golangci-lint-2.1.6-darwin-amd64.tar.gz",
         ],
-        strip_prefix = "golangci-lint-2.1.5-darwin-amd64",
+        strip_prefix = "golangci-lint-2.1.6-darwin-amd64",
         type = "tar.gz",
-        sha256 = "b44c77e61f2685a9cb673a1b579486c7839bf2a57feee591eb42812951b9d190",
+        sha256 = "e091107c4ca7e283902343ba3a09d14fb56b86e071effd461ce9d67193ef580e",
     )
     http_archive(
         name = "com_github_golangci_golangci_lint_darwin_arm64",
         build_file = "//bazel/toolchains:BUILD.golangci.bazel",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/de757442ad87df8b094afb610ea92f85a8e46c687b496a3b8d708c94dec16526",
-            "https://github.com/golangci/golangci-lint/releases/download/v2.1.5/golangci-lint-2.1.5-darwin-arm64.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/90783fa092a0f64a4f7b7d419f3da1f53207e300261773babe962957240e9ea6",
+            "https://github.com/golangci/golangci-lint/releases/download/v2.1.6/golangci-lint-2.1.6-darwin-arm64.tar.gz",
         ],
-        strip_prefix = "golangci-lint-2.1.5-darwin-arm64",
+        strip_prefix = "golangci-lint-2.1.6-darwin-arm64",
         type = "tar.gz",
-        sha256 = "de757442ad87df8b094afb610ea92f85a8e46c687b496a3b8d708c94dec16526",
+        sha256 = "90783fa092a0f64a4f7b7d419f3da1f53207e300261773babe962957240e9ea6",
     )
 
 def _buf_deps():
