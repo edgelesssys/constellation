@@ -1093,6 +1093,7 @@ func (r *ClusterResource) apply(ctx context.Context, data *ClusterResourceModel,
 		DeployCSIDriver:     microserviceCfg.CSIDriver,
 		masterSecret:        secrets.masterSecret,
 		serviceAccURI:       serviceAccURI,
+		serviceCIDR:         networkCfg.IPCidrService.ValueString(),
 	}
 	if csp == cloudprovider.OpenStack {
 		payload.openStackHelmValues = &helm.OpenStackValues{
@@ -1267,6 +1268,7 @@ type applyHelmChartsPayload struct {
 	masterSecret        uri.MasterSecret         // master secret of the cluster.
 	serviceAccURI       string                   // URI of the service account used within the cluster.
 	openStackHelmValues *helm.OpenStackValues    // OpenStack-specific Helm values.
+	serviceCIDR         string                   // CIDR used for k8s services - needed for CoreDNS chart.
 }
 
 // applyHelmCharts applies the Helm charts to the cluster.
@@ -1288,6 +1290,7 @@ func (r *ClusterResource) applyHelmCharts(ctx context.Context, applier *constell
 		// The user has previously been warned about this when planning a microservice version change.
 		AllowDestructive: helm.AllowDestructive,
 		OpenStackValues:  payload.openStackHelmValues,
+		ServiceCIDR:      payload.serviceCIDR,
 	}
 
 	if err := applier.AnnotateCoreDNSResources(ctx); err != nil {
