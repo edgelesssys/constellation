@@ -25,11 +25,9 @@ go_library(
     ] + select({
         "@io_bazel_rules_go//go/platform:android": [
             "@io_k8s_kubernetes//pkg/util/iptables",
-            "@io_k8s_utils//exec",
         ],
         "@io_bazel_rules_go//go/platform:linux": [
             "@io_k8s_kubernetes//pkg/util/iptables",
-            "@io_k8s_utils//exec",
         ],
         "//conditions:default": [],
     }),

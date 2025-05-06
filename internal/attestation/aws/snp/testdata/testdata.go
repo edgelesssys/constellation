@@ -15,7 +15,7 @@ import _ "embed"
 var SNPReport string
 
 // AKDigest holds the AK digest embedded in SNPReport.REPORT_DATA.
-const AKDigest = "032635613c8e331fa29e096371910fe6a1f69383dda02c9461400a70b66d87a3da5dd863002522be43afc34f2c233989bd6e401e351d10d7cc800d6f5dfcf019"
+const AKDigest = "87ab7caf510e1b3520dc3cceb64ee44128e10976fb0d3fc5e274699d8aaf506154af4c1de0a026b49fdf861e9ac75551551b3534d1c61369a3b08f5baed0db2f"
 
 // VLEK for SNPReport.
 //

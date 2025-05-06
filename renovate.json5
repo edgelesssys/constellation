@@ -17,7 +17,6 @@
     'gomodUpdateImportPaths',
     'gomodMassage'
   ],
-  prConcurrentLimit: 4,
   ignorePaths: [
     'internal/constellation/helm/charts/aws-load-balancer-controller/**',
     'internal/constellation/helm/charts/cilium/**',
@@ -31,6 +30,9 @@
   ignoreDeps: [
     'github.com/edgelesssys/constellation/v2',
     'github.com/daniel-weisse/go-cryptsetup',
+
+    // Only update once they fixed dependency violations on their side.
+    'github.com/google/go-tpm-tools',
   ],
   // Rules for changing renovates behaviour for different packages.
   // The documentation for configuration options can be found here:
@@ -76,8 +78,28 @@
         'pinDigest',
         'rollback',
       ],
+      matchDepNames: [
+        '!github.com/bazelbuild/rules_go',
+      ],
       schedule: [
         'before 8am on monday',
+      ],
+    },
+    {
+      // Group update of rules_go dependencies.
+      groupName: 'rules_go dependencies',
+      matchManagers: [
+        'gomod'
+        'bazel',
+        'bazel-module',
+      ],
+      matchDepNames: [
+        'github.com/bazelbuild/rules_go',
+        'io_bazel_rules_go',
+        'rules_go',
+      ],
+      schedule: [
+        'before 8am on tuesday',
       ],
     },
     {
@@ -108,9 +130,7 @@
       ],
       matchDepNames: [
         'bazel',
-        'io_bazel_rules_go',
         'bazel_gazelle',
-        'rules_go',
         'gazelle',
       ],
       groupName: 'bazel (core)',
