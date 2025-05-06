@@ -15,7 +15,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"k8s.io/kubernetes/pkg/util/iptables"
-	"k8s.io/utils/exec"
 )
 
 // PrepareControlPlaneNode sets up iptables for the control plane node only
@@ -54,7 +53,7 @@ func (c *Cloud) PrepareControlPlaneNode(ctx context.Context, log *slog.Logger) e
 	}
 
 	log.Info(fmt.Sprintf("Setting up iptables for control plane node with load balancer IP %s", loadbalancerIP))
-	iptablesExec := iptables.New(exec.New(), iptables.ProtocolIPv4)
+	iptablesExec := iptables.New(iptables.ProtocolIPv4)
 
 	const chainName = "azure-lb-nat"
 	if _, err := iptablesExec.EnsureChain(iptables.TableNAT, chainName); err != nil {
