@@ -79,8 +79,28 @@
         'pinDigest',
         'rollback',
       ],
+      matchDepNames: [
+        '!github.com/bazelbuild/rules_go',
+      ],
       schedule: [
         'before 8am on monday',
+      ],
+    },
+    {
+      // Group update of rules_go dependencies.
+      groupName: 'rules_go dependencies',
+      matchManagers: [
+        'gomod'
+        'bazel',
+        'bazel-module',
+      ],
+      matchDepNames: [
+        'github.com/bazelbuild/rules_go',
+        'io_bazel_rules_go',
+        'rules_go',
+      ],
+      schedule: [
+        'before 8am on tuesday',
       ],
     },
     {
@@ -111,9 +131,7 @@
       ],
       matchDepNames: [
         'bazel',
-        'io_bazel_rules_go',
         'bazel_gazelle',
-        'rules_go',
         'gazelle',
       ],
       groupName: 'bazel (core)',
