@@ -30,7 +30,6 @@
   ignoreDeps: [
     'github.com/edgelesssys/constellation/v2',
     'github.com/daniel-weisse/go-cryptsetup',
-
     // Only update once they fixed dependency violations on their side.
     'github.com/google/go-tpm-tools',
   ],
@@ -252,6 +251,7 @@
       matchPackageNames: [
         'ghcr.io/edgelesssys/{/,}**',
         '!ghcr.io/edgelesssys/cloud-provider-gcp',
+        '!ghcr.io/edgelesssys/constellation/s3proxy',
       ],
       versioning: 'semver',
       // Allow packages of ghcr.io/edgelesssys to update to unstable prereleases.
