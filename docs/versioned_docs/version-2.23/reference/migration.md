@@ -3,6 +3,12 @@
 This document describes breaking changes and migrations between Constellation releases.
 Use [`constellation config migrate`](./cli.md#constellation-config-migrate) to automatically update an old config file to a new format.
 
+## Migrations to v2.23.0
+
+### GCP
+
+GCP will require the additional permission `compute.forwardingRules.list`. Please update your IAM roles using `constellation iam upgrade apply`.
+
 ## Migrations to v2.19.1
 
 ### Azure
