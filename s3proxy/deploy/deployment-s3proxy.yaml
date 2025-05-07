@@ -72,7 +72,7 @@ spec:
     spec:
       containers:
         - name: s3proxy
-          image: ghcr.io/edgelesssys/constellation/s3proxy:v2.13.0-pre
+          image: ghcr.io/edgelesssys/constellation/s3proxy:v2.23.0
           args:
             - "--level=-1"
           ports:
