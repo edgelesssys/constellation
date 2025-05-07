@@ -29,6 +29,8 @@ func GetNetworkInterfaces() ([]string, error) {
 				ip = v.IP
 			case *net.IPAddr:
 				ip = v.IP
+			default:
+				continue
 			}
 			principalList = append(principalList, ip.String())
 		}
