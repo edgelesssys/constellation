@@ -120,7 +120,6 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 		return nil, status.Errorf(codes.Internal, "generating ssh emergency CA key: %s", err)
 	}
 
-	// FIXME: the file exists on the node but - logically - not on the container
 	principalList := req.HostCertificatePrincipals
 	additionalPrincipals, err := s.fileHandler.Read(constants.SSHAdditionalPrincipalsPath)
 	if err != nil {
