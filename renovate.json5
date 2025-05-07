@@ -89,7 +89,7 @@
       // Group update of rules_go dependencies.
       groupName: 'rules_go dependencies',
       matchManagers: [
-        'gomod'
+        'gomod',
         'bazel',
         'bazel-module',
       ],
