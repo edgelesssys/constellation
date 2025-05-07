@@ -4,7 +4,7 @@
 /bazel @burgerdev
 /bootstrapper @msanft
 /cli/internal/cloudcmd @daniel-weisse
-/cli/internal/cmd/upgrade* @derpsteb
+/cli/internal/cmd/upgrade* @daniel-weisse
 /cli/internal/libvirt @daniel-weisse
 /cli/internal/terraform @elchead
 /csi @daniel-weisse
@@ -12,9 +12,9 @@
 /disk-mapper @daniel-weisse
 /docs @thomasten
 /e2e @msanft
-/hack/azure-snp-report-verify @derpsteb
+/hack/azure-snp-report-verify @msanft
 /hack/bazel-deps-mirror @burgerdev
-/hack/cli-k8s-compatibility @derpsteb
+/hack/cli-k8s-compatibility @burgerdev
 /hack/clidocgen @thomasten
 /hack/fetch-broken-e2e @msanft
 /hack/gocoverage @msanft
@@ -25,12 +25,12 @@
 /hack/tools @msanft
 /hack/versioninfogen @daniel-weisse
 /image @msanft
-/internal/api @derpsteb
+/internal/api @daniel-weisse
 /internal/atls @thomasten
 /internal/attestation @daniel-weisse
 /internal/cloud @msanft
-/internal/compatibility @derpsteb
-/internal/config @derpsteb
+/internal/compatibility @daniel-weisse
+/internal/config @msanft
 /internal/constellation/featureset @thomasten
 /internal/constellation/helm @burgerdev
 /internal/constellation/kubecmd @daniel-weisse
@@ -49,7 +49,7 @@
 /internal/nodestate @daniel-weisse
 /internal/osimage @msanft
 /internal/retry @msanft
-/internal/semver @derpsteb
+/internal/semver @daniel-weisse
 /internal/sigstore @elchead
 /internal/staticupload @msanft
 /internal/versions @msanft
