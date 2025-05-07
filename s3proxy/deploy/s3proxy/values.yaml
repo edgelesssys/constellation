@@ -3,7 +3,7 @@ awsAccessKeyID: "replaceme"
 awsSecretAccessKey: "replaceme"
 
 # Pod image to deploy.
-image: "ghcr.io/edgelesssys/constellation/s3proxy:v2.23.0-pre.0.20250409150110-8e6c93474149"
+image: "ghcr.io/edgelesssys/constellation/s3proxy:v2.24.0-pre.0.20250506164353-dd8539f54b44"
 
 # Control if multipart uploads are blocked.
 allowMultipart: false
