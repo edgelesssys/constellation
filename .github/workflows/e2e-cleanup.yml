@@ -1,8 +1,8 @@
-name: e2e weekly cleanup
+name: e2e cleanup
 
 on:
   schedule:
-    - cron: "0 0 * * 0" # At 00:00 every Sunday UTC
+    - cron: "0 0 * * *" # At 00:00 every day
   workflow_dispatch:
 
 
