@@ -14,20 +14,20 @@ function download_tfstate_artifact {
 # delete_resources runs terraform destroy on the constellation-terraform subfolder of a given folder.
 function delete_resources {
   if [[ -d "$1/constellation-terraform" ]]; then
-    cd "$1/constellation-terraform" || exit 1
-    terraform init > /dev/null || exit 1 # first, install plugins
-    terraform destroy -auto-approve || exit 1
-    cd ../../ || exit 1
+    cd "$1/constellation-terraform" || return 1
+    terraform init > /dev/null || return 1 # first, install plugins
+    terraform destroy -auto-approve || return 1
+    cd ../../ || return 1
   fi
 }
 
 # delete_iam_config runs terraform destroy on the constellation-iam-terraform subfolder of a given folder.
 function delete_iam_config {
   if [[ -d "$1/constellation-iam-terraform" ]]; then
-    cd "$1/constellation-iam-terraform" || exit 1
-    terraform init > /dev/null || exit 1 # first, install plugins
-    terraform destroy -auto-approve || exit 1
-    cd ../../ || exit 1
+    cd "$1/constellation-iam-terraform" || return 1
+    terraform init > /dev/null || return 1 # first, install plugins
+    terraform destroy -auto-approve || return 1
+    cd ../../ || return 1
   fi
 }
 
@@ -85,13 +85,19 @@ export TF_PLUGIN_CACHE_DIR="${HOME}/tf_plugin_cache"
 echo "[*] created terraform cache directory ${TF_PLUGIN_CACHE_DIR}"
 
 echo "[*] deleting resources"
+error_occurred=0
 for directory in ./terraform-state-*; do
   echo "    deleting resources in ${directory}"
-  delete_resources "${directory}"
+  delete_resources "${directory}" || error_occurred=1
   echo "    deleting IAM configuration in ${directory}"
-  delete_iam_config "${directory}"
+  delete_iam_config "${directory}" || error_occurred=1
   echo "    deleting directory ${directory}"
   rm -rf "${directory}"
 done
+
+if [[ ${error_occurred} -ne 0 ]]; then
+  echo "[!] Errors occurred during resource deletion."
+  exit 1
+fi
 
 exit 0
