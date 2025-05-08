@@ -33,7 +33,7 @@ require (
 	cloud.google.com/go/kms v1.21.2
 	cloud.google.com/go/secretmanager v1.14.7
 	cloud.google.com/go/storage v1.53.0
-	dario.cat/mergo v1.0.1
+	dario.cat/mergo v1.0.2
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.18.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.9.0
@@ -50,7 +50,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.17.75
 	github.com/aws/aws-sdk-go-v2/service/autoscaling v1.52.4
 	github.com/aws/aws-sdk-go-v2/service/cloudfront v1.46.0
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.214.0
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.216.0
 	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2 v1.45.2
 	github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi v1.26.3
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.79.3
@@ -75,7 +75,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/googleapis/gax-go/v2 v2.14.1
 	github.com/gophercloud/gophercloud/v2 v2.7.0
-	github.com/gophercloud/utils/v2 v2.0.0-20250505075637-4ac8ddd08bb6
+	github.com/gophercloud/utils/v2 v2.0.0-20250506092640-af27464b6166
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.2
 	github.com/hashicorp/go-kms-wrapping/v2 v2.0.18
 	github.com/hashicorp/go-kms-wrapping/wrappers/awskms/v2 v2.0.11
@@ -103,7 +103,7 @@ require (
 	github.com/samber/slog-multi v1.4.0
 	github.com/schollz/progressbar/v3 v3.18.0
 	github.com/secure-systems-lab/go-securesystemslib v0.9.0
-	github.com/siderolabs/talos/pkg/machinery v1.10.0
+	github.com/siderolabs/talos/pkg/machinery v1.10.1
 	github.com/sigstore/rekor v1.3.10
 	github.com/sigstore/sigstore v1.9.4
 	github.com/spf13/afero v1.14.0
@@ -122,7 +122,7 @@ require (
 	golang.org/x/sys v0.33.0
 	golang.org/x/text v0.25.0
 	golang.org/x/tools v0.33.0
-	google.golang.org/api v0.231.0
+	google.golang.org/api v0.232.0
 	google.golang.org/grpc v1.72.0
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/yaml.v3 v3.0.1
@@ -376,7 +376,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/net v0.40.0 // indirect
-	golang.org/x/oauth2 v0.29.0 // indirect
+	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sync v0.14.0 // indirect
 	golang.org/x/term v0.32.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
@@ -384,7 +384,7 @@ require (
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto v0.0.0-20250303144028-a0af3efb3deb // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250425173222-7b384671a197 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250425173222-7b384671a197 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250428153025-10db94c68c34 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	k8s.io/cli-runtime v0.32.2 // indirect
