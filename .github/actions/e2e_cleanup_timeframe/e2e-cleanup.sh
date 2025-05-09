@@ -11,24 +11,15 @@ function download_tfstate_artifact {
   gh run download "$1" -p "terraform-state-*" -R edgelesssys/constellation > /dev/null
 }
 
-# delete_resources runs terraform destroy on the constellation-terraform subfolder of a given folder.
-function delete_resources {
-  if [[ -d "$1/constellation-terraform" ]]; then
-    cd "$1/constellation-terraform" || return 1
-    terraform init > /dev/null || return 1 # first, install plugins
-    terraform destroy -auto-approve || return 1
-    cd ../../ || return 1
+# delete_terraform_resources runs terraform destroy on the given folder.
+function delete_terraform_resources {
+  delete_err=0
+  if pushd "${1}/${2}"; then
+    terraform init > /dev/null || delete_err=1 # first, install plugins
+    terraform destroy -auto-approve || delete_err=1
+    popd || exit 1
   fi
-}
-
-# delete_iam_config runs terraform destroy on the constellation-iam-terraform subfolder of a given folder.
-function delete_iam_config {
-  if [[ -d "$1/constellation-iam-terraform" ]]; then
-    cd "$1/constellation-iam-terraform" || return 1
-    terraform init > /dev/null || return 1 # first, install plugins
-    terraform destroy -auto-approve || return 1
-    cd ../../ || return 1
-  fi
+  return "${delete_err}"
 }
 
 # check if the password for artifact decryption was given
@@ -88,9 +79,9 @@ echo "[*] deleting resources"
 error_occurred=0
 for directory in ./terraform-state-*; do
   echo "    deleting resources in ${directory}"
-  delete_resources "${directory}" || error_occurred=1
+  delete_terraform_resources "${directory}" "constellation-terraform" || echo "[!] deleting resources failed" && error_occurred=1
   echo "    deleting IAM configuration in ${directory}"
-  delete_iam_config "${directory}" || error_occurred=1
+  delete_terraform_resources "${directory}" "constellation-iam-terraform" || echo "[!] deleting IAM resources failed" && error_occurred=1
   echo "    deleting directory ${directory}"
   rm -rf "${directory}"
 done
