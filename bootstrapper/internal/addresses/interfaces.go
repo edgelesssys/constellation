@@ -4,14 +4,14 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package interfaces
+package addresses
 
 import (
 	"net"
 )
 
-// GetNetworkInterfaces retrieves all network interface addresses.
-func GetNetworkInterfaces() ([]string, error) {
+// GetMachineNetworkAddresses retrieves all network interface addresses.
+func GetMachineNetworkAddresses() ([]string, error) {
 	var principalList []string
 	ifaces, err := net.Interfaces()
 	if err != nil {
