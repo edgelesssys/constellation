@@ -33,7 +33,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
-	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/interfaces"
+	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/addresses"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/journald"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
@@ -250,7 +250,7 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 		return err
 	}
 
-	principalList, err := interfaces.GetNetworkInterfaces()
+	principalList, err := addresses.GetMachineNetworkAddresses()
 	if err != nil {
 		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "failed to get network interfaces: %s", err)); e != nil {
 			err = errors.Join(err, e)
