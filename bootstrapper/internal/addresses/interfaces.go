@@ -12,7 +12,7 @@ import (
 
 // GetMachineNetworkAddresses retrieves all network interface addresses.
 func GetMachineNetworkAddresses() ([]string, error) {
-	var principalList []string
+	var addresses []string
 	ifaces, err := net.Interfaces()
 	if err != nil {
 		return nil, err
@@ -35,9 +35,9 @@ func GetMachineNetworkAddresses() ([]string, error) {
 			if ip.IsLoopback() {
 				continue
 			}
-			principalList = append(principalList, ip.String())
+			addresses = append(addresses, ip.String())
 		}
 	}
 
-	return principalList, nil
+	return addresses, nil
 }
