@@ -100,7 +100,7 @@ func GenerateSignedSSHHostKey(principals []string, ca ssh.Signer) (*pem.Block, *
 		ValidBefore:     ssh.CertTimeInfinity,
 		Reserved:        []byte{},
 		Key:             hostKeySSHPub,
-		KeyId:           "host_key",
+		KeyId:           principals[0],
 		Permissions: ssh.Permissions{
 			CriticalOptions: map[string]string{},
 			Extensions:      map[string]string{},
