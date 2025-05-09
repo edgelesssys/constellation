@@ -32,6 +32,9 @@ func GetNetworkInterfaces() ([]string, error) {
 			default:
 				continue
 			}
+			if ip.IsLoopback() {
+				continue
+			}
 			principalList = append(principalList, ip.String())
 		}
 	}
