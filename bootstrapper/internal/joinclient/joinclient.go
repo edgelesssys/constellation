@@ -28,8 +28,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/addresses"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/certificate"
-	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/interfaces"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -211,7 +211,7 @@ func (c *JoinClient) requestJoinTicket(serviceEndpoint string) (ticket *joinprot
 		return nil, nil, err
 	}
 
-	principalList, err := interfaces.GetNetworkInterfaces()
+	principalList, err := addresses.GetMachineNetworkAddresses()
 	if err != nil {
 		c.log.With(slog.Any("error", err)).Error("Failed to get network interfaces")
 		return nil, nil, err

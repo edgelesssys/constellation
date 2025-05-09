@@ -7,8 +7,8 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/bootstrapper/internal/joinclient",
     visibility = ["//bootstrapper:__subpackages__"],
     deps = [
+        "//bootstrapper/internal/addresses",
         "//bootstrapper/internal/certificate",
-        "//bootstrapper/internal/interfaces",
         "//internal/attestation",
         "//internal/cloud/metadata",
         "//internal/constants",
