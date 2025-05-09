@@ -33,7 +33,7 @@ artifact_pwd=${ENCRYPTION_SECRET}
 shopt -s nullglob
 
 start_date=$(date "+%Y-%m-%d")
-end_date=$(date --date "-14 day" "+%Y-%m-%d")
+end_date=$(date --date "-4 day" "+%Y-%m-%d")
 dates_to_clean=()
 
 # get all dates of the last week
