@@ -5,5 +5,11 @@ metadata:
   name: gceconf
   namespace: {{ .Release.Namespace }}
 data:
-  gce.conf: "[global]\nproject-id = {{.Values.GCP.projectID }}\nuse-metadata-server = true\nnode-tags = constellation-{{ .Values.GCP.uid }}\nregional = true\n"
+  gce.conf: |
+    [global]
+    project-id = {{.Values.GCP.projectID }}
+    use-metadata-server = true
+    node-tags = constellation-{{ .Values.GCP.uid }}
+    regional = true
+    token-url = nil # This forces use of GOOGLE_APPLICATION_CREDENTIALS.
 {{- end -}}
