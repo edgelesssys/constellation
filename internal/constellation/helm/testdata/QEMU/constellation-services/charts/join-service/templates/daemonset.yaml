@@ -53,7 +53,7 @@ spec:
             - mountPath: /var/secrets/google
               name: gcekey
               readOnly: true
-            - mountPath: /run/ssh/principals
+            - mountPath: /var/run/state/ssh/principals
               name: principals
               readOnly: true
           ports:
@@ -79,5 +79,5 @@ spec:
             path: /etc/kubernetes
         - name: principals
           hostPath:
-            path: /run/ssh/principals
+            path: /var/run/state/ssh/principals
   updateStrategy: {}
