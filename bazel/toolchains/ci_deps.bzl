@@ -271,7 +271,7 @@ def _buf_deps():
         build_file_content = """exports_files(["buf"], visibility = ["//visibility:public"])""",
         urls = [
             "https://cdn.confidential.cloud/constellation/cas/sha256/2dc9793f94806f3e4b0158a36e33680e2b962be50c12a7785ccb3da00d2fb2e7",
-            "https://github.com/bufbuild/buf/releases/download/v1.53.0/buf-Linux-x86_64.tar.gz",
+            "https://github.com/bufbuild/buf/releases/download/v1.54.0/buf-Linux-x86_64.tar.gz",
         ],
         type = "tar.gz",
         sha256 = "2dc9793f94806f3e4b0158a36e33680e2b962be50c12a7785ccb3da00d2fb2e7",
@@ -282,7 +282,7 @@ def _buf_deps():
         build_file_content = """exports_files(["buf"], visibility = ["//visibility:public"])""",
         urls = [
             "https://cdn.confidential.cloud/constellation/cas/sha256/4b5a40388c6a6608c29c7961fefc97ea10585e684038b1e6f9716f2216eaf9a9",
-            "https://github.com/bufbuild/buf/releases/download/v1.53.0/buf-Linux-aarch64.tar.gz",
+            "https://github.com/bufbuild/buf/releases/download/v1.54.0/buf-Linux-aarch64.tar.gz",
         ],
         type = "tar.gz",
         sha256 = "4b5a40388c6a6608c29c7961fefc97ea10585e684038b1e6f9716f2216eaf9a9",
@@ -293,7 +293,7 @@ def _buf_deps():
         build_file_content = """exports_files(["buf"], visibility = ["//visibility:public"])""",
         urls = [
             "https://cdn.confidential.cloud/constellation/cas/sha256/44f1c88c597694b607902adc7da5f0742511f3c379cc08058b140bcb5e8a4b11",
-            "https://github.com/bufbuild/buf/releases/download/v1.53.0/buf-Darwin-x86_64.tar.gz",
+            "https://github.com/bufbuild/buf/releases/download/v1.54.0/buf-Darwin-x86_64.tar.gz",
         ],
         type = "tar.gz",
         sha256 = "44f1c88c597694b607902adc7da5f0742511f3c379cc08058b140bcb5e8a4b11",
@@ -304,7 +304,7 @@ def _buf_deps():
         build_file_content = """exports_files(["buf"], visibility = ["//visibility:public"])""",
         urls = [
             "https://cdn.confidential.cloud/constellation/cas/sha256/3a12862c5e27fe57e27b3c4dec6aae3e923ec626b1b443eb2310a3487066735f",
-            "https://github.com/bufbuild/buf/releases/download/v1.53.0/buf-Darwin-arm64.tar.gz",
+            "https://github.com/bufbuild/buf/releases/download/v1.54.0/buf-Darwin-arm64.tar.gz",
         ],
         type = "tar.gz",
         sha256 = "3a12862c5e27fe57e27b3c4dec6aae3e923ec626b1b443eb2310a3487066735f",
