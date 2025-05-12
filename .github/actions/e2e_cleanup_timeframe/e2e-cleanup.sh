@@ -15,6 +15,14 @@ function download_tfstate_artifact {
 function delete_terraform_resources {
   delete_err=0
   if pushd "${1}/${2}"; then
+    # Workaround for cleaning up Azure resources
+    # We include a data source that is only used to generate output
+    # If this data source is deleted before we call terraform destroy,
+    # terraform will first try to evaluate the data source and fail,
+    # causing the destroy to fail as well.
+    sed -i '/data "azurerm_user_assigned_identity" "uaid" {/,/}/d' main.tf
+    sed -i '/output "user_assigned_identity_client_id" {/,/}/d' outputs.tf
+
     terraform init > /dev/null || delete_err=1 # first, install plugins
     terraform destroy -auto-approve || delete_err=1
     popd || exit 1
