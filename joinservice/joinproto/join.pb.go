@@ -31,7 +31,8 @@ type IssueJoinTicketRequest struct {
 	DiskUuid                  string                 `protobuf:"bytes,1,opt,name=disk_uuid,json=diskUuid,proto3" json:"disk_uuid,omitempty"`
 	CertificateRequest        []byte                 `protobuf:"bytes,2,opt,name=certificate_request,json=certificateRequest,proto3" json:"certificate_request,omitempty"`
 	IsControlPlane            bool                   `protobuf:"varint,3,opt,name=is_control_plane,json=isControlPlane,proto3" json:"is_control_plane,omitempty"`
-	HostCertificatePrincipals []string               `protobuf:"bytes,4,rep,name=host_certificate_principals,json=hostCertificatePrincipals,proto3" json:"host_certificate_principals,omitempty"`
+	HostPublicKey             []byte                 `protobuf:"bytes,4,opt,name=host_public_key,json=hostPublicKey,proto3" json:"host_public_key,omitempty"`
+	HostCertificatePrincipals []string               `protobuf:"bytes,5,rep,name=host_certificate_principals,json=hostCertificatePrincipals,proto3" json:"host_certificate_principals,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -87,6 +88,13 @@ func (x *IssueJoinTicketRequest) GetIsControlPlane() bool {
 	return false
 }
 
+func (x *IssueJoinTicketRequest) GetHostPublicKey() []byte {
+	if x != nil {
+		return x.HostPublicKey
+	}
+	return nil
+}
+
 func (x *IssueJoinTicketRequest) GetHostCertificatePrincipals() []string {
 	if x != nil {
 		return x.HostCertificatePrincipals
@@ -107,8 +115,7 @@ type IssueJoinTicketResponse struct {
 	KubernetesVersion        string                   `protobuf:"bytes,9,opt,name=kubernetes_version,json=kubernetesVersion,proto3" json:"kubernetes_version,omitempty"`
 	KubernetesComponents     []*components.Component  `protobuf:"bytes,10,rep,name=kubernetes_components,json=kubernetesComponents,proto3" json:"kubernetes_components,omitempty"`
 	AuthorizedCaPublicKey    []byte                   `protobuf:"bytes,11,opt,name=authorized_ca_public_key,json=authorizedCaPublicKey,proto3" json:"authorized_ca_public_key,omitempty"`
-	HostKey                  []byte                   `protobuf:"bytes,12,opt,name=host_key,json=hostKey,proto3" json:"host_key,omitempty"`
-	HostCertificate          []byte                   `protobuf:"bytes,13,opt,name=host_certificate,json=hostCertificate,proto3" json:"host_certificate,omitempty"`
+	HostCertificate          []byte                   `protobuf:"bytes,12,opt,name=host_certificate,json=hostCertificate,proto3" json:"host_certificate,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -216,13 +223,6 @@ func (x *IssueJoinTicketResponse) GetKubernetesComponents() []*components.Compon
 func (x *IssueJoinTicketResponse) GetAuthorizedCaPublicKey() []byte {
 	if x != nil {
 		return x.AuthorizedCaPublicKey
-	}
-	return nil
-}
-
-func (x *IssueJoinTicketResponse) GetHostKey() []byte {
-	if x != nil {
-		return x.HostKey
 	}
 	return nil
 }
@@ -386,12 +386,13 @@ var File_joinservice_joinproto_join_proto protoreflect.FileDescriptor
 
 const file_joinservice_joinproto_join_proto_rawDesc = "" +
 	"\n" +
-	" joinservice/joinproto/join.proto\x12\x04join\x1a-internal/versions/components/components.proto\"\xd0\x01\n" +
+	" joinservice/joinproto/join.proto\x12\x04join\x1a-internal/versions/components/components.proto\"\xf8\x01\n" +
 	"\x16IssueJoinTicketRequest\x12\x1b\n" +
 	"\tdisk_uuid\x18\x01 \x01(\tR\bdiskUuid\x12/\n" +
 	"\x13certificate_request\x18\x02 \x01(\fR\x12certificateRequest\x12(\n" +
-	"\x10is_control_plane\x18\x03 \x01(\bR\x0eisControlPlane\x12>\n" +
-	"\x1bhost_certificate_principals\x18\x04 \x03(\tR\x19hostCertificatePrincipals\"\x8d\x05\n" +
+	"\x10is_control_plane\x18\x03 \x01(\bR\x0eisControlPlane\x12&\n" +
+	"\x0fhost_public_key\x18\x04 \x01(\fR\rhostPublicKey\x12>\n" +
+	"\x1bhost_certificate_principals\x18\x05 \x03(\tR\x19hostCertificatePrincipals\"\xf2\x04\n" +
 	"\x17IssueJoinTicketResponse\x12$\n" +
 	"\x0estate_disk_key\x18\x01 \x01(\fR\fstateDiskKey\x12)\n" +
 	"\x10measurement_salt\x18\x02 \x01(\fR\x0fmeasurementSalt\x12-\n" +
@@ -404,9 +405,8 @@ const file_joinservice_joinproto_join_proto_rawDesc = "" +
 	"\x12kubernetes_version\x18\t \x01(\tR\x11kubernetesVersion\x12J\n" +
 	"\x15kubernetes_components\x18\n" +
 	" \x03(\v2\x15.components.ComponentR\x14kubernetesComponents\x127\n" +
-	"\x18authorized_ca_public_key\x18\v \x01(\fR\x15authorizedCaPublicKey\x12\x19\n" +
-	"\bhost_key\x18\f \x01(\fR\ahostKey\x12)\n" +
-	"\x10host_certificate\x18\r \x01(\fR\x0fhostCertificate\"C\n" +
+	"\x18authorized_ca_public_key\x18\v \x01(\fR\x15authorizedCaPublicKey\x12)\n" +
+	"\x10host_certificate\x18\f \x01(\fR\x0fhostCertificate\"C\n" +
 	"\x19control_plane_cert_or_key\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04data\x18\x02 \x01(\fR\x04data\"7\n" +
