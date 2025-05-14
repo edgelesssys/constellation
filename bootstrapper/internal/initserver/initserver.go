@@ -21,7 +21,6 @@ import (
 	"bufio"
 	"context"
 	"crypto/ed25519"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
@@ -264,27 +263,43 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 		}
 		return err
 	}
+
 	principalList = append(principalList, hostname)
 	principalList = append(principalList, req.ApiserverCertSans...)
-	hostKey, hostCertificate, err := crypto.GenerateSignedSSHHostKey(principalList, ca)
+
+	hostKeyContent, err := s.fileHandler.Read(constants.SSHHostKeyPath)
 	if err != nil {
-		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "generating and signing host SSH key: %s", err)); e != nil {
+		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "failed to read host SSH key: %s", err)); e != nil {
 			err = errors.Join(err, e)
 		}
 		return err
 	}
+
+	hostPrivateKey, err := ssh.ParsePrivateKey(hostKeyContent)
+	if err != nil {
+		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "failed to parse host SSH key: %s", err)); e != nil {
+			err = errors.Join(err, e)
+		}
+		return err
+	}
+
+	hostKeyPubSSH := hostPrivateKey.PublicKey()
+
+	hostCertificate, err := crypto.GenerateSSHHostCertificate(principalList, hostKeyPubSSH, ca)
+	if err != nil {
+		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "generating SSH host certificate: %s", err)); e != nil {
+			err = errors.Join(err, e)
+		}
+		return err
+	}
+
 	if err := s.fileHandler.Write(constants.SSHAdditionalPrincipalsPath, []byte(strings.Join(req.ApiserverCertSans, ",")), file.OptMkdirAll); err != nil {
 		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "writing list of public ssh principals: %s", err)); e != nil {
 			err = errors.Join(err, e)
 		}
 		return err
 	}
-	if err := s.fileHandler.Write(constants.SSHHostKeyPath, pem.EncodeToMemory(hostKey), file.OptMkdirAll); err != nil {
-		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "writing ssh host key: %s", err)); e != nil {
-			err = errors.Join(err, e)
-		}
-		return err
-	}
+
 	if err := s.fileHandler.Write(constants.SSHHostCertificatePath, ssh.MarshalAuthorizedKey(hostCertificate), file.OptMkdirAll); err != nil {
 		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "writing ssh host certificate: %s", err)); e != nil {
 			err = errors.Join(err, e)

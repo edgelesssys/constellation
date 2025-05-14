@@ -19,6 +19,8 @@ package joinclient
 
 import (
 	"context"
+	"crypto/ed25519"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -39,6 +41,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"github.com/edgelesssys/constellation/v2/joinservice/joinproto"
 	"github.com/spf13/afero"
+	"golang.org/x/crypto/ssh"
 	"google.golang.org/grpc"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 	kubeconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
@@ -223,6 +226,45 @@ func (c *JoinClient) requestJoinTicket(serviceEndpoint string) (ticket *joinprot
 	}
 	principalList = append(principalList, hostname)
 
+	var hostKeyPubSSH ssh.PublicKey
+
+	if _, err := c.fileHandler.Stat(constants.SSHHostKeyPath); errors.Is(err, os.ErrNotExist) {
+		hostKeyPub, hostKey, err := ed25519.GenerateKey(nil)
+		if err != nil {
+			c.log.With(slog.Any("error", err)).Error("Failed to generate SSH host key")
+			return nil, nil, err
+		}
+
+		hostKeyPubSSH, err = ssh.NewPublicKey(hostKeyPub)
+		if err != nil {
+			c.log.With(slog.Any("error", err)).Error("Failed to convert ed25519 pubkey to ssh pubkey")
+			return nil, nil, err
+		}
+
+		pemHostKey, err := ssh.MarshalPrivateKey(hostKey, "")
+		if err != nil {
+			c.log.With(slog.Any("error", err)).Error("Failed to format SSH host key")
+			return nil, nil, err
+		}
+		if err := c.fileHandler.Write(constants.SSHHostKeyPath, pem.EncodeToMemory(pemHostKey), file.OptMkdirAll); err != nil {
+			c.log.With(slog.Any("error", err)).Error("Failed to write SSH host key")
+			return nil, nil, err
+		}
+	} else {
+		hostKeyData, err := c.fileHandler.Read(constants.SSHHostKeyPath)
+		if err != nil {
+			c.log.With(slog.Any("error", err)).Error("Failed to read SSH host key file")
+			return nil, nil, err
+		}
+
+		hostKey, err := ssh.ParsePrivateKey(hostKeyData)
+		if err != nil {
+			c.log.With(slog.Any("error", err)).Error("Failed to parse SSH host key file")
+			return nil, nil, err
+		}
+		hostKeyPubSSH = hostKey.PublicKey()
+	}
+
 	conn, err := c.dialer.Dial(serviceEndpoint)
 	if err != nil {
 		c.log.With(slog.String("endpoint", serviceEndpoint), slog.Any("error", err)).Error("Join service unreachable")
@@ -235,6 +277,7 @@ func (c *JoinClient) requestJoinTicket(serviceEndpoint string) (ticket *joinprot
 		DiskUuid:                  c.diskUUID,
 		CertificateRequest:        certificateRequest,
 		IsControlPlane:            c.role == role.ControlPlane,
+		HostPublicKey:             hostKeyPubSSH.Marshal(),
 		HostCertificatePrincipals: principalList,
 	}
 	ticket, err = protoClient.IssueJoinTicket(ctx, req)
@@ -288,10 +331,6 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 
 	if err := c.fileHandler.Write(constants.SSHCAKeyPath, ticket.AuthorizedCaPublicKey, file.OptMkdirAll); err != nil {
 		return fmt.Errorf("writing ssh ca key: %w", err)
-	}
-
-	if err := c.fileHandler.Write(constants.SSHHostKeyPath, ticket.HostKey, file.OptMkdirAll); err != nil {
-		return fmt.Errorf("writing ssh host key: %w", err)
 	}
 
 	if err := c.fileHandler.Write(constants.SSHHostCertificatePath, ticket.HostCertificate, file.OptMkdirAll); err != nil {

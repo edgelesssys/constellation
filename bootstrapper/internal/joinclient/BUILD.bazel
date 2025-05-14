@@ -22,6 +22,7 @@ go_library(
         "@io_k8s_kubernetes//cmd/kubeadm/app/constants",
         "@io_k8s_utils//clock",
         "@org_golang_google_grpc//:grpc",
+        "@org_golang_x_crypto//ssh",
     ],
 )
 

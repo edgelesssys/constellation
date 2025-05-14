@@ -78,28 +78,15 @@ func GenerateEmergencySSHCAKey(seed []byte) (ssh.Signer, error) {
 	return ca, nil
 }
 
-// GenerateSignedSSHHostKey creates a host key that is signed by the given CA.
-func GenerateSignedSSHHostKey(principals []string, ca ssh.Signer) (*pem.Block, *ssh.Certificate, error) {
-	hostKeyPub, hostKey, err := ed25519.GenerateKey(nil)
-	if err != nil {
-		return nil, nil, err
-	}
-	hostKeySSHPub, err := ssh.NewPublicKey(hostKeyPub)
-	if err != nil {
-		return nil, nil, err
-	}
-	pemHostKey, err := ssh.MarshalPrivateKey(hostKey, "")
-	if err != nil {
-		return nil, nil, err
-	}
-
+// GenerateSSHHostCertificate creates a host key that is signed by the given CA.
+func GenerateSSHHostCertificate(principals []string, publicKey ssh.PublicKey, ca ssh.Signer) (*ssh.Certificate, error) {
 	certificate := ssh.Certificate{
 		CertType:        ssh.HostCert,
 		ValidPrincipals: principals,
 		ValidAfter:      uint64(time.Now().Unix()),
 		ValidBefore:     ssh.CertTimeInfinity,
 		Reserved:        []byte{},
-		Key:             hostKeySSHPub,
+		Key:             publicKey,
 		KeyId:           principals[0],
 		Permissions: ssh.Permissions{
 			CriticalOptions: map[string]string{},
@@ -107,10 +94,10 @@ func GenerateSignedSSHHostKey(principals []string, ca ssh.Signer) (*pem.Block, *
 		},
 	}
 	if err := certificate.SignCert(rand.Reader, ca); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return pemHostKey, &certificate, nil
+	return &certificate, nil
 }
 
 // PemToX509Cert takes a list of PEM-encoded certificates, parses the first one and returns it
