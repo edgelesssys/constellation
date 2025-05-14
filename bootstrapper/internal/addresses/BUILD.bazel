@@ -9,7 +9,7 @@ go_library(
 
 go_library(
     name = "addresses",
-    srcs = ["interfaces.go"],
+    srcs = ["addresses.go"],
     importpath = "github.com/edgelesssys/constellation/v2/bootstrapper/internal/addresses",
     visibility = ["//bootstrapper:__subpackages__"],
 )
