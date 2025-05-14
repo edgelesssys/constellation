@@ -249,9 +249,22 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 		return err
 	}
 
-	principalList, err := addresses.GetMachineNetworkAddresses()
+	interfaces, err := net.Interfaces()
 	if err != nil {
-		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "failed to get network interfaces: %s", err)); e != nil {
+		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "getting network interfaces: %s", err)); e != nil {
+			err = errors.Join(err, e)
+		}
+		return err
+	}
+	// Needed since go doesn't implicitly convert slices of structs to slices of interfaces
+	interfacesForFunc := make([]addresses.NetInterface, len(interfaces))
+	for i := range interfaces {
+		interfacesForFunc[i] = &interfaces[i]
+	}
+
+	principalList, err := addresses.GetMachineNetworkAddresses(interfacesForFunc)
+	if err != nil {
+		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "failed to get network addresses: %s", err)); e != nil {
 			err = errors.Join(err, e)
 		}
 		return err
