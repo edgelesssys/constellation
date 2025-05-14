@@ -214,9 +214,20 @@ func (c *JoinClient) requestJoinTicket(serviceEndpoint string) (ticket *joinprot
 		return nil, nil, err
 	}
 
-	principalList, err := addresses.GetMachineNetworkAddresses()
+	interfaces, err := net.Interfaces()
 	if err != nil {
 		c.log.With(slog.Any("error", err)).Error("Failed to get network interfaces")
+		return nil, nil, err
+	}
+	// Needed since go doesn't implicitly convert slices of structs to slices of interfaces
+	interfacesForFunc := make([]addresses.NetInterface, len(interfaces))
+	for i := range interfaces {
+		interfacesForFunc[i] = &interfaces[i]
+	}
+
+	principalList, err := addresses.GetMachineNetworkAddresses(interfacesForFunc)
+	if err != nil {
+		c.log.With(slog.Any("error", err)).Error("Failed to get network addresses")
 		return nil, nil, err
 	}
 	hostname, err := os.Hostname()
