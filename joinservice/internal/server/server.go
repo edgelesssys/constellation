@@ -10,7 +10,6 @@ package server
 import (
 	"context"
 	"crypto/ed25519"
-	"encoding/pem"
 	"fmt"
 	"log/slog"
 	"net"
@@ -128,7 +127,12 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 	}
 	principalList = append(principalList, strings.Split(string(additionalPrincipals), ",")...)
 
-	hostKey, hostCertificate, err := crypto.GenerateSignedSSHHostKey(principalList, ca)
+	publicKey, err := ssh.ParsePublicKey(req.HostPublicKey)
+	if err != nil {
+		log.With(slog.Any("error", err)).Error("Failed to parse host public key")
+		return nil, status.Errorf(codes.Internal, "unmarshalling host public key: %s", err)
+	}
+	hostCertificate, err := crypto.GenerateSSHHostCertificate(principalList, publicKey, ca)
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to generate and sign SSH host key")
 		return nil, status.Errorf(codes.Internal, "generating and signing SSH host key: %s", err)
@@ -202,7 +206,6 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 		ControlPlaneFiles:        controlPlaneFiles,
 		KubernetesComponents:     components,
 		AuthorizedCaPublicKey:    ssh.MarshalAuthorizedKey(ca.PublicKey()),
-		HostKey:                  pem.EncodeToMemory(hostKey),
 		HostCertificate:          ssh.MarshalAuthorizedKey(hostCertificate),
 	}, nil
 }
