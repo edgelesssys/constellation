@@ -11,13 +11,10 @@ import (
 )
 
 // GetMachineNetworkAddresses retrieves all network interface addresses.
-func GetMachineNetworkAddresses() ([]string, error) {
+func GetMachineNetworkAddresses(interfaces []NetInterface) ([]string, error) {
 	var addresses []string
-	ifaces, err := net.Interfaces()
-	if err != nil {
-		return nil, err
-	}
-	for _, i := range ifaces {
+
+	for _, i := range interfaces {
 		addrs, err := i.Addrs()
 		if err != nil {
 			return nil, err
@@ -40,4 +37,8 @@ func GetMachineNetworkAddresses() ([]string, error) {
 	}
 
 	return addresses, nil
+}
+
+type NetInterface interface {
+	Addrs() ([]net.Addr, error)
 }
