@@ -20,8 +20,10 @@ message IssueJoinTicketRequest {
   bytes certificate_request = 2;
   // is_control_plane indicates whether the node is a control-plane node.
   bool is_control_plane = 3;
+  // host_public_key is the public host key that should be signed.
+  bytes host_public_key = 4;
   // host_certificate_principals are principals that should be added to the host certificate.
-  repeated string host_certificate_principals = 4;
+  repeated string host_certificate_principals = 5;
 }
 
 message IssueJoinTicketResponse {
@@ -49,10 +51,8 @@ message IssueJoinTicketResponse {
   repeated components.Component kubernetes_components = 10;
   // authorized_ca_public_key is an ssh ca key that can be used to connect to a node in case of an emergency.
   bytes authorized_ca_public_key = 11;
-  // host_key is the ssh host key that the node should use.
-  bytes host_key = 12;
   // host_certificate is the certificate that can be used to verify a nodes host key.
-  bytes host_certificate = 13;
+  bytes host_certificate = 12;
 }
 
 message control_plane_cert_or_key {
