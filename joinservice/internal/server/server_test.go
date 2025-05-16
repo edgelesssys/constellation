@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
+	"golang.org/x/crypto/ssh"
 	kubeadmv1 "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
 
@@ -37,6 +38,11 @@ func TestIssueJoinTicket(t *testing.T) {
 	testCert := []byte{0x4, 0x5, 0x6}
 	measurementSecret := []byte{0x7, 0x8, 0x9}
 	uuid := "uuid"
+
+	pubkey, _, err := ed25519.GenerateKey(nil)
+	require.NoError(t, err)
+	hostSSHPubKey, err := ssh.NewPublicKey(pubkey)
+	require.NoError(t, err)
 
 	testJoinToken := &kubeadmv1.BootstrapTokenDiscovery{
 		APIServerEndpoint: "192.0.2.1",
@@ -61,6 +67,7 @@ func TestIssueJoinTicket(t *testing.T) {
 		kubeClient                      stubKubeClient
 		missingComponentsReferenceFile  bool
 		missingAdditionalPrincipalsFile bool
+		missingSSHHostKey               bool
 		wantErr                         bool
 	}{
 		"worker node": {
@@ -194,6 +201,18 @@ func TestIssueJoinTicket(t *testing.T) {
 			missingAdditionalPrincipalsFile: true,
 			wantErr:                         true,
 		},
+		"Host pubkey is missing": {
+			kubeadm: stubTokenGetter{token: testJoinToken},
+			kms: stubKeyGetter{dataKeys: map[string][]byte{
+				uuid:                                 testKey,
+				attestation.MeasurementSecretContext: measurementSecret,
+				constants.SSHCAKeySuffix:             testCaKey,
+			}},
+			ca:                stubCA{cert: testCert, nodeName: "node"},
+			kubeClient:        stubKubeClient{getComponentsVal: clusterComponents, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
+			missingSSHHostKey: true,
+			wantErr:           true,
+		},
 	}
 
 	for name, tc := range testCases {
@@ -218,9 +237,17 @@ func TestIssueJoinTicket(t *testing.T) {
 				fileHandler:     fh,
 			}
 
+			var keyToSend []byte
+			if tc.missingSSHHostKey {
+				keyToSend = nil
+			} else {
+				keyToSend = hostSSHPubKey.Marshal()
+			}
+
 			req := &joinproto.IssueJoinTicketRequest{
 				DiskUuid:       "uuid",
 				IsControlPlane: tc.isControlPlane,
+				HostPublicKey:  keyToSend,
 			}
 			resp, err := api.IssueJoinTicket(t.Context(), req)
 			if tc.wantErr {
