@@ -44,6 +44,7 @@ go_test(
         "//bootstrapper/initproto",
         "//internal/atls",
         "//internal/attestation/variant",
+        "//internal/constants",
         "//internal/crypto/testvector",
         "//internal/file",
         "//internal/kms/setup",
@@ -55,6 +56,7 @@ go_test(
         "@com_github_stretchr_testify//require",
         "@org_golang_google_grpc//:grpc",
         "@org_golang_x_crypto//bcrypt",
+        "@org_golang_x_crypto//ssh",
         "@org_uber_go_goleak//:goleak",
     ],
 )
