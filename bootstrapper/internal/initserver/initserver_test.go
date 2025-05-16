@@ -9,9 +9,12 @@ package initserver
 import (
 	"bytes"
 	"context"
+	"crypto/ed25519"
+	"encoding/pem"
 	"errors"
 	"io"
 	"net"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -20,6 +23,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto/testvector"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	kmssetup "github.com/edgelesssys/constellation/v2/internal/kms/setup"
@@ -31,6 +35,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/crypto/ssh"
 	"google.golang.org/grpc"
 )
 
@@ -100,17 +105,31 @@ func TestInit(t *testing.T) {
 
 	masterSecret := uri.MasterSecret{Key: []byte("secret"), Salt: []byte("salt")}
 
+	_, privkey, err := ed25519.GenerateKey(nil)
+	require.NoError(t, err)
+	pemHostKey, err := ssh.MarshalPrivateKey(privkey, "")
+	require.NoError(t, err)
+
+	fsWithHostKey := afero.NewMemMapFs()
+	hostKeyFile, err := fsWithHostKey.Create(constants.SSHHostKeyPath)
+	require.NoError(t, err)
+	_, err = hostKeyFile.Write(pem.EncodeToMemory(pemHostKey))
+	require.NoError(t, err)
+	require.NoError(t, hostKeyFile.Close())
+	readOnlyFSWithHostKey := afero.NewReadOnlyFs(fsWithHostKey)
+
 	testCases := map[string]struct {
-		nodeLock       *fakeLock
-		initializer    ClusterInitializer
-		disk           encryptedDisk
-		fileHandler    file.Handler
-		req            *initproto.InitRequest
-		stream         stubStream
-		logCollector   stubJournaldCollector
-		initSecretHash []byte
-		wantErr        bool
-		wantShutdown   bool
+		nodeLock           *fakeLock
+		initializer        ClusterInitializer
+		disk               encryptedDisk
+		fileHandler        file.Handler
+		req                *initproto.InitRequest
+		stream             stubStream
+		logCollector       stubJournaldCollector
+		initSecretHash     []byte
+		hostkeyDoesntExist bool
+		wantErr            bool
+		wantShutdown       bool
 	}{
 		"successful init": {
 			nodeLock:       newFakeLock(),
@@ -174,7 +193,7 @@ func TestInit(t *testing.T) {
 			nodeLock:       newFakeLock(),
 			initializer:    &stubClusterInitializer{},
 			disk:           &stubDisk{},
-			fileHandler:    file.NewHandler(afero.NewReadOnlyFs(afero.NewMemMapFs())),
+			fileHandler:    file.NewHandler(readOnlyFSWithHostKey),
 			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: uri.NoStoreURI},
 			stream:         stubStream{},
 			logCollector:   stubJournaldCollector{logPipe: &stubReadCloser{reader: bytes.NewReader([]byte{})}},
@@ -205,11 +224,31 @@ func TestInit(t *testing.T) {
 			logCollector:   stubJournaldCollector{logPipe: &stubReadCloser{reader: bytes.NewReader([]byte{})}},
 			wantErr:        true,
 		},
+		"host key doesn't exist": {
+			nodeLock:           newFakeLock(),
+			initializer:        &stubClusterInitializer{},
+			disk:               &stubDisk{},
+			fileHandler:        file.NewHandler(afero.NewMemMapFs()),
+			initSecretHash:     initSecretHash,
+			req:                &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: uri.NoStoreURI},
+			stream:             stubStream{},
+			logCollector:       stubJournaldCollector{logPipe: &stubReadCloser{reader: bytes.NewReader([]byte{})}},
+			hostkeyDoesntExist: true,
+			wantShutdown:       true,
+			wantErr:            true,
+		},
 	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
+			require := require.New(t)
+
+			if _, err := tc.fileHandler.Stat(constants.SSHHostKeyPath); errors.Is(err, os.ErrNotExist) {
+				if !tc.hostkeyDoesntExist {
+					require.NoError(tc.fileHandler.Write(constants.SSHHostKeyPath, pem.EncodeToMemory(pemHostKey), file.OptMkdirAll))
+				}
+			}
 
 			serveStopper := newStubServeStopper()
 			server := &Server{
