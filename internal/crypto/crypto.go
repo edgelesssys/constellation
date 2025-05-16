@@ -78,7 +78,7 @@ func GenerateEmergencySSHCAKey(seed []byte) (ssh.Signer, error) {
 	return ca, nil
 }
 
-// GenerateSSHHostCertificate creates a host key that is signed by the given CA.
+// GenerateSSHHostCertificate takes a given public key and CA to generate a host certificate.
 func GenerateSSHHostCertificate(principals []string, publicKey ssh.PublicKey, ca ssh.Signer) (*ssh.Certificate, error) {
 	certificate := ssh.Certificate{
 		CertType:        ssh.HostCert,
