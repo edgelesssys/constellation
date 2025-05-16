@@ -39,6 +39,7 @@ func GetMachineNetworkAddresses(interfaces []NetInterface) ([]string, error) {
 	return addresses, nil
 }
 
+// NetInterface represents a network interface used to get network addresses.
 type NetInterface interface {
 	Addrs() ([]net.Addr, error)
 }
