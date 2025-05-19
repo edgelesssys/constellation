@@ -185,7 +185,7 @@ type stubEtcdClient struct {
 	closeErr  error
 }
 
-func (c *stubEtcdClient) MemberList(_ context.Context) (*clientv3.MemberListResponse, error) {
+func (c *stubEtcdClient) MemberList(_ context.Context, _ ...clientv3.OpOption) (*clientv3.MemberListResponse, error) {
 	return &clientv3.MemberListResponse{
 		Members: c.members,
 	}, c.listErr
