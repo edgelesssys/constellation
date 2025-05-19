@@ -127,7 +127,7 @@ func getInitialEndpoints(k8sClient client.Client) ([]string, error) {
 }
 
 type etcdClient interface {
-	MemberList(ctx context.Context) (*clientv3.MemberListResponse, error)
+	MemberList(ctx context.Context, opts ...clientv3.OpOption) (*clientv3.MemberListResponse, error)
 	MemberRemove(ctx context.Context, memberID uint64) (*clientv3.MemberRemoveResponse, error)
 	Sync(ctx context.Context) error
 	Close() error
