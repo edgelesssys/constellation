@@ -73,10 +73,9 @@ func TestClient(t *testing.T) {
 				}
 				time.Sleep(time.Second * 3)
 				continue
-			} else {
-				sshKeyBytes = sshKey
-				break
 			}
+			sshKeyBytes = sshKey
+			break
 		}
 		sshKey, err := ssh.ParsePrivateKey(sshKeyBytes)
 		require.NoError(err)
