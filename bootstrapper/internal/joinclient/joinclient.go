@@ -239,7 +239,8 @@ func (c *JoinClient) requestJoinTicket(serviceEndpoint string) (ticket *joinprot
 
 	var hostKeyPubSSH ssh.PublicKey
 
-	if _, err := c.fileHandler.Stat(constants.SSHHostKeyPath); errors.Is(err, os.ErrNotExist) {
+	_, err = c.fileHandler.Stat(constants.SSHHostKeyPath)
+	if errors.Is(err, os.ErrNotExist) {
 		hostKeyPub, hostKey, err := ed25519.GenerateKey(nil)
 		if err != nil {
 			c.log.With(slog.Any("error", err)).Error("Failed to generate SSH host key")
@@ -261,6 +262,9 @@ func (c *JoinClient) requestJoinTicket(serviceEndpoint string) (ticket *joinprot
 			c.log.With(slog.Any("error", err)).Error("Failed to write SSH host key")
 			return nil, nil, err
 		}
+	} else if err != nil {
+		c.log.With(slog.Any("error", err)).Error("Failed to stat SSH host key")
+		return nil, nil, err
 	} else {
 		hostKeyData, err := c.fileHandler.Read(constants.SSHHostKeyPath)
 		if err != nil {
