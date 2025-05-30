@@ -8,6 +8,7 @@ package joinclient
 
 import (
 	"context"
+	"crypto/ed25519"
 	"net"
 	"strconv"
 	"sync"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
@@ -28,6 +30,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
+	"golang.org/x/crypto/ssh"
 	"google.golang.org/grpc"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 	testclock "k8s.io/utils/clock/testing"
@@ -53,15 +56,57 @@ func TestClient(t *testing.T) {
 	caDerivationKey := make([]byte, 256)
 	respCaKey := &joinproto.IssueJoinTicketResponse{AuthorizedCaPublicKey: caDerivationKey}
 
+	makeIssueJoinTicketAnswerWithValidCert := func(t *testing.T, originalAnswer issueJoinTicketAnswer, fh file.Handler) issueJoinTicketAnswer {
+		require := require.New(t)
+
+		tries := 0
+		var sshKeyBytes []byte
+		for {
+			t.Logf("Trying to read ssh host key: %d/3", tries)
+			sshKey, err := fh.Read(constants.SSHHostKeyPath)
+			if err != nil {
+				tries++
+				if tries >= 3 {
+					assert.Fail(t, "ssh key never written: ", err)
+				}
+				time.Sleep(time.Second * 3)
+				continue
+			} else {
+				sshKeyBytes = sshKey
+				break
+			}
+		}
+		sshKey, err := ssh.ParsePrivateKey(sshKeyBytes)
+		require.NoError(err)
+		_, randomCAKey, err := ed25519.GenerateKey(nil)
+		require.NoError(err)
+		randomCA, err := ssh.NewSignerFromSigner(randomCAKey)
+		require.NoError(err)
+
+		cert, err := crypto.GenerateSSHHostCertificate([]string{"asdf"}, sshKey.PublicKey(), randomCA)
+		require.NoError(err)
+
+		certBytes := ssh.MarshalAuthorizedKey(cert)
+
+		if originalAnswer.resp == nil {
+			originalAnswer.resp = &joinproto.IssueJoinTicketResponse{HostCertificate: certBytes}
+		} else {
+			originalAnswer.resp.HostCertificate = certBytes
+		}
+
+		return originalAnswer
+	}
+
 	testCases := map[string]struct {
-		role          role.Role
-		clusterJoiner *stubClusterJoiner
-		disk          encryptedDisk
-		nodeLock      *fakeLock
-		apiAnswers    []any
-		wantLock      bool
-		wantJoin      bool
-		wantNumJoins  int
+		role                role.Role
+		clusterJoiner       *stubClusterJoiner
+		disk                encryptedDisk
+		nodeLock            *fakeLock
+		apiAnswers          []any
+		wantLock            bool
+		wantJoin            bool
+		wantNumJoins        int
+		wantNotMatchingCert bool
 	}{
 		"on worker: metadata self: errors occur": {
 			role: role.Worker,
@@ -195,28 +240,32 @@ func TestClient(t *testing.T) {
 				listAnswer{instances: peers},
 				issueJoinTicketAnswer{resp: respCaKey},
 			},
-			clusterJoiner: &stubClusterJoiner{},
-			nodeLock:      lockedLock,
-			disk:          &stubDisk{},
-			wantLock:      true,
+			clusterJoiner:       &stubClusterJoiner{},
+			nodeLock:            lockedLock,
+			disk:                &stubDisk{},
+			wantLock:            true,
+			wantNotMatchingCert: true,
 		},
 		"on control plane: disk open fails": {
-			role:          role.ControlPlane,
-			clusterJoiner: &stubClusterJoiner{},
-			nodeLock:      newFakeLock(),
-			disk:          &stubDisk{openErr: assert.AnError},
+			role:                role.ControlPlane,
+			clusterJoiner:       &stubClusterJoiner{},
+			nodeLock:            newFakeLock(),
+			disk:                &stubDisk{openErr: assert.AnError},
+			wantNotMatchingCert: true,
 		},
 		"on control plane: disk uuid fails": {
-			role:          role.ControlPlane,
-			clusterJoiner: &stubClusterJoiner{},
-			nodeLock:      newFakeLock(),
-			disk:          &stubDisk{uuidErr: assert.AnError},
+			role:                role.ControlPlane,
+			clusterJoiner:       &stubClusterJoiner{},
+			nodeLock:            newFakeLock(),
+			disk:                &stubDisk{uuidErr: assert.AnError},
+			wantNotMatchingCert: true,
 		},
 	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
+			require := require.New(t)
 
 			clock := testclock.NewFakeClock(time.Now())
 			metadataAPI := newStubMetadataAPI()
@@ -259,12 +308,30 @@ func TestClient(t *testing.T) {
 				case listAnswer:
 					metadataAPI.listAnswerC <- a
 				case issueJoinTicketAnswer:
-					joinserviceAPI.issueJoinTicketAnswerC <- a
+					joinserviceAPI.issueJoinTicketAnswerC <- makeIssueJoinTicketAnswerWithValidCert(t, a, fileHandler)
 				}
 				clock.Step(time.Second)
 			}
 
 			client.Stop()
+
+			if !tc.wantNotMatchingCert {
+				hostCertBytes, err := fileHandler.Read(constants.SSHHostCertificatePath)
+				require.NoError(err)
+				hostKeyBytes, err := fileHandler.Read(constants.SSHHostKeyPath)
+				require.NoError(err)
+
+				hostCertKey, _, _, _, err := ssh.ParseAuthorizedKey(hostCertBytes)
+				require.NoError(err)
+				hostCert, ok := hostCertKey.(*ssh.Certificate)
+				require.True(ok)
+
+				hostKey, err := ssh.ParsePrivateKey(hostKeyBytes)
+				require.NoError(err)
+
+				// TODO: for some reason, the private keys are different
+				assert.Equal(string(ssh.MarshalAuthorizedKey(hostKey.PublicKey())), string(ssh.MarshalAuthorizedKey(hostCert.Key)))
+			}
 
 			if tc.wantJoin {
 				assert.Greater(tc.clusterJoiner.joinClusterCalled, 0)
