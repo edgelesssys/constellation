@@ -9,7 +9,9 @@ package joinclient
 import (
 	"context"
 	"crypto/ed25519"
+	"errors"
 	"net"
+	"os"
 	"strconv"
 	"sync"
 	"testing"
@@ -97,6 +99,32 @@ func TestClient(t *testing.T) {
 		return originalAnswer
 	}
 
+	makeIssueJoinTicketAnswerWithInvalidCert := func(t *testing.T, originalAnswer issueJoinTicketAnswer) issueJoinTicketAnswer {
+		require := require.New(t)
+		_, randomCAKey, err := ed25519.GenerateKey(nil)
+		require.NoError(err)
+		randomCA, err := ssh.NewSignerFromSigner(randomCAKey)
+		require.NoError(err)
+
+		randomKey, _, err := ed25519.GenerateKey(nil)
+		require.NoError(err)
+		randomSSHKey, err := ssh.NewPublicKey(randomKey)
+		require.NoError(err)
+
+		cert, err := crypto.GenerateSSHHostCertificate([]string{"asdf"}, randomSSHKey, randomCA)
+		require.NoError(err)
+
+		certBytes := ssh.MarshalAuthorizedKey(cert)
+
+		if originalAnswer.resp == nil {
+			originalAnswer.resp = &joinproto.IssueJoinTicketResponse{HostCertificate: certBytes}
+		} else {
+			originalAnswer.resp.HostCertificate = certBytes
+		}
+
+		return originalAnswer
+	}
+
 	testCases := map[string]struct {
 		role                role.Role
 		clusterJoiner       *stubClusterJoiner
@@ -107,6 +135,7 @@ func TestClient(t *testing.T) {
 		wantJoin            bool
 		wantNumJoins        int
 		wantNotMatchingCert bool
+		wantCertNotExisting bool
 	}{
 		"on worker: metadata self: errors occur": {
 			role: role.Worker,
@@ -123,6 +152,23 @@ func TestClient(t *testing.T) {
 			disk:          &stubDisk{},
 			wantJoin:      true,
 			wantLock:      true,
+		},
+		"on worker: SSH host cert not matching": {
+			role: role.Worker,
+			apiAnswers: []any{
+				selfAnswer{err: assert.AnError},
+				selfAnswer{err: assert.AnError},
+				selfAnswer{err: assert.AnError},
+				selfAnswer{instance: workerSelf},
+				listAnswer{instances: peers},
+				issueJoinTicketAnswer{resp: respCaKey},
+			},
+			clusterJoiner:       &stubClusterJoiner{},
+			nodeLock:            newFakeLock(),
+			disk:                &stubDisk{},
+			wantJoin:            true,
+			wantLock:            true,
+			wantNotMatchingCert: true,
 		},
 		"on worker: metadata self: invalid answer": {
 			role: role.Worker,
@@ -244,21 +290,21 @@ func TestClient(t *testing.T) {
 			nodeLock:            lockedLock,
 			disk:                &stubDisk{},
 			wantLock:            true,
-			wantNotMatchingCert: true,
+			wantCertNotExisting: true,
 		},
 		"on control plane: disk open fails": {
 			role:                role.ControlPlane,
 			clusterJoiner:       &stubClusterJoiner{},
 			nodeLock:            newFakeLock(),
 			disk:                &stubDisk{openErr: assert.AnError},
-			wantNotMatchingCert: true,
+			wantCertNotExisting: true,
 		},
 		"on control plane: disk uuid fails": {
 			role:                role.ControlPlane,
 			clusterJoiner:       &stubClusterJoiner{},
 			nodeLock:            newFakeLock(),
 			disk:                &stubDisk{uuidErr: assert.AnError},
-			wantNotMatchingCert: true,
+			wantCertNotExisting: true,
 		},
 	}
 
@@ -308,14 +354,20 @@ func TestClient(t *testing.T) {
 				case listAnswer:
 					metadataAPI.listAnswerC <- a
 				case issueJoinTicketAnswer:
-					joinserviceAPI.issueJoinTicketAnswerC <- makeIssueJoinTicketAnswerWithValidCert(t, a, fileHandler)
+					var answer issueJoinTicketAnswer
+					if tc.wantNotMatchingCert {
+						answer = makeIssueJoinTicketAnswerWithInvalidCert(t, a)
+					} else {
+						answer = makeIssueJoinTicketAnswerWithValidCert(t, a, fileHandler)
+					}
+					joinserviceAPI.issueJoinTicketAnswerC <- answer
 				}
 				clock.Step(time.Second)
 			}
 
 			client.Stop()
 
-			if !tc.wantNotMatchingCert {
+			if !tc.wantCertNotExisting {
 				hostCertBytes, err := fileHandler.Read(constants.SSHHostCertificatePath)
 				require.NoError(err)
 				hostKeyBytes, err := fileHandler.Read(constants.SSHHostKeyPath)
@@ -329,7 +381,14 @@ func TestClient(t *testing.T) {
 				hostKey, err := ssh.ParsePrivateKey(hostKeyBytes)
 				require.NoError(err)
 
-				assert.Equal(hostKey.PublicKey().Marshal(), hostCert.Key.Marshal())
+				if !tc.wantNotMatchingCert {
+					assert.Equal(hostKey.PublicKey().Marshal(), hostCert.Key.Marshal())
+				} else {
+					assert.NotEqual(hostKey.PublicKey().Marshal(), hostCert.Key.Marshal())
+				}
+			} else {
+				_, err := fileHandler.Stat(constants.SSHHostCertificatePath)
+				require.True(errors.Is(err, os.ErrNotExist))
 			}
 
 			if tc.wantJoin {
