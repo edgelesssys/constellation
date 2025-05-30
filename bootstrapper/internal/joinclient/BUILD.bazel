@@ -37,6 +37,7 @@ go_test(
     deps = [
         "//internal/cloud/metadata",
         "//internal/constants",
+        "//internal/crypto",
         "//internal/file",
         "//internal/grpc/atlscredentials",
         "//internal/grpc/dialer",
@@ -51,6 +52,7 @@ go_test(
         "@io_k8s_kubernetes//cmd/kubeadm/app/apis/kubeadm/v1beta3",
         "@io_k8s_utils//clock/testing",
         "@org_golang_google_grpc//:grpc",
+        "@org_golang_x_crypto//ssh",
         "@org_uber_go_goleak//:goleak",
     ],
 )
