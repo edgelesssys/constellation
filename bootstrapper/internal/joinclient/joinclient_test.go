@@ -329,8 +329,7 @@ func TestClient(t *testing.T) {
 				hostKey, err := ssh.ParsePrivateKey(hostKeyBytes)
 				require.NoError(err)
 
-				// TODO: for some reason, the private keys are different
-				assert.Equal(string(ssh.MarshalAuthorizedKey(hostKey.PublicKey())), string(ssh.MarshalAuthorizedKey(hostCert.Key)))
+				assert.Equal(hostKey.PublicKey().Marshal(), hostCert.Key.Marshal())
 			}
 
 			if tc.wantJoin {
