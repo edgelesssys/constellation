@@ -239,7 +239,7 @@ func (c *JoinClient) requestJoinTicket(serviceEndpoint string) (ticket *joinprot
 
 	var hostKeyPubSSH ssh.PublicKey
 
-	_, err = c.fileHandler.Stat(constants.SSHHostKeyPath)
+	statInfo, err := c.fileHandler.Stat(constants.SSHHostKeyPath)
 	if errors.Is(err, os.ErrNotExist) {
 		hostKeyPub, hostKey, err := ed25519.GenerateKey(nil)
 		if err != nil {
@@ -265,6 +265,9 @@ func (c *JoinClient) requestJoinTicket(serviceEndpoint string) (ticket *joinprot
 	} else if err != nil {
 		c.log.With(slog.Any("error", err)).Error("Failed to stat SSH host key")
 		return nil, nil, err
+	} else if statInfo.IsDir() {
+		c.log.Error("SSH host key path points to directory instead of file")
+		return nil, nil, errors.New("SSH host key path is directory instead of file")
 	} else {
 		hostKeyData, err := c.fileHandler.Read(constants.SSHHostKeyPath)
 		if err != nil {
