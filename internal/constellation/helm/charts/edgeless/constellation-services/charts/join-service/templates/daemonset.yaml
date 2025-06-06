@@ -53,6 +53,8 @@ spec:
             - mountPath: /var/secrets/google
               name: gcekey
               readOnly: true
+            - mountPath: /var/run/state/ssh
+              name: ssh
           ports:
             - containerPort: {{ .Values.joinServicePort }}
               name: tcp
@@ -74,4 +76,7 @@ spec:
         - name: kubeadm
           hostPath:
             path: /etc/kubernetes
+        - name: ssh
+          hostPath:
+            path: /var/run/state/ssh
   updateStrategy: {}
