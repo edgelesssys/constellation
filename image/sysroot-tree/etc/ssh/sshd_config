@@ -1,4 +1,4 @@
-HostKey /var/run/state/ssh/ssh_host_ecdsa_key
+HostKey /var/run/state/ssh/ssh_host_ed25519_key
 HostCertificate /var/run/state/ssh/ssh_host_cert.pub
 TrustedUserCAKeys /var/run/state/ssh/ssh_ca.pub
 PasswordAuthentication no

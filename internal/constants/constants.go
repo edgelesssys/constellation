@@ -47,7 +47,7 @@ const (
 	// SSHCAKeyPath is the path to the emergency SSH CA key on the node.
 	SSHCAKeyPath = "/var/run/state/ssh/ssh_ca.pub"
 	// SSHHostKeyPath is the path to the SSH host key of the node.
-	SSHHostKeyPath = "/var/run/state/ssh/ssh_host_ecdsa_key"
+	SSHHostKeyPath = "/var/run/state/ssh/ssh_host_ed25519_key"
 	// SSHHostCertificatePath is the path to the SSH host certificate.
 	SSHHostCertificatePath = "/var/run/state/ssh/ssh_host_cert.pub"
 	// SSHAdditionalPrincipalsPath stores additional principals (like the public IP of the load balancer) that get added to all host certificates.
