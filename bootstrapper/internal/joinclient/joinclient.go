@@ -19,8 +19,6 @@ package joinclient
 
 import (
 	"context"
-	"crypto/ed25519"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -237,51 +235,18 @@ func (c *JoinClient) requestJoinTicket(serviceEndpoint string) (ticket *joinprot
 	}
 	principalList = append(principalList, hostname)
 
-	var hostKeyPubSSH ssh.PublicKey
-
-	statInfo, err := c.fileHandler.Stat(constants.SSHHostKeyPath)
-	if errors.Is(err, os.ErrNotExist) {
-		hostKeyPub, hostKey, err := ed25519.GenerateKey(nil)
-		if err != nil {
-			c.log.With(slog.Any("error", err)).Error("Failed to generate SSH host key")
-			return nil, nil, err
-		}
-
-		hostKeyPubSSH, err = ssh.NewPublicKey(hostKeyPub)
-		if err != nil {
-			c.log.With(slog.Any("error", err)).Error("Failed to convert ed25519 pubkey to ssh pubkey")
-			return nil, nil, err
-		}
-
-		pemHostKey, err := ssh.MarshalPrivateKey(hostKey, "")
-		if err != nil {
-			c.log.With(slog.Any("error", err)).Error("Failed to format SSH host key")
-			return nil, nil, err
-		}
-		if err := c.fileHandler.Write(constants.SSHHostKeyPath, pem.EncodeToMemory(pemHostKey), file.OptMkdirAll); err != nil {
-			c.log.With(slog.Any("error", err)).Error("Failed to write SSH host key")
-			return nil, nil, err
-		}
-	} else if err != nil {
-		c.log.With(slog.Any("error", err)).Error("Failed to stat SSH host key")
+	hostKeyData, err := c.fileHandler.Read(constants.SSHHostKeyPath)
+	if err != nil {
+		c.log.With(slog.Any("error", err)).Error("Failed to read SSH host key file")
 		return nil, nil, err
-	} else if statInfo.IsDir() {
-		c.log.Error("SSH host key path points to directory instead of file")
-		return nil, nil, errors.New("SSH host key path is directory instead of file")
-	} else {
-		hostKeyData, err := c.fileHandler.Read(constants.SSHHostKeyPath)
-		if err != nil {
-			c.log.With(slog.Any("error", err)).Error("Failed to read SSH host key file")
-			return nil, nil, err
-		}
-
-		hostKey, err := ssh.ParsePrivateKey(hostKeyData)
-		if err != nil {
-			c.log.With(slog.Any("error", err)).Error("Failed to parse SSH host key file")
-			return nil, nil, err
-		}
-		hostKeyPubSSH = hostKey.PublicKey()
 	}
+
+	hostKey, err := ssh.ParsePrivateKey(hostKeyData)
+	if err != nil {
+		c.log.With(slog.Any("error", err)).Error("Failed to parse SSH host key file")
+		return nil, nil, err
+	}
+	hostKeyPubSSH := hostKey.PublicKey()
 
 	conn, err := c.dialer.Dial(serviceEndpoint)
 	if err != nil {
