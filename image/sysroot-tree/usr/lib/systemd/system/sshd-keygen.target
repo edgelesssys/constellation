@@ -1,3 +1,3 @@
-# Disable automatic key generation
 [Unit]
+Wants=sshd-keygen@ed25519.service
 PartOf=sshd.service
