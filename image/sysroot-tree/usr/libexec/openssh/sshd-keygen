@@ -1,0 +1,40 @@
+#!/usr/bin/bash
+# Taken from the original openssh-server package and slightly modified
+
+# Create the host keys for the OpenSSH server.
+KEYTYPE=$1
+case $KEYTYPE in
+        "dsa") ;& # disabled in FIPS
+        "ed25519")
+                FIPS=/proc/sys/crypto/fips_enabled
+                if [[ -r "$FIPS" && $(cat $FIPS) == "1" ]]; then
+                        exit 0
+                fi ;;
+        "rsa") ;; # always ok
+        "ecdsa") ;;
+        *) # wrong argument
+                exit 12 ;;
+esac
+KEY=/var/run/state/ssh/ssh_host_${KEYTYPE}_key
+
+KEYGEN=/usr/bin/ssh-keygen
+if [[ ! -x $KEYGEN ]]; then
+        exit 13
+fi
+
+# remove old keys
+rm -f $KEY{,.pub}
+
+# create new keys
+if ! $KEYGEN -q -t $KEYTYPE -f $KEY -C '' -N '' >&/dev/null; then
+        exit 1
+fi
+
+# sanitize permissions
+/usr/bin/chmod 600 $KEY
+/usr/bin/chmod 644 $KEY.pub
+if [[ -x /usr/sbin/restorecon ]]; then
+        /usr/sbin/restorecon $KEY{,.pub}
+fi
+
+exit 0
