@@ -17,7 +17,7 @@ bazel_dep(name = "rules_proto", version = "7.1.0")
 bazel_dep(name = "rules_python", version = "1.4.1")
 bazel_dep(name = "rules_shell", version = "0.4.1")
 
-bazel_dep(name = "buildifier_prebuilt", version = "8.0.3", dev_dependency = True)
+bazel_dep(name = "buildifier_prebuilt", version = "8.2.0", dev_dependency = True)
 
 go_sdk = use_extension("@io_bazel_rules_go//go:extensions.bzl", "go_sdk")
 go_sdk.download(
