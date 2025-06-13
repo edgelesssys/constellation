@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"time"
 
 	"golang.org/x/crypto/hkdf"
 	"golang.org/x/crypto/ssh"
@@ -75,6 +76,28 @@ func GenerateEmergencySSHCAKey(seed []byte) (ssh.Signer, error) {
 		return nil, err
 	}
 	return ca, nil
+}
+
+// GenerateSSHHostCertificate takes a given public key and CA to generate a host certificate.
+func GenerateSSHHostCertificate(principals []string, publicKey ssh.PublicKey, ca ssh.Signer) (*ssh.Certificate, error) {
+	certificate := ssh.Certificate{
+		CertType:        ssh.HostCert,
+		ValidPrincipals: principals,
+		ValidAfter:      uint64(time.Now().Unix()),
+		ValidBefore:     ssh.CertTimeInfinity,
+		Reserved:        []byte{},
+		Key:             publicKey,
+		KeyId:           principals[0],
+		Permissions: ssh.Permissions{
+			CriticalOptions: map[string]string{},
+			Extensions:      map[string]string{},
+		},
+	}
+	if err := certificate.SignCert(rand.Reader, ca); err != nil {
+		return nil, err
+	}
+
+	return &certificate, nil
 }
 
 // PemToX509Cert takes a list of PEM-encoded certificates, parses the first one and returns it
