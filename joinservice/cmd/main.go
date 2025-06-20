@@ -116,6 +116,7 @@ func main() {
 		keyServiceClient,
 		kubeClient,
 		log.WithGroup("server"),
+		file.NewHandler(afero.NewOsFs()),
 	)
 	if err != nil {
 		log.With(slog.Any("error", err)).Error("Failed to create server")

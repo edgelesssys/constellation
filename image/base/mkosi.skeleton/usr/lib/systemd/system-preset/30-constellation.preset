@@ -10,4 +10,3 @@ enable measurements.service
 enable export_constellation_debug.service
 enable systemd-timesyncd
 enable udev-trigger.service
-enable create-host-ssh-key.service

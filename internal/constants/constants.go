@@ -45,7 +45,13 @@ const (
 	// SSHCAKeySuffix is the suffix used together with the DEKPrefix to derive an SSH CA key for emergency ssh access.
 	SSHCAKeySuffix = "ca_emergency_ssh"
 	// SSHCAKeyPath is the path to the emergency SSH CA key on the node.
-	SSHCAKeyPath = "/run/ssh/ssh_ca.pub"
+	SSHCAKeyPath = "/var/run/state/ssh/ssh_ca.pub"
+	// SSHHostKeyPath is the path to the SSH host key of the node.
+	SSHHostKeyPath = "/var/run/state/ssh/ssh_host_ed25519_key"
+	// SSHHostCertificatePath is the path to the SSH host certificate.
+	SSHHostCertificatePath = "/var/run/state/ssh/ssh_host_cert.pub"
+	// SSHAdditionalPrincipalsPath stores additional principals (like the public IP of the load balancer) that get added to all host certificates.
+	SSHAdditionalPrincipalsPath = "/var/run/state/ssh/additional_principals.txt"
 
 	//
 	// Ports.
