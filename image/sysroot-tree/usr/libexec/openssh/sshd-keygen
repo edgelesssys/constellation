@@ -1,6 +1,8 @@
 #!/usr/bin/bash
 # Taken from the original openssh-server package and slightly modified
 
+set -x
+
 # Create the host keys for the OpenSSH server.
 KEYTYPE=$1
 case $KEYTYPE in
