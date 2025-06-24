@@ -17,6 +17,7 @@ case $KEYTYPE in
         *) # wrong argument
                 exit 12 ;;
 esac
+mkdir -p /var/run/state/ssh
 KEY=/var/run/state/ssh/ssh_host_${KEYTYPE}_key
 
 KEYGEN=/usr/bin/ssh-keygen
