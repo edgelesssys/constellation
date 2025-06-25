@@ -9,6 +9,7 @@ package joinclient
 import (
 	"context"
 	"crypto/ed25519"
+	"encoding/pem"
 	"errors"
 	"net"
 	"os"
@@ -58,25 +59,12 @@ func TestClient(t *testing.T) {
 	caDerivationKey := make([]byte, 256)
 	respCaKey := &joinproto.IssueJoinTicketResponse{AuthorizedCaPublicKey: caDerivationKey}
 
+	// TODO: fix test since keys are generated with systemd service
 	makeIssueJoinTicketAnswerWithValidCert := func(t *testing.T, originalAnswer issueJoinTicketAnswer, fh file.Handler) issueJoinTicketAnswer {
 		require := require.New(t)
 
-		tries := 0
-		var sshKeyBytes []byte
-		for {
-			t.Logf("Trying to read ssh host key: %d/3", tries)
-			sshKey, err := fh.Read(constants.SSHHostKeyPath)
-			if err != nil {
-				tries++
-				if tries >= 3 {
-					assert.Fail(t, "ssh key never written: ", err)
-				}
-				time.Sleep(time.Second * 3)
-				continue
-			}
-			sshKeyBytes = sshKey
-			break
-		}
+		sshKeyBytes, err := fh.Read(constants.SSHHostKeyPath)
+		require.NoError(err)
 		sshKey, err := ssh.ParsePrivateKey(sshKeyBytes)
 		require.NoError(err)
 		_, randomCAKey, err := ed25519.GenerateKey(nil)
@@ -315,6 +303,12 @@ func TestClient(t *testing.T) {
 			clock := testclock.NewFakeClock(time.Now())
 			metadataAPI := newStubMetadataAPI()
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
+
+			_, hostKey, err := ed25519.GenerateKey(nil)
+			require.NoError(err)
+			hostKeyPEM, err := ssh.MarshalPrivateKey(hostKey, "hostkey")
+			require.NoError(err)
+			require.NoError(fileHandler.Write(constants.SSHHostKeyPath, pem.EncodeToMemory(hostKeyPEM), file.OptMkdirAll))
 
 			netDialer := testdialer.NewBufconnDialer()
 			dialer := dialer.New(nil, nil, netDialer)
