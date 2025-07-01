@@ -177,7 +177,7 @@ Emergency SSH access to nodes can be useful to diagnose issues or download impor
 3. Now you can connect to any Constellation node using your certificate and your private key.
 
    ```bash
-   ssh -o CertificateFile=constellation_cert.pub -i <your private key> root@<ip of constellation node>
+   ssh -o CertificateFile=constellation_cert.pub -o UserKnownHostsFile=./known_hosts -i <your private key> root@<ip of constellation node>
    ```
 
    Normally, you don't have access to the Constellation nodes since they reside in a private network.
@@ -185,16 +185,18 @@ Emergency SSH access to nodes can be useful to diagnose issues or download impor
    For this, use something along the following SSH client configuration:
 
    ```text
-   Host <LB domain name>
+   Host <LB public IP>
      ProxyJump none
 
    Host *
      IdentityFile <your private key>
      PreferredAuthentications publickey
      CertificateFile=constellation_cert.pub
+     UserKnownHostsFile=./known_hosts
      User root
-     ProxyJump <LB domain name>
+     ProxyJump <LB public IP>
    ```
 
    With this configuration you can connect to a Constellation node using `ssh -F <this config> <private node IP>`.
-   You can obtain the private node IP and the domain name of the load balancer using your CSP's web UI.
+   You can obtain the private node IP and the public IP of the load balancer using your CSP's web UI. Note that if
+   you use the load balancers domain name, ssh host certificate verification doesn't work, so using the public IP is recommended.

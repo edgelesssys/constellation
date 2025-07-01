@@ -150,7 +150,9 @@ runs:
     - name: Setup bazel
       uses: ./.github/actions/setup_bazel_nix
       with:
-        nixTools: terraform
+        nixTools: |
+          terraform
+          syslinux
 
     - name: Log in to the Container registry
       uses: ./.github/actions/container_registry_login
@@ -452,7 +454,7 @@ runs:
         s3AccessKey: ${{ inputs.s3AccessKey }}
         s3SecretKey: ${{ inputs.s3SecretKey }}
         githubToken: ${{ inputs.githubToken }}
-    
+
     - name: Run emergency ssh test
       if: inputs.test == 'emergency ssh'
       uses: ./.github/actions/e2e_emergency_ssh

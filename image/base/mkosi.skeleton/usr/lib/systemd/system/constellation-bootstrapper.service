@@ -1,7 +1,8 @@
 [Unit]
 Description=Constellation Bootstrapper
 Wants=network-online.target
-After=network-online.target configure-constel-csp.service
+Requires=sshd-keygen.target
+After=network-online.target configure-constel-csp.service sshd-keygen.target
 After=export_constellation_debug.service
 
 [Service]

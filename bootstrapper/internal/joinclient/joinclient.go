@@ -23,10 +23,12 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"os"
 	"path/filepath"
 	"strconv"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/addresses"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/certificate"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
@@ -37,6 +39,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"github.com/edgelesssys/constellation/v2/joinservice/joinproto"
 	"github.com/spf13/afero"
+	"golang.org/x/crypto/ssh"
 	"google.golang.org/grpc"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 	kubeconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
@@ -209,6 +212,42 @@ func (c *JoinClient) requestJoinTicket(serviceEndpoint string) (ticket *joinprot
 		return nil, nil, err
 	}
 
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		c.log.With(slog.Any("error", err)).Error("Failed to get network interfaces")
+		return nil, nil, err
+	}
+	// Needed since go doesn't implicitly convert slices of structs to slices of interfaces
+	interfacesForFunc := make([]addresses.NetInterface, len(interfaces))
+	for i := range interfaces {
+		interfacesForFunc[i] = &interfaces[i]
+	}
+
+	principalList, err := addresses.GetMachineNetworkAddresses(interfacesForFunc)
+	if err != nil {
+		c.log.With(slog.Any("error", err)).Error("Failed to get network addresses")
+		return nil, nil, err
+	}
+	hostname, err := os.Hostname()
+	if err != nil {
+		c.log.With(slog.Any("error", err)).Error("Failed to get hostname")
+		return nil, nil, err
+	}
+	principalList = append(principalList, hostname)
+
+	hostKeyData, err := c.fileHandler.Read(constants.SSHHostKeyPath)
+	if err != nil {
+		c.log.With(slog.Any("error", err)).Error("Failed to read SSH host key file")
+		return nil, nil, err
+	}
+
+	hostKey, err := ssh.ParsePrivateKey(hostKeyData)
+	if err != nil {
+		c.log.With(slog.Any("error", err)).Error("Failed to parse SSH host key file")
+		return nil, nil, err
+	}
+	hostKeyPubSSH := hostKey.PublicKey()
+
 	conn, err := c.dialer.Dial(serviceEndpoint)
 	if err != nil {
 		c.log.With(slog.String("endpoint", serviceEndpoint), slog.Any("error", err)).Error("Join service unreachable")
@@ -218,9 +257,11 @@ func (c *JoinClient) requestJoinTicket(serviceEndpoint string) (ticket *joinprot
 
 	protoClient := joinproto.NewAPIClient(conn)
 	req := &joinproto.IssueJoinTicketRequest{
-		DiskUuid:           c.diskUUID,
-		CertificateRequest: certificateRequest,
-		IsControlPlane:     c.role == role.ControlPlane,
+		DiskUuid:                  c.diskUUID,
+		CertificateRequest:        certificateRequest,
+		IsControlPlane:            c.role == role.ControlPlane,
+		HostPublicKey:             hostKeyPubSSH.Marshal(),
+		HostCertificatePrincipals: principalList,
 	}
 	ticket, err = protoClient.IssueJoinTicket(ctx, req)
 	if err != nil {
@@ -273,6 +314,10 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 
 	if err := c.fileHandler.Write(constants.SSHCAKeyPath, ticket.AuthorizedCaPublicKey, file.OptMkdirAll); err != nil {
 		return fmt.Errorf("writing ssh ca key: %w", err)
+	}
+
+	if err := c.fileHandler.Write(constants.SSHHostCertificatePath, ticket.HostCertificate, file.OptMkdirAll); err != nil {
+		return fmt.Errorf("writing ssh host certificate: %w", err)
 	}
 
 	state := nodestate.NodeState{

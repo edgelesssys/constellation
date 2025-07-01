@@ -8,7 +8,11 @@ package joinclient
 
 import (
 	"context"
+	"crypto/ed25519"
+	"encoding/pem"
+	"errors"
 	"net"
+	"os"
 	"strconv"
 	"sync"
 	"testing"
@@ -16,6 +20,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
@@ -28,6 +33,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
+	"golang.org/x/crypto/ssh"
 	"google.golang.org/grpc"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 	testclock "k8s.io/utils/clock/testing"
@@ -53,15 +59,70 @@ func TestClient(t *testing.T) {
 	caDerivationKey := make([]byte, 256)
 	respCaKey := &joinproto.IssueJoinTicketResponse{AuthorizedCaPublicKey: caDerivationKey}
 
+	// TODO: fix test since keys are generated with systemd service
+	makeIssueJoinTicketAnswerWithValidCert := func(t *testing.T, originalAnswer issueJoinTicketAnswer, fh file.Handler) issueJoinTicketAnswer {
+		require := require.New(t)
+
+		sshKeyBytes, err := fh.Read(constants.SSHHostKeyPath)
+		require.NoError(err)
+		sshKey, err := ssh.ParsePrivateKey(sshKeyBytes)
+		require.NoError(err)
+		_, randomCAKey, err := ed25519.GenerateKey(nil)
+		require.NoError(err)
+		randomCA, err := ssh.NewSignerFromSigner(randomCAKey)
+		require.NoError(err)
+
+		cert, err := crypto.GenerateSSHHostCertificate([]string{"asdf"}, sshKey.PublicKey(), randomCA)
+		require.NoError(err)
+
+		certBytes := ssh.MarshalAuthorizedKey(cert)
+
+		if originalAnswer.resp == nil {
+			originalAnswer.resp = &joinproto.IssueJoinTicketResponse{HostCertificate: certBytes}
+		} else {
+			originalAnswer.resp.HostCertificate = certBytes
+		}
+
+		return originalAnswer
+	}
+
+	makeIssueJoinTicketAnswerWithInvalidCert := func(t *testing.T, originalAnswer issueJoinTicketAnswer) issueJoinTicketAnswer {
+		require := require.New(t)
+		_, randomCAKey, err := ed25519.GenerateKey(nil)
+		require.NoError(err)
+		randomCA, err := ssh.NewSignerFromSigner(randomCAKey)
+		require.NoError(err)
+
+		randomKey, _, err := ed25519.GenerateKey(nil)
+		require.NoError(err)
+		randomSSHKey, err := ssh.NewPublicKey(randomKey)
+		require.NoError(err)
+
+		cert, err := crypto.GenerateSSHHostCertificate([]string{"asdf"}, randomSSHKey, randomCA)
+		require.NoError(err)
+
+		certBytes := ssh.MarshalAuthorizedKey(cert)
+
+		if originalAnswer.resp == nil {
+			originalAnswer.resp = &joinproto.IssueJoinTicketResponse{HostCertificate: certBytes}
+		} else {
+			originalAnswer.resp.HostCertificate = certBytes
+		}
+
+		return originalAnswer
+	}
+
 	testCases := map[string]struct {
-		role          role.Role
-		clusterJoiner *stubClusterJoiner
-		disk          encryptedDisk
-		nodeLock      *fakeLock
-		apiAnswers    []any
-		wantLock      bool
-		wantJoin      bool
-		wantNumJoins  int
+		role                role.Role
+		clusterJoiner       *stubClusterJoiner
+		disk                encryptedDisk
+		nodeLock            *fakeLock
+		apiAnswers          []any
+		wantLock            bool
+		wantJoin            bool
+		wantNumJoins        int
+		wantNotMatchingCert bool
+		wantCertNotExisting bool
 	}{
 		"on worker: metadata self: errors occur": {
 			role: role.Worker,
@@ -78,6 +139,23 @@ func TestClient(t *testing.T) {
 			disk:          &stubDisk{},
 			wantJoin:      true,
 			wantLock:      true,
+		},
+		"on worker: SSH host cert not matching": {
+			role: role.Worker,
+			apiAnswers: []any{
+				selfAnswer{err: assert.AnError},
+				selfAnswer{err: assert.AnError},
+				selfAnswer{err: assert.AnError},
+				selfAnswer{instance: workerSelf},
+				listAnswer{instances: peers},
+				issueJoinTicketAnswer{resp: respCaKey},
+			},
+			clusterJoiner:       &stubClusterJoiner{},
+			nodeLock:            newFakeLock(),
+			disk:                &stubDisk{},
+			wantJoin:            true,
+			wantLock:            true,
+			wantNotMatchingCert: true,
 		},
 		"on worker: metadata self: invalid answer": {
 			role: role.Worker,
@@ -195,32 +273,42 @@ func TestClient(t *testing.T) {
 				listAnswer{instances: peers},
 				issueJoinTicketAnswer{resp: respCaKey},
 			},
-			clusterJoiner: &stubClusterJoiner{},
-			nodeLock:      lockedLock,
-			disk:          &stubDisk{},
-			wantLock:      true,
+			clusterJoiner:       &stubClusterJoiner{},
+			nodeLock:            lockedLock,
+			disk:                &stubDisk{},
+			wantLock:            true,
+			wantCertNotExisting: true,
 		},
 		"on control plane: disk open fails": {
-			role:          role.ControlPlane,
-			clusterJoiner: &stubClusterJoiner{},
-			nodeLock:      newFakeLock(),
-			disk:          &stubDisk{openErr: assert.AnError},
+			role:                role.ControlPlane,
+			clusterJoiner:       &stubClusterJoiner{},
+			nodeLock:            newFakeLock(),
+			disk:                &stubDisk{openErr: assert.AnError},
+			wantCertNotExisting: true,
 		},
 		"on control plane: disk uuid fails": {
-			role:          role.ControlPlane,
-			clusterJoiner: &stubClusterJoiner{},
-			nodeLock:      newFakeLock(),
-			disk:          &stubDisk{uuidErr: assert.AnError},
+			role:                role.ControlPlane,
+			clusterJoiner:       &stubClusterJoiner{},
+			nodeLock:            newFakeLock(),
+			disk:                &stubDisk{uuidErr: assert.AnError},
+			wantCertNotExisting: true,
 		},
 	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
+			require := require.New(t)
 
 			clock := testclock.NewFakeClock(time.Now())
 			metadataAPI := newStubMetadataAPI()
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
+
+			_, hostKey, err := ed25519.GenerateKey(nil)
+			require.NoError(err)
+			hostKeyPEM, err := ssh.MarshalPrivateKey(hostKey, "hostkey")
+			require.NoError(err)
+			require.NoError(fileHandler.Write(constants.SSHHostKeyPath, pem.EncodeToMemory(hostKeyPEM), file.OptMkdirAll))
 
 			netDialer := testdialer.NewBufconnDialer()
 			dialer := dialer.New(nil, nil, netDialer)
@@ -259,12 +347,42 @@ func TestClient(t *testing.T) {
 				case listAnswer:
 					metadataAPI.listAnswerC <- a
 				case issueJoinTicketAnswer:
-					joinserviceAPI.issueJoinTicketAnswerC <- a
+					var answer issueJoinTicketAnswer
+					if tc.wantNotMatchingCert {
+						answer = makeIssueJoinTicketAnswerWithInvalidCert(t, a)
+					} else {
+						answer = makeIssueJoinTicketAnswerWithValidCert(t, a, fileHandler)
+					}
+					joinserviceAPI.issueJoinTicketAnswerC <- answer
 				}
 				clock.Step(time.Second)
 			}
 
 			client.Stop()
+
+			if !tc.wantCertNotExisting {
+				hostCertBytes, err := fileHandler.Read(constants.SSHHostCertificatePath)
+				require.NoError(err)
+				hostKeyBytes, err := fileHandler.Read(constants.SSHHostKeyPath)
+				require.NoError(err)
+
+				hostCertKey, _, _, _, err := ssh.ParseAuthorizedKey(hostCertBytes)
+				require.NoError(err)
+				hostCert, ok := hostCertKey.(*ssh.Certificate)
+				require.True(ok)
+
+				hostKey, err := ssh.ParsePrivateKey(hostKeyBytes)
+				require.NoError(err)
+
+				if !tc.wantNotMatchingCert {
+					assert.Equal(hostKey.PublicKey().Marshal(), hostCert.Key.Marshal())
+				} else {
+					assert.NotEqual(hostKey.PublicKey().Marshal(), hostCert.Key.Marshal())
+				}
+			} else {
+				_, err := fileHandler.Stat(constants.SSHHostCertificatePath)
+				require.True(errors.Is(err, os.ErrNotExist))
+			}
 
 			if tc.wantJoin {
 				assert.Greater(tc.clusterJoiner.joinClusterCalled, 0)
