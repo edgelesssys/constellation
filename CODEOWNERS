@@ -50,7 +50,7 @@
 /internal/osimage @msanft
 /internal/retry @msanft
 /internal/semver @daniel-weisse
-/internal/sigstore @burgerdevb
+/internal/sigstore @burgerdev
 /internal/staticupload @msanft
 /internal/versions @msanft
 /joinservice @daniel-weisse
