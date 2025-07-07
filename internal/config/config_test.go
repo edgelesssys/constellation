@@ -333,7 +333,7 @@ func TestValidate(t *testing.T) {
 	const awsErrCount = 8
 	const gcpErrCount = 8
 
-	// TODO(AB#3132,3u13r): refactor config validation tests
+	// TODO(AB#3132): refactor config validation tests
 	// Note that the `cnf.Image = ""` is a hack to align `bazel test` with `go test` behavior
 	// since first does version stamping.
 	testCases := map[string]struct {

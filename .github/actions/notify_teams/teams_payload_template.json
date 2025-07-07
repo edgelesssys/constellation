@@ -21,14 +21,6 @@
                         },
                         {
                             "type": "mention",
-                            "text": "<at>3u13r</at>",
-                            "mentioned": {
-                                "id": "26869b29-b0d6-48f8-a9ed-7a6374410a53",
-                                "name": "Leonard Cohnen"
-                            }
-                        },
-                        {
-                            "type": "mention",
                             "text": "<at>daniel-weisse</at>",
                             "mentioned": {
                                 "id": "759f3380-526e-4776-a620-cc713dce6177",

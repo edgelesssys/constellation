@@ -184,8 +184,7 @@ type GCPIAMVariables struct {
 	Zone string `hcl:"zone" cty:"zone"`
 	// ServiceAccountID is the ID of the service account to use.
 	ServiceAccountID string `hcl:"service_account_id" cty:"service_account_id"`
-	// IAMServiceAccountVM is the ID of the service account to attach to VMs.
-	// TODO(@3u13r): Eventually remove this field after v2.22 has been released.
+	// NamePrefix is a prefix applied to the service account ID and VM ID created by this configuration.
 	NamePrefix string `hcl:"name_prefix,optional" cty:"name_prefix"`
 }
 

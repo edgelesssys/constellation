@@ -182,7 +182,6 @@ module "loadbalancer_backend_control_plane" {
 }
 
 # We cannot delete them right away since we first need to to delete the dependency from the VMSS to this backend pool.
-# TODO(@3u13r): Remove this resource after v2.18.0 has been released.
 module "loadbalancer_backend_worker" {
   source = "./modules/load_balancer_backend"
 
@@ -193,7 +192,6 @@ module "loadbalancer_backend_worker" {
 }
 
 # We cannot delete them right away since we first need to to delete the dependency from the VMSS to this backend pool.
-# TODO(@3u13r): Remove this resource after v2.18.0 has been released.
 resource "azurerm_lb_backend_address_pool" "all" {
   loadbalancer_id = azurerm_lb.loadbalancer.id
   name            = "${var.name}-all"
