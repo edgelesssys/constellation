@@ -75,8 +75,6 @@ runs:
       shell: bash
       run: bazel run //bazel/release:push
 
-    # TODO(3u13r): Replace with https://github.com/sigstore/sigstore-installer/tree/initial
-    # once it has the functionality
     - name: Install Cosign
       if: inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != ''
       uses: sigstore/cosign-installer@3454372f43399081ed03b604cb2d021dabca52bb # v3.8.2

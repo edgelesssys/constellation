@@ -182,7 +182,6 @@ module "loadbalancer_backend_control_plane" {
 }
 
 # We cannot delete them right away since we first need to to delete the dependency from the VMSS to this backend pool.
-# TODO(@3u13r): Remove this resource after v2.18.0 has been released.
 module "loadbalancer_backend_worker" {
   source = "./modules/load_balancer_backend"
 
@@ -193,7 +192,6 @@ module "loadbalancer_backend_worker" {
 }
 
 # We cannot delete them right away since we first need to to delete the dependency from the VMSS to this backend pool.
-# TODO(@3u13r): Remove this resource after v2.18.0 has been released.
 resource "azurerm_lb_backend_address_pool" "all" {
   loadbalancer_id = azurerm_lb.loadbalancer.id
   name            = "${var.name}-all"
@@ -234,7 +232,6 @@ resource "azurerm_network_security_rule" "nsg_rule" {
   for_each = {
     for o in local.ports : o.name => o
   }
-  # TODO(elchead): v2.20.0: remove name suffix and priority offset. Might need to add create_before_destroy to the NSG rule.
   name                        = "${each.value.name}-new"
   priority                    = each.value.priority + 10 # offset to not overlap with old rules
   direction                   = "Inbound"

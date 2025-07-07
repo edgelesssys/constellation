@@ -6,7 +6,7 @@
 /cli/internal/cloudcmd @daniel-weisse
 /cli/internal/cmd/upgrade* @daniel-weisse
 /cli/internal/libvirt @daniel-weisse
-/cli/internal/terraform @elchead
+/cli/internal/terraform @daniel-weisse
 /csi @daniel-weisse
 /debugd @daniel-weisse
 /disk-mapper @daniel-weisse
@@ -34,7 +34,7 @@
 /internal/constellation/featureset @thomasten
 /internal/constellation/helm @burgerdev
 /internal/constellation/kubecmd @daniel-weisse
-/internal/constellation/state @elchead
+/internal/constellation/state @msanft
 /internal/containerimage @burgerdev
 /internal/crypto @thomasten
 /internal/cryptsetup @daniel-weisse
@@ -50,14 +50,14 @@
 /internal/osimage @msanft
 /internal/retry @msanft
 /internal/semver @daniel-weisse
-/internal/sigstore @elchead
+/internal/sigstore @burgerdev
 /internal/staticupload @msanft
 /internal/versions @msanft
 /joinservice @daniel-weisse
 /keyservice @daniel-weisse
 /measurement-reader @daniel-weisse
 /operators @msanft
-/terraform-provider-constellation @msanft @elchead
+/terraform-provider-constellation @msanft
 /tools @burgerdev
 /upgrade-agent @msanft
 /verify @daniel-weisse

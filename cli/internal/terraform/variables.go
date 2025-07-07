@@ -24,11 +24,6 @@ type Variables interface {
 // ClusterVariables should be used in places where a cluster is created.
 type ClusterVariables interface {
 	Variables
-	// TODO(derpsteb): Rename this function once we have introduced an interface for config.Config.
-	// GetCreateMAA does not follow Go's naming convention because we need to keep the CreateMAA property public for now.
-	// There are functions creating Variables objects outside of this package.
-	// These functions can only be moved into this package once we have introduced an interface for config.Config,
-	// since we do not want to introduce a dependency on config.Config in this package.
 	GetCreateMAA() bool
 }
 
@@ -75,7 +70,6 @@ type AWSClusterVariables struct {
 }
 
 // GetCreateMAA gets the CreateMAA variable.
-// TODO(derpsteb): Rename this function once we have introduced an interface for config.Config.
 func (a *AWSClusterVariables) GetCreateMAA() bool {
 	return false
 }
@@ -148,7 +142,6 @@ type GCPClusterVariables struct {
 }
 
 // GetCreateMAA gets the CreateMAA variable.
-// TODO(derpsteb): Rename this function once we have introduced an interface for config.Config.
 func (g *GCPClusterVariables) GetCreateMAA() bool {
 	return false
 }
@@ -184,8 +177,7 @@ type GCPIAMVariables struct {
 	Zone string `hcl:"zone" cty:"zone"`
 	// ServiceAccountID is the ID of the service account to use.
 	ServiceAccountID string `hcl:"service_account_id" cty:"service_account_id"`
-	// IAMServiceAccountVM is the ID of the service account to attach to VMs.
-	// TODO(@3u13r): Eventually remove this field after v2.22 has been released.
+	// NamePrefix is a prefix applied to the service account ID and VM ID created by this configuration.
 	NamePrefix string `hcl:"name_prefix,optional" cty:"name_prefix"`
 }
 
@@ -231,7 +223,6 @@ type AzureClusterVariables struct {
 }
 
 // GetCreateMAA gets the CreateMAA variable.
-// TODO(derpsteb): Rename this function once we have introduced an interface for config.Config.
 func (a *AzureClusterVariables) GetCreateMAA() bool {
 	if a.CreateMAA == nil {
 		return false
@@ -316,7 +307,6 @@ type OpenStackClusterVariables struct {
 }
 
 // GetCreateMAA gets the CreateMAA variable.
-// TODO(derpsteb): Rename this function once we have introduced an interface for config.Config.
 func (o *OpenStackClusterVariables) GetCreateMAA() bool {
 	return false
 }
@@ -389,7 +379,6 @@ type QEMUVariables struct {
 }
 
 // GetCreateMAA gets the CreateMAA variable.
-// TODO(derpsteb): Rename this function once we have introduced an interface for config.Config.
 func (q *QEMUVariables) GetCreateMAA() bool {
 	return false
 }

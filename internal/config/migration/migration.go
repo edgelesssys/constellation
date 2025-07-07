@@ -140,10 +140,6 @@ type AWSSEVSNP struct {
 	// description: |
 	//   Expected TPM measurements.
 	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
-	// TODO(derpsteb): reenable launchMeasurement once SNP is fixed on AWS.
-	// description: |
-	//   Expected launch measurement in SNP report.
-	// LaunchMeasurement measurements.Measurement `json:"launchMeasurement" yaml:"launchMeasurement" validate:"required"`
 }
 
 // AWSNitroTPM is the configuration for AWS Nitro TPM attestation.

@@ -392,8 +392,8 @@ func (c *Cloud) getLoadBalancerPublicIP(ctx context.Context) (string, error) {
 }
 
 /*
-// TODO(malt3): uncomment and use as soon as we switch the primary endpoint to DNS.
-// Addition from 3u13r: We have to think about how to handle DNS for internal load balancers
+// TODO: uncomment and use as soon as we switch the primary endpoint to DNS.
+// We have to think about how to handle DNS for internal load balancers
 // that only have a private IP address and therefore no DNS name by default.
 //
 // getLoadBalancerDNSName retrieves the dns name of the load balancer.

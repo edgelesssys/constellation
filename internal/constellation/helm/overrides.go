@@ -48,7 +48,7 @@ func extraCiliumValues(provider cloudprovider.Provider, conformanceMode bool, ou
 	extraVals := map[string]any{}
 
 	strictMode := map[string]any{}
-	// TODO(@3u13r): Once we are able to set the subnet of the load balancer VMs
+	// TODO: Once we are able to set the subnet of the load balancer VMs
 	// on STACKIT, we can remove the OpenStack exception here.
 	if provider != cloudprovider.QEMU && provider != cloudprovider.OpenStack {
 		strictMode = map[string]any{

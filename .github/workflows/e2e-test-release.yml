@@ -122,7 +122,7 @@ jobs:
           # Tests on macOS runner
           #
           # Skipping verify test on MacOS since the runner uses a different version of sed
-          # TODO(3u13r): Update verify test to work on MacOS runners
+          # TODO: Update verify test to work on MacOS runners
           # - test: "verify"
           #  attestationVariant: "azure-sev-snp"
           #  kubernetes-version: "v1.31"

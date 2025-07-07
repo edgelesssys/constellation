@@ -40,13 +40,6 @@ func main() {
 		panic(err)
 	}
 
-	// logLevel can be made a public variable so logging level can be changed dynamically.
-	// TODO (derpsteb): enable once we are on go 1.21.
-	// logLevel := new(slog.LevelVar)
-	// handler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel})
-	// logger := slog.New(handler)
-	// logLevel.Set(flags.logLevel)
-
 	logger := logger.NewJSONLogger(logger.VerbosityFromInt(flags.logLevel))
 
 	if flags.forwardMultipartReqs {
@@ -110,12 +103,6 @@ func parseFlags() (cmdFlags, error) {
 		return cmdFlags{}, fmt.Errorf("not a valid IPv4 address: %s", *ip)
 	}
 
-	// TODO(derpsteb): enable once we are on go 1.21.
-	// logLevel := new(slog.Level)
-	// if err := logLevel.UnmarshalText([]byte(*level)); err != nil {
-	// 	return cmdFlags{}, fmt.Errorf("parsing log level: %w", err)
-	// }
-
 	return cmdFlags{
 		noTLS:                *noTLS,
 		ip:                   netIP.String(),
@@ -134,7 +121,5 @@ type cmdFlags struct {
 	certLocation         string
 	kmsEndpoint          string
 	forwardMultipartReqs bool
-	// TODO(derpsteb): enable once we are on go 1.21.
-	// logLevel slog.Level
-	logLevel int
+	logLevel             int
 }

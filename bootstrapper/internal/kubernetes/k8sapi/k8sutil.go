@@ -87,7 +87,6 @@ func (k *KubernetesUtil) InstallComponents(ctx context.Context, kubernetesCompon
 func (k *KubernetesUtil) InitCluster(
 	ctx context.Context, initConfig []byte, nodeName, clusterName string, ips []net.IP, conformanceMode bool, log *slog.Logger,
 ) ([]byte, error) {
-	// TODO(3u13r): audit policy should be user input
 	auditPolicy, err := resources.NewDefaultAuditPolicy().Marshal()
 	if err != nil {
 		return nil, fmt.Errorf("generating default audit policy: %w", err)
@@ -186,7 +185,6 @@ func (k *KubernetesUtil) InitCluster(
 
 // JoinCluster joins existing Kubernetes cluster using kubeadm join.
 func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, log *slog.Logger) error {
-	// TODO(3u13r): audit policy should be user input
 	auditPolicy, err := resources.NewDefaultAuditPolicy().Marshal()
 	if err != nil {
 		return fmt.Errorf("generating default audit policy: %w", err)

@@ -51,15 +51,6 @@ resource "aws_launch_template" "launch_template" {
     # use "disabled" to disable SEV-SNP (but still require SNP-capable hardware)
     # use null to leave the setting unset (allows non-SNP-capable hardware to be used)
     amd_sev_snp = var.enable_snp ? "enabled" : null
-    # Disable SMT. We are already disabling it inside the image.
-    # Disabling SMT only in the image, not in the Hypervisor creates problems.
-    # Thus, also disable it in the Hypervisor.
-    # TODO(derpsteb): reenable once AWS confirms it's safe to do so.
-    # threads_per_core = 1
-    # When setting threads_per_core we also have to set core_count.
-    # For the currently supported SNP instance families (C6a, M6a, R6a) default_cores
-    # equals the maximum number of available cores.
-    # core_count = data.aws_ec2_instance_type.instance_data.default_cores
   }
 
   lifecycle {
