@@ -234,7 +234,6 @@ resource "azurerm_network_security_rule" "nsg_rule" {
   for_each = {
     for o in local.ports : o.name => o
   }
-  # TODO(elchead): v2.20.0: remove name suffix and priority offset. Might need to add create_before_destroy to the NSG rule.
   name                        = "${each.value.name}-new"
   priority                    = each.value.priority + 10 # offset to not overlap with old rules
   direction                   = "Inbound"

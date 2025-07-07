@@ -13,14 +13,6 @@
                     "entities": [
                         {
                             "type": "mention",
-                            "text": "<at>elchead</at>",
-                            "mentioned": {
-                                "id": "3931943b-8d4b-4300-ac7e-bbb06c4da27f",
-                                "name": "Adrian Stobbe"
-                            }
-                        },
-                        {
-                            "type": "mention",
                             "text": "<at>msanft</at>",
                             "mentioned": {
                                 "id": "1359ea62-4415-423e-b808-9d9acb96def0",

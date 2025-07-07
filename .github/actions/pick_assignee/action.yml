@@ -14,7 +14,6 @@ runs:
       shell: bash
       run: |
         possibleAssignees=(
-          "elchead"
           "daniel-weisse"
           "msanft"
           "burgerdev"

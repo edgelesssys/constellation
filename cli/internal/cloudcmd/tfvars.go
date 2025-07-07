@@ -367,7 +367,7 @@ func qemuTerraformVars(
 		ImagePath:          imagePath,
 		ImageFormat:        conf.Provider.QEMU.ImageFormat,
 		NodeGroups:         nodeGroups,
-		Machine:            "q35", // TODO(elchead): make configurable AB#3225
+		Machine:            "q35",
 		MetadataAPIImage:   conf.Provider.QEMU.MetadataAPIImage,
 		MetadataLibvirtURI: metadataLibvirtURI,
 		NVRAM:              conf.Provider.QEMU.NVRAM,
