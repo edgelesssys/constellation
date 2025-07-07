@@ -24,11 +24,6 @@ type Variables interface {
 // ClusterVariables should be used in places where a cluster is created.
 type ClusterVariables interface {
 	Variables
-	// TODO(derpsteb): Rename this function once we have introduced an interface for config.Config.
-	// GetCreateMAA does not follow Go's naming convention because we need to keep the CreateMAA property public for now.
-	// There are functions creating Variables objects outside of this package.
-	// These functions can only be moved into this package once we have introduced an interface for config.Config,
-	// since we do not want to introduce a dependency on config.Config in this package.
 	GetCreateMAA() bool
 }
 
@@ -75,7 +70,6 @@ type AWSClusterVariables struct {
 }
 
 // GetCreateMAA gets the CreateMAA variable.
-// TODO(derpsteb): Rename this function once we have introduced an interface for config.Config.
 func (a *AWSClusterVariables) GetCreateMAA() bool {
 	return false
 }
@@ -148,7 +142,6 @@ type GCPClusterVariables struct {
 }
 
 // GetCreateMAA gets the CreateMAA variable.
-// TODO(derpsteb): Rename this function once we have introduced an interface for config.Config.
 func (g *GCPClusterVariables) GetCreateMAA() bool {
 	return false
 }
@@ -230,7 +223,6 @@ type AzureClusterVariables struct {
 }
 
 // GetCreateMAA gets the CreateMAA variable.
-// TODO(derpsteb): Rename this function once we have introduced an interface for config.Config.
 func (a *AzureClusterVariables) GetCreateMAA() bool {
 	if a.CreateMAA == nil {
 		return false
@@ -315,7 +307,6 @@ type OpenStackClusterVariables struct {
 }
 
 // GetCreateMAA gets the CreateMAA variable.
-// TODO(derpsteb): Rename this function once we have introduced an interface for config.Config.
 func (o *OpenStackClusterVariables) GetCreateMAA() bool {
 	return false
 }
@@ -388,7 +379,6 @@ type QEMUVariables struct {
 }
 
 // GetCreateMAA gets the CreateMAA variable.
-// TODO(derpsteb): Rename this function once we have introduced an interface for config.Config.
 func (q *QEMUVariables) GetCreateMAA() bool {
 	return false
 }
