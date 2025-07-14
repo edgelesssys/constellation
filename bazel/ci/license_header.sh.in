@@ -25,7 +25,7 @@ noHeader=$(
     --include='*.go' \
     --exclude-dir 3rdparty \
     --exclude-dir build \
-    -e'SPDX-License-Identifier: AGPL-3.0-only' \
+    -e'SPDX-License-Identifier: BUSL-1.1' \
     -e'DO NOT EDIT' | { grep -v internal/cloud/openstack/clouds || true; }
 )
 
