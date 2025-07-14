@@ -1,7 +1,7 @@
 /*
 Copyright (c) Edgeless Systems GmbH
 
-SPDX-License-Identifier: AGPL-3.0-only
+SPDX-License-Identifier: BUSL-1.1
 */
 
 // cli-k8s-compatibility generates JSON output for a CLI version and its supported Kubernetes versions.

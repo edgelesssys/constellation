@@ -1,7 +1,7 @@
 /*
 Copyright (c) Edgeless Systems GmbH
 
-SPDX-License-Identifier: AGPL-3.0-only
+SPDX-License-Identifier: BUSL-1.1
 */
 
 // package imageinfo is used to upload image info JSON files to S3.

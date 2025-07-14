@@ -1,7 +1,7 @@
 /*
 Copyright (c) Edgeless Systems GmbH
 
-SPDX-License-Identifier: AGPL-3.0-only
+SPDX-License-Identifier: BUSL-1.1
 */
 
 // package featureset provides a way to check whether a feature is enabled in the current build.
