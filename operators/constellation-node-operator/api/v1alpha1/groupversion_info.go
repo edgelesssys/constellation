@@ -1,7 +1,7 @@
 /*
 Copyright (c) Edgeless Systems GmbH
 
-SPDX-License-Identifier: AGPL-3.0-only
+SPDX-License-Identifier: BUSL-1.1
 */
 
 // Package v1alpha1 contains API Schema definitions for the update v1alpha1 API group

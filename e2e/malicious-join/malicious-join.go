@@ -1,7 +1,7 @@
 /*
 Copyright (c) Edgeless Systems GmbH
 
-SPDX-License-Identifier: AGPL-3.0-only
+SPDX-License-Identifier: BUSL-1.1
 */
 
 // End-to-end test that issues various types of malicious join requests to a cluster.
