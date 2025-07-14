@@ -57,12 +57,6 @@ license_report() {
 
       AGPL-3.0)
         case ${pkg} in
-        github.com/edgelesssys/constellation/v2) ;;
-
-        github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/api/v1alpha1) ;;
-
-        github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/api) ;;
-
         github.com/edgelesssys/go-tdx-qpl) ;;
 
         *)
@@ -73,6 +67,8 @@ license_report() {
 
       Unknown)
         case ${pkg} in
+        github.com/edgelesssys/constellation/v2/*) ;;
+
         *)
           not_allowed
           ;;
