@@ -21,7 +21,7 @@ git clone \
   --no-checkout \
   --sparse \
   --depth 1 \
-  -b v1.15.8-edg.0 \
+  -b v1.15.19-edg \
   https://github.com/edgelesssys/cilium.git
 cd cilium
 
