@@ -5,6 +5,9 @@ go 1.24.4
 // TODO(daniel-weisse): revert after merging https://github.com/martinjungblut/go-cryptsetup/pull/16.
 replace github.com/martinjungblut/go-cryptsetup => github.com/daniel-weisse/go-cryptsetup v0.0.0-20230705150314-d8c07bd1723c
 
+// TODO(daniel-weisse): revert after merging https://github.com/google/go-sev-guest/pull/173.
+replace github.com/google/go-sev-guest => github.com/daniel-weisse/go-sev-guest v0.0.0-20250728114912-0c2ba277c52b
+
 // Kubernetes replace directives are required because we depend on k8s.io/kubernetes/cmd/kubeadm
 // k8s discourages usage of k8s.io/kubernetes as a dependency, but no external staging repositories for kubeadm exist.
 // Our code does not actually depend on these packages, but `go mod download` breaks without this replace directive.
