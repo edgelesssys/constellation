@@ -30,6 +30,7 @@
   ignoreDeps: [
     'github.com/edgelesssys/constellation/v2',
     'github.com/daniel-weisse/go-cryptsetup',
+    'github.com/daniel-weisse/go-sev-guest',
     // Only update once they fixed dependency violations on their side.
     'github.com/google/go-tpm-tools',
   ],
