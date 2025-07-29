@@ -188,7 +188,7 @@ const (
 	V1_32 ValidK8sVersion = "v1.32.7" // renovate:kubernetes-release
 
 	// Default k8s version deployed by Constellation.
-	Default ValidK8sVersion = V1_30
+	Default ValidK8sVersion = V1_31
 )
 
 // Regenerate the hashes by running go generate.
