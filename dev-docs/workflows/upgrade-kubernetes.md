@@ -27,7 +27,20 @@ curl -qL https://mcr.microsoft.com/v2/oss/kubernetes/azure-cloud-node-manager/ta
 
 Normally renovate will handle the upgrading of Kubernetes dependencies.
 
-Also, don't forget to update the Kubernetes versions tested in the CI. (e.g. release, weekly E2E tests)
+## Update e2e tests
+
+Run the following script to update the k8s versions used in the e2e workflows, adjusting the versions to what you're upgrading to.
+
+```sh
+next=v1.33
+current=v1.32
+old=v1.31
+oldold=v1.30
+sed -i -e "s/$current/$next/g" -e "s/$old/$current/g" -e "s/$oldold/$old/g" \
+  .github/workflows/e2e-test-daily.yml \
+  .github/workflows/e2e-test-weekly.yml \
+  .github/workflows/e2e-test-release.yml
+```
 
 ## Test the new Kubernetes version
 
