@@ -27,6 +27,8 @@ curl -qL https://mcr.microsoft.com/v2/oss/kubernetes/azure-cloud-node-manager/ta
 
 Normally renovate will handle the upgrading of Kubernetes dependencies.
 
+Also, don't forget to update the Kubernetes versions tested in the CI. (e.g. release, weekly E2E tests)
+
 ## Test the new Kubernetes version
 
 - Setup a Constellation cluster using the new image with the new bootstrapper binary and check if Kubernetes is deployed successfully.

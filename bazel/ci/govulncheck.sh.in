@@ -30,6 +30,7 @@ check_module() {
   excluded_osvs=(
     "GO-2025-3521" # Kubernetes GitRepo Volume Inadvertent Local Repository Access
     "GO-2025-3547" # Kubernetes kube-apiserver Vulnerable to Race Condition
+    "GO-2025-3770" # Host Header Injection which Leads to Open Redirect in RedirectSlashes in github.com/go-chi/chi
   )
 
   # shellcheck disable=SC2016 # The $ sign in the single quoted string is correct.
