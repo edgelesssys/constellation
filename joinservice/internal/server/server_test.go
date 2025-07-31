@@ -199,7 +199,6 @@ func TestIssueJoinTicket(t *testing.T) {
 			ca:                              stubCA{cert: testCert, nodeName: "node"},
 			kubeClient:                      stubKubeClient{getComponentsVal: clusterComponents, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
 			missingAdditionalPrincipalsFile: true,
-			wantErr:                         true,
 		},
 		"Host pubkey is missing": {
 			kubeadm: stubTokenGetter{token: testJoinToken},
@@ -224,7 +223,7 @@ func TestIssueJoinTicket(t *testing.T) {
 
 			fh := file.NewHandler(afero.NewMemMapFs())
 			if !tc.missingAdditionalPrincipalsFile {
-				require.NoError(fh.Write(constants.SSHAdditionalPrincipalsPath, []byte("*"), file.OptMkdirAll))
+				require.NoError(fh.Write("/var/kubeadm-config/ClusterConfiguration", []byte(clusterConfig), file.OptMkdirAll))
 			}
 
 			api := Server{
@@ -391,3 +390,70 @@ func (s *stubKubeClient) AddNodeToJoiningNodes(_ context.Context, nodeName strin
 	s.componentsRef = componentsRef
 	return s.addNodeToJoiningNodesErr
 }
+
+const clusterConfig = `
+apiServer:
+  certSANs:
+  - "*"
+  extraArgs:
+  - name: audit-log-maxage
+    value: "30"
+  - name: audit-log-maxbackup
+    value: "10"
+  - name: audit-log-maxsize
+    value: "100"
+  - name: audit-log-path
+    value: /var/log/kubernetes/audit/audit.log
+  - name: audit-policy-file
+    value: /etc/kubernetes/audit-policy.yaml
+  - name: kubelet-certificate-authority
+    value: /etc/kubernetes/pki/ca.crt
+  - name: profiling
+    value: "false"
+  - name: tls-cipher-suites
+    value: TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,TLS_RSA_WITH_3DES_EDE_CBC_SHA,TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_256_CBC_SHA,TLS_RSA_WITH_AES_256_GCM_SHA384
+  extraVolumes:
+  - hostPath: /var/log/kubernetes/audit/
+    mountPath: /var/log/kubernetes/audit/
+    name: audit-log
+    pathType: DirectoryOrCreate
+  - hostPath: /etc/kubernetes/audit-policy.yaml
+    mountPath: /etc/kubernetes/audit-policy.yaml
+    name: audit
+    pathType: File
+    readOnly: true
+apiVersion: kubeadm.k8s.io/v1beta4
+caCertificateValidityPeriod: 87600h0m0s
+certificateValidityPeriod: 8760h0m0s
+certificatesDir: /etc/kubernetes/pki
+clusterName: mr-cilium-7d6460ea
+controlPlaneEndpoint: 34.8.0.20:6443
+controllerManager:
+  extraArgs:
+  - name: cloud-provider
+    value: external
+  - name: configure-cloud-routes
+    value: "false"
+  - name: flex-volume-plugin-dir
+    value: /opt/libexec/kubernetes/kubelet-plugins/volume/exec/
+  - name: profiling
+    value: "false"
+  - name: terminated-pod-gc-threshold
+    value: "1000"
+dns: {}
+encryptionAlgorithm: RSA-2048
+etcd:
+  local:
+    dataDir: /var/lib/etcd
+imageRepository: registry.k8s.io
+kind: ClusterConfiguration
+kubernetesVersion: v1.30.14
+networking:
+  dnsDomain: cluster.local
+  serviceSubnet: 10.96.0.0/12
+proxy: {}
+scheduler:
+  extraArgs:
+  - name: profiling
+    value: "false"
+`

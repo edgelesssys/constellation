@@ -50,6 +50,9 @@ spec:
             - mountPath: /etc/kubernetes
               name: kubeadm
               readOnly: true
+            - mountPath: /var/kubeadm-config
+              name: kubeadm-config
+              readOnly: true
             - mountPath: /var/secrets/google
               name: gcekey
               readOnly: true
@@ -76,6 +79,9 @@ spec:
         - name: kubeadm
           hostPath:
             path: /etc/kubernetes
+        - name: kubeadm-config
+          configMap:
+            name: kubeadm-config
         - name: ssh
           hostPath:
             path: /var/run/state/ssh
