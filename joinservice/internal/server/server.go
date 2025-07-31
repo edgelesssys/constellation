@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
@@ -29,6 +28,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
+	"gopkg.in/yaml.v3"
 
 	kubeadmv1 "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
@@ -119,13 +119,10 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 		return nil, status.Errorf(codes.Internal, "generating ssh emergency CA key: %s", err)
 	}
 
-	principalList := req.HostCertificatePrincipals
-	additionalPrincipals, err := s.fileHandler.Read(constants.SSHAdditionalPrincipalsPath)
-	if err != nil {
-		log.With(slog.Any("error", err)).Error("Failed to read additional principals file")
-		return nil, status.Errorf(codes.Internal, "reading additional principals file: %s", err)
+	principalList := s.extendPrincipals(req.HostCertificatePrincipals)
+	if len(principalList) == 0 {
+		principalList = append(principalList, grpclog.PeerAddrFromContext(ctx))
 	}
-	principalList = append(principalList, strings.Split(string(additionalPrincipals), ",")...)
 
 	publicKey, err := ssh.ParsePublicKey(req.HostPublicKey)
 	if err != nil {
@@ -269,4 +266,46 @@ type kubeClient interface {
 	GetK8sComponentsRefFromNodeVersionCRD(ctx context.Context, nodeName string) (string, error)
 	GetComponents(ctx context.Context, configMapName string) (components.Components, error)
 	AddNodeToJoiningNodes(ctx context.Context, nodeName string, componentsHash string, isControlPlane bool) error
+}
+
+func (s *Server) extendPrincipals(principals []string) []string {
+	clusterConfigYAML, err := s.fileHandler.Read("/var/kubeadm-config/ClusterConfiguration")
+	if err != nil {
+		s.log.Error("Failed to read kubeadm ClusterConfiguration file", "error", err)
+		return principals
+	}
+
+	var obj map[string]any
+	yaml.Unmarshal(clusterConfigYAML, &obj)
+	apiServerAny, ok := obj["apiServer"]
+	if !ok {
+		s.log.Error("ClusterConfig has no apiServer field")
+		return principals
+	}
+	apiServerCfg, ok := apiServerAny.(map[string]any)
+	if !ok {
+		s.log.Error("Unexpected type of ClusterConfig.apiServer field", "type", fmt.Sprintf("%T", apiServerAny))
+		return principals
+	}
+	certSANsAny, ok := apiServerCfg["certSANs"]
+	if !ok {
+		s.log.Error("ClusterConfig.apiServer has no certSANs field")
+		return principals
+	}
+	certSANsListAny, ok := certSANsAny.([]any)
+	if !ok {
+		s.log.Error("Unexpected type of ClusterConfig.apiServer.certSANs field", "type", fmt.Sprintf("%T", certSANsAny))
+		return principals
+	}
+	// Don't append into the input slice.
+	principals = append([]string{}, principals...)
+	for i, sanAny := range certSANsListAny {
+		san, ok := sanAny.(string)
+		if !ok {
+			s.log.Error("Unexpected type of ClusterConfig.apiServer.certSANs field", "index", i, "type", fmt.Sprintf("%T", sanAny))
+		}
+		principals = append(principals, san)
+	}
+
+	return principals
 }
