@@ -276,7 +276,10 @@ func (s *Server) extendPrincipals(principals []string) []string {
 	}
 
 	var obj map[string]any
-	yaml.Unmarshal(clusterConfigYAML, &obj)
+	if err := yaml.Unmarshal(clusterConfigYAML, &obj); err != nil {
+		s.log.Error("Failed to unmarshal ClusterConfiguration file", "error", err)
+		return principals
+	}
 	apiServerAny, ok := obj["apiServer"]
 	if !ok {
 		s.log.Error("ClusterConfig has no apiServer field")
