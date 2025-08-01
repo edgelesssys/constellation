@@ -381,18 +381,18 @@ func (i *chartLoader) loadCiliumValues(cloudprovider.Provider) (map[string]any, 
 		"image": map[string]any{
 			"repository": "ghcr.io/edgelesssys/cilium/cilium",
 			"suffix":     "",
-			"tag":        "v1.15.19-edg.0-rc.0",
-			"digest":     "sha256:d613f2a1f119643eb1b662017463c07b3ecf36af494332c80a841ffed28fd069",
+			"tag":        "v1.15.19-edg.0",
+			"digest":     "sha256:700218a5ffc10473ce9b09d560b8e0e3ed1309a4d57a9273da2ed16e3e1533f3",
 			"useDigest":  true,
 		},
 		"operator": map[string]any{
 			"image": map[string]any{
 				"repository": "ghcr.io/edgelesssys/cilium/operator",
 				"suffix":     "",
-				"tag":        "v1.15.19-edg.0-rc.0",
+				"tag":        "v1.15.19-edg.0",
 				// Careful: this is the digest of ghcr.io/.../operator-generic!
 				// See magic image manipulation in ./helm/charts/cilium/templates/cilium-operator/_helpers.tpl.
-				"genericDigest": "sha256:a95a9b7b48126803be7698bc0d8309bfe1135e5dc9f0ead1965a27da0eff140f",
+				"genericDigest": "sha256:5db046fea42cb1239d4eaa0f870d10e77911768a1eaf34c4968488dea93e27c4",
 				"useDigest":     true,
 			},
 			"podDisruptionBudget": map[string]any{
