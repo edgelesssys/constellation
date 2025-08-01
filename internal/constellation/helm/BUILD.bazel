@@ -474,6 +474,7 @@ go_library(
         "charts/coredns/templates/service.yaml",
         "charts/coredns/templates/serviceaccount.yaml",
         "charts/aws-load-balancer-controller/templates/hpa.yaml",
+        "charts/cilium/files/cilium-envoy/configmap/bootstrap-config.yaml",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/constellation/helm",
     visibility = ["//:__subpackages__"],
