@@ -19,35 +19,35 @@ def _shellcheck_deps():
     http_archive(
         name = "com_github_koalaman_shellcheck_linux_amd64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/6c881ab0698e4e6ea235245f22832860544f17ba386442fe7e9d629f8cbedf87",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198",
             "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz",
         ],
-        sha256 = "6c881ab0698e4e6ea235245f22832860544f17ba386442fe7e9d629f8cbedf87",
         strip_prefix = "shellcheck-v0.11.0",
         build_file_content = """exports_files(["shellcheck"], visibility = ["//visibility:public"])""",
         type = "tar.xz",
+        sha256 = "8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198",
     )
     http_archive(
         name = "com_github_koalaman_shellcheck_linux_arm64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/324a7e89de8fa2aed0d0c28f3dab59cf84c6d74264022c00c22af665ed1a09bb",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/12b331c1d2db6b9eb13cfca64306b1b157a86eb69db83023e261eaa7e7c14588",
             "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.aarch64.tar.xz",
         ],
-        sha256 = "324a7e89de8fa2aed0d0c28f3dab59cf84c6d74264022c00c22af665ed1a09bb",
         strip_prefix = "shellcheck-v0.11.0",
         build_file_content = """exports_files(["shellcheck"], visibility = ["//visibility:public"])""",
         type = "tar.xz",
+        sha256 = "12b331c1d2db6b9eb13cfca64306b1b157a86eb69db83023e261eaa7e7c14588",
     )
     http_archive(
         name = "com_github_koalaman_shellcheck_darwin_amd64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/ef27684f23279d112d8ad84e0823642e43f838993bbb8c0963db9b58a90464c2",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/3c89db4edcab7cf1c27bff178882e0f6f27f7afdf54e859fa041fca10febe4c6",
             "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.darwin.x86_64.tar.xz",
         ],
-        sha256 = "ef27684f23279d112d8ad84e0823642e43f838993bbb8c0963db9b58a90464c2",
         strip_prefix = "shellcheck-v0.11.0",
         build_file_content = """exports_files(["shellcheck"], visibility = ["//visibility:public"])""",
         type = "tar.xz",
+        sha256 = "3c89db4edcab7cf1c27bff178882e0f6f27f7afdf54e859fa041fca10febe4c6",
     )
 
 def _terraform_deps():
