@@ -262,7 +262,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		CloudControllerManagerImageOpenStack: "docker.io/k8scloudprovider/openstack-cloud-controller-manager:v1.26.4@sha256:05e846fb13481b6dbe4a1e50491feb219e8f5101af6cf662a086115735624db0", // renovate:container
 		// External service image. Depends on k8s version.
 		// Check for new versions at https://github.com/kubernetes/autoscaler/releases.
-		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.30.4@sha256:f508cac11c8300f27529ed73f8d80f9b1949f819e8f8787f28afcb8e47ceb2b4", // renovate:container
+		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.30.5@sha256:c63b6fc563a7e374fca8fa3ca226d58955fe92360cb93aaa76974fc5dbf5cee6", // renovate:container
 	},
 	V1_31: {
 		ClusterVersion: "v1.31.11", // renovate:kubernetes-release
@@ -329,7 +329,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		CloudControllerManagerImageOpenStack: "registry.k8s.io/provider-os/openstack-cloud-controller-manager:v1.33.1@sha256:de8a6da8c31c7b967625451a7169309d6f77aee1ff64b3f8e6ba8d8810ce2a22", // renovate:container
 		// External service image. Depends on k8s version.
 		// Check for new versions at https://github.com/kubernetes/autoscaler/releases.
-		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.31.2@sha256:2f2ae9f88573d45d8c72d22abff97fb77fd8d9e55f40e57aa282957e56fd3a1a", // renovate:container
+		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.31.3@sha256:b5ac5d93d0e43c6f4f14b0a3994ff905ed169aa0d614d7af702eca0a254cb8a8", // renovate:container
 	},
 	V1_32: {
 		ClusterVersion: "v1.32.7", // renovate:kubernetes-release
@@ -396,7 +396,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		CloudControllerManagerImageOpenStack: "registry.k8s.io/provider-os/openstack-cloud-controller-manager:v1.33.1@sha256:de8a6da8c31c7b967625451a7169309d6f77aee1ff64b3f8e6ba8d8810ce2a22", // renovate:container
 		// External service image. Depends on k8s version.
 		// Check for new versions at https://github.com/kubernetes/autoscaler/releases.
-		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.32.1@sha256:dfc7e06c58b3757e530a0be1b8af6f6fe38926f0f4da35d6f1b8a9a9e0bb78de", // renovate:container
+		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.32.2@sha256:c627d8d159a8cd6705a2612afd8a9ffc499e2fc37bad3525364427439b9224c0", // renovate:container
 	},
 }
 
