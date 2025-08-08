@@ -1,6 +1,6 @@
 module github.com/edgelesssys/constellation/v2/hack/tools
 
-go 1.24.4
+go 1.24.6
 
 require (
 	github.com/google/go-licenses v1.6.0
