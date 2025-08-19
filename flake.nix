@@ -38,6 +38,15 @@
             '';
           });
 
+          cryptsetup = prev.cryptsetup.overrideAttrs (old: rec {
+            pname = "cryptsetup";
+            version = "2.8.1";
+            src = prev.fetchurl {
+              url = "mirror://kernel/linux/utils/cryptsetup/v${prev.lib.versions.majorMinor version}/${pname}-${version}.tar.xz";
+              hash = "sha256-LDN563ZZfcq1CRFEmwE+JpfEv/zHFtu/DZsOj7u0b7Q=";
+            };
+          });
+
           # dnf5 assumes a TTY with a very small width by default, truncating its output instead of line-wrapping
           # it. Force it to use more VT columns to avoid this, and make debugging errors easier.
           dnf5-stub = prev.writeScriptBin "dnf5" ''
@@ -94,7 +103,8 @@
         # Note that it's *not* a legacy attribute.
         legacyPackages = {
           generate = pkgs.callPackage ./nix/generate.nix { };
-        } // pkgs;
+        }
+        // pkgs;
 
         packages.mkosi = mkosiDev;
 
