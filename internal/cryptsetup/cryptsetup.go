@@ -50,9 +50,10 @@ var (
 
 // CryptSetup manages encrypted devices.
 type CryptSetup struct {
-	nameInit func(name string) (cryptDevice, error)
-	pathInit func(path string) (cryptDevice, error)
-	device   cryptDevice
+	nameInit     func(name string) (cryptDevice, string, error)
+	pathInit     func(path string) (cryptDevice, string, error)
+	device       cryptDevice
+	headerDevice string
 }
 
 // New creates a new CryptSetup.
@@ -71,11 +72,12 @@ func (c *CryptSetup) Init(devicePath string) (free func(), err error) {
 	if c.device != nil {
 		return nil, errDeviceAlreadyOpen
 	}
-	device, err := c.pathInit(devicePath)
+	device, headerDevice, err := c.pathInit(devicePath)
 	if err != nil {
 		return nil, fmt.Errorf("init cryptsetup by device path %q: %w", devicePath, err)
 	}
 	c.device = device
+	c.headerDevice = headerDevice
 	return c.Free, nil
 }
 
@@ -86,11 +88,12 @@ func (c *CryptSetup) InitByName(name string) (free func(), err error) {
 	if c.device != nil {
 		return nil, errDeviceAlreadyOpen
 	}
-	device, err := c.nameInit(name)
+	device, headerDevice, err := c.nameInit(name)
 	if err != nil {
 		return nil, fmt.Errorf("init cryptsetup by name %q: %w", name, err)
 	}
 	c.device = device
+	c.headerDevice = headerDevice
 	return c.Free, nil
 }
 
@@ -101,6 +104,9 @@ func (c *CryptSetup) Free() {
 	if c.device != nil {
 		c.device.Free()
 		c.device = nil
+	}
+	if c.headerDevice != "" {
+		_ = detachLoopbackDevice(c.headerDevice)
 	}
 }
 

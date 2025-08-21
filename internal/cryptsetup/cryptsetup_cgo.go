@@ -11,9 +11,16 @@ package cryptsetup
 import "C"
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 
+	"github.com/google/uuid"
 	"github.com/martinjungblut/go-cryptsetup"
+	"golang.org/x/sys/unix"
 )
 
 const (
@@ -56,12 +63,46 @@ func format(device cryptDevice, integrity bool) error {
 	}
 }
 
-func initByDevicePath(devicePath string) (cryptDevice, error) {
-	return cryptsetup.Init(devicePath)
+func initByDevicePath(devicePath string) (cryptDevice, string, error) {
+	tmpDevice, err := cryptsetup.Init(devicePath)
+	if err != nil {
+		return nil, "", fmt.Errorf("init device by path %s: %w", devicePath, err)
+	}
+	// If the device is not LUKS2 formatted, this is treated as a new device,
+	// meaning no header exists yet
+	if tmpDevice.Load(cryptsetup.LUKS2{}) != nil {
+		return tmpDevice, "", nil
+	}
+
+	defer tmpDevice.Free()
+	headerDevice, err := detachHeader(tmpDevice)
+	if err != nil {
+		return nil, "", err
+	}
+
+	cryptDevice, err := cryptsetup.InitDataDevice(devicePath, headerDevice)
+	return cryptDevice, headerDevice, err
 }
 
-func initByName(name string) (cryptDevice, error) {
-	return cryptsetup.InitByName(name)
+func initByName(name string) (cryptDevice, string, error) {
+	tmpDevice, err := cryptsetup.InitByName(name)
+	if err != nil {
+		return nil, "", fmt.Errorf("init device by name %s: %w", name, err)
+	}
+	// If the device is not LUKS2 formatted, this is treated as a new device,
+	// meaning no header exists yet
+	if tmpDevice.Load(cryptsetup.LUKS2{}) != nil {
+		return tmpDevice, "", nil
+	}
+
+	defer tmpDevice.Free()
+	headerDevice, err := detachHeader(tmpDevice)
+	if err != nil {
+		return nil, "", err
+	}
+
+	cryptDevice, err := cryptsetup.InitByNameAndHeader(name, headerDevice)
+	return cryptDevice, headerDevice, err
 }
 
 func loadLUKS2(device cryptDevice) error {
@@ -70,6 +111,236 @@ func loadLUKS2(device cryptDevice) error {
 		return d.Load(cryptsetup.LUKS2{})
 	default:
 		return errInvalidType
+	}
+}
+
+func detachHeader(device *cryptsetup.Device) (headerDevice string, err error) {
+	headerFile := filepath.Join(os.TempDir(), fmt.Sprintf("luks-header-%s", uuid.New().String()))
+	if err := device.HeaderBackup(cryptsetup.LUKS2{}, headerFile); err != nil {
+		return "", fmt.Errorf("creating header backup: %w", err)
+	}
+
+	headerDevice, err = createLoopbackDevice(headerFile)
+	if err != nil {
+		return "", fmt.Errorf("create loopback device: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			_ = detachLoopbackDevice(headerDevice)
+		}
+	}()
+
+	headerCryptDevice, err := cryptsetup.Init(headerDevice)
+	if err != nil {
+		return "", fmt.Errorf("init header device: %w", err)
+	}
+	defer headerCryptDevice.Free()
+	if err := headerCryptDevice.Load(cryptsetup.LUKS2{}); err != nil {
+		return "", fmt.Errorf("creating header backup: %w", err)
+	}
+	metadataJSON, err := headerCryptDevice.DumpJSON()
+	if err != nil {
+		return "", fmt.Errorf("dumping device metadata: %w", err)
+	}
+
+	var metadata cryptsetupMetadata
+	decoder := json.NewDecoder(strings.NewReader(metadataJSON))
+	decoder.DisallowUnknownFields() // Ensure no unknown fields are present in the JSON data
+	if err := decoder.Decode(&metadata); err != nil {
+		return "", fmt.Errorf("decoding LUKS header JSON from %s: %w", headerFile, err)
+	}
+
+	if err := verifyLUKS2Header(metadata); err != nil {
+		return "", fmt.Errorf("verifying LUKS2 header: %w", err)
+	}
+
+	return headerDevice, nil
+}
+
+func verifyLUKS2Header(metadata cryptsetupMetadata) error {
+	if len(metadata.KeySlots) == 0 {
+		return errors.New("no key slots found in LUKS2 header")
+	}
+	for slotName, slot := range metadata.KeySlots {
+		if slot.Type != "luks2" {
+			return fmt.Errorf("unsupported key slot type %q for slot %q", slot.Type, slotName)
+		}
+		if slot.KeySize != 64 && slot.KeySize != 96 { // 64 for encryption, 96 if integrity is added
+			return fmt.Errorf("unsupported key size %d for slot %q", slot.KeySize, slotName)
+		}
+		if slot.AntiForensicSplitter.Type != "luks1" {
+			return fmt.Errorf("unsupported anti-forensic splitter type %q for slot %q", slot.AntiForensicSplitter.Type, slotName)
+		}
+		if slot.AntiForensicSplitter.Stripes != 4000 {
+			return fmt.Errorf("unsupported anti-forensic splitter stripes %d for slot %q", slot.AntiForensicSplitter.Stripes, slotName)
+		}
+		if slot.AntiForensicSplitter.Hash != "sha256" {
+			return fmt.Errorf("unsupported anti-forensic splitter hash %q for slot %q", slot.AntiForensicSplitter.Hash, slotName)
+		}
+		if slot.Area.Type != "raw" {
+			return fmt.Errorf("unsupported area type %q for slot %q", slot.Area.Type, slotName)
+		}
+		if slot.Area.Encryption != "aes-xts-plain64" {
+			return fmt.Errorf("unsupported area encryption %q for slot %q", slot.Area.Encryption, slotName)
+		}
+		if slot.Area.KeySize != 64 {
+			return fmt.Errorf("unsupported area key size %d for slot %q", slot.Area.KeySize, slotName)
+		}
+		if slot.KDF.Type != "argon2id" {
+			return fmt.Errorf("unsupported KDF type %q for slot %q", slot.KDF.Type, slotName)
+		}
+		if slot.KDF.Memory != 65536 {
+			return fmt.Errorf("unsupported KDF memory %d for slot %q", slot.KDF.Memory, slotName)
+		}
+		if slot.KDF.Salt == "" {
+			return fmt.Errorf("unsupported KDF salt for slot %q", slotName)
+		}
+	}
+	if len(metadata.Segments) == 0 {
+		return errors.New("no segments found in LUKS2 header")
+	}
+	for segmentName, segment := range metadata.Segments {
+		if segment.Type != "crypt" {
+			return fmt.Errorf("unsupported segment type %q for segment %q", segment.Type, segmentName)
+		}
+		if segment.SectorSize != 4096 {
+			return fmt.Errorf("unsupported segment sector size %d for segment %q", segment.SectorSize, segmentName)
+		}
+		if segment.IVTweak != "0" {
+			return fmt.Errorf("unsupported segment IV tweak %q for segment %q", segment.IVTweak, segmentName)
+		}
+		if segment.Encryption != "aes-xts-plain64" {
+			return fmt.Errorf("unsupported segment encryption %q for segment %q", segment.Encryption, segmentName)
+		}
+		if segment.Integrity.Type != "hmac(sha256)" {
+			return fmt.Errorf("unsupported segment integrity type %q for segment %q", segment.Integrity.Type, segmentName)
+		}
+		if segment.Integrity.JournalEncryption != "none" {
+			return fmt.Errorf("unsupported segment integrity journal encryption %q for segment %q", segment.Integrity.JournalEncryption, segmentName)
+		}
+		if segment.Integrity.JournalIntegrity != "none" {
+			return fmt.Errorf("unsupported segment integrity journal integrity %q for segment %q", segment.Integrity.JournalIntegrity, segmentName)
+		}
+	}
+	if len(metadata.Digests) == 0 {
+		return errors.New("no digests found in LUKS2 header")
+	}
+	for digestName, digest := range metadata.Digests {
+		if digest.Type != "pbkdf2" {
+			return fmt.Errorf("unsupported digest type %q for digest %q", digest.Type, digestName)
+		}
+		if digest.Hash != "sha256" {
+			return fmt.Errorf("unsupported digest hash %q for digest %q", digest.Hash, digestName)
+		}
+		if digest.Salt == "" {
+			return fmt.Errorf("unsupported digest salt for digest %q", digestName)
+		}
+		if digest.Digest == "" {
+			return fmt.Errorf("unsupported digest value for digest %q", digestName)
+		}
+	}
+	return nil
+}
+
+// createLoopbackDevice sets up a loop device for the given file and returns the loop device path (e.g., /dev/loop0).
+func createLoopbackDevice(filePath string) (string, error) {
+	file, err := os.OpenFile(filePath, os.O_RDWR, 0)
+	if err != nil {
+		return "", fmt.Errorf("open backing file: %w", err)
+	}
+	defer file.Close()
+
+	// Get a free loop device number
+	ctrl, err := os.OpenFile("/dev/loop-control", os.O_RDWR, 0)
+	if err != nil {
+		return "", fmt.Errorf("open /dev/loop-control: %w", err)
+	}
+	defer ctrl.Close()
+	loopNum, _, errno := unix.Syscall(unix.SYS_IOCTL, ctrl.Fd(), unix.LOOP_CTL_GET_FREE, 0)
+	if errno != 0 {
+		return "", fmt.Errorf("LOOP_CTL_GET_FREE: %v", errno)
+	}
+
+	// Open the loop device
+	loopDev := fmt.Sprintf("/dev/loop%d", loopNum)
+	loop, err := os.OpenFile(loopDev, os.O_RDWR, 0)
+	if err != nil {
+		return "", fmt.Errorf("open loop device: %w", err)
+	}
+	defer loop.Close()
+
+	// Associate the file with the loop device
+	if _, _, errno := unix.Syscall(unix.SYS_IOCTL, loop.Fd(), unix.LOOP_SET_FD, file.Fd()); errno != 0 {
+		return "", fmt.Errorf("LOOP_SET_FD: %v", errno)
+	}
+
+	return loopDev, nil
+}
+
+func detachLoopbackDevice(loopDev string) error {
+	loop, err := os.OpenFile(loopDev, os.O_RDWR, 0)
+	if err != nil {
+		return fmt.Errorf("open loop device: %w", err)
+	}
+	defer loop.Close()
+
+	if _, _, errno := unix.Syscall(unix.SYS_IOCTL, loop.Fd(), unix.LOOP_CLR_FD, 0); errno != 0 {
+		return fmt.Errorf("LOOP_CLR_FD: %v", errno)
+	}
+	return nil
+}
+
+type cryptsetupMetadata struct {
+	KeySlots map[string]struct {
+		Type                 string `json:"type"`
+		KeySize              int    `json:"key_size"`
+		AntiForensicSplitter struct {
+			Type    string `json:"type"`
+			Stripes int    `json:"stripes"`
+			Hash    string `json:"hash"`
+		} `json:"af"`
+		Area struct {
+			Type       string `json:"type"`
+			Offset     string `json:"offset"`
+			Size       string `json:"size"`
+			Encryption string `json:"encryption"`
+			KeySize    int    `json:"key_size"`
+		} `json:"area"`
+		KDF struct {
+			Type   string `json:"type"`
+			Time   int    `json:"time"`
+			Memory int    `json:"memory"`
+			CPUs   int    `json:"cpus"`
+			Salt   string `json:"salt"`
+		} `json:"kdf"`
+	} `json:"keyslots"`
+	Tokens   map[string]any `json:"tokens"`
+	Segments map[string]struct {
+		Type       string   `json:"type"`
+		Offset     string   `json:"offset"`
+		Size       string   `json:"size"`
+		Flags      []string `json:"flags,omitempty"`
+		IVTweak    string   `json:"iv_tweak"`
+		Encryption string   `json:"encryption"`
+		SectorSize int      `json:"sector_size"`
+		Integrity  struct {
+			Type              string `json:"type"`
+			JournalEncryption string `json:"journal_encryption"`
+			JournalIntegrity  string `json:"journal_integrity"`
+		}
+	} `json:"segments"`
+	Digests map[string]struct {
+		Type       string   `json:"type"`
+		Keyslots   []string `json:"keyslots"`
+		Segments   []string `json:"segments"`
+		Hash       string   `json:"hash"`
+		Iterations int      `json:"iterations"`
+		Salt       string   `json:"salt"`
+		Digest     string   `json:"digest"`
+	} `json:"digests"`
+	Config struct {
+		JSONSize     string `json:"json_size"`
+		KeyslotsSize string `json:"keyslots_size"`
 	}
 }
 
