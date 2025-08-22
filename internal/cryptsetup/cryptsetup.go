@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -50,10 +51,12 @@ var (
 
 // CryptSetup manages encrypted devices.
 type CryptSetup struct {
-	nameInit     func(name string) (cryptDevice, string, error)
-	pathInit     func(path string) (cryptDevice, string, error)
-	device       cryptDevice
-	headerDevice string
+	nameInit                 func(name string) (cryptDevice, cryptDevice, string, string, error)
+	pathInit                 func(path string) (cryptDevice, cryptDevice, string, string, error)
+	device                   cryptDevice
+	deviceWithAttachedHeader cryptDevice
+	headerDevice             string
+	headerFile               string
 }
 
 // New creates a new CryptSetup.
@@ -72,12 +75,14 @@ func (c *CryptSetup) Init(devicePath string) (free func(), err error) {
 	if c.device != nil {
 		return nil, errDeviceAlreadyOpen
 	}
-	device, headerDevice, err := c.pathInit(devicePath)
+	device, deviceWithAttachedHeader, headerDevice, headerFile, err := c.pathInit(devicePath)
 	if err != nil {
 		return nil, fmt.Errorf("init cryptsetup by device path %q: %w", devicePath, err)
 	}
 	c.device = device
+	c.deviceWithAttachedHeader = deviceWithAttachedHeader
 	c.headerDevice = headerDevice
+	c.headerFile = headerFile
 	return c.Free, nil
 }
 
@@ -88,12 +93,14 @@ func (c *CryptSetup) InitByName(name string) (free func(), err error) {
 	if c.device != nil {
 		return nil, errDeviceAlreadyOpen
 	}
-	device, headerDevice, err := c.nameInit(name)
+	device, deviceWithAttachedHeader, headerDevice, headerFile, err := c.nameInit(name)
 	if err != nil {
 		return nil, fmt.Errorf("init cryptsetup by name %q: %w", name, err)
 	}
 	c.device = device
+	c.deviceWithAttachedHeader = deviceWithAttachedHeader
 	c.headerDevice = headerDevice
+	c.headerFile = headerFile
 	return c.Free, nil
 }
 
@@ -105,8 +112,15 @@ func (c *CryptSetup) Free() {
 		c.device.Free()
 		c.device = nil
 	}
+	if c.hasAttachedHeaderDevice() {
+		c.deviceWithAttachedHeader.Free()
+		c.deviceWithAttachedHeader = nil
+	}
 	if c.headerDevice != "" {
 		_ = detachLoopbackDevice(c.headerDevice)
+	}
+	if c.headerFile != "" {
+		c.headerFile = ""
 	}
 }
 
@@ -158,8 +172,24 @@ func (c *CryptSetup) Format(integrity bool) error {
 	if c.device == nil {
 		return errDeviceNotOpen
 	}
+
+	// If we are re-formatting an existing device, we start from scratch without a detached header
+	if c.hasAttachedHeaderDevice() {
+		c.device.Free()
+		c.device = c.deviceWithAttachedHeader
+		c.deviceWithAttachedHeader = nil
+		if c.headerDevice != "" {
+			_ = detachLoopbackDevice(c.headerDevice)
+			c.headerDevice = ""
+		}
+		c.headerFile = ""
+	}
+
 	if err := format(c.device, integrity); err != nil {
 		return fmt.Errorf("formatting crypt device %q: %w", c.device.GetDeviceName(), err)
+	}
+	if err := c.createHeaderBackup(); err != nil {
+		return err
 	}
 	return nil
 }
@@ -195,6 +225,9 @@ func (c *CryptSetup) KeyslotAddByVolumeKey(keyslot int, volumeKey string, passph
 	if err := c.device.KeyslotAddByVolumeKey(keyslot, volumeKey, passphrase); err != nil {
 		return fmt.Errorf("adding keyslot to device %q: %w", c.device.GetDeviceName(), err)
 	}
+	if err := c.createHeaderBackup(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -207,6 +240,9 @@ func (c *CryptSetup) KeyslotChangeByPassphrase(currentKeyslot, newKeyslot int, c
 	}
 	if err := c.device.KeyslotChangeByPassphrase(currentKeyslot, newKeyslot, currentPassphrase, newPassphrase); err != nil {
 		return fmt.Errorf("updating passphrase for device %q: %w", c.device.GetDeviceName(), err)
+	}
+	if err := c.createHeaderBackup(); err != nil {
+		return err
 	}
 	return nil
 }
@@ -230,6 +266,9 @@ func (c *CryptSetup) Resize(name string, newSize uint64) error {
 	}
 	if err := c.device.Resize(name, newSize); err != nil {
 		return fmt.Errorf("resizing crypt device %q: %w", c.device.GetDeviceName(), err)
+	}
+	if err := c.createHeaderBackup(); err != nil {
+		return err
 	}
 	return nil
 }
@@ -265,6 +304,9 @@ func (c *CryptSetup) TokenJSONSet(token int, json string) (int, error) {
 	if err != nil {
 		return -1, fmt.Errorf("setting JSON data for token %d: %w", token, err)
 	}
+	if err := c.createHeaderBackup(); err != nil {
+		return -1, err
+	}
 	return tokenID, nil
 }
 
@@ -281,6 +323,9 @@ func (c *CryptSetup) SetConstellationStateDiskToken(diskIsInitialized bool) erro
 	}
 	if _, err := c.device.TokenJSONSet(ConstellationStateDiskTokenID, string(json)); err != nil {
 		return fmt.Errorf("setting token: %w", err)
+	}
+	if err := c.createHeaderBackup(); err != nil {
+		return err
 	}
 	return nil
 }
@@ -338,6 +383,27 @@ func (c *CryptSetup) Wipe(
 
 	if err := c.device.Wipe(mappedDevicePath+tmpDevice, wipePattern, 0, 0, blockWipeSize, flags, progressCallback); err != nil {
 		return fmt.Errorf("wiping disk of device %q: %w", c.device.GetDeviceName(), err)
+	}
+	if err := c.createHeaderBackup(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *CryptSetup) hasAttachedHeaderDevice() bool {
+	return c.deviceWithAttachedHeader != nil && !reflect.ValueOf(c.deviceWithAttachedHeader).IsNil()
+}
+
+func (c *CryptSetup) createHeaderBackup() error {
+	if c.headerFile != "" {
+		if err := headerBackup(c.device, c.headerFile); err != nil {
+			return fmt.Errorf("creating header backup for device %q: %w", c.device.GetDeviceName(), err)
+		}
+	}
+	if c.hasAttachedHeaderDevice() && c.headerFile != "" {
+		if err := headerRestore(c.deviceWithAttachedHeader, c.headerFile); err != nil {
+			return fmt.Errorf("restoring header for device %q (with attached header): %w", c.device.GetDeviceName(), err)
+		}
 	}
 	return nil
 }

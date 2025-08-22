@@ -2,7 +2,7 @@ module github.com/edgelesssys/constellation/v2
 
 go 1.24.6
 
-replace github.com/martinjungblut/go-cryptsetup => github.com/edgelesssys/go-cryptsetup v0.0.0-20250821104430-e7e52279791d
+replace github.com/martinjungblut/go-cryptsetup => github.com/edgelesssys/go-cryptsetup v0.0.0-20250822075033-840d240dddf8
 
 // TODO(daniel-weisse): revert after merging https://github.com/google/go-sev-guest/pull/173.
 replace github.com/google/go-sev-guest => github.com/daniel-weisse/go-sev-guest v0.0.0-20250728114912-0c2ba277c52b

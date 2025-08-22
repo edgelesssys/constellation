@@ -63,46 +63,100 @@ func format(device cryptDevice, integrity bool) error {
 	}
 }
 
-func initByDevicePath(devicePath string) (cryptDevice, string, error) {
-	tmpDevice, err := cryptsetup.Init(devicePath)
-	if err != nil {
-		return nil, "", fmt.Errorf("init device by path %s: %w", devicePath, err)
+func headerRestore(device cryptDevice, headerFile string) error {
+	switch d := device.(type) {
+	case cgoRestorer:
+		return d.HeaderRestore(cryptsetup.LUKS2{}, headerFile)
+	default:
+		return errInvalidType
 	}
-	// If the device is not LUKS2 formatted, this is treated as a new device,
-	// meaning no header exists yet
-	if tmpDevice.Load(cryptsetup.LUKS2{}) != nil {
-		return tmpDevice, "", nil
-	}
-
-	defer tmpDevice.Free()
-	headerDevice, err := detachHeader(tmpDevice)
-	if err != nil {
-		return nil, "", err
-	}
-
-	cryptDevice, err := cryptsetup.InitDataDevice(devicePath, headerDevice)
-	return cryptDevice, headerDevice, err
 }
 
-func initByName(name string) (cryptDevice, string, error) {
-	tmpDevice, err := cryptsetup.InitByName(name)
+func headerBackup(device cryptDevice, headerFile string) error {
+	switch d := device.(type) {
+	case cgoBackuper:
+		if err := os.Remove(headerFile); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("removing existing header file %q: %w", headerFile, err)
+		}
+		if err := d.HeaderBackup(cryptsetup.LUKS2{}, headerFile); err != nil {
+			return fmt.Errorf("creating header backup: %w", err)
+		}
+		return nil
+	default:
+		return errInvalidType
+	}
+}
+
+func initByDevicePath(devicePath string) (deviceDetachedHeader, deviceAttachedHeader cryptDevice, headerDevice string, headerFile string, err error) {
+	tmpDevice, err := cryptsetup.Init(devicePath)
 	if err != nil {
-		return nil, "", fmt.Errorf("init device by name %s: %w", name, err)
+		return nil, nil, "", "", fmt.Errorf("init device by path %s: %w", devicePath, err)
 	}
 	// If the device is not LUKS2 formatted, this is treated as a new device,
 	// meaning no header exists yet
 	if tmpDevice.Load(cryptsetup.LUKS2{}) != nil {
-		return tmpDevice, "", nil
+		return tmpDevice, nil, "", "", nil
 	}
-
 	defer tmpDevice.Free()
-	headerDevice, err := detachHeader(tmpDevice)
+
+	deviceAttachedHeader, err = cryptsetup.Init(devicePath)
 	if err != nil {
-		return nil, "", err
+		return nil, nil, "", "", fmt.Errorf("init device by path %s: %w", devicePath, err)
 	}
+	defer func() {
+		if err != nil && deviceAttachedHeader != nil {
+			deviceAttachedHeader.Free()
+		}
+	}()
+
+	headerDevice, headerFile, err = detachHeader(tmpDevice)
+	if err != nil {
+		return nil, nil, "", "", err
+	}
+	defer func() {
+		if err != nil {
+			_ = detachLoopbackDevice(headerDevice)
+		}
+	}()
+
+	cryptDevice, err := cryptsetup.InitDataDevice(headerDevice, devicePath)
+	return cryptDevice, deviceAttachedHeader, headerDevice, headerFile, err
+}
+
+func initByName(name string) (deviceDetachedHeader, deviceAttachedHeader cryptDevice, headerDevice string, headerFile string, err error) {
+	tmpDevice, err := cryptsetup.InitByName(name)
+	if err != nil {
+		return nil, nil, "", "", fmt.Errorf("init device by name %s: %w", name, err)
+	}
+	// If the device is not LUKS2 formatted, this is treated as a new device,
+	// meaning no header exists yet
+	if tmpDevice.Load(cryptsetup.LUKS2{}) != nil {
+		return tmpDevice, nil, "", "", nil
+	}
+	defer tmpDevice.Free()
+
+	deviceAttachedHeader, err = cryptsetup.InitByName(name)
+	if err != nil {
+		return nil, nil, "", "", fmt.Errorf("init device by name %s: %w", name, err)
+	}
+	defer func() {
+		if err != nil && deviceAttachedHeader != nil {
+			deviceAttachedHeader.Free()
+		}
+	}()
+
+	headerDevice, headerFile, err = detachHeader(tmpDevice)
+	if err != nil {
+		return nil, nil, "", "", err
+	}
+	defer func() {
+		if err != nil {
+			_ = detachLoopbackDevice(headerDevice)
+		}
+	}()
 
 	cryptDevice, err := cryptsetup.InitByNameAndHeader(name, headerDevice)
-	return cryptDevice, headerDevice, err
+	return cryptDevice, deviceAttachedHeader, headerDevice, headerFile, err
 }
 
 func loadLUKS2(device cryptDevice) error {
@@ -114,15 +168,15 @@ func loadLUKS2(device cryptDevice) error {
 	}
 }
 
-func detachHeader(device *cryptsetup.Device) (headerDevice string, err error) {
-	headerFile := filepath.Join(os.TempDir(), fmt.Sprintf("luks-header-%s", uuid.New().String()))
-	if err := device.HeaderBackup(cryptsetup.LUKS2{}, headerFile); err != nil {
-		return "", fmt.Errorf("creating header backup: %w", err)
+func detachHeader(device *cryptsetup.Device) (headerDevice, headerFile string, err error) {
+	headerFile = filepath.Join(os.TempDir(), fmt.Sprintf("luks-header-%s", uuid.New().String()))
+	if err = headerBackup(device, headerFile); err != nil {
+		return "", "", err
 	}
 
 	headerDevice, err = createLoopbackDevice(headerFile)
 	if err != nil {
-		return "", fmt.Errorf("create loopback device: %w", err)
+		return "", "", fmt.Errorf("create loopback device: %w", err)
 	}
 	defer func() {
 		if err != nil {
@@ -132,29 +186,29 @@ func detachHeader(device *cryptsetup.Device) (headerDevice string, err error) {
 
 	headerCryptDevice, err := cryptsetup.Init(headerDevice)
 	if err != nil {
-		return "", fmt.Errorf("init header device: %w", err)
+		return "", "", fmt.Errorf("init header device: %w", err)
 	}
 	defer headerCryptDevice.Free()
 	if err := headerCryptDevice.Load(cryptsetup.LUKS2{}); err != nil {
-		return "", fmt.Errorf("creating header backup: %w", err)
+		return "", "", fmt.Errorf("creating header backup: %w", err)
 	}
 	metadataJSON, err := headerCryptDevice.DumpJSON()
 	if err != nil {
-		return "", fmt.Errorf("dumping device metadata: %w", err)
+		return "", "", fmt.Errorf("dumping device metadata: %w", err)
 	}
 
 	var metadata cryptsetupMetadata
 	decoder := json.NewDecoder(strings.NewReader(metadataJSON))
 	decoder.DisallowUnknownFields() // Ensure no unknown fields are present in the JSON data
 	if err := decoder.Decode(&metadata); err != nil {
-		return "", fmt.Errorf("decoding LUKS header JSON from %s: %w", headerFile, err)
+		return "", "", fmt.Errorf("decoding LUKS header JSON from %s: %w", headerFile, err)
 	}
 
 	if err := verifyLUKS2Header(metadata); err != nil {
-		return "", fmt.Errorf("verifying LUKS2 header: %w", err)
+		return "", "", fmt.Errorf("verifying LUKS2 header: %w", err)
 	}
 
-	return headerDevice, nil
+	return headerDevice, headerFile, nil
 }
 
 func verifyLUKS2Header(metadata cryptsetupMetadata) error {
@@ -189,7 +243,7 @@ func verifyLUKS2Header(metadata cryptsetupMetadata) error {
 		if slot.KDF.Type != "argon2id" {
 			return fmt.Errorf("unsupported KDF type %q for slot %q", slot.KDF.Type, slotName)
 		}
-		if slot.KDF.Memory != 65536 {
+		if slot.KDF.Memory == 0 {
 			return fmt.Errorf("unsupported KDF memory %d for slot %q", slot.KDF.Memory, slotName)
 		}
 		if slot.KDF.Salt == "" {
@@ -212,14 +266,23 @@ func verifyLUKS2Header(metadata cryptsetupMetadata) error {
 		if segment.Encryption != "aes-xts-plain64" {
 			return fmt.Errorf("unsupported segment encryption %q for segment %q", segment.Encryption, segmentName)
 		}
-		if segment.Integrity.Type != "hmac(sha256)" {
+		switch segment.Integrity.Type {
+		case "hmac(sha256)":
+			if segment.Integrity.JournalEncryption != "none" {
+				return fmt.Errorf("unsupported segment integrity journal encryption %q for segment %q", segment.Integrity.JournalEncryption, segmentName)
+			}
+			if segment.Integrity.JournalIntegrity != "none" {
+				return fmt.Errorf("unsupported segment integrity journal integrity %q for segment %q", segment.Integrity.JournalIntegrity, segmentName)
+			}
+		case "":
+			if segment.Integrity.JournalEncryption != "" {
+				return fmt.Errorf("unsupported segment integrity journal encryption %q for segment %q", segment.Integrity.JournalEncryption, segmentName)
+			}
+			if segment.Integrity.JournalIntegrity != "" {
+				return fmt.Errorf("unsupported segment integrity journal integrity %q for segment %q", segment.Integrity.JournalIntegrity, segmentName)
+			}
+		default:
 			return fmt.Errorf("unsupported segment integrity type %q for segment %q", segment.Integrity.Type, segmentName)
-		}
-		if segment.Integrity.JournalEncryption != "none" {
-			return fmt.Errorf("unsupported segment integrity journal encryption %q for segment %q", segment.Integrity.JournalEncryption, segmentName)
-		}
-		if segment.Integrity.JournalIntegrity != "none" {
-			return fmt.Errorf("unsupported segment integrity journal integrity %q for segment %q", segment.Integrity.JournalIntegrity, segmentName)
 		}
 	}
 	if len(metadata.Digests) == 0 {
@@ -350,4 +413,11 @@ type cgoFormatter interface {
 
 type cgoLoader interface {
 	Load(deviceType cryptsetup.DeviceType) error
+}
+
+type cgoRestorer interface {
+	HeaderRestore(deviceType cryptsetup.DeviceType, headerFile string) error
+}
+type cgoBackuper interface {
+	HeaderBackup(deviceType cryptsetup.DeviceType, headerFile string) error
 }

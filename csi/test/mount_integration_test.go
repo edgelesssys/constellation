@@ -182,7 +182,7 @@ func TestOpenAndCloseIntegrity(t *testing.T) {
 
 	// check if we can reopen the device
 	_, err = mapper.OpenCryptDevice(t.Context(), devicePath, deviceName, true)
-	assert.NoError(err)
+	assert.NoError(err, "Failed to re-open crypt device")
 	assert.NoError(mapper.CloseCryptDevice(deviceName))
 }
 
