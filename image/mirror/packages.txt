@@ -5,6 +5,7 @@ cryptsetup
 curl
 dbus
 device-mapper
+dracut
 e2fsprogs
 ec2-utils
 efitools
