@@ -51,12 +51,20 @@ var (
 
 // CryptSetup manages encrypted devices.
 type CryptSetup struct {
-	nameInit                 func(name string) (cryptDevice, cryptDevice, string, string, error)
-	pathInit                 func(path string) (cryptDevice, cryptDevice, string, string, error)
-	device                   cryptDevice
+	nameInit func(name string) (cryptDevice, cryptDevice, string, string, error)
+	pathInit func(path string) (cryptDevice, cryptDevice, string, string, error)
+	// device is the cryptsetup device we are working on.
+	// This may either be a device with attached header, in case we are setting up a new device,
+	// or a device with detached header, in case an existing device is used.
+	device cryptDevice
+	// deviceWithAttachedHeader is a cryptsetup device loaded without a separate, detached header.
+	// This device is purely used to write back changes that affect the header to the original disk.
 	deviceWithAttachedHeader cryptDevice
-	headerDevice             string
-	headerFile               string
+	// headerDevice is the name of the loopback device containing the detached cryptsetup header.
+	headerDevice string
+	// headerFile is the path to the file containing the detached cryptsetup header.
+	// The file is mounted as a loopback device on "headerDevice".
+	headerFile string
 }
 
 // New creates a new CryptSetup.
@@ -390,10 +398,12 @@ func (c *CryptSetup) Wipe(
 	return nil
 }
 
+// hasAttachedHeaderDevice checks if the value of the [CryptSetup.deviceWithAttachedHeader] interface is not nil.
 func (c *CryptSetup) hasAttachedHeaderDevice() bool {
 	return c.deviceWithAttachedHeader != nil && !reflect.ValueOf(c.deviceWithAttachedHeader).IsNil()
 }
 
+// createHeaderBackup creates a backup of the detached header, and saves it back to the original device.
 func (c *CryptSetup) createHeaderBackup() error {
 	if c.headerFile != "" {
 		if err := headerBackup(c.device, c.headerFile); err != nil {

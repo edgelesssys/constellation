@@ -63,6 +63,8 @@ func format(device cryptDevice, integrity bool) error {
 	}
 }
 
+// headerRestore restores the header of the given device from the header in the given file.
+// Reloading the device is required for the changes to be reflected in the active [cryptDevice] struct.
 func headerRestore(device cryptDevice, headerFile string) error {
 	switch d := device.(type) {
 	case cgoRestorer:
@@ -72,6 +74,7 @@ func headerRestore(device cryptDevice, headerFile string) error {
 	}
 }
 
+// headerBackup creates a backup of the cryptDevice's header to the given file.
 func headerBackup(device cryptDevice, headerFile string) error {
 	switch d := device.(type) {
 	case cgoBackuper:
@@ -168,6 +171,7 @@ func loadLUKS2(device cryptDevice) error {
 	}
 }
 
+// detachHeader loads reads the header from the given cryptsetup device and returns a loopback device with just the header.
 func detachHeader(device *cryptsetup.Device) (headerDevice, headerFile string, err error) {
 	headerFile = filepath.Join(os.TempDir(), fmt.Sprintf("luks-header-%s", uuid.New().String()))
 	if err = headerBackup(device, headerFile); err != nil {
@@ -211,6 +215,7 @@ func detachHeader(device *cryptsetup.Device) (headerDevice, headerFile string, e
 	return headerDevice, headerFile, nil
 }
 
+// verifyLUKS2Header verifies a LUKS2 header contains the expected configuration for Constellation.
 func verifyLUKS2Header(metadata cryptsetupMetadata) error {
 	if len(metadata.KeySlots) == 0 {
 		return errors.New("no key slots found in LUKS2 header")
@@ -340,6 +345,7 @@ func createLoopbackDevice(filePath string) (string, error) {
 	return loopDev, nil
 }
 
+// detachLoopbackDevice removes the specified loopback device.
 func detachLoopbackDevice(loopDev string) error {
 	loop, err := os.OpenFile(loopDev, os.O_RDWR, 0)
 	if err != nil {
