@@ -10,7 +10,10 @@ e2fsprogs
 ec2-utils
 efitools
 ethtool
+file
+fuse-libs
 google-compute-engine-guest-configs-udev
+grub2
 gzip
 iproute
 iproute-tc
@@ -24,6 +27,7 @@ openssh-server
 passt-selinux
 passwd
 podman
+rpm
 sbsigntools
 selinux-policy
 selinux-policy-targeted
