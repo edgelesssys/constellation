@@ -97,7 +97,7 @@ func initByDevicePath(devicePath string) (deviceDetachedHeader, deviceAttachedHe
 	}
 	// If the device is not LUKS2 formatted, this is treated as a new device,
 	// meaning no header exists yet
-	if tmpDevice.Load(cryptsetup.LUKS2{}) != nil {
+	if err := tmpDevice.Load(cryptsetup.LUKS2{}); err != nil {
 		return nil, tmpDevice, "", "", nil
 	}
 	defer tmpDevice.Free()
@@ -133,7 +133,7 @@ func initByName(name string) (deviceDetachedHeader, deviceAttachedHeader cryptDe
 	}
 	// If the device is not LUKS2 formatted, this is treated as a new device,
 	// meaning no header exists yet
-	if tmpDevice.Load(cryptsetup.LUKS2{}) != nil {
+	if err := tmpDevice.Load(cryptsetup.LUKS2{}); err != nil {
 		return nil, tmpDevice, "", "", nil
 	}
 	defer tmpDevice.Free()

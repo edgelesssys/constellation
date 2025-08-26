@@ -27,11 +27,11 @@ import (
 )
 
 const (
-	devicePath string = "testDevice"
-	deviceName string = "testDeviceName"
+	defaultBackingImage = "testDevice"
+	deviceName          = "testDeviceName"
 )
 
-var toolsEnvs = []string{"CP", "DD", "RM", "FSCK_EXT4", "MKFS_EXT4", "BLKID", "FSCK", "MOUNT", "UMOUNT"}
+var toolsEnvs = []string{"CP", "DD", "RM", "FSCK_EXT4", "MKFS_EXT4", "BLKID", "FSCK", "MOUNT", "UMOUNT", "LOSETUP"}
 
 // addToolsToPATH is used to update the PATH to contain necessary tool binaries for
 // coreutils, util-linux and ext4.
@@ -57,20 +57,35 @@ func addToolsToPATH() error {
 	return nil
 }
 
-func setup(devicePath string) {
-	if err := exec.Command("dd", "if=/dev/zero", fmt.Sprintf("of=%s", devicePath), "bs=64M", "count=1").Run(); err != nil {
+func setup(backingDisk string) string {
+	if err := exec.Command("dd", "if=/dev/zero", fmt.Sprintf("of=%s", backingDisk), "bs=64M", "count=1").Run(); err != nil {
+		panic(err)
+	}
+	out, err := exec.Command("losetup", "-f", "--show", backingDisk).CombinedOutput()
+	if err != nil {
+		panic(err)
+	}
+	return strings.TrimSpace(string(out))
+}
+
+func teardown(backingImage, devicePath string) {
+	if err := exec.Command("losetup", "-d", devicePath).Run(); err != nil {
+		panic(err)
+	}
+	if err := exec.Command("rm", "-f", backingImage).Run(); err != nil {
 		panic(err)
 	}
 }
 
-func teardown(devicePath string) {
-	if err := exec.Command("rm", "-f", devicePath).Run(); err != nil {
-		panic(err)
+func cp(source, target string) (string, error) {
+	if err := exec.Command("cp", source, target).Run(); err != nil {
+		return "", err
 	}
-}
-
-func cp(source, target string) error {
-	return exec.Command("cp", source, target).Run()
+	out, err := exec.Command("losetup", "-f", "--show", target).CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(out)), nil
 }
 
 func resize(devicePath string) {
@@ -100,8 +115,8 @@ func TestMain(m *testing.M) {
 func TestOpenAndClose(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
-	setup(devicePath)
-	defer teardown(devicePath)
+	devicePath := setup(defaultBackingImage)
+	defer teardown(defaultBackingImage, devicePath)
 
 	mapper := cryptmapper.New(&fakeKMS{})
 
@@ -124,7 +139,7 @@ func TestOpenAndClose(t *testing.T) {
 	assert.Equal(newPath, newPath2)
 
 	// Resize the device
-	resize(devicePath)
+	resize(defaultBackingImage)
 
 	resizedPath, err := mapper.ResizeCryptDevice(t.Context(), deviceName)
 	require.NoError(err)
@@ -145,8 +160,8 @@ func TestOpenAndClose(t *testing.T) {
 func TestOpenAndCloseIntegrity(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
-	setup(devicePath)
-	defer teardown(devicePath)
+	devicePath := setup(defaultBackingImage)
+	defer teardown(defaultBackingImage, devicePath)
 
 	mapper := cryptmapper.New(&fakeKMS{})
 
@@ -167,7 +182,7 @@ func TestOpenAndCloseIntegrity(t *testing.T) {
 	assert.Equal(newPath, newPath2)
 
 	// integrity devices do not support resizing
-	resize(devicePath)
+	resize(defaultBackingImage)
 	_, err = mapper.ResizeCryptDevice(t.Context(), deviceName)
 	assert.Error(err)
 
@@ -189,18 +204,19 @@ func TestOpenAndCloseIntegrity(t *testing.T) {
 func TestDeviceCloning(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
-	setup(devicePath)
-	defer teardown(devicePath)
+	devicePath := setup(defaultBackingImage)
+	defer teardown(defaultBackingImage, devicePath)
 
 	mapper := cryptmapper.New(&dynamicKMS{})
 
 	_, err := mapper.OpenCryptDevice(t.Context(), devicePath, deviceName, false)
 	assert.NoError(err)
 
-	require.NoError(cp(devicePath, devicePath+"-copy"))
-	defer teardown(devicePath + "-copy")
+	cpDevice, err := cp(defaultBackingImage, defaultBackingImage+"-copy")
+	require.NoError(err)
+	defer teardown(defaultBackingImage+"-copy", cpDevice)
 
-	_, err = mapper.OpenCryptDevice(t.Context(), devicePath+"-copy", deviceName+"-copy", false)
+	_, err = mapper.OpenCryptDevice(t.Context(), cpDevice, deviceName+"-copy", false)
 	assert.NoError(err)
 
 	assert.NoError(mapper.CloseCryptDevice(deviceName))
@@ -209,12 +225,12 @@ func TestDeviceCloning(t *testing.T) {
 
 func TestConcurrency(t *testing.T) {
 	assert := assert.New(t)
-	setup(devicePath)
-	defer teardown(devicePath)
+	devicePath := setup(defaultBackingImage)
+	defer teardown(defaultBackingImage, devicePath)
 
-	device2 := devicePath + "-2"
-	setup(device2)
-	defer teardown(device2)
+	backingImage2 := defaultBackingImage + "-2"
+	device2 := setup(backingImage2)
+	defer teardown(backingImage2, device2)
 
 	mapper := cryptmapper.New(&fakeKMS{})
 

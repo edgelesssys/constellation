@@ -121,11 +121,12 @@ func (c *CryptSetup) Free() {
 func (c *CryptSetup) ActivateByPassphrase(deviceName string, keyslot int, passphrase string, flags int) error {
 	packageLock.Lock()
 	defer packageLock.Unlock()
-	device, err := c.getActiveDevice()
-	if err != nil {
-		return err
+	if !c.hasDetachedHeaderDevice() {
+		if err := c.reload(); err != nil {
+			return fmt.Errorf("re-loading crypt device for activation: %w", err)
+		}
 	}
-	if err := device.ActivateByPassphrase(deviceName, keyslot, passphrase, flags); err != nil {
+	if err := c.deviceWithDetachedHeader.ActivateByPassphrase(deviceName, keyslot, passphrase, flags); err != nil {
 		return fmt.Errorf("activating crypt device %q using passphrase: %w", deviceName, err)
 	}
 	return nil
@@ -136,11 +137,12 @@ func (c *CryptSetup) ActivateByPassphrase(deviceName string, keyslot int, passph
 func (c *CryptSetup) ActivateByVolumeKey(deviceName, volumeKey string, volumeKeySize, flags int) error {
 	packageLock.Lock()
 	defer packageLock.Unlock()
-	device, err := c.getActiveDevice()
-	if err != nil {
-		return err
+	if !c.hasDetachedHeaderDevice() {
+		if err := c.reload(); err != nil {
+			return fmt.Errorf("re-loading crypt device for activation: %w", err)
+		}
 	}
-	if err := device.ActivateByVolumeKey(deviceName, volumeKey, volumeKeySize, flags); err != nil {
+	if err := c.deviceWithDetachedHeader.ActivateByVolumeKey(deviceName, volumeKey, volumeKeySize, flags); err != nil {
 		return fmt.Errorf("activating crypt device %q using volume key: %w", deviceName, err)
 	}
 	return nil
@@ -439,6 +441,30 @@ func (c *CryptSetup) free() {
 	if c.headerFile != "" {
 		c.headerFile = ""
 	}
+}
+
+func (c *CryptSetup) reload() error {
+	if !c.hasAttachedHeaderDevice() {
+		return errDeviceNotOpen
+	}
+
+	backingDevice := c.deviceWithAttachedHeader.GetDeviceName()
+	c.free()
+	var err error
+	c.deviceWithDetachedHeader, c.deviceWithAttachedHeader, c.headerDevice, c.headerFile, err = c.pathInit(backingDevice)
+	if err != nil {
+		return fmt.Errorf("re-loading crypt device: %w", err)
+	}
+
+	if !c.hasDetachedHeaderDevice() {
+		return errors.New("failed to reload device without detached header")
+	}
+
+	if err := loadLUKS2(c.deviceWithDetachedHeader); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // getActiveDevice returns a handle to the active cryptsetup device with detached header if set,
