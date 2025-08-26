@@ -78,7 +78,7 @@ func New() *CryptSetup {
 func (c *CryptSetup) Init(devicePath string) (free func(), err error) {
 	packageLock.Lock()
 	defer packageLock.Unlock()
-	if c.deviceWithDetachedHeader != nil {
+	if c.hasDetachedHeaderDevice() || c.hasAttachedHeaderDevice() {
 		return nil, errDeviceAlreadyOpen
 	}
 	deviceDetachedHeader, deviceAttachedHeader, headerDevice, headerFile, err := c.pathInit(devicePath)
@@ -96,7 +96,7 @@ func (c *CryptSetup) Init(devicePath string) (free func(), err error) {
 func (c *CryptSetup) InitByName(name string) (free func(), err error) {
 	packageLock.Lock()
 	defer packageLock.Unlock()
-	if c.deviceWithDetachedHeader != nil {
+	if c.hasDetachedHeaderDevice() || c.hasAttachedHeaderDevice() {
 		return nil, errDeviceAlreadyOpen
 	}
 	deviceDetachedHeader, deviceAttachedHeader, headerDevice, headerFile, err := c.nameInit(name)
@@ -114,20 +114,7 @@ func (c *CryptSetup) InitByName(name string) (free func(), err error) {
 func (c *CryptSetup) Free() {
 	packageLock.Lock()
 	defer packageLock.Unlock()
-	if c.hasDetachedHeaderDevice() {
-		c.deviceWithDetachedHeader.Free()
-		c.deviceWithDetachedHeader = nil
-	}
-	if c.hasAttachedHeaderDevice() {
-		c.deviceWithAttachedHeader.Free()
-		c.deviceWithAttachedHeader = nil
-	}
-	if c.headerDevice != "" {
-		_ = detachLoopbackDevice(c.headerDevice)
-	}
-	if c.headerFile != "" {
-		c.headerFile = ""
-	}
+	c.free()
 }
 
 // ActivateByPassphrase actives a crypt device using a passphrase.
@@ -182,8 +169,10 @@ func (c *CryptSetup) Format(integrity bool) error {
 
 	// If we are re-formatting an existing device, we start from scratch without a detached header
 	if c.hasAttachedHeaderDevice() {
-		c.deviceWithDetachedHeader.Free()
-		c.deviceWithDetachedHeader = nil
+		if c.deviceWithDetachedHeader != nil {
+			c.deviceWithDetachedHeader.Free()
+			c.deviceWithDetachedHeader = nil
+		}
 		if c.headerDevice != "" {
 			_ = detachLoopbackDevice(c.headerDevice)
 			c.headerDevice = ""
@@ -433,6 +422,23 @@ func (c *CryptSetup) Wipe(
 		return err
 	}
 	return nil
+}
+
+func (c *CryptSetup) free() {
+	if c.hasDetachedHeaderDevice() {
+		c.deviceWithDetachedHeader.Free()
+		c.deviceWithDetachedHeader = nil
+	}
+	if c.hasAttachedHeaderDevice() {
+		c.deviceWithAttachedHeader.Free()
+		c.deviceWithAttachedHeader = nil
+	}
+	if c.headerDevice != "" {
+		_ = detachLoopbackDevice(c.headerDevice)
+	}
+	if c.headerFile != "" {
+		c.headerFile = ""
+	}
 }
 
 // getActiveDevice returns a handle to the active cryptsetup device with detached header if set,
