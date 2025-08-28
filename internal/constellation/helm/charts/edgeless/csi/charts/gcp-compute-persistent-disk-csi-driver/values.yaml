@@ -22,7 +22,7 @@ image:
   gcepdDriver:
     repo: ghcr.io/edgelesssys/constellation/gcp-csi-driver
     # CSI driver version is independent of Constellation releases
-    tag: v1.4.0@sha256:53d608aa03dd07059bc04e1f8c64e2feb6fceff50fb0cbe276d31a8652a19bac
+    tag: v1.5.0@sha256:29309197ae012f5db9ac998796619752dffa06d6b3fb9137b6c5980bcc0e355d
     pullPolicy: IfNotPresent
 
 csiController:
