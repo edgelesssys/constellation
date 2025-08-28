@@ -9,9 +9,11 @@ go_test(
     data = [
         "@coreutils//:bin/dd",
         "@coreutils//:bin/rm",
+        "@util-linux//:bin/losetup",
     ],
     env = {
         "DD": "$(rlocationpath @coreutils//:bin/dd)",
+        "LOSETUP": "$(rlocationpath @util-linux//:bin/losetup)",
         "RM": "$(rlocationpath @coreutils//:bin/rm)",
     },
     # keep

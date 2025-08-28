@@ -26,14 +26,26 @@ func format(_ cryptDevice, _ bool) error {
 	return errCGONotSupported
 }
 
-func initByDevicePath(_ string) (cryptDevice, error) {
-	return nil, errCGONotSupported
+func headerRestore(_ cryptDevice, _ string) error {
+	return errCGONotSupported
 }
 
-func initByName(_ string) (cryptDevice, error) {
-	return nil, errCGONotSupported
+func headerBackup(_ cryptDevice, _ string) error {
+	return errCGONotSupported
+}
+
+func initByDevicePath(_ string) (cryptDevice, cryptDevice, string, string, error) {
+	return nil, nil, "", "", errCGONotSupported
+}
+
+func initByName(_ string) (cryptDevice, cryptDevice, string, string, error) {
+	return nil, nil, "", "", errCGONotSupported
 }
 
 func loadLUKS2(_ cryptDevice) error {
+	return errCGONotSupported
+}
+
+func detachLoopbackDevice(_ string) error {
 	return errCGONotSupported
 }

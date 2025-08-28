@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -50,9 +51,18 @@ var (
 
 // CryptSetup manages encrypted devices.
 type CryptSetup struct {
-	nameInit func(name string) (cryptDevice, error)
-	pathInit func(path string) (cryptDevice, error)
-	device   cryptDevice
+	nameInit func(name string) (deviceDetachedHeader, deviceAttachedHeader cryptDevice, headerDevice string, headerFile string, err error)
+	pathInit func(path string) (deviceDetachedHeader, deviceAttachedHeader cryptDevice, headerDevice string, headerFile string, err error)
+	// deviceWithDetachedHeader is the cryptsetup device with detached header we are working on.
+	deviceWithDetachedHeader cryptDevice
+	// deviceWithAttachedHeader is a cryptsetup device loaded without a separate, detached header.
+	// If this is not a fresh disk, this device is purely used to write back changes that affect the header to the original disk.
+	deviceWithAttachedHeader cryptDevice
+	// headerDevice is the name of the loopback device containing the detached cryptsetup header.
+	headerDevice string
+	// headerFile is the path to the file containing the detached cryptsetup header.
+	// The file is mounted as a loopback device on "headerDevice".
+	headerFile string
 }
 
 // New creates a new CryptSetup.
@@ -68,14 +78,17 @@ func New() *CryptSetup {
 func (c *CryptSetup) Init(devicePath string) (free func(), err error) {
 	packageLock.Lock()
 	defer packageLock.Unlock()
-	if c.device != nil {
+	if c.hasDetachedHeaderDevice() || c.hasAttachedHeaderDevice() {
 		return nil, errDeviceAlreadyOpen
 	}
-	device, err := c.pathInit(devicePath)
+	deviceDetachedHeader, deviceAttachedHeader, headerDevice, headerFile, err := c.pathInit(devicePath)
 	if err != nil {
 		return nil, fmt.Errorf("init cryptsetup by device path %q: %w", devicePath, err)
 	}
-	c.device = device
+	c.deviceWithDetachedHeader = deviceDetachedHeader
+	c.deviceWithAttachedHeader = deviceAttachedHeader
+	c.headerDevice = headerDevice
+	c.headerFile = headerFile
 	return c.Free, nil
 }
 
@@ -83,14 +96,17 @@ func (c *CryptSetup) Init(devicePath string) (free func(), err error) {
 func (c *CryptSetup) InitByName(name string) (free func(), err error) {
 	packageLock.Lock()
 	defer packageLock.Unlock()
-	if c.device != nil {
+	if c.hasDetachedHeaderDevice() || c.hasAttachedHeaderDevice() {
 		return nil, errDeviceAlreadyOpen
 	}
-	device, err := c.nameInit(name)
+	deviceDetachedHeader, deviceAttachedHeader, headerDevice, headerFile, err := c.nameInit(name)
 	if err != nil {
 		return nil, fmt.Errorf("init cryptsetup by name %q: %w", name, err)
 	}
-	c.device = device
+	c.deviceWithDetachedHeader = deviceDetachedHeader
+	c.deviceWithAttachedHeader = deviceAttachedHeader
+	c.headerDevice = headerDevice
+	c.headerFile = headerFile
 	return c.Free, nil
 }
 
@@ -98,20 +114,19 @@ func (c *CryptSetup) InitByName(name string) (free func(), err error) {
 func (c *CryptSetup) Free() {
 	packageLock.Lock()
 	defer packageLock.Unlock()
-	if c.device != nil {
-		c.device.Free()
-		c.device = nil
-	}
+	c.free()
 }
 
 // ActivateByPassphrase actives a crypt device using a passphrase.
 func (c *CryptSetup) ActivateByPassphrase(deviceName string, keyslot int, passphrase string, flags int) error {
 	packageLock.Lock()
 	defer packageLock.Unlock()
-	if c.device == nil {
-		return errDeviceNotOpen
+	if !c.hasDetachedHeaderDevice() {
+		if err := c.reload(); err != nil {
+			return fmt.Errorf("re-loading crypt device for activation: %w", err)
+		}
 	}
-	if err := c.device.ActivateByPassphrase(deviceName, keyslot, passphrase, flags); err != nil {
+	if err := c.deviceWithDetachedHeader.ActivateByPassphrase(deviceName, keyslot, passphrase, flags); err != nil {
 		return fmt.Errorf("activating crypt device %q using passphrase: %w", deviceName, err)
 	}
 	return nil
@@ -122,10 +137,12 @@ func (c *CryptSetup) ActivateByPassphrase(deviceName string, keyslot int, passph
 func (c *CryptSetup) ActivateByVolumeKey(deviceName, volumeKey string, volumeKeySize, flags int) error {
 	packageLock.Lock()
 	defer packageLock.Unlock()
-	if c.device == nil {
-		return errDeviceNotOpen
+	if !c.hasDetachedHeaderDevice() {
+		if err := c.reload(); err != nil {
+			return fmt.Errorf("re-loading crypt device for activation: %w", err)
+		}
 	}
-	if err := c.device.ActivateByVolumeKey(deviceName, volumeKey, volumeKeySize, flags); err != nil {
+	if err := c.deviceWithDetachedHeader.ActivateByVolumeKey(deviceName, volumeKey, volumeKeySize, flags); err != nil {
 		return fmt.Errorf("activating crypt device %q using volume key: %w", deviceName, err)
 	}
 	return nil
@@ -135,10 +152,10 @@ func (c *CryptSetup) ActivateByVolumeKey(deviceName, volumeKey string, volumeKey
 func (c *CryptSetup) Deactivate(deviceName string) error {
 	packageLock.Lock()
 	defer packageLock.Unlock()
-	if c.device == nil {
+	if !c.hasDetachedHeaderDevice() {
 		return errDeviceNotOpen
 	}
-	if err := c.device.Deactivate(deviceName); err != nil {
+	if err := c.deviceWithDetachedHeader.Deactivate(deviceName); err != nil {
 		return fmt.Errorf("deactivating crypt device %q: %w", deviceName, err)
 	}
 	return nil
@@ -149,18 +166,42 @@ func (c *CryptSetup) Deactivate(deviceName string) error {
 func (c *CryptSetup) Format(integrity bool) error {
 	packageLock.Lock()
 	defer packageLock.Unlock()
-	if c.device == nil {
+	var device cryptDevice
+
+	// If we are re-formatting an existing device, we start from scratch without a detached header
+	if c.hasAttachedHeaderDevice() {
+		if c.deviceWithDetachedHeader != nil {
+			c.deviceWithDetachedHeader.Free()
+			c.deviceWithDetachedHeader = nil
+		}
+		if c.headerDevice != "" {
+			_ = detachLoopbackDevice(c.headerDevice)
+			c.headerDevice = ""
+		}
+		c.headerFile = ""
+		device = c.deviceWithAttachedHeader
+	} else {
 		return errDeviceNotOpen
 	}
-	if err := format(c.device, integrity); err != nil {
-		return fmt.Errorf("formatting crypt device %q: %w", c.device.GetDeviceName(), err)
+
+	if err := format(device, integrity); err != nil {
+		return fmt.Errorf("formatting crypt device %q: %w", device.GetDeviceName(), err)
+	}
+	if err := c.createHeaderBackup(); err != nil {
+		return err
 	}
 	return nil
 }
 
 // GetDeviceName gets the path to the underlying device.
 func (c *CryptSetup) GetDeviceName() string {
-	return c.device.GetDeviceName()
+	packageLock.Lock()
+	defer packageLock.Unlock()
+	device, err := c.getActiveDevice()
+	if err != nil {
+		return ""
+	}
+	return device.GetDeviceName()
 }
 
 // GetUUID gets the device's LUKS2 UUID.
@@ -168,12 +209,13 @@ func (c *CryptSetup) GetDeviceName() string {
 func (c *CryptSetup) GetUUID() (string, error) {
 	packageLock.Lock()
 	defer packageLock.Unlock()
-	if c.device == nil {
-		return "", errDeviceNotOpen
+	device, err := c.getActiveDevice()
+	if err != nil {
+		return "", err
 	}
-	uuid := c.device.GetUUID()
+	uuid := device.GetUUID()
 	if uuid == "" {
-		return "", fmt.Errorf("unable to get UUID for device %q", c.device.GetDeviceName())
+		return "", fmt.Errorf("unable to get UUID for device %q", device.GetDeviceName())
 	}
 	return strings.ToLower(uuid), nil
 }
@@ -183,11 +225,15 @@ func (c *CryptSetup) GetUUID() (string, error) {
 func (c *CryptSetup) KeyslotAddByVolumeKey(keyslot int, volumeKey string, passphrase string) error {
 	packageLock.Lock()
 	defer packageLock.Unlock()
-	if c.device == nil {
-		return errDeviceNotOpen
+	device, err := c.getActiveDevice()
+	if err != nil {
+		return err
 	}
-	if err := c.device.KeyslotAddByVolumeKey(keyslot, volumeKey, passphrase); err != nil {
-		return fmt.Errorf("adding keyslot to device %q: %w", c.device.GetDeviceName(), err)
+	if err := device.KeyslotAddByVolumeKey(keyslot, volumeKey, passphrase); err != nil {
+		return fmt.Errorf("adding keyslot to device %q: %w", device.GetDeviceName(), err)
+	}
+	if err := c.createHeaderBackup(); err != nil {
+		return err
 	}
 	return nil
 }
@@ -196,21 +242,30 @@ func (c *CryptSetup) KeyslotAddByVolumeKey(keyslot int, volumeKey string, passph
 func (c *CryptSetup) KeyslotChangeByPassphrase(currentKeyslot, newKeyslot int, currentPassphrase, newPassphrase string) error {
 	packageLock.Lock()
 	defer packageLock.Unlock()
-	if c.device == nil {
-		return errDeviceNotOpen
+	device, err := c.getActiveDevice()
+	if err != nil {
+		return err
 	}
-	if err := c.device.KeyslotChangeByPassphrase(currentKeyslot, newKeyslot, currentPassphrase, newPassphrase); err != nil {
-		return fmt.Errorf("updating passphrase for device %q: %w", c.device.GetDeviceName(), err)
+	if err := device.KeyslotChangeByPassphrase(currentKeyslot, newKeyslot, currentPassphrase, newPassphrase); err != nil {
+		return fmt.Errorf("updating passphrase for device %q: %w", device.GetDeviceName(), err)
+	}
+	if err := c.createHeaderBackup(); err != nil {
+		return err
 	}
 	return nil
 }
 
 // LoadLUKS2 loads the device as LUKS2 crypt device.
 func (c *CryptSetup) LoadLUKS2() error {
-	if err := loadLUKS2(c.device); err != nil {
-		return fmt.Errorf("loading LUKS2 crypt device %q: %w", c.device.GetDeviceName(), err)
+	packageLock.Lock()
+	defer packageLock.Unlock()
+	if c.hasDetachedHeaderDevice() {
+		if err := loadLUKS2(c.deviceWithDetachedHeader); err != nil {
+			return fmt.Errorf("loading LUKS2 crypt device %q: %w", c.deviceWithDetachedHeader.GetDeviceName(), err)
+		}
+		return nil
 	}
-	return nil
+	return errors.New("cannot load LUKS2 on device with attached header")
 }
 
 // Resize resizes a device to the given size.
@@ -219,11 +274,15 @@ func (c *CryptSetup) LoadLUKS2() error {
 func (c *CryptSetup) Resize(name string, newSize uint64) error {
 	packageLock.Lock()
 	defer packageLock.Unlock()
-	if c.device == nil {
-		return errDeviceNotOpen
+	device, err := c.getActiveDevice()
+	if err != nil {
+		return err
 	}
-	if err := c.device.Resize(name, newSize); err != nil {
-		return fmt.Errorf("resizing crypt device %q: %w", c.device.GetDeviceName(), err)
+	if err := device.Resize(name, newSize); err != nil {
+		return fmt.Errorf("resizing crypt device %q: %w", device.GetDeviceName(), err)
+	}
+	if err := c.createHeaderBackup(); err != nil {
+		return err
 	}
 	return nil
 }
@@ -232,10 +291,11 @@ func (c *CryptSetup) Resize(name string, newSize uint64) error {
 func (c *CryptSetup) TokenJSONGet(token int) (string, error) {
 	packageLock.Lock()
 	defer packageLock.Unlock()
-	if c.device == nil {
-		return "", errDeviceNotOpen
+	device, err := c.getActiveDevice()
+	if err != nil {
+		return "", err
 	}
-	json, err := c.device.TokenJSONGet(token)
+	json, err := device.TokenJSONGet(token)
 	if err != nil {
 		return "", fmt.Errorf("getting JSON data for token %d: %w", token, err)
 	}
@@ -252,18 +312,25 @@ func (c *CryptSetup) TokenJSONGet(token int) (string, error) {
 func (c *CryptSetup) TokenJSONSet(token int, json string) (int, error) {
 	packageLock.Lock()
 	defer packageLock.Unlock()
-	if c.device == nil {
-		return -1, errDeviceNotOpen
+	device, err := c.getActiveDevice()
+	if err != nil {
+		return -1, err
 	}
-	tokenID, err := c.device.TokenJSONSet(token, json)
+
+	tokenID, err := device.TokenJSONSet(token, json)
 	if err != nil {
 		return -1, fmt.Errorf("setting JSON data for token %d: %w", token, err)
+	}
+	if err := c.createHeaderBackup(); err != nil {
+		return -1, err
 	}
 	return tokenID, nil
 }
 
 // SetConstellationStateDiskToken sets the Constellation state disk token.
 func (c *CryptSetup) SetConstellationStateDiskToken(diskIsInitialized bool) error {
+	packageLock.Lock()
+	defer packageLock.Unlock()
 	token := constellationLUKS2Token{
 		Type:              "constellation-state-disk",
 		Keyslots:          []string{},
@@ -273,15 +340,31 @@ func (c *CryptSetup) SetConstellationStateDiskToken(diskIsInitialized bool) erro
 	if err != nil {
 		return fmt.Errorf("marshaling token: %w", err)
 	}
-	if _, err := c.device.TokenJSONSet(ConstellationStateDiskTokenID, string(json)); err != nil {
+
+	device, err := c.getActiveDevice()
+	if err != nil {
+		return err
+	}
+
+	if _, err := device.TokenJSONSet(ConstellationStateDiskTokenID, string(json)); err != nil {
 		return fmt.Errorf("setting token: %w", err)
+	}
+	if err := c.createHeaderBackup(); err != nil {
+		return err
 	}
 	return nil
 }
 
 // ConstellationStateDiskTokenIsInitialized returns true if the Constellation state disk token is set to initialized.
 func (c *CryptSetup) ConstellationStateDiskTokenIsInitialized() bool {
-	stateDiskToken, err := c.device.TokenJSONGet(ConstellationStateDiskTokenID)
+	packageLock.Lock()
+	defer packageLock.Unlock()
+	device, err := c.getActiveDevice()
+	if err != nil {
+		return false
+	}
+
+	stateDiskToken, err := device.TokenJSONGet(ConstellationStateDiskTokenID)
 	if err != nil {
 		return false
 	}
@@ -298,17 +381,18 @@ func (c *CryptSetup) Wipe(
 ) (err error) {
 	packageLock.Lock()
 	defer packageLock.Unlock()
-	if c.device == nil {
-		return errDeviceNotOpen
+	device, err := c.getActiveDevice()
+	if err != nil {
+		return err
 	}
 
 	// Active temporary device to perform wipe on
 	tmpDevice := tmpDevicePrefix + name
-	if err := c.device.ActivateByVolumeKey(tmpDevice, "", 0, wipeFlags); err != nil {
+	if err := device.ActivateByVolumeKey(tmpDevice, "", 0, wipeFlags); err != nil {
 		return fmt.Errorf("trying to activate temporary dm-crypt volume: %w", err)
 	}
 	defer func() {
-		if deactivateErr := c.device.Deactivate(tmpDevice); deactivateErr != nil {
+		if deactivateErr := device.Deactivate(tmpDevice); deactivateErr != nil {
 			err = errors.Join(err, fmt.Errorf("deactivating temporary device %q: %w", tmpDevice, deactivateErr))
 		}
 	}()
@@ -330,8 +414,89 @@ func (c *CryptSetup) Wipe(
 		return 0
 	}
 
-	if err := c.device.Wipe(mappedDevicePath+tmpDevice, wipePattern, 0, 0, blockWipeSize, flags, progressCallback); err != nil {
-		return fmt.Errorf("wiping disk of device %q: %w", c.device.GetDeviceName(), err)
+	if err := device.Wipe(mappedDevicePath+tmpDevice, wipePattern, 0, 0, blockWipeSize, flags, progressCallback); err != nil {
+		return fmt.Errorf("wiping disk of device %q: %w", device.GetDeviceName(), err)
+	}
+	if err := c.createHeaderBackup(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *CryptSetup) free() {
+	if c.hasDetachedHeaderDevice() {
+		c.deviceWithDetachedHeader.Free()
+		c.deviceWithDetachedHeader = nil
+	}
+	if c.hasAttachedHeaderDevice() {
+		c.deviceWithAttachedHeader.Free()
+		c.deviceWithAttachedHeader = nil
+	}
+	if c.headerDevice != "" {
+		_ = detachLoopbackDevice(c.headerDevice)
+	}
+	if c.headerFile != "" {
+		c.headerFile = ""
+	}
+}
+
+func (c *CryptSetup) reload() error {
+	if !c.hasAttachedHeaderDevice() {
+		return errDeviceNotOpen
+	}
+
+	backingDevice := c.deviceWithAttachedHeader.GetDeviceName()
+	c.free()
+	var err error
+	c.deviceWithDetachedHeader, c.deviceWithAttachedHeader, c.headerDevice, c.headerFile, err = c.pathInit(backingDevice)
+	if err != nil {
+		return fmt.Errorf("re-loading crypt device: %w", err)
+	}
+
+	if !c.hasDetachedHeaderDevice() {
+		return errors.New("failed to reload device without detached header")
+	}
+
+	if err := loadLUKS2(c.deviceWithDetachedHeader); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// getActiveDevice returns a handle to the active cryptsetup device with detached header if set,
+// or one with attached header otherwise.
+func (c *CryptSetup) getActiveDevice() (cryptDevice, error) {
+	if c.hasDetachedHeaderDevice() {
+		return c.deviceWithDetachedHeader, nil
+	}
+	if c.hasAttachedHeaderDevice() {
+		return c.deviceWithAttachedHeader, nil
+	}
+	return nil, errDeviceNotOpen
+}
+
+// hasDetachedHeaderDevice checks if the value of the [CryptSetup.deviceWithDetachedHeader] interface is not nil.
+func (c *CryptSetup) hasDetachedHeaderDevice() bool {
+	return c.deviceWithDetachedHeader != nil && !reflect.ValueOf(c.deviceWithDetachedHeader).IsNil()
+}
+
+// hasAttachedHeaderDevice checks if the value of the [CryptSetup.deviceWithAttachedHeader] interface is not nil.
+func (c *CryptSetup) hasAttachedHeaderDevice() bool {
+	return c.deviceWithAttachedHeader != nil && !reflect.ValueOf(c.deviceWithAttachedHeader).IsNil()
+}
+
+// createHeaderBackup creates a backup of the detached header, and saves it back to the original device.
+func (c *CryptSetup) createHeaderBackup() error {
+	if c.hasDetachedHeaderDevice() && c.headerFile != "" {
+		if err := headerBackup(c.deviceWithDetachedHeader, c.headerFile); err != nil {
+			return fmt.Errorf("creating header backup for device %q: %w", c.deviceWithDetachedHeader.GetDeviceName(), err)
+		}
+	}
+	if c.hasAttachedHeaderDevice() && c.headerFile != "" {
+		if err := headerRestore(c.deviceWithAttachedHeader, c.headerFile); err != nil {
+			return fmt.Errorf("restoring header for device %q (with attached header): %w", c.deviceWithDetachedHeader.GetDeviceName(), err)
+		}
 	}
 	return nil
 }

@@ -10,6 +10,7 @@ package integration
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -31,13 +32,15 @@ import (
 )
 
 const (
-	devicePath   = "testDevice"
+	backingDisk  = "testDevice"
 	mappedDevice = "mappedDevice"
 )
 
+var devicePath string
+
 var diskPath = flag.String("disk", "", "Path to the disk to use for the benchmark")
 
-var toolsEnvs = []string{"DD", "RM"}
+var toolsEnvs = []string{"DD", "RM", "LOSETUP"}
 
 // addToolsToPATH is used to update the PATH to contain necessary tool binaries for
 // coreutils.
@@ -64,11 +67,22 @@ func addToolsToPATH() error {
 }
 
 func setup(sizeGB int) error {
-	return exec.Command("dd", "if=/dev/random", fmt.Sprintf("of=%s", devicePath), "bs=1G", fmt.Sprintf("count=%d", sizeGB)).Run()
+	if err := exec.Command("dd", "if=/dev/random", fmt.Sprintf("of=%s", backingDisk), "bs=1G", fmt.Sprintf("count=%d", sizeGB)).Run(); err != nil {
+		return err
+	}
+	cmd := exec.Command("losetup", "-f", "--show", backingDisk)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("losetup failed: %w\nOutput: %s", err, out)
+	}
+	devicePath = strings.TrimSpace(string(out))
+	return nil
 }
 
 func teardown() error {
-	return exec.Command("rm", "-f", devicePath).Run()
+	err := exec.Command("losetup", "-d", devicePath).Run()
+	errors.Join(err, exec.Command("rm", "-f", backingDisk).Run())
+	return err
 }
 
 func TestMain(m *testing.M) {
@@ -136,6 +150,27 @@ func TestMapper(t *testing.T) {
 
 	// Disk should still be marked as not initialized because token is set to false.
 	assert.False(mapper.IsInitialized())
+
+	// Set disk as initialized
+	assert.NoError(ccrypt.SetConstellationStateDiskToken(ccryptsetup.SetDiskInitialized))
+
+	// Set up a new client and check if the client still sees the disk as initialized
+	ccrypt2 := ccryptsetup.New()
+	freeDevice2, err := ccrypt2.Init(devicePath)
+	require.NoError(err, "failed to initialize crypt device")
+	defer freeDevice2()
+	require.NoError(ccrypt2.LoadLUKS2(), "failed to load LUKS2")
+
+	tokenJSON, err = ccrypt2.TokenJSONGet(ccryptsetup.ConstellationStateDiskTokenID)
+	require.NoError(err, "token should have been set")
+	var token2 struct {
+		Type              string   `json:"type"`
+		Keyslots          []string `json:"keyslots"`
+		DiskIsInitialized bool     `json:"diskIsInitialized"`
+	}
+	require.NoError(json.Unmarshal([]byte(tokenJSON), &token2))
+	assert.True(token2.DiskIsInitialized, "disk should be marked as initialized")
+	assert.True(ccrypt2.ConstellationStateDiskTokenIsInitialized(), "disk should be marked as initialized")
 
 	// Try to map disk with incorrect passphrase
 	assert.Error(mapper.MapDisk(mappedDevice, "invalid-passphrase"), "was able to map disk with incorrect passphrase")
