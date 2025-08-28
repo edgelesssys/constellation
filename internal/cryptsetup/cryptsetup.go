@@ -152,11 +152,10 @@ func (c *CryptSetup) ActivateByVolumeKey(deviceName, volumeKey string, volumeKey
 func (c *CryptSetup) Deactivate(deviceName string) error {
 	packageLock.Lock()
 	defer packageLock.Unlock()
-	device, err := c.getActiveDevice()
-	if err != nil {
-		return err
+	if !c.hasDetachedHeaderDevice() {
+		return errDeviceNotOpen
 	}
-	if err := device.Deactivate(deviceName); err != nil {
+	if err := c.deviceWithDetachedHeader.Deactivate(deviceName); err != nil {
 		return fmt.Errorf("deactivating crypt device %q: %w", deviceName, err)
 	}
 	return nil
@@ -181,8 +180,6 @@ func (c *CryptSetup) Format(integrity bool) error {
 		}
 		c.headerFile = ""
 		device = c.deviceWithAttachedHeader
-	} else if c.hasDetachedHeaderDevice() {
-		device = c.deviceWithDetachedHeader
 	} else {
 		return errDeviceNotOpen
 	}
