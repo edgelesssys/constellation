@@ -39,7 +39,7 @@ download() {
   "${DNF5}" \
     "--config=${DNF_CONF}" \
     "--setopt=reposdir=${REPOSDIR}" \
-    "--releasever=40" \
+    "--releasever=42" \
     download \
     "--destdir=${OUTDIR}" \
     --resolve --alldeps \

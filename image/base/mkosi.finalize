@@ -10,5 +10,5 @@ set -euxo pipefail
 # /etc/shadow-.
 tmp=$(mktemp)
 cp -a "${BUILDROOT}/etc/shadow-" "${tmp}"
-mkosi-chroot chage -d "" etcd
+mkosi-chroot chage -d "" etcd || true
 cp -a "${tmp}" "${BUILDROOT}/etc/shadow-"
