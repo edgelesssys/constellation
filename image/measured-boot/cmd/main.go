@@ -221,6 +221,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Ignore PCR9 measurement until we resolved the precalculation issues with F42.
+	// Both command line and initrd measurements are also contained in PCR11.
+	// TODO(msanft): re-enable PCR9 measurement once we fixed the issues.
+	delete(simulator.Bank, 9)
+
 	if err := writeOutput(fs, outputFile, simulator); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
