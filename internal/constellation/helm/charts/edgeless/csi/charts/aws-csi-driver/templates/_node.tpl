@@ -114,6 +114,8 @@ spec:
               mountPath: /csi
             - name: device-dir
               mountPath: /dev
+            - name: tmp-dir
+              mountPath: /tmp
             - name: cryptsetup
               mountPath: /run/cryptsetup
           {{- with .Values.node.volumeMounts }}
@@ -237,6 +239,8 @@ spec:
           hostPath:
             path: /run/cryptsetup
             type: Directory
+        - name: tmp-dir
+          emptyDir: {}
         - name: probe-dir
           {{- if .Values.node.probeDirVolume }}
           {{- toYaml .Values.node.probeDirVolume | nindent 10 }}
