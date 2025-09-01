@@ -31,6 +31,7 @@
     'github.com/edgelesssys/constellation/v2',
     // Only update once they fixed dependency violations on their side.
     'github.com/google/go-tpm-tools',
+    'terraform-provider-openstack/openstack',
   ],
   // Rules for changing renovates behaviour for different packages.
   // The documentation for configuration options can be found here:

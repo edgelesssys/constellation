@@ -7,7 +7,7 @@ terraform {
 
     stackit = {
       source  = "stackitcloud/stackit"
-      version = "0.53.0"
+      version = "0.62.0"
     }
 
     random = {
