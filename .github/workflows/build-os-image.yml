@@ -151,6 +151,8 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::795746500882:role/GitHubConstellationImagePipeline
           aws-region: eu-central-1
+          # extend token expiry to 3 hours to ensure long image builds don't fail because of expired credentials
+          role-duration-seconds: 10800
 
       - name: Login to Azure
         uses: ./.github/actions/login_azure
@@ -172,7 +174,7 @@ jobs:
         run: |
           sudo sysctl --ignore --write kernel.apparmor_restrict_unprivileged_unconfined=0
           sudo sysctl --ignore --write kernel.apparmor_restrict_unprivileged_userns=0
-          
+
       - name: Build and upload
         id: build
         shell: bash
