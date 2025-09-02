@@ -20,8 +20,8 @@
       system:
       let
         overlay = final: prev: {
-          mkosi = prev.mkosi.overrideAttrs (old: {
-            patches = old.patches or [ ] ++ [ ./image/0001-drop-.osrel-UKI-section.patch ];
+          systemd = prev.systemd.overrideAttrs (old: {
+            patches = old.patches or [ ] ++ [ ./image/0001-ukify-dont-bundle-osrel-section.patch ];
           });
 
           rpm = prev.rpm.overrideAttrs (old: {
