@@ -201,8 +201,8 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		ClusterVersion: "v1.30.14", // renovate:kubernetes-release
 		KubernetesComponents: components.Components{
 			{
-				Url:         "https://github.com/containernetworking/plugins/releases/download/v1.7.1/cni-plugins-linux-amd64-v1.7.1.tgz", // renovate:cni-plugins-release
-				Hash:        "sha256:1a28a0506bfe5bcdc981caf1a49eeab7e72da8321f1119b7be85f22621013098",
+				Url:         "https://github.com/containernetworking/plugins/releases/download/v1.8.0/cni-plugins-linux-amd64-v1.8.0.tgz", // renovate:cni-plugins-release
+				Hash:        "sha256:ab3bda535f9d90766cccc90d3dddb5482003dd744d7f22bcf98186bf8eea8be6",
 				InstallPath: constants.CniPluginsDir,
 				Extract:     true,
 			},
@@ -268,8 +268,8 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		ClusterVersion: "v1.31.12", // renovate:kubernetes-release
 		KubernetesComponents: components.Components{
 			{
-				Url:         "https://github.com/containernetworking/plugins/releases/download/v1.7.1/cni-plugins-linux-amd64-v1.7.1.tgz", // renovate:cni-plugins-release
-				Hash:        "sha256:1a28a0506bfe5bcdc981caf1a49eeab7e72da8321f1119b7be85f22621013098",
+				Url:         "https://github.com/containernetworking/plugins/releases/download/v1.8.0/cni-plugins-linux-amd64-v1.8.0.tgz", // renovate:cni-plugins-release
+				Hash:        "sha256:ab3bda535f9d90766cccc90d3dddb5482003dd744d7f22bcf98186bf8eea8be6",
 				InstallPath: constants.CniPluginsDir,
 				Extract:     true,
 			},
@@ -335,8 +335,8 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		ClusterVersion: "v1.32.8", // renovate:kubernetes-release
 		KubernetesComponents: components.Components{
 			{
-				Url:         "https://github.com/containernetworking/plugins/releases/download/v1.7.1/cni-plugins-linux-amd64-v1.7.1.tgz", // renovate:cni-plugins-release
-				Hash:        "sha256:1a28a0506bfe5bcdc981caf1a49eeab7e72da8321f1119b7be85f22621013098",
+				Url:         "https://github.com/containernetworking/plugins/releases/download/v1.8.0/cni-plugins-linux-amd64-v1.8.0.tgz", // renovate:cni-plugins-release
+				Hash:        "sha256:ab3bda535f9d90766cccc90d3dddb5482003dd744d7f22bcf98186bf8eea8be6",
 				InstallPath: constants.CniPluginsDir,
 				Extract:     true,
 			},
