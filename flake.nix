@@ -20,6 +20,10 @@
       system:
       let
         overlay = final: prev: {
+          systemd = prev.systemd.overrideAttrs (old: {
+            patches = old.patches or [ ] ++ [ ./image/0001-ukify-dont-bundle-osrel-section.patch ];
+          });
+
           rpm = prev.rpm.overrideAttrs (old: {
             nativeBuildInputs = old.nativeBuildInputs ++ [ prev.makeWrapper ];
             postFixup = ''
@@ -94,7 +98,8 @@
         # Note that it's *not* a legacy attribute.
         legacyPackages = {
           generate = pkgs.callPackage ./nix/generate.nix { };
-        } // pkgs;
+        }
+        // pkgs;
 
         packages.mkosi = mkosiDev;
 

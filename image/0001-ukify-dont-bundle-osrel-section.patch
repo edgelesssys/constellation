@@ -1,0 +1,26 @@
+From f4d9b358e9ff6761a3e72db6f109fe4576ea58c2 Mon Sep 17 00:00:00 2001
+From: Moritz Sanft <58110325+msanft@users.noreply.github.com>
+Date: Tue, 2 Sep 2025 10:21:58 +0200
+Subject: [PATCH] ukify: dont bundle osrel section
+
+Signed-off-by: Moritz Sanft <58110325+msanft@users.noreply.github.com>
+---
+ src/ukify/ukify.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/ukify/ukify.py b/src/ukify/ukify.py
+index fce36b6686..1f261299b3 100755
+--- a/src/ukify/ukify.py
++++ b/src/ukify/ukify.py
+@@ -1393,7 +1393,7 @@ def make_uki(opts: UkifyConfig) -> None:
+ 
+     sections = [
+         # name,      content,         measure?
+-        ('.osrel',   opts.os_release, True),
++        # ('.osrel',   opts.os_release, True),
+         ('.cmdline', opts.cmdline,    True),
+         ('.dtb',     opts.devicetree, True),
+         *(('.dtbauto', dtb, True) for dtb in opts.devicetree_auto),
+-- 
+2.51.0
+
