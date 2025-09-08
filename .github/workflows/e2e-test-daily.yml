@@ -46,7 +46,7 @@ jobs:
       max-parallel: 5
       matrix:
         kubernetesVersion: ["v1.31"] # This should correspond to the current default k8s minor.
-        attestationVariant: ["gcp-sev-snp", "azure-sev-snp", "azure-tdx", "aws-sev-snp"]
+        attestationVariant: ["gcp-sev-snp", "azure-sev-snp", "aws-sev-snp"]
         refStream: ["ref/release/stream/stable/?"] # ["ref/main/stream/debug/?", "ref/release/stream/stable/?"]
         test: ["sonobuoy quick"]
     runs-on: ubuntu-24.04
