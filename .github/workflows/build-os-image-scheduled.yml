@@ -6,9 +6,9 @@ on:
     - cron: "0 21 * * 2" # At 21:00 on Tuesday.
     - cron: "20 21 * * 2" # At 21:20 on Tuesday.
     - cron: "40 21 * * 2" # At 21:40 on Tuesday.
-    - cron: "0 21 * * 4" # At 21:00 on Thursday.
-    - cron: "20 21 * * 4" # At 21:20 on Thursday.
-    - cron: "40 21 * * 4" # At 21:40 on Thursday.
+    # - cron: "0 21 * * 4" # At 21:00 on Thursday.
+    # - cron: "20 21 * * 4" # At 21:20 on Thursday.
+    # - cron: "40 21 * * 4" # At 21:40 on Thursday.
 
 jobs:
   stream:
