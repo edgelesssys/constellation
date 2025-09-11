@@ -28,6 +28,10 @@
     'operators/constellation-node-operator/config/manager/kustomization.yaml',
   ],
   ignoreDeps: [
+    // Go requires manual updates
+    'go',
+    // Newer version install different versions of nix, breaking reproducibility
+    'cachix/install-nix-action',
     'github.com/edgelesssys/constellation/v2',
     // Only update once they fixed dependency violations on their side.
     'github.com/google/go-tpm-tools',
