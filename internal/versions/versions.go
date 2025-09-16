@@ -183,9 +183,9 @@ const (
 	//nolint:revive
 	V1_30 ValidK8sVersion = "v1.30.14" // renovate:kubernetes-release
 	//nolint:revive
-	V1_31 ValidK8sVersion = "v1.31.12" // renovate:kubernetes-release
+	V1_31 ValidK8sVersion = "v1.31.13" // renovate:kubernetes-release
 	//nolint:revive
-	V1_32 ValidK8sVersion = "v1.32.8" // renovate:kubernetes-release
+	V1_32 ValidK8sVersion = "v1.32.9" // renovate:kubernetes-release
 
 	// Default k8s version deployed by Constellation.
 	Default ValidK8sVersion = V1_31
@@ -265,7 +265,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.30.5@sha256:c63b6fc563a7e374fca8fa3ca226d58955fe92360cb93aaa76974fc5dbf5cee6", // renovate:container
 	},
 	V1_31: {
-		ClusterVersion: "v1.31.12", // renovate:kubernetes-release
+		ClusterVersion: "v1.31.13", // renovate:kubernetes-release
 		KubernetesComponents: components.Components{
 			{
 				Url:         "https://github.com/containernetworking/plugins/releases/download/v1.8.0/cni-plugins-linux-amd64-v1.8.0.tgz", // renovate:cni-plugins-release
@@ -280,33 +280,33 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 				Extract:     true,
 			},
 			{
-				Url:         "https://dl.k8s.io/v1.31.12/bin/linux/amd64/kubelet", // renovate:kubernetes-release
-				Hash:        "sha256:43f4a2ff9d5f40419f74977ed6e1939c4f8db51b0f2e63a98546e146d683c299",
+				Url:         "https://dl.k8s.io/v1.31.13/bin/linux/amd64/kubelet", // renovate:kubernetes-release
+				Hash:        "sha256:b7733cb0e36031ab8f69cf3f73cc364730141b107d24ecb75bee5b3122dc6b6e",
 				InstallPath: constants.KubeletPath,
 				Extract:     false,
 			},
 			{
-				Url:         "https://dl.k8s.io/v1.31.12/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
-				Hash:        "sha256:3228da53372fb8ffab303e7d8b1b0f78c016e461216b6535609e4f2377424349",
+				Url:         "https://dl.k8s.io/v1.31.13/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
+				Hash:        "sha256:e0c91c606e1402e943666f6fda8452140851a1b2bb4f69918dd7176e8d86845c",
 				InstallPath: constants.KubeadmPath,
 				Extract:     false,
 			},
 			{
-				Url:         "https://dl.k8s.io/v1.31.12/bin/linux/amd64/kubectl", // renovate:kubernetes-release
-				Hash:        "sha256:cf609add577be9c898c52027e800a008331d6b2a202ecc61413e847f7a12ccd0",
+				Url:         "https://dl.k8s.io/v1.31.13/bin/linux/amd64/kubectl", // renovate:kubernetes-release
+				Hash:        "sha256:ce427a4df97b044bf6beaf38be6b3aaafb1b5c782c406958b3c71ebb25a48fe3",
 				InstallPath: constants.KubectlPath,
 				Extract:     false,
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtYXBpc2VydmVyOnYxLjMxLjEyQHNoYTI1NjplOTAxMWMzYmVlOGMwNmVjYWJkNzgxNmUxMTlkY2E0ZTQ0OGM5MmY3YTc4YWNkODkxZGUzZDJkYjFkYzZjMjM0In1d",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtYXBpc2VydmVyOnYxLjMxLjEzQHNoYTI1Njo5YWJlYjhhMmQzZTUzZTM1NmQxZjJlNWQ1ZGMyMDgxY2YyOGYyMzI0MjY1MWIwNTUyYzllMzhmNGE3YWU5NjBlIn1d",
 				InstallPath: patchFilePath("kube-apiserver"),
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtY29udHJvbGxlci1tYW5hZ2VyOnYxLjMxLjEyQHNoYTI1NjpkMjg2MmY5NGQ4NzMyMDI2N2ZkZGJkNTVkYjI2NTU2YTI2N2FhODAyZTUxZDZiNjBmMjU3ODZiNGM0MjhhZmM4In1d",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtY29udHJvbGxlci1tYW5hZ2VyOnYxLjMxLjEzQHNoYTI1NjpmYWNjOTEyODg2OTdhMjg4YTY5MTUyMDk0OWZlNGVlYzQwMDU5ZWYwNjVjODlkYThlMTA0ODFkMTRlMTMxYjA5In1d",
 				InstallPath: patchFilePath("kube-controller-manager"),
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtc2NoZWR1bGVyOnYxLjMxLjEyQHNoYTI1NjoxNTI5NDNiN2UzMDI0NGY0NDE1ZmQwYTU4NjBhMmRjY2Q5MTY2MGZlOTgzZDMwYTI4YTEwZWRiMGNjOGY2NzU2In1d",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtc2NoZWR1bGVyOnYxLjMxLjEzQHNoYTI1NjpjNWNlMTUwZGNjZTI0MTlmZGVmOWY5ODc1ZmVmNDMwMTQzNTVjY2ViZjkzNzg0NmVkM2EyOTcxOTUzZjliMjQxIn1d",
 				InstallPath: patchFilePath("kube-scheduler"),
 			},
 			{
@@ -332,7 +332,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.31.3@sha256:b5ac5d93d0e43c6f4f14b0a3994ff905ed169aa0d614d7af702eca0a254cb8a8", // renovate:container
 	},
 	V1_32: {
-		ClusterVersion: "v1.32.8", // renovate:kubernetes-release
+		ClusterVersion: "v1.32.9", // renovate:kubernetes-release
 		KubernetesComponents: components.Components{
 			{
 				Url:         "https://github.com/containernetworking/plugins/releases/download/v1.8.0/cni-plugins-linux-amd64-v1.8.0.tgz", // renovate:cni-plugins-release
@@ -347,33 +347,33 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 				Extract:     true,
 			},
 			{
-				Url:         "https://dl.k8s.io/v1.32.8/bin/linux/amd64/kubelet", // renovate:kubernetes-release
-				Hash:        "sha256:7dfca4da9cdf592c0f70800e09fb42553765bc0951cade3d6e0c571daf3f23ee",
+				Url:         "https://dl.k8s.io/v1.32.9/bin/linux/amd64/kubelet", // renovate:kubernetes-release
+				Hash:        "sha256:fd7711d1f0c1e263e9332004858fc4a6c39462e3e2ee485706eea5297966ed9c",
 				InstallPath: constants.KubeletPath,
 				Extract:     false,
 			},
 			{
-				Url:         "https://dl.k8s.io/v1.32.8/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
-				Hash:        "sha256:da4cc996800db14f82fce8813caa55be318e52ef69d82e50e728ef4cfa18b69f",
+				Url:         "https://dl.k8s.io/v1.32.9/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
+				Hash:        "sha256:183b3b12e39b3ed2dc2db25cbc17769610cdd5f02e9d1325ba747d54978d8f5f",
 				InstallPath: constants.KubeadmPath,
 				Extract:     false,
 			},
 			{
-				Url:         "https://dl.k8s.io/v1.32.8/bin/linux/amd64/kubectl", // renovate:kubernetes-release
-				Hash:        "sha256:0fc709a8262be523293a18965771fedfba7466eda7ab4337feaa5c028aa46b1b",
+				Url:         "https://dl.k8s.io/v1.32.9/bin/linux/amd64/kubectl", // renovate:kubernetes-release
+				Hash:        "sha256:509ae171bac7ad3b98cc49f5594d6bc84900cf6860f155968d1059fde3be5286",
 				InstallPath: constants.KubectlPath,
 				Extract:     false,
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtYXBpc2VydmVyOnYxLjMyLjhAc2hhMjU2OjZlMWEyZjliMjRmNjllZTc3ZDBjMGVkYWYzMmIzMWZkYmI1ZTFhNjEzZjQ0NzYyNzIxOTdlNmUxZTIzOTA1MGIifV0=",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtYXBpc2VydmVyOnYxLjMyLjlAc2hhMjU2OjZkZjExY2MyYWQ5Njc5YjExMTdiZTM0ZDNhMDIzMGFkZDg4YmMwYTA4ZmQ3YTNlYmMyNmI2ODA1NzVlOGRlOTcifV0=",
 				InstallPath: patchFilePath("kube-apiserver"),
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtY29udHJvbGxlci1tYW5hZ2VyOnYxLjMyLjhAc2hhMjU2Ojg3ODhjY2QyOGNlZWQ5ZTJlNWY4ZmMzMTM3NWVmNTc3MWRmOGVhNmU1MThiMzYyYzlhMDZmM2NjNzA5Y2Q2YzcifV0=",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtY29udHJvbGxlci1tYW5hZ2VyOnYxLjMyLjlAc2hhMjU2OjI0M2M0YjhlM2JjZTI3MWZjYjFiNzgwMDhhYjk5NmFiNjk3NmIxYTIwMDk2ZGVhYzA4MzM4ZmNkMTc5Nzk5MjIifV0=",
 				InstallPath: patchFilePath("kube-controller-manager"),
 			},
 			{
-				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtc2NoZWR1bGVyOnYxLjMyLjhAc2hhMjU2OjQzYzU4YmNiZDFjNzgxMmRkMTlmOGJmYTVhZTExMDkzZWJlZmQyODY5OTQ1M2NlODZmYzcxMDg2OWUxNTVjZDQifV0=",
+				Url:         "data:application/json;base64,W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9zcGVjL2NvbnRhaW5lcnMvMC9pbWFnZSIsInZhbHVlIjoicmVnaXN0cnkuazhzLmlvL2t1YmUtc2NoZWR1bGVyOnYxLjMyLjlAc2hhMjU2OjUwYzQ5NTIwZGJkMGU4YjQwNzZiNmE1Yzc3ZDgwMTRkZjA5ZWEzZDU5YTczZThiYWZkMjY3OGQ1MWViYjkyZDUifV0=",
 				InstallPath: patchFilePath("kube-scheduler"),
 			},
 			{
