@@ -1,4 +1,4 @@
-FROM fedora:42@sha256:cf907e6a54b0ffd3275e03745b4914e748e69c352810918493ca91789188106c AS release
+FROM fedora:44@sha256:61bc3614a3aeae53af1817b0506e57d6b8ec9adf27203f6b1510c753b294b6f1 AS release
 
 RUN dnf install -y https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-8.6.2-x86_64.rpm
 
