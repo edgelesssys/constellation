@@ -46,7 +46,7 @@ func (s signer) Sign(content []byte) (signature []byte, err error) {
 	if err != nil {
 		return signature, fmt.Errorf("sign version file: %w", err)
 	}
-	return
+	return signature, err
 }
 
 // SignContent signs the content with the cosign encrypted private key and corresponding cosign password.

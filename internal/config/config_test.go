@@ -1108,7 +1108,7 @@ func getConfigAsMap(conf *Config, t *testing.T) (res configMap) {
 	if err := yaml.Unmarshal(bytes, &res); err != nil {
 		t.Fatal(err)
 	}
-	return
+	return res
 }
 
 type stubAttestationFetcher struct{}

@@ -111,5 +111,5 @@ func splitRepoTag(ref string) (registry, prefix, name, tag string, err error) {
 		prefix = fullName[:nameSep]
 		name = fullName[nameSep+1:]
 	}
-	return
+	return registry, prefix, name, tag, err
 }
