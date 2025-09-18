@@ -215,18 +215,18 @@ func (a *InstanceInfo) ParseCertChain() (ask, ark *x509.Certificate, retErr erro
 	for block, rest = pem.Decode(rest); block != nil; block, rest = pem.Decode(rest) {
 		if i > 2 {
 			retErr = fmt.Errorf("parse certificate %d: more than 2 certificates in chain", i)
-			return
+			return ask, ark, retErr
 		}
 
 		if block.Type != "CERTIFICATE" {
 			retErr = fmt.Errorf("parse certificate %d: expected PEM block type 'CERTIFICATE', got '%s'", i, block.Type)
-			return
+			return ask, ark, retErr
 		}
 
 		cert, err := x509.ParseCertificate(block.Bytes)
 		if err != nil {
 			retErr = fmt.Errorf("parse certificate %d: %w", i, err)
-			return
+			return ask, ark, retErr
 		}
 
 		// https://www.amd.com/content/dam/amd/en/documents/epyc-technical-docs/specifications/57230.pdf
@@ -238,7 +238,7 @@ func (a *InstanceInfo) ParseCertChain() (ask, ark *x509.Certificate, retErr erro
 			ark = cert
 		default:
 			retErr = fmt.Errorf("parse certificate %d: unexpected subject CN %s", i, cert.Subject.CommonName)
-			return
+			return ask, ark, retErr
 		}
 
 		i++
@@ -251,7 +251,7 @@ func (a *InstanceInfo) ParseCertChain() (ask, ark *x509.Certificate, retErr erro
 		retErr = fmt.Errorf("remaining PEM block is not a valid certificate: %s", rest)
 	}
 
-	return
+	return ask, ark, retErr
 }
 
 // ParseReportSigner parses the VCEK/VLEK certificate from the instanceInfo into an x509-formatted certificate.

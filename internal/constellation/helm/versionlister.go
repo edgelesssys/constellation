@@ -44,7 +44,7 @@ func (c ReleaseVersionClient) listAction(release string) (res []*helmrelease.Rel
 		res, err = action.Run()
 		return err
 	})
-	return
+	return res, err
 }
 
 // Versions queries the cluster for running versions and returns a map of releaseName -> version.

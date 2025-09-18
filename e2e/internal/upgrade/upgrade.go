@@ -168,18 +168,18 @@ func runCommandWithSeparateOutputs(cmd *exec.Cmd) (stdout, stderr []byte, err er
 	stdoutIn, err := cmd.StdoutPipe()
 	if err != nil {
 		err = fmt.Errorf("create stdout pipe: %w", err)
-		return
+		return stdout, stderr, err
 	}
 	stderrIn, err := cmd.StderrPipe()
 	if err != nil {
 		err = fmt.Errorf("create stderr pipe: %w", err)
-		return
+		return stdout, stderr, err
 	}
 
 	err = cmd.Start()
 	if err != nil {
 		err = fmt.Errorf("start command: %w", err)
-		return
+		return stdout, stderr, err
 	}
 
 	continuouslyPrintOutput := func(r io.Reader, prefix string, wg *sync.WaitGroup) {

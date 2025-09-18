@@ -880,7 +880,7 @@ func supportedValidK8sVersions() (res []versions.ValidK8sVersion) {
 	for _, v := range versions.SupportedK8sVersions() {
 		res = append(res, versions.ValidK8sVersion(v))
 	}
-	return
+	return res
 }
 
 var kubeadmClusterConfigurationV1Beta3 = `
