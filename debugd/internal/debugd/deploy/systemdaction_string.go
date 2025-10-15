@@ -20,8 +20,9 @@ const _SystemdAction_name = "UnknownStartStopRestartReload"
 var _SystemdAction_index = [...]uint8{0, 7, 12, 16, 23, 29}
 
 func (i SystemdAction) String() string {
-	if i >= SystemdAction(len(_SystemdAction_index)-1) {
+	idx := int(i) - 0
+	if i < 0 || idx >= len(_SystemdAction_index)-1 {
 		return "SystemdAction(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _SystemdAction_name[_SystemdAction_index[i]:_SystemdAction_index[i+1]]
+	return _SystemdAction_name[_SystemdAction_index[idx]:_SystemdAction_index[idx+1]]
 }

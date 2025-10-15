@@ -18,8 +18,9 @@ const _AuthMethod_name = "UnknownServicePrincipalUserAssignedIdentity"
 var _AuthMethod_index = [...]uint8{0, 7, 23, 43}
 
 func (i AuthMethod) String() string {
-	if i >= AuthMethod(len(_AuthMethod_index)-1) {
+	idx := int(i) - 0
+	if i < 0 || idx >= len(_AuthMethod_index)-1 {
 		return "AuthMethod(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _AuthMethod_name[_AuthMethod_index[i]:_AuthMethod_index[i+1]]
+	return _AuthMethod_name[_AuthMethod_index[idx]:_AuthMethod_index[idx+1]]
 }

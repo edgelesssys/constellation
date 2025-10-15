@@ -19,8 +19,9 @@ const _Enforcement_name = "UnknownEqualMAAFallbackWarnOnly"
 var _Enforcement_index = [...]uint8{0, 7, 12, 23, 31}
 
 func (i Enforcement) String() string {
-	if i >= Enforcement(len(_Enforcement_index)-1) {
+	idx := int(i) - 0
+	if i < 0 || idx >= len(_Enforcement_index)-1 {
 		return "Enforcement(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _Enforcement_name[_Enforcement_index[i]:_Enforcement_index[i+1]]
+	return _Enforcement_name[_Enforcement_index[idx]:_Enforcement_index[idx+1]]
 }

@@ -26,6 +26,5 @@ data:
     }
 kind: ConfigMap
 metadata:
-  creationTimestamp: null
   name: edg-coredns
   namespace: kube-system

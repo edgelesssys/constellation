@@ -32,6 +32,12 @@
     // Only update once they fixed dependency violations on their side.
     'github.com/google/go-tpm-tools',
     'terraform-provider-openstack/openstack',
+    // terraform-plugin-go v0.29.0 breaks our protobuf generation
+    'github.com/hashicorp/terraform-plugin-go',
+    // terraform-plugin-framework v1.16.1 requires terraform-plugin-go v0.29.0
+    'github.com/hashicorp/terraform-plugin-framework',
+    // terraform-plugin-framework-validators v0.18.0 requires terraform-plugin-go v0.29.0
+    'github.com/hashicorp/terraform-plugin-framework-validators',
   ],
   // Rules for changing renovates behaviour for different packages.
   // The documentation for configuration options can be found here:
