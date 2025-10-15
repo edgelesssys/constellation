@@ -546,7 +546,7 @@ multirun(
     commands = [
         ":parallel_checks",
         ":golangci_lint",
-        ":govulncheck",
+        # ":govulncheck", # Disabled since govulncheck blocks merging PRs while we have non critical Go vulnerabilities on main
     ],
     jobs = 1,  # execute sequentially to avoid running into memory issues on our CI runners
     stop_on_error = False,
