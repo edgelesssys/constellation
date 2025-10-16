@@ -42,14 +42,12 @@ func TestSecrets(t *testing.T) {
 data:
   key: dmFsdWUx
 kind: Secret
-metadata:
-  creationTimestamp: null
+metadata: {}
 ---
 apiVersion: v1
 data:
   key: dmFsdWUy
 kind: Secret
-metadata:
-  creationTimestamp: null
+metadata: {}
 `, string(data))
 }

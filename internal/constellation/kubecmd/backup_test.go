@@ -33,8 +33,8 @@ func TestBackupCRDs(t *testing.T) {
 	}{
 		"success": {
 			upgradeID:    "1234",
-			crd:          "apiVersion: \nkind: \nmetadata:\n  name: foobar\n  creationTimestamp: null\nspec:\n  group: \"\"\n  names:\n    kind: \"somename\"\n    plural: \"somenames\"\n  scope: \"\"\n  versions: null\nstatus:\n  acceptedNames:\n    kind: \"\"\n    plural: \"\"\n  conditions: null\n  storedVersions: null\n",
-			expectedFile: "apiVersion: apiextensions.k8s.io/v1\nkind: CustomResourceDefinition\nmetadata:\n  name: foobar\n  creationTimestamp: null\nspec:\n  group: \"\"\n  names:\n    kind: \"somename\"\n    plural: \"somenames\"\n  scope: \"\"\n  versions: null\nstatus:\n  acceptedNames:\n    kind: \"\"\n    plural: \"\"\n  conditions: null\n  storedVersions: null\n",
+			crd:          "apiVersion: \nkind: \nmetadata:\n  name: foobar\nspec:\n  group: \"\"\n  names:\n    kind: \"somename\"\n    plural: \"somenames\"\n  scope: \"\"\n  versions: null\nstatus:\n  acceptedNames:\n    kind: \"\"\n    plural: \"\"\n  conditions: null\n  storedVersions: null\n",
+			expectedFile: "apiVersion: apiextensions.k8s.io/v1\nkind: CustomResourceDefinition\nmetadata:\n  name: foobar\nspec:\n  group: \"\"\n  names:\n    kind: \"somename\"\n    plural: \"somenames\"\n  scope: \"\"\n  versions: null\nstatus:\n  acceptedNames:\n    kind: \"\"\n    plural: \"\"\n  conditions: null\n  storedVersions: null\n",
 		},
 		"api request fails": {
 			upgradeID:    "1234",

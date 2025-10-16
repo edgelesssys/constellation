@@ -21,8 +21,9 @@ const _Provider_name = "UnknownAWSAzureGCPOpenStackQEMU"
 var _Provider_index = [...]uint8{0, 7, 10, 15, 18, 27, 31}
 
 func (i Provider) String() string {
-	if i >= Provider(len(_Provider_index)-1) {
+	idx := int(i) - 0
+	if i < 0 || idx >= len(_Provider_index)-1 {
 		return "Provider(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _Provider_name[_Provider_index[i]:_Provider_index[i+1]]
+	return _Provider_name[_Provider_index[idx]:_Provider_index[idx+1]]
 }

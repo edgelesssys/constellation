@@ -32,11 +32,35 @@
     // Only update once they fixed dependency violations on their side.
     'github.com/google/go-tpm-tools',
     'terraform-provider-openstack/openstack',
+    // terraform-plugin-go v0.29.0 breaks our protobuf generation
+    'github.com/hashicorp/terraform-plugin-go',
+    // terraform-plugin-framework v1.16.1 requires terraform-plugin-go v0.29.0
+    'github.com/hashicorp/terraform-plugin-framework',
+    // terraform-plugin-framework-validators v0.18.0 requires terraform-plugin-go v0.29.0
+    'github.com/hashicorp/terraform-plugin-framework-validators',
   ],
   // Rules for changing renovates behaviour for different packages.
   // The documentation for configuration options can be found here:
   // https://docs.renovatebot.com/configuration-options/
   packageRules: [
+    {
+      matchDepNames: [
+        // terraform-plugin-go v0.29 breaks our protobuf generation
+        // Newer versions plugin-framework and plugin-framework-validators depend on v0.29
+        'github.com/hashicorp/terraform-plugin-go',
+        'github.com/hashicorp/terraform-plugin-framework',
+        'github.com/hashicorp/terraform-plugin-framework-validators',
+        // grpc v1.75 introduces a behavior change to how server name is propagated,
+        // effectively blocking us from only setting it on the Go TLS config object.
+        // This breaks our aTLS implementation.
+        'google.golang.org/grpc'
+      ],
+      matchUpdateTypes: [
+        'minor',
+        'major'
+      ],
+      enabled: false
+    },
     {
       matchManagers: [
         'gomod'

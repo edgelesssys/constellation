@@ -1,7 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  creationTimestamp: null
   labels:
     k8s-app: kube-dns
   name: coredns
@@ -17,7 +16,6 @@ spec:
     type: RollingUpdate
   template:
     metadata:
-      creationTimestamp: null
       labels:
         k8s-app: kube-dns
     spec:
@@ -43,7 +41,7 @@ spec:
           failureThreshold: 5
           httpGet:
             path: /health
-            port: 8080
+            port: liveness-probe
             scheme: HTTP
           initialDelaySeconds: 60
           successThreshold: 1
@@ -59,10 +57,16 @@ spec:
         - containerPort: 9153
           name: metrics
           protocol: TCP
+        - containerPort: 8080
+          name: liveness-probe
+          protocol: TCP
+        - containerPort: 8181
+          name: readiness-probe
+          protocol: TCP
         readinessProbe:
           httpGet:
             path: /ready
-            port: 8181
+            port: readiness-probe
             scheme: HTTP
         resources:
           limits:
