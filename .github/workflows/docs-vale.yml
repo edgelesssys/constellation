@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
       # Work around https://github.com/errata-ai/vale-action/issues/128.
@@ -25,7 +25,7 @@ jobs:
           python3 -m venv "$venv"
           echo "$venv/bin" >> "$GITHUB_PATH"
       - name: Vale
-        uses: errata-ai/vale-action@2690bc95f0ed3cb5220492575af09c51b04fbea9 # tag=reviewdog
+        uses: errata-ai/vale-action@dcded780f1ff68e2558e802a165a484a4a3e2fb8 # tag=reviewdog
         with:
           files: docs/docs
           fail_on_error: true

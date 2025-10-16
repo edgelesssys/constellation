@@ -30,7 +30,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
           fetch-depth: 0
@@ -49,7 +49,7 @@ jobs:
           rm -rf awscliv2.zip aws
 
       - name: Login to AWS (IAM role)
-        uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d116df # v4.2.1
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           role-to-assume: arn:aws:iam::795746500882:role/GithubActionGocoverage
           aws-region: eu-central-1
@@ -69,7 +69,7 @@ jobs:
 
       - name: Comment coverage
         if: steps.coverage.outputs.uploadable == 'true' && github.event_name == 'pull_request'
-        uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db # v2.9.2
+        uses: marocchino/sticky-pull-request-comment@773744901bac0e8cbb5a0dc842800d45e9b2b405 # v2.9.4
         with:
           header: coverage
           path: coverage_diff.md

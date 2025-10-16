@@ -33,7 +33,7 @@ jobs:
       RELEASE_BRANCH: ${{ steps.version-info.outputs.RELEASE_BRANCH }}
       WORKING_BRANCH: ${{ steps.version-info.outputs.WORKING_BRANCH }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Working branch
         run: echo "WORKING_BRANCH=$(git branch --show-current)" | tee -a "$GITHUB_ENV"
@@ -84,7 +84,7 @@ jobs:
       MAJOR_MINOR: ${{ needs.verify-inputs.outputs.MAJOR_MINOR }}
       BRANCH: docs/${{ needs.verify-inputs.outputs.MAJOR_MINOR }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           ref: main
 
@@ -147,7 +147,7 @@ jobs:
       WORKING_BRANCH: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
 
@@ -185,7 +185,7 @@ jobs:
       WITHOUT_V: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
 
@@ -245,7 +245,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
 
@@ -266,7 +266,7 @@ jobs:
       WITHOUT_V: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
 
