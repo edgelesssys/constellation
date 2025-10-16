@@ -34,6 +34,8 @@
     // Only update once they fixed dependency violations on their side.
     'github.com/google/go-tpm-tools',
     'terraform-provider-openstack/openstack',
+    // Install nix action is pinned to v31.4.0 for compatibility with reproducible builds.
+    'cachix/install-nix-action'
   ],
   // Rules for changing renovates behaviour for different packages.
   // The documentation for configuration options can be found here:

@@ -17,7 +17,7 @@ jobs:
         path: constellation
 
     - name: Install Nix
-      uses: cachix/install-nix-action@fd24c48048070c1be9acd18c9d369a83f0fe94d7 # v31
+      uses: cachix/install-nix-action@17fe5fb4a23ad6cbbe47d6b3f359611ad276644c # v31.4.0
 
     - name: Download Firmware release
       id: download-firmware
