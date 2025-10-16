@@ -44,6 +44,24 @@
   // https://docs.renovatebot.com/configuration-options/
   packageRules: [
     {
+      matchDepNames: [
+        // terraform-plugin-go v0.29 breaks our protobuf generation
+        // Newer versions plugin-framework and plugin-framework-validators depend on v0.29
+        'github.com/hashicorp/terraform-plugin-go',
+        'github.com/hashicorp/terraform-plugin-framework',
+        'github.com/hashicorp/terraform-plugin-framework-validators',
+        // grpc v1.75 introduces a behavior change to how server name is propagated,
+        // effectively blocking us from only setting it on the Go TLS config object.
+        // This breaks our aTLS implementation.
+        'google.golang.org/grpc'
+      ],
+      matchUpdateTypes: [
+        'minor',
+        'major'
+      ],
+      enabled: false
+    },
+    {
       matchManagers: [
         'gomod'
       ],
