@@ -19,7 +19,6 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -112,8 +111,8 @@ func (c Client) deleteVersion(versions attestationconfigapi.List, versionStr str
 
 func (c Client) listCachedVersions(ctx context.Context, attestation variant.Variant) ([]string, error) {
 	list, err := c.s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
-		Bucket: aws.String(c.bucketID),
-		Prefix: aws.String(reportVersionDir(attestation)),
+		Bucket: toPtr(c.bucketID),
+		Prefix: toPtr(reportVersionDir(attestation)),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list objects: %w", err)
@@ -175,4 +174,8 @@ func executeAllCmds(ctx context.Context, client *apiclient.Client, cmds []crudCm
 		}
 	}
 	return nil
+}
+
+func toPtr(s string) *string {
+	return &s
 }

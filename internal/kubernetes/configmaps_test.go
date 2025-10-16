@@ -42,14 +42,12 @@ func TestConfigMaps(t *testing.T) {
 data:
   key: value1
 kind: ConfigMap
-metadata:
-  creationTimestamp: null
+metadata: {}
 ---
 apiVersion: v1
 data:
   key: value2
 kind: ConfigMap
-metadata:
-  creationTimestamp: null
+metadata: {}
 `, string(data))
 }
