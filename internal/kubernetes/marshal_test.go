@@ -41,8 +41,7 @@ func TestMarshalK8SResources(t *testing.T) {
 data:
   key: value
 kind: ConfigMap
-metadata:
-  creationTimestamp: null
+metadata: {}
 `,
 		},
 		"Multiple fields are correctly encoded": {
@@ -73,15 +72,13 @@ metadata:
 data:
   key: value
 kind: ConfigMap
-metadata:
-  creationTimestamp: null
+metadata: {}
 ---
 apiVersion: v1
 data:
   key: dmFsdWU=
 kind: Secret
-metadata:
-  creationTimestamp: null
+metadata: {}
 `,
 		},
 		"Non-pointer is detected": {
@@ -134,8 +131,7 @@ func TestUnmarshalK8SResources(t *testing.T) {
 data:
   key: value
 kind: ConfigMap
-metadata:
-  creationTimestamp: null
+metadata: {}
 `,
 			into: &struct {
 				ConfigMap k8s.ConfigMap
@@ -159,15 +155,13 @@ metadata:
 data:
   key: value
 kind: ConfigMap
-metadata:
-  creationTimestamp: null
+metadata: {}
 ---
 apiVersion: v1
 data:
   key: dmFsdWU=
 kind: Secret
-metadata:
-  creationTimestamp: null
+metadata: {}
 `,
 			into: &struct {
 				ConfigMap k8s.ConfigMap
@@ -202,15 +196,13 @@ metadata:
 data:
   key: value
 kind: ConfigMap
-metadata:
-  creationTimestamp: null
+metadata: {}
 ---
 apiVersion: v1
 data:
   key: dmFsdWU=
 kind: Secret
-metadata:
-  creationTimestamp: null
+metadata: {}
 `,
 			into: &struct {
 				ConfigMap k8s.ConfigMap
@@ -238,8 +230,7 @@ metadata:
 data:
   key: value
 kind: ConfigMap
-metadata:
-  creationTimestamp: null
+metadata: {}
 `,
 			into: &struct {
 				String string
@@ -251,8 +242,7 @@ metadata:
 data:
   key: value
 kind: ConfigMap
-metadata:
-  creationTimestamp: null
+metadata: {}
 `,
 			into: &struct {
 				Secret k8s.Secret
@@ -301,8 +291,7 @@ func TestMarshalK8SResourcesList(t *testing.T) {
 data:
   key: value
 kind: ConfigMap
-metadata:
-  creationTimestamp: null
+metadata: {}
 `,
 		},
 		"Multiple fields are correctly encoded": {
@@ -330,15 +319,13 @@ metadata:
 data:
   key: value
 kind: ConfigMap
-metadata:
-  creationTimestamp: null
+metadata: {}
 ---
 apiVersion: v1
 data:
   key: dmFsdWU=
 kind: Secret
-metadata:
-  creationTimestamp: null
+metadata: {}
 `,
 		},
 		"Nil resource pointer is encodes": {

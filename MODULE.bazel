@@ -39,7 +39,6 @@ go_deps.from_file(go_work = "//:go.work")
 use_repo(
     go_deps,
     "cat_dario_mergo",
-    "com_github_aws_aws_sdk_go",
     "com_github_aws_aws_sdk_go_v2",
     "com_github_aws_aws_sdk_go_v2_config",
     "com_github_aws_aws_sdk_go_v2_credentials",
