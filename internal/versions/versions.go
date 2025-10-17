@@ -326,7 +326,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
 		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v30.1.4@sha256:0c3695a18d3825492196facb092e5fe56e466fa8517cde5a206fe21630c1da13", // renovate:container
 		// CloudControllerManagerImageOpenStack is the CCM image used on OpenStack.
-		CloudControllerManagerImageOpenStack: "registry.k8s.io/provider-os/openstack-cloud-controller-manager:v1.33.1@sha256:de8a6da8c31c7b967625451a7169309d6f77aee1ff64b3f8e6ba8d8810ce2a22", // renovate:container
+		CloudControllerManagerImageOpenStack: "registry.k8s.io/provider-os/openstack-cloud-controller-manager:v1.34.1@sha256:745a7843f46029a44c4286506fe610344ab28886d13465cd75a94f28a9ac4371", // renovate:container
 		// External service image. Depends on k8s version.
 		// Check for new versions at https://github.com/kubernetes/autoscaler/releases.
 		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.31.5@sha256:b90105c3470ad5059e8a7c11e2c63117dd8d499ae893d4cc76968e748a886b74", // renovate:container
@@ -393,7 +393,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
 		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v30.1.4@sha256:0c3695a18d3825492196facb092e5fe56e466fa8517cde5a206fe21630c1da13", // renovate:container
 		// CloudControllerManagerImageOpenStack is the CCM image used on OpenStack.
-		CloudControllerManagerImageOpenStack: "registry.k8s.io/provider-os/openstack-cloud-controller-manager:v1.33.1@sha256:de8a6da8c31c7b967625451a7169309d6f77aee1ff64b3f8e6ba8d8810ce2a22", // renovate:container
+		CloudControllerManagerImageOpenStack: "registry.k8s.io/provider-os/openstack-cloud-controller-manager:v1.34.1@sha256:745a7843f46029a44c4286506fe610344ab28886d13465cd75a94f28a9ac4371", // renovate:container
 		// External service image. Depends on k8s version.
 		// Check for new versions at https://github.com/kubernetes/autoscaler/releases.
 		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.32.4@sha256:77cfe4c344b8650a9335d5d42df4397838764977d6f112be73e29da74dab8124", // renovate:container
