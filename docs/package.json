@@ -19,7 +19,7 @@
     "@docusaurus/preset-classic": "3.9.2",
     "@docusaurus/theme-mermaid": "3.9.2",
     "@mdx-js/react": "3.1.1",
-    "asciinema-player": "3.10.0",
+    "asciinema-player": "3.12.1",
     "clsx": "2.1.1",
     "prism-react-renderer": "2.4.1",
     "react": "18.3.1",
