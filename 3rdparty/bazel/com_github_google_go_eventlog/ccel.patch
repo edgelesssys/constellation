@@ -1,0 +1,11 @@
+--- ccel/BUILD.bazel
++++ ccel/BUILD.bazel
+@@ -9,6 +9,7 @@
+     importpath = "github.com/google/go-eventlog/ccel",
+     visibility = ["//visibility:public"],
+     deps = [
+         "//extract",
++        "//proto/state",
+         "//register",
+         "//tcg",
+     ],

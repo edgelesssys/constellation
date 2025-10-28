@@ -1,0 +1,12 @@
+--- wellknown/BUILD.bazel
++++ wellknown/BUILD.bazel
+@@ -13,6 +13,9 @@
+     ],
+     importpath = "github.com/google/go-eventlog/wellknown",
+     visibility = ["//visibility:public"],
++    deps = [
++        "//proto/state",
++    ],
+ )
+ 
+ alias(

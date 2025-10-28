@@ -1,0 +1,10 @@
+--- extract/BUILD.bazel
++++ extract/BUILD.bazel
+@@ -11,6 +11,7 @@
+     importpath = "github.com/google/go-eventlog/extract",
+     visibility = ["//visibility:public"],
+     deps = [
++        "//proto/state",
+         "//tcg",
+         "//wellknown",
+         "@com_github_google_go_tpm//legacy/tpm2",

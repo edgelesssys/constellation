@@ -1,0 +1,14 @@
+--- register/BUILD.bazel
++++ register/BUILD.bazel
+@@ -9,7 +9,10 @@
+     ],
+     importpath = "github.com/google/go-eventlog/register",
+     visibility = ["//visibility:public"],
+-    deps = ["@com_github_google_go_tpm//legacy/tpm2"],
++    deps = [
++        "//proto/state",
++        "@com_github_google_go_tpm//legacy/tpm2",
++    ],
+ )
+ 
+ alias(
