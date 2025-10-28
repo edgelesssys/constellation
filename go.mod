@@ -7,6 +7,10 @@ replace github.com/martinjungblut/go-cryptsetup => github.com/edgelesssys/go-cry
 // TODO(daniel-weisse): revert after merging https://github.com/google/go-sev-guest/pull/173.
 replace github.com/google/go-sev-guest => github.com/edgelesssys/go-sev-guest v0.0.0-20250811150530-d85b756e97f2
 
+replace github.com/google/go-tpm-tools => github.com/edgelesssys/go-tpm-tools v0.0.0-20251028083745-69921e3e136f
+
+replace github.com/google/go-eventlog => github.com/google/go-eventlog v0.0.3-0.20250820210646-0f4d84deece4
+
 // Kubernetes replace directives are required because we depend on k8s.io/kubernetes/cmd/kubeadm
 // k8s discourages usage of k8s.io/kubernetes as a dependency, but no external staging repositories for kubeadm exist.
 // Our code does not actually depend on these packages, but `go mod download` breaks without this replace directive.
@@ -72,7 +76,7 @@ require (
 	github.com/google/go-sev-guest v0.13.0
 	github.com/google/go-tdx-guest v0.3.2-0.20250814004405-ffb0869e6f4d
 	github.com/google/go-tpm v0.9.6
-	github.com/google/go-tpm-tools v0.4.4
+	github.com/google/go-tpm-tools v0.4.6
 	github.com/google/uuid v1.6.0
 	github.com/googleapis/gax-go/v2 v2.15.0
 	github.com/gophercloud/gophercloud/v2 v2.8.0
@@ -268,6 +272,7 @@ require (
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-configfs-tsm v0.3.3-0.20240919001351-b4b5b84fdcbc // indirect
 	github.com/google/go-containerregistry v0.20.6 // indirect
+	github.com/google/go-eventlog v0.0.2-0.20241213203620-f921bdc3aeb0 // indirect
 	github.com/google/go-tspi v0.3.0 // indirect
 	github.com/google/logger v1.1.1 // indirect
 	github.com/google/pprof v0.0.0-20250602020802-c6617b811d0e // indirect
