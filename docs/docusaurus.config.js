@@ -9,7 +9,7 @@ async function createConfig() {
   return {
     title: 'Constellation',
     tagline: 'Constellation: The world\'s most secure Kubernetes',
-    url: 'https://constellation-docs.netlify.app',
+    url: 'https://docs.edgeless.systems',
     baseUrl: '/constellation/',
     onBrokenLinks: 'throw',
     onBrokenMarkdownLinks: 'throw',
