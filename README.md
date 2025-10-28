@@ -5,7 +5,6 @@
 <p>
     <a href="https://github.com/edgelesssys/constellation/actions/workflows/test-tidy.yml/badge.svg?branch=main"><img src="https://github.com/edgelesssys/constellation/actions/workflows/test-tidy.yml/badge.svg?branch=main" alt="Govulncheck"></a>
     <a href="https://goreportcard.com/report/github.com/edgelesssys/constellation/v2"><img src="https://goreportcard.com/badge/github.com/edgelesssys/constellation/v2" alt="Go Report"></a>
-    <a href="https://discord.gg/rH8QTH56JN"><img src="https://img.shields.io/discord/823900998606651454?color=7389D8&label=discord&logo=discord&logoColor=ffffff" alt="Discord"></a>
     <a href="https://twitter.com/EdgelessSystems"><img src="https://img.shields.io/twitter/follow/EdgelessSystems?label=Follow" alt="Twitter"></a>
 </p>
 
