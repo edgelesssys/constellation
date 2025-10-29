@@ -1,0 +1,7 @@
+exports_files([
+    "wellknown.patch",
+    "register.patch",
+    "tcg.patch",
+    "extract.patch",
+    "ccel.patch",
+])

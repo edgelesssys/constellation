@@ -206,3 +206,13 @@ go_deps.gazelle_override(
     build_file_generation = "on",
     path = "github.com/cncf/xds/go",
 )
+go_deps.module_override(
+    patches = [
+        "//3rdparty/bazel/com_github_google_go_eventlog:wellknown.patch",
+        "//3rdparty/bazel/com_github_google_go_eventlog:register.patch",
+        "//3rdparty/bazel/com_github_google_go_eventlog:tcg.patch",
+        "//3rdparty/bazel/com_github_google_go_eventlog:extract.patch",
+        "//3rdparty/bazel/com_github_google_go_eventlog:ccel.patch",
+    ],
+    path = "github.com/google/go-eventlog",
+)

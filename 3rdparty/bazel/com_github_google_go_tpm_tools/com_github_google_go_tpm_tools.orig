@@ -10,11 +10,17 @@ go_library(
     ],
     cgo = True,
     clinkopts = select({
-        "@io_bazel_rules_go//go/platform:darwin": [
+        "@io_bazel_rules_go//go/platform:darwin_amd64": [
             "-L/usr/local/opt/openssl/lib",
         ],
-        "@io_bazel_rules_go//go/platform:ios": [
+        "@io_bazel_rules_go//go/platform:darwin_arm64": [
+            "-L/opt/homebrew/opt/openssl/lib",
+        ],
+        "@io_bazel_rules_go//go/platform:ios_amd64": [
             "-L/usr/local/opt/openssl/lib",
+        ],
+        "@io_bazel_rules_go//go/platform:ios_arm64": [
+            "-L/opt/homebrew/opt/openssl/lib",
         ],
         "//conditions:default": [],
     }),
@@ -45,7 +51,6 @@ go_library(
             "-fstack-protector-all",
         ],
         "@io_bazel_rules_go//go/platform:darwin": [
-            "-I/usr/local/opt/openssl/include",
             "-fstack-protector-all",
         ],
         "@io_bazel_rules_go//go/platform:dragonfly": [
@@ -58,7 +63,6 @@ go_library(
             "-fstack-protector-all",
         ],
         "@io_bazel_rules_go//go/platform:ios": [
-            "-I/usr/local/opt/openssl/include",
             "-fstack-protector-all",
         ],
         "@io_bazel_rules_go//go/platform:js": [
@@ -84,6 +88,20 @@ go_library(
         ],
         "@io_bazel_rules_go//go/platform:solaris": [
             "-fstack-protector-all",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@io_bazel_rules_go//go/platform:darwin_amd64": [
+            "-I/usr/local/opt/openssl/include",
+        ],
+        "@io_bazel_rules_go//go/platform:darwin_arm64": [
+            "-I/opt/homebrew/opt/openssl/include",
+        ],
+        "@io_bazel_rules_go//go/platform:ios_amd64": [
+            "-I/usr/local/opt/openssl/include",
+        ],
+        "@io_bazel_rules_go//go/platform:ios_arm64": [
+            "-I/opt/homebrew/opt/openssl/include",
         ],
         "//conditions:default": [],
     }),

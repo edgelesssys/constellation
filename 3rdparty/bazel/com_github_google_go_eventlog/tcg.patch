@@ -1,0 +1,10 @@
+--- tcg/BUILD.bazel
++++ tcg/BUILD.bazel
+@@ -9,6 +9,7 @@
+     importpath = "github.com/google/go-eventlog/tcg",
+     visibility = ["//visibility:public"],
+     deps = [
++        "//proto/state",
+         "//register",
+         "@com_github_google_go_tpm//legacy/tpm2",
+     ],
