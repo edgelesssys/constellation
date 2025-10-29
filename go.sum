@@ -272,8 +272,6 @@ github.com/edgelesssys/go-sev-guest v0.0.0-20250811150530-d85b756e97f2 h1:QjSQQJ
 github.com/edgelesssys/go-sev-guest v0.0.0-20250811150530-d85b756e97f2/go.mod h1:SK9vW+uyfuzYdVN0m8BShL3OQCtXZe/JPF7ZkpD3760=
 github.com/edgelesssys/go-tdx-qpl v0.0.0-20250129202750-607ac61e2377 h1:5JMJiBhvOUUR7EZ0UyeSy7a1WrqB2eM+DX3odLSHAh4=
 github.com/edgelesssys/go-tdx-qpl v0.0.0-20250129202750-607ac61e2377/go.mod h1:IC72qyykUIWl0ZmSk53L4xbLCFDBEGZVaujUmPQOEyw=
-github.com/edgelesssys/go-tpm-tools v0.0.0-20251028083745-69921e3e136f h1:yXcuZDg+FWPXBg/CQVHA1epXCm/WEj483cUqvjBpgNs=
-github.com/edgelesssys/go-tpm-tools v0.0.0-20251028083745-69921e3e136f/go.mod h1:s/UKzJDLl2w3GF01QY5qUpH5qw3aIVzCOxhu+ksvDA0=
 github.com/emicklei/go-restful/v3 v3.12.2 h1:DhwDP0vY3k8ZzE0RunuJy8GhNpPL6zqLkDf9B/a0/xU=
 github.com/emicklei/go-restful/v3 v3.12.2/go.mod h1:6n3XBCmQQb25CM2LCACGz8ukIrRry+4bhvbpWn3mrbc=
 github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=
@@ -439,12 +437,14 @@ github.com/google/go-configfs-tsm v0.3.3-0.20240919001351-b4b5b84fdcbc h1:SG12DW
 github.com/google/go-configfs-tsm v0.3.3-0.20240919001351-b4b5b84fdcbc/go.mod h1:EL1GTDFMb5PZQWDviGfZV9n87WeGTR/JUg13RfwkgRo=
 github.com/google/go-containerregistry v0.20.6 h1:cvWX87UxxLgaH76b4hIvya6Dzz9qHB31qAwjAohdSTU=
 github.com/google/go-containerregistry v0.20.6/go.mod h1:T0x8MuoAoKX/873bkeSfLD2FAkwCDf9/HZgsFJ02E2Y=
-github.com/google/go-eventlog v0.0.3-0.20250820210646-0f4d84deece4 h1:YipeNcSjvwloWKD7/4mcHIOgLnb/zLcDS6f6weaBFrQ=
-github.com/google/go-eventlog v0.0.3-0.20250820210646-0f4d84deece4/go.mod h1:7huE5P8w2NTObSwSJjboHmB7ioBNblkijdzoVa2skfQ=
+github.com/google/go-eventlog v0.0.2-0.20241213203620-f921bdc3aeb0 h1:270O3tFxca1lAXm3JVWqUU4fHlK3EEIEYIfk4koWMkM=
+github.com/google/go-eventlog v0.0.2-0.20241213203620-f921bdc3aeb0/go.mod h1:7huE5P8w2NTObSwSJjboHmB7ioBNblkijdzoVa2skfQ=
 github.com/google/go-tdx-guest v0.3.2-0.20250814004405-ffb0869e6f4d h1:Ff8goEP/ue2/rZT5qyoRicuySCYDbAXEZS8Cf1fgsUo=
 github.com/google/go-tdx-guest v0.3.2-0.20250814004405-ffb0869e6f4d/go.mod h1:uHy3VaNXNXhl0fiPxKqTxieeouqQmW6A0EfLcaeCYBk=
 github.com/google/go-tpm v0.9.6 h1:Ku42PT4LmjDu1H5C5ISWLlpI1mj+Zq7sPGKoRw2XROA=
 github.com/google/go-tpm v0.9.6/go.mod h1:h9jEsEECg7gtLis0upRBQU+GhYVH6jMjrFxI8u6bVUY=
+github.com/google/go-tpm-tools v0.4.6 h1:hwIwPG7w4z5eQEBq11gYw8YYr9xXLfBQ/0JsKyq5AJM=
+github.com/google/go-tpm-tools v0.4.6/go.mod h1:MsVQbJnRhKDfWwf5zgr3cDGpj13P1uLAFF0wMEP/n5w=
 github.com/google/go-tspi v0.3.0 h1:ADtq8RKfP+jrTyIWIZDIYcKOMecRqNJFOew2IT0Inus=
 github.com/google/go-tspi v0.3.0/go.mod h1:xfMGI3G0PhxCdNVcYr1C4C+EizojDg/TXuX5by8CiHI=
 github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=

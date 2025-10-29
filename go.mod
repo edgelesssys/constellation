@@ -7,10 +7,6 @@ replace github.com/martinjungblut/go-cryptsetup => github.com/edgelesssys/go-cry
 // TODO(daniel-weisse): revert after merging https://github.com/google/go-sev-guest/pull/173.
 replace github.com/google/go-sev-guest => github.com/edgelesssys/go-sev-guest v0.0.0-20250811150530-d85b756e97f2
 
-replace github.com/google/go-tpm-tools => github.com/edgelesssys/go-tpm-tools v0.0.0-20251028083745-69921e3e136f
-
-replace github.com/google/go-eventlog => github.com/google/go-eventlog v0.0.3-0.20250820210646-0f4d84deece4
-
 // Kubernetes replace directives are required because we depend on k8s.io/kubernetes/cmd/kubeadm
 // k8s discourages usage of k8s.io/kubernetes as a dependency, but no external staging repositories for kubeadm exist.
 // Our code does not actually depend on these packages, but `go mod download` breaks without this replace directive.
