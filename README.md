@@ -2,6 +2,11 @@
 
 # Always Encrypted Kubernetes
 
+> [!IMPORTANT]
+> **Constellation is no longer actively maintained by Edgeless Systems.**
+> 
+> This project is no longer receiving updates or support from Edgeless Systems. The repository remains available for archival purposes and community use.
+
 <p>
     <a href="https://github.com/edgelesssys/constellation/actions/workflows/test-tidy.yml/badge.svg?branch=main"><img src="https://github.com/edgelesssys/constellation/actions/workflows/test-tidy.yml/badge.svg?branch=main" alt="Govulncheck"></a>
     <a href="https://goreportcard.com/report/github.com/edgelesssys/constellation/v2"><img src="https://goreportcard.com/badge/github.com/edgelesssys/constellation/v2" alt="Go Report"></a>
