@@ -114,7 +114,7 @@ runs:
 
     - name: Install nix
       if: steps.check_inputs.outputs.nixPreinstalled == 'false'
-      uses: cachix/install-nix-action@fd24c48048070c1be9acd18c9d369a83f0fe94d7 # v31.8.1
+      uses: cachix/install-nix-action@456688f15bc354bef6d396e4a35f4f89d40bf2b7 # v31.8.2
       with:
         install_url: "https://releases.nixos.org/nix/nix-${{ steps.check_inputs.outputs.nixVersion }}/install"
 
