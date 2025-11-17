@@ -60,7 +60,7 @@ sudo cryptsetup luksOpen /dev/nbd0 constellation-state --key-file passphrase
 11. Unmount the partition:
 ```bash 
 sudo umount /your/mount/path
-sudo luksClose constellation-state
+sudo cryptsetup luksClose constellation-state
 sudo qemu-nbd -d /dev/nbd0
 ```
 
