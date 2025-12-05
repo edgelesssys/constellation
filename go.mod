@@ -13,54 +13,54 @@ replace github.com/google/go-sev-guest => github.com/edgelesssys/go-sev-guest v0
 // See this issue: https://github.com/kubernetes/kubernetes/issues/79384
 // And this README: https://github.com/kubernetes/kubernetes/blob/master/staging/README.md
 replace (
-	k8s.io/cloud-provider => k8s.io/cloud-provider v0.34.1
-	k8s.io/controller-manager => k8s.io/controller-manager v0.34.1
-	k8s.io/cri-client => k8s.io/cri-client v0.34.1
-	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.34.1
-	k8s.io/dynamic-resource-allocation => k8s.io/dynamic-resource-allocation v0.34.1
-	k8s.io/endpointslice => k8s.io/endpointslice v0.34.1
-	k8s.io/externaljwt => k8s.io/externaljwt v0.34.1
-	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.34.1
-	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.34.1
-	k8s.io/kube-proxy => k8s.io/kube-proxy v0.34.1
-	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.34.1
+	k8s.io/cloud-provider => k8s.io/cloud-provider v0.34.2
+	k8s.io/controller-manager => k8s.io/controller-manager v0.34.2
+	k8s.io/cri-client => k8s.io/cri-client v0.34.2
+	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.34.2
+	k8s.io/dynamic-resource-allocation => k8s.io/dynamic-resource-allocation v0.34.2
+	k8s.io/endpointslice => k8s.io/endpointslice v0.34.2
+	k8s.io/externaljwt => k8s.io/externaljwt v0.34.2
+	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.34.2
+	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.34.2
+	k8s.io/kube-proxy => k8s.io/kube-proxy v0.34.2
+	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.34.2
 	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.30.14
-	k8s.io/pod-security-admission => k8s.io/pod-security-admission v0.34.1
-	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.34.1
+	k8s.io/pod-security-admission => k8s.io/pod-security-admission v0.34.2
+	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.34.2
 )
 
 require (
-	cloud.google.com/go/compute v1.49.0
+	cloud.google.com/go/compute v1.50.0
 	cloud.google.com/go/compute/metadata v0.9.0
-	cloud.google.com/go/kms v1.23.1
-	cloud.google.com/go/secretmanager v1.15.1
-	cloud.google.com/go/storage v1.57.0
+	cloud.google.com/go/kms v1.23.2
+	cloud.google.com/go/secretmanager v1.16.0
+	cloud.google.com/go/storage v1.58.0
 	dario.cat/mergo v1.0.2
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.19.1
-	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.0
-	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v7 v7.1.0
-	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v7 v7.0.0
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.20.0
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.1
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v7 v7.2.0
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v7 v7.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets v1.4.0
-	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.2
+	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.3
 	github.com/BurntSushi/toml v1.5.0
-	github.com/aws/aws-sdk-go-v2 v1.39.2
-	github.com/aws/aws-sdk-go-v2/config v1.31.12
-	github.com/aws/aws-sdk-go-v2/credentials v1.18.16
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.9
-	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.19.12
-	github.com/aws/aws-sdk-go-v2/service/autoscaling v1.59.3
-	github.com/aws/aws-sdk-go-v2/service/cloudfront v1.55.0
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.256.0
-	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2 v1.50.6
-	github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi v1.30.6
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.88.4
-	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.39.6
-	github.com/aws/smithy-go v1.23.0
-	github.com/bazelbuild/buildtools v0.0.0-20250930140053-2eb4fccefb52
+	github.com/aws/aws-sdk-go-v2 v1.40.1
+	github.com/aws/aws-sdk-go-v2/config v1.32.3
+	github.com/aws/aws-sdk-go-v2/credentials v1.19.3
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.15
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.20.13
+	github.com/aws/aws-sdk-go-v2/service/autoscaling v1.62.2
+	github.com/aws/aws-sdk-go-v2/service/cloudfront v1.58.2
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.275.1
+	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2 v1.54.3
+	github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi v1.31.3
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.93.0
+	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.40.3
+	github.com/aws/smithy-go v1.24.0
+	github.com/bazelbuild/buildtools 6e81bc356fa5
 	github.com/bazelbuild/rules_go v0.58.3
 	github.com/coreos/go-systemd/v22 v22.6.0
-	github.com/docker/docker v28.5.1+incompatible
+	github.com/docker/docker v28.5.2+incompatible
 	github.com/edgelesssys/go-azguestattestation v0.0.0-20250408071817-8c4457b235ff
 	github.com/edgelesssys/go-tdx-qpl v0.0.0-20250129202750-607ac61e2377
 	github.com/foxboron/go-uefi v0.0.0-20251010190908-d29549a44f29
@@ -69,20 +69,20 @@ require (
 	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.28.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
-	github.com/google/go-sev-guest v0.13.0
-	github.com/google/go-tdx-guest v0.3.2-0.20250814004405-ffb0869e6f4d
-	github.com/google/go-tpm v0.9.6
+	github.com/google/go-sev-guest v0.14.1
+	github.com/google/go-tdx-guest 5ba7655b58ce
+	github.com/google/go-tpm v0.9.7
 	github.com/google/go-tpm-tools v0.4.6
 	github.com/google/uuid v1.6.0
 	github.com/googleapis/gax-go/v2 v2.15.0
-	github.com/gophercloud/gophercloud/v2 v2.8.0
-	github.com/gophercloud/utils/v2 v2.0.0-20250930154317-576cdf6142a7
-	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.2
+	github.com/gophercloud/gophercloud/v2 v2.9.0
+	github.com/gophercloud/utils/v2 v2.0.0-20251121145439-0a38d66a3d88
+	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.3
 	github.com/hashicorp/go-kms-wrapping/v2 v2.0.19
 	github.com/hashicorp/go-kms-wrapping/wrappers/awskms/v2 v2.0.11
 	github.com/hashicorp/go-kms-wrapping/wrappers/azurekeyvault/v2 v2.0.14
 	github.com/hashicorp/go-kms-wrapping/wrappers/gcpckms/v2 v2.0.13
-	github.com/hashicorp/go-version v1.7.0
+	github.com/hashicorp/go-version v1.8.0
 	github.com/hashicorp/hc-install v0.9.2
 	github.com/hashicorp/hcl/v2 v2.24.0
 	github.com/hashicorp/terraform-exec v0.24.0
@@ -90,56 +90,56 @@ require (
 	github.com/hashicorp/terraform-plugin-framework v1.15.1
 	github.com/hashicorp/terraform-plugin-framework-validators v0.18.0
 	github.com/hashicorp/terraform-plugin-go v0.28.0
-	github.com/hashicorp/terraform-plugin-log v0.9.0
-	github.com/hashicorp/terraform-plugin-testing v1.13.3
+	github.com/hashicorp/terraform-plugin-log v0.10.0
+	github.com/hashicorp/terraform-plugin-testing v1.14.0
 	github.com/hexops/gotextdiff v1.0.3
 	github.com/martinjungblut/go-cryptsetup v0.0.0-20220520180014-fd0874fd07a6
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/onsi/ginkgo/v2 v2.26.0
+	github.com/onsi/ginkgo/v2 v2.27.2
 	github.com/onsi/gomega v1.38.2
 	github.com/pkg/errors v0.9.1
-	github.com/regclient/regclient v0.9.2
+	github.com/regclient/regclient v0.11.0
 	github.com/rogpeppe/go-internal v1.14.1
-	github.com/samber/slog-multi v1.5.0
+	github.com/samber/slog-multi v1.6.0
 	github.com/schollz/progressbar/v3 v3.18.0
 	github.com/secure-systems-lab/go-securesystemslib v0.9.1
-	github.com/siderolabs/talos/pkg/machinery v1.11.2
-	github.com/sigstore/rekor v1.4.0
-	github.com/sigstore/sigstore v1.9.5
+	github.com/siderolabs/talos/pkg/machinery v1.11.5
+	github.com/sigstore/rekor v1.4.3
+	github.com/sigstore/sigstore v1.10.0
 	github.com/spf13/afero v1.15.0
-	github.com/spf13/cobra v1.10.1
+	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
 	github.com/tink-crypto/tink-go/v2 v2.5.0
 	github.com/vincent-petithory/dataurl v1.0.0
-	go.etcd.io/etcd/api/v3 v3.6.5
-	go.etcd.io/etcd/client/pkg/v3 v3.6.5
-	go.etcd.io/etcd/client/v3 v3.6.5
+	go.etcd.io/etcd/api/v3 v3.6.6
+	go.etcd.io/etcd/client/pkg/v3 v3.6.6
+	go.etcd.io/etcd/client/v3 v3.6.6
 	go.uber.org/goleak v1.3.0
 	golang.org/x/crypto v0.43.0
-	golang.org/x/exp v0.0.0-20251009144603-d2f985daa21b
-	golang.org/x/mod v0.29.0
-	golang.org/x/sys v0.37.0
-	golang.org/x/text v0.30.0
-	golang.org/x/tools v0.38.0
-	google.golang.org/api v0.248.0
+	golang.org/x/exp 87e1e737ad39
+	golang.org/x/mod v0.30.0
+	golang.org/x/sys v0.38.0
+	golang.org/x/text v0.31.0
+	golang.org/x/tools v0.39.0
+	google.golang.org/api v0.257.0
 	google.golang.org/grpc v1.74.3
 	google.golang.org/protobuf v1.36.10
 	gopkg.in/yaml.v3 v3.0.1
-	helm.sh/helm/v3 v3.19.0
-	k8s.io/api v0.34.1
-	k8s.io/apiextensions-apiserver v0.34.1
-	k8s.io/apimachinery v0.34.1
-	k8s.io/apiserver v0.34.1
-	k8s.io/client-go v0.34.1
-	k8s.io/cluster-bootstrap v0.34.1
-	k8s.io/kubelet v0.34.1
-	k8s.io/kubernetes v1.34.1
-	k8s.io/mount-utils v0.34.1
+	helm.sh/helm/v3 v3.19.2
+	k8s.io/api v0.34.2
+	k8s.io/apiextensions-apiserver v0.34.2
+	k8s.io/apimachinery v0.34.2
+	k8s.io/apiserver v0.34.2
+	k8s.io/client-go v0.34.2
+	k8s.io/cluster-bootstrap v0.34.2
+	k8s.io/kubelet v0.34.2
+	k8s.io/kubernetes v1.34.2
+	k8s.io/mount-utils v0.34.2
 	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4
-	libvirt.org/go/libvirt v1.11006.0
-	sigs.k8s.io/controller-runtime v0.22.3
+	libvirt.org/go/libvirt v1.11010.0
+	sigs.k8s.io/controller-runtime v0.22.4
 	sigs.k8s.io/yaml v1.6.0
 )
 
