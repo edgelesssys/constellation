@@ -12,7 +12,6 @@ async function createConfig() {
     url: 'https://docs.edgeless.systems',
     baseUrl: '/constellation/',
     onBrokenLinks: 'throw',
-    onBrokenMarkdownLinks: 'throw',
     onBrokenAnchors: 'throw',
     favicon: 'img/favicon.ico',
 
@@ -41,6 +40,9 @@ async function createConfig() {
     // mermaid
     markdown: {
       mermaid: true,
+      hooks: {
+        onBrokenMarkdownLinks: 'throw',
+      },
     },
     themes: ['@docusaurus/theme-mermaid'],
 
