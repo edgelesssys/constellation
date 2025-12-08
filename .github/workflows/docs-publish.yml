@@ -33,6 +33,10 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Set base URL
+        run: |
+          sed -i "s|baseUrl: '/constellation/'|baseUrl: '/constellation/pr-preview/pr-${{ github.event.number }}/'|" ./docs/docusaurus.config.js
+
       - name: Build
         working-directory: ./docs
         run: |
