@@ -1,0 +1,67 @@
+name: Publish docs to GitHub Pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - docs/**
+      - .github/workflows/docs_publish.yml
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
+    paths:
+      - docs/**
+      - .github/workflows/docs_publish.yml
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  preview:
+    name: Publish docs to GitHub Pages
+    runs-on: ubuntu-24.04
+    if: github.event_name == 'push' && github.ref_name == 'main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build
+        working-directory: ./docs
+        run: |
+          npm run build
+
+      - name: Deploy Preview
+        uses: rossjrw/pr-preview-action@8ff09e486b4c23709012eedd3b42e9f0b95dd0c5 # v1.6.3
+        with:
+          source-dir: ./docs/build
+
+  publish:
+    name: Publish docs to GitHub Pages
+    runs-on: ubuntu-24.04
+    if: github.event_name == 'push' && github.ref_name == 'main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build
+        working-directory: ./docs
+        run: |
+          npm run build
+
+      - name: Publish
+        uses: JamesIves/github-pages-deploy-action@4a3abc783e1a24aeb44c16e869ad83caf6b4cc23 # v4.7.4
+        with:
+          folder: ./docs/build
+          branch: gh-pages
+          clean-exclude: pr-preview
+          force: false
