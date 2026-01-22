@@ -4,8 +4,10 @@
 
 > [!IMPORTANT]
 > **Constellation is no longer actively maintained by Edgeless Systems.**
-> 
+>
 > This project is no longer receiving updates or support from Edgeless Systems. The repository remains available for archival purposes and community use.
+> New development continues in Contrast, which provides workload-level confidential computing using Confidential Containers.
+> 👉 https://github.com/edgelesssys/contrast
 
 <p>
     <a href="https://github.com/edgelesssys/constellation/actions/workflows/test-tidy.yml/badge.svg?branch=main"><img src="https://github.com/edgelesssys/constellation/actions/workflows/test-tidy.yml/badge.svg?branch=main" alt="Govulncheck"></a>
