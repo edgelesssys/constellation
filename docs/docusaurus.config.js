@@ -14,6 +14,7 @@ async function createConfig() {
     onBrokenLinks: 'throw',
     onBrokenAnchors: 'throw',
     favicon: 'img/favicon.ico',
+    trailingSlash: false,
 
     // GitHub pages deployment config.
     // If you aren't using GitHub pages, you don't need these.
@@ -104,8 +105,10 @@ async function createConfig() {
         },
         announcementBar: {
           content:
-            'If you like Constellation, give it a star on <a target="_blank" rel="noopener noreferrer" href="https://github.com/edgelesssys/constellation">GitHub</a> ⭐️',
-          backgroundColor: '#E7E6E6'
+            '<strong>⚠️ Maintenance Notice: Constellation is no longer actively maintained by Edgeless Systems. This project is no longer receiving updates or support. New development continues in <a href="https://github.com/edgelesssys/contrast">Contrast</a>, which provides workload-level confidential computing using Confidential Containers.</strong>',
+          backgroundColor: '#FFF3CD',
+          textColor: '#664d03',
+          isCloseable: false,
         },
         footer: {
           style: 'dark',
