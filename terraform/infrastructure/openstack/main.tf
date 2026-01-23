@@ -2,12 +2,12 @@ terraform {
   required_providers {
     openstack = {
       source  = "terraform-provider-openstack/openstack"
-      version = "3.0.0"
+      version = "3.3.2"
     }
 
     stackit = {
       source  = "stackitcloud/stackit"
-      version = "0.62.0"
+      version = "0.68.0"
     }
 
     random = {

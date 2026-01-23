@@ -2,7 +2,7 @@ terraform {
   required_providers {
     stackit = {
       source  = "stackitcloud/stackit"
-      version = "0.62.0"
+      version = "0.68.0"
     }
   }
 }
